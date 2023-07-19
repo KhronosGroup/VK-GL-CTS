@@ -289,7 +289,7 @@ void ShaderAtomicCounterOpsTestBase::ShaderPipeline::executeComputeShader(deqp::
 
 	// output image
 	gl.bindTexture(GL_TEXTURE_2D, *outputTexture);
-	gl.texStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32UI, 16, 16);
+	gl.texStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, 16, 16);
 	gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Uploading image data failed");

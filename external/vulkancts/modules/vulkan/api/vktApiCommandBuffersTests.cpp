@@ -3484,8 +3484,8 @@ tcu::TestStatus executeSecondaryBufferTwiceTest(Context& context)
 		// record secondary command buffer
 		VK_CHECK(vk.beginCommandBuffer(cmdBuffers[ndx].get(), &secCmdBufBeginInfo));
 		{
-			// wait for event
-			vk.cmdWaitEvents(cmdBuffers[ndx].get(), 1, &eventOne.get(), VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, DE_NULL, 0u, DE_NULL, 0u, DE_NULL);
+			// set event
+			vk.cmdSetEvent(cmdBuffers[ndx].get(), *eventOne, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 		}
 		// end recording of secondary buffers
 		endCommandBuffer(vk, cmdBuffers[ndx].get());
@@ -3512,53 +3512,68 @@ tcu::TestStatus executeSecondaryBufferTwiceTest(Context& context)
 	const Unique<VkFence>					fenceOne				(createFence(vk, vkDevice));
 	const Unique<VkFence>					fenceTwo				(createFence(vk, vkDevice));
 
-	const VkSubmitInfo						submitInfoOne			=
+	const uint64_t semaphoreWaitValue = 1ull;
+	const VkPipelineStageFlags semaphoreWaitStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+	const auto semaphore = createSemaphoreType(vk, vkDevice, VK_SEMAPHORE_TYPE_TIMELINE);
+
+	// Use timeline semaphore to wait for signal from the host.
+	const VkTimelineSemaphoreSubmitInfo timelineWaitSubmitInfo =
 	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,								// sType
-		DE_NULL,													// pNext
-		0u,															// waitSemaphoreCount
-		DE_NULL,													// pWaitSemaphores
-		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
-		1,															// commandBufferCount
-		&primCmdBufOne.get(),										// pCommandBuffers
-		0u,															// signalSemaphoreCount
-		DE_NULL,													// pSignalSemaphores
+		VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,	//	VkStructureType	sType;
+		nullptr,											//	const void*		pNext;
+		1u,													//	uint32_t		waitSemaphoreValueCount;
+		&semaphoreWaitValue,								//	const uint64_t*	pWaitSemaphoreValues;
+		0u,													//	uint32_t		signalSemaphoreValueCount;
+		nullptr,											//	const uint64_t*	pSignalSemaphoreValues;
 	};
 
-	// submit primary buffer, the secondary should be executed too
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfoOne, *fenceOne));
-
-	// wait for buffer to stop at event for 100 microseconds
-	vk.waitForFences(vkDevice, 1, &fenceOne.get(), 0u, 100000);
-
-	const VkSubmitInfo						submitInfoTwo			=
+	const VkSubmitInfo submitInfo =
 	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,								// sType
-		DE_NULL,													// pNext
-		0u,															// waitSemaphoreCount
-		DE_NULL,													// pWaitSemaphores
-		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
-		1,															// commandBufferCount
-		&primCmdBufTwo.get(),										// pCommandBuffers
-		0u,															// signalSemaphoreCount
-		DE_NULL,													// pSignalSemaphores
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,		//	VkStructureType				sType;
+		&timelineWaitSubmitInfo,			//	const void*					pNext;
+		1u,									//	uint32_t					waitSemaphoreCount;
+		&semaphore.get(),					//	const VkSemaphore*			pWaitSemaphores;
+		&semaphoreWaitStage,				//	const VkPipelineStageFlags*	pWaitDstStageMask;
+		1u,									//	uint32_t					commandBufferCount;
+		&primCmdBufOne.get(),				//	const VkCommandBuffer*		pCommandBuffers;
+		0u,									//	uint32_t					signalSemaphoreCount;
+		nullptr,							//	const VkSemaphore*			pSignalSemaphores;
+	};
+	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fenceOne));
+
+	const VkSubmitInfo submitInfo2 =
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,		//	VkStructureType				sType;
+		&timelineWaitSubmitInfo,			//	const void*					pNext;
+		1u,									//	uint32_t					waitSemaphoreCount;
+		&semaphore.get(),					//	const VkSemaphore*			pWaitSemaphores;
+		&semaphoreWaitStage,				//	const VkPipelineStageFlags*	pWaitDstStageMask;
+		1u,									//	uint32_t					commandBufferCount;
+		&primCmdBufTwo.get(),				//	const VkCommandBuffer*		pCommandBuffers;
+		0u,									//	uint32_t					signalSemaphoreCount;
+		nullptr,							//	const VkSemaphore*			pSignalSemaphores;
 	};
 
-	// submit second primary buffer, the secondary should be executed too
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfoTwo, *fenceTwo));
+	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo2, *fenceTwo));
 
-	// wait for all buffers to stop at event for 100 microseconds
-	vk.waitForFences(vkDevice, 1, &fenceOne.get(), 0u, 100000);
+	// Signal from host
+	const vk::VkSemaphoreSignalInfo signalInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO,	//	VkStructureType	sType;
+		nullptr,										//	const void*		pNext;
+		semaphore.get(),								//	VkSemaphore		semaphore;
+		semaphoreWaitValue,								//	uint64_t		value;
+	};
 
-	// now all buffers are waiting at eventOne
-	// set event eventOne
-	VK_CHECK(vk.setEvent(vkDevice, *eventOne));
+	VK_CHECK(vk.signalSemaphore(vkDevice, &signalInfo));
 
 	// wait for end of execution of fenceOne
 	VK_CHECK(vk.waitForFences(vkDevice, 1, &fenceOne.get(), 0u, INFINITE_TIMEOUT));
 
-	// wait for end of execution of second queue
+	// wait for end of execution of fenceTwo
 	VK_CHECK(vk.waitForFences(vkDevice, 1, &fenceTwo.get(), 0u, INFINITE_TIMEOUT));
+
+	TCU_CHECK(vk.getEventStatus(vkDevice, *eventOne) == vk::VK_EVENT_SET);
 
 	return tcu::TestStatus::pass("executeSecondaryBufferTwiceTest succeeded");
 }
@@ -4057,11 +4072,12 @@ void checkSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport(Context
 	checkSecondaryCommandBufferNullOrImagelessFramebufferSupport(context);
 }
 
-void checkEventAndSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport(Context& context)
+void checkEventAndTimelineSemaphoreAndSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport(Context& context)
 {
 	checkEventSupport(context);
-	checkCommandBufferSimultaneousUseSupport(context);
-	checkSecondaryCommandBufferNullOrImagelessFramebufferSupport(context);
+	context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
+
+	checkSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport(context);
 }
 
 #ifndef CTS_USES_VULKANSC
@@ -4702,7 +4718,7 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 	{
 		deUint32	seed		= 1614182419u;
 		const auto	smallExtent	= makeExtent3D(128u, 128u, 1u);
-		const auto	largeExtent	= makeExtent3D(512u, 512u, 1u);
+		const auto	largeExtent	= makeExtent3D(512u, 256u, 1u);
 
 		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_primary_1",		"", ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_PRIMARY,	smallExtent,	seed++)));
 		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_primary_2",		"", ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_PRIMARY,	largeExtent,	seed++)));
@@ -4734,7 +4750,7 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 	addFunctionCase				(commandBuffersTests.get(), "submit_two_buffers_one_buffer_null_with_fence", "", checkEventSupport, submitTwoBuffersOneBufferNullWithFence);
 	/* 19.5. Secondary Command Buffer Execution (5.6 in VK 1.0 Spec) */
 	addFunctionCase				(commandBuffersTests.get(), "secondary_execute",				"", checkEventAndSecondaryCommandBufferNullFramebufferSupport, executeSecondaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "secondary_execute_twice",			"", checkEventAndSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport, executeSecondaryBufferTwiceTest);
+	addFunctionCase				(commandBuffersTests.get(), "secondary_execute_twice",			"", checkEventAndTimelineSemaphoreAndSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport, executeSecondaryBufferTwiceTest);
 	/* 19.6. Commands Allowed Inside Command Buffers (? in VK 1.0 Spec) */
 	addFunctionCaseWithPrograms (commandBuffersTests.get(), "order_bind_pipeline",				"", genComputeSource, orderBindPipelineTest);
 	/* Verify untested transitions between command buffer states */

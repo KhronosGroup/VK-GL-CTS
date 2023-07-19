@@ -37,6 +37,7 @@
 #	define VKAPI_CALL
 #endif
 
+#define VK_NULL_HANDLE									DE_NULL
 #define VK_DEFINE_HANDLE(NAME, TYPE)					typedef struct NAME##_s* NAME
 #define VK_DEFINE_NON_DISPATCHABLE_HANDLE(NAME, TYPE)	typedef Handle<TYPE> NAME
 
@@ -64,6 +65,9 @@ struct NAME {											\
 #define VK_CHECK_SUPPORTED(EXPR)				vk::checkResultSupported((EXPR), #EXPR, __FILE__, __LINE__)
 #define VK_CHECK_MSG(EXPR, MSG)					vk::checkResult((EXPR), MSG, __FILE__, __LINE__)
 #define VK_CHECK_WSI(EXPR)						vk::checkWsiResult((EXPR), #EXPR, __FILE__, __LINE__)
+
+#define VK_MAKE_VIDEO_STD_VERSION(major, minor, patch) \
+    ((((deUint32)(major)) << 22) | (((deUint32)(minor)) << 12) | ((deUint32)(patch)))
 
 /*--------------------------------------------------------------------*//*!
  * \brief Vulkan utilities
@@ -188,9 +192,11 @@ typedef VKAPI_ATTR VkBool32	(VKAPI_CALL* PFN_vkDebugReportCallbackEXT)			(VkDebu
 																				 const char*				pMessage,
 																				 void*						pUserData);
 
+typedef VKAPI_ATTR PFN_vkVoidFunction (VKAPI_CALL* PFN_vkGetInstanceProcAddrLUNARG)	(VkInstance instance, const char pName);
+
 #endif // CTS_USES_VULKANSC
 
-typedef VKAPI_ATTR VkBool32 (VKAPI_CALL *PFN_vkDebugUtilsMessengerCallbackEXT)	(VkDebugUtilsMessageSeverityFlagBitsEXT				messageSeverity,
+typedef VKAPI_ATTR VkBool32	(VKAPI_CALL *PFN_vkDebugUtilsMessengerCallbackEXT)	(VkDebugUtilsMessageSeverityFlagBitsEXT				messageSeverity,
 																				 VkDebugUtilsMessageTypeFlagsEXT					messageTypes,
 																				 const struct VkDebugUtilsMessengerCallbackDataEXT*	pCallbackData,
 																				 void*												pUserData);
@@ -198,38 +204,15 @@ typedef VKAPI_ATTR VkBool32 (VKAPI_CALL *PFN_vkDebugUtilsMessengerCallbackEXT)	(
 typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkDeviceMemoryReportCallbackEXT)	(const struct VkDeviceMemoryReportCallbackDataEXT*	pCallbackData,
 																				 void*												pUserData);
 
+
 #ifdef CTS_USES_VULKANSC
 struct VkFaultData;
 typedef VKAPI_ATTR void		(VKAPI_CALL *PFN_vkFaultCallbackFunction)			(VkBool32											incompleteFaultData,
 																				 deUint32											faultCount,
-																				 VkFaultData*										pFaultData);
+																				 const VkFaultData*									pFaultData);
 #endif // CTS_USES_VULKANSC
 
 #include "vkStructTypes.inl"
-
-#ifdef CTS_USES_VULKANSC
-
-// substitute required enums and structs removed from VulkanSC specification
-
-enum VkShaderModuleCreateFlagBits
-{
-	VK_SHADER_MODULE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF,
-};
-typedef deUint32 VkShaderModuleCreateFlags;
-
-#define VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO VkStructureType(16)
-#define VK_OBJECT_TYPE_SHADER_MODULE VkObjectType(15)
-
-struct VkShaderModuleCreateInfo
-{
-	VkStructureType				sType;
-	const void*					pNext;
-	VkShaderModuleCreateFlags	flags;
-	deUintptr					codeSize;
-	const deUint32*				pCode;
-};
-
-#endif // CTS_USES_VULKANSC
 
 typedef void* VkRemoteAddressNV;
 

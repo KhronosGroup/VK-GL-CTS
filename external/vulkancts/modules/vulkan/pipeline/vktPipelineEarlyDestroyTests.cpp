@@ -192,7 +192,7 @@ tcu::TestStatus testEarlyDestroy (Context& context, const TestParams& params, bo
 		graphicsPipeline.disableViewportState()
 						.setDefaultMultisampleState()
 						.setDefaultDepthStencilState()
-						.setupVertexInputStete(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
+						.setupVertexInputState(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
 						.setupPreRasterizationShaderState(viewports,
 														  scissors,
 														  *pipelineLayout,

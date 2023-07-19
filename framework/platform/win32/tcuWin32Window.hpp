@@ -41,6 +41,7 @@ public:
 	void		setVisible			(bool visible);
 	void		setForeground		(void);
 	void		setSize				(int width, int height);
+	void		setMinimized		(bool minimize);
 
 	LRESULT		windowProc			(UINT uMsg, WPARAM wParam, LPARAM lParam);
 	void		processEvents		(void);

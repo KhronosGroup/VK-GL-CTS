@@ -318,7 +318,7 @@ FlushFinishCase::CalibrationParams FlushFinishCase::calibrate (void)
 		m_testCtx.getLog() << TestLog::Integer("MaxDrawCalls", "Maximum number of draw calls", "", QP_KEY_TAG_NONE, params.maxDrawCalls);
 	}
 
-	// Sanity check.
+	// Quick check.
 	if (params.maxDrawCalls < MIN_DRAW_CALL_COUNT)
 		throw CalibrationFailedException("Calibration failed, maximum draw call count is too low");
 

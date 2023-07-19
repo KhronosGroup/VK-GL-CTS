@@ -288,7 +288,11 @@ int main (int argc, char** argv)
 		tcu::DirArchive					archive			{""};
 		tcu::TestLog					log				{ cmdLine.getOption<opt::LogFile>().c_str() }; log.supressLogging(true);
 		de::SharedPtr<tcu::Platform>	platform		{createPlatform()};
+#ifdef DE_PLATFORM_USE_LIBRARY_TYPE
+		de::SharedPtr<vk::Library>		library			{platform->getVulkanPlatform().createLibrary(vk::Platform::LIBRARY_TYPE_VULKAN, DE_NULL)};
+#else
 		de::SharedPtr<vk::Library>		library			{platform->getVulkanPlatform().createLibrary(DE_NULL)};
+#endif
 		tcu::TestContext				tcx				{*platform, archive, log, cmdLineDummy, nullptr};
 		vk::BinaryCollection			collection		{};
 		vkt::Context					context			(tcx, library->getPlatformInterface(), collection, de::SharedPtr<vk::ResourceInterface>{new vk::ResourceInterfaceStandard{ tcx }});

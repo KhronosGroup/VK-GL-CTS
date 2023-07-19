@@ -298,7 +298,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper&			gpw,
 	};
 
 	gpw.setDefaultRasterizationState()
-	   .setupVertexInputStete(&vertexInputStateInfo)
+	   .setupVertexInputState(&vertexInputStateInfo)
 	   .setupPreRasterizationShaderState(viewport,
 								scissor,
 								pipelineLayout,

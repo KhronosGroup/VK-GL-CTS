@@ -78,11 +78,13 @@ typedef PointerWrapper<VkPipelineViewportDepthClipControlCreateInfoEXT> Pipeline
 typedef PointerWrapper<VkPipelineRenderingCreateInfoKHR> PipelineRenderingCreateInfoWrapper;
 typedef PointerWrapper<VkPipelineCreationFeedbackCreateInfoEXT> PipelineCreationFeedbackCreateInfoWrapper;
 typedef ConstPointerWrapper<VkPipelineShaderStageModuleIdentifierCreateInfoEXT> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
+typedef PointerWrapper<VkPipelineRepresentativeFragmentTestStateCreateInfoNV> PipelineRepresentativeFragmentTestCreateInfoWrapper;
 #else
 typedef PointerWrapper<void> PipelineViewportDepthClipControlCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRenderingCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineCreationFeedbackCreateInfoWrapper;
 typedef ConstPointerWrapper<void> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
+typedef PointerWrapper<void> PipelineRepresentativeFragmentTestCreateInfoWrapper;
 #endif
 
 // Class that can build monolithic pipeline or fully separated pipeline libraries
@@ -111,15 +113,22 @@ public:
 	// By default dynamic state has to be specified before specifying other CreateInfo structures
 	GraphicsPipelineWrapper&	setDynamicState						(const VkPipelineDynamicStateCreateInfo* dynamicState);
 
+	// Specify the representative fragment test state.
+	GraphicsPipelineWrapper&	setRepresentativeFragmentTestState	(PipelineRepresentativeFragmentTestCreateInfoWrapper representativeFragmentTestState);
+
 	// Specify topology that is used by default InputAssemblyState in vertex input state. This needs to be
-	// specified only when there is no custom InputAssemblyState provided in setupVertexInputStete and when
+	// specified only when there is no custom InputAssemblyState provided in setupVertexInputState and when
 	// topology is diferent then VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST which is used by default.
 	GraphicsPipelineWrapper&	setDefaultTopology					(const VkPrimitiveTopology topology);
 
 	// Specify patch control points that is used by default TessellationState in pre-rasterization shader state.
 	// This can to be specified only when there is no custom TessellationState provided in
 	// setupPreRasterizationShaderState and when patchControlPoints is diferent then 3 which is used by default.
+	// A value of std::numeric_limits<uint32_t>::max() forces the tessellation state to be null.
 	GraphicsPipelineWrapper&	setDefaultPatchControlPoints		(const deUint32 patchControlPoints);
+
+	// Specify tesellation domain origin, used by the tessellation state in pre-rasterization shader state.
+	GraphicsPipelineWrapper&	setDefaultTessellationDomainOrigin	(const VkTessellationDomainOrigin domainOrigin, bool forceExtStruct = false);
 
 	// Enable discarding of primitives that is used by default RasterizationState in pre-rasterization shader state.
 	// This can be specified only when there is no custom RasterizationState provided in setupPreRasterizationShaderState.
@@ -131,6 +140,7 @@ public:
 	GraphicsPipelineWrapper&	setDefaultDepthStencilState			(void);
 	GraphicsPipelineWrapper&	setDefaultColorBlendState			(void);
 	GraphicsPipelineWrapper&	setDefaultMultisampleState			(void);
+	GraphicsPipelineWrapper&	setDefaultVertexInputState			(const deBool useDefaultVertexInputState);
 
 	// Pre-rasterization shader state uses provieded viewports and scissors to create ViewportState. By default
 	// number of viewports and scissors is same as number of items in vector but when vectors are empty then by
@@ -138,8 +148,8 @@ public:
 	GraphicsPipelineWrapper&	setDefaultViewportsCount			(deUint32 viewportCount = 0u);
 	GraphicsPipelineWrapper&	setDefaultScissorsCount				(deUint32 scissorCount = 0u);
 
-	// Pre-rasterization shader state uses default ViewportState, this method extends it with VkPipelineViewportDepthClipControlCreateInfoEXT.
-	GraphicsPipelineWrapper&	setDepthClipControl					(PipelineViewportDepthClipControlCreateInfoWrapper& depthClipControlCreateInfo);
+	// Pre-rasterization shader state uses default ViewportState, this method extends the internal structure.
+	GraphicsPipelineWrapper&	setViewportStatePnext				(const void* pNext);
 
 #ifndef CTS_USES_VULKANSC
 	GraphicsPipelineWrapper&	setRenderingColorAttachmentsInfo	(PipelineRenderingCreateInfoWrapper pipelineRenderingCreateInfo);
@@ -147,14 +157,15 @@ public:
 
 	// Pre-rasterization shader state uses provieded viewports and scissors to create ViewportState. When disableViewportState
 	// is used then ViewportState won't be constructed and NULL will be used.
-	GraphicsPipelineWrapper&	disableViewportState				(void);
+	GraphicsPipelineWrapper&	disableViewportState				(const bool disable = true);
 
 
 	// Setup vertex input state. When VertexInputState or InputAssemblyState are not provided then default structures will be used.
-	GraphicsPipelineWrapper&	setupVertexInputStete				(const VkPipelineVertexInputStateCreateInfo*		vertexInputState = DE_NULL,
-																	 const VkPipelineInputAssemblyStateCreateInfo*		inputAssemblyState = DE_NULL,
+	GraphicsPipelineWrapper&	setupVertexInputState				(const VkPipelineVertexInputStateCreateInfo*		vertexInputState = nullptr,
+																	 const VkPipelineInputAssemblyStateCreateInfo*		inputAssemblyState = nullptr,
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
-																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
+																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
+																	 const bool											useNullPtrs = false);
 
 	// Setup pre-rasterization shader state.
 	GraphicsPipelineWrapper&	setupPreRasterizationShaderState	(const std::vector<VkViewport>&						viewports,
@@ -269,7 +280,8 @@ public:
 	void						buildPipeline						(const VkPipelineCache								pipelineCache = DE_NULL,
 																	 const VkPipeline									basePipelineHandle = DE_NULL,
 																	 const deInt32										basePipelineIndex = 0,
-																	 PipelineCreationFeedbackCreateInfoWrapper			creationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
+																	 PipelineCreationFeedbackCreateInfoWrapper			creationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
+																	 void*												pNext = DE_NULL);
 
 	// Returns true when pipeline was build using buildPipeline method.
 	deBool						wasBuild							(void) const;

@@ -4,6 +4,10 @@ KHR-GLES32.info.version
 KHR-GLES32.info.shading_language_version
 KHR-GLES32.info.extensions
 KHR-GLES32.info.render_target
+KHR-GLES32.shaders.function.local_variable_aliasing_vertex
+KHR-GLES32.shaders.function.local_variable_aliasing_fragment
+KHR-GLES32.shaders.function.global_variable_aliasing_vertex
+KHR-GLES32.shaders.function.global_variable_aliasing_fragment
 KHR-GLES32.shaders.shader_integer_mix.define
 KHR-GLES32.shaders.shader_integer_mix.prototypes-extension
 KHR-GLES32.shaders.shader_integer_mix.prototypes
@@ -13,6 +17,7 @@ KHR-GLES32.shaders.shader_integer_mix.mix-uvec4
 KHR-GLES32.shaders.shader_integer_mix.mix-bvec4
 KHR-GLES32.shaders.negative.initialize
 KHR-GLES32.shaders.negative.constant_sequence
+KHR-GLES32.shaders.negative.non_precision_qualifiers_in_struct_members
 KHR-GLES32.shaders.negative.used_uniform_precision_matching
 KHR-GLES32.shaders.struct.local.basic_vertex
 KHR-GLES32.shaders.struct.local.basic_fragment

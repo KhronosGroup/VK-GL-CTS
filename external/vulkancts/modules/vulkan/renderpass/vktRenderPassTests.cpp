@@ -62,6 +62,9 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
+#include "vkBarrierUtil.hpp"
 
 #include "tcuFloat.hpp"
 #include "tcuFormatUtil.hpp"
@@ -2007,6 +2010,8 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 									? VK_TRUE
 									: VK_FALSE;
 
+	VkStencilOp		stencilOp		= writeStencil ? VK_STENCIL_OP_REPLACE : VK_STENCIL_OP_KEEP;
+
 	const VkPipelineDepthStencilStateCreateInfo depthStencilState =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// sType
@@ -2018,18 +2023,18 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 		VK_FALSE,													// depthBoundsEnable
 		writeStencil,												// stencilTestEnable
 		{
-			VK_STENCIL_OP_REPLACE,									// stencilFailOp
-			VK_STENCIL_OP_REPLACE,									// stencilPassOp
-			VK_STENCIL_OP_REPLACE,									// stencilDepthFailOp
+			stencilOp,												// stencilFailOp
+			stencilOp,												// stencilPassOp
+			stencilOp,												// stencilDepthFailOp
 			VK_COMPARE_OP_ALWAYS,									// stencilCompareOp
 			~0u,													// stencilCompareMask
 			~0u,													// stencilWriteMask
 			((stencilIndex % 2) == 0) ? ~0x0u : 0x0u				// stencilReference
 		},															// front
 		{
-			VK_STENCIL_OP_REPLACE,									// stencilFailOp
-			VK_STENCIL_OP_REPLACE,									// stencilPassOp
-			VK_STENCIL_OP_REPLACE,									// stencilDepthFailOp
+			stencilOp,												// stencilFailOp
+			stencilOp,												// stencilPassOp
+			stencilOp,												// stencilDepthFailOp
 			VK_COMPARE_OP_ALWAYS,									// stencilCompareOp
 			~0u,													// stencilCompareMask
 			~0u,													// stencilWriteMask
@@ -2779,7 +2784,7 @@ void pushImageInitializationCommands (const DeviceInterface&								vk,
 
 		if (!initializeLayouts.empty())
 			vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-								  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, (VkDependencyFlags)0,
+								  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT | VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0,
 								  0, (const VkMemoryBarrier*)DE_NULL,
 								  0, (const VkBufferMemoryBarrier*)DE_NULL,
 								  (deUint32)initializeLayouts.size(), &initializeLayouts[0]);
@@ -2865,7 +2870,7 @@ void pushImageInitializationCommands (const DeviceInterface&								vk,
 
 		if (!renderPassLayouts.empty())
 			vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-								  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, (VkDependencyFlags)0,
+								  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT | VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0,
 								  0, (const VkMemoryBarrier*)DE_NULL,
 								  0, (const VkBufferMemoryBarrier*)DE_NULL,
 								  (deUint32)renderPassLayouts.size(), &renderPassLayouts[0]);
@@ -5298,6 +5303,198 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 	}
 }
 
+class RenderPassNoDrawLoadStoreTestCase : public vkt::TestCase
+{
+public:
+	RenderPassNoDrawLoadStoreTestCase(tcu::TestContext& context, const std::string& name, const std::string& description, bool useRenderPass2);
+	TestInstance*   createInstance          (Context& context) const override;
+private:
+	bool m_renderPass2;
+};
+
+class RenderPassNoDrawLoadStoreTestInstance : public vkt::TestInstance
+{
+public:
+	RenderPassNoDrawLoadStoreTestInstance(Context& context, bool useRenderPass2);
+
+	template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>
+	Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk, VkDevice vkDevice, RenderingType type);
+	virtual tcu::TestStatus iterate(void);
+private:
+	bool m_renderPass2;
+};
+
+RenderPassNoDrawLoadStoreTestCase::RenderPassNoDrawLoadStoreTestCase(tcu::TestContext& context, const std::string& name, const std::string& description, bool useRenderPass2)
+	: vkt::TestCase(context, name, description), m_renderPass2(useRenderPass2) {}
+
+RenderPassNoDrawLoadStoreTestInstance::RenderPassNoDrawLoadStoreTestInstance(Context& context, bool useRenderPass2) : vkt::TestInstance(context), m_renderPass2(useRenderPass2) { }
+
+TestInstance* RenderPassNoDrawLoadStoreTestCase::createInstance(Context& context) const {
+	return new RenderPassNoDrawLoadStoreTestInstance(context, m_renderPass2);
+}
+
+template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>
+Move<VkRenderPass> RenderPassNoDrawLoadStoreTestInstance::createRenderPass (const DeviceInterface&	vk,
+									 VkDevice				vkDevice,
+									 RenderingType			type)
+{
+	const VkImageAspectFlags	aspectMask						= type == RENDERING_TYPE_RENDERPASS_LEGACY ? 0 : VK_IMAGE_ASPECT_COLOR_BIT;
+
+	const AttachmentDesc attachmentDescription =
+		// Result attachment
+		AttachmentDesc (
+			nullptr,									// const void*						pNext
+			(VkAttachmentDescriptionFlags)0,			// VkAttachmentDescriptionFlags		flags
+			VK_FORMAT_R8G8B8A8_UNORM,					// VkFormat							format
+			VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits			samples
+			VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp				loadOp
+			VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				storeOp
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp				stencilLoadOp
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp				stencilStoreOp
+			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout					initialLayout
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout					finalLayout
+		);
+
+	const AttachmentRef resultAttachmentRefSubpass0 (
+		nullptr,									// const void*			pNext
+		0u,											// deUint32				attachment
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout		layout
+		aspectMask									// VkImageAspectFlags	aspectMask
+	);
+
+	const SubpassDesc subpassDescription =
+		SubpassDesc (
+			nullptr,
+			(VkSubpassDescriptionFlags)0,		// VkSubpassDescriptionFlags		flags
+			VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint				pipelineBindPoint
+			0u,									// deUint32							viewMask
+			0u,									// deUint32							inputAttachmentCount
+			nullptr,							// const VkAttachmentReference*		pInputAttachments
+			1u,									// deUint32							colorAttachmentCount
+			&resultAttachmentRefSubpass0,		// const VkAttachmentReference*		pColorAttachments
+			nullptr,							// const VkAttachmentReference*		pResolveAttachments
+			nullptr,							// const VkAttachmentReference*		pDepthStencilAttachment
+			0u,									// deUint32							preserveAttachmentCount
+			nullptr								// const deUint32*					pPreserveAttachments
+		);
+
+	const RenderPassCreateInfo renderPassInfo (
+		nullptr,									// const void*						pNext
+		(VkRenderPassCreateFlags)0,					// VkRenderPassCreateFlags			flags
+		1u,											// deUint32							attachmentCount
+		&attachmentDescription,						// const VkAttachmentDescription*	pAttachments
+		1u,											// deUint32							subpassCount
+		&subpassDescription,						// const VkSubpassDescription*		pSubpasses
+		0u,											// deUint32							dependencyCount
+		nullptr,									// const VkSubpassDependency*		pDependencies
+		0u,											// deUint32							correlatedViewMaskCount
+		nullptr										// const deUint32*					pCorrelatedViewMasks
+	);
+	return renderPassInfo.createRenderPass(vk, vkDevice);
+}
+
+tcu::TestStatus RenderPassNoDrawLoadStoreTestInstance::iterate() {
+	const auto& vkd			= m_context.getDeviceInterface();
+	const auto  device		= m_context.getDevice();
+	auto& alloc				= m_context.getDefaultAllocator();
+
+	auto imageFormat		= VK_FORMAT_R8G8B8A8_UNORM;
+	auto imageExtent		= makeExtent3D(1, 1, 1u);
+
+	const tcu::IVec3 imageDim	(static_cast<int>(imageExtent.width), static_cast<int>(imageExtent.height), static_cast<int>(imageExtent.depth));
+	const tcu::IVec2 imageSize	(imageDim.x(), imageDim.y());
+
+	const std::vector<VkViewport>	viewports	{ makeViewport(imageExtent) };
+	const std::vector<VkRect2D>		scissors	{ makeRect2D(imageExtent) };
+
+	de::MovePtr<ImageWithMemory>  colorAttachment;
+
+	const auto  qIndex	= m_context.getUniversalQueueFamilyIndex();
+
+	const auto  subresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const auto  imageUsage			= static_cast<VkImageUsageFlags>(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const VkImageCreateInfo imageCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType				sType;
+		nullptr,								//	const void*					pNext;
+		0u,										//	VkImageCreateFlags			flags;
+		VK_IMAGE_TYPE_2D,						//	VkImageType					imageType;
+		imageFormat,							//	VkFormat					format;
+		imageExtent,							//	VkExtent3D					extent;
+		1u,										//	deUint32					mipLevels;
+		1u,										//	deUint32					arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,					//	VkSampleCountFlagBits		samples;
+		VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling				tiling;
+		imageUsage,								//	VkImageUsageFlags			usage;
+		VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode				sharingMode;
+		0u,										//	deUint32					queueFamilyIndexCount;
+		nullptr,								//	const deUint32*				pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout				initialLayout;
+	};
+
+	colorAttachment               = de::MovePtr<ImageWithMemory>(new ImageWithMemory(vkd, device, alloc, imageCreateInfo, MemoryRequirement::Any));
+	auto colorAttachmentView      = makeImageView(vkd, device, colorAttachment->get(), VK_IMAGE_VIEW_TYPE_2D, imageFormat, subresourceRange);
+
+	const auto	tcuFormat			= mapVkFormat(imageFormat);
+	const auto	outBufferSize		= static_cast<VkDeviceSize>(static_cast<uint32_t>(tcu::getPixelSize(tcuFormat)) * imageExtent.width * imageExtent.height);
+
+	BufferWithMemory outBuffer (vkd, device, alloc, makeBufferCreateInfo(outBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
+	auto&		outBufferAlloc		= outBuffer.getAllocation();
+	void*		outBufferData		= outBufferAlloc.getHostPtr();
+
+	Move<VkRenderPass> renderPass;
+	if (m_renderPass2) {
+		renderPass = createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>
+			(vkd, device, RENDERING_TYPE_RENDERPASS_LEGACY);
+	} else {
+		renderPass = createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>
+			(vkd, device, RENDERING_TYPE_RENDERPASS2);
+	}
+
+	// Framebuffer.
+	const auto framebuffer = makeFramebuffer(vkd, device, renderPass.get(), colorAttachmentView.get(), imageExtent.width, imageExtent.height);
+
+	const auto clearValueColor = makeClearValueColor(tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f));
+
+	auto graphicsPipelineLayout = makePipelineLayout(vkd, device);
+	auto commandPool	= createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, qIndex);
+	auto commandBuffer	= allocateCommandBuffer(vkd, device, commandPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	beginCommandBuffer(vkd, commandBuffer.get());
+
+	const VkRenderPassBeginInfo renderPassBeginInfo =
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,		// VkStructureType         sType;
+		nullptr,										// const void*             pNext;
+		*renderPass,									// VkRenderPass            renderPass;
+		*framebuffer,									// VkFramebuffer           framebuffer;
+		scissors.at(0),									// VkRect2D                renderArea;
+		1,												// uint32_t                clearValueCount;
+		&clearValueColor,								// const VkClearValue*     pClearValues;
+	};
+	vkd.cmdBeginRenderPass(*commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vkd.cmdEndRenderPass(*commandBuffer);
+	auto barrier = makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, colorAttachment->get(), subresourceRange);
+	cmdPipelineImageMemoryBarrier(vkd, *commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &barrier);
+	copyImageToBuffer(vkd, commandBuffer.get(), colorAttachment.get()->get(), outBuffer.get(), imageSize);
+	endCommandBuffer(vkd, commandBuffer.get());
+	submitCommandsAndWait(vkd, device, m_context.getUniversalQueue(), commandBuffer.get());
+	invalidateAlloc(vkd, device, outBufferAlloc);
+
+	tcu::ConstPixelBufferAccess outPixels(tcuFormat, imageDim, outBufferData);
+	auto pixel = outPixels.getPixel(0, 0);
+	auto expected = tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f);
+
+	if (pixel != expected) {
+		std::stringstream output("Pixel isn't equal to clear color: ");
+		output << pixel << " instead of " << expected;
+		return tcu::TestStatus::fail(output.str());
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 static const VkFormat s_coreColorFormats[] =
 {
 	VK_FORMAT_R5G6B5_UNORM_PACK16,
@@ -7712,6 +7909,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, co
 	de::MovePtr<tcu::TestCaseGroup>	renderingTests					(new tcu::TestCaseGroup(testCtx, groupName, ""));
 	de::MovePtr<tcu::TestCaseGroup>	suballocationTestGroup			= createSuballocationTests(testCtx, groupParams);
 	de::MovePtr<tcu::TestCaseGroup>	dedicatedAllocationTestGroup	= createDedicatedAllocationTests(testCtx, groupParams);
+	de::MovePtr<tcu::TestCaseGroup> noDrawGroup {new tcu::TestCaseGroup{testCtx, "no_draws", ""}};
 
 	const RenderingType renderingType = groupParams->renderingType;
 
@@ -7722,6 +7920,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, co
 		suballocationTestGroup->addChild(createRenderPassMultisampleResolveTests(testCtx, groupParams));
 		suballocationTestGroup->addChild(createRenderPassSubpassDependencyTests(testCtx));
 		suballocationTestGroup->addChild(createRenderPassSampleReadTests(testCtx));
+		noDrawGroup->addChild(new RenderPassNoDrawLoadStoreTestCase(testCtx, "render_pass_no_draw_clear_load_store", "Test clears in a renderpass with no drawing commands", false));
 
 #ifndef CTS_USES_VULKANSC
 		suballocationTestGroup->addChild(createRenderPassSparseRenderTargetTests(testCtx, groupParams));
@@ -7737,6 +7936,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, co
 		suballocationTestGroup->addChild(createRenderPass2MultisampleResolveTests(testCtx, groupParams));
 		suballocationTestGroup->addChild(createRenderPass2SubpassDependencyTests(testCtx));
 		suballocationTestGroup->addChild(createRenderPass2SampleReadTests(testCtx));
+		noDrawGroup->addChild(new RenderPassNoDrawLoadStoreTestCase(testCtx, "render_pass2_no_draw_clear_load_store", "Test clears in a renderpass with no drawing commands", true));
 
 #ifndef CTS_USES_VULKANSC
 		suballocationTestGroup->addChild(createRenderPass2SparseRenderTargetTests(testCtx, groupParams));
@@ -7784,6 +7984,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, co
 
 	renderingTests->addChild(suballocationTestGroup.release());
 	renderingTests->addChild(dedicatedAllocationTestGroup.release());
+	renderingTests->addChild(noDrawGroup.release());
 
 	return renderingTests.release();
 }

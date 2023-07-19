@@ -74,7 +74,7 @@ void testFilesExist (const VkPhysicalDeviceDrmPropertiesEXT& deviceDrmProperties
 #endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 
 	if (!primaryFound && !renderFound) {
-		TCU_THROW(NotSupportedError, "Nether DRM primary nor render device files were found");
+		TCU_THROW(NotSupportedError, "Neither DRM primary nor render device files were found");
 	}
 }
 

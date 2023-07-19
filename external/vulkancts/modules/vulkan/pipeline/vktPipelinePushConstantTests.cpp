@@ -532,7 +532,7 @@ void PushConstantGraphicsTestInstance::init (void)
 						  .setDefaultMultisampleState()
 						  .setDefaultColorBlendState()
 						  .setDefaultTopology(topology)
-						  .setupVertexInputStete(&vertexInputStateParams)
+						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 															scissors,
 															*m_preRasterizationStatePipelineLayout,
@@ -2365,7 +2365,7 @@ void PushConstantLifetimeTestInstance::init (void)
 							 .setDefaultMultisampleState()
 							 .setDefaultColorBlendState()
 							 .setDefaultTopology(topology)
-							 .setupVertexInputStete(&vertexInputStateParams)
+							 .setupVertexInputState(&vertexInputStateParams)
 							 .setupPreRasterizationShaderState(viewports,
 															   scissors,
 															   *(m_pipelineLayout[0]),
@@ -2382,7 +2382,7 @@ void PushConstantLifetimeTestInstance::init (void)
 							 .setDefaultMultisampleState()
 							 .setDefaultColorBlendState()
 							 .setDefaultTopology(topology)
-							 .setupVertexInputStete(&vertexInputStateParams)
+							 .setupVertexInputState(&vertexInputStateParams)
 							 .setupPreRasterizationShaderState(viewports,
 															   scissors,
 															   *(m_pipelineLayout[1]),
@@ -2918,12 +2918,23 @@ tcu::TestStatus OverwriteTestInstance::iterate (void)
 		renderPass	= makeRenderPass(vkd, device);
 		framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), 0u, nullptr, imageExtent.width, imageExtent.height);
 
+		const VkPipelineColorBlendStateCreateInfo colorBlendState
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType
+			DE_NULL,													// const void*									pNext
+			0u,															// VkPipelineColorBlendStateCreateFlags			flags
+			VK_FALSE,													// VkBool32										logicOpEnable
+			VK_LOGIC_OP_CLEAR,											// VkLogicOp									logicOp
+			0u,															// deUint32										attachmentCount
+			DE_NULL,													// const VkPipelineColorBlendAttachmentState*	pAttachments
+			{ 0.0f, 0.0f, 0.0f, 0.0f }									// float										blendConstants[4]
+		};
+
 		pipelineWrapper.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
 					   .setDefaultRasterizationState()
-					   .setDefaultColorBlendState()
 					   .setDefaultDepthStencilState()
 					   .setDefaultMultisampleState()
-					   .setupVertexInputStete(&inputState)
+					   .setupVertexInputState(&inputState)
 					   .setupPreRasterizationShaderState(viewports,
 														 scissors,
 														 *pipelineLayout,
@@ -2931,7 +2942,7 @@ tcu::TestStatus OverwriteTestInstance::iterate (void)
 														 0u,
 														 *vertModule)
 					   .setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragModule)
-					   .setupFragmentOutputState(*renderPass)
+					   .setupFragmentOutputState(*renderPass, 0u, &colorBlendState)
 					   .setMonolithicPipelineLayout(*pipelineLayout)
 					   .buildPipeline();
 	}

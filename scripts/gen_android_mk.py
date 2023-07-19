@@ -24,7 +24,7 @@ import os
 import posixpath
 from fnmatch import fnmatch
 
-from build.common import DEQP_DIR, writeFile
+from ctsbuild.common import DEQP_DIR, writeFile
 
 SRC_ROOTS = [
 	"execserver",

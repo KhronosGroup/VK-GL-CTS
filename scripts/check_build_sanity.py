@@ -25,8 +25,8 @@ import argparse
 import tempfile
 import sys
 
-from build.common import *
-from build.build import *
+from ctsbuild.common import *
+from ctsbuild.build import *
 
 pythonExecutable = sys.executable or "python"
 
@@ -271,6 +271,10 @@ def parseArgs ():
 						dest="skipPrerequisites",
 						action="store_true",
 						help="Skip external dependency fetch")
+	parser.add_argument("--skip-post-checks",
+						dest="skipPostCheck",
+						action="store_true",
+						help="Skip post recipe checks")
 
 	return parser.parse_args()
 
@@ -290,7 +294,7 @@ if __name__ == "__main__":
 
 		print("Running %s" % name)
 
-		allSteps = (PREREQUISITES if (args.skipPrerequisites == False) else []) + steps + POST_CHECKS
+		allSteps = (PREREQUISITES if (args.skipPrerequisites == False) else []) + steps + (POST_CHECKS if (args.skipPostCheck == False) else [])
 		runSteps(allSteps)
 
 		print("All steps completed successfully")

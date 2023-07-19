@@ -609,7 +609,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 								  .setDefaultDepthStencilState()
 								  .setDefaultColorBlendState()
 								  .setDefaultMultisampleState()
-								  .setupVertexInputStete(&vertexInputStateParams)
+								  .setupVertexInputState(&vertexInputStateParams)
 								  .setupPreRasterizationShaderState(viewports,
 																	scissors,
 																	*m_pipelineLayout,
@@ -2413,7 +2413,7 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx, Pipelin
 	}
 
 	// Dynamic descriptor offset test for combined descriptor sets.
-	{
+	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) {
 		de::MovePtr<tcu::TestCaseGroup>	combinedDescriptorsTests(new tcu::TestCaseGroup(testCtx, "combined_descriptors", ""));
 
 		struct

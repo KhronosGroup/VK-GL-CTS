@@ -20,5 +20,4 @@ add_library(deqp-vk-multiview STATIC ${DEQP_VK_MULTI_VIEW_SRCS})
 target_link_libraries(deqp-vk-multiview tcutil vkutil)
 
 add_library(deqp-vksc-multiview STATIC ${DEQP_VK_MULTI_VIEW_SRCS})
-target_include_directories(deqp-vksc-multiview BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-multiview PUBLIC deqp-vksc-util tcutil vkscutil)

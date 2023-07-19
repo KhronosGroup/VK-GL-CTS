@@ -23,10 +23,11 @@
 import os
 import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
+scriptPath = os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts")
+sys.path.insert(0, scriptPath)
 
-from build.common import DEQP_DIR
-from build.config import ANY_GENERATOR
+from ctsbuild.common import DEQP_DIR
+from ctsbuild.config import ANY_GENERATOR
 from build_caselists import Module, getModuleByName, getBuildConfig, DEFAULT_BUILD_DIR, DEFAULT_TARGET
 from mustpass import Project, Package, Mustpass, Configuration, include, exclude, genMustpassLists, parseBuildConfigFromCmdLineArgs
 
@@ -69,7 +70,7 @@ VULKAN_SC_MAIN_PKG	= Package(module = VULKAN_SC_MODULE, configurations = [
 		  Configuration(name					= "default",
 						filters					= [include("master_sc.txt"),
 												   exclude("android-tests-sc.txt")],
-						listOfGroupsToSplit		= ["dEQP-VKSC"]),
+						listOfGroupsToSplit		= ["dEQP-VKSC", "dEQP-VKSC.pipeline"]),
 	])
 
 MUSTPASS_LISTS		= [

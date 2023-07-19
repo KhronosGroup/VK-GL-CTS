@@ -479,6 +479,11 @@ VkResult InstanceDriver::getPhysicalDeviceVideoFormatPropertiesKHR (VkPhysicalDe
 	return m_vk.getPhysicalDeviceVideoFormatPropertiesKHR(physicalDevice, pVideoFormatInfo, pVideoFormatPropertyCount, pVideoFormatProperties);
 }
 
+VkResult InstanceDriver::getPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceVideoEncodeQualityLevelInfoKHR* pQualityLevelInfo, VkVideoEncodeQualityLevelPropertiesKHR* pQualityLevelProperties) const
+{
+	return m_vk.getPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR(physicalDevice, pQualityLevelInfo, pQualityLevelProperties);
+}
+
 VkResult InstanceDriver::acquireDrmDisplayEXT (VkPhysicalDevice physicalDevice, int32_t drmFd, VkDisplayKHR display) const
 {
 	return m_vk.acquireDrmDisplayEXT(physicalDevice, drmFd, display);
@@ -492,4 +497,9 @@ VkResult InstanceDriver::getDrmDisplayEXT (VkPhysicalDevice physicalDevice, int3
 VkResult InstanceDriver::getPhysicalDeviceOpticalFlowImageFormatsNV (VkPhysicalDevice physicalDevice, const VkOpticalFlowImageFormatInfoNV* pOpticalFlowImageFormatInfo, uint32_t* pFormatCount, VkOpticalFlowImageFormatPropertiesNV* pImageFormatProperties) const
 {
 	return m_vk.getPhysicalDeviceOpticalFlowImageFormatsNV(physicalDevice, pOpticalFlowImageFormatInfo, pFormatCount, pImageFormatProperties);
+}
+
+VkResult InstanceDriver::getPhysicalDeviceCooperativeMatrixPropertiesKHR (VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesKHR* pProperties) const
+{
+	return m_vk.getPhysicalDeviceCooperativeMatrixPropertiesKHR(physicalDevice, pPropertyCount, pProperties);
 }

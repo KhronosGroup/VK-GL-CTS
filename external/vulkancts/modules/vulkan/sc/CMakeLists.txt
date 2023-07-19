@@ -24,5 +24,4 @@ set(DEQP_VK_SC_SRCS
 PCH(DEQP_VK_SC_SRCS ../pch.cpp)
 
 add_library(deqp-vksc-sc STATIC ${DEQP_VK_SC_SRCS})
-target_include_directories(deqp-vksc-sc BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-sc PUBLIC deqp-vksc-util tcutil vkscutil)

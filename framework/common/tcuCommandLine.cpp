@@ -697,10 +697,14 @@ bool matchWildcards(string::const_iterator	patternStart,
 		return (path == pathEnd);
 	else if (*pattern == '*')
 	{
-		for (; path != pathEnd; ++path)
-		{
-			if (matchWildcards(pattern + 1, patternEnd, path, pathEnd, allowPrefix))
-				return true;
+		string::const_iterator patternNext = pattern + 1;
+		if (patternNext != patternEnd) {
+			for (; path != pathEnd; ++path)
+			{
+				if (*patternNext == *path)
+					if (matchWildcards(patternNext, patternEnd, path, pathEnd, allowPrefix))
+						return true;
+			}
 		}
 
 		if (matchWildcards(pattern + 1, patternEnd, pathEnd, pathEnd, allowPrefix))
@@ -750,7 +754,9 @@ static bool patternMatches(vector<string>::const_iterator	patternStart,
 
 bool CasePaths::matches (const string& caseName, bool allowPrefix) const
 {
+#if defined(TCU_HIERARCHICAL_CASEPATHS)
 	const vector<string> components = de::splitString(caseName, '.');
+#endif
 
 	for (size_t ndx = 0; ndx < m_casePatterns.size(); ++ndx)
 	{
@@ -775,7 +781,7 @@ bool CasePaths::matches (const string& caseName, bool allowPrefix) const
  * \note CommandLine is not fully initialized until parse() has been called.
  *//*--------------------------------------------------------------------*/
 CommandLine::CommandLine (void)
-	: m_appName(), m_logFlags(0)
+	: m_appName(), m_logFlags(0), m_hadHelpSpecified(false)
 {
 }
 
@@ -788,7 +794,7 @@ CommandLine::CommandLine (void)
  * \param argv Command line arguments
  *//*--------------------------------------------------------------------*/
 CommandLine::CommandLine (int argc, const char* const* argv)
-	: m_appName(argv[0]), m_logFlags (0)
+	: m_appName(argv[0]), m_logFlags (0), m_hadHelpSpecified(false)
 {
 	if (argc > 1)
 	{
@@ -803,7 +809,12 @@ CommandLine::CommandLine (int argc, const char* const* argv)
 	}
 
 	if (!parse(argc, argv))
-		throw Exception("Failed to parse command line");
+	{
+		if (m_hadHelpSpecified)
+			exit(EXIT_SUCCESS);
+		else
+			throw Exception("Failed to parse command line");
+	}
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -814,7 +825,7 @@ CommandLine::CommandLine (int argc, const char* const* argv)
  * \param cmdLine Full command line string.
  *//*--------------------------------------------------------------------*/
 CommandLine::CommandLine (const std::string& cmdLine)
-	: m_appName(), m_initialCmdLine	(cmdLine)
+	: m_appName(), m_initialCmdLine	(cmdLine), m_hadHelpSpecified(false)
 {
 	if (!parse(cmdLine))
 		throw Exception("Failed to parse command line");
@@ -872,6 +883,9 @@ bool CommandLine::parse (int argc, const char* const* argv)
 	{
 		debugOut << "\n" << de::FilePath(argv[0]).getBaseName() << " [options]\n\n";
 		parser.help(debugOut);
+
+		// We need to save this to avoid exiting with error later, and before the clear() call that wipes its value.
+		m_hadHelpSpecified = m_cmdLine.helpSpecified();
 
 		clear();
 		return false;

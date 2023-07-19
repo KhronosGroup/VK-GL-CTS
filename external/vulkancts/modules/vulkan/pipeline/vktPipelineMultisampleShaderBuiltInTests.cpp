@@ -38,6 +38,7 @@
 #include "tcuTestLog.hpp"
 
 #include <set>
+#include <cmath>
 
 using std::set;
 
@@ -645,7 +646,7 @@ VkPipelineMultisampleStateCreateInfo MSInstanceSampleMaskPattern::getMSStateCrea
 		(VkPipelineMultisampleStateCreateFlags)0u,						// VkPipelineMultisampleStateCreateFlags	flags;
 		imageMSParams.numSamples,										// VkSampleCountFlagBits					rasterizationSamples;
 		VK_FALSE,														// VkBool32									sampleShadingEnable;
-		1.0f,															// float									minSampleShading;
+		imageMSParams.shadingRate,										// float									minSampleShading;
 		&m_sampleMask,													// const VkSampleMask*						pSampleMask;
 		VK_FALSE,														// VkBool32									alphaToCoverageEnable;
 		VK_FALSE,														// VkBool32									alphaToOneEnable;
@@ -808,7 +809,7 @@ template<> tcu::TestStatus MSInstance<MSInstanceSampleMaskBitCount>::verifyImage
 	DE_UNREF(dataRS);
 
 	if (checkForErrorMS(imageMSInfo, dataPerSample, 0))
-		return tcu::TestStatus::fail("gl_SampleMaskIn has more than one bit set for some shader invocations");
+		return tcu::TestStatus::fail("gl_SampleMaskIn has an illegal number of bits for some shader invocations");
 
 	return tcu::TestStatus::pass("Passed");
 }
@@ -827,7 +828,7 @@ template<> void MSCase<MSCaseSampleMaskBitCount>::init (void)
 		<< tcu::TestLog::Message
 		<< "Verifying gl_SampleMaskIn.\n"
 		<< "	Fragment shader will be invoked numSamples times.\n"
-		<< "	=> gl_SampleMaskIn should have only one bit set for each shader invocation.\n"
+		<< "	=> gl_SampleMaskIn should have a number of bits that depends on the shading rate.\n"
 		<< tcu::TestLog::EndMessage;
 
 	MultisampleCaseBase::init();
@@ -856,19 +857,20 @@ template<> void MSCase<MSCaseSampleMaskBitCount>::initPrograms (vk::SourceCollec
 	// Create fragment shader
 	std::ostringstream fs;
 
+	// The worst case scenario would be all invocations except one covering a single sample, and then one invocation covering the rest.
+	const int minInvocations	= static_cast<int>(std::ceil(static_cast<float>(m_imageMSParams.numSamples) * m_imageMSParams.shadingRate));
+	const int minCount			= 1;
+	const int maxCount			= m_imageMSParams.numSamples - (minInvocations - 1);
+
 	fs << "#version 440\n"
 		<< "\n"
 		<< "layout(location = 0) out vec4 fs_out_color;\n"
 		<< "\n"
 		<< "void main (void)\n"
 		<< "{\n"
-		<< "	uint maskBitCount = 0u;\n"
+		<< "	const int maskBitCount = bitCount(gl_SampleMaskIn[0]);\n"
 		<< "\n"
-		<< "	for (int i = 0; i < 32; ++i)\n"
-		<< "		if (((gl_SampleMaskIn[0] >> i) & 0x01) == 0x01)\n"
-		<< "			++maskBitCount;\n"
-		<< "\n"
-		<< "	if (maskBitCount != 1u)\n"
+		<< "	if (maskBitCount < " << minCount << " || maskBitCount > " << maxCount << ")\n"
 		<< "		fs_out_color = vec4(1.0, 0.0, 0.0, 1.0);\n"
 		<< "	else\n"
 		<< "		fs_out_color = vec4(0.0, 1.0, 0.0, 1.0);\n"
@@ -993,7 +995,7 @@ template<> VkPipelineMultisampleStateCreateInfo MSInstance<MSInstanceSampleMaskW
 		(VkPipelineMultisampleStateCreateFlags)0u,					// VkPipelineMultisampleStateCreateFlags	flags;
 		imageMSParams.numSamples,									// VkSampleCountFlagBits					rasterizationSamples;
 		VK_FALSE,													// VkBool32									sampleShadingEnable;
-		0.0f,														// float									minSampleShading;
+		imageMSParams.shadingRate,									// float									minSampleShading;
 		DE_NULL,													// const VkSampleMask*						pSampleMask;
 		VK_FALSE,													// VkBool32									alphaToCoverageEnable;
 		VK_FALSE,													// VkBool32									alphaToOneEnable;
@@ -1985,7 +1987,7 @@ tcu::TestStatus WriteSampleMaskTestInstance::iterate (void)
 	vk::GraphicsPipelineWrapper firstSubpassPipeline(vkd, device, m_params.pipelineConstructionType);
 	firstSubpassPipeline.setDynamicState(&dynamicStateInfo)
 						.setDefaultRasterizationState()
-						.setupVertexInputStete(&vertexInputInfo, &inputAssemblyInfo)
+						.setupVertexInputState(&vertexInputInfo, &inputAssemblyInfo)
 						.setupPreRasterizationShaderState(viewport, scissor, *emptyPipelineLayout, *renderPass, 0u, *vertModule)
 						.setupFragmentShaderState(*emptyPipelineLayout, *renderPass, 0u, *writeModule, &depthStencilInfo, &multisampleInfo)
 						.setupFragmentOutputState(*renderPass, 0u, &colorBlendInfo, &multisampleInfo)
@@ -1996,7 +1998,7 @@ tcu::TestStatus WriteSampleMaskTestInstance::iterate (void)
 	vk::GraphicsPipelineWrapper secondSubpassPipeline(vkd, device, m_params.pipelineConstructionType);
 	secondSubpassPipeline.setDynamicState(&dynamicStateInfo)
 						.setDefaultRasterizationState()
-						.setupVertexInputStete(&vertexInputInfo, &inputAssemblyInfo)
+						.setupVertexInputState(&vertexInputInfo, &inputAssemblyInfo)
 						.setupPreRasterizationShaderState(viewport, scissor, *checkPipelineLayout, *renderPass, 1u, *vertModule)
 						.setupFragmentShaderState(*checkPipelineLayout, *renderPass, 1u, *checkModule, &depthStencilInfo, &multisampleInfo)
 						.setupFragmentOutputState(*renderPass, 1u, &colorBlendInfo, &multisampleInfo)
@@ -2132,10 +2134,11 @@ tcu::TestCaseGroup* createMultisampleShaderBuiltInTests (tcu::TestContext& testC
 
 	de::MovePtr<tcu::TestCaseGroup> sampleMaskGroup(new tcu::TestCaseGroup(testCtx, "sample_mask", "Sample Mask Tests"));
 
-	sampleMaskGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleMaskPattern> >	(testCtx, "pattern",	pipelineConstructionType, imageSizes, sizesElemCount, samplesSetReduced, samplesSetReducedCount));
-	sampleMaskGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleMaskBitCount> >	(testCtx, "bit_count",	pipelineConstructionType, imageSizes, sizesElemCount, samplesSetReduced, samplesSetReducedCount));
-	sampleMaskGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleMaskCorrectBit> >(testCtx, "correct_bit",pipelineConstructionType, imageSizes, sizesElemCount, samplesSetReduced, samplesSetReducedCount));
-	sampleMaskGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleMaskWrite> >		(testCtx, "write",		pipelineConstructionType, imageSizes, sizesElemCount, samplesSetReduced, samplesSetReducedCount));
+	sampleMaskGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleMaskPattern> >	(testCtx, "pattern",		pipelineConstructionType, imageSizes, sizesElemCount, samplesSetReduced, samplesSetReducedCount));
+	sampleMaskGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleMaskBitCount> >	(testCtx, "bit_count",		pipelineConstructionType, imageSizes, sizesElemCount, samplesSetReduced, samplesSetReducedCount));
+	sampleMaskGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleMaskBitCount> >	(testCtx, "bit_count_0_5",	pipelineConstructionType, imageSizes, sizesElemCount, samplesSetReduced, samplesSetReducedCount, multisample::ComponentData{}, 0.5f));
+	sampleMaskGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleMaskCorrectBit> >(testCtx, "correct_bit",	pipelineConstructionType, imageSizes, sizesElemCount, samplesSetReduced, samplesSetReducedCount));
+	sampleMaskGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleMaskWrite> >		(testCtx, "write",			pipelineConstructionType, imageSizes, sizesElemCount, samplesSetReduced, samplesSetReducedCount));
 
 	testGroup->addChild(sampleMaskGroup.release());
 

@@ -1592,6 +1592,85 @@ tcu::TestStatus testComplementarity (Context& context, const int numClipDistance
 
 } // ClipDistanceComplementarity ns
 
+namespace CullDistance
+{
+	void checkSupport(Context& context)
+	{
+		const InstanceInterface&	vki			= context.getInstanceInterface();
+		const VkPhysicalDevice		physDevice	= context.getPhysicalDevice();
+
+		requireFeatures(vki, physDevice, FEATURE_SHADER_CULL_DISTANCE);
+	}
+
+	void initPrograms(SourceCollections& programCollection)
+	{
+		// setup triangle with three per-vertex cull distance values:
+		// v0: gl_CullDistance = {  0.0,  0.0, -1.0 };
+		// v1: gl_CullDistance = {  0.0, -1.0,  0.0 };
+		// v2: gl_CullDistance = { -1.0,  0.0,  0.0 };
+		// each vertex has a negative cull distance value but the triangle must not
+		// be culled because none of the three half-spaces is negative for all vertices
+
+		programCollection.glslSources.add("vert") << glu::VertexSource(
+			"#version 450\n"
+			"layout(location = 0) in vec4 v_position;\n"
+			"out gl_PerVertex {\n"
+			"  vec4  gl_Position;\n"
+			"  float gl_CullDistance[3];\n"
+			"};\n"
+			"void main (void)\n"
+			"{\n"
+			"  gl_Position = v_position;\n"
+			"  gl_CullDistance[0] = 0.0 - float(gl_VertexIndex == 2);\n"
+			"  gl_CullDistance[1] = 0.0 - float(gl_VertexIndex == 1);\n"
+			"  gl_CullDistance[2] = 0.0 - float(gl_VertexIndex == 0);\n"
+			"}\n");
+
+		programCollection.glslSources.add("frag") << glu::FragmentSource(
+			"#version 450\n"
+			"layout(location = 0) out vec4 o_color;\n"
+			"void main (void)\n"
+			"{\n"
+			"  o_color = vec4(1.0, 0.0, 0.0, 1.0);\n"
+			"}\n");
+	}
+
+	tcu::TestStatus testCullDistance(Context& context)
+	{
+		std::vector<VulkanShader> shaders
+		{
+			VulkanShader(VK_SHADER_STAGE_VERTEX_BIT,	context.getBinaryCollection().get("vert")),
+			VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("frag"))
+		};
+
+		std::vector<Vec4> vertices
+		{
+			{ -3.0f,  0.0f, 0.0f, 1.0f },
+			{  0.0f,  3.0f, 0.0f, 1.0f },
+			{  0.0f, -3.0f, 0.0f, 1.0f },
+		};
+
+		VulkanProgram		vulkanProgram		(shaders);
+		FrameBufferState	framebufferState	(RENDER_SIZE, RENDER_SIZE);
+		PipelineState		pipelineState		(context.getDeviceProperties().limits.subPixelPrecisionBits);
+		DrawCallData		drawCallData		(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, vertices);
+		VulkanDrawContext	drawContext			(context, framebufferState);
+
+		drawContext.registerDrawObject(pipelineState, vulkanProgram, drawCallData);
+		drawContext.draw();
+
+		const int numDrawnPixels = countPixels(drawContext.getColorPixels(), Vec4(1.0f, 0.0f, 0.0f, 1.0f), Vec4(0.02f, 0.02f, 0.02f, 0.0f));
+		const int numExpectedPixels = RENDER_SIZE * RENDER_SIZE / 2;
+
+		// triangle should be drawn and half of framebuffer should be filled with red color
+		if (numDrawnPixels == numExpectedPixels)
+			return tcu::TestStatus::pass("OK");
+
+		return tcu::TestStatus::fail("Triangle was not drawn");
+	}
+
+} // CullDistance
+
 void checkTopologySupport(Context& context, const VkPrimitiveTopology topology)
 {
 #ifndef CTS_USES_VULKANSC
@@ -1760,6 +1839,7 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 				clipDistanceGroup->addChild(mainGroup.release());
 			}
 		}
+		clippingTestsGroup->addChild(clipDistanceGroup.release());
 
 		// Complementarity criterion (i.e. clipped and not clipped areas must add up to a complete primitive with no holes nor overlap)
 		{
@@ -1773,7 +1853,15 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 			clippingTestsGroup->addChild(group.release());
 		}
 
-		clippingTestsGroup->addChild(clipDistanceGroup.release());
+		{
+			using namespace CullDistance;
+
+			MovePtr<tcu::TestCaseGroup>	group(new tcu::TestCaseGroup(testCtx, "misc", ""));
+
+			addFunctionCaseWithPrograms(group.get(), "negative_and_non_negative_cull_distance", "", checkSupport, initPrograms, testCullDistance);
+
+			clippingTestsGroup->addChild(group.release());
+		}
 	}
 }
 

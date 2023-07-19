@@ -772,7 +772,7 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 			m_graphicsPipelines[quadNdx].setDefaultMultisampleState()
 										.setDefaultDepthStencilState()
 										.setDefaultRasterizationState()
-										.setupVertexInputStete(&vertexInputStateParams)
+										.setupVertexInputState(&vertexInputStateParams)
 										.setupPreRasterizationShaderState(viewports,
 																		  scissors,
 																		  *m_pipelineLayout,
@@ -1372,7 +1372,7 @@ DualSourceBlendTestInstance::DualSourceBlendTestInstance (Context&									conte
 			m_graphicsPipelines[quadNdx].setDefaultRasterizationState()
 										.setDefaultDepthStencilState()
 										.setDefaultMultisampleState()
-										.setupVertexInputStete(&vertexInputStateParams)
+										.setupVertexInputState(&vertexInputStateParams)
 										.setupPreRasterizationShaderState(viewports,
 																		  scissors,
 																		  *m_pipelineLayout,
@@ -1910,7 +1910,7 @@ tcu::TestStatus ClampTestInstance::iterate (void)
 	graphicsPipeline.setDefaultRasterizationState()
 					.setDefaultDepthStencilState()
 					.setDefaultMultisampleState()
-					.setupVertexInputStete(&vertexInputStateParams)
+					.setupVertexInputState(&vertexInputStateParams)
 					.setupPreRasterizationShaderState(viewports,
 													  scissors,
 													  *pipelineLayout,

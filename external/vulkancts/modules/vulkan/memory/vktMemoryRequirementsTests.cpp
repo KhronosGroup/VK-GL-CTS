@@ -41,6 +41,8 @@
 #include "tcuResultCollector.hpp"
 #include "tcuTestLog.hpp"
 
+#include <set>
+
 namespace vkt
 {
 namespace memory
@@ -1027,6 +1029,22 @@ bool isUsageMatchesFeatures (const VkImageUsageFlags usage, const VkFormatFeatur
 	return false;
 }
 
+bool doesUsageSatisfyFeatures (const VkImageUsageFlags usage, const VkFormatFeatureFlags featureFlags)
+{
+	bool ans = true;
+
+	if (usage & VK_IMAGE_USAGE_SAMPLED_BIT)
+		ans &= ((featureFlags & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) != 0);
+	if (usage & VK_IMAGE_USAGE_STORAGE_BIT)
+		ans &= ((featureFlags & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) != 0);
+	if (usage & (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT))
+		ans &= ((featureFlags & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) != 0);
+	if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+		ans &= ((featureFlags & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0);
+
+	return ans;
+}
+
 //! This catches both invalid as well as legal but unsupported combinations of image parameters
 bool ImageMemoryRequirementsOriginal::isImageSupported (const Context& context, const InstanceInterface& vki, const VkPhysicalDevice physDevice, const VkImageCreateInfo& info)
 {
@@ -1882,15 +1900,17 @@ bool isMultiplaneImageSupported (const InstanceInterface&	vki,
 	const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(vki, physicalDevice, info.format);
 	const VkFormatFeatureFlags	formatFeatures		= (info.tiling == VK_IMAGE_TILING_LINEAR ? formatProperties.linearTilingFeatures
 																							 : formatProperties.optimalTilingFeatures);
+	if ((info.flags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0 && (formatFeatures & VK_FORMAT_FEATURE_DISJOINT_BIT) == 0)
+		return false;
 
-	if (!isUsageMatchesFeatures(info.usage, formatFeatures))
+	if (!doesUsageSatisfyFeatures(info.usage, formatFeatures))
 		return false;
 
 	VkImageFormatProperties		imageFormatProperties;
 	const VkResult				result				= vki.getPhysicalDeviceImageFormatProperties(
 														physicalDevice, info.format, info.imageType, info.tiling, info.usage, info.flags, &imageFormatProperties);
 
-	if (result == VK_SUCCESS)
+	if (VK_SUCCESS == result)
 	{
 		if (info.arrayLayers > imageFormatProperties.maxArrayLayers)
 			return false;
@@ -1900,7 +1920,7 @@ bool isMultiplaneImageSupported (const InstanceInterface&	vki,
 			return false;
 	}
 
-	return result == VK_SUCCESS;
+	return (VK_SUCCESS == result);
 }
 
 tcu::TestStatus testMultiplaneImages (Context& context, ImageTestParams params)
@@ -1928,128 +1948,223 @@ tcu::TestStatus testMultiplaneImages (Context& context, ImageTestParams params)
 		VK_FORMAT_G16_B16R16_2PLANE_422_UNORM
 	};
 
+	std::vector<VkImageCreateFlags> nonSparseCreateFlags
+	{
+		  VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT
+		, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT
+		, VK_IMAGE_CREATE_ALIAS_BIT
+		/* VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT - present tests use only one physical device */
+		, VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT
+		/* VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT not apply with planar formats */
+		, VK_IMAGE_CREATE_EXTENDED_USAGE_BIT
+		, VK_IMAGE_CREATE_DISJOINT_BIT
+		, VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT
+	};
+	if (context.getDeviceVulkan11Features().protectedMemory)
+	{
+		nonSparseCreateFlags.emplace_back(VK_IMAGE_CREATE_PROTECTED_BIT);
+	}
+#ifndef CTS_USES_VULKANSC
+	std::vector<VkImageCreateFlags> nonSparseCreateFlagsNoSC
+	{
+		  VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV
+		, VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT
+		, VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT
+		, VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_QCOM
+	};
+	auto isMultisampledRenderToSingleSampledEnabled = [&]() -> bool
+	{
+		bool enabled = false;
+		if (context.isDeviceFunctionalitySupported(VK_EXT_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_EXTENSION_NAME))
+		{
+			const auto& feature = context.getMultisampledRenderToSingleSampledFeaturesEXT();
+			enabled = feature.multisampledRenderToSingleSampled != VK_FALSE;
+		}
+		return enabled;
+	};
+	if (isMultisampledRenderToSingleSampledEnabled())
+		nonSparseCreateFlagsNoSC.push_back(VK_IMAGE_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT);
+	nonSparseCreateFlags.insert(nonSparseCreateFlags.end(), nonSparseCreateFlagsNoSC.begin(), nonSparseCreateFlagsNoSC.end());
+#endif // CTS_USES_VULKANSC
+
+	const std::vector<VkImageCreateFlags> sparseCreateFlags
+	{
+		VK_IMAGE_CREATE_SPARSE_BINDING_BIT,
+		VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT,
+		VK_IMAGE_CREATE_SPARSE_ALIASED_BIT,
+		VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT
+	};
+
+	const bool								isSparseTest		((params.flags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT) != 0);
 	const InstanceInterface&				vki					= context.getInstanceInterface();
 	const VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
 	const DeviceInterface&					vk					= context.getDeviceInterface();
 	const VkDevice							device				= context.getDevice();
-	const VkImageCreateFlags				sparseFlags			= VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT | VK_IMAGE_CREATE_SPARSE_ALIASED_BIT;
 	const VkImageUsageFlags					transientFlags		= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
 	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
 	tcu::TestLog&							log					= context.getTestContext().getLog();
 	tcu::ResultCollector					result				(log, "ERROR: ");
+	std::set<VkFormat>						supportedFormats	{};
 
 	log << TestLog::Message << "Memory properties: " << memoryProperties << TestLog::EndMessage;
 
-	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(multiplaneFormats); formatNdx++)
+	for (const VkFormat format : multiplaneFormats)
 	{
-		for (VkImageCreateFlags		loopCreateFlags	= (VkImageCreateFlags)0;			loopCreateFlags	<= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;	loopCreateFlags	= nextFlagExcluding(loopCreateFlags, sparseFlags))
-		for (VkImageUsageFlags		loopUsageFlags	= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;	loopUsageFlags	<= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;	loopUsageFlags	= nextFlagExcluding(loopUsageFlags, transientFlags))
+		for (const VkImageCreateFlags loopCreateFlags : (isSparseTest ? sparseCreateFlags : nonSparseCreateFlags))
 		{
-			const VkFormat				format				= multiplaneFormats[formatNdx];
-			const VkImageCreateFlags	actualCreateFlags	= loopCreateFlags | params.flags;
-			const VkImageUsageFlags		actualUsageFlags	= loopUsageFlags  | (params.transient ? VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT : (VkImageUsageFlagBits)0);
-			const VkImageCreateInfo		imageInfo			=
+			const VkImageType			imageType			= ((loopCreateFlags & VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT)
+#ifndef CTS_USES_VULKANSC
+																|| (loopCreateFlags & VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT)
+#endif // CTS_USES_VULKANSC
+																																	)
+																? isYCbCrConversionFormat(format)
+																  ? VK_IMAGE_TYPE_MAX_ENUM
+																  : VK_IMAGE_TYPE_3D
+																: VK_IMAGE_TYPE_2D;
+			if (imageType == VK_IMAGE_TYPE_MAX_ENUM) continue;
+
+			if ((loopCreateFlags & VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT) && !isDepthStencilFormat(format)) continue;
+
+			for (VkImageUsageFlags		loopUsageFlags	= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+										loopUsageFlags	<= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+										loopUsageFlags	= nextFlagExcluding(loopUsageFlags, transientFlags))
 			{
-				VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType          sType;
-				DE_NULL,								// const void*              pNext;
-				actualCreateFlags,						// VkImageCreateFlags       flags;
-				VK_IMAGE_TYPE_2D,						// VkImageType              imageType;
-				format,									// VkFormat                 format;
-				{ 64u, 64u, 1u, },						// VkExtent3D               extent;
-				1u,										// uint32_t                 mipLevels;
-				1u,										// uint32_t                 arrayLayers;
-				VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits    samples;
-				params.tiling,							// VkImageTiling            tiling;
-				actualUsageFlags,						// VkImageUsageFlags        usage;
-				VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode            sharingMode;
-				0u,										// uint32_t                 queueFamilyIndexCount;
-				DE_NULL,								// const uint32_t*          pQueueFamilyIndices;
-				VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout            initialLayout;
-			};
-
-			if (isMultiplaneImageSupported(vki, physicalDevice, imageInfo))
-			{
-				const Unique<VkImage>			image			((params.useMaint4) ? Move<VkImage>() : createImage(vk, device, &imageInfo));
-
-				log << tcu::TestLog::Message << "- " << getImageInfoString(imageInfo) << tcu::TestLog::EndMessage;
-
-				for (deUint32 planeNdx = 0; planeNdx < (deUint32)getPlaneCount(format); planeNdx++)
+				const VkImageCreateFlags	actualCreateFlags	= loopCreateFlags | (isSparseTest ? params.flags : 0);
+				const VkImageUsageFlags		actualUsageFlags	= loopUsageFlags  | (params.transient ? VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT : (VkImageUsageFlagBits)0);
+				const uint32_t				arrayLayers			= ((imageType == VK_IMAGE_TYPE_2D) && (loopCreateFlags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT)) ? 6u : 1u;
+				const VkImageCreateInfo		imageInfo			=
 				{
-					VkMemoryRequirements2						requirements	=
-					{
-						VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
-						DE_NULL,
-						{ 0u, 0u, 0u }
-					};
-					const VkImageAspectFlagBits					aspect		= getPlaneAspect(planeNdx);
+					VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType          sType;
+					DE_NULL,								// const void*              pNext;
+					actualCreateFlags,						// VkImageCreateFlags       flags;
+					imageType,								// VkImageType              imageType;
+					format,									// VkFormat                 format;
+					{ 64u, 64u, 1u, },						// VkExtent3D               extent;
+					1u,										// uint32_t                 mipLevels;
+					arrayLayers,							// uint32_t                 arrayLayers;
+					VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits    samples;
+					params.tiling,							// VkImageTiling            tiling;
+					actualUsageFlags,						// VkImageUsageFlags        usage;
+					VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode            sharingMode;
+					0u,										// uint32_t                 queueFamilyIndexCount;
+					DE_NULL,								// const uint32_t*          pQueueFamilyIndices;
+					VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout            initialLayout;
+				};
 
-#ifndef CTS_USES_VULKANSC
-					if (params.useMaint4)
+				if (isMultiplaneImageSupported(vki, physicalDevice, imageInfo))
+				{
+					const Unique<VkImage>			image			((params.useMaint4) ? Move<VkImage>() : createImage(vk, device, &imageInfo));
+
+					log << tcu::TestLog::Message << "- " << getImageInfoString(imageInfo) << tcu::TestLog::EndMessage;
+
+					supportedFormats.insert(format);
+
+					for (deUint32 planeNdx = 0; planeNdx < (deUint32)getPlaneCount(format); planeNdx++)
 					{
-						const VkDeviceImageMemoryRequirementsKHR	info	=
+						VkMemoryRequirements2						requirements	=
 						{
-							VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR,
+							VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
 							DE_NULL,
-							&imageInfo,
-							aspect
+							{ 0u, 0u, 0u }
 						};
-						vk.getDeviceImageMemoryRequirements(device, &info, &requirements);
-					}
-					else
-					{
-#endif // CTS_USES_VULKANSC
-						const VkImagePlaneMemoryRequirementsInfo	aspectInfo	=
+						const VkImageAspectFlagBits					aspect		= getPlaneAspect(planeNdx);
+
+	#ifndef CTS_USES_VULKANSC
+						if (params.useMaint4)
 						{
-							VK_STRUCTURE_TYPE_IMAGE_PLANE_MEMORY_REQUIREMENTS_INFO,
-							DE_NULL,
-							aspect
-						};
-						const VkImageMemoryRequirementsInfo2		info		=
-						{
-							VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
-							(actualCreateFlags & VK_IMAGE_CREATE_DISJOINT_BIT) == 0 ? DE_NULL : &aspectInfo,
-							*image
-						};
-
-						vk.getImageMemoryRequirements2(device, &info, &requirements);
-#ifndef CTS_USES_VULKANSC
-				}
-#endif // CTS_USES_VULKANSC
-
-					log << TestLog::Message << "Aspect: " << getImageAspectFlagsStr(aspect) << ", Requirements: " << requirements << TestLog::EndMessage;
-
-					result.check(deIsPowerOfTwo64(static_cast<deUint64>(requirements.memoryRequirements.alignment)), "VkMemoryRequirements alignment isn't power of two");
-
-					if (result.check(requirements.memoryRequirements.memoryTypeBits != 0, "No supported memory types"))
-					{
-						typedef std::vector<deUint32>::const_iterator	IndexIterator;
-						const std::vector<deUint32>						usedMemoryTypeIndices	= bitsToIndices(requirements.memoryRequirements.memoryTypeBits);
-						bool											hasHostVisibleType		= false;
-
-						for (IndexIterator memoryTypeNdx = usedMemoryTypeIndices.begin(); memoryTypeNdx != usedMemoryTypeIndices.end(); ++memoryTypeNdx)
-						{
-							if (result.check(*memoryTypeNdx < memoryProperties.memoryTypeCount, "Unknown memory type bits set in memory requirements"))
+							const VkDeviceImageMemoryRequirementsKHR	info	=
 							{
-								const VkMemoryPropertyFlags	propertyFlags	(memoryProperties.memoryTypes[*memoryTypeNdx].propertyFlags);
+								VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR,
+								DE_NULL,
+								&imageInfo,
+								aspect
+							};
+							vk.getDeviceImageMemoryRequirements(device, &info, &requirements);
+						}
+						else
+						{
+	#endif // CTS_USES_VULKANSC
+							const VkImagePlaneMemoryRequirementsInfo	aspectInfo	=
+							{
+								VK_STRUCTURE_TYPE_IMAGE_PLANE_MEMORY_REQUIREMENTS_INFO,
+								DE_NULL,
+								aspect
+							};
+							const VkImageMemoryRequirementsInfo2		info		=
+							{
+								VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
+								(actualCreateFlags & VK_IMAGE_CREATE_DISJOINT_BIT) == 0 ? DE_NULL : &aspectInfo,
+								*image
+							};
 
-								if (propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
-									hasHostVisibleType = true;
+							vk.getImageMemoryRequirements2(device, &info, &requirements);
+	#ifndef CTS_USES_VULKANSC
+						}
+	#endif // CTS_USES_VULKANSC
 
-								if (propertyFlags & VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT)
+						log << TestLog::Message << "Aspect: " << getImageAspectFlagsStr(aspect) << ", Requirements: " << requirements << TestLog::EndMessage;
+
+						result.check(deIsPowerOfTwo64(static_cast<deUint64>(requirements.memoryRequirements.alignment)), "VkMemoryRequirements alignment isn't power of two");
+
+	#ifndef CTS_USES_VULKANSC
+						if (actualCreateFlags & VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT)
+						{
+							std::vector<VkSparseImageMemoryRequirements> sparseRequirements;
+							if ((*image == DE_NULL) || params.useMaint4)
+								sparseRequirements = getDeviceImageSparseMemoryRequirements(vk, device, imageInfo, aspect);
+							else
+								sparseRequirements = getImageSparseMemoryRequirements(vk, device, *image);
+
+							for (const VkSparseImageMemoryRequirements& sr : sparseRequirements)
+							{
+								if (sr.formatProperties.aspectMask == aspect)
 								{
-									result.check((imageInfo.usage & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT) != 0u,
-										"Memory type includes VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT for a non-transient attachment image");
+									result.check((sr.imageMipTailSize % requirements.memoryRequirements.alignment) == 0,
+										"VkSparseImageMemoryRequirements::imageMipTailSize is not aligned with sparse block size");
+									break;
 								}
 							}
-							else
-								break;
 						}
+	#endif // CTS_USES_VULKANSC
 
-						result.check(params.tiling != VK_IMAGE_TILING_LINEAR || hasHostVisibleType, "Required memory type doesn't include VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT");
+						if (result.check(requirements.memoryRequirements.memoryTypeBits != 0, "No supported memory types"))
+						{
+							typedef std::vector<deUint32>::const_iterator	IndexIterator;
+							const std::vector<deUint32>						usedMemoryTypeIndices	= bitsToIndices(requirements.memoryRequirements.memoryTypeBits);
+							bool											hasHostVisibleType		= false;
+
+							for (IndexIterator memoryTypeNdx = usedMemoryTypeIndices.begin(); memoryTypeNdx != usedMemoryTypeIndices.end(); ++memoryTypeNdx)
+							{
+								if (result.check(*memoryTypeNdx < memoryProperties.memoryTypeCount, "Unknown memory type bits set in memory requirements"))
+								{
+									const VkMemoryPropertyFlags	propertyFlags	(memoryProperties.memoryTypes[*memoryTypeNdx].propertyFlags);
+
+									if (propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+										hasHostVisibleType = true;
+
+									if (propertyFlags & VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT)
+									{
+										result.check((imageInfo.usage & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT) != 0u,
+											"Memory type includes VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT for a non-transient attachment image");
+									}
+								}
+								else
+									break;
+							}
+
+							result.check(params.tiling != VK_IMAGE_TILING_LINEAR || (hasHostVisibleType || (loopCreateFlags & VK_IMAGE_CREATE_PROTECTED_BIT)),
+								"Required memory type doesn't include VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT");
+						}
 					}
 				}
 			}
 		}
+	}
+
+	if (supportedFormats.size() == 0)
+	{
+		return tcu::TestStatus(QP_TEST_RESULT_NOT_SUPPORTED,
+			"None of tested in given configuration multiplanar formats is supported by device.");
 	}
 
 	return tcu::TestStatus(result.getResult(), result.getMessage());

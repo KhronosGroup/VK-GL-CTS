@@ -199,7 +199,7 @@ const char* LibDrm::libDrmFiles[] =
 {
 	"libdrm.so.2",
 	"libdrm.so",
-	DE_NULL
+	nullptr
 };
 
 } // tcu

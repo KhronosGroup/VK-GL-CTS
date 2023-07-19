@@ -3,8 +3,8 @@ dEQP-VK.draw.renderpass.simple_draw.simple_draw_triangle_strip
 dEQP-VK.draw.renderpass.simple_draw.simple_draw_instanced_triangle_list
 dEQP-VK.draw.renderpass.simple_draw.simple_draw_instanced_triangle_strip
 dEQP-VK.draw.renderpass.indexed_draw.draw_indexed_triangle_list
-dEQP-VK.draw.renderpass.indexed_draw.draw_indexed_triangle_strip
 dEQP-VK.draw.renderpass.indexed_draw.draw_instanced_indexed_triangle_list
+dEQP-VK.draw.renderpass.indexed_draw.draw_indexed_triangle_strip
 dEQP-VK.draw.renderpass.indexed_draw.draw_instanced_indexed_triangle_strip
 dEQP-VK.draw.renderpass.indirect_draw.sequential.indirect_draw.triangle_list
 dEQP-VK.draw.renderpass.indirect_draw.sequential.indirect_draw.triangle_strip

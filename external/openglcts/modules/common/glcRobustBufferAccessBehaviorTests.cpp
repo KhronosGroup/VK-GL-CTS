@@ -384,7 +384,7 @@ void Program::Use() const
  **/
 void Program::Attach(const glw::Functions& gl, glw::GLuint program_id, glw::GLuint shader_id)
 {
-	/* Sanity checks */
+	/* Quick checks */
 	if ((m_invalid_id == program_id) || (Shader::m_invalid_id == shader_id))
 	{
 		return;
@@ -3615,8 +3615,48 @@ bool UniformBufferTest::verifyResults(GLfloat* buffer_data)
 		name		  = "valid indices";
 		break;
 	case SOURCE_INVALID:
+		name = "invalid source indices";
+
+		if (m_has_khr_robust_buffer_access)
+		{
+			/* KHR_robust_buffer_access_behavior (and also GL 4.5 and later) states
+			 * which values can be expected when reading or writing outside of a
+			 * buffer's range. If supported, we will compare results against those
+			 * expectations.
+			 *
+			 * Otherwise, we will attempt to match results against previously observed
+			 * and valid behavior.
+			 */
+			for (int b = 0; b < 4; b++)
+			{
+				/* Each out-of-range read can either be 0 or any value within
+				 * the source buffer.
+				 * */
+				if (buffer_data[b] == 0.0f)
+					continue;
+
+				bool valid = false;
+				for (int c = 0; c < 4 && !valid; c++)
+				{
+					if (buffer_data[b] == expected_data_valid[c])
+					{
+						valid = true;
+						break;
+					}
+				}
+
+				if (!valid)
+				{
+					m_testCtx.getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
+							<< tcu::TestLog::EndMessage;
+					return false;
+				}
+			}
+
+			return true;
+		}
+
 		expected_data = expected_data_invalid_source;
-		name		  = "invalid source indices";
 		break;
 	default:
 		TCU_FAIL("Invalid enum");

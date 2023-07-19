@@ -357,6 +357,7 @@ private:
 	deUint32						m_logFlags;
 
 	std::string						m_initialCmdLine;
+	bool							m_hadHelpSpecified;
 };
 
 } // tcu

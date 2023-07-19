@@ -559,7 +559,7 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 			.setDefaultMultisampleState()
 			.setDefaultDepthStencilState()
 			.setDefaultColorBlendState()
-			.setupVertexInputStete()
+			.setupVertexInputState()
 			.setupPreRasterizationShaderState(viewports,
 				scissors,
 				*pipelineLayout,

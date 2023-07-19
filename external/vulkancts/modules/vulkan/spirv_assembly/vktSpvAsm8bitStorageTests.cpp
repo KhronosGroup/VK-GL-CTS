@@ -3659,7 +3659,7 @@ void addGraphics8BitStorageUniformInt16To8Group (tcu::TestCaseGroup* testGroup)
 		resources.inputs.clear();
 		resources.outputs.clear();
 		vector<deInt16>						inputs	= getInt16s(rnd, ((arrayStrideInBytesUniform / static_cast<deUint32>(sizeof(deInt16))) * numDataPoints) / categories[catIdx].numElements);
-		vector<deInt8>						outputs	(numDataPoints/ categories[catIdx].numElements);
+		vector<deInt8>						outputs	(numDataPoints);
 
 		switch (categories[catIdx].numElements)
 		{

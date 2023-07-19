@@ -100,7 +100,7 @@ protected:
 	/* Protected methods */
 	void test(const glw::Functions& gl);
 
-	float readDepthValue(const glw::Functions& gl, const GLuint readDepthProgramId);
+	float readDepthValue(const glw::Functions& gl, const GLuint readDepthProgramId, const GLuint testProgramId);
 
 	virtual bool verify(GLuint caseNo, GLfloat depth, GLfloat offsetDepth, GLfloat offsetClampDepth) = DE_NULL;
 };

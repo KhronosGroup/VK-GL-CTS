@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDevicePipelineProtectedAccessFeaturesEXT":
+		[
+			{ "features": ["pipelineProtectedAccess"],				"requirements": ["VK_EXT_pipeline_protected_access"] }
+		]
+	}
+}

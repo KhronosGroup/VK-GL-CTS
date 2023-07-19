@@ -265,6 +265,7 @@ protected:
 														 VkShaderModule					geomShaderModule,
 														 VkShaderModule					fragShaderModule,
 														 VkPipelineCreationFeedbackEXT*	pipelineCreationFeedback,
+														 bool*							pipelineCreationIsHeavy,
 														 VkPipelineCreationFeedbackEXT*	pipelineStageCreationFeedbacks,
 														 VkPipeline						basePipelineHandle,
 														 VkBool32						zeroOutFeedbackCount);
@@ -281,6 +282,7 @@ protected:
 
 	GraphicsPipelineWrapper				m_pipeline[PIPELINE_CACHE_NDX_COUNT];
 	VkPipelineCreationFeedbackEXT		m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS * PIPELINE_CACHE_NDX_COUNT];
+	bool								m_pipelineCreationIsHeavy[VK_MAX_PIPELINE_PARTS * PIPELINE_CACHE_NDX_COUNT];
 	VkPipelineCreationFeedbackEXT		m_pipelineStageCreationFeedbacks[PIPELINE_CACHE_NDX_COUNT * VK_MAX_SHADER_STAGES];
 };
 
@@ -474,6 +476,7 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&				context,
 
 		preparePipelineWrapper(m_pipeline[ndx], vertShaderModule, *tescShaderModule, *teseShaderModule, *geomShaderModule, *fragShaderModule,
 							   &m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS * ndx],
+							   &m_pipelineCreationIsHeavy[VK_MAX_PIPELINE_PARTS * ndx],
 							   &m_pipelineStageCreationFeedbacks[VK_MAX_SHADER_STAGES * ndx],
 							   ndx == PIPELINE_CACHE_NDX_DERIVATIVE ? m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE].getPipeline() : DE_NULL,
 							   param->isZeroOutFeedbackCount());
@@ -504,6 +507,7 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 														VkShaderModule					geomShaderModule,
 														VkShaderModule					fragShaderModule,
 														VkPipelineCreationFeedbackEXT*	pipelineCreationFeedback,
+														bool*							pipelineCreationIsHeavy,
 														VkPipelineCreationFeedbackEXT*	pipelineStageCreationFeedbacks,
 														VkPipeline						basePipelineHandle,
 														VkBool32						zeroOutFeedbackCount)
@@ -613,6 +617,8 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 		pipelineCreationFeedbackCreateInfo[i] = initVulkanStructure();
 		pipelineCreationFeedbackCreateInfo[i].pPipelineCreationFeedback = &pipelineCreationFeedback[i];
 		pipelineCreationFeedbackWrapper[i].ptr = &pipelineCreationFeedbackCreateInfo[i];
+
+		pipelineCreationIsHeavy[i] = false;
 	}
 
 	deUint32 geometryStages = 1u + (geomShaderModule != DE_NULL) + (tescShaderModule != DE_NULL) + (teseShaderModule != DE_NULL);
@@ -620,6 +626,8 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 	{
 		pipelineCreationFeedbackCreateInfo[4].pipelineStageCreationFeedbackCount	= zeroOutFeedbackCount ? 0u : (1u + geometryStages);
 		pipelineCreationFeedbackCreateInfo[4].pPipelineStageCreationFeedbacks		= pipelineStageCreationFeedbacks;
+
+		pipelineCreationIsHeavy[4] = true;
 	}
 	else
 	{
@@ -630,17 +638,23 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 		pipelineCreationFeedbackCreateInfo[2].pipelineStageCreationFeedbackCount	= zeroOutFeedbackCount ? 0u : 1u;
 		pipelineCreationFeedbackCreateInfo[2].pPipelineStageCreationFeedbacks		= pipelineStageCreationFeedbacks + geometryStages;
 
+		pipelineCreationIsHeavy[1] = true;
+		pipelineCreationIsHeavy[2] = true;
+
 		if (m_param->getPipelineConstructionType() == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 		{
-			pipelineCreationFeedbackCreateInfo[4].pipelineStageCreationFeedbackCount	= zeroOutFeedbackCount ? 0u : (1u + geometryStages);
-			pipelineCreationFeedbackCreateInfo[4].pPipelineStageCreationFeedbacks		= pipelineStageCreationFeedbacks;
+			pipelineCreationIsHeavy[4] = true;
 		}
 	}
+
+	// pipelineCreationIsHeavy element 0 and 3 intentionally left false,
+	// because these relate to vertex input and fragment output stages, which may be
+	// created in nearly zero time.
 
 	gpw.setDefaultTopology((tescShaderModule == DE_NULL) ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST : VK_PRIMITIVE_TOPOLOGY_PATCH_LIST)
 	   .setDefaultRasterizationState()
 	   .setDefaultMultisampleState()
-	   .setupVertexInputStete(&vertexInputStateParams, DE_NULL, *m_cache, pipelineCreationFeedbackWrapper[0])
+	   .setupVertexInputState(&vertexInputStateParams, DE_NULL, *m_cache, pipelineCreationFeedbackWrapper[0])
 	   .setupPreRasterizationShaderState(
 			viewport,
 			scissor,
@@ -682,8 +696,6 @@ tcu::TestStatus GraphicsCacheTestInstance::verifyTestResult (void)
 	deUint32		finalPipelineIndex		= deUint32(VK_MAX_PIPELINE_PARTS) - 1u;
 	deUint32		start					= isMonolithic ? finalPipelineIndex : 0u;
 	deUint32		step					= start + 1u;
-
-	clearFeedbacks();
 
 	// Iterate ofer creation feedback for all pipeline parts - if monolithic pipeline is tested then skip (step over) feedback for parts
 	for (deUint32 creationFeedbackNdx = start; creationFeedbackNdx < VK_MAX_PIPELINE_PARTS * PIPELINE_CACHE_NDX_COUNT; creationFeedbackNdx += step)
@@ -745,8 +757,15 @@ tcu::TestStatus GraphicsCacheTestInstance::verifyTestResult (void)
 
 			if (m_pipelineCreationFeedback[creationFeedbackNdx].duration == 0)
 			{
-				message << "\nWarning: Pipeline creation feedback reports duration spent creating a pipeline was zero nanoseconds\n";
-				durationZeroWarning = DE_TRUE;
+				if (m_pipelineCreationIsHeavy[creationFeedbackNdx])
+				{
+					// Emit warnings only for pipelines, that are expected to have large creation times.
+					// Pipelines containing only vertex input or fragment output stages may be created in
+					// time duration less than the timer precision available on given platform.
+
+					message << "\nWarning: Pipeline creation feedback reports duration spent creating a pipeline was zero nanoseconds\n";
+					durationZeroWarning = DE_TRUE;
+				}
 			}
 
 			message << "\n";

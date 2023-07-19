@@ -46,6 +46,7 @@
 #include "tcuTextureUtil.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuMaybe.hpp"
+#include "tcuImageCompare.hpp"
 
 #include "deStringUtil.hpp"
 #include "deMemory.h"
@@ -1538,26 +1539,26 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 	tcu::Vec4 texColor;
 
 	for (int x = 0; x < W; ++x)
-	for (int y = 0; y < H; ++y)
-	for (int z = 0; z < D; ++z)
-	{
-		if (m_params.solidColor)
-		{
-			// Texture with solid color for filtered sampling.
-			texColor = tcu::Vec4{0.5f, 0.25f, 0.7529411764705882f, 1.0f};
-		}
-		else
-		{
-			// Use a color gradient otherwise.
-			const float colorX = static_cast<float>(x) / divX;
-			const float colorY = static_cast<float>(y) / divY;
-			const float colorZ = std::min(colorX, colorY);
+		for (int y = 0; y < H; ++y)
+			for (int z = 0; z < D; ++z)
+			{
+				if (m_params.solidColor)
+				{
+					// Texture with solid color for filtered sampling.
+					texColor = tcu::Vec4{0.5f, 0.25f, 0.7529411764705882f, 1.0f};
+				}
+				else
+				{
+					// Use a color gradient otherwise.
+					const float colorX = static_cast<float>(x) / divX;
+					const float colorY = static_cast<float>(y) / divY;
+					const float colorZ = std::min(colorX, colorY);
 
-			texColor = tcu::Vec4{colorX, colorY, colorZ, 1.0f};
-		}
-		const tcu::Vec4 finalColor = (texColor - formatInfo.lookupBias) / formatInfo.lookupScale;
-		texPixels.setPixel(finalColor, x, y, z);
-	}
+					texColor = tcu::Vec4{colorX, colorY, colorZ, 1.0f};
+				}
+				const tcu::Vec4 finalColor = (texColor - formatInfo.lookupBias) / formatInfo.lookupScale;
+				texPixels.setPixel(finalColor, x, y, z);
+			}
 
 	vk::flushAlloc(vkd, device, texBufferAlloc);
 
@@ -1750,7 +1751,7 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 			.setDefaultRasterizationState()
 			.setDefaultMultisampleState()
 			.setDefaultColorBlendState()
-			.setupVertexInputStete(&vertexInputInfo)
+			.setupVertexInputState(&vertexInputInfo)
 			.setupPreRasterizationShaderState(viewports,
 							scissors,
 							*pipelineLayout,
@@ -1825,21 +1826,21 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 
 	bool pass = true;
 	for (int x = 0; x < W; ++x)
-	for (int y = 0; y < H; ++y)
-	for (int z = 0; z < D; ++z)
-	{
-		const auto inPix	= texPixels.getPixel(x, y, z);
-		const auto outPix	= resultPixels.getPixel(x, y, z);
-		if (inPix == outPix)
-		{
-			diffImg.setPixel(colorGreen, x, y, z);
-		}
-		else
-		{
-			pass = false;
-			diffImg.setPixel(colorRed, x, y, z);
-		}
-	}
+		for (int y = 0; y < H; ++y)
+			for (int z = 0; z < D; ++z)
+			{
+				const auto inPix	= texPixels.getPixel(x, y, z);
+				const auto outPix	= resultPixels.getPixel(x, y, z);
+				if (inPix == outPix)
+				{
+					diffImg.setPixel(colorGreen, x, y, z);
+				}
+				else
+				{
+					pass = false;
+					diffImg.setPixel(colorRed, x, y, z);
+				}
+			}
 
 	tcu::TestStatus status = tcu::TestStatus::pass("Pass");
 	if (!pass)
@@ -1852,6 +1853,375 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 	}
 
 	return status;
+}
+
+enum class LodBiasCase
+{
+	SAMPLER_BIAS	= 0,
+	SAMPLER_MINLOD	= 1,
+	SHADER_LOD		= 2,
+	SHADER_BIAS		= 3,
+	VIEW_MINLOD		= 4,
+	CASE_COUNT		= 5,
+};
+
+std::string getLodBiasCaseName (LodBiasCase lodBiasCase)
+{
+	std::string name;
+
+	switch (lodBiasCase)
+	{
+	case LodBiasCase::SAMPLER_BIAS:		name = "sampler_bias";		break;
+	case LodBiasCase::SAMPLER_MINLOD:	name = "sampler_minlod";	break;
+	case LodBiasCase::SHADER_LOD:		name = "shader_lod";		break;
+	case LodBiasCase::SHADER_BIAS:		name = "shader_bias";		break;
+	case LodBiasCase::VIEW_MINLOD:		name = "view_minlod";		break;
+	case LodBiasCase::CASE_COUNT: // fallthrough
+	default:
+		DE_ASSERT(false);
+		break;
+	}
+
+	return name;
+}
+
+struct MaxSamplerLodBiasParams
+{
+	const PipelineConstructionType	pipelineConstructionType;
+	const LodBiasCase				lodBiasCase;
+};
+
+class MaxSamplerLodBiasCase : public vkt::TestCase
+{
+public:
+					MaxSamplerLodBiasCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const MaxSamplerLodBiasParams& params)
+						: vkt::TestCase	(testCtx, name, description)
+						, m_params		(params)
+						{}
+	virtual			~MaxSamplerLodBiasCase	(void) {}
+
+	void			checkSupport			(Context& context) const override;
+	void			initPrograms			(vk::SourceCollections& programCollection) const override;
+	TestInstance*	createInstance			(Context& context) const override;
+
+protected:
+	const MaxSamplerLodBiasParams m_params;
+};
+
+class MaxSamplerLodBiasInstance : public vkt::TestInstance
+{
+public:
+						MaxSamplerLodBiasInstance	(Context& context, const MaxSamplerLodBiasParams& params)
+							: vkt::TestInstance	(context)
+							, m_params			(params)
+							{}
+	virtual				~MaxSamplerLodBiasInstance	(void) {}
+
+	tcu::TestStatus		iterate						(void);
+
+protected:
+	const MaxSamplerLodBiasParams m_params;
+};
+
+void MaxSamplerLodBiasCase::checkSupport (Context& context) const
+{
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+
+	if (m_params.lodBiasCase == LodBiasCase::VIEW_MINLOD)
+		context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
+}
+
+void MaxSamplerLodBiasCase::initPrograms (vk::SourceCollections& programCollection) const
+{
+	std::ostringstream vert;
+	vert
+		<< "#version 460\n"
+		<< "layout (location=0) in vec4 inPos;\n"
+		<< "void main (void) {\n"
+		<< "    gl_Position = inPos;\n"
+		<< "}\n"
+		;
+	programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+	std::string			sampleStatement;
+	const std::string	sampleCoords = "vec2(gl_FragCoord.x / pc.fbWidth, gl_FragCoord.y / pc.fbHeight)";
+
+	if (m_params.lodBiasCase == LodBiasCase::SHADER_LOD)
+		sampleStatement = "textureLod(texSampler, " + sampleCoords + ", pc.lodLevel)";
+	else if (m_params.lodBiasCase == LodBiasCase::SHADER_BIAS)
+		sampleStatement = "texture(texSampler, " + sampleCoords + ", pc.lodLevel)";
+	else
+		sampleStatement = "textureLod(texSampler, " + sampleCoords + ", 0.0)";
+
+	DE_ASSERT(!sampleStatement.empty());
+
+	std::ostringstream frag;
+	frag
+		<< "#version 460\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "layout (set=0, binding=0) uniform sampler2D texSampler;\n"
+		<< "layout (push_constant, std430) uniform PushConstantBlock {\n"
+		<< "    float lodLevel;\n"
+		<< "    float fbWidth;\n"
+		<< "    float fbHeight;\n"
+		<< "} pc;\n"
+		<< "void main (void) {\n"
+		<< "    outColor = " << sampleStatement << ";\n"
+		<< "}\n"
+		;
+	programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+TestInstance* MaxSamplerLodBiasCase::createInstance (Context& context) const
+{
+	return new MaxSamplerLodBiasInstance(context, m_params);
+}
+
+tcu::TestStatus MaxSamplerLodBiasInstance::iterate (void)
+{
+	const auto ctx					= m_context.getContextCommonData();
+	const auto vkFormat				= VK_FORMAT_R8G8B8A8_UNORM;
+	const auto tcuFormat			= mapVkFormat(vkFormat);
+	const auto imageType			= VK_IMAGE_TYPE_2D;
+	const auto tiling				= VK_IMAGE_TILING_OPTIMAL;
+	const auto textureUsage			= (VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+	const auto fbUsage				= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const auto sampleCount			= VK_SAMPLE_COUNT_1_BIT;
+	const auto descriptorType		= VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	const auto maxLodBias			= getPhysicalDeviceProperties(ctx.vki, ctx.physicalDevice).limits.maxSamplerLodBias;
+	const auto roundedBias			= deFloatFloor(maxLodBias + 0.5f);
+	const auto textureProperties	= getPhysicalDeviceImageFormatProperties(ctx.vki, ctx.physicalDevice, vkFormat, imageType, tiling, textureUsage, 0u);
+	const auto textureExtent		= makeExtent3D(textureProperties.maxExtent.width, 1u, 1u);
+	const auto fbExtent				= tcu::IVec3(1, 1, 1);
+	const auto vkExtent				= makeExtent3D(fbExtent);
+	const auto baseSeed				= 1687852938u;
+
+	const VkImageCreateInfo textureCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,						//	VkStructureType			sType;
+		nullptr,													//	const void*				pNext;
+		0u,															//	VkImageCreateFlags		flags;
+		imageType,													//	VkImageType				imageType;
+		vkFormat,													//	VkFormat				format;
+		textureExtent,												//	VkExtent3D				extent;
+		textureProperties.maxMipLevels,								//	uint32_t				mipLevels;
+		1u,															//	uint32_t				arrayLayers;
+		sampleCount,												//	VkSampleCountFlagBits	samples;
+		tiling,														//	VkImageTiling			tiling;
+		textureUsage,												//	VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,									//	VkSharingMode			sharingMode;
+		0u,															//	uint32_t				queueFamilyIndexCount;
+		nullptr,													//	const uint32_t*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,									//	VkImageLayout			initialLayout;
+	};
+	ImageWithMemory texture (ctx.vkd, ctx.device, ctx.allocator, textureCreateInfo, MemoryRequirement::Any);
+	const auto textureColorSRR	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, textureCreateInfo.mipLevels, 0u, 1u);
+	const auto accessedLevel	= std::min(roundedBias, static_cast<float>(textureCreateInfo.mipLevels - 1u));
+
+#ifndef CTS_USES_VULKANSC
+	std::unique_ptr<VkImageViewMinLodCreateInfoEXT> viewMinLodPtr;
+	if (m_params.lodBiasCase == LodBiasCase::VIEW_MINLOD)
+	{
+		viewMinLodPtr.reset(new VkImageViewMinLodCreateInfoEXT{
+			VK_STRUCTURE_TYPE_IMAGE_VIEW_MIN_LOD_CREATE_INFO_EXT,
+			nullptr,
+			accessedLevel, // VUID-VkImageViewMinLodCreateInfoEXT-minLod-06456 prevents us from using maxLodBias directly.
+		});
+	}
+#endif // CTS_USES_VULKANSC
+
+	const VkImageViewCreateInfo viewCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	//	VkStructureType			sType;
+#ifndef CTS_USES_VULKANSC
+		viewMinLodPtr.get(),						//	const void*				pNext;
+#else
+		nullptr,						//	const void*				pNext;
+#endif // CTS_USES_VULKANSC
+		0u,											//	VkImageViewCreateFlags	flags;
+		texture.get(),								//	VkImage					image;
+		VK_IMAGE_VIEW_TYPE_2D,						//	VkImageViewType			viewType;
+		vkFormat,									//	VkFormat				format;
+		{											//	VkComponentMapping		components;
+			VK_COMPONENT_SWIZZLE_R,
+			VK_COMPONENT_SWIZZLE_G,
+			VK_COMPONENT_SWIZZLE_B,
+			VK_COMPONENT_SWIZZLE_A,
+		},
+		textureColorSRR,							//	VkImageSubresourceRange	subresourceRange;
+	};
+	const auto textureView = createImageView(ctx.vkd, ctx.device, &viewCreateInfo);
+
+	// Output color buffer.
+	ImageWithBuffer colorBuffer (ctx.vkd, ctx.device, ctx.allocator, vkExtent, vkFormat, fbUsage, imageType);
+
+	// Texture sampler.
+	const float samplerMipLodBias	= ((m_params.lodBiasCase == LodBiasCase::SAMPLER_BIAS) ?	maxLodBias : 0.0f);
+	const float samplerMinLod		= ((m_params.lodBiasCase == LodBiasCase::SAMPLER_MINLOD) ?	maxLodBias : 0.0f);
+	const VkSamplerCreateInfo samplerCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,		//	VkStructureType			sType;
+		nullptr,									//	const void*				pNext;
+		0u,											//	VkSamplerCreateFlags	flags;
+		VK_FILTER_NEAREST,							//	VkFilter				magFilter;
+		VK_FILTER_NEAREST,							//	VkFilter				minFilter;
+		VK_SAMPLER_MIPMAP_MODE_NEAREST,				//	VkSamplerMipmapMode		mipmapMode;
+		VK_SAMPLER_ADDRESS_MODE_REPEAT,				//	VkSamplerAddressMode	addressModeU;
+		VK_SAMPLER_ADDRESS_MODE_REPEAT,				//	VkSamplerAddressMode	addressModeV;
+		VK_SAMPLER_ADDRESS_MODE_REPEAT,				//	VkSamplerAddressMode	addressModeW;
+		samplerMipLodBias,							//	float					mipLodBias;
+		VK_FALSE,									//	VkBool32				anisotropyEnable;
+		0.0f,										//	float					maxAnisotropy;
+		VK_FALSE,									//	VkBool32				compareEnable;
+		VK_COMPARE_OP_NEVER,						//	VkCompareOp				compareOp;
+		samplerMinLod,								//	float					minLod;
+		VK_LOD_CLAMP_NONE,							//	float					maxLod;
+		VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,	//	VkBorderColor			borderColor;
+		VK_FALSE,									//	VkBool32				unnormalizedCoordinates;
+	};
+	const auto sampler = createSampler(ctx.vkd, ctx.device, &samplerCreateInfo);
+
+	// Vertex buffer.
+	const std::vector<tcu::Vec4> vertices
+	{
+		tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f),
+		tcu::Vec4(-1.0f,  1.0f, 0.0f, 1.0f),
+		tcu::Vec4( 1.0f, -1.0f, 0.0f, 1.0f),
+		tcu::Vec4( 1.0f,  1.0f, 0.0f, 1.0f),
+	};
+	const auto			vertexBufferSize	= static_cast<VkDeviceSize>(de::dataSize(vertices));
+	const auto			vertexBufferInfo	= makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	BufferWithMemory	vertexBuffer		(ctx.vkd, ctx.device, ctx.allocator, vertexBufferInfo, MemoryRequirement::HostVisible);
+	auto&				vertexBufferAlloc	= vertexBuffer.getAllocation();
+	void*				vertexBufferDataPtr	= vertexBufferAlloc.getHostPtr();
+	const auto			vertexBufferOffset	= static_cast<VkDeviceSize>(0);
+
+	deMemcpy(vertexBufferDataPtr, de::dataOrNull(vertices), de::dataSize(vertices));
+	flushAlloc(ctx.vkd, ctx.device, vertexBufferAlloc);
+
+	// Render pass and framebuffer.
+	const auto renderPass	= makeRenderPass(ctx.vkd, ctx.device, vkFormat);
+	const auto framebuffer	= makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(), vkExtent.width, vkExtent.height);
+
+	// Push constants.
+	const std::vector<float>	pcValues	{ maxLodBias, static_cast<float>(vkExtent.width), static_cast<float>(vkExtent.height) };
+	const auto					pcSize		= static_cast<uint32_t>(de::dataSize(pcValues));
+	const auto					pcStages	= VK_SHADER_STAGE_FRAGMENT_BIT;
+	const auto					pcRange		= makePushConstantRange(pcStages, 0u, pcSize);
+
+	// Descriptor pool and set.
+	DescriptorSetLayoutBuilder setLayoutBuilder;
+	setLayoutBuilder.addSingleBinding(descriptorType, VK_SHADER_STAGE_FRAGMENT_BIT);
+	const auto descriptorSetLayout	= setLayoutBuilder.build(ctx.vkd, ctx.device);
+	const auto pipelineLayout		= makePipelineLayout(ctx.vkd, ctx.device, *descriptorSetLayout, &pcRange);
+
+	DescriptorPoolBuilder descriptorPoolBuilder;
+	descriptorPoolBuilder.addType(descriptorType);
+	const auto descriptorPool	= descriptorPoolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+	const auto descriptorSet	= makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *descriptorSetLayout);
+
+	DescriptorSetUpdateBuilder setUpdateBuilder;
+	const auto samplerDescriptorInfo = makeDescriptorImageInfo(*sampler, *textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	setUpdateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, &samplerDescriptorInfo);
+	setUpdateBuilder.update(ctx.vkd, ctx.device);
+
+	// Pipeline.
+	const auto&	binaries	= m_context.getBinaryCollection();
+	const auto	vertMod		= createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+	const auto	fragMod		= createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(vkExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(vkExtent));
+
+	GraphicsPipelineWrapper pipeline (ctx.vkd, ctx.device, m_params.pipelineConstructionType);
+	pipeline.setDefaultDepthStencilState()
+			.setDefaultRasterizationState()
+			.setDefaultMultisampleState()
+			.setDefaultColorBlendState()
+			.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+			.setupVertexInputState()
+			.setupPreRasterizationShaderState(viewports,
+							scissors,
+							*pipelineLayout,
+							*renderPass,
+							0u,
+							*vertMod)
+			.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragMod)
+			.setupFragmentOutputState(*renderPass)
+			.setMonolithicPipelineLayout(*pipelineLayout)
+			.buildPipeline();
+
+	CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, ctx.qfIndex);
+	const auto cmdBuffer = *cmd.cmdBuffer;
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+	// Transition texture to layout suitable for filling.
+	const auto preFillBarrier = makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, texture.get(), textureColorSRR);
+	cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &preFillBarrier);
+
+	// Fill every level with a different random color.
+	auto& log = m_context.getTestContext().getLog();
+	de::Random rnd(baseSeed + static_cast<uint32_t>(m_params.lodBiasCase));
+	std::vector<tcu::Vec4> levelColors;
+	levelColors.reserve(textureCreateInfo.mipLevels);
+
+	for (uint32_t level = 0u; level < textureCreateInfo.mipLevels; ++level)
+	{
+		const auto		levelRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, level, 1u, 0u, 1u);
+		// If we "embed" these expressions in the constructor below, separated by commas, the order in which colors are obtained would depend on the compiler.
+		const auto		red				= rnd.getFloat(0.0f, 1.0f);
+		const auto		green			= rnd.getFloat(0.0f, 1.0f);
+		const auto		blue			= rnd.getFloat(0.0f, 1.0f);
+		const tcu::Vec4	clearValue		(red, green, blue, 1.0f);
+		const auto		clearValueColor	= makeClearValueColorVec4(clearValue);
+
+		levelColors.push_back(clearValue);
+		ctx.vkd.cmdClearColorImage(cmdBuffer, texture.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValueColor.color, 1u, &levelRange);
+		log << tcu::TestLog::Message << "Level " << level << " cleared to " << clearValue << tcu::TestLog::EndMessage;
+	}
+
+	// Transition texture to suitable layout for reading it in the shader.
+	const auto preReadBarrier = makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, texture.get(), textureColorSRR);
+	cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, &preReadBarrier);
+
+	const tcu::Vec4 fbClearColor (0.0f, 0.0f, 0.0f, 0.0f);
+	beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.at(0u), fbClearColor);
+	ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+	ctx.vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
+	ctx.vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+	ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, pcStages, 0u, pcSize, de::dataOrNull(pcValues));
+	ctx.vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
+	endRenderPass(ctx.vkd, cmdBuffer);
+
+	// Copy color buffer to verification buffer.
+	copyImageToBuffer(ctx.vkd,
+					  cmdBuffer,
+					  colorBuffer.getImage(),
+					  colorBuffer.getBuffer(),
+					  fbExtent.swizzle(0, 1),
+					  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+					  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+					  1u,
+					  VK_IMAGE_ASPECT_COLOR_BIT,
+					  VK_IMAGE_ASPECT_COLOR_BIT,
+					  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+	// Verify color buffer has the right mip level color.
+	const auto& colorBufferAlloc = colorBuffer.getBufferAllocation();
+	invalidateAlloc(ctx.vkd, ctx.device, colorBufferAlloc);
+
+	const tcu::ConstPixelBufferAccess	resultAccess		(tcuFormat, fbExtent, colorBufferAlloc.getHostPtr());
+	const auto							channelThreshold	= 0.005f; // 1/255 < 0.005 < 2/255
+	const tcu::Vec4						threshold			(channelThreshold, channelThreshold, channelThreshold, 0.0f);
+
+	if (!tcu::floatThresholdCompare(log, "Result", "", levelColors.at(static_cast<size_t>(accessedLevel)), resultAccess, threshold, tcu::COMPARE_LOG_EVERYTHING))
+		return tcu::TestStatus::fail("Unexpected color found in color buffer -- check log for details");
+
+	return tcu::TestStatus::pass("Pass");
 }
 
 } // anonymous
@@ -2141,6 +2511,27 @@ tcu::TestCaseGroup* createExactSamplingTests (tcu::TestContext& testCtx, Pipelin
 	return exactSamplingTests.release();
 }
 
+tcu::TestCaseGroup* createMaxSamplerLodBiasTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
+{
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "max_sampler_lod_bias", "Test the maxSamplerLodBias limit"));
+
+	for (int caseIdx = 0; caseIdx < static_cast<int>(LodBiasCase::CASE_COUNT); ++caseIdx)
+	{
+		const auto						caseValue	= static_cast<LodBiasCase>(caseIdx);
+		const auto						testName	= getLodBiasCaseName(caseValue);
+		const MaxSamplerLodBiasParams	params		{pipelineConstructionType, caseValue};
+
+#ifdef CTS_USES_VULKANSC
+		if (caseValue == LodBiasCase::VIEW_MINLOD)
+			continue;
+#endif // CTS_USES_VULKANSC
+
+		testGroup->addChild(new MaxSamplerLodBiasCase(testCtx, testName, "", params));
+	}
+
+	return testGroup.release();
+}
+
 tcu::TestCaseGroup* createSamplerTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
 	de::MovePtr<tcu::TestCaseGroup> samplerTests(new tcu::TestCaseGroup(testCtx, "sampler", "Sampler tests"));
@@ -2160,6 +2551,8 @@ tcu::TestCaseGroup* createSamplerTests (tcu::TestContext& testCtx, PipelineConst
 	// Border color swizzle tests.
 	samplerTests->addChild(createSamplerBorderSwizzleTests(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
+
+	samplerTests->addChild(createMaxSamplerLodBiasTests(testCtx, pipelineConstructionType));
 
 	return samplerTests.release();
 }

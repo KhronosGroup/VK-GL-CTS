@@ -59,6 +59,8 @@ set(DEQP_GLES2_FUNCTIONAL_SRCS
 	es2fShaderDiscardTests.hpp
 	es2fShaderExecuteTest.cpp
 	es2fShaderExecuteTest.hpp
+	es2fShaderFunctionTests.cpp
+	es2fShaderFunctionTests.hpp
 	es2fShaderIndexingTests.cpp
 	es2fShaderIndexingTests.hpp
 	es2fShaderLoopTests.cpp

@@ -630,7 +630,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 			.setDefaultScissorsCount(staticViewportCount)
 			.setDefaultMultisampleState()
 			.setDefaultColorBlendState()
-			.setupVertexInputStete(&pipelinestate::vertexInput)
+			.setupVertexInputState(&pipelinestate::vertexInput)
 			.setupPreRasterizationShaderState(viewports,
 											  scissors,
 											  *m_rectanglePipelineLayout,

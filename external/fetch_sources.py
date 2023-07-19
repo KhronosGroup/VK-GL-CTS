@@ -24,17 +24,22 @@ import os
 import sys
 import shutil
 import tarfile
+import zipfile
 import hashlib
 import argparse
 import subprocess
 import ssl
 import stat
+import platform
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "scripts"))
+scriptPath = os.path.join(os.path.dirname(__file__), "..", "scripts")
+sys.path.insert(0, scriptPath)
 
-from build.common import *
+from ctsbuild.common import *
 
 EXTERNAL_DIR	= os.path.realpath(os.path.normpath(os.path.dirname(__file__)))
+
+SYSTEM_NAME		= platform.system()
 
 def computeChecksum (data):
 	return hashlib.sha256(data).hexdigest()
@@ -51,17 +56,17 @@ class Source:
 	def clean (self):
 		fullDstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
 		# Remove read-only first
-		readonlydir = os.path.join(fullDstPath, ".git", "objects", "pack")
+		readonlydir = os.path.join(fullDstPath, ".git")
 		if os.path.exists(readonlydir):
-			shutil.rmtree(readonlydir, onerror = onReadonlyRemoveError )
+			shutil.rmtree(readonlydir, onerror = onReadonlyRemoveError)
 		if os.path.exists(fullDstPath):
 			shutil.rmtree(fullDstPath, ignore_errors=False)
 
 class SourcePackage (Source):
-	def __init__(self, url, filename, checksum, baseDir, extractDir = "src", postExtract=None):
+	def __init__(self, url, checksum, baseDir, extractDir = "src", postExtract=None):
 		Source.__init__(self, baseDir, extractDir)
 		self.url			= url
-		self.filename		= filename
+		self.filename		= os.path.basename(self.url)
 		self.checksum		= checksum
 		self.archiveDir		= "packages"
 		self.postExtract	= postExtract
@@ -145,7 +150,11 @@ class SourcePackage (Source):
 		srcPath	= os.path.join(EXTERNAL_DIR, self.baseDir, self.archiveDir, self.filename)
 		tmpPath	= os.path.join(EXTERNAL_DIR, ".extract-tmp-%s" % self.baseDir)
 		dstPath	= os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
-		archive	= tarfile.open(srcPath)
+
+		if self.filename.endswith(".zip"):
+			archive	= zipfile.ZipFile(srcPath)
+		else:
+			archive	= tarfile.open(srcPath)
 
 		if os.path.exists(tmpPath):
 			shutil.rmtree(tmpPath, ignore_errors=False)
@@ -282,12 +291,10 @@ def postExtractLibpng (path):
 PACKAGES = [
 	SourcePackage(
 		"http://zlib.net/fossils/zlib-1.2.13.tar.gz",
-		"zlib-1.2.13.tar.gz",
 		"b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
 		"zlib"),
 	SourcePackage(
 		"http://prdownloads.sourceforge.net/libpng/libpng-1.6.27.tar.gz",
-		"libpng-1.6.27.tar.gz",
 		"c9d164ec247f426a525a7b89936694aefbc91fb7a50182b198898b8fc91174b4",
 		"libpng",
 		postExtract = postExtractLibpng),
@@ -297,36 +304,49 @@ PACKAGES = [
 		"e7b5f0aa5b1b0eadc63a1c624c0ca7f5af133aa857d6a4271b0ef3d0bdb6868e",
 		"renderdoc"),
 	GitRepo(
-		"https://github.com/KhronosGroup/SPIRV-Tools.git",
-		"git@github.com:KhronosGroup/SPIRV-Tools.git",
-		"f98473ceeb1d33700d01e20910433583e5256030",
+		"https://gitlab.khronos.org/spirv/spirv-tools.git",
+		"git@gitlab.khronos.org:spirv/spirv-tools.git",
+		"01ba28ef86e52ec25c4ee0ece8acbd1209220eb3",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		"git@github.com:KhronosGroup/glslang.git",
-		"a0ad0d7067521fff880e36acfb8ce453421c3f25",
+		"0bbec2e8f6eca92e925bc589725b108788fc0733",
 		"glslang",
-		removeTags = ["master-tot"]),
+		removeTags = ["main-tot"]),
 	GitRepo(
-		"https://github.com/KhronosGroup/SPIRV-Headers.git",
-		"git@github.com:KhronosGroup/SPIRV-Headers.git",
-		"87d5b782bec60822aa878941e6b13c0a9a954c9b",
+		"https://gitlab.khronos.org/spirv/SPIRV-Headers.git",
+		"git@gitlab.khronos.org:spirv/SPIRV-Headers.git",
+		"a23993896ce751388a23737921b68e9f03b438db",
 		"spirv-headers"),
 	GitRepo(
 		"https://gitlab.khronos.org/vulkan/vulkan.git",
 		"git@gitlab.khronos.org:vulkan/vulkan.git",
-		"18ffc4dc086e320f73194d7337da4a72f7220336",
+		"1594a56e4781cfbc1c572954451eeb011b303863",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",
 		"git@github.com:google/amber.git",
-		"8b145a6c89dcdb4ec28173339dd176fb7b6f43ed",
+		"933ecb4d6288675a92eb1650e0f52b1d7afe8273",
 		"amber"),
 	GitRepo(
 		"https://github.com/open-source-parsers/jsoncpp.git",
 		"git@github.com:open-source-parsers/jsoncpp.git",
 		"9059f5cad030ba11d37818847443a53918c327b1",
 		"jsoncpp"),
+	# NOTE: The samples application is not well suited to external
+	# integration, this fork contains the small fixes needed for use
+	# by the CTS.
+	GitRepo(
+		"https://github.com/Igalia/vk_video_samples.git",
+		"git@github.com:Igalia/vk_video_samples.git",
+		"cts-integration-0.9.9-1",
+		"nvidia-video-samples"),
+	GitRepo(
+		"https://github.com/Igalia/ESExtractor.git",
+		"git@github.com:Igalia/ESExtractor.git",
+		"v0.3.3",
+		"ESExtractor"),
 ]
 
 def parseArgs ():
@@ -355,6 +375,23 @@ def parseArgs ():
 				break;
 
 	return args
+
+def run(*popenargs, **kwargs):
+	process = subprocess.Popen(*popenargs, **kwargs)
+
+	try:
+		stdout, stderr = process.communicate(None)
+	except:
+		process.kill()
+		process.wait()
+		raise
+
+	retcode = process.poll()
+
+	if retcode:
+		raise subprocess.CalledProcessError(retcode, process.args, output=stdout, stderr=stderr)
+
+	return retcode, stdout, stderr
 
 if __name__ == "__main__":
 	args = parseArgs()

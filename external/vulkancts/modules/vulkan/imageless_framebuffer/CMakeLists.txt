@@ -14,5 +14,4 @@ add_library(deqp-vk-imageless-framebuffer STATIC ${DEQP_VK_IMAGELESS_FRAMEBUFFER
 target_link_libraries(deqp-vk-imageless-framebuffer tcutil vkutil)
 
 add_library(deqp-vksc-imageless-framebuffer STATIC ${DEQP_VK_IMAGELESS_FRAMEBUFFER_SRCS})
-target_include_directories(deqp-vksc-imageless-framebuffer BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-imageless-framebuffer PUBLIC deqp-vksc-util tcutil vkscutil)

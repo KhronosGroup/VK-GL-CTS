@@ -131,6 +131,7 @@ void									initMultisamplePrograms				(SourceCollections& sources, Multisample
 bool									isSupportedSampleCount				(const InstanceInterface& instanceInterface, VkPhysicalDevice physicalDevice, VkSampleCountFlagBits rasterizationSamples);
 bool									isSupportedDepthStencilFormat		(const InstanceInterface& vki, const VkPhysicalDevice physDevice, const VkFormat format);
 VkPipelineColorBlendAttachmentState		getDefaultColorBlendAttachmentState	(void);
+VkPipelineColorBlendAttachmentState		getAlphaToCoverageBlendState		(bool blendEnable);
 deUint32								getUniqueColorsCount				(const tcu::ConstPixelBufferAccess& image);
 VkImageAspectFlags						getImageAspectFlags					(const VkFormat format);
 VkPrimitiveTopology						getPrimitiveTopology				(const GeometryType geometryType);
@@ -306,22 +307,25 @@ public:
 																				 VkSampleCountFlagBits				rasterizationSamples,
 																				 GeometryType						geometryType,
 																				 ImageBackingMode					backingMode,
-																				 const bool							useFragmentShadingRate);
+																				 const bool							useFragmentShadingRate,
+																				 const bool							checkDepthBuffer);
 
 	virtual										~AlphaToCoverageTest			(void) {}
+	void										initPrograms					(SourceCollections& programCollection) const override;
 
 protected:
-	virtual TestInstance*						createMultisampleTestInstance	(Context&										context,
+	TestInstance*								createMultisampleTestInstance	(Context&										context,
 																				 VkPrimitiveTopology							topology,
 																				 float											pointSize,
 																				 const std::vector<Vertex4RGBA>&				vertices,
 																				 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
-																				 const VkPipelineColorBlendAttachmentState&		colorBlendState) const;
+																				 const VkPipelineColorBlendAttachmentState&		colorBlendState) const override;
 
 	static VkPipelineMultisampleStateCreateInfo	getAlphaToCoverageStateParams	(VkSampleCountFlagBits rasterizationSamples);
 
 	GeometryType								m_geometryType;
 	const ImageBackingMode						m_backingMode;
+	const bool									m_checkDepthBuffer;
 };
 
 class AlphaToCoverageNoColorAttachmentTest : public MultisampleTest
@@ -496,6 +500,7 @@ public:
 
 	de::MovePtr<tcu::TextureLevel>				render						(void);
 	de::MovePtr<tcu::TextureLevel>				getSingleSampledImage		(deUint32 sampleId);
+	de::MovePtr<tcu::TextureLevel>				renderReusingDepth			();
 
 
 protected:
@@ -726,16 +731,19 @@ public:
 																			 const VkPipelineColorBlendAttachmentState&		blendState,
 																			 GeometryType									geometryType,
 																			 ImageBackingMode								backingMode,
-																			 const bool										useFragmentShadingRate);
+																			 const bool										useFragmentShadingRate,
+																			 const bool										checkDepthBuffer);
 	virtual										~AlphaToCoverageInstance	(void) {}
 
 	virtual tcu::TestStatus						iterate						(void);
 
 protected:
 	virtual tcu::TestStatus						verifyImage					(const tcu::ConstPixelBufferAccess& result);
+	virtual tcu::TestStatus						verifyDepthBufferCheck		(const tcu::ConstPixelBufferAccess& result);
 
 	const PipelineConstructionType				m_pipelineConstructionType;
 	const VkFormat								m_colorFormat;
+	const VkFormat								m_depthStencilFormat;
 	const tcu::IVec2							m_renderSize;
 	const VkPrimitiveTopology					m_primitiveTopology;
 	const std::vector<Vertex4RGBA>				m_vertices;
@@ -744,6 +752,7 @@ protected:
 	const GeometryType							m_geometryType;
 	const ImageBackingMode						m_backingMode;
 	const bool									m_useFragmentShadingRate;
+	const bool									m_checkDepthBuffer;
 };
 
 class AlphaToCoverageNoColorAttachmentInstance : public vkt::TestInstance
@@ -1083,7 +1092,7 @@ bool checkFragmentShadingRateRequirements(Context& context, deUint32 sampleCount
 	return false;
 }
 
-VkPipelineColorBlendAttachmentState getDefaultColorBlendAttachmentState (void)
+VkPipelineColorBlendAttachmentState getDefaultColorBlendAttachmentState ()
 {
 	const VkPipelineColorBlendAttachmentState colorBlendState =
 	{
@@ -1093,6 +1102,24 @@ VkPipelineColorBlendAttachmentState getDefaultColorBlendAttachmentState (void)
 		VK_BLEND_OP_ADD,											// VkBlendOp				colorBlendOp;
 		VK_BLEND_FACTOR_ONE,										// VkBlendFactor			srcAlphaBlendFactor;
 		VK_BLEND_FACTOR_ZERO,										// VkBlendFactor			dstAlphaBlendFactor;
+		VK_BLEND_OP_ADD,											// VkBlendOp				alphaBlendOp;
+		VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |		// VkColorComponentFlags	colorWriteMask;
+			VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+	};
+
+	return colorBlendState;
+}
+
+VkPipelineColorBlendAttachmentState getAlphaToCoverageBlendState (bool blendEnable)
+{
+	const VkPipelineColorBlendAttachmentState colorBlendState =
+	{
+		blendEnable,												// VkBool32					blendEnable;
+		VK_BLEND_FACTOR_SRC_ALPHA,									// VkBlendFactor			srcColorBlendFactor;
+		VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,						// VkBlendFactor			dstColorBlendFactor;
+		VK_BLEND_OP_ADD,											// VkBlendOp				colorBlendOp;
+		VK_BLEND_FACTOR_ZERO,										// VkBlendFactor			srcAlphaBlendFactor;
+		VK_BLEND_FACTOR_ONE,										// VkBlendFactor			dstAlphaBlendFactor;
 		VK_BLEND_OP_ADD,											// VkBlendOp				alphaBlendOp;
 		VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |		// VkColorComponentFlags	colorWriteMask;
 			VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
@@ -1245,7 +1272,7 @@ std::vector<Vertex4RGBA> generateVertices (const GeometryType geometryType)
 					vertexData[i].position.z() = 0.5f;
 			}
 
-			vertices = std::vector<Vertex4RGBA>(vertexData, vertexData + 4);
+			vertices = std::vector<Vertex4RGBA>(vertexData, vertexData + de::arrayLength(vertexData));
 			break;
 		}
 
@@ -1597,11 +1624,49 @@ AlphaToCoverageTest::AlphaToCoverageTest (tcu::TestContext&					testContext,
 										  VkSampleCountFlagBits				rasterizationSamples,
 										  GeometryType						geometryType,
 										  ImageBackingMode					backingMode,
-										  const bool						useFragmentShadingRate)
-	: MultisampleTest	(testContext, name, description, pipelineConstructionType, getAlphaToCoverageStateParams(rasterizationSamples), getDefaultColorBlendAttachmentState(), geometryType, 1.0f, backingMode, useFragmentShadingRate)
+										  const bool						useFragmentShadingRate,
+										  const bool						checkDepthBuffer)
+	: MultisampleTest	(testContext,
+						 name,
+						 description,
+						 pipelineConstructionType,
+						 getAlphaToCoverageStateParams(rasterizationSamples),
+						 getAlphaToCoverageBlendState(checkDepthBuffer),
+						 geometryType,
+						 1.0f,
+						 backingMode,
+						 useFragmentShadingRate)
 	, m_geometryType	(geometryType)
 	, m_backingMode		(backingMode)
+	, m_checkDepthBuffer(checkDepthBuffer)
 {
+	if (checkDepthBuffer)
+		DE_ASSERT(geometryType == GEOMETRY_TYPE_INVISIBLE_QUAD);
+}
+
+void AlphaToCoverageTest::initPrograms (SourceCollections &programCollection) const
+{
+	MultisampleTest::initPrograms(programCollection);
+
+	if (m_checkDepthBuffer)
+	{
+		std::ostringstream vert;
+		vert
+			<< "#version 460\n"
+			<< "layout (push_constant, std430) uniform PushConstantBlock { float depth; } pc;\n"
+			<< "layout (location=0) out vec4 vtxColor;\n"
+			<< "vec2 positions[3] = vec2[](\n"
+			<< "    vec2(-1.0, -1.0),\n"
+			<< "    vec2(-1.0, 3.0),\n"
+			<< "    vec2(3.0, -1.0)\n"
+			<< ");\n"
+			<< "void main (void) {\n"
+			<< "    gl_Position = vec4(positions[gl_VertexIndex % 3], pc.depth, 1.0);\n"
+			<< "    vtxColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("checkDepth-vert") << glu::VertexSource(vert.str());
+	}
 }
 
 TestInstance* AlphaToCoverageTest::createMultisampleTestInstance (Context&										context,
@@ -1612,7 +1677,7 @@ TestInstance* AlphaToCoverageTest::createMultisampleTestInstance (Context&						
 																  const VkPipelineColorBlendAttachmentState&	colorBlendState) const
 {
 	DE_UNREF(pointSize);
-	return new AlphaToCoverageInstance(context, m_pipelineConstructionType, topology, vertices, multisampleStateParams, colorBlendState, m_geometryType, m_backingMode, m_useFragmentShadingRate);
+	return new AlphaToCoverageInstance(context, m_pipelineConstructionType, topology, vertices, multisampleStateParams, colorBlendState, m_geometryType, m_backingMode, m_useFragmentShadingRate, m_checkDepthBuffer);
 }
 
 VkPipelineMultisampleStateCreateInfo AlphaToCoverageTest::getAlphaToCoverageStateParams (VkSampleCountFlagBits rasterizationSamples)
@@ -1763,17 +1828,21 @@ void SampleMaskWithConservativeTest::checkSupport(Context& context) const
 	if (m_useFragmentShadingRate && !checkFragmentShadingRateRequirements(context, m_rasterizationSamples))
 		TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
 
-	if (m_enablePostDepthCoverage)
-		context.requireDeviceFunctionality("VK_EXT_post_depth_coverage");
-
 	context.requireDeviceFunctionality("VK_EXT_conservative_rasterization");
 
-	const VkPhysicalDeviceConservativeRasterizationPropertiesEXT	conservativeRasterizationProperties = context.getConservativeRasterizationPropertiesEXT();
-	const deUint32													subPixelPrecisionBits = context.getDeviceProperties().limits.subPixelPrecisionBits;
-	const deUint32													subPixelPrecision = 1 << subPixelPrecisionBits;
-	const float														primitiveOverestimationSizeMult = float(subPixelPrecision) * conservativeRasterizationProperties.primitiveOverestimationSize;
+	const auto&		conservativeRasterizationProperties	= context.getConservativeRasterizationPropertiesEXT();
+	const deUint32	subPixelPrecisionBits				= context.getDeviceProperties().limits.subPixelPrecisionBits;
+	const deUint32	subPixelPrecision					= (1 << subPixelPrecisionBits);
+	const float		primitiveOverestimationSizeMult		= float(subPixelPrecision) * conservativeRasterizationProperties.primitiveOverestimationSize;
 
 	DE_ASSERT(subPixelPrecisionBits < sizeof(deUint32) * 8);
+
+	if (m_enablePostDepthCoverage)
+	{
+		context.requireDeviceFunctionality("VK_EXT_post_depth_coverage");
+		if (!conservativeRasterizationProperties.conservativeRasterizationPostDepthCoverage)
+			TCU_THROW(NotSupportedError, "conservativeRasterizationPostDepthCoverage not supported");
+	}
 
 	context.getTestContext().getLog()
 		<< tcu::TestLog::Message
@@ -2563,10 +2632,12 @@ AlphaToCoverageInstance::AlphaToCoverageInstance (Context&										context,
 												  const VkPipelineColorBlendAttachmentState&	blendState,
 												  GeometryType									geometryType,
 												  ImageBackingMode								backingMode,
-												  const bool									useFragmentShadingRate)
+												  const bool									useFragmentShadingRate,
+												  const bool									checkDepthBuffer)
 	: vkt::TestInstance			(context)
 	, m_pipelineConstructionType(pipelineConstructionType)
 	, m_colorFormat				(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_depthStencilFormat		(VK_FORMAT_D16_UNORM)
 	, m_renderSize				(32, 32)
 	, m_primitiveTopology		(topology)
 	, m_vertices				(vertices)
@@ -2575,6 +2646,7 @@ AlphaToCoverageInstance::AlphaToCoverageInstance (Context&										context,
 	, m_geometryType			(geometryType)
 	, m_backingMode				(backingMode)
 	, m_useFragmentShadingRate	(useFragmentShadingRate)
+	, m_checkDepthBuffer		(checkDepthBuffer)
 {
 }
 
@@ -2583,44 +2655,80 @@ tcu::TestStatus AlphaToCoverageInstance::iterate (void)
 	DE_ASSERT(m_multisampleStateParams.alphaToCoverageEnable);
 
 	de::MovePtr<tcu::TextureLevel>	result;
-	MultisampleRenderer				renderer	(m_context, m_pipelineConstructionType, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, m_multisampleStateParams, m_colorBlendState, RENDER_TYPE_RESOLVE, m_backingMode, m_useFragmentShadingRate);
+	MultisampleRenderer				renderer	(m_context, m_pipelineConstructionType, m_colorFormat, m_depthStencilFormat, m_renderSize, m_checkDepthBuffer, false, 1u, &m_primitiveTopology, &m_vertices, m_multisampleStateParams, m_colorBlendState, RENDER_TYPE_RESOLVE, m_backingMode, m_useFragmentShadingRate);
 
 	result = renderer.render();
 
-	return verifyImage(result->getAccess());
+	const auto colorStatus = verifyImage(result->getAccess());
+	auto depthStatus = tcu::TestStatus::pass("Pass");
+
+	if (m_checkDepthBuffer)
+	{
+		const auto redrawResult	= renderer.renderReusingDepth();
+		depthStatus				= verifyDepthBufferCheck(redrawResult->getAccess());
+	}
+
+	if (colorStatus.getCode() == QP_TEST_RESULT_FAIL)
+		return colorStatus;
+
+	if (depthStatus.getCode() == QP_TEST_RESULT_FAIL)
+		return depthStatus;
+
+	return colorStatus;
+}
+
+tcu::TestStatus AlphaToCoverageInstance::verifyDepthBufferCheck (const tcu::ConstPixelBufferAccess& result)
+{
+	const tcu::Vec4 refColor	(0.0f, 0.0f, 1.0f, 1.0f); // Must match "checkDepth-vert".
+	const tcu::Vec4 threshold	(0.0f, 0.0f, 0.0f, 0.0f);
+
+	if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "BlueColor", "", refColor, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Depth buffer verification failed: depth buffer was not clear");
+	return tcu::TestStatus::pass("Pass");
 }
 
 tcu::TestStatus AlphaToCoverageInstance::verifyImage (const tcu::ConstPixelBufferAccess&	result)
 {
 	float maxColorValue;
+	float minColorValue;
 
 	switch (m_geometryType)
 	{
 		case GEOMETRY_TYPE_OPAQUE_QUAD:
 			maxColorValue = 1.01f;
+			minColorValue = 0.99f;
 			break;
 
 		case GEOMETRY_TYPE_TRANSLUCENT_QUAD:
 			maxColorValue = 0.52f;
+			minColorValue = 0.0f;
 			break;
 
 		case GEOMETRY_TYPE_INVISIBLE_QUAD:
 			maxColorValue = 0.01f;
+			minColorValue = 0.0f;
 			break;
 
 		default:
 			maxColorValue = 0.0f;
+			minColorValue = 0.0f;
 			DE_ASSERT(false);
 	}
+
+	auto& log = m_context.getTestContext().getLog();
+	log << tcu::TestLog::Image("Result", "Result Image", result);
 
 	for (int y = 0; y < m_renderSize.y(); y++)
 	{
 		for (int x = 0; x < m_renderSize.x(); x++)
 		{
-			if (result.getPixel(x, y).x() > maxColorValue)
+			const auto pixel	= result.getPixel(x, y);
+			const auto red		= pixel.x();
+
+			if (red > maxColorValue || red < minColorValue)
 			{
 				std::ostringstream message;
-				message << "Pixel is not below the threshold value (" << result.getPixel(x, y).x() << " > " << maxColorValue << ")";
+				message << "Pixel is not in the expected range: " << red << " not in [" << minColorValue << ", " << maxColorValue << "]";
 				return tcu::TestStatus::fail(message.str());
 			}
 		}
@@ -4159,7 +4267,7 @@ void MultisampleRenderer::initialize (Context&									context,
 			{
 				m_graphicsPipelines.emplace_back(vk, vkDevice, m_pipelineConstructionType);
 				m_graphicsPipelines.back().setDefaultTopology(pTopology[i])
-										  .setupVertexInputStete(&vertexInputStateParams)
+										  .setupVertexInputState(&vertexInputStateParams)
 										  .setupPreRasterizationShaderState(viewports,
 																			scissors,
 																			*m_pipelineLayout,
@@ -4223,7 +4331,7 @@ void MultisampleRenderer::initialize (Context&									context,
 											.setDefaultRasterizationState()
 											.setDefaultMultisampleState()
 											.setDefaultDepthStencilState()
-											.setupVertexInputStete(&vertexInputStateParams)
+											.setupVertexInputState(&vertexInputStateParams)
 											.setupPreRasterizationShaderState(viewports,
 																			scissors,
 																			*m_copySamplePipelineLayout,
@@ -4524,7 +4632,15 @@ de::MovePtr<tcu::TextureLevel> MultisampleRenderer::render (void)
 	const VkQueue				queue				= m_context.getUniversalQueue();
 	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 
-	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+	if (m_backingMode == IMAGE_BACKING_MODE_SPARSE)
+	{
+		const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+		submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get(), false, 1u, 1u, &m_bindSemaphore.get(), stageBits);
+	}
+	else
+	{
+		submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+	}
 
 	if (m_renderType == RENDER_TYPE_RESOLVE || m_renderType == RENDER_TYPE_DEPTHSTENCIL_ONLY || m_renderType == RENDER_TYPE_UNUSED_ATTACHMENT)
 	{
@@ -4543,6 +4659,169 @@ de::MovePtr<tcu::TextureLevel> MultisampleRenderer::render (void)
 de::MovePtr<tcu::TextureLevel> MultisampleRenderer::getSingleSampledImage (deUint32 sampleId)
 {
 	return readColorAttachment(m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueue(), m_context.getUniversalQueueFamilyIndex(), m_context.getDefaultAllocator(), *m_perSampleImages[sampleId]->m_image, m_colorFormat, m_renderSize.cast<deUint32>());
+}
+
+de::MovePtr<tcu::TextureLevel> MultisampleRenderer::renderReusingDepth ()
+{
+	const auto ctx			= m_context.getContextCommonData();
+	const auto renderSize	= m_renderSize.cast<uint32_t>();
+	const auto scissor		= makeRect2D(renderSize);
+	const auto fbExtent		= makeExtent3D(scissor.extent.width, scissor.extent.height, 1u);
+	const auto colorUsage	= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const auto sampleCount	= m_multisampleStateParams.rasterizationSamples;
+	const auto singleSample	= VK_SAMPLE_COUNT_1_BIT;
+	const auto bindPoint	= VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+	ImageWithBuffer secondColorBuffer	(ctx.vkd, ctx.device, ctx.allocator, fbExtent, m_colorFormat, colorUsage, VK_IMAGE_TYPE_2D, makeDefaultImageSubresourceRange(), 1u, sampleCount);
+	ImageWithBuffer secondResolveBuffer	(ctx.vkd, ctx.device, ctx.allocator, fbExtent, m_colorFormat, colorUsage, VK_IMAGE_TYPE_2D, makeDefaultImageSubresourceRange(), 1u, singleSample);
+
+	const auto pcSize			= static_cast<uint32_t>(sizeof(float));
+	const auto pcStages			= VK_SHADER_STAGE_VERTEX_BIT;
+	const auto pcRange			= makePushConstantRange(pcStages, 0u, pcSize);
+	const auto pipelineLayout	= makePipelineLayout(ctx.vkd, ctx.device, VK_NULL_HANDLE, &pcRange);
+
+	const std::vector<VkAttachmentDescription> attachmentDescriptions
+	{
+		{ // Color attachment.
+			0u,											//	VkAttachmentDescriptionFlags	flags;
+			m_colorFormat,								//	VkFormat						format;
+			sampleCount,								//	VkSampleCountFlagBits			samples;
+			VK_ATTACHMENT_LOAD_OP_CLEAR,				//	VkAttachmentLoadOp				loadOp;
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,			//	VkAttachmentStoreOp				storeOp;
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,			//	VkAttachmentLoadOp				stencilLoadOp;
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,			//	VkAttachmentStoreOp				stencilStoreOp;
+			VK_IMAGE_LAYOUT_UNDEFINED,					//	VkImageLayout					initialLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	//	VkImageLayout					finalLayout;
+		},
+		{ // Depth/stencil attachment.
+			0u,													//	VkAttachmentDescriptionFlags	flags;
+			m_depthStencilFormat,								//	VkFormat						format;
+			sampleCount,										//	VkSampleCountFlagBits			samples;
+			VK_ATTACHMENT_LOAD_OP_LOAD,							//	VkAttachmentLoadOp				loadOp;
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,					//	VkAttachmentStoreOp				storeOp;
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,					//	VkAttachmentLoadOp				stencilLoadOp;
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,					//	VkAttachmentStoreOp				stencilStoreOp;
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	//	VkImageLayout					initialLayout;
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	//	VkImageLayout					finalLayout;
+		},
+		{ // Resolve attachment.
+			0u,											//	VkAttachmentDescriptionFlags	flags;
+			m_colorFormat,								//	VkFormat						format;
+			singleSample,								//	VkSampleCountFlagBits			samples;
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,			//	VkAttachmentLoadOp				loadOp;
+			VK_ATTACHMENT_STORE_OP_STORE,				//	VkAttachmentStoreOp				storeOp;
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,			//	VkAttachmentLoadOp				stencilLoadOp;
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,			//	VkAttachmentStoreOp				stencilStoreOp;
+			VK_IMAGE_LAYOUT_UNDEFINED,					//	VkImageLayout					initialLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	//	VkImageLayout					finalLayout;
+		},
+	};
+
+	const auto colorAttachmentReference		= makeAttachmentReference(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	const auto dsAttachmentReference		= makeAttachmentReference(1u, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+	const auto resolveAttachmentReference	= makeAttachmentReference(2u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+	const VkSubpassDescription subpassDescription =
+	{
+		0u,								//	VkSubpassDescriptionFlags		flags;
+		bindPoint,						//	VkPipelineBindPoint				pipelineBindPoint;
+		0u,								//	uint32_t						inputAttachmentCount;
+		nullptr,						//	const VkAttachmentReference*	pInputAttachments;
+		1u,								//	uint32_t						colorAttachmentCount;
+		&colorAttachmentReference,		//	const VkAttachmentReference*	pColorAttachments;
+		&resolveAttachmentReference,	//	const VkAttachmentReference*	pResolveAttachments;
+		&dsAttachmentReference,			//	const VkAttachmentReference*	pDepthStencilAttachment;
+		0u,								//	uint32_t						preserveAttachmentCount;
+		nullptr,						//	const uint32_t*					pPreserveAttachments;
+	};
+
+	const VkRenderPassCreateInfo rpCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	//	VkStructureType					sType;
+		nullptr,									//	const void*						pNext;
+		0u,											//	VkRenderPassCreateFlags			flags;
+		de::sizeU32(attachmentDescriptions),		//	uint32_t						attachmentCount;
+		de::dataOrNull(attachmentDescriptions),		//	const VkAttachmentDescription*	pAttachments;
+		1u,											//	uint32_t						subpassCount;
+		&subpassDescription,						//	const VkSubpassDescription*		pSubpasses;
+		0u,											//	uint32_t						dependencyCount;
+		nullptr,									//	const VkSubpassDependency*		pDependencies;
+	};
+	const auto renderPass = createRenderPass(ctx.vkd, ctx.device, &rpCreateInfo);
+
+	const std::vector<VkImageView> fbImageViews
+	{
+		secondColorBuffer.getImageView(),
+		*m_depthStencilAttachmentView,
+		secondResolveBuffer.getImageView(),
+	};
+	const auto framebuffer = makeFramebuffer(ctx.vkd, ctx.device, renderPass.get(), de::sizeU32(fbImageViews), de::dataOrNull(fbImageViews), fbExtent.width, fbExtent.height);
+
+	const std::vector<VkViewport>				viewports					(1u, makeViewport(fbExtent));
+	const std::vector<VkRect2D>					scissors					(1u, scissor);
+	const VkPipelineVertexInputStateCreateInfo	vertexInputStateCreateInfo	= initVulkanStructure();
+	const auto									stencilOpState				= makeStencilOpState(VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_NEVER, 0u, 0u, 0u);
+
+	// This is the key to test the depth buffer contains the clear value and has not been written to:
+	// The comparison op is EQUAL, so we will only draw if the depth buffer contains the expected value.
+	const VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,		//	VkStructureType							sType;
+		nullptr,														//	const void*								pNext;
+		0u,																//	VkPipelineDepthStencilStateCreateFlags	flags;
+		VK_TRUE,														//	VkBool32								depthTestEnable;
+		VK_FALSE,														//	VkBool32								depthWriteEnable;
+		VK_COMPARE_OP_EQUAL,											//	VkCompareOp								depthCompareOp;
+		VK_FALSE,														//	VkBool32								depthBoundsTestEnable;
+		VK_FALSE,														//	VkBool32								stencilTestEnable;
+		stencilOpState,													//	VkStencilOpState						front;
+		stencilOpState,													//	VkStencilOpState						back;
+		0.0f,															//	float									minDepthBounds;
+		1.0f,															//	float									maxDepthBounds;
+	};
+
+	const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	//	VkStructureType							sType;
+		nullptr,													//	const void*								pNext;
+		0u,															//	VkPipelineMultisampleStateCreateFlags	flags;
+		sampleCount,												//	VkSampleCountFlagBits					rasterizationSamples;
+		VK_FALSE,													//	VkBool32								sampleShadingEnable;
+		1.0f,														//	float									minSampleShading;
+		nullptr,													//	const VkSampleMask*						pSampleMask;
+		VK_FALSE,													//	VkBool32								alphaToCoverageEnable;
+		VK_FALSE,													//	VkBool32								alphaToOneEnable;
+	};
+
+	const auto&	binaries	= m_context.getBinaryCollection();
+	const auto	vertModule	= createShaderModule(ctx.vkd, ctx.device, binaries.get("checkDepth-vert"));
+	const auto	fragModule	= createShaderModule(ctx.vkd, ctx.device, binaries.get("color_frag"));
+	const auto	pipeline	= makeGraphicsPipeline(
+		ctx.vkd, ctx.device, pipelineLayout.get(),
+		vertModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, fragModule.get(), renderPass.get(),
+		viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u,
+		&vertexInputStateCreateInfo, nullptr, &multisampleStateCreateInfo, &depthStencilStateCreateInfo);
+
+	const CommandPoolWithBuffer	cmd			(ctx.vkd, ctx.device, ctx.qfIndex);
+	const auto					cmdBuffer	= cmd.cmdBuffer.get();
+	const tcu::Vec4				clearColor	(0.0f, 0.0f, 0.0f, 1.0f);
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+	{
+		// Make sure the previous depth buffer writes have completed already.
+		const auto depthBarrier	= makeMemoryBarrier(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT));
+		const auto depthStages	= (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+		cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, depthStages, depthStages, &depthBarrier);
+	}
+	beginRenderPass(ctx.vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissor, clearColor);
+	ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, pipeline.get());
+	ctx.vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), pcStages, 0u, pcSize, &m_depthClearValue);
+	ctx.vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+	endRenderPass(ctx.vkd, cmdBuffer);
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+	return readColorAttachment(ctx.vkd, ctx.device, ctx.queue, ctx.qfIndex, ctx.allocator, secondResolveBuffer.getImage(), m_colorFormat, renderSize);
 }
 
 // Multisample tests with subpasses using no attachments.
@@ -4836,8 +5115,9 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 		renderPassCreateInfo.attachmentCount = 1u;
 		renderPassCreateInfo.pAttachments = &colorAttachmentDescription;
 	}
+	const bool unusedAttachmentSubpass	= (m_params.nonEmptyFramebuffer && m_params.unusedAttachment);
 	renderPassCreateInfo.subpassCount	= 1u;
-	renderPassCreateInfo.pSubpasses		= ((m_params.nonEmptyFramebuffer && m_params.unusedAttachment) ? &unusedAttachmentSubpassDescription : &emptySubpassDescription);
+	renderPassCreateInfo.pSubpasses		= (unusedAttachmentSubpass ? &unusedAttachmentSubpassDescription : &emptySubpassDescription);
 	const auto renderPassSingleSubpass	= vk::createRenderPass(vkd, device, &renderPassCreateInfo);
 
 	// Framebuffers.
@@ -4923,15 +5203,41 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 	const std::vector<VkViewport>	viewport	{ vk::makeViewport(kWidth32, kHeight32) };
 	const std::vector<VkRect2D>		scissor		{ vk::makeRect2D(kWidth32, kHeight32) };
 
-	const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo =
+	const VkColorComponentFlags colorComponentFlags = (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+
+	const VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
+	{
+		VK_FALSE,				//	VkBool32				blendEnable;
+		VK_BLEND_FACTOR_ZERO,	//	VkBlendFactor			srcColorBlendFactor;
+		VK_BLEND_FACTOR_ZERO,	//	VkBlendFactor			dstColorBlendFactor;
+		VK_BLEND_OP_ADD,		//	VkBlendOp				colorBlendOp;
+		VK_BLEND_FACTOR_ZERO,	//	VkBlendFactor			srcAlphaBlendFactor;
+		VK_BLEND_FACTOR_ZERO,	//	VkBlendFactor			dstAlphaBlendFactor;
+		VK_BLEND_OP_ADD,		//	VkBlendOp				alphaBlendOp;
+		colorComponentFlags,	//	VkColorComponentFlags	colorWriteMask;
+	};
+
+	const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfoNoAttachments =
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
 		DE_NULL,														// const void*									pNext;
 		0u,																// VkPipelineColorBlendStateCreateFlags			flags;
-		false,															// VkBool32										logicOpEnable;
+		VK_FALSE,														// VkBool32										logicOpEnable;
 		vk::VK_LOGIC_OP_CLEAR,											// VkLogicOp									logicOp;
-		0,																// deUint32										attachmentCount;
-		DE_NULL,														// const VkPipelineColorBlendAttachmentState*	pAttachments;
+		0u,																// deUint32										attachmentCount;
+		nullptr,														// const VkPipelineColorBlendAttachmentState*	pAttachments;
+		{ 0.0f, 0.0f, 0.0f, 0.0f }										// float										blendConstants[4];
+	};
+
+	const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfoOneAttachment =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
+		DE_NULL,														// const void*									pNext;
+		0u,																// VkPipelineColorBlendStateCreateFlags			flags;
+		VK_FALSE,														// VkBool32										logicOpEnable;
+		vk::VK_LOGIC_OP_CLEAR,											// VkLogicOp									logicOp;
+		1u,																// deUint32										attachmentCount;
+		&colorBlendAttachmentState,										// const VkPipelineColorBlendAttachmentState*	pAttachments;
 		{ 0.0f, 0.0f, 0.0f, 0.0f }										// float										blendConstants[4];
 	};
 
@@ -4952,21 +5258,23 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 	outputPipelines.reserve(m_params.subpassCounts.size());
 	for (const auto samples : m_params.subpassCounts)
 	{
+		const auto colorBlendStatePtr = (unusedAttachmentSubpass ? &colorBlendStateCreateInfoOneAttachment : &colorBlendStateCreateInfoNoAttachments);
+
 		multisampleStateCreateInfo.rasterizationSamples = samples;
 
 		outputPipelines.emplace_back(vkd, device, m_params.pipelineConstructionType);
 		outputPipelines.back()
 			.setDefaultDepthStencilState()
 			.setDefaultRasterizationState()
-			.setupVertexInputStete(&vertexInputStateCreateInfo)
+			.setupVertexInputState(&vertexInputStateCreateInfo)
 			.setupPreRasterizationShaderState(viewport,
 				scissor,
 				*pipelineLayout,
 				*renderPassSingleSubpass,
 				0u,
 				*vertModule)
-			.setupFragmentShaderState(*pipelineLayout, *renderPassSingleSubpass, 0u, *fragModule)
-			.setupFragmentOutputState(*renderPassSingleSubpass, 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
+			.setupFragmentShaderState(*pipelineLayout, *renderPassSingleSubpass, 0u, *fragModule, DE_NULL, &multisampleStateCreateInfo)
+			.setupFragmentOutputState(*renderPassSingleSubpass, 0u, colorBlendStatePtr, &multisampleStateCreateInfo)
 			.setMonolithicPipelineLayout(*pipelineLayout)
 			.buildPipeline();
 	}
@@ -4983,15 +5291,15 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 		referencePipelines.back()
 			.setDefaultDepthStencilState()
 			.setDefaultRasterizationState()
-			.setupVertexInputStete(&vertexInputStateCreateInfo)
+			.setupVertexInputState(&vertexInputStateCreateInfo)
 			.setupPreRasterizationShaderState(viewport,
 				scissor,
 				*pipelineLayout,
 				*renderPassMultiplePasses,
 				subpass,
 				*vertModule)
-			.setupFragmentShaderState(*pipelineLayout, *renderPassMultiplePasses, subpass, *fragModule)
-			.setupFragmentOutputState(*renderPassMultiplePasses, subpass, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
+			.setupFragmentShaderState(*pipelineLayout, *renderPassMultiplePasses, subpass, *fragModule, DE_NULL, &multisampleStateCreateInfo)
+			.setupFragmentOutputState(*renderPassMultiplePasses, subpass, &colorBlendStateCreateInfoNoAttachments, &multisampleStateCreateInfo)
 			.setMonolithicPipelineLayout(*pipelineLayout)
 			.buildPipeline();
 	}
@@ -5180,10 +5488,583 @@ CombinationVector combinations(const ElementsVector& elements, size_t requestedS
 	return solutions;
 }
 
+/********
+Z EXPORT TESTS
+
+The tests enable alpha to coverage statically or dynamically, and play with 3 other parameters, which we can be testing or not as
+outputs from the frag shader.
+
+* Depth value
+* Stencil reference value
+* Sample mask
+
+Alpha values on the left side of the framebuffer will be 0.0. On the right side they will be 1.0. This means the left side should
+not have coverage, and the right side should have.
+
+Depth value will be cleared to 1.0 and we expect to obtain 0.0 for covered pixels at the end. We will activate the depth test with a
+depth compare op of "less".
+
+* If we are testing this, we will set 0.5 from the vertex shader and 0.0 from the frag shader.
+* If we are not testing this, we will set 0.0 directly from the vertex shader.
+
+Stencil will be cleared to 0 and we expect to obtain 255 for covered pixels at the end. We will activate the stencil test with a
+stencil op of "replace" for front-facing pixels, compare op "always", keep and "never" for back-facing pixels.
+
+* If we are testing this, the stencil ref value will be 128 in the pipeline, then 255 from the frag shader.
+* If we are not testing this, the reference value will be set to 255 directly in the pipeline.
+
+Sample mask is a bit special: we'll always set it to 0xFF in the pipeline, and we normally expect all pixels to be covered.
+
+* If we are testing this, we'll set it to 0x00 on the lower half of the framebuffer.
+* If we are not testing this, we'll leave it as it is.
+
+Expected result:
+
+* The left side of the framebuffer will have:
+  - The clear color.
+  - The clear depth value.
+  - The clear stencil value.
+
+* The right side of the framebuffer will have:
+  - The geometry color (typically blue).
+  - The expected depth value.
+  - The expected stencil value.
+  - But, if we are testing the sample mask, the lower half of the right side will be like the left side.
+
+********/
+enum ZExportTestBits
+{
+	ZEXP_DEPTH_BIT			= 0x1,
+	ZEXP_STENCIL_BIT		= 0x2,	// Requires VK_EXT_shader_stencil_export
+	ZEXP_SAMPLE_MASK_BIT	= 0x4,
+};
+
+using ZExportFlags = uint32_t;
+
+struct ZExportParams
+{
+	const PipelineConstructionType	pipelineConstructionType;
+	const ZExportFlags				testFlags;
+	const bool						dynamicAlphaToCoverage;
+
+	ZExportParams (PipelineConstructionType pipelineConstructionType_, ZExportFlags testFlags_, bool dynamicAlphaToCoverage_)
+		: pipelineConstructionType	(pipelineConstructionType_)
+		, testFlags					(testFlags_)
+		, dynamicAlphaToCoverage	(dynamicAlphaToCoverage_)
+	{}
+
+	bool testDepth		(void) const	{ return hasFlag(ZEXP_DEPTH_BIT);		}
+	bool testStencil	(void) const	{ return hasFlag(ZEXP_STENCIL_BIT);		}
+	bool testSampleMask	(void) const	{ return hasFlag(ZEXP_SAMPLE_MASK_BIT);	}
+
+	static constexpr float		kClearDepth			= 1.0f;
+	static constexpr float		kExpectedDepth		= 0.0f;
+	static constexpr float		kBadDepth			= 0.5f;
+
+	static constexpr uint32_t	kClearStencil		= 0u;
+	static constexpr uint32_t	kExpectedStencil	= 255u;
+	static constexpr uint32_t	kBadStencil			= 128u;
+
+	static constexpr uint32_t	kWidth				= 4u;
+	static constexpr uint32_t	kHeight				= 4u;
+
+private:
+	bool hasFlag (ZExportTestBits bit) const
+	{
+		return ((testFlags & static_cast<ZExportFlags>(bit)) != 0u);
+	}
+};
+
+void ZExportCheckSupport (Context& context, const ZExportParams params)
+{
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
+
+	context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
+	context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
+
+	const auto& dsResolveProperties = context.getDepthStencilResolveProperties();
+
+	if ((dsResolveProperties.supportedDepthResolveModes & VK_RESOLVE_MODE_SAMPLE_ZERO_BIT) == 0u)
+		TCU_THROW(NotSupportedError, "VK_RESOLVE_MODE_SAMPLE_ZERO_BIT not supported for depth");
+
+	if ((dsResolveProperties.supportedStencilResolveModes & VK_RESOLVE_MODE_SAMPLE_ZERO_BIT) == 0u)
+		TCU_THROW(NotSupportedError, "VK_RESOLVE_MODE_SAMPLE_ZERO_BIT not supported for stencil");
+
+	if (params.testStencil())
+		context.requireDeviceFunctionality("VK_EXT_shader_stencil_export");
+
+	if (params.dynamicAlphaToCoverage)
+	{
+#ifndef CTS_USES_VULKANSC
+		const auto& eds3Features = context.getExtendedDynamicState3FeaturesEXT();
+		if (!eds3Features.extendedDynamicState3AlphaToCoverageEnable)
+			TCU_THROW(NotSupportedError, "extendedDynamicState3AlphaToCoverageEnable not supported");
+#else
+		DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+	}
+}
+
+void ZExportInitPrograms (SourceCollections& programCollection, const ZExportParams params)
+{
+	{
+		const auto vertDepth = (params.testDepth() ? ZExportParams::kBadDepth : ZExportParams::kExpectedDepth);
+
+		std::ostringstream vert;
+		vert
+			<< "#version 460\n"
+			<< "vec2 positions[3] = vec2[](\n"
+			<< "    vec2(-1.0, -1.0),\n"
+			<< "    vec2(-1.0, 3.0),\n"
+			<< "    vec2(3.0, -1.0)\n"
+			<< ");\n"
+			<< "void main (void) {\n"
+			<< "    gl_Position = vec4(positions[gl_VertexIndex % 3], " << vertDepth << ", 1.0);\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+	}
+
+	{
+		std::ostringstream frag;
+		frag
+			<< "#version 460\n"
+			<< "layout (location=0) out vec4 outColor;\n"
+			<< (params.testStencil() ? "#extension GL_ARB_shader_stencil_export: require\n" : "")
+			<< "void main (void) {\n"
+			<< "    const float alphaValue = ((int(gl_FragCoord.x) < " << (ZExportParams::kWidth / 2u) << ") ? 0.0 : 1.0);\n"
+			<< "    outColor = vec4(0.0, 0.0, 1.0, alphaValue);\n"
+			<< (params.testDepth() ? ("    gl_FragDepth = " + std::to_string(ZExportParams::kExpectedDepth) + ";\n") : "")
+			<< (params.testStencil() ? ("    gl_FragStencilRefARB = " + std::to_string(ZExportParams::kExpectedStencil) + ";\n") : "")
+			;
+
+		if (params.testSampleMask())
+			frag << "    gl_SampleMask[0] = ((int(gl_FragCoord.y) >= " << (ZExportParams::kHeight / 2u) << ") ? 0 : 0xFF);\n";
+
+		frag << "}\n";
+		programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+	}
+}
+
+tcu::TestStatus ZExportIterate (Context& context, const ZExportParams params)
+{
+	const auto& ctx = context.getContextCommonData();
+
+	// Choose depth/stencil format.
+	const auto dsFormat = findSupportedDepthStencilFormat(context, true, true);
+	if (dsFormat == VK_FORMAT_UNDEFINED)
+		TCU_FAIL("Unable to find supported depth/stencil format");
+
+	const auto fbExtent		= makeExtent3D(ZExportParams::kWidth, ZExportParams::kHeight, 1u);
+	const auto colorFormat	= VK_FORMAT_R8G8B8A8_UNORM;
+	const auto colorUsage	= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const auto dsUsage		= (VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const auto colorAspect	= VK_IMAGE_ASPECT_COLOR_BIT;
+	const auto dsAspect		= (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT);
+	const auto colorSRR		= makeImageSubresourceRange(colorAspect, 0u, 1u, 0u, 1u);
+	const auto dsSRR		= makeImageSubresourceRange(dsAspect, 0u, 1u, 0u, 1u);
+	const auto imageType	= VK_IMAGE_TYPE_2D;
+	const auto viewType		= VK_IMAGE_VIEW_TYPE_2D;
+	const auto sampleCount	= VK_SAMPLE_COUNT_4_BIT;
+	const auto bindPoint	= VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+	// Multisample color attachment.
+	const VkImageCreateInfo colorAttachmentCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
+		nullptr,								//	const void*				pNext;
+		0u,										//	VkImageCreateFlags		flags;
+		imageType,								//	VkImageType				imageType;
+		colorFormat,							//	VkFormat				format;
+		fbExtent,								//	VkExtent3D				extent;
+		1u,										//	uint32_t				mipLevels;
+		1u,										//	uint32_t				arrayLayers;
+		sampleCount,							//	VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
+		colorUsage,								//	VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode			sharingMode;
+		0u,										//	uint32_t				queueFamilyIndexCount;
+		nullptr,								//	const uint32_t*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
+	};
+	ImageWithMemory colorAttachment (ctx.vkd, ctx.device, ctx.allocator, colorAttachmentCreateInfo, MemoryRequirement::Any);
+	const auto colorAttachmentView = makeImageView(ctx.vkd, ctx.device, colorAttachment.get(), viewType, colorFormat, colorSRR);
+
+	// Multisample depth/stencil attachment.
+	const VkImageCreateInfo dsAttachmentCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
+		nullptr,								//	const void*				pNext;
+		0u,										//	VkImageCreateFlags		flags;
+		imageType,								//	VkImageType				imageType;
+		dsFormat,								//	VkFormat				format;
+		fbExtent,								//	VkExtent3D				extent;
+		1u,										//	uint32_t				mipLevels;
+		1u,										//	uint32_t				arrayLayers;
+		sampleCount,							//	VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
+		dsUsage,								//	VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode			sharingMode;
+		0u,										//	uint32_t				queueFamilyIndexCount;
+		nullptr,								//	const uint32_t*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
+	};
+	ImageWithMemory dsAttachment (ctx.vkd, ctx.device, ctx.allocator, dsAttachmentCreateInfo, MemoryRequirement::Any);
+	const auto dsAttachmentView = makeImageView(ctx.vkd, ctx.device, dsAttachment.get(), viewType, dsFormat, dsSRR);
+
+	// Resolve attachments.
+	VkImageCreateInfo colorResolveAttachmentCreateInfo	= colorAttachmentCreateInfo;
+	colorResolveAttachmentCreateInfo.samples			= VK_SAMPLE_COUNT_1_BIT;
+	VkImageCreateInfo dsResolveAttachmentCreateInfo		= dsAttachmentCreateInfo;
+	dsResolveAttachmentCreateInfo.samples				= VK_SAMPLE_COUNT_1_BIT;
+
+	ImageWithMemory colorResolveAttachment		(ctx.vkd, ctx.device, ctx.allocator, colorResolveAttachmentCreateInfo, MemoryRequirement::Any);
+	ImageWithMemory dsResolveAttachment			(ctx.vkd, ctx.device, ctx.allocator, dsResolveAttachmentCreateInfo, MemoryRequirement::Any);
+	const auto		colorResolveAttachmentView	= makeImageView(ctx.vkd, ctx.device, colorResolveAttachment.get(), viewType, colorFormat, colorSRR);
+	const auto		dsResolveAttachmentView		= makeImageView(ctx.vkd, ctx.device, dsResolveAttachment.get(), viewType, dsFormat, dsSRR);
+
+	// Render pass and framebuffer.
+	const VkAttachmentDescription2 colorAttachmentDesc =
+	{
+		VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
+		nullptr,
+		0u,													//	VkAttachmentDescriptionFlags	flags;
+		colorFormat,										//	VkFormat						format;
+		sampleCount,										//	VkSampleCountFlagBits			samples;
+		VK_ATTACHMENT_LOAD_OP_CLEAR,						//	VkAttachmentLoadOp				loadOp;
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,					//	VkAttachmentStoreOp				storeOp;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,					//	VkAttachmentLoadOp				stencilLoadOp;
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,					//	VkAttachmentStoreOp				stencilStoreOp;
+		VK_IMAGE_LAYOUT_UNDEFINED,							//	VkImageLayout					initialLayout;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			//	VkImageLayout					finalLayout;
+	};
+	const VkAttachmentDescription2 dsAttachmentDesc =
+	{
+		VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
+		nullptr,
+		0u,													//	VkAttachmentDescriptionFlags	flags;
+		dsFormat,											//	VkFormat						format;
+		sampleCount,										//	VkSampleCountFlagBits			samples;
+		VK_ATTACHMENT_LOAD_OP_CLEAR,						//	VkAttachmentLoadOp				loadOp;
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,					//	VkAttachmentStoreOp				storeOp;
+		VK_ATTACHMENT_LOAD_OP_CLEAR,						//	VkAttachmentLoadOp				stencilLoadOp;
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,					//	VkAttachmentStoreOp				stencilStoreOp;
+		VK_IMAGE_LAYOUT_UNDEFINED,							//	VkImageLayout					initialLayout;
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	//	VkImageLayout					finalLayout;
+	};
+	const VkAttachmentDescription2 colorResolveAttachmentDesc =
+	{
+		VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
+		nullptr,
+		0u,													//	VkAttachmentDescriptionFlags	flags;
+		colorFormat,										//	VkFormat						format;
+		VK_SAMPLE_COUNT_1_BIT,								//	VkSampleCountFlagBits			samples;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,					//	VkAttachmentLoadOp				loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,						//	VkAttachmentStoreOp				storeOp;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,					//	VkAttachmentLoadOp				stencilLoadOp;
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,					//	VkAttachmentStoreOp				stencilStoreOp;
+		VK_IMAGE_LAYOUT_UNDEFINED,							//	VkImageLayout					initialLayout;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			//	VkImageLayout					finalLayout;
+	};
+	const VkAttachmentDescription2 dsResolveAttachmentDesc =
+	{
+		VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
+		nullptr,
+		0u,													//	VkAttachmentDescriptionFlags	flags;
+		dsFormat,											//	VkFormat						format;
+		VK_SAMPLE_COUNT_1_BIT,								//	VkSampleCountFlagBits			samples;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,					//	VkAttachmentLoadOp				loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,						//	VkAttachmentStoreOp				storeOp;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,					//	VkAttachmentLoadOp				stencilLoadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,						//	VkAttachmentStoreOp				stencilStoreOp;
+		VK_IMAGE_LAYOUT_UNDEFINED,							//	VkImageLayout					initialLayout;
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	//	VkImageLayout					finalLayout;
+	};
+
+	std::vector<VkAttachmentDescription2> attachmentDescriptions;
+	attachmentDescriptions.reserve(4u);
+	attachmentDescriptions.push_back(colorAttachmentDesc);
+	attachmentDescriptions.push_back(dsAttachmentDesc);
+	attachmentDescriptions.push_back(colorResolveAttachmentDesc);
+	attachmentDescriptions.push_back(dsResolveAttachmentDesc);
+
+	const VkAttachmentReference2 colorAttachmentReference =
+	{
+		VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
+		nullptr,
+		0u,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		colorAspect,
+	};
+	const VkAttachmentReference2 dsAttachmentReference =
+	{
+		VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
+		nullptr,
+		1u,
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		dsAspect,
+	};
+	const VkAttachmentReference2 colorResolveAttachmentReference =
+	{
+		VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
+		nullptr,
+		2u,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		colorAspect,
+	};
+	const VkAttachmentReference2 dsResolveAttachmentReference =
+	{
+		VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
+		nullptr,
+		3u,
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		dsAspect,
+	};
+
+	const VkSubpassDescriptionDepthStencilResolve dsResolveDescription =
+	{
+		VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE,	//	VkStructureType					sType;
+		nullptr,														//	const void*						pNext;
+		VK_RESOLVE_MODE_SAMPLE_ZERO_BIT,								//	VkResolveModeFlagBits			depthResolveMode;
+		VK_RESOLVE_MODE_SAMPLE_ZERO_BIT,								//	VkResolveModeFlagBits			stencilResolveMode;
+		&dsResolveAttachmentReference,									//	const VkAttachmentReference2*	pDepthStencilResolveAttachment;
+	};
+
+	const VkSubpassDescription2 subpassDescription =
+	{
+		VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,
+		&dsResolveDescription,
+		0u,									//	VkSubpassDescriptionFlags		flags;
+		bindPoint,							//	VkPipelineBindPoint				pipelineBindPoint;
+		0u,									//	uint32_t						viewMask;
+		0u,									//	uint32_t						inputAttachmentCount;
+		nullptr,							//	const VkAttachmentReference*	pInputAttachments;
+		1u,									//	uint32_t						colorAttachmentCount;
+		&colorAttachmentReference,			//	const VkAttachmentReference*	pColorAttachments;
+		&colorResolveAttachmentReference,	//	const VkAttachmentReference*	pResolveAttachments;
+		&dsAttachmentReference,				//	const VkAttachmentReference*	pDepthStencilAttachment;
+		0u,									//	uint32_t						preserveAttachmentCount;
+		nullptr,							//	const uint32_t*					pPreserveAttachments;
+	};
+
+	const VkRenderPassCreateInfo2 renderPassCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2,	//	VkStructureType					sType;
+		nullptr,										//	const void*						pNext;
+		0u,												//	VkRenderPassCreateFlags			flags;
+		de::sizeU32(attachmentDescriptions),			//	uint32_t						attachmentCount;
+		de::dataOrNull(attachmentDescriptions),			//	const VkAttachmentDescription*	pAttachments;
+		1u,												//	uint32_t						subpassCount;
+		&subpassDescription,							//	const VkSubpassDescription*		pSubpasses;
+		0u,												//	uint32_t						dependencyCount;
+		nullptr,										//	const VkSubpassDependency*		pDependencies;
+		0u,												//	uint32_t						correlatedViewMaskCount;
+		nullptr,										//	const uint32_t*					pCorrelatedViewMasks;
+	};
+
+	const std::vector<VkImageView> attachmentViews
+	{
+		colorAttachmentView.get(),
+		dsAttachmentView.get(),
+		colorResolveAttachmentView.get(),
+		dsResolveAttachmentView.get(),
+	};
+
+	const auto renderPass	= createRenderPass2(ctx.vkd, ctx.device, &renderPassCreateInfo);
+	const auto framebuffer	= makeFramebuffer(ctx.vkd, ctx.device, renderPass.get(),
+		de::sizeU32(attachmentViews), de::dataOrNull(attachmentViews), fbExtent.width, fbExtent.height);
+
+	// Pipeline layout.
+	const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device);
+
+	// Shaders.
+	const auto&	binaries	= context.getBinaryCollection();
+	const auto	vertShader	= createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+	const auto	fragShader	= createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+	// Viewports and scissors.
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(fbExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(fbExtent));
+
+	const auto frontStencilRef = (params.testStencil() ? ZExportParams::kBadStencil : ZExportParams::kExpectedStencil);
+	const VkStencilOpState frontStencilOpState
+	{
+		VK_STENCIL_OP_KEEP,												// VkStencilOp									failOp
+		VK_STENCIL_OP_REPLACE,											// VkStencilOp									passOp
+		VK_STENCIL_OP_KEEP,												// VkStencilOp									depthFailOp
+		VK_COMPARE_OP_ALWAYS,											// VkCompareOp									compareOp
+		0xFFu,															// deUint32										compareMask
+		0xFFu,															// deUint32										writeMask
+		frontStencilRef,												// deUint32										reference
+	};
+	const auto backStencilOpState = makeStencilOpState(VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_NEVER, 0xFFu, 0xFFu, 0u);
+
+	const VkPipelineDepthStencilStateCreateInfo dsStateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,		// VkStructureType								sType
+		DE_NULL,														// const void*									pNext
+		0u,																// VkPipelineDepthStencilStateCreateFlags		flags
+		VK_TRUE,														// VkBool32										depthTestEnable
+		VK_TRUE,														// VkBool32										depthWriteEnable
+		VK_COMPARE_OP_LESS,												// VkCompareOp									depthCompareOp
+		VK_FALSE,														// VkBool32										depthBoundsTestEnable
+		VK_TRUE,														// VkBool32										stencilTestEnable
+		frontStencilOpState,											// VkStencilOpState								front
+		backStencilOpState,												// VkStencilOpState								back
+		0.0f,															// float										minDepthBounds
+		1.0f,															// float										maxDepthBounds
+	};
+
+	// Multisample state, including alpha to coverage, which is key for these tests.
+	const auto staticAlphaToCoverage = (params.dynamicAlphaToCoverage ? VK_FALSE : VK_TRUE);
+	const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,		// VkStructureType								sType
+		nullptr,														// const void*									pNext
+		0u,																// VkPipelineMultisampleStateCreateFlags		flags
+		sampleCount,													// VkSampleCountFlagBits						rasterizationSamples
+		VK_FALSE,														// VkBool32										sampleShadingEnable
+		1.0f,															// float										minSampleShading
+		nullptr,														// const VkSampleMask*							pSampleMask
+		staticAlphaToCoverage,											// VkBool32										alphaToCoverageEnable
+		VK_FALSE,														// VkBool32										alphaToOneEnable
+	};
+
+	const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = initVulkanStructure();
+
+	std::vector<VkDynamicState> dynamicStates;
+#ifndef CTS_USES_VULKANSC
+	if (params.dynamicAlphaToCoverage)
+		dynamicStates.push_back(VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT);
+#else
+	DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+
+	const VkPipelineDynamicStateCreateInfo dynamicStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	//	VkStructureType						sType;
+		nullptr,												//	const void*							pNext;
+		0u,														//	VkPipelineDynamicStateCreateFlags	flags;
+		de::sizeU32(dynamicStates),								//	uint32_t							dynamicStateCount;
+		de::dataOrNull(dynamicStates),							//	const VkDynamicState*				pDynamicStates;
+	};
+
+	GraphicsPipelineWrapper pipelineWrapper (ctx.vkd, ctx.device, params.pipelineConstructionType);
+	pipelineWrapper
+			.setDefaultRasterizationState()
+			.setDefaultColorBlendState()
+			.setDynamicState(&dynamicStateInfo)
+			.setupVertexInputState(&vertexInputStateCreateInfo)
+			.setupPreRasterizationShaderState(viewports,
+				scissors,
+				*pipelineLayout,
+				*renderPass,
+				0u,
+				*vertShader)
+			.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragShader, &dsStateInfo, &multisampleStateCreateInfo)
+			.setupFragmentOutputState(*renderPass, 0u, nullptr, &multisampleStateCreateInfo)
+			.setMonolithicPipelineLayout(*pipelineLayout)
+			.buildPipeline();
+
+	CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, ctx.qfIndex);
+	const auto cmdBuffer = *cmd.cmdBuffer;
+
+	const tcu::Vec4 clearColor		(0.0f, 0.0f, 0.0f, 0.0f);
+	const tcu::Vec4 geometryColor	(0.0f, 0.0f, 1.0f, 1.0f); // For pixels with coverage. Must match frag shader.
+
+	const std::vector<VkClearValue> clearValues
+	{
+		makeClearValueColor(clearColor),
+		makeClearValueDepthStencil(ZExportParams::kClearDepth, ZExportParams::kClearStencil),
+	};
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+	beginRenderPass(ctx.vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), de::sizeU32(clearValues), de::dataOrNull(clearValues));
+	ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, pipelineWrapper.getPipeline());
+#ifndef CTS_USES_VULKANSC
+	if (params.dynamicAlphaToCoverage)
+		ctx.vkd.cmdSetAlphaToCoverageEnableEXT(cmdBuffer, VK_TRUE);
+#else
+	DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+	ctx.vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+	endRenderPass(ctx.vkd, cmdBuffer);
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+	const tcu::UVec2	renderSize		(fbExtent.width, fbExtent.height);
+	const auto			colorLevel		= readColorAttachment(ctx.vkd, ctx.device, ctx.queue, ctx.qfIndex, ctx.allocator, colorResolveAttachment.get(), colorFormat, renderSize);
+	const auto			depthLevel		= readDepthAttachment(ctx.vkd, ctx.device, ctx.queue, ctx.qfIndex, ctx.allocator, dsResolveAttachment.get(), dsFormat, renderSize);
+	const auto			stencilLevel	= readStencilAttachment(ctx.vkd, ctx.device, ctx.queue, ctx.qfIndex, ctx.allocator, dsResolveAttachment.get(), dsFormat, renderSize, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+	const auto			colorAccess		= colorLevel->getAccess();
+	const auto			depthAccess		= depthLevel->getAccess();
+	const auto			stencilAccess	= stencilLevel->getAccess();
+
+	const tcu::IVec3	iExtent		(static_cast<int>(fbExtent.width), static_cast<int>(fbExtent.height), static_cast<int>(fbExtent.depth));
+	tcu::TextureLevel	refColor	(mapVkFormat(colorFormat), iExtent.x(), iExtent.y());
+	tcu::TextureLevel	refDepth	(getDepthCopyFormat(dsFormat), iExtent.x(), iExtent.y());
+	tcu::TextureLevel	refStencil	(getStencilCopyFormat(dsFormat), iExtent.x(), iExtent.y());
+
+	auto refColorAccess	= refColor.getAccess();
+	auto refDepthAccess	= refDepth.getAccess();
+	auto refStencilAccess	= refStencil.getAccess();
+
+	const auto halfWidth	= iExtent.x() / 2;
+	const auto halfHeight	= iExtent.y() / 2;
+
+	// Prepare color reference.
+	{
+		auto leftSide		= tcu::getSubregion(refColorAccess, 0,			0,			halfWidth, iExtent.y());
+		auto topRight		= tcu::getSubregion(refColorAccess, halfWidth,	0,			halfWidth, halfHeight);
+		auto bottomRight	= tcu::getSubregion(refColorAccess, halfWidth,	halfHeight,	halfWidth, halfHeight);
+
+		tcu::clear(leftSide, clearColor);
+		tcu::clear(topRight, geometryColor);
+		tcu::clear(bottomRight, (params.testSampleMask() ? clearColor : geometryColor));
+	}
+	// Prepare depth reference.
+	{
+		auto leftSide		= tcu::getSubregion(refDepthAccess, 0,			0,			halfWidth, iExtent.y());
+		auto topRight		= tcu::getSubregion(refDepthAccess, halfWidth,	0,			halfWidth, halfHeight);
+		auto bottomRight	= tcu::getSubregion(refDepthAccess, halfWidth,	halfHeight,	halfWidth, halfHeight);
+
+		tcu::clearDepth(leftSide, ZExportParams::kClearDepth);
+		tcu::clearDepth(topRight, ZExportParams::kExpectedDepth);
+		tcu::clearDepth(bottomRight, (params.testSampleMask() ? ZExportParams::kClearDepth : ZExportParams::kExpectedDepth));
+	}
+	// Prepare stencil reference.
+	{
+		const auto clearStencil		= static_cast<int>(ZExportParams::kClearStencil);
+		const auto expectedStencil	= static_cast<int>(ZExportParams::kExpectedStencil);
+
+		auto leftSide		= tcu::getSubregion(refStencilAccess, 0,			0,			halfWidth, iExtent.y());
+		auto topRight		= tcu::getSubregion(refStencilAccess, halfWidth,	0,			halfWidth, halfHeight);
+		auto bottomRight	= tcu::getSubregion(refStencilAccess, halfWidth,	halfHeight,	halfWidth, halfHeight);
+
+		tcu::clearStencil(leftSide, clearStencil);
+		tcu::clearStencil(topRight, expectedStencil);
+		tcu::clearStencil(bottomRight, (params.testSampleMask() ? clearStencil : expectedStencil));
+	}
+
+	// Compare results and references.
+	auto& log = context.getTestContext().getLog();
+	const auto colorOK		= tcu::floatThresholdCompare(log, "Color", "Color Result", refColorAccess, colorAccess, tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f), tcu::COMPARE_LOG_ON_ERROR);
+	const auto depthOK		= tcu::dsThresholdCompare(log, "Depth", "Depth Result", refDepthAccess, depthAccess, 0.0f, tcu::COMPARE_LOG_ON_ERROR);
+	const auto stencilOK	= tcu::dsThresholdCompare(log, "Stencil", "Stencil Result", refStencilAccess, stencilAccess, 0.0f, tcu::COMPARE_LOG_ON_ERROR);
+
+	if (!colorOK || !depthOK || !stencilOK)
+		return tcu::TestStatus::fail("Unexpected color, depth or stencil result; check log for details");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType, bool useFragmentShadingRate)
 {
+	using TestCaseGroupPtr = de::MovePtr<tcu::TestCaseGroup>;
+
 	const VkSampleCountFlagBits samples[] =
 	{
 		VK_SAMPLE_COUNT_2_BIT,
@@ -5194,19 +6075,19 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 		VK_SAMPLE_COUNT_64_BIT
 	};
 
-	const char*		groupName[]		{ "multisample", "multisample_with_fragment_shading_rate" };
-	de::MovePtr<tcu::TestCaseGroup> multisampleTests (new tcu::TestCaseGroup(testCtx, groupName[useFragmentShadingRate], ""));
+	const char*			groupName[]			{ "multisample", "multisample_with_fragment_shading_rate" };
+	TestCaseGroupPtr	multisampleTests	(new tcu::TestCaseGroup(testCtx, groupName[useFragmentShadingRate], ""));
 
 	// Rasterization samples tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> rasterizationSamplesTests(new tcu::TestCaseGroup(testCtx, "raster_samples", ""));
+		TestCaseGroupPtr rasterizationSamplesTests(new tcu::TestCaseGroup(testCtx, "raster_samples", ""));
 
 		for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); samplesNdx++)
 		{
 			std::ostringstream caseName;
 			caseName << "samples_" << samples[samplesNdx];
 
-			de::MovePtr<tcu::TestCaseGroup> samplesTests	(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
+			TestCaseGroupPtr samplesTests (new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
 
 			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "primitive_triangle", "",	pipelineConstructionType, samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_REGULAR, 0u, useFragmentShadingRate));
 			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "primitive_line", "",		pipelineConstructionType, samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_LINE, 1.0f, IMAGE_BACKING_MODE_REGULAR, 0u, useFragmentShadingRate));
@@ -5236,7 +6117,7 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 	// Raster samples consistency check
 #ifndef CTS_USES_VULKANSC
 	{
-		de::MovePtr<tcu::TestCaseGroup> rasterSamplesConsistencyTests	(new tcu::TestCaseGroup(testCtx, "raster_samples_consistency", ""));
+		TestCaseGroupPtr				rasterSamplesConsistencyTests	(new tcu::TestCaseGroup(testCtx, "raster_samples_consistency", ""));
 		MultisampleTestParams			paramsRegular					= { pipelineConstructionType, GEOMETRY_TYPE_OPAQUE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate };
 		MultisampleTestParams			paramsSparse					= { pipelineConstructionType, GEOMETRY_TYPE_OPAQUE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_SPARSE, useFragmentShadingRate };
 
@@ -5277,19 +6158,19 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 		};
 
 		{
-			de::MovePtr<tcu::TestCaseGroup> minSampleShadingTests(new tcu::TestCaseGroup(testCtx, "min_sample_shading", ""));
+			TestCaseGroupPtr minSampleShadingTests(new tcu::TestCaseGroup(testCtx, "min_sample_shading", ""));
 
 			for (int configNdx = 0; configNdx < DE_LENGTH_OF_ARRAY(testConfigs); configNdx++)
 			{
-				const TestConfig&				testConfig				= testConfigs[configNdx];
-				de::MovePtr<tcu::TestCaseGroup>	minShadingValueTests	(new tcu::TestCaseGroup(testCtx, testConfigs[configNdx].name, ""));
+				const TestConfig&	testConfig				= testConfigs[configNdx];
+				TestCaseGroupPtr	minShadingValueTests	(new tcu::TestCaseGroup(testCtx, testConfigs[configNdx].name, ""));
 
 				for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); samplesNdx++)
 				{
 					std::ostringstream caseName;
 					caseName << "samples_" << samples[samplesNdx];
 
-					de::MovePtr<tcu::TestCaseGroup> samplesTests	(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
+					TestCaseGroupPtr samplesTests (new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
 
 					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_triangle",	"", pipelineConstructionType, samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_REGULAR, true, useFragmentShadingRate));
 					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_line",		"", pipelineConstructionType, samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_LINE, 1.0f, IMAGE_BACKING_MODE_REGULAR, true, useFragmentShadingRate));
@@ -5312,19 +6193,19 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 		}
 
 		{
-			de::MovePtr<tcu::TestCaseGroup> minSampleShadingTests(new tcu::TestCaseGroup(testCtx, "min_sample_shading_enabled", ""));
+			TestCaseGroupPtr minSampleShadingTests(new tcu::TestCaseGroup(testCtx, "min_sample_shading_enabled", ""));
 
 			for (int configNdx = 0; configNdx < DE_LENGTH_OF_ARRAY(testConfigs); configNdx++)
 			{
-				const TestConfig&				testConfig				= testConfigs[configNdx];
-				de::MovePtr<tcu::TestCaseGroup>	minShadingValueTests	(new tcu::TestCaseGroup(testCtx, testConfigs[configNdx].name, ""));
+				const TestConfig&	testConfig				= testConfigs[configNdx];
+				TestCaseGroupPtr	minShadingValueTests	(new tcu::TestCaseGroup(testCtx, testConfigs[configNdx].name, ""));
 
 				for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); samplesNdx++)
 				{
 					std::ostringstream caseName;
 					caseName << "samples_" << samples[samplesNdx];
 
-					de::MovePtr<tcu::TestCaseGroup> samplesTests	(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
+					TestCaseGroupPtr samplesTests (new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
 
 					samplesTests->addChild(new MinSampleShadingTest(testCtx, "quad", "", pipelineConstructionType, samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_QUAD, 1.0f, IMAGE_BACKING_MODE_REGULAR, true, useFragmentShadingRate));
 
@@ -5338,19 +6219,19 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 		}
 
 		{
-			de::MovePtr<tcu::TestCaseGroup> minSampleShadingTests(new tcu::TestCaseGroup(testCtx, "min_sample_shading_disabled", ""));
+			TestCaseGroupPtr minSampleShadingTests(new tcu::TestCaseGroup(testCtx, "min_sample_shading_disabled", ""));
 
 			for (int configNdx = 0; configNdx < DE_LENGTH_OF_ARRAY(testConfigs); configNdx++)
 			{
-				const TestConfig&				testConfig				= testConfigs[configNdx];
-				de::MovePtr<tcu::TestCaseGroup>	minShadingValueTests	(new tcu::TestCaseGroup(testCtx, testConfigs[configNdx].name, ""));
+				const TestConfig&	testConfig				= testConfigs[configNdx];
+				TestCaseGroupPtr	minShadingValueTests	(new tcu::TestCaseGroup(testCtx, testConfigs[configNdx].name, ""));
 
 				for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); samplesNdx++)
 				{
 					std::ostringstream caseName;
 					caseName << "samples_" << samples[samplesNdx];
 
-					de::MovePtr<tcu::TestCaseGroup> samplesTests	(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
+					TestCaseGroupPtr samplesTests (new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
 
 					samplesTests->addChild(new MinSampleShadingTest(testCtx, "quad", "", pipelineConstructionType, samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_QUAD, 1.0f, IMAGE_BACKING_MODE_REGULAR, false, useFragmentShadingRate));
 
@@ -5381,20 +6262,20 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 			{ "mask_random",	"All mask elements are 0xAAAAAAAA",	0xAAAAAAAA },
 		};
 
-		de::MovePtr<tcu::TestCaseGroup> sampleMaskTests(new tcu::TestCaseGroup(testCtx, "sample_mask", ""));
+		TestCaseGroupPtr sampleMaskTests(new tcu::TestCaseGroup(testCtx, "sample_mask", ""));
 
 		for (int configNdx = 0; configNdx < DE_LENGTH_OF_ARRAY(testConfigs); configNdx++)
 		{
-			const TestConfig&				testConfig				= testConfigs[configNdx];
-			de::MovePtr<tcu::TestCaseGroup>	sampleMaskValueTests	(new tcu::TestCaseGroup(testCtx, testConfig.name, testConfig.description));
+			const TestConfig&	testConfig				= testConfigs[configNdx];
+			TestCaseGroupPtr	sampleMaskValueTests	(new tcu::TestCaseGroup(testCtx, testConfig.name, testConfig.description));
 
 			for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); samplesNdx++)
 			{
 				std::ostringstream caseName;
 				caseName << "samples_" << samples[samplesNdx];
 
-				const deUint32					sampleMaskCount	= samples[samplesNdx] / 32;
-				de::MovePtr<tcu::TestCaseGroup> samplesTests	(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
+				const deUint32		sampleMaskCount	= samples[samplesNdx] / 32;
+				TestCaseGroupPtr	samplesTests	(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
 
 				std::vector<VkSampleMask> mask;
 				for (deUint32 maskNdx = 0; maskNdx < sampleMaskCount; maskNdx++)
@@ -5433,7 +6314,7 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 			VK_SAMPLE_COUNT_32_BIT,
 			VK_SAMPLE_COUNT_64_BIT
 		};
-		de::MovePtr<tcu::TestCaseGroup> alphaToOneTests(new tcu::TestCaseGroup(testCtx, "alpha_to_one", ""));
+		TestCaseGroupPtr alphaToOneTests(new tcu::TestCaseGroup(testCtx, "alpha_to_one", ""));
 
 		for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samplesForAlphaToOne); samplesNdx++)
 		{
@@ -5452,22 +6333,24 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 
 	// AlphaToCoverageEnable tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> alphaToCoverageTests (new tcu::TestCaseGroup(testCtx, "alpha_to_coverage", ""));
+		TestCaseGroupPtr alphaToCoverageTests (new tcu::TestCaseGroup(testCtx, "alpha_to_coverage", ""));
 
 		for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); samplesNdx++)
 		{
 			std::ostringstream caseName;
 			caseName << "samples_" << samples[samplesNdx];
 
-			de::MovePtr<tcu::TestCaseGroup> samplesTests	(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
+			TestCaseGroupPtr samplesTests (new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
 
-			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_opaque", "", pipelineConstructionType, samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_QUAD, IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate));
-			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_translucent", "", pipelineConstructionType, samples[samplesNdx], GEOMETRY_TYPE_TRANSLUCENT_QUAD, IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate));
-			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_invisible", "", pipelineConstructionType, samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_QUAD, IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate));
+			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_opaque", "", pipelineConstructionType, samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_QUAD, IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate, false));
+			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_translucent", "", pipelineConstructionType, samples[samplesNdx], GEOMETRY_TYPE_TRANSLUCENT_QUAD, IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate, false));
+			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_invisible", "", pipelineConstructionType, samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_QUAD, IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate, false));
+			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_invisible_check_depth", "", pipelineConstructionType, samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_QUAD, IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate, true));
 #ifndef CTS_USES_VULKANSC
-			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_opaque_sparse", "", pipelineConstructionType, samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_QUAD, IMAGE_BACKING_MODE_SPARSE, useFragmentShadingRate));
-			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_translucent_sparse", "", pipelineConstructionType, samples[samplesNdx], GEOMETRY_TYPE_TRANSLUCENT_QUAD, IMAGE_BACKING_MODE_SPARSE, useFragmentShadingRate));
-			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_invisible_sparse", "", pipelineConstructionType, samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_QUAD, IMAGE_BACKING_MODE_SPARSE, useFragmentShadingRate));
+			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_opaque_sparse", "", pipelineConstructionType, samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_QUAD, IMAGE_BACKING_MODE_SPARSE, useFragmentShadingRate, false));
+			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_translucent_sparse", "", pipelineConstructionType, samples[samplesNdx], GEOMETRY_TYPE_TRANSLUCENT_QUAD, IMAGE_BACKING_MODE_SPARSE, useFragmentShadingRate, false));
+			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_invisible_sparse", "", pipelineConstructionType, samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_QUAD, IMAGE_BACKING_MODE_SPARSE, useFragmentShadingRate, false));
+			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_invisible_sparse_check_depth", "", pipelineConstructionType, samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_QUAD, IMAGE_BACKING_MODE_SPARSE, useFragmentShadingRate, true));
 #endif // CTS_USES_VULKANSC
 
 			alphaToCoverageTests->addChild(samplesTests.release());
@@ -5477,14 +6360,14 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 
 	// AlphaToCoverageEnable without color buffer tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> alphaToCoverageNoColorAttachmentTests (new tcu::TestCaseGroup(testCtx, "alpha_to_coverage_no_color_attachment", ""));
+		TestCaseGroupPtr alphaToCoverageNoColorAttachmentTests (new tcu::TestCaseGroup(testCtx, "alpha_to_coverage_no_color_attachment", ""));
 
 		for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); samplesNdx++)
 		{
 			std::ostringstream caseName;
 			caseName << "samples_" << samples[samplesNdx];
 
-			de::MovePtr<tcu::TestCaseGroup> samplesTests	(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
+			TestCaseGroupPtr samplesTests (new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
 
 			samplesTests->addChild(new AlphaToCoverageNoColorAttachmentTest(testCtx, "alpha_opaque", "", pipelineConstructionType, samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_QUAD, IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate));
 #ifndef CTS_USES_VULKANSC
@@ -5499,14 +6382,14 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 	// AlphaToCoverageEnable with unused color attachment:
 	// Set color output at location 0 as unused, but use the alpha write to control coverage for rendering to color buffer at location 1.
 	{
-		de::MovePtr<tcu::TestCaseGroup> alphaToCoverageColorUnusedAttachmentTests (new tcu::TestCaseGroup(testCtx, "alpha_to_coverage_unused_attachment", ""));
+		TestCaseGroupPtr alphaToCoverageColorUnusedAttachmentTests (new tcu::TestCaseGroup(testCtx, "alpha_to_coverage_unused_attachment", ""));
 
 		for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); samplesNdx++)
 		{
 			std::ostringstream caseName;
 			caseName << "samples_" << samples[samplesNdx];
 
-			de::MovePtr<tcu::TestCaseGroup> samplesTests	(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
+			TestCaseGroupPtr samplesTests (new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
 
 			samplesTests->addChild(new AlphaToCoverageColorUnusedAttachmentTest(testCtx, "alpha_opaque", "", pipelineConstructionType, samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_QUAD, IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate));
 #ifndef CTS_USES_VULKANSC
@@ -5565,7 +6448,7 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 			vk::VK_SAMPLE_COUNT_16_BIT
 		};
 
-		de::MovePtr<tcu::TestCaseGroup> sampleMaskWithDepthTestGroup(new tcu::TestCaseGroup(testCtx, "sample_mask_with_depth_test", ""));
+		TestCaseGroupPtr sampleMaskWithDepthTestGroup(new tcu::TestCaseGroup(testCtx, "sample_mask_with_depth_test", ""));
 
 		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(standardSamplesSet); ++ndx)
 		{
@@ -5623,12 +6506,12 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 		};
 
 		// Conservative rendering
-		de::MovePtr<tcu::TestCaseGroup> conservativeGroup(new tcu::TestCaseGroup(testCtx, "conservative_with_full_coverage", ""));
+		TestCaseGroupPtr conservativeGroup(new tcu::TestCaseGroup(testCtx, "conservative_with_full_coverage", ""));
 
 		for (int modeNdx = 0; modeNdx < DE_LENGTH_OF_ARRAY(rasterizationMode); ++modeNdx)
 		{
-			const char* modeName = (modeNdx == 0 ? "overestimate" : "underestimate");
-			de::MovePtr<tcu::TestCaseGroup> modesGroup(new tcu::TestCaseGroup(testCtx, modeName, ""));
+			const char*			modeName	= (modeNdx == 0 ? "overestimate" : "underestimate");
+			TestCaseGroupPtr	modesGroup	(new tcu::TestCaseGroup(testCtx, modeName, ""));
 
 			for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(standardSamplesSet); ++samplesNdx)
 			{
@@ -5667,7 +6550,7 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 		static const std::array<bool, 2> unusedAttachmentFlag = {{ false, true }};
 
 		{
-			de::MovePtr<tcu::TestCaseGroup> variableRateGroup(new tcu::TestCaseGroup(testCtx, "variable_rate", "Tests for multisample variable rate in subpasses"));
+			TestCaseGroupPtr variableRateGroup(new tcu::TestCaseGroup(testCtx, "variable_rate", "Tests for multisample variable rate in subpasses"));
 
 			// 2 and 3 subpasses should be good enough.
 			static const std::vector<size_t> combinationSizes = { 2, 3 };
@@ -5763,7 +6646,7 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 		}
 
 		{
-			de::MovePtr<tcu::TestCaseGroup> mixedCountGroup(new tcu::TestCaseGroup(testCtx, "mixed_count", "Tests for mixed sample count in empty subpass and framebuffer"));
+			TestCaseGroupPtr mixedCountGroup(new tcu::TestCaseGroup(testCtx, "mixed_count", "Tests for mixed sample count in empty subpass and framebuffer"));
 
 			const auto combs = combinations(kSampleCounts, 2);
 			for (const auto& comb : combs)
@@ -5800,6 +6683,43 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 			}
 
 			multisampleTests->addChild(mixedCountGroup.release());
+		}
+
+		if (!useFragmentShadingRate)
+		{
+			TestCaseGroupPtr zExportGroup (new tcu::TestCaseGroup(testCtx, "z_export", "Tests using alpha to coverage combined with depth/stencil/mask writes in the frag shader"));
+
+			const struct
+			{
+				ZExportFlags		flags;
+				const char*			name;
+			} flagsCases[] =
+			{
+				{ (ZEXP_DEPTH_BIT),												"depth"			},
+				{ (ZEXP_STENCIL_BIT),											"stencil"		},
+				{ (ZEXP_SAMPLE_MASK_BIT),										"sample_mask"	},
+				{ (ZEXP_DEPTH_BIT | ZEXP_STENCIL_BIT | ZEXP_SAMPLE_MASK_BIT),	"write_all"		},
+			};
+
+			for (const auto& flagsCase : flagsCases)
+			{
+				for (int i = 0; i < 2; ++i)
+				{
+					const bool dynamicAlphaToCoverage = (i > 0);
+
+#ifdef CTS_USES_VULKANSC
+					if (dynamicAlphaToCoverage)
+						continue;
+#endif // CTS_USES_VULKANSC
+
+					const auto			testName	= std::string(flagsCase.name) + "_" + (dynamicAlphaToCoverage ? "dynamic" : "static") + "_atc"; // atc = alpha to coverage
+					const ZExportParams	params		(pipelineConstructionType, flagsCase.flags, dynamicAlphaToCoverage);
+
+					addFunctionCaseWithPrograms(zExportGroup.get(), testName, "", ZExportCheckSupport, ZExportInitPrograms, ZExportIterate, params);
+				}
+			}
+
+			multisampleTests->addChild(zExportGroup.release());
 		}
 	}
 

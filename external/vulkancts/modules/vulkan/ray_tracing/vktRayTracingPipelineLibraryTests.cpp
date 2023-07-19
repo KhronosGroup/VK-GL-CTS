@@ -68,32 +68,154 @@ struct LibraryConfiguration
 	std::vector<tcu::IVec2>				pipelineLibraries; // IVec2 = ( parentID, shaderCount )
 };
 
+enum class TestType
+{
+	DEFAULT = 0,
+	CHECK_GROUP_HANDLES,
+	CHECK_CAPTURE_REPLAY_HANDLES,
+	CHECK_ALL_HANDLES,
+};
+
 struct TestParams
 {
 	LibraryConfiguration				libraryConfiguration;
 	bool								multithreadedCompilation;
 	bool								pipelinesCreatedUsingDHO;
+	TestType							testType;
+	bool								useAABBs;
+	bool								useLinkTimeOptimizations;
+	bool								retainLinkTimeOptimizations;
 	deUint32							width;
 	deUint32							height;
+
+	uint32_t getPixelCount (void) const
+	{
+		return width * height;
+	}
+
+	uint32_t getHitGroupCount (void) const
+	{
+		uint32_t numShadersUsed = libraryConfiguration.pipelineShaders;
+		for (const auto& lib : libraryConfiguration.pipelineLibraries)
+			numShadersUsed += lib.y();
+		return numShadersUsed;
+	}
+
+	bool includesCaptureReplay (void) const
+	{
+		return (testType == TestType::CHECK_CAPTURE_REPLAY_HANDLES || testType == TestType::CHECK_ALL_HANDLES);
+	}
 };
 
-deUint32 getShaderGroupSize (const InstanceInterface&	vki,
-							 const VkPhysicalDevice		physicalDevice)
+// This class will help verify shader group handles in libraries by maintaining information of the library tree and being able to
+// calculate the offset of the handles for each pipeline in the "flattened" array of shader group handles.
+class PipelineTree
 {
-	de::MovePtr<RayTracingProperties>	rayTracingPropertiesKHR;
+protected:
+	// Each node represents a pipeline.
+	class Node
+	{
+	public:
+		Node (int64_t parent, uint32_t groupCount)
+			: m_parent		(parent)
+			, m_groupCount	(groupCount)
+			, m_children	()
+			, m_frozen		(false)
+			, m_flatOffset	(std::numeric_limits<uint32_t>::max())
+		{}
 
-	rayTracingPropertiesKHR	= makeRayTracingProperties(vki, physicalDevice);
-	return rayTracingPropertiesKHR->getShaderGroupHandleSize();
-}
+		void		appendChild				(Node* child)					{ m_children.push_back(child); }
+		uint32_t	getOffset				(void) const					{ return m_flatOffset; }
+		void		freeze					(void)							{ m_frozen = true; }
+		uint32_t	calcOffsetRecursively	(uint32_t currentOffset)		// Returns the next offset.
+		{
+			DE_ASSERT(m_frozen);
+			m_flatOffset = currentOffset;
+			uint32_t newOffset = currentOffset + m_groupCount;
+			for (auto& node : m_children)
+				newOffset = node->calcOffsetRecursively(newOffset);
+			return newOffset;
+		}
 
-deUint32 getShaderGroupBaseAlignment (const InstanceInterface&	vki,
-									  const VkPhysicalDevice	physicalDevice)
-{
-	de::MovePtr<RayTracingProperties>	rayTracingPropertiesKHR;
+	protected:
+		const int64_t		m_parent;		// Parent pipeline (-1 for the root node).
+		const uint32_t		m_groupCount;	// Shader group count in pipeline. Related to LibraryConfiguration::pipelineLibraries[1].
+		std::vector<Node*>	m_children;		// How many child pipelines. Related to LibraryConfiguration::pipelineLibraries[0]
+		bool				m_frozen;		// No sense to calculate offsets before the tree structure is fully constructed.
+		uint32_t			m_flatOffset;	// Calculated offset in the flattened array.
+	};
 
-	rayTracingPropertiesKHR = makeRayTracingProperties(vki, physicalDevice);
-	return rayTracingPropertiesKHR->getShaderGroupBaseAlignment();
-}
+public:
+	PipelineTree ()
+		: m_nodes				()
+		, m_root				(nullptr)
+		, m_frozen				(false)
+		, m_offsetsCalculated	(false)
+	{}
+
+	// See LibraryConfiguration::pipelineLibraries.
+	void addNode (int64_t parent, uint32_t groupCount)
+	{
+		DE_ASSERT(m_nodes.size() < static_cast<size_t>(std::numeric_limits<uint32_t>::max()));
+
+		if (parent < 0)
+		{
+			DE_ASSERT(!m_root);
+			m_nodes.emplace_back(new Node(parent, groupCount));
+			m_root = m_nodes.back().get();
+		}
+		else
+		{
+			DE_ASSERT(parent < static_cast<int64_t>(m_nodes.size()));
+			m_nodes.emplace_back(new Node(parent, groupCount));
+			m_nodes.at(static_cast<size_t>(parent))->appendChild(m_nodes.back().get());
+		}
+	}
+
+	// Confirms we will not be adding more nodes to the tree.
+	void freeze (void)
+	{
+		for (auto& node : m_nodes)
+			node->freeze();
+		m_frozen = true;
+	}
+
+	// When obtaining shader group handles from the root pipeline, we get a vector of handles in which some of those handles come from pipeline libraries.
+	// This method returns, for each pipeline, the offset of its shader group handles in that vector as the number of shader groups (not bytes).
+	std::vector<uint32_t> getGroupOffsets (void)
+	{
+		DE_ASSERT(m_frozen);
+
+		if (!m_offsetsCalculated)
+		{
+			calcOffsets();
+			m_offsetsCalculated = true;
+		}
+
+		std::vector<uint32_t> offsets;
+		offsets.reserve(m_nodes.size());
+
+		for (const auto& node : m_nodes)
+			offsets.push_back(node->getOffset());
+
+		return offsets;
+	}
+
+protected:
+	void calcOffsets (void)
+	{
+		DE_ASSERT(m_frozen);
+		if (m_root)
+		{
+			m_root->calcOffsetRecursively(0);
+		}
+	}
+
+	std::vector<std::unique_ptr<Node>>	m_nodes;
+	Node*								m_root;
+	bool								m_frozen;
+	bool								m_offsetsCalculated;
+};
 
 VkImageCreateInfo makeImageCreateInfo (deUint32 width, deUint32 height, VkFormat format)
 {
@@ -132,102 +254,6 @@ private:
 	TestParams				m_data;
 };
 
-struct DeviceTestFeatures
-{
-	VkPhysicalDeviceRayTracingPipelineFeaturesKHR		rayTracingPipelineFeatures;
-	VkPhysicalDeviceAccelerationStructureFeaturesKHR	accelerationStructureFeatures;
-	VkPhysicalDeviceBufferDeviceAddressFeaturesKHR		deviceAddressFeatures;
-	VkPhysicalDeviceFeatures2							deviceFeatures;
-
-	void linkStructures ()
-	{
-		rayTracingPipelineFeatures.pNext	= nullptr;
-		accelerationStructureFeatures.pNext	= &rayTracingPipelineFeatures;
-		deviceAddressFeatures.pNext			= &accelerationStructureFeatures;
-		deviceFeatures.pNext				= &deviceAddressFeatures;
-	}
-
-	DeviceTestFeatures (const InstanceInterface& vki, VkPhysicalDevice physicalDevice)
-	{
-		rayTracingPipelineFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
-		accelerationStructureFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
-		deviceAddressFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_KHR;
-		deviceFeatures.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-
-		linkStructures();
-		vki.getPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures);
-	}
-};
-
-struct DeviceHelper
-{
-	Move<VkDevice>					device;
-	de::MovePtr<DeviceDriver>		vkd;
-	deUint32						queueFamilyIndex;
-	VkQueue							queue;
-	de::MovePtr<SimpleAllocator>	allocator;
-
-	DeviceHelper (Context& context)
-	{
-		const auto&	vkp				= context.getPlatformInterface();
-		const auto&	vki				= context.getInstanceInterface();
-		const auto	instance		= context.getInstance();
-		const auto	physicalDevice	= context.getPhysicalDevice();
-		const auto	queuePriority	= 1.0f;
-
-		// Queue index first.
-		queueFamilyIndex = context.getUniversalQueueFamilyIndex();
-
-		// Get device features (these have already been checked in the test case).
-		DeviceTestFeatures features(vki, physicalDevice);
-		features.linkStructures();
-
-		// Make sure robust buffer access is disabled as in the default device.
-		features.deviceFeatures.features.robustBufferAccess = VK_FALSE;
-
-		const VkDeviceQueueCreateInfo queueInfo =
-		{
-			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	//	VkStructureType				sType;
-			nullptr,									//	const void*					pNext;
-			0u,											//	VkDeviceQueueCreateFlags	flags;
-			queueFamilyIndex,							//	deUint32					queueFamilyIndex;
-			1u,											//	deUint32					queueCount;
-			&queuePriority,								//	const float*				pQueuePriorities;
-		};
-
-		// Required extensions.
-		std::vector<const char*> requiredExtensions;
-		requiredExtensions.push_back("VK_KHR_ray_tracing_pipeline");
-		requiredExtensions.push_back("VK_KHR_pipeline_library");
-		requiredExtensions.push_back("VK_KHR_acceleration_structure");
-		requiredExtensions.push_back("VK_KHR_deferred_host_operations");
-		requiredExtensions.push_back("VK_KHR_buffer_device_address");
-		requiredExtensions.push_back("VK_EXT_descriptor_indexing");
-		requiredExtensions.push_back("VK_KHR_spirv_1_4");
-		requiredExtensions.push_back("VK_KHR_shader_float_controls");
-
-		const VkDeviceCreateInfo createInfo =
-		{
-			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,				//	VkStructureType					sType;
-			features.deviceFeatures.pNext,						//	const void*						pNext;
-			0u,													//	VkDeviceCreateFlags				flags;
-			1u,													//	deUint32						queueCreateInfoCount;
-			&queueInfo,											//	const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
-			0u,													//	deUint32						enabledLayerCount;
-			nullptr,											//	const char* const*				ppEnabledLayerNames;
-			static_cast<deUint32>(requiredExtensions.size()),	//	deUint32						enabledExtensionCount;
-			requiredExtensions.data(),							//	const char* const*				ppEnabledExtensionNames;
-			&features.deviceFeatures.features,					//	const VkPhysicalDeviceFeatures*	pEnabledFeatures;
-		};
-
-		// Create custom device and related objects.
-		device		= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &createInfo);
-		vkd			= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get()));
-		queue		= getDeviceQueue(*vkd, *device, queueFamilyIndex, 0u);
-		allocator	= de::MovePtr<SimpleAllocator>(new SimpleAllocator(*vkd, device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
-	}
-};
-
 class RayTracingPipelineLibraryTestInstance : public TestInstance
 {
 public:
@@ -236,12 +262,14 @@ public:
 	tcu::TestStatus													iterate									(void);
 
 protected:
-	std::vector<de::SharedPtr<BottomLevelAccelerationStructure>>	initBottomAccelerationStructures		(DeviceHelper& deviceHelper, VkCommandBuffer cmdBuffer);
-	de::MovePtr<TopLevelAccelerationStructure>						initTopAccelerationStructure			(DeviceHelper& deviceHelper, VkCommandBuffer cmdBuffer,
+	std::vector<de::SharedPtr<BottomLevelAccelerationStructure>>	initBottomAccelerationStructures		(VkCommandBuffer cmdBuffer);
+	de::MovePtr<TopLevelAccelerationStructure>						initTopAccelerationStructure			(VkCommandBuffer cmdBuffer,
 																											 std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >& bottomLevelAccelerationStructures);
-	de::MovePtr<BufferWithMemory>									runTest									(DeviceHelper& deviceHelper);
+	std::vector<uint32_t>											runTest									(bool replay = false);
 private:
 	TestParams														m_data;
+	PipelineTree													m_pipelineTree;
+	std::vector<uint8_t>											m_captureReplayHandles;
 };
 
 
@@ -261,37 +289,22 @@ void RayTracingPipelineLibraryTestCase::checkSupport(Context& context) const
 	const auto	physicalDevice		= context.getPhysicalDevice();
 	const auto	supportedExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
-	if (!context.isDeviceFunctionalitySupported("VK_KHR_ray_tracing_pipeline"))
-		TCU_THROW(NotSupportedError, "VK_KHR_ray_tracing_pipeline not supported");
+	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+	context.requireDeviceFunctionality("VK_KHR_pipeline_library");
 
-	// VK_KHR_pipeline_library must be supported if the ray tracing pipeline extension is supported, which it should be at this point.
-	// If it's not supported, this is considered a failure.
-	if (!context.isDeviceFunctionalitySupported("VK_KHR_pipeline_library"))
-		TCU_FAIL("VK_KHR_pipeline_library not supported but VK_KHR_ray_tracing_pipeline supported");
+	if (m_data.testType != TestType::DEFAULT)
+		context.requireDeviceFunctionality("VK_EXT_pipeline_library_group_handles");
 
-	// VK_KHR_acceleration_structure is required by VK_KHR_ray_tracing_pipeline.
-	if (!context.isDeviceFunctionalitySupported("VK_KHR_acceleration_structure"))
-		TCU_FAIL("VK_KHR_acceleration_structure not supported but VK_KHR_ray_tracing_pipeline supported");
+	if (m_data.useLinkTimeOptimizations)
+		context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
 
-	// VK_KHR_deferred_host_operations is required by VK_KHR_acceleration_structure.
-	if (!context.isDeviceFunctionalitySupported("VK_KHR_deferred_host_operations"))
-		TCU_FAIL("VK_KHR_deferred_host_operations not supported but VK_KHR_acceleration_structure supported");
+	if (m_data.includesCaptureReplay())
+	{
+		const auto& rtFeatures = context.getRayTracingPipelineFeatures();
+		if (!rtFeatures.rayTracingPipelineShaderGroupHandleCaptureReplay)
+			TCU_THROW(NotSupportedError, "rayTracingPipelineShaderGroupHandleCaptureReplay not supported");
+	}
 
-	// The same for VK_KHR_buffer_device_address.
-	if (!context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
-		TCU_FAIL("VK_KHR_buffer_device_address not supported but VK_KHR_acceleration_structure supported");
-
-	// Get and check needed features.
-	DeviceTestFeatures testFeatures (vki, physicalDevice);
-
-	if (!testFeatures.rayTracingPipelineFeatures.rayTracingPipeline)
-		TCU_THROW(NotSupportedError, "Ray tracing pipelines not supported");
-
-	if (!testFeatures.accelerationStructureFeatures.accelerationStructure)
-		TCU_THROW(NotSupportedError, "Acceleration structures not supported");
-
-	if (!testFeatures.deviceAddressFeatures.bufferDeviceAddress)
-		TCU_FAIL("Acceleration structures supported but bufferDeviceAddress not supported");
 }
 
 void RayTracingPipelineLibraryTestCase::initPrograms (SourceCollections& programCollection) const
@@ -334,6 +347,20 @@ void RayTracingPipelineLibraryTestCase::initPrograms (SourceCollections& program
 		programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
+	if (m_data.useAABBs)
+	{
+		std::ostringstream isec;
+		isec
+			<< "#version 460 core\n"
+			<< "#extension GL_EXT_ray_tracing : require\n"
+			<< "void main()\n"
+			<< "{\n"
+			<< "  reportIntersectionEXT(gl_RayTminEXT, 0);\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("isec") << glu::IntersectionSource(updateRayTracingGLSL(isec.str())) << buildOptions;
+	}
+
 	for(deUint32 i=0; i<RTPL_MAX_CHIT_SHADER_COUNT; ++i)
 	{
 		std::stringstream css;
@@ -359,18 +386,26 @@ TestInstance* RayTracingPipelineLibraryTestCase::createInstance (Context& contex
 RayTracingPipelineLibraryTestInstance::RayTracingPipelineLibraryTestInstance (Context& context, const TestParams& data)
 	: vkt::TestInstance		(context)
 	, m_data				(data)
+	, m_pipelineTree		()
 {
+	// Build the helper pipeline tree, which helps for some tests.
+	m_pipelineTree.addNode(-1, static_cast<uint32_t>(m_data.libraryConfiguration.pipelineShaders + 2/*rgen and miss for the root pipeline*/));
+
+	for (const auto& lib : m_data.libraryConfiguration.pipelineLibraries)
+		m_pipelineTree.addNode(lib.x(), static_cast<uint32_t>(lib.y()));
+
+	m_pipelineTree.freeze();
 }
 
 RayTracingPipelineLibraryTestInstance::~RayTracingPipelineLibraryTestInstance (void)
 {
 }
 
-std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > RayTracingPipelineLibraryTestInstance::initBottomAccelerationStructures (DeviceHelper& deviceHelper, VkCommandBuffer cmdBuffer)
+std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > RayTracingPipelineLibraryTestInstance::initBottomAccelerationStructures (VkCommandBuffer cmdBuffer)
 {
-	const auto&														vkd			= *deviceHelper.vkd;
-	const auto														device		= deviceHelper.device.get();
-	auto&															allocator	= *deviceHelper.allocator;
+	const auto&														vkd			= m_context.getDeviceInterface();
+	const auto														device		= m_context.getDevice();
+	auto&															allocator	= m_context.getDefaultAllocator();
 	std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >	result;
 
 	tcu::Vec3 v0(0.0, 1.0, 0.0);
@@ -379,38 +414,46 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > RayTracingPipeline
 	tcu::Vec3 v3(1.0, 0.0, 0.0);
 
 	for (deUint32 y = 0; y < m_data.height; ++y)
-	for (deUint32 x = 0; x < m_data.width; ++x)
-	{
-		// let's build a 3D chessboard of geometries
-		if (((x + y) % 2) == 0)
-			continue;
-		tcu::Vec3 xyz((float)x, (float)y, 0.0f);
-		std::vector<tcu::Vec3>	geometryData;
+		for (deUint32 x = 0; x < m_data.width; ++x)
+		{
+			// let's build a 3D chessboard of geometries
+			if (((x + y) % 2) == 0)
+				continue;
+			tcu::Vec3 xyz((float)x, (float)y, 0.0f);
+			std::vector<tcu::Vec3>	geometryData;
 
-		de::MovePtr<BottomLevelAccelerationStructure>	bottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
-		bottomLevelAccelerationStructure->setGeometryCount(1u);
+			de::MovePtr<BottomLevelAccelerationStructure>	bottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
+			bottomLevelAccelerationStructure->setGeometryCount(1u);
 
-		geometryData.push_back(xyz + v0);
-		geometryData.push_back(xyz + v1);
-		geometryData.push_back(xyz + v2);
-		geometryData.push_back(xyz + v2);
-		geometryData.push_back(xyz + v1);
-		geometryData.push_back(xyz + v3);
+			if (m_data.useAABBs)
+			{
+				geometryData.push_back(xyz + v1);
+				geometryData.push_back(xyz + v2);
+			}
+			else
+			{
+				geometryData.push_back(xyz + v0);
+				geometryData.push_back(xyz + v1);
+				geometryData.push_back(xyz + v2);
+				geometryData.push_back(xyz + v2);
+				geometryData.push_back(xyz + v1);
+				geometryData.push_back(xyz + v3);
+			}
 
-		bottomLevelAccelerationStructure->addGeometry(geometryData, true);
-		bottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
-		result.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
-	}
+			bottomLevelAccelerationStructure->addGeometry(geometryData, !m_data.useAABBs/*triangles*/);
+			bottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+			result.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
+		}
 
 	return result;
 }
 
-de::MovePtr<TopLevelAccelerationStructure> RayTracingPipelineLibraryTestInstance::initTopAccelerationStructure (DeviceHelper& deviceHelper, VkCommandBuffer cmdBuffer,
+de::MovePtr<TopLevelAccelerationStructure> RayTracingPipelineLibraryTestInstance::initTopAccelerationStructure (VkCommandBuffer cmdBuffer,
 																												std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >& bottomLevelAccelerationStructures)
 {
-	const auto&									vkd			= *deviceHelper.vkd;
-	const auto									device		= deviceHelper.device.get();
-	auto&										allocator	= *deviceHelper.allocator;
+	const auto&									vkd			= m_context.getDeviceInterface();
+	const auto									device		= m_context.getDevice();
+	auto&										allocator	= m_context.getDefaultAllocator();
 
 	deUint32 instanceCount = m_data.width * m_data.height / 2;
 
@@ -418,72 +461,145 @@ de::MovePtr<TopLevelAccelerationStructure> RayTracingPipelineLibraryTestInstance
 	result->setInstanceCount(instanceCount);
 
 	deUint32 currentInstanceIndex	= 0;
-	deUint32 numShadersUsed			= m_data.libraryConfiguration.pipelineShaders;
-	for (auto it = begin(m_data.libraryConfiguration.pipelineLibraries), eit = end(m_data.libraryConfiguration.pipelineLibraries); it != eit; ++it)
-		numShadersUsed += it->y();
+	deUint32 numShadersUsed			= m_data.getHitGroupCount();
 
 	for (deUint32 y = 0; y < m_data.height; ++y)
-	for (deUint32 x = 0; x < m_data.width; ++x)
-	{
-		if (((x + y) % 2) == 0)
-			continue;
-		const VkTransformMatrixKHR			identityMatrix =
+		for (deUint32 x = 0; x < m_data.width; ++x)
 		{
-			{								//  float	matrix[3][4];
-				{ 1.0f, 0.0f, 0.0f, 0.0f },
-				{ 0.0f, 1.0f, 0.0f, 0.0f },
-				{ 0.0f, 0.0f, 1.0f, 0.0f },
-			}
-		};
+			if (((x + y) % 2) == 0)
+				continue;
 
-		result->addInstance(bottomLevelAccelerationStructures[currentInstanceIndex], identityMatrix, 0, 0xFF, currentInstanceIndex % numShadersUsed, 0U);
-		currentInstanceIndex++;
-	}
+			result->addInstance(bottomLevelAccelerationStructures[currentInstanceIndex], identityMatrix3x4, 0, 0xFF, currentInstanceIndex % numShadersUsed, 0U);
+			currentInstanceIndex++;
+		}
 	result->createAndBuild(vkd, device, cmdBuffer, allocator);
 
 	return result;
 }
 
-void compileShaders (DeviceHelper& deviceHelper, Context& context, de::SharedPtr<de::MovePtr<RayTracingPipeline>>& pipeline, const std::vector<std::tuple<std::string, VkShaderStageFlagBits>>& shaderData)
+void compileShaders (Context& context,
+					 de::SharedPtr<de::MovePtr<RayTracingPipeline>>& pipeline,
+					 const std::vector<std::tuple<std::string, VkShaderStageFlagBits>>& shaderData,
+					 const Move<VkShaderModule>& isecMod)
 {
-	const auto&	vkd		= *deviceHelper.vkd;
-	const auto	device	= deviceHelper.device.get();
+	const auto&	vkd			= context.getDeviceInterface();
+	const auto	device		= context.getDevice();
+	const auto&	binaries	= context.getBinaryCollection();
+	const bool	hasISec		= static_cast<bool>(isecMod);
 
 	for (deUint32 i=0; i< shaderData.size(); ++i)
 	{
 		std::string				shaderName;
 		VkShaderStageFlagBits	shaderStage;
 		std::tie(shaderName, shaderStage) = shaderData[i];
-		pipeline->get()->addShader(shaderStage, createShaderModule(vkd, device, context.getBinaryCollection().get(shaderName), 0), i);
+
+		auto pipelinePtr = pipeline->get();
+		pipelinePtr->addShader(shaderStage, createShaderModule(vkd, device, binaries.get(shaderName)), i);
+		if (hasISec && shaderStage == VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
+			pipelinePtr->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR, isecMod.get(), i);
 	}
 }
 
 struct CompileShadersMultithreadData
 {
-	DeviceHelper&														deviceHelper;
 	Context&															context;
 	de::SharedPtr<de::MovePtr<RayTracingPipeline>>&						pipeline;
 	const std::vector<std::tuple<std::string, VkShaderStageFlagBits>>&	shaderData;
+	const Move<VkShaderModule>&											isecMod;
 };
 
 void compileShadersThread (void* param)
 {
 	CompileShadersMultithreadData* csmd = (CompileShadersMultithreadData*)param;
-	compileShaders(csmd->deviceHelper, csmd->context, csmd->pipeline, csmd->shaderData);
+	compileShaders(csmd->context, csmd->pipeline, csmd->shaderData, csmd->isecMod);
 }
 
-de::MovePtr<BufferWithMemory> RayTracingPipelineLibraryTestInstance::runTest (DeviceHelper& deviceHelper)
+std::vector<uint32_t> getAllGroupCounts (const std::vector<de::SharedPtr<de::MovePtr<RayTracingPipeline>>>& rayTracingPipelines)
+{
+	std::vector<uint32_t> allGroupCounts;
+	allGroupCounts.reserve(rayTracingPipelines.size());
+	std::transform(begin(rayTracingPipelines), end(rayTracingPipelines), std::back_inserter(allGroupCounts),
+		[](const de::SharedPtr<de::MovePtr<RayTracingPipeline>>& rtPipeline) { return rtPipeline->get()->getFullShaderGroupCount(); });
+
+	return allGroupCounts;
+}
+
+// Sometimes we want to obtain shader group handles and do checks on them, and the processing we do is the same for normal handles
+// and for capture/replay handles. Yet their sizes can be different, and the function to get them also changes. The type below
+// provides a small abstraction so we only have to choose the right class to instantiate, and the rest of the code is the same.
+class HandleGetter
+{
+public:
+	HandleGetter			(const uint32_t handleSize) : m_handleSize(handleSize)	{}
+	virtual ~HandleGetter	()														{}
+
+	virtual std::vector<uint8_t> getShaderGroupHandlesVector (const RayTracingPipeline*	rtPipeline,
+															  const DeviceInterface&	vkd,
+															  const VkDevice			device,
+															  const VkPipeline			pipeline,
+															  const uint32_t			firstGroup,
+															  const uint32_t			groupCount) const = 0;
+
+protected:
+	const uint32_t m_handleSize;
+};
+
+class NormalHandleGetter : public HandleGetter
+{
+public:
+	NormalHandleGetter			(const uint32_t shaderGroupHandleSize) : HandleGetter(shaderGroupHandleSize)	{}
+	virtual ~NormalHandleGetter	()																				{}
+
+	std::vector<uint8_t> getShaderGroupHandlesVector (const RayTracingPipeline*	rtPipeline,
+													  const DeviceInterface&	vkd,
+													  const VkDevice			device,
+													  const VkPipeline			pipeline,
+													  const uint32_t			firstGroup,
+													  const uint32_t			groupCount) const override
+	{
+		return rtPipeline->getShaderGroupHandles(vkd, device, pipeline, m_handleSize, firstGroup, groupCount);
+	}
+};
+
+class CaptureReplayHandleGetter : public HandleGetter
+{
+public:
+	CaptureReplayHandleGetter			(const uint32_t shaderGroupHandleCaptureReplaySize) : HandleGetter(shaderGroupHandleCaptureReplaySize)	{}
+	virtual ~CaptureReplayHandleGetter	()																				{}
+
+	std::vector<uint8_t> getShaderGroupHandlesVector (const RayTracingPipeline*	rtPipeline,
+													  const DeviceInterface&	vkd,
+													  const VkDevice			device,
+													  const VkPipeline			pipeline,
+													  const uint32_t			firstGroup,
+													  const uint32_t			groupCount) const override
+	{
+		return rtPipeline->getShaderGroupReplayHandles(vkd, device, pipeline, m_handleSize, firstGroup, groupCount);
+	}
+};
+
+std::vector<uint32_t> RayTracingPipelineLibraryTestInstance::runTest (bool replay)
 {
 	const InstanceInterface&			vki									= m_context.getInstanceInterface();
 	const VkPhysicalDevice				physicalDevice						= m_context.getPhysicalDevice();
-	const auto&							vkd									= *deviceHelper.vkd;
-	const auto							device								= deviceHelper.device.get();
-	const auto							queueFamilyIndex					= deviceHelper.queueFamilyIndex;
-	const auto							queue								= deviceHelper.queue;
-	auto&								allocator							= *deviceHelper.allocator;
-	const deUint32						pixelCount							= m_data.height * m_data.width;
-	const deUint32						shaderGroupHandleSize				= getShaderGroupSize(vki, physicalDevice);
-	const deUint32						shaderGroupBaseAlignment			= getShaderGroupBaseAlignment(vki, physicalDevice);
+	const auto&							vkd									= m_context.getDeviceInterface();
+	const auto							device								= m_context.getDevice();
+	const auto							queueFamilyIndex					= m_context.getUniversalQueueFamilyIndex();
+	const auto							queue								= m_context.getUniversalQueue();
+	auto&								allocator							= m_context.getDefaultAllocator();
+	const auto							pixelCount							= m_data.getPixelCount();
+	const auto							hitGroupCount						= m_data.getHitGroupCount();
+	const auto							rayTracingProperties				= makeRayTracingProperties(vki, physicalDevice);
+	const uint32_t						shaderGroupHandleSize				= rayTracingProperties->getShaderGroupHandleSize();
+	const uint32_t						shaderGroupBaseAlignment			= rayTracingProperties->getShaderGroupBaseAlignment();
+	const uint32_t						shaderGroupHandleReplaySize			= rayTracingProperties->getShaderGroupHandleCaptureReplaySize();
+	const auto							allGroupOffsets						= m_pipelineTree.getGroupOffsets();
+
+	// Make sure we only replay in CAPTURE_REPLAY handles mode.
+	// When checking capture/replay handles, the first iteration will save the handles to m_captureReplayHandles.
+	// In the second iteration, the replay argument will be true and we'll use the saved m_captureReplayHandles when creating pipelines.
+	if (replay)
+		DE_ASSERT(m_data.includesCaptureReplay());
 
 	const Move<VkDescriptorSetLayout>	descriptorSetLayout					= DescriptorSetLayoutBuilder()
 																					.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, ALL_RAY_TRACING_STAGES)
@@ -497,43 +613,60 @@ de::MovePtr<BufferWithMemory> RayTracingPipelineLibraryTestInstance::runTest (De
 	const Move<VkPipelineLayout>		pipelineLayout						= makePipelineLayout(vkd, device, descriptorSetLayout.get());
 
 	// sort pipeline library configurations ( including main pipeline )
-	std::vector<std::tuple<int, deUint32, deUint32>> libraryList;
+	std::vector<std::tuple<int, deUint32, deUint32>> pipelineInfoList;
 	{
 		// push main pipeline on the list
 		deUint32 shaderOffset	= 0U;
-		libraryList.push_back(std::make_tuple(-1, shaderOffset, m_data.libraryConfiguration.pipelineShaders));
+		pipelineInfoList.push_back(std::make_tuple(-1, shaderOffset, m_data.libraryConfiguration.pipelineShaders));
 		shaderOffset			+= m_data.libraryConfiguration.pipelineShaders;
 
 		for (size_t i = 0; i < m_data.libraryConfiguration.pipelineLibraries.size(); ++i)
 		{
 			int parentIndex			= m_data.libraryConfiguration.pipelineLibraries[i].x();
 			deUint32 shaderCount	= deUint32(m_data.libraryConfiguration.pipelineLibraries[i].y());
-			if (parentIndex < 0 || parentIndex >= int(libraryList.size()) )
+			if (parentIndex < 0 || parentIndex >= int(pipelineInfoList.size()) )
 				TCU_THROW(InternalError, "Wrong library tree definition");
-			libraryList.push_back(std::make_tuple(parentIndex, shaderOffset, shaderCount));
+			pipelineInfoList.push_back(std::make_tuple(parentIndex, shaderOffset, shaderCount));
 			shaderOffset			+= shaderCount;
 		}
 	}
 
-	// create pipeline libraries
-	std::vector<de::SharedPtr<de::MovePtr<RayTracingPipeline>>>					pipelineLibraries(libraryList.size());
-	std::vector<std::vector<std::tuple<std::string, VkShaderStageFlagBits>>>	pipelineShaders(libraryList.size());
-	for (size_t idx=0; idx < libraryList.size(); ++idx)
+	// create pipeline libraries and build a pipeline tree.
+	std::vector<de::SharedPtr<de::MovePtr<RayTracingPipeline>>>					rtPipelines(pipelineInfoList.size());
+	std::vector<std::vector<std::tuple<std::string, VkShaderStageFlagBits>>>	pipelineShaders(pipelineInfoList.size());
+	for (size_t idx=0; idx < pipelineInfoList.size(); ++idx)
 	{
 		int			parentIndex;
 		deUint32	shaderCount, shaderOffset;
-		std::tie(parentIndex, shaderOffset, shaderCount) = libraryList[idx];
+		std::tie(parentIndex, shaderOffset, shaderCount) = pipelineInfoList[idx];
 
 		// create pipeline objects
-		de::SharedPtr<de::MovePtr<RayTracingPipeline>> pipeline = makeVkSharedPtr(de::MovePtr<RayTracingPipeline>(new RayTracingPipeline));
+		de::SharedPtr<de::MovePtr<RayTracingPipeline>> rtPipeline = makeVkSharedPtr(de::MovePtr<RayTracingPipeline>(new RayTracingPipeline));
 
-		(*pipeline)->setDeferredOperation(m_data.pipelinesCreatedUsingDHO);
+		(*rtPipeline)->setDeferredOperation(m_data.pipelinesCreatedUsingDHO);
+
+		VkPipelineCreateFlags creationFlags = 0u;
 
 		// all pipelines are pipeline libraries, except for the main pipeline
-		if(idx>0)
-			pipeline->get()->setCreateFlags(VK_PIPELINE_CREATE_LIBRARY_BIT_KHR);
-		pipeline->get()->setMaxPayloadSize(16U); // because rayPayloadInEXT is uvec4 ( = 16 bytes ) for all chit shaders
-		pipelineLibraries[idx] = pipeline;
+		if (idx > 0)
+			creationFlags |= VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
+
+		// Sometimes we need capture/replay handles.
+		if (m_data.includesCaptureReplay())
+			creationFlags |= VK_PIPELINE_CREATE_RAY_TRACING_SHADER_GROUP_HANDLE_CAPTURE_REPLAY_BIT_KHR;
+
+		if (m_data.useLinkTimeOptimizations)
+		{
+			if (m_data.retainLinkTimeOptimizations)
+				creationFlags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
+			else
+				creationFlags |= VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT;
+		}
+
+		rtPipeline->get()->setCreateFlags(creationFlags);
+
+		rtPipeline->get()->setMaxPayloadSize(16U); // because rayPayloadInEXT is uvec4 ( = 16 bytes ) for all chit shaders
+		rtPipelines[idx] = rtPipeline;
 
 		// prepare all shader names for all pipelines
 		if (idx == 0)
@@ -541,19 +674,24 @@ de::MovePtr<BufferWithMemory> RayTracingPipelineLibraryTestInstance::runTest (De
 			pipelineShaders[0].push_back(std::make_tuple( "rgen", VK_SHADER_STAGE_RAYGEN_BIT_KHR ));
 			pipelineShaders[0].push_back(std::make_tuple( "miss", VK_SHADER_STAGE_MISS_BIT_KHR ));
 		}
-		for ( deUint32 i=0; i < shaderCount; ++i)
+		for (uint32_t i = 0; i < shaderCount; ++i)
 		{
 			std::stringstream csname;
 			csname << "chit" << shaderOffset + i;
 			pipelineShaders[idx].push_back(std::make_tuple( csname.str(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR ));
 		}
 	}
+
+	const auto isecMod	= (m_data.useAABBs
+						? createShaderModule(vkd, device, m_context.getBinaryCollection().get("isec"))
+						: Move<VkShaderModule>());
+
 	// singlethreaded / multithreaded compilation of all shaders
 	if (m_data.multithreadedCompilation)
 	{
 		std::vector<CompileShadersMultithreadData> csmds;
-		for (deUint32 i = 0; i < pipelineLibraries.size(); ++i)
-			csmds.push_back(CompileShadersMultithreadData{ deviceHelper, m_context, pipelineLibraries[i], pipelineShaders[i] });
+		for (deUint32 i = 0; i < rtPipelines.size(); ++i)
+			csmds.push_back(CompileShadersMultithreadData{ m_context, rtPipelines[i], pipelineShaders[i], isecMod });
 
 		std::vector<deThread>	threads;
 		for (deUint32 i = 0; i < csmds.size(); ++i)
@@ -567,36 +705,94 @@ de::MovePtr<BufferWithMemory> RayTracingPipelineLibraryTestInstance::runTest (De
 	}
 	else // m_data.multithreadedCompilation == false
 	{
-		for (deUint32 i = 0; i < pipelineLibraries.size(); ++i)
-			compileShaders(deviceHelper, m_context, pipelineLibraries[i], pipelineShaders[i]);
+		for (deUint32 i = 0; i < rtPipelines.size(); ++i)
+			compileShaders(m_context, rtPipelines[i], pipelineShaders[i], isecMod);
 	}
 
 	// connect libraries into a tree structure
-	for (size_t idx = 0; idx < libraryList.size(); ++idx)
+	for (size_t idx = 0; idx < pipelineInfoList.size(); ++idx)
 	{
 		int			parentIndex;
 		deUint32 shaderCount, shaderOffset;
-		std::tie(parentIndex, shaderCount, shaderOffset) = libraryList[idx];
+		std::tie(parentIndex, shaderOffset, shaderCount) = pipelineInfoList[idx];
 		if (parentIndex != -1)
-			pipelineLibraries[parentIndex]->get()->addLibrary(pipelineLibraries[idx]);
+			rtPipelines[parentIndex]->get()->addLibrary(rtPipelines[idx]);
+	}
+
+	// Add the saved capture/replay handles when in replay mode.
+	if (replay)
+	{
+		for (size_t pipelineIdx = 0; pipelineIdx < rtPipelines.size(); ++pipelineIdx)
+		{
+			const auto pipelineOffsetBytes = allGroupOffsets.at(pipelineIdx) * shaderGroupHandleReplaySize;
+			for (size_t groupIdx = 0; groupIdx < pipelineShaders.at(pipelineIdx).size(); ++groupIdx)
+			{
+				const auto groupOffsetBytes = pipelineOffsetBytes + groupIdx * shaderGroupHandleReplaySize;
+				rtPipelines[pipelineIdx]->get()->setGroupCaptureReplayHandle(static_cast<uint32_t>(groupIdx), &m_captureReplayHandles.at(groupOffsetBytes));
+			}
+		}
 	}
 
 	// build main pipeline and all pipeline libraries that it depends on
-	std::vector<de::SharedPtr<Move<VkPipeline>>>	pipelines				= pipelineLibraries[0]->get()->createPipelineWithLibraries(vkd, device, *pipelineLayout);
-	DE_ASSERT(pipelines.size() > 0);
-	VkPipeline pipeline = pipelines[0]->get();
+	const auto										firstRTPipeline	= rtPipelines.at(0)->get();
+	std::vector<de::SharedPtr<Move<VkPipeline>>>	pipelines		= firstRTPipeline->createPipelineWithLibraries(vkd, device, *pipelineLayout);
+	const VkPipeline								pipeline		= pipelines.at(0)->get();
 
-	deUint32							numShadersUsed						= m_data.libraryConfiguration.pipelineShaders;
-	for (auto it = begin(m_data.libraryConfiguration.pipelineLibraries), eit = end(m_data.libraryConfiguration.pipelineLibraries); it != eit; ++it)
-		numShadersUsed += it->y();
+	// Obtain and verify shader group handles.
+	if (m_data.testType != TestType::DEFAULT)
+	{
+		// When checking all handles, we'll do two iterations, checking the normal handles first and the capture/replay handles later.
+		const bool					checkAllHandles	= (m_data.testType == TestType::CHECK_ALL_HANDLES);
+		const uint32_t				iterations		= (checkAllHandles ? 2u : 1u);
+
+		for (uint32_t iter = 0u; iter < iterations; ++iter)
+		{
+			const bool					normalHandles	= (iter == 0u && m_data.testType != TestType::CHECK_CAPTURE_REPLAY_HANDLES);
+			const auto					handleSize		= (normalHandles ? shaderGroupHandleSize : shaderGroupHandleReplaySize);
+			de::MovePtr<HandleGetter>	handleGetter	(normalHandles
+														? static_cast<HandleGetter*>(new NormalHandleGetter(handleSize))
+														: static_cast<HandleGetter*>(new CaptureReplayHandleGetter(handleSize)));
+
+			const auto allHandles		= handleGetter->getShaderGroupHandlesVector(firstRTPipeline, vkd, device, pipeline, 0u, firstRTPipeline->getFullShaderGroupCount());
+			const auto allGroupCounts	= getAllGroupCounts(rtPipelines);
+
+			DE_ASSERT(allGroupOffsets.size() == rtPipelines.size());
+			DE_ASSERT(allGroupCounts.size() == rtPipelines.size());
+			DE_ASSERT(rtPipelines.size() == pipelines.size());
+
+			for (size_t idx = 0; idx < rtPipelines.size(); ++idx)
+			{
+				const auto	curRTPipeline	= rtPipelines[idx]->get();
+				const auto&	curPipeline		= pipelines[idx]->get();
+				const auto&	curGroupOffset	= allGroupOffsets[idx];
+				const auto& curGroupCount	= allGroupCounts[idx];
+				const auto	curHandles		= handleGetter->getShaderGroupHandlesVector(curRTPipeline, vkd, device, curPipeline, 0u, curGroupCount);
+
+				const auto	rangeStart		= curGroupOffset * shaderGroupHandleSize;
+				const auto	rangeEnd		= (curGroupOffset + curGroupCount) * shaderGroupHandleSize;
+
+				const std::vector<uint8_t> handleRange (allHandles.begin() + rangeStart, allHandles.begin() + rangeEnd);
+				if (handleRange != curHandles)
+				{
+					std::ostringstream msg;
+					msg << (normalHandles ? "" : "Capture Replay ") << "Shader Group Handle verification failed for pipeline " << idx;
+					TCU_FAIL(msg.str());
+				}
+			}
+
+			// Save capture/replay handles for a later replay.
+			if (!normalHandles && !replay)
+				m_captureReplayHandles = allHandles;
+		}
+	}
 
 	// build shader binding tables
-	const de::MovePtr<BufferWithMemory>	raygenShaderBindingTable			= pipelineLibraries[0]->get()->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1 );
-	const de::MovePtr<BufferWithMemory>	missShaderBindingTable				= pipelineLibraries[0]->get()->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1 );
-	const de::MovePtr<BufferWithMemory>	hitShaderBindingTable				= pipelineLibraries[0]->get()->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 2, numShadersUsed);
+	const de::MovePtr<BufferWithMemory>		raygenShaderBindingTable			= firstRTPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1 );
+	const de::MovePtr<BufferWithMemory>		missShaderBindingTable				= firstRTPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1 );
+	const de::MovePtr<BufferWithMemory>		hitShaderBindingTable				= firstRTPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 2, hitGroupCount);
 	const VkStridedDeviceAddressRegionKHR	raygenShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
 	const VkStridedDeviceAddressRegionKHR	missShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
-	const VkStridedDeviceAddressRegionKHR	hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0), shaderGroupHandleSize, numShadersUsed * shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0), shaderGroupHandleSize, hitGroupCount * shaderGroupHandleSize);
 	const VkStridedDeviceAddressRegionKHR	callableShaderBindingTableRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
 
 	const VkFormat						imageFormat							= VK_FORMAT_R32_UINT;
@@ -609,6 +805,7 @@ de::MovePtr<BufferWithMemory> RayTracingPipelineLibraryTestInstance::runTest (De
 	const VkImageSubresourceLayers		resultBufferImageSubresourceLayers	= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
 	const VkBufferImageCopy				resultBufferImageRegion				= makeBufferImageCopy(makeExtent3D(m_data.width, m_data.height, 1), resultBufferImageSubresourceLayers);
 	de::MovePtr<BufferWithMemory>		resultBuffer						= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vkd, device, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
+	auto&								resultBufferAlloc					= resultBuffer->getAllocation();
 
 	const VkDescriptorImageInfo			descriptorImageInfo					= makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
@@ -633,8 +830,8 @@ de::MovePtr<BufferWithMemory> RayTracingPipelineLibraryTestInstance::runTest (De
 																					**image, imageSubresourceRange);
 		cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, &postImageBarrier);
 
-		bottomLevelAccelerationStructures	= initBottomAccelerationStructures(deviceHelper, *cmdBuffer);
-		topLevelAccelerationStructure		= initTopAccelerationStructure(deviceHelper, *cmdBuffer, bottomLevelAccelerationStructures);
+		bottomLevelAccelerationStructures	= initBottomAccelerationStructures(*cmdBuffer);
+		topLevelAccelerationStructure		= initTopAccelerationStructure(*cmdBuffer, bottomLevelAccelerationStructures);
 
 		const TopLevelAccelerationStructure*			topLevelAccelerationStructurePtr		= topLevelAccelerationStructure.get();
 		VkWriteDescriptorSetAccelerationStructureKHR	accelerationStructureWriteDescriptorSet	=
@@ -674,47 +871,54 @@ de::MovePtr<BufferWithMemory> RayTracingPipelineLibraryTestInstance::runTest (De
 
 	submitCommandsAndWait(vkd, device, queue, cmdBuffer.get());
 
-	invalidateMappedMemoryRange(vkd, device, resultBuffer->getAllocation().getMemory(), resultBuffer->getAllocation().getOffset(), VK_WHOLE_SIZE);
+	invalidateAlloc(vkd, device, resultBufferAlloc);
 
-	return resultBuffer;
+	std::vector<uint32_t> resultVector (pixelCount);
+	deMemcpy(resultVector.data(), resultBufferAlloc.getHostPtr(), de::dataSize(resultVector));
+
+	return resultVector;
 }
 
 tcu::TestStatus RayTracingPipelineLibraryTestInstance::iterate (void)
 {
 	// run test using arrays of pointers
-	DeviceHelper						deviceHelper(m_context);
-	const de::MovePtr<BufferWithMemory>	buffer		= runTest(deviceHelper);
-	const deUint32*						bufferPtr	= (deUint32*)buffer->getAllocation().getHostPtr();
+	const auto	numShadersUsed	= m_data.getHitGroupCount();
+	const auto	bufferVec		= runTest();
 
-	deUint32							failures		= 0;
-	deUint32							pos				= 0;
-	deUint32							shaderIdx		= 0;
-	deUint32							numShadersUsed	= m_data.libraryConfiguration.pipelineShaders;
-	for (auto it = begin(m_data.libraryConfiguration.pipelineLibraries), eit = end(m_data.libraryConfiguration.pipelineLibraries); it != eit; ++it)
-		numShadersUsed += it->y();
-
-	// verify results
-	for (deUint32 y = 0; y < m_data.height; ++y)
-	for (deUint32 x = 0; x < m_data.width; ++x)
+	if (m_data.includesCaptureReplay())
 	{
-		deUint32 expectedResult;
-		if ((x + y) % 2)
-		{
-			expectedResult = shaderIdx % numShadersUsed;
-			++shaderIdx;
-		}
-		else
-			expectedResult = RTPL_MAX_CHIT_SHADER_COUNT;
-
-		if (bufferPtr[pos] != expectedResult)
-			failures++;
-		++pos;
+		const auto replayResults = runTest(true/*replay*/);
+		if (bufferVec != replayResults)
+			return tcu::TestStatus::fail("Replay results differ from original results");
 	}
+
+	deUint32	failures		= 0;
+	deUint32	pos				= 0;
+	deUint32	shaderIdx		= 0;
+
+	// Verify results.
+	for (deUint32 y = 0; y < m_data.height; ++y)
+		for (deUint32 x = 0; x < m_data.width; ++x)
+		{
+			deUint32 expectedResult;
+			if ((x + y) % 2)
+			{
+				expectedResult = shaderIdx % numShadersUsed;
+				++shaderIdx;
+			}
+			else
+				expectedResult = RTPL_MAX_CHIT_SHADER_COUNT;
+
+			if (bufferVec.at(pos) != expectedResult)
+				failures++;
+
+			++pos;
+		}
 
 	if (failures == 0)
 		return tcu::TestStatus::pass("Pass");
 	else
-		return tcu::TestStatus::fail("Fail (failures=" + de::toString(failures) + ")");
+		return tcu::TestStatus::fail("failures=" + de::toString(failures));
 }
 
 }	// anonymous
@@ -753,23 +957,79 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group)
 		{ {3, { { 0, 2 }, { 1, 2 }, { 1, 2 }, { 0, 2 } } },	"s3_l22_l22"	},	// 3 shaders in a main pipeline. 4 pipeline libraries with 2 shaders each. Second and third library is a child of a first library
 	};
 
+	struct
+	{
+		const TestType	testType;
+		const char*		suffix;
+	} testTypeCases[] =
+	{
+		{ TestType::DEFAULT,						""									},
+		{ TestType::CHECK_GROUP_HANDLES,			"_check_group_handles"				},
+		{ TestType::CHECK_CAPTURE_REPLAY_HANDLES,	"_check_capture_replay_handles"		},
+		{ TestType::CHECK_ALL_HANDLES,				"_check_all_handles"				},
+	};
+
+	struct
+	{
+		const bool		useAABBs;
+		const char*		suffix;
+	} geometryTypeCases[] =
+	{
+		{ false,	""			},
+		{ true,		"_aabbs"	},
+	};
+
 	for (size_t threadNdx = 0; threadNdx < DE_LENGTH_OF_ARRAY(threadData); ++threadNdx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> threadGroup(new tcu::TestCaseGroup(group->getTestContext(), threadData[threadNdx].name, ""));
 
 		for (size_t libConfigNdx = 0; libConfigNdx < DE_LENGTH_OF_ARRAY(libraryConfigurationData); ++libConfigNdx)
 		{
-			TestParams testParams
+			for (const auto& testTypeCase : testTypeCases)
 			{
-				libraryConfigurationData[libConfigNdx].libraryConfiguration,
-				threadData[threadNdx].multithreaded,
-				threadData[threadNdx].pipelinesCreatedUsingDHO,
-				RTPL_DEFAULT_SIZE,
-				RTPL_DEFAULT_SIZE
-			};
-			threadGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), libraryConfigurationData[libConfigNdx].name, "", testParams));
+				for (const auto& geometryCase : geometryTypeCases)
+				{
+					TestParams testParams
+					{
+						libraryConfigurationData[libConfigNdx].libraryConfiguration,
+						threadData[threadNdx].multithreaded,
+						threadData[threadNdx].pipelinesCreatedUsingDHO,
+						testTypeCase.testType,
+						geometryCase.useAABBs,
+						false,
+						false,
+						RTPL_DEFAULT_SIZE,
+						RTPL_DEFAULT_SIZE
+					};
+
+					const std::string testName = std::string(libraryConfigurationData[libConfigNdx].name) + geometryCase.suffix + testTypeCase.suffix;
+					threadGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), testName.c_str(), "", testParams));
+				}
+			}
 		}
 		group->addChild(threadGroup.release());
+	}
+
+	{
+		TestParams testParams
+		{
+			libraryConfigurationData[5].libraryConfiguration,
+			false,
+			false,
+			TestType::DEFAULT,
+			true,
+			true,
+			false,
+			RTPL_DEFAULT_SIZE,
+			RTPL_DEFAULT_SIZE
+		};
+
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(group->getTestContext(), "misc", ""));
+		miscGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), "use_link_time_optimizations", "", testParams));
+		testParams.retainLinkTimeOptimizations = true;
+		miscGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), "retain_link_time_optimizations", "", testParams));
+
+		group->addChild(miscGroup.release());
 	}
 }
 

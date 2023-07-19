@@ -68,6 +68,11 @@ public:
 		m_window->setSize((int)newSize.x(), (int)newSize.y());
 	}
 
+	void setMinimized(bool minimized)
+	{
+		m_window->setMinimized(minimized);
+	}
+
 private:
 	UniquePtr<win32::Window>	m_window;
 };
@@ -122,9 +127,13 @@ VulkanPlatform::~VulkanPlatform (void)
 {
 }
 
-vk::Library* VulkanPlatform::createLibrary (const char* libraryPath) const
+vk::Library* VulkanPlatform::createLibrary (LibraryType libraryType, const char* libraryPath) const
 {
-	return new VulkanLibrary(libraryPath);
+	switch(libraryType)
+	{
+		case LIBRARY_TYPE_VULKAN:						return new VulkanLibrary(libraryPath);
+		default: TCU_THROW(InternalError, "Unknown library type requested");
+	}
 }
 
 ULONG getStringRegKey (const std::string& regKey, const std::string& strValueName, std::string& strValue)

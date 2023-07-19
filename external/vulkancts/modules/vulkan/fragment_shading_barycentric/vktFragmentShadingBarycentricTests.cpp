@@ -24,7 +24,6 @@
 #include "vktFragmentShadingBarycentricTests.hpp"
 
 #include "vkDefs.hpp"
-
 #include "vktTestCase.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vkCmdUtil.hpp"
@@ -35,6 +34,8 @@
 #include "vkImageWithMemory.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkPipelineConstructionUtil.hpp"
+
 #include "tcuTestLog.hpp"
 #include "tcuStringTemplate.hpp"
 #include "tcuImageCompare.hpp"
@@ -84,19 +85,20 @@ const float		WEIGHT_TEST_SLOPE	= 16.0f;
 
 struct TestParams
 {
-	TestType				testType;
-	TestSubtype				testSubtype;
-	VkPrimitiveTopology		topology;
-	bool					dynamicIndexing;
-	size_t					aggregate; // 0: value itself, 1:struct, 2+:Array
-	glu::DataType			dataType;
-	size_t					width;
-	size_t					height;
-	bool					perspective;
-	bool					provokingVertexLast;
-	uint32_t				rotation;
-	bool					dynamicTopologyInPipeline;
-	VkSampleCountFlagBits	sampleCount;
+	const PipelineConstructionType	pipelineConstructionType;
+	TestType						testType;
+	TestSubtype						testSubtype;
+	VkPrimitiveTopology				topology;
+	bool							dynamicIndexing;
+	size_t							aggregate; // 0: value itself, 1:struct, 2+:Array
+	glu::DataType					dataType;
+	size_t							width;
+	size_t							height;
+	bool							perspective;
+	bool							provokingVertexLast;
+	uint32_t						rotation;
+	bool							dynamicTopologyInPipeline;
+	VkSampleCountFlagBits			sampleCount;
 };
 
 size_t getComponentCount (const TestParams& testParams)
@@ -210,19 +212,22 @@ static Move<VkRenderPass> makeRenderPass(const DeviceInterface& vk, const VkDevi
 	return createRenderPass(vk, device, &renderPassInfo, DE_NULL);
 }
 
-static Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vkd,
-											  const VkDevice				device,
-											  const VkPipelineLayout		pipelineLayout,
-											  const VkRenderPass			renderPass,
-											  const VkShaderModule			vertShaderModule,
-											  const VkShaderModule			fragShaderModule,
-											  const uint32_t				width,
-											  const uint32_t				height,
-											  const VkPrimitiveTopology		topology,
-											  const VkSampleCountFlagBits	rasterizationSamples,
-											  const bool					withColor = false,
-											  const bool					provokingVertexLast = false,
-											  const bool					dynamicTopology = false)
+using GraphicsPipelinePtr = std::unique_ptr<GraphicsPipelineWrapper>;
+
+static GraphicsPipelinePtr makeGraphicsPipeline (PipelineConstructionType		pipelineConstructionType,
+												 const DeviceInterface&			vkd,
+												 const VkDevice					device,
+												 const VkPipelineLayout			pipelineLayout,
+												 const VkRenderPass				renderPass,
+												 const VkShaderModule			vertShaderModule,
+												 const VkShaderModule			fragShaderModule,
+												 const uint32_t					width,
+												 const uint32_t					height,
+												 const VkPrimitiveTopology		topology,
+												 const VkSampleCountFlagBits	rasterizationSamples,
+												 const bool						withColor = false,
+												 const bool						provokingVertexLast = false,
+												 const bool						dynamicTopology = false)
 {
 	const std::vector<VkViewport>									viewports							(1, makeViewport(width, height));
 	const std::vector<VkRect2D>										scissors							(1, makeRect2D(width, height));
@@ -279,19 +284,19 @@ static Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vkd,
 		0.0f,																	//  float									depthBiasSlopeFactor;
 		1.0f																	//  float									lineWidth;
 	};
-	const VkPipelineMultisampleStateCreateInfo multisampleStateInfo
+	const bool									isMultiSample			= (rasterizationSamples > VK_SAMPLE_COUNT_1_BIT);
+	const VkPipelineMultisampleStateCreateInfo	multisampleStateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,				// VkStructureType							sType;
-		DE_NULL,																// const void*								pNext;
-		(VkPipelineMultisampleStateCreateFlags)0u,								// VkPipelineMultisampleStateCreateFlags	flags;
+		nullptr,																// const void*								pNext;
+		0u,																		// VkPipelineMultisampleStateCreateFlags	flags;
 		rasterizationSamples,													// VkSampleCountFlagBits					rasterizationSamples;
-		VK_TRUE,																// VkBool32									sampleShadingEnable;
+		(isMultiSample ? VK_TRUE : VK_FALSE),									// VkBool32									sampleShadingEnable;
 		1.0f,																	// float									minSampleShading;
 		DE_NULL,																// const VkSampleMask*						pSampleMask;
 		VK_FALSE,																// VkBool32									alphaToCoverageEnable;
 		VK_FALSE,																// VkBool32									alphaToOneEnable;
 	};
-	const VkPipelineMultisampleStateCreateInfo* multisampleStateInfoPtr = (rasterizationSamples > VK_SAMPLE_COUNT_1_BIT) ? &multisampleStateInfo : DE_NULL;
 	const VkDynamicState											dynamicStates[]						=
 	{
 		VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY,
@@ -305,27 +310,24 @@ static Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vkd,
 		dynamicStates,											//  const VkDynamicState*				pDynamicStates;
 	};
 	const VkPipelineDynamicStateCreateInfo*							pDynamicStateCreateInfo				= dynamicTopology ? &dynamicStateCreateInfo : DE_NULL;
+	const auto														pVertexInputStateCreateInfo			= (withColor ? &vertexInputStateInfo : nullptr);
 
-	return makeGraphicsPipeline(vkd,											//  const DeviceInterface&							vk,
-								device,											//  const VkDevice									device,
-								pipelineLayout,									//  const VkPipelineLayout							pipelineLayout,
-								vertShaderModule,								//  const VkShaderModule							vertexShaderModule,
-								DE_NULL,										//  const VkShaderModule							tessellationControlShaderModule,
-								DE_NULL,										//  const VkShaderModule							tessellationEvalShaderModule,
-								DE_NULL,										//  const VkShaderModule							geometryShaderModule,
-								fragShaderModule,								//  const VkShaderModule							fragmentShaderModule,
-								renderPass,										//  const VkRenderPass								renderPass,
-								viewports,										//  const std::vector<VkViewport>&					viewports,
-								scissors,										//  const std::vector<VkRect2D>&					scissors,
-								topology,										//  const VkPrimitiveTopology						topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-								0u,												//  const deUint32									subpass = 0u,
-								0u,												//  const deUint32									patchControlPoints = 0u,
-								withColor ? &vertexInputStateInfo : DE_NULL,	//  const VkPipelineVertexInputStateCreateInfo*		vertexInputStateCreateInfo = DE_NULL,
-								&rasterizationStateCreateInfo,					//  const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo = DE_NULL,
-								multisampleStateInfoPtr,						//  const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo = DE_NULL,
-								DE_NULL,										//  const VkPipelineDepthStencilStateCreateInfo*	depthStencilStateCreateInfo = DE_NULL,
-								DE_NULL,										//  const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo = DE_NULL,
-								pDynamicStateCreateInfo);						//  const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo = DE_NULL,
+	GraphicsPipelinePtr	pipelineWrapperPtr	(new GraphicsPipelineWrapper(vkd, device, pipelineConstructionType));
+	auto&				pipelineWrapper		= *pipelineWrapperPtr.get();
+
+	pipelineWrapper
+		.setMonolithicPipelineLayout(pipelineLayout)
+		.setDefaultDepthStencilState()
+		.setDefaultColorBlendState()
+		.setDefaultTopology(topology)
+		.setDynamicState(pDynamicStateCreateInfo)
+		.setupVertexInputState(pVertexInputStateCreateInfo)
+		.setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPass, 0u, vertShaderModule, &rasterizationStateCreateInfo)
+		.setupFragmentShaderState(pipelineLayout, renderPass, 0u, fragShaderModule)
+		.setupFragmentOutputState(renderPass, 0u, nullptr, &multisampleStateInfo)
+		.buildPipeline();
+
+	return pipelineWrapperPtr;
 }
 
 // Function replacing all occurrences of substring with string passed in last parameter.
@@ -701,7 +703,8 @@ tcu::TestStatus FragmentShadingBarycentricDataTestInstance::iterate (void)
 	const VkPushConstantRange*		pushConstantRangePtr		= m_testParams.dynamicIndexing ? &pushConstantRange : DE_NULL;
 	const deUint32					pushConstantRangeCount		= m_testParams.dynamicIndexing ? 1 : 0;
 	const Move<VkPipelineLayout>	pipelineLayout				= makePipelineLayout(vkd, device, 0, DE_NULL, pushConstantRangeCount, pushConstantRangePtr);
-	const Move<VkPipeline>			pipeline					= makeGraphicsPipeline(vkd, device, *pipelineLayout, *renderPass, *vertModule, *fragModule, width, height, topology, VK_SAMPLE_COUNT_1_BIT, withColor, provokingVertexLast);
+	const auto						pipelineWrapper				= makeGraphicsPipeline(m_testParams.pipelineConstructionType, vkd, device, *pipelineLayout, *renderPass, *vertModule, *fragModule, width, height, topology, VK_SAMPLE_COUNT_1_BIT, withColor, provokingVertexLast);
+	const VkPipeline				pipeline					= pipelineWrapper->getPipeline();
 
 	const Move<VkFramebuffer>		framebuffer					= makeFramebuffer(vkd, device, *renderPass, *imageView, width, height);
 
@@ -712,7 +715,7 @@ tcu::TestStatus FragmentShadingBarycentricDataTestInstance::iterate (void)
 	{
 		beginRenderPass(vkd, *commandBuffer, *renderPass, *framebuffer, makeRect2D(width, height), clearColor);
 
-		vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+		vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
 		vkd.cmdBindVertexBuffers(*commandBuffer, 0u, 1u, &vertexBuffer->get(), &offsetZero);
 
@@ -1132,7 +1135,8 @@ tcu::TestStatus FragmentShadingBarycentricWeightTestInstance::iterate (void)
 		const Move<VkShaderModule>		fragModule			= createShaderModule(vkd, device, m_context.getBinaryCollection().get(fragModuleName), 0u);
 		const VkPushConstantRange		pushConstantRange	= makePushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mvp));
 		const Move<VkPipelineLayout>	pipelineLayout		= makePipelineLayout(vkd, device, 0, DE_NULL, 1, &pushConstantRange);
-		const Move<VkPipeline>			pipeline			= makeGraphicsPipeline(vkd, device, *pipelineLayout, *renderPass, *vertModule, *fragModule, width, height, pipelineTopology, m_testParams.sampleCount, withColor, provokingVertexLast, dynamicStateTopology);
+		const auto						pipelineWrapper		= makeGraphicsPipeline(m_testParams.pipelineConstructionType, vkd, device, *pipelineLayout, *renderPass, *vertModule, *fragModule, width, height, pipelineTopology, m_testParams.sampleCount, withColor, provokingVertexLast, dynamicStateTopology);
+		const VkPipeline				pipeline			= pipelineWrapper->getPipeline();
 
 		beginCommandBuffer(vkd, *commandBuffer);
 		{
@@ -1143,7 +1147,7 @@ tcu::TestStatus FragmentShadingBarycentricWeightTestInstance::iterate (void)
 
 			beginRenderPass(vkd, *commandBuffer, *renderPass, *framebuffer, makeRect2D(width, height), 1u + useMultisampling, clearValues.data());
 			{
-				vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+				vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
 				vkd.cmdBindVertexBuffers(*commandBuffer, 0u, 1u, &vertexBuffer->get(), &offsetZero);
 
@@ -1204,12 +1208,17 @@ FragmentShadingBarycentricTestCase::~FragmentShadingBarycentricTestCase (void)
 
 void FragmentShadingBarycentricTestCase::checkSupport (Context& context) const
 {
+	const auto&		vki				= context.getInstanceInterface();
+	const auto		physicalDevice	= context.getPhysicalDevice();
+
 	context.requireDeviceFunctionality("VK_KHR_fragment_shader_barycentric");
 
 	const VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR& fragmentShaderBarycentricFeatures = context.getFragmentShaderBarycentricFeatures();
 
 	if (!fragmentShaderBarycentricFeatures.fragmentShaderBarycentric)
 		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR.fragmentShaderBarycentric");
+
+	checkPipelineLibraryRequirements(vki, physicalDevice, m_testParams.pipelineConstructionType);
 
 	if (m_testParams.provokingVertexLast)
 	{
@@ -1229,6 +1238,22 @@ void FragmentShadingBarycentricTestCase::checkSupport (Context& context) const
 
 		if (!extendedDynamicStateFeaturesEXT.extendedDynamicState)
 			TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceExtendedDynamicStateFeaturesEXT.extendedDynamicState");
+	}
+
+	if ((m_testParams.dataType == glu::TYPE_DOUBLE) ||
+		(m_testParams.dataType == glu::TYPE_DOUBLE_VEC2) ||
+		(m_testParams.dataType == glu::TYPE_DOUBLE_VEC3) ||
+		(m_testParams.dataType == glu::TYPE_DOUBLE_VEC4))
+	{
+		VkPhysicalDeviceFeatures2 features2;
+		deMemset(&features2, 0, sizeof(features2));
+		features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		features2.pNext = nullptr;
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+		if (features2.features.shaderFloat64 != VK_TRUE)
+		{
+			TCU_THROW(NotSupportedError, "shaderFloat64 not supported");
+		}
 	}
 }
 
@@ -1634,6 +1659,7 @@ void FragmentShadingBarycentricTestCase::initWeightPrograms (SourceCollections& 
 		break;
 	case TEST_SUBTYPE_MSAA_INTERPOLATE_AT_OFFSET:
 		attributes["glslFormulaeTest"] = std::string("interpolateAtOffset(gl_") + baryCoordVariable + "EXT, vec2(gl_SamplePosition - vec2(0.5)))";
+		attributes["glslDeclspecRef"] += " sample";
 		break;
 	case TEST_SUBTYPE_MSAA_CENTROID_QUALIFIER:
 		attributes["spirvBaryCoordVariable"]		= baryCoordVariable + "KHR";
@@ -1665,8 +1691,21 @@ void FragmentShadingBarycentricTestCase::initWeightPrograms (SourceCollections& 
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
-	const bool					notused	= false;
-	MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "fragment_shading_barycentric", "Tests fragment shading barycentric extension"));
+	const bool					notused			= false;
+	MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "fragment_shading_barycentric", "Tests fragment shading barycentric extension"));
+	MovePtr<tcu::TestCaseGroup>	libGroup		(new tcu::TestCaseGroup(testCtx, "pipeline_library", "Tests using graphics pipeline libraries"));
+	MovePtr<tcu::TestCaseGroup>	fastLinkGroup	(new tcu::TestCaseGroup(testCtx, "fast_linked_library", "Tests using graphics pipeline libraries with fast linking"));
+
+	const struct
+	{
+		PipelineConstructionType		constructionType;
+		tcu::TestCaseGroup*				testGroup;
+	} constructionTypeCases[] =
+	{
+		{ PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC,					group.get()			},
+		{ PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY,	libGroup.get()		},
+		{ PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY,			fastLinkGroup.get()	},
+	};
 
 	const struct PrimitiveTestSpec
 	{
@@ -1747,6 +1786,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 		{ "pipeline_topology_dynamic",	true	},
 	};
 
+	for (const auto& constructionTypeCase : constructionTypeCases)
 	{
 		MovePtr<tcu::TestCaseGroup>	testTypeGroup	(new tcu::TestCaseGroup(testCtx, "data", ""));
 		const TestType				testType		= TEST_TYPE_DATA;
@@ -1780,6 +1820,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 
 							const TestParams	testParams
 							{
+								constructionTypeCase.constructionType,
 								testType,				//  TestType				testType;
 								TEST_SUBTYPE_DEFAULT,	//  TestSubtype				testSubtype;
 								topology,				//  VkPrimitiveTopology		topology;
@@ -1814,6 +1855,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 			MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
 			const TestParams testParams
 			{
+				constructionTypeCase.constructionType,
 				TEST_TYPE_DATA,							//  TestType				testType;
 				TEST_SUBTYPE_PERVERTEX_CORRECTNESS,		//  TestSubtype				testSubtype;
 				VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	//  VkPrimitiveTopology		topology;
@@ -1832,9 +1874,10 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 			testTypeGroup->addChild(miscGroup.release());
 		}
 
-		group->addChild(testTypeGroup.release());
+		constructionTypeCase.testGroup->addChild(testTypeGroup.release());
 	}
 
+	for (const auto& constructionTypeCase : constructionTypeCases)
 	{
 		const struct MsaaTestCase
 		{
@@ -1881,6 +1924,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 
 							const TestParams testParams
 							{
+								constructionTypeCase.constructionType,
 								testType,							//  TestType				testType;
 								msaaCases[msaaCaseNdx].subtype,		//  TestSubtype				testSubtype;
 								topology,							//  VkPrimitiveTopology		topology;
@@ -1922,6 +1966,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 
 							const TestParams testParams
 							{
+								constructionTypeCase.constructionType,
 								testType,				//  TestType				testType;
 								TEST_SUBTYPE_DEFAULT,	//  TestSubtype				testSubtype;
 								topology,				//  VkPrimitiveTopology		topology;
@@ -1950,8 +1995,11 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 			testTypeGroup->addChild(topologyInPipelineGroup.release());
 		}
 
-		group->addChild(testTypeGroup.release());
+		constructionTypeCase.testGroup->addChild(testTypeGroup.release());
 	}
+
+	group->addChild(libGroup.release());
+	group->addChild(fastLinkGroup.release());
 
 	return group.release();
 }

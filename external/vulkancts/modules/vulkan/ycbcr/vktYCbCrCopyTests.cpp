@@ -49,6 +49,7 @@ using tcu::UVec2;
 using tcu::Vec4;
 using tcu::TestLog;
 
+
 using std::string;
 using std::vector;
 using std::pair;
@@ -82,19 +83,81 @@ struct ImageConfig
 struct TestConfig
 {
 				TestConfig		(const ImageConfig&	src_,
-								 const ImageConfig&	dst_)
-		: src	(src_)
-		, dst	(dst_)
+								 const ImageConfig&	dst_,
+								 const bool intermediateBuffer_)
+		: src					(src_)
+		, dst					(dst_)
+		, intermediateBuffer	(intermediateBuffer_)
 	{
 	}
 
 	ImageConfig	src;
 	ImageConfig	dst;
+	bool intermediateBuffer;
 };
 
 void checkFormatSupport(Context& context, const ImageConfig& config)
 {
-	try
+	const auto&							instInt	(context.getInstanceInterface());
+
+	{
+		const vk::VkPhysicalDeviceImageFormatInfo2			imageFormatInfo				=
+		{
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	// sType;
+			DE_NULL,													// pNext;
+			config.format,												// format;
+			vk::VK_IMAGE_TYPE_2D,										// type;
+			vk::VK_IMAGE_TILING_OPTIMAL,								// tiling;
+			vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+			vk::VK_IMAGE_USAGE_SAMPLED_BIT,									// usage;
+			(vk::VkImageCreateFlags)0u										// flags
+		};
+
+		vk::VkSamplerYcbcrConversionImageFormatProperties	samplerYcbcrConversionImage = {};
+		samplerYcbcrConversionImage.sType = vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
+		samplerYcbcrConversionImage.pNext = DE_NULL;
+
+		vk::VkImageFormatProperties2						imageFormatProperties		= {};
+		imageFormatProperties.sType = vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
+		imageFormatProperties.pNext = &samplerYcbcrConversionImage;
+
+		vk::VkResult result = instInt.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo, &imageFormatProperties);
+		if (result == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Format not supported.");
+		VK_CHECK(result);
+
+		// Check for plane compatible format support when the disjoint flag is being used
+		if (config.disjoint)
+		{
+			const vk::PlanarFormatDescription				formatDescription		= vk::getPlanarFormatDescription(config.format);
+
+			for (deUint32 channelNdx = 0; channelNdx < 4; ++channelNdx)
+			{
+				if (!formatDescription.hasChannelNdx(channelNdx))
+					continue;
+				deUint32					planeNdx					= formatDescription.channels[channelNdx].planeNdx;
+				vk::VkFormat				planeCompatibleFormat		= getPlaneCompatibleFormat(formatDescription, planeNdx);
+
+				const vk::VkPhysicalDeviceImageFormatInfo2			planeImageFormatInfo				=
+				{
+					vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	// sType;
+					DE_NULL,												// pNext;
+					planeCompatibleFormat,									// format;
+					vk::VK_IMAGE_TYPE_2D,										// type;
+					vk::VK_IMAGE_TILING_OPTIMAL,								// tiling;
+					vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+					vk::VK_IMAGE_USAGE_SAMPLED_BIT,								// usage;
+					(vk::VkImageCreateFlags)0u									// flags
+				};
+
+				vk::VkResult planesResult = instInt.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &planeImageFormatInfo, &imageFormatProperties);
+				if (planesResult == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+					TCU_THROW(NotSupportedError, "Plane compatibile format not supported.");
+				VK_CHECK(planesResult);
+			}
+		}
+	}
+
 	{
 		const vk::VkFormatProperties	properties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), config.format));
 		const vk::VkFormatFeatureFlags	features	(config.tiling == vk::VK_IMAGE_TILING_OPTIMAL
@@ -109,13 +172,6 @@ void checkFormatSupport(Context& context, const ImageConfig& config)
 
 		if (config.disjoint && ((features & vk::VK_FORMAT_FEATURE_DISJOINT_BIT) == 0))
 			TCU_THROW(NotSupportedError, "Format doesn't support disjoint planes");
-	}
-	catch (const vk::Error& err)
-	{
-		if (err.getError() == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-			TCU_THROW(NotSupportedError, "Format not supported");
-
-		throw;
 	}
 }
 
@@ -583,6 +639,30 @@ void logTestCaseInfo (TestLog&							log,
 	}
 }
 
+vk::VkFormat chooseFloatFormat(vk::VkFormat srcFormat, vk::VkFormat dstFormat) {
+	const std::vector<vk::VkFormat> floatFormats =
+	{
+		vk::VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+		vk::VK_FORMAT_R16_SFLOAT,
+		vk::VK_FORMAT_R16G16_SFLOAT,
+		vk::VK_FORMAT_R16G16B16_SFLOAT,
+		vk::VK_FORMAT_R16G16B16A16_SFLOAT,
+		vk::VK_FORMAT_R32_SFLOAT,
+		vk::VK_FORMAT_R32G32_SFLOAT,
+		vk::VK_FORMAT_R32G32B32_SFLOAT,
+		vk::VK_FORMAT_R32G32B32A32_SFLOAT,
+		vk::VK_FORMAT_R64_SFLOAT,
+		vk::VK_FORMAT_R64G64_SFLOAT,
+		vk::VK_FORMAT_R64G64B64_SFLOAT,
+		vk::VK_FORMAT_R64G64B64A64_SFLOAT,
+	};
+
+	if (std::find(floatFormats.begin(), floatFormats.end(), srcFormat) != floatFormats.end())
+		return srcFormat;
+
+	return dstFormat;
+}
+
 tcu::TestStatus imageCopyTest (Context& context, const TestConfig config)
 {
 	{
@@ -602,7 +682,7 @@ tcu::TestStatus imageCopyTest (Context& context, const TestConfig config)
 		logTestCaseInfo(log, config, copies);
 
 		// To avoid putting NaNs in dst in the image copy
-		fillRandom(&rng, &srcData, config.dst.format, noNan);
+		fillRandom(&rng, &srcData, chooseFloatFormat(config.src.format, config.dst.format), noNan);
 		fillRandom(&rng, &dstData, config.dst.format, noNan);
 
 		{
@@ -634,16 +714,88 @@ tcu::TestStatus imageCopyTest (Context& context, const TestConfig config)
 				fillImageMemory(vkd, device, context.getUniversalQueueFamilyIndex(), *dstImage, dstImageMemory, dstData, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 			{
-				const deUint32							queueFamilyNdx	(context.getUniversalQueueFamilyIndex());
-				const vk::VkQueue						queue			(context.getUniversalQueue());
-				const vk::Unique<vk::VkCommandPool>		cmdPool			(createCommandPool(vkd, device, (vk::VkCommandPoolCreateFlags)0, queueFamilyNdx));
-				const vk::Unique<vk::VkCommandBuffer>	cmdBuffer		(allocateCommandBuffer(vkd, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+				const deUint32							queueFamilyNdx		(context.getUniversalQueueFamilyIndex());
+				const vk::VkQueue						queue				(context.getUniversalQueue());
+				const vk::Unique<vk::VkCommandPool>		cmdPool				(createCommandPool(vkd, device, (vk::VkCommandPoolCreateFlags)0, queueFamilyNdx));
+				const vk::Unique<vk::VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer(vkd, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 				beginCommandBuffer(vkd, *cmdBuffer);
 
+				std::vector<de::MovePtr<vk::BufferWithMemory>> buffers(copies.size());
+
 				for (size_t i = 0; i < copies.size(); i++)
 				{
-					vkd.cmdCopyImage(*cmdBuffer, *srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copies[i]);
+					const deUint32							srcPlaneNdx			(copies[i].srcSubresource.aspectMask != vk::VK_IMAGE_ASPECT_COLOR_BIT
+																				? vk::getAspectPlaneNdx((vk::VkImageAspectFlagBits)copies[i].srcSubresource.aspectMask)
+																				: 0u);
+
+					const vk::VkFormat						srcPlaneFormat		(getPlaneCompatibleFormat(config.src.format, srcPlaneNdx));
+
+					const deUint32							blockSizeBytes		(getBlockByteSize(srcPlaneFormat));
+					const vk::VkDeviceSize					bufferSize			= config.src.size.x() * config.src.size.y() * blockSizeBytes;
+					const vk::VkBufferCreateInfo			bufferCreateInfo	=
+					{
+						vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,									// VkStructureType		sType;
+						DE_NULL,																	// const void*			pNext;
+						0u,																			// VkBufferCreateFlags	flags;
+						bufferSize,																	// VkDeviceSize			size;
+						vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT | vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT,// VkBufferUsageFlags	usage;
+						vk::VK_SHARING_MODE_EXCLUSIVE,												// VkSharingMode		sharingMode;
+						0u,																			// deUint32				queueFamilyIndexCount;
+						(const deUint32*)DE_NULL,													// const deUint32*		pQueueFamilyIndices;
+					};
+					buffers[i] = de::MovePtr<vk::BufferWithMemory>(new vk::BufferWithMemory(vkd, device, context.getDefaultAllocator(), bufferCreateInfo, vk::MemoryRequirement::Any));
+
+					if (config.intermediateBuffer)
+					{
+						const vk::VkBufferImageCopy imageToBufferCopy = {
+							0u,							//	VkDeviceSize				bufferOffset;
+							0u,							//	uint32_t					bufferRowLength;
+							0u,							//	uint32_t					bufferImageHeight;
+							copies[i].srcSubresource,	//	VkImageSubresourceLayers	imageSubresource;
+							copies[i].srcOffset,		//	VkOffset3D					imageOffset;
+							copies[i].extent,			//	VkExtent3D					imageExtent;
+						};
+						vkd.cmdCopyImageToBuffer(*cmdBuffer, *srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **buffers[i], 1, &imageToBufferCopy);
+
+						const vk::VkBufferMemoryBarrier bufferBarrier =
+						{
+							vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,// VkStructureType	sType;
+							DE_NULL,									// const void*		pNext;
+							vk::VK_ACCESS_TRANSFER_WRITE_BIT,			// VkAccessFlags	srcAccessMask;
+							vk::VK_ACCESS_TRANSFER_READ_BIT,			// VkAccessFlags	dstAccessMask;
+							VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
+							VK_QUEUE_FAMILY_IGNORED,					// deUint32			dstQueueFamilyIndex;
+							**buffers[i],								// VkBuffer			buffer;
+							0u,											// VkDeviceSize		offset;
+							VK_WHOLE_SIZE,								// VkDeviceSize		size;
+						};
+
+						vkd.cmdPipelineBarrier(*cmdBuffer,
+												(vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+												(vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+												(vk::VkDependencyFlags)0u,
+												0u,
+												(const vk::VkMemoryBarrier*)DE_NULL,
+												1u,
+												&bufferBarrier,
+												0u,
+												(const vk::VkImageMemoryBarrier*)DE_NULL);
+
+						const vk::VkBufferImageCopy bufferToImageCopy = {
+							0u,							//	VkDeviceSize				bufferOffset;
+							0u,							//	uint32_t					bufferRowLength;
+							0u,							//	uint32_t					bufferImageHeight;
+							copies[i].dstSubresource,	//	VkImageSubresourceLayers	imageSubresource;
+							copies[i].dstOffset,		//	VkOffset3D					imageOffset;
+							copies[i].extent,			//	VkExtent3D					imageExtent;
+						};
+						vkd.cmdCopyBufferToImage(*cmdBuffer, **buffers[i], *dstImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferToImageCopy);
+					}
+					else
+					{
+						vkd.cmdCopyImage(*cmdBuffer, *srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copies[i]);
+					}
 
 					const vk::VkImageMemoryBarrier preCopyBarrier =
 					{
@@ -926,12 +1078,14 @@ void initYcbcrDefaultCopyTests (tcu::TestCaseGroup* testGroup)
 
 					for (size_t srcDisjointNdx = 0; srcDisjointNdx < 2; srcDisjointNdx++)
 					for (size_t dstDisjointNdx = 0; dstDisjointNdx < 2; dstDisjointNdx++)
+					for (size_t useBufferNdx = 0; useBufferNdx < 2; useBufferNdx++)
 					{
-						const bool			srcDisjoint	= srcDisjointNdx == 1;
-						const bool			dstDisjoint	= dstDisjointNdx == 1;
-						const TestConfig	config		(ImageConfig(srcFormat, srcTiling, srcDisjoint, srcSize), ImageConfig(dstFormat, dstTiling, dstDisjoint, dstSize));
+						const bool			srcDisjoint			= srcDisjointNdx == 1;
+						const bool			dstDisjoint			= dstDisjointNdx == 1;
+						const bool			useBuffer			= useBufferNdx == 1;
+						const TestConfig	config		(ImageConfig(srcFormat, srcTiling, srcDisjoint, srcSize), ImageConfig(dstFormat, dstTiling, dstDisjoint, dstSize), useBuffer);
 
-						addFunctionCase(dstFormatGroup.get(), string(srcTilingName) + (srcDisjoint ? "_disjoint_" : "_") + string(dstTilingName) + (dstDisjoint ? "_disjoint" : ""), "", checkSupport, imageCopyTest, config);
+						addFunctionCase(dstFormatGroup.get(), string(srcTilingName) + (srcDisjoint ? "_disjoint_" : "_") + (useBuffer ? "buffer_" : "") + string(dstTilingName) + (dstDisjoint ? "_disjoint" : ""), "", checkSupport, imageCopyTest, config);
 					}
 				}
 			}
@@ -1038,7 +1192,7 @@ void initYcbcrDimensionsCopyTests (tcu::TestCaseGroup* testGroup)
 						{
 							const bool			srcDisjoint	= srcDisjointNdx == 1;
 							const bool			dstDisjoint	= dstDisjointNdx == 1;
-							const TestConfig	config		(ImageConfig(srcFormat, srcTiling, srcDisjoint, srcSize), ImageConfig(dstFormat, dstTiling, dstDisjoint, dstSize));
+							const TestConfig	config		(ImageConfig(srcFormat, srcTiling, srcDisjoint, srcSize), ImageConfig(dstFormat, dstTiling, dstDisjoint, dstSize), false);
 
 							addFunctionCase(dstFormatGroup.get(), string(srcTilingName) + (srcDisjoint ? "_disjoint_" : "_") + string(dstTilingName) + (dstDisjoint ? "_disjoint" : ""), "", checkSupport, imageCopyTest, config);
 						}

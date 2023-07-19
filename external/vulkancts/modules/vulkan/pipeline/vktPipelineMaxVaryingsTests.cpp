@@ -1055,7 +1055,7 @@ tcu::TestStatus test(Context& context, const MaxVaryingsParam param)
 					.setDefaultDepthStencilState()
 					.setDefaultMultisampleState()
 					.setDefaultColorBlendState()
-					.setupVertexInputStete()
+					.setupVertexInputState()
 					.setupPreRasterizationShaderState(viewport,
 													scissor,
 													*pipelineLayout,

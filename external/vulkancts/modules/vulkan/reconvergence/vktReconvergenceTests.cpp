@@ -1665,7 +1665,7 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 				vk, device, allocator, makeBufferCreateInfo(sizes[i], VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
 				MemoryRequirement::HostVisible | MemoryRequirement::Cached));
 		}
-		catch(tcu::ResourceError&)
+		catch(const tcu::TestError&)
 		{
 			// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
 			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed device memory allocation " + de::toString(sizes[i]) + " bytes");
@@ -1837,7 +1837,7 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 				vk, device, allocator, makeBufferCreateInfo(sizes[1], VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
 				MemoryRequirement::HostVisible | MemoryRequirement::Cached));
 		}
-		catch(tcu::ResourceError&)
+		catch(const tcu::TestError&)
 		{
 			// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
 			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed device memory allocation " + de::toString(sizes[1]) + " bytes");

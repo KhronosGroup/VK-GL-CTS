@@ -301,7 +301,7 @@ protected:
 #endif // CTS_USES_VULKANSC
 		{
 			m_pipeline_1
-					.setupVertexInputStete(&m_vertexInputState)
+					.setupVertexInputState(&m_vertexInputState)
 					.setupPreRasterizationShaderState(viewports,
 													  scissors,
 													  *m_pipelineLayout,
@@ -337,7 +337,7 @@ protected:
 #endif // CTS_USES_VULKANSC
 		{
 			m_pipeline_2
-					.setupVertexInputStete(&m_vertexInputState)
+					.setupVertexInputState(&m_vertexInputState)
 					.setupPreRasterizationShaderState(viewports,
 													  scissors,
 													  *m_pipelineLayout,
@@ -737,11 +737,12 @@ void DepthBoundsTestInstance::initPipeline (const vk::VkDevice device)
 	std::vector<vk::VkViewport>			viewports	{ { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } };
 	std::vector<vk::VkRect2D>			scissors	{ { { 0u, 0u }, { 0u, 0u } } };
 
-	const PipelineCreateInfo::ColorBlendState::Attachment	attachmentState;
-	const PipelineCreateInfo::ColorBlendState				colorBlendState(1u, static_cast<const vk::VkPipelineColorBlendAttachmentState*>(&attachmentState));
-	const PipelineCreateInfo::RasterizerState				rasterizerState;
-	const PipelineCreateInfo::DepthStencilState				depthStencilState(false, false, vk::VK_COMPARE_OP_NEVER, true);
-	const PipelineCreateInfo::DynamicState					dynamicState;
+	const PipelineCreateInfo::ColorBlendState::Attachment		attachmentState;
+	const PipelineCreateInfo::ColorBlendState					colorBlendState(1u, static_cast<const vk::VkPipelineColorBlendAttachmentState*>(&attachmentState));
+	const PipelineCreateInfo::RasterizerState					rasterizerState;
+	const PipelineCreateInfo::DepthStencilState::StencilOpState stencilOpState(vk::VK_STENCIL_OP_KEEP, vk::VK_STENCIL_OP_KEEP, vk::VK_STENCIL_OP_KEEP);
+	const PipelineCreateInfo::DepthStencilState					depthStencilState(false, false, vk::VK_COMPARE_OP_NEVER, true, 0u, stencilOpState, stencilOpState);
+	const PipelineCreateInfo::DynamicState						dynamicState;
 
 	m_pipeline.setDefaultTopology(m_topology)
 			  .setDynamicState(static_cast<const vk::VkPipelineDynamicStateCreateInfo*>(&dynamicState))
@@ -764,7 +765,7 @@ void DepthBoundsTestInstance::initPipeline (const vk::VkDevice device)
 #endif // CTS_USES_VULKANSC
 	{
 		m_pipeline
-			  .setupVertexInputStete(&m_vertexInputState)
+			  .setupVertexInputState(&m_vertexInputState)
 			  .setupPreRasterizationShaderState(viewports,
 												scissors,
 												*m_pipelineLayout,

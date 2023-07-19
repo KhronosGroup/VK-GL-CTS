@@ -80,6 +80,9 @@ deInt32 ConfigInfo::getAttribute (deUint32 attribute) const
 		// EGL_EXT_pixel_format_float
 		case EGL_COLOR_COMPONENT_TYPE_EXT:	return colorComponentType;
 
+		// EGL_ANDROID_recordable
+		case EGL_RECORDABLE_ANDROID:		return recordableAndroid;
+
 		default:							TCU_THROW(InternalError, "Unknown attribute");
 	}
 }
@@ -134,6 +137,13 @@ void queryExtConfigInfo (const eglw::Library& egl, eglw::EGLDisplay display, egl
 		egl.getConfigAttrib(display, config, EGL_YUV_PLANE_BPP_EXT,			(EGLint*)&dst->yuvPlaneBpp);
 
 		EGLU_CHECK_MSG(egl, "Failed to query EGL_EXT_yuv_surface config attribs");
+	}
+
+	if (de::contains(extensions.begin(), extensions.end(), "EGL_ANDROID_recordable"))
+	{
+		egl.getConfigAttrib(display, config, EGL_RECORDABLE_ANDROID,            (EGLint*)&dst->recordableAndroid);
+
+		EGLU_CHECK_MSG(egl, "Failed to query EGL_ANDROID_recordable config attribs");
 	}
 
 	if (de::contains(extensions.begin(), extensions.end(), "EGL_EXT_pixel_format_float"))

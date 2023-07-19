@@ -164,19 +164,6 @@ Move<VkDevice> createDeviceWithPushDescriptor (const Context&				context,
 	return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &deviceParams, DE_NULL);
 }
 
-deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
-{
-	const vector<VkQueueFamilyProperties>	queueProps	= getPhysicalDeviceQueueFamilyProperties(vkInstance, physicalDevice);
-
-	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
-	{
-		if ((queueProps[queueNdx].queueFlags & requiredCaps) == requiredCaps)
-			return (deUint32)queueNdx;
-	}
-
-	TCU_THROW(NotSupportedError, "No matching queue found");
-}
-
 vector<Vertex4RGBA> createQuads (deUint32 numQuads, float size)
 {
 	vector<Vertex4RGBA>	vertices;
@@ -493,7 +480,7 @@ void PushDescriptorBufferGraphicsTestInstance::init (void)
 						  .setDefaultMultisampleState()
 						  .setDefaultColorBlendState()
 						  .setDefaultTopology(topology)
-						  .setupVertexInputStete(&vertexInputStateParams)
+						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 															scissors,
 															*m_preRasterizationStatePipelineLayout,
@@ -1572,7 +1559,7 @@ void PushDescriptorImageGraphicsTestInstance::init (void)
 						  .setDefaultDepthStencilState()
 						  .setDefaultMultisampleState()
 						  .setDefaultColorBlendState()
-						  .setupVertexInputStete(&vertexInputStateParams)
+						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 															scissors,
 															*m_preRasterizationStatePipelineLayout,
@@ -2976,7 +2963,7 @@ void PushDescriptorTexelBufferGraphicsTestInstance::init (void)
 						  .setDefaultDepthStencilState()
 						  .setDefaultMultisampleState()
 						  .setDefaultColorBlendState()
-						  .setupVertexInputStete(&vertexInputStateParams)
+						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 															scissors,
 															*m_preRasterizationStatePipelineLayout,
@@ -4033,7 +4020,7 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init (void)
 								  .setDefaultDepthStencilState()
 								  .setDefaultMultisampleState()
 								  .setDefaultColorBlendState()
-								  .setupVertexInputStete(&vertexInputStateParams)
+								  .setupVertexInputState(&vertexInputStateParams)
 								  .setupPreRasterizationShaderState(viewports,
 																	scissors,
 																	*m_preRasterizationStatePipelineLayout,

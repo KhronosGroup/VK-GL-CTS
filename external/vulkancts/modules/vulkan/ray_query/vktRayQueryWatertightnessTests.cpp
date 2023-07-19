@@ -300,6 +300,13 @@ inline float triangleArea (const float edgeALen, const float edgeBLen, const flo
 	return deFloatSqrt(q);
 }
 
+static const std::string getGeomName (bool writePointSize)
+{
+	std::ostringstream str;
+	str << "geom" << (writePointSize ? "_point_size" : "");
+	return str.str();
+}
+
 class GraphicsConfiguration : public PipelineConfiguration
 {
 public:
@@ -615,7 +622,11 @@ void GraphicsConfiguration::initPrograms (SourceCollections&	programCollection,
 		{
 			programCollection.glslSources.add("vert") << glu::VertexSource(getVertexPassthrough()) << buildOptions;
 
+			for (deUint32 i = 0; i < 2; ++i)
 			{
+				const bool writePointSize = i == 1;
+				std::string pointSize = writePointSize ? "    gl_PointSize = 1.0f;\n" : "";
+
 				std::ostringstream src;
 				src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_460) << "\n"
 					<< "#extension GL_EXT_ray_query : require\n"
@@ -636,9 +647,10 @@ void GraphicsConfiguration::initPrograms (SourceCollections&	programCollection,
 					<< "  const ivec3 pos      = ivec3(posId % size.x, posId / size.x, 0);\n"
 					<< "\n"
 					<< "  testFunc(pos, size);\n"
+					<< pointSize
 					<< "}\n";
 
-				programCollection.glslSources.add("geom") << glu::GeometrySource(src.str()) << buildOptions;
+				programCollection.glslSources.add(getGeomName(writePointSize)) << glu::GeometrySource(src.str()) << buildOptions;
 			}
 
 			break;
@@ -814,15 +826,21 @@ Move<VkPipeline> GraphicsConfiguration::makeGraphicsPipeline (Context&		context,
 void GraphicsConfiguration::initConfiguration (Context&		context,
 											   TestParams&	testParams)
 {
-	const DeviceInterface&	vkd			= context.getDeviceInterface();
-	const VkDevice			device		= context.getDevice();
-	Allocator&				allocator	= context.getDefaultAllocator();
-	vk::BinaryCollection&	collection	= context.getBinaryCollection();
-	VkShaderStageFlags		shaders		= static_cast<VkShaderStageFlags>(0);
-	deUint32				shaderCount	= 0;
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	const DeviceInterface&		vkd				= context.getDeviceInterface();
+	const VkDevice				device			= context.getDevice();
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	Allocator&					allocator		= context.getDefaultAllocator();
+	vk::BinaryCollection&		collection		= context.getBinaryCollection();
+	VkShaderStageFlags			shaders			= static_cast<VkShaderStageFlags>(0);
+	deUint32					shaderCount		= 0;
+
+	VkPhysicalDeviceFeatures features;
+	vki.getPhysicalDeviceFeatures(physicalDevice, &features);
+	const bool				pointSizeRequired = features.shaderTessellationAndGeometryPointSize;
 
 	if (collection.contains("vert")) shaders |= VK_SHADER_STAGE_VERTEX_BIT;
-	if (collection.contains("geom")) shaders |= VK_SHADER_STAGE_GEOMETRY_BIT;
+	if (collection.contains(getGeomName(pointSizeRequired))) shaders |= VK_SHADER_STAGE_GEOMETRY_BIT;
 	if (collection.contains("tesc")) shaders |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
 	if (collection.contains("tese")) shaders |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 	if (collection.contains("frag")) shaders |= VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -830,11 +848,13 @@ void GraphicsConfiguration::initConfiguration (Context&		context,
 	for (BinaryCollection::Iterator it = collection.begin(); it != collection.end(); ++it)
 		shaderCount++;
 
+	if (collection.contains(getGeomName(!pointSizeRequired))) --shaderCount;
+
 	if (shaderCount != (deUint32)dePop32(shaders))
 		TCU_THROW(InternalError, "Unused shaders detected in the collection");
 
 	if (0 != (shaders & VK_SHADER_STAGE_VERTEX_BIT))					m_vertShaderModule = createShaderModule(vkd, device, collection.get("vert"), 0);
-	if (0 != (shaders & VK_SHADER_STAGE_GEOMETRY_BIT))					m_geomShaderModule = createShaderModule(vkd, device, collection.get("geom"), 0);
+	if (0 != (shaders & VK_SHADER_STAGE_GEOMETRY_BIT))					m_geomShaderModule = createShaderModule(vkd, device, collection.get(getGeomName(pointSizeRequired)), 0);
 	if (0 != (shaders & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT))		m_tescShaderModule = createShaderModule(vkd, device, collection.get("tesc"), 0);
 	if (0 != (shaders & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT))	m_teseShaderModule = createShaderModule(vkd, device, collection.get("tese"), 0);
 	if (0 != (shaders & VK_SHADER_STAGE_FRAGMENT_BIT))					m_fragShaderModule = createShaderModule(vkd, device, collection.get("frag"), 0);

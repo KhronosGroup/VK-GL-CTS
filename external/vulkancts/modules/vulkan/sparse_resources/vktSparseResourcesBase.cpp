@@ -81,7 +81,7 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 	// If requested, create an intance with device groups
 	if (m_useDeviceGroups)
 	{
-		const std::vector<std::string>	requiredExtensions(1, "VK_KHR_device_group_creation");
+		const std::vector<std::string>	requiredExtensions { "VK_KHR_device_group_creation", "VK_KHR_get_physical_device_properties2" };
 		m_deviceGroupInstance	=		createCustomInstanceWithExtensions(m_context, requiredExtensions);
 		devGroupProperties		=		enumeratePhysicalDeviceGroups(m_context.getInstanceInterface(), m_deviceGroupInstance);
 		m_numPhysicalDevices	=		devGroupProperties[m_deviceGroupIdx].physicalDeviceCount;
@@ -99,6 +99,10 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 
 		if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_device_group"))
 			deviceExtensions.push_back("VK_KHR_device_group");
+	}
+	else
+	{
+		m_context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 	}
 
 	const VkInstance&					instance(m_useDeviceGroups ? m_deviceGroupInstance : m_context.getInstance());
@@ -175,6 +179,7 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 	}
 
 	vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT shaderImageAtomicInt64Features = m_context.getShaderImageAtomicInt64FeaturesEXT();
+	shaderImageAtomicInt64Features.pNext = DE_NULL;
 
 	const VkPhysicalDeviceFeatures	deviceFeatures	= getPhysicalDeviceFeatures(instanceDriver, physicalDevice);
 	vk::VkPhysicalDeviceFeatures2	deviceFeatures2	= getPhysicalDeviceFeatures2(instanceDriver, physicalDevice);

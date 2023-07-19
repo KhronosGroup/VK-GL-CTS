@@ -36,6 +36,7 @@
 #include <cstring>
 #include <vector>
 #include <limits>
+#include <cstdint>
 #include <fenv.h>
 
 namespace vkt
@@ -1563,7 +1564,7 @@ public:
 					  ValueId		_input1,
 					  ValueId		_input2,
 					  ValueId		_expectedOutput,
-					  deBool		_fp16Without16BitStorage = DE_FALSE)
+					  bool			_fp16Without16BitStorage = false)
 		: baseName(_baseName)
 		, behaviorFlags(_behaviorFlags)
 		, operationId(_operatinId)
@@ -1581,7 +1582,7 @@ public:
 	OperationId				operationId;
 	ValueId					input[2];
 	ValueId					expectedOutput;
-	deBool					fp16Without16BitStorage;
+	bool					fp16Without16BitStorage;
 };
 
 // Helper structure used to store specialized operation
@@ -1620,7 +1621,7 @@ private:
 							  OperationId operationId,
 							  ValueId denormPreserveResult,
 							  ValueId denormFTZResult,
-							  deBool fp16WithoutStorage = DE_FALSE) const;
+							  bool fp16WithoutStorage = false) const;
 
 private:
 
@@ -2148,10 +2149,10 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 
 		if (isFP16)
 		{
-			testCases.push_back(OTC("denorm_op_var_flush_to_zero_nostorage",		B_DENORM_FLUSH,					 operation, V_DENORM, V_ONE,		binaryCase.opVarResult, DE_TRUE));
-			testCases.push_back(OTC("denorm_op_denorm_flush_to_zero_nostorage",		B_DENORM_FLUSH,					 operation, V_DENORM, V_DENORM,		binaryCase.opDenormResult, DE_TRUE));
-			testCases.push_back(OTC("denorm_op_inf_flush_to_zero_nostorage",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_INF,		binaryCase.opInfResult, DE_TRUE));
-			testCases.push_back(OTC("denorm_op_nan_flush_to_zero_nostorage",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_NAN,		binaryCase.opNanResult, DE_TRUE));
+			testCases.push_back(OTC("denorm_op_var_flush_to_zero_nostorage",		B_DENORM_FLUSH,					 operation, V_DENORM, V_ONE,		binaryCase.opVarResult, true));
+			testCases.push_back(OTC("denorm_op_denorm_flush_to_zero_nostorage",		B_DENORM_FLUSH,					 operation, V_DENORM, V_DENORM,		binaryCase.opDenormResult, true));
+			testCases.push_back(OTC("denorm_op_inf_flush_to_zero_nostorage",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_INF,		binaryCase.opInfResult, true));
+			testCases.push_back(OTC("denorm_op_nan_flush_to_zero_nostorage",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_NAN,		binaryCase.opNanResult, true));
 		}
 	}
 
@@ -2162,7 +2163,7 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		OperationId			operation = unaryCase.operationId;
 		testCases.push_back(OTC("op_denorm_flush_to_zero", B_DENORM_FLUSH, operation, V_DENORM, V_UNUSED, unaryCase.result));
 		if (isFP16)
-			testCases.push_back(OTC("op_denorm_flush_to_zero_nostorage", B_DENORM_FLUSH, operation, V_DENORM, V_UNUSED, unaryCase.result, DE_TRUE));
+			testCases.push_back(OTC("op_denorm_flush_to_zero_nostorage", B_DENORM_FLUSH, operation, V_DENORM, V_UNUSED, unaryCase.result, true));
 
 	}
 
@@ -2178,10 +2179,10 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 
 		if (isFP16)
 		{
-			testCases.push_back(OTC("denorm_op_var_preserve_nostorage",			B_DENORM_PRESERVE,					operation, V_DENORM,	V_ONE,		binaryCase.opVarResult, DE_TRUE));
-			testCases.push_back(OTC("denorm_op_denorm_preserve_nostorage",		B_DENORM_PRESERVE,					operation, V_DENORM,	V_DENORM,	binaryCase.opDenormResult, DE_TRUE));
-			testCases.push_back(OTC("denorm_op_inf_preserve_nostorage",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_INF,		binaryCase.opInfResult, DE_TRUE));
-			testCases.push_back(OTC("denorm_op_nan_preserve_nostorage",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_NAN,		binaryCase.opNanResult, DE_TRUE));
+			testCases.push_back(OTC("denorm_op_var_preserve_nostorage",			B_DENORM_PRESERVE,					operation, V_DENORM,	V_ONE,		binaryCase.opVarResult, true));
+			testCases.push_back(OTC("denorm_op_denorm_preserve_nostorage",		B_DENORM_PRESERVE,					operation, V_DENORM,	V_DENORM,	binaryCase.opDenormResult, true));
+			testCases.push_back(OTC("denorm_op_inf_preserve_nostorage",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_INF,		binaryCase.opInfResult, true));
+			testCases.push_back(OTC("denorm_op_nan_preserve_nostorage",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_NAN,		binaryCase.opNanResult, true));
 		}
 	}
 
@@ -2192,7 +2193,7 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		OperationId			operation	= unaryCase.operationId;
 		testCases.push_back(OTC("op_denorm_preserve", B_DENORM_PRESERVE, operation, V_DENORM, V_UNUSED, unaryCase.result));
 		if (isFP16)
-			testCases.push_back(OTC("op_denorm_preserve_nostorage", B_DENORM_PRESERVE, operation, V_DENORM, V_UNUSED, unaryCase.result, DE_TRUE));
+			testCases.push_back(OTC("op_denorm_preserve_nostorage", B_DENORM_PRESERVE, operation, V_DENORM, V_UNUSED, unaryCase.result, true));
 	}
 
 	struct ZINCase
@@ -2246,11 +2247,11 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 
 		if (isFP16)
 		{
-			testCases.push_back(OTC("zero_op_var_preserve_nostorage",				B_ZIN_PRESERVE, zc.operationId, V_ZERO,			zc.secondArgument,	zc.preserveZeroResult, DE_TRUE));
-			testCases.push_back(OTC("signed_zero_op_var_preserve_nostorage",		B_ZIN_PRESERVE, zc.operationId, V_MINUS_ZERO,	zc.secondArgument,	zc.preserveSZeroResult, DE_TRUE));
-			testCases.push_back(OTC("inf_op_var_preserve_nostorage",				B_ZIN_PRESERVE, zc.operationId, V_INF,			zc.secondArgument,	zc.preserveInfResult, DE_TRUE));
-			testCases.push_back(OTC("signed_inf_op_var_preserve_nostorage",			B_ZIN_PRESERVE, zc.operationId, V_MINUS_INF,	zc.secondArgument,	zc.preserveSInfResult, DE_TRUE));
-			testCases.push_back(OTC("nan_op_var_preserve_nostorage",				B_ZIN_PRESERVE, zc.operationId, V_NAN,			zc.secondArgument,	zc.preserveNanResult, DE_TRUE));
+			testCases.push_back(OTC("zero_op_var_preserve_nostorage",				B_ZIN_PRESERVE, zc.operationId, V_ZERO,			zc.secondArgument,	zc.preserveZeroResult, true));
+			testCases.push_back(OTC("signed_zero_op_var_preserve_nostorage",		B_ZIN_PRESERVE, zc.operationId, V_MINUS_ZERO,	zc.secondArgument,	zc.preserveSZeroResult, true));
+			testCases.push_back(OTC("inf_op_var_preserve_nostorage",				B_ZIN_PRESERVE, zc.operationId, V_INF,			zc.secondArgument,	zc.preserveInfResult, true));
+			testCases.push_back(OTC("signed_inf_op_var_preserve_nostorage",			B_ZIN_PRESERVE, zc.operationId, V_MINUS_INF,	zc.secondArgument,	zc.preserveSInfResult, true));
+			testCases.push_back(OTC("nan_op_var_preserve_nostorage",				B_ZIN_PRESERVE, zc.operationId, V_NAN,			zc.secondArgument,	zc.preserveNanResult, true));
 		}
 	}
 
@@ -2269,11 +2270,11 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 
 		if (isFP16)
 		{
-			testCases.push_back(OTC("op_zero_preserve_nostorage",			B_ZIN_PRESERVE,zc.operationId, V_ZERO,			V_UNUSED,	zc.preserveZeroResult, DE_TRUE));
-			testCases.push_back(OTC("op_signed_zero_preserve_nostorage",	B_ZIN_PRESERVE,zc.operationId, V_MINUS_ZERO,	V_UNUSED,	zc.preserveSZeroResult, DE_TRUE));
-			testCases.push_back(OTC("op_inf_preserve_nostorage",			B_ZIN_PRESERVE,zc.operationId, V_INF,			V_UNUSED,	zc.preserveInfResult, DE_TRUE));
-			testCases.push_back(OTC("op_signed_inf_preserve_nostorage",		B_ZIN_PRESERVE,zc.operationId, V_MINUS_INF,		V_UNUSED,	zc.preserveSInfResult, DE_TRUE));
-			testCases.push_back(OTC("op_nan_preserve_nostorage",			B_ZIN_PRESERVE,zc.operationId, V_NAN,			V_UNUSED,	zc.preserveNanResult, DE_TRUE));
+			testCases.push_back(OTC("op_zero_preserve_nostorage",			B_ZIN_PRESERVE,zc.operationId, V_ZERO,			V_UNUSED,	zc.preserveZeroResult, true));
+			testCases.push_back(OTC("op_signed_zero_preserve_nostorage",	B_ZIN_PRESERVE,zc.operationId, V_MINUS_ZERO,	V_UNUSED,	zc.preserveSZeroResult, true));
+			testCases.push_back(OTC("op_inf_preserve_nostorage",			B_ZIN_PRESERVE,zc.operationId, V_INF,			V_UNUSED,	zc.preserveInfResult, true));
+			testCases.push_back(OTC("op_signed_inf_preserve_nostorage",		B_ZIN_PRESERVE,zc.operationId, V_MINUS_INF,		V_UNUSED,	zc.preserveSInfResult, true));
+			testCases.push_back(OTC("op_nan_preserve_nostorage",			B_ZIN_PRESERVE,zc.operationId, V_NAN,			V_UNUSED,	zc.preserveNanResult, true));
 		}
 	}
 
@@ -2304,7 +2305,7 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		const ComparisonCase& cc = comparisonCases[op];
 		testCases.push_back(OTC("denorm_op_var_preserve", B_DENORM_PRESERVE, cc.operationId, V_DENORM, V_ONE, cc.denormPreserveResult));
 		if (isFP16)
-			testCases.push_back(OTC("denorm_op_var_preserve_nostorage", B_DENORM_PRESERVE, cc.operationId, V_DENORM, V_ONE, cc.denormPreserveResult, DE_TRUE));
+			testCases.push_back(OTC("denorm_op_var_preserve_nostorage", B_DENORM_PRESERVE, cc.operationId, V_DENORM, V_ONE, cc.denormPreserveResult, true));
 	}
 
 	if (argumentsFromInput)
@@ -2347,8 +2348,8 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 			testCases.push_back(OTC("rounding_rtz_op", B_RTZ_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTZResult));
 			if (isFP16)
 			{
-				testCases.push_back(OTC("rounding_rte_op_nostorage", B_RTE_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTEResult, DE_TRUE));
-				testCases.push_back(OTC("rounding_rtz_op_nostorage", B_RTZ_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTZResult, DE_TRUE));
+				testCases.push_back(OTC("rounding_rte_op_nostorage", B_RTE_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTEResult, true));
+				testCases.push_back(OTC("rounding_rtz_op_nostorage", B_RTZ_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTZResult, true));
 			}
 		}
 	}
@@ -2368,15 +2369,15 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
 			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
 
-			testCases.push_back(OTC("rounding_rte_conv_from_fp32_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, DE_TRUE));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, DE_TRUE));
-			testCases.push_back(OTC("rounding_rte_conv_from_fp64_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, DE_TRUE));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, DE_TRUE));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp32_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, true));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, true));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, true));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, true));
 
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, DE_TRUE));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, DE_TRUE));
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, DE_TRUE));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, DE_TRUE));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, true));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, true));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, true));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, true));
 
 			// verify that VkShaderFloatingPointRoundingModeKHR can be overridden for a given instruction by the FPRoundingMode decoration.
 			// FPRoundingMode decoration requires VK_KHR_16bit_storage.
@@ -2386,8 +2387,8 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 
 		createUnaryTestCases(testCases, OID_CONV_FROM_FP32, V_CONV_DENORM_SMALLER, V_ZERO);
 		createUnaryTestCases(testCases, OID_CONV_FROM_FP64, V_CONV_DENORM_BIGGER, V_ZERO);
-		createUnaryTestCases(testCases, OID_CONV_FROM_FP32, V_CONV_DENORM_SMALLER, V_ZERO, DE_TRUE);
-		createUnaryTestCases(testCases, OID_CONV_FROM_FP64, V_CONV_DENORM_BIGGER, V_ZERO, DE_TRUE);
+		createUnaryTestCases(testCases, OID_CONV_FROM_FP32, V_CONV_DENORM_SMALLER, V_ZERO, true);
+		createUnaryTestCases(testCases, OID_CONV_FROM_FP64, V_CONV_DENORM_BIGGER, V_ZERO, true);
 
 	}
 	else if (typeTestResults->floatType() == FP32)
@@ -2412,7 +2413,7 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		}
 
 		createUnaryTestCases(testCases, OID_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP32);
-		createUnaryTestCases(testCases, OID_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP32, DE_TRUE);
+		createUnaryTestCases(testCases, OID_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP32, true);
 		createUnaryTestCases(testCases, OID_CONV_FROM_FP64, V_CONV_DENORM_BIGGER, V_ZERO);
 	}
 	else // FP64
@@ -2428,7 +2429,7 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		}
 
 		createUnaryTestCases(testCases, OID_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP64);
-		createUnaryTestCases(testCases, OID_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP64, DE_TRUE);
+		createUnaryTestCases(testCases, OID_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP64, true);
 		createUnaryTestCases(testCases, OID_CONV_FROM_FP32, V_CONV_DENORM_BIGGER, V_ZERO_OR_FP32_DENORM_TO_FP64);
 	}
 }
@@ -2438,21 +2439,21 @@ const Operation& TestCasesBuilder::getOperation(OperationId id) const
 	return m_operations.at(id);
 }
 
-void TestCasesBuilder::createUnaryTestCases(vector<OperationTestCase>& testCases, OperationId operationId, ValueId denormPreserveResult, ValueId denormFTZResult, deBool fp16WithoutStorage) const
+void TestCasesBuilder::createUnaryTestCases(vector<OperationTestCase>& testCases, OperationId operationId, ValueId denormPreserveResult, ValueId denormFTZResult, bool fp16WithoutStorage) const
 {
 	if (fp16WithoutStorage)
 	{
 		// Denom - Preserve
-		testCases.push_back(OTC("op_denorm_preserve_nostorage",		B_DENORM_PRESERVE,	operationId, V_DENORM,	V_UNUSED, denormPreserveResult, DE_TRUE));
+		testCases.push_back(OTC("op_denorm_preserve_nostorage",		B_DENORM_PRESERVE,	operationId, V_DENORM,	V_UNUSED, denormPreserveResult, true));
 
 		// Denorm - FlushToZero
-		testCases.push_back(OTC("op_denorm_flush_to_zero_nostorage",	B_DENORM_FLUSH,		operationId, V_DENORM,	V_UNUSED, denormFTZResult, DE_TRUE));
+		testCases.push_back(OTC("op_denorm_flush_to_zero_nostorage",	B_DENORM_FLUSH,		operationId, V_DENORM,	V_UNUSED, denormFTZResult, true));
 
 		// Signed Zero Inf Nan - Preserve
-		testCases.push_back(OTC("op_zero_preserve_nostorage",			B_ZIN_PRESERVE,		operationId, V_ZERO,		V_UNUSED, V_ZERO, DE_TRUE));
-		testCases.push_back(OTC("op_signed_zero_preserve_nostorage",	B_ZIN_PRESERVE,		operationId, V_MINUS_ZERO,	V_UNUSED, V_MINUS_ZERO, DE_TRUE));
-		testCases.push_back(OTC("op_inf_preserve_nostorage",			B_ZIN_PRESERVE,		operationId, V_INF,			V_UNUSED, V_INF, DE_TRUE));
-		testCases.push_back(OTC("op_nan_preserve_nostorage",			B_ZIN_PRESERVE,		operationId, V_NAN,			V_UNUSED, V_NAN, DE_TRUE));
+		testCases.push_back(OTC("op_zero_preserve_nostorage",			B_ZIN_PRESERVE,		operationId, V_ZERO,		V_UNUSED, V_ZERO, true));
+		testCases.push_back(OTC("op_signed_zero_preserve_nostorage",	B_ZIN_PRESERVE,		operationId, V_MINUS_ZERO,	V_UNUSED, V_MINUS_ZERO, true));
+		testCases.push_back(OTC("op_inf_preserve_nostorage",			B_ZIN_PRESERVE,		operationId, V_INF,			V_UNUSED, V_INF, true));
+		testCases.push_back(OTC("op_nan_preserve_nostorage",			B_ZIN_PRESERVE,		operationId, V_NAN,			V_UNUSED, V_NAN, true));
 	}
 	else
 	{
@@ -2856,7 +2857,7 @@ protected:
 		SettingsOption							fp16Option;
 		SettingsOption							fp32Option;
 		SettingsOption							fp64Option;
-		deBool									fp16Without16BitStorage;
+		bool									fp16Without16BitStorage;
 	};
 
 	void specializeOperation(const OperationTestCaseInfo&	testCaseInfo,
@@ -3359,85 +3360,85 @@ void ComputeTestGroupBuilder::createSettingsTests(TestCaseGroup* parentGroup)
 		// name															mode			independenceSetting		fp16Option		fp32Option		fp64Option		fp16Without16bitstorage
 
 		// test rounding modes when only two float widths are available
-		{ "rounding_ind_all_fp16_rte_fp32_rtz",							SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_UNUSED,		DE_FALSE },
-		{ "rounding_ind_all_fp16_rtz_fp32_rte",							SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_UNUSED,		DE_FALSE },
-		{ "rounding_ind_32_fp16_rte_fp32_rtz",							SM_ROUNDING,	independence32,			SO_RTE,			SO_RTZ,			SO_UNUSED,		DE_FALSE },
-		{ "rounding_ind_32_fp16_rtz_fp32_rte",							SM_ROUNDING,	independence32,			SO_RTZ,			SO_RTE,			SO_UNUSED,		DE_FALSE },
-		{ "rounding_ind_all_fp16_rte_fp64_rtz",							SM_ROUNDING,	independenceAll,		SO_RTE,			SO_UNUSED,		SO_RTZ,			DE_FALSE },
-		{ "rounding_ind_all_fp16_rtz_fp64_rte",							SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_UNUSED,		SO_RTE,			DE_FALSE },
-		{ "rounding_ind_all_fp32_rte_fp64_rtz",							SM_ROUNDING,	independenceAll,		SO_UNUSED,		SO_RTE,			SO_RTZ,			DE_FALSE },
-		{ "rounding_ind_all_fp32_rtz_fp64_rte",							SM_ROUNDING,	independenceAll,		SO_UNUSED,		SO_RTZ,			SO_RTE,			DE_FALSE },
-		{ "rounding_ind_32_fp32_rte_fp64_rtz",							SM_ROUNDING,	independence32,			SO_UNUSED,		SO_RTE,			SO_RTZ,			DE_FALSE },
-		{ "rounding_ind_32_fp32_rtz_fp64_rte",							SM_ROUNDING,	independence32,			SO_UNUSED,		SO_RTZ,			SO_RTE,			DE_FALSE },
+		{ "rounding_ind_all_fp16_rte_fp32_rtz",							SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_UNUSED,		false },
+		{ "rounding_ind_all_fp16_rtz_fp32_rte",							SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_UNUSED,		false },
+		{ "rounding_ind_32_fp16_rte_fp32_rtz",							SM_ROUNDING,	independence32,			SO_RTE,			SO_RTZ,			SO_UNUSED,		false },
+		{ "rounding_ind_32_fp16_rtz_fp32_rte",							SM_ROUNDING,	independence32,			SO_RTZ,			SO_RTE,			SO_UNUSED,		false },
+		{ "rounding_ind_all_fp16_rte_fp64_rtz",							SM_ROUNDING,	independenceAll,		SO_RTE,			SO_UNUSED,		SO_RTZ,			false },
+		{ "rounding_ind_all_fp16_rtz_fp64_rte",							SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_UNUSED,		SO_RTE,			false },
+		{ "rounding_ind_all_fp32_rte_fp64_rtz",							SM_ROUNDING,	independenceAll,		SO_UNUSED,		SO_RTE,			SO_RTZ,			false },
+		{ "rounding_ind_all_fp32_rtz_fp64_rte",							SM_ROUNDING,	independenceAll,		SO_UNUSED,		SO_RTZ,			SO_RTE,			false },
+		{ "rounding_ind_32_fp32_rte_fp64_rtz",							SM_ROUNDING,	independence32,			SO_UNUSED,		SO_RTE,			SO_RTZ,			false },
+		{ "rounding_ind_32_fp32_rtz_fp64_rte",							SM_ROUNDING,	independence32,			SO_UNUSED,		SO_RTZ,			SO_RTE,			false },
 
 		// test rounding modes when three widths are available
-		{ "rounding_ind_all_fp16_rtz_fp32_rte_fp64_rtz",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_RTZ,			DE_FALSE },
-		{ "rounding_ind_32_fp16_rtz_fp32_rte_fp64_rtz",					SM_ROUNDING,	independence32,			SO_RTZ,			SO_RTE,			SO_RTZ,			DE_FALSE },
-		{ "rounding_ind_all_fp16_rte_fp32_rtz_fp64_rte",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_RTE,			DE_FALSE },
-		{ "rounding_ind_32_fp16_rte_fp32_rtz_fp64_rte",					SM_ROUNDING,	independence32,			SO_RTE,			SO_RTZ,			SO_RTE,			DE_FALSE },
-		{ "rounding_ind_all_fp16_rtz_fp32_rtz_fp64_rte",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTZ,			SO_RTE,			DE_FALSE },
-		{ "rounding_ind_all_fp16_rtz_fp32_rte_fp64_rte",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_RTE,			DE_FALSE },
-		{ "rounding_ind_all_fp16_rte_fp32_rte_fp64_rtz",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTE,			SO_RTZ,			DE_FALSE },
-		{ "rounding_ind_all_fp16_rte_fp32_rtz_fp64_rtz",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_RTZ,			DE_FALSE },
+		{ "rounding_ind_all_fp16_rtz_fp32_rte_fp64_rtz",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_RTZ,			false },
+		{ "rounding_ind_32_fp16_rtz_fp32_rte_fp64_rtz",					SM_ROUNDING,	independence32,			SO_RTZ,			SO_RTE,			SO_RTZ,			false },
+		{ "rounding_ind_all_fp16_rte_fp32_rtz_fp64_rte",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_RTE,			false },
+		{ "rounding_ind_32_fp16_rte_fp32_rtz_fp64_rte",					SM_ROUNDING,	independence32,			SO_RTE,			SO_RTZ,			SO_RTE,			false },
+		{ "rounding_ind_all_fp16_rtz_fp32_rtz_fp64_rte",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTZ,			SO_RTE,			false },
+		{ "rounding_ind_all_fp16_rtz_fp32_rte_fp64_rte",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_RTE,			false },
+		{ "rounding_ind_all_fp16_rte_fp32_rte_fp64_rtz",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTE,			SO_RTZ,			false },
+		{ "rounding_ind_all_fp16_rte_fp32_rtz_fp64_rtz",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_RTZ,			false },
 
 		// test denorm settings when only two float widths are available
-		{ "denorm_ind_all_fp16_flush_fp32_preserve",					SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_UNUSED,		DE_FALSE },
-		{ "denorm_ind_all_fp16_preserve_fp32_flush",					SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_UNUSED,		DE_FALSE },
-		{ "denorm_ind_32_fp16_flush_fp32_preserve",						SM_DENORMS,		independence32,			SO_FLUSH,		SO_PRESERVE,	SO_UNUSED,		DE_FALSE },
-		{ "denorm_ind_32_fp16_preserve_fp32_flush",						SM_DENORMS,		independence32,			SO_PRESERVE,	SO_FLUSH,		SO_UNUSED,		DE_FALSE },
-		{ "denorm_ind_all_fp16_flush_fp64_preserve",					SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_UNUSED,		SO_PRESERVE,	DE_FALSE },
-		{ "denorm_ind_all_fp16_preserve_fp64_flush",					SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_UNUSED,		SO_FLUSH,		DE_FALSE },
-		{ "denorm_ind_all_fp32_flush_fp64_preserve",					SM_DENORMS,		independenceAll,		SO_UNUSED,		SO_FLUSH,		SO_PRESERVE,	DE_FALSE },
-		{ "denorm_ind_all_fp32_preserve_fp64_flush",					SM_DENORMS,		independenceAll,		SO_UNUSED,		SO_PRESERVE,	SO_FLUSH,		DE_FALSE },
-		{ "denorm_ind_32_fp32_flush_fp64_preserve",						SM_DENORMS,		independence32,			SO_UNUSED,		SO_FLUSH,		SO_PRESERVE,	DE_FALSE },
-		{ "denorm_ind_32_fp32_preserve_fp64_flush",						SM_DENORMS,		independence32,			SO_UNUSED,		SO_PRESERVE,	SO_FLUSH,		DE_FALSE },
+		{ "denorm_ind_all_fp16_flush_fp32_preserve",					SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_UNUSED,		false },
+		{ "denorm_ind_all_fp16_preserve_fp32_flush",					SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_UNUSED,		false },
+		{ "denorm_ind_32_fp16_flush_fp32_preserve",						SM_DENORMS,		independence32,			SO_FLUSH,		SO_PRESERVE,	SO_UNUSED,		false },
+		{ "denorm_ind_32_fp16_preserve_fp32_flush",						SM_DENORMS,		independence32,			SO_PRESERVE,	SO_FLUSH,		SO_UNUSED,		false },
+		{ "denorm_ind_all_fp16_flush_fp64_preserve",					SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_UNUSED,		SO_PRESERVE,	false },
+		{ "denorm_ind_all_fp16_preserve_fp64_flush",					SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_UNUSED,		SO_FLUSH,		false },
+		{ "denorm_ind_all_fp32_flush_fp64_preserve",					SM_DENORMS,		independenceAll,		SO_UNUSED,		SO_FLUSH,		SO_PRESERVE,	false },
+		{ "denorm_ind_all_fp32_preserve_fp64_flush",					SM_DENORMS,		independenceAll,		SO_UNUSED,		SO_PRESERVE,	SO_FLUSH,		false },
+		{ "denorm_ind_32_fp32_flush_fp64_preserve",						SM_DENORMS,		independence32,			SO_UNUSED,		SO_FLUSH,		SO_PRESERVE,	false },
+		{ "denorm_ind_32_fp32_preserve_fp64_flush",						SM_DENORMS,		independence32,			SO_UNUSED,		SO_PRESERVE,	SO_FLUSH,		false },
 
 		// test denorm settings when three widths are available
-		{ "denorm_ind_all_fp16_preserve_fp32_flush_fp64_preserve",		SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_PRESERVE,	DE_FALSE },
-		{ "denorm_ind_32_fp16_preserve_fp32_flush_fp64_preserve",		SM_DENORMS,		independence32,			SO_PRESERVE,	SO_FLUSH,		SO_PRESERVE,	DE_FALSE },
-		{ "denorm_ind_all_fp16_flush_fp32_preserve_fp64_flush",			SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_FLUSH,		DE_FALSE },
-		{ "denorm_ind_32_fp16_flush_fp32_preserve_fp64_flush",			SM_DENORMS,		independence32,			SO_FLUSH,		SO_PRESERVE,	SO_FLUSH,		DE_FALSE },
-		{ "denorm_ind_all_fp16_preserve_fp32_preserve_fp64_flush",		SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_PRESERVE,	SO_FLUSH,		DE_FALSE },
-		{ "denorm_ind_all_fp16_preserve_fp32_flush_fp64_flush",			SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_FLUSH,		DE_FALSE },
-		{ "denorm_ind_all_fp16_flush_fp32_flush_fp64_preserve",			SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_FLUSH,		SO_PRESERVE,	DE_FALSE },
-		{ "denorm_ind_all_fp16_flush_fp32_preserve_fp64_preserve",		SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_PRESERVE,	DE_FALSE },
+		{ "denorm_ind_all_fp16_preserve_fp32_flush_fp64_preserve",		SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_PRESERVE,	false },
+		{ "denorm_ind_32_fp16_preserve_fp32_flush_fp64_preserve",		SM_DENORMS,		independence32,			SO_PRESERVE,	SO_FLUSH,		SO_PRESERVE,	false },
+		{ "denorm_ind_all_fp16_flush_fp32_preserve_fp64_flush",			SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_FLUSH,		false },
+		{ "denorm_ind_32_fp16_flush_fp32_preserve_fp64_flush",			SM_DENORMS,		independence32,			SO_FLUSH,		SO_PRESERVE,	SO_FLUSH,		false },
+		{ "denorm_ind_all_fp16_preserve_fp32_preserve_fp64_flush",		SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_PRESERVE,	SO_FLUSH,		false },
+		{ "denorm_ind_all_fp16_preserve_fp32_flush_fp64_flush",			SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_FLUSH,		false },
+		{ "denorm_ind_all_fp16_flush_fp32_flush_fp64_preserve",			SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_FLUSH,		SO_PRESERVE,	false },
+		{ "denorm_ind_all_fp16_flush_fp32_preserve_fp64_preserve",		SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_PRESERVE,	false },
 
 		// Same fp16 tests but without requiring VK_KHR_16bit_storage
 		// test rounding modes when only two float widths are available
-		{ "rounding_ind_all_fp16_rte_fp32_rtz_nostorage",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_UNUSED,		DE_TRUE },
-		{ "rounding_ind_all_fp16_rtz_fp32_rte_nostorage",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_UNUSED,		DE_TRUE },
-		{ "rounding_ind_32_fp16_rte_fp32_rtz_nostorage",				SM_ROUNDING,	independence32,			SO_RTE,			SO_RTZ,			SO_UNUSED,		DE_TRUE },
-		{ "rounding_ind_32_fp16_rtz_fp32_rte_nostorage",				SM_ROUNDING,	independence32,			SO_RTZ,			SO_RTE,			SO_UNUSED,		DE_TRUE },
-		{ "rounding_ind_all_fp16_rte_fp64_rtz_nostorage",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_UNUSED,		SO_RTZ,			DE_TRUE },
-		{ "rounding_ind_all_fp16_rtz_fp64_rte_nostorage",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_UNUSED,		SO_RTE,			DE_TRUE },
+		{ "rounding_ind_all_fp16_rte_fp32_rtz_nostorage",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_UNUSED,		true },
+		{ "rounding_ind_all_fp16_rtz_fp32_rte_nostorage",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_UNUSED,		true },
+		{ "rounding_ind_32_fp16_rte_fp32_rtz_nostorage",				SM_ROUNDING,	independence32,			SO_RTE,			SO_RTZ,			SO_UNUSED,		true },
+		{ "rounding_ind_32_fp16_rtz_fp32_rte_nostorage",				SM_ROUNDING,	independence32,			SO_RTZ,			SO_RTE,			SO_UNUSED,		true },
+		{ "rounding_ind_all_fp16_rte_fp64_rtz_nostorage",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_UNUSED,		SO_RTZ,			true },
+		{ "rounding_ind_all_fp16_rtz_fp64_rte_nostorage",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_UNUSED,		SO_RTE,			true },
 
 		// test rounding modes when three widths are available
-		{ "rounding_ind_all_fp16_rtz_fp32_rte_fp64_rtz_nostorage",		SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_RTZ,			DE_TRUE },
-		{ "rounding_ind_32_fp16_rtz_fp32_rte_fp64_rtz_nostorage",		SM_ROUNDING,	independence32,			SO_RTZ,			SO_RTE,			SO_RTZ,			DE_TRUE },
-		{ "rounding_ind_all_fp16_rte_fp32_rtz_fp64_rte_nostorage",		SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_RTE,			DE_TRUE },
-		{ "rounding_ind_32_fp16_rte_fp32_rtz_fp64_rte_nostorage",		SM_ROUNDING,	independence32,			SO_RTE,			SO_RTZ,			SO_RTE,			DE_TRUE },
-		{ "rounding_ind_all_fp16_rtz_fp32_rtz_fp64_rte_nostorage",		SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTZ,			SO_RTE,			DE_TRUE },
-		{ "rounding_ind_all_fp16_rtz_fp32_rte_fp64_rte_nostorage",		SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_RTE,			DE_TRUE },
-		{ "rounding_ind_all_fp16_rte_fp32_rte_fp64_rtz_nostorage",		SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTE,			SO_RTZ,			DE_TRUE },
-		{ "rounding_ind_all_fp16_rte_fp32_rtz_fp64_rtz_nostorage",		SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_RTZ,			DE_TRUE },
+		{ "rounding_ind_all_fp16_rtz_fp32_rte_fp64_rtz_nostorage",		SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_RTZ,			true },
+		{ "rounding_ind_32_fp16_rtz_fp32_rte_fp64_rtz_nostorage",		SM_ROUNDING,	independence32,			SO_RTZ,			SO_RTE,			SO_RTZ,			true },
+		{ "rounding_ind_all_fp16_rte_fp32_rtz_fp64_rte_nostorage",		SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_RTE,			true },
+		{ "rounding_ind_32_fp16_rte_fp32_rtz_fp64_rte_nostorage",		SM_ROUNDING,	independence32,			SO_RTE,			SO_RTZ,			SO_RTE,			true },
+		{ "rounding_ind_all_fp16_rtz_fp32_rtz_fp64_rte_nostorage",		SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTZ,			SO_RTE,			true },
+		{ "rounding_ind_all_fp16_rtz_fp32_rte_fp64_rte_nostorage",		SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_RTE,			true },
+		{ "rounding_ind_all_fp16_rte_fp32_rte_fp64_rtz_nostorage",		SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTE,			SO_RTZ,			true },
+		{ "rounding_ind_all_fp16_rte_fp32_rtz_fp64_rtz_nostorage",		SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_RTZ,			true },
 
 		// test denorm settings when only two float widths are available
-		{ "denorm_ind_all_fp16_flush_fp32_preserve_nostorage",			SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_UNUSED,		DE_TRUE },
-		{ "denorm_ind_all_fp16_preserve_fp32_flush_nostorage",			SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_UNUSED,		DE_TRUE },
-		{ "denorm_ind_32_fp16_flush_fp32_preserve_nostorage",			SM_DENORMS,		independence32,			SO_FLUSH,		SO_PRESERVE,	SO_UNUSED,		DE_TRUE },
-		{ "denorm_ind_32_fp16_preserve_fp32_flush_nostorage",			SM_DENORMS,		independence32,			SO_PRESERVE,	SO_FLUSH,		SO_UNUSED,		DE_TRUE },
-		{ "denorm_ind_all_fp16_flush_fp64_preserve_nostorage",			SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_UNUSED,		SO_PRESERVE,	DE_TRUE },
-		{ "denorm_ind_all_fp16_preserve_fp64_flush_nostorage",			SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_UNUSED,		SO_FLUSH,		DE_TRUE },
+		{ "denorm_ind_all_fp16_flush_fp32_preserve_nostorage",			SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_UNUSED,		true },
+		{ "denorm_ind_all_fp16_preserve_fp32_flush_nostorage",			SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_UNUSED,		true },
+		{ "denorm_ind_32_fp16_flush_fp32_preserve_nostorage",			SM_DENORMS,		independence32,			SO_FLUSH,		SO_PRESERVE,	SO_UNUSED,		true },
+		{ "denorm_ind_32_fp16_preserve_fp32_flush_nostorage",			SM_DENORMS,		independence32,			SO_PRESERVE,	SO_FLUSH,		SO_UNUSED,		true },
+		{ "denorm_ind_all_fp16_flush_fp64_preserve_nostorage",			SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_UNUSED,		SO_PRESERVE,	true },
+		{ "denorm_ind_all_fp16_preserve_fp64_flush_nostorage",			SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_UNUSED,		SO_FLUSH,		true },
 
 		// test denorm settings when three widths are available
-		{ "denorm_ind_all_fp16_preserve_fp32_flush_fp64_preserve_nostorage",	SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_PRESERVE,	DE_TRUE },
-		{ "denorm_ind_32_fp16_preserve_fp32_flush_fp64_preserve_nostorage",		SM_DENORMS,		independence32,			SO_PRESERVE,	SO_FLUSH,		SO_PRESERVE,	DE_TRUE },
-		{ "denorm_ind_all_fp16_flush_fp32_preserve_fp64_flush_nostorage",		SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_FLUSH,		DE_TRUE },
-		{ "denorm_ind_32_fp16_flush_fp32_preserve_fp64_flush_nostorage",		SM_DENORMS,		independence32,			SO_FLUSH,		SO_PRESERVE,	SO_FLUSH,		DE_TRUE },
-		{ "denorm_ind_all_fp16_preserve_fp32_preserve_fp64_flush_nostorage",	SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_PRESERVE,	SO_FLUSH,		DE_TRUE },
-		{ "denorm_ind_all_fp16_preserve_fp32_flush_fp64_flush_nostorage",		SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_FLUSH,		DE_TRUE },
-		{ "denorm_ind_all_fp16_flush_fp32_flush_fp64_preserve_nostorage",		SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_FLUSH,		SO_PRESERVE,	DE_TRUE },
-		{ "denorm_ind_all_fp16_flush_fp32_preserve_fp64_preserve_nostorage",	SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_PRESERVE,	DE_TRUE },
+		{ "denorm_ind_all_fp16_preserve_fp32_flush_fp64_preserve_nostorage",	SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_PRESERVE,	true },
+		{ "denorm_ind_32_fp16_preserve_fp32_flush_fp64_preserve_nostorage",		SM_DENORMS,		independence32,			SO_PRESERVE,	SO_FLUSH,		SO_PRESERVE,	true },
+		{ "denorm_ind_all_fp16_flush_fp32_preserve_fp64_flush_nostorage",		SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_FLUSH,		true },
+		{ "denorm_ind_32_fp16_flush_fp32_preserve_fp64_flush_nostorage",		SM_DENORMS,		independence32,			SO_FLUSH,		SO_PRESERVE,	SO_FLUSH,		true },
+		{ "denorm_ind_all_fp16_preserve_fp32_preserve_fp64_flush_nostorage",	SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_PRESERVE,	SO_FLUSH,		true },
+		{ "denorm_ind_all_fp16_preserve_fp32_flush_fp64_flush_nostorage",		SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_FLUSH,		true },
+		{ "denorm_ind_all_fp16_flush_fp32_flush_fp64_preserve_nostorage",		SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_FLUSH,		SO_PRESERVE,	true },
+		{ "denorm_ind_all_fp16_flush_fp32_preserve_fp64_preserve_nostorage",	SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_PRESERVE,	true },
 	};
 
 	for(const auto& testCase : testCases)
@@ -3472,8 +3473,8 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	TypeSnippetsSP	outTypeSnippets		= specOpData.outTypeSnippets;
 	FloatType		inFloatType			= specOpData.inFloatType;
 
-	deBool			outFp16WithoutStorage	= (outFloatType == FP16) && testCase.fp16Without16BitStorage;
-	deBool			inFp16WithoutStorage	= (inFloatType == FP16) && testCase.fp16Without16BitStorage;
+	bool			outFp16WithoutStorage	= (outFloatType == FP16) && testCase.fp16Without16BitStorage;
+	bool			inFp16WithoutStorage	= (inFloatType == FP16) && testCase.fp16Without16BitStorage;
 
 	// UnpackHalf2x16 is a corner case - it returns two 32-bit floats but
 	// internaly operates on fp16 and this type should be used by float controls
@@ -4219,8 +4220,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 	TypeSnippetsSP	outTypeSnippets		= specOpData.outTypeSnippets;
 	FloatType		inFloatType			= specOpData.inFloatType;
 
-	deBool			outFp16WithoutStorage	= (outFloatType == FP16) && testCase.fp16Without16BitStorage;
-	deBool			inFp16WithoutStorage	= (inFloatType == FP16) && testCase.fp16Without16BitStorage;
+	bool			outFp16WithoutStorage	= (outFloatType == FP16) && testCase.fp16Without16BitStorage;
+	bool			inFp16WithoutStorage	= (inFloatType == FP16) && testCase.fp16Without16BitStorage;
 
 	// There may be several reasons why we need the shaderFloat16 Vulkan feature.
 	bool needsShaderFloat16 = inFp16WithoutStorage || outFp16WithoutStorage;

@@ -802,7 +802,6 @@ class Robustness1AccessInstance : public vkt::TestInstance
 public:
 								Robustness1AccessInstance	(TestContext&							testCtx,
 															 Context&								context,
-															 std::shared_ptr<CustomInstanceWrapper>	instanceWrapper,
 															 T										device,
 															 DeviceDriverPtr						deviceDriver,
 															 const Robustness1TestInfo&				testInfo);
@@ -810,7 +809,6 @@ public:
 	virtual TestStatus			iterate() override;
 
 private:
-	std::shared_ptr<CustomInstanceWrapper>						m_instanceWrapper;
 	TestContext&												m_testCtx;
 	T															m_device;
 #ifndef CTS_USES_VULKANSC
@@ -824,12 +822,10 @@ private:
 template<typename T>
 Robustness1AccessInstance<T>::Robustness1AccessInstance (TestContext&							testCtx,
 														 Context&								context,
-														 std::shared_ptr<CustomInstanceWrapper>	instanceWrapper,
 														 T										device,
 														 DeviceDriverPtr						deviceDriver,
 														 const Robustness1TestInfo&				testInfo)
 	: vkt::TestInstance				(context)
-	, m_instanceWrapper				(instanceWrapper)
 	, m_testCtx						(testCtx)
 	, m_device						(device)
 	, m_deviceDriver				(deviceDriver)
@@ -868,15 +864,14 @@ Robustness1AccessTest::Robustness1AccessTest (TestContext &testContext, const Ro
 
 TestInstance *Robustness1AccessTest::createInstance (Context &context) const
 {
-	std::shared_ptr<CustomInstanceWrapper> instanceWrapper(new CustomInstanceWrapper(context));
-	Move<VkDevice>	device = createRobustBufferAccessDevice(context, instanceWrapper->instance, instanceWrapper->instance.getDriver());
+	Move<VkDevice>	device = createRobustBufferAccessDevice(context);
 #ifndef CTS_USES_VULKANSC
-	DeviceDriverPtr	deviceDriver = DeviceDriverPtr (new DeviceDriver(context.getPlatformInterface(), instanceWrapper->instance, *device));
+	DeviceDriverPtr	deviceDriver = DeviceDriverPtr (new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device));
 #else
-	DeviceDriverPtr	deviceDriver = DeviceDriverPtr (new DeviceDriverSC(context.getPlatformInterface(), instanceWrapper->instance, *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties()), vk::DeinitDeviceDeleter( context.getResourceInterface().get(), *device ));
+	DeviceDriverPtr	deviceDriver = DeviceDriverPtr (new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties()), vk::DeinitDeviceDeleter( context.getResourceInterface().get(), *device ));
 #endif // CTS_USES_VULKANSC
 
-	return new Robustness1AccessInstance<Move<VkDevice>>(m_testCtx, context, instanceWrapper, device, deviceDriver, m_testInfo);
+	return new Robustness1AccessInstance<Move<VkDevice>>(m_testCtx, context, device, deviceDriver, m_testInfo);
 }
 
 void Robustness1AccessTest::initPrograms (SourceCollections& programCollection) const

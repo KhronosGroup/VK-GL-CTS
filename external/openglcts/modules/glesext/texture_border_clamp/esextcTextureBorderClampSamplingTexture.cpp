@@ -1,3 +1,4 @@
+
 /*-------------------------------------------------------------------------
  * OpenGL Conformance Test Suite
  * -----------------------------
@@ -30,6 +31,7 @@
 #include "esextcTextureBorderClampSamplingTexture.hpp"
 #include "esextcTextureBorderClampCompressedResources.hpp"
 #include "gluDefs.hpp"
+#include "gluTextureUtil.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
 #include "tcuTestLog.hpp"
@@ -148,6 +150,13 @@ void TextureBorderClampSamplingTexture<InputType, OutputType>::initTest(void)
 	if (!m_is_texture_border_clamp_supported)
 	{
 		throw tcu::NotSupportedError(TEXTURE_BORDER_CLAMP_NOT_SUPPORTED, "", __FILE__, __LINE__);
+	}
+
+	if (!m_is_texture_float_linear_supported && m_test_configuration.get_filtering() == GL_LINEAR &&
+		(m_test_configuration.get_input_internal_format() == GL_RGBA32F ||
+		 m_test_configuration.get_input_internal_format() == GL_DEPTH_COMPONENT32F))
+	{
+		throw tcu::NotSupportedError(TEXTURE_FLOAT_LINEAR_NOT_SUPPORTED, "", __FILE__, __LINE__);
 	}
 
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -745,6 +754,13 @@ bool TextureBorderClampSamplingTexture<InputType, OutputType>::checkResult(Outpu
 				  &resultData[0]);							/* data */
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Error reading pixels from color buffer");
 
+	tcu::TextureFormat tcuFormat =
+		glu::mapGLTransferFormat(m_test_configuration.get_output_format(), m_test_configuration.get_output_type());
+	m_testCtx.getLog() << tcu::TestLog::Image("Result", "Rendered result image",
+											  tcu::ConstPixelBufferAccess(tcuFormat, m_test_configuration.get_width(),
+																		  m_test_configuration.get_height(), 1,
+																		  &resultData[0]));
+
 	/* Choose comparision method depending on filtering mode */
 	if (m_test_configuration.get_filtering() == GL_NEAREST)
 	{
@@ -1009,16 +1025,44 @@ template <typename InputType, typename OutputType>
 bool TextureBorderClampSamplingTexture<InputType, OutputType>::checkLinear(std::vector<OutputType>& buffer,
 																		   glw::GLint layer)
 {
-	glw::GLuint centerX = m_test_configuration.get_width() / 2;
-	glw::GLuint centerY = m_test_configuration.get_height() / 2;
-	glw::GLuint stepX   = m_test_configuration.get_width() / 3;
-	glw::GLuint stepY   = m_test_configuration.get_height() / 3;
+	glw::GLuint w		= m_test_configuration.get_width();
+	glw::GLuint h		= m_test_configuration.get_height();
+	glw::GLuint centerX = w / 2;
+	glw::GLuint centerY = h / 2;
+	glw::GLuint stepX   = w / 3;
+	glw::GLuint stepY   = h / 3;
 
 	glw::GLuint index = 0;
 
 	glw::GLuint in_components  = m_test_configuration.get_n_in_components();
 	glw::GLuint out_components = m_test_configuration.get_n_out_components();
-	glw::GLuint outRowWidth	= m_test_configuration.get_width() * out_components;
+	glw::GLuint outRowWidth	= w * out_components;
+
+	/* Check that some points well within the texture are 0.  Not applicable for
+	 * 3D, where some slices are blended with border along the depth coordinate.
+	 */
+	if (m_test_configuration.get_target() != GL_TEXTURE_3D)
+	{
+		glw::GLuint texture_samples[4][2] = {
+			{ centerX + w / 6, centerY },
+			{ centerX - w / 6, centerY },
+			{ centerX, centerY + h / 6 },
+			{ centerX, centerY - h / 6 },
+		};
+		for (glw::GLuint i = 0; i < 4; i++)
+		{
+			for (glw::GLuint c = 0; c < deMinu32(out_components, in_components); ++c)
+			{
+				if (buffer[texture_samples[i][1] * outRowWidth + texture_samples[i][0] * out_components + c] != 0)
+				{
+					m_testCtx.getLog() << tcu::TestLog::Message << "Texture sample at (x, y) = ("
+									   << texture_samples[i][0] << "," << texture_samples[i][1] << ") not black\n"
+									   << tcu::TestLog::EndMessage;
+					return false;
+				}
+			}
+		}
+	}
 
 	/* Check values from center to the bottom */
 	for (glw::GLuint y = centerY; y < centerY + stepY; ++y)

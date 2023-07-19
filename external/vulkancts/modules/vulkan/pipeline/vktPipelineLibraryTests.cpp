@@ -43,10 +43,13 @@
 
 #include "../draw/vktDrawCreateInfoUtil.hpp"
 #include "deMath.h"
+#include "deRandom.hpp"
+#include "deClock.h"
 
 #include <vector>
 #include <chrono>
 #include <set>
+#include <limits>
 
 namespace vkt
 {
@@ -91,11 +94,13 @@ struct TestParams
 
 struct RuntimePipelineTreeNode
 {
-	deInt32								parentIndex;
-	VkGraphicsPipelineLibraryFlagsEXT	graphicsPipelineLibraryFlags;
-	VkGraphicsPipelineLibraryFlagsEXT	subtreeGraphicsPipelineLibraryFlags;
-	Move<VkPipeline>					pipeline;
-	std::vector<VkPipeline>				pipelineLibraries;
+	deInt32												parentIndex;
+	VkGraphicsPipelineLibraryFlagsEXT					graphicsPipelineLibraryFlags;
+	VkGraphicsPipelineLibraryFlagsEXT					subtreeGraphicsPipelineLibraryFlags;
+	Move<VkPipeline>									pipeline;
+	std::vector<VkPipeline>								pipelineLibraries;
+	// We need to track the linked libraries too, included in VkPipelineLibraryCreateInfoKHR->pLibraries
+	std::vector<VkGraphicsPipelineLibraryFlagsEXT>		linkedLibraryFlags;
 };
 
 typedef std::vector<RuntimePipelineTreeNode>	RuntimePipelineTreeConfiguration;
@@ -400,7 +405,8 @@ void updateVertexInputInterface (Context&						context,
 void updatePreRasterization (Context&						context,
 							 GraphicsPipelineCreateInfo&	graphicsPipelineCreateInfo,
 							 bool							delayedShaderCreate,
-							 VkPolygonMode					polygonMode = VK_POLYGON_MODE_FILL)
+							 VkPolygonMode					polygonMode = VK_POLYGON_MODE_FILL,
+							 const VkSpecializationInfo*	specializationInfo = DE_NULL)
 {
 	const ProgramBinary&		shaderBinary			= context.getBinaryCollection().get("vert");
 	VkShaderModuleCreateInfo&	shaderModuleCreateInfo	= graphicsPipelineCreateInfo.m_shaderModuleCreateInfo[graphicsPipelineCreateInfo.m_shaderModuleCreateInfoCount];
@@ -438,7 +444,7 @@ void updatePreRasterization (Context&						context,
 		VK_SHADER_STAGE_VERTEX_BIT,								// VkShaderStageFlagBits			stage;
 		shaderModule,											// VkShaderModule					module;
 		"main",													// const char*						pName;
-		DE_NULL													// const VkSpecializationInfo*		pSpecializationInfo;
+		specializationInfo										// const VkSpecializationInfo*		pSpecializationInfo;
 	};
 
 	shaderBinary.setUsed();
@@ -483,7 +489,8 @@ void updatePreRasterization (Context&						context,
 void updatePostRasterization (Context&						context,
 							  GraphicsPipelineCreateInfo&	graphicsPipelineCreateInfo,
 							  bool							delayedShaderCreate,
-							  bool							enableDepth = true)
+							  bool							enableDepth = true,
+							  const VkSpecializationInfo*	specializationInfo = DE_NULL)
 {
 	const ProgramBinary&		shaderBinary			= context.getBinaryCollection().get("frag");
 	VkShaderModuleCreateInfo&	shaderModuleCreateInfo	= graphicsPipelineCreateInfo.m_shaderModuleCreateInfo[graphicsPipelineCreateInfo.m_shaderModuleCreateInfoCount];
@@ -521,7 +528,7 @@ void updatePostRasterization (Context&						context,
 		VK_SHADER_STAGE_FRAGMENT_BIT,							// VkShaderStageFlagBits			stage;
 		shaderModule,											// VkShaderModule					module;
 		"main",													// const char*						pName;
-		DE_NULL													// const VkSpecializationInfo*		pSpecializationInfo;
+		specializationInfo										// const VkSpecializationInfo*		pSpecializationInfo;
 	};
 
 	shaderBinary.setUsed();
@@ -804,6 +811,29 @@ Move<VkDescriptorSet> PipelineLibraryTestInstance::createDescriptorSet (const Vk
 	return descriptorSet;
 }
 
+VkFormat getSupportedDepthFormat(const InstanceInterface &vk, const VkPhysicalDevice physicalDevice)
+{
+	VkFormatProperties properties;
+
+	const VkFormat DepthFormats[] =
+	{
+		VK_FORMAT_D32_SFLOAT,
+		VK_FORMAT_X8_D24_UNORM_PACK32,
+		VK_FORMAT_D24_UNORM_S8_UINT,
+		VK_FORMAT_D32_SFLOAT_S8_UINT
+	};
+
+	for (const auto format: DepthFormats)
+	{
+		vk.getPhysicalDeviceFormatProperties(physicalDevice, format, &properties);
+
+		if (properties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+			return format;
+	}
+
+	TCU_THROW(NotSupportedError, "Depth format is not supported");
+}
+
 bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	runtimePipelineTreeConfiguration,
 										   const bool							optimize,
 										   const bool							delayedShaderCreate)
@@ -814,7 +844,7 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 	Allocator&								allocator				= m_context.getDefaultAllocator();
 	tcu::TestLog&							log						= m_context.getTestContext().getLog();
 	const VkFormat							colorFormat				= VK_FORMAT_R8G8B8A8_UNORM;
-	const VkFormat							depthFormat				= VK_FORMAT_D32_SFLOAT;
+	const VkFormat							depthFormat				= getSupportedDepthFormat(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
 	const VkGraphicsPipelineLibraryFlagsEXT	vertPipelineFlags		= static_cast<VkGraphicsPipelineLibraryFlagsEXT>(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT);
 	const VkGraphicsPipelineLibraryFlagsEXT	fragPipelineFlags		= static_cast<VkGraphicsPipelineLibraryFlagsEXT>(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT);
 	const VkGraphicsPipelineLibraryFlagsEXT	samePipelineFlags		= vertPipelineFlags | fragPipelineFlags;
@@ -895,13 +925,39 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 			}
 		}
 
-		if (graphicsPipelineLibraryCreateInfo.flags != ALL_GRAPHICS_PIPELINE_LIBRARY_FLAGS)
+		VkGraphicsPipelineLibraryFlagsEXT linkedLibrariesFlags = 0;
+
+		for (auto flag : node.linkedLibraryFlags)
+			linkedLibrariesFlags |= flag;
+
+		// When pLibraries have any pipeline library with fragment shader state and current pipeline we try to create doesn't,
+		// we need to set a MS info.
+		if ((linkedLibrariesFlags & VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT) &&
+				!(node.graphicsPipelineLibraryFlags & VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT) &&
+				(graphicsPipelineCreateInfo.pMultisampleState == DE_NULL))
+		{
+			const VkPipelineMultisampleStateCreateInfo	pipelineMultisampleStateCreateInfo = makePipelineMultisampleStateCreateInfo();
+
+			graphicsPipelineCreateInfo.addState(pipelineMultisampleStateCreateInfo);
+		}
+
+
+		if (linkedLibrariesFlags != ALL_GRAPHICS_PIPELINE_LIBRARY_FLAGS  && graphicsPipelineLibraryCreateInfo.flags != 0)
 			appendStructurePtrToVulkanChain(&graphicsPipelineCreateInfo.pNext, &graphicsPipelineLibraryCreateInfo);
 
 		if (linkingInfo.libraryCount != 0)
 		{
 			appendStructurePtrToVulkanChain(&graphicsPipelineCreateInfo.pNext, &linkingInfo);
 			graphicsPipelineCreateInfo.layout = *pipelineLayoutSame;
+		}
+
+		linkedLibrariesFlags |= node.graphicsPipelineLibraryFlags;
+
+		// if current pipeline that we try to create and pLibraries have all states of pipelines, we are not allowed to create a pipeline library.
+		if (linkedLibrariesFlags == ALL_GRAPHICS_PIPELINE_LIBRARY_FLAGS)
+		{
+			DE_ASSERT(!buildLibrary);
+			graphicsPipelineCreateInfo.flags &= ~VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
 		}
 
 		node.pipeline = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
@@ -911,6 +967,7 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 			DE_ASSERT(de::inBounds(node.parentIndex, 0, static_cast<deInt32>(runtimePipelineTreeConfiguration.size())));
 
 			runtimePipelineTreeConfiguration[node.parentIndex].pipelineLibraries.push_back(*node.pipeline);
+			runtimePipelineTreeConfiguration[node.parentIndex].linkedLibraryFlags.push_back(linkedLibrariesFlags);
 		}
 		else
 		{
@@ -1169,6 +1226,8 @@ PipelineLibraryTestCase::~PipelineLibraryTestCase (void)
 
 void PipelineLibraryTestCase::checkSupport (Context& context) const
 {
+	context.requireDeviceFunctionality("VK_KHR_pipeline_library");
+
 	if (m_data.delayedShaderCreate || (m_data.pipelineTreeConfiguration.size() > 1))
 	{
 		context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
@@ -1236,6 +1295,7 @@ enum class MiscTestMode
 	SHADER_MODULE_CREATE_INFO_COMP,
 	SHADER_MODULE_CREATE_INFO_RT,
 	SHADER_MODULE_CREATE_INFO_RT_LIB,
+	NULL_RENDERING_CREATE_INFO,
 };
 
 struct MiscTestParams
@@ -1428,6 +1488,12 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runNullDescriptorSet(void)
 
 		fragPipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
 	}
+	else
+	{
+		pipelineLayoutCreateInfo.setLayoutCount = 0u;
+		pipelineLayoutCreateInfo.pSetLayouts	= DE_NULL;
+		fragPipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
+	}
 
 	// create descriptor pool
 	Move<VkDescriptorPool> descriptorPool = DescriptorPoolBuilder()
@@ -1469,7 +1535,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runNullDescriptorSet(void)
 	};
 
 	// fill proper portion of pipeline state
-	updateVertexInputInterface(m_context, partialPipelineCreateInfo[0], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+	updateVertexInputInterface(m_context, partialPipelineCreateInfo[0], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u);
 	updatePreRasterization(m_context, partialPipelineCreateInfo[0], false);
 	updatePostRasterization(m_context, partialPipelineCreateInfo[1], false);
 	updateFragmentOutputInterface(m_context, partialPipelineCreateInfo[1]);
@@ -1519,7 +1585,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runNullDescriptorSet(void)
 			uniformBufferDataSize								// VkDeviceSize						size
 		));
 		initialBufferBarriers[1].buffer = uniformBuffer[1]->get();
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, (VkDependencyFlags)0, 0, DE_NULL, 2, initialBufferBarriers.data(), 0, DE_NULL);
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, DE_NULL, 2, initialBufferBarriers.data(), 0, DE_NULL);
 
 		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, m_renderArea, m_colorClearColor);
 
@@ -1888,13 +1954,57 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runCompareLinkTimes (void)
 		{ *layout, *m_renderPass, 0, VK_PIPELINE_CREATE_LIBRARY_BIT_KHR },
 	};
 
+	de::Random rnd(static_cast<deUint32>(deGetMicroseconds()));
+
+	const uint32_t vertexRandSpecConsts[]	= { rnd.getUint32() * 2, rnd.getUint32() * 2 };
+	const uint32_t fragmentRandSpecConsts[] = { rnd.getUint32() * 2, rnd.getUint32() * 2 };
+
+	const VkSpecializationMapEntry entry =
+	{
+		0,					// uint32_t	constantID;
+		0,					// uint32_t	offset;
+		sizeof(int32_t)		// size_t	size;
+	};
+
+	const VkSpecializationInfo vertexSpecializationInfos[] =
+	{
+		{
+			1u,							// uint32_t							mapEntryCount;
+			&entry,						// const VkSpecializationMapEntry*	pMapEntries;
+			sizeof(int32_t),			// size_t							dataSize;
+			&vertexRandSpecConsts[0]	// const void*						pData;
+		},
+		{
+			1u,							// uint32_t							mapEntryCount;
+			&entry,						// const VkSpecializationMapEntry*	pMapEntries;
+			sizeof(int32_t),			// size_t							dataSize;
+			&vertexRandSpecConsts[1]	// const void*						pData;
+		}
+	};
+
+	const VkSpecializationInfo fragmentSpecializationInfos[] =
+	{
+		{
+			1u,							// uint32_t							mapEntryCount;
+			&entry,						// const VkSpecializationMapEntry*	pMapEntries;
+			sizeof(int32_t),			// size_t							dataSize;
+			&fragmentRandSpecConsts[0]	// const void*						pData;
+		},
+		{
+			1u,							// uint32_t							mapEntryCount;
+			&entry,						// const VkSpecializationMapEntry*	pMapEntries;
+			sizeof(int32_t),			// size_t							dataSize;
+			&fragmentRandSpecConsts[1]	// const void*						pData;
+		}
+	};
+
 	// fill proper portion of pipeline state - this cant be easily done in a scalable loop
 	updateVertexInputInterface		(m_context, partialPipelineCreateInfo[0], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
 	updateVertexInputInterface		(m_context, partialPipelineCreateInfo[1], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-	updatePreRasterization			(m_context, partialPipelineCreateInfo[2], false, VK_POLYGON_MODE_FILL);
-	updatePreRasterization			(m_context, partialPipelineCreateInfo[3], false, VK_POLYGON_MODE_LINE);
-	updatePostRasterization			(m_context, partialPipelineCreateInfo[4], false, true);
-	updatePostRasterization			(m_context, partialPipelineCreateInfo[5], false, false);
+	updatePreRasterization			(m_context, partialPipelineCreateInfo[2], false, VK_POLYGON_MODE_FILL, &vertexSpecializationInfos[0]);
+	updatePreRasterization			(m_context, partialPipelineCreateInfo[3], false, VK_POLYGON_MODE_LINE, &vertexSpecializationInfos[1]);
+	updatePostRasterization			(m_context, partialPipelineCreateInfo[4], false, true,	&fragmentSpecializationInfos[0]);
+	updatePostRasterization			(m_context, partialPipelineCreateInfo[5], false, false, &fragmentSpecializationInfos[1]);
 	updateFragmentOutputInterface	(m_context, partialPipelineCreateInfo[6], 0xf);
 	updateFragmentOutputInterface	(m_context, partialPipelineCreateInfo[7]);
 
@@ -2314,6 +2424,262 @@ tcu::TestStatus	PipelineLibraryShaderModuleInfoRTInstance::iterate (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
+class NullRenderingCreateInfoInstance : public vkt::TestInstance
+{
+public:
+						NullRenderingCreateInfoInstance		(Context& context)
+							: vkt::TestInstance(context)
+							{}
+	virtual				~NullRenderingCreateInfoInstance	(void) {}
+
+	tcu::TestStatus		iterate			(void) override;
+};
+
+tcu::TestStatus NullRenderingCreateInfoInstance::iterate (void)
+{
+	const auto			ctx				= m_context.getContextCommonData();
+	const tcu::IVec3	colorExtent		(1, 1, 1);
+	const auto			imageExtent		= makeExtent3D(colorExtent);
+	const auto			colorFormat		= VK_FORMAT_R8G8B8A8_UNORM;
+	const auto			tcuFormat		= mapVkFormat(colorFormat);
+	const auto			colorUsage		= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const auto			colorSRR		= makeDefaultImageSubresourceRange();
+	const auto			colorSRL		= makeDefaultImageSubresourceLayers();
+
+	// Color buffer and view.
+	ImageWithBuffer	colorBuffer	(ctx.vkd, ctx.device, ctx.allocator, imageExtent, colorFormat, colorUsage, VK_IMAGE_TYPE_2D);
+	const auto		colorView	= makeImageView(ctx.vkd, ctx.device, colorBuffer.getImage(), VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSRR);
+
+	// Verification buffer.
+	const auto			verificationBufferSize	= static_cast<VkDeviceSize>(colorExtent.x() * colorExtent.y() * colorExtent.z() * tcu::getPixelSize(tcuFormat));
+	const auto			verificationBufferInfo	= makeBufferCreateInfo(verificationBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	BufferWithMemory	verificationBuffer		(ctx.vkd, ctx.device, ctx.allocator, verificationBufferInfo, MemoryRequirement::HostVisible);
+	auto&				verificationBufferAlloc = verificationBuffer.getAllocation();
+	void*				verificationBufferPtr	= verificationBufferAlloc.getHostPtr();
+
+	const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device);
+
+	const VkPipelineVertexInputStateCreateInfo	vertexInputStateInfo	= initVulkanStructure();
+	VkPipelineInputAssemblyStateCreateInfo		inputAssemblyStateInfo	= initVulkanStructure();
+	inputAssemblyStateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(imageExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(imageExtent));
+
+	const auto&	binaries	= m_context.getBinaryCollection();
+	const auto	vertModule	= createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+	const auto	fragModule	= createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+	// We will use a null-filled pipeline rendering info structure for all substates except the fragment output state.
+	VkPipelineRenderingCreateInfo nullRenderingInfo = initVulkanStructure();
+	nullRenderingInfo.colorAttachmentCount = std::numeric_limits<uint32_t>::max();
+
+	VkPipelineRenderingCreateInfo finalRenderingInfo = initVulkanStructure();
+	finalRenderingInfo.colorAttachmentCount		= 1u;
+	finalRenderingInfo.pColorAttachmentFormats	= &colorFormat;
+
+	const VkPipelineViewportStateCreateInfo viewportStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	//	VkStructureType						sType;
+		nullptr,												//	const void*							pNext;
+		0u,														//	VkPipelineViewportStateCreateFlags	flags;
+		de::sizeU32(viewports),									//	uint32_t							viewportCount;
+		de::dataOrNull(viewports),								//	const VkViewport*					pViewports;
+		de::sizeU32(scissors),									//	uint32_t							scissorCount;
+		de::dataOrNull(scissors),								//	const VkRect2D*						pScissors;
+	};
+
+	const VkPipelineRasterizationStateCreateInfo rasterizationStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		//	VkStructureType							sType;
+		nullptr,														//	const void*								pNext;
+		0u,																//	VkPipelineRasterizationStateCreateFlags	flags;
+		VK_FALSE,														//	VkBool32								depthClampEnable;
+		VK_FALSE,														//	VkBool32								rasterizerDiscardEnable;
+		VK_POLYGON_MODE_FILL,											//	VkPolygonMode							polygonMode;
+		VK_CULL_MODE_BACK_BIT,											//	VkCullModeFlags							cullMode;
+		VK_FRONT_FACE_COUNTER_CLOCKWISE,								//	VkFrontFace								frontFace;
+		VK_FALSE,														//	VkBool32								depthBiasEnable;
+		0.0f,															//	float									depthBiasConstantFactor;
+		0.0f,															//	float									depthBiasClamp;
+		0.0f,															//	float									depthBiasSlopeFactor;
+		1.0f,															//	float									lineWidth;
+	};
+
+	const VkPipelineMultisampleStateCreateInfo multisampleStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	//	VkStructureType							sType;
+		nullptr,													//	const void*								pNext;
+		0u,															//	VkPipelineMultisampleStateCreateFlags	flags;
+		VK_SAMPLE_COUNT_1_BIT,										//	VkSampleCountFlagBits					rasterizationSamples;
+		VK_FALSE,													//	VkBool32								sampleShadingEnable;
+		1.0f,														//	float									minSampleShading;
+		nullptr,													//	const VkSampleMask*						pSampleMask;
+		VK_FALSE,													//	VkBool32								alphaToCoverageEnable;
+		VK_FALSE,													//	VkBool32								alphaToOneEnable;
+	};
+
+	const VkPipelineDepthStencilStateCreateInfo depthStencilStateInfo = initVulkanStructure();
+
+	const VkColorComponentFlags colorComponentFlags = (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+
+	const VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
+	{
+		VK_FALSE,				//	VkBool32				blendEnable;
+		VK_BLEND_FACTOR_ZERO,	//	VkBlendFactor			srcColorBlendFactor;
+		VK_BLEND_FACTOR_ZERO,	//	VkBlendFactor			dstColorBlendFactor;
+		VK_BLEND_OP_ADD,		//	VkBlendOp				colorBlendOp;
+		VK_BLEND_FACTOR_ZERO,	//	VkBlendFactor			srcAlphaBlendFactor;
+		VK_BLEND_FACTOR_ZERO,	//	VkBlendFactor			dstAlphaBlendFactor;
+		VK_BLEND_OP_ADD,		//	VkBlendOp				alphaBlendOp;
+		colorComponentFlags,	//	VkColorComponentFlags	colorWriteMask;
+	};
+
+	const VkPipelineColorBlendStateCreateInfo colorBlendStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	//	VkStructureType								sType;
+		nullptr,													//	const void*									pNext;
+		0u,															//	VkPipelineColorBlendStateCreateFlags		flags;
+		VK_FALSE,													//	VkBool32									logicOpEnable;
+		VK_LOGIC_OP_CLEAR,											//	VkLogicOp									logicOp;
+		1u,															//	uint32_t									attachmentCount;
+		&colorBlendAttachmentState,									//	const VkPipelineColorBlendAttachmentState*	pAttachments;
+		{ 0.0f, 0.0f, 0.0f, 0.0f },									//	float										blendConstants[4];
+	};
+
+	// Build the different pipeline pieces.
+	Move<VkPipeline> vertexInputLib;
+	Move<VkPipeline> preRasterShaderLib;
+	Move<VkPipeline> fragShaderLib;
+	Move<VkPipeline> fragOutputLib;
+
+	const VkPipelineCreateFlags libCreationFlags	= VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
+	const VkPipelineCreateFlags linkFlags			= 0u;
+
+	// Vertex input state library.
+	{
+		VkGraphicsPipelineLibraryCreateInfoEXT vertexInputLibInfo	= initVulkanStructure();
+		vertexInputLibInfo.flags									|= VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT;
+
+		VkGraphicsPipelineCreateInfo vertexInputPipelineInfo	= initVulkanStructure(&vertexInputLibInfo);
+		vertexInputPipelineInfo.flags							= libCreationFlags;
+		vertexInputPipelineInfo.pVertexInputState				= &vertexInputStateInfo;
+		vertexInputPipelineInfo.pInputAssemblyState				= &inputAssemblyStateInfo;
+
+		vertexInputLib = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &vertexInputPipelineInfo);
+	}
+
+	// Pre-rasterization shader state library.
+	{
+		VkGraphicsPipelineLibraryCreateInfoEXT preRasterShaderLibInfo	= initVulkanStructure(&nullRenderingInfo); // What we're testing.
+		preRasterShaderLibInfo.flags									|= VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT;
+
+		VkGraphicsPipelineCreateInfo preRasterShaderPipelineInfo	= initVulkanStructure(&preRasterShaderLibInfo);
+		preRasterShaderPipelineInfo.flags							= libCreationFlags;
+		preRasterShaderPipelineInfo.layout							= pipelineLayout.get();
+		preRasterShaderPipelineInfo.pViewportState					= &viewportStateInfo;
+		preRasterShaderPipelineInfo.pRasterizationState				= &rasterizationStateInfo;
+
+		const auto vertShaderInfo = makePipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertModule.get());
+		preRasterShaderPipelineInfo.stageCount	= 1u;
+		preRasterShaderPipelineInfo.pStages		= &vertShaderInfo;
+
+		preRasterShaderLib = createGraphicsPipeline(ctx.vkd, ctx.device, DE_NULL, &preRasterShaderPipelineInfo);
+	}
+
+	// Fragment shader stage library.
+	{
+		VkGraphicsPipelineLibraryCreateInfoEXT fragShaderLibInfo	= initVulkanStructure(&nullRenderingInfo); // What we're testing.
+		fragShaderLibInfo.flags										|= VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT;
+
+		VkGraphicsPipelineCreateInfo fragShaderPipelineInfo	= initVulkanStructure(&fragShaderLibInfo);
+		fragShaderPipelineInfo.flags						= libCreationFlags;
+		fragShaderPipelineInfo.layout						= pipelineLayout.get();
+		fragShaderPipelineInfo.pMultisampleState			= &multisampleStateInfo;
+		fragShaderPipelineInfo.pDepthStencilState			= &depthStencilStateInfo;
+
+		const auto fragShaderInfo = makePipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragModule.get());
+		fragShaderPipelineInfo.stageCount	= 1u;
+		fragShaderPipelineInfo.pStages		= &fragShaderInfo;
+
+		fragShaderLib = createGraphicsPipeline(ctx.vkd, ctx.device, DE_NULL, &fragShaderPipelineInfo);
+	}
+
+	// Fragment output library.
+	{
+		VkGraphicsPipelineLibraryCreateInfoEXT fragOutputLibInfo	= initVulkanStructure(&finalRenderingInfo); // Good info only in the fragment output substate.
+		fragOutputLibInfo.flags										|= VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT;
+
+		VkGraphicsPipelineCreateInfo fragOutputPipelineInfo	= initVulkanStructure(&fragOutputLibInfo);
+		fragOutputPipelineInfo.flags						= libCreationFlags;
+		fragOutputPipelineInfo.pColorBlendState				= &colorBlendStateInfo;
+		fragOutputPipelineInfo.pMultisampleState			= &multisampleStateInfo;
+
+		fragOutputLib = createGraphicsPipeline(ctx.vkd, ctx.device, DE_NULL, &fragOutputPipelineInfo);
+	}
+
+	// Linked pipeline.
+	const std::vector<VkPipeline> libraryHandles
+	{
+		vertexInputLib.get(),
+		preRasterShaderLib.get(),
+		fragShaderLib.get(),
+		fragOutputLib.get(),
+	};
+
+	VkPipelineLibraryCreateInfoKHR linkedPipelineLibraryInfo	= initVulkanStructure();
+	linkedPipelineLibraryInfo.libraryCount						= de::sizeU32(libraryHandles);
+	linkedPipelineLibraryInfo.pLibraries						= de::dataOrNull(libraryHandles);
+
+	VkGraphicsPipelineCreateInfo linkedPipelineInfo	= initVulkanStructure(&linkedPipelineLibraryInfo);
+	linkedPipelineInfo.flags						= linkFlags;
+	linkedPipelineInfo.layout						= pipelineLayout.get();
+
+	const auto pipeline = createGraphicsPipeline(ctx.vkd, ctx.device, DE_NULL, &linkedPipelineInfo);
+
+	CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, ctx.qfIndex);
+	const auto cmdBuffer = cmd.cmdBuffer.get();
+
+	const auto clearValue = makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f);
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+	const auto preRenderBarrier = makeImageMemoryBarrier(0u, (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
+														 VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+														 colorBuffer.getImage(), colorSRR);
+	cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, &preRenderBarrier);
+
+	beginRendering(ctx.vkd, cmdBuffer, colorView.get(), scissors.at(0u), clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	ctx.vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+	ctx.vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+	endRendering(ctx.vkd, cmdBuffer);
+
+	const auto color2Transfer = makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+													   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+													   colorBuffer.getImage(), colorSRR);
+	cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &color2Transfer);
+	const auto copyRegion = makeBufferImageCopy(imageExtent, colorSRL);
+	ctx.vkd.cmdCopyImageToBuffer(cmdBuffer, colorBuffer.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, verificationBuffer.get(), 1u, &copyRegion);
+
+	const auto transfer2Host = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+	cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, &transfer2Host);
+
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+
+	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+	invalidateAlloc(ctx.vkd, ctx.device, verificationBufferAlloc);
+
+	auto&						testLog			= m_context.getTestContext().getLog();
+	const tcu::Vec4				expectedColor	(0.0f, 0.0f, 1.0f, 1.0f); // Must match frag shader.
+	const tcu::Vec4				threshold		(0.0f, 0.0f, 0.0f, 0.0f);
+	tcu::ConstPixelBufferAccess	resultAccess	(tcuFormat, colorExtent, verificationBufferPtr);
+
+	if (!tcu::floatThresholdCompare(testLog, "Result", "", expectedColor, resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Unexpected color buffer contents -- check log for details");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 class PipelineLibraryMiscTestCase : public TestCase
 {
 public:
@@ -2353,6 +2719,9 @@ void PipelineLibraryMiscTestCase::checkSupport(Context& context) const
 
 	if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_RT_LIB)
 		context.requireDeviceFunctionality("VK_KHR_pipeline_library");
+
+	if (m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 }
 
 void PipelineLibraryMiscTestCase::initPrograms(SourceCollections& programCollection) const
@@ -2439,8 +2808,7 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections& programCollect
 	{
 		programCollection.glslSources.add("vert") << glu::VertexSource(
 			"#version 450\n"
-			"precision mediump int; precision highp float;"
-			"layout(location = 0) in vec4 in_position;\n"
+			"precision mediump int; precision highp float;\n"
 			"layout(set = 0, binding = 0) uniform bufA\n"
 			"{\n"
 			"  vec4 valueA;\n"
@@ -2475,7 +2843,7 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections& programCollect
 			"layout(set = 1, binding = 0) uniform bufB\n"
 			"{\n"
 			"  vec4 valueB;\n"
-			"};\n\n"
+			"};\n"
 			"void main()\n"
 			"{\n"
 			// note: values in buffers were set to get vec4(0.0, 0.75, 0.5, 0.2)
@@ -2491,20 +2859,22 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections& programCollect
 			"out gl_PerVertex\n"
 			"{\n"
 			"  vec4 gl_Position;\n"
-			"};\n\n"
+			"};\n"
+			"layout(constant_id = 0) const int random = 0;\n\n"
 			"void main()\n"
 			"{\n"
 			"   gl_Position = vec4(float(1 - 2 * int(gl_VertexIndex != 1)),\n"
-			"                      float(1 - 2 * int(gl_VertexIndex > 0)), 0.0, 1.0);\n"
+			"                      float(1 - 2 * int(gl_VertexIndex > 0)), 0.0, 1.0) + float(random & 1);\n"
 			"}\n");
 
 		programCollection.glslSources.add("frag") << glu::FragmentSource(
 			"#version 450\n"
 			"precision mediump int; precision highp float;"
 			"layout(location = 0) out highp vec4 o_color;\n"
+			"layout(constant_id = 0) const int random = 0;\n\n"
 			"void main()\n"
 			"{\n"
-			"  o_color = vec4(0.0, 1.0, 0.5, 1.0);\n"
+			"  o_color = vec4(0.0, 1.0, 0.5, 1.0) + float(random & 1);\n"
 			"}\n");
 	}
 	else if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_COMP)
@@ -2540,6 +2910,32 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections& programCollect
 			;
 		programCollection.glslSources.add("rgen") << glu::RaygenSource(rgen.str()) << buildOptions;
 	}
+	else if (m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO)
+	{
+		std::ostringstream vert;
+		vert
+			<< "#version 460\n"
+			<< "vec2 positions[3] = vec2[](\n"
+			<< "    vec2(-1.0, -1.0),\n"
+			<< "    vec2(-1.0,  3.0),\n"
+			<< "    vec2( 3.0, -1.0)\n"
+			<< ");\n"
+			<< "void main() {\n"
+			<< "    gl_Position = vec4(positions[gl_VertexIndex % 3], 0.0, 1.0);\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+		std::ostringstream frag;
+		frag
+			<< "#version 460\n"
+			<< "layout (location=0) out vec4 color;\n"
+			<< "void main () {\n"
+			<< "    color = vec4(0.0, 0.0, 1.0, 1.0);\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+	}
 	else
 	{
 		DE_ASSERT(false);
@@ -2557,10 +2953,11 @@ TestInstance* PipelineLibraryMiscTestCase::createInstance(Context& context) cons
 	if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_RT_LIB)
 		return new PipelineLibraryShaderModuleInfoRTInstance(context, true/*withLibrary*/);
 
+	if (m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO)
+		return new NullRenderingCreateInfoInstance(context);
+
 	return new PipelineLibraryMiscTestInstance(context, m_testParams);
 }
-
-}	// anonymous
 
 void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group, bool optimize)
 {
@@ -2660,18 +3057,6 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group, bool opti
 														/*   /       */
 			{ 2, 1 },									/*  1        */
 		} },
-
-		{ {
-			{ R, 0 },									/*         0 */
-														/*        /  */
-			{ 0, 1 },									/*       1   */
-														/*      /    */
-			{ 1, 1 },									/*     1     */
-														/*    /      */
-			{ 2, 1 },									/*   1       */
-														/*  /        */
-			{ 3, 1 },									/* 1         */
-		} },
 	};
 
 	for (size_t libConfigNdx = 0; libConfigNdx < DE_LENGTH_OF_ARRAY(pipelineTreeConfiguration); ++libConfigNdx)
@@ -2691,6 +3076,8 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group, bool opti
 		group->addChild(new PipelineLibraryTestCase(group->getTestContext(), testName.c_str(), "", testParams));
 	}
 }
+
+}	// anonymous
 
 tcu::TestCaseGroup*	createPipelineLibraryTests(tcu::TestContext& testCtx)
 {
@@ -2739,6 +3126,7 @@ tcu::TestCaseGroup*	createPipelineLibraryTests(tcu::TestContext& testCtx)
 		de::MovePtr<tcu::TestCaseGroup> otherTests(new tcu::TestCaseGroup(testCtx, "other", ""));
 		otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "compare_link_times", { MiscTestMode::COMPARE_LINK_TIMES, 0u, 0u }));
 		otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "null_descriptor_set_in_monolithic_pipeline", { MiscTestMode::BIND_NULL_DESCRIPTOR_SET_IN_MONOLITHIC_PIPELINE, 0u, 0u }));
+		otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "null_rendering_create_info", { MiscTestMode::NULL_RENDERING_CREATE_INFO, 0u, 0u }));
 		miscTests->addChild(otherTests.release());
 	}
 

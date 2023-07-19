@@ -93,6 +93,11 @@ bool isSupportedSamplableFormat (const InstanceInterface& instanceInterface, VkP
 			if (!physicalFeatures.textureCompressionETC2)
 				return false;
 		}
+		else if (tcu::isBcFormat(compressedFormat))
+		{
+			if (!physicalFeatures.textureCompressionBC)
+				return false;
+		}
 		else
 		{
 			DE_FATAL("Unsupported compressed format");
@@ -206,6 +211,11 @@ void getLookupScaleBias (vk::VkFormat format, tcu::Vec4& lookupScale, tcu::Vec4&
 			case VK_FORMAT_EAC_R11G11_SNORM_BLOCK:
 				lookupScale	= tcu::Vec4(0.5f, 0.5f, 1.0f, 1.0f);
 				lookupBias	= tcu::Vec4(0.5f, 0.5f, 0.0f, 0.0f);
+				break;
+
+			case VK_FORMAT_BC5_SNORM_BLOCK:
+				lookupScale = tcu::Vec4(0.5f, 0.5f, 1.0f, 1.0f);
+				lookupBias = tcu::Vec4(0.5f, 0.5f, 0.0f, 0.0f);
 				break;
 
 			default:

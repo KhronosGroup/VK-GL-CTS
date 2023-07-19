@@ -655,13 +655,27 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup (void)
 		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
 	}
 
-	// Create pipeline layout
+	// Create pipeline layouts
 	{
 		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			0u,													// VkPipelineLayoutCreateFlags	flags;
+			VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT,	// VkPipelineLayoutCreateFlags	flags;
+			0u,													// deUint32						setLayoutCount;
+			DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
+			0u,													// deUint32						pushConstantRangeCount;
+			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
+		};
+
+		m_preRasterizationStatePipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+	}
+	{
+		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
+			DE_NULL,											// const void*					pNext;
+			VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT,	// VkPipelineLayoutCreateFlags	flags;
 			1u,													// deUint32						setLayoutCount;
 			&m_descriptorSetLayout.get(),						// const VkDescriptorSetLayout*	pSetLayouts;
 			0u,													// deUint32						pushConstantRangeCount;
@@ -748,7 +762,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup (void)
 						  .setDefaultDepthStencilState()
 						  .setDefaultRasterizationState()
 						  .setDefaultMultisampleState()
-						  .setupVertexInputStete(&vertexInputStateParams)
+						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 														scissors,
 														*m_preRasterizationStatePipelineLayout,
@@ -1149,7 +1163,21 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup (void)
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			0u,													// VkPipelineLayoutCreateFlags	flags;
+			VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT,	// VkPipelineLayoutCreateFlags	flags;
+			0u,													// deUint32						setLayoutCount;
+			DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
+			0u,													// deUint32						pushConstantRangeCount;
+			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
+		};
+
+		m_preRasterizationStatePipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+	}
+	{
+		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
+			DE_NULL,											// const void*					pNext;
+			VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT,	// VkPipelineLayoutCreateFlags	flags;
 			1u,													// deUint32						setLayoutCount;
 			&m_descriptorSetLayout.get(),						// const VkDescriptorSetLayout*	pSetLayouts;
 			0u,													// deUint32						pushConstantRangeCount;
@@ -1222,8 +1250,8 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup (void)
 			0u,															// VkPipelineColorBlendStateCreateFlags			flags;
 			false,														// VkBool32										logicOpEnable;
 			VK_LOGIC_OP_COPY,											// VkLogicOp									logicOp;
-			(deUint32)m_imageCount,										// deUint32										attachmentCount;
-			&colorBlendAttachmentStates[0],								// const VkPipelineColorBlendAttachmentState*	pAttachments;
+			0u,															// deUint32										attachmentCount;
+			DE_NULL,													// const VkPipelineColorBlendAttachmentState*	pAttachments;
 			{ 0.0f, 0.0f, 0.0f, 0.0f }									// float										blendConstants[4];
 		};
 
@@ -1258,7 +1286,7 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup (void)
 						  .setDefaultDepthStencilState()
 						  .setDefaultRasterizationState()
 						  .setDefaultMultisampleState()
-						  .setupVertexInputStete(&vertexInputStateParams)
+						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 														scissors,
 														*m_preRasterizationStatePipelineLayout,
@@ -1547,7 +1575,8 @@ tcu::TestStatus AttachmentFeedbackLoopLayoutImageSamplingInstance::verifyImage(v
 																						 m_context.getDefaultAllocator(),
 																						 **m_colorImages[imgNdx],
 																						 m_colorFormat,
-																						 renderSize));
+																						 renderSize,
+																						 vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT));
 		const tcu::ConstPixelBufferAccess	result	= resultTexture->getAccess();
 		const bool							isIntegerFormat	= isUintFormat(m_imageFormat) || isIntFormat(m_imageFormat);
 
@@ -1939,12 +1968,15 @@ void AttachmentFeedbackLoopLayoutSamplerTest::initPrograms (SourceCollections& s
 		fragmentSrc << "	read_data.x = ";
 		if (m_samplerLod > 0.0f)
 		{
-				DE_ASSERT(m_imageViewType.isNormalized());
-				fragmentSrc << "textureLod(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ", " << std::fixed <<  m_samplerLod << ").x";
+			DE_ASSERT(m_imageViewType.isNormalized());
+			fragmentSrc << "textureLod(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ", " << std::fixed <<  m_samplerLod << ").x";
 		}
 		else
 		{
+			if (m_imageViewType.isNormalized())
 				fragmentSrc << "texture(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ").x" << std::fixed;
+			else
+				fragmentSrc << "textureLod(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ", 0).x" << std::fixed;
 		}
 
 		fragmentSrc << " + 0.1f;\n";
@@ -1953,12 +1985,15 @@ void AttachmentFeedbackLoopLayoutSamplerTest::initPrograms (SourceCollections& s
 	{
 		if (m_samplerLod > 0.0f)
 		{
-				DE_ASSERT(m_imageViewType.isNormalized());
-				fragmentSrc << "vec4(textureLod(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ", " << std::fixed <<  m_samplerLod << ").x / 255.0f, 0.0f, 0.0f, 1.0f)";
+			DE_ASSERT(m_imageViewType.isNormalized());
+			fragmentSrc << "vec4(textureLod(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ", " << std::fixed <<  m_samplerLod << ").x / 255.0f, 0.0f, 0.0f, 1.0f)";
 		}
 		else
 		{
+			if (m_imageViewType.isNormalized())
 				fragmentSrc << "vec4(texture(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ").x / 255.0f, 0.0f, 0.0f, 1.0f)" << std::fixed;
+			else
+				fragmentSrc << "vec4(textureLod(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ", 0).x / 255.0f, 0.0f, 0.0f, 1.0f)" << std::fixed;
 		}
 
 		fragmentSrc << ";\n";
@@ -1967,12 +2002,15 @@ void AttachmentFeedbackLoopLayoutSamplerTest::initPrograms (SourceCollections& s
 	{
 		if (m_samplerLod > 0.0f)
 		{
-				DE_ASSERT(m_imageViewType.isNormalized());
-				fragmentSrc << "textureLod(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ", " << std::fixed <<  m_samplerLod << ")";
+			DE_ASSERT(m_imageViewType.isNormalized());
+			fragmentSrc << "textureLod(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ", " << std::fixed <<  m_samplerLod << ")";
 		}
 		else
 		{
+			if (m_imageViewType.isNormalized())
 				fragmentSrc << "texture(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ")" << std::fixed;
+			else
+				fragmentSrc << "textureLod(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ", 0)" << std::fixed;
 		}
 
 		if (m_testMode >= TEST_MODE_READ_WRITE_SAME_PIXEL)

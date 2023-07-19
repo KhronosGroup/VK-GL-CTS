@@ -5583,7 +5583,13 @@ tcu::TestNode::IterateResult ReservedNamesTest::iterate()
 	}
 
 	m_so_ids[SHADER_TYPE_FRAGMENT] = gl.createShader(GL_FRAGMENT_SHADER);
-	m_so_ids[SHADER_TYPE_GEOMETRY] = gl.createShader(GL_GEOMETRY_SHADER);
+
+	if (glu::contextSupports(context_type, glu::ApiType::core(3, 2)) ||
+		m_context.getContextInfo().isExtensionSupported("GL_ARB_geometry_shader4"))
+	{
+		m_so_ids[SHADER_TYPE_GEOMETRY] = gl.createShader(GL_GEOMETRY_SHADER);
+	}
+
 	m_so_ids[SHADER_TYPE_VERTEX]   = gl.createShader(GL_VERTEX_SHADER);
 
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateShader() call failed.");

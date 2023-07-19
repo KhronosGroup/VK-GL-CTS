@@ -340,7 +340,16 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support remapping format components");
 		}
 	}
+
+	bool formatRgba10x6WithoutYCbCrSampler = context.getRGBA10X6FormatsFeaturesEXT().formatRgba10x6WithoutYCbCrSampler;
+#else
+	bool formatRgba10x6WithoutYCbCrSampler = VK_FALSE;
 #endif // CTS_USES_VULKANSC
+
+	if ((params.imageFormat == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16) && (params.subresourceRange.levelCount > 1) && (formatRgba10x6WithoutYCbCrSampler == VK_FALSE))
+	{
+		TCU_THROW(NotSupportedError, "formatRgba10x6WithoutYCbCrSampler not supported");
+	}
 }
 
 ImageSamplingInstance::ImageSamplingInstance (Context&						context,
@@ -792,7 +801,7 @@ void ImageSamplingInstance::setup ()
 						  .setDefaultDepthStencilState()
 						  .setDefaultRasterizationState()
 						  .setDefaultMultisampleState()
-						  .setupVertexInputStete(&vertexInputStateParams)
+						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 														scissors,
 														*m_preRasterizationStatePipelineLayout,
@@ -1509,6 +1518,8 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 		lookupPrecision.colorMask		= m_componentMask;
 		lookupPrecision.colorThreshold	= tcu::computeFixedPointThreshold(max((tcu::IVec4(8, 8, 8, 8) - (isNearestOnly ? 1 : 2)), tcu::IVec4(0))) / swizzleScaleBias(lookupScale, m_componentMapping, 1.0f);
 
+		if (m_imageFormat == VK_FORMAT_BC5_UNORM_BLOCK || m_imageFormat == VK_FORMAT_BC5_SNORM_BLOCK)
+			lookupPrecision.colorThreshold = tcu::Vec4(0.06f, 0.06f, 0.06f, 0.06f);
 		if (tcu::isSRGB(m_texture->getTextureFormat()))
 			lookupPrecision.colorThreshold += tcu::Vec4(4.f / 255.f);
 

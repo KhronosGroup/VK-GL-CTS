@@ -423,6 +423,7 @@ void clearBuffer (const DeviceInterface& vk, const VkDevice device, const de::Sh
 	void*						allocationData	= allocation.getHostPtr();
 	invalidateAlloc(vk, device, allocation);
 	deMemcpy(allocationData, &data[0], (size_t)bufferSizeBytes);
+	flushAlloc(vk, device, allocation);
 }
 
 class StatisticQueryTestInstance : public TestInstance
@@ -3880,7 +3881,7 @@ tcu::TestStatus VertexShaderMultipleQueryTestInstance::executeTest (void)
 				VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	//  VkStructureType	sType;
 				DE_NULL,									//  const void*		pNext;
 				VK_ACCESS_TRANSFER_WRITE_BIT,				//  VkAccessFlags	srcAccessMask;
-			    VK_ACCESS_HOST_READ_BIT,					//  VkAccessFlags	dstAccessMask;
+				VK_ACCESS_HOST_READ_BIT,					//  VkAccessFlags	dstAccessMask;
 				VK_QUEUE_FAMILY_IGNORED,					//  deUint32		srcQueueFamilyIndex;
 				VK_QUEUE_FAMILY_IGNORED,					//  deUint32		destQueueFamilyIndex;
 				m_queryBuffer->object(),					//  VkBuffer		buffer;
@@ -3965,7 +3966,7 @@ tcu::TestStatus VertexShaderMultipleQueryTestInstance::checkResult (VkQueryPool 
 	deUint32				queryCount			= (m_parametersGraphic.queryCount + (m_parametersGraphic.dstOffset ? 1u : 0u));
 	deUint32				size				= NUM_QUERY_STATISTICS * queryCount;
 	std::vector<deUint64>   results;
-    results.resize(size);
+	results.resize(size);
 
 	deBool					hasPartialFlag		= (deBool)(m_parametersGraphic.queryFlags & VK_QUERY_RESULT_PARTIAL_BIT);
 	deBool					hasWaitFlag			= (deBool)(m_parametersGraphic.queryFlags & VK_QUERY_RESULT_WAIT_BIT);
@@ -4005,7 +4006,7 @@ tcu::TestStatus VertexShaderMultipleQueryTestInstance::checkResult (VkQueryPool 
 					return tcu::TestStatus::fail("dstOffset values were overwritten");
 			}
 			continue;
-        }
+		}
 
 		if (hasWaitFlag && !hasPartialFlag && !availableQuery)
 			return tcu::TestStatus::fail("Results should be available");
@@ -4110,6 +4111,142 @@ private:
 	const GraphicBasicMultipleQueryTestInstance::ParametersGraphic	m_parametersGraphic;
 };
 
+class BlitBetweenIncompatibleFormatsTestInstance : public StatisticMultipleQueryTestInstance
+{
+public:
+	BlitBetweenIncompatibleFormatsTestInstance	(vkt::Context& context);
+protected:
+	virtual tcu::TestStatus	iterate				(void);
+};
+
+BlitBetweenIncompatibleFormatsTestInstance::BlitBetweenIncompatibleFormatsTestInstance(vkt::Context& context)
+	: StatisticMultipleQueryTestInstance(context, 1u)
+{
+}
+
+tcu::TestStatus BlitBetweenIncompatibleFormatsTestInstance::iterate(void)
+{
+	const DeviceInterface&			vk					= m_context.getDeviceInterface();
+	const VkDevice					device				= m_context.getDevice();
+	const VkQueue					queue				= m_context.getUniversalQueue();
+	auto&							alloc				= m_context.getDefaultAllocator();
+	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+
+	const CmdPoolCreateInfo			cmdPoolCreateInfo	(queueFamilyIndex);
+	const Move<VkCommandPool>		cmdPool				(createCommandPool(vk, device, &cmdPoolCreateInfo));
+	const Unique<VkQueryPool>		queryPool			(makeQueryPool(vk, device, 1u, VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT));
+	const Unique<VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+	const VkImageSubresourceLayers	subresourceLayers	{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u };
+	const VkImageSubresourceRange	subresourceRange	{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u };
+	const VkClearColorValue			clearColor			{ { 0.0f, 1.0f, 0.0f, 1.0f } };
+	const VkImageBlit				blitRegion
+	{
+		subresourceLayers,
+		{ { 8,  0, 0}, {16, 16, 1} },
+		subresourceLayers,
+		{ {0, 8, 0}, {8, 16, 1} }
+	};
+
+	VkImageCreateInfo imageCreateInfo
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType		sType;
+		DE_NULL,								// const void*			pNext;
+		0,										// VkImageCreateFlags	flags;
+		VK_IMAGE_TYPE_2D,						// VkImageType			imageType;
+		VK_FORMAT_R32G32B32A32_SFLOAT,			// VkFormat				format;
+		{ 16u, 16u, 1u },						// VkExtent3D			extent;
+		1u,										// deUint32				mipLevels;
+		1u,										// deUint32				arraySize;
+		VK_SAMPLE_COUNT_1_BIT,					// deUint32				samples;
+		VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling		tiling;
+		VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT,	// VkImageUsageFlags	usage;
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
+		1u,										// deUint32				queueFamilyIndexCount;
+		&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
+	};
+
+	de::MovePtr<ImageWithMemory>	srcImage	(new ImageWithMemory(vk, device, alloc, imageCreateInfo, MemoryRequirement::Any));
+	imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+	de::MovePtr<ImageWithMemory>	dstImage	(new ImageWithMemory(vk, device, alloc, imageCreateInfo, MemoryRequirement::Any));
+
+	VkImageMemoryBarrier imageBarriers[2];
+	imageBarriers[0] =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,	// VkStructureType			sType;
+		DE_NULL,								// const void*				pNext;
+		0,										// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_TRANSFER_WRITE_BIT,			// VkAccessFlags			dstAccessMask;
+		VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout			oldLayout;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,	// VkImageLayout			newLayout;
+		VK_QUEUE_FAMILY_IGNORED,				// deUint32					srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,				// deUint32					dstQueueFamilyIndex;
+		**srcImage,								// VkImage					image;
+		subresourceRange						// VkImageSubresourceRange	subresourceRange;
+	};
+	imageBarriers[1] = imageBarriers[0];
+	imageBarriers[1].image = **dstImage;
+
+	beginCommandBuffer(vk, *cmdBuffer);
+
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 2, imageBarriers);
+	vk.cmdClearColorImage(*cmdBuffer, **srcImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1, &subresourceRange);
+
+	imageBarriers[0].srcAccessMask	= VK_ACCESS_TRANSFER_WRITE_BIT;
+	imageBarriers[0].dstAccessMask	= VK_ACCESS_TRANSFER_READ_BIT;
+	imageBarriers[0].oldLayout		= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	imageBarriers[0].newLayout		= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, imageBarriers);
+
+	vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, 1u);
+	vk.cmdBeginQuery(*cmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
+	vk.cmdBlitImage(*cmdBuffer, **srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blitRegion, VK_FILTER_NEAREST);
+	vk.cmdEndQuery(*cmdBuffer, *queryPool, 0u);
+
+	endCommandBuffer(vk, *cmdBuffer);
+
+	// Wait for completion
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	deUint64 queryResult = 1;
+	VkResult result = vk.getQueryPoolResults(device, *queryPool, 0u, 1u, sizeof(deUint64), &queryResult, sizeof(deUint64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+	if (result != VK_SUCCESS)
+		return tcu::TestStatus::fail("getQueryPoolResults() returned: " + de::toString(getResultStr(result)));
+
+	if (queryResult == 0)
+		return tcu::TestStatus::pass("pass");
+
+	return tcu::TestStatus::fail("QueryPoolResults incorrect result");
+}
+
+class BlitBetweenIncompatibleFormatsTestCase : public TestCase
+{
+public:
+	BlitBetweenIncompatibleFormatsTestCase(tcu::TestContext& context, const std::string& name);
+
+	void checkSupport(vkt::Context& context) const;
+
+	vkt::TestInstance* createInstance(vkt::Context& context) const;
+};
+
+BlitBetweenIncompatibleFormatsTestCase::BlitBetweenIncompatibleFormatsTestCase(tcu::TestContext& context, const std::string& name)
+	: TestCase(context, name.c_str(), "")
+{
+}
+
+void BlitBetweenIncompatibleFormatsTestCase::checkSupport(vkt::Context& context) const
+{
+	if (!context.getDeviceFeatures().pipelineStatisticsQuery)
+		TCU_THROW(NotSupportedError, "Pipeline statistics queries are not supported");
+}
+
+vkt::TestInstance* BlitBetweenIncompatibleFormatsTestCase::createInstance(vkt::Context& context) const
+{
+	return new BlitBetweenIncompatibleFormatsTestInstance(context);
+}
+
 } //anonymous
 
 QueryPoolStatisticsTests::QueryPoolStatisticsTests (tcu::TestContext &testCtx)
@@ -4198,7 +4335,7 @@ void QueryPoolStatisticsTests::init (void)
 	de::MovePtr<TestCaseGroup>	tesControlPatchesResetAfterCopy					(new TestCaseGroup(m_testCtx, "tes_control_patches",				"Query pipeline statistic tessellation control shader patches"));
 	de::MovePtr<TestCaseGroup>	tesEvaluationShaderInvocationsResetAfterCopy	(new TestCaseGroup(m_testCtx, "tes_evaluation_shader_invocations",	"Query pipeline statistic tessellation evaluation shader invocations"));
 
-	de::MovePtr<TestCaseGroup>	vertexShaderMultipleQueries						(new TestCaseGroup(m_testCtx, "multiple_queries",				"Query pipeline statistics related to vertex and fragment shaders"));
+	de::MovePtr<TestCaseGroup>	vertexShaderMultipleQueries						(new TestCaseGroup(m_testCtx, "multiple_queries",					"Query pipeline statistics related to vertex and fragment shaders"));
 
 	CopyType copyType[]															= { COPY_TYPE_GET,	COPY_TYPE_CMD };
 	std::string copyTypeStr[]													= { "",			"cmdcopyquerypoolresults_" };
@@ -4861,6 +4998,10 @@ void QueryPoolStatisticsTests::init (void)
 			}
 		}
 
+		// test corner case: on some implementations running queries while blitting between incompatible formats
+		// falls back to a draw shader, and this may end up erroneously incrementing pipeline statistics results
+		primary->addChild(new BlitBetweenIncompatibleFormatsTestCase(m_testCtx, "blit_between_incompatible_formats"));
+
 		clippingInvocations->addChild(primary.release());
 		clippingInvocations->addChild(secondary.release());
 		clippingInvocations->addChild(secondaryInherited.release());
@@ -5059,7 +5200,7 @@ void QueryPoolStatisticsTests::init (void)
 	}
 
 	// Multiple statistics query flags enabled
-    {
+	{
 		VkQueryResultFlags	partialFlags[]		=	{ 0u, VK_QUERY_RESULT_PARTIAL_BIT };
 		const char* const	partialFlagsStr[]	=	{ "", "_partial" };
 		VkQueryResultFlags	waitFlags[]			=	{ 0u, VK_QUERY_RESULT_WAIT_BIT };

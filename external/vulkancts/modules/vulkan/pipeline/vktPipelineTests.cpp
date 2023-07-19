@@ -29,6 +29,7 @@
 #include "vktPipelineDepthTests.hpp"
 #include "vktPipelineDescriptorLimitsTests.hpp"
 #include "vktPipelineDynamicOffsetTests.hpp"
+#include "vktPipelineDynamicVertexAttributeTests.hpp"
 #include "vktPipelineEarlyDestroyTests.hpp"
 #include "vktPipelineLogicOpTests.hpp"
 #include "vktPipelineImageTests.hpp"
@@ -57,6 +58,7 @@
 #include "vktPipelineMaxVaryingsTests.hpp"
 #include "vktPipelineBlendOperationAdvancedTests.hpp"
 #include "vktPipelineExtendedDynamicStateTests.hpp"
+#include "vktPipelineDynamicControlPoints.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktPipelineCreationCacheControlTests.hpp"
 #include "vktPipelineBindPointTests.hpp"
@@ -67,6 +69,10 @@
 #include "vktPipelineLibraryTests.hpp"
 #include "vktPipelineAttachmentFeedbackLoopLayoutTests.hpp"
 #include "vktPipelineShaderModuleIdentifierTests.hpp"
+#include "vktPipelineImageSlicedViewOf3DTests.hpp"
+#include "vktPipelineBindVertexBuffers2Tests.hpp"
+#include "vktPipelineRobustnessCacheTests.hpp"
+#include "vktPipelineInputAttributeOffsetTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -83,11 +89,13 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 {
 	tcu::TestContext& testCtx = group->getTestContext();
 
+	group->addChild(createDynamicControlPointTests (testCtx, pipelineConstructionType));
 	group->addChild(createStencilTests					(testCtx, pipelineConstructionType));
 	group->addChild(createBlendTests					(testCtx, pipelineConstructionType));
 	group->addChild(createDepthTests					(testCtx, pipelineConstructionType));
 	group->addChild(createDescriptorLimitsTests			(testCtx, pipelineConstructionType));
 	group->addChild(createDynamicOffsetTests			(testCtx, pipelineConstructionType));
+	group->addChild(createDynamicVertexAttributeTests	(testCtx, pipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
 	group->addChild(createEarlyDestroyTests				(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
@@ -136,22 +144,26 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 #ifndef CTS_USES_VULKANSC
 	group->addChild(createAttachmentFeedbackLoopLayoutTests (testCtx, pipelineConstructionType));
 	group->addChild(createShaderModuleIdentifierTests	(testCtx, pipelineConstructionType));
+	group->addChild(createPipelineRobustnessCacheTests	(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
 	group->addChild(createColorWriteEnable2Tests		(testCtx, pipelineConstructionType));
+	group->addChild(createMiscTests						(testCtx, pipelineConstructionType));
+	group->addChild(createCmdBindBuffers2Tests			(testCtx, pipelineConstructionType));
+	group->addChild(createInputAttributeOffsetTests		(testCtx, pipelineConstructionType));
 
 	// NOTE: all new pipeline tests should use GraphicsPipelineWrapper for pipeline creation
 
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		// there is no support for pipelineConstructionType in amber
-		group->addChild(createMiscTests						(testCtx));
-
 #ifndef CTS_USES_VULKANSC
 		// compute pipeline tests should not be repeated basing on pipelineConstructionType
 		group->addChild(createDerivativeTests				(testCtx));
 
 		// dont repeat tests requiring timing execution of vkCreate*Pipelines
 		group->addChild(createCacheControlTests				(testCtx));
+
+		// No need to repeat tests checking sliced view of 3D images for different construction types.
+		group->addChild(createImageSlicedViewOf3DTests		(testCtx));
 #endif // CTS_USES_VULKANSC
 	}
 #ifndef CTS_USES_VULKANSC
