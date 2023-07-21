@@ -174,6 +174,8 @@ bool areSubgroupOperationsSupportedForStage (Context& context, vk::VkShaderStage
 
 bool isSubgroupFeatureSupportedForDevice (Context& context, vk::VkSubgroupFeatureFlagBits bit);
 
+bool areQuadOperationsSupportedForStages (Context& context, const vk::VkShaderStageFlags stages);
+
 bool isFragmentSSBOSupportedForDevice (Context& context);
 
 bool isVertexSSBOSupportedForDevice (Context& context);

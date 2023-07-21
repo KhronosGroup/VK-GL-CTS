@@ -8476,14 +8476,19 @@ tcu::TestStatus RayTracingMiscTestInstance::iterate (void)
 		return tcu::TestStatus::fail("Fail");
 }
 
-void nullMissSupport (Context& context)
+void checkRTPipelineSupport (Context& context)
 {
 	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
 	context.requireDeviceFunctionality("VK_KHR_buffer_device_address");
 	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
 }
 
-void nullMissPrograms (vk::SourceCollections& programCollection)
+void checkReuseCreationBufferSupport (Context& context, bool)
+{
+	checkRTPipelineSupport(context);
+}
+
+void initBasicHitBufferPrograms (vk::SourceCollections& programCollection)
 {
 	const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
 
@@ -8524,6 +8529,11 @@ void nullMissPrograms (vk::SourceCollections& programCollection)
 
 	programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(rgen.str())) << buildOptions;
 	programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(chit.str())) << buildOptions;
+}
+
+void initReuseCreationBufferPrograms (vk::SourceCollections& programCollection, bool)
+{
+	initBasicHitBufferPrograms(programCollection);
 }
 
 // Creates an empty shader binding table with a zeroed-out shader group handle.
@@ -8685,6 +8695,225 @@ tcu::TestStatus nullMissInstance (Context& context)
 	deMemcpy(&bufferValue, bufferAlloc.getHostPtr(), sizeof(bufferValue));
 
 	if (bufferValue != 0.0f)
+		TCU_FAIL("Unexpected value found in buffer: " + de::toString(bufferValue));
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+std::vector<tcu::Vec3> getInRangeTrianglePoints (float offset)
+{
+	std::vector<tcu::Vec3> triangle;
+	triangle.reserve(3u);
+	triangle.emplace_back( 0.0f + offset,  1.0f + offset, 5.0f + offset);
+	triangle.emplace_back(-1.0f + offset, -1.0f + offset, 5.0f + offset);
+	triangle.emplace_back( 1.0f + offset, -1.0f + offset, 5.0f + offset);
+
+	return triangle;
+}
+
+tcu::TestStatus reuseCreationBufferInstance (Context& context, const bool disturbTop/* if false, bottom AS */)
+{
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physDev			= context.getPhysicalDevice();
+	const auto&	vkd				= context.getDeviceInterface();
+	const auto	device			= context.getDevice();
+	auto&		alloc			= context.getDefaultAllocator();
+	const auto	qIndex			= context.getUniversalQueueFamilyIndex();
+	const auto	queue			= context.getUniversalQueue();
+	const auto	stages			= (VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+	const bool	disturbBottom	= (!disturbTop);
+
+	// We don't know exactly how much space each implementation is going to require to build the top and bottom accel structures,
+	// but in practice the number appears to be in the low-KBs range, so creating a 4MB buffer will give us enough room to almost
+	// guarantee the buffer is going to be used.
+	const VkDeviceSize	creationBufferSize		= 4u * 1024u * 1024u;
+	const auto			creationBufferUsage		= (VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+	const auto			creationBufferInfo		= makeBufferCreateInfo(creationBufferSize, creationBufferUsage);
+	const auto			creationBufferMemReqs	= (MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress);
+	BufferWithMemory	creationBuffer			(vkd, device, alloc, creationBufferInfo, creationBufferMemReqs);
+
+	// Command pool and buffer.
+	const auto cmdPool			= makeCommandPool(vkd, device, qIndex);
+	const auto mainCmdBufferPtr	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto bottomBuildCmd	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto topBuildCmd		= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	// Build acceleration structures.
+	auto topLevelAS			= makeTopLevelAccelerationStructure();
+	auto topLevelOtherAS	= makeTopLevelAccelerationStructure();
+	auto bottomLevelAS		= makeBottomLevelAccelerationStructure();
+	auto bottomLevelOtherAS	= makeBottomLevelAccelerationStructure();
+
+	const auto goodTriangle	= getInRangeTrianglePoints(0.0f);
+	const auto badTriangle	= getInRangeTrianglePoints(100.0f);
+
+	bottomLevelAS->addGeometry(goodTriangle, true/*triangles*/);
+	bottomLevelOtherAS->addGeometry(badTriangle, true/*triangles*/);
+
+	// Critical for the test: we create an additional acceleration structure without building it, and reusing the same creation
+	// buffer. The creation operation is supposed to avoid touching the buffer, so this should not alter its contents and using the
+	// original acceleration structure after this step should still work.
+
+	beginCommandBuffer(vkd, bottomBuildCmd.get());
+
+	if (disturbBottom)
+	{
+		bottomLevelAS->create(vkd, device, alloc, 0u, 0u, nullptr, MemoryRequirement::Any, creationBuffer.get(), creationBufferSize);
+		bottomLevelAS->build(vkd, device, bottomBuildCmd.get());
+	}
+	else
+		bottomLevelAS->createAndBuild(vkd, device, bottomBuildCmd.get(), alloc);
+
+	// Submit command buffer so the bottom acceleration structure is actually built and stored in the creation buffer.
+	endCommandBuffer(vkd, bottomBuildCmd.get());
+	submitCommandsAndWait(vkd, device, queue, bottomBuildCmd.get());
+
+	if (disturbBottom)
+	{
+		bottomLevelOtherAS->create(vkd, device, alloc, 0u, 0u, nullptr, MemoryRequirement::Any, creationBuffer.get(), creationBufferSize);
+		// Note how we have created the second bottom level accel structure reusing the buffer but we haven't built it.
+	}
+
+	using SharedBottomPtr = de::SharedPtr<BottomLevelAccelerationStructure>;
+
+	SharedBottomPtr blasSharedPtr		(bottomLevelAS.release());
+	SharedBottomPtr blasOtherSharedPtr	(nullptr);
+
+	topLevelAS->setInstanceCount(1);
+	topLevelAS->addInstance(blasSharedPtr);
+
+	beginCommandBuffer(vkd, topBuildCmd.get());
+
+	if (disturbTop)
+	{
+		topLevelAS->create(vkd, device, alloc, 0u, 0u, nullptr, MemoryRequirement::Any, creationBuffer.get(), creationBufferSize);
+		topLevelAS->build(vkd, device, topBuildCmd.get());
+
+		bottomLevelOtherAS->createAndBuild(vkd, device, topBuildCmd.get(), alloc);
+	}
+	else
+		topLevelAS->createAndBuild(vkd, device, topBuildCmd.get(), alloc);
+
+	// Submit command buffer so the top acceleration structure is actually built and stored in the creation buffer.
+	endCommandBuffer(vkd, topBuildCmd.get());
+	submitCommandsAndWait(vkd, device, queue, topBuildCmd.get());
+
+	if (disturbTop)
+	{
+		SharedBottomPtr auxiliar (bottomLevelOtherAS.release());
+		blasOtherSharedPtr.swap(auxiliar);
+
+		topLevelOtherAS->setInstanceCount(1);
+		topLevelOtherAS->addInstance(blasOtherSharedPtr);
+		topLevelOtherAS->create(vkd, device, alloc, 0u, 0u, nullptr, MemoryRequirement::Any, creationBuffer.get(), creationBufferSize);
+		// Note how we have created the second top level accel structure reusing the buffer but we haven't built it.
+	}
+
+	// Create output buffer.
+	const auto			bufferSize			= static_cast<VkDeviceSize>(sizeof(float));
+	const auto			bufferCreateInfo	= makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	BufferWithMemory	buffer				(vkd, device, alloc, bufferCreateInfo, MemoryRequirement::HostVisible);
+	auto&				bufferAlloc			= buffer.getAllocation();
+
+	// Fill output buffer with an initial value.
+	deMemset(bufferAlloc.getHostPtr(), 0, sizeof(float));
+	flushAlloc(vkd, device, bufferAlloc);
+
+	// Descriptor set layout and pipeline layout.
+	DescriptorSetLayoutBuilder setLayoutBuilder;
+	setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, stages);
+	setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, stages);
+
+	const auto setLayout		= setLayoutBuilder.build(vkd, device);
+	const auto pipelineLayout	= makePipelineLayout(vkd, device, setLayout.get());
+
+	// Descriptor pool and set.
+	DescriptorPoolBuilder poolBuilder;
+	poolBuilder.addType(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
+	poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	const auto descriptorPool	= poolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+	const auto descriptorSet	= makeDescriptorSet(vkd, device, descriptorPool.get(), setLayout.get());
+
+	// Update descriptor set.
+	{
+		const VkWriteDescriptorSetAccelerationStructureKHR accelDescInfo =
+		{
+			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+			nullptr,
+			1u,
+			topLevelAS.get()->getPtr(),
+		};
+
+		const auto bufferDescInfo = makeDescriptorBufferInfo(buffer.get(), 0ull, VK_WHOLE_SIZE);
+
+		DescriptorSetUpdateBuilder updateBuilder;
+		updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &accelDescInfo);
+		updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescInfo);
+		updateBuilder.update(vkd, device);
+	}
+
+	// Shader modules.
+	auto rgenModule = createShaderModule(vkd, device, context.getBinaryCollection().get("rgen"), 0);
+	auto chitModule = createShaderModule(vkd, device, context.getBinaryCollection().get("chit"), 0);
+
+	// Get some ray tracing properties.
+	deUint32 shaderGroupHandleSize		= 0u;
+	deUint32 shaderGroupBaseAlignment	= 1u;
+	{
+		const auto rayTracingPropertiesKHR	= makeRayTracingProperties(vki, physDev);
+		shaderGroupHandleSize				= rayTracingPropertiesKHR->getShaderGroupHandleSize();
+		shaderGroupBaseAlignment			= rayTracingPropertiesKHR->getShaderGroupBaseAlignment();
+	}
+
+	// Create raytracing pipeline and shader binding tables.
+	Move<VkPipeline>				pipeline;
+
+	de::MovePtr<BufferWithMemory>	raygenSBT;
+	de::MovePtr<BufferWithMemory>	missSBT;
+	de::MovePtr<BufferWithMemory>	hitSBT;
+	de::MovePtr<BufferWithMemory>	callableSBT;
+
+	VkStridedDeviceAddressRegionKHR	raygenSBTRegion		= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	VkStridedDeviceAddressRegionKHR	missSBTRegion		= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	VkStridedDeviceAddressRegionKHR	hitSBTRegion		= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	VkStridedDeviceAddressRegionKHR	callableSBTRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+
+	{
+		const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
+
+		rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, rgenModule, 0u);
+		rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, chitModule, 1u);
+
+		pipeline = rayTracingPipeline->createPipeline(vkd, device, pipelineLayout.get());
+
+		raygenSBT		= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline.get(), alloc, shaderGroupHandleSize, shaderGroupBaseAlignment, 0u, 1u);
+		raygenSBTRegion	= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenSBT->get(), 0ull), shaderGroupHandleSize, shaderGroupHandleSize);
+
+		hitSBT			= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline.get(), alloc, shaderGroupHandleSize, shaderGroupBaseAlignment, 1u, 1u);
+		hitSBTRegion	= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitSBT->get(), 0ull), shaderGroupHandleSize, shaderGroupHandleSize);
+	}
+
+	const auto mainCmdBuffer = mainCmdBufferPtr.get();
+	beginCommandBuffer(vkd, mainCmdBuffer);
+
+	// Trace rays.
+	vkd.cmdBindPipeline(mainCmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.get());
+	vkd.cmdBindDescriptorSets(mainCmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+	vkd.cmdTraceRaysKHR(mainCmdBuffer, &raygenSBTRegion, &missSBTRegion, &hitSBTRegion, &callableSBTRegion, 1u, 1u, 1u);
+
+	// Barrier for the output buffer.
+	const auto bufferBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+	vkd.cmdPipelineBarrier(mainCmdBuffer, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &bufferBarrier, 0u, nullptr, 0u, nullptr);
+
+	endCommandBuffer(vkd, mainCmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, mainCmdBuffer);
+
+	// Read value back from the buffer.
+	float bufferValue = 0.0f;
+	invalidateAlloc(vkd, device, bufferAlloc);
+	deMemcpy(&bufferValue, bufferAlloc.getHostPtr(), sizeof(bufferValue));
+
+	if (bufferValue != 1.0f)
 		TCU_FAIL("Unexpected value found in buffer: " + de::toString(bufferValue));
 
 	return tcu::TestStatus::pass("Pass");
@@ -9565,7 +9794,9 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 	}
 
 	{
-		addFunctionCaseWithPrograms(miscGroupPtr.get(), "null_miss", "", nullMissSupport, nullMissPrograms, nullMissInstance);
+		addFunctionCaseWithPrograms(miscGroupPtr.get(), "null_miss", "", checkRTPipelineSupport, initBasicHitBufferPrograms, nullMissInstance);
+		addFunctionCaseWithPrograms(miscGroupPtr.get(), "reuse_creation_buffer_top", "", checkReuseCreationBufferSupport, initReuseCreationBufferPrograms, reuseCreationBufferInstance, true/*top*/);
+		addFunctionCaseWithPrograms(miscGroupPtr.get(), "reuse_creation_buffer_bottom", "", checkReuseCreationBufferSupport, initReuseCreationBufferPrograms, reuseCreationBufferInstance, false/*top*/);
 	}
 
 	return miscGroupPtr.release();

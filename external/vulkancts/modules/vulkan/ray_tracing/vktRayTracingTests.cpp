@@ -46,6 +46,7 @@
 #include "vktRayTracingNonUniformArgsTests.hpp"
 #include "vktRayTracingPipelineFlagsTests.hpp"
 #include "vktRayTracingOpacityMicromapTests.hpp"
+#include "vktRayTracingPositionFetchTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -88,6 +89,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createPipelineFlagsTests(testCtx));
 	group->addChild(createTraceRays2Tests(testCtx));
 	group->addChild(createOpacityMicromapTests(testCtx));
+	group->addChild(createPositionFetchTests(testCtx));
 
 	return group.release();
 }

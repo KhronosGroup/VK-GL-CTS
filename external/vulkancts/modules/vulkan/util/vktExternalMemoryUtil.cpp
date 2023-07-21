@@ -1423,6 +1423,12 @@ vk::Move<vk::VkImage> createExternalImage (const vk::DeviceInterface&					vkd,
 #  if defined(__ANDROID_API_P__) && (DE_ANDROID_API >= __ANDROID_API_P__)
 #      define BUILT_WITH_ANDROID_P_HARDWARE_BUFFER 1
 #  endif
+#  if defined(__ANDROID_API_T__) && (DE_ANDROID_API >= __ANDROID_API_T__)
+#      define BUILT_WITH_ANDROID_T_HARDWARE_BUFFER 1
+#  endif
+#  if defined(__ANDROID_API_U__) && (DE_ANDROID_API >= __ANDROID_API_U__)
+#      define BUILT_WITH_ANDROID_U_HARDWARE_BUFFER 1
+#  endif
 
 static deInt32 androidGetSdkVersion()
 {
