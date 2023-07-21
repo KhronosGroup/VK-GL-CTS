@@ -38,6 +38,7 @@
 
 #include <functional>
 #include <map>
+#include <set>
 
 namespace vkt
 {
@@ -149,6 +150,7 @@ struct TestParameters
 	const uint32_t		queryCount;
 	QueryOrder			queryOrder;
 	OutsideDraw			outsideDraw;
+	const bool			availabilityBit;
 
 	bool		pgqDefault					(void)	const	{ return pgqStream == VERTEX_STREAM_DEFAULT;						}
 	bool		xfbDefault					(void)	const	{ return xfbStream == VERTEX_STREAM_DEFAULT;						}
@@ -393,14 +395,17 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 														   m_parameters.queryResultType == QUERY_RESULT_TYPE_PGQ_64_XFB_32);
 	const bool						xfb64				= (m_parameters.queryResultType == QUERY_RESULT_TYPE_64_BIT ||
 														   m_parameters.queryResultType == QUERY_RESULT_TYPE_PGQ_32_XFB_64);
-	const size_t					pgqResultSize		= pgq64 ? sizeof(deUint64) : sizeof(deUint32);
-	const size_t					xfbResultSize		= xfb64 ? sizeof(deUint64) * 2 : sizeof(deUint32) * 2;
+	const VkQueryResultFlags		availabilityFlags	= (m_parameters.availabilityBit ? VK_QUERY_RESULT_WITH_AVAILABILITY_BIT : 0);
+	const size_t					pgqValuesPerQuery	= (m_parameters.availabilityBit ? 2 : 1);
+	const size_t					xfbValuesPerQuery	= (m_parameters.availabilityBit ? 3 : 2);
+	const size_t					pgqResultSize		= (pgq64 ? sizeof(deUint64) : sizeof(deUint32)) * pgqValuesPerQuery;
+	const size_t					xfbResultSize		= (xfb64 ? sizeof(deUint64) : sizeof(deUint32)) * xfbValuesPerQuery;
 	const size_t					pgqResultBufferSize	= pgqResultSize * m_parameters.queryCount;
 	const size_t					xfbResultBufferSize	= xfbResultSize * m_parameters.queryCount;
 	const VkQueryResultFlags		pgqResultWidthBit	= pgq64 ? VK_QUERY_RESULT_64_BIT : 0;
 	const VkQueryResultFlags		xfbResultWidthBit	= xfb64 ? VK_QUERY_RESULT_64_BIT : 0;
-	const VkQueryResultFlags		pgqResultFlags		= VK_QUERY_RESULT_WAIT_BIT | pgqResultWidthBit;
-	const VkQueryResultFlags		xfbResultFlags		= VK_QUERY_RESULT_WAIT_BIT | xfbResultWidthBit;
+	const VkQueryResultFlags		pgqResultFlags		= VK_QUERY_RESULT_WAIT_BIT | pgqResultWidthBit | availabilityFlags;
+	const VkQueryResultFlags		xfbResultFlags		= VK_QUERY_RESULT_WAIT_BIT | xfbResultWidthBit | availabilityFlags;
 
 	std::vector<deUint8>			pgqResults			(pgqResultBufferSize, 255u);
 	std::vector<deUint8>			xfbResults			(xfbResultBufferSize, 255u);
@@ -669,8 +674,8 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 	{
 		union QueryResults
 		{
-			deUint32	elements32[2];
-			deUint64	elements64[2];
+			deUint32	elements32[3];
+			deUint64	elements64[3];
 		};
 
 		const QueryResults*	pgqCounters		= reinterpret_cast<QueryResults*>(pgqResults.data() + queryIdx * pgqResultSize);
@@ -679,6 +684,8 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 		const deUint64		xfbWritten		= xfb64 ? xfbCounters->elements64[0] : static_cast<deUint64>(xfbCounters->elements32[0]);
 		const deUint64		xfbGenerated	= xfb64 ? xfbCounters->elements64[1] : static_cast<deUint64>(xfbCounters->elements32[1]);
 		const deUint32		drawCount		= (m_parameters.cmdBufCase == CMD_BUF_CASE_TWO_DRAWS) ? 2u : 1u;
+		const uint64_t		pgqAvailability	= (m_parameters.availabilityBit ? (pgq64 ? pgqCounters->elements64[1] : static_cast<deUint64>(pgqCounters->elements32[1])) : 1);
+		const uint64_t		xfbAvailability	= (m_parameters.availabilityBit ? (xfb64 ? xfbCounters->elements64[2] : static_cast<deUint64>(xfbCounters->elements32[2])) : 1);
 		tcu::TestLog&		log				= m_context.getTestContext().getLog();
 
 		if (queryIdx == 0u)
@@ -704,6 +711,12 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 			return tcu::TestStatus::fail(message);
 		}
 
+		if (pgqAvailability != 1)
+		{
+			const std::string message = logPrefix + "pgqAvailability == " + de::toString(pgqAvailability) + ", expected 1";
+			return tcu::TestStatus::fail(message);
+		}
+
 		if (m_parameters.transformFeedback)
 		{
 			if (xfbGenerated != primitivesGenerated * drawCount)
@@ -721,6 +734,12 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 			if (xfbWritten != (primitivesGenerated - 3))
 			{
 				const std::string message = logPrefix + "xfbWritten == " + de::toString(xfbWritten) + ", expected " + de::toString(primitivesGenerated - 3);
+				return tcu::TestStatus::fail(message);
+			}
+
+			if (xfbAvailability != 1)
+			{
+				const std::string message = logPrefix + "xfbAvailability == " + de::toString(xfbAvailability) + ", expected 1";
 				return tcu::TestStatus::fail(message);
 			}
 		}
@@ -2339,6 +2358,13 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 		{ RAST_CASE_COLOR_WRITE_DISABLE_DYNAMIC,	DE_TRUE,	"color_write_disable_dynamic_ds",	"Tests disabling color output using vkCmdSetColorWriteEnableEXT with a depth stencil attachment"		},
 	};
 
+	static const std::set<RasterizationCase> rasterizationCasesWithAvailability
+	{
+		RAST_CASE_DISCARD,
+		RAST_CASE_DEFAULT,
+		RAST_CASE_NO_ATTACHMENT,
+	};
+
 	constexpr struct Topology
 	{
 		VkPrimitiveTopology	type;
@@ -2357,6 +2383,13 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 		{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY,	"triangle_list_with_adjacency",		"Tests for separate triangle primitives with adjacency"														},
 		{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY,	"triangle_strip_with_adjacency",	"Tests for connected triangle primitives with adjacency, with consecutive triangles sharing an edge"		},
 		{ VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,						"patch_list",						"Tests for separate patch primitives"																		},
+	};
+
+	static const std::set<VkPrimitiveTopology> topologiesWithAvailability
+	{
+		VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
+		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+		VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,
 	};
 
 	// Tests for vkCmdBeginQueryIndexedEXT and vkCmdEndQueryIndexedEXT.
@@ -2507,28 +2540,44 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 												{
 													for (const auto& countCase : queryCountCases)
 													{
-														const TestParameters	parameters =
+														for (const auto availabilityBit : { false, true})
 														{
-															read.type,						// QueryReadType		queryReadType
-															reset.type,						// QueryResetType		queryResetType
-															result.type,					// QueryResultType		queryResultType
-															shader.stage,					// ShaderStage			shaderStage
-															xfbState.enable,				// deBool				transformFeedback
-															rastCase.type,					// RasterizationCase	rastCase
-															rastCase.dsAttachment,			// deBool				depthStencilAttachment
-															topology.type,					// VkPrimitiveTopology	primitiveTopology
-															pgqStream.index,				// VertexStreamIndex	pgqStreamIndex
-															xfbStream.index,				// VertexStreamIndex	xfbStreamIndex
-															cmdBufCase.type,				// CommandBufferCase	cmdBufCase
-															countCase.queryCount,			// const uint32_t		queryCount
-															queryOrderCase.order,			// QueryOrder			queryOrder
-															outSideDrawCase.outsideDraw,	// OutsideDraw			outsideDraw
-														};
+															if (availabilityBit && topologiesWithAvailability.count(topology.type) == 0)
+																continue;
 
-														const auto name = std::string(outSideDrawCase.name) + countCase.nameSuffix;
-														const auto desc = std::string(outSideDrawCase.desc) + countCase.descSuffix;
+															if (availabilityBit && rasterizationCasesWithAvailability.count(rastCase.type) == 0)
+																continue;
 
-														queryOrderGroup->addChild(new PrimitivesGeneratedQueryTestCase(testCtx, name.c_str(), desc.c_str(), parameters));
+															if (availabilityBit && cmdBufCase.type != CMD_BUF_CASE_SINGLE_DRAW)
+																continue;
+
+															const TestParameters	parameters =
+															{
+																read.type,						// QueryReadType		queryReadType
+																reset.type,						// QueryResetType		queryResetType
+																result.type,					// QueryResultType		queryResultType
+																shader.stage,					// ShaderStage			shaderStage
+																xfbState.enable,				// deBool				transformFeedback
+																rastCase.type,					// RasterizationCase	rastCase
+																rastCase.dsAttachment,			// deBool				depthStencilAttachment
+																topology.type,					// VkPrimitiveTopology	primitiveTopology
+																pgqStream.index,				// VertexStreamIndex	pgqStreamIndex
+																xfbStream.index,				// VertexStreamIndex	xfbStreamIndex
+																cmdBufCase.type,				// CommandBufferCase	cmdBufCase
+																countCase.queryCount,			// const uint32_t		queryCount
+																queryOrderCase.order,			// QueryOrder			queryOrder
+																outSideDrawCase.outsideDraw,	// OutsideDraw			outsideDraw
+																availabilityBit,				// const bool			availabilityBit
+															};
+
+															const auto availabilityNameSuffix = (availabilityBit ? "_with_availability" : "");
+															const auto availabilityDescSuffix = (availabilityBit ? " using VK_QUERY_RESULT_WITH_AVAILABILITY_BIT" : "");
+
+															const auto name = std::string(outSideDrawCase.name) + countCase.nameSuffix + availabilityNameSuffix;
+															const auto desc = std::string(outSideDrawCase.desc) + countCase.descSuffix + availabilityDescSuffix;
+
+															queryOrderGroup->addChild(new PrimitivesGeneratedQueryTestCase(testCtx, name.c_str(), desc.c_str(), parameters));
+														}
 													}
 												}
 
