@@ -11709,6 +11709,7 @@ void addImageToImageCubeTests (tcu::TestCaseGroup* group, TestGroupParamsPtr tes
 		paramsCubeToArray.dst.image.extent.depth	= arrayLayers;
 		paramsCubeToArray.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		paramsCubeToArray.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		paramsCubeToArray.dst.image.fillMode		= FILL_MODE_GRADIENT;
 		paramsCubeToArray.allocationKind			= testGroupParams->allocationKind;
 		paramsCubeToArray.extensionFlags			= testGroupParams->extensionFlags;
 		paramsCubeToArray.queueSelection			= testGroupParams->queueSelection;
