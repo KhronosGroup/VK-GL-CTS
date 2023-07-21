@@ -166,7 +166,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 		const string  evaluationSourceGLSL =
 			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
-			"#extension GL_EXT_tessellation_shader : require\n"
+			"${TESS_EXTENSION}\n"
 			"layout(isolines, equal_spacing, ccw ) in;\n"
 			"layout(location = 0) out float out_color;\n"
 			"\n"
@@ -184,7 +184,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 		const string bdy = subgroupMask(caseDef);
 		const string  controlSourceGLSL =
 			"${VERSION_DECL}\n"
-			"#extension GL_EXT_tessellation_shader : require\n"
+			"${TESS_EXTENSION}\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(vertices = 2) out;\n"
 			"layout(location = 0) out float out_color[];\n"
