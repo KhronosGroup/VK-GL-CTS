@@ -9934,7 +9934,7 @@ struct AddPrograms
 				const char* const vertexShader =
 					"#version 450\n"
 					"precision highp float;\n"
-					"layout(set=0, binding=0, rgba8) uniform image2D u_image;\n"
+					"layout(set=0, binding=0, rgba8) uniform readonly image2D u_image;\n"
 					"out gl_PerVertex {\n"
 					"\tvec4 gl_Position;\n"
 					"\tfloat gl_PointSize;\n"
@@ -9959,7 +9959,7 @@ struct AddPrograms
 					"#version 450\n"
 					"#extension GL_EXT_texture_buffer : require\n"
 					"precision highp float;\n"
-					"layout(set=0, binding=0, rgba8) uniform image2D u_image;\n"
+					"layout(set=0, binding=0, rgba8) uniform readonly image2D u_image;\n"
 					"layout(location = 0) out highp vec4 o_color;\n"
 					"void main (void) {\n"
 					"\thighp uvec2 size = uvec2(imageSize(u_image).x, imageSize(u_image).y);\n"
