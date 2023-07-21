@@ -1422,7 +1422,7 @@ void ImageStoreComputeTestInstance::executeShader (const VkCommandBuffer&		cmdBu
 		for (deUint32 imageNdx = 0u; imageNdx < imageData[1].getImagesCount(); ++imageNdx)
 		{
 			preShaderImageBarriers[imageNdx]									= makeImageMemoryBarrier(
-																					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+																					VK_ACCESS_TRANSFER_WRITE_BIT, (VK_ACCESS_SHADER_READ_BIT|VK_ACCESS_SHADER_WRITE_BIT),
 																					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 																					imageData[1].getImage(imageNdx), uncompressedRange);
 
@@ -1433,7 +1433,7 @@ void ImageStoreComputeTestInstance::executeShader (const VkCommandBuffer&		cmdBu
 		}
 
 		preShaderImageBarriers[preShaderImageBarriers.size()-1] = makeImageMemoryBarrier(
-																	VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+																	VK_ACCESS_TRANSFER_WRITE_BIT, (VK_ACCESS_SHADER_READ_BIT|VK_ACCESS_SHADER_WRITE_BIT),
 																	VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
 																	imageData[0].getImage(0u), compressedRange);
 
@@ -2309,7 +2309,7 @@ void GraphicsTextureTestInstance::transcodeRead ()
 			const VkImageMemoryBarrier		srcCopyImageBarrierPre	= makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, srcImage->get(), srcSubresourceRange);
 			const VkImageMemoryBarrier		srcCopyImageBarrierPost	= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL, srcImage->get(), srcSubresourceRange);
 			const VkBufferImageCopy			dstCopyRegion			= makeBufferImageCopy(dstImageResolution.x(), dstImageResolution.y());
-			const VkImageMemoryBarrier		dstInitImageBarrier		= makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, dstImage->get(), dstSubresourceRange);
+			const VkImageMemoryBarrier		dstInitImageBarrier		= makeImageMemoryBarrier(0u, (VK_ACCESS_SHADER_READ_BIT|VK_ACCESS_SHADER_WRITE_BIT), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, dstImage->get(), dstSubresourceRange);
 
 			const VkExtent2D				framebufferSize			(makeExtent2D(dstImageResolution[0], dstImageResolution[1]));
 			const Move<VkFramebuffer>		framebuffer				(makeFramebuffer(vk, device, *renderPass, 0, DE_NULL, framebufferSize.width, framebufferSize.height, SINGLE_LAYER));

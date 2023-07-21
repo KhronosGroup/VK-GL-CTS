@@ -3321,7 +3321,7 @@ tcu::TestStatus testMemoryImportTwice (Context& context, MemoryTestConfig config
 	// \note Buffer is only allocated to get memory requirements
 	const vk::Unique<vk::VkBuffer>				buffer					(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 	const vk::VkMemoryRequirements				requirements			(getBufferMemoryRequirements(vkd, *device, *buffer));
-	const deUint32								exportedMemoryTypeIndex	(getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, requirements.memoryTypeBits));
+	deUint32									exportedMemoryTypeIndex	(getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, requirements.memoryTypeBits));
 	const vk::Unique<vk::VkDeviceMemory>		memory					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType, config.dedicated ? *buffer : (vk::VkBuffer)0));
 	NativeHandle								handleA;
 
@@ -3329,6 +3329,22 @@ tcu::TestStatus testMemoryImportTwice (Context& context, MemoryTestConfig config
 		writeHostMemory(vkd, *device, *memory, testData.size(), &testData[0]);
 
 	getMemoryNative(vkd, *device, *memory, config.externalType, handleA);
+
+	// Need to query again memory type index since we are forced to have same type bits as the ahb buffer
+	// Avoids VUID-VkMemoryAllocateInfo-memoryTypeIndex-02385
+	if (config.externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
+	{
+		vk::VkAndroidHardwareBufferPropertiesANDROID	ahbProperties	=
+		{
+			vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID,	// VkStructureType	sType
+			DE_NULL,															// void*			pNext
+			0u,																	// VkDeviceSize		allocationSize
+			0u																	// uint32_t			memoryTypeBits
+		};
+		vkd.getAndroidHardwareBufferPropertiesANDROID(device.get(), handleA.getAndroidHardwareBuffer(), &ahbProperties);
+
+		exportedMemoryTypeIndex	= chooseMemoryType(ahbProperties.memoryTypeBits);
+	}
 
 	{
 		const vk::Unique<vk::VkBuffer>			bufferA	(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
@@ -3378,11 +3394,27 @@ tcu::TestStatus testMemoryMultipleImports (Context& context, MemoryTestConfig co
 	// \note Buffer is only allocated to get memory requirements
 	const vk::Unique<vk::VkBuffer>			buffer					(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 	const vk::VkMemoryRequirements			requirements			(getBufferMemoryRequirements(vkd, *device, *buffer));
-	const deUint32							exportedMemoryTypeIndex	(getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, requirements.memoryTypeBits));
+	deUint32								exportedMemoryTypeIndex	(getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, requirements.memoryTypeBits));
 	const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType, config.dedicated ? *buffer : (vk::VkBuffer)0));
 	NativeHandle							handleA;
 
 	getMemoryNative(vkd, *device, *memory, config.externalType, handleA);
+
+	// Need to query again memory type index since we are forced to have same type bits as the ahb buffer
+	// Avoids VUID-VkMemoryAllocateInfo-memoryTypeIndex-02385
+	if (config.externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
+	{
+		vk::VkAndroidHardwareBufferPropertiesANDROID	ahbProperties	=
+		{
+			vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID,	// VkStructureType	sType
+			DE_NULL,															// void*			pNext
+			0u,																	// VkDeviceSize		allocationSize
+			0u																	// uint32_t			memoryTypeBits
+		};
+		vkd.getAndroidHardwareBufferPropertiesANDROID(device.get(), handleA.getAndroidHardwareBuffer(), &ahbProperties);
+
+		exportedMemoryTypeIndex	= chooseMemoryType(ahbProperties.memoryTypeBits);
+	}
 
 	for (size_t ndx = 0; ndx < count; ndx++)
 	{
@@ -3837,13 +3869,29 @@ tcu::TestStatus testBufferBindExportImportBind (Context&				context,
 	// \note Buffer is only allocated to get memory requirements
 	const vk::Unique<vk::VkBuffer>			bufferA					(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 	const vk::VkMemoryRequirements			requirements			(getBufferMemoryRequirements(vkd, *device, *bufferA));
-	const deUint32							exportedMemoryTypeIndex	(chooseMemoryType(requirements.memoryTypeBits));
+	deUint32								exportedMemoryTypeIndex	(chooseMemoryType(requirements.memoryTypeBits));
 	const vk::Unique<vk::VkDeviceMemory>	memoryA					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType, config.dedicated ? *bufferA : (vk::VkBuffer)0));
 	NativeHandle							handle;
 
 	VK_CHECK(vkd.bindBufferMemory(*device, *bufferA, *memoryA, 0u));
 
 	getMemoryNative(vkd, *device, *memoryA, config.externalType, handle);
+
+	// Need to query again memory type index since we are forced to have same type bits as the ahb buffer
+	// Avoids VUID-VkMemoryAllocateInfo-memoryTypeIndex-02385
+	if (config.externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
+	{
+		vk::VkAndroidHardwareBufferPropertiesANDROID	ahbProperties	=
+		{
+			vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID,	// VkStructureType	sType
+			DE_NULL,															// void*			pNext
+			0u,																	// VkDeviceSize		allocationSize
+			0u																	// uint32_t			memoryTypeBits
+		};
+		vkd.getAndroidHardwareBufferPropertiesANDROID(device.get(), handle.getAndroidHardwareBuffer(), &ahbProperties);
+
+		exportedMemoryTypeIndex	= chooseMemoryType(ahbProperties.memoryTypeBits);
+	}
 
 	{
 		const vk::Unique<vk::VkBuffer>			bufferB	(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
@@ -3875,12 +3923,28 @@ tcu::TestStatus testBufferExportBindImportBind (Context&				context,
 	// \note Buffer is only allocated to get memory requirements
 	const vk::Unique<vk::VkBuffer>			bufferA					(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 	const vk::VkMemoryRequirements			requirements			(getBufferMemoryRequirements(vkd, *device, *bufferA));
-	const deUint32							exportedMemoryTypeIndex	(chooseMemoryType(requirements.memoryTypeBits));
+	deUint32								exportedMemoryTypeIndex	(chooseMemoryType(requirements.memoryTypeBits));
 	const vk::Unique<vk::VkDeviceMemory>	memoryA					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType, config.dedicated ? *bufferA : (vk::VkBuffer)0));
 	NativeHandle							handle;
 
 	getMemoryNative(vkd, *device, *memoryA, config.externalType, handle);
 	VK_CHECK(vkd.bindBufferMemory(*device, *bufferA, *memoryA, 0u));
+
+	// Need to query again memory type index since we are forced to have same type bits as the ahb buffer
+	// Avoids VUID-VkMemoryAllocateInfo-memoryTypeIndex-02385
+	if (config.externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
+	{
+		vk::VkAndroidHardwareBufferPropertiesANDROID	ahbProperties	=
+		{
+			vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID,	// VkStructureType	sType
+			DE_NULL,															// void*			pNext
+			0u,																	// VkDeviceSize		allocationSize
+			0u																	// uint32_t			memoryTypeBits
+		};
+		vkd.getAndroidHardwareBufferPropertiesANDROID(device.get(), handle.getAndroidHardwareBuffer(), &ahbProperties);
+
+		exportedMemoryTypeIndex	= chooseMemoryType(ahbProperties.memoryTypeBits);
+	}
 
 	{
 		const vk::Unique<vk::VkBuffer>			bufferB	(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
@@ -3912,11 +3976,27 @@ tcu::TestStatus testBufferExportImportBindBind (Context&				context,
 	// \note Buffer is only allocated to get memory requirements
 	const vk::Unique<vk::VkBuffer>			bufferA					(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 	const vk::VkMemoryRequirements			requirements			(getBufferMemoryRequirements(vkd, *device, *bufferA));
-	const deUint32							exportedMemoryTypeIndex	(chooseMemoryType(requirements.memoryTypeBits));
+	deUint32								exportedMemoryTypeIndex	(chooseMemoryType(requirements.memoryTypeBits));
 	const vk::Unique<vk::VkDeviceMemory>	memoryA					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType, config.dedicated ? *bufferA : (vk::VkBuffer)0));
 	NativeHandle							handle;
 
 	getMemoryNative(vkd, *device, *memoryA, config.externalType, handle);
+
+	// Need to query again memory type index since we are forced to have same type bits as the ahb buffer
+	// Avoids VUID-VkMemoryAllocateInfo-memoryTypeIndex-02385
+	if (config.externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
+	{
+		vk::VkAndroidHardwareBufferPropertiesANDROID	ahbProperties	=
+		{
+			vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID,	// VkStructureType	sType
+			DE_NULL,															// void*			pNext
+			0u,																	// VkDeviceSize		allocationSize
+			0u																	// uint32_t			memoryTypeBits
+		};
+		vkd.getAndroidHardwareBufferPropertiesANDROID(device.get(), handle.getAndroidHardwareBuffer(), &ahbProperties);
+
+		exportedMemoryTypeIndex	= chooseMemoryType(ahbProperties.memoryTypeBits);
+	}
 
 	{
 		const vk::Unique<vk::VkBuffer>			bufferB	(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
