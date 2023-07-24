@@ -1230,13 +1230,14 @@ public:
 
 	struct ParametersGraphic : public GenericParameters
 	{
-		ParametersGraphic (const VkQueryPipelineStatisticFlags queryStatisticFlags_, const VkPrimitiveTopology primitiveTopology_, const ResetType resetType_, const CopyType copyType_, const deBool query64Bits_, const deBool vertexOnlyPipe_ = DE_FALSE, const deBool dstOffset_ = DE_FALSE, const ClearOperation clearOp_ = CLEAR_NOOP, const deBool noColorAttachments_ = DE_FALSE, const StrideType strideType_ = STRIDE_TYPE_VALID)
+		ParametersGraphic (const VkQueryPipelineStatisticFlags queryStatisticFlags_, const VkPrimitiveTopology primitiveTopology_, const ResetType resetType_, const CopyType copyType_, const deBool query64Bits_, const deBool vertexOnlyPipe_ = DE_FALSE, const deBool dstOffset_ = DE_FALSE, const ClearOperation clearOp_ = CLEAR_NOOP, const deBool noColorAttachments_ = DE_FALSE, const StrideType strideType_ = STRIDE_TYPE_VALID, const deBool hasTess_ = false)
 			: GenericParameters		{resetType_, copyType_, query64Bits_, dstOffset_, strideType_}
 			, queryStatisticFlags	(queryStatisticFlags_)
 			, primitiveTopology		(primitiveTopology_)
 			, vertexOnlyPipe		(vertexOnlyPipe_)
 			, clearOp				(clearOp_)
 			, noColorAttachments			(noColorAttachments_)
+			, hasTess				(hasTess_)
 			{}
 
 		VkQueryPipelineStatisticFlags	queryStatisticFlags;
@@ -1244,6 +1245,7 @@ public:
 		deBool							vertexOnlyPipe;
 		ClearOperation					clearOp;
 		deBool							noColorAttachments;
+		deBool							hasTess;
 	};
 											GraphicBasicTestInstance			(vkt::Context&					context,
 																				 const std::vector<VertexData>&	data,
@@ -1707,6 +1709,8 @@ tcu::TestStatus VertexShaderTestInstance::checkResult (VkQueryPool queryPool)
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 	const VkDevice			device		= m_context.getDevice();
 	deUint64				expectedMin	= 0u;
+	deBool					hasMax		= false;
+	deUint64				expectedMax	= 0u;
 
 	switch(m_parametersGraphic.queryStatisticFlags)
 	{
@@ -1747,6 +1751,10 @@ tcu::TestStatus VertexShaderTestInstance::checkResult (VkQueryPool queryPool)
 							m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY	?  3072u :
 							0u;
 			break;
+		case VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT:
+					hasMax = true;
+					expectedMax = 0;
+			break;
 		default:
 			DE_FATAL("Unexpected type of statistics query");
 			break;
@@ -1768,7 +1776,7 @@ tcu::TestStatus VertexShaderTestInstance::checkResult (VkQueryPool queryPool)
 			VK_CHECK(GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount, (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags())));
 		}
 
-		if (results[0] < expectedMin)
+		if (results[0] < expectedMin || (hasMax && results[0] > expectedMax))
 			return tcu::TestStatus::fail("QueryPoolResults incorrect");
 		if (queryCount > 1)
 		{
@@ -1791,7 +1799,7 @@ tcu::TestStatus VertexShaderTestInstance::checkResult (VkQueryPool queryPool)
 			VK_CHECK(GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount, (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags() | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT)));
 		}
 
-		if (results[0].first < expectedMin || results[0].second == 0)
+		if (results[0].first < expectedMin || (hasMax && results[0].first > expectedMax) || results[0].second == 0)
 			return tcu::TestStatus::fail("QueryPoolResults incorrect");
 
 		if (queryCount > 1)
@@ -2888,6 +2896,8 @@ tcu::TestStatus TessellationShaderTestInstance::checkResult (VkQueryPool queryPo
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 	const VkDevice			device		= m_context.getDevice();
 	deUint64				expectedMin	= 0u;
+	bool					hasMax		= false;
+	deUint64				expectedMax = 0u;
 
 	switch(m_parametersGraphic.queryStatisticFlags)
 	{
@@ -2896,6 +2906,11 @@ tcu::TestStatus TessellationShaderTestInstance::checkResult (VkQueryPool queryPo
 			break;
 		case VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT:
 			expectedMin = 100u;
+			break;
+		case VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT:
+					expectedMin = 0;
+					expectedMax = 0;
+					hasMax = true;
 			break;
 		default:
 			DE_FATAL("Unexpected type of statistics query");
@@ -2917,7 +2932,7 @@ tcu::TestStatus TessellationShaderTestInstance::checkResult (VkQueryPool queryPo
 			VK_CHECK(GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount, (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags())));
 		}
 
-		if (results[0] < expectedMin)
+		if (results[0] < expectedMin || (hasMax && results[0] > expectedMax))
 			return tcu::TestStatus::fail("QueryPoolResults incorrect");
 		if (queryCount > 1)
 		{
@@ -2942,7 +2957,7 @@ tcu::TestStatus TessellationShaderTestInstance::checkResult (VkQueryPool queryPo
 			VK_CHECK(GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount, (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags() | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT)));
 		}
 
-		if (results[0].first < expectedMin || results[0].second == 0u)
+		if (results[0].first < expectedMin || (hasMax && results[0].first > expectedMax) || results[0].second == 0u)
 			return tcu::TestStatus::fail("QueryPoolResults incorrect");
 
 		if (queryCount > 1)
@@ -3373,8 +3388,7 @@ public:
 			sourceCollections.glslSources.add("vertex") << glu::VertexSource(source.str());
 		}
 
-		if (m_parametersGraphic.queryStatisticFlags & (VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT|
-									VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT))
+		if (m_parametersGraphic.hasTess)
 		{// Tessellation control & evaluation
 			std::ostringstream source_tc;
 			source_tc	<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
@@ -4336,6 +4350,7 @@ void QueryPoolStatisticsTests::init (void)
 	de::MovePtr<TestCaseGroup>	tesEvaluationShaderInvocationsResetAfterCopy	(new TestCaseGroup(m_testCtx, "tes_evaluation_shader_invocations",	"Query pipeline statistic tessellation evaluation shader invocations"));
 
 	de::MovePtr<TestCaseGroup>	vertexShaderMultipleQueries						(new TestCaseGroup(m_testCtx, "multiple_queries",					"Query pipeline statistics related to vertex and fragment shaders"));
+	de::MovePtr<TestCaseGroup>	gsInvocationsNoGs								(new TestCaseGroup(m_testCtx, "gs_invocations_no_gs",				"Query pipeline statistics GS invocations with no GS"));
 
 	CopyType copyType[]															= { COPY_TYPE_GET,	COPY_TYPE_CMD };
 	std::string copyTypeStr[]													= { "",			"cmdcopyquerypoolresults_" };
@@ -5199,6 +5214,15 @@ void QueryPoolStatisticsTests::init (void)
 		}
 	}
 
+	// number of GS invocations with TES/TSC/vert
+	{
+		for (deUint32 copyTypeIdx = 0; copyTypeIdx < DE_LENGTH_OF_ARRAY(copyType); copyTypeIdx++)
+		{
+			gsInvocationsNoGs->addChild								(new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>						(m_testCtx,	copyTypeStr[copyTypeIdx] + "gs_invocations_no_gs_vtx",	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, RESET_TYPE_NORMAL, copyType[copyTypeIdx], DE_FALSE, DE_FALSE, DE_FALSE, CLEAR_NOOP, DE_TRUE, STRIDE_TYPE_VALID), sixRepeats));
+			gsInvocationsNoGs->addChild						(new QueryPoolGraphicStatisticsTest<TessellationShaderTestInstance>					(m_testCtx,	copyTypeStr[copyTypeIdx] + "gs_invocations_no_gs_tes",  "",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, RESET_TYPE_NORMAL, copyType[copyTypeIdx], DE_FALSE, DE_FALSE, 0, CLEAR_NOOP, DE_TRUE, STRIDE_TYPE_VALID, true), sixRepeats));
+		}
+	}
+
 	// Multiple statistics query flags enabled
 	{
 		VkQueryResultFlags	partialFlags[]		=	{ 0u, VK_QUERY_RESULT_PARTIAL_BIT };
@@ -5280,6 +5304,7 @@ void QueryPoolStatisticsTests::init (void)
 	addChild(clippingPrimitives.release());
 	addChild(tesControlPatches.release());
 	addChild(tesEvaluationShaderInvocations.release());
+	addChild(gsInvocationsNoGs.release());
 
 	vertexOnlyGroup->addChild(inputAssemblyVerticesVertexOnly.release());
 	vertexOnlyGroup->addChild(inputAssemblyPrimitivesVertexOnly.release());
