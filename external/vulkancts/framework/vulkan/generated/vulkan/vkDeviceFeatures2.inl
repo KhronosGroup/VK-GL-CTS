@@ -1894,7 +1894,7 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderClockFeaturesKHR (Context& contex
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
-tcu::TestStatus testPhysicalDeviceFeatureIndexTypeUint8FeaturesEXT (Context& context)
+tcu::TestStatus testPhysicalDeviceFeatureIndexTypeUint8FeaturesKHR (Context& context)
 {
 	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
 	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
@@ -1904,29 +1904,29 @@ tcu::TestStatus testPhysicalDeviceFeatureIndexTypeUint8FeaturesEXT (Context& con
 	VkPhysicalDeviceFeatures2	extFeatures;
 	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
-	VkPhysicalDeviceIndexTypeUint8FeaturesEXT	deviceIndexTypeUint8FeaturesEXT[count];
-	const bool									isIndexTypeUint8FeaturesEXT = checkExtension(properties, "VK_EXT_index_type_uint8");
+	VkPhysicalDeviceIndexTypeUint8FeaturesKHR	deviceIndexTypeUint8FeaturesKHR[count];
+	const bool									isIndexTypeUint8FeaturesKHR = checkExtension(properties, "VK_KHR_index_type_uint8");
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
-		deMemset(&deviceIndexTypeUint8FeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceIndexTypeUint8FeaturesEXT));
-		deviceIndexTypeUint8FeaturesEXT[ndx].sType = isIndexTypeUint8FeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT : VK_STRUCTURE_TYPE_MAX_ENUM;
-		deviceIndexTypeUint8FeaturesEXT[ndx].pNext = DE_NULL;
+		deMemset(&deviceIndexTypeUint8FeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceIndexTypeUint8FeaturesKHR));
+		deviceIndexTypeUint8FeaturesKHR[ndx].sType = isIndexTypeUint8FeaturesKHR ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_KHR : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceIndexTypeUint8FeaturesKHR[ndx].pNext = DE_NULL;
 
 		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
 		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-		extFeatures.pNext = &deviceIndexTypeUint8FeaturesEXT[ndx];
+		extFeatures.pNext = &deviceIndexTypeUint8FeaturesKHR[ndx];
 
 		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
 	}
 
-	if (isIndexTypeUint8FeaturesEXT)
-		log << TestLog::Message << deviceIndexTypeUint8FeaturesEXT[0] << TestLog::EndMessage;
+	if (isIndexTypeUint8FeaturesKHR)
+		log << TestLog::Message << deviceIndexTypeUint8FeaturesKHR[0] << TestLog::EndMessage;
 
-	if (isIndexTypeUint8FeaturesEXT &&
-		(deviceIndexTypeUint8FeaturesEXT[0].indexTypeUint8 != deviceIndexTypeUint8FeaturesEXT[1].indexTypeUint8))
+	if (isIndexTypeUint8FeaturesKHR &&
+		(deviceIndexTypeUint8FeaturesKHR[0].indexTypeUint8 != deviceIndexTypeUint8FeaturesKHR[1].indexTypeUint8))
 	{
-		TCU_FAIL("Mismatch between VkPhysicalDeviceIndexTypeUint8FeaturesEXT");
+		TCU_FAIL("Mismatch between VkPhysicalDeviceIndexTypeUint8FeaturesKHR");
 	}
 	return tcu::TestStatus::pass("Querying succeeded");
 }
@@ -4955,7 +4955,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "ycbcr_image_arrays_features_ext", "VkPhysicalDeviceYcbcrImageArraysFeaturesEXT", testPhysicalDeviceFeatureYcbcrImageArraysFeaturesEXT);
 	addFunctionCase(testGroup, "performance_query_features_khr", "VkPhysicalDevicePerformanceQueryFeaturesKHR", testPhysicalDeviceFeaturePerformanceQueryFeaturesKHR);
 	addFunctionCase(testGroup, "shader_clock_features_khr", "VkPhysicalDeviceShaderClockFeaturesKHR", testPhysicalDeviceFeatureShaderClockFeaturesKHR);
-	addFunctionCase(testGroup, "index_type_uint8_features_ext", "VkPhysicalDeviceIndexTypeUint8FeaturesEXT", testPhysicalDeviceFeatureIndexTypeUint8FeaturesEXT);
+	addFunctionCase(testGroup, "index_type_uint8_features_khr", "VkPhysicalDeviceIndexTypeUint8FeaturesKHR", testPhysicalDeviceFeatureIndexTypeUint8FeaturesKHR);
 	addFunctionCase(testGroup, "fragment_shader_interlock_features_ext", "VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT", testPhysicalDeviceFeatureFragmentShaderInterlockFeaturesEXT);
 	addFunctionCase(testGroup, "separate_depth_stencil_layouts_features", "VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures", testPhysicalDeviceFeatureSeparateDepthStencilLayoutsFeatures);
 	addFunctionCase(testGroup, "primitive_topology_list_restart_features_ext", "VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT", testPhysicalDeviceFeaturePrimitiveTopologyListRestartFeaturesEXT);

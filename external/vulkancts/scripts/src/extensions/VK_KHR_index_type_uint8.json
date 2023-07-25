@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceIndexTypeUint8FeaturesKHR":
+		[
+			{ "features": ["indexTypeUint8"],		"requirements": ["VK_KHR_index_type_uint8"] }
+		]
+	}
+}

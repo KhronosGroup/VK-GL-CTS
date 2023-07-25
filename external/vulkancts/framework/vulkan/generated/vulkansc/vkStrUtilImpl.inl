@@ -7563,9 +7563,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderClockFeat
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceIndexTypeUint8FeaturesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceIndexTypeUint8FeaturesKHR& value)
 {
-	s << "VkPhysicalDeviceIndexTypeUint8FeaturesEXT = {\n";
+	s << "VkPhysicalDeviceIndexTypeUint8FeaturesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tindexTypeUint8 = " << value.indexTypeUint8 << '\n';

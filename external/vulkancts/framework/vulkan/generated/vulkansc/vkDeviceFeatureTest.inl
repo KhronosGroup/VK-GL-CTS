@@ -1289,7 +1289,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderClockFeaturesKHR (C
 }
 
 
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesEXT (Context& context)
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesKHR (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();
 	tcu::TestLog&							log						= context.getTestContext().getLog();
@@ -1313,13 +1313,13 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesEXT
 	const auto& extensionNames = context.getDeviceCreationExtensions();
 	DE_UNREF(extensionNames); // In some cases this is not used.
 
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceIndexTypeUint8FeaturesEXT>()))
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceIndexTypeUint8FeaturesKHR>()))
 	{
 		static const Feature features[] =
 		{
-		FEATURE_ITEM (VkPhysicalDeviceIndexTypeUint8FeaturesEXT, indexTypeUint8),
+		FEATURE_ITEM (VkPhysicalDeviceIndexTypeUint8FeaturesKHR, indexTypeUint8),
 		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceIndexTypeUint8FeaturesEXT*>(featuresStruct);
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceIndexTypeUint8FeaturesKHR*>(featuresStruct);
 		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
@@ -2435,7 +2435,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "ycbcr_image_arrays_features_ext", "createDeviceWithUnsupportedFeaturesTestYcbcrImageArraysFeaturesEXT", createDeviceWithUnsupportedFeaturesTestYcbcrImageArraysFeaturesEXT);
 	addFunctionCase(testGroup, "performance_query_features_khr", "createDeviceWithUnsupportedFeaturesTestPerformanceQueryFeaturesKHR", createDeviceWithUnsupportedFeaturesTestPerformanceQueryFeaturesKHR);
 	addFunctionCase(testGroup, "shader_clock_features_khr", "createDeviceWithUnsupportedFeaturesTestShaderClockFeaturesKHR", createDeviceWithUnsupportedFeaturesTestShaderClockFeaturesKHR);
-	addFunctionCase(testGroup, "index_type_uint8_features_ext", "createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesEXT", createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesEXT);
+	addFunctionCase(testGroup, "index_type_uint8_features_khr", "createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesKHR", createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesKHR);
 	addFunctionCase(testGroup, "fragment_shader_interlock_features_ext", "createDeviceWithUnsupportedFeaturesTestFragmentShaderInterlockFeaturesEXT", createDeviceWithUnsupportedFeaturesTestFragmentShaderInterlockFeaturesEXT);
 	addFunctionCase(testGroup, "separate_depth_stencil_layouts_features", "createDeviceWithUnsupportedFeaturesTestSeparateDepthStencilLayoutsFeatures", createDeviceWithUnsupportedFeaturesTestSeparateDepthStencilLayoutsFeatures);
 	addFunctionCase(testGroup, "shader_demote_to_helper_invocation_features_ext", "createDeviceWithUnsupportedFeaturesTestShaderDemoteToHelperInvocationFeaturesEXT", createDeviceWithUnsupportedFeaturesTestShaderDemoteToHelperInvocationFeaturesEXT);

@@ -364,11 +364,21 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT physicalDeviceIndexTypeUint8FeaturesEXT;
 	deMemset(&physicalDeviceIndexTypeUint8FeaturesEXT, 0, sizeof(physicalDeviceIndexTypeUint8FeaturesEXT));
 
-	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_index_type_uint8") )
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_index_type_uint8") || canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_index_type_uint8") )
 	{
 		physicalDeviceIndexTypeUint8FeaturesEXT.sType = getStructureType<VkPhysicalDeviceIndexTypeUint8FeaturesEXT>();
 		*nextPtr = &physicalDeviceIndexTypeUint8FeaturesEXT;
 		nextPtr  = &physicalDeviceIndexTypeUint8FeaturesEXT.pNext;
+	}
+
+	vk::VkPhysicalDeviceIndexTypeUint8FeaturesKHR physicalDeviceIndexTypeUint8FeaturesKHR;
+	deMemset(&physicalDeviceIndexTypeUint8FeaturesKHR, 0, sizeof(physicalDeviceIndexTypeUint8FeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_index_type_uint8") || canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_index_type_uint8") )
+	{
+		physicalDeviceIndexTypeUint8FeaturesKHR.sType = getStructureType<VkPhysicalDeviceIndexTypeUint8FeaturesKHR>();
+		*nextPtr = &physicalDeviceIndexTypeUint8FeaturesKHR;
+		nextPtr  = &physicalDeviceIndexTypeUint8FeaturesKHR.pNext;
 	}
 
 	vk::VkPhysicalDeviceInlineUniformBlockFeaturesEXT physicalDeviceInlineUniformBlockFeaturesEXT;
@@ -2070,6 +2080,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceImagelessFramebufferFeatures.imagelessFramebuffer == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature imagelessFramebuffer not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_index_type_uint8")) )
+	{
+		if ( physicalDeviceIndexTypeUint8FeaturesKHR.indexTypeUint8 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature indexTypeUint8 not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

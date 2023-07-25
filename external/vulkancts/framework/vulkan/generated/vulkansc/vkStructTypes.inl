@@ -3251,7 +3251,7 @@ struct VkPhysicalDeviceShaderClockFeaturesKHR
 	VkBool32		shaderDeviceClock;
 };
 
-struct VkPhysicalDeviceIndexTypeUint8FeaturesEXT
+struct VkPhysicalDeviceIndexTypeUint8FeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -4456,6 +4456,8 @@ typedef VkFramebufferAttachmentsCreateInfo VkFramebufferAttachmentsCreateInfoKHR
 typedef VkFramebufferAttachmentImageInfo VkFramebufferAttachmentImageInfoKHR;
 
 typedef VkRenderPassAttachmentBeginInfo VkRenderPassAttachmentBeginInfoKHR;
+
+typedef VkPhysicalDeviceIndexTypeUint8FeaturesKHR VkPhysicalDeviceIndexTypeUint8FeaturesEXT;
 
 typedef VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures VkPhysicalDeviceSeparateDepthStencilLayoutsFeaturesKHR;
 

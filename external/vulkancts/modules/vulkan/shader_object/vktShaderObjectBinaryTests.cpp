@@ -651,7 +651,7 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate (void)
 	auto lineRasterizationFeatures					= m_context.getLineRasterizationFeaturesEXT();
 	auto shaderAtomicFloatFeatures					= m_context.getShaderAtomicFloatFeaturesEXT();
 	auto hostQueryResetFeatures						= m_context.getHostQueryResetFeatures();
-	auto indexTypeUint8Features						= m_context.getIndexTypeUint8FeaturesEXT();
+	auto indexTypeUint8Features						= m_context.getIndexTypeUint8Features();
 	auto extendedDynamicStateFeatures				= m_context.getExtendedDynamicStateFeaturesEXT();
 	auto pipelineExecutablePropertiesFeatures		= m_context.getPipelineExecutablePropertiesFeatures();
 	auto shaderAtomicFloat2Features					= m_context.getShaderAtomicFloat2FeaturesEXT();

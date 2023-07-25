@@ -3217,6 +3217,42 @@ bool check_VK_KHR_cooperative_matrix(const tcu::UVec2& v, const ExtPropVect& vIE
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
+bool check_VK_QCOM_image_processing2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_QCOM_image_processing2"))
+		return true;
+
+	// depends attribute in xml: VK_QCOM_image_processing
+	return isSupported(vDEP, "VK_QCOM_image_processing");
+}
+
+bool check_VK_QCOM_filter_cubic_weights(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_QCOM_filter_cubic_weights"))
+		return true;
+
+	// depends attribute in xml: VK_EXT_filter_cubic
+	return isSupported(vDEP, "VK_EXT_filter_cubic");
+}
+
+bool check_VK_QCOM_filter_cubic_clamp(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_QCOM_filter_cubic_clamp"))
+		return true;
+
+	// depends attribute in xml: (VK_EXT_filter_cubic)+(VK_VERSION_1_2,VK_EXT_sampler_filter_minmax)
+	return (isSupported(vDEP, "VK_EXT_filter_cubic")) && (isCompatibile(1, 2, v) || (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_EXT_sampler_filter_minmax")));
+}
+
 bool check_VK_EXT_attachment_feedback_loop_dynamic_state(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3239,6 +3275,18 @@ bool check_VK_QNX_external_memory_screen_buffer(const tcu::UVec2& v, const ExtPr
 
 	// depends attribute in xml: ((VK_KHR_sampler_ycbcr_conversion+VK_KHR_external_memory+VK_KHR_dedicated_allocation),VK_VERSION_1_1)+VK_EXT_queue_family_foreign
 	return (((isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_sampler_ycbcr_conversion")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_external_memory")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_dedicated_allocation")))) && isSupported(vDEP, "VK_EXT_queue_family_foreign");
+}
+
+bool check_VK_KHR_index_type_uint8(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_index_type_uint8"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
 static const DependencyCheckVect deviceExtensionDependencies
@@ -3471,8 +3519,12 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_pipeline_library_group_handles",					&check_VK_EXT_pipeline_library_group_handles),
 	std::make_pair("VK_EXT_dynamic_rendering_unused_attachments",			&check_VK_EXT_dynamic_rendering_unused_attachments),
 	std::make_pair("VK_KHR_cooperative_matrix",								&check_VK_KHR_cooperative_matrix),
+	std::make_pair("VK_QCOM_image_processing2",								&check_VK_QCOM_image_processing2),
+	std::make_pair("VK_QCOM_filter_cubic_weights",							&check_VK_QCOM_filter_cubic_weights),
+	std::make_pair("VK_QCOM_filter_cubic_clamp",							&check_VK_QCOM_filter_cubic_clamp),
 	std::make_pair("VK_EXT_attachment_feedback_loop_dynamic_state",			&check_VK_EXT_attachment_feedback_loop_dynamic_state),
 	std::make_pair("VK_QNX_external_memory_screen_buffer",					&check_VK_QNX_external_memory_screen_buffer),
+	std::make_pair("VK_KHR_index_type_uint8",								&check_VK_KHR_index_type_uint8),
 };
 
 static const std::tuple<deUint32, deUint32, deUint32, deUint32>	releasedApiVersions[]	=
@@ -3816,6 +3868,11 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_dynamic_rendering_unused_attachments"),
 	std::make_tuple(1, 0, "VK_KHR_cooperative_matrix"),
 	std::make_tuple(1, 0, "VK_QCOM_multiview_per_view_render_areas"),
+	std::make_tuple(1, 0, "VK_QCOM_image_processing2"),
+	std::make_tuple(1, 0, "VK_QCOM_filter_cubic_weights"),
+	std::make_tuple(1, 0, "VK_QCOM_ycbcr_degamma"),
+	std::make_tuple(1, 0, "VK_QCOM_filter_cubic_clamp"),
 	std::make_tuple(1, 0, "VK_EXT_attachment_feedback_loop_dynamic_state"),
 	std::make_tuple(1, 0, "VK_QNX_external_memory_screen_buffer"),
+	std::make_tuple(1, 0, "VK_KHR_index_type_uint8"),
 };

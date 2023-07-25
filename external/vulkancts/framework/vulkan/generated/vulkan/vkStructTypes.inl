@@ -4958,7 +4958,7 @@ struct VkPhysicalDeviceShaderClockFeaturesKHR
 	VkBool32		shaderDeviceClock;
 };
 
-struct VkPhysicalDeviceIndexTypeUint8FeaturesEXT
+struct VkPhysicalDeviceIndexTypeUint8FeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -8802,6 +8802,71 @@ struct VkDispatchGraphCountInfoAMDX
 	uint64_t						stride;
 };
 
+struct VkPhysicalDeviceCubicClampFeaturesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		cubicRangeClamp;
+};
+
+struct VkPhysicalDeviceYcbcrDegammaFeaturesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		ycbcrDegamma;
+};
+
+struct VkSamplerYcbcrConversionYcbcrDegammaCreateInfoQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		enableYDegamma;
+	VkBool32		enableCbCrDegamma;
+};
+
+struct VkPhysicalDeviceCubicWeightsFeaturesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		selectableCubicWeights;
+};
+
+struct VkSamplerCubicWeightsCreateInfoQCOM
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkCubicFilterWeightsQCOM	cubicWeights;
+};
+
+struct VkBlitImageCubicWeightsInfoQCOM
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkCubicFilterWeightsQCOM	cubicWeights;
+};
+
+struct VkPhysicalDeviceImageProcessing2FeaturesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		textureBlockMatch2;
+};
+
+struct VkPhysicalDeviceImageProcessing2PropertiesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkExtent2D		maxBlockMatchWindow;
+};
+
+struct VkSamplerBlockMatchWindowCreateInfoQCOM
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkExtent2D							windowExtent;
+	VkBlockMatchWindowCompareModeQCOM	windowCompareMode;
+};
+
 struct StdVideoH264SpsVuiFlags
 {
 	uint32_t	aspect_ratio_info_present_flag:1;
@@ -10018,6 +10083,8 @@ typedef VkPipelineCreationFeedback VkPipelineCreationFeedbackEXT;
 typedef VkPipelineCreationFeedbackCreateInfo VkPipelineCreationFeedbackCreateInfoEXT;
 
 typedef VkQueryPoolPerformanceQueryCreateInfoINTEL VkQueryPoolCreateInfoINTEL;
+
+typedef VkPhysicalDeviceIndexTypeUint8FeaturesKHR VkPhysicalDeviceIndexTypeUint8FeaturesEXT;
 
 typedef VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures VkPhysicalDeviceSeparateDepthStencilLayoutsFeaturesKHR;
 
