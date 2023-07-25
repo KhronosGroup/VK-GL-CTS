@@ -126,6 +126,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDispatchIndirectFunc)												(Vk
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSubpassShadingHUAWEIFunc)											(VkCommandBuffer commandBuffer);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawClusterHUAWEIFunc)												(VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawClusterIndirectHUAWEIFunc)										(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdUpdatePipelineIndirectBufferFunc)									(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyBufferFunc)														(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyImageFunc)														(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageCopy* pRegions);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBlitImageFunc)														(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit* pRegions, VkFilter filter);
@@ -453,6 +454,8 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyDeferredOperationKHRFunc)							
 typedef VKAPI_ATTR uint32_t				(VKAPI_CALL* GetDeferredOperationMaxConcurrencyKHRFunc)								(VkDevice device, VkDeferredOperationKHR operation);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeferredOperationResultKHRFunc)										(VkDevice device, VkDeferredOperationKHR operation);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* DeferredOperationJoinKHRFunc)											(VkDevice device, VkDeferredOperationKHR operation);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetPipelineIndirectMemoryRequirementsNVFunc)							(VkDevice device, const VkComputePipelineCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements);
+typedef VKAPI_ATTR VkDeviceAddress		(VKAPI_CALL* GetPipelineIndirectDeviceAddressNVFunc)								(VkDevice device, const VkPipelineIndirectDeviceAddressInfoNV* pInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetCullModeFunc)													(VkCommandBuffer commandBuffer, VkCullModeFlags cullMode);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetCullModeEXTFunc)													(VkCommandBuffer commandBuffer, VkCullModeFlags cullMode);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetFrontFaceFunc)													(VkCommandBuffer commandBuffer, VkFrontFace frontFace);
@@ -557,6 +560,10 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdWriteTimestamp2Func)												(VkC
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdWriteTimestamp2KHRFunc)												(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkQueryPool queryPool, uint32_t query);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdWriteBufferMarker2AMDFunc)											(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetQueueCheckpointData2NVFunc)											(VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointData2NV* pCheckpointData);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CopyMemoryToImageEXTFunc)												(VkDevice device, const VkCopyMemoryToImageInfoEXT* pCopyMemoryToImageInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CopyImageToMemoryEXTFunc)												(VkDevice device, const VkCopyImageToMemoryInfoEXT* pCopyImageToMemoryInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CopyImageToImageEXTFunc)												(VkDevice device, const VkCopyImageToImageInfoEXT* pCopyImageToImageInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* TransitionImageLayoutEXTFunc)											(VkDevice device, uint32_t transitionCount, const VkHostImageLayoutTransitionInfoEXT* pTransitions);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceVideoCapabilitiesKHRFunc)								(VkPhysicalDevice physicalDevice, const VkVideoProfileInfoKHR* pVideoProfile, VkVideoCapabilitiesKHR* pCapabilities);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceVideoFormatPropertiesKHRFunc)							(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceVideoFormatInfoKHR* pVideoFormatInfo, uint32_t* pVideoFormatPropertyCount, VkVideoFormatPropertiesKHR* pVideoFormatProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHRFunc)				(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceVideoEncodeQualityLevelInfoKHR* pQualityLevelInfo, VkVideoEncodeQualityLevelPropertiesKHR* pQualityLevelProperties);

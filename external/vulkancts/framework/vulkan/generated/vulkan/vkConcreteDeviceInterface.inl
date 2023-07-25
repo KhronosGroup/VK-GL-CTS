@@ -108,6 +108,7 @@ virtual void				cmdDispatchIndirect										(VkCommandBuffer commandBuffer, VkB
 virtual void				cmdSubpassShadingHUAWEI									(VkCommandBuffer commandBuffer) const;
 virtual void				cmdDrawClusterHUAWEI									(VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const;
 virtual void				cmdDrawClusterIndirectHUAWEI							(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset) const;
+virtual void				cmdUpdatePipelineIndirectBuffer							(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline) const;
 virtual void				cmdCopyBuffer											(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions) const;
 virtual void				cmdCopyImage											(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageCopy* pRegions) const;
 virtual void				cmdBlitImage											(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit* pRegions, VkFilter filter) const;
@@ -320,6 +321,8 @@ virtual void				destroyDeferredOperationKHR								(VkDevice device, VkDeferredO
 virtual uint32_t			getDeferredOperationMaxConcurrencyKHR					(VkDevice device, VkDeferredOperationKHR operation) const;
 virtual VkResult			getDeferredOperationResultKHR							(VkDevice device, VkDeferredOperationKHR operation) const;
 virtual VkResult			deferredOperationJoinKHR								(VkDevice device, VkDeferredOperationKHR operation) const;
+virtual void				getPipelineIndirectMemoryRequirementsNV					(VkDevice device, const VkComputePipelineCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements) const;
+virtual VkDeviceAddress		getPipelineIndirectDeviceAddressNV						(VkDevice device, const VkPipelineIndirectDeviceAddressInfoNV* pInfo) const;
 virtual void				cmdSetCullMode											(VkCommandBuffer commandBuffer, VkCullModeFlags cullMode) const;
 virtual void				cmdSetFrontFace											(VkCommandBuffer commandBuffer, VkFrontFace frontFace) const;
 virtual void				cmdSetPrimitiveTopology									(VkCommandBuffer commandBuffer, VkPrimitiveTopology primitiveTopology) const;
@@ -392,6 +395,10 @@ virtual VkResult			queueSubmit2											(VkQueue queue, uint32_t submitCount, 
 virtual void				cmdWriteTimestamp2										(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkQueryPool queryPool, uint32_t query) const;
 virtual void				cmdWriteBufferMarker2AMD								(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker) const;
 virtual void				getQueueCheckpointData2NV								(VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointData2NV* pCheckpointData) const;
+virtual VkResult			copyMemoryToImageEXT									(VkDevice device, const VkCopyMemoryToImageInfoEXT* pCopyMemoryToImageInfo) const;
+virtual VkResult			copyImageToMemoryEXT									(VkDevice device, const VkCopyImageToMemoryInfoEXT* pCopyImageToMemoryInfo) const;
+virtual VkResult			copyImageToImageEXT										(VkDevice device, const VkCopyImageToImageInfoEXT* pCopyImageToImageInfo) const;
+virtual VkResult			transitionImageLayoutEXT								(VkDevice device, uint32_t transitionCount, const VkHostImageLayoutTransitionInfoEXT* pTransitions) const;
 virtual VkResult			createVideoSessionKHR									(VkDevice device, const VkVideoSessionCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionKHR* pVideoSession) const;
 virtual void				destroyVideoSessionKHR									(VkDevice device, VkVideoSessionKHR videoSession, const VkAllocationCallbacks* pAllocator) const;
 virtual VkResult			createVideoSessionParametersKHR							(VkDevice device, const VkVideoSessionParametersCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionParametersKHR* pVideoSessionParameters) const;

@@ -924,6 +924,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_host_image_copy")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_map_memory2")
 	{
 		return;
@@ -1292,6 +1296,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_NV_memory_decompression")
+	{
+		return;
+	}
+	if (extName == "VK_NV_device_generated_commands_compute")
 	{
 		return;
 	}
@@ -2502,6 +2510,15 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetPipelineExecutableInternalRepresentationsKHR");
 		return;
 	}
+	if (extName == "VK_EXT_host_image_copy")
+	{
+		functions.push_back("vkCopyMemoryToImageEXT");
+		functions.push_back("vkCopyImageToMemoryEXT");
+		functions.push_back("vkCopyImageToImageEXT");
+		functions.push_back("vkTransitionImageLayoutEXT");
+		functions.push_back("vkGetImageSubresourceLayout2EXT");
+		return;
+	}
 	if (extName == "VK_KHR_map_memory2")
 	{
 		functions.push_back("vkMapMemory2KHR");
@@ -2962,6 +2979,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdDecompressMemoryIndirectCountNV");
 		return;
 	}
+	if (extName == "VK_NV_device_generated_commands_compute")
+	{
+		functions.push_back("vkGetPipelineIndirectMemoryRequirementsNV");
+		functions.push_back("vkGetPipelineIndirectDeviceAddressNV");
+		return;
+	}
 	if (extName == "VK_NV_linear_color_attachment")
 	{
 		return;
@@ -3407,6 +3430,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_extended_dynamic_state",
 	"VK_KHR_deferred_host_operations",
 	"VK_KHR_pipeline_executable_properties",
+	"VK_EXT_host_image_copy",
 	"VK_KHR_map_memory2",
 	"VK_EXT_shader_atomic_float2",
 	"VK_EXT_swapchain_maintenance1",
@@ -3494,6 +3518,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_QCOM_fragment_density_map_offset",
 	"VK_NV_copy_memory_indirect",
 	"VK_NV_memory_decompression",
+	"VK_NV_device_generated_commands_compute",
 	"VK_NV_linear_color_attachment",
 	"VK_EXT_image_compression_control_swapchain",
 	"VK_QCOM_image_processing",

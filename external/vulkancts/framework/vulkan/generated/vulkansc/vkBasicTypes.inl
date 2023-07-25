@@ -2789,6 +2789,8 @@ typedef VkSubmitFlags VkSubmitFlagsKHR;
 
 typedef uint32_t VkImageFormatConstraintsFlagsFUCHSIA;
 
+typedef uint32_t VkHostImageCopyFlagsEXT;
+
 typedef uint32_t VkImageConstraintsInfoFlagsFUCHSIA;
 
 typedef uint32_t VkGraphicsPipelineLibraryFlagsEXT;

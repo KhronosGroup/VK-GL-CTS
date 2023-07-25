@@ -285,6 +285,7 @@ tcu::Format::Bitfield<32> getDescriptorSetLayoutCreateFlagsStr (VkDescriptorSetL
 		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_EXT,				"VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_EXT"),
 		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT,				"VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT"),
 		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_EMBEDDED_IMMUTABLE_SAMPLERS_BIT_EXT,	"VK_DESCRIPTOR_SET_LAYOUT_CREATE_EMBEDDED_IMMUTABLE_SAMPLERS_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_INDIRECT_BINDABLE_BIT_NV,				"VK_DESCRIPTOR_SET_LAYOUT_CREATE_INDIRECT_BINDABLE_BIT_NV"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1021,6 +1022,7 @@ tcu::Format::Bitfield<32> getImageUsageFlagsStr (VkImageUsageFlags value)
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT,			"VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT"),
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_SAMPLE_WEIGHT_BIT_QCOM,						"VK_IMAGE_USAGE_SAMPLE_WEIGHT_BIT_QCOM"),
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_SAMPLE_BLOCK_MATCH_BIT_QCOM,				"VK_IMAGE_USAGE_SAMPLE_BLOCK_MATCH_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT,						"VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1963,6 +1965,16 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR:										return "VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR:									return "VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR:						return "VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_PROPERTIES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY_EXT:											return "VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY_EXT";
+		case VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY_EXT:											return "VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY_EXT";
+		case VK_STRUCTURE_TYPE_COPY_IMAGE_TO_MEMORY_INFO_EXT:										return "VK_STRUCTURE_TYPE_COPY_IMAGE_TO_MEMORY_INFO_EXT";
+		case VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO_EXT:										return "VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO_EXT:								return "VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO_EXT";
+		case VK_STRUCTURE_TYPE_COPY_IMAGE_TO_IMAGE_INFO_EXT:										return "VK_STRUCTURE_TYPE_COPY_IMAGE_TO_IMAGE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_SUBRESOURCE_HOST_MEMCPY_SIZE_EXT:									return "VK_STRUCTURE_TYPE_SUBRESOURCE_HOST_MEMCPY_SIZE_EXT";
+		case VK_STRUCTURE_TYPE_HOST_IMAGE_COPY_DEVICE_PERFORMANCE_QUERY_EXT:						return "VK_STRUCTURE_TYPE_HOST_IMAGE_COPY_DEVICE_PERFORMANCE_QUERY_EXT";
 		case VK_STRUCTURE_TYPE_MEMORY_MAP_INFO_KHR:													return "VK_STRUCTURE_TYPE_MEMORY_MAP_INFO_KHR";
 		case VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO_KHR:												return "VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT";
@@ -2200,6 +2212,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_PROPERTIES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_PROPERTIES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_COMPUTE_FEATURES_NV:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_COMPUTE_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_INDIRECT_BUFFER_INFO_NV:							return "VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_INDIRECT_BUFFER_INFO_NV";
+		case VK_STRUCTURE_TYPE_PIPELINE_INDIRECT_DEVICE_ADDRESS_INFO_NV:							return "VK_STRUCTURE_TYPE_PIPELINE_INDIRECT_DEVICE_ADDRESS_INFO_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINEAR_COLOR_ATTACHMENT_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINEAR_COLOR_ATTACHMENT_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_FEATURES_QCOM:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_FEATURES_QCOM";
@@ -2531,6 +2546,8 @@ const char* getIndirectCommandsTokenTypeNVName (VkIndirectCommandsTokenTypeNV va
 		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_NV:				return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_NV";
 		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_TASKS_NV:			return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_TASKS_NV";
 		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_MESH_TASKS_NV:	return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_MESH_TASKS_NV";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PIPELINE_NV:			return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_PIPELINE_NV";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DISPATCH_NV:			return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DISPATCH_NV";
 		default:													return DE_NULL;
 	}
 }
@@ -3218,6 +3235,15 @@ const char* getProvokingVertexModeEXTName (VkProvokingVertexModeEXT value)
 	}
 }
 
+tcu::Format::Bitfield<32> getHostImageCopyFlagsEXTStr (VkHostImageCopyFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_HOST_IMAGE_COPY_MEMCPY_EXT,	"VK_HOST_IMAGE_COPY_MEMCPY_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getImageConstraintsInfoFlagsFUCHSIAStr (VkImageConstraintsInfoFlagsFUCHSIA value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -3277,6 +3303,7 @@ tcu::Format::Bitfield<64> getFormatFeatureFlags2Str (VkFormatFeatureFlags2 value
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_OPTICAL_FLOW_IMAGE_BIT_NV,														"VK_FORMAT_FEATURE_2_OPTICAL_FLOW_IMAGE_BIT_NV"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_OPTICAL_FLOW_VECTOR_BIT_NV,													"VK_FORMAT_FEATURE_2_OPTICAL_FLOW_VECTOR_BIT_NV"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_OPTICAL_FLOW_COST_BIT_NV,														"VK_FORMAT_FEATURE_2_OPTICAL_FLOW_COST_BIT_NV"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT,													"VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -6204,6 +6231,18 @@ std::ostream& operator<< (std::ostream& s, const VkComputePipelineCreateInfo& va
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkComputePipelineIndirectBufferInfoNV& value)
+{
+	s << "VkComputePipelineIndirectBufferInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdeviceAddress = " << value.deviceAddress << '\n';
+	s << "\tsize = " << value.size << '\n';
+	s << "\tpipelineDeviceAddressCaptureReplay = " << value.pipelineDeviceAddressCaptureReplay << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPipelineCreateFlags2CreateInfoKHR& value)
 {
 	s << "VkPipelineCreateFlags2CreateInfoKHR = {\n";
@@ -7443,6 +7482,18 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDeviceGenerated
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdeviceGeneratedCompute = " << value.deviceGeneratedCompute << '\n';
+	s << "\tdeviceGeneratedComputePipelines = " << value.deviceGeneratedComputePipelines << '\n';
+	s << "\tdeviceGeneratedComputeCaptureReplay = " << value.deviceGeneratedComputeCaptureReplay << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkDevicePrivateDataCreateInfo& value)
 {
 	s << "VkDevicePrivateDataCreateInfo = {\n";
@@ -7640,6 +7691,25 @@ std::ostream& operator<< (std::ostream& s, const VkGeneratedCommandsMemoryRequir
 	s << "\tpipeline = " << value.pipeline << '\n';
 	s << "\tindirectCommandsLayout = " << value.indirectCommandsLayout << '\n';
 	s << "\tmaxSequencesCount = " << value.maxSequencesCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineIndirectDeviceAddressInfoNV& value)
+{
+	s << "VkPipelineIndirectDeviceAddressInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpipelineBindPoint = " << value.pipelineBindPoint << '\n';
+	s << "\tpipeline = " << value.pipeline << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBindPipelineIndirectCommandNV& value)
+{
+	s << "VkBindPipelineIndirectCommandNV = {\n";
+	s << "\tpipelineAddress = " << value.pipelineAddress << '\n';
 	s << '}';
 	return s;
 }
@@ -13690,6 +13760,139 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSynchronization
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tsynchronization2 = " << value.synchronization2 << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceHostImageCopyFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceHostImageCopyFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thostImageCopy = " << value.hostImageCopy << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceHostImageCopyPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceHostImageCopyPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcopySrcLayoutCount = " << value.copySrcLayoutCount << '\n';
+	s << "\tpCopySrcLayouts = " << value.pCopySrcLayouts << '\n';
+	s << "\tcopyDstLayoutCount = " << value.copyDstLayoutCount << '\n';
+	s << "\tpCopyDstLayouts = " << value.pCopyDstLayouts << '\n';
+	s << "\toptimalTilingLayoutUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.optimalTilingLayoutUUID)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.optimalTilingLayoutUUID))) << '\n';
+	s << "\tidenticalMemoryTypeRequirements = " << value.identicalMemoryTypeRequirements << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryToImageCopyEXT& value)
+{
+	s << "VkMemoryToImageCopyEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpHostPointer = " << value.pHostPointer << '\n';
+	s << "\tmemoryRowLength = " << value.memoryRowLength << '\n';
+	s << "\tmemoryImageHeight = " << value.memoryImageHeight << '\n';
+	s << "\timageSubresource = " << value.imageSubresource << '\n';
+	s << "\timageOffset = " << value.imageOffset << '\n';
+	s << "\timageExtent = " << value.imageExtent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageToMemoryCopyEXT& value)
+{
+	s << "VkImageToMemoryCopyEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpHostPointer = " << value.pHostPointer << '\n';
+	s << "\tmemoryRowLength = " << value.memoryRowLength << '\n';
+	s << "\tmemoryImageHeight = " << value.memoryImageHeight << '\n';
+	s << "\timageSubresource = " << value.imageSubresource << '\n';
+	s << "\timageOffset = " << value.imageOffset << '\n';
+	s << "\timageExtent = " << value.imageExtent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCopyMemoryToImageInfoEXT& value)
+{
+	s << "VkCopyMemoryToImageInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getHostImageCopyFlagsEXTStr(value.flags) << '\n';
+	s << "\tdstImage = " << value.dstImage << '\n';
+	s << "\tdstImageLayout = " << value.dstImageLayout << '\n';
+	s << "\tregionCount = " << value.regionCount << '\n';
+	s << "\tpRegions = " << value.pRegions << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCopyImageToMemoryInfoEXT& value)
+{
+	s << "VkCopyImageToMemoryInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getHostImageCopyFlagsEXTStr(value.flags) << '\n';
+	s << "\tsrcImage = " << value.srcImage << '\n';
+	s << "\tsrcImageLayout = " << value.srcImageLayout << '\n';
+	s << "\tregionCount = " << value.regionCount << '\n';
+	s << "\tpRegions = " << value.pRegions << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCopyImageToImageInfoEXT& value)
+{
+	s << "VkCopyImageToImageInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getHostImageCopyFlagsEXTStr(value.flags) << '\n';
+	s << "\tsrcImage = " << value.srcImage << '\n';
+	s << "\tsrcImageLayout = " << value.srcImageLayout << '\n';
+	s << "\tdstImage = " << value.dstImage << '\n';
+	s << "\tdstImageLayout = " << value.dstImageLayout << '\n';
+	s << "\tregionCount = " << value.regionCount << '\n';
+	s << "\tpRegions = " << value.pRegions << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkHostImageLayoutTransitionInfoEXT& value)
+{
+	s << "VkHostImageLayoutTransitionInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timage = " << value.image << '\n';
+	s << "\toldLayout = " << value.oldLayout << '\n';
+	s << "\tnewLayout = " << value.newLayout << '\n';
+	s << "\tsubresourceRange = " << value.subresourceRange << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSubresourceHostMemcpySizeEXT& value)
+{
+	s << "VkSubresourceHostMemcpySizeEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsize = " << value.size << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkHostImageCopyDevicePerformanceQueryEXT& value)
+{
+	s << "VkHostImageCopyDevicePerformanceQueryEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\toptimalDeviceAccess = " << value.optimalDeviceAccess << '\n';
+	s << "\tidenticalMemoryLayout = " << value.identicalMemoryLayout << '\n';
 	s << '}';
 	return s;
 }

@@ -110,6 +110,7 @@ m_vk.cmdDispatchIndirect									= (CmdDispatchIndirectFunc)										GET_PROC_A
 m_vk.cmdSubpassShadingHUAWEI								= (CmdSubpassShadingHUAWEIFunc)									GET_PROC_ADDR("vkCmdSubpassShadingHUAWEI");
 m_vk.cmdDrawClusterHUAWEI									= (CmdDrawClusterHUAWEIFunc)									GET_PROC_ADDR("vkCmdDrawClusterHUAWEI");
 m_vk.cmdDrawClusterIndirectHUAWEI							= (CmdDrawClusterIndirectHUAWEIFunc)							GET_PROC_ADDR("vkCmdDrawClusterIndirectHUAWEI");
+m_vk.cmdUpdatePipelineIndirectBuffer						= (CmdUpdatePipelineIndirectBufferFunc)							GET_PROC_ADDR("vkCmdUpdatePipelineIndirectBuffer");
 m_vk.cmdCopyBuffer											= (CmdCopyBufferFunc)											GET_PROC_ADDR("vkCmdCopyBuffer");
 m_vk.cmdCopyImage											= (CmdCopyImageFunc)											GET_PROC_ADDR("vkCmdCopyImage");
 m_vk.cmdBlitImage											= (CmdBlitImageFunc)											GET_PROC_ADDR("vkCmdBlitImage");
@@ -390,6 +391,8 @@ m_vk.destroyDeferredOperationKHR							= (DestroyDeferredOperationKHRFunc)						
 m_vk.getDeferredOperationMaxConcurrencyKHR					= (GetDeferredOperationMaxConcurrencyKHRFunc)					GET_PROC_ADDR("vkGetDeferredOperationMaxConcurrencyKHR");
 m_vk.getDeferredOperationResultKHR							= (GetDeferredOperationResultKHRFunc)							GET_PROC_ADDR("vkGetDeferredOperationResultKHR");
 m_vk.deferredOperationJoinKHR								= (DeferredOperationJoinKHRFunc)								GET_PROC_ADDR("vkDeferredOperationJoinKHR");
+m_vk.getPipelineIndirectMemoryRequirementsNV				= (GetPipelineIndirectMemoryRequirementsNVFunc)					GET_PROC_ADDR("vkGetPipelineIndirectMemoryRequirementsNV");
+m_vk.getPipelineIndirectDeviceAddressNV						= (GetPipelineIndirectDeviceAddressNVFunc)						GET_PROC_ADDR("vkGetPipelineIndirectDeviceAddressNV");
 m_vk.cmdSetCullMode											= (CmdSetCullModeFunc)											GET_PROC_ADDR("vkCmdSetCullMode");
 if (!m_vk.cmdSetCullMode)
 	m_vk.cmdSetCullMode										= (CmdSetCullModeFunc)											GET_PROC_ADDR("vkCmdSetCullModeEXT");
@@ -524,6 +527,10 @@ if (!m_vk.cmdWriteTimestamp2)
 	m_vk.cmdWriteTimestamp2									= (CmdWriteTimestamp2Func)										GET_PROC_ADDR("vkCmdWriteTimestamp2KHR");
 m_vk.cmdWriteBufferMarker2AMD								= (CmdWriteBufferMarker2AMDFunc)								GET_PROC_ADDR("vkCmdWriteBufferMarker2AMD");
 m_vk.getQueueCheckpointData2NV								= (GetQueueCheckpointData2NVFunc)								GET_PROC_ADDR("vkGetQueueCheckpointData2NV");
+m_vk.copyMemoryToImageEXT									= (CopyMemoryToImageEXTFunc)									GET_PROC_ADDR("vkCopyMemoryToImageEXT");
+m_vk.copyImageToMemoryEXT									= (CopyImageToMemoryEXTFunc)									GET_PROC_ADDR("vkCopyImageToMemoryEXT");
+m_vk.copyImageToImageEXT									= (CopyImageToImageEXTFunc)										GET_PROC_ADDR("vkCopyImageToImageEXT");
+m_vk.transitionImageLayoutEXT								= (TransitionImageLayoutEXTFunc)								GET_PROC_ADDR("vkTransitionImageLayoutEXT");
 m_vk.createVideoSessionKHR									= (CreateVideoSessionKHRFunc)									GET_PROC_ADDR("vkCreateVideoSessionKHR");
 m_vk.destroyVideoSessionKHR									= (DestroyVideoSessionKHRFunc)									GET_PROC_ADDR("vkDestroyVideoSessionKHR");
 m_vk.createVideoSessionParametersKHR						= (CreateVideoSessionParametersKHRFunc)							GET_PROC_ADDR("vkCreateVideoSessionParametersKHR");

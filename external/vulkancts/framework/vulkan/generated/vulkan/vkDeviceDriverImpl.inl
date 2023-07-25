@@ -529,6 +529,11 @@ void DeviceDriver::cmdDrawClusterIndirectHUAWEI (VkCommandBuffer commandBuffer, 
 	m_vk.cmdDrawClusterIndirectHUAWEI(commandBuffer, buffer, offset);
 }
 
+void DeviceDriver::cmdUpdatePipelineIndirectBuffer (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline) const
+{
+	m_vk.cmdUpdatePipelineIndirectBuffer(commandBuffer, pipelineBindPoint, pipeline);
+}
+
 void DeviceDriver::cmdCopyBuffer (VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions) const
 {
 	m_vk.cmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, regionCount, pRegions);
@@ -1589,6 +1594,16 @@ VkResult DeviceDriver::deferredOperationJoinKHR (VkDevice device, VkDeferredOper
 	return m_vk.deferredOperationJoinKHR(device, operation);
 }
 
+void DeviceDriver::getPipelineIndirectMemoryRequirementsNV (VkDevice device, const VkComputePipelineCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements) const
+{
+	m_vk.getPipelineIndirectMemoryRequirementsNV(device, pCreateInfo, pMemoryRequirements);
+}
+
+VkDeviceAddress DeviceDriver::getPipelineIndirectDeviceAddressNV (VkDevice device, const VkPipelineIndirectDeviceAddressInfoNV* pInfo) const
+{
+	return m_vk.getPipelineIndirectDeviceAddressNV(device, pInfo);
+}
+
 void DeviceDriver::cmdSetCullMode (VkCommandBuffer commandBuffer, VkCullModeFlags cullMode) const
 {
 	m_vk.cmdSetCullMode(commandBuffer, cullMode);
@@ -1947,6 +1962,26 @@ void DeviceDriver::cmdWriteBufferMarker2AMD (VkCommandBuffer commandBuffer, VkPi
 void DeviceDriver::getQueueCheckpointData2NV (VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointData2NV* pCheckpointData) const
 {
 	m_vk.getQueueCheckpointData2NV(queue, pCheckpointDataCount, pCheckpointData);
+}
+
+VkResult DeviceDriver::copyMemoryToImageEXT (VkDevice device, const VkCopyMemoryToImageInfoEXT* pCopyMemoryToImageInfo) const
+{
+	return m_vk.copyMemoryToImageEXT(device, pCopyMemoryToImageInfo);
+}
+
+VkResult DeviceDriver::copyImageToMemoryEXT (VkDevice device, const VkCopyImageToMemoryInfoEXT* pCopyImageToMemoryInfo) const
+{
+	return m_vk.copyImageToMemoryEXT(device, pCopyImageToMemoryInfo);
+}
+
+VkResult DeviceDriver::copyImageToImageEXT (VkDevice device, const VkCopyImageToImageInfoEXT* pCopyImageToImageInfo) const
+{
+	return m_vk.copyImageToImageEXT(device, pCopyImageToImageInfo);
+}
+
+VkResult DeviceDriver::transitionImageLayoutEXT (VkDevice device, uint32_t transitionCount, const VkHostImageLayoutTransitionInfoEXT* pTransitions) const
+{
+	return m_vk.transitionImageLayoutEXT(device, transitionCount, pTransitions);
 }
 
 VkResult DeviceDriver::createVideoSessionKHR (VkDevice device, const VkVideoSessionCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionKHR* pVideoSession) const
