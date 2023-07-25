@@ -30,8 +30,8 @@ dEQP-VK.dynamic_state.monolithic.compute_transfer.single.compute.ray_tracing_pip
 dEQP-VK.dynamic_state.monolithic.compute_transfer.single.compute.ray_tracing_pipeline_stack_size_khr.after
 dEQP-VK.dynamic_state.monolithic.compute_transfer.single.compute.fragment_shading_rate_khr.before
 dEQP-VK.dynamic_state.monolithic.compute_transfer.single.compute.fragment_shading_rate_khr.after
-dEQP-VK.dynamic_state.monolithic.compute_transfer.single.compute.line_stipple_ext.before
-dEQP-VK.dynamic_state.monolithic.compute_transfer.single.compute.line_stipple_ext.after
+dEQP-VK.dynamic_state.monolithic.compute_transfer.single.compute.line_stipple_khr.before
+dEQP-VK.dynamic_state.monolithic.compute_transfer.single.compute.line_stipple_khr.after
 dEQP-VK.dynamic_state.monolithic.compute_transfer.single.compute.cull_mode.before
 dEQP-VK.dynamic_state.monolithic.compute_transfer.single.compute.cull_mode.after
 dEQP-VK.dynamic_state.monolithic.compute_transfer.single.compute.front_face.before
@@ -90,8 +90,8 @@ dEQP-VK.dynamic_state.monolithic.compute_transfer.single.transfer.ray_tracing_pi
 dEQP-VK.dynamic_state.monolithic.compute_transfer.single.transfer.ray_tracing_pipeline_stack_size_khr.after
 dEQP-VK.dynamic_state.monolithic.compute_transfer.single.transfer.fragment_shading_rate_khr.before
 dEQP-VK.dynamic_state.monolithic.compute_transfer.single.transfer.fragment_shading_rate_khr.after
-dEQP-VK.dynamic_state.monolithic.compute_transfer.single.transfer.line_stipple_ext.before
-dEQP-VK.dynamic_state.monolithic.compute_transfer.single.transfer.line_stipple_ext.after
+dEQP-VK.dynamic_state.monolithic.compute_transfer.single.transfer.line_stipple_khr.before
+dEQP-VK.dynamic_state.monolithic.compute_transfer.single.transfer.line_stipple_khr.after
 dEQP-VK.dynamic_state.monolithic.compute_transfer.single.transfer.cull_mode.before
 dEQP-VK.dynamic_state.monolithic.compute_transfer.single.transfer.cull_mode.after
 dEQP-VK.dynamic_state.monolithic.compute_transfer.single.transfer.front_face.before

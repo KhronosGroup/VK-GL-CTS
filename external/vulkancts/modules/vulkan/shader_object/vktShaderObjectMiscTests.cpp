@@ -1043,7 +1043,7 @@ void ShaderObjectStateInstance::setDynamicStates (const vk::DeviceInterface& vk,
 		if (!m_params.pipeline || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_STIPPLE_ENABLE_EXT))
 			vk.cmdSetLineStippleEnableEXT(cmdBuffer, m_params.stippledLineEnable ? VK_TRUE : VK_FALSE);
 		if ((!m_params.pipeline && m_params.stippledLineEnable) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_STIPPLE_EXT))
-			vk.cmdSetLineStippleEXT(cmdBuffer, 1u, 0x1);
+			vk.cmdSetLineStippleKHR(cmdBuffer, 1u, 0x1);
 	}
 	if ((!m_params.pipeline && m_params.depthClipControl) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_CLIP_NEGATIVE_ONE_TO_ONE_EXT))
 		vk.cmdSetDepthClipNegativeOneToOneEXT(cmdBuffer, VK_TRUE);
@@ -1832,8 +1832,9 @@ void ShaderObjectStateCase::checkSupport (Context& context) const
 	}
 	if (m_params.lineRasterization)
 	{
-		context.requireDeviceFunctionality("VK_EXT_line_rasterization");
-		if (!context.getLineRasterizationFeaturesEXT().rectangularLines)
+		if (!context.isDeviceFunctionalitySupported("VK_KHR_line_rasterization") && !context.isDeviceFunctionalitySupported("VK_EXT_line_rasterization"))
+			TCU_THROW(NotSupportedError, "VK_KHR_line_rasterization and VK_EXT_line_rasterization are not supported");
+		if (!context.getLineRasterizationFeatures().rectangularLines)
 			TCU_THROW(NotSupportedError, "rectangularLines not supported");
 		if (m_params.pipeline && eds3Features.extendedDynamicState3LineRasterizationMode)
 			TCU_THROW(NotSupportedError, "extendedDynamicState3LineRasterizationMode not supported");

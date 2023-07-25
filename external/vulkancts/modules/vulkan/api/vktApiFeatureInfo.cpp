@@ -1574,16 +1574,16 @@ void checkSupportExtLineRasterization (Context& context)
 tcu::TestStatus validateLimitsExtLineRasterization (Context& context)
 {
 	const VkBool32											checkAlways						= VK_TRUE;
-	const VkPhysicalDeviceLineRasterizationPropertiesEXT&	lineRasterizationPropertiesEXT	= context.getLineRasterizationPropertiesEXT();
+	const VkPhysicalDeviceLineRasterizationPropertiesKHR&	lineRasterizationProperties		= context.getLineRasterizationProperties();
 	TestLog&												log								= context.getTestContext().getLog();
 	bool													limitsOk						= true;
 
 	FeatureLimitTableItem featureLimitTable[] =
 	{
-		{ PN(checkAlways),	PN(lineRasterizationPropertiesEXT.lineSubPixelPrecisionBits),	LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),	PN(lineRasterizationProperties.lineSubPixelPrecisionBits),	LIM_MIN_UINT32(4) },
 	};
 
-	log << TestLog::Message << lineRasterizationPropertiesEXT << TestLog::EndMessage;
+	log << TestLog::Message << lineRasterizationProperties << TestLog::EndMessage;
 
 	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
 		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;

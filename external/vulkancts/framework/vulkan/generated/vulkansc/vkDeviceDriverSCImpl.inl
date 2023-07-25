@@ -1553,10 +1553,10 @@ uint64_t DeviceDriverSC::getDeviceMemoryOpaqueCaptureAddress (VkDevice device, c
 	return 0u;
 }
 
-void DeviceDriverSC::cmdSetLineStippleEXT (VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern) const
+void DeviceDriverSC::cmdSetLineStippleKHR (VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern) const
 {
 	if (m_normalMode)
-		m_vk.cmdSetLineStippleEXT(commandBuffer, lineStippleFactor, lineStipplePattern);
+		m_vk.cmdSetLineStippleKHR(commandBuffer, lineStippleFactor, lineStipplePattern);
 	else
 		increaseCommandBufferSize(commandBuffer, 0u);
 }

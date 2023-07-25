@@ -1421,6 +1421,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_line_rasterization")
+	{
+		return;
+	}
 	if (extName == "vulkan_video_codecs_common")
 	{
 		return;
@@ -3191,6 +3195,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetScreenBufferPropertiesQNX");
 		return;
 	}
+	if (extName == "VK_KHR_line_rasterization")
+	{
+		functions.push_back("vkCmdSetLineStippleKHR");
+		return;
+	}
 	if (extName == "vulkan_video_codecs_common")
 	{
 		return;
@@ -3562,4 +3571,5 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_QCOM_multiview_per_view_render_areas",
 	"VK_EXT_attachment_feedback_loop_dynamic_state",
 	"VK_QNX_external_memory_screen_buffer",
+	"VK_KHR_line_rasterization",
 };

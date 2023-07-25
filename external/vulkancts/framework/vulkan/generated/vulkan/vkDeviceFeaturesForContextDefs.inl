@@ -61,7 +61,7 @@ const vk::VkPhysicalDeviceYcbcrImageArraysFeaturesEXT&						Context::getYcbcrIma
 const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeatures&				Context::getUniformBufferStandardLayoutFeatures				(void) const { return m_device->getUniformBufferStandardLayoutFeatures();			}
 const vk::VkPhysicalDeviceProvokingVertexFeaturesEXT&						Context::getProvokingVertexFeaturesEXT						(void) const { return m_device->getProvokingVertexFeaturesEXT();					}
 const vk::VkPhysicalDeviceBufferDeviceAddressFeatures&						Context::getBufferDeviceAddressFeatures						(void) const { return m_device->getBufferDeviceAddressFeatures();					}
-const vk::VkPhysicalDeviceLineRasterizationFeaturesEXT&						Context::getLineRasterizationFeaturesEXT					(void) const { return m_device->getLineRasterizationFeaturesEXT();					}
+const vk::VkPhysicalDeviceLineRasterizationFeaturesKHR&						Context::getLineRasterizationFeatures						(void) const { return m_device->getLineRasterizationFeatures();						}
 const vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&						Context::getShaderAtomicFloatFeaturesEXT					(void) const { return m_device->getShaderAtomicFloatFeaturesEXT();					}
 const vk::VkPhysicalDeviceHostQueryResetFeatures&							Context::getHostQueryResetFeatures							(void) const { return m_device->getHostQueryResetFeatures();						}
 const vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT&						Context::getIndexTypeUint8FeaturesEXT						(void) const { return m_device->getIndexTypeUint8FeaturesEXT();						}

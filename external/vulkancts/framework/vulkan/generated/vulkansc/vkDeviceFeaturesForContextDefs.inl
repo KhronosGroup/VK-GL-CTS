@@ -16,7 +16,7 @@ const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&				Context::getFragmen
 const vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&			Context::getShaderImageAtomicInt64FeaturesEXT			(void) const { return m_device->getShaderImageAtomicInt64FeaturesEXT();			}
 const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&			Context::getFragmentShaderInterlockFeaturesEXT			(void) const { return m_device->getFragmentShaderInterlockFeaturesEXT();		}
 const vk::VkPhysicalDeviceYcbcrImageArraysFeaturesEXT&					Context::getYcbcrImageArraysFeaturesEXT					(void) const { return m_device->getYcbcrImageArraysFeaturesEXT();				}
-const vk::VkPhysicalDeviceLineRasterizationFeaturesEXT&					Context::getLineRasterizationFeaturesEXT				(void) const { return m_device->getLineRasterizationFeaturesEXT();				}
+const vk::VkPhysicalDeviceLineRasterizationFeaturesKHR&					Context::getLineRasterizationFeatures					(void) const { return m_device->getLineRasterizationFeatures();					}
 const vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&					Context::getShaderAtomicFloatFeaturesEXT				(void) const { return m_device->getShaderAtomicFloatFeaturesEXT();				}
 const vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT&					Context::getIndexTypeUint8FeaturesEXT					(void) const { return m_device->getIndexTypeUint8FeaturesEXT();					}
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&				Context::getExtendedDynamicStateFeaturesEXT				(void) const { return m_device->getExtendedDynamicStateFeaturesEXT();			}

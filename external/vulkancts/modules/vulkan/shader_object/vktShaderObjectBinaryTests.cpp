@@ -648,7 +648,7 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate (void)
 	auto ycbcrImageArraysFeatures					= m_context.getYcbcrImageArraysFeaturesEXT();
 	auto uniformBufferStandardLayoutFeatures		= m_context.getUniformBufferStandardLayoutFeatures();
 	auto provokingVertexFeatures					= m_context.getProvokingVertexFeaturesEXT();
-	auto lineRasterizationFeatures					= m_context.getLineRasterizationFeaturesEXT();
+	auto lineRasterizationFeatures					= m_context.getLineRasterizationFeatures();
 	auto shaderAtomicFloatFeatures					= m_context.getShaderAtomicFloatFeaturesEXT();
 	auto hostQueryResetFeatures						= m_context.getHostQueryResetFeatures();
 	auto indexTypeUint8Features						= m_context.getIndexTypeUint8FeaturesEXT();
