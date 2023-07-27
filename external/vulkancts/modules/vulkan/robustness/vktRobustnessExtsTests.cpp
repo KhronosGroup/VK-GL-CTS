@@ -146,6 +146,11 @@ class SingletonDevice
 		const auto	physicalDevice	= chooseDevice(vki, instance, context.getTestContext().getCommandLine());
 
 		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+
+#ifndef CTS_USES_VULKANSC
+		if (FEATURES & RF_PIPELINE_ROBUSTNESS)
+			features2.features.robustBufferAccess = VK_FALSE;
+#endif
 		m_logicalDevice = createRobustBufferAccessDevice(context, &features2);
 
 #ifndef CTS_USES_VULKANSC
@@ -195,15 +200,11 @@ private:
 template <RobustnessFeatures FEATURES>
 SharedPtr<SingletonDevice<FEATURES>> SingletonDevice<FEATURES>::m_singletonDevice;
 
-constexpr RobustnessFeatures kImageRobustness			= RF_IMG_ROBUSTNESS;
-constexpr RobustnessFeatures kRobustness2				= RF_ROBUSTNESS2;
-constexpr RobustnessFeatures kPipelineRobustness		= RF_PIPELINE_ROBUSTNESS;
+using ImageRobustnessSingleton	= SingletonDevice<RF_IMG_ROBUSTNESS>;
+using Robustness2Singleton		= SingletonDevice<RF_ROBUSTNESS2>;
 
-using ImageRobustnessSingleton	= SingletonDevice<kImageRobustness>;
-using Robustness2Singleton		= SingletonDevice<kRobustness2>;
-
-using PipelineRobustnessImageRobustnessSingleton	= SingletonDevice<kImageRobustness | kPipelineRobustness>;
-using PipelineRobustnessRobustness2Singleton		= SingletonDevice<kRobustness2 | kPipelineRobustness>;
+using PipelineRobustnessImageRobustnessSingleton	= SingletonDevice<RF_IMG_ROBUSTNESS | RF_PIPELINE_ROBUSTNESS>;
+using PipelineRobustnessRobustness2Singleton		= SingletonDevice<RF_ROBUSTNESS2 | RF_PIPELINE_ROBUSTNESS>;
 
 // Render target / compute grid dimensions
 static const deUint32 DIM = 8;
@@ -400,6 +401,10 @@ static bool supportsStores(int descriptorType)
 static VkPipelineRobustnessCreateInfoEXT getPipelineRobustnessInfo(bool robustness2, int descriptorType)
 {
 	VkPipelineRobustnessCreateInfoEXT robustnessCreateInfo = initVulkanStructure();
+	robustnessCreateInfo.storageBuffers	= VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_DISABLED_EXT;
+	robustnessCreateInfo.uniformBuffers	= VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_DISABLED_EXT;
+	robustnessCreateInfo.vertexInputs	= VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_DISABLED_EXT;
+	robustnessCreateInfo.images			= VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_DISABLED_EXT;
 
 	switch (descriptorType)
 	{
