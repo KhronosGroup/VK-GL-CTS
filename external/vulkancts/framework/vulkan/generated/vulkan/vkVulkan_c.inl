@@ -24,7 +24,12 @@ extern "C" {
 
 
 
+// vulkan_video_codecs_common is a preprocessor guard. Do not pass it to API calls.
 #define vulkan_video_codecs_common 1
+#if !defined(VK_NO_STDINT_H)
+    #include <stdint.h>
+#endif
+
 #define VK_MAKE_VIDEO_STD_VERSION(major, minor, patch) \
     ((((deUint32)(major)) << 22) | (((deUint32)(minor)) << 12) | ((deUint32)(patch)))
 
@@ -55,8 +60,9 @@ extern "C" {
 
 
 
+// vulkan_video_codec_h264std is a preprocessor guard. Do not pass it to API calls.
 #define vulkan_video_codec_h264std 1
-#include <stdint.h>
+
 #define STD_VIDEO_H264_CPB_CNT_LIST_SIZE  32
 #define STD_VIDEO_H264_SCALING_LIST_4X4_NUM_LISTS 6
 #define STD_VIDEO_H264_SCALING_LIST_4X4_NUM_ELEMENTS 16
@@ -365,7 +371,9 @@ extern "C" {
 
 
 
+// vulkan_video_codec_h264std_encode is a preprocessor guard. Do not pass it to API calls.
 #define vulkan_video_codec_h264std_encode 1
+
 // Vulkan 0.9 provisional Vulkan video H.264 encode std specification version number
 #define VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_API_VERSION_0_9_10 VK_MAKE_VIDEO_STD_VERSION(0, 9, 10)
 
@@ -509,9 +517,11 @@ extern "C" {
 
 
 
+// vulkan_video_codec_h265std is a preprocessor guard. Do not pass it to API calls.
 #define vulkan_video_codec_h265std 1
-#define STD_VIDEO_H265_SUBLAYERS_LIST_SIZE 7
+
 #define STD_VIDEO_H265_CPB_CNT_LIST_SIZE  32
+#define STD_VIDEO_H265_SUBLAYERS_LIST_SIZE 7
 #define STD_VIDEO_H265_SCALING_LIST_4X4_NUM_LISTS 6
 #define STD_VIDEO_H265_SCALING_LIST_4X4_NUM_ELEMENTS 16
 #define STD_VIDEO_H265_SCALING_LIST_8X8_NUM_LISTS 6
@@ -520,16 +530,16 @@ extern "C" {
 #define STD_VIDEO_H265_SCALING_LIST_16X16_NUM_ELEMENTS 64
 #define STD_VIDEO_H265_SCALING_LIST_32X32_NUM_LISTS 2
 #define STD_VIDEO_H265_SCALING_LIST_32X32_NUM_ELEMENTS 64
-#define STD_VIDEO_H265_PREDICTOR_PALETTE_COMPONENTS_LIST_SIZE 3
-#define STD_VIDEO_H265_PREDICTOR_PALETTE_COMP_ENTRIES_LIST_SIZE 128
-#define STD_VIDEO_H265_MAX_DPB_SIZE       16
-#define STD_VIDEO_H265_MAX_LONG_TERM_REF_PICS_SPS 32
 #define STD_VIDEO_H265_CHROMA_QP_OFFSET_LIST_SIZE 6
 #define STD_VIDEO_H265_CHROMA_QP_OFFSET_TILE_COLS_LIST_SIZE 19
 #define STD_VIDEO_H265_CHROMA_QP_OFFSET_TILE_ROWS_LIST_SIZE 21
+#define STD_VIDEO_H265_PREDICTOR_PALETTE_COMPONENTS_LIST_SIZE 3
+#define STD_VIDEO_H265_PREDICTOR_PALETTE_COMP_ENTRIES_LIST_SIZE 128
 #define STD_VIDEO_H265_MAX_NUM_LIST_REF   15
 #define STD_VIDEO_H265_MAX_CHROMA_PLANES  2
 #define STD_VIDEO_H265_MAX_SHORT_TERM_REF_PIC_SETS 64
+#define STD_VIDEO_H265_MAX_DPB_SIZE       16
+#define STD_VIDEO_H265_MAX_LONG_TERM_REF_PICS_SPS 32
 #define STD_VIDEO_H265_MAX_LONG_TERM_PICS 16
 #define STD_VIDEO_H265_MAX_DELTA_POC      48
 
@@ -952,13 +962,15 @@ extern "C" {
 
 
 
+// vulkan_video_codec_h264std_decode is a preprocessor guard. Do not pass it to API calls.
 #define vulkan_video_codec_h264std_decode 1
+
 
 #define VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_API_VERSION_1_0_0 VK_MAKE_VIDEO_STD_VERSION(1, 0, 0)
 
-#define STD_VIDEO_DECODE_H264_FIELD_ORDER_COUNT_LIST_SIZE 2
 #define VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_SPEC_VERSION VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_API_VERSION_1_0_0
 #define VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME "VK_STD_vulkan_video_codec_h264_decode"
+#define STD_VIDEO_DECODE_H264_FIELD_ORDER_COUNT_LIST_SIZE 2
 
 typedef enum StdVideoDecodeH264FieldOrderCount {
     STD_VIDEO_DECODE_H264_FIELD_ORDER_COUNT_TOP = 0,
@@ -1027,13 +1039,15 @@ extern "C" {
 
 
 
+// vulkan_video_codec_h265std_decode is a preprocessor guard. Do not pass it to API calls.
 #define vulkan_video_codec_h265std_decode 1
+
 
 #define VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_API_VERSION_1_0_0 VK_MAKE_VIDEO_STD_VERSION(1, 0, 0)
 
-#define STD_VIDEO_DECODE_H265_REF_PIC_SET_LIST_SIZE 8
 #define VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_API_VERSION_1_0_0
 #define VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME "VK_STD_vulkan_video_codec_h265_decode"
+#define STD_VIDEO_DECODE_H265_REF_PIC_SET_LIST_SIZE 8
 typedef struct StdVideoDecodeH265PictureInfoFlags {
     deUint32    IrapPicFlag : 1;
     deUint32    IdrPicFlag  : 1;
@@ -1092,6 +1106,7 @@ extern "C" {
 
 
 
+// VK_VERSION_1_0 is a preprocessor guard. Do not pass it to API calls.
 #define VK_VERSION_1_0 1
 
 
@@ -1141,7 +1156,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 256
+#define VK_HEADER_VERSION 259
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 3, VK_HEADER_VERSION)
@@ -1872,6 +1887,16 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR = 1000269003,
     VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR = 1000269004,
     VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR = 1000269005,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_FEATURES_EXT = 1000270000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_PROPERTIES_EXT = 1000270001,
+    VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY_EXT = 1000270002,
+    VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY_EXT = 1000270003,
+    VK_STRUCTURE_TYPE_COPY_IMAGE_TO_MEMORY_INFO_EXT = 1000270004,
+    VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO_EXT = 1000270005,
+    VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO_EXT = 1000270006,
+    VK_STRUCTURE_TYPE_COPY_IMAGE_TO_IMAGE_INFO_EXT = 1000270007,
+    VK_STRUCTURE_TYPE_SUBRESOURCE_HOST_MEMCPY_SIZE_EXT = 1000270008,
+    VK_STRUCTURE_TYPE_HOST_IMAGE_COPY_DEVICE_PERFORMANCE_QUERY_EXT = 1000270009,
     VK_STRUCTURE_TYPE_MEMORY_MAP_INFO_KHR = 1000271000,
     VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO_KHR = 1000271001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT = 1000273000,
@@ -2096,6 +2121,9 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_NV = 1000426001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_FEATURES_NV = 1000427000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_PROPERTIES_NV = 1000427001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_COMPUTE_FEATURES_NV = 1000428000,
+    VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_INDIRECT_BUFFER_INFO_NV = 1000428001,
+    VK_STRUCTURE_TYPE_PIPELINE_INDIRECT_DEVICE_ADDRESS_INFO_NV = 1000428002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINEAR_COLOR_ATTACHMENT_FEATURES_NV = 1000430000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT = 1000437000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_FEATURES_QCOM = 1000440000,
@@ -3153,7 +3181,8 @@ typedef enum VkAttachmentLoadOp {
     VK_ATTACHMENT_LOAD_OP_LOAD = 0,
     VK_ATTACHMENT_LOAD_OP_CLEAR = 1,
     VK_ATTACHMENT_LOAD_OP_DONT_CARE = 2,
-    VK_ATTACHMENT_LOAD_OP_NONE_EXT = 1000400000,
+    VK_ATTACHMENT_LOAD_OP_NONE_KHR = 1000400000,
+    VK_ATTACHMENT_LOAD_OP_NONE_EXT = VK_ATTACHMENT_LOAD_OP_NONE_KHR,
     VK_ATTACHMENT_LOAD_OP_MAX_ENUM = 0x7FFFFFFF
 } VkAttachmentLoadOp;
 
@@ -3363,6 +3392,7 @@ typedef enum VkImageUsageFlagBits {
     VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR = 0x00001000,
     VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT = 0x00000200,
     VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR = 0x00000100,
+    VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT = 0x00400000,
 #ifdef VK_ENABLE_BETA_EXTENSIONS
     VK_IMAGE_USAGE_VIDEO_ENCODE_DST_BIT_KHR = 0x00002000,
 #endif
@@ -3753,6 +3783,7 @@ typedef enum VkDescriptorSetLayoutCreateFlagBits {
     VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR = 0x00000001,
     VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT = 0x00000010,
     VK_DESCRIPTOR_SET_LAYOUT_CREATE_EMBEDDED_IMMUTABLE_SAMPLERS_BIT_EXT = 0x00000020,
+    VK_DESCRIPTOR_SET_LAYOUT_CREATE_INDIRECT_BINDABLE_BIT_NV = 0x00000080,
     VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_EXT = 0x00000004,
     VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,
     VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_VALVE = VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_EXT,
@@ -5909,6 +5940,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdExecuteCommands(
 #endif
 
 
+// VK_VERSION_1_1 is a preprocessor guard. Do not pass it to API calls.
 #define VK_VERSION_1_1 1
 // Vulkan 1.1 version number
 #define VK_API_VERSION_1_1 VK_MAKE_API_VERSION(0, 1, 1, 0)// Patch version should always be set to 0
@@ -6775,6 +6807,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetDescriptorSetLayoutSupport(
 #endif
 
 
+// VK_VERSION_1_2 is a preprocessor guard. Do not pass it to API calls.
 #define VK_VERSION_1_2 1
 // Vulkan 1.2 version number
 #define VK_API_VERSION_1_2 VK_MAKE_API_VERSION(0, 1, 2, 0)// Patch version should always be set to 0
@@ -7529,6 +7562,7 @@ VKAPI_ATTR deUint64 VKAPI_CALL vkGetDeviceMemoryOpaqueCaptureAddress(
 #endif
 
 
+// VK_VERSION_1_3 is a preprocessor guard. Do not pass it to API calls.
 #define VK_VERSION_1_3 1
 // Vulkan 1.3 version number
 #define VK_API_VERSION_1_3 VK_MAKE_API_VERSION(0, 1, 3, 0)// Patch version should always be set to 0
@@ -7804,6 +7838,7 @@ static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_VIDEO_DECODE_DPB_BIT_K
 static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_ACCELERATION_STRUCTURE_VERTEX_BUFFER_BIT_KHR = 0x20000000ULL;
 static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_FRAGMENT_DENSITY_MAP_BIT_EXT = 0x01000000ULL;
 static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR = 0x40000000ULL;
+static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT = 0x400000000000ULL;
 #ifdef VK_ENABLE_BETA_EXTENSIONS
 static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_VIDEO_ENCODE_INPUT_BIT_KHR = 0x08000000ULL;
 #endif
@@ -8571,6 +8606,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetDeviceImageSparseMemoryRequirements(
 #endif
 
 
+// VK_KHR_surface is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_surface 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkSurfaceKHR)
 #define VK_KHR_SURFACE_SPEC_VERSION       25
@@ -8685,6 +8721,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfacePresentModesKHR(
 #endif
 
 
+// VK_KHR_swapchain is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_swapchain 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkSwapchainKHR)
 #define VK_KHR_SWAPCHAIN_SPEC_VERSION     70
@@ -8845,6 +8882,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAcquireNextImage2KHR(
 #endif
 
 
+// VK_KHR_display is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_display 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDisplayKHR)
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDisplayModeKHR)
@@ -8970,6 +9008,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDisplayPlaneSurfaceKHR(
 #endif
 
 
+// VK_KHR_display_swapchain is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_display_swapchain 1
 #define VK_KHR_DISPLAY_SWAPCHAIN_SPEC_VERSION 10
 #define VK_KHR_DISPLAY_SWAPCHAIN_EXTENSION_NAME "VK_KHR_display_swapchain"
@@ -8993,11 +9032,13 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSharedSwapchainsKHR(
 #endif
 
 
+// VK_KHR_sampler_mirror_clamp_to_edge is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_sampler_mirror_clamp_to_edge 1
 #define VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_SPEC_VERSION 3
 #define VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME "VK_KHR_sampler_mirror_clamp_to_edge"
 
 
+// VK_KHR_video_queue is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_video_queue 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkVideoSessionKHR)
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkVideoSessionParametersKHR)
@@ -9293,6 +9334,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdControlVideoCodingKHR(
 #endif
 
 
+// VK_KHR_video_decode_queue is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_video_decode_queue 1
 #define VK_KHR_VIDEO_DECODE_QUEUE_SPEC_VERSION 7
 #define VK_KHR_VIDEO_DECODE_QUEUE_EXTENSION_NAME "VK_KHR_video_decode_queue"
@@ -9347,6 +9389,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDecodeVideoKHR(
 #endif
 
 
+// VK_KHR_video_decode_h264 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_video_decode_h264 1
 
 
@@ -9407,6 +9450,7 @@ typedef struct VkVideoDecodeH264DpbSlotInfoKHR {
 
 
 
+// VK_KHR_dynamic_rendering is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_dynamic_rendering 1
 #define VK_KHR_DYNAMIC_RENDERING_SPEC_VERSION 1
 #define VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME "VK_KHR_dynamic_rendering"
@@ -9469,6 +9513,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdEndRenderingKHR(
 #endif
 
 
+// VK_KHR_multiview is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_multiview 1
 #define VK_KHR_MULTIVIEW_SPEC_VERSION     1
 #define VK_KHR_MULTIVIEW_EXTENSION_NAME   "VK_KHR_multiview"
@@ -9480,6 +9525,7 @@ typedef VkPhysicalDeviceMultiviewProperties VkPhysicalDeviceMultiviewPropertiesK
 
 
 
+// VK_KHR_get_physical_device_properties2 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_get_physical_device_properties2 1
 #define VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_SPEC_VERSION 2
 #define VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME "VK_KHR_get_physical_device_properties2"
@@ -9545,6 +9591,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceSparseImageFormatProperties2KHR(
 #endif
 
 
+// VK_KHR_device_group is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_device_group 1
 #define VK_KHR_DEVICE_GROUP_SPEC_VERSION  4
 #define VK_KHR_DEVICE_GROUP_EXTENSION_NAME "VK_KHR_device_group"
@@ -9597,11 +9644,13 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDispatchBaseKHR(
 #endif
 
 
+// VK_KHR_shader_draw_parameters is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_shader_draw_parameters 1
 #define VK_KHR_SHADER_DRAW_PARAMETERS_SPEC_VERSION 1
 #define VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME "VK_KHR_shader_draw_parameters"
 
 
+// VK_KHR_maintenance1 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_maintenance1 1
 #define VK_KHR_MAINTENANCE_1_SPEC_VERSION 2
 #define VK_KHR_MAINTENANCE_1_EXTENSION_NAME "VK_KHR_maintenance1"
@@ -9619,6 +9668,7 @@ VKAPI_ATTR void VKAPI_CALL vkTrimCommandPoolKHR(
 #endif
 
 
+// VK_KHR_device_group_creation is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_device_group_creation 1
 #define VK_KHR_DEVICE_GROUP_CREATION_SPEC_VERSION 1
 #define VK_KHR_DEVICE_GROUP_CREATION_EXTENSION_NAME "VK_KHR_device_group_creation"
@@ -9637,6 +9687,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumeratePhysicalDeviceGroupsKHR(
 #endif
 
 
+// VK_KHR_external_memory_capabilities is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_external_memory_capabilities 1
 #define VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_SPEC_VERSION 1
 #define VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME "VK_KHR_external_memory_capabilities"
@@ -9671,6 +9722,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceExternalBufferPropertiesKHR(
 #endif
 
 
+// VK_KHR_external_memory is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_external_memory 1
 #define VK_KHR_EXTERNAL_MEMORY_SPEC_VERSION 1
 #define VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME "VK_KHR_external_memory"
@@ -9683,6 +9735,7 @@ typedef VkExportMemoryAllocateInfo VkExportMemoryAllocateInfoKHR;
 
 
 
+// VK_KHR_external_memory_fd is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_external_memory_fd 1
 #define VK_KHR_EXTERNAL_MEMORY_FD_SPEC_VERSION 1
 #define VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME "VK_KHR_external_memory_fd"
@@ -9723,6 +9776,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetMemoryFdPropertiesKHR(
 #endif
 
 
+// VK_KHR_external_semaphore_capabilities is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_external_semaphore_capabilities 1
 #define VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_SPEC_VERSION 1
 #define VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME "VK_KHR_external_semaphore_capabilities"
@@ -9748,6 +9802,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceExternalSemaphorePropertiesKHR(
 #endif
 
 
+// VK_KHR_external_semaphore is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_external_semaphore 1
 #define VK_KHR_EXTERNAL_SEMAPHORE_SPEC_VERSION 1
 #define VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME "VK_KHR_external_semaphore"
@@ -9759,6 +9814,7 @@ typedef VkExportSemaphoreCreateInfo VkExportSemaphoreCreateInfoKHR;
 
 
 
+// VK_KHR_external_semaphore_fd is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_external_semaphore_fd 1
 #define VK_KHR_EXTERNAL_SEMAPHORE_FD_SPEC_VERSION 1
 #define VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME "VK_KHR_external_semaphore_fd"
@@ -9793,6 +9849,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetSemaphoreFdKHR(
 #endif
 
 
+// VK_KHR_push_descriptor is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_push_descriptor 1
 #define VK_KHR_PUSH_DESCRIPTOR_SPEC_VERSION 2
 #define VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME "VK_KHR_push_descriptor"
@@ -9823,6 +9880,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdPushDescriptorSetWithTemplateKHR(
 #endif
 
 
+// VK_KHR_shader_float16_int8 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_shader_float16_int8 1
 #define VK_KHR_SHADER_FLOAT16_INT8_SPEC_VERSION 1
 #define VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME "VK_KHR_shader_float16_int8"
@@ -9832,6 +9890,7 @@ typedef VkPhysicalDeviceShaderFloat16Int8Features VkPhysicalDeviceFloat16Int8Fea
 
 
 
+// VK_KHR_16bit_storage is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_16bit_storage 1
 #define VK_KHR_16BIT_STORAGE_SPEC_VERSION 1
 #define VK_KHR_16BIT_STORAGE_EXTENSION_NAME "VK_KHR_16bit_storage"
@@ -9839,6 +9898,7 @@ typedef VkPhysicalDevice16BitStorageFeatures VkPhysicalDevice16BitStorageFeature
 
 
 
+// VK_KHR_incremental_present is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_incremental_present 1
 #define VK_KHR_INCREMENTAL_PRESENT_SPEC_VERSION 2
 #define VK_KHR_INCREMENTAL_PRESENT_EXTENSION_NAME "VK_KHR_incremental_present"
@@ -9862,6 +9922,7 @@ typedef struct VkPresentRegionsKHR {
 
 
 
+// VK_KHR_descriptor_update_template is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_descriptor_update_template 1
 typedef VkDescriptorUpdateTemplate VkDescriptorUpdateTemplateKHR;
 
@@ -9899,6 +9960,7 @@ VKAPI_ATTR void VKAPI_CALL vkUpdateDescriptorSetWithTemplateKHR(
 #endif
 
 
+// VK_KHR_imageless_framebuffer is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_imageless_framebuffer 1
 #define VK_KHR_IMAGELESS_FRAMEBUFFER_SPEC_VERSION 1
 #define VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME "VK_KHR_imageless_framebuffer"
@@ -9912,6 +9974,7 @@ typedef VkRenderPassAttachmentBeginInfo VkRenderPassAttachmentBeginInfoKHR;
 
 
 
+// VK_KHR_create_renderpass2 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_create_renderpass2 1
 #define VK_KHR_CREATE_RENDERPASS_2_SPEC_VERSION 1
 #define VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME "VK_KHR_create_renderpass2"
@@ -9957,6 +10020,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdEndRenderPass2KHR(
 #endif
 
 
+// VK_KHR_shared_presentable_image is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_shared_presentable_image 1
 #define VK_KHR_SHARED_PRESENTABLE_IMAGE_SPEC_VERSION 1
 #define VK_KHR_SHARED_PRESENTABLE_IMAGE_EXTENSION_NAME "VK_KHR_shared_presentable_image"
@@ -9975,6 +10039,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetSwapchainStatusKHR(
 #endif
 
 
+// VK_KHR_external_fence_capabilities is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_external_fence_capabilities 1
 #define VK_KHR_EXTERNAL_FENCE_CAPABILITIES_SPEC_VERSION 1
 #define VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME "VK_KHR_external_fence_capabilities"
@@ -10000,6 +10065,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceExternalFencePropertiesKHR(
 #endif
 
 
+// VK_KHR_external_fence is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_external_fence 1
 #define VK_KHR_EXTERNAL_FENCE_SPEC_VERSION 1
 #define VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME "VK_KHR_external_fence"
@@ -10011,6 +10077,7 @@ typedef VkExportFenceCreateInfo VkExportFenceCreateInfoKHR;
 
 
 
+// VK_KHR_external_fence_fd is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_external_fence_fd 1
 #define VK_KHR_EXTERNAL_FENCE_FD_SPEC_VERSION 1
 #define VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME "VK_KHR_external_fence_fd"
@@ -10045,6 +10112,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetFenceFdKHR(
 #endif
 
 
+// VK_KHR_performance_query is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_performance_query 1
 #define VK_KHR_PERFORMANCE_QUERY_SPEC_VERSION 1
 #define VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME "VK_KHR_performance_query"
@@ -10185,6 +10253,7 @@ VKAPI_ATTR void VKAPI_CALL vkReleaseProfilingLockKHR(
 #endif
 
 
+// VK_KHR_maintenance2 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_maintenance2 1
 #define VK_KHR_MAINTENANCE_2_SPEC_VERSION 1
 #define VK_KHR_MAINTENANCE_2_EXTENSION_NAME "VK_KHR_maintenance2"
@@ -10206,6 +10275,7 @@ typedef VkPipelineTessellationDomainOriginStateCreateInfo VkPipelineTessellation
 
 
 
+// VK_KHR_get_surface_capabilities2 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_get_surface_capabilities2 1
 #define VK_KHR_GET_SURFACE_CAPABILITIES_2_SPEC_VERSION 1
 #define VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME "VK_KHR_get_surface_capabilities2"
@@ -10244,6 +10314,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceFormats2KHR(
 #endif
 
 
+// VK_KHR_variable_pointers is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_variable_pointers 1
 #define VK_KHR_VARIABLE_POINTERS_SPEC_VERSION 1
 #define VK_KHR_VARIABLE_POINTERS_EXTENSION_NAME "VK_KHR_variable_pointers"
@@ -10253,6 +10324,7 @@ typedef VkPhysicalDeviceVariablePointersFeatures VkPhysicalDeviceVariablePointer
 
 
 
+// VK_KHR_get_display_properties2 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_get_display_properties2 1
 #define VK_KHR_GET_DISPLAY_PROPERTIES_2_SPEC_VERSION 1
 #define VK_KHR_GET_DISPLAY_PROPERTIES_2_EXTENSION_NAME "VK_KHR_get_display_properties2"
@@ -10316,6 +10388,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetDisplayPlaneCapabilities2KHR(
 #endif
 
 
+// VK_KHR_dedicated_allocation is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_dedicated_allocation 1
 #define VK_KHR_DEDICATED_ALLOCATION_SPEC_VERSION 3
 #define VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME "VK_KHR_dedicated_allocation"
@@ -10325,16 +10398,19 @@ typedef VkMemoryDedicatedAllocateInfo VkMemoryDedicatedAllocateInfoKHR;
 
 
 
+// VK_KHR_storage_buffer_storage_class is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_storage_buffer_storage_class 1
 #define VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_SPEC_VERSION 1
 #define VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_EXTENSION_NAME "VK_KHR_storage_buffer_storage_class"
 
 
+// VK_KHR_relaxed_block_layout is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_relaxed_block_layout 1
 #define VK_KHR_RELAXED_BLOCK_LAYOUT_SPEC_VERSION 1
 #define VK_KHR_RELAXED_BLOCK_LAYOUT_EXTENSION_NAME "VK_KHR_relaxed_block_layout"
 
 
+// VK_KHR_get_memory_requirements2 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_get_memory_requirements2 1
 #define VK_KHR_GET_MEMORY_REQUIREMENTS_2_SPEC_VERSION 1
 #define VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME "VK_KHR_get_memory_requirements2"
@@ -10371,6 +10447,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetImageSparseMemoryRequirements2KHR(
 #endif
 
 
+// VK_KHR_image_format_list is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_image_format_list 1
 #define VK_KHR_IMAGE_FORMAT_LIST_SPEC_VERSION 1
 #define VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME "VK_KHR_image_format_list"
@@ -10378,6 +10455,7 @@ typedef VkImageFormatListCreateInfo VkImageFormatListCreateInfoKHR;
 
 
 
+// VK_KHR_sampler_ycbcr_conversion is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_sampler_ycbcr_conversion 1
 typedef VkSamplerYcbcrConversion VkSamplerYcbcrConversionKHR;
 
@@ -10418,6 +10496,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySamplerYcbcrConversionKHR(
 #endif
 
 
+// VK_KHR_bind_memory2 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_bind_memory2 1
 #define VK_KHR_BIND_MEMORY_2_SPEC_VERSION 1
 #define VK_KHR_BIND_MEMORY_2_EXTENSION_NAME "VK_KHR_bind_memory2"
@@ -10441,6 +10520,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkBindImageMemory2KHR(
 #endif
 
 
+// VK_KHR_maintenance3 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_maintenance3 1
 #define VK_KHR_MAINTENANCE_3_SPEC_VERSION 1
 #define VK_KHR_MAINTENANCE_3_EXTENSION_NAME "VK_KHR_maintenance3"
@@ -10460,6 +10540,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetDescriptorSetLayoutSupportKHR(
 #endif
 
 
+// VK_KHR_draw_indirect_count is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_draw_indirect_count 1
 #define VK_KHR_DRAW_INDIRECT_COUNT_SPEC_VERSION 1
 #define VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME "VK_KHR_draw_indirect_count"
@@ -10487,6 +10568,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexedIndirectCountKHR(
 #endif
 
 
+// VK_KHR_shader_subgroup_extended_types is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_shader_subgroup_extended_types 1
 #define VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES_SPEC_VERSION 1
 #define VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES_EXTENSION_NAME "VK_KHR_shader_subgroup_extended_types"
@@ -10494,6 +10576,7 @@ typedef VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures VkPhysicalDeviceShad
 
 
 
+// VK_KHR_8bit_storage is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_8bit_storage 1
 #define VK_KHR_8BIT_STORAGE_SPEC_VERSION  1
 #define VK_KHR_8BIT_STORAGE_EXTENSION_NAME "VK_KHR_8bit_storage"
@@ -10501,6 +10584,7 @@ typedef VkPhysicalDevice8BitStorageFeatures VkPhysicalDevice8BitStorageFeaturesK
 
 
 
+// VK_KHR_shader_atomic_int64 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_shader_atomic_int64 1
 #define VK_KHR_SHADER_ATOMIC_INT64_SPEC_VERSION 1
 #define VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME "VK_KHR_shader_atomic_int64"
@@ -10508,6 +10592,7 @@ typedef VkPhysicalDeviceShaderAtomicInt64Features VkPhysicalDeviceShaderAtomicIn
 
 
 
+// VK_KHR_shader_clock is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_shader_clock 1
 #define VK_KHR_SHADER_CLOCK_SPEC_VERSION  1
 #define VK_KHR_SHADER_CLOCK_EXTENSION_NAME "VK_KHR_shader_clock"
@@ -10520,6 +10605,7 @@ typedef struct VkPhysicalDeviceShaderClockFeaturesKHR {
 
 
 
+// VK_KHR_video_decode_h265 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_video_decode_h265 1
 
 
@@ -10573,6 +10659,7 @@ typedef struct VkVideoDecodeH265DpbSlotInfoKHR {
 
 
 
+// VK_KHR_global_priority is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_global_priority 1
 #define VK_MAX_GLOBAL_PRIORITY_SIZE_KHR   16U
 #define VK_KHR_GLOBAL_PRIORITY_SPEC_VERSION 1
@@ -10610,6 +10697,7 @@ typedef struct VkQueueFamilyGlobalPriorityPropertiesKHR {
 
 
 
+// VK_KHR_driver_properties is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_driver_properties 1
 #define VK_KHR_DRIVER_PROPERTIES_SPEC_VERSION 1
 #define VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME "VK_KHR_driver_properties"
@@ -10623,6 +10711,7 @@ typedef VkPhysicalDeviceDriverProperties VkPhysicalDeviceDriverPropertiesKHR;
 
 
 
+// VK_KHR_shader_float_controls is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_shader_float_controls 1
 #define VK_KHR_SHADER_FLOAT_CONTROLS_SPEC_VERSION 4
 #define VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME "VK_KHR_shader_float_controls"
@@ -10632,6 +10721,7 @@ typedef VkPhysicalDeviceFloatControlsProperties VkPhysicalDeviceFloatControlsPro
 
 
 
+// VK_KHR_depth_stencil_resolve is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_depth_stencil_resolve 1
 #define VK_KHR_DEPTH_STENCIL_RESOLVE_SPEC_VERSION 1
 #define VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME "VK_KHR_depth_stencil_resolve"
@@ -10645,11 +10735,13 @@ typedef VkPhysicalDeviceDepthStencilResolveProperties VkPhysicalDeviceDepthStenc
 
 
 
+// VK_KHR_swapchain_mutable_format is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_swapchain_mutable_format 1
 #define VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_SPEC_VERSION 1
 #define VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME "VK_KHR_swapchain_mutable_format"
 
 
+// VK_KHR_timeline_semaphore is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_timeline_semaphore 1
 #define VK_KHR_TIMELINE_SEMAPHORE_SPEC_VERSION 2
 #define VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME "VK_KHR_timeline_semaphore"
@@ -10692,6 +10784,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkSignalSemaphoreKHR(
 #endif
 
 
+// VK_KHR_vulkan_memory_model is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_vulkan_memory_model 1
 #define VK_KHR_VULKAN_MEMORY_MODEL_SPEC_VERSION 3
 #define VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME "VK_KHR_vulkan_memory_model"
@@ -10699,6 +10792,7 @@ typedef VkPhysicalDeviceVulkanMemoryModelFeatures VkPhysicalDeviceVulkanMemoryMo
 
 
 
+// VK_KHR_shader_terminate_invocation is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_shader_terminate_invocation 1
 #define VK_KHR_SHADER_TERMINATE_INVOCATION_SPEC_VERSION 1
 #define VK_KHR_SHADER_TERMINATE_INVOCATION_EXTENSION_NAME "VK_KHR_shader_terminate_invocation"
@@ -10706,6 +10800,7 @@ typedef VkPhysicalDeviceShaderTerminateInvocationFeatures VkPhysicalDeviceShader
 
 
 
+// VK_KHR_fragment_shading_rate is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_fragment_shading_rate 1
 #define VK_KHR_FRAGMENT_SHADING_RATE_SPEC_VERSION 2
 #define VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME "VK_KHR_fragment_shading_rate"
@@ -10785,11 +10880,13 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetFragmentShadingRateKHR(
 #endif
 
 
+// VK_KHR_spirv_1_4 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_spirv_1_4 1
 #define VK_KHR_SPIRV_1_4_SPEC_VERSION     1
 #define VK_KHR_SPIRV_1_4_EXTENSION_NAME   "VK_KHR_spirv_1_4"
 
 
+// VK_KHR_surface_protected_capabilities is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_surface_protected_capabilities 1
 #define VK_KHR_SURFACE_PROTECTED_CAPABILITIES_SPEC_VERSION 1
 #define VK_KHR_SURFACE_PROTECTED_CAPABILITIES_EXTENSION_NAME "VK_KHR_surface_protected_capabilities"
@@ -10801,6 +10898,7 @@ typedef struct VkSurfaceProtectedCapabilitiesKHR {
 
 
 
+// VK_KHR_separate_depth_stencil_layouts is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_separate_depth_stencil_layouts 1
 #define VK_KHR_SEPARATE_DEPTH_STENCIL_LAYOUTS_SPEC_VERSION 1
 #define VK_KHR_SEPARATE_DEPTH_STENCIL_LAYOUTS_EXTENSION_NAME "VK_KHR_separate_depth_stencil_layouts"
@@ -10812,6 +10910,7 @@ typedef VkAttachmentDescriptionStencilLayout VkAttachmentDescriptionStencilLayou
 
 
 
+// VK_KHR_present_wait is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_present_wait 1
 #define VK_KHR_PRESENT_WAIT_SPEC_VERSION  1
 #define VK_KHR_PRESENT_WAIT_EXTENSION_NAME "VK_KHR_present_wait"
@@ -10832,6 +10931,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkWaitForPresentKHR(
 #endif
 
 
+// VK_KHR_uniform_buffer_standard_layout is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_uniform_buffer_standard_layout 1
 #define VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_SPEC_VERSION 1
 #define VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_EXTENSION_NAME "VK_KHR_uniform_buffer_standard_layout"
@@ -10839,6 +10939,7 @@ typedef VkPhysicalDeviceUniformBufferStandardLayoutFeatures VkPhysicalDeviceUnif
 
 
 
+// VK_KHR_buffer_device_address is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_buffer_device_address 1
 #define VK_KHR_BUFFER_DEVICE_ADDRESS_SPEC_VERSION 1
 #define VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME "VK_KHR_buffer_device_address"
@@ -10871,6 +10972,7 @@ VKAPI_ATTR deUint64 VKAPI_CALL vkGetDeviceMemoryOpaqueCaptureAddressKHR(
 #endif
 
 
+// VK_KHR_deferred_host_operations is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_deferred_host_operations 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDeferredOperationKHR)
 #define VK_KHR_DEFERRED_HOST_OPERATIONS_SPEC_VERSION 4
@@ -10906,6 +11008,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkDeferredOperationJoinKHR(
 #endif
 
 
+// VK_KHR_pipeline_executable_properties is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_pipeline_executable_properties 1
 #define VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_SPEC_VERSION 1
 #define VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME "VK_KHR_pipeline_executable_properties"
@@ -10996,6 +11099,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPipelineExecutableInternalRepresentationsKHR
 #endif
 
 
+// VK_KHR_map_memory2 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_map_memory2 1
 #define VK_KHR_MAP_MEMORY_2_SPEC_VERSION  1
 #define VK_KHR_MAP_MEMORY_2_EXTENSION_NAME "VK_KHR_map_memory2"
@@ -11031,6 +11135,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkUnmapMemory2KHR(
 #endif
 
 
+// VK_KHR_shader_integer_dot_product is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_shader_integer_dot_product 1
 #define VK_KHR_SHADER_INTEGER_DOT_PRODUCT_SPEC_VERSION 1
 #define VK_KHR_SHADER_INTEGER_DOT_PRODUCT_EXTENSION_NAME "VK_KHR_shader_integer_dot_product"
@@ -11040,6 +11145,7 @@ typedef VkPhysicalDeviceShaderIntegerDotProductProperties VkPhysicalDeviceShader
 
 
 
+// VK_KHR_pipeline_library is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_pipeline_library 1
 #define VK_KHR_PIPELINE_LIBRARY_SPEC_VERSION 1
 #define VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME "VK_KHR_pipeline_library"
@@ -11052,11 +11158,13 @@ typedef struct VkPipelineLibraryCreateInfoKHR {
 
 
 
+// VK_KHR_shader_non_semantic_info is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_shader_non_semantic_info 1
 #define VK_KHR_SHADER_NON_SEMANTIC_INFO_SPEC_VERSION 1
 #define VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME "VK_KHR_shader_non_semantic_info"
 
 
+// VK_KHR_present_id is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_present_id 1
 #define VK_KHR_PRESENT_ID_SPEC_VERSION    1
 #define VK_KHR_PRESENT_ID_EXTENSION_NAME  "VK_KHR_present_id"
@@ -11075,6 +11183,7 @@ typedef struct VkPhysicalDevicePresentIdFeaturesKHR {
 
 
 
+// VK_KHR_synchronization2 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_synchronization2 1
 #define VK_KHR_SYNCHRONIZATION_2_SPEC_VERSION 1
 #define VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME "VK_KHR_synchronization2"
@@ -11175,6 +11284,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetQueueCheckpointData2NV(
 #endif
 
 
+// VK_KHR_fragment_shader_barycentric is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_fragment_shader_barycentric 1
 #define VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_SPEC_VERSION 1
 #define VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME "VK_KHR_fragment_shader_barycentric"
@@ -11192,6 +11302,7 @@ typedef struct VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR {
 
 
 
+// VK_KHR_shader_subgroup_uniform_control_flow is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_shader_subgroup_uniform_control_flow 1
 #define VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_SPEC_VERSION 1
 #define VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_EXTENSION_NAME "VK_KHR_shader_subgroup_uniform_control_flow"
@@ -11203,6 +11314,7 @@ typedef struct VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR {
 
 
 
+// VK_KHR_zero_initialize_workgroup_memory is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_zero_initialize_workgroup_memory 1
 #define VK_KHR_ZERO_INITIALIZE_WORKGROUP_MEMORY_SPEC_VERSION 1
 #define VK_KHR_ZERO_INITIALIZE_WORKGROUP_MEMORY_EXTENSION_NAME "VK_KHR_zero_initialize_workgroup_memory"
@@ -11210,6 +11322,7 @@ typedef VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeatures VkPhysicalDeviceZe
 
 
 
+// VK_KHR_workgroup_memory_explicit_layout is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_workgroup_memory_explicit_layout 1
 #define VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_SPEC_VERSION 1
 #define VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_EXTENSION_NAME "VK_KHR_workgroup_memory_explicit_layout"
@@ -11224,6 +11337,7 @@ typedef struct VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR {
 
 
 
+// VK_KHR_copy_commands2 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_copy_commands2 1
 #define VK_KHR_COPY_COMMANDS_2_SPEC_VERSION 1
 #define VK_KHR_COPY_COMMANDS_2_EXTENSION_NAME "VK_KHR_copy_commands2"
@@ -11283,6 +11397,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdResolveImage2KHR(
 #endif
 
 
+// VK_KHR_format_feature_flags2 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_format_feature_flags2 1
 #define VK_KHR_FORMAT_FEATURE_FLAGS_2_SPEC_VERSION 2
 #define VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME "VK_KHR_format_feature_flags2"
@@ -11294,6 +11409,7 @@ typedef VkFormatProperties3 VkFormatProperties3KHR;
 
 
 
+// VK_KHR_ray_tracing_maintenance1 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_ray_tracing_maintenance1 1
 #define VK_KHR_RAY_TRACING_MAINTENANCE_1_SPEC_VERSION 1
 #define VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME "VK_KHR_ray_tracing_maintenance1"
@@ -11330,11 +11446,13 @@ VKAPI_ATTR void VKAPI_CALL vkCmdTraceRaysIndirect2KHR(
 #endif
 
 
+// VK_KHR_portability_enumeration is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_portability_enumeration 1
 #define VK_KHR_PORTABILITY_ENUMERATION_SPEC_VERSION 1
 #define VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME "VK_KHR_portability_enumeration"
 
 
+// VK_KHR_maintenance4 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_maintenance4 1
 #define VK_KHR_MAINTENANCE_4_SPEC_VERSION 2
 #define VK_KHR_MAINTENANCE_4_EXTENSION_NAME "VK_KHR_maintenance4"
@@ -11369,6 +11487,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetDeviceImageSparseMemoryRequirementsKHR(
 #endif
 
 
+// VK_KHR_ray_tracing_position_fetch is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_ray_tracing_position_fetch 1
 #define VK_KHR_RAY_TRACING_POSITION_FETCH_SPEC_VERSION 1
 #define VK_KHR_RAY_TRACING_POSITION_FETCH_EXTENSION_NAME "VK_KHR_ray_tracing_position_fetch"
@@ -11380,6 +11499,7 @@ typedef struct VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR {
 
 
 
+// VK_KHR_cooperative_matrix is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_cooperative_matrix 1
 #define VK_KHR_COOPERATIVE_MATRIX_SPEC_VERSION 2
 #define VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME "VK_KHR_cooperative_matrix"
@@ -11396,6 +11516,17 @@ typedef enum VkComponentTypeKHR {
     VK_COMPONENT_TYPE_UINT16_KHR = 8,
     VK_COMPONENT_TYPE_UINT32_KHR = 9,
     VK_COMPONENT_TYPE_UINT64_KHR = 10,
+    VK_COMPONENT_TYPE_FLOAT16_NV = VK_COMPONENT_TYPE_FLOAT16_KHR,
+    VK_COMPONENT_TYPE_FLOAT32_NV = VK_COMPONENT_TYPE_FLOAT32_KHR,
+    VK_COMPONENT_TYPE_FLOAT64_NV = VK_COMPONENT_TYPE_FLOAT64_KHR,
+    VK_COMPONENT_TYPE_SINT8_NV = VK_COMPONENT_TYPE_SINT8_KHR,
+    VK_COMPONENT_TYPE_SINT16_NV = VK_COMPONENT_TYPE_SINT16_KHR,
+    VK_COMPONENT_TYPE_SINT32_NV = VK_COMPONENT_TYPE_SINT32_KHR,
+    VK_COMPONENT_TYPE_SINT64_NV = VK_COMPONENT_TYPE_SINT64_KHR,
+    VK_COMPONENT_TYPE_UINT8_NV = VK_COMPONENT_TYPE_UINT8_KHR,
+    VK_COMPONENT_TYPE_UINT16_NV = VK_COMPONENT_TYPE_UINT16_KHR,
+    VK_COMPONENT_TYPE_UINT32_NV = VK_COMPONENT_TYPE_UINT32_KHR,
+    VK_COMPONENT_TYPE_UINT64_NV = VK_COMPONENT_TYPE_UINT64_KHR,
     VK_COMPONENT_TYPE_MAX_ENUM_KHR = 0x7FFFFFFF
 } VkComponentTypeKHR;
 
@@ -11404,6 +11535,10 @@ typedef enum VkScopeKHR {
     VK_SCOPE_WORKGROUP_KHR = 2,
     VK_SCOPE_SUBGROUP_KHR = 3,
     VK_SCOPE_QUEUE_FAMILY_KHR = 5,
+    VK_SCOPE_DEVICE_NV = VK_SCOPE_DEVICE_KHR,
+    VK_SCOPE_WORKGROUP_NV = VK_SCOPE_WORKGROUP_KHR,
+    VK_SCOPE_SUBGROUP_NV = VK_SCOPE_SUBGROUP_KHR,
+    VK_SCOPE_QUEUE_FAMILY_NV = VK_SCOPE_QUEUE_FAMILY_KHR,
     VK_SCOPE_MAX_ENUM_KHR = 0x7FFFFFFF
 } VkScopeKHR;
 typedef struct VkCooperativeMatrixPropertiesKHR {
@@ -11443,6 +11578,13 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR
 #endif
 
 
+// VK_KHR_load_store_op_none is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_load_store_op_none 1
+#define VK_KHR_LOAD_STORE_OP_NONE_SPEC_VERSION 1
+#define VK_KHR_LOAD_STORE_OP_NONE_EXTENSION_NAME "VK_KHR_load_store_op_none"
+
+
+// VK_EXT_debug_report is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_debug_report 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDebugReportCallbackEXT)
 #define VK_EXT_DEBUG_REPORT_SPEC_VERSION  10
@@ -11550,21 +11692,25 @@ VKAPI_ATTR void VKAPI_CALL vkDebugReportMessageEXT(
 #endif
 
 
+// VK_NV_glsl_shader is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_glsl_shader 1
 #define VK_NV_GLSL_SHADER_SPEC_VERSION    1
 #define VK_NV_GLSL_SHADER_EXTENSION_NAME  "VK_NV_glsl_shader"
 
 
+// VK_EXT_depth_range_unrestricted is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_depth_range_unrestricted 1
 #define VK_EXT_DEPTH_RANGE_UNRESTRICTED_SPEC_VERSION 1
 #define VK_EXT_DEPTH_RANGE_UNRESTRICTED_EXTENSION_NAME "VK_EXT_depth_range_unrestricted"
 
 
+// VK_IMG_filter_cubic is a preprocessor guard. Do not pass it to API calls.
 #define VK_IMG_filter_cubic 1
 #define VK_IMG_FILTER_CUBIC_SPEC_VERSION  1
 #define VK_IMG_FILTER_CUBIC_EXTENSION_NAME "VK_IMG_filter_cubic"
 
 
+// VK_AMD_rasterization_order is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_rasterization_order 1
 #define VK_AMD_RASTERIZATION_ORDER_SPEC_VERSION 1
 #define VK_AMD_RASTERIZATION_ORDER_EXTENSION_NAME "VK_AMD_rasterization_order"
@@ -11582,16 +11728,19 @@ typedef struct VkPipelineRasterizationStateRasterizationOrderAMD {
 
 
 
+// VK_AMD_shader_trinary_minmax is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_shader_trinary_minmax 1
 #define VK_AMD_SHADER_TRINARY_MINMAX_SPEC_VERSION 1
 #define VK_AMD_SHADER_TRINARY_MINMAX_EXTENSION_NAME "VK_AMD_shader_trinary_minmax"
 
 
+// VK_AMD_shader_explicit_vertex_parameter is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_shader_explicit_vertex_parameter 1
 #define VK_AMD_SHADER_EXPLICIT_VERTEX_PARAMETER_SPEC_VERSION 1
 #define VK_AMD_SHADER_EXPLICIT_VERTEX_PARAMETER_EXTENSION_NAME "VK_AMD_shader_explicit_vertex_parameter"
 
 
+// VK_EXT_debug_marker is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_debug_marker 1
 #define VK_EXT_DEBUG_MARKER_SPEC_VERSION  4
 #define VK_EXT_DEBUG_MARKER_EXTENSION_NAME "VK_EXT_debug_marker"
@@ -11648,11 +11797,13 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDebugMarkerInsertEXT(
 #endif
 
 
+// VK_AMD_gcn_shader is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_gcn_shader 1
 #define VK_AMD_GCN_SHADER_SPEC_VERSION    1
 #define VK_AMD_GCN_SHADER_EXTENSION_NAME  "VK_AMD_gcn_shader"
 
 
+// VK_NV_dedicated_allocation is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_dedicated_allocation 1
 #define VK_NV_DEDICATED_ALLOCATION_SPEC_VERSION 1
 #define VK_NV_DEDICATED_ALLOCATION_EXTENSION_NAME "VK_NV_dedicated_allocation"
@@ -11677,6 +11828,7 @@ typedef struct VkDedicatedAllocationMemoryAllocateInfoNV {
 
 
 
+// VK_EXT_transform_feedback is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_transform_feedback 1
 #define VK_EXT_TRANSFORM_FEEDBACK_SPEC_VERSION 1
 #define VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME "VK_EXT_transform_feedback"
@@ -11764,6 +11916,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndirectByteCountEXT(
 #endif
 
 
+// VK_NVX_binary_import is a preprocessor guard. Do not pass it to API calls.
 #define VK_NVX_binary_import 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkCuModuleNVX)
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkCuFunctionNVX)
@@ -11835,6 +11988,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdCuLaunchKernelNVX(
 #endif
 
 
+// VK_NVX_image_view_handle is a preprocessor guard. Do not pass it to API calls.
 #define VK_NVX_image_view_handle 1
 #define VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION 2
 #define VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME "VK_NVX_image_view_handle"
@@ -11868,6 +12022,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetImageViewAddressNVX(
 #endif
 
 
+// VK_AMD_draw_indirect_count is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_draw_indirect_count 1
 #define VK_AMD_DRAW_INDIRECT_COUNT_SPEC_VERSION 2
 #define VK_AMD_DRAW_INDIRECT_COUNT_EXTENSION_NAME "VK_AMD_draw_indirect_count"
@@ -11895,21 +12050,25 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexedIndirectCountAMD(
 #endif
 
 
+// VK_AMD_negative_viewport_height is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_negative_viewport_height 1
 #define VK_AMD_NEGATIVE_VIEWPORT_HEIGHT_SPEC_VERSION 1
 #define VK_AMD_NEGATIVE_VIEWPORT_HEIGHT_EXTENSION_NAME "VK_AMD_negative_viewport_height"
 
 
+// VK_AMD_gpu_shader_half_float is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_gpu_shader_half_float 1
 #define VK_AMD_GPU_SHADER_HALF_FLOAT_SPEC_VERSION 2
 #define VK_AMD_GPU_SHADER_HALF_FLOAT_EXTENSION_NAME "VK_AMD_gpu_shader_half_float"
 
 
+// VK_AMD_shader_ballot is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_shader_ballot 1
 #define VK_AMD_SHADER_BALLOT_SPEC_VERSION 1
 #define VK_AMD_SHADER_BALLOT_EXTENSION_NAME "VK_AMD_shader_ballot"
 
 
+// VK_AMD_texture_gather_bias_lod is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_texture_gather_bias_lod 1
 #define VK_AMD_TEXTURE_GATHER_BIAS_LOD_SPEC_VERSION 1
 #define VK_AMD_TEXTURE_GATHER_BIAS_LOD_EXTENSION_NAME "VK_AMD_texture_gather_bias_lod"
@@ -11921,6 +12080,7 @@ typedef struct VkTextureLODGatherFormatPropertiesAMD {
 
 
 
+// VK_AMD_shader_info is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_shader_info 1
 #define VK_AMD_SHADER_INFO_SPEC_VERSION   1
 #define VK_AMD_SHADER_INFO_EXTENSION_NAME "VK_AMD_shader_info"
@@ -11962,11 +12122,13 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetShaderInfoAMD(
 #endif
 
 
+// VK_AMD_shader_image_load_store_lod is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_shader_image_load_store_lod 1
 #define VK_AMD_SHADER_IMAGE_LOAD_STORE_LOD_SPEC_VERSION 1
 #define VK_AMD_SHADER_IMAGE_LOAD_STORE_LOD_EXTENSION_NAME "VK_AMD_shader_image_load_store_lod"
 
 
+// VK_NV_corner_sampled_image is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_corner_sampled_image 1
 #define VK_NV_CORNER_SAMPLED_IMAGE_SPEC_VERSION 2
 #define VK_NV_CORNER_SAMPLED_IMAGE_EXTENSION_NAME "VK_NV_corner_sampled_image"
@@ -11978,11 +12140,13 @@ typedef struct VkPhysicalDeviceCornerSampledImageFeaturesNV {
 
 
 
+// VK_IMG_format_pvrtc is a preprocessor guard. Do not pass it to API calls.
 #define VK_IMG_format_pvrtc 1
 #define VK_IMG_FORMAT_PVRTC_SPEC_VERSION  1
 #define VK_IMG_FORMAT_PVRTC_EXTENSION_NAME "VK_IMG_format_pvrtc"
 
 
+// VK_NV_external_memory_capabilities is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_external_memory_capabilities 1
 #define VK_NV_EXTERNAL_MEMORY_CAPABILITIES_SPEC_VERSION 1
 #define VK_NV_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME "VK_NV_external_memory_capabilities"
@@ -12025,6 +12189,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceExternalImageFormatPropertiesN
 #endif
 
 
+// VK_NV_external_memory is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_external_memory 1
 #define VK_NV_EXTERNAL_MEMORY_SPEC_VERSION 1
 #define VK_NV_EXTERNAL_MEMORY_EXTENSION_NAME "VK_NV_external_memory"
@@ -12042,6 +12207,7 @@ typedef struct VkExportMemoryAllocateInfoNV {
 
 
 
+// VK_EXT_validation_flags is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_validation_flags 1
 #define VK_EXT_VALIDATION_FLAGS_SPEC_VERSION 2
 #define VK_EXT_VALIDATION_FLAGS_EXTENSION_NAME "VK_EXT_validation_flags"
@@ -12060,16 +12226,19 @@ typedef struct VkValidationFlagsEXT {
 
 
 
+// VK_EXT_shader_subgroup_ballot is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_shader_subgroup_ballot 1
 #define VK_EXT_SHADER_SUBGROUP_BALLOT_SPEC_VERSION 1
 #define VK_EXT_SHADER_SUBGROUP_BALLOT_EXTENSION_NAME "VK_EXT_shader_subgroup_ballot"
 
 
+// VK_EXT_shader_subgroup_vote is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_shader_subgroup_vote 1
 #define VK_EXT_SHADER_SUBGROUP_VOTE_SPEC_VERSION 1
 #define VK_EXT_SHADER_SUBGROUP_VOTE_EXTENSION_NAME "VK_EXT_shader_subgroup_vote"
 
 
+// VK_EXT_texture_compression_astc_hdr is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_texture_compression_astc_hdr 1
 #define VK_EXT_TEXTURE_COMPRESSION_ASTC_HDR_SPEC_VERSION 1
 #define VK_EXT_TEXTURE_COMPRESSION_ASTC_HDR_EXTENSION_NAME "VK_EXT_texture_compression_astc_hdr"
@@ -12077,6 +12246,7 @@ typedef VkPhysicalDeviceTextureCompressionASTCHDRFeatures VkPhysicalDeviceTextur
 
 
 
+// VK_EXT_astc_decode_mode is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_astc_decode_mode 1
 #define VK_EXT_ASTC_DECODE_MODE_SPEC_VERSION 1
 #define VK_EXT_ASTC_DECODE_MODE_EXTENSION_NAME "VK_EXT_astc_decode_mode"
@@ -12094,6 +12264,7 @@ typedef struct VkPhysicalDeviceASTCDecodeFeaturesEXT {
 
 
 
+// VK_EXT_pipeline_robustness is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_pipeline_robustness 1
 #define VK_EXT_PIPELINE_ROBUSTNESS_SPEC_VERSION 1
 #define VK_EXT_PIPELINE_ROBUSTNESS_EXTENSION_NAME "VK_EXT_pipeline_robustness"
@@ -12139,6 +12310,7 @@ typedef struct VkPipelineRobustnessCreateInfoEXT {
 
 
 
+// VK_EXT_conditional_rendering is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_conditional_rendering 1
 #define VK_EXT_CONDITIONAL_RENDERING_SPEC_VERSION 2
 #define VK_EXT_CONDITIONAL_RENDERING_EXTENSION_NAME "VK_EXT_conditional_rendering"
@@ -12182,6 +12354,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdEndConditionalRenderingEXT(
 #endif
 
 
+// VK_NV_clip_space_w_scaling is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_clip_space_w_scaling 1
 #define VK_NV_CLIP_SPACE_W_SCALING_SPEC_VERSION 1
 #define VK_NV_CLIP_SPACE_W_SCALING_EXTENSION_NAME "VK_NV_clip_space_w_scaling"
@@ -12209,6 +12382,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetViewportWScalingNV(
 #endif
 
 
+// VK_EXT_direct_mode_display is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_direct_mode_display 1
 #define VK_EXT_DIRECT_MODE_DISPLAY_SPEC_VERSION 1
 #define VK_EXT_DIRECT_MODE_DISPLAY_EXTENSION_NAME "VK_EXT_direct_mode_display"
@@ -12221,6 +12395,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkReleaseDisplayEXT(
 #endif
 
 
+// VK_EXT_display_surface_counter is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_display_surface_counter 1
 #define VK_EXT_DISPLAY_SURFACE_COUNTER_SPEC_VERSION 1
 #define VK_EXT_DISPLAY_SURFACE_COUNTER_EXTENSION_NAME "VK_EXT_display_surface_counter"
@@ -12257,6 +12432,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceCapabilities2EXT(
 #endif
 
 
+// VK_EXT_display_control is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_display_control 1
 #define VK_EXT_DISPLAY_CONTROL_SPEC_VERSION 1
 #define VK_EXT_DISPLAY_CONTROL_EXTENSION_NAME "VK_EXT_display_control"
@@ -12333,6 +12509,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetSwapchainCounterEXT(
 #endif
 
 
+// VK_GOOGLE_display_timing is a preprocessor guard. Do not pass it to API calls.
 #define VK_GOOGLE_display_timing 1
 #define VK_GOOGLE_DISPLAY_TIMING_SPEC_VERSION 1
 #define VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME "VK_GOOGLE_display_timing"
@@ -12377,16 +12554,19 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPastPresentationTimingGOOGLE(
 #endif
 
 
+// VK_NV_sample_mask_override_coverage is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_sample_mask_override_coverage 1
 #define VK_NV_SAMPLE_MASK_OVERRIDE_COVERAGE_SPEC_VERSION 1
 #define VK_NV_SAMPLE_MASK_OVERRIDE_COVERAGE_EXTENSION_NAME "VK_NV_sample_mask_override_coverage"
 
 
+// VK_NV_geometry_shader_passthrough is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_geometry_shader_passthrough 1
 #define VK_NV_GEOMETRY_SHADER_PASSTHROUGH_SPEC_VERSION 1
 #define VK_NV_GEOMETRY_SHADER_PASSTHROUGH_EXTENSION_NAME "VK_NV_geometry_shader_passthrough"
 
 
+// VK_NV_viewport_array2 is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_viewport_array2 1
 #define VK_NV_VIEWPORT_ARRAY_2_SPEC_VERSION 1
 #define VK_NV_VIEWPORT_ARRAY_2_EXTENSION_NAME "VK_NV_viewport_array2"
@@ -12394,6 +12574,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPastPresentationTimingGOOGLE(
 #define VK_NV_VIEWPORT_ARRAY2_EXTENSION_NAME VK_NV_VIEWPORT_ARRAY_2_EXTENSION_NAME
 
 
+// VK_NVX_multiview_per_view_attributes is a preprocessor guard. Do not pass it to API calls.
 #define VK_NVX_multiview_per_view_attributes 1
 #define VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_SPEC_VERSION 1
 #define VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_EXTENSION_NAME "VK_NVX_multiview_per_view_attributes"
@@ -12405,6 +12586,7 @@ typedef struct VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX {
 
 
 
+// VK_NV_viewport_swizzle is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_viewport_swizzle 1
 #define VK_NV_VIEWPORT_SWIZZLE_SPEC_VERSION 1
 #define VK_NV_VIEWPORT_SWIZZLE_EXTENSION_NAME "VK_NV_viewport_swizzle"
@@ -12438,6 +12620,7 @@ typedef struct VkPipelineViewportSwizzleStateCreateInfoNV {
 
 
 
+// VK_EXT_discard_rectangles is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_discard_rectangles 1
 #define VK_EXT_DISCARD_RECTANGLES_SPEC_VERSION 2
 #define VK_EXT_DISCARD_RECTANGLES_EXTENSION_NAME "VK_EXT_discard_rectangles"
@@ -12484,6 +12667,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetDiscardRectangleModeEXT(
 #endif
 
 
+// VK_EXT_conservative_rasterization is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_conservative_rasterization 1
 #define VK_EXT_CONSERVATIVE_RASTERIZATION_SPEC_VERSION 1
 #define VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME "VK_EXT_conservative_rasterization"
@@ -12519,6 +12703,7 @@ typedef struct VkPipelineRasterizationConservativeStateCreateInfoEXT {
 
 
 
+// VK_EXT_depth_clip_enable is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_depth_clip_enable 1
 #define VK_EXT_DEPTH_CLIP_ENABLE_SPEC_VERSION 1
 #define VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME "VK_EXT_depth_clip_enable"
@@ -12538,11 +12723,13 @@ typedef struct VkPipelineRasterizationDepthClipStateCreateInfoEXT {
 
 
 
+// VK_EXT_swapchain_colorspace is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_swapchain_colorspace 1
 #define VK_EXT_SWAPCHAIN_COLOR_SPACE_SPEC_VERSION 4
 #define VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME "VK_EXT_swapchain_colorspace"
 
 
+// VK_EXT_hdr_metadata is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_hdr_metadata 1
 #define VK_EXT_HDR_METADATA_SPEC_VERSION  2
 #define VK_EXT_HDR_METADATA_EXTENSION_NAME "VK_EXT_hdr_metadata"
@@ -12575,17 +12762,20 @@ VKAPI_ATTR void VKAPI_CALL vkSetHdrMetadataEXT(
 #endif
 
 
+// VK_EXT_external_memory_dma_buf is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_external_memory_dma_buf 1
 #define VK_EXT_EXTERNAL_MEMORY_DMA_BUF_SPEC_VERSION 1
 #define VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME "VK_EXT_external_memory_dma_buf"
 
 
+// VK_EXT_queue_family_foreign is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_queue_family_foreign 1
 #define VK_EXT_QUEUE_FAMILY_FOREIGN_SPEC_VERSION 1
 #define VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME "VK_EXT_queue_family_foreign"
 #define VK_QUEUE_FAMILY_FOREIGN_EXT       (~2U)
 
 
+// VK_EXT_debug_utils is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_debug_utils 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDebugUtilsMessengerEXT)
 #define VK_EXT_DEBUG_UTILS_SPEC_VERSION   2
@@ -12728,6 +12918,7 @@ VKAPI_ATTR void VKAPI_CALL vkSubmitDebugUtilsMessageEXT(
 #endif
 
 
+// VK_EXT_sampler_filter_minmax is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_sampler_filter_minmax 1
 #define VK_EXT_SAMPLER_FILTER_MINMAX_SPEC_VERSION 2
 #define VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME "VK_EXT_sampler_filter_minmax"
@@ -12739,21 +12930,25 @@ typedef VkPhysicalDeviceSamplerFilterMinmaxProperties VkPhysicalDeviceSamplerFil
 
 
 
+// VK_AMD_gpu_shader_int16 is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_gpu_shader_int16 1
 #define VK_AMD_GPU_SHADER_INT16_SPEC_VERSION 2
 #define VK_AMD_GPU_SHADER_INT16_EXTENSION_NAME "VK_AMD_gpu_shader_int16"
 
 
+// VK_AMD_mixed_attachment_samples is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_mixed_attachment_samples 1
 #define VK_AMD_MIXED_ATTACHMENT_SAMPLES_SPEC_VERSION 1
 #define VK_AMD_MIXED_ATTACHMENT_SAMPLES_EXTENSION_NAME "VK_AMD_mixed_attachment_samples"
 
 
+// VK_AMD_shader_fragment_mask is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_shader_fragment_mask 1
 #define VK_AMD_SHADER_FRAGMENT_MASK_SPEC_VERSION 1
 #define VK_AMD_SHADER_FRAGMENT_MASK_EXTENSION_NAME "VK_AMD_shader_fragment_mask"
 
 
+// VK_EXT_inline_uniform_block is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_inline_uniform_block 1
 #define VK_EXT_INLINE_UNIFORM_BLOCK_SPEC_VERSION 1
 #define VK_EXT_INLINE_UNIFORM_BLOCK_EXTENSION_NAME "VK_EXT_inline_uniform_block"
@@ -12767,11 +12962,13 @@ typedef VkDescriptorPoolInlineUniformBlockCreateInfo VkDescriptorPoolInlineUnifo
 
 
 
+// VK_EXT_shader_stencil_export is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_shader_stencil_export 1
 #define VK_EXT_SHADER_STENCIL_EXPORT_SPEC_VERSION 1
 #define VK_EXT_SHADER_STENCIL_EXPORT_EXTENSION_NAME "VK_EXT_shader_stencil_export"
 
 
+// VK_EXT_sample_locations is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_sample_locations 1
 #define VK_EXT_SAMPLE_LOCATIONS_SPEC_VERSION 1
 #define VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME "VK_EXT_sample_locations"
@@ -12846,6 +13043,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceMultisamplePropertiesEXT(
 #endif
 
 
+// VK_EXT_blend_operation_advanced is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_blend_operation_advanced 1
 #define VK_EXT_BLEND_OPERATION_ADVANCED_SPEC_VERSION 2
 #define VK_EXT_BLEND_OPERATION_ADVANCED_EXTENSION_NAME "VK_EXT_blend_operation_advanced"
@@ -12883,6 +13081,7 @@ typedef struct VkPipelineColorBlendAdvancedStateCreateInfoEXT {
 
 
 
+// VK_NV_fragment_coverage_to_color is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_fragment_coverage_to_color 1
 #define VK_NV_FRAGMENT_COVERAGE_TO_COLOR_SPEC_VERSION 1
 #define VK_NV_FRAGMENT_COVERAGE_TO_COLOR_EXTENSION_NAME "VK_NV_fragment_coverage_to_color"
@@ -12897,6 +13096,7 @@ typedef struct VkPipelineCoverageToColorStateCreateInfoNV {
 
 
 
+// VK_NV_framebuffer_mixed_samples is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_framebuffer_mixed_samples 1
 #define VK_NV_FRAMEBUFFER_MIXED_SAMPLES_SPEC_VERSION 1
 #define VK_NV_FRAMEBUFFER_MIXED_SAMPLES_EXTENSION_NAME "VK_NV_framebuffer_mixed_samples"
@@ -12921,11 +13121,13 @@ typedef struct VkPipelineCoverageModulationStateCreateInfoNV {
 
 
 
+// VK_NV_fill_rectangle is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_fill_rectangle 1
 #define VK_NV_FILL_RECTANGLE_SPEC_VERSION 1
 #define VK_NV_FILL_RECTANGLE_EXTENSION_NAME "VK_NV_fill_rectangle"
 
 
+// VK_NV_shader_sm_builtins is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_shader_sm_builtins 1
 #define VK_NV_SHADER_SM_BUILTINS_SPEC_VERSION 1
 #define VK_NV_SHADER_SM_BUILTINS_EXTENSION_NAME "VK_NV_shader_sm_builtins"
@@ -12944,11 +13146,13 @@ typedef struct VkPhysicalDeviceShaderSMBuiltinsFeaturesNV {
 
 
 
+// VK_EXT_post_depth_coverage is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_post_depth_coverage 1
 #define VK_EXT_POST_DEPTH_COVERAGE_SPEC_VERSION 1
 #define VK_EXT_POST_DEPTH_COVERAGE_EXTENSION_NAME "VK_EXT_post_depth_coverage"
 
 
+// VK_EXT_image_drm_format_modifier is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_image_drm_format_modifier 1
 #define VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_SPEC_VERSION 2
 #define VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME "VK_EXT_image_drm_format_modifier"
@@ -13018,6 +13222,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetImageDrmFormatModifierPropertiesEXT(
 #endif
 
 
+// VK_EXT_validation_cache is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_validation_cache 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkValidationCacheEXT)
 #define VK_EXT_VALIDATION_CACHE_SPEC_VERSION 1
@@ -13073,6 +13278,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetValidationCacheDataEXT(
 #endif
 
 
+// VK_EXT_descriptor_indexing is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_descriptor_indexing 1
 #define VK_EXT_DESCRIPTOR_INDEXING_SPEC_VERSION 2
 #define VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME "VK_EXT_descriptor_indexing"
@@ -13092,11 +13298,13 @@ typedef VkDescriptorSetVariableDescriptorCountLayoutSupport VkDescriptorSetVaria
 
 
 
+// VK_EXT_shader_viewport_index_layer is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_shader_viewport_index_layer 1
 #define VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_SPEC_VERSION 1
 #define VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME "VK_EXT_shader_viewport_index_layer"
 
 
+// VK_NV_shading_rate_image is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_shading_rate_image 1
 #define VK_NV_SHADING_RATE_IMAGE_SPEC_VERSION 3
 #define VK_NV_SHADING_RATE_IMAGE_EXTENSION_NAME "VK_NV_shading_rate_image"
@@ -13197,6 +13405,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetCoarseSampleOrderNV(
 #endif
 
 
+// VK_NV_ray_tracing is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_ray_tracing 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkAccelerationStructureNV)
 #define VK_NV_RAY_TRACING_SPEC_VERSION    3
@@ -13575,6 +13784,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCompileDeferredNV(
 #endif
 
 
+// VK_NV_representative_fragment_test is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_representative_fragment_test 1
 #define VK_NV_REPRESENTATIVE_FRAGMENT_TEST_SPEC_VERSION 2
 #define VK_NV_REPRESENTATIVE_FRAGMENT_TEST_EXTENSION_NAME "VK_NV_representative_fragment_test"
@@ -13592,6 +13802,7 @@ typedef struct VkPipelineRepresentativeFragmentTestStateCreateInfoNV {
 
 
 
+// VK_EXT_filter_cubic is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_filter_cubic 1
 #define VK_EXT_FILTER_CUBIC_SPEC_VERSION  3
 #define VK_EXT_FILTER_CUBIC_EXTENSION_NAME "VK_EXT_filter_cubic"
@@ -13610,11 +13821,13 @@ typedef struct VkFilterCubicImageViewImageFormatPropertiesEXT {
 
 
 
+// VK_QCOM_render_pass_shader_resolve is a preprocessor guard. Do not pass it to API calls.
 #define VK_QCOM_render_pass_shader_resolve 1
 #define VK_QCOM_RENDER_PASS_SHADER_RESOLVE_SPEC_VERSION 4
 #define VK_QCOM_RENDER_PASS_SHADER_RESOLVE_EXTENSION_NAME "VK_QCOM_render_pass_shader_resolve"
 
 
+// VK_EXT_global_priority is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_global_priority 1
 #define VK_EXT_GLOBAL_PRIORITY_SPEC_VERSION 2
 #define VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME "VK_EXT_global_priority"
@@ -13624,6 +13837,7 @@ typedef VkDeviceQueueGlobalPriorityCreateInfoKHR VkDeviceQueueGlobalPriorityCrea
 
 
 
+// VK_EXT_external_memory_host is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_external_memory_host 1
 #define VK_EXT_EXTERNAL_MEMORY_HOST_SPEC_VERSION 1
 #define VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME "VK_EXT_external_memory_host"
@@ -13657,6 +13871,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetMemoryHostPointerPropertiesEXT(
 #endif
 
 
+// VK_AMD_buffer_marker is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_buffer_marker 1
 #define VK_AMD_BUFFER_MARKER_SPEC_VERSION 1
 #define VK_AMD_BUFFER_MARKER_EXTENSION_NAME "VK_AMD_buffer_marker"
@@ -13672,6 +13887,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdWriteBufferMarkerAMD(
 #endif
 
 
+// VK_AMD_pipeline_compiler_control is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_pipeline_compiler_control 1
 #define VK_AMD_PIPELINE_COMPILER_CONTROL_SPEC_VERSION 1
 #define VK_AMD_PIPELINE_COMPILER_CONTROL_EXTENSION_NAME "VK_AMD_pipeline_compiler_control"
@@ -13688,6 +13904,7 @@ typedef struct VkPipelineCompilerControlCreateInfoAMD {
 
 
 
+// VK_EXT_calibrated_timestamps is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_calibrated_timestamps 1
 #define VK_EXT_CALIBRATED_TIMESTAMPS_SPEC_VERSION 2
 #define VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME "VK_EXT_calibrated_timestamps"
@@ -13723,6 +13940,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetCalibratedTimestampsEXT(
 #endif
 
 
+// VK_AMD_shader_core_properties is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_shader_core_properties 1
 #define VK_AMD_SHADER_CORE_PROPERTIES_SPEC_VERSION 2
 #define VK_AMD_SHADER_CORE_PROPERTIES_EXTENSION_NAME "VK_AMD_shader_core_properties"
@@ -13747,6 +13965,7 @@ typedef struct VkPhysicalDeviceShaderCorePropertiesAMD {
 
 
 
+// VK_AMD_memory_overallocation_behavior is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_memory_overallocation_behavior 1
 #define VK_AMD_MEMORY_OVERALLOCATION_BEHAVIOR_SPEC_VERSION 1
 #define VK_AMD_MEMORY_OVERALLOCATION_BEHAVIOR_EXTENSION_NAME "VK_AMD_memory_overallocation_behavior"
@@ -13765,6 +13984,7 @@ typedef struct VkDeviceMemoryOverallocationCreateInfoAMD {
 
 
 
+// VK_EXT_vertex_attribute_divisor is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_vertex_attribute_divisor 1
 #define VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_SPEC_VERSION 3
 #define VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME "VK_EXT_vertex_attribute_divisor"
@@ -13795,6 +14015,7 @@ typedef struct VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT {
 
 
 
+// VK_EXT_pipeline_creation_feedback is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_pipeline_creation_feedback 1
 #define VK_EXT_PIPELINE_CREATION_FEEDBACK_SPEC_VERSION 1
 #define VK_EXT_PIPELINE_CREATION_FEEDBACK_EXTENSION_NAME "VK_EXT_pipeline_creation_feedback"
@@ -13808,11 +14029,13 @@ typedef VkPipelineCreationFeedback VkPipelineCreationFeedbackEXT;
 
 
 
+// VK_NV_shader_subgroup_partitioned is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_shader_subgroup_partitioned 1
 #define VK_NV_SHADER_SUBGROUP_PARTITIONED_SPEC_VERSION 1
 #define VK_NV_SHADER_SUBGROUP_PARTITIONED_EXTENSION_NAME "VK_NV_shader_subgroup_partitioned"
 
 
+// VK_NV_compute_shader_derivatives is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_compute_shader_derivatives 1
 #define VK_NV_COMPUTE_SHADER_DERIVATIVES_SPEC_VERSION 1
 #define VK_NV_COMPUTE_SHADER_DERIVATIVES_EXTENSION_NAME "VK_NV_compute_shader_derivatives"
@@ -13825,6 +14048,7 @@ typedef struct VkPhysicalDeviceComputeShaderDerivativesFeaturesNV {
 
 
 
+// VK_NV_mesh_shader is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_mesh_shader 1
 #define VK_NV_MESH_SHADER_SPEC_VERSION    1
 #define VK_NV_MESH_SHADER_EXTENSION_NAME  "VK_NV_mesh_shader"
@@ -13886,6 +14110,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDrawMeshTasksIndirectCountNV(
 #endif
 
 
+// VK_NV_fragment_shader_barycentric is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_fragment_shader_barycentric 1
 #define VK_NV_FRAGMENT_SHADER_BARYCENTRIC_SPEC_VERSION 1
 #define VK_NV_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME "VK_NV_fragment_shader_barycentric"
@@ -13893,6 +14118,7 @@ typedef VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR VkPhysicalDeviceFra
 
 
 
+// VK_NV_shader_image_footprint is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_shader_image_footprint 1
 #define VK_NV_SHADER_IMAGE_FOOTPRINT_SPEC_VERSION 2
 #define VK_NV_SHADER_IMAGE_FOOTPRINT_EXTENSION_NAME "VK_NV_shader_image_footprint"
@@ -13904,6 +14130,7 @@ typedef struct VkPhysicalDeviceShaderImageFootprintFeaturesNV {
 
 
 
+// VK_NV_scissor_exclusive is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_scissor_exclusive 1
 #define VK_NV_SCISSOR_EXCLUSIVE_SPEC_VERSION 2
 #define VK_NV_SCISSOR_EXCLUSIVE_EXTENSION_NAME "VK_NV_scissor_exclusive"
@@ -13938,6 +14165,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetExclusiveScissorNV(
 #endif
 
 
+// VK_NV_device_diagnostic_checkpoints is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_device_diagnostic_checkpoints 1
 #define VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_SPEC_VERSION 2
 #define VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_EXTENSION_NAME "VK_NV_device_diagnostic_checkpoints"
@@ -13969,6 +14197,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetQueueCheckpointDataNV(
 #endif
 
 
+// VK_INTEL_shader_integer_functions2 is a preprocessor guard. Do not pass it to API calls.
 #define VK_INTEL_shader_integer_functions2 1
 #define VK_INTEL_SHADER_INTEGER_FUNCTIONS_2_SPEC_VERSION 1
 #define VK_INTEL_SHADER_INTEGER_FUNCTIONS_2_EXTENSION_NAME "VK_INTEL_shader_integer_functions2"
@@ -13980,6 +14209,7 @@ typedef struct VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL {
 
 
 
+// VK_INTEL_performance_query is a preprocessor guard. Do not pass it to API calls.
 #define VK_INTEL_performance_query 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkPerformanceConfigurationINTEL)
 #define VK_INTEL_PERFORMANCE_QUERY_SPEC_VERSION 2
@@ -14118,6 +14348,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPerformanceParameterINTEL(
 #endif
 
 
+// VK_EXT_pci_bus_info is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_pci_bus_info 1
 #define VK_EXT_PCI_BUS_INFO_SPEC_VERSION  2
 #define VK_EXT_PCI_BUS_INFO_EXTENSION_NAME "VK_EXT_pci_bus_info"
@@ -14132,6 +14363,7 @@ typedef struct VkPhysicalDevicePCIBusInfoPropertiesEXT {
 
 
 
+// VK_AMD_display_native_hdr is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_display_native_hdr 1
 #define VK_AMD_DISPLAY_NATIVE_HDR_SPEC_VERSION 1
 #define VK_AMD_DISPLAY_NATIVE_HDR_EXTENSION_NAME "VK_AMD_display_native_hdr"
@@ -14157,6 +14389,7 @@ VKAPI_ATTR void VKAPI_CALL vkSetLocalDimmingAMD(
 #endif
 
 
+// VK_EXT_fragment_density_map is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_fragment_density_map 1
 #define VK_EXT_FRAGMENT_DENSITY_MAP_SPEC_VERSION 2
 #define VK_EXT_FRAGMENT_DENSITY_MAP_EXTENSION_NAME "VK_EXT_fragment_density_map"
@@ -14184,6 +14417,7 @@ typedef struct VkRenderPassFragmentDensityMapCreateInfoEXT {
 
 
 
+// VK_EXT_scalar_block_layout is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_scalar_block_layout 1
 #define VK_EXT_SCALAR_BLOCK_LAYOUT_SPEC_VERSION 1
 #define VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME "VK_EXT_scalar_block_layout"
@@ -14191,6 +14425,7 @@ typedef VkPhysicalDeviceScalarBlockLayoutFeatures VkPhysicalDeviceScalarBlockLay
 
 
 
+// VK_GOOGLE_hlsl_functionality1 is a preprocessor guard. Do not pass it to API calls.
 #define VK_GOOGLE_hlsl_functionality1 1
 #define VK_GOOGLE_HLSL_FUNCTIONALITY_1_SPEC_VERSION 1
 #define VK_GOOGLE_HLSL_FUNCTIONALITY_1_EXTENSION_NAME "VK_GOOGLE_hlsl_functionality1"
@@ -14198,11 +14433,13 @@ typedef VkPhysicalDeviceScalarBlockLayoutFeatures VkPhysicalDeviceScalarBlockLay
 #define VK_GOOGLE_HLSL_FUNCTIONALITY1_EXTENSION_NAME VK_GOOGLE_HLSL_FUNCTIONALITY_1_EXTENSION_NAME
 
 
+// VK_GOOGLE_decorate_string is a preprocessor guard. Do not pass it to API calls.
 #define VK_GOOGLE_decorate_string 1
 #define VK_GOOGLE_DECORATE_STRING_SPEC_VERSION 1
 #define VK_GOOGLE_DECORATE_STRING_EXTENSION_NAME "VK_GOOGLE_decorate_string"
 
 
+// VK_EXT_subgroup_size_control is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_subgroup_size_control 1
 #define VK_EXT_SUBGROUP_SIZE_CONTROL_SPEC_VERSION 2
 #define VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME "VK_EXT_subgroup_size_control"
@@ -14214,6 +14451,7 @@ typedef VkPipelineShaderStageRequiredSubgroupSizeCreateInfo VkPipelineShaderStag
 
 
 
+// VK_AMD_shader_core_properties2 is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_shader_core_properties2 1
 #define VK_AMD_SHADER_CORE_PROPERTIES_2_SPEC_VERSION 1
 #define VK_AMD_SHADER_CORE_PROPERTIES_2_EXTENSION_NAME "VK_AMD_shader_core_properties2"
@@ -14231,6 +14469,7 @@ typedef struct VkPhysicalDeviceShaderCoreProperties2AMD {
 
 
 
+// VK_AMD_device_coherent_memory is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_device_coherent_memory 1
 #define VK_AMD_DEVICE_COHERENT_MEMORY_SPEC_VERSION 1
 #define VK_AMD_DEVICE_COHERENT_MEMORY_EXTENSION_NAME "VK_AMD_device_coherent_memory"
@@ -14242,6 +14481,7 @@ typedef struct VkPhysicalDeviceCoherentMemoryFeaturesAMD {
 
 
 
+// VK_EXT_shader_image_atomic_int64 is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_shader_image_atomic_int64 1
 #define VK_EXT_SHADER_IMAGE_ATOMIC_INT64_SPEC_VERSION 1
 #define VK_EXT_SHADER_IMAGE_ATOMIC_INT64_EXTENSION_NAME "VK_EXT_shader_image_atomic_int64"
@@ -14254,6 +14494,7 @@ typedef struct VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT {
 
 
 
+// VK_EXT_memory_budget is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_memory_budget 1
 #define VK_EXT_MEMORY_BUDGET_SPEC_VERSION 1
 #define VK_EXT_MEMORY_BUDGET_EXTENSION_NAME "VK_EXT_memory_budget"
@@ -14266,6 +14507,7 @@ typedef struct VkPhysicalDeviceMemoryBudgetPropertiesEXT {
 
 
 
+// VK_EXT_memory_priority is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_memory_priority 1
 #define VK_EXT_MEMORY_PRIORITY_SPEC_VERSION 1
 #define VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME "VK_EXT_memory_priority"
@@ -14283,6 +14525,7 @@ typedef struct VkMemoryPriorityAllocateInfoEXT {
 
 
 
+// VK_NV_dedicated_allocation_image_aliasing is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_dedicated_allocation_image_aliasing 1
 #define VK_NV_DEDICATED_ALLOCATION_IMAGE_ALIASING_SPEC_VERSION 1
 #define VK_NV_DEDICATED_ALLOCATION_IMAGE_ALIASING_EXTENSION_NAME "VK_NV_dedicated_allocation_image_aliasing"
@@ -14294,6 +14537,7 @@ typedef struct VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV {
 
 
 
+// VK_EXT_buffer_device_address is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_buffer_device_address 1
 #define VK_EXT_BUFFER_DEVICE_ADDRESS_SPEC_VERSION 2
 #define VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME "VK_EXT_buffer_device_address"
@@ -14324,6 +14568,7 @@ VKAPI_ATTR VkDeviceAddress VKAPI_CALL vkGetBufferDeviceAddressEXT(
 #endif
 
 
+// VK_EXT_tooling_info is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_tooling_info 1
 #define VK_EXT_TOOLING_INFO_SPEC_VERSION  1
 #define VK_EXT_TOOLING_INFO_EXTENSION_NAME "VK_EXT_tooling_info"
@@ -14343,6 +14588,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceToolPropertiesEXT(
 #endif
 
 
+// VK_EXT_separate_stencil_usage is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_separate_stencil_usage 1
 #define VK_EXT_SEPARATE_STENCIL_USAGE_SPEC_VERSION 1
 #define VK_EXT_SEPARATE_STENCIL_USAGE_EXTENSION_NAME "VK_EXT_separate_stencil_usage"
@@ -14350,6 +14596,7 @@ typedef VkImageStencilUsageCreateInfo VkImageStencilUsageCreateInfoEXT;
 
 
 
+// VK_EXT_validation_features is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_validation_features 1
 #define VK_EXT_VALIDATION_FEATURES_SPEC_VERSION 5
 #define VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME "VK_EXT_validation_features"
@@ -14385,32 +14632,14 @@ typedef struct VkValidationFeaturesEXT {
 
 
 
+// VK_NV_cooperative_matrix is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_cooperative_matrix 1
 #define VK_NV_COOPERATIVE_MATRIX_SPEC_VERSION 1
 #define VK_NV_COOPERATIVE_MATRIX_EXTENSION_NAME "VK_NV_cooperative_matrix"
+typedef VkComponentTypeKHR VkComponentTypeNV;
 
-typedef enum VkComponentTypeNV {
-    VK_COMPONENT_TYPE_FLOAT16_NV = 0,
-    VK_COMPONENT_TYPE_FLOAT32_NV = 1,
-    VK_COMPONENT_TYPE_FLOAT64_NV = 2,
-    VK_COMPONENT_TYPE_SINT8_NV = 3,
-    VK_COMPONENT_TYPE_SINT16_NV = 4,
-    VK_COMPONENT_TYPE_SINT32_NV = 5,
-    VK_COMPONENT_TYPE_SINT64_NV = 6,
-    VK_COMPONENT_TYPE_UINT8_NV = 7,
-    VK_COMPONENT_TYPE_UINT16_NV = 8,
-    VK_COMPONENT_TYPE_UINT32_NV = 9,
-    VK_COMPONENT_TYPE_UINT64_NV = 10,
-    VK_COMPONENT_TYPE_MAX_ENUM_NV = 0x7FFFFFFF
-} VkComponentTypeNV;
+typedef VkScopeKHR VkScopeNV;
 
-typedef enum VkScopeNV {
-    VK_SCOPE_DEVICE_NV = 1,
-    VK_SCOPE_WORKGROUP_NV = 2,
-    VK_SCOPE_SUBGROUP_NV = 3,
-    VK_SCOPE_QUEUE_FAMILY_NV = 5,
-    VK_SCOPE_MAX_ENUM_NV = 0x7FFFFFFF
-} VkScopeNV;
 typedef struct VkCooperativeMatrixPropertiesNV {
     VkStructureType      sType;
     void*                pNext;
@@ -14447,6 +14676,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceCooperativeMatrixPropertiesNV(
 #endif
 
 
+// VK_NV_coverage_reduction_mode is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_coverage_reduction_mode 1
 #define VK_NV_COVERAGE_REDUCTION_MODE_SPEC_VERSION 1
 #define VK_NV_COVERAGE_REDUCTION_MODE_EXTENSION_NAME "VK_NV_coverage_reduction_mode"
@@ -14489,6 +14719,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSupportedFramebufferMixedSampl
 #endif
 
 
+// VK_EXT_fragment_shader_interlock is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_fragment_shader_interlock 1
 #define VK_EXT_FRAGMENT_SHADER_INTERLOCK_SPEC_VERSION 1
 #define VK_EXT_FRAGMENT_SHADER_INTERLOCK_EXTENSION_NAME "VK_EXT_fragment_shader_interlock"
@@ -14502,6 +14733,7 @@ typedef struct VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT {
 
 
 
+// VK_EXT_ycbcr_image_arrays is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_ycbcr_image_arrays 1
 #define VK_EXT_YCBCR_IMAGE_ARRAYS_SPEC_VERSION 1
 #define VK_EXT_YCBCR_IMAGE_ARRAYS_EXTENSION_NAME "VK_EXT_ycbcr_image_arrays"
@@ -14513,6 +14745,7 @@ typedef struct VkPhysicalDeviceYcbcrImageArraysFeaturesEXT {
 
 
 
+// VK_EXT_provoking_vertex is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_provoking_vertex 1
 #define VK_EXT_PROVOKING_VERTEX_SPEC_VERSION 1
 #define VK_EXT_PROVOKING_VERTEX_EXTENSION_NAME "VK_EXT_provoking_vertex"
@@ -14544,6 +14777,7 @@ typedef struct VkPipelineRasterizationProvokingVertexStateCreateInfoEXT {
 
 
 
+// VK_EXT_headless_surface is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_headless_surface 1
 #define VK_EXT_HEADLESS_SURFACE_SPEC_VERSION 1
 #define VK_EXT_HEADLESS_SURFACE_EXTENSION_NAME "VK_EXT_headless_surface"
@@ -14565,6 +14799,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateHeadlessSurfaceEXT(
 #endif
 
 
+// VK_EXT_line_rasterization is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_line_rasterization 1
 #define VK_EXT_LINE_RASTERIZATION_SPEC_VERSION 1
 #define VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME "VK_EXT_line_rasterization"
@@ -14612,6 +14847,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetLineStippleEXT(
 #endif
 
 
+// VK_EXT_shader_atomic_float is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_shader_atomic_float 1
 #define VK_EXT_SHADER_ATOMIC_FLOAT_SPEC_VERSION 1
 #define VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME "VK_EXT_shader_atomic_float"
@@ -14634,6 +14870,7 @@ typedef struct VkPhysicalDeviceShaderAtomicFloatFeaturesEXT {
 
 
 
+// VK_EXT_host_query_reset is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_host_query_reset 1
 #define VK_EXT_HOST_QUERY_RESET_SPEC_VERSION 1
 #define VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME "VK_EXT_host_query_reset"
@@ -14650,6 +14887,7 @@ VKAPI_ATTR void VKAPI_CALL vkResetQueryPoolEXT(
 #endif
 
 
+// VK_EXT_index_type_uint8 is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_index_type_uint8 1
 #define VK_EXT_INDEX_TYPE_UINT8_SPEC_VERSION 1
 #define VK_EXT_INDEX_TYPE_UINT8_EXTENSION_NAME "VK_EXT_index_type_uint8"
@@ -14661,6 +14899,7 @@ typedef struct VkPhysicalDeviceIndexTypeUint8FeaturesEXT {
 
 
 
+// VK_EXT_extended_dynamic_state is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_extended_dynamic_state 1
 #define VK_EXT_EXTENDED_DYNAMIC_STATE_SPEC_VERSION 1
 #define VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME "VK_EXT_extended_dynamic_state"
@@ -14745,6 +14984,154 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetStencilOpEXT(
 #endif
 
 
+// VK_EXT_host_image_copy is a preprocessor guard. Do not pass it to API calls.
+#define VK_EXT_host_image_copy 1
+#define VK_EXT_HOST_IMAGE_COPY_SPEC_VERSION 1
+#define VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME "VK_EXT_host_image_copy"
+
+typedef enum VkHostImageCopyFlagBitsEXT {
+    VK_HOST_IMAGE_COPY_MEMCPY_EXT = 0x00000001,
+    VK_HOST_IMAGE_COPY_FLAG_BITS_MAX_ENUM_EXT = 0x7FFFFFFF
+} VkHostImageCopyFlagBitsEXT;
+typedef VkFlags VkHostImageCopyFlagsEXT;
+typedef struct VkPhysicalDeviceHostImageCopyFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           hostImageCopy;
+} VkPhysicalDeviceHostImageCopyFeaturesEXT;
+
+typedef struct VkPhysicalDeviceHostImageCopyPropertiesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    deUint32           copySrcLayoutCount;
+    VkImageLayout*     pCopySrcLayouts;
+    deUint32           copyDstLayoutCount;
+    VkImageLayout*     pCopyDstLayouts;
+    deUint8            optimalTilingLayoutUUID[VK_UUID_SIZE];
+    VkBool32           identicalMemoryTypeRequirements;
+} VkPhysicalDeviceHostImageCopyPropertiesEXT;
+
+typedef struct VkMemoryToImageCopyEXT {
+    VkStructureType             sType;
+    const void*                 pNext;
+    const void*                 pHostPointer;
+    deUint32                    memoryRowLength;
+    deUint32                    memoryImageHeight;
+    VkImageSubresourceLayers    imageSubresource;
+    VkOffset3D                  imageOffset;
+    VkExtent3D                  imageExtent;
+} VkMemoryToImageCopyEXT;
+
+typedef struct VkImageToMemoryCopyEXT {
+    VkStructureType             sType;
+    const void*                 pNext;
+    void*                       pHostPointer;
+    deUint32                    memoryRowLength;
+    deUint32                    memoryImageHeight;
+    VkImageSubresourceLayers    imageSubresource;
+    VkOffset3D                  imageOffset;
+    VkExtent3D                  imageExtent;
+} VkImageToMemoryCopyEXT;
+
+typedef struct VkCopyMemoryToImageInfoEXT {
+    VkStructureType                  sType;
+    const void*                      pNext;
+    VkHostImageCopyFlagsEXT          flags;
+    VkImage                          dstImage;
+    VkImageLayout                    dstImageLayout;
+    deUint32                         regionCount;
+    const VkMemoryToImageCopyEXT*    pRegions;
+} VkCopyMemoryToImageInfoEXT;
+
+typedef struct VkCopyImageToMemoryInfoEXT {
+    VkStructureType                  sType;
+    const void*                      pNext;
+    VkHostImageCopyFlagsEXT          flags;
+    VkImage                          srcImage;
+    VkImageLayout                    srcImageLayout;
+    deUint32                         regionCount;
+    const VkImageToMemoryCopyEXT*    pRegions;
+} VkCopyImageToMemoryInfoEXT;
+
+typedef struct VkCopyImageToImageInfoEXT {
+    VkStructureType            sType;
+    const void*                pNext;
+    VkHostImageCopyFlagsEXT    flags;
+    VkImage                    srcImage;
+    VkImageLayout              srcImageLayout;
+    VkImage                    dstImage;
+    VkImageLayout              dstImageLayout;
+    deUint32                   regionCount;
+    const VkImageCopy2*        pRegions;
+} VkCopyImageToImageInfoEXT;
+
+typedef struct VkHostImageLayoutTransitionInfoEXT {
+    VkStructureType            sType;
+    const void*                pNext;
+    VkImage                    image;
+    VkImageLayout              oldLayout;
+    VkImageLayout              newLayout;
+    VkImageSubresourceRange    subresourceRange;
+} VkHostImageLayoutTransitionInfoEXT;
+
+typedef struct VkSubresourceHostMemcpySizeEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkDeviceSize       size;
+} VkSubresourceHostMemcpySizeEXT;
+
+typedef struct VkHostImageCopyDevicePerformanceQueryEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           optimalDeviceAccess;
+    VkBool32           identicalMemoryLayout;
+} VkHostImageCopyDevicePerformanceQueryEXT;
+
+typedef struct VkSubresourceLayout2EXT {
+    VkStructureType        sType;
+    void*                  pNext;
+    VkSubresourceLayout    subresourceLayout;
+} VkSubresourceLayout2EXT;
+
+typedef struct VkImageSubresource2EXT {
+    VkStructureType       sType;
+    void*                 pNext;
+    VkImageSubresource    imageSubresource;
+} VkImageSubresource2EXT;
+
+typedef VkResult (VKAPI_PTR *PFN_vkCopyMemoryToImageEXT)(VkDevice device, const VkCopyMemoryToImageInfoEXT* pCopyMemoryToImageInfo);
+typedef VkResult (VKAPI_PTR *PFN_vkCopyImageToMemoryEXT)(VkDevice device, const VkCopyImageToMemoryInfoEXT* pCopyImageToMemoryInfo);
+typedef VkResult (VKAPI_PTR *PFN_vkCopyImageToImageEXT)(VkDevice device, const VkCopyImageToImageInfoEXT* pCopyImageToImageInfo);
+typedef VkResult (VKAPI_PTR *PFN_vkTransitionImageLayoutEXT)(VkDevice device, deUint32 transitionCount, const VkHostImageLayoutTransitionInfoEXT* pTransitions);
+typedef void (VKAPI_PTR *PFN_vkGetImageSubresourceLayout2EXT)(VkDevice device, VkImage image, const VkImageSubresource2EXT* pSubresource, VkSubresourceLayout2EXT* pLayout);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR VkResult VKAPI_CALL vkCopyMemoryToImageEXT(
+    VkDevice                                    device,
+    const VkCopyMemoryToImageInfoEXT*           pCopyMemoryToImageInfo);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkCopyImageToMemoryEXT(
+    VkDevice                                    device,
+    const VkCopyImageToMemoryInfoEXT*           pCopyImageToMemoryInfo);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkCopyImageToImageEXT(
+    VkDevice                                    device,
+    const VkCopyImageToImageInfoEXT*            pCopyImageToImageInfo);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkTransitionImageLayoutEXT(
+    VkDevice                                    device,
+    deUint32                                    transitionCount,
+    const VkHostImageLayoutTransitionInfoEXT*   pTransitions);
+
+VKAPI_ATTR void VKAPI_CALL vkGetImageSubresourceLayout2EXT(
+    VkDevice                                    device,
+    VkImage                                     image,
+    const VkImageSubresource2EXT*               pSubresource,
+    VkSubresourceLayout2EXT*                    pLayout);
+#endif
+
+
+// VK_EXT_shader_atomic_float2 is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_shader_atomic_float2 1
 #define VK_EXT_SHADER_ATOMIC_FLOAT_2_SPEC_VERSION 1
 #define VK_EXT_SHADER_ATOMIC_FLOAT_2_EXTENSION_NAME "VK_EXT_shader_atomic_float2"
@@ -14767,6 +15154,7 @@ typedef struct VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT {
 
 
 
+// VK_EXT_surface_maintenance1 is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_surface_maintenance1 1
 #define VK_EXT_SURFACE_MAINTENANCE_1_SPEC_VERSION 1
 #define VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME "VK_EXT_surface_maintenance1"
@@ -14811,6 +15199,7 @@ typedef struct VkSurfacePresentModeCompatibilityEXT {
 
 
 
+// VK_EXT_swapchain_maintenance1 is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_swapchain_maintenance1 1
 #define VK_EXT_SWAPCHAIN_MAINTENANCE_1_SPEC_VERSION 1
 #define VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME "VK_EXT_swapchain_maintenance1"
@@ -14866,6 +15255,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkReleaseSwapchainImagesEXT(
 #endif
 
 
+// VK_EXT_shader_demote_to_helper_invocation is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_shader_demote_to_helper_invocation 1
 #define VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_SPEC_VERSION 1
 #define VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME "VK_EXT_shader_demote_to_helper_invocation"
@@ -14873,6 +15263,7 @@ typedef VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures VkPhysicalDeviceS
 
 
 
+// VK_NV_device_generated_commands is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_device_generated_commands 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkIndirectCommandsLayoutNV)
 #define VK_NV_DEVICE_GENERATED_COMMANDS_SPEC_VERSION 3
@@ -14888,6 +15279,8 @@ typedef enum VkIndirectCommandsTokenTypeNV {
     VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_NV = 6,
     VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_TASKS_NV = 7,
     VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_MESH_TASKS_NV = 1000328000,
+    VK_INDIRECT_COMMANDS_TOKEN_TYPE_PIPELINE_NV = 1000428003,
+    VK_INDIRECT_COMMANDS_TOKEN_TYPE_DISPATCH_NV = 1000428004,
     VK_INDIRECT_COMMANDS_TOKEN_TYPE_MAX_ENUM_NV = 0x7FFFFFFF
 } VkIndirectCommandsTokenTypeNV;
 
@@ -15064,6 +15457,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyIndirectCommandsLayoutNV(
 #endif
 
 
+// VK_NV_inherited_viewport_scissor is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_inherited_viewport_scissor 1
 #define VK_NV_INHERITED_VIEWPORT_SCISSOR_SPEC_VERSION 1
 #define VK_NV_INHERITED_VIEWPORT_SCISSOR_EXTENSION_NAME "VK_NV_inherited_viewport_scissor"
@@ -15083,6 +15477,7 @@ typedef struct VkCommandBufferInheritanceViewportScissorInfoNV {
 
 
 
+// VK_EXT_texel_buffer_alignment is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_texel_buffer_alignment 1
 #define VK_EXT_TEXEL_BUFFER_ALIGNMENT_SPEC_VERSION 1
 #define VK_EXT_TEXEL_BUFFER_ALIGNMENT_EXTENSION_NAME "VK_EXT_texel_buffer_alignment"
@@ -15096,6 +15491,7 @@ typedef VkPhysicalDeviceTexelBufferAlignmentProperties VkPhysicalDeviceTexelBuff
 
 
 
+// VK_QCOM_render_pass_transform is a preprocessor guard. Do not pass it to API calls.
 #define VK_QCOM_render_pass_transform 1
 #define VK_QCOM_RENDER_PASS_TRANSFORM_SPEC_VERSION 3
 #define VK_QCOM_RENDER_PASS_TRANSFORM_EXTENSION_NAME "VK_QCOM_render_pass_transform"
@@ -15114,6 +15510,7 @@ typedef struct VkCommandBufferInheritanceRenderPassTransformInfoQCOM {
 
 
 
+// VK_EXT_depth_bias_control is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_depth_bias_control 1
 #define VK_EXT_DEPTH_BIAS_CONTROL_SPEC_VERSION 1
 #define VK_EXT_DEPTH_BIAS_CONTROL_EXTENSION_NAME "VK_EXT_depth_bias_control"
@@ -15157,6 +15554,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetDepthBias2EXT(
 #endif
 
 
+// VK_EXT_device_memory_report is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_device_memory_report 1
 #define VK_EXT_DEVICE_MEMORY_REPORT_SPEC_VERSION 2
 #define VK_EXT_DEVICE_MEMORY_REPORT_EXTENSION_NAME "VK_EXT_device_memory_report"
@@ -15202,6 +15600,7 @@ typedef struct VkDeviceDeviceMemoryReportCreateInfoEXT {
 
 
 
+// VK_EXT_acquire_drm_display is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_acquire_drm_display 1
 #define VK_EXT_ACQUIRE_DRM_DISPLAY_SPEC_VERSION 1
 #define VK_EXT_ACQUIRE_DRM_DISPLAY_EXTENSION_NAME "VK_EXT_acquire_drm_display"
@@ -15222,6 +15621,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetDrmDisplayEXT(
 #endif
 
 
+// VK_EXT_robustness2 is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_robustness2 1
 #define VK_EXT_ROBUSTNESS_2_SPEC_VERSION  1
 #define VK_EXT_ROBUSTNESS_2_EXTENSION_NAME "VK_EXT_robustness2"
@@ -15242,6 +15642,7 @@ typedef struct VkPhysicalDeviceRobustness2PropertiesEXT {
 
 
 
+// VK_EXT_custom_border_color is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_custom_border_color 1
 #define VK_EXT_CUSTOM_BORDER_COLOR_SPEC_VERSION 12
 #define VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME "VK_EXT_custom_border_color"
@@ -15267,11 +15668,13 @@ typedef struct VkPhysicalDeviceCustomBorderColorFeaturesEXT {
 
 
 
+// VK_GOOGLE_user_type is a preprocessor guard. Do not pass it to API calls.
 #define VK_GOOGLE_user_type 1
 #define VK_GOOGLE_USER_TYPE_SPEC_VERSION  1
 #define VK_GOOGLE_USER_TYPE_EXTENSION_NAME "VK_GOOGLE_user_type"
 
 
+// VK_NV_present_barrier is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_present_barrier 1
 #define VK_NV_PRESENT_BARRIER_SPEC_VERSION 1
 #define VK_NV_PRESENT_BARRIER_EXTENSION_NAME "VK_NV_present_barrier"
@@ -15295,6 +15698,7 @@ typedef struct VkSwapchainPresentBarrierCreateInfoNV {
 
 
 
+// VK_EXT_private_data is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_private_data 1
 typedef VkPrivateDataSlot VkPrivateDataSlotEXT;
 
@@ -15341,6 +15745,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPrivateDataEXT(
 #endif
 
 
+// VK_EXT_pipeline_creation_cache_control is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_pipeline_creation_cache_control 1
 #define VK_EXT_PIPELINE_CREATION_CACHE_CONTROL_SPEC_VERSION 3
 #define VK_EXT_PIPELINE_CREATION_CACHE_CONTROL_EXTENSION_NAME "VK_EXT_pipeline_creation_cache_control"
@@ -15348,6 +15753,7 @@ typedef VkPhysicalDevicePipelineCreationCacheControlFeatures VkPhysicalDevicePip
 
 
 
+// VK_NV_device_diagnostics_config is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_device_diagnostics_config 1
 #define VK_NV_DEVICE_DIAGNOSTICS_CONFIG_SPEC_VERSION 2
 #define VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME "VK_NV_device_diagnostics_config"
@@ -15374,11 +15780,13 @@ typedef struct VkDeviceDiagnosticsConfigCreateInfoNV {
 
 
 
+// VK_QCOM_render_pass_store_ops is a preprocessor guard. Do not pass it to API calls.
 #define VK_QCOM_render_pass_store_ops 1
 #define VK_QCOM_RENDER_PASS_STORE_OPS_SPEC_VERSION 2
 #define VK_QCOM_RENDER_PASS_STORE_OPS_EXTENSION_NAME "VK_QCOM_render_pass_store_ops"
 
 
+// VK_NV_low_latency is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_low_latency 1
 #define VK_NV_LOW_LATENCY_SPEC_VERSION    1
 #define VK_NV_LOW_LATENCY_EXTENSION_NAME  "VK_NV_low_latency"
@@ -15390,6 +15798,7 @@ typedef struct VkQueryLowLatencySupportNV {
 
 
 
+// VK_EXT_descriptor_buffer is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_descriptor_buffer 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkAccelerationStructureKHR)
 #define VK_EXT_DESCRIPTOR_BUFFER_SPEC_VERSION 1
@@ -15602,6 +16011,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetAccelerationStructureOpaqueCaptureDescriptor
 #endif
 
 
+// VK_EXT_graphics_pipeline_library is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_graphics_pipeline_library 1
 #define VK_EXT_GRAPHICS_PIPELINE_LIBRARY_SPEC_VERSION 1
 #define VK_EXT_GRAPHICS_PIPELINE_LIBRARY_EXTENSION_NAME "VK_EXT_graphics_pipeline_library"
@@ -15635,6 +16045,7 @@ typedef struct VkGraphicsPipelineLibraryCreateInfoEXT {
 
 
 
+// VK_AMD_shader_early_and_late_fragment_tests is a preprocessor guard. Do not pass it to API calls.
 #define VK_AMD_shader_early_and_late_fragment_tests 1
 #define VK_AMD_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS_SPEC_VERSION 1
 #define VK_AMD_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS_EXTENSION_NAME "VK_AMD_shader_early_and_late_fragment_tests"
@@ -15646,6 +16057,7 @@ typedef struct VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD {
 
 
 
+// VK_NV_fragment_shading_rate_enums is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_fragment_shading_rate_enums 1
 #define VK_NV_FRAGMENT_SHADING_RATE_ENUMS_SPEC_VERSION 1
 #define VK_NV_FRAGMENT_SHADING_RATE_ENUMS_EXTENSION_NAME "VK_NV_fragment_shading_rate_enums"
@@ -15703,6 +16115,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetFragmentShadingRateEnumNV(
 #endif
 
 
+// VK_NV_ray_tracing_motion_blur is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_ray_tracing_motion_blur 1
 #define VK_NV_RAY_TRACING_MOTION_BLUR_SPEC_VERSION 1
 #define VK_NV_RAY_TRACING_MOTION_BLUR_EXTENSION_NAME "VK_NV_ray_tracing_motion_blur"
@@ -15793,6 +16206,7 @@ typedef struct VkPhysicalDeviceRayTracingMotionBlurFeaturesNV {
 
 
 
+// VK_EXT_ycbcr_2plane_444_formats is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_ycbcr_2plane_444_formats 1
 #define VK_EXT_YCBCR_2PLANE_444_FORMATS_SPEC_VERSION 1
 #define VK_EXT_YCBCR_2PLANE_444_FORMATS_EXTENSION_NAME "VK_EXT_ycbcr_2plane_444_formats"
@@ -15804,6 +16218,7 @@ typedef struct VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT {
 
 
 
+// VK_EXT_fragment_density_map2 is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_fragment_density_map2 1
 #define VK_EXT_FRAGMENT_DENSITY_MAP_2_SPEC_VERSION 1
 #define VK_EXT_FRAGMENT_DENSITY_MAP_2_EXTENSION_NAME "VK_EXT_fragment_density_map2"
@@ -15824,6 +16239,7 @@ typedef struct VkPhysicalDeviceFragmentDensityMap2PropertiesEXT {
 
 
 
+// VK_QCOM_rotated_copy_commands is a preprocessor guard. Do not pass it to API calls.
 #define VK_QCOM_rotated_copy_commands 1
 #define VK_QCOM_ROTATED_COPY_COMMANDS_SPEC_VERSION 1
 #define VK_QCOM_ROTATED_COPY_COMMANDS_EXTENSION_NAME "VK_QCOM_rotated_copy_commands"
@@ -15835,6 +16251,7 @@ typedef struct VkCopyCommandTransformInfoQCOM {
 
 
 
+// VK_EXT_image_robustness is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_image_robustness 1
 #define VK_EXT_IMAGE_ROBUSTNESS_SPEC_VERSION 1
 #define VK_EXT_IMAGE_ROBUSTNESS_EXTENSION_NAME "VK_EXT_image_robustness"
@@ -15842,6 +16259,7 @@ typedef VkPhysicalDeviceImageRobustnessFeatures VkPhysicalDeviceImageRobustnessF
 
 
 
+// VK_EXT_image_compression_control is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_image_compression_control 1
 #define VK_EXT_IMAGE_COMPRESSION_CONTROL_SPEC_VERSION 1
 #define VK_EXT_IMAGE_COMPRESSION_CONTROL_EXTENSION_NAME "VK_EXT_image_compression_control"
@@ -15898,18 +16316,6 @@ typedef struct VkImageCompressionControlEXT {
     VkImageCompressionFixedRateFlagsEXT*    pFixedRateFlags;
 } VkImageCompressionControlEXT;
 
-typedef struct VkSubresourceLayout2EXT {
-    VkStructureType        sType;
-    void*                  pNext;
-    VkSubresourceLayout    subresourceLayout;
-} VkSubresourceLayout2EXT;
-
-typedef struct VkImageSubresource2EXT {
-    VkStructureType       sType;
-    void*                 pNext;
-    VkImageSubresource    imageSubresource;
-} VkImageSubresource2EXT;
-
 typedef struct VkImageCompressionPropertiesEXT {
     VkStructureType                        sType;
     void*                                  pNext;
@@ -15917,17 +16323,9 @@ typedef struct VkImageCompressionPropertiesEXT {
     VkImageCompressionFixedRateFlagsEXT    imageCompressionFixedRateFlags;
 } VkImageCompressionPropertiesEXT;
 
-typedef void (VKAPI_PTR *PFN_vkGetImageSubresourceLayout2EXT)(VkDevice device, VkImage image, const VkImageSubresource2EXT* pSubresource, VkSubresourceLayout2EXT* pLayout);
-
-#ifndef VK_NO_PROTOTYPES
-VKAPI_ATTR void VKAPI_CALL vkGetImageSubresourceLayout2EXT(
-    VkDevice                                    device,
-    VkImage                                     image,
-    const VkImageSubresource2EXT*               pSubresource,
-    VkSubresourceLayout2EXT*                    pLayout);
-#endif
 
 
+// VK_EXT_attachment_feedback_loop_layout is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_attachment_feedback_loop_layout 1
 #define VK_EXT_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_SPEC_VERSION 2
 #define VK_EXT_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_EXTENSION_NAME "VK_EXT_attachment_feedback_loop_layout"
@@ -15939,6 +16337,7 @@ typedef struct VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT {
 
 
 
+// VK_EXT_4444_formats is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_4444_formats 1
 #define VK_EXT_4444_FORMATS_SPEC_VERSION  1
 #define VK_EXT_4444_FORMATS_EXTENSION_NAME "VK_EXT_4444_formats"
@@ -15951,6 +16350,7 @@ typedef struct VkPhysicalDevice4444FormatsFeaturesEXT {
 
 
 
+// VK_EXT_device_fault is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_device_fault 1
 #define VK_EXT_DEVICE_FAULT_SPEC_VERSION  2
 #define VK_EXT_DEVICE_FAULT_EXTENSION_NAME "VK_EXT_device_fault"
@@ -16030,6 +16430,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetDeviceFaultInfoEXT(
 #endif
 
 
+// VK_ARM_rasterization_order_attachment_access is a preprocessor guard. Do not pass it to API calls.
 #define VK_ARM_rasterization_order_attachment_access 1
 #define VK_ARM_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_SPEC_VERSION 1
 #define VK_ARM_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_EXTENSION_NAME "VK_ARM_rasterization_order_attachment_access"
@@ -16045,6 +16446,7 @@ typedef VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT VkPhysical
 
 
 
+// VK_EXT_rgba10x6_formats is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_rgba10x6_formats 1
 #define VK_EXT_RGBA10X6_FORMATS_SPEC_VERSION 1
 #define VK_EXT_RGBA10X6_FORMATS_EXTENSION_NAME "VK_EXT_rgba10x6_formats"
@@ -16056,6 +16458,7 @@ typedef struct VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT {
 
 
 
+// VK_VALVE_mutable_descriptor_type is a preprocessor guard. Do not pass it to API calls.
 #define VK_VALVE_mutable_descriptor_type 1
 #define VK_VALVE_MUTABLE_DESCRIPTOR_TYPE_SPEC_VERSION 1
 #define VK_VALVE_MUTABLE_DESCRIPTOR_TYPE_EXTENSION_NAME "VK_VALVE_mutable_descriptor_type"
@@ -16085,6 +16488,7 @@ typedef VkMutableDescriptorTypeCreateInfoEXT VkMutableDescriptorTypeCreateInfoVA
 
 
 
+// VK_EXT_vertex_input_dynamic_state is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_vertex_input_dynamic_state 1
 #define VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_SPEC_VERSION 2
 #define VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME "VK_EXT_vertex_input_dynamic_state"
@@ -16124,6 +16528,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetVertexInputEXT(
 #endif
 
 
+// VK_EXT_physical_device_drm is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_physical_device_drm 1
 #define VK_EXT_PHYSICAL_DEVICE_DRM_SPEC_VERSION 1
 #define VK_EXT_PHYSICAL_DEVICE_DRM_EXTENSION_NAME "VK_EXT_physical_device_drm"
@@ -16140,6 +16545,7 @@ typedef struct VkPhysicalDeviceDrmPropertiesEXT {
 
 
 
+// VK_EXT_device_address_binding_report is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_device_address_binding_report 1
 #define VK_EXT_DEVICE_ADDRESS_BINDING_REPORT_SPEC_VERSION 1
 #define VK_EXT_DEVICE_ADDRESS_BINDING_REPORT_EXTENSION_NAME "VK_EXT_device_address_binding_report"
@@ -16172,6 +16578,7 @@ typedef struct VkDeviceAddressBindingCallbackDataEXT {
 
 
 
+// VK_EXT_depth_clip_control is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_depth_clip_control 1
 #define VK_EXT_DEPTH_CLIP_CONTROL_SPEC_VERSION 1
 #define VK_EXT_DEPTH_CLIP_CONTROL_EXTENSION_NAME "VK_EXT_depth_clip_control"
@@ -16189,6 +16596,7 @@ typedef struct VkPipelineViewportDepthClipControlCreateInfoEXT {
 
 
 
+// VK_EXT_primitive_topology_list_restart is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_primitive_topology_list_restart 1
 #define VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_SPEC_VERSION 1
 #define VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_EXTENSION_NAME "VK_EXT_primitive_topology_list_restart"
@@ -16201,6 +16609,7 @@ typedef struct VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT {
 
 
 
+// VK_HUAWEI_subpass_shading is a preprocessor guard. Do not pass it to API calls.
 #define VK_HUAWEI_subpass_shading 1
 #define VK_HUAWEI_SUBPASS_SHADING_SPEC_VERSION 3
 #define VK_HUAWEI_SUBPASS_SHADING_EXTENSION_NAME "VK_HUAWEI_subpass_shading"
@@ -16237,6 +16646,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSubpassShadingHUAWEI(
 #endif
 
 
+// VK_HUAWEI_invocation_mask is a preprocessor guard. Do not pass it to API calls.
 #define VK_HUAWEI_invocation_mask 1
 #define VK_HUAWEI_INVOCATION_MASK_SPEC_VERSION 1
 #define VK_HUAWEI_INVOCATION_MASK_EXTENSION_NAME "VK_HUAWEI_invocation_mask"
@@ -16256,6 +16666,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdBindInvocationMaskHUAWEI(
 #endif
 
 
+// VK_NV_external_memory_rdma is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_external_memory_rdma 1
 typedef void* VkRemoteAddressNV;
 #define VK_NV_EXTERNAL_MEMORY_RDMA_SPEC_VERSION 1
@@ -16283,6 +16694,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetMemoryRemoteAddressNV(
 #endif
 
 
+// VK_EXT_pipeline_properties is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_pipeline_properties 1
 #define VK_EXT_PIPELINE_PROPERTIES_SPEC_VERSION 1
 #define VK_EXT_PIPELINE_PROPERTIES_EXTENSION_NAME "VK_EXT_pipeline_properties"
@@ -16310,6 +16722,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPipelinePropertiesEXT(
 #endif
 
 
+// VK_EXT_multisampled_render_to_single_sampled is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_multisampled_render_to_single_sampled 1
 #define VK_EXT_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_SPEC_VERSION 1
 #define VK_EXT_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_EXTENSION_NAME "VK_EXT_multisampled_render_to_single_sampled"
@@ -16334,6 +16747,7 @@ typedef struct VkMultisampledRenderToSingleSampledInfoEXT {
 
 
 
+// VK_EXT_extended_dynamic_state2 is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_extended_dynamic_state2 1
 #define VK_EXT_EXTENDED_DYNAMIC_STATE_2_SPEC_VERSION 1
 #define VK_EXT_EXTENDED_DYNAMIC_STATE_2_EXTENSION_NAME "VK_EXT_extended_dynamic_state2"
@@ -16374,6 +16788,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetPrimitiveRestartEnableEXT(
 #endif
 
 
+// VK_EXT_color_write_enable is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_color_write_enable 1
 #define VK_EXT_COLOR_WRITE_ENABLE_SPEC_VERSION 1
 #define VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME "VK_EXT_color_write_enable"
@@ -16400,6 +16815,7 @@ VKAPI_ATTR void                                    VKAPI_CALL vkCmdSetColorWrite
 #endif
 
 
+// VK_EXT_primitives_generated_query is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_primitives_generated_query 1
 #define VK_EXT_PRIMITIVES_GENERATED_QUERY_SPEC_VERSION 1
 #define VK_EXT_PRIMITIVES_GENERATED_QUERY_EXTENSION_NAME "VK_EXT_primitives_generated_query"
@@ -16413,6 +16829,7 @@ typedef struct VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT {
 
 
 
+// VK_EXT_global_priority_query is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_global_priority_query 1
 #define VK_EXT_GLOBAL_PRIORITY_QUERY_SPEC_VERSION 1
 #define VK_EXT_GLOBAL_PRIORITY_QUERY_EXTENSION_NAME "VK_EXT_global_priority_query"
@@ -16423,6 +16840,7 @@ typedef VkQueueFamilyGlobalPriorityPropertiesKHR VkQueueFamilyGlobalPriorityProp
 
 
 
+// VK_EXT_image_view_min_lod is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_image_view_min_lod 1
 #define VK_EXT_IMAGE_VIEW_MIN_LOD_SPEC_VERSION 1
 #define VK_EXT_IMAGE_VIEW_MIN_LOD_EXTENSION_NAME "VK_EXT_image_view_min_lod"
@@ -16440,6 +16858,7 @@ typedef struct VkImageViewMinLodCreateInfoEXT {
 
 
 
+// VK_EXT_multi_draw is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_multi_draw 1
 #define VK_EXT_MULTI_DRAW_SPEC_VERSION    1
 #define VK_EXT_MULTI_DRAW_EXTENSION_NAME  "VK_EXT_multi_draw"
@@ -16489,6 +16908,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDrawMultiIndexedEXT(
 #endif
 
 
+// VK_EXT_image_2d_view_of_3d is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_image_2d_view_of_3d 1
 #define VK_EXT_IMAGE_2D_VIEW_OF_3D_SPEC_VERSION 1
 #define VK_EXT_IMAGE_2D_VIEW_OF_3D_EXTENSION_NAME "VK_EXT_image_2d_view_of_3d"
@@ -16501,6 +16921,7 @@ typedef struct VkPhysicalDeviceImage2DViewOf3DFeaturesEXT {
 
 
 
+// VK_EXT_shader_tile_image is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_shader_tile_image 1
 #define VK_EXT_SHADER_TILE_IMAGE_SPEC_VERSION 1
 #define VK_EXT_SHADER_TILE_IMAGE_EXTENSION_NAME "VK_EXT_shader_tile_image"
@@ -16522,6 +16943,7 @@ typedef struct VkPhysicalDeviceShaderTileImagePropertiesEXT {
 
 
 
+// VK_EXT_opacity_micromap is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_opacity_micromap 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkMicromapEXT)
 #define VK_EXT_OPACITY_MICROMAP_SPEC_VERSION 2
@@ -16793,11 +17215,13 @@ VKAPI_ATTR void VKAPI_CALL vkGetMicromapBuildSizesEXT(
 #endif
 
 
+// VK_EXT_load_store_op_none is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_load_store_op_none 1
 #define VK_EXT_LOAD_STORE_OP_NONE_SPEC_VERSION 1
 #define VK_EXT_LOAD_STORE_OP_NONE_EXTENSION_NAME "VK_EXT_load_store_op_none"
 
 
+// VK_HUAWEI_cluster_culling_shader is a preprocessor guard. Do not pass it to API calls.
 #define VK_HUAWEI_cluster_culling_shader 1
 #define VK_HUAWEI_CLUSTER_CULLING_SHADER_SPEC_VERSION 2
 #define VK_HUAWEI_CLUSTER_CULLING_SHADER_EXTENSION_NAME "VK_HUAWEI_cluster_culling_shader"
@@ -16834,6 +17258,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDrawClusterIndirectHUAWEI(
 #endif
 
 
+// VK_EXT_border_color_swizzle is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_border_color_swizzle 1
 #define VK_EXT_BORDER_COLOR_SWIZZLE_SPEC_VERSION 1
 #define VK_EXT_BORDER_COLOR_SWIZZLE_EXTENSION_NAME "VK_EXT_border_color_swizzle"
@@ -16853,6 +17278,7 @@ typedef struct VkSamplerBorderColorComponentMappingCreateInfoEXT {
 
 
 
+// VK_EXT_pageable_device_local_memory is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_pageable_device_local_memory 1
 #define VK_EXT_PAGEABLE_DEVICE_LOCAL_MEMORY_SPEC_VERSION 1
 #define VK_EXT_PAGEABLE_DEVICE_LOCAL_MEMORY_EXTENSION_NAME "VK_EXT_pageable_device_local_memory"
@@ -16872,6 +17298,7 @@ VKAPI_ATTR void VKAPI_CALL vkSetDeviceMemoryPriorityEXT(
 #endif
 
 
+// VK_ARM_shader_core_properties is a preprocessor guard. Do not pass it to API calls.
 #define VK_ARM_shader_core_properties 1
 #define VK_ARM_SHADER_CORE_PROPERTIES_SPEC_VERSION 1
 #define VK_ARM_SHADER_CORE_PROPERTIES_EXTENSION_NAME "VK_ARM_shader_core_properties"
@@ -16885,6 +17312,7 @@ typedef struct VkPhysicalDeviceShaderCorePropertiesARM {
 
 
 
+// VK_EXT_image_sliced_view_of_3d is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_image_sliced_view_of_3d 1
 #define VK_EXT_IMAGE_SLICED_VIEW_OF_3D_SPEC_VERSION 1
 #define VK_EXT_IMAGE_SLICED_VIEW_OF_3D_EXTENSION_NAME "VK_EXT_image_sliced_view_of_3d"
@@ -16904,6 +17332,7 @@ typedef struct VkImageViewSlicedCreateInfoEXT {
 
 
 
+// VK_VALVE_descriptor_set_host_mapping is a preprocessor guard. Do not pass it to API calls.
 #define VK_VALVE_descriptor_set_host_mapping 1
 #define VK_VALVE_DESCRIPTOR_SET_HOST_MAPPING_SPEC_VERSION 1
 #define VK_VALVE_DESCRIPTOR_SET_HOST_MAPPING_EXTENSION_NAME "VK_VALVE_descriptor_set_host_mapping"
@@ -16943,6 +17372,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetDescriptorSetHostMappingVALVE(
 #endif
 
 
+// VK_EXT_depth_clamp_zero_one is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_depth_clamp_zero_one 1
 #define VK_EXT_DEPTH_CLAMP_ZERO_ONE_SPEC_VERSION 1
 #define VK_EXT_DEPTH_CLAMP_ZERO_ONE_EXTENSION_NAME "VK_EXT_depth_clamp_zero_one"
@@ -16954,6 +17384,7 @@ typedef struct VkPhysicalDeviceDepthClampZeroOneFeaturesEXT {
 
 
 
+// VK_EXT_non_seamless_cube_map is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_non_seamless_cube_map 1
 #define VK_EXT_NON_SEAMLESS_CUBE_MAP_SPEC_VERSION 1
 #define VK_EXT_NON_SEAMLESS_CUBE_MAP_EXTENSION_NAME "VK_EXT_non_seamless_cube_map"
@@ -16965,6 +17396,7 @@ typedef struct VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT {
 
 
 
+// VK_QCOM_fragment_density_map_offset is a preprocessor guard. Do not pass it to API calls.
 #define VK_QCOM_fragment_density_map_offset 1
 #define VK_QCOM_FRAGMENT_DENSITY_MAP_OFFSET_SPEC_VERSION 1
 #define VK_QCOM_FRAGMENT_DENSITY_MAP_OFFSET_EXTENSION_NAME "VK_QCOM_fragment_density_map_offset"
@@ -16989,6 +17421,7 @@ typedef struct VkSubpassFragmentDensityMapOffsetEndInfoQCOM {
 
 
 
+// VK_NV_copy_memory_indirect is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_copy_memory_indirect 1
 #define VK_NV_COPY_MEMORY_INDIRECT_SPEC_VERSION 1
 #define VK_NV_COPY_MEMORY_INDIRECT_EXTENSION_NAME "VK_NV_copy_memory_indirect"
@@ -17040,6 +17473,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdCopyMemoryToImageIndirectNV(
 #endif
 
 
+// VK_NV_memory_decompression is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_memory_decompression 1
 #define VK_NV_MEMORY_DECOMPRESSION_SPEC_VERSION 1
 #define VK_NV_MEMORY_DECOMPRESSION_EXTENSION_NAME "VK_NV_memory_decompression"
@@ -17087,6 +17521,59 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDecompressMemoryIndirectCountNV(
 #endif
 
 
+// VK_NV_device_generated_commands_compute is a preprocessor guard. Do not pass it to API calls.
+#define VK_NV_device_generated_commands_compute 1
+#define VK_NV_DEVICE_GENERATED_COMMANDS_COMPUTE_SPEC_VERSION 2
+#define VK_NV_DEVICE_GENERATED_COMMANDS_COMPUTE_EXTENSION_NAME "VK_NV_device_generated_commands_compute"
+typedef struct VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           deviceGeneratedCompute;
+    VkBool32           deviceGeneratedComputePipelines;
+    VkBool32           deviceGeneratedComputeCaptureReplay;
+} VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV;
+
+typedef struct VkComputePipelineIndirectBufferInfoNV {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkDeviceAddress    deviceAddress;
+    VkDeviceSize       size;
+    VkDeviceAddress    pipelineDeviceAddressCaptureReplay;
+} VkComputePipelineIndirectBufferInfoNV;
+
+typedef struct VkPipelineIndirectDeviceAddressInfoNV {
+    VkStructureType        sType;
+    const void*            pNext;
+    VkPipelineBindPoint    pipelineBindPoint;
+    VkPipeline             pipeline;
+} VkPipelineIndirectDeviceAddressInfoNV;
+
+typedef struct VkBindPipelineIndirectCommandNV {
+    VkDeviceAddress    pipelineAddress;
+} VkBindPipelineIndirectCommandNV;
+
+typedef void (VKAPI_PTR *PFN_vkGetPipelineIndirectMemoryRequirementsNV)(VkDevice device, const VkComputePipelineCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements);
+typedef void (VKAPI_PTR *PFN_vkCmdUpdatePipelineIndirectBufferNV)(VkCommandBuffer commandBuffer, VkPipelineBindPoint           pipelineBindPoint, VkPipeline                    pipeline);
+typedef VkDeviceAddress (VKAPI_PTR *PFN_vkGetPipelineIndirectDeviceAddressNV)(VkDevice device, const VkPipelineIndirectDeviceAddressInfoNV* pInfo);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR void VKAPI_CALL vkGetPipelineIndirectMemoryRequirementsNV(
+    VkDevice                                    device,
+    const VkComputePipelineCreateInfo*          pCreateInfo,
+    VkMemoryRequirements2*                      pMemoryRequirements);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdUpdatePipelineIndirectBufferNV(
+    VkCommandBuffer                             commandBuffer,
+    VkPipelineBindPoint                         pipelineBindPoint,
+    VkPipeline                                  pipeline);
+
+VKAPI_ATTR VkDeviceAddress VKAPI_CALL vkGetPipelineIndirectDeviceAddressNV(
+    VkDevice                                    device,
+    const VkPipelineIndirectDeviceAddressInfoNV* pInfo);
+#endif
+
+
+// VK_NV_linear_color_attachment is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_linear_color_attachment 1
 #define VK_NV_LINEAR_COLOR_ATTACHMENT_SPEC_VERSION 1
 #define VK_NV_LINEAR_COLOR_ATTACHMENT_EXTENSION_NAME "VK_NV_linear_color_attachment"
@@ -17098,11 +17585,13 @@ typedef struct VkPhysicalDeviceLinearColorAttachmentFeaturesNV {
 
 
 
+// VK_GOOGLE_surfaceless_query is a preprocessor guard. Do not pass it to API calls.
 #define VK_GOOGLE_surfaceless_query 1
 #define VK_GOOGLE_SURFACELESS_QUERY_SPEC_VERSION 2
 #define VK_GOOGLE_SURFACELESS_QUERY_EXTENSION_NAME "VK_GOOGLE_surfaceless_query"
 
 
+// VK_EXT_image_compression_control_swapchain is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_image_compression_control_swapchain 1
 #define VK_EXT_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_SPEC_VERSION 1
 #define VK_EXT_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_EXTENSION_NAME "VK_EXT_image_compression_control_swapchain"
@@ -17114,6 +17603,7 @@ typedef struct VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT {
 
 
 
+// VK_QCOM_image_processing is a preprocessor guard. Do not pass it to API calls.
 #define VK_QCOM_image_processing 1
 #define VK_QCOM_IMAGE_PROCESSING_SPEC_VERSION 1
 #define VK_QCOM_IMAGE_PROCESSING_EXTENSION_NAME "VK_QCOM_image_processing"
@@ -17144,6 +17634,7 @@ typedef struct VkPhysicalDeviceImageProcessingPropertiesQCOM {
 
 
 
+// VK_EXT_external_memory_acquire_unmodified is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_external_memory_acquire_unmodified 1
 #define VK_EXT_EXTERNAL_MEMORY_ACQUIRE_UNMODIFIED_SPEC_VERSION 1
 #define VK_EXT_EXTERNAL_MEMORY_ACQUIRE_UNMODIFIED_EXTENSION_NAME "VK_EXT_external_memory_acquire_unmodified"
@@ -17155,6 +17646,7 @@ typedef struct VkExternalMemoryAcquireUnmodifiedEXT {
 
 
 
+// VK_EXT_extended_dynamic_state3 is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_extended_dynamic_state3 1
 #define VK_EXT_EXTENDED_DYNAMIC_STATE_3_SPEC_VERSION 2
 #define VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME "VK_EXT_extended_dynamic_state3"
@@ -17388,6 +17880,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetCoverageReductionModeNV(
 #endif
 
 
+// VK_EXT_subpass_merge_feedback is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_subpass_merge_feedback 1
 #define VK_EXT_SUBPASS_MERGE_FEEDBACK_SPEC_VERSION 2
 #define VK_EXT_SUBPASS_MERGE_FEEDBACK_EXTENSION_NAME "VK_EXT_subpass_merge_feedback"
@@ -17445,6 +17938,7 @@ typedef struct VkRenderPassSubpassFeedbackCreateInfoEXT {
 
 
 
+// VK_LUNARG_direct_driver_loading is a preprocessor guard. Do not pass it to API calls.
 #define VK_LUNARG_direct_driver_loading 1
 #define VK_LUNARG_DIRECT_DRIVER_LOADING_SPEC_VERSION 1
 #define VK_LUNARG_DIRECT_DRIVER_LOADING_EXTENSION_NAME "VK_LUNARG_direct_driver_loading"
@@ -17475,6 +17969,7 @@ typedef struct VkDirectDriverLoadingListLUNARG {
 
 
 
+// VK_EXT_shader_module_identifier is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_shader_module_identifier 1
 #define VK_MAX_SHADER_MODULE_IDENTIFIER_SIZE_EXT 32U
 #define VK_EXT_SHADER_MODULE_IDENTIFIER_SPEC_VERSION 1
@@ -17521,11 +18016,13 @@ VKAPI_ATTR void VKAPI_CALL vkGetShaderModuleCreateInfoIdentifierEXT(
 #endif
 
 
+// VK_EXT_rasterization_order_attachment_access is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_rasterization_order_attachment_access 1
 #define VK_EXT_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_SPEC_VERSION 1
 #define VK_EXT_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_EXTENSION_NAME "VK_EXT_rasterization_order_attachment_access"
 
 
+// VK_NV_optical_flow is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_optical_flow 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkOpticalFlowSessionNV)
 #define VK_NV_OPTICAL_FLOW_SPEC_VERSION   1
@@ -17690,6 +18187,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdOpticalFlowExecuteNV(
 #endif
 
 
+// VK_EXT_legacy_dithering is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_legacy_dithering 1
 #define VK_EXT_LEGACY_DITHERING_SPEC_VERSION 1
 #define VK_EXT_LEGACY_DITHERING_EXTENSION_NAME "VK_EXT_legacy_dithering"
@@ -17701,6 +18199,7 @@ typedef struct VkPhysicalDeviceLegacyDitheringFeaturesEXT {
 
 
 
+// VK_EXT_pipeline_protected_access is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_pipeline_protected_access 1
 #define VK_EXT_PIPELINE_PROTECTED_ACCESS_SPEC_VERSION 1
 #define VK_EXT_PIPELINE_PROTECTED_ACCESS_EXTENSION_NAME "VK_EXT_pipeline_protected_access"
@@ -17712,6 +18211,7 @@ typedef struct VkPhysicalDevicePipelineProtectedAccessFeaturesEXT {
 
 
 
+// VK_EXT_shader_object is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_shader_object 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkShaderEXT)
 #define VK_EXT_SHADER_OBJECT_SPEC_VERSION 1
@@ -17798,6 +18298,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdBindShadersEXT(
 #endif
 
 
+// VK_QCOM_tile_properties is a preprocessor guard. Do not pass it to API calls.
 #define VK_QCOM_tile_properties 1
 #define VK_QCOM_TILE_PROPERTIES_SPEC_VERSION 1
 #define VK_QCOM_TILE_PROPERTIES_EXTENSION_NAME "VK_QCOM_tile_properties"
@@ -17832,6 +18333,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetDynamicRenderingTilePropertiesQCOM(
 #endif
 
 
+// VK_SEC_amigo_profiling is a preprocessor guard. Do not pass it to API calls.
 #define VK_SEC_amigo_profiling 1
 #define VK_SEC_AMIGO_PROFILING_SPEC_VERSION 1
 #define VK_SEC_AMIGO_PROFILING_EXTENSION_NAME "VK_SEC_amigo_profiling"
@@ -17850,6 +18352,7 @@ typedef struct VkAmigoProfilingSubmitInfoSEC {
 
 
 
+// VK_QCOM_multiview_per_view_viewports is a preprocessor guard. Do not pass it to API calls.
 #define VK_QCOM_multiview_per_view_viewports 1
 #define VK_QCOM_MULTIVIEW_PER_VIEW_VIEWPORTS_SPEC_VERSION 1
 #define VK_QCOM_MULTIVIEW_PER_VIEW_VIEWPORTS_EXTENSION_NAME "VK_QCOM_multiview_per_view_viewports"
@@ -17861,6 +18364,7 @@ typedef struct VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM {
 
 
 
+// VK_NV_ray_tracing_invocation_reorder is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_ray_tracing_invocation_reorder 1
 #define VK_NV_RAY_TRACING_INVOCATION_REORDER_SPEC_VERSION 1
 #define VK_NV_RAY_TRACING_INVOCATION_REORDER_EXTENSION_NAME "VK_NV_ray_tracing_invocation_reorder"
@@ -17884,11 +18388,13 @@ typedef struct VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV {
 
 
 
+// VK_EXT_mutable_descriptor_type is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_mutable_descriptor_type 1
 #define VK_EXT_MUTABLE_DESCRIPTOR_TYPE_SPEC_VERSION 1
 #define VK_EXT_MUTABLE_DESCRIPTOR_TYPE_EXTENSION_NAME "VK_EXT_mutable_descriptor_type"
 
 
+// VK_ARM_shader_core_builtins is a preprocessor guard. Do not pass it to API calls.
 #define VK_ARM_shader_core_builtins 1
 #define VK_ARM_SHADER_CORE_BUILTINS_SPEC_VERSION 2
 #define VK_ARM_SHADER_CORE_BUILTINS_EXTENSION_NAME "VK_ARM_shader_core_builtins"
@@ -17908,6 +18414,7 @@ typedef struct VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM {
 
 
 
+// VK_EXT_pipeline_library_group_handles is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_pipeline_library_group_handles 1
 #define VK_EXT_PIPELINE_LIBRARY_GROUP_HANDLES_SPEC_VERSION 1
 #define VK_EXT_PIPELINE_LIBRARY_GROUP_HANDLES_EXTENSION_NAME "VK_EXT_pipeline_library_group_handles"
@@ -17919,6 +18426,7 @@ typedef struct VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT {
 
 
 
+// VK_EXT_dynamic_rendering_unused_attachments is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_dynamic_rendering_unused_attachments 1
 #define VK_EXT_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_SPEC_VERSION 1
 #define VK_EXT_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_EXTENSION_NAME "VK_EXT_dynamic_rendering_unused_attachments"
@@ -17930,6 +18438,7 @@ typedef struct VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT {
 
 
 
+// VK_QCOM_multiview_per_view_render_areas is a preprocessor guard. Do not pass it to API calls.
 #define VK_QCOM_multiview_per_view_render_areas 1
 #define VK_QCOM_MULTIVIEW_PER_VIEW_RENDER_AREAS_SPEC_VERSION 1
 #define VK_QCOM_MULTIVIEW_PER_VIEW_RENDER_AREAS_EXTENSION_NAME "VK_QCOM_multiview_per_view_render_areas"
@@ -17948,6 +18457,7 @@ typedef struct VkMultiviewPerViewRenderAreasRenderPassBeginInfoQCOM {
 
 
 
+// VK_EXT_attachment_feedback_loop_dynamic_state is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_attachment_feedback_loop_dynamic_state 1
 #define VK_EXT_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_SPEC_VERSION 1
 #define VK_EXT_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_EXTENSION_NAME "VK_EXT_attachment_feedback_loop_dynamic_state"
@@ -17966,6 +18476,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetAttachmentFeedbackLoopEnableEXT(
 #endif
 
 
+// VK_KHR_acceleration_structure is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_acceleration_structure 1
 #define VK_KHR_ACCELERATION_STRUCTURE_SPEC_VERSION 13
 #define VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME "VK_KHR_acceleration_structure"
@@ -18241,6 +18752,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetAccelerationStructureBuildSizesKHR(
 #endif
 
 
+// VK_KHR_ray_tracing_pipeline is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_ray_tracing_pipeline 1
 #define VK_KHR_RAY_TRACING_PIPELINE_SPEC_VERSION 1
 #define VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME "VK_KHR_ray_tracing_pipeline"
@@ -18377,6 +18889,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetRayTracingPipelineStackSizeKHR(
 #endif
 
 
+// VK_KHR_ray_query is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_ray_query 1
 #define VK_KHR_RAY_QUERY_SPEC_VERSION     1
 #define VK_KHR_RAY_QUERY_EXTENSION_NAME   "VK_KHR_ray_query"
@@ -18388,6 +18901,7 @@ typedef struct VkPhysicalDeviceRayQueryFeaturesKHR {
 
 
 
+// VK_EXT_mesh_shader is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_mesh_shader 1
 #define VK_EXT_MESH_SHADER_SPEC_VERSION   1
 #define VK_EXT_MESH_SHADER_EXTENSION_NAME "VK_EXT_mesh_shader"

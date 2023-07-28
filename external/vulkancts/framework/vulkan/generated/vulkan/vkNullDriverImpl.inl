@@ -1015,6 +1015,13 @@ VKAPI_ATTR void VKAPI_CALL cmdDrawClusterIndirectHUAWEI (VkCommandBuffer command
 	DE_UNREF(offset);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdUpdatePipelineIndirectBufferNV (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pipelineBindPoint);
+	DE_UNREF(pipeline);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdCopyBuffer (VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions)
 {
 	DE_UNREF(commandBuffer);
@@ -2968,6 +2975,20 @@ VKAPI_ATTR VkResult VKAPI_CALL deferredOperationJoinKHR (VkDevice device, VkDefe
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL getPipelineIndirectMemoryRequirementsNV (VkDevice device, const VkComputePipelineCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pCreateInfo);
+	DE_UNREF(pMemoryRequirements);
+}
+
+VKAPI_ATTR VkDeviceAddress VKAPI_CALL getPipelineIndirectDeviceAddressNV (VkDevice device, const VkPipelineIndirectDeviceAddressInfoNV* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdSetCullMode (VkCommandBuffer commandBuffer, VkCullModeFlags cullMode)
 {
 	DE_UNREF(commandBuffer);
@@ -3440,6 +3461,35 @@ VKAPI_ATTR void VKAPI_CALL getQueueCheckpointData2NV (VkQueue queue, uint32_t* p
 	DE_UNREF(queue);
 	DE_UNREF(pCheckpointDataCount);
 	DE_UNREF(pCheckpointData);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL copyMemoryToImageEXT (VkDevice device, const VkCopyMemoryToImageInfoEXT* pCopyMemoryToImageInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pCopyMemoryToImageInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL copyImageToMemoryEXT (VkDevice device, const VkCopyImageToMemoryInfoEXT* pCopyImageToMemoryInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pCopyImageToMemoryInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL copyImageToImageEXT (VkDevice device, const VkCopyImageToImageInfoEXT* pCopyImageToImageInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pCopyImageToImageInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL transitionImageLayoutEXT (VkDevice device, uint32_t transitionCount, const VkHostImageLayoutTransitionInfoEXT* pTransitions)
+{
+	DE_UNREF(device);
+	DE_UNREF(transitionCount);
+	DE_UNREF(pTransitions);
+	return VK_SUCCESS;
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceVideoCapabilitiesKHR (VkPhysicalDevice physicalDevice, const VkVideoProfileInfoKHR* pVideoProfile, VkVideoCapabilitiesKHR* pCapabilities)
@@ -4176,6 +4226,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdSubpassShadingHUAWEI,									cmdSubpassShadingHUAWEI),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawClusterHUAWEI,										cmdDrawClusterHUAWEI),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawClusterIndirectHUAWEI,								cmdDrawClusterIndirectHUAWEI),
+	VK_NULL_FUNC_ENTRY(vkCmdUpdatePipelineIndirectBufferNV,							cmdUpdatePipelineIndirectBufferNV),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyBuffer,												cmdCopyBuffer),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyImage,												cmdCopyImage),
 	VK_NULL_FUNC_ENTRY(vkCmdBlitImage,												cmdBlitImage),
@@ -4388,6 +4439,8 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetDeferredOperationMaxConcurrencyKHR,						getDeferredOperationMaxConcurrencyKHR),
 	VK_NULL_FUNC_ENTRY(vkGetDeferredOperationResultKHR,								getDeferredOperationResultKHR),
 	VK_NULL_FUNC_ENTRY(vkDeferredOperationJoinKHR,									deferredOperationJoinKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPipelineIndirectMemoryRequirementsNV,					getPipelineIndirectMemoryRequirementsNV),
+	VK_NULL_FUNC_ENTRY(vkGetPipelineIndirectDeviceAddressNV,						getPipelineIndirectDeviceAddressNV),
 	VK_NULL_FUNC_ENTRY(vkCmdSetCullMode,											cmdSetCullMode),
 	VK_NULL_FUNC_ENTRY(vkCmdSetFrontFace,											cmdSetFrontFace),
 	VK_NULL_FUNC_ENTRY(vkCmdSetPrimitiveTopology,									cmdSetPrimitiveTopology),
@@ -4459,6 +4512,10 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdWriteTimestamp2,										cmdWriteTimestamp2),
 	VK_NULL_FUNC_ENTRY(vkCmdWriteBufferMarker2AMD,									cmdWriteBufferMarker2AMD),
 	VK_NULL_FUNC_ENTRY(vkGetQueueCheckpointData2NV,									getQueueCheckpointData2NV),
+	VK_NULL_FUNC_ENTRY(vkCopyMemoryToImageEXT,										copyMemoryToImageEXT),
+	VK_NULL_FUNC_ENTRY(vkCopyImageToMemoryEXT,										copyImageToMemoryEXT),
+	VK_NULL_FUNC_ENTRY(vkCopyImageToImageEXT,										copyImageToImageEXT),
+	VK_NULL_FUNC_ENTRY(vkTransitionImageLayoutEXT,									transitionImageLayoutEXT),
 	VK_NULL_FUNC_ENTRY(vkCreateVideoSessionKHR,										createVideoSessionKHR),
 	VK_NULL_FUNC_ENTRY(vkDestroyVideoSessionKHR,									destroyVideoSessionKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateVideoSessionParametersKHR,							createVideoSessionParametersKHR),

@@ -3060,6 +3060,11 @@ tcu::Format::Bitfield<32> getImageFormatConstraintsFlagsFUCHSIAStr (VkImageForma
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
+tcu::Format::Bitfield<32> getHostImageCopyFlagsEXTStr (VkHostImageCopyFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
 tcu::Format::Bitfield<32> getImageConstraintsInfoFlagsFUCHSIAStr (VkImageConstraintsInfoFlagsFUCHSIA value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);

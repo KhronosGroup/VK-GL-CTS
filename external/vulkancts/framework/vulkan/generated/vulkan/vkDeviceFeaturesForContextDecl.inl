@@ -66,6 +66,7 @@ const vk::VkPhysicalDeviceHostQueryResetFeatures&							getHostQueryResetFeature
 const vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT&						getIndexTypeUint8FeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&					getExtendedDynamicStateFeaturesEXT					(void) const;
 const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&			getPipelineExecutablePropertiesFeatures				(void) const;
+const vk::VkPhysicalDeviceHostImageCopyFeaturesEXT&							getHostImageCopyFeaturesEXT							(void) const;
 const vk::VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT&					getShaderAtomicFloat2FeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT&					getSwapchainMaintenance1FeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures&			getShaderDemoteToHelperInvocationFeatures			(void) const;
@@ -131,6 +132,7 @@ const vk::VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT&					getNonSeamlessCubeM
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM&				getFragmentDensityMapOffsetFeaturesQCOM				(void) const;
 const vk::VkPhysicalDeviceCopyMemoryIndirectFeaturesNV&						getCopyMemoryIndirectFeatures						(void) const;
 const vk::VkPhysicalDeviceMemoryDecompressionFeaturesNV&					getMemoryDecompressionFeatures						(void) const;
+const vk::VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV&			getDeviceGeneratedCommandsComputeFeatures			(void) const;
 const vk::VkPhysicalDeviceLinearColorAttachmentFeaturesNV&					getLinearColorAttachmentFeatures					(void) const;
 const vk::VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT&		getImageCompressionControlSwapchainFeaturesEXT		(void) const;
 const vk::VkPhysicalDeviceImageProcessingFeaturesQCOM&						getImageProcessingFeaturesQCOM						(void) const;

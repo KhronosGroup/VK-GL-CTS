@@ -581,6 +581,15 @@ struct VkComputePipelineCreateInfo
 	int32_t							basePipelineIndex;
 };
 
+struct VkComputePipelineIndirectBufferInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkDeviceAddress	deviceAddress;
+	VkDeviceSize	size;
+	VkDeviceAddress	pipelineDeviceAddressCaptureReplay;
+};
+
 struct VkVertexInputBindingDescription
 {
 	uint32_t			binding;
@@ -1582,6 +1591,15 @@ struct VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV
 	VkBool32		deviceGeneratedCommands;
 };
 
+struct VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		deviceGeneratedCompute;
+	VkBool32		deviceGeneratedComputePipelines;
+	VkBool32		deviceGeneratedComputeCaptureReplay;
+};
+
 struct VkDevicePrivateDataCreateInfo
 {
 	VkStructureType	sType;
@@ -1733,6 +1751,19 @@ struct VkGeneratedCommandsMemoryRequirementsInfoNV
 	VkPipeline					pipeline;
 	VkIndirectCommandsLayoutNV	indirectCommandsLayout;
 	uint32_t					maxSequencesCount;
+};
+
+struct VkPipelineIndirectDeviceAddressInfoNV
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkPipelineBindPoint	pipelineBindPoint;
+	VkPipeline			pipeline;
+};
+
+struct VkBindPipelineIndirectCommandNV
+{
+	VkDeviceAddress	pipelineAddress;
 };
 
 struct VkPhysicalDeviceFeatures2
@@ -6259,6 +6290,109 @@ struct VkPhysicalDeviceSynchronization2Features
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		synchronization2;
+};
+
+struct VkPhysicalDeviceHostImageCopyFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		hostImageCopy;
+};
+
+struct VkPhysicalDeviceHostImageCopyPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		copySrcLayoutCount;
+	VkImageLayout*	pCopySrcLayouts;
+	uint32_t		copyDstLayoutCount;
+	VkImageLayout*	pCopyDstLayouts;
+	uint8_t			optimalTilingLayoutUUID[VK_UUID_SIZE];
+	VkBool32		identicalMemoryTypeRequirements;
+};
+
+struct VkMemoryToImageCopyEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	const void*					pHostPointer;
+	uint32_t					memoryRowLength;
+	uint32_t					memoryImageHeight;
+	VkImageSubresourceLayers	imageSubresource;
+	VkOffset3D					imageOffset;
+	VkExtent3D					imageExtent;
+};
+
+struct VkImageToMemoryCopyEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	void*						pHostPointer;
+	uint32_t					memoryRowLength;
+	uint32_t					memoryImageHeight;
+	VkImageSubresourceLayers	imageSubresource;
+	VkOffset3D					imageOffset;
+	VkExtent3D					imageExtent;
+};
+
+struct VkCopyMemoryToImageInfoEXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkHostImageCopyFlagsEXT			flags;
+	VkImage							dstImage;
+	VkImageLayout					dstImageLayout;
+	uint32_t						regionCount;
+	const VkMemoryToImageCopyEXT*	pRegions;
+};
+
+struct VkCopyImageToMemoryInfoEXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkHostImageCopyFlagsEXT			flags;
+	VkImage							srcImage;
+	VkImageLayout					srcImageLayout;
+	uint32_t						regionCount;
+	const VkImageToMemoryCopyEXT*	pRegions;
+};
+
+struct VkCopyImageToImageInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkHostImageCopyFlagsEXT	flags;
+	VkImage					srcImage;
+	VkImageLayout			srcImageLayout;
+	VkImage					dstImage;
+	VkImageLayout			dstImageLayout;
+	uint32_t				regionCount;
+	const VkImageCopy2*		pRegions;
+};
+
+struct VkHostImageLayoutTransitionInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkImage					image;
+	VkImageLayout			oldLayout;
+	VkImageLayout			newLayout;
+	VkImageSubresourceRange	subresourceRange;
+};
+
+struct VkSubresourceHostMemcpySizeEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	size;
+};
+
+struct VkHostImageCopyDevicePerformanceQueryEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		optimalDeviceAccess;
+	VkBool32		identicalMemoryLayout;
 };
 
 struct VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT
