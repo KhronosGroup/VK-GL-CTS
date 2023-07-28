@@ -691,7 +691,7 @@ tcu::TestStatus TimestampTestInstance::iterate (void)
 	submitCommandsAndWait(vk, m_device, queue, m_cmdBuffer.get());
 
 	// Get timestamp value from query pool
-	vk.getQueryPoolResults(m_device, *m_queryPool, 0u, stageSize, queryDataSize * stageSize, (void*)m_timestampValues, queryDataSize, m_queryResultFlags);
+	VK_CHECK(vk.getQueryPoolResults(m_device, *m_queryPool, 0u, stageSize, queryDataSize * stageSize, (void*)m_timestampValues, queryDataSize, m_queryResultFlags));
 
 	for (deUint32 ndx = 0; ndx < stageSize; ndx++)
 	{

@@ -3342,6 +3342,13 @@ def writeApiExtensionDependencyInfo(api, filename):
 					depList[idx] = depList[idx].replace('+', ' && ')
 				elif 'VK_' in depPart:
 					if 'VK_VERSION' in depPart:
+						if idx > 0 and ' || ' in depList[idx-1]:
+							# some vk.xml entries include "promoted to" version preceded by logical OR operator in the extension "depends" attribute
+							# script don't rely on this optional information and will find "promoted to" versions for all dependencies of all extensions in the below code
+							# accordingly the one from vk.xml is ignored to avoid redundant isCompatibile() checks
+							depList[idx-1] = depList[idx-1].replace(' || ', '')
+							depList[idx] = ''
+							continue
 						# when dependency is vulkan version then replace it with proper condition
 						depList[idx] = f'isCompatibile({depPart[-3]}, {depPart[-1]}, v)'
 					else:
@@ -3399,6 +3406,41 @@ def writeApiExtensionDependencyInfo(api, filename):
 			yield '\tstd::make_tuple({}, {}, {}, {}),'.format(version, apiVariant, major, minor)
 		yield '};'
 
+	def parseExtensionDependencies(extDeps, ext):
+		major, minor = 1, 0
+		requiredVerFound = False;
+		# return in case nothing more left to be processed
+		if extDeps is None or extDeps == "":
+			return major, minor, requiredVerFound
+		ungrpPartLen = 0
+		versionPattern = "[A-Z]+_VERSION_([0-9]+)_([0-9]+)"
+		ungroupedPattern = r"^.*?\(+|^.*?$"
+		# look for non-grouped part, it may include the required vulkan version
+		ungroupPart = re.search(ungroupedPattern, extDeps)
+		if ungroupPart is not None and ungroupPart[0].replace(r"(", "") != "":
+			ungrpPartLen = len(ungroupPart[0].replace(r"(", ""))
+			# is specific version explicitly requested?
+			match = re.search(versionPattern, ungroupPart[0])
+			if match is not None:
+				if len(match[0]) != len(extDeps):
+					# there is more than just a version; check if it's accompanied by AND operator(s)
+					ext_pattern = ".*\+*"+versionPattern+"\++.*|.*\++"+versionPattern+"\+*.*"
+					match = re.search(ext_pattern, ungroupPart[0])
+				if match is not None:
+					# specific version is explicitly requested
+					major, minor = int(match[1]), int(match[2])
+					return major, minor, True
+			# no explicit version is requested, continue parsing the remaining part
+			extDeps = extDeps[ungrpPartLen:]
+		groupedPattern = r"(.*)\+|(.*)$"
+		match = re.search(groupedPattern, extDeps)
+		if match is not None and match[0] != "":
+			# groups may include the dependency "promoted to" versions accompanied by OR operator
+			# but they don't include the extension explicit required version; continue parsing the remaining part
+			groupLength = len(match[0])
+			major, minor, requiredVerFound = parseExtensionDependencies(extDeps[groupLength:], ext)
+		return major, minor, requiredVerFound
+
 	def genRequiredCoreVersions():
 		yield 'static const std::tuple<deUint32, deUint32, const char*>\textensionRequiredCoreVersion[]\t ='
 		yield '{'
@@ -3409,25 +3451,22 @@ def writeApiExtensionDependencyInfo(api, filename):
 				continue
 			major, minor = 1, 0
 			if ext.depends is not None:
-				match = re.search(versionPattern, ext.depends)
-				if match is None:
+				major, minor, requiredVerFound = parseExtensionDependencies(ext.depends, ext)
+				if not requiredVerFound:
 					# find all extensions that are dependencies of this one
 					matches = re.findall("VK_\w+", ext.depends, re.M)
 					for m in matches:
 						for de in api.extensions:
 							if de.name == m:
 								if de.depends is not None:
-									# check if this dependency has its own dependency from vulkan version
-									match = re.search(versionPattern, de.depends)
-									if match:
-										newMajor, newMinor = int(match[1]), int(match[2])
+									# check if the dependency states explicitly the required vulkan version and pick the higher one
+									newMajor, newMinor, requiredVerFound = parseExtensionDependencies(de.depends, de)
+									if requiredVerFound:
 										if newMajor > major:
 											major, minor = newMajor, newMinor
-										elif newMajor == major:
+										elif newMajor == major and newMinor > minor:
 											minor = newMinor
 								break
-				else:
-					major, minor = int(match[1]), int(match[2])
 			yield '\tstd::make_tuple({}, {}, "{}"),'.format(major, minor, ext.name)
 		yield '};'
 
