@@ -36,18 +36,18 @@ namespace Functional
 class PrimitiveRestartTests : public TestCaseGroup
 {
 public:
-								PrimitiveRestartTests	(Context& context);
-								~PrimitiveRestartTests	(void);
+    PrimitiveRestartTests(Context &context);
+    ~PrimitiveRestartTests(void);
 
-	void						init					(void);
+    void init(void);
 
 private:
-								PrimitiveRestartTests	(const PrimitiveRestartTests& other);
-	PrimitiveRestartTests&		operator=				(const PrimitiveRestartTests& other);
+    PrimitiveRestartTests(const PrimitiveRestartTests &other);
+    PrimitiveRestartTests &operator=(const PrimitiveRestartTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FPRIMITIVERESTARTTESTS_HPP

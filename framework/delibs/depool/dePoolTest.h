@@ -25,6 +25,6 @@
 
 #include "deDefs.h"
 
-void	dePool_selfTest		(void);
+void dePool_selfTest(void);
 
 #endif /* _DEPOOLTEST_H */

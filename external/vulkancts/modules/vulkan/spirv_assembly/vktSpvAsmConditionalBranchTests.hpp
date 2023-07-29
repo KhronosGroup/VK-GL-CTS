@@ -31,10 +31,10 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	createConditionalBranchComputeGroup		(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*	createConditionalBranchGraphicsGroup	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createConditionalBranchComputeGroup(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createConditionalBranchGraphicsGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMCONDITIONALBRANCHTESTS_HPP

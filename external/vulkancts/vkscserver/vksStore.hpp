@@ -31,39 +31,39 @@ namespace vksc_server
 
 struct Store
 {
-	bool Get (const string& path, vector<u8>& content, bool removeAfter)
-	{
-		std::lock_guard<std::mutex> lock(FileMapMutex);
+    bool Get(const string &path, vector<u8> &content, bool removeAfter)
+    {
+        std::lock_guard<std::mutex> lock(FileMapMutex);
 
-		auto it = FileMap.find(path);
-		if (it != FileMap.end())
-		{
-			if (removeAfter)
-			{
-				content = std::move(it->second);
-				FileMap.erase(it);
-			}
-			else
-			{
-				content = it->second;
-			}
-			return true;
-		}
-		return false;
-	}
+        auto it = FileMap.find(path);
+        if (it != FileMap.end())
+        {
+            if (removeAfter)
+            {
+                content = std::move(it->second);
+                FileMap.erase(it);
+            }
+            else
+            {
+                content = it->second;
+            }
+            return true;
+        }
+        return false;
+    }
 
-	bool Set (const string& uniqueFilename, const vector<u8>& content)
-	{
-		std::lock_guard<std::mutex> lock(FileMapMutex);
-		FileMap[uniqueFilename] = std::move(content);
-		return true;
-	}
+    bool Set(const string &uniqueFilename, const vector<u8> &content)
+    {
+        std::lock_guard<std::mutex> lock(FileMapMutex);
+        FileMap[uniqueFilename] = std::move(content);
+        return true;
+    }
 
 private:
-	std::map<string, vector<u8>> FileMap;
-	std::mutex FileMapMutex;
+    std::map<string, vector<u8>> FileMap;
+    std::mutex FileMapMutex;
 };
 
-}
+} // namespace vksc_server
 
 #endif // _VKSSTORE_HPP

@@ -36,18 +36,17 @@ namespace Functional
 class ClipControlTests : public TestCaseGroup
 {
 public:
-
-	ClipControlTests(Context& context);
-	~ClipControlTests(void);
-	void init(void);
+    ClipControlTests(Context &context);
+    ~ClipControlTests(void);
+    void init(void);
 
 private:
-	ClipControlTests(const ClipControlTests& other);
-	ClipControlTests& operator=(const ClipControlTests& other);
+    ClipControlTests(const ClipControlTests &other);
+    ClipControlTests &operator=(const ClipControlTests &other);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FCLIPCONTROLTESTS_HPP

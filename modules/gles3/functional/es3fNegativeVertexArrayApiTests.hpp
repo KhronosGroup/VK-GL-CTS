@@ -36,18 +36,18 @@ namespace Functional
 class NegativeVertexArrayApiTests : public TestCaseGroup
 {
 public:
-									NegativeVertexArrayApiTests		(Context& context);
-									~NegativeVertexArrayApiTests	(void);
+    NegativeVertexArrayApiTests(Context &context);
+    ~NegativeVertexArrayApiTests(void);
 
-	void							init							(void);
+    void init(void);
 
 private:
-									NegativeVertexArrayApiTests		(const NegativeVertexArrayApiTests& other);
-	NegativeVertexArrayApiTests&	operator=						(const NegativeVertexArrayApiTests& other);
+    NegativeVertexArrayApiTests(const NegativeVertexArrayApiTests &other);
+    NegativeVertexArrayApiTests &operator=(const NegativeVertexArrayApiTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FNEGATIVEVERTEXARRAYAPITESTS_HPP

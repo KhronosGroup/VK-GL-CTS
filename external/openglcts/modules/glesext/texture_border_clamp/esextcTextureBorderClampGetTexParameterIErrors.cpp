@@ -50,41 +50,42 @@ const glw::GLuint TextureBorderClampGetTexParameterIErrorsTest::m_buffer_size = 
  *  @param description Test case's description
  **/
 TextureBorderClampGetTexParameterIErrorsTest::TextureBorderClampGetTexParameterIErrorsTest(
-	Context& context, const ExtParameters& extParams, const char* name, const char* description)
-	: TextureBorderClampBase(context, extParams, name, description), m_test_passed(true)
+    Context &context, const ExtParameters &extParams, const char *name, const char *description)
+    : TextureBorderClampBase(context, extParams, name, description)
+    , m_test_passed(true)
 {
-	/* Left blank on purpose */
+    /* Left blank on purpose */
 }
 
 /** Initializes GLES objects used during the test.  */
 void TextureBorderClampGetTexParameterIErrorsTest::initTest(void)
 {
-	if (!m_is_texture_border_clamp_supported)
-	{
-		throw tcu::NotSupportedError(TEXTURE_BORDER_CLAMP_NOT_SUPPORTED, "", __FILE__, __LINE__);
-	}
+    if (!m_is_texture_border_clamp_supported)
+    {
+        throw tcu::NotSupportedError(TEXTURE_BORDER_CLAMP_NOT_SUPPORTED, "", __FILE__, __LINE__);
+    }
 
-	/* Initialize base class */
-	TextureBorderClampBase::initTest();
+    /* Initialize base class */
+    TextureBorderClampBase::initTest();
 
-	m_pname_list.push_back(GL_DEPTH_STENCIL_TEXTURE_MODE);
-	m_pname_list.push_back(GL_TEXTURE_BASE_LEVEL);
-	m_pname_list.push_back(m_glExtTokens.TEXTURE_BORDER_COLOR);
-	m_pname_list.push_back(GL_TEXTURE_COMPARE_FUNC);
-	m_pname_list.push_back(GL_TEXTURE_IMMUTABLE_FORMAT);
-	m_pname_list.push_back(GL_TEXTURE_IMMUTABLE_LEVELS);
-	m_pname_list.push_back(GL_TEXTURE_MAG_FILTER);
-	m_pname_list.push_back(GL_TEXTURE_MAX_LEVEL);
-	m_pname_list.push_back(GL_TEXTURE_MAX_LOD);
-	m_pname_list.push_back(GL_TEXTURE_MIN_FILTER);
-	m_pname_list.push_back(GL_TEXTURE_MIN_LOD);
-	m_pname_list.push_back(GL_TEXTURE_SWIZZLE_R);
-	m_pname_list.push_back(GL_TEXTURE_SWIZZLE_G);
-	m_pname_list.push_back(GL_TEXTURE_SWIZZLE_B);
-	m_pname_list.push_back(GL_TEXTURE_SWIZZLE_A);
-	m_pname_list.push_back(GL_TEXTURE_WRAP_S);
-	m_pname_list.push_back(GL_TEXTURE_WRAP_T);
-	m_pname_list.push_back(GL_TEXTURE_WRAP_R);
+    m_pname_list.push_back(GL_DEPTH_STENCIL_TEXTURE_MODE);
+    m_pname_list.push_back(GL_TEXTURE_BASE_LEVEL);
+    m_pname_list.push_back(m_glExtTokens.TEXTURE_BORDER_COLOR);
+    m_pname_list.push_back(GL_TEXTURE_COMPARE_FUNC);
+    m_pname_list.push_back(GL_TEXTURE_IMMUTABLE_FORMAT);
+    m_pname_list.push_back(GL_TEXTURE_IMMUTABLE_LEVELS);
+    m_pname_list.push_back(GL_TEXTURE_MAG_FILTER);
+    m_pname_list.push_back(GL_TEXTURE_MAX_LEVEL);
+    m_pname_list.push_back(GL_TEXTURE_MAX_LOD);
+    m_pname_list.push_back(GL_TEXTURE_MIN_FILTER);
+    m_pname_list.push_back(GL_TEXTURE_MIN_LOD);
+    m_pname_list.push_back(GL_TEXTURE_SWIZZLE_R);
+    m_pname_list.push_back(GL_TEXTURE_SWIZZLE_G);
+    m_pname_list.push_back(GL_TEXTURE_SWIZZLE_B);
+    m_pname_list.push_back(GL_TEXTURE_SWIZZLE_A);
+    m_pname_list.push_back(GL_TEXTURE_WRAP_S);
+    m_pname_list.push_back(GL_TEXTURE_WRAP_T);
+    m_pname_list.push_back(GL_TEXTURE_WRAP_R);
 }
 
 /** Executes the test.
@@ -97,33 +98,33 @@ void TextureBorderClampGetTexParameterIErrorsTest::initTest(void)
  **/
 tcu::TestNode::IterateResult TextureBorderClampGetTexParameterIErrorsTest::iterate(void)
 {
-	initTest();
+    initTest();
 
-	/* Make sure the tested functions report GL_NO_ERROR if used with
-	 * cube map texture target. */
-	CheckAllNames(GL_TEXTURE_CUBE_MAP, GL_NO_ERROR);
+    /* Make sure the tested functions report GL_NO_ERROR if used with
+     * cube map texture target. */
+    CheckAllNames(GL_TEXTURE_CUBE_MAP, GL_NO_ERROR);
 
-	/* Make sure the tested functions report GL_INVALID_ENUM error
-	 * if used for cube-map face texture targets. */
-	CheckAllNames(GL_TEXTURE_CUBE_MAP_POSITIVE_X, GL_INVALID_ENUM);
+    /* Make sure the tested functions report GL_INVALID_ENUM error
+     * if used for cube-map face texture targets. */
+    CheckAllNames(GL_TEXTURE_CUBE_MAP_POSITIVE_X, GL_INVALID_ENUM);
 
-	if (m_is_texture_buffer_supported)
-	{
-		/* Make sure the tested functions report GL_INVALID_ENUM error
-		 * if used for GL_TEXTURE_BUFFER_EXT texture target. */
-		CheckAllNames(GL_TEXTURE_BUFFER_EXT, GL_INVALID_ENUM);
-	}
+    if (m_is_texture_buffer_supported)
+    {
+        /* Make sure the tested functions report GL_INVALID_ENUM error
+         * if used for GL_TEXTURE_BUFFER_EXT texture target. */
+        CheckAllNames(GL_TEXTURE_BUFFER_EXT, GL_INVALID_ENUM);
+    }
 
-	if (m_test_passed)
-	{
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	}
-	else
-	{
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-	}
+    if (m_test_passed)
+    {
+        m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+    }
+    else
+    {
+        m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+    }
 
-	return STOP;
+    return STOP;
 }
 
 /**
@@ -135,13 +136,13 @@ tcu::TestNode::IterateResult TextureBorderClampGetTexParameterIErrorsTest::itera
  */
 void TextureBorderClampGetTexParameterIErrorsTest::CheckAllNames(glw::GLenum target, glw::GLenum expected_error)
 {
-	for (glw::GLuint i = 0; i < m_pname_list.size(); ++i)
-	{
-		/* Check glGetTexParameterIivEXT() */
-		VerifyGLGetTexParameterIiv(target, m_pname_list[i] /* pname*/, expected_error);
-		/* Check glGetTexParameterIuivEXT() */
-		VerifyGLGetTexParameterIuiv(target, m_pname_list[i] /* pname*/, expected_error);
-	}
+    for (glw::GLuint i = 0; i < m_pname_list.size(); ++i)
+    {
+        /* Check glGetTexParameterIivEXT() */
+        VerifyGLGetTexParameterIiv(target, m_pname_list[i] /* pname*/, expected_error);
+        /* Check glGetTexParameterIuivEXT() */
+        VerifyGLGetTexParameterIuiv(target, m_pname_list[i] /* pname*/, expected_error);
+    }
 }
 
 /** Verifies that calling glGetTexParameterIivEXT() with user-specified arguments
@@ -152,25 +153,25 @@ void TextureBorderClampGetTexParameterIErrorsTest::CheckAllNames(glw::GLenum tar
  * @param expected_error anticipated GL error code;
  */
 void TextureBorderClampGetTexParameterIErrorsTest::VerifyGLGetTexParameterIiv(glw::GLenum target, glw::GLenum pname,
-																			  glw::GLenum expected_error)
+                                                                              glw::GLenum expected_error)
 {
-	glw::GLenum				error_code = GL_NO_ERROR;
-	const glw::Functions&   gl		   = m_context.getRenderContext().getFunctions();
-	std::vector<glw::GLint> params(m_buffer_size);
+    glw::GLenum error_code   = GL_NO_ERROR;
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+    std::vector<glw::GLint> params(m_buffer_size);
 
-	gl.getTexParameterIiv(target, pname, &params[0]);
+    gl.getTexParameterIiv(target, pname, &params[0]);
 
-	error_code = gl.getError();
-	if (expected_error != error_code)
-	{
-		m_test_passed = false;
+    error_code = gl.getError();
+    if (expected_error != error_code)
+    {
+        m_test_passed = false;
 
-		m_testCtx.getLog() << tcu::TestLog::Message << "glGetTexParameterIivEXT() failed:["
-						   << "target:" << getTexTargetString(target) << ", pname:" << getPNameString(pname)
-						   << "] reported error code:[" << glu::getErrorStr(error_code) << "] expected error code:["
-						   << glu::getErrorStr(expected_error) << "]\n"
-						   << tcu::TestLog::EndMessage;
-	}
+        m_testCtx.getLog() << tcu::TestLog::Message << "glGetTexParameterIivEXT() failed:["
+                           << "target:" << getTexTargetString(target) << ", pname:" << getPNameString(pname)
+                           << "] reported error code:[" << glu::getErrorStr(error_code) << "] expected error code:["
+                           << glu::getErrorStr(expected_error) << "]\n"
+                           << tcu::TestLog::EndMessage;
+    }
 }
 
 /** Verifies that calling glGetTexParameterIuivEXT() with user-specified arguments
@@ -181,25 +182,25 @@ void TextureBorderClampGetTexParameterIErrorsTest::VerifyGLGetTexParameterIiv(gl
  * @param expected_error anticipated GL error code;
  */
 void TextureBorderClampGetTexParameterIErrorsTest::VerifyGLGetTexParameterIuiv(glw::GLenum target, glw::GLenum pname,
-																			   glw::GLenum expected_error)
+                                                                               glw::GLenum expected_error)
 {
-	glw::GLenum				 error_code = GL_NO_ERROR;
-	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
-	std::vector<glw::GLuint> params(m_buffer_size);
+    glw::GLenum error_code   = GL_NO_ERROR;
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+    std::vector<glw::GLuint> params(m_buffer_size);
 
-	gl.getTexParameterIuiv(target, pname, &params[0]);
+    gl.getTexParameterIuiv(target, pname, &params[0]);
 
-	error_code = gl.getError();
-	if (expected_error != error_code)
-	{
-		m_test_passed = false;
+    error_code = gl.getError();
+    if (expected_error != error_code)
+    {
+        m_test_passed = false;
 
-		m_testCtx.getLog() << tcu::TestLog::Message << "glGetTexParameterIuivEXT() failed:["
-						   << "target:" << getTexTargetString(target) << ", pname:" << getPNameString(pname)
-						   << "] reported error code:[" << glu::getErrorStr(error_code) << "] expected error code:["
-						   << glu::getErrorStr(expected_error) << "]\n"
-						   << tcu::TestLog::EndMessage;
-	}
+        m_testCtx.getLog() << tcu::TestLog::Message << "glGetTexParameterIuivEXT() failed:["
+                           << "target:" << getTexTargetString(target) << ", pname:" << getPNameString(pname)
+                           << "] reported error code:[" << glu::getErrorStr(error_code) << "] expected error code:["
+                           << glu::getErrorStr(expected_error) << "]\n"
+                           << tcu::TestLog::EndMessage;
+    }
 }
 
 } // namespace glcts

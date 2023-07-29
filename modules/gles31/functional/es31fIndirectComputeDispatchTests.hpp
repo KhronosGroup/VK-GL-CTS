@@ -36,18 +36,18 @@ namespace Functional
 class IndirectComputeDispatchTests : public TestCaseGroup
 {
 public:
-									IndirectComputeDispatchTests	(Context& context);
-									~IndirectComputeDispatchTests	(void);
+    IndirectComputeDispatchTests(Context &context);
+    ~IndirectComputeDispatchTests(void);
 
-	void							init							(void);
+    void init(void);
 
 private:
-									IndirectComputeDispatchTests	(const IndirectComputeDispatchTests&);
-	IndirectComputeDispatchTests&	operator=						(const IndirectComputeDispatchTests&);
+    IndirectComputeDispatchTests(const IndirectComputeDispatchTests &);
+    IndirectComputeDispatchTests &operator=(const IndirectComputeDispatchTests &);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FINDIRECTCOMPUTEDISPATCHTESTS_HPP

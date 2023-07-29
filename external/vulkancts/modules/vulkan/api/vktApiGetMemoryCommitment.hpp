@@ -33,9 +33,9 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup*		createMemoryCommitmentTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createMemoryCommitmentTests(tcu::TestContext &testCtx);
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPIGETMEMORYCOMMITMENT_HPP

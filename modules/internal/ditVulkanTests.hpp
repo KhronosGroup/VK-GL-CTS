@@ -29,8 +29,8 @@
 namespace dit
 {
 
-tcu::TestCaseGroup*	createVulkanTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createVulkanTests(tcu::TestContext &testCtx);
 
-} // dit
+} // namespace dit
 
 #endif // _DITVULKANTESTS_HPP

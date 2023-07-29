@@ -36,30 +36,36 @@ namespace vk
 class BufferWithMemory
 {
 public:
-										BufferWithMemory	(const vk::DeviceInterface&		vk,
-															 const vk::VkDevice				device,
-															 vk::Allocator&					allocator,
-															 const vk::VkBufferCreateInfo&	bufferCreateInfo,
-															 const vk::MemoryRequirement	memoryRequirement)
+    BufferWithMemory(const vk::DeviceInterface &vk, const vk::VkDevice device, vk::Allocator &allocator,
+                     const vk::VkBufferCreateInfo &bufferCreateInfo, const vk::MemoryRequirement memoryRequirement)
 
-											: m_buffer		(createBuffer(vk, device, &bufferCreateInfo))
-											, m_allocation	(allocator.allocate(getBufferMemoryRequirements(vk, device, *m_buffer), memoryRequirement))
-										{
-											VK_CHECK(vk.bindBufferMemory(device, *m_buffer, m_allocation->getMemory(), m_allocation->getOffset()));
-										}
+        : m_buffer(createBuffer(vk, device, &bufferCreateInfo))
+        , m_allocation(allocator.allocate(getBufferMemoryRequirements(vk, device, *m_buffer), memoryRequirement))
+    {
+        VK_CHECK(vk.bindBufferMemory(device, *m_buffer, m_allocation->getMemory(), m_allocation->getOffset()));
+    }
 
-	const vk::VkBuffer&					get				(void) const { return *m_buffer; }
-	const vk::VkBuffer&					operator*		(void) const { return get(); }
-	vk::Allocation&						getAllocation	(void) const { return *m_allocation; }
+    const vk::VkBuffer &get(void) const
+    {
+        return *m_buffer;
+    }
+    const vk::VkBuffer &operator*(void) const
+    {
+        return get();
+    }
+    vk::Allocation &getAllocation(void) const
+    {
+        return *m_allocation;
+    }
 
 private:
-	const vk::Unique<vk::VkBuffer>		m_buffer;
-	const de::UniquePtr<vk::Allocation>	m_allocation;
+    const vk::Unique<vk::VkBuffer> m_buffer;
+    const de::UniquePtr<vk::Allocation> m_allocation;
 
-	// "deleted"
-										BufferWithMemory	(const BufferWithMemory&);
-	BufferWithMemory					operator=			(const BufferWithMemory&);
+    // "deleted"
+    BufferWithMemory(const BufferWithMemory &);
+    BufferWithMemory operator=(const BufferWithMemory &);
 };
-} // vk
+} // namespace vk
 
 #endif // _VKBUFFERWITHMEMORY_HPP

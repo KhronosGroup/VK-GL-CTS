@@ -36,21 +36,22 @@ namespace video
 class IfcFfmpegDemuxer
 {
 public:
-	virtual bool	demux				(deUint8** pData, deInt64* pSize) = 0;
-	virtual			~IfcFfmpegDemuxer	() { }
+    virtual bool demux(uint8_t **pData, int64_t *pSize) = 0;
+    virtual ~IfcFfmpegDemuxer()
+    {
+    }
 };
-
 
 class IfcFfmpegFunctions
 {
 public:
-	virtual	IfcFfmpegDemuxer*	createIfcFfmpegDemuxer	(de::MovePtr<std::vector<deUint8>>& data) = 0;
-	virtual						~IfcFfmpegFunctions		() {};
+    virtual IfcFfmpegDemuxer *createIfcFfmpegDemuxer(de::MovePtr<std::vector<uint8_t>> &data) = 0;
+    virtual ~IfcFfmpegFunctions(){};
 };
 
-de::MovePtr<IfcFfmpegFunctions> createIfcFfmpegFunctions ();
+de::MovePtr<IfcFfmpegFunctions> createIfcFfmpegFunctions();
 
-} // video
-} // vkt
+} // namespace video
+} // namespace vkt
 
 #endif // _VKTVIDEOSESSIONFFMPEGUTILS_HPP

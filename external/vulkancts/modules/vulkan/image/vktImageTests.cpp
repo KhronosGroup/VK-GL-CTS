@@ -50,44 +50,44 @@ namespace image
 namespace
 {
 
-void createChildren (tcu::TestCaseGroup* imageTests)
+void createChildren(tcu::TestCaseGroup *imageTests)
 {
-	tcu::TestContext&	testCtx		= imageTests->getTestContext();
+    tcu::TestContext &testCtx = imageTests->getTestContext();
 
-	imageTests->addChild(createImageStoreTests(testCtx));
-	imageTests->addChild(createImageLoadStoreTests(testCtx));
-	imageTests->addChild(createImageMultisampleLoadStoreTests(testCtx));
-	imageTests->addChild(createImageMutableTests(testCtx));
-	imageTests->addChild(createSwapchainImageMutableTests(testCtx));
-	imageTests->addChild(createImageFormatReinterpretTests(testCtx));
-	imageTests->addChild(createImageQualifiersTests(testCtx));
-	imageTests->addChild(createImageSizeTests(testCtx));
-	imageTests->addChild(createImageAtomicOperationTests(testCtx));
-	imageTests->addChild(createImageCompressionTranscodingTests(testCtx));
-	imageTests->addChild(createImageTranscodingSupportTests(testCtx));
-	imageTests->addChild(createImageExtendOperandsTests(testCtx));
+    imageTests->addChild(createImageStoreTests(testCtx));
+    imageTests->addChild(createImageLoadStoreTests(testCtx));
+    imageTests->addChild(createImageMultisampleLoadStoreTests(testCtx));
+    imageTests->addChild(createImageMutableTests(testCtx));
+    imageTests->addChild(createSwapchainImageMutableTests(testCtx));
+    imageTests->addChild(createImageFormatReinterpretTests(testCtx));
+    imageTests->addChild(createImageQualifiersTests(testCtx));
+    imageTests->addChild(createImageSizeTests(testCtx));
+    imageTests->addChild(createImageAtomicOperationTests(testCtx));
+    imageTests->addChild(createImageCompressionTranscodingTests(testCtx));
+    imageTests->addChild(createImageTranscodingSupportTests(testCtx));
+    imageTests->addChild(createImageExtendOperandsTests(testCtx));
 #ifndef CTS_USES_VULKANSC
-	imageTests->addChild(createImageNontemporalOperandTests(testCtx));
+    imageTests->addChild(createImageNontemporalOperandTests(testCtx));
 #endif // CTS_USES_VULKANSC
-	imageTests->addChild(createImageAstcDecodeModeTests(testCtx));
-	imageTests->addChild(createMisalignedCubeTests(testCtx));
-	imageTests->addChild(createImageLoadStoreLodAMDTests(testCtx));
-	imageTests->addChild(createImageSubresourceLayoutTests(testCtx));
-	imageTests->addChild(createImageMismatchedFormatsTests(testCtx));
-	imageTests->addChild(createImageWriteOpTests(testCtx));
-	imageTests->addChild(createImageSampleDrawnCubeFaceTests(testCtx));
-	imageTests->addChild(createImageDepthStencilDescriptorTests(testCtx));
-	imageTests->addChild(createImageSampleDrawnTextureTests(testCtx));
-	imageTests->addChild(createImageExtendedUsageBitTests(testCtx));
-	imageTests->addChild(createTransferQueueImageTests(testCtx));
+    imageTests->addChild(createImageAstcDecodeModeTests(testCtx));
+    imageTests->addChild(createMisalignedCubeTests(testCtx));
+    imageTests->addChild(createImageLoadStoreLodAMDTests(testCtx));
+    imageTests->addChild(createImageSubresourceLayoutTests(testCtx));
+    imageTests->addChild(createImageMismatchedFormatsTests(testCtx));
+    imageTests->addChild(createImageWriteOpTests(testCtx));
+    imageTests->addChild(createImageSampleDrawnCubeFaceTests(testCtx));
+    imageTests->addChild(createImageDepthStencilDescriptorTests(testCtx));
+    imageTests->addChild(createImageSampleDrawnTextureTests(testCtx));
+    imageTests->addChild(createImageExtendedUsageBitTests(testCtx));
+    imageTests->addChild(createTransferQueueImageTests(testCtx));
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "image", "Image tests", createChildren);
+    return createTestGroup(testCtx, "image", "Image tests", createChildren);
 }
 
-} // image
-} // vkt
+} // namespace image
+} // namespace vkt

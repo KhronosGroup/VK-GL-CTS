@@ -35,24 +35,23 @@ namespace gles2
 namespace Stress
 {
 
-StressTests::StressTests (Context& context)
-	: TestCaseGroup(context, "stress", "Stress tests")
+StressTests::StressTests(Context &context) : TestCaseGroup(context, "stress", "Stress tests")
 {
 }
 
-StressTests::~StressTests (void)
+StressTests::~StressTests(void)
 {
 }
 
-void StressTests::init (void)
+void StressTests::init(void)
 {
-	addChild(new MemoryTests		(m_context));
-	addChild(new LongRunningTests	(m_context));
-	addChild(new SpecialFloatTests	(m_context));
-	addChild(new VertexArrayTests	(m_context));
-	addChild(new DrawTests			(m_context));
+    addChild(new MemoryTests(m_context));
+    addChild(new LongRunningTests(m_context));
+    addChild(new SpecialFloatTests(m_context));
+    addChild(new VertexArrayTests(m_context));
+    addChild(new DrawTests(m_context));
 }
 
-} // Stress
-} // gles2
-} // deqp
+} // namespace Stress
+} // namespace gles2
+} // namespace deqp

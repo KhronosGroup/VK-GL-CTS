@@ -52,40 +52,39 @@ namespace subgroups
 namespace
 {
 
-void createChildren(tcu::TestCaseGroup* subgroupsTests)
+void createChildren(tcu::TestCaseGroup *subgroupsTests)
 {
-	tcu::TestContext& testCtx = subgroupsTests->getTestContext();
+    tcu::TestContext &testCtx = subgroupsTests->getTestContext();
 
-	subgroupsTests->addChild(createSubgroupsBuiltinVarTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsBuiltinMaskVarTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsBasicTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsVoteTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsBallotTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsBallotBroadcastTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsBallotOtherTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsArithmeticTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsClusteredTests(testCtx));
+    subgroupsTests->addChild(createSubgroupsBuiltinVarTests(testCtx));
+    subgroupsTests->addChild(createSubgroupsBuiltinMaskVarTests(testCtx));
+    subgroupsTests->addChild(createSubgroupsBasicTests(testCtx));
+    subgroupsTests->addChild(createSubgroupsVoteTests(testCtx));
+    subgroupsTests->addChild(createSubgroupsBallotTests(testCtx));
+    subgroupsTests->addChild(createSubgroupsBallotBroadcastTests(testCtx));
+    subgroupsTests->addChild(createSubgroupsBallotOtherTests(testCtx));
+    subgroupsTests->addChild(createSubgroupsArithmeticTests(testCtx));
+    subgroupsTests->addChild(createSubgroupsClusteredTests(testCtx));
 #ifndef CTS_USES_VULKANSC
-	subgroupsTests->addChild(createSubgroupsPartitionedTests(testCtx));
+    subgroupsTests->addChild(createSubgroupsPartitionedTests(testCtx));
 #endif
-	subgroupsTests->addChild(createSubgroupsShuffleTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsQuadTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsShapeTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsBallotMasksTests(testCtx));
-	subgroupsTests->addChild(createMultipleDispatchesUniformSubgroupSizeTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsSizeControlTests(testCtx));
+    subgroupsTests->addChild(createSubgroupsShuffleTests(testCtx));
+    subgroupsTests->addChild(createSubgroupsQuadTests(testCtx));
+    subgroupsTests->addChild(createSubgroupsShapeTests(testCtx));
+    subgroupsTests->addChild(createSubgroupsBallotMasksTests(testCtx));
+    subgroupsTests->addChild(createMultipleDispatchesUniformSubgroupSizeTests(testCtx));
+    subgroupsTests->addChild(createSubgroupsSizeControlTests(testCtx));
 #ifndef CTS_USES_VULKANSC
-	subgroupsTests->addChild(createSubgroupUniformControlFlowTests(testCtx));
+    subgroupsTests->addChild(createSubgroupUniformControlFlowTests(testCtx));
 #endif // CTS_USES_VULKANSC
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests(tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(
-			   testCtx, "subgroups", "Subgroups tests", createChildren);
+    return createTestGroup(testCtx, "subgroups", "Subgroups tests", createChildren);
 }
 
-} // subgroups
-} // vkt
+} // namespace subgroups
+} // namespace vkt

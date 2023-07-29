@@ -31,108 +31,108 @@ namespace tcu
 {
 
 template <typename T, int Size>
-Matrix<T, Size+1, Size+1>		translationMatrix		(const Vector<T, Size>& translation);
+Matrix<T, Size + 1, Size + 1> translationMatrix(const Vector<T, Size> &translation);
 
 template <typename T, int Rows, int Cols>
-Matrix<T, Cols, Rows>			transpose				(const Matrix<T, Rows, Cols>& mat);
+Matrix<T, Cols, Rows> transpose(const Matrix<T, Rows, Cols> &mat);
 
 // 2D affine transformations.
-Matrix<float, 2, 2>				rotationMatrix			(float radians);
-Matrix<float, 2, 2>				shearMatrix				(const Vector<float, 2>& shear);
+Matrix<float, 2, 2> rotationMatrix(float radians);
+Matrix<float, 2, 2> shearMatrix(const Vector<float, 2> &shear);
 
 // 3D axis rotations.
-Matrix<float, 3, 3>				rotationMatrixX			(float radiansX);
-Matrix<float, 3, 3>				rotationMatrixY			(float radiansY);
-Matrix<float, 3, 3>				rotationMatrixZ			(float radiansZ);
+Matrix<float, 3, 3> rotationMatrixX(float radiansX);
+Matrix<float, 3, 3> rotationMatrixY(float radiansY);
+Matrix<float, 3, 3> rotationMatrixZ(float radiansZ);
 
 // Implementations.
 
 // Builds a translation matrix for a homogenous coordinate system
 template <typename T, int Len>
-inline Matrix<T, Len+1, Len+1> translationMatrix (const Vector<T, Len>& translation)
+inline Matrix<T, Len + 1, Len + 1> translationMatrix(const Vector<T, Len> &translation)
 {
-	Matrix<T, Len+1, Len+1> res =  Matrix<T, Len+1, Len+1>();
-	for (int row = 0; row < Len; row++)
-		res(row, Len) = translation.m_data[row];
-	return res;
+    Matrix<T, Len + 1, Len + 1> res = Matrix<T, Len + 1, Len + 1>();
+    for (int row = 0; row < Len; row++)
+        res(row, Len) = translation.m_data[row];
+    return res;
 }
 
 template <typename T, int Rows, int Cols>
-inline Matrix<T, Cols, Rows> transpose (const Matrix<T, Rows, Cols>& mat)
+inline Matrix<T, Cols, Rows> transpose(const Matrix<T, Rows, Cols> &mat)
 {
-	Matrix<T, Cols, Rows> res;
-	for (int row = 0; row < Rows; row++)
-		for (int col = 0; col < Cols; col++)
-			res(col, row) = mat(row, col);
-	return res;
+    Matrix<T, Cols, Rows> res;
+    for (int row = 0; row < Rows; row++)
+        for (int col = 0; col < Cols; col++)
+            res(col, row) = mat(row, col);
+    return res;
 }
 
-inline Matrix<float, 2, 2> rotationMatrix (float radians)
+inline Matrix<float, 2, 2> rotationMatrix(float radians)
 {
-	Matrix<float, 2, 2> mat;
-	float				c	= deFloatCos(radians);
-	float				s	= deFloatSin(radians);
+    Matrix<float, 2, 2> mat;
+    float c = deFloatCos(radians);
+    float s = deFloatSin(radians);
 
-	mat(0, 0) = c;
-	mat(0, 1) = -s;
-	mat(1, 0) = s;
-	mat(1, 1) = c;
+    mat(0, 0) = c;
+    mat(0, 1) = -s;
+    mat(1, 0) = s;
+    mat(1, 1) = c;
 
-	return mat;
+    return mat;
 }
 
-inline Matrix<float, 2, 2> shearMatrix (const Vector<float, 2>& shear)
+inline Matrix<float, 2, 2> shearMatrix(const Vector<float, 2> &shear)
 {
-	Matrix<float, 2, 2> mat;
-	mat(0, 0) = 1.0f;
-	mat(0, 1) = shear.x();
-	mat(1, 0) = shear.y();
-	mat(1, 1) = 1.0f + shear.x()*shear.y();
-	return mat;
+    Matrix<float, 2, 2> mat;
+    mat(0, 0) = 1.0f;
+    mat(0, 1) = shear.x();
+    mat(1, 0) = shear.y();
+    mat(1, 1) = 1.0f + shear.x() * shear.y();
+    return mat;
 }
 
-inline Matrix<float, 3, 3> rotationMatrixX (float radiansX)
+inline Matrix<float, 3, 3> rotationMatrixX(float radiansX)
 {
-	Matrix<float, 3, 3> mat(1.0f);
-	float				c	= deFloatCos(radiansX);
-	float				s	= deFloatSin(radiansX);
+    Matrix<float, 3, 3> mat(1.0f);
+    float c = deFloatCos(radiansX);
+    float s = deFloatSin(radiansX);
 
-	mat(1, 1) = c;
-	mat(1, 2) = -s;
-	mat(2, 1) = s;
-	mat(2, 2) = c;
+    mat(1, 1) = c;
+    mat(1, 2) = -s;
+    mat(2, 1) = s;
+    mat(2, 2) = c;
 
-	return mat;
+    return mat;
 }
 
-inline Matrix<float, 3, 3> rotationMatrixY (float radiansY)
+inline Matrix<float, 3, 3> rotationMatrixY(float radiansY)
 {
-	Matrix<float, 3, 3> mat(1.0f);
-	float				c	= deFloatCos(radiansY);
-	float				s	= deFloatSin(radiansY);
+    Matrix<float, 3, 3> mat(1.0f);
+    float c = deFloatCos(radiansY);
+    float s = deFloatSin(radiansY);
 
-	mat(0, 0) = c;
-	mat(0, 2) = s;
-	mat(2, 0) = -s;
-	mat(2, 2) = c;
+    mat(0, 0) = c;
+    mat(0, 2) = s;
+    mat(2, 0) = -s;
+    mat(2, 2) = c;
 
-	return mat;
+    return mat;
 }
 
-inline Matrix<float, 3, 3> rotationMatrixZ (float radiansZ)
+inline Matrix<float, 3, 3> rotationMatrixZ(float radiansZ)
 {
-	Matrix<float, 3, 3> mat(1.0f);
-	float				c	= deFloatCos(radiansZ);
-	float				s	= deFloatSin(radiansZ);
+    Matrix<float, 3, 3> mat(1.0f);
+    float c = deFloatCos(radiansZ);
+    float s = deFloatSin(radiansZ);
 
-	mat(0, 0) = c;
-	mat(0, 1) = -s;
-	mat(1, 0) = s;
-	mat(1, 1) = c;
+    mat(0, 0) = c;
+    mat(0, 1) = -s;
+    mat(1, 0) = s;
+    mat(1, 1) = c;
 
-	return mat;
+    return mat;
 }
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUMATRIXUTIL_HPP

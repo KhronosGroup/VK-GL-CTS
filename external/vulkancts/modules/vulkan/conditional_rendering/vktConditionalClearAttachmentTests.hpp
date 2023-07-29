@@ -34,17 +34,16 @@ namespace conditional
 class ConditionalClearAttachmentTests : public tcu::TestCaseGroup
 {
 public:
-						ConditionalClearAttachmentTests	(tcu::TestContext &testCtx);
-						~ConditionalClearAttachmentTests(void);
-	void				init							(void);
+    ConditionalClearAttachmentTests(tcu::TestContext &testCtx);
+    ~ConditionalClearAttachmentTests(void);
+    void init(void);
 
 private:
-	ConditionalClearAttachmentTests						(const ConditionalClearAttachmentTests &other);
-	ConditionalClearAttachmentTests&	operator=		(const ConditionalClearAttachmentTests &other);
-
+    ConditionalClearAttachmentTests(const ConditionalClearAttachmentTests &other);
+    ConditionalClearAttachmentTests &operator=(const ConditionalClearAttachmentTests &other);
 };
 
-} // conditional
-} // vkt
+} // namespace conditional
+} // namespace vkt
 
 #endif // _VKTCONDITIONALCLEARATTACHMENTTESTS_HPP

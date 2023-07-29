@@ -32,9 +32,9 @@ namespace vkt
 namespace rasterization
 {
 
-tcu::TestCaseGroup* createRasterizationOrderAttachmentAccessTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createRasterizationOrderAttachmentAccessTests(tcu::TestContext &testCtx);
 
 }
-}
+} // namespace vkt
 
 #endif // _VKTRASTERIZATIONORDERATTACHMENTACCESSTESTS_HPP

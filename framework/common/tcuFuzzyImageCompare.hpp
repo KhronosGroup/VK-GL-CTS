@@ -33,16 +33,16 @@ class PixelBufferAccess;
 
 struct FuzzyCompareParams
 {
-	FuzzyCompareParams (int maxSampleSkip_ = 8)
-		: maxSampleSkip(maxSampleSkip_)
-	{
-	}
+    FuzzyCompareParams(int maxSampleSkip_ = 8) : maxSampleSkip(maxSampleSkip_)
+    {
+    }
 
-	int		maxSampleSkip;
+    int maxSampleSkip;
 };
 
-float fuzzyCompare (const FuzzyCompareParams& params, const ConstPixelBufferAccess& ref, const ConstPixelBufferAccess& cmp, const PixelBufferAccess& errorMask);
+float fuzzyCompare(const FuzzyCompareParams &params, const ConstPixelBufferAccess &ref,
+                   const ConstPixelBufferAccess &cmp, const PixelBufferAccess &errorMask);
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUFUZZYIMAGECOMPARE_HPP

@@ -35,84 +35,75 @@ namespace Android
 
 enum MessageType
 {
-	// Execution control messages. No data argument.
-	MESSAGE_RESUME = 0,
-	MESSAGE_PAUSE,
-	MESSAGE_FINISH,
+    // Execution control messages. No data argument.
+    MESSAGE_RESUME = 0,
+    MESSAGE_PAUSE,
+    MESSAGE_FINISH,
 
-	// Window messages. Argument is ANativeWindow pointer.
-	MESSAGE_WINDOW_CREATED,
-	MESSAGE_WINDOW_RESIZED,
-	MESSAGE_WINDOW_DESTROYED,
+    // Window messages. Argument is ANativeWindow pointer.
+    MESSAGE_WINDOW_CREATED,
+    MESSAGE_WINDOW_RESIZED,
+    MESSAGE_WINDOW_DESTROYED,
 
-	// Input queue messages. Argument is AInputQueue pointer.
-	MESSAGE_INPUT_QUEUE_CREATED,
-	MESSAGE_INPUT_QUEUE_DESTROYED,
+    // Input queue messages. Argument is AInputQueue pointer.
+    MESSAGE_INPUT_QUEUE_CREATED,
+    MESSAGE_INPUT_QUEUE_DESTROYED,
 
-	MESSAGE_SYNC,					//!< Main thread requests sync. Data argument is de::Semaphore* that needs to be incremented.
+    MESSAGE_SYNC, //!< Main thread requests sync. Data argument is de::Semaphore* that needs to be incremented.
 
-	MESSAGETYPE_LAST
+    MESSAGETYPE_LAST
 };
 
 struct Message
 {
-	MessageType			type;			//!< Message type.
-	union
-	{
-		ANativeWindow*	window;
-		AInputQueue*	inputQueue;
-		de::Semaphore*	semaphore;
-	} payload;							//!< Optional data argument.
+    MessageType type; //!< Message type.
+    union
+    {
+        ANativeWindow *window;
+        AInputQueue *inputQueue;
+        de::Semaphore *semaphore;
+    } payload; //!< Optional data argument.
 
-	Message (void)
-		: type(MESSAGETYPE_LAST)
-	{
-	}
+    Message(void) : type(MESSAGETYPE_LAST)
+    {
+    }
 
-	explicit Message (MessageType type_)
-		: type(type_)
-	{
-		DE_ASSERT(type_ == MESSAGE_RESUME	||
-				  type_ == MESSAGE_PAUSE	||
-				  type_ == MESSAGE_FINISH);
-	}
+    explicit Message(MessageType type_) : type(type_)
+    {
+        DE_ASSERT(type_ == MESSAGE_RESUME || type_ == MESSAGE_PAUSE || type_ == MESSAGE_FINISH);
+    }
 
-	Message (MessageType type_, ANativeWindow* window)
-		: type(type_)
-	{
-		DE_ASSERT(type_ == MESSAGE_WINDOW_CREATED	||
-				  type_ == MESSAGE_WINDOW_DESTROYED	||
-				  type_ == MESSAGE_WINDOW_RESIZED);
-		DE_ASSERT(window);
-		payload.window = window;
-	}
+    Message(MessageType type_, ANativeWindow *window) : type(type_)
+    {
+        DE_ASSERT(type_ == MESSAGE_WINDOW_CREATED || type_ == MESSAGE_WINDOW_DESTROYED ||
+                  type_ == MESSAGE_WINDOW_RESIZED);
+        DE_ASSERT(window);
+        payload.window = window;
+    }
 
-	Message (MessageType type_, AInputQueue* inputQueue)
-		: type(type_)
-	{
-		DE_ASSERT(type_ == MESSAGE_INPUT_QUEUE_CREATED	||
-				  type_ == MESSAGE_INPUT_QUEUE_DESTROYED);
-		DE_ASSERT(inputQueue);
-		payload.inputQueue = inputQueue;
-	}
+    Message(MessageType type_, AInputQueue *inputQueue) : type(type_)
+    {
+        DE_ASSERT(type_ == MESSAGE_INPUT_QUEUE_CREATED || type_ == MESSAGE_INPUT_QUEUE_DESTROYED);
+        DE_ASSERT(inputQueue);
+        payload.inputQueue = inputQueue;
+    }
 
-	Message (MessageType type_, de::Semaphore* semaphore)
-		: type(type_)
-	{
-		DE_ASSERT(type_ == MESSAGE_SYNC);
-		DE_ASSERT(semaphore);
-		payload.semaphore = semaphore;
-	}
+    Message(MessageType type_, de::Semaphore *semaphore) : type(type_)
+    {
+        DE_ASSERT(type_ == MESSAGE_SYNC);
+        DE_ASSERT(semaphore);
+        payload.semaphore = semaphore;
+    }
 };
 
 enum WindowState
 {
-	WINDOWSTATE_NOT_CREATED = 0,	//!< Framework hasn't signaled window creation.
-	WINDOWSTATE_NOT_INITIALIZED,	//!< Framework hasn't signaled first resize after creation and thus size is not final.
-	WINDOWSTATE_READY,				//!< Window is ready for use.
-	WINDOWSTATE_DESTROYED,			//!< Window has been destroyed.
+    WINDOWSTATE_NOT_CREATED = 0, //!< Framework hasn't signaled window creation.
+    WINDOWSTATE_NOT_INITIALIZED, //!< Framework hasn't signaled first resize after creation and thus size is not final.
+    WINDOWSTATE_READY,           //!< Window is ready for use.
+    WINDOWSTATE_DESTROYED,       //!< Window has been destroyed.
 
-	WINDOWSTATE_LAST
+    WINDOWSTATE_LAST
 };
 
 typedef de::ThreadSafeRingBuffer<Message> MessageQueue;
@@ -120,79 +111,85 @@ typedef de::ThreadSafeRingBuffer<Message> MessageQueue;
 class RenderThread : private de::Thread
 {
 public:
-							RenderThread				(NativeActivity& activity);
-							~RenderThread				(void);
+    RenderThread(NativeActivity &activity);
+    ~RenderThread(void);
 
-	void					start						(void);
-	void					resume						(void);
-	void					pause						(void);
-	void					stop						(void);
+    void start(void);
+    void resume(void);
+    void pause(void);
+    void stop(void);
 
-	void					enqueue						(const Message& message);
-	void					sync						(void);
+    void enqueue(const Message &message);
+    void sync(void);
 
-	void					run							(void);
+    void run(void);
 
 protected:
-	virtual void			onInputEvent				(AInputEvent* event) { DE_UNREF(event); }
-	virtual void			onWindowCreated				(ANativeWindow* window) = 0;
-	virtual void			onWindowResized				(ANativeWindow* window) = 0;
-	virtual void			onWindowDestroyed			(ANativeWindow* window) = 0;
-	virtual bool			render						(void) = 0;
+    virtual void onInputEvent(AInputEvent *event)
+    {
+        DE_UNREF(event);
+    }
+    virtual void onWindowCreated(ANativeWindow *window)   = 0;
+    virtual void onWindowResized(ANativeWindow *window)   = 0;
+    virtual void onWindowDestroyed(ANativeWindow *window) = 0;
+    virtual bool render(void)                             = 0;
 
-	NativeActivity&			getNativeActivity			(void) { return m_activity; }
+    NativeActivity &getNativeActivity(void)
+    {
+        return m_activity;
+    }
 
 private:
-	void					processMessage				(const Message& message);
+    void processMessage(const Message &message);
 
-	// Shared state.
-	NativeActivity&			m_activity;
-	MessageQueue			m_msgQueue;
+    // Shared state.
+    NativeActivity &m_activity;
+    MessageQueue m_msgQueue;
 
-	// Parent thread state.
-	bool					m_threadRunning;
+    // Parent thread state.
+    bool m_threadRunning;
 
-	// Thread state.
-	AInputQueue*			m_inputQueue;
-	WindowState				m_windowState;
-	ANativeWindow*			m_window;
-	bool					m_paused;					//!< Is rendering paused?
-	bool					m_finish;					//!< Has thread received FINISH message?
-	bool					m_receivedFirstResize;				//!< Has the first onWindowResized been processed?
+    // Thread state.
+    AInputQueue *m_inputQueue;
+    WindowState m_windowState;
+    ANativeWindow *m_window;
+    bool m_paused;              //!< Is rendering paused?
+    bool m_finish;              //!< Has thread received FINISH message?
+    bool m_receivedFirstResize; //!< Has the first onWindowResized been processed?
 };
 
 class RenderActivity : public NativeActivity
 {
 public:
-							RenderActivity				(ANativeActivity* activity);
-	virtual					~RenderActivity				(void);
+    RenderActivity(ANativeActivity *activity);
+    virtual ~RenderActivity(void);
 
-	virtual void			onStart						(void);
-	virtual void			onResume					(void);
-	virtual void			onPause						(void);
-	virtual void			onStop						(void);
-	virtual void			onDestroy					(void);
+    virtual void onStart(void);
+    virtual void onResume(void);
+    virtual void onPause(void);
+    virtual void onStop(void);
+    virtual void onDestroy(void);
 
-	virtual void			onNativeWindowCreated		(ANativeWindow* window);
-	virtual void			onNativeWindowResized		(ANativeWindow* window);
-	virtual void			onNativeWindowRedrawNeeded	(ANativeWindow* window);
-	virtual void			onNativeWindowDestroyed		(ANativeWindow* window);
+    virtual void onNativeWindowCreated(ANativeWindow *window);
+    virtual void onNativeWindowResized(ANativeWindow *window);
+    virtual void onNativeWindowRedrawNeeded(ANativeWindow *window);
+    virtual void onNativeWindowDestroyed(ANativeWindow *window);
 
-	virtual void			onInputQueueCreated			(AInputQueue* queue);
-	virtual void			onInputQueueDestroyed		(AInputQueue* queue);
+    virtual void onInputQueueCreated(AInputQueue *queue);
+    virtual void onInputQueueDestroyed(AInputQueue *queue);
 
 protected:
-	//! Set rendering thread. Must be called at construction time.
-	void					setThread					(RenderThread* thread);
+    //! Set rendering thread. Must be called at construction time.
+    void setThread(RenderThread *thread);
 
 private:
-							RenderActivity				(const RenderActivity& other);
-	RenderActivity&			operator=					(const RenderActivity& other);
+    RenderActivity(const RenderActivity &other);
+    RenderActivity &operator=(const RenderActivity &other);
 
-	RenderThread*			m_thread;
+    RenderThread *m_thread;
 };
 
-} // Android
-} // tcu
+} // namespace Android
+} // namespace tcu
 
 #endif // _TCUANDROIDRENDERACTIVITY_HPP

@@ -27,18 +27,18 @@
 
 DE_BEGIN_EXTERN_C
 
-typedef void (*deTimerCallback) (void* arg);
+typedef void (*deTimerCallback)(void *arg);
 
 typedef struct deTimer_s deTimer;
 
-deTimer*		deTimer_create				(deTimerCallback callback, void* arg);
-void			deTimer_destroy				(deTimer* timer);
+deTimer *deTimer_create(deTimerCallback callback, void *arg);
+void deTimer_destroy(deTimer *timer);
 
-deBool			deTimer_scheduleSingle		(deTimer* timer, int milliseconds);
-deBool			deTimer_scheduleInterval	(deTimer* timer, int milliseconds);
+bool deTimer_scheduleSingle(deTimer *timer, int milliseconds);
+bool deTimer_scheduleInterval(deTimer *timer, int milliseconds);
 
-deBool			deTimer_isActive			(const deTimer* timer);
-void			deTimer_disable				(deTimer* timer);
+bool deTimer_isActive(const deTimer *timer);
+void deTimer_disable(deTimer *timer);
 
 DE_END_EXTERN_C
 

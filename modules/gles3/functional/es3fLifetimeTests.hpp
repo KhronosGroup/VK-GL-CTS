@@ -32,10 +32,10 @@ namespace gles3
 namespace Functional
 {
 
-TestCaseGroup* createLifetimeTests (Context& context);
+TestCaseGroup *createLifetimeTests(Context &context);
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FLIFETIMETESTS_HPP

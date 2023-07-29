@@ -36,18 +36,18 @@ namespace Performance
 class RedundantStateChangeTests : public TestCaseGroup
 {
 public:
-								RedundantStateChangeTests	(Context& context);
-								~RedundantStateChangeTests	(void);
+    RedundantStateChangeTests(Context &context);
+    ~RedundantStateChangeTests(void);
 
-	void						init						(void);
+    void init(void);
 
 private:
-								RedundantStateChangeTests	(const RedundantStateChangeTests& other);
-	RedundantStateChangeTests&	operator=					(const RedundantStateChangeTests& other);
+    RedundantStateChangeTests(const RedundantStateChangeTests &other);
+    RedundantStateChangeTests &operator=(const RedundantStateChangeTests &other);
 };
 
-} // Performance
-} // gles2
-} // deqp
+} // namespace Performance
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2PREDUNDANTSTATECHANGETESTS_HPP

@@ -45,32 +45,33 @@ namespace glu
 class ContextFactory : public tcu::FactoryBase
 {
 public:
-							ContextFactory		(const std::string& name, const std::string& description);
-	virtual					~ContextFactory		(void);
+    ContextFactory(const std::string &name, const std::string &description);
+    virtual ~ContextFactory(void);
 
-	/*--------------------------------------------------------------------*//*!
-	 * Create OpenGL rendering context.
-	 *
-	 * GL(ES) tests will call this when entering TestPackage (i.e. when launching
-	 * test execution session) and destroy the context upon leaving TestPackage.
-	 *
-	 * Only single context will be active concurrently and it will be accessed
-	 * only from the calling thread.
-	 *
-	 * \param config		Rendering context configuration
-	 * \param cmdLine		Command line for extra arguments
-	 * \param sharedContext	Context with which objects should be shared
-	 * \return Rendering context wrapper object.
-	 *//*--------------------------------------------------------------------*/
-	virtual RenderContext*	createContext		(const RenderConfig& config, const tcu::CommandLine& cmdLine, const glu::RenderContext* sharedContext) const = 0;
+    /*--------------------------------------------------------------------*//*!
+     * Create OpenGL rendering context.
+     *
+     * GL(ES) tests will call this when entering TestPackage (i.e. when launching
+     * test execution session) and destroy the context upon leaving TestPackage.
+     *
+     * Only single context will be active concurrently and it will be accessed
+     * only from the calling thread.
+     *
+     * \param config        Rendering context configuration
+     * \param cmdLine        Command line for extra arguments
+     * \param sharedContext    Context with which objects should be shared
+     * \return Rendering context wrapper object.
+     *//*--------------------------------------------------------------------*/
+    virtual RenderContext *createContext(const RenderConfig &config, const tcu::CommandLine &cmdLine,
+                                         const glu::RenderContext *sharedContext) const = 0;
 
 private:
-							ContextFactory		(const ContextFactory&);
-	ContextFactory&			operator=			(const ContextFactory&);
+    ContextFactory(const ContextFactory &);
+    ContextFactory &operator=(const ContextFactory &);
 };
 
 typedef tcu::FactoryRegistry<ContextFactory> ContextFactoryRegistry;
 
-} // glu
+} // namespace glu
 
 #endif // _GLUCONTEXTFACTORY_HPP

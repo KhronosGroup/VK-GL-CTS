@@ -35,12 +35,12 @@ namespace config
 class TestCaseWrapper : public tcu::TestCaseExecutor
 {
 public:
-	TestCaseWrapper(void);
-	~TestCaseWrapper(void);
+    TestCaseWrapper(void);
+    ~TestCaseWrapper(void);
 
-	void init(tcu::TestCase* testCase, const std::string& path);
-	void deinit(tcu::TestCase* testCase);
-	tcu::TestNode::IterateResult iterate(tcu::TestCase* testCase);
+    void init(tcu::TestCase *testCase, const std::string &path);
+    void deinit(tcu::TestCase *testCase);
+    tcu::TestNode::IterateResult iterate(tcu::TestCase *testCase);
 };
 
 TestCaseWrapper::TestCaseWrapper(void)
@@ -51,26 +51,26 @@ TestCaseWrapper::~TestCaseWrapper(void)
 {
 }
 
-void TestCaseWrapper::init(tcu::TestCase* testCase, const std::string&)
+void TestCaseWrapper::init(tcu::TestCase *testCase, const std::string &)
 {
-	testCase->init();
+    testCase->init();
 }
 
-void TestCaseWrapper::deinit(tcu::TestCase* testCase)
+void TestCaseWrapper::deinit(tcu::TestCase *testCase)
 {
-	testCase->deinit();
+    testCase->deinit();
 }
 
-tcu::TestNode::IterateResult TestCaseWrapper::iterate(tcu::TestCase* testCase)
+tcu::TestNode::IterateResult TestCaseWrapper::iterate(tcu::TestCase *testCase)
 {
-	const tcu::TestCase::IterateResult result = testCase->iterate();
+    const tcu::TestCase::IterateResult result = testCase->iterate();
 
-	return result;
+    return result;
 }
-}
+} // namespace config
 
-ConfigPackage::ConfigPackage(tcu::TestContext& testCtx, const char* name)
-	: tcu::TestPackage(testCtx, name, "CTS Configuration List Package")
+ConfigPackage::ConfigPackage(tcu::TestContext &testCtx, const char *name)
+    : tcu::TestPackage(testCtx, name, "CTS Configuration List Package")
 {
 }
 
@@ -78,28 +78,28 @@ ConfigPackage::~ConfigPackage(void)
 {
 }
 
-tcu::TestCaseExecutor* ConfigPackage::createExecutor(void) const
+tcu::TestCaseExecutor *ConfigPackage::createExecutor(void) const
 {
-	return new config::TestCaseWrapper();
+    return new config::TestCaseWrapper();
 }
 
 void ConfigPackage::init(void)
 {
-	addChild(new ConfigListCase(m_testCtx, "es2", "OpenGL ES 2 Configurations", glu::ApiType::es(2, 0)));
-	addChild(new ConfigListCase(m_testCtx, "es3", "OpenGL ES 3 Configurations", glu::ApiType::es(3, 0)));
-	addChild(new ConfigListCase(m_testCtx, "es31", "OpenGL ES 3.1 Configurations", glu::ApiType::es(3, 1)));
-	addChild(new ConfigListCase(m_testCtx, "es32", "OpenGL ES 3.2 Configurations", glu::ApiType::es(3, 2)));
-	addChild(new ConfigListCase(m_testCtx, "gl30", "OpenGL 3.0 Configurations", glu::ApiType::core(3, 0)));
-	addChild(new ConfigListCase(m_testCtx, "gl31", "OpenGL 3.1 Configurations", glu::ApiType::core(3, 1)));
-	addChild(new ConfigListCase(m_testCtx, "gl32", "OpenGL 3.2 Configurations", glu::ApiType::core(3, 2)));
-	addChild(new ConfigListCase(m_testCtx, "gl33", "OpenGL 3.3 Configurations", glu::ApiType::core(3, 3)));
-	addChild(new ConfigListCase(m_testCtx, "gl40", "OpenGL 4.0 Configurations", glu::ApiType::core(4, 0)));
-	addChild(new ConfigListCase(m_testCtx, "gl41", "OpenGL 4.1 Configurations", glu::ApiType::core(4, 1)));
-	addChild(new ConfigListCase(m_testCtx, "gl42", "OpenGL 4.2 Configurations", glu::ApiType::core(4, 2)));
-	addChild(new ConfigListCase(m_testCtx, "gl43", "OpenGL 4.3 Configurations", glu::ApiType::core(4, 3)));
-	addChild(new ConfigListCase(m_testCtx, "gl44", "OpenGL 4.4 Configurations", glu::ApiType::core(4, 4)));
-	addChild(new ConfigListCase(m_testCtx, "gl45", "OpenGL 4.5 Configurations", glu::ApiType::core(4, 5)));
-	addChild(new ConfigListCase(m_testCtx, "gl46", "OpenGL 4.6 Configurations", glu::ApiType::core(4, 6)));
+    addChild(new ConfigListCase(m_testCtx, "es2", "OpenGL ES 2 Configurations", glu::ApiType::es(2, 0)));
+    addChild(new ConfigListCase(m_testCtx, "es3", "OpenGL ES 3 Configurations", glu::ApiType::es(3, 0)));
+    addChild(new ConfigListCase(m_testCtx, "es31", "OpenGL ES 3.1 Configurations", glu::ApiType::es(3, 1)));
+    addChild(new ConfigListCase(m_testCtx, "es32", "OpenGL ES 3.2 Configurations", glu::ApiType::es(3, 2)));
+    addChild(new ConfigListCase(m_testCtx, "gl30", "OpenGL 3.0 Configurations", glu::ApiType::core(3, 0)));
+    addChild(new ConfigListCase(m_testCtx, "gl31", "OpenGL 3.1 Configurations", glu::ApiType::core(3, 1)));
+    addChild(new ConfigListCase(m_testCtx, "gl32", "OpenGL 3.2 Configurations", glu::ApiType::core(3, 2)));
+    addChild(new ConfigListCase(m_testCtx, "gl33", "OpenGL 3.3 Configurations", glu::ApiType::core(3, 3)));
+    addChild(new ConfigListCase(m_testCtx, "gl40", "OpenGL 4.0 Configurations", glu::ApiType::core(4, 0)));
+    addChild(new ConfigListCase(m_testCtx, "gl41", "OpenGL 4.1 Configurations", glu::ApiType::core(4, 1)));
+    addChild(new ConfigListCase(m_testCtx, "gl42", "OpenGL 4.2 Configurations", glu::ApiType::core(4, 2)));
+    addChild(new ConfigListCase(m_testCtx, "gl43", "OpenGL 4.3 Configurations", glu::ApiType::core(4, 3)));
+    addChild(new ConfigListCase(m_testCtx, "gl44", "OpenGL 4.4 Configurations", glu::ApiType::core(4, 4)));
+    addChild(new ConfigListCase(m_testCtx, "gl45", "OpenGL 4.5 Configurations", glu::ApiType::core(4, 5)));
+    addChild(new ConfigListCase(m_testCtx, "gl46", "OpenGL 4.6 Configurations", glu::ApiType::core(4, 6)));
 }
 
-} // glcts
+} // namespace glcts

@@ -34,273 +34,281 @@
 #include <iostream>
 #include <stdexcept>
 
-using std::vector;
-using std::string;
-using std::set;
 using std::map;
+using std::set;
+using std::string;
+using std::vector;
 
 struct CommandLine
 {
-	CommandLine (void)
-		: statusCode(false)
-	{
-	}
+    CommandLine(void) : statusCode(false)
+    {
+    }
 
-	string			filename;
-	vector<string>	tagNames;
-	bool			statusCode;
+    string filename;
+    vector<string> tagNames;
+    bool statusCode;
 };
 
 typedef xe::ri::NumericValue Value;
 
 struct CaseValues
 {
-	string				casePath;
-	xe::TestCaseType	caseType;
-	xe::TestStatusCode	statusCode;
-	string				statusDetails;
+    string casePath;
+    xe::TestCaseType caseType;
+    xe::TestStatusCode statusCode;
+    string statusDetails;
 
-	vector<Value>		values;
+    vector<Value> values;
 };
 
 class BatchResultValues
 {
 public:
-	BatchResultValues (const vector<string>& tagNames)
-		: m_tagNames(tagNames)
-	{
-	}
+    BatchResultValues(const vector<string> &tagNames) : m_tagNames(tagNames)
+    {
+    }
 
-	~BatchResultValues (void)
-	{
-		for (vector<CaseValues*>::iterator i = m_caseValues.begin(); i != m_caseValues.end(); ++i)
-			delete *i;
-	}
+    ~BatchResultValues(void)
+    {
+        for (vector<CaseValues *>::iterator i = m_caseValues.begin(); i != m_caseValues.end(); ++i)
+            delete *i;
+    }
 
-	void add (const CaseValues& result)
-	{
-		CaseValues* copy = new CaseValues(result);
-		try
-		{
-			m_caseValues.push_back(copy);
-		}
-		catch (...)
-		{
-			delete copy;
-			throw;
-		}
-	}
+    void add(const CaseValues &result)
+    {
+        CaseValues *copy = new CaseValues(result);
+        try
+        {
+            m_caseValues.push_back(copy);
+        }
+        catch (...)
+        {
+            delete copy;
+            throw;
+        }
+    }
 
-	const vector<string>&	getTagNames		(void) const		{ return m_tagNames;			}
+    const vector<string> &getTagNames(void) const
+    {
+        return m_tagNames;
+    }
 
-	size_t					size			(void) const		{ return m_caseValues.size();	}
-	const CaseValues&		operator[]		(size_t ndx) const	{ return *m_caseValues[ndx];	}
+    size_t size(void) const
+    {
+        return m_caseValues.size();
+    }
+    const CaseValues &operator[](size_t ndx) const
+    {
+        return *m_caseValues[ndx];
+    }
 
 private:
-	vector<string>		m_tagNames;
-	vector<CaseValues*>	m_caseValues;
+    vector<string> m_tagNames;
+    vector<CaseValues *> m_caseValues;
 };
 
-static Value findValueByTag (const xe::ri::List& items, const string& tagName)
+static Value findValueByTag(const xe::ri::List &items, const string &tagName)
 {
-	for (int ndx = 0; ndx < items.getNumItems(); ndx++)
-	{
-		const xe::ri::Item& item = items.getItem(ndx);
+    for (int ndx = 0; ndx < items.getNumItems(); ndx++)
+    {
+        const xe::ri::Item &item = items.getItem(ndx);
 
-		if (item.getType() == xe::ri::TYPE_SECTION)
-		{
-			const Value value = findValueByTag(static_cast<const xe::ri::Section&>(item).items, tagName);
-			if (value.getType() != Value::NUMVALTYPE_EMPTY)
-				return value;
-		}
-		else if (item.getType() == xe::ri::TYPE_NUMBER)
-		{
-			const xe::ri::Number& value = static_cast<const xe::ri::Number&>(item);
-			return value.value;
-		}
-	}
+        if (item.getType() == xe::ri::TYPE_SECTION)
+        {
+            const Value value = findValueByTag(static_cast<const xe::ri::Section &>(item).items, tagName);
+            if (value.getType() != Value::NUMVALTYPE_EMPTY)
+                return value;
+        }
+        else if (item.getType() == xe::ri::TYPE_NUMBER)
+        {
+            const xe::ri::Number &value = static_cast<const xe::ri::Number &>(item);
+            return value.value;
+        }
+    }
 
-	return Value();
+    return Value();
 }
 
 class TagParser : public xe::TestLogHandler
 {
 public:
-	TagParser (BatchResultValues& result)
-		: m_result(result)
-	{
-	}
+    TagParser(BatchResultValues &result) : m_result(result)
+    {
+    }
 
-	void setSessionInfo (const xe::SessionInfo&)
-	{
-		// Ignored.
-	}
+    void setSessionInfo(const xe::SessionInfo &)
+    {
+        // Ignored.
+    }
 
-	xe::TestCaseResultPtr startTestCaseResult (const char* casePath)
-	{
-		return xe::TestCaseResultPtr(new xe::TestCaseResultData(casePath));
-	}
+    xe::TestCaseResultPtr startTestCaseResult(const char *casePath)
+    {
+        return xe::TestCaseResultPtr(new xe::TestCaseResultData(casePath));
+    }
 
-	void testCaseResultUpdated (const xe::TestCaseResultPtr&)
-	{
-		// Ignored.
-	}
+    void testCaseResultUpdated(const xe::TestCaseResultPtr &)
+    {
+        // Ignored.
+    }
 
-	void testCaseResultComplete (const xe::TestCaseResultPtr& caseData)
-	{
-		const vector<string>&	tagNames	= m_result.getTagNames();
-		CaseValues				tagResult;
+    void testCaseResultComplete(const xe::TestCaseResultPtr &caseData)
+    {
+        const vector<string> &tagNames = m_result.getTagNames();
+        CaseValues tagResult;
 
-		tagResult.casePath		= caseData->getTestCasePath();
-		tagResult.caseType		= xe::TESTCASETYPE_SELF_VALIDATE;
-		tagResult.statusCode	= caseData->getStatusCode();
-		tagResult.statusDetails	= caseData->getStatusDetails();
-		tagResult.values.resize(tagNames.size());
+        tagResult.casePath      = caseData->getTestCasePath();
+        tagResult.caseType      = xe::TESTCASETYPE_SELF_VALIDATE;
+        tagResult.statusCode    = caseData->getStatusCode();
+        tagResult.statusDetails = caseData->getStatusDetails();
+        tagResult.values.resize(tagNames.size());
 
-		if (caseData->getDataSize() > 0 && caseData->getStatusCode() == xe::TESTSTATUSCODE_LAST)
-		{
-			xe::TestCaseResult					fullResult;
-			xe::TestResultParser::ParseResult	parseResult;
+        if (caseData->getDataSize() > 0 && caseData->getStatusCode() == xe::TESTSTATUSCODE_LAST)
+        {
+            xe::TestCaseResult fullResult;
+            xe::TestResultParser::ParseResult parseResult;
 
-			m_testResultParser.init(&fullResult);
-			parseResult = m_testResultParser.parse(caseData->getData(), caseData->getDataSize());
+            m_testResultParser.init(&fullResult);
+            parseResult = m_testResultParser.parse(caseData->getData(), caseData->getDataSize());
 
-			if ((parseResult != xe::TestResultParser::PARSERESULT_ERROR && fullResult.statusCode != xe::TESTSTATUSCODE_LAST) ||
-				(tagResult.statusCode == xe::TESTSTATUSCODE_LAST && fullResult.statusCode != xe::TESTSTATUSCODE_LAST))
-			{
-				tagResult.statusCode	= fullResult.statusCode;
-				tagResult.statusDetails	= fullResult.statusDetails;
-			}
-			else if (tagResult.statusCode == xe::TESTSTATUSCODE_LAST)
-			{
-				DE_ASSERT(parseResult == xe::TestResultParser::PARSERESULT_ERROR);
-				tagResult.statusCode	= xe::TESTSTATUSCODE_INTERNAL_ERROR;
-				tagResult.statusDetails	= "Test case result parsing failed";
-			}
+            if ((parseResult != xe::TestResultParser::PARSERESULT_ERROR &&
+                 fullResult.statusCode != xe::TESTSTATUSCODE_LAST) ||
+                (tagResult.statusCode == xe::TESTSTATUSCODE_LAST && fullResult.statusCode != xe::TESTSTATUSCODE_LAST))
+            {
+                tagResult.statusCode    = fullResult.statusCode;
+                tagResult.statusDetails = fullResult.statusDetails;
+            }
+            else if (tagResult.statusCode == xe::TESTSTATUSCODE_LAST)
+            {
+                DE_ASSERT(parseResult == xe::TestResultParser::PARSERESULT_ERROR);
+                tagResult.statusCode    = xe::TESTSTATUSCODE_INTERNAL_ERROR;
+                tagResult.statusDetails = "Test case result parsing failed";
+            }
 
-			if (parseResult != xe::TestResultParser::PARSERESULT_ERROR)
-			{
-				for (int valNdx = 0; valNdx < (int)tagNames.size(); valNdx++)
-					tagResult.values[valNdx] = findValueByTag(fullResult.resultItems, tagNames[valNdx]);
-			}
-		}
+            if (parseResult != xe::TestResultParser::PARSERESULT_ERROR)
+            {
+                for (int valNdx = 0; valNdx < (int)tagNames.size(); valNdx++)
+                    tagResult.values[valNdx] = findValueByTag(fullResult.resultItems, tagNames[valNdx]);
+            }
+        }
 
-		m_result.add(tagResult);
-	}
+        m_result.add(tagResult);
+    }
 
 private:
-	BatchResultValues&		m_result;
-	xe::TestResultParser	m_testResultParser;
+    BatchResultValues &m_result;
+    xe::TestResultParser m_testResultParser;
 };
 
-static void readLogFile (BatchResultValues& batchResult, const char* filename)
+static void readLogFile(BatchResultValues &batchResult, const char *filename)
 {
-	std::ifstream		in				(filename, std::ifstream::binary|std::ifstream::in);
-	TagParser			resultHandler	(batchResult);
-	xe::TestLogParser	parser			(&resultHandler);
-	deUint8				buf				[1024];
-	int					numRead			= 0;
+    std::ifstream in(filename, std::ifstream::binary | std::ifstream::in);
+    TagParser resultHandler(batchResult);
+    xe::TestLogParser parser(&resultHandler);
+    uint8_t buf[1024];
+    int numRead = 0;
 
-	if (!in.good())
-		throw std::runtime_error(string("Failed to open '") + filename + "'");
+    if (!in.good())
+        throw std::runtime_error(string("Failed to open '") + filename + "'");
 
-	for (;;)
-	{
-		in.read((char*)&buf[0], DE_LENGTH_OF_ARRAY(buf));
-		numRead = (int)in.gcount();
+    for (;;)
+    {
+        in.read((char *)&buf[0], DE_LENGTH_OF_ARRAY(buf));
+        numRead = (int)in.gcount();
 
-		if (numRead <= 0)
-			break;
+        if (numRead <= 0)
+            break;
 
-		parser.parse(&buf[0], numRead);
-	}
+        parser.parse(&buf[0], numRead);
+    }
 
-	in.close();
+    in.close();
 }
 
-static void printTaggedValues (const CommandLine& cmdLine, std::ostream& dst)
+static void printTaggedValues(const CommandLine &cmdLine, std::ostream &dst)
 {
-	BatchResultValues values(cmdLine.tagNames);
+    BatchResultValues values(cmdLine.tagNames);
 
-	readLogFile(values, cmdLine.filename.c_str());
+    readLogFile(values, cmdLine.filename.c_str());
 
-	// Header
-	{
-		dst << "CasePath";
-		if (cmdLine.statusCode)
-			dst << ",StatusCode";
+    // Header
+    {
+        dst << "CasePath";
+        if (cmdLine.statusCode)
+            dst << ",StatusCode";
 
-		for (vector<string>::const_iterator tagName = values.getTagNames().begin(); tagName != values.getTagNames().end(); ++tagName)
-			dst << "," << *tagName;
+        for (vector<string>::const_iterator tagName = values.getTagNames().begin();
+             tagName != values.getTagNames().end(); ++tagName)
+            dst << "," << *tagName;
 
-		dst << "\n";
-	}
+        dst << "\n";
+    }
 
-	for (int resultNdx = 0; resultNdx < (int)values.size(); resultNdx++)
-	{
-		const CaseValues& result = values[resultNdx];
+    for (int resultNdx = 0; resultNdx < (int)values.size(); resultNdx++)
+    {
+        const CaseValues &result = values[resultNdx];
 
-		dst << result.casePath;
-		if (cmdLine.statusCode)
-			dst << "," << xe::getTestStatusCodeName(result.statusCode);
+        dst << result.casePath;
+        if (cmdLine.statusCode)
+            dst << "," << xe::getTestStatusCodeName(result.statusCode);
 
-		for (vector<Value>::const_iterator value = result.values.begin(); value != result.values.end(); ++value)
-			dst << "," << *value;
+        for (vector<Value>::const_iterator value = result.values.begin(); value != result.values.end(); ++value)
+            dst << "," << *value;
 
-		dst << "\n";
-	}
+        dst << "\n";
+    }
 }
 
-static void printHelp (const char* binName)
+static void printHelp(const char *binName)
 {
-	printf("%s: [filename] [name 1] [[name 2]...]\n", binName);
-	printf(" --statuscode     Include status code as first entry.\n");
+    printf("%s: [filename] [name 1] [[name 2]...]\n", binName);
+    printf(" --statuscode     Include status code as first entry.\n");
 }
 
-static bool parseCommandLine (CommandLine& cmdLine, int argc, const char* const* argv)
+static bool parseCommandLine(CommandLine &cmdLine, int argc, const char *const *argv)
 {
-	for (int argNdx = 1; argNdx < argc; argNdx++)
-	{
-		const char* arg = argv[argNdx];
+    for (int argNdx = 1; argNdx < argc; argNdx++)
+    {
+        const char *arg = argv[argNdx];
 
-		if (deStringEqual(arg, "--statuscode"))
-			cmdLine.statusCode = true;
-		else if (!deStringBeginsWith(arg, "--"))
-		{
-			if (cmdLine.filename.empty())
-				cmdLine.filename = arg;
-			else
-				cmdLine.tagNames.push_back(arg);
-		}
-		else
-			return false;
-	}
+        if (deStringEqual(arg, "--statuscode"))
+            cmdLine.statusCode = true;
+        else if (!deStringBeginsWith(arg, "--"))
+        {
+            if (cmdLine.filename.empty())
+                cmdLine.filename = arg;
+            else
+                cmdLine.tagNames.push_back(arg);
+        }
+        else
+            return false;
+    }
 
-	if (cmdLine.filename.empty())
-		return false;
+    if (cmdLine.filename.empty())
+        return false;
 
-	return true;
+    return true;
 }
 
-int main (int argc, const char* const* argv)
+int main(int argc, const char *const *argv)
 {
-	try
-	{
-		CommandLine cmdLine;
+    try
+    {
+        CommandLine cmdLine;
 
-		if (!parseCommandLine(cmdLine, argc, argv))
-		{
-			printHelp(argv[0]);
-			return -1;
-		}
+        if (!parseCommandLine(cmdLine, argc, argv))
+        {
+            printHelp(argv[0]);
+            return -1;
+        }
 
-		printTaggedValues(cmdLine, std::cout);
-	}
-	catch (const std::exception& e)
-	{
-		printf("FATAL ERROR: %s\n", e.what());
-		return -1;
-	}
+        printTaggedValues(cmdLine, std::cout);
+    }
+    catch (const std::exception &e)
+    {
+        printf("FATAL ERROR: %s\n", e.what());
+        return -1;
+    }
 
-	return 0;
+    return 0;
 }

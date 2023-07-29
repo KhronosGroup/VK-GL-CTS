@@ -34,16 +34,16 @@ namespace glcts
 class LayoutLocationTests : public TestCaseGroup
 {
 public:
-	LayoutLocationTests(glcts::Context& context);
-	~LayoutLocationTests(void);
+    LayoutLocationTests(glcts::Context &context);
+    ~LayoutLocationTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	LayoutLocationTests(const LayoutLocationTests& other);
-	LayoutLocationTests& operator=(const LayoutLocationTests& other);
+    LayoutLocationTests(const LayoutLocationTests &other);
+    LayoutLocationTests &operator=(const LayoutLocationTests &other);
 };
 
-} // glcts
+} // namespace glcts
 
 #endif // _GLCLAYOUTLOCATIONTESTS_HPP

@@ -32,16 +32,16 @@ namespace gl4cts
 class VertexAttribBindingTests : public deqp::TestCaseGroup
 {
 public:
-	VertexAttribBindingTests(deqp::Context& context);
-	~VertexAttribBindingTests(void);
+    VertexAttribBindingTests(deqp::Context &context);
+    ~VertexAttribBindingTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	VertexAttribBindingTests(const VertexAttribBindingTests& other);
-	VertexAttribBindingTests& operator=(const VertexAttribBindingTests& other);
+    VertexAttribBindingTests(const VertexAttribBindingTests &other);
+    VertexAttribBindingTests &operator=(const VertexAttribBindingTests &other);
 };
 
-} // gl4cts
+} // namespace gl4cts
 
 #endif // _GL4CVERTEXATTRIBBINDINGTESTS_HPP

@@ -34,11 +34,11 @@ namespace egl
 class SurfacelessContextTests : public TestCaseGroup
 {
 public:
-			SurfacelessContextTests	(EglTestContext& eglTestCtx);
-	void	init					(void);
+    SurfacelessContextTests(EglTestContext &eglTestCtx);
+    void init(void);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLSURFACELESSCONTEXTTESTS_HPP

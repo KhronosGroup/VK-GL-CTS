@@ -33,16 +33,16 @@ namespace glcts
 class TextureRepeatModeTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	TextureRepeatModeTests(deqp::Context& context);
+    /* Public methods */
+    TextureRepeatModeTests(deqp::Context &context);
 
-	void init(void);
+    void init(void);
 
 private:
-	TextureRepeatModeTests(const TextureRepeatModeTests& other);
-	TextureRepeatModeTests& operator=(const TextureRepeatModeTests& other);
+    TextureRepeatModeTests(const TextureRepeatModeTests &other);
+    TextureRepeatModeTests &operator=(const TextureRepeatModeTests &other);
 };
 
-} /* glcts namespace */
+} // namespace glcts
 
 #endif // _GLCTEXTUREREPEATMODETESTS_HPP

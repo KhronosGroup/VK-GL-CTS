@@ -33,9 +33,9 @@ namespace vkt
 namespace wsi
 {
 
-void	createMaintenance1Tests	(tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType);
+void createMaintenance1Tests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType);
 
-} // wsi
-} // vkt
+} // namespace wsi
+} // namespace vkt
 
 #endif // _VKTWSIMAINTENANCE1TESTS_HPP

@@ -24,166 +24,164 @@
 #include "xeTestLogParser.hpp"
 #include "deString.h"
 
+using std::map;
 using std::string;
 using std::vector;
-using std::map;
 
 namespace xe
 {
 
-TestLogParser::TestLogParser (TestLogHandler* handler)
-	: m_handler		(handler)
-	, m_inSession	(false)
+TestLogParser::TestLogParser(TestLogHandler *handler) : m_handler(handler), m_inSession(false)
 {
 }
 
-TestLogParser::~TestLogParser (void)
+TestLogParser::~TestLogParser(void)
 {
 }
 
-void TestLogParser::reset (void)
+void TestLogParser::reset(void)
 {
-	m_containerParser.clear();
-	m_currentCaseData.clear();
-	m_sessionInfo	= SessionInfo();
-	m_inSession		= false;
+    m_containerParser.clear();
+    m_currentCaseData.clear();
+    m_sessionInfo = SessionInfo();
+    m_inSession   = false;
 }
 
-void TestLogParser::parse (const deUint8* bytes, size_t numBytes)
+void TestLogParser::parse(const uint8_t *bytes, size_t numBytes)
 {
-	m_containerParser.feed(bytes, numBytes);
+    m_containerParser.feed(bytes, numBytes);
 
-	for (;;)
-	{
-		ContainerElement element = m_containerParser.getElement();
+    for (;;)
+    {
+        ContainerElement element = m_containerParser.getElement();
 
-		if (element == CONTAINERELEMENT_INCOMPLETE)
-			break;
+        if (element == CONTAINERELEMENT_INCOMPLETE)
+            break;
 
-		switch (element)
-		{
-			case CONTAINERELEMENT_BEGIN_SESSION:
-			{
-				if (m_inSession)
-					throw Error("Unexpected #beginSession");
+        switch (element)
+        {
+        case CONTAINERELEMENT_BEGIN_SESSION:
+        {
+            if (m_inSession)
+                throw Error("Unexpected #beginSession");
 
-				m_handler->setSessionInfo(m_sessionInfo);
-				m_inSession = true;
-				break;
-			}
+            m_handler->setSessionInfo(m_sessionInfo);
+            m_inSession = true;
+            break;
+        }
 
-			case CONTAINERELEMENT_END_SESSION:
-			{
-				if (!m_inSession)
-					throw Error("Unexpected #endSession");
+        case CONTAINERELEMENT_END_SESSION:
+        {
+            if (!m_inSession)
+                throw Error("Unexpected #endSession");
 
-				m_inSession = false;
-				break;
-			}
+            m_inSession = false;
+            break;
+        }
 
-			case CONTAINERELEMENT_SESSION_INFO:
-			{
-				if (m_inSession)
-					throw Error("Unexpected #sessionInfo");
+        case CONTAINERELEMENT_SESSION_INFO:
+        {
+            if (m_inSession)
+                throw Error("Unexpected #sessionInfo");
 
-				const char*		attribute	= m_containerParser.getSessionInfoAttribute();
-				const char*		value		= m_containerParser.getSessionInfoValue();
+            const char *attribute = m_containerParser.getSessionInfoAttribute();
+            const char *value     = m_containerParser.getSessionInfoValue();
 
-				if (deStringEqual(attribute, "releaseName"))
-					m_sessionInfo.releaseName = value;
-				else if (deStringEqual(attribute, "releaseId"))
-					m_sessionInfo.releaseId = value;
-				else if (deStringEqual(attribute, "targetName"))
-					m_sessionInfo.targetName = value;
-				else if (deStringEqual(attribute, "candyTargetName"))
-					m_sessionInfo.candyTargetName = value;
-				else if (deStringEqual(attribute, "configName"))
-					m_sessionInfo.configName = value;
-				else if (deStringEqual(attribute, "resultName"))
-					m_sessionInfo.resultName = value;
-				else if (deStringEqual(attribute, "timestamp"))
-					m_sessionInfo.timestamp = value;
-				else if (deStringEqual(attribute, "commandLineParameters"))
-					m_sessionInfo.qpaCommandLineParameters = value;
+            if (deStringEqual(attribute, "releaseName"))
+                m_sessionInfo.releaseName = value;
+            else if (deStringEqual(attribute, "releaseId"))
+                m_sessionInfo.releaseId = value;
+            else if (deStringEqual(attribute, "targetName"))
+                m_sessionInfo.targetName = value;
+            else if (deStringEqual(attribute, "candyTargetName"))
+                m_sessionInfo.candyTargetName = value;
+            else if (deStringEqual(attribute, "configName"))
+                m_sessionInfo.configName = value;
+            else if (deStringEqual(attribute, "resultName"))
+                m_sessionInfo.resultName = value;
+            else if (deStringEqual(attribute, "timestamp"))
+                m_sessionInfo.timestamp = value;
+            else if (deStringEqual(attribute, "commandLineParameters"))
+                m_sessionInfo.qpaCommandLineParameters = value;
 
-				// \todo [2012-06-09 pyry] What to do with unknown/duplicate attributes? Currently just ignored.
-				break;
-			}
+            // \todo [2012-06-09 pyry] What to do with unknown/duplicate attributes? Currently just ignored.
+            break;
+        }
 
-			case CONTAINERELEMENT_BEGIN_TEST_CASE_RESULT:
-			{
-				if (!m_inSession)
-					throw Error("Unexpected #beginTestCaseResult");
+        case CONTAINERELEMENT_BEGIN_TEST_CASE_RESULT:
+        {
+            if (!m_inSession)
+                throw Error("Unexpected #beginTestCaseResult");
 
-				const char* casePath = m_containerParser.getTestCasePath();
-				m_currentCaseData = m_handler->startTestCaseResult(casePath);
+            const char *casePath = m_containerParser.getTestCasePath();
+            m_currentCaseData    = m_handler->startTestCaseResult(casePath);
 
-				// Clear and set to running state.
-				m_currentCaseData->setDataSize(0);
-				m_currentCaseData->setTestResult(TESTSTATUSCODE_RUNNING, "Running");
+            // Clear and set to running state.
+            m_currentCaseData->setDataSize(0);
+            m_currentCaseData->setTestResult(TESTSTATUSCODE_RUNNING, "Running");
 
-				m_handler->testCaseResultUpdated(m_currentCaseData);
-				break;
-			}
+            m_handler->testCaseResultUpdated(m_currentCaseData);
+            break;
+        }
 
-			case CONTAINERELEMENT_END_TEST_CASE_RESULT:
-				if (m_currentCaseData)
-				{
-					// \todo [2012-06-16 pyry] Parse status code already here?
-					m_currentCaseData->setTestResult(TESTSTATUSCODE_LAST, "");
-					m_handler->testCaseResultComplete(m_currentCaseData);
-				}
-				m_currentCaseData.clear();
-				break;
+        case CONTAINERELEMENT_END_TEST_CASE_RESULT:
+            if (m_currentCaseData)
+            {
+                // \todo [2012-06-16 pyry] Parse status code already here?
+                m_currentCaseData->setTestResult(TESTSTATUSCODE_LAST, "");
+                m_handler->testCaseResultComplete(m_currentCaseData);
+            }
+            m_currentCaseData.clear();
+            break;
 
-			case CONTAINERELEMENT_TERMINATE_TEST_CASE_RESULT:
-				if (m_currentCaseData)
-				{
-					TestStatusCode	statusCode	= TESTSTATUSCODE_CRASH;
-					const char*		reason		= m_containerParser.getTerminateReason();
-					try
-					{
-						statusCode = getTestStatusCode(reason);
-					}
-					catch (const xe::ParseError&)
-					{
-						// Could not map status code.
-					}
-					m_currentCaseData->setTestResult(statusCode, reason);
-					m_handler->testCaseResultComplete(m_currentCaseData);
-				}
-				m_currentCaseData.clear();
-				break;
+        case CONTAINERELEMENT_TERMINATE_TEST_CASE_RESULT:
+            if (m_currentCaseData)
+            {
+                TestStatusCode statusCode = TESTSTATUSCODE_CRASH;
+                const char *reason        = m_containerParser.getTerminateReason();
+                try
+                {
+                    statusCode = getTestStatusCode(reason);
+                }
+                catch (const xe::ParseError &)
+                {
+                    // Could not map status code.
+                }
+                m_currentCaseData->setTestResult(statusCode, reason);
+                m_handler->testCaseResultComplete(m_currentCaseData);
+            }
+            m_currentCaseData.clear();
+            break;
 
-			case CONTAINERELEMENT_END_OF_STRING:
-				if (m_currentCaseData)
-				{
-					// Terminate current case.
-					m_currentCaseData->setTestResult(TESTSTATUSCODE_TERMINATED, "Unexpected end of string");
-					m_handler->testCaseResultComplete(m_currentCaseData);
-				}
-				m_currentCaseData.clear();
-				break;
+        case CONTAINERELEMENT_END_OF_STRING:
+            if (m_currentCaseData)
+            {
+                // Terminate current case.
+                m_currentCaseData->setTestResult(TESTSTATUSCODE_TERMINATED, "Unexpected end of string");
+                m_handler->testCaseResultComplete(m_currentCaseData);
+            }
+            m_currentCaseData.clear();
+            break;
 
-			case CONTAINERELEMENT_TEST_LOG_DATA:
-				if (m_currentCaseData)
-				{
-					int offset			= m_currentCaseData->getDataSize();
-					int	numDataBytes	= m_containerParser.getDataSize();
+        case CONTAINERELEMENT_TEST_LOG_DATA:
+            if (m_currentCaseData)
+            {
+                int offset       = m_currentCaseData->getDataSize();
+                int numDataBytes = m_containerParser.getDataSize();
 
-					m_currentCaseData->setDataSize(offset+numDataBytes);
-					m_containerParser.getData(m_currentCaseData->getData()+offset, numDataBytes, 0);
+                m_currentCaseData->setDataSize(offset + numDataBytes);
+                m_containerParser.getData(m_currentCaseData->getData() + offset, numDataBytes, 0);
 
-					m_handler->testCaseResultUpdated(m_currentCaseData);
-				}
-				break;
+                m_handler->testCaseResultUpdated(m_currentCaseData);
+            }
+            break;
 
-			default:
-				throw ContainerParseError("Unknown container element");
-		}
+        default:
+            throw ContainerParseError("Unknown container element");
+        }
 
-		m_containerParser.advance();
-	}
+        m_containerParser.advance();
+    }
 }
 
-} // xe
+} // namespace xe

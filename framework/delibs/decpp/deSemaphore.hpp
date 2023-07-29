@@ -42,18 +42,18 @@ namespace de
 class Semaphore
 {
 public:
-					Semaphore		(int initialValue, deUint32 flags = 0);
-					~Semaphore		(void);
+    Semaphore(int initialValue, uint32_t flags = 0);
+    ~Semaphore(void);
 
-	void			increment		(void) throw();
-	void			decrement		(void) throw();
-	bool			tryDecrement	(void) throw();
+    void increment(void) throw();
+    void decrement(void) throw();
+    bool tryDecrement(void) throw();
 
 private:
-					Semaphore		(const Semaphore& other); // Not allowed!
-	Semaphore&		operator=		(const Semaphore& other); // Not allowed!
+    Semaphore(const Semaphore &other);            // Not allowed!
+    Semaphore &operator=(const Semaphore &other); // Not allowed!
 
-	deSemaphore		m_semaphore;
+    deSemaphore m_semaphore;
 };
 
 // Inline implementations.
@@ -67,9 +67,9 @@ private:
  *
  * Incrementing semaphore will never block.
  *//*--------------------------------------------------------------------*/
-inline void Semaphore::increment (void) throw()
+inline void Semaphore::increment(void) throw()
 {
-	deSemaphore_increment(m_semaphore);
+    deSemaphore_increment(m_semaphore);
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -82,25 +82,25 @@ inline void Semaphore::increment (void) throw()
  * If there is an another thread waiting in decrement(), the current thread
  * will block until other thread(s) have been resumed.
  *//*--------------------------------------------------------------------*/
-inline void Semaphore::decrement (void) throw()
+inline void Semaphore::decrement(void) throw()
 {
-	deSemaphore_decrement(m_semaphore);
+    deSemaphore_decrement(m_semaphore);
 }
 
 /*--------------------------------------------------------------------*//*!
  * \brief Try to decrement semaphore value.
  * \return true if decrementing was successful without blocking, false
- *		   otherwise
+ *           otherwise
  *
  * This function will never block, i.e. it will return false if decrementing
  * semaphore counter would result in negative value or there is already
  * one or more threads waiting for this semaphore.
  *//*--------------------------------------------------------------------*/
-inline bool Semaphore::tryDecrement (void) throw()
+inline bool Semaphore::tryDecrement(void) throw()
 {
-	return deSemaphore_tryDecrement(m_semaphore) == DE_TRUE;
+    return deSemaphore_tryDecrement(m_semaphore) == true;
 }
 
-} // de
+} // namespace de
 
 #endif // _DESEMAPHORE_HPP

@@ -24,7 +24,8 @@
 #include "deDynamicLibrary.h"
 #include "deMemory.h"
 
-#if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_SYMBIAN) || (DE_OS == DE_OS_IOS) || (DE_OS == DE_OS_QNX) || (DE_OS == DE_OS_FUCHSIA)
+#if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_SYMBIAN) || \
+    (DE_OS == DE_OS_IOS) || (DE_OS == DE_OS_QNX) || (DE_OS == DE_OS_FUCHSIA)
 /* Posix implementation. */
 
 #include <dlfcn.h>
@@ -33,48 +34,48 @@
 
 struct deDynamicLibrary_s
 {
-	void*	libHandle;
+    void *libHandle;
 };
 
-deDynamicLibrary* deDynamicLibrary_open (const char* fileName)
+deDynamicLibrary *deDynamicLibrary_open(const char *fileName)
 {
-	deDynamicLibrary* library = (deDynamicLibrary*)deCalloc(sizeof(deDynamicLibrary));
-	if (!library)
-		return DE_NULL;
+    deDynamicLibrary *library = (deDynamicLibrary *)deCalloc(sizeof(deDynamicLibrary));
+    if (!library)
+        return DE_NULL;
 
-	if (getenv("LD_LIBRARY_PATH"))
-		library->libHandle = dlopen(basename((char*)fileName), RTLD_LAZY);
-	else
-		library->libHandle = dlopen(fileName, RTLD_LAZY);
+    if (getenv("LD_LIBRARY_PATH"))
+        library->libHandle = dlopen(basename((char *)fileName), RTLD_LAZY);
+    else
+        library->libHandle = dlopen(fileName, RTLD_LAZY);
 
-	if (!library->libHandle)
-	{
-		deFree(library);
-		return DE_NULL;
-	}
+    if (!library->libHandle)
+    {
+        deFree(library);
+        return DE_NULL;
+    }
 
-	return library;
+    return library;
 }
 
-void deDynamicLibrary_close (deDynamicLibrary* library)
+void deDynamicLibrary_close(deDynamicLibrary *library)
 {
-	if (library && library->libHandle)
-		dlclose(library->libHandle);
-	deFree(library);
+    if (library && library->libHandle)
+        dlclose(library->libHandle);
+    deFree(library);
 }
 
-deFunctionPtr deDynamicLibrary_getFunction (const deDynamicLibrary* library, const char* symbolName)
+deFunctionPtr deDynamicLibrary_getFunction(const deDynamicLibrary *library, const char *symbolName)
 {
-	/* C forbids direct cast from object pointer to function pointer */
-	union
-	{
-		deFunctionPtr	funcPtr;
-		void*			objPtr;
-	} ptr;
+    /* C forbids direct cast from object pointer to function pointer */
+    union
+    {
+        deFunctionPtr funcPtr;
+        void *objPtr;
+    } ptr;
 
-	DE_ASSERT(library && library->libHandle && symbolName);
-	ptr.objPtr = dlsym(library->libHandle, symbolName);
-	return ptr.funcPtr;
+    DE_ASSERT(library && library->libHandle && symbolName);
+    ptr.objPtr = dlsym(library->libHandle, symbolName);
+    return ptr.funcPtr;
 }
 
 #elif (DE_OS == DE_OS_WIN32)
@@ -86,38 +87,38 @@ deFunctionPtr deDynamicLibrary_getFunction (const deDynamicLibrary* library, con
 
 struct deDynamicLibrary_s
 {
-	HINSTANCE	handle;
+    HINSTANCE handle;
 };
 
-deDynamicLibrary* deDynamicLibrary_open (const char* fileName)
+deDynamicLibrary *deDynamicLibrary_open(const char *fileName)
 {
-	deDynamicLibrary* library = (deDynamicLibrary*)deCalloc(sizeof(deDynamicLibrary));
-	if (!library)
-		return DE_NULL;
+    deDynamicLibrary *library = (deDynamicLibrary *)deCalloc(sizeof(deDynamicLibrary));
+    if (!library)
+        return DE_NULL;
 
-	library->handle = LoadLibrary(fileName);
-	if (!library->handle)
-	{
-		deFree(library);
-		return DE_NULL;
-	}
+    library->handle = LoadLibrary(fileName);
+    if (!library->handle)
+    {
+        deFree(library);
+        return DE_NULL;
+    }
 
-	return library;
+    return library;
 }
 
-void deDynamicLibrary_close (deDynamicLibrary* library)
+void deDynamicLibrary_close(deDynamicLibrary *library)
 {
-	if (library && library->handle)
-		FreeLibrary(library->handle);
-	deFree(library);
+    if (library && library->handle)
+        FreeLibrary(library->handle);
+    deFree(library);
 }
 
-deFunctionPtr deDynamicLibrary_getFunction (const deDynamicLibrary* library, const char* symbolName)
+deFunctionPtr deDynamicLibrary_getFunction(const deDynamicLibrary *library, const char *symbolName)
 {
-	DE_ASSERT(library && library->handle && symbolName);
-	return (deFunctionPtr)GetProcAddress(library->handle, symbolName);
+    DE_ASSERT(library && library->handle && symbolName);
+    return (deFunctionPtr)GetProcAddress(library->handle, symbolName);
 }
 
 #else
-#	error deDynamicLibrary is not implemented on this OS
+#error deDynamicLibrary is not implemented on this OS
 #endif

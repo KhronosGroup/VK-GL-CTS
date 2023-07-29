@@ -36,23 +36,23 @@ namespace glcts
 class MultipleContextsTests : public tcu::TestCaseGroup
 {
 public:
-	/* Public methods */
-	MultipleContextsTests(tcu::TestContext& testCtx, glu::ApiType apiType);
-	virtual ~MultipleContextsTests()
-	{
-	}
+    /* Public methods */
+    MultipleContextsTests(tcu::TestContext &testCtx, glu::ApiType apiType);
+    virtual ~MultipleContextsTests()
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	/* Private methods */
-	MultipleContextsTests(const MultipleContextsTests&);
-	MultipleContextsTests& operator=(const MultipleContextsTests&);
+    /* Private methods */
+    MultipleContextsTests(const MultipleContextsTests &);
+    MultipleContextsTests &operator=(const MultipleContextsTests &);
 
-	/* Private members */
-	glu::ApiType m_apiType;
+    /* Private members */
+    glu::ApiType m_apiType;
 };
 
-} /* gl4cts namespace */
+} // namespace glcts
 
 #endif // _GLCMULTIPLECONTEXTSTESTS_HPP

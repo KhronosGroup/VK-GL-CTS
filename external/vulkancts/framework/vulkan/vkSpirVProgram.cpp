@@ -28,26 +28,23 @@
 namespace vk
 {
 
-tcu::TestLog& operator<< (tcu::TestLog& log, const SpirVProgramInfo& shaderInfo)
+tcu::TestLog &operator<<(tcu::TestLog &log, const SpirVProgramInfo &shaderInfo)
 {
-	log << tcu::TestLog::ShaderProgram(shaderInfo.compileOk , shaderInfo.infoLog)
-		<< tcu::TestLog::SpirVAssemblySource(shaderInfo.source)
-		<< tcu::TestLog::EndShaderProgram;
+    log << tcu::TestLog::ShaderProgram(shaderInfo.compileOk, shaderInfo.infoLog)
+        << tcu::TestLog::SpirVAssemblySource(shaderInfo.source) << tcu::TestLog::EndShaderProgram;
 
-	// Write statistics
-	log << tcu::TestLog::Float(	"SpirVAssemblyTime",
-								"SpirV assembly time",
-								"ms", QP_KEY_TAG_TIME, (float)shaderInfo.compileTimeUs / 1000.0f);
-	return log;
+    // Write statistics
+    log << tcu::TestLog::Float("SpirVAssemblyTime", "SpirV assembly time", "ms", QP_KEY_TAG_TIME,
+                               (float)shaderInfo.compileTimeUs / 1000.0f);
+    return log;
 }
 
-tcu::TestLog& operator<< (tcu::TestLog& log, const SpirVAsmSource& source)
+tcu::TestLog &operator<<(tcu::TestLog &log, const SpirVAsmSource &source)
 {
-	log << tcu::TestLog::ShaderProgram(true , "")
-		<< tcu::TestLog::SpirVAssemblySource(source.source)
-		<< tcu::TestLog::EndShaderProgram;
+    log << tcu::TestLog::ShaderProgram(true, "") << tcu::TestLog::SpirVAssemblySource(source.source)
+        << tcu::TestLog::EndShaderProgram;
 
-	return log;
+    return log;
 }
 
-} // vk
+} // namespace vk

@@ -35,32 +35,32 @@ struct ParentImpl;
 
 struct Parent
 {
-				Parent	(const int portOffset);
-				~Parent	();
+    Parent(const int portOffset);
+    ~Parent();
 
-	bool		SetFile	(const string& name, const std::vector<u8>& content);
-	vector<u8>	GetFile	(const string& name);
+    bool SetFile(const string &name, const std::vector<u8> &content);
+    vector<u8> GetFile(const string &name);
 
 private:
-	std::unique_ptr<ParentImpl> impl;
+    std::unique_ptr<ParentImpl> impl;
 };
 
 struct ChildImpl;
 
 struct Child
 {
-				Child	(const int portOffset);
-				~Child	();
+    Child(const int portOffset);
+    ~Child();
 
-	bool		SetFile	(const string& name, const std::vector<u8>& content);
-	vector<u8>	GetFile	(const string& name);
+    bool SetFile(const string &name, const std::vector<u8> &content);
+    vector<u8> GetFile(const string &name);
 
 private:
-	std::unique_ptr<ChildImpl> impl;
+    std::unique_ptr<ChildImpl> impl;
 };
 
-} // ipc
+} // namespace ipc
 
-} // vksc_server
+} // namespace vksc_server
 
 #endif // _VKSIPC_HPP

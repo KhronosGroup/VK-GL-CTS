@@ -26,6 +26,4 @@ package org.khronos.cts;
 
 import android.app.NativeActivity;
 
-public class ES32Activity extends NativeActivity
-{
-}
+public class ES32Activity extends NativeActivity {}

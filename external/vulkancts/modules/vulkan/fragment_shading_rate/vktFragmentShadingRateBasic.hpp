@@ -33,9 +33,9 @@ namespace vkt
 namespace FragmentShadingRate
 {
 
-void createBasicTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* group, SharedGroupParams groupParams);
+void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *group, SharedGroupParams groupParams);
 
-} // FragmentShadingRate
-} // vkt
+} // namespace FragmentShadingRate
+} // namespace vkt
 
 #endif // _VKTFRAGMENTSHADINGRATEBASIC_HPP

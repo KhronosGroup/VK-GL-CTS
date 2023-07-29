@@ -32,8 +32,9 @@ class ConstPixelBufferAccess;
 class PixelBufferAccess;
 class RGBA;
 
-bool bilinearCompare (const ConstPixelBufferAccess& reference, const ConstPixelBufferAccess& result, const PixelBufferAccess& errorMask, const RGBA threshold);
+bool bilinearCompare(const ConstPixelBufferAccess &reference, const ConstPixelBufferAccess &result,
+                     const PixelBufferAccess &errorMask, const RGBA threshold);
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUBILINEARIMAGECOMPARE_HPP
