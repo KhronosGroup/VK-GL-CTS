@@ -27,9 +27,9 @@
 #include <map>
 #include <set>
 
-using std::vector;
-using std::set;
 using std::map;
+using std::set;
+using std::vector;
 
 namespace rsg
 {
@@ -37,468 +37,480 @@ namespace rsg
 class SubValueRangeIterator
 {
 public:
-									SubValueRangeIterator			(const ConstValueRangeAccess& valueRange);
-									~SubValueRangeIterator			(void) {}
+    SubValueRangeIterator(const ConstValueRangeAccess &valueRange);
+    ~SubValueRangeIterator(void)
+    {
+    }
 
-	bool							hasItem							(void) const;
-	ConstValueRangeAccess			getItem							(void) const;
-	void							next							(void);
+    bool hasItem(void) const;
+    ConstValueRangeAccess getItem(void) const;
+    void next(void);
 
 private:
-
-	vector<ConstValueRangeAccess>	m_stack;
+    vector<ConstValueRangeAccess> m_stack;
 };
 
-SubValueRangeIterator::SubValueRangeIterator (const ConstValueRangeAccess& valueRange)
+SubValueRangeIterator::SubValueRangeIterator(const ConstValueRangeAccess &valueRange)
 {
-	m_stack.push_back(valueRange);
+    m_stack.push_back(valueRange);
 }
 
-inline bool SubValueRangeIterator::hasItem (void) const
+inline bool SubValueRangeIterator::hasItem(void) const
 {
-	return !m_stack.empty();
+    return !m_stack.empty();
 }
 
-inline ConstValueRangeAccess SubValueRangeIterator::getItem (void) const
+inline ConstValueRangeAccess SubValueRangeIterator::getItem(void) const
 {
-	return m_stack[m_stack.size()-1];
+    return m_stack[m_stack.size() - 1];
 }
 
-void SubValueRangeIterator::next (void)
+void SubValueRangeIterator::next(void)
 {
-	ConstValueRangeAccess curItem = getItem();
-	m_stack.pop_back(); // Remove current
+    ConstValueRangeAccess curItem = getItem();
+    m_stack.pop_back(); // Remove current
 
-	switch (curItem.getType().getBaseType())
-	{
-		case VariableType::TYPE_ARRAY:
-		{
-			int numElements = curItem.getType().getNumElements();
-			for (int ndx = 0; ndx < numElements; ndx++)
-				m_stack.push_back(curItem.member(ndx));
-			break;
-		}
+    switch (curItem.getType().getBaseType())
+    {
+    case VariableType::TYPE_ARRAY:
+    {
+        int numElements = curItem.getType().getNumElements();
+        for (int ndx = 0; ndx < numElements; ndx++)
+            m_stack.push_back(curItem.member(ndx));
+        break;
+    }
 
-		case VariableType::TYPE_STRUCT:
-		{
-			int numMembers = (int)curItem.getType().getMembers().size();
-			for (int ndx = 0; ndx < numMembers; ndx++)
-				m_stack.push_back(curItem.member(ndx));
-			break;
-		}
+    case VariableType::TYPE_STRUCT:
+    {
+        int numMembers = (int)curItem.getType().getMembers().size();
+        for (int ndx = 0; ndx < numMembers; ndx++)
+            m_stack.push_back(curItem.member(ndx));
+        break;
+    }
 
-		default:
-			break; // \todo [2011-02-03 pyry] Swizzle control?
-	}
+    default:
+        break; // \todo [2011-02-03 pyry] Swizzle control?
+    }
 }
 
-ValueEntry::ValueEntry (const Variable* variable)
-	: m_variable	(variable)
-	, m_valueRange	(variable->getType())
-{
-}
-
-VariableScope::VariableScope (void)
+ValueEntry::ValueEntry(const Variable *variable) : m_variable(variable), m_valueRange(variable->getType())
 {
 }
 
-VariableScope::~VariableScope (void)
-{
-	for (vector<Variable*>::iterator i = m_declaredVariables.begin(); i != m_declaredVariables.end(); i++)
-		delete *i;
-
-	for (vector<Variable*>::iterator i = m_liveVariables.begin(); i != m_liveVariables.end(); i++)
-		delete *i;
-}
-
-Variable* VariableScope::allocate (const VariableType& type, Variable::Storage storage, const char* name)
-{
-	Variable* variable = new Variable(type, storage, name);
-	try
-	{
-		m_liveVariables.push_back(variable);
-		return variable;
-	}
-	catch (const std::exception&)
-	{
-		delete variable;
-		throw;
-	}
-}
-
-void VariableScope::declare (Variable* variable)
-{
-	m_declaredVariables.push_back(variable);
-	removeLive(variable);
-}
-
-void VariableScope::removeLive (const Variable* variable)
-{
-	vector<Variable*>::iterator pos = std::find(m_liveVariables.begin(), m_liveVariables.end(), variable);
-	DE_ASSERT(pos != m_liveVariables.end());
-
-	// \todo [pyry] Not so efficient
-	m_liveVariables.erase(pos);
-}
-
-ValueScope::ValueScope (void)
+VariableScope::VariableScope(void)
 {
 }
 
-ValueScope::~ValueScope (void)
+VariableScope::~VariableScope(void)
 {
-	clear();
+    for (vector<Variable *>::iterator i = m_declaredVariables.begin(); i != m_declaredVariables.end(); i++)
+        delete *i;
+
+    for (vector<Variable *>::iterator i = m_liveVariables.begin(); i != m_liveVariables.end(); i++)
+        delete *i;
 }
 
-void ValueScope::clear (void)
+Variable *VariableScope::allocate(const VariableType &type, Variable::Storage storage, const char *name)
 {
-	for (vector<ValueEntry*>::iterator i = m_entries.begin(); i != m_entries.end(); i++)
-		delete *i;
-	m_entries.clear();
+    Variable *variable = new Variable(type, storage, name);
+    try
+    {
+        m_liveVariables.push_back(variable);
+        return variable;
+    }
+    catch (const std::exception &)
+    {
+        delete variable;
+        throw;
+    }
 }
 
-ValueEntry* ValueScope::allocate (const Variable* variable)
+void VariableScope::declare(Variable *variable)
 {
-	ValueEntry* entry = new ValueEntry(variable);
-	try
-	{
-		m_entries.push_back(entry);
-		return entry;
-	}
-	catch (const std::exception&)
-	{
-		delete entry;
-		throw;
-	}
+    m_declaredVariables.push_back(variable);
+    removeLive(variable);
+}
+
+void VariableScope::removeLive(const Variable *variable)
+{
+    vector<Variable *>::iterator pos = std::find(m_liveVariables.begin(), m_liveVariables.end(), variable);
+    DE_ASSERT(pos != m_liveVariables.end());
+
+    // \todo [pyry] Not so efficient
+    m_liveVariables.erase(pos);
+}
+
+ValueScope::ValueScope(void)
+{
+}
+
+ValueScope::~ValueScope(void)
+{
+    clear();
+}
+
+void ValueScope::clear(void)
+{
+    for (vector<ValueEntry *>::iterator i = m_entries.begin(); i != m_entries.end(); i++)
+        delete *i;
+    m_entries.clear();
+}
+
+ValueEntry *ValueScope::allocate(const Variable *variable)
+{
+    ValueEntry *entry = new ValueEntry(variable);
+    try
+    {
+        m_entries.push_back(entry);
+        return entry;
+    }
+    catch (const std::exception &)
+    {
+        delete entry;
+        throw;
+    }
 }
 
 class CompareEntryVariable
 {
 public:
-	CompareEntryVariable (const Variable* variable)
-		: m_variable(variable)
-	{
-	}
+    CompareEntryVariable(const Variable *variable) : m_variable(variable)
+    {
+    }
 
-	bool operator== (const ValueEntry* entry) const
-	{
-		return entry->getVariable() == m_variable;
-	}
+    bool operator==(const ValueEntry *entry) const
+    {
+        return entry->getVariable() == m_variable;
+    }
 
 private:
-	const Variable* m_variable;
+    const Variable *m_variable;
 };
 
-bool operator== (const ValueEntry* entry, const CompareEntryVariable& cmp)
+bool operator==(const ValueEntry *entry, const CompareEntryVariable &cmp)
 {
-	return cmp == entry;
+    return cmp == entry;
 }
 
-ValueEntry* ValueScope::findEntry (const Variable* variable) const
+ValueEntry *ValueScope::findEntry(const Variable *variable) const
 {
-	vector<ValueEntry*>::const_iterator pos = std::find(m_entries.begin(), m_entries.end(), CompareEntryVariable(variable));
-	return pos != m_entries.end() ? *pos : DE_NULL;
+    vector<ValueEntry *>::const_iterator pos =
+        std::find(m_entries.begin(), m_entries.end(), CompareEntryVariable(variable));
+    return pos != m_entries.end() ? *pos : DE_NULL;
 }
 
-void ValueScope::setValue (const Variable* variable, ConstValueRangeAccess value)
+void ValueScope::setValue(const Variable *variable, ConstValueRangeAccess value)
 {
-	ValueEntry* entry = findEntry(variable);
-	DE_ASSERT(entry);
+    ValueEntry *entry = findEntry(variable);
+    DE_ASSERT(entry);
 
-	ValueRangeAccess dst = entry->getValueRange();
-	dst.getMin() = value.getMin().value();
-	dst.getMax() = value.getMax().value();
+    ValueRangeAccess dst = entry->getValueRange();
+    dst.getMin()         = value.getMin().value();
+    dst.getMax()         = value.getMax().value();
 }
 
-void ValueScope::removeValue (const Variable* variable)
+void ValueScope::removeValue(const Variable *variable)
 {
-	vector<ValueEntry*>::iterator pos = std::find(m_entries.begin(), m_entries.end(), CompareEntryVariable(variable));
-	if (pos != m_entries.end())
-	{
-		ValueEntry* entry = *pos;
-		m_entries.erase(pos);
-		delete entry;
-	}
+    vector<ValueEntry *>::iterator pos = std::find(m_entries.begin(), m_entries.end(), CompareEntryVariable(variable));
+    if (pos != m_entries.end())
+    {
+        ValueEntry *entry = *pos;
+        m_entries.erase(pos);
+        delete entry;
+    }
 }
 
-VariableManager::VariableManager (NameAllocator& nameAllocator)
-	: m_numAllocatedScalars				(0)
-	, m_numAllocatedShaderInScalars		(0)
-	, m_numAllocatedShaderInVariables	(0)
-	, m_numAllocatedUniformScalars		(0)
-	, m_nameAllocator					(nameAllocator)
-{
-}
-
-VariableManager::~VariableManager (void)
+VariableManager::VariableManager(NameAllocator &nameAllocator)
+    : m_numAllocatedScalars(0)
+    , m_numAllocatedShaderInScalars(0)
+    , m_numAllocatedShaderInVariables(0)
+    , m_numAllocatedUniformScalars(0)
+    , m_nameAllocator(nameAllocator)
 {
 }
 
-Variable* VariableManager::allocate (const VariableType& type)
+VariableManager::~VariableManager(void)
 {
-	return allocate(type, Variable::STORAGE_LOCAL, m_nameAllocator.allocate().c_str());
 }
 
-Variable* VariableManager::allocate (const VariableType& type, Variable::Storage storage, const char* name)
+Variable *VariableManager::allocate(const VariableType &type)
 {
-	VariableScope&	varScope	= getCurVariableScope();
-	ValueScope&		valueScope	= getCurValueScope();
-	int				numScalars	= type.getScalarSize();
-
-	// Allocate in current scope
-	Variable* variable = varScope.allocate(type, Variable::STORAGE_LOCAL, name);
-
-	// Allocate value entry
-	ValueEntry* valueEntry = valueScope.allocate(variable);
-
-	// Add to cache
-	m_entryCache.push_back(valueEntry);
-
-	m_numAllocatedScalars += numScalars;
-
-	// Set actual storage - affects uniform/shader in allocations.
-	setStorage(variable, storage);
-
-	return variable;
+    return allocate(type, Variable::STORAGE_LOCAL, m_nameAllocator.allocate().c_str());
 }
 
-void VariableManager::setStorage (Variable* variable, Variable::Storage storage)
+Variable *VariableManager::allocate(const VariableType &type, Variable::Storage storage, const char *name)
 {
-	int numScalars = variable->getType().getScalarSize();
+    VariableScope &varScope = getCurVariableScope();
+    ValueScope &valueScope  = getCurValueScope();
+    int numScalars          = type.getScalarSize();
 
-	// Decrement old.
-	if (variable->getStorage() == Variable::STORAGE_SHADER_IN)
-	{
-		m_numAllocatedShaderInScalars	-= numScalars;
-		m_numAllocatedShaderInVariables	-= 1;
-	}
-	else if (variable->getStorage() == Variable::STORAGE_UNIFORM)
-		m_numAllocatedUniformScalars -= numScalars;
+    // Allocate in current scope
+    Variable *variable = varScope.allocate(type, Variable::STORAGE_LOCAL, name);
 
-	// Add new.
-	if (storage == Variable::STORAGE_SHADER_IN)
-	{
-		m_numAllocatedShaderInScalars	+= numScalars;
-		m_numAllocatedShaderInVariables	+= 1;
-	}
-	else if (storage == Variable::STORAGE_UNIFORM)
-		m_numAllocatedUniformScalars += numScalars;
+    // Allocate value entry
+    ValueEntry *valueEntry = valueScope.allocate(variable);
 
-	variable->setStorage(storage);
+    // Add to cache
+    m_entryCache.push_back(valueEntry);
+
+    m_numAllocatedScalars += numScalars;
+
+    // Set actual storage - affects uniform/shader in allocations.
+    setStorage(variable, storage);
+
+    return variable;
 }
 
-bool VariableManager::canDeclareInCurrentScope (const Variable* variable) const
+void VariableManager::setStorage(Variable *variable, Variable::Storage storage)
 {
-	const vector<Variable*>& curLiveVars = getCurVariableScope().getLiveVariables();
-	return std::find(curLiveVars.begin(), curLiveVars.end(), variable) != curLiveVars.end();
+    int numScalars = variable->getType().getScalarSize();
+
+    // Decrement old.
+    if (variable->getStorage() == Variable::STORAGE_SHADER_IN)
+    {
+        m_numAllocatedShaderInScalars -= numScalars;
+        m_numAllocatedShaderInVariables -= 1;
+    }
+    else if (variable->getStorage() == Variable::STORAGE_UNIFORM)
+        m_numAllocatedUniformScalars -= numScalars;
+
+    // Add new.
+    if (storage == Variable::STORAGE_SHADER_IN)
+    {
+        m_numAllocatedShaderInScalars += numScalars;
+        m_numAllocatedShaderInVariables += 1;
+    }
+    else if (storage == Variable::STORAGE_UNIFORM)
+        m_numAllocatedUniformScalars += numScalars;
+
+    variable->setStorage(storage);
 }
 
-const vector<Variable*>& VariableManager::getLiveVariables (void) const
+bool VariableManager::canDeclareInCurrentScope(const Variable *variable) const
 {
-	return getCurVariableScope().getLiveVariables();
+    const vector<Variable *> &curLiveVars = getCurVariableScope().getLiveVariables();
+    return std::find(curLiveVars.begin(), curLiveVars.end(), variable) != curLiveVars.end();
 }
 
-void VariableManager::declareVariable (Variable* variable)
+const vector<Variable *> &VariableManager::getLiveVariables(void) const
 {
-	// Remove from cache if exists in there.
-	std::vector<const ValueEntry*>::iterator pos = std::find(m_entryCache.begin(), m_entryCache.end(), CompareEntryVariable(variable));
-	if (pos != m_entryCache.end())
-		m_entryCache.erase(pos);
-
-	DE_ASSERT(std::find(m_entryCache.begin(), m_entryCache.end(), CompareEntryVariable(variable)) == m_entryCache.end());
-
-	// Remove from scope stack.
-	for (vector<ValueScope*>::const_iterator stackIter = m_valueScopeStack.begin(); stackIter != m_valueScopeStack.end(); stackIter++)
-	{
-		ValueScope* scope = *stackIter;
-		scope->removeValue(variable);
-	}
-
-	// Declare in current scope.
-	getCurVariableScope().declare(variable);
+    return getCurVariableScope().getLiveVariables();
 }
 
-const ValueEntry* VariableManager::getValue (const Variable* variable) const
+void VariableManager::declareVariable(Variable *variable)
 {
-	vector<const ValueEntry*>::const_iterator pos = std::find(m_entryCache.begin(), m_entryCache.end(), CompareEntryVariable(variable));
-	return pos != m_entryCache.end() ? *pos : DE_NULL;
+    // Remove from cache if exists in there.
+    std::vector<const ValueEntry *>::iterator pos =
+        std::find(m_entryCache.begin(), m_entryCache.end(), CompareEntryVariable(variable));
+    if (pos != m_entryCache.end())
+        m_entryCache.erase(pos);
+
+    DE_ASSERT(std::find(m_entryCache.begin(), m_entryCache.end(), CompareEntryVariable(variable)) ==
+              m_entryCache.end());
+
+    // Remove from scope stack.
+    for (vector<ValueScope *>::const_iterator stackIter = m_valueScopeStack.begin();
+         stackIter != m_valueScopeStack.end(); stackIter++)
+    {
+        ValueScope *scope = *stackIter;
+        scope->removeValue(variable);
+    }
+
+    // Declare in current scope.
+    getCurVariableScope().declare(variable);
 }
 
-void VariableManager::removeValueFromCurrentScope (const Variable* variable)
+const ValueEntry *VariableManager::getValue(const Variable *variable) const
 {
-	// Remove from cache
-	std::vector<const ValueEntry*>::iterator pos = std::find(m_entryCache.begin(), m_entryCache.end(), CompareEntryVariable(variable));
-	DE_ASSERT(pos != m_entryCache.end());
-	m_entryCache.erase(pos);
-
-	// Remove from current scope \note May not exist in there.
-	getCurValueScope().removeValue(variable);
+    vector<const ValueEntry *>::const_iterator pos =
+        std::find(m_entryCache.begin(), m_entryCache.end(), CompareEntryVariable(variable));
+    return pos != m_entryCache.end() ? *pos : DE_NULL;
 }
 
-const ValueEntry* VariableManager::getParentValue (const Variable* variable) const
+void VariableManager::removeValueFromCurrentScope(const Variable *variable)
 {
-	if (m_valueScopeStack.size() < 2)
-		return DE_NULL; // Only single value scope
+    // Remove from cache
+    std::vector<const ValueEntry *>::iterator pos =
+        std::find(m_entryCache.begin(), m_entryCache.end(), CompareEntryVariable(variable));
+    DE_ASSERT(pos != m_entryCache.end());
+    m_entryCache.erase(pos);
 
-	for (vector<ValueScope*>::const_reverse_iterator i = m_valueScopeStack.rbegin()+1; i != m_valueScopeStack.rend(); i++)
-	{
-		const ValueScope*	scope	= *i;
-		ValueEntry*			entry	= scope->findEntry(variable);
-
-		if (entry)
-			return entry;
-	}
-
-	return DE_NULL; // Not found in stack
+    // Remove from current scope \note May not exist in there.
+    getCurValueScope().removeValue(variable);
 }
 
-void VariableManager::setValue (const Variable* variable, ConstValueRangeAccess value)
+const ValueEntry *VariableManager::getParentValue(const Variable *variable) const
 {
-	ValueScope& curScope = getCurValueScope();
+    if (m_valueScopeStack.size() < 2)
+        return DE_NULL; // Only single value scope
 
-	if (!curScope.findEntry(variable))
-	{
-		// New value, allocate and update cache.
-		ValueEntry*									newEntry	= curScope.allocate(variable);
-		std::vector<const ValueEntry*>::iterator	cachePos	= std::find(m_entryCache.begin(), m_entryCache.end(), CompareEntryVariable(variable));
+    for (vector<ValueScope *>::const_reverse_iterator i = m_valueScopeStack.rbegin() + 1; i != m_valueScopeStack.rend();
+         i++)
+    {
+        const ValueScope *scope = *i;
+        ValueEntry *entry       = scope->findEntry(variable);
 
-		if (cachePos != m_entryCache.end())
-			*cachePos = newEntry;
-		else
-			m_entryCache.push_back(newEntry);
-	}
+        if (entry)
+            return entry;
+    }
 
-	curScope.setValue(variable, value);
+    return DE_NULL; // Not found in stack
 }
 
-void VariableManager::reserve (ReservedScalars& store, int numScalars)
+void VariableManager::setValue(const Variable *variable, ConstValueRangeAccess value)
 {
-	DE_ASSERT(store.numScalars == 0);
-	store.numScalars		 = numScalars;
-	m_numAllocatedScalars	+= numScalars;
+    ValueScope &curScope = getCurValueScope();
+
+    if (!curScope.findEntry(variable))
+    {
+        // New value, allocate and update cache.
+        ValueEntry *newEntry = curScope.allocate(variable);
+        std::vector<const ValueEntry *>::iterator cachePos =
+            std::find(m_entryCache.begin(), m_entryCache.end(), CompareEntryVariable(variable));
+
+        if (cachePos != m_entryCache.end())
+            *cachePos = newEntry;
+        else
+            m_entryCache.push_back(newEntry);
+    }
+
+    curScope.setValue(variable, value);
 }
 
-void VariableManager::release (ReservedScalars& store)
+void VariableManager::reserve(ReservedScalars &store, int numScalars)
 {
-	m_numAllocatedScalars	-= store.numScalars;
-	store.numScalars		 = 0;
+    DE_ASSERT(store.numScalars == 0);
+    store.numScalars = numScalars;
+    m_numAllocatedScalars += numScalars;
 }
 
-void VariableManager::pushVariableScope (VariableScope& scope)
+void VariableManager::release(ReservedScalars &store)
 {
-	// Expects emtpy scope
-	DE_ASSERT(scope.getDeclaredVariables().size() == 0);
-	DE_ASSERT(scope.getLiveVariables().size() == 0);
-
-	m_variableScopeStack.push_back(&scope);
+    m_numAllocatedScalars -= store.numScalars;
+    store.numScalars = 0;
 }
 
-void VariableManager::popVariableScope (void)
+void VariableManager::pushVariableScope(VariableScope &scope)
 {
-	VariableScope& curScope = getCurVariableScope();
+    // Expects emtpy scope
+    DE_ASSERT(scope.getDeclaredVariables().size() == 0);
+    DE_ASSERT(scope.getLiveVariables().size() == 0);
 
-	// Migrate live variables to parent scope.
-	// Variables allocated in child scopes can be declared in any parent scope but not the other way around.
-	if (m_variableScopeStack.size() > 1)
-	{
-		VariableScope&		parentScope		= *m_variableScopeStack[m_variableScopeStack.size()-2];
-		vector<Variable*>&	curLiveVars		= curScope.getLiveVariables();
-		vector<Variable*>&	parenLiveVars	= parentScope.getLiveVariables();
-
-		while (!curLiveVars.empty())
-		{
-			Variable* liveVar = curLiveVars.back();
-			parenLiveVars.push_back(liveVar);
-			curLiveVars.pop_back();
-		}
-	}
-
-	// All variables should be either migrated to parent or declared (in case of root scope).
-	DE_ASSERT(curScope.getLiveVariables().size() == 0);
-
-	m_variableScopeStack.pop_back();
+    m_variableScopeStack.push_back(&scope);
 }
 
-void VariableManager::pushValueScope (ValueScope& scope)
+void VariableManager::popVariableScope(void)
 {
-	// Value scope should be empty
-	DE_ASSERT(scope.getValues().size() == 0);
+    VariableScope &curScope = getCurVariableScope();
 
-	m_valueScopeStack.push_back(&scope);
+    // Migrate live variables to parent scope.
+    // Variables allocated in child scopes can be declared in any parent scope but not the other way around.
+    if (m_variableScopeStack.size() > 1)
+    {
+        VariableScope &parentScope        = *m_variableScopeStack[m_variableScopeStack.size() - 2];
+        vector<Variable *> &curLiveVars   = curScope.getLiveVariables();
+        vector<Variable *> &parenLiveVars = parentScope.getLiveVariables();
+
+        while (!curLiveVars.empty())
+        {
+            Variable *liveVar = curLiveVars.back();
+            parenLiveVars.push_back(liveVar);
+            curLiveVars.pop_back();
+        }
+    }
+
+    // All variables should be either migrated to parent or declared (in case of root scope).
+    DE_ASSERT(curScope.getLiveVariables().size() == 0);
+
+    m_variableScopeStack.pop_back();
 }
 
-void VariableManager::popValueScope (void)
+void VariableManager::pushValueScope(ValueScope &scope)
 {
-	ValueScope& oldScope = getCurValueScope();
+    // Value scope should be empty
+    DE_ASSERT(scope.getValues().size() == 0);
 
-	// Pop scope and clear cache.
-	m_valueScopeStack.pop_back();
-	m_entryCache.clear();
-
-	// Re-build entry cache.
-	if (!m_valueScopeStack.empty())
-	{
-		ValueScope& newTopScope = getCurValueScope();
-
-		// Speed up computing intersections.
-		map<const Variable*, const ValueEntry*>	oldValues;
-		const vector<ValueEntry*>&				oldEntries = oldScope.getValues();
-
-		for (vector<ValueEntry*>::const_iterator valueIter = oldEntries.begin(); valueIter != oldEntries.end(); valueIter++)
-			oldValues[(*valueIter)->getVariable()] = *valueIter;
-
-		set<const Variable*> addedVars;
-
-		// Re-build based on current stack.
-		for (vector<ValueScope*>::reverse_iterator scopeIter = m_valueScopeStack.rbegin(); scopeIter != m_valueScopeStack.rend(); scopeIter++)
-		{
-			const ValueScope*			scope			= *scopeIter;
-			const vector<ValueEntry*>&	valueEntries	= scope->getValues();
-
-			for (vector<ValueEntry*>::const_iterator valueIter = valueEntries.begin(); valueIter != valueEntries.end(); valueIter++)
-			{
-				const ValueEntry*	entry	= *valueIter;
-				const Variable*		var		= entry->getVariable();
-
-				if (addedVars.find(var) != addedVars.end())
-					continue; // Already in cache, set deeper in scope stack.
-
-				DE_ASSERT(std::find(m_entryCache.begin(), m_entryCache.end(), CompareEntryVariable(var)) == m_entryCache.end());
-
-				if (oldValues.find(var) != oldValues.end())
-				{
-					const ValueEntry* oldEntry = oldValues[var];
-
-					// Build new intersected value and store into current scope.
-					ValueRange intersectedValue(var->getType());
-					DE_ASSERT(oldEntry->getValueRange().intersects(entry->getValueRange())); // Must intersect
-					ValueRange::computeIntersection(intersectedValue, entry->getValueRange(), oldEntry->getValueRange());
-
-					if (!newTopScope.findEntry(var))
-						newTopScope.allocate(var);
-
-					newTopScope.setValue(var, intersectedValue.asAccess());
-
-					// Add entry from top scope to cache.
-					m_entryCache.push_back(newTopScope.findEntry(var));
-				}
-				else
-					m_entryCache.push_back(entry); // Just add to cache.
-
-				addedVars.insert(var); // Record as cached variable.
-			}
-		}
-
-		// Copy entries from popped scope that don't yet exist in the stack.
-		for (vector<ValueEntry*>::const_iterator valueIter = oldEntries.begin(); valueIter != oldEntries.end(); valueIter++)
-		{
-			const ValueEntry*	oldEntry	= *valueIter;
-			const Variable*		var			= oldEntry->getVariable();
-
-			if (addedVars.find(var) == addedVars.end())
-				setValue(var, oldEntry->getValueRange());
-		}
-	}
+    m_valueScopeStack.push_back(&scope);
 }
 
-} // rsg
+void VariableManager::popValueScope(void)
+{
+    ValueScope &oldScope = getCurValueScope();
+
+    // Pop scope and clear cache.
+    m_valueScopeStack.pop_back();
+    m_entryCache.clear();
+
+    // Re-build entry cache.
+    if (!m_valueScopeStack.empty())
+    {
+        ValueScope &newTopScope = getCurValueScope();
+
+        // Speed up computing intersections.
+        map<const Variable *, const ValueEntry *> oldValues;
+        const vector<ValueEntry *> &oldEntries = oldScope.getValues();
+
+        for (vector<ValueEntry *>::const_iterator valueIter = oldEntries.begin(); valueIter != oldEntries.end();
+             valueIter++)
+            oldValues[(*valueIter)->getVariable()] = *valueIter;
+
+        set<const Variable *> addedVars;
+
+        // Re-build based on current stack.
+        for (vector<ValueScope *>::reverse_iterator scopeIter = m_valueScopeStack.rbegin();
+             scopeIter != m_valueScopeStack.rend(); scopeIter++)
+        {
+            const ValueScope *scope                  = *scopeIter;
+            const vector<ValueEntry *> &valueEntries = scope->getValues();
+
+            for (vector<ValueEntry *>::const_iterator valueIter = valueEntries.begin(); valueIter != valueEntries.end();
+                 valueIter++)
+            {
+                const ValueEntry *entry = *valueIter;
+                const Variable *var     = entry->getVariable();
+
+                if (addedVars.find(var) != addedVars.end())
+                    continue; // Already in cache, set deeper in scope stack.
+
+                DE_ASSERT(std::find(m_entryCache.begin(), m_entryCache.end(), CompareEntryVariable(var)) ==
+                          m_entryCache.end());
+
+                if (oldValues.find(var) != oldValues.end())
+                {
+                    const ValueEntry *oldEntry = oldValues[var];
+
+                    // Build new intersected value and store into current scope.
+                    ValueRange intersectedValue(var->getType());
+                    DE_ASSERT(oldEntry->getValueRange().intersects(entry->getValueRange())); // Must intersect
+                    ValueRange::computeIntersection(intersectedValue, entry->getValueRange(),
+                                                    oldEntry->getValueRange());
+
+                    if (!newTopScope.findEntry(var))
+                        newTopScope.allocate(var);
+
+                    newTopScope.setValue(var, intersectedValue.asAccess());
+
+                    // Add entry from top scope to cache.
+                    m_entryCache.push_back(newTopScope.findEntry(var));
+                }
+                else
+                    m_entryCache.push_back(entry); // Just add to cache.
+
+                addedVars.insert(var); // Record as cached variable.
+            }
+        }
+
+        // Copy entries from popped scope that don't yet exist in the stack.
+        for (vector<ValueEntry *>::const_iterator valueIter = oldEntries.begin(); valueIter != oldEntries.end();
+             valueIter++)
+        {
+            const ValueEntry *oldEntry = *valueIter;
+            const Variable *var        = oldEntry->getVariable();
+
+            if (addedVars.find(var) == addedVars.end())
+                setValue(var, oldEntry->getValueRange());
+        }
+    }
+}
+
+} // namespace rsg

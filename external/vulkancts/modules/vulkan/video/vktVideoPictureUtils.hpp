@@ -31,24 +31,23 @@ namespace vkt
 namespace video
 {
 
-class VulkanPicture: public INvidiaVulkanPicture
+class VulkanPicture : public INvidiaVulkanPicture
 {
 public:
-							VulkanPicture	();
-							~VulkanPicture	();
+    VulkanPicture();
+    ~VulkanPicture();
 
-	virtual void			AddRef			() override;
-	virtual void			Release			() override;
-	void					Reset			();
+    virtual void AddRef() override;
+    virtual void Release() override;
+    void Reset();
 
 protected:
-	void					Clear			();
+    void Clear();
 
-	std::atomic<int32_t>	m_refCount;
+    std::atomic<int32_t> m_refCount;
 };
 
-
-} // video
-} // vkt
+} // namespace video
+} // namespace vkt
 
 #endif // _VKTVIDEOPICTUREUTILS_HPP

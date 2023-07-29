@@ -31,9 +31,9 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup*		createDeviceInitializationTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDeviceInitializationTests(tcu::TestContext &testCtx);
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPIDEVICEINITIALIZATIONTESTS_HPP

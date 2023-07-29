@@ -34,11 +34,11 @@ namespace egl
 class GLES2SharedRenderingPerfTests : public TestCaseGroup
 {
 public:
-			GLES2SharedRenderingPerfTests	(EglTestContext& eglTestCtx);
-	void	init							(void);
+    GLES2SharedRenderingPerfTests(EglTestContext &eglTestCtx);
+    void init(void);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLGLES2SHAREDRENDERINGPERFTESTS_HPP

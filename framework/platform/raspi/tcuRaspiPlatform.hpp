@@ -38,14 +38,20 @@ namespace rpi
 class Platform : public tcu::Platform, private eglu::Platform, private glu::Platform
 {
 public:
-									Platform		(void);
-	virtual							~Platform		(void);
+    Platform(void);
+    virtual ~Platform(void);
 
-	virtual const glu::Platform&	getGLPlatform		(void) const { return static_cast<const glu::Platform&>	(*this);	}
-	virtual const eglu::Platform&	getEGLPlatform		(void) const { return static_cast<const eglu::Platform&>(*this);	}
+    virtual const glu::Platform &getGLPlatform(void) const
+    {
+        return static_cast<const glu::Platform &>(*this);
+    }
+    virtual const eglu::Platform &getEGLPlatform(void) const
+    {
+        return static_cast<const eglu::Platform &>(*this);
+    }
 };
 
-} // rpi
-} // tcu
+} // namespace rpi
+} // namespace tcu
 
 #endif // _TCURASPIPLATFORM_HPP

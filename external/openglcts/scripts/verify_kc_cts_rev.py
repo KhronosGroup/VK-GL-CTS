@@ -36,54 +36,54 @@ from ctsbuild.common import *
 EXTERNAL_DIR    = os.path.realpath(os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 def computeChecksum (data):
-	return hashlib.sha256(data).hexdigest()
+    return hashlib.sha256(data).hexdigest()
 
 class Source:
-	def __init__(self, baseDir, extractDir):
-		self.baseDir		= baseDir
-		self.extractDir		= extractDir
+    def __init__(self, baseDir, extractDir):
+        self.baseDir = baseDir
+        self.extractDir = extractDir
 
-	def clean (self):
-		fullDstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
-		if os.path.exists(fullDstPath):
-			shutil.rmtree(fullDstPath, ignore_errors=False)
+    def clean (self):
+        fullDstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
+        if os.path.exists(fullDstPath):
+            shutil.rmtree(fullDstPath, ignore_errors=False)
 
 class GitRepo (Source):
-	def __init__(self, url, revision, baseDir, extractDir = "src"):
-		Source.__init__(self, baseDir, extractDir)
-		self.url		= url
-		self.revision	= revision
+    def __init__(self, url, revision, baseDir, extractDir = "src"):
+        Source.__init__(self, baseDir, extractDir)
+        self.url = url
+        self.revision = revision
 
-	def update (self):
-		fullDstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
+    def update (self):
+        fullDstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
 
-		if not os.path.exists(fullDstPath):
-			execute(["git", "clone", "--no-checkout", self.url, fullDstPath])
+        if not os.path.exists(fullDstPath):
+            execute(["git", "clone", "--no-checkout", self.url, fullDstPath])
 
-		pushWorkingDir(fullDstPath)
-		try:
-			execute(["git", "fetch", self.url, "+refs/heads/*:refs/remotes/origin/*"])
-			execute(["git", "checkout", self.revision])
-		finally:
-			popWorkingDir()
-	def compare_rev(self):
-		fullDstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
-		pushWorkingDir(fullDstPath)
-		try:
-			out = subprocess.check_output(["git", "rev-parse", "HEAD"])
-			if out.replace('\n', '') != SHA1:
-				raise Exception ("KC CTS checkout revision %s in external/fetch_kc_cts.py doesn't match KC CTS master HEAD revision %s" % (SHA1, out))
-		finally:
-			popWorkingDir()
+        pushWorkingDir(fullDstPath)
+        try:
+            execute(["git", "fetch", self.url, "+refs/heads/*:refs/remotes/origin/*"])
+            execute(["git", "checkout", self.revision])
+        finally:
+            popWorkingDir()
+    def compare_rev(self):
+        fullDstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
+        pushWorkingDir(fullDstPath)
+        try:
+            out = subprocess.check_output(["git", "rev-parse", "HEAD"])
+            if out.replace('\n', '') != SHA1:
+                raise Exception ("KC CTS checkout revision %s in external/fetch_kc_cts.py doesn't match KC CTS master HEAD revision %s" % (SHA1, out))
+        finally:
+            popWorkingDir()
 
 PACKAGES = [
-	GitRepo(
-		"git@gitlab.khronos.org:opengl/kc-cts.git",
-		"HEAD",
-		"kc-cts"),
+    GitRepo(
+        "git@gitlab.khronos.org:opengl/kc-cts.git",
+        "HEAD",
+        "kc-cts"),
 ]
 
 if __name__ == "__main__":
-	for pkg in PACKAGES:
-		pkg.update()
-		pkg.compare_rev()
+    for pkg in PACKAGES:
+        pkg.update()
+        pkg.compare_rev()

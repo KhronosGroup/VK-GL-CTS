@@ -34,13 +34,13 @@ namespace egl
 class CreateContextTests : public TestCaseGroup
 {
 public:
-							CreateContextTests			(EglTestContext& eglTestCtx);
-	virtual					~CreateContextTests			(void);
+    CreateContextTests(EglTestContext &eglTestCtx);
+    virtual ~CreateContextTests(void);
 
-	void					init						(void);
+    void init(void);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLCREATECONTEXTTESTS_HPP

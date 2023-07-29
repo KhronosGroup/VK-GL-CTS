@@ -32,9 +32,9 @@ namespace vkt
 namespace FragmentShadingRate
 {
 
-void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* group, SharedGroupParams groupParams);
+void createAttachmentRateTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *group, SharedGroupParams groupParams);
 
-} // FragmentShadingRate
-} // vkt
+} // namespace FragmentShadingRate
+} // namespace vkt
 
 #endif // _VKTATTACHMENTRATETESTS_HPP

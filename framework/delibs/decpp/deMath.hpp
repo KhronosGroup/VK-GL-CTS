@@ -28,63 +28,117 @@
 
 #include <limits>
 
-DE_INLINE double	deToDouble	(deFloat16 x)	{ return deFloat16To64(x); }
-DE_INLINE double	deToDouble	(float x)		{ return x; }
-DE_INLINE double	deToDouble	(double x)		{ return x; }
+DE_INLINE double deToDouble(deFloat16 x)
+{
+    return deFloat16To64(x);
+}
+DE_INLINE double deToDouble(float x)
+{
+    return x;
+}
+DE_INLINE double deToDouble(double x)
+{
+    return x;
+}
 
 template <typename T>
 inline T deToFloatType(double x)
 {
-	return static_cast<T>(x);
+    return static_cast<T>(x);
 }
 
 template <>
 inline deFloat16 deToFloatType<deFloat16>(double x)
 {
-	return deFloat64To16(x);
+    return deFloat64To16(x);
 }
 
 // These helpers make the C helpers usable from templates.  Because some of
 // these deal with signaling NaN, it's important that no implicit float
 // conversion operations happen.
-DE_INLINE deBool	deIsPositiveZero	(deFloat16 x)	{ return deHalfIsPositiveZero(x); }
-DE_INLINE deBool	deIsPositiveZero	(float x)		{ return deFloatIsPositiveZero(x); }
-DE_INLINE deBool	deIsPositiveZero	(double x)		{ return deDoubleIsPositiveZero(x); }
-DE_INLINE deBool	deIsNegativeZero	(deFloat16 x)	{ return deHalfIsNegativeZero(x); }
-DE_INLINE deBool	deIsNegativeZero	(float x)		{ return deFloatIsNegativeZero(x); }
-DE_INLINE deBool	deIsNegativeZero	(double x)		{ return deDoubleIsNegativeZero(x); }
-DE_INLINE deBool	deIsIEEENaN			(deFloat16 x)	{ return deHalfIsIEEENaN(x); }
-DE_INLINE deBool	deIsIEEENaN			(float x)		{ return deFloatIsIEEENaN(x); }
-DE_INLINE deBool	deIsIEEENaN			(double x)		{ return deDoubleIsIEEENaN(x); }
-DE_INLINE deBool	deIsSignalingNaN	(deFloat16 x)	{ return deHalfIsSignalingNaN(x); }
-DE_INLINE deBool	deIsSignalingNaN	(float x)		{ return deFloatIsSignalingNaN(x); }
-DE_INLINE deBool	deIsSignalingNaN	(double x)		{ return deDoubleIsSignalingNaN(x); }
-DE_INLINE deBool	deIsQuietNaN		(deFloat16 x)	{ return deHalfIsQuietNaN(x); }
-DE_INLINE deBool	deIsQuietNaN		(float x)		{ return deFloatIsQuietNaN(x); }
-DE_INLINE deBool	deIsQuietNaN		(double x)		{ return deDoubleIsQuietNaN(x); }
+DE_INLINE bool deIsPositiveZero(deFloat16 x)
+{
+    return deHalfIsPositiveZero(x);
+}
+DE_INLINE bool deIsPositiveZero(float x)
+{
+    return deFloatIsPositiveZero(x);
+}
+DE_INLINE bool deIsPositiveZero(double x)
+{
+    return deDoubleIsPositiveZero(x);
+}
+DE_INLINE bool deIsNegativeZero(deFloat16 x)
+{
+    return deHalfIsNegativeZero(x);
+}
+DE_INLINE bool deIsNegativeZero(float x)
+{
+    return deFloatIsNegativeZero(x);
+}
+DE_INLINE bool deIsNegativeZero(double x)
+{
+    return deDoubleIsNegativeZero(x);
+}
+DE_INLINE bool deIsIEEENaN(deFloat16 x)
+{
+    return deHalfIsIEEENaN(x);
+}
+DE_INLINE bool deIsIEEENaN(float x)
+{
+    return deFloatIsIEEENaN(x);
+}
+DE_INLINE bool deIsIEEENaN(double x)
+{
+    return deDoubleIsIEEENaN(x);
+}
+DE_INLINE bool deIsSignalingNaN(deFloat16 x)
+{
+    return deHalfIsSignalingNaN(x);
+}
+DE_INLINE bool deIsSignalingNaN(float x)
+{
+    return deFloatIsSignalingNaN(x);
+}
+DE_INLINE bool deIsSignalingNaN(double x)
+{
+    return deDoubleIsSignalingNaN(x);
+}
+DE_INLINE bool deIsQuietNaN(deFloat16 x)
+{
+    return deHalfIsQuietNaN(x);
+}
+DE_INLINE bool deIsQuietNaN(float x)
+{
+    return deFloatIsQuietNaN(x);
+}
+DE_INLINE bool deIsQuietNaN(double x)
+{
+    return deDoubleIsQuietNaN(x);
+}
 
-template<typename T>
+template <typename T>
 inline T deQuietNaN()
 {
-	return std::numeric_limits<T>::quiet_NaN();
+    return std::numeric_limits<T>::quiet_NaN();
 }
 
-template<>
+template <>
 inline deFloat16 deQuietNaN<deFloat16>()
 {
-	return deFloat16QuietNaN;
+    return deFloat16QuietNaN;
 }
 
-template<typename T>
+template <typename T>
 inline T deSignalingNaN()
 {
-	return std::numeric_limits<T>::signaling_NaN();
+    return std::numeric_limits<T>::signaling_NaN();
 }
 
-template<>
+template <>
 inline deFloat16 deSignalingNaN<deFloat16>()
 {
-	return deFloat16SignalingNaN;
+    return deFloat16SignalingNaN;
 }
 
 #endif // _DEMATH_HPP

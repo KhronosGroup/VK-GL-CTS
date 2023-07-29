@@ -39,48 +39,44 @@ using tcu::TestLog;
 class BasicSampleListCase : public tcu::TestCase
 {
 public:
-	BasicSampleListCase (tcu::TestContext& testCtx)
-		: TestCase(testCtx, "sample_list", "Basic sample list usage")
-	{
-	}
+    BasicSampleListCase(tcu::TestContext &testCtx) : TestCase(testCtx, "sample_list", "Basic sample list usage")
+    {
+    }
 
-	IterateResult iterate (void)
-	{
-		TestLog& log = m_testCtx.getLog();
+    IterateResult iterate(void)
+    {
+        TestLog &log = m_testCtx.getLog();
 
-		log << TestLog::SampleList("TestSamples", "Test Sample List")
-			<< TestLog::SampleInfo
-			<< TestLog::ValueInfo("NumDrawCalls",	"Number of draw calls",		"",		QP_SAMPLE_VALUE_TAG_PREDICTOR)
-			<< TestLog::ValueInfo("NumOps",			"Number of ops in shader",	"op",	QP_SAMPLE_VALUE_TAG_PREDICTOR)
-			<< TestLog::ValueInfo("RenderTime",		"Rendering time",			"ms",	QP_SAMPLE_VALUE_TAG_RESPONSE)
-			<< TestLog::EndSampleInfo;
+        log << TestLog::SampleList("TestSamples", "Test Sample List") << TestLog::SampleInfo
+            << TestLog::ValueInfo("NumDrawCalls", "Number of draw calls", "", QP_SAMPLE_VALUE_TAG_PREDICTOR)
+            << TestLog::ValueInfo("NumOps", "Number of ops in shader", "op", QP_SAMPLE_VALUE_TAG_PREDICTOR)
+            << TestLog::ValueInfo("RenderTime", "Rendering time", "ms", QP_SAMPLE_VALUE_TAG_RESPONSE)
+            << TestLog::EndSampleInfo;
 
-		log << TestLog::Sample << 1 << 2 << 2.3 << TestLog::EndSample
-			<< TestLog::Sample << 0 << 0 << 0 << TestLog::EndSample
-			<< TestLog::Sample << 421 << -23 << 0.00001 << TestLog::EndSample
-			<< TestLog::Sample << 2 << 9 << -1e9 << TestLog::EndSample
-			<< TestLog::Sample << std::numeric_limits<deInt64>::max() << std::numeric_limits<deInt64>::min() << -0.0f << TestLog::EndSample
-			<< TestLog::Sample << 0x3355 << 0xf24 << std::numeric_limits<double>::max() << TestLog::EndSample;
+        log << TestLog::Sample << 1 << 2 << 2.3 << TestLog::EndSample << TestLog::Sample << 0 << 0 << 0
+            << TestLog::EndSample << TestLog::Sample << 421 << -23 << 0.00001 << TestLog::EndSample << TestLog::Sample
+            << 2 << 9 << -1e9 << TestLog::EndSample << TestLog::Sample << std::numeric_limits<int64_t>::max()
+            << std::numeric_limits<int64_t>::min() << -0.0f << TestLog::EndSample << TestLog::Sample << 0x3355 << 0xf24
+            << std::numeric_limits<double>::max() << TestLog::EndSample;
 
-		log << TestLog::EndSampleList;
+        log << TestLog::EndSampleList;
 
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-		return STOP;
-	}
+        m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+        return STOP;
+    }
 };
 
-TestLogTests::TestLogTests (tcu::TestContext& testCtx)
-	: TestCaseGroup(testCtx, "testlog", "Test Log Tests")
+TestLogTests::TestLogTests(tcu::TestContext &testCtx) : TestCaseGroup(testCtx, "testlog", "Test Log Tests")
 {
 }
 
-TestLogTests::~TestLogTests (void)
+TestLogTests::~TestLogTests(void)
 {
 }
 
-void TestLogTests::init (void)
+void TestLogTests::init(void)
 {
-	addChild(new BasicSampleListCase(m_testCtx));
+    addChild(new BasicSampleListCase(m_testCtx));
 }
 
-} // dit
+} // namespace dit

@@ -35,24 +35,24 @@ namespace xe
 class TestCaseListParser
 {
 public:
-							TestCaseListParser		(void);
-							~TestCaseListParser		(void);
+    TestCaseListParser(void);
+    ~TestCaseListParser(void);
 
-	void					init					(TestGroup* rootGroup);
-	void					parse					(const deUint8* bytes, int numBytes);
+    void init(TestGroup *rootGroup);
+    void parse(const uint8_t *bytes, int numBytes);
 
 private:
-							TestCaseListParser		(const TestCaseListParser& other);
-	TestCaseListParser&		operator=				(const TestCaseListParser& other);
+    TestCaseListParser(const TestCaseListParser &other);
+    TestCaseListParser &operator=(const TestCaseListParser &other);
 
-	void					clear					(void);
+    void clear(void);
 
-	xml::Parser				m_xmlParser;
-	TestGroup*				m_root;
+    xml::Parser m_xmlParser;
+    TestGroup *m_root;
 
-	std::vector<TestNode*>	m_nodeStack;
+    std::vector<TestNode *> m_nodeStack;
 };
 
-} // xe
+} // namespace xe
 
 #endif // _XETESTCASELISTPARSER_HPP

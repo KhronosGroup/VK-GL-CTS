@@ -32,9 +32,9 @@ namespace vkt
 namespace tessellation
 {
 
-tcu::TestCaseGroup* createCommonEdgeTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createCommonEdgeTests(tcu::TestContext &testCtx);
 
-} // tessellation
-} // vkt
+} // namespace tessellation
+} // namespace vkt
 
 #endif // _VKTTESSELLATIONCOMMONEDGETESTS_HPP

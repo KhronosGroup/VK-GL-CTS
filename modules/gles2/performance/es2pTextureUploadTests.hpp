@@ -36,24 +36,24 @@ namespace Performance
 
 enum UploadFunction
 {
-	UPLOAD_TEXIMAGE2D,
-	UPLOAD_TEXSUBIMAGE2D,
+    UPLOAD_TEXIMAGE2D,
+    UPLOAD_TEXSUBIMAGE2D,
 
-	UPLOAD_LAST
+    UPLOAD_LAST
 };
 
 class TextureUploadTests : public TestCaseGroup
 {
 public:
-					TextureUploadTests			(Context& context);
-					~TextureUploadTests			(void);
+    TextureUploadTests(Context &context);
+    ~TextureUploadTests(void);
 
-	void			init						(void);
-	void			deinit						(void);
+    void init(void);
+    void deinit(void);
 };
 
-} // Performance
-} // gles2
-} // deqp
+} // namespace Performance
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2PTEXTUREUPLOADTESTS_HPP

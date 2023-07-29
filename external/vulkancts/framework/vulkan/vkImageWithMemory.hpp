@@ -35,30 +35,36 @@ namespace vk
 class ImageWithMemory
 {
 public:
-										ImageWithMemory	(const vk::DeviceInterface&		vk,
-														 const vk::VkDevice				device,
-														 vk::Allocator&					allocator,
-														 const vk::VkImageCreateInfo&	imageCreateInfo,
-														 const vk::MemoryRequirement	memoryRequirement)
+    ImageWithMemory(const vk::DeviceInterface &vk, const vk::VkDevice device, vk::Allocator &allocator,
+                    const vk::VkImageCreateInfo &imageCreateInfo, const vk::MemoryRequirement memoryRequirement)
 
-											: m_image		(createImage(vk, device, &imageCreateInfo))
-											, m_allocation	(allocator.allocate(getImageMemoryRequirements(vk, device, *m_image), memoryRequirement))
-										{
-											VK_CHECK(vk.bindImageMemory(device, *m_image, m_allocation->getMemory(), m_allocation->getOffset()));
-										}
+        : m_image(createImage(vk, device, &imageCreateInfo))
+        , m_allocation(allocator.allocate(getImageMemoryRequirements(vk, device, *m_image), memoryRequirement))
+    {
+        VK_CHECK(vk.bindImageMemory(device, *m_image, m_allocation->getMemory(), m_allocation->getOffset()));
+    }
 
-	const vk::VkImage&					get				(void) const { return *m_image; }
-	const vk::VkImage&					operator*		(void) const { return get(); }
-	vk::Allocation&						getAllocation	(void) const { return *m_allocation; }
+    const vk::VkImage &get(void) const
+    {
+        return *m_image;
+    }
+    const vk::VkImage &operator*(void) const
+    {
+        return get();
+    }
+    vk::Allocation &getAllocation(void) const
+    {
+        return *m_allocation;
+    }
 
 private:
-	const vk::Unique<vk::VkImage>		m_image;
-	const de::UniquePtr<vk::Allocation>	m_allocation;
+    const vk::Unique<vk::VkImage> m_image;
+    const de::UniquePtr<vk::Allocation> m_allocation;
 
-	// "deleted"
-										ImageWithMemory	(const ImageWithMemory&);
-	ImageWithMemory&					operator=		(const ImageWithMemory&);
+    // "deleted"
+    ImageWithMemory(const ImageWithMemory &);
+    ImageWithMemory &operator=(const ImageWithMemory &);
 };
-} // vk
+} // namespace vk
 
 #endif // _VKIMAGEWITHMEMORY_HPP

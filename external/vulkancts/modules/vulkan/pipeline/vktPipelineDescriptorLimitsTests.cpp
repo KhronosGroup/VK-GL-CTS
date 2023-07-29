@@ -53,880 +53,945 @@ namespace
 
 enum class TestType
 {
-	Samplers			= 0,
-	UniformBuffers		= 1,
-	StorageBuffers		= 2,
-	SampledImages		= 3,
-	StorageImages		= 4,
-	InputAttachments	= 5
+    Samplers         = 0,
+    UniformBuffers   = 1,
+    StorageBuffers   = 2,
+    SampledImages    = 3,
+    StorageImages    = 4,
+    InputAttachments = 5
 };
 
-inline VkImageCreateInfo makeImageCreateInfo (const tcu::IVec2& size, const VkFormat format, const VkImageUsageFlags usage)
+inline VkImageCreateInfo makeImageCreateInfo(const tcu::IVec2 &size, const VkFormat format,
+                                             const VkImageUsageFlags usage)
 {
-	const VkImageCreateInfo	imageParams	=
-	{
-		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType;
-		DE_NULL,								// const void*				pNext;
-		(VkImageCreateFlags)0,					// VkImageCreateFlags		flags;
-		VK_IMAGE_TYPE_2D,						// VkImageType				imageType;
-		format,									// VkFormat					format;
-		makeExtent3D(size.x(), size.y(), 1),	// VkExtent3D				extent;
-		1u,										// deUint32					mipLevels;
-		1u,										// deUint32					arrayLayers;
-		VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits	samples;
-		VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling			tiling;
-		usage,									// VkImageUsageFlags		usage;
-		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode			sharingMode;
-		0u,										// deUint32					queueFamilyIndexCount;
-		DE_NULL,								// const deUint32*			pQueueFamilyIndices;
-		VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout			initialLayout;
-	};
-	return imageParams;
+    const VkImageCreateInfo imageParams = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                             // const void* pNext;
+        (VkImageCreateFlags)0,               // VkImageCreateFlags flags;
+        VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
+        format,                              // VkFormat format;
+        makeExtent3D(size.x(), size.y(), 1), // VkExtent3D extent;
+        1u,                                  // uint32_t mipLevels;
+        1u,                                  // uint32_t arrayLayers;
+        VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits samples;
+        VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling tiling;
+        usage,                               // VkImageUsageFlags usage;
+        VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
+        0u,                                  // uint32_t queueFamilyIndexCount;
+        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
+    };
+    return imageParams;
 }
 
-tcu::TextureLevel generateColorImage (const VkFormat format, const tcu::IVec2 &renderSize, const tcu::Vec4 color)
+tcu::TextureLevel generateColorImage(const VkFormat format, const tcu::IVec2 &renderSize, const tcu::Vec4 color)
 {
-	tcu::TextureLevel image(mapVkFormat(format), renderSize.x(), renderSize.y());
-	tcu::clear(image.getAccess(), color);
+    tcu::TextureLevel image(mapVkFormat(format), renderSize.x(), renderSize.y());
+    tcu::clear(image.getAccess(), color);
 
-	return image;
+    return image;
 }
 
-Move<VkRenderPass> makeRenderPassInputAttachment (const DeviceInterface&	vk,
-												  const VkDevice			device,
-												  const VkFormat			colorFormat)
+Move<VkRenderPass> makeRenderPassInputAttachment(const DeviceInterface &vk, const VkDevice device,
+                                                 const VkFormat colorFormat)
 {
-	const VkAttachmentDescription				colorAttachmentDescription	=
-	{
-		(VkAttachmentDescriptionFlags)0,			// VkAttachmentDescriptionFlags	flags
-		colorFormat,								// VkFormat						format
-		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits		samples
-		VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp			loadOp
-		VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp			storeOp
-		VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp			stencilLoadOp
-		VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp			stencilStoreOp
-		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout				initialLayout
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout				finalLayout
-	};
+    const VkAttachmentDescription colorAttachmentDescription = {
+        (VkAttachmentDescriptionFlags)0,         // VkAttachmentDescriptionFlags    flags
+        colorFormat,                             // VkFormat                        format
+        VK_SAMPLE_COUNT_1_BIT,                   // VkSampleCountFlagBits        samples
+        VK_ATTACHMENT_LOAD_OP_CLEAR,             // VkAttachmentLoadOp            loadOp
+        VK_ATTACHMENT_STORE_OP_STORE,            // VkAttachmentStoreOp            storeOp
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE,         // VkAttachmentLoadOp            stencilLoadOp
+        VK_ATTACHMENT_STORE_OP_DONT_CARE,        // VkAttachmentStoreOp            stencilStoreOp
+        VK_IMAGE_LAYOUT_UNDEFINED,               // VkImageLayout                initialLayout
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL // VkImageLayout                finalLayout
+    };
 
-	const VkAttachmentDescription				inputAttachmentDescription	=
-	{
-		VkAttachmentDescriptionFlags(0),			// VkAttachmentDescriptionFlags	flags;
-		colorFormat,								// VkFormat						format;
-		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits		samples;
-		VK_ATTACHMENT_LOAD_OP_LOAD,					// VkAttachmentLoadOp			loadOp;
-		VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp			storeOp;
-		VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp			stencilLoadOp;
-		VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp			stencilStoreOp;
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout				initialLayout;
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL	// VkImageLayout				finalLayout;
-	};
+    const VkAttachmentDescription inputAttachmentDescription = {
+        VkAttachmentDescriptionFlags(0),          // VkAttachmentDescriptionFlags flags;
+        colorFormat,                              // VkFormat format;
+        VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits samples;
+        VK_ATTACHMENT_LOAD_OP_LOAD,               // VkAttachmentLoadOp loadOp;
+        VK_ATTACHMENT_STORE_OP_STORE,             // VkAttachmentStoreOp storeOp;
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp stencilLoadOp;
+        VK_ATTACHMENT_STORE_OP_DONT_CARE,         // VkAttachmentStoreOp stencilStoreOp;
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout initialLayout;
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL  // VkImageLayout finalLayout;
+    };
 
-	const std::vector<VkAttachmentDescription>	attachmentDescriptions		= { inputAttachmentDescription, inputAttachmentDescription, colorAttachmentDescription };
+    const std::vector<VkAttachmentDescription> attachmentDescriptions = {
+        inputAttachmentDescription, inputAttachmentDescription, colorAttachmentDescription};
 
-	const std::vector<VkAttachmentReference>	inputAttachmentReferences	= { { 0u, inputAttachmentDescription.finalLayout }, { 1u, inputAttachmentDescription.finalLayout } };
+    const std::vector<VkAttachmentReference> inputAttachmentReferences = {{0u, inputAttachmentDescription.finalLayout},
+                                                                          {1u, inputAttachmentDescription.finalLayout}};
 
-	const VkAttachmentReference					colorAttachmentReference	= { 2u, colorAttachmentDescription.finalLayout };
+    const VkAttachmentReference colorAttachmentReference = {2u, colorAttachmentDescription.finalLayout};
 
-	const VkSubpassDescription					subpassDescription			=
-	{
-		(VkSubpassDescriptionFlags)0,								// VkSubpassDescriptionFlags	flags
-		VK_PIPELINE_BIND_POINT_GRAPHICS,							// VkPipelineBindPoint			pipelineBindPoint
-		static_cast<deUint32>(inputAttachmentReferences.size()),	// deUint32						inputAttachmentCount
-		inputAttachmentReferences.data(),							// const VkAttachmentReference*	pInputAttachments
-		1u,															// deUint32						colorAttachmentCount
-		&colorAttachmentReference,									// const VkAttachmentReference*	pColorAttachments
-		DE_NULL,													// const VkAttachmentReference*	pResolveAttachments
-		DE_NULL,													// const VkAttachmentReference*	pDepthStencilAttachment
-		0u,															// deUint32						preserveAttachmentCount
-		DE_NULL														// const deUint32*				pPreserveAttachments
-	};
+    const VkSubpassDescription subpassDescription = {
+        (VkSubpassDescriptionFlags)0,                            // VkSubpassDescriptionFlags    flags
+        VK_PIPELINE_BIND_POINT_GRAPHICS,                         // VkPipelineBindPoint            pipelineBindPoint
+        static_cast<uint32_t>(inputAttachmentReferences.size()), // uint32_t                        inputAttachmentCount
+        inputAttachmentReferences.data(),                        // const VkAttachmentReference*    pInputAttachments
+        1u,                                                      // uint32_t                        colorAttachmentCount
+        &colorAttachmentReference,                               // const VkAttachmentReference*    pColorAttachments
+        DE_NULL,                                                 // const VkAttachmentReference*    pResolveAttachments
+        DE_NULL, // const VkAttachmentReference*    pDepthStencilAttachment
+        0u,      // uint32_t                        preserveAttachmentCount
+        DE_NULL  // const uint32_t*                pPreserveAttachments
+    };
 
-	const VkRenderPassCreateInfo				renderPassInfo				=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureType					sType
-		DE_NULL,									// const void*						pNext
-		(VkRenderPassCreateFlags)0,					// VkRenderPassCreateFlags			flags
-		(deUint32)attachmentDescriptions.size(),	// deUint32							attachmentCount
-		attachmentDescriptions.data(),				// const VkAttachmentDescription*	pAttachments
-		1u,											// deUint32							subpassCount
-		&subpassDescription,						// const VkSubpassDescription*		pSubpasses
-		0u,											// deUint32							dependencyCount
-		DE_NULL										// const VkSubpassDependency*		pDependencies
-	};
+    const VkRenderPassCreateInfo renderPassInfo = {
+        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType                    sType
+        DE_NULL,                                   // const void*                        pNext
+        (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags            flags
+        (uint32_t)attachmentDescriptions.size(),   // uint32_t                            attachmentCount
+        attachmentDescriptions.data(),             // const VkAttachmentDescription*    pAttachments
+        1u,                                        // uint32_t                            subpassCount
+        &subpassDescription,                       // const VkSubpassDescription*        pSubpasses
+        0u,                                        // uint32_t                            dependencyCount
+        DE_NULL                                    // const VkSubpassDependency*        pDependencies
+    };
 
-	return createRenderPass(vk, device, &renderPassInfo, DE_NULL);
+    return createRenderPass(vk, device, &renderPassInfo, DE_NULL);
 }
 
 class DescriptorLimitTestInstance : public vkt::TestInstance
 {
 public:
-							DescriptorLimitTestInstance		(Context&						context,
-															const PipelineConstructionType	pipelineConstructionType,
-															const TestType					testType,
-															const bool						useCompShader,
-															const tcu::IVec2				framebufferSize,
-															const deUint32					descCount)
-															: vkt::TestInstance				(context)
-															, m_pipelineConstructionType	(pipelineConstructionType)
-															, m_testType					(testType)
-															, m_useCompShader				(useCompShader)
-															, m_framebufferSize				(framebufferSize)
-															, m_descCount					(descCount)
-															{}
+    DescriptorLimitTestInstance(Context &context, const PipelineConstructionType pipelineConstructionType,
+                                const TestType testType, const bool useCompShader, const tcu::IVec2 framebufferSize,
+                                const uint32_t descCount)
+        : vkt::TestInstance(context)
+        , m_pipelineConstructionType(pipelineConstructionType)
+        , m_testType(testType)
+        , m_useCompShader(useCompShader)
+        , m_framebufferSize(framebufferSize)
+        , m_descCount(descCount)
+    {
+    }
 
-							~DescriptorLimitTestInstance	()
-							{}
+    ~DescriptorLimitTestInstance()
+    {
+    }
 
-	virtual tcu::TestStatus	iterate							(void);
+    virtual tcu::TestStatus iterate(void);
 
 private:
-	struct BufferInfo
-	{
-		tcu::Vec4	color;
-	};
+    struct BufferInfo
+    {
+        tcu::Vec4 color;
+    };
 
-	const PipelineConstructionType	m_pipelineConstructionType;
-	const TestType					m_testType;
-	const bool						m_useCompShader;
-	const tcu::IVec2				m_framebufferSize;
-	const deUint32					m_descCount;
+    const PipelineConstructionType m_pipelineConstructionType;
+    const TestType m_testType;
+    const bool m_useCompShader;
+    const tcu::IVec2 m_framebufferSize;
+    const uint32_t m_descCount;
 };
 
-tcu::TestStatus DescriptorLimitTestInstance::iterate (void)
+tcu::TestStatus DescriptorLimitTestInstance::iterate(void)
 {
-	tcu::TestLog&							log										= m_context.getTestContext().getLog();
-	const DeviceInterface&					vk										= m_context.getDeviceInterface();
-	const VkDevice							vkDevice								= m_context.getDevice();
-	Allocator&								allocator								= m_context.getDefaultAllocator();
-	const VkQueue							queue									= m_context.getUniversalQueue();
-	const deUint32							queueFamilyIndex						= m_context.getUniversalQueueFamilyIndex();
-	VkFormat								colorFormat								= VK_FORMAT_R8G8B8A8_UNORM;
-
-	// Pick correct test parameters based on test type
-	const VkShaderStageFlags				shaderStageFlags						= m_useCompShader ? VkShaderStageFlags(VK_SHADER_STAGE_COMPUTE_BIT) : VkShaderStageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
-	const VkPipelineStageFlags				pipelineStageFlags						= m_useCompShader ? VkPipelineStageFlags(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT) : VkPipelineStageFlags(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-
-	const VkImageUsageFlags					imageFlags								= m_testType == TestType::InputAttachments
-																					? VkImageUsageFlags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
-																					: m_testType == TestType::StorageImages
-																					? VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
-																					: VkImageUsageFlags(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-
-	const VkImageLayout						finalImageLayout						= m_testType == TestType::InputAttachments
-																					? VkImageLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-																					: m_testType == TestType::StorageImages
-																					? VkImageLayout(VK_IMAGE_LAYOUT_GENERAL)
-																					: VkImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-	// Create shaders
-	Move<VkShaderModule>					vertexShaderModule						= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("vert"), 0u);
-	Move<VkShaderModule>					testedShaderModule						= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("test"), 0u);
-
-	// Create images
-	const VkImageSubresourceRange			colorSubresourceRange					= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-	const Move<VkImage>						colorImage								(makeImage(vk, vkDevice, makeImageCreateInfo(m_framebufferSize, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)));
-	const de::MovePtr<Allocation>			colorImageAlloc							(bindImage(vk, vkDevice, allocator, *colorImage, MemoryRequirement::Any));
-	const Move<VkImageView>					colorImageView							(makeImageView(vk, vkDevice, *colorImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange));
-
-	const Move<VkImage>						inputImages[2]							{ (makeImage(vk, vkDevice, makeImageCreateInfo(m_framebufferSize, colorFormat, imageFlags)))
-																					, (makeImage(vk, vkDevice, makeImageCreateInfo(m_framebufferSize, colorFormat, imageFlags))) };
-	const de::MovePtr<Allocation>			inputImageAllocs[2]						{ (bindImage(vk, vkDevice, allocator, *inputImages[0], MemoryRequirement::Any))
-																					, (bindImage(vk, vkDevice, allocator, *inputImages[1], MemoryRequirement::Any)) };
-	Move<VkImageView>						inputImageViews[2]						{ (makeImageView(vk, vkDevice, *inputImages[0], VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange))
-																					, (makeImageView(vk, vkDevice, *inputImages[1], VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange)) };
-
-	std::array<tcu::Vec4, 2>				testColors								{ tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f), tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f) };
-
-	for (int i = 0; i < 2; i++)
-	{
-		clearColorImage(vk, vkDevice, queue, queueFamilyIndex, inputImages[i].get(),
-			testColors[i],
-			VK_IMAGE_LAYOUT_UNDEFINED,
-			finalImageLayout,
-			pipelineStageFlags);
-	}
-
-	std::vector<VkImageView>				attachmentImages;
-
-	// Create Samplers
-	const tcu::Sampler						sampler = tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, 0.0f, true, tcu::Sampler::COMPAREMODE_NONE, 0, tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f), true);
-	const tcu::TextureFormat				texFormat								= mapVkFormat(colorFormat);
-	const VkSamplerCreateInfo				samplerParams							= mapSampler(sampler, texFormat);
-
-	Move<VkSampler>							samplers[2]								= { createSampler(vk, vkDevice, &samplerParams)
-																					, createSampler(vk, vkDevice, &samplerParams) };
-
-	// Create buffers
-	const deUint32							bufferElementSize						= static_cast<deUint32>(sizeof(tcu::Vec4));
-
-	const Move<VkBuffer>					uboBuffers[2]							{ (makeBuffer(vk, vkDevice, bufferElementSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT))
-																					, (makeBuffer(vk, vkDevice, bufferElementSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)) };
-
-	const Move<VkBuffer>					ssboBuffers[2]							{ (makeBuffer(vk, vkDevice, bufferElementSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT))
-																					, (makeBuffer(vk, vkDevice, bufferElementSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)) };
-
-	const Move<VkBuffer>					compBufferResult						(makeBuffer(vk, vkDevice, bufferElementSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
-
-	const de::MovePtr<Allocation>			uboBufferAllocs[2]						{ (bindBuffer(vk, vkDevice, allocator, *uboBuffers[0], MemoryRequirement::HostVisible))
-																					, (bindBuffer(vk, vkDevice, allocator, *uboBuffers[1], MemoryRequirement::HostVisible)) };
-
-	const de::MovePtr<Allocation>			ssboBufferAllocs[2]						{ (bindBuffer(vk, vkDevice, allocator, *ssboBuffers[0], MemoryRequirement::HostVisible))
-																					, (bindBuffer(vk, vkDevice, allocator, *ssboBuffers[1], MemoryRequirement::HostVisible)) };
-
-	const de::MovePtr<Allocation>			ssboBufferAllocResult					(bindBuffer(vk, vkDevice, allocator, *compBufferResult, MemoryRequirement::HostVisible));
-
-	// Fill buffers
-	{
-		char*	pPosUbos[2]				= { static_cast<char*>(uboBufferAllocs[0]->getHostPtr())
-										, static_cast<char*>(uboBufferAllocs[1]->getHostPtr()) };
-
-		char*	pPosSsbos[2]			= { static_cast<char*>(ssboBufferAllocs[0]->getHostPtr())
-										, static_cast<char*>(ssboBufferAllocs[1]->getHostPtr()) };
-
-		char*	pPosSsboResult			= static_cast<char*>(ssboBufferAllocResult->getHostPtr());
-
-		*((tcu::Vec4*)pPosUbos[0])		= testColors[0];
-		*((tcu::Vec4*)pPosUbos[1])		= testColors[1];
-
-		flushAlloc(vk, vkDevice, *uboBufferAllocs[0]);
-		flushAlloc(vk, vkDevice, *uboBufferAllocs[1]);
-
-		*((tcu::Vec4*)pPosSsbos[0])		= testColors[0];
-		*((tcu::Vec4*)pPosSsbos[1])		= testColors[1];
-
-		flushAlloc(vk, vkDevice, *ssboBufferAllocs[0]);
-		flushAlloc(vk, vkDevice, *ssboBufferAllocs[1]);
-
-		*((tcu::Vec4*)pPosSsboResult)	= tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
-
-		flushAlloc(vk, vkDevice, *ssboBufferAllocResult);
-	}
-
-	if (m_testType == TestType::InputAttachments)
-	{
-		for (deUint32 image = 0; image < 2; image++)
-		{
-			attachmentImages.push_back(*inputImageViews[image]);
-		}
-	}
-
-	attachmentImages.push_back(*colorImageView);
-
-	// Result image buffer for fragment shader run
-	const VkDeviceSize						resultImageBufferSizeBytes				= tcu::getPixelSize(mapVkFormat(colorFormat)) * m_framebufferSize.x() * m_framebufferSize.y();
-	const Move<VkBuffer>					resultImageBuffer						(makeBuffer(vk, vkDevice, resultImageBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
-	const de::MovePtr<Allocation>			resultImageBufferAlloc					(bindBuffer(vk, vkDevice, allocator, *resultImageBuffer, MemoryRequirement::HostVisible));
-
-	// Create vertex buffer
-	const deUint32							numVertices								= 6;
-	const VkDeviceSize						vertexBufferSizeBytes					= 256;
-	Move<VkBuffer>							vertexBuffer							= (makeBuffer(vk, vkDevice, vertexBufferSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
-	de::MovePtr<Allocation>					vertexBufferAlloc						= (bindBuffer(vk, vkDevice, allocator, *vertexBuffer, MemoryRequirement::HostVisible));
-
-	{
-		tcu::Vec4* const	pVertices	= reinterpret_cast<tcu::Vec4*>(vertexBufferAlloc->getHostPtr());
-
-		pVertices[0]	= tcu::Vec4( 1.0f, -1.0f, 0.0f, 1.0f);
-		pVertices[1]	= tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f);
-		pVertices[2]	= tcu::Vec4(-1.0f,  1.0f, 0.0f, 1.0f);
-		pVertices[3]	= tcu::Vec4(-1.0f,  1.0f, 0.0f, 1.0f);
-		pVertices[4]	= tcu::Vec4( 1.0f,  1.0f, 0.0f, 1.0f);
-		pVertices[5]	= tcu::Vec4( 1.0f, -1.0f, 0.0f, 1.0f);
-
-		flushAlloc(vk, vkDevice, *vertexBufferAlloc);
-	}
-
-	// Descriptor pool and descriptor set
-	DescriptorPoolBuilder				poolBuilder;
-
-	// If compute pipeline is used for testing something else than SSBOs,
-	// one SSBO descriptor is still needed for writing of the test result.
-	if (m_testType != TestType::StorageBuffers && m_useCompShader)
-	{
-		poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u);
-	}
-
-	if (m_testType == TestType::Samplers)
-	{
-		poolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_descCount);
-	}
-
-	if (m_testType == TestType::UniformBuffers)
-	{
-		poolBuilder.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, m_descCount);
-	}
-
-	if (m_testType == TestType::StorageBuffers)
-	{
-		// We must be an extra careful here, since we are actually adding another bind for ssbo result buffer
-		// when compute shader is used.
-		poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_descCount + (m_useCompShader ? 1u : 0u));
-	}
-
-	if (m_testType == TestType::SampledImages)
-	{
-		poolBuilder.addType(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, m_descCount);
-	}
-
-	if (m_testType == TestType::StorageImages)
-	{
-		poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, m_descCount);
-	}
-
-	if (m_testType == TestType::InputAttachments)
-	{
-		poolBuilder.addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, m_descCount);
-	}
-
-	const Move<VkDescriptorPool>			descriptorPool							= poolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u + (m_useCompShader ? 1u : 0u));
-
-	DescriptorSetLayoutBuilder				layoutBuilderAttachments;
-
-	if (m_testType == TestType::Samplers)
-	{
-		for (uint32_t i = 0; i < m_descCount; i++)
-		{
-			layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, shaderStageFlags);
-		}
-	}
-
-	if (m_testType == TestType::UniformBuffers)
-	{
-		for (uint32_t i = 0; i < m_descCount; i++)
-		{
-			layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, shaderStageFlags);
-		}
-	}
-
-	if (m_testType == TestType::StorageBuffers)
-	{
-		for (uint32_t i = 0; i < m_descCount; i++)
-		{
-			layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, shaderStageFlags);
-		}
-	}
-
-	if (m_testType == TestType::SampledImages)
-	{
-		for (uint32_t i = 0; i < m_descCount; i++)
-		{
-			layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, shaderStageFlags);
-		}
-	}
-
-	if (m_testType == TestType::StorageImages)
-	{
-		for (uint32_t i = 0; i < m_descCount; i++)
-		{
-			layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, shaderStageFlags);
-		}
-	}
-
-	if (m_testType == TestType::InputAttachments)
-	{
-		for (uint32_t i = 0; i < m_descCount; i++)
-		{
-			layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT);
-		}
-	}
-
-	const Move<VkDescriptorSetLayout>		descriptorSetLayout						= layoutBuilderAttachments.build(vk, vkDevice);
-	const Move<VkDescriptorSet>				descriptorSet							= makeDescriptorSet(vk, vkDevice, descriptorPool.get(), descriptorSetLayout.get());
-
-
-	DescriptorSetLayoutBuilder				layoutBuilderAttachmentsResult;
-
-	Move<VkDescriptorSetLayout>				descriptorSetLayoutResult;
-	Move<VkDescriptorSet>					descriptorSetResult;
-
-	if (m_useCompShader)
-	{
-		layoutBuilderAttachmentsResult.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
-
-		descriptorSetLayoutResult	= layoutBuilderAttachmentsResult.build(vk, vkDevice);
-		descriptorSetResult			= makeDescriptorSet(vk, vkDevice, descriptorPool.get(), descriptorSetLayoutResult.get());
-	}
-
-	// Setup renderpass and framebuffer.
-	const Move<VkRenderPass>				renderPass								(m_testType == TestType::InputAttachments
-																					? (makeRenderPassInputAttachment(vk, vkDevice, colorFormat))
-																					: (makeRenderPass(vk, vkDevice, colorFormat)));
-
-	const Move<VkFramebuffer>				framebuffer								(makeFramebuffer(vk, vkDevice, *renderPass, static_cast<deUint32>(attachmentImages.size()), attachmentImages.data(), m_framebufferSize.x(), m_framebufferSize.y()));
-
-	// Command buffer
-	const Move<VkCommandPool>				cmdPool									(createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-	const Move<VkCommandBuffer>				cmdBuffer								(allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-
-	std::vector<VkClearValue>				clearColorValues;
-
-	if (m_testType == TestType::InputAttachments)
-	{
-		clearColorValues.push_back(defaultClearValue(colorFormat));
-		clearColorValues.push_back(defaultClearValue(colorFormat));
-	}
-
-	clearColorValues.push_back(defaultClearValue(colorFormat));
-
-	const VkDeviceSize						vertexBufferOffset						= 0ull;
-
-	// Bind buffers
-	const vk::VkDescriptorImageInfo			imageInfos[2]							= { makeDescriptorImageInfo(*samplers[0], *inputImageViews[0], m_testType == TestType::StorageImages
-																					? VK_IMAGE_LAYOUT_GENERAL
-																					: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-																					, makeDescriptorImageInfo(*samplers[1], *inputImageViews[1], m_testType == TestType::StorageImages
-																					? VK_IMAGE_LAYOUT_GENERAL
-																					: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) };
-
-	const vk::VkDescriptorBufferInfo		uboInfos[2]								= { makeDescriptorBufferInfo(*uboBuffers[0], 0u, bufferElementSize)
-																					, makeDescriptorBufferInfo(*uboBuffers[1], 0u, bufferElementSize) };
-
-	const vk::VkDescriptorBufferInfo		ssboInfos[2]							= { makeDescriptorBufferInfo(*ssboBuffers[0], 0u, bufferElementSize)
-																					, makeDescriptorBufferInfo(*ssboBuffers[1], 0u, bufferElementSize) };
-
-	const vk::VkDescriptorBufferInfo		ssboInfoResult							= makeDescriptorBufferInfo(*compBufferResult, 0u, bufferElementSize);
-
-	DescriptorSetUpdateBuilder				updateBuilder;
-
-	if (m_useCompShader)
-	{
-		updateBuilder.writeSingle(*descriptorSetResult, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &ssboInfoResult);
-	}
-
-	if (m_testType == TestType::Samplers)
-	{
-		for (deUint32 bufferID = 0; bufferID < m_descCount - 1u; bufferID++)
-		{
-			updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(bufferID), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageInfos[0]);
-		}
-
-		updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(m_descCount - 1u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageInfos[1]);
-	}
-
-	if (m_testType == TestType::UniformBuffers)
-	{
-		for (deUint32 bufferID = 0; bufferID < m_descCount - 1u; bufferID++)
-		{
-			updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(bufferID), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &uboInfos[0]);
-		}
-
-		updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(m_descCount - 1u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &uboInfos[1]);
-	}
-
-	if (m_testType == TestType::StorageBuffers)
-	{
-		for (deUint32 bufferID = 0; bufferID < m_descCount - 1u; bufferID++)
-		{
-			updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(bufferID), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &ssboInfos[0]);
-		}
-
-		updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(m_descCount - 1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &ssboInfos[1]);
-	}
-
-	if (m_testType == TestType::SampledImages)
-	{
-		for (deUint32 bufferID = 0; bufferID < m_descCount - 1u; bufferID++)
-		{
-			updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(bufferID), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfos[0]);
-		}
-
-		updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(m_descCount - 1u), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfos[1]);
-	}
-
-	if (m_testType == TestType::StorageImages)
-	{
-		for (deUint32 bufferID = 0; bufferID < m_descCount - 1u; bufferID++)
-		{
-			updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(bufferID), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageInfos[0]);
-		}
-
-		updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(m_descCount - 1u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageInfos[1]);
-	}
-
-	if (m_testType == TestType::InputAttachments)
-	{
-		for (deUint32 bufferID = 0; bufferID < m_descCount - 1u; bufferID++)
-		{
-			updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(bufferID), VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &imageInfos[0]);
-		}
-
-		updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(m_descCount - 1u), VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &imageInfos[1]);
-	}
-
-	updateBuilder.update(vk, vkDevice);
-
-	// Create pipeline layout
-	std::vector<VkDescriptorSetLayout>		descSetLayouts							= { descriptorSetLayout.get() };
-
-	if (m_useCompShader)
-	{
-		descSetLayouts.push_back(descriptorSetLayoutResult.get());
-	}
-
-	const VkPipelineLayoutCreateInfo		pipelineLayoutInfo						=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType				sType;
-		DE_NULL,										// const void*					pNext;
-		0u,												// VkPipelineLayoutCreateFlags	flags;
-		static_cast<deUint32>(descSetLayouts.size()),	// deUint32						descriptorSetCount;
-		descSetLayouts.data(),							// const VkDescriptorSetLayout*	pSetLayouts;
-		0u,												// deUint32						pushConstantRangeCount;
-		DE_NULL											// const VkPushDescriptorRange*	pPushDescriptorRanges;
-	};
-
-	const Move<VkPipelineLayout>			pipelineLayout							= createPipelineLayout(vk, vkDevice, &pipelineLayoutInfo);
-	Move<VkPipeline>						computePipeline							{};
-	GraphicsPipelineWrapper					graphicsPipelineWrapper					{ vk, vkDevice, m_pipelineConstructionType };
-
-	if (m_useCompShader)
-	{
-		computePipeline = (makeComputePipeline(vk, vkDevice, pipelineLayout.get(), testedShaderModule.get()));
-	}
-	else
-	{
-		const std::vector<VkViewport>	viewports	{ makeViewport(m_framebufferSize) };
-		const std::vector<VkRect2D>		scissors	{ makeRect2D(m_framebufferSize) };
-		VkSampleMask					sampleMask	= 0x1;
-
-		const VkPipelineMultisampleStateCreateInfo	multisampleStateCreateInfo
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType							sType
-			DE_NULL,													// const void*								pNext
-			0u,															// VkPipelineMultisampleStateCreateFlags	flags
-			VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits					rasterizationSamples
-			DE_FALSE,													// VkBool32									sampleShadingEnable
-			0.0f,														// float									minSampleShading
-			&sampleMask,												// const VkSampleMask*						pSampleMask
-			DE_FALSE,													// VkBool32									alphaToCoverageEnable
-			DE_FALSE,													// VkBool32									alphaToOneEnable
-		};
-
-		graphicsPipelineWrapper.setDefaultDepthStencilState()
-			.setDefaultColorBlendState()
-			.setDefaultRasterizationState()
-			.setupVertexInputState()
-			.setupPreRasterizationShaderState(viewports,
-				scissors,
-				pipelineLayout.get(),
-				renderPass.get(),
-				0u,
-				vertexShaderModule.get())
-			.setupFragmentShaderState(pipelineLayout.get(),
-				renderPass.get(),
-				0u,
-				testedShaderModule.get(),
-				DE_NULL,
-				&multisampleStateCreateInfo)
-			.setupFragmentOutputState(renderPass.get(), 0u, DE_NULL, &multisampleStateCreateInfo)
-			.setMonolithicPipelineLayout(pipelineLayout.get())
-			.buildPipeline();
-	}
-
-	beginCommandBuffer(vk, *cmdBuffer);
-
-	if (m_useCompShader)
-	{
-		const std::vector<VkDescriptorSet> descSets = { descriptorSet.get(), descriptorSetResult.get() };
-
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline.get());
-		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, static_cast<deUint32>(descSets.size()), descSets.data(), 0u, DE_NULL);
-		vk.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
-	}
-	else
-	{
-		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, m_framebufferSize.x(), m_framebufferSize.y()), static_cast<deUint32>(clearColorValues.size()), clearColorValues.data());
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineWrapper.getPipeline());
-		vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
-		vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
-		endRenderPass(vk, *cmdBuffer);
-		copyImageToBuffer(vk, *cmdBuffer, *colorImage, *resultImageBuffer, m_framebufferSize, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
-	}
-
-	endCommandBuffer(vk, *cmdBuffer);
-
-	submitCommandsAndWait(vk, vkDevice, queue, *cmdBuffer);
-
-	// Check results
-	if (!m_useCompShader)
-	{
-		invalidateAlloc(vk, vkDevice, *resultImageBufferAlloc);
-
-		const tcu::ConstPixelBufferAccess	imagePixelAccess	(mapVkFormat(colorFormat), m_framebufferSize.x(), m_framebufferSize.y(), 1, resultImageBufferAlloc->getHostPtr());
-		const tcu::TextureLevel				referenceTexture	= generateColorImage(colorFormat, m_framebufferSize, testColors[1]);
-
-		if (!tcu::floatThresholdCompare(log, "Compare color output", "Image result comparison", referenceTexture.getAccess(), imagePixelAccess, tcu::Vec4(0.0f), tcu::COMPARE_LOG_RESULT))
-			return tcu::TestStatus::fail("Rendered color image is not correct");
-	}
-	else
-	{
-		invalidateAlloc(vk, vkDevice, *ssboBufferAllocResult);
-		const tcu::Vec4	resultValue	= *static_cast<tcu::Vec4*>(ssboBufferAllocResult->getHostPtr());
-
-		if (!(resultValue == tcu::Vec4(0.0, 1.0, 0.0, 1.0)))
-			return tcu::TestStatus::fail("Result buffer value is not correct");
-	}
-
-	return tcu::TestStatus::pass("Success");
+    tcu::TestLog &log               = m_context.getTestContext().getLog();
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice vkDevice         = m_context.getDevice();
+    Allocator &allocator            = m_context.getDefaultAllocator();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    VkFormat colorFormat            = VK_FORMAT_R8G8B8A8_UNORM;
+
+    // Pick correct test parameters based on test type
+    const VkShaderStageFlags shaderStageFlags     = m_useCompShader ? VkShaderStageFlags(VK_SHADER_STAGE_COMPUTE_BIT) :
+                                                                      VkShaderStageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
+    const VkPipelineStageFlags pipelineStageFlags = m_useCompShader ?
+                                                        VkPipelineStageFlags(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT) :
+                                                        VkPipelineStageFlags(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+
+    const VkImageUsageFlags imageFlags =
+        m_testType == TestType::InputAttachments ?
+            VkImageUsageFlags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |
+                              VK_IMAGE_USAGE_TRANSFER_DST_BIT) :
+        m_testType == TestType::StorageImages ?
+            VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT :
+            VkImageUsageFlags(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+    const VkImageLayout finalImageLayout =
+        m_testType == TestType::InputAttachments ? VkImageLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) :
+        m_testType == TestType::StorageImages    ? VkImageLayout(VK_IMAGE_LAYOUT_GENERAL) :
+                                                   VkImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    // Create shaders
+    Move<VkShaderModule> vertexShaderModule =
+        createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("vert"), 0u);
+    Move<VkShaderModule> testedShaderModule =
+        createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("test"), 0u);
+
+    // Create images
+    const VkImageSubresourceRange colorSubresourceRange =
+        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+    const Move<VkImage> colorImage(
+        makeImage(vk, vkDevice,
+                  makeImageCreateInfo(m_framebufferSize, colorFormat,
+                                      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)));
+    const de::MovePtr<Allocation> colorImageAlloc(
+        bindImage(vk, vkDevice, allocator, *colorImage, MemoryRequirement::Any));
+    const Move<VkImageView> colorImageView(
+        makeImageView(vk, vkDevice, *colorImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange));
+
+    const Move<VkImage> inputImages[2]{
+        (makeImage(vk, vkDevice, makeImageCreateInfo(m_framebufferSize, colorFormat, imageFlags))),
+        (makeImage(vk, vkDevice, makeImageCreateInfo(m_framebufferSize, colorFormat, imageFlags)))};
+    const de::MovePtr<Allocation> inputImageAllocs[2]{
+        (bindImage(vk, vkDevice, allocator, *inputImages[0], MemoryRequirement::Any)),
+        (bindImage(vk, vkDevice, allocator, *inputImages[1], MemoryRequirement::Any))};
+    Move<VkImageView> inputImageViews[2]{
+        (makeImageView(vk, vkDevice, *inputImages[0], VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange)),
+        (makeImageView(vk, vkDevice, *inputImages[1], VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange))};
+
+    std::array<tcu::Vec4, 2> testColors{tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f), tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f)};
+
+    for (int i = 0; i < 2; i++)
+    {
+        clearColorImage(vk, vkDevice, queue, queueFamilyIndex, inputImages[i].get(), testColors[i],
+                        VK_IMAGE_LAYOUT_UNDEFINED, finalImageLayout, pipelineStageFlags);
+    }
+
+    std::vector<VkImageView> attachmentImages;
+
+    // Create Samplers
+    const tcu::Sampler sampler = tcu::Sampler(
+        tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::NEAREST,
+        tcu::Sampler::NEAREST, 0.0f, true, tcu::Sampler::COMPAREMODE_NONE, 0, tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f), true);
+    const tcu::TextureFormat texFormat      = mapVkFormat(colorFormat);
+    const VkSamplerCreateInfo samplerParams = mapSampler(sampler, texFormat);
+
+    Move<VkSampler> samplers[2] = {createSampler(vk, vkDevice, &samplerParams),
+                                   createSampler(vk, vkDevice, &samplerParams)};
+
+    // Create buffers
+    const uint32_t bufferElementSize = static_cast<uint32_t>(sizeof(tcu::Vec4));
+
+    const Move<VkBuffer> uboBuffers[2]{
+        (makeBuffer(vk, vkDevice, bufferElementSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)),
+        (makeBuffer(vk, vkDevice, bufferElementSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT))};
+
+    const Move<VkBuffer> ssboBuffers[2]{
+        (makeBuffer(vk, vkDevice, bufferElementSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)),
+        (makeBuffer(vk, vkDevice, bufferElementSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT))};
+
+    const Move<VkBuffer> compBufferResult(
+        makeBuffer(vk, vkDevice, bufferElementSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
+
+    const de::MovePtr<Allocation> uboBufferAllocs[2]{
+        (bindBuffer(vk, vkDevice, allocator, *uboBuffers[0], MemoryRequirement::HostVisible)),
+        (bindBuffer(vk, vkDevice, allocator, *uboBuffers[1], MemoryRequirement::HostVisible))};
+
+    const de::MovePtr<Allocation> ssboBufferAllocs[2]{
+        (bindBuffer(vk, vkDevice, allocator, *ssboBuffers[0], MemoryRequirement::HostVisible)),
+        (bindBuffer(vk, vkDevice, allocator, *ssboBuffers[1], MemoryRequirement::HostVisible))};
+
+    const de::MovePtr<Allocation> ssboBufferAllocResult(
+        bindBuffer(vk, vkDevice, allocator, *compBufferResult, MemoryRequirement::HostVisible));
+
+    // Fill buffers
+    {
+        char *pPosUbos[2] = {static_cast<char *>(uboBufferAllocs[0]->getHostPtr()),
+                             static_cast<char *>(uboBufferAllocs[1]->getHostPtr())};
+
+        char *pPosSsbos[2] = {static_cast<char *>(ssboBufferAllocs[0]->getHostPtr()),
+                              static_cast<char *>(ssboBufferAllocs[1]->getHostPtr())};
+
+        char *pPosSsboResult = static_cast<char *>(ssboBufferAllocResult->getHostPtr());
+
+        *((tcu::Vec4 *)pPosUbos[0]) = testColors[0];
+        *((tcu::Vec4 *)pPosUbos[1]) = testColors[1];
+
+        flushAlloc(vk, vkDevice, *uboBufferAllocs[0]);
+        flushAlloc(vk, vkDevice, *uboBufferAllocs[1]);
+
+        *((tcu::Vec4 *)pPosSsbos[0]) = testColors[0];
+        *((tcu::Vec4 *)pPosSsbos[1]) = testColors[1];
+
+        flushAlloc(vk, vkDevice, *ssboBufferAllocs[0]);
+        flushAlloc(vk, vkDevice, *ssboBufferAllocs[1]);
+
+        *((tcu::Vec4 *)pPosSsboResult) = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+
+        flushAlloc(vk, vkDevice, *ssboBufferAllocResult);
+    }
+
+    if (m_testType == TestType::InputAttachments)
+    {
+        for (uint32_t image = 0; image < 2; image++)
+        {
+            attachmentImages.push_back(*inputImageViews[image]);
+        }
+    }
+
+    attachmentImages.push_back(*colorImageView);
+
+    // Result image buffer for fragment shader run
+    const VkDeviceSize resultImageBufferSizeBytes =
+        tcu::getPixelSize(mapVkFormat(colorFormat)) * m_framebufferSize.x() * m_framebufferSize.y();
+    const Move<VkBuffer> resultImageBuffer(
+        makeBuffer(vk, vkDevice, resultImageBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+    const de::MovePtr<Allocation> resultImageBufferAlloc(
+        bindBuffer(vk, vkDevice, allocator, *resultImageBuffer, MemoryRequirement::HostVisible));
+
+    // Create vertex buffer
+    const uint32_t numVertices               = 6;
+    const VkDeviceSize vertexBufferSizeBytes = 256;
+    Move<VkBuffer> vertexBuffer = (makeBuffer(vk, vkDevice, vertexBufferSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+    de::MovePtr<Allocation> vertexBufferAlloc =
+        (bindBuffer(vk, vkDevice, allocator, *vertexBuffer, MemoryRequirement::HostVisible));
+
+    {
+        tcu::Vec4 *const pVertices = reinterpret_cast<tcu::Vec4 *>(vertexBufferAlloc->getHostPtr());
+
+        pVertices[0] = tcu::Vec4(1.0f, -1.0f, 0.0f, 1.0f);
+        pVertices[1] = tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f);
+        pVertices[2] = tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f);
+        pVertices[3] = tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f);
+        pVertices[4] = tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f);
+        pVertices[5] = tcu::Vec4(1.0f, -1.0f, 0.0f, 1.0f);
+
+        flushAlloc(vk, vkDevice, *vertexBufferAlloc);
+    }
+
+    // Descriptor pool and descriptor set
+    DescriptorPoolBuilder poolBuilder;
+
+    // If compute pipeline is used for testing something else than SSBOs,
+    // one SSBO descriptor is still needed for writing of the test result.
+    if (m_testType != TestType::StorageBuffers && m_useCompShader)
+    {
+        poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u);
+    }
+
+    if (m_testType == TestType::Samplers)
+    {
+        poolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_descCount);
+    }
+
+    if (m_testType == TestType::UniformBuffers)
+    {
+        poolBuilder.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, m_descCount);
+    }
+
+    if (m_testType == TestType::StorageBuffers)
+    {
+        // We must be an extra careful here, since we are actually adding another bind for ssbo result buffer
+        // when compute shader is used.
+        poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_descCount + (m_useCompShader ? 1u : 0u));
+    }
+
+    if (m_testType == TestType::SampledImages)
+    {
+        poolBuilder.addType(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, m_descCount);
+    }
+
+    if (m_testType == TestType::StorageImages)
+    {
+        poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, m_descCount);
+    }
+
+    if (m_testType == TestType::InputAttachments)
+    {
+        poolBuilder.addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, m_descCount);
+    }
+
+    const Move<VkDescriptorPool> descriptorPool = poolBuilder.build(
+        vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u + (m_useCompShader ? 1u : 0u));
+
+    DescriptorSetLayoutBuilder layoutBuilderAttachments;
+
+    if (m_testType == TestType::Samplers)
+    {
+        for (uint32_t i = 0; i < m_descCount; i++)
+        {
+            layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, shaderStageFlags);
+        }
+    }
+
+    if (m_testType == TestType::UniformBuffers)
+    {
+        for (uint32_t i = 0; i < m_descCount; i++)
+        {
+            layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, shaderStageFlags);
+        }
+    }
+
+    if (m_testType == TestType::StorageBuffers)
+    {
+        for (uint32_t i = 0; i < m_descCount; i++)
+        {
+            layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, shaderStageFlags);
+        }
+    }
+
+    if (m_testType == TestType::SampledImages)
+    {
+        for (uint32_t i = 0; i < m_descCount; i++)
+        {
+            layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, shaderStageFlags);
+        }
+    }
+
+    if (m_testType == TestType::StorageImages)
+    {
+        for (uint32_t i = 0; i < m_descCount; i++)
+        {
+            layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, shaderStageFlags);
+        }
+    }
+
+    if (m_testType == TestType::InputAttachments)
+    {
+        for (uint32_t i = 0; i < m_descCount; i++)
+        {
+            layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+                                                      VK_SHADER_STAGE_FRAGMENT_BIT);
+        }
+    }
+
+    const Move<VkDescriptorSetLayout> descriptorSetLayout = layoutBuilderAttachments.build(vk, vkDevice);
+    const Move<VkDescriptorSet> descriptorSet =
+        makeDescriptorSet(vk, vkDevice, descriptorPool.get(), descriptorSetLayout.get());
+
+    DescriptorSetLayoutBuilder layoutBuilderAttachmentsResult;
+
+    Move<VkDescriptorSetLayout> descriptorSetLayoutResult;
+    Move<VkDescriptorSet> descriptorSetResult;
+
+    if (m_useCompShader)
+    {
+        layoutBuilderAttachmentsResult.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+
+        descriptorSetLayoutResult = layoutBuilderAttachmentsResult.build(vk, vkDevice);
+        descriptorSetResult = makeDescriptorSet(vk, vkDevice, descriptorPool.get(), descriptorSetLayoutResult.get());
+    }
+
+    // Setup renderpass and framebuffer.
+    const Move<VkRenderPass> renderPass(m_testType == TestType::InputAttachments ?
+                                            (makeRenderPassInputAttachment(vk, vkDevice, colorFormat)) :
+                                            (makeRenderPass(vk, vkDevice, colorFormat)));
+
+    const Move<VkFramebuffer> framebuffer(
+        makeFramebuffer(vk, vkDevice, *renderPass, static_cast<uint32_t>(attachmentImages.size()),
+                        attachmentImages.data(), m_framebufferSize.x(), m_framebufferSize.y()));
+
+    // Command buffer
+    const Move<VkCommandPool> cmdPool(
+        createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+    const Move<VkCommandBuffer> cmdBuffer(
+        allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    std::vector<VkClearValue> clearColorValues;
+
+    if (m_testType == TestType::InputAttachments)
+    {
+        clearColorValues.push_back(defaultClearValue(colorFormat));
+        clearColorValues.push_back(defaultClearValue(colorFormat));
+    }
+
+    clearColorValues.push_back(defaultClearValue(colorFormat));
+
+    const VkDeviceSize vertexBufferOffset = 0ull;
+
+    // Bind buffers
+    const vk::VkDescriptorImageInfo imageInfos[2] = {
+        makeDescriptorImageInfo(*samplers[0], *inputImageViews[0],
+                                m_testType == TestType::StorageImages ? VK_IMAGE_LAYOUT_GENERAL :
+                                                                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+        makeDescriptorImageInfo(*samplers[1], *inputImageViews[1],
+                                m_testType == TestType::StorageImages ? VK_IMAGE_LAYOUT_GENERAL :
+                                                                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)};
+
+    const vk::VkDescriptorBufferInfo uboInfos[2] = {makeDescriptorBufferInfo(*uboBuffers[0], 0u, bufferElementSize),
+                                                    makeDescriptorBufferInfo(*uboBuffers[1], 0u, bufferElementSize)};
+
+    const vk::VkDescriptorBufferInfo ssboInfos[2] = {makeDescriptorBufferInfo(*ssboBuffers[0], 0u, bufferElementSize),
+                                                     makeDescriptorBufferInfo(*ssboBuffers[1], 0u, bufferElementSize)};
+
+    const vk::VkDescriptorBufferInfo ssboInfoResult =
+        makeDescriptorBufferInfo(*compBufferResult, 0u, bufferElementSize);
+
+    DescriptorSetUpdateBuilder updateBuilder;
+
+    if (m_useCompShader)
+    {
+        updateBuilder.writeSingle(*descriptorSetResult, DescriptorSetUpdateBuilder::Location::binding(0u),
+                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &ssboInfoResult);
+    }
+
+    if (m_testType == TestType::Samplers)
+    {
+        for (uint32_t bufferID = 0; bufferID < m_descCount - 1u; bufferID++)
+        {
+            updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(bufferID),
+                                      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageInfos[0]);
+        }
+
+        updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(m_descCount - 1u),
+                                  VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageInfos[1]);
+    }
+
+    if (m_testType == TestType::UniformBuffers)
+    {
+        for (uint32_t bufferID = 0; bufferID < m_descCount - 1u; bufferID++)
+        {
+            updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(bufferID),
+                                      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &uboInfos[0]);
+        }
+
+        updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(m_descCount - 1u),
+                                  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &uboInfos[1]);
+    }
+
+    if (m_testType == TestType::StorageBuffers)
+    {
+        for (uint32_t bufferID = 0; bufferID < m_descCount - 1u; bufferID++)
+        {
+            updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(bufferID),
+                                      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &ssboInfos[0]);
+        }
+
+        updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(m_descCount - 1u),
+                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &ssboInfos[1]);
+    }
+
+    if (m_testType == TestType::SampledImages)
+    {
+        for (uint32_t bufferID = 0; bufferID < m_descCount - 1u; bufferID++)
+        {
+            updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(bufferID),
+                                      VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfos[0]);
+        }
+
+        updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(m_descCount - 1u),
+                                  VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfos[1]);
+    }
+
+    if (m_testType == TestType::StorageImages)
+    {
+        for (uint32_t bufferID = 0; bufferID < m_descCount - 1u; bufferID++)
+        {
+            updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(bufferID),
+                                      VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageInfos[0]);
+        }
+
+        updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(m_descCount - 1u),
+                                  VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageInfos[1]);
+    }
+
+    if (m_testType == TestType::InputAttachments)
+    {
+        for (uint32_t bufferID = 0; bufferID < m_descCount - 1u; bufferID++)
+        {
+            updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(bufferID),
+                                      VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &imageInfos[0]);
+        }
+
+        updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(m_descCount - 1u),
+                                  VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &imageInfos[1]);
+    }
+
+    updateBuilder.update(vk, vkDevice);
+
+    // Create pipeline layout
+    std::vector<VkDescriptorSetLayout> descSetLayouts = {descriptorSetLayout.get()};
+
+    if (m_useCompShader)
+    {
+        descSetLayouts.push_back(descriptorSetLayoutResult.get());
+    }
+
+    const VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                       // const void* pNext;
+        0u,                                            // VkPipelineLayoutCreateFlags flags;
+        static_cast<uint32_t>(descSetLayouts.size()),  // uint32_t descriptorSetCount;
+        descSetLayouts.data(),                         // const VkDescriptorSetLayout* pSetLayouts;
+        0u,                                            // uint32_t pushConstantRangeCount;
+        DE_NULL                                        // const VkPushDescriptorRange* pPushDescriptorRanges;
+    };
+
+    const Move<VkPipelineLayout> pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutInfo);
+    Move<VkPipeline> computePipeline{};
+    GraphicsPipelineWrapper graphicsPipelineWrapper{vk, vkDevice, m_pipelineConstructionType};
+
+    if (m_useCompShader)
+    {
+        computePipeline = (makeComputePipeline(vk, vkDevice, pipelineLayout.get(), testedShaderModule.get()));
+    }
+    else
+    {
+        const std::vector<VkViewport> viewports{makeViewport(m_framebufferSize)};
+        const std::vector<VkRect2D> scissors{makeRect2D(m_framebufferSize)};
+        VkSampleMask sampleMask = 0x1;
+
+        const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo{
+            VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType                            sType
+            DE_NULL,               // const void*                                pNext
+            0u,                    // VkPipelineMultisampleStateCreateFlags    flags
+            VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits                    rasterizationSamples
+            false,                 // VkBool32                                    sampleShadingEnable
+            0.0f,                  // float                                    minSampleShading
+            &sampleMask,           // const VkSampleMask*                        pSampleMask
+            false,                 // VkBool32                                    alphaToCoverageEnable
+            false,                 // VkBool32                                    alphaToOneEnable
+        };
+
+        graphicsPipelineWrapper.setDefaultDepthStencilState()
+            .setDefaultColorBlendState()
+            .setDefaultRasterizationState()
+            .setupVertexInputState()
+            .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout.get(), renderPass.get(), 0u,
+                                              vertexShaderModule.get())
+            .setupFragmentShaderState(pipelineLayout.get(), renderPass.get(), 0u, testedShaderModule.get(), DE_NULL,
+                                      &multisampleStateCreateInfo)
+            .setupFragmentOutputState(renderPass.get(), 0u, DE_NULL, &multisampleStateCreateInfo)
+            .setMonolithicPipelineLayout(pipelineLayout.get())
+            .buildPipeline();
+    }
+
+    beginCommandBuffer(vk, *cmdBuffer);
+
+    if (m_useCompShader)
+    {
+        const std::vector<VkDescriptorSet> descSets = {descriptorSet.get(), descriptorSetResult.get()};
+
+        vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline.get());
+        vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u,
+                                 static_cast<uint32_t>(descSets.size()), descSets.data(), 0u, DE_NULL);
+        vk.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
+    }
+    else
+    {
+        beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer,
+                        makeRect2D(0, 0, m_framebufferSize.x(), m_framebufferSize.y()),
+                        static_cast<uint32_t>(clearColorValues.size()), clearColorValues.data());
+        vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineWrapper.getPipeline());
+        vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+        vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
+                                 &descriptorSet.get(), 0u, DE_NULL);
+        vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
+        endRenderPass(vk, *cmdBuffer);
+        copyImageToBuffer(vk, *cmdBuffer, *colorImage, *resultImageBuffer, m_framebufferSize,
+                          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+    }
+
+    endCommandBuffer(vk, *cmdBuffer);
+
+    submitCommandsAndWait(vk, vkDevice, queue, *cmdBuffer);
+
+    // Check results
+    if (!m_useCompShader)
+    {
+        invalidateAlloc(vk, vkDevice, *resultImageBufferAlloc);
+
+        const tcu::ConstPixelBufferAccess imagePixelAccess(mapVkFormat(colorFormat), m_framebufferSize.x(),
+                                                           m_framebufferSize.y(), 1,
+                                                           resultImageBufferAlloc->getHostPtr());
+        const tcu::TextureLevel referenceTexture = generateColorImage(colorFormat, m_framebufferSize, testColors[1]);
+
+        if (!tcu::floatThresholdCompare(log, "Compare color output", "Image result comparison",
+                                        referenceTexture.getAccess(), imagePixelAccess, tcu::Vec4(0.0f),
+                                        tcu::COMPARE_LOG_RESULT))
+            return tcu::TestStatus::fail("Rendered color image is not correct");
+    }
+    else
+    {
+        invalidateAlloc(vk, vkDevice, *ssboBufferAllocResult);
+        const tcu::Vec4 resultValue = *static_cast<tcu::Vec4 *>(ssboBufferAllocResult->getHostPtr());
+
+        if (!(resultValue == tcu::Vec4(0.0, 1.0, 0.0, 1.0)))
+            return tcu::TestStatus::fail("Result buffer value is not correct");
+    }
+
+    return tcu::TestStatus::pass("Success");
 }
 
 class DescriptorLimitTest : public vkt::TestCase
 {
 public:
-							DescriptorLimitTest		(tcu::TestContext&				testContext,
-													 const std::string&				name,
-													 const std::string&				description,
-													 const PipelineConstructionType	pipelineConstructionType,
-													 const TestType					testType,
-													 const bool						useCompShader,
-													 const tcu::IVec2				framebufferSize,
-													 const deUint32					descCount)
-							: TestCase(testContext, name, description)
-							, m_pipelineConstructionType	(pipelineConstructionType)
-							, m_testType					(testType)
-							, m_useCompShader				(useCompShader)
-							, m_framebufferSize				(framebufferSize)
-							, m_descCount					(descCount)
-							{}
+    DescriptorLimitTest(tcu::TestContext &testContext, const std::string &name, const std::string &description,
+                        const PipelineConstructionType pipelineConstructionType, const TestType testType,
+                        const bool useCompShader, const tcu::IVec2 framebufferSize, const uint32_t descCount)
+        : TestCase(testContext, name, description)
+        , m_pipelineConstructionType(pipelineConstructionType)
+        , m_testType(testType)
+        , m_useCompShader(useCompShader)
+        , m_framebufferSize(framebufferSize)
+        , m_descCount(descCount)
+    {
+    }
 
-	virtual					~DescriptorLimitTest	(void)
-							{}
+    virtual ~DescriptorLimitTest(void)
+    {
+    }
 
-	virtual void			initPrograms			(SourceCollections& programCollection) const;
-	virtual void			checkSupport			(Context& context) const;
-	virtual TestInstance*	createInstance			(Context& context) const;
+    virtual void initPrograms(SourceCollections &programCollection) const;
+    virtual void checkSupport(Context &context) const;
+    virtual TestInstance *createInstance(Context &context) const;
 
 private:
-	const PipelineConstructionType	m_pipelineConstructionType;
-	const TestType					m_testType;
-	const bool						m_useCompShader;
-	const tcu::IVec2				m_framebufferSize;
-	const deUint32					m_descCount;
+    const PipelineConstructionType m_pipelineConstructionType;
+    const TestType m_testType;
+    const bool m_useCompShader;
+    const tcu::IVec2 m_framebufferSize;
+    const uint32_t m_descCount;
 };
 
-void DescriptorLimitTest::initPrograms (SourceCollections& sourceCollections) const
+void DescriptorLimitTest::initPrograms(SourceCollections &sourceCollections) const
 {
-	std::ostringstream	testTypeStr;
-	std::ostringstream	fragResultStr;
-	std::ostringstream	compResultStr;
+    std::ostringstream testTypeStr;
+    std::ostringstream fragResultStr;
+    std::ostringstream compResultStr;
 
-	if (m_testType == TestType::Samplers)
-	{
-		testTypeStr		<< "layout(set = 0, binding = " << m_descCount - 1u << ") uniform sampler2D texSamplerInput;\n";
+    if (m_testType == TestType::Samplers)
+    {
+        testTypeStr << "layout(set = 0, binding = " << m_descCount - 1u << ") uniform sampler2D texSamplerInput;\n";
 
-		fragResultStr	<<	"    const vec2 coords = vec2(0, 0);\n"
-						<<	"    fragColor = texture(texSamplerInput, coords);\n";
+        fragResultStr << "    const vec2 coords = vec2(0, 0);\n"
+                      << "    fragColor = texture(texSamplerInput, coords);\n";
 
-		compResultStr	<<	"    const vec2 coords = vec2(0, 0);\n"
-						<<	"    outputData.color = texture(texSamplerInput, coords);\n";
-	}
+        compResultStr << "    const vec2 coords = vec2(0, 0);\n"
+                      << "    outputData.color = texture(texSamplerInput, coords);\n";
+    }
 
-	if (m_testType == TestType::UniformBuffers)
-	{
-		testTypeStr		<< "layout(set = 0, binding = " << m_descCount - 1u << ") uniform uboInput\n"
-						<< "{\n"
-						<< "    vec4 color;\n"
-						<< "} inputData;\n"
-						<< "\n";
+    if (m_testType == TestType::UniformBuffers)
+    {
+        testTypeStr << "layout(set = 0, binding = " << m_descCount - 1u << ") uniform uboInput\n"
+                    << "{\n"
+                    << "    vec4 color;\n"
+                    << "} inputData;\n"
+                    << "\n";
 
-		fragResultStr	<< "    fragColor = inputData.color;\n";
-		compResultStr	<< "    outputData.color = inputData.color;\n";
-	}
+        fragResultStr << "    fragColor = inputData.color;\n";
+        compResultStr << "    outputData.color = inputData.color;\n";
+    }
 
-	if (m_testType == TestType::StorageBuffers)
-	{
-		testTypeStr		<< "layout(set = 0, binding = " << m_descCount - 1u << ") readonly buffer ssboInput\n"
-						<< "{\n"
-						<< "    vec4 color;\n"
-						<< "} inputData;\n"
-						<< "\n";
+    if (m_testType == TestType::StorageBuffers)
+    {
+        testTypeStr << "layout(set = 0, binding = " << m_descCount - 1u << ") readonly buffer ssboInput\n"
+                    << "{\n"
+                    << "    vec4 color;\n"
+                    << "} inputData;\n"
+                    << "\n";
 
-		fragResultStr	<< "    fragColor = inputData.color;\n";
-		compResultStr	<< "    outputData.color = inputData.color;\n";
-	}
+        fragResultStr << "    fragColor = inputData.color;\n";
+        compResultStr << "    outputData.color = inputData.color;\n";
+    }
 
-	if (m_testType == TestType::SampledImages)
-	{
-		testTypeStr		<< "#extension GL_EXT_samplerless_texture_functions : enable\n"
-						<< "layout(set = 0, binding = " << m_descCount - 1u << ") uniform texture2D imageInput;\n";
+    if (m_testType == TestType::SampledImages)
+    {
+        testTypeStr << "#extension GL_EXT_samplerless_texture_functions : enable\n"
+                    << "layout(set = 0, binding = " << m_descCount - 1u << ") uniform texture2D imageInput;\n";
 
-		fragResultStr	<< "    fragColor = texelFetch(imageInput, ivec2(gl_FragCoord.xy), 0);\n";
-		compResultStr	<< "    const ivec2 coords = ivec2(0, 0);\n"
-						<< "    outputData.color = texelFetch(imageInput, coords, 0);\n";
-	}
+        fragResultStr << "    fragColor = texelFetch(imageInput, ivec2(gl_FragCoord.xy), 0);\n";
+        compResultStr << "    const ivec2 coords = ivec2(0, 0);\n"
+                      << "    outputData.color = texelFetch(imageInput, coords, 0);\n";
+    }
 
-	if (m_testType == TestType::StorageImages)
-	{
-		testTypeStr		<< "#extension GL_EXT_samplerless_texture_functions : enable\n"
-						<< "layout(set = 0, binding = " << m_descCount - 1u << ", rgba8) uniform image2D imageInput;\n";
+    if (m_testType == TestType::StorageImages)
+    {
+        testTypeStr << "#extension GL_EXT_samplerless_texture_functions : enable\n"
+                    << "layout(set = 0, binding = " << m_descCount - 1u << ", rgba8) uniform image2D imageInput;\n";
 
-		fragResultStr	<< "    fragColor = imageLoad(imageInput, ivec2(gl_FragCoord.xy));\n";
-		compResultStr	<< "    const ivec2 coords = ivec2(0, 0);\n"
-						<< "    outputData.color = imageLoad(imageInput, coords);\n";
-	}
+        fragResultStr << "    fragColor = imageLoad(imageInput, ivec2(gl_FragCoord.xy));\n";
+        compResultStr << "    const ivec2 coords = ivec2(0, 0);\n"
+                      << "    outputData.color = imageLoad(imageInput, coords);\n";
+    }
 
-	if (m_testType == TestType::InputAttachments)
-	{
-		testTypeStr << "layout (input_attachment_index = 0, set = 0, binding = " << m_descCount - 1u << ") uniform subpassInput imageInput;\n";
+    if (m_testType == TestType::InputAttachments)
+    {
+        testTypeStr << "layout (input_attachment_index = 0, set = 0, binding = " << m_descCount - 1u
+                    << ") uniform subpassInput imageInput;\n";
 
-		fragResultStr	<< "    fragColor = subpassLoad(imageInput);\n";
-		compResultStr	<< "    outputData.color = vec4(0.0, 0.0, 0.0, 1.0);\n";
-	}
+        fragResultStr << "    fragColor = subpassLoad(imageInput);\n";
+        compResultStr << "    outputData.color = vec4(0.0, 0.0, 0.0, 1.0);\n";
+    }
 
-	std::ostringstream vertexSrc;
-	vertexSrc	<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
-				<< "\n"
-				<< "layout(location = 0) in vec4 position;\n"
-				<< "\n"
-				<< "void main (void)\n"
-				<< "{\n"
-				<< "    gl_Position = position;\n"
-				<< "}\n";
+    std::ostringstream vertexSrc;
+    vertexSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+              << "\n"
+              << "layout(location = 0) in vec4 position;\n"
+              << "\n"
+              << "void main (void)\n"
+              << "{\n"
+              << "    gl_Position = position;\n"
+              << "}\n";
 
-	sourceCollections.glslSources.add("vert") << glu::VertexSource(vertexSrc.str());
+    sourceCollections.glslSources.add("vert") << glu::VertexSource(vertexSrc.str());
 
-	std::ostringstream testSrc;
+    std::ostringstream testSrc;
 
-	if (!m_useCompShader)
-	{
-		testSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
-			<< "\n"
-			<< "layout(location = 0) out vec4 fragColor;\n"
-			<< "\n"
-			<< testTypeStr.str()
-			<< "void main (void)\n"
-			<< "{\n"
-			<< fragResultStr.str()
-			<< "}\n";
+    if (!m_useCompShader)
+    {
+        testSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+                << "\n"
+                << "layout(location = 0) out vec4 fragColor;\n"
+                << "\n"
+                << testTypeStr.str() << "void main (void)\n"
+                << "{\n"
+                << fragResultStr.str() << "}\n";
 
-		sourceCollections.glslSources.add("test") << glu::FragmentSource(testSrc.str());
-	}
-	else
-	{
-		testSrc	<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
-				<< "\n"
-				// Input attachments are not supported by compute shaders.
-				<< (m_testType != TestType::InputAttachments ? testTypeStr.str() : "")
-				<< "layout(set = 1, binding = 0) buffer ssboOutput\n"
-				<< "{\n"
-				<< "    vec4 color;\n"
-				<< "} outputData;\n"
-				<< "\n"
-				<< "void main (void)\n"
-				<< "{\n"
-				<< compResultStr.str()
-				<< "}\n";
+        sourceCollections.glslSources.add("test") << glu::FragmentSource(testSrc.str());
+    }
+    else
+    {
+        testSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+                << "\n"
+                // Input attachments are not supported by compute shaders.
+                << (m_testType != TestType::InputAttachments ? testTypeStr.str() : "")
+                << "layout(set = 1, binding = 0) buffer ssboOutput\n"
+                << "{\n"
+                << "    vec4 color;\n"
+                << "} outputData;\n"
+                << "\n"
+                << "void main (void)\n"
+                << "{\n"
+                << compResultStr.str() << "}\n";
 
-		sourceCollections.glslSources.add("test") << glu::ComputeSource(testSrc.str());
-	}
+        sourceCollections.glslSources.add("test") << glu::ComputeSource(testSrc.str());
+    }
 }
 
-void DescriptorLimitTest::checkSupport (Context& context) const
+void DescriptorLimitTest::checkSupport(Context &context) const
 {
-	const InstanceInterface&		vki				= context.getInstanceInterface();
-	const VkPhysicalDevice			physDevice		= context.getPhysicalDevice();
-	const VkPhysicalDeviceLimits	limits			= getPhysicalDeviceProperties(vki, physDevice).limits;
+    const InstanceInterface &vki        = context.getInstanceInterface();
+    const VkPhysicalDevice physDevice   = context.getPhysicalDevice();
+    const VkPhysicalDeviceLimits limits = getPhysicalDeviceProperties(vki, physDevice).limits;
 
-	// We have to make sure, that we don't bind anything outside of valid descriptor binding locations determined by maxPerStageResources.
-	if (m_descCount > limits.maxPerStageResources - 1u)
-		TCU_THROW(NotSupportedError, "maxPerStageResources (" + std::to_string(limits.maxPerStageResources) + ")");
+    // We have to make sure, that we don't bind anything outside of valid descriptor binding locations determined by maxPerStageResources.
+    if (m_descCount > limits.maxPerStageResources - 1u)
+        TCU_THROW(NotSupportedError, "maxPerStageResources (" + std::to_string(limits.maxPerStageResources) + ")");
 
-	if (m_testType == TestType::Samplers)
-	{
-		if(m_descCount > limits.maxPerStageDescriptorSamplers)
-			TCU_THROW(NotSupportedError, "maxPerStageDescriptorSamplers (" + std::to_string(limits.maxPerStageDescriptorSamplers) + ")");
-	}
+    if (m_testType == TestType::Samplers)
+    {
+        if (m_descCount > limits.maxPerStageDescriptorSamplers)
+            TCU_THROW(NotSupportedError,
+                      "maxPerStageDescriptorSamplers (" + std::to_string(limits.maxPerStageDescriptorSamplers) + ")");
+    }
 
-	if (m_testType == TestType::UniformBuffers)
-	{
-		if (m_descCount > limits.maxPerStageDescriptorUniformBuffers)
-			TCU_THROW(NotSupportedError, "maxPerStageDescriptorUniformBuffers (" + std::to_string(limits.maxPerStageDescriptorUniformBuffers) + ")");
-	}
+    if (m_testType == TestType::UniformBuffers)
+    {
+        if (m_descCount > limits.maxPerStageDescriptorUniformBuffers)
+            TCU_THROW(NotSupportedError, "maxPerStageDescriptorUniformBuffers (" +
+                                             std::to_string(limits.maxPerStageDescriptorUniformBuffers) + ")");
+    }
 
-	if (m_testType == TestType::StorageBuffers)
-	{
-		if (m_descCount > limits.maxPerStageDescriptorStorageBuffers)
-			TCU_THROW(NotSupportedError, "maxPerStageDescriptorStorageBuffers (" + std::to_string(limits.maxPerStageDescriptorStorageBuffers) + ")");
-	}
+    if (m_testType == TestType::StorageBuffers)
+    {
+        if (m_descCount > limits.maxPerStageDescriptorStorageBuffers)
+            TCU_THROW(NotSupportedError, "maxPerStageDescriptorStorageBuffers (" +
+                                             std::to_string(limits.maxPerStageDescriptorStorageBuffers) + ")");
+    }
 
-	if (m_testType == TestType::SampledImages)
-	{
-		if (m_descCount > limits.maxPerStageDescriptorSampledImages)
-			TCU_THROW(NotSupportedError, "maxPerStageDescriptorSampledImages (" + std::to_string(limits.maxPerStageDescriptorSampledImages) + ")");
-	}
+    if (m_testType == TestType::SampledImages)
+    {
+        if (m_descCount > limits.maxPerStageDescriptorSampledImages)
+            TCU_THROW(NotSupportedError, "maxPerStageDescriptorSampledImages (" +
+                                             std::to_string(limits.maxPerStageDescriptorSampledImages) + ")");
+    }
 
-	if (m_testType == TestType::StorageImages)
-	{
-		if (m_descCount > limits.maxPerStageDescriptorStorageImages)
-			TCU_THROW(NotSupportedError, "maxPerStageDescriptorStorageImages (" + std::to_string(limits.maxPerStageDescriptorStorageImages) + ")");
-	}
+    if (m_testType == TestType::StorageImages)
+    {
+        if (m_descCount > limits.maxPerStageDescriptorStorageImages)
+            TCU_THROW(NotSupportedError, "maxPerStageDescriptorStorageImages (" +
+                                             std::to_string(limits.maxPerStageDescriptorStorageImages) + ")");
+    }
 
-	if (m_testType == TestType::InputAttachments)
-	{
-		if (m_descCount > limits.maxPerStageDescriptorInputAttachments)
-			TCU_THROW(NotSupportedError, "maxPerStageDescriptorInputAttachments (" + std::to_string(limits.maxPerStageDescriptorInputAttachments) + ")");
-	}
+    if (m_testType == TestType::InputAttachments)
+    {
+        if (m_descCount > limits.maxPerStageDescriptorInputAttachments)
+            TCU_THROW(NotSupportedError, "maxPerStageDescriptorInputAttachments (" +
+                                             std::to_string(limits.maxPerStageDescriptorInputAttachments) + ")");
+    }
 
-	checkPipelineLibraryRequirements(vki, physDevice, m_pipelineConstructionType);
+    checkPipelineLibraryRequirements(vki, physDevice, m_pipelineConstructionType);
 }
 
-TestInstance* DescriptorLimitTest::createInstance (Context& context) const
+TestInstance *DescriptorLimitTest::createInstance(Context &context) const
 {
-	return new DescriptorLimitTestInstance(context, m_pipelineConstructionType, m_testType, m_useCompShader, m_framebufferSize, m_descCount);
+    return new DescriptorLimitTestInstance(context, m_pipelineConstructionType, m_testType, m_useCompShader,
+                                           m_framebufferSize, m_descCount);
 }
 
-}
+} // namespace
 
-tcu::TestCaseGroup* createDescriptorLimitsTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
+tcu::TestCaseGroup *createDescriptorLimitsTests(tcu::TestContext &testCtx,
+                                                PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup>	descriptorLimitTestGroup	(new tcu::TestCaseGroup(testCtx, "descriptor_limits", "Descriptor limits tests"));
-	const tcu::IVec2				frameBufferSize				= tcu::IVec2(32, 32);
+    de::MovePtr<tcu::TestCaseGroup> descriptorLimitTestGroup(
+        new tcu::TestCaseGroup(testCtx, "descriptor_limits", "Descriptor limits tests"));
+    const tcu::IVec2 frameBufferSize = tcu::IVec2(32, 32);
 
-	const std::vector<deUint32>		numDescriptors				=
-	{
-		3u,		4u,		5u,		6u,		7u,		8u,		9u,		10u,	11u,
-		12u,	13u,	14u,	15u,	16u,	17u,	18u,	19u,	20u,
-		31u,	32u,	63u,	64u,	100u,	127u,	128u,	199u,	200u,
-		256u,	512u,	1024u,	2048u,	4096u,	8192u,	16384u,	32768u,	65535u
-	};
+    const std::vector<uint32_t> numDescriptors = {3u,   4u,   5u,    6u,    7u,    8u,    9u,     10u,    11u,
+                                                  12u,  13u,  14u,   15u,   16u,   17u,   18u,    19u,    20u,
+                                                  31u,  32u,  63u,   64u,   100u,  127u,  128u,   199u,   200u,
+                                                  256u, 512u, 1024u, 2048u, 4096u, 8192u, 16384u, 32768u, 65535u};
 
-	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
-	{
-		de::MovePtr<tcu::TestCaseGroup>	computeShaderGroup(new tcu::TestCaseGroup(testCtx, "compute_shader", "Compute shader test group"));
+    if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+    {
+        de::MovePtr<tcu::TestCaseGroup> computeShaderGroup(
+            new tcu::TestCaseGroup(testCtx, "compute_shader", "Compute shader test group"));
 
-		for (const auto& descId : numDescriptors)
-		{
-			const deUint32	testValue		= descId;
+        for (const auto &descId : numDescriptors)
+        {
+            const uint32_t testValue = descId;
 
-			computeShaderGroup->addChild(new DescriptorLimitTest(testCtx, "samplers_" + std::to_string(testValue), "", pipelineConstructionType, TestType::Samplers, true, frameBufferSize, testValue));
-			computeShaderGroup->addChild(new DescriptorLimitTest(testCtx, "uniform_buffers_" + std::to_string(testValue), "", pipelineConstructionType, TestType::UniformBuffers, true, frameBufferSize, testValue));
-			computeShaderGroup->addChild(new DescriptorLimitTest(testCtx, "storage_buffers_" + std::to_string(testValue), "", pipelineConstructionType, TestType::StorageBuffers, true, frameBufferSize, testValue));
-			computeShaderGroup->addChild(new DescriptorLimitTest(testCtx, "sampled_images_" + std::to_string(testValue), "", pipelineConstructionType, TestType::SampledImages, true, frameBufferSize, testValue));
-			computeShaderGroup->addChild(new DescriptorLimitTest(testCtx, "storage_images_" + std::to_string(testValue), "", pipelineConstructionType, TestType::StorageImages, true, frameBufferSize, testValue));
-		}
+            computeShaderGroup->addChild(new DescriptorLimitTest(testCtx, "samplers_" + std::to_string(testValue), "",
+                                                                 pipelineConstructionType, TestType::Samplers, true,
+                                                                 frameBufferSize, testValue));
+            computeShaderGroup->addChild(new DescriptorLimitTest(
+                testCtx, "uniform_buffers_" + std::to_string(testValue), "", pipelineConstructionType,
+                TestType::UniformBuffers, true, frameBufferSize, testValue));
+            computeShaderGroup->addChild(new DescriptorLimitTest(
+                testCtx, "storage_buffers_" + std::to_string(testValue), "", pipelineConstructionType,
+                TestType::StorageBuffers, true, frameBufferSize, testValue));
+            computeShaderGroup->addChild(new DescriptorLimitTest(testCtx, "sampled_images_" + std::to_string(testValue),
+                                                                 "", pipelineConstructionType, TestType::SampledImages,
+                                                                 true, frameBufferSize, testValue));
+            computeShaderGroup->addChild(new DescriptorLimitTest(testCtx, "storage_images_" + std::to_string(testValue),
+                                                                 "", pipelineConstructionType, TestType::StorageImages,
+                                                                 true, frameBufferSize, testValue));
+        }
 
-		descriptorLimitTestGroup->addChild(computeShaderGroup.release());
-	}
+        descriptorLimitTestGroup->addChild(computeShaderGroup.release());
+    }
 
-	de::MovePtr<tcu::TestCaseGroup>	fragmentShaderGroup(new tcu::TestCaseGroup(testCtx, "fragment_shader", "Fragment shader test group"));
+    de::MovePtr<tcu::TestCaseGroup> fragmentShaderGroup(
+        new tcu::TestCaseGroup(testCtx, "fragment_shader", "Fragment shader test group"));
 
-	for (const auto& descId : numDescriptors)
-	{
-		const deUint32	testValue	= descId;
+    for (const auto &descId : numDescriptors)
+    {
+        const uint32_t testValue = descId;
 
-		fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "samplers_" + std::to_string(testValue), "", pipelineConstructionType, TestType::Samplers, false, frameBufferSize, testValue));
-		fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "uniform_buffers_" + std::to_string(testValue), "", pipelineConstructionType, TestType::UniformBuffers, false, frameBufferSize, testValue));
-		fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "storage_buffers_" + std::to_string(testValue), "", pipelineConstructionType, TestType::StorageBuffers, false, frameBufferSize, testValue));
-		fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "sampled_images_" + std::to_string(testValue), "", pipelineConstructionType, TestType::SampledImages, false, frameBufferSize, testValue));
-		fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "storage_images_" + std::to_string(testValue), "", pipelineConstructionType, TestType::StorageImages, false, frameBufferSize, testValue));
-		fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "input_attachments_" + std::to_string(testValue), "", pipelineConstructionType, TestType::InputAttachments, false, frameBufferSize, testValue));
-	}
+        fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "samplers_" + std::to_string(testValue), "",
+                                                              pipelineConstructionType, TestType::Samplers, false,
+                                                              frameBufferSize, testValue));
+        fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "uniform_buffers_" + std::to_string(testValue),
+                                                              "", pipelineConstructionType, TestType::UniformBuffers,
+                                                              false, frameBufferSize, testValue));
+        fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "storage_buffers_" + std::to_string(testValue),
+                                                              "", pipelineConstructionType, TestType::StorageBuffers,
+                                                              false, frameBufferSize, testValue));
+        fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "sampled_images_" + std::to_string(testValue),
+                                                              "", pipelineConstructionType, TestType::SampledImages,
+                                                              false, frameBufferSize, testValue));
+        fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "storage_images_" + std::to_string(testValue),
+                                                              "", pipelineConstructionType, TestType::StorageImages,
+                                                              false, frameBufferSize, testValue));
+        fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "input_attachments_" + std::to_string(testValue),
+                                                              "", pipelineConstructionType, TestType::InputAttachments,
+                                                              false, frameBufferSize, testValue));
+    }
 
-	descriptorLimitTestGroup->addChild(fragmentShaderGroup.release());
+    descriptorLimitTestGroup->addChild(fragmentShaderGroup.release());
 
-	return descriptorLimitTestGroup.release();
+    return descriptorLimitTestGroup.release();
 }
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt

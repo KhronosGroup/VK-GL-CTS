@@ -30,22 +30,22 @@ namespace gl4cts
 class TextureBarrierTests : public deqp::TestCaseGroup
 {
 public:
-	enum API
-	{
-		API_GL_45core,
-		API_GL_ARB_texture_barrier,
-	};
+    enum API
+    {
+        API_GL_45core,
+        API_GL_ARB_texture_barrier,
+    };
 
-	TextureBarrierTests(deqp::Context& context, API api);
-	~TextureBarrierTests(void);
-	void init(void);
+    TextureBarrierTests(deqp::Context &context, API api);
+    ~TextureBarrierTests(void);
+    void init(void);
 
 private:
-	TextureBarrierTests(const TextureBarrierTests& other);
-	TextureBarrierTests& operator=(const TextureBarrierTests& other);
-	API m_api;
+    TextureBarrierTests(const TextureBarrierTests &other);
+    TextureBarrierTests &operator=(const TextureBarrierTests &other);
+    API m_api;
 };
 
-} /* gl4cts namespace */
+} // namespace gl4cts
 
 #endif // _GL4CTEXTUREBARRIERTESTS_HPP

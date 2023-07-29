@@ -33,9 +33,10 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createBlendOperationAdvancedTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
+tcu::TestCaseGroup *createBlendOperationAdvancedTests(tcu::TestContext &testCtx,
+                                                      vk::PipelineConstructionType pipelineConstructionType);
 
-} // Draw
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEBLENDOPERATIONADVANCEDTESTS_HPP

@@ -36,18 +36,18 @@ namespace Functional
 class NegativeStateApiTests : public TestCaseGroup
 {
 public:
-								NegativeStateApiTests		(Context& context);
-								~NegativeStateApiTests		(void);
+    NegativeStateApiTests(Context &context);
+    ~NegativeStateApiTests(void);
 
-	void						init						(void);
+    void init(void);
 
 private:
-								NegativeStateApiTests		(const NegativeStateApiTests& other);
-	NegativeStateApiTests&		operator=					(const NegativeStateApiTests& other);
+    NegativeStateApiTests(const NegativeStateApiTests &other);
+    NegativeStateApiTests &operator=(const NegativeStateApiTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FNEGATIVESTATEAPITESTS_HPP

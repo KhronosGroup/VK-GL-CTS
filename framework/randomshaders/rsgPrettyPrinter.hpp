@@ -35,21 +35,23 @@ namespace rsg
 class PrettyPrinter
 {
 public:
-							PrettyPrinter		(std::ostringstream& str);
-							~PrettyPrinter		(void) {}
+    PrettyPrinter(std::ostringstream &str);
+    ~PrettyPrinter(void)
+    {
+    }
 
-	void					append				(const TokenStream& tokens);
+    void append(const TokenStream &tokens);
 
 private:
-	void					processToken		(const Token& token);
+    void processToken(const Token &token);
 
-	static const char*		getSimpleTokenStr	(Token::Type token);
+    static const char *getSimpleTokenStr(Token::Type token);
 
-	std::string				m_line;
-	std::ostringstream&		m_str;
-	int						m_indentDepth;
+    std::string m_line;
+    std::ostringstream &m_str;
+    int m_indentDepth;
 };
 
-} // rsg
+} // namespace rsg
 
 #endif // _RSGPRETTYPRINTER_HPP

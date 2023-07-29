@@ -33,9 +33,9 @@ namespace vkt
 namespace ProtectedMem
 {
 
-tcu::TestCaseGroup*	createYCbCrConversionTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createYCbCrConversionTests(tcu::TestContext &testCtx);
 
-} // ProtectedMem
-} // vkt
+} // namespace ProtectedMem
+} // namespace vkt
 
 #endif // _VKTPROTECTEDMEMYCBCRCONVERSIONTESTS_HPP

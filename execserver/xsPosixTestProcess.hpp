@@ -40,71 +40,74 @@ namespace posix
 class CaseListWriter : public de::Thread
 {
 public:
-							CaseListWriter		(void);
-							~CaseListWriter		(void);
+    CaseListWriter(void);
+    ~CaseListWriter(void);
 
-	void					start				(const char* caseList, deFile* dst);
-	void					stop				(void);
+    void start(const char *caseList, deFile *dst);
+    void stop(void);
 
-	void					run					(void);
+    void run(void);
 
 private:
-	deFile*					m_file;
-	std::vector<char>		m_caseList;
-	bool					m_run;
+    deFile *m_file;
+    std::vector<char> m_caseList;
+    bool m_run;
 };
 
 class PipeReader : public de::Thread
 {
 public:
-							PipeReader			(ThreadedByteBuffer* dst);
-							~PipeReader			(void);
+    PipeReader(ThreadedByteBuffer *dst);
+    ~PipeReader(void);
 
-	void					start				(deFile* file);
-	void					stop				(void);
+    void start(deFile *file);
+    void stop(void);
 
-	void					run					(void);
+    void run(void);
 
 private:
-	deFile*					m_file;
-	ThreadedByteBuffer*		m_buf;
+    deFile *m_file;
+    ThreadedByteBuffer *m_buf;
 };
 
-} // posix
+} // namespace posix
 
 class PosixTestProcess : public TestProcess
 {
 public:
-							PosixTestProcess		(void);
-	virtual					~PosixTestProcess		(void);
+    PosixTestProcess(void);
+    virtual ~PosixTestProcess(void);
 
-	virtual void			start					(const char* name, const char* params, const char* workingDir, const char* caseList);
-	virtual void			terminate				(void);
-	virtual void			cleanup					(void);
+    virtual void start(const char *name, const char *params, const char *workingDir, const char *caseList);
+    virtual void terminate(void);
+    virtual void cleanup(void);
 
-	virtual bool			isRunning				(void);
+    virtual bool isRunning(void);
 
-	virtual int				getExitCode				(void) const;
+    virtual int getExitCode(void) const;
 
-	virtual int				readTestLog				(deUint8* dst, int numBytes);
-	virtual int				readInfoLog				(deUint8* dst, int numBytes) { return m_infoBuffer.tryRead(numBytes, dst); }
+    virtual int readTestLog(uint8_t *dst, int numBytes);
+    virtual int readInfoLog(uint8_t *dst, int numBytes)
+    {
+        return m_infoBuffer.tryRead(numBytes, dst);
+    }
 
 private:
-							PosixTestProcess		(const PosixTestProcess& other);
-	PosixTestProcess&		operator=				(const PosixTestProcess& other);
+    PosixTestProcess(const PosixTestProcess &other);
+    PosixTestProcess &operator=(const PosixTestProcess &other);
 
-	de::Process*			m_process;
-	deUint64				m_processStartTime;		//!< Used for determining log file timeout.
-	std::string				m_logFileName;
-	ThreadedByteBuffer		m_infoBuffer;
+    de::Process *m_process;
+    uint64_t m_processStartTime; //!< Used for determining log file timeout.
+    std::string m_logFileName;
+    ThreadedByteBuffer m_infoBuffer;
 
-	// Threads.
-	posix::CaseListWriter	m_caseListWriter;
-	posix::PipeReader		m_stdOutReader;
-	posix::PipeReader		m_stdErrReader;
-	posix::FileReader		m_logReader;
+    // Threads.
+    posix::CaseListWriter m_caseListWriter;
+    posix::PipeReader m_stdOutReader;
+    posix::PipeReader m_stdErrReader;
+    posix::FileReader m_logReader;
 };
 
-} // xs
+} // namespace xs
 
 #endif // _XSPOSIXTESTPROCESS_HPP

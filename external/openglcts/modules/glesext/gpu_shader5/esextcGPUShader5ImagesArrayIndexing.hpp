@@ -94,36 +94,36 @@ namespace glcts
 class GPUShader5ImagesArrayIndexing : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GPUShader5ImagesArrayIndexing(Context& context, const ExtParameters& extParams, const char* name,
-								  const char* description);
+    /* Public methods */
+    GPUShader5ImagesArrayIndexing(Context &context, const ExtParameters &extParams, const char *name,
+                                  const char *description);
 
-	virtual ~GPUShader5ImagesArrayIndexing()
-	{
-	}
+    virtual ~GPUShader5ImagesArrayIndexing()
+    {
+    }
 
-	virtual IterateResult iterate(void);
-	virtual void		  deinit(void);
+    virtual IterateResult iterate(void);
+    virtual void deinit(void);
 
 private:
-	/* Private methods */
-	void initTest(void);
+    /* Private methods */
+    void initTest(void);
 
-	/* Private static variables */
-	static const glw::GLuint m_array_size;
-	static const glw::GLint  m_texture_n_components;
+    /* Private static variables */
+    static const glw::GLuint m_array_size;
+    static const glw::GLint m_texture_n_components;
 
-	/* Private variables */
-	glw::GLuint  m_compute_shader_id;
-	glw::GLuint* m_data_buffer;
-	glw::GLuint  m_program_id;
-	glw::GLint   m_texture_height;
-	glw::GLint   m_texture_width;
-	glw::GLuint* m_to_ids;
-	glw::GLuint  m_fbo_id;
+    /* Private variables */
+    glw::GLuint m_compute_shader_id;
+    glw::GLuint *m_data_buffer;
+    glw::GLuint m_program_id;
+    glw::GLint m_texture_height;
+    glw::GLint m_texture_width;
+    glw::GLuint *m_to_ids;
+    glw::GLuint m_fbo_id;
 
-	/* Private functions */
-	std::string getComputeShaderCode(const std::string& layout_size_x, const std::string& layout_size_y);
+    /* Private functions */
+    std::string getComputeShaderCode(const std::string &layout_size_x, const std::string &layout_size_y);
 };
 
 } // namespace glcts

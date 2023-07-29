@@ -30,39 +30,37 @@ namespace vkt
 namespace renderpass
 {
 
-
 enum RenderingType
 {
-	RENDERING_TYPE_RENDERPASS_LEGACY = 0,
-	RENDERING_TYPE_RENDERPASS2,
-	RENDERING_TYPE_DYNAMIC_RENDERING
+    RENDERING_TYPE_RENDERPASS_LEGACY = 0,
+    RENDERING_TYPE_RENDERPASS2,
+    RENDERING_TYPE_DYNAMIC_RENDERING
 };
 
 enum SynchronizationType
 {
-	SYNCHRONIZATION_TYPE_LEGACY = 0,
-	SYNCHRONIZATION_TYPE_SYNCHRONIZATION2,
+    SYNCHRONIZATION_TYPE_LEGACY = 0,
+    SYNCHRONIZATION_TYPE_SYNCHRONIZATION2,
 };
 
 // Structure containing parameters for all tests in renderpass group
 struct GroupParams
 {
-	// Specifies type of renderpass.
-	RenderingType renderingType;
+    // Specifies type of renderpass.
+    RenderingType renderingType;
 
-	// When this flag is true then secondary command buffer is created in test
-	bool useSecondaryCmdBuffer;
+    // When this flag is true then secondary command buffer is created in test
+    bool useSecondaryCmdBuffer;
 
-	// When true begin/endRendering is in secondary command buffer, when false those
-	// commands are recorded to primary command buffer. This flag is checked only when
-	// useSecondaryCmdBuffer is true.
-	bool secondaryCmdBufferCompletelyContainsDynamicRenderpass;
+    // When true begin/endRendering is in secondary command buffer, when false those
+    // commands are recorded to primary command buffer. This flag is checked only when
+    // useSecondaryCmdBuffer is true.
+    bool secondaryCmdBufferCompletelyContainsDynamicRenderpass;
 };
 
 typedef de::SharedPtr<GroupParams> SharedGroupParams;
 
-} // renderpass
-} // vkt
-
+} // namespace renderpass
+} // namespace vkt
 
 #endif // _VKTRENDERPASSGROUPPARAMS_HPP

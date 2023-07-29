@@ -35,91 +35,86 @@ namespace texture
 namespace
 {
 
-tcu::TestCaseGroup* createAtomicTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createAtomicTests(tcu::TestContext &testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> atomic		(new tcu::TestCaseGroup(testCtx, "atomic", "Test atomic oprerations on multisample textures"));
+    de::MovePtr<tcu::TestCaseGroup> atomic(
+        new tcu::TestCaseGroup(testCtx, "atomic", "Test atomic oprerations on multisample textures"));
 #ifndef CTS_USES_VULKANSC
-	static const char				dataDir[]	= "texture/multisample/atomic";
+    static const char dataDir[] = "texture/multisample/atomic";
 
-	static const std::string		cases[]		=
-	{
-		"storage_image_r32i",
-		"storage_image_r32ui"
-	};
+    static const std::string cases[] = {"storage_image_r32i", "storage_image_r32ui"};
 
-	std::vector<std::string>		requirements;
+    std::vector<std::string> requirements;
 
-	requirements.push_back("Features.shaderStorageImageMultisample");
+    requirements.push_back("Features.shaderStorageImageMultisample");
 
-	for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
-	{
-		const std::string			fileName	= cases[i] + ".amber";
-		cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].c_str(), "", dataDir, fileName, requirements);
+    for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
+    {
+        const std::string fileName = cases[i] + ".amber";
+        cts_amber::AmberTestCase *testCase =
+            cts_amber::createAmberTestCase(testCtx, cases[i].c_str(), "", dataDir, fileName, requirements);
 
-		atomic->addChild(testCase);
-	}
+        atomic->addChild(testCase);
+    }
 #endif
 
-	return atomic.release();
+    return atomic.release();
 }
 
-tcu::TestCaseGroup* createInvalidSampleIndexTests(tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createInvalidSampleIndexTests(tcu::TestContext &testCtx)
 {
-	std::pair <std::string, VkSampleCountFlagBits>	cases[]			=
-	{
-		{ "sample_count_2",		VK_SAMPLE_COUNT_2_BIT	},
-		{ "sample_count_4",		VK_SAMPLE_COUNT_4_BIT	},
-		{ "sample_count_8",		VK_SAMPLE_COUNT_8_BIT	},
-		{ "sample_count_16",	VK_SAMPLE_COUNT_16_BIT	},
-		{ "sample_count_32",	VK_SAMPLE_COUNT_32_BIT	},
-		{ "sample_count_64",	VK_SAMPLE_COUNT_64_BIT	}
-	};
+    std::pair<std::string, VkSampleCountFlagBits> cases[] = {
+        {"sample_count_2", VK_SAMPLE_COUNT_2_BIT},   {"sample_count_4", VK_SAMPLE_COUNT_4_BIT},
+        {"sample_count_8", VK_SAMPLE_COUNT_8_BIT},   {"sample_count_16", VK_SAMPLE_COUNT_16_BIT},
+        {"sample_count_32", VK_SAMPLE_COUNT_32_BIT}, {"sample_count_64", VK_SAMPLE_COUNT_64_BIT}};
 
-	de::MovePtr<tcu::TestCaseGroup>					invalidWrites	(new tcu::TestCaseGroup(testCtx, "invalid_sample_index", "Writes to invalid sample indices should be discarded."));
-	static const char								dataDir[]		= "texture/multisample/invalidsampleindex";
-	std::vector<std::string>						requirements	= { "Features.shaderStorageImageMultisample" };
+    de::MovePtr<tcu::TestCaseGroup> invalidWrites(new tcu::TestCaseGroup(
+        testCtx, "invalid_sample_index", "Writes to invalid sample indices should be discarded."));
+    static const char dataDir[]           = "texture/multisample/invalidsampleindex";
+    std::vector<std::string> requirements = {"Features.shaderStorageImageMultisample"};
 
-	for (const auto& testCase : cases)
-	{
-		const VkImageCreateInfo			vkImageCreateInfo	=
-		{
-			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// sType
-			DE_NULL,								// pNext
-			0,										// flags
-			VK_IMAGE_TYPE_2D,						// imageType
-			VK_FORMAT_R8G8B8A8_UNORM,				// format
-			{ 16, 16, 1 },							// extent
-			1,										// mipLevels
-			1,										// arrayLayers
-			testCase.second,						// samples
-			VK_IMAGE_TILING_OPTIMAL,				// tiling
-			VK_IMAGE_USAGE_SAMPLED_BIT,				// usage
-			VK_SHARING_MODE_EXCLUSIVE,				// sharingMode
-			0,										// queueFamilyIndexCount
-			DE_NULL,								// pQueueFamilyIndices
-			VK_IMAGE_LAYOUT_UNDEFINED,				// initialLayout
-		};
+    for (const auto &testCase : cases)
+    {
+        const VkImageCreateInfo vkImageCreateInfo = {
+            VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // sType
+            DE_NULL,                             // pNext
+            0,                                   // flags
+            VK_IMAGE_TYPE_2D,                    // imageType
+            VK_FORMAT_R8G8B8A8_UNORM,            // format
+            {16, 16, 1},                         // extent
+            1,                                   // mipLevels
+            1,                                   // arrayLayers
+            testCase.second,                     // samples
+            VK_IMAGE_TILING_OPTIMAL,             // tiling
+            VK_IMAGE_USAGE_SAMPLED_BIT,          // usage
+            VK_SHARING_MODE_EXCLUSIVE,           // sharingMode
+            0,                                   // queueFamilyIndexCount
+            DE_NULL,                             // pQueueFamilyIndices
+            VK_IMAGE_LAYOUT_UNDEFINED,           // initialLayout
+        };
 
-		std::vector<VkImageCreateInfo>	imageRequirements	= { vkImageCreateInfo };
-		const std::string				fileName			= testCase.first + ".amber";
+        std::vector<VkImageCreateInfo> imageRequirements = {vkImageCreateInfo};
+        const std::string fileName                       = testCase.first + ".amber";
 
-		invalidWrites->addChild(cts_amber::createAmberTestCase(testCtx, testCase.first.c_str(), "", dataDir, fileName, requirements, imageRequirements));
-	}
+        invalidWrites->addChild(cts_amber::createAmberTestCase(testCtx, testCase.first.c_str(), "", dataDir, fileName,
+                                                               requirements, imageRequirements));
+    }
 
-	return invalidWrites.release();
+    return invalidWrites.release();
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTextureMultisampleTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTextureMultisampleTests(tcu::TestContext &testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> multisample (new tcu::TestCaseGroup(testCtx, "multisample", "Multisample texture tests"));
+    de::MovePtr<tcu::TestCaseGroup> multisample(
+        new tcu::TestCaseGroup(testCtx, "multisample", "Multisample texture tests"));
 
-	multisample->addChild(createAtomicTests(testCtx));
-	multisample->addChild(createInvalidSampleIndexTests(testCtx));
+    multisample->addChild(createAtomicTests(testCtx));
+    multisample->addChild(createInvalidSampleIndexTests(testCtx));
 
-	return multisample.release();
+    return multisample.release();
 }
 
-} // texture
-} // vkt
+} // namespace texture
+} // namespace vkt

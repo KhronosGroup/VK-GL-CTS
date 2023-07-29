@@ -36,18 +36,18 @@ namespace Performance
 class BufferDataUploadTests : public TestCaseGroup
 {
 public:
-							BufferDataUploadTests	(Context& context);
-							~BufferDataUploadTests	(void);
+    BufferDataUploadTests(Context &context);
+    ~BufferDataUploadTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							BufferDataUploadTests	(const BufferDataUploadTests& other);
-	BufferDataUploadTests&	operator=				(const BufferDataUploadTests& other);
+    BufferDataUploadTests(const BufferDataUploadTests &other);
+    BufferDataUploadTests &operator=(const BufferDataUploadTests &other);
 };
 
-} // Performance
-} // gles3
-} // deqp
+} // namespace Performance
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3PBUFFERDATAUPLOADTESTS_HPP

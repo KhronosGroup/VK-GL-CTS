@@ -33,9 +33,9 @@ namespace vkt
 namespace ProtectedMem
 {
 
-tcu::TestCaseGroup* createSwapchainTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSwapchainTests(tcu::TestContext &testCtx);
 
-} // wsi
-} // vkt
+} // namespace ProtectedMem
+} // namespace vkt
 
 #endif // _VKTPROTECTEDMEMWSISWAPCHAINTESTS_HPP

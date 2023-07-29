@@ -33,9 +33,9 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup* createPipelineTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createPipelineTests(tcu::TestContext &testCtx);
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPIPIPELINETESTS_HPP

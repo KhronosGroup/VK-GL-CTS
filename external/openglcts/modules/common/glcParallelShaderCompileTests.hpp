@@ -42,14 +42,14 @@ namespace glcts
 class SimpleQueriesTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	SimpleQueriesTest(deqp::Context& context);
+    /* Public methods */
+    SimpleQueriesTest(deqp::Context &context);
 
-	tcu::TestNode::IterateResult iterate();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	/* Private members */
+    /* Private methods */
+    /* Private members */
 };
 
 /** Test verifies if MaxShaderCompilerThreadsKHR function works as expected
@@ -57,14 +57,14 @@ private:
 class MaxShaderCompileThreadsTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	MaxShaderCompileThreadsTest(deqp::Context& context);
+    /* Public methods */
+    MaxShaderCompileThreadsTest(deqp::Context &context);
 
-	tcu::TestNode::IterateResult iterate();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	/* Private members */
+    /* Private methods */
+    /* Private members */
 };
 
 /** Test verifies if GetShaderiv and GetProgramiv queries returns value as expected
@@ -73,30 +73,30 @@ private:
 class CompilationCompletionParallelTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	CompilationCompletionParallelTest(deqp::Context& context);
+    /* Public methods */
+    CompilationCompletionParallelTest(deqp::Context &context);
 
-	tcu::TestNode::IterateResult iterate();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	/* Private members */
+    /* Private methods */
+    /* Private members */
 };
 
 /** Test group which encapsulates all sparse buffer conformance tests */
 class ParallelShaderCompileTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	ParallelShaderCompileTests(deqp::Context& context);
+    /* Public methods */
+    ParallelShaderCompileTests(deqp::Context &context);
 
-	void init();
+    void init();
 
 private:
-	ParallelShaderCompileTests(const ParallelShaderCompileTests& other);
-	ParallelShaderCompileTests& operator=(const ParallelShaderCompileTests& other);
+    ParallelShaderCompileTests(const ParallelShaderCompileTests &other);
+    ParallelShaderCompileTests &operator=(const ParallelShaderCompileTests &other);
 };
 
-} /* glcts namespace */
+} // namespace glcts
 
 #endif // _GLCPARALLELSHADERCOMPILETESTS_HPP

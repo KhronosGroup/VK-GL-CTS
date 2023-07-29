@@ -31,10 +31,10 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	createImageSamplerComputeGroup	(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*	createImageSamplerGraphicsGroup	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageSamplerComputeGroup(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createImageSamplerGraphicsGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMIMAGESAMPLERTESTS_HPP

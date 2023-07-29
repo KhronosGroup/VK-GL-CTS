@@ -38,24 +38,25 @@ namespace vkt
 namespace shaderexecutor
 {
 
-tcu::TestCaseGroup* createBuiltinTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createBuiltinTests(tcu::TestContext &testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	builtinTests			(new tcu::TestCaseGroup(testCtx, "builtin",		"Built-in tests"));
-	de::MovePtr<tcu::TestCaseGroup>	builtinFunctionTests	(new tcu::TestCaseGroup(testCtx, "function",	"Built-in Function Tests"));
+    de::MovePtr<tcu::TestCaseGroup> builtinTests(new tcu::TestCaseGroup(testCtx, "builtin", "Built-in tests"));
+    de::MovePtr<tcu::TestCaseGroup> builtinFunctionTests(
+        new tcu::TestCaseGroup(testCtx, "function", "Built-in Function Tests"));
 
-	builtinFunctionTests->addChild(new ShaderCommonFunctionTests(testCtx));
-	builtinFunctionTests->addChild(new ShaderIntegerFunctionTests(testCtx));
-	builtinFunctionTests->addChild(new ShaderPackingFunctionTests(testCtx));
+    builtinFunctionTests->addChild(new ShaderCommonFunctionTests(testCtx));
+    builtinFunctionTests->addChild(new ShaderIntegerFunctionTests(testCtx));
+    builtinFunctionTests->addChild(new ShaderPackingFunctionTests(testCtx));
 
-	builtinTests->addChild(builtinFunctionTests.release());
-	builtinTests->addChild(new BuiltinPrecisionTests(testCtx));
-	builtinTests->addChild(new BuiltinPrecision16BitTests(testCtx));
-	builtinTests->addChild(new BuiltinPrecision16Storage32BitTests(testCtx));
-	builtinTests->addChild(new BuiltinPrecisionDoubleTests(testCtx));
-	builtinTests->addChild(createPrecisionFconvertGroup(testCtx));
+    builtinTests->addChild(builtinFunctionTests.release());
+    builtinTests->addChild(new BuiltinPrecisionTests(testCtx));
+    builtinTests->addChild(new BuiltinPrecision16BitTests(testCtx));
+    builtinTests->addChild(new BuiltinPrecision16Storage32BitTests(testCtx));
+    builtinTests->addChild(new BuiltinPrecisionDoubleTests(testCtx));
+    builtinTests->addChild(createPrecisionFconvertGroup(testCtx));
 
-	return builtinTests.release();
+    return builtinTests.release();
 }
 
-} // shaderexecutor
-} // vkt
+} // namespace shaderexecutor
+} // namespace vkt

@@ -36,18 +36,18 @@ namespace Functional
 class TextureSpecificationTests : public TestCaseGroup
 {
 public:
-									TextureSpecificationTests		(Context& context);
-									~TextureSpecificationTests		(void);
+    TextureSpecificationTests(Context &context);
+    ~TextureSpecificationTests(void);
 
-	void							init							(void);
+    void init(void);
 
 private:
-									TextureSpecificationTests		(const TextureSpecificationTests& other);
-	TextureSpecificationTests&		operator=						(const TextureSpecificationTests& other);
+    TextureSpecificationTests(const TextureSpecificationTests &other);
+    TextureSpecificationTests &operator=(const TextureSpecificationTests &other);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FTEXTURESPECIFICATIONTESTS_HPP

@@ -36,18 +36,20 @@ namespace Performance
 class DepthTests : public TestCaseGroup
 {
 public:
-					DepthTests	(Context& context);
-					~DepthTests	(void) {}
+    DepthTests(Context &context);
+    ~DepthTests(void)
+    {
+    }
 
-	virtual void	init		(void);
+    virtual void init(void);
 
 private:
-					DepthTests	(const DepthTests& other);
-	DepthTests&		operator=	(const DepthTests& other);
+    DepthTests(const DepthTests &other);
+    DepthTests &operator=(const DepthTests &other);
 };
 
-} // Performance
-} // gles3
-} // deqp
+} // namespace Performance
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3PDEPTHTESTS_HPP

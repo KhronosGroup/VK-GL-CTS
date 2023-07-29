@@ -43,55 +43,57 @@ namespace
 class IsNodeNamed
 {
 public:
-	IsNodeNamed(const std::string& name)
-		: checkName(name)
-	{}
-	bool operator()(tcu::TestNode* node)
-	{
-		return checkName == std::string(node->getName());
-	}
+    IsNodeNamed(const std::string &name) : checkName(name)
+    {
+    }
+    bool operator()(tcu::TestNode *node)
+    {
+        return checkName == std::string(node->getName());
+    }
+
 private:
-	const std::string checkName;
+    const std::string checkName;
 };
 
-}
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> robustnessTests(new tcu::TestCaseGroup(testCtx, "robustness", ""));
+    de::MovePtr<tcu::TestCaseGroup> robustnessTests(new tcu::TestCaseGroup(testCtx, "robustness", ""));
 
-	robustnessTests->addChild(createBufferAccessTests(testCtx));
-	robustnessTests->addChild(createVertexAccessTests(testCtx));
-	robustnessTests->addChild(createIndexAccessTests(testCtx));
+    robustnessTests->addChild(createBufferAccessTests(testCtx));
+    robustnessTests->addChild(createVertexAccessTests(testCtx));
+    robustnessTests->addChild(createIndexAccessTests(testCtx));
 
-	std::vector<tcu::TestNode*> children;
-	robustnessTests->getChildren(children);
-	std::vector<tcu::TestNode*>::iterator buffer_access = std::find_if(children.begin(), children.end(), IsNodeNamed("buffer_access"));
-	if (buffer_access != children.end())
-	{
-		(*buffer_access)->addChild(createBufferAccessWithVariablePointersTests(testCtx));
-	}
-	else
-	{
-		de::MovePtr<tcu::TestCaseGroup> bufferAccess(new tcu::TestCaseGroup(testCtx, "buffer_access", ""));
-		bufferAccess->addChild(createBufferAccessWithVariablePointersTests(testCtx));
-		robustnessTests->addChild(bufferAccess.release());
-	}
+    std::vector<tcu::TestNode *> children;
+    robustnessTests->getChildren(children);
+    std::vector<tcu::TestNode *>::iterator buffer_access =
+        std::find_if(children.begin(), children.end(), IsNodeNamed("buffer_access"));
+    if (buffer_access != children.end())
+    {
+        (*buffer_access)->addChild(createBufferAccessWithVariablePointersTests(testCtx));
+    }
+    else
+    {
+        de::MovePtr<tcu::TestCaseGroup> bufferAccess(new tcu::TestCaseGroup(testCtx, "buffer_access", ""));
+        bufferAccess->addChild(createBufferAccessWithVariablePointersTests(testCtx));
+        robustnessTests->addChild(bufferAccess.release());
+    }
 
-	robustnessTests->addChild(createRobustness2Tests(testCtx));
-	robustnessTests->addChild(createImageRobustnessTests(testCtx));
+    robustnessTests->addChild(createRobustness2Tests(testCtx));
+    robustnessTests->addChild(createImageRobustnessTests(testCtx));
 #ifndef CTS_USES_VULKANSC
-	robustnessTests->addChild(createPipelineRobustnessTests(testCtx));
+    robustnessTests->addChild(createPipelineRobustnessTests(testCtx));
 #endif
-	robustnessTests->addChild(createNonRobustBufferAccessTests(testCtx));
+    robustnessTests->addChild(createNonRobustBufferAccessTests(testCtx));
 
 #ifndef CTS_USES_VULKANSC
-	robustnessTests->addChild(createPipelineRobustnessBufferAccessTests(testCtx));
+    robustnessTests->addChild(createPipelineRobustnessBufferAccessTests(testCtx));
 #endif
-	robustnessTests->addChild(createRobustness1VertexAccessTests(testCtx));
+    robustnessTests->addChild(createRobustness1VertexAccessTests(testCtx));
 
-	return robustnessTests.release();
+    return robustnessTests.release();
 }
 
-} // robustness
-} // vkt
+} // namespace robustness
+} // namespace vkt

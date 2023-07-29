@@ -35,23 +35,26 @@ namespace video
 class IfcVulkanVideoDecodeParser
 {
 public:
-	virtual bool						parseByteStream						(deUint8* pData, deInt64 size)													= 0;
-	virtual bool						initialize							(NvidiaVulkanParserVideoDecodeClient*	nvidiaVulkanParserVideoDecodeClient)	= 0;
-	virtual bool						deinitialize						(void)																			= 0;
+    virtual bool parseByteStream(uint8_t *pData, int64_t size)                                        = 0;
+    virtual bool initialize(NvidiaVulkanParserVideoDecodeClient *nvidiaVulkanParserVideoDecodeClient) = 0;
+    virtual bool deinitialize(void)                                                                   = 0;
 
-	virtual								~IfcVulkanVideoDecodeParser			() {}
+    virtual ~IfcVulkanVideoDecodeParser()
+    {
+    }
 };
 
 class IfcNvFunctions
 {
 public:
-	virtual	IfcVulkanVideoDecodeParser*	createIfcVulkanVideoDecodeParser	(VkVideoCodecOperationFlagBitsKHR codecOperation, const VkExtensionProperties* stdExtensionVersion) = 0;
-	virtual								~IfcNvFunctions						() {};
+    virtual IfcVulkanVideoDecodeParser *createIfcVulkanVideoDecodeParser(
+        VkVideoCodecOperationFlagBitsKHR codecOperation, const VkExtensionProperties *stdExtensionVersion) = 0;
+    virtual ~IfcNvFunctions(){};
 };
 
-de::MovePtr<IfcNvFunctions>	createIfcNvFunctions (const vk::Platform& platform);
+de::MovePtr<IfcNvFunctions> createIfcNvFunctions(const vk::Platform &platform);
 
-} // video
-} // vkt
+} // namespace video
+} // namespace vkt
 
 #endif // _VKTVIDEOSESSIONNVUTILS_HPP

@@ -32,9 +32,9 @@ namespace vkt
 namespace compute
 {
 
-tcu::TestCaseGroup* createZeroInitializeWorkgroupMemoryTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createZeroInitializeWorkgroupMemoryTests(tcu::TestContext &testCtx);
 
-} // compute
-} // vkt
+} // namespace compute
+} // namespace vkt
 
 #endif // _VKTCOMPUTEZEROINITIALIZEWORKGROUPMEMORYTESTS_HPP

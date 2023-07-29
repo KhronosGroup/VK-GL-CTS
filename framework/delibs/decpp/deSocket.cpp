@@ -31,119 +31,119 @@ namespace de
 
 // SocketAddress
 
-SocketAddress::SocketAddress (void)
+SocketAddress::SocketAddress(void)
 {
-	m_address = deSocketAddress_create();
-	if (!m_address)
-		throw std::bad_alloc();
+    m_address = deSocketAddress_create();
+    if (!m_address)
+        throw std::bad_alloc();
 }
 
-SocketAddress::~SocketAddress (void)
+SocketAddress::~SocketAddress(void)
 {
-	deSocketAddress_destroy(m_address);
+    deSocketAddress_destroy(m_address);
 }
 
-void SocketAddress::setHost (const char* host)
+void SocketAddress::setHost(const char *host)
 {
-	if (!deSocketAddress_setHost(m_address, host))
-		throw std::runtime_error("SocketAddress::setHost()");
+    if (!deSocketAddress_setHost(m_address, host))
+        throw std::runtime_error("SocketAddress::setHost()");
 }
 
-void SocketAddress::setPort (int port)
+void SocketAddress::setPort(int port)
 {
-	if (!deSocketAddress_setPort(m_address, port))
-		throw std::runtime_error("SocketAddress::setPort()");
+    if (!deSocketAddress_setPort(m_address, port))
+        throw std::runtime_error("SocketAddress::setPort()");
 }
 
-void SocketAddress::setFamily (deSocketFamily family)
+void SocketAddress::setFamily(deSocketFamily family)
 {
-	if (!deSocketAddress_setFamily(m_address, family))
-		throw std::runtime_error("SocketAddress::setFamily()");
+    if (!deSocketAddress_setFamily(m_address, family))
+        throw std::runtime_error("SocketAddress::setFamily()");
 }
 
-void SocketAddress::setType (deSocketType type)
+void SocketAddress::setType(deSocketType type)
 {
-	if (!deSocketAddress_setType(m_address, type))
-		throw std::runtime_error("SocketAddress::setType()");
+    if (!deSocketAddress_setType(m_address, type))
+        throw std::runtime_error("SocketAddress::setType()");
 }
 
-void SocketAddress::setProtocol (deSocketProtocol protocol)
+void SocketAddress::setProtocol(deSocketProtocol protocol)
 {
-	if (!deSocketAddress_setProtocol(m_address, protocol))
-		throw std::runtime_error("SocketAddress::setProtocol()");
+    if (!deSocketAddress_setProtocol(m_address, protocol))
+        throw std::runtime_error("SocketAddress::setProtocol()");
 }
 
 // Socket
 
-Socket::Socket (void)
+Socket::Socket(void)
 {
-	m_socket = deSocket_create();
-	if (!m_socket)
-		throw std::bad_alloc();
+    m_socket = deSocket_create();
+    if (!m_socket)
+        throw std::bad_alloc();
 }
 
-Socket::~Socket (void)
+Socket::~Socket(void)
 {
-	deSocket_destroy(m_socket);
+    deSocket_destroy(m_socket);
 }
 
-void Socket::setFlags (deUint32 flags)
+void Socket::setFlags(uint32_t flags)
 {
-	if (!deSocket_setFlags(m_socket, flags))
-		throw SocketError("Setting socket flags failed");
+    if (!deSocket_setFlags(m_socket, flags))
+        throw SocketError("Setting socket flags failed");
 }
 
-void Socket::listen (const SocketAddress& address)
+void Socket::listen(const SocketAddress &address)
 {
-	if (!deSocket_listen(m_socket, address))
-		throw SocketError("Listening on socket failed");
+    if (!deSocket_listen(m_socket, address))
+        throw SocketError("Listening on socket failed");
 }
 
-void Socket::connect (const SocketAddress& address)
+void Socket::connect(const SocketAddress &address)
 {
-	if (!deSocket_connect(m_socket, address))
-		throw SocketError("Connecting socket failed");
+    if (!deSocket_connect(m_socket, address))
+        throw SocketError("Connecting socket failed");
 }
 
-void Socket::shutdown (void)
+void Socket::shutdown(void)
 {
-	if (!deSocket_shutdown(m_socket, DE_SOCKETCHANNEL_BOTH))
-		throw SocketError("Socket shutdown failed");
+    if (!deSocket_shutdown(m_socket, DE_SOCKETCHANNEL_BOTH))
+        throw SocketError("Socket shutdown failed");
 }
 
-void Socket::shutdownSend (void)
+void Socket::shutdownSend(void)
 {
-	if (!deSocket_shutdown(m_socket, DE_SOCKETCHANNEL_SEND))
-		throw SocketError("Socket send channel shutdown failed");
+    if (!deSocket_shutdown(m_socket, DE_SOCKETCHANNEL_SEND))
+        throw SocketError("Socket send channel shutdown failed");
 }
 
-void Socket::shutdownReceive (void)
+void Socket::shutdownReceive(void)
 {
-	if (!deSocket_shutdown(m_socket, DE_SOCKETCHANNEL_RECEIVE))
-		throw SocketError("Socket receive channel shutdown failed");
+    if (!deSocket_shutdown(m_socket, DE_SOCKETCHANNEL_RECEIVE))
+        throw SocketError("Socket receive channel shutdown failed");
 }
 
-void Socket::close (void)
+void Socket::close(void)
 {
-	if (!deSocket_close(m_socket))
-		throw SocketError("Closing socket failed");
+    if (!deSocket_close(m_socket))
+        throw SocketError("Closing socket failed");
 }
 
-Socket* Socket::accept (deSocketAddress* clientAddress)
+Socket *Socket::accept(deSocketAddress *clientAddress)
 {
-	deSocket* clientSocket = deSocket_accept(m_socket, clientAddress);
-	if (!clientSocket)
-		throw SocketError("Accepting connection to socket failed");
+    deSocket *clientSocket = deSocket_accept(m_socket, clientAddress);
+    if (!clientSocket)
+        throw SocketError("Accepting connection to socket failed");
 
-	try
-	{
-		return new Socket(clientSocket);
-	}
-	catch (...)
-	{
-		deSocket_destroy(clientSocket);
-		throw;
-	}
+    try
+    {
+        return new Socket(clientSocket);
+    }
+    catch (...)
+    {
+        deSocket_destroy(clientSocket);
+        throw;
+    }
 }
 
-} // de
+} // namespace de

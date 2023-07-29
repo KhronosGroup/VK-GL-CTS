@@ -36,18 +36,18 @@ namespace Functional
 class TransformFeedbackTests : public TestCaseGroup
 {
 public:
-								TransformFeedbackTests		(Context& context);
-								~TransformFeedbackTests		(void);
+    TransformFeedbackTests(Context &context);
+    ~TransformFeedbackTests(void);
 
-	void						init						(void);
+    void init(void);
 
 private:
-								TransformFeedbackTests		(const TransformFeedbackTests& other);
-	TransformFeedbackTests&		operator=					(const TransformFeedbackTests& other);
+    TransformFeedbackTests(const TransformFeedbackTests &other);
+    TransformFeedbackTests &operator=(const TransformFeedbackTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FTRANSFORMFEEDBACKTESTS_HPP

@@ -31,9 +31,9 @@ namespace vkt
 namespace RayQuery
 {
 
-tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createAccelerationStructuresTests(tcu::TestContext &testCtx);
 
-} // RayQuery
-} // vkt
+} // namespace RayQuery
+} // namespace vkt
 
 #endif // _VKTRAYQUERYACCELERATIONSTRUCTURESTESTS_HPP

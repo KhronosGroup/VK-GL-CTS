@@ -40,53 +40,55 @@ namespace glcts
 class ShaderTextureImageSamplesTestBase : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	ShaderTextureImageSamplesTestBase(deqp::Context& context, const char* name, const char* description);
+    /* Public methods */
+    ShaderTextureImageSamplesTestBase(deqp::Context &context, const char *name, const char *description);
 
-	void		 deinit();
-	virtual void init();
+    void deinit();
+    virtual void init();
 
 protected:
-	/* Protected type definitions */
-	typedef enum {
-		SAMPLER_TYPE_ISAMPLER2DMS,
-		SAMPLER_TYPE_ISAMPLER2DMSARRAY,
-		SAMPLER_TYPE_SAMPLER2DMS,
-		SAMPLER_TYPE_SAMPLER2DMSARRAY,
-		SAMPLER_TYPE_USAMPLER2DMS,
-		SAMPLER_TYPE_USAMPLER2DMSARRAY,
+    /* Protected type definitions */
+    typedef enum
+    {
+        SAMPLER_TYPE_ISAMPLER2DMS,
+        SAMPLER_TYPE_ISAMPLER2DMSARRAY,
+        SAMPLER_TYPE_SAMPLER2DMS,
+        SAMPLER_TYPE_SAMPLER2DMSARRAY,
+        SAMPLER_TYPE_USAMPLER2DMS,
+        SAMPLER_TYPE_USAMPLER2DMSARRAY,
 
-		SAMPLER_TYPE_COUNT
-	} _sampler_type;
+        SAMPLER_TYPE_COUNT
+    } _sampler_type;
 
-	typedef enum {
-		TEST_TYPE_IMAGE,
-		TEST_TYPE_TEXTURE,
+    typedef enum
+    {
+        TEST_TYPE_IMAGE,
+        TEST_TYPE_TEXTURE,
 
-		TEST_TYPE_COUNT
-	} _test_type;
+        TEST_TYPE_COUNT
+    } _test_type;
 
-	/* Protected methods */
-	bool buildComputeProgram(const char* cs_body, bool should_link_po, bool should_succeed);
+    /* Protected methods */
+    bool buildComputeProgram(const char *cs_body, bool should_link_po, bool should_succeed);
 
-	void executeFunctionalTest(const _sampler_type& sampler_type, const _test_type& test_type);
+    void executeFunctionalTest(const _sampler_type &sampler_type, const _test_type &test_type);
 
 private:
-	/* Private methods */
-	void deinitProgramAndShaderObjects();
+    /* Private methods */
+    void deinitProgramAndShaderObjects();
 
-	/* Private members */
-	glw::GLint  m_internalformat_n_samples_count;
-	glw::GLint* m_internalformat_n_samples_data;
+    /* Private members */
+    glw::GLint m_internalformat_n_samples_count;
+    glw::GLint *m_internalformat_n_samples_data;
 
-	glw::GLuint m_bo_id;
-	glw::GLuint m_cs_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_to_id;
+    glw::GLuint m_bo_id;
+    glw::GLuint m_cs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_to_id;
 
-	const unsigned int m_to_depth;
-	const unsigned int m_to_height;
-	const unsigned int m_to_width;
+    const unsigned int m_to_depth;
+    const unsigned int m_to_height;
+    const unsigned int m_to_width;
 };
 
 /** Implements the following functional tests from CTS_ARB_shader_texture_image_samples:
@@ -144,15 +146,15 @@ private:
 class ShaderTextureImageSampleFunctionalTest : public ShaderTextureImageSamplesTestBase
 {
 public:
-	/* Public methods */
-	ShaderTextureImageSampleFunctionalTest(deqp::Context& context, const char* name);
-	void init();
+    /* Public methods */
+    ShaderTextureImageSampleFunctionalTest(deqp::Context &context, const char *name);
+    void init();
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	_test_type type_to_test;
-	/* Private methods */
+    _test_type type_to_test;
+    /* Private methods */
 };
 
 /** Implements the following GLSL #extension test from CTS_ARB_shader_texture_image_samples:
@@ -165,13 +167,13 @@ private:
 class ShaderTextureImageSamplesGLSLExtensionEnableTest : public ShaderTextureImageSamplesTestBase
 {
 public:
-	/* Public methods */
-	ShaderTextureImageSamplesGLSLExtensionEnableTest(deqp::Context& context);
+    /* Public methods */
+    ShaderTextureImageSamplesGLSLExtensionEnableTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
+    /* Private methods */
 };
 
 /** Implements the following GLSL #extension test from CTS_ARB_shader_texture_image_samples:
@@ -184,13 +186,13 @@ private:
 class ShaderTextureImageSamplesGLSLExtensionRequireTest : public ShaderTextureImageSamplesTestBase
 {
 public:
-	/* Public methods */
-	ShaderTextureImageSamplesGLSLExtensionRequireTest(deqp::Context& context);
+    /* Public methods */
+    ShaderTextureImageSamplesGLSLExtensionRequireTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
+    /* Private methods */
 };
 
 /** Test group which encapsulates all conformance tests for GL_ARB_shader_texture_image_samples
@@ -199,16 +201,16 @@ private:
 class ShaderTextureImageSamplesTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	ShaderTextureImageSamplesTests(deqp::Context& context);
+    /* Public methods */
+    ShaderTextureImageSamplesTests(deqp::Context &context);
 
-	void init(void);
+    void init(void);
 
 private:
-	ShaderTextureImageSamplesTests(const ShaderTextureImageSamplesTests& other);
-	ShaderTextureImageSamplesTests& operator=(const ShaderTextureImageSamplesTests& other);
+    ShaderTextureImageSamplesTests(const ShaderTextureImageSamplesTests &other);
+    ShaderTextureImageSamplesTests &operator=(const ShaderTextureImageSamplesTests &other);
 };
 
-} /* glcts namespace */
+} // namespace glcts
 
 #endif // _GL4CSHADERTEXTUREIMAGESAMPLESTESTS_HPP

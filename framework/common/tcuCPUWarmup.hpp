@@ -27,7 +27,7 @@ namespace tcu
 {
 
 //! Does some unused calculations to try and get the CPU working at full speed.
-void warmupCPU (void);
+void warmupCPU(void);
 
 namespace warmupCPUInternal
 {
@@ -37,16 +37,21 @@ namespace warmupCPUInternal
 class Unused
 {
 public:
-								Unused	(void) : m_v(new float) {}
-								~Unused	(void) { delete m_v; }
+    Unused(void) : m_v(new float)
+    {
+    }
+    ~Unused(void)
+    {
+        delete m_v;
+    }
 
-	volatile float* volatile	m_v;
+    volatile float *volatile m_v;
 };
 
 extern volatile Unused g_unused;
 
-}
+} // namespace warmupCPUInternal
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUCPUWARMUP_HPP

@@ -40,67 +40,83 @@ namespace pipeline
 class MultisamplePixelGrid
 {
 public:
-	MultisamplePixelGrid (const tcu::UVec2& gridSize, const vk::VkSampleCountFlagBits numSamples)
-		: m_gridSize		(gridSize)
-		, m_numSamples		(numSamples)
-		, m_sampleLocations	(gridSize.x() * gridSize.y() * numSamples)
-	{
-		DE_ASSERT(gridSize.x() > 0 && gridSize.y() > 0);
-		DE_ASSERT(numSamples   > 1);
-	}
+    MultisamplePixelGrid(const tcu::UVec2 &gridSize, const vk::VkSampleCountFlagBits numSamples)
+        : m_gridSize(gridSize)
+        , m_numSamples(numSamples)
+        , m_sampleLocations(gridSize.x() * gridSize.y() * numSamples)
+    {
+        DE_ASSERT(gridSize.x() > 0 && gridSize.y() > 0);
+        DE_ASSERT(numSamples > 1);
+    }
 
-	//! If grid x,y is larger than gridSize, then each coordinate is wrapped, x' = x % size_x
-	const vk::VkSampleLocationEXT& getSample (deUint32 gridX, deUint32 gridY, const deUint32 sampleNdx) const
-	{
-		return m_sampleLocations[getSampleIndex(gridX, gridY, sampleNdx)];
-	}
+    //! If grid x,y is larger than gridSize, then each coordinate is wrapped, x' = x % size_x
+    const vk::VkSampleLocationEXT &getSample(uint32_t gridX, uint32_t gridY, const uint32_t sampleNdx) const
+    {
+        return m_sampleLocations[getSampleIndex(gridX, gridY, sampleNdx)];
+    }
 
-	void setSample (const deUint32 gridX, const deUint32 gridY, const deUint32 sampleNdx, const vk::VkSampleLocationEXT& location)
-	{
-		DE_ASSERT(gridX < m_gridSize.x());
-		DE_ASSERT(gridY < m_gridSize.y());
+    void setSample(const uint32_t gridX, const uint32_t gridY, const uint32_t sampleNdx,
+                   const vk::VkSampleLocationEXT &location)
+    {
+        DE_ASSERT(gridX < m_gridSize.x());
+        DE_ASSERT(gridY < m_gridSize.y());
 
-		m_sampleLocations[getSampleIndex(gridX, gridY, sampleNdx)] = location;
-	}
+        m_sampleLocations[getSampleIndex(gridX, gridY, sampleNdx)] = location;
+    }
 
-	const tcu::UVec2&				size				(void) const	{ return m_gridSize; }
-	vk::VkSampleCountFlagBits		samplesPerPixel		(void) const	{ return m_numSamples; }
-	const vk::VkSampleLocationEXT*	sampleLocations		(void) const	{ return dataOrNullPtr(m_sampleLocations); }
-	vk::VkSampleLocationEXT*		sampleLocations		(void)			{ return dataOrNullPtr(m_sampleLocations); }
-	deUint32						sampleLocationCount	(void) const	{ return static_cast<deUint32>(m_sampleLocations.size()); }
+    const tcu::UVec2 &size(void) const
+    {
+        return m_gridSize;
+    }
+    vk::VkSampleCountFlagBits samplesPerPixel(void) const
+    {
+        return m_numSamples;
+    }
+    const vk::VkSampleLocationEXT *sampleLocations(void) const
+    {
+        return dataOrNullPtr(m_sampleLocations);
+    }
+    vk::VkSampleLocationEXT *sampleLocations(void)
+    {
+        return dataOrNullPtr(m_sampleLocations);
+    }
+    uint32_t sampleLocationCount(void) const
+    {
+        return static_cast<uint32_t>(m_sampleLocations.size());
+    }
 
 private:
-	deUint32 getSampleIndex (deUint32 gridX, deUint32 gridY, const deUint32 sampleNdx) const
-	{
-		gridX %= m_gridSize.x();
-		gridY %= m_gridSize.y();
-		return (gridY * m_gridSize.x() + gridX) * static_cast<deUint32>(m_numSamples) + sampleNdx;
-	}
+    uint32_t getSampleIndex(uint32_t gridX, uint32_t gridY, const uint32_t sampleNdx) const
+    {
+        gridX %= m_gridSize.x();
+        gridY %= m_gridSize.y();
+        return (gridY * m_gridSize.x() + gridX) * static_cast<uint32_t>(m_numSamples) + sampleNdx;
+    }
 
-	tcu::UVec2								m_gridSize;
-	vk::VkSampleCountFlagBits				m_numSamples;
-	std::vector<vk::VkSampleLocationEXT>	m_sampleLocations;
+    tcu::UVec2 m_gridSize;
+    vk::VkSampleCountFlagBits m_numSamples;
+    std::vector<vk::VkSampleLocationEXT> m_sampleLocations;
 };
 
 //! References the data inside MultisamplePixelGrid
-inline vk::VkSampleLocationsInfoEXT makeSampleLocationsInfo (const MultisamplePixelGrid& pixelGrid)
+inline vk::VkSampleLocationsInfoEXT makeSampleLocationsInfo(const MultisamplePixelGrid &pixelGrid)
 {
-	const vk::VkSampleLocationsInfoEXT info =
-	{
-		vk::VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT,				// VkStructureType               sType;
-		DE_NULL,														// const void*                   pNext;
-		pixelGrid.samplesPerPixel(),									// VkSampleCountFlagBits         sampleLocationsPerPixel;
-		vk::makeExtent2D(pixelGrid.size().x(), pixelGrid.size().y()),	// VkExtent2D                    sampleLocationGridSize;
-		pixelGrid.sampleLocationCount(),								// uint32_t                      sampleLocationsCount;
-		pixelGrid.sampleLocations(),									// const VkSampleLocationEXT*    pSampleLocations;
-	};
-	return info;
+    const vk::VkSampleLocationsInfoEXT info = {
+        vk::VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT, // VkStructureType               sType;
+        DE_NULL,                                         // const void*                   pNext;
+        pixelGrid.samplesPerPixel(),                     // VkSampleCountFlagBits         sampleLocationsPerPixel;
+        vk::makeExtent2D(pixelGrid.size().x(),
+                         pixelGrid.size().y()), // VkExtent2D                    sampleLocationGridSize;
+        pixelGrid.sampleLocationCount(),        // uint32_t                      sampleLocationsCount;
+        pixelGrid.sampleLocations(),            // const VkSampleLocationEXT*    pSampleLocations;
+    };
+    return info;
 }
 
 //! Fill each grid pixel with a distinct samples pattern, rounding locations based on subPixelBits
-void fillSampleLocationsRandom (MultisamplePixelGrid& grid, const deUint32 subPixelBits, const deUint32 seed = 142u);
+void fillSampleLocationsRandom(MultisamplePixelGrid &grid, const uint32_t subPixelBits, const uint32_t seed = 142u);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINESAMPLELOCATIONSUTIL_HPP

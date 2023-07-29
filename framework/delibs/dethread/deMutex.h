@@ -27,21 +27,21 @@
 
 DE_BEGIN_EXTERN_C
 
-typedef deUintptr	deMutex;
+typedef uintptr_t deMutex;
 
 /*--------------------------------------------------------------------*//*!
  * \brief Mutex attributes.
  *//*--------------------------------------------------------------------*/
 typedef enum deMutexFlag_e
 {
-	/**
-	 * \brief Create recursive mutex.
-	 *
-	 * Recursive mutex can be locked multiple times from single thread
-	 * and it is unlocked when lock count from owning thread reaches
-	 * zero.
-	 */
-	DE_MUTEX_RECURSIVE		= (1 << 0)
+    /**
+     * \brief Create recursive mutex.
+     *
+     * Recursive mutex can be locked multiple times from single thread
+     * and it is unlocked when lock count from owning thread reaches
+     * zero.
+     */
+    DE_MUTEX_RECURSIVE = (1 << 0)
 } deMutexFlag;
 
 /*--------------------------------------------------------------------*//*!
@@ -49,14 +49,14 @@ typedef enum deMutexFlag_e
  *//*--------------------------------------------------------------------*/
 typedef struct deMutexAttributes_s
 {
-	deUint32		flags;
+    uint32_t flags;
 } deMutexAttributes;
 
-deMutex		deMutex_create		(const deMutexAttributes* attributes);
-void		deMutex_destroy		(deMutex mutex);
-void		deMutex_lock		(deMutex mutex);
-deBool		deMutex_tryLock		(deMutex mutex);
-void		deMutex_unlock		(deMutex mutex);
+deMutex deMutex_create(const deMutexAttributes *attributes);
+void deMutex_destroy(deMutex mutex);
+void deMutex_lock(deMutex mutex);
+bool deMutex_tryLock(deMutex mutex);
+void deMutex_unlock(deMutex mutex);
 
 DE_END_EXTERN_C
 
