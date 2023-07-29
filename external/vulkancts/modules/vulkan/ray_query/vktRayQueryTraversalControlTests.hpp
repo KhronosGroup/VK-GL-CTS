@@ -31,9 +31,9 @@ namespace vkt
 namespace RayQuery
 {
 
-tcu::TestCaseGroup*	createTraversalControlTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTraversalControlTests(tcu::TestContext &testCtx);
 
-} // RayQuery
-} // vkt
+} // namespace RayQuery
+} // namespace vkt
 
 #endif // _VKTRAYQUERYTRAVERSALCONTROLTESTS_HPP

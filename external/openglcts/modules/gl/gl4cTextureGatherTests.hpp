@@ -32,15 +32,15 @@ namespace gl4cts
 class TextureGatherTests : public deqp::TestCaseGroup
 {
 public:
-	TextureGatherTests(deqp::Context& context);
-	~TextureGatherTests(void);
+    TextureGatherTests(deqp::Context &context);
+    ~TextureGatherTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	TextureGatherTests(const TextureGatherTests& other);
-	TextureGatherTests& operator=(const TextureGatherTests& other);
+    TextureGatherTests(const TextureGatherTests &other);
+    TextureGatherTests &operator=(const TextureGatherTests &other);
 };
-}
+} // namespace gl4cts
 
 #endif // _GL4CTEXTUREGATHERTESTS_HPP

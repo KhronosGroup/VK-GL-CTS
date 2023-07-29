@@ -31,9 +31,9 @@ namespace vkt
 namespace image
 {
 
-tcu::TestCaseGroup* createImageAstcDecodeModeTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageAstcDecodeModeTests(tcu::TestContext &testCtx);
 
-} // image
-} // vkt
+} // namespace image
+} // namespace vkt
 
 #endif // _VKTIMAGEASTCDECODEMODETESTS_HPP

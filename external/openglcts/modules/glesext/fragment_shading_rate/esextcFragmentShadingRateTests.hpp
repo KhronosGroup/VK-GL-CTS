@@ -35,7 +35,7 @@ namespace glcts
 namespace fsrutils
 {
 
-deUint32 packShadingRate(glw::GLenum shadingRate);
+uint32_t packShadingRate(glw::GLenum shadingRate);
 
 } // namespace fsrutils
 
@@ -43,17 +43,17 @@ deUint32 packShadingRate(glw::GLenum shadingRate);
 class FragmentShadingRateTests : public TestCaseGroupBase
 {
 public:
-	FragmentShadingRateTests(glcts::Context& context, const ExtParameters& extParams);
+    FragmentShadingRateTests(glcts::Context &context, const ExtParameters &extParams);
 
-	~FragmentShadingRateTests(void) override
-	{
-	}
+    ~FragmentShadingRateTests(void) override
+    {
+    }
 
-	void init(void) override;
+    void init(void) override;
 
 private:
-	FragmentShadingRateTests(const FragmentShadingRateTests& other);
-	FragmentShadingRateTests& operator=(const FragmentShadingRateTests& other);
+    FragmentShadingRateTests(const FragmentShadingRateTests &other);
+    FragmentShadingRateTests &operator=(const FragmentShadingRateTests &other);
 };
 
 } // namespace glcts

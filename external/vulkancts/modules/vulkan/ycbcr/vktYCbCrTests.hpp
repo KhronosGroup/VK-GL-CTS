@@ -31,9 +31,9 @@ namespace vkt
 namespace ycbcr
 {
 
-tcu::TestCaseGroup*	createTests	(tcu::TestContext& testCtx, const std::string& name);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name);
 
-} // ycbcr
-} // vkt
+} // namespace ycbcr
+} // namespace vkt
 
 #endif // _VKTYCBCRTESTS_HPP

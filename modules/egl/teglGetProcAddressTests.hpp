@@ -34,13 +34,13 @@ namespace egl
 class GetProcAddressTests : public TestCaseGroup
 {
 public:
-							GetProcAddressTests			(EglTestContext& eglTestCtx);
-	virtual					~GetProcAddressTests		(void);
+    GetProcAddressTests(EglTestContext &eglTestCtx);
+    virtual ~GetProcAddressTests(void);
 
-	void					init						(void);
+    void init(void);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLGETPROCADDRESSTESTS_HPP

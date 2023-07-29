@@ -35,23 +35,23 @@ namespace SpirVAssembly
 namespace
 {
 
-void createChildren (tcu::TestCaseGroup* spirVAssemblyTests)
+void createChildren(tcu::TestCaseGroup *spirVAssemblyTests)
 {
-	tcu::TestContext&	testCtx		= spirVAssemblyTests->getTestContext();
+    tcu::TestContext &testCtx = spirVAssemblyTests->getTestContext();
 
-	spirVAssemblyTests->addChild(createInstructionTests(testCtx));
-	spirVAssemblyTests->addChild(createTypeTests(testCtx));
-	// \todo [2015-09-28 antiagainst] control flow
-	// \todo [2015-09-28 antiagainst] multiple entry points for the same shader stage
-	// \todo [2015-09-28 antiagainst] multiple shaders in the same module
+    spirVAssemblyTests->addChild(createInstructionTests(testCtx));
+    spirVAssemblyTests->addChild(createTypeTests(testCtx));
+    // \todo [2015-09-28 antiagainst] control flow
+    // \todo [2015-09-28 antiagainst] multiple entry points for the same shader stage
+    // \todo [2015-09-28 antiagainst] multiple shaders in the same module
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
-	return createTestGroup(testCtx, name, createChildren);
+    return createTestGroup(testCtx, name, createChildren);
 }
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt

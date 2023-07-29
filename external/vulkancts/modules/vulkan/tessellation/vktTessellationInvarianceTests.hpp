@@ -32,9 +32,9 @@ namespace vkt
 namespace tessellation
 {
 
-tcu::TestCaseGroup* createInvarianceTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createInvarianceTests(tcu::TestContext &testCtx);
 
-} // tessellation
-} // vkt
+} // namespace tessellation
+} // namespace vkt
 
 #endif // _VKTTESSELLATIONINVARIANCETESTS_HPP

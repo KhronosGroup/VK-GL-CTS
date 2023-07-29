@@ -29,14 +29,14 @@
 namespace de
 {
 
-char* copyToPool (de::MemPool* pool, const char* string)
+char *copyToPool(de::MemPool *pool, const char *string)
 {
-	deUintptr	size	= (deUintptr)strlen(string) + 1;
-	char*		copy	= (char*)pool->alloc(size);
+    uintptr_t size = (uintptr_t)strlen(string) + 1;
+    char *copy     = (char *)pool->alloc(size);
 
-	std::copy(string, string+size, copy);
+    std::copy(string, string + size, copy);
 
-	return copy;
+    return copy;
 }
 
-} // de
+} // namespace de

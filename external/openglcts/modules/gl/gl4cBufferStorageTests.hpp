@@ -64,18 +64,18 @@ class Buffer;
 class ErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	ErrorsTest(deqp::Context& context);
-	virtual ~ErrorsTest()
-	{
-	}
+    /* Public methods */
+    ErrorsTest(deqp::Context &context);
+    virtual ~ErrorsTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	void verifyError(glw::GLenum expected_error, const glw::GLchar* error_message, bool& out_test_result);
+    /* Private methods */
+    void verifyError(glw::GLenum expected_error, const glw::GLchar *error_message, bool &out_test_result);
 };
 
 /** Implementation of test "GetBufferParameter". Description follows:
@@ -99,27 +99,27 @@ private:
 class GetBufferParameterTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	GetBufferParameterTest(deqp::Context& context);
-	virtual ~GetBufferParameterTest()
-	{
-	}
+    /* Public methods */
+    GetBufferParameterTest(deqp::Context &context);
+    virtual ~GetBufferParameterTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		testCase(glw::GLenum flags, glw::GLenum access);
+    /* Private types */
+    struct testCase
+    {
+        testCase(glw::GLenum flags, glw::GLenum access);
 
-		glw::GLenum m_flags;
-		glw::GLenum m_access;
-	};
+        glw::GLenum m_flags;
+        glw::GLenum m_access;
+    };
 
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
 };
 
 /** Implementation of test "DynamicStorage". Description follows:
@@ -152,14 +152,14 @@ private:
 class DynamicStorageTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	DynamicStorageTest(deqp::Context& context);
-	virtual ~DynamicStorageTest()
-	{
-	}
+    /* Public methods */
+    DynamicStorageTest(deqp::Context &context);
+    virtual ~DynamicStorageTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test "MapPersistentBufferSubData". Description follows:
@@ -201,23 +201,23 @@ public:
 class MapPersistentBufferSubDataTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	MapPersistentBufferSubDataTest(deqp::Context& context);
-	virtual ~MapPersistentBufferSubDataTest()
-	{
-	}
+    /* Public methods */
+    MapPersistentBufferSubDataTest(deqp::Context &context);
+    virtual ~MapPersistentBufferSubDataTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		glw::GLintptr   m_offset;
-		glw::GLsizeiptr m_size;
-		bool			m_cross_mapped_region;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLintptr m_offset;
+        glw::GLsizeiptr m_size;
+        bool m_cross_mapped_region;
+    };
 };
 
 /** Implementation of test "MapPersistentTexture". Description follows:
@@ -251,37 +251,37 @@ private:
 class MapPersistentTextureTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	MapPersistentTextureTest(deqp::Context& context);
+    /* Public methods */
+    MapPersistentTextureTest(deqp::Context &context);
 
-	virtual ~MapPersistentTextureTest()
-	{
-	}
+    virtual ~MapPersistentTextureTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 private:
-	/* Private types */
-	enum TESTED_OPERATION
-	{
-		OP_COMPRESSED_TEX_IMAGE = 0,
-		OP_COMPRESSED_TEX_SUB_IMAGE,
-		OP_COMPRESSED_TEXTURE_SUB_IMAGE,
-		OP_TEX_IMAGE,
-		OP_TEX_SUB_IMAGE,
+    /* Private types */
+    enum TESTED_OPERATION
+    {
+        OP_COMPRESSED_TEX_IMAGE = 0,
+        OP_COMPRESSED_TEX_SUB_IMAGE,
+        OP_COMPRESSED_TEXTURE_SUB_IMAGE,
+        OP_TEX_IMAGE,
+        OP_TEX_SUB_IMAGE,
 
-		TESTED_OPERATION_MAX
-	};
+        TESTED_OPERATION_MAX
+    };
 
-	void		getCompressedInfo();
-	const char* getOperationName(TESTED_OPERATION operation);
+    void getCompressedInfo();
+    const char *getOperationName(TESTED_OPERATION operation);
 
-	bool verifyTestedOperation(TESTED_OPERATION operation, Buffer& buffer, glw::GLenum expected_error);
+    bool verifyTestedOperation(TESTED_OPERATION operation, Buffer &buffer, glw::GLenum expected_error);
 
-	/* Private fields */
-	glw::GLint m_compressed_image_size;
-	glw::GLint m_compressed_internal_format;
+    /* Private fields */
+    glw::GLint m_compressed_image_size;
+    glw::GLint m_compressed_internal_format;
 };
 
 /** Implementation of test "MapPersistentReadPixels". Description follows:
@@ -312,15 +312,15 @@ private:
 class MapPersistentReadPixelsTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	MapPersistentReadPixelsTest(deqp::Context& context);
+    /* Public methods */
+    MapPersistentReadPixelsTest(deqp::Context &context);
 
-	virtual ~MapPersistentReadPixelsTest()
-	{
-	}
+    virtual ~MapPersistentReadPixelsTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test "MapPersistentDispatch". Description follows:
@@ -359,18 +359,18 @@ public:
 class MapPersistentDispatchTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	MapPersistentDispatchTest(deqp::Context& context);
+    /* Public methods */
+    MapPersistentDispatchTest(deqp::Context &context);
 
-	MapPersistentDispatchTest(deqp::Context& context, const glw::GLchar* test_name,
-							  const glw::GLchar* test_description);
+    MapPersistentDispatchTest(deqp::Context &context, const glw::GLchar *test_name,
+                              const glw::GLchar *test_description);
 
-	virtual ~MapPersistentDispatchTest()
-	{
-	}
+    virtual ~MapPersistentDispatchTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test "MapPersistentFlush". Description follows:
@@ -386,15 +386,15 @@ public:
 class MapPersistentFlushTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	MapPersistentFlushTest(deqp::Context& context);
+    /* Public methods */
+    MapPersistentFlushTest(deqp::Context &context);
 
-	virtual ~MapPersistentFlushTest()
-	{
-	}
+    virtual ~MapPersistentFlushTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test "MapPersistentDraw". Description follows:
@@ -464,37 +464,37 @@ public:
 class MapPersistentDrawTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	MapPersistentDrawTest(deqp::Context& context);
+    /* Public methods */
+    MapPersistentDrawTest(deqp::Context &context);
 
-	virtual ~MapPersistentDrawTest()
-	{
-	}
+    virtual ~MapPersistentDrawTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
-} /* BufferStorage */
+} // namespace BufferStorage
 
 /** Group class for Buffer Storage conformance tests */
 class BufferStorageTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	BufferStorageTests(deqp::Context& context);
+    /* Public methods */
+    BufferStorageTests(deqp::Context &context);
 
-	virtual ~BufferStorageTests(void)
-	{
-	}
+    virtual ~BufferStorageTests(void)
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	/* Private methods */
-	BufferStorageTests(const BufferStorageTests& other);
-	BufferStorageTests& operator=(const BufferStorageTests& other);
+    /* Private methods */
+    BufferStorageTests(const BufferStorageTests &other);
+    BufferStorageTests &operator=(const BufferStorageTests &other);
 };
 
-} /* gl4cts */
+} // namespace gl4cts
 
 #endif // _GL4CBUFFERSTORAGETESTS_HPP

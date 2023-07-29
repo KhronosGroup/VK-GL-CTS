@@ -30,10 +30,10 @@ namespace vkt
 namespace synchronization
 {
 
-tcu::TestCaseGroup* createSmokeTests(tcu::TestContext& testCtx);
-tcu::TestCaseGroup* createSynchronization2SmokeTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSmokeTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createSynchronization2SmokeTests(tcu::TestContext &testCtx);
 
-} // synchronization
-} // vkt
+} // namespace synchronization
+} // namespace vkt
 
 #endif // _VKTSYNCHRONIZATIONSMOKETESTS_HPP

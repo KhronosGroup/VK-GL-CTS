@@ -33,11 +33,11 @@ namespace vkt
 namespace image
 {
 
-tcu::TestCaseGroup*	createImageMutableTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageMutableTests(tcu::TestContext &testCtx);
 
-tcu::TestCaseGroup*	createSwapchainImageMutableTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSwapchainImageMutableTests(tcu::TestContext &testCtx);
 
-} // image
-} // vkt
+} // namespace image
+} // namespace vkt
 
 #endif // _VKTIMAGEMUTABLETESTS_HPP

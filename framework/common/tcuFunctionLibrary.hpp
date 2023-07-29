@@ -37,68 +37,67 @@ namespace tcu
 class FunctionLibrary
 {
 protected:
-								FunctionLibrary			(void);
+    FunctionLibrary(void);
 
 public:
-	virtual						~FunctionLibrary		(void);
-	virtual deFunctionPtr		getFunction				(const char* funcName) const = 0;
+    virtual ~FunctionLibrary(void);
+    virtual deFunctionPtr getFunction(const char *funcName) const = 0;
 
 private:
-								FunctionLibrary			(const FunctionLibrary&);
-	FunctionLibrary&			operator=				(const FunctionLibrary&);
+    FunctionLibrary(const FunctionLibrary &);
+    FunctionLibrary &operator=(const FunctionLibrary &);
 };
 
 class StaticFunctionLibrary : public FunctionLibrary
 {
 public:
-	struct Entry
-	{
-		const char*		name;
-		deFunctionPtr	ptr;
-	};
+    struct Entry
+    {
+        const char *name;
+        deFunctionPtr ptr;
+    };
 
-								StaticFunctionLibrary	(const Entry* entries, int numEntries);
-								~StaticFunctionLibrary	(void);
+    StaticFunctionLibrary(const Entry *entries, int numEntries);
+    ~StaticFunctionLibrary(void);
 
-	deFunctionPtr				getFunction				(const char* funcName) const;
+    deFunctionPtr getFunction(const char *funcName) const;
 
 private:
+    StaticFunctionLibrary(const StaticFunctionLibrary &);
+    StaticFunctionLibrary &operator=(const StaticFunctionLibrary &);
 
-								StaticFunctionLibrary	(const StaticFunctionLibrary&);
-	StaticFunctionLibrary&		operator=				(const StaticFunctionLibrary&);
-
-	// \todo [2014-03-11 pyry] This could be implemented with const char* pointers and custom compare.
-	std::map<std::string, deFunctionPtr>				m_functions;
+    // \todo [2014-03-11 pyry] This could be implemented with const char* pointers and custom compare.
+    std::map<std::string, deFunctionPtr> m_functions;
 };
 
 class DynamicFunctionLibrary : public FunctionLibrary
 {
 public:
-								DynamicFunctionLibrary	(const char* fileName);
-								~DynamicFunctionLibrary	(void);
+    DynamicFunctionLibrary(const char *fileName);
+    ~DynamicFunctionLibrary(void);
 
-	deFunctionPtr				getFunction				(const char* funcName) const;
+    deFunctionPtr getFunction(const char *funcName) const;
 
 private:
-								DynamicFunctionLibrary	(const DynamicFunctionLibrary&);
-	DynamicFunctionLibrary&		operator=				(const DynamicFunctionLibrary&);
+    DynamicFunctionLibrary(const DynamicFunctionLibrary &);
+    DynamicFunctionLibrary &operator=(const DynamicFunctionLibrary &);
 
-	de::DynamicLibrary			m_dynamicLibrary;
+    de::DynamicLibrary m_dynamicLibrary;
 };
 
 class CompositeFunctionLibrary : public FunctionLibrary
 {
 public:
-									CompositeFunctionLibrary	(const FunctionLibrary* libraries, int numLibraries);
-									~CompositeFunctionLibrary	(void);
+    CompositeFunctionLibrary(const FunctionLibrary *libraries, int numLibraries);
+    ~CompositeFunctionLibrary(void);
 
-	deFunctionPtr					getFunction					(const char* funcName) const;
+    deFunctionPtr getFunction(const char *funcName) const;
 
 private:
-	const FunctionLibrary* const	m_libraries;
-	const int						m_numLibraries;
+    const FunctionLibrary *const m_libraries;
+    const int m_numLibraries;
 };
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUFUNCTIONLIBRARY_HPP

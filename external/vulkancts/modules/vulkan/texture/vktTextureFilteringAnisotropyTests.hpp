@@ -30,9 +30,9 @@ namespace vkt
 namespace texture
 {
 
-tcu::TestCaseGroup* createFilteringAnisotropyTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createFilteringAnisotropyTests(tcu::TestContext &testCtx);
 
-} // texture
-} // vkt
+} // namespace texture
+} // namespace vkt
 
 #endif // _VKTTEXTUREFILTERINGANISOTROPYTESTS_HPP

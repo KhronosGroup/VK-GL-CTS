@@ -32,9 +32,9 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	createSignedIntCompareGroup (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSignedIntCompareGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMSIGNEDINTCOMPARETESTS_HPP

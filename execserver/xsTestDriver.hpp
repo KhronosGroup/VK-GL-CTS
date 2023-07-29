@@ -35,46 +35,46 @@ namespace xs
 class TestDriver
 {
 public:
-							TestDriver			(xs::TestProcess* testProcess);
-							~TestDriver			(void);
+    TestDriver(xs::TestProcess *testProcess);
+    ~TestDriver(void);
 
-	void					reset				(void);
+    void reset(void);
 
-	void					startProcess		(const char* name, const char* params, const char* workingDir, const char* caseList);
-	void					stopProcess			(void);
+    void startProcess(const char *name, const char *params, const char *workingDir, const char *caseList);
+    void stopProcess(void);
 
-	bool					poll				(ByteBuffer& messageBuffer);
+    bool poll(ByteBuffer &messageBuffer);
 
 private:
-	enum State
-	{
-		STATE_NOT_STARTED = 0,
-		STATE_PROCESS_LAUNCH_FAILED,
-		STATE_PROCESS_STARTED,
-		STATE_PROCESS_RUNNING,
-		STATE_READING_DATA,
-		STATE_PROCESS_FINISHED,
+    enum State
+    {
+        STATE_NOT_STARTED = 0,
+        STATE_PROCESS_LAUNCH_FAILED,
+        STATE_PROCESS_STARTED,
+        STATE_PROCESS_RUNNING,
+        STATE_READING_DATA,
+        STATE_PROCESS_FINISHED,
 
-		STATE_LAST
-	};
+        STATE_LAST
+    };
 
-	bool					pollLogFile			(ByteBuffer& messageBuffer);
-	bool					pollInfo			(ByteBuffer& messageBuffer);
-	bool					pollBuffer			(ByteBuffer& messageBuffer, MessageType msgType);
+    bool pollLogFile(ByteBuffer &messageBuffer);
+    bool pollInfo(ByteBuffer &messageBuffer);
+    bool pollBuffer(ByteBuffer &messageBuffer, MessageType msgType);
 
-	bool					writeMessage		(ByteBuffer& messageBuffer, const Message& message);
+    bool writeMessage(ByteBuffer &messageBuffer, const Message &message);
 
-	State					m_state;
+    State m_state;
 
-	std::string				m_lastLaunchFailure;
-	int						m_lastExitCode;
+    std::string m_lastLaunchFailure;
+    int m_lastExitCode;
 
-	xs::TestProcess*		m_process;
-	deUint64				m_lastProcessDataTime;
+    xs::TestProcess *m_process;
+    uint64_t m_lastProcessDataTime;
 
-	std::vector<deUint8>	m_dataMsgTmpBuf;
+    std::vector<uint8_t> m_dataMsgTmpBuf;
 };
 
-} // xs
+} // namespace xs
 
 #endif // _XSTESTDRIVER_HPP

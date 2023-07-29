@@ -31,14 +31,14 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup* createOpSDotKHRComputeGroup(tcu::TestContext& testCtx);
-tcu::TestCaseGroup* createOpUDotKHRComputeGroup(tcu::TestContext& testCtx);
-tcu::TestCaseGroup* createOpSUDotKHRComputeGroup(tcu::TestContext& testCtx);
-tcu::TestCaseGroup* createOpSDotAccSatKHRComputeGroup(tcu::TestContext& testCtx);
-tcu::TestCaseGroup* createOpUDotAccSatKHRComputeGroup(tcu::TestContext& testCtx);
-tcu::TestCaseGroup* createOpSUDotAccSatKHRComputeGroup(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createOpSDotKHRComputeGroup(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createOpUDotKHRComputeGroup(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createOpSUDotKHRComputeGroup(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createOpSDotAccSatKHRComputeGroup(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createOpUDotAccSatKHRComputeGroup(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createOpSUDotAccSatKHRComputeGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMINTEGERDOTPRODUCTTESTS_HPP

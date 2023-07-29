@@ -31,11 +31,11 @@ namespace rr
 
 enum GenericVecType
 {
-	GENERICVECTYPE_FLOAT = 0,
-	GENERICVECTYPE_UINT32,
-	GENERICVECTYPE_INT32,
+    GENERICVECTYPE_FLOAT = 0,
+    GENERICVECTYPE_UINT32,
+    GENERICVECTYPE_INT32,
 
-	GENERICVECTYPE_LAST
+    GENERICVECTYPE_LAST
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -50,108 +50,105 @@ enum GenericVecType
 class GenericVec4
 {
 private:
-	union
-	{
-		deUint32 uData[4];
-		deInt32  iData[4];
-		float    fData[4];
-	} v;
+    union
+    {
+        uint32_t uData[4];
+        int32_t iData[4];
+        float fData[4];
+    } v;
 
 public:
-	inline GenericVec4 (void)
-	{
-		v.iData[0] = 0;
-		v.iData[1] = 0;
-		v.iData[2] = 0;
-		v.iData[3] = 0;
-	}
+    inline GenericVec4(void)
+    {
+        v.iData[0] = 0;
+        v.iData[1] = 0;
+        v.iData[2] = 0;
+        v.iData[3] = 0;
+    }
 
-	template<typename ScalarType>
-	explicit GenericVec4 (const tcu::Vector<ScalarType, 4>& value)
-	{
-		*this = value;
-	}
+    template <typename ScalarType>
+    explicit GenericVec4(const tcu::Vector<ScalarType, 4> &value)
+    {
+        *this = value;
+    }
 
-	inline GenericVec4 (const GenericVec4& other)
-	{
-		v.iData[0] = other.v.iData[0];
-		v.iData[1] = other.v.iData[1];
-		v.iData[2] = other.v.iData[2];
-		v.iData[3] = other.v.iData[3];
-	}
+    inline GenericVec4(const GenericVec4 &other)
+    {
+        v.iData[0] = other.v.iData[0];
+        v.iData[1] = other.v.iData[1];
+        v.iData[2] = other.v.iData[2];
+        v.iData[3] = other.v.iData[3];
+    }
 
-	GenericVec4& operator= (const GenericVec4& value)
-	{
-		v.iData[0] = value.v.iData[0];
-		v.iData[1] = value.v.iData[1];
-		v.iData[2] = value.v.iData[2];
-		v.iData[3] = value.v.iData[3];
-		return *this;
-	}
+    GenericVec4 &operator=(const GenericVec4 &value)
+    {
+        v.iData[0] = value.v.iData[0];
+        v.iData[1] = value.v.iData[1];
+        v.iData[2] = value.v.iData[2];
+        v.iData[3] = value.v.iData[3];
+        return *this;
+    }
 
-	template<typename ScalarType>
-	GenericVec4& operator= (const tcu::Vector<ScalarType, 4>& value)
-	{
-		getAccess<ScalarType>()[0] = value[0];
-		getAccess<ScalarType>()[1] = value[1];
-		getAccess<ScalarType>()[2] = value[2];
-		getAccess<ScalarType>()[3] = value[3];
-		return *this;
-	}
+    template <typename ScalarType>
+    GenericVec4 &operator=(const tcu::Vector<ScalarType, 4> &value)
+    {
+        getAccess<ScalarType>()[0] = value[0];
+        getAccess<ScalarType>()[1] = value[1];
+        getAccess<ScalarType>()[2] = value[2];
+        getAccess<ScalarType>()[3] = value[3];
+        return *this;
+    }
 
-	template<typename ScalarType>
-	inline tcu::Vector<ScalarType, 4> get (void) const
-	{
-		return tcu::Vector<ScalarType, 4>(
-			getAccess<ScalarType>()[0],
-			getAccess<ScalarType>()[1],
-			getAccess<ScalarType>()[2],
-			getAccess<ScalarType>()[3]);
-	}
+    template <typename ScalarType>
+    inline tcu::Vector<ScalarType, 4> get(void) const
+    {
+        return tcu::Vector<ScalarType, 4>(getAccess<ScalarType>()[0], getAccess<ScalarType>()[1],
+                                          getAccess<ScalarType>()[2], getAccess<ScalarType>()[3]);
+    }
 
-	template<typename ScalarType>
-	inline ScalarType* getAccess ();
+    template <typename ScalarType>
+    inline ScalarType *getAccess();
 
-	template<typename ScalarType>
-	inline const ScalarType* getAccess () const;
+    template <typename ScalarType>
+    inline const ScalarType *getAccess() const;
 } DE_WARN_UNUSED_TYPE;
 
-template<>
-inline float* GenericVec4::getAccess<float> ()
+template <>
+inline float *GenericVec4::getAccess<float>()
 {
-	return v.fData;
+    return v.fData;
 }
 
-template<>
-inline const float* GenericVec4::getAccess<float> () const
+template <>
+inline const float *GenericVec4::getAccess<float>() const
 {
-	return v.fData;
+    return v.fData;
 }
 
-template<>
-inline deUint32* GenericVec4::getAccess<deUint32> ()
+template <>
+inline uint32_t *GenericVec4::getAccess<uint32_t>()
 {
-	return v.uData;
+    return v.uData;
 }
 
-template<>
-inline const deUint32* GenericVec4::getAccess<deUint32> () const
+template <>
+inline const uint32_t *GenericVec4::getAccess<uint32_t>() const
 {
-	return v.uData;
+    return v.uData;
 }
 
-template<>
-inline deInt32* GenericVec4::getAccess<deInt32> ()
+template <>
+inline int32_t *GenericVec4::getAccess<int32_t>()
 {
-	return v.iData;
+    return v.iData;
 }
 
-template<>
-inline const deInt32* GenericVec4::getAccess<deInt32> () const
+template <>
+inline const int32_t *GenericVec4::getAccess<int32_t>() const
 {
-	return v.iData;
+    return v.iData;
 }
 
-} // rr
+} // namespace rr
 
 #endif // _RRGENERICVECTOR_HPP

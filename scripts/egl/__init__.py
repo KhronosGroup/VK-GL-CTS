@@ -31,13 +31,13 @@ import egl.library
 import egl.gtf_wrapper
 
 def gen ():
-	registry	= getEGLRegistry()
-	iface		= getDefaultInterface()
+    registry = getEGLRegistry()
+    iface = getDefaultInterface()
 
-	str_util.gen(iface)
-	call_log_wrapper.gen(iface)
-	proc_address_tests.gen()
-	enums.gen(iface)
-	func_ptrs.gen(iface)
-	library.gen(registry)
-	gtf_wrapper.gen(registry)
+    str_util.gen(iface)
+    call_log_wrapper.gen(iface)
+    proc_address_tests.gen()
+    enums.gen(iface)
+    func_ptrs.gen(iface)
+    library.gen(registry)
+    gtf_wrapper.gen(registry)

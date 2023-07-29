@@ -48,70 +48,70 @@ namespace glcts
 class TessellationShaderXFB : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TessellationShaderXFB(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderXFB(Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderXFB(void)
-	{
-	}
+    virtual ~TessellationShaderXFB(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	void				  initTest(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    void initTest(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private definitions */
-	typedef struct _test_descriptor
-	{
-		/* Allowed values:
-		 *
-		 * GL_GEOMETRY_SHADER_EXT / GL_TESS_CONTROL_SHADER_EXT / GL_TESS_EVALUATION_SHADER_EXT /
-		 * GL_VERTEX_SHADER.
-		 */
-		glw::GLenum expected_data_source;
-		int			expected_n_values;
-		bool		should_draw_call_fail;
-		bool		requires_pipeline;
-		glw::GLenum tf_mode;
+    /* Private definitions */
+    typedef struct _test_descriptor
+    {
+        /* Allowed values:
+         *
+         * GL_GEOMETRY_SHADER_EXT / GL_TESS_CONTROL_SHADER_EXT / GL_TESS_EVALUATION_SHADER_EXT /
+         * GL_VERTEX_SHADER.
+         */
+        glw::GLenum expected_data_source;
+        int expected_n_values;
+        bool should_draw_call_fail;
+        bool requires_pipeline;
+        glw::GLenum tf_mode;
 
-		bool use_gs;
-		bool use_tc;
-		bool use_te;
+        bool use_gs;
+        bool use_tc;
+        bool use_te;
 
-		_test_descriptor()
-		{
-			expected_data_source  = GL_NONE;
-			expected_n_values	 = 0;
-			should_draw_call_fail = false;
-			requires_pipeline	 = false;
-			tf_mode				  = GL_POINTS;
-			use_gs				  = false;
-			use_tc				  = false;
-			use_te				  = false;
-		}
-	} _test_descriptor;
+        _test_descriptor()
+        {
+            expected_data_source  = GL_NONE;
+            expected_n_values     = 0;
+            should_draw_call_fail = false;
+            requires_pipeline     = false;
+            tf_mode               = GL_POINTS;
+            use_gs                = false;
+            use_tc                = false;
+            use_te                = false;
+        }
+    } _test_descriptor;
 
-	/* Private variables */
-	glw::GLuint m_bo_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_gs_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_tc_id;
-	glw::GLuint m_te_id;
-	glw::GLuint m_vs_id;
+    /* Private variables */
+    glw::GLuint m_bo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_tc_id;
+    glw::GLuint m_te_id;
+    glw::GLuint m_vs_id;
 
-	glw::GLuint m_pipeline_id;
-	glw::GLuint m_fs_program_id;
-	glw::GLuint m_gs_program_id;
-	glw::GLuint m_tc_program_id;
-	glw::GLuint m_te_program_id;
-	glw::GLuint m_vs_program_id;
+    glw::GLuint m_pipeline_id;
+    glw::GLuint m_fs_program_id;
+    glw::GLuint m_gs_program_id;
+    glw::GLuint m_tc_program_id;
+    glw::GLuint m_te_program_id;
+    glw::GLuint m_vs_program_id;
 
-	glw::GLuint m_vao_id;
+    glw::GLuint m_vao_id;
 
-	/* Private methods */
-	glw::GLuint createSeparableProgram(glw::GLenum shader_type, unsigned int n_strings, const char* const* strings,
-									   unsigned int n_varyings, const char* const* varyings, bool should_succeed);
+    /* Private methods */
+    glw::GLuint createSeparableProgram(glw::GLenum shader_type, unsigned int n_strings, const char *const *strings,
+                                       unsigned int n_varyings, const char *const *varyings, bool should_succeed);
 };
 
 } // namespace glcts

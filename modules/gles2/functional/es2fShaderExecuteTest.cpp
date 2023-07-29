@@ -41,26 +41,26 @@ namespace gles2
 namespace Functional
 {
 
-ShaderExecuteTest::ShaderExecuteTest (Context& context, const char* groupName, const char* description)
-	: TestCaseGroup(context, groupName, description)
+ShaderExecuteTest::ShaderExecuteTest(Context &context, const char *groupName, const char *description)
+    : TestCaseGroup(context, groupName, description)
 {
 }
 
-ShaderExecuteTest::~ShaderExecuteTest (void)
+ShaderExecuteTest::~ShaderExecuteTest(void)
 {
 }
 
-void ShaderExecuteTest::init (void)
+void ShaderExecuteTest::init(void)
 {
-	// Test code.
-	gls::ShaderLibrary	shaderLibrary(m_testCtx, m_context.getRenderContext(), m_context.getContextInfo());
-	string				fileName	= string("shaders/") + getName() + ".test";
-	vector<TestNode*>	children	= shaderLibrary.loadShaderFile(fileName.c_str());
+    // Test code.
+    gls::ShaderLibrary shaderLibrary(m_testCtx, m_context.getRenderContext(), m_context.getContextInfo());
+    string fileName             = string("shaders/") + getName() + ".test";
+    vector<TestNode *> children = shaderLibrary.loadShaderFile(fileName.c_str());
 
-	for (int i = 0; i < (int)children.size(); i++)
-		addChild(children[i]);
+    for (int i = 0; i < (int)children.size(); i++)
+        addChild(children[i]);
 }
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp

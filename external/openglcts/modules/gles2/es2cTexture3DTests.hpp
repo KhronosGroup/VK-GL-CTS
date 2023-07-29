@@ -32,14 +32,14 @@ namespace es2cts
 class Texture3DTests : public deqp::TestCaseGroup
 {
 public:
-	Texture3DTests(deqp::Context& context);
-	~Texture3DTests(void);
-	void init(void);
+    Texture3DTests(deqp::Context &context);
+    ~Texture3DTests(void);
+    void init(void);
 
 private:
-	Texture3DTests(const Texture3DTests& other);
-	Texture3DTests& operator=(const Texture3DTests& other);
+    Texture3DTests(const Texture3DTests &other);
+    Texture3DTests &operator=(const Texture3DTests &other);
 };
-}
+} // namespace es2cts
 
 #endif // _ES2CTEXTURE3DTESTS_HPP

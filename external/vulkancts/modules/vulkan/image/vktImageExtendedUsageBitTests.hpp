@@ -32,9 +32,9 @@ namespace vkt
 namespace image
 {
 
-tcu::TestCaseGroup* createImageExtendedUsageBitTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageExtendedUsageBitTests(tcu::TestContext &testCtx);
 
-} // image
-} // vkt
+} // namespace image
+} // namespace vkt
 
 #endif // _VKTIMAGEEXTENDEDUSAGEBITTESTS_HPP

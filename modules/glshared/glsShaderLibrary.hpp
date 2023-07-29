@@ -38,21 +38,21 @@ namespace gls
 class ShaderLibrary
 {
 public:
-								ShaderLibrary		(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const glu::ContextInfo& contextInfo);
-								~ShaderLibrary		(void);
+    ShaderLibrary(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, const glu::ContextInfo &contextInfo);
+    ~ShaderLibrary(void);
 
-	std::vector<tcu::TestNode*>	loadShaderFile		(const char* fileName);
+    std::vector<tcu::TestNode *> loadShaderFile(const char *fileName);
 
 private:
-								ShaderLibrary		(const ShaderLibrary&);		// not allowed!
-	ShaderLibrary&				operator=			(const ShaderLibrary&);		// not allowed!
+    ShaderLibrary(const ShaderLibrary &);            // not allowed!
+    ShaderLibrary &operator=(const ShaderLibrary &); // not allowed!
 
-	tcu::TestContext&			m_testCtx;
-	glu::RenderContext&			m_renderCtx;
-	const glu::ContextInfo&		m_contextInfo;
+    tcu::TestContext &m_testCtx;
+    glu::RenderContext &m_renderCtx;
+    const glu::ContextInfo &m_contextInfo;
 };
 
-} // gls
-} // deqp
+} // namespace gls
+} // namespace deqp
 
 #endif // _GLSSHADERLIBRARY_HPP

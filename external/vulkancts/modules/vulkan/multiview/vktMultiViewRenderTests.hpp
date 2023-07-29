@@ -31,9 +31,9 @@ namespace vkt
 namespace MultiView
 {
 
-void multiViewRenderCreateTests (tcu::TestCaseGroup* group);
+void multiViewRenderCreateTests(tcu::TestCaseGroup *group);
 
-} // MultiView
-} // vkt
+} // namespace MultiView
+} // namespace vkt
 
 #endif // _VKTMULTIVIEWRENDERTESTS_HPP

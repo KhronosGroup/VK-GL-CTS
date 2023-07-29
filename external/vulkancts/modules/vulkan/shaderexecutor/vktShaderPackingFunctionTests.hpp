@@ -34,17 +34,17 @@ namespace shaderexecutor
 class ShaderPackingFunctionTests : public tcu::TestCaseGroup
 {
 public:
-									ShaderPackingFunctionTests				(tcu::TestContext& testCtx);
-	virtual							~ShaderPackingFunctionTests				(void);
+    ShaderPackingFunctionTests(tcu::TestContext &testCtx);
+    virtual ~ShaderPackingFunctionTests(void);
 
-	virtual void					init									(void);
+    virtual void init(void);
 
 private:
-									ShaderPackingFunctionTests				(const ShaderPackingFunctionTests&);		// not allowed!
-	ShaderPackingFunctionTests&		operator=								(const ShaderPackingFunctionTests&);		// not allowed!
+    ShaderPackingFunctionTests(const ShaderPackingFunctionTests &);            // not allowed!
+    ShaderPackingFunctionTests &operator=(const ShaderPackingFunctionTests &); // not allowed!
 };
 
-} // shaderexecutor
-} // vkt
+} // namespace shaderexecutor
+} // namespace vkt
 
 #endif // _VKTSHADERPACKINGFUNCTIONTESTS_HPP

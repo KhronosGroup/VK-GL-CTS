@@ -32,23 +32,22 @@ namespace de
 /*--------------------------------------------------------------------*//*!
  * \brief Construct mutual exclusion lock.
  * \param flags Mutex flags as described in deMutex.h.
- *				DE_MUTEX_RECURSIVE flag enables recursive mutex.
+ *                DE_MUTEX_RECURSIVE flag enables recursive mutex.
  *//*--------------------------------------------------------------------*/
-Mutex::Mutex (deUint32 flags)
-	: m_mutex(0)
+Mutex::Mutex(uint32_t flags) : m_mutex(0)
 {
-	deMutexAttributes attribs;
-	deMemset(&attribs, 0, sizeof(attribs));
-	attribs.flags = flags;
+    deMutexAttributes attribs;
+    deMemset(&attribs, 0, sizeof(attribs));
+    attribs.flags = flags;
 
-	m_mutex = deMutex_create(&attribs);
-	if (!m_mutex)
-		throw std::bad_alloc();
+    m_mutex = deMutex_create(&attribs);
+    if (!m_mutex)
+        throw std::bad_alloc();
 }
 
-Mutex::~Mutex (void)
+Mutex::~Mutex(void)
 {
-	deMutex_destroy(m_mutex);
+    deMutex_destroy(m_mutex);
 }
 
-} // de
+} // namespace de

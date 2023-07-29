@@ -32,22 +32,22 @@ namespace gles3
 namespace Performance
 {
 
-ShaderCompilerTests::ShaderCompilerTests (Context& context)
-	: TestCaseGroup(context, "compiler", "Shader Compiler Performance Tests")
+ShaderCompilerTests::ShaderCompilerTests(Context &context)
+    : TestCaseGroup(context, "compiler", "Shader Compiler Performance Tests")
 {
 }
 
-ShaderCompilerTests::~ShaderCompilerTests (void)
+ShaderCompilerTests::~ShaderCompilerTests(void)
 {
 }
 
-void ShaderCompilerTests::init (void)
+void ShaderCompilerTests::init(void)
 {
-	addShaderCompilationPerformanceCases(*this);
+    addShaderCompilationPerformanceCases(*this);
 
-	addChild(new ShaderOptimizationTests(m_context));
+    addChild(new ShaderOptimizationTests(m_context));
 }
 
-} // Performance
-} // gles3
-} // deqp
+} // namespace Performance
+} // namespace gles3
+} // namespace deqp

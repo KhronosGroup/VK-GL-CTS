@@ -20,44 +20,47 @@
 #
 #-------------------------------------------------------------------------
 
-import	sys
-from	argparse				import	ArgumentParser
-from	common					import	getChangedFiles, getAllProjectFiles
-from	check_include_guards	import	checkIncludeGuards
-from	check_encoding			import	checkEncoding
-from	check_whitespace		import	checkWhitespace
-from	check_license			import	checkLicense
-from	check_boms				import	checkBOMs
-from	check_file_size_limit	import checkFilesSizeLimit
+import    sys
+from    argparse                import    ArgumentParser
+
+from    run_clang_format        import    runClangFormatOnModifiedFiles
+from    common                    import    getChangedFiles, getAllProjectFiles
+from    check_include_guards    import    checkIncludeGuards
+from    check_encoding            import    checkEncoding
+from    check_whitespace        import    checkWhitespace
+from    check_license            import    checkLicense
+from    check_boms                import    checkBOMs
+from    check_file_size_limit    import    checkFilesSizeLimit
 
 if __name__ == "__main__":
-	parser = ArgumentParser()
-	parser.add_argument("-e",	"--only-errors",	action="store_true",	dest="onlyErrors",		default=False,	help="Print only on error")
-	parser.add_argument("-i",	"--only-changed",	action="store_true",	dest="useGitIndex",		default=False,	help="Check only modified files. Uses git.")
-	parser.add_argument("-b",	"--fix-bom",		action="store_true",	dest="fixBOMs",			default=False,	help="Attempt to fix BOMs")
+    parser = ArgumentParser()
+    parser.add_argument("-e", "--only-errors", action="store_true", dest="onlyErrors", default=False, help="Print only on error")
+    parser.add_argument("-i", "--only-changed", action="store_true", dest="useGitIndex", default=False, help="Check only modified files. Uses git.")
+    parser.add_argument("-b", "--fix-bom", action="store_true", dest="fixBOMs", default=False, help="Attempt to fix BOMs")
 
-	args = parser.parse_args()
+    args = parser.parse_args()
 
-	if args.useGitIndex:
-		files = getChangedFiles()
-	else:
-		files = getAllProjectFiles()
+    if args.useGitIndex:
+        files = getChangedFiles()
+    else:
+        files = getAllProjectFiles()
 
-	# filter out original Vulkan header sources
-	files = [f for f in files if "vulkancts/scripts/src" not in f.replace("\\", "/")]
+    # filter out original Vulkan header sources
+    files = [f for f in files if "vulkancts/scripts/src" not in f.replace("\\", "/")]
 
-	error = not all([
-		checkBOMs(files, args.fixBOMs),
-		checkEncoding(files),
-		checkWhitespace(files),
-		checkIncludeGuards(files),
-		checkLicense(files),
-		checkFilesSizeLimit (files, 100 * 1024 * 1024),
-		#todo checkRedundantIncludeGuards(files),
-		])
+    error = not all([
+        checkBOMs(files, args.fixBOMs),
+        checkEncoding(files),
+        checkWhitespace(files),
+        checkIncludeGuards(files),
+        checkLicense(files),
+        checkFilesSizeLimit (files, 100 * 1024 * 1024),
+        #todo checkRedundantIncludeGuards(files),
+        runClangFormatOnModifiedFiles(True)
+        ])
 
-	if	error:
-		print("One or more checks failed")
-		sys.exit(1)
-	if	not	args.onlyErrors:
-		print("All checks passed")
+    if    error:
+        print("One or more checks failed")
+        sys.exit(1)
+    if    not    args.onlyErrors:
+        print("All checks passed")

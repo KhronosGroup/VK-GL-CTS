@@ -34,174 +34,190 @@ namespace gles31
 namespace Functional
 {
 
-using std::vector;
 using std::string;
+using std::vector;
 using tcu::TestLog;
 using namespace gls::ShaderExecUtil;
 
 class UniformIntegerFunctionCase : public TestCase
 {
 public:
-								UniformIntegerFunctionCase				(Context& context, const char* description, int inputValue, glu::Precision precision, glu::ShaderType shaderType);
-								~UniformIntegerFunctionCase				(void);
+    UniformIntegerFunctionCase(Context &context, const char *description, int inputValue, glu::Precision precision,
+                               glu::ShaderType shaderType);
+    ~UniformIntegerFunctionCase(void);
 
-	void						init									(void);
-	void						deinit									(void);
-	IterateResult				iterate									(void);
-	virtual const char*			getFunctionName()						= 0;
-	virtual int					computeExpectedResult(deInt32 value)	= 0;
+    void init(void);
+    void deinit(void);
+    IterateResult iterate(void);
+    virtual const char *getFunctionName()            = 0;
+    virtual int computeExpectedResult(int32_t value) = 0;
 
 protected:
-								UniformIntegerFunctionCase				(const UniformIntegerFunctionCase& other);
-	UniformIntegerFunctionCase&	operator=								(const UniformIntegerFunctionCase& other);
+    UniformIntegerFunctionCase(const UniformIntegerFunctionCase &other);
+    UniformIntegerFunctionCase &operator=(const UniformIntegerFunctionCase &other);
 
 private:
-	ShaderSpec					m_spec;
-	glu::ShaderType				m_shaderType;
-	int							m_input;
-	int							m_value;
-	ShaderExecutor*				m_executor;
+    ShaderSpec m_spec;
+    glu::ShaderType m_shaderType;
+    int m_input;
+    int m_value;
+    ShaderExecutor *m_executor;
 };
 
-static std::string getCaseName (glu::Precision precision, glu::ShaderType shaderType);
+static std::string getCaseName(glu::Precision precision, glu::ShaderType shaderType);
 
-UniformIntegerFunctionCase::UniformIntegerFunctionCase(Context& context, const char* description, int inputValue, glu::Precision precision, glu::ShaderType shaderType)
-	: TestCase(context, getCaseName(precision, shaderType).c_str(), description)
-	, m_shaderType(shaderType)
-	, m_input(inputValue)
-	, m_value(0)
-	, m_executor(DE_NULL)
+UniformIntegerFunctionCase::UniformIntegerFunctionCase(Context &context, const char *description, int inputValue,
+                                                       glu::Precision precision, glu::ShaderType shaderType)
+    : TestCase(context, getCaseName(precision, shaderType).c_str(), description)
+    , m_shaderType(shaderType)
+    , m_input(inputValue)
+    , m_value(0)
+    , m_executor(DE_NULL)
 {
-	m_spec.version = glu::GLSL_VERSION_310_ES;
+    m_spec.version = glu::GLSL_VERSION_310_ES;
 
-	std::ostringstream oss;
-	glu::VarType varType(glu::TYPE_INT, precision);
-	oss << "uniform " << glu::declare(varType, "value", 0) << ";\n";
-	m_spec.globalDeclarations = oss.str();
-	m_spec.outputs.push_back(Symbol("result", glu::VarType(glu::TYPE_INT, glu::PRECISION_LOWP)));
-	m_spec.outputs.push_back(Symbol("comparison", glu::VarType(glu::TYPE_BOOL, glu::PRECISION_LAST)));
+    std::ostringstream oss;
+    glu::VarType varType(glu::TYPE_INT, precision);
+    oss << "uniform " << glu::declare(varType, "value", 0) << ";\n";
+    m_spec.globalDeclarations = oss.str();
+    m_spec.outputs.push_back(Symbol("result", glu::VarType(glu::TYPE_INT, glu::PRECISION_LOWP)));
+    m_spec.outputs.push_back(Symbol("comparison", glu::VarType(glu::TYPE_BOOL, glu::PRECISION_LAST)));
 }
 
 UniformIntegerFunctionCase::~UniformIntegerFunctionCase(void)
 {
-	UniformIntegerFunctionCase::deinit();
+    UniformIntegerFunctionCase::deinit();
 }
 
 void UniformIntegerFunctionCase::deinit(void)
 {
-	delete m_executor;
-	m_executor = DE_NULL;
+    delete m_executor;
+    m_executor = DE_NULL;
 }
 
 void UniformIntegerFunctionCase::init(void)
 {
-	std::ostringstream oss;
-	oss <<
-		"result = " << getFunctionName() << "(value);\n"
-		"comparison = (" << getFunctionName() << "(value) == " << computeExpectedResult(m_input) << ");\n";
-	m_spec.source = oss.str();
+    std::ostringstream oss;
+    oss << "result = " << getFunctionName()
+        << "(value);\n"
+           "comparison = ("
+        << getFunctionName() << "(value) == " << computeExpectedResult(m_input) << ");\n";
+    m_spec.source = oss.str();
 
-	DE_ASSERT(!m_executor);
-	m_executor = createExecutor(m_context.getRenderContext(), m_shaderType, m_spec);
-	m_testCtx.getLog() << m_executor;
+    DE_ASSERT(!m_executor);
+    m_executor = createExecutor(m_context.getRenderContext(), m_shaderType, m_spec);
+    m_testCtx.getLog() << m_executor;
 
-	if (!m_executor->isOk())
-		throw tcu::TestError("Compile failed");
+    if (!m_executor->isOk())
+        throw tcu::TestError("Compile failed");
 
-	m_value = m_context.getRenderContext().getFunctions().getUniformLocation(m_executor->getProgram(), "value");
+    m_value = m_context.getRenderContext().getFunctions().getUniformLocation(m_executor->getProgram(), "value");
 }
 
 tcu::TestNode::IterateResult UniformIntegerFunctionCase::iterate(void)
 {
-	deInt32					result;
-	deBool					comparison;
-	vector<void*>			outputPointers	(2);
+    int32_t result;
+    bool comparison;
+    vector<void *> outputPointers(2);
 
-	outputPointers[0]= &result;
-	outputPointers[1] = &comparison;
+    outputPointers[0] = &result;
+    outputPointers[1] = &comparison;
 
-	m_executor->useProgram();
-	m_context.getRenderContext().getFunctions().uniform1i(m_value, m_input);
-	m_executor->execute(1, DE_NULL, &outputPointers[0]);
+    m_executor->useProgram();
+    m_context.getRenderContext().getFunctions().uniform1i(m_value, m_input);
+    m_executor->execute(1, DE_NULL, &outputPointers[0]);
 
-	int expectedResult = computeExpectedResult(m_input);
-	if (result != expectedResult) {
-		m_testCtx.getLog() << TestLog::Message << "ERROR: comparison failed for " << getFunctionName() << "(" << m_input << ") == " << expectedResult << TestLog::EndMessage;
-		m_testCtx.getLog() << TestLog::Message << "input: " << m_input << TestLog::EndMessage;
-		m_testCtx.getLog() << TestLog::Message << "result: " << result << TestLog::EndMessage;
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Result comparison failed");
-		return STOP;
-	} else if (!comparison) {
-		m_testCtx.getLog() << TestLog::Message << "ERROR: result is as expected, but not when use in condition statement (" << getFunctionName() << "(" << m_input << ") == " << expectedResult << ") == true" << TestLog::EndMessage;
-		m_testCtx.getLog() << TestLog::Message << "input:" << m_input << TestLog::EndMessage;
-		m_testCtx.getLog() << TestLog::Message << "result: " << result << TestLog::EndMessage;
-		m_testCtx.getLog() << TestLog::Message << "comparison: " << comparison << TestLog::EndMessage;
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Result comparison failed");
-		return STOP;
-	}
-	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	return STOP;
+    int expectedResult = computeExpectedResult(m_input);
+    if (result != expectedResult)
+    {
+        m_testCtx.getLog() << TestLog::Message << "ERROR: comparison failed for " << getFunctionName() << "(" << m_input
+                           << ") == " << expectedResult << TestLog::EndMessage;
+        m_testCtx.getLog() << TestLog::Message << "input: " << m_input << TestLog::EndMessage;
+        m_testCtx.getLog() << TestLog::Message << "result: " << result << TestLog::EndMessage;
+        m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Result comparison failed");
+        return STOP;
+    }
+    else if (!comparison)
+    {
+        m_testCtx.getLog() << TestLog::Message
+                           << "ERROR: result is as expected, but not when use in condition statement ("
+                           << getFunctionName() << "(" << m_input << ") == " << expectedResult << ") == true"
+                           << TestLog::EndMessage;
+        m_testCtx.getLog() << TestLog::Message << "input:" << m_input << TestLog::EndMessage;
+        m_testCtx.getLog() << TestLog::Message << "result: " << result << TestLog::EndMessage;
+        m_testCtx.getLog() << TestLog::Message << "comparison: " << comparison << TestLog::EndMessage;
+        m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Result comparison failed");
+        return STOP;
+    }
+    m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+    return STOP;
 }
 
-static std::string getCaseName (glu::Precision precision, glu::ShaderType shaderType)
+static std::string getCaseName(glu::Precision precision, glu::ShaderType shaderType)
 {
-	return string(getPrecisionName(precision)) + getShaderTypePostfix(shaderType);
+    return string(getPrecisionName(precision)) + getShaderTypePostfix(shaderType);
 }
 
-class FindMSBEdgeCase : public UniformIntegerFunctionCase {
+class FindMSBEdgeCase : public UniformIntegerFunctionCase
+{
 public:
-	FindMSBEdgeCase(Context& context, int inputValue, glu::Precision precision, glu::ShaderType shaderType)
-		: UniformIntegerFunctionCase(context, "findMSB", inputValue, precision, shaderType)
-	{
-	}
+    FindMSBEdgeCase(Context &context, int inputValue, glu::Precision precision, glu::ShaderType shaderType)
+        : UniformIntegerFunctionCase(context, "findMSB", inputValue, precision, shaderType)
+    {
+    }
 
 protected:
-	const char* getFunctionName() {
-		return "findMSB";
-	}
+    const char *getFunctionName()
+    {
+        return "findMSB";
+    }
 
-	int computeExpectedResult(deInt32 input) {
-		return de::findMSB(input);
-	}
+    int computeExpectedResult(int32_t input)
+    {
+        return de::findMSB(input);
+    }
 };
 
-class FindLSBEdgeCase : public UniformIntegerFunctionCase {
+class FindLSBEdgeCase : public UniformIntegerFunctionCase
+{
 public:
-	FindLSBEdgeCase(Context& context, int inputValue, glu::Precision precision, glu::ShaderType shaderType)
-		: UniformIntegerFunctionCase(context, "findLSB", inputValue, precision, shaderType)
-	{
-	}
+    FindLSBEdgeCase(Context &context, int inputValue, glu::Precision precision, glu::ShaderType shaderType)
+        : UniformIntegerFunctionCase(context, "findLSB", inputValue, precision, shaderType)
+    {
+    }
 
 protected:
-	const char* getFunctionName() {
-		return "findLSB";
-	}
+    const char *getFunctionName()
+    {
+        return "findLSB";
+    }
 
-	int computeExpectedResult(deInt32 input) {
-		return de::findLSB(input);
-	}
+    int computeExpectedResult(int32_t input)
+    {
+        return de::findLSB(input);
+    }
 };
 
-
-template<class TestClass>
-static void addFunctionCases (TestCaseGroup* parent, const char* functionName, int input)
+template <class TestClass>
+static void addFunctionCases(TestCaseGroup *parent, const char *functionName, int input)
 {
-	tcu::TestCaseGroup* group = new tcu::TestCaseGroup(parent->getTestContext(), functionName, functionName);
-	parent->addChild(group);
-	for (int prec = glu::PRECISION_LOWP; prec <= glu::PRECISION_HIGHP; prec++)
-	{
-		for (int shaderTypeNdx = 0; shaderTypeNdx < glu::SHADERTYPE_LAST; shaderTypeNdx++)
-		{
-			if (executorSupported(glu::ShaderType(shaderTypeNdx)))
-			{
-				group->addChild(new TestClass(parent->getContext(), input, glu::Precision(prec), glu::ShaderType(shaderTypeNdx)));
-			}
-		}
-	}
+    tcu::TestCaseGroup *group = new tcu::TestCaseGroup(parent->getTestContext(), functionName, functionName);
+    parent->addChild(group);
+    for (int prec = glu::PRECISION_LOWP; prec <= glu::PRECISION_HIGHP; prec++)
+    {
+        for (int shaderTypeNdx = 0; shaderTypeNdx < glu::SHADERTYPE_LAST; shaderTypeNdx++)
+        {
+            if (executorSupported(glu::ShaderType(shaderTypeNdx)))
+            {
+                group->addChild(
+                    new TestClass(parent->getContext(), input, glu::Precision(prec), glu::ShaderType(shaderTypeNdx)));
+            }
+        }
+    }
 }
 
-ShaderUniformIntegerFunctionTests::ShaderUniformIntegerFunctionTests(Context& context)
-	: TestCaseGroup(context, "uniform", "Function on uniform")
+ShaderUniformIntegerFunctionTests::ShaderUniformIntegerFunctionTests(Context &context)
+    : TestCaseGroup(context, "uniform", "Function on uniform")
 {
 }
 
@@ -210,12 +226,12 @@ ShaderUniformIntegerFunctionTests::~ShaderUniformIntegerFunctionTests()
 }
 void ShaderUniformIntegerFunctionTests::init()
 {
-	addFunctionCases<FindMSBEdgeCase>(this, "findMSBZero", 0);
-	addFunctionCases<FindMSBEdgeCase>(this, "findMSBMinusOne", -1);
-	addFunctionCases<FindLSBEdgeCase>(this, "findLSBZero", 0);
-	addFunctionCases<FindLSBEdgeCase>(this, "findLSBMinusOne", -1);
+    addFunctionCases<FindMSBEdgeCase>(this, "findMSBZero", 0);
+    addFunctionCases<FindMSBEdgeCase>(this, "findMSBMinusOne", -1);
+    addFunctionCases<FindLSBEdgeCase>(this, "findLSBZero", 0);
+    addFunctionCases<FindLSBEdgeCase>(this, "findLSBMinusOne", -1);
 }
 
-}
-}
-}
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp

@@ -28,45 +28,45 @@ from . common import *
 from . config import *
 
 def initBuildDir (config, generator):
-	cfgArgs = []
+    cfgArgs = []
 
-	# Build base configuration args
-	cfgArgs += config.getArgs()
+    # Build base configuration args
+    cfgArgs += config.getArgs()
 
-	# Generator args
-	cfgArgs += generator.getGenerateArgs(config.getBuildType())
+    # Generator args
+    cfgArgs += generator.getGenerateArgs(config.getBuildType())
 
-	if not os.path.exists(config.buildDir):
-		os.makedirs(config.buildDir)
+    if not os.path.exists(config.buildDir):
+        os.makedirs(config.buildDir)
 
-	pushWorkingDir(config.getBuildDir())
+    pushWorkingDir(config.getBuildDir())
 
-	try:
-		execute([config.getCMakePath(), config.getSrcPath()] + cfgArgs)
-	finally:
-		popWorkingDir()
+    try:
+        execute([config.getCMakePath(), config.getSrcPath()] + cfgArgs)
+    finally:
+        popWorkingDir()
 
 def build (config, generator, targets = None):
-	if os.path.exists(config.buildDir):
-		try:
-			initBuildDir(config, generator)
-		except Exception as e:
-			print(e)
-			print("WARNING: Using existing build directory failed; re-creating build directory")
-			shutil.rmtree(config.buildDir)
-			initBuildDir(config, generator)
-	else:
-		initBuildDir(config, generator)
+    if os.path.exists(config.buildDir):
+        try:
+            initBuildDir(config, generator)
+        except Exception as e:
+            print(e)
+            print("WARNING: Using existing build directory failed; re-creating build directory")
+            shutil.rmtree(config.buildDir)
+            initBuildDir(config, generator)
+    else:
+        initBuildDir(config, generator)
 
-	baseCmd		= [config.getCMakePath(), '--build', '.']
-	buildArgs	= generator.getBuildArgs(config.getBuildType())
+    baseCmd = [config.getCMakePath(), '--build', '.']
+    buildArgs = generator.getBuildArgs(config.getBuildType())
 
-	pushWorkingDir(config.getBuildDir())
+    pushWorkingDir(config.getBuildDir())
 
-	if targets == None:
-		execute(baseCmd + buildArgs)
-	else:
-		for target in targets:
-			execute(baseCmd + ['--target', target] + buildArgs)
+    if targets == None:
+        execute(baseCmd + buildArgs)
+    else:
+        for target in targets:
+            execute(baseCmd + ['--target', target] + buildArgs)
 
-	popWorkingDir()
+    popWorkingDir()

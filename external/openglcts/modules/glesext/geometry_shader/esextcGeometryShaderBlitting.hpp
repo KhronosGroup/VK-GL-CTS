@@ -33,30 +33,30 @@ namespace glcts
 class GeometryShaderBlitting : public TestCaseBase
 {
 public:
-	/* Public methods */
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    /* Public methods */
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 protected:
-	GeometryShaderBlitting(Context& context, const ExtParameters& extParams, const char* name, const char* description);
+    GeometryShaderBlitting(Context &context, const ExtParameters &extParams, const char *name, const char *description);
 
-	virtual ~GeometryShaderBlitting(void)
-	{
-	}
+    virtual ~GeometryShaderBlitting(void)
+    {
+    }
 
-	/* Protected abstract methods */
-	virtual void setUpFramebuffersForRendering(glw::GLuint fbo_draw_id, glw::GLuint fbo_read_id, glw::GLint to_draw,
-											   glw::GLint to_read) = 0;
+    /* Protected abstract methods */
+    virtual void setUpFramebuffersForRendering(glw::GLuint fbo_draw_id, glw::GLuint fbo_read_id, glw::GLint to_draw,
+                                               glw::GLint to_read) = 0;
 
 private:
-	/* Private variables */
-	glw::GLenum m_draw_fbo_completeness;
-	glw::GLenum m_read_fbo_completeness;
-	glw::GLuint m_fbo_draw_id;
-	glw::GLuint m_fbo_read_id;
-	glw::GLuint m_to_draw;
-	glw::GLuint m_to_read;
-	glw::GLuint m_vao_id;
+    /* Private variables */
+    glw::GLenum m_draw_fbo_completeness;
+    glw::GLenum m_read_fbo_completeness;
+    glw::GLuint m_fbo_draw_id;
+    glw::GLuint m_fbo_read_id;
+    glw::GLuint m_to_draw;
+    glw::GLuint m_to_read;
+    glw::GLuint m_vao_id;
 };
 
 /**
@@ -94,18 +94,18 @@ private:
 class GeometryShaderBlittingLayeredToNonLayered : public GeometryShaderBlitting
 {
 public:
-	/* Public methods */
-	GeometryShaderBlittingLayeredToNonLayered(Context& context, const ExtParameters& extParams, const char* name,
-											  const char* description);
+    /* Public methods */
+    GeometryShaderBlittingLayeredToNonLayered(Context &context, const ExtParameters &extParams, const char *name,
+                                              const char *description);
 
-	virtual ~GeometryShaderBlittingLayeredToNonLayered(void)
-	{
-	}
+    virtual ~GeometryShaderBlittingLayeredToNonLayered(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	void setUpFramebuffersForRendering(glw::GLuint fbo_draw_id, glw::GLuint fbo_read_id, glw::GLint to_draw,
-									   glw::GLint to_read);
+    /* Protected methods */
+    void setUpFramebuffersForRendering(glw::GLuint fbo_draw_id, glw::GLuint fbo_read_id, glw::GLint to_draw,
+                                       glw::GLint to_read);
 };
 
 /**
@@ -127,18 +127,18 @@ protected:
 class GeometryShaderBlittingNonLayeredToLayered : public GeometryShaderBlitting
 {
 public:
-	/* Public methods */
-	GeometryShaderBlittingNonLayeredToLayered(Context& context, const ExtParameters& extParams, const char* name,
-											  const char* description);
+    /* Public methods */
+    GeometryShaderBlittingNonLayeredToLayered(Context &context, const ExtParameters &extParams, const char *name,
+                                              const char *description);
 
-	virtual ~GeometryShaderBlittingNonLayeredToLayered(void)
-	{
-	}
+    virtual ~GeometryShaderBlittingNonLayeredToLayered(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	void setUpFramebuffersForRendering(glw::GLuint fbo_draw_id, glw::GLuint fbo_read_id, glw::GLint to_draw,
-									   glw::GLint to_read);
+    /* Protected methods */
+    void setUpFramebuffersForRendering(glw::GLuint fbo_draw_id, glw::GLuint fbo_read_id, glw::GLint to_draw,
+                                       glw::GLint to_read);
 };
 
 /**
@@ -157,18 +157,18 @@ protected:
 class GeometryShaderBlittingLayeredToLayered : public GeometryShaderBlitting
 {
 public:
-	/* Public methods */
-	GeometryShaderBlittingLayeredToLayered(Context& context, const ExtParameters& extParams, const char* name,
-										   const char* description);
+    /* Public methods */
+    GeometryShaderBlittingLayeredToLayered(Context &context, const ExtParameters &extParams, const char *name,
+                                           const char *description);
 
-	virtual ~GeometryShaderBlittingLayeredToLayered(void)
-	{
-	}
+    virtual ~GeometryShaderBlittingLayeredToLayered(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	void setUpFramebuffersForRendering(glw::GLuint fbo_draw_id, glw::GLuint fbo_read_id, glw::GLint to_draw,
-									   glw::GLint to_read);
+    /* Protected methods */
+    void setUpFramebuffersForRendering(glw::GLuint fbo_draw_id, glw::GLuint fbo_read_id, glw::GLint to_draw,
+                                       glw::GLint to_read);
 };
 
 } /* namespace glcts */

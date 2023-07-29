@@ -140,133 +140,133 @@ namespace glcts
 class FormatInfo
 {
 public:
-	/* Public methods */
-	FormatInfo();
-	FormatInfo(glw::GLenum internalFormat, glw::GLuint offsetAlignment);
+    /* Public methods */
+    FormatInfo();
+    FormatInfo(glw::GLenum internalFormat, glw::GLuint offsetAlignment);
 
-	glw::GLuint get_aligned_size()
-	{
-		return m_aligned_size;
-	}
-	glw::GLuint get_not_aligned_size()
-	{
-		return m_not_aligned_size;
-	}
-	glw::GLuint get_ssbo_value_size()
-	{
-		return m_ssbo_value_size;
-	}
-	glw::GLenum get_internal_format()
-	{
-		return m_internal_format;
-	}
-	glw::GLuint get_n_components()
-	{
-		return m_n_components;
-	}
-	glw::GLenum get_input_type()
-	{
-		return m_input_type;
-	}
-	glw::GLenum get_output_type()
-	{
-		return m_output_type;
-	}
-	glw::GLboolean get_is_image_supported()
-	{
-		return m_is_image_supported;
-	}
-	std::string get_image_format_name()
-	{
-		return m_image_format_name;
-	}
-	std::string get_image_type_name()
-	{
-		return m_image_type_name;
-	}
-	std::string get_sampler_type_name()
-	{
-		return m_sampler_type_name;
-	}
-	std::string get_output_type_name()
-	{
-		return m_output_type_name;
-	}
-	std::string get_value_selector()
-	{
-		return m_value_selector;
-	}
+    glw::GLuint get_aligned_size()
+    {
+        return m_aligned_size;
+    }
+    glw::GLuint get_not_aligned_size()
+    {
+        return m_not_aligned_size;
+    }
+    glw::GLuint get_ssbo_value_size()
+    {
+        return m_ssbo_value_size;
+    }
+    glw::GLenum get_internal_format()
+    {
+        return m_internal_format;
+    }
+    glw::GLuint get_n_components()
+    {
+        return m_n_components;
+    }
+    glw::GLenum get_input_type()
+    {
+        return m_input_type;
+    }
+    glw::GLenum get_output_type()
+    {
+        return m_output_type;
+    }
+    glw::GLboolean get_is_image_supported()
+    {
+        return m_is_image_supported;
+    }
+    std::string get_image_format_name()
+    {
+        return m_image_format_name;
+    }
+    std::string get_image_type_name()
+    {
+        return m_image_type_name;
+    }
+    std::string get_sampler_type_name()
+    {
+        return m_sampler_type_name;
+    }
+    std::string get_output_type_name()
+    {
+        return m_output_type_name;
+    }
+    std::string get_value_selector()
+    {
+        return m_value_selector;
+    }
 
 private:
-	/* Private methods */
-	glw::GLuint countAlignedSize(glw::GLuint offsetAlignment, glw::GLuint totalSize);
-	void configure(void);
+    /* Private methods */
+    glw::GLuint countAlignedSize(glw::GLuint offsetAlignment, glw::GLuint totalSize);
+    void configure(void);
 
-	/* Private Variables */
-	glw::GLuint	m_aligned_size;
-	glw::GLuint	m_not_aligned_size;
-	glw::GLuint	m_ssbo_value_size;
-	glw::GLenum	m_internal_format;
-	glw::GLuint	m_offset_alignment;
-	glw::GLuint	m_n_components;
-	glw::GLenum	m_input_type;
-	glw::GLenum	m_output_type;
-	glw::GLboolean m_is_image_supported;
-	std::string	m_image_format_name;
-	std::string	m_image_type_name;
-	std::string	m_sampler_type_name;
-	std::string	m_output_type_name;
-	std::string	m_value_selector;
+    /* Private Variables */
+    glw::GLuint m_aligned_size;
+    glw::GLuint m_not_aligned_size;
+    glw::GLuint m_ssbo_value_size;
+    glw::GLenum m_internal_format;
+    glw::GLuint m_offset_alignment;
+    glw::GLuint m_n_components;
+    glw::GLenum m_input_type;
+    glw::GLenum m_output_type;
+    glw::GLboolean m_is_image_supported;
+    std::string m_image_format_name;
+    std::string m_image_type_name;
+    std::string m_sampler_type_name;
+    std::string m_output_type_name;
+    std::string m_value_selector;
 };
 
 /* Test Case Class */
 class TextureBufferTextureBufferRange : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureBufferTextureBufferRange(Context& context, const ExtParameters& extParams, const char* name,
-									const char* description);
+    /* Public methods */
+    TextureBufferTextureBufferRange(Context &context, const ExtParameters &extParams, const char *name,
+                                    const char *description);
 
-	virtual ~TextureBufferTextureBufferRange()
-	{
-	}
+    virtual ~TextureBufferTextureBufferRange()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	virtual void initTest(void);
-	std::string getComputeShaderCode(FormatInfo& info) const;
-	std::string getFragmentShaderCode(FormatInfo& info) const;
-	std::string getVertexShaderCode(FormatInfo& info) const;
+    /* Private methods */
+    virtual void initTest(void);
+    std::string getComputeShaderCode(FormatInfo &info) const;
+    std::string getFragmentShaderCode(FormatInfo &info) const;
+    std::string getVertexShaderCode(FormatInfo &info) const;
 
-	void fillInputData(glw::GLubyte* buffer, glw::GLuint offset, FormatInfo& info);
-	void fillOutputData(glw::GLubyte* buffer, FormatInfo& info);
-	void cleanIteration();
+    void fillInputData(glw::GLubyte *buffer, glw::GLuint offset, FormatInfo &info);
+    void fillOutputData(glw::GLubyte *buffer, FormatInfo &info);
+    void cleanIteration();
 
-	bool checkResult(FormatInfo& info, const char* phase, bool transformFeedback);
-	void logError(const char* phase, const char* internalFormat, glw::GLuint component, const char* exptectedValue,
-				  const char* resultValue);
+    bool checkResult(FormatInfo &info, const char *phase, bool transformFeedback);
+    void logError(const char *phase, const char *internalFormat, glw::GLuint component, const char *exptectedValue,
+                  const char *resultValue);
 
-	/* Variables for general usage */
-	glw::GLuint m_cs_id;
-	glw::GLuint m_cs_po_id;
-	glw::GLuint m_ssbo_size_id;
-	glw::GLuint m_ssbo_value_id;
-	glw::GLuint m_tbo_id;
-	glw::GLuint m_tbo_tex_id;
-	glw::GLint  m_texture_buffer_offset_alignment;
-	glw::GLuint m_vao_id;
+    /* Variables for general usage */
+    glw::GLuint m_cs_id;
+    glw::GLuint m_cs_po_id;
+    glw::GLuint m_ssbo_size_id;
+    glw::GLuint m_ssbo_value_id;
+    glw::GLuint m_tbo_id;
+    glw::GLuint m_tbo_tex_id;
+    glw::GLint m_texture_buffer_offset_alignment;
+    glw::GLuint m_vao_id;
 
-	glw::GLuint m_vs_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_vsfs_po_id;
-	glw::GLuint m_tf_size_buffer_id;
-	glw::GLuint m_tf_value_buffer_id;
+    glw::GLuint m_vs_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_vsfs_po_id;
+    glw::GLuint m_tf_size_buffer_id;
+    glw::GLuint m_tf_value_buffer_id;
 
-	std::map<glw::GLenum, FormatInfo> m_configurations;
-	glw::GLuint m_buffer_total_size;
+    std::map<glw::GLenum, FormatInfo> m_configurations;
+    glw::GLuint m_buffer_total_size;
 };
 
 } // namespace glcts

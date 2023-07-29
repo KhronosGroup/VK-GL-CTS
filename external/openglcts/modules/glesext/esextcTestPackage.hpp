@@ -41,18 +41,18 @@ namespace esextcts
 class ESEXTTestPackage : public deqp::TestPackage
 {
 public:
-	ESEXTTestPackage(tcu::TestContext& testCtx, const char* packageName);
-	~ESEXTTestPackage(void);
+    ESEXTTestPackage(tcu::TestContext &testCtx, const char *packageName);
+    ~ESEXTTestPackage(void);
 
-	void init(void);
+    void init(void);
 
-	virtual tcu::TestCaseExecutor* createExecutor(void) const;
+    virtual tcu::TestCaseExecutor *createExecutor(void) const;
 
 private:
-	ESEXTTestPackage(const ESEXTTestPackage& other);
-	ESEXTTestPackage& operator=(const ESEXTTestPackage& other);
+    ESEXTTestPackage(const ESEXTTestPackage &other);
+    ESEXTTestPackage &operator=(const ESEXTTestPackage &other);
 };
 
-} // es31cts
+} // namespace esextcts
 
 #endif // _ESEXTCTESTPACKAGE_HPP

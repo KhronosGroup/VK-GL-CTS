@@ -34,28 +34,28 @@ namespace lnx
 {
 enum
 {
-	DEFAULT_WINDOW_WIDTH	= 400,
-	DEFAULT_WINDOW_HEIGHT	= 300
+    DEFAULT_WINDOW_WIDTH  = 400,
+    DEFAULT_WINDOW_HEIGHT = 300
 };
 
 class EventState
 {
 public:
-				EventState	(void);
-	virtual		~EventState	(void);
-	void		setQuitFlag	(bool quit);
-	bool		getQuitFlag	(void);
+    EventState(void);
+    virtual ~EventState(void);
+    void setQuitFlag(bool quit);
+    bool getQuitFlag(void);
 
-	protected:
-	de::Mutex	m_mutex;
-	bool		m_quit;
+protected:
+    de::Mutex m_mutex;
+    bool m_quit;
 
 private:
-				EventState	(const EventState&);
-	EventState&	operator=	(const EventState&);
+    EventState(const EventState &);
+    EventState &operator=(const EventState &);
 };
 
-} // lnx
-} // tcu
+} // namespace lnx
+} // namespace tcu
 
 #endif // _TCULNX_HPP

@@ -39,120 +39,160 @@ namespace tcu
 {
 
 //! Kill program. Called when a fatal error occurs.
-void	die			(const char* format, ...) DE_PRINTF_FUNC_ATTR(1, 2);
+void die(const char *format, ...) DE_PRINTF_FUNC_ATTR(1, 2);
 
 //! Print to debug console.
-void	print		(const char* format, ...) DE_PRINTF_FUNC_ATTR(1, 2);
+void print(const char *format, ...) DE_PRINTF_FUNC_ATTR(1, 2);
 
 //! Print nonfatal error.
-void	printError	(const char* format, ...) DE_PRINTF_FUNC_ATTR(1, 2);
+void printError(const char *format, ...) DE_PRINTF_FUNC_ATTR(1, 2);
 
 //! Base exception class for dEQP test framework.
 class Exception : public std::runtime_error
 {
 public:
-						Exception			(const char* message, const char* expr, const char* file, int line);
-						Exception			(const std::string& message);
-	virtual				~Exception			(void) throw() {}
+    Exception(const char *message, const char *expr, const char *file, int line);
+    Exception(const std::string &message);
+    virtual ~Exception(void) throw()
+    {
+    }
 
-	const char*			getMessage			(void) const { return m_message.what(); }
+    const char *getMessage(void) const
+    {
+        return m_message.what();
+    }
 
 private:
-	// std::runtime_error is used here as an immutable ref-counted string.
-	// This allows the copy constructor in the class to be noexcept.
-	const std::runtime_error m_message;
+    // std::runtime_error is used here as an immutable ref-counted string.
+    // This allows the copy constructor in the class to be noexcept.
+    const std::runtime_error m_message;
 };
 
 //! Base exception class for test exceptions that affect test result
 class TestException : public Exception
 {
 public:
-						TestException		(const char* message, const char* expr, const char* file, int line, qpTestResult result);
-						TestException		(const std::string& message, qpTestResult result);
-	virtual				~TestException		(void) throw() {}
+    TestException(const char *message, const char *expr, const char *file, int line, qpTestResult result);
+    TestException(const std::string &message, qpTestResult result);
+    virtual ~TestException(void) throw()
+    {
+    }
 
-	qpTestResult		getTestResult		(void) const { return m_result; }
-	virtual bool		isFatal				(void) const { return false; }
+    qpTestResult getTestResult(void) const
+    {
+        return m_result;
+    }
+    virtual bool isFatal(void) const
+    {
+        return false;
+    }
 
 private:
-	const qpTestResult	m_result;
+    const qpTestResult m_result;
 };
 
 //! Exception for test errors.
 class TestError : public TestException
 {
 public:
-					TestError			(const char* message, const char* expr, const char* file, int line);
-					TestError			(const std::string& message, const char* expr, const char* file, int line);
-					TestError			(const std::string& message);
-	virtual			~TestError			(void) throw() {}
+    TestError(const char *message, const char *expr, const char *file, int line);
+    TestError(const std::string &message, const char *expr, const char *file, int line);
+    TestError(const std::string &message);
+    virtual ~TestError(void) throw()
+    {
+    }
 };
 
 //! Exception for internal errors.
 class InternalError : public TestException
 {
 public:
-					InternalError		(const char* message, const char* expr, const char* file, int line);
-					InternalError		(const std::string& message, const char* expr, const char* file, int line);
-					InternalError		(const std::string& message);
-	virtual			~InternalError		(void) throw() {}
+    InternalError(const char *message, const char *expr, const char *file, int line);
+    InternalError(const std::string &message, const char *expr, const char *file, int line);
+    InternalError(const std::string &message);
+    virtual ~InternalError(void) throw()
+    {
+    }
 };
 
 //! Resource error. Tester will terminate if thrown out of test case.
 class ResourceError : public TestException
 {
 public:
-					ResourceError		(const char* message, const char* expr, const char* file, int line);
-					ResourceError		(const std::string& message);
-	virtual			~ResourceError		(void) throw() {}
+    ResourceError(const char *message, const char *expr, const char *file, int line);
+    ResourceError(const std::string &message);
+    virtual ~ResourceError(void) throw()
+    {
+    }
 
-	virtual bool	isFatal				(void) const { return true; }
+    virtual bool isFatal(void) const
+    {
+        return true;
+    }
 };
 
 //! Not supported error.
 class NotSupportedError : public TestException
 {
 public:
-					NotSupportedError	(const char* message, const char* expr, const char* file, int line);
-					NotSupportedError	(const std::string& message, const char* expr, const char* file, int line);
-					NotSupportedError	(const std::string& message);
-	virtual			~NotSupportedError	(void) throw() {}
+    NotSupportedError(const char *message, const char *expr, const char *file, int line);
+    NotSupportedError(const std::string &message, const char *expr, const char *file, int line);
+    NotSupportedError(const std::string &message);
+    virtual ~NotSupportedError(void) throw()
+    {
+    }
 };
 
 //! Quality warning.
 class QualityWarning : public TestException
 {
 public:
-					QualityWarning	(const char* message, const char* expr, const char* file, int line);
-					QualityWarning	(const std::string& message, const char* expr, const char* file, int line);
-					QualityWarning	(const std::string& message);
-	virtual			~QualityWarning	(void) throw() {}
+    QualityWarning(const char *message, const char *expr, const char *file, int line);
+    QualityWarning(const std::string &message, const char *expr, const char *file, int line);
+    QualityWarning(const std::string &message);
+    virtual ~QualityWarning(void) throw()
+    {
+    }
 };
 
-} // tcu
+} // namespace tcu
 
-#define TCU_THROW_EXPR(ERRCLASS, MSG, EXPR)						\
-			throw tcu::ERRCLASS(MSG, EXPR, __FILE__, __LINE__)
+#define TCU_THROW_EXPR(ERRCLASS, MSG, EXPR) throw tcu::ERRCLASS(MSG, EXPR, __FILE__, __LINE__)
 
-#define TCU_THROW(ERRCLASS, MSG)								\
-			TCU_THROW_EXPR(ERRCLASS, MSG, DE_NULL)
+#define TCU_THROW(ERRCLASS, MSG) TCU_THROW_EXPR(ERRCLASS, MSG, DE_NULL)
 
-#define TCU_CHECK_AND_THROW(ERRCLASS, X, MSG)					\
-	do {														\
-		if (!(!deGetFalse() && (X)))							\
-			TCU_THROW_EXPR(ERRCLASS, MSG, #X);					\
-	} while(deGetFalse())
+#define TCU_CHECK_AND_THROW(ERRCLASS, X, MSG)  \
+    do                                         \
+    {                                          \
+        if (!(!false && (X)))                  \
+            TCU_THROW_EXPR(ERRCLASS, MSG, #X); \
+    } while (false)
 
 //! Throw TestError.
-#define TCU_FAIL(MSG)				TCU_THROW(TestError, MSG)
+#define TCU_FAIL(MSG) TCU_THROW(TestError, MSG)
 
 //! Throw TestError if condition X is not satisfied.
-#define TCU_CHECK(X)			do { if (!(!deGetFalse() && (X))) throw tcu::TestError(DE_NULL, #X, __FILE__, __LINE__); } while(deGetFalse())
+#define TCU_CHECK(X)                                               \
+    do                                                             \
+    {                                                              \
+        if (!(!false && (X)))                                      \
+            throw tcu::TestError(DE_NULL, #X, __FILE__, __LINE__); \
+    } while (false)
 
 //! Throw TestError if condition X is not satisfied.
-#define TCU_CHECK_MSG(X, MSG)	do { if (!(!deGetFalse() && (X))) throw tcu::TestError((MSG), #X, __FILE__, __LINE__); } while(deGetFalse())
+#define TCU_CHECK_MSG(X, MSG)                                    \
+    do                                                           \
+    {                                                            \
+        if (!(!false && (X)))                                    \
+            throw tcu::TestError((MSG), #X, __FILE__, __LINE__); \
+    } while (false)
 
 //! Throw InternalError if condition X is not satisfied
-#define	TCU_CHECK_INTERNAL(X)	do { if (!(!deGetFalse() && (X))) throw tcu::InternalError(DE_NULL, #X, __FILE__, __LINE__); } while(deGetFalse())
+#define TCU_CHECK_INTERNAL(X)                                          \
+    do                                                                 \
+    {                                                                  \
+        if (!(!false && (X)))                                          \
+            throw tcu::InternalError(DE_NULL, #X, __FILE__, __LINE__); \
+    } while (false)
 
 #endif // _TCUDEFS_HPP

@@ -35,18 +35,18 @@ namespace Functional
 class ShaderTextureFunctionTests : public TestCaseGroup
 {
 public:
-									ShaderTextureFunctionTests		(Context& context);
-	virtual							~ShaderTextureFunctionTests		(void);
+    ShaderTextureFunctionTests(Context &context);
+    virtual ~ShaderTextureFunctionTests(void);
 
-	virtual void					init							(void);
+    virtual void init(void);
 
 private:
-									ShaderTextureFunctionTests		(const ShaderTextureFunctionTests&);		// not allowed!
-	ShaderTextureFunctionTests&		operator=						(const ShaderTextureFunctionTests&);		// not allowed!
+    ShaderTextureFunctionTests(const ShaderTextureFunctionTests &);            // not allowed!
+    ShaderTextureFunctionTests &operator=(const ShaderTextureFunctionTests &); // not allowed!
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FSHADERTEXTUREFUNCTIONTESTS_HPP

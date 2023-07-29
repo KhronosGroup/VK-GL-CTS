@@ -32,9 +32,9 @@ namespace vkt
 namespace api
 {
 
-	tcu::TestCaseGroup* createMemoryRequirementInvarianceTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createMemoryRequirementInvarianceTests(tcu::TestContext &testCtx);
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPIMEMORYREQUIREMENTINVARIANCETESTS_HPP

@@ -22,7 +22,7 @@
  *//*!
  * \file
  * \brief Wrapper that can construct monolithic pipeline or use
-		  VK_EXT_shader_object for compute pipeline construction.
+          VK_EXT_shader_object for compute pipeline construction.
  *//*--------------------------------------------------------------------*/
 
 #include "vkRef.hpp"
@@ -35,75 +35,75 @@ namespace vk
 
 enum ComputePipelineConstructionType
 {
-	COMPUTE_PIPELINE_CONSTRUCTION_TYPE_PIPELINE	= 0,				// Construct monolithic pipeline
-	COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV,			// Use VK_EXT_shader_object and construct a shader object from spirv
-	COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY,		// Use VK_EXT_shader_object and construct a shader object from binary
+    COMPUTE_PIPELINE_CONSTRUCTION_TYPE_PIPELINE = 0, // Construct monolithic pipeline
+    COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV, // Use VK_EXT_shader_object and construct a shader object from spirv
+    COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY, // Use VK_EXT_shader_object and construct a shader object from binary
 };
 
-inline ComputePipelineConstructionType graphicsToComputeConstructionType (PipelineConstructionType pipelineConstructionType)
+inline ComputePipelineConstructionType graphicsToComputeConstructionType(
+    PipelineConstructionType pipelineConstructionType)
 {
-	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV || pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_LINKED_SPIRV)
-		return COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV;
-	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_BINARY || pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_LINKED_BINARY)
-		return COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY;
-	return COMPUTE_PIPELINE_CONSTRUCTION_TYPE_PIPELINE;
+    if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV ||
+        pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_LINKED_SPIRV)
+        return COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV;
+    if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_BINARY ||
+        pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_LINKED_BINARY)
+        return COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY;
+    return COMPUTE_PIPELINE_CONSTRUCTION_TYPE_PIPELINE;
 }
 
-void checkShaderObjectRequirements (const InstanceInterface&		vki,
-									VkPhysicalDevice				physicalDevice,
-									ComputePipelineConstructionType	computePipelineConstructionType);
+void checkShaderObjectRequirements(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
+                                   ComputePipelineConstructionType computePipelineConstructionType);
 
 class ComputePipelineWrapper
 {
 public:
-										ComputePipelineWrapper	() = default;
-										ComputePipelineWrapper	(const DeviceInterface&					vk,
-																 VkDevice								device,
-																 const ComputePipelineConstructionType	pipelineConstructionType);
-										ComputePipelineWrapper	(const DeviceInterface&					vk,
-																 VkDevice								device,
-																 const ComputePipelineConstructionType	pipelineConstructionType,
-																 const ProgramBinary&					programBinary);
+    ComputePipelineWrapper() = default;
+    ComputePipelineWrapper(const DeviceInterface &vk, VkDevice device,
+                           const ComputePipelineConstructionType pipelineConstructionType);
+    ComputePipelineWrapper(const DeviceInterface &vk, VkDevice device,
+                           const ComputePipelineConstructionType pipelineConstructionType,
+                           const ProgramBinary &programBinary);
 
-										ComputePipelineWrapper	(const ComputePipelineWrapper&) noexcept;
-										ComputePipelineWrapper	(ComputePipelineWrapper&&) noexcept;
-										~ComputePipelineWrapper	(void) = default;
+    ComputePipelineWrapper(const ComputePipelineWrapper &) noexcept;
+    ComputePipelineWrapper(ComputePipelineWrapper &&) noexcept;
+    ~ComputePipelineWrapper(void) = default;
 
-	ComputePipelineWrapper&				operator=				(const ComputePipelineWrapper& rhs) noexcept;
-	ComputePipelineWrapper&				operator=				(ComputePipelineWrapper&& rhs) noexcept;
+    ComputePipelineWrapper &operator=(const ComputePipelineWrapper &rhs) noexcept;
+    ComputePipelineWrapper &operator=(ComputePipelineWrapper &&rhs) noexcept;
 
-	void								setDescriptorSetLayout	(VkDescriptorSetLayout descriptorSetLayout);
-	void								setDescriptorSetLayouts	(deUint32 setLayoutCount, const VkDescriptorSetLayout* descriptorSetLayouts);
-	void								setSpecializationInfo	(VkSpecializationInfo specializationInfo);
-	void								setPipelineCreateFlags	(VkPipelineCreateFlags pipelineCreateFlags);
-	void								setPipelineCreatePNext	(void* pipelineCreatePNext);
-	void								setSubgroupSize			(uint32_t subgroupSize);
-	void								buildPipeline			(void);
-	void								bind					(VkCommandBuffer commandBuffer);
+    void setDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout);
+    void setDescriptorSetLayouts(uint32_t setLayoutCount, const VkDescriptorSetLayout *descriptorSetLayouts);
+    void setSpecializationInfo(VkSpecializationInfo specializationInfo);
+    void setPipelineCreateFlags(VkPipelineCreateFlags pipelineCreateFlags);
+    void setPipelineCreatePNext(void *pipelineCreatePNext);
+    void setSubgroupSize(uint32_t subgroupSize);
+    void buildPipeline(void);
+    void bind(VkCommandBuffer commandBuffer);
 
-	VkPipelineLayout					getPipelineLayout		(void);
+    VkPipelineLayout getPipelineLayout(void);
 
 private:
-	void								buildPipelineLayout		(void);
+    void buildPipelineLayout(void);
 
-	struct InternalData;
+    struct InternalData;
 
-	// Store internal data that is needed only for pipeline construction.
-	de::SharedPtr<InternalData>			m_internalData;
-	const ProgramBinary*				m_programBinary;
-	std::vector<VkDescriptorSetLayout>	m_descriptorSetLayouts;
-	VkSpecializationInfo				m_specializationInfo;
-	VkPipelineCreateFlags				m_pipelineCreateFlags;
-	void*								m_pipelineCreatePNext;
-	uint32_t							m_subgroupSize;
+    // Store internal data that is needed only for pipeline construction.
+    de::SharedPtr<InternalData> m_internalData;
+    const ProgramBinary *m_programBinary;
+    std::vector<VkDescriptorSetLayout> m_descriptorSetLayouts;
+    VkSpecializationInfo m_specializationInfo;
+    VkPipelineCreateFlags m_pipelineCreateFlags;
+    void *m_pipelineCreatePNext;
+    uint32_t m_subgroupSize;
 
-	Move<VkPipeline>					m_pipeline;
-	Move<VkPipelineLayout>				m_pipelineLayout;
+    Move<VkPipeline> m_pipeline;
+    Move<VkPipelineLayout> m_pipelineLayout;
 #ifndef CTS_USES_VULKANSC
-	Move<VkShaderEXT>					m_shader;
+    Move<VkShaderEXT> m_shader;
 #endif
 };
 
-} // vk
+} // namespace vk
 
 #endif // _VKCOMPUTEPIPELINECONSTRUCTIONUTIL_HPP

@@ -31,13 +31,13 @@
 namespace dit
 {
 
-tcu::TestCaseGroup* createVulkanTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createVulkanTests(tcu::TestContext &testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "vulkan", "Vulkan Framework Tests"));
+    de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "vulkan", "Vulkan Framework Tests"));
 
-	group->addChild(new SelfCheckCase(testCtx, "image_util", "ImageUtil self-check tests", vk::imageUtilSelfTest));
+    group->addChild(new SelfCheckCase(testCtx, "image_util", "ImageUtil self-check tests", vk::imageUtilSelfTest));
 
-	return group.release();
+    return group.release();
 }
 
-} // dit
+} // namespace dit

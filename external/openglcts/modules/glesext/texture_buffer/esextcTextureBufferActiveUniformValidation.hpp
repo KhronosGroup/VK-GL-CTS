@@ -123,130 +123,130 @@ namespace glcts
 class TextureParameters
 {
 public:
-	TextureParameters();
-	TextureParameters(glw::GLuint textureBufferSize, glw::GLenum textureFormat, glw::GLenum textureUniformType,
-					  const char* uniformName);
+    TextureParameters();
+    TextureParameters(glw::GLuint textureBufferSize, glw::GLenum textureFormat, glw::GLenum textureUniformType,
+                      const char *uniformName);
 
-	glw::GLuint get_texture_buffer_size() const
-	{
-		return m_texture_buffer_size;
-	}
+    glw::GLuint get_texture_buffer_size() const
+    {
+        return m_texture_buffer_size;
+    }
 
-	glw::GLenum get_texture_format() const
-	{
-		return m_texture_format;
-	}
+    glw::GLenum get_texture_format() const
+    {
+        return m_texture_format;
+    }
 
-	glw::GLenum get_texture_uniform_type() const
-	{
-		return m_texture_uniform_type;
-	}
+    glw::GLenum get_texture_uniform_type() const
+    {
+        return m_texture_uniform_type;
+    }
 
-	std::string get_uniform_name() const
-	{
-		return m_uniform_name;
-	}
+    std::string get_uniform_name() const
+    {
+        return m_uniform_name;
+    }
 
 private:
-	glw::GLenum m_texture_buffer_size;
-	glw::GLenum m_texture_format;
-	glw::GLenum m_texture_uniform_type;
-	std::string m_uniform_name;
+    glw::GLenum m_texture_buffer_size;
+    glw::GLenum m_texture_format;
+    glw::GLenum m_texture_uniform_type;
+    std::string m_uniform_name;
 };
 
 /* Base Class */
 class TextureBufferActiveUniformValidation : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureBufferActiveUniformValidation(Context& context, const ExtParameters& extParams, const char* name,
-										 const char* description);
+    /* Public methods */
+    TextureBufferActiveUniformValidation(Context &context, const ExtParameters &extParams, const char *name,
+                                         const char *description);
 
-	virtual ~TextureBufferActiveUniformValidation()
-	{
-	}
+    virtual ~TextureBufferActiveUniformValidation()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 protected:
-	/* Protected methods */
-	void addTextureParam(glw::GLenum uniformType, glw::GLenum format, glw::GLuint size, const char* name,
-						 std::vector<TextureParameters>* params);
+    /* Protected methods */
+    void addTextureParam(glw::GLenum uniformType, glw::GLenum format, glw::GLuint size, const char *name,
+                         std::vector<TextureParameters> *params);
 
-	/* Protected variables */
-	glw::GLuint m_po_id;
+    /* Protected variables */
+    glw::GLuint m_po_id;
 
-	static const glw::GLuint m_param_value_size;
+    static const glw::GLuint m_param_value_size;
 
 private:
-	/* Private methods */
-	virtual void configureParams(std::vector<TextureParameters>* params) = 0;
-	virtual void configureProgram(std::vector<TextureParameters>* params, glw::GLuint* texIds) = 0;
-	virtual void createProgram(void) = 0;
+    /* Private methods */
+    virtual void configureParams(std::vector<TextureParameters> *params)                       = 0;
+    virtual void configureProgram(std::vector<TextureParameters> *params, glw::GLuint *texIds) = 0;
+    virtual void createProgram(void)                                                           = 0;
 
-	virtual void initTest(void);
-	const char* getUniformTypeName(glw::GLenum uniformType);
-	const TextureParameters* getParamsForType(glw::GLenum uniformType) const;
+    virtual void initTest(void);
+    const char *getUniformTypeName(glw::GLenum uniformType);
+    const TextureParameters *getParamsForType(glw::GLenum uniformType) const;
 
-	/* Variables for general usage */
-	glw::GLuint*				   m_tbo_ids;
-	glw::GLuint*				   m_tbo_tex_ids;
-	std::vector<TextureParameters> m_texture_params;
+    /* Variables for general usage */
+    glw::GLuint *m_tbo_ids;
+    glw::GLuint *m_tbo_tex_ids;
+    std::vector<TextureParameters> m_texture_params;
 };
 
 /* Vertex/Fragment Shader (Case 1)*/
 class TextureBufferActiveUniformValidationVSFS : public TextureBufferActiveUniformValidation
 {
 public:
-	/* Public methods */
-	TextureBufferActiveUniformValidationVSFS(Context& context, const ExtParameters& extParams, const char* name,
-											 const char* description);
+    /* Public methods */
+    TextureBufferActiveUniformValidationVSFS(Context &context, const ExtParameters &extParams, const char *name,
+                                             const char *description);
 
-	virtual ~TextureBufferActiveUniformValidationVSFS()
-	{
-	}
+    virtual ~TextureBufferActiveUniformValidationVSFS()
+    {
+    }
 
-	virtual void deinit(void);
+    virtual void deinit(void);
 
 private:
-	/* Private methods */
-	virtual void configureParams(std::vector<TextureParameters>* params);
-	virtual void configureProgram(std::vector<TextureParameters>* params, glw::GLuint* texIds);
-	virtual void createProgram(void);
+    /* Private methods */
+    virtual void configureParams(std::vector<TextureParameters> *params);
+    virtual void configureProgram(std::vector<TextureParameters> *params, glw::GLuint *texIds);
+    virtual void createProgram(void);
 
-	const char* getFragmentShaderCode(void) const;
-	const char* getVertexShaderCode(void) const;
+    const char *getFragmentShaderCode(void) const;
+    const char *getVertexShaderCode(void) const;
 
-	/* Variables for general usage */
-	glw::GLuint m_fs_id;
-	glw::GLuint m_vs_id;
+    /* Variables for general usage */
+    glw::GLuint m_fs_id;
+    glw::GLuint m_vs_id;
 };
 
 /* Compute Shader (Case 2)*/
 class TextureBufferActiveUniformValidationCS : public TextureBufferActiveUniformValidation
 {
 public:
-	/* Public methods */
-	TextureBufferActiveUniformValidationCS(Context& context, const ExtParameters& extParams, const char* name,
-										   const char* description);
+    /* Public methods */
+    TextureBufferActiveUniformValidationCS(Context &context, const ExtParameters &extParams, const char *name,
+                                           const char *description);
 
-	virtual ~TextureBufferActiveUniformValidationCS()
-	{
-	}
+    virtual ~TextureBufferActiveUniformValidationCS()
+    {
+    }
 
-	virtual void deinit(void);
+    virtual void deinit(void);
 
 private:
-	/* Private methods */
-	virtual void configureParams(std::vector<TextureParameters>* params);
-	virtual void configureProgram(std::vector<TextureParameters>* params, glw::GLuint* texIds);
-	virtual void createProgram(void);
+    /* Private methods */
+    virtual void configureParams(std::vector<TextureParameters> *params);
+    virtual void configureProgram(std::vector<TextureParameters> *params, glw::GLuint *texIds);
+    virtual void createProgram(void);
 
-	const char* getComputeShaderCode(void) const;
+    const char *getComputeShaderCode(void) const;
 
-	/* Variables for general usage */
-	glw::GLuint m_cs_id;
+    /* Variables for general usage */
+    glw::GLuint m_cs_id;
 };
 
 } // namespace glcts

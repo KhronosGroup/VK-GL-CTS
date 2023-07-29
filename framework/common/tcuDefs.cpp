@@ -31,134 +31,125 @@
 namespace tcu
 {
 
-void die (const char* format, ...)
+void die(const char *format, ...)
 {
-	va_list args;
-	va_start(args, format);
-	qpDiev(format, args);
-	va_end(args);
+    va_list args;
+    va_start(args, format);
+    qpDiev(format, args);
+    va_end(args);
 }
 
-void print (const char* format, ...)
+void print(const char *format, ...)
 {
-	va_list args;
-	va_start(args, format);
-	qpPrintv(format, args);
-	va_end(args);
+    va_list args;
+    va_start(args, format);
+    qpPrintv(format, args);
+    va_end(args);
 }
 
-void printError (const char* format, ...)
+void printError(const char *format, ...)
 {
-	va_list args;
-	va_start(args, format);
-	qpPrintErrorv(format, args);
-	va_end(args);
+    va_list args;
+    va_start(args, format);
+    qpPrintErrorv(format, args);
+    va_end(args);
 }
 
-static std::string formatError (const char* message, const char* expr, const char* file, int line)
+static std::string formatError(const char *message, const char *expr, const char *file, int line)
 {
-	std::ostringstream msg;
-	msg << (message ? message : "Runtime check failed");
+    std::ostringstream msg;
+    msg << (message ? message : "Runtime check failed");
 
-	if (expr)
-		msg << ": '" << expr << '\'';
+    if (expr)
+        msg << ": '" << expr << '\'';
 
-	if (file)
-		msg << " at " << de::FilePath(file).getBaseName() << ":" << line;
+    if (file)
+        msg << " at " << de::FilePath(file).getBaseName() << ":" << line;
 
-	return msg.str();
+    return msg.str();
 }
 
-Exception::Exception (const char* message, const char* expr, const char* file, int line)
-	: std::runtime_error(formatError(message, expr, file, line))
-	, m_message			(message ? message : "Runtime check failed")
-{
-}
-
-Exception::Exception (const std::string& message)
-	: std::runtime_error(message)
-	, m_message			(message)
+Exception::Exception(const char *message, const char *expr, const char *file, int line)
+    : std::runtime_error(formatError(message, expr, file, line))
+    , m_message(message ? message : "Runtime check failed")
 {
 }
 
-TestException::TestException (const char* message, const char* expr, const char* file, int line, qpTestResult result)
-	: Exception	(formatError(message, expr, file, line))
-	, m_result	(result)
+Exception::Exception(const std::string &message) : std::runtime_error(message), m_message(message)
 {
 }
 
-TestException::TestException (const std::string& message, qpTestResult result)
-	: Exception	(message)
-	, m_result	(result)
+TestException::TestException(const char *message, const char *expr, const char *file, int line, qpTestResult result)
+    : Exception(formatError(message, expr, file, line))
+    , m_result(result)
 {
 }
 
-TestError::TestError (const char* message, const char* expr, const char* file, int line)
-	: TestException(message, expr, file, line, QP_TEST_RESULT_FAIL)
-{
-}
-TestError::TestError (const std::string& message, const char* expr, const char* file, int line)
-	: TestException(message.c_str(), expr, file, line, QP_TEST_RESULT_FAIL)
+TestException::TestException(const std::string &message, qpTestResult result) : Exception(message), m_result(result)
 {
 }
 
-TestError::TestError (const std::string& message)
-	: TestException(message, QP_TEST_RESULT_FAIL)
+TestError::TestError(const char *message, const char *expr, const char *file, int line)
+    : TestException(message, expr, file, line, QP_TEST_RESULT_FAIL)
+{
+}
+TestError::TestError(const std::string &message, const char *expr, const char *file, int line)
+    : TestException(message.c_str(), expr, file, line, QP_TEST_RESULT_FAIL)
 {
 }
 
-InternalError::InternalError (const char* message, const char* expr, const char* file, int line)
-	: TestException(message, expr, file, line, QP_TEST_RESULT_INTERNAL_ERROR)
+TestError::TestError(const std::string &message) : TestException(message, QP_TEST_RESULT_FAIL)
 {
 }
 
-InternalError::InternalError (const std::string& message, const char* expr, const char* file, int line)
-	: TestException(message.c_str(), expr, file, line, QP_TEST_RESULT_INTERNAL_ERROR)
+InternalError::InternalError(const char *message, const char *expr, const char *file, int line)
+    : TestException(message, expr, file, line, QP_TEST_RESULT_INTERNAL_ERROR)
 {
 }
 
-InternalError::InternalError (const std::string& message)
-	: TestException(message, QP_TEST_RESULT_INTERNAL_ERROR)
+InternalError::InternalError(const std::string &message, const char *expr, const char *file, int line)
+    : TestException(message.c_str(), expr, file, line, QP_TEST_RESULT_INTERNAL_ERROR)
 {
 }
 
-ResourceError::ResourceError (const char* message, const char* expr, const char* file, int line)
-	: TestException(message, expr, file, line, QP_TEST_RESULT_RESOURCE_ERROR)
+InternalError::InternalError(const std::string &message) : TestException(message, QP_TEST_RESULT_INTERNAL_ERROR)
 {
 }
 
-ResourceError::ResourceError (const std::string& message)
-	: TestException(message, QP_TEST_RESULT_RESOURCE_ERROR)
+ResourceError::ResourceError(const char *message, const char *expr, const char *file, int line)
+    : TestException(message, expr, file, line, QP_TEST_RESULT_RESOURCE_ERROR)
 {
 }
 
-NotSupportedError::NotSupportedError (const char* message, const char* expr, const char* file, int line)
-	: TestException(message, expr, file, line, QP_TEST_RESULT_NOT_SUPPORTED)
+ResourceError::ResourceError(const std::string &message) : TestException(message, QP_TEST_RESULT_RESOURCE_ERROR)
 {
 }
 
-NotSupportedError::NotSupportedError (const std::string& message, const char* expr, const char* file, int line)
-	: TestException(message.c_str(), expr, file, line, QP_TEST_RESULT_NOT_SUPPORTED)
+NotSupportedError::NotSupportedError(const char *message, const char *expr, const char *file, int line)
+    : TestException(message, expr, file, line, QP_TEST_RESULT_NOT_SUPPORTED)
 {
 }
 
-NotSupportedError::NotSupportedError (const std::string& message)
-	: TestException(message, QP_TEST_RESULT_NOT_SUPPORTED)
+NotSupportedError::NotSupportedError(const std::string &message, const char *expr, const char *file, int line)
+    : TestException(message.c_str(), expr, file, line, QP_TEST_RESULT_NOT_SUPPORTED)
 {
 }
 
-QualityWarning::QualityWarning (const char* message, const char* expr, const char* file, int line)
-	: TestException(message, expr, file, line, QP_TEST_RESULT_QUALITY_WARNING)
+NotSupportedError::NotSupportedError(const std::string &message) : TestException(message, QP_TEST_RESULT_NOT_SUPPORTED)
 {
 }
 
-QualityWarning::QualityWarning (const std::string& message, const char* expr, const char* file, int line)
-	: TestException(message.c_str(), expr, file, line, QP_TEST_RESULT_QUALITY_WARNING)
+QualityWarning::QualityWarning(const char *message, const char *expr, const char *file, int line)
+    : TestException(message, expr, file, line, QP_TEST_RESULT_QUALITY_WARNING)
 {
 }
 
-QualityWarning::QualityWarning (const std::string& message)
-	: TestException(message, QP_TEST_RESULT_QUALITY_WARNING)
+QualityWarning::QualityWarning(const std::string &message, const char *expr, const char *file, int line)
+    : TestException(message.c_str(), expr, file, line, QP_TEST_RESULT_QUALITY_WARNING)
+{
+}
+
+QualityWarning::QualityWarning(const std::string &message) : TestException(message, QP_TEST_RESULT_QUALITY_WARNING)
 {
 }
 

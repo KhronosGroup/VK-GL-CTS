@@ -31,9 +31,9 @@ namespace vkt
 namespace sc
 {
 
-tcu::TestCaseGroup* createObjectRefreshTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createObjectRefreshTests(tcu::TestContext &testCtx);
 
-} // sc
-} // vkt
+} // namespace sc
+} // namespace vkt
 
 #endif // _VKTOBJECTREFRESHTESTS_HPP

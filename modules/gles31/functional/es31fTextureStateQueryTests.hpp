@@ -36,18 +36,18 @@ namespace Functional
 class TextureStateQueryTests : public TestCaseGroup
 {
 public:
-								TextureStateQueryTests	(Context& context);
-								~TextureStateQueryTests	(void);
+    TextureStateQueryTests(Context &context);
+    ~TextureStateQueryTests(void);
 
-	void						init					(void);
+    void init(void);
 
 private:
-								TextureStateQueryTests	(const TextureStateQueryTests& other);
-	TextureStateQueryTests&		operator=				(const TextureStateQueryTests& other);
+    TextureStateQueryTests(const TextureStateQueryTests &other);
+    TextureStateQueryTests &operator=(const TextureStateQueryTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FTEXTURESTATEQUERYTESTS_HPP

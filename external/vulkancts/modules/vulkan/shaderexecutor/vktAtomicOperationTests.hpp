@@ -32,9 +32,9 @@ namespace vkt
 namespace shaderexecutor
 {
 
-tcu::TestCaseGroup*		createAtomicOperationTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createAtomicOperationTests(tcu::TestContext &testCtx);
 
-} // shaderexecutor
-} // vkt
+} // namespace shaderexecutor
+} // namespace vkt
 
 #endif // _VKTATOMICOPERATIONTESTS_HPP

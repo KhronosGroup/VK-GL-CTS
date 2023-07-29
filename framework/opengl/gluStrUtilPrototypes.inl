@@ -151,4 +151,4 @@ inline tcu::Format::Enum<int, 2>	getPipelineParamStr						(int value)		{ return 
 inline tcu::Format::Enum<int, 2>	getPatchParamStr						(int value)		{ return tcu::Format::Enum<int, 2>(getPatchParamName, value); }
 inline tcu::Format::Enum<int, 2>	getTextureFormatStr						(int value)		{ return tcu::Format::Enum<int, 2>(getTextureFormatName, value); }
 inline tcu::Format::Enum<int, 2>	getGraphicsResetStatusStr				(int value)		{ return tcu::Format::Enum<int, 2>(getGraphicsResetStatusName, value); }
-inline tcu::Format::Enum<int, 1>	getBooleanStr							(deUint8 value)	{ return tcu::Format::Enum<int, 1>(getBooleanName, (int)value); }
+inline tcu::Format::Enum<int, 1>	getBooleanStr							(uint8_t value)	{ return tcu::Format::Enum<int, 1>(getBooleanName, (int)value); }

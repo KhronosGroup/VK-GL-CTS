@@ -36,18 +36,18 @@ namespace Functional
 class ImplementationLimitTests : public TestCaseGroup
 {
 public:
-									ImplementationLimitTests			(Context& context);
-									~ImplementationLimitTests			(void);
+    ImplementationLimitTests(Context &context);
+    ~ImplementationLimitTests(void);
 
-	void							init								(void);
+    void init(void);
 
 private:
-									ImplementationLimitTests			(const ImplementationLimitTests& other);
-	ImplementationLimitTests&		operator=							(const ImplementationLimitTests& other);
+    ImplementationLimitTests(const ImplementationLimitTests &other);
+    ImplementationLimitTests &operator=(const ImplementationLimitTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FIMPLEMENTATIONLIMITTESTS_HPP

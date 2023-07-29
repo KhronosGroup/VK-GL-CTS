@@ -50,87 +50,87 @@ namespace glcts
 class TextureCubeMapArrayColorDepthAttachmentsTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureCubeMapArrayColorDepthAttachmentsTest(Context& context, const ExtParameters& extParams, const char* name,
-												 const char* description);
+    /* Public methods */
+    TextureCubeMapArrayColorDepthAttachmentsTest(Context &context, const ExtParameters &extParams, const char *name,
+                                                 const char *description);
 
-	virtual ~TextureCubeMapArrayColorDepthAttachmentsTest()
-	{
-	}
+    virtual ~TextureCubeMapArrayColorDepthAttachmentsTest()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private type definitions */
-	struct _texture_size
-	{
-		_texture_size(glw::GLuint size, glw::GLuint m_n_cubemaps);
+    /* Private type definitions */
+    struct _texture_size
+    {
+        _texture_size(glw::GLuint size, glw::GLuint m_n_cubemaps);
 
-		/* Face width & height */
-		glw::GLuint m_size;
+        /* Face width & height */
+        glw::GLuint m_size;
 
-		/* Number of cubemaps in array */
-		glw::GLuint m_n_cubemaps;
-	};
+        /* Number of cubemaps in array */
+        glw::GLuint m_n_cubemaps;
+    };
 
-	typedef std::vector<_texture_size> _texture_size_vector;
+    typedef std::vector<_texture_size> _texture_size_vector;
 
-	/* Private methods */
-	void determineSupportedDepthFormat();
-	void draw(const _texture_size& texture_size);
-	void generateAndConfigureTextureObjects(glw::GLuint texture_size, glw::GLuint n_cubemaps,
-											bool should_generate_mutable_textures);
-	void initTest();
-	void prepareImmutableTextureObject(glw::GLuint texture_id, glw::GLuint texture_size, glw::GLuint n_cubemaps,
-									   bool should_take_color_texture_properties);
-	void prepareMutableTextureObject(glw::GLuint texture_id, glw::GLuint texture_size, glw::GLuint n_cubemaps,
-									 bool should_take_color_texture_properties);
-	void releaseAndDetachTextureObject(glw::GLuint texture_id, bool is_color);
-	void configureLayeredFramebufferAttachment(glw::GLuint texture_id, bool should_use_as_color_attachment);
-	void configureNonLayeredFramebufferAttachment(glw::GLuint texture_id, glw::GLuint n_layer,
-												  bool should_use_as_color_attachment,
-												  bool should_update_draw_framebuffer = true);
-	void testLayeredRendering(const _texture_size& texture_size, bool should_use_mutable_textures);
-	void testNonLayeredRendering(const _texture_size& texture_size, bool should_use_mutable_texture);
-	bool verifyColorData(const _texture_size& texture_size, glw::GLuint n_layer);
-	bool verifyDepth16Data(const _texture_size& texture_size, glw::GLuint n_layer);
-	bool verifyDepth24Data(const _texture_size& texture_size, glw::GLuint n_layer);
-	bool verifyDepth32FData(const _texture_size& texture_size, glw::GLuint n_layer);
+    /* Private methods */
+    void determineSupportedDepthFormat();
+    void draw(const _texture_size &texture_size);
+    void generateAndConfigureTextureObjects(glw::GLuint texture_size, glw::GLuint n_cubemaps,
+                                            bool should_generate_mutable_textures);
+    void initTest();
+    void prepareImmutableTextureObject(glw::GLuint texture_id, glw::GLuint texture_size, glw::GLuint n_cubemaps,
+                                       bool should_take_color_texture_properties);
+    void prepareMutableTextureObject(glw::GLuint texture_id, glw::GLuint texture_size, glw::GLuint n_cubemaps,
+                                     bool should_take_color_texture_properties);
+    void releaseAndDetachTextureObject(glw::GLuint texture_id, bool is_color);
+    void configureLayeredFramebufferAttachment(glw::GLuint texture_id, bool should_use_as_color_attachment);
+    void configureNonLayeredFramebufferAttachment(glw::GLuint texture_id, glw::GLuint n_layer,
+                                                  bool should_use_as_color_attachment,
+                                                  bool should_update_draw_framebuffer = true);
+    void testLayeredRendering(const _texture_size &texture_size, bool should_use_mutable_textures);
+    void testNonLayeredRendering(const _texture_size &texture_size, bool should_use_mutable_texture);
+    bool verifyColorData(const _texture_size &texture_size, glw::GLuint n_layer);
+    bool verifyDepth16Data(const _texture_size &texture_size, glw::GLuint n_layer);
+    bool verifyDepth24Data(const _texture_size &texture_size, glw::GLuint n_layer);
+    bool verifyDepth32FData(const _texture_size &texture_size, glw::GLuint n_layer);
 
-	/* Private fields */
-	glw::GLuint m_vao_id;
-	glw::GLuint m_color_texture_id;
-	glw::GLuint m_depth_texture_id;
-	glw::GLuint m_fragment_shader_id;
-	glw::GLuint m_framebuffer_object_id;
-	glw::GLuint m_layered_geometry_shader_id;
-	glw::GLuint m_layered_program_id;
-	glw::GLuint m_non_layered_geometry_shader_id;
-	glw::GLuint m_non_layered_program_id;
-	glw::GLint  m_non_layered_program_id_uni_layer_uniform_location;
-	glw::GLuint m_vertex_shader_id;
+    /* Private fields */
+    glw::GLuint m_vao_id;
+    glw::GLuint m_color_texture_id;
+    glw::GLuint m_depth_texture_id;
+    glw::GLuint m_fragment_shader_id;
+    glw::GLuint m_framebuffer_object_id;
+    glw::GLuint m_layered_geometry_shader_id;
+    glw::GLuint m_layered_program_id;
+    glw::GLuint m_non_layered_geometry_shader_id;
+    glw::GLuint m_non_layered_program_id;
+    glw::GLint m_non_layered_program_id_uni_layer_uniform_location;
+    glw::GLuint m_vertex_shader_id;
 
-	_texture_size_vector m_resolutions;
+    _texture_size_vector m_resolutions;
 
-	static const glw::GLenum m_color_internal_format;
-	static const glw::GLenum m_color_format;
-	static const glw::GLenum m_color_type;
-	glw::GLenum				 m_depth_internal_format;
-	static const glw::GLenum m_depth_format;
-	glw::GLenum				 m_depth_type;
+    static const glw::GLenum m_color_internal_format;
+    static const glw::GLenum m_color_format;
+    static const glw::GLenum m_color_type;
+    glw::GLenum m_depth_internal_format;
+    static const glw::GLenum m_depth_format;
+    glw::GLenum m_depth_type;
 
-	glw::GLuint m_n_invalid_color_checks;
-	glw::GLuint m_n_invalid_depth_checks;
+    glw::GLuint m_n_invalid_color_checks;
+    glw::GLuint m_n_invalid_depth_checks;
 
-	static const glw::GLchar* const m_fragment_shader_code;
-	static const glw::GLchar* const m_geometry_shader_code_preamble;
-	static const glw::GLchar* const m_geometry_shader_code_layered;
-	static const glw::GLchar* const m_geometry_shader_code_non_layered;
-	static const glw::GLchar* const m_geometry_shader_code_body;
-	static const glw::GLchar* const m_vertex_shader_code;
+    static const glw::GLchar *const m_fragment_shader_code;
+    static const glw::GLchar *const m_geometry_shader_code_preamble;
+    static const glw::GLchar *const m_geometry_shader_code_layered;
+    static const glw::GLchar *const m_geometry_shader_code_non_layered;
+    static const glw::GLchar *const m_geometry_shader_code_body;
+    static const glw::GLchar *const m_vertex_shader_code;
 };
 
-} /* glcts */
+} // namespace glcts
 
 #endif // _ESEXTCTEXTURECUBEMAPARRAYCOLORDEPTHATTACHMENTS_HPP

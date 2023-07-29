@@ -35,11 +35,11 @@ namespace x11
 namespace egl
 {
 
-eglu::NativeDisplayFactory* createDisplayFactory (EventState& eventState);
+eglu::NativeDisplayFactory *createDisplayFactory(EventState &eventState);
 
 }
-} // x11
-} // lnx
-} // tcu
+} // namespace x11
+} // namespace lnx
+} // namespace tcu
 
 #endif // _TCULNXX11EGLDISPLAYFACTORY_HPP

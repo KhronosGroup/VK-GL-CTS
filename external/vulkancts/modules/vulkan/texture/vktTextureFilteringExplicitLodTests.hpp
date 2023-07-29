@@ -30,9 +30,9 @@ namespace vkt
 namespace texture
 {
 
-tcu::TestCaseGroup* createExplicitLodTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createExplicitLodTests(tcu::TestContext &testCtx);
 
-} // texture
-} // vkt
+} // namespace texture
+} // namespace vkt
 
 #endif // _VKTTEXTUREFILTERINGEXPLICITLODTESTS_HPP

@@ -33,9 +33,10 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createDynamicVertexAttributeTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
+tcu::TestCaseGroup *createDynamicVertexAttributeTests(tcu::TestContext &testCtx,
+                                                      vk::PipelineConstructionType pipelineConstructionType);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEDYNAMICVERTEXATTRIBUTETESTS_HPP

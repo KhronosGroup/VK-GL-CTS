@@ -30,22 +30,22 @@ namespace gl4cts
 class ClipControlTests : public deqp::TestCaseGroup
 {
 public:
-	enum API
-	{
-		API_GL_45core,
-		API_GL_ARB_clip_control,
-	};
+    enum API
+    {
+        API_GL_45core,
+        API_GL_ARB_clip_control,
+    };
 
-	ClipControlTests(deqp::Context& context, API api);
-	~ClipControlTests(void);
-	void init(void);
+    ClipControlTests(deqp::Context &context, API api);
+    ~ClipControlTests(void);
+    void init(void);
 
 private:
-	ClipControlTests(const ClipControlTests& other);
-	ClipControlTests& operator=(const ClipControlTests& other);
-	API m_api;
+    ClipControlTests(const ClipControlTests &other);
+    ClipControlTests &operator=(const ClipControlTests &other);
+    API m_api;
 };
 
-} /* gl4cts namespace */
+} // namespace gl4cts
 
 #endif // _GL4CCLIPCONTROLTESTS_HPP

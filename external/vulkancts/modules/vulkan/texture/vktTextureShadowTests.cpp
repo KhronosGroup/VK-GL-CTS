@@ -54,1888 +54,2005 @@ namespace texture
 namespace
 {
 
-using std::vector;
 using std::string;
-using tcu::TestLog;
+using std::vector;
 using tcu::Sampler;
+using tcu::TestLog;
 using namespace texture::util;
 using namespace glu::TextureTestUtil;
 
 enum
 {
-	TEXCUBE_VIEWPORT_SIZE	= 28,
-	TEX1D_VIEWPORT_WIDTH	= 64,
-	TEX2D_VIEWPORT_WIDTH	= 64,
-	TEX2D_VIEWPORT_HEIGHT	= 64
+    TEXCUBE_VIEWPORT_SIZE = 28,
+    TEX1D_VIEWPORT_WIDTH  = 64,
+    TEX2D_VIEWPORT_WIDTH  = 64,
+    TEX2D_VIEWPORT_HEIGHT = 64
 };
 
 struct TextureShadowCommonTestCaseParameters
 {
-										TextureShadowCommonTestCaseParameters	(void);
-	Sampler::CompareMode				compareOp;
-	TextureBinding::ImageBackingMode	backingMode;
+    TextureShadowCommonTestCaseParameters(void);
+    Sampler::CompareMode compareOp;
+    TextureBinding::ImageBackingMode backingMode;
 };
 
-TextureShadowCommonTestCaseParameters::TextureShadowCommonTestCaseParameters (void)
-	: compareOp							(Sampler::COMPAREMODE_EQUAL)
-	, backingMode						(TextureBinding::IMAGE_BACKING_MODE_REGULAR)
+TextureShadowCommonTestCaseParameters::TextureShadowCommonTestCaseParameters(void)
+    : compareOp(Sampler::COMPAREMODE_EQUAL)
+    , backingMode(TextureBinding::IMAGE_BACKING_MODE_REGULAR)
 {
 }
 
-struct Texture2DShadowTestCaseParameters : public Texture2DTestCaseParameters, public TextureShadowCommonTestCaseParameters
+struct Texture2DShadowTestCaseParameters : public Texture2DTestCaseParameters,
+                                           public TextureShadowCommonTestCaseParameters
 {
 };
 
-bool isFloatingPointDepthFormat (const tcu::TextureFormat& format)
+bool isFloatingPointDepthFormat(const tcu::TextureFormat &format)
 {
-	// Only two depth and depth-stencil formats are floating point
-	return	(format.order == tcu::TextureFormat::D && format.type == tcu::TextureFormat::FLOAT) ||
-			(format.order == tcu::TextureFormat::DS && format.type == tcu::TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV);
+    // Only two depth and depth-stencil formats are floating point
+    return (format.order == tcu::TextureFormat::D && format.type == tcu::TextureFormat::FLOAT) ||
+           (format.order == tcu::TextureFormat::DS && format.type == tcu::TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV);
 }
 
-void clampFloatingPointTexture (const tcu::PixelBufferAccess& access)
+void clampFloatingPointTexture(const tcu::PixelBufferAccess &access)
 {
-	DE_ASSERT(isFloatingPointDepthFormat(access.getFormat()));
+    DE_ASSERT(isFloatingPointDepthFormat(access.getFormat()));
 
-	for (int z = 0; z < access.getDepth(); ++z)
-	for (int y = 0; y < access.getHeight(); ++y)
-	for (int x = 0; x < access.getWidth(); ++x)
-		access.setPixDepth(de::clamp(access.getPixDepth(x, y, z), 0.0f, 1.0f), x, y, z);
+    for (int z = 0; z < access.getDepth(); ++z)
+        for (int y = 0; y < access.getHeight(); ++y)
+            for (int x = 0; x < access.getWidth(); ++x)
+                access.setPixDepth(de::clamp(access.getPixDepth(x, y, z), 0.0f, 1.0f), x, y, z);
 }
 
-void clampFloatingPointTexture (tcu::Texture2D& target)
+void clampFloatingPointTexture(tcu::Texture2D &target)
 {
-	for (int level = 0; level < target.getNumLevels(); ++level)
-		if (!target.isLevelEmpty(level))
-			clampFloatingPointTexture(target.getLevel(level));
+    for (int level = 0; level < target.getNumLevels(); ++level)
+        if (!target.isLevelEmpty(level))
+            clampFloatingPointTexture(target.getLevel(level));
 }
 
-static void clampFloatingPointTexture (tcu::Texture2DArray& target)
+static void clampFloatingPointTexture(tcu::Texture2DArray &target)
 {
-	for (int level = 0; level < target.getNumLevels(); ++level)
-		if (!target.isLevelEmpty(level))
-			clampFloatingPointTexture(target.getLevel(level));
+    for (int level = 0; level < target.getNumLevels(); ++level)
+        if (!target.isLevelEmpty(level))
+            clampFloatingPointTexture(target.getLevel(level));
 }
 
-void clampFloatingPointTexture (tcu::TextureCube& target)
+void clampFloatingPointTexture(tcu::TextureCube &target)
 {
-	for (int level = 0; level < target.getNumLevels(); ++level)
-		for (int face = tcu::CUBEFACE_NEGATIVE_X; face < tcu::CUBEFACE_LAST; ++face)
-			clampFloatingPointTexture(target.getLevelFace(level, (tcu::CubeFace)face));
+    for (int level = 0; level < target.getNumLevels(); ++level)
+        for (int face = tcu::CUBEFACE_NEGATIVE_X; face < tcu::CUBEFACE_LAST; ++face)
+            clampFloatingPointTexture(target.getLevelFace(level, (tcu::CubeFace)face));
 }
 
-void clampFloatingPointTexture (tcu::Texture1D& target)
+void clampFloatingPointTexture(tcu::Texture1D &target)
 {
-	for (int level = 0; level < target.getNumLevels(); ++level)
-		if (!target.isLevelEmpty(level))
-			clampFloatingPointTexture(target.getLevel(level));
+    for (int level = 0; level < target.getNumLevels(); ++level)
+        if (!target.isLevelEmpty(level))
+            clampFloatingPointTexture(target.getLevel(level));
 }
 
-static void clampFloatingPointTexture (tcu::Texture1DArray& target)
+static void clampFloatingPointTexture(tcu::Texture1DArray &target)
 {
-	for (int level = 0; level < target.getNumLevels(); ++level)
-		if (!target.isLevelEmpty(level))
-			clampFloatingPointTexture(target.getLevel(level));
+    for (int level = 0; level < target.getNumLevels(); ++level)
+        if (!target.isLevelEmpty(level))
+            clampFloatingPointTexture(target.getLevel(level));
 }
 
-void clampFloatingPointTexture (tcu::TextureCubeArray& target)
+void clampFloatingPointTexture(tcu::TextureCubeArray &target)
 {
-	for (int level = 0; level < target.getNumLevels(); ++level)
-		clampFloatingPointTexture(target.getLevel(level)); // face and layer are inside level's depth
+    for (int level = 0; level < target.getNumLevels(); ++level)
+        clampFloatingPointTexture(target.getLevel(level)); // face and layer are inside level's depth
 }
 
 tcu::PixelFormat getPixelFormat(tcu::TextureFormat texFormat)
 {
-	const tcu::IVec4			formatBitDepth		= tcu::getTextureFormatBitDepth(tcu::getEffectiveDepthStencilTextureFormat(texFormat, Sampler::MODE_DEPTH));
-	return tcu::PixelFormat(formatBitDepth[0], formatBitDepth[1], formatBitDepth[2], formatBitDepth[3]);
+    const tcu::IVec4 formatBitDepth =
+        tcu::getTextureFormatBitDepth(tcu::getEffectiveDepthStencilTextureFormat(texFormat, Sampler::MODE_DEPTH));
+    return tcu::PixelFormat(formatBitDepth[0], formatBitDepth[1], formatBitDepth[2], formatBitDepth[3]);
 }
 
-template<typename TextureType>
-bool verifyTexCompareResult (tcu::TestContext&						testCtx,
-							 const tcu::ConstPixelBufferAccess&		result,
-							 const TextureType&						src,
-							 const float*							texCoord,
-							 const ReferenceParams&					sampleParams,
-							 const tcu::TexComparePrecision&		comparePrec,
-							 const tcu::LodPrecision&				lodPrec,
-							 const tcu::PixelFormat&				pixelFormat)
+template <typename TextureType>
+bool verifyTexCompareResult(tcu::TestContext &testCtx, const tcu::ConstPixelBufferAccess &result,
+                            const TextureType &src, const float *texCoord, const ReferenceParams &sampleParams,
+                            const tcu::TexComparePrecision &comparePrec, const tcu::LodPrecision &lodPrec,
+                            const tcu::PixelFormat &pixelFormat)
 {
-	tcu::TestLog&	 log				= testCtx.getLog();
-	tcu::Surface	 reference			(result.getWidth(), result.getHeight());
-	tcu::Surface	 errorMask			(result.getWidth(), result.getHeight());
-	const tcu::IVec4 nonShadowBits		= tcu::max(getBitsVec(pixelFormat)-1, tcu::IVec4(0));
-	const tcu::Vec3	 nonShadowThreshold	= tcu::computeFixedPointThreshold(nonShadowBits).swizzle(1,2,3);
-	int				 numFailedPixels;
+    tcu::TestLog &log = testCtx.getLog();
+    tcu::Surface reference(result.getWidth(), result.getHeight());
+    tcu::Surface errorMask(result.getWidth(), result.getHeight());
+    const tcu::IVec4 nonShadowBits     = tcu::max(getBitsVec(pixelFormat) - 1, tcu::IVec4(0));
+    const tcu::Vec3 nonShadowThreshold = tcu::computeFixedPointThreshold(nonShadowBits).swizzle(1, 2, 3);
+    int numFailedPixels;
 
-	// sampleTexture() expects source image to be the same state as it would be in a GL implementation, that is
-	// the floating point depth values should be in [0, 1] range as data is clamped during texture upload. Since
-	// we don't have a separate "uploading" phase and just reuse the buffer we used for GL-upload, do the clamping
-	// here if necessary.
+    // sampleTexture() expects source image to be the same state as it would be in a GL implementation, that is
+    // the floating point depth values should be in [0, 1] range as data is clamped during texture upload. Since
+    // we don't have a separate "uploading" phase and just reuse the buffer we used for GL-upload, do the clamping
+    // here if necessary.
 
-	if (isFloatingPointDepthFormat(src.getFormat()))
-	{
-		TextureType clampedSource(src);
+    if (isFloatingPointDepthFormat(src.getFormat()))
+    {
+        TextureType clampedSource(src);
 
-		clampFloatingPointTexture(clampedSource);
+        clampFloatingPointTexture(clampedSource);
 
-		// sample clamped values
+        // sample clamped values
 
-		sampleTexture(tcu::SurfaceAccess(reference, pixelFormat), clampedSource, texCoord, sampleParams);
-		numFailedPixels = computeTextureCompareDiff(result, reference.getAccess(), errorMask.getAccess(), clampedSource, texCoord, sampleParams, comparePrec, lodPrec, nonShadowThreshold);
-	}
-	else
-	{
-		// sample raw values (they are guaranteed to be in [0, 1] range as the format cannot represent any other values)
+        sampleTexture(tcu::SurfaceAccess(reference, pixelFormat), clampedSource, texCoord, sampleParams);
+        numFailedPixels = computeTextureCompareDiff(result, reference.getAccess(), errorMask.getAccess(), clampedSource,
+                                                    texCoord, sampleParams, comparePrec, lodPrec, nonShadowThreshold);
+    }
+    else
+    {
+        // sample raw values (they are guaranteed to be in [0, 1] range as the format cannot represent any other values)
 
-		sampleTexture(tcu::SurfaceAccess(reference, pixelFormat), src, texCoord, sampleParams);
-		numFailedPixels = computeTextureCompareDiff(result, reference.getAccess(), errorMask.getAccess(), src, texCoord, sampleParams, comparePrec, lodPrec, nonShadowThreshold);
-	}
+        sampleTexture(tcu::SurfaceAccess(reference, pixelFormat), src, texCoord, sampleParams);
+        numFailedPixels = computeTextureCompareDiff(result, reference.getAccess(), errorMask.getAccess(), src, texCoord,
+                                                    sampleParams, comparePrec, lodPrec, nonShadowThreshold);
+    }
 
-	if (numFailedPixels > 0)
-		log << TestLog::Message << "ERROR: Result verification failed, got " << numFailedPixels << " invalid pixels!" << TestLog::EndMessage;
+    if (numFailedPixels > 0)
+        log << TestLog::Message << "ERROR: Result verification failed, got " << numFailedPixels << " invalid pixels!"
+            << TestLog::EndMessage;
 
-	log << TestLog::ImageSet("VerifyResult", "Verification result")
-		<< TestLog::Image("Rendered", "Rendered image", result);
+    log << TestLog::ImageSet("VerifyResult", "Verification result")
+        << TestLog::Image("Rendered", "Rendered image", result);
 
-	if (numFailedPixels > 0)
-	{
-		log << TestLog::Image("Reference", "Ideal reference image", reference)
-			<< TestLog::Image("ErrorMask", "Error mask", errorMask);
-	}
+    if (numFailedPixels > 0)
+    {
+        log << TestLog::Image("Reference", "Ideal reference image", reference)
+            << TestLog::Image("ErrorMask", "Error mask", errorMask);
+    }
 
-	log << TestLog::EndImageSet;
+    log << TestLog::EndImageSet;
 
-	return numFailedPixels == 0;
+    return numFailedPixels == 0;
 }
 
 #ifdef CTS_USES_VULKANSC
 bool isDepthFormat(VkFormat format)
 {
-	if (isCompressedFormat(format))
-		return false;
+    if (isCompressedFormat(format))
+        return false;
 
-	if (isYCbCrFormat(format))
-		return false;
+    if (isYCbCrFormat(format))
+        return false;
 
-	const tcu::TextureFormat tcuFormat = mapVkFormat(format);
-	return tcuFormat.order == tcu::TextureFormat::D || tcuFormat.order == tcu::TextureFormat::DS;
+    const tcu::TextureFormat tcuFormat = mapVkFormat(format);
+    return tcuFormat.order == tcu::TextureFormat::D || tcuFormat.order == tcu::TextureFormat::DS;
 }
 #endif // CTS_USES_VULKANSC
 
-void checkTextureSupport (Context& context, const Texture2DShadowTestCaseParameters& testParameters)
+void checkTextureSupport(Context &context, const Texture2DShadowTestCaseParameters &testParameters)
 {
 #ifndef CTS_USES_VULKANSC
-	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
-	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
-		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
+    const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
+    if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
+        TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
 #else
-	DE_UNREF(context);
-	if (!isDepthFormat(testParameters.format))
-		TCU_THROW(NotSupportedError, "Format cannot be used as depth format");
+    DE_UNREF(context);
+    if (!isDepthFormat(testParameters.format))
+        TCU_THROW(NotSupportedError, "Format cannot be used as depth format");
 #endif // CTS_USES_VULKANSC
 }
 
 class Texture2DShadowTestInstance : public TestInstance
 {
 public:
-	typedef Texture2DShadowTestCaseParameters	ParameterType;
-												Texture2DShadowTestInstance		(Context& context, const ParameterType& testParameters);
-												~Texture2DShadowTestInstance	(void);
+    typedef Texture2DShadowTestCaseParameters ParameterType;
+    Texture2DShadowTestInstance(Context &context, const ParameterType &testParameters);
+    ~Texture2DShadowTestInstance(void);
 
-	virtual tcu::TestStatus						iterate							(void);
+    virtual tcu::TestStatus iterate(void);
 
 private:
-												Texture2DShadowTestInstance		(const Texture2DShadowTestInstance& other);
-	Texture2DShadowTestInstance&				operator=						(const Texture2DShadowTestInstance& other);
+    Texture2DShadowTestInstance(const Texture2DShadowTestInstance &other);
+    Texture2DShadowTestInstance &operator=(const Texture2DShadowTestInstance &other);
 
-	struct FilterCase
-	{
-		int			textureIndex;
+    struct FilterCase
+    {
+        int textureIndex;
 
-		tcu::Vec2	minCoord;
-		tcu::Vec2	maxCoord;
-		float		ref;
+        tcu::Vec2 minCoord;
+        tcu::Vec2 maxCoord;
+        float ref;
 
-		FilterCase	(void)
-			: textureIndex(-1)
-			, ref		(0.0f)
-		{
-		}
+        FilterCase(void) : textureIndex(-1), ref(0.0f)
+        {
+        }
 
-		FilterCase	(int tex_, const float ref_, const tcu::Vec2& minCoord_, const tcu::Vec2& maxCoord_)
-			: textureIndex	(tex_)
-			, minCoord		(minCoord_)
-			, maxCoord		(maxCoord_)
-			, ref			(ref_)
-		{
-		}
-	};
+        FilterCase(int tex_, const float ref_, const tcu::Vec2 &minCoord_, const tcu::Vec2 &maxCoord_)
+            : textureIndex(tex_)
+            , minCoord(minCoord_)
+            , maxCoord(maxCoord_)
+            , ref(ref_)
+        {
+        }
+    };
 
-	const ParameterType&			m_testParameters;
-	std::vector<TestTexture2DSp>	m_textures;
-	std::vector<FilterCase>			m_cases;
+    const ParameterType &m_testParameters;
+    std::vector<TestTexture2DSp> m_textures;
+    std::vector<FilterCase> m_cases;
 
-	TextureRenderer					m_renderer;
+    TextureRenderer m_renderer;
 
-	int								m_caseNdx;
+    int m_caseNdx;
 };
 
-Texture2DShadowTestInstance::Texture2DShadowTestInstance (Context& context, const ParameterType& testParameters)
-	: TestInstance			(context)
-	, m_testParameters		(testParameters)
-	, m_renderer			(context, testParameters.sampleCount, TEX2D_VIEWPORT_WIDTH, TEX2D_VIEWPORT_HEIGHT)
-	, m_caseNdx				(0)
+Texture2DShadowTestInstance::Texture2DShadowTestInstance(Context &context, const ParameterType &testParameters)
+    : TestInstance(context)
+    , m_testParameters(testParameters)
+    , m_renderer(context, testParameters.sampleCount, TEX2D_VIEWPORT_WIDTH, TEX2D_VIEWPORT_HEIGHT)
+    , m_caseNdx(0)
 {
-	// Create 2 textures.
-	m_textures.reserve(2);
-	for (int ndx = 0; ndx < 2; ndx++)
-	{
-		m_textures.push_back(TestTexture2DSp(new pipeline::TestTexture2D(vk::mapVkFormat(m_testParameters.format), m_testParameters.width, m_testParameters.height)));
-	}
+    // Create 2 textures.
+    m_textures.reserve(2);
+    for (int ndx = 0; ndx < 2; ndx++)
+    {
+        m_textures.push_back(TestTexture2DSp(new pipeline::TestTexture2D(
+            vk::mapVkFormat(m_testParameters.format), m_testParameters.width, m_testParameters.height)));
+    }
 
-	const int	numLevels	= m_textures[0]->getNumLevels();
+    const int numLevels = m_textures[0]->getNumLevels();
 
-	// Fill first gradient texture.
-	for (int levelNdx = 0; levelNdx < numLevels; ++levelNdx)
-	{
-		tcu::fillWithComponentGradients(m_textures[0]->getLevel(levelNdx, 0), tcu::Vec4(-0.5f, -0.5f, -0.5f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f));
-	}
+    // Fill first gradient texture.
+    for (int levelNdx = 0; levelNdx < numLevels; ++levelNdx)
+    {
+        tcu::fillWithComponentGradients(m_textures[0]->getLevel(levelNdx, 0), tcu::Vec4(-0.5f, -0.5f, -0.5f, 2.0f),
+                                        tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f));
+    }
 
-	// Fill second with grid texture.
-	for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
-	{
-		const deUint32	step	= 0x00ffffff / numLevels;
-		const deUint32	rgb		= step*levelNdx;
-		const deUint32	colorA	= 0xff000000 | rgb;
-		const deUint32	colorB	= 0xff000000 | ~rgb;
+    // Fill second with grid texture.
+    for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
+    {
+        const uint32_t step   = 0x00ffffff / numLevels;
+        const uint32_t rgb    = step * levelNdx;
+        const uint32_t colorA = 0xff000000 | rgb;
+        const uint32_t colorB = 0xff000000 | ~rgb;
 
-		tcu::fillWithGrid(m_textures[1]->getLevel(levelNdx, 0), 4, tcu::RGBA(colorA).toVec(), tcu::RGBA(colorB).toVec());
-	}
+        tcu::fillWithGrid(m_textures[1]->getLevel(levelNdx, 0), 4, tcu::RGBA(colorA).toVec(),
+                          tcu::RGBA(colorB).toVec());
+    }
 
-	// Upload.
-	for (std::vector<TestTexture2DSp>::iterator i = m_textures.begin(); i != m_textures.end(); ++i)
-	{
-		m_renderer.add2DTexture(*i, m_testParameters.aspectMask, m_testParameters.backingMode);
-	}
+    // Upload.
+    for (std::vector<TestTexture2DSp>::iterator i = m_textures.begin(); i != m_textures.end(); ++i)
+    {
+        m_renderer.add2DTexture(*i, m_testParameters.aspectMask, m_testParameters.backingMode);
+    }
 
-	// Compute cases.
-	{
-		const float refInRangeUpper		= (m_testParameters.compareOp == Sampler::COMPAREMODE_EQUAL || m_testParameters.compareOp == Sampler::COMPAREMODE_NOT_EQUAL) ? 1.0f : 0.5f;
-		const float refInRangeLower		= (m_testParameters.compareOp == Sampler::COMPAREMODE_EQUAL || m_testParameters.compareOp == Sampler::COMPAREMODE_NOT_EQUAL) ? 0.0f : 0.5f;
-		const float refOutOfBoundsUpper	= 1.1f;		// !< lookup function should clamp values to [0, 1] range
-		const float refOutOfBoundsLower	= -0.1f;
+    // Compute cases.
+    {
+        const float refInRangeUpper     = (m_testParameters.compareOp == Sampler::COMPAREMODE_EQUAL ||
+                                       m_testParameters.compareOp == Sampler::COMPAREMODE_NOT_EQUAL) ?
+                                              1.0f :
+                                              0.5f;
+        const float refInRangeLower     = (m_testParameters.compareOp == Sampler::COMPAREMODE_EQUAL ||
+                                       m_testParameters.compareOp == Sampler::COMPAREMODE_NOT_EQUAL) ?
+                                              0.0f :
+                                              0.5f;
+        const float refOutOfBoundsUpper = 1.1f; // !< lookup function should clamp values to [0, 1] range
+        const float refOutOfBoundsLower = -0.1f;
 
-		const struct
-		{
-			const int	texNdx;
-			const float	ref;
-			const float	lodX;
-			const float	lodY;
-			const float	oX;
-			const float	oY;
-		} cases[] =
-		{
-			{ 0,	refInRangeUpper,		1.6f,	2.9f,	-1.0f,	-2.7f	},
-			{ 0,	refInRangeLower,		-2.0f,	-1.35f,	-0.2f,	0.7f	},
-			{ 1,	refInRangeUpper,		0.14f,	0.275f,	-1.5f,	-1.1f	},
-			{ 1,	refInRangeLower,		-0.92f,	-2.64f,	0.4f,	-0.1f	},
-			{ 1,	refOutOfBoundsUpper,	-0.39f,	-0.52f,	0.65f,	0.87f	},
-			{ 1,	refOutOfBoundsLower,	-1.55f,	0.65f,	0.35f,	0.91f	},
-		};
+        const struct
+        {
+            const int texNdx;
+            const float ref;
+            const float lodX;
+            const float lodY;
+            const float oX;
+            const float oY;
+        } cases[] = {
+            {0, refInRangeUpper, 1.6f, 2.9f, -1.0f, -2.7f},
+            {0, refInRangeLower, -2.0f, -1.35f, -0.2f, 0.7f},
+            {1, refInRangeUpper, 0.14f, 0.275f, -1.5f, -1.1f},
+            {1, refInRangeLower, -0.92f, -2.64f, 0.4f, -0.1f},
+            {1, refOutOfBoundsUpper, -0.39f, -0.52f, 0.65f, 0.87f},
+            {1, refOutOfBoundsLower, -1.55f, 0.65f, 0.35f, 0.91f},
+        };
 
-		for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); caseNdx++)
-		{
-			const int	texNdx	= de::clamp(cases[caseNdx].texNdx, 0, (int)m_textures.size()-1);
-			const float ref		= cases[caseNdx].ref;
-			const float	lodX	= cases[caseNdx].lodX;
-			const float	lodY	= cases[caseNdx].lodY;
-			const float	oX		= cases[caseNdx].oX;
-			const float	oY		= cases[caseNdx].oY;
-			const float	sX		= deFloatExp2(lodX) * float(m_renderer.getRenderWidth()) / float(m_textures[texNdx]->getTexture().getWidth());
-			const float	sY		= deFloatExp2(lodY) * float(m_renderer.getRenderHeight()) / float(m_textures[texNdx]->getTexture().getHeight());
+        for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); caseNdx++)
+        {
+            const int texNdx = de::clamp(cases[caseNdx].texNdx, 0, (int)m_textures.size() - 1);
+            const float ref  = cases[caseNdx].ref;
+            const float lodX = cases[caseNdx].lodX;
+            const float lodY = cases[caseNdx].lodY;
+            const float oX   = cases[caseNdx].oX;
+            const float oY   = cases[caseNdx].oY;
+            const float sX   = deFloatExp2(lodX) * float(m_renderer.getRenderWidth()) /
+                             float(m_textures[texNdx]->getTexture().getWidth());
+            const float sY = deFloatExp2(lodY) * float(m_renderer.getRenderHeight()) /
+                             float(m_textures[texNdx]->getTexture().getHeight());
 
-			m_cases.push_back(FilterCase(texNdx, ref, tcu::Vec2(oX, oY), tcu::Vec2(oX+sX, oY+sY)));
-		}
-	}
+            m_cases.push_back(FilterCase(texNdx, ref, tcu::Vec2(oX, oY), tcu::Vec2(oX + sX, oY + sY)));
+        }
+    }
 
-	m_caseNdx = 0;
+    m_caseNdx = 0;
 }
 
-Texture2DShadowTestInstance::~Texture2DShadowTestInstance (void)
+Texture2DShadowTestInstance::~Texture2DShadowTestInstance(void)
 {
-	m_textures.clear();
-	m_cases.clear();
+    m_textures.clear();
+    m_cases.clear();
 }
 
-tcu::TestStatus Texture2DShadowTestInstance::iterate (void)
+tcu::TestStatus Texture2DShadowTestInstance::iterate(void)
 {
-	tcu::TestLog&					log				= m_context.getTestContext().getLog();
-	const pipeline::TestTexture2D&	texture			= m_renderer.get2DTexture(m_cases[m_caseNdx].textureIndex);
-	const tcu::TextureFormat		texFmt			= texture.getTextureFormat();
-	const tcu::TextureFormatInfo	fmtInfo			= tcu::getTextureFormatInfo(texFmt);
-	const tcu::ScopedLogSection		section			(log, string("Test") + de::toString(m_caseNdx), string("Test ") + de::toString(m_caseNdx));
+    tcu::TestLog &log                      = m_context.getTestContext().getLog();
+    const pipeline::TestTexture2D &texture = m_renderer.get2DTexture(m_cases[m_caseNdx].textureIndex);
+    const tcu::TextureFormat texFmt        = texture.getTextureFormat();
+    const tcu::TextureFormatInfo fmtInfo   = tcu::getTextureFormatInfo(texFmt);
+    const tcu::ScopedLogSection section(log, string("Test") + de::toString(m_caseNdx),
+                                        string("Test ") + de::toString(m_caseNdx));
 
-	const FilterCase&				curCase			= m_cases[m_caseNdx];
-	ReferenceParams					sampleParams	(TEXTURETYPE_2D);
-	tcu::Surface					rendered		(m_renderer.getRenderWidth(), m_renderer.getRenderHeight());
-	vector<float>					texCoord;
+    const FilterCase &curCase = m_cases[m_caseNdx];
+    ReferenceParams sampleParams(TEXTURETYPE_2D);
+    tcu::Surface rendered(m_renderer.getRenderWidth(), m_renderer.getRenderHeight());
+    vector<float> texCoord;
 
-	// Setup params for reference.
-	sampleParams.sampler			= util::createSampler(m_testParameters.wrapS, m_testParameters.wrapT, m_testParameters.minFilter, m_testParameters.magFilter);
-	sampleParams.sampler.compare	= m_testParameters.compareOp;
-	sampleParams.samplerType		= SAMPLERTYPE_SHADOW;
-	sampleParams.lodMode			= LODMODE_EXACT;
-	sampleParams.colorBias			= fmtInfo.lookupBias;
-	sampleParams.colorScale			= fmtInfo.lookupScale;
-	sampleParams.ref				= curCase.ref;
+    // Setup params for reference.
+    sampleParams.sampler         = util::createSampler(m_testParameters.wrapS, m_testParameters.wrapT,
+                                                       m_testParameters.minFilter, m_testParameters.magFilter);
+    sampleParams.sampler.compare = m_testParameters.compareOp;
+    sampleParams.samplerType     = SAMPLERTYPE_SHADOW;
+    sampleParams.lodMode         = LODMODE_EXACT;
+    sampleParams.colorBias       = fmtInfo.lookupBias;
+    sampleParams.colorScale      = fmtInfo.lookupScale;
+    sampleParams.ref             = curCase.ref;
 
-	log << TestLog::Message << "Compare reference value = " << sampleParams.ref << TestLog::EndMessage;
+    log << TestLog::Message << "Compare reference value = " << sampleParams.ref << TestLog::EndMessage;
 
-	// Compute texture coordinates.
-	log << TestLog::Message << "Texture coordinates: " << curCase.minCoord << " -> " << curCase.maxCoord << TestLog::EndMessage;
-	computeQuadTexCoord2D(texCoord, curCase.minCoord, curCase.maxCoord);
+    // Compute texture coordinates.
+    log << TestLog::Message << "Texture coordinates: " << curCase.minCoord << " -> " << curCase.maxCoord
+        << TestLog::EndMessage;
+    computeQuadTexCoord2D(texCoord, curCase.minCoord, curCase.maxCoord);
 
-	m_renderer.renderQuad(rendered, curCase.textureIndex, &texCoord[0], sampleParams);
+    m_renderer.renderQuad(rendered, curCase.textureIndex, &texCoord[0], sampleParams);
 
-	{
-		const tcu::PixelFormat		pixelFormat			= getPixelFormat(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
-		tcu::LodPrecision			lodPrecision;
-		tcu::TexComparePrecision	texComparePrecision;
+    {
+        const tcu::PixelFormat pixelFormat = getPixelFormat(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
+        tcu::LodPrecision lodPrecision;
+        tcu::TexComparePrecision texComparePrecision;
 
-		lodPrecision.derivateBits			= 18;
-		lodPrecision.lodBits				= 6;
-		texComparePrecision.coordBits		= tcu::IVec3(20,20,0);
-		texComparePrecision.uvwBits			= tcu::IVec3(7,7,0);
-		texComparePrecision.pcfBits			= 5;
-		texComparePrecision.referenceBits	= 16;
-		texComparePrecision.resultBits		= pixelFormat.redBits-1;
+        lodPrecision.derivateBits         = 18;
+        lodPrecision.lodBits              = 6;
+        texComparePrecision.coordBits     = tcu::IVec3(20, 20, 0);
+        texComparePrecision.uvwBits       = tcu::IVec3(7, 7, 0);
+        texComparePrecision.pcfBits       = 5;
+        texComparePrecision.referenceBits = 16;
+        texComparePrecision.resultBits    = pixelFormat.redBits - 1;
 
 #ifdef CTS_USES_VULKANSC
-		if (m_context.getTestContext().getCommandLine().isSubProcess())
+        if (m_context.getTestContext().getCommandLine().isSubProcess())
 #endif // CTS_USES_VULKANSC
-		{
-			const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-															  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+        {
+            const bool isHighQuality =
+                verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+                                       &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-			if (!isHighQuality)
-			{
-				m_context.getTestContext().getLog() << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+            if (!isHighQuality)
+            {
+                m_context.getTestContext().getLog()
+                    << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed."
+                    << TestLog::EndMessage;
 
-				lodPrecision.lodBits			= 4;
-				texComparePrecision.uvwBits		= tcu::IVec3(4,4,0);
-				texComparePrecision.pcfBits		= 0;
+                lodPrecision.lodBits        = 4;
+                texComparePrecision.uvwBits = tcu::IVec3(4, 4, 0);
+                texComparePrecision.pcfBits = 0;
 
-				const bool isOk = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-														 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+                const bool isOk =
+                    verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+                                           &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-				if (!isOk)
-				{
-					m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
-					return tcu::TestStatus::fail("Image verification failed");
-				}
-			}
-		}
-	}
+                if (!isOk)
+                {
+                    m_context.getTestContext().getLog()
+                        << TestLog::Message
+                        << "ERROR: Verification against low precision requirements failed, failing test case."
+                        << TestLog::EndMessage;
+                    return tcu::TestStatus::fail("Image verification failed");
+                }
+            }
+        }
+    }
 
-	m_caseNdx += 1;
-	return m_caseNdx < (int)m_cases.size() ? tcu::TestStatus::incomplete() : tcu::TestStatus::pass("Pass");
+    m_caseNdx += 1;
+    return m_caseNdx < (int)m_cases.size() ? tcu::TestStatus::incomplete() : tcu::TestStatus::pass("Pass");
 }
 
-struct TextureCubeShadowTestCaseParameters : public TextureShadowCommonTestCaseParameters, public TextureCubeTestCaseParameters
+struct TextureCubeShadowTestCaseParameters : public TextureShadowCommonTestCaseParameters,
+                                             public TextureCubeTestCaseParameters
 {
 };
 
-void checkTextureSupport (Context& context, const TextureCubeShadowTestCaseParameters& testParameters)
+void checkTextureSupport(Context &context, const TextureCubeShadowTestCaseParameters &testParameters)
 {
 #ifndef CTS_USES_VULKANSC
-	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
-	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
-		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
-	if (!testParameters.seamless)
-		context.requireDeviceFunctionality("VK_EXT_non_seamless_cube_map");
+    const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
+    if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
+        TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
+    if (!testParameters.seamless)
+        context.requireDeviceFunctionality("VK_EXT_non_seamless_cube_map");
 #else
-	DE_UNREF(context);
-	if (!isDepthFormat(testParameters.format))
-		TCU_THROW(NotSupportedError, "Format cannot be used as depth format");
+    DE_UNREF(context);
+    if (!isDepthFormat(testParameters.format))
+        TCU_THROW(NotSupportedError, "Format cannot be used as depth format");
 #endif // CTS_USES_VULKANSC
 }
-
 
 class TextureCubeShadowTestInstance : public TestInstance
 {
 public:
-	typedef TextureCubeShadowTestCaseParameters ParameterType;
-												TextureCubeShadowTestInstance		(Context& context, const ParameterType& testParameters);
-												~TextureCubeShadowTestInstance		(void);
+    typedef TextureCubeShadowTestCaseParameters ParameterType;
+    TextureCubeShadowTestInstance(Context &context, const ParameterType &testParameters);
+    ~TextureCubeShadowTestInstance(void);
 
-	virtual tcu::TestStatus						iterate								(void);
+    virtual tcu::TestStatus iterate(void);
 
 private:
-												TextureCubeShadowTestInstance		(const TextureCubeShadowTestInstance& other);
-	TextureCubeShadowTestInstance&				operator=							(const TextureCubeShadowTestInstance& other);
+    TextureCubeShadowTestInstance(const TextureCubeShadowTestInstance &other);
+    TextureCubeShadowTestInstance &operator=(const TextureCubeShadowTestInstance &other);
 
-	struct FilterCase
-	{
-		int						textureIndex;
-		tcu::Vec2				bottomLeft;
-		tcu::Vec2				topRight;
-		float					ref;
+    struct FilterCase
+    {
+        int textureIndex;
+        tcu::Vec2 bottomLeft;
+        tcu::Vec2 topRight;
+        float ref;
 
-		FilterCase (void)
-			: textureIndex	(-1)
-			, ref			(0.0f)
-		{
-		}
+        FilterCase(void) : textureIndex(-1), ref(0.0f)
+        {
+        }
 
-		FilterCase (const int tex_, const float ref_, const tcu::Vec2& bottomLeft_, const tcu::Vec2& topRight_)
-			: textureIndex	(tex_)
-			, bottomLeft	(bottomLeft_)
-			, topRight		(topRight_)
-			, ref			(ref_)
-		{
-		}
-	};
+        FilterCase(const int tex_, const float ref_, const tcu::Vec2 &bottomLeft_, const tcu::Vec2 &topRight_)
+            : textureIndex(tex_)
+            , bottomLeft(bottomLeft_)
+            , topRight(topRight_)
+            , ref(ref_)
+        {
+        }
+    };
 
-	const ParameterType&		m_testParameters;
-	vector<TestTextureCubeSp>	m_textures;
-	std::vector<FilterCase>		m_cases;
+    const ParameterType &m_testParameters;
+    vector<TestTextureCubeSp> m_textures;
+    std::vector<FilterCase> m_cases;
 
-	TextureRenderer				m_renderer;
-	int							m_caseNdx;
+    TextureRenderer m_renderer;
+    int m_caseNdx;
 };
 
-TextureCubeShadowTestInstance::TextureCubeShadowTestInstance (Context& context, const ParameterType& testParameters)
-	: TestInstance			(context)
-	, m_testParameters		(testParameters)
-	, m_renderer			(context, testParameters.sampleCount, TEXCUBE_VIEWPORT_SIZE, TEXCUBE_VIEWPORT_SIZE)
-	, m_caseNdx				(0)
+TextureCubeShadowTestInstance::TextureCubeShadowTestInstance(Context &context, const ParameterType &testParameters)
+    : TestInstance(context)
+    , m_testParameters(testParameters)
+    , m_renderer(context, testParameters.sampleCount, TEXCUBE_VIEWPORT_SIZE, TEXCUBE_VIEWPORT_SIZE)
+    , m_caseNdx(0)
 {
-	const int						numLevels	= deLog2Floor32(m_testParameters.size)+1;
-	const tcu::TextureFormatInfo	fmtInfo		= tcu::getTextureFormatInfo(vk::mapVkFormat(m_testParameters.format));
-	const tcu::Vec4					cBias		= fmtInfo.valueMin;
-	const tcu::Vec4					cScale		= fmtInfo.valueMax-fmtInfo.valueMin;
+    const int numLevels                  = deLog2Floor32(m_testParameters.size) + 1;
+    const tcu::TextureFormatInfo fmtInfo = tcu::getTextureFormatInfo(vk::mapVkFormat(m_testParameters.format));
+    const tcu::Vec4 cBias                = fmtInfo.valueMin;
+    const tcu::Vec4 cScale               = fmtInfo.valueMax - fmtInfo.valueMin;
 
-	// Create textures.
+    // Create textures.
 
-	m_textures.reserve(2);
-	for (int ndx = 0; ndx < 2; ndx++)
-	{
-		m_textures.push_back(TestTextureCubeSp(new pipeline::TestTextureCube(vk::mapVkFormat(m_testParameters.format), m_testParameters.size)));
-	}
+    m_textures.reserve(2);
+    for (int ndx = 0; ndx < 2; ndx++)
+    {
+        m_textures.push_back(TestTextureCubeSp(
+            new pipeline::TestTextureCube(vk::mapVkFormat(m_testParameters.format), m_testParameters.size)));
+    }
 
-	// Fill first with gradient texture.
-	static const tcu::Vec4 gradients[tcu::CUBEFACE_LAST][2] =
-	{
-		{ tcu::Vec4(-1.0f, -1.0f, -1.0f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f) }, // negative x
-		{ tcu::Vec4( 0.0f, -1.0f, -1.0f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f) }, // positive x
-		{ tcu::Vec4(-1.0f,  0.0f, -1.0f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f) }, // negative y
-		{ tcu::Vec4(-1.0f, -1.0f,  0.0f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f) }, // positive y
-		{ tcu::Vec4(-1.0f, -1.0f, -1.0f, 0.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f) }, // negative z
-		{ tcu::Vec4( 0.0f,  0.0f,  0.0f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f) }  // positive z
-	};
+    // Fill first with gradient texture.
+    static const tcu::Vec4 gradients[tcu::CUBEFACE_LAST][2] = {
+        {tcu::Vec4(-1.0f, -1.0f, -1.0f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f)}, // negative x
+        {tcu::Vec4(0.0f, -1.0f, -1.0f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f)},  // positive x
+        {tcu::Vec4(-1.0f, 0.0f, -1.0f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f)},  // negative y
+        {tcu::Vec4(-1.0f, -1.0f, 0.0f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f)},  // positive y
+        {tcu::Vec4(-1.0f, -1.0f, -1.0f, 0.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f)}, // negative z
+        {tcu::Vec4(0.0f, 0.0f, 0.0f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f)}     // positive z
+    };
 
-	for (int face = 0; face < tcu::CUBEFACE_LAST; face++)
-	{
-		for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
-		{
-			tcu::fillWithComponentGradients(m_textures[0]->getLevel(levelNdx, face), gradients[face][0]*cScale + cBias, gradients[face][1]*cScale + cBias);
-		}
-	}
+    for (int face = 0; face < tcu::CUBEFACE_LAST; face++)
+    {
+        for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
+        {
+            tcu::fillWithComponentGradients(m_textures[0]->getLevel(levelNdx, face),
+                                            gradients[face][0] * cScale + cBias, gradients[face][1] * cScale + cBias);
+        }
+    }
 
-	// Fill second with grid texture.
-	for (int face = 0; face < tcu::CUBEFACE_LAST; face++)
-	{
-		for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
-		{
-			const deUint32	step	= 0x00ffffff / (numLevels*tcu::CUBEFACE_LAST);
-			const deUint32	rgb		= step*levelNdx*face;
-			const deUint32	colorA	= 0xff000000 | rgb;
-			const deUint32	colorB	= 0xff000000 | ~rgb;
+    // Fill second with grid texture.
+    for (int face = 0; face < tcu::CUBEFACE_LAST; face++)
+    {
+        for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
+        {
+            const uint32_t step   = 0x00ffffff / (numLevels * tcu::CUBEFACE_LAST);
+            const uint32_t rgb    = step * levelNdx * face;
+            const uint32_t colorA = 0xff000000 | rgb;
+            const uint32_t colorB = 0xff000000 | ~rgb;
 
-			tcu::fillWithGrid(m_textures[1]->getLevel(levelNdx, face), 4, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
-		}
-	}
+            tcu::fillWithGrid(m_textures[1]->getLevel(levelNdx, face), 4, tcu::RGBA(colorA).toVec() * cScale + cBias,
+                              tcu::RGBA(colorB).toVec() * cScale + cBias);
+        }
+    }
 
-	// Upload.
-	for (vector<TestTextureCubeSp>::iterator i = m_textures.begin(); i != m_textures.end(); i++)
-	{
-		m_renderer.addCubeTexture(*i, m_testParameters.aspectMask, m_testParameters.backingMode);
-	}
+    // Upload.
+    for (vector<TestTextureCubeSp>::iterator i = m_textures.begin(); i != m_textures.end(); i++)
+    {
+        m_renderer.addCubeTexture(*i, m_testParameters.aspectMask, m_testParameters.backingMode);
+    }
 
-	// Compute cases
-	{
-		const float refInRangeUpper		= (m_testParameters.compareOp == Sampler::COMPAREMODE_EQUAL || m_testParameters.compareOp == Sampler::COMPAREMODE_NOT_EQUAL) ? 1.0f : 0.5f;
-		const float refInRangeLower		= (m_testParameters.compareOp == Sampler::COMPAREMODE_EQUAL || m_testParameters.compareOp == Sampler::COMPAREMODE_NOT_EQUAL) ? 0.0f : 0.5f;
-		const float refOutOfBoundsUpper	= 1.1f;
-		const float refOutOfBoundsLower	= -0.1f;
+    // Compute cases
+    {
+        const float refInRangeUpper     = (m_testParameters.compareOp == Sampler::COMPAREMODE_EQUAL ||
+                                       m_testParameters.compareOp == Sampler::COMPAREMODE_NOT_EQUAL) ?
+                                              1.0f :
+                                              0.5f;
+        const float refInRangeLower     = (m_testParameters.compareOp == Sampler::COMPAREMODE_EQUAL ||
+                                       m_testParameters.compareOp == Sampler::COMPAREMODE_NOT_EQUAL) ?
+                                              0.0f :
+                                              0.5f;
+        const float refOutOfBoundsUpper = 1.1f;
+        const float refOutOfBoundsLower = -0.1f;
 
-		m_cases.push_back(FilterCase(0,	refInRangeUpper,		tcu::Vec2(-1.25f, -1.2f),	tcu::Vec2(1.2f, 1.25f)));	// minification
-		m_cases.push_back(FilterCase(0,	refInRangeLower,		tcu::Vec2(0.8f, 0.8f),		tcu::Vec2(1.25f, 1.20f)));	// magnification
-		m_cases.push_back(FilterCase(1,	refInRangeUpper,		tcu::Vec2(-1.19f, -1.3f),	tcu::Vec2(1.1f, 1.35f)));	// minification
-		m_cases.push_back(FilterCase(1,	refInRangeLower,		tcu::Vec2(-1.2f, -1.1f),	tcu::Vec2(-0.8f, -0.8f)));	// magnification
-		m_cases.push_back(FilterCase(1,	refOutOfBoundsUpper,	tcu::Vec2(-0.61f, -0.1f),	tcu::Vec2(0.9f, 1.18f)));	// reference value clamp, upper
-		m_cases.push_back(FilterCase(1,	refOutOfBoundsLower,	tcu::Vec2(-0.75f, 1.0f),	tcu::Vec2(0.05f, 0.75f)));	// reference value clamp, lower
-	}
+        m_cases.push_back(
+            FilterCase(0, refInRangeUpper, tcu::Vec2(-1.25f, -1.2f), tcu::Vec2(1.2f, 1.25f))); // minification
+        m_cases.push_back(
+            FilterCase(0, refInRangeLower, tcu::Vec2(0.8f, 0.8f), tcu::Vec2(1.25f, 1.20f))); // magnification
+        m_cases.push_back(
+            FilterCase(1, refInRangeUpper, tcu::Vec2(-1.19f, -1.3f), tcu::Vec2(1.1f, 1.35f))); // minification
+        m_cases.push_back(
+            FilterCase(1, refInRangeLower, tcu::Vec2(-1.2f, -1.1f), tcu::Vec2(-0.8f, -0.8f))); // magnification
+        m_cases.push_back(FilterCase(1, refOutOfBoundsUpper, tcu::Vec2(-0.61f, -0.1f),
+                                     tcu::Vec2(0.9f, 1.18f))); // reference value clamp, upper
+        m_cases.push_back(FilterCase(1, refOutOfBoundsLower, tcu::Vec2(-0.75f, 1.0f),
+                                     tcu::Vec2(0.05f, 0.75f))); // reference value clamp, lower
+    }
 }
 
-TextureCubeShadowTestInstance::~TextureCubeShadowTestInstance	(void)
+TextureCubeShadowTestInstance::~TextureCubeShadowTestInstance(void)
 {
 }
 
-static const char* getFaceDesc (const tcu::CubeFace face)
+static const char *getFaceDesc(const tcu::CubeFace face)
 {
-	switch (face)
-	{
-		case tcu::CUBEFACE_NEGATIVE_X:	return "-X";
-		case tcu::CUBEFACE_POSITIVE_X:	return "+X";
-		case tcu::CUBEFACE_NEGATIVE_Y:	return "-Y";
-		case tcu::CUBEFACE_POSITIVE_Y:	return "+Y";
-		case tcu::CUBEFACE_NEGATIVE_Z:	return "-Z";
-		case tcu::CUBEFACE_POSITIVE_Z:	return "+Z";
-		default:
-			DE_ASSERT(false);
-			return DE_NULL;
-	}
+    switch (face)
+    {
+    case tcu::CUBEFACE_NEGATIVE_X:
+        return "-X";
+    case tcu::CUBEFACE_POSITIVE_X:
+        return "+X";
+    case tcu::CUBEFACE_NEGATIVE_Y:
+        return "-Y";
+    case tcu::CUBEFACE_POSITIVE_Y:
+        return "+Y";
+    case tcu::CUBEFACE_NEGATIVE_Z:
+        return "-Z";
+    case tcu::CUBEFACE_POSITIVE_Z:
+        return "+Z";
+    default:
+        DE_ASSERT(false);
+        return DE_NULL;
+    }
 }
 
-tcu::TestStatus TextureCubeShadowTestInstance::iterate (void)
+tcu::TestStatus TextureCubeShadowTestInstance::iterate(void)
 {
 
-	tcu::TestLog&						log				= m_context.getTestContext().getLog();
-	const tcu::ScopedLogSection			iterSection		(log, string("Test") + de::toString(m_caseNdx), string("Test ") + de::toString(m_caseNdx));
-	const FilterCase&					curCase			= m_cases[m_caseNdx];
-	const pipeline::TestTextureCube&	texture			= m_renderer.getCubeTexture(curCase.textureIndex);
+    tcu::TestLog &log = m_context.getTestContext().getLog();
+    const tcu::ScopedLogSection iterSection(log, string("Test") + de::toString(m_caseNdx),
+                                            string("Test ") + de::toString(m_caseNdx));
+    const FilterCase &curCase                = m_cases[m_caseNdx];
+    const pipeline::TestTextureCube &texture = m_renderer.getCubeTexture(curCase.textureIndex);
 
-	ReferenceParams						sampleParams	(TEXTURETYPE_CUBE);
+    ReferenceParams sampleParams(TEXTURETYPE_CUBE);
 
-	// Params for reference computation.
-	sampleParams.sampler					= util::createSampler(Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE, m_testParameters.minFilter, m_testParameters.magFilter);
-	sampleParams.sampler.seamlessCubeMap	= m_testParameters.seamless;
-	sampleParams.sampler.compare			= m_testParameters.compareOp;
-	sampleParams.samplerType				= SAMPLERTYPE_SHADOW;
-	sampleParams.lodMode					= LODMODE_EXACT;
-	sampleParams.ref						= curCase.ref;
+    // Params for reference computation.
+    sampleParams.sampler                 = util::createSampler(Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE,
+                                                               m_testParameters.minFilter, m_testParameters.magFilter);
+    sampleParams.sampler.seamlessCubeMap = m_testParameters.seamless;
+    sampleParams.sampler.compare         = m_testParameters.compareOp;
+    sampleParams.samplerType             = SAMPLERTYPE_SHADOW;
+    sampleParams.lodMode                 = LODMODE_EXACT;
+    sampleParams.ref                     = curCase.ref;
 
-	log	<< TestLog::Message
-		<< "Compare reference value = " << sampleParams.ref << "\n"
-		<< "Coordinates: " << curCase.bottomLeft << " -> " << curCase.topRight
-		<< TestLog::EndMessage;
+    log << TestLog::Message << "Compare reference value = " << sampleParams.ref << "\n"
+        << "Coordinates: " << curCase.bottomLeft << " -> " << curCase.topRight << TestLog::EndMessage;
 
-	for (int faceNdx = 0; faceNdx < tcu::CUBEFACE_LAST; faceNdx++)
-	{
-		const tcu::CubeFace		face		= tcu::CubeFace(faceNdx);
-		tcu::Surface			result		(m_renderer.getRenderWidth(), m_renderer.getRenderHeight());
-		vector<float>			texCoord;
+    for (int faceNdx = 0; faceNdx < tcu::CUBEFACE_LAST; faceNdx++)
+    {
+        const tcu::CubeFace face = tcu::CubeFace(faceNdx);
+        tcu::Surface result(m_renderer.getRenderWidth(), m_renderer.getRenderHeight());
+        vector<float> texCoord;
 
-		computeQuadTexCoordCube(texCoord, face, curCase.bottomLeft, curCase.topRight);
+        computeQuadTexCoordCube(texCoord, face, curCase.bottomLeft, curCase.topRight);
 
-		log << TestLog::Message << "Face " << getFaceDesc(face) << TestLog::EndMessage;
+        log << TestLog::Message << "Face " << getFaceDesc(face) << TestLog::EndMessage;
 
-		// \todo Log texture coordinates.
+        // \todo Log texture coordinates.
 
-		m_renderer.renderQuad(result, curCase.textureIndex, &texCoord[0], sampleParams);
+        m_renderer.renderQuad(result, curCase.textureIndex, &texCoord[0], sampleParams);
 
-		{
-			const tcu::PixelFormat		pixelFormat			= getPixelFormat(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
-			tcu::LodPrecision			lodPrecision;
-			tcu::TexComparePrecision	texComparePrecision;
+        {
+            const tcu::PixelFormat pixelFormat = getPixelFormat(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
+            tcu::LodPrecision lodPrecision;
+            tcu::TexComparePrecision texComparePrecision;
 
-			lodPrecision.derivateBits			= 10;
-			lodPrecision.lodBits				= 5;
-			texComparePrecision.coordBits		= tcu::IVec3(10,10,10);
-			texComparePrecision.uvwBits			= tcu::IVec3(6,6,0);
-			texComparePrecision.pcfBits			= 5;
-			texComparePrecision.referenceBits	= 16;
-			texComparePrecision.resultBits		= pixelFormat.redBits-1;
+            lodPrecision.derivateBits         = 10;
+            lodPrecision.lodBits              = 5;
+            texComparePrecision.coordBits     = tcu::IVec3(10, 10, 10);
+            texComparePrecision.uvwBits       = tcu::IVec3(6, 6, 0);
+            texComparePrecision.pcfBits       = 5;
+            texComparePrecision.referenceBits = 16;
+            texComparePrecision.resultBits    = pixelFormat.redBits - 1;
 
 #ifdef CTS_USES_VULKANSC
-			if (m_context.getTestContext().getCommandLine().isSubProcess())
+            if (m_context.getTestContext().getCommandLine().isSubProcess())
 #endif // CTS_USES_VULKANSC
-			{
-				const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
-																  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+            {
+                const bool isHighQuality =
+                    verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
+                                           &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-				if (!isHighQuality)
-				{
-					log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+                if (!isHighQuality)
+                {
+                    log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed."
+                        << TestLog::EndMessage;
 
-					lodPrecision.lodBits			= 4;
-					texComparePrecision.uvwBits		= tcu::IVec3(4,4,0);
-					texComparePrecision.pcfBits		= 0;
+                    lodPrecision.lodBits        = 4;
+                    texComparePrecision.uvwBits = tcu::IVec3(4, 4, 0);
+                    texComparePrecision.pcfBits = 0;
 
-					const bool isOk = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
-															 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+                    const bool isOk = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(),
+                                                             texture.getTexture(), &texCoord[0], sampleParams,
+                                                             texComparePrecision, lodPrecision, pixelFormat);
 
-					if (!isOk)
-					{
-						log << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
-						return tcu::TestStatus::fail("Image verification failed");
-					}
-				}
-			}
-		}
-	}
+                    if (!isOk)
+                    {
+                        log << TestLog::Message
+                            << "ERROR: Verification against low precision requirements failed, failing test case."
+                            << TestLog::EndMessage;
+                        return tcu::TestStatus::fail("Image verification failed");
+                    }
+                }
+            }
+        }
+    }
 
-	m_caseNdx += 1;
-	return m_caseNdx < (int)m_cases.size() ? tcu::TestStatus::incomplete() : tcu::TestStatus::pass("Pass");
+    m_caseNdx += 1;
+    return m_caseNdx < (int)m_cases.size() ? tcu::TestStatus::incomplete() : tcu::TestStatus::pass("Pass");
 }
 
-struct Texture2DArrayShadowTestCaseParameters : public TextureShadowCommonTestCaseParameters, public Texture2DArrayTestCaseParameters
+struct Texture2DArrayShadowTestCaseParameters : public TextureShadowCommonTestCaseParameters,
+                                                public Texture2DArrayTestCaseParameters
 {
 };
 
-void checkTextureSupport (Context& context, const Texture2DArrayShadowTestCaseParameters& testParameters)
+void checkTextureSupport(Context &context, const Texture2DArrayShadowTestCaseParameters &testParameters)
 {
 #ifndef CTS_USES_VULKANSC
-	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
-	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
-		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
+    const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
+    if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
+        TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
 #else
-	DE_UNREF(context);
-	if (!isDepthFormat(testParameters.format))
-		TCU_THROW(NotSupportedError, "Format cannot be used as depth format");
+    DE_UNREF(context);
+    if (!isDepthFormat(testParameters.format))
+        TCU_THROW(NotSupportedError, "Format cannot be used as depth format");
 #endif // CTS_USES_VULKANSC
 }
 
 class Texture2DArrayShadowTestInstance : public TestInstance
 {
 public:
-	typedef Texture2DArrayShadowTestCaseParameters	ParameterType;
-													Texture2DArrayShadowTestInstance		(Context& context, const ParameterType& testParameters);
-													~Texture2DArrayShadowTestInstance		(void);
+    typedef Texture2DArrayShadowTestCaseParameters ParameterType;
+    Texture2DArrayShadowTestInstance(Context &context, const ParameterType &testParameters);
+    ~Texture2DArrayShadowTestInstance(void);
 
-	virtual tcu::TestStatus							iterate									(void);
+    virtual tcu::TestStatus iterate(void);
 
 private:
-													Texture2DArrayShadowTestInstance		(const Texture2DArrayShadowTestInstance& other);
-	Texture2DArrayShadowTestInstance&				operator=								(const Texture2DArrayShadowTestInstance& other);
+    Texture2DArrayShadowTestInstance(const Texture2DArrayShadowTestInstance &other);
+    Texture2DArrayShadowTestInstance &operator=(const Texture2DArrayShadowTestInstance &other);
 
-	struct FilterCase
-	{
-		int							textureIndex;
-		tcu::Vec3					minCoord;
-		tcu::Vec3					maxCoord;
-		float						ref;
+    struct FilterCase
+    {
+        int textureIndex;
+        tcu::Vec3 minCoord;
+        tcu::Vec3 maxCoord;
+        float ref;
 
-		FilterCase (void)
-			: textureIndex	(-1)
-			, ref			(0.0f)
-		{
-		}
+        FilterCase(void) : textureIndex(-1), ref(0.0f)
+        {
+        }
 
-		FilterCase (const int tex_, float ref_, const tcu::Vec3& minCoord_, const tcu::Vec3& maxCoord_)
-			: textureIndex	(tex_)
-			, minCoord		(minCoord_)
-			, maxCoord		(maxCoord_)
-			, ref			(ref_)
-		{
-		}
-	};
+        FilterCase(const int tex_, float ref_, const tcu::Vec3 &minCoord_, const tcu::Vec3 &maxCoord_)
+            : textureIndex(tex_)
+            , minCoord(minCoord_)
+            , maxCoord(maxCoord_)
+            , ref(ref_)
+        {
+        }
+    };
 
-	const ParameterType&				m_testParameters;
-	std::vector<TestTexture2DArraySp>	m_textures;
-	std::vector<FilterCase>				m_cases;
+    const ParameterType &m_testParameters;
+    std::vector<TestTexture2DArraySp> m_textures;
+    std::vector<FilterCase> m_cases;
 
-	TextureRenderer						m_renderer;
+    TextureRenderer m_renderer;
 
-	int									m_caseNdx;
+    int m_caseNdx;
 };
 
-Texture2DArrayShadowTestInstance::Texture2DArrayShadowTestInstance (Context& context, const ParameterType& testParameters)
-	: TestInstance			(context)
-	, m_testParameters		(testParameters)
-	, m_renderer			(context, testParameters.sampleCount, TEX2D_VIEWPORT_WIDTH, TEX2D_VIEWPORT_HEIGHT)
-	, m_caseNdx				(0)
+Texture2DArrayShadowTestInstance::Texture2DArrayShadowTestInstance(Context &context,
+                                                                   const ParameterType &testParameters)
+    : TestInstance(context)
+    , m_testParameters(testParameters)
+    , m_renderer(context, testParameters.sampleCount, TEX2D_VIEWPORT_WIDTH, TEX2D_VIEWPORT_HEIGHT)
+    , m_caseNdx(0)
 {
-	const int						numLevels	= deLog2Floor32(de::max(m_testParameters.width, m_testParameters.height))+1;
-	const tcu::TextureFormatInfo	fmtInfo		= tcu::getTextureFormatInfo(vk::mapVkFormat(m_testParameters.format));
-	const tcu::Vec4					cScale		= fmtInfo.valueMax-fmtInfo.valueMin;
-	const tcu::Vec4					cBias		= fmtInfo.valueMin;
+    const int numLevels                  = deLog2Floor32(de::max(m_testParameters.width, m_testParameters.height)) + 1;
+    const tcu::TextureFormatInfo fmtInfo = tcu::getTextureFormatInfo(vk::mapVkFormat(m_testParameters.format));
+    const tcu::Vec4 cScale               = fmtInfo.valueMax - fmtInfo.valueMin;
+    const tcu::Vec4 cBias                = fmtInfo.valueMin;
 
-	// Create 2 textures.
-	m_textures.reserve(2);
-	for (int ndx = 0; ndx < 2; ndx++)
-	{
-		m_textures.push_back(TestTexture2DArraySp(new pipeline::TestTexture2DArray(vk::mapVkFormat(m_testParameters.format), m_testParameters.width, m_testParameters.height, m_testParameters.numLayers)));
-	}
+    // Create 2 textures.
+    m_textures.reserve(2);
+    for (int ndx = 0; ndx < 2; ndx++)
+    {
+        m_textures.push_back(TestTexture2DArraySp(
+            new pipeline::TestTexture2DArray(vk::mapVkFormat(m_testParameters.format), m_testParameters.width,
+                                             m_testParameters.height, m_testParameters.numLayers)));
+    }
 
-	// Fill first gradient texture.
-	for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
-	{
-		const tcu::Vec4 gMin = tcu::Vec4(-0.5f, -0.5f, -0.5f, 2.0f)*cScale + cBias;
-		const tcu::Vec4 gMax = tcu::Vec4( 1.0f,  1.0f,  1.0f, 0.0f)*cScale + cBias;
+    // Fill first gradient texture.
+    for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
+    {
+        const tcu::Vec4 gMin = tcu::Vec4(-0.5f, -0.5f, -0.5f, 2.0f) * cScale + cBias;
+        const tcu::Vec4 gMax = tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f) * cScale + cBias;
 
-		tcu::fillWithComponentGradients(m_textures[0]->getTexture().getLevel(levelNdx), gMin, gMax);
-	}
+        tcu::fillWithComponentGradients(m_textures[0]->getTexture().getLevel(levelNdx), gMin, gMax);
+    }
 
-	// Fill second with grid texture.
-	for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
-	{
-		const deUint32	step	= 0x00ffffff / numLevels;
-		const deUint32	rgb		= step*levelNdx;
-		const deUint32	colorA	= 0xff000000 | rgb;
-		const deUint32	colorB	= 0xff000000 | ~rgb;
+    // Fill second with grid texture.
+    for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
+    {
+        const uint32_t step   = 0x00ffffff / numLevels;
+        const uint32_t rgb    = step * levelNdx;
+        const uint32_t colorA = 0xff000000 | rgb;
+        const uint32_t colorB = 0xff000000 | ~rgb;
 
-		tcu::fillWithGrid(m_textures[1]->getTexture().getLevel(levelNdx), 4, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
-	}
+        tcu::fillWithGrid(m_textures[1]->getTexture().getLevel(levelNdx), 4, tcu::RGBA(colorA).toVec() * cScale + cBias,
+                          tcu::RGBA(colorB).toVec() * cScale + cBias);
+    }
 
-	// Upload.
-	for (std::vector<TestTexture2DArraySp>::iterator i = m_textures.begin(); i != m_textures.end(); ++i)
-	{
-		m_renderer.add2DArrayTexture(*i, m_testParameters.aspectMask, m_testParameters.backingMode);
-	}
+    // Upload.
+    for (std::vector<TestTexture2DArraySp>::iterator i = m_textures.begin(); i != m_textures.end(); ++i)
+    {
+        m_renderer.add2DArrayTexture(*i, m_testParameters.aspectMask, m_testParameters.backingMode);
+    }
 
-	// Compute cases.
-	{
-		const float refInRangeUpper		= (m_testParameters.compareOp == Sampler::COMPAREMODE_EQUAL || m_testParameters.compareOp == Sampler::COMPAREMODE_NOT_EQUAL) ? 1.0f : 0.5f;
-		const float refInRangeLower		= (m_testParameters.compareOp == Sampler::COMPAREMODE_EQUAL || m_testParameters.compareOp == Sampler::COMPAREMODE_NOT_EQUAL) ? 0.0f : 0.5f;
-		const float refOutOfBoundsUpper	= 1.1f;		// !< lookup function should clamp values to [0, 1] range
-		const float refOutOfBoundsLower	= -0.1f;
+    // Compute cases.
+    {
+        const float refInRangeUpper     = (m_testParameters.compareOp == Sampler::COMPAREMODE_EQUAL ||
+                                       m_testParameters.compareOp == Sampler::COMPAREMODE_NOT_EQUAL) ?
+                                              1.0f :
+                                              0.5f;
+        const float refInRangeLower     = (m_testParameters.compareOp == Sampler::COMPAREMODE_EQUAL ||
+                                       m_testParameters.compareOp == Sampler::COMPAREMODE_NOT_EQUAL) ?
+                                              0.0f :
+                                              0.5f;
+        const float refOutOfBoundsUpper = 1.1f; // !< lookup function should clamp values to [0, 1] range
+        const float refOutOfBoundsLower = -0.1f;
 
-		const struct
-		{
-			const int	texNdx;
-			const float	ref;
-			const float	lodX;
-			const float	lodY;
-			const float	oX;
-			const float	oY;
-		} cases[] =
-		{
-			{ 0,	refInRangeUpper,		1.6f,	2.9f,	-1.0f,	-2.7f	},
-			{ 0,	refInRangeLower,		-2.0f,	-1.35f,	-0.2f,	0.7f	},
-			{ 1,	refInRangeUpper,		0.14f,	0.275f,	-1.5f,	-1.1f	},
-			{ 1,	refInRangeLower,		-0.92f,	-2.64f,	0.4f,	-0.1f	},
-			{ 1,	refOutOfBoundsUpper,	-0.49f,	-0.22f,	0.45f,	0.97f	},
-			{ 1,	refOutOfBoundsLower,	-0.85f,	0.75f,	0.25f,	0.61f	},
-		};
+        const struct
+        {
+            const int texNdx;
+            const float ref;
+            const float lodX;
+            const float lodY;
+            const float oX;
+            const float oY;
+        } cases[] = {
+            {0, refInRangeUpper, 1.6f, 2.9f, -1.0f, -2.7f},
+            {0, refInRangeLower, -2.0f, -1.35f, -0.2f, 0.7f},
+            {1, refInRangeUpper, 0.14f, 0.275f, -1.5f, -1.1f},
+            {1, refInRangeLower, -0.92f, -2.64f, 0.4f, -0.1f},
+            {1, refOutOfBoundsUpper, -0.49f, -0.22f, 0.45f, 0.97f},
+            {1, refOutOfBoundsLower, -0.85f, 0.75f, 0.25f, 0.61f},
+        };
 
-		const float	minLayer	= -0.5f;
-		const float	maxLayer	= (float)m_testParameters.numLayers;
+        const float minLayer = -0.5f;
+        const float maxLayer = (float)m_testParameters.numLayers;
 
-		for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); caseNdx++)
-		{
-			const int	tex		= cases[caseNdx].texNdx > 0 ? 1 : 0;
-			const float	ref		= cases[caseNdx].ref;
-			const float	lodX	= cases[caseNdx].lodX;
-			const float	lodY	= cases[caseNdx].lodY;
-			const float	oX		= cases[caseNdx].oX;
-			const float	oY		= cases[caseNdx].oY;
-			const float	sX		= deFloatExp2(lodX) * float(m_renderer.getRenderWidth()) / float(m_textures[tex]->getTexture().getWidth());
-			const float	sY		= deFloatExp2(lodY) * float(m_renderer.getRenderHeight()) / float(m_textures[tex]->getTexture().getHeight());
+        for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); caseNdx++)
+        {
+            const int tex    = cases[caseNdx].texNdx > 0 ? 1 : 0;
+            const float ref  = cases[caseNdx].ref;
+            const float lodX = cases[caseNdx].lodX;
+            const float lodY = cases[caseNdx].lodY;
+            const float oX   = cases[caseNdx].oX;
+            const float oY   = cases[caseNdx].oY;
+            const float sX   = deFloatExp2(lodX) * float(m_renderer.getRenderWidth()) /
+                             float(m_textures[tex]->getTexture().getWidth());
+            const float sY = deFloatExp2(lodY) * float(m_renderer.getRenderHeight()) /
+                             float(m_textures[tex]->getTexture().getHeight());
 
-			m_cases.push_back(FilterCase(tex, ref, tcu::Vec3(oX, oY, minLayer), tcu::Vec3(oX+sX, oY+sY, maxLayer)));
-		}
-	}
+            m_cases.push_back(FilterCase(tex, ref, tcu::Vec3(oX, oY, minLayer), tcu::Vec3(oX + sX, oY + sY, maxLayer)));
+        }
+    }
 }
 
-Texture2DArrayShadowTestInstance::~Texture2DArrayShadowTestInstance (void)
+Texture2DArrayShadowTestInstance::~Texture2DArrayShadowTestInstance(void)
 {
 }
 
-tcu::TestStatus Texture2DArrayShadowTestInstance::iterate (void)
+tcu::TestStatus Texture2DArrayShadowTestInstance::iterate(void)
 {
-	tcu::TestLog&						log				= m_context.getTestContext().getLog();
-	const FilterCase&					curCase			= m_cases[m_caseNdx];
-	const pipeline::TestTexture2DArray&	texture			= m_renderer.get2DArrayTexture(curCase.textureIndex);
+    tcu::TestLog &log                           = m_context.getTestContext().getLog();
+    const FilterCase &curCase                   = m_cases[m_caseNdx];
+    const pipeline::TestTexture2DArray &texture = m_renderer.get2DArrayTexture(curCase.textureIndex);
 
-	ReferenceParams						sampleParams	(TEXTURETYPE_2D_ARRAY);
-	tcu::Surface						rendered		(m_renderer.getRenderWidth(), m_renderer.getRenderHeight());
-	const tcu::ScopedLogSection			section			(log, string("Test") + de::toString(m_caseNdx), string("Test ") + de::toString(m_caseNdx));
+    ReferenceParams sampleParams(TEXTURETYPE_2D_ARRAY);
+    tcu::Surface rendered(m_renderer.getRenderWidth(), m_renderer.getRenderHeight());
+    const tcu::ScopedLogSection section(log, string("Test") + de::toString(m_caseNdx),
+                                        string("Test ") + de::toString(m_caseNdx));
 
-	const float							texCoord[]		=
-	{
-		curCase.minCoord.x(), curCase.minCoord.y(), curCase.minCoord.z(),
-		curCase.minCoord.x(), curCase.maxCoord.y(), (curCase.minCoord.z() + curCase.maxCoord.z()) / 2.0f,
-		curCase.maxCoord.x(), curCase.minCoord.y(), (curCase.minCoord.z() + curCase.maxCoord.z()) / 2.0f,
-		curCase.maxCoord.x(), curCase.maxCoord.y(), curCase.maxCoord.z()
-	};
+    const float texCoord[] = {
+        curCase.minCoord.x(), curCase.minCoord.y(), curCase.minCoord.z(),
+        curCase.minCoord.x(), curCase.maxCoord.y(), (curCase.minCoord.z() + curCase.maxCoord.z()) / 2.0f,
+        curCase.maxCoord.x(), curCase.minCoord.y(), (curCase.minCoord.z() + curCase.maxCoord.z()) / 2.0f,
+        curCase.maxCoord.x(), curCase.maxCoord.y(), curCase.maxCoord.z()};
 
-	// Setup params for reference.
-	sampleParams.sampler			= util::createSampler(m_testParameters.wrapS, m_testParameters.wrapT, m_testParameters.minFilter, m_testParameters.magFilter);
-	sampleParams.sampler.compare	= m_testParameters.compareOp;
-	sampleParams.samplerType		= SAMPLERTYPE_SHADOW;
-	sampleParams.lodMode			= LODMODE_EXACT;
-	sampleParams.ref				= curCase.ref;
+    // Setup params for reference.
+    sampleParams.sampler         = util::createSampler(m_testParameters.wrapS, m_testParameters.wrapT,
+                                                       m_testParameters.minFilter, m_testParameters.magFilter);
+    sampleParams.sampler.compare = m_testParameters.compareOp;
+    sampleParams.samplerType     = SAMPLERTYPE_SHADOW;
+    sampleParams.lodMode         = LODMODE_EXACT;
+    sampleParams.ref             = curCase.ref;
 
-	log	<< TestLog::Message
-		<< "Compare reference value = " << sampleParams.ref << "\n"
-		<< "Texture coordinates: " << curCase.minCoord << " -> " << curCase.maxCoord
-		<< TestLog::EndMessage;
+    log << TestLog::Message << "Compare reference value = " << sampleParams.ref << "\n"
+        << "Texture coordinates: " << curCase.minCoord << " -> " << curCase.maxCoord << TestLog::EndMessage;
 
-	m_renderer.renderQuad(rendered, curCase.textureIndex, &texCoord[0], sampleParams);
+    m_renderer.renderQuad(rendered, curCase.textureIndex, &texCoord[0], sampleParams);
 
-	{
-		const tcu::PixelFormat		pixelFormat			= getPixelFormat(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
-		tcu::LodPrecision			lodPrecision;
-		tcu::TexComparePrecision	texComparePrecision;
+    {
+        const tcu::PixelFormat pixelFormat = getPixelFormat(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
+        tcu::LodPrecision lodPrecision;
+        tcu::TexComparePrecision texComparePrecision;
 
-		lodPrecision.derivateBits			= 18;
-		lodPrecision.lodBits				= 6;
-		texComparePrecision.coordBits		= tcu::IVec3(20,20,20);
-		texComparePrecision.uvwBits			= tcu::IVec3(7,7,7);
-		texComparePrecision.pcfBits			= 5;
-		texComparePrecision.referenceBits	= 16;
-		texComparePrecision.resultBits		= pixelFormat.redBits-1;
+        lodPrecision.derivateBits         = 18;
+        lodPrecision.lodBits              = 6;
+        texComparePrecision.coordBits     = tcu::IVec3(20, 20, 20);
+        texComparePrecision.uvwBits       = tcu::IVec3(7, 7, 7);
+        texComparePrecision.pcfBits       = 5;
+        texComparePrecision.referenceBits = 16;
+        texComparePrecision.resultBits    = pixelFormat.redBits - 1;
 
 #ifdef CTS_USES_VULKANSC
-		if (m_context.getTestContext().getCommandLine().isSubProcess())
+        if (m_context.getTestContext().getCommandLine().isSubProcess())
 #endif // CTS_USES_VULKANSC
-		{
-			const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-															  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+        {
+            const bool isHighQuality =
+                verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+                                       &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-			if (!isHighQuality)
-			{
-				log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+            if (!isHighQuality)
+            {
+                log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed."
+                    << TestLog::EndMessage;
 
-				lodPrecision.lodBits			= 4;
-				texComparePrecision.uvwBits		= tcu::IVec3(4,4,4);
-				texComparePrecision.pcfBits		= 0;
+                lodPrecision.lodBits        = 4;
+                texComparePrecision.uvwBits = tcu::IVec3(4, 4, 4);
+                texComparePrecision.pcfBits = 0;
 
-				const bool isOk = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-														 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+                const bool isOk =
+                    verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+                                           &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-				if (!isOk)
-				{
-					log << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
-					return tcu::TestStatus::fail("Image verification failed");
-				}
-			}
-		}
-	}
+                if (!isOk)
+                {
+                    log << TestLog::Message
+                        << "ERROR: Verification against low precision requirements failed, failing test case."
+                        << TestLog::EndMessage;
+                    return tcu::TestStatus::fail("Image verification failed");
+                }
+            }
+        }
+    }
 
-	m_caseNdx += 1;
-	return m_caseNdx < (int)m_cases.size() ? tcu::TestStatus::incomplete() : tcu::TestStatus::pass("Pass");
+    m_caseNdx += 1;
+    return m_caseNdx < (int)m_cases.size() ? tcu::TestStatus::incomplete() : tcu::TestStatus::pass("Pass");
 }
 
-struct Texture1DShadowTestCaseParameters : public Texture1DTestCaseParameters, public TextureShadowCommonTestCaseParameters
+struct Texture1DShadowTestCaseParameters : public Texture1DTestCaseParameters,
+                                           public TextureShadowCommonTestCaseParameters
 {
 };
 
-void checkTextureSupport (Context& context, const Texture1DShadowTestCaseParameters& testParameters)
+void checkTextureSupport(Context &context, const Texture1DShadowTestCaseParameters &testParameters)
 {
 #ifndef CTS_USES_VULKANSC
-	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
-	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
-		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
+    const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
+    if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
+        TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
 #else
-	DE_UNREF(context);
-	if (!isDepthFormat(testParameters.format))
-		TCU_THROW(NotSupportedError, "Format cannot be used as depth format");
+    DE_UNREF(context);
+    if (!isDepthFormat(testParameters.format))
+        TCU_THROW(NotSupportedError, "Format cannot be used as depth format");
 #endif // CTS_USES_VULKANSC
 }
 
 class Texture1DShadowTestInstance : public TestInstance
 {
 public:
-	typedef Texture1DShadowTestCaseParameters	ParameterType;
-												Texture1DShadowTestInstance		(Context& context, const ParameterType& testParameters);
-												~Texture1DShadowTestInstance	(void);
+    typedef Texture1DShadowTestCaseParameters ParameterType;
+    Texture1DShadowTestInstance(Context &context, const ParameterType &testParameters);
+    ~Texture1DShadowTestInstance(void);
 
-	virtual tcu::TestStatus						iterate							(void);
+    virtual tcu::TestStatus iterate(void);
 
 private:
-												Texture1DShadowTestInstance		(const Texture1DShadowTestInstance& other) = delete;
-	Texture1DShadowTestInstance&				operator=						(const Texture1DShadowTestInstance& other) = delete;
+    Texture1DShadowTestInstance(const Texture1DShadowTestInstance &other)            = delete;
+    Texture1DShadowTestInstance &operator=(const Texture1DShadowTestInstance &other) = delete;
 
-	struct FilterCase
-	{
-		int			textureIndex;
+    struct FilterCase
+    {
+        int textureIndex;
 
-		float		minCoord;
-		float		maxCoord;
-		float		ref;
+        float minCoord;
+        float maxCoord;
+        float ref;
 
-		FilterCase	(void)
-			: textureIndex(-1)
-			, minCoord	(0)
-			, maxCoord	(0)
-			, ref		(0.0f)
-		{
-		}
+        FilterCase(void) : textureIndex(-1), minCoord(0), maxCoord(0), ref(0.0f)
+        {
+        }
 
-		FilterCase	(int tex_, const float ref_, const float& minCoord_, const float& maxCoord_)
-			: textureIndex	(tex_)
-			, minCoord		(minCoord_)
-			, maxCoord		(maxCoord_)
-			, ref			(ref_)
-		{
-		}
-	};
+        FilterCase(int tex_, const float ref_, const float &minCoord_, const float &maxCoord_)
+            : textureIndex(tex_)
+            , minCoord(minCoord_)
+            , maxCoord(maxCoord_)
+            , ref(ref_)
+        {
+        }
+    };
 
-	const ParameterType&			m_testParameters;
-	std::vector<TestTexture1DSp>	m_textures;
-	std::vector<FilterCase>			m_cases;
+    const ParameterType &m_testParameters;
+    std::vector<TestTexture1DSp> m_textures;
+    std::vector<FilterCase> m_cases;
 
-	TextureRenderer					m_renderer;
+    TextureRenderer m_renderer;
 
-	int								m_caseNdx;
+    int m_caseNdx;
 };
 
-Texture1DShadowTestInstance::Texture1DShadowTestInstance (Context& context, const ParameterType& testParameters)
-	: TestInstance			(context)
-	, m_testParameters		(testParameters)
-	, m_renderer			(context, testParameters.sampleCount, TEX1D_VIEWPORT_WIDTH, 1, 1, vk::makeComponentMappingRGBA(), vk::VK_IMAGE_TYPE_1D, vk::VK_IMAGE_VIEW_TYPE_1D)
-	, m_caseNdx				(0)
+Texture1DShadowTestInstance::Texture1DShadowTestInstance(Context &context, const ParameterType &testParameters)
+    : TestInstance(context)
+    , m_testParameters(testParameters)
+    , m_renderer(context, testParameters.sampleCount, TEX1D_VIEWPORT_WIDTH, 1, 1, vk::makeComponentMappingRGBA(),
+                 vk::VK_IMAGE_TYPE_1D, vk::VK_IMAGE_VIEW_TYPE_1D)
+    , m_caseNdx(0)
 {
-	// Create 2 textures.
-	m_textures.reserve(2);
-	for (int ndx = 0; ndx < 2; ndx++)
-	{
-		m_textures.push_back(TestTexture1DSp(new pipeline::TestTexture1D(vk::mapVkFormat(m_testParameters.format), m_testParameters.width)));
-	}
+    // Create 2 textures.
+    m_textures.reserve(2);
+    for (int ndx = 0; ndx < 2; ndx++)
+    {
+        m_textures.push_back(TestTexture1DSp(
+            new pipeline::TestTexture1D(vk::mapVkFormat(m_testParameters.format), m_testParameters.width)));
+    }
 
-	const int	numLevels	= m_textures[0]->getNumLevels();
+    const int numLevels = m_textures[0]->getNumLevels();
 
-	// Fill first gradient texture.
-	for (int levelNdx = 0; levelNdx < numLevels; ++levelNdx)
-	{
-		tcu::fillWithComponentGradients(m_textures[0]->getLevel(levelNdx, 0), tcu::Vec4(-0.5f, -0.5f, -0.5f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f));
-	}
+    // Fill first gradient texture.
+    for (int levelNdx = 0; levelNdx < numLevels; ++levelNdx)
+    {
+        tcu::fillWithComponentGradients(m_textures[0]->getLevel(levelNdx, 0), tcu::Vec4(-0.5f, -0.5f, -0.5f, 2.0f),
+                                        tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f));
+    }
 
-	// Fill second with grid texture.
-	for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
-	{
-		const deUint32	step	= 0x00ffffff / numLevels;
-		const deUint32	rgb		= step*levelNdx;
-		const deUint32	colorA	= 0xff000000 | rgb;
-		const deUint32	colorB	= 0xff000000 | ~rgb;
+    // Fill second with grid texture.
+    for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
+    {
+        const uint32_t step   = 0x00ffffff / numLevels;
+        const uint32_t rgb    = step * levelNdx;
+        const uint32_t colorA = 0xff000000 | rgb;
+        const uint32_t colorB = 0xff000000 | ~rgb;
 
-		tcu::fillWithGrid(m_textures[1]->getLevel(levelNdx, 0), 4, tcu::RGBA(colorA).toVec(), tcu::RGBA(colorB).toVec());
-	}
+        tcu::fillWithGrid(m_textures[1]->getLevel(levelNdx, 0), 4, tcu::RGBA(colorA).toVec(),
+                          tcu::RGBA(colorB).toVec());
+    }
 
-	// Upload.
-	for (std::vector<TestTexture1DSp>::iterator i = m_textures.begin(); i != m_textures.end(); ++i)
-	{
-		m_renderer.add1DTexture(*i, m_testParameters.aspectMask, m_testParameters.backingMode);
-	}
+    // Upload.
+    for (std::vector<TestTexture1DSp>::iterator i = m_textures.begin(); i != m_textures.end(); ++i)
+    {
+        m_renderer.add1DTexture(*i, m_testParameters.aspectMask, m_testParameters.backingMode);
+    }
 
-	// Compute cases.
-	{
-		const bool	compareModeSet		= (m_testParameters.compareOp == Sampler::COMPAREMODE_EQUAL || m_testParameters.compareOp == Sampler::COMPAREMODE_NOT_EQUAL);
-		const float refInRangeUpper		= compareModeSet ? 1.0f : 0.5f;
-		const float refInRangeLower		= compareModeSet ? 0.0f : 0.5f;
-		const float refOutOfBoundsUpper	= 1.1f;		// !< lookup function should clamp values to [0, 1] range
-		const float refOutOfBoundsLower	= -0.1f;
+    // Compute cases.
+    {
+        const bool compareModeSet       = (m_testParameters.compareOp == Sampler::COMPAREMODE_EQUAL ||
+                                     m_testParameters.compareOp == Sampler::COMPAREMODE_NOT_EQUAL);
+        const float refInRangeUpper     = compareModeSet ? 1.0f : 0.5f;
+        const float refInRangeLower     = compareModeSet ? 0.0f : 0.5f;
+        const float refOutOfBoundsUpper = 1.1f; // !< lookup function should clamp values to [0, 1] range
+        const float refOutOfBoundsLower = -0.1f;
 
-		const struct
-		{
-			const int	texNdx;
-			const float	ref;
-			const float	lodX;
-			const float	oX;
-		}
-		cases[] =
-		{
-			{ 0,	refInRangeUpper,		+1.600f,	-1.000f	},
-			{ 0,	refInRangeLower,		-2.000f,	-0.200f	},
-			{ 1,	refInRangeUpper,		+0.140f,	-1.500f	},
-			{ 1,	refInRangeLower,		-0.920f,	+0.400f	},
-			{ 1,	refOutOfBoundsUpper,	-0.390f,	+0.650f	},
-			{ 1,	refOutOfBoundsLower,	-1.550f,	+0.350f	},
-		};
+        const struct
+        {
+            const int texNdx;
+            const float ref;
+            const float lodX;
+            const float oX;
+        } cases[] = {
+            {0, refInRangeUpper, +1.600f, -1.000f},     {0, refInRangeLower, -2.000f, -0.200f},
+            {1, refInRangeUpper, +0.140f, -1.500f},     {1, refInRangeLower, -0.920f, +0.400f},
+            {1, refOutOfBoundsUpper, -0.390f, +0.650f}, {1, refOutOfBoundsLower, -1.550f, +0.350f},
+        };
 
-		for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); caseNdx++)
-		{
-			const int	texNdx	= de::clamp(cases[caseNdx].texNdx, 0, (int)m_textures.size()-1);
-			const float ref		= cases[caseNdx].ref;
-			const float	lodX	= cases[caseNdx].lodX;
-			const float	oX		= cases[caseNdx].oX;
-			const float	sX		= deFloatExp2(lodX) * float(m_renderer.getRenderWidth()) / float(m_textures[texNdx]->getTexture().getWidth());
+        for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); caseNdx++)
+        {
+            const int texNdx = de::clamp(cases[caseNdx].texNdx, 0, (int)m_textures.size() - 1);
+            const float ref  = cases[caseNdx].ref;
+            const float lodX = cases[caseNdx].lodX;
+            const float oX   = cases[caseNdx].oX;
+            const float sX   = deFloatExp2(lodX) * float(m_renderer.getRenderWidth()) /
+                             float(m_textures[texNdx]->getTexture().getWidth());
 
-			m_cases.push_back(FilterCase(texNdx, ref, oX, oX+sX));
-		}
-	}
+            m_cases.push_back(FilterCase(texNdx, ref, oX, oX + sX));
+        }
+    }
 
-	m_caseNdx = 0;
+    m_caseNdx = 0;
 }
 
-Texture1DShadowTestInstance::~Texture1DShadowTestInstance (void)
+Texture1DShadowTestInstance::~Texture1DShadowTestInstance(void)
 {
-	m_textures.clear();
-	m_cases.clear();
+    m_textures.clear();
+    m_cases.clear();
 }
 
-tcu::TestStatus Texture1DShadowTestInstance::iterate (void)
+tcu::TestStatus Texture1DShadowTestInstance::iterate(void)
 {
-	tcu::TestLog&					log				= m_context.getTestContext().getLog();
-	const pipeline::TestTexture1D&	texture			= m_renderer.get1DTexture(m_cases[m_caseNdx].textureIndex);
-	const tcu::TextureFormat		texFmt			= texture.getTextureFormat();
-	const tcu::TextureFormatInfo	fmtInfo			= tcu::getTextureFormatInfo(texFmt);
-	const tcu::ScopedLogSection		section			(log, string("Test") + de::toString(m_caseNdx), string("Test ") + de::toString(m_caseNdx));
+    tcu::TestLog &log                      = m_context.getTestContext().getLog();
+    const pipeline::TestTexture1D &texture = m_renderer.get1DTexture(m_cases[m_caseNdx].textureIndex);
+    const tcu::TextureFormat texFmt        = texture.getTextureFormat();
+    const tcu::TextureFormatInfo fmtInfo   = tcu::getTextureFormatInfo(texFmt);
+    const tcu::ScopedLogSection section(log, string("Test") + de::toString(m_caseNdx),
+                                        string("Test ") + de::toString(m_caseNdx));
 
-	const FilterCase&				curCase			= m_cases[m_caseNdx];
-	ReferenceParams					sampleParams	(TEXTURETYPE_1D);
-	tcu::Surface					rendered		(m_renderer.getRenderWidth(), 1);
-	vector<float>					texCoord;
+    const FilterCase &curCase = m_cases[m_caseNdx];
+    ReferenceParams sampleParams(TEXTURETYPE_1D);
+    tcu::Surface rendered(m_renderer.getRenderWidth(), 1);
+    vector<float> texCoord;
 
-	// Setup params for reference.
-	sampleParams.sampler			= util::createSampler(m_testParameters.wrapS, m_testParameters.minFilter, m_testParameters.magFilter);
-	sampleParams.sampler.compare	= m_testParameters.compareOp;
-	sampleParams.samplerType		= SAMPLERTYPE_SHADOW;
-	sampleParams.lodMode			= LODMODE_EXACT;
-	sampleParams.colorBias			= fmtInfo.lookupBias;
-	sampleParams.colorScale			= fmtInfo.lookupScale;
-	sampleParams.ref				= curCase.ref;
+    // Setup params for reference.
+    sampleParams.sampler =
+        util::createSampler(m_testParameters.wrapS, m_testParameters.minFilter, m_testParameters.magFilter);
+    sampleParams.sampler.compare = m_testParameters.compareOp;
+    sampleParams.samplerType     = SAMPLERTYPE_SHADOW;
+    sampleParams.lodMode         = LODMODE_EXACT;
+    sampleParams.colorBias       = fmtInfo.lookupBias;
+    sampleParams.colorScale      = fmtInfo.lookupScale;
+    sampleParams.ref             = curCase.ref;
 
-	log << TestLog::Message << "Compare reference value = " << sampleParams.ref << TestLog::EndMessage;
+    log << TestLog::Message << "Compare reference value = " << sampleParams.ref << TestLog::EndMessage;
 
-	// Compute texture coordinates.
-	log << TestLog::Message << "Texture coordinates: " << curCase.minCoord << " -> " << curCase.maxCoord << TestLog::EndMessage;
-	computeQuadTexCoord1D(texCoord, curCase.minCoord, curCase.maxCoord);
+    // Compute texture coordinates.
+    log << TestLog::Message << "Texture coordinates: " << curCase.minCoord << " -> " << curCase.maxCoord
+        << TestLog::EndMessage;
+    computeQuadTexCoord1D(texCoord, curCase.minCoord, curCase.maxCoord);
 
-	m_renderer.renderQuad(rendered, curCase.textureIndex, &texCoord[0], sampleParams);
+    m_renderer.renderQuad(rendered, curCase.textureIndex, &texCoord[0], sampleParams);
 
-	{
-		const tcu::PixelFormat		pixelFormat			= getPixelFormat(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
-		tcu::LodPrecision			lodPrecision;
-		tcu::TexComparePrecision	texComparePrecision;
+    {
+        const tcu::PixelFormat pixelFormat = getPixelFormat(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
+        tcu::LodPrecision lodPrecision;
+        tcu::TexComparePrecision texComparePrecision;
 
-		lodPrecision.derivateBits			= 18;
-		lodPrecision.lodBits				= 6;
-		texComparePrecision.coordBits		= tcu::IVec3(20,0,0);
-		texComparePrecision.uvwBits			= tcu::IVec3(7,0,0);
-		texComparePrecision.pcfBits			= 5;
-		texComparePrecision.referenceBits	= 16;
-		texComparePrecision.resultBits		= pixelFormat.redBits-1;
+        lodPrecision.derivateBits         = 18;
+        lodPrecision.lodBits              = 6;
+        texComparePrecision.coordBits     = tcu::IVec3(20, 0, 0);
+        texComparePrecision.uvwBits       = tcu::IVec3(7, 0, 0);
+        texComparePrecision.pcfBits       = 5;
+        texComparePrecision.referenceBits = 16;
+        texComparePrecision.resultBits    = pixelFormat.redBits - 1;
 
 #ifdef CTS_USES_VULKANSC
-		if (m_context.getTestContext().getCommandLine().isSubProcess())
+        if (m_context.getTestContext().getCommandLine().isSubProcess())
 #endif // CTS_USES_VULKANSC
-		{
-			const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-															  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+        {
+            const bool isHighQuality =
+                verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+                                       &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-			if (!isHighQuality)
-			{
-				m_context.getTestContext().getLog() << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+            if (!isHighQuality)
+            {
+                m_context.getTestContext().getLog()
+                    << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed."
+                    << TestLog::EndMessage;
 
-				lodPrecision.lodBits			= 4;
-				texComparePrecision.uvwBits		= tcu::IVec3(4,0,0);
-				texComparePrecision.pcfBits		= 0;
+                lodPrecision.lodBits        = 4;
+                texComparePrecision.uvwBits = tcu::IVec3(4, 0, 0);
+                texComparePrecision.pcfBits = 0;
 
-				const bool isOk = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-														 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+                const bool isOk =
+                    verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+                                           &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-				if (!isOk)
-				{
-					m_context.getTestContext().getLog() << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
-					return tcu::TestStatus::fail("Image verification failed");
-				}
-			}
-		}
-	}
+                if (!isOk)
+                {
+                    m_context.getTestContext().getLog()
+                        << TestLog::Message
+                        << "ERROR: Verification against low precision requirements failed, failing test case."
+                        << TestLog::EndMessage;
+                    return tcu::TestStatus::fail("Image verification failed");
+                }
+            }
+        }
+    }
 
-	m_caseNdx += 1;
-	return m_caseNdx < (int)m_cases.size() ? tcu::TestStatus::incomplete() : tcu::TestStatus::pass("Pass");
+    m_caseNdx += 1;
+    return m_caseNdx < (int)m_cases.size() ? tcu::TestStatus::incomplete() : tcu::TestStatus::pass("Pass");
 }
 
-struct Texture1DArrayShadowTestCaseParameters : public TextureShadowCommonTestCaseParameters, public Texture1DArrayTestCaseParameters
+struct Texture1DArrayShadowTestCaseParameters : public TextureShadowCommonTestCaseParameters,
+                                                public Texture1DArrayTestCaseParameters
 {
 };
 
-void checkTextureSupport (Context& context, const Texture1DArrayShadowTestCaseParameters& testParameters)
+void checkTextureSupport(Context &context, const Texture1DArrayShadowTestCaseParameters &testParameters)
 {
 #ifndef CTS_USES_VULKANSC
-	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
-	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
-		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
+    const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
+    if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
+        TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
 #else
-	DE_UNREF(context);
-	if (!isDepthFormat(testParameters.format))
-		TCU_THROW(NotSupportedError, "Format cannot be used as depth format");
+    DE_UNREF(context);
+    if (!isDepthFormat(testParameters.format))
+        TCU_THROW(NotSupportedError, "Format cannot be used as depth format");
 #endif // CTS_USES_VULKANSC
 }
 
 class Texture1DArrayShadowTestInstance : public TestInstance
 {
 public:
-	typedef Texture1DArrayShadowTestCaseParameters	ParameterType;
-													Texture1DArrayShadowTestInstance		(Context& context, const ParameterType& testParameters);
-													~Texture1DArrayShadowTestInstance		(void);
+    typedef Texture1DArrayShadowTestCaseParameters ParameterType;
+    Texture1DArrayShadowTestInstance(Context &context, const ParameterType &testParameters);
+    ~Texture1DArrayShadowTestInstance(void);
 
-	virtual tcu::TestStatus							iterate									(void);
+    virtual tcu::TestStatus iterate(void);
 
 private:
-													Texture1DArrayShadowTestInstance		(const Texture1DArrayShadowTestInstance& other) = delete;
-	Texture1DArrayShadowTestInstance&				operator=								(const Texture1DArrayShadowTestInstance& other) = delete;
+    Texture1DArrayShadowTestInstance(const Texture1DArrayShadowTestInstance &other)            = delete;
+    Texture1DArrayShadowTestInstance &operator=(const Texture1DArrayShadowTestInstance &other) = delete;
 
-	struct FilterCase
-	{
-		int							textureIndex;
-		tcu::Vec2					minCoord;
-		tcu::Vec2					maxCoord;
-		float						ref;
+    struct FilterCase
+    {
+        int textureIndex;
+        tcu::Vec2 minCoord;
+        tcu::Vec2 maxCoord;
+        float ref;
 
-		FilterCase (void)
-			: textureIndex	(-1)
-			, ref			(0.0f)
-		{
-		}
+        FilterCase(void) : textureIndex(-1), ref(0.0f)
+        {
+        }
 
-		FilterCase (const int tex_, float ref_, const tcu::Vec2& minCoord_, const tcu::Vec2& maxCoord_)
-			: textureIndex	(tex_)
-			, minCoord		(minCoord_)
-			, maxCoord		(maxCoord_)
-			, ref			(ref_)
-		{
-		}
-	};
+        FilterCase(const int tex_, float ref_, const tcu::Vec2 &minCoord_, const tcu::Vec2 &maxCoord_)
+            : textureIndex(tex_)
+            , minCoord(minCoord_)
+            , maxCoord(maxCoord_)
+            , ref(ref_)
+        {
+        }
+    };
 
-	const ParameterType&				m_testParameters;
-	std::vector<TestTexture1DArraySp>	m_textures;
-	std::vector<FilterCase>				m_cases;
+    const ParameterType &m_testParameters;
+    std::vector<TestTexture1DArraySp> m_textures;
+    std::vector<FilterCase> m_cases;
 
-	TextureRenderer						m_renderer;
+    TextureRenderer m_renderer;
 
-	int									m_caseNdx;
+    int m_caseNdx;
 };
 
-Texture1DArrayShadowTestInstance::Texture1DArrayShadowTestInstance (Context& context, const ParameterType& testParameters)
-	: TestInstance			(context)
-	, m_testParameters		(testParameters)
-	, m_renderer			(context, testParameters.sampleCount, TEX1D_VIEWPORT_WIDTH, 1)
-	, m_caseNdx				(0)
+Texture1DArrayShadowTestInstance::Texture1DArrayShadowTestInstance(Context &context,
+                                                                   const ParameterType &testParameters)
+    : TestInstance(context)
+    , m_testParameters(testParameters)
+    , m_renderer(context, testParameters.sampleCount, TEX1D_VIEWPORT_WIDTH, 1)
+    , m_caseNdx(0)
 {
-	const int						numLevels	= deLog2Floor32(m_testParameters.width) + 1;
-	const tcu::TextureFormatInfo	fmtInfo		= tcu::getTextureFormatInfo(vk::mapVkFormat(m_testParameters.format));
-	const tcu::Vec4					cScale		= fmtInfo.valueMax-fmtInfo.valueMin;
-	const tcu::Vec4					cBias		= fmtInfo.valueMin;
+    const int numLevels                  = deLog2Floor32(m_testParameters.width) + 1;
+    const tcu::TextureFormatInfo fmtInfo = tcu::getTextureFormatInfo(vk::mapVkFormat(m_testParameters.format));
+    const tcu::Vec4 cScale               = fmtInfo.valueMax - fmtInfo.valueMin;
+    const tcu::Vec4 cBias                = fmtInfo.valueMin;
 
-	// Create 2 textures.
-	m_textures.reserve(2);
-	for (int ndx = 0; ndx < 2; ndx++)
-	{
-		m_textures.push_back(TestTexture1DArraySp(new pipeline::TestTexture1DArray(vk::mapVkFormat(m_testParameters.format), m_testParameters.width, m_testParameters.numLayers)));
-	}
+    // Create 2 textures.
+    m_textures.reserve(2);
+    for (int ndx = 0; ndx < 2; ndx++)
+    {
+        m_textures.push_back(TestTexture1DArraySp(new pipeline::TestTexture1DArray(
+            vk::mapVkFormat(m_testParameters.format), m_testParameters.width, m_testParameters.numLayers)));
+    }
 
-	// Fill first gradient texture.
-	for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
-	{
-		const tcu::Vec4 gMin = tcu::Vec4(-0.5f, -0.5f, -0.5f, 2.0f)*cScale + cBias;
-		const tcu::Vec4 gMax = tcu::Vec4( 1.0f,  1.0f,  1.0f, 0.0f)*cScale + cBias;
+    // Fill first gradient texture.
+    for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
+    {
+        const tcu::Vec4 gMin = tcu::Vec4(-0.5f, -0.5f, -0.5f, 2.0f) * cScale + cBias;
+        const tcu::Vec4 gMax = tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f) * cScale + cBias;
 
-		tcu::fillWithComponentGradients(m_textures[0]->getTexture().getLevel(levelNdx), gMin, gMax);
-	}
+        tcu::fillWithComponentGradients(m_textures[0]->getTexture().getLevel(levelNdx), gMin, gMax);
+    }
 
-	// Fill second with grid texture.
-	for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
-	{
-		const deUint32	step	= 0x00ffffff / numLevels;
-		const deUint32	rgb		= step*levelNdx;
-		const deUint32	colorA	= 0xff000000 | rgb;
-		const deUint32	colorB	= 0xff000000 | ~rgb;
+    // Fill second with grid texture.
+    for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
+    {
+        const uint32_t step   = 0x00ffffff / numLevels;
+        const uint32_t rgb    = step * levelNdx;
+        const uint32_t colorA = 0xff000000 | rgb;
+        const uint32_t colorB = 0xff000000 | ~rgb;
 
-		tcu::fillWithGrid(m_textures[1]->getTexture().getLevel(levelNdx), 4, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
-	}
+        tcu::fillWithGrid(m_textures[1]->getTexture().getLevel(levelNdx), 4, tcu::RGBA(colorA).toVec() * cScale + cBias,
+                          tcu::RGBA(colorB).toVec() * cScale + cBias);
+    }
 
-	// Upload.
-	for (std::vector<TestTexture1DArraySp>::iterator i = m_textures.begin(); i != m_textures.end(); ++i)
-	{
-		m_renderer.add1DArrayTexture(*i, m_testParameters.aspectMask, m_testParameters.backingMode);
-	}
+    // Upload.
+    for (std::vector<TestTexture1DArraySp>::iterator i = m_textures.begin(); i != m_textures.end(); ++i)
+    {
+        m_renderer.add1DArrayTexture(*i, m_testParameters.aspectMask, m_testParameters.backingMode);
+    }
 
-	// Compute cases.
-	{
-		const bool	compareModeSet		= (m_testParameters.compareOp == Sampler::COMPAREMODE_EQUAL || m_testParameters.compareOp == Sampler::COMPAREMODE_NOT_EQUAL);
-		const float	refInRangeUpper		= compareModeSet ? 1.0f : 0.5f;
-		const float	refInRangeLower		= compareModeSet ? 0.0f : 0.5f;
-		const float	refOutOfBoundsUpper	= 1.1f;		// !< lookup function should clamp values to [0, 1] range
-		const float	refOutOfBoundsLower	= -0.1f;
+    // Compute cases.
+    {
+        const bool compareModeSet       = (m_testParameters.compareOp == Sampler::COMPAREMODE_EQUAL ||
+                                     m_testParameters.compareOp == Sampler::COMPAREMODE_NOT_EQUAL);
+        const float refInRangeUpper     = compareModeSet ? 1.0f : 0.5f;
+        const float refInRangeLower     = compareModeSet ? 0.0f : 0.5f;
+        const float refOutOfBoundsUpper = 1.1f; // !< lookup function should clamp values to [0, 1] range
+        const float refOutOfBoundsLower = -0.1f;
 
-		const struct
-		{
-			const int	texNdx;
-			const float	ref;
-			const float	lodX;
-			const float	oX;
-		}
-		cases[] =
-		{
-			{ 0,	refInRangeUpper,		1.6f,	-1.0f,	},
-			{ 0,	refInRangeLower,		-2.0f,	-0.2f,	},
-			{ 1,	refInRangeUpper,		0.14f,	-1.5f,	},
-			{ 1,	refInRangeLower,		-0.92f,	0.4f,	},
-			{ 1,	refOutOfBoundsUpper,	-0.49f,	0.45f,	},
-			{ 1,	refOutOfBoundsLower,	-0.85f,	0.25f,	},
-		};
+        const struct
+        {
+            const int texNdx;
+            const float ref;
+            const float lodX;
+            const float oX;
+        } cases[] = {
+            {
+                0,
+                refInRangeUpper,
+                1.6f,
+                -1.0f,
+            },
+            {
+                0,
+                refInRangeLower,
+                -2.0f,
+                -0.2f,
+            },
+            {
+                1,
+                refInRangeUpper,
+                0.14f,
+                -1.5f,
+            },
+            {
+                1,
+                refInRangeLower,
+                -0.92f,
+                0.4f,
+            },
+            {
+                1,
+                refOutOfBoundsUpper,
+                -0.49f,
+                0.45f,
+            },
+            {
+                1,
+                refOutOfBoundsLower,
+                -0.85f,
+                0.25f,
+            },
+        };
 
-		const float	minLayer	= -0.5f;
-		const float	maxLayer	= (float)m_testParameters.numLayers;
+        const float minLayer = -0.5f;
+        const float maxLayer = (float)m_testParameters.numLayers;
 
-		for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); caseNdx++)
-		{
-			const int	tex		= cases[caseNdx].texNdx > 0 ? 1 : 0;
-			const float	ref		= cases[caseNdx].ref;
-			const float	lodX	= cases[caseNdx].lodX;
-			const float	oX		= cases[caseNdx].oX;
-			const float	sX		= deFloatExp2(lodX) * float(m_renderer.getRenderWidth()) / float(m_textures[tex]->getTexture().getWidth());
+        for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); caseNdx++)
+        {
+            const int tex    = cases[caseNdx].texNdx > 0 ? 1 : 0;
+            const float ref  = cases[caseNdx].ref;
+            const float lodX = cases[caseNdx].lodX;
+            const float oX   = cases[caseNdx].oX;
+            const float sX   = deFloatExp2(lodX) * float(m_renderer.getRenderWidth()) /
+                             float(m_textures[tex]->getTexture().getWidth());
 
-			m_cases.push_back(FilterCase(tex, ref, tcu::Vec2(oX, minLayer), tcu::Vec2(oX+sX, maxLayer)));
-		}
-	}
+            m_cases.push_back(FilterCase(tex, ref, tcu::Vec2(oX, minLayer), tcu::Vec2(oX + sX, maxLayer)));
+        }
+    }
 }
 
-Texture1DArrayShadowTestInstance::~Texture1DArrayShadowTestInstance (void)
+Texture1DArrayShadowTestInstance::~Texture1DArrayShadowTestInstance(void)
 {
 }
 
-tcu::TestStatus Texture1DArrayShadowTestInstance::iterate (void)
+tcu::TestStatus Texture1DArrayShadowTestInstance::iterate(void)
 {
-	tcu::TestLog&						log				= m_context.getTestContext().getLog();
-	const FilterCase&					curCase			= m_cases[m_caseNdx];
-	const pipeline::TestTexture1DArray&	texture			= m_renderer.get1DArrayTexture(curCase.textureIndex);
+    tcu::TestLog &log                           = m_context.getTestContext().getLog();
+    const FilterCase &curCase                   = m_cases[m_caseNdx];
+    const pipeline::TestTexture1DArray &texture = m_renderer.get1DArrayTexture(curCase.textureIndex);
 
-	ReferenceParams						sampleParams	(TEXTURETYPE_1D_ARRAY);
-	tcu::Surface						rendered		(m_renderer.getRenderWidth(), m_renderer.getRenderHeight());
-	const tcu::ScopedLogSection			section			(log, string("Test") + de::toString(m_caseNdx), string("Test ") + de::toString(m_caseNdx));
+    ReferenceParams sampleParams(TEXTURETYPE_1D_ARRAY);
+    tcu::Surface rendered(m_renderer.getRenderWidth(), m_renderer.getRenderHeight());
+    const tcu::ScopedLogSection section(log, string("Test") + de::toString(m_caseNdx),
+                                        string("Test ") + de::toString(m_caseNdx));
 
-	const float							texCoord[]		=
-	{
-		curCase.minCoord.x(), curCase.minCoord.y(),
-		curCase.minCoord.x(), (curCase.minCoord.y() + curCase.maxCoord.y()) / 2.0f,
-		curCase.maxCoord.x(), (curCase.minCoord.y() + curCase.maxCoord.y()) / 2.0f,
-		curCase.maxCoord.x(), curCase.maxCoord.y()
-	};
+    const float texCoord[] = {curCase.minCoord.x(), curCase.minCoord.y(),
+                              curCase.minCoord.x(), (curCase.minCoord.y() + curCase.maxCoord.y()) / 2.0f,
+                              curCase.maxCoord.x(), (curCase.minCoord.y() + curCase.maxCoord.y()) / 2.0f,
+                              curCase.maxCoord.x(), curCase.maxCoord.y()};
 
-	// Setup params for reference.
-	sampleParams.sampler			= util::createSampler(m_testParameters.wrapS, m_testParameters.minFilter, m_testParameters.magFilter);
-	sampleParams.sampler.compare	= m_testParameters.compareOp;
-	sampleParams.samplerType		= SAMPLERTYPE_SHADOW;
-	sampleParams.lodMode			= LODMODE_EXACT;
-	sampleParams.ref				= curCase.ref;
+    // Setup params for reference.
+    sampleParams.sampler =
+        util::createSampler(m_testParameters.wrapS, m_testParameters.minFilter, m_testParameters.magFilter);
+    sampleParams.sampler.compare = m_testParameters.compareOp;
+    sampleParams.samplerType     = SAMPLERTYPE_SHADOW;
+    sampleParams.lodMode         = LODMODE_EXACT;
+    sampleParams.ref             = curCase.ref;
 
-	log	<< TestLog::Message
-		<< "Compare reference value = " << sampleParams.ref << "\n"
-		<< "Texture coordinates: " << curCase.minCoord << " -> " << curCase.maxCoord
-		<< TestLog::EndMessage;
+    log << TestLog::Message << "Compare reference value = " << sampleParams.ref << "\n"
+        << "Texture coordinates: " << curCase.minCoord << " -> " << curCase.maxCoord << TestLog::EndMessage;
 
-	m_renderer.renderQuad(rendered, curCase.textureIndex, &texCoord[0], sampleParams);
+    m_renderer.renderQuad(rendered, curCase.textureIndex, &texCoord[0], sampleParams);
 
-	{
-		const tcu::PixelFormat		pixelFormat			= getPixelFormat(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
-		tcu::LodPrecision			lodPrecision;
-		tcu::TexComparePrecision	texComparePrecision;
+    {
+        const tcu::PixelFormat pixelFormat = getPixelFormat(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
+        tcu::LodPrecision lodPrecision;
+        tcu::TexComparePrecision texComparePrecision;
 
-		lodPrecision.derivateBits			= 18;
-		lodPrecision.lodBits				= 6;
-		texComparePrecision.coordBits		= tcu::IVec3(20,20,20);
-		texComparePrecision.uvwBits			= tcu::IVec3(7,7,7);
-		texComparePrecision.pcfBits			= 5;
-		texComparePrecision.referenceBits	= 16;
-		texComparePrecision.resultBits		= pixelFormat.redBits-1;
+        lodPrecision.derivateBits         = 18;
+        lodPrecision.lodBits              = 6;
+        texComparePrecision.coordBits     = tcu::IVec3(20, 20, 20);
+        texComparePrecision.uvwBits       = tcu::IVec3(7, 7, 7);
+        texComparePrecision.pcfBits       = 5;
+        texComparePrecision.referenceBits = 16;
+        texComparePrecision.resultBits    = pixelFormat.redBits - 1;
 
 #ifdef CTS_USES_VULKANSC
-		if (m_context.getTestContext().getCommandLine().isSubProcess())
+        if (m_context.getTestContext().getCommandLine().isSubProcess())
 #endif // CTS_USES_VULKANSC
-		{
-			const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-															  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+        {
+            const bool isHighQuality =
+                verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+                                       &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-			if (!isHighQuality)
-			{
-				log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+            if (!isHighQuality)
+            {
+                log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed."
+                    << TestLog::EndMessage;
 
-				lodPrecision.lodBits			= 4;
-				texComparePrecision.uvwBits		= tcu::IVec3(4,4,4);
-				texComparePrecision.pcfBits		= 0;
+                lodPrecision.lodBits        = 4;
+                texComparePrecision.uvwBits = tcu::IVec3(4, 4, 4);
+                texComparePrecision.pcfBits = 0;
 
-				const bool isOk = verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
-														 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+                const bool isOk =
+                    verifyTexCompareResult(m_context.getTestContext(), rendered.getAccess(), texture.getTexture(),
+                                           &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-				if (!isOk)
-				{
-					log << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
-					return tcu::TestStatus::fail("Image verification failed");
-				}
-			}
-		}
-	}
+                if (!isOk)
+                {
+                    log << TestLog::Message
+                        << "ERROR: Verification against low precision requirements failed, failing test case."
+                        << TestLog::EndMessage;
+                    return tcu::TestStatus::fail("Image verification failed");
+                }
+            }
+        }
+    }
 
-	m_caseNdx += 1;
-	return m_caseNdx < (int)m_cases.size() ? tcu::TestStatus::incomplete() : tcu::TestStatus::pass("Pass");
+    m_caseNdx += 1;
+    return m_caseNdx < (int)m_cases.size() ? tcu::TestStatus::incomplete() : tcu::TestStatus::pass("Pass");
 }
 
-struct TextureCubeArrayShadowTestCaseParameters : public TextureShadowCommonTestCaseParameters, public TextureCubeArrayTestCaseParameters
+struct TextureCubeArrayShadowTestCaseParameters : public TextureShadowCommonTestCaseParameters,
+                                                  public TextureCubeArrayTestCaseParameters
 {
 };
 
-void checkTextureSupport (Context& context, const TextureCubeArrayShadowTestCaseParameters& testParameters)
+void checkTextureSupport(Context &context, const TextureCubeArrayShadowTestCaseParameters &testParameters)
 {
 #ifndef CTS_USES_VULKANSC
-	const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
-	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
-		TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
-	if (!testParameters.seamless)
-		context.requireDeviceFunctionality("VK_EXT_non_seamless_cube_map");
+    const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
+    if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
+        TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
+    if (!testParameters.seamless)
+        context.requireDeviceFunctionality("VK_EXT_non_seamless_cube_map");
 #else
-	DE_UNREF(context);
-	if (!isDepthFormat(testParameters.format))
-		TCU_THROW(NotSupportedError, "Format cannot be used as depth format");
+    DE_UNREF(context);
+    if (!isDepthFormat(testParameters.format))
+        TCU_THROW(NotSupportedError, "Format cannot be used as depth format");
 #endif // CTS_USES_VULKANSC
 }
 
 class TextureCubeArrayShadowTestInstance : public TestInstance
 {
 public:
-	typedef TextureCubeArrayShadowTestCaseParameters	ParameterType;
-														TextureCubeArrayShadowTestInstance	(Context& context, const ParameterType& testParameters);
-														~TextureCubeArrayShadowTestInstance	(void);
+    typedef TextureCubeArrayShadowTestCaseParameters ParameterType;
+    TextureCubeArrayShadowTestInstance(Context &context, const ParameterType &testParameters);
+    ~TextureCubeArrayShadowTestInstance(void);
 
-	virtual tcu::TestStatus								iterate								(void);
+    virtual tcu::TestStatus iterate(void);
 
 private:
-														TextureCubeArrayShadowTestInstance	(const TextureCubeArrayShadowTestInstance& other);
-	TextureCubeArrayShadowTestInstance&					operator=							(const TextureCubeArrayShadowTestInstance& other);
+    TextureCubeArrayShadowTestInstance(const TextureCubeArrayShadowTestInstance &other);
+    TextureCubeArrayShadowTestInstance &operator=(const TextureCubeArrayShadowTestInstance &other);
 
-	struct FilterCase
-	{
-		int						textureIndex;
-		tcu::Vec2				bottomLeft;
-		tcu::Vec2				topRight;
-		float					ref;
+    struct FilterCase
+    {
+        int textureIndex;
+        tcu::Vec2 bottomLeft;
+        tcu::Vec2 topRight;
+        float ref;
 
-		FilterCase (void)
-			: textureIndex	(-1)
-			, ref			(0.0f)
-		{
-		}
+        FilterCase(void) : textureIndex(-1), ref(0.0f)
+        {
+        }
 
-		FilterCase (const int tex_, const float ref_, const tcu::Vec2& bottomLeft_, const tcu::Vec2& topRight_)
-			: textureIndex	(tex_)
-			, bottomLeft	(bottomLeft_)
-			, topRight		(topRight_)
-			, ref			(ref_)
-		{
-		}
-	};
+        FilterCase(const int tex_, const float ref_, const tcu::Vec2 &bottomLeft_, const tcu::Vec2 &topRight_)
+            : textureIndex(tex_)
+            , bottomLeft(bottomLeft_)
+            , topRight(topRight_)
+            , ref(ref_)
+        {
+        }
+    };
 
-	const ParameterType&			m_testParameters;
-	vector<TestTextureCubeArraySp>	m_textures;
-	std::vector<FilterCase>			m_cases;
+    const ParameterType &m_testParameters;
+    vector<TestTextureCubeArraySp> m_textures;
+    std::vector<FilterCase> m_cases;
 
-	TextureRenderer					m_renderer;
-	int								m_caseNdx;
+    TextureRenderer m_renderer;
+    int m_caseNdx;
 };
 
-TextureCubeArrayShadowTestInstance::TextureCubeArrayShadowTestInstance (Context& context, const ParameterType& testParameters)
-	: TestInstance			(context)
-	, m_testParameters		(testParameters)
-	, m_renderer			(context, testParameters.sampleCount, TEXCUBE_VIEWPORT_SIZE, TEXCUBE_VIEWPORT_SIZE)
-	, m_caseNdx				(0)
+TextureCubeArrayShadowTestInstance::TextureCubeArrayShadowTestInstance(Context &context,
+                                                                       const ParameterType &testParameters)
+    : TestInstance(context)
+    , m_testParameters(testParameters)
+    , m_renderer(context, testParameters.sampleCount, TEXCUBE_VIEWPORT_SIZE, TEXCUBE_VIEWPORT_SIZE)
+    , m_caseNdx(0)
 {
-	const int						numLevels	= deLog2Floor32(m_testParameters.size)+1;
-	const tcu::TextureFormatInfo	fmtInfo		= tcu::getTextureFormatInfo(vk::mapVkFormat(m_testParameters.format));
-	const tcu::Vec4					cBias		= fmtInfo.valueMin;
-	const tcu::Vec4					cScale		= fmtInfo.valueMax-fmtInfo.valueMin;
+    const int numLevels                  = deLog2Floor32(m_testParameters.size) + 1;
+    const tcu::TextureFormatInfo fmtInfo = tcu::getTextureFormatInfo(vk::mapVkFormat(m_testParameters.format));
+    const tcu::Vec4 cBias                = fmtInfo.valueMin;
+    const tcu::Vec4 cScale               = fmtInfo.valueMax - fmtInfo.valueMin;
 
-	// Create textures.
+    // Create textures.
 
-	m_textures.reserve(2);
-	for (int ndx = 0; ndx < 2; ndx++)
-	{
-		m_textures.push_back(TestTextureCubeArraySp(new pipeline::TestTextureCubeArray(vk::mapVkFormat(m_testParameters.format), m_testParameters.size, m_testParameters.numLayers)));
-	}
+    m_textures.reserve(2);
+    for (int ndx = 0; ndx < 2; ndx++)
+    {
+        m_textures.push_back(TestTextureCubeArraySp(new pipeline::TestTextureCubeArray(
+            vk::mapVkFormat(m_testParameters.format), m_testParameters.size, m_testParameters.numLayers)));
+    }
 
-	// Fill first with gradient texture.
-	static const tcu::Vec4 gradients[tcu::CUBEFACE_LAST][2] =
-	{
-		{ tcu::Vec4(-1.0f, -1.0f, -1.0f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f) }, // negative x
-		{ tcu::Vec4( 0.0f, -1.0f, -1.0f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f) }, // positive x
-		{ tcu::Vec4(-1.0f,  0.0f, -1.0f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f) }, // negative y
-		{ tcu::Vec4(-1.0f, -1.0f,  0.0f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f) }, // positive y
-		{ tcu::Vec4(-1.0f, -1.0f, -1.0f, 0.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f) }, // negative z
-		{ tcu::Vec4( 0.0f,  0.0f,  0.0f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f) }  // positive z
-	};
+    // Fill first with gradient texture.
+    static const tcu::Vec4 gradients[tcu::CUBEFACE_LAST][2] = {
+        {tcu::Vec4(-1.0f, -1.0f, -1.0f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f)}, // negative x
+        {tcu::Vec4(0.0f, -1.0f, -1.0f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f)},  // positive x
+        {tcu::Vec4(-1.0f, 0.0f, -1.0f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f)},  // negative y
+        {tcu::Vec4(-1.0f, -1.0f, 0.0f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f)},  // positive y
+        {tcu::Vec4(-1.0f, -1.0f, -1.0f, 0.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f)}, // negative z
+        {tcu::Vec4(0.0f, 0.0f, 0.0f, 2.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f)}     // positive z
+    };
 
-	for (int layerFace = 0; layerFace < m_textures[0]->getArraySize(); layerFace++)
-	{
-		const int		face		= layerFace % 6;
-		const int		layer		= layerFace / 6;
-		const tcu::Vec4	gradient0	= gradients[face][0] / float(layer + 1);
-		const tcu::Vec4	gradient1	= gradients[face][1] / float(layer + 1);
+    for (int layerFace = 0; layerFace < m_textures[0]->getArraySize(); layerFace++)
+    {
+        const int face            = layerFace % 6;
+        const int layer           = layerFace / 6;
+        const tcu::Vec4 gradient0 = gradients[face][0] / float(layer + 1);
+        const tcu::Vec4 gradient1 = gradients[face][1] / float(layer + 1);
 
-		for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
-		{
-			tcu::fillWithComponentGradients(m_textures[0]->getLevel(levelNdx, layerFace), gradient0*cScale + cBias, gradient1*cScale + cBias);
-		}
-	}
+        for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
+        {
+            tcu::fillWithComponentGradients(m_textures[0]->getLevel(levelNdx, layerFace), gradient0 * cScale + cBias,
+                                            gradient1 * cScale + cBias);
+        }
+    }
 
-	// Fill second with grid texture.
-	for (int layerFace = 0; layerFace < m_textures[1]->getArraySize(); layerFace++)
-	{
-		const int	face		= layerFace % 6;
-		const int	layer		= layerFace / 6;
-		const int	cellSize	= 4 + layer;
+    // Fill second with grid texture.
+    for (int layerFace = 0; layerFace < m_textures[1]->getArraySize(); layerFace++)
+    {
+        const int face     = layerFace % 6;
+        const int layer    = layerFace / 6;
+        const int cellSize = 4 + layer;
 
-		for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
-		{
-			const deUint32	step	= 0x00ffffff / (numLevels*tcu::CUBEFACE_LAST);
-			const deUint32	rgb		= step*levelNdx*face;
-			const deUint32	colorA	= 0xff000000 | rgb;
-			const deUint32	colorB	= 0xff000000 | ~rgb;
+        for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
+        {
+            const uint32_t step   = 0x00ffffff / (numLevels * tcu::CUBEFACE_LAST);
+            const uint32_t rgb    = step * levelNdx * face;
+            const uint32_t colorA = 0xff000000 | rgb;
+            const uint32_t colorB = 0xff000000 | ~rgb;
 
-			tcu::fillWithGrid(m_textures[1]->getLevel(levelNdx, layerFace), cellSize, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
-		}
-	}
+            tcu::fillWithGrid(m_textures[1]->getLevel(levelNdx, layerFace), cellSize,
+                              tcu::RGBA(colorA).toVec() * cScale + cBias, tcu::RGBA(colorB).toVec() * cScale + cBias);
+        }
+    }
 
-	// Upload.
-	for (vector<TestTextureCubeArraySp>::iterator i = m_textures.begin(); i != m_textures.end(); i++)
-	{
-		m_renderer.addCubeArrayTexture(*i, m_testParameters.aspectMask, m_testParameters.backingMode);
-	}
+    // Upload.
+    for (vector<TestTextureCubeArraySp>::iterator i = m_textures.begin(); i != m_textures.end(); i++)
+    {
+        m_renderer.addCubeArrayTexture(*i, m_testParameters.aspectMask, m_testParameters.backingMode);
+    }
 
-	// Compute cases
-	{
-		const bool	compareModeSet		= (m_testParameters.compareOp == Sampler::COMPAREMODE_EQUAL || m_testParameters.compareOp == Sampler::COMPAREMODE_NOT_EQUAL);
-		const float refInRangeUpper		= compareModeSet ? 1.0f : 0.5f;
-		const float refInRangeLower		= compareModeSet ? 0.0f : 0.5f;
-		const float refOutOfBoundsUpper	= 1.1f;
-		const float refOutOfBoundsLower	= -0.1f;
+    // Compute cases
+    {
+        const bool compareModeSet       = (m_testParameters.compareOp == Sampler::COMPAREMODE_EQUAL ||
+                                     m_testParameters.compareOp == Sampler::COMPAREMODE_NOT_EQUAL);
+        const float refInRangeUpper     = compareModeSet ? 1.0f : 0.5f;
+        const float refInRangeLower     = compareModeSet ? 0.0f : 0.5f;
+        const float refOutOfBoundsUpper = 1.1f;
+        const float refOutOfBoundsLower = -0.1f;
 
-		m_cases.push_back(FilterCase(0,	refInRangeUpper,		tcu::Vec2(-1.25f, -1.2f),	tcu::Vec2(1.2f, 1.25f)));	// minification
-		m_cases.push_back(FilterCase(0,	refInRangeLower,		tcu::Vec2(0.8f, 0.8f),		tcu::Vec2(1.25f, 1.20f)));	// magnification
-		m_cases.push_back(FilterCase(1,	refInRangeUpper,		tcu::Vec2(-1.19f, -1.3f),	tcu::Vec2(1.1f, 1.35f)));	// minification
-		m_cases.push_back(FilterCase(1,	refInRangeLower,		tcu::Vec2(-1.2f, -1.1f),	tcu::Vec2(-0.8f, -0.8f)));	// magnification
-		m_cases.push_back(FilterCase(1,	refOutOfBoundsUpper,	tcu::Vec2(-0.61f, -0.1f),	tcu::Vec2(0.9f, 1.18f)));	// reference value clamp, upper
-		m_cases.push_back(FilterCase(1,	refOutOfBoundsLower,	tcu::Vec2(-0.75f, 1.0f),	tcu::Vec2(0.05f, 0.75f)));	// reference value clamp, lower
-	}
+        m_cases.push_back(
+            FilterCase(0, refInRangeUpper, tcu::Vec2(-1.25f, -1.2f), tcu::Vec2(1.2f, 1.25f))); // minification
+        m_cases.push_back(
+            FilterCase(0, refInRangeLower, tcu::Vec2(0.8f, 0.8f), tcu::Vec2(1.25f, 1.20f))); // magnification
+        m_cases.push_back(
+            FilterCase(1, refInRangeUpper, tcu::Vec2(-1.19f, -1.3f), tcu::Vec2(1.1f, 1.35f))); // minification
+        m_cases.push_back(
+            FilterCase(1, refInRangeLower, tcu::Vec2(-1.2f, -1.1f), tcu::Vec2(-0.8f, -0.8f))); // magnification
+        m_cases.push_back(FilterCase(1, refOutOfBoundsUpper, tcu::Vec2(-0.61f, -0.1f),
+                                     tcu::Vec2(0.9f, 1.18f))); // reference value clamp, upper
+        m_cases.push_back(FilterCase(1, refOutOfBoundsLower, tcu::Vec2(-0.75f, 1.0f),
+                                     tcu::Vec2(0.05f, 0.75f))); // reference value clamp, lower
+    }
 }
 
-TextureCubeArrayShadowTestInstance::~TextureCubeArrayShadowTestInstance	(void)
+TextureCubeArrayShadowTestInstance::~TextureCubeArrayShadowTestInstance(void)
 {
 }
 
-tcu::TestStatus TextureCubeArrayShadowTestInstance::iterate (void)
+tcu::TestStatus TextureCubeArrayShadowTestInstance::iterate(void)
 {
 
-	tcu::TestLog&							log				= m_context.getTestContext().getLog();
-	const tcu::ScopedLogSection				iterSection		(log, string("Test") + de::toString(m_caseNdx), string("Test ") + de::toString(m_caseNdx));
-	const FilterCase&						curCase			= m_cases[m_caseNdx];
-	const pipeline::TestTextureCubeArray&	texture			= m_renderer.getCubeArrayTexture(curCase.textureIndex);
+    tcu::TestLog &log = m_context.getTestContext().getLog();
+    const tcu::ScopedLogSection iterSection(log, string("Test") + de::toString(m_caseNdx),
+                                            string("Test ") + de::toString(m_caseNdx));
+    const FilterCase &curCase                     = m_cases[m_caseNdx];
+    const pipeline::TestTextureCubeArray &texture = m_renderer.getCubeArrayTexture(curCase.textureIndex);
 
-	ReferenceParams							sampleParams	(TEXTURETYPE_CUBE_ARRAY);
+    ReferenceParams sampleParams(TEXTURETYPE_CUBE_ARRAY);
 
-	// Params for reference computation.
-	sampleParams.sampler					= util::createSampler(Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE, m_testParameters.minFilter, m_testParameters.magFilter);
-	sampleParams.sampler.seamlessCubeMap	= m_testParameters.seamless;
-	sampleParams.sampler.compare			= m_testParameters.compareOp;
-	sampleParams.samplerType				= SAMPLERTYPE_SHADOW;
-	sampleParams.lodMode					= LODMODE_EXACT;
-	sampleParams.ref						= curCase.ref;
+    // Params for reference computation.
+    sampleParams.sampler                 = util::createSampler(Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE,
+                                                               m_testParameters.minFilter, m_testParameters.magFilter);
+    sampleParams.sampler.seamlessCubeMap = m_testParameters.seamless;
+    sampleParams.sampler.compare         = m_testParameters.compareOp;
+    sampleParams.samplerType             = SAMPLERTYPE_SHADOW;
+    sampleParams.lodMode                 = LODMODE_EXACT;
+    sampleParams.ref                     = curCase.ref;
 
-	log	<< TestLog::Message
-		<< "Compare reference value = " << sampleParams.ref << "\n"
-		<< "Coordinates: " << curCase.bottomLeft << " -> " << curCase.topRight
-		<< TestLog::EndMessage;
+    log << TestLog::Message << "Compare reference value = " << sampleParams.ref << "\n"
+        << "Coordinates: " << curCase.bottomLeft << " -> " << curCase.topRight << TestLog::EndMessage;
 
-	for (int layerFace = 0; layerFace < m_textures[curCase.textureIndex]->getArraySize(); layerFace++)
-	{
-		const tcu::CubeFace		face		= tcu::CubeFace(layerFace % 6);
-		const int				layer		= layerFace / 6;
-		const float				minLayer	= -0.5f + float(layer);
-		const float				maxLayer	= (float)m_testParameters.numLayers;
-		tcu::Surface			result		(m_renderer.getRenderWidth(), m_renderer.getRenderHeight());
-		vector<float>			texCoord;
+    for (int layerFace = 0; layerFace < m_textures[curCase.textureIndex]->getArraySize(); layerFace++)
+    {
+        const tcu::CubeFace face = tcu::CubeFace(layerFace % 6);
+        const int layer          = layerFace / 6;
+        const float minLayer     = -0.5f + float(layer);
+        const float maxLayer     = (float)m_testParameters.numLayers;
+        tcu::Surface result(m_renderer.getRenderWidth(), m_renderer.getRenderHeight());
+        vector<float> texCoord;
 
-		computeQuadTexCoordCubeArray(texCoord, face, curCase.bottomLeft, curCase.topRight, tcu::Vec2(minLayer, maxLayer));
+        computeQuadTexCoordCubeArray(texCoord, face, curCase.bottomLeft, curCase.topRight,
+                                     tcu::Vec2(minLayer, maxLayer));
 
-		log << TestLog::Message << "Face " << getFaceDesc(face) << " at layer " << layer << TestLog::EndMessage;
+        log << TestLog::Message << "Face " << getFaceDesc(face) << " at layer " << layer << TestLog::EndMessage;
 
-		// \todo Log texture coordinates.
+        // \todo Log texture coordinates.
 
-		m_renderer.renderQuad(result, curCase.textureIndex, &texCoord[0], sampleParams);
+        m_renderer.renderQuad(result, curCase.textureIndex, &texCoord[0], sampleParams);
 
-		{
-			const tcu::PixelFormat		pixelFormat			= getPixelFormat(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
-			tcu::LodPrecision			lodPrecision;
-			tcu::TexComparePrecision	texComparePrecision;
+        {
+            const tcu::PixelFormat pixelFormat = getPixelFormat(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM));
+            tcu::LodPrecision lodPrecision;
+            tcu::TexComparePrecision texComparePrecision;
 
-			lodPrecision.derivateBits			= 10;
-			lodPrecision.lodBits				= 5;
-			texComparePrecision.coordBits		= tcu::IVec3(10,10,10);
-			texComparePrecision.uvwBits			= tcu::IVec3(6,6,0);
-			texComparePrecision.pcfBits			= 5;
-			texComparePrecision.referenceBits	= 16;
-			texComparePrecision.resultBits		= pixelFormat.redBits-1;
+            lodPrecision.derivateBits         = 10;
+            lodPrecision.lodBits              = 5;
+            texComparePrecision.coordBits     = tcu::IVec3(10, 10, 10);
+            texComparePrecision.uvwBits       = tcu::IVec3(6, 6, 0);
+            texComparePrecision.pcfBits       = 5;
+            texComparePrecision.referenceBits = 16;
+            texComparePrecision.resultBits    = pixelFormat.redBits - 1;
 
 #ifdef CTS_USES_VULKANSC
-			if (m_context.getTestContext().getCommandLine().isSubProcess())
+            if (m_context.getTestContext().getCommandLine().isSubProcess())
 #endif // CTS_USES_VULKANSC
-			{
-				const bool isHighQuality = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
-															  &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+            {
+                const bool isHighQuality =
+                    verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
+                                           &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
 
-				if (!isHighQuality)
-				{
-					log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed." << TestLog::EndMessage;
+                if (!isHighQuality)
+                {
+                    log << TestLog::Message << "Warning: Verification assuming high-quality PCF filtering failed."
+                        << TestLog::EndMessage;
 
-					lodPrecision.lodBits			= 4;
-					texComparePrecision.uvwBits		= tcu::IVec3(4,4,0);
-					texComparePrecision.pcfBits		= 0;
+                    lodPrecision.lodBits        = 4;
+                    texComparePrecision.uvwBits = tcu::IVec3(4, 4, 0);
+                    texComparePrecision.pcfBits = 0;
 
-					const bool isOk = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(), texture.getTexture(),
-															 &texCoord[0], sampleParams, texComparePrecision, lodPrecision, pixelFormat);
+                    const bool isOk = verifyTexCompareResult(m_context.getTestContext(), result.getAccess(),
+                                                             texture.getTexture(), &texCoord[0], sampleParams,
+                                                             texComparePrecision, lodPrecision, pixelFormat);
 
-					if (!isOk)
-					{
-						log << TestLog::Message << "ERROR: Verification against low precision requirements failed, failing test case." << TestLog::EndMessage;
-						return tcu::TestStatus::fail("Image verification failed");
-					}
-				}
-			}
-		}
-	}
+                    if (!isOk)
+                    {
+                        log << TestLog::Message
+                            << "ERROR: Verification against low precision requirements failed, failing test case."
+                            << TestLog::EndMessage;
+                        return tcu::TestStatus::fail("Image verification failed");
+                    }
+                }
+            }
+        }
+    }
 
-	m_caseNdx += 1;
-	return m_caseNdx < (int)m_cases.size() ? tcu::TestStatus::incomplete() : tcu::TestStatus::pass("Pass");
+    m_caseNdx += 1;
+    return m_caseNdx < (int)m_cases.size() ? tcu::TestStatus::incomplete() : tcu::TestStatus::pass("Pass");
 }
-} // anonymous
+} // namespace
 
-void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
+void populateTextureShadowTests(tcu::TestCaseGroup *textureShadowTests)
 {
-	tcu::TestContext&				testCtx				= textureShadowTests->getTestContext();
+    tcu::TestContext &testCtx = textureShadowTests->getTestContext();
 
-	static const struct
-	{
-		const char*								name;
-		const TextureBinding::ImageBackingMode	backingMode;
-	} backingModes[] =
-	{
-		{ "",			TextureBinding::IMAGE_BACKING_MODE_REGULAR	},
+    static const struct
+    {
+        const char *name;
+        const TextureBinding::ImageBackingMode backingMode;
+    } backingModes[] = {{"", TextureBinding::IMAGE_BACKING_MODE_REGULAR},
 #ifndef CTS_USES_VULKANSC
-		{ "sparse_",	TextureBinding::IMAGE_BACKING_MODE_SPARSE	}
+                        {"sparse_", TextureBinding::IMAGE_BACKING_MODE_SPARSE}
 #endif // CTS_USES_VULKANSC
-	};
+    };
 
-	static const struct
-	{
-		const char*								name;
-		const VkFormat							format;
-		const VkImageAspectFlags				aspect;
-	} formats[] =
-	{
-		{ "d16_unorm",				VK_FORMAT_D16_UNORM,			VK_IMAGE_ASPECT_DEPTH_BIT	},
-		{ "x8_d24_unorm_pack32",	VK_FORMAT_X8_D24_UNORM_PACK32,	VK_IMAGE_ASPECT_DEPTH_BIT	},
-		{ "d32_sfloat",				VK_FORMAT_D32_SFLOAT,			VK_IMAGE_ASPECT_DEPTH_BIT	},
-		{ "d16_unorm_s8_uint",		VK_FORMAT_D16_UNORM_S8_UINT,	VK_IMAGE_ASPECT_DEPTH_BIT	},
-		{ "d24_unorm_s8_uint",		VK_FORMAT_D24_UNORM_S8_UINT,	VK_IMAGE_ASPECT_DEPTH_BIT	},
-		{ "d32_sfloat_s8_uint",		VK_FORMAT_D32_SFLOAT_S8_UINT,	VK_IMAGE_ASPECT_DEPTH_BIT	},
-		{ "r16_unorm",				VK_FORMAT_R16_UNORM,			VK_IMAGE_ASPECT_COLOR_BIT	},
-		{ "r32_sfloat",				VK_FORMAT_R32_SFLOAT,			VK_IMAGE_ASPECT_COLOR_BIT	}
-	};
+    static const struct
+    {
+        const char *name;
+        const VkFormat format;
+        const VkImageAspectFlags aspect;
+    } formats[] = {{"d16_unorm", VK_FORMAT_D16_UNORM, VK_IMAGE_ASPECT_DEPTH_BIT},
+                   {"x8_d24_unorm_pack32", VK_FORMAT_X8_D24_UNORM_PACK32, VK_IMAGE_ASPECT_DEPTH_BIT},
+                   {"d32_sfloat", VK_FORMAT_D32_SFLOAT, VK_IMAGE_ASPECT_DEPTH_BIT},
+                   {"d16_unorm_s8_uint", VK_FORMAT_D16_UNORM_S8_UINT, VK_IMAGE_ASPECT_DEPTH_BIT},
+                   {"d24_unorm_s8_uint", VK_FORMAT_D24_UNORM_S8_UINT, VK_IMAGE_ASPECT_DEPTH_BIT},
+                   {"d32_sfloat_s8_uint", VK_FORMAT_D32_SFLOAT_S8_UINT, VK_IMAGE_ASPECT_DEPTH_BIT},
+                   {"r16_unorm", VK_FORMAT_R16_UNORM, VK_IMAGE_ASPECT_COLOR_BIT},
+                   {"r32_sfloat", VK_FORMAT_R32_SFLOAT, VK_IMAGE_ASPECT_COLOR_BIT}};
 
-	static const struct
-	{
-		const char*								name;
-		const Sampler::FilterMode				minFilter;
-		const Sampler::FilterMode				magFilter;
-	} filters[] =
-	{
-		{ "nearest",				Sampler::NEAREST,					Sampler::NEAREST	},
-		{ "linear",					Sampler::LINEAR,					Sampler::LINEAR		},
-		{ "nearest_mipmap_nearest",	Sampler::NEAREST_MIPMAP_NEAREST,	Sampler::LINEAR		},
-		{ "linear_mipmap_nearest",	Sampler::LINEAR_MIPMAP_NEAREST,		Sampler::LINEAR		},
-		{ "nearest_mipmap_linear",	Sampler::NEAREST_MIPMAP_LINEAR,		Sampler::LINEAR		},
-		{ "linear_mipmap_linear",	Sampler::LINEAR_MIPMAP_LINEAR,		Sampler::LINEAR		}
-	};
+    static const struct
+    {
+        const char *name;
+        const Sampler::FilterMode minFilter;
+        const Sampler::FilterMode magFilter;
+    } filters[] = {{"nearest", Sampler::NEAREST, Sampler::NEAREST},
+                   {"linear", Sampler::LINEAR, Sampler::LINEAR},
+                   {"nearest_mipmap_nearest", Sampler::NEAREST_MIPMAP_NEAREST, Sampler::LINEAR},
+                   {"linear_mipmap_nearest", Sampler::LINEAR_MIPMAP_NEAREST, Sampler::LINEAR},
+                   {"nearest_mipmap_linear", Sampler::NEAREST_MIPMAP_LINEAR, Sampler::LINEAR},
+                   {"linear_mipmap_linear", Sampler::LINEAR_MIPMAP_LINEAR, Sampler::LINEAR}};
 
-	static const struct
-	{
-		const char*								name;
-		const Sampler::CompareMode				op;
-	} compareOp[] =
-	{
-		{ "less_or_equal",		Sampler::COMPAREMODE_LESS_OR_EQUAL		},
-		{ "greater_or_equal",	Sampler::COMPAREMODE_GREATER_OR_EQUAL	},
-		{ "less",				Sampler::COMPAREMODE_LESS				},
-		{ "greater",			Sampler::COMPAREMODE_GREATER			},
-		{ "equal",				Sampler::COMPAREMODE_EQUAL				},
-		{ "not_equal",			Sampler::COMPAREMODE_NOT_EQUAL			},
-		{ "always",				Sampler::COMPAREMODE_ALWAYS				},
-		{ "never",				Sampler::COMPAREMODE_NEVER				}
-	};
+    static const struct
+    {
+        const char *name;
+        const Sampler::CompareMode op;
+    } compareOp[] = {{"less_or_equal", Sampler::COMPAREMODE_LESS_OR_EQUAL},
+                     {"greater_or_equal", Sampler::COMPAREMODE_GREATER_OR_EQUAL},
+                     {"less", Sampler::COMPAREMODE_LESS},
+                     {"greater", Sampler::COMPAREMODE_GREATER},
+                     {"equal", Sampler::COMPAREMODE_EQUAL},
+                     {"not_equal", Sampler::COMPAREMODE_NOT_EQUAL},
+                     {"always", Sampler::COMPAREMODE_ALWAYS},
+                     {"never", Sampler::COMPAREMODE_NEVER}};
 
-	static const struct
-	{
-		const char*								name;
-		deBool									seamless;
-	} seamModes[] =
-	{
-		{"",				true},
+    static const struct
+    {
+        const char *name;
+        bool seamless;
+    } seamModes[] = {{"", true},
 #ifndef CTS_USES_VULKANSC
-		{"non_seamless_",	false}
+                     {"non_seamless_", false}
 #endif // CTS_USES_VULKANSC
-	};
+    };
 
-	// 2D cases.
-	{
-		// 2D texture shadow lookup tests
-		de::MovePtr<tcu::TestCaseGroup>	group2D	(new tcu::TestCaseGroup(testCtx, "2d"));
+    // 2D cases.
+    {
+        // 2D texture shadow lookup tests
+        de::MovePtr<tcu::TestCaseGroup> group2D(new tcu::TestCaseGroup(testCtx, "2d"));
 
-		for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
-		{
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup	(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name));
+        for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
+        {
+            de::MovePtr<tcu::TestCaseGroup> filterGroup(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name));
 
-			for (int compareNdx = 0; compareNdx < DE_LENGTH_OF_ARRAY(compareOp); compareNdx++)
-			{
-				for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
-				{
-					for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
-					{
-						const string						name	= string(backingModes[backingNdx].name) + compareOp[compareNdx].name + "_" + formats[formatNdx].name;
-						Texture2DShadowTestCaseParameters	testParameters;
+            for (int compareNdx = 0; compareNdx < DE_LENGTH_OF_ARRAY(compareOp); compareNdx++)
+            {
+                for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
+                {
+                    for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
+                    {
+                        const string name = string(backingModes[backingNdx].name) + compareOp[compareNdx].name + "_" +
+                                            formats[formatNdx].name;
+                        Texture2DShadowTestCaseParameters testParameters;
 
-						testParameters.minFilter	= filters[filterNdx].minFilter;
-						testParameters.magFilter	= filters[filterNdx].magFilter;
-						testParameters.format		= formats[formatNdx].format;
-						testParameters.backingMode	= backingModes[backingNdx].backingMode;
-						testParameters.compareOp	= compareOp[compareNdx].op;
-						testParameters.wrapS		= Sampler::REPEAT_GL;
-						testParameters.wrapT		= Sampler::REPEAT_GL;
-						testParameters.width		= 32;
-						testParameters.height		= 64;
-						testParameters.aspectMask	= formats[formatNdx].aspect;
-						testParameters.programs.push_back(PROGRAM_2D_SHADOW);
+                        testParameters.minFilter   = filters[filterNdx].minFilter;
+                        testParameters.magFilter   = filters[filterNdx].magFilter;
+                        testParameters.format      = formats[formatNdx].format;
+                        testParameters.backingMode = backingModes[backingNdx].backingMode;
+                        testParameters.compareOp   = compareOp[compareNdx].op;
+                        testParameters.wrapS       = Sampler::REPEAT_GL;
+                        testParameters.wrapT       = Sampler::REPEAT_GL;
+                        testParameters.width       = 32;
+                        testParameters.height      = 64;
+                        testParameters.aspectMask  = formats[formatNdx].aspect;
+                        testParameters.programs.push_back(PROGRAM_2D_SHADOW);
 
-						filterGroup->addChild(new TextureTestCase<Texture2DShadowTestInstance>(testCtx, name.c_str(), testParameters));
-					}
-				}
-			}
+                        filterGroup->addChild(
+                            new TextureTestCase<Texture2DShadowTestInstance>(testCtx, name.c_str(), testParameters));
+                    }
+                }
+            }
 
-			group2D->addChild(filterGroup.release());
-		}
+            group2D->addChild(filterGroup.release());
+        }
 
-		textureShadowTests->addChild(group2D.release());
-	}
+        textureShadowTests->addChild(group2D.release());
+    }
 
-	// Cubemap cases.
-	{
-		// Cube map texture shadow lookup tests
-		de::MovePtr<tcu::TestCaseGroup>	groupCube	(new tcu::TestCaseGroup(testCtx, "cube"));
+    // Cubemap cases.
+    {
+        // Cube map texture shadow lookup tests
+        de::MovePtr<tcu::TestCaseGroup> groupCube(new tcu::TestCaseGroup(testCtx, "cube"));
 
-		for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
-		{
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup	(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name));
+        for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
+        {
+            de::MovePtr<tcu::TestCaseGroup> filterGroup(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name));
 
-			for (int compareNdx = 0; compareNdx < DE_LENGTH_OF_ARRAY(compareOp); compareNdx++)
-			{
-				for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
-				{
-					for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
-					{
-						for (int seamNdx = 0; seamNdx < DE_LENGTH_OF_ARRAY(seamModes); seamNdx++)
-						{
-							const string							name	= string(backingModes[backingNdx].name) + seamModes[seamNdx].name + compareOp[compareNdx].name + "_" + formats[formatNdx].name;
-							TextureCubeShadowTestCaseParameters		testParameters;
+            for (int compareNdx = 0; compareNdx < DE_LENGTH_OF_ARRAY(compareOp); compareNdx++)
+            {
+                for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
+                {
+                    for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
+                    {
+                        for (int seamNdx = 0; seamNdx < DE_LENGTH_OF_ARRAY(seamModes); seamNdx++)
+                        {
+                            const string name = string(backingModes[backingNdx].name) + seamModes[seamNdx].name +
+                                                compareOp[compareNdx].name + "_" + formats[formatNdx].name;
+                            TextureCubeShadowTestCaseParameters testParameters;
 
-							testParameters.minFilter	= filters[filterNdx].minFilter;
-							testParameters.magFilter	= filters[filterNdx].magFilter;
-							testParameters.format		= formats[formatNdx].format;
-							testParameters.backingMode	= backingModes[backingNdx].backingMode;
-							testParameters.seamless		= seamModes[seamNdx].seamless;
-							testParameters.compareOp	= compareOp[compareNdx].op;
-							testParameters.wrapS		= Sampler::REPEAT_GL;
-							testParameters.wrapT		= Sampler::REPEAT_GL;
-							testParameters.size			= 32;
-							testParameters.aspectMask	= formats[formatNdx].aspect;
+                            testParameters.minFilter   = filters[filterNdx].minFilter;
+                            testParameters.magFilter   = filters[filterNdx].magFilter;
+                            testParameters.format      = formats[formatNdx].format;
+                            testParameters.backingMode = backingModes[backingNdx].backingMode;
+                            testParameters.seamless    = seamModes[seamNdx].seamless;
+                            testParameters.compareOp   = compareOp[compareNdx].op;
+                            testParameters.wrapS       = Sampler::REPEAT_GL;
+                            testParameters.wrapT       = Sampler::REPEAT_GL;
+                            testParameters.size        = 32;
+                            testParameters.aspectMask  = formats[formatNdx].aspect;
 
-							testParameters.programs.push_back(PROGRAM_CUBE_SHADOW);
+                            testParameters.programs.push_back(PROGRAM_CUBE_SHADOW);
 
-							filterGroup->addChild(new TextureTestCase<TextureCubeShadowTestInstance>(testCtx, name.c_str(), testParameters));
-						}
-					}
-				}
-			}
+                            filterGroup->addChild(new TextureTestCase<TextureCubeShadowTestInstance>(
+                                testCtx, name.c_str(), testParameters));
+                        }
+                    }
+                }
+            }
 
-			groupCube->addChild(filterGroup.release());
-		}
+            groupCube->addChild(filterGroup.release());
+        }
 
-		textureShadowTests->addChild(groupCube.release());
-	}
+        textureShadowTests->addChild(groupCube.release());
+    }
 
-	// 2D array cases.
-	{
-		de::MovePtr<tcu::TestCaseGroup>	group2DArray	(new tcu::TestCaseGroup(testCtx, "2d_array", "2D texture array shadow lookup tests"));
+    // 2D array cases.
+    {
+        de::MovePtr<tcu::TestCaseGroup> group2DArray(
+            new tcu::TestCaseGroup(testCtx, "2d_array", "2D texture array shadow lookup tests"));
 
-		for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
-		{
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup	(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name));
+        for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
+        {
+            de::MovePtr<tcu::TestCaseGroup> filterGroup(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name));
 
-			for (int compareNdx = 0; compareNdx < DE_LENGTH_OF_ARRAY(compareOp); compareNdx++)
-			{
-				for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
-				{
-					for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
-					{
-						const string							name	= string(backingModes[backingNdx].name) + compareOp[compareNdx].name + "_" + formats[formatNdx].name;
-						Texture2DArrayShadowTestCaseParameters	testParameters;
+            for (int compareNdx = 0; compareNdx < DE_LENGTH_OF_ARRAY(compareOp); compareNdx++)
+            {
+                for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
+                {
+                    for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
+                    {
+                        const string name = string(backingModes[backingNdx].name) + compareOp[compareNdx].name + "_" +
+                                            formats[formatNdx].name;
+                        Texture2DArrayShadowTestCaseParameters testParameters;
 
-						testParameters.minFilter	= filters[filterNdx].minFilter;
-						testParameters.magFilter	= filters[filterNdx].magFilter;
-						testParameters.format		= formats[formatNdx].format;
-						testParameters.backingMode	= backingModes[backingNdx].backingMode;
-						testParameters.compareOp	= compareOp[compareNdx].op;
-						testParameters.wrapS		= Sampler::REPEAT_GL;
-						testParameters.wrapT		= Sampler::REPEAT_GL;
-						testParameters.width		= 32;
-						testParameters.height		= 64;
-						testParameters.numLayers	= 8;
-						testParameters.aspectMask	= formats[formatNdx].aspect;
+                        testParameters.minFilter   = filters[filterNdx].minFilter;
+                        testParameters.magFilter   = filters[filterNdx].magFilter;
+                        testParameters.format      = formats[formatNdx].format;
+                        testParameters.backingMode = backingModes[backingNdx].backingMode;
+                        testParameters.compareOp   = compareOp[compareNdx].op;
+                        testParameters.wrapS       = Sampler::REPEAT_GL;
+                        testParameters.wrapT       = Sampler::REPEAT_GL;
+                        testParameters.width       = 32;
+                        testParameters.height      = 64;
+                        testParameters.numLayers   = 8;
+                        testParameters.aspectMask  = formats[formatNdx].aspect;
 
-						testParameters.programs.push_back(PROGRAM_2D_ARRAY_SHADOW);
+                        testParameters.programs.push_back(PROGRAM_2D_ARRAY_SHADOW);
 
-						filterGroup->addChild(new TextureTestCase<Texture2DArrayShadowTestInstance>(testCtx, name.c_str(), testParameters));
-					}
-				}
-			}
+                        filterGroup->addChild(new TextureTestCase<Texture2DArrayShadowTestInstance>(
+                            testCtx, name.c_str(), testParameters));
+                    }
+                }
+            }
 
-			group2DArray->addChild(filterGroup.release());
-		}
+            group2DArray->addChild(filterGroup.release());
+        }
 
-		textureShadowTests->addChild(group2DArray.release());
-	}
+        textureShadowTests->addChild(group2DArray.release());
+    }
 
-	// 1D cases.
-	{
-		de::MovePtr<tcu::TestCaseGroup>	group1D	(new tcu::TestCaseGroup(testCtx, "1d", "1D texture shadow lookup tests"));
+    // 1D cases.
+    {
+        de::MovePtr<tcu::TestCaseGroup> group1D(
+            new tcu::TestCaseGroup(testCtx, "1d", "1D texture shadow lookup tests"));
 
-		for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
-		{
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup	(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name));
+        for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
+        {
+            de::MovePtr<tcu::TestCaseGroup> filterGroup(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name));
 
-			for (int compareNdx = 0; compareNdx < DE_LENGTH_OF_ARRAY(compareOp); compareNdx++)
-			{
-				for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
-				{
-					for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
-					{
-						const string						name			= string(backingModes[backingNdx].name) + compareOp[compareNdx].name + "_" + formats[formatNdx].name;
-						Texture1DShadowTestCaseParameters	testParameters;
+            for (int compareNdx = 0; compareNdx < DE_LENGTH_OF_ARRAY(compareOp); compareNdx++)
+            {
+                for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
+                {
+                    for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
+                    {
+                        const string name = string(backingModes[backingNdx].name) + compareOp[compareNdx].name + "_" +
+                                            formats[formatNdx].name;
+                        Texture1DShadowTestCaseParameters testParameters;
 
-						testParameters.minFilter	= filters[filterNdx].minFilter;
-						testParameters.magFilter	= filters[filterNdx].magFilter;
-						testParameters.format		= formats[formatNdx].format;
-						testParameters.backingMode	= backingModes[backingNdx].backingMode;
-						testParameters.compareOp	= compareOp[compareNdx].op;
-						testParameters.wrapS		= Sampler::REPEAT_GL;
-						testParameters.width		= 32;
-						testParameters.aspectMask	= formats[formatNdx].aspect;
-						testParameters.programs.push_back(PROGRAM_1D_SHADOW);
+                        testParameters.minFilter   = filters[filterNdx].minFilter;
+                        testParameters.magFilter   = filters[filterNdx].magFilter;
+                        testParameters.format      = formats[formatNdx].format;
+                        testParameters.backingMode = backingModes[backingNdx].backingMode;
+                        testParameters.compareOp   = compareOp[compareNdx].op;
+                        testParameters.wrapS       = Sampler::REPEAT_GL;
+                        testParameters.width       = 32;
+                        testParameters.aspectMask  = formats[formatNdx].aspect;
+                        testParameters.programs.push_back(PROGRAM_1D_SHADOW);
 
-						filterGroup->addChild(new TextureTestCase<Texture1DShadowTestInstance>(testCtx, name.c_str(), testParameters));
-					}
-				}
-			}
+                        filterGroup->addChild(
+                            new TextureTestCase<Texture1DShadowTestInstance>(testCtx, name.c_str(), testParameters));
+                    }
+                }
+            }
 
-			group1D->addChild(filterGroup.release());
-		}
+            group1D->addChild(filterGroup.release());
+        }
 
-		textureShadowTests->addChild(group1D.release());
-	}
+        textureShadowTests->addChild(group1D.release());
+    }
 
-	// 1D array cases.
-	{
-		de::MovePtr<tcu::TestCaseGroup>	group1DArray	(new tcu::TestCaseGroup(testCtx, "1d_array", "1D texture array shadow lookup tests"));
+    // 1D array cases.
+    {
+        de::MovePtr<tcu::TestCaseGroup> group1DArray(
+            new tcu::TestCaseGroup(testCtx, "1d_array", "1D texture array shadow lookup tests"));
 
-		for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
-		{
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup	(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name));
+        for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
+        {
+            de::MovePtr<tcu::TestCaseGroup> filterGroup(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name));
 
-			for (int compareNdx = 0; compareNdx < DE_LENGTH_OF_ARRAY(compareOp); compareNdx++)
-			{
-				for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
-				{
-					for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
-					{
-						const string							name			= string(backingModes[backingNdx].name) + compareOp[compareNdx].name + "_" + formats[formatNdx].name;
-						Texture1DArrayShadowTestCaseParameters	testParameters;
+            for (int compareNdx = 0; compareNdx < DE_LENGTH_OF_ARRAY(compareOp); compareNdx++)
+            {
+                for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
+                {
+                    for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
+                    {
+                        const string name = string(backingModes[backingNdx].name) + compareOp[compareNdx].name + "_" +
+                                            formats[formatNdx].name;
+                        Texture1DArrayShadowTestCaseParameters testParameters;
 
-						testParameters.minFilter	= filters[filterNdx].minFilter;
-						testParameters.magFilter	= filters[filterNdx].magFilter;
-						testParameters.format		= formats[formatNdx].format;
-						testParameters.backingMode	= backingModes[backingNdx].backingMode;
-						testParameters.compareOp	= compareOp[compareNdx].op;
-						testParameters.wrapS		= Sampler::REPEAT_GL;
-						testParameters.width		= 32;
-						testParameters.numLayers	= 8;
-						testParameters.aspectMask	= formats[formatNdx].aspect;
+                        testParameters.minFilter   = filters[filterNdx].minFilter;
+                        testParameters.magFilter   = filters[filterNdx].magFilter;
+                        testParameters.format      = formats[formatNdx].format;
+                        testParameters.backingMode = backingModes[backingNdx].backingMode;
+                        testParameters.compareOp   = compareOp[compareNdx].op;
+                        testParameters.wrapS       = Sampler::REPEAT_GL;
+                        testParameters.width       = 32;
+                        testParameters.numLayers   = 8;
+                        testParameters.aspectMask  = formats[formatNdx].aspect;
 
-						testParameters.programs.push_back(PROGRAM_1D_ARRAY_SHADOW);
+                        testParameters.programs.push_back(PROGRAM_1D_ARRAY_SHADOW);
 
-						filterGroup->addChild(new TextureTestCase<Texture1DArrayShadowTestInstance>(testCtx, name.c_str(), testParameters));
-					}
-				}
-			}
+                        filterGroup->addChild(new TextureTestCase<Texture1DArrayShadowTestInstance>(
+                            testCtx, name.c_str(), testParameters));
+                    }
+                }
+            }
 
-			group1DArray->addChild(filterGroup.release());
-		}
+            group1DArray->addChild(filterGroup.release());
+        }
 
-		textureShadowTests->addChild(group1DArray.release());
-	}
+        textureShadowTests->addChild(group1DArray.release());
+    }
 
-	// Cubemap Array cases.
-	{
-		de::MovePtr<tcu::TestCaseGroup>	groupCubeArray	(new tcu::TestCaseGroup(testCtx, "cube_array", "Cube map texture shadow lookup tests"));
+    // Cubemap Array cases.
+    {
+        de::MovePtr<tcu::TestCaseGroup> groupCubeArray(
+            new tcu::TestCaseGroup(testCtx, "cube_array", "Cube map texture shadow lookup tests"));
 
-		for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
-		{
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup	(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name));
+        for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
+        {
+            de::MovePtr<tcu::TestCaseGroup> filterGroup(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name));
 
-			for (int compareNdx = 0; compareNdx < DE_LENGTH_OF_ARRAY(compareOp); compareNdx++)
-			{
-				for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
-				{
-					for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
-					{
-						for (int seamNdx = 0; seamNdx < DE_LENGTH_OF_ARRAY(seamModes); seamNdx++)
-						{
-							const string								name	= string(backingModes[backingNdx].name) + seamModes[seamNdx].name + compareOp[compareNdx].name + "_" + formats[formatNdx].name;
-							TextureCubeArrayShadowTestCaseParameters	testParameters;
+            for (int compareNdx = 0; compareNdx < DE_LENGTH_OF_ARRAY(compareOp); compareNdx++)
+            {
+                for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
+                {
+                    for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
+                    {
+                        for (int seamNdx = 0; seamNdx < DE_LENGTH_OF_ARRAY(seamModes); seamNdx++)
+                        {
+                            const string name = string(backingModes[backingNdx].name) + seamModes[seamNdx].name +
+                                                compareOp[compareNdx].name + "_" + formats[formatNdx].name;
+                            TextureCubeArrayShadowTestCaseParameters testParameters;
 
-							testParameters.minFilter	= filters[filterNdx].minFilter;
-							testParameters.magFilter	= filters[filterNdx].magFilter;
-							testParameters.format		= formats[formatNdx].format;
-							testParameters.backingMode	= backingModes[backingNdx].backingMode;
-							testParameters.compareOp	= compareOp[compareNdx].op;
-							testParameters.seamless		= seamModes[seamNdx].seamless;
-							testParameters.wrapS		= Sampler::REPEAT_GL;
-							testParameters.wrapT		= Sampler::REPEAT_GL;
-							testParameters.size			= 32;
-							testParameters.numLayers	= 4 * 6;
-							testParameters.aspectMask	= formats[formatNdx].aspect;
+                            testParameters.minFilter   = filters[filterNdx].minFilter;
+                            testParameters.magFilter   = filters[filterNdx].magFilter;
+                            testParameters.format      = formats[formatNdx].format;
+                            testParameters.backingMode = backingModes[backingNdx].backingMode;
+                            testParameters.compareOp   = compareOp[compareNdx].op;
+                            testParameters.seamless    = seamModes[seamNdx].seamless;
+                            testParameters.wrapS       = Sampler::REPEAT_GL;
+                            testParameters.wrapT       = Sampler::REPEAT_GL;
+                            testParameters.size        = 32;
+                            testParameters.numLayers   = 4 * 6;
+                            testParameters.aspectMask  = formats[formatNdx].aspect;
 
-							testParameters.programs.push_back(PROGRAM_CUBE_ARRAY_SHADOW);
+                            testParameters.programs.push_back(PROGRAM_CUBE_ARRAY_SHADOW);
 
-							filterGroup->addChild(new TextureTestCase<TextureCubeArrayShadowTestInstance>(testCtx, name.c_str(), testParameters));
-						}
-					}
-				}
-			}
+                            filterGroup->addChild(new TextureTestCase<TextureCubeArrayShadowTestInstance>(
+                                testCtx, name.c_str(), testParameters));
+                        }
+                    }
+                }
+            }
 
-			groupCubeArray->addChild(filterGroup.release());
-		}
+            groupCubeArray->addChild(filterGroup.release());
+        }
 
-		textureShadowTests->addChild(groupCubeArray.release());
-	}
+        textureShadowTests->addChild(groupCubeArray.release());
+    }
 #ifndef CTS_USES_VULKANSC
-	// Texel replacement tests.
-	{
-		de::MovePtr<tcu::TestCaseGroup>	groupTexelReplacement	(new tcu::TestCaseGroup(testCtx, "texel_replacement", "Texel replacement texture shadow lookup tests"));
+    // Texel replacement tests.
+    {
+        de::MovePtr<tcu::TestCaseGroup> groupTexelReplacement(
+            new tcu::TestCaseGroup(testCtx, "texel_replacement", "Texel replacement texture shadow lookup tests"));
 
-		cts_amber::AmberTestCase*		testCaseLod				= cts_amber::createAmberTestCase(testCtx, "d32_sfloat", "texture/shadow/texel_replacement", "d32_sfloat.amber");
+        cts_amber::AmberTestCase *testCaseLod = cts_amber::createAmberTestCase(
+            testCtx, "d32_sfloat", "texture/shadow/texel_replacement", "d32_sfloat.amber");
 
-		groupTexelReplacement->addChild(testCaseLod);
-		textureShadowTests->addChild(groupTexelReplacement.release());
-	}
+        groupTexelReplacement->addChild(testCaseLod);
+        textureShadowTests->addChild(groupTexelReplacement.release());
+    }
 #endif // CTS_USES_VULKANSC
 }
 
-tcu::TestCaseGroup* createTextureShadowTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTextureShadowTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "shadow", populateTextureShadowTests);
+    return createTestGroup(testCtx, "shadow", populateTextureShadowTests);
 }
 
-} // texture
-} // vkt
+} // namespace texture
+} // namespace vkt
