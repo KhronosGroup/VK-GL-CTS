@@ -37,18 +37,18 @@ namespace Functional
 class ShaderFramebufferFetchTests : public TestCaseGroup
 {
 public:
-									ShaderFramebufferFetchTests		(Context& context);
-									~ShaderFramebufferFetchTests	(void);
+    ShaderFramebufferFetchTests(Context &context);
+    ~ShaderFramebufferFetchTests(void);
 
-	void							init							(void);
+    void init(void);
 
 private:
-	ShaderFramebufferFetchTests&	operator=						(const ShaderFramebufferFetchTests&);
-	ShaderFramebufferFetchTests										(const ShaderFramebufferFetchTests&);
+    ShaderFramebufferFetchTests &operator=(const ShaderFramebufferFetchTests &);
+    ShaderFramebufferFetchTests(const ShaderFramebufferFetchTests &);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FSHADERFRAMEBUFFERFETCHTESTS_HPP

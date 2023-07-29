@@ -35,12 +35,12 @@ namespace glcts
 class FramebufferCompletenessTests : public deqp::TestCaseGroup
 {
 public:
-									FramebufferCompletenessTests	(deqp::Context& context);
-	virtual void					init							(void);
+    FramebufferCompletenessTests(deqp::Context &context);
+    virtual void init(void);
 
 private:
-									FramebufferCompletenessTests	(const FramebufferCompletenessTests& other)	= delete;
-	FramebufferCompletenessTests&	operator=						(const FramebufferCompletenessTests& other)	= delete;
+    FramebufferCompletenessTests(const FramebufferCompletenessTests &other)            = delete;
+    FramebufferCompletenessTests &operator=(const FramebufferCompletenessTests &other) = delete;
 };
 
 } // namespace glcts

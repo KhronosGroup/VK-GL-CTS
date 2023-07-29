@@ -36,18 +36,18 @@ namespace Functional
 class FramebufferBlitTests : public TestCaseGroup
 {
 public:
-								FramebufferBlitTests	(Context& context);
-								~FramebufferBlitTests	(void);
+    FramebufferBlitTests(Context &context);
+    ~FramebufferBlitTests(void);
 
-	void						init					(void);
+    void init(void);
 
 private:
-								FramebufferBlitTests	(const FramebufferBlitTests& other);
-	FramebufferBlitTests&		operator=				(const FramebufferBlitTests& other);
+    FramebufferBlitTests(const FramebufferBlitTests &other);
+    FramebufferBlitTests &operator=(const FramebufferBlitTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FFRAMEBUFFERBLITTESTS_HPP

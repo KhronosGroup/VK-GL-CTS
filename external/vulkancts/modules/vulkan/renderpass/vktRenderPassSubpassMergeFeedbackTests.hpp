@@ -31,9 +31,10 @@ namespace vkt
 namespace renderpass
 {
 
-tcu::TestCaseGroup* createRenderPassSubpassMergeFeedbackTests (tcu::TestContext& testCtx, const RenderingType renderingType);
+tcu::TestCaseGroup *createRenderPassSubpassMergeFeedbackTests(tcu::TestContext &testCtx,
+                                                              const RenderingType renderingType);
 
-} // renderpass
-} // vkt
+} // namespace renderpass
+} // namespace vkt
 
 #endif // _VKTRENDERPASSSUBPASSMERGEFEEDBACKTESTS_HPP

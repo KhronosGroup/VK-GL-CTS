@@ -36,20 +36,20 @@ namespace Functional
 class TessellationTests : public TestCaseGroup
 {
 public:
-						TessellationTests	(Context& context, bool isGL45);
-						~TessellationTests	(void);
+    TessellationTests(Context &context, bool isGL45);
+    ~TessellationTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						TessellationTests	(const TessellationTests& other);
-	TessellationTests&	operator=			(const TessellationTests& other);
+    TessellationTests(const TessellationTests &other);
+    TessellationTests &operator=(const TessellationTests &other);
 
-	bool				m_isGL45;
+    bool m_isGL45;
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FTESSELLATIONTESTS_HPP

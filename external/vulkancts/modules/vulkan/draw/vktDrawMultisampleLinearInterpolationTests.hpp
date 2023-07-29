@@ -33,9 +33,10 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup*	createMultisampleLinearInterpolationTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams);
+tcu::TestCaseGroup *createMultisampleLinearInterpolationTests(tcu::TestContext &testCtx,
+                                                              const SharedGroupParams groupParams);
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWMULTISAMPLELINEARINTERPOLATIONTESTS_HPP

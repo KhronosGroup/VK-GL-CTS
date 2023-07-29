@@ -36,18 +36,18 @@ namespace Accuracy
 class AccuracyTests : public TestCaseGroup
 {
 public:
-						AccuracyTests		(Context& context);
-						~AccuracyTests		(void);
+    AccuracyTests(Context &context);
+    ~AccuracyTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						AccuracyTests		(const AccuracyTests& other);
-	AccuracyTests&		operator=			(const AccuracyTests& other);
+    AccuracyTests(const AccuracyTests &other);
+    AccuracyTests &operator=(const AccuracyTests &other);
 };
 
-} // Accuracy
-} // gles2
-} // deqp
+} // namespace Accuracy
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2AACCURACYTESTS_HPP

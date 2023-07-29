@@ -33,23 +33,23 @@ namespace deqp
 class SampleVariablesTests : public TestCaseGroup
 {
 public:
-	SampleVariablesTests(Context& context, glu::GLSLVersion glslVersion);
-	~SampleVariablesTests();
+    SampleVariablesTests(Context &context, glu::GLSLVersion glslVersion);
+    ~SampleVariablesTests();
 
-	void init();
+    void init();
 
 private:
-	SampleVariablesTests(const SampleVariablesTests& other);
-	SampleVariablesTests& operator=(const SampleVariablesTests& other);
+    SampleVariablesTests(const SampleVariablesTests &other);
+    SampleVariablesTests &operator=(const SampleVariablesTests &other);
 
-	enum
-	{
-		SAMPLE_MASKS = 8
-	};
+    enum
+    {
+        SAMPLE_MASKS = 8
+    };
 
-	glu::GLSLVersion m_glslVersion;
+    glu::GLSLVersion m_glslVersion;
 };
 
-} // deqp
+} // namespace deqp
 
 #endif // _GLCSAMPLEVARIABLESTESTS_HPP

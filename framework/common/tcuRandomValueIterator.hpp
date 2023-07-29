@@ -30,98 +30,139 @@ namespace tcu
 {
 
 template <typename T>
-T getRandomValue (de::Random& rnd)
+T getRandomValue(de::Random &rnd)
 {
-	// \note memcpy() is the only valid way to do cast from uint32 to float for instnance.
-	deUint8 data[sizeof(T) + sizeof(T)%4];
-	DE_STATIC_ASSERT(sizeof(data)%4 == 0);
-	for (int vecNdx = 0; vecNdx < DE_LENGTH_OF_ARRAY(data)/4; vecNdx++)
-	{
-		deUint32 rval = rnd.getUint32();
-		for (int compNdx = 0; compNdx < 4; compNdx++)
-			data[vecNdx*4+compNdx] = ((const deUint8*)&rval)[compNdx];
-	}
-	return *(const T*)&data[0];
+    // \note memcpy() is the only valid way to do cast from uint32 to float for instnance.
+    uint8_t data[sizeof(T) + sizeof(T) % 4];
+    DE_STATIC_ASSERT(sizeof(data) % 4 == 0);
+    for (int vecNdx = 0; vecNdx < DE_LENGTH_OF_ARRAY(data) / 4; vecNdx++)
+    {
+        uint32_t rval = rnd.getUint32();
+        for (int compNdx = 0; compNdx < 4; compNdx++)
+            data[vecNdx * 4 + compNdx] = ((const uint8_t *)&rval)[compNdx];
+    }
+    return *(const T *)&data[0];
 }
 
 // Faster implementations for int types.
-template <> inline deUint8	getRandomValue<deUint8>		(de::Random& rnd) { return (deUint8)rnd.getUint32();	}
-template <> inline deUint16	getRandomValue<deUint16>	(de::Random& rnd) { return (deUint16)rnd.getUint32();	}
-template <> inline deUint32	getRandomValue<deUint32>	(de::Random& rnd) { return rnd.getUint32();				}
-template <> inline deUint64	getRandomValue<deUint64>	(de::Random& rnd) { return rnd.getUint64();				}
-template <> inline deInt8	getRandomValue<deInt8>		(de::Random& rnd) { return (deInt8)rnd.getUint32();		}
-template <> inline deInt16	getRandomValue<deInt16>		(de::Random& rnd) { return (deInt16)rnd.getUint32();	}
-template <> inline deInt32	getRandomValue<deInt32>		(de::Random& rnd) { return (deInt32)rnd.getUint32();	}
-template <> inline deInt64	getRandomValue<deInt64>		(de::Random& rnd) { return (deInt64)rnd.getUint64();	}
+template <>
+inline uint8_t getRandomValue<uint8_t>(de::Random &rnd)
+{
+    return (uint8_t)rnd.getUint32();
+}
+template <>
+inline uint16_t getRandomValue<uint16_t>(de::Random &rnd)
+{
+    return (uint16_t)rnd.getUint32();
+}
+template <>
+inline uint32_t getRandomValue<uint32_t>(de::Random &rnd)
+{
+    return rnd.getUint32();
+}
+template <>
+inline uint64_t getRandomValue<uint64_t>(de::Random &rnd)
+{
+    return rnd.getUint64();
+}
+template <>
+inline int8_t getRandomValue<int8_t>(de::Random &rnd)
+{
+    return (int8_t)rnd.getUint32();
+}
+template <>
+inline int16_t getRandomValue<int16_t>(de::Random &rnd)
+{
+    return (int16_t)rnd.getUint32();
+}
+template <>
+inline int32_t getRandomValue<int32_t>(de::Random &rnd)
+{
+    return (int32_t)rnd.getUint32();
+}
+template <>
+inline int64_t getRandomValue<int64_t>(de::Random &rnd)
+{
+    return (int64_t)rnd.getUint64();
+}
 
 template <typename T>
 class RandomValueIterator
 {
 public:
-	using iterator_category = std::forward_iterator_tag;
-	using value_type = T;
-	using difference_type = std::ptrdiff_t;
-	using pointer = T*;
-	using reference = T&;
+    using iterator_category = std::forward_iterator_tag;
+    using value_type        = T;
+    using difference_type   = std::ptrdiff_t;
+    using pointer           = T *;
+    using reference         = T &;
 
-	static RandomValueIterator	begin					(deUint32 seed, int numValues)	{ return RandomValueIterator<T>(seed, numValues);	}
-	static RandomValueIterator	end						(void)							{ return RandomValueIterator<T>(0, 0);				}
+    static RandomValueIterator begin(uint32_t seed, int numValues)
+    {
+        return RandomValueIterator<T>(seed, numValues);
+    }
+    static RandomValueIterator end(void)
+    {
+        return RandomValueIterator<T>(0, 0);
+    }
 
-	RandomValueIterator&		operator++				(void);
-	RandomValueIterator			operator++				(int);
+    RandomValueIterator &operator++(void);
+    RandomValueIterator operator++(int);
 
-	const T&					operator*				(void) const { return m_curVal; }
+    const T &operator*(void) const
+    {
+        return m_curVal;
+    }
 
-	bool						operator==				(const RandomValueIterator<T>& other) const;
-	bool						operator!=				(const RandomValueIterator<T>& other) const;
+    bool operator==(const RandomValueIterator<T> &other) const;
+    bool operator!=(const RandomValueIterator<T> &other) const;
 
 private:
-								RandomValueIterator		(deUint32 seed, int numLeft);
+    RandomValueIterator(uint32_t seed, int numLeft);
 
-	de::Random					m_rnd;
-	int							m_numLeft;
-	T							m_curVal;
+    de::Random m_rnd;
+    int m_numLeft;
+    T m_curVal;
 };
 
 template <typename T>
-RandomValueIterator<T>::RandomValueIterator (deUint32 seed, int numLeft)
-	: m_rnd		(seed)
-	, m_numLeft	(numLeft)
-	, m_curVal	(numLeft > 0 ? getRandomValue<T>(m_rnd) : T())
+RandomValueIterator<T>::RandomValueIterator(uint32_t seed, int numLeft)
+    : m_rnd(seed)
+    , m_numLeft(numLeft)
+    , m_curVal(numLeft > 0 ? getRandomValue<T>(m_rnd) : T())
 {
 }
 
 template <typename T>
-RandomValueIterator<T>& RandomValueIterator<T>::operator++ (void)
+RandomValueIterator<T> &RandomValueIterator<T>::operator++(void)
 {
-	DE_ASSERT(m_numLeft > 0);
+    DE_ASSERT(m_numLeft > 0);
 
-	m_numLeft	-= 1;
-	m_curVal	 = getRandomValue<T>(m_rnd);
+    m_numLeft -= 1;
+    m_curVal = getRandomValue<T>(m_rnd);
 
-	return *this;
+    return *this;
 }
 
 template <typename T>
-RandomValueIterator<T> RandomValueIterator<T>::operator++ (int)
+RandomValueIterator<T> RandomValueIterator<T>::operator++(int)
 {
-	RandomValueIterator copy(*this);
-	++(*this);
-	return copy;
+    RandomValueIterator copy(*this);
+    ++(*this);
+    return copy;
 }
 
 template <typename T>
-bool RandomValueIterator<T>::operator== (const RandomValueIterator<T>& other) const
+bool RandomValueIterator<T>::operator==(const RandomValueIterator<T> &other) const
 {
-	return (m_numLeft == 0 && other.m_numLeft == 0) || (m_numLeft == other.m_numLeft && m_rnd == other.m_rnd);
+    return (m_numLeft == 0 && other.m_numLeft == 0) || (m_numLeft == other.m_numLeft && m_rnd == other.m_rnd);
 }
 
 template <typename T>
-bool RandomValueIterator<T>::operator!= (const RandomValueIterator<T>& other) const
+bool RandomValueIterator<T>::operator!=(const RandomValueIterator<T> &other) const
 {
-	return !(m_numLeft == 0 && other.m_numLeft == 0) && (m_numLeft != other.m_numLeft || m_rnd != other.m_rnd);
+    return !(m_numLeft == 0 && other.m_numLeft == 0) && (m_numLeft != other.m_numLeft || m_rnd != other.m_rnd);
 }
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCURANDOMVALUEITERATOR_HPP

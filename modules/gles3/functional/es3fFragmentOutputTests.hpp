@@ -36,18 +36,18 @@ namespace Functional
 class FragmentOutputTests : public TestCaseGroup
 {
 public:
-								FragmentOutputTests			(Context& context);
-								~FragmentOutputTests		(void);
+    FragmentOutputTests(Context &context);
+    ~FragmentOutputTests(void);
 
-	void						init						(void);
+    void init(void);
 
 private:
-								FragmentOutputTests			(const FragmentOutputTests& other);
-	FragmentOutputTests&		operator=					(const FragmentOutputTests& other);
+    FragmentOutputTests(const FragmentOutputTests &other);
+    FragmentOutputTests &operator=(const FragmentOutputTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FFRAGMENTOUTPUTTESTS_HPP

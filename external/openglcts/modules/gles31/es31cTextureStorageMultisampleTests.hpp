@@ -40,17 +40,17 @@ namespace glcts
 class TextureStorageMultisampleTests : public glcts::TestCaseGroup
 {
 public:
-	/* Public methods */
-	TextureStorageMultisampleTests(glcts::Context& context);
+    /* Public methods */
+    TextureStorageMultisampleTests(glcts::Context &context);
 
-	void init(void);
+    void init(void);
 
 private:
-	/* Private methods */
-	TextureStorageMultisampleTests(const TextureStorageMultisampleTests&);
-	TextureStorageMultisampleTests& operator=(const TextureStorageMultisampleTests&);
+    /* Private methods */
+    TextureStorageMultisampleTests(const TextureStorageMultisampleTests &);
+    TextureStorageMultisampleTests &operator=(const TextureStorageMultisampleTests &);
 };
 
-} /* glcts namespace */
+} // namespace glcts
 
 #endif // _ES31CTEXTURESTORAGEMULTISAMPLETESTS_HPP

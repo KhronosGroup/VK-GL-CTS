@@ -36,13 +36,13 @@ namespace Functional
 class SamplerObjectTests : public TestCaseGroup
 {
 public:
-					SamplerObjectTests	(Context& context);
-	virtual			~SamplerObjectTests	(void);
-	virtual void	init				(void);
+    SamplerObjectTests(Context &context);
+    virtual ~SamplerObjectTests(void);
+    virtual void init(void);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FSAMPLEROBJECTTESTS_HPP

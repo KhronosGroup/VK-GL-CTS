@@ -31,9 +31,9 @@ namespace vkt
 namespace BindingModel
 {
 
-tcu::TestCaseGroup* createStagesTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createStagesTests(tcu::TestContext &testCtx);
 
-} // BindingModel
-} // vkt
+} // namespace BindingModel
+} // namespace vkt
 
 #endif // _VKTBINDINGSTAGESTESTS_HPP

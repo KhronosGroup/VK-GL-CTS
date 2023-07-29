@@ -32,9 +32,9 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup* createDepthBiasTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDepthBiasTests(tcu::TestContext &testCtx);
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWDEPTHBIASTESTS_HPP

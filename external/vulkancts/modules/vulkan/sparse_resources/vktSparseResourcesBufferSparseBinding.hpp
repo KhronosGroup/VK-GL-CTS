@@ -31,9 +31,9 @@ namespace vkt
 namespace sparse
 {
 
-void addBufferSparseBindingTests (tcu::TestCaseGroup* group, const bool useDeviceGroups);
+void addBufferSparseBindingTests(tcu::TestCaseGroup *group, const bool useDeviceGroups);
 
-} // sparse
-} // vkt
+} // namespace sparse
+} // namespace vkt
 
 #endif // _VKTSPARSERESOURCESBUFFERSPARSEBINDING_HPP

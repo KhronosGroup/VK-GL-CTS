@@ -36,18 +36,18 @@ namespace Functional
 class ShaderExecuteTest : public TestCaseGroup
 {
 public:
-							ShaderExecuteTest	(Context& context, const char* groupName, const char* description);
-	virtual					~ShaderExecuteTest	(void);
+    ShaderExecuteTest(Context &context, const char *groupName, const char *description);
+    virtual ~ShaderExecuteTest(void);
 
-	virtual void			init				(void);
+    virtual void init(void);
 
 private:
-							ShaderExecuteTest	(const ShaderExecuteTest&);		// not allowed!
-	ShaderExecuteTest&		operator=			(const ShaderExecuteTest&);		// not allowed!
+    ShaderExecuteTest(const ShaderExecuteTest &);            // not allowed!
+    ShaderExecuteTest &operator=(const ShaderExecuteTest &); // not allowed!
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FSHADEREXECUTETEST_HPP

@@ -31,9 +31,9 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup*	createPipelineFlagsTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createPipelineFlagsTests(tcu::TestContext &testCtx);
 
-} // RayTracing
-} // vkt
+} // namespace RayTracing
+} // namespace vkt
 
 #endif // _VKTRAYTRACINGPIPELINEFLAGSTESTS_HPP

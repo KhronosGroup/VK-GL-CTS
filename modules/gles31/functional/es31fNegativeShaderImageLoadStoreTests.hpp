@@ -35,14 +35,14 @@ namespace Functional
 namespace NegativeTestShared
 {
 
-std::vector<FunctionContainer> getNegativeShaderImageLoadTestFunctions				(void);
-std::vector<FunctionContainer> getNegativeShaderImageStoreTestFunctions				(void);
-std::vector<FunctionContainer> getNegativeShaderImageAtomicTestFunctions			(void);
-std::vector<FunctionContainer> getNegativeShaderImageAtomicExchangeTestFunctions	(void);
+std::vector<FunctionContainer> getNegativeShaderImageLoadTestFunctions(void);
+std::vector<FunctionContainer> getNegativeShaderImageStoreTestFunctions(void);
+std::vector<FunctionContainer> getNegativeShaderImageAtomicTestFunctions(void);
+std::vector<FunctionContainer> getNegativeShaderImageAtomicExchangeTestFunctions(void);
 
-} // NegativeTestShared
-} // Functional
-} // gles31
-} // deqp
+} // namespace NegativeTestShared
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FNEGATIVESHADERIMAGELOADSTORETESTS_HPP

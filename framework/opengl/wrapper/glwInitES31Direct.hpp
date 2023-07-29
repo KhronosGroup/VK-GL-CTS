@@ -29,8 +29,8 @@
 namespace glw
 {
 
-void	initES31Direct	(Functions* gl);	//!< Load all OpenGL ES 3.1 functions using compile-time linkage.
+void initES31Direct(Functions *gl); //!< Load all OpenGL ES 3.1 functions using compile-time linkage.
 
-} // glw
+} // namespace glw
 
 #endif // _GLWINITES31DIRECT_HPP

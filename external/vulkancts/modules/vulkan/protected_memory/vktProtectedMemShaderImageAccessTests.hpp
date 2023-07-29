@@ -33,9 +33,9 @@ namespace vkt
 namespace ProtectedMem
 {
 
-tcu::TestCaseGroup*		createShaderImageAccessTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createShaderImageAccessTests(tcu::TestContext &testCtx);
 
-} // ProtectedMem
-} // vkt
+} // namespace ProtectedMem
+} // namespace vkt
 
 #endif // _VKTPROTECTEDMEMSHADERIMAGEACCESSTESTS_HPP

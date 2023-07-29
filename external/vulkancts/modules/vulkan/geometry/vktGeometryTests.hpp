@@ -31,9 +31,9 @@ namespace vkt
 namespace geometry
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name);
 
-} // geometry
-} // vkt
+} // namespace geometry
+} // namespace vkt
 
 #endif // _VKTGEOMETRYTESTS_HPP

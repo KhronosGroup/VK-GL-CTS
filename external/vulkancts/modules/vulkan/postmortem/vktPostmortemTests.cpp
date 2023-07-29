@@ -39,18 +39,18 @@ namespace
 
 void createChildren(tcu::TestCaseGroup *postmortemTests)
 {
-	tcu::TestContext &testCtx = postmortemTests->getTestContext();
-	postmortemTests->addChild(createShaderTimeoutTests(testCtx));
-	postmortemTests->addChild(createUseAfterFreeTests(testCtx));
-	postmortemTests->addChild(createDeviceFaultTests(testCtx));
-	postmortemTests->addChild(createDeviceLossTests(testCtx));
+    tcu::TestContext &testCtx = postmortemTests->getTestContext();
+    postmortemTests->addChild(createShaderTimeoutTests(testCtx));
+    postmortemTests->addChild(createUseAfterFreeTests(testCtx));
+    postmortemTests->addChild(createDeviceFaultTests(testCtx));
+    postmortemTests->addChild(createDeviceLossTests(testCtx));
 }
 
 } // namespace
 
-tcu::TestCaseGroup *createTests (tcu::TestContext &testCtx, const std::string& name)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
-	return createTestGroup(testCtx, name.c_str(), createChildren);
+    return createTestGroup(testCtx, name.c_str(), createChildren);
 }
 
 } // namespace postmortem

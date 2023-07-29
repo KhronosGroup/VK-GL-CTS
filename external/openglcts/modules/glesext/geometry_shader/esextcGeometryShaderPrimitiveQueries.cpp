@@ -32,89 +32,89 @@ namespace glcts
 {
 
 /* Fragment shader */
-const char* GeometryShaderPrimitiveQueries::m_fs_code = "${VERSION}\n"
-														"\n"
-														"precision highp float;\n"
-														"\n"
-														"void main()\n"
-														"{\n"
-														"}\n";
+const char *GeometryShaderPrimitiveQueries::m_fs_code = "${VERSION}\n"
+                                                        "\n"
+                                                        "precision highp float;\n"
+                                                        "\n"
+                                                        "void main()\n"
+                                                        "{\n"
+                                                        "}\n";
 
 /* Vertex shader */
-const char* GeometryShaderPrimitiveQueries::m_vs_code = "${VERSION}\n"
-														"\n"
-														"precision highp float;\n"
-														"\n"
-														"void main()\n"
-														"{\n"
-														"    gl_Position = vec4(gl_VertexID, 0, 0, 1);\n"
-														"}\n";
+const char *GeometryShaderPrimitiveQueries::m_vs_code = "${VERSION}\n"
+                                                        "\n"
+                                                        "precision highp float;\n"
+                                                        "\n"
+                                                        "void main()\n"
+                                                        "{\n"
+                                                        "    gl_Position = vec4(gl_VertexID, 0, 0, 1);\n"
+                                                        "}\n";
 
 /* Geometry shader */
-const char* GeometryShaderPrimitiveQueriesPoints::m_gs_code =
-	"${VERSION}\n"
-	"\n"
-	"${GEOMETRY_SHADER_REQUIRE}\n"
-	"\n"
-	"precision highp float;\n"
-	"\n"
-	"layout(points)                          in;\n"
-	"layout(points, max_vertices=8)          out;\n"
-	"\n"
-	"void main()\n"
-	"{\n"
-	"    for (int n = 0; n < 8; ++n)\n"
-	"    {\n"
-	"        gl_Position = vec4(1.0 / (float(n) + 1.0), 1.0 / (float(n) + 2.0), 0.0, 1.0);\n"
-	"        EmitVertex();\n"
-	"    }\n"
-	"\n"
-	"    EndPrimitive();\n"
-	"}\n";
+const char *GeometryShaderPrimitiveQueriesPoints::m_gs_code =
+    "${VERSION}\n"
+    "\n"
+    "${GEOMETRY_SHADER_REQUIRE}\n"
+    "\n"
+    "precision highp float;\n"
+    "\n"
+    "layout(points)                          in;\n"
+    "layout(points, max_vertices=8)          out;\n"
+    "\n"
+    "void main()\n"
+    "{\n"
+    "    for (int n = 0; n < 8; ++n)\n"
+    "    {\n"
+    "        gl_Position = vec4(1.0 / (float(n) + 1.0), 1.0 / (float(n) + 2.0), 0.0, 1.0);\n"
+    "        EmitVertex();\n"
+    "    }\n"
+    "\n"
+    "    EndPrimitive();\n"
+    "}\n";
 
 /* Geometry shader */
-const char* GeometryShaderPrimitiveQueriesLines::m_gs_code =
-	"${VERSION}\n"
-	"\n"
-	"${GEOMETRY_SHADER_REQUIRE}\n"
-	"\n"
-	"precision highp float;\n"
-	"\n"
-	"layout(points)                          in;\n"
-	"layout(line_strip, max_vertices=10)     out;\n"
-	"\n"
-	"void main()\n"
-	"{\n"
-	"    for (int n = 0; n < 10; ++n)\n"
-	"    {\n"
-	"        gl_Position = vec4(1.0 / (float(n) + 1.0), 1.0 / (float(n) + 2.0), 0.0, 1.0);\n"
-	"        EmitVertex();\n"
-	"    }\n"
-	"\n"
-	"    EndPrimitive();\n"
-	"}\n";
+const char *GeometryShaderPrimitiveQueriesLines::m_gs_code =
+    "${VERSION}\n"
+    "\n"
+    "${GEOMETRY_SHADER_REQUIRE}\n"
+    "\n"
+    "precision highp float;\n"
+    "\n"
+    "layout(points)                          in;\n"
+    "layout(line_strip, max_vertices=10)     out;\n"
+    "\n"
+    "void main()\n"
+    "{\n"
+    "    for (int n = 0; n < 10; ++n)\n"
+    "    {\n"
+    "        gl_Position = vec4(1.0 / (float(n) + 1.0), 1.0 / (float(n) + 2.0), 0.0, 1.0);\n"
+    "        EmitVertex();\n"
+    "    }\n"
+    "\n"
+    "    EndPrimitive();\n"
+    "}\n";
 
 /* Geometry shader */
-const char* GeometryShaderPrimitiveQueriesTriangles::m_gs_code =
-	"${VERSION}\n"
-	"\n"
-	"${GEOMETRY_SHADER_REQUIRE}\n"
-	"\n"
-	"precision highp float;\n"
-	"\n"
-	"layout(points)                          in;\n"
-	"layout(triangle_strip, max_vertices=12) out;\n"
-	"\n"
-	"void main()\n"
-	"{\n"
-	"    for (int n = 0; n < 12; ++n)\n"
-	"    {\n"
-	"        gl_Position = vec4(1.0 / (float(n) + 1.0), 1.0 / (float(n) + 2.0), 0.0, 1.0);\n"
-	"        EmitVertex();\n"
-	"    }\n"
-	"\n"
-	"    EndPrimitive();\n"
-	"}\n";
+const char *GeometryShaderPrimitiveQueriesTriangles::m_gs_code =
+    "${VERSION}\n"
+    "\n"
+    "${GEOMETRY_SHADER_REQUIRE}\n"
+    "\n"
+    "precision highp float;\n"
+    "\n"
+    "layout(points)                          in;\n"
+    "layout(triangle_strip, max_vertices=12) out;\n"
+    "\n"
+    "void main()\n"
+    "{\n"
+    "    for (int n = 0; n < 12; ++n)\n"
+    "    {\n"
+    "        gl_Position = vec4(1.0 / (float(n) + 1.0), 1.0 / (float(n) + 2.0), 0.0, 1.0);\n"
+    "        EmitVertex();\n"
+    "    }\n"
+    "\n"
+    "    EndPrimitive();\n"
+    "}\n";
 
 /** Constructor
  *
@@ -122,10 +122,10 @@ const char* GeometryShaderPrimitiveQueriesTriangles::m_gs_code =
  * @param name          Test case's name
  * @param description   Test case's description
  **/
-GeometryShaderPrimitiveQueriesPoints::GeometryShaderPrimitiveQueriesPoints(Context&				context,
-																		   const ExtParameters& extParams,
-																		   const char* name, const char* description)
-	: GeometryShaderPrimitiveQueries(context, extParams, name, description)
+GeometryShaderPrimitiveQueriesPoints::GeometryShaderPrimitiveQueriesPoints(Context &context,
+                                                                           const ExtParameters &extParams,
+                                                                           const char *name, const char *description)
+    : GeometryShaderPrimitiveQueries(context, extParams, name, description)
 {
 }
 
@@ -133,9 +133,9 @@ GeometryShaderPrimitiveQueriesPoints::GeometryShaderPrimitiveQueriesPoints(Conte
  *
  * @return geometry shader code
  **/
-const char* GeometryShaderPrimitiveQueriesPoints::getGeometryShaderCode()
+const char *GeometryShaderPrimitiveQueriesPoints::getGeometryShaderCode()
 {
-	return m_gs_code;
+    return m_gs_code;
 }
 
 /** Gets the number of emitted vertices
@@ -144,7 +144,7 @@ const char* GeometryShaderPrimitiveQueriesPoints::getGeometryShaderCode()
  **/
 glw::GLint GeometryShaderPrimitiveQueriesPoints::getAmountOfEmittedVertices()
 {
-	return 8;
+    return 8;
 }
 
 /** Gets the transform feedback mode
@@ -153,7 +153,7 @@ glw::GLint GeometryShaderPrimitiveQueriesPoints::getAmountOfEmittedVertices()
  **/
 glw::GLenum GeometryShaderPrimitiveQueriesPoints::getTFMode()
 {
-	return GL_POINTS;
+    return GL_POINTS;
 }
 
 /** Constructor
@@ -162,10 +162,10 @@ glw::GLenum GeometryShaderPrimitiveQueriesPoints::getTFMode()
  * @param name          Test case's name
  * @param description   Test case's desricption
  **/
-GeometryShaderPrimitiveQueriesLines::GeometryShaderPrimitiveQueriesLines(Context&			  context,
-																		 const ExtParameters& extParams,
-																		 const char* name, const char* description)
-	: GeometryShaderPrimitiveQueries(context, extParams, name, description)
+GeometryShaderPrimitiveQueriesLines::GeometryShaderPrimitiveQueriesLines(Context &context,
+                                                                         const ExtParameters &extParams,
+                                                                         const char *name, const char *description)
+    : GeometryShaderPrimitiveQueries(context, extParams, name, description)
 {
 }
 
@@ -173,9 +173,9 @@ GeometryShaderPrimitiveQueriesLines::GeometryShaderPrimitiveQueriesLines(Context
  *
  * @return geometry shader code
  **/
-const char* GeometryShaderPrimitiveQueriesLines::getGeometryShaderCode()
+const char *GeometryShaderPrimitiveQueriesLines::getGeometryShaderCode()
 {
-	return m_gs_code;
+    return m_gs_code;
 }
 
 /** Gets the number of emitted vertices
@@ -184,7 +184,7 @@ const char* GeometryShaderPrimitiveQueriesLines::getGeometryShaderCode()
  **/
 glw::GLint GeometryShaderPrimitiveQueriesLines::getAmountOfEmittedVertices()
 {
-	return 18;
+    return 18;
 }
 
 /** Gets the transform feedback mode
@@ -193,7 +193,7 @@ glw::GLint GeometryShaderPrimitiveQueriesLines::getAmountOfEmittedVertices()
  **/
 glw::GLenum GeometryShaderPrimitiveQueriesLines::getTFMode()
 {
-	return GL_LINES;
+    return GL_LINES;
 }
 
 /** Constructor
@@ -202,11 +202,11 @@ glw::GLenum GeometryShaderPrimitiveQueriesLines::getTFMode()
  * @param name          Test case's name
  * @param description   Test case's desricption
  **/
-GeometryShaderPrimitiveQueriesTriangles::GeometryShaderPrimitiveQueriesTriangles(Context&			  context,
-																				 const ExtParameters& extParams,
-																				 const char*		  name,
-																				 const char*		  description)
-	: GeometryShaderPrimitiveQueries(context, extParams, name, description)
+GeometryShaderPrimitiveQueriesTriangles::GeometryShaderPrimitiveQueriesTriangles(Context &context,
+                                                                                 const ExtParameters &extParams,
+                                                                                 const char *name,
+                                                                                 const char *description)
+    : GeometryShaderPrimitiveQueries(context, extParams, name, description)
 {
 }
 
@@ -214,9 +214,9 @@ GeometryShaderPrimitiveQueriesTriangles::GeometryShaderPrimitiveQueriesTriangles
  *
  * @return geometry shader code
  **/
-const char* GeometryShaderPrimitiveQueriesTriangles::getGeometryShaderCode()
+const char *GeometryShaderPrimitiveQueriesTriangles::getGeometryShaderCode()
 {
-	return m_gs_code;
+    return m_gs_code;
 }
 
 /** Gets the number of emitted vertices
@@ -225,7 +225,7 @@ const char* GeometryShaderPrimitiveQueriesTriangles::getGeometryShaderCode()
  **/
 glw::GLint GeometryShaderPrimitiveQueriesTriangles::getAmountOfEmittedVertices()
 {
-	return 30;
+    return 30;
 }
 
 /** Gets the transform feedback mode
@@ -234,7 +234,7 @@ glw::GLint GeometryShaderPrimitiveQueriesTriangles::getAmountOfEmittedVertices()
  **/
 glw::GLenum GeometryShaderPrimitiveQueriesTriangles::getTFMode()
 {
-	return GL_TRIANGLES;
+    return GL_TRIANGLES;
 }
 
 /** Constructor
@@ -243,21 +243,21 @@ glw::GLenum GeometryShaderPrimitiveQueriesTriangles::getTFMode()
  * @param name          Test case's name
  * @param description   Test case's desricption
  **/
-GeometryShaderPrimitiveQueries::GeometryShaderPrimitiveQueries(Context& context, const ExtParameters& extParams,
-															   const char* name, const char* description)
-	: TestCaseBase(context, extParams, name, description)
-	, m_n_texture_components(4)
-	, m_bo_large_id(0)
-	, m_bo_small_id(0)
-	, m_fs_id(0)
-	, m_gs_id(0)
-	, m_po_id(0)
-	, m_qo_primitives_generated_id(0)
-	, m_qo_tf_primitives_written_id(0)
-	, m_vao_id(0)
-	, m_vs_id(0)
+GeometryShaderPrimitiveQueries::GeometryShaderPrimitiveQueries(Context &context, const ExtParameters &extParams,
+                                                               const char *name, const char *description)
+    : TestCaseBase(context, extParams, name, description)
+    , m_n_texture_components(4)
+    , m_bo_large_id(0)
+    , m_bo_small_id(0)
+    , m_fs_id(0)
+    , m_gs_id(0)
+    , m_po_id(0)
+    , m_qo_primitives_generated_id(0)
+    , m_qo_tf_primitives_written_id(0)
+    , m_vao_id(0)
+    , m_vs_id(0)
 {
-	/* Nothing to be done here */
+    /* Nothing to be done here */
 }
 
 /** Deinitializes GLES objects created during the test.
@@ -265,60 +265,60 @@ GeometryShaderPrimitiveQueries::GeometryShaderPrimitiveQueries(Context& context,
  */
 void GeometryShaderPrimitiveQueries::deinit(void)
 {
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-	/* Reset OpenGL ES state */
-	gl.useProgram(0);
-	gl.bindBuffer(GL_ARRAY_BUFFER, 0);
-	gl.bindVertexArray(0);
+    /* Reset OpenGL ES state */
+    gl.useProgram(0);
+    gl.bindBuffer(GL_ARRAY_BUFFER, 0);
+    gl.bindVertexArray(0);
 
-	if (m_po_id != 0)
-	{
-		gl.deleteProgram(m_po_id);
-	}
+    if (m_po_id != 0)
+    {
+        gl.deleteProgram(m_po_id);
+    }
 
-	if (m_fs_id != 0)
-	{
-		gl.deleteShader(m_fs_id);
-	}
+    if (m_fs_id != 0)
+    {
+        gl.deleteShader(m_fs_id);
+    }
 
-	if (m_gs_id != 0)
-	{
-		gl.deleteShader(m_gs_id);
-	}
+    if (m_gs_id != 0)
+    {
+        gl.deleteShader(m_gs_id);
+    }
 
-	if (m_vs_id != 0)
-	{
-		gl.deleteShader(m_vs_id);
-	}
+    if (m_vs_id != 0)
+    {
+        gl.deleteShader(m_vs_id);
+    }
 
-	if (m_bo_small_id != 0)
-	{
-		gl.deleteBuffers(1, &m_bo_small_id);
-	}
+    if (m_bo_small_id != 0)
+    {
+        gl.deleteBuffers(1, &m_bo_small_id);
+    }
 
-	if (m_bo_large_id != 0)
-	{
-		gl.deleteBuffers(1, &m_bo_large_id);
-	}
+    if (m_bo_large_id != 0)
+    {
+        gl.deleteBuffers(1, &m_bo_large_id);
+    }
 
-	if (m_qo_primitives_generated_id != 0)
-	{
-		gl.deleteQueries(1, &m_qo_primitives_generated_id);
-	}
+    if (m_qo_primitives_generated_id != 0)
+    {
+        gl.deleteQueries(1, &m_qo_primitives_generated_id);
+    }
 
-	if (m_qo_tf_primitives_written_id != 0)
-	{
-		gl.deleteQueries(1, &m_qo_tf_primitives_written_id);
-	}
+    if (m_qo_tf_primitives_written_id != 0)
+    {
+        gl.deleteQueries(1, &m_qo_tf_primitives_written_id);
+    }
 
-	if (m_vao_id != 0)
-	{
-		gl.deleteVertexArrays(1, &m_vao_id);
-	}
+    if (m_vao_id != 0)
+    {
+        gl.deleteVertexArrays(1, &m_vao_id);
+    }
 
-	/* Release base class */
-	TestCaseBase::deinit();
+    /* Release base class */
+    TestCaseBase::deinit();
 }
 
 /** Executes the test.
@@ -328,143 +328,145 @@ void GeometryShaderPrimitiveQueries::deinit(void)
  **/
 tcu::TestNode::IterateResult GeometryShaderPrimitiveQueries::iterate(void)
 {
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-	/* Check if geometry_shader extension is supported */
-	if (!m_is_geometry_shader_extension_supported)
-	{
-		throw tcu::NotSupportedError(GEOMETRY_SHADER_EXTENSION_NOT_SUPPORTED, "", __FILE__, __LINE__);
-	}
+    /* Check if geometry_shader extension is supported */
+    if (!m_is_geometry_shader_extension_supported)
+    {
+        throw tcu::NotSupportedError(GEOMETRY_SHADER_EXTENSION_NOT_SUPPORTED, "", __FILE__, __LINE__);
+    }
 
-	/* Create shader objects and a program object */
-	m_vs_id = gl.createShader(GL_VERTEX_SHADER);
-	m_fs_id = gl.createShader(GL_FRAGMENT_SHADER);
-	m_gs_id = gl.createShader(m_glExtTokens.GEOMETRY_SHADER);
-	m_po_id = gl.createProgram();
+    /* Create shader objects and a program object */
+    m_vs_id = gl.createShader(GL_VERTEX_SHADER);
+    m_fs_id = gl.createShader(GL_FRAGMENT_SHADER);
+    m_gs_id = gl.createShader(m_glExtTokens.GEOMETRY_SHADER);
+    m_po_id = gl.createProgram();
 
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Error creating program/shader objects.");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Error creating program/shader objects.");
 
-	/* Try to build test-specific program object */
-	const char* tf_varyings[] = { "gl_Position" };
-	const char* gs_code		  = getGeometryShaderCode();
+    /* Try to build test-specific program object */
+    const char *tf_varyings[] = {"gl_Position"};
+    const char *gs_code       = getGeometryShaderCode();
 
-	gl.transformFeedbackVaryings(m_po_id, sizeof(tf_varyings) / sizeof(tf_varyings[0]), tf_varyings,
-								 GL_SEPARATE_ATTRIBS);
+    gl.transformFeedbackVaryings(m_po_id, sizeof(tf_varyings) / sizeof(tf_varyings[0]), tf_varyings,
+                                 GL_SEPARATE_ATTRIBS);
 
-	if (!buildProgram(m_po_id, m_fs_id, 1 /* part */, &m_fs_code, m_gs_id, 1 /* part */, &gs_code, m_vs_id,
-					  1 /* part */, &m_vs_code))
-	{
-		TCU_FAIL("Could not create a program for GeometryShaderPrimitiveQueries!");
-	}
+    if (!buildProgram(m_po_id, m_fs_id, 1 /* part */, &m_fs_code, m_gs_id, 1 /* part */, &gs_code, m_vs_id,
+                      1 /* part */, &m_vs_code))
+    {
+        TCU_FAIL("Could not create a program for GeometryShaderPrimitiveQueries!");
+    }
 
-	/* Create and bind a vertex array object */
-	gl.genVertexArrays(1, &m_vao_id);
-	gl.bindVertexArray(m_vao_id);
+    /* Create and bind a vertex array object */
+    gl.genVertexArrays(1, &m_vao_id);
+    gl.bindVertexArray(m_vao_id);
 
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Error creating a vertex array object.");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Error creating a vertex array object.");
 
-	/* Create two buffer objects
-	 *
-	 * One with sufficiently large storage space to hold position data for particular output.
-	 * Another one of insufficient size.
-	 */
-	gl.genBuffers(1, &m_bo_large_id);
-	gl.genBuffers(1, &m_bo_small_id);
+    /* Create two buffer objects
+     *
+     * One with sufficiently large storage space to hold position data for particular output.
+     * Another one of insufficient size.
+     */
+    gl.genBuffers(1, &m_bo_large_id);
+    gl.genBuffers(1, &m_bo_small_id);
 
-	gl.bindBuffer(GL_ARRAY_BUFFER, m_bo_large_id);
-	gl.bufferData(GL_ARRAY_BUFFER,
-				  getAmountOfEmittedVertices() * m_n_texture_components /* components */ * sizeof(float), NULL,
-				  GL_STATIC_DRAW);
+    gl.bindBuffer(GL_ARRAY_BUFFER, m_bo_large_id);
+    gl.bufferData(GL_ARRAY_BUFFER,
+                  getAmountOfEmittedVertices() * m_n_texture_components /* components */ * sizeof(float), NULL,
+                  GL_STATIC_DRAW);
 
-	gl.bindBuffer(GL_ARRAY_BUFFER, m_bo_small_id);
-	gl.bufferData(GL_ARRAY_BUFFER,
-				  (getAmountOfEmittedVertices() / 2) * m_n_texture_components /* components */ * sizeof(float), NULL,
-				  GL_STATIC_DRAW);
+    gl.bindBuffer(GL_ARRAY_BUFFER, m_bo_small_id);
+    gl.bufferData(GL_ARRAY_BUFFER,
+                  (getAmountOfEmittedVertices() / 2) * m_n_texture_components /* components */ * sizeof(float), NULL,
+                  GL_STATIC_DRAW);
 
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Error allocating buffer objects.");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Error allocating buffer objects.");
 
-	/* Create primitive query objects */
-	gl.genQueries(1, &m_qo_tf_primitives_written_id);
-	gl.genQueries(1, &m_qo_primitives_generated_id);
+    /* Create primitive query objects */
+    gl.genQueries(1, &m_qo_tf_primitives_written_id);
+    gl.genQueries(1, &m_qo_primitives_generated_id);
 
-	glw::GLuint nPrimitivesGenerated = 0;
-	glw::GLuint nTFPrimitivesWritten = 0;
+    glw::GLuint nPrimitivesGenerated = 0;
+    glw::GLuint nTFPrimitivesWritten = 0;
 
-	/* Test case 13.1 */
-	readPrimitiveQueryValues(m_bo_large_id, &nPrimitivesGenerated, &nTFPrimitivesWritten);
+    /* Test case 13.1 */
+    readPrimitiveQueryValues(m_bo_large_id, &nPrimitivesGenerated, &nTFPrimitivesWritten);
 
-	if (nPrimitivesGenerated == 0)
-	{
-		m_testCtx.getLog()
-			<< tcu::TestLog::Message
-			<< "Retrieved GL_PRIMITIVES_GENERATED_EXT query object value is zero which should never happen."
-			<< tcu::TestLog::EndMessage;
+    if (nPrimitivesGenerated == 0)
+    {
+        m_testCtx.getLog()
+            << tcu::TestLog::Message
+            << "Retrieved GL_PRIMITIVES_GENERATED_EXT query object value is zero which should never happen."
+            << tcu::TestLog::EndMessage;
 
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-		return STOP;
-	}
+        m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+        return STOP;
+    }
 
-	if (nTFPrimitivesWritten == 0)
-	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "Retrieved GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN query "
-													   "object value is zero which should never happen."
-						   << tcu::TestLog::EndMessage;
+    if (nTFPrimitivesWritten == 0)
+    {
+        m_testCtx.getLog() << tcu::TestLog::Message
+                           << "Retrieved GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN query "
+                              "object value is zero which should never happen."
+                           << tcu::TestLog::EndMessage;
 
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-		return STOP;
-	}
+        m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+        return STOP;
+    }
 
-	if (nPrimitivesGenerated != nTFPrimitivesWritten)
-	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "Retrieved GL_PRIMITIVES_GENERATED_EXT query object value("
-						   << nPrimitivesGenerated
-						   << ") is different than for GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN ("
-						   << nTFPrimitivesWritten << ")" << tcu::TestLog::EndMessage;
+    if (nPrimitivesGenerated != nTFPrimitivesWritten)
+    {
+        m_testCtx.getLog() << tcu::TestLog::Message << "Retrieved GL_PRIMITIVES_GENERATED_EXT query object value("
+                           << nPrimitivesGenerated
+                           << ") is different than for GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN ("
+                           << nTFPrimitivesWritten << ")" << tcu::TestLog::EndMessage;
 
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-		return STOP;
-	}
+        m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+        return STOP;
+    }
 
-	/* Test case 13.2 */
-	nPrimitivesGenerated = 0;
-	nTFPrimitivesWritten = 0;
+    /* Test case 13.2 */
+    nPrimitivesGenerated = 0;
+    nTFPrimitivesWritten = 0;
 
-	readPrimitiveQueryValues(m_bo_small_id, &nPrimitivesGenerated, &nTFPrimitivesWritten);
+    readPrimitiveQueryValues(m_bo_small_id, &nPrimitivesGenerated, &nTFPrimitivesWritten);
 
-	if (nPrimitivesGenerated == 0)
-	{
-		m_testCtx.getLog()
-			<< tcu::TestLog::Message
-			<< "Retrieved GL_PRIMITIVES_GENERATED_EXT query object value is zero which should never happen."
-			<< tcu::TestLog::EndMessage;
+    if (nPrimitivesGenerated == 0)
+    {
+        m_testCtx.getLog()
+            << tcu::TestLog::Message
+            << "Retrieved GL_PRIMITIVES_GENERATED_EXT query object value is zero which should never happen."
+            << tcu::TestLog::EndMessage;
 
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-		return STOP;
-	}
+        m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+        return STOP;
+    }
 
-	if (nTFPrimitivesWritten == 0)
-	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "Retrieved GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN query "
-													   "object value is zero which should never happen."
-						   << tcu::TestLog::EndMessage;
+    if (nTFPrimitivesWritten == 0)
+    {
+        m_testCtx.getLog() << tcu::TestLog::Message
+                           << "Retrieved GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN query "
+                              "object value is zero which should never happen."
+                           << tcu::TestLog::EndMessage;
 
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-		return STOP;
-	}
+        m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+        return STOP;
+    }
 
-	if ((nPrimitivesGenerated / 2) != nTFPrimitivesWritten)
-	{
-		m_testCtx.getLog() << tcu::TestLog::Message
-						   << "Retrieved GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN query object value("
-						   << nPrimitivesGenerated << ") should be half the amount of GL_PRIMITIVES_GENERATED_EXT ("
-						   << nTFPrimitivesWritten << ")" << tcu::TestLog::EndMessage;
+    if ((nPrimitivesGenerated / 2) != nTFPrimitivesWritten)
+    {
+        m_testCtx.getLog() << tcu::TestLog::Message
+                           << "Retrieved GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN query object value("
+                           << nPrimitivesGenerated << ") should be half the amount of GL_PRIMITIVES_GENERATED_EXT ("
+                           << nTFPrimitivesWritten << ")" << tcu::TestLog::EndMessage;
 
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-		return STOP;
-	}
+        m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+        return STOP;
+    }
 
-	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	return STOP;
+    m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+    return STOP;
 }
 
 /**
@@ -477,44 +479,44 @@ tcu::TestNode::IterateResult GeometryShaderPrimitiveQueries::iterate(void)
  * @return nPrimitivesGenerated      the result of GL_PRIMITIVES_GENERATED_EXT query
  * @return nPrimitivesWritten        the result of GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN query
  */
-void GeometryShaderPrimitiveQueries::readPrimitiveQueryValues(glw::GLint bufferId, glw::GLuint* nPrimitivesGenerated,
-															  glw::GLuint* nPrimitivesWritten)
+void GeometryShaderPrimitiveQueries::readPrimitiveQueryValues(glw::GLint bufferId, glw::GLuint *nPrimitivesGenerated,
+                                                              glw::GLuint *nPrimitivesWritten)
 {
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-	/* Bind the buffer object to hold the captured data.*/
-	gl.bindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, bufferId);
+    /* Bind the buffer object to hold the captured data.*/
+    gl.bindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, bufferId);
 
-	/* Activate the program object */
-	gl.useProgram(m_po_id);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Error using program object");
+    /* Activate the program object */
+    gl.useProgram(m_po_id);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Error using program object");
 
-	gl.beginTransformFeedback(getTFMode());
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Error starting transform feedback");
+    gl.beginTransformFeedback(getTFMode());
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Error starting transform feedback");
 
-	/* Activate the queries */
-	gl.beginQuery(m_glExtTokens.PRIMITIVES_GENERATED, m_qo_primitives_generated_id);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Error starting GL_PRIMITIVES_GENERATED_EXT query");
+    /* Activate the queries */
+    gl.beginQuery(m_glExtTokens.PRIMITIVES_GENERATED, m_qo_primitives_generated_id);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Error starting GL_PRIMITIVES_GENERATED_EXT query");
 
-	gl.beginQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN, m_qo_tf_primitives_written_id);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Error starting GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN query");
+    gl.beginQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN, m_qo_tf_primitives_written_id);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Error starting GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN query");
 
-	/* Render */
-	gl.drawArrays(GL_POINTS, 0 /* first */, 1 /* count */);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Error executing draw call");
+    /* Render */
+    gl.drawArrays(GL_POINTS, 0 /* first */, 1 /* count */);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Error executing draw call");
 
-	gl.endTransformFeedback();
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Error finishing transform feedback");
+    gl.endTransformFeedback();
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Error finishing transform feedback");
 
-	/* Query objects end here. */
-	gl.endQuery(m_glExtTokens.PRIMITIVES_GENERATED);
-	gl.endQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN);
+    /* Query objects end here. */
+    gl.endQuery(m_glExtTokens.PRIMITIVES_GENERATED);
+    gl.endQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN);
 
-	/* Retrieve query values */
-	gl.getQueryObjectuiv(m_qo_primitives_generated_id, GL_QUERY_RESULT, nPrimitivesGenerated);
-	gl.getQueryObjectuiv(m_qo_tf_primitives_written_id, GL_QUERY_RESULT, nPrimitivesWritten);
+    /* Retrieve query values */
+    gl.getQueryObjectuiv(m_qo_primitives_generated_id, GL_QUERY_RESULT, nPrimitivesGenerated);
+    gl.getQueryObjectuiv(m_qo_tf_primitives_written_id, GL_QUERY_RESULT, nPrimitivesWritten);
 
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Error retrieving query values.");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Error retrieving query values.");
 }
 
 } // namespace glcts

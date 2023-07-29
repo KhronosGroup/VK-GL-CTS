@@ -31,9 +31,9 @@ namespace vkt
 namespace image
 {
 
-tcu::TestCaseGroup* createImageQualifiersTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageQualifiersTests(tcu::TestContext &testCtx);
 
-} // image
-} // vkt
+} // namespace image
+} // namespace vkt
 
 #endif // _VKTIMAGEQUALIFIERSTESTS_HPP

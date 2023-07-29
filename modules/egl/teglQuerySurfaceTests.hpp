@@ -34,13 +34,13 @@ namespace egl
 class QuerySurfaceTests : public TestCaseGroup
 {
 public:
-							QuerySurfaceTests			(EglTestContext& eglTestCtx);
-	virtual					~QuerySurfaceTests			(void);
+    QuerySurfaceTests(EglTestContext &eglTestCtx);
+    virtual ~QuerySurfaceTests(void);
 
-	void					init						(void);
+    void init(void);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLQUERYSURFACETESTS_HPP

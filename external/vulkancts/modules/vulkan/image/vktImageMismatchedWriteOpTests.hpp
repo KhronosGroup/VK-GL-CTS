@@ -32,9 +32,9 @@ namespace vkt
 namespace image
 {
 
-tcu::TestCaseGroup* createImageWriteOpTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageWriteOpTests(tcu::TestContext &testCtx);
 
-} // image
-} // vkt
+} // namespace image
+} // namespace vkt
 
 #endif // _VKTIMAGEMISMATCHEDWRITEOPTESTS_HPP

@@ -25,32 +25,33 @@
 
 using namespace tcu;
 
-SurfaceAccess::SurfaceAccess (tcu::Surface& surface, const tcu::PixelFormat& colorFmt, int x, int y, int width, int height)
-	: m_surface		(&surface)
-	, m_colorMask	(getColorMask(colorFmt))
-	, m_x			(x)
-	, m_y			(y)
-	, m_width		(width)
-	, m_height		(height)
+SurfaceAccess::SurfaceAccess(tcu::Surface &surface, const tcu::PixelFormat &colorFmt, int x, int y, int width,
+                             int height)
+    : m_surface(&surface)
+    , m_colorMask(getColorMask(colorFmt))
+    , m_x(x)
+    , m_y(y)
+    , m_width(width)
+    , m_height(height)
 {
 }
 
-SurfaceAccess::SurfaceAccess (tcu::Surface& surface, const tcu::PixelFormat& colorFmt)
-	: m_surface		(&surface)
-	, m_colorMask	(getColorMask(colorFmt))
-	, m_x			(0)
-	, m_y			(0)
-	, m_width		(surface.getWidth())
-	, m_height		(surface.getHeight())
+SurfaceAccess::SurfaceAccess(tcu::Surface &surface, const tcu::PixelFormat &colorFmt)
+    : m_surface(&surface)
+    , m_colorMask(getColorMask(colorFmt))
+    , m_x(0)
+    , m_y(0)
+    , m_width(surface.getWidth())
+    , m_height(surface.getHeight())
 {
 }
 
-SurfaceAccess::SurfaceAccess (const SurfaceAccess& parent, int x, int y, int width, int height)
-	: m_surface			(parent.m_surface)
-	, m_colorMask		(parent.m_colorMask)
-	, m_x				(parent.m_x + x)
-	, m_y				(parent.m_y + y)
-	, m_width			(width)
-	, m_height			(height)
+SurfaceAccess::SurfaceAccess(const SurfaceAccess &parent, int x, int y, int width, int height)
+    : m_surface(parent.m_surface)
+    , m_colorMask(parent.m_colorMask)
+    , m_x(parent.m_x + x)
+    , m_y(parent.m_y + y)
+    , m_width(width)
+    , m_height(height)
 {
 }

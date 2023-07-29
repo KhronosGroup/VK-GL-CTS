@@ -36,15 +36,15 @@ namespace postmortem
 class PostmortemTestInstance : public vkt::TestInstance
 {
 public:
-	PostmortemTestInstance(Context& context);
-	virtual ~PostmortemTestInstance();
+    PostmortemTestInstance(Context &context);
+    virtual ~PostmortemTestInstance();
 
 protected:
-	vk::Unique<vk::VkDevice>	m_logicalDevice;
-	vk::DeviceDriver			m_deviceDriver;
-	deUint32					m_queueFamilyIndex;
-	vk::VkQueue					m_queue;
-	vk::SimpleAllocator			m_allocator;
+    vk::Unique<vk::VkDevice> m_logicalDevice;
+    vk::DeviceDriver m_deviceDriver;
+    uint32_t m_queueFamilyIndex;
+    vk::VkQueue m_queue;
+    vk::SimpleAllocator m_allocator;
 };
 
 } // namespace postmortem

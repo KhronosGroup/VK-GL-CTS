@@ -37,42 +37,42 @@ namespace de
  * method.
  *
  * \note Thread class is not thread-safe, i.e. thread control functions
- *		 such as start() or join() can not be called from multiple threads
- *		 concurrently.
+ *         such as start() or join() can not be called from multiple threads
+ *         concurrently.
  *//*--------------------------------------------------------------------*/
 class Thread
 {
 public:
-						Thread			(void);
-	virtual				~Thread			(void);
+    Thread(void);
+    virtual ~Thread(void);
 
-	void				setPriority		(deThreadPriority priority);
-	void				start			(void);
-	void				join			(void);
+    void setPriority(deThreadPriority priority);
+    void start(void);
+    void join(void);
 
-	bool				isStarted		(void) const;
+    bool isStarted(void) const;
 
-	/** Thread entry point. */
-	virtual void		run				(void) = DE_NULL;
+    /** Thread entry point. */
+    virtual void run(void) = DE_NULL;
 
 private:
-						Thread			(const Thread& other); // Not allowed!
-	Thread&				operator=		(const Thread& other); // Not allowed!
+    Thread(const Thread &other);            // Not allowed!
+    Thread &operator=(const Thread &other); // Not allowed!
 
-	deThreadAttributes	m_attribs;
-	deThread			m_thread;
+    deThreadAttributes m_attribs;
+    deThread m_thread;
 };
 
 /*--------------------------------------------------------------------*//*!
  * \brief Get thread launch status.
  * \return true if thread has been started and no join() has been called,
- *		   false otherwise.
+ *           false otherwise.
  *//*--------------------------------------------------------------------*/
-inline bool Thread::isStarted (void) const
+inline bool Thread::isStarted(void) const
 {
-	return m_thread != 0;
+    return m_thread != 0;
 }
 
-} // de
+} // namespace de
 
 #endif // _DETHREAD_HPP

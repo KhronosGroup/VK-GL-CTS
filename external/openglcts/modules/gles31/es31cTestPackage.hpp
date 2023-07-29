@@ -33,18 +33,18 @@ namespace es31cts
 class ES31TestPackage : public deqp::TestPackage
 {
 public:
-	ES31TestPackage(tcu::TestContext& testCtx, const char* packageName);
-	~ES31TestPackage(void);
+    ES31TestPackage(tcu::TestContext &testCtx, const char *packageName);
+    ~ES31TestPackage(void);
 
-	void init(void);
+    void init(void);
 
-	virtual tcu::TestCaseExecutor* createExecutor(void) const;
+    virtual tcu::TestCaseExecutor *createExecutor(void) const;
 
 private:
-	ES31TestPackage(const ES31TestPackage& other);
-	ES31TestPackage& operator=(const ES31TestPackage& other);
+    ES31TestPackage(const ES31TestPackage &other);
+    ES31TestPackage &operator=(const ES31TestPackage &other);
 };
 
-} // es31cts
+} // namespace es31cts
 
 #endif // _ES31CTESTPACKAGE_HPP

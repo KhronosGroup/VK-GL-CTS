@@ -31,13 +31,13 @@ namespace synchronization
 {
 
 #ifndef CTS_USES_VULKANSC
-	typedef vk::VkVideoCodecOperationFlagsKHR VideoCodecOperationFlags;
+typedef vk::VkVideoCodecOperationFlagsKHR VideoCodecOperationFlags;
 #else
-	// Can be replaced when/if video extension will be promoted into SC
-	typedef uint32_t VideoCodecOperationFlags;
+// Can be replaced when/if video extension will be promoted into SC
+typedef uint32_t VideoCodecOperationFlags;
 #endif
 
-} // synchronization
-} // vkt
+} // namespace synchronization
+} // namespace vkt
 
 #endif // _VKTSYNCHRONIZATIONDEFS_HPP

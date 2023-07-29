@@ -32,10 +32,10 @@ namespace vkt
 namespace RayQuery
 {
 
-tcu::TestCaseGroup*	createMiscTests	(tcu::TestContext& testCtx);
-tcu::TestCaseGroup* addHelperInvocationsTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createMiscTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *addHelperInvocationsTests(tcu::TestContext &testCtx);
 
-} // RayQuery
-} // vkt
+} // namespace RayQuery
+} // namespace vkt
 
 #endif // _VKTRAYQUERYMISCTESTS_HPP

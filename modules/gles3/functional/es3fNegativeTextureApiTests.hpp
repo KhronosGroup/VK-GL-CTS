@@ -36,18 +36,18 @@ namespace Functional
 class NegativeTextureApiTests : public TestCaseGroup
 {
 public:
-								NegativeTextureApiTests		(Context& context);
-								~NegativeTextureApiTests	(void);
+    NegativeTextureApiTests(Context &context);
+    ~NegativeTextureApiTests(void);
 
-	void						init						(void);
+    void init(void);
 
 private:
-								NegativeTextureApiTests		(const NegativeTextureApiTests& other);
-	NegativeTextureApiTests&	operator=					(const NegativeTextureApiTests& other);
+    NegativeTextureApiTests(const NegativeTextureApiTests &other);
+    NegativeTextureApiTests &operator=(const NegativeTextureApiTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FNEGATIVETEXTUREAPITESTS_HPP

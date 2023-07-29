@@ -40,116 +40,127 @@ namespace xe
 class TcpIpLinkState
 {
 public:
-								TcpIpLinkState				(CommLinkState initialState, const char* initialErr);
-								~TcpIpLinkState				(void);
+    TcpIpLinkState(CommLinkState initialState, const char *initialErr);
+    ~TcpIpLinkState(void);
 
-	CommLinkState				getState					(void) const;
-	CommLinkState				getState					(std::string& error) const;
+    CommLinkState getState(void) const;
+    CommLinkState getState(std::string &error) const;
 
-	void						setCallbacks				(CommLink::StateChangedFunc stateChangedCallback, CommLink::LogDataFunc testLogDataCallback, CommLink::LogDataFunc infoLogDataCallback, void* userPtr);
+    void setCallbacks(CommLink::StateChangedFunc stateChangedCallback, CommLink::LogDataFunc testLogDataCallback,
+                      CommLink::LogDataFunc infoLogDataCallback, void *userPtr);
 
-	void						setState					(CommLinkState state, const char* error = "");
-	void						onTestLogData				(const deUint8* bytes, size_t numBytes) const;
-	void						onInfoLogData				(const deUint8* bytes, size_t numBytes) const;
+    void setState(CommLinkState state, const char *error = "");
+    void onTestLogData(const uint8_t *bytes, size_t numBytes) const;
+    void onInfoLogData(const uint8_t *bytes, size_t numBytes) const;
 
-	void						onKeepaliveReceived			(void);
-	deUint64					getLastKeepaliveRecevied	(void) const;
+    void onKeepaliveReceived(void);
+    uint64_t getLastKeepaliveRecevied(void) const;
 
 private:
-	mutable de::Mutex					m_lock;
-	volatile CommLinkState				m_state;
-	std::string							m_error;
+    mutable de::Mutex m_lock;
+    volatile CommLinkState m_state;
+    std::string m_error;
 
-	volatile deUint64					m_lastKeepaliveReceived;
+    volatile uint64_t m_lastKeepaliveReceived;
 
-	volatile CommLink::StateChangedFunc	m_stateChangedCallback;
-	volatile CommLink::LogDataFunc		m_testLogDataCallback;
-	volatile CommLink::LogDataFunc		m_infoLogDataCallback;
-	void* volatile						m_userPtr;
+    volatile CommLink::StateChangedFunc m_stateChangedCallback;
+    volatile CommLink::LogDataFunc m_testLogDataCallback;
+    volatile CommLink::LogDataFunc m_infoLogDataCallback;
+    void *volatile m_userPtr;
 };
 
 class TcpIpSendThread : public de::Thread
 {
 public:
-								TcpIpSendThread			(de::Socket& socket, TcpIpLinkState& state);
-								~TcpIpSendThread		(void);
+    TcpIpSendThread(de::Socket &socket, TcpIpLinkState &state);
+    ~TcpIpSendThread(void);
 
-	void						start					(void);
-	void						run						(void);
-	void						stop					(void);
+    void start(void);
+    void run(void);
+    void stop(void);
 
-	bool						isRunning				(void) const { return m_isRunning; }
+    bool isRunning(void) const
+    {
+        return m_isRunning;
+    }
 
-	de::BlockBuffer<deUint8>&	getBuffer				(void) { return m_buffer; }
+    de::BlockBuffer<uint8_t> &getBuffer(void)
+    {
+        return m_buffer;
+    }
 
 private:
-	de::Socket&					m_socket;
-	TcpIpLinkState&				m_state;
+    de::Socket &m_socket;
+    TcpIpLinkState &m_state;
 
-	de::BlockBuffer<deUint8>	m_buffer;
+    de::BlockBuffer<uint8_t> m_buffer;
 
-	bool						m_isRunning;
+    bool m_isRunning;
 };
 
 class TcpIpRecvThread : public de::Thread
 {
 public:
-								TcpIpRecvThread			(de::Socket& socket, TcpIpLinkState& state);
-								~TcpIpRecvThread		(void);
+    TcpIpRecvThread(de::Socket &socket, TcpIpLinkState &state);
+    ~TcpIpRecvThread(void);
 
-	void						start					(void);
-	void						run						(void);
-	void						stop					(void);
+    void start(void);
+    void run(void);
+    void stop(void);
 
-	bool						isRunning				(void) const { return m_isRunning; }
+    bool isRunning(void) const
+    {
+        return m_isRunning;
+    }
 
 private:
-	void						handleMessage			(xs::MessageType messageType, const deUint8* data, size_t dataSize);
+    void handleMessage(xs::MessageType messageType, const uint8_t *data, size_t dataSize);
 
-	de::Socket&					m_socket;
-	TcpIpLinkState&				m_state;
+    de::Socket &m_socket;
+    TcpIpLinkState &m_state;
 
-	std::vector<deUint8>		m_curMsgBuf;
-	size_t						m_curMsgPos;
+    std::vector<uint8_t> m_curMsgBuf;
+    size_t m_curMsgPos;
 
-	bool						m_isRunning;
+    bool m_isRunning;
 };
 
 class TcpIpLink : public CommLink
 {
 public:
-								TcpIpLink				(void);
-								~TcpIpLink				(void);
+    TcpIpLink(void);
+    ~TcpIpLink(void);
 
-	// TcpIpLink -specific API
-	void						connect					(const de::SocketAddress& address);
-	void						disconnect				(void);
+    // TcpIpLink -specific API
+    void connect(const de::SocketAddress &address);
+    void disconnect(void);
 
-	// CommLink API
-	void						reset					(void);
+    // CommLink API
+    void reset(void);
 
-	CommLinkState				getState				(void) const;
-	CommLinkState				getState				(std::string& error) const;
+    CommLinkState getState(void) const;
+    CommLinkState getState(std::string &error) const;
 
-	void						setCallbacks			(StateChangedFunc stateChangedCallback, LogDataFunc testLogDataCallback, LogDataFunc infoLogDataCallback, void* userPtr);
+    void setCallbacks(StateChangedFunc stateChangedCallback, LogDataFunc testLogDataCallback,
+                      LogDataFunc infoLogDataCallback, void *userPtr);
 
-	void						startTestProcess		(const char* name, const char* params, const char* workingDir, const char* caseList);
-	void						stopTestProcess			(void);
+    void startTestProcess(const char *name, const char *params, const char *workingDir, const char *caseList);
+    void stopTestProcess(void);
 
 private:
-	void						closeConnection			(void);
+    void closeConnection(void);
 
-	static void					keepaliveTimerCallback	(void* ptr);
+    static void keepaliveTimerCallback(void *ptr);
 
-	de::Socket					m_socket;
-	TcpIpLinkState				m_state;
+    de::Socket m_socket;
+    TcpIpLinkState m_state;
 
-	TcpIpSendThread				m_sendThread;
-	TcpIpRecvThread				m_recvThread;
+    TcpIpSendThread m_sendThread;
+    TcpIpRecvThread m_recvThread;
 
-	deTimer*					m_keepaliveTimer;
+    deTimer *m_keepaliveTimer;
 };
 
-} // xe
+} // namespace xe
 
 #endif // _XETCPIPLINK_HPP

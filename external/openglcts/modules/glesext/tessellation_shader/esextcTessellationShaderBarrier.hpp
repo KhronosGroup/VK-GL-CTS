@@ -35,10 +35,10 @@ namespace glcts
 class TessellationShaderBarrierTests : public TestCaseGroupBase
 {
 public:
-	/* Public methods */
-	TessellationShaderBarrierTests(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderBarrierTests(Context &context, const ExtParameters &extParams);
 
-	virtual void init(void);
+    virtual void init(void);
 };
 
 /** Base class for all tests that check the memory barrier functionality.
@@ -46,38 +46,38 @@ public:
 class TessellationShaderBarrierTestCase : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TessellationShaderBarrierTestCase(Context& context, const ExtParameters& extParams, const char* name,
-									  const char* description);
+    /* Public methods */
+    TessellationShaderBarrierTestCase(Context &context, const ExtParameters &extParams, const char *name,
+                                      const char *description);
 
-	virtual ~TessellationShaderBarrierTestCase(void)
-	{
-	}
+    virtual ~TessellationShaderBarrierTestCase(void)
+    {
+    }
 
-	virtual void		  deinit();
-	virtual void		  initTest(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit();
+    virtual void initTest(void);
+    virtual IterateResult iterate(void);
 
 protected:
-	/* Protected methods */
-	virtual void getDrawCallArgs(glw::GLenum* out_mode, glw::GLint* out_count, glw::GLenum* out_tf_mode,
-								 glw::GLint* out_n_patch_vertices, glw::GLint* out_n_instances) = 0;
+    /* Protected methods */
+    virtual void getDrawCallArgs(glw::GLenum *out_mode, glw::GLint *out_count, glw::GLenum *out_tf_mode,
+                                 glw::GLint *out_n_patch_vertices, glw::GLint *out_n_instances) = 0;
 
-	virtual const char* getTCSCode()	   = 0;
-	virtual const char* getTESCode()	   = 0;
-	virtual const char* getVSCode()		   = 0;
-	virtual int			getXFBBufferSize() = 0;
-	virtual void getXFBProperties(int* out_n_names, const char*** out_names) = 0;
-	virtual bool verifyXFBBuffer(const void* data) = 0;
+    virtual const char *getTCSCode()                                         = 0;
+    virtual const char *getTESCode()                                         = 0;
+    virtual const char *getVSCode()                                          = 0;
+    virtual int getXFBBufferSize()                                           = 0;
+    virtual void getXFBProperties(int *out_n_names, const char ***out_names) = 0;
+    virtual bool verifyXFBBuffer(const void *data)                           = 0;
 
-	/* Protected variables */
-	glw::GLuint m_bo_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_tcs_id;
-	glw::GLuint m_tes_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_vs_id;
+    /* Protected variables */
+    glw::GLuint m_bo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_tcs_id;
+    glw::GLuint m_tes_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_id;
 };
 
 /** Implementation of Test Case 22.1
@@ -91,29 +91,29 @@ protected:
 class TessellationShaderBarrier1 : public TessellationShaderBarrierTestCase
 {
 public:
-	/* Public methods */
-	TessellationShaderBarrier1(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderBarrier1(Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderBarrier1(void)
-	{
-	}
+    virtual ~TessellationShaderBarrier1(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	void getDrawCallArgs(glw::GLenum* out_mode, glw::GLint* out_count, glw::GLenum* out_tf_mode,
-						 glw::GLint* out_n_patch_vertices, glw::GLint* out_n_instances);
+    /* Protected methods */
+    void getDrawCallArgs(glw::GLenum *out_mode, glw::GLint *out_count, glw::GLenum *out_tf_mode,
+                         glw::GLint *out_n_patch_vertices, glw::GLint *out_n_instances);
 
-	const char* getTCSCode();
-	const char* getTESCode();
-	const char* getVSCode();
-	int			getXFBBufferSize();
-	void getXFBProperties(int* out_n_names, const char*** out_names);
-	bool verifyXFBBuffer(const void* data);
+    const char *getTCSCode();
+    const char *getTESCode();
+    const char *getVSCode();
+    int getXFBBufferSize();
+    void getXFBProperties(int *out_n_names, const char ***out_names);
+    bool verifyXFBBuffer(const void *data);
 
 private:
-	/* Private fields */
-	unsigned int	   m_n_input_vertices;
-	const unsigned int m_n_result_vertices;
+    /* Private fields */
+    unsigned int m_n_input_vertices;
+    const unsigned int m_n_result_vertices;
 };
 
 /** Implementation of Test Case 22.2
@@ -129,29 +129,29 @@ private:
 class TessellationShaderBarrier2 : public TessellationShaderBarrierTestCase
 {
 public:
-	/* Public methods */
-	TessellationShaderBarrier2(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderBarrier2(Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderBarrier2(void)
-	{
-	}
+    virtual ~TessellationShaderBarrier2(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	void getDrawCallArgs(glw::GLenum* out_mode, glw::GLint* out_count, glw::GLenum* out_tf_mode,
-						 glw::GLint* out_n_patch_vertices, glw::GLint* out_n_instances);
+    /* Protected methods */
+    void getDrawCallArgs(glw::GLenum *out_mode, glw::GLint *out_count, glw::GLenum *out_tf_mode,
+                         glw::GLint *out_n_patch_vertices, glw::GLint *out_n_instances);
 
-	const char* getTCSCode();
-	const char* getTESCode();
-	const char* getVSCode();
-	int			getXFBBufferSize();
-	void getXFBProperties(int* out_n_names, const char*** out_names);
-	bool verifyXFBBuffer(const void* data);
+    const char *getTCSCode();
+    const char *getTESCode();
+    const char *getVSCode();
+    int getXFBBufferSize();
+    void getXFBProperties(int *out_n_names, const char ***out_names);
+    bool verifyXFBBuffer(const void *data);
 
 private:
-	/* Private fields */
-	unsigned int	   m_n_input_vertices;
-	const unsigned int m_n_result_vertices;
+    /* Private fields */
+    unsigned int m_n_input_vertices;
+    const unsigned int m_n_result_vertices;
 };
 
 /** Implementation of Test Case 22.3
@@ -173,33 +173,33 @@ private:
 class TessellationShaderBarrier3 : public TessellationShaderBarrierTestCase
 {
 public:
-	/* Public methods */
-	TessellationShaderBarrier3(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderBarrier3(Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderBarrier3(void)
-	{
-	}
+    virtual ~TessellationShaderBarrier3(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	void getDrawCallArgs(glw::GLenum* out_mode, glw::GLint* out_count, glw::GLenum* out_tf_mode,
-						 glw::GLint* out_n_patch_vertices, glw::GLint* out_n_instances);
+    /* Protected methods */
+    void getDrawCallArgs(glw::GLenum *out_mode, glw::GLint *out_count, glw::GLenum *out_tf_mode,
+                         glw::GLint *out_n_patch_vertices, glw::GLint *out_n_instances);
 
-	const char* getTCSCode();
-	const char* getTESCode();
-	const char* getVSCode();
-	int			getXFBBufferSize();
-	void getXFBProperties(int* out_n_names, const char*** out_names);
-	bool verifyXFBBuffer(const void* data);
+    const char *getTCSCode();
+    const char *getTESCode();
+    const char *getVSCode();
+    int getXFBBufferSize();
+    void getXFBProperties(int *out_n_names, const char ***out_names);
+    bool verifyXFBBuffer(const void *data);
 
 private:
-	/* Private fields */
-	unsigned int	   m_n_input_vertices;
-	const unsigned int m_n_instances;
-	const unsigned int m_n_invocations;
-	const unsigned int m_n_patch_vertices;
-	const unsigned int m_n_patches_per_invocation;
-	const unsigned int m_n_result_vertices;
+    /* Private fields */
+    unsigned int m_n_input_vertices;
+    const unsigned int m_n_instances;
+    const unsigned int m_n_invocations;
+    const unsigned int m_n_patch_vertices;
+    const unsigned int m_n_patches_per_invocation;
+    const unsigned int m_n_result_vertices;
 };
 
 } // namespace glcts

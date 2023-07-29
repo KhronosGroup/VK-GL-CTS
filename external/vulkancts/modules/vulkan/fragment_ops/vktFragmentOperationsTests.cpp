@@ -35,22 +35,22 @@ namespace FragmentOperations
 namespace
 {
 
-void addFragmentOperationsTests (tcu::TestCaseGroup* fragmentOperationsTestsGroup)
+void addFragmentOperationsTests(tcu::TestCaseGroup *fragmentOperationsTestsGroup)
 {
-	tcu::TestContext& testCtx = fragmentOperationsTestsGroup->getTestContext();
+    tcu::TestContext &testCtx = fragmentOperationsTestsGroup->getTestContext();
 
-	fragmentOperationsTestsGroup->addChild(createScissorTests				(testCtx));
-	fragmentOperationsTestsGroup->addChild(createEarlyFragmentTests			(testCtx));
-	fragmentOperationsTestsGroup->addChild(createOcclusionQueryTests		(testCtx));
-	fragmentOperationsTestsGroup->addChild(createTransientAttachmentTests	(testCtx));
+    fragmentOperationsTestsGroup->addChild(createScissorTests(testCtx));
+    fragmentOperationsTestsGroup->addChild(createEarlyFragmentTests(testCtx));
+    fragmentOperationsTestsGroup->addChild(createOcclusionQueryTests(testCtx));
+    fragmentOperationsTestsGroup->addChild(createTransientAttachmentTests(testCtx));
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
-	return createTestGroup(testCtx, name.c_str(), addFragmentOperationsTests);
+    return createTestGroup(testCtx, name.c_str(), addFragmentOperationsTests);
 }
 
-} // FragmentOperations
-} // vkt
+} // namespace FragmentOperations
+} // namespace vkt

@@ -39,84 +39,82 @@ namespace
 class TextureTests : public tcu::TestCaseGroup
 {
 public:
-	TextureTests (tcu::TestContext& testCtx)
-		: tcu::TestCaseGroup(testCtx, "texture", "Tests for tcu::Texture and utils.")
-	{
-	}
+    TextureTests(tcu::TestContext &testCtx)
+        : tcu::TestCaseGroup(testCtx, "texture", "Tests for tcu::Texture and utils.")
+    {
+    }
 
-	void init (void)
-	{
-		addChild(createSRGB8ConversionTest(m_testCtx));
-	}
+    void init(void)
+    {
+        addChild(createSRGB8ConversionTest(m_testCtx));
+    }
 };
 
 class DeqpTests : public tcu::TestCaseGroup
 {
 public:
-	DeqpTests (tcu::TestContext& testCtx)
-		: tcu::TestCaseGroup(testCtx, "deqp", "dEQP Test Framework Self-tests")
-	{
-	}
+    DeqpTests(tcu::TestContext &testCtx) : tcu::TestCaseGroup(testCtx, "deqp", "dEQP Test Framework Self-tests")
+    {
+    }
 
-	void init (void)
-	{
-		addChild(new TestLogTests		(m_testCtx));
-		addChild(new ImageIOTests		(m_testCtx));
-		addChild(new ImageCompareTests	(m_testCtx));
-		addChild(new TextureTests		(m_testCtx));
-		addChild(createSeedBuilderTests	(m_testCtx));
-	}
+    void init(void)
+    {
+        addChild(new TestLogTests(m_testCtx));
+        addChild(new ImageIOTests(m_testCtx));
+        addChild(new ImageCompareTests(m_testCtx));
+        addChild(new TextureTests(m_testCtx));
+        addChild(createSeedBuilderTests(m_testCtx));
+    }
 };
 
-} // anonymous
+} // namespace
 
 class TestCaseExecutor : public tcu::TestCaseExecutor
 {
 public:
-	TestCaseExecutor (void)
-	{
-	}
+    TestCaseExecutor(void)
+    {
+    }
 
-	~TestCaseExecutor (void)
-	{
-	}
+    ~TestCaseExecutor(void)
+    {
+    }
 
-	void init (tcu::TestCase* testCase, const std::string&)
-	{
-		testCase->init();
-	}
+    void init(tcu::TestCase *testCase, const std::string &)
+    {
+        testCase->init();
+    }
 
-	void deinit (tcu::TestCase* testCase)
-	{
-		testCase->deinit();
-	}
+    void deinit(tcu::TestCase *testCase)
+    {
+        testCase->deinit();
+    }
 
-	tcu::TestNode::IterateResult iterate (tcu::TestCase* testCase)
-	{
-		return testCase->iterate();
-	}
+    tcu::TestNode::IterateResult iterate(tcu::TestCase *testCase)
+    {
+        return testCase->iterate();
+    }
 };
 
-TestPackage::TestPackage (tcu::TestContext& testCtx)
-	: tcu::TestPackage(testCtx, "dE-IT", "drawElements Internal Tests")
+TestPackage::TestPackage(tcu::TestContext &testCtx) : tcu::TestPackage(testCtx, "dE-IT", "drawElements Internal Tests")
 {
 }
 
-TestPackage::~TestPackage (void)
+TestPackage::~TestPackage(void)
 {
 }
 
-void TestPackage::init (void)
+void TestPackage::init(void)
 {
-	addChild(new BuildInfoTests	(m_testCtx));
-	addChild(new DelibsTests	(m_testCtx));
-	addChild(new FrameworkTests	(m_testCtx));
-	addChild(new DeqpTests		(m_testCtx));
+    addChild(new BuildInfoTests(m_testCtx));
+    addChild(new DelibsTests(m_testCtx));
+    addChild(new FrameworkTests(m_testCtx));
+    addChild(new DeqpTests(m_testCtx));
 }
 
-tcu::TestCaseExecutor* TestPackage::createExecutor (void) const
+tcu::TestCaseExecutor *TestPackage::createExecutor(void) const
 {
-	return new TestCaseExecutor();
+    return new TestCaseExecutor();
 }
 
-} // dit
+} // namespace dit

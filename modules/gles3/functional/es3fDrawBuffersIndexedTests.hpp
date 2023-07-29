@@ -33,10 +33,10 @@ namespace gles3
 namespace Functional
 {
 
-TestCaseGroup* createDrawBuffersIndexedTests (Context& context);
+TestCaseGroup *createDrawBuffersIndexedTests(Context &context);
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FDRAWBUFFERSINDEXEDTESTS_HPP

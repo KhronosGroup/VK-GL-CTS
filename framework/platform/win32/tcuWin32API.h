@@ -24,13 +24,13 @@
  *//*--------------------------------------------------------------------*/
 
 #if !defined(VC_EXTRALEAN)
-#	define VC_EXTRALEAN 1
+#define VC_EXTRALEAN 1
 #endif
 #if !defined(WIN32_LEAN_AND_MEAN)
-#	define WIN32_LEAN_AND_MEAN 1
+#define WIN32_LEAN_AND_MEAN 1
 #endif
 #if !defined(NOMINMAX)
-#	define NOMINMAX 1
+#define NOMINMAX 1
 #endif
 #include <windows.h>
 

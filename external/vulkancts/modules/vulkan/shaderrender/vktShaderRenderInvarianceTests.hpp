@@ -32,9 +32,9 @@ namespace vkt
 namespace sr
 {
 
-tcu::TestCaseGroup*	createShaderInvarianceTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createShaderInvarianceTests(tcu::TestContext &testCtx);
 
-} // sr
-} // vkt
+} // namespace sr
+} // namespace vkt
 
 #endif // _VKTSHADERRENDERINVARIANCETESTS_HPP

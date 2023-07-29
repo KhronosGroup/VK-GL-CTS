@@ -33,8 +33,8 @@ class FunctionLibrary;
 namespace eglu
 {
 
-tcu::FunctionLibrary*	createStaticESLibrary		(void);
+tcu::FunctionLibrary *createStaticESLibrary(void);
 
-} // eglu
+} // namespace eglu
 
 #endif // _EGLUSTATICESLIBRARY_HPP

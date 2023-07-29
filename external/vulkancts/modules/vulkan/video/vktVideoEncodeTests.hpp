@@ -31,9 +31,9 @@ namespace vkt
 namespace video
 {
 
-tcu::TestCaseGroup* createVideoEncodeTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createVideoEncodeTests(tcu::TestContext &testCtx);
 
-} // video
-} // vkt
+} // namespace video
+} // namespace vkt
 
 #endif // _VKTVIDEOENCODETESTS_HPP

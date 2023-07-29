@@ -38,74 +38,76 @@ template <typename T>
 class UniqueRandomIterator
 {
 public:
-							UniqueRandomIterator	(deUint32 numItems, deUint32 numValues, int seed);
-	virtual					~UniqueRandomIterator	(void) {}
-	bool					hasNext					(void) const;
-	T						next					(void);
-	void					reset					(void);
+    UniqueRandomIterator(uint32_t numItems, uint32_t numValues, int seed);
+    virtual ~UniqueRandomIterator(void)
+    {
+    }
+    bool hasNext(void) const;
+    T next(void);
+    void reset(void);
 
 protected:
-	virtual T				getIndexedValue			(deUint32 index) = 0;
+    virtual T getIndexedValue(uint32_t index) = 0;
 
 private:
-	std::vector<deUint32>	m_indices;
-	size_t					m_currentIndex;
+    std::vector<uint32_t> m_indices;
+    size_t m_currentIndex;
 };
 
 template <typename T>
-UniqueRandomIterator<T>::UniqueRandomIterator (deUint32 numItems, deUint32 numValues, int seed)
+UniqueRandomIterator<T>::UniqueRandomIterator(uint32_t numItems, uint32_t numValues, int seed)
 {
-	de::Random rnd(seed);
+    de::Random rnd(seed);
 
-	DE_ASSERT(numItems <= numValues);
+    DE_ASSERT(numItems <= numValues);
 
-	if (numItems == numValues)
-	{
-		// Fast way to populate the index sequence
-		m_indices = std::vector<deUint32>(numItems);
+    if (numItems == numValues)
+    {
+        // Fast way to populate the index sequence
+        m_indices = std::vector<uint32_t>(numItems);
 
-		for (deUint32 itemNdx = 0; itemNdx < numItems; itemNdx++)
-			m_indices[itemNdx] = itemNdx;
-	}
-	else
-	{
-		std::set<deUint32> uniqueIndices;
+        for (uint32_t itemNdx = 0; itemNdx < numItems; itemNdx++)
+            m_indices[itemNdx] = itemNdx;
+    }
+    else
+    {
+        std::set<uint32_t> uniqueIndices;
 
-		// Populate set with "numItems" unique values between 0 and numValues - 1
-		while (uniqueIndices.size() < numItems)
-			uniqueIndices.insert(rnd.getUint32() % numValues);
+        // Populate set with "numItems" unique values between 0 and numValues - 1
+        while (uniqueIndices.size() < numItems)
+            uniqueIndices.insert(rnd.getUint32() % numValues);
 
-		// Copy set into index sequence
-		m_indices = std::vector<deUint32>(uniqueIndices.begin(), uniqueIndices.end());
-	}
+        // Copy set into index sequence
+        m_indices = std::vector<uint32_t>(uniqueIndices.begin(), uniqueIndices.end());
+    }
 
-	// Scramble the indices
-	rnd.shuffle(m_indices.begin(), m_indices.end());
+    // Scramble the indices
+    rnd.shuffle(m_indices.begin(), m_indices.end());
 
-	reset();
+    reset();
 }
 
 template <typename T>
-bool UniqueRandomIterator<T>::hasNext (void) const
+bool UniqueRandomIterator<T>::hasNext(void) const
 {
-	return m_currentIndex < m_indices.size();
+    return m_currentIndex < m_indices.size();
 }
 
 template <typename T>
-T UniqueRandomIterator<T>::next (void)
+T UniqueRandomIterator<T>::next(void)
 {
-	DE_ASSERT(m_currentIndex < m_indices.size());
+    DE_ASSERT(m_currentIndex < m_indices.size());
 
-	return getIndexedValue(m_indices[m_currentIndex++]);
+    return getIndexedValue(m_indices[m_currentIndex++]);
 }
 
 template <typename T>
-void UniqueRandomIterator<T>::reset (void)
+void UniqueRandomIterator<T>::reset(void)
 {
-	m_currentIndex = 0;
+    m_currentIndex = 0;
 }
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEUNIQUERANDOMITERATOR_HPP

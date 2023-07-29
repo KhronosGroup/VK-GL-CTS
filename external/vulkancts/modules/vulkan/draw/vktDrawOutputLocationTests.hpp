@@ -32,9 +32,9 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup* createOutputLocationTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createOutputLocationTests(tcu::TestContext &testCtx);
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWOUTPUTLOCATIONTESTS_HPP

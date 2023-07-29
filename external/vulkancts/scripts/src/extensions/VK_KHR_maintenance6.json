@@ -1,14 +1,21 @@
 {
-	"register_extension":
-	{
-		"type": "device",
-		"core": ""
-	},
-	"mandatory_features":
-	{
-		"VkPhysicalDeviceMaintenance6FeaturesKHR":
-		[
-			{ "features": ["maintenance6"],	"requirements": ["VK_KHR_maintenance6"] }
-		]
-	}
+    "register_extension":
+        {
+            "type": "device",
+            "core": ""
+        },
+    "mandatory_features":
+        {
+            "VkPhysicalDeviceMaintenance6FeaturesKHR":
+                [
+                    {
+                        "features": [
+                            "maintenance6"
+                        ],
+                        "requirements": [
+                            "VK_KHR_maintenance6"
+                        ]
+                    }
+                ]
+        }
 }

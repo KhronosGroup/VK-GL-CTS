@@ -31,9 +31,9 @@ namespace vkt
 namespace QueryPool
 {
 
-tcu::TestCaseGroup*		createTests			(tcu::TestContext& testCtx, const std::string& name);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name);
 
-} // QueryPool
-} // vkt
+} // namespace QueryPool
+} // namespace vkt
 
 #endif // _VKTQUERYPOOLTESTS_HPP

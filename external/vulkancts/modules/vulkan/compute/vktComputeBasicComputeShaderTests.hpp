@@ -34,10 +34,12 @@ namespace vkt
 namespace compute
 {
 
-tcu::TestCaseGroup* createBasicComputeShaderTests (tcu::TestContext& testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType);
-tcu::TestCaseGroup* createBasicDeviceGroupComputeShaderTests (tcu::TestContext& testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType);
+tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
+                                                  vk::ComputePipelineConstructionType computePipelineConstructionType);
+tcu::TestCaseGroup *createBasicDeviceGroupComputeShaderTests(
+    tcu::TestContext &testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType);
 
-} // compute
-} // vkt
+} // namespace compute
+} // namespace vkt
 
 #endif // _VKTCOMPUTEBASICCOMPUTESHADERTESTS_HPP

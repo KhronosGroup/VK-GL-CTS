@@ -36,18 +36,18 @@ namespace Functional
 class FramebufferDefaultStateQueryTests : public TestCaseGroup
 {
 public:
-										FramebufferDefaultStateQueryTests	(Context& context);
-										~FramebufferDefaultStateQueryTests	(void);
+    FramebufferDefaultStateQueryTests(Context &context);
+    ~FramebufferDefaultStateQueryTests(void);
 
-	void								init								(void);
+    void init(void);
 
 private:
-										FramebufferDefaultStateQueryTests	(const FramebufferDefaultStateQueryTests& other);
-	FramebufferDefaultStateQueryTests&	operator=							(const FramebufferDefaultStateQueryTests& other);
+    FramebufferDefaultStateQueryTests(const FramebufferDefaultStateQueryTests &other);
+    FramebufferDefaultStateQueryTests &operator=(const FramebufferDefaultStateQueryTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FFRAMEBUFFERDEFAULTSTATEQUERYTESTS_HPP

@@ -32,30 +32,50 @@ namespace de
 template <typename T>
 class ModularCounter
 {
-	static_assert(std::is_unsigned<T>::value, "Invalid underlying type");
+    static_assert(std::is_unsigned<T>::value, "Invalid underlying type");
 
 public:
-	typedef T value_type;
+    typedef T value_type;
 
-	explicit ModularCounter (T period, T initialValue = T{0})
-		: m_period(period), m_value(initialValue)
-	{
-	}
+    explicit ModularCounter(T period, T initialValue = T{0}) : m_period(period), m_value(initialValue)
+    {
+    }
 
-	ModularCounter& operator++	()			{ m_value = ((m_value + T{1}) % m_period); return *this; }
-	ModularCounter& operator--	()			{ m_value = ((m_value - T{1}) % m_period); return *this; }
-	ModularCounter  operator++	(int)		{ ModularCounter ret(*this); ++(*this); return ret; }
-	ModularCounter  operator--	(int)		{ ModularCounter ret(*this); --(*this); return ret; }
-	operator		T			(void)		{ return m_value; }
+    ModularCounter &operator++()
+    {
+        m_value = ((m_value + T{1}) % m_period);
+        return *this;
+    }
+    ModularCounter &operator--()
+    {
+        m_value = ((m_value - T{1}) % m_period);
+        return *this;
+    }
+    ModularCounter operator++(int)
+    {
+        ModularCounter ret(*this);
+        ++(*this);
+        return ret;
+    }
+    ModularCounter operator--(int)
+    {
+        ModularCounter ret(*this);
+        --(*this);
+        return ret;
+    }
+    operator T(void)
+    {
+        return m_value;
+    }
 
 protected:
-	const T	m_period;
-	T		m_value;
+    const T m_period;
+    T m_value;
 };
 
 using ModCounter64 = ModularCounter<uint64_t>;
 using ModCounter32 = ModularCounter<uint32_t>;
 
-}
+} // namespace de
 
 #endif // _DEMODULARCOUNTER_HPP

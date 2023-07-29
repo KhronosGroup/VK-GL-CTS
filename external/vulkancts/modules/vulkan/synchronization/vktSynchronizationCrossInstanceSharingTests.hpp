@@ -31,9 +31,9 @@ namespace vkt
 namespace synchronization
 {
 
-tcu::TestCaseGroup* createCrossInstanceSharingTest (tcu::TestContext& testCtx, SynchronizationType type);
+tcu::TestCaseGroup *createCrossInstanceSharingTest(tcu::TestContext &testCtx, SynchronizationType type);
 
-} // synchronization
-} // vkt
+} // namespace synchronization
+} // namespace vkt
 
 #endif // _VKTSYNCHRONIZATIONCROSSINSTANCESHARINGTESTS_HPP

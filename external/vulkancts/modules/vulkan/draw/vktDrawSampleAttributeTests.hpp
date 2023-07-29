@@ -32,9 +32,9 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup*	createSampleAttributeTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams);
+tcu::TestCaseGroup *createSampleAttributeTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams);
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWSAMPLEATTRIBUTETESTS_HPP

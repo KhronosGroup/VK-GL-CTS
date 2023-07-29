@@ -36,14 +36,14 @@ namespace Functional
 class MultisampledRenderToTextureTests : public TestCaseGroup
 {
 public:
-	MultisampledRenderToTextureTests(Context& context);
-	~MultisampledRenderToTextureTests();
+    MultisampledRenderToTextureTests(Context &context);
+    ~MultisampledRenderToTextureTests();
 
-	void init();
+    void init();
 
 private:
-	MultisampledRenderToTextureTests(const MultisampledRenderToTextureTests& other);
-	MultisampledRenderToTextureTests& operator=(const MultisampledRenderToTextureTests& other);
+    MultisampledRenderToTextureTests(const MultisampledRenderToTextureTests &other);
+    MultisampledRenderToTextureTests &operator=(const MultisampledRenderToTextureTests &other);
 };
 
 } // namespace Functional

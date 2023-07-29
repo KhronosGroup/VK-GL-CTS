@@ -38,37 +38,42 @@ namespace Functional
 class ApiCase : public TestCase, protected glu::CallLogWrapper
 {
 public:
-						ApiCase					(Context& context, const char* name, const char* description);
-	virtual				~ApiCase				(void);
+    ApiCase(Context &context, const char *name, const char *description);
+    virtual ~ApiCase(void);
 
-	IterateResult		iterate					(void);
+    IterateResult iterate(void);
 
 protected:
-	virtual void		test					(void) = DE_NULL;
+    virtual void test(void) = DE_NULL;
 
-	void				expectError				(deUint32 error);
-	void				expectError				(deUint32 error0, deUint32 error1);
-	void				getSupportedExtensions	(const deUint32 numSupportedValues, const deUint32 extension, std::vector<int>& values);
-	void				checkBooleans			(deUint8 value, deUint8 expected);
-	void				checkBooleans			(deInt32 value, deUint8 expected);
+    void expectError(uint32_t error);
+    void expectError(uint32_t error0, uint32_t error1);
+    void getSupportedExtensions(const uint32_t numSupportedValues, const uint32_t extension, std::vector<int> &values);
+    void checkBooleans(uint8_t value, uint8_t expected);
+    void checkBooleans(int32_t value, uint8_t expected);
 
-	tcu::TestLog&		m_log;
+    tcu::TestLog &m_log;
 };
 
 // Helper macro for declaring ApiCases.
-#define ES2F_ADD_API_CASE(NAME, DESCRIPTION, TEST_FUNC_BODY)							\
-	do {																				\
-		class ApiCase_##NAME : public ApiCase {											\
-		public:																			\
-			ApiCase_##NAME (Context& context) : ApiCase(context, #NAME, DESCRIPTION) {}	\
-		protected:																		\
-			void test (void) TEST_FUNC_BODY  /* NOLINT(TEST_FUNC_BODY) */				\
-		};																				\
-		addChild(new ApiCase_##NAME(m_context));										\
-	} while (deGetFalse())
+#define ES2F_ADD_API_CASE(NAME, DESCRIPTION, TEST_FUNC_BODY)                        \
+    do                                                                              \
+    {                                                                               \
+        class ApiCase_##NAME : public ApiCase                                       \
+        {                                                                           \
+        public:                                                                     \
+            ApiCase_##NAME(Context &context) : ApiCase(context, #NAME, DESCRIPTION) \
+            {                                                                       \
+            }                                                                       \
+                                                                                    \
+        protected:                                                                  \
+            void test(void) TEST_FUNC_BODY /* NOLINT(TEST_FUNC_BODY) */             \
+        };                                                                          \
+        addChild(new ApiCase_##NAME(m_context));                                    \
+    } while (false)
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FAPICASE_HPP

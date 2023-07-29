@@ -46,31 +46,31 @@ namespace gl4cts
 class SpirvExtensionsQueriesTestCase : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	SpirvExtensionsQueriesTestCase(deqp::Context& context);
+    /* Public methods */
+    SpirvExtensionsQueriesTestCase(deqp::Context &context);
 
-	void						 init();
-	tcu::TestNode::IterateResult iterate();
+    void init();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private members */
-	/* Private methods */
+    /* Private members */
+    /* Private methods */
 };
 
 /** Test group which encapsulates spirv extensions conformance tests */
 class SpirvExtensionsTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	SpirvExtensionsTests(deqp::Context& context);
+    /* Public methods */
+    SpirvExtensionsTests(deqp::Context &context);
 
-	void init();
+    void init();
 
 private:
-	SpirvExtensionsTests(const SpirvExtensionsTests& other);
-	SpirvExtensionsTests& operator=(const SpirvExtensionsTests& other);
+    SpirvExtensionsTests(const SpirvExtensionsTests &other);
+    SpirvExtensionsTests &operator=(const SpirvExtensionsTests &other);
 };
 
-} /* gl4cts namespace */
+} // namespace gl4cts
 
 #endif // _GL4CSPIRVEXTENSIONSTESTS_HPP

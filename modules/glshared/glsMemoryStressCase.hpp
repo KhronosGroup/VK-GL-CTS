@@ -36,51 +36,52 @@ namespace gls
 
 enum MemObjectType
 {
-	MEMOBJECTTYPE_TEXTURE = (1 << 0),
-	MEMOBJECTTYPE_BUFFER = (1 << 1),
+    MEMOBJECTTYPE_TEXTURE = (1 << 0),
+    MEMOBJECTTYPE_BUFFER  = (1 << 1),
 
-	MEMOBJECTTYPE_LAST
+    MEMOBJECTTYPE_LAST
 };
 
 struct MemObjectConfig
 {
-	int minBufferSize;
-	int maxBufferSize;
+    int minBufferSize;
+    int maxBufferSize;
 
-	int minTextureSize;
-	int maxTextureSize;
+    int minTextureSize;
+    int maxTextureSize;
 
-	bool useUnusedData;
-	bool write;
-	bool use;
+    bool useUnusedData;
+    bool write;
+    bool use;
 };
 
 class MemoryStressCase : public tcu::TestCase
 {
 public:
-							MemoryStressCase		(tcu::TestContext& testCtx, glu::RenderContext& renderContext, deUint32 objectTypes, int minTextureSize, int maxTextureSize, int minBufferSize, int maxBufferSize, bool write, bool use, bool useUnusedData, bool clearAfterOOM, const char* name, const char* desc);
-							~MemoryStressCase		(void);
+    MemoryStressCase(tcu::TestContext &testCtx, glu::RenderContext &renderContext, uint32_t objectTypes,
+                     int minTextureSize, int maxTextureSize, int minBufferSize, int maxBufferSize, bool write, bool use,
+                     bool useUnusedData, bool clearAfterOOM, const char *name, const char *desc);
+    ~MemoryStressCase(void);
 
-	void					init					(void);
-	void					deinit					(void);
-	IterateResult			iterate					(void);
+    void init(void);
+    void deinit(void);
+    IterateResult iterate(void);
 
 private:
-	int						m_iteration;
-	int						m_iterationCount;
-	std::vector<int>		m_allocated;
-	MemObjectType			m_objectTypes;
-	MemObjectConfig			m_config;
-	bool					m_zeroAlloc;
-	bool					m_clearAfterOOM;
-	glu::RenderContext&		m_renderCtx;
+    int m_iteration;
+    int m_iterationCount;
+    std::vector<int> m_allocated;
+    MemObjectType m_objectTypes;
+    MemObjectConfig m_config;
+    bool m_zeroAlloc;
+    bool m_clearAfterOOM;
+    glu::RenderContext &m_renderCtx;
 
-							MemoryStressCase	(const MemoryStressCase&);
-	MemoryStressCase&		operator=			(const MemoryStressCase&);
+    MemoryStressCase(const MemoryStressCase &);
+    MemoryStressCase &operator=(const MemoryStressCase &);
 };
 
-
-} // gls
-} // deqp
+} // namespace gls
+} // namespace deqp
 
 #endif // _GLSMEMORYSTRESSCASE_HPP
