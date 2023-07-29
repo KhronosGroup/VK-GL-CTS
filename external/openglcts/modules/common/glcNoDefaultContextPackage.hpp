@@ -31,23 +31,23 @@ namespace glcts
 class NoDefaultContextPackage : public tcu::TestPackage
 {
 public:
-	NoDefaultContextPackage(tcu::TestContext& testCtx, const char* name);
-	virtual ~NoDefaultContextPackage(void);
+    NoDefaultContextPackage(tcu::TestContext &testCtx, const char *name);
+    virtual ~NoDefaultContextPackage(void);
 
-	void init(void);
+    void init(void);
 
-	tcu::Archive* getArchive(void)
-	{
-		return &m_testCtx.getRootArchive();
-	}
+    tcu::Archive *getArchive(void)
+    {
+        return &m_testCtx.getRootArchive();
+    }
 
-	virtual tcu::TestCaseExecutor* createExecutor(void) const;
+    virtual tcu::TestCaseExecutor *createExecutor(void) const;
 
 private:
-	NoDefaultContextPackage(const NoDefaultContextPackage& other);
-	NoDefaultContextPackage& operator=(const NoDefaultContextPackage& other);
+    NoDefaultContextPackage(const NoDefaultContextPackage &other);
+    NoDefaultContextPackage &operator=(const NoDefaultContextPackage &other);
 };
 
-} // glcts
+} // namespace glcts
 
 #endif // _GLCNODEFAULTCONTEXTPACKAGE_HPP

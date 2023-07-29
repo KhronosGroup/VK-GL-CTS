@@ -36,18 +36,18 @@ namespace Functional
 class FboStencilTests : public TestCaseGroup
 {
 public:
-						FboStencilTests		(Context& context);
-						~FboStencilTests	(void);
+    FboStencilTests(Context &context);
+    ~FboStencilTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						FboStencilTests		(const FboStencilTests& other);
-	FboStencilTests&	operator=			(const FboStencilTests& other);
+    FboStencilTests(const FboStencilTests &other);
+    FboStencilTests &operator=(const FboStencilTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FFBOSTENCILBUFFERTESTS_HPP

@@ -29,15 +29,15 @@ DE_BEGIN_EXTERN_C
 
 typedef struct deCommandLine_s
 {
-	int			numArgs;
-	char**		args;
-	char*		argBuf;
+    int numArgs;
+    char **args;
+    char *argBuf;
 } deCommandLine;
 
-deCommandLine*	deCommandLine_parse		(const char* cmdLine);
-void			deCommandLine_destroy	(deCommandLine* cmdLine);
+deCommandLine *deCommandLine_parse(const char *cmdLine);
+void deCommandLine_destroy(deCommandLine *cmdLine);
 
-void			deCommandLine_selfTest	(void);
+void deCommandLine_selfTest(void);
 
 DE_END_EXTERN_C
 

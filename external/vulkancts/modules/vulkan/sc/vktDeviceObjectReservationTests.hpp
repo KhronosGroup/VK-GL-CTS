@@ -31,9 +31,9 @@ namespace vkt
 namespace sc
 {
 
-tcu::TestCaseGroup*	createDeviceObjectReservationTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDeviceObjectReservationTests(tcu::TestContext &testCtx);
 
-} // sc
-} // vkt
+} // namespace sc
+} // namespace vkt
 
 #endif // _VKTDEVICEOBJECTRESERVATIONTESTS_HPP

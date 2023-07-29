@@ -31,8 +31,8 @@ namespace vkt
 {
 namespace compute
 {
-tcu::TestCaseGroup*		createCooperativeMatrixTests (tcu::TestContext& testCtx);
-} // compute
-} // vkt
+tcu::TestCaseGroup *createCooperativeMatrixTests(tcu::TestContext &testCtx);
+} // namespace compute
+} // namespace vkt
 
 #endif // _VKTCOMPUTECOOPERATIVEMATRIXTESTS_HPP

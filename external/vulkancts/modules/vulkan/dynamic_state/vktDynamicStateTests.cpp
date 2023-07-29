@@ -43,43 +43,49 @@ namespace DynamicState
 namespace
 {
 
-void createChildren (tcu::TestCaseGroup* group, vk::PipelineConstructionType pipelineConstructionType)
+void createChildren(tcu::TestCaseGroup *group, vk::PipelineConstructionType pipelineConstructionType)
 {
-	tcu::TestContext&	testCtx		= group->getTestContext();
+    tcu::TestContext &testCtx = group->getTestContext();
 
-	group->addChild(new DynamicStateVPTests				(testCtx, pipelineConstructionType));
-	group->addChild(new DynamicStateRSTests				(testCtx, pipelineConstructionType));
-	group->addChild(new DynamicStateCBTests				(testCtx, pipelineConstructionType));
-	group->addChild(new DynamicStateDSTests				(testCtx, pipelineConstructionType));
-	group->addChild(new DynamicStateGeneralTests		(testCtx, pipelineConstructionType));
-	group->addChild(new DynamicStateInheritanceTests	(testCtx, pipelineConstructionType));
-	group->addChild(new DynamicStateClearTests			(testCtx, pipelineConstructionType));
-	group->addChild(new DynamicStateDiscardTests		(testCtx, pipelineConstructionType));
+    group->addChild(new DynamicStateVPTests(testCtx, pipelineConstructionType));
+    group->addChild(new DynamicStateRSTests(testCtx, pipelineConstructionType));
+    group->addChild(new DynamicStateCBTests(testCtx, pipelineConstructionType));
+    group->addChild(new DynamicStateDSTests(testCtx, pipelineConstructionType));
+    group->addChild(new DynamicStateGeneralTests(testCtx, pipelineConstructionType));
+    group->addChild(new DynamicStateInheritanceTests(testCtx, pipelineConstructionType));
+    group->addChild(new DynamicStateClearTests(testCtx, pipelineConstructionType));
+    group->addChild(new DynamicStateDiscardTests(testCtx, pipelineConstructionType));
 
-	if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
-		group->addChild(createDynamicStateComputeTests	(testCtx));
+    if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+        group->addChild(createDynamicStateComputeTests(testCtx));
 }
 
-static void cleanupGroup(tcu::TestCaseGroup*, vk::PipelineConstructionType)
+static void cleanupGroup(tcu::TestCaseGroup *, vk::PipelineConstructionType)
 {
-	// Destroy singleton objects.
-	cleanupDevice();
+    // Destroy singleton objects.
+    cleanupDevice();
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> monolithicGroup			(createTestGroup(testCtx, "monolithic",				"Monolithic pipeline tests",					createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC, cleanupGroup));
-	de::MovePtr<tcu::TestCaseGroup> pipelineLibraryGroup	(createTestGroup(testCtx, "pipeline_library",		"Graphics pipeline library tests",				createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY, cleanupGroup));
-	de::MovePtr<tcu::TestCaseGroup> fastLinkedLibraryGroup	(createTestGroup(testCtx, "fast_linked_library",	"Fast linked graphics pipeline library tests",	createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY, cleanupGroup));
+    de::MovePtr<tcu::TestCaseGroup> monolithicGroup(
+        createTestGroup(testCtx, "monolithic", "Monolithic pipeline tests", createChildren,
+                        vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC, cleanupGroup));
+    de::MovePtr<tcu::TestCaseGroup> pipelineLibraryGroup(
+        createTestGroup(testCtx, "pipeline_library", "Graphics pipeline library tests", createChildren,
+                        vk::PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY, cleanupGroup));
+    de::MovePtr<tcu::TestCaseGroup> fastLinkedLibraryGroup(
+        createTestGroup(testCtx, "fast_linked_library", "Fast linked graphics pipeline library tests", createChildren,
+                        vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY, cleanupGroup));
 
-	de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, "dynamic_state", "Dynamic State Tests"));
-	mainGroup->addChild(monolithicGroup.release());
-	mainGroup->addChild(pipelineLibraryGroup.release());
-	mainGroup->addChild(fastLinkedLibraryGroup.release());
-	return mainGroup.release();
+    de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, "dynamic_state", "Dynamic State Tests"));
+    mainGroup->addChild(monolithicGroup.release());
+    mainGroup->addChild(pipelineLibraryGroup.release());
+    mainGroup->addChild(fastLinkedLibraryGroup.release());
+    return mainGroup.release();
 }
 
-} // DynamicState
-} // vkt
+} // namespace DynamicState
+} // namespace vkt

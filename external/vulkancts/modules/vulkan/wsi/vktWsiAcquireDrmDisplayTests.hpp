@@ -30,9 +30,9 @@ namespace vkt
 namespace wsi
 {
 
-void createAcquireDrmDisplayTests (tcu::TestCaseGroup* group);
+void createAcquireDrmDisplayTests(tcu::TestCaseGroup *group);
 
-} // wsi
-} // vkt
+} // namespace wsi
+} // namespace vkt
 
 #endif // _VKTWSIACQUIREDRMDISPLAYTESTS_HPP

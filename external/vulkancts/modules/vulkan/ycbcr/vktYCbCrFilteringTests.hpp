@@ -31,9 +31,9 @@ namespace vkt
 namespace ycbcr
 {
 
-tcu::TestCaseGroup*	createFilteringTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createFilteringTests(tcu::TestContext &testCtx);
 
-} // ycbcr
-} // vkt
+} // namespace ycbcr
+} // namespace vkt
 
 #endif // _VKTYCBCRFILTERINGTESTS_HPP

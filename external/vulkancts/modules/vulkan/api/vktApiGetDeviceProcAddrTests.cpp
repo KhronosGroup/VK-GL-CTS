@@ -35,13 +35,13 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup* createGetDeviceProcAddrTests	(tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createGetDeviceProcAddrTests(tcu::TestContext &testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(
-		new tcu::TestCaseGroup(testCtx, "get_device_proc_addr", "Test for vkGetDeviceProcAddr."));
-	addGetDeviceProcAddrTests(group.get());
-	return group.release();
+    de::MovePtr<tcu::TestCaseGroup> group(
+        new tcu::TestCaseGroup(testCtx, "get_device_proc_addr", "Test for vkGetDeviceProcAddr."));
+    addGetDeviceProcAddrTests(group.get());
+    return group.release();
 }
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt

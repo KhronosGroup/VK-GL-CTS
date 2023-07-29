@@ -32,9 +32,9 @@ namespace vkt
 namespace FragmentOperations
 {
 
-tcu::TestCaseGroup* createOcclusionQueryTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createOcclusionQueryTests(tcu::TestContext &testCtx);
 
-} // FragmentOperations
-} // vkt
+} // namespace FragmentOperations
+} // namespace vkt
 
 #endif // _VKTFRAGMENTOPERATIONSOCCLUSIONQUERYTESTS_HPP

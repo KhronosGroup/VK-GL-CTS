@@ -36,18 +36,18 @@ namespace Functional
 class DefaultVertexAttributeTests : public TestCaseGroup
 {
 public:
-									DefaultVertexAttributeTests		(Context& context);
-									~DefaultVertexAttributeTests	(void);
+    DefaultVertexAttributeTests(Context &context);
+    ~DefaultVertexAttributeTests(void);
 
-	void							init							(void);
+    void init(void);
 
 private:
-									DefaultVertexAttributeTests		(const DefaultVertexAttributeTests& other);
-	DefaultVertexAttributeTests&	operator=						(const DefaultVertexAttributeTests& other);
+    DefaultVertexAttributeTests(const DefaultVertexAttributeTests &other);
+    DefaultVertexAttributeTests &operator=(const DefaultVertexAttributeTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FDEFAULTVERTEXATTRIBUTETESTS_HPP

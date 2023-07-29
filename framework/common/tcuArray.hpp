@@ -35,26 +35,41 @@ template <typename T, int Size>
 class Array
 {
 public:
-					Array			(void) {}
-					~Array			(void) {}
+    Array(void)
+    {
+    }
+    ~Array(void)
+    {
+    }
 
-	inline T		operator[]		(int ndx) const		{ return m_data[ndx]; }
-	inline T&		operator[]		(int ndx)			{ return m_data[ndx]; }
+    inline T operator[](int ndx) const
+    {
+        return m_data[ndx];
+    }
+    inline T &operator[](int ndx)
+    {
+        return m_data[ndx];
+    }
 
-	inline const T*	getPtr			(void) const		{ return m_data; }
-	inline T*		getPtr			(void)				{ return m_data; }
+    inline const T *getPtr(void) const
+    {
+        return m_data;
+    }
+    inline T *getPtr(void)
+    {
+        return m_data;
+    }
 
 private:
-	T				m_data[Size];
+    T m_data[Size];
 } DE_WARN_UNUSED_TYPE;
 
-
 template <typename T, int Size>
-std::ostream& operator<< (std::ostream& stream, const Array<T, Size>& arr)
+std::ostream &operator<<(std::ostream &stream, const Array<T, Size> &arr)
 {
-	return stream << Format::Array<T*>(arr.getPtr(), arr.getPtr() + Size);
+    return stream << Format::Array<T *>(arr.getPtr(), arr.getPtr() + Size);
 }
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUARRAY_HPP

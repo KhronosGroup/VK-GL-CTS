@@ -40,51 +40,51 @@ namespace MeshShader
 // Primitive shading rate cases.
 enum class FragmentSize
 {
-	SIZE_2X2	= 0,
-	SIZE_2X1	= 1,
-	SIZE_1X1	= 2,
-	SIZE_COUNT	= 3,
+    SIZE_2X2   = 0,
+    SIZE_2X1   = 1,
+    SIZE_1X1   = 2,
+    SIZE_COUNT = 3,
 };
 
 using FragmentSizeVector = std::vector<FragmentSize>;
 
 // Get the block extent according to the fragment size.
-vk::VkExtent2D getShadingRateSize (FragmentSize fragmentSize);
+vk::VkExtent2D getShadingRateSize(FragmentSize fragmentSize);
 
 // Returns a shading rate size that does not match the given fragment sizes.
 template <typename Iterator>
-FragmentSize getBadShadingRateSize (Iterator itBegin, Iterator itEnd)
+FragmentSize getBadShadingRateSize(Iterator itBegin, Iterator itEnd)
 {
-	const auto fsCount = static_cast<int>(FragmentSize::SIZE_COUNT);
+    const auto fsCount = static_cast<int>(FragmentSize::SIZE_COUNT);
 
-	for (int i = 0; i < fsCount; ++i)
-	{
-		const auto fs = static_cast<FragmentSize>(i);
-		if (!de::contains(itBegin, itEnd, fs))
-			return fs;
-	}
+    for (int i = 0; i < fsCount; ++i)
+    {
+        const auto fs = static_cast<FragmentSize>(i);
+        if (!de::contains(itBegin, itEnd, fs))
+            return fs;
+    }
 
-	DE_ASSERT(false);
-	return FragmentSize::SIZE_COUNT;
+    DE_ASSERT(false);
+    return FragmentSize::SIZE_COUNT;
 }
 
 // GLSL representation of the given fragment size.
-std::string getGLSLShadingRateMask (FragmentSize fragmentSize);
+std::string getGLSLShadingRateMask(FragmentSize fragmentSize);
 
 // GLSL/SPV value of the given mask.
-int getSPVShadingRateValue (FragmentSize fragmentSize);
+int getSPVShadingRateValue(FragmentSize fragmentSize);
 
 // Basic feature check (NV version)
-void checkTaskMeshShaderSupportNV (Context& context, bool requireTask, bool requireMesh);
+void checkTaskMeshShaderSupportNV(Context &context, bool requireTask, bool requireMesh);
 
 // Basic feature check (EXT version)
-void checkTaskMeshShaderSupportEXT (Context& context, bool requireTask, bool requireMesh);
+void checkTaskMeshShaderSupportEXT(Context &context, bool requireTask, bool requireMesh);
 
 // Get the right SPIR-V build options for the EXT.
-vk::ShaderBuildOptions		getMinMeshEXTBuildOptions		(uint32_t vulkanVersion, uint32_t flags = 0u);
-vk::SpirVAsmBuildOptions	getMinMeshEXTSpvBuildOptions	(uint32_t vulkanVersion, bool allowMaintenance4 = false);
+vk::ShaderBuildOptions getMinMeshEXTBuildOptions(uint32_t vulkanVersion, uint32_t flags = 0u);
+vk::SpirVAsmBuildOptions getMinMeshEXTSpvBuildOptions(uint32_t vulkanVersion, bool allowMaintenance4 = false);
 
-}
-}
+} // namespace MeshShader
+} // namespace vkt
 
 #endif // _VKTMESHSHADERUTIL_HPP

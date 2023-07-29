@@ -31,9 +31,9 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup*		createObjectManagementTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createObjectManagementTests(tcu::TestContext &testCtx);
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPIOBJECTMANAGEMENTTESTS_HPP

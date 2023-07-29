@@ -39,35 +39,32 @@ namespace Performance
 class Texture2DRenderCase : public gls::ShaderPerformanceCase
 {
 public:
-									Texture2DRenderCase			(Context& context, const char* name, const char* description,
-																 deUint32 format, deUint32 dataType,
-																 deUint32 wrapS, deUint32 wrapT,
-																 deUint32 minFilter, deUint32 magFilter,
-																 const tcu::Mat3& coordTransform,
-																 int numTextures, bool powerOfTwo);
-									~Texture2DRenderCase		(void);
+    Texture2DRenderCase(Context &context, const char *name, const char *description, uint32_t format, uint32_t dataType,
+                        uint32_t wrapS, uint32_t wrapT, uint32_t minFilter, uint32_t magFilter,
+                        const tcu::Mat3 &coordTransform, int numTextures, bool powerOfTwo);
+    ~Texture2DRenderCase(void);
 
-	void							init						(void);
-	void							deinit						(void);
+    void init(void);
+    void deinit(void);
 
 private:
-	void							setupProgram				(deUint32 program);
-	void							setupRenderState			(void);
+    void setupProgram(uint32_t program);
+    void setupRenderState(void);
 
-	deUint32						m_format;
-	deUint32						m_dataType;
-	deUint32						m_wrapS;
-	deUint32						m_wrapT;
-	deUint32						m_minFilter;
-	deUint32						m_magFilter;
-	tcu::Mat3						m_coordTransform;
-	int								m_numTextures;
-	bool							m_powerOfTwo;
-	std::vector<glu::Texture2D*>	m_textures;
+    uint32_t m_format;
+    uint32_t m_dataType;
+    uint32_t m_wrapS;
+    uint32_t m_wrapT;
+    uint32_t m_minFilter;
+    uint32_t m_magFilter;
+    tcu::Mat3 m_coordTransform;
+    int m_numTextures;
+    bool m_powerOfTwo;
+    std::vector<glu::Texture2D *> m_textures;
 };
 
-} // Performance
-} // gles2
-} // deqp
+} // namespace Performance
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2PTEXTURECASES_HPP

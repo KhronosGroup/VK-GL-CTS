@@ -45,8 +45,8 @@ class TestRunStatus;
 
 enum
 {
-	WATCHDOG_TOTAL_TIME_LIMIT_SECS		= 300,
-	WATCHDOG_INTERVAL_TIME_LIMIT_SECS	= 30
+    WATCHDOG_TOTAL_TIME_LIMIT_SECS    = 300,
+    WATCHDOG_INTERVAL_TIME_LIMIT_SECS = 30
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -68,32 +68,32 @@ enum
 class App
 {
 public:
-							App					(Platform& platform, Archive& archive, TestLog& log, const CommandLine& cmdLine);
-	virtual					~App				(void);
+    App(Platform &platform, Archive &archive, TestLog &log, const CommandLine &cmdLine);
+    virtual ~App(void);
 
-	bool					iterate				(void);
-	const TestRunStatus&	getResult			(void) const;
+    bool iterate(void);
+    const TestRunStatus &getResult(void) const;
 
 protected:
-	void					cleanup				(void);
+    void cleanup(void);
 
-	void					onWatchdogTimeout	(qpTimeoutReason reason);
-	void					onCrash				(void);
+    void onWatchdogTimeout(qpTimeoutReason reason);
+    void onCrash(void);
 
-	static void				onWatchdogTimeout	(qpWatchDog* watchDog, void* userPtr, qpTimeoutReason reason);
-	static void				onCrash				(qpCrashHandler* crashHandler, void* userPtr);
+    static void onWatchdogTimeout(qpWatchDog *watchDog, void *userPtr, qpTimeoutReason reason);
+    static void onCrash(qpCrashHandler *crashHandler, void *userPtr);
 
-	Platform&				m_platform;
-	qpWatchDog*				m_watchDog;
-	qpCrashHandler*			m_crashHandler;
-	de::Mutex				m_crashLock;
-	bool					m_crashed;
+    Platform &m_platform;
+    qpWatchDog *m_watchDog;
+    qpCrashHandler *m_crashHandler;
+    de::Mutex m_crashLock;
+    bool m_crashed;
 
-	TestContext*			m_testCtx;
-	TestPackageRoot*		m_testRoot;
-	TestSessionExecutor*	m_testExecutor;
+    TestContext *m_testCtx;
+    TestPackageRoot *m_testRoot;
+    TestSessionExecutor *m_testExecutor;
 };
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUAPP_HPP

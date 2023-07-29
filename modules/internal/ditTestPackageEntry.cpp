@@ -25,9 +25,9 @@
 
 // Register package to test executor.
 
-static tcu::TestPackage* createTestPackage (tcu::TestContext& testCtx)
+static tcu::TestPackage *createTestPackage(tcu::TestContext &testCtx)
 {
-	return new dit::TestPackage(testCtx);
+    return new dit::TestPackage(testCtx);
 }
 
 tcu::TestPackageDescriptor g_ditPackageDescriptor("dE-IT", createTestPackage);

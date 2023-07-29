@@ -36,18 +36,18 @@ namespace Functional
 class TextureShadowTests : public TestCaseGroup
 {
 public:
-							TextureShadowTests		(Context& context);
-							~TextureShadowTests		(void);
+    TextureShadowTests(Context &context);
+    ~TextureShadowTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							TextureShadowTests		(const TextureShadowTests& other);
-	TextureShadowTests&		operator=				(const TextureShadowTests& other);
+    TextureShadowTests(const TextureShadowTests &other);
+    TextureShadowTests &operator=(const TextureShadowTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FTEXTURESHADOWTESTS_HPP

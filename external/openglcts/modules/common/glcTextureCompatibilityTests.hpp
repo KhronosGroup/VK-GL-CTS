@@ -34,13 +34,13 @@ namespace glcts
 class TextureCompatibilityTests : public deqp::TestCaseGroup
 {
 public:
-	TextureCompatibilityTests			(deqp::Context& context);
+    TextureCompatibilityTests(deqp::Context &context);
 
-	virtual ~TextureCompatibilityTests	(void);
+    virtual ~TextureCompatibilityTests(void);
 
-	virtual void init					(void);
+    virtual void init(void);
 };
 
-} // glcts
+} // namespace glcts
 
 #endif // _GLCTEXTURECOMPATIBILITYTESTS_HPP

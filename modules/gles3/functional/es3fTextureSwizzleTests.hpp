@@ -36,18 +36,18 @@ namespace Functional
 class TextureSwizzleTests : public TestCaseGroup
 {
 public:
-							TextureSwizzleTests		(Context& context);
-							~TextureSwizzleTests	(void);
+    TextureSwizzleTests(Context &context);
+    ~TextureSwizzleTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							TextureSwizzleTests		(const TextureSwizzleTests& other);
-	TextureSwizzleTests&	operator=				(const TextureSwizzleTests& other);
+    TextureSwizzleTests(const TextureSwizzleTests &other);
+    TextureSwizzleTests &operator=(const TextureSwizzleTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FTEXTURESWIZZLETESTS_HPP

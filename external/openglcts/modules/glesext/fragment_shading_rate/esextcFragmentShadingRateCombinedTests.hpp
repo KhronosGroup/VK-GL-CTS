@@ -40,63 +40,63 @@ namespace glcts
 class FragmentShadingRateCombined : public TestCaseBase
 {
 public:
-	struct TestcaseParam
-	{
-		bool		useShadingRateAPI;
-		bool		useShadingRatePrimitive;
-		bool		useShadingRateAttachment;
-		glw::GLenum combinerOp0;
-		glw::GLenum combinerOp1;
-		bool		msaa;
-		deInt32		framebufferSize;
-	};
+    struct TestcaseParam
+    {
+        bool useShadingRateAPI;
+        bool useShadingRatePrimitive;
+        bool useShadingRateAttachment;
+        glw::GLenum combinerOp0;
+        glw::GLenum combinerOp1;
+        bool msaa;
+        int32_t framebufferSize;
+    };
 
-	struct Extent2D
-	{
-		deUint32 width;
-		deUint32 height;
-	};
+    struct Extent2D
+    {
+        uint32_t width;
+        uint32_t height;
+    };
 
 public:
-	FragmentShadingRateCombined(Context& context, const ExtParameters& extParams,
-								const FragmentShadingRateCombined::TestcaseParam& testcaseParam, const char* name,
-								const char* description);
+    FragmentShadingRateCombined(Context &context, const ExtParameters &extParams,
+                                const FragmentShadingRateCombined::TestcaseParam &testcaseParam, const char *name,
+                                const char *description);
 
-	virtual ~FragmentShadingRateCombined()
-	{
-	}
+    virtual ~FragmentShadingRateCombined()
+    {
+    }
 
-	void		  init(void) override;
-	void		  deinit(void) override;
-	IterateResult iterate(void) override;
-
-private:
-	std::string genVS();
-	std::string genFS();
-	std::string genCS();
-	glw::GLenum translateDrawIDToShadingRate(deUint32 drawID) const;
-	glw::GLenum translatePrimIDToShadingRate(deUint32 primID) const;
-	glw::GLenum translateCoordsToShadingRate(deUint32 srx, deUint32 sry) const;
-	deUint32	getPrimitiveID(deUint32 drawID) const;
-	deUint32	simulate(deUint32 drawID, deUint32 primID, deUint32 x, deUint32 y);
-	Extent2D	packedShadingRateToExtent(deUint32 packedRate) const;
-	deUint32	shadingRateExtentToClampedMask(Extent2D ext, bool allowSwap) const;
-
-	void	 setupTest(void);
-	Extent2D combine(Extent2D extent0, Extent2D extent1, glw::GLenum combineOp) const;
+    void init(void) override;
+    void deinit(void) override;
+    IterateResult iterate(void) override;
 
 private:
-	TestcaseParam			 m_tcParam;
-	glu::ShaderProgram*		 m_renderProgram;
-	glu::ShaderProgram*		 m_computeProgram;
-	glw::GLuint				 m_to_id;
-	glw::GLuint				 m_sr_to_id;
-	glw::GLuint				 m_fbo_id;
-	glw::GLuint				 m_vbo_id;
-	std::vector<glw::GLenum> m_availableShadingRates;
-	glw::GLint				 m_srTexelWidth;
-	glw::GLint				 m_srTexelHeight;
-	std::vector<deUint32>	 m_simulationCache;
+    std::string genVS();
+    std::string genFS();
+    std::string genCS();
+    glw::GLenum translateDrawIDToShadingRate(uint32_t drawID) const;
+    glw::GLenum translatePrimIDToShadingRate(uint32_t primID) const;
+    glw::GLenum translateCoordsToShadingRate(uint32_t srx, uint32_t sry) const;
+    uint32_t getPrimitiveID(uint32_t drawID) const;
+    uint32_t simulate(uint32_t drawID, uint32_t primID, uint32_t x, uint32_t y);
+    Extent2D packedShadingRateToExtent(uint32_t packedRate) const;
+    uint32_t shadingRateExtentToClampedMask(Extent2D ext, bool allowSwap) const;
+
+    void setupTest(void);
+    Extent2D combine(Extent2D extent0, Extent2D extent1, glw::GLenum combineOp) const;
+
+private:
+    TestcaseParam m_tcParam;
+    glu::ShaderProgram *m_renderProgram;
+    glu::ShaderProgram *m_computeProgram;
+    glw::GLuint m_to_id;
+    glw::GLuint m_sr_to_id;
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_vbo_id;
+    std::vector<glw::GLenum> m_availableShadingRates;
+    glw::GLint m_srTexelWidth;
+    glw::GLint m_srTexelHeight;
+    std::vector<uint32_t> m_simulationCache;
 };
 
 } // namespace glcts

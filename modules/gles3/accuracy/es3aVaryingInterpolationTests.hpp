@@ -36,18 +36,18 @@ namespace Accuracy
 class VaryingInterpolationTests : public TestCaseGroup
 {
 public:
-									VaryingInterpolationTests		(Context& context);
-									~VaryingInterpolationTests		(void);
+    VaryingInterpolationTests(Context &context);
+    ~VaryingInterpolationTests(void);
 
-	void							init							(void);
+    void init(void);
 
 private:
-									VaryingInterpolationTests		(const VaryingInterpolationTests& other);
-	VaryingInterpolationTests&		operator=						(const VaryingInterpolationTests& other);
+    VaryingInterpolationTests(const VaryingInterpolationTests &other);
+    VaryingInterpolationTests &operator=(const VaryingInterpolationTests &other);
 };
 
-} // Accuracy
-} // gles3
-} // deqp
+} // namespace Accuracy
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3AVARYINGINTERPOLATIONTESTS_HPP

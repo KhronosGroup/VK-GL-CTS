@@ -28,22 +28,22 @@
 #include "vktTestGroupUtil.hpp"
 #include "vktTestCase.hpp"
 
-
 namespace vkt
 {
 namespace TransformFeedback
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> transformFeedbackGroup (new tcu::TestCaseGroup(testCtx, "transform_feedback", "Transform Feedback tests"));
+    de::MovePtr<tcu::TestCaseGroup> transformFeedbackGroup(
+        new tcu::TestCaseGroup(testCtx, "transform_feedback", "Transform Feedback tests"));
 
-	transformFeedbackGroup->addChild(createTransformFeedbackSimpleTests(testCtx));
-	transformFeedbackGroup->addChild(createTransformFeedbackFuzzLayoutTests(testCtx));
-	transformFeedbackGroup->addChild(createPrimitivesGeneratedQueryTests(testCtx));
+    transformFeedbackGroup->addChild(createTransformFeedbackSimpleTests(testCtx));
+    transformFeedbackGroup->addChild(createTransformFeedbackFuzzLayoutTests(testCtx));
+    transformFeedbackGroup->addChild(createPrimitivesGeneratedQueryTests(testCtx));
 
-	return transformFeedbackGroup.release();
+    return transformFeedbackGroup.release();
 }
 
-} // TransformFeedback
-} // vkt
+} // namespace TransformFeedback
+} // namespace vkt

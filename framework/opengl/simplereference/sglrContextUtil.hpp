@@ -31,11 +31,11 @@ namespace sglr
 
 class Context;
 
-void		drawQuad					(sglr::Context& ctx, deUint32 program, const tcu::Vec3& p0, const tcu::Vec3& p1);
+void drawQuad(sglr::Context &ctx, uint32_t program, const tcu::Vec3 &p0, const tcu::Vec3 &p1);
 
-void		drawQuadWithVaoBuffers		(sglr::Context& ctx, deUint32 program, const tcu::Vec3& p0, const tcu::Vec3& p1);
-void		drawQuadWithClientPointers	(sglr::Context& ctx, deUint32 program, const tcu::Vec3& p0, const tcu::Vec3& p1);
+void drawQuadWithVaoBuffers(sglr::Context &ctx, uint32_t program, const tcu::Vec3 &p0, const tcu::Vec3 &p1);
+void drawQuadWithClientPointers(sglr::Context &ctx, uint32_t program, const tcu::Vec3 &p0, const tcu::Vec3 &p1);
 
-} //sglr
+} // namespace sglr
 
 #endif // _SGLRCONTEXTUTIL_HPP

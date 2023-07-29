@@ -282,9 +282,9 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceVulkanSC10Features>, DECL_VULKAN_SC_1_0_EXTENSION_NAME, 0 },
 };
 
-deUint32 getBlobFeaturesVersion (VkStructureType sType)
+uint32_t getBlobFeaturesVersion (VkStructureType sType)
 {
-	const std::map<VkStructureType, deUint32> sTypeBlobMap
+	const std::map<VkStructureType, uint32_t> sTypeBlobMap
 	{
 		// Vulkan11
 		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES,								VK_API_VERSION_1_1 },

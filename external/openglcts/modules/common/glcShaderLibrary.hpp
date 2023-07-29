@@ -36,32 +36,32 @@ namespace deqp
 class ShaderLibrary
 {
 public:
-	ShaderLibrary(tcu::TestContext& testCtx, glu::RenderContext& renderCtx);
-	~ShaderLibrary(void);
+    ShaderLibrary(tcu::TestContext &testCtx, glu::RenderContext &renderCtx);
+    ~ShaderLibrary(void);
 
-	std::vector<tcu::TestNode*> loadShaderFile(const char* fileName);
+    std::vector<tcu::TestNode *> loadShaderFile(const char *fileName);
 
 private:
-	ShaderLibrary(const ShaderLibrary&);			// not allowed!
-	ShaderLibrary& operator=(const ShaderLibrary&); // not allowed!
+    ShaderLibrary(const ShaderLibrary &);            // not allowed!
+    ShaderLibrary &operator=(const ShaderLibrary &); // not allowed!
 
-	// Member variables.
-	tcu::TestContext&   m_testCtx;
-	glu::RenderContext& m_renderCtx;
+    // Member variables.
+    tcu::TestContext &m_testCtx;
+    glu::RenderContext &m_renderCtx;
 };
 
 class ShaderLibraryGroup : public TestCaseGroup
 {
 public:
-	ShaderLibraryGroup(Context& context, const char* name, const char* description, const char* filename);
-	~ShaderLibraryGroup(void);
+    ShaderLibraryGroup(Context &context, const char *name, const char *description, const char *filename);
+    ~ShaderLibraryGroup(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	std::string m_filename;
+    std::string m_filename;
 };
 
-} // deqp
+} // namespace deqp
 
 #endif // _GLCSHADERLIBRARY_HPP

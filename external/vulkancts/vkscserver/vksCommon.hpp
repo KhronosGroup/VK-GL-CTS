@@ -35,29 +35,29 @@ namespace vksc_server
 
 using msize = std::size_t;
 
-using s32 = deInt32;
+using s32 = int32_t;
 
-using u8  = deUint8;
-using u16 = deUint16;
-using u32 = deUint32;
-using u64 = deUint64;
+using u8  = uint8_t;
+using u16 = uint16_t;
+using u32 = uint32_t;
+using u64 = uint64_t;
 
 using std::string;
 using std::vector;
 
 template <typename R>
-bool is_ready (const std::future<R>& f)
+bool is_ready(const std::future<R> &f)
 {
-	return f.wait_for(std::chrono::seconds(1)) == std::future_status::ready;
+    return f.wait_for(std::chrono::seconds(1)) == std::future_status::ready;
 }
 
 template <typename T, typename PRED>
-vector<T>& remove_erase_if (vector<T>& on, PRED pred)
+vector<T> &remove_erase_if(vector<T> &on, PRED pred)
 {
-	on.erase( std::remove_if(on.begin(), on.end(), pred),  on.end() );
-	return on;
+    on.erase(std::remove_if(on.begin(), on.end(), pred), on.end());
+    return on;
 }
 
-}; // vksc_server
+}; // namespace vksc_server
 
 #endif // _VKSCOMMON_HPP

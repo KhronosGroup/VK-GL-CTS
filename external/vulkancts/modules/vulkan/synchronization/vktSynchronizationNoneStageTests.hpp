@@ -30,9 +30,9 @@ namespace vkt
 namespace synchronization
 {
 
-tcu::TestCaseGroup* createNoneStageTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createNoneStageTests(tcu::TestContext &testCtx);
 
-} // synchronization
-} // vkt
+} // namespace synchronization
+} // namespace vkt
 
 #endif // _VKTSYNCHRONIZATIONNONESTAGETESTS_HPP

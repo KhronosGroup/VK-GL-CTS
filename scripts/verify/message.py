@@ -23,20 +23,20 @@
 import os
 
 class ValidationMessage:
-	TYPE_ERROR		= 0
-	TYPE_WARNING	= 1
+    TYPE_ERROR = 0
+    TYPE_WARNING = 1
 
-	def __init__ (self, type, filename, message):
-		self.type		= type
-		self.filename	= filename
-		self.message	= message
+    def __init__ (self, type, filename, message):
+        self.type = type
+        self.filename = filename
+        self.message = message
 
-	def __str__ (self):
-		prefix = {self.TYPE_ERROR: "ERROR: ", self.TYPE_WARNING: "WARNING: "}
-		return prefix[self.type] + os.path.basename(self.filename) + ": " + self.message
+    def __str__ (self):
+        prefix = {self.TYPE_ERROR: "ERROR: ", self.TYPE_WARNING: "WARNING: "}
+        return prefix[self.type] + os.path.basename(self.filename) + ": " + self.message
 
 def error (filename, message):
-	return ValidationMessage(ValidationMessage.TYPE_ERROR, filename, message)
+    return ValidationMessage(ValidationMessage.TYPE_ERROR, filename, message)
 
 def warning (filename, message):
-	return ValidationMessage(ValidationMessage.TYPE_WARNING, filename, message)
+    return ValidationMessage(ValidationMessage.TYPE_WARNING, filename, message)

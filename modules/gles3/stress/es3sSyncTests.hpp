@@ -36,18 +36,18 @@ namespace Stress
 class SyncTests : public TestCaseGroup
 {
 public:
-					SyncTests	(Context& context);
-					~SyncTests	(void);
+    SyncTests(Context &context);
+    ~SyncTests(void);
 
-	void			init		(void);
+    void init(void);
 
 private:
-					SyncTests	(const SyncTests& other);
-	SyncTests&		operator=	(const SyncTests& other);
+    SyncTests(const SyncTests &other);
+    SyncTests &operator=(const SyncTests &other);
 };
 
-} // Stress
-} // gles3
-} // deqp
+} // namespace Stress
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3SSYNCTESTS_HPP

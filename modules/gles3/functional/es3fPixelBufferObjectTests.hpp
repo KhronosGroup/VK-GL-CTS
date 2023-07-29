@@ -36,13 +36,13 @@ namespace Functional
 class PixelBufferObjectTests : public TestCaseGroup
 {
 public:
-					PixelBufferObjectTests	(Context& context);
-	virtual			~PixelBufferObjectTests	(void);
-	virtual void	init					(void);
+    PixelBufferObjectTests(Context &context);
+    virtual ~PixelBufferObjectTests(void);
+    virtual void init(void);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FPIXELBUFFEROBJECTTESTS_HPP

@@ -78,84 +78,84 @@ namespace glcts
 /* Structure holding information which region of the cube map to replace */
 struct SubImage3DCopyParams
 {
-	SubImage3DCopyParams(void) : m_xoffset(0), m_yoffset(0), m_zoffset(0), m_width(0), m_height(0), m_depth(0)
-	{
-		/* Nothing to be done here */
-	}
+    SubImage3DCopyParams(void) : m_xoffset(0), m_yoffset(0), m_zoffset(0), m_width(0), m_height(0), m_depth(0)
+    {
+        /* Nothing to be done here */
+    }
 
-	void init(const glw::GLuint xoffset, const glw::GLuint yoffset, const glw::GLuint zoffset, const glw::GLuint width,
-			  const glw::GLuint height, const glw::GLuint depth)
-	{
-		m_xoffset = xoffset;
-		m_yoffset = yoffset;
-		m_zoffset = zoffset;
-		m_width   = width;
-		m_height  = height;
-		m_depth   = depth;
-	}
+    void init(const glw::GLuint xoffset, const glw::GLuint yoffset, const glw::GLuint zoffset, const glw::GLuint width,
+              const glw::GLuint height, const glw::GLuint depth)
+    {
+        m_xoffset = xoffset;
+        m_yoffset = yoffset;
+        m_zoffset = zoffset;
+        m_width   = width;
+        m_height  = height;
+        m_depth   = depth;
+    }
 
-	glw::GLuint m_xoffset;
-	glw::GLuint m_yoffset;
-	glw::GLuint m_zoffset;
-	glw::GLuint m_width;
-	glw::GLuint m_height;
-	glw::GLuint m_depth;
+    glw::GLuint m_xoffset;
+    glw::GLuint m_yoffset;
+    glw::GLuint m_zoffset;
+    glw::GLuint m_width;
+    glw::GLuint m_height;
+    glw::GLuint m_depth;
 };
 
 class TextureCubeMapArraySubImage3D : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureCubeMapArraySubImage3D(Context& context, const ExtParameters& extParams, const char* name,
-								  const char* description);
+    /* Public methods */
+    TextureCubeMapArraySubImage3D(Context &context, const ExtParameters &extParams, const char *name,
+                                  const char *description);
 
-	virtual ~TextureCubeMapArraySubImage3D()
-	{
-	}
+    virtual ~TextureCubeMapArraySubImage3D()
+    {
+    }
 
-	virtual IterateResult iterate(void);
-	virtual void		  deinit(void);
+    virtual IterateResult iterate(void);
+    virtual void deinit(void);
 
-	/* Public static constants */
-	static const glw::GLuint m_n_components;
-	static const glw::GLuint m_n_dimensions;
-	static const glw::GLuint m_n_resolutions;
-	static const glw::GLuint m_n_storage_type;
+    /* Public static constants */
+    static const glw::GLuint m_n_components;
+    static const glw::GLuint m_n_dimensions;
+    static const glw::GLuint m_n_resolutions;
+    static const glw::GLuint m_n_storage_type;
 
 protected:
-	/* Protected methods */
-	void initTest(void);
+    /* Protected methods */
+    void initTest(void);
 
-	void configureDataBuffer(glw::GLuint width, glw::GLuint height, glw::GLuint depth,
-							 const SubImage3DCopyParams& copy_params, glw::GLuint clear_value);
-	void configurePixelUnpackBuffer(const SubImage3DCopyParams& copy_params);
-	void configureCubeMapArrayTexture(glw::GLuint width, glw::GLuint height, glw::GLuint depth, STORAGE_TYPE storType,
-									  glw::GLuint clear_value);
-	void clearCubeMapArrayTexture(glw::GLuint width, glw::GLuint height, glw::GLuint depth, glw::GLuint clear_value);
-	void configure2DTexture(const SubImage3DCopyParams& copy_params);
+    void configureDataBuffer(glw::GLuint width, glw::GLuint height, glw::GLuint depth,
+                             const SubImage3DCopyParams &copy_params, glw::GLuint clear_value);
+    void configurePixelUnpackBuffer(const SubImage3DCopyParams &copy_params);
+    void configureCubeMapArrayTexture(glw::GLuint width, glw::GLuint height, glw::GLuint depth, STORAGE_TYPE storType,
+                                      glw::GLuint clear_value);
+    void clearCubeMapArrayTexture(glw::GLuint width, glw::GLuint height, glw::GLuint depth, glw::GLuint clear_value);
+    void configure2DTexture(const SubImage3DCopyParams &copy_params);
 
-	void testTexSubImage3D(glw::GLuint width, glw::GLuint height, glw::GLuint depth,
-						   const SubImage3DCopyParams& copy_params, glw::GLboolean& test_passed);
-	void testCopyTexSubImage3D(glw::GLuint width, glw::GLuint height, glw::GLuint depth,
-							   const SubImage3DCopyParams& copy_params, glw::GLboolean& test_passed);
+    void testTexSubImage3D(glw::GLuint width, glw::GLuint height, glw::GLuint depth,
+                           const SubImage3DCopyParams &copy_params, glw::GLboolean &test_passed);
+    void testCopyTexSubImage3D(glw::GLuint width, glw::GLuint height, glw::GLuint depth,
+                               const SubImage3DCopyParams &copy_params, glw::GLboolean &test_passed);
 
-	void texSubImage3D(const SubImage3DCopyParams& copy_params, const glw::GLuint* data_pointer);
-	void copyTexSubImage3D(const SubImage3DCopyParams& copy_params);
-	bool checkResults(glw::GLuint width, glw::GLuint height, glw::GLuint depth);
+    void texSubImage3D(const SubImage3DCopyParams &copy_params, const glw::GLuint *data_pointer);
+    void copyTexSubImage3D(const SubImage3DCopyParams &copy_params);
+    bool checkResults(glw::GLuint width, glw::GLuint height, glw::GLuint depth);
 
-	void deletePixelUnpackBuffer();
-	void deleteCubeMapArrayTexture();
-	void delete2DTexture();
+    void deletePixelUnpackBuffer();
+    void deleteCubeMapArrayTexture();
+    void delete2DTexture();
 
-	typedef std::vector<glw::GLuint> DataBufferVec;
+    typedef std::vector<glw::GLuint> DataBufferVec;
 
-	/* Protected variables */
-	DataBufferVec m_copy_data_buffer;
-	DataBufferVec m_expected_data_buffer;
-	glw::GLuint   m_read_fbo_id;
-	glw::GLuint   m_pixel_buffer_id;
-	glw::GLuint   m_tex_cube_map_array_id;
-	glw::GLuint   m_tex_2d_id;
+    /* Protected variables */
+    DataBufferVec m_copy_data_buffer;
+    DataBufferVec m_expected_data_buffer;
+    glw::GLuint m_read_fbo_id;
+    glw::GLuint m_pixel_buffer_id;
+    glw::GLuint m_tex_cube_map_array_id;
+    glw::GLuint m_tex_2d_id;
 };
 
 } // namespace glcts

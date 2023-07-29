@@ -29,117 +29,175 @@ namespace vksc_server
 
 struct CompileShaderRequest
 {
-	SourceVariant source;
-	string commandLine{};
+    SourceVariant source;
+    string commandLine{};
 
-	static constexpr u32 Type () { return 0; }
+    static constexpr u32 Type()
+    {
+        return 0;
+    }
 
-	template <typename TYPE>
-	void Serialize (Serializer<TYPE>& archive) { archive.SerializeObject(source); archive.Serialize(commandLine); }
+    template <typename TYPE>
+    void Serialize(Serializer<TYPE> &archive)
+    {
+        archive.SerializeObject(source);
+        archive.Serialize(commandLine);
+    }
 };
 
 struct CompileShaderResponse
 {
-	bool status{};
-	vector<u8> binary;
+    bool status{};
+    vector<u8> binary;
 
-	static constexpr u32 Type() { return 1; }
+    static constexpr u32 Type()
+    {
+        return 1;
+    }
 
-	template <typename TYPE>
-	void Serialize (Serializer<TYPE>& archive) { archive.Serialize(status, binary); }
+    template <typename TYPE>
+    void Serialize(Serializer<TYPE> &archive)
+    {
+        archive.Serialize(status, binary);
+    }
 };
 
 struct StoreContentRequest
 {
-	string name;
-	vector<u8> data;
+    string name;
+    vector<u8> data;
 
-	static constexpr u32 Type() { return 2; }
+    static constexpr u32 Type()
+    {
+        return 2;
+    }
 
-	template <typename TYPE>
-	void Serialize (Serializer<TYPE>& archive) { archive.Serialize(name, data); }
+    template <typename TYPE>
+    void Serialize(Serializer<TYPE> &archive)
+    {
+        archive.Serialize(name, data);
+    }
 };
 
 struct StoreContentResponse
 {
-	bool status{};
+    bool status{};
 
-	static constexpr u32 Type() { return 3; }
+    static constexpr u32 Type()
+    {
+        return 3;
+    }
 
-	template <typename TYPE>
-	void Serialize (Serializer<TYPE>& archive) { archive.Serialize(status); }
+    template <typename TYPE>
+    void Serialize(Serializer<TYPE> &archive)
+    {
+        archive.Serialize(status);
+    }
 };
 
 struct AppendRequest
 {
-	string fileName;
-	vector<u8> data;
-	bool clear{};
+    string fileName;
+    vector<u8> data;
+    bool clear{};
 
-	static constexpr u32 Type() { return 4; }
+    static constexpr u32 Type()
+    {
+        return 4;
+    }
 
-	template <typename TYPE>
-	void Serialize (Serializer<TYPE>& archive) { archive.Serialize(fileName, data, clear); }
+    template <typename TYPE>
+    void Serialize(Serializer<TYPE> &archive)
+    {
+        archive.Serialize(fileName, data, clear);
+    }
 };
 
 struct GetContentRequest
 {
-	string path;
-	bool physicalFile{};
-	bool removeAfter{};
+    string path;
+    bool physicalFile{};
+    bool removeAfter{};
 
-	static constexpr u32 Type() { return 5; }
+    static constexpr u32 Type()
+    {
+        return 5;
+    }
 
-	template <typename TYPE>
-	void Serialize (Serializer<TYPE>& archive) { archive.Serialize(path, physicalFile, removeAfter); }
+    template <typename TYPE>
+    void Serialize(Serializer<TYPE> &archive)
+    {
+        archive.Serialize(path, physicalFile, removeAfter);
+    }
 };
 
 struct GetContentResponse
 {
-	bool status{};
-	vector<u8> data;
+    bool status{};
+    vector<u8> data;
 
-	static constexpr u32 Type() { return 6; }
+    static constexpr u32 Type()
+    {
+        return 6;
+    }
 
-	template <typename TYPE>
-	void Serialize (Serializer<TYPE>& archive) { archive.Serialize(status, data); }
+    template <typename TYPE>
+    void Serialize(Serializer<TYPE> &archive)
+    {
+        archive.Serialize(status, data);
+    }
 };
 
 struct CreateCacheRequest
 {
-	VulkanPipelineCacheInput	input;
-	s32							caseFraction;
-	static constexpr u32 Type() { return 7; }
+    VulkanPipelineCacheInput input;
+    s32 caseFraction;
+    static constexpr u32 Type()
+    {
+        return 7;
+    }
 
-	template <typename TYPE>
-	void Serialize (Serializer<TYPE>& archive)
-	{
-		archive.SerializeObject(input);
-		archive.Serialize(caseFraction);
-	}
+    template <typename TYPE>
+    void Serialize(Serializer<TYPE> &archive)
+    {
+        archive.SerializeObject(input);
+        archive.Serialize(caseFraction);
+    }
 };
 
 struct CreateCacheResponse
 {
-	bool status{};
-	vector<u8>							binary;
-	static constexpr u32 Type() { return 8; }
+    bool status{};
+    vector<u8> binary;
+    static constexpr u32 Type()
+    {
+        return 8;
+    }
 
-	template <typename TYPE>
-	void Serialize (Serializer<TYPE>& archive) { archive.Serialize(status, binary); }
+    template <typename TYPE>
+    void Serialize(Serializer<TYPE> &archive)
+    {
+        archive.Serialize(status, binary);
+    }
 };
 
 struct LogRequest
 {
-	s32 type;
-	string message;
+    s32 type;
+    string message;
 
-	static constexpr u32 Type() { return 9; }
+    static constexpr u32 Type()
+    {
+        return 9;
+    }
 
-	template <typename TYPE>
-	void Serialize (Serializer<TYPE>& archive) { archive.Serialize(type, message); }
+    template <typename TYPE>
+    void Serialize(Serializer<TYPE> &archive)
+    {
+        archive.Serialize(type, message);
+    }
 };
 
-}
+} // namespace vksc_server
 
 #endif // _VKSPROTOCOL_HPP

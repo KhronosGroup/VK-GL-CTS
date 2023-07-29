@@ -40,83 +40,83 @@ namespace glcts
 class DrawBuffersIndexedBase : public TestCaseBase
 {
 public:
-	/** Public methods
-	 **/
-	DrawBuffersIndexedBase(Context& context, const ExtParameters& extParams, const char* name, const char* description);
+    /** Public methods
+     **/
+    DrawBuffersIndexedBase(Context &context, const ExtParameters &extParams, const char *name, const char *description);
 
-	virtual ~DrawBuffersIndexedBase()
-	{
-	}
+    virtual ~DrawBuffersIndexedBase()
+    {
+    }
 
 private:
-	virtual void init(void);
+    virtual void init(void);
 
 protected:
-	class BlendMaskState
-	{
-	public:
-		glw::GLenum	enable;
-		glw::GLenum	mode_rgb;
-		glw::GLenum	mode_a;
-		glw::GLenum	func_src_rgb;
-		glw::GLenum	func_src_a;
-		glw::GLenum	func_dst_rgb;
-		glw::GLenum	func_dst_a;
-		glw::GLboolean mask_r;
-		glw::GLboolean mask_g;
-		glw::GLboolean mask_b;
-		glw::GLboolean mask_a;
+    class BlendMaskState
+    {
+    public:
+        glw::GLenum enable;
+        glw::GLenum mode_rgb;
+        glw::GLenum mode_a;
+        glw::GLenum func_src_rgb;
+        glw::GLenum func_src_a;
+        glw::GLenum func_dst_rgb;
+        glw::GLenum func_dst_a;
+        glw::GLboolean mask_r;
+        glw::GLboolean mask_g;
+        glw::GLboolean mask_b;
+        glw::GLboolean mask_a;
 
-		BlendMaskState()
-			: enable(GL_FALSE)
-			, mode_rgb(GL_FUNC_ADD)
-			, mode_a(GL_FUNC_ADD)
-			, func_src_rgb(GL_ONE)
-			, func_src_a(GL_ONE)
-			, func_dst_rgb(GL_ZERO)
-			, func_dst_a(GL_ZERO)
-			, mask_r(GL_TRUE)
-			, mask_g(GL_TRUE)
-			, mask_b(GL_TRUE)
-			, mask_a(GL_TRUE)
-		{
-		}
-	};
+        BlendMaskState()
+            : enable(GL_FALSE)
+            , mode_rgb(GL_FUNC_ADD)
+            , mode_a(GL_FUNC_ADD)
+            , func_src_rgb(GL_ONE)
+            , func_src_a(GL_ONE)
+            , func_dst_rgb(GL_ZERO)
+            , func_dst_a(GL_ZERO)
+            , mask_r(GL_TRUE)
+            , mask_g(GL_TRUE)
+            , mask_b(GL_TRUE)
+            , mask_a(GL_TRUE)
+        {
+        }
+    };
 
-	class BlendMaskStateMachine
-	{
-	public:
-		BlendMaskStateMachine(Context& context, tcu::TestLog& log);
-		BlendMaskStateMachine(Context& context, tcu::TestLog& log, int dbs);
+    class BlendMaskStateMachine
+    {
+    public:
+        BlendMaskStateMachine(Context &context, tcu::TestLog &log);
+        BlendMaskStateMachine(Context &context, tcu::TestLog &log, int dbs);
 
-		std::vector<BlendMaskState> state;
+        std::vector<BlendMaskState> state;
 
-		bool CheckEnumGeneral(glw::GLenum e, glw::GLenum state);
-		bool CheckEnumForBuffer(int idx, glw::GLenum e, glw::GLenum state);
-		bool CheckBuffer(int idx);
-		bool CheckAll();
+        bool CheckEnumGeneral(glw::GLenum e, glw::GLenum state);
+        bool CheckEnumForBuffer(int idx, glw::GLenum e, glw::GLenum state);
+        bool CheckBuffer(int idx);
+        bool CheckAll();
 
-		void SetEnablei(int idx);
-		void SetDisablei(int idx);
-		void SetColorMaski(int idx, glw::GLboolean r, glw::GLboolean g, glw::GLboolean b, glw::GLboolean a);
-		void SetBlendEquationi(int idx, glw::GLenum mode);
-		void SetBlendEquationSeparatei(int idx, glw::GLenum rgb, glw::GLenum a);
-		void SetBlendFunci(int idx, glw::GLenum src, glw::GLenum dst);
-		void SetBlendFuncSeparatei(int idx, glw::GLenum src_rgb, glw::GLenum dst_rgb, glw::GLenum src_a,
-								   glw::GLenum dst_a);
-		void SetEnable();
-		void SetDisable();
-		void SetColorMask(glw::GLboolean r, glw::GLboolean g, glw::GLboolean b, glw::GLboolean a);
-		void SetBlendEquation(glw::GLenum mode);
-		void SetBlendEquationSeparate(glw::GLenum rgb, glw::GLenum a);
-		void SetBlendFunc(glw::GLenum src, glw::GLenum dst);
-		void SetBlendFuncSeparate(glw::GLenum src_rgb, glw::GLenum dst_rgb, glw::GLenum src_a, glw::GLenum dst_a);
-		void SetDefaults();
+        void SetEnablei(int idx);
+        void SetDisablei(int idx);
+        void SetColorMaski(int idx, glw::GLboolean r, glw::GLboolean g, glw::GLboolean b, glw::GLboolean a);
+        void SetBlendEquationi(int idx, glw::GLenum mode);
+        void SetBlendEquationSeparatei(int idx, glw::GLenum rgb, glw::GLenum a);
+        void SetBlendFunci(int idx, glw::GLenum src, glw::GLenum dst);
+        void SetBlendFuncSeparatei(int idx, glw::GLenum src_rgb, glw::GLenum dst_rgb, glw::GLenum src_a,
+                                   glw::GLenum dst_a);
+        void SetEnable();
+        void SetDisable();
+        void SetColorMask(glw::GLboolean r, glw::GLboolean g, glw::GLboolean b, glw::GLboolean a);
+        void SetBlendEquation(glw::GLenum mode);
+        void SetBlendEquationSeparate(glw::GLenum rgb, glw::GLenum a);
+        void SetBlendFunc(glw::GLenum src, glw::GLenum dst);
+        void SetBlendFuncSeparate(glw::GLenum src_rgb, glw::GLenum dst_rgb, glw::GLenum src_a, glw::GLenum dst_a);
+        void SetDefaults();
 
-	private:
-		const glw::Functions& gl;
-		tcu::TestLog&		  testLog;
-	};
+    private:
+        const glw::Functions &gl;
+        tcu::TestLog &testLog;
+    };
 };
-}
+} // namespace glcts
 #endif // _ESEXTCDRAWBUFFERSINDEXEDBASE_HPP

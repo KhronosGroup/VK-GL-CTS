@@ -31,10 +31,10 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	create8BitStorageComputeGroup	(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*	create8BitStorageGraphicsGroup	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *create8BitStorageComputeGroup(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *create8BitStorageGraphicsGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASM8BITSTORAGETESTS_HPP

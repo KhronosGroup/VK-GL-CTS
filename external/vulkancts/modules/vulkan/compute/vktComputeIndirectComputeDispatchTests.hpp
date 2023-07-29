@@ -31,9 +31,9 @@ namespace vkt
 namespace compute
 {
 
-tcu::TestCaseGroup* createIndirectComputeDispatchTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createIndirectComputeDispatchTests(tcu::TestContext &testCtx);
 
-} // compute
-} // vkt
+} // namespace compute
+} // namespace vkt
 
 #endif // _VKTCOMPUTEINDIRECTCOMPUTEDISPATCHTESTS_HPP

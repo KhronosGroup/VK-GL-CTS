@@ -29,9 +29,9 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	createPtrAccessChainGroup (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createPtrAccessChainGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMPTRACCESSCHAINTESTS_HPP

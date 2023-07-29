@@ -32,9 +32,9 @@ namespace vkt
 namespace sr
 {
 
-tcu::TestCaseGroup*	createSwitchTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSwitchTests(tcu::TestContext &testCtx);
 
-} // sr
-} // vkt
+} // namespace sr
+} // namespace vkt
 
 #endif // _VKTSHADERRENDERSWITCHTESTS_HPP

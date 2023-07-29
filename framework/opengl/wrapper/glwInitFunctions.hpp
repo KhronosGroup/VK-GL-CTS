@@ -30,26 +30,28 @@
 namespace glw
 {
 
-void	initES20			(Functions* gl, const FunctionLoader* loader);	//!< Load all OpenGL ES 2.0 functions.
-void	initES30			(Functions* gl, const FunctionLoader* loader);	//!< Load all OpenGL ES 3.0 functions.
-void	initES31			(Functions* gl, const FunctionLoader* loader);	//!< Load all OpenGL ES 3.1 functions.
-void	initES32			(Functions* gl, const FunctionLoader* loader);	//!< Load all OpenGL ES 3.2 functions.
+void initES20(Functions *gl, const FunctionLoader *loader); //!< Load all OpenGL ES 2.0 functions.
+void initES30(Functions *gl, const FunctionLoader *loader); //!< Load all OpenGL ES 3.0 functions.
+void initES31(Functions *gl, const FunctionLoader *loader); //!< Load all OpenGL ES 3.1 functions.
+void initES32(Functions *gl, const FunctionLoader *loader); //!< Load all OpenGL ES 3.2 functions.
 
-void	initGL30Core		(Functions* gl, const FunctionLoader* loader);	//!< Load all GL 3.0 core functions.
-void	initGL31Core		(Functions* gl, const FunctionLoader* loader);	//!< Load all GL 3.1 core functions.
-void	initGL32Core		(Functions* gl, const FunctionLoader* loader);	//!< Load all GL 3.2 core functions.
-void	initGL33Core		(Functions* gl, const FunctionLoader* loader);	//!< Load all GL 3.3 core functions.
-void	initGL40Core		(Functions* gl, const FunctionLoader* loader);	//!< Load all GL 4.0 core functions.
-void	initGL41Core		(Functions* gl, const FunctionLoader* loader);	//!< Load all GL 4.1 core functions.
-void	initGL42Core		(Functions* gl, const FunctionLoader* loader);	//!< Load all GL 4.2 core functions.
-void	initGL43Core		(Functions* gl, const FunctionLoader* loader);	//!< Load all GL 4.3 core functions.
-void	initGL44Core		(Functions* gl, const FunctionLoader* loader);	//!< Load all GL 4.4 core functions.
-void	initGL45Core		(Functions* gl, const FunctionLoader* loader);  //!< Load all GL 4.5 core functions.
-void	initGL46Core		(Functions* gl, const FunctionLoader* loader);  //!< Load all GL 4.6 core functions.
+void initGL30Core(Functions *gl, const FunctionLoader *loader); //!< Load all GL 3.0 core functions.
+void initGL31Core(Functions *gl, const FunctionLoader *loader); //!< Load all GL 3.1 core functions.
+void initGL32Core(Functions *gl, const FunctionLoader *loader); //!< Load all GL 3.2 core functions.
+void initGL33Core(Functions *gl, const FunctionLoader *loader); //!< Load all GL 3.3 core functions.
+void initGL40Core(Functions *gl, const FunctionLoader *loader); //!< Load all GL 4.0 core functions.
+void initGL41Core(Functions *gl, const FunctionLoader *loader); //!< Load all GL 4.1 core functions.
+void initGL42Core(Functions *gl, const FunctionLoader *loader); //!< Load all GL 4.2 core functions.
+void initGL43Core(Functions *gl, const FunctionLoader *loader); //!< Load all GL 4.3 core functions.
+void initGL44Core(Functions *gl, const FunctionLoader *loader); //!< Load all GL 4.4 core functions.
+void initGL45Core(Functions *gl, const FunctionLoader *loader); //!< Load all GL 4.5 core functions.
+void initGL46Core(Functions *gl, const FunctionLoader *loader); //!< Load all GL 4.6 core functions.
 
-void	initExtensionsGL	(Functions* gl, const FunctionLoader* loader, int numExtensions, const char* const* extensions);	//!< Load all supported GL core extension functions.
-void	initExtensionsES	(Functions* gl, const FunctionLoader* loader, int numExtensions, const char* const* extensions);	//!< Load all supported GLES extension functions.
+void initExtensionsGL(Functions *gl, const FunctionLoader *loader, int numExtensions,
+                      const char *const *extensions); //!< Load all supported GL core extension functions.
+void initExtensionsES(Functions *gl, const FunctionLoader *loader, int numExtensions,
+                      const char *const *extensions); //!< Load all supported GLES extension functions.
 
-} // glw
+} // namespace glw
 
 #endif // _GLWINITFUNCTIONS_HPP

@@ -43,21 +43,21 @@ namespace gl4cts
 class PostDepthShaderCase : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	PostDepthShaderCase(deqp::Context& context);
+    /* Public methods */
+    PostDepthShaderCase(deqp::Context &context);
 
-	void						 deinit();
-	void						 init();
-	tcu::TestNode::IterateResult iterate();
+    void deinit();
+    void init();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	/* Private members */
-	std::string m_vertShader;
-	std::string m_fragShader1;
-	std::string m_fragShader2;
-	std::string m_fragShader3;
-	std::string m_fragShader4;
+    /* Private methods */
+    /* Private members */
+    std::string m_vertShader;
+    std::string m_fragShader1;
+    std::string m_fragShader2;
+    std::string m_fragShader3;
+    std::string m_fragShader4;
 };
 
 /** Verify if fragment shader is allowed to control whether values in
@@ -67,59 +67,59 @@ private:
 class PostDepthSampleMaskCase : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	PostDepthSampleMaskCase(deqp::Context& context);
+    /* Public methods */
+    PostDepthSampleMaskCase(deqp::Context &context);
 
-	virtual void						 deinit();
-	virtual void						 init();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual void init();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private enums */
-	enum BufferCase
-	{
-		BUFFERCASE_FIRST   = 0,
-		BUFFERCASE_DEPTH   = BUFFERCASE_FIRST,
-		BUFFERCASE_STENCIL = BUFFERCASE_FIRST + 1,
-		BUFFERCASE_LAST	= BUFFERCASE_STENCIL,
-	};
+    /* Private enums */
+    enum BufferCase
+    {
+        BUFFERCASE_FIRST   = 0,
+        BUFFERCASE_DEPTH   = BUFFERCASE_FIRST,
+        BUFFERCASE_STENCIL = BUFFERCASE_FIRST + 1,
+        BUFFERCASE_LAST    = BUFFERCASE_STENCIL,
+    };
 
-	enum PDCCase
-	{
-		PDCCASE_FIRST	= 0,
-		PDCCASE_DISABLED = PDCCASE_FIRST,
-		PDCCASE_ENABLED  = PDCCASE_FIRST + 1,
-		PDCCASE_LAST	 = PDCCASE_ENABLED,
-	};
+    enum PDCCase
+    {
+        PDCCASE_FIRST    = 0,
+        PDCCASE_DISABLED = PDCCASE_FIRST,
+        PDCCASE_ENABLED  = PDCCASE_FIRST + 1,
+        PDCCASE_LAST     = PDCCASE_ENABLED,
+    };
 
-	/* Private methods */
-	/* Private members */
-	deUint32 m_framebufferMS;
-	deUint32 m_framebuffer;
-	deUint32 m_textureMS;
-	deUint32 m_texture;
-	deUint32 m_depthStencilRenderbuffer;
+    /* Private methods */
+    /* Private members */
+    uint32_t m_framebufferMS;
+    uint32_t m_framebuffer;
+    uint32_t m_textureMS;
+    uint32_t m_texture;
+    uint32_t m_depthStencilRenderbuffer;
 
-	std::string m_vertShader;
-	std::string m_fragShader1a;
-	std::string m_fragShader1b;
-	std::string m_fragShader2;
+    std::string m_vertShader;
+    std::string m_fragShader1a;
+    std::string m_fragShader1b;
+    std::string m_fragShader2;
 };
 
 /** Test group which encapsulates all sparse buffer conformance tests */
 class PostDepthCoverage : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	PostDepthCoverage(deqp::Context& context);
+    /* Public methods */
+    PostDepthCoverage(deqp::Context &context);
 
-	void init();
+    void init();
 
 private:
-	PostDepthCoverage(const PostDepthCoverage& other);
-	PostDepthCoverage& operator=(const PostDepthCoverage& other);
+    PostDepthCoverage(const PostDepthCoverage &other);
+    PostDepthCoverage &operator=(const PostDepthCoverage &other);
 };
 
-} /* glcts namespace */
+} // namespace gl4cts
 
 #endif // _GL4CPOSTDEPTHCOVERAGETESTS_HPP

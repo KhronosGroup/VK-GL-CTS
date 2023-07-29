@@ -31,9 +31,9 @@ namespace vkt
 namespace sparse
 {
 
-tcu::TestCaseGroup* createSparseResourcesShaderIntrinsicsTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSparseResourcesShaderIntrinsicsTests(tcu::TestContext &testCtx);
 
-} // sparse
-} // vkt
+} // namespace sparse
+} // namespace vkt
 
 #endif // _VKTSPARSERESOURCESSHADERINTRINSICS_HPP

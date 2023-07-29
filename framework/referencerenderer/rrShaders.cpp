@@ -27,14 +27,15 @@
 namespace rr
 {
 
-GeometryShader::GeometryShader (size_t numVaryingInputs, size_t numVaryingOutputs, GeometryShaderInputType inputType, GeometryShaderOutputType outputType, size_t verticesOut, size_t numInvocations)
-	: m_inputType		(inputType)
-	, m_outputType		(outputType)
-	, m_numVerticesOut	(verticesOut)
-	, m_numInvocations	(numInvocations)
-	, m_inputs			(numVaryingInputs)
-	, m_outputs			(numVaryingOutputs)
+GeometryShader::GeometryShader(size_t numVaryingInputs, size_t numVaryingOutputs, GeometryShaderInputType inputType,
+                               GeometryShaderOutputType outputType, size_t verticesOut, size_t numInvocations)
+    : m_inputType(inputType)
+    , m_outputType(outputType)
+    , m_numVerticesOut(verticesOut)
+    , m_numInvocations(numInvocations)
+    , m_inputs(numVaryingInputs)
+    , m_outputs(numVaryingOutputs)
 {
 }
 
-} // rr
+} // namespace rr

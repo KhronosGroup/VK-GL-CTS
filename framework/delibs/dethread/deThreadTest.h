@@ -27,11 +27,11 @@
 
 DE_BEGIN_EXTERN_C
 
-void	deThread_selfTest		(void);
-void	deMutex_selfTest		(void);
-void	deSemaphore_selfTest	(void);
-void	deAtomic_selfTest		(void);
-void	deSingleton_selfTest	(void);
+void deThread_selfTest(void);
+void deMutex_selfTest(void);
+void deSemaphore_selfTest(void);
+void deAtomic_selfTest(void);
+void deSingleton_selfTest(void);
 
 DE_END_EXTERN_C
 
