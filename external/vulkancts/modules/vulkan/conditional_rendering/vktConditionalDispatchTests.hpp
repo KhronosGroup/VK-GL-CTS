@@ -34,17 +34,16 @@ namespace conditional
 class ConditionalDispatchTests : public tcu::TestCaseGroup
 {
 public:
-						ConditionalDispatchTests	(tcu::TestContext &testCtx);
-						~ConditionalDispatchTests	(void);
-	void				init						(void);
+    ConditionalDispatchTests(tcu::TestContext &testCtx);
+    ~ConditionalDispatchTests(void);
+    void init(void);
 
 private:
-	ConditionalDispatchTests						(const ConditionalDispatchTests &other);
-	ConditionalDispatchTests&	operator=			(const ConditionalDispatchTests &other);
-
+    ConditionalDispatchTests(const ConditionalDispatchTests &other);
+    ConditionalDispatchTests &operator=(const ConditionalDispatchTests &other);
 };
 
-} // conditional
-} // vkt
+} // namespace conditional
+} // namespace vkt
 
 #endif // _VKTCONDITIONALDISPATCHTESTS_HPP

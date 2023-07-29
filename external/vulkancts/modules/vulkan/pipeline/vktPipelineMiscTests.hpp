@@ -32,9 +32,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createMiscTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEMISCTESTS_HPP

@@ -34,15 +34,15 @@ namespace glcts
 class ConfigListCase : public tcu::TestCase
 {
 public:
-	ConfigListCase(tcu::TestContext& testCtx, const char* name, const char* description, glu::ApiType type);
-	~ConfigListCase(void);
+    ConfigListCase(tcu::TestContext &testCtx, const char *name, const char *description, glu::ApiType type);
+    ~ConfigListCase(void);
 
-	IterateResult iterate(void);
+    IterateResult iterate(void);
 
 private:
-	glu::ApiType m_ctxType;
+    glu::ApiType m_ctxType;
 };
 
-} // glcts
+} // namespace glcts
 
 #endif // _GLCCONFIGLISTCASE_HPP

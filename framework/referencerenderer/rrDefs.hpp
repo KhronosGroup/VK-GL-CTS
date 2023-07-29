@@ -33,30 +33,30 @@ namespace rr
 
 enum FaceType
 {
-	FACETYPE_FRONT = 0,
-	FACETYPE_BACK,
+    FACETYPE_FRONT = 0,
+    FACETYPE_BACK,
 
-	FACETYPE_LAST
+    FACETYPE_LAST
 };
 
 enum IndexType
 {
-	INDEXTYPE_UINT8,
-	INDEXTYPE_UINT16,
-	INDEXTYPE_UINT32,
+    INDEXTYPE_UINT8,
+    INDEXTYPE_UINT16,
+    INDEXTYPE_UINT32,
 
-	INDEXTYPE_LAST
+    INDEXTYPE_LAST
 };
 
 enum ProvokingVertex
 {
-	PROVOKINGVERTEX_FIRST = 0,
-	PROVOKINGVERTEX_LAST,			// \note valid value, "last vertex", not last of enum
+    PROVOKINGVERTEX_FIRST = 0,
+    PROVOKINGVERTEX_LAST, // \note valid value, "last vertex", not last of enum
 };
 
 // \todo [pyry]
 //  - subpixel bits
 
-} // rr
+} // namespace rr
 
 #endif // _RRDEFS_HPP

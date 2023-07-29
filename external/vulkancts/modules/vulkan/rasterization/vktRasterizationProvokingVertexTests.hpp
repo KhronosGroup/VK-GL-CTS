@@ -31,9 +31,9 @@ namespace vkt
 namespace rasterization
 {
 
-tcu::TestCaseGroup*	createProvokingVertexTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createProvokingVertexTests(tcu::TestContext &testCtx);
 
-} // rasterization
-} // vkt
+} // namespace rasterization
+} // namespace vkt
 
 #endif // _VKTRASTERIZATIONPROVOKINGVERTEXTESTS_HPP

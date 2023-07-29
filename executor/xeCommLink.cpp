@@ -26,28 +26,34 @@
 namespace xe
 {
 
-const char* getCommLinkStateName (CommLinkState state)
+const char *getCommLinkStateName(CommLinkState state)
 {
-	switch (state)
-	{
-		case COMMLINKSTATE_READY:						return "COMMLINKSTATE_READY";
-		case COMMLINKSTATE_TEST_PROCESS_LAUNCHING:		return "COMMLINKSTATE_PROCESS_LAUNCHING";
-		case COMMLINKSTATE_TEST_PROCESS_RUNNING:		return "COMMLINKSTATE_PROCESS_RUNNING";
-		case COMMLINKSTATE_TEST_PROCESS_FINISHED:		return "COMMLINKSTATE_FINISHED";
-		case COMMLINKSTATE_TEST_PROCESS_LAUNCH_FAILED:	return "COMMLINKSTATE_LAUNCH_FAILED";
-		case COMMLINKSTATE_ERROR:						return "COMMLINKSTATE_ERROR";
-		default:
-			DE_ASSERT(false);
-			return DE_NULL;
-	}
+    switch (state)
+    {
+    case COMMLINKSTATE_READY:
+        return "COMMLINKSTATE_READY";
+    case COMMLINKSTATE_TEST_PROCESS_LAUNCHING:
+        return "COMMLINKSTATE_PROCESS_LAUNCHING";
+    case COMMLINKSTATE_TEST_PROCESS_RUNNING:
+        return "COMMLINKSTATE_PROCESS_RUNNING";
+    case COMMLINKSTATE_TEST_PROCESS_FINISHED:
+        return "COMMLINKSTATE_FINISHED";
+    case COMMLINKSTATE_TEST_PROCESS_LAUNCH_FAILED:
+        return "COMMLINKSTATE_LAUNCH_FAILED";
+    case COMMLINKSTATE_ERROR:
+        return "COMMLINKSTATE_ERROR";
+    default:
+        DE_ASSERT(false);
+        return DE_NULL;
+    }
 }
 
-CommLink::CommLink (void)
+CommLink::CommLink(void)
 {
 }
 
-CommLink::~CommLink (void)
+CommLink::~CommLink(void)
 {
 }
 
-} // xe
+} // namespace xe

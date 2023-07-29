@@ -36,18 +36,18 @@ namespace Functional
 class ShaderSharedVarTests : public TestCaseGroup
 {
 public:
-							ShaderSharedVarTests	(Context& context);
-							~ShaderSharedVarTests	(void);
+    ShaderSharedVarTests(Context &context);
+    ~ShaderSharedVarTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							ShaderSharedVarTests	(const ShaderSharedVarTests& other);
-	ShaderSharedVarTests&	operator=				(const ShaderSharedVarTests& other);
+    ShaderSharedVarTests(const ShaderSharedVarTests &other);
+    ShaderSharedVarTests &operator=(const ShaderSharedVarTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FSHADERSHAREDVARTESTS_HPP

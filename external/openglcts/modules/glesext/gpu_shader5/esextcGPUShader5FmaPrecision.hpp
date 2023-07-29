@@ -102,56 +102,57 @@ namespace glcts
 /* Define type of input data */
 enum INPUT_DATA_TYPE
 {
-	IDT_FLOAT = 1,
-	IDT_VEC2  = 2,
-	IDT_VEC3  = 3,
-	IDT_VEC4  = 4,
+    IDT_FLOAT = 1,
+    IDT_VEC2  = 2,
+    IDT_VEC3  = 3,
+    IDT_VEC4  = 4,
 };
 
 /* Helper for bitwise operation */
-union FloatConverter {
-	glw::GLfloat m_float;
-	glw::GLint   m_int;
+union FloatConverter
+{
+    glw::GLfloat m_float;
+    glw::GLint m_int;
 };
 
 template <INPUT_DATA_TYPE S>
 class GPUShader5FmaPrecision : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GPUShader5FmaPrecision(Context& context, const ExtParameters& extParams, const char* name, const char* description);
+    /* Public methods */
+    GPUShader5FmaPrecision(Context &context, const ExtParameters &extParams, const char *name, const char *description);
 
-	virtual ~GPUShader5FmaPrecision(void)
-	{
-	}
+    virtual ~GPUShader5FmaPrecision(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	std::string generateVertexShaderCode();
-	const char* getFragmentShaderCode();
-	void		generateData();
-	void		initTest(void);
+    /* Private methods */
+    std::string generateVertexShaderCode();
+    const char *getFragmentShaderCode();
+    void generateData();
+    void initTest(void);
 
-	/* Static variables */
-	static const glw::GLuint m_n_elements = 100;
+    /* Static variables */
+    static const glw::GLuint m_n_elements = 100;
 
-	/* Variables for general usage */
-	const glw::GLfloat m_amplitude;
-	glw::GLfloat	   m_data_a[m_n_elements * S];
-	glw::GLfloat	   m_data_b[m_n_elements * S];
-	glw::GLfloat	   m_data_c[m_n_elements * S];
-	glw::GLuint		   m_fs_id;
-	glw::GLuint		   m_po_id;
-	glw::GLuint		   m_vao_id;
-	glw::GLuint		   m_vbo_a_id;
-	glw::GLuint		   m_vbo_b_id;
-	glw::GLuint		   m_vbo_c_id;
-	glw::GLuint		   m_vbo_result_fma_id;
-	glw::GLuint		   m_vbo_result_std_id;
-	glw::GLuint		   m_vs_id;
+    /* Variables for general usage */
+    const glw::GLfloat m_amplitude;
+    glw::GLfloat m_data_a[m_n_elements * S];
+    glw::GLfloat m_data_b[m_n_elements * S];
+    glw::GLfloat m_data_c[m_n_elements * S];
+    glw::GLuint m_fs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vbo_a_id;
+    glw::GLuint m_vbo_b_id;
+    glw::GLuint m_vbo_c_id;
+    glw::GLuint m_vbo_result_fma_id;
+    glw::GLuint m_vbo_result_std_id;
+    glw::GLuint m_vs_id;
 };
 
 } // namespace glcts

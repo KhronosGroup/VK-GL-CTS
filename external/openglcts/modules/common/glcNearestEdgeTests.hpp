@@ -32,18 +32,18 @@ namespace glcts
 class NearestEdgeCases : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	NearestEdgeCases(deqp::Context& context);
-	virtual ~NearestEdgeCases(void);
+    /* Public methods */
+    NearestEdgeCases(deqp::Context &context);
+    virtual ~NearestEdgeCases(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	/* Private methods */
-	NearestEdgeCases(const NearestEdgeCases& other);
-	NearestEdgeCases& operator=(const NearestEdgeCases& other);
+    /* Private methods */
+    NearestEdgeCases(const NearestEdgeCases &other);
+    NearestEdgeCases &operator=(const NearestEdgeCases &other);
 };
 
-} /* glcts namespace */
+} // namespace glcts
 
 #endif // _GLCNEARESTEDGETESTS_HPP

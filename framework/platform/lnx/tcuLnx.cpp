@@ -23,32 +23,30 @@
 
 #include "tcuLnx.hpp"
 
-
 namespace tcu
 {
 namespace lnx
 {
 
-EventState::EventState (void)
-	: m_quit(false)
+EventState::EventState(void) : m_quit(false)
 {
 }
 
-EventState::~EventState (void)
+EventState::~EventState(void)
 {
 }
 
-void EventState::setQuitFlag (bool quit)
+void EventState::setQuitFlag(bool quit)
 {
-	de::ScopedLock lock(m_mutex);
-	m_quit = quit;
+    de::ScopedLock lock(m_mutex);
+    m_quit = quit;
 }
 
-bool EventState::getQuitFlag (void)
+bool EventState::getQuitFlag(void)
 {
-	de::ScopedLock lock(m_mutex);
-	return m_quit;
+    de::ScopedLock lock(m_mutex);
+    return m_quit;
 }
 
-} // lnx
-} // tcu
+} // namespace lnx
+} // namespace tcu

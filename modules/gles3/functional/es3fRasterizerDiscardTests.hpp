@@ -36,18 +36,18 @@ namespace Functional
 class RasterizerDiscardTests : public TestCaseGroup
 {
 public:
-							RasterizerDiscardTests	(Context& context);
-							~RasterizerDiscardTests	(void);
+    RasterizerDiscardTests(Context &context);
+    ~RasterizerDiscardTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							RasterizerDiscardTests	(const RasterizerDiscardTests& other);
-	RasterizerDiscardTests&	operator=				(const RasterizerDiscardTests& other);
+    RasterizerDiscardTests(const RasterizerDiscardTests &other);
+    RasterizerDiscardTests &operator=(const RasterizerDiscardTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FRASTERIZERDISCARDTESTS_HPP

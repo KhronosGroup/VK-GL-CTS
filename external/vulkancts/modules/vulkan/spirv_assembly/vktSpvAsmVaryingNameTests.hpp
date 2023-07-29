@@ -31,9 +31,9 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	createVaryingNameGraphicsGroup	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createVaryingNameGraphicsGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMVARYINGNAMETESTS_HPP

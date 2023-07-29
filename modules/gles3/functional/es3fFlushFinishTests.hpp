@@ -36,18 +36,18 @@ namespace Functional
 class FlushFinishTests : public TestCaseGroup
 {
 public:
-						FlushFinishTests	(Context& context);
-						~FlushFinishTests	(void);
+    FlushFinishTests(Context &context);
+    ~FlushFinishTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						FlushFinishTests	(const FlushFinishTests&);
-	FlushFinishTests&	operator=			(const FlushFinishTests&);
+    FlushFinishTests(const FlushFinishTests &);
+    FlushFinishTests &operator=(const FlushFinishTests &);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FFLUSHFINISHTESTS_HPP

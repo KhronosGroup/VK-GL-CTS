@@ -22,12 +22,12 @@
  * \file
  * \brief OpenGL Enumeration Values
  * \note Do not include this anywhere where you'd like to include native
- *		 GL headers or otherwise preprocessor will be rather unhappy about
- *		 duplicate declarations.
+ *         GL headers or otherwise preprocessor will be rather unhappy about
+ *         duplicate declarations.
  *
  * \todo [2013-04-08 pyry] This is .hpp just for consistency. Should we make
- *						   it .h instead since it doesn't contain anything
- *						   C++ -specific.
+ *                           it .h instead since it doesn't contain anything
+ *                           C++ -specific.
  *//*--------------------------------------------------------------------*/
 
 #include "deDefs.hpp"

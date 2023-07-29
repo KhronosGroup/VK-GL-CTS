@@ -45,15 +45,15 @@ namespace Sync
 class Tests : public deqp::TestCaseGroup
 {
 public:
-	/* Public member functions */
-	Tests(deqp::Context& context);
+    /* Public member functions */
+    Tests(deqp::Context &context);
 
-	void init();
+    void init();
 
 private:
-	/* Private member functions */
-	Tests(const Tests& other);
-	Tests& operator=(const Tests& other);
+    /* Private member functions */
+    Tests(const Tests &other);
+    Tests &operator=(const Tests &other);
 };
 /* Tests class */
 
@@ -90,19 +90,19 @@ private:
 class FlushCommandsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	FlushCommandsTest(deqp::Context& context);
+    /* Public member functions */
+    FlushCommandsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	FlushCommandsTest(const FlushCommandsTest& other);
-	FlushCommandsTest& operator=(const FlushCommandsTest& other);
+    /* Private member functions */
+    FlushCommandsTest(const FlushCommandsTest &other);
+    FlushCommandsTest &operator=(const FlushCommandsTest &other);
 };
 
 /* FlushCommandsTest class */
-} /* Sync namespace */
-} /* gl4cts */
+} // namespace Sync
+} // namespace gl4cts
 
 #endif // _GL4CSYNCTESTS_HPP

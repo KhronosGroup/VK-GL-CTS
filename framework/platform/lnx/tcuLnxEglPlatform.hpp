@@ -38,14 +38,16 @@ namespace egl
 class Platform : public eglu::Platform
 {
 public:
-										Platform				(EventState& eventState);
-										~Platform				(void) {}
+    Platform(EventState &eventState);
+    ~Platform(void)
+    {
+    }
 
-	de::MovePtr<glu::ContextFactory>	createContextFactory	(void);
+    de::MovePtr<glu::ContextFactory> createContextFactory(void);
 };
 
-} // egl
-} // linux
-} // tcu
+} // namespace egl
+} // namespace lnx
+} // namespace tcu
 
 #endif // _TCULNXEGLPLATFORM_HPP

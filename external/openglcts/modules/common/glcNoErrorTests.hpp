@@ -36,41 +36,41 @@
 namespace glcts
 {
 /** Test verifies if it is possible to create context with
-	 *  CONTEXT_FLAG_NO_ERROR_BIT_KHR flag set in CONTEXT_FLAGS.
-	 */
+ *  CONTEXT_FLAG_NO_ERROR_BIT_KHR flag set in CONTEXT_FLAGS.
+ */
 class NoErrorContextTest : public tcu::TestCase
 {
 public:
-	/* Public methods */
-	NoErrorContextTest(tcu::TestContext& testCtx, glu::ApiType apiType);
+    /* Public methods */
+    NoErrorContextTest(tcu::TestContext &testCtx, glu::ApiType apiType);
 
-	void						 deinit(void);
-	void						 init(void);
-	tcu::TestNode::IterateResult iterate(void);
+    void deinit(void);
+    void init(void);
+    tcu::TestNode::IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	bool verifyNoErrorContext(void);
-	/* Private members */
-	glu::ApiType m_ApiType;
+    /* Private methods */
+    bool verifyNoErrorContext(void);
+    /* Private members */
+    glu::ApiType m_ApiType;
 };
 
 /** Test group which encapsulates all sparse buffer conformance tests */
 class NoErrorTests : public tcu::TestCaseGroup
 {
 public:
-	/* Public methods */
-	NoErrorTests(tcu::TestContext& testCtx, glu::ApiType apiType);
+    /* Public methods */
+    NoErrorTests(tcu::TestContext &testCtx, glu::ApiType apiType);
 
-	void init(void);
+    void init(void);
 
 private:
-	NoErrorTests(const NoErrorTests& other);
-	NoErrorTests& operator=(const NoErrorTests& other);
+    NoErrorTests(const NoErrorTests &other);
+    NoErrorTests &operator=(const NoErrorTests &other);
 
-	/* Private members */
-	glu::ApiType m_ApiType;
+    /* Private members */
+    glu::ApiType m_ApiType;
 };
-} /* glcts namespace */
+} // namespace glcts
 
 #endif // _GLCNOERRORTESTS_HPP

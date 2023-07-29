@@ -36,18 +36,18 @@ namespace Performance
 class PerformanceTests : public TestCaseGroup
 {
 public:
-						PerformanceTests	(Context& context);
-						~PerformanceTests	(void);
+    PerformanceTests(Context &context);
+    ~PerformanceTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						PerformanceTests	(const PerformanceTests& other);
-	PerformanceTests&	operator=			(const PerformanceTests& other);
+    PerformanceTests(const PerformanceTests &other);
+    PerformanceTests &operator=(const PerformanceTests &other);
 };
 
-} // Performance
-} // gles2
-} // deqp
+} // namespace Performance
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2PPERFORMANCETESTS_HPP

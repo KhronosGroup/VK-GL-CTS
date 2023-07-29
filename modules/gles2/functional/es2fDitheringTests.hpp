@@ -36,18 +36,18 @@ namespace Functional
 class DitheringTests : public TestCaseGroup
 {
 public:
-						DitheringTests		(Context& context);
-						~DitheringTests		(void);
+    DitheringTests(Context &context);
+    ~DitheringTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						DitheringTests		(const DitheringTests& other);
-	DitheringTests&		operator=			(const DitheringTests& other);
+    DitheringTests(const DitheringTests &other);
+    DitheringTests &operator=(const DitheringTests &other);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FDITHERINGTESTS_HPP

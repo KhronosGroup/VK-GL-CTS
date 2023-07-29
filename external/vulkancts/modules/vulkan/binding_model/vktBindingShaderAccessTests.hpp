@@ -31,9 +31,9 @@ namespace vkt
 namespace BindingModel
 {
 
-tcu::TestCaseGroup* createShaderAccessTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createShaderAccessTests(tcu::TestContext &testCtx);
 
-} // BindingModel
-} // vkt
+} // namespace BindingModel
+} // namespace vkt
 
 #endif // _VKTBINDINGSHADERACCESSTESTS_HPP

@@ -36,18 +36,18 @@ namespace Functional
 class TextureSizeTests : public TestCaseGroup
 {
 public:
-							TextureSizeTests		(Context& context);
-							~TextureSizeTests		(void);
+    TextureSizeTests(Context &context);
+    ~TextureSizeTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							TextureSizeTests		(const TextureSizeTests& other);
-	TextureSizeTests&		operator=				(const TextureSizeTests& other);
+    TextureSizeTests(const TextureSizeTests &other);
+    TextureSizeTests &operator=(const TextureSizeTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FTEXTURESIZETESTS_HPP

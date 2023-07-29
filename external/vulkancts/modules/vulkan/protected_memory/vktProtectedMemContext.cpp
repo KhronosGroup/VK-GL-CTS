@@ -28,49 +28,47 @@ namespace vkt
 namespace ProtectedMem
 {
 
-ProtectedContext::ProtectedContext	(Context&						ctx,
-									 const std::vector<std::string>	instanceExtensions,
-									 const std::vector<std::string>	deviceExtensions)
-	: m_context				(ctx)
-	, m_interface			(m_context.getPlatformInterface())
-	, m_instance			(makeProtectedMemInstance(m_context, instanceExtensions))
-	, m_vki					(m_instance.getDriver())
-	, m_phyDevice			(vk::chooseDevice(m_vki, m_instance, m_context.getTestContext().getCommandLine()))
-	, m_queueFamilyIndex	(chooseProtectedMemQueueFamilyIndex(m_vki, m_phyDevice))
-	, m_device				(makeProtectedMemDevice(m_interface, m_instance, m_vki, m_phyDevice, m_queueFamilyIndex, ctx.getUsedApiVersion(), deviceExtensions,
+ProtectedContext::ProtectedContext(Context &ctx, const std::vector<std::string> instanceExtensions,
+                                   const std::vector<std::string> deviceExtensions)
+    : m_context(ctx)
+    , m_interface(m_context.getPlatformInterface())
+    , m_instance(makeProtectedMemInstance(m_context, instanceExtensions))
+    , m_vki(m_instance.getDriver())
+    , m_phyDevice(vk::chooseDevice(m_vki, m_instance, m_context.getTestContext().getCommandLine()))
+    , m_queueFamilyIndex(chooseProtectedMemQueueFamilyIndex(m_vki, m_phyDevice))
+    , m_device(makeProtectedMemDevice(m_interface, m_instance, m_vki, m_phyDevice, m_queueFamilyIndex,
+                                      ctx.getUsedApiVersion(), deviceExtensions,
 #ifdef CTS_USES_VULKANSC
-		ctx.getResourceInterface(),
+                                      ctx.getResourceInterface(),
 #endif // CTS_USES_VULKANSC
-		ctx.getTestContext().getCommandLine()))
-	, m_deviceDriver		(m_context.getPlatformInterface(), m_instance, *m_device)
-	, m_allocator			(createAllocator())
-	, m_queue				(getProtectedQueue(m_deviceDriver, *m_device, m_queueFamilyIndex, 0))
+                                      ctx.getTestContext().getCommandLine()))
+    , m_deviceDriver(m_context.getPlatformInterface(), m_instance, *m_device)
+    , m_allocator(createAllocator())
+    , m_queue(getProtectedQueue(m_deviceDriver, *m_device, m_queueFamilyIndex, 0))
 {
 }
 
-ProtectedContext::ProtectedContext	(Context&						ctx,
-									 vk::wsi::Type					wsiType,
-									 vk::wsi::Display&				display,
-									 vk::wsi::Window&				window,
-									 const std::vector<std::string>	instanceExtensions,
-									 const std::vector<std::string>	deviceExtensions)
-	: m_context				(ctx)
-	, m_interface			(m_context.getPlatformInterface())
-	, m_instance			(makeProtectedMemInstance(m_context, instanceExtensions))
-	, m_vki					(m_instance.getDriver())
-	, m_phyDevice			(vk::chooseDevice(m_vki, m_instance, m_context.getTestContext().getCommandLine()))
-	, m_surface				(vk::wsi::createSurface(m_vki, m_instance, wsiType, display, window))
-	, m_queueFamilyIndex	(chooseProtectedMemQueueFamilyIndex(m_vki, m_phyDevice, *m_surface))
-	, m_device				(makeProtectedMemDevice(m_interface, m_instance, m_vki, m_phyDevice, m_queueFamilyIndex, ctx.getUsedApiVersion(), deviceExtensions,
+ProtectedContext::ProtectedContext(Context &ctx, vk::wsi::Type wsiType, vk::wsi::Display &display,
+                                   vk::wsi::Window &window, const std::vector<std::string> instanceExtensions,
+                                   const std::vector<std::string> deviceExtensions)
+    : m_context(ctx)
+    , m_interface(m_context.getPlatformInterface())
+    , m_instance(makeProtectedMemInstance(m_context, instanceExtensions))
+    , m_vki(m_instance.getDriver())
+    , m_phyDevice(vk::chooseDevice(m_vki, m_instance, m_context.getTestContext().getCommandLine()))
+    , m_surface(vk::wsi::createSurface(m_vki, m_instance, wsiType, display, window))
+    , m_queueFamilyIndex(chooseProtectedMemQueueFamilyIndex(m_vki, m_phyDevice, *m_surface))
+    , m_device(makeProtectedMemDevice(m_interface, m_instance, m_vki, m_phyDevice, m_queueFamilyIndex,
+                                      ctx.getUsedApiVersion(), deviceExtensions,
 #ifdef CTS_USES_VULKANSC
-		ctx.getResourceInterface(),
+                                      ctx.getResourceInterface(),
 #endif // CTS_USES_VULKANSC
-		ctx.getTestContext().getCommandLine()))
-	, m_deviceDriver		(m_interface, m_instance, *m_device)
-	, m_allocator(createAllocator())
-	, m_queue				(getProtectedQueue(m_deviceDriver, *m_device, m_queueFamilyIndex, 0))
+                                      ctx.getTestContext().getCommandLine()))
+    , m_deviceDriver(m_interface, m_instance, *m_device)
+    , m_allocator(createAllocator())
+    , m_queue(getProtectedQueue(m_deviceDriver, *m_device, m_queueFamilyIndex, 0))
 {
 }
 
-} // ProtectedMem
-} // vkt
+} // namespace ProtectedMem
+} // namespace vkt

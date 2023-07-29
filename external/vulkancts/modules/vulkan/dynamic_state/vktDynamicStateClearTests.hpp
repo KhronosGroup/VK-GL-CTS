@@ -37,18 +37,18 @@ namespace DynamicState
 class DynamicStateClearTests : public tcu::TestCaseGroup
 {
 public:
-					DynamicStateClearTests	(tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
-					~DynamicStateClearTests	(void);
-	void			init					(void);
+    DynamicStateClearTests(tcu::TestContext &testCtx, vk::PipelineConstructionType pipelineConstructionType);
+    ~DynamicStateClearTests(void);
+    void init(void);
 
 private:
-	DynamicStateClearTests					(const DynamicStateClearTests& other);
-	DynamicStateClearTests&		operator=	(const DynamicStateClearTests& other);
+    DynamicStateClearTests(const DynamicStateClearTests &other);
+    DynamicStateClearTests &operator=(const DynamicStateClearTests &other);
 
-	vk::PipelineConstructionType	m_pipelineConstructionType;
+    vk::PipelineConstructionType m_pipelineConstructionType;
 };
 
-} // DynamicState
-} // vkt
+} // namespace DynamicState
+} // namespace vkt
 
 #endif // _VKTDYNAMICSTATECLEARTESTS_HPP

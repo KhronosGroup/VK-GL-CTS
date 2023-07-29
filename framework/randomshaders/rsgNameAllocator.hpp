@@ -31,19 +31,19 @@ namespace rsg
 {
 
 // \todo [2011-02-03 pyry] Name allocation should be done as a post-pass to better control symbol name
-//						   randomization, re-use etc...
+//                           randomization, re-use etc...
 class NameAllocator
 {
 public:
-									NameAllocator					(void);
-									~NameAllocator					(void);
+    NameAllocator(void);
+    ~NameAllocator(void);
 
-	std::string						allocate						(void);
+    std::string allocate(void);
 
 private:
-	deUint32						m_nextName;
+    uint32_t m_nextName;
 };
 
-} // rsg
+} // namespace rsg
 
 #endif // _RSGNAMEALLOCATOR_HPP

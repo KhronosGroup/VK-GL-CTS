@@ -31,9 +31,9 @@ namespace vkt
 namespace sc
 {
 
-tcu::TestCaseGroup*	createApplicationParametersTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createApplicationParametersTests(tcu::TestContext &testCtx);
 
-} // sc
-} // vkt
+} // namespace sc
+} // namespace vkt
 
 #endif // _VKTAPPLICATIONPARAMETERSTESTS_HPP

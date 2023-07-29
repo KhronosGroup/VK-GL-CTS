@@ -34,13 +34,13 @@ namespace egl
 class NegativeApiTests : public TestCaseGroup
 {
 public:
-				NegativeApiTests		(EglTestContext& eglTestCtx);
-				~NegativeApiTests		(void);
+    NegativeApiTests(EglTestContext &eglTestCtx);
+    ~NegativeApiTests(void);
 
-	void		init					(void);
+    void init(void);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLNEGATIVEAPITESTS_HPP

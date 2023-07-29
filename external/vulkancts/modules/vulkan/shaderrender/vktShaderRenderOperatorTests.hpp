@@ -32,9 +32,9 @@ namespace vkt
 namespace sr
 {
 
-tcu::TestCaseGroup*	createOperatorTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createOperatorTests(tcu::TestContext &testCtx);
 
-} // sr
-} // vkt
+} // namespace sr
+} // namespace vkt
 
 #endif // _VKTSHADERRENDEROPERATORTESTS_HPP

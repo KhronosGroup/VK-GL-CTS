@@ -31,9 +31,9 @@ namespace vkt
 namespace sc
 {
 
-tcu::TestCaseGroup*	createCommandPoolMemoryReservationTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createCommandPoolMemoryReservationTests(tcu::TestContext &testCtx);
 
-} // sc
-} // vkt
+} // namespace sc
+} // namespace vkt
 
 #endif // _VKTCOMMANDPOOLMEMORYRESERVATIONTESTS_HPP

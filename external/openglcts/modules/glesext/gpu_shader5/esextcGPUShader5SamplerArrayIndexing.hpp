@@ -83,40 +83,40 @@ namespace glcts
 class GPUShader5SamplerArrayIndexing : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GPUShader5SamplerArrayIndexing(Context& context, const ExtParameters& extParams, const char* name,
-								   const char* description);
+    /* Public methods */
+    GPUShader5SamplerArrayIndexing(Context &context, const ExtParameters &extParams, const char *name,
+                                   const char *description);
 
-	virtual ~GPUShader5SamplerArrayIndexing(void)
-	{
-	}
+    virtual ~GPUShader5SamplerArrayIndexing(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	void		initTest(void);
-	const char* getFragmentShaderCode();
-	const char* getVertexShaderCode();
+    void initTest(void);
+    const char *getFragmentShaderCode();
+    const char *getVertexShaderCode();
 
-	/* Private static variables */
-	static const int m_n_small_textures;
-	static const int m_n_texture_components;
-	static const int m_big_texture_height;
-	static const int m_big_texture_width;
-	static const int m_n_texture_levels;
-	static const int m_small_texture_height;
-	static const int m_small_texture_width;
+    /* Private static variables */
+    static const int m_n_small_textures;
+    static const int m_n_texture_components;
+    static const int m_big_texture_height;
+    static const int m_big_texture_width;
+    static const int m_n_texture_levels;
+    static const int m_small_texture_height;
+    static const int m_small_texture_width;
 
-	/* Private variables */
-	glw::GLuint  m_big_to_id;
-	glw::GLuint  m_fbo_id;
-	glw::GLuint  m_fs_id;
-	glw::GLuint  m_po_id;
-	glw::GLuint* m_small_to_ids;
-	glw::GLuint  m_vao_id;
-	glw::GLuint  m_vbo_id;
-	glw::GLuint  m_vs_id;
+    /* Private variables */
+    glw::GLuint m_big_to_id;
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint *m_small_to_ids;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vbo_id;
+    glw::GLuint m_vs_id;
 };
 
 } // namespace glcts

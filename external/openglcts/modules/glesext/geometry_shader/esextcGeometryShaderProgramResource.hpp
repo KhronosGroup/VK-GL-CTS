@@ -46,56 +46,56 @@ namespace glcts
 class GeometryShaderProgramResourceTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderProgramResourceTest(Context& context, const ExtParameters& extParams, const char* name,
-									  const char* description);
+    /* Public methods */
+    GeometryShaderProgramResourceTest(Context &context, const ExtParameters &extParams, const char *name,
+                                      const char *description);
 
-	virtual ~GeometryShaderProgramResourceTest()
-	{
-	}
+    virtual ~GeometryShaderProgramResourceTest()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	void initTest(void);
+    /* Private methods */
+    void initTest(void);
 
-	bool checkIfResourceAtIndexIsReferenced(glw::GLuint program_object_id, glw::GLenum interface,
-											glw::GLuint index) const;
+    bool checkIfResourceAtIndexIsReferenced(glw::GLuint program_object_id, glw::GLenum interface,
+                                            glw::GLuint index) const;
 
-	bool checkIfResourceIsReferenced(glw::GLuint program_object_id, glw::GLenum interface, const char* name) const;
+    bool checkIfResourceIsReferenced(glw::GLuint program_object_id, glw::GLenum interface, const char *name) const;
 
-	/* Private fields */
+    /* Private fields */
 
-	/* Shader objects */
-	glw::GLuint m_fragment_shader_id;
-	glw::GLuint m_geometry_shader_id;
-	glw::GLuint m_vertex_shader_id;
+    /* Shader objects */
+    glw::GLuint m_fragment_shader_id;
+    glw::GLuint m_geometry_shader_id;
+    glw::GLuint m_vertex_shader_id;
 
-	/* Program object */
-	glw::GLuint m_program_object_id;
+    /* Program object */
+    glw::GLuint m_program_object_id;
 
-	static const char* const m_common_shader_code_definitions_body;
-	static const char* const m_common_shader_code_definitions_atomic_counter_body;
-	static const char* const m_common_shader_code_definitions_ssbo_body;
+    static const char *const m_common_shader_code_definitions_body;
+    static const char *const m_common_shader_code_definitions_atomic_counter_body;
+    static const char *const m_common_shader_code_definitions_ssbo_body;
 
-	static const char* const m_vertex_shader_code_preamble;
-	static const char* const m_vertex_shader_code_body;
-	static const char* const m_vertex_shader_code_atomic_counter_body;
-	static const char* const m_vertex_shader_code_ssbo_body;
+    static const char *const m_vertex_shader_code_preamble;
+    static const char *const m_vertex_shader_code_body;
+    static const char *const m_vertex_shader_code_atomic_counter_body;
+    static const char *const m_vertex_shader_code_ssbo_body;
 
-	static const char* const m_geometry_shader_code_preamble;
-	static const char* const m_geometry_shader_code_body;
-	static const char* const m_geometry_shader_code_atomic_counter_body;
-	static const char* const m_geometry_shader_code_ssbo_body;
+    static const char *const m_geometry_shader_code_preamble;
+    static const char *const m_geometry_shader_code_body;
+    static const char *const m_geometry_shader_code_atomic_counter_body;
+    static const char *const m_geometry_shader_code_ssbo_body;
 
-	static const char* const m_fragment_shader_code;
+    static const char *const m_fragment_shader_code;
 
-	bool m_atomic_counters_supported;
-	bool m_ssbos_supported;
+    bool m_atomic_counters_supported;
+    bool m_ssbos_supported;
 };
 
-} /* glcts */
+} // namespace glcts
 
 #endif // _ESEXTCGEOMETRYSHADERPROGRAMRESOURCE_HPP

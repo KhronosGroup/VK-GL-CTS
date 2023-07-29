@@ -36,18 +36,18 @@ namespace Functional
 class BasicComputeShaderTests : public TestCaseGroup
 {
 public:
-								BasicComputeShaderTests		(Context& context);
-								~BasicComputeShaderTests	(void);
+    BasicComputeShaderTests(Context &context);
+    ~BasicComputeShaderTests(void);
 
-	void						init						(void);
+    void init(void);
 
 private:
-								BasicComputeShaderTests		(const BasicComputeShaderTests& other);
-	BasicComputeShaderTests&	operator=					(const BasicComputeShaderTests& other);
+    BasicComputeShaderTests(const BasicComputeShaderTests &other);
+    BasicComputeShaderTests &operator=(const BasicComputeShaderTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FBASICCOMPUTESHADERTESTS_HPP

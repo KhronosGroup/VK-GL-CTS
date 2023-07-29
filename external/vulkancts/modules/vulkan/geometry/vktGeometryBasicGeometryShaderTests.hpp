@@ -31,9 +31,9 @@ namespace vkt
 namespace geometry
 {
 
-tcu::TestCaseGroup* createBasicGeometryShaderTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createBasicGeometryShaderTests(tcu::TestContext &testCtx);
 
-} // geometry
-} // vkt
+} // namespace geometry
+} // namespace vkt
 
 #endif // _VKTGEOMETRYBASICGEOMETRYSHADERTESTS_HPP

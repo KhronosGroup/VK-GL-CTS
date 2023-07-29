@@ -38,42 +38,45 @@ namespace api
 class ComputeInstanceResultBuffer
 {
 public:
-	enum
-	{
-		DATA_SIZE = sizeof(tcu::Vec4[4])
-	};
+    enum
+    {
+        DATA_SIZE = sizeof(tcu::Vec4[4])
+    };
 
-											ComputeInstanceResultBuffer (const vk::DeviceInterface &vki,
-																				vk::VkDevice device,
-																				vk::Allocator &allocator,
-																				float initValue = -1.0f);
+    ComputeInstanceResultBuffer(const vk::DeviceInterface &vki, vk::VkDevice device, vk::Allocator &allocator,
+                                float initValue = -1.0f);
 
-	void									readResultContentsTo(tcu::Vec4 (* results)[4]) const;
+    void readResultContentsTo(tcu::Vec4 (*results)[4]) const;
 
-	void									readResultContentsTo(deUint32* result) const;
+    void readResultContentsTo(uint32_t *result) const;
 
-	inline vk::VkBuffer						getBuffer(void) const { return *m_buffer; }
+    inline vk::VkBuffer getBuffer(void) const
+    {
+        return *m_buffer;
+    }
 
-	inline const vk::VkBufferMemoryBarrier*	getResultReadBarrier(void) const { return &m_bufferBarrier; }
+    inline const vk::VkBufferMemoryBarrier *getResultReadBarrier(void) const
+    {
+        return &m_bufferBarrier;
+    }
 
 private:
-	static vk::Move<vk::VkBuffer>			createResultBuffer(const vk::DeviceInterface &vki,
-														vk::VkDevice device,
-														vk::Allocator &allocator,
-														de::MovePtr<vk::Allocation>* outAllocation,
-														float initValue = -1.0f);
+    static vk::Move<vk::VkBuffer> createResultBuffer(const vk::DeviceInterface &vki, vk::VkDevice device,
+                                                     vk::Allocator &allocator,
+                                                     de::MovePtr<vk::Allocation> *outAllocation,
+                                                     float initValue = -1.0f);
 
-	static vk::VkBufferMemoryBarrier		createResultBufferBarrier(vk::VkBuffer buffer);
+    static vk::VkBufferMemoryBarrier createResultBufferBarrier(vk::VkBuffer buffer);
 
-	const vk::DeviceInterface &				m_vki;
-	const vk::VkDevice						m_device;
+    const vk::DeviceInterface &m_vki;
+    const vk::VkDevice m_device;
 
-	de::MovePtr<vk::Allocation>				m_bufferMem;
-	const vk::Unique<vk::VkBuffer>			m_buffer;
-	const vk::VkBufferMemoryBarrier			m_bufferBarrier;
+    de::MovePtr<vk::Allocation> m_bufferMem;
+    const vk::Unique<vk::VkBuffer> m_buffer;
+    const vk::VkBufferMemoryBarrier m_bufferBarrier;
 };
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPICOMPUTEINSTANCERESULTBUFFER_HPP

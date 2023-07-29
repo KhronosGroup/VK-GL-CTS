@@ -28,6 +28,7 @@
 DE_BEGIN_EXTERN_C
 
 #include "eglwTypes.inl"
+
 #include "eglwApi.inl"
 #include "eglwFunctionTypes.inl"
 #include "eglwEnumsC.inl"

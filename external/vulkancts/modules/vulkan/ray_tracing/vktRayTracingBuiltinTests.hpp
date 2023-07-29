@@ -31,10 +31,10 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup*	createBuiltinTests		(tcu::TestContext& testCtx);
-tcu::TestCaseGroup* createSpecConstantTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createBuiltinTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createSpecConstantTests(tcu::TestContext &testCtx);
 
-} // RayTracing
-} // vkt
+} // namespace RayTracing
+} // namespace vkt
 
 #endif // _VKTRAYTRACINGBUILTINTESTS_HPP

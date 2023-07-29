@@ -29,9 +29,9 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup* createExternalMemoryTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createExternalMemoryTests(tcu::TestContext &testCtx);
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPIEXTERNALMEMORYTESTS_HPP

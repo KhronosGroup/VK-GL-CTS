@@ -21,7 +21,7 @@
  */ /*!
  * \file  glcOverlyAggressiveShaderOptimizationTests.hpp
  * \brief Conformance tests that checks if shader optimizations are not
- *		  overly aggressive.
+ *          overly aggressive.
  */ /*-----------------------------------------------------------------------------*/
 
 #include "glcTestCase.hpp"
@@ -34,10 +34,10 @@ namespace glcts
 class AggressiveShaderOptimizationsTests : public TestCaseGroup
 {
 public:
-	AggressiveShaderOptimizationsTests(deqp::Context& context);
-	~AggressiveShaderOptimizationsTests();
+    AggressiveShaderOptimizationsTests(deqp::Context &context);
+    ~AggressiveShaderOptimizationsTests();
 
-	void init(void);
+    void init(void);
 };
 
 } // namespace glcts

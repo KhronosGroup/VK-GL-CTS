@@ -32,12 +32,12 @@
 namespace glu
 {
 class RenderContext;
-} // glu
+} // namespace glu
 
 namespace sglr
 {
 class Context;
-} // sglr
+} // namespace sglr
 
 namespace deqp
 {
@@ -52,57 +52,42 @@ using tcu::Vec4;
 
 enum PrimitiveType
 {
-	POINT = 0,
-	LINE,
-	TRIANGLE,
+    POINT = 0,
+    LINE,
+    TRIANGLE,
 
-	PRIMITIVETYPE_LAST
+    PRIMITIVETYPE_LAST
 };
 
 enum ClearType
 {
-	CLEAR_COLOR_FIXED = 0,
-	CLEAR_COLOR_FLOAT,
-	CLEAR_COLOR_INT,
-	CLEAR_COLOR_UINT,
-	CLEAR_DEPTH,
-	CLEAR_STENCIL,
-	CLEAR_DEPTH_STENCIL,
+    CLEAR_COLOR_FIXED = 0,
+    CLEAR_COLOR_FLOAT,
+    CLEAR_COLOR_INT,
+    CLEAR_COLOR_UINT,
+    CLEAR_DEPTH,
+    CLEAR_STENCIL,
+    CLEAR_DEPTH_STENCIL,
 
-	CLEAR_LAST
+    CLEAR_LAST
 };
 
 // Areas are of the form (x,y,widht,height) in the range [0,1]
-tcu::TestNode*	createPrimitiveTest	(tcu::TestContext&		testCtx,
-									 glu::RenderContext&	renderCtx,
-									 const char*			name,
-									 const char*			desc,
-									 const Vec4&			scissorArea,
-									 const Vec4&			renderArea,
-									 PrimitiveType			type,
-									 int					primitiveCount);
-tcu::TestNode*	createClearTest		(tcu::TestContext&		testCtx,
-									 glu::RenderContext&	renderCtx,
-									 const char*			name,
-									 const char*			desc,
-									 const Vec4&			scissorArea,
-									 deUint32				clearMode);
+tcu::TestNode *createPrimitiveTest(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, const char *name,
+                                   const char *desc, const Vec4 &scissorArea, const Vec4 &renderArea,
+                                   PrimitiveType type, int primitiveCount);
+tcu::TestNode *createClearTest(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, const char *name,
+                               const char *desc, const Vec4 &scissorArea, uint32_t clearMode);
 
-tcu::TestNode* createFramebufferClearTest (tcu::TestContext&	testCtx,
-										   glu::RenderContext&	renderCtx,
-										   const char*			name,
-										   const char*			desc,
-										   ClearType			clearType);
+tcu::TestNode *createFramebufferClearTest(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, const char *name,
+                                          const char *desc, ClearType clearType);
 
-tcu::TestNode* createFramebufferBlitTest (tcu::TestContext&		testCtx,
-										  glu::RenderContext&	renderCtx,
-										  const char*			name,
-										  const char*			desc,
-										  const Vec4&			scissorArea);
+tcu::TestNode *createFramebufferBlitTest(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, const char *name,
+                                         const char *desc, const Vec4 &scissorArea);
 
-} // ScissorTestInternal
-} // Functional
-} // gls
-} // deqp
+} // namespace ScissorTestInternal
+} // namespace Functional
+} // namespace gls
+} // namespace deqp
 
 #endif // _GLSSCISSORTESTS_HPP

@@ -38,22 +38,20 @@ namespace glcts
  * @param context       Test context
  * @param glslVersion   GLSL version
  **/
-DisjointTimerQueryTests::DisjointTimerQueryTests (glcts::Context& context, const ExtParameters& extParams)
-	: TestCaseGroupBase(context, extParams, "disjoint_timer_query", "Disjoint timer query tests")
+DisjointTimerQueryTests::DisjointTimerQueryTests(glcts::Context &context, const ExtParameters &extParams)
+    : TestCaseGroupBase(context, extParams, "disjoint_timer_query", "Disjoint timer query tests")
 {
-	/* No implementation needed */
+    /* No implementation needed */
 }
 
 /** Initializes test cases for texture buffer tests
  **/
-void DisjointTimerQueryTests::init (void)
+void DisjointTimerQueryTests::init(void)
 {
-	/* Initialize base class */
-	TestCaseGroupBase::init();
+    /* Initialize base class */
+    TestCaseGroupBase::init();
 
-
-	addChild(new DisjointTimerQueryHandleReuse(m_context, m_extParams,
-											   "handle_reuse", "handle reuse"));
+    addChild(new DisjointTimerQueryHandleReuse(m_context, m_extParams, "handle_reuse", "handle reuse"));
 }
 
 } // namespace glcts

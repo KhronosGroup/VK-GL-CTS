@@ -35,284 +35,264 @@
 namespace glu
 {
 
-static int getNumDepthBits (const tcu::TextureFormat& format)
+static int getNumDepthBits(const tcu::TextureFormat &format)
 {
-	if (format.order == tcu::TextureFormat::DS)
-	{
-		const tcu::TextureFormat	depthOnlyFormat		= tcu::getEffectiveDepthStencilTextureFormat(format, tcu::Sampler::MODE_DEPTH);
-		return tcu::getTextureFormatBitDepth(depthOnlyFormat).x();
-	}
-	else if (format.order == tcu::TextureFormat::D)
-		return tcu::getTextureFormatBitDepth(format).x();
-	else
-		return 0;
+    if (format.order == tcu::TextureFormat::DS)
+    {
+        const tcu::TextureFormat depthOnlyFormat =
+            tcu::getEffectiveDepthStencilTextureFormat(format, tcu::Sampler::MODE_DEPTH);
+        return tcu::getTextureFormatBitDepth(depthOnlyFormat).x();
+    }
+    else if (format.order == tcu::TextureFormat::D)
+        return tcu::getTextureFormatBitDepth(format).x();
+    else
+        return 0;
 }
 
-static int getNumStencilBits (const tcu::TextureFormat& format)
+static int getNumStencilBits(const tcu::TextureFormat &format)
 {
-	if (format.order == tcu::TextureFormat::DS)
-	{
-		const tcu::TextureFormat	stencilOnlyFormat		= tcu::getEffectiveDepthStencilTextureFormat(format, tcu::Sampler::MODE_STENCIL);
-		return tcu::getTextureFormatBitDepth(stencilOnlyFormat).x();
-	}
-	else if (format.order == tcu::TextureFormat::S)
-		return tcu::getTextureFormatBitDepth(format).x();
-	else
-		return 0;
+    if (format.order == tcu::TextureFormat::DS)
+    {
+        const tcu::TextureFormat stencilOnlyFormat =
+            tcu::getEffectiveDepthStencilTextureFormat(format, tcu::Sampler::MODE_STENCIL);
+        return tcu::getTextureFormatBitDepth(stencilOnlyFormat).x();
+    }
+    else if (format.order == tcu::TextureFormat::S)
+        return tcu::getTextureFormatBitDepth(format).x();
+    else
+        return 0;
 }
 
-static tcu::PixelFormat getPixelFormat (deUint32 colorFormat)
+static tcu::PixelFormat getPixelFormat(uint32_t colorFormat)
 {
-	const tcu::IVec4 bits = tcu::getTextureFormatBitDepth(glu::mapGLInternalFormat(colorFormat));
-	return tcu::PixelFormat(bits[0], bits[1], bits[2], bits[3]);
+    const tcu::IVec4 bits = tcu::getTextureFormatBitDepth(glu::mapGLInternalFormat(colorFormat));
+    return tcu::PixelFormat(bits[0], bits[1], bits[2], bits[3]);
 }
 
-static void getDepthStencilBits (deUint32 depthStencilFormat, int* depthBits, int* stencilBits)
+static void getDepthStencilBits(uint32_t depthStencilFormat, int *depthBits, int *stencilBits)
 {
-	const tcu::TextureFormat	combinedFormat	= glu::mapGLInternalFormat(depthStencilFormat);
+    const tcu::TextureFormat combinedFormat = glu::mapGLInternalFormat(depthStencilFormat);
 
-	*depthBits		= getNumDepthBits(combinedFormat);
-	*stencilBits	= getNumStencilBits(combinedFormat);
+    *depthBits   = getNumDepthBits(combinedFormat);
+    *stencilBits = getNumStencilBits(combinedFormat);
 }
 
-deUint32 chooseColorFormat (const glu::RenderConfig& config)
+uint32_t chooseColorFormat(const glu::RenderConfig &config)
 {
-	static const deUint32 s_formats[] =
-	{
-		GL_RGBA8,
-		GL_RGB8,
-		GL_RG8,
-		GL_R8,
-		GL_RGBA4,
-		GL_RGB5_A1,
-		GL_RGB565,
-		GL_RGB5
-	};
+    static const uint32_t s_formats[] = {GL_RGBA8, GL_RGB8, GL_RG8, GL_R8, GL_RGBA4, GL_RGB5_A1, GL_RGB565, GL_RGB5};
 
-	for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(s_formats); fmtNdx++)
-	{
-		const deUint32		format	= s_formats[fmtNdx];
-		const tcu::IVec4	bits	= tcu::getTextureFormatBitDepth(glu::mapGLInternalFormat(format));
+    for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(s_formats); fmtNdx++)
+    {
+        const uint32_t format = s_formats[fmtNdx];
+        const tcu::IVec4 bits = tcu::getTextureFormatBitDepth(glu::mapGLInternalFormat(format));
 
-		if (config.redBits != glu::RenderConfig::DONT_CARE &&
-			config.redBits != bits[0])
-			continue;
+        if (config.redBits != glu::RenderConfig::DONT_CARE && config.redBits != bits[0])
+            continue;
 
-		if (config.greenBits != glu::RenderConfig::DONT_CARE &&
-			config.greenBits != bits[1])
-			continue;
+        if (config.greenBits != glu::RenderConfig::DONT_CARE && config.greenBits != bits[1])
+            continue;
 
-		if (config.blueBits != glu::RenderConfig::DONT_CARE &&
-			config.blueBits != bits[2])
-			continue;
+        if (config.blueBits != glu::RenderConfig::DONT_CARE && config.blueBits != bits[2])
+            continue;
 
-		if (config.alphaBits != glu::RenderConfig::DONT_CARE &&
-			config.alphaBits != bits[3])
-			continue;
+        if (config.alphaBits != glu::RenderConfig::DONT_CARE && config.alphaBits != bits[3])
+            continue;
 
-		return format;
-	}
+        return format;
+    }
 
-	return 0;
+    return 0;
 }
 
-deUint32 chooseDepthStencilFormat (const glu::RenderConfig& config)
+uint32_t chooseDepthStencilFormat(const glu::RenderConfig &config)
 {
-	static const deUint32 s_formats[] =
-	{
-		GL_DEPTH32F_STENCIL8,
-		GL_DEPTH24_STENCIL8,
-		GL_DEPTH_COMPONENT32F,
-		GL_DEPTH_COMPONENT24,
-		GL_DEPTH_COMPONENT16,
-		GL_STENCIL_INDEX8
-	};
+    static const uint32_t s_formats[] = {GL_DEPTH32F_STENCIL8, GL_DEPTH24_STENCIL8,  GL_DEPTH_COMPONENT32F,
+                                         GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT16, GL_STENCIL_INDEX8};
 
-	for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(s_formats); fmtNdx++)
-	{
-		const deUint32				format			= s_formats[fmtNdx];
-		const tcu::TextureFormat	combinedFormat	= glu::mapGLInternalFormat(format);
-		const int					depthBits		= getNumDepthBits(combinedFormat);
-		const int					stencilBits		= getNumStencilBits(combinedFormat);
+    for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(s_formats); fmtNdx++)
+    {
+        const uint32_t format                   = s_formats[fmtNdx];
+        const tcu::TextureFormat combinedFormat = glu::mapGLInternalFormat(format);
+        const int depthBits                     = getNumDepthBits(combinedFormat);
+        const int stencilBits                   = getNumStencilBits(combinedFormat);
 
-		if (config.depthBits != glu::RenderConfig::DONT_CARE &&
-			config.depthBits != depthBits)
-			continue;
+        if (config.depthBits != glu::RenderConfig::DONT_CARE && config.depthBits != depthBits)
+            continue;
 
-		if (config.stencilBits != glu::RenderConfig::DONT_CARE &&
-			config.stencilBits != stencilBits)
-			continue;
+        if (config.stencilBits != glu::RenderConfig::DONT_CARE && config.stencilBits != stencilBits)
+            continue;
 
-		return format;
-	}
+        return format;
+    }
 
-	return 0;
+    return 0;
 }
 
-FboRenderContext::FboRenderContext (RenderContext* context, const RenderConfig& config)
-	: m_context				(context)
-	, m_framebuffer			(0)
-	, m_colorBuffer			(0)
-	, m_depthStencilBuffer	(0)
-	, m_renderTarget		()
+FboRenderContext::FboRenderContext(RenderContext *context, const RenderConfig &config)
+    : m_context(context)
+    , m_framebuffer(0)
+    , m_colorBuffer(0)
+    , m_depthStencilBuffer(0)
+    , m_renderTarget()
 {
-	try
-	{
-		createFramebuffer(config);
-	}
-	catch (...)
-	{
-		destroyFramebuffer();
-		throw;
-	}
+    try
+    {
+        createFramebuffer(config);
+    }
+    catch (...)
+    {
+        destroyFramebuffer();
+        throw;
+    }
 }
 
-FboRenderContext::FboRenderContext (const ContextFactory& factory, const RenderConfig& config, const tcu::CommandLine& cmdLine)
-	: m_context				(DE_NULL)
-	, m_framebuffer			(0)
-	, m_colorBuffer			(0)
-	, m_depthStencilBuffer	(0)
-	, m_renderTarget		()
+FboRenderContext::FboRenderContext(const ContextFactory &factory, const RenderConfig &config,
+                                   const tcu::CommandLine &cmdLine)
+    : m_context(DE_NULL)
+    , m_framebuffer(0)
+    , m_colorBuffer(0)
+    , m_depthStencilBuffer(0)
+    , m_renderTarget()
 {
-	try
-	{
-		RenderConfig nativeRenderConfig;
-		nativeRenderConfig.type				= config.type;
-		nativeRenderConfig.windowVisibility	= config.windowVisibility;
-		// \note All other properties are defaults, mostly DONT_CARE
-		m_context = factory.createContext(nativeRenderConfig, cmdLine, DE_NULL);
-		createFramebuffer(config);
-	}
-	catch (...)
-	{
-		delete m_context;
-		throw;
-	}
+    try
+    {
+        RenderConfig nativeRenderConfig;
+        nativeRenderConfig.type             = config.type;
+        nativeRenderConfig.windowVisibility = config.windowVisibility;
+        // \note All other properties are defaults, mostly DONT_CARE
+        m_context = factory.createContext(nativeRenderConfig, cmdLine, DE_NULL);
+        createFramebuffer(config);
+    }
+    catch (...)
+    {
+        delete m_context;
+        throw;
+    }
 }
 
-FboRenderContext::~FboRenderContext (void)
+FboRenderContext::~FboRenderContext(void)
 {
-	// \todo [2013-04-08 pyry] Do we want to destry FBO before destroying context?
-	delete m_context;
+    // \todo [2013-04-08 pyry] Do we want to destry FBO before destroying context?
+    delete m_context;
 }
 
-void FboRenderContext::postIterate (void)
+void FboRenderContext::postIterate(void)
 {
-	// \todo [2012-11-27 pyry] Blit to default framebuffer in ES3?
-	m_context->getFunctions().finish();
+    // \todo [2012-11-27 pyry] Blit to default framebuffer in ES3?
+    m_context->getFunctions().finish();
 }
 
 void FboRenderContext::makeCurrent(void)
 {
-	m_context->makeCurrent();
+    m_context->makeCurrent();
 }
 
-void FboRenderContext::createFramebuffer (const RenderConfig& config)
+void FboRenderContext::createFramebuffer(const RenderConfig &config)
 {
-	DE_ASSERT(m_framebuffer == 0 && m_colorBuffer == 0 && m_depthStencilBuffer == 0);
+    DE_ASSERT(m_framebuffer == 0 && m_colorBuffer == 0 && m_depthStencilBuffer == 0);
 
-	const glw::Functions&	gl					= m_context->getFunctions();
-	const deUint32			colorFormat			= chooseColorFormat(config);
-	const deUint32			depthStencilFormat	= chooseDepthStencilFormat(config);
-	int						width				= config.width;
-	int						height				= config.height;
-	tcu::PixelFormat		pixelFormat;
-	int						depthBits			= 0;
-	int						stencilBits			= 0;
+    const glw::Functions &gl          = m_context->getFunctions();
+    const uint32_t colorFormat        = chooseColorFormat(config);
+    const uint32_t depthStencilFormat = chooseDepthStencilFormat(config);
+    int width                         = config.width;
+    int height                        = config.height;
+    tcu::PixelFormat pixelFormat;
+    int depthBits   = 0;
+    int stencilBits = 0;
 
-	if (config.numSamples > 0 && !gl.renderbufferStorageMultisample)
-		throw tcu::NotSupportedError("Multisample FBO is not supported");
+    if (config.numSamples > 0 && !gl.renderbufferStorageMultisample)
+        throw tcu::NotSupportedError("Multisample FBO is not supported");
 
-	if (colorFormat == 0)
-		throw tcu::NotSupportedError("Unsupported color attachment format");
+    if (colorFormat == 0)
+        throw tcu::NotSupportedError("Unsupported color attachment format");
 
-	if (width == glu::RenderConfig::DONT_CARE || height == glu::RenderConfig::DONT_CARE)
-	{
-		int maxSize = 0;
-		gl.getIntegerv(GL_MAX_RENDERBUFFER_SIZE, &maxSize);
+    if (width == glu::RenderConfig::DONT_CARE || height == glu::RenderConfig::DONT_CARE)
+    {
+        int maxSize = 0;
+        gl.getIntegerv(GL_MAX_RENDERBUFFER_SIZE, &maxSize);
 
-		width	= (width	== glu::RenderConfig::DONT_CARE) ? maxSize : width;
-		height	= (height	== glu::RenderConfig::DONT_CARE) ? maxSize : height;
-	}
+        width  = (width == glu::RenderConfig::DONT_CARE) ? maxSize : width;
+        height = (height == glu::RenderConfig::DONT_CARE) ? maxSize : height;
+    }
 
-	{
-		pixelFormat = getPixelFormat(colorFormat);
+    {
+        pixelFormat = getPixelFormat(colorFormat);
 
-		gl.genRenderbuffers(1, &m_colorBuffer);
-		gl.bindRenderbuffer(GL_RENDERBUFFER, m_colorBuffer);
+        gl.genRenderbuffers(1, &m_colorBuffer);
+        gl.bindRenderbuffer(GL_RENDERBUFFER, m_colorBuffer);
 
-		if (config.numSamples > 0)
-			gl.renderbufferStorageMultisample(GL_RENDERBUFFER, config.numSamples, colorFormat, width, height);
-		else
-			gl.renderbufferStorage(GL_RENDERBUFFER, colorFormat, width, height);
+        if (config.numSamples > 0)
+            gl.renderbufferStorageMultisample(GL_RENDERBUFFER, config.numSamples, colorFormat, width, height);
+        else
+            gl.renderbufferStorage(GL_RENDERBUFFER, colorFormat, width, height);
 
-		gl.bindRenderbuffer(GL_RENDERBUFFER, 0);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Creating color renderbuffer");
-	}
+        gl.bindRenderbuffer(GL_RENDERBUFFER, 0);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "Creating color renderbuffer");
+    }
 
-	if (depthStencilFormat != GL_NONE)
-	{
-		getDepthStencilBits(depthStencilFormat, &depthBits, &stencilBits);
+    if (depthStencilFormat != GL_NONE)
+    {
+        getDepthStencilBits(depthStencilFormat, &depthBits, &stencilBits);
 
-		gl.genRenderbuffers(1, &m_depthStencilBuffer);
-		gl.bindRenderbuffer(GL_RENDERBUFFER, m_depthStencilBuffer);
+        gl.genRenderbuffers(1, &m_depthStencilBuffer);
+        gl.bindRenderbuffer(GL_RENDERBUFFER, m_depthStencilBuffer);
 
-		if (config.numSamples > 0)
-			gl.renderbufferStorageMultisample(GL_RENDERBUFFER, config.numSamples, depthStencilFormat, width, height);
-		else
-			gl.renderbufferStorage(GL_RENDERBUFFER, depthStencilFormat, width, height);
+        if (config.numSamples > 0)
+            gl.renderbufferStorageMultisample(GL_RENDERBUFFER, config.numSamples, depthStencilFormat, width, height);
+        else
+            gl.renderbufferStorage(GL_RENDERBUFFER, depthStencilFormat, width, height);
 
-		gl.bindRenderbuffer(GL_RENDERBUFFER, 0);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Creating depth / stencil renderbuffer");
-	}
+        gl.bindRenderbuffer(GL_RENDERBUFFER, 0);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "Creating depth / stencil renderbuffer");
+    }
 
-	gl.genFramebuffers(1, &m_framebuffer);
-	gl.bindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
+    gl.genFramebuffers(1, &m_framebuffer);
+    gl.bindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
 
-	if (m_colorBuffer)
-		gl.framebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, m_colorBuffer);
+    if (m_colorBuffer)
+        gl.framebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, m_colorBuffer);
 
-	if (m_depthStencilBuffer)
-	{
-		if (depthBits > 0)
-			gl.framebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depthStencilBuffer);
+    if (m_depthStencilBuffer)
+    {
+        if (depthBits > 0)
+            gl.framebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depthStencilBuffer);
 
-		if (stencilBits > 0)
-			gl.framebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_depthStencilBuffer);
-	}
+        if (stencilBits > 0)
+            gl.framebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_depthStencilBuffer);
+    }
 
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Creating framebuffer");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Creating framebuffer");
 
-	if (gl.checkFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		throw tcu::NotSupportedError("Framebuffer is not complete");
+    if (gl.checkFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        throw tcu::NotSupportedError("Framebuffer is not complete");
 
-	// Set up correct viewport for first test case.
-	gl.viewport(0, 0, width, height);
+    // Set up correct viewport for first test case.
+    gl.viewport(0, 0, width, height);
 
-	m_renderTarget = tcu::RenderTarget(width, height, pixelFormat, depthBits, stencilBits, config.numSamples);
+    m_renderTarget = tcu::RenderTarget(width, height, pixelFormat, depthBits, stencilBits, config.numSamples);
 }
 
-void FboRenderContext::destroyFramebuffer (void)
+void FboRenderContext::destroyFramebuffer(void)
 {
-	const glw::Functions& gl = m_context->getFunctions();
+    const glw::Functions &gl = m_context->getFunctions();
 
-	if (m_framebuffer)
-	{
-		gl.deleteFramebuffers(1, &m_framebuffer);
-		m_framebuffer = 0;
-	}
+    if (m_framebuffer)
+    {
+        gl.deleteFramebuffers(1, &m_framebuffer);
+        m_framebuffer = 0;
+    }
 
-	if (m_depthStencilBuffer)
-	{
-		gl.deleteRenderbuffers(1, &m_depthStencilBuffer);
-		m_depthStencilBuffer = 0;
-	}
+    if (m_depthStencilBuffer)
+    {
+        gl.deleteRenderbuffers(1, &m_depthStencilBuffer);
+        m_depthStencilBuffer = 0;
+    }
 
-	if (m_colorBuffer)
-	{
-		gl.deleteRenderbuffers(1, &m_colorBuffer);
-		m_colorBuffer = 0;
-	}
+    if (m_colorBuffer)
+    {
+        gl.deleteRenderbuffers(1, &m_colorBuffer);
+        m_colorBuffer = 0;
+    }
 }
 
-} // glu
+} // namespace glu

@@ -32,7 +32,7 @@ namespace tcu
 {
 class TestNode;
 class TestContext;
-}
+} // namespace tcu
 
 namespace glu
 {
@@ -49,34 +49,30 @@ using glu::DataType;
 
 struct TestParams
 {
-	const char*		name;
-	const char*		expression;
+    const char *name;
+    const char *expression;
 
-	DataType		inType;
-	int				minComponents;
-	int				maxComponents;
+    DataType inType;
+    int minComponents;
+    int maxComponents;
 
-	DataType		outType;
-	float			output;
+    DataType outType;
+    float output;
 };
 
 enum TestShaderStage
 {
-	SHADER_VERTEX = 1<<0,
-	SHADER_FRAGMENT = 1<<2,
-	SHADER_BOTH = SHADER_VERTEX | SHADER_FRAGMENT,
+    SHADER_VERTEX   = 1 << 0,
+    SHADER_FRAGMENT = 1 << 2,
+    SHADER_BOTH     = SHADER_VERTEX | SHADER_FRAGMENT,
 };
 
-std::vector<tcu::TestNode*>		createTests		(tcu::TestContext&			testContext,
-												 glu::RenderContext&		renderContext,
-												 const glu::ContextInfo&	contextInfo,
-												 const TestParams*			cases,
-												 int						numCases,
-												 glu::GLSLVersion			version,
-												 TestShaderStage			testStage = SHADER_BOTH);
+std::vector<tcu::TestNode *> createTests(tcu::TestContext &testContext, glu::RenderContext &renderContext,
+                                         const glu::ContextInfo &contextInfo, const TestParams *cases, int numCases,
+                                         glu::GLSLVersion version, TestShaderStage testStage = SHADER_BOTH);
 
-} // ShaderConstExpr
-} // gls
-} // deqp
+} // namespace ShaderConstExpr
+} // namespace gls
+} // namespace deqp
 
 #endif // _GLSSHADERCONSTEXPRTESTS_HPP

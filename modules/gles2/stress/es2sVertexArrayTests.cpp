@@ -37,315 +37,313 @@ namespace Stress
 namespace
 {
 
-template<class T>
-static std::string typeToString (T t)
+template <class T>
+static std::string typeToString(T t)
 {
-	std::stringstream strm;
-	strm << t;
-	return strm.str();
+    std::stringstream strm;
+    strm << t;
+    return strm.str();
 }
 
 class SingleVertexArrayUsageTests : public TestCaseGroup
 {
 public:
-									SingleVertexArrayUsageTests		(Context& context);
-	virtual							~SingleVertexArrayUsageTests	(void);
+    SingleVertexArrayUsageTests(Context &context);
+    virtual ~SingleVertexArrayUsageTests(void);
 
-	virtual void					init							(void);
+    virtual void init(void);
 
 private:
-									SingleVertexArrayUsageTests		(const SingleVertexArrayUsageTests& other);
-	SingleVertexArrayUsageTests&	operator=						(const SingleVertexArrayUsageTests& other);
+    SingleVertexArrayUsageTests(const SingleVertexArrayUsageTests &other);
+    SingleVertexArrayUsageTests &operator=(const SingleVertexArrayUsageTests &other);
 };
 
-SingleVertexArrayUsageTests::SingleVertexArrayUsageTests (Context& context)
-	: TestCaseGroup(context, "usages", "Single vertex atribute, usage")
+SingleVertexArrayUsageTests::SingleVertexArrayUsageTests(Context &context)
+    : TestCaseGroup(context, "usages", "Single vertex atribute, usage")
 {
 }
 
-SingleVertexArrayUsageTests::~SingleVertexArrayUsageTests (void)
+SingleVertexArrayUsageTests::~SingleVertexArrayUsageTests(void)
 {
 }
 
-void SingleVertexArrayUsageTests::init (void)
+void SingleVertexArrayUsageTests::init(void)
 {
-	// Test usage
-	Array::Usage		usages[]		= {Array::USAGE_STATIC_DRAW, Array::USAGE_STREAM_DRAW, Array::USAGE_DYNAMIC_DRAW};
-	int					counts[]		= {1, 256};
-	int					strides[]		= {17};
-	Array::InputType	inputTypes[]	= {Array::INPUTTYPE_FLOAT, Array::INPUTTYPE_FIXED, Array::INPUTTYPE_SHORT, Array::INPUTTYPE_BYTE};
+    // Test usage
+    Array::Usage usages[]         = {Array::USAGE_STATIC_DRAW, Array::USAGE_STREAM_DRAW, Array::USAGE_DYNAMIC_DRAW};
+    int counts[]                  = {1, 256};
+    int strides[]                 = {17};
+    Array::InputType inputTypes[] = {Array::INPUTTYPE_FLOAT, Array::INPUTTYPE_FIXED, Array::INPUTTYPE_SHORT,
+                                     Array::INPUTTYPE_BYTE};
 
-	for (int inputTypeNdx = 0; inputTypeNdx < DE_LENGTH_OF_ARRAY(inputTypes); inputTypeNdx++)
-	{
-		for (int countNdx = 0; countNdx < DE_LENGTH_OF_ARRAY(counts); countNdx++)
-		{
-			for (int strideNdx = 0; strideNdx < DE_LENGTH_OF_ARRAY(strides); strideNdx++)
-			{
-				for (int usageNdx = 0; usageNdx < DE_LENGTH_OF_ARRAY(usages); usageNdx++)
-				{
-					const int	componentCount	= 2;
-					const int	stride			= (strides[strideNdx] < 0 ? Array::inputTypeSize(inputTypes[inputTypeNdx]) * componentCount : strides[strideNdx]);
-					const bool	aligned			= (stride % Array::inputTypeSize(inputTypes[inputTypeNdx])) == 0;
-					MultiVertexArrayTest::Spec::ArraySpec arraySpec(inputTypes[inputTypeNdx],
-																	Array::OUTPUTTYPE_VEC2,
-																	Array::STORAGE_BUFFER,
-																	usages[usageNdx],
-																	componentCount,
-																	0,
-																	stride,
-																	false,
-																	GLValue::getMinValue(inputTypes[inputTypeNdx]),
-																	GLValue::getMaxValue(inputTypes[inputTypeNdx]));
+    for (int inputTypeNdx = 0; inputTypeNdx < DE_LENGTH_OF_ARRAY(inputTypes); inputTypeNdx++)
+    {
+        for (int countNdx = 0; countNdx < DE_LENGTH_OF_ARRAY(counts); countNdx++)
+        {
+            for (int strideNdx = 0; strideNdx < DE_LENGTH_OF_ARRAY(strides); strideNdx++)
+            {
+                for (int usageNdx = 0; usageNdx < DE_LENGTH_OF_ARRAY(usages); usageNdx++)
+                {
+                    const int componentCount = 2;
+                    const int stride =
+                        (strides[strideNdx] < 0 ? Array::inputTypeSize(inputTypes[inputTypeNdx]) * componentCount :
+                                                  strides[strideNdx]);
+                    const bool aligned = (stride % Array::inputTypeSize(inputTypes[inputTypeNdx])) == 0;
+                    MultiVertexArrayTest::Spec::ArraySpec arraySpec(
+                        inputTypes[inputTypeNdx], Array::OUTPUTTYPE_VEC2, Array::STORAGE_BUFFER, usages[usageNdx],
+                        componentCount, 0, stride, false, GLValue::getMinValue(inputTypes[inputTypeNdx]),
+                        GLValue::getMaxValue(inputTypes[inputTypeNdx]));
 
-					MultiVertexArrayTest::Spec spec;
-					spec.primitive	= Array::PRIMITIVE_TRIANGLES;
-					spec.drawCount	= counts[countNdx];
-					spec.first		= 0;
-					spec.arrays.push_back(arraySpec);
+                    MultiVertexArrayTest::Spec spec;
+                    spec.primitive = Array::PRIMITIVE_TRIANGLES;
+                    spec.drawCount = counts[countNdx];
+                    spec.first     = 0;
+                    spec.arrays.push_back(arraySpec);
 
-					std::string name = spec.getName();
+                    std::string name = spec.getName();
 
-					if (!aligned)
-						addChild(new MultiVertexArrayTest(m_testCtx, m_context.getRenderContext(), spec, name.c_str(), name.c_str()));
-				}
-			}
-		}
-	}
+                    if (!aligned)
+                        addChild(new MultiVertexArrayTest(m_testCtx, m_context.getRenderContext(), spec, name.c_str(),
+                                                          name.c_str()));
+                }
+            }
+        }
+    }
 }
 
 class SingleVertexArrayStrideTests : public TestCaseGroup
 {
 public:
-									SingleVertexArrayStrideTests	(Context& context);
-	virtual							~SingleVertexArrayStrideTests	(void);
+    SingleVertexArrayStrideTests(Context &context);
+    virtual ~SingleVertexArrayStrideTests(void);
 
-	virtual void					init							(void);
+    virtual void init(void);
 
 private:
-									SingleVertexArrayStrideTests	(const SingleVertexArrayStrideTests& other);
-	SingleVertexArrayStrideTests&	operator=						(const SingleVertexArrayStrideTests& other);
+    SingleVertexArrayStrideTests(const SingleVertexArrayStrideTests &other);
+    SingleVertexArrayStrideTests &operator=(const SingleVertexArrayStrideTests &other);
 };
 
-SingleVertexArrayStrideTests::SingleVertexArrayStrideTests (Context& context)
-	: TestCaseGroup(context, "strides", "Single stride vertex atribute")
+SingleVertexArrayStrideTests::SingleVertexArrayStrideTests(Context &context)
+    : TestCaseGroup(context, "strides", "Single stride vertex atribute")
 {
 }
 
-SingleVertexArrayStrideTests::~SingleVertexArrayStrideTests (void)
+SingleVertexArrayStrideTests::~SingleVertexArrayStrideTests(void)
 {
 }
 
-void SingleVertexArrayStrideTests::init (void)
+void SingleVertexArrayStrideTests::init(void)
 {
-	// Test strides with different input types, component counts and storage, Usage(?)
-	Array::InputType	inputTypes[]	= {Array::INPUTTYPE_FLOAT, Array::INPUTTYPE_SHORT, Array::INPUTTYPE_BYTE, /*Array::INPUTTYPE_UNSIGNED_SHORT, Array::INPUTTYPE_UNSIGNED_BYTE,*/ Array::INPUTTYPE_FIXED};
-	Array::Storage		storages[]		= {Array::STORAGE_BUFFER};
-	int					counts[]		= {1, 256};
-	int					strides[]		= {17};
+    // Test strides with different input types, component counts and storage, Usage(?)
+    Array::InputType inputTypes[] = {
+        Array::INPUTTYPE_FLOAT, Array::INPUTTYPE_SHORT, Array::INPUTTYPE_BYTE,
+        /*Array::INPUTTYPE_UNSIGNED_SHORT, Array::INPUTTYPE_UNSIGNED_BYTE,*/ Array::INPUTTYPE_FIXED};
+    Array::Storage storages[] = {Array::STORAGE_BUFFER};
+    int counts[]              = {1, 256};
+    int strides[]             = {17};
 
-	for (int inputTypeNdx = 0; inputTypeNdx < DE_LENGTH_OF_ARRAY(inputTypes); inputTypeNdx++)
-	{
-		for (int storageNdx = 0; storageNdx < DE_LENGTH_OF_ARRAY(storages); storageNdx++)
-		{
-			for (int componentCount = 2; componentCount < 5; componentCount++)
-			{
-				for (int countNdx = 0; countNdx < DE_LENGTH_OF_ARRAY(counts); countNdx++)
-				{
-					for (int strideNdx = 0; strideNdx < DE_LENGTH_OF_ARRAY(strides); strideNdx++)
-					{
-						const int	stride			= (strides[strideNdx] < 0 ? Array::inputTypeSize(inputTypes[inputTypeNdx]) * componentCount : strides[strideNdx]);
-						const bool	bufferUnaligned	= (storages[storageNdx] == Array::STORAGE_BUFFER) && (stride % Array::inputTypeSize(inputTypes[inputTypeNdx])) != 0;
+    for (int inputTypeNdx = 0; inputTypeNdx < DE_LENGTH_OF_ARRAY(inputTypes); inputTypeNdx++)
+    {
+        for (int storageNdx = 0; storageNdx < DE_LENGTH_OF_ARRAY(storages); storageNdx++)
+        {
+            for (int componentCount = 2; componentCount < 5; componentCount++)
+            {
+                for (int countNdx = 0; countNdx < DE_LENGTH_OF_ARRAY(counts); countNdx++)
+                {
+                    for (int strideNdx = 0; strideNdx < DE_LENGTH_OF_ARRAY(strides); strideNdx++)
+                    {
+                        const int stride =
+                            (strides[strideNdx] < 0 ? Array::inputTypeSize(inputTypes[inputTypeNdx]) * componentCount :
+                                                      strides[strideNdx]);
+                        const bool bufferUnaligned = (storages[storageNdx] == Array::STORAGE_BUFFER) &&
+                                                     (stride % Array::inputTypeSize(inputTypes[inputTypeNdx])) != 0;
 
-						MultiVertexArrayTest::Spec::ArraySpec arraySpec(inputTypes[inputTypeNdx],
-																		Array::OUTPUTTYPE_VEC4,
-																		storages[storageNdx],
-																		Array::USAGE_DYNAMIC_DRAW,
-																		componentCount,
-																		0,
-																		stride,
-																		false,
-																		GLValue::getMinValue(inputTypes[inputTypeNdx]),
-																		GLValue::getMaxValue(inputTypes[inputTypeNdx]));
+                        MultiVertexArrayTest::Spec::ArraySpec arraySpec(
+                            inputTypes[inputTypeNdx], Array::OUTPUTTYPE_VEC4, storages[storageNdx],
+                            Array::USAGE_DYNAMIC_DRAW, componentCount, 0, stride, false,
+                            GLValue::getMinValue(inputTypes[inputTypeNdx]),
+                            GLValue::getMaxValue(inputTypes[inputTypeNdx]));
 
-						MultiVertexArrayTest::Spec spec;
-						spec.primitive	= Array::PRIMITIVE_TRIANGLES;
-						spec.drawCount	= counts[countNdx];
-						spec.first		= 0;
-						spec.arrays.push_back(arraySpec);
+                        MultiVertexArrayTest::Spec spec;
+                        spec.primitive = Array::PRIMITIVE_TRIANGLES;
+                        spec.drawCount = counts[countNdx];
+                        spec.first     = 0;
+                        spec.arrays.push_back(arraySpec);
 
-						std::string name = spec.getName();
-						if (bufferUnaligned)
-							addChild(new MultiVertexArrayTest(m_testCtx, m_context.getRenderContext(), spec, name.c_str(), name.c_str()));
-					}
-				}
-			}
-		}
-	}
+                        std::string name = spec.getName();
+                        if (bufferUnaligned)
+                            addChild(new MultiVertexArrayTest(m_testCtx, m_context.getRenderContext(), spec,
+                                                              name.c_str(), name.c_str()));
+                    }
+                }
+            }
+        }
+    }
 }
 
 class SingleVertexArrayFirstTests : public TestCaseGroup
 {
 public:
-									SingleVertexArrayFirstTests	(Context& context);
-	virtual							~SingleVertexArrayFirstTests	(void);
+    SingleVertexArrayFirstTests(Context &context);
+    virtual ~SingleVertexArrayFirstTests(void);
 
-	virtual void					init							(void);
+    virtual void init(void);
 
 private:
-									SingleVertexArrayFirstTests	(const SingleVertexArrayFirstTests& other);
-	SingleVertexArrayFirstTests&	operator=						(const SingleVertexArrayFirstTests& other);
+    SingleVertexArrayFirstTests(const SingleVertexArrayFirstTests &other);
+    SingleVertexArrayFirstTests &operator=(const SingleVertexArrayFirstTests &other);
 };
 
-SingleVertexArrayFirstTests::SingleVertexArrayFirstTests (Context& context)
-	: TestCaseGroup(context, "first", "Single vertex atribute different first values")
+SingleVertexArrayFirstTests::SingleVertexArrayFirstTests(Context &context)
+    : TestCaseGroup(context, "first", "Single vertex atribute different first values")
 {
 }
 
-SingleVertexArrayFirstTests::~SingleVertexArrayFirstTests (void)
+SingleVertexArrayFirstTests::~SingleVertexArrayFirstTests(void)
 {
 }
 
-void SingleVertexArrayFirstTests::init (void)
+void SingleVertexArrayFirstTests::init(void)
 {
-	// Test strides with different input types, component counts and storage, Usage(?)
-	Array::InputType	inputTypes[]	= {Array::INPUTTYPE_FLOAT, Array::INPUTTYPE_BYTE, Array::INPUTTYPE_FIXED};
-	int					counts[]		= {5, 256};
-	int					firsts[]		= {6, 24};
-	int					offsets[]		= {1, 17};
-	int					strides[]		= {/*0,*/ -1, 17, 32}; // Tread negative value as sizeof input. Same as 0, but done outside of GL.
+    // Test strides with different input types, component counts and storage, Usage(?)
+    Array::InputType inputTypes[] = {Array::INPUTTYPE_FLOAT, Array::INPUTTYPE_BYTE, Array::INPUTTYPE_FIXED};
+    int counts[]                  = {5, 256};
+    int firsts[]                  = {6, 24};
+    int offsets[]                 = {1, 17};
+    int strides[] = {/*0,*/ -1, 17, 32}; // Tread negative value as sizeof input. Same as 0, but done outside of GL.
 
-	for (int inputTypeNdx = 0; inputTypeNdx < DE_LENGTH_OF_ARRAY(inputTypes); inputTypeNdx++)
-	{
-		for (int offsetNdx = 0; offsetNdx < DE_LENGTH_OF_ARRAY(offsets); offsetNdx++)
-		{
-			for (int countNdx = 0; countNdx < DE_LENGTH_OF_ARRAY(counts); countNdx++)
-			{
-				for (int strideNdx = 0; strideNdx < DE_LENGTH_OF_ARRAY(strides); strideNdx++)
-				{
-					for (int firstNdx = 0; firstNdx < DE_LENGTH_OF_ARRAY(firsts); firstNdx++)
-					{
-						const int	stride	= (strides[strideNdx] < 0 ? Array::inputTypeSize(inputTypes[inputTypeNdx]) * 2 : strides[strideNdx]);
-						const bool	aligned	= ((stride % Array::inputTypeSize(inputTypes[inputTypeNdx])) == 0) && (offsets[offsetNdx] % Array::inputTypeSize(inputTypes[inputTypeNdx]) == 0);
+    for (int inputTypeNdx = 0; inputTypeNdx < DE_LENGTH_OF_ARRAY(inputTypes); inputTypeNdx++)
+    {
+        for (int offsetNdx = 0; offsetNdx < DE_LENGTH_OF_ARRAY(offsets); offsetNdx++)
+        {
+            for (int countNdx = 0; countNdx < DE_LENGTH_OF_ARRAY(counts); countNdx++)
+            {
+                for (int strideNdx = 0; strideNdx < DE_LENGTH_OF_ARRAY(strides); strideNdx++)
+                {
+                    for (int firstNdx = 0; firstNdx < DE_LENGTH_OF_ARRAY(firsts); firstNdx++)
+                    {
+                        const int stride =
+                            (strides[strideNdx] < 0 ? Array::inputTypeSize(inputTypes[inputTypeNdx]) * 2 :
+                                                      strides[strideNdx]);
+                        const bool aligned = ((stride % Array::inputTypeSize(inputTypes[inputTypeNdx])) == 0) &&
+                                             (offsets[offsetNdx] % Array::inputTypeSize(inputTypes[inputTypeNdx]) == 0);
 
-						MultiVertexArrayTest::Spec::ArraySpec arraySpec(inputTypes[inputTypeNdx],
-																		Array::OUTPUTTYPE_VEC2,
-																		Array::STORAGE_BUFFER,
-																		Array::USAGE_DYNAMIC_DRAW,
-																		2,
-																		offsets[offsetNdx],
-																		stride,
-																		false,
-																		GLValue::getMinValue(inputTypes[inputTypeNdx]),
-																		GLValue::getMaxValue(inputTypes[inputTypeNdx]));
+                        MultiVertexArrayTest::Spec::ArraySpec arraySpec(
+                            inputTypes[inputTypeNdx], Array::OUTPUTTYPE_VEC2, Array::STORAGE_BUFFER,
+                            Array::USAGE_DYNAMIC_DRAW, 2, offsets[offsetNdx], stride, false,
+                            GLValue::getMinValue(inputTypes[inputTypeNdx]),
+                            GLValue::getMaxValue(inputTypes[inputTypeNdx]));
 
-						MultiVertexArrayTest::Spec spec;
-						spec.primitive	= Array::PRIMITIVE_TRIANGLES;
-						spec.drawCount	= counts[countNdx];
-						spec.first		= firsts[firstNdx];
-						spec.arrays.push_back(arraySpec);
+                        MultiVertexArrayTest::Spec spec;
+                        spec.primitive = Array::PRIMITIVE_TRIANGLES;
+                        spec.drawCount = counts[countNdx];
+                        spec.first     = firsts[firstNdx];
+                        spec.arrays.push_back(arraySpec);
 
-						std::string name = Array::inputTypeToString(inputTypes[inputTypeNdx]) + "_first" + typeToString(firsts[firstNdx]) + "_offset" + typeToString(offsets[offsetNdx]) + "_stride" + typeToString(stride) + "_quads" + typeToString(counts[countNdx]);
-						if (!aligned)
-							addChild(new MultiVertexArrayTest(m_testCtx, m_context.getRenderContext(), spec, name.c_str(), name.c_str()));
-					}
-				}
-			}
-		}
-	}
+                        std::string name = Array::inputTypeToString(inputTypes[inputTypeNdx]) + "_first" +
+                                           typeToString(firsts[firstNdx]) + "_offset" +
+                                           typeToString(offsets[offsetNdx]) + "_stride" + typeToString(stride) +
+                                           "_quads" + typeToString(counts[countNdx]);
+                        if (!aligned)
+                            addChild(new MultiVertexArrayTest(m_testCtx, m_context.getRenderContext(), spec,
+                                                              name.c_str(), name.c_str()));
+                    }
+                }
+            }
+        }
+    }
 }
 
 class SingleVertexArrayOffsetTests : public TestCaseGroup
 {
 public:
-									SingleVertexArrayOffsetTests	(Context& context);
-	virtual							~SingleVertexArrayOffsetTests	(void);
+    SingleVertexArrayOffsetTests(Context &context);
+    virtual ~SingleVertexArrayOffsetTests(void);
 
-	virtual void					init							(void);
+    virtual void init(void);
 
 private:
-									SingleVertexArrayOffsetTests	(const SingleVertexArrayOffsetTests& other);
-	SingleVertexArrayOffsetTests&	operator=						(const SingleVertexArrayOffsetTests& other);
+    SingleVertexArrayOffsetTests(const SingleVertexArrayOffsetTests &other);
+    SingleVertexArrayOffsetTests &operator=(const SingleVertexArrayOffsetTests &other);
 };
 
-SingleVertexArrayOffsetTests::SingleVertexArrayOffsetTests (Context& context)
-	: TestCaseGroup(context, "offset", "Single vertex atribute offset element")
+SingleVertexArrayOffsetTests::SingleVertexArrayOffsetTests(Context &context)
+    : TestCaseGroup(context, "offset", "Single vertex atribute offset element")
 {
 }
 
-SingleVertexArrayOffsetTests::~SingleVertexArrayOffsetTests (void)
+SingleVertexArrayOffsetTests::~SingleVertexArrayOffsetTests(void)
 {
 }
 
-void SingleVertexArrayOffsetTests::init (void)
+void SingleVertexArrayOffsetTests::init(void)
 {
-	// Test strides with different input types, component counts and storage, Usage(?)
-	Array::InputType	inputTypes[]	= {Array::INPUTTYPE_FLOAT, Array::INPUTTYPE_BYTE, Array::INPUTTYPE_FIXED};
-	int					counts[]		= {1, 256};
-	int					offsets[]		= {1, 4, 17, 32};
-	int					strides[]		= {/*0,*/ -1, 17, 32}; // Tread negative value as sizeof input. Same as 0, but done outside of GL.
+    // Test strides with different input types, component counts and storage, Usage(?)
+    Array::InputType inputTypes[] = {Array::INPUTTYPE_FLOAT, Array::INPUTTYPE_BYTE, Array::INPUTTYPE_FIXED};
+    int counts[]                  = {1, 256};
+    int offsets[]                 = {1, 4, 17, 32};
+    int strides[] = {/*0,*/ -1, 17, 32}; // Tread negative value as sizeof input. Same as 0, but done outside of GL.
 
-	for (int inputTypeNdx = 0; inputTypeNdx < DE_LENGTH_OF_ARRAY(inputTypes); inputTypeNdx++)
-	{
-		for (int offsetNdx = 0; offsetNdx < DE_LENGTH_OF_ARRAY(offsets); offsetNdx++)
-		{
-			for (int countNdx = 0; countNdx < DE_LENGTH_OF_ARRAY(counts); countNdx++)
-			{
-				for (int strideNdx = 0; strideNdx < DE_LENGTH_OF_ARRAY(strides); strideNdx++)
-				{
-					const int	stride	= (strides[strideNdx] < 0 ? Array::inputTypeSize(inputTypes[inputTypeNdx]) * 2 : strides[strideNdx]);
-					const bool	aligned	= ((stride % Array::inputTypeSize(inputTypes[inputTypeNdx])) == 0) && ((offsets[offsetNdx] % Array::inputTypeSize(inputTypes[inputTypeNdx])) == 0);
+    for (int inputTypeNdx = 0; inputTypeNdx < DE_LENGTH_OF_ARRAY(inputTypes); inputTypeNdx++)
+    {
+        for (int offsetNdx = 0; offsetNdx < DE_LENGTH_OF_ARRAY(offsets); offsetNdx++)
+        {
+            for (int countNdx = 0; countNdx < DE_LENGTH_OF_ARRAY(counts); countNdx++)
+            {
+                for (int strideNdx = 0; strideNdx < DE_LENGTH_OF_ARRAY(strides); strideNdx++)
+                {
+                    const int stride   = (strides[strideNdx] < 0 ? Array::inputTypeSize(inputTypes[inputTypeNdx]) * 2 :
+                                                                   strides[strideNdx]);
+                    const bool aligned = ((stride % Array::inputTypeSize(inputTypes[inputTypeNdx])) == 0) &&
+                                         ((offsets[offsetNdx] % Array::inputTypeSize(inputTypes[inputTypeNdx])) == 0);
 
-					MultiVertexArrayTest::Spec::ArraySpec arraySpec(inputTypes[inputTypeNdx],
-																	Array::OUTPUTTYPE_VEC2,
-																	Array::STORAGE_BUFFER,
-																	Array::USAGE_DYNAMIC_DRAW,
-																	2,
-																	offsets[offsetNdx],
-																	stride,
-																	false,
-																	GLValue::getMinValue(inputTypes[inputTypeNdx]),
-																	GLValue::getMaxValue(inputTypes[inputTypeNdx]));
+                    MultiVertexArrayTest::Spec::ArraySpec arraySpec(
+                        inputTypes[inputTypeNdx], Array::OUTPUTTYPE_VEC2, Array::STORAGE_BUFFER,
+                        Array::USAGE_DYNAMIC_DRAW, 2, offsets[offsetNdx], stride, false,
+                        GLValue::getMinValue(inputTypes[inputTypeNdx]), GLValue::getMaxValue(inputTypes[inputTypeNdx]));
 
-					MultiVertexArrayTest::Spec spec;
-					spec.primitive	= Array::PRIMITIVE_TRIANGLES;
-					spec.drawCount	= counts[countNdx];
-					spec.first		= 0;
-					spec.arrays.push_back(arraySpec);
+                    MultiVertexArrayTest::Spec spec;
+                    spec.primitive = Array::PRIMITIVE_TRIANGLES;
+                    spec.drawCount = counts[countNdx];
+                    spec.first     = 0;
+                    spec.arrays.push_back(arraySpec);
 
-					std::string name = spec.getName();
-					if (!aligned)
-						addChild(new MultiVertexArrayTest(m_testCtx, m_context.getRenderContext(), spec, name.c_str(), name.c_str()));
-				}
-			}
-		}
-	}
+                    std::string name = spec.getName();
+                    if (!aligned)
+                        addChild(new MultiVertexArrayTest(m_testCtx, m_context.getRenderContext(), spec, name.c_str(),
+                                                          name.c_str()));
+                }
+            }
+        }
+    }
 }
 
-} // anonymous
+} // namespace
 
-VertexArrayTests::VertexArrayTests (Context& context)
-	: TestCaseGroup(context, "vertex_arrays", "Vertex array and array tests")
+VertexArrayTests::VertexArrayTests(Context &context)
+    : TestCaseGroup(context, "vertex_arrays", "Vertex array and array tests")
 {
 }
 
-VertexArrayTests::~VertexArrayTests (void)
+VertexArrayTests::~VertexArrayTests(void)
 {
 }
 
-void VertexArrayTests::init (void)
+void VertexArrayTests::init(void)
 {
-	tcu::TestCaseGroup* const group = new tcu::TestCaseGroup(m_testCtx, "single_attribute", "Single attribute");
-	addChild(group);
+    tcu::TestCaseGroup *const group = new tcu::TestCaseGroup(m_testCtx, "single_attribute", "Single attribute");
+    addChild(group);
 
-	// .single_attribute
-	{
-		group->addChild(new SingleVertexArrayStrideTests(m_context));
-		group->addChild(new SingleVertexArrayUsageTests(m_context));
-		group->addChild(new SingleVertexArrayOffsetTests(m_context));
-		group->addChild(new SingleVertexArrayFirstTests(m_context));
-	}
+    // .single_attribute
+    {
+        group->addChild(new SingleVertexArrayStrideTests(m_context));
+        group->addChild(new SingleVertexArrayUsageTests(m_context));
+        group->addChild(new SingleVertexArrayOffsetTests(m_context));
+        group->addChild(new SingleVertexArrayFirstTests(m_context));
+    }
 }
 
-} // Stress
-} // gles2
-} // deqp
+} // namespace Stress
+} // namespace gles2
+} // namespace deqp

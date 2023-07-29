@@ -25,10 +25,11 @@
 
 #import "tcuIOSApp.h"
 
-@interface tcuIOSViewController : UIViewController {
-    BOOL			isIterating;
-    CADisplayLink*	displayLink;
-	tcuIOSApp*		app;
+@interface tcuIOSViewController : UIViewController
+{
+    BOOL isIterating;
+    CADisplayLink *displayLink;
+    tcuIOSApp *app;
 }
 
 - (void)startTestIteration;

@@ -32,10 +32,10 @@ namespace vkt
 namespace sr
 {
 
-tcu::TestCaseGroup*	createDiscardTests	(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*	createDemoteTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDiscardTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createDemoteTests(tcu::TestContext &testCtx);
 
-} // sr
-} // vkt
+} // namespace sr
+} // namespace vkt
 
 #endif // _VKTSHADERRENDERDISCARDTESTS_HPP

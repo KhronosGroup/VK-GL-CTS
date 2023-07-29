@@ -35,18 +35,18 @@ namespace Functional
 class ShaderDerivateTests : public TestCaseGroup
 {
 public:
-							ShaderDerivateTests		(Context& context);
-	virtual					~ShaderDerivateTests	(void);
+    ShaderDerivateTests(Context &context);
+    virtual ~ShaderDerivateTests(void);
 
-	virtual void			init					(void);
+    virtual void init(void);
 
 private:
-							ShaderDerivateTests		(const ShaderDerivateTests&);		// not allowed!
-	ShaderDerivateTests&	operator=				(const ShaderDerivateTests&);		// not allowed!
+    ShaderDerivateTests(const ShaderDerivateTests &);            // not allowed!
+    ShaderDerivateTests &operator=(const ShaderDerivateTests &); // not allowed!
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FSHADERDERIVATETESTS_HPP

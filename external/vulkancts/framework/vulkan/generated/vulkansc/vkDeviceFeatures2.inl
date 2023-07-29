@@ -5,13 +5,13 @@
 
 tcu::TestStatus testPhysicalDeviceFeature4444FormatsFeaturesEXT (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDevice4444FormatsFeaturesEXT	device4444FormatsFeaturesEXT[count];
 	const bool								is4444FormatsFeaturesEXT = checkExtension(properties, "VK_EXT_4444_formats");
@@ -43,13 +43,13 @@ tcu::TestStatus testPhysicalDeviceFeature4444FormatsFeaturesEXT (Context& contex
 
 tcu::TestStatus testPhysicalDeviceFeature8BitStorageFeatures (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDevice8BitStorageFeatures	device8BitStorageFeatures[count];
 	const bool							is8BitStorageFeatures = context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
@@ -82,13 +82,13 @@ tcu::TestStatus testPhysicalDeviceFeature8BitStorageFeatures (Context& context)
 
 tcu::TestStatus testPhysicalDeviceFeature16BitStorageFeatures (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDevice16BitStorageFeatures	device16BitStorageFeatures[count];
 	const bool								is16BitStorageFeatures = context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
@@ -122,13 +122,13 @@ tcu::TestStatus testPhysicalDeviceFeature16BitStorageFeatures (Context& context)
 
 tcu::TestStatus testPhysicalDeviceFeatureASTCDecodeFeaturesEXT (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceASTCDecodeFeaturesEXT	deviceASTCDecodeFeaturesEXT[count];
 	const bool								isASTCDecodeFeaturesEXT = checkExtension(properties, "VK_EXT_astc_decode_mode");
@@ -159,13 +159,13 @@ tcu::TestStatus testPhysicalDeviceFeatureASTCDecodeFeaturesEXT (Context& context
 
 tcu::TestStatus testPhysicalDeviceFeatureBlendOperationAdvancedFeaturesEXT (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT	deviceBlendOperationAdvancedFeaturesEXT[count];
 	const bool											isBlendOperationAdvancedFeaturesEXT = checkExtension(properties, "VK_EXT_blend_operation_advanced");
@@ -196,13 +196,13 @@ tcu::TestStatus testPhysicalDeviceFeatureBlendOperationAdvancedFeaturesEXT (Cont
 
 tcu::TestStatus testPhysicalDeviceFeatureBufferDeviceAddressFeatures (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceBufferDeviceAddressFeatures	deviceBufferDeviceAddressFeatures[count];
 	const bool									isBufferDeviceAddressFeatures = context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
@@ -235,13 +235,13 @@ tcu::TestStatus testPhysicalDeviceFeatureBufferDeviceAddressFeatures (Context& c
 
 tcu::TestStatus testPhysicalDeviceFeatureCustomBorderColorFeaturesEXT (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceCustomBorderColorFeaturesEXT	deviceCustomBorderColorFeaturesEXT[count];
 	const bool										isCustomBorderColorFeaturesEXT = checkExtension(properties, "VK_EXT_custom_border_color");
@@ -273,13 +273,13 @@ tcu::TestStatus testPhysicalDeviceFeatureCustomBorderColorFeaturesEXT (Context& 
 
 tcu::TestStatus testPhysicalDeviceFeatureColorWriteEnableFeaturesEXT (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceColorWriteEnableFeaturesEXT	deviceColorWriteEnableFeaturesEXT[count];
 	const bool									isColorWriteEnableFeaturesEXT = checkExtension(properties, "VK_EXT_color_write_enable");
@@ -310,13 +310,13 @@ tcu::TestStatus testPhysicalDeviceFeatureColorWriteEnableFeaturesEXT (Context& c
 
 tcu::TestStatus testPhysicalDeviceFeatureDescriptorIndexingFeatures (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceDescriptorIndexingFeatures	deviceDescriptorIndexingFeatures[count];
 	const bool									isDescriptorIndexingFeatures = context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
@@ -366,13 +366,13 @@ tcu::TestStatus testPhysicalDeviceFeatureDescriptorIndexingFeatures (Context& co
 
 tcu::TestStatus testPhysicalDeviceFeatureDepthClipEnableFeaturesEXT (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceDepthClipEnableFeaturesEXT	deviceDepthClipEnableFeaturesEXT[count];
 	const bool									isDepthClipEnableFeaturesEXT = checkExtension(properties, "VK_EXT_depth_clip_enable");
@@ -403,13 +403,13 @@ tcu::TestStatus testPhysicalDeviceFeatureDepthClipEnableFeaturesEXT (Context& co
 
 tcu::TestStatus testPhysicalDeviceFeatureExtendedDynamicStateFeaturesEXT (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceExtendedDynamicStateFeaturesEXT	deviceExtendedDynamicStateFeaturesEXT[count];
 	const bool										isExtendedDynamicStateFeaturesEXT = checkExtension(properties, "VK_EXT_extended_dynamic_state");
@@ -440,13 +440,13 @@ tcu::TestStatus testPhysicalDeviceFeatureExtendedDynamicStateFeaturesEXT (Contex
 
 tcu::TestStatus testPhysicalDeviceFeatureExtendedDynamicState2FeaturesEXT (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceExtendedDynamicState2FeaturesEXT	deviceExtendedDynamicState2FeaturesEXT[count];
 	const bool											isExtendedDynamicState2FeaturesEXT = checkExtension(properties, "VK_EXT_extended_dynamic_state2");
@@ -479,13 +479,13 @@ tcu::TestStatus testPhysicalDeviceFeatureExtendedDynamicState2FeaturesEXT (Conte
 
 tcu::TestStatus testPhysicalDeviceFeatureFragmentShadingRateFeaturesKHR (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceFragmentShadingRateFeaturesKHR	deviceFragmentShadingRateFeaturesKHR[count];
 	const bool										isFragmentShadingRateFeaturesKHR = checkExtension(properties, "VK_KHR_fragment_shading_rate");
@@ -518,13 +518,13 @@ tcu::TestStatus testPhysicalDeviceFeatureFragmentShadingRateFeaturesKHR (Context
 
 tcu::TestStatus testPhysicalDeviceFeatureIndexTypeUint8FeaturesEXT (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceIndexTypeUint8FeaturesEXT	deviceIndexTypeUint8FeaturesEXT[count];
 	const bool									isIndexTypeUint8FeaturesEXT = checkExtension(properties, "VK_EXT_index_type_uint8");
@@ -555,13 +555,13 @@ tcu::TestStatus testPhysicalDeviceFeatureIndexTypeUint8FeaturesEXT (Context& con
 
 tcu::TestStatus testPhysicalDeviceFeatureImagelessFramebufferFeatures (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceImagelessFramebufferFeatures	deviceImagelessFramebufferFeatures[count];
 	const bool										isImagelessFramebufferFeatures = context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
@@ -592,13 +592,13 @@ tcu::TestStatus testPhysicalDeviceFeatureImagelessFramebufferFeatures (Context& 
 
 tcu::TestStatus testPhysicalDeviceFeatureHostQueryResetFeatures (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceHostQueryResetFeatures	deviceHostQueryResetFeatures[count];
 	const bool								isHostQueryResetFeatures = context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
@@ -629,13 +629,13 @@ tcu::TestStatus testPhysicalDeviceFeatureHostQueryResetFeatures (Context& contex
 
 tcu::TestStatus testPhysicalDeviceFeatureLineRasterizationFeaturesEXT (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceLineRasterizationFeaturesEXT	deviceLineRasterizationFeaturesEXT[count];
 	const bool										isLineRasterizationFeaturesEXT = checkExtension(properties, "VK_EXT_line_rasterization");
@@ -671,13 +671,13 @@ tcu::TestStatus testPhysicalDeviceFeatureLineRasterizationFeaturesEXT (Context& 
 
 tcu::TestStatus testPhysicalDeviceFeatureMultiviewFeatures (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceMultiviewFeatures	deviceMultiviewFeatures[count];
 	const bool							isMultiviewFeatures = context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
@@ -710,13 +710,13 @@ tcu::TestStatus testPhysicalDeviceFeatureMultiviewFeatures (Context& context)
 
 tcu::TestStatus testPhysicalDeviceFeaturePerformanceQueryFeaturesKHR (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDevicePerformanceQueryFeaturesKHR	devicePerformanceQueryFeaturesKHR[count];
 	const bool									isPerformanceQueryFeaturesKHR = checkExtension(properties, "VK_KHR_performance_query");
@@ -748,13 +748,13 @@ tcu::TestStatus testPhysicalDeviceFeaturePerformanceQueryFeaturesKHR (Context& c
 
 tcu::TestStatus testPhysicalDeviceFeatureProtectedMemoryFeatures (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceProtectedMemoryFeatures	deviceProtectedMemoryFeatures[count];
 	const bool								isProtectedMemoryFeatures = context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
@@ -785,13 +785,13 @@ tcu::TestStatus testPhysicalDeviceFeatureProtectedMemoryFeatures (Context& conte
 
 tcu::TestStatus testPhysicalDeviceFeatureRobustness2FeaturesEXT (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceRobustness2FeaturesEXT	deviceRobustness2FeaturesEXT[count];
 	const bool								isRobustness2FeaturesEXT = checkExtension(properties, "VK_EXT_robustness2");
@@ -824,13 +824,13 @@ tcu::TestStatus testPhysicalDeviceFeatureRobustness2FeaturesEXT (Context& contex
 
 tcu::TestStatus testPhysicalDeviceFeatureSamplerYcbcrConversionFeatures (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceSamplerYcbcrConversionFeatures	deviceSamplerYcbcrConversionFeatures[count];
 	const bool										isSamplerYcbcrConversionFeatures = context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
@@ -861,13 +861,13 @@ tcu::TestStatus testPhysicalDeviceFeatureSamplerYcbcrConversionFeatures (Context
 
 tcu::TestStatus testPhysicalDeviceFeatureScalarBlockLayoutFeatures (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceScalarBlockLayoutFeatures	deviceScalarBlockLayoutFeatures[count];
 	const bool									isScalarBlockLayoutFeatures = context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
@@ -898,13 +898,13 @@ tcu::TestStatus testPhysicalDeviceFeatureScalarBlockLayoutFeatures (Context& con
 
 tcu::TestStatus testPhysicalDeviceFeatureSeparateDepthStencilLayoutsFeatures (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures	deviceSeparateDepthStencilLayoutsFeatures[count];
 	const bool											isSeparateDepthStencilLayoutsFeatures = context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
@@ -935,13 +935,13 @@ tcu::TestStatus testPhysicalDeviceFeatureSeparateDepthStencilLayoutsFeatures (Co
 
 tcu::TestStatus testPhysicalDeviceFeatureShaderAtomicInt64Features (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceShaderAtomicInt64Features	deviceShaderAtomicInt64Features[count];
 	const bool									isShaderAtomicInt64Features = context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
@@ -973,13 +973,13 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderAtomicInt64Features (Context& con
 
 tcu::TestStatus testPhysicalDeviceFeatureShaderAtomicFloatFeaturesEXT (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceShaderAtomicFloatFeaturesEXT	deviceShaderAtomicFloatFeaturesEXT[count];
 	const bool										isShaderAtomicFloatFeaturesEXT = checkExtension(properties, "VK_EXT_shader_atomic_float");
@@ -1021,13 +1021,13 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderAtomicFloatFeaturesEXT (Context& 
 
 tcu::TestStatus testPhysicalDeviceFeatureShaderFloat16Int8Features (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceShaderFloat16Int8Features	deviceShaderFloat16Int8Features[count];
 	const bool									isShaderFloat16Int8Features = context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
@@ -1059,13 +1059,13 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderFloat16Int8Features (Context& con
 
 tcu::TestStatus testPhysicalDeviceFeatureShaderClockFeaturesKHR (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceShaderClockFeaturesKHR	deviceShaderClockFeaturesKHR[count];
 	const bool								isShaderClockFeaturesKHR = checkExtension(properties, "VK_KHR_shader_clock");
@@ -1097,13 +1097,13 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderClockFeaturesKHR (Context& contex
 
 tcu::TestStatus testPhysicalDeviceFeatureShaderDrawParametersFeatures (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceShaderDrawParametersFeatures	deviceShaderDrawParametersFeatures[count];
 	const bool										isShaderDrawParametersFeatures = context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
@@ -1134,13 +1134,13 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderDrawParametersFeatures (Context& 
 
 tcu::TestStatus testPhysicalDeviceFeatureShaderSubgroupExtendedTypesFeatures (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures	deviceShaderSubgroupExtendedTypesFeatures[count];
 	const bool											isShaderSubgroupExtendedTypesFeatures = context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
@@ -1171,13 +1171,13 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderSubgroupExtendedTypesFeatures (Co
 
 tcu::TestStatus testPhysicalDeviceFeatureFragmentShaderInterlockFeaturesEXT (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT	deviceFragmentShaderInterlockFeaturesEXT[count];
 	const bool											isFragmentShaderInterlockFeaturesEXT = checkExtension(properties, "VK_EXT_fragment_shader_interlock");
@@ -1210,13 +1210,13 @@ tcu::TestStatus testPhysicalDeviceFeatureFragmentShaderInterlockFeaturesEXT (Con
 
 tcu::TestStatus testPhysicalDeviceFeatureTexelBufferAlignmentFeaturesEXT (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT	deviceTexelBufferAlignmentFeaturesEXT[count];
 	const bool										isTexelBufferAlignmentFeaturesEXT = checkExtension(properties, "VK_EXT_texel_buffer_alignment");
@@ -1247,13 +1247,13 @@ tcu::TestStatus testPhysicalDeviceFeatureTexelBufferAlignmentFeaturesEXT (Contex
 
 tcu::TestStatus testPhysicalDeviceFeatureTimelineSemaphoreFeatures (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceTimelineSemaphoreFeatures	deviceTimelineSemaphoreFeatures[count];
 	const bool									isTimelineSemaphoreFeatures = context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
@@ -1284,13 +1284,13 @@ tcu::TestStatus testPhysicalDeviceFeatureTimelineSemaphoreFeatures (Context& con
 
 tcu::TestStatus testPhysicalDeviceFeatureUniformBufferStandardLayoutFeatures (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceUniformBufferStandardLayoutFeatures	deviceUniformBufferStandardLayoutFeatures[count];
 	const bool											isUniformBufferStandardLayoutFeatures = context.contextSupports(vk::ApiVersion(0, 1, 2, 0));
@@ -1321,13 +1321,13 @@ tcu::TestStatus testPhysicalDeviceFeatureUniformBufferStandardLayoutFeatures (Co
 
 tcu::TestStatus testPhysicalDeviceFeatureVariablePointersFeatures (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceVariablePointersFeatures	deviceVariablePointersFeatures[count];
 	const bool									isVariablePointersFeatures = context.contextSupports(vk::ApiVersion(0, 1, 1, 0));
@@ -1359,13 +1359,13 @@ tcu::TestStatus testPhysicalDeviceFeatureVariablePointersFeatures (Context& cont
 
 tcu::TestStatus testPhysicalDeviceFeatureVertexAttributeDivisorFeaturesEXT (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT	deviceVertexAttributeDivisorFeaturesEXT[count];
 	const bool											isVertexAttributeDivisorFeaturesEXT = checkExtension(properties, "VK_EXT_vertex_attribute_divisor");
@@ -1397,13 +1397,13 @@ tcu::TestStatus testPhysicalDeviceFeatureVertexAttributeDivisorFeaturesEXT (Cont
 
 tcu::TestStatus testPhysicalDeviceFeatureVertexInputDynamicStateFeaturesEXT (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT	deviceVertexInputDynamicStateFeaturesEXT[count];
 	const bool											isVertexInputDynamicStateFeaturesEXT = checkExtension(properties, "VK_EXT_vertex_input_dynamic_state");
@@ -1434,13 +1434,13 @@ tcu::TestStatus testPhysicalDeviceFeatureVertexInputDynamicStateFeaturesEXT (Con
 
 tcu::TestStatus testPhysicalDeviceFeatureYcbcrImageArraysFeaturesEXT (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceYcbcrImageArraysFeaturesEXT	deviceYcbcrImageArraysFeaturesEXT[count];
 	const bool									isYcbcrImageArraysFeaturesEXT = checkExtension(properties, "VK_EXT_ycbcr_image_arrays");
@@ -1471,13 +1471,13 @@ tcu::TestStatus testPhysicalDeviceFeatureYcbcrImageArraysFeaturesEXT (Context& c
 
 tcu::TestStatus testPhysicalDeviceFeatureYcbcr2Plane444FormatsFeaturesEXT (Context& context)
 {
-	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&		vki				(instance.getDriver());
-	const int					count			= 2u;
-	TestLog&					log				= context.getTestContext().getLog();
-	VkPhysicalDeviceFeatures2	extFeatures;
-	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT	deviceYcbcr2Plane444FormatsFeaturesEXT[count];
 	const bool											isYcbcr2Plane444FormatsFeaturesEXT = checkExtension(properties, "VK_EXT_ycbcr_2plane_444_formats");

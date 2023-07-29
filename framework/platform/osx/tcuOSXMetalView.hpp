@@ -31,21 +31,24 @@ namespace osx
 class MetalView
 {
 public:
-				MetalView			(int width, int height);
-				~MetalView			(void);
+    MetalView(int width, int height);
+    ~MetalView(void);
 
-	void		setSize				(int width, int height);
+    void setSize(int width, int height);
 
-	void*		getView				(void) const { return m_view;	}
+    void *getView(void) const
+    {
+        return m_view;
+    }
 
 private:
-				MetalView			(const MetalView&);
-	MetalView	operator=			(const MetalView&);
+    MetalView(const MetalView &);
+    MetalView operator=(const MetalView &);
 
-	void*		m_view;
+    void *m_view;
 };
 
-} // osx
-} // tcu
+} // namespace osx
+} // namespace tcu
 
 #endif // _TCUOSXMETALVIEW_HPP

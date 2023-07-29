@@ -32,9 +32,9 @@ namespace vkt
 namespace wsi
 {
 
-void	createSwapchainTests	(tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType);
+void createSwapchainTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType);
 
-} // wsi
-} // vkt
+} // namespace wsi
+} // namespace vkt
 
 #endif // _VKTWSISWAPCHAINTESTS_HPP

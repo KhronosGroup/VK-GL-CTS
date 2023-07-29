@@ -31,9 +31,9 @@ namespace vkt
 namespace BindingModel
 {
 
-tcu::TestCaseGroup* createDescriptorValveMutableTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDescriptorValveMutableTests(tcu::TestContext &testCtx);
 
-} // BindingModel
-} // vkt
+} // namespace BindingModel
+} // namespace vkt
 
 #endif // _VKTBINDINGVALVEMUTABLETESTS_HPP

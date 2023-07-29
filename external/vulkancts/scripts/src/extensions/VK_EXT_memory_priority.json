@@ -1,9 +1,16 @@
 {
-	"mandatory_features":
-	{
-		"VkPhysicalDeviceMemoryPriorityFeaturesEXT":
-		[
-			{ "features": ["memoryPriority"],		"requirements": ["VK_EXT_memory_priority"] }
-		]
-	}
+    "mandatory_features":
+        {
+            "VkPhysicalDeviceMemoryPriorityFeaturesEXT":
+                [
+                    {
+                        "features": [
+                            "memoryPriority"
+                        ],
+                        "requirements": [
+                            "VK_EXT_memory_priority"
+                        ]
+                    }
+                ]
+        }
 }
