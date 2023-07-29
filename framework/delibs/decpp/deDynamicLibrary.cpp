@@ -29,28 +29,26 @@
 namespace de
 {
 
-DynamicLibrary::DynamicLibrary (const char* fileName)
-	: m_library(DE_NULL)
+DynamicLibrary::DynamicLibrary(const char *fileName) : m_library(DE_NULL)
 {
-	m_library = deDynamicLibrary_open(fileName);
-	if (!m_library)
-		throw std::runtime_error(std::string("Failed to open dynamic library: '") + fileName + "'");
+    m_library = deDynamicLibrary_open(fileName);
+    if (!m_library)
+        throw std::runtime_error(std::string("Failed to open dynamic library: '") + fileName + "'");
 }
 
-DynamicLibrary::DynamicLibrary (const char* fileNames[])
-	: m_library(DE_NULL)
+DynamicLibrary::DynamicLibrary(const char *fileNames[]) : m_library(DE_NULL)
 {
-	for (int i = 0; !m_library && fileNames[i]; i++)
-	{
-		m_library = deDynamicLibrary_open(fileNames[i]);
-		if (!m_library)
-			throw std::runtime_error(std::string("Failed to open dynamic library: '") + fileNames[0] + "'");
-	}
+    for (int i = 0; !m_library && fileNames[i]; i++)
+    {
+        m_library = deDynamicLibrary_open(fileNames[i]);
+        if (!m_library)
+            throw std::runtime_error(std::string("Failed to open dynamic library: '") + fileNames[0] + "'");
+    }
 }
 
-DynamicLibrary::~DynamicLibrary (void)
+DynamicLibrary::~DynamicLibrary(void)
 {
-	deDynamicLibrary_close(m_library);
+    deDynamicLibrary_close(m_library);
 }
 
-} // de
+} // namespace de

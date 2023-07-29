@@ -35,21 +35,21 @@ namespace win32
 class VulkanPlatform : public vk::Platform
 {
 public:
-						VulkanPlatform		(HINSTANCE instance);
-						~VulkanPlatform		(void);
+    VulkanPlatform(HINSTANCE instance);
+    ~VulkanPlatform(void);
 
-	vk::Library*		createLibrary		(void) const;
-	vk::wsi::Display*	createWsiDisplay	(vk::wsi::Type wsiType) const;
-	bool				hasDisplay	(vk::wsi::Type wsiType) const;
+    vk::Library *createLibrary(void) const;
+    vk::wsi::Display *createWsiDisplay(vk::wsi::Type wsiType) const;
+    bool hasDisplay(vk::wsi::Type wsiType) const;
 
-	void				getMemoryLimits		(vk::PlatformMemoryLimits& limits) const;
-	void				describePlatform	(std::ostream& dst) const;
+    void getMemoryLimits(vk::PlatformMemoryLimits &limits) const;
+    void describePlatform(std::ostream &dst) const;
 
 private:
-	const HINSTANCE		m_instance;
+    const HINSTANCE m_instance;
 };
 
-} // win32
-} // tcu
+} // namespace win32
+} // namespace tcu
 
 #endif // _TCUWIN32VULKANPLATFORM_HPP

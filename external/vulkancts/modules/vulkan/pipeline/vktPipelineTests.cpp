@@ -68,53 +68,53 @@ namespace pipeline
 namespace
 {
 
-void createChildren (tcu::TestCaseGroup* pipelineTests)
+void createChildren(tcu::TestCaseGroup *pipelineTests)
 {
-	tcu::TestContext&	testCtx	= pipelineTests->getTestContext();
+    tcu::TestContext &testCtx = pipelineTests->getTestContext();
 
-	pipelineTests->addChild(createStencilTests					(testCtx));
-	pipelineTests->addChild(createBlendTests					(testCtx));
-	pipelineTests->addChild(createDepthTests					(testCtx));
-	pipelineTests->addChild(createDynamicOffsetTests			(testCtx));
-	pipelineTests->addChild(createEarlyDestroyTests				(testCtx));
-	pipelineTests->addChild(createImageTests					(testCtx));
-	pipelineTests->addChild(createSamplerTests					(testCtx));
-	pipelineTests->addChild(createImageViewTests				(testCtx));
-	pipelineTests->addChild(createLogicOpTests					(testCtx));
-	pipelineTests->addChild(createPushConstantTests				(testCtx));
-	pipelineTests->addChild(createPushDescriptorTests			(testCtx));
-	pipelineTests->addChild(createSpecConstantTests				(testCtx));
-	pipelineTests->addChild(createMatchedAttachmentsTests		(testCtx));
-	pipelineTests->addChild(createMultisampleTests				(testCtx));
-	pipelineTests->addChild(createMultisampleInterpolationTests	(testCtx));
-	pipelineTests->addChild(createMultisampleShaderBuiltInTests	(testCtx));
-	pipelineTests->addChild(createTestGroup						(testCtx,	"vertex_input", "", createVertexInputTests));
-	pipelineTests->addChild(createInputAssemblyTests			(testCtx));
-	pipelineTests->addChild(createTimestampTests				(testCtx));
-	pipelineTests->addChild(createCacheTests					(testCtx));
-	pipelineTests->addChild(createRenderToImageTests			(testCtx));
-	pipelineTests->addChild(createFramebufferAttachmentTests	(testCtx));
-	pipelineTests->addChild(createStencilExportTests			(testCtx));
-	pipelineTests->addChild(createDerivativeTests				(testCtx));
-	pipelineTests->addChild(createCreationFeedbackTests			(testCtx));
-	pipelineTests->addChild(createDepthRangeUnrestrictedTests	(testCtx));
-	pipelineTests->addChild(createExecutablePropertiesTests		(testCtx));
-	pipelineTests->addChild(createMiscTests						(testCtx));
-	pipelineTests->addChild(createMaxVaryingsTests				(testCtx));
-	pipelineTests->addChild(createBlendOperationAdvancedTests	(testCtx));
-	pipelineTests->addChild(createExtendedDynamicStateTests		(testCtx));
-	pipelineTests->addChild(createCacheControlTests				(testCtx));
-	pipelineTests->addChild(createNoPositionTests				(testCtx));
-	pipelineTests->addChild(createBindPointTests				(testCtx));
-	pipelineTests->addChild(createColorWriteEnableTests			(testCtx));
+    pipelineTests->addChild(createStencilTests(testCtx));
+    pipelineTests->addChild(createBlendTests(testCtx));
+    pipelineTests->addChild(createDepthTests(testCtx));
+    pipelineTests->addChild(createDynamicOffsetTests(testCtx));
+    pipelineTests->addChild(createEarlyDestroyTests(testCtx));
+    pipelineTests->addChild(createImageTests(testCtx));
+    pipelineTests->addChild(createSamplerTests(testCtx));
+    pipelineTests->addChild(createImageViewTests(testCtx));
+    pipelineTests->addChild(createLogicOpTests(testCtx));
+    pipelineTests->addChild(createPushConstantTests(testCtx));
+    pipelineTests->addChild(createPushDescriptorTests(testCtx));
+    pipelineTests->addChild(createSpecConstantTests(testCtx));
+    pipelineTests->addChild(createMatchedAttachmentsTests(testCtx));
+    pipelineTests->addChild(createMultisampleTests(testCtx));
+    pipelineTests->addChild(createMultisampleInterpolationTests(testCtx));
+    pipelineTests->addChild(createMultisampleShaderBuiltInTests(testCtx));
+    pipelineTests->addChild(createTestGroup(testCtx, "vertex_input", "", createVertexInputTests));
+    pipelineTests->addChild(createInputAssemblyTests(testCtx));
+    pipelineTests->addChild(createTimestampTests(testCtx));
+    pipelineTests->addChild(createCacheTests(testCtx));
+    pipelineTests->addChild(createRenderToImageTests(testCtx));
+    pipelineTests->addChild(createFramebufferAttachmentTests(testCtx));
+    pipelineTests->addChild(createStencilExportTests(testCtx));
+    pipelineTests->addChild(createDerivativeTests(testCtx));
+    pipelineTests->addChild(createCreationFeedbackTests(testCtx));
+    pipelineTests->addChild(createDepthRangeUnrestrictedTests(testCtx));
+    pipelineTests->addChild(createExecutablePropertiesTests(testCtx));
+    pipelineTests->addChild(createMiscTests(testCtx));
+    pipelineTests->addChild(createMaxVaryingsTests(testCtx));
+    pipelineTests->addChild(createBlendOperationAdvancedTests(testCtx));
+    pipelineTests->addChild(createExtendedDynamicStateTests(testCtx));
+    pipelineTests->addChild(createCacheControlTests(testCtx));
+    pipelineTests->addChild(createNoPositionTests(testCtx));
+    pipelineTests->addChild(createBindPointTests(testCtx));
+    pipelineTests->addChild(createColorWriteEnableTests(testCtx));
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "pipeline", "Pipeline Tests", createChildren);
+    return createTestGroup(testCtx, "pipeline", "Pipeline Tests", createChildren);
 }
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt

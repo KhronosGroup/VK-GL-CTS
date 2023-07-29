@@ -38,17 +38,17 @@ namespace glcts
 class ContextFlagsTests : public tcu::TestCaseGroup
 {
 public:
-	ContextFlagsTests(tcu::TestContext& testCtx, glu::ApiType apiType);
+    ContextFlagsTests(tcu::TestContext &testCtx, glu::ApiType apiType);
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	ContextFlagsTests(const ContextFlagsTests& other);
-	ContextFlagsTests& operator=(const ContextFlagsTests& other);
+    ContextFlagsTests(const ContextFlagsTests &other);
+    ContextFlagsTests &operator=(const ContextFlagsTests &other);
 
-	/* Private members */
-	glu::ApiType m_ApiType;
+    /* Private members */
+    glu::ApiType m_ApiType;
 };
-}
+} // namespace glcts
 
 #endif // _GLCCONTEXTFLAGSTESTS_HPP

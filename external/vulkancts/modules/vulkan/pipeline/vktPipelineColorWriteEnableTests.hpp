@@ -30,9 +30,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createColorWriteEnableTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createColorWriteEnableTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINECOLORWRITEENABLETESTS_HPP

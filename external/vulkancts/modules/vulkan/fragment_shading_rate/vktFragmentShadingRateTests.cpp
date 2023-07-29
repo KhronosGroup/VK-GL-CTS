@@ -35,20 +35,20 @@ namespace FragmentShadingRate
 namespace
 {
 
-void createChildren (tcu::TestCaseGroup* group)
+void createChildren(tcu::TestCaseGroup *group)
 {
-	tcu::TestContext&	testCtx		= group->getTestContext();
+    tcu::TestContext &testCtx = group->getTestContext();
 
-	createBasicTests		   (testCtx, group);
-	createPixelConsistencyTests(testCtx, group);
+    createBasicTests(testCtx, group);
+    createPixelConsistencyTests(testCtx, group);
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "fragment_shading_rate", "Fragment shading rate tests", createChildren);
+    return createTestGroup(testCtx, "fragment_shading_rate", "Fragment shading rate tests", createChildren);
 }
 
-} // FragmentShaderInterlock
-} // vkt
+} // namespace FragmentShadingRate
+} // namespace vkt

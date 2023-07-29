@@ -4,7 +4,7 @@
 static const struct
 {
 	std::string driver;
-	deUint32 id;
+	uint32_t id;
 } driverIds [] =
 {
 	{"VK_DRIVER_ID_AMD_PROPRIETARY", 1},

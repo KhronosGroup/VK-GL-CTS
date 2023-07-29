@@ -28,9 +28,9 @@
 
 namespace glu
 {
-	class RenderContext;
-	class ShaderProgram;
-} // glu
+class RenderContext;
+class ShaderProgram;
+} // namespace glu
 
 namespace deqp
 {
@@ -42,60 +42,53 @@ namespace TextureBufferCaseUtil
 
 enum ModifyBits
 {
-	MODIFYBITS_NONE					= 0,
-	MODIFYBITS_BUFFERDATA			= (0x1<<0),
-	MODIFYBITS_BUFFERSUBDATA		= (0x1<<1),
-	MODIFYBITS_MAPBUFFER_WRITE		= (0x1<<2),
-	MODIFYBITS_MAPBUFFER_READWRITE	= (0x1<<3),
+    MODIFYBITS_NONE                = 0,
+    MODIFYBITS_BUFFERDATA          = (0x1 << 0),
+    MODIFYBITS_BUFFERSUBDATA       = (0x1 << 1),
+    MODIFYBITS_MAPBUFFER_WRITE     = (0x1 << 2),
+    MODIFYBITS_MAPBUFFER_READWRITE = (0x1 << 3),
 };
 
 enum RenderBits
 {
-	RENDERBITS_NONE					= 0,
-	RENDERBITS_AS_VERTEX_ARRAY		= (0x1<<0),
-	RENDERBITS_AS_INDEX_ARRAY		= (0x1<<1),
-	RENDERBITS_AS_VERTEX_TEXTURE	= (0x1<<2),
-	RENDERBITS_AS_FRAGMENT_TEXTURE	= (0x1<<3)
+    RENDERBITS_NONE                = 0,
+    RENDERBITS_AS_VERTEX_ARRAY     = (0x1 << 0),
+    RENDERBITS_AS_INDEX_ARRAY      = (0x1 << 1),
+    RENDERBITS_AS_VERTEX_TEXTURE   = (0x1 << 2),
+    RENDERBITS_AS_FRAGMENT_TEXTURE = (0x1 << 3)
 };
 
-} // TextureBufferCaseUtil
+} // namespace TextureBufferCaseUtil
 
 class TextureBufferCase : public tcu::TestCase
 {
 public:
-					TextureBufferCase	(tcu::TestContext&					testCtx,
-										 glu::RenderContext&				renderCtx,
-										 deUint32							format,
-										 size_t								bufferSize,
-										 size_t								offset,
-										 size_t								size,
-										 TextureBufferCaseUtil::RenderBits	preRender,
-										 TextureBufferCaseUtil::ModifyBits	modify,
-										 TextureBufferCaseUtil::RenderBits	postRender,
-										 const char*						name,
-										 const char*						description);
+    TextureBufferCase(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, uint32_t format, size_t bufferSize,
+                      size_t offset, size_t size, TextureBufferCaseUtil::RenderBits preRender,
+                      TextureBufferCaseUtil::ModifyBits modify, TextureBufferCaseUtil::RenderBits postRender,
+                      const char *name, const char *description);
 
-					~TextureBufferCase	(void);
+    ~TextureBufferCase(void);
 
-	void			init				(void);
-	void			deinit				(void);
-	IterateResult	iterate				(void);
+    void init(void);
+    void deinit(void);
+    IterateResult iterate(void);
 
 private:
-	glu::RenderContext&						m_renderCtx;
-	const deUint32							m_format;
-	const size_t							m_bufferSize;
-	const size_t							m_offset;
-	const size_t							m_size;
-	const TextureBufferCaseUtil::RenderBits	m_preRender;
-	const TextureBufferCaseUtil::ModifyBits	m_modify;
-	const TextureBufferCaseUtil::RenderBits	m_postRender;
+    glu::RenderContext &m_renderCtx;
+    const uint32_t m_format;
+    const size_t m_bufferSize;
+    const size_t m_offset;
+    const size_t m_size;
+    const TextureBufferCaseUtil::RenderBits m_preRender;
+    const TextureBufferCaseUtil::ModifyBits m_modify;
+    const TextureBufferCaseUtil::RenderBits m_postRender;
 
-	glu::ShaderProgram*						m_preRenderProgram;
-	glu::ShaderProgram*						m_postRenderProgram;
+    glu::ShaderProgram *m_preRenderProgram;
+    glu::ShaderProgram *m_postRenderProgram;
 };
 
-} // gls
-} // deqp
+} // namespace gls
+} // namespace deqp
 
 #endif // _GLSTEXTUREBUFFERCASE_HPP

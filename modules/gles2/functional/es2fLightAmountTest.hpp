@@ -38,20 +38,20 @@ namespace Functional
 class LightAmountTest : public TestCaseGroup
 {
 public:
-							LightAmountTest		(Context& context);
-	virtual					~LightAmountTest	(void);
+    LightAmountTest(Context &context);
+    virtual ~LightAmountTest(void);
 
-	virtual void			init				(void);
+    virtual void init(void);
 
 private:
-							LightAmountTest		(const LightAmountTest&);		// not allowed!
-	LightAmountTest&		operator=			(const LightAmountTest&);		// not allowed!
+    LightAmountTest(const LightAmountTest &);            // not allowed!
+    LightAmountTest &operator=(const LightAmountTest &); // not allowed!
 
-	// Member variables.
+    // Member variables.
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FLIGHTAMOUNTTEST_HPP

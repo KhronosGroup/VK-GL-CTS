@@ -34,14 +34,15 @@ namespace DynamicState
 class DynamicStateInheritanceTests : public tcu::TestCaseGroup
 {
 public:
-	DynamicStateInheritanceTests (tcu::TestContext& testCtx);
-	void init (void);
+    DynamicStateInheritanceTests(tcu::TestContext &testCtx);
+    void init(void);
+
 private:
-	DynamicStateInheritanceTests (const DynamicStateInheritanceTests& other); // not implemented
-	DynamicStateInheritanceTests& operator= (const DynamicStateInheritanceTests& other); // not implemented
+    DynamicStateInheritanceTests(const DynamicStateInheritanceTests &other);            // not implemented
+    DynamicStateInheritanceTests &operator=(const DynamicStateInheritanceTests &other); // not implemented
 };
 
-} // DynamicState
-} // vkt
+} // namespace DynamicState
+} // namespace vkt
 
 #endif // _VKTDYNAMICSTATEINHERITANCETESTS_HPP

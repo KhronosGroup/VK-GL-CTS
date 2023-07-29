@@ -36,17 +36,17 @@ namespace Functional
 class CompressedTextureTests : public TestCaseGroup
 {
 public:
-								CompressedTextureTests		(Context& context);
-								~CompressedTextureTests		(void);
-	void						init						(void);
+    CompressedTextureTests(Context &context);
+    ~CompressedTextureTests(void);
+    void init(void);
 
 private:
-	CompressedTextureTests&		operator=					(const CompressedTextureTests&);
-								CompressedTextureTests		(const CompressedTextureTests&);
+    CompressedTextureTests &operator=(const CompressedTextureTests &);
+    CompressedTextureTests(const CompressedTextureTests &);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FCOMPRESSEDTEXTURETESTS_HPP

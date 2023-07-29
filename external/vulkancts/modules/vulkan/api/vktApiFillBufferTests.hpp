@@ -33,9 +33,9 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup*		createFillAndUpdateBufferTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createFillAndUpdateBufferTests(tcu::TestContext &testCtx);
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPIFILLBUFFERTESTS_HPP

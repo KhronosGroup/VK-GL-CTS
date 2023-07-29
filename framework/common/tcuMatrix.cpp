@@ -18,7 +18,7 @@
  *
  *//*!
  * \file
- * \brief	Templatized matrix class.
+ * \brief    Templatized matrix class.
  *//*--------------------------------------------------------------------*/
 
 #include "tcuMatrix.hpp"

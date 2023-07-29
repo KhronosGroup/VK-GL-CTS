@@ -34,56 +34,48 @@ namespace rsg
 class Sampler2D
 {
 public:
-	Sampler2D (void)
-		: m_texture	(DE_NULL)
-		, m_sampler	()
-	{
-	}
+    Sampler2D(void) : m_texture(DE_NULL), m_sampler()
+    {
+    }
 
-	Sampler2D (const tcu::Texture2D* texture, const tcu::Sampler& sampler)
-		: m_texture	(texture)
-		, m_sampler	(sampler)
-	{
-	}
+    Sampler2D(const tcu::Texture2D *texture, const tcu::Sampler &sampler) : m_texture(texture), m_sampler(sampler)
+    {
+    }
 
-	inline tcu::Vec4 sample (float s, float t, float lod) const
-	{
-		return m_texture->sample(m_sampler, s, t, lod);
-	}
+    inline tcu::Vec4 sample(float s, float t, float lod) const
+    {
+        return m_texture->sample(m_sampler, s, t, lod);
+    }
 
 private:
-	const tcu::Texture2D*		m_texture;
-	tcu::Sampler				m_sampler;
+    const tcu::Texture2D *m_texture;
+    tcu::Sampler m_sampler;
 };
 
 class SamplerCube
 {
 public:
-	SamplerCube (void)
-		: m_texture	(DE_NULL)
-		, m_sampler	()
-	{
-	}
+    SamplerCube(void) : m_texture(DE_NULL), m_sampler()
+    {
+    }
 
-	SamplerCube (const tcu::TextureCube* texture, const tcu::Sampler& sampler)
-		: m_texture	(texture)
-		, m_sampler	(sampler)
-	{
-	}
+    SamplerCube(const tcu::TextureCube *texture, const tcu::Sampler &sampler) : m_texture(texture), m_sampler(sampler)
+    {
+    }
 
-	inline tcu::Vec4 sample (float s, float t, float r, float lod) const
-	{
-		return m_texture->sample(m_sampler, s, t, r, lod);
-	}
+    inline tcu::Vec4 sample(float s, float t, float r, float lod) const
+    {
+        return m_texture->sample(m_sampler, s, t, r, lod);
+    }
 
 private:
-	const tcu::TextureCube*		m_texture;
-	tcu::Sampler				m_sampler;
+    const tcu::TextureCube *m_texture;
+    tcu::Sampler m_sampler;
 };
 
-typedef std::map<int, Sampler2D>	Sampler2DMap;
-typedef std::map<int, SamplerCube>	SamplerCubeMap;
+typedef std::map<int, Sampler2D> Sampler2DMap;
+typedef std::map<int, SamplerCube> SamplerCubeMap;
 
-} // rsg
+} // namespace rsg
 
 #endif // _RSGSAMPLERS_HPP

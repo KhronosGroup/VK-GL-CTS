@@ -31,9 +31,9 @@ namespace vkt
 namespace postmortem
 {
 
-tcu::TestCaseGroup* createShaderTimeoutTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createShaderTimeoutTests(tcu::TestContext &testCtx);
 
-} // postmortem
-} // vkt
+} // namespace postmortem
+} // namespace vkt
 
 #endif // _VKTPOSTMORTEMSHADERTIMEOUTTESTS_HPP

@@ -34,15 +34,15 @@ namespace egl
 class MutableRenderBufferTests : public TestCaseGroup
 {
 public:
-								MutableRenderBufferTests	(EglTestContext& eglTestCtx);
-	void						init						(void);
+    MutableRenderBufferTests(EglTestContext &eglTestCtx);
+    void init(void);
 
 private:
-								MutableRenderBufferTests	(const MutableRenderBufferTests&);
-	MutableRenderBufferTests&	operator=					(const MutableRenderBufferTests&);
+    MutableRenderBufferTests(const MutableRenderBufferTests &);
+    MutableRenderBufferTests &operator=(const MutableRenderBufferTests &);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLMUTABLERENDERBUFFERTESTS_HPP

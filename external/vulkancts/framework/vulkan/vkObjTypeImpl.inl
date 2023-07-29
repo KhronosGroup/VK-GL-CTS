@@ -3,7 +3,7 @@
  */
 namespace vk
 {
-template<typename T> VkObjectType getObjectType	(void);
+template<typename T> VkObjectType getObjectType    (void);
 template<> inline VkObjectType	getObjectType<VkBuffer>							(void) { return VK_OBJECT_TYPE_BUFFER;							}
 template<> inline VkObjectType	getObjectType<VkImage>							(void) { return VK_OBJECT_TYPE_IMAGE;							}
 template<> inline VkObjectType	getObjectType<VkInstance>						(void) { return VK_OBJECT_TYPE_INSTANCE;						}

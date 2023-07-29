@@ -30,9 +30,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createRenderToImageTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createRenderToImageTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINERENDERTOIMAGETESTS_HPP

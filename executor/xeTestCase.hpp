@@ -35,23 +35,23 @@ namespace xe
 
 enum TestCaseType
 {
-	TESTCASETYPE_SELF_VALIDATE,
-	TESTCASETYPE_CAPABILITY,
-	TESTCASETYPE_ACCURACY,
-	TESTCASETYPE_PERFORMANCE,
+    TESTCASETYPE_SELF_VALIDATE,
+    TESTCASETYPE_CAPABILITY,
+    TESTCASETYPE_ACCURACY,
+    TESTCASETYPE_PERFORMANCE,
 
-	TESTCASETYPE_LAST
+    TESTCASETYPE_LAST
 };
 
-const char* getTestCaseTypeName (TestCaseType caseType);
+const char *getTestCaseTypeName(TestCaseType caseType);
 
 enum TestNodeType
 {
-	TESTNODETYPE_ROOT,
-	TESTNODETYPE_GROUP,
-	TESTNODETYPE_TEST_CASE,
+    TESTNODETYPE_ROOT,
+    TESTNODETYPE_GROUP,
+    TESTNODETYPE_TEST_CASE,
 
-	TESTNODETYPE_LAST
+    TESTNODETYPE_LAST
 };
 
 class TestGroup;
@@ -60,156 +60,196 @@ class TestCase;
 class TestNode
 {
 public:
-	virtual				~TestNode			(void) {}
+    virtual ~TestNode(void)
+    {
+    }
 
-	TestNodeType		getNodeType			(void) const { return m_nodeType;		}
-	const char*			getName				(void) const { return m_name.c_str();	}
-	const TestGroup*	getParent			(void) const { return m_parent;			}
+    TestNodeType getNodeType(void) const
+    {
+        return m_nodeType;
+    }
+    const char *getName(void) const
+    {
+        return m_name.c_str();
+    }
+    const TestGroup *getParent(void) const
+    {
+        return m_parent;
+    }
 
-	void				getFullPath			(std::string& path) const;
-	std::string			getFullPath			(void) const { std::string str; getFullPath(str); return str; }
+    void getFullPath(std::string &path) const;
+    std::string getFullPath(void) const
+    {
+        std::string str;
+        getFullPath(str);
+        return str;
+    }
 
-	const TestNode*		find				(const char* path) const;
-	TestNode*			find				(const char* path);
+    const TestNode *find(const char *path) const;
+    TestNode *find(const char *path);
 
 protected:
-						TestNode			(TestGroup* parent, TestNodeType nodeType, const char* name, const char* desc);
+    TestNode(TestGroup *parent, TestNodeType nodeType, const char *name, const char *desc);
 
 private:
-						TestNode			(const TestNode& other);
-	TestNode&			operator=			(const TestNode& other);
+    TestNode(const TestNode &other);
+    TestNode &operator=(const TestNode &other);
 
-	TestGroup*			m_parent;
-	TestNodeType		m_nodeType;
-	std::string			m_name;
-	std::string			m_description;
+    TestGroup *m_parent;
+    TestNodeType m_nodeType;
+    std::string m_name;
+    std::string m_description;
 };
 
 class TestGroup : public TestNode
 {
 public:
-								~TestGroup			(void);
+    ~TestGroup(void);
 
-	int							getNumChildren		(void) const	{ return (int)m_children.size();	}
-	TestNode*					getChild			(int ndx)		{ return m_children[ndx];			}
-	const TestNode*				getChild			(int ndx) const	{ return m_children[ndx];			}
+    int getNumChildren(void) const
+    {
+        return (int)m_children.size();
+    }
+    TestNode *getChild(int ndx)
+    {
+        return m_children[ndx];
+    }
+    const TestNode *getChild(int ndx) const
+    {
+        return m_children[ndx];
+    }
 
-	TestNode*					findChildNode		(const char* path);
-	const TestNode*				findChildNode		(const char* path) const;
+    TestNode *findChildNode(const char *path);
+    const TestNode *findChildNode(const char *path) const;
 
-	TestGroup*					createGroup			(const char* name, const char* description);
-	TestCase*					createCase			(TestCaseType caseType, const char* name, const char* description);
+    TestGroup *createGroup(const char *name, const char *description);
+    TestCase *createCase(TestCaseType caseType, const char *name, const char *description);
 
 protected:
-								TestGroup			(TestGroup* parent, TestNodeType nodeType, const char* name, const char* description);
+    TestGroup(TestGroup *parent, TestNodeType nodeType, const char *name, const char *description);
 
 private:
-	std::vector<TestNode*>		m_children;
-	std::set<std::string>		m_childNames;		//!< Used for checking for duplicate test case names.
+    std::vector<TestNode *> m_children;
+    std::set<std::string> m_childNames; //!< Used for checking for duplicate test case names.
 
-	// For adding TestCase to m_children. \todo [2012-06-15 pyry] Is the API broken perhaps?
-	friend class TestNode;
+    // For adding TestCase to m_children. \todo [2012-06-15 pyry] Is the API broken perhaps?
+    friend class TestNode;
 };
 
 class TestRoot : public TestGroup
 {
 public:
-								TestRoot			(void);
+    TestRoot(void);
 };
 
 class TestCase : public TestNode
 {
 public:
-								~TestCase			(void);
+    ~TestCase(void);
 
-	TestCaseType				getCaseType			(void) const { return m_caseType; }
+    TestCaseType getCaseType(void) const
+    {
+        return m_caseType;
+    }
 
-	static TestCase*			createAsChild		(TestGroup* parent, TestCaseType caseType, const char* name, const char* description);
+    static TestCase *createAsChild(TestGroup *parent, TestCaseType caseType, const char *name, const char *description);
 
 protected:
-								TestCase			(TestGroup* parent, TestCaseType caseType, const char* name, const char* description);
+    TestCase(TestGroup *parent, TestCaseType caseType, const char *name, const char *description);
 
 private:
-	TestCaseType				m_caseType;
+    TestCaseType m_caseType;
 };
 
 // Helper class for efficiently constructing TestCase hierarchy from test case list.
 class TestHierarchyBuilder
 {
 public:
-										TestHierarchyBuilder		(TestRoot* root);
-										~TestHierarchyBuilder		(void);
+    TestHierarchyBuilder(TestRoot *root);
+    ~TestHierarchyBuilder(void);
 
-	TestCase*							createCase					(const char* path, TestCaseType caseType);
+    TestCase *createCase(const char *path, TestCaseType caseType);
 
 private:
-										TestHierarchyBuilder		(const TestHierarchyBuilder& other);
-	TestHierarchyBuilder&				operator=					(const TestHierarchyBuilder& other);
+    TestHierarchyBuilder(const TestHierarchyBuilder &other);
+    TestHierarchyBuilder &operator=(const TestHierarchyBuilder &other);
 
-	TestRoot*							m_root;
-	std::map<std::string, TestGroup*>	m_groupMap;
+    TestRoot *m_root;
+    std::map<std::string, TestGroup *> m_groupMap;
 };
 
 // Helper class for computing and iterating test sets.
 class TestSet
 {
 public:
-							TestSet			(void) {}
-							~TestSet		(void) {}
+    TestSet(void)
+    {
+    }
+    ~TestSet(void)
+    {
+    }
 
-	bool					empty			(void) const { return m_set.empty(); }
+    bool empty(void) const
+    {
+        return m_set.empty();
+    }
 
-	void					add				(const TestNode* node);
-	void					addCase			(const TestCase* testCase);
-	void					addGroup		(const TestGroup* testGroup);
+    void add(const TestNode *node);
+    void addCase(const TestCase *testCase);
+    void addGroup(const TestGroup *testGroup);
 
-	void					remove			(const TestNode* node);
-	void					removeCase		(const TestCase* testCase);
-	void					removeGroup		(const TestGroup* testGroup);
+    void remove(const TestNode *node);
+    void removeCase(const TestCase *testCase);
+    void removeGroup(const TestGroup *testGroup);
 
-	bool					hasNode			(const TestNode* node) const { return m_set.find(node) != m_set.end(); }
+    bool hasNode(const TestNode *node) const
+    {
+        return m_set.find(node) != m_set.end();
+    }
 
 private:
-	std::set<const TestNode*> m_set;
+    std::set<const TestNode *> m_set;
 };
 
 class ConstTestNodeIterator
 {
 public:
-	static ConstTestNodeIterator	begin					(const TestNode* root);
-	static ConstTestNodeIterator	end						(const TestNode* root);
+    static ConstTestNodeIterator begin(const TestNode *root);
+    static ConstTestNodeIterator end(const TestNode *root);
 
-	ConstTestNodeIterator&			operator++				(void);
-	ConstTestNodeIterator			operator++				(int);
+    ConstTestNodeIterator &operator++(void);
+    ConstTestNodeIterator operator++(int);
 
-	const TestNode*					operator*				(void) const;
+    const TestNode *operator*(void) const;
 
-	bool							operator!=				(const ConstTestNodeIterator& other) const;
+    bool operator!=(const ConstTestNodeIterator &other) const;
 
 protected:
-									ConstTestNodeIterator	(const TestNode* root);
+    ConstTestNodeIterator(const TestNode *root);
 
 private:
-	struct GroupState
-	{
-		GroupState (const TestGroup* group_) : group(group_), childNdx(0) {}
+    struct GroupState
+    {
+        GroupState(const TestGroup *group_) : group(group_), childNdx(0)
+        {
+        }
 
-		const TestGroup*	group;
-		int					childNdx;
+        const TestGroup *group;
+        int childNdx;
 
-		bool operator!= (const GroupState& other) const
-		{
-			return group != other.group || childNdx != other.childNdx;
-		}
+        bool operator!=(const GroupState &other) const
+        {
+            return group != other.group || childNdx != other.childNdx;
+        }
 
-		bool operator== (const GroupState& other) const
-		{
-			return group == other.group && childNdx == other.childNdx;
-		}
-	};
+        bool operator==(const GroupState &other) const
+        {
+            return group == other.group && childNdx == other.childNdx;
+        }
+    };
 
-	const TestNode*					m_root;
-	std::vector<GroupState>			m_iterStack;
+    const TestNode *m_root;
+    std::vector<GroupState> m_iterStack;
 };
 
 // \todo [2012-06-19 pyry] Implement following iterators:
@@ -217,6 +257,6 @@ private:
 //  - ConstTestSetIterator
 //  - TestSetIterator
 
-} // xe
+} // namespace xe
 
 #endif // _XETESTCASE_HPP

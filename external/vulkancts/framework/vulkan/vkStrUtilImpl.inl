@@ -4834,7 +4834,7 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceProperties& val
 	s << "\tdeviceID = " << value.deviceID << '\n';
 	s << "\tdeviceType = " << value.deviceType << '\n';
 	s << "\tdeviceName = " << (const char*)value.deviceName << '\n';
-	s << "\tpipelineCacheUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.pipelineCacheUUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.pipelineCacheUUID))) << '\n';
+	s << "\tpipelineCacheUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.pipelineCacheUUID)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.pipelineCacheUUID))) << '\n';
 	s << "\tlimits = " << value.limits << '\n';
 	s << "\tsparseProperties = " << value.sparseProperties << '\n';
 	s << '}';
@@ -6534,9 +6534,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceIDProperties& v
 	s << "VkPhysicalDeviceIDProperties = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tdeviceUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.deviceUUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.deviceUUID))) << '\n';
-	s << "\tdriverUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.driverUUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.driverUUID))) << '\n';
-	s << "\tdeviceLUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.deviceLUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.deviceLUID))) << '\n';
+	s << "\tdeviceUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.deviceUUID)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.deviceUUID))) << '\n';
+	s << "\tdriverUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.driverUUID)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.driverUUID))) << '\n';
+	s << "\tdeviceLUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.deviceLUID)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.deviceLUID))) << '\n';
 	s << "\tdeviceNodeMask = " << value.deviceNodeMask << '\n';
 	s << "\tdeviceLUIDValid = " << value.deviceLUIDValid << '\n';
 	s << '}';
@@ -6694,9 +6694,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVulkan11Propert
 	s << "VkPhysicalDeviceVulkan11Properties = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tdeviceUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.deviceUUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.deviceUUID))) << '\n';
-	s << "\tdriverUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.driverUUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.driverUUID))) << '\n';
-	s << "\tdeviceLUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.deviceLUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.deviceLUID))) << '\n';
+	s << "\tdeviceUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.deviceUUID)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.deviceUUID))) << '\n';
+	s << "\tdriverUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.driverUUID)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.driverUUID))) << '\n';
+	s << "\tdeviceLUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.deviceLUID)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.deviceLUID))) << '\n';
 	s << "\tdeviceNodeMask = " << value.deviceNodeMask << '\n';
 	s << "\tdeviceLUIDValid = " << value.deviceLUIDValid << '\n';
 	s << "\tsubgroupSize = " << value.subgroupSize << '\n';
@@ -7819,7 +7819,7 @@ std::ostream& operator<< (std::ostream& s, const VkPerformanceCounterKHR& value)
 	s << "\tunit = " << value.unit << '\n';
 	s << "\tscope = " << value.scope << '\n';
 	s << "\tstorage = " << value.storage << '\n';
-	s << "\tuuid = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.uuid)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.uuid))) << '\n';
+	s << "\tuuid = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.uuid)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.uuid))) << '\n';
 	s << '}';
 	return s;
 }
@@ -11926,7 +11926,7 @@ std::ostream& operator<< (std::ostream& s, const StdVideoH264HrdParameters& valu
 	s << "\tcpb_size_scale = " << value.cpb_size_scale << '\n';
 	s << "\tbit_rate_value_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.bit_rate_value_minus1), DE_ARRAY_END(value.bit_rate_value_minus1)) << '\n';
 	s << "\tcpb_size_value_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.cpb_size_value_minus1), DE_ARRAY_END(value.cpb_size_value_minus1)) << '\n';
-	s << "\tcbr_flag = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.cbr_flag)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.cbr_flag))) << '\n';
+	s << "\tcbr_flag = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.cbr_flag)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.cbr_flag))) << '\n';
 	s << "\tinitial_cpb_removal_delay_length_minus1 = " << value.initial_cpb_removal_delay_length_minus1 << '\n';
 	s << "\tcpb_removal_delay_length_minus1 = " << value.cpb_removal_delay_length_minus1 << '\n';
 	s << "\tdpb_output_delay_length_minus1 = " << value.dpb_output_delay_length_minus1 << '\n';
@@ -12463,8 +12463,8 @@ std::ostream& operator<< (std::ostream& s, const StdVideoH265DecPicBufMgr& value
 {
 	s << "StdVideoH265DecPicBufMgr = {\n";
 	s << "\tmax_latency_increase_plus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.max_latency_increase_plus1), DE_ARRAY_END(value.max_latency_increase_plus1)) << '\n';
-	s << "\tmax_dec_pic_buffering_minus1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.max_dec_pic_buffering_minus1)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.max_dec_pic_buffering_minus1))) << '\n';
-	s << "\tmax_num_reorder_pics = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.max_num_reorder_pics)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.max_num_reorder_pics))) << '\n';
+	s << "\tmax_dec_pic_buffering_minus1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.max_dec_pic_buffering_minus1)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.max_dec_pic_buffering_minus1))) << '\n';
+	s << "\tmax_num_reorder_pics = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.max_num_reorder_pics)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.max_num_reorder_pics))) << '\n';
 	s << '}';
 	return s;
 }
@@ -12507,7 +12507,7 @@ std::ostream& operator<< (std::ostream& s, const StdVideoH265HrdParameters& valu
 	s << "\tinitial_cpb_removal_delay_length_minus1 = " << value.initial_cpb_removal_delay_length_minus1 << '\n';
 	s << "\tau_cpb_removal_delay_length_minus1 = " << value.au_cpb_removal_delay_length_minus1 << '\n';
 	s << "\tdpb_output_delay_length_minus1 = " << value.dpb_output_delay_length_minus1 << '\n';
-	s << "\tcpb_cnt_minus1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.cpb_cnt_minus1)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.cpb_cnt_minus1))) << '\n';
+	s << "\tcpb_cnt_minus1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.cpb_cnt_minus1)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.cpb_cnt_minus1))) << '\n';
 	s << "\telemental_duration_in_tc_minus1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.elemental_duration_in_tc_minus1), DE_ARRAY_END(value.elemental_duration_in_tc_minus1)) << '\n';
 	s << "\tSubLayerHrdParametersNal = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.SubLayerHrdParametersNal), DE_ARRAY_END(value.SubLayerHrdParametersNal)) << '\n';
 	s << "\tSubLayerHrdParametersVcl = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.SubLayerHrdParametersVcl), DE_ARRAY_END(value.SubLayerHrdParametersVcl)) << '\n';
@@ -12549,8 +12549,8 @@ std::ostream& operator<< (std::ostream& s, const StdVideoH265ScalingLists& value
 	s << "\tScalingList8x8 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList8x8), DE_ARRAY_END(value.ScalingList8x8)) << '\n';
 	s << "\tScalingList16x16 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList16x16), DE_ARRAY_END(value.ScalingList16x16)) << '\n';
 	s << "\tScalingList32x32 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList32x32), DE_ARRAY_END(value.ScalingList32x32)) << '\n';
-	s << "\tScalingListDCCoef16x16 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.ScalingListDCCoef16x16)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.ScalingListDCCoef16x16))) << '\n';
-	s << "\tScalingListDCCoef32x32 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.ScalingListDCCoef32x32)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.ScalingListDCCoef32x32))) << '\n';
+	s << "\tScalingListDCCoef16x16 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.ScalingListDCCoef16x16)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.ScalingListDCCoef16x16))) << '\n';
+	s << "\tScalingListDCCoef32x32 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.ScalingListDCCoef32x32)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.ScalingListDCCoef32x32))) << '\n';
 	s << '}';
 	return s;
 }
@@ -12794,9 +12794,9 @@ std::ostream& operator<< (std::ostream& s, const StdVideoDecodeH265PictureInfo& 
 	s << "\tPicOrderCntVal = " << value.PicOrderCntVal << '\n';
 	s << "\tNumBitsForSTRefPicSetInSlice = " << value.NumBitsForSTRefPicSetInSlice << '\n';
 	s << "\tNumDeltaPocsOfRefRpsIdx = " << value.NumDeltaPocsOfRefRpsIdx << '\n';
-	s << "\tRefPicSetStCurrBefore = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.RefPicSetStCurrBefore)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.RefPicSetStCurrBefore))) << '\n';
-	s << "\tRefPicSetStCurrAfter = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.RefPicSetStCurrAfter)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.RefPicSetStCurrAfter))) << '\n';
-	s << "\tRefPicSetLtCurr = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.RefPicSetLtCurr)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.RefPicSetLtCurr))) << '\n';
+	s << "\tRefPicSetStCurrBefore = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.RefPicSetStCurrBefore)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.RefPicSetStCurrBefore))) << '\n';
+	s << "\tRefPicSetStCurrAfter = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.RefPicSetStCurrAfter)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.RefPicSetStCurrAfter))) << '\n';
+	s << "\tRefPicSetLtCurr = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.RefPicSetLtCurr)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.RefPicSetLtCurr))) << '\n';
 	s << "\tflags = " << value.flags << '\n';
 	s << '}';
 	return s;

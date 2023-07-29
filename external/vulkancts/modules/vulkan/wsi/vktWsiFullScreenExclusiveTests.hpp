@@ -33,9 +33,9 @@ namespace vkt
 namespace wsi
 {
 
-void	createFullScreenExclusiveTests	(tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType);
+void createFullScreenExclusiveTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType);
 
-} // wsi
-} // vkt
+} // namespace wsi
+} // namespace vkt
 
 #endif // _VKTWSIFULLSCREENEXCLUSIVETESTS_HPP

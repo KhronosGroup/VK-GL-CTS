@@ -39,491 +39,485 @@ namespace Functional
 namespace
 {
 
-void checkIntEquals (tcu::TestContext& testCtx, GLint got, GLint expected)
+void checkIntEquals(tcu::TestContext &testCtx, GLint got, GLint expected)
 {
-	using tcu::TestLog;
+    using tcu::TestLog;
 
-	if (got != expected)
-	{
-		testCtx.getLog() << TestLog::Message << "// ERROR: Expected " << expected << "; got " << got << TestLog::EndMessage;
-		if (testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-			testCtx.setTestResult(QP_TEST_RESULT_FAIL, "got invalid value");
-	}
+    if (got != expected)
+    {
+        testCtx.getLog() << TestLog::Message << "// ERROR: Expected " << expected << "; got " << got
+                         << TestLog::EndMessage;
+        if (testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+            testCtx.setTestResult(QP_TEST_RESULT_FAIL, "got invalid value");
+    }
 }
 
-void checkIntEquals (tcu::TestContext& testCtx, GLint64 got, GLint64 expected)
+void checkIntEquals(tcu::TestContext &testCtx, GLint64 got, GLint64 expected)
 {
-	using tcu::TestLog;
+    using tcu::TestLog;
 
-	if (got != expected)
-	{
-		testCtx.getLog() << TestLog::Message << "// ERROR: Expected " << expected << "; got " << got << TestLog::EndMessage;
-		if (testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-			testCtx.setTestResult(QP_TEST_RESULT_FAIL, "got invalid value");
-	}
+    if (got != expected)
+    {
+        testCtx.getLog() << TestLog::Message << "// ERROR: Expected " << expected << "; got " << got
+                         << TestLog::EndMessage;
+        if (testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+            testCtx.setTestResult(QP_TEST_RESULT_FAIL, "got invalid value");
+    }
 }
 
 class TransformFeedbackCase : public ApiCase
 {
 public:
-	TransformFeedbackCase (Context& context, const char* name, const char* description)
-		: ApiCase(context, name, description)
-	{
-	}
+    TransformFeedbackCase(Context &context, const char *name, const char *description)
+        : ApiCase(context, name, description)
+    {
+    }
 
-	virtual void testTransformFeedback (void) = DE_NULL;
+    virtual void testTransformFeedback(void) = DE_NULL;
 
-	void test (void)
-	{
-		static const char* transformFeedbackTestVertSource	=	"#version 300 es\n"
-																"out highp vec4 anotherOutput;\n"
-																"void main (void)\n"
-																"{\n"
-																"	gl_Position = vec4(0.0);\n"
-																"	anotherOutput = vec4(0.0);\n"
-																"}\n\0";
-		static const char* transformFeedbackTestFragSource	=	"#version 300 es\n"
-																"layout(location = 0) out mediump vec4 fragColor;"
-																"void main (void)\n"
-																"{\n"
-																"	fragColor = vec4(0.0);\n"
-																"}\n\0";
+    void test(void)
+    {
+        static const char *transformFeedbackTestVertSource = "#version 300 es\n"
+                                                             "out highp vec4 anotherOutput;\n"
+                                                             "void main (void)\n"
+                                                             "{\n"
+                                                             "    gl_Position = vec4(0.0);\n"
+                                                             "    anotherOutput = vec4(0.0);\n"
+                                                             "}\n\0";
+        static const char *transformFeedbackTestFragSource = "#version 300 es\n"
+                                                             "layout(location = 0) out mediump vec4 fragColor;"
+                                                             "void main (void)\n"
+                                                             "{\n"
+                                                             "    fragColor = vec4(0.0);\n"
+                                                             "}\n\0";
 
-		GLuint shaderVert = glCreateShader(GL_VERTEX_SHADER);
-		GLuint shaderFrag = glCreateShader(GL_FRAGMENT_SHADER);
+        GLuint shaderVert = glCreateShader(GL_VERTEX_SHADER);
+        GLuint shaderFrag = glCreateShader(GL_FRAGMENT_SHADER);
 
-		glShaderSource(shaderVert, 1, &transformFeedbackTestVertSource, DE_NULL);
-		glShaderSource(shaderFrag, 1, &transformFeedbackTestFragSource, DE_NULL);
+        glShaderSource(shaderVert, 1, &transformFeedbackTestVertSource, DE_NULL);
+        glShaderSource(shaderFrag, 1, &transformFeedbackTestFragSource, DE_NULL);
 
-		glCompileShader(shaderVert);
-		glCompileShader(shaderFrag);
-		expectError(GL_NO_ERROR);
+        glCompileShader(shaderVert);
+        glCompileShader(shaderFrag);
+        expectError(GL_NO_ERROR);
 
-		GLuint shaderProg = glCreateProgram();
-		glAttachShader(shaderProg, shaderVert);
-		glAttachShader(shaderProg, shaderFrag);
+        GLuint shaderProg = glCreateProgram();
+        glAttachShader(shaderProg, shaderVert);
+        glAttachShader(shaderProg, shaderFrag);
 
-		const char* transformFeedbackOutputs[] =
-		{
-			"gl_Position",
-			"anotherOutput"
-		};
+        const char *transformFeedbackOutputs[] = {"gl_Position", "anotherOutput"};
 
-		glTransformFeedbackVaryings(shaderProg, 2, transformFeedbackOutputs, GL_INTERLEAVED_ATTRIBS);
-		glLinkProgram(shaderProg);
-		expectError(GL_NO_ERROR);
+        glTransformFeedbackVaryings(shaderProg, 2, transformFeedbackOutputs, GL_INTERLEAVED_ATTRIBS);
+        glLinkProgram(shaderProg);
+        expectError(GL_NO_ERROR);
 
-		glGenTransformFeedbacks(2, transformFeedbacks);
-		// Also store the default transform feedback in the array.
-		transformFeedbacks[2] = 0;
-		glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, transformFeedbacks[0]);
-		expectError(GL_NO_ERROR);
+        glGenTransformFeedbacks(2, transformFeedbacks);
+        // Also store the default transform feedback in the array.
+        transformFeedbacks[2] = 0;
+        glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, transformFeedbacks[0]);
+        expectError(GL_NO_ERROR);
 
-		testTransformFeedback();
+        testTransformFeedback();
 
-		// cleanup
+        // cleanup
 
-		glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
+        glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
 
-		glDeleteTransformFeedbacks(2, transformFeedbacks);
-		glDeleteShader(shaderVert);
-		glDeleteShader(shaderFrag);
-		glDeleteProgram(shaderProg);
-		expectError(GL_NO_ERROR);
-	}
+        glDeleteTransformFeedbacks(2, transformFeedbacks);
+        glDeleteShader(shaderVert);
+        glDeleteShader(shaderFrag);
+        glDeleteProgram(shaderProg);
+        expectError(GL_NO_ERROR);
+    }
+
 protected:
-	GLuint transformFeedbacks[3];
+    GLuint transformFeedbacks[3];
 };
 
 class TransformFeedbackBufferBindingCase : public TransformFeedbackCase
 {
 public:
-	TransformFeedbackBufferBindingCase (Context& context, const char* name, const char* description)
-		: TransformFeedbackCase(context, name, description)
-	{
-	}
+    TransformFeedbackBufferBindingCase(Context &context, const char *name, const char *description)
+        : TransformFeedbackCase(context, name, description)
+    {
+    }
 
-	void testTransformFeedback (void)
-	{
-		const int feedbackPositionIndex = 0;
-		const int feedbackOutputIndex = 1;
-		const int feedbackIndex[2] = {feedbackPositionIndex, feedbackOutputIndex};
+    void testTransformFeedback(void)
+    {
+        const int feedbackPositionIndex = 0;
+        const int feedbackOutputIndex   = 1;
+        const int feedbackIndex[2]      = {feedbackPositionIndex, feedbackOutputIndex};
 
-		// bind bffers
+        // bind bffers
 
-		GLuint feedbackBuffers[2];
-		glGenBuffers(2, feedbackBuffers);
-		expectError(GL_NO_ERROR);
+        GLuint feedbackBuffers[2];
+        glGenBuffers(2, feedbackBuffers);
+        expectError(GL_NO_ERROR);
 
-		for (int ndx = 0; ndx < 2; ++ndx)
-		{
-			glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, feedbackBuffers[ndx]);
-			glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 16, NULL, GL_DYNAMIC_READ);
-			glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, feedbackIndex[ndx], feedbackBuffers[ndx]);
-			expectError(GL_NO_ERROR);
-		}
+        for (int ndx = 0; ndx < 2; ++ndx)
+        {
+            glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, feedbackBuffers[ndx]);
+            glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 16, NULL, GL_DYNAMIC_READ);
+            glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, feedbackIndex[ndx], feedbackBuffers[ndx]);
+            expectError(GL_NO_ERROR);
+        }
 
-		// test TRANSFORM_FEEDBACK_BUFFER_BINDING
+        // test TRANSFORM_FEEDBACK_BUFFER_BINDING
 
-		for (int ndx = 0; ndx < 2; ++ndx)
-		{
-			StateQueryMemoryWriteGuard<GLint> boundBuffer;
-			glGetIntegeri_v(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, feedbackIndex[ndx], &boundBuffer);
-			boundBuffer.verifyValidity(m_testCtx);
-			checkIntEquals(m_testCtx, boundBuffer, feedbackBuffers[ndx]);
-		}
+        for (int ndx = 0; ndx < 2; ++ndx)
+        {
+            StateQueryMemoryWriteGuard<GLint> boundBuffer;
+            glGetIntegeri_v(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, feedbackIndex[ndx], &boundBuffer);
+            boundBuffer.verifyValidity(m_testCtx);
+            checkIntEquals(m_testCtx, boundBuffer, feedbackBuffers[ndx]);
+        }
 
+        // cleanup
 
-		// cleanup
-
-		glDeleteBuffers(2, feedbackBuffers);
-	}
+        glDeleteBuffers(2, feedbackBuffers);
+    }
 };
 
 class TransformFeedbackBufferBufferCase : public TransformFeedbackCase
 {
 public:
-	TransformFeedbackBufferBufferCase (Context& context, const char* name, const char* description)
-		: TransformFeedbackCase(context, name, description)
-	{
-	}
+    TransformFeedbackBufferBufferCase(Context &context, const char *name, const char *description)
+        : TransformFeedbackCase(context, name, description)
+    {
+    }
 
-	void testTransformFeedback (void)
-	{
-		const int feedbackPositionIndex = 0;
-		const int feedbackOutputIndex = 1;
+    void testTransformFeedback(void)
+    {
+        const int feedbackPositionIndex = 0;
+        const int feedbackOutputIndex   = 1;
 
-		const int rangeBufferOffset = 4;
-		const int rangeBufferSize = 8;
+        const int rangeBufferOffset = 4;
+        const int rangeBufferSize   = 8;
 
-		// bind buffers
+        // bind buffers
 
-		GLuint feedbackBuffers[2];
-		glGenBuffers(2, feedbackBuffers);
-		expectError(GL_NO_ERROR);
+        GLuint feedbackBuffers[2];
+        glGenBuffers(2, feedbackBuffers);
+        expectError(GL_NO_ERROR);
 
-		glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, feedbackBuffers[0]);
-		glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 16, NULL, GL_DYNAMIC_READ);
-		glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, feedbackPositionIndex, feedbackBuffers[0]);
-		expectError(GL_NO_ERROR);
+        glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, feedbackBuffers[0]);
+        glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 16, NULL, GL_DYNAMIC_READ);
+        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, feedbackPositionIndex, feedbackBuffers[0]);
+        expectError(GL_NO_ERROR);
 
-		glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, feedbackBuffers[1]);
-		glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 16, NULL, GL_DYNAMIC_READ);
-		glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, feedbackOutputIndex, feedbackBuffers[1], rangeBufferOffset, rangeBufferSize);
-		expectError(GL_NO_ERROR);
+        glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, feedbackBuffers[1]);
+        glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 16, NULL, GL_DYNAMIC_READ);
+        glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, feedbackOutputIndex, feedbackBuffers[1], rangeBufferOffset,
+                          rangeBufferSize);
+        expectError(GL_NO_ERROR);
 
-		// test TRANSFORM_FEEDBACK_BUFFER_START and TRANSFORM_FEEDBACK_BUFFER_SIZE
+        // test TRANSFORM_FEEDBACK_BUFFER_START and TRANSFORM_FEEDBACK_BUFFER_SIZE
 
-		const struct BufferRequirements
-		{
-			GLint	index;
-			GLenum	pname;
-			GLint64 value;
-		} requirements[] =
-		{
-			{ feedbackPositionIndex,	GL_TRANSFORM_FEEDBACK_BUFFER_START, 0					},
-			{ feedbackPositionIndex,	GL_TRANSFORM_FEEDBACK_BUFFER_SIZE,	0					},
-			{ feedbackOutputIndex,		GL_TRANSFORM_FEEDBACK_BUFFER_START, rangeBufferOffset	},
-			{ feedbackOutputIndex,		GL_TRANSFORM_FEEDBACK_BUFFER_SIZE,	rangeBufferSize		}
-		};
+        const struct BufferRequirements
+        {
+            GLint index;
+            GLenum pname;
+            GLint64 value;
+        } requirements[] = {{feedbackPositionIndex, GL_TRANSFORM_FEEDBACK_BUFFER_START, 0},
+                            {feedbackPositionIndex, GL_TRANSFORM_FEEDBACK_BUFFER_SIZE, 0},
+                            {feedbackOutputIndex, GL_TRANSFORM_FEEDBACK_BUFFER_START, rangeBufferOffset},
+                            {feedbackOutputIndex, GL_TRANSFORM_FEEDBACK_BUFFER_SIZE, rangeBufferSize}};
 
-		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(requirements); ++ndx)
-		{
-			StateQueryMemoryWriteGuard<GLint64> state;
-			glGetInteger64i_v(requirements[ndx].pname, requirements[ndx].index, &state);
+        for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(requirements); ++ndx)
+        {
+            StateQueryMemoryWriteGuard<GLint64> state;
+            glGetInteger64i_v(requirements[ndx].pname, requirements[ndx].index, &state);
 
-			if (state.verifyValidity(m_testCtx))
-				checkIntEquals(m_testCtx, state, requirements[ndx].value);
-		}
+            if (state.verifyValidity(m_testCtx))
+                checkIntEquals(m_testCtx, state, requirements[ndx].value);
+        }
 
-		// cleanup
+        // cleanup
 
-		glDeleteBuffers(2, feedbackBuffers);
-	}
+        glDeleteBuffers(2, feedbackBuffers);
+    }
 };
 
 class TransformFeedbackSwitchingBufferCase : public TransformFeedbackCase
 {
 public:
-	TransformFeedbackSwitchingBufferCase (Context& context, const char* name, const char* description)
-		: TransformFeedbackCase(context, name, description)
-	{
-	}
+    TransformFeedbackSwitchingBufferCase(Context &context, const char *name, const char *description)
+        : TransformFeedbackCase(context, name, description)
+    {
+    }
 
-	void testTransformFeedback (void)
-	{
-		GLuint feedbackBuffers[3];
-		glGenBuffers(3, feedbackBuffers);
-		expectError(GL_NO_ERROR);
+    void testTransformFeedback(void)
+    {
+        GLuint feedbackBuffers[3];
+        glGenBuffers(3, feedbackBuffers);
+        expectError(GL_NO_ERROR);
 
-		for (int i = 0; i < 3; ++i)
-		{
-			glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, transformFeedbacks[i]);
-			expectError(GL_NO_ERROR);
-			GLint value;
-			glGetIntegeri_v(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, 0, &value);
-			expectError(GL_NO_ERROR);
-			checkIntEquals(m_testCtx, value, 0);
-			glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, feedbackBuffers[i]);
-			expectError(GL_NO_ERROR);
-			// glBindBufferBase should also set the generic binding point.
-			glGetIntegerv(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, &value);
-			expectError(GL_NO_ERROR);
-			checkIntEquals(m_testCtx, value, feedbackBuffers[i]);
-		}
+        for (int i = 0; i < 3; ++i)
+        {
+            glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, transformFeedbacks[i]);
+            expectError(GL_NO_ERROR);
+            GLint value;
+            glGetIntegeri_v(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, 0, &value);
+            expectError(GL_NO_ERROR);
+            checkIntEquals(m_testCtx, value, 0);
+            glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, feedbackBuffers[i]);
+            expectError(GL_NO_ERROR);
+            // glBindBufferBase should also set the generic binding point.
+            glGetIntegerv(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, &value);
+            expectError(GL_NO_ERROR);
+            checkIntEquals(m_testCtx, value, feedbackBuffers[i]);
+        }
 
-		for (int i = 0; i < 3; ++i)
-		{
-			// glBindTransformFeedback should change the indexed binding points, but
-			// not the generic one.
-			glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, transformFeedbacks[i]);
-			expectError(GL_NO_ERROR);
-			GLint value;
-			glGetIntegeri_v(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, 0, &value);
-			expectError(GL_NO_ERROR);
-			checkIntEquals(m_testCtx, value, feedbackBuffers[i]);
-			glGetIntegerv(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, &value);
-			expectError(GL_NO_ERROR);
-			// Should be unchanged.
-			checkIntEquals(m_testCtx, value, feedbackBuffers[2]);
-		}
+        for (int i = 0; i < 3; ++i)
+        {
+            // glBindTransformFeedback should change the indexed binding points, but
+            // not the generic one.
+            glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, transformFeedbacks[i]);
+            expectError(GL_NO_ERROR);
+            GLint value;
+            glGetIntegeri_v(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, 0, &value);
+            expectError(GL_NO_ERROR);
+            checkIntEquals(m_testCtx, value, feedbackBuffers[i]);
+            glGetIntegerv(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, &value);
+            expectError(GL_NO_ERROR);
+            // Should be unchanged.
+            checkIntEquals(m_testCtx, value, feedbackBuffers[2]);
+        }
 
-		glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, transformFeedbacks[0]);
-		expectError(GL_NO_ERROR);
-		glDeleteBuffers(3, feedbackBuffers);
-		expectError(GL_NO_ERROR);
+        glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, transformFeedbacks[0]);
+        expectError(GL_NO_ERROR);
+        glDeleteBuffers(3, feedbackBuffers);
+        expectError(GL_NO_ERROR);
 
-		// After deleting buffers the bound state should be changed but unbound
-		// state should be unchanged.
+        // After deleting buffers the bound state should be changed but unbound
+        // state should be unchanged.
 
-		GLint value;
-		glGetIntegeri_v(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, 0, &value);
-		expectError(GL_NO_ERROR);
-		checkIntEquals(m_testCtx, value, 0);
-		glGetIntegerv(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, &value);
-		expectError(GL_NO_ERROR);
-		checkIntEquals(m_testCtx, value, 0);
+        GLint value;
+        glGetIntegeri_v(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, 0, &value);
+        expectError(GL_NO_ERROR);
+        checkIntEquals(m_testCtx, value, 0);
+        glGetIntegerv(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, &value);
+        expectError(GL_NO_ERROR);
+        checkIntEquals(m_testCtx, value, 0);
 
-		for (int i = 1; i < 3; ++i)
-		{
-			glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, transformFeedbacks[i]);
-			expectError(GL_NO_ERROR);
-			glGetIntegeri_v(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, 0, &value);
-			expectError(GL_NO_ERROR);
-			checkIntEquals(m_testCtx, value, feedbackBuffers[i]);
-			glGetIntegerv(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, &value);
-			expectError(GL_NO_ERROR);
-			checkIntEquals(m_testCtx, value, 0);
-		}
-	}
+        for (int i = 1; i < 3; ++i)
+        {
+            glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, transformFeedbacks[i]);
+            expectError(GL_NO_ERROR);
+            glGetIntegeri_v(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, 0, &value);
+            expectError(GL_NO_ERROR);
+            checkIntEquals(m_testCtx, value, feedbackBuffers[i]);
+            glGetIntegerv(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, &value);
+            expectError(GL_NO_ERROR);
+            checkIntEquals(m_testCtx, value, 0);
+        }
+    }
 };
 
 class UniformBufferCase : public ApiCase
 {
 public:
-	UniformBufferCase (Context& context, const char* name, const char* description)
-		: ApiCase	(context, name, description)
-		, m_program	(0)
-	{
-	}
+    UniformBufferCase(Context &context, const char *name, const char *description)
+        : ApiCase(context, name, description)
+        , m_program(0)
+    {
+    }
 
-	virtual void testUniformBuffers (void) = DE_NULL;
+    virtual void testUniformBuffers(void) = DE_NULL;
 
-	void test (void)
-	{
-		static const char* testVertSource	=	"#version 300 es\n"
-												"uniform highp vec4 input1;\n"
-												"uniform highp vec4 input2;\n"
-												"void main (void)\n"
-												"{\n"
-												"	gl_Position = input1 + input2;\n"
-												"}\n\0";
-		static const char* testFragSource	=	"#version 300 es\n"
-												"layout(location = 0) out mediump vec4 fragColor;"
-												"void main (void)\n"
-												"{\n"
-												"	fragColor = vec4(0.0);\n"
-												"}\n\0";
+    void test(void)
+    {
+        static const char *testVertSource = "#version 300 es\n"
+                                            "uniform highp vec4 input1;\n"
+                                            "uniform highp vec4 input2;\n"
+                                            "void main (void)\n"
+                                            "{\n"
+                                            "    gl_Position = input1 + input2;\n"
+                                            "}\n\0";
+        static const char *testFragSource = "#version 300 es\n"
+                                            "layout(location = 0) out mediump vec4 fragColor;"
+                                            "void main (void)\n"
+                                            "{\n"
+                                            "    fragColor = vec4(0.0);\n"
+                                            "}\n\0";
 
-		GLuint shaderVert = glCreateShader(GL_VERTEX_SHADER);
-		GLuint shaderFrag = glCreateShader(GL_FRAGMENT_SHADER);
+        GLuint shaderVert = glCreateShader(GL_VERTEX_SHADER);
+        GLuint shaderFrag = glCreateShader(GL_FRAGMENT_SHADER);
 
-		glShaderSource(shaderVert, 1, &testVertSource, DE_NULL);
-		glShaderSource(shaderFrag, 1, &testFragSource, DE_NULL);
+        glShaderSource(shaderVert, 1, &testVertSource, DE_NULL);
+        glShaderSource(shaderFrag, 1, &testFragSource, DE_NULL);
 
-		glCompileShader(shaderVert);
-		glCompileShader(shaderFrag);
-		expectError(GL_NO_ERROR);
+        glCompileShader(shaderVert);
+        glCompileShader(shaderFrag);
+        expectError(GL_NO_ERROR);
 
-		m_program = glCreateProgram();
-		glAttachShader(m_program, shaderVert);
-		glAttachShader(m_program, shaderFrag);
-		glLinkProgram(m_program);
-		glUseProgram(m_program);
-		expectError(GL_NO_ERROR);
+        m_program = glCreateProgram();
+        glAttachShader(m_program, shaderVert);
+        glAttachShader(m_program, shaderFrag);
+        glLinkProgram(m_program);
+        glUseProgram(m_program);
+        expectError(GL_NO_ERROR);
 
-		testUniformBuffers();
+        testUniformBuffers();
 
-		glUseProgram(0);
-		glDeleteShader(shaderVert);
-		glDeleteShader(shaderFrag);
-		glDeleteProgram(m_program);
-		expectError(GL_NO_ERROR);
-	}
+        glUseProgram(0);
+        glDeleteShader(shaderVert);
+        glDeleteShader(shaderFrag);
+        glDeleteProgram(m_program);
+        expectError(GL_NO_ERROR);
+    }
 
 protected:
-	GLuint	m_program;
+    GLuint m_program;
 };
 
 class UniformBufferBindingCase : public UniformBufferCase
 {
 public:
-	UniformBufferBindingCase (Context& context, const char* name, const char* description)
-		: UniformBufferCase(context, name, description)
-	{
-	}
+    UniformBufferBindingCase(Context &context, const char *name, const char *description)
+        : UniformBufferCase(context, name, description)
+    {
+    }
 
-	void testUniformBuffers (void)
-	{
-		const char* uniformNames[] =
-		{
-			"input1",
-			"input2"
-		};
-		GLuint uniformIndices[2] = {0};
-		glGetUniformIndices(m_program, 2, uniformNames, uniformIndices);
+    void testUniformBuffers(void)
+    {
+        const char *uniformNames[] = {"input1", "input2"};
+        GLuint uniformIndices[2]   = {0};
+        glGetUniformIndices(m_program, 2, uniformNames, uniformIndices);
 
-		GLuint buffers[2];
-		glGenBuffers(2, buffers);
+        GLuint buffers[2];
+        glGenBuffers(2, buffers);
 
-		for (int ndx = 0; ndx < 2; ++ndx)
-		{
-			glBindBuffer(GL_UNIFORM_BUFFER, buffers[ndx]);
-			glBufferData(GL_UNIFORM_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
-			glBindBufferBase(GL_UNIFORM_BUFFER, uniformIndices[ndx], buffers[ndx]);
-			expectError(GL_NO_ERROR);
-		}
+        for (int ndx = 0; ndx < 2; ++ndx)
+        {
+            glBindBuffer(GL_UNIFORM_BUFFER, buffers[ndx]);
+            glBufferData(GL_UNIFORM_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+            glBindBufferBase(GL_UNIFORM_BUFFER, uniformIndices[ndx], buffers[ndx]);
+            expectError(GL_NO_ERROR);
+        }
 
-		for (int ndx = 0; ndx < 2; ++ndx)
-		{
-			StateQueryMemoryWriteGuard<GLint> boundBuffer;
-			glGetIntegeri_v(GL_UNIFORM_BUFFER_BINDING, uniformIndices[ndx], &boundBuffer);
+        for (int ndx = 0; ndx < 2; ++ndx)
+        {
+            StateQueryMemoryWriteGuard<GLint> boundBuffer;
+            glGetIntegeri_v(GL_UNIFORM_BUFFER_BINDING, uniformIndices[ndx], &boundBuffer);
 
-			if (boundBuffer.verifyValidity(m_testCtx))
-				checkIntEquals(m_testCtx, boundBuffer, buffers[ndx]);
-			expectError(GL_NO_ERROR);
-		}
+            if (boundBuffer.verifyValidity(m_testCtx))
+                checkIntEquals(m_testCtx, boundBuffer, buffers[ndx]);
+            expectError(GL_NO_ERROR);
+        }
 
-		glDeleteBuffers(2, buffers);
-	}
+        glDeleteBuffers(2, buffers);
+    }
 };
 
 class UniformBufferBufferCase : public UniformBufferCase
 {
 public:
-	UniformBufferBufferCase (Context& context, const char* name, const char* description)
-		: UniformBufferCase(context, name, description)
-	{
-	}
+    UniformBufferBufferCase(Context &context, const char *name, const char *description)
+        : UniformBufferCase(context, name, description)
+    {
+    }
 
-	void testUniformBuffers (void)
-	{
-		const char* uniformNames[] =
-		{
-			"input1",
-			"input2"
-		};
-		GLuint uniformIndices[2] = {0};
-		glGetUniformIndices(m_program, 2, uniformNames, uniformIndices);
+    void testUniformBuffers(void)
+    {
+        const char *uniformNames[] = {"input1", "input2"};
+        GLuint uniformIndices[2]   = {0};
+        glGetUniformIndices(m_program, 2, uniformNames, uniformIndices);
 
-		const GLint alignment = GetAlignment();
-		if (alignment == -1) // cannot continue without this
-			return;
+        const GLint alignment = GetAlignment();
+        if (alignment == -1) // cannot continue without this
+            return;
 
-		m_testCtx.getLog() << tcu::TestLog::Message << "Alignment is " << alignment << tcu::TestLog::EndMessage;
+        m_testCtx.getLog() << tcu::TestLog::Message << "Alignment is " << alignment << tcu::TestLog::EndMessage;
 
-		int rangeBufferOffset		= alignment;
-		int rangeBufferSize			= alignment * 2;
-		int rangeBufferTotalSize	= rangeBufferOffset + rangeBufferSize + 8; // + 8 has no special meaning, just to make it != with the size of the range
+        int rangeBufferOffset    = alignment;
+        int rangeBufferSize      = alignment * 2;
+        int rangeBufferTotalSize = rangeBufferOffset + rangeBufferSize +
+                                   8; // + 8 has no special meaning, just to make it != with the size of the range
 
-		GLuint buffers[2];
-		glGenBuffers(2, buffers);
+        GLuint buffers[2];
+        glGenBuffers(2, buffers);
 
-		glBindBuffer(GL_UNIFORM_BUFFER, buffers[0]);
-		glBufferData(GL_UNIFORM_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
-		glBindBufferBase(GL_UNIFORM_BUFFER, uniformIndices[0], buffers[0]);
-		expectError(GL_NO_ERROR);
+        glBindBuffer(GL_UNIFORM_BUFFER, buffers[0]);
+        glBufferData(GL_UNIFORM_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+        glBindBufferBase(GL_UNIFORM_BUFFER, uniformIndices[0], buffers[0]);
+        expectError(GL_NO_ERROR);
 
-		glBindBuffer(GL_UNIFORM_BUFFER, buffers[1]);
-		glBufferData(GL_UNIFORM_BUFFER, rangeBufferTotalSize, DE_NULL, GL_DYNAMIC_DRAW);
-		glBindBufferRange(GL_UNIFORM_BUFFER, uniformIndices[1], buffers[1], rangeBufferOffset, rangeBufferSize);
-		expectError(GL_NO_ERROR);
+        glBindBuffer(GL_UNIFORM_BUFFER, buffers[1]);
+        glBufferData(GL_UNIFORM_BUFFER, rangeBufferTotalSize, DE_NULL, GL_DYNAMIC_DRAW);
+        glBindBufferRange(GL_UNIFORM_BUFFER, uniformIndices[1], buffers[1], rangeBufferOffset, rangeBufferSize);
+        expectError(GL_NO_ERROR);
 
-		// test UNIFORM_BUFFER_START and UNIFORM_BUFFER_SIZE
+        // test UNIFORM_BUFFER_START and UNIFORM_BUFFER_SIZE
 
-		const struct BufferRequirements
-		{
-			GLuint	index;
-			GLenum	pname;
-			GLint64 value;
-		} requirements[] =
-		{
-			{ uniformIndices[0], GL_UNIFORM_BUFFER_START,	0					},
-			{ uniformIndices[0], GL_UNIFORM_BUFFER_SIZE,	0					},
-			{ uniformIndices[1], GL_UNIFORM_BUFFER_START,	rangeBufferOffset	},
-			{ uniformIndices[1], GL_UNIFORM_BUFFER_SIZE,	rangeBufferSize		}
-		};
+        const struct BufferRequirements
+        {
+            GLuint index;
+            GLenum pname;
+            GLint64 value;
+        } requirements[] = {{uniformIndices[0], GL_UNIFORM_BUFFER_START, 0},
+                            {uniformIndices[0], GL_UNIFORM_BUFFER_SIZE, 0},
+                            {uniformIndices[1], GL_UNIFORM_BUFFER_START, rangeBufferOffset},
+                            {uniformIndices[1], GL_UNIFORM_BUFFER_SIZE, rangeBufferSize}};
 
-		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(requirements); ++ndx)
-		{
-			StateQueryMemoryWriteGuard<GLint64> state;
-			glGetInteger64i_v(requirements[ndx].pname, requirements[ndx].index, &state);
+        for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(requirements); ++ndx)
+        {
+            StateQueryMemoryWriteGuard<GLint64> state;
+            glGetInteger64i_v(requirements[ndx].pname, requirements[ndx].index, &state);
 
-			if (state.verifyValidity(m_testCtx))
-				checkIntEquals(m_testCtx, state, requirements[ndx].value);
-			expectError(GL_NO_ERROR);
-		}
+            if (state.verifyValidity(m_testCtx))
+                checkIntEquals(m_testCtx, state, requirements[ndx].value);
+            expectError(GL_NO_ERROR);
+        }
 
-		glDeleteBuffers(2, buffers);
-	}
+        glDeleteBuffers(2, buffers);
+    }
 
-	int GetAlignment()
-	{
-		StateQueryMemoryWriteGuard<GLint> state;
-		glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &state);
+    int GetAlignment()
+    {
+        StateQueryMemoryWriteGuard<GLint> state;
+        glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &state);
 
-		if (!state.verifyValidity(m_testCtx))
-			return -1;
+        if (!state.verifyValidity(m_testCtx))
+            return -1;
 
-		if (state <= 256)
-			return state;
+        if (state <= 256)
+            return state;
 
-		m_testCtx.getLog() << tcu::TestLog::Message << "// ERROR: UNIFORM_BUFFER_OFFSET_ALIGNMENT has a maximum value of 256." << tcu::TestLog::EndMessage;
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "invalid UNIFORM_BUFFER_OFFSET_ALIGNMENT value");
+        m_testCtx.getLog() << tcu::TestLog::Message
+                           << "// ERROR: UNIFORM_BUFFER_OFFSET_ALIGNMENT has a maximum value of 256."
+                           << tcu::TestLog::EndMessage;
+        m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "invalid UNIFORM_BUFFER_OFFSET_ALIGNMENT value");
 
-		return -1;
-	}
+        return -1;
+    }
 };
 
-} // anonymous
+} // namespace
 
-IndexedStateQueryTests::IndexedStateQueryTests (Context& context)
-	: TestCaseGroup(context, "indexed", "Indexed Integer Values")
+IndexedStateQueryTests::IndexedStateQueryTests(Context &context)
+    : TestCaseGroup(context, "indexed", "Indexed Integer Values")
 {
 }
 
-void IndexedStateQueryTests::init (void)
+void IndexedStateQueryTests::init(void)
 {
-	// transform feedback
-	addChild(new TransformFeedbackBufferBindingCase(m_context, "transform_feedback_buffer_binding", "TRANSFORM_FEEDBACK_BUFFER_BINDING"));
-	addChild(new TransformFeedbackBufferBufferCase(m_context, "transform_feedback_buffer_start_size", "TRANSFORM_FEEDBACK_BUFFER_START and TRANSFORM_FEEDBACK_BUFFER_SIZE"));
-	addChild(new TransformFeedbackSwitchingBufferCase(m_context, "transform_feedback_switching_buffer", "TRANSFORM_FEEDBACK_BUFFER_BINDING while switching transform feedback objects"));
+    // transform feedback
+    addChild(new TransformFeedbackBufferBindingCase(m_context, "transform_feedback_buffer_binding",
+                                                    "TRANSFORM_FEEDBACK_BUFFER_BINDING"));
+    addChild(
+        new TransformFeedbackBufferBufferCase(m_context, "transform_feedback_buffer_start_size",
+                                              "TRANSFORM_FEEDBACK_BUFFER_START and TRANSFORM_FEEDBACK_BUFFER_SIZE"));
+    addChild(new TransformFeedbackSwitchingBufferCase(
+        m_context, "transform_feedback_switching_buffer",
+        "TRANSFORM_FEEDBACK_BUFFER_BINDING while switching transform feedback objects"));
 
-	// uniform buffers
-	addChild(new UniformBufferBindingCase(m_context, "uniform_buffer_binding", "UNIFORM_BUFFER_BINDING"));
-	addChild(new UniformBufferBufferCase(m_context, "uniform_buffer_start_size", "UNIFORM_BUFFER_START and UNIFORM_BUFFER_SIZE"));
+    // uniform buffers
+    addChild(new UniformBufferBindingCase(m_context, "uniform_buffer_binding", "UNIFORM_BUFFER_BINDING"));
+    addChild(new UniformBufferBufferCase(m_context, "uniform_buffer_start_size",
+                                         "UNIFORM_BUFFER_START and UNIFORM_BUFFER_SIZE"));
 }
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp

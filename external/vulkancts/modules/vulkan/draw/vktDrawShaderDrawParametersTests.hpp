@@ -33,15 +33,15 @@ namespace Draw
 class ShaderDrawParametersTests : public tcu::TestCaseGroup
 {
 public:
-								ShaderDrawParametersTests	(tcu::TestContext& testCtx);
-	void						init						(void);
+    ShaderDrawParametersTests(tcu::TestContext &testCtx);
+    void init(void);
 
 private:
-								ShaderDrawParametersTests	(const ShaderDrawParametersTests& other);
-	ShaderDrawParametersTests&	operator=					(const ShaderDrawParametersTests& other);
+    ShaderDrawParametersTests(const ShaderDrawParametersTests &other);
+    ShaderDrawParametersTests &operator=(const ShaderDrawParametersTests &other);
 };
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWSHADERDRAWPARAMETERSTESTS_HPP

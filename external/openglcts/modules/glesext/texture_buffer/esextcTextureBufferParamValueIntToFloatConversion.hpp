@@ -99,34 +99,34 @@ namespace glcts
 class TextureBufferParamValueIntToFloatConversion : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureBufferParamValueIntToFloatConversion(Context& context, const ExtParameters& extParams, const char* name,
-												const char* description);
+    /* Public methods */
+    TextureBufferParamValueIntToFloatConversion(Context &context, const ExtParameters &extParams, const char *name,
+                                                const char *description);
 
-	virtual ~TextureBufferParamValueIntToFloatConversion()
-	{
-	}
+    virtual ~TextureBufferParamValueIntToFloatConversion()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	void		initTest(void);
-	std::string getComputeShaderCode(void);
+    /* Private methods */
+    void initTest(void);
+    std::string getComputeShaderCode(void);
 
-	/* Variables for general usage */
-	glw::GLuint m_cs_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_ssbo_id;
-	glw::GLuint m_tbo_id;
-	glw::GLuint m_tbo_tex_id;
+    /* Variables for general usage */
+    glw::GLuint m_cs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_ssbo_id;
+    glw::GLuint m_tbo_id;
+    glw::GLuint m_tbo_tex_id;
 
-	/* Static constant variables */
-	static glw::GLuint		  m_texture_buffer_size;
-	static glw::GLuint		  m_work_group_x_size;
-	static glw::GLuint		  m_work_group_y_size;
-	static const glw::GLfloat m_epsilon;
+    /* Static constant variables */
+    static glw::GLuint m_texture_buffer_size;
+    static glw::GLuint m_work_group_x_size;
+    static glw::GLuint m_work_group_y_size;
+    static const glw::GLfloat m_epsilon;
 };
 
 } // namespace glcts

@@ -32,9 +32,9 @@
 #include <string>
 
 using std::string;
-using tcu::IVec3;
-using tcu::CompressedTexture;
 using tcu::CompressedTexFormat;
+using tcu::CompressedTexture;
+using tcu::IVec3;
 
 namespace deqp
 {
@@ -43,71 +43,78 @@ namespace gles3
 namespace Functional
 {
 
-static const string getASTCFormatShortName (CompressedTexFormat format)
+static const string getASTCFormatShortName(CompressedTexFormat format)
 {
-	DE_ASSERT(tcu::isAstcFormat(format));
-	const IVec3 blockSize = tcu::getBlockPixelSize(format);
-	DE_ASSERT(blockSize.z() == 1);
+    DE_ASSERT(tcu::isAstcFormat(format));
+    const IVec3 blockSize = tcu::getBlockPixelSize(format);
+    DE_ASSERT(blockSize.z() == 1);
 
-	return de::toString(blockSize.x()) + "x" + de::toString(blockSize.y()) + (tcu::isAstcSRGBFormat(format) ? "_srgb" : "");
+    return de::toString(blockSize.x()) + "x" + de::toString(blockSize.y()) +
+           (tcu::isAstcSRGBFormat(format) ? "_srgb" : "");
 }
 
-CompressedTextureTests::CompressedTextureTests (Context& context)
-	: TestCaseGroup (context, "compressed", "Compressed Texture Tests")
-{
-}
-
-CompressedTextureTests::~CompressedTextureTests (void)
+CompressedTextureTests::CompressedTextureTests(Context &context)
+    : TestCaseGroup(context, "compressed", "Compressed Texture Tests")
 {
 }
 
-void CompressedTextureTests::init (void)
+CompressedTextureTests::~CompressedTextureTests(void)
 {
-	// ASTC cases.
-	{
-		TestCaseGroup* const astcGroup = new TestCaseGroup(m_context, "astc", "ASTC Tests");
-		addChild(astcGroup);
-
-		// Block test cases.
-
-		for (int astcTestTypeI = 0; astcTestTypeI < tcu::astc::BLOCK_TEST_TYPE_LAST; astcTestTypeI++)
-		{
-			const tcu::astc::BlockTestType	astcTestType	= (tcu::astc::BlockTestType)astcTestTypeI;
-			TestCaseGroup* const			testTypeGroup	= new TestCaseGroup(m_context, getBlockTestTypeName(astcTestType), getBlockTestTypeDescription(astcTestType));
-			astcGroup->addChild(testTypeGroup);
-
-			for (int formatI = 0; formatI < tcu::COMPRESSEDTEXFORMAT_LAST; formatI++)
-			{
-				const CompressedTexFormat format = (CompressedTexFormat)formatI;
-
-				if (!tcu::isAstcFormat(format))
-					continue;
-				if (tcu::isAstcSRGBFormat(format) && tcu::astc::isBlockTestTypeHDROnly(astcTestType))
-					continue;
-
-				testTypeGroup->addChild(new ASTCBlockCase2D(m_context, getASTCFormatShortName(format).c_str(), glu::getCompressedTextureFormatName(glu::getGLFormat(format)), astcTestType, format));
-			}
-		}
-
-		// Image size/block size remainder cases.
-
-		{
-			TestCaseGroup* const blockSizeRemainderGroup = new TestCaseGroup(m_context, "block_size_remainder", "Test image size/block size remainders");
-			astcGroup->addChild(blockSizeRemainderGroup);
-
-			for (int formatI = 0; formatI < tcu::COMPRESSEDTEXFORMAT_LAST; formatI++)
-			{
-				const CompressedTexFormat format = (CompressedTexFormat)formatI;
-
-				if (!tcu::isAstcFormat(format))
-					continue;
-
-				blockSizeRemainderGroup->addChild(new ASTCBlockSizeRemainderCase2D(m_context, getASTCFormatShortName(format).c_str(), glu::getCompressedTextureFormatName(glu::getGLFormat(format)), format));
-			}
-		}
-	}
 }
 
-} // Functional
-} // gles3
-} // deqp
+void CompressedTextureTests::init(void)
+{
+    // ASTC cases.
+    {
+        TestCaseGroup *const astcGroup = new TestCaseGroup(m_context, "astc", "ASTC Tests");
+        addChild(astcGroup);
+
+        // Block test cases.
+
+        for (int astcTestTypeI = 0; astcTestTypeI < tcu::astc::BLOCK_TEST_TYPE_LAST; astcTestTypeI++)
+        {
+            const tcu::astc::BlockTestType astcTestType = (tcu::astc::BlockTestType)astcTestTypeI;
+            TestCaseGroup *const testTypeGroup = new TestCaseGroup(m_context, getBlockTestTypeName(astcTestType),
+                                                                   getBlockTestTypeDescription(astcTestType));
+            astcGroup->addChild(testTypeGroup);
+
+            for (int formatI = 0; formatI < tcu::COMPRESSEDTEXFORMAT_LAST; formatI++)
+            {
+                const CompressedTexFormat format = (CompressedTexFormat)formatI;
+
+                if (!tcu::isAstcFormat(format))
+                    continue;
+                if (tcu::isAstcSRGBFormat(format) && tcu::astc::isBlockTestTypeHDROnly(astcTestType))
+                    continue;
+
+                testTypeGroup->addChild(new ASTCBlockCase2D(
+                    m_context, getASTCFormatShortName(format).c_str(),
+                    glu::getCompressedTextureFormatName(glu::getGLFormat(format)), astcTestType, format));
+            }
+        }
+
+        // Image size/block size remainder cases.
+
+        {
+            TestCaseGroup *const blockSizeRemainderGroup =
+                new TestCaseGroup(m_context, "block_size_remainder", "Test image size/block size remainders");
+            astcGroup->addChild(blockSizeRemainderGroup);
+
+            for (int formatI = 0; formatI < tcu::COMPRESSEDTEXFORMAT_LAST; formatI++)
+            {
+                const CompressedTexFormat format = (CompressedTexFormat)formatI;
+
+                if (!tcu::isAstcFormat(format))
+                    continue;
+
+                blockSizeRemainderGroup->addChild(new ASTCBlockSizeRemainderCase2D(
+                    m_context, getASTCFormatShortName(format).c_str(),
+                    glu::getCompressedTextureFormatName(glu::getGLFormat(format)), format));
+            }
+        }
+    }
+}
+
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp

@@ -32,10 +32,10 @@ namespace vkt
 namespace texture
 {
 
-tcu::TestCaseGroup*		createTextureCompressedFormatTests		(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*		create3DTextureCompressedFormatTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTextureCompressedFormatTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *create3DTextureCompressedFormatTests(tcu::TestContext &testCtx);
 
-} // texture
-} // vkt
+} // namespace texture
+} // namespace vkt
 
 #endif // _VKTTEXTURECOMPRESSEDFORMATTESTS_HPP

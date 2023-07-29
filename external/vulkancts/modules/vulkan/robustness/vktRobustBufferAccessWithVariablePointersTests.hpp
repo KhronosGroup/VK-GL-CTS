@@ -31,9 +31,9 @@ namespace vkt
 namespace robustness
 {
 
-tcu::TestCaseGroup* createBufferAccessWithVariablePointersTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createBufferAccessWithVariablePointersTests(tcu::TestContext &testCtx);
 
-} // robustness
-} // vkt
+} // namespace robustness
+} // namespace vkt
 
 #endif // _VKTROBUSTBUFFERACCESSWITHVARIABLEPOINTERSTESTS_HPP

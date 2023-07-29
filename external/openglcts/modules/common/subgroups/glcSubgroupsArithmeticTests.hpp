@@ -33,9 +33,9 @@ namespace glc
 namespace subgroups
 {
 
-deqp::TestCaseGroup* createSubgroupsArithmeticTests(deqp::Context& testCtx);
+deqp::TestCaseGroup *createSubgroupsArithmeticTests(deqp::Context &testCtx);
 
-} // subgroups
-} // glc
+} // namespace subgroups
+} // namespace glc
 
 #endif // _GLCSUBGROUPSARITHMETICTESTS_HPP

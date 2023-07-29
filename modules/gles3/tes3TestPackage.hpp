@@ -31,7 +31,7 @@
 
 namespace tcu
 {
-	class WaiverUtil;
+class WaiverUtil;
 };
 
 namespace deqp
@@ -42,24 +42,30 @@ namespace gles3
 class TestPackage : public tcu::TestPackage
 {
 public:
-									TestPackage				(tcu::TestContext& testCtx);
-	virtual							~TestPackage			(void);
+    TestPackage(tcu::TestContext &testCtx);
+    virtual ~TestPackage(void);
 
-	virtual void					init					(void);
-	virtual void					deinit					(void);
+    virtual void init(void);
+    virtual void deinit(void);
 
-	tcu::TestCaseExecutor*			createExecutor			(void) const;
+    tcu::TestCaseExecutor *createExecutor(void) const;
 
-	tcu::Archive*					getArchive				(void) { return &m_archive;	}
-	Context*						getContext				(void) { return m_context;	}
+    tcu::Archive *getArchive(void)
+    {
+        return &m_archive;
+    }
+    Context *getContext(void)
+    {
+        return m_context;
+    }
 
 private:
-	tcu::ResourcePrefix				m_archive;
-	Context*						m_context;
-	de::SharedPtr<tcu::WaiverUtil>	m_waiverMechanism;
+    tcu::ResourcePrefix m_archive;
+    Context *m_context;
+    de::SharedPtr<tcu::WaiverUtil> m_waiverMechanism;
 };
 
-} // gles3
-} // deqp
+} // namespace gles3
+} // namespace deqp
 
 #endif // _TES3TESTPACKAGE_HPP

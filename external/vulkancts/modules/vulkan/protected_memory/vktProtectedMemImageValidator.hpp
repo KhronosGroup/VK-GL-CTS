@@ -35,31 +35,31 @@ namespace ProtectedMem
 
 class ProtectedContext;
 
-struct ValidationData {
-	tcu::Vec4	coords[4];
-	tcu::Vec4	values[4];
+struct ValidationData
+{
+    tcu::Vec4 coords[4];
+    tcu::Vec4 values[4];
 };
 
 class ImageValidator
 {
 public:
-							ImageValidator	(vk::VkFormat imageFormat = vk::VK_FORMAT_R8G8B8A8_UNORM)
-								: m_imageFormat	(imageFormat)
-							{}
-							~ImageValidator	() {}
-	void					initPrograms	(vk::SourceCollections&	programCollection) const;
+    ImageValidator(vk::VkFormat imageFormat = vk::VK_FORMAT_R8G8B8A8_UNORM) : m_imageFormat(imageFormat)
+    {
+    }
+    ~ImageValidator()
+    {
+    }
+    void initPrograms(vk::SourceCollections &programCollection) const;
 
-	bool					validateImage	(ProtectedContext&		ctx,
-											 const ValidationData&	refData,
-											 const vk::VkImage		image,
-											 const vk::VkFormat		imageFormat,
-											 const vk::VkImageLayout imageLayout) const;
+    bool validateImage(ProtectedContext &ctx, const ValidationData &refData, const vk::VkImage image,
+                       const vk::VkFormat imageFormat, const vk::VkImageLayout imageLayout) const;
 
 private:
-	const vk::VkFormat		m_imageFormat;
+    const vk::VkFormat m_imageFormat;
 };
 
-} // ProtectedMem
-} // vkt
+} // namespace ProtectedMem
+} // namespace vkt
 
 #endif // _VKTPROTECTEDMEMIMAGEVALIDATOR_HPP

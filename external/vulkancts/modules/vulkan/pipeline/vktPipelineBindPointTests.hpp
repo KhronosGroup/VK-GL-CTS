@@ -31,9 +31,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createBindPointTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createBindPointTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEBINDPOINTTESTS_HPP

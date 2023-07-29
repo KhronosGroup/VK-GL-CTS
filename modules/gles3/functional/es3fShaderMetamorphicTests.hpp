@@ -35,18 +35,18 @@ namespace Functional
 class ShaderMetamorphicTests : public TestCaseGroup
 {
 public:
-								ShaderMetamorphicTests		(Context& context);
-	virtual						~ShaderMetamorphicTests		(void);
+    ShaderMetamorphicTests(Context &context);
+    virtual ~ShaderMetamorphicTests(void);
 
-	virtual void				init						(void);
+    virtual void init(void);
 
 private:
-								ShaderMetamorphicTests		(const ShaderMetamorphicTests&);	// not allowed!
-	ShaderMetamorphicTests&		operator=					(const ShaderMetamorphicTests&);	// not allowed!
+    ShaderMetamorphicTests(const ShaderMetamorphicTests &);            // not allowed!
+    ShaderMetamorphicTests &operator=(const ShaderMetamorphicTests &); // not allowed!
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FSHADERMETAMORPHICTESTS_HPP

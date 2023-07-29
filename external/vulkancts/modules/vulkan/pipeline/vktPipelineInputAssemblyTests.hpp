@@ -31,9 +31,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createInputAssemblyTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createInputAssemblyTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEINPUTASSEMBLYTESTS_HPP

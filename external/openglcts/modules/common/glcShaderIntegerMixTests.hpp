@@ -36,12 +36,12 @@ namespace deqp
 class ShaderIntegerMixTests : public TestCaseGroup
 {
 public:
-	ShaderIntegerMixTests(Context& context, glu::GLSLVersion glslVersion);
-	~ShaderIntegerMixTests();
+    ShaderIntegerMixTests(Context &context, glu::GLSLVersion glslVersion);
+    ~ShaderIntegerMixTests();
 
-	void init(void);
+    void init(void);
 
-	glu::GLSLVersion m_glslVersion;
+    glu::GLSLVersion m_glslVersion;
 };
 
 } // namespace deqp

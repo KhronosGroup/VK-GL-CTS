@@ -36,21 +36,21 @@ namespace glcts
 class GeometryShaderTests : public glcts::TestCaseGroupBase
 {
 public:
-	/* Public methods */
-	GeometryShaderTests(glcts::Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    GeometryShaderTests(glcts::Context &context, const ExtParameters &extParams);
 
-	~GeometryShaderTests(void)
-	{
-	}
+    ~GeometryShaderTests(void)
+    {
+    }
 
-	void init(void);
+    void init(void);
 
 private:
-	/* Private methods */
-	GeometryShaderTests(const GeometryShaderTests& other);
-	GeometryShaderTests& operator=(const GeometryShaderTests& other);
+    /* Private methods */
+    GeometryShaderTests(const GeometryShaderTests &other);
+    GeometryShaderTests &operator=(const GeometryShaderTests &other);
 };
 
-} // glcts
+} // namespace glcts
 
 #endif // _ESEXTCGEOMETRYSHADERTESTS_HPP

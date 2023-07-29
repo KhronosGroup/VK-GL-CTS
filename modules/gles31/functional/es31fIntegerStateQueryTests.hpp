@@ -36,18 +36,18 @@ namespace Functional
 class IntegerStateQueryTests : public TestCaseGroup
 {
 public:
-							IntegerStateQueryTests	(Context& context);
-							~IntegerStateQueryTests	(void);
+    IntegerStateQueryTests(Context &context);
+    ~IntegerStateQueryTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							IntegerStateQueryTests	(const IntegerStateQueryTests& other);
-	IntegerStateQueryTests&	operator=				(const IntegerStateQueryTests& other);
+    IntegerStateQueryTests(const IntegerStateQueryTests &other);
+    IntegerStateQueryTests &operator=(const IntegerStateQueryTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FINTEGERSTATEQUERYTESTS_HPP

@@ -36,18 +36,18 @@ namespace Stress
 class LongRunningShaderTests : public TestCaseGroup
 {
 public:
-								LongRunningShaderTests	(Context& context);
-								~LongRunningShaderTests	(void);
+    LongRunningShaderTests(Context &context);
+    ~LongRunningShaderTests(void);
 
-	void						init					(void);
+    void init(void);
 
 private:
-								LongRunningShaderTests	(const LongRunningShaderTests&);
-	LongRunningShaderTests&		operator=				(const LongRunningShaderTests&);
+    LongRunningShaderTests(const LongRunningShaderTests &);
+    LongRunningShaderTests &operator=(const LongRunningShaderTests &);
 };
 
-} // Stress
-} // gles3
-} // deqp
+} // namespace Stress
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3SLONGRUNNINGSHADERTESTS_HPP

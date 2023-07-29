@@ -38,63 +38,81 @@ namespace gls
 class ShaderPerformanceCase : public tcu::TestCase
 {
 public:
-	struct InitialCalibration
-	{
-		int initialNumCalls;
-		InitialCalibration (void) : initialNumCalls(1) {}
-	};
+    struct InitialCalibration
+    {
+        int initialNumCalls;
+        InitialCalibration(void) : initialNumCalls(1)
+        {
+        }
+    };
 
-										ShaderPerformanceCase				(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, PerfCaseType caseType);
-										~ShaderPerformanceCase				(void);
+    ShaderPerformanceCase(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, const char *name,
+                          const char *description, PerfCaseType caseType);
+    ~ShaderPerformanceCase(void);
 
-	void								setCalibrationInitialParamStorage	(const de::SharedPtr<InitialCalibration>& storage) { m_initialCalibration = storage; }
+    void setCalibrationInitialParamStorage(const de::SharedPtr<InitialCalibration> &storage)
+    {
+        m_initialCalibration = storage;
+    }
 
-	void								init								(void);
-	void								deinit								(void);
+    void init(void);
+    void deinit(void);
 
-	IterateResult						iterate								(void);
+    IterateResult iterate(void);
 
 protected:
-	virtual void						setupProgram						(deUint32 program);
-	virtual void						setupRenderState					(void);
+    virtual void setupProgram(uint32_t program);
+    virtual void setupRenderState(void);
 
-	void								setGridSize							(int gridW, int gridH);
-	void								setViewportSize						(int width, int height);
-	void								setVertexFragmentRatio				(float fragmentsPerVertices);
+    void setGridSize(int gridW, int gridH);
+    void setViewportSize(int width, int height);
+    void setVertexFragmentRatio(float fragmentsPerVertices);
 
-	int									getGridWidth						(void) const { return m_measurer.getGridWidth();		}
-	int									getGridHeight						(void) const { return m_measurer.getGridHeight();		}
-	int									getViewportWidth					(void) const { return m_measurer.getViewportWidth();	}
-	int									getViewportHeight					(void) const { return m_measurer.getViewportHeight();	}
+    int getGridWidth(void) const
+    {
+        return m_measurer.getGridWidth();
+    }
+    int getGridHeight(void) const
+    {
+        return m_measurer.getGridHeight();
+    }
+    int getViewportWidth(void) const
+    {
+        return m_measurer.getViewportWidth();
+    }
+    int getViewportHeight(void) const
+    {
+        return m_measurer.getViewportHeight();
+    }
 
-	virtual void						reportResult						(float mvertPerSecond, float mfragPerSecond);
+    virtual void reportResult(float mvertPerSecond, float mfragPerSecond);
 
-	glu::RenderContext&					m_renderCtx;
+    glu::RenderContext &m_renderCtx;
 
-	PerfCaseType						m_caseType;
+    PerfCaseType m_caseType;
 
-	std::string							m_vertShaderSource;
-	std::string							m_fragShaderSource;
-	std::vector<AttribSpec>				m_attributes;
+    std::string m_vertShaderSource;
+    std::string m_fragShaderSource;
+    std::vector<AttribSpec> m_attributes;
 
 private:
-	glu::ShaderProgram*					m_program;
-	ShaderPerformanceMeasurer			m_measurer;
+    glu::ShaderProgram *m_program;
+    ShaderPerformanceMeasurer m_measurer;
 
-	de::SharedPtr<InitialCalibration>	m_initialCalibration;
+    de::SharedPtr<InitialCalibration> m_initialCalibration;
 };
 
 class ShaderPerformanceCaseGroup : public tcu::TestCaseGroup
 {
 public:
-																ShaderPerformanceCaseGroup	(tcu::TestContext& testCtx, const char* name, const char* description);
-	void														addChild					(ShaderPerformanceCase*);
+    ShaderPerformanceCaseGroup(tcu::TestContext &testCtx, const char *name, const char *description);
+    void addChild(ShaderPerformanceCase *);
 
 private:
-	de::SharedPtr<ShaderPerformanceCase::InitialCalibration>	m_initialCalibrationStorage;
+    de::SharedPtr<ShaderPerformanceCase::InitialCalibration> m_initialCalibrationStorage;
 };
 
-} // gls
-} // deqp
+} // namespace gls
+} // namespace deqp
 
 #endif // _GLSSHADERPERFORMANCECASE_HPP

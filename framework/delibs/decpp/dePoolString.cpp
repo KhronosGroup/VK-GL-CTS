@@ -29,42 +29,42 @@
 namespace de
 {
 
-void PoolString::toString (std::string& str) const
+void PoolString::toString(std::string &str) const
 {
-	str.resize(size());
-	std::copy(begin(), end(), str.begin());
+    str.resize(size());
+    std::copy(begin(), end(), str.begin());
 }
 
-void PoolString::append (const char* str)
+void PoolString::append(const char *str)
 {
-	deUintptr	oldEnd	= size();
-	size_t		len		= strlen(str);
+    uintptr_t oldEnd = size();
+    size_t len       = strlen(str);
 
-	resize(size()+len);
-	std::copy(str, str+len, begin()+oldEnd);
+    resize(size() + len);
+    std::copy(str, str + len, begin() + oldEnd);
 }
 
-void PoolString::append (const std::string& str)
+void PoolString::append(const std::string &str)
 {
-	deUintptr oldEnd = size();
+    uintptr_t oldEnd = size();
 
-	resize(size()+str.length());
-	std::copy(str.begin(), str.end(), begin()+oldEnd);
+    resize(size() + str.length());
+    std::copy(str.begin(), str.end(), begin() + oldEnd);
 }
 
-void PoolString::append (const PoolString& str)
+void PoolString::append(const PoolString &str)
 {
-	deUintptr oldEnd = size();
+    uintptr_t oldEnd = size();
 
-	resize(size()+str.size());
-	std::copy(str.begin(), str.end(), begin()+oldEnd);
+    resize(size() + str.size());
+    std::copy(str.begin(), str.end(), begin() + oldEnd);
 }
 
-std::ostream& operator<< (std::ostream& stream, const PoolString& string)
+std::ostream &operator<<(std::ostream &stream, const PoolString &string)
 {
-	for (PoolString::ConstIterator i = string.begin(); i != string.end(); i++)
-		stream << *i;
-	return stream;
+    for (PoolString::ConstIterator i = string.begin(); i != string.end(); i++)
+        stream << *i;
+    return stream;
 }
 
-} // de
+} // namespace de

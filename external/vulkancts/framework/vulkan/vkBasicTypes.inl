@@ -1,9 +1,9 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  */
-#define VK_API_VERSION_1_0					(static_cast<deUint32>			(VK_MAKE_API_VERSION(0, 1, 0, 0)))
-#define VK_API_VERSION_1_1					(static_cast<deUint32>			(VK_MAKE_API_VERSION(0, 1, 1, 0)))
-#define VK_API_VERSION_1_2					(static_cast<deUint32>			(VK_MAKE_API_VERSION(0, 1, 2, 0)))
+#define VK_API_VERSION_1_0					(static_cast<uint32_t>			(VK_MAKE_API_VERSION(0, 1, 0, 0)))
+#define VK_API_VERSION_1_1					(static_cast<uint32_t>			(VK_MAKE_API_VERSION(0, 1, 1, 0)))
+#define VK_API_VERSION_1_2					(static_cast<uint32_t>			(VK_MAKE_API_VERSION(0, 1, 2, 0)))
 #define VK_MAX_PHYSICAL_DEVICE_NAME_SIZE	(static_cast<size_t>			(256U))
 #define VK_MAX_EXTENSION_NAME_SIZE			(static_cast<size_t>			(256U))
 #define VK_MAX_DRIVER_NAME_SIZE				(static_cast<size_t>			(256U))
@@ -14,12 +14,12 @@
 #define VK_MAX_MEMORY_HEAPS					(static_cast<size_t>			(16U))
 #define VK_MAX_DESCRIPTION_SIZE				(static_cast<size_t>			(256U))
 #define VK_MAX_DEVICE_GROUP_SIZE			(static_cast<size_t>			(32U))
-#define VK_ATTACHMENT_UNUSED				(static_cast<deUint32>			((~0U)))
-#define VK_SUBPASS_EXTERNAL					(static_cast<deUint32>			((~0U)))
-#define VK_QUEUE_FAMILY_IGNORED				(static_cast<deUint32>			((~0U)))
-#define VK_QUEUE_FAMILY_EXTERNAL			(static_cast<deUint32>			((~1U)))
-#define VK_REMAINING_MIP_LEVELS				(static_cast<deUint32>			((~0U)))
-#define VK_REMAINING_ARRAY_LAYERS			(static_cast<deUint32>			((~0U)))
+#define VK_ATTACHMENT_UNUSED				(static_cast<uint32_t>			((~0U)))
+#define VK_SUBPASS_EXTERNAL					(static_cast<uint32_t>			((~0U)))
+#define VK_QUEUE_FAMILY_IGNORED				(static_cast<uint32_t>			((~0U)))
+#define VK_QUEUE_FAMILY_EXTERNAL			(static_cast<uint32_t>			((~1U)))
+#define VK_REMAINING_MIP_LEVELS				(static_cast<uint32_t>			((~0U)))
+#define VK_REMAINING_ARRAY_LAYERS			(static_cast<uint32_t>			((~0U)))
 #define VK_WHOLE_SIZE						(static_cast<vk::VkDeviceSize>	((~0ULL)))
 #define VK_TRUE								(static_cast<vk::VkBool32>		(1U))
 #define VK_FALSE							(static_cast<vk::VkBool32>		(0U))
@@ -2580,7 +2580,7 @@ enum VkAccessFlagBits
 	VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV			= VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
 	VK_ACCESS_FLAG_BITS_MAX_ENUM							= 0x7FFFFFFF,
 };
-typedef deUint32 VkAccessFlags;
+typedef uint32_t VkAccessFlags;
 
 enum VkImageAspectFlagBits
 {
@@ -2600,7 +2600,7 @@ enum VkImageAspectFlagBits
 	VK_IMAGE_ASPECT_PLANE_2_BIT_KHR			= VK_IMAGE_ASPECT_PLANE_2_BIT,
 	VK_IMAGE_ASPECT_FLAG_BITS_MAX_ENUM		= 0x7FFFFFFF,
 };
-typedef deUint32 VkImageAspectFlags;
+typedef uint32_t VkImageAspectFlags;
 
 enum VkFormatFeatureFlagBits
 {
@@ -2648,7 +2648,7 @@ enum VkFormatFeatureFlagBits
 	VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT												= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG,
 	VK_FORMAT_FEATURE_FLAG_BITS_MAX_ENUM																= 0x7FFFFFFF,
 };
-typedef deUint32 VkFormatFeatureFlags;
+typedef uint32_t VkFormatFeatureFlags;
 
 enum VkImageCreateFlagBits
 {
@@ -2675,7 +2675,7 @@ enum VkImageCreateFlagBits
 	VK_IMAGE_CREATE_ALIAS_BIT_KHR								= VK_IMAGE_CREATE_ALIAS_BIT,
 	VK_IMAGE_CREATE_FLAG_BITS_MAX_ENUM							= 0x7FFFFFFF,
 };
-typedef deUint32 VkImageCreateFlags;
+typedef uint32_t VkImageCreateFlags;
 
 enum VkSampleCountFlagBits
 {
@@ -2688,7 +2688,7 @@ enum VkSampleCountFlagBits
 	VK_SAMPLE_COUNT_64_BIT				= 0x00000040,
 	VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkSampleCountFlags;
+typedef uint32_t VkSampleCountFlags;
 
 enum VkImageUsageFlagBits
 {
@@ -2711,7 +2711,7 @@ enum VkImageUsageFlagBits
 	VK_IMAGE_USAGE_SHADING_RATE_IMAGE_BIT_NV				= VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,
 	VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM						= 0x7FFFFFFF,
 };
-typedef deUint32 VkImageUsageFlags;
+typedef uint32_t VkImageUsageFlags;
 
 enum VkMemoryHeapFlagBits
 {
@@ -2720,7 +2720,7 @@ enum VkMemoryHeapFlagBits
 	VK_MEMORY_HEAP_MULTI_INSTANCE_BIT_KHR	= VK_MEMORY_HEAP_MULTI_INSTANCE_BIT,
 	VK_MEMORY_HEAP_FLAG_BITS_MAX_ENUM		= 0x7FFFFFFF,
 };
-typedef deUint32 VkMemoryHeapFlags;
+typedef uint32_t VkMemoryHeapFlags;
 
 enum VkMemoryPropertyFlagBits
 {
@@ -2734,7 +2734,7 @@ enum VkMemoryPropertyFlagBits
 	VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD	= 0x00000080,
 	VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM		= 0x7FFFFFFF,
 };
-typedef deUint32 VkMemoryPropertyFlags;
+typedef uint32_t VkMemoryPropertyFlags;
 
 enum VkQueueFlagBits
 {
@@ -2747,14 +2747,14 @@ enum VkQueueFlagBits
 	VK_QUEUE_VIDEO_ENCODE_BIT_KHR	= 0x00000040,
 	VK_QUEUE_FLAG_BITS_MAX_ENUM		= 0x7FFFFFFF,
 };
-typedef deUint32 VkQueueFlags;
+typedef uint32_t VkQueueFlags;
 
 enum VkDeviceQueueCreateFlagBits
 {
 	VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT		= 0x00000001,
 	VK_DEVICE_QUEUE_CREATE_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkDeviceQueueCreateFlags;
+typedef uint32_t VkDeviceQueueCreateFlags;
 
 enum VkPipelineStageFlagBits
 {
@@ -2790,14 +2790,14 @@ enum VkPipelineStageFlagBits
 	VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV		= VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
 	VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM						= 0x7FFFFFFF,
 };
-typedef deUint32 VkPipelineStageFlags;
+typedef uint32_t VkPipelineStageFlags;
 
 enum VkSparseMemoryBindFlagBits
 {
 	VK_SPARSE_MEMORY_BIND_METADATA_BIT			= 0x00000001,
 	VK_SPARSE_MEMORY_BIND_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkSparseMemoryBindFlags;
+typedef uint32_t VkSparseMemoryBindFlags;
 
 enum VkSparseImageFormatFlagBits
 {
@@ -2806,21 +2806,21 @@ enum VkSparseImageFormatFlagBits
 	VK_SPARSE_IMAGE_FORMAT_NONSTANDARD_BLOCK_SIZE_BIT	= 0x00000004,
 	VK_SPARSE_IMAGE_FORMAT_FLAG_BITS_MAX_ENUM			= 0x7FFFFFFF,
 };
-typedef deUint32 VkSparseImageFormatFlags;
+typedef uint32_t VkSparseImageFormatFlags;
 
 enum VkFenceCreateFlagBits
 {
 	VK_FENCE_CREATE_SIGNALED_BIT		= 0x00000001,
 	VK_FENCE_CREATE_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkFenceCreateFlags;
+typedef uint32_t VkFenceCreateFlags;
 
 enum VkEventCreateFlagBits
 {
 	VK_EVENT_CREATE_DEVICE_ONLY_BIT_KHR	= 0x00000001,
 	VK_EVENT_CREATE_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkEventCreateFlags;
+typedef uint32_t VkEventCreateFlags;
 
 enum VkQueryPipelineStatisticFlagBits
 {
@@ -2837,7 +2837,7 @@ enum VkQueryPipelineStatisticFlagBits
 	VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT					= 0x00000400,
 	VK_QUERY_PIPELINE_STATISTIC_FLAG_BITS_MAX_ENUM								= 0x7FFFFFFF,
 };
-typedef deUint32 VkQueryPipelineStatisticFlags;
+typedef uint32_t VkQueryPipelineStatisticFlags;
 
 enum VkQueryResultFlagBits
 {
@@ -2848,7 +2848,7 @@ enum VkQueryResultFlagBits
 	VK_QUERY_RESULT_WITH_STATUS_BIT_KHR		= 0x00000010,
 	VK_QUERY_RESULT_FLAG_BITS_MAX_ENUM		= 0x7FFFFFFF,
 };
-typedef deUint32 VkQueryResultFlags;
+typedef uint32_t VkQueryResultFlags;
 
 enum VkBufferCreateFlagBits
 {
@@ -2861,7 +2861,7 @@ enum VkBufferCreateFlagBits
 	VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR	= VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT,
 	VK_BUFFER_CREATE_FLAG_BITS_MAX_ENUM						= 0x7FFFFFFF,
 };
-typedef deUint32 VkBufferCreateFlags;
+typedef uint32_t VkBufferCreateFlags;
 
 enum VkBufferUsageFlagBits
 {
@@ -2890,7 +2890,7 @@ enum VkBufferUsageFlagBits
 	VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR							= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
 	VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM										= 0x7FFFFFFF,
 };
-typedef deUint32 VkBufferUsageFlags;
+typedef uint32_t VkBufferUsageFlags;
 
 enum VkImageViewCreateFlagBits
 {
@@ -2898,20 +2898,20 @@ enum VkImageViewCreateFlagBits
 	VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DEFERRED_BIT_EXT	= 0x00000002,
 	VK_IMAGE_VIEW_CREATE_FLAG_BITS_MAX_ENUM						= 0x7FFFFFFF,
 };
-typedef deUint32 VkImageViewCreateFlags;
+typedef uint32_t VkImageViewCreateFlags;
 
 enum VkShaderModuleCreateFlagBits
 {
 	VK_SHADER_MODULE_CREATE_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkShaderModuleCreateFlags;
+typedef uint32_t VkShaderModuleCreateFlags;
 
 enum VkPipelineCacheCreateFlagBits
 {
 	VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT_EXT	= 0x00000001,
 	VK_PIPELINE_CACHE_CREATE_FLAG_BITS_MAX_ENUM					= 0x7FFFFFFF,
 };
-typedef deUint32 VkPipelineCacheCreateFlags;
+typedef uint32_t VkPipelineCacheCreateFlags;
 
 enum VkColorComponentFlagBits
 {
@@ -2921,7 +2921,7 @@ enum VkColorComponentFlagBits
 	VK_COLOR_COMPONENT_A_BIT				= 0x00000008,
 	VK_COLOR_COMPONENT_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkColorComponentFlags;
+typedef uint32_t VkColorComponentFlags;
 
 enum VkPipelineCreateFlagBits
 {
@@ -2949,7 +2949,7 @@ enum VkPipelineCreateFlagBits
 	VK_PIPELINE_CREATE_DISPATCH_BASE_KHR										= VK_PIPELINE_CREATE_DISPATCH_BASE,
 	VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM										= 0x7FFFFFFF,
 };
-typedef deUint32 VkPipelineCreateFlags;
+typedef uint32_t VkPipelineCreateFlags;
 
 enum VkPipelineShaderStageCreateFlagBits
 {
@@ -2957,7 +2957,7 @@ enum VkPipelineShaderStageCreateFlagBits
 	VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT		= 0x00000002,
 	VK_PIPELINE_SHADER_STAGE_CREATE_FLAG_BITS_MAX_ENUM					= 0x7FFFFFFF,
 };
-typedef deUint32 VkPipelineShaderStageCreateFlags;
+typedef uint32_t VkPipelineShaderStageCreateFlags;
 
 enum VkShaderStageFlagBits
 {
@@ -2985,7 +2985,7 @@ enum VkShaderStageFlagBits
 	VK_SHADER_STAGE_CALLABLE_BIT_NV				= VK_SHADER_STAGE_CALLABLE_BIT_KHR,
 	VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM			= 0x7FFFFFFF,
 };
-typedef deUint32 VkShaderStageFlags;
+typedef uint32_t VkShaderStageFlags;
 
 enum VkCullModeFlagBits
 {
@@ -2995,7 +2995,7 @@ enum VkCullModeFlagBits
 	VK_CULL_MODE_FRONT_AND_BACK		= 0x00000003,
 	VK_CULL_MODE_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkCullModeFlags;
+typedef uint32_t VkCullModeFlags;
 
 enum VkSamplerCreateFlagBits
 {
@@ -3003,7 +3003,7 @@ enum VkSamplerCreateFlagBits
 	VK_SAMPLER_CREATE_SUBSAMPLED_COARSE_RECONSTRUCTION_BIT_EXT	= 0x00000002,
 	VK_SAMPLER_CREATE_FLAG_BITS_MAX_ENUM						= 0x7FFFFFFF,
 };
-typedef deUint32 VkSamplerCreateFlags;
+typedef uint32_t VkSamplerCreateFlags;
 
 enum VkDescriptorPoolCreateFlagBits
 {
@@ -3013,7 +3013,7 @@ enum VkDescriptorPoolCreateFlagBits
 	VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT	= VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT,
 	VK_DESCRIPTOR_POOL_CREATE_FLAG_BITS_MAX_ENUM		= 0x7FFFFFFF,
 };
-typedef deUint32 VkDescriptorPoolCreateFlags;
+typedef uint32_t VkDescriptorPoolCreateFlags;
 
 enum VkDescriptorSetLayoutCreateFlagBits
 {
@@ -3023,14 +3023,14 @@ enum VkDescriptorSetLayoutCreateFlagBits
 	VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT	= VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,
 	VK_DESCRIPTOR_SET_LAYOUT_CREATE_FLAG_BITS_MAX_ENUM				= 0x7FFFFFFF,
 };
-typedef deUint32 VkDescriptorSetLayoutCreateFlags;
+typedef uint32_t VkDescriptorSetLayoutCreateFlags;
 
 enum VkAttachmentDescriptionFlagBits
 {
 	VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT			= 0x00000001,
 	VK_ATTACHMENT_DESCRIPTION_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkAttachmentDescriptionFlags;
+typedef uint32_t VkAttachmentDescriptionFlags;
 
 enum VkDependencyFlagBits
 {
@@ -3041,7 +3041,7 @@ enum VkDependencyFlagBits
 	VK_DEPENDENCY_DEVICE_GROUP_BIT_KHR	= VK_DEPENDENCY_DEVICE_GROUP_BIT,
 	VK_DEPENDENCY_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkDependencyFlags;
+typedef uint32_t VkDependencyFlags;
 
 enum VkFramebufferCreateFlagBits
 {
@@ -3049,14 +3049,14 @@ enum VkFramebufferCreateFlagBits
 	VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT_KHR		= VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT,
 	VK_FRAMEBUFFER_CREATE_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkFramebufferCreateFlags;
+typedef uint32_t VkFramebufferCreateFlags;
 
 enum VkRenderPassCreateFlagBits
 {
 	VK_RENDER_PASS_CREATE_TRANSFORM_BIT_QCOM	= 0x00000002,
 	VK_RENDER_PASS_CREATE_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkRenderPassCreateFlags;
+typedef uint32_t VkRenderPassCreateFlags;
 
 enum VkSubpassDescriptionFlagBits
 {
@@ -3066,7 +3066,7 @@ enum VkSubpassDescriptionFlagBits
 	VK_SUBPASS_DESCRIPTION_SHADER_RESOLVE_BIT_QCOM			= 0x00000008,
 	VK_SUBPASS_DESCRIPTION_FLAG_BITS_MAX_ENUM				= 0x7FFFFFFF,
 };
-typedef deUint32 VkSubpassDescriptionFlags;
+typedef uint32_t VkSubpassDescriptionFlags;
 
 enum VkCommandPoolCreateFlagBits
 {
@@ -3075,14 +3075,14 @@ enum VkCommandPoolCreateFlagBits
 	VK_COMMAND_POOL_CREATE_PROTECTED_BIT			= 0x00000004,
 	VK_COMMAND_POOL_CREATE_FLAG_BITS_MAX_ENUM		= 0x7FFFFFFF,
 };
-typedef deUint32 VkCommandPoolCreateFlags;
+typedef uint32_t VkCommandPoolCreateFlags;
 
 enum VkCommandPoolResetFlagBits
 {
 	VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT	= 0x00000001,
 	VK_COMMAND_POOL_RESET_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkCommandPoolResetFlags;
+typedef uint32_t VkCommandPoolResetFlags;
 
 enum VkCommandBufferUsageFlagBits
 {
@@ -3091,21 +3091,21 @@ enum VkCommandBufferUsageFlagBits
 	VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT		= 0x00000004,
 	VK_COMMAND_BUFFER_USAGE_FLAG_BITS_MAX_ENUM			= 0x7FFFFFFF,
 };
-typedef deUint32 VkCommandBufferUsageFlags;
+typedef uint32_t VkCommandBufferUsageFlags;
 
 enum VkQueryControlFlagBits
 {
 	VK_QUERY_CONTROL_PRECISE_BIT		= 0x00000001,
 	VK_QUERY_CONTROL_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkQueryControlFlags;
+typedef uint32_t VkQueryControlFlags;
 
 enum VkCommandBufferResetFlagBits
 {
 	VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT	= 0x00000001,
 	VK_COMMAND_BUFFER_RESET_FLAG_BITS_MAX_ENUM		= 0x7FFFFFFF,
 };
-typedef deUint32 VkCommandBufferResetFlags;
+typedef uint32_t VkCommandBufferResetFlags;
 
 enum VkStencilFaceFlagBits
 {
@@ -3115,7 +3115,7 @@ enum VkStencilFaceFlagBits
 	VK_STENCIL_FRONT_AND_BACK			= VK_STENCIL_FACE_FRONT_AND_BACK,
 	VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkStencilFaceFlags;
+typedef uint32_t VkStencilFaceFlags;
 
 enum VkSubgroupFeatureFlagBits
 {
@@ -3130,7 +3130,7 @@ enum VkSubgroupFeatureFlagBits
 	VK_SUBGROUP_FEATURE_PARTITIONED_BIT_NV		= 0x00000100,
 	VK_SUBGROUP_FEATURE_FLAG_BITS_MAX_ENUM		= 0x7FFFFFFF,
 };
-typedef deUint32 VkSubgroupFeatureFlags;
+typedef uint32_t VkSubgroupFeatureFlags;
 
 enum VkPeerMemoryFeatureFlagBits
 {
@@ -3144,7 +3144,7 @@ enum VkPeerMemoryFeatureFlagBits
 	VK_PEER_MEMORY_FEATURE_GENERIC_DST_BIT_KHR	= VK_PEER_MEMORY_FEATURE_GENERIC_DST_BIT,
 	VK_PEER_MEMORY_FEATURE_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkPeerMemoryFeatureFlags;
+typedef uint32_t VkPeerMemoryFeatureFlags;
 
 enum VkMemoryAllocateFlagBits
 {
@@ -3156,7 +3156,7 @@ enum VkMemoryAllocateFlagBits
 	VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR	= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT,
 	VK_MEMORY_ALLOCATE_FLAG_BITS_MAX_ENUM						= 0x7FFFFFFF,
 };
-typedef deUint32 VkMemoryAllocateFlags;
+typedef uint32_t VkMemoryAllocateFlags;
 
 enum VkExternalMemoryHandleTypeFlagBits
 {
@@ -3181,7 +3181,7 @@ enum VkExternalMemoryHandleTypeFlagBits
 	VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT_KHR				= VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT,
 	VK_EXTERNAL_MEMORY_HANDLE_TYPE_FLAG_BITS_MAX_ENUM					= 0x7FFFFFFF,
 };
-typedef deUint32 VkExternalMemoryHandleTypeFlags;
+typedef uint32_t VkExternalMemoryHandleTypeFlags;
 
 enum VkExternalMemoryFeatureFlagBits
 {
@@ -3193,7 +3193,7 @@ enum VkExternalMemoryFeatureFlagBits
 	VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR		= VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT,
 	VK_EXTERNAL_MEMORY_FEATURE_FLAG_BITS_MAX_ENUM		= 0x7FFFFFFF,
 };
-typedef deUint32 VkExternalMemoryFeatureFlags;
+typedef uint32_t VkExternalMemoryFeatureFlags;
 
 enum VkExternalFenceHandleTypeFlagBits
 {
@@ -3207,7 +3207,7 @@ enum VkExternalFenceHandleTypeFlagBits
 	VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT_KHR			= VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT,
 	VK_EXTERNAL_FENCE_HANDLE_TYPE_FLAG_BITS_MAX_ENUM		= 0x7FFFFFFF,
 };
-typedef deUint32 VkExternalFenceHandleTypeFlags;
+typedef uint32_t VkExternalFenceHandleTypeFlags;
 
 enum VkExternalFenceFeatureFlagBits
 {
@@ -3217,7 +3217,7 @@ enum VkExternalFenceFeatureFlagBits
 	VK_EXTERNAL_FENCE_FEATURE_IMPORTABLE_BIT_KHR	= VK_EXTERNAL_FENCE_FEATURE_IMPORTABLE_BIT,
 	VK_EXTERNAL_FENCE_FEATURE_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkExternalFenceFeatureFlags;
+typedef uint32_t VkExternalFenceFeatureFlags;
 
 enum VkFenceImportFlagBits
 {
@@ -3225,7 +3225,7 @@ enum VkFenceImportFlagBits
 	VK_FENCE_IMPORT_TEMPORARY_BIT_KHR	= VK_FENCE_IMPORT_TEMPORARY_BIT,
 	VK_FENCE_IMPORT_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkFenceImportFlags;
+typedef uint32_t VkFenceImportFlags;
 
 enum VkSemaphoreImportFlagBits
 {
@@ -3233,7 +3233,7 @@ enum VkSemaphoreImportFlagBits
 	VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR	= VK_SEMAPHORE_IMPORT_TEMPORARY_BIT,
 	VK_SEMAPHORE_IMPORT_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkSemaphoreImportFlags;
+typedef uint32_t VkSemaphoreImportFlags;
 
 enum VkExternalSemaphoreHandleTypeFlagBits
 {
@@ -3251,7 +3251,7 @@ enum VkExternalSemaphoreHandleTypeFlagBits
 	VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR			= VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT,
 	VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_FLAG_BITS_MAX_ENUM		= 0x7FFFFFFF,
 };
-typedef deUint32 VkExternalSemaphoreHandleTypeFlags;
+typedef uint32_t VkExternalSemaphoreHandleTypeFlags;
 
 enum VkExternalSemaphoreFeatureFlagBits
 {
@@ -3261,7 +3261,7 @@ enum VkExternalSemaphoreFeatureFlagBits
 	VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT_KHR	= VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT,
 	VK_EXTERNAL_SEMAPHORE_FEATURE_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkExternalSemaphoreFeatureFlags;
+typedef uint32_t VkExternalSemaphoreFeatureFlags;
 
 enum VkResolveModeFlagBits
 {
@@ -3277,7 +3277,7 @@ enum VkResolveModeFlagBits
 	VK_RESOLVE_MODE_MAX_BIT_KHR			= VK_RESOLVE_MODE_MAX_BIT,
 	VK_RESOLVE_MODE_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkResolveModeFlags;
+typedef uint32_t VkResolveModeFlags;
 
 enum VkDescriptorBindingFlagBits
 {
@@ -3291,7 +3291,7 @@ enum VkDescriptorBindingFlagBits
 	VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT		= VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT,
 	VK_DESCRIPTOR_BINDING_FLAG_BITS_MAX_ENUM					= 0x7FFFFFFF,
 };
-typedef deUint32 VkDescriptorBindingFlags;
+typedef uint32_t VkDescriptorBindingFlags;
 
 enum VkSemaphoreWaitFlagBits
 {
@@ -3299,7 +3299,7 @@ enum VkSemaphoreWaitFlagBits
 	VK_SEMAPHORE_WAIT_ANY_BIT_KHR			= VK_SEMAPHORE_WAIT_ANY_BIT,
 	VK_SEMAPHORE_WAIT_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF,
 };
-typedef deUint32 VkSemaphoreWaitFlags;
+typedef uint32_t VkSemaphoreWaitFlags;
 
 enum VkSurfaceTransformFlagBitsKHR
 {
@@ -3314,7 +3314,7 @@ enum VkSurfaceTransformFlagBitsKHR
 	VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR						= 0x00000100,
 	VK_SURFACE_TRANSFORM_FLAG_BITS_MAX_ENUM_KHR					= 0x7FFFFFFF,
 };
-typedef deUint32 VkSurfaceTransformFlagsKHR;
+typedef uint32_t VkSurfaceTransformFlagsKHR;
 
 enum VkCompositeAlphaFlagBitsKHR
 {
@@ -3324,7 +3324,7 @@ enum VkCompositeAlphaFlagBitsKHR
 	VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR			= 0x00000008,
 	VK_COMPOSITE_ALPHA_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
 };
-typedef deUint32 VkCompositeAlphaFlagsKHR;
+typedef uint32_t VkCompositeAlphaFlagsKHR;
 
 enum VkSwapchainCreateFlagBitsKHR
 {
@@ -3333,7 +3333,7 @@ enum VkSwapchainCreateFlagBitsKHR
 	VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR				= 0x00000004,
 	VK_SWAPCHAIN_CREATE_FLAG_BITS_MAX_ENUM_KHR				= 0x7FFFFFFF,
 };
-typedef deUint32 VkSwapchainCreateFlagsKHR;
+typedef uint32_t VkSwapchainCreateFlagsKHR;
 
 enum VkDeviceGroupPresentModeFlagBitsKHR
 {
@@ -3343,7 +3343,7 @@ enum VkDeviceGroupPresentModeFlagBitsKHR
 	VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHR	= 0x00000008,
 	VK_DEVICE_GROUP_PRESENT_MODE_FLAG_BITS_MAX_ENUM_KHR		= 0x7FFFFFFF,
 };
-typedef deUint32 VkDeviceGroupPresentModeFlagsKHR;
+typedef uint32_t VkDeviceGroupPresentModeFlagsKHR;
 
 enum VkDisplayPlaneAlphaFlagBitsKHR
 {
@@ -3353,7 +3353,7 @@ enum VkDisplayPlaneAlphaFlagBitsKHR
 	VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR	= 0x00000008,
 	VK_DISPLAY_PLANE_ALPHA_FLAG_BITS_MAX_ENUM_KHR			= 0x7FFFFFFF,
 };
-typedef deUint32 VkDisplayPlaneAlphaFlagsKHR;
+typedef uint32_t VkDisplayPlaneAlphaFlagsKHR;
 
 enum VkPerformanceCounterDescriptionFlagBitsKHR
 {
@@ -3363,20 +3363,20 @@ enum VkPerformanceCounterDescriptionFlagBitsKHR
 	VK_PERFORMANCE_COUNTER_DESCRIPTION_CONCURRENTLY_IMPACTED_KHR		= VK_PERFORMANCE_COUNTER_DESCRIPTION_CONCURRENTLY_IMPACTED_BIT_KHR,
 	VK_PERFORMANCE_COUNTER_DESCRIPTION_FLAG_BITS_MAX_ENUM_KHR			= 0x7FFFFFFF,
 };
-typedef deUint32 VkPerformanceCounterDescriptionFlagsKHR;
+typedef uint32_t VkPerformanceCounterDescriptionFlagsKHR;
 
 enum VkAcquireProfilingLockFlagBitsKHR
 {
 	VK_ACQUIRE_PROFILING_LOCK_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
 };
-typedef deUint32 VkAcquireProfilingLockFlagsKHR;
+typedef uint32_t VkAcquireProfilingLockFlagsKHR;
 
 enum VkSubmitFlagBitsKHR
 {
 	VK_SUBMIT_PROTECTED_BIT_KHR			= 0x00000001,
 	VK_SUBMIT_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
 };
-typedef deUint32 VkSubmitFlagsKHR;
+typedef uint32_t VkSubmitFlagsKHR;
 
 enum VkDebugReportFlagBitsEXT
 {
@@ -3387,7 +3387,7 @@ enum VkDebugReportFlagBitsEXT
 	VK_DEBUG_REPORT_DEBUG_BIT_EXT				= 0x00000010,
 	VK_DEBUG_REPORT_FLAG_BITS_MAX_ENUM_EXT		= 0x7FFFFFFF,
 };
-typedef deUint32 VkDebugReportFlagsEXT;
+typedef uint32_t VkDebugReportFlagsEXT;
 
 enum VkExternalMemoryHandleTypeFlagBitsNV
 {
@@ -3397,7 +3397,7 @@ enum VkExternalMemoryHandleTypeFlagBitsNV
 	VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_IMAGE_KMT_BIT_NV	= 0x00000008,
 	VK_EXTERNAL_MEMORY_HANDLE_TYPE_FLAG_BITS_MAX_ENUM_NV	= 0x7FFFFFFF,
 };
-typedef deUint32 VkExternalMemoryHandleTypeFlagsNV;
+typedef uint32_t VkExternalMemoryHandleTypeFlagsNV;
 
 enum VkExternalMemoryFeatureFlagBitsNV
 {
@@ -3406,14 +3406,14 @@ enum VkExternalMemoryFeatureFlagBitsNV
 	VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_NV		= 0x00000004,
 	VK_EXTERNAL_MEMORY_FEATURE_FLAG_BITS_MAX_ENUM_NV	= 0x7FFFFFFF,
 };
-typedef deUint32 VkExternalMemoryFeatureFlagsNV;
+typedef uint32_t VkExternalMemoryFeatureFlagsNV;
 
 enum VkConditionalRenderingFlagBitsEXT
 {
 	VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT		= 0x00000001,
 	VK_CONDITIONAL_RENDERING_FLAG_BITS_MAX_ENUM_EXT	= 0x7FFFFFFF,
 };
-typedef deUint32 VkConditionalRenderingFlagsEXT;
+typedef uint32_t VkConditionalRenderingFlagsEXT;
 
 enum VkSurfaceCounterFlagBitsEXT
 {
@@ -3421,7 +3421,7 @@ enum VkSurfaceCounterFlagBitsEXT
 	VK_SURFACE_COUNTER_VBLANK_EXT				= VK_SURFACE_COUNTER_VBLANK_BIT_EXT,
 	VK_SURFACE_COUNTER_FLAG_BITS_MAX_ENUM_EXT	= 0x7FFFFFFF,
 };
-typedef deUint32 VkSurfaceCounterFlagsEXT;
+typedef uint32_t VkSurfaceCounterFlagsEXT;
 
 enum VkDebugUtilsMessageSeverityFlagBitsEXT
 {
@@ -3431,7 +3431,7 @@ enum VkDebugUtilsMessageSeverityFlagBitsEXT
 	VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT			= 0x00001000,
 	VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT	= 0x7FFFFFFF,
 };
-typedef deUint32 VkDebugUtilsMessageSeverityFlagsEXT;
+typedef uint32_t VkDebugUtilsMessageSeverityFlagsEXT;
 
 enum VkDebugUtilsMessageTypeFlagBitsEXT
 {
@@ -3440,7 +3440,7 @@ enum VkDebugUtilsMessageTypeFlagBitsEXT
 	VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT		= 0x00000004,
 	VK_DEBUG_UTILS_MESSAGE_TYPE_FLAG_BITS_MAX_ENUM_EXT	= 0x7FFFFFFF,
 };
-typedef deUint32 VkDebugUtilsMessageTypeFlagsEXT;
+typedef uint32_t VkDebugUtilsMessageTypeFlagsEXT;
 
 enum VkGeometryFlagBitsKHR
 {
@@ -3450,7 +3450,7 @@ enum VkGeometryFlagBitsKHR
 	VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_NV	= VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR,
 	VK_GEOMETRY_FLAG_BITS_MAX_ENUM_KHR					= 0x7FFFFFFF,
 };
-typedef deUint32 VkGeometryFlagsKHR;
+typedef uint32_t VkGeometryFlagsKHR;
 
 enum VkGeometryInstanceFlagBitsKHR
 {
@@ -3464,7 +3464,7 @@ enum VkGeometryInstanceFlagBitsKHR
 	VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_NV						= VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_KHR,
 	VK_GEOMETRY_INSTANCE_FLAG_BITS_MAX_ENUM_KHR						= 0x7FFFFFFF,
 };
-typedef deUint32 VkGeometryInstanceFlagsKHR;
+typedef uint32_t VkGeometryInstanceFlagsKHR;
 
 enum VkBuildAccelerationStructureFlagBitsKHR
 {
@@ -3480,13 +3480,13 @@ enum VkBuildAccelerationStructureFlagBitsKHR
 	VK_BUILD_ACCELERATION_STRUCTURE_LOW_MEMORY_BIT_NV			= VK_BUILD_ACCELERATION_STRUCTURE_LOW_MEMORY_BIT_KHR,
 	VK_BUILD_ACCELERATION_STRUCTURE_FLAG_BITS_MAX_ENUM_KHR		= 0x7FFFFFFF,
 };
-typedef deUint32 VkBuildAccelerationStructureFlagsKHR;
+typedef uint32_t VkBuildAccelerationStructureFlagsKHR;
 
 enum VkPipelineCompilerControlFlagBitsAMD
 {
 	VK_PIPELINE_COMPILER_CONTROL_FLAG_BITS_MAX_ENUM_AMD	= 0x7FFFFFFF,
 };
-typedef deUint32 VkPipelineCompilerControlFlagsAMD;
+typedef uint32_t VkPipelineCompilerControlFlagsAMD;
 
 enum VkPipelineCreationFeedbackFlagBitsEXT
 {
@@ -3495,13 +3495,13 @@ enum VkPipelineCreationFeedbackFlagBitsEXT
 	VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT		= 0x00000004,
 	VK_PIPELINE_CREATION_FEEDBACK_FLAG_BITS_MAX_ENUM_EXT					= 0x7FFFFFFF,
 };
-typedef deUint32 VkPipelineCreationFeedbackFlagsEXT;
+typedef uint32_t VkPipelineCreationFeedbackFlagsEXT;
 
 enum VkShaderCorePropertiesFlagBitsAMD
 {
 	VK_SHADER_CORE_PROPERTIES_FLAG_BITS_MAX_ENUM_AMD	= 0x7FFFFFFF,
 };
-typedef deUint32 VkShaderCorePropertiesFlagsAMD;
+typedef uint32_t VkShaderCorePropertiesFlagsAMD;
 
 enum VkToolPurposeFlagBitsEXT
 {
@@ -3514,14 +3514,14 @@ enum VkToolPurposeFlagBitsEXT
 	VK_TOOL_PURPOSE_DEBUG_MARKERS_BIT_EXT		= 0x00000040,
 	VK_TOOL_PURPOSE_FLAG_BITS_MAX_ENUM_EXT		= 0x7FFFFFFF,
 };
-typedef deUint32 VkToolPurposeFlagsEXT;
+typedef uint32_t VkToolPurposeFlagsEXT;
 
 enum VkIndirectStateFlagBitsNV
 {
 	VK_INDIRECT_STATE_FLAG_FRONTFACE_BIT_NV	= 0x00000001,
 	VK_INDIRECT_STATE_FLAG_BITS_MAX_ENUM_NV	= 0x7FFFFFFF,
 };
-typedef deUint32 VkIndirectStateFlagsNV;
+typedef uint32_t VkIndirectStateFlagsNV;
 
 enum VkIndirectCommandsLayoutUsageFlagBitsNV
 {
@@ -3530,13 +3530,13 @@ enum VkIndirectCommandsLayoutUsageFlagBitsNV
 	VK_INDIRECT_COMMANDS_LAYOUT_USAGE_UNORDERED_SEQUENCES_BIT_NV	= 0x00000004,
 	VK_INDIRECT_COMMANDS_LAYOUT_USAGE_FLAG_BITS_MAX_ENUM_NV			= 0x7FFFFFFF,
 };
-typedef deUint32 VkIndirectCommandsLayoutUsageFlagsNV;
+typedef uint32_t VkIndirectCommandsLayoutUsageFlagsNV;
 
 enum VkPrivateDataSlotCreateFlagBitsEXT
 {
 	VK_PRIVATE_DATA_SLOT_CREATE_FLAG_BITS_MAX_ENUM_EXT	= 0x7FFFFFFF,
 };
-typedef deUint32 VkPrivateDataSlotCreateFlagsEXT;
+typedef uint32_t VkPrivateDataSlotCreateFlagsEXT;
 
 enum VkDeviceDiagnosticsConfigFlagBitsNV
 {
@@ -3545,14 +3545,14 @@ enum VkDeviceDiagnosticsConfigFlagBitsNV
 	VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_AUTOMATIC_CHECKPOINTS_BIT_NV	= 0x00000004,
 	VK_DEVICE_DIAGNOSTICS_CONFIG_FLAG_BITS_MAX_ENUM_NV					= 0x7FFFFFFF,
 };
-typedef deUint32 VkDeviceDiagnosticsConfigFlagsNV;
+typedef uint32_t VkDeviceDiagnosticsConfigFlagsNV;
 
 enum VkAccelerationStructureCreateFlagBitsKHR
 {
 	VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR	= 0x00000001,
 	VK_ACCELERATION_STRUCTURE_CREATE_FLAG_BITS_MAX_ENUM_KHR					= 0x7FFFFFFF,
 };
-typedef deUint32 VkAccelerationStructureCreateFlagsKHR;
+typedef uint32_t VkAccelerationStructureCreateFlagsKHR;
 
 enum VkVideoCodecOperationFlagBitsKHR
 {
@@ -3562,7 +3562,7 @@ enum VkVideoCodecOperationFlagBitsKHR
 	VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_EXT	= 0x00000002,
 	VK_VIDEO_CODEC_OPERATION_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
 };
-typedef deUint32 VkVideoCodecOperationFlagsKHR;
+typedef uint32_t VkVideoCodecOperationFlagsKHR;
 
 enum VkVideoChromaSubsamplingFlagBitsKHR
 {
@@ -3573,7 +3573,7 @@ enum VkVideoChromaSubsamplingFlagBitsKHR
 	VK_VIDEO_CHROMA_SUBSAMPLING_444_BIT_KHR				= 0x00000008,
 	VK_VIDEO_CHROMA_SUBSAMPLING_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
 };
-typedef deUint32 VkVideoChromaSubsamplingFlagsKHR;
+typedef uint32_t VkVideoChromaSubsamplingFlagsKHR;
 
 enum VkVideoComponentBitDepthFlagBitsKHR
 {
@@ -3583,7 +3583,7 @@ enum VkVideoComponentBitDepthFlagBitsKHR
 	VK_VIDEO_COMPONENT_BIT_DEPTH_12_BIT_KHR				= 0x00000010,
 	VK_VIDEO_COMPONENT_BIT_DEPTH_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
 };
-typedef deUint32 VkVideoComponentBitDepthFlagsKHR;
+typedef uint32_t VkVideoComponentBitDepthFlagsKHR;
 
 enum VkVideoCapabilitiesFlagBitsKHR
 {
@@ -3591,7 +3591,7 @@ enum VkVideoCapabilitiesFlagBitsKHR
 	VK_VIDEO_CAPABILITIES_SEPARATE_REFERENCE_IMAGES_BIT_KHR	= 0x00000002,
 	VK_VIDEO_CAPABILITIES_FLAG_BITS_MAX_ENUM_KHR			= 0x7FFFFFFF,
 };
-typedef deUint32 VkVideoCapabilitiesFlagsKHR;
+typedef uint32_t VkVideoCapabilitiesFlagsKHR;
 
 enum VkVideoSessionCreateFlagBitsKHR
 {
@@ -3599,7 +3599,7 @@ enum VkVideoSessionCreateFlagBitsKHR
 	VK_VIDEO_SESSION_CREATE_PROTECTED_CONTENT_BIT_KHR	= 0x00000001,
 	VK_VIDEO_SESSION_CREATE_FLAG_BITS_MAX_ENUM_KHR		= 0x7FFFFFFF,
 };
-typedef deUint32 VkVideoSessionCreateFlagsKHR;
+typedef uint32_t VkVideoSessionCreateFlagsKHR;
 
 enum VkVideoCodingControlFlagBitsKHR
 {
@@ -3607,7 +3607,7 @@ enum VkVideoCodingControlFlagBitsKHR
 	VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR			= 0x00000001,
 	VK_VIDEO_CODING_CONTROL_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
 };
-typedef deUint32 VkVideoCodingControlFlagsKHR;
+typedef uint32_t VkVideoCodingControlFlagsKHR;
 
 enum VkVideoCodingQualityPresetFlagBitsKHR
 {
@@ -3617,7 +3617,7 @@ enum VkVideoCodingQualityPresetFlagBitsKHR
 	VK_VIDEO_CODING_QUALITY_PRESET_QUALITY_BIT_KHR			= 0x00000004,
 	VK_VIDEO_CODING_QUALITY_PRESET_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
 };
-typedef deUint32 VkVideoCodingQualityPresetFlagsKHR;
+typedef uint32_t VkVideoCodingQualityPresetFlagsKHR;
 
 enum VkVideoDecodeFlagBitsKHR
 {
@@ -3625,7 +3625,7 @@ enum VkVideoDecodeFlagBitsKHR
 	VK_VIDEO_DECODE_RESERVED_0_BIT_KHR		= 0x00000001,
 	VK_VIDEO_DECODE_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
 };
-typedef deUint32 VkVideoDecodeFlagsKHR;
+typedef uint32_t VkVideoDecodeFlagsKHR;
 
 enum VkVideoEncodeFlagBitsKHR
 {
@@ -3633,7 +3633,7 @@ enum VkVideoEncodeFlagBitsKHR
 	VK_VIDEO_ENCODE_RESERVED_0_BIT_KHR		= 0x00000001,
 	VK_VIDEO_ENCODE_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
 };
-typedef deUint32 VkVideoEncodeFlagsKHR;
+typedef uint32_t VkVideoEncodeFlagsKHR;
 
 enum VkVideoEncodeRateControlFlagBitsKHR
 {
@@ -3641,7 +3641,7 @@ enum VkVideoEncodeRateControlFlagBitsKHR
 	VK_VIDEO_ENCODE_RATE_CONTROL_RESET_BIT_KHR			= 0x00000001,
 	VK_VIDEO_ENCODE_RATE_CONTROL_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
 };
-typedef deUint32 VkVideoEncodeRateControlFlagsKHR;
+typedef uint32_t VkVideoEncodeRateControlFlagsKHR;
 
 enum VkVideoEncodeRateControlModeFlagBitsKHR
 {
@@ -3650,7 +3650,7 @@ enum VkVideoEncodeRateControlModeFlagBitsKHR
 	VK_VIDEO_ENCODE_RATE_CONTROL_MODE_VBR_BIT_KHR				= 2,
 	VK_VIDEO_ENCODE_RATE_CONTROL_MODE_FLAG_BITS_MAX_ENUM_KHR	= 0x7FFFFFFF,
 };
-typedef deUint32 VkVideoEncodeRateControlModeFlagsKHR;
+typedef uint32_t VkVideoEncodeRateControlModeFlagsKHR;
 
 enum VkVideoEncodeH264CapabilitiesFlagBitsEXT
 {
@@ -3667,7 +3667,7 @@ enum VkVideoEncodeH264CapabilitiesFlagBitsEXT
 	VK_VIDEO_ENCODE_H264_CAPABILITY_EVENLY_DISTRIBUTED_SLICE_SIZE_BIT_EXT	= 0x00000400,
 	VK_VIDEO_ENCODE_H264_CAPABILITIES_FLAG_BITS_MAX_ENUM_EXT				= 0x7FFFFFFF,
 };
-typedef deUint32 VkVideoEncodeH264CapabilitiesFlagsEXT;
+typedef uint32_t VkVideoEncodeH264CapabilitiesFlagsEXT;
 
 enum VkVideoEncodeH264InputModeFlagBitsEXT
 {
@@ -3676,7 +3676,7 @@ enum VkVideoEncodeH264InputModeFlagBitsEXT
 	VK_VIDEO_ENCODE_H264_INPUT_MODE_NON_VCL_BIT_EXT			= 0x00000004,
 	VK_VIDEO_ENCODE_H264_INPUT_MODE_FLAG_BITS_MAX_ENUM_EXT	= 0x7FFFFFFF,
 };
-typedef deUint32 VkVideoEncodeH264InputModeFlagsEXT;
+typedef uint32_t VkVideoEncodeH264InputModeFlagsEXT;
 
 enum VkVideoEncodeH264OutputModeFlagBitsEXT
 {
@@ -3685,7 +3685,7 @@ enum VkVideoEncodeH264OutputModeFlagBitsEXT
 	VK_VIDEO_ENCODE_H264_OUTPUT_MODE_NON_VCL_BIT_EXT		= 0x00000004,
 	VK_VIDEO_ENCODE_H264_OUTPUT_MODE_FLAG_BITS_MAX_ENUM_EXT	= 0x7FFFFFFF,
 };
-typedef deUint32 VkVideoEncodeH264OutputModeFlagsEXT;
+typedef uint32_t VkVideoEncodeH264OutputModeFlagsEXT;
 
 enum VkVideoEncodeH264CreateFlagBitsEXT
 {
@@ -3693,7 +3693,7 @@ enum VkVideoEncodeH264CreateFlagBitsEXT
 	VK_VIDEO_ENCODE_H264_CREATE_RESERVED_0_BIT_EXT		= 0x00000001,
 	VK_VIDEO_ENCODE_H264_CREATE_FLAG_BITS_MAX_ENUM_EXT	= 0x7FFFFFFF,
 };
-typedef deUint32 VkVideoEncodeH264CreateFlagsEXT;
+typedef uint32_t VkVideoEncodeH264CreateFlagsEXT;
 
 enum VkVideoDecodeH264FieldLayoutFlagBitsEXT
 {
@@ -3702,105 +3702,105 @@ enum VkVideoDecodeH264FieldLayoutFlagBitsEXT
 	VK_VIDEO_DECODE_H264_FIELD_LAYOUT_SEPARATE_INTERLACED_PLANE_BIT_EXT	= 0x00000002,
 	VK_VIDEO_DECODE_H264_FIELD_LAYOUT_FLAG_BITS_MAX_ENUM_EXT			= 0x7FFFFFFF,
 };
-typedef deUint32 VkVideoDecodeH264FieldLayoutFlagsEXT;
+typedef uint32_t VkVideoDecodeH264FieldLayoutFlagsEXT;
 
-typedef deUint32 VkInstanceCreateFlags;
+typedef uint32_t VkInstanceCreateFlags;
 
-typedef deUint32 VkDeviceCreateFlags;
+typedef uint32_t VkDeviceCreateFlags;
 
-typedef deUint32 VkMemoryMapFlags;
+typedef uint32_t VkMemoryMapFlags;
 
-typedef deUint32 VkSemaphoreCreateFlags;
+typedef uint32_t VkSemaphoreCreateFlags;
 
-typedef deUint32 VkQueryPoolCreateFlags;
+typedef uint32_t VkQueryPoolCreateFlags;
 
-typedef deUint32 VkBufferViewCreateFlags;
+typedef uint32_t VkBufferViewCreateFlags;
 
-typedef deUint32 VkPipelineVertexInputStateCreateFlags;
+typedef uint32_t VkPipelineVertexInputStateCreateFlags;
 
-typedef deUint32 VkPipelineInputAssemblyStateCreateFlags;
+typedef uint32_t VkPipelineInputAssemblyStateCreateFlags;
 
-typedef deUint32 VkPipelineTessellationStateCreateFlags;
+typedef uint32_t VkPipelineTessellationStateCreateFlags;
 
-typedef deUint32 VkPipelineViewportStateCreateFlags;
+typedef uint32_t VkPipelineViewportStateCreateFlags;
 
-typedef deUint32 VkPipelineRasterizationStateCreateFlags;
+typedef uint32_t VkPipelineRasterizationStateCreateFlags;
 
-typedef deUint32 VkPipelineMultisampleStateCreateFlags;
+typedef uint32_t VkPipelineMultisampleStateCreateFlags;
 
-typedef deUint32 VkPipelineDepthStencilStateCreateFlags;
+typedef uint32_t VkPipelineDepthStencilStateCreateFlags;
 
-typedef deUint32 VkPipelineColorBlendStateCreateFlags;
+typedef uint32_t VkPipelineColorBlendStateCreateFlags;
 
-typedef deUint32 VkPipelineDynamicStateCreateFlags;
+typedef uint32_t VkPipelineDynamicStateCreateFlags;
 
-typedef deUint32 VkPipelineLayoutCreateFlags;
+typedef uint32_t VkPipelineLayoutCreateFlags;
 
-typedef deUint32 VkDescriptorPoolResetFlags;
+typedef uint32_t VkDescriptorPoolResetFlags;
 
-typedef deUint32 VkCommandPoolTrimFlags;
+typedef uint32_t VkCommandPoolTrimFlags;
 
-typedef deUint32 VkDescriptorUpdateTemplateCreateFlags;
+typedef uint32_t VkDescriptorUpdateTemplateCreateFlags;
 
-typedef deUint32 VkDisplayModeCreateFlagsKHR;
+typedef uint32_t VkDisplayModeCreateFlagsKHR;
 
-typedef deUint32 VkDisplaySurfaceCreateFlagsKHR;
+typedef uint32_t VkDisplaySurfaceCreateFlagsKHR;
 
-typedef deUint32 VkPipelineRasterizationStateStreamCreateFlagsEXT;
+typedef uint32_t VkPipelineRasterizationStateStreamCreateFlagsEXT;
 
-typedef deUint32 VkPipelineViewportSwizzleStateCreateFlagsNV;
+typedef uint32_t VkPipelineViewportSwizzleStateCreateFlagsNV;
 
-typedef deUint32 VkPipelineDiscardRectangleStateCreateFlagsEXT;
+typedef uint32_t VkPipelineDiscardRectangleStateCreateFlagsEXT;
 
-typedef deUint32 VkPipelineRasterizationConservativeStateCreateFlagsEXT;
+typedef uint32_t VkPipelineRasterizationConservativeStateCreateFlagsEXT;
 
-typedef deUint32 VkPipelineRasterizationDepthClipStateCreateFlagsEXT;
+typedef uint32_t VkPipelineRasterizationDepthClipStateCreateFlagsEXT;
 
-typedef deUint32 VkDebugUtilsMessengerCallbackDataFlagsEXT;
+typedef uint32_t VkDebugUtilsMessengerCallbackDataFlagsEXT;
 
-typedef deUint32 VkDebugUtilsMessengerCreateFlagsEXT;
+typedef uint32_t VkDebugUtilsMessengerCreateFlagsEXT;
 
-typedef deUint32 VkPipelineCoverageToColorStateCreateFlagsNV;
+typedef uint32_t VkPipelineCoverageToColorStateCreateFlagsNV;
 
-typedef deUint32 VkPipelineCoverageModulationStateCreateFlagsNV;
+typedef uint32_t VkPipelineCoverageModulationStateCreateFlagsNV;
 
-typedef deUint32 VkValidationCacheCreateFlagsEXT;
+typedef uint32_t VkValidationCacheCreateFlagsEXT;
 
-typedef deUint32 VkPipelineCoverageReductionStateCreateFlagsNV;
+typedef uint32_t VkPipelineCoverageReductionStateCreateFlagsNV;
 
-typedef deUint32 VkHeadlessSurfaceCreateFlagsEXT;
+typedef uint32_t VkHeadlessSurfaceCreateFlagsEXT;
 
-typedef deUint32 VkDeviceMemoryReportFlagsEXT;
+typedef uint32_t VkDeviceMemoryReportFlagsEXT;
 
-typedef deUint32 VkAndroidSurfaceCreateFlagsKHR;
+typedef uint32_t VkAndroidSurfaceCreateFlagsKHR;
 
-typedef deUint32 VkVideoBeginCodingFlagsKHR;
+typedef uint32_t VkVideoBeginCodingFlagsKHR;
 
-typedef deUint32 VkVideoEndCodingFlagsKHR;
+typedef uint32_t VkVideoEndCodingFlagsKHR;
 
-typedef deUint32 VkVideoDecodeH264CreateFlagsEXT;
+typedef uint32_t VkVideoDecodeH264CreateFlagsEXT;
 
-typedef deUint32 VkVideoDecodeH265CreateFlagsEXT;
+typedef uint32_t VkVideoDecodeH265CreateFlagsEXT;
 
-typedef deUint32 VkImagePipeSurfaceCreateFlagsFUCHSIA;
+typedef uint32_t VkImagePipeSurfaceCreateFlagsFUCHSIA;
 
-typedef deUint32 VkStreamDescriptorSurfaceCreateFlagsGGP;
+typedef uint32_t VkStreamDescriptorSurfaceCreateFlagsGGP;
 
-typedef deUint32 VkIOSSurfaceCreateFlagsMVK;
+typedef uint32_t VkIOSSurfaceCreateFlagsMVK;
 
-typedef deUint32 VkMacOSSurfaceCreateFlagsMVK;
+typedef uint32_t VkMacOSSurfaceCreateFlagsMVK;
 
-typedef deUint32 VkMetalSurfaceCreateFlagsEXT;
+typedef uint32_t VkMetalSurfaceCreateFlagsEXT;
 
-typedef deUint32 VkViSurfaceCreateFlagsNN;
+typedef uint32_t VkViSurfaceCreateFlagsNN;
 
-typedef deUint32 VkWaylandSurfaceCreateFlagsKHR;
+typedef uint32_t VkWaylandSurfaceCreateFlagsKHR;
 
-typedef deUint32 VkWin32SurfaceCreateFlagsKHR;
+typedef uint32_t VkWin32SurfaceCreateFlagsKHR;
 
-typedef deUint32 VkXcbSurfaceCreateFlagsKHR;
+typedef uint32_t VkXcbSurfaceCreateFlagsKHR;
 
-typedef deUint32 VkXlibSurfaceCreateFlagsKHR;
+typedef uint32_t VkXlibSurfaceCreateFlagsKHR;
 
 typedef VkPeerMemoryFeatureFlags VkPeerMemoryFeatureFlagsKHR;
 
@@ -3838,8 +3838,8 @@ typedef VkCommandPoolTrimFlags VkCommandPoolTrimFlagsKHR;
 
 typedef VkDescriptorUpdateTemplateCreateFlags VkDescriptorUpdateTemplateCreateFlagsKHR;
 
-typedef deUint64 VkPipelineStageFlags2KHR;
-typedef deUint64 VkPipelineStageFlagBits2KHR;
+typedef uint64_t VkPipelineStageFlags2KHR;
+typedef uint64_t VkPipelineStageFlagBits2KHR;
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_NONE_KHR									= 0ULL;
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR						= 0x00000001ULL;
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT_KHR						= 0x00000002ULL;
@@ -3881,8 +3881,8 @@ static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_FRAGMENT_DENSITY_PR
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_NV							= 0x00080000ULL;
 static const VkPipelineStageFlagBits2KHR VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_NV							= 0x00100000ULL;
 
-typedef deUint64 VkAccessFlags2KHR;
-typedef deUint64 VkAccessFlagBits2KHR;
+typedef uint64_t VkAccessFlags2KHR;
+typedef uint64_t VkAccessFlagBits2KHR;
 static const VkAccessFlagBits2KHR VK_ACCESS_2_NONE_KHR										= 0ULL;
 static const VkAccessFlagBits2KHR VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT_KHR					= 0x00000001ULL;
 static const VkAccessFlagBits2KHR VK_ACCESS_2_INDEX_READ_BIT_KHR							= 0x00000002ULL;
@@ -3924,11 +3924,11 @@ static const VkAccessFlagBits2KHR VK_ACCESS_2_FRAGMENT_DENSITY_MAP_READ_BIT_EXT	
 static const VkAccessFlagBits2KHR VK_ACCESS_2_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT		= 0x00080000ULL;
 
 VK_DEFINE_PLATFORM_TYPE(XlibDisplayPtr,				void*);
-VK_DEFINE_PLATFORM_TYPE(XlibWindow,					deUintptr);
-VK_DEFINE_PLATFORM_TYPE(XlibVisualID,				deUint32);
+VK_DEFINE_PLATFORM_TYPE(XlibWindow,					uintptr_t);
+VK_DEFINE_PLATFORM_TYPE(XlibVisualID,				uint32_t);
 VK_DEFINE_PLATFORM_TYPE(XcbConnectionPtr,			void*);
-VK_DEFINE_PLATFORM_TYPE(XcbWindow,					deUintptr);
-VK_DEFINE_PLATFORM_TYPE(XcbVisualid,				deUint32);
+VK_DEFINE_PLATFORM_TYPE(XcbWindow,					uintptr_t);
+VK_DEFINE_PLATFORM_TYPE(XcbVisualid,				uint32_t);
 VK_DEFINE_PLATFORM_TYPE(WaylandDisplayPtr,			void*);
 VK_DEFINE_PLATFORM_TYPE(WaylandSurfacePtr,			void*);
 VK_DEFINE_PLATFORM_TYPE(MirConnectionPtr,			void*);
@@ -3942,9 +3942,9 @@ VK_DEFINE_PLATFORM_TYPE(AndroidHardwareBufferPtr,	void*);
 VK_DEFINE_PLATFORM_TYPE(Win32MonitorHandle,			void*);
 VK_DEFINE_PLATFORM_TYPE(Win32LPCWSTR,				const void*);
 VK_DEFINE_PLATFORM_TYPE(RROutput,					void*);
-VK_DEFINE_PLATFORM_TYPE(zx_handle_t,				deInt32);
-VK_DEFINE_PLATFORM_TYPE(GgpFrameToken,				deInt32);
-VK_DEFINE_PLATFORM_TYPE(GgpStreamDescriptor,		deInt32);
+VK_DEFINE_PLATFORM_TYPE(zx_handle_t,				int32_t);
+VK_DEFINE_PLATFORM_TYPE(GgpFrameToken,				int32_t);
+VK_DEFINE_PLATFORM_TYPE(GgpStreamDescriptor,		int32_t);
 VK_DEFINE_PLATFORM_TYPE(CAMetalLayer,				void*);
 #define VK_KHR_SURFACE_SPEC_VERSION 25
 #define VK_KHR_SWAPCHAIN_SPEC_VERSION 70

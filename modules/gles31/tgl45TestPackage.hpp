@@ -31,7 +31,7 @@
 
 namespace tcu
 {
-    class WaiverUtil;
+class WaiverUtil;
 };
 
 namespace deqp
@@ -42,24 +42,30 @@ namespace gles31
 class TestPackageGL45 : public tcu::TestPackage
 {
 public:
-									TestPackageGL45			(tcu::TestContext& testCtx);
-	virtual							~TestPackageGL45		(void);
+    TestPackageGL45(tcu::TestContext &testCtx);
+    virtual ~TestPackageGL45(void);
 
-	virtual void					init					(void);
-	virtual void					deinit					(void);
+    virtual void init(void);
+    virtual void deinit(void);
 
-	tcu::TestCaseExecutor*			createExecutor			(void) const;
+    tcu::TestCaseExecutor *createExecutor(void) const;
 
-	tcu::Archive*					getArchive				(void) { return &m_archive; }
-	Context*						getContext				(void) { return m_context; }
+    tcu::Archive *getArchive(void)
+    {
+        return &m_archive;
+    }
+    Context *getContext(void)
+    {
+        return m_context;
+    }
 
 private:
-	tcu::ResourcePrefix				m_archive;
-	Context*						m_context;
-    de::SharedPtr<tcu::WaiverUtil>	m_waiverMechanism;
+    tcu::ResourcePrefix m_archive;
+    Context *m_context;
+    de::SharedPtr<tcu::WaiverUtil> m_waiverMechanism;
 };
 
-} // gles31
-} // deqp
+} // namespace gles31
+} // namespace deqp
 
 #endif // _TGL45TESTPACKAGE_HPP

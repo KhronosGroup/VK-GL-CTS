@@ -72,9 +72,9 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceProtectedMemoryProperties>(
 }
 template<> void initPropertyFromBlob<VkPhysicalDeviceIDProperties>(VkPhysicalDeviceIDProperties& propertyType, const AllPropertiesBlobs& allPropertiesBlobs)
 {
-	memcpy(propertyType.deviceUUID, allPropertiesBlobs.vk11.deviceUUID, sizeof(deUint8) * VK_UUID_SIZE);
-	memcpy(propertyType.driverUUID, allPropertiesBlobs.vk11.driverUUID, sizeof(deUint8) * VK_UUID_SIZE);
-	memcpy(propertyType.deviceLUID, allPropertiesBlobs.vk11.deviceLUID, sizeof(deUint8) * VK_LUID_SIZE);
+	memcpy(propertyType.deviceUUID, allPropertiesBlobs.vk11.deviceUUID, sizeof(uint8_t) * VK_UUID_SIZE);
+	memcpy(propertyType.driverUUID, allPropertiesBlobs.vk11.driverUUID, sizeof(uint8_t) * VK_UUID_SIZE);
+	memcpy(propertyType.deviceLUID, allPropertiesBlobs.vk11.deviceLUID, sizeof(uint8_t) * VK_LUID_SIZE);
 	propertyType.deviceNodeMask = allPropertiesBlobs.vk11.deviceNodeMask;
 	propertyType.deviceLUIDValid = allPropertiesBlobs.vk11.deviceLUIDValid;
 }

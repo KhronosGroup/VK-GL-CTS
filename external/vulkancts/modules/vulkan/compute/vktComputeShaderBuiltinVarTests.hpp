@@ -30,8 +30,8 @@ namespace vkt
 {
 namespace compute
 {
-	tcu::TestCaseGroup* createComputeShaderBuiltinVarTests (tcu::TestContext& testCtx);
-} // compute
-} // vkt
+tcu::TestCaseGroup *createComputeShaderBuiltinVarTests(tcu::TestContext &testCtx);
+} // namespace compute
+} // namespace vkt
 
 #endif // _VKTCOMPUTESHADERBUILTINVARTESTS_HPP

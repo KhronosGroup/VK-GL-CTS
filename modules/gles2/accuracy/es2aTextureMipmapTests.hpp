@@ -36,18 +36,18 @@ namespace Accuracy
 class TextureMipmapTests : public TestCaseGroup
 {
 public:
-							TextureMipmapTests		(Context& context);
-							~TextureMipmapTests		(void);
+    TextureMipmapTests(Context &context);
+    ~TextureMipmapTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							TextureMipmapTests		(const TextureMipmapTests& other);
-	TextureMipmapTests&		operator=				(const TextureMipmapTests& other);
+    TextureMipmapTests(const TextureMipmapTests &other);
+    TextureMipmapTests &operator=(const TextureMipmapTests &other);
 };
 
-} // Accuracy
-} // gles2
-} // deqp
+} // namespace Accuracy
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2ATEXTUREMIPMAPTESTS_HPP

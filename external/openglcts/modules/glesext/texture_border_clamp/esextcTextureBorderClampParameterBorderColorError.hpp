@@ -52,35 +52,35 @@ namespace glcts
 class TextureBorderClampParameterBorderColorErrorTest : public TextureBorderClampBase
 {
 public:
-	/* Public functions */
-	TextureBorderClampParameterBorderColorErrorTest(Context& context, const ExtParameters& extParams, const char* name,
-													const char* description);
+    /* Public functions */
+    TextureBorderClampParameterBorderColorErrorTest(Context &context, const ExtParameters &extParams, const char *name,
+                                                    const char *description);
 
-	virtual ~TextureBorderClampParameterBorderColorErrorTest()
-	{
-	}
+    virtual ~TextureBorderClampParameterBorderColorErrorTest()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private functions */
-	void initTest(void);
+    /* Private functions */
+    void initTest(void);
 
-	void VerifyGLTexParameterf(glw::GLenum target, glw::GLenum pname, glw::GLfloat param, glw::GLenum expected_error);
+    void VerifyGLTexParameterf(glw::GLenum target, glw::GLenum pname, glw::GLfloat param, glw::GLenum expected_error);
 
-	void VerifyGLTexParameteri(glw::GLenum target, glw::GLenum pname, glw::GLint param, glw::GLenum expected_error);
+    void VerifyGLTexParameteri(glw::GLenum target, glw::GLenum pname, glw::GLint param, glw::GLenum expected_error);
 
-	void VerifyGLSamplerParameterf(glw::GLenum pname, glw::GLfloat param, glw::GLenum expected_error);
+    void VerifyGLSamplerParameterf(glw::GLenum pname, glw::GLfloat param, glw::GLenum expected_error);
 
-	void VerifyGLSamplerParameteri(glw::GLenum pname, glw::GLint param, glw::GLenum expected_error);
+    void VerifyGLSamplerParameteri(glw::GLenum pname, glw::GLint param, glw::GLenum expected_error);
 
-	/* Private variables */
-	glw::GLuint	m_sampler_id;
-	glw::GLboolean m_test_passed;
+    /* Private variables */
+    glw::GLuint m_sampler_id;
+    glw::GLboolean m_test_passed;
 
-	/* Private static variables */
-	static const glw::GLuint m_texture_unit;
+    /* Private static variables */
+    static const glw::GLuint m_texture_unit;
 };
 
 } // namespace glcts

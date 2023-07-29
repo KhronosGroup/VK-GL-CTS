@@ -38,99 +38,106 @@ namespace vk
 class Library
 {
 public:
-										Library					(void) {}
-	virtual								~Library				(void) {}
+    Library(void)
+    {
+    }
+    virtual ~Library(void)
+    {
+    }
 
-	virtual const PlatformInterface&	getPlatformInterface	(void) const = 0;
-	virtual const tcu::FunctionLibrary&	getFunctionLibrary		(void) const = 0;
+    virtual const PlatformInterface &getPlatformInterface(void) const  = 0;
+    virtual const tcu::FunctionLibrary &getFunctionLibrary(void) const = 0;
 };
 
 class PlatformDriver : public PlatformInterface
 {
 public:
-				PlatformDriver	(const tcu::FunctionLibrary& library);
-				~PlatformDriver	(void);
+    PlatformDriver(const tcu::FunctionLibrary &library);
+    ~PlatformDriver(void);
 
 #include "vkConcretePlatformInterface.inl"
 
-				virtual	GetInstanceProcAddrFunc	getGetInstanceProcAddr  () const {
-					return m_vk.getInstanceProcAddr;
-				}
+    virtual GetInstanceProcAddrFunc getGetInstanceProcAddr() const
+    {
+        return m_vk.getInstanceProcAddr;
+    }
 
 protected:
-	struct Functions
-	{
+    struct Functions
+    {
 #include "vkPlatformFunctionPointers.inl"
-	};
+    };
 
-	Functions	m_vk;
+    Functions m_vk;
 };
 
 class InstanceDriver : public InstanceInterface
 {
 public:
-				InstanceDriver	(const PlatformInterface& platformInterface, VkInstance instance);
-				~InstanceDriver	(void);
+    InstanceDriver(const PlatformInterface &platformInterface, VkInstance instance);
+    ~InstanceDriver(void);
 
 #include "vkConcreteInstanceInterface.inl"
 
 protected:
-	void		loadFunctions	(const PlatformInterface& platformInterface, VkInstance instance);
+    void loadFunctions(const PlatformInterface &platformInterface, VkInstance instance);
 
-	struct Functions
-	{
+    struct Functions
+    {
 #include "vkInstanceFunctionPointers.inl"
-	};
+    };
 
-	Functions	m_vk;
+    Functions m_vk;
 };
 
 class DeviceDriver : public DeviceInterface
 {
 public:
-				DeviceDriver	(const PlatformInterface& platformInterface, VkInstance instance, VkDevice device);
-				~DeviceDriver	(void);
+    DeviceDriver(const PlatformInterface &platformInterface, VkInstance instance, VkDevice device);
+    ~DeviceDriver(void);
 
 #include "vkConcreteDeviceInterface.inl"
 
 protected:
-	struct Functions
-	{
+    struct Functions
+    {
 #include "vkDeviceFunctionPointers.inl"
-	};
+    };
 
-	Functions	m_vk;
+    Functions m_vk;
 };
 
 // Defined in vkWsiPlatform.hpp
 namespace wsi
 {
 class Display;
-} // wsi
+} // namespace wsi
 
 struct PlatformMemoryLimits
 {
-	// System memory properties
-	size_t			totalSystemMemory;					//!< #bytes of system memory (heap + HOST_LOCAL) tests must not exceed
+    // System memory properties
+    size_t totalSystemMemory; //!< #bytes of system memory (heap + HOST_LOCAL) tests must not exceed
 
-	// Device memory properties
-	VkDeviceSize	totalDeviceLocalMemory;				//!< #bytes of total DEVICE_LOCAL memory tests must not exceed or 0 if DEVICE_LOCAL counts against system memory
-	VkDeviceSize	deviceMemoryAllocationGranularity;	//!< VkDeviceMemory allocation granularity (typically page size)
+    // Device memory properties
+    VkDeviceSize
+        totalDeviceLocalMemory; //!< #bytes of total DEVICE_LOCAL memory tests must not exceed or 0 if DEVICE_LOCAL counts against system memory
+    VkDeviceSize deviceMemoryAllocationGranularity; //!< VkDeviceMemory allocation granularity (typically page size)
 
-	// Device memory page table geometry
-	// \todo [2016-03-23 pyry] This becomes obsolete if Vulkan API adds a way for driver to expose internal device memory allocations
-	VkDeviceSize	devicePageSize;						//!< Page size on device (must be rounded up to nearest POT)
-	VkDeviceSize	devicePageTableEntrySize;			//!< Number of bytes per page table size
-	size_t			devicePageTableHierarchyLevels;		//!< Number of levels in device page table hierarchy
+    // Device memory page table geometry
+    // \todo [2016-03-23 pyry] This becomes obsolete if Vulkan API adds a way for driver to expose internal device memory allocations
+    VkDeviceSize devicePageSize;           //!< Page size on device (must be rounded up to nearest POT)
+    VkDeviceSize devicePageTableEntrySize; //!< Number of bytes per page table size
+    size_t devicePageTableHierarchyLevels; //!< Number of levels in device page table hierarchy
 
-	PlatformMemoryLimits (void)
-		: totalSystemMemory					(0)
-		, totalDeviceLocalMemory			(0)
-		, deviceMemoryAllocationGranularity	(0)
-		, devicePageSize					(0)
-		, devicePageTableEntrySize			(0)
-		, devicePageTableHierarchyLevels	(0)
-	{}
+    PlatformMemoryLimits(void)
+        : totalSystemMemory(0)
+        , totalDeviceLocalMemory(0)
+        , deviceMemoryAllocationGranularity(0)
+        , devicePageSize(0)
+        , devicePageTableEntrySize(0)
+        , devicePageTableHierarchyLevels(0)
+    {
+    }
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -139,25 +146,29 @@ struct PlatformMemoryLimits
 class Platform
 {
 public:
-							Platform			(void) {}
-							~Platform			(void) {}
+    Platform(void)
+    {
+    }
+    ~Platform(void)
+    {
+    }
 
-	virtual Library*		createLibrary		(void) const = 0;
+    virtual Library *createLibrary(void) const = 0;
 
-	virtual wsi::Display*	createWsiDisplay	(wsi::Type wsiType) const;
-	virtual bool			hasDisplay	(wsi::Type wsiType) const;
+    virtual wsi::Display *createWsiDisplay(wsi::Type wsiType) const;
+    virtual bool hasDisplay(wsi::Type wsiType) const;
 
-	virtual void			getMemoryLimits		(PlatformMemoryLimits& limits) const = 0;
-	virtual void			describePlatform	(std::ostream& dst) const;
+    virtual void getMemoryLimits(PlatformMemoryLimits &limits) const = 0;
+    virtual void describePlatform(std::ostream &dst) const;
 };
 
-inline PlatformMemoryLimits getMemoryLimits (const Platform& platform)
+inline PlatformMemoryLimits getMemoryLimits(const Platform &platform)
 {
-	PlatformMemoryLimits limits;
-	platform.getMemoryLimits(limits);
-	return limits;
+    PlatformMemoryLimits limits;
+    platform.getMemoryLimits(limits);
+    return limits;
 }
 
-} // vk
+} // namespace vk
 
 #endif // _VKPLATFORM_HPP

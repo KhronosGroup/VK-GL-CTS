@@ -33,9 +33,9 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup*		createImageClearingTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageClearingTests(tcu::TestContext &testCtx);
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPIIMAGECLEARINGTESTS_HPP

@@ -39,18 +39,18 @@ namespace glcts
 class TextureBorderClampTests : public TestCaseGroupBase
 {
 public:
-	/* Public methods */
-	TextureBorderClampTests(glcts::Context& context, const ExtParameters& extParams);
-	virtual ~TextureBorderClampTests(void)
-	{
-	}
+    /* Public methods */
+    TextureBorderClampTests(glcts::Context &context, const ExtParameters &extParams);
+    virtual ~TextureBorderClampTests(void)
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	/* Private methods */
-	TextureBorderClampTests(const TextureBorderClampTests& other);
-	TextureBorderClampTests& operator=(const TextureBorderClampTests& other);
+    /* Private methods */
+    TextureBorderClampTests(const TextureBorderClampTests &other);
+    TextureBorderClampTests &operator=(const TextureBorderClampTests &other);
 };
 
 } // namespace glcts

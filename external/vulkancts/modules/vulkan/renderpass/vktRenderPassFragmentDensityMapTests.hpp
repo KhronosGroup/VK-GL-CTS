@@ -31,9 +31,9 @@ namespace vkt
 namespace renderpass
 {
 
-tcu::TestCaseGroup* createFragmentDensityMapTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createFragmentDensityMapTests(tcu::TestContext &testCtx);
 
-} // renderpass
-} // vkt
+} // namespace renderpass
+} // namespace vkt
 
 #endif // _VKTRENDERPASSFRAGMENTDENSITYMAPTESTS_HPP

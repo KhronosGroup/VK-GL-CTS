@@ -21,7 +21,6 @@
  * \brief Utilties for experimental crash postmortem tests
  *//*--------------------------------------------------------------------*/
 
-
 #include "vktPostmortemTests.hpp"
 #include "vktPostmortemShaderTimeoutTests.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -48,54 +47,53 @@ namespace postmortem
 namespace
 {
 
-Move<VkDevice> createPostmortemDevice(Context& context)
+Move<VkDevice> createPostmortemDevice(Context &context)
 {
-	const float queuePriority = 1.0f;
+    const float queuePriority = 1.0f;
 
-	// Create a universal queue that supports graphics and compute
-	const VkDeviceQueueCreateInfo	queueParams =
-	{
-		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	// VkStructureType				sType;
-		DE_NULL,									// const void*					pNext;
-		0u,											// VkDeviceQueueCreateFlags		flags;
-		context.getUniversalQueueFamilyIndex(),		// deUint32						queueFamilyIndex;
-		1u,											// deUint32						queueCount;
-		&queuePriority								// const float*					pQueuePriorities;
-	};
+    // Create a universal queue that supports graphics and compute
+    const VkDeviceQueueCreateInfo queueParams = {
+        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                    // const void* pNext;
+        0u,                                         // VkDeviceQueueCreateFlags flags;
+        context.getUniversalQueueFamilyIndex(),     // uint32_t queueFamilyIndex;
+        1u,                                         // uint32_t queueCount;
+        &queuePriority                              // const float* pQueuePriorities;
+    };
 
-	const VkDeviceCreateInfo		deviceParams =
-	{
-		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	// VkStructureType					sType;
-		DE_NULL,								// const void*						pNext;
-		0u,										// VkDeviceCreateFlags				flags;
-		1u,										// deUint32							queueCreateInfoCount;
-		&queueParams,							// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
-		0u,										// deUint32							enabledLayerCount;
-		DE_NULL,								// const char* const*				ppEnabledLayerNames;
-		0u,										// deUint32							enabledExtensionCount;
-		DE_NULL,								// const char* const*				ppEnabledExtensionNames;
-        DE_NULL									// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
-	};
+    const VkDeviceCreateInfo deviceParams = {
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                              // const void* pNext;
+        0u,                                   // VkDeviceCreateFlags flags;
+        1u,                                   // uint32_t queueCreateInfoCount;
+        &queueParams,                         // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
+        0u,                                   // uint32_t enabledLayerCount;
+        DE_NULL,                              // const char* const* ppEnabledLayerNames;
+        0u,                                   // uint32_t enabledExtensionCount;
+        DE_NULL,                              // const char* const* ppEnabledExtensionNames;
+        DE_NULL                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+    };
 
-	return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(),
-							  context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceParams);
+    return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
+                              context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(),
+                              context.getPhysicalDevice(), &deviceParams);
 }
-}
+} // namespace
 
-PostmortemTestInstance::PostmortemTestInstance(Context& context)
-	: TestInstance(context), m_logicalDevice(createPostmortemDevice(context)),
-	m_deviceDriver(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice),
-	m_queueFamilyIndex(0),
-	m_queue(getDeviceQueue(m_deviceDriver, *m_logicalDevice, m_queueFamilyIndex, 0)),
-	m_allocator(m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()))
+PostmortemTestInstance::PostmortemTestInstance(Context &context)
+    : TestInstance(context)
+    , m_logicalDevice(createPostmortemDevice(context))
+    , m_deviceDriver(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice)
+    , m_queueFamilyIndex(0)
+    , m_queue(getDeviceQueue(m_deviceDriver, *m_logicalDevice, m_queueFamilyIndex, 0))
+    , m_allocator(m_deviceDriver, *m_logicalDevice,
+                  getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()))
 {
-
 }
 
 PostmortemTestInstance::~PostmortemTestInstance()
 {
-
 }
 
-}
-}
+} // namespace postmortem
+} // namespace vkt

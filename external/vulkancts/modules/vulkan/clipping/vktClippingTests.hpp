@@ -31,9 +31,9 @@ namespace vkt
 namespace clipping
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx);
 
-} // clipping
-} // vkt
+} // namespace clipping
+} // namespace vkt
 
 #endif // _VKTCLIPPINGTESTS_HPP

@@ -31,7 +31,7 @@ namespace glu
 {
 class RenderContext;
 class ContextInfo;
-}
+} // namespace glu
 
 namespace tcu
 {
@@ -46,28 +46,37 @@ namespace gles31
 class Context
 {
 public:
-									Context					(tcu::TestContext& testCtx, glu::ApiType apiType = glu::ApiType::es(3,2));
-									~Context				(void);
+    Context(tcu::TestContext &testCtx, glu::ApiType apiType = glu::ApiType::es(3, 2));
+    ~Context(void);
 
-	tcu::TestContext&				getTestContext			(void)			{ return m_testCtx;			}
-	glu::RenderContext&				getRenderContext		(void)			{ return *m_renderCtx;		}
-	const glu::ContextInfo&			getContextInfo			(void) const	{ return *m_contextInfo;	}
-	const tcu::RenderTarget&		getRenderTarget			(void) const;
+    tcu::TestContext &getTestContext(void)
+    {
+        return m_testCtx;
+    }
+    glu::RenderContext &getRenderContext(void)
+    {
+        return *m_renderCtx;
+    }
+    const glu::ContextInfo &getContextInfo(void) const
+    {
+        return *m_contextInfo;
+    }
+    const tcu::RenderTarget &getRenderTarget(void) const;
 
 private:
-									Context					(const Context& other);
-	Context&						operator=				(const Context& other);
+    Context(const Context &other);
+    Context &operator=(const Context &other);
 
-	void							createRenderContext		(void);
-	void							destroyRenderContext	(void);
+    void createRenderContext(void);
+    void destroyRenderContext(void);
 
-	tcu::TestContext&				m_testCtx;
-	glu::RenderContext*				m_renderCtx;
-	glu::ContextInfo*				m_contextInfo;
-	glu::ApiType					m_apiType;
+    tcu::TestContext &m_testCtx;
+    glu::RenderContext *m_renderCtx;
+    glu::ContextInfo *m_contextInfo;
+    glu::ApiType m_apiType;
 };
 
-} // gles31
-} // deqp
+} // namespace gles31
+} // namespace deqp
 
 #endif // _TES31CONTEXT_HPP

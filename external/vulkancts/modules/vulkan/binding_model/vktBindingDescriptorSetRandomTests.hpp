@@ -31,9 +31,9 @@ namespace vkt
 namespace BindingModel
 {
 
-tcu::TestCaseGroup* createDescriptorSetRandomTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDescriptorSetRandomTests(tcu::TestContext &testCtx);
 
-} // BindingModel
-} // vkt
+} // namespace BindingModel
+} // namespace vkt
 
 #endif // _VKTBINDINGDESCRIPTORSETRANDOMTESTS_HPP

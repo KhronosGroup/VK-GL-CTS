@@ -38,22 +38,22 @@ namespace glcts
 class DrawBuffersIndexedNegative : public TestCaseBase
 {
 public:
-	/** Public methods
-	 **/
-	DrawBuffersIndexedNegative(Context& context, const ExtParameters& extParams, const char* name,
-							   const char* description);
+    /** Public methods
+     **/
+    DrawBuffersIndexedNegative(Context &context, const ExtParameters &extParams, const char *name,
+                               const char *description);
 
-	virtual ~DrawBuffersIndexedNegative()
-	{
-	}
+    virtual ~DrawBuffersIndexedNegative()
+    {
+    }
 
 private:
-	/** Private methods
-	 **/
-	virtual void		  init();
-	virtual IterateResult iterate();
+    /** Private methods
+     **/
+    virtual void init();
+    virtual IterateResult iterate();
 
-	bool ExpectedError(glw::GLenum expectedResult, const char* call);
+    bool ExpectedError(glw::GLenum expectedResult, const char *call);
 };
 
 } // namespace glcts

@@ -36,18 +36,18 @@ namespace Stress
 class OcclusionQueryTests : public TestCaseGroup
 {
 public:
-							OcclusionQueryTests		(Context& testCtx);
-							~OcclusionQueryTests	(void);
+    OcclusionQueryTests(Context &testCtx);
+    ~OcclusionQueryTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							OcclusionQueryTests		(const OcclusionQueryTests& other);
-	OcclusionQueryTests&	operator=				(const OcclusionQueryTests& other);
+    OcclusionQueryTests(const OcclusionQueryTests &other);
+    OcclusionQueryTests &operator=(const OcclusionQueryTests &other);
 };
 
-} // Stress
-} // gles3
-} // deqp
+} // namespace Stress
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3SOCCLUSIONQUERYTESTS_HPP

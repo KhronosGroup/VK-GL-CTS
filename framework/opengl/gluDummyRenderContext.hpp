@@ -23,7 +23,7 @@
  * \brief A RenderContext representing absence of a real render context.
  *
  * \todo Remove this when the need for a render context in test case
- *		 constructors no longer exists.
+ *         constructors no longer exists.
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
@@ -47,19 +47,32 @@ namespace glu
 class DummyRenderContext : public RenderContext
 {
 public:
-	explicit							DummyRenderContext	(ContextType ctxType = ContextType()) : m_ctxType(ctxType) {}
+    explicit DummyRenderContext(ContextType ctxType = ContextType()) : m_ctxType(ctxType)
+    {
+    }
 
-	virtual ContextType					getType				(void) const { return m_ctxType;				}
-	virtual const glw::Functions&		getFunctions		(void) const { return m_functions;				}
-	virtual const tcu::RenderTarget&	getRenderTarget		(void) const { return m_renderTarget;			}
-	virtual void						postIterate			(void) {}
+    virtual ContextType getType(void) const
+    {
+        return m_ctxType;
+    }
+    virtual const glw::Functions &getFunctions(void) const
+    {
+        return m_functions;
+    }
+    virtual const tcu::RenderTarget &getRenderTarget(void) const
+    {
+        return m_renderTarget;
+    }
+    virtual void postIterate(void)
+    {
+    }
 
 private:
-	const ContextType					m_ctxType;
-	tcu::RenderTarget					m_renderTarget;
-	glw::Functions						m_functions;
+    const ContextType m_ctxType;
+    tcu::RenderTarget m_renderTarget;
+    glw::Functions m_functions;
 };
 
-} // glu
+} // namespace glu
 
 #endif // _GLUDUMMYRENDERCONTEXT_HPP

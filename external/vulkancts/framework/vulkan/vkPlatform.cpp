@@ -27,45 +27,45 @@
 namespace vk
 {
 
-PlatformDriver::PlatformDriver (const tcu::FunctionLibrary& library)
+PlatformDriver::PlatformDriver(const tcu::FunctionLibrary &library)
 {
-	m_vk.getInstanceProcAddr	= (GetInstanceProcAddrFunc)library.getFunction("vkGetInstanceProcAddr");
+    m_vk.getInstanceProcAddr = (GetInstanceProcAddrFunc)library.getFunction("vkGetInstanceProcAddr");
 
 #define GET_PROC_ADDR(NAME) m_vk.getInstanceProcAddr(DE_NULL, NAME)
 #include "vkInitPlatformFunctionPointers.inl"
 #undef GET_PROC_ADDR
 }
 
-PlatformDriver::~PlatformDriver (void)
+PlatformDriver::~PlatformDriver(void)
 {
 }
 
-InstanceDriver::InstanceDriver (const PlatformInterface& platformInterface, VkInstance instance)
+InstanceDriver::InstanceDriver(const PlatformInterface &platformInterface, VkInstance instance)
 {
-	loadFunctions(platformInterface, instance);
+    loadFunctions(platformInterface, instance);
 }
 
-void InstanceDriver::loadFunctions (const PlatformInterface& platformInterface, VkInstance instance)
-{
+void InstanceDriver::loadFunctions(const PlatformInterface &platformInterface, VkInstance instance){
 #define GET_PROC_ADDR(NAME) platformInterface.getInstanceProcAddr(instance, NAME)
 #include "vkInitInstanceFunctionPointers.inl"
 #undef GET_PROC_ADDR
 }
 
-InstanceDriver::~InstanceDriver (void)
+InstanceDriver::~InstanceDriver(void)
 {
 }
 
-DeviceDriver::DeviceDriver(const PlatformInterface& platformInterface, VkInstance instance, VkDevice device)
+DeviceDriver::DeviceDriver(const PlatformInterface &platformInterface, VkInstance instance, VkDevice device)
 {
-	m_vk.getDeviceProcAddr = (GetDeviceProcAddrFunc)platformInterface.getInstanceProcAddr(instance, "vkGetDeviceProcAddr");
+    m_vk.getDeviceProcAddr =
+        (GetDeviceProcAddrFunc)platformInterface.getInstanceProcAddr(instance, "vkGetDeviceProcAddr");
 
 #define GET_PROC_ADDR(NAME) m_vk.getDeviceProcAddr(device, NAME)
 #include "vkInitDeviceFunctionPointers.inl"
 #undef GET_PROC_ADDR
 }
 
-DeviceDriver::~DeviceDriver (void)
+DeviceDriver::~DeviceDriver(void)
 {
 }
 
@@ -73,19 +73,19 @@ DeviceDriver::~DeviceDriver (void)
 #include "vkInstanceDriverImpl.inl"
 #include "vkDeviceDriverImpl.inl"
 
-wsi::Display* Platform::createWsiDisplay (wsi::Type) const
+wsi::Display *Platform::createWsiDisplay(wsi::Type) const
 {
-	TCU_THROW(NotSupportedError, "WSI not supported");
+    TCU_THROW(NotSupportedError, "WSI not supported");
 }
 
-bool Platform::hasDisplay (wsi::Type) const
+bool Platform::hasDisplay(wsi::Type) const
 {
-	return false;
+    return false;
 }
 
-void Platform::describePlatform (std::ostream& dst) const
+void Platform::describePlatform(std::ostream &dst) const
 {
-	dst << "vk::Platform::describePlatform() not implemented";
+    dst << "vk::Platform::describePlatform() not implemented";
 }
 
-} // vk
+} // namespace vk

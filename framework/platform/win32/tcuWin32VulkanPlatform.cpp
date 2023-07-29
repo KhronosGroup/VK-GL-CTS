@@ -41,183 +41,179 @@ namespace win32
 using de::MovePtr;
 using de::UniquePtr;
 
-DE_STATIC_ASSERT(sizeof(vk::pt::Win32InstanceHandle)	== sizeof(HINSTANCE));
-DE_STATIC_ASSERT(sizeof(vk::pt::Win32WindowHandle)		== sizeof(HWND));
+DE_STATIC_ASSERT(sizeof(vk::pt::Win32InstanceHandle) == sizeof(HINSTANCE));
+DE_STATIC_ASSERT(sizeof(vk::pt::Win32WindowHandle) == sizeof(HWND));
 
 class VulkanWindow : public vk::wsi::Win32WindowInterface
 {
 public:
-	VulkanWindow (MovePtr<win32::Window> window)
-		: vk::wsi::Win32WindowInterface	(vk::pt::Win32WindowHandle(window->getHandle()))
-		, m_window						(window)
-	{
-	}
+    VulkanWindow(MovePtr<win32::Window> window)
+        : vk::wsi::Win32WindowInterface(vk::pt::Win32WindowHandle(window->getHandle()))
+        , m_window(window)
+    {
+    }
 
-	void setVisible(bool visible)
-	{
-		m_window->setVisible(visible);
-	}
+    void setVisible(bool visible)
+    {
+        m_window->setVisible(visible);
+    }
 
-	void setForeground(void)
-	{
-		m_window->setForeground();
-	}
+    void setForeground(void)
+    {
+        m_window->setForeground();
+    }
 
-	void resize (const UVec2& newSize)
-	{
-		m_window->setSize((int)newSize.x(), (int)newSize.y());
-	}
+    void resize(const UVec2 &newSize)
+    {
+        m_window->setSize((int)newSize.x(), (int)newSize.y());
+    }
 
 private:
-	UniquePtr<win32::Window>	m_window;
+    UniquePtr<win32::Window> m_window;
 };
 
 class VulkanDisplay : public vk::wsi::Win32DisplayInterface
 {
 public:
-	VulkanDisplay (HINSTANCE instance)
-		: vk::wsi::Win32DisplayInterface	(vk::pt::Win32InstanceHandle(instance))
-	{
-	}
+    VulkanDisplay(HINSTANCE instance) : vk::wsi::Win32DisplayInterface(vk::pt::Win32InstanceHandle(instance))
+    {
+    }
 
-	vk::wsi::Window* createWindow (const Maybe<UVec2>& initialSize) const
-	{
-		const HINSTANCE	instance	= (HINSTANCE)m_native.internal;
-		const deUint32	width		= !initialSize ? 400 : initialSize->x();
-		const deUint32	height		= !initialSize ? 300 : initialSize->y();
+    vk::wsi::Window *createWindow(const Maybe<UVec2> &initialSize) const
+    {
+        const HINSTANCE instance = (HINSTANCE)m_native.internal;
+        const uint32_t width     = !initialSize ? 400 : initialSize->x();
+        const uint32_t height    = !initialSize ? 300 : initialSize->y();
 
-		return new VulkanWindow(MovePtr<win32::Window>(new win32::Window(instance, (int)width, (int)height)));
-	}
+        return new VulkanWindow(MovePtr<win32::Window>(new win32::Window(instance, (int)width, (int)height)));
+    }
 };
 
 class VulkanLibrary : public vk::Library
 {
 public:
-	VulkanLibrary (void)
-		: m_library	("vulkan-1.dll")
-		, m_driver	(m_library)
-	{
-	}
+    VulkanLibrary(void) : m_library("vulkan-1.dll"), m_driver(m_library)
+    {
+    }
 
-	const vk::PlatformInterface&	getPlatformInterface	(void) const
-	{
-		return m_driver;
-	}
-	const tcu::FunctionLibrary&		getFunctionLibrary		(void) const
-	{
-		return m_library;
-	}
+    const vk::PlatformInterface &getPlatformInterface(void) const
+    {
+        return m_driver;
+    }
+    const tcu::FunctionLibrary &getFunctionLibrary(void) const
+    {
+        return m_library;
+    }
 
 private:
-	const tcu::DynamicFunctionLibrary	m_library;
-	const vk::PlatformDriver			m_driver;
+    const tcu::DynamicFunctionLibrary m_library;
+    const vk::PlatformDriver m_driver;
 };
 
-VulkanPlatform::VulkanPlatform (HINSTANCE instance)
-	: m_instance(instance)
+VulkanPlatform::VulkanPlatform(HINSTANCE instance) : m_instance(instance)
 {
 }
 
-VulkanPlatform::~VulkanPlatform (void)
+VulkanPlatform::~VulkanPlatform(void)
 {
 }
 
-vk::Library* VulkanPlatform::createLibrary (void) const
+vk::Library *VulkanPlatform::createLibrary(void) const
 {
-	return new VulkanLibrary();
+    return new VulkanLibrary();
 }
 
-ULONG getStringRegKey (const std::string& regKey, const std::string& strValueName, std::string& strValue)
+ULONG getStringRegKey(const std::string &regKey, const std::string &strValueName, std::string &strValue)
 {
-	HKEY	hKey;
-	ULONG	nError;
-	CHAR	szBuffer[512];
-	DWORD	dwBufferSize = sizeof(szBuffer);
+    HKEY hKey;
+    ULONG nError;
+    CHAR szBuffer[512];
+    DWORD dwBufferSize = sizeof(szBuffer);
 
-	nError = RegOpenKeyExA(HKEY_LOCAL_MACHINE, regKey.c_str(), 0, KEY_READ, &hKey);
+    nError = RegOpenKeyExA(HKEY_LOCAL_MACHINE, regKey.c_str(), 0, KEY_READ, &hKey);
 
-	if (ERROR_SUCCESS == nError)
-		nError = RegQueryValueExA(hKey, strValueName.c_str(), 0, DE_NULL, (LPBYTE)szBuffer, &dwBufferSize);
+    if (ERROR_SUCCESS == nError)
+        nError = RegQueryValueExA(hKey, strValueName.c_str(), 0, DE_NULL, (LPBYTE)szBuffer, &dwBufferSize);
 
-	if (ERROR_SUCCESS == nError)
-		strValue = szBuffer;
+    if (ERROR_SUCCESS == nError)
+        strValue = szBuffer;
 
-	return nError;
+    return nError;
 }
 
-void getWindowsBits (std::ostream& dst)
+void getWindowsBits(std::ostream &dst)
 {
 #if defined(_WIN64)
-	dst << "64"; // 64-bit programs run only on Win64
-	return;
+    dst << "64"; // 64-bit programs run only on Win64
+    return;
 #elif defined(_WIN32)
-	BOOL is64 = false;
-	// 32-bit programs run on both 32-bit and 64-bit Windows.
-	// Function is defined from XP SP2 onwards, so we don't need to
-	// check if it exists.
-	if (IsWow64Process(GetCurrentProcess(), &is64))
-	{
-		if (is64)
-			dst << "64";
-		else
-			dst << "32";
-		return;
-	}
+    BOOL is64 = false;
+    // 32-bit programs run on both 32-bit and 64-bit Windows.
+    // Function is defined from XP SP2 onwards, so we don't need to
+    // check if it exists.
+    if (IsWow64Process(GetCurrentProcess(), &is64))
+    {
+        if (is64)
+            dst << "64";
+        else
+            dst << "32";
+        return;
+    }
 #endif
 #if !defined(_WIN64)
-	// IsWow64Process returns failure or neither of
-	// _WIN64 or _WIN32 is defined
-	dst << "Unknown";
+    // IsWow64Process returns failure or neither of
+    // _WIN64 or _WIN32 is defined
+    dst << "Unknown";
 #endif
 }
 
-void getOSNameFromRegistry (std::ostream& dst)
+void getOSNameFromRegistry(std::ostream &dst)
 {
-	const char* keypath		= "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion";
-	std::string productname	= "Unknown";
-	std::string releaseid	= "Unknown";
-	std::string optional;
+    const char *keypath     = "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion";
+    std::string productname = "Unknown";
+    std::string releaseid   = "Unknown";
+    std::string optional;
 
-	getStringRegKey(keypath, "ProductName", productname);
-	getStringRegKey(keypath, "ReleaseId", releaseid);
+    getStringRegKey(keypath, "ProductName", productname);
+    getStringRegKey(keypath, "ReleaseId", releaseid);
 
-	getWindowsBits(dst);
+    getWindowsBits(dst);
 
-	dst << " bit Windows Product: " << productname << ", Release: " << releaseid;
+    dst << " bit Windows Product: " << productname << ", Release: " << releaseid;
 
-	if (ERROR_SUCCESS == getStringRegKey(keypath, "EditionID", optional))
-	{
-		dst << ", Edition: " << optional;
-		if (ERROR_SUCCESS == getStringRegKey(keypath, "EditionSubstring", optional)
-			&& optional.length() > 0)
-			dst << " " << optional;
-	}
+    if (ERROR_SUCCESS == getStringRegKey(keypath, "EditionID", optional))
+    {
+        dst << ", Edition: " << optional;
+        if (ERROR_SUCCESS == getStringRegKey(keypath, "EditionSubstring", optional) && optional.length() > 0)
+            dst << " " << optional;
+    }
 }
 
-void getOSVersionFromDLL (std::ostream& dst)
+void getOSVersionFromDLL(std::ostream &dst)
 {
-	DWORD	buffer_size	= GetFileVersionInfoSize(("kernel32.dll"), DE_NULL);
-	char*	buffer		= 0;
+    DWORD buffer_size = GetFileVersionInfoSize(("kernel32.dll"), DE_NULL);
+    char *buffer      = 0;
 
-	if (buffer_size != 0)
-	{
-		buffer = new char[buffer_size];
-		if (buffer != 0)
-		{
-			if (GetFileVersionInfo("kernel32.dll", 0, buffer_size, buffer))
-			{
-				VS_FIXEDFILEINFO*	version		= DE_NULL;
-				UINT				version_len	= 0;
+    if (buffer_size != 0)
+    {
+        buffer = new char[buffer_size];
+        if (buffer != 0)
+        {
+            if (GetFileVersionInfo("kernel32.dll", 0, buffer_size, buffer))
+            {
+                VS_FIXEDFILEINFO *version = DE_NULL;
+                UINT version_len          = 0;
 
-				if (VerQueryValue(buffer, "\\", (LPVOID*)&version, &version_len))
-				{
-					dst << ", DLL Version: " << HIWORD(version->dwProductVersionMS) << "." << LOWORD(version->dwProductVersionMS)
-						<< ", DLL Build: "   << HIWORD(version->dwProductVersionLS) << "." << LOWORD(version->dwProductVersionLS);
-				}
-			}
-			delete[] buffer;
-		}
-	}
+                if (VerQueryValue(buffer, "\\", (LPVOID *)&version, &version_len))
+                {
+                    dst << ", DLL Version: " << HIWORD(version->dwProductVersionMS) << "."
+                        << LOWORD(version->dwProductVersionMS) << ", DLL Build: " << HIWORD(version->dwProductVersionLS)
+                        << "." << LOWORD(version->dwProductVersionLS);
+                }
+            }
+            delete[] buffer;
+        }
+    }
 }
 
 // Old windows version query APIs lie about the version number. There's no replacement
@@ -234,81 +230,87 @@ void getOSVersionFromDLL (std::ostream& dst)
 //
 // If the DLL method fails, we simply don't print out anything about it.
 // The minimal output from this function is "Windows Product: Unknown, Release: Unknown"
-static void getOSInfo (std::ostream& dst)
+static void getOSInfo(std::ostream &dst)
 {
-	getOSNameFromRegistry(dst);
-	getOSVersionFromDLL(dst);
+    getOSNameFromRegistry(dst);
+    getOSVersionFromDLL(dst);
 }
 
-const char* getProcessorArchitectureName (WORD arch)
+const char *getProcessorArchitectureName(WORD arch)
 {
-	switch (arch)
-	{
-		case PROCESSOR_ARCHITECTURE_AMD64:		return "AMD64";
-		case PROCESSOR_ARCHITECTURE_ARM:		return "ARM";
-		case PROCESSOR_ARCHITECTURE_IA64:		return "IA64";
-		case PROCESSOR_ARCHITECTURE_INTEL:		return "INTEL";
-		case PROCESSOR_ARCHITECTURE_UNKNOWN:	return "UNKNOWN";
-		default:								return DE_NULL;
-	}
+    switch (arch)
+    {
+    case PROCESSOR_ARCHITECTURE_AMD64:
+        return "AMD64";
+    case PROCESSOR_ARCHITECTURE_ARM:
+        return "ARM";
+    case PROCESSOR_ARCHITECTURE_IA64:
+        return "IA64";
+    case PROCESSOR_ARCHITECTURE_INTEL:
+        return "INTEL";
+    case PROCESSOR_ARCHITECTURE_UNKNOWN:
+        return "UNKNOWN";
+    default:
+        return DE_NULL;
+    }
 }
 
-static void getProcessorInfo (std::ostream& dst)
+static void getProcessorInfo(std::ostream &dst)
 {
-	SYSTEM_INFO	sysInfo;
+    SYSTEM_INFO sysInfo;
 
-	deMemset(&sysInfo, 0, sizeof(sysInfo));
-	GetSystemInfo(&sysInfo);
+    deMemset(&sysInfo, 0, sizeof(sysInfo));
+    GetSystemInfo(&sysInfo);
 
-	dst << "arch ";
-	{
-		const char* const	archName	= getProcessorArchitectureName(sysInfo.wProcessorArchitecture);
+    dst << "arch ";
+    {
+        const char *const archName = getProcessorArchitectureName(sysInfo.wProcessorArchitecture);
 
-		if (archName)
-			dst << archName;
-		else
-			dst << tcu::toHex(sysInfo.wProcessorArchitecture);
-	}
+        if (archName)
+            dst << archName;
+        else
+            dst << tcu::toHex(sysInfo.wProcessorArchitecture);
+    }
 
-	dst << ", level " << tcu::toHex(sysInfo.wProcessorLevel) << ", revision " << tcu::toHex(sysInfo.wProcessorRevision);
+    dst << ", level " << tcu::toHex(sysInfo.wProcessorLevel) << ", revision " << tcu::toHex(sysInfo.wProcessorRevision);
 }
 
-void VulkanPlatform::describePlatform (std::ostream& dst) const
+void VulkanPlatform::describePlatform(std::ostream &dst) const
 {
-	dst << "OS: ";
-	getOSInfo(dst);
-	dst << "\n";
+    dst << "OS: ";
+    getOSInfo(dst);
+    dst << "\n";
 
-	dst << "CPU: ";
-	getProcessorInfo(dst);
-	dst << "\n";
+    dst << "CPU: ";
+    getProcessorInfo(dst);
+    dst << "\n";
 }
 
-void VulkanPlatform::getMemoryLimits (vk::PlatformMemoryLimits& limits) const
+void VulkanPlatform::getMemoryLimits(vk::PlatformMemoryLimits &limits) const
 {
-	limits.totalSystemMemory					= 256*1024*1024;
-	limits.totalDeviceLocalMemory				= 128*1024*1024;
-	limits.deviceMemoryAllocationGranularity	= 64*1024;
-	limits.devicePageSize						= 4096;
-	limits.devicePageTableEntrySize				= 8;
-	limits.devicePageTableHierarchyLevels		= 3;
+    limits.totalSystemMemory                 = 256 * 1024 * 1024;
+    limits.totalDeviceLocalMemory            = 128 * 1024 * 1024;
+    limits.deviceMemoryAllocationGranularity = 64 * 1024;
+    limits.devicePageSize                    = 4096;
+    limits.devicePageTableEntrySize          = 8;
+    limits.devicePageTableHierarchyLevels    = 3;
 }
 
-vk::wsi::Display* VulkanPlatform::createWsiDisplay (vk::wsi::Type wsiType) const
+vk::wsi::Display *VulkanPlatform::createWsiDisplay(vk::wsi::Type wsiType) const
 {
-	if (wsiType != vk::wsi::TYPE_WIN32)
-		TCU_THROW(NotSupportedError, "WSI type not supported");
+    if (wsiType != vk::wsi::TYPE_WIN32)
+        TCU_THROW(NotSupportedError, "WSI type not supported");
 
-	return new VulkanDisplay(m_instance);
+    return new VulkanDisplay(m_instance);
 }
 
-bool VulkanPlatform::hasDisplay (vk::wsi::Type wsiType)  const
+bool VulkanPlatform::hasDisplay(vk::wsi::Type wsiType) const
 {
-	if (wsiType != vk::wsi::TYPE_WIN32)
-		return false;
+    if (wsiType != vk::wsi::TYPE_WIN32)
+        return false;
 
-	return true;
+    return true;
 }
 
-} // win32
-} // tcu
+} // namespace win32
+} // namespace tcu

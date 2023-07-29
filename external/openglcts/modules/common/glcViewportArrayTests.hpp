@@ -46,231 +46,231 @@ namespace ViewportArray
 class Utils
 {
 public:
-	enum SHADER_STAGES
-	{
-		COMPUTE_SHADER = 0,
-		VERTEX_SHADER,
-		TESS_CTRL_SHADER,
-		TESS_EVAL_SHADER,
-		GEOMETRY_SHADER,
-		FRAGMENT_SHADER,
+    enum SHADER_STAGES
+    {
+        COMPUTE_SHADER = 0,
+        VERTEX_SHADER,
+        TESS_CTRL_SHADER,
+        TESS_EVAL_SHADER,
+        GEOMETRY_SHADER,
+        FRAGMENT_SHADER,
 
-		/* */
-		SHADER_STAGES_MAX
-	};
+        /* */
+        SHADER_STAGES_MAX
+    };
 
-	/* Public types */
-	struct buffer
-	{
-		buffer(deqp::Context& context);
-		~buffer();
+    /* Public types */
+    struct buffer
+    {
+        buffer(deqp::Context &context);
+        ~buffer();
 
-		void bind() const;
+        void bind() const;
 
-		void bindRange(glw::GLuint index, glw::GLintptr offset, glw::GLsizeiptr size);
+        void bindRange(glw::GLuint index, glw::GLintptr offset, glw::GLsizeiptr size);
 
-		void generate(glw::GLenum target);
-		void* map(glw::GLenum access) const;
-		void unmap() const;
+        void generate(glw::GLenum target);
+        void *map(glw::GLenum access) const;
+        void unmap() const;
 
-		void update(glw::GLsizeiptr size, glw::GLvoid* data, glw::GLenum usage);
+        void update(glw::GLsizeiptr size, glw::GLvoid *data, glw::GLenum usage);
 
-		glw::GLuint m_id;
+        glw::GLuint m_id;
 
-	private:
-		deqp::Context& m_context;
-		glw::GLenum	m_target;
-	};
+    private:
+        deqp::Context &m_context;
+        glw::GLenum m_target;
+    };
 
-	struct framebuffer
-	{
-		framebuffer(deqp::Context& context);
-		~framebuffer();
+    struct framebuffer
+    {
+        framebuffer(deqp::Context &context);
+        ~framebuffer();
 
-		void attachTexture(glw::GLenum attachment, glw::GLuint texture_id, glw::GLuint width, glw::GLuint height);
+        void attachTexture(glw::GLenum attachment, glw::GLuint texture_id, glw::GLuint width, glw::GLuint height);
 
-		void bind();
-		void clear(glw::GLenum mask);
+        void bind();
+        void clear(glw::GLenum mask);
 
-		void clearColor(glw::GLfloat red, glw::GLfloat green, glw::GLfloat blue, glw::GLfloat alpha);
+        void clearColor(glw::GLfloat red, glw::GLfloat green, glw::GLfloat blue, glw::GLfloat alpha);
 
-		void generate();
+        void generate();
 
-		glw::GLuint m_id;
+        glw::GLuint m_id;
 
-	private:
-		deqp::Context& m_context;
-	};
+    private:
+        deqp::Context &m_context;
+    };
 
-	class shaderCompilationException : public std::exception
-	{
-	public:
-		shaderCompilationException(const glw::GLchar* source, const glw::GLchar* message);
+    class shaderCompilationException : public std::exception
+    {
+    public:
+        shaderCompilationException(const glw::GLchar *source, const glw::GLchar *message);
 
-		virtual ~shaderCompilationException() throw()
-		{
-		}
+        virtual ~shaderCompilationException() throw()
+        {
+        }
 
-		virtual const char* what() const throw();
+        virtual const char *what() const throw();
 
-		std::string m_shader_source;
-		std::string m_error_message;
-	};
+        std::string m_shader_source;
+        std::string m_error_message;
+    };
 
-	class programLinkageException : public std::exception
-	{
-	public:
-		programLinkageException(const glw::GLchar* error_message);
+    class programLinkageException : public std::exception
+    {
+    public:
+        programLinkageException(const glw::GLchar *error_message);
 
-		virtual ~programLinkageException() throw()
-		{
-		}
+        virtual ~programLinkageException() throw()
+        {
+        }
 
-		virtual const char* what() const throw();
+        virtual const char *what() const throw();
 
-		std::string m_error_message;
-	};
+        std::string m_error_message;
+    };
 
-	/** Store information about program object
-	 *
-	 **/
-	struct program
-	{
-		program(deqp::Context& context);
-		~program();
+    /** Store information about program object
+     *
+     **/
+    struct program
+    {
+        program(deqp::Context &context);
+        ~program();
 
-		void build(const glw::GLchar* compute_shader_code, const glw::GLchar* fragment_shader_code,
-				   const glw::GLchar* geometry_shader_code, const glw::GLchar* tesselation_control_shader_code,
-				   const glw::GLchar* tesselation_evaluation_shader_code, const glw::GLchar* vertex_shader_code,
-				   const glw::GLchar* const* varying_names, glw::GLuint n_varying_names, bool is_separable = false);
+        void build(const glw::GLchar *compute_shader_code, const glw::GLchar *fragment_shader_code,
+                   const glw::GLchar *geometry_shader_code, const glw::GLchar *tesselation_control_shader_code,
+                   const glw::GLchar *tesselation_evaluation_shader_code, const glw::GLchar *vertex_shader_code,
+                   const glw::GLchar *const *varying_names, glw::GLuint n_varying_names, bool is_separable = false);
 
-		void compile(glw::GLuint shader_id, const glw::GLchar* source) const;
+        void compile(glw::GLuint shader_id, const glw::GLchar *source) const;
 
-		glw::GLint getAttribLocation(const glw::GLchar* name) const;
+        glw::GLint getAttribLocation(const glw::GLchar *name) const;
 
-		glw::GLuint getSubroutineIndex(const glw::GLchar* subroutine_name, glw::GLenum shader_stage) const;
+        glw::GLuint getSubroutineIndex(const glw::GLchar *subroutine_name, glw::GLenum shader_stage) const;
 
-		glw::GLint getSubroutineUniformLocation(const glw::GLchar* uniform_name, glw::GLenum shader_stage) const;
+        glw::GLint getSubroutineUniformLocation(const glw::GLchar *uniform_name, glw::GLenum shader_stage) const;
 
-		glw::GLint getUniformLocation(const glw::GLchar* uniform_name) const;
+        glw::GLint getUniformLocation(const glw::GLchar *uniform_name) const;
 
-		void link() const;
-		void remove();
-		void use() const;
+        void link() const;
+        void remove();
+        void use() const;
 
-		/* */
-		static void printShaderSource(const glw::GLchar* source, tcu::MessageBuilder& log);
+        /* */
+        static void printShaderSource(const glw::GLchar *source, tcu::MessageBuilder &log);
 
-		static const glw::GLenum ARB_COMPUTE_SHADER;
+        static const glw::GLenum ARB_COMPUTE_SHADER;
 
-		glw::GLuint m_compute_shader_id;
-		glw::GLuint m_fragment_shader_id;
-		glw::GLuint m_geometry_shader_id;
-		glw::GLuint m_program_object_id;
-		glw::GLuint m_tesselation_control_shader_id;
-		glw::GLuint m_tesselation_evaluation_shader_id;
-		glw::GLuint m_vertex_shader_id;
+        glw::GLuint m_compute_shader_id;
+        glw::GLuint m_fragment_shader_id;
+        glw::GLuint m_geometry_shader_id;
+        glw::GLuint m_program_object_id;
+        glw::GLuint m_tesselation_control_shader_id;
+        glw::GLuint m_tesselation_evaluation_shader_id;
+        glw::GLuint m_vertex_shader_id;
 
-	private:
-		deqp::Context& m_context;
-	};
+    private:
+        deqp::Context &m_context;
+    };
 
-	struct texture
-	{
-		texture(deqp::Context& context);
-		~texture();
+    struct texture
+    {
+        texture(deqp::Context &context);
+        ~texture();
 
-		void bind() const;
+        void bind() const;
 
-		void create(glw::GLuint width, glw::GLuint height, glw::GLenum internal_format);
+        void create(glw::GLuint width, glw::GLuint height, glw::GLenum internal_format);
 
-		void create(glw::GLuint width, glw::GLuint height, glw::GLuint depth, glw::GLenum internal_format);
+        void create(glw::GLuint width, glw::GLuint height, glw::GLuint depth, glw::GLenum internal_format);
 
-		void get(glw::GLenum format, glw::GLenum type, glw::GLvoid* out_data) const;
+        void get(glw::GLenum format, glw::GLenum type, glw::GLvoid *out_data) const;
 
-		void release();
+        void release();
 
-		void update(glw::GLuint width, glw::GLuint height, glw::GLuint depth, glw::GLenum format, glw::GLenum type,
-					glw::GLvoid* data);
+        void update(glw::GLuint width, glw::GLuint height, glw::GLuint depth, glw::GLenum format, glw::GLenum type,
+                    glw::GLvoid *data);
 
-		glw::GLuint m_id;
-		glw::GLuint m_width;
-		glw::GLuint m_height;
-		glw::GLuint m_depth;
+        glw::GLuint m_id;
+        glw::GLuint m_width;
+        glw::GLuint m_height;
+        glw::GLuint m_depth;
 
-	private:
-		deqp::Context& m_context;
-		bool		   m_is_array;
-	};
+    private:
+        deqp::Context &m_context;
+        bool m_is_array;
+    };
 
-	struct vertexArray
-	{
-		vertexArray(deqp::Context& Context);
-		~vertexArray();
+    struct vertexArray
+    {
+        vertexArray(deqp::Context &Context);
+        ~vertexArray();
 
-		void generate();
-		void bind();
+        void generate();
+        void bind();
 
-		glw::GLuint m_id;
+        glw::GLuint m_id;
 
-	private:
-		deqp::Context& m_context;
-	};
+    private:
+        deqp::Context &m_context;
+    };
 
-	class DepthFuncWrapper
-	{
-	public:
-		DepthFuncWrapper(deqp::Context& context) : m_gl(context.getRenderContext().getFunctions()){};
-		~DepthFuncWrapper(){};
+    class DepthFuncWrapper
+    {
+    public:
+        DepthFuncWrapper(deqp::Context &context) : m_gl(context.getRenderContext().getFunctions()){};
+        ~DepthFuncWrapper(){};
 
-		void depthRangeArray(glw::GLuint first, glw::GLsizei count, const glw::GLfloat* v)
-		{
-			m_gl.depthRangeArrayfvOES(first, count, v);
-		}
+        void depthRangeArray(glw::GLuint first, glw::GLsizei count, const glw::GLfloat *v)
+        {
+            m_gl.depthRangeArrayfvOES(first, count, v);
+        }
 
-		void depthRangeArray(glw::GLuint first, glw::GLsizei count, const glw::GLdouble* v)
-		{
-			m_gl.depthRangeArrayv(first, count, v);
-		}
+        void depthRangeArray(glw::GLuint first, glw::GLsizei count, const glw::GLdouble *v)
+        {
+            m_gl.depthRangeArrayv(first, count, v);
+        }
 
-		void depthRangeIndexed(glw::GLuint index, glw::GLfloat n, glw::GLfloat f)
-		{
-			m_gl.depthRangeIndexedfOES(index, n, f);
-		}
+        void depthRangeIndexed(glw::GLuint index, glw::GLfloat n, glw::GLfloat f)
+        {
+            m_gl.depthRangeIndexedfOES(index, n, f);
+        }
 
-		void depthRangeIndexed(glw::GLuint index, glw::GLdouble n, glw::GLdouble f)
-		{
-			m_gl.depthRangeIndexed(index, n, f);
-		}
+        void depthRangeIndexed(glw::GLuint index, glw::GLdouble n, glw::GLdouble f)
+        {
+            m_gl.depthRangeIndexed(index, n, f);
+        }
 
-		void depthRange(glw::GLfloat near, glw::GLfloat far)
-		{
-			m_gl.depthRangef(near, far);
-		}
+        void depthRange(glw::GLfloat near, glw::GLfloat far)
+        {
+            m_gl.depthRangef(near, far);
+        }
 
-		void depthRange(glw::GLdouble near, glw::GLdouble far)
-		{
-			m_gl.depthRange(near, far);
-		}
+        void depthRange(glw::GLdouble near, glw::GLdouble far)
+        {
+            m_gl.depthRange(near, far);
+        }
 
-		void getDepthi_v(glw::GLenum target, glw::GLuint index, glw::GLfloat* data)
-		{
-			m_gl.getFloati_v(target, index, data);
-		}
+        void getDepthi_v(glw::GLenum target, glw::GLuint index, glw::GLfloat *data)
+        {
+            m_gl.getFloati_v(target, index, data);
+        }
 
-		void getDepthi_v(glw::GLenum target, glw::GLuint index, glw::GLdouble* data)
-		{
-			m_gl.getDoublei_v(target, index, data);
-		}
+        void getDepthi_v(glw::GLenum target, glw::GLuint index, glw::GLdouble *data)
+        {
+            m_gl.getDoublei_v(target, index, data);
+        }
 
-		const glw::Functions& getFunctions()
-		{
-			return m_gl;
-		}
+        const glw::Functions &getFunctions()
+        {
+            return m_gl;
+        }
 
-	private:
-		const glw::Functions& m_gl;
-	};
+    private:
+        const glw::Functions &m_gl;
+    };
 };
 
 /** Implements test APIErrors, description follows:
@@ -305,30 +305,30 @@ public:
 class APIErrors : public glcts::TestCaseBase
 {
 public:
-	/* Public methods */
-	APIErrors(deqp::Context& context, const glcts::ExtParameters& extParams);
+    /* Public methods */
+    APIErrors(deqp::Context &context, const glcts::ExtParameters &extParams);
 
-	virtual ~APIErrors()
-	{
-	}
+    virtual ~APIErrors()
+    {
+    }
 
-	/* Public methods inherited from TestCaseBase */
-	virtual IterateResult iterate(void);
+    /* Public methods inherited from TestCaseBase */
+    virtual IterateResult iterate(void);
 
 private:
-	template <typename T>
-	void depthRangeArrayHelper(Utils::DepthFuncWrapper& depthFunc, glw::GLint max_viewports, bool& test_result,
-							   T* data = NULL);
+    template <typename T>
+    void depthRangeArrayHelper(Utils::DepthFuncWrapper &depthFunc, glw::GLint max_viewports, bool &test_result,
+                               T *data = NULL);
 
-	template <typename T>
-	void depthRangeIndexedHelper(Utils::DepthFuncWrapper& depthFunc, glw::GLint max_viewports, bool& test_result,
-								 T* data = NULL);
+    template <typename T>
+    void depthRangeIndexedHelper(Utils::DepthFuncWrapper &depthFunc, glw::GLint max_viewports, bool &test_result,
+                                 T *data = NULL);
 
-	template <typename T>
-	void getDepthHelper(Utils::DepthFuncWrapper& depthFunc, glw::GLint max_viewports, bool& test_result,
-						T* data = NULL);
+    template <typename T>
+    void getDepthHelper(Utils::DepthFuncWrapper &depthFunc, glw::GLint max_viewports, bool &test_result,
+                        T *data = NULL);
 
-	void checkGLError(glw::GLenum expected_error, const glw::GLchar* description, bool& out_result);
+    void checkGLError(glw::GLenum expected_error, const glw::GLchar *description, bool &out_result);
 };
 
 /** Implements test Queries, description follows:
@@ -354,20 +354,20 @@ private:
 class Queries : public glcts::TestCaseBase
 {
 public:
-	/* Public methods */
-	Queries(deqp::Context& context, const glcts::ExtParameters& extParams);
+    /* Public methods */
+    Queries(deqp::Context &context, const glcts::ExtParameters &extParams);
 
-	virtual ~Queries()
-	{
-	}
+    virtual ~Queries()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 private:
-	template <typename T>
-	void depthRangeInitialValuesHelper(Utils::DepthFuncWrapper& depthFunc, glw::GLint max_viewports, bool& test_result,
-									   T* data = NULL);
+    template <typename T>
+    void depthRangeInitialValuesHelper(Utils::DepthFuncWrapper &depthFunc, glw::GLint max_viewports, bool &test_result,
+                                       T *data = NULL);
 };
 
 /** Implements test ViewportAPI, description follows:
@@ -392,25 +392,25 @@ private:
 class ViewportAPI : public glcts::TestCaseBase
 {
 public:
-	/* Public methods */
-	ViewportAPI(deqp::Context& context, const glcts::ExtParameters& extParams);
+    /* Public methods */
+    ViewportAPI(deqp::Context &context, const glcts::ExtParameters &extParams);
 
-	virtual ~ViewportAPI()
-	{
-	}
+    virtual ~ViewportAPI()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	void compareViewports(std::vector<glw::GLfloat>& left, std::vector<glw::GLfloat>& right,
-						  const glw::GLchar* description, bool& out_result);
+    /* Private methods */
+    void compareViewports(std::vector<glw::GLfloat> &left, std::vector<glw::GLfloat> &right,
+                          const glw::GLchar *description, bool &out_result);
 
-	void getViewports(glw::GLint max_viewports, std::vector<glw::GLfloat>& out_data);
+    void getViewports(glw::GLint max_viewports, std::vector<glw::GLfloat> &out_data);
 
-	/* Private constants */
-	static const glw::GLuint m_n_elements;
+    /* Private constants */
+    static const glw::GLuint m_n_elements;
 };
 
 /** Implements test ScissorAPI, description follows:
@@ -435,25 +435,25 @@ private:
 class ScissorAPI : public glcts::TestCaseBase
 {
 public:
-	/* Public methods */
-	ScissorAPI(deqp::Context& context, const glcts::ExtParameters& extParams);
+    /* Public methods */
+    ScissorAPI(deqp::Context &context, const glcts::ExtParameters &extParams);
 
-	virtual ~ScissorAPI()
-	{
-	}
+    virtual ~ScissorAPI()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	void compareScissorBoxes(std::vector<glw::GLint>& left, std::vector<glw::GLint>& right,
-							 const glw::GLchar* description, bool& out_result);
+    /* Private methods */
+    void compareScissorBoxes(std::vector<glw::GLint> &left, std::vector<glw::GLint> &right,
+                             const glw::GLchar *description, bool &out_result);
 
-	void getScissorBoxes(glw::GLint max_viewports, std::vector<glw::GLint>& out_data);
+    void getScissorBoxes(glw::GLint max_viewports, std::vector<glw::GLint> &out_data);
 
-	/* Private constants */
-	static const glw::GLuint m_n_elements;
+    /* Private constants */
+    static const glw::GLuint m_n_elements;
 };
 
 /** Implements test DepthRangeAPI, description follows:
@@ -475,30 +475,30 @@ private:
 class DepthRangeAPI : public glcts::TestCaseBase
 {
 public:
-	/* Public methods */
-	DepthRangeAPI(deqp::Context& context, const glcts::ExtParameters& extParams);
+    /* Public methods */
+    DepthRangeAPI(deqp::Context &context, const glcts::ExtParameters &extParams);
 
-	virtual ~DepthRangeAPI()
-	{
-	}
+    virtual ~DepthRangeAPI()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	template <typename T>
-	void compareDepthRanges(std::vector<T>& left, std::vector<T>& right, const glw::GLchar* description,
-							bool& out_result);
+    /* Private methods */
+    template <typename T>
+    void compareDepthRanges(std::vector<T> &left, std::vector<T> &right, const glw::GLchar *description,
+                            bool &out_result);
 
-	template <typename T>
-	void getDepthRanges(Utils::DepthFuncWrapper& depthFunc, glw::GLint max_viewports, std::vector<T>& out_data);
+    template <typename T>
+    void getDepthRanges(Utils::DepthFuncWrapper &depthFunc, glw::GLint max_viewports, std::vector<T> &out_data);
 
-	template <typename T>
-	bool iterateHelper(T* data = NULL);
+    template <typename T>
+    bool iterateHelper(T *data = NULL);
 
-	/* Private constants */
-	static const glw::GLuint m_n_elements;
+    /* Private constants */
+    static const glw::GLuint m_n_elements;
 };
 
 /** Implements test ScissorTestStateAPI, description follows:
@@ -522,121 +522,121 @@ private:
 class ScissorTestStateAPI : public glcts::TestCaseBase
 {
 public:
-	/* Public methods */
-	ScissorTestStateAPI(deqp::Context& context, const glcts::ExtParameters& extParams);
+    /* Public methods */
+    ScissorTestStateAPI(deqp::Context &context, const glcts::ExtParameters &extParams);
 
-	virtual ~ScissorTestStateAPI()
-	{
-	}
+    virtual ~ScissorTestStateAPI()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	void compareScissorTestStates(std::vector<glw::GLboolean>& left, std::vector<glw::GLboolean>& right,
-								  const glw::GLchar* description, bool& out_result);
+    /* Private methods */
+    void compareScissorTestStates(std::vector<glw::GLboolean> &left, std::vector<glw::GLboolean> &right,
+                                  const glw::GLchar *description, bool &out_result);
 
-	void getScissorTestStates(glw::GLint max_viewports, std::vector<glw::GLboolean>& out_data);
+    void getScissorTestStates(glw::GLint max_viewports, std::vector<glw::GLboolean> &out_data);
 };
 
 class DrawTestBase : public glcts::TestCaseBase
 {
 public:
-	/* Public methods */
-	DrawTestBase(deqp::Context& context, const glcts::ExtParameters& extParams, const glw::GLchar* test_name,
-				 const glw::GLchar* test_description);
+    /* Public methods */
+    DrawTestBase(deqp::Context &context, const glcts::ExtParameters &extParams, const glw::GLchar *test_name,
+                 const glw::GLchar *test_description);
 
-	virtual ~DrawTestBase()
-	{
-	}
+    virtual ~DrawTestBase()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 protected:
-	/* Protected enums */
-	enum VIEWPORT_METHOD
-	{
-		VIEWPORTARRAYV = 0,
-		VIEWPORTINDEXEDF,
-		VIEWPORTINDEXEDF_V,
-	};
-	enum SCISSOR_METHOD
-	{
-		SCISSORARRAYV = 0,
-		SCISSORINDEXEDF,
-		SCISSORINDEXEDF_V,
-	};
-	enum DEPTH_RANGE_METHOD
-	{
-		DEPTHRANGEARRAYV = 0,
-		DEPTHRANGEINDEXED,
-	};
-	enum PROVOKING_VERTEX
-	{
-		FIRST,
-		LAST,
-	};
-	enum TEST_TYPE
-	{
-		VIEWPORT,
-		SCISSOR,
-		DEPTHRANGE,
-		PROVOKING,
-	};
+    /* Protected enums */
+    enum VIEWPORT_METHOD
+    {
+        VIEWPORTARRAYV = 0,
+        VIEWPORTINDEXEDF,
+        VIEWPORTINDEXEDF_V,
+    };
+    enum SCISSOR_METHOD
+    {
+        SCISSORARRAYV = 0,
+        SCISSORINDEXEDF,
+        SCISSORINDEXEDF_V,
+    };
+    enum DEPTH_RANGE_METHOD
+    {
+        DEPTHRANGEARRAYV = 0,
+        DEPTHRANGEINDEXED,
+    };
+    enum PROVOKING_VERTEX
+    {
+        FIRST,
+        LAST,
+    };
+    enum TEST_TYPE
+    {
+        VIEWPORT,
+        SCISSOR,
+        DEPTHRANGE,
+        PROVOKING,
+    };
 
-	/* Protected methods to be implemented by child class */
-	virtual bool checkResults(Utils::texture& texture_0, Utils::texture& texture_1, glw::GLuint draw_call_index);
+    /* Protected methods to be implemented by child class */
+    virtual bool checkResults(Utils::texture &texture_0, Utils::texture &texture_1, glw::GLuint draw_call_index);
 
-	virtual void getClearSettings(bool& clear_depth_before_draw, glw::GLuint iteration_index,
-								  glw::GLfloat& depth_value);
+    virtual void getClearSettings(bool &clear_depth_before_draw, glw::GLuint iteration_index,
+                                  glw::GLfloat &depth_value);
 
-	virtual glw::GLuint getDrawCallsNumber();
-	virtual std::string getFragmentShader() = 0;
-	virtual std::string getGeometryShader() = 0;
-	virtual TEST_TYPE   getTestType();
-	virtual bool		isClearTest();
+    virtual glw::GLuint getDrawCallsNumber();
+    virtual std::string getFragmentShader() = 0;
+    virtual std::string getGeometryShader() = 0;
+    virtual TEST_TYPE getTestType();
+    virtual bool isClearTest();
 
-	virtual void prepareTextures(Utils::texture& texture_0, Utils::texture& texture_1);
+    virtual void prepareTextures(Utils::texture &texture_0, Utils::texture &texture_1);
 
-	virtual void prepareUniforms(Utils::program& program, glw::GLuint draw_call_index);
+    virtual void prepareUniforms(Utils::program &program, glw::GLuint draw_call_index);
 
-	virtual void setupFramebuffer(Utils::framebuffer& framebuffer, Utils::texture& texture_0,
-								  Utils::texture& texture_1);
+    virtual void setupFramebuffer(Utils::framebuffer &framebuffer, Utils::texture &texture_0,
+                                  Utils::texture &texture_1);
 
-	virtual void setupViewports(TEST_TYPE type, glw::GLuint iteration_index);
+    virtual void setupViewports(TEST_TYPE type, glw::GLuint iteration_index);
 
-	/* Methods available for child class */
-	bool checkRegionR32I(glw::GLuint x, glw::GLuint y, glw::GLint expected_value, glw::GLint* data);
+    /* Methods available for child class */
+    bool checkRegionR32I(glw::GLuint x, glw::GLuint y, glw::GLint expected_value, glw::GLint *data);
 
-	bool checkRegionR32I(glw::GLuint x, glw::GLuint y, glw::GLuint width, glw::GLuint height, glw::GLint expected_value,
-						 glw::GLint* data);
+    bool checkRegionR32I(glw::GLuint x, glw::GLuint y, glw::GLuint width, glw::GLuint height, glw::GLint expected_value,
+                         glw::GLint *data);
 
-	void prepareTextureR32I(Utils::texture& texture);
-	void prepareTextureR32Ix4(Utils::texture& texture);
-	void prepareTextureArrayR32I(Utils::texture& texture);
-	void prepareTextureR32F(Utils::texture& texture);
-	void prepareTextureD32F(Utils::texture& texture);
-	void setup16x2Depths(DEPTH_RANGE_METHOD method);
-	void setup4x4Scissor(SCISSOR_METHOD method, bool set_zeros);
-	void setup4x4Viewport(VIEWPORT_METHOD method);
-	void setup2x2Viewport(PROVOKING_VERTEX provoking);
+    void prepareTextureR32I(Utils::texture &texture);
+    void prepareTextureR32Ix4(Utils::texture &texture);
+    void prepareTextureArrayR32I(Utils::texture &texture);
+    void prepareTextureR32F(Utils::texture &texture);
+    void prepareTextureD32F(Utils::texture &texture);
+    void setup16x2Depths(DEPTH_RANGE_METHOD method);
+    void setup4x4Scissor(SCISSOR_METHOD method, bool set_zeros);
+    void setup4x4Viewport(VIEWPORT_METHOD method);
+    void setup2x2Viewport(PROVOKING_VERTEX provoking);
 
-	/* Constants available to child class */
-	static const glw::GLuint m_depth;
-	static const glw::GLuint m_height;
-	static const glw::GLuint m_width;
-	static const glw::GLuint m_r32f_height;
-	static const glw::GLuint m_r32f_width;
-	static const glw::GLuint m_r32ix4_depth;
+    /* Constants available to child class */
+    static const glw::GLuint m_depth;
+    static const glw::GLuint m_height;
+    static const glw::GLuint m_width;
+    static const glw::GLuint m_r32f_height;
+    static const glw::GLuint m_r32f_width;
+    static const glw::GLuint m_r32ix4_depth;
 
 private:
-	/* Private methods */
-	std::string getVertexShader();
+    /* Private methods */
+    std::string getVertexShader();
 
-	template <typename T>
-	void setup16x2DepthsHelper(DEPTH_RANGE_METHOD method, T* data = NULL);
+    template <typename T>
+    void setup16x2DepthsHelper(DEPTH_RANGE_METHOD method, T *data = NULL);
 };
 
 /** Implements test DrawToSingleLayerWithMultipleViewports, description follows:
@@ -679,17 +679,17 @@ private:
 class DrawToSingleLayerWithMultipleViewports : public DrawTestBase
 {
 public:
-	/* Public methods */
-	DrawToSingleLayerWithMultipleViewports(deqp::Context& context, const glcts::ExtParameters& extParams);
+    /* Public methods */
+    DrawToSingleLayerWithMultipleViewports(deqp::Context &context, const glcts::ExtParameters &extParams);
 
-	virtual ~DrawToSingleLayerWithMultipleViewports()
-	{
-	}
+    virtual ~DrawToSingleLayerWithMultipleViewports()
+    {
+    }
 
 protected:
-	/* Protected methods inherited from DrawTestBase */
-	virtual std::string getFragmentShader();
-	virtual std::string getGeometryShader();
+    /* Protected methods inherited from DrawTestBase */
+    virtual std::string getFragmentShader();
+    virtual std::string getGeometryShader();
 };
 
 /** Implements test DynamicViewportIndex, description follows:
@@ -709,22 +709,22 @@ protected:
 class DynamicViewportIndex : public DrawTestBase
 {
 public:
-	/* Public methods */
-	DynamicViewportIndex(deqp::Context& context, const glcts::ExtParameters& extParams);
+    /* Public methods */
+    DynamicViewportIndex(deqp::Context &context, const glcts::ExtParameters &extParams);
 
-	virtual ~DynamicViewportIndex()
-	{
-	}
+    virtual ~DynamicViewportIndex()
+    {
+    }
 
 protected:
-	/* Protected methods inherited from DrawTestBase */
-	virtual bool checkResults(Utils::texture& texture_0, Utils::texture& texture_1, glw::GLuint draw_call_index);
+    /* Protected methods inherited from DrawTestBase */
+    virtual bool checkResults(Utils::texture &texture_0, Utils::texture &texture_1, glw::GLuint draw_call_index);
 
-	virtual std::string getFragmentShader();
-	virtual std::string getGeometryShader();
-	virtual glw::GLuint getDrawCallsNumber();
+    virtual std::string getFragmentShader();
+    virtual std::string getGeometryShader();
+    virtual glw::GLuint getDrawCallsNumber();
 
-	virtual void prepareUniforms(Utils::program& program, glw::GLuint draw_call_index);
+    virtual void prepareUniforms(Utils::program &program, glw::GLuint draw_call_index);
 };
 
 /** Implements test DrawMulitpleViewportsWithSingleInvocation, description follows:
@@ -740,17 +740,17 @@ protected:
 class DrawMulitpleViewportsWithSingleInvocation : public DrawTestBase
 {
 public:
-	/* Public methods */
-	DrawMulitpleViewportsWithSingleInvocation(deqp::Context& context, const glcts::ExtParameters& extParams);
+    /* Public methods */
+    DrawMulitpleViewportsWithSingleInvocation(deqp::Context &context, const glcts::ExtParameters &extParams);
 
-	virtual ~DrawMulitpleViewportsWithSingleInvocation()
-	{
-	}
+    virtual ~DrawMulitpleViewportsWithSingleInvocation()
+    {
+    }
 
 protected:
-	/* Protected methods inherited from DrawTestBase */
-	virtual std::string getFragmentShader();
-	virtual std::string getGeometryShader();
+    /* Protected methods inherited from DrawTestBase */
+    virtual std::string getFragmentShader();
+    virtual std::string getGeometryShader();
 };
 
 /** Implements test ViewportIndexSubroutine, description follows:
@@ -773,27 +773,27 @@ protected:
 class ViewportIndexSubroutine : public DrawTestBase
 {
 public:
-	/* Public methods */
-	ViewportIndexSubroutine(deqp::Context& context, const glcts::ExtParameters& extParams);
+    /* Public methods */
+    ViewportIndexSubroutine(deqp::Context &context, const glcts::ExtParameters &extParams);
 
-	virtual ~ViewportIndexSubroutine()
-	{
-	}
+    virtual ~ViewportIndexSubroutine()
+    {
+    }
 
-	/* Public methods inherited from TestCase/DrawTestBase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase/DrawTestBase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 protected:
-	/* Protected methods inherited from DrawTestBase */
-	virtual bool checkResults(Utils::texture& texture_0, Utils::texture& texture_1, glw::GLuint draw_call_index);
+    /* Protected methods inherited from DrawTestBase */
+    virtual bool checkResults(Utils::texture &texture_0, Utils::texture &texture_1, glw::GLuint draw_call_index);
 
-	virtual std::string getFragmentShader();
-	virtual std::string getGeometryShader();
-	virtual glw::GLuint getDrawCallsNumber();
+    virtual std::string getFragmentShader();
+    virtual std::string getGeometryShader();
+    virtual glw::GLuint getDrawCallsNumber();
 
-	virtual void prepareUniforms(Utils::program& program, glw::GLuint draw_call_index);
+    virtual void prepareUniforms(Utils::program &program, glw::GLuint draw_call_index);
 
-	virtual void setupViewports(TEST_TYPE type, glw::GLuint iteration_index);
+    virtual void setupViewports(TEST_TYPE type, glw::GLuint iteration_index);
 };
 
 /** Implements test DrawMultipleLayers, description follows:
@@ -808,24 +808,24 @@ protected:
 class DrawMultipleLayers : public DrawTestBase
 {
 public:
-	/* Public methods */
-	DrawMultipleLayers(deqp::Context& context, const glcts::ExtParameters& extParams);
+    /* Public methods */
+    DrawMultipleLayers(deqp::Context &context, const glcts::ExtParameters &extParams);
 
-	DrawMultipleLayers(deqp::Context& context, const glcts::ExtParameters& extParams, const glw::GLchar* test_name,
-					   const glw::GLchar* test_description);
+    DrawMultipleLayers(deqp::Context &context, const glcts::ExtParameters &extParams, const glw::GLchar *test_name,
+                       const glw::GLchar *test_description);
 
-	virtual ~DrawMultipleLayers()
-	{
-	}
+    virtual ~DrawMultipleLayers()
+    {
+    }
 
 protected:
-	/* Protected methods inherited from DrawTestBase */
-	virtual bool checkResults(Utils::texture& texture_0, Utils::texture& texture_1, glw::GLuint draw_call_index);
+    /* Protected methods inherited from DrawTestBase */
+    virtual bool checkResults(Utils::texture &texture_0, Utils::texture &texture_1, glw::GLuint draw_call_index);
 
-	virtual std::string getFragmentShader();
-	virtual std::string getGeometryShader();
+    virtual std::string getFragmentShader();
+    virtual std::string getGeometryShader();
 
-	virtual void prepareTextures(Utils::texture& texture_0, Utils::texture& texture_1);
+    virtual void prepareTextures(Utils::texture &texture_0, Utils::texture &texture_1);
 };
 
 /** Implements test Scissor, description follows:
@@ -852,16 +852,16 @@ protected:
 class Scissor : public DrawMultipleLayers
 {
 public:
-	/* Public methods */
-	Scissor(deqp::Context& context, const glcts::ExtParameters& extParams);
+    /* Public methods */
+    Scissor(deqp::Context &context, const glcts::ExtParameters &extParams);
 
-	virtual ~Scissor()
-	{
-	}
+    virtual ~Scissor()
+    {
+    }
 
 protected:
-	/* Protected methods inherited from DrawTestBase */
-	virtual TEST_TYPE getTestType();
+    /* Protected methods inherited from DrawTestBase */
+    virtual TEST_TYPE getTestType();
 };
 
 /** Implements test ScissorZeroDimension, description follows:
@@ -874,20 +874,20 @@ protected:
 class ScissorZeroDimension : public DrawMultipleLayers
 {
 public:
-	/* Public methods */
-	ScissorZeroDimension(deqp::Context& context, const glcts::ExtParameters& extParams);
+    /* Public methods */
+    ScissorZeroDimension(deqp::Context &context, const glcts::ExtParameters &extParams);
 
-	virtual ~ScissorZeroDimension()
-	{
-	}
+    virtual ~ScissorZeroDimension()
+    {
+    }
 
 protected:
-	/* Protected methods inherited from DrawTestBase */
-	virtual bool checkResults(Utils::texture& texture_0, Utils::texture& texture_1, glw::GLuint draw_call_index);
+    /* Protected methods inherited from DrawTestBase */
+    virtual bool checkResults(Utils::texture &texture_0, Utils::texture &texture_1, glw::GLuint draw_call_index);
 
-	virtual TEST_TYPE getTestType();
+    virtual TEST_TYPE getTestType();
 
-	virtual void setupViewports(TEST_TYPE type, glw::GLuint iteration_index);
+    virtual void setupViewports(TEST_TYPE type, glw::GLuint iteration_index);
 };
 
 /** Implements test ScissorClear, description follows:
@@ -907,19 +907,19 @@ protected:
 class ScissorClear : public DrawMultipleLayers
 {
 public:
-	/* Public methods */
-	ScissorClear(deqp::Context& context, const glcts::ExtParameters& extParams);
+    /* Public methods */
+    ScissorClear(deqp::Context &context, const glcts::ExtParameters &extParams);
 
-	virtual ~ScissorClear()
-	{
-	}
+    virtual ~ScissorClear()
+    {
+    }
 
 protected:
-	/* Protected methods inherited from DrawTestBase */
-	virtual bool checkResults(Utils::texture& texture_0, Utils::texture& texture_1, glw::GLuint draw_call_index);
+    /* Protected methods inherited from DrawTestBase */
+    virtual bool checkResults(Utils::texture &texture_0, Utils::texture &texture_1, glw::GLuint draw_call_index);
 
-	virtual TEST_TYPE getTestType();
-	virtual bool	  isClearTest();
+    virtual TEST_TYPE getTestType();
+    virtual bool isClearTest();
 };
 
 /** Implements test DepthRange, description follows:
@@ -960,21 +960,21 @@ protected:
 class DepthRange : public DrawTestBase
 {
 public:
-	/* Public methods */
-	DepthRange(deqp::Context& context, const glcts::ExtParameters& extParams);
-	virtual ~DepthRange()
-	{
-	}
+    /* Public methods */
+    DepthRange(deqp::Context &context, const glcts::ExtParameters &extParams);
+    virtual ~DepthRange()
+    {
+    }
 
 protected:
-	/* Protected methods inherited from DrawTestBase */
-	virtual bool checkResults(Utils::texture& texture_0, Utils::texture& texture_1, glw::GLuint draw_call_index);
+    /* Protected methods inherited from DrawTestBase */
+    virtual bool checkResults(Utils::texture &texture_0, Utils::texture &texture_1, glw::GLuint draw_call_index);
 
-	virtual std::string getFragmentShader();
-	virtual std::string getGeometryShader();
-	virtual TEST_TYPE   getTestType();
+    virtual std::string getFragmentShader();
+    virtual std::string getGeometryShader();
+    virtual TEST_TYPE getTestType();
 
-	virtual void prepareTextures(Utils::texture& texture_0, Utils::texture& texture_1);
+    virtual void prepareTextures(Utils::texture &texture_0, Utils::texture &texture_1);
 };
 
 /** Implements test DepthRangeDepthTest, description follows:
@@ -995,31 +995,31 @@ protected:
 class DepthRangeDepthTest : public DrawTestBase
 {
 public:
-	/* Public methods */
-	DepthRangeDepthTest(deqp::Context& context, const glcts::ExtParameters& extParams);
+    /* Public methods */
+    DepthRangeDepthTest(deqp::Context &context, const glcts::ExtParameters &extParams);
 
-	virtual ~DepthRangeDepthTest()
-	{
-	}
+    virtual ~DepthRangeDepthTest()
+    {
+    }
 
 protected:
-	/* Protected methods inherited from DrawTestBase */
-	virtual bool checkResults(Utils::texture& texture_0, Utils::texture& texture_1, glw::GLuint draw_call_index);
+    /* Protected methods inherited from DrawTestBase */
+    virtual bool checkResults(Utils::texture &texture_0, Utils::texture &texture_1, glw::GLuint draw_call_index);
 
-	virtual void getClearSettings(bool& clear_depth_before_draw, glw::GLuint iteration_index,
-								  glw::GLfloat& depth_value);
+    virtual void getClearSettings(bool &clear_depth_before_draw, glw::GLuint iteration_index,
+                                  glw::GLfloat &depth_value);
 
-	virtual glw::GLuint getDrawCallsNumber();
-	virtual std::string getFragmentShader();
-	virtual std::string getGeometryShader();
-	virtual TEST_TYPE   getTestType();
+    virtual glw::GLuint getDrawCallsNumber();
+    virtual std::string getFragmentShader();
+    virtual std::string getGeometryShader();
+    virtual TEST_TYPE getTestType();
 
-	virtual void prepareTextures(Utils::texture& texture_0, Utils::texture& texture_1);
+    virtual void prepareTextures(Utils::texture &texture_0, Utils::texture &texture_1);
 
-	virtual void setupFramebuffer(Utils::framebuffer& framebuffer, Utils::texture& texture_0,
-								  Utils::texture& texture_1);
+    virtual void setupFramebuffer(Utils::framebuffer &framebuffer, Utils::texture &texture_0,
+                                  Utils::texture &texture_1);
 
-	virtual void setupViewports(TEST_TYPE type, glw::GLuint iteration_index);
+    virtual void setupViewports(TEST_TYPE type, glw::GLuint iteration_index);
 };
 
 /** Implements test ProvokingVertex, description follows:
@@ -1052,44 +1052,44 @@ protected:
 class ProvokingVertex : public DrawTestBase
 {
 public:
-	/* Public methods */
-	ProvokingVertex(deqp::Context& context, const glcts::ExtParameters& extParams);
+    /* Public methods */
+    ProvokingVertex(deqp::Context &context, const glcts::ExtParameters &extParams);
 
-	virtual ~ProvokingVertex()
-	{
-	}
+    virtual ~ProvokingVertex()
+    {
+    }
 
 protected:
-	/* Protected methods inherited from DrawTestBase */
-	virtual bool checkResults(Utils::texture& texture_0, Utils::texture& texture_1, glw::GLuint draw_call_index);
+    /* Protected methods inherited from DrawTestBase */
+    virtual bool checkResults(Utils::texture &texture_0, Utils::texture &texture_1, glw::GLuint draw_call_index);
 
-	virtual std::string getFragmentShader();
-	virtual std::string getGeometryShader();
-	virtual TEST_TYPE   getTestType();
+    virtual std::string getFragmentShader();
+    virtual std::string getGeometryShader();
+    virtual TEST_TYPE getTestType();
 
-	virtual void prepareTextures(Utils::texture& texture_0, Utils::texture& texture_1);
+    virtual void prepareTextures(Utils::texture &texture_0, Utils::texture &texture_1);
 };
-} /* ViewportArray namespace */
+} // namespace ViewportArray
 
 /** Group class for Shader Language 420Pack conformance tests */
 class ViewportArrayTests : public glcts::TestCaseGroupBase
 {
 public:
-	/* Public methods */
-	ViewportArrayTests(deqp::Context& context, const glcts::ExtParameters& extParams);
+    /* Public methods */
+    ViewportArrayTests(deqp::Context &context, const glcts::ExtParameters &extParams);
 
-	virtual ~ViewportArrayTests(void)
-	{
-	}
+    virtual ~ViewportArrayTests(void)
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	/* Private methods */
-	ViewportArrayTests(const ViewportArrayTests& other);
-	ViewportArrayTests& operator=(const ViewportArrayTests& other);
+    /* Private methods */
+    ViewportArrayTests(const ViewportArrayTests &other);
+    ViewportArrayTests &operator=(const ViewportArrayTests &other);
 };
 
-} // glcts
+} // namespace glcts
 
 #endif // _GLCVIEWPORTARRAYTESTS_HPP

@@ -29,8 +29,8 @@
 namespace dit
 {
 
-tcu::TestCase* createSRGB8ConversionTest (tcu::TestContext& context);
+tcu::TestCase *createSRGB8ConversionTest(tcu::TestContext &context);
 
-} // dit
+} // namespace dit
 
 #endif // _DITSRGB8CONVERSIONTEST_HPP

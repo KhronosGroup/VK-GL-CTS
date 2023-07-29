@@ -31,9 +31,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createSamplerTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSamplerTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINESAMPLERTESTS_HPP

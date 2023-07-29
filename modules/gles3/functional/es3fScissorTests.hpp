@@ -36,18 +36,18 @@ namespace Functional
 class ScissorTests : public TestCaseGroup
 {
 public:
-						ScissorTests		(Context& context);
-	virtual				~ScissorTests		(void);
+    ScissorTests(Context &context);
+    virtual ~ScissorTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						ScissorTests		(const ScissorTests& other);
-	ScissorTests&		operator=			(const ScissorTests& other);
+    ScissorTests(const ScissorTests &other);
+    ScissorTests &operator=(const ScissorTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FSCISSORTESTS_HPP

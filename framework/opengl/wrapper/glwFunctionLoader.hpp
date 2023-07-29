@@ -28,14 +28,14 @@
 namespace glw
 {
 
-typedef GLW_APICALL void (GLW_APIENTRY* GenericFuncType) (void);
+typedef GLW_APICALL void(GLW_APIENTRY *GenericFuncType)(void);
 
 class FunctionLoader
 {
 public:
-	virtual GenericFuncType		get			(const char* name) const = 0;
+    virtual GenericFuncType get(const char *name) const = 0;
 };
 
-} // glw
+} // namespace glw
 
 #endif // _GLWFUNCTIONLOADER_HPP
