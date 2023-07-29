@@ -64,35 +64,35 @@ namespace glcts
 class GeometryShaderClipping : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderClipping(Context& context, const ExtParameters& extParams, const char* name, const char* description);
+    /* Public methods */
+    GeometryShaderClipping(Context &context, const ExtParameters &extParams, const char *name, const char *description);
 
-	virtual ~GeometryShaderClipping()
-	{
-	}
+    virtual ~GeometryShaderClipping()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private variables */
-	static const char* m_fs_code;
-	static const char* m_vs_code;
-	static const char* m_gs_code;
+    /* Private variables */
+    static const char *m_fs_code;
+    static const char *m_vs_code;
+    static const char *m_gs_code;
 
-	static const int m_texture_height		= 4;
-	static const int m_texture_width		= 4;
-	static const int m_texture_n_levels		= 1;
-	static const int m_texture_n_components = 4;
+    static const int m_texture_height       = 4;
+    static const int m_texture_width        = 4;
+    static const int m_texture_n_levels     = 1;
+    static const int m_texture_n_components = 4;
 
-	/* Variables for general usege*/
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_gs_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_to_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_vs_id;
+    /* Variables for general usege*/
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_to_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_id;
 };
 
 } // namespace glcts

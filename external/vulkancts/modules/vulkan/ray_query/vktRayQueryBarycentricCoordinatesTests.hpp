@@ -32,9 +32,9 @@ namespace vkt
 namespace RayQuery
 {
 
-tcu::TestCaseGroup*	createBarycentricCoordinatesTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createBarycentricCoordinatesTests(tcu::TestContext &testCtx);
 
-} // RayQuery
-} // vkt
+} // namespace RayQuery
+} // namespace vkt
 
 #endif // _VKTRAYQUERYBARYCENTRICCOORDINATESTESTS_HPP

@@ -32,16 +32,16 @@ namespace gl4cts
 class ShaderStorageBufferObjectTests : public deqp::TestCaseGroup
 {
 public:
-	ShaderStorageBufferObjectTests(deqp::Context& context);
-	~ShaderStorageBufferObjectTests(void);
+    ShaderStorageBufferObjectTests(deqp::Context &context);
+    ~ShaderStorageBufferObjectTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	ShaderStorageBufferObjectTests(const ShaderStorageBufferObjectTests& other);
-	ShaderStorageBufferObjectTests& operator=(const ShaderStorageBufferObjectTests& other);
+    ShaderStorageBufferObjectTests(const ShaderStorageBufferObjectTests &other);
+    ShaderStorageBufferObjectTests &operator=(const ShaderStorageBufferObjectTests &other);
 };
 
-} // gl4cts
+} // namespace gl4cts
 
 #endif // _GL4CSHADERSTORAGEBUFFEROBJECTTESTS_HPP

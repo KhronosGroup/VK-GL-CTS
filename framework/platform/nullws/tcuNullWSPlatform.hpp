@@ -39,43 +39,50 @@ namespace nullws
 class VulkanLibrary : public vk::Library
 {
 public:
-	VulkanLibrary (void)
-		: m_library	("libvulkan.so.1")
-		, m_driver	(m_library)
-	{
-	}
+    VulkanLibrary(void) : m_library("libvulkan.so.1"), m_driver(m_library)
+    {
+    }
 
-	const vk::PlatformInterface& getPlatformInterface (void) const
-	{
-		return m_driver;
-	}
-	const tcu::FunctionLibrary&		getFunctionLibrary		(void) const
-	{
-		return m_library;
-	}
+    const vk::PlatformInterface &getPlatformInterface(void) const
+    {
+        return m_driver;
+    }
+    const tcu::FunctionLibrary &getFunctionLibrary(void) const
+    {
+        return m_library;
+    }
+
 private:
-	const tcu::DynamicFunctionLibrary	m_library;
-	const vk::PlatformDriver			m_driver;
+    const tcu::DynamicFunctionLibrary m_library;
+    const vk::PlatformDriver m_driver;
 };
 
-
-class Platform: public tcu::Platform, private glu::Platform, private eglu::Platform, private vk::Platform
+class Platform : public tcu::Platform, private glu::Platform, private eglu::Platform, private vk::Platform
 {
 public:
-									Platform		();
-	virtual							~Platform		();
+    Platform();
+    virtual ~Platform();
 
-	virtual const glu::Platform&	getGLPlatform	()	const { return static_cast<const glu::Platform&>(*this); }
-	virtual const eglu::Platform&	getEGLPlatform	()	const { return static_cast<const eglu::Platform&>(*this); }
-  virtual const vk::Platform&   getVulkanPlatform() const { return static_cast<const vk::Platform&>(*this); }
+    virtual const glu::Platform &getGLPlatform() const
+    {
+        return static_cast<const glu::Platform &>(*this);
+    }
+    virtual const eglu::Platform &getEGLPlatform() const
+    {
+        return static_cast<const eglu::Platform &>(*this);
+    }
+    virtual const vk::Platform &getVulkanPlatform() const
+    {
+        return static_cast<const vk::Platform &>(*this);
+    }
 
-	vk::Library* createLibrary (void) const
-	{
-		return new VulkanLibrary();
-	}
+    vk::Library *createLibrary(void) const
+    {
+        return new VulkanLibrary();
+    }
 };
 
-} // nullws
-} // tcu
+} // namespace nullws
+} // namespace tcu
 
 #endif // _TCUNULLWSPLATFORM_HPP

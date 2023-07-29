@@ -51,64 +51,82 @@ namespace tcu
 class CGLRenderContext : public glu::RenderContext
 {
 public:
-								CGLRenderContext		(const glu::RenderConfig& config);
-								~CGLRenderContext		(void);
+    CGLRenderContext(const glu::RenderConfig &config);
+    ~CGLRenderContext(void);
 
-	glu::ContextType			getType					(void) const { return m_type;			}
-	const glw::Functions&		getFunctions			(void) const { return m_functions;		}
-	const tcu::RenderTarget&	getRenderTarget			(void) const { return m_renderTarget;	}
-	void						postIterate				(void) {}
+    glu::ContextType getType(void) const
+    {
+        return m_type;
+    }
+    const glw::Functions &getFunctions(void) const
+    {
+        return m_functions;
+    }
+    const tcu::RenderTarget &getRenderTarget(void) const
+    {
+        return m_renderTarget;
+    }
+    void postIterate(void)
+    {
+    }
 
 private:
-	const glu::ContextType		m_type;
-	CGLContextObj				m_context;
-	glw::Functions				m_functions;
-	RenderTarget				m_renderTarget;
+    const glu::ContextType m_type;
+    CGLContextObj m_context;
+    glw::Functions m_functions;
+    RenderTarget m_renderTarget;
 };
 
 class CGLContextFactory : public glu::ContextFactory
 {
 public:
-	CGLContextFactory (void)
-		: glu::ContextFactory("cgl", "CGL Context (surfaceless, use fbo)")
-	{
-	}
+    CGLContextFactory(void) : glu::ContextFactory("cgl", "CGL Context (surfaceless, use fbo)")
+    {
+    }
 
-	glu::RenderContext*	createContext (const glu::RenderConfig& config, const tcu::CommandLine&, const glu::RenderContext*) const
-	{
-		return new CGLRenderContext(config);
-	}
+    glu::RenderContext *createContext(const glu::RenderConfig &config, const tcu::CommandLine &,
+                                      const glu::RenderContext *) const
+    {
+        return new CGLRenderContext(config);
+    }
 };
 
 class OSXGLPlatform : public glu::Platform
 {
 public:
-	OSXGLPlatform(void)
-	{
-		m_contextFactoryRegistry.registerFactory(new CGLContextFactory());
-	}
+    OSXGLPlatform(void)
+    {
+        m_contextFactoryRegistry.registerFactory(new CGLContextFactory());
+    }
 
-	~OSXGLPlatform(void) {}
+    ~OSXGLPlatform(void)
+    {
+    }
 };
 
 class OSXPlatform : public tcu::Platform
 {
 public:
-	OSXPlatform(void)
-		: m_gluPlatform(), m_vkPlatform()
-	{
-	}
+    OSXPlatform(void) : m_gluPlatform(), m_vkPlatform()
+    {
+    }
 
-	~OSXPlatform(void)
-	{
-	}
+    ~OSXPlatform(void)
+    {
+    }
 
-	const glu::Platform&	getGLPlatform	(void) const { return m_gluPlatform; }
-	const vk::Platform&		getVulkanPlatform	(void) const { return m_vkPlatform; }
+    const glu::Platform &getGLPlatform(void) const
+    {
+        return m_gluPlatform;
+    }
+    const vk::Platform &getVulkanPlatform(void) const
+    {
+        return m_vkPlatform;
+    }
 
 private:
-	OSXGLPlatform m_gluPlatform;
-	osx::VulkanPlatform m_vkPlatform;
+    OSXGLPlatform m_gluPlatform;
+    osx::VulkanPlatform m_vkPlatform;
 };
 
 namespace
@@ -117,113 +135,109 @@ namespace
 class GLFunctionLoader : public glw::FunctionLoader
 {
 public:
-	GLFunctionLoader (const char* path)
-		: m_library(path)
-	{
-	}
+    GLFunctionLoader(const char *path) : m_library(path)
+    {
+    }
 
-	glw::GenericFuncType get (const char* name) const
-	{
-		return m_library.getFunction(name);
-	}
+    glw::GenericFuncType get(const char *name) const
+    {
+        return m_library.getFunction(name);
+    }
 
 private:
-	de::DynamicLibrary m_library;
+    de::DynamicLibrary m_library;
 };
 
-} // anonymous
+} // namespace
 
-static CGLOpenGLProfile getCGLProfile (glu::ContextType type)
+static CGLOpenGLProfile getCGLProfile(glu::ContextType type)
 {
-	if (type.getAPI().getProfile() != glu::PROFILE_CORE)
-		throw NotSupportedError("Requested OpenGL profile is not supported in CGL");
+    if (type.getAPI().getProfile() != glu::PROFILE_CORE)
+        throw NotSupportedError("Requested OpenGL profile is not supported in CGL");
 
-	if (type.getAPI().getMajorVersion() == 4)
-		return kCGLOGLPVersion_GL4_Core;
-	else if (type.getAPI().getMajorVersion() == 3)
-		return kCGLOGLPVersion_GL3_Core;
-	else
-		throw NotSupportedError("Requested OpenGL version is not supported in CGL");
+    if (type.getAPI().getMajorVersion() == 4)
+        return kCGLOGLPVersion_GL4_Core;
+    else if (type.getAPI().getMajorVersion() == 3)
+        return kCGLOGLPVersion_GL3_Core;
+    else
+        throw NotSupportedError("Requested OpenGL version is not supported in CGL");
 }
 
-static glu::ApiType getVersion (const glw::Functions& gl)
+static glu::ApiType getVersion(const glw::Functions &gl)
 {
-	int major = 0;
-	int minor = 0;
-	gl.getIntegerv(GL_MAJOR_VERSION, &major);
-	gl.getIntegerv(GL_MINOR_VERSION, &minor);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to query exact GL version");
-	return glu::ApiType::core(major, minor);
+    int major = 0;
+    int minor = 0;
+    gl.getIntegerv(GL_MAJOR_VERSION, &major);
+    gl.getIntegerv(GL_MINOR_VERSION, &minor);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to query exact GL version");
+    return glu::ApiType::core(major, minor);
 }
 
-CGLRenderContext::CGLRenderContext (const glu::RenderConfig& config)
-	: m_type			(config.type)
-	, m_context			(DE_NULL)
-	, m_renderTarget	(0, 0, tcu::PixelFormat(0,0,0,0), 0, 0, 0)
+CGLRenderContext::CGLRenderContext(const glu::RenderConfig &config)
+    : m_type(config.type)
+    , m_context(DE_NULL)
+    , m_renderTarget(0, 0, tcu::PixelFormat(0, 0, 0, 0), 0, 0, 0)
 {
-	try
-	{
-		const CGLPixelFormatAttribute attribs[] =
-		{
-			kCGLPFAAccelerated,
-			kCGLPFAOpenGLProfile, (CGLPixelFormatAttribute)getCGLProfile(config.type),
-			(CGLPixelFormatAttribute)0
-		};
+    try
+    {
+        const CGLPixelFormatAttribute attribs[] = {kCGLPFAAccelerated, kCGLPFAOpenGLProfile,
+                                                   (CGLPixelFormatAttribute)getCGLProfile(config.type),
+                                                   (CGLPixelFormatAttribute)0};
 
-		CGLPixelFormatObj	pixelFormat;
-		int					numVScreens;
+        CGLPixelFormatObj pixelFormat;
+        int numVScreens;
 
-		if (CGLChoosePixelFormat(&attribs[0], &pixelFormat, &numVScreens) != kCGLNoError)
-			throw NotSupportedError("No compatible pixel formats found");
+        if (CGLChoosePixelFormat(&attribs[0], &pixelFormat, &numVScreens) != kCGLNoError)
+            throw NotSupportedError("No compatible pixel formats found");
 
-		try
-		{
-			if (CGLCreateContext(pixelFormat, DE_NULL, &m_context) != kCGLNoError)
-				throw ResourceError("Failed to create CGL context");
+        try
+        {
+            if (CGLCreateContext(pixelFormat, DE_NULL, &m_context) != kCGLNoError)
+                throw ResourceError("Failed to create CGL context");
 
-			if (CGLSetCurrentContext(m_context) != kCGLNoError)
-				throw ResourceError("Failed to set current CGL context");
-		}
-		catch (...)
-		{
-			CGLReleasePixelFormat(pixelFormat);
-			throw;
-		}
+            if (CGLSetCurrentContext(m_context) != kCGLNoError)
+                throw ResourceError("Failed to set current CGL context");
+        }
+        catch (...)
+        {
+            CGLReleasePixelFormat(pixelFormat);
+            throw;
+        }
 
-		CGLReleasePixelFormat(pixelFormat);
+        CGLReleasePixelFormat(pixelFormat);
 
-		{
-			GLFunctionLoader loader(OPENGL_LIBRARY_PATH);
-			glu::initFunctions(&m_functions, &loader, config.type.getAPI());
-		}
+        {
+            GLFunctionLoader loader(OPENGL_LIBRARY_PATH);
+            glu::initFunctions(&m_functions, &loader, config.type.getAPI());
+        }
 
-		{
-			const glu::ApiType actualApi = getVersion(m_functions);
-			if (!contextSupports(glu::ContextType(actualApi, glu::ContextFlags(0)), config.type.getAPI()))
-				throw tcu::NotSupportedError("OpenGL version not supported");
-		}
-	}
-	catch (...)
-	{
-		if (m_context)
-		{
-			CGLSetCurrentContext(DE_NULL);
-			CGLDestroyContext(m_context);
-		}
-		throw;
-	}
+        {
+            const glu::ApiType actualApi = getVersion(m_functions);
+            if (!contextSupports(glu::ContextType(actualApi, glu::ContextFlags(0)), config.type.getAPI()))
+                throw tcu::NotSupportedError("OpenGL version not supported");
+        }
+    }
+    catch (...)
+    {
+        if (m_context)
+        {
+            CGLSetCurrentContext(DE_NULL);
+            CGLDestroyContext(m_context);
+        }
+        throw;
+    }
 }
 
-CGLRenderContext::~CGLRenderContext (void)
+CGLRenderContext::~CGLRenderContext(void)
 {
-	CGLSetCurrentContext(DE_NULL);
-	if (m_context)
-		CGLDestroyContext(m_context);
+    CGLSetCurrentContext(DE_NULL);
+    if (m_context)
+        CGLDestroyContext(m_context);
 }
 
-} // tcu
+} // namespace tcu
 
-tcu::Platform* createPlatform (void)
+tcu::Platform *createPlatform(void)
 {
-	return new tcu::OSXPlatform();
+    return new tcu::OSXPlatform();
 }

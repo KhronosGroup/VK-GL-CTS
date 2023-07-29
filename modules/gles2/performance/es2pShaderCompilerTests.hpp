@@ -36,18 +36,18 @@ namespace Performance
 class ShaderCompilerTests : public TestCaseGroup
 {
 public:
-							ShaderCompilerTests		(Context& context);
-							~ShaderCompilerTests	(void);
+    ShaderCompilerTests(Context &context);
+    ~ShaderCompilerTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							ShaderCompilerTests		(const ShaderCompilerTests& other);
-	ShaderCompilerTests&	operator=				(const ShaderCompilerTests& other);
+    ShaderCompilerTests(const ShaderCompilerTests &other);
+    ShaderCompilerTests &operator=(const ShaderCompilerTests &other);
 };
 
-} // Performance
-} // gles2
-} // deqp
+} // namespace Performance
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2PSHADERCOMPILERTESTS_HPP

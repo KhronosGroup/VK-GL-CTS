@@ -36,16 +36,16 @@ namespace Functional
 class TextureGatherTests : public TestCaseGroup
 {
 public:
-							TextureGatherTests	(Context& context);
-	void					init				(void);
+    TextureGatherTests(Context &context);
+    void init(void);
 
 private:
-							TextureGatherTests	(const TextureGatherTests& other);
-	TextureGatherTests&		operator=			(const TextureGatherTests& other);
+    TextureGatherTests(const TextureGatherTests &other);
+    TextureGatherTests &operator=(const TextureGatherTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FTEXTUREGATHERTESTS_HPP

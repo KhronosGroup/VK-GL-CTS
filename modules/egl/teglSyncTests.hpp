@@ -34,18 +34,18 @@ namespace egl
 class FenceSyncTests : public TestCaseGroup
 {
 public:
-			FenceSyncTests	(EglTestContext& eglTestCtx);
-	void	init			(void);
+    FenceSyncTests(EglTestContext &eglTestCtx);
+    void init(void);
 };
 
 class ReusableSyncTests : public TestCaseGroup
 {
 public:
-			ReusableSyncTests	(EglTestContext& eglTestCtx);
-	void	init				(void);
+    ReusableSyncTests(EglTestContext &eglTestCtx);
+    void init(void);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLSYNCTESTS_HPP

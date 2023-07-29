@@ -33,18 +33,18 @@ namespace Draw
 class ConcurrentDrawTests : public tcu::TestCaseGroup
 {
 public:
-						ConcurrentDrawTests		(tcu::TestContext &testCtx, bool useDynamicRendering);
-						~ConcurrentDrawTests	(void) = default;
-	void				init					(void);
+    ConcurrentDrawTests(tcu::TestContext &testCtx, bool useDynamicRendering);
+    ~ConcurrentDrawTests(void) = default;
+    void init(void);
 
 private:
-	ConcurrentDrawTests							(const ConcurrentDrawTests &other);
-	ConcurrentDrawTests&	operator=			(const ConcurrentDrawTests &other);
+    ConcurrentDrawTests(const ConcurrentDrawTests &other);
+    ConcurrentDrawTests &operator=(const ConcurrentDrawTests &other);
 
 private:
-	const bool m_useDynamicRendering;
+    const bool m_useDynamicRendering;
 };
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWCONCURRENTTESTS_HPP

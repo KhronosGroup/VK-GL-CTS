@@ -31,9 +31,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createPushConstantTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEPUSHCONSTANTTESTS_HPP

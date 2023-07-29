@@ -41,28 +41,28 @@ namespace glcts
 class MultisampleTextureGetActiveUniformSamplersTest : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureGetActiveUniformSamplersTest(Context& context);
+    /* Public methods */
+    MultisampleTextureGetActiveUniformSamplersTest(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void initInternals();
-	void deinitInternals();
+    /* Private methods */
+    void initInternals();
+    void deinitInternals();
 
-	/* Private variables */
-	glw::GLint	 fs_id;
-	glw::GLboolean gl_oes_texture_storage_multisample_2d_array_supported;
-	glw::GLint	 po_id;
-	glw::GLint	 vs_id;
+    /* Private variables */
+    glw::GLint fs_id;
+    glw::GLboolean gl_oes_texture_storage_multisample_2d_array_supported;
+    glw::GLint po_id;
+    glw::GLint vs_id;
 
-	static const char* fs_body;
-	static const char* fs_body_oes;
-	static const char* vs_body;
-	static const char* vs_body_oes;
+    static const char *fs_body;
+    static const char *fs_body_oes;
+    static const char *vs_body;
+    static const char *vs_body_oes;
 };
-} /* glcts namespace */
+} // namespace glcts
 
 #endif // _ES31CTEXTURESTORAGEMULTISAMPLEGETACTIVEUNIFORMTESTS_HPP

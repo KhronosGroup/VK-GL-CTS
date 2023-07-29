@@ -58,29 +58,29 @@ namespace glcts
 class TessellationShaderProgramInterfaces : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TessellationShaderProgramInterfaces(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderProgramInterfaces(Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderProgramInterfaces(void)
-	{
-	}
+    virtual ~TessellationShaderProgramInterfaces(void)
+    {
+    }
 
-	virtual void		  deinit();
-	void				  initTest(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit();
+    void initTest(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	void verifyPropertyValue(glw::GLenum interface, glw::GLenum property, glw::GLuint index, glw::GLint expected_value);
+    /* Private methods */
+    void verifyPropertyValue(glw::GLenum interface, glw::GLenum property, glw::GLuint index, glw::GLint expected_value);
 
-	/* Private variables */
-	glw::GLuint m_fs_shader_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_tc_shader_id;
-	glw::GLuint m_te_shader_id;
-	glw::GLuint m_vs_shader_id;
-	bool		m_is_atomic_counters_supported;
-	bool		m_is_shader_storage_blocks_supported;
+    /* Private variables */
+    glw::GLuint m_fs_shader_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_tc_shader_id;
+    glw::GLuint m_te_shader_id;
+    glw::GLuint m_vs_shader_id;
+    bool m_is_atomic_counters_supported;
+    bool m_is_shader_storage_blocks_supported;
 };
 
 } // namespace glcts

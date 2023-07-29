@@ -36,17 +36,17 @@ namespace Functional
 class ShaderStateQueryTests : public TestCaseGroup
 {
 public:
-																		ShaderStateQueryTests	(Context& context);
+    ShaderStateQueryTests(Context &context);
 
-	void																init					(void);
+    void init(void);
 
 private:
-																		ShaderStateQueryTests	(const ShaderStateQueryTests& other);
-	ShaderStateQueryTests&												operator=				(const ShaderStateQueryTests& other);
+    ShaderStateQueryTests(const ShaderStateQueryTests &other);
+    ShaderStateQueryTests &operator=(const ShaderStateQueryTests &other);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FSHADERSTATEQUERYTESTS_HPP

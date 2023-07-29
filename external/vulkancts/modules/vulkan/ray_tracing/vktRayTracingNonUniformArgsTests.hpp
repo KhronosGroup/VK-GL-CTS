@@ -32,9 +32,9 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup*	createNonUniformArgsTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createNonUniformArgsTests(tcu::TestContext &testCtx);
 
-} // RayTracing
-} // vkt
+} // namespace RayTracing
+} // namespace vkt
 
 #endif // _VKTRAYTRACINGNONUNIFORMARGSTESTS_HPP

@@ -57,1515 +57,1497 @@ using namespace std;
 
 namespace
 {
-typedef de::SharedPtr<Unique<VkBuffer> >		VkBufferSp;
-typedef de::SharedPtr<Allocation>				AllocationSp;
-typedef de::SharedPtr<Unique<VkCommandBuffer> >	VkCommandBufferSp;
-typedef de::SharedPtr<Unique<VkRenderPass> >	VkRenderPassSp;
-typedef de::SharedPtr<Unique<VkFramebuffer> >	VkFramebufferSp;
-typedef de::SharedPtr<Unique<VkPipeline> >		VkPipelineSp;
+typedef de::SharedPtr<Unique<VkBuffer>> VkBufferSp;
+typedef de::SharedPtr<Allocation> AllocationSp;
+typedef de::SharedPtr<Unique<VkCommandBuffer>> VkCommandBufferSp;
+typedef de::SharedPtr<Unique<VkRenderPass>> VkRenderPassSp;
+typedef de::SharedPtr<Unique<VkFramebuffer>> VkFramebufferSp;
+typedef de::SharedPtr<Unique<VkPipeline>> VkPipelineSp;
 
 enum class GroupingStrategy
 {
-	SINGLE_SET	= 0,
-	MULTISET	= 1,
-	ARRAYS		= 2,
+    SINGLE_SET = 0,
+    MULTISET   = 1,
+    ARRAYS     = 2,
 };
 
 struct TestParams
 {
-	VkDescriptorType	descriptorType;
-	deUint32			numCmdBuffers;
-	bool				reverseOrder;
-	deUint32			numDescriptorSetBindings;
-	deUint32			numDynamicBindings;
-	deUint32			numNonDynamicBindings;
-	GroupingStrategy	groupingStrategy;
+    VkDescriptorType descriptorType;
+    uint32_t numCmdBuffers;
+    bool reverseOrder;
+    uint32_t numDescriptorSetBindings;
+    uint32_t numDynamicBindings;
+    uint32_t numNonDynamicBindings;
+    GroupingStrategy groupingStrategy;
 };
 
-vector<Vertex4RGBA> createQuads (deUint32 numQuads, float size)
+vector<Vertex4RGBA> createQuads(uint32_t numQuads, float size)
 {
-	vector<Vertex4RGBA>	vertices;
+    vector<Vertex4RGBA> vertices;
 
-	for (deUint32 quadNdx = 0; quadNdx < numQuads; quadNdx++)
-	{
-		const float			xOffset				= -0.5f + (float)quadNdx;
-		const tcu::Vec4		color				(0.0f);
-		const Vertex4RGBA	lowerLeftVertex		= {tcu::Vec4(-size + xOffset, -size, 0.0f, 1.0f), color};
-		const Vertex4RGBA	lowerRightVertex	= {tcu::Vec4(size + xOffset, -size, 0.0f, 1.0f), color};
-		const Vertex4RGBA	UpperLeftVertex		= {tcu::Vec4(-size + xOffset, size, 0.0f, 1.0f), color};
-		const Vertex4RGBA	UpperRightVertex	= {tcu::Vec4(size + xOffset, size, 0.0f, 1.0f), color};
+    for (uint32_t quadNdx = 0; quadNdx < numQuads; quadNdx++)
+    {
+        const float xOffset = -0.5f + (float)quadNdx;
+        const tcu::Vec4 color(0.0f);
+        const Vertex4RGBA lowerLeftVertex  = {tcu::Vec4(-size + xOffset, -size, 0.0f, 1.0f), color};
+        const Vertex4RGBA lowerRightVertex = {tcu::Vec4(size + xOffset, -size, 0.0f, 1.0f), color};
+        const Vertex4RGBA UpperLeftVertex  = {tcu::Vec4(-size + xOffset, size, 0.0f, 1.0f), color};
+        const Vertex4RGBA UpperRightVertex = {tcu::Vec4(size + xOffset, size, 0.0f, 1.0f), color};
 
-		vertices.push_back(lowerLeftVertex);
-		vertices.push_back(lowerRightVertex);
-		vertices.push_back(UpperLeftVertex);
-		vertices.push_back(UpperLeftVertex);
-		vertices.push_back(lowerRightVertex);
-		vertices.push_back(UpperRightVertex);
-	}
+        vertices.push_back(lowerLeftVertex);
+        vertices.push_back(lowerRightVertex);
+        vertices.push_back(UpperLeftVertex);
+        vertices.push_back(UpperLeftVertex);
+        vertices.push_back(lowerRightVertex);
+        vertices.push_back(UpperRightVertex);
+    }
 
-	return vertices;
+    return vertices;
 }
 
-static const tcu::Vec4			testColors[]	=
-{
-	tcu::Vec4(0.3f, 0.0f, 0.0f, 1.0f),
-	tcu::Vec4(0.0f, 0.3f, 0.0f, 1.0f),
-	tcu::Vec4(0.0f, 0.0f, 0.3f, 1.0f),
-	tcu::Vec4(0.3f, 0.3f, 0.0f, 1.0f),
-	tcu::Vec4(0.0f, 0.3f, 0.3f, 1.0f),
-	tcu::Vec4(0.3f, 0.0f, 0.3f, 1.0f)
-};
-static constexpr VkDeviceSize	kColorSize		= static_cast<VkDeviceSize>(sizeof(testColors[0]));
-static constexpr deUint32		kNumTestColors	= static_cast<deUint32>(DE_LENGTH_OF_ARRAY(testColors));
+static const tcu::Vec4 testColors[]      = {tcu::Vec4(0.3f, 0.0f, 0.0f, 1.0f), tcu::Vec4(0.0f, 0.3f, 0.0f, 1.0f),
+                                            tcu::Vec4(0.0f, 0.0f, 0.3f, 1.0f), tcu::Vec4(0.3f, 0.3f, 0.0f, 1.0f),
+                                            tcu::Vec4(0.0f, 0.3f, 0.3f, 1.0f), tcu::Vec4(0.3f, 0.0f, 0.3f, 1.0f)};
+static constexpr VkDeviceSize kColorSize = static_cast<VkDeviceSize>(sizeof(testColors[0]));
+static constexpr uint32_t kNumTestColors = static_cast<uint32_t>(DE_LENGTH_OF_ARRAY(testColors));
 
 class DynamicOffsetTestInstance : public vkt::TestInstance
 {
 public:
-	DynamicOffsetTestInstance (Context& context, const TestParams& params)
-		: vkt::TestInstance	(context)
-		, m_params			(params)
-		, m_memAlloc		(context.getDeviceInterface(), context.getDevice(), getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()))
-		{}
+    DynamicOffsetTestInstance(Context &context, const TestParams &params)
+        : vkt::TestInstance(context)
+        , m_params(params)
+        , m_memAlloc(context.getDeviceInterface(), context.getDevice(),
+                     getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()))
+    {
+    }
 
 protected:
-	const TestParams	m_params;
-	SimpleAllocator		m_memAlloc;
+    const TestParams m_params;
+    SimpleAllocator m_memAlloc;
 };
 
 class DynamicOffsetGraphicsTestInstance : public DynamicOffsetTestInstance
 {
 public:
-								DynamicOffsetGraphicsTestInstance	(Context& context, const TestParams& params);
-	virtual						~DynamicOffsetGraphicsTestInstance	(void);
-	void						init								(void);
-	virtual tcu::TestStatus		iterate								(void);
-	tcu::TestStatus				verifyImage							(void);
+    DynamicOffsetGraphicsTestInstance(Context &context, const TestParams &params);
+    virtual ~DynamicOffsetGraphicsTestInstance(void);
+    void init(void);
+    virtual tcu::TestStatus iterate(void);
+    tcu::TestStatus verifyImage(void);
 
 private:
-	const tcu::UVec2					m_renderSize;
-	const VkFormat						m_colorFormat;
-	VkImageCreateInfo					m_colorImageCreateInfo;
-	Move<VkImage>						m_colorImage;
-	de::MovePtr<Allocation>				m_colorImageAlloc;
-	Move<VkImageView>					m_colorAttachmentView;
-	vector<VkRenderPassSp>				m_renderPasses;
-	vector<VkFramebufferSp>				m_framebuffers;
-	Move<VkShaderModule>				m_vertexShaderModule;
-	Move<VkShaderModule>				m_fragmentShaderModule;
-	Move<VkBuffer>						m_vertexBuffer;
-	de::MovePtr<Allocation>				m_vertexBufferAlloc;
-	Move<VkBuffer>						m_buffer;
-	de::MovePtr<Allocation>				m_bufferAlloc;
-	vector<Move<VkDescriptorSetLayout>>	m_descriptorSetLayouts;
-	Move<VkDescriptorPool>				m_descriptorPool;
-	vector<Move<VkDescriptorSet>>		m_descriptorSets;
-	Move<VkPipelineLayout>				m_pipelineLayout;
-	vector<VkPipelineSp>				m_graphicsPipelines;
-	Move<VkCommandPool>					m_cmdPool;
-	vector<VkCommandBufferSp>			m_cmdBuffers;
-	vector<Vertex4RGBA>					m_vertices;
+    const tcu::UVec2 m_renderSize;
+    const VkFormat m_colorFormat;
+    VkImageCreateInfo m_colorImageCreateInfo;
+    Move<VkImage> m_colorImage;
+    de::MovePtr<Allocation> m_colorImageAlloc;
+    Move<VkImageView> m_colorAttachmentView;
+    vector<VkRenderPassSp> m_renderPasses;
+    vector<VkFramebufferSp> m_framebuffers;
+    Move<VkShaderModule> m_vertexShaderModule;
+    Move<VkShaderModule> m_fragmentShaderModule;
+    Move<VkBuffer> m_vertexBuffer;
+    de::MovePtr<Allocation> m_vertexBufferAlloc;
+    Move<VkBuffer> m_buffer;
+    de::MovePtr<Allocation> m_bufferAlloc;
+    vector<Move<VkDescriptorSetLayout>> m_descriptorSetLayouts;
+    Move<VkDescriptorPool> m_descriptorPool;
+    vector<Move<VkDescriptorSet>> m_descriptorSets;
+    Move<VkPipelineLayout> m_pipelineLayout;
+    vector<VkPipelineSp> m_graphicsPipelines;
+    Move<VkCommandPool> m_cmdPool;
+    vector<VkCommandBufferSp> m_cmdBuffers;
+    vector<Vertex4RGBA> m_vertices;
 };
 
-DynamicOffsetGraphicsTestInstance::DynamicOffsetGraphicsTestInstance (Context& context, const TestParams& params)
-	: DynamicOffsetTestInstance	(context, params)
-	, m_renderSize				(32, 32)
-	, m_colorFormat				(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_vertices				(createQuads(m_params.numDescriptorSetBindings * m_params.numCmdBuffers, 0.25f))
+DynamicOffsetGraphicsTestInstance::DynamicOffsetGraphicsTestInstance(Context &context, const TestParams &params)
+    : DynamicOffsetTestInstance(context, params)
+    , m_renderSize(32, 32)
+    , m_colorFormat(VK_FORMAT_R8G8B8A8_UNORM)
+    , m_vertices(createQuads(m_params.numDescriptorSetBindings * m_params.numCmdBuffers, 0.25f))
 {
 }
 
-void DynamicOffsetGraphicsTestInstance::init (void)
+void DynamicOffsetGraphicsTestInstance::init(void)
 {
-	const VkComponentMapping		componentMappingRGBA		= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-	const DeviceInterface&			vk							= m_context.getDeviceInterface();
-	const VkDevice					vkDevice					= m_context.getDevice();
-	const deUint32					queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
-	const deUint32					numBindings					= m_params.numDynamicBindings + m_params.numNonDynamicBindings;
-	deUint32						offset						= 0;
-	deUint32						quadNdx						= 0;
-	const VkPhysicalDeviceLimits	deviceLimits				= getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()).limits;
-	const VkDeviceSize				alignment					= ((m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) ? deviceLimits.minUniformBufferOffsetAlignment : deviceLimits.minStorageBufferOffsetAlignment);
-	const VkDeviceSize				extraBytes					= kColorSize % alignment;
-	const VkDeviceSize				colorBlockInputSize			= ((extraBytes == 0ull) ? kColorSize : (kColorSize + alignment - extraBytes));
-	const VkDeviceSize				bufferSize					= colorBlockInputSize * kNumTestColors;
-	const VkDeviceSize				bindingOffset				= bufferSize / numBindings;
-	const VkDescriptorType			nonDynamicDescriptorType	= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    const VkComponentMapping componentMappingRGBA = {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G,
+                                                     VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
+    const DeviceInterface &vk                     = m_context.getDeviceInterface();
+    const VkDevice vkDevice                       = m_context.getDevice();
+    const uint32_t queueFamilyIndex               = m_context.getUniversalQueueFamilyIndex();
+    const uint32_t numBindings                    = m_params.numDynamicBindings + m_params.numNonDynamicBindings;
+    uint32_t offset                               = 0;
+    uint32_t quadNdx                              = 0;
+    const VkPhysicalDeviceLimits deviceLimits =
+        getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()).limits;
+    const VkDeviceSize alignment  = ((m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) ?
+                                         deviceLimits.minUniformBufferOffsetAlignment :
+                                         deviceLimits.minStorageBufferOffsetAlignment);
+    const VkDeviceSize extraBytes = kColorSize % alignment;
+    const VkDeviceSize colorBlockInputSize =
+        ((extraBytes == 0ull) ? kColorSize : (kColorSize + alignment - extraBytes));
+    const VkDeviceSize bufferSize    = colorBlockInputSize * kNumTestColors;
+    const VkDeviceSize bindingOffset = bufferSize / numBindings;
+    const VkDescriptorType nonDynamicDescriptorType =
+        m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER :
+                                                                               VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
-	vector<VkDescriptorSetLayout>	descriptorSetLayoutsPlain;
-	vector<VkDescriptorSet>			descriptorSetsPlain;
+    vector<VkDescriptorSetLayout> descriptorSetLayoutsPlain;
+    vector<VkDescriptorSet> descriptorSetsPlain;
 
-	// Create color image
-	{
+    // Create color image
+    {
 
-		const VkImageCreateInfo colorImageParams =
-		{
-			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,									// VkStructureType			sType;
-			DE_NULL,																// const void*				pNext;
-			0u,																		// VkImageCreateFlags		flags;
-			VK_IMAGE_TYPE_2D,														// VkImageType				imageType;
-			m_colorFormat,															// VkFormat					format;
-			{ m_renderSize.x(), m_renderSize.y(), 1u },								// VkExtent3D				extent;
-			1u,																		// deUint32					mipLevels;
-			1u,																		// deUint32					arrayLayers;
-			VK_SAMPLE_COUNT_1_BIT,													// VkSampleCountFlagBits	samples;
-			VK_IMAGE_TILING_OPTIMAL,												// VkImageTiling			tiling;
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,	// VkImageUsageFlags		usage;
-			VK_SHARING_MODE_EXCLUSIVE,												// VkSharingMode			sharingMode;
-			1u,																		// deUint32					queueFamilyIndexCount;
-			&queueFamilyIndex,														// const deUint32*			pQueueFamilyIndices;
-			VK_IMAGE_LAYOUT_UNDEFINED,												// VkImageLayout			initialLayout;
-		};
+        const VkImageCreateInfo colorImageParams = {
+            VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
+            DE_NULL,                                                               // const void* pNext;
+            0u,                                                                    // VkImageCreateFlags flags;
+            VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
+            m_colorFormat,                                                         // VkFormat format;
+            {m_renderSize.x(), m_renderSize.y(), 1u},                              // VkExtent3D extent;
+            1u,                                                                    // uint32_t mipLevels;
+            1u,                                                                    // uint32_t arrayLayers;
+            VK_SAMPLE_COUNT_1_BIT,                                                 // VkSampleCountFlagBits samples;
+            VK_IMAGE_TILING_OPTIMAL,                                               // VkImageTiling tiling;
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags usage;
+            VK_SHARING_MODE_EXCLUSIVE,                                             // VkSharingMode sharingMode;
+            1u,                                                                    // uint32_t queueFamilyIndexCount;
+            &queueFamilyIndex,         // const uint32_t* pQueueFamilyIndices;
+            VK_IMAGE_LAYOUT_UNDEFINED, // VkImageLayout initialLayout;
+        };
 
-		m_colorImageCreateInfo	= colorImageParams;
-		m_colorImage			= createImage(vk, vkDevice, &m_colorImageCreateInfo);
+        m_colorImageCreateInfo = colorImageParams;
+        m_colorImage           = createImage(vk, vkDevice, &m_colorImageCreateInfo);
 
-		// Allocate and bind color image memory
-		m_colorImageAlloc		= m_memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_colorImage), MemoryRequirement::Any);
-		VK_CHECK(vk.bindImageMemory(vkDevice, *m_colorImage, m_colorImageAlloc->getMemory(), m_colorImageAlloc->getOffset()));
-	}
+        // Allocate and bind color image memory
+        m_colorImageAlloc =
+            m_memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_colorImage), MemoryRequirement::Any);
+        VK_CHECK(vk.bindImageMemory(vkDevice, *m_colorImage, m_colorImageAlloc->getMemory(),
+                                    m_colorImageAlloc->getOffset()));
+    }
 
-	// Create color attachment view
-	{
-		const VkImageViewCreateInfo colorAttachmentViewParams =
-		{
-			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType				sType;
-			DE_NULL,										// const void*					pNext;
-			0u,												// VkImageViewCreateFlags		flags;
-			*m_colorImage,									// VkImage						image;
-			VK_IMAGE_VIEW_TYPE_2D,							// VkImageViewType				viewType;
-			m_colorFormat,									// VkFormat						format;
-			componentMappingRGBA,							// VkChannelMapping				channels;
-			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },	// VkImageSubresourceRange		subresourceRange;
-		};
+    // Create color attachment view
+    {
+        const VkImageViewCreateInfo colorAttachmentViewParams = {
+            VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // VkStructureType sType;
+            DE_NULL,                                     // const void* pNext;
+            0u,                                          // VkImageViewCreateFlags flags;
+            *m_colorImage,                               // VkImage image;
+            VK_IMAGE_VIEW_TYPE_2D,                       // VkImageViewType viewType;
+            m_colorFormat,                               // VkFormat format;
+            componentMappingRGBA,                        // VkChannelMapping channels;
+            {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}, // VkImageSubresourceRange subresourceRange;
+        };
 
-		m_colorAttachmentView = createImageView(vk, vkDevice, &colorAttachmentViewParams);
-	}
+        m_colorAttachmentView = createImageView(vk, vkDevice, &colorAttachmentViewParams);
+    }
 
-	// Create render passes
-	for (deUint32 renderPassIdx = 0; renderPassIdx < m_params.numCmdBuffers; renderPassIdx++)
-	{
-		// The first pass clears the output image, and the second one draws on top of the first pass.
-		const VkAttachmentLoadOp		loadOps[]				=
-		{
-			VK_ATTACHMENT_LOAD_OP_CLEAR,
-			VK_ATTACHMENT_LOAD_OP_LOAD
-		};
+    // Create render passes
+    for (uint32_t renderPassIdx = 0; renderPassIdx < m_params.numCmdBuffers; renderPassIdx++)
+    {
+        // The first pass clears the output image, and the second one draws on top of the first pass.
+        const VkAttachmentLoadOp loadOps[] = {VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_LOAD_OP_LOAD};
 
-		const VkImageLayout				initialLayouts[]		=
-		{
-			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-		};
+        const VkImageLayout initialLayouts[] = {VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
 
-		const VkAttachmentDescription	attachmentDescription	=
-		{
-			(VkAttachmentDescriptionFlags)0,			// VkAttachmentDescriptionFlags	flags
-			m_colorFormat,								// VkFormat						format
-			VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits		samples
-			loadOps[renderPassIdx],						// VkAttachmentLoadOp			loadOp
-			VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp			storeOp
-			VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp			stencilLoadOp
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp			stencilStoreOp
-			initialLayouts[renderPassIdx],				// VkImageLayout				initialLayout
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout				finalLayout
-		};
+        const VkAttachmentDescription attachmentDescription = {
+            (VkAttachmentDescriptionFlags)0,         // VkAttachmentDescriptionFlags    flags
+            m_colorFormat,                           // VkFormat                        format
+            VK_SAMPLE_COUNT_1_BIT,                   // VkSampleCountFlagBits        samples
+            loadOps[renderPassIdx],                  // VkAttachmentLoadOp            loadOp
+            VK_ATTACHMENT_STORE_OP_STORE,            // VkAttachmentStoreOp            storeOp
+            VK_ATTACHMENT_LOAD_OP_DONT_CARE,         // VkAttachmentLoadOp            stencilLoadOp
+            VK_ATTACHMENT_STORE_OP_DONT_CARE,        // VkAttachmentStoreOp            stencilStoreOp
+            initialLayouts[renderPassIdx],           // VkImageLayout                initialLayout
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL // VkImageLayout                finalLayout
+        };
 
-		const VkAttachmentReference		attachmentRef			=
-		{
-			0u,											// deUint32			attachment
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout	layout
-		};
+        const VkAttachmentReference attachmentRef = {
+            0u,                                      // uint32_t            attachment
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL // VkImageLayout    layout
+        };
 
-		const VkSubpassDescription		subpassDescription		=
-		{
-			(VkSubpassDescriptionFlags)0,		// VkSubpassDescriptionFlags	flags
-			VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint			pipelineBindPoint
-			0u,									// deUint32						inputAttachmentCount
-			DE_NULL,							// const VkAttachmentReference*	pInputAttachments
-			1u,									// deUint32						colorAttachmentCount
-			&attachmentRef,						// const VkAttachmentReference*	pColorAttachments
-			DE_NULL,							// const VkAttachmentReference*	pResolveAttachments
-			DE_NULL,							// const VkAttachmentReference*	pDepthStencilAttachment
-			0u,									// deUint32						preserveAttachmentCount
-			DE_NULL								// const deUint32*				pPreserveAttachments
-		};
+        const VkSubpassDescription subpassDescription = {
+            (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags    flags
+            VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint            pipelineBindPoint
+            0u,                              // uint32_t                        inputAttachmentCount
+            DE_NULL,                         // const VkAttachmentReference*    pInputAttachments
+            1u,                              // uint32_t                        colorAttachmentCount
+            &attachmentRef,                  // const VkAttachmentReference*    pColorAttachments
+            DE_NULL,                         // const VkAttachmentReference*    pResolveAttachments
+            DE_NULL,                         // const VkAttachmentReference*    pDepthStencilAttachment
+            0u,                              // uint32_t                        preserveAttachmentCount
+            DE_NULL                          // const uint32_t*                pPreserveAttachments
+        };
 
-		const VkRenderPassCreateInfo	renderPassInfo			=
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureTypei					sType
-			DE_NULL,									// const void*						pNext
-			(VkRenderPassCreateFlags)0,					// VkRenderPassCreateFlags			flags
-			1u,											// deUint32							attachmentCount
-			&attachmentDescription,						// const VkAttachmentDescription*	pAttachments
-			1u,											// deUint32							subpassCount
-			&subpassDescription,						// const VkSubpassDescription*		pSubpasses
-			0u,											// deUint32							dependencyCount
-			DE_NULL										// const VkSubpassDependency*		pDependencies
-		};
+        const VkRenderPassCreateInfo renderPassInfo = {
+            VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureTypei                    sType
+            DE_NULL,                                   // const void*                        pNext
+            (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags            flags
+            1u,                                        // uint32_t                            attachmentCount
+            &attachmentDescription,                    // const VkAttachmentDescription*    pAttachments
+            1u,                                        // uint32_t                            subpassCount
+            &subpassDescription,                       // const VkSubpassDescription*        pSubpasses
+            0u,                                        // uint32_t                            dependencyCount
+            DE_NULL                                    // const VkSubpassDependency*        pDependencies
+        };
 
-		m_renderPasses.push_back(VkRenderPassSp(new Unique<VkRenderPass>(createRenderPass(vk, vkDevice, &renderPassInfo))));
-	}
+        m_renderPasses.push_back(
+            VkRenderPassSp(new Unique<VkRenderPass>(createRenderPass(vk, vkDevice, &renderPassInfo))));
+    }
 
-	// Create framebuffers
-	for (deUint32 framebufferIdx = 0; framebufferIdx < m_params.numCmdBuffers; framebufferIdx++)
-	{
-		const VkImageView				attachmentBindInfos[]	=
-		{
-			*m_colorAttachmentView
-		};
+    // Create framebuffers
+    for (uint32_t framebufferIdx = 0; framebufferIdx < m_params.numCmdBuffers; framebufferIdx++)
+    {
+        const VkImageView attachmentBindInfos[] = {*m_colorAttachmentView};
 
-		const VkFramebufferCreateInfo	framebufferParams		=
-		{
-			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// VkStructureType				sType;
-			DE_NULL,									// const void*					pNext;
-			0u,											// VkFramebufferCreateFlags		flags;
-			**m_renderPasses[framebufferIdx],			// VkRenderPass					renderPass;
-			1u,											// deUint32						attachmentCount;
-			attachmentBindInfos,						// const VkImageView*			pAttachments;
-			(deUint32)m_renderSize.x(),					// deUint32						width;
-			(deUint32)m_renderSize.y(),					// deUint32						height;
-			1u											// deUint32						layers;
-		};
+        const VkFramebufferCreateInfo framebufferParams = {
+            VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
+            DE_NULL,                                   // const void* pNext;
+            0u,                                        // VkFramebufferCreateFlags flags;
+            **m_renderPasses[framebufferIdx],          // VkRenderPass renderPass;
+            1u,                                        // uint32_t attachmentCount;
+            attachmentBindInfos,                       // const VkImageView* pAttachments;
+            (uint32_t)m_renderSize.x(),                // uint32_t width;
+            (uint32_t)m_renderSize.y(),                // uint32_t height;
+            1u                                         // uint32_t layers;
+        };
 
-		m_framebuffers.push_back(VkFramebufferSp(new Unique<VkFramebuffer>(createFramebuffer(vk, vkDevice, &framebufferParams))));
-	}
+        m_framebuffers.push_back(
+            VkFramebufferSp(new Unique<VkFramebuffer>(createFramebuffer(vk, vkDevice, &framebufferParams))));
+    }
 
-	// Create pipeline layout
-	{
-		// Create descriptor set layouts
-		vector<VkDescriptorSetLayoutBinding>	descriptorSetLayoutBindings;
+    // Create pipeline layout
+    {
+        // Create descriptor set layouts
+        vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
 
-		for (deUint32 binding = 0; binding < numBindings; binding++)
-		{
-			const bool								dynamicDesc						= (binding < m_params.numDynamicBindings);
-			const VkDescriptorType					descriptorType					= (dynamicDesc ? m_params.descriptorType : nonDynamicDescriptorType);
-			const deUint32							bindingNumber					= (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET ? binding : 0u);
-			const deUint32							descriptorCount					= ((m_params.groupingStrategy == GroupingStrategy::ARRAYS) ? (dynamicDesc ? m_params.numDynamicBindings : m_params.numNonDynamicBindings) : 1u);
-			const VkDescriptorSetLayoutBinding		descriptorSetLayoutBinding		=
-			{
-				bindingNumber,				// uint32_t				binding;
-				descriptorType,				// VkDescriptorType		descriptorType;
-				descriptorCount,			// uint32_t				descriptorCount;
-				VK_SHADER_STAGE_VERTEX_BIT,	// VkShaderStageFlags	stageFlags;
-				DE_NULL						// const VkSampler*		pImmutableSamplers;
-			};
+        for (uint32_t binding = 0; binding < numBindings; binding++)
+        {
+            const bool dynamicDesc                = (binding < m_params.numDynamicBindings);
+            const VkDescriptorType descriptorType = (dynamicDesc ? m_params.descriptorType : nonDynamicDescriptorType);
+            const uint32_t bindingNumber = (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET ? binding : 0u);
+            const uint32_t descriptorCount =
+                ((m_params.groupingStrategy == GroupingStrategy::ARRAYS) ?
+                     (dynamicDesc ? m_params.numDynamicBindings : m_params.numNonDynamicBindings) :
+                     1u);
+            const VkDescriptorSetLayoutBinding descriptorSetLayoutBinding = {
+                bindingNumber,              // uint32_t binding;
+                descriptorType,             // VkDescriptorType descriptorType;
+                descriptorCount,            // uint32_t descriptorCount;
+                VK_SHADER_STAGE_VERTEX_BIT, // VkShaderStageFlags stageFlags;
+                DE_NULL                     // const VkSampler* pImmutableSamplers;
+            };
 
-			// Skip used descriptors in array mode.
-			if (m_params.groupingStrategy == GroupingStrategy::ARRAYS)
-				binding = (dynamicDesc ? m_params.numDynamicBindings - 1 : numBindings);
+            // Skip used descriptors in array mode.
+            if (m_params.groupingStrategy == GroupingStrategy::ARRAYS)
+                binding = (dynamicDesc ? m_params.numDynamicBindings - 1 : numBindings);
 
-			descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
-		}
+            descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+        }
 
-		vector<VkDescriptorSetLayoutCreateInfo> descriptorSetLayoutCreateInfos;
+        vector<VkDescriptorSetLayoutCreateInfo> descriptorSetLayoutCreateInfos;
 
-		if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
-		{
-			const VkDescriptorSetLayoutCreateInfo	descriptorSetLayoutCreateInfo	=
-			{
-				VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
-				DE_NULL,												// const void*							pNext;
-				0u,														// VkDescriptorSetLayoutCreateFlags		flags;
-				numBindings,											// uint32_t								bindingCount;
-				descriptorSetLayoutBindings.data()						// const VkDescriptorSetLayoutBinding*	pBindings;
-			};
+        if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
+        {
+            const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
+                VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType sType;
+                DE_NULL,                                             // const void* pNext;
+                0u,                                                  // VkDescriptorSetLayoutCreateFlags flags;
+                numBindings,                                         // uint32_t bindingCount;
+                descriptorSetLayoutBindings.data()                   // const VkDescriptorSetLayoutBinding* pBindings;
+            };
 
-			m_descriptorSetLayouts.push_back(createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutCreateInfo));
-		}
-		else
-		{
-			for (size_t i = 0; i < descriptorSetLayoutBindings.size(); ++i)
-			{
-				const VkDescriptorSetLayoutCreateInfo	descriptorSetLayoutCreateInfo	=
-				{
-					VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
-					DE_NULL,												// const void*							pNext;
-					0u,														// VkDescriptorSetLayoutCreateFlags		flags;
-					1u,														// uint32_t								bindingCount;
-					&descriptorSetLayoutBindings[i]							// const VkDescriptorSetLayoutBinding*	pBindings;
-				};
+            m_descriptorSetLayouts.push_back(createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutCreateInfo));
+        }
+        else
+        {
+            for (size_t i = 0; i < descriptorSetLayoutBindings.size(); ++i)
+            {
+                const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
+                    VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType sType;
+                    DE_NULL,                                             // const void* pNext;
+                    0u,                                                  // VkDescriptorSetLayoutCreateFlags flags;
+                    1u,                                                  // uint32_t bindingCount;
+                    &descriptorSetLayoutBindings[i] // const VkDescriptorSetLayoutBinding* pBindings;
+                };
 
-				m_descriptorSetLayouts.push_back(createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutCreateInfo));
-			}
-		}
+                m_descriptorSetLayouts.push_back(
+                    createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutCreateInfo));
+            }
+        }
 
-		// Create pipeline layout
-		descriptorSetLayoutsPlain.resize(m_descriptorSetLayouts.size());
-		for (size_t i = 0; i < descriptorSetLayoutsPlain.size(); ++i)
-			descriptorSetLayoutsPlain[i] = m_descriptorSetLayouts[i].get();
+        // Create pipeline layout
+        descriptorSetLayoutsPlain.resize(m_descriptorSetLayouts.size());
+        for (size_t i = 0; i < descriptorSetLayoutsPlain.size(); ++i)
+            descriptorSetLayoutsPlain[i] = m_descriptorSetLayouts[i].get();
 
-		const VkPipelineLayoutCreateInfo		pipelineLayoutParams			=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,				// VkStructureType				sType;
-			DE_NULL,													// const void*					pNext;
-			0u,															// VkPipelineLayoutCreateFlags	flags;
-			static_cast<deUint32>(descriptorSetLayoutsPlain.size()),	// deUint32						descriptorSetCount;
-			descriptorSetLayoutsPlain.data(),							// const VkDescriptorSetLayout*	pSetLayouts;
-			0u,															// deUint32						pushConstantRangeCount;
-			DE_NULL														// const VkPushDescriptorRange*	pPushDescriptorRanges;
-		};
+        const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
+            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,           // VkStructureType sType;
+            DE_NULL,                                                 // const void* pNext;
+            0u,                                                      // VkPipelineLayoutCreateFlags flags;
+            static_cast<uint32_t>(descriptorSetLayoutsPlain.size()), // uint32_t descriptorSetCount;
+            descriptorSetLayoutsPlain.data(),                        // const VkDescriptorSetLayout* pSetLayouts;
+            0u,                                                      // uint32_t pushConstantRangeCount;
+            DE_NULL // const VkPushDescriptorRange* pPushDescriptorRanges;
+        };
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
-	}
+        m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+    }
 
-	// Create buffer
-	{
-		vector<deUint8> hostBuffer((size_t)bufferSize, 0);
-		for (deUint32 colorIdx = 0; colorIdx < kNumTestColors; colorIdx++)
-			deMemcpy(&hostBuffer[(deUint32)colorBlockInputSize * colorIdx], &testColors[colorIdx], kColorSize);
+    // Create buffer
+    {
+        vector<uint8_t> hostBuffer((size_t)bufferSize, 0);
+        for (uint32_t colorIdx = 0; colorIdx < kNumTestColors; colorIdx++)
+            deMemcpy(&hostBuffer[(uint32_t)colorBlockInputSize * colorIdx], &testColors[colorIdx], kColorSize);
 
-		const VkBufferUsageFlags	usageFlags			= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+        const VkBufferUsageFlags usageFlags = m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ?
+                                                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT :
+                                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
-		const VkBufferCreateInfo	bufferCreateInfo	=
-		{
-			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,								// const void*			pNext;
-			0u,										// VkBufferCreateFlags	flags
-			bufferSize,								// VkDeviceSize			size;
-			usageFlags,								// VkBufferUsageFlags	usage;
-			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-			1u,										// deUint32				queueFamilyCount;
-			&queueFamilyIndex						// const deUint32*		pQueueFamilyIndices;
-		};
+        const VkBufferCreateInfo bufferCreateInfo = {
+            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
+            DE_NULL,                              // const void* pNext;
+            0u,                                   // VkBufferCreateFlags    flags
+            bufferSize,                           // VkDeviceSize size;
+            usageFlags,                           // VkBufferUsageFlags usage;
+            VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
+            1u,                                   // uint32_t queueFamilyCount;
+            &queueFamilyIndex                     // const uint32_t* pQueueFamilyIndices;
+        };
 
-		m_buffer = createBuffer(vk, vkDevice, &bufferCreateInfo);
-		m_bufferAlloc = m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_buffer), MemoryRequirement::HostVisible);
-		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_buffer, m_bufferAlloc->getMemory(), m_bufferAlloc->getOffset()));
+        m_buffer = createBuffer(vk, vkDevice, &bufferCreateInfo);
+        m_bufferAlloc =
+            m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_buffer), MemoryRequirement::HostVisible);
+        VK_CHECK(vk.bindBufferMemory(vkDevice, *m_buffer, m_bufferAlloc->getMemory(), m_bufferAlloc->getOffset()));
 
-		deMemcpy(m_bufferAlloc->getHostPtr(), hostBuffer.data(), (size_t)bufferSize);
-		flushAlloc(vk, vkDevice, *m_bufferAlloc);
-	}
+        deMemcpy(m_bufferAlloc->getHostPtr(), hostBuffer.data(), (size_t)bufferSize);
+        flushAlloc(vk, vkDevice, *m_bufferAlloc);
+    }
 
-	// Create descriptor pool
-	{
-		DescriptorPoolBuilder	poolBuilder;
-		poolBuilder.addType(m_params.descriptorType, m_params.numDynamicBindings);
-		poolBuilder.addType(nonDynamicDescriptorType, m_params.numNonDynamicBindings);
-		m_descriptorPool = poolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, static_cast<deUint32>(m_descriptorSetLayouts.size()));
-	}
+    // Create descriptor pool
+    {
+        DescriptorPoolBuilder poolBuilder;
+        poolBuilder.addType(m_params.descriptorType, m_params.numDynamicBindings);
+        poolBuilder.addType(nonDynamicDescriptorType, m_params.numNonDynamicBindings);
+        m_descriptorPool = poolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+                                             static_cast<uint32_t>(m_descriptorSetLayouts.size()));
+    }
 
-	// Create descriptor sets
-	{
-		for (size_t i = 0; i < m_descriptorSetLayouts.size(); ++i)
-		{
-			const VkDescriptorSetAllocateInfo allocInfo =
-			{
-				VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,	// VkStructureType					sType;
-				DE_NULL,										// const void*						pNext;
-				*m_descriptorPool,								// VkDescriptorPool					descriptorPool;
-				1u,												// deUint32							setLayoutCount;
-				&(m_descriptorSetLayouts[i].get()),				// const VkDescriptorSetLayout*		pSetLayouts;
-			};
-			m_descriptorSets.push_back(allocateDescriptorSet(vk, vkDevice, &allocInfo));
-		}
-	}
+    // Create descriptor sets
+    {
+        for (size_t i = 0; i < m_descriptorSetLayouts.size(); ++i)
+        {
+            const VkDescriptorSetAllocateInfo allocInfo = {
+                VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType sType;
+                DE_NULL,                                        // const void* pNext;
+                *m_descriptorPool,                              // VkDescriptorPool descriptorPool;
+                1u,                                             // uint32_t setLayoutCount;
+                &(m_descriptorSetLayouts[i].get()),             // const VkDescriptorSetLayout* pSetLayouts;
+            };
+            m_descriptorSets.push_back(allocateDescriptorSet(vk, vkDevice, &allocInfo));
+        }
+    }
 
-	descriptorSetsPlain.resize(m_descriptorSets.size());
-	for (size_t i = 0; i < descriptorSetsPlain.size(); ++i)
-		descriptorSetsPlain[i] = m_descriptorSets[i].get();
+    descriptorSetsPlain.resize(m_descriptorSets.size());
+    for (size_t i = 0; i < descriptorSetsPlain.size(); ++i)
+        descriptorSetsPlain[i] = m_descriptorSets[i].get();
 
-	// Update descriptor sets
-	for (deUint32 binding = 0; binding < numBindings; ++binding)
-	{
-		const bool						dynamicDesc				= (binding < m_params.numDynamicBindings);
-		const VkDescriptorType			descriptorType			= (dynamicDesc ? m_params.descriptorType : nonDynamicDescriptorType);
-		const VkDescriptorBufferInfo	descriptorBufferInfo	=
-		{
-			*m_buffer,					// VkBuffer			buffer;
-			bindingOffset * binding,	// VkDeviceSize		offset;
-			kColorSize					// VkDeviceSize		range;
-		};
+    // Update descriptor sets
+    for (uint32_t binding = 0; binding < numBindings; ++binding)
+    {
+        const bool dynamicDesc                = (binding < m_params.numDynamicBindings);
+        const VkDescriptorType descriptorType = (dynamicDesc ? m_params.descriptorType : nonDynamicDescriptorType);
+        const VkDescriptorBufferInfo descriptorBufferInfo = {
+            *m_buffer,               // VkBuffer buffer;
+            bindingOffset * binding, // VkDeviceSize offset;
+            kColorSize               // VkDeviceSize range;
+        };
 
-		VkDescriptorSet	bindingSet;
-		deUint32		bindingNumber;
-		deUint32		dstArrayElement;
+        VkDescriptorSet bindingSet;
+        uint32_t bindingNumber;
+        uint32_t dstArrayElement;
 
-		if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
-		{
-			bindingSet		= m_descriptorSets[0].get();
-			bindingNumber	= binding;
-			dstArrayElement	= 0u;
-		}
-		else if (m_params.groupingStrategy == GroupingStrategy::MULTISET)
-		{
-			bindingSet		= m_descriptorSets[binding].get();
-			bindingNumber	= 0u;
-			dstArrayElement	= 0u;
-		}
-		else // GroupingStrategy::ARRAYS
-		{
-			bindingSet		= (dynamicDesc ? m_descriptorSets[0].get() : m_descriptorSets[1].get());
-			bindingNumber	= 0u;
-			dstArrayElement	= (dynamicDesc ? binding : (binding - m_params.numDynamicBindings));
-		}
+        if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
+        {
+            bindingSet      = m_descriptorSets[0].get();
+            bindingNumber   = binding;
+            dstArrayElement = 0u;
+        }
+        else if (m_params.groupingStrategy == GroupingStrategy::MULTISET)
+        {
+            bindingSet      = m_descriptorSets[binding].get();
+            bindingNumber   = 0u;
+            dstArrayElement = 0u;
+        }
+        else // GroupingStrategy::ARRAYS
+        {
+            bindingSet      = (dynamicDesc ? m_descriptorSets[0].get() : m_descriptorSets[1].get());
+            bindingNumber   = 0u;
+            dstArrayElement = (dynamicDesc ? binding : (binding - m_params.numDynamicBindings));
+        }
 
-		const VkWriteDescriptorSet		writeDescriptorSet		=
-		{
-			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,	// VkStructureType					sType;
-			DE_NULL,								// const void*						pNext;
-			bindingSet,								// VkDescriptorSet					dstSet;
-			bindingNumber,							// uint32_t							dstBinding;
-			dstArrayElement,						// uint32_t							dstArrayElement;
-			1u,										// uint32_t							descriptorCount;
-			descriptorType,							// VkDescriptorType					descriptorType;
-			DE_NULL,								// const VkDescriptorImageInfo*		pImageInfo;
-			&descriptorBufferInfo,					// const VkDescriptorBufferInfo*	pBufferInfo;
-			DE_NULL									// const VkBufferView*				pTexelBufferView;
-		};
+        const VkWriteDescriptorSet writeDescriptorSet = {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
+            DE_NULL,                                // const void* pNext;
+            bindingSet,                             // VkDescriptorSet dstSet;
+            bindingNumber,                          // uint32_t dstBinding;
+            dstArrayElement,                        // uint32_t dstArrayElement;
+            1u,                                     // uint32_t descriptorCount;
+            descriptorType,                         // VkDescriptorType descriptorType;
+            DE_NULL,                                // const VkDescriptorImageInfo* pImageInfo;
+            &descriptorBufferInfo,                  // const VkDescriptorBufferInfo* pBufferInfo;
+            DE_NULL                                 // const VkBufferView* pTexelBufferView;
+        };
 
-		vk.updateDescriptorSets(vkDevice, 1u, &writeDescriptorSet, 0u, DE_NULL);
-	}
+        vk.updateDescriptorSets(vkDevice, 1u, &writeDescriptorSet, 0u, DE_NULL);
+    }
 
-	// Create shaders
-	{
-		m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("vert"), 0u);
-		m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("frag"), 0u);
-	}
+    // Create shaders
+    {
+        m_vertexShaderModule   = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("vert"), 0u);
+        m_fragmentShaderModule = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("frag"), 0u);
+    }
 
-	// Create pipelines
-	for (deUint32 pipelineIdx = 0; pipelineIdx < m_params.numCmdBuffers; pipelineIdx++)
-	{
-		const VkVertexInputBindingDescription		vertexInputBindingDescription		=
-		{
-			0u,							// deUint32					binding;
-			sizeof(Vertex4RGBA),		// deUint32					strideInBytes;
-			VK_VERTEX_INPUT_RATE_VERTEX	// VkVertexInputStepRate	stepRate;
-		};
+    // Create pipelines
+    for (uint32_t pipelineIdx = 0; pipelineIdx < m_params.numCmdBuffers; pipelineIdx++)
+    {
+        const VkVertexInputBindingDescription vertexInputBindingDescription = {
+            0u,                         // uint32_t binding;
+            sizeof(Vertex4RGBA),        // uint32_t strideInBytes;
+            VK_VERTEX_INPUT_RATE_VERTEX // VkVertexInputStepRate stepRate;
+        };
 
-		const VkVertexInputAttributeDescription		vertexInputAttributeDescriptions[]	=
-		{
-			{
-				0u,									// deUint32	location;
-				0u,									// deUint32	binding;
-				VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat	format;
-				0u									// deUint32	offsetInBytes;
-			},
-			{
-				1u,									// deUint32	location;
-				0u,									// deUint32	binding;
-				VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat	format;
-				DE_OFFSET_OF(Vertex4RGBA, color),	// deUint32	offset;
-			}
-		};
+        const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[] = {
+            {
+                0u,                            // uint32_t location;
+                0u,                            // uint32_t binding;
+                VK_FORMAT_R32G32B32A32_SFLOAT, // VkFormat format;
+                0u                             // uint32_t offsetInBytes;
+            },
+            {
+                1u,                            // uint32_t location;
+                0u,                            // uint32_t binding;
+                VK_FORMAT_R32G32B32A32_SFLOAT, // VkFormat format;
+                offsetof(Vertex4RGBA, color),  // uint32_t offset;
+            }};
 
-		const VkPipelineVertexInputStateCreateInfo	vertexInputStateParams				=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType;
-			DE_NULL,													// const void*								pNext;
-			0u,															// vkPipelineVertexInputStateCreateFlags	flags;
-			1u,															// deUint32									bindingCount;
-			&vertexInputBindingDescription,								// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
-			2u,															// deUint32									attributeCount;
-			vertexInputAttributeDescriptions							// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
-		};
+        const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
+            VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
+            DE_NULL,                                                   // const void* pNext;
+            0u,                                                        // vkPipelineVertexInputStateCreateFlags flags;
+            1u,                                                        // uint32_t bindingCount;
+            &vertexInputBindingDescription,  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+            2u,                              // uint32_t attributeCount;
+            vertexInputAttributeDescriptions // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+        };
 
-		const VkPrimitiveTopology					topology							= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        const VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
-		const vector<VkViewport>					viewports							(1, makeViewport(m_renderSize));
-		const vector<VkRect2D>						scissors							(1, makeRect2D(m_renderSize));
+        const vector<VkViewport> viewports(1, makeViewport(m_renderSize));
+        const vector<VkRect2D> scissors(1, makeRect2D(m_renderSize));
 
-		m_graphicsPipelines.push_back(VkPipelineSp(new Unique<VkPipeline>(makeGraphicsPipeline(vk,								// const DeviceInterface&						vk
-																							   vkDevice,						// const VkDevice								device
-																							   *m_pipelineLayout,				// const VkPipelineLayout						pipelineLayout
-																							   *m_vertexShaderModule,			// const VkShaderModule							vertexShaderModule
-																							   DE_NULL,							// const VkShaderModule							tessellationControlShaderModule
-																							   DE_NULL,							// const VkShaderModule							tessellationEvalShaderModule
-																							   DE_NULL,							// const VkShaderModule							geometryShaderModule
-																							   *m_fragmentShaderModule,			// const VkShaderModule							fragmentShaderModule
-																							   **m_renderPasses[pipelineIdx],	// const VkRenderPass							renderPass
-																							   viewports,						// const std::vector<VkViewport>&				viewports
-																							   scissors,						// const std::vector<VkRect2D>&					scissors
-																							   topology,						// const VkPrimitiveTopology					topology
-																							   0u,								// const deUint32								subpass
-																							   0u,								// const deUint32								patchControlPoints
-																							   &vertexInputStateParams))));		// const VkPipelineVertexInputStateCreateInfo*	vertexInputStateCreateInfo
-	}
+        m_graphicsPipelines.push_back(VkPipelineSp(new Unique<VkPipeline>(makeGraphicsPipeline(
+            vk,                      // const DeviceInterface&                        vk
+            vkDevice,                // const VkDevice                                device
+            *m_pipelineLayout,       // const VkPipelineLayout                        pipelineLayout
+            *m_vertexShaderModule,   // const VkShaderModule                            vertexShaderModule
+            DE_NULL,                 // const VkShaderModule                            tessellationControlShaderModule
+            DE_NULL,                 // const VkShaderModule                            tessellationEvalShaderModule
+            DE_NULL,                 // const VkShaderModule                            geometryShaderModule
+            *m_fragmentShaderModule, // const VkShaderModule                            fragmentShaderModule
+            **m_renderPasses[pipelineIdx], // const VkRenderPass                            renderPass
+            viewports,                     // const std::vector<VkViewport>&                viewports
+            scissors,                      // const std::vector<VkRect2D>&                    scissors
+            topology,                      // const VkPrimitiveTopology                    topology
+            0u,                            // const uint32_t                                subpass
+            0u,                            // const uint32_t                                patchControlPoints
+            &vertexInputStateParams))));   // const VkPipelineVertexInputStateCreateInfo*    vertexInputStateCreateInfo
+    }
 
-	// Create vertex buffer
-	{
-		const VkBufferCreateInfo vertexBufferParams =
-		{
-			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,						// VkStructureType		sType;
-			DE_NULL,													// const void*			pNext;
-			0u,															// VkBufferCreateFlags	flags;
-			(VkDeviceSize)(sizeof(Vertex4RGBA) * m_vertices.size()),	// VkDeviceSize			size;
-			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,							// VkBufferUsageFlags	usage;
-			VK_SHARING_MODE_EXCLUSIVE,									// VkSharingMode		sharingMode;
-			1u,															// deUint32				queueFamilyCount;
-			&queueFamilyIndex											// const deUint32*		pQueueFamilyIndices;
-		};
+    // Create vertex buffer
+    {
+        const VkBufferCreateInfo vertexBufferParams = {
+            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                    // VkStructureType sType;
+            DE_NULL,                                                 // const void* pNext;
+            0u,                                                      // VkBufferCreateFlags flags;
+            (VkDeviceSize)(sizeof(Vertex4RGBA) * m_vertices.size()), // VkDeviceSize size;
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,                       // VkBufferUsageFlags usage;
+            VK_SHARING_MODE_EXCLUSIVE,                               // VkSharingMode sharingMode;
+            1u,                                                      // uint32_t queueFamilyCount;
+            &queueFamilyIndex                                        // const uint32_t* pQueueFamilyIndices;
+        };
 
-		m_vertexBuffer		= createBuffer(vk, vkDevice, &vertexBufferParams);
-		m_vertexBufferAlloc	= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_vertexBuffer), MemoryRequirement::HostVisible);
+        m_vertexBuffer      = createBuffer(vk, vkDevice, &vertexBufferParams);
+        m_vertexBufferAlloc = m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_vertexBuffer),
+                                                  MemoryRequirement::HostVisible);
 
-		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_vertexBuffer, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset()));
+        VK_CHECK(vk.bindBufferMemory(vkDevice, *m_vertexBuffer, m_vertexBufferAlloc->getMemory(),
+                                     m_vertexBufferAlloc->getOffset()));
 
-		// Load vertices into vertex buffer
-		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
-		flushAlloc(vk, vkDevice, *m_vertexBufferAlloc);
-	}
+        // Load vertices into vertex buffer
+        deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
+        flushAlloc(vk, vkDevice, *m_vertexBufferAlloc);
+    }
 
-	// Create command pool
-	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+    // Create command pool
+    m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
-	// Create command buffers
-	for (deUint32 cmdBufferIdx = 0; cmdBufferIdx < m_params.numCmdBuffers; cmdBufferIdx++)
-		m_cmdBuffers.push_back(VkCommandBufferSp(new Unique<VkCommandBuffer>(allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY))));
+    // Create command buffers
+    for (uint32_t cmdBufferIdx = 0; cmdBufferIdx < m_params.numCmdBuffers; cmdBufferIdx++)
+        m_cmdBuffers.push_back(VkCommandBufferSp(new Unique<VkCommandBuffer>(
+            allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY))));
 
-	for (deUint32 cmdBufferIdx = 0; cmdBufferIdx < m_params.numCmdBuffers; cmdBufferIdx++)
-	{
-		const VkClearValue	attachmentClearValue	= defaultClearValue(m_colorFormat);
-		const VkDeviceSize	vertexBufferOffset		= 0;
-		const deUint32		idx						= m_params.reverseOrder ? m_params.numCmdBuffers - cmdBufferIdx - 1 : cmdBufferIdx;
+    for (uint32_t cmdBufferIdx = 0; cmdBufferIdx < m_params.numCmdBuffers; cmdBufferIdx++)
+    {
+        const VkClearValue attachmentClearValue = defaultClearValue(m_colorFormat);
+        const VkDeviceSize vertexBufferOffset   = 0;
+        const uint32_t idx = m_params.reverseOrder ? m_params.numCmdBuffers - cmdBufferIdx - 1 : cmdBufferIdx;
 
-		beginCommandBuffer(vk, **m_cmdBuffers[idx], 0u);
-		beginRenderPass(vk, **m_cmdBuffers[idx], **m_renderPasses[idx], **m_framebuffers[idx], makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
-		vk.cmdBindPipeline(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_GRAPHICS, **m_graphicsPipelines[idx]);
-		vk.cmdBindVertexBuffers(**m_cmdBuffers[idx], 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
+        beginCommandBuffer(vk, **m_cmdBuffers[idx], 0u);
+        beginRenderPass(vk, **m_cmdBuffers[idx], **m_renderPasses[idx], **m_framebuffers[idx],
+                        makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
+        vk.cmdBindPipeline(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_GRAPHICS, **m_graphicsPipelines[idx]);
+        vk.cmdBindVertexBuffers(**m_cmdBuffers[idx], 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 
-		for (deUint32 i = 0; i < m_params.numDescriptorSetBindings; i++)
-		{
-			vector<deUint32>	offsets;
-			for (deUint32 dynamicBindingIdx = 0; dynamicBindingIdx < m_params.numDynamicBindings; dynamicBindingIdx++)
-				offsets.push_back(offset + (deUint32)colorBlockInputSize * dynamicBindingIdx);
+        for (uint32_t i = 0; i < m_params.numDescriptorSetBindings; i++)
+        {
+            vector<uint32_t> offsets;
+            for (uint32_t dynamicBindingIdx = 0; dynamicBindingIdx < m_params.numDynamicBindings; dynamicBindingIdx++)
+                offsets.push_back(offset + (uint32_t)colorBlockInputSize * dynamicBindingIdx);
 
-			vk.cmdBindDescriptorSets(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, static_cast<deUint32>(descriptorSetsPlain.size()), descriptorSetsPlain.data(), m_params.numDynamicBindings, offsets.data());
-			offset += (deUint32)colorBlockInputSize;
+            vk.cmdBindDescriptorSets(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u,
+                                     static_cast<uint32_t>(descriptorSetsPlain.size()), descriptorSetsPlain.data(),
+                                     m_params.numDynamicBindings, offsets.data());
+            offset += (uint32_t)colorBlockInputSize;
 
-			// Draw quad
-			vk.cmdDraw(**m_cmdBuffers[idx], 6, 1, 6 * quadNdx, 0);
-			quadNdx++;
-		}
+            // Draw quad
+            vk.cmdDraw(**m_cmdBuffers[idx], 6, 1, 6 * quadNdx, 0);
+            quadNdx++;
+        }
 
-		endRenderPass(vk, **m_cmdBuffers[idx]);
-		endCommandBuffer(vk, **m_cmdBuffers[idx]);
-	}
+        endRenderPass(vk, **m_cmdBuffers[idx]);
+        endCommandBuffer(vk, **m_cmdBuffers[idx]);
+    }
 }
 
-DynamicOffsetGraphicsTestInstance::~DynamicOffsetGraphicsTestInstance (void)
+DynamicOffsetGraphicsTestInstance::~DynamicOffsetGraphicsTestInstance(void)
 {
 }
 
-tcu::TestStatus DynamicOffsetGraphicsTestInstance::iterate (void)
+tcu::TestStatus DynamicOffsetGraphicsTestInstance::iterate(void)
 {
-	init();
+    init();
 
-	for (deUint32 cmdBufferIdx = 0; cmdBufferIdx < m_params.numCmdBuffers; cmdBufferIdx++)
-		submitCommandsAndWait(m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueue(), **m_cmdBuffers[cmdBufferIdx]);
+    for (uint32_t cmdBufferIdx = 0; cmdBufferIdx < m_params.numCmdBuffers; cmdBufferIdx++)
+        submitCommandsAndWait(m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueue(),
+                              **m_cmdBuffers[cmdBufferIdx]);
 
-	return verifyImage();
+    return verifyImage();
 }
 
-tcu::TestStatus DynamicOffsetGraphicsTestInstance::verifyImage (void)
+tcu::TestStatus DynamicOffsetGraphicsTestInstance::verifyImage(void)
 {
-	const tcu::TextureFormat	tcuColorFormat		= mapVkFormat(m_colorFormat);
-	const tcu::TextureFormat	tcuDepthFormat		= tcu::TextureFormat();
-	const ColorVertexShader		vertexShader;
-	const ColorFragmentShader	fragmentShader		(tcuColorFormat, tcuDepthFormat);
-	const rr::Program			program				(&vertexShader, &fragmentShader);
-	ReferenceRenderer			refRenderer			(m_renderSize.x(), m_renderSize.y(), 1, tcuColorFormat, tcuDepthFormat, &program);
-	bool						compareOk			= false;
+    const tcu::TextureFormat tcuColorFormat = mapVkFormat(m_colorFormat);
+    const tcu::TextureFormat tcuDepthFormat = tcu::TextureFormat();
+    const ColorVertexShader vertexShader;
+    const ColorFragmentShader fragmentShader(tcuColorFormat, tcuDepthFormat);
+    const rr::Program program(&vertexShader, &fragmentShader);
+    ReferenceRenderer refRenderer(m_renderSize.x(), m_renderSize.y(), 1, tcuColorFormat, tcuDepthFormat, &program);
+    bool compareOk = false;
 
-	// Render reference image
-	{
-		const deUint32	numBindings		= m_params.numDynamicBindings + m_params.numNonDynamicBindings;
-		const deUint32	bindingOffset	= kNumTestColors / numBindings;
+    // Render reference image
+    {
+        const uint32_t numBindings   = m_params.numDynamicBindings + m_params.numNonDynamicBindings;
+        const uint32_t bindingOffset = kNumTestColors / numBindings;
 
-		for (deUint32 quadIdx = 0; quadIdx < m_vertices.size() / 6; quadIdx++)
-			for (deUint32 vertexIdx = 0; vertexIdx < 6; vertexIdx++)
-			{
-				tcu::Vec4 refColor(0.0f);
+        for (uint32_t quadIdx = 0; quadIdx < m_vertices.size() / 6; quadIdx++)
+            for (uint32_t vertexIdx = 0; vertexIdx < 6; vertexIdx++)
+            {
+                tcu::Vec4 refColor(0.0f);
 
-				for (deUint32 binding = 0; binding < m_params.numDynamicBindings; binding++)
-					refColor += testColors[quadIdx + binding * bindingOffset + binding];
-				for (deUint32 binding = 0; binding < m_params.numNonDynamicBindings; binding++)
-					refColor += testColors[(m_params.numDynamicBindings + binding) * bindingOffset];
-				refColor.w() = 1.0f;
+                for (uint32_t binding = 0; binding < m_params.numDynamicBindings; binding++)
+                    refColor += testColors[quadIdx + binding * bindingOffset + binding];
+                for (uint32_t binding = 0; binding < m_params.numNonDynamicBindings; binding++)
+                    refColor += testColors[(m_params.numDynamicBindings + binding) * bindingOffset];
+                refColor.w() = 1.0f;
 
-				m_vertices[quadIdx * 6 + vertexIdx].color.xyzw() = refColor;
-			}
+                m_vertices[quadIdx * 6 + vertexIdx].color.xyzw() = refColor;
+            }
 
-		refRenderer.draw(rr::RenderState(refRenderer.getViewportState(), m_context.getDeviceProperties().limits.subPixelPrecisionBits),
-			             rr::PRIMITIVETYPE_TRIANGLES, m_vertices);
-	}
+        refRenderer.draw(rr::RenderState(refRenderer.getViewportState(),
+                                         m_context.getDeviceProperties().limits.subPixelPrecisionBits),
+                         rr::PRIMITIVETYPE_TRIANGLES, m_vertices);
+    }
 
-	// Compare result with reference image
-	{
-		de::MovePtr<tcu::TextureLevel> result = readColorAttachment(
-			m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueue(),
-			m_context.getUniversalQueueFamilyIndex(), m_memAlloc, *m_colorImage, m_colorFormat, m_renderSize);
+    // Compare result with reference image
+    {
+        de::MovePtr<tcu::TextureLevel> result = readColorAttachment(
+            m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueue(),
+            m_context.getUniversalQueueFamilyIndex(), m_memAlloc, *m_colorImage, m_colorFormat, m_renderSize);
 
-		compareOk = tcu::intThresholdPositionDeviationCompare(m_context.getTestContext().getLog(),
-															  "IntImageCompare",
-															  "Image comparison",
-															  refRenderer.getAccess(),
-															  result->getAccess(),
-															  tcu::UVec4(2, 2, 2, 2),
-															  tcu::IVec3(1, 1, 0),
-															  true,
-															  tcu::COMPARE_LOG_RESULT);
-	}
+        compareOk = tcu::intThresholdPositionDeviationCompare(
+            m_context.getTestContext().getLog(), "IntImageCompare", "Image comparison", refRenderer.getAccess(),
+            result->getAccess(), tcu::UVec4(2, 2, 2, 2), tcu::IVec3(1, 1, 0), true, tcu::COMPARE_LOG_RESULT);
+    }
 
-	if (compareOk)
-		return tcu::TestStatus::pass("Result image matches reference");
-	else
-		return tcu::TestStatus::fail("Image mismatch");
+    if (compareOk)
+        return tcu::TestStatus::pass("Result image matches reference");
+    else
+        return tcu::TestStatus::fail("Image mismatch");
 }
 
 class DynamicOffsetGraphicsTest : public vkt::TestCase
 {
 public:
-						DynamicOffsetGraphicsTest	(tcu::TestContext&	testContext,
-													 const string&		name,
-													 const string&		description,
-													 const TestParams&	params);
-						~DynamicOffsetGraphicsTest	(void);
-	void				initPrograms				(SourceCollections& sourceCollections) const;
-	TestInstance*		createInstance				(Context& context) const;
+    DynamicOffsetGraphicsTest(tcu::TestContext &testContext, const string &name, const string &description,
+                              const TestParams &params);
+    ~DynamicOffsetGraphicsTest(void);
+    void initPrograms(SourceCollections &sourceCollections) const;
+    TestInstance *createInstance(Context &context) const;
 
 protected:
-	const TestParams	m_params;
+    const TestParams m_params;
 };
 
-DynamicOffsetGraphicsTest::DynamicOffsetGraphicsTest (tcu::TestContext&	testContext,
-													  const string&		name,
-													  const string&		description,
-													  const TestParams&	params)
-	: vkt::TestCase	(testContext, name, description)
-	, m_params		(params)
+DynamicOffsetGraphicsTest::DynamicOffsetGraphicsTest(tcu::TestContext &testContext, const string &name,
+                                                     const string &description, const TestParams &params)
+    : vkt::TestCase(testContext, name, description)
+    , m_params(params)
 {
 }
 
-DynamicOffsetGraphicsTest::~DynamicOffsetGraphicsTest (void)
+DynamicOffsetGraphicsTest::~DynamicOffsetGraphicsTest(void)
 {
 }
 
-TestInstance* DynamicOffsetGraphicsTest::createInstance (Context& context) const
+TestInstance *DynamicOffsetGraphicsTest::createInstance(Context &context) const
 {
-	return new DynamicOffsetGraphicsTestInstance(context, m_params);
+    return new DynamicOffsetGraphicsTestInstance(context, m_params);
 }
 
-void DynamicOffsetGraphicsTest::initPrograms (SourceCollections& sourceCollections) const
+void DynamicOffsetGraphicsTest::initPrograms(SourceCollections &sourceCollections) const
 {
-	const deUint32	numBindings		= m_params.numDynamicBindings + m_params.numNonDynamicBindings;
-	const string	bufferType		= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? "uniform" : "readonly buffer";
-	ostringstream	inputBlocks;
-	ostringstream	inputSum;
-	string			setAndBinding;
-	string			blockSuffix;
-	string			accessSuffix;
-	bool			dynArrayDecl	= false;	// Dynamic descriptor block array declared?
-	bool			nonDynArrayDecl	= false;	// Nondynamic descriptor block array declared?
+    const uint32_t numBindings = m_params.numDynamicBindings + m_params.numNonDynamicBindings;
+    const string bufferType =
+        m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? "uniform" : "readonly buffer";
+    ostringstream inputBlocks;
+    ostringstream inputSum;
+    string setAndBinding;
+    string blockSuffix;
+    string accessSuffix;
+    bool dynArrayDecl    = false; // Dynamic descriptor block array declared?
+    bool nonDynArrayDecl = false; // Nondynamic descriptor block array declared?
 
-	for (deUint32 b = 0; b < numBindings; b++)
-	{
-		const bool		dynBind	= (b < m_params.numDynamicBindings);
-		const string	bStr	= de::toString(b);
+    for (uint32_t b = 0; b < numBindings; b++)
+    {
+        const bool dynBind = (b < m_params.numDynamicBindings);
+        const string bStr  = de::toString(b);
 
-		if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
-		{
-			setAndBinding	= "set = 0, binding = " + bStr;
-			blockSuffix		= bStr;
-			accessSuffix	= bStr;
-		}
-		else if (m_params.groupingStrategy == GroupingStrategy::MULTISET)
-		{
-			setAndBinding	= "set = " + bStr + ", binding = 0";
-			blockSuffix		= bStr;
-			accessSuffix	= bStr;
-		}
-		else // GroupingStrategy::ARRAYS
-		{
-			// In array mode, only two sets are declared, one with an array of dynamic descriptors and another one with an array of
-			// nondynamic descriptors.
-			setAndBinding	= "set = " + string(dynBind ? "0" : "1") + ", binding = 0";
-			blockSuffix		= string(dynBind ? "Dyn" : "NonDyn") + "[" + (dynBind ? de::toString(m_params.numDynamicBindings) : de::toString(m_params.numNonDynamicBindings)) + "]";
-			accessSuffix	= string(dynBind ? "Dyn" : "NonDyn") + "[" + (dynBind ? de::toString(b) : de::toString(b - m_params.numDynamicBindings)) + "]";
-		}
+        if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
+        {
+            setAndBinding = "set = 0, binding = " + bStr;
+            blockSuffix   = bStr;
+            accessSuffix  = bStr;
+        }
+        else if (m_params.groupingStrategy == GroupingStrategy::MULTISET)
+        {
+            setAndBinding = "set = " + bStr + ", binding = 0";
+            blockSuffix   = bStr;
+            accessSuffix  = bStr;
+        }
+        else // GroupingStrategy::ARRAYS
+        {
+            // In array mode, only two sets are declared, one with an array of dynamic descriptors and another one with an array of
+            // nondynamic descriptors.
+            setAndBinding = "set = " + string(dynBind ? "0" : "1") + ", binding = 0";
+            blockSuffix =
+                string(dynBind ? "Dyn" : "NonDyn") + "[" +
+                (dynBind ? de::toString(m_params.numDynamicBindings) : de::toString(m_params.numNonDynamicBindings)) +
+                "]";
+            accessSuffix = string(dynBind ? "Dyn" : "NonDyn") + "[" +
+                           (dynBind ? de::toString(b) : de::toString(b - m_params.numDynamicBindings)) + "]";
+        }
 
-		// In array mode, declare the input block only once per descriptor type.
-		bool& arrayDeclFlag = (dynBind ? dynArrayDecl : nonDynArrayDecl);
-		if (m_params.groupingStrategy != GroupingStrategy::ARRAYS || !arrayDeclFlag)
-		{
-			inputBlocks
-				<< "layout(" << setAndBinding << ") " << bufferType << " Block" << bStr << "\n"
-				<< "{\n"
-				<< "    vec4 color;\n"
-				<< "} inputData" << blockSuffix << ";\n"
-				;
-			arrayDeclFlag = true;
-		}
+        // In array mode, declare the input block only once per descriptor type.
+        bool &arrayDeclFlag = (dynBind ? dynArrayDecl : nonDynArrayDecl);
+        if (m_params.groupingStrategy != GroupingStrategy::ARRAYS || !arrayDeclFlag)
+        {
+            inputBlocks << "layout(" << setAndBinding << ") " << bufferType << " Block" << bStr << "\n"
+                        << "{\n"
+                        << "    vec4 color;\n"
+                        << "} inputData" << blockSuffix << ";\n";
+            arrayDeclFlag = true;
+        }
 
-		// But the sum always needs to be added once per descriptor.
-		inputSum << "    vtxColor.rgb += inputData" << accessSuffix << ".color.rgb;\n";
-	}
+        // But the sum always needs to be added once per descriptor.
+        inputSum << "    vtxColor.rgb += inputData" << accessSuffix << ".color.rgb;\n";
+    }
 
-	const string	vertexSrc	=
-		"#version 450\n"
-		"layout(location = 0) in highp vec4 position;\n"
-		"layout(location = 1) in highp vec4 color;\n"
-		"layout(location = 0) out highp vec4 vtxColor;\n"
-		+ inputBlocks.str() +
-		"\n"
-		"out gl_PerVertex { vec4 gl_Position; };\n"
-		"\n"
-		"void main()\n"
-		"{\n"
-		"    gl_Position = position;\n"
-		"    vtxColor = vec4(0, 0, 0, 1);\n"
-		+ inputSum.str() +
-		"}\n";
+    const string vertexSrc = "#version 450\n"
+                             "layout(location = 0) in highp vec4 position;\n"
+                             "layout(location = 1) in highp vec4 color;\n"
+                             "layout(location = 0) out highp vec4 vtxColor;\n" +
+                             inputBlocks.str() +
+                             "\n"
+                             "out gl_PerVertex { vec4 gl_Position; };\n"
+                             "\n"
+                             "void main()\n"
+                             "{\n"
+                             "    gl_Position = position;\n"
+                             "    vtxColor = vec4(0, 0, 0, 1);\n" +
+                             inputSum.str() + "}\n";
 
-	const string	fragmentSrc	=
-		"#version 450\n"
-		"layout(location = 0) in highp vec4 vtxColor;\n"
-		"layout(location = 0) out highp vec4 fragColor;\n"
-		"\n"
-		"void main (void)\n"
-		"{\n"
-		"    fragColor = vtxColor;\n"
-		"}\n";
+    const string fragmentSrc = "#version 450\n"
+                               "layout(location = 0) in highp vec4 vtxColor;\n"
+                               "layout(location = 0) out highp vec4 fragColor;\n"
+                               "\n"
+                               "void main (void)\n"
+                               "{\n"
+                               "    fragColor = vtxColor;\n"
+                               "}\n";
 
-	sourceCollections.glslSources.add("vert") << glu::VertexSource(vertexSrc);
-	sourceCollections.glslSources.add("frag") << glu::FragmentSource(fragmentSrc);
+    sourceCollections.glslSources.add("vert") << glu::VertexSource(vertexSrc);
+    sourceCollections.glslSources.add("frag") << glu::FragmentSource(fragmentSrc);
 }
 
 class DynamicOffsetComputeTestInstance : public DynamicOffsetTestInstance
 {
 public:
-								DynamicOffsetComputeTestInstance	(Context& context, const TestParams& params);
-	virtual						~DynamicOffsetComputeTestInstance	(void);
-	void						init								(void);
-	virtual tcu::TestStatus		iterate								(void);
-	tcu::TestStatus				verifyOutput						(void);
+    DynamicOffsetComputeTestInstance(Context &context, const TestParams &params);
+    virtual ~DynamicOffsetComputeTestInstance(void);
+    void init(void);
+    virtual tcu::TestStatus iterate(void);
+    tcu::TestStatus verifyOutput(void);
 
 private:
-	const deUint32						m_numBindings;
-	const deUint32						m_numOutputColors;
-	const VkPhysicalDeviceLimits		m_deviceLimits;
-	Move<VkShaderModule>				m_computeShaderModule;
-	Move<VkBuffer>						m_buffer;
-	de::MovePtr<Allocation>				m_bufferAlloc;
-	vector<Move<VkDescriptorSetLayout>>	m_descriptorSetLayouts;
-	Move<VkDescriptorPool>				m_descriptorPool;
-	vector<Move<VkDescriptorSet>>		m_descriptorSets;
-	Move<VkPipelineLayout>				m_pipelineLayout;
-	Move<VkPipeline>					m_computePipeline;
-	Move<VkBuffer>						m_outputBuffer;
-	de::MovePtr<Allocation>				m_outputBufferAlloc;
-	Move<VkCommandPool>					m_cmdPool;
-	vector<VkCommandBufferSp>			m_cmdBuffers;
+    const uint32_t m_numBindings;
+    const uint32_t m_numOutputColors;
+    const VkPhysicalDeviceLimits m_deviceLimits;
+    Move<VkShaderModule> m_computeShaderModule;
+    Move<VkBuffer> m_buffer;
+    de::MovePtr<Allocation> m_bufferAlloc;
+    vector<Move<VkDescriptorSetLayout>> m_descriptorSetLayouts;
+    Move<VkDescriptorPool> m_descriptorPool;
+    vector<Move<VkDescriptorSet>> m_descriptorSets;
+    Move<VkPipelineLayout> m_pipelineLayout;
+    Move<VkPipeline> m_computePipeline;
+    Move<VkBuffer> m_outputBuffer;
+    de::MovePtr<Allocation> m_outputBufferAlloc;
+    Move<VkCommandPool> m_cmdPool;
+    vector<VkCommandBufferSp> m_cmdBuffers;
 };
 
-DynamicOffsetComputeTestInstance::DynamicOffsetComputeTestInstance (Context& context, const TestParams& params)
-	: DynamicOffsetTestInstance	(context, params)
-	, m_numBindings				(params.numDynamicBindings + params.numNonDynamicBindings)
-	, m_numOutputColors			(params.numCmdBuffers * params.numDescriptorSetBindings)
-	, m_deviceLimits			(getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits)
+DynamicOffsetComputeTestInstance::DynamicOffsetComputeTestInstance(Context &context, const TestParams &params)
+    : DynamicOffsetTestInstance(context, params)
+    , m_numBindings(params.numDynamicBindings + params.numNonDynamicBindings)
+    , m_numOutputColors(params.numCmdBuffers * params.numDescriptorSetBindings)
+    , m_deviceLimits(getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits)
 {
 }
 
-void DynamicOffsetComputeTestInstance::init (void)
+void DynamicOffsetComputeTestInstance::init(void)
 {
-	const DeviceInterface&			vk							= m_context.getDeviceInterface();
-	const VkDevice					vkDevice					= m_context.getDevice();
-	const deUint32					queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
-	const VkDeviceSize				inputAlignment				= ((m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) ? m_deviceLimits.minUniformBufferOffsetAlignment : m_deviceLimits.minStorageBufferOffsetAlignment);
-	const VkDeviceSize				inputExtraBytes				= kColorSize % inputAlignment;
-	const VkDeviceSize				colorBlockInputSize			= ((inputExtraBytes == 0ull) ? kColorSize : (kColorSize + inputAlignment - inputExtraBytes));
-	const deUint32					colorBlockInputSizeU32		= static_cast<deUint32>(colorBlockInputSize);
-	const VkDeviceSize				outputExtraBytes			= kColorSize % m_deviceLimits.minStorageBufferOffsetAlignment;
-	const VkDeviceSize				colorBlockOutputSize		= ((outputExtraBytes == 0ull) ? kColorSize : (kColorSize + m_deviceLimits.minStorageBufferOffsetAlignment - outputExtraBytes));
-	const deUint32					colorBlockOutputSizeU32		= static_cast<deUint32>(colorBlockOutputSize);
-	const VkDeviceSize				bufferSize					= colorBlockInputSize * kNumTestColors;
-	const VkDeviceSize				bindingOffset				= bufferSize / m_numBindings;
-	const VkDescriptorType			nonDynamicDescriptorType	= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	const VkDeviceSize				outputBufferSize			= colorBlockOutputSize * m_numOutputColors;
+    const DeviceInterface &vk          = m_context.getDeviceInterface();
+    const VkDevice vkDevice            = m_context.getDevice();
+    const uint32_t queueFamilyIndex    = m_context.getUniversalQueueFamilyIndex();
+    const VkDeviceSize inputAlignment  = ((m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) ?
+                                              m_deviceLimits.minUniformBufferOffsetAlignment :
+                                              m_deviceLimits.minStorageBufferOffsetAlignment);
+    const VkDeviceSize inputExtraBytes = kColorSize % inputAlignment;
+    const VkDeviceSize colorBlockInputSize =
+        ((inputExtraBytes == 0ull) ? kColorSize : (kColorSize + inputAlignment - inputExtraBytes));
+    const uint32_t colorBlockInputSizeU32 = static_cast<uint32_t>(colorBlockInputSize);
+    const VkDeviceSize outputExtraBytes   = kColorSize % m_deviceLimits.minStorageBufferOffsetAlignment;
+    const VkDeviceSize colorBlockOutputSize =
+        ((outputExtraBytes == 0ull) ? kColorSize :
+                                      (kColorSize + m_deviceLimits.minStorageBufferOffsetAlignment - outputExtraBytes));
+    const uint32_t colorBlockOutputSizeU32 = static_cast<uint32_t>(colorBlockOutputSize);
+    const VkDeviceSize bufferSize          = colorBlockInputSize * kNumTestColors;
+    const VkDeviceSize bindingOffset       = bufferSize / m_numBindings;
+    const VkDescriptorType nonDynamicDescriptorType =
+        m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER :
+                                                                               VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    const VkDeviceSize outputBufferSize = colorBlockOutputSize * m_numOutputColors;
 
-	vector<VkDescriptorSetLayout>	descriptorSetLayoutsPlain;
-	vector<VkDescriptorSet>			descriptorSetsPlain;
+    vector<VkDescriptorSetLayout> descriptorSetLayoutsPlain;
+    vector<VkDescriptorSet> descriptorSetsPlain;
 
-	// Create pipeline layout
-	{
-		// Create descriptor set layouts
-		vector<VkDescriptorSetLayoutBinding>	descriptorSetLayoutBindings;
+    // Create pipeline layout
+    {
+        // Create descriptor set layouts
+        vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
 
-		for (deUint32 binding = 0; binding < m_numBindings; binding++)
-		{
-			const bool								dynamicDesc					= (binding < m_params.numDynamicBindings);
-			const VkDescriptorType					descriptorType				= (dynamicDesc ? m_params.descriptorType : nonDynamicDescriptorType);
-			const deUint32							bindingNumber				= (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET ? binding : 0u);
-			const deUint32							descriptorCount				= ((m_params.groupingStrategy == GroupingStrategy::ARRAYS) ? (dynamicDesc ? m_params.numDynamicBindings : m_params.numNonDynamicBindings) : 1u);
-			const VkDescriptorSetLayoutBinding		descriptorSetLayoutBinding	=
-			{
-				bindingNumber,					// uint32_t				binding;
-				descriptorType,					// VkDescriptorType		descriptorType;
-				descriptorCount,				// uint32_t				descriptorCount;
-				VK_SHADER_STAGE_COMPUTE_BIT,	// VkShaderStageFlags	stageFlags;
-				DE_NULL							// const VkSampler*		pImmutableSamplers;
-			};
+        for (uint32_t binding = 0; binding < m_numBindings; binding++)
+        {
+            const bool dynamicDesc                = (binding < m_params.numDynamicBindings);
+            const VkDescriptorType descriptorType = (dynamicDesc ? m_params.descriptorType : nonDynamicDescriptorType);
+            const uint32_t bindingNumber = (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET ? binding : 0u);
+            const uint32_t descriptorCount =
+                ((m_params.groupingStrategy == GroupingStrategy::ARRAYS) ?
+                     (dynamicDesc ? m_params.numDynamicBindings : m_params.numNonDynamicBindings) :
+                     1u);
+            const VkDescriptorSetLayoutBinding descriptorSetLayoutBinding = {
+                bindingNumber,               // uint32_t binding;
+                descriptorType,              // VkDescriptorType descriptorType;
+                descriptorCount,             // uint32_t descriptorCount;
+                VK_SHADER_STAGE_COMPUTE_BIT, // VkShaderStageFlags stageFlags;
+                DE_NULL                      // const VkSampler* pImmutableSamplers;
+            };
 
-			// Skip used descriptors in array mode.
-			if (m_params.groupingStrategy == GroupingStrategy::ARRAYS)
-				binding = (dynamicDesc ? m_params.numDynamicBindings - 1 : m_numBindings);
+            // Skip used descriptors in array mode.
+            if (m_params.groupingStrategy == GroupingStrategy::ARRAYS)
+                binding = (dynamicDesc ? m_params.numDynamicBindings - 1 : m_numBindings);
 
-			descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
-		}
+            descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+        }
 
-		const deUint32							bindingNumberOutput					= (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET ? m_numBindings : 0u);
-		const VkDescriptorSetLayoutBinding		descriptorSetLayoutBindingOutput	=
-		{
-			bindingNumberOutput,						// uint32_t				binding;
-			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,	// VkDescriptorType		descriptorType;
-			1u,											// uint32_t				descriptorCount;
-			VK_SHADER_STAGE_COMPUTE_BIT,				// VkShaderStageFlags	stageFlags;
-			DE_NULL										// const VkSampler*		pImmutableSamplers;
-		};
+        const uint32_t bindingNumberOutput =
+            (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET ? m_numBindings : 0u);
+        const VkDescriptorSetLayoutBinding descriptorSetLayoutBindingOutput = {
+            bindingNumberOutput,                       // uint32_t binding;
+            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, // VkDescriptorType descriptorType;
+            1u,                                        // uint32_t descriptorCount;
+            VK_SHADER_STAGE_COMPUTE_BIT,               // VkShaderStageFlags stageFlags;
+            DE_NULL                                    // const VkSampler* pImmutableSamplers;
+        };
 
-		descriptorSetLayoutBindings.push_back(descriptorSetLayoutBindingOutput);
+        descriptorSetLayoutBindings.push_back(descriptorSetLayoutBindingOutput);
 
-		if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
-		{
-			const VkDescriptorSetLayoutCreateInfo	descriptorSetLayoutCreateInfo	=
-			{
-				VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
-				DE_NULL,												// const void*							pNext;
-				0u,														// VkDescriptorSetLayoutCreateFlags		flags;
-				m_numBindings + 1,										// uint32_t								bindingCount;
-				descriptorSetLayoutBindings.data()						// const VkDescriptorSetLayoutBinding*	pBindings;
-			};
+        if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
+        {
+            const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
+                VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType sType;
+                DE_NULL,                                             // const void* pNext;
+                0u,                                                  // VkDescriptorSetLayoutCreateFlags flags;
+                m_numBindings + 1,                                   // uint32_t bindingCount;
+                descriptorSetLayoutBindings.data()                   // const VkDescriptorSetLayoutBinding* pBindings;
+            };
 
-			m_descriptorSetLayouts.push_back(createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutCreateInfo, DE_NULL));
-		}
-		else
-		{
-			for (size_t i = 0; i < descriptorSetLayoutBindings.size(); ++i)
-			{
-				const VkDescriptorSetLayoutCreateInfo	descriptorSetLayoutCreateInfo	=
-				{
-					VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
-					DE_NULL,												// const void*							pNext;
-					0u,														// VkDescriptorSetLayoutCreateFlags		flags;
-					1u,														// uint32_t								bindingCount;
-					&descriptorSetLayoutBindings[i]							// const VkDescriptorSetLayoutBinding*	pBindings;
-				};
+            m_descriptorSetLayouts.push_back(
+                createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutCreateInfo, DE_NULL));
+        }
+        else
+        {
+            for (size_t i = 0; i < descriptorSetLayoutBindings.size(); ++i)
+            {
+                const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
+                    VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType sType;
+                    DE_NULL,                                             // const void* pNext;
+                    0u,                                                  // VkDescriptorSetLayoutCreateFlags flags;
+                    1u,                                                  // uint32_t bindingCount;
+                    &descriptorSetLayoutBindings[i] // const VkDescriptorSetLayoutBinding* pBindings;
+                };
 
-				m_descriptorSetLayouts.push_back(createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutCreateInfo, DE_NULL));
-			}
-		}
+                m_descriptorSetLayouts.push_back(
+                    createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutCreateInfo, DE_NULL));
+            }
+        }
 
-		// Create pipeline layout
-		descriptorSetLayoutsPlain.resize(m_descriptorSetLayouts.size());
-		for (size_t i = 0; i < descriptorSetLayoutsPlain.size(); ++i)
-			descriptorSetLayoutsPlain[i] = m_descriptorSetLayouts[i].get();
+        // Create pipeline layout
+        descriptorSetLayoutsPlain.resize(m_descriptorSetLayouts.size());
+        for (size_t i = 0; i < descriptorSetLayoutsPlain.size(); ++i)
+            descriptorSetLayoutsPlain[i] = m_descriptorSetLayouts[i].get();
 
-		const VkPipelineLayoutCreateInfo		pipelineLayoutParams			=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,				// VkStructureType				sType;
-			DE_NULL,													// const void*					pNext;
-			0u,															// VkPipelineLayoutCreateFlags	flags;
-			static_cast<deUint32>(descriptorSetLayoutsPlain.size()),	// deUint32						descriptorSetCount;
-			descriptorSetLayoutsPlain.data(),							// const VkDescriptorSetLayout*	pSetLayouts;
-			0u,															// deUint32						pushConstantRangeCount;
-			DE_NULL														// const VkPushDescriptorRange*	pPushDescriptorRanges;
-		};
+        const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
+            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,           // VkStructureType sType;
+            DE_NULL,                                                 // const void* pNext;
+            0u,                                                      // VkPipelineLayoutCreateFlags flags;
+            static_cast<uint32_t>(descriptorSetLayoutsPlain.size()), // uint32_t descriptorSetCount;
+            descriptorSetLayoutsPlain.data(),                        // const VkDescriptorSetLayout* pSetLayouts;
+            0u,                                                      // uint32_t pushConstantRangeCount;
+            DE_NULL // const VkPushDescriptorRange* pPushDescriptorRanges;
+        };
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
-	}
+        m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+    }
 
-	// Create buffer
-	{
-		vector<deUint8> hostBuffer((deUint32)bufferSize, 0);
-		for (deUint32 colorIdx = 0; colorIdx < kNumTestColors; colorIdx++)
-			deMemcpy(&hostBuffer[colorBlockInputSizeU32 * colorIdx], &testColors[colorIdx], kColorSize);
+    // Create buffer
+    {
+        vector<uint8_t> hostBuffer((uint32_t)bufferSize, 0);
+        for (uint32_t colorIdx = 0; colorIdx < kNumTestColors; colorIdx++)
+            deMemcpy(&hostBuffer[colorBlockInputSizeU32 * colorIdx], &testColors[colorIdx], kColorSize);
 
-		const VkBufferUsageFlags	usageFlags			= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+        const VkBufferUsageFlags usageFlags = m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ?
+                                                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT :
+                                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
-		const VkBufferCreateInfo	bufferCreateInfo	=
-		{
-			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,								// const void*			pNext;
-			0u,										// VkBufferCreateFlags	flags
-			bufferSize,								// VkDeviceSize			size;
-			usageFlags,								// VkBufferUsageFlags	usage;
-			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-			1u,										// deUint32				queueFamilyCount;
-			&queueFamilyIndex						// const deUint32*		pQueueFamilyIndices;
-		};
+        const VkBufferCreateInfo bufferCreateInfo = {
+            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
+            DE_NULL,                              // const void* pNext;
+            0u,                                   // VkBufferCreateFlags    flags
+            bufferSize,                           // VkDeviceSize size;
+            usageFlags,                           // VkBufferUsageFlags usage;
+            VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
+            1u,                                   // uint32_t queueFamilyCount;
+            &queueFamilyIndex                     // const uint32_t* pQueueFamilyIndices;
+        };
 
-		m_buffer = createBuffer(vk, vkDevice, &bufferCreateInfo);
-		m_bufferAlloc = m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_buffer), MemoryRequirement::HostVisible);
-		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_buffer, m_bufferAlloc->getMemory(), m_bufferAlloc->getOffset()));
+        m_buffer = createBuffer(vk, vkDevice, &bufferCreateInfo);
+        m_bufferAlloc =
+            m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_buffer), MemoryRequirement::HostVisible);
+        VK_CHECK(vk.bindBufferMemory(vkDevice, *m_buffer, m_bufferAlloc->getMemory(), m_bufferAlloc->getOffset()));
 
-		deMemcpy(m_bufferAlloc->getHostPtr(), hostBuffer.data(), (size_t)bufferSize);
-		flushAlloc(vk, vkDevice, *m_bufferAlloc);
-	}
+        deMemcpy(m_bufferAlloc->getHostPtr(), hostBuffer.data(), (size_t)bufferSize);
+        flushAlloc(vk, vkDevice, *m_bufferAlloc);
+    }
 
-	// Create output buffer
-	{
-		const VkBufferCreateInfo bufferCreateInfo =
-		{
-			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,								// const void*			pNext;
-			0u,										// VkBufferCreateFlags	flags
-			outputBufferSize,						// VkDeviceSize			size;
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,		// VkBufferUsageFlags	usage;
-			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-			1u,										// deUint32				queueFamilyCount;
-			&queueFamilyIndex						// const deUint32*		pQueueFamilyIndices;
-		};
+    // Create output buffer
+    {
+        const VkBufferCreateInfo bufferCreateInfo = {
+            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
+            DE_NULL,                              // const void* pNext;
+            0u,                                   // VkBufferCreateFlags    flags
+            outputBufferSize,                     // VkDeviceSize size;
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,   // VkBufferUsageFlags usage;
+            VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
+            1u,                                   // uint32_t queueFamilyCount;
+            &queueFamilyIndex                     // const uint32_t* pQueueFamilyIndices;
+        };
 
-		m_outputBuffer		= createBuffer(vk, vkDevice, &bufferCreateInfo);
-		m_outputBufferAlloc	= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_outputBuffer), MemoryRequirement::HostVisible);
-		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_outputBuffer, m_outputBufferAlloc->getMemory(), m_outputBufferAlloc->getOffset()));
-	}
+        m_outputBuffer      = createBuffer(vk, vkDevice, &bufferCreateInfo);
+        m_outputBufferAlloc = m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_outputBuffer),
+                                                  MemoryRequirement::HostVisible);
+        VK_CHECK(vk.bindBufferMemory(vkDevice, *m_outputBuffer, m_outputBufferAlloc->getMemory(),
+                                     m_outputBufferAlloc->getOffset()));
+    }
 
-	// Create descriptor pool
-	{
-		DescriptorPoolBuilder	poolBuilder;
-		poolBuilder.addType(m_params.descriptorType, m_params.numDynamicBindings);
-		poolBuilder.addType(nonDynamicDescriptorType, m_params.numNonDynamicBindings);
-		poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1u);
-		m_descriptorPool = poolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, static_cast<deUint32>(m_descriptorSetLayouts.size()));
-	}
+    // Create descriptor pool
+    {
+        DescriptorPoolBuilder poolBuilder;
+        poolBuilder.addType(m_params.descriptorType, m_params.numDynamicBindings);
+        poolBuilder.addType(nonDynamicDescriptorType, m_params.numNonDynamicBindings);
+        poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1u);
+        m_descriptorPool = poolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+                                             static_cast<uint32_t>(m_descriptorSetLayouts.size()));
+    }
 
-	// Create descriptor sets
-	{
-		for (size_t i = 0; i < m_descriptorSetLayouts.size(); ++i)
-		{
-			const VkDescriptorSetAllocateInfo allocInfo =
-			{
-				VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,	// VkStructureType				sType;
-				DE_NULL,										// const void*					pNext;
-				*m_descriptorPool,								// VkDescriptorPool				descriptorPool;
-				1u,												// deUint32						setLayoutCount;
-				&(m_descriptorSetLayouts[i].get()),				// const VkDescriptorSetLayout*	pSetLayouts;
-			};
-			m_descriptorSets.push_back(allocateDescriptorSet(vk, vkDevice, &allocInfo));
-		}
-	}
+    // Create descriptor sets
+    {
+        for (size_t i = 0; i < m_descriptorSetLayouts.size(); ++i)
+        {
+            const VkDescriptorSetAllocateInfo allocInfo = {
+                VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType sType;
+                DE_NULL,                                        // const void* pNext;
+                *m_descriptorPool,                              // VkDescriptorPool descriptorPool;
+                1u,                                             // uint32_t setLayoutCount;
+                &(m_descriptorSetLayouts[i].get()),             // const VkDescriptorSetLayout* pSetLayouts;
+            };
+            m_descriptorSets.push_back(allocateDescriptorSet(vk, vkDevice, &allocInfo));
+        }
+    }
 
-	descriptorSetsPlain.resize(m_descriptorSets.size());
-	for (size_t i = 0; i < descriptorSetsPlain.size(); ++i)
-		descriptorSetsPlain[i] = m_descriptorSets[i].get();
+    descriptorSetsPlain.resize(m_descriptorSets.size());
+    for (size_t i = 0; i < descriptorSetsPlain.size(); ++i)
+        descriptorSetsPlain[i] = m_descriptorSets[i].get();
 
-	// Update input buffer descriptors
-	for (deUint32 binding = 0; binding < m_numBindings; ++binding)
-	{
-		const bool						dynamicDesc				= (binding < m_params.numDynamicBindings);
-		const VkDescriptorType			descriptorType			= dynamicDesc ? m_params.descriptorType : nonDynamicDescriptorType;
-		const VkDescriptorBufferInfo	descriptorBufferInfo	=
-		{
-			*m_buffer,					// VkBuffer			buffer;
-			bindingOffset * binding,	// VkDeviceSize		offset;
-			kColorSize					// VkDeviceSize		range;
-		};
+    // Update input buffer descriptors
+    for (uint32_t binding = 0; binding < m_numBindings; ++binding)
+    {
+        const bool dynamicDesc                = (binding < m_params.numDynamicBindings);
+        const VkDescriptorType descriptorType = dynamicDesc ? m_params.descriptorType : nonDynamicDescriptorType;
+        const VkDescriptorBufferInfo descriptorBufferInfo = {
+            *m_buffer,               // VkBuffer buffer;
+            bindingOffset * binding, // VkDeviceSize offset;
+            kColorSize               // VkDeviceSize range;
+        };
 
-		VkDescriptorSet	bindingSet;
-		deUint32		bindingNumber;
-		deUint32		dstArrayElement;
+        VkDescriptorSet bindingSet;
+        uint32_t bindingNumber;
+        uint32_t dstArrayElement;
 
-		if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
-		{
-			bindingSet		= m_descriptorSets[0].get();
-			bindingNumber	= binding;
-			dstArrayElement	= 0u;
-		}
-		else if (m_params.groupingStrategy == GroupingStrategy::MULTISET)
-		{
-			bindingSet		= m_descriptorSets[binding].get();
-			bindingNumber	= 0u;
-			dstArrayElement	= 0u;
-		}
-		else // GroupingStrategy::ARRAYS
-		{
-			bindingSet		= (dynamicDesc ? m_descriptorSets[0].get() : m_descriptorSets[1].get());
-			bindingNumber	= 0u;
-			dstArrayElement	= (dynamicDesc ? binding : (binding - m_params.numDynamicBindings));
-		}
+        if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
+        {
+            bindingSet      = m_descriptorSets[0].get();
+            bindingNumber   = binding;
+            dstArrayElement = 0u;
+        }
+        else if (m_params.groupingStrategy == GroupingStrategy::MULTISET)
+        {
+            bindingSet      = m_descriptorSets[binding].get();
+            bindingNumber   = 0u;
+            dstArrayElement = 0u;
+        }
+        else // GroupingStrategy::ARRAYS
+        {
+            bindingSet      = (dynamicDesc ? m_descriptorSets[0].get() : m_descriptorSets[1].get());
+            bindingNumber   = 0u;
+            dstArrayElement = (dynamicDesc ? binding : (binding - m_params.numDynamicBindings));
+        }
 
-		const VkWriteDescriptorSet		writeDescriptorSet		=
-		{
-			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,	// VkStructureType					sType;
-			DE_NULL,								// const void*						pNext;
-			bindingSet,								// VkDescriptorSet					dstSet;
-			bindingNumber,							// uint32_t							dstBinding;
-			dstArrayElement,						// uint32_t							dstArrayElement;
-			1u,										// uint32_t							descriptorCount;
-			descriptorType,							// VkDescriptorType					descriptorType;
-			DE_NULL,								// const VkDescriptorImageInfo*		pImageInfo;
-			&descriptorBufferInfo,					// const VkDescriptorBufferInfo*	pBufferInfo;
-			DE_NULL									// const VkBufferView*				pTexelBufferView;
-		};
+        const VkWriteDescriptorSet writeDescriptorSet = {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
+            DE_NULL,                                // const void* pNext;
+            bindingSet,                             // VkDescriptorSet dstSet;
+            bindingNumber,                          // uint32_t dstBinding;
+            dstArrayElement,                        // uint32_t dstArrayElement;
+            1u,                                     // uint32_t descriptorCount;
+            descriptorType,                         // VkDescriptorType descriptorType;
+            DE_NULL,                                // const VkDescriptorImageInfo* pImageInfo;
+            &descriptorBufferInfo,                  // const VkDescriptorBufferInfo* pBufferInfo;
+            DE_NULL                                 // const VkBufferView* pTexelBufferView;
+        };
 
-		vk.updateDescriptorSets(vkDevice, 1u, &writeDescriptorSet, 0u, DE_NULL);
-	}
+        vk.updateDescriptorSets(vkDevice, 1u, &writeDescriptorSet, 0u, DE_NULL);
+    }
 
-	// Update output buffer descriptor
-	{
-		const VkDescriptorBufferInfo	descriptorBufferInfo	=
-		{
-			*m_outputBuffer,	// VkBuffer			buffer;
-			0u,					// VkDeviceSize		offset;
-			kColorSize			// VkDeviceSize		range;
-		};
+    // Update output buffer descriptor
+    {
+        const VkDescriptorBufferInfo descriptorBufferInfo = {
+            *m_outputBuffer, // VkBuffer buffer;
+            0u,              // VkDeviceSize offset;
+            kColorSize       // VkDeviceSize range;
+        };
 
-		VkDescriptorSet	bindingSet;
-		deUint32		bindingNumber;
+        VkDescriptorSet bindingSet;
+        uint32_t bindingNumber;
 
-		if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
-		{
-			bindingSet		= m_descriptorSets[0].get();
-			bindingNumber	= m_numBindings;
-		}
-		else if (m_params.groupingStrategy == GroupingStrategy::MULTISET)
-		{
-			bindingSet		= m_descriptorSets.back().get();
-			bindingNumber	= 0u;
-		}
-		else // GroupingStrategy::ARRAYS
-		{
-			bindingSet		= m_descriptorSets.back().get();
-			bindingNumber	= 0u;
-		}
+        if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
+        {
+            bindingSet    = m_descriptorSets[0].get();
+            bindingNumber = m_numBindings;
+        }
+        else if (m_params.groupingStrategy == GroupingStrategy::MULTISET)
+        {
+            bindingSet    = m_descriptorSets.back().get();
+            bindingNumber = 0u;
+        }
+        else // GroupingStrategy::ARRAYS
+        {
+            bindingSet    = m_descriptorSets.back().get();
+            bindingNumber = 0u;
+        }
 
-		const VkWriteDescriptorSet		writeDescriptorSet		=
-		{
-			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,		// VkStructureType					sType;
-			DE_NULL,									// const void*						pNext;
-			bindingSet,									// VkDescriptorSet					dstSet;
-			bindingNumber,								// uint32_t							dstBinding;
-			0u,											// uint32_t							dstArrayElement;
-			1u,											// uint32_t							descriptorCount;
-			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,	// VkDescriptorType					descriptorType;
-			DE_NULL,									// const VkDescriptorImageInfo*		pImageInfo;
-			&descriptorBufferInfo,						// const VkDescriptorBufferInfo*	pBufferInfo;
-			DE_NULL										// const VkBufferView*				pTexelBufferView;
-		};
+        const VkWriteDescriptorSet writeDescriptorSet = {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,    // VkStructureType sType;
+            DE_NULL,                                   // const void* pNext;
+            bindingSet,                                // VkDescriptorSet dstSet;
+            bindingNumber,                             // uint32_t dstBinding;
+            0u,                                        // uint32_t dstArrayElement;
+            1u,                                        // uint32_t descriptorCount;
+            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, // VkDescriptorType descriptorType;
+            DE_NULL,                                   // const VkDescriptorImageInfo* pImageInfo;
+            &descriptorBufferInfo,                     // const VkDescriptorBufferInfo* pBufferInfo;
+            DE_NULL                                    // const VkBufferView* pTexelBufferView;
+        };
 
-		vk.updateDescriptorSets(vkDevice, 1u, &writeDescriptorSet, 0u, DE_NULL);
-	}
+        vk.updateDescriptorSets(vkDevice, 1u, &writeDescriptorSet, 0u, DE_NULL);
+    }
 
-	// Create shader
-	{
-		m_computeShaderModule = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("compute"), 0u);
-	}
+    // Create shader
+    {
+        m_computeShaderModule = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("compute"), 0u);
+    }
 
-	// Create pipeline
-	{
-		const VkPipelineShaderStageCreateInfo	stageCreateInfo	=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
-			DE_NULL,												// const void*							pNext;
-			0u,														// VkPipelineShaderStageCreateFlags		flags;
-			VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
-			*m_computeShaderModule,									// VkShaderModule						module;
-			"main",													// const char*							pName;
-			DE_NULL													// const VkSpecializationInfo*			pSpecializationInfo;
-		};
+    // Create pipeline
+    {
+        const VkPipelineShaderStageCreateInfo stageCreateInfo = {
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
+            DE_NULL,                                             // const void* pNext;
+            0u,                                                  // VkPipelineShaderStageCreateFlags flags;
+            VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
+            *m_computeShaderModule,                              // VkShaderModule module;
+            "main",                                              // const char* pName;
+            DE_NULL                                              // const VkSpecializationInfo* pSpecializationInfo;
+        };
 
-		const VkComputePipelineCreateInfo		createInfo		=
-		{
-			VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,			// VkStructureType					sType;
-			DE_NULL,												// const void*						pNext;
-			0u,														// VkPipelineCreateFlags			flags;
-			stageCreateInfo,										// VkPipelineShaderStageCreateInfo	stage;
-			*m_pipelineLayout,										// VkPipelineLayout					layout;
-			(VkPipeline)0,											// VkPipeline						basePipelineHandle;
-			0u,														// int32_t							basePipelineIndex;
-		};
+        const VkComputePipelineCreateInfo createInfo = {
+            VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
+            DE_NULL,                                        // const void* pNext;
+            0u,                                             // VkPipelineCreateFlags flags;
+            stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
+            *m_pipelineLayout,                              // VkPipelineLayout layout;
+            (VkPipeline)0,                                  // VkPipeline basePipelineHandle;
+            0u,                                             // int32_t basePipelineIndex;
+        };
 
-		m_computePipeline = createComputePipeline(vk, vkDevice, (vk::VkPipelineCache)0u, &createInfo);
-	}
+        m_computePipeline = createComputePipeline(vk, vkDevice, (vk::VkPipelineCache)0u, &createInfo);
+    }
 
-	// Create command pool
-	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+    // Create command pool
+    m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
-	// Create command buffers
-	for (deUint32 cmdBufferIdx = 0; cmdBufferIdx < m_params.numCmdBuffers; cmdBufferIdx++)
-		m_cmdBuffers.push_back(VkCommandBufferSp(new Unique<VkCommandBuffer>(allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY))));
+    // Create command buffers
+    for (uint32_t cmdBufferIdx = 0; cmdBufferIdx < m_params.numCmdBuffers; cmdBufferIdx++)
+        m_cmdBuffers.push_back(VkCommandBufferSp(new Unique<VkCommandBuffer>(
+            allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY))));
 
-	deUint32 inputOffset	= 0u;
-	deUint32 outputOffset	= 0u;
+    uint32_t inputOffset  = 0u;
+    uint32_t outputOffset = 0u;
 
-	for (deUint32 cmdBufferIdx = 0; cmdBufferIdx < m_params.numCmdBuffers; cmdBufferIdx++)
-	{
-		const deUint32 idx = m_params.reverseOrder ? m_params.numCmdBuffers - cmdBufferIdx - 1 : cmdBufferIdx;
+    for (uint32_t cmdBufferIdx = 0; cmdBufferIdx < m_params.numCmdBuffers; cmdBufferIdx++)
+    {
+        const uint32_t idx = m_params.reverseOrder ? m_params.numCmdBuffers - cmdBufferIdx - 1 : cmdBufferIdx;
 
-		beginCommandBuffer(vk, **m_cmdBuffers[idx], 0u);
-		vk.cmdBindPipeline(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipeline);
+        beginCommandBuffer(vk, **m_cmdBuffers[idx], 0u);
+        vk.cmdBindPipeline(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipeline);
 
-		for (deUint32 i = 0; i < m_params.numDescriptorSetBindings; i++)
-		{
-			// Create pipeline barrier
-			const vk::VkBufferMemoryBarrier bufferBarrier =
-				{
-					vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,					// VkStructureType	sType;
-					DE_NULL,														// const void*		pNext;
-					vk::VK_ACCESS_SHADER_WRITE_BIT,									// VkAccessFlags	srcAccessMask;
-					vk::VK_ACCESS_SHADER_WRITE_BIT | vk::VK_ACCESS_HOST_READ_BIT,	// VkAccessFlags	dstAccessMask;
-					VK_QUEUE_FAMILY_IGNORED,										// deUint32			srcQueueFamilyIndex;
-					VK_QUEUE_FAMILY_IGNORED,										// deUint32			dstQueueFamilyIndex;
-					*m_outputBuffer,												// VkBuffer			buffer;
-					outputOffset,													// VkDeviceSize		offset;
-					VK_WHOLE_SIZE													// VkDeviceSize		size;
-				};
+        for (uint32_t i = 0; i < m_params.numDescriptorSetBindings; i++)
+        {
+            // Create pipeline barrier
+            const vk::VkBufferMemoryBarrier bufferBarrier = {
+                vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,                  // VkStructureType sType;
+                DE_NULL,                                                      // const void* pNext;
+                vk::VK_ACCESS_SHADER_WRITE_BIT,                               // VkAccessFlags srcAccessMask;
+                vk::VK_ACCESS_SHADER_WRITE_BIT | vk::VK_ACCESS_HOST_READ_BIT, // VkAccessFlags dstAccessMask;
+                VK_QUEUE_FAMILY_IGNORED,                                      // uint32_t srcQueueFamilyIndex;
+                VK_QUEUE_FAMILY_IGNORED,                                      // uint32_t dstQueueFamilyIndex;
+                *m_outputBuffer,                                              // VkBuffer buffer;
+                outputOffset,                                                 // VkDeviceSize offset;
+                VK_WHOLE_SIZE                                                 // VkDeviceSize size;
+            };
 
-			vector<deUint32> offsets;
+            vector<uint32_t> offsets;
 
-			// Offsets for input buffers
-			for (deUint32 dynamicBindingIdx = 0; dynamicBindingIdx < m_params.numDynamicBindings; dynamicBindingIdx++)
-				offsets.push_back(inputOffset + colorBlockInputSizeU32 * dynamicBindingIdx);
-			inputOffset += colorBlockInputSizeU32;
+            // Offsets for input buffers
+            for (uint32_t dynamicBindingIdx = 0; dynamicBindingIdx < m_params.numDynamicBindings; dynamicBindingIdx++)
+                offsets.push_back(inputOffset + colorBlockInputSizeU32 * dynamicBindingIdx);
+            inputOffset += colorBlockInputSizeU32;
 
-			// Offset for output buffer
-			offsets.push_back(outputOffset);
-			outputOffset += colorBlockOutputSizeU32;
+            // Offset for output buffer
+            offsets.push_back(outputOffset);
+            outputOffset += colorBlockOutputSizeU32;
 
-			vk.cmdBindDescriptorSets(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, static_cast<deUint32>(descriptorSetsPlain.size()), descriptorSetsPlain.data(), (deUint32)offsets.size(), offsets.data());
+            vk.cmdBindDescriptorSets(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u,
+                                     static_cast<uint32_t>(descriptorSetsPlain.size()), descriptorSetsPlain.data(),
+                                     (uint32_t)offsets.size(), offsets.data());
 
-			// Dispatch
-			vk.cmdDispatch(**m_cmdBuffers[idx], 1, 1, 1);
+            // Dispatch
+            vk.cmdDispatch(**m_cmdBuffers[idx], 1, 1, 1);
 
-			vk.cmdPipelineBarrier(**m_cmdBuffers[idx], vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
-		}
+            vk.cmdPipelineBarrier(**m_cmdBuffers[idx], vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                  vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
+                                  DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
+        }
 
-		endCommandBuffer(vk, **m_cmdBuffers[idx]);
-	}
+        endCommandBuffer(vk, **m_cmdBuffers[idx]);
+    }
 }
 
-DynamicOffsetComputeTestInstance::~DynamicOffsetComputeTestInstance (void)
+DynamicOffsetComputeTestInstance::~DynamicOffsetComputeTestInstance(void)
 {
 }
 
-tcu::TestStatus DynamicOffsetComputeTestInstance::iterate (void)
+tcu::TestStatus DynamicOffsetComputeTestInstance::iterate(void)
 {
-	init();
+    init();
 
-	for (deUint32 cmdBufferIdx = 0; cmdBufferIdx < m_params.numCmdBuffers; cmdBufferIdx++)
-		submitCommandsAndWait(m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueue(), **m_cmdBuffers[cmdBufferIdx]);
+    for (uint32_t cmdBufferIdx = 0; cmdBufferIdx < m_params.numCmdBuffers; cmdBufferIdx++)
+        submitCommandsAndWait(m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueue(),
+                              **m_cmdBuffers[cmdBufferIdx]);
 
-	return verifyOutput();
+    return verifyOutput();
 }
 
-tcu::TestStatus DynamicOffsetComputeTestInstance::verifyOutput (void)
+tcu::TestStatus DynamicOffsetComputeTestInstance::verifyOutput(void)
 {
-	const deUint32		bindingOffset			= kNumTestColors / m_numBindings;
-	const deUint32		colorBlockOutputSize	= static_cast<deUint32>(de::max(kColorSize, m_deviceLimits.minStorageBufferOffsetAlignment));
-	vector<tcu::Vec4>	refColors				(m_numOutputColors);
-	vector<tcu::Vec4>	outColors				(m_numOutputColors);
+    const uint32_t bindingOffset = kNumTestColors / m_numBindings;
+    const uint32_t colorBlockOutputSize =
+        static_cast<uint32_t>(de::max(kColorSize, m_deviceLimits.minStorageBufferOffsetAlignment));
+    vector<tcu::Vec4> refColors(m_numOutputColors);
+    vector<tcu::Vec4> outColors(m_numOutputColors);
 
-	for (deUint32 i = 0; i < m_numOutputColors; i++)
-	{
-		tcu::Vec4 refColor(0.0f);
+    for (uint32_t i = 0; i < m_numOutputColors; i++)
+    {
+        tcu::Vec4 refColor(0.0f);
 
-		for (deUint32 binding = 0; binding < m_params.numDynamicBindings; binding++)
-			refColor += testColors[i + binding * bindingOffset + binding];
-		for (deUint32 binding = 0; binding < m_params.numNonDynamicBindings; binding++)
-			refColor += testColors[(m_params.numDynamicBindings + binding) * bindingOffset];
-		refColor.w() = 1.0f;
+        for (uint32_t binding = 0; binding < m_params.numDynamicBindings; binding++)
+            refColor += testColors[i + binding * bindingOffset + binding];
+        for (uint32_t binding = 0; binding < m_params.numNonDynamicBindings; binding++)
+            refColor += testColors[(m_params.numDynamicBindings + binding) * bindingOffset];
+        refColor.w() = 1.0f;
 
-		refColors[i] = refColor;
-	}
+        refColors[i] = refColor;
+    }
 
-	invalidateAlloc(m_context.getDeviceInterface(), m_context.getDevice(), *m_outputBufferAlloc);
+    invalidateAlloc(m_context.getDeviceInterface(), m_context.getDevice(), *m_outputBufferAlloc);
 
-	// Grab the output results using offset alignment
-	for (deUint32 i = 0; i < m_numOutputColors; i++)
-		outColors[i] = *(tcu::Vec4*)((deUint8*)m_outputBufferAlloc->getHostPtr() + colorBlockOutputSize * i);
+    // Grab the output results using offset alignment
+    for (uint32_t i = 0; i < m_numOutputColors; i++)
+        outColors[i] = *(tcu::Vec4 *)((uint8_t *)m_outputBufferAlloc->getHostPtr() + colorBlockOutputSize * i);
 
-	// Verify results
-	for (deUint32 i = 0; i < m_numOutputColors; i++)
-		if (outColors[i] != refColors[i])
-			return tcu::TestStatus::fail("Output mismatch");
+    // Verify results
+    for (uint32_t i = 0; i < m_numOutputColors; i++)
+        if (outColors[i] != refColors[i])
+            return tcu::TestStatus::fail("Output mismatch");
 
-	return tcu::TestStatus::pass("Output matches expected values");
+    return tcu::TestStatus::pass("Output matches expected values");
 }
 
 class DynamicOffsetComputeTest : public vkt::TestCase
 {
 public:
-						DynamicOffsetComputeTest	(tcu::TestContext&	testContext,
-													 const string&		name,
-													 const string&		description,
-													 const TestParams&	params);
-						~DynamicOffsetComputeTest	(void);
-	void				initPrograms				(SourceCollections& sourceCollections) const;
-	TestInstance*		createInstance				(Context& context) const;
+    DynamicOffsetComputeTest(tcu::TestContext &testContext, const string &name, const string &description,
+                             const TestParams &params);
+    ~DynamicOffsetComputeTest(void);
+    void initPrograms(SourceCollections &sourceCollections) const;
+    TestInstance *createInstance(Context &context) const;
 
 protected:
-	const TestParams	m_params;
+    const TestParams m_params;
 };
 
-DynamicOffsetComputeTest::DynamicOffsetComputeTest (tcu::TestContext&	testContext,
-													const string&		name,
-													const string&		description,
-													const TestParams&	params)
-	: vkt::TestCase	(testContext, name, description)
-	, m_params		(params)
+DynamicOffsetComputeTest::DynamicOffsetComputeTest(tcu::TestContext &testContext, const string &name,
+                                                   const string &description, const TestParams &params)
+    : vkt::TestCase(testContext, name, description)
+    , m_params(params)
 {
 }
 
-DynamicOffsetComputeTest::~DynamicOffsetComputeTest (void)
+DynamicOffsetComputeTest::~DynamicOffsetComputeTest(void)
 {
 }
 
-TestInstance* DynamicOffsetComputeTest::createInstance (Context& context) const
+TestInstance *DynamicOffsetComputeTest::createInstance(Context &context) const
 {
-	return new DynamicOffsetComputeTestInstance(context, m_params);
+    return new DynamicOffsetComputeTestInstance(context, m_params);
 }
 
-void DynamicOffsetComputeTest::initPrograms (SourceCollections& sourceCollections) const
+void DynamicOffsetComputeTest::initPrograms(SourceCollections &sourceCollections) const
 {
-	const deUint32	numBindings		= m_params.numDynamicBindings + m_params.numNonDynamicBindings;
-	const string	bufferType		= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? "uniform" : "buffer";
-	ostringstream	inputBlocks;
-	ostringstream	inputSum;
-	string			setAndBinding;
-	string			blockSuffix;
-	string			accessSuffix;
-	bool			dynArrayDecl	= false;	// Dynamic descriptor block array declared?
-	bool			nonDynArrayDecl	= false;	// Nondynamic descriptor block array declared?
-	string			bStr;
+    const uint32_t numBindings = m_params.numDynamicBindings + m_params.numNonDynamicBindings;
+    const string bufferType =
+        m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? "uniform" : "buffer";
+    ostringstream inputBlocks;
+    ostringstream inputSum;
+    string setAndBinding;
+    string blockSuffix;
+    string accessSuffix;
+    bool dynArrayDecl    = false; // Dynamic descriptor block array declared?
+    bool nonDynArrayDecl = false; // Nondynamic descriptor block array declared?
+    string bStr;
 
-	for (deUint32 b = 0; b < numBindings; b++)
-	{
-		const bool dynBind	= (b < m_params.numDynamicBindings);
-		bStr				= de::toString(b);
+    for (uint32_t b = 0; b < numBindings; b++)
+    {
+        const bool dynBind = (b < m_params.numDynamicBindings);
+        bStr               = de::toString(b);
 
-		if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
-		{
-			setAndBinding = "set = 0, binding = " + bStr;
-			blockSuffix		= bStr;
-			accessSuffix	= bStr;
-		}
-		else if (m_params.groupingStrategy == GroupingStrategy::MULTISET)
-		{
-			setAndBinding = "set = " + bStr + ", binding = 0";
-			blockSuffix		= bStr;
-			accessSuffix	= bStr;
-		}
-		else // GroupingStrategy::ARRAYS
-		{
-			// In array mode, only two sets are declared, one with an array of dynamic descriptors and another one with an array of
-			// nondynamic descriptors.
-			setAndBinding	= "set = " + string(dynBind ? "0" : "1") + ", binding = 0";
-			blockSuffix		= string(dynBind ? "Dyn" : "NonDyn") + "[" + (dynBind ? de::toString(m_params.numDynamicBindings) : de::toString(m_params.numNonDynamicBindings)) + "]";
-			accessSuffix	= string(dynBind ? "Dyn" : "NonDyn") + "[" + (dynBind ? de::toString(b) : de::toString(b - m_params.numDynamicBindings)) + "]";
-		}
+        if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
+        {
+            setAndBinding = "set = 0, binding = " + bStr;
+            blockSuffix   = bStr;
+            accessSuffix  = bStr;
+        }
+        else if (m_params.groupingStrategy == GroupingStrategy::MULTISET)
+        {
+            setAndBinding = "set = " + bStr + ", binding = 0";
+            blockSuffix   = bStr;
+            accessSuffix  = bStr;
+        }
+        else // GroupingStrategy::ARRAYS
+        {
+            // In array mode, only two sets are declared, one with an array of dynamic descriptors and another one with an array of
+            // nondynamic descriptors.
+            setAndBinding = "set = " + string(dynBind ? "0" : "1") + ", binding = 0";
+            blockSuffix =
+                string(dynBind ? "Dyn" : "NonDyn") + "[" +
+                (dynBind ? de::toString(m_params.numDynamicBindings) : de::toString(m_params.numNonDynamicBindings)) +
+                "]";
+            accessSuffix = string(dynBind ? "Dyn" : "NonDyn") + "[" +
+                           (dynBind ? de::toString(b) : de::toString(b - m_params.numDynamicBindings)) + "]";
+        }
 
-		// In array mode, declare the input block only once per descriptor type.
-		bool& arrayDeclFlag = (dynBind ? dynArrayDecl : nonDynArrayDecl);
-		if (m_params.groupingStrategy != GroupingStrategy::ARRAYS || !arrayDeclFlag)
-		{
-			inputBlocks
-				<< "layout(" << setAndBinding << ") " << bufferType << " Block" << bStr << "\n"
-				<< "{\n"
-				<< "    vec4 color;\n"
-				<< "} inputData" << blockSuffix << ";\n"
-				;
-			arrayDeclFlag = true;
-		}
+        // In array mode, declare the input block only once per descriptor type.
+        bool &arrayDeclFlag = (dynBind ? dynArrayDecl : nonDynArrayDecl);
+        if (m_params.groupingStrategy != GroupingStrategy::ARRAYS || !arrayDeclFlag)
+        {
+            inputBlocks << "layout(" << setAndBinding << ") " << bufferType << " Block" << bStr << "\n"
+                        << "{\n"
+                        << "    vec4 color;\n"
+                        << "} inputData" << blockSuffix << ";\n";
+            arrayDeclFlag = true;
+        }
 
-		// But the sum always needs to be added once per descriptor.
-		inputSum << "    outData.color.rgb += inputData" << accessSuffix << ".color.rgb;\n";
-	}
+        // But the sum always needs to be added once per descriptor.
+        inputSum << "    outData.color.rgb += inputData" << accessSuffix << ".color.rgb;\n";
+    }
 
-	bStr = de::toString(numBindings);
-	if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
-	{
-		setAndBinding = "set = 0, binding = " + bStr;
-	}
-	else if (m_params.groupingStrategy == GroupingStrategy::MULTISET)
-	{
-		setAndBinding = "set = " + bStr + ", binding = 0";
-	}
-	else // GroupingStrategy::ARRAYS
-	{
-		// The output buffer goes to a separate set.
-		deUint32 usedSets = 0u;
-		if (dynArrayDecl)		++usedSets;
-		if (nonDynArrayDecl)	++usedSets;
+    bStr = de::toString(numBindings);
+    if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
+    {
+        setAndBinding = "set = 0, binding = " + bStr;
+    }
+    else if (m_params.groupingStrategy == GroupingStrategy::MULTISET)
+    {
+        setAndBinding = "set = " + bStr + ", binding = 0";
+    }
+    else // GroupingStrategy::ARRAYS
+    {
+        // The output buffer goes to a separate set.
+        uint32_t usedSets = 0u;
+        if (dynArrayDecl)
+            ++usedSets;
+        if (nonDynArrayDecl)
+            ++usedSets;
 
-		setAndBinding = "set = " + de::toString(usedSets) + ", binding = 0";
-	}
+        setAndBinding = "set = " + de::toString(usedSets) + ", binding = 0";
+    }
 
-	const string	computeSrc	=
-		"#version 450\n"
-		+ inputBlocks.str() +
-		"layout(" + setAndBinding + ") writeonly buffer Output\n"
-		"{\n"
-		"	vec4 color;\n"
-		"} outData;\n"
-		"\n"
-		"void main()\n"
-		"{\n"
-		"    outData.color = vec4(0, 0, 0, 1);\n"
-		+ inputSum.str() +
-		"}\n";
+    const string computeSrc = "#version 450\n" + inputBlocks.str() + "layout(" + setAndBinding +
+                              ") writeonly buffer Output\n"
+                              "{\n"
+                              "    vec4 color;\n"
+                              "} outData;\n"
+                              "\n"
+                              "void main()\n"
+                              "{\n"
+                              "    outData.color = vec4(0, 0, 0, 1);\n" +
+                              inputSum.str() + "}\n";
 
-	sourceCollections.glslSources.add("compute") << glu::ComputeSource(computeSrc);
+    sourceCollections.glslSources.add("compute") << glu::ComputeSource(computeSrc);
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createDynamicOffsetTests(tcu::TestContext &testCtx)
 {
-	const char*	pipelineTypes[]			= { "graphics", "compute" };
+    const char *pipelineTypes[] = {"graphics", "compute"};
 
-	struct
-	{
-		const char*				name;
-		const GroupingStrategy	strategy;
-	}
-	const groupingTypes[]				=
-	{
-		{ "single_set",		GroupingStrategy::SINGLE_SET	},
-		{ "multiset",		GroupingStrategy::MULTISET		},
-		{ "arrays",			GroupingStrategy::ARRAYS		},
-	};
+    struct
+    {
+        const char *name;
+        const GroupingStrategy strategy;
+    } const groupingTypes[] = {
+        {"single_set", GroupingStrategy::SINGLE_SET},
+        {"multiset", GroupingStrategy::MULTISET},
+        {"arrays", GroupingStrategy::ARRAYS},
+    };
 
-	struct
-	{
-		const char*			name;
-		VkDescriptorType	type;
-	}
-	const descriptorTypes[]				=
-	{
-		{	"uniform_buffer",	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC	},
-		{	"storage_buffer",	VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC	}
-	};
+    struct
+    {
+        const char *name;
+        VkDescriptorType type;
+    } const descriptorTypes[] = {{"uniform_buffer", VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC},
+                                 {"storage_buffer", VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC}};
 
-	struct
-	{
-		const char*		name;
-		deUint32		num;
-	}
-	const numCmdBuffers[]				=
-	{
-		{	"numcmdbuffers_1",	1u	},
-		{	"numcmdbuffers_2",	2u	}
-	};
+    struct
+    {
+        const char *name;
+        uint32_t num;
+    } const numCmdBuffers[] = {{"numcmdbuffers_1", 1u}, {"numcmdbuffers_2", 2u}};
 
-	struct
-	{
-		const char*		name;
-		bool			reverse;
-	}
-	const reverseOrders[]				=
-	{
-		{	"reverseorder",	true	},
-		{	"sameorder",	false	}
-	};
+    struct
+    {
+        const char *name;
+        bool reverse;
+    } const reverseOrders[] = {{"reverseorder", true}, {"sameorder", false}};
 
-	struct
-	{
-		const char*		name;
-		deUint32		num;
-	}
-	const numDescriptorSetBindings[]	=
-	{
-		{	"numdescriptorsetbindings_1",	1u	},
-		{	"numdescriptorsetbindings_2",	2u	}
-	};
+    struct
+    {
+        const char *name;
+        uint32_t num;
+    } const numDescriptorSetBindings[] = {{"numdescriptorsetbindings_1", 1u}, {"numdescriptorsetbindings_2", 2u}};
 
-	struct
-	{
-		const char*		name;
-		deUint32		num;
-	}
-	const numDynamicBindings[]			=
-	{
-		{	"numdynamicbindings_1",	1u	},
-		{	"numdynamicbindings_2",	2u	}
-	};
+    struct
+    {
+        const char *name;
+        uint32_t num;
+    } const numDynamicBindings[] = {{"numdynamicbindings_1", 1u}, {"numdynamicbindings_2", 2u}};
 
-	struct
-	{
-		const char*		name;
-		deUint32		num;
-	}
-	const numNonDynamicBindings[]		=
-	{
-		{	"numnondynamicbindings_0",	0u	},
-		{	"numnondynamicbindings_1",	1u	}
-	};
+    struct
+    {
+        const char *name;
+        uint32_t num;
+    } const numNonDynamicBindings[] = {{"numnondynamicbindings_0", 0u}, {"numnondynamicbindings_1", 1u}};
 
-	de::MovePtr<tcu::TestCaseGroup>	dynamicOffsetTests	(new tcu::TestCaseGroup(testCtx, "dynamic_offset", "Dynamic offset tests"));
+    de::MovePtr<tcu::TestCaseGroup> dynamicOffsetTests(
+        new tcu::TestCaseGroup(testCtx, "dynamic_offset", "Dynamic offset tests"));
 
-	for (deUint32 pipelineTypeIdx = 0; pipelineTypeIdx < DE_LENGTH_OF_ARRAY(pipelineTypes); pipelineTypeIdx++)
-	{
-		de::MovePtr<tcu::TestCaseGroup>	pipelineTypeGroup	(new tcu::TestCaseGroup(testCtx, pipelineTypes[pipelineTypeIdx], ""));
+    for (uint32_t pipelineTypeIdx = 0; pipelineTypeIdx < DE_LENGTH_OF_ARRAY(pipelineTypes); pipelineTypeIdx++)
+    {
+        de::MovePtr<tcu::TestCaseGroup> pipelineTypeGroup(
+            new tcu::TestCaseGroup(testCtx, pipelineTypes[pipelineTypeIdx], ""));
 
-		for (deUint32 groupingTypeIdx = 0; groupingTypeIdx < DE_LENGTH_OF_ARRAY(groupingTypes); ++groupingTypeIdx)
-		{
-			de::MovePtr<tcu::TestCaseGroup> groupingTypeGroup (new tcu::TestCaseGroup(testCtx, groupingTypes[groupingTypeIdx].name, ""));
+        for (uint32_t groupingTypeIdx = 0; groupingTypeIdx < DE_LENGTH_OF_ARRAY(groupingTypes); ++groupingTypeIdx)
+        {
+            de::MovePtr<tcu::TestCaseGroup> groupingTypeGroup(
+                new tcu::TestCaseGroup(testCtx, groupingTypes[groupingTypeIdx].name, ""));
 
-			for (deUint32 descriptorTypeIdx = 0; descriptorTypeIdx < DE_LENGTH_OF_ARRAY(descriptorTypes); descriptorTypeIdx++)
-			{
-				de::MovePtr<tcu::TestCaseGroup>	descriptorTypeGroup	(new tcu::TestCaseGroup(testCtx, descriptorTypes[descriptorTypeIdx].name, ""));
+            for (uint32_t descriptorTypeIdx = 0; descriptorTypeIdx < DE_LENGTH_OF_ARRAY(descriptorTypes);
+                 descriptorTypeIdx++)
+            {
+                de::MovePtr<tcu::TestCaseGroup> descriptorTypeGroup(
+                    new tcu::TestCaseGroup(testCtx, descriptorTypes[descriptorTypeIdx].name, ""));
 
-				for (deUint32 numCmdBuffersIdx = 0; numCmdBuffersIdx < DE_LENGTH_OF_ARRAY(numCmdBuffers); numCmdBuffersIdx++)
-				{
-					de::MovePtr<tcu::TestCaseGroup>	numCmdBuffersGroup	(new tcu::TestCaseGroup(testCtx, numCmdBuffers[numCmdBuffersIdx].name, ""));
+                for (uint32_t numCmdBuffersIdx = 0; numCmdBuffersIdx < DE_LENGTH_OF_ARRAY(numCmdBuffers);
+                     numCmdBuffersIdx++)
+                {
+                    de::MovePtr<tcu::TestCaseGroup> numCmdBuffersGroup(
+                        new tcu::TestCaseGroup(testCtx, numCmdBuffers[numCmdBuffersIdx].name, ""));
 
-					for (deUint32 reverseOrderIdx = 0; reverseOrderIdx < DE_LENGTH_OF_ARRAY(reverseOrders); reverseOrderIdx++)
-					{
-						if (numCmdBuffers[numCmdBuffersIdx].num < 2 && reverseOrders[reverseOrderIdx].reverse)
-							continue;
+                    for (uint32_t reverseOrderIdx = 0; reverseOrderIdx < DE_LENGTH_OF_ARRAY(reverseOrders);
+                         reverseOrderIdx++)
+                    {
+                        if (numCmdBuffers[numCmdBuffersIdx].num < 2 && reverseOrders[reverseOrderIdx].reverse)
+                            continue;
 
-						de::MovePtr<tcu::TestCaseGroup>	reverseOrderGroup	(new tcu::TestCaseGroup(testCtx, reverseOrders[reverseOrderIdx].name, ""));
+                        de::MovePtr<tcu::TestCaseGroup> reverseOrderGroup(
+                            new tcu::TestCaseGroup(testCtx, reverseOrders[reverseOrderIdx].name, ""));
 
-						for (deUint32 numDescriptorSetBindingsIdx = 0; numDescriptorSetBindingsIdx < DE_LENGTH_OF_ARRAY(numDescriptorSetBindings); numDescriptorSetBindingsIdx++)
-						{
-							if (numCmdBuffers[numCmdBuffersIdx].num > 1 && numDescriptorSetBindings[numDescriptorSetBindingsIdx].num > 1)
-								continue;
+                        for (uint32_t numDescriptorSetBindingsIdx = 0;
+                             numDescriptorSetBindingsIdx < DE_LENGTH_OF_ARRAY(numDescriptorSetBindings);
+                             numDescriptorSetBindingsIdx++)
+                        {
+                            if (numCmdBuffers[numCmdBuffersIdx].num > 1 &&
+                                numDescriptorSetBindings[numDescriptorSetBindingsIdx].num > 1)
+                                continue;
 
-							de::MovePtr<tcu::TestCaseGroup>	numDescriptorSetBindingsGroup	(new tcu::TestCaseGroup(testCtx, numDescriptorSetBindings[numDescriptorSetBindingsIdx].name, ""));
-							for (deUint32 numDynamicBindingsIdx = 0; numDynamicBindingsIdx < DE_LENGTH_OF_ARRAY(numDynamicBindings); numDynamicBindingsIdx++)
-							{
-								de::MovePtr<tcu::TestCaseGroup>	numDynamicBindingsGroup	(new tcu::TestCaseGroup(testCtx, numDynamicBindings[numDynamicBindingsIdx].name, ""));
+                            de::MovePtr<tcu::TestCaseGroup> numDescriptorSetBindingsGroup(new tcu::TestCaseGroup(
+                                testCtx, numDescriptorSetBindings[numDescriptorSetBindingsIdx].name, ""));
+                            for (uint32_t numDynamicBindingsIdx = 0;
+                                 numDynamicBindingsIdx < DE_LENGTH_OF_ARRAY(numDynamicBindings);
+                                 numDynamicBindingsIdx++)
+                            {
+                                de::MovePtr<tcu::TestCaseGroup> numDynamicBindingsGroup(new tcu::TestCaseGroup(
+                                    testCtx, numDynamicBindings[numDynamicBindingsIdx].name, ""));
 
-								for (deUint32 numNonDynamicBindingsIdx = 0; numNonDynamicBindingsIdx < DE_LENGTH_OF_ARRAY(numNonDynamicBindings); numNonDynamicBindingsIdx++)
-								{
-									TestParams params;
-									params.descriptorType			= descriptorTypes[descriptorTypeIdx].type;
-									params.numCmdBuffers			= numCmdBuffers[numCmdBuffersIdx].num;
-									params.reverseOrder				= reverseOrders[reverseOrderIdx].reverse;
-									params.numDescriptorSetBindings	= numDescriptorSetBindings[numDescriptorSetBindingsIdx].num;
-									params.numDynamicBindings		= numDynamicBindings[numDynamicBindingsIdx].num;
-									params.numNonDynamicBindings	= numNonDynamicBindings[numNonDynamicBindingsIdx].num;
-									params.groupingStrategy			= groupingTypes[groupingTypeIdx].strategy;
+                                for (uint32_t numNonDynamicBindingsIdx = 0;
+                                     numNonDynamicBindingsIdx < DE_LENGTH_OF_ARRAY(numNonDynamicBindings);
+                                     numNonDynamicBindingsIdx++)
+                                {
+                                    TestParams params;
+                                    params.descriptorType = descriptorTypes[descriptorTypeIdx].type;
+                                    params.numCmdBuffers  = numCmdBuffers[numCmdBuffersIdx].num;
+                                    params.reverseOrder   = reverseOrders[reverseOrderIdx].reverse;
+                                    params.numDescriptorSetBindings =
+                                        numDescriptorSetBindings[numDescriptorSetBindingsIdx].num;
+                                    params.numDynamicBindings    = numDynamicBindings[numDynamicBindingsIdx].num;
+                                    params.numNonDynamicBindings = numNonDynamicBindings[numNonDynamicBindingsIdx].num;
+                                    params.groupingStrategy      = groupingTypes[groupingTypeIdx].strategy;
 
-									if (strcmp(pipelineTypes[pipelineTypeIdx], "graphics") == 0)
-										numDynamicBindingsGroup->addChild(new DynamicOffsetGraphicsTest(testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, "", params));
-									else
-										numDynamicBindingsGroup->addChild(new DynamicOffsetComputeTest(testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, "", params));
-								}
+                                    if (strcmp(pipelineTypes[pipelineTypeIdx], "graphics") == 0)
+                                        numDynamicBindingsGroup->addChild(new DynamicOffsetGraphicsTest(
+                                            testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, "", params));
+                                    else
+                                        numDynamicBindingsGroup->addChild(new DynamicOffsetComputeTest(
+                                            testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, "", params));
+                                }
 
-								numDescriptorSetBindingsGroup->addChild(numDynamicBindingsGroup.release());
-							}
+                                numDescriptorSetBindingsGroup->addChild(numDynamicBindingsGroup.release());
+                            }
 
-							reverseOrderGroup->addChild(numDescriptorSetBindingsGroup.release());
-						}
+                            reverseOrderGroup->addChild(numDescriptorSetBindingsGroup.release());
+                        }
 
-						numCmdBuffersGroup->addChild(reverseOrderGroup.release());
-					}
+                        numCmdBuffersGroup->addChild(reverseOrderGroup.release());
+                    }
 
-					descriptorTypeGroup->addChild(numCmdBuffersGroup.release());
-				}
+                    descriptorTypeGroup->addChild(numCmdBuffersGroup.release());
+                }
 
-				groupingTypeGroup->addChild(descriptorTypeGroup.release());
-			}
+                groupingTypeGroup->addChild(descriptorTypeGroup.release());
+            }
 
-			pipelineTypeGroup->addChild(groupingTypeGroup.release());
-		}
+            pipelineTypeGroup->addChild(groupingTypeGroup.release());
+        }
 
-		dynamicOffsetTests->addChild(pipelineTypeGroup.release());
-	}
+        dynamicOffsetTests->addChild(pipelineTypeGroup.release());
+    }
 
-	return dynamicOffsetTests.release();
+    return dynamicOffsetTests.release();
 }
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt

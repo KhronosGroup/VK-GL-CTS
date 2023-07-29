@@ -32,9 +32,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDynamicOffsetTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEDYNAMICOFFSETTESTS_HPP

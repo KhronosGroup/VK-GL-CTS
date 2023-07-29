@@ -36,7 +36,7 @@ namespace RobustBufferAccessBehavior
 {
 /** Replace first occurance of <token> with <text> in <string> starting at <search_posistion>
  **/
-void replaceToken(const glw::GLchar* token, size_t& search_position, const glw::GLchar* text, std::string& string);
+void replaceToken(const glw::GLchar *token, size_t &search_position, const glw::GLchar *text, std::string &string);
 
 /** Represents buffer instance
  * Provides basic buffer functionality
@@ -44,43 +44,43 @@ void replaceToken(const glw::GLchar* token, size_t& search_position, const glw::
 class Buffer
 {
 public:
-	/* Public methods */
-	/* Ctr & Dtr */
-	Buffer(const glw::Functions& gl);
-	~Buffer();
+    /* Public methods */
+    /* Ctr & Dtr */
+    Buffer(const glw::Functions &gl);
+    ~Buffer();
 
-	/* Init & Release */
-	void InitData(glw::GLenum target, glw::GLenum usage, glw::GLsizeiptr size, const glw::GLvoid* data);
-	void Release();
+    /* Init & Release */
+    void InitData(glw::GLenum target, glw::GLenum usage, glw::GLsizeiptr size, const glw::GLvoid *data);
+    void Release();
 
-	/* Functionality */
-	void Bind() const;
-	void BindBase(glw::GLuint index) const;
+    /* Functionality */
+    void Bind() const;
+    void BindBase(glw::GLuint index) const;
 
-	/* Public static routines */
-	/* Functionality */
-	static void Bind(const glw::Functions& gl, glw::GLuint id, glw::GLenum target);
-	static void BindBase(const glw::Functions& gl, glw::GLuint id, glw::GLenum target, glw::GLuint index);
-	static void Data(const glw::Functions& gl, glw::GLenum target, glw::GLenum usage, glw::GLsizeiptr size,
-					 const glw::GLvoid* data);
-	static void Generate(const glw::Functions& gl, glw::GLuint& out_id);
-	static void SubData(const glw::Functions& gl, glw::GLenum target, glw::GLintptr offset, glw::GLsizeiptr size,
-						glw::GLvoid* data);
+    /* Public static routines */
+    /* Functionality */
+    static void Bind(const glw::Functions &gl, glw::GLuint id, glw::GLenum target);
+    static void BindBase(const glw::Functions &gl, glw::GLuint id, glw::GLenum target, glw::GLuint index);
+    static void Data(const glw::Functions &gl, glw::GLenum target, glw::GLenum usage, glw::GLsizeiptr size,
+                     const glw::GLvoid *data);
+    static void Generate(const glw::Functions &gl, glw::GLuint &out_id);
+    static void SubData(const glw::Functions &gl, glw::GLenum target, glw::GLintptr offset, glw::GLsizeiptr size,
+                        glw::GLvoid *data);
 
-	/* Public fields */
-	glw::GLuint m_id;
+    /* Public fields */
+    glw::GLuint m_id;
 
-	/* Public constants */
-	static const glw::GLuint m_invalid_id;
-	static const glw::GLuint m_n_targets = 13;
-	static const glw::GLenum m_targets[m_n_targets];
+    /* Public constants */
+    static const glw::GLuint m_invalid_id;
+    static const glw::GLuint m_n_targets = 13;
+    static const glw::GLenum m_targets[m_n_targets];
 
 private:
-	/* Private enums */
+    /* Private enums */
 
-	/* Private fields */
-	const glw::Functions& m_gl;
-	glw::GLenum	m_target;
+    /* Private fields */
+    const glw::Functions &m_gl;
+    glw::GLenum m_target;
 };
 
 /** Represents framebuffer
@@ -89,30 +89,30 @@ private:
 class Framebuffer
 {
 public:
-	/* Public methods */
-	/* Ctr & Dtr */
-	Framebuffer(const glw::Functions& gl);
-	~Framebuffer();
+    /* Public methods */
+    /* Ctr & Dtr */
+    Framebuffer(const glw::Functions &gl);
+    ~Framebuffer();
 
-	/* Init & Release */
-	void Release();
+    /* Init & Release */
+    void Release();
 
-	/* Public static routines */
-	static void AttachTexture(const glw::Functions& gl, glw::GLenum target, glw::GLenum attachment,
-							  glw::GLuint texture_id, glw::GLint level, glw::GLuint width, glw::GLuint height);
+    /* Public static routines */
+    static void AttachTexture(const glw::Functions &gl, glw::GLenum target, glw::GLenum attachment,
+                              glw::GLuint texture_id, glw::GLint level, glw::GLuint width, glw::GLuint height);
 
-	static void Bind(const glw::Functions& gl, glw::GLenum target, glw::GLuint id);
-	static void Generate(const glw::Functions& gl, glw::GLuint& out_id);
+    static void Bind(const glw::Functions &gl, glw::GLenum target, glw::GLuint id);
+    static void Generate(const glw::Functions &gl, glw::GLuint &out_id);
 
-	/* Public fields */
-	glw::GLuint m_id;
+    /* Public fields */
+    glw::GLuint m_id;
 
-	/* Public constants */
-	static const glw::GLuint m_invalid_id;
+    /* Public constants */
+    static const glw::GLuint m_invalid_id;
 
 private:
-	/* Private fields */
-	const glw::Functions& m_gl;
+    /* Private fields */
+    const glw::Functions &m_gl;
 };
 
 /** Represents shader instance.
@@ -121,30 +121,30 @@ private:
 class Shader
 {
 public:
-	/* Public methods */
-	/* Ctr & Dtr */
-	Shader(const glw::Functions& gl);
-	~Shader();
+    /* Public methods */
+    /* Ctr & Dtr */
+    Shader(const glw::Functions &gl);
+    ~Shader();
 
-	/* Init & Realese */
-	void Init(glw::GLenum stage, const std::string& source);
-	void Release();
+    /* Init & Realese */
+    void Init(glw::GLenum stage, const std::string &source);
+    void Release();
 
-	/* Public static routines */
-	/* Functionality */
-	static void Compile(const glw::Functions& gl, glw::GLuint id);
-	static void Create(const glw::Functions& gl, glw::GLenum stage, glw::GLuint& out_id);
-	static void Source(const glw::Functions& gl, glw::GLuint id, const std::string& source);
+    /* Public static routines */
+    /* Functionality */
+    static void Compile(const glw::Functions &gl, glw::GLuint id);
+    static void Create(const glw::Functions &gl, glw::GLenum stage, glw::GLuint &out_id);
+    static void Source(const glw::Functions &gl, glw::GLuint id, const std::string &source);
 
-	/* Public fields */
-	glw::GLuint m_id;
+    /* Public fields */
+    glw::GLuint m_id;
 
-	/* Public constants */
-	static const glw::GLuint m_invalid_id;
+    /* Public constants */
+    static const glw::GLuint m_invalid_id;
 
 private:
-	/* Private fields */
-	const glw::Functions& m_gl;
+    /* Private fields */
+    const glw::Functions &m_gl;
 };
 
 /** Represents program instance.
@@ -153,44 +153,44 @@ private:
 class Program
 {
 public:
-	/* Public methods */
-	/* Ctr & Dtr */
-	Program(const glw::Functions& gl);
-	~Program();
+    /* Public methods */
+    /* Ctr & Dtr */
+    Program(const glw::Functions &gl);
+    ~Program();
 
-	/* Init & Release */
-	void Init(const std::string& compute_shader, const std::string& fragment_shader, const std::string& geometry_shader,
-			  const std::string& tesselation_control_shader, const std::string& tesselation_evaluation_shader,
-			  const std::string& vertex_shader);
+    /* Init & Release */
+    void Init(const std::string &compute_shader, const std::string &fragment_shader, const std::string &geometry_shader,
+              const std::string &tesselation_control_shader, const std::string &tesselation_evaluation_shader,
+              const std::string &vertex_shader);
 
-	void Release();
+    void Release();
 
-	/* Functionality */
-	void Use() const;
+    /* Functionality */
+    void Use() const;
 
-	/* Public static routines */
-	/* Functionality */
-	static void Attach(const glw::Functions& gl, glw::GLuint program_id, glw::GLuint shader_id);
-	static void Create(const glw::Functions& gl, glw::GLuint& out_id);
-	static void Link(const glw::Functions& gl, glw::GLuint id);
-	static void Use(const glw::Functions& gl, glw::GLuint id);
+    /* Public static routines */
+    /* Functionality */
+    static void Attach(const glw::Functions &gl, glw::GLuint program_id, glw::GLuint shader_id);
+    static void Create(const glw::Functions &gl, glw::GLuint &out_id);
+    static void Link(const glw::Functions &gl, glw::GLuint id);
+    static void Use(const glw::Functions &gl, glw::GLuint id);
 
-	/* Public fields */
-	glw::GLuint m_id;
+    /* Public fields */
+    glw::GLuint m_id;
 
-	Shader m_compute;
-	Shader m_fragment;
-	Shader m_geometry;
-	Shader m_tess_ctrl;
-	Shader m_tess_eval;
-	Shader m_vertex;
+    Shader m_compute;
+    Shader m_fragment;
+    Shader m_geometry;
+    Shader m_tess_ctrl;
+    Shader m_tess_eval;
+    Shader m_vertex;
 
-	/* Public constants */
-	static const glw::GLuint m_invalid_id;
+    /* Public constants */
+    static const glw::GLuint m_invalid_id;
 
 private:
-	/* Private fields */
-	const glw::Functions& m_gl;
+    /* Private fields */
+    const glw::Functions &m_gl;
 };
 
 /** Represents texture instance
@@ -198,53 +198,53 @@ private:
 class Texture
 {
 public:
-	/* Public methods */
-	/* Ctr & Dtr */
-	Texture(const glw::Functions& gl);
-	~Texture();
+    /* Public methods */
+    /* Ctr & Dtr */
+    Texture(const glw::Functions &gl);
+    ~Texture();
 
-	/* Init & Release */
-	void Release();
+    /* Init & Release */
+    void Release();
 
-	/* Public static routines */
-	/* Functionality */
-	static void Bind(const glw::Functions& gl, glw::GLuint id, glw::GLenum target);
+    /* Public static routines */
+    /* Functionality */
+    static void Bind(const glw::Functions &gl, glw::GLuint id, glw::GLenum target);
 
-	static void CompressedImage(const glw::Functions& gl, glw::GLenum target, glw::GLint level,
-								glw::GLenum internal_format, glw::GLuint width, glw::GLuint height, glw::GLuint depth,
-								glw::GLsizei image_size, const glw::GLvoid* data);
+    static void CompressedImage(const glw::Functions &gl, glw::GLenum target, glw::GLint level,
+                                glw::GLenum internal_format, glw::GLuint width, glw::GLuint height, glw::GLuint depth,
+                                glw::GLsizei image_size, const glw::GLvoid *data);
 
-	static void Generate(const glw::Functions& gl, glw::GLuint& out_id);
+    static void Generate(const glw::Functions &gl, glw::GLuint &out_id);
 
-	static void GetData(const glw::Functions& gl, glw::GLint level, glw::GLenum target, glw::GLenum format,
-						glw::GLenum type, glw::GLvoid* out_data);
+    static void GetData(const glw::Functions &gl, glw::GLint level, glw::GLenum target, glw::GLenum format,
+                        glw::GLenum type, glw::GLvoid *out_data);
 
-	static void GetData(const glw::Functions& gl, glw::GLuint id, glw::GLint level, glw::GLuint width,
-						glw::GLuint height, glw::GLenum format, glw::GLenum type, glw::GLvoid* out_data);
+    static void GetData(const glw::Functions &gl, glw::GLuint id, glw::GLint level, glw::GLuint width,
+                        glw::GLuint height, glw::GLenum format, glw::GLenum type, glw::GLvoid *out_data);
 
-	static void GetLevelParameter(const glw::Functions& gl, glw::GLenum target, glw::GLint level, glw::GLenum pname,
-								  glw::GLint* param);
+    static void GetLevelParameter(const glw::Functions &gl, glw::GLenum target, glw::GLint level, glw::GLenum pname,
+                                  glw::GLint *param);
 
-	static void Image(const glw::Functions& gl, glw::GLenum target, glw::GLint level, glw::GLenum internal_format,
-					  glw::GLuint width, glw::GLuint height, glw::GLuint depth, glw::GLenum format, glw::GLenum type,
-					  const glw::GLvoid* data);
+    static void Image(const glw::Functions &gl, glw::GLenum target, glw::GLint level, glw::GLenum internal_format,
+                      glw::GLuint width, glw::GLuint height, glw::GLuint depth, glw::GLenum format, glw::GLenum type,
+                      const glw::GLvoid *data);
 
-	static void Storage(const glw::Functions& gl, glw::GLenum target, glw::GLsizei levels, glw::GLenum internal_format,
-						glw::GLuint width, glw::GLuint height, glw::GLuint depth);
+    static void Storage(const glw::Functions &gl, glw::GLenum target, glw::GLsizei levels, glw::GLenum internal_format,
+                        glw::GLuint width, glw::GLuint height, glw::GLuint depth);
 
-	static void SubImage(const glw::Functions& gl, glw::GLenum target, glw::GLint level, glw::GLint x, glw::GLint y,
-						 glw::GLint z, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format,
-						 glw::GLenum type, const glw::GLvoid* pixels);
+    static void SubImage(const glw::Functions &gl, glw::GLenum target, glw::GLint level, glw::GLint x, glw::GLint y,
+                         glw::GLint z, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format,
+                         glw::GLenum type, const glw::GLvoid *pixels);
 
-	/* Public fields */
-	glw::GLuint m_id;
+    /* Public fields */
+    glw::GLuint m_id;
 
-	/* Public constants */
-	static const glw::GLuint m_invalid_id;
+    /* Public constants */
+    static const glw::GLuint m_invalid_id;
 
 private:
-	/* Private fields */
-	const glw::Functions& m_gl;
+    /* Private fields */
+    const glw::Functions &m_gl;
 };
 
 /** Represents Vertex array object
@@ -253,43 +253,43 @@ private:
 class VertexArray
 {
 public:
-	/* Public methods */
-	/* Ctr & Dtr */
-	VertexArray(const glw::Functions& gl);
-	~VertexArray();
+    /* Public methods */
+    /* Ctr & Dtr */
+    VertexArray(const glw::Functions &gl);
+    ~VertexArray();
 
-	/* Init & Release */
-	void Release();
+    /* Init & Release */
+    void Release();
 
-	/* Public static methods */
-	static void Bind(const glw::Functions& gl, glw::GLuint id);
-	static void Generate(const glw::Functions& gl, glw::GLuint& out_id);
+    /* Public static methods */
+    static void Bind(const glw::Functions &gl, glw::GLuint id);
+    static void Generate(const glw::Functions &gl, glw::GLuint &out_id);
 
-	/* Public fields */
-	glw::GLuint m_id;
+    /* Public fields */
+    glw::GLuint m_id;
 
-	/* Public constants */
-	static const glw::GLuint m_invalid_id;
+    /* Public constants */
+    static const glw::GLuint m_invalid_id;
 
 private:
-	/* Private fields */
-	const glw::Functions& m_gl;
+    /* Private fields */
+    const glw::Functions &m_gl;
 };
 
 class RobustnessBase : public tcu::TestCase
 {
 public:
-	RobustnessBase(tcu::TestContext& testCtx, const char* name, const char* description, glu::ApiType apiType);
+    RobustnessBase(tcu::TestContext &testCtx, const char *name, const char *description, glu::ApiType apiType);
 
-	glu::RenderContext* createRobustContext(
-		glu::ResetNotificationStrategy reset = glu::RESET_NOTIFICATION_STRATEGY_NO_RESET_NOTIFICATION);
+    glu::RenderContext *createRobustContext(
+        glu::ResetNotificationStrategy reset = glu::RESET_NOTIFICATION_STRATEGY_NO_RESET_NOTIFICATION);
 
 protected:
-	glu::ApiType m_api_type;
-	bool		 m_context_is_es;
-	bool		 m_has_khr_robust_buffer_access;
+    glu::ApiType m_api_type;
+    bool m_context_is_es;
+    bool m_has_khr_robust_buffer_access;
 
-	std::map<std::string, std::string> m_specializationMap;
+    std::map<std::string, std::string> m_specializationMap;
 };
 
 /** Implementation of test VertexBufferObjects. Description follows:
@@ -341,23 +341,23 @@ protected:
 class VertexBufferObjectsTest : public RobustnessBase
 {
 public:
-	/* Public methods */
-	VertexBufferObjectsTest(tcu::TestContext& testCtx, glu::ApiType apiType);
-	virtual ~VertexBufferObjectsTest()
-	{
-	}
+    /* Public methods */
+    VertexBufferObjectsTest(tcu::TestContext &testCtx, glu::ApiType apiType);
+    virtual ~VertexBufferObjectsTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 protected:
-	/* Protected methods */
-	std::string getFragmentShader();
-	std::string getVertexShader();
-	void cleanTexture(const glw::Functions& gl, glw::GLuint texture_id);
-	bool verifyInvalidResults(const glw::Functions& gl, glw::GLuint texture_id);
-	bool verifyValidResults(const glw::Functions& gl, glw::GLuint texture_id);
-	bool verifyResults(const glw::Functions& gl, glw::GLuint texture_id);
+    /* Protected methods */
+    std::string getFragmentShader();
+    std::string getVertexShader();
+    void cleanTexture(const glw::Functions &gl, glw::GLuint texture_id);
+    bool verifyInvalidResults(const glw::Functions &gl, glw::GLuint texture_id);
+    bool verifyValidResults(const glw::Functions &gl, glw::GLuint texture_id);
+    bool verifyResults(const glw::Functions &gl, glw::GLuint texture_id);
 };
 
 /** Implementation of test TexelFetch. Description follows:
@@ -390,51 +390,51 @@ protected:
 class TexelFetchTest : public RobustnessBase
 {
 public:
-	/* Public methods */
-	TexelFetchTest(tcu::TestContext& testCtx, glu::ApiType apiType);
-	TexelFetchTest(tcu::TestContext& testCtx, const char* name, const char* description, glu::ApiType apiType);
-	virtual ~TexelFetchTest()
-	{
-	}
+    /* Public methods */
+    TexelFetchTest(tcu::TestContext &testCtx, glu::ApiType apiType);
+    TexelFetchTest(tcu::TestContext &testCtx, const char *name, const char *description, glu::ApiType apiType);
+    virtual ~TexelFetchTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
-
-protected:
-	/* Protected enums */
-	enum TEST_CASES
-	{
-		R8,
-		RG8_SNORM,
-		R32UI_MULTISAMPLE,
-		RGBA32F,
-		R32UI_MIPMAP,
-		/* */
-		LAST
-	};
-
-	enum VERSION
-	{
-		VALID,
-		SOURCE_INVALID,
-		DESTINATION_INVALID,
-	};
-
-	/* Protected methods */
-	const glw::GLchar* getTestCaseName() const;
-	void prepareTexture(const glw::Functions& gl, bool is_source, glw::GLuint texture_id);
-
-	/* Protected fields */
-	TEST_CASES m_test_case;
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 protected:
-	/* Protected methods */
-	std::string getFragmentShader(const glu::ContextType& contextType, bool is_case_valid,
-								  glw::GLuint fetch_offset = 0);
-	std::string  getGeometryShader();
-	std::string  getVertexShader();
-	virtual bool verifyInvalidResults(const glw::Functions& gl, glw::GLuint texture_id);
-	virtual bool verifyValidResults(const glw::Functions& gl, glw::GLuint texture_id);
+    /* Protected enums */
+    enum TEST_CASES
+    {
+        R8,
+        RG8_SNORM,
+        R32UI_MULTISAMPLE,
+        RGBA32F,
+        R32UI_MIPMAP,
+        /* */
+        LAST
+    };
+
+    enum VERSION
+    {
+        VALID,
+        SOURCE_INVALID,
+        DESTINATION_INVALID,
+    };
+
+    /* Protected methods */
+    const glw::GLchar *getTestCaseName() const;
+    void prepareTexture(const glw::Functions &gl, bool is_source, glw::GLuint texture_id);
+
+    /* Protected fields */
+    TEST_CASES m_test_case;
+
+protected:
+    /* Protected methods */
+    std::string getFragmentShader(const glu::ContextType &contextType, bool is_case_valid,
+                                  glw::GLuint fetch_offset = 0);
+    std::string getGeometryShader();
+    std::string getVertexShader();
+    virtual bool verifyInvalidResults(const glw::Functions &gl, glw::GLuint texture_id);
+    virtual bool verifyValidResults(const glw::Functions &gl, glw::GLuint texture_id);
 };
 
 /** Implementation of test ImageLoadStore. Description follows:
@@ -454,21 +454,21 @@ protected:
 class ImageLoadStoreTest : public TexelFetchTest
 {
 public:
-	/* Public methods */
-	ImageLoadStoreTest(tcu::TestContext& testCtx, glu::ApiType apiType);
-	virtual ~ImageLoadStoreTest()
-	{
-	}
+    /* Public methods */
+    ImageLoadStoreTest(tcu::TestContext &testCtx, glu::ApiType apiType);
+    virtual ~ImageLoadStoreTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 protected:
-	/* Protected methods */
-	std::string getComputeShader(VERSION version, glw::GLuint coord_offset = 0, glw::GLuint sample_offset = 0);
-	void setTextures(const glw::Functions& gl, glw::GLuint id_destination, glw::GLuint id_source);
-	bool verifyInvalidResults(const glw::Functions& gl, glw::GLuint texture_id);
-	bool verifyValidResults(const glw::Functions& gl, glw::GLuint texture_id);
+    /* Protected methods */
+    std::string getComputeShader(VERSION version, glw::GLuint coord_offset = 0, glw::GLuint sample_offset = 0);
+    void setTextures(const glw::Functions &gl, glw::GLuint id_destination, glw::GLuint id_source);
+    bool verifyInvalidResults(const glw::Functions &gl, glw::GLuint texture_id);
+    bool verifyValidResults(const glw::Functions &gl, glw::GLuint texture_id);
 };
 
 /** Implementation of test StorageBuffer. Description follows:
@@ -500,36 +500,36 @@ protected:
 class StorageBufferTest : public RobustnessBase
 {
 public:
-	/* Public methods */
-	StorageBufferTest(tcu::TestContext& testCtx, glu::ApiType apiType);
-	virtual ~StorageBufferTest()
-	{
-	}
+    /* Public methods */
+    StorageBufferTest(tcu::TestContext &testCtx, glu::ApiType apiType);
+    virtual ~StorageBufferTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 protected:
-	/* Protected enums */
-	enum VERSION
-	{
-		VALID,
-		SOURCE_INVALID,
-		DESTINATION_INVALID,
-		/* */
-		LAST
-	};
+    /* Protected enums */
+    enum VERSION
+    {
+        VALID,
+        SOURCE_INVALID,
+        DESTINATION_INVALID,
+        /* */
+        LAST
+    };
 
-	/* Private methods */
-	std::string getComputeShader(glw::GLuint offset);
-	bool verifyResults(glw::GLfloat* buffer_data);
+    /* Private methods */
+    std::string getComputeShader(glw::GLuint offset);
+    bool verifyResults(glw::GLfloat *buffer_data);
 
-	/* Protected fields */
-	VERSION m_test_case;
+    /* Protected fields */
+    VERSION m_test_case;
 
-	/* Protected constants */
-	static const glw::GLfloat m_destination_data[4];
-	static const glw::GLfloat m_source_data[4];
+    /* Protected constants */
+    static const glw::GLfloat m_destination_data[4];
+    static const glw::GLfloat m_source_data[4];
 };
 
 /** Implementation of test UniformBuffer. Description follows:
@@ -544,54 +544,54 @@ protected:
 class UniformBufferTest : public RobustnessBase
 {
 public:
-	/* Public methods */
-	UniformBufferTest(tcu::TestContext& testCtx, glu::ApiType apiType);
-	virtual ~UniformBufferTest()
-	{
-	}
+    /* Public methods */
+    UniformBufferTest(tcu::TestContext &testCtx, glu::ApiType apiType);
+    virtual ~UniformBufferTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 protected:
-	/* Protected enums */
-	enum VERSION
-	{
-		VALID,
-		SOURCE_INVALID,
-		/* */
-		LAST
-	};
+    /* Protected enums */
+    enum VERSION
+    {
+        VALID,
+        SOURCE_INVALID,
+        /* */
+        LAST
+    };
 
-	/* Protected methods */
-	std::string getComputeShader(glw::GLuint offset);
-	bool verifyResults(glw::GLfloat* buffer_data);
+    /* Protected methods */
+    std::string getComputeShader(glw::GLuint offset);
+    bool verifyResults(glw::GLfloat *buffer_data);
 
-	/* Protected fields */
-	VERSION m_test_case;
+    /* Protected fields */
+    VERSION m_test_case;
 };
-} /* RobustBufferAccessBehavior */
+} // namespace RobustBufferAccessBehavior
 
 /** Group class for multi bind conformance tests */
 class RobustBufferAccessBehaviorTests : public tcu::TestCaseGroup
 {
 public:
-	/* Public methods */
-	RobustBufferAccessBehaviorTests(tcu::TestContext& testCtx, glu::ApiType apiType);
-	virtual ~RobustBufferAccessBehaviorTests(void)
-	{
-	}
+    /* Public methods */
+    RobustBufferAccessBehaviorTests(tcu::TestContext &testCtx, glu::ApiType apiType);
+    virtual ~RobustBufferAccessBehaviorTests(void)
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	/* Private methods */
-	RobustBufferAccessBehaviorTests(const RobustBufferAccessBehaviorTests& other);
-	RobustBufferAccessBehaviorTests& operator=(const RobustBufferAccessBehaviorTests& other);
+    /* Private methods */
+    RobustBufferAccessBehaviorTests(const RobustBufferAccessBehaviorTests &other);
+    RobustBufferAccessBehaviorTests &operator=(const RobustBufferAccessBehaviorTests &other);
 
-	glu::ApiType m_ApiType;
+    glu::ApiType m_ApiType;
 };
 
-} /* glcts */
+} // namespace glcts
 
 #endif // _GLCROBUSTBUFFERACCESSBEHAVIORTESTS_HPP

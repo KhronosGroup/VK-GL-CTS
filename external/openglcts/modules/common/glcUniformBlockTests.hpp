@@ -34,18 +34,18 @@ namespace deqp
 class UniformBlockTests : public TestCaseGroup
 {
 public:
-	UniformBlockTests(Context& context, glu::GLSLVersion glslVersion);
-	~UniformBlockTests(void);
+    UniformBlockTests(Context &context, glu::GLSLVersion glslVersion);
+    ~UniformBlockTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	UniformBlockTests(const UniformBlockTests& other);
-	UniformBlockTests& operator=(const UniformBlockTests& other);
+    UniformBlockTests(const UniformBlockTests &other);
+    UniformBlockTests &operator=(const UniformBlockTests &other);
 
-	glu::GLSLVersion m_glslVersion;
+    glu::GLSLVersion m_glslVersion;
 };
 
-} // deqp
+} // namespace deqp
 
 #endif // _GLCUNIFORMBLOCKTESTS_HPP

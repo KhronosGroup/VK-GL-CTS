@@ -43,99 +43,95 @@ namespace osx
 class VulkanWindow : public vk::wsi::MacOSWindowInterface
 {
 public:
-	VulkanWindow (MovePtr<osx::MetalView> view)
-	: vk::wsi::MacOSWindowInterface(view->getView())
-	, m_view(view)
-	{
-	}
+    VulkanWindow(MovePtr<osx::MetalView> view) : vk::wsi::MacOSWindowInterface(view->getView()), m_view(view)
+    {
+    }
 
-	void setVisible(bool visible)
-	{
-	}
+    void setVisible(bool visible)
+    {
+    }
 
-	void resize (const UVec2& newSize) {
-		m_view->setSize(newSize.x(), newSize.y());
-	}
+    void resize(const UVec2 &newSize)
+    {
+        m_view->setSize(newSize.x(), newSize.y());
+    }
 
 private:
-	UniquePtr<osx::MetalView> m_view;
+    UniquePtr<osx::MetalView> m_view;
 };
 
 class VulkanDisplay : public vk::wsi::Display
 {
 public:
-	VulkanDisplay ()
-	{
-	}
+    VulkanDisplay()
+    {
+    }
 
-	vk::wsi::Window* createWindow (const Maybe<UVec2>& initialSize) const
-	{
-		const deUint32 width = !initialSize ? 400 : initialSize->x();
-		const deUint32 height = !initialSize ? 300 : initialSize->y();
-		return new VulkanWindow(MovePtr<osx::MetalView>(new osx::MetalView(width, height)));
-	}
+    vk::wsi::Window *createWindow(const Maybe<UVec2> &initialSize) const
+    {
+        const uint32_t width  = !initialSize ? 400 : initialSize->x();
+        const uint32_t height = !initialSize ? 300 : initialSize->y();
+        return new VulkanWindow(MovePtr<osx::MetalView>(new osx::MetalView(width, height)));
+    }
 };
 
 class VulkanLibrary : public vk::Library
 {
 public:
-	VulkanLibrary (void)
-		: m_library	("libvulkan.dylib")
-		, m_driver	(m_library)
-	{
-	}
+    VulkanLibrary(void) : m_library("libvulkan.dylib"), m_driver(m_library)
+    {
+    }
 
-	const vk::PlatformInterface&	getPlatformInterface	(void) const
-	{
-		return m_driver;
-	}
+    const vk::PlatformInterface &getPlatformInterface(void) const
+    {
+        return m_driver;
+    }
 
-	const tcu::FunctionLibrary&		getFunctionLibrary		(void) const
-	{
-		return m_library;
-	}
+    const tcu::FunctionLibrary &getFunctionLibrary(void) const
+    {
+        return m_library;
+    }
 
 private:
-	const DynamicFunctionLibrary	m_library;
-	const vk::PlatformDriver		m_driver;
+    const DynamicFunctionLibrary m_library;
+    const vk::PlatformDriver m_driver;
 };
 
-VulkanPlatform::VulkanPlatform ()
+VulkanPlatform::VulkanPlatform()
 {
 }
 
-vk::wsi::Display* VulkanPlatform::createWsiDisplay (vk::wsi::Type wsiType) const
+vk::wsi::Display *VulkanPlatform::createWsiDisplay(vk::wsi::Type wsiType) const
 {
-	if (wsiType != vk::wsi::TYPE_MACOS)
-		TCU_THROW(NotSupportedError, "WSI type not supported");
+    if (wsiType != vk::wsi::TYPE_MACOS)
+        TCU_THROW(NotSupportedError, "WSI type not supported");
 
-	return new VulkanDisplay();
+    return new VulkanDisplay();
 }
 
-bool VulkanPlatform::hasDisplay (vk::wsi::Type wsiType)  const
+bool VulkanPlatform::hasDisplay(vk::wsi::Type wsiType) const
 {
-	if (wsiType != vk::wsi::TYPE_MACOS)
-		return false;
+    if (wsiType != vk::wsi::TYPE_MACOS)
+        return false;
 
-	return true;
+    return true;
 }
-vk::Library* VulkanPlatform::createLibrary (void) const
+vk::Library *VulkanPlatform::createLibrary(void) const
 {
-	return new VulkanLibrary();
-}
-
-void VulkanPlatform::describePlatform (std::ostream& dst) const
-{
-	utsname		sysInfo;
-	deMemset(&sysInfo, 0, sizeof(sysInfo));
-
-	if (uname(&sysInfo) != 0)
-		throw std::runtime_error("uname() failed");
-
-	dst << "OS: " << sysInfo.sysname << " " << sysInfo.release << " " << sysInfo.version << "\n";
-	dst << "CPU: " << sysInfo.machine << "\n";
+    return new VulkanLibrary();
 }
 
-} // osx
-} // tcu
+void VulkanPlatform::describePlatform(std::ostream &dst) const
+{
+    utsname sysInfo;
+    deMemset(&sysInfo, 0, sizeof(sysInfo));
 
+    if (uname(&sysInfo) != 0)
+        throw std::runtime_error("uname() failed");
+
+    dst << "OS: " << sysInfo.sysname << " " << sysInfo.release << " " << sysInfo.version << "\n";
+    dst << "CPU: " << sysInfo.machine << "\n";
+}
+
+} // namespace osx
+} // namespace tcu

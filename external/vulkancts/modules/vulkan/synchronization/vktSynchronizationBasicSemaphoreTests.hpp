@@ -31,11 +31,10 @@ namespace vkt
 namespace synchronization
 {
 
-tcu::TestCaseGroup*		createBasicBinarySemaphoreTests		(tcu::TestContext& testCtx, SynchronizationType type);
-tcu::TestCaseGroup*		createBasicTimelineSemaphoreTests	(tcu::TestContext& testCtx, SynchronizationType type);
+tcu::TestCaseGroup *createBasicBinarySemaphoreTests(tcu::TestContext &testCtx, SynchronizationType type);
+tcu::TestCaseGroup *createBasicTimelineSemaphoreTests(tcu::TestContext &testCtx, SynchronizationType type);
 
-} //synchronization
-} // vkt
-
+} // namespace synchronization
+} // namespace vkt
 
 #endif // _VKTSYNCHRONIZATIONBASICSEMAPHORETESTS_HPP

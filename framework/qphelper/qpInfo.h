@@ -27,12 +27,12 @@
 
 DE_BEGIN_EXTERN_C
 
-const char*			qpGetTargetName				(void);
-const char*			qpGetReleaseName			(void);
-deUint32			qpGetReleaseId				(void);
-const char*			qpGetReleaseGlslName		(void);
-const char*			qpGetReleaseSpirvToolsName	(void);
-const char*			qpGetReleaseSpirvHeadersName(void);
+const char *qpGetTargetName(void);
+const char *qpGetReleaseName(void);
+uint32_t qpGetReleaseId(void);
+const char *qpGetReleaseGlslName(void);
+const char *qpGetReleaseSpirvToolsName(void);
+const char *qpGetReleaseSpirvHeadersName(void);
 
 DE_END_EXTERN_C
 

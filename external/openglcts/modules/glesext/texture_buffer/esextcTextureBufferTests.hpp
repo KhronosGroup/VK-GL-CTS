@@ -39,19 +39,19 @@ namespace glcts
 class TextureBufferTests : public TestCaseGroupBase
 {
 public:
-	/* Public methods */
-	TextureBufferTests(glcts::Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TextureBufferTests(glcts::Context &context, const ExtParameters &extParams);
 
-	virtual ~TextureBufferTests(void)
-	{
-	}
+    virtual ~TextureBufferTests(void)
+    {
+    }
 
-	void init(void);
+    void init(void);
 
 private:
-	/* Private methods */
-	TextureBufferTests(const TextureBufferTests& other);
-	TextureBufferTests& operator=(const TextureBufferTests& other);
+    /* Private methods */
+    TextureBufferTests(const TextureBufferTests &other);
+    TextureBufferTests &operator=(const TextureBufferTests &other);
 };
 
 } // namespace glcts

@@ -44,18 +44,18 @@ namespace glcts
 class RobustnessTests : public tcu::TestCaseGroup
 {
 public:
-	RobustnessTests(tcu::TestContext& testCtx, glu::ApiType apiType);
-	virtual ~RobustnessTests(void)
-	{
-	}
+    RobustnessTests(tcu::TestContext &testCtx, glu::ApiType apiType);
+    virtual ~RobustnessTests(void)
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	RobustnessTests(const RobustnessTests& other);
-	RobustnessTests& operator=(const RobustnessTests& other);
+    RobustnessTests(const RobustnessTests &other);
+    RobustnessTests &operator=(const RobustnessTests &other);
 
-	glu::ApiType m_ApiType;
+    glu::ApiType m_ApiType;
 };
 
 } // namespace glcts

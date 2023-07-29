@@ -34,18 +34,18 @@ namespace Draw
 class InstancedTests : public tcu::TestCaseGroup
 {
 public:
-					InstancedTests	(tcu::TestContext &testCtx, bool useDynamicRendering);
-					~InstancedTests	(void);
+    InstancedTests(tcu::TestContext &testCtx, bool useDynamicRendering);
+    ~InstancedTests(void);
 
 private:
-					InstancedTests	(const InstancedTests &other);
-	InstancedTests&	operator=		(const InstancedTests &other);
+    InstancedTests(const InstancedTests &other);
+    InstancedTests &operator=(const InstancedTests &other);
 
 private:
-	const bool m_useDynamicRendering;
+    const bool m_useDynamicRendering;
 };
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWINSTANCEDTESTS_HPP

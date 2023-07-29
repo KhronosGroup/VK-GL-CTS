@@ -29,9 +29,9 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createCommandBuffersTests(tcu::TestContext &testCtx);
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPICOMMANDBUFFERSTESTS_HPP

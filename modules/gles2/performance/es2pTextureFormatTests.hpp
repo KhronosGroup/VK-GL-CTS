@@ -36,18 +36,18 @@ namespace Performance
 class TextureFormatTests : public TestCaseGroup
 {
 public:
-							TextureFormatTests		(Context& context);
-							~TextureFormatTests		(void);
+    TextureFormatTests(Context &context);
+    ~TextureFormatTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							TextureFormatTests		(const TextureFormatTests& other);
-	TextureFormatTests&		operator=				(const TextureFormatTests& other);
+    TextureFormatTests(const TextureFormatTests &other);
+    TextureFormatTests &operator=(const TextureFormatTests &other);
 };
 
-} // Performance
-} // gles2
-} // deqp
+} // namespace Performance
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2PTEXTUREFORMATTESTS_HPP

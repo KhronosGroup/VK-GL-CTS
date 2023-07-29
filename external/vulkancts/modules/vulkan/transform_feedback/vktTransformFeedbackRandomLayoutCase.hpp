@@ -30,7 +30,7 @@
 namespace de
 {
 class Random;
-} // de
+} // namespace de
 
 namespace vkt
 {
@@ -39,53 +39,49 @@ namespace TransformFeedback
 
 enum FeatureBits
 {
-	FEATURE_VECTORS					= (1<<0),
-	FEATURE_MATRICES				= (1<<1),
-	FEATURE_ARRAYS					= (1<<2),
-	FEATURE_STRUCTS					= (1<<3),
-	FEATURE_NESTED_STRUCTS			= (1<<4),
-	FEATURE_INSTANCE_ARRAYS			= (1<<5),
-	FEATURE_ARRAYS_OF_ARRAYS		= (1<<6),
-	FEATURE_DOUBLES					= (1<<7),
-	FEATURE_UNASSIGNED_FIELDS		= (1<<8),
-	FEATURE_UNASSIGNED_BLOCK_MEMBERS= (1<<9),
-	FEATURE_MISSING_BLOCK_MEMBERS	= (1<<10),	// Add holes into XFB buffer
-	FEATURE_OUT_OF_ORDER_OFFSETS	= (1<<11),
+    FEATURE_VECTORS                  = (1 << 0),
+    FEATURE_MATRICES                 = (1 << 1),
+    FEATURE_ARRAYS                   = (1 << 2),
+    FEATURE_STRUCTS                  = (1 << 3),
+    FEATURE_NESTED_STRUCTS           = (1 << 4),
+    FEATURE_INSTANCE_ARRAYS          = (1 << 5),
+    FEATURE_ARRAYS_OF_ARRAYS         = (1 << 6),
+    FEATURE_DOUBLES                  = (1 << 7),
+    FEATURE_UNASSIGNED_FIELDS        = (1 << 8),
+    FEATURE_UNASSIGNED_BLOCK_MEMBERS = (1 << 9),
+    FEATURE_MISSING_BLOCK_MEMBERS    = (1 << 10), // Add holes into XFB buffer
+    FEATURE_OUT_OF_ORDER_OFFSETS     = (1 << 11),
 };
 
 class RandomInterfaceBlockCase : public InterfaceBlockCase
 {
 public:
-								RandomInterfaceBlockCase	(tcu::TestContext&		testCtx,
-															 const std::string&		name,
-															 const std::string&		description,
-															 const TestStageFlags	testStageFlags,
-															 deUint32				features,
-															 deUint32				seed);
+    RandomInterfaceBlockCase(tcu::TestContext &testCtx, const std::string &name, const std::string &description,
+                             const TestStageFlags testStageFlags, uint32_t features, uint32_t seed);
 
 private:
-	void						generateBlock				(de::Random& rnd, deUint32 layoutFlags);
-	void						generateBlockMember			(de::Random& rnd, InterfaceBlock& block, const int numBlockMembers, int& numMissing);
-	VarType						generateType				(de::Random& rnd, int typeDepth, bool arrayOk);
-	std::vector<glu::DataType>	fillTypeCandidates			(void);
+    void generateBlock(de::Random &rnd, uint32_t layoutFlags);
+    void generateBlockMember(de::Random &rnd, InterfaceBlock &block, const int numBlockMembers, int &numMissing);
+    VarType generateType(de::Random &rnd, int typeDepth, bool arrayOk);
+    std::vector<glu::DataType> fillTypeCandidates(void);
 
-	const deUint32				m_features;
-	const bool					m_explicitXfbOffsets;
-	const int					m_maxBlocks;
-	const int					m_maxInstances;
-	const int					m_maxArrayLength;
-	const int					m_maxStructDepth;
-	const int					m_maxBlockMembers;
-	const int					m_maxStructMembers;
-	const deUint32				m_seed;
+    const uint32_t m_features;
+    const bool m_explicitXfbOffsets;
+    const int m_maxBlocks;
+    const int m_maxInstances;
+    const int m_maxArrayLength;
+    const int m_maxStructDepth;
+    const int m_maxBlockMembers;
+    const int m_maxStructMembers;
+    const uint32_t m_seed;
 
-	int							m_blockNdx;
-	int							m_interfaceNdx;
-	int							m_structNdx;
-	std::vector<glu::DataType>	m_primitiveTypeCandidates;
+    int m_blockNdx;
+    int m_interfaceNdx;
+    int m_structNdx;
+    std::vector<glu::DataType> m_primitiveTypeCandidates;
 };
 
-} // TransformFeedback
-} // vkt
+} // namespace TransformFeedback
+} // namespace vkt
 
 #endif // _VKTTRANSFORMFEEDBACKRANDOMLAYOUTCASE_HPP

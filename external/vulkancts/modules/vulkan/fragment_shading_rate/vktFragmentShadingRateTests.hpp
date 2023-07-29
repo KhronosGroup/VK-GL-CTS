@@ -32,9 +32,9 @@ namespace vkt
 namespace FragmentShadingRate
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx);
 
-} // FragmentShadingRate
-} // vkt
+} // namespace FragmentShadingRate
+} // namespace vkt
 
 #endif // _VKTFRAGMENTSHADINGRATETESTS_HPP

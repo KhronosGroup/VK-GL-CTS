@@ -107,32 +107,32 @@ namespace glcts
 class TextureBufferMAXSizeValidation : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureBufferMAXSizeValidation(Context& context, const ExtParameters& extParams, const char* name,
-								   const char* description);
+    /* Public methods */
+    TextureBufferMAXSizeValidation(Context &context, const ExtParameters &extParams, const char *name,
+                                   const char *description);
 
-	virtual ~TextureBufferMAXSizeValidation()
-	{
-	}
+    virtual ~TextureBufferMAXSizeValidation()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	void		initTest(void);
-	const char* getComputeShaderCode(void);
+    /* Private methods */
+    void initTest(void);
+    const char *getComputeShaderCode(void);
 
-	/* Static constant variables */
-	static const glw::GLuint m_n_vec_components;
+    /* Static constant variables */
+    static const glw::GLuint m_n_vec_components;
 
-	/* Variables for general usage */
-	glw::GLuint m_cs_id;
-	glw::GLint  m_max_tex_buffer_size;
-	glw::GLuint m_po_id;
-	glw::GLuint m_ssbo_id;
-	glw::GLuint m_tbo_id;
-	glw::GLuint m_tbo_tex_id;
+    /* Variables for general usage */
+    glw::GLuint m_cs_id;
+    glw::GLint m_max_tex_buffer_size;
+    glw::GLuint m_po_id;
+    glw::GLuint m_ssbo_id;
+    glw::GLuint m_tbo_id;
+    glw::GLuint m_tbo_tex_id;
 };
 
 } // namespace glcts

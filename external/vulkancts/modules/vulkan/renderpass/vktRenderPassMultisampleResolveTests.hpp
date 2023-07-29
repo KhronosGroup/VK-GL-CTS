@@ -29,10 +29,10 @@
 namespace vkt
 {
 
-tcu::TestCaseGroup*	createRenderPassMultisampleResolveTests (tcu::TestContext& testCtx);
-tcu::TestCaseGroup* createRenderPass2MultisampleResolveTests (tcu::TestContext& testCtx);
-tcu::TestCaseGroup* createDynamicRenderingMultisampleResolveTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createRenderPassMultisampleResolveTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createRenderPass2MultisampleResolveTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createDynamicRenderingMultisampleResolveTests(tcu::TestContext &testCtx);
 
-} // vkt
+} // namespace vkt
 
 #endif // _VKTRENDERPASSMULTISAMPLERESOLVETESTS_HPP

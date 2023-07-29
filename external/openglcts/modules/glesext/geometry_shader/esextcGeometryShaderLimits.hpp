@@ -40,68 +40,68 @@ namespace glcts
 class GeometryShaderLimitsTransformFeedbackBase : public TestCaseBase
 {
 public:
-	/* Public methods */
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    /* Public methods */
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 protected:
-	/* Protected methods */
-	GeometryShaderLimitsTransformFeedbackBase(Context& context, const ExtParameters& extParams, const char* name,
-											  const char* description);
+    /* Protected methods */
+    GeometryShaderLimitsTransformFeedbackBase(Context &context, const ExtParameters &extParams, const char *name,
+                                              const char *description);
 
-	virtual ~GeometryShaderLimitsTransformFeedbackBase()
-	{
-	}
+    virtual ~GeometryShaderLimitsTransformFeedbackBase()
+    {
+    }
 
-	void initTest(void);
+    void initTest(void);
 
-	/* Methods to be overriden by inheriting test cases */
-	virtual void clean() = 0;
+    /* Methods to be overriden by inheriting test cases */
+    virtual void clean() = 0;
 
-	virtual void getCapturedVaryings(const glw::GLchar* const*& out_captured_varyings_names,
-									 glw::GLuint&				out_n_captured_varyings) = 0;
+    virtual void getCapturedVaryings(const glw::GLchar *const *&out_captured_varyings_names,
+                                     glw::GLuint &out_n_captured_varyings) = 0;
 
-	virtual void getShaderParts(const glw::GLchar* const*& out_fragment_shader_parts,
-								glw::GLuint&			   out_n_fragment_shader_parts,
-								const glw::GLchar* const*& out_geometry_shader_parts,
-								glw::GLuint&			   out_n_geometry_shader_parts,
-								const glw::GLchar* const*& out_vertex_shader_parts,
-								glw::GLuint&			   out_n_vertex_shader_parts) = 0;
+    virtual void getShaderParts(const glw::GLchar *const *&out_fragment_shader_parts,
+                                glw::GLuint &out_n_fragment_shader_parts,
+                                const glw::GLchar *const *&out_geometry_shader_parts,
+                                glw::GLuint &out_n_geometry_shader_parts,
+                                const glw::GLchar *const *&out_vertex_shader_parts,
+                                glw::GLuint &out_n_vertex_shader_parts) = 0;
 
-	virtual void getTransformFeedbackBufferSize(glw::GLuint& out_buffer_size) = 0;
-	virtual void prepareProgramInput()										  = 0;
-	virtual bool verifyResult(const void* data)								  = 0;
+    virtual void getTransformFeedbackBufferSize(glw::GLuint &out_buffer_size) = 0;
+    virtual void prepareProgramInput()                                        = 0;
+    virtual bool verifyResult(const void *data)                               = 0;
 
-	/* Protected fields */
-	/* Program and shader ids */
-	glw::GLuint m_fragment_shader_id;
-	glw::GLuint m_geometry_shader_id;
-	glw::GLuint m_program_object_id;
-	glw::GLuint m_vertex_shader_id;
+    /* Protected fields */
+    /* Program and shader ids */
+    glw::GLuint m_fragment_shader_id;
+    glw::GLuint m_geometry_shader_id;
+    glw::GLuint m_program_object_id;
+    glw::GLuint m_vertex_shader_id;
 
-	/* Buffer object used in transform feedback */
-	glw::GLuint m_buffer_object_id;
+    /* Buffer object used in transform feedback */
+    glw::GLuint m_buffer_object_id;
 
-	/* Vertex array object */
-	glw::GLuint m_vertex_array_object_id;
+    /* Vertex array object */
+    glw::GLuint m_vertex_array_object_id;
 
 private:
-	/* Private fields */
-	/* Shaders' code */
-	const glw::GLchar* const* m_fragment_shader_parts;
-	const glw::GLchar* const* m_geometry_shader_parts;
-	const glw::GLchar* const* m_vertex_shader_parts;
+    /* Private fields */
+    /* Shaders' code */
+    const glw::GLchar *const *m_fragment_shader_parts;
+    const glw::GLchar *const *m_geometry_shader_parts;
+    const glw::GLchar *const *m_vertex_shader_parts;
 
-	glw::GLuint m_n_fragment_shader_parts;
-	glw::GLuint m_n_geometry_shader_parts;
-	glw::GLuint m_n_vertex_shader_parts;
+    glw::GLuint m_n_fragment_shader_parts;
+    glw::GLuint m_n_geometry_shader_parts;
+    glw::GLuint m_n_vertex_shader_parts;
 
-	/* Names of varyings */
-	const glw::GLchar* const* m_captured_varyings_names;
-	glw::GLuint				  m_n_captured_varyings;
+    /* Names of varyings */
+    const glw::GLchar *const *m_captured_varyings_names;
+    glw::GLuint m_n_captured_varyings;
 
-	/* Size of buffer used by transform feedback */
-	glw::GLuint m_buffer_size;
+    /* Size of buffer used by transform feedback */
+    glw::GLuint m_buffer_size;
 };
 
 /** Parent class for geometry shader Test Group 16 tests
@@ -110,74 +110,74 @@ private:
 class GeometryShaderLimitsRenderingBase : public TestCaseBase
 {
 public:
-	/* Public methods */
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    /* Public methods */
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 protected:
-	/* Protected methods */
-	GeometryShaderLimitsRenderingBase(Context& context, const ExtParameters& extParams, const char* name,
-									  const char* description);
+    /* Protected methods */
+    GeometryShaderLimitsRenderingBase(Context &context, const ExtParameters &extParams, const char *name,
+                                      const char *description);
 
-	virtual ~GeometryShaderLimitsRenderingBase()
-	{
-	}
+    virtual ~GeometryShaderLimitsRenderingBase()
+    {
+    }
 
-	void initTest(void);
+    void initTest(void);
 
-	/* Methods to be overriden by child test cases */
-	virtual void clean() = 0;
+    /* Methods to be overriden by child test cases */
+    virtual void clean() = 0;
 
-	virtual void getDrawCallDetails(glw::GLenum& out_primitive_type, glw::GLuint& out_n_vertices) = 0;
+    virtual void getDrawCallDetails(glw::GLenum &out_primitive_type, glw::GLuint &out_n_vertices) = 0;
 
-	virtual void getFramebufferDetails(glw::GLenum& out_texture_format, glw::GLenum& out_texture_read_format,
-									   glw::GLenum& out_texture_read_type, glw::GLuint& out_texture_width,
-									   glw::GLuint& out_texture_height, glw::GLuint& out_texture_pixel_size) = 0;
+    virtual void getFramebufferDetails(glw::GLenum &out_texture_format, glw::GLenum &out_texture_read_format,
+                                       glw::GLenum &out_texture_read_type, glw::GLuint &out_texture_width,
+                                       glw::GLuint &out_texture_height, glw::GLuint &out_texture_pixel_size) = 0;
 
-	virtual void getRequiredPointSize(glw::GLfloat& out_point_size) = 0;
+    virtual void getRequiredPointSize(glw::GLfloat &out_point_size) = 0;
 
-	virtual void getShaderParts(const glw::GLchar* const*& out_fragment_shader_parts,
-								glw::GLuint&			   out_n_fragment_shader_parts,
-								const glw::GLchar* const*& out_geometry_shader_parts,
-								glw::GLuint&			   out_n_geometry_shader_parts,
-								const glw::GLchar* const*& out_vertex_shader_parts,
-								glw::GLuint&			   out_n_vertex_shader_parts) = 0;
+    virtual void getShaderParts(const glw::GLchar *const *&out_fragment_shader_parts,
+                                glw::GLuint &out_n_fragment_shader_parts,
+                                const glw::GLchar *const *&out_geometry_shader_parts,
+                                glw::GLuint &out_n_geometry_shader_parts,
+                                const glw::GLchar *const *&out_vertex_shader_parts,
+                                glw::GLuint &out_n_vertex_shader_parts) = 0;
 
-	virtual void prepareProgramInput()			= 0;
-	virtual bool verifyResult(const void* data) = 0;
+    virtual void prepareProgramInput()          = 0;
+    virtual bool verifyResult(const void *data) = 0;
 
-	/* Protected fields */
-	/* Program and shader ids */
-	glw::GLuint m_fragment_shader_id;
-	glw::GLuint m_geometry_shader_id;
-	glw::GLuint m_program_object_id;
-	glw::GLuint m_vertex_shader_id;
+    /* Protected fields */
+    /* Program and shader ids */
+    glw::GLuint m_fragment_shader_id;
+    glw::GLuint m_geometry_shader_id;
+    glw::GLuint m_program_object_id;
+    glw::GLuint m_vertex_shader_id;
 
-	/* Framebuffer object id */
-	glw::GLuint m_framebuffer_object_id;
-	glw::GLuint m_color_texture_id;
+    /* Framebuffer object id */
+    glw::GLuint m_framebuffer_object_id;
+    glw::GLuint m_color_texture_id;
 
-	/* Vertex array object */
-	glw::GLuint m_vertex_array_object_id;
+    /* Vertex array object */
+    glw::GLuint m_vertex_array_object_id;
 
 private:
-	/* Private fields */
-	/* Shaders' code */
-	const glw::GLchar* const* m_fragment_shader_parts;
-	const glw::GLchar* const* m_geometry_shader_parts;
-	const glw::GLchar* const* m_vertex_shader_parts;
+    /* Private fields */
+    /* Shaders' code */
+    const glw::GLchar *const *m_fragment_shader_parts;
+    const glw::GLchar *const *m_geometry_shader_parts;
+    const glw::GLchar *const *m_vertex_shader_parts;
 
-	glw::GLuint m_n_fragment_shader_parts;
-	glw::GLuint m_n_geometry_shader_parts;
-	glw::GLuint m_n_vertex_shader_parts;
+    glw::GLuint m_n_fragment_shader_parts;
+    glw::GLuint m_n_geometry_shader_parts;
+    glw::GLuint m_n_vertex_shader_parts;
 
-	/* Framebuffer dimensions */
-	glw::GLenum m_texture_format;
-	glw::GLuint m_texture_height;
-	glw::GLuint m_texture_pixel_size;
-	glw::GLenum m_texture_read_format;
-	glw::GLenum m_texture_read_type;
-	glw::GLuint m_texture_width;
+    /* Framebuffer dimensions */
+    glw::GLenum m_texture_format;
+    glw::GLuint m_texture_height;
+    glw::GLuint m_texture_pixel_size;
+    glw::GLenum m_texture_read_format;
+    glw::GLenum m_texture_read_type;
+    glw::GLuint m_texture_width;
 };
 
 /** Implementation of test case 16.1. Test description follows:
@@ -214,61 +214,61 @@ private:
 class GeometryShaderMaxUniformComponentsTest : public GeometryShaderLimitsTransformFeedbackBase
 {
 public:
-	/* Public methods */
-	GeometryShaderMaxUniformComponentsTest(Context& context, const ExtParameters& extParams, const char* name,
-										   const char* description);
+    /* Public methods */
+    GeometryShaderMaxUniformComponentsTest(Context &context, const ExtParameters &extParams, const char *name,
+                                           const char *description);
 
-	virtual ~GeometryShaderMaxUniformComponentsTest()
-	{
-	}
+    virtual ~GeometryShaderMaxUniformComponentsTest()
+    {
+    }
 
 protected:
-	/* Overriden from GeometryShaderLimitsTransformFeedbackBase */
-	virtual void clean();
+    /* Overriden from GeometryShaderLimitsTransformFeedbackBase */
+    virtual void clean();
 
-	virtual void getCapturedVaryings(const glw::GLchar* const*& out_captured_varyings_names,
-									 glw::GLuint&				out_n_captured_varyings);
+    virtual void getCapturedVaryings(const glw::GLchar *const *&out_captured_varyings_names,
+                                     glw::GLuint &out_n_captured_varyings);
 
-	virtual void getShaderParts(const glw::GLchar* const*& out_fragment_shader_parts,
-								glw::GLuint&			   out_n_fragment_shader_parts,
-								const glw::GLchar* const*& out_geometry_shader_parts,
-								glw::GLuint&			   out_n_geometry_shader_parts,
-								const glw::GLchar* const*& out_vertex_shader_parts,
-								glw::GLuint&			   out_n_vertex_shader_parts);
+    virtual void getShaderParts(const glw::GLchar *const *&out_fragment_shader_parts,
+                                glw::GLuint &out_n_fragment_shader_parts,
+                                const glw::GLchar *const *&out_geometry_shader_parts,
+                                glw::GLuint &out_n_geometry_shader_parts,
+                                const glw::GLchar *const *&out_vertex_shader_parts,
+                                glw::GLuint &out_n_vertex_shader_parts);
 
-	virtual void getTransformFeedbackBufferSize(glw::GLuint& out_buffer_size);
-	virtual void prepareProgramInput();
-	virtual bool verifyResult(const void* data);
+    virtual void getTransformFeedbackBufferSize(glw::GLuint &out_buffer_size);
+    virtual void prepareProgramInput();
+    virtual bool verifyResult(const void *data);
 
 private:
-	/* Private fields */
-	/* Shaders' code */
-	static const glw::GLchar* const m_fragment_shader_code;
-	static const glw::GLchar* const m_geometry_shader_code_preamble;
-	static const glw::GLchar* const m_geometry_shader_code_number_of_uniforms;
-	static const glw::GLchar* const m_geometry_shader_code_body;
-	static const glw::GLchar* const m_vertex_shader_code;
+    /* Private fields */
+    /* Shaders' code */
+    static const glw::GLchar *const m_fragment_shader_code;
+    static const glw::GLchar *const m_geometry_shader_code_preamble;
+    static const glw::GLchar *const m_geometry_shader_code_number_of_uniforms;
+    static const glw::GLchar *const m_geometry_shader_code_body;
+    static const glw::GLchar *const m_vertex_shader_code;
 
-	const glw::GLchar* m_geometry_shader_parts[4];
+    const glw::GLchar *m_geometry_shader_parts[4];
 
-	/* String used to store number of uniform vectors */
-	std::string m_max_uniform_vectors_string;
+    /* String used to store number of uniform vectors */
+    std::string m_max_uniform_vectors_string;
 
-	/* Varying names */
-	static const glw::GLchar* const m_captured_varyings_names;
+    /* Varying names */
+    static const glw::GLchar *const m_captured_varyings_names;
 
-	/* Buffer size */
-	static const glw::GLuint m_buffer_size;
+    /* Buffer size */
+    static const glw::GLuint m_buffer_size;
 
-	/* Max uniform components and vectors */
-	glw::GLint m_max_uniform_components;
-	glw::GLint m_max_uniform_vectors;
+    /* Max uniform components and vectors */
+    glw::GLint m_max_uniform_components;
+    glw::GLint m_max_uniform_vectors;
 
-	/* Uniform location */
-	glw::GLint m_uniform_location;
+    /* Uniform location */
+    glw::GLint m_uniform_location;
 
-	/* Uniform data */
-	std::vector<glw::GLint> m_uniform_data;
+    /* Uniform data */
+    std::vector<glw::GLint> m_uniform_data;
 };
 
 /** Implementation of test case 16.2. Test description follows:
@@ -290,68 +290,68 @@ private:
 class GeometryShaderMaxUniformBlocksTest : public GeometryShaderLimitsTransformFeedbackBase
 {
 public:
-	/* Public methods */
-	GeometryShaderMaxUniformBlocksTest(Context& context, const ExtParameters& extParams, const char* name,
-									   const char* description);
+    /* Public methods */
+    GeometryShaderMaxUniformBlocksTest(Context &context, const ExtParameters &extParams, const char *name,
+                                       const char *description);
 
-	virtual ~GeometryShaderMaxUniformBlocksTest()
-	{
-	}
+    virtual ~GeometryShaderMaxUniformBlocksTest()
+    {
+    }
 
 protected:
-	/* Overriden from GeometryShaderLimitsTransformFeedbackBase */
-	virtual void clean();
+    /* Overriden from GeometryShaderLimitsTransformFeedbackBase */
+    virtual void clean();
 
-	virtual void getCapturedVaryings(const glw::GLchar* const*& out_captured_varyings_names,
-									 glw::GLuint&				out_n_captured_varyings);
+    virtual void getCapturedVaryings(const glw::GLchar *const *&out_captured_varyings_names,
+                                     glw::GLuint &out_n_captured_varyings);
 
-	virtual void getShaderParts(const glw::GLchar* const*& out_fragment_shader_parts,
-								glw::GLuint&			   out_n_fragment_shader_parts,
-								const glw::GLchar* const*& out_geometry_shader_parts,
-								glw::GLuint&			   out_n_geometry_shader_parts,
-								const glw::GLchar* const*& out_vertex_shader_parts,
-								glw::GLuint&			   out_n_vertex_shader_parts);
+    virtual void getShaderParts(const glw::GLchar *const *&out_fragment_shader_parts,
+                                glw::GLuint &out_n_fragment_shader_parts,
+                                const glw::GLchar *const *&out_geometry_shader_parts,
+                                glw::GLuint &out_n_geometry_shader_parts,
+                                const glw::GLchar *const *&out_vertex_shader_parts,
+                                glw::GLuint &out_n_vertex_shader_parts);
 
-	virtual void getTransformFeedbackBufferSize(glw::GLuint& out_buffer_size);
-	virtual void prepareProgramInput();
-	virtual bool verifyResult(const void* data);
+    virtual void getTransformFeedbackBufferSize(glw::GLuint &out_buffer_size);
+    virtual void prepareProgramInput();
+    virtual bool verifyResult(const void *data);
 
 private:
-	/* Private type */
-	struct _uniform_block
-	{
-		glw::GLuint buffer_object_id;
-		glw::GLint  data;
-	};
+    /* Private type */
+    struct _uniform_block
+    {
+        glw::GLuint buffer_object_id;
+        glw::GLint data;
+    };
 
-	/* Private fields */
-	/* Shaders' code */
-	static const glw::GLchar* const m_fragment_shader_code;
-	static const glw::GLchar* const m_geometry_shader_code_preamble;
-	static const glw::GLchar* const m_geometry_shader_code_number_of_uniforms;
-	static const glw::GLchar* const m_geometry_shader_code_body_str;
-	static const glw::GLchar* const m_geometry_shader_code_body_end;
-	static const glw::GLchar* const m_vertex_shader_code;
+    /* Private fields */
+    /* Shaders' code */
+    static const glw::GLchar *const m_fragment_shader_code;
+    static const glw::GLchar *const m_geometry_shader_code_preamble;
+    static const glw::GLchar *const m_geometry_shader_code_number_of_uniforms;
+    static const glw::GLchar *const m_geometry_shader_code_body_str;
+    static const glw::GLchar *const m_geometry_shader_code_body_end;
+    static const glw::GLchar *const m_vertex_shader_code;
 
-	const glw::GLchar* m_geometry_shader_parts[6];
+    const glw::GLchar *m_geometry_shader_parts[6];
 
-	/* String used to store uniform blocks accesses */
-	std::string m_uniform_block_access_string;
+    /* String used to store uniform blocks accesses */
+    std::string m_uniform_block_access_string;
 
-	/* String used to store number of uniform blocks */
-	std::string m_max_uniform_blocks_string;
+    /* String used to store number of uniform blocks */
+    std::string m_max_uniform_blocks_string;
 
-	/* Varying names */
-	static const glw::GLchar* const m_captured_varyings_names;
+    /* Varying names */
+    static const glw::GLchar *const m_captured_varyings_names;
 
-	/* Buffer size */
-	static const glw::GLuint m_buffer_size;
+    /* Buffer size */
+    static const glw::GLuint m_buffer_size;
 
-	/* Max uniform blocks */
-	glw::GLint m_max_uniform_blocks;
+    /* Max uniform blocks */
+    glw::GLint m_max_uniform_blocks;
 
-	/* Uniform blocks data */
-	std::vector<_uniform_block> m_uniform_blocks;
+    /* Uniform blocks data */
+    std::vector<_uniform_block> m_uniform_blocks;
 };
 
 /** Implementation of test case 16.3. Test description follows:
@@ -385,58 +385,58 @@ private:
 class GeometryShaderMaxInputComponentsTest : public GeometryShaderLimitsTransformFeedbackBase
 {
 public:
-	/* Public methods */
-	GeometryShaderMaxInputComponentsTest(Context& context, const ExtParameters& extParams, const char* name,
-										 const char* description);
+    /* Public methods */
+    GeometryShaderMaxInputComponentsTest(Context &context, const ExtParameters &extParams, const char *name,
+                                         const char *description);
 
-	virtual ~GeometryShaderMaxInputComponentsTest()
-	{
-	}
+    virtual ~GeometryShaderMaxInputComponentsTest()
+    {
+    }
 
 protected:
-	/* Overriden from GeometryShaderLimitsTransformFeedbackBase */
-	virtual void clean();
+    /* Overriden from GeometryShaderLimitsTransformFeedbackBase */
+    virtual void clean();
 
-	virtual void getCapturedVaryings(const glw::GLchar* const*& out_captured_varyings_names,
-									 glw::GLuint&				out_n_captured_varyings);
+    virtual void getCapturedVaryings(const glw::GLchar *const *&out_captured_varyings_names,
+                                     glw::GLuint &out_n_captured_varyings);
 
-	virtual void getShaderParts(const glw::GLchar* const*& out_fragment_shader_parts,
-								glw::GLuint&			   out_n_fragment_shader_parts,
-								const glw::GLchar* const*& out_geometry_shader_parts,
-								glw::GLuint&			   out_n_geometry_shader_parts,
-								const glw::GLchar* const*& out_vertex_shader_parts,
-								glw::GLuint&			   out_n_vertex_shader_parts);
+    virtual void getShaderParts(const glw::GLchar *const *&out_fragment_shader_parts,
+                                glw::GLuint &out_n_fragment_shader_parts,
+                                const glw::GLchar *const *&out_geometry_shader_parts,
+                                glw::GLuint &out_n_geometry_shader_parts,
+                                const glw::GLchar *const *&out_vertex_shader_parts,
+                                glw::GLuint &out_n_vertex_shader_parts);
 
-	virtual void getTransformFeedbackBufferSize(glw::GLuint& out_buffer_size);
-	virtual void prepareProgramInput();
-	virtual bool verifyResult(const void* data);
+    virtual void getTransformFeedbackBufferSize(glw::GLuint &out_buffer_size);
+    virtual void prepareProgramInput();
+    virtual bool verifyResult(const void *data);
 
 private:
-	/* Private fields */
-	/* Shaders' code */
-	static const glw::GLchar* const m_fragment_shader_code;
-	static const glw::GLchar* const m_geometry_shader_code_preamble;
-	static const glw::GLchar* const m_geometry_shader_code_number_of_uniforms;
-	static const glw::GLchar* const m_geometry_shader_code_body;
-	static const glw::GLchar* const m_vertex_shader_code_preamble;
-	static const glw::GLchar* const m_vertex_shader_code_number_of_uniforms;
-	static const glw::GLchar* const m_vertex_shader_code_body;
+    /* Private fields */
+    /* Shaders' code */
+    static const glw::GLchar *const m_fragment_shader_code;
+    static const glw::GLchar *const m_geometry_shader_code_preamble;
+    static const glw::GLchar *const m_geometry_shader_code_number_of_uniforms;
+    static const glw::GLchar *const m_geometry_shader_code_body;
+    static const glw::GLchar *const m_vertex_shader_code_preamble;
+    static const glw::GLchar *const m_vertex_shader_code_number_of_uniforms;
+    static const glw::GLchar *const m_vertex_shader_code_body;
 
-	const glw::GLchar* m_geometry_shader_parts[4];
-	const glw::GLchar* m_vertex_shader_parts[4];
+    const glw::GLchar *m_geometry_shader_parts[4];
+    const glw::GLchar *m_vertex_shader_parts[4];
 
-	/* Max input components and vectors */
-	glw::GLint m_max_geometry_input_components;
-	glw::GLint m_max_geometry_input_vectors;
+    /* Max input components and vectors */
+    glw::GLint m_max_geometry_input_components;
+    glw::GLint m_max_geometry_input_vectors;
 
-	/* String used to store number of geometry input vectors */
-	std::string m_max_geometry_input_vectors_string;
+    /* String used to store number of geometry input vectors */
+    std::string m_max_geometry_input_vectors_string;
 
-	/* Varying names */
-	static const glw::GLchar* const m_captured_varyings_names;
+    /* Varying names */
+    static const glw::GLchar *const m_captured_varyings_names;
 
-	/* Buffer size */
-	static const glw::GLuint m_buffer_size;
+    /* Buffer size */
+    static const glw::GLuint m_buffer_size;
 };
 
 /** Implementation of test case 16.4. Test description follows:
@@ -493,77 +493,77 @@ private:
 class GeometryShaderMaxOutputComponentsTest : public GeometryShaderLimitsRenderingBase
 {
 public:
-	/* Public methods */
-	GeometryShaderMaxOutputComponentsTest(Context& context, const ExtParameters& extParams, const char* name,
-										  const char* description);
+    /* Public methods */
+    GeometryShaderMaxOutputComponentsTest(Context &context, const ExtParameters &extParams, const char *name,
+                                          const char *description);
 
-	virtual ~GeometryShaderMaxOutputComponentsTest()
-	{
-	}
+    virtual ~GeometryShaderMaxOutputComponentsTest()
+    {
+    }
 
 protected:
-	/* Methods overriden from GeometryShaderLimitsRenderingBase */
-	virtual void clean();
+    /* Methods overriden from GeometryShaderLimitsRenderingBase */
+    virtual void clean();
 
-	virtual void getDrawCallDetails(glw::GLenum& out_primitive_type, glw::GLuint& out_n_vertices);
+    virtual void getDrawCallDetails(glw::GLenum &out_primitive_type, glw::GLuint &out_n_vertices);
 
-	virtual void getFramebufferDetails(glw::GLenum& out_texture_format, glw::GLenum& out_texture_read_format,
-									   glw::GLenum& out_texture_read_type, glw::GLuint& out_texture_width,
-									   glw::GLuint& out_texture_height, glw::GLuint& out_texture_pixel_size);
+    virtual void getFramebufferDetails(glw::GLenum &out_texture_format, glw::GLenum &out_texture_read_format,
+                                       glw::GLenum &out_texture_read_type, glw::GLuint &out_texture_width,
+                                       glw::GLuint &out_texture_height, glw::GLuint &out_texture_pixel_size);
 
-	virtual void getRequiredPointSize(glw::GLfloat& out_point_size);
+    virtual void getRequiredPointSize(glw::GLfloat &out_point_size);
 
-	virtual void getShaderParts(const glw::GLchar* const*& out_fragment_shader_parts,
-								glw::GLuint&			   out_n_fragment_shader_parts,
-								const glw::GLchar* const*& out_geometry_shader_parts,
-								glw::GLuint&			   out_n_geometry_shader_parts,
-								const glw::GLchar* const*& out_vertex_shader_parts,
-								glw::GLuint&			   out_n_vertex_shader_parts);
+    virtual void getShaderParts(const glw::GLchar *const *&out_fragment_shader_parts,
+                                glw::GLuint &out_n_fragment_shader_parts,
+                                const glw::GLchar *const *&out_geometry_shader_parts,
+                                glw::GLuint &out_n_geometry_shader_parts,
+                                const glw::GLchar *const *&out_vertex_shader_parts,
+                                glw::GLuint &out_n_vertex_shader_parts);
 
-	virtual void prepareProgramInput();
-	virtual bool verifyResult(const void* data);
+    virtual void prepareProgramInput();
+    virtual bool verifyResult(const void *data);
 
 private:
-	/* Private methods */
-	void prepareFragmentShader(std::string& out_shader_code) const;
-	void prepareGeometryShader(std::string& out_shader_code) const;
+    /* Private methods */
+    void prepareFragmentShader(std::string &out_shader_code) const;
+    void prepareGeometryShader(std::string &out_shader_code) const;
 
-	/* Private fields */
-	/* Shaders' code */
-	static const glw::GLchar* const m_common_shader_code_gs_fs_out;
-	static const glw::GLchar* const m_common_shader_code_number_of_points;
-	static const glw::GLchar* const m_common_shader_code_gs_fs_out_definitions;
-	static const glw::GLchar* const m_fragment_shader_code_preamble;
-	static const glw::GLchar* const m_fragment_shader_code_flat_in_ivec4;
-	static const glw::GLchar* const m_fragment_shader_code_sum;
-	static const glw::GLchar* const m_fragment_shader_code_body_begin;
-	static const glw::GLchar* const m_fragment_shader_code_body_end;
-	static const glw::GLchar* const m_geometry_shader_code_preamble;
-	static const glw::GLchar* const m_geometry_shader_code_layout;
-	static const glw::GLchar* const m_geometry_shader_code_flat_out_ivec4;
-	static const glw::GLchar* const m_geometry_shader_code_assignment;
-	static const glw::GLchar* const m_geometry_shader_code_body_begin;
-	static const glw::GLchar* const m_geometry_shader_code_body_end;
-	static const glw::GLchar* const m_vertex_shader_code;
+    /* Private fields */
+    /* Shaders' code */
+    static const glw::GLchar *const m_common_shader_code_gs_fs_out;
+    static const glw::GLchar *const m_common_shader_code_number_of_points;
+    static const glw::GLchar *const m_common_shader_code_gs_fs_out_definitions;
+    static const glw::GLchar *const m_fragment_shader_code_preamble;
+    static const glw::GLchar *const m_fragment_shader_code_flat_in_ivec4;
+    static const glw::GLchar *const m_fragment_shader_code_sum;
+    static const glw::GLchar *const m_fragment_shader_code_body_begin;
+    static const glw::GLchar *const m_fragment_shader_code_body_end;
+    static const glw::GLchar *const m_geometry_shader_code_preamble;
+    static const glw::GLchar *const m_geometry_shader_code_layout;
+    static const glw::GLchar *const m_geometry_shader_code_flat_out_ivec4;
+    static const glw::GLchar *const m_geometry_shader_code_assignment;
+    static const glw::GLchar *const m_geometry_shader_code_body_begin;
+    static const glw::GLchar *const m_geometry_shader_code_body_end;
+    static const glw::GLchar *const m_vertex_shader_code;
 
-	/* Storage for prepared fragment and geometry shader */
-	std::string		   m_fragment_shader_code;
-	const glw::GLchar* m_fragment_shader_code_c_str;
-	std::string		   m_geometry_shader_code;
-	const glw::GLchar* m_geometry_shader_code_c_str;
+    /* Storage for prepared fragment and geometry shader */
+    std::string m_fragment_shader_code;
+    const glw::GLchar *m_fragment_shader_code_c_str;
+    std::string m_geometry_shader_code;
+    const glw::GLchar *m_geometry_shader_code_c_str;
 
-	/* Framebuffer dimensions */
-	glw::GLuint				 m_texture_width;
-	static const glw::GLuint m_texture_height;
-	static const glw::GLuint m_texture_pixel_size;
-	static const glw::GLuint m_point_size;
+    /* Framebuffer dimensions */
+    glw::GLuint m_texture_width;
+    static const glw::GLuint m_texture_height;
+    static const glw::GLuint m_texture_pixel_size;
+    static const glw::GLuint m_point_size;
 
-	/* Max number of output components */
-	glw::GLint m_max_output_components;
-	glw::GLint m_max_output_vectors;
-	glw::GLint m_max_total_output_components;
-	glw::GLint m_n_available_vectors;
-	glw::GLint m_n_output_points;
+    /* Max number of output components */
+    glw::GLint m_max_output_components;
+    glw::GLint m_max_output_vectors;
+    glw::GLint m_max_total_output_components;
+    glw::GLint m_n_available_vectors;
+    glw::GLint m_n_output_points;
 };
 
 /** Implementation of test case 16.5. Test description follows:
@@ -593,23 +593,23 @@ private:
 class GeometryShaderMaxOutputVerticesTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderMaxOutputVerticesTest(Context& context, const ExtParameters& extParams, const char* name,
-										const char* description);
+    /* Public methods */
+    GeometryShaderMaxOutputVerticesTest(Context &context, const ExtParameters &extParams, const char *name,
+                                        const char *description);
 
-	virtual ~GeometryShaderMaxOutputVerticesTest()
-	{
-	}
+    virtual ~GeometryShaderMaxOutputVerticesTest()
+    {
+    }
 
-	virtual IterateResult iterate(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private fields */
-	/* Shaders' code */
-	static const glw::GLchar* const m_fragment_shader_code;
-	static const glw::GLchar* const m_geometry_shader_code_preamble;
-	static const glw::GLchar* const m_geometry_shader_code_body;
-	static const glw::GLchar* const m_vertex_shader_code;
+    /* Private fields */
+    /* Shaders' code */
+    static const glw::GLchar *const m_fragment_shader_code;
+    static const glw::GLchar *const m_geometry_shader_code_preamble;
+    static const glw::GLchar *const m_geometry_shader_code_body;
+    static const glw::GLchar *const m_vertex_shader_code;
 };
 
 /** Implementation of test case 16.6. Test description follows:
@@ -626,74 +626,74 @@ private:
 class GeometryShaderMaxOutputComponentsSinglePointTest : public GeometryShaderLimitsRenderingBase
 {
 public:
-	/* Public methods */
-	GeometryShaderMaxOutputComponentsSinglePointTest(Context& context, const ExtParameters& extParams, const char* name,
-													 const char* description);
+    /* Public methods */
+    GeometryShaderMaxOutputComponentsSinglePointTest(Context &context, const ExtParameters &extParams, const char *name,
+                                                     const char *description);
 
-	virtual ~GeometryShaderMaxOutputComponentsSinglePointTest()
-	{
-	}
+    virtual ~GeometryShaderMaxOutputComponentsSinglePointTest()
+    {
+    }
 
 protected:
-	/* Methods overriden from GeometryShaderLimitsRenderingBase */
-	virtual void clean();
+    /* Methods overriden from GeometryShaderLimitsRenderingBase */
+    virtual void clean();
 
-	virtual void getDrawCallDetails(glw::GLenum& out_primitive_type, glw::GLuint& out_n_vertices);
+    virtual void getDrawCallDetails(glw::GLenum &out_primitive_type, glw::GLuint &out_n_vertices);
 
-	virtual void getFramebufferDetails(glw::GLenum& out_texture_format, glw::GLenum& out_texture_read_format,
-									   glw::GLenum& out_texture_read_type, glw::GLuint& out_texture_width,
-									   glw::GLuint& out_texture_height, glw::GLuint& out_texture_pixel_size);
+    virtual void getFramebufferDetails(glw::GLenum &out_texture_format, glw::GLenum &out_texture_read_format,
+                                       glw::GLenum &out_texture_read_type, glw::GLuint &out_texture_width,
+                                       glw::GLuint &out_texture_height, glw::GLuint &out_texture_pixel_size);
 
-	virtual void getRequiredPointSize(glw::GLfloat& out_point_size);
+    virtual void getRequiredPointSize(glw::GLfloat &out_point_size);
 
-	virtual void getShaderParts(const glw::GLchar* const*& out_fragment_shader_parts,
-								glw::GLuint&			   out_n_fragment_shader_parts,
-								const glw::GLchar* const*& out_geometry_shader_parts,
-								glw::GLuint&			   out_n_geometry_shader_parts,
-								const glw::GLchar* const*& out_vertex_shader_parts,
-								glw::GLuint&			   out_n_vertex_shader_parts);
+    virtual void getShaderParts(const glw::GLchar *const *&out_fragment_shader_parts,
+                                glw::GLuint &out_n_fragment_shader_parts,
+                                const glw::GLchar *const *&out_geometry_shader_parts,
+                                glw::GLuint &out_n_geometry_shader_parts,
+                                const glw::GLchar *const *&out_vertex_shader_parts,
+                                glw::GLuint &out_n_vertex_shader_parts);
 
-	virtual void prepareProgramInput();
-	virtual bool verifyResult(const void* data);
+    virtual void prepareProgramInput();
+    virtual bool verifyResult(const void *data);
 
 private:
-	/* Private methods */
-	void prepareFragmentShader(std::string& out_shader_code) const;
-	void prepareGeometryShader(std::string& out_shader_code) const;
+    /* Private methods */
+    void prepareFragmentShader(std::string &out_shader_code) const;
+    void prepareGeometryShader(std::string &out_shader_code) const;
 
-	/* Private fields */
-	/* Shaders' code */
-	static const glw::GLchar* const m_common_shader_code_gs_fs_out;
-	static const glw::GLchar* const m_common_shader_code_gs_fs_out_definitions;
-	static const glw::GLchar* const m_fragment_shader_code_preamble;
-	static const glw::GLchar* const m_fragment_shader_code_flat_in_ivec4;
-	static const glw::GLchar* const m_fragment_shader_code_sum;
-	static const glw::GLchar* const m_fragment_shader_code_body_begin;
-	static const glw::GLchar* const m_fragment_shader_code_body_end;
-	static const glw::GLchar* const m_geometry_shader_code_preamble;
-	static const glw::GLchar* const m_geometry_shader_code_flat_out_ivec4;
-	static const glw::GLchar* const m_geometry_shader_code_assignment;
-	static const glw::GLchar* const m_geometry_shader_code_body_begin;
-	static const glw::GLchar* const m_geometry_shader_code_body_end;
-	static const glw::GLchar* const m_vertex_shader_code;
+    /* Private fields */
+    /* Shaders' code */
+    static const glw::GLchar *const m_common_shader_code_gs_fs_out;
+    static const glw::GLchar *const m_common_shader_code_gs_fs_out_definitions;
+    static const glw::GLchar *const m_fragment_shader_code_preamble;
+    static const glw::GLchar *const m_fragment_shader_code_flat_in_ivec4;
+    static const glw::GLchar *const m_fragment_shader_code_sum;
+    static const glw::GLchar *const m_fragment_shader_code_body_begin;
+    static const glw::GLchar *const m_fragment_shader_code_body_end;
+    static const glw::GLchar *const m_geometry_shader_code_preamble;
+    static const glw::GLchar *const m_geometry_shader_code_flat_out_ivec4;
+    static const glw::GLchar *const m_geometry_shader_code_assignment;
+    static const glw::GLchar *const m_geometry_shader_code_body_begin;
+    static const glw::GLchar *const m_geometry_shader_code_body_end;
+    static const glw::GLchar *const m_vertex_shader_code;
 
-	/* Storage for prepared fragment and geometry shader */
-	std::string m_fragment_shader_code;
-	std::string m_geometry_shader_code;
+    /* Storage for prepared fragment and geometry shader */
+    std::string m_fragment_shader_code;
+    std::string m_geometry_shader_code;
 
-	const glw::GLchar* m_fragment_shader_code_c_str;
-	const glw::GLchar* m_geometry_shader_code_c_str;
+    const glw::GLchar *m_fragment_shader_code_c_str;
+    const glw::GLchar *m_geometry_shader_code_c_str;
 
-	/* Framebuffer dimensions */
-	static const glw::GLuint m_texture_width;
-	static const glw::GLuint m_texture_height;
-	static const glw::GLuint m_texture_pixel_size;
-	static const glw::GLuint m_point_size;
+    /* Framebuffer dimensions */
+    static const glw::GLuint m_texture_width;
+    static const glw::GLuint m_texture_height;
+    static const glw::GLuint m_texture_pixel_size;
+    static const glw::GLuint m_point_size;
 
-	/* Max number of output components */
-	glw::GLint m_max_output_components;
-	glw::GLint m_max_output_vectors;
-	glw::GLint m_n_available_vectors;
+    /* Max number of output components */
+    glw::GLint m_max_output_components;
+    glw::GLint m_max_output_vectors;
+    glw::GLint m_n_available_vectors;
 };
 
 /** Implementation of test case 16.7. Test description follows:
@@ -764,69 +764,69 @@ private:
 class GeometryShaderMaxTextureUnitsTest : public GeometryShaderLimitsRenderingBase
 {
 public:
-	/* Public methods */
-	GeometryShaderMaxTextureUnitsTest(Context& context, const ExtParameters& extParams, const char* name,
-									  const char* description);
+    /* Public methods */
+    GeometryShaderMaxTextureUnitsTest(Context &context, const ExtParameters &extParams, const char *name,
+                                      const char *description);
 
-	virtual ~GeometryShaderMaxTextureUnitsTest()
-	{
-	}
+    virtual ~GeometryShaderMaxTextureUnitsTest()
+    {
+    }
 
 protected:
-	/* Methods overriden from GeometryShaderLimitsRenderingBase */
-	virtual void clean();
+    /* Methods overriden from GeometryShaderLimitsRenderingBase */
+    virtual void clean();
 
-	virtual void getDrawCallDetails(glw::GLenum& out_primitive_type, glw::GLuint& out_n_vertices);
+    virtual void getDrawCallDetails(glw::GLenum &out_primitive_type, glw::GLuint &out_n_vertices);
 
-	virtual void getFramebufferDetails(glw::GLenum& out_texture_format, glw::GLenum& out_texture_read_format,
-									   glw::GLenum& out_texture_read_type, glw::GLuint& out_texture_width,
-									   glw::GLuint& out_texture_height, glw::GLuint& out_texture_pixel_size);
+    virtual void getFramebufferDetails(glw::GLenum &out_texture_format, glw::GLenum &out_texture_read_format,
+                                       glw::GLenum &out_texture_read_type, glw::GLuint &out_texture_width,
+                                       glw::GLuint &out_texture_height, glw::GLuint &out_texture_pixel_size);
 
-	virtual void getRequiredPointSize(glw::GLfloat& out_point_size);
+    virtual void getRequiredPointSize(glw::GLfloat &out_point_size);
 
-	virtual void getShaderParts(const glw::GLchar* const*& out_fragment_shader_parts,
-								glw::GLuint&			   out_n_fragment_shader_parts,
-								const glw::GLchar* const*& out_geometry_shader_parts,
-								glw::GLuint&			   out_n_geometry_shader_parts,
-								const glw::GLchar* const*& out_vertex_shader_parts,
-								glw::GLuint&			   out_n_vertex_shader_parts);
+    virtual void getShaderParts(const glw::GLchar *const *&out_fragment_shader_parts,
+                                glw::GLuint &out_n_fragment_shader_parts,
+                                const glw::GLchar *const *&out_geometry_shader_parts,
+                                glw::GLuint &out_n_geometry_shader_parts,
+                                const glw::GLchar *const *&out_vertex_shader_parts,
+                                glw::GLuint &out_n_vertex_shader_parts);
 
-	virtual void prepareProgramInput();
-	virtual bool verifyResult(const void* data);
+    virtual void prepareProgramInput();
+    virtual bool verifyResult(const void *data);
 
 private:
-	/* Private types */
-	struct _texture_data
-	{
-		glw::GLuint texture_id;
-		glw::GLint  data;
-	};
-	typedef std::vector<_texture_data> textureContainer;
+    /* Private types */
+    struct _texture_data
+    {
+        glw::GLuint texture_id;
+        glw::GLint data;
+    };
+    typedef std::vector<_texture_data> textureContainer;
 
-	/* Private fields */
-	/* Shaders' code */
-	static const glw::GLchar* const m_fragment_shader_code;
-	static const glw::GLchar* const m_geometry_shader_code_preamble;
-	static const glw::GLchar* const m_geometry_shader_code_body;
-	static const glw::GLchar* const m_vertex_shader_code_preamble;
-	static const glw::GLchar* const m_vertex_shader_code_body;
+    /* Private fields */
+    /* Shaders' code */
+    static const glw::GLchar *const m_fragment_shader_code;
+    static const glw::GLchar *const m_geometry_shader_code_preamble;
+    static const glw::GLchar *const m_geometry_shader_code_body;
+    static const glw::GLchar *const m_vertex_shader_code_preamble;
+    static const glw::GLchar *const m_vertex_shader_code_body;
 
-	/* Storage for vertex and geometry shader parts */
-	const glw::GLchar* m_geometry_shader_parts[3];
-	const glw::GLchar* m_vertex_shader_parts[3];
+    /* Storage for vertex and geometry shader parts */
+    const glw::GLchar *m_geometry_shader_parts[3];
+    const glw::GLchar *m_vertex_shader_parts[3];
 
-	/* Framebuffer dimensions */
-	glw::GLuint				 m_texture_width;
-	static const glw::GLuint m_texture_height;
-	static const glw::GLuint m_texture_pixel_size;
-	static const glw::GLuint m_point_size;
+    /* Framebuffer dimensions */
+    glw::GLuint m_texture_width;
+    static const glw::GLuint m_texture_height;
+    static const glw::GLuint m_texture_pixel_size;
+    static const glw::GLuint m_point_size;
 
-	/* Max number of texture units */
-	glw::GLint  m_max_texture_units;
-	std::string m_max_texture_units_string;
+    /* Max number of texture units */
+    glw::GLint m_max_texture_units;
+    std::string m_max_texture_units_string;
 
-	/* Texture units */
-	textureContainer m_textures;
+    /* Texture units */
+    textureContainer m_textures;
 };
 
 /** Implementation of test case 16.8. Test description follows:
@@ -898,67 +898,67 @@ private:
 class GeometryShaderMaxInvocationsTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderMaxInvocationsTest(Context& context, const ExtParameters& extParams, const char* name,
-									 const char* description);
+    /* Public methods */
+    GeometryShaderMaxInvocationsTest(Context &context, const ExtParameters &extParams, const char *name,
+                                     const char *description);
 
-	virtual ~GeometryShaderMaxInvocationsTest()
-	{
-	}
+    virtual ~GeometryShaderMaxInvocationsTest()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	void initTest(void);
+    /* Private methods */
+    void initTest(void);
 
-	/* Verification of results */
-	bool verifyResultOfMultipleInvocationsPass(unsigned char* result_image);
-	bool verifyResultOfSingleInvocationPass(unsigned char* result_image);
+    /* Verification of results */
+    bool verifyResultOfMultipleInvocationsPass(unsigned char *result_image);
+    bool verifyResultOfSingleInvocationPass(unsigned char *result_image);
 
-	/* Private fields */
-	/* Program and shader ids for multiple GS invocations */
-	glw::GLuint m_fragment_shader_id_for_multiple_invocations_pass;
-	glw::GLuint m_geometry_shader_id_for_multiple_invocations_pass;
-	glw::GLuint m_program_object_id_for_multiple_invocations_pass;
-	glw::GLuint m_vertex_shader_id_for_multiple_invocations_pass;
+    /* Private fields */
+    /* Program and shader ids for multiple GS invocations */
+    glw::GLuint m_fragment_shader_id_for_multiple_invocations_pass;
+    glw::GLuint m_geometry_shader_id_for_multiple_invocations_pass;
+    glw::GLuint m_program_object_id_for_multiple_invocations_pass;
+    glw::GLuint m_vertex_shader_id_for_multiple_invocations_pass;
 
-	/* Program and shader ids for single GS invocation */
-	glw::GLuint m_fragment_shader_id_for_single_invocation_pass;
-	glw::GLuint m_geometry_shader_id_for_single_invocation_pass;
-	glw::GLuint m_program_object_id_for_single_invocation_pass;
-	glw::GLuint m_vertex_shader_id_for_single_invocation_pass;
+    /* Program and shader ids for single GS invocation */
+    glw::GLuint m_fragment_shader_id_for_single_invocation_pass;
+    glw::GLuint m_geometry_shader_id_for_single_invocation_pass;
+    glw::GLuint m_program_object_id_for_single_invocation_pass;
+    glw::GLuint m_vertex_shader_id_for_single_invocation_pass;
 
-	/* Shaders' code */
-	static const glw::GLchar* const m_fragment_shader_code;
-	static const glw::GLchar* const m_geometry_shader_code_preamble;
-	static const glw::GLchar* const m_geometry_shader_code_layout;
-	static const glw::GLchar* const m_geometry_shader_code_layout_invocations;
-	static const glw::GLchar* const m_geometry_shader_code_body;
-	static const glw::GLchar* const m_vertex_shader_code;
+    /* Shaders' code */
+    static const glw::GLchar *const m_fragment_shader_code;
+    static const glw::GLchar *const m_geometry_shader_code_preamble;
+    static const glw::GLchar *const m_geometry_shader_code_layout;
+    static const glw::GLchar *const m_geometry_shader_code_layout_invocations;
+    static const glw::GLchar *const m_geometry_shader_code_body;
+    static const glw::GLchar *const m_vertex_shader_code;
 
-	const glw::GLchar* m_geometry_shader_parts_for_multiple_invocations_pass[16];
-	const glw::GLchar* m_geometry_shader_parts_for_single_invocation_pass[16];
+    const glw::GLchar *m_geometry_shader_parts_for_multiple_invocations_pass[16];
+    const glw::GLchar *m_geometry_shader_parts_for_single_invocation_pass[16];
 
-	/* Max GS invocations */
-	glw::GLint m_max_geometry_shader_invocations;
+    /* Max GS invocations */
+    glw::GLint m_max_geometry_shader_invocations;
 
-	/* String used to store maximum number of GS invocations */
-	std::string m_max_geometry_shader_invocations_string;
+    /* String used to store maximum number of GS invocations */
+    std::string m_max_geometry_shader_invocations_string;
 
-	/* Framebuffer */
-	glw::GLuint m_framebuffer_object_id;
-	glw::GLuint m_color_texture_id;
+    /* Framebuffer */
+    glw::GLuint m_framebuffer_object_id;
+    glw::GLuint m_color_texture_id;
 
-	/* Framebuffer dimensions */
-	glw::GLuint				 m_texture_width;
-	static const glw::GLuint m_triangle_edge_length;
-	static const glw::GLuint m_texture_height;
-	static const glw::GLuint m_texture_pixel_size;
+    /* Framebuffer dimensions */
+    glw::GLuint m_texture_width;
+    static const glw::GLuint m_triangle_edge_length;
+    static const glw::GLuint m_texture_height;
+    static const glw::GLuint m_texture_pixel_size;
 
-	/* Vertex array object */
-	glw::GLuint m_vertex_array_object_id;
+    /* Vertex array object */
+    glw::GLuint m_vertex_array_object_id;
 };
 
 /** Implementation of test case 16.9. Test description follows:
@@ -1065,83 +1065,83 @@ private:
 class GeometryShaderMaxCombinedTextureUnitsTest : public GeometryShaderLimitsRenderingBase
 {
 public:
-	/* Public methods */
-	GeometryShaderMaxCombinedTextureUnitsTest(Context& context, const ExtParameters& extParams, const char* name,
-											  const char* description);
+    /* Public methods */
+    GeometryShaderMaxCombinedTextureUnitsTest(Context &context, const ExtParameters &extParams, const char *name,
+                                              const char *description);
 
-	virtual ~GeometryShaderMaxCombinedTextureUnitsTest()
-	{
-	}
+    virtual ~GeometryShaderMaxCombinedTextureUnitsTest()
+    {
+    }
 
 protected:
-	/* Methods overriden from GeometryShaderLimitsRenderingBase */
-	virtual void clean();
+    /* Methods overriden from GeometryShaderLimitsRenderingBase */
+    virtual void clean();
 
-	virtual void getDrawCallDetails(glw::GLenum& out_primitive_type, glw::GLuint& out_n_vertices);
+    virtual void getDrawCallDetails(glw::GLenum &out_primitive_type, glw::GLuint &out_n_vertices);
 
-	virtual void getFramebufferDetails(glw::GLenum& out_texture_format, glw::GLenum& out_texture_read_format,
-									   glw::GLenum& out_texture_read_type, glw::GLuint& out_texture_width,
-									   glw::GLuint& out_texture_height, glw::GLuint& out_texture_pixel_size);
+    virtual void getFramebufferDetails(glw::GLenum &out_texture_format, glw::GLenum &out_texture_read_format,
+                                       glw::GLenum &out_texture_read_type, glw::GLuint &out_texture_width,
+                                       glw::GLuint &out_texture_height, glw::GLuint &out_texture_pixel_size);
 
-	virtual void getRequiredPointSize(glw::GLfloat& out_point_size);
+    virtual void getRequiredPointSize(glw::GLfloat &out_point_size);
 
-	virtual void getShaderParts(const glw::GLchar* const*& out_fragment_shader_parts,
-								glw::GLuint&			   out_n_fragment_shader_parts,
-								const glw::GLchar* const*& out_geometry_shader_parts,
-								glw::GLuint&			   out_n_geometry_shader_parts,
-								const glw::GLchar* const*& out_vertex_shader_parts,
-								glw::GLuint&			   out_n_vertex_shader_parts);
+    virtual void getShaderParts(const glw::GLchar *const *&out_fragment_shader_parts,
+                                glw::GLuint &out_n_fragment_shader_parts,
+                                const glw::GLchar *const *&out_geometry_shader_parts,
+                                glw::GLuint &out_n_geometry_shader_parts,
+                                const glw::GLchar *const *&out_vertex_shader_parts,
+                                glw::GLuint &out_n_vertex_shader_parts);
 
-	virtual void prepareProgramInput();
-	virtual bool verifyResult(const void* data);
+    virtual void prepareProgramInput();
+    virtual bool verifyResult(const void *data);
 
 private:
-	/* Private types */
-	struct _texture_data
-	{
-		glw::GLuint texture_id;
-		glw::GLuint data;
-	};
-	typedef std::vector<_texture_data> textureContainer;
+    /* Private types */
+    struct _texture_data
+    {
+        glw::GLuint texture_id;
+        glw::GLuint data;
+    };
+    typedef std::vector<_texture_data> textureContainer;
 
-	/* Private fields */
-	/* Shaders' code */
-	static const glw::GLchar* const m_fragment_shader_code_preamble;
-	static const glw::GLchar* const m_fragment_shader_code_body;
-	static const glw::GLchar* const m_geometry_shader_code_preamble;
-	static const glw::GLchar* const m_geometry_shader_code_body;
-	static const glw::GLchar* const m_vertex_shader_code_preamble;
-	static const glw::GLchar* const m_vertex_shader_code_body;
+    /* Private fields */
+    /* Shaders' code */
+    static const glw::GLchar *const m_fragment_shader_code_preamble;
+    static const glw::GLchar *const m_fragment_shader_code_body;
+    static const glw::GLchar *const m_geometry_shader_code_preamble;
+    static const glw::GLchar *const m_geometry_shader_code_body;
+    static const glw::GLchar *const m_vertex_shader_code_preamble;
+    static const glw::GLchar *const m_vertex_shader_code_body;
 
-	/* Storage for vertex and geometry shader parts */
-	const glw::GLchar* m_fragment_shader_parts[3];
-	const glw::GLchar* m_geometry_shader_parts[3];
-	const glw::GLchar* m_vertex_shader_parts[3];
+    /* Storage for vertex and geometry shader parts */
+    const glw::GLchar *m_fragment_shader_parts[3];
+    const glw::GLchar *m_geometry_shader_parts[3];
+    const glw::GLchar *m_vertex_shader_parts[3];
 
-	/* Framebuffer dimensions */
-	glw::GLuint				 m_texture_width;
-	static const glw::GLuint m_texture_height;
-	static const glw::GLuint m_texture_pixel_size;
-	static const glw::GLuint m_point_size;
+    /* Framebuffer dimensions */
+    glw::GLuint m_texture_width;
+    static const glw::GLuint m_texture_height;
+    static const glw::GLuint m_texture_pixel_size;
+    static const glw::GLuint m_point_size;
 
-	/* Max number of texture units */
-	glw::GLint  m_max_combined_texture_units;
-	glw::GLint  m_max_fragment_texture_units;
-	glw::GLint  m_max_geometry_texture_units;
-	glw::GLint  m_max_vertex_texture_units;
-	glw::GLint  m_min_texture_units;
-	glw::GLint  m_n_fragment_texture_units;
-	glw::GLint  m_n_geometry_texture_units;
-	glw::GLint  m_n_texture_units;
-	glw::GLint  m_n_vertex_texture_units;
-	std::string m_n_fragment_texture_units_string;
-	std::string m_n_geometry_texture_units_string;
-	std::string m_n_vertex_texture_units_string;
+    /* Max number of texture units */
+    glw::GLint m_max_combined_texture_units;
+    glw::GLint m_max_fragment_texture_units;
+    glw::GLint m_max_geometry_texture_units;
+    glw::GLint m_max_vertex_texture_units;
+    glw::GLint m_min_texture_units;
+    glw::GLint m_n_fragment_texture_units;
+    glw::GLint m_n_geometry_texture_units;
+    glw::GLint m_n_texture_units;
+    glw::GLint m_n_vertex_texture_units;
+    std::string m_n_fragment_texture_units_string;
+    std::string m_n_geometry_texture_units_string;
+    std::string m_n_vertex_texture_units_string;
 
-	/* Texture units */
-	textureContainer m_textures;
+    /* Texture units */
+    textureContainer m_textures;
 };
 
-} /* glcts */
+} // namespace glcts
 
 #endif // _ESEXTCGEOMETRYSHADERLIMITS_HPP

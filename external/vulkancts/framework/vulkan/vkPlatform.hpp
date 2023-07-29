@@ -38,75 +38,80 @@ namespace vk
 class Library
 {
 public:
-										Library					(void) {}
-	virtual								~Library				(void) {}
+    Library(void)
+    {
+    }
+    virtual ~Library(void)
+    {
+    }
 
-	virtual const PlatformInterface&	getPlatformInterface	(void) const = 0;
-	virtual const tcu::FunctionLibrary&	getFunctionLibrary		(void) const = 0;
+    virtual const PlatformInterface &getPlatformInterface(void) const  = 0;
+    virtual const tcu::FunctionLibrary &getFunctionLibrary(void) const = 0;
 };
 
 class PlatformDriver : public PlatformInterface
 {
 public:
-				PlatformDriver	(const tcu::FunctionLibrary& library);
-				~PlatformDriver	(void);
+    PlatformDriver(const tcu::FunctionLibrary &library);
+    ~PlatformDriver(void);
 
 #include "vkConcretePlatformInterface.inl"
 
-				virtual	GetInstanceProcAddrFunc	getGetInstanceProcAddr  () const {
-					return m_vk.getInstanceProcAddr;
-				}
+    virtual GetInstanceProcAddrFunc getGetInstanceProcAddr() const
+    {
+        return m_vk.getInstanceProcAddr;
+    }
 
 protected:
-	struct Functions
-	{
+    struct Functions
+    {
 #include "vkPlatformFunctionPointers.inl"
-	};
+    };
 
-	Functions	m_vk;
+    Functions m_vk;
 };
 
 class InstanceDriver : public InstanceInterface
 {
 public:
-				InstanceDriver	(const PlatformInterface& platformInterface, VkInstance instance);
-				~InstanceDriver	(void);
+    InstanceDriver(const PlatformInterface &platformInterface, VkInstance instance);
+    ~InstanceDriver(void);
 
 #include "vkConcreteInstanceInterface.inl"
 
 protected:
-	void		loadFunctions	(const PlatformInterface& platformInterface, VkInstance instance);
+    void loadFunctions(const PlatformInterface &platformInterface, VkInstance instance);
 
-	struct Functions
-	{
+    struct Functions
+    {
 #include "vkInstanceFunctionPointers.inl"
-	};
+    };
 
-	Functions	m_vk;
+    Functions m_vk;
 };
 
 class DeviceDriver : public DeviceInterface
 {
 public:
-				DeviceDriver	(const PlatformInterface& platformInterface, VkInstance instance, VkDevice device);
-				~DeviceDriver	(void);
+    DeviceDriver(const PlatformInterface &platformInterface, VkInstance instance, VkDevice device);
+    ~DeviceDriver(void);
 
 #include "vkConcreteDeviceInterface.inl"
 
 protected:
-	struct Functions
-	{
+    struct Functions
+    {
 #include "vkDeviceFunctionPointers.inl"
-	};
+    };
 
-	Functions	m_vk;
+    Functions m_vk;
 };
 
 // Defined in vkWsiPlatform.hpp
 namespace wsi
 {
 class Display;
-} // wsi
+} // namespace wsi
 
 /*--------------------------------------------------------------------*//*!
  * \brief Vulkan platform interface
@@ -114,15 +119,19 @@ class Display;
 class Platform
 {
 public:
-							Platform			(void) {}
-							~Platform			(void) {}
+    Platform(void)
+    {
+    }
+    ~Platform(void)
+    {
+    }
 
-	virtual Library*		createLibrary		(void) const = 0;
-	virtual wsi::Display*	createWsiDisplay	(wsi::Type wsiType) const;
-	virtual bool			hasDisplay			(wsi::Type wsiType) const;
-	virtual void			describePlatform	(std::ostream& dst) const;
+    virtual Library *createLibrary(void) const = 0;
+    virtual wsi::Display *createWsiDisplay(wsi::Type wsiType) const;
+    virtual bool hasDisplay(wsi::Type wsiType) const;
+    virtual void describePlatform(std::ostream &dst) const;
 };
 
-} // vk
+} // namespace vk
 
 #endif // _VKPLATFORM_HPP

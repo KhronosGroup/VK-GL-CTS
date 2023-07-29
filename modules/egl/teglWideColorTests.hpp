@@ -31,10 +31,10 @@ namespace deqp
 namespace egl
 {
 
-TestCaseGroup* createWideColorTests (EglTestContext& eglTestCtx);
-TestCaseGroup* createHdrColorTests (EglTestContext& eglTestCtx);
+TestCaseGroup *createWideColorTests(EglTestContext &eglTestCtx);
+TestCaseGroup *createHdrColorTests(EglTestContext &eglTestCtx);
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLWIDECOLORTESTS_HPP

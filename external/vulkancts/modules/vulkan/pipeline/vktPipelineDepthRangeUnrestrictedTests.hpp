@@ -31,9 +31,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createDepthRangeUnrestrictedTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDepthRangeUnrestrictedTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEDEPTHRANGEUNRESTRICTEDTESTS_HPP

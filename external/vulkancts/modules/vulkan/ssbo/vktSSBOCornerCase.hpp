@@ -28,10 +28,10 @@
 
 namespace vkt
 {
-	namespace ssbo
-	{
-		tcu::TestCaseGroup* createSSBOCornerCaseTests (tcu::TestContext& testCtx);
-	} // ssbo
-} // vkt
+namespace ssbo
+{
+tcu::TestCaseGroup *createSSBOCornerCaseTests(tcu::TestContext &testCtx);
+} // namespace ssbo
+} // namespace vkt
 
 #endif // _VKTSSBOCORNERCASE_HPP

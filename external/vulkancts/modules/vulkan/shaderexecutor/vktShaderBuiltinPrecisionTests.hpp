@@ -36,52 +36,52 @@ namespace shaderexecutor
 class BuiltinPrecisionTests : public tcu::TestCaseGroup
 {
 public:
-									BuiltinPrecisionTests				(tcu::TestContext& testCtx);
-	virtual							~BuiltinPrecisionTests				(void);
+    BuiltinPrecisionTests(tcu::TestContext &testCtx);
+    virtual ~BuiltinPrecisionTests(void);
 
-	virtual void					init								(void);
+    virtual void init(void);
 
-									BuiltinPrecisionTests				(const BuiltinPrecisionTests&) = delete;
-	BuiltinPrecisionTests&			operator=							(const BuiltinPrecisionTests&) = delete;
+    BuiltinPrecisionTests(const BuiltinPrecisionTests &)            = delete;
+    BuiltinPrecisionTests &operator=(const BuiltinPrecisionTests &) = delete;
 };
 
 class BuiltinPrecision16BitTests : public tcu::TestCaseGroup
 {
 public:
-									BuiltinPrecision16BitTests			(tcu::TestContext& testCtx);
-	virtual							~BuiltinPrecision16BitTests			(void);
+    BuiltinPrecision16BitTests(tcu::TestContext &testCtx);
+    virtual ~BuiltinPrecision16BitTests(void);
 
-	virtual void					init								(void);
+    virtual void init(void);
 
-									BuiltinPrecision16BitTests			(const BuiltinPrecision16BitTests&) = delete;
-	BuiltinPrecision16BitTests&		operator=							(const BuiltinPrecision16BitTests&) = delete;
+    BuiltinPrecision16BitTests(const BuiltinPrecision16BitTests &)            = delete;
+    BuiltinPrecision16BitTests &operator=(const BuiltinPrecision16BitTests &) = delete;
 };
 
 class BuiltinPrecision16Storage32BitTests : public tcu::TestCaseGroup
 {
 public:
-												BuiltinPrecision16Storage32BitTests	(tcu::TestContext& testCtx);
-	virtual										~BuiltinPrecision16Storage32BitTests	(void);
+    BuiltinPrecision16Storage32BitTests(tcu::TestContext &testCtx);
+    virtual ~BuiltinPrecision16Storage32BitTests(void);
 
-	virtual void								init(void);
+    virtual void init(void);
 
-												BuiltinPrecision16Storage32BitTests	(const BuiltinPrecision16Storage32BitTests&) = delete;
-	BuiltinPrecision16Storage32BitTests&		operator=							(const BuiltinPrecision16Storage32BitTests&) = delete;
+    BuiltinPrecision16Storage32BitTests(const BuiltinPrecision16Storage32BitTests &)            = delete;
+    BuiltinPrecision16Storage32BitTests &operator=(const BuiltinPrecision16Storage32BitTests &) = delete;
 };
 
 class BuiltinPrecisionDoubleTests : public tcu::TestCaseGroup
 {
 public:
-									BuiltinPrecisionDoubleTests			(tcu::TestContext& testCtx);
-	virtual							~BuiltinPrecisionDoubleTests		(void);
+    BuiltinPrecisionDoubleTests(tcu::TestContext &testCtx);
+    virtual ~BuiltinPrecisionDoubleTests(void);
 
-	virtual void					init								(void);
+    virtual void init(void);
 
-									BuiltinPrecisionDoubleTests			(const BuiltinPrecisionDoubleTests&) = delete;
-	BuiltinPrecisionDoubleTests&	operator=							(const BuiltinPrecisionDoubleTests&) = delete;
+    BuiltinPrecisionDoubleTests(const BuiltinPrecisionDoubleTests &)            = delete;
+    BuiltinPrecisionDoubleTests &operator=(const BuiltinPrecisionDoubleTests &) = delete;
 };
 
-} // shaderexecutor
-} // vkt
+} // namespace shaderexecutor
+} // namespace vkt
 
 #endif // _VKTSHADERBUILTINPRECISIONTESTS_HPP

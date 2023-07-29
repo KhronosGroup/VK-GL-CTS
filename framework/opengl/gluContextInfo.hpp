@@ -39,38 +39,38 @@ template <typename T, class ComputeValue>
 class CachedValue
 {
 public:
-	CachedValue (ComputeValue compute = ComputeValue(), const T& defaultValue = T())
-		: m_compute		(compute)
-		, m_value		(defaultValue)
-		, m_isComputed	(false)
-	{
-	}
+    CachedValue(ComputeValue compute = ComputeValue(), const T &defaultValue = T())
+        : m_compute(compute)
+        , m_value(defaultValue)
+        , m_isComputed(false)
+    {
+    }
 
-	const T& getValue (const RenderContext& context) const
-	{
-		if (!m_isComputed)
-		{
-			m_value			= m_compute(context);
-			m_isComputed	= true;
-		}
-		return m_value;
-	}
+    const T &getValue(const RenderContext &context) const
+    {
+        if (!m_isComputed)
+        {
+            m_value      = m_compute(context);
+            m_isComputed = true;
+        }
+        return m_value;
+    }
 
 private:
-	ComputeValue	m_compute;
-	mutable T		m_value;
-	mutable bool	m_isComputed;
+    ComputeValue m_compute;
+    mutable T m_value;
+    mutable bool m_isComputed;
 };
 
 class GetCompressedTextureFormats
 {
 public:
-	std::set<int> operator() (const RenderContext& context) const;
+    std::set<int> operator()(const RenderContext &context) const;
 };
 
-typedef CachedValue<std::set<int>, GetCompressedTextureFormats>	CompressedTextureFormats;
+typedef CachedValue<std::set<int>, GetCompressedTextureFormats> CompressedTextureFormats;
 
-bool IsES3Compatible(const glw::Functions& gl);
+bool IsES3Compatible(const glw::Functions &gl);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Context information & limit query.
@@ -78,40 +78,58 @@ bool IsES3Compatible(const glw::Functions& gl);
 class ContextInfo
 {
 public:
-	virtual										~ContextInfo						(void);
+    virtual ~ContextInfo(void);
 
-	virtual int									getInt								(int param) const;
-	virtual bool								getBool								(int param) const;
-	virtual const char*							getString							(int param) const;
+    virtual int getInt(int param) const;
+    virtual bool getBool(int param) const;
+    virtual const char *getString(int param) const;
 
-	virtual bool								isVertexUniformLoopSupported		(void) const { return true; }
-	virtual bool								isVertexDynamicLoopSupported		(void) const { return true; }
-	virtual bool								isFragmentHighPrecisionSupported	(void) const { return true; }
-	virtual bool								isFragmentUniformLoopSupported		(void) const { return true; }
-	virtual bool								isFragmentDynamicLoopSupported		(void) const { return true; }
+    virtual bool isVertexUniformLoopSupported(void) const
+    {
+        return true;
+    }
+    virtual bool isVertexDynamicLoopSupported(void) const
+    {
+        return true;
+    }
+    virtual bool isFragmentHighPrecisionSupported(void) const
+    {
+        return true;
+    }
+    virtual bool isFragmentUniformLoopSupported(void) const
+    {
+        return true;
+    }
+    virtual bool isFragmentDynamicLoopSupported(void) const
+    {
+        return true;
+    }
 
-	virtual bool								isCompressedTextureFormatSupported	(int format) const;
+    virtual bool isCompressedTextureFormatSupported(int format) const;
 
-	const std::vector<std::string>&				getExtensions						(void) const { return m_extensions; }
-	bool										isExtensionSupported				(const char* extName) const;
+    const std::vector<std::string> &getExtensions(void) const
+    {
+        return m_extensions;
+    }
+    bool isExtensionSupported(const char *extName) const;
 
-	bool											isES3Compatible() const;
+    bool isES3Compatible() const;
 
-	static ContextInfo*							create								(const RenderContext& context);
+    static ContextInfo *create(const RenderContext &context);
 
 protected:
-												ContextInfo							(const RenderContext& context);
+    ContextInfo(const RenderContext &context);
 
-	const RenderContext&						m_context;
+    const RenderContext &m_context;
 
 private:
-												ContextInfo							(const ContextInfo& other);
-	ContextInfo&								operator=							(const ContextInfo& other);
+    ContextInfo(const ContextInfo &other);
+    ContextInfo &operator=(const ContextInfo &other);
 
-	std::vector<std::string>					m_extensions;
-	CompressedTextureFormats					m_compressedTextureFormats;
+    std::vector<std::string> m_extensions;
+    CompressedTextureFormats m_compressedTextureFormats;
 };
 
-} // glu
+} // namespace glu
 
 #endif // _GLUCONTEXTINFO_HPP

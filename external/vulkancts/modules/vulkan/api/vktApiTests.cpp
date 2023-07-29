@@ -60,52 +60,52 @@ namespace api
 namespace
 {
 
-void createBufferViewTests (tcu::TestCaseGroup* bufferViewTests)
+void createBufferViewTests(tcu::TestCaseGroup *bufferViewTests)
 {
-	tcu::TestContext&	testCtx		= bufferViewTests->getTestContext();
+    tcu::TestContext &testCtx = bufferViewTests->getTestContext();
 
-	bufferViewTests->addChild(createBufferViewCreateTests	(testCtx));
-	bufferViewTests->addChild(createBufferViewAccessTests	(testCtx));
+    bufferViewTests->addChild(createBufferViewCreateTests(testCtx));
+    bufferViewTests->addChild(createBufferViewAccessTests(testCtx));
 }
 
-void createApiTests (tcu::TestCaseGroup* apiTests)
+void createApiTests(tcu::TestCaseGroup *apiTests)
 {
-	tcu::TestContext&	testCtx		= apiTests->getTestContext();
+    tcu::TestContext &testCtx = apiTests->getTestContext();
 
-	apiTests->addChild(createVersionSanityCheckTests			(testCtx));
-	apiTests->addChild(createDriverPropertiesTests				(testCtx));
-	apiTests->addChild(createSmokeTests							(testCtx));
-	apiTests->addChild(api::createFeatureInfoTests				(testCtx));
-	apiTests->addChild(createDeviceDrmPropertiesTests			(testCtx));
-	apiTests->addChild(createDeviceInitializationTests			(testCtx));
-	apiTests->addChild(createObjectManagementTests				(testCtx));
-	apiTests->addChild(createBufferTests						(testCtx));
-	apiTests->addChild(createBufferMarkerTests					(testCtx));
-	apiTests->addChild(createTestGroup							(testCtx, "buffer_view",	"BufferView tests",		createBufferViewTests));
-	apiTests->addChild(createCommandBuffersTests				(testCtx));
-	apiTests->addChild(createCopiesAndBlittingTests				(testCtx));
-	apiTests->addChild(createImageClearingTests					(testCtx));
-	apiTests->addChild(createFillAndUpdateBufferTests			(testCtx));
-	apiTests->addChild(createDescriptorPoolTests				(testCtx));
-	apiTests->addChild(createNullHandleTests					(testCtx));
-	apiTests->addChild(createGranularityQueryTests				(testCtx));
-	apiTests->addChild(createMemoryCommitmentTests				(testCtx));
-	apiTests->addChild(createExternalMemoryTests				(testCtx));
-	apiTests->addChild(createMaintenance3Tests					(testCtx));
-	apiTests->addChild(createDescriptorSetTests					(testCtx));
-	apiTests->addChild(createPipelineTests						(testCtx));
-	apiTests->addChild(createMemoryRequirementInvarianceTests	(testCtx));
-	apiTests->addChild(createToolingInfoTests					(testCtx));
-	apiTests->addChild(createFormatPropertiesExtendedKHRTests	(testCtx));
-	apiTests->addChild(createBufferMemoryRequirementsTests		(testCtx));
+    apiTests->addChild(createVersionSanityCheckTests(testCtx));
+    apiTests->addChild(createDriverPropertiesTests(testCtx));
+    apiTests->addChild(createSmokeTests(testCtx));
+    apiTests->addChild(api::createFeatureInfoTests(testCtx));
+    apiTests->addChild(createDeviceDrmPropertiesTests(testCtx));
+    apiTests->addChild(createDeviceInitializationTests(testCtx));
+    apiTests->addChild(createObjectManagementTests(testCtx));
+    apiTests->addChild(createBufferTests(testCtx));
+    apiTests->addChild(createBufferMarkerTests(testCtx));
+    apiTests->addChild(createTestGroup(testCtx, "buffer_view", "BufferView tests", createBufferViewTests));
+    apiTests->addChild(createCommandBuffersTests(testCtx));
+    apiTests->addChild(createCopiesAndBlittingTests(testCtx));
+    apiTests->addChild(createImageClearingTests(testCtx));
+    apiTests->addChild(createFillAndUpdateBufferTests(testCtx));
+    apiTests->addChild(createDescriptorPoolTests(testCtx));
+    apiTests->addChild(createNullHandleTests(testCtx));
+    apiTests->addChild(createGranularityQueryTests(testCtx));
+    apiTests->addChild(createMemoryCommitmentTests(testCtx));
+    apiTests->addChild(createExternalMemoryTests(testCtx));
+    apiTests->addChild(createMaintenance3Tests(testCtx));
+    apiTests->addChild(createDescriptorSetTests(testCtx));
+    apiTests->addChild(createPipelineTests(testCtx));
+    apiTests->addChild(createMemoryRequirementInvarianceTests(testCtx));
+    apiTests->addChild(createToolingInfoTests(testCtx));
+    apiTests->addChild(createFormatPropertiesExtendedKHRTests(testCtx));
+    apiTests->addChild(createBufferMemoryRequirementsTests(testCtx));
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "api", "API Tests", createApiTests);
+    return createTestGroup(testCtx, "api", "API Tests", createApiTests);
 }
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt

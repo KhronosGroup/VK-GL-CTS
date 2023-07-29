@@ -36,18 +36,18 @@ namespace Functional
 class FboApiTests : public TestCaseGroup
 {
 public:
-					FboApiTests			(Context& context);
-	virtual			~FboApiTests		(void);
+    FboApiTests(Context &context);
+    virtual ~FboApiTests(void);
 
-	virtual void	init				(void);
+    virtual void init(void);
 
 private:
-					FboApiTests			(const FboApiTests& other);
-	FboApiTests&	operator=			(const FboApiTests& other);
+    FboApiTests(const FboApiTests &other);
+    FboApiTests &operator=(const FboApiTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FFBOAPITESTS_HPP

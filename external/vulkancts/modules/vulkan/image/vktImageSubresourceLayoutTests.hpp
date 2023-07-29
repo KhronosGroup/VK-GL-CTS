@@ -32,8 +32,8 @@ namespace vkt
 namespace image
 {
 
-tcu::TestCaseGroup* createImageSubresourceLayoutTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageSubresourceLayoutTests(tcu::TestContext &testCtx);
 
 }
-}
+} // namespace vkt
 #endif // _VKTIMAGESUBRESOURCELAYOUTTESTS_HPP

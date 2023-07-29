@@ -27,7 +27,7 @@ namespace tcu
 {
 
 //! Does some dummy calculations to try and get the CPU working at full speed.
-void warmupCPU (void);
+void warmupCPU(void);
 
 namespace warmupCPUInternal
 {
@@ -37,16 +37,21 @@ namespace warmupCPUInternal
 class Dummy
 {
 public:
-								Dummy	(void) : m_v(new float) {}
-								~Dummy	(void) { delete m_v; }
+    Dummy(void) : m_v(new float)
+    {
+    }
+    ~Dummy(void)
+    {
+        delete m_v;
+    }
 
-	volatile float* volatile	m_v;
+    volatile float *volatile m_v;
 };
 
 extern volatile Dummy g_dummy;
 
-}
+} // namespace warmupCPUInternal
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUCPUWARMUP_HPP

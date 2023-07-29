@@ -45,87 +45,112 @@ namespace ios
 class ScreenManager
 {
 public:
-									ScreenManager			(tcuEAGLView* view);
-									~ScreenManager			(void);
+    ScreenManager(tcuEAGLView *view);
+    ~ScreenManager(void);
 
-	CAEAGLLayer*					acquireScreen			(void);
-	void							releaseScreen			(CAEAGLLayer* layer);
+    CAEAGLLayer *acquireScreen(void);
+    void releaseScreen(CAEAGLLayer *layer);
 
 private:
-									ScreenManager			(const ScreenManager&);
-	ScreenManager&					operator=				(const ScreenManager&);
+    ScreenManager(const ScreenManager &);
+    ScreenManager &operator=(const ScreenManager &);
 
-	tcuEAGLView*					m_view;
-	de::Mutex						m_viewLock;
+    tcuEAGLView *m_view;
+    de::Mutex m_viewLock;
 };
 
 class ContextFactory : public glu::ContextFactory
 {
 public:
-									ContextFactory			(ScreenManager* screenManager);
-									~ContextFactory			(void);
+    ContextFactory(ScreenManager *screenManager);
+    ~ContextFactory(void);
 
-	glu::RenderContext*				createContext			(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine) const;
+    glu::RenderContext *createContext(const glu::RenderConfig &config, const tcu::CommandLine &cmdLine) const;
 
 private:
-	ScreenManager* const			m_screenManager;
+    ScreenManager *const m_screenManager;
 };
 
 class Platform : public tcu::Platform, private glu::Platform
 {
 public:
-									Platform				(ScreenManager* screenManager);
-	virtual							~Platform				(void);
+    Platform(ScreenManager *screenManager);
+    virtual ~Platform(void);
 
-	const glu::Platform&			getGLPlatform			(void) const { return static_cast<const glu::Platform&>(*this); }
+    const glu::Platform &getGLPlatform(void) const
+    {
+        return static_cast<const glu::Platform &>(*this);
+    }
 };
 
 //! EAGLContext-backed rendering context. Doesn't have default framebuffer.
 class RawContext : public glu::RenderContext
 {
 public:
-									RawContext				(glu::ContextType type);
-	virtual							~RawContext				(void);
+    RawContext(glu::ContextType type);
+    virtual ~RawContext(void);
 
-	virtual glu::ContextType		getType					(void) const { return m_type;							}
-	virtual const glw::Functions&	getFunctions			(void) const { return m_functions;						}
-	virtual const RenderTarget&		getRenderTarget			(void) const { return m_emptyTarget;					}
-	virtual deUint32				getDefaultFramebuffer	(void) const { DE_FATAL("No framebuffer"); return 0;	}
-	virtual void					postIterate				(void);
+    virtual glu::ContextType getType(void) const
+    {
+        return m_type;
+    }
+    virtual const glw::Functions &getFunctions(void) const
+    {
+        return m_functions;
+    }
+    virtual const RenderTarget &getRenderTarget(void) const
+    {
+        return m_emptyTarget;
+    }
+    virtual uint32_t getDefaultFramebuffer(void) const
+    {
+        DE_FATAL("No framebuffer");
+        return 0;
+    }
+    virtual void postIterate(void);
 
 protected:
-	EAGLContext*					getEAGLContext			(void) const { return m_context; }
+    EAGLContext *getEAGLContext(void) const
+    {
+        return m_context;
+    }
 
 private:
-	glu::ContextType				m_type;
-	EAGLContext*					m_context;
-	glw::Functions					m_functions;
-	tcu::RenderTarget				m_emptyTarget;
+    glu::ContextType m_type;
+    EAGLContext *m_context;
+    glw::Functions m_functions;
+    tcu::RenderTarget m_emptyTarget;
 };
 
 class ScreenContext : public RawContext
 {
 public:
-									ScreenContext			(ScreenManager* screenManager, const glu::RenderConfig& config);
-									~ScreenContext			(void);
+    ScreenContext(ScreenManager *screenManager, const glu::RenderConfig &config);
+    ~ScreenContext(void);
 
-	virtual const RenderTarget&		getRenderTarget			(void) const { return m_renderTarget;	}
-	virtual deUint32				getDefaultFramebuffer	(void) const { return *m_framebuffer;	}
-	virtual void					postIterate				(void);
+    virtual const RenderTarget &getRenderTarget(void) const
+    {
+        return m_renderTarget;
+    }
+    virtual uint32_t getDefaultFramebuffer(void) const
+    {
+        return *m_framebuffer;
+    }
+    virtual void postIterate(void);
 
 private:
-	void							createFramebuffer		(const glu::RenderConfig& config);
+    void createFramebuffer(const glu::RenderConfig &config);
 
-	ScreenManager*					m_screenManager;
-	CAEAGLLayer*					m_layer;
+    ScreenManager *m_screenManager;
+    CAEAGLLayer *m_layer;
 
-	glu::Framebuffer				m_framebuffer;
-	glu::Renderbuffer				m_colorBuffer;
-	glu::Renderbuffer				m_depthStencilBuffer;
-	tcu::RenderTarget				m_renderTarget;
+    glu::Framebuffer m_framebuffer;
+    glu::Renderbuffer m_colorBuffer;
+    glu::Renderbuffer m_depthStencilBuffer;
+    tcu::RenderTarget m_renderTarget;
 };
 
-} // ios
-} // tcu
+} // namespace ios
+} // namespace tcu
 
 #endif // _TCUIOSPLATFORM_H

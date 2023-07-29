@@ -31,9 +31,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup*	createSpecConstantTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSpecConstantTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINESPECCONSTANTTESTS_HPP

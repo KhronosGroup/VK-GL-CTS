@@ -27,16 +27,16 @@
 
 typedef enum deSingletonState_e
 {
-	DE_SINGLETON_STATE_NOT_INITIALIZED = 0,
-	DE_SINGLETON_STATE_INITIALIZING,
-	DE_SINGLETON_STATE_INITIALIZED,
+    DE_SINGLETON_STATE_NOT_INITIALIZED = 0,
+    DE_SINGLETON_STATE_INITIALIZING,
+    DE_SINGLETON_STATE_INITIALIZED,
 
-	DE_SINGLETON_STATE_LAST
+    DE_SINGLETON_STATE_LAST
 } deSingletonState;
 
 DE_BEGIN_EXTERN_C
 
-typedef void	(*deSingletonConstructorFunc)		(void* arg);
+typedef void (*deSingletonConstructorFunc)(void *arg);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Initialize singleton.
@@ -53,13 +53,13 @@ typedef void	(*deSingletonConstructorFunc)		(void* arg);
  * Note that singletonState memory location must be initialized to
  * DE_SINGLETON_STATE_NOT_INITIALIZED prior to any calls to deInitSingleton().
  *
- * \param singletonState	Pointer to singleton state.
- * \param constructor		Constructor function.
- * \param arg				Generic arg pointer for constructor.
+ * \param singletonState    Pointer to singleton state.
+ * \param constructor        Constructor function.
+ * \param arg                Generic arg pointer for constructor.
  *//*--------------------------------------------------------------------*/
-void			deInitSingleton						(volatile deSingletonState* singletonState, deSingletonConstructorFunc constructor, void* arg);
+void deInitSingleton(volatile deSingletonState *singletonState, deSingletonConstructorFunc constructor, void *arg);
 
-void			deSingleton_selfTest				(void);
+void deSingleton_selfTest(void);
 
 DE_END_EXTERN_C
 

@@ -31,9 +31,9 @@ namespace vkt
 namespace TransformFeedback
 {
 
-tcu::TestCaseGroup* createTransformFeedbackSimpleTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTransformFeedbackSimpleTests(tcu::TestContext &testCtx);
 
-} // TransformFeedback
-} // vkt
+} // namespace TransformFeedback
+} // namespace vkt
 
 #endif // _VKTTRANSFORMFEEDBACKSIMPLETESTS_HPP
