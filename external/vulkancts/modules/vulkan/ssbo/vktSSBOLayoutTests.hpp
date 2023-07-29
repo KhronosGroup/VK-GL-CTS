@@ -31,9 +31,9 @@ namespace vkt
 namespace ssbo
 {
 
-tcu::TestCaseGroup*		createTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx);
 
-} // ssbo
-} // vkt
+} // namespace ssbo
+} // namespace vkt
 
 #endif // _VKTSSBOLAYOUTTESTS_HPP

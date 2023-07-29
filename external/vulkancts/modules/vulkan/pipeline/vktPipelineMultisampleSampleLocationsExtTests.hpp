@@ -31,9 +31,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createMultisampleSampleLocationsExtTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createMultisampleSampleLocationsExtTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEMULTISAMPLESAMPLELOCATIONSEXTTESTS_HPP

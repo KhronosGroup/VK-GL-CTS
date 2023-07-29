@@ -92,37 +92,37 @@ namespace glcts
 class TextureBorderClampTexParameterIErrorsTest : public TextureBorderClampBase
 {
 public:
-	/* Public functions */
-	TextureBorderClampTexParameterIErrorsTest(Context& context, const ExtParameters& extParams, const char* name,
-											  const char* description);
+    /* Public functions */
+    TextureBorderClampTexParameterIErrorsTest(Context &context, const ExtParameters &extParams, const char *name,
+                                              const char *description);
 
-	virtual ~TextureBorderClampTexParameterIErrorsTest()
-	{
-	}
+    virtual ~TextureBorderClampTexParameterIErrorsTest()
+    {
+    }
 
-	virtual IterateResult iterate(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private functions */
-	virtual void initTest(void);
+    /* Private functions */
+    virtual void initTest(void);
 
-	void VerifyGLTexParameterIiv(glw::GLenum target, glw::GLenum pname, glw::GLint params, glw::GLenum expected_error);
+    void VerifyGLTexParameterIiv(glw::GLenum target, glw::GLenum pname, glw::GLint params, glw::GLenum expected_error);
 
-	void VerifyGLTexParameterIivMultipleAcceptedErrors(glw::GLenum target, glw::GLenum pname, glw::GLint params,
-													   glw::GLenum expected_error1, glw::GLenum expected_error2);
+    void VerifyGLTexParameterIivMultipleAcceptedErrors(glw::GLenum target, glw::GLenum pname, glw::GLint params,
+                                                       glw::GLenum expected_error1, glw::GLenum expected_error2);
 
-	void VerifyGLTexParameterIivForAll(glw::GLenum pname, glw::GLint params, glw::GLenum expected_error);
+    void VerifyGLTexParameterIivForAll(glw::GLenum pname, glw::GLint params, glw::GLenum expected_error);
 
-	void VerifyGLTexParameterIivTextureBaseLevelForAll(glw::GLenum pname, glw::GLint params,
-													   glw::GLenum expected_error);
+    void VerifyGLTexParameterIivTextureBaseLevelForAll(glw::GLenum pname, glw::GLint params,
+                                                       glw::GLenum expected_error);
 
-	void VerifyGLTexParameterIuiv(glw::GLenum target, glw::GLenum pname, glw::GLuint params,
-								  glw::GLenum expected_error);
+    void VerifyGLTexParameterIuiv(glw::GLenum target, glw::GLenum pname, glw::GLuint params,
+                                  glw::GLenum expected_error);
 
-	void VerifyGLTexParameterIuivForAll(glw::GLenum pname, glw::GLuint params, glw::GLenum expected_error);
+    void VerifyGLTexParameterIuivForAll(glw::GLenum pname, glw::GLuint params, glw::GLenum expected_error);
 
-	/* Private variables */
-	glw::GLboolean m_test_passed;
+    /* Private variables */
+    glw::GLboolean m_test_passed;
 };
 
 } // namespace glcts

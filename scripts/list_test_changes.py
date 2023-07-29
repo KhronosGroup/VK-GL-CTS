@@ -32,7 +32,7 @@ import re
 assert sys.version_info >= (3, 0)
 
 if len(sys.argv) == 1:
-	print("""
+    print("""
 VK-GL-CTS log scrubber
 ----------------------
 This script attempts to list changed tests since certain time or
@@ -44,39 +44,39 @@ errors. Overly broad changes are ignored (e.g, dEQP-VK.*).
 Usage: Give the git log parameters
 
 Examples:""")
-	print(sys.argv[0], '--since="two months ago"')
-	print(sys.argv[0], '--since="7.7.2019"')
-	print(sys.argv[0], 'vulkan-cts-1.1.3.1..HEAD')
-	quit()
+    print(sys.argv[0], '--since="two months ago"')
+    print(sys.argv[0], '--since="7.7.2019"')
+    print(sys.argv[0], 'vulkan-cts-1.1.3.1..HEAD')
+    quit()
 
 params = ""
 first = True
 for x in sys.argv[1:]:
-	if not first:
-		params = params + " "
-	params = params + x
-	first = False
+    if not first:
+        params = params + " "
+    params = params + x
+    first = False
 
 res = []
 
 rawlogoutput = subprocess.check_output(['git', 'log', params, '--pretty=format:"%B"'])
 logoutput = rawlogoutput.decode().split()
 for x in logoutput:
-	xs = x.strip()
-	# regexp matches various over-large test masks like "dEQP-*", "dEQP-VK*", "dEQP-VK.*",
-	# but not "dEQP-VK.a" or "dEQP-VK.*a"
-	if xs.startswith('dEQP-') and not re.search('dEQP-\w*\**\.*\**$',xs):
-		found = False
-		killlist = []
-		for y in res:
-			if fnmatch.fnmatch(xs, y):
-				found = True
-			if fnmatch.fnmatch(y, xs):
-				killlist.append(y)
-		for y in killlist:
-			res.remove(y)
-		if not found:
-			res.append(xs)
+    xs = x.strip()
+    # regexp matches various over-large test masks like "dEQP-*", "dEQP-VK*", "dEQP-VK.*",
+    # but not "dEQP-VK.a" or "dEQP-VK.*a"
+    if xs.startswith('dEQP-') and not re.search('dEQP-\w*\**\.*\**$',xs):
+        found = False
+        killlist = []
+        for y in res:
+            if fnmatch.fnmatch(xs, y):
+                found = True
+            if fnmatch.fnmatch(y, xs):
+                killlist.append(y)
+        for y in killlist:
+            res.remove(y)
+        if not found:
+            res.append(xs)
 for x in sorted(res):
-	print(x)
+    print(x)
 print(len(res), 'total')

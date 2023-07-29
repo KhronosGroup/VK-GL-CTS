@@ -39,9 +39,8 @@ extern "C"
 {
 
 #include "eglwTypes.inl"
-
 }
 
-} // eglw
+} // namespace eglw
 
 #endif // _EGLWDEFS_HPP

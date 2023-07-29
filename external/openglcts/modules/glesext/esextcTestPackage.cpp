@@ -44,20 +44,21 @@ namespace esextcts
 class TestCaseWrapper : public tcu::TestCaseExecutor
 {
 public:
-	TestCaseWrapper(ESEXTTestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism);
-	~TestCaseWrapper(void);
+    TestCaseWrapper(ESEXTTestPackage &package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism);
+    ~TestCaseWrapper(void);
 
-	void init(tcu::TestCase* testCase, const std::string& path);
-	void deinit(tcu::TestCase* testCase);
-	tcu::TestNode::IterateResult iterate(tcu::TestCase* testCase);
+    void init(tcu::TestCase *testCase, const std::string &path);
+    void deinit(tcu::TestCase *testCase);
+    tcu::TestNode::IterateResult iterate(tcu::TestCase *testCase);
 
 private:
-	ESEXTTestPackage& m_testPackage;
-	de::SharedPtr<tcu::WaiverUtil> m_waiverMechanism;
+    ESEXTTestPackage &m_testPackage;
+    de::SharedPtr<tcu::WaiverUtil> m_waiverMechanism;
 };
 
-TestCaseWrapper::TestCaseWrapper(ESEXTTestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism)
-	: m_testPackage(package), m_waiverMechanism(waiverMechanism)
+TestCaseWrapper::TestCaseWrapper(ESEXTTestPackage &package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism)
+    : m_testPackage(package)
+    , m_waiverMechanism(waiverMechanism)
 {
 }
 
@@ -65,53 +66,53 @@ TestCaseWrapper::~TestCaseWrapper(void)
 {
 }
 
-void TestCaseWrapper::init(tcu::TestCase* testCase, const std::string& path)
+void TestCaseWrapper::init(tcu::TestCase *testCase, const std::string &path)
 {
-	if (m_waiverMechanism->isOnWaiverList(path))
-		throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
+    if (m_waiverMechanism->isOnWaiverList(path))
+        throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
 
-	glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
+    glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
 
-	testCase->init();
+    testCase->init();
 }
 
-void TestCaseWrapper::deinit(tcu::TestCase* testCase)
+void TestCaseWrapper::deinit(tcu::TestCase *testCase)
 {
-	testCase->deinit();
+    testCase->deinit();
 
-	glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
+    glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
 }
 
-tcu::TestNode::IterateResult TestCaseWrapper::iterate(tcu::TestCase* testCase)
+tcu::TestNode::IterateResult TestCaseWrapper::iterate(tcu::TestCase *testCase)
 {
-	tcu::TestContext&			 testCtx   = m_testPackage.getContext().getTestContext();
-	glu::RenderContext&			 renderCtx = m_testPackage.getContext().getRenderContext();
-	tcu::TestCase::IterateResult result;
+    tcu::TestContext &testCtx     = m_testPackage.getContext().getTestContext();
+    glu::RenderContext &renderCtx = m_testPackage.getContext().getRenderContext();
+    tcu::TestCase::IterateResult result;
 
-	result = testCase->iterate();
+    result = testCase->iterate();
 
-	// Call implementation specific post-iterate routine (usually handles native events and swaps buffers)
-	try
-	{
-		renderCtx.postIterate();
-		return result;
-	}
-	catch (const tcu::ResourceError&)
-	{
-		testCtx.getLog().endCase(QP_TEST_RESULT_RESOURCE_ERROR, "Resource error in context post-iteration routine");
-		testCtx.setTerminateAfter(true);
-		return tcu::TestNode::STOP;
-	}
-	catch (const std::exception&)
-	{
-		testCtx.getLog().endCase(QP_TEST_RESULT_FAIL, "Error in context post-iteration routine");
-		return tcu::TestNode::STOP;
-	}
+    // Call implementation specific post-iterate routine (usually handles native events and swaps buffers)
+    try
+    {
+        renderCtx.postIterate();
+        return result;
+    }
+    catch (const tcu::ResourceError &)
+    {
+        testCtx.getLog().endCase(QP_TEST_RESULT_RESOURCE_ERROR, "Resource error in context post-iteration routine");
+        testCtx.setTerminateAfter(true);
+        return tcu::TestNode::STOP;
+    }
+    catch (const std::exception &)
+    {
+        testCtx.getLog().endCase(QP_TEST_RESULT_FAIL, "Error in context post-iteration routine");
+        return tcu::TestNode::STOP;
+    }
 }
 
-ESEXTTestPackage::ESEXTTestPackage(tcu::TestContext& testCtx, const char* packageName)
-	: TestPackage(testCtx, packageName, "OpenGL ES Extensions Conformance Tests",
-				  glu::ContextType(glu::ApiType::es(3, 1)), "gl_cts/data/")
+ESEXTTestPackage::ESEXTTestPackage(tcu::TestContext &testCtx, const char *packageName)
+    : TestPackage(testCtx, packageName, "OpenGL ES Extensions Conformance Tests",
+                  glu::ContextType(glu::ApiType::es(3, 1)), "gl_cts/data/")
 {
 }
 
@@ -121,41 +122,41 @@ ESEXTTestPackage::~ESEXTTestPackage(void)
 
 void ESEXTTestPackage::init(void)
 {
-	// Call init() in parent - this creates context.
-	TestPackage::init();
+    // Call init() in parent - this creates context.
+    TestPackage::init();
 
-	try
-	{
-		const glu::ContextType& context_type = getContext().getRenderContext().getType();
-		glcts::ExtParameters	extParams(glu::GLSL_VERSION_310_ES, glcts::EXTENSIONTYPE_EXT);
-		if (glu::contextSupports(context_type, glu::ApiType::es(3, 2)))
-		{
-			extParams.glslVersion = glu::GLSL_VERSION_320_ES;
-			extParams.extType	 = glcts::EXTENSIONTYPE_NONE;
-		}
+    try
+    {
+        const glu::ContextType &context_type = getContext().getRenderContext().getType();
+        glcts::ExtParameters extParams(glu::GLSL_VERSION_310_ES, glcts::EXTENSIONTYPE_EXT);
+        if (glu::contextSupports(context_type, glu::ApiType::es(3, 2)))
+        {
+            extParams.glslVersion = glu::GLSL_VERSION_320_ES;
+            extParams.extType     = glcts::EXTENSIONTYPE_NONE;
+        }
 
-		addChild(new glcts::GeometryShaderTests(getContext(), extParams));
-		addChild(new glcts::GPUShader5Tests(getContext(), extParams));
-		addChild(new glcts::TessellationShaderTests(getContext(), extParams));
-		addChild(new glcts::TextureCubeMapArrayTests(getContext(), extParams));
-		addChild(new glcts::TextureBorderClampTests(getContext(), extParams));
-		addChild(new glcts::TextureBufferTests(getContext(), extParams));
-		addChild(new glcts::DrawElementsBaseVertexTests(getContext(), extParams));
-		glcts::ExtParameters viewportParams(glu::GLSL_VERSION_310_ES, glcts::EXTENSIONTYPE_OES);
-		addChild(new glcts::ViewportArrayTests(getContext(), viewportParams));
-		addChild(new deqp::Functional::TextureShadowLodTest(getContext()));
-	}
-	catch (...)
-	{
-		// Destroy context.
-		TestPackage::deinit();
-		throw;
-	}
+        addChild(new glcts::GeometryShaderTests(getContext(), extParams));
+        addChild(new glcts::GPUShader5Tests(getContext(), extParams));
+        addChild(new glcts::TessellationShaderTests(getContext(), extParams));
+        addChild(new glcts::TextureCubeMapArrayTests(getContext(), extParams));
+        addChild(new glcts::TextureBorderClampTests(getContext(), extParams));
+        addChild(new glcts::TextureBufferTests(getContext(), extParams));
+        addChild(new glcts::DrawElementsBaseVertexTests(getContext(), extParams));
+        glcts::ExtParameters viewportParams(glu::GLSL_VERSION_310_ES, glcts::EXTENSIONTYPE_OES);
+        addChild(new glcts::ViewportArrayTests(getContext(), viewportParams));
+        addChild(new deqp::Functional::TextureShadowLodTest(getContext()));
+    }
+    catch (...)
+    {
+        // Destroy context.
+        TestPackage::deinit();
+        throw;
+    }
 }
 
-tcu::TestCaseExecutor* ESEXTTestPackage::createExecutor(void) const
+tcu::TestCaseExecutor *ESEXTTestPackage::createExecutor(void) const
 {
-	return new TestCaseWrapper(const_cast<ESEXTTestPackage&>(*this), m_waiverMechanism);
+    return new TestCaseWrapper(const_cast<ESEXTTestPackage &>(*this), m_waiverMechanism);
 }
 
-} // esextcts
+} // namespace esextcts

@@ -36,18 +36,18 @@ namespace Functional
 class RandomFragmentOpTests : public TestCaseGroup
 {
 public:
-							RandomFragmentOpTests	(Context& context);
-							~RandomFragmentOpTests	(void);
+    RandomFragmentOpTests(Context &context);
+    ~RandomFragmentOpTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							RandomFragmentOpTests	(const RandomFragmentOpTests& other);
-	RandomFragmentOpTests&	operator=				(const RandomFragmentOpTests& other);
+    RandomFragmentOpTests(const RandomFragmentOpTests &other);
+    RandomFragmentOpTests &operator=(const RandomFragmentOpTests &other);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FRANDOMFRAGMENTOPTESTS_HPP

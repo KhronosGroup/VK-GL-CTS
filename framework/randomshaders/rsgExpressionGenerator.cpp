@@ -26,63 +26,62 @@
 namespace rsg
 {
 
-ExpressionGenerator::ExpressionGenerator (GeneratorState& state)
-	: m_state(state)
+ExpressionGenerator::ExpressionGenerator(GeneratorState &state) : m_state(state)
 {
 }
 
-ExpressionGenerator::~ExpressionGenerator (void)
+ExpressionGenerator::~ExpressionGenerator(void)
 {
 }
 
-Expression* ExpressionGenerator::generate (const ValueRange& valueRange, int initialDepth)
+Expression *ExpressionGenerator::generate(const ValueRange &valueRange, int initialDepth)
 {
-	// Create root
-	m_state.setExpressionDepth(initialDepth);
-	Expression* root = Expression::createRandom(m_state, valueRange);
+    // Create root
+    m_state.setExpressionDepth(initialDepth);
+    Expression *root = Expression::createRandom(m_state, valueRange);
 
-	try
-	{
-		// Generate full expression
-		generate(root);
-	}
-	catch (const std::exception&)
-	{
-		delete root;
-		m_expressionStack.clear();
-		throw;
-	}
+    try
+    {
+        // Generate full expression
+        generate(root);
+    }
+    catch (const std::exception &)
+    {
+        delete root;
+        m_expressionStack.clear();
+        throw;
+    }
 
-	return root;
+    return root;
 }
 
-void ExpressionGenerator::generate (Expression* root)
+void ExpressionGenerator::generate(Expression *root)
 {
-	DE_ASSERT(m_expressionStack.empty());
+    DE_ASSERT(m_expressionStack.empty());
 
-	// Initialize stack
-	m_expressionStack.push_back(root);
-	m_state.setExpressionDepth(m_state.getExpressionDepth()+1);
+    // Initialize stack
+    m_expressionStack.push_back(root);
+    m_state.setExpressionDepth(m_state.getExpressionDepth() + 1);
 
-	// Process until done
-	while (!m_expressionStack.empty())
-	{
-		DE_ASSERT(m_state.getExpressionDepth() <= m_state.getShaderParameters().maxExpressionDepth);
+    // Process until done
+    while (!m_expressionStack.empty())
+    {
+        DE_ASSERT(m_state.getExpressionDepth() <= m_state.getShaderParameters().maxExpressionDepth);
 
-		Expression* curExpr = m_expressionStack[m_expressionStack.size()-1];
-		Expression*	child	= curExpr->createNextChild(m_state);
+        Expression *curExpr = m_expressionStack[m_expressionStack.size() - 1];
+        Expression *child   = curExpr->createNextChild(m_state);
 
-		if (child)
-		{
-			m_expressionStack.push_back(child);
-			m_state.setExpressionDepth(m_state.getExpressionDepth()+1);
-		}
-		else
-		{
-			m_expressionStack.pop_back();
-			m_state.setExpressionDepth(m_state.getExpressionDepth()-1);
-		}
-	}
+        if (child)
+        {
+            m_expressionStack.push_back(child);
+            m_state.setExpressionDepth(m_state.getExpressionDepth() + 1);
+        }
+        else
+        {
+            m_expressionStack.pop_back();
+            m_state.setExpressionDepth(m_state.getExpressionDepth() - 1);
+        }
+    }
 }
 
-} // rsg
+} // namespace rsg

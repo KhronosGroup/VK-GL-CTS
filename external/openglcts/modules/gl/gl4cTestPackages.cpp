@@ -106,11 +106,11 @@ namespace gl4cts
 
 // GL40TestPackage
 
-GL40TestPackage::GL40TestPackage(tcu::TestContext& testCtx, const char* packageName, const char* description,
-								 glu::ContextType renderContextType)
-	: GL33TestPackage(testCtx, packageName, packageName, renderContextType)
+GL40TestPackage::GL40TestPackage(tcu::TestContext &testCtx, const char *packageName, const char *description,
+                                 glu::ContextType renderContextType)
+    : GL33TestPackage(testCtx, packageName, packageName, renderContextType)
 {
-	(void)description;
+    (void)description;
 }
 
 GL40TestPackage::~GL40TestPackage(void)
@@ -119,38 +119,38 @@ GL40TestPackage::~GL40TestPackage(void)
 
 void GL40TestPackage::init(void)
 {
-	// Call init() in parent - this creates context.
-	GL33TestPackage::init();
+    // Call init() in parent - this creates context.
+    GL33TestPackage::init();
 
-	try
-	{
-		glcts::ExtParameters extParams(glu::GLSL_VERSION_400, glcts::EXTENSIONTYPE_NONE);
-		addChild(new glcts::DrawElementsBaseVertexTests(getContext(), extParams));
-		addChild(new glcts::InternalformatTests(getContext()));
-		addChild(new gl4cts::GPUShaderFP64Tests(getContext()));
-		addChild(new gl4cts::TextureGatherTests(getContext()));
-		addChild(new glcts::DrawIndirectTestsGL40(getContext()));
-		addChild(new gl4cts::ClipControlTests(getContext(), gl4cts::ClipControlTests::API_GL_ARB_clip_control));
-		addChild(new gl4cts::ShaderSubroutineTests(getContext()));
-		addChild(
-			new gl4cts::TextureBarrierTests(getContext(), gl4cts::TextureBarrierTests::API_GL_ARB_texture_barrier));
-		addChild(new glcts::ExposedExtensionsTests(getContext()));
-	}
-	catch (...)
-	{
-		// Destroy context.
-		TestPackage::deinit();
-		throw;
-	}
+    try
+    {
+        glcts::ExtParameters extParams(glu::GLSL_VERSION_400, glcts::EXTENSIONTYPE_NONE);
+        addChild(new glcts::DrawElementsBaseVertexTests(getContext(), extParams));
+        addChild(new glcts::InternalformatTests(getContext()));
+        addChild(new gl4cts::GPUShaderFP64Tests(getContext()));
+        addChild(new gl4cts::TextureGatherTests(getContext()));
+        addChild(new glcts::DrawIndirectTestsGL40(getContext()));
+        addChild(new gl4cts::ClipControlTests(getContext(), gl4cts::ClipControlTests::API_GL_ARB_clip_control));
+        addChild(new gl4cts::ShaderSubroutineTests(getContext()));
+        addChild(
+            new gl4cts::TextureBarrierTests(getContext(), gl4cts::TextureBarrierTests::API_GL_ARB_texture_barrier));
+        addChild(new glcts::ExposedExtensionsTests(getContext()));
+    }
+    catch (...)
+    {
+        // Destroy context.
+        TestPackage::deinit();
+        throw;
+    }
 }
 
 // GL41TestPackage
 
-GL41TestPackage::GL41TestPackage(tcu::TestContext& testCtx, const char* packageName, const char* description,
-								 glu::ContextType renderContextType)
-	: GL40TestPackage(testCtx, packageName, packageName, renderContextType)
+GL41TestPackage::GL41TestPackage(tcu::TestContext &testCtx, const char *packageName, const char *description,
+                                 glu::ContextType renderContextType)
+    : GL40TestPackage(testCtx, packageName, packageName, renderContextType)
 {
-	(void)description;
+    (void)description;
 }
 
 GL41TestPackage::~GL41TestPackage(void)
@@ -159,21 +159,21 @@ GL41TestPackage::~GL41TestPackage(void)
 
 void GL41TestPackage::init(void)
 {
-	// Call init() in parent - this creates context.
-	GL40TestPackage::init();
+    // Call init() in parent - this creates context.
+    GL40TestPackage::init();
 
-	try
-	{
-		addChild(new gl4cts::VertexAttrib64BitTests(getContext()));
-		glcts::ExtParameters extParams(glu::GLSL_VERSION_410, glcts::EXTENSIONTYPE_NONE);
-		addChild(new glcts::ViewportArrayTests(getContext(), extParams));
-	}
-	catch (...)
-	{
-		// Destroy context.
-		TestPackage::deinit();
-		throw;
-	}
+    try
+    {
+        addChild(new gl4cts::VertexAttrib64BitTests(getContext()));
+        glcts::ExtParameters extParams(glu::GLSL_VERSION_410, glcts::EXTENSIONTYPE_NONE);
+        addChild(new glcts::ViewportArrayTests(getContext(), extParams));
+    }
+    catch (...)
+    {
+        // Destroy context.
+        TestPackage::deinit();
+        throw;
+    }
 }
 
 // GL42TestPackage
@@ -181,21 +181,22 @@ void GL41TestPackage::init(void)
 class GL42ShaderTests : public deqp::TestCaseGroup
 {
 public:
-	GL42ShaderTests(deqp::Context& context) : TestCaseGroup(context, "shaders42", "Shading Language Tests")
-	{
-	}
+    GL42ShaderTests(deqp::Context &context) : TestCaseGroup(context, "shaders42", "Shading Language Tests")
+    {
+    }
 
-	void init(void)
-	{
-		addChild(new deqp::ShaderLibraryGroup(m_context, "declarations", "Declaration Tests", "gl42/declarations.test"));
-	}
+    void init(void)
+    {
+        addChild(
+            new deqp::ShaderLibraryGroup(m_context, "declarations", "Declaration Tests", "gl42/declarations.test"));
+    }
 };
 
-GL42TestPackage::GL42TestPackage(tcu::TestContext& testCtx, const char* packageName, const char* description,
-								 glu::ContextType renderContextType)
-	: GL41TestPackage(testCtx, packageName, packageName, renderContextType)
+GL42TestPackage::GL42TestPackage(tcu::TestContext &testCtx, const char *packageName, const char *description,
+                                 glu::ContextType renderContextType)
+    : GL41TestPackage(testCtx, packageName, packageName, renderContextType)
 {
-	(void)description;
+    (void)description;
 }
 
 GL42TestPackage::~GL42TestPackage(void)
@@ -204,33 +205,33 @@ GL42TestPackage::~GL42TestPackage(void)
 
 void GL42TestPackage::init(void)
 {
-	// Call init() in parent - this creates context.
-	GL41TestPackage::init();
+    // Call init() in parent - this creates context.
+    GL41TestPackage::init();
 
-	try
-	{
-		addChild(new gl4cts::MapBufferAlignmentTests(getContext()));
-		addChild(new gl4cts::ShaderAtomicCountersTests(getContext()));
-		addChild(new gl4cts::ShaderImageLoadStoreTests(getContext()));
-		addChild(new gl4cts::ShadingLanguage420PackTests(getContext()));
-		addChild(new gl4cts::TextureViewTests(getContext()));
-		addChild(new GL42ShaderTests(getContext()));
-	}
-	catch (...)
-	{
-		// Destroy context.
-		TestPackage::deinit();
-		throw;
-	}
+    try
+    {
+        addChild(new gl4cts::MapBufferAlignmentTests(getContext()));
+        addChild(new gl4cts::ShaderAtomicCountersTests(getContext()));
+        addChild(new gl4cts::ShaderImageLoadStoreTests(getContext()));
+        addChild(new gl4cts::ShadingLanguage420PackTests(getContext()));
+        addChild(new gl4cts::TextureViewTests(getContext()));
+        addChild(new GL42ShaderTests(getContext()));
+    }
+    catch (...)
+    {
+        // Destroy context.
+        TestPackage::deinit();
+        throw;
+    }
 }
 
 // GL43TestPackage
 
-GL43TestPackage::GL43TestPackage(tcu::TestContext& testCtx, const char* packageName, const char* description,
-								 glu::ContextType renderContextType)
-	: GL42TestPackage(testCtx, packageName, packageName, renderContextType)
+GL43TestPackage::GL43TestPackage(tcu::TestContext &testCtx, const char *packageName, const char *description,
+                                 glu::ContextType renderContextType)
+    : GL42TestPackage(testCtx, packageName, packageName, renderContextType)
 {
-	(void)description;
+    (void)description;
 }
 
 GL43TestPackage::~GL43TestPackage(void)
@@ -239,36 +240,36 @@ GL43TestPackage::~GL43TestPackage(void)
 
 void GL43TestPackage::init(void)
 {
-	// Call init() in parent - this creates context.
-	GL42TestPackage::init();
+    // Call init() in parent - this creates context.
+    GL42TestPackage::init();
 
-	try
-	{
-		addChild(new glcts::ArrayOfArraysTestGroupGL(getContext()));
-		addChild(new gl4cts::CopyImageTests(getContext()));
-		addChild(new glcts::DrawIndirectTestsGL43(getContext()));
-		addChild(new gl4cts::ProgramInterfaceQueryTests(getContext()));
-		addChild(new gl4cts::ComputeShaderTests(getContext()));
-		addChild(new gl4cts::ShaderStorageBufferObjectTests(getContext()));
-		addChild(new gl4cts::VertexAttribBindingTests(getContext()));
-		addChild(new gl4cts::ShaderImageSizeTests(getContext()));
-		addChild(new glcts::ExplicitUniformLocationGLTests(getContext()));
-		addChild(new glcts::BlendEquationAdvancedTests(getContext(), glu::GLSL_VERSION_430));
-		addChild(new glcts::ShaderBitfieldOperationTests(getContext(), glu::GLSL_VERSION_430));
-		addChild(new gl4cts::StencilTexturingTests(getContext()));
-		addChild(new gl4cts::SparseBufferTests(getContext()));
-		addChild(new gl4cts::SparseTextureTests(getContext()));
-		addChild(new gl4cts::IndirectParametersTests(getContext()));
-		addChild(new gl4cts::ShaderBallotTests(getContext()));
-		addChild(new glcts::ShaderConstExprTests(getContext()));
-		addChild(new glcts::AggressiveShaderOptimizationsTests(getContext()));
-	}
-	catch (...)
-	{
-		// Destroy context.
-		TestPackage::deinit();
-		throw;
-	}
+    try
+    {
+        addChild(new glcts::ArrayOfArraysTestGroupGL(getContext()));
+        addChild(new gl4cts::CopyImageTests(getContext()));
+        addChild(new glcts::DrawIndirectTestsGL43(getContext()));
+        addChild(new gl4cts::ProgramInterfaceQueryTests(getContext()));
+        addChild(new gl4cts::ComputeShaderTests(getContext()));
+        addChild(new gl4cts::ShaderStorageBufferObjectTests(getContext()));
+        addChild(new gl4cts::VertexAttribBindingTests(getContext()));
+        addChild(new gl4cts::ShaderImageSizeTests(getContext()));
+        addChild(new glcts::ExplicitUniformLocationGLTests(getContext()));
+        addChild(new glcts::BlendEquationAdvancedTests(getContext(), glu::GLSL_VERSION_430));
+        addChild(new glcts::ShaderBitfieldOperationTests(getContext(), glu::GLSL_VERSION_430));
+        addChild(new gl4cts::StencilTexturingTests(getContext()));
+        addChild(new gl4cts::SparseBufferTests(getContext()));
+        addChild(new gl4cts::SparseTextureTests(getContext()));
+        addChild(new gl4cts::IndirectParametersTests(getContext()));
+        addChild(new gl4cts::ShaderBallotTests(getContext()));
+        addChild(new glcts::ShaderConstExprTests(getContext()));
+        addChild(new glcts::AggressiveShaderOptimizationsTests(getContext()));
+    }
+    catch (...)
+    {
+        // Destroy context.
+        TestPackage::deinit();
+        throw;
+    }
 }
 
 // GL44TestPackage
@@ -276,22 +277,22 @@ void GL43TestPackage::init(void)
 class GL44ShaderTests : public deqp::TestCaseGroup
 {
 public:
-	GL44ShaderTests(deqp::Context& context) : TestCaseGroup(context, "shaders44", "Shading Language Tests")
-	{
-	}
+    GL44ShaderTests(deqp::Context &context) : TestCaseGroup(context, "shaders44", "Shading Language Tests")
+    {
+    }
 
-	void init(void)
-	{
-		addChild(
-			new deqp::ShaderLibraryGroup(m_context, "preprocessor", "Preprocessor Tests", "gl44/preprocessor.test"));
-	}
+    void init(void)
+    {
+        addChild(
+            new deqp::ShaderLibraryGroup(m_context, "preprocessor", "Preprocessor Tests", "gl44/preprocessor.test"));
+    }
 };
 
-GL44TestPackage::GL44TestPackage(tcu::TestContext& testCtx, const char* packageName, const char* description,
-								 glu::ContextType renderContextType)
-	: GL43TestPackage(testCtx, packageName, packageName, renderContextType)
+GL44TestPackage::GL44TestPackage(tcu::TestContext &testCtx, const char *packageName, const char *description,
+                                 glu::ContextType renderContextType)
+    : GL43TestPackage(testCtx, packageName, packageName, renderContextType)
 {
-	(void)description;
+    (void)description;
 }
 
 GL44TestPackage::~GL44TestPackage(void)
@@ -300,39 +301,39 @@ GL44TestPackage::~GL44TestPackage(void)
 
 void GL44TestPackage::init(void)
 {
-	// Call init() in parent - this creates context.
-	GL43TestPackage::init();
+    // Call init() in parent - this creates context.
+    GL43TestPackage::init();
 
-	try
-	{
-		addChild(new GL44ShaderTests(getContext()));
-		addChild(new gl4cts::BufferStorageTests(getContext()));
-		addChild(new gl4cts::EnhancedLayoutsTests(getContext()));
-		addChild(new glcts::LayoutBindingTests(getContext(), glu::GLSL_VERSION_440));
-		addChild(new gl4cts::MultiBindTests(getContext()));
-		addChild(new glcts::SeparateShaderObjsTests(getContext(), glu::GLSL_VERSION_440));
-		addChild(new glcts::SampleShadingTests(getContext(), glu::GLSL_VERSION_440));
-		addChild(new deqp::SampleVariablesTests(getContext(), glu::GLSL_VERSION_440));
-		addChild(new deqp::ShaderMultisampleInterpolationTests(getContext(), glu::GLSL_VERSION_440));
-		addChild(new glcts::ShaderTextureImageSamplesTests(getContext()));
-		addChild(new glcts::TextureFilterAnisotropicTests(getContext()));
+    try
+    {
+        addChild(new GL44ShaderTests(getContext()));
+        addChild(new gl4cts::BufferStorageTests(getContext()));
+        addChild(new gl4cts::EnhancedLayoutsTests(getContext()));
+        addChild(new glcts::LayoutBindingTests(getContext(), glu::GLSL_VERSION_440));
+        addChild(new gl4cts::MultiBindTests(getContext()));
+        addChild(new glcts::SeparateShaderObjsTests(getContext(), glu::GLSL_VERSION_440));
+        addChild(new glcts::SampleShadingTests(getContext(), glu::GLSL_VERSION_440));
+        addChild(new deqp::SampleVariablesTests(getContext(), glu::GLSL_VERSION_440));
+        addChild(new deqp::ShaderMultisampleInterpolationTests(getContext(), glu::GLSL_VERSION_440));
+        addChild(new glcts::ShaderTextureImageSamplesTests(getContext()));
+        addChild(new glcts::TextureFilterAnisotropicTests(getContext()));
 
-		glcts::ExtParameters extParams(glu::GLSL_VERSION_440, glcts::EXTENSIONTYPE_NONE);
-		addChild(new glcts::GeometryShaderTests(getContext(), extParams));
-		addChild(new glcts::GPUShader5Tests(getContext(), extParams));
-		addChild(new glcts::TessellationShaderTests(getContext(), extParams));
-		addChild(new glcts::TextureCubeMapArrayTests(getContext(), extParams));
-		addChild(new glcts::TextureBorderClampTests(getContext(), extParams));
-		addChild(new glcts::TextureBufferTests(getContext(), extParams));
+        glcts::ExtParameters extParams(glu::GLSL_VERSION_440, glcts::EXTENSIONTYPE_NONE);
+        addChild(new glcts::GeometryShaderTests(getContext(), extParams));
+        addChild(new glcts::GPUShader5Tests(getContext(), extParams));
+        addChild(new glcts::TessellationShaderTests(getContext(), extParams));
+        addChild(new glcts::TextureCubeMapArrayTests(getContext(), extParams));
+        addChild(new glcts::TextureBorderClampTests(getContext(), extParams));
+        addChild(new glcts::TextureBufferTests(getContext(), extParams));
 
-		//addChild(new gl4cts::ContextFlushControl::Tests(getContext()));
-	}
-	catch (...)
-	{
-		// Destroy context.
-		TestPackage::deinit();
-		throw;
-	}
+        //addChild(new gl4cts::ContextFlushControl::Tests(getContext()));
+    }
+    catch (...)
+    {
+        // Destroy context.
+        TestPackage::deinit();
+        throw;
+    }
 }
 
 // GL45TestPackage
@@ -340,21 +341,21 @@ void GL44TestPackage::init(void)
 class GL45ShaderTests : public deqp::TestCaseGroup
 {
 public:
-	GL45ShaderTests(deqp::Context& context) : TestCaseGroup(context, "shaders45", "Shading Language Tests")
-	{
-	}
+    GL45ShaderTests(deqp::Context &context) : TestCaseGroup(context, "shaders45", "Shading Language Tests")
+    {
+    }
 
-	void init(void)
-	{
-		addChild(new deqp::ShaderIntegerMixTests(getContext(), glu::GLSL_VERSION_450));
-	}
+    void init(void)
+    {
+        addChild(new deqp::ShaderIntegerMixTests(getContext(), glu::GLSL_VERSION_450));
+    }
 };
 
-GL45TestPackage::GL45TestPackage(tcu::TestContext& testCtx, const char* packageName, const char* description,
-								 glu::ContextType renderContextType)
-	: GL44TestPackage(testCtx, packageName, packageName, renderContextType)
+GL45TestPackage::GL45TestPackage(tcu::TestContext &testCtx, const char *packageName, const char *description,
+                                 glu::ContextType renderContextType)
+    : GL44TestPackage(testCtx, packageName, packageName, renderContextType)
 {
-	(void)description;
+    (void)description;
 }
 
 GL45TestPackage::~GL45TestPackage(void)
@@ -363,48 +364,48 @@ GL45TestPackage::~GL45TestPackage(void)
 
 void GL45TestPackage::init(void)
 {
-	// Call init() in parent - this creates context.
-	GL44TestPackage::init();
+    // Call init() in parent - this creates context.
+    GL44TestPackage::init();
 
-	try
-	{
-		addChild(new GL45ShaderTests(getContext()));
-		addChild(new gl4cts::ClipControlTests(getContext(), gl4cts::ClipControlTests::API_GL_45core));
-		addChild(new gl4cts::DirectStateAccess::Tests(getContext()));
-		addChild(new gl4cts::GetTextureSubImage::Tests(getContext()));
-		addChild(new gl4cts::TextureBarrierTests(getContext(), gl4cts::TextureBarrierTests::API_GL_45core));
-		addChild(new gl4cts::ConditionalRenderInverted::Tests(getContext()));
-		addChild(new gl4cts::Sync::Tests(getContext()));
-		addChild(new gl4cts::IncompleteTextureAccess::Tests(getContext()));
-		addChild(new glcts::ParallelShaderCompileTests(getContext()));
-		addChild(new gl4cts::PostDepthCoverage(getContext()));
-		addChild(new gl4cts::SparseTexture2Tests(getContext()));
-		addChild(new gl4cts::SparseTextureClampTests(getContext()));
-		addChild(new gl4cts::TextureFilterMinmax(getContext()));
-		addChild(new gl4cts::ShaderAtomicCounterOps(getContext()));
-		addChild(new gl4cts::ShaderDrawParametersTests(getContext()));
-		addChild(new gl4cts::ShaderViewportLayerArray(getContext()));
-		addChild(new gl4cts::LimitsTests(getContext()));
-		addChild(new glcts::ShaderGroupVote(getContext()));
-		addChild(new glcts::PolygonOffsetClamp(getContext()));
-		addChild(new glcts::SeparableProgramsTransformFeedbackTests(getContext()));
-		addChild(new glcts::LayoutLocationTests(getContext()));
-		addChild(new gl4cts::SpirvExtensionsTests(getContext()));
-		addChild(new gl4cts::GlSpirvTests(getContext()));
-	}
-	catch (...)
-	{
-		// Destroy context.
-		TestPackage::deinit();
-		throw;
-	}
+    try
+    {
+        addChild(new GL45ShaderTests(getContext()));
+        addChild(new gl4cts::ClipControlTests(getContext(), gl4cts::ClipControlTests::API_GL_45core));
+        addChild(new gl4cts::DirectStateAccess::Tests(getContext()));
+        addChild(new gl4cts::GetTextureSubImage::Tests(getContext()));
+        addChild(new gl4cts::TextureBarrierTests(getContext(), gl4cts::TextureBarrierTests::API_GL_45core));
+        addChild(new gl4cts::ConditionalRenderInverted::Tests(getContext()));
+        addChild(new gl4cts::Sync::Tests(getContext()));
+        addChild(new gl4cts::IncompleteTextureAccess::Tests(getContext()));
+        addChild(new glcts::ParallelShaderCompileTests(getContext()));
+        addChild(new gl4cts::PostDepthCoverage(getContext()));
+        addChild(new gl4cts::SparseTexture2Tests(getContext()));
+        addChild(new gl4cts::SparseTextureClampTests(getContext()));
+        addChild(new gl4cts::TextureFilterMinmax(getContext()));
+        addChild(new gl4cts::ShaderAtomicCounterOps(getContext()));
+        addChild(new gl4cts::ShaderDrawParametersTests(getContext()));
+        addChild(new gl4cts::ShaderViewportLayerArray(getContext()));
+        addChild(new gl4cts::LimitsTests(getContext()));
+        addChild(new glcts::ShaderGroupVote(getContext()));
+        addChild(new glcts::PolygonOffsetClamp(getContext()));
+        addChild(new glcts::SeparableProgramsTransformFeedbackTests(getContext()));
+        addChild(new glcts::LayoutLocationTests(getContext()));
+        addChild(new gl4cts::SpirvExtensionsTests(getContext()));
+        addChild(new gl4cts::GlSpirvTests(getContext()));
+    }
+    catch (...)
+    {
+        // Destroy context.
+        TestPackage::deinit();
+        throw;
+    }
 }
 
-GL46TestPackage::GL46TestPackage(tcu::TestContext& testCtx, const char* packageName, const char* description,
-								 glu::ContextType renderContextType)
-	: GL45TestPackage(testCtx, packageName, packageName, renderContextType)
+GL46TestPackage::GL46TestPackage(tcu::TestContext &testCtx, const char *packageName, const char *description,
+                                 glu::ContextType renderContextType)
+    : GL45TestPackage(testCtx, packageName, packageName, renderContextType)
 {
-	(void)description;
+    (void)description;
 }
 
 GL46TestPackage::~GL46TestPackage(void)
@@ -413,8 +414,8 @@ GL46TestPackage::~GL46TestPackage(void)
 
 void GL46TestPackage::init(void)
 {
-	// Call init() in parent - this creates context.
-	GL45TestPackage::init();
+    // Call init() in parent - this creates context.
+    GL45TestPackage::init();
 }
 
-} // gl4cts
+} // namespace gl4cts

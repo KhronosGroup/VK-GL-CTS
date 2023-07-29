@@ -33,16 +33,15 @@ namespace Draw
 class DrawIndexedTests : public tcu::TestCaseGroup
 {
 public:
-							DrawIndexedTests		(tcu::TestContext &testCtx);
-							~DrawIndexedTests		(void);
-	void					init					(void);
+    DrawIndexedTests(tcu::TestContext &testCtx);
+    ~DrawIndexedTests(void);
+    void init(void);
 
 private:
-	DrawIndexedTests								(const DrawIndexedTests &other);
-	DrawIndexedTests&		operator=				(const DrawIndexedTests &other);
-
+    DrawIndexedTests(const DrawIndexedTests &other);
+    DrawIndexedTests &operator=(const DrawIndexedTests &other);
 };
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWINDEXEDTEST_HPP

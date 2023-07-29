@@ -31,10 +31,9 @@ namespace vkt
 namespace synchronization
 {
 
-tcu::TestCaseGroup*		createBasicEventTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createBasicEventTests(tcu::TestContext &testCtx);
 
-} //synchronization
-} // vkt
-
+} // namespace synchronization
+} // namespace vkt
 
 #endif // _VKTSYNCHRONIZATIONBASICEVENTTESTS_HPP

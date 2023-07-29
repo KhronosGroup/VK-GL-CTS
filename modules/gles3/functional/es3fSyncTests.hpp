@@ -36,18 +36,18 @@ namespace Functional
 class SyncTests : public TestCaseGroup
 {
 public:
-					SyncTests	(Context& context);
-					~SyncTests	(void);
+    SyncTests(Context &context);
+    ~SyncTests(void);
 
-	void			init		(void);
+    void init(void);
 
 private:
-					SyncTests	(const SyncTests& other);
-	SyncTests&		operator=	(const SyncTests& other);
+    SyncTests(const SyncTests &other);
+    SyncTests &operator=(const SyncTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FSYNCTESTS_HPP

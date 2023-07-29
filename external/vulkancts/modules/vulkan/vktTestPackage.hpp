@@ -34,30 +34,30 @@ namespace vkt
 class BaseTestPackage : public tcu::TestPackage
 {
 public:
-								BaseTestPackage		(tcu::TestContext& testCtx, const char* name, const char* desc);
-	virtual						~BaseTestPackage	(void);
+    BaseTestPackage(tcu::TestContext &testCtx, const char *name, const char *desc);
+    virtual ~BaseTestPackage(void);
 
-	tcu::TestCaseExecutor*		createExecutor		(void) const;
+    tcu::TestCaseExecutor *createExecutor(void) const;
 };
 
 class TestPackage : public BaseTestPackage
 {
 public:
-								TestPackage			(tcu::TestContext& testCtx);
-	virtual						~TestPackage		(void);
+    TestPackage(tcu::TestContext &testCtx);
+    virtual ~TestPackage(void);
 
-	virtual void				init				(void);
+    virtual void init(void);
 };
 
 class ExperimentalTestPackage : public BaseTestPackage
 {
 public:
-								ExperimentalTestPackage	 (tcu::TestContext& testCtx);
-	virtual						~ExperimentalTestPackage (void);
+    ExperimentalTestPackage(tcu::TestContext &testCtx);
+    virtual ~ExperimentalTestPackage(void);
 
-	virtual void				init					 (void);
+    virtual void init(void);
 };
 
-} // vkt
+} // namespace vkt
 
 #endif // _VKTTESTPACKAGE_HPP

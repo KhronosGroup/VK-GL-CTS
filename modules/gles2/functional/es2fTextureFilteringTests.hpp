@@ -36,18 +36,18 @@ namespace Functional
 class TextureFilteringTests : public TestCaseGroup
 {
 public:
-								TextureFilteringTests		(Context& context);
-								~TextureFilteringTests		(void);
+    TextureFilteringTests(Context &context);
+    ~TextureFilteringTests(void);
 
-	void						init						(void);
+    void init(void);
 
 private:
-								TextureFilteringTests		(const TextureFilteringTests& other);
-	TextureFilteringTests&		operator=					(const TextureFilteringTests& other);
+    TextureFilteringTests(const TextureFilteringTests &other);
+    TextureFilteringTests &operator=(const TextureFilteringTests &other);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FTEXTUREFILTERINGTESTS_HPP

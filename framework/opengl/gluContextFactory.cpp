@@ -26,13 +26,12 @@
 namespace glu
 {
 
-ContextFactory::ContextFactory (const std::string& name, const std::string& description)
-	: FactoryBase(name, description)
+ContextFactory::ContextFactory(const std::string &name, const std::string &description) : FactoryBase(name, description)
 {
 }
 
-ContextFactory::~ContextFactory (void)
+ContextFactory::~ContextFactory(void)
 {
 }
 
-} // glu
+} // namespace glu

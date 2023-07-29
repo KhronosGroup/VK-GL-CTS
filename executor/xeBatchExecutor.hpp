@@ -37,91 +37,91 @@ namespace xe
 
 struct TargetConfiguration
 {
-	TargetConfiguration (void)
-		: maxCasesPerSession(1000)
-	{
-	}
+    TargetConfiguration(void) : maxCasesPerSession(1000)
+    {
+    }
 
-	std::string		binaryName;
-	std::string		workingDir;
-	std::string		cmdLineArgs;
-	int				maxCasesPerSession;
+    std::string binaryName;
+    std::string workingDir;
+    std::string cmdLineArgs;
+    int maxCasesPerSession;
 };
 
 class BatchExecutorLogHandler : public TestLogHandler
 {
 public:
-							BatchExecutorLogHandler		(BatchResult* batchResult);
-							~BatchExecutorLogHandler	(void);
+    BatchExecutorLogHandler(BatchResult *batchResult);
+    ~BatchExecutorLogHandler(void);
 
-	void					setSessionInfo				(const SessionInfo& sessionInfo);
+    void setSessionInfo(const SessionInfo &sessionInfo);
 
-	TestCaseResultPtr		startTestCaseResult			(const char* casePath);
-	void					testCaseResultUpdated		(const TestCaseResultPtr& resultData);
-	void					testCaseResultComplete		(const TestCaseResultPtr& resultData);
+    TestCaseResultPtr startTestCaseResult(const char *casePath);
+    void testCaseResultUpdated(const TestCaseResultPtr &resultData);
+    void testCaseResultComplete(const TestCaseResultPtr &resultData);
 
 private:
-	BatchResult*			m_batchResult;
+    BatchResult *m_batchResult;
 };
 
 class BatchExecutor
 {
 public:
-							BatchExecutor		(const TargetConfiguration& config, CommLink* commLink, const TestNode* root, const TestSet& testSet, BatchResult* batchResult, InfoLog* infoLog);
-							~BatchExecutor		(void);
+    BatchExecutor(const TargetConfiguration &config, CommLink *commLink, const TestNode *root, const TestSet &testSet,
+                  BatchResult *batchResult, InfoLog *infoLog);
+    ~BatchExecutor(void);
 
-	void					run					(void);
-	void					cancel				(void); //!< Cancel current run(), can be called from any thread.
+    void run(void);
+    void cancel(void); //!< Cancel current run(), can be called from any thread.
 
 private:
-							BatchExecutor		(const BatchExecutor& other);
-	BatchExecutor&			operator=			(const BatchExecutor& other);
+    BatchExecutor(const BatchExecutor &other);
+    BatchExecutor &operator=(const BatchExecutor &other);
 
-	bool					iterate				(void);
+    bool iterate(void);
 
-	void					onStateChanged		(CommLinkState state, const char* message);
-	void					onTestLogData		(const deUint8* bytes, size_t numBytes);
-	void					onInfoLogData		(const deUint8* bytes, size_t numBytes);
+    void onStateChanged(CommLinkState state, const char *message);
+    void onTestLogData(const uint8_t *bytes, size_t numBytes);
+    void onInfoLogData(const uint8_t *bytes, size_t numBytes);
 
-	void					launchTestSet		(const TestSet& testSet);
+    void launchTestSet(const TestSet &testSet);
 
-	// Callbacks for CommLink.
-	static void				enqueueStateChanged	(void* userPtr, CommLinkState state, const char* message);
-	static void				enqueueTestLogData	(void* userPtr, const deUint8* bytes, size_t numBytes);
-	static void				enqueueInfoLogData	(void* userPtr, const deUint8* bytes, size_t numBytes);
+    // Callbacks for CommLink.
+    static void enqueueStateChanged(void *userPtr, CommLinkState state, const char *message);
+    static void enqueueTestLogData(void *userPtr, const uint8_t *bytes, size_t numBytes);
+    static void enqueueInfoLogData(void *userPtr, const uint8_t *bytes, size_t numBytes);
 
-	// Called in CallQueue dispatch.
-	static void				dispatchStateChanged	(CallReader& data);
-	static void				dispatchTestLogData		(CallReader& data);
-	static void				dispatchInfoLogData		(CallReader& data);
+    // Called in CallQueue dispatch.
+    static void dispatchStateChanged(CallReader &data);
+    static void dispatchTestLogData(CallReader &data);
+    static void dispatchInfoLogData(CallReader &data);
 
-	enum State
-	{
-		STATE_NOT_STARTED,
-		STATE_STARTED,
-		STATE_FINISHED,
+    enum State
+    {
+        STATE_NOT_STARTED,
+        STATE_STARTED,
+        STATE_FINISHED,
 
-		STATE_LAST
-	};
+        STATE_LAST
+    };
 
-	TargetConfiguration		m_config;
-	CommLink*				m_commLink;
+    TargetConfiguration m_config;
+    CommLink *m_commLink;
 
-	const TestNode*			m_root;
-	const TestSet&			m_testSet;
+    const TestNode *m_root;
+    const TestSet &m_testSet;
 
-	BatchExecutorLogHandler	m_logHandler;
-	BatchResult*			m_batchResult;
-	InfoLog*				m_infoLog;
+    BatchExecutorLogHandler m_logHandler;
+    BatchResult *m_batchResult;
+    InfoLog *m_infoLog;
 
-	State					m_state;
-	TestSet					m_casesToExecute;
+    State m_state;
+    TestSet m_casesToExecute;
 
-	TestLogParser			m_testLogParser;
+    TestLogParser m_testLogParser;
 
-	CallQueue				m_dispatcher;
+    CallQueue m_dispatcher;
 };
 
-} // xe
+} // namespace xe
 
 #endif // _XEBATCHEXECUTOR_HPP

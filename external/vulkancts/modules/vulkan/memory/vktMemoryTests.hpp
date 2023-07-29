@@ -31,9 +31,9 @@ namespace vkt
 namespace memory
 {
 
-tcu::TestCaseGroup*		createTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx);
 
-} // memory
-} // vkt
+} // namespace memory
+} // namespace vkt
 
 #endif // _VKTMEMORYTESTS_HPP

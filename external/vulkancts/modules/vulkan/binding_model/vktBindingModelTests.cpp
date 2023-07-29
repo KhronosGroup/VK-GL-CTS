@@ -39,28 +39,28 @@ namespace BindingModel
 namespace
 {
 
-void createChildren (tcu::TestCaseGroup* group)
+void createChildren(tcu::TestCaseGroup *group)
 {
-	tcu::TestContext&	testCtx		= group->getTestContext();
+    tcu::TestContext &testCtx = group->getTestContext();
 
-	group->addChild(createShaderAccessTests(testCtx));
-	group->addChild(createDescriptorUpdateTests(testCtx));
-	group->addChild(createDescriptorSetRandomTests(testCtx));
-	group->addChild(createDescriptorCopyTests(testCtx));
-	group->addChild(createBufferDeviceAddressTests(testCtx));
-	group->addChild(createDynamicOffsetTests(testCtx));
+    group->addChild(createShaderAccessTests(testCtx));
+    group->addChild(createDescriptorUpdateTests(testCtx));
+    group->addChild(createDescriptorSetRandomTests(testCtx));
+    group->addChild(createDescriptorCopyTests(testCtx));
+    group->addChild(createBufferDeviceAddressTests(testCtx));
+    group->addChild(createDynamicOffsetTests(testCtx));
 
-	// \todo [2015-07-30 jarkko] .change_binding.{between_renderpasses, within_pass}
-	// \todo [2015-07-30 jarkko] .descriptor_set_chain
-	// \todo [2015-07-30 jarkko] .update_descriptor_set
+    // \todo [2015-07-30 jarkko] .change_binding.{between_renderpasses, within_pass}
+    // \todo [2015-07-30 jarkko] .descriptor_set_chain
+    // \todo [2015-07-30 jarkko] .update_descriptor_set
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "binding_model", "Resource binding tests", createChildren);
+    return createTestGroup(testCtx, "binding_model", "Resource binding tests", createChildren);
 }
 
-} // BindingModel
-} // vkt
+} // namespace BindingModel
+} // namespace vkt

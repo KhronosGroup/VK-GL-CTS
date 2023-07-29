@@ -37,31 +37,29 @@ namespace multisample
 class MSCaseBaseResolve : public MultisampleCaseBase
 {
 public:
-	MSCaseBaseResolve	(tcu::TestContext&		testCtx,
-						 const std::string&		name,
-						 const ImageMSParams&	imageMSParams)
-		: MultisampleCaseBase(testCtx, name, imageMSParams)
-	{}
+    MSCaseBaseResolve(tcu::TestContext &testCtx, const std::string &name, const ImageMSParams &imageMSParams)
+        : MultisampleCaseBase(testCtx, name, imageMSParams)
+    {
+    }
 };
 
 class MSInstanceBaseResolve : public MultisampleInstanceBase
 {
 public:
-							MSInstanceBaseResolve	(Context&							context,
-													 const ImageMSParams&				imageMSParams)
-								: MultisampleInstanceBase(context, imageMSParams)
-							{}
+    MSInstanceBaseResolve(Context &context, const ImageMSParams &imageMSParams)
+        : MultisampleInstanceBase(context, imageMSParams)
+    {
+    }
 
 protected:
+    tcu::TestStatus iterate(void);
 
-	tcu::TestStatus			iterate					(void);
-
-	virtual tcu::TestStatus	verifyImageData			(const vk::VkImageCreateInfo&		imageRSInfo,
-													 const tcu::ConstPixelBufferAccess&	dataRS) const = 0;
+    virtual tcu::TestStatus verifyImageData(const vk::VkImageCreateInfo &imageRSInfo,
+                                            const tcu::ConstPixelBufferAccess &dataRS) const = 0;
 };
 
-} // multisample
-} // pipeline
-} // vkt
+} // namespace multisample
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEMULTISAMPLEBASERESOLVE_HPP

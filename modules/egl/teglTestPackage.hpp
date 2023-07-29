@@ -35,19 +35,19 @@ namespace egl
 class TestPackage : public tcu::TestPackage
 {
 public:
-									TestPackage				(tcu::TestContext& testCtx);
-	virtual							~TestPackage			(void);
+    TestPackage(tcu::TestContext &testCtx);
+    virtual ~TestPackage(void);
 
-	virtual void					init					(void);
-	virtual void					deinit					(void);
+    virtual void init(void);
+    virtual void deinit(void);
 
-	tcu::TestCaseExecutor*			createExecutor			(void) const;
+    tcu::TestCaseExecutor *createExecutor(void) const;
 
 private:
-	EglTestContext*					m_eglTestCtx;
+    EglTestContext *m_eglTestCtx;
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLTESTPACKAGE_HPP

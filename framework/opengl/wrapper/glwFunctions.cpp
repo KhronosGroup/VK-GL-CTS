@@ -27,9 +27,9 @@
 namespace glw
 {
 
-Functions::Functions (void)
+Functions::Functions(void)
 {
-	deMemset(this, 0, sizeof(*this));
+    deMemset(this, 0, sizeof(*this));
 }
 
-} // glw
+} // namespace glw

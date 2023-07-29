@@ -35,42 +35,41 @@ namespace texture
 namespace
 {
 
-tcu::TestCaseGroup* createAtomicTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createAtomicTests(tcu::TestContext &testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> atomic		(new tcu::TestCaseGroup(testCtx, "atomic", "Test atomic oprerations on multisample textures"));
-	static const char				dataDir[]	= "texture/multisample/atomic";
+    de::MovePtr<tcu::TestCaseGroup> atomic(
+        new tcu::TestCaseGroup(testCtx, "atomic", "Test atomic oprerations on multisample textures"));
+    static const char dataDir[] = "texture/multisample/atomic";
 
-	static const std::string		cases[]		=
-	{
-		"storage_image_r32i",
-		"storage_image_r32ui"
-	};
+    static const std::string cases[] = {"storage_image_r32i", "storage_image_r32ui"};
 
-	std::vector<std::string>		requirements;
+    std::vector<std::string> requirements;
 
-	requirements.push_back("Features.shaderStorageImageMultisample");
+    requirements.push_back("Features.shaderStorageImageMultisample");
 
-	for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
-	{
-		const std::string			fileName	= cases[i] + ".amber";
-		cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].c_str(), "", dataDir, fileName, requirements);
+    for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
+    {
+        const std::string fileName = cases[i] + ".amber";
+        cts_amber::AmberTestCase *testCase =
+            cts_amber::createAmberTestCase(testCtx, cases[i].c_str(), "", dataDir, fileName, requirements);
 
-		atomic->addChild(testCase);
-	}
+        atomic->addChild(testCase);
+    }
 
-	return atomic.release();
+    return atomic.release();
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTextureMultisampleTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTextureMultisampleTests(tcu::TestContext &testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> multisample (new tcu::TestCaseGroup(testCtx, "multisample", "Multisample texture tests"));
+    de::MovePtr<tcu::TestCaseGroup> multisample(
+        new tcu::TestCaseGroup(testCtx, "multisample", "Multisample texture tests"));
 
-	multisample->addChild(createAtomicTests(testCtx));
+    multisample->addChild(createAtomicTests(testCtx));
 
-	return multisample.release();
+    return multisample.release();
 }
 
-} // texture
-} // vkt
+} // namespace texture
+} // namespace vkt

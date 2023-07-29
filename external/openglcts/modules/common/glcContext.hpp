@@ -33,7 +33,7 @@ namespace glu
 {
 class RenderContext;
 class ContextInfo;
-}
+} // namespace glu
 
 namespace tcu
 {
@@ -46,44 +46,44 @@ namespace deqp
 class Context
 {
 public:
-	Context(tcu::TestContext& testCtx, glu::ContextType contextType = glu::ContextType());
-	~Context(void);
+    Context(tcu::TestContext &testCtx, glu::ContextType contextType = glu::ContextType());
+    ~Context(void);
 
-	tcu::TestContext& getTestContext(void)
-	{
-		return m_testCtx;
-	}
+    tcu::TestContext &getTestContext(void)
+    {
+        return m_testCtx;
+    }
 
-	glu::RenderContext& getRenderContext(void)
-	{
-		return *m_renderCtx;
-	}
+    glu::RenderContext &getRenderContext(void)
+    {
+        return *m_renderCtx;
+    }
 
-	void setRenderContext(glu::RenderContext* renderCtx)
-	{
-		m_renderCtx = renderCtx;
-	}
+    void setRenderContext(glu::RenderContext *renderCtx)
+    {
+        m_renderCtx = renderCtx;
+    }
 
-	const glu::ContextInfo& getContextInfo(void) const
-	{
-		return *m_contextInfo;
-	}
+    const glu::ContextInfo &getContextInfo(void) const
+    {
+        return *m_contextInfo;
+    }
 
-	const tcu::RenderTarget& getRenderTarget(void) const;
+    const tcu::RenderTarget &getRenderTarget(void) const;
 
 private:
-	Context(const Context& other);
-	Context& operator=(const Context& other);
+    Context(const Context &other);
+    Context &operator=(const Context &other);
 
-	void createRenderContext(glu::ContextType& contextType, glu::ContextFlags ctxFlags = (glu::ContextFlags)0);
-	void destroyRenderContext(void);
+    void createRenderContext(glu::ContextType &contextType, glu::ContextFlags ctxFlags = (glu::ContextFlags)0);
+    void destroyRenderContext(void);
 
-	tcu::TestContext&   m_testCtx;
-	glu::RenderContext* m_renderCtx;
-	glu::ContextInfo*   m_contextInfo;
-	glu::ContextType	m_contextType;
+    tcu::TestContext &m_testCtx;
+    glu::RenderContext *m_renderCtx;
+    glu::ContextInfo *m_contextInfo;
+    glu::ContextType m_contextType;
 };
 
-} // deqp
+} // namespace deqp
 
 #endif // _GLCCONTEXT_HPP

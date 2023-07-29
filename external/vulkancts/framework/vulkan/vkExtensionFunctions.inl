@@ -2,7 +2,7 @@
  * be lost! Modify the generating script instead.
  */
 
-void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::std::vector<const char*>& functions)
+void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::std::vector<const char*>& functions)
 {
 	if (extName == "VK_KHR_surface")
 	{
@@ -956,7 +956,7 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	DE_FATAL("Extension name not found");
 }
 
-void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::std::vector<const char*>& functions)
+void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::std::vector<const char*>& functions)
 {
 	if (extName == "VK_KHR_surface")
 	{

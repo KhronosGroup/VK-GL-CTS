@@ -34,10 +34,10 @@ namespace gles31
 namespace Functional
 {
 
-TestCaseGroup* createCopyImageTests (Context& context);
+TestCaseGroup *createCopyImageTests(Context &context);
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FCOPYIMAGETESTS_HPP

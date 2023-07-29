@@ -36,23 +36,23 @@ namespace compute
 namespace
 {
 
-void createChildren (tcu::TestCaseGroup* computeTests)
+void createChildren(tcu::TestCaseGroup *computeTests)
 {
-	tcu::TestContext&	testCtx		= computeTests->getTestContext();
+    tcu::TestContext &testCtx = computeTests->getTestContext();
 
-	computeTests->addChild(createBasicComputeShaderTests(testCtx));
-	computeTests->addChild(createBasicDeviceGroupComputeShaderTests(testCtx));
-	computeTests->addChild(createCooperativeMatrixTests(testCtx));
-	computeTests->addChild(createIndirectComputeDispatchTests(testCtx));
-	computeTests->addChild(createComputeShaderBuiltinVarTests(testCtx));
+    computeTests->addChild(createBasicComputeShaderTests(testCtx));
+    computeTests->addChild(createBasicDeviceGroupComputeShaderTests(testCtx));
+    computeTests->addChild(createCooperativeMatrixTests(testCtx));
+    computeTests->addChild(createIndirectComputeDispatchTests(testCtx));
+    computeTests->addChild(createComputeShaderBuiltinVarTests(testCtx));
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "compute", "Compute shader tests", createChildren);
+    return createTestGroup(testCtx, "compute", "Compute shader tests", createChildren);
 }
 
-} // compute
-} // vkt
+} // namespace compute
+} // namespace vkt

@@ -31,10 +31,10 @@ namespace vkt
 namespace sparse
 {
 
-tcu::TestCaseGroup* createImageSparseMemoryAliasingTests(tcu::TestContext& testCtx);
-tcu::TestCaseGroup* createDeviceGroupImageSparseMemoryAliasingTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageSparseMemoryAliasingTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createDeviceGroupImageSparseMemoryAliasingTests(tcu::TestContext &testCtx);
 
-} // sparse
-} // vkt
+} // namespace sparse
+} // namespace vkt
 
 #endif // _VKTSPARSERESOURCESIMAGEMEMORYALIASING_HPP

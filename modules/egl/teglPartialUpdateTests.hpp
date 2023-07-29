@@ -34,15 +34,15 @@ namespace egl
 class PartialUpdateTests : public TestCaseGroup
 {
 public:
-						PartialUpdateTests		(EglTestContext& eglTestCtx);
-	void				init					(void);
+    PartialUpdateTests(EglTestContext &eglTestCtx);
+    void init(void);
 
 private:
-						PartialUpdateTests		(const PartialUpdateTests&);
-	PartialUpdateTests&	operator=				(const PartialUpdateTests&);
+    PartialUpdateTests(const PartialUpdateTests &);
+    PartialUpdateTests &operator=(const PartialUpdateTests &);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLPARTIALUPDATETESTS_HPP

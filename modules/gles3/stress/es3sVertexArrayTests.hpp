@@ -36,18 +36,18 @@ namespace Stress
 class VertexArrayTests : public TestCaseGroup
 {
 public:
-						VertexArrayTests	(Context& testCtx);
-						~VertexArrayTests	(void);
+    VertexArrayTests(Context &testCtx);
+    ~VertexArrayTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						VertexArrayTests	(const VertexArrayTests& other);
-	VertexArrayTests&	operator=			(const VertexArrayTests& other);
+    VertexArrayTests(const VertexArrayTests &other);
+    VertexArrayTests &operator=(const VertexArrayTests &other);
 };
 
-} // Stress
-} // gles3
-} // deqp
+} // namespace Stress
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3SVERTEXARRAYTESTS_HPP

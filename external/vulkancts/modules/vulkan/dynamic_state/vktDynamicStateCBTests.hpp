@@ -35,16 +35,16 @@ namespace DynamicState
 class DynamicStateCBTests : public tcu::TestCaseGroup
 {
 public:
-							DynamicStateCBTests			(tcu::TestContext& testCtx);
-							~DynamicStateCBTests		(void);
-	void					init						(void);
+    DynamicStateCBTests(tcu::TestContext &testCtx);
+    ~DynamicStateCBTests(void);
+    void init(void);
 
 private:
-	DynamicStateCBTests									(const DynamicStateCBTests &other);
-	DynamicStateCBTests&	operator=					(const DynamicStateCBTests &other);
+    DynamicStateCBTests(const DynamicStateCBTests &other);
+    DynamicStateCBTests &operator=(const DynamicStateCBTests &other);
 };
 
-} // DynamicState
-} // vkt
+} // namespace DynamicState
+} // namespace vkt
 
 #endif // _VKTDYNAMICSTATECBTESTS_HPP

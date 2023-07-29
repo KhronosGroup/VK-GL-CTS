@@ -461,14 +461,14 @@ VKAPI_ATTR void VKAPI_CALL destroyAccelerationStructureKHR (VkDevice device, VkA
 	freeNonDispHandle<AccelerationStructureKHR, VkAccelerationStructureKHR>(accelerationStructure, pAllocator);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceLayerProperties (deUint32* pPropertyCount, VkLayerProperties* pProperties)
+VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceLayerProperties (uint32_t* pPropertyCount, VkLayerProperties* pProperties)
 {
 	DE_UNREF(pPropertyCount);
 	DE_UNREF(pProperties);
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL enumerateDeviceLayerProperties (VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkLayerProperties* pProperties)
+VKAPI_ATTR VkResult VKAPI_CALL enumerateDeviceLayerProperties (VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkLayerProperties* pProperties)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pPropertyCount);
@@ -476,7 +476,7 @@ VKAPI_ATTR VkResult VKAPI_CALL enumerateDeviceLayerProperties (VkPhysicalDevice 
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL queueSubmit (VkQueue queue, deUint32 submitCount, const VkSubmitInfo* pSubmits, VkFence fence)
+VKAPI_ATTR VkResult VKAPI_CALL queueSubmit (VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence)
 {
 	DE_UNREF(queue);
 	DE_UNREF(submitCount);
@@ -497,7 +497,7 @@ VKAPI_ATTR VkResult VKAPI_CALL deviceWaitIdle (VkDevice device)
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL flushMappedMemoryRanges (VkDevice device, deUint32 memoryRangeCount, const VkMappedMemoryRange* pMemoryRanges)
+VKAPI_ATTR VkResult VKAPI_CALL flushMappedMemoryRanges (VkDevice device, uint32_t memoryRangeCount, const VkMappedMemoryRange* pMemoryRanges)
 {
 	DE_UNREF(device);
 	DE_UNREF(memoryRangeCount);
@@ -505,7 +505,7 @@ VKAPI_ATTR VkResult VKAPI_CALL flushMappedMemoryRanges (VkDevice device, deUint3
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL invalidateMappedMemoryRanges (VkDevice device, deUint32 memoryRangeCount, const VkMappedMemoryRange* pMemoryRanges)
+VKAPI_ATTR VkResult VKAPI_CALL invalidateMappedMemoryRanges (VkDevice device, uint32_t memoryRangeCount, const VkMappedMemoryRange* pMemoryRanges)
 {
 	DE_UNREF(device);
 	DE_UNREF(memoryRangeCount);
@@ -538,7 +538,7 @@ VKAPI_ATTR VkResult VKAPI_CALL bindImageMemory (VkDevice device, VkImage image, 
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL getImageSparseMemoryRequirements (VkDevice device, VkImage image, deUint32* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements* pSparseMemoryRequirements)
+VKAPI_ATTR void VKAPI_CALL getImageSparseMemoryRequirements (VkDevice device, VkImage image, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements* pSparseMemoryRequirements)
 {
 	DE_UNREF(device);
 	DE_UNREF(image);
@@ -546,7 +546,7 @@ VKAPI_ATTR void VKAPI_CALL getImageSparseMemoryRequirements (VkDevice device, Vk
 	DE_UNREF(pSparseMemoryRequirements);
 }
 
-VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceSparseImageFormatProperties (VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling, deUint32* pPropertyCount, VkSparseImageFormatProperties* pProperties)
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceSparseImageFormatProperties (VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling, uint32_t* pPropertyCount, VkSparseImageFormatProperties* pProperties)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(format);
@@ -558,7 +558,7 @@ VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceSparseImageFormatProperties (VkPhysi
 	DE_UNREF(pProperties);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL queueBindSparse (VkQueue queue, deUint32 bindInfoCount, const VkBindSparseInfo* pBindInfo, VkFence fence)
+VKAPI_ATTR VkResult VKAPI_CALL queueBindSparse (VkQueue queue, uint32_t bindInfoCount, const VkBindSparseInfo* pBindInfo, VkFence fence)
 {
 	DE_UNREF(queue);
 	DE_UNREF(bindInfoCount);
@@ -567,7 +567,7 @@ VKAPI_ATTR VkResult VKAPI_CALL queueBindSparse (VkQueue queue, deUint32 bindInfo
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL resetFences (VkDevice device, deUint32 fenceCount, const VkFence* pFences)
+VKAPI_ATTR VkResult VKAPI_CALL resetFences (VkDevice device, uint32_t fenceCount, const VkFence* pFences)
 {
 	DE_UNREF(device);
 	DE_UNREF(fenceCount);
@@ -582,7 +582,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getFenceStatus (VkDevice device, VkFence fence)
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL waitForFences (VkDevice device, deUint32 fenceCount, const VkFence* pFences, VkBool32 waitAll, deUint64 timeout)
+VKAPI_ATTR VkResult VKAPI_CALL waitForFences (VkDevice device, uint32_t fenceCount, const VkFence* pFences, VkBool32 waitAll, uint64_t timeout)
 {
 	DE_UNREF(device);
 	DE_UNREF(fenceCount);
@@ -613,7 +613,7 @@ VKAPI_ATTR VkResult VKAPI_CALL resetEvent (VkDevice device, VkEvent event)
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getQueryPoolResults (VkDevice device, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount, deUintptr dataSize, void* pData, VkDeviceSize stride, VkQueryResultFlags flags)
+VKAPI_ATTR VkResult VKAPI_CALL getQueryPoolResults (VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, uintptr_t dataSize, void* pData, VkDeviceSize stride, VkQueryResultFlags flags)
 {
 	DE_UNREF(device);
 	DE_UNREF(queryPool);
@@ -634,7 +634,7 @@ VKAPI_ATTR void VKAPI_CALL getImageSubresourceLayout (VkDevice device, VkImage i
 	DE_UNREF(pLayout);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPipelineCacheData (VkDevice device, VkPipelineCache pipelineCache, deUintptr* pDataSize, void* pData)
+VKAPI_ATTR VkResult VKAPI_CALL getPipelineCacheData (VkDevice device, VkPipelineCache pipelineCache, uintptr_t* pDataSize, void* pData)
 {
 	DE_UNREF(device);
 	DE_UNREF(pipelineCache);
@@ -643,7 +643,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPipelineCacheData (VkDevice device, VkPipeline
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL mergePipelineCaches (VkDevice device, VkPipelineCache dstCache, deUint32 srcCacheCount, const VkPipelineCache* pSrcCaches)
+VKAPI_ATTR VkResult VKAPI_CALL mergePipelineCaches (VkDevice device, VkPipelineCache dstCache, uint32_t srcCacheCount, const VkPipelineCache* pSrcCaches)
 {
 	DE_UNREF(device);
 	DE_UNREF(dstCache);
@@ -652,7 +652,7 @@ VKAPI_ATTR VkResult VKAPI_CALL mergePipelineCaches (VkDevice device, VkPipelineC
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL updateDescriptorSets (VkDevice device, deUint32 descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites, deUint32 descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies)
+VKAPI_ATTR void VKAPI_CALL updateDescriptorSets (VkDevice device, uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites, uint32_t descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies)
 {
 	DE_UNREF(device);
 	DE_UNREF(descriptorWriteCount);
@@ -703,7 +703,7 @@ VKAPI_ATTR void VKAPI_CALL cmdBindPipeline (VkCommandBuffer commandBuffer, VkPip
 	DE_UNREF(pipeline);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetViewport (VkCommandBuffer commandBuffer, deUint32 firstViewport, deUint32 viewportCount, const VkViewport* pViewports)
+VKAPI_ATTR void VKAPI_CALL cmdSetViewport (VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(firstViewport);
@@ -711,7 +711,7 @@ VKAPI_ATTR void VKAPI_CALL cmdSetViewport (VkCommandBuffer commandBuffer, deUint
 	DE_UNREF(pViewports);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetScissor (VkCommandBuffer commandBuffer, deUint32 firstScissor, deUint32 scissorCount, const VkRect2D* pScissors)
+VKAPI_ATTR void VKAPI_CALL cmdSetScissor (VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(firstScissor);
@@ -746,28 +746,28 @@ VKAPI_ATTR void VKAPI_CALL cmdSetDepthBounds (VkCommandBuffer commandBuffer, flo
 	DE_UNREF(maxDepthBounds);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetStencilCompareMask (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, deUint32 compareMask)
+VKAPI_ATTR void VKAPI_CALL cmdSetStencilCompareMask (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, uint32_t compareMask)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(faceMask);
 	DE_UNREF(compareMask);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetStencilWriteMask (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, deUint32 writeMask)
+VKAPI_ATTR void VKAPI_CALL cmdSetStencilWriteMask (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, uint32_t writeMask)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(faceMask);
 	DE_UNREF(writeMask);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetStencilReference (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, deUint32 reference)
+VKAPI_ATTR void VKAPI_CALL cmdSetStencilReference (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, uint32_t reference)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(faceMask);
 	DE_UNREF(reference);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdBindDescriptorSets (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, deUint32 firstSet, deUint32 descriptorSetCount, const VkDescriptorSet* pDescriptorSets, deUint32 dynamicOffsetCount, const deUint32* pDynamicOffsets)
+VKAPI_ATTR void VKAPI_CALL cmdBindDescriptorSets (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount, const uint32_t* pDynamicOffsets)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pipelineBindPoint);
@@ -787,7 +787,7 @@ VKAPI_ATTR void VKAPI_CALL cmdBindIndexBuffer (VkCommandBuffer commandBuffer, Vk
 	DE_UNREF(indexType);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdBindVertexBuffers (VkCommandBuffer commandBuffer, deUint32 firstBinding, deUint32 bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets)
+VKAPI_ATTR void VKAPI_CALL cmdBindVertexBuffers (VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(firstBinding);
@@ -796,7 +796,7 @@ VKAPI_ATTR void VKAPI_CALL cmdBindVertexBuffers (VkCommandBuffer commandBuffer, 
 	DE_UNREF(pOffsets);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDraw (VkCommandBuffer commandBuffer, deUint32 vertexCount, deUint32 instanceCount, deUint32 firstVertex, deUint32 firstInstance)
+VKAPI_ATTR void VKAPI_CALL cmdDraw (VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(vertexCount);
@@ -805,7 +805,7 @@ VKAPI_ATTR void VKAPI_CALL cmdDraw (VkCommandBuffer commandBuffer, deUint32 vert
 	DE_UNREF(firstInstance);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDrawIndexed (VkCommandBuffer commandBuffer, deUint32 indexCount, deUint32 instanceCount, deUint32 firstIndex, deInt32 vertexOffset, deUint32 firstInstance)
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndexed (VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(indexCount);
@@ -815,7 +815,7 @@ VKAPI_ATTR void VKAPI_CALL cmdDrawIndexed (VkCommandBuffer commandBuffer, deUint
 	DE_UNREF(firstInstance);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDrawIndirect (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, deUint32 drawCount, deUint32 stride)
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndirect (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(buffer);
@@ -824,7 +824,7 @@ VKAPI_ATTR void VKAPI_CALL cmdDrawIndirect (VkCommandBuffer commandBuffer, VkBuf
 	DE_UNREF(stride);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirect (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, deUint32 drawCount, deUint32 stride)
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirect (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(buffer);
@@ -833,7 +833,7 @@ VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirect (VkCommandBuffer commandBuffer
 	DE_UNREF(stride);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDispatch (VkCommandBuffer commandBuffer, deUint32 groupCountX, deUint32 groupCountY, deUint32 groupCountZ)
+VKAPI_ATTR void VKAPI_CALL cmdDispatch (VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(groupCountX);
@@ -848,7 +848,7 @@ VKAPI_ATTR void VKAPI_CALL cmdDispatchIndirect (VkCommandBuffer commandBuffer, V
 	DE_UNREF(offset);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdCopyBuffer (VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, deUint32 regionCount, const VkBufferCopy* pRegions)
+VKAPI_ATTR void VKAPI_CALL cmdCopyBuffer (VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(srcBuffer);
@@ -857,7 +857,7 @@ VKAPI_ATTR void VKAPI_CALL cmdCopyBuffer (VkCommandBuffer commandBuffer, VkBuffe
 	DE_UNREF(pRegions);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdCopyImage (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, deUint32 regionCount, const VkImageCopy* pRegions)
+VKAPI_ATTR void VKAPI_CALL cmdCopyImage (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageCopy* pRegions)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(srcImage);
@@ -868,7 +868,7 @@ VKAPI_ATTR void VKAPI_CALL cmdCopyImage (VkCommandBuffer commandBuffer, VkImage 
 	DE_UNREF(pRegions);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdBlitImage (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, deUint32 regionCount, const VkImageBlit* pRegions, VkFilter filter)
+VKAPI_ATTR void VKAPI_CALL cmdBlitImage (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit* pRegions, VkFilter filter)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(srcImage);
@@ -880,7 +880,7 @@ VKAPI_ATTR void VKAPI_CALL cmdBlitImage (VkCommandBuffer commandBuffer, VkImage 
 	DE_UNREF(filter);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdCopyBufferToImage (VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, deUint32 regionCount, const VkBufferImageCopy* pRegions)
+VKAPI_ATTR void VKAPI_CALL cmdCopyBufferToImage (VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkBufferImageCopy* pRegions)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(srcBuffer);
@@ -890,7 +890,7 @@ VKAPI_ATTR void VKAPI_CALL cmdCopyBufferToImage (VkCommandBuffer commandBuffer, 
 	DE_UNREF(pRegions);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdCopyImageToBuffer (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkBuffer dstBuffer, deUint32 regionCount, const VkBufferImageCopy* pRegions)
+VKAPI_ATTR void VKAPI_CALL cmdCopyImageToBuffer (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferImageCopy* pRegions)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(srcImage);
@@ -909,7 +909,7 @@ VKAPI_ATTR void VKAPI_CALL cmdUpdateBuffer (VkCommandBuffer commandBuffer, VkBuf
 	DE_UNREF(pData);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdFillBuffer (VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize size, deUint32 data)
+VKAPI_ATTR void VKAPI_CALL cmdFillBuffer (VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize size, uint32_t data)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(dstBuffer);
@@ -918,7 +918,7 @@ VKAPI_ATTR void VKAPI_CALL cmdFillBuffer (VkCommandBuffer commandBuffer, VkBuffe
 	DE_UNREF(data);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdClearColorImage (VkCommandBuffer commandBuffer, VkImage image, VkImageLayout imageLayout, const VkClearColorValue* pColor, deUint32 rangeCount, const VkImageSubresourceRange* pRanges)
+VKAPI_ATTR void VKAPI_CALL cmdClearColorImage (VkCommandBuffer commandBuffer, VkImage image, VkImageLayout imageLayout, const VkClearColorValue* pColor, uint32_t rangeCount, const VkImageSubresourceRange* pRanges)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(image);
@@ -928,7 +928,7 @@ VKAPI_ATTR void VKAPI_CALL cmdClearColorImage (VkCommandBuffer commandBuffer, Vk
 	DE_UNREF(pRanges);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdClearDepthStencilImage (VkCommandBuffer commandBuffer, VkImage image, VkImageLayout imageLayout, const VkClearDepthStencilValue* pDepthStencil, deUint32 rangeCount, const VkImageSubresourceRange* pRanges)
+VKAPI_ATTR void VKAPI_CALL cmdClearDepthStencilImage (VkCommandBuffer commandBuffer, VkImage image, VkImageLayout imageLayout, const VkClearDepthStencilValue* pDepthStencil, uint32_t rangeCount, const VkImageSubresourceRange* pRanges)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(image);
@@ -938,7 +938,7 @@ VKAPI_ATTR void VKAPI_CALL cmdClearDepthStencilImage (VkCommandBuffer commandBuf
 	DE_UNREF(pRanges);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdClearAttachments (VkCommandBuffer commandBuffer, deUint32 attachmentCount, const VkClearAttachment* pAttachments, deUint32 rectCount, const VkClearRect* pRects)
+VKAPI_ATTR void VKAPI_CALL cmdClearAttachments (VkCommandBuffer commandBuffer, uint32_t attachmentCount, const VkClearAttachment* pAttachments, uint32_t rectCount, const VkClearRect* pRects)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(attachmentCount);
@@ -947,7 +947,7 @@ VKAPI_ATTR void VKAPI_CALL cmdClearAttachments (VkCommandBuffer commandBuffer, d
 	DE_UNREF(pRects);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdResolveImage (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, deUint32 regionCount, const VkImageResolve* pRegions)
+VKAPI_ATTR void VKAPI_CALL cmdResolveImage (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageResolve* pRegions)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(srcImage);
@@ -972,7 +972,7 @@ VKAPI_ATTR void VKAPI_CALL cmdResetEvent (VkCommandBuffer commandBuffer, VkEvent
 	DE_UNREF(stageMask);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdWaitEvents (VkCommandBuffer commandBuffer, deUint32 eventCount, const VkEvent* pEvents, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, deUint32 memoryBarrierCount, const VkMemoryBarrier* pMemoryBarriers, deUint32 bufferMemoryBarrierCount, const VkBufferMemoryBarrier* pBufferMemoryBarriers, deUint32 imageMemoryBarrierCount, const VkImageMemoryBarrier* pImageMemoryBarriers)
+VKAPI_ATTR void VKAPI_CALL cmdWaitEvents (VkCommandBuffer commandBuffer, uint32_t eventCount, const VkEvent* pEvents, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, uint32_t memoryBarrierCount, const VkMemoryBarrier* pMemoryBarriers, uint32_t bufferMemoryBarrierCount, const VkBufferMemoryBarrier* pBufferMemoryBarriers, uint32_t imageMemoryBarrierCount, const VkImageMemoryBarrier* pImageMemoryBarriers)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(eventCount);
@@ -987,7 +987,7 @@ VKAPI_ATTR void VKAPI_CALL cmdWaitEvents (VkCommandBuffer commandBuffer, deUint3
 	DE_UNREF(pImageMemoryBarriers);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdPipelineBarrier (VkCommandBuffer commandBuffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkDependencyFlags dependencyFlags, deUint32 memoryBarrierCount, const VkMemoryBarrier* pMemoryBarriers, deUint32 bufferMemoryBarrierCount, const VkBufferMemoryBarrier* pBufferMemoryBarriers, deUint32 imageMemoryBarrierCount, const VkImageMemoryBarrier* pImageMemoryBarriers)
+VKAPI_ATTR void VKAPI_CALL cmdPipelineBarrier (VkCommandBuffer commandBuffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkDependencyFlags dependencyFlags, uint32_t memoryBarrierCount, const VkMemoryBarrier* pMemoryBarriers, uint32_t bufferMemoryBarrierCount, const VkBufferMemoryBarrier* pBufferMemoryBarriers, uint32_t imageMemoryBarrierCount, const VkImageMemoryBarrier* pImageMemoryBarriers)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(srcStageMask);
@@ -1001,7 +1001,7 @@ VKAPI_ATTR void VKAPI_CALL cmdPipelineBarrier (VkCommandBuffer commandBuffer, Vk
 	DE_UNREF(pImageMemoryBarriers);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdBeginQuery (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 query, VkQueryControlFlags flags)
+VKAPI_ATTR void VKAPI_CALL cmdBeginQuery (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, VkQueryControlFlags flags)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(queryPool);
@@ -1009,14 +1009,14 @@ VKAPI_ATTR void VKAPI_CALL cmdBeginQuery (VkCommandBuffer commandBuffer, VkQuery
 	DE_UNREF(flags);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdEndQuery (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 query)
+VKAPI_ATTR void VKAPI_CALL cmdEndQuery (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(queryPool);
 	DE_UNREF(query);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdResetQueryPool (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount)
+VKAPI_ATTR void VKAPI_CALL cmdResetQueryPool (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(queryPool);
@@ -1024,7 +1024,7 @@ VKAPI_ATTR void VKAPI_CALL cmdResetQueryPool (VkCommandBuffer commandBuffer, VkQ
 	DE_UNREF(queryCount);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdWriteTimestamp (VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkQueryPool queryPool, deUint32 query)
+VKAPI_ATTR void VKAPI_CALL cmdWriteTimestamp (VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkQueryPool queryPool, uint32_t query)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pipelineStage);
@@ -1032,7 +1032,7 @@ VKAPI_ATTR void VKAPI_CALL cmdWriteTimestamp (VkCommandBuffer commandBuffer, VkP
 	DE_UNREF(query);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdCopyQueryPoolResults (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize stride, VkQueryResultFlags flags)
+VKAPI_ATTR void VKAPI_CALL cmdCopyQueryPoolResults (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize stride, VkQueryResultFlags flags)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(queryPool);
@@ -1044,7 +1044,7 @@ VKAPI_ATTR void VKAPI_CALL cmdCopyQueryPoolResults (VkCommandBuffer commandBuffe
 	DE_UNREF(flags);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdPushConstants (VkCommandBuffer commandBuffer, VkPipelineLayout layout, VkShaderStageFlags stageFlags, deUint32 offset, deUint32 size, const void* pValues)
+VKAPI_ATTR void VKAPI_CALL cmdPushConstants (VkCommandBuffer commandBuffer, VkPipelineLayout layout, VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void* pValues)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(layout);
@@ -1072,20 +1072,20 @@ VKAPI_ATTR void VKAPI_CALL cmdEndRenderPass (VkCommandBuffer commandBuffer)
 	DE_UNREF(commandBuffer);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdExecuteCommands (VkCommandBuffer commandBuffer, deUint32 commandBufferCount, const VkCommandBuffer* pCommandBuffers)
+VKAPI_ATTR void VKAPI_CALL cmdExecuteCommands (VkCommandBuffer commandBuffer, uint32_t commandBufferCount, const VkCommandBuffer* pCommandBuffers)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(commandBufferCount);
 	DE_UNREF(pCommandBuffers);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceVersion (deUint32* pApiVersion)
+VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceVersion (uint32_t* pApiVersion)
 {
 	DE_UNREF(pApiVersion);
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL bindBufferMemory2 (VkDevice device, deUint32 bindInfoCount, const VkBindBufferMemoryInfo* pBindInfos)
+VKAPI_ATTR VkResult VKAPI_CALL bindBufferMemory2 (VkDevice device, uint32_t bindInfoCount, const VkBindBufferMemoryInfo* pBindInfos)
 {
 	DE_UNREF(device);
 	DE_UNREF(bindInfoCount);
@@ -1093,7 +1093,7 @@ VKAPI_ATTR VkResult VKAPI_CALL bindBufferMemory2 (VkDevice device, deUint32 bind
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL bindImageMemory2 (VkDevice device, deUint32 bindInfoCount, const VkBindImageMemoryInfo* pBindInfos)
+VKAPI_ATTR VkResult VKAPI_CALL bindImageMemory2 (VkDevice device, uint32_t bindInfoCount, const VkBindImageMemoryInfo* pBindInfos)
 {
 	DE_UNREF(device);
 	DE_UNREF(bindInfoCount);
@@ -1101,7 +1101,7 @@ VKAPI_ATTR VkResult VKAPI_CALL bindImageMemory2 (VkDevice device, deUint32 bindI
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL getDeviceGroupPeerMemoryFeatures (VkDevice device, deUint32 heapIndex, deUint32 localDeviceIndex, deUint32 remoteDeviceIndex, VkPeerMemoryFeatureFlags* pPeerMemoryFeatures)
+VKAPI_ATTR void VKAPI_CALL getDeviceGroupPeerMemoryFeatures (VkDevice device, uint32_t heapIndex, uint32_t localDeviceIndex, uint32_t remoteDeviceIndex, VkPeerMemoryFeatureFlags* pPeerMemoryFeatures)
 {
 	DE_UNREF(device);
 	DE_UNREF(heapIndex);
@@ -1110,13 +1110,13 @@ VKAPI_ATTR void VKAPI_CALL getDeviceGroupPeerMemoryFeatures (VkDevice device, de
 	DE_UNREF(pPeerMemoryFeatures);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetDeviceMask (VkCommandBuffer commandBuffer, deUint32 deviceMask)
+VKAPI_ATTR void VKAPI_CALL cmdSetDeviceMask (VkCommandBuffer commandBuffer, uint32_t deviceMask)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(deviceMask);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDispatchBase (VkCommandBuffer commandBuffer, deUint32 baseGroupX, deUint32 baseGroupY, deUint32 baseGroupZ, deUint32 groupCountX, deUint32 groupCountY, deUint32 groupCountZ)
+VKAPI_ATTR void VKAPI_CALL cmdDispatchBase (VkCommandBuffer commandBuffer, uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(baseGroupX);
@@ -1127,7 +1127,7 @@ VKAPI_ATTR void VKAPI_CALL cmdDispatchBase (VkCommandBuffer commandBuffer, deUin
 	DE_UNREF(groupCountZ);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL enumeratePhysicalDeviceGroups (VkInstance instance, deUint32* pPhysicalDeviceGroupCount, VkPhysicalDeviceGroupProperties* pPhysicalDeviceGroupProperties)
+VKAPI_ATTR VkResult VKAPI_CALL enumeratePhysicalDeviceGroups (VkInstance instance, uint32_t* pPhysicalDeviceGroupCount, VkPhysicalDeviceGroupProperties* pPhysicalDeviceGroupProperties)
 {
 	DE_UNREF(instance);
 	DE_UNREF(pPhysicalDeviceGroupCount);
@@ -1149,7 +1149,7 @@ VKAPI_ATTR void VKAPI_CALL getBufferMemoryRequirements2 (VkDevice device, const 
 	DE_UNREF(pMemoryRequirements);
 }
 
-VKAPI_ATTR void VKAPI_CALL getImageSparseMemoryRequirements2 (VkDevice device, const VkImageSparseMemoryRequirementsInfo2* pInfo, deUint32* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements)
+VKAPI_ATTR void VKAPI_CALL getImageSparseMemoryRequirements2 (VkDevice device, const VkImageSparseMemoryRequirementsInfo2* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements)
 {
 	DE_UNREF(device);
 	DE_UNREF(pInfo);
@@ -1184,7 +1184,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceImageFormatProperties2 (VkPhysic
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceQueueFamilyProperties2 (VkPhysicalDevice physicalDevice, deUint32* pQueueFamilyPropertyCount, VkQueueFamilyProperties2* pQueueFamilyProperties)
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceQueueFamilyProperties2 (VkPhysicalDevice physicalDevice, uint32_t* pQueueFamilyPropertyCount, VkQueueFamilyProperties2* pQueueFamilyProperties)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pQueueFamilyPropertyCount);
@@ -1197,7 +1197,7 @@ VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceMemoryProperties2 (VkPhysicalDevice 
 	DE_UNREF(pMemoryProperties);
 }
 
-VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceSparseImageFormatProperties2 (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSparseImageFormatInfo2* pFormatInfo, deUint32* pPropertyCount, VkSparseImageFormatProperties2* pProperties)
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceSparseImageFormatProperties2 (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSparseImageFormatInfo2* pFormatInfo, uint32_t* pPropertyCount, VkSparseImageFormatProperties2* pProperties)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pFormatInfo);
@@ -1255,7 +1255,7 @@ VKAPI_ATTR void VKAPI_CALL getDescriptorSetLayoutSupport (VkDevice device, const
 	DE_UNREF(pSupport);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectCount (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectCount (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(buffer);
@@ -1266,7 +1266,7 @@ VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectCount (VkCommandBuffer commandBuffer, 
 	DE_UNREF(stride);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirectCount (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirectCount (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(buffer);
@@ -1297,7 +1297,7 @@ VKAPI_ATTR void VKAPI_CALL cmdEndRenderPass2 (VkCommandBuffer commandBuffer, con
 	DE_UNREF(pSubpassEndInfo);
 }
 
-VKAPI_ATTR void VKAPI_CALL resetQueryPool (VkDevice device, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount)
+VKAPI_ATTR void VKAPI_CALL resetQueryPool (VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount)
 {
 	DE_UNREF(device);
 	DE_UNREF(queryPool);
@@ -1305,7 +1305,7 @@ VKAPI_ATTR void VKAPI_CALL resetQueryPool (VkDevice device, VkQueryPool queryPoo
 	DE_UNREF(queryCount);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getSemaphoreCounterValue (VkDevice device, VkSemaphore semaphore, deUint64* pValue)
+VKAPI_ATTR VkResult VKAPI_CALL getSemaphoreCounterValue (VkDevice device, VkSemaphore semaphore, uint64_t* pValue)
 {
 	DE_UNREF(device);
 	DE_UNREF(semaphore);
@@ -1313,7 +1313,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getSemaphoreCounterValue (VkDevice device, VkSema
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL waitSemaphores (VkDevice device, const VkSemaphoreWaitInfo* pWaitInfo, deUint64 timeout)
+VKAPI_ATTR VkResult VKAPI_CALL waitSemaphores (VkDevice device, const VkSemaphoreWaitInfo* pWaitInfo, uint64_t timeout)
 {
 	DE_UNREF(device);
 	DE_UNREF(pWaitInfo);
@@ -1349,7 +1349,7 @@ VKAPI_ATTR uint64_t VKAPI_CALL getDeviceMemoryOpaqueCaptureAddress (VkDevice dev
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, VkSurfaceKHR surface, VkBool32* pSupported)
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceSupportKHR (VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, VkSurfaceKHR surface, VkBool32* pSupported)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(queueFamilyIndex);
@@ -1366,7 +1366,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceCapabilitiesKHR (VkPhysic
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceFormatsKHR (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, deUint32* pSurfaceFormatCount, VkSurfaceFormatKHR* pSurfaceFormats)
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceFormatsKHR (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t* pSurfaceFormatCount, VkSurfaceFormatKHR* pSurfaceFormats)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(surface);
@@ -1375,7 +1375,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceFormatsKHR (VkPhysicalDev
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfacePresentModesKHR (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, deUint32* pPresentModeCount, VkPresentModeKHR* pPresentModes)
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfacePresentModesKHR (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t* pPresentModeCount, VkPresentModeKHR* pPresentModes)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(surface);
@@ -1384,7 +1384,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfacePresentModesKHR (VkPhysic
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getSwapchainImagesKHR (VkDevice device, VkSwapchainKHR swapchain, deUint32* pSwapchainImageCount, VkImage* pSwapchainImages)
+VKAPI_ATTR VkResult VKAPI_CALL getSwapchainImagesKHR (VkDevice device, VkSwapchainKHR swapchain, uint32_t* pSwapchainImageCount, VkImage* pSwapchainImages)
 {
 	DE_UNREF(device);
 	DE_UNREF(swapchain);
@@ -1393,7 +1393,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getSwapchainImagesKHR (VkDevice device, VkSwapcha
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL acquireNextImageKHR (VkDevice device, VkSwapchainKHR swapchain, deUint64 timeout, VkSemaphore semaphore, VkFence fence, deUint32* pImageIndex)
+VKAPI_ATTR VkResult VKAPI_CALL acquireNextImageKHR (VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex)
 {
 	DE_UNREF(device);
 	DE_UNREF(swapchain);
@@ -1426,7 +1426,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getDeviceGroupSurfacePresentModesKHR (VkDevice de
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDevicePresentRectanglesKHR (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, deUint32* pRectCount, VkRect2D* pRects)
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDevicePresentRectanglesKHR (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t* pRectCount, VkRect2D* pRects)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(surface);
@@ -1435,7 +1435,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDevicePresentRectanglesKHR (VkPhysical
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL acquireNextImage2KHR (VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, deUint32* pImageIndex)
+VKAPI_ATTR VkResult VKAPI_CALL acquireNextImage2KHR (VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex)
 {
 	DE_UNREF(device);
 	DE_UNREF(pAcquireInfo);
@@ -1443,7 +1443,7 @@ VKAPI_ATTR VkResult VKAPI_CALL acquireNextImage2KHR (VkDevice device, const VkAc
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceDisplayPropertiesKHR (VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkDisplayPropertiesKHR* pProperties)
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceDisplayPropertiesKHR (VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkDisplayPropertiesKHR* pProperties)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pPropertyCount);
@@ -1451,7 +1451,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceDisplayPropertiesKHR (VkPhysical
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceDisplayPlanePropertiesKHR (VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkDisplayPlanePropertiesKHR* pProperties)
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceDisplayPlanePropertiesKHR (VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkDisplayPlanePropertiesKHR* pProperties)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pPropertyCount);
@@ -1459,7 +1459,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceDisplayPlanePropertiesKHR (VkPhy
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getDisplayPlaneSupportedDisplaysKHR (VkPhysicalDevice physicalDevice, deUint32 planeIndex, deUint32* pDisplayCount, VkDisplayKHR* pDisplays)
+VKAPI_ATTR VkResult VKAPI_CALL getDisplayPlaneSupportedDisplaysKHR (VkPhysicalDevice physicalDevice, uint32_t planeIndex, uint32_t* pDisplayCount, VkDisplayKHR* pDisplays)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(planeIndex);
@@ -1468,7 +1468,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getDisplayPlaneSupportedDisplaysKHR (VkPhysicalDe
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getDisplayModePropertiesKHR (VkPhysicalDevice physicalDevice, VkDisplayKHR display, deUint32* pPropertyCount, VkDisplayModePropertiesKHR* pProperties)
+VKAPI_ATTR VkResult VKAPI_CALL getDisplayModePropertiesKHR (VkPhysicalDevice physicalDevice, VkDisplayKHR display, uint32_t* pPropertyCount, VkDisplayModePropertiesKHR* pProperties)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(display);
@@ -1477,7 +1477,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getDisplayModePropertiesKHR (VkPhysicalDevice phy
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getDisplayPlaneCapabilitiesKHR (VkPhysicalDevice physicalDevice, VkDisplayModeKHR mode, deUint32 planeIndex, VkDisplayPlaneCapabilitiesKHR* pCapabilities)
+VKAPI_ATTR VkResult VKAPI_CALL getDisplayPlaneCapabilitiesKHR (VkPhysicalDevice physicalDevice, VkDisplayModeKHR mode, uint32_t planeIndex, VkDisplayPlaneCapabilitiesKHR* pCapabilities)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(mode);
@@ -1518,7 +1518,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getSemaphoreFdKHR (VkDevice device, const VkSemap
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdPushDescriptorSetKHR (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, deUint32 set, deUint32 descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites)
+VKAPI_ATTR void VKAPI_CALL cmdPushDescriptorSetKHR (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set, uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pipelineBindPoint);
@@ -1528,7 +1528,7 @@ VKAPI_ATTR void VKAPI_CALL cmdPushDescriptorSetKHR (VkCommandBuffer commandBuffe
 	DE_UNREF(pDescriptorWrites);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdPushDescriptorSetWithTemplateKHR (VkCommandBuffer commandBuffer, VkDescriptorUpdateTemplate descriptorUpdateTemplate, VkPipelineLayout layout, deUint32 set, const void* pData)
+VKAPI_ATTR void VKAPI_CALL cmdPushDescriptorSetWithTemplateKHR (VkCommandBuffer commandBuffer, VkDescriptorUpdateTemplate descriptorUpdateTemplate, VkPipelineLayout layout, uint32_t set, const void* pData)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(descriptorUpdateTemplate);
@@ -1559,7 +1559,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getFenceFdKHR (VkDevice device, const VkFenceGetF
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, deUint32* pCounterCount, VkPerformanceCounterKHR* pCounters, VkPerformanceCounterDescriptionKHR* pCounterDescriptions)
+VKAPI_ATTR VkResult VKAPI_CALL enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR (VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, uint32_t* pCounterCount, VkPerformanceCounterKHR* pCounters, VkPerformanceCounterDescriptionKHR* pCounterDescriptions)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(queueFamilyIndex);
@@ -1569,7 +1569,7 @@ VKAPI_ATTR VkResult VKAPI_CALL enumeratePhysicalDeviceQueueFamilyPerformanceQuer
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR (VkPhysicalDevice physicalDevice, const VkQueryPoolPerformanceCreateInfoKHR* pPerformanceQueryCreateInfo, deUint32* pNumPasses)
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR (VkPhysicalDevice physicalDevice, const VkQueryPoolPerformanceCreateInfoKHR* pPerformanceQueryCreateInfo, uint32_t* pNumPasses)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pPerformanceQueryCreateInfo);
@@ -1596,7 +1596,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceCapabilities2KHR (VkPhysi
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceFormats2KHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, deUint32* pSurfaceFormatCount, VkSurfaceFormat2KHR* pSurfaceFormats)
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceFormats2KHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, uint32_t* pSurfaceFormatCount, VkSurfaceFormat2KHR* pSurfaceFormats)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pSurfaceInfo);
@@ -1605,7 +1605,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceFormats2KHR (VkPhysicalDe
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceDisplayProperties2KHR (VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkDisplayProperties2KHR* pProperties)
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceDisplayProperties2KHR (VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkDisplayProperties2KHR* pProperties)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pPropertyCount);
@@ -1613,7 +1613,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceDisplayProperties2KHR (VkPhysica
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceDisplayPlaneProperties2KHR (VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkDisplayPlaneProperties2KHR* pProperties)
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceDisplayPlaneProperties2KHR (VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkDisplayPlaneProperties2KHR* pProperties)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pPropertyCount);
@@ -1621,7 +1621,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceDisplayPlaneProperties2KHR (VkPh
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getDisplayModeProperties2KHR (VkPhysicalDevice physicalDevice, VkDisplayKHR display, deUint32* pPropertyCount, VkDisplayModeProperties2KHR* pProperties)
+VKAPI_ATTR VkResult VKAPI_CALL getDisplayModeProperties2KHR (VkPhysicalDevice physicalDevice, VkDisplayKHR display, uint32_t* pPropertyCount, VkDisplayModeProperties2KHR* pProperties)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(display);
@@ -1638,7 +1638,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getDisplayPlaneCapabilities2KHR (VkPhysicalDevice
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceFragmentShadingRatesKHR (VkPhysicalDevice physicalDevice, deUint32* pFragmentShadingRateCount, VkPhysicalDeviceFragmentShadingRateKHR* pFragmentShadingRates)
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceFragmentShadingRatesKHR (VkPhysicalDevice physicalDevice, uint32_t* pFragmentShadingRateCount, VkPhysicalDeviceFragmentShadingRateKHR* pFragmentShadingRates)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pFragmentShadingRateCount);
@@ -1674,7 +1674,7 @@ VKAPI_ATTR VkResult VKAPI_CALL deferredOperationJoinKHR (VkDevice device, VkDefe
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPipelineExecutablePropertiesKHR (VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, deUint32* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties)
+VKAPI_ATTR VkResult VKAPI_CALL getPipelineExecutablePropertiesKHR (VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, uint32_t* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties)
 {
 	DE_UNREF(device);
 	DE_UNREF(pPipelineInfo);
@@ -1683,7 +1683,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPipelineExecutablePropertiesKHR (VkDevice devi
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPipelineExecutableStatisticsKHR (VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, deUint32* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics)
+VKAPI_ATTR VkResult VKAPI_CALL getPipelineExecutableStatisticsKHR (VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, uint32_t* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics)
 {
 	DE_UNREF(device);
 	DE_UNREF(pExecutableInfo);
@@ -1692,7 +1692,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPipelineExecutableStatisticsKHR (VkDevice devi
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPipelineExecutableInternalRepresentationsKHR (VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, deUint32* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations)
+VKAPI_ATTR VkResult VKAPI_CALL getPipelineExecutableInternalRepresentationsKHR (VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, uint32_t* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations)
 {
 	DE_UNREF(device);
 	DE_UNREF(pExecutableInfo);
@@ -1737,7 +1737,7 @@ VKAPI_ATTR void VKAPI_CALL cmdResolveImage2KHR (VkCommandBuffer commandBuffer, c
 	DE_UNREF(pResolveImageInfo);
 }
 
-VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, deInt32 messageCode, const char* pLayerPrefix, const char* pMessage)
+VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, uintptr_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage)
 {
 	DE_UNREF(instance);
 	DE_UNREF(flags);
@@ -1780,7 +1780,7 @@ VKAPI_ATTR void VKAPI_CALL cmdDebugMarkerInsertEXT (VkCommandBuffer commandBuffe
 	DE_UNREF(pMarkerInfo);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdBindTransformFeedbackBuffersEXT (VkCommandBuffer commandBuffer, deUint32 firstBinding, deUint32 bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes)
+VKAPI_ATTR void VKAPI_CALL cmdBindTransformFeedbackBuffersEXT (VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(firstBinding);
@@ -1790,7 +1790,7 @@ VKAPI_ATTR void VKAPI_CALL cmdBindTransformFeedbackBuffersEXT (VkCommandBuffer c
 	DE_UNREF(pSizes);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdBeginTransformFeedbackEXT (VkCommandBuffer commandBuffer, deUint32 firstCounterBuffer, deUint32 counterBufferCount, const VkBuffer* pCounterBuffers, const VkDeviceSize* pCounterBufferOffsets)
+VKAPI_ATTR void VKAPI_CALL cmdBeginTransformFeedbackEXT (VkCommandBuffer commandBuffer, uint32_t firstCounterBuffer, uint32_t counterBufferCount, const VkBuffer* pCounterBuffers, const VkDeviceSize* pCounterBufferOffsets)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(firstCounterBuffer);
@@ -1799,7 +1799,7 @@ VKAPI_ATTR void VKAPI_CALL cmdBeginTransformFeedbackEXT (VkCommandBuffer command
 	DE_UNREF(pCounterBufferOffsets);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdEndTransformFeedbackEXT (VkCommandBuffer commandBuffer, deUint32 firstCounterBuffer, deUint32 counterBufferCount, const VkBuffer* pCounterBuffers, const VkDeviceSize* pCounterBufferOffsets)
+VKAPI_ATTR void VKAPI_CALL cmdEndTransformFeedbackEXT (VkCommandBuffer commandBuffer, uint32_t firstCounterBuffer, uint32_t counterBufferCount, const VkBuffer* pCounterBuffers, const VkDeviceSize* pCounterBufferOffsets)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(firstCounterBuffer);
@@ -1808,7 +1808,7 @@ VKAPI_ATTR void VKAPI_CALL cmdEndTransformFeedbackEXT (VkCommandBuffer commandBu
 	DE_UNREF(pCounterBufferOffsets);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdBeginQueryIndexedEXT (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 query, VkQueryControlFlags flags, deUint32 index)
+VKAPI_ATTR void VKAPI_CALL cmdBeginQueryIndexedEXT (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, VkQueryControlFlags flags, uint32_t index)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(queryPool);
@@ -1817,7 +1817,7 @@ VKAPI_ATTR void VKAPI_CALL cmdBeginQueryIndexedEXT (VkCommandBuffer commandBuffe
 	DE_UNREF(index);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdEndQueryIndexedEXT (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 query, deUint32 index)
+VKAPI_ATTR void VKAPI_CALL cmdEndQueryIndexedEXT (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, uint32_t index)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(queryPool);
@@ -1825,7 +1825,7 @@ VKAPI_ATTR void VKAPI_CALL cmdEndQueryIndexedEXT (VkCommandBuffer commandBuffer,
 	DE_UNREF(index);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectByteCountEXT (VkCommandBuffer commandBuffer, deUint32 instanceCount, deUint32 firstInstance, VkBuffer counterBuffer, VkDeviceSize counterBufferOffset, deUint32 counterOffset, deUint32 vertexStride)
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectByteCountEXT (VkCommandBuffer commandBuffer, uint32_t instanceCount, uint32_t firstInstance, VkBuffer counterBuffer, VkDeviceSize counterBufferOffset, uint32_t counterOffset, uint32_t vertexStride)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(instanceCount);
@@ -1851,7 +1851,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getImageViewAddressNVX (VkDevice device, VkImageV
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectCountAMD (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectCountAMD (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(buffer);
@@ -1862,7 +1862,7 @@ VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectCountAMD (VkCommandBuffer commandBuffe
 	DE_UNREF(stride);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirectCountAMD (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirectCountAMD (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(buffer);
@@ -1873,7 +1873,7 @@ VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirectCountAMD (VkCommandBuffer comma
 	DE_UNREF(stride);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getShaderInfoAMD (VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, deUintptr* pInfoSize, void* pInfo)
+VKAPI_ATTR VkResult VKAPI_CALL getShaderInfoAMD (VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, uintptr_t* pInfoSize, void* pInfo)
 {
 	DE_UNREF(device);
 	DE_UNREF(pipeline);
@@ -1908,7 +1908,7 @@ VKAPI_ATTR void VKAPI_CALL cmdEndConditionalRenderingEXT (VkCommandBuffer comman
 	DE_UNREF(commandBuffer);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetViewportWScalingNV (VkCommandBuffer commandBuffer, deUint32 firstViewport, deUint32 viewportCount, const VkViewportWScalingNV* pViewportWScalings)
+VKAPI_ATTR void VKAPI_CALL cmdSetViewportWScalingNV (VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewportWScalingNV* pViewportWScalings)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(firstViewport);
@@ -1958,7 +1958,7 @@ VKAPI_ATTR VkResult VKAPI_CALL registerDisplayEventEXT (VkDevice device, VkDispl
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getSwapchainCounterEXT (VkDevice device, VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, deUint64* pCounterValue)
+VKAPI_ATTR VkResult VKAPI_CALL getSwapchainCounterEXT (VkDevice device, VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, uint64_t* pCounterValue)
 {
 	DE_UNREF(device);
 	DE_UNREF(swapchain);
@@ -1975,7 +1975,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getRefreshCycleDurationGOOGLE (VkDevice device, V
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPastPresentationTimingGOOGLE (VkDevice device, VkSwapchainKHR swapchain, deUint32* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings)
+VKAPI_ATTR VkResult VKAPI_CALL getPastPresentationTimingGOOGLE (VkDevice device, VkSwapchainKHR swapchain, uint32_t* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings)
 {
 	DE_UNREF(device);
 	DE_UNREF(swapchain);
@@ -1984,7 +1984,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPastPresentationTimingGOOGLE (VkDevice device,
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetDiscardRectangleEXT (VkCommandBuffer commandBuffer, deUint32 firstDiscardRectangle, deUint32 discardRectangleCount, const VkRect2D* pDiscardRectangles)
+VKAPI_ATTR void VKAPI_CALL cmdSetDiscardRectangleEXT (VkCommandBuffer commandBuffer, uint32_t firstDiscardRectangle, uint32_t discardRectangleCount, const VkRect2D* pDiscardRectangles)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(firstDiscardRectangle);
@@ -1992,7 +1992,7 @@ VKAPI_ATTR void VKAPI_CALL cmdSetDiscardRectangleEXT (VkCommandBuffer commandBuf
 	DE_UNREF(pDiscardRectangles);
 }
 
-VKAPI_ATTR void VKAPI_CALL setHdrMetadataEXT (VkDevice device, deUint32 swapchainCount, const VkSwapchainKHR* pSwapchains, const VkHdrMetadataEXT* pMetadata)
+VKAPI_ATTR void VKAPI_CALL setHdrMetadataEXT (VkDevice device, uint32_t swapchainCount, const VkSwapchainKHR* pSwapchains, const VkHdrMetadataEXT* pMetadata)
 {
 	DE_UNREF(device);
 	DE_UNREF(swapchainCount);
@@ -2077,7 +2077,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getImageDrmFormatModifierPropertiesEXT (VkDevice 
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL mergeValidationCachesEXT (VkDevice device, VkValidationCacheEXT dstCache, deUint32 srcCacheCount, const VkValidationCacheEXT* pSrcCaches)
+VKAPI_ATTR VkResult VKAPI_CALL mergeValidationCachesEXT (VkDevice device, VkValidationCacheEXT dstCache, uint32_t srcCacheCount, const VkValidationCacheEXT* pSrcCaches)
 {
 	DE_UNREF(device);
 	DE_UNREF(dstCache);
@@ -2086,7 +2086,7 @@ VKAPI_ATTR VkResult VKAPI_CALL mergeValidationCachesEXT (VkDevice device, VkVali
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getValidationCacheDataEXT (VkDevice device, VkValidationCacheEXT validationCache, deUintptr* pDataSize, void* pData)
+VKAPI_ATTR VkResult VKAPI_CALL getValidationCacheDataEXT (VkDevice device, VkValidationCacheEXT validationCache, uintptr_t* pDataSize, void* pData)
 {
 	DE_UNREF(device);
 	DE_UNREF(validationCache);
@@ -2102,7 +2102,7 @@ VKAPI_ATTR void VKAPI_CALL cmdBindShadingRateImageNV (VkCommandBuffer commandBuf
 	DE_UNREF(imageLayout);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetViewportShadingRatePaletteNV (VkCommandBuffer commandBuffer, deUint32 firstViewport, deUint32 viewportCount, const VkShadingRatePaletteNV* pShadingRatePalettes)
+VKAPI_ATTR void VKAPI_CALL cmdSetViewportShadingRatePaletteNV (VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkShadingRatePaletteNV* pShadingRatePalettes)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(firstViewport);
@@ -2110,7 +2110,7 @@ VKAPI_ATTR void VKAPI_CALL cmdSetViewportShadingRatePaletteNV (VkCommandBuffer c
 	DE_UNREF(pShadingRatePalettes);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetCoarseSampleOrderNV (VkCommandBuffer commandBuffer, VkCoarseSampleOrderTypeNV sampleOrderType, deUint32 customSampleOrderCount, const VkCoarseSampleOrderCustomNV* pCustomSampleOrders)
+VKAPI_ATTR void VKAPI_CALL cmdSetCoarseSampleOrderNV (VkCommandBuffer commandBuffer, VkCoarseSampleOrderTypeNV sampleOrderType, uint32_t customSampleOrderCount, const VkCoarseSampleOrderCustomNV* pCustomSampleOrders)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(sampleOrderType);
@@ -2125,7 +2125,7 @@ VKAPI_ATTR void VKAPI_CALL getAccelerationStructureMemoryRequirementsNV (VkDevic
 	DE_UNREF(pMemoryRequirements);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL bindAccelerationStructureMemoryNV (VkDevice device, deUint32 bindInfoCount, const VkBindAccelerationStructureMemoryInfoNV* pBindInfos)
+VKAPI_ATTR VkResult VKAPI_CALL bindAccelerationStructureMemoryNV (VkDevice device, uint32_t bindInfoCount, const VkBindAccelerationStructureMemoryInfoNV* pBindInfos)
 {
 	DE_UNREF(device);
 	DE_UNREF(bindInfoCount);
@@ -2154,7 +2154,7 @@ VKAPI_ATTR void VKAPI_CALL cmdCopyAccelerationStructureNV (VkCommandBuffer comma
 	DE_UNREF(mode);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdTraceRaysNV (VkCommandBuffer commandBuffer, VkBuffer raygenShaderBindingTableBuffer, VkDeviceSize raygenShaderBindingOffset, VkBuffer missShaderBindingTableBuffer, VkDeviceSize missShaderBindingOffset, VkDeviceSize missShaderBindingStride, VkBuffer hitShaderBindingTableBuffer, VkDeviceSize hitShaderBindingOffset, VkDeviceSize hitShaderBindingStride, VkBuffer callableShaderBindingTableBuffer, VkDeviceSize callableShaderBindingOffset, VkDeviceSize callableShaderBindingStride, deUint32 width, deUint32 height, deUint32 depth)
+VKAPI_ATTR void VKAPI_CALL cmdTraceRaysNV (VkCommandBuffer commandBuffer, VkBuffer raygenShaderBindingTableBuffer, VkDeviceSize raygenShaderBindingOffset, VkBuffer missShaderBindingTableBuffer, VkDeviceSize missShaderBindingOffset, VkDeviceSize missShaderBindingStride, VkBuffer hitShaderBindingTableBuffer, VkDeviceSize hitShaderBindingOffset, VkDeviceSize hitShaderBindingStride, VkBuffer callableShaderBindingTableBuffer, VkDeviceSize callableShaderBindingOffset, VkDeviceSize callableShaderBindingStride, uint32_t width, uint32_t height, uint32_t depth)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(raygenShaderBindingTableBuffer);
@@ -2173,7 +2173,7 @@ VKAPI_ATTR void VKAPI_CALL cmdTraceRaysNV (VkCommandBuffer commandBuffer, VkBuff
 	DE_UNREF(depth);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getRayTracingShaderGroupHandlesKHR (VkDevice device, VkPipeline pipeline, deUint32 firstGroup, deUint32 groupCount, deUintptr dataSize, void* pData)
+VKAPI_ATTR VkResult VKAPI_CALL getRayTracingShaderGroupHandlesKHR (VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, uintptr_t dataSize, void* pData)
 {
 	DE_UNREF(device);
 	DE_UNREF(pipeline);
@@ -2184,7 +2184,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getRayTracingShaderGroupHandlesKHR (VkDevice devi
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getRayTracingShaderGroupHandlesNV (VkDevice device, VkPipeline pipeline, deUint32 firstGroup, deUint32 groupCount, deUintptr dataSize, void* pData)
+VKAPI_ATTR VkResult VKAPI_CALL getRayTracingShaderGroupHandlesNV (VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, uintptr_t dataSize, void* pData)
 {
 	DE_UNREF(device);
 	DE_UNREF(pipeline);
@@ -2195,7 +2195,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getRayTracingShaderGroupHandlesNV (VkDevice devic
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getAccelerationStructureHandleNV (VkDevice device, VkAccelerationStructureNV accelerationStructure, deUintptr dataSize, void* pData)
+VKAPI_ATTR VkResult VKAPI_CALL getAccelerationStructureHandleNV (VkDevice device, VkAccelerationStructureNV accelerationStructure, uintptr_t dataSize, void* pData)
 {
 	DE_UNREF(device);
 	DE_UNREF(accelerationStructure);
@@ -2204,7 +2204,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getAccelerationStructureHandleNV (VkDevice device
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdWriteAccelerationStructuresPropertiesNV (VkCommandBuffer commandBuffer, deUint32 accelerationStructureCount, const VkAccelerationStructureNV* pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, deUint32 firstQuery)
+VKAPI_ATTR void VKAPI_CALL cmdWriteAccelerationStructuresPropertiesNV (VkCommandBuffer commandBuffer, uint32_t accelerationStructureCount, const VkAccelerationStructureNV* pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, uint32_t firstQuery)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(accelerationStructureCount);
@@ -2214,7 +2214,7 @@ VKAPI_ATTR void VKAPI_CALL cmdWriteAccelerationStructuresPropertiesNV (VkCommand
 	DE_UNREF(firstQuery);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL compileDeferredNV (VkDevice device, VkPipeline pipeline, deUint32 shader)
+VKAPI_ATTR VkResult VKAPI_CALL compileDeferredNV (VkDevice device, VkPipeline pipeline, uint32_t shader)
 {
 	DE_UNREF(device);
 	DE_UNREF(pipeline);
@@ -2231,7 +2231,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getMemoryHostPointerPropertiesEXT (VkDevice devic
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdWriteBufferMarkerAMD (VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkBuffer dstBuffer, VkDeviceSize dstOffset, deUint32 marker)
+VKAPI_ATTR void VKAPI_CALL cmdWriteBufferMarkerAMD (VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pipelineStage);
@@ -2240,7 +2240,7 @@ VKAPI_ATTR void VKAPI_CALL cmdWriteBufferMarkerAMD (VkCommandBuffer commandBuffe
 	DE_UNREF(marker);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCalibrateableTimeDomainsEXT (VkPhysicalDevice physicalDevice, deUint32* pTimeDomainCount, VkTimeDomainEXT* pTimeDomains)
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCalibrateableTimeDomainsEXT (VkPhysicalDevice physicalDevice, uint32_t* pTimeDomainCount, VkTimeDomainEXT* pTimeDomains)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pTimeDomainCount);
@@ -2248,7 +2248,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCalibrateableTimeDomainsEXT (VkP
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getCalibratedTimestampsEXT (VkDevice device, deUint32 timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, deUint64* pTimestamps, deUint64* pMaxDeviation)
+VKAPI_ATTR VkResult VKAPI_CALL getCalibratedTimestampsEXT (VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation)
 {
 	DE_UNREF(device);
 	DE_UNREF(timestampCount);
@@ -2258,14 +2258,14 @@ VKAPI_ATTR VkResult VKAPI_CALL getCalibratedTimestampsEXT (VkDevice device, deUi
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDrawMeshTasksNV (VkCommandBuffer commandBuffer, deUint32 taskCount, deUint32 firstTask)
+VKAPI_ATTR void VKAPI_CALL cmdDrawMeshTasksNV (VkCommandBuffer commandBuffer, uint32_t taskCount, uint32_t firstTask)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(taskCount);
 	DE_UNREF(firstTask);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDrawMeshTasksIndirectNV (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, deUint32 drawCount, deUint32 stride)
+VKAPI_ATTR void VKAPI_CALL cmdDrawMeshTasksIndirectNV (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(buffer);
@@ -2274,7 +2274,7 @@ VKAPI_ATTR void VKAPI_CALL cmdDrawMeshTasksIndirectNV (VkCommandBuffer commandBu
 	DE_UNREF(stride);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDrawMeshTasksIndirectCountNV (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
+VKAPI_ATTR void VKAPI_CALL cmdDrawMeshTasksIndirectCountNV (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(buffer);
@@ -2285,7 +2285,7 @@ VKAPI_ATTR void VKAPI_CALL cmdDrawMeshTasksIndirectCountNV (VkCommandBuffer comm
 	DE_UNREF(stride);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetExclusiveScissorNV (VkCommandBuffer commandBuffer, deUint32 firstExclusiveScissor, deUint32 exclusiveScissorCount, const VkRect2D* pExclusiveScissors)
+VKAPI_ATTR void VKAPI_CALL cmdSetExclusiveScissorNV (VkCommandBuffer commandBuffer, uint32_t firstExclusiveScissor, uint32_t exclusiveScissorCount, const VkRect2D* pExclusiveScissors)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(firstExclusiveScissor);
@@ -2299,7 +2299,7 @@ VKAPI_ATTR void VKAPI_CALL cmdSetCheckpointNV (VkCommandBuffer commandBuffer, co
 	DE_UNREF(pCheckpointMarker);
 }
 
-VKAPI_ATTR void VKAPI_CALL getQueueCheckpointDataNV (VkQueue queue, deUint32* pCheckpointDataCount, VkCheckpointDataNV* pCheckpointData)
+VKAPI_ATTR void VKAPI_CALL getQueueCheckpointDataNV (VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointDataNV* pCheckpointData)
 {
 	DE_UNREF(queue);
 	DE_UNREF(pCheckpointDataCount);
@@ -2383,7 +2383,7 @@ VKAPI_ATTR VkDeviceAddress VKAPI_CALL getBufferDeviceAddressEXT (VkDevice device
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceToolPropertiesEXT (VkPhysicalDevice physicalDevice, deUint32* pToolCount, VkPhysicalDeviceToolPropertiesEXT* pToolProperties)
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceToolPropertiesEXT (VkPhysicalDevice physicalDevice, uint32_t* pToolCount, VkPhysicalDeviceToolPropertiesEXT* pToolProperties)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pToolCount);
@@ -2391,7 +2391,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceToolPropertiesEXT (VkPhysicalDev
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCooperativeMatrixPropertiesNV (VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties)
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCooperativeMatrixPropertiesNV (VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pPropertyCount);
@@ -2399,7 +2399,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCooperativeMatrixPropertiesNV (V
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV (VkPhysicalDevice physicalDevice, deUint32* pCombinationCount, VkFramebufferMixedSamplesCombinationNV* pCombinations)
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV (VkPhysicalDevice physicalDevice, uint32_t* pCombinationCount, VkFramebufferMixedSamplesCombinationNV* pCombinations)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pCombinationCount);
@@ -2407,7 +2407,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSupportedFramebufferMixedSamples
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetLineStippleEXT (VkCommandBuffer commandBuffer, deUint32 lineStippleFactor, deUint16 lineStipplePattern)
+VKAPI_ATTR void VKAPI_CALL cmdSetLineStippleEXT (VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(lineStippleFactor);
@@ -2432,21 +2432,21 @@ VKAPI_ATTR void VKAPI_CALL cmdSetPrimitiveTopologyEXT (VkCommandBuffer commandBu
 	DE_UNREF(primitiveTopology);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetViewportWithCountEXT (VkCommandBuffer commandBuffer, deUint32 viewportCount, const VkViewport* pViewports)
+VKAPI_ATTR void VKAPI_CALL cmdSetViewportWithCountEXT (VkCommandBuffer commandBuffer, uint32_t viewportCount, const VkViewport* pViewports)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(viewportCount);
 	DE_UNREF(pViewports);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetScissorWithCountEXT (VkCommandBuffer commandBuffer, deUint32 scissorCount, const VkRect2D* pScissors)
+VKAPI_ATTR void VKAPI_CALL cmdSetScissorWithCountEXT (VkCommandBuffer commandBuffer, uint32_t scissorCount, const VkRect2D* pScissors)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(scissorCount);
 	DE_UNREF(pScissors);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdBindVertexBuffers2EXT (VkCommandBuffer commandBuffer, deUint32 firstBinding, deUint32 bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes, const VkDeviceSize* pStrides)
+VKAPI_ATTR void VKAPI_CALL cmdBindVertexBuffers2EXT (VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes, const VkDeviceSize* pStrides)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(firstBinding);
@@ -2517,7 +2517,7 @@ VKAPI_ATTR void VKAPI_CALL cmdExecuteGeneratedCommandsNV (VkCommandBuffer comman
 	DE_UNREF(pGeneratedCommandsInfo);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdBindPipelineShaderGroupNV (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline, deUint32 groupIndex)
+VKAPI_ATTR void VKAPI_CALL cmdBindPipelineShaderGroupNV (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline, uint32_t groupIndex)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pipelineBindPoint);
@@ -2525,7 +2525,7 @@ VKAPI_ATTR void VKAPI_CALL cmdBindPipelineShaderGroupNV (VkCommandBuffer command
 	DE_UNREF(groupIndex);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL setPrivateDataEXT (VkDevice device, VkObjectType objectType, deUint64 objectHandle, VkPrivateDataSlotEXT privateDataSlot, deUint64 data)
+VKAPI_ATTR VkResult VKAPI_CALL setPrivateDataEXT (VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlotEXT privateDataSlot, uint64_t data)
 {
 	DE_UNREF(device);
 	DE_UNREF(objectType);
@@ -2535,7 +2535,7 @@ VKAPI_ATTR VkResult VKAPI_CALL setPrivateDataEXT (VkDevice device, VkObjectType 
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL getPrivateDataEXT (VkDevice device, VkObjectType objectType, deUint64 objectHandle, VkPrivateDataSlotEXT privateDataSlot, deUint64* pData)
+VKAPI_ATTR void VKAPI_CALL getPrivateDataEXT (VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlotEXT privateDataSlot, uint64_t* pData)
 {
 	DE_UNREF(device);
 	DE_UNREF(objectType);
@@ -2558,7 +2558,7 @@ VKAPI_ATTR VkResult VKAPI_CALL acquireWinrtDisplayNV (VkPhysicalDevice physicalD
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getWinrtDisplayNV (VkPhysicalDevice physicalDevice, deUint32 deviceRelativeId, VkDisplayKHR* pDisplay)
+VKAPI_ATTR VkResult VKAPI_CALL getWinrtDisplayNV (VkPhysicalDevice physicalDevice, uint32_t deviceRelativeId, VkDisplayKHR* pDisplay)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(deviceRelativeId);
@@ -2566,7 +2566,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getWinrtDisplayNV (VkPhysicalDevice physicalDevic
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdBuildAccelerationStructuresKHR (VkCommandBuffer commandBuffer, deUint32 infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos)
+VKAPI_ATTR void VKAPI_CALL cmdBuildAccelerationStructuresKHR (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(infoCount);
@@ -2574,7 +2574,7 @@ VKAPI_ATTR void VKAPI_CALL cmdBuildAccelerationStructuresKHR (VkCommandBuffer co
 	DE_UNREF(ppBuildRangeInfos);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdBuildAccelerationStructuresIndirectKHR (VkCommandBuffer commandBuffer, deUint32 infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkDeviceAddress* pIndirectDeviceAddresses, const deUint32* pIndirectStrides, const deUint32* const* ppMaxPrimitiveCounts)
+VKAPI_ATTR void VKAPI_CALL cmdBuildAccelerationStructuresIndirectKHR (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkDeviceAddress* pIndirectDeviceAddresses, const uint32_t* pIndirectStrides, const uint32_t* const* ppMaxPrimitiveCounts)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(infoCount);
@@ -2584,7 +2584,7 @@ VKAPI_ATTR void VKAPI_CALL cmdBuildAccelerationStructuresIndirectKHR (VkCommandB
 	DE_UNREF(ppMaxPrimitiveCounts);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL buildAccelerationStructuresKHR (VkDevice device, VkDeferredOperationKHR deferredOperation, deUint32 infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos)
+VKAPI_ATTR VkResult VKAPI_CALL buildAccelerationStructuresKHR (VkDevice device, VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos)
 {
 	DE_UNREF(device);
 	DE_UNREF(deferredOperation);
@@ -2618,7 +2618,7 @@ VKAPI_ATTR VkResult VKAPI_CALL copyMemoryToAccelerationStructureKHR (VkDevice de
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL writeAccelerationStructuresPropertiesKHR (VkDevice device, deUint32 accelerationStructureCount, const VkAccelerationStructureKHR* pAccelerationStructures, VkQueryType queryType, deUintptr dataSize, void* pData, deUintptr stride)
+VKAPI_ATTR VkResult VKAPI_CALL writeAccelerationStructuresPropertiesKHR (VkDevice device, uint32_t accelerationStructureCount, const VkAccelerationStructureKHR* pAccelerationStructures, VkQueryType queryType, uintptr_t dataSize, void* pData, uintptr_t stride)
 {
 	DE_UNREF(device);
 	DE_UNREF(accelerationStructureCount);
@@ -2655,7 +2655,7 @@ VKAPI_ATTR VkDeviceAddress VKAPI_CALL getAccelerationStructureDeviceAddressKHR (
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdWriteAccelerationStructuresPropertiesKHR (VkCommandBuffer commandBuffer, deUint32 accelerationStructureCount, const VkAccelerationStructureKHR* pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, deUint32 firstQuery)
+VKAPI_ATTR void VKAPI_CALL cmdWriteAccelerationStructuresPropertiesKHR (VkCommandBuffer commandBuffer, uint32_t accelerationStructureCount, const VkAccelerationStructureKHR* pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, uint32_t firstQuery)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(accelerationStructureCount);
@@ -2672,7 +2672,7 @@ VKAPI_ATTR void VKAPI_CALL getDeviceAccelerationStructureCompatibilityKHR (VkDev
 	DE_UNREF(pCompatibility);
 }
 
-VKAPI_ATTR void VKAPI_CALL getAccelerationStructureBuildSizesKHR (VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkAccelerationStructureBuildGeometryInfoKHR* pBuildInfo, const deUint32* pMaxPrimitiveCounts, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo)
+VKAPI_ATTR void VKAPI_CALL getAccelerationStructureBuildSizesKHR (VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkAccelerationStructureBuildGeometryInfoKHR* pBuildInfo, const uint32_t* pMaxPrimitiveCounts, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo)
 {
 	DE_UNREF(device);
 	DE_UNREF(buildType);
@@ -2681,7 +2681,7 @@ VKAPI_ATTR void VKAPI_CALL getAccelerationStructureBuildSizesKHR (VkDevice devic
 	DE_UNREF(pSizeInfo);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdTraceRaysKHR (VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, deUint32 width, deUint32 height, deUint32 depth)
+VKAPI_ATTR void VKAPI_CALL cmdTraceRaysKHR (VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, uint32_t width, uint32_t height, uint32_t depth)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pRaygenShaderBindingTable);
@@ -2693,7 +2693,7 @@ VKAPI_ATTR void VKAPI_CALL cmdTraceRaysKHR (VkCommandBuffer commandBuffer, const
 	DE_UNREF(depth);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getRayTracingCaptureReplayShaderGroupHandlesKHR (VkDevice device, VkPipeline pipeline, deUint32 firstGroup, deUint32 groupCount, deUintptr dataSize, void* pData)
+VKAPI_ATTR VkResult VKAPI_CALL getRayTracingCaptureReplayShaderGroupHandlesKHR (VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, uintptr_t dataSize, void* pData)
 {
 	DE_UNREF(device);
 	DE_UNREF(pipeline);
@@ -2714,7 +2714,7 @@ VKAPI_ATTR void VKAPI_CALL cmdTraceRaysIndirectKHR (VkCommandBuffer commandBuffe
 	DE_UNREF(indirectDeviceAddress);
 }
 
-VKAPI_ATTR VkDeviceSize VKAPI_CALL getRayTracingShaderGroupStackSizeKHR (VkDevice device, VkPipeline pipeline, deUint32 group, VkShaderGroupShaderKHR groupShader)
+VKAPI_ATTR VkDeviceSize VKAPI_CALL getRayTracingShaderGroupStackSizeKHR (VkDevice device, VkPipeline pipeline, uint32_t group, VkShaderGroupShaderKHR groupShader)
 {
 	DE_UNREF(device);
 	DE_UNREF(pipeline);
@@ -2723,7 +2723,7 @@ VKAPI_ATTR VkDeviceSize VKAPI_CALL getRayTracingShaderGroupStackSizeKHR (VkDevic
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetRayTracingPipelineStackSizeKHR (VkCommandBuffer commandBuffer, deUint32 pipelineStackSize)
+VKAPI_ATTR void VKAPI_CALL cmdSetRayTracingPipelineStackSizeKHR (VkCommandBuffer commandBuffer, uint32_t pipelineStackSize)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pipelineStackSize);
@@ -2737,7 +2737,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getAndroidHardwareBufferPropertiesANDROID (VkDevi
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceWaylandPresentationSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, pt::WaylandDisplayPtr display)
+VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceWaylandPresentationSupportKHR (VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, pt::WaylandDisplayPtr display)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(queueFamilyIndex);
@@ -2745,7 +2745,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceWaylandPresentationSupportKHR (V
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceWin32PresentationSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex)
+VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceWin32PresentationSupportKHR (VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(queueFamilyIndex);
@@ -2808,7 +2808,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getMemoryWin32HandleNV (VkDevice device, VkDevice
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfacePresentModes2EXT (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, deUint32* pPresentModeCount, VkPresentModeKHR* pPresentModes)
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfacePresentModes2EXT (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, uint32_t* pPresentModeCount, VkPresentModeKHR* pPresentModes)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pSurfaceInfo);
@@ -2839,7 +2839,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getDeviceGroupSurfacePresentModes2EXT (VkDevice d
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceXcbPresentationSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, pt::XcbConnectionPtr connection, pt::XcbVisualid visual_id)
+VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceXcbPresentationSupportKHR (VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, pt::XcbConnectionPtr connection, pt::XcbVisualid visual_id)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(queueFamilyIndex);
@@ -2848,7 +2848,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceXcbPresentationSupportKHR (VkPhy
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceXlibPresentationSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, pt::XlibDisplayPtr dpy, pt::XlibVisualID visualID)
+VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceXlibPresentationSupportKHR (VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, pt::XlibDisplayPtr dpy, pt::XlibVisualID visualID)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(queueFamilyIndex);

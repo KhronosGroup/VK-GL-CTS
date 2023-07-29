@@ -36,18 +36,18 @@ namespace Functional
 class GeometryShaderTests : public TestCaseGroup
 {
 public:
-							GeometryShaderTests		(Context& context);
-							~GeometryShaderTests	(void);
+    GeometryShaderTests(Context &context);
+    ~GeometryShaderTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							GeometryShaderTests		(const GeometryShaderTests& other);
-	GeometryShaderTests&	operator=				(const GeometryShaderTests& other);
+    GeometryShaderTests(const GeometryShaderTests &other);
+    GeometryShaderTests &operator=(const GeometryShaderTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FGEOMETRYSHADERTESTS_HPP

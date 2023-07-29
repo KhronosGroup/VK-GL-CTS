@@ -32,9 +32,9 @@ namespace vkt
 namespace sparse
 {
 
-tcu::TestCaseGroup* createImageBlockShapesTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageBlockShapesTests(tcu::TestContext &testCtx);
 
-} // sparse
-} // vkt
+} // namespace sparse
+} // namespace vkt
 
 #endif // _VKTSPARSERESOURCESIMAGEBLOCKSHAPES_HPP

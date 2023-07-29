@@ -31,9 +31,9 @@ namespace vkt
 namespace postmortem
 {
 
-tcu::TestCaseGroup* createUseAfterFreeTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createUseAfterFreeTests(tcu::TestContext &testCtx);
 
-} // postmortem
-} // vkt
+} // namespace postmortem
+} // namespace vkt
 
 #endif // _VKTPOSTMORTEMUSEAFTERFREETESTS_HPP

@@ -33,21 +33,21 @@ namespace gles31
 namespace Functional
 {
 
-class FboSRGBWriteControlTests  : public TestCaseGroup
+class FboSRGBWriteControlTests : public TestCaseGroup
 {
 public:
-								FboSRGBWriteControlTests	(Context& context);
-								~FboSRGBWriteControlTests	(void);
+    FboSRGBWriteControlTests(Context &context);
+    ~FboSRGBWriteControlTests(void);
 
-	void						init						(void);
+    void init(void);
 
 private:
-								FboSRGBWriteControlTests	(const FboSRGBWriteControlTests & other);
-	FboSRGBWriteControlTests&	operator=					(const FboSRGBWriteControlTests & other);
+    FboSRGBWriteControlTests(const FboSRGBWriteControlTests &other);
+    FboSRGBWriteControlTests &operator=(const FboSRGBWriteControlTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FFBOSRGBWRITECONTROLTESTS_HPP

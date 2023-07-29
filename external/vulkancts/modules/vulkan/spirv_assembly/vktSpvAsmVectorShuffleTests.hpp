@@ -29,9 +29,9 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	createVectorShuffleGroup (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createVectorShuffleGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMVECTORSHUFFLETESTS_HPP

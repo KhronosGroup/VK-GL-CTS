@@ -36,148 +36,141 @@ namespace multisample
 
 enum class ComponentSource
 {
-	NONE			= 0,
-	CONSTANT		= 1,
-	PUSH_CONSTANT	= 2,
+    NONE          = 0,
+    CONSTANT      = 1,
+    PUSH_CONSTANT = 2,
 };
 
 struct ComponentData
 {
-	ComponentData ()
-		: source	{ComponentSource::NONE}
-		, index		{0u}
-		{}
+    ComponentData() : source{ComponentSource::NONE}, index{0u}
+    {
+    }
 
-	ComponentData (ComponentSource source_, deUint32 index_)
-		: source	{source_}
-		, index		{index_}
-		{}
+    ComponentData(ComponentSource source_, uint32_t index_) : source{source_}, index{index_}
+    {
+    }
 
-	ComponentData (const ComponentData& other)
-		: source	{other.source}
-		, index		{other.index}
-		{}
+    ComponentData(const ComponentData &other) : source{other.source}, index{other.index}
+    {
+    }
 
-	ComponentSource	source;
-	deUint32		index;
+    ComponentSource source;
+    uint32_t index;
 };
 
 struct ImageMSParams
 {
-	ImageMSParams(const vk::VkSampleCountFlagBits samples, const tcu::UVec3& size, const ComponentData& data = ComponentData{})
-		: numSamples	{samples}
-		, imageSize		{size}
-		, componentData	{data}
-		{}
+    ImageMSParams(const vk::VkSampleCountFlagBits samples, const tcu::UVec3 &size,
+                  const ComponentData &data = ComponentData{})
+        : numSamples{samples}
+        , imageSize{size}
+        , componentData{data}
+    {
+    }
 
-	vk::VkSampleCountFlagBits	numSamples;
-	tcu::UVec3					imageSize;
-	ComponentData				componentData;
+    vk::VkSampleCountFlagBits numSamples;
+    tcu::UVec3 imageSize;
+    ComponentData componentData;
 };
 
 class MultisampleCaseBase : public TestCase
 {
 public:
-	MultisampleCaseBase	(tcu::TestContext&		testCtx,
-						 const std::string&		name,
-						 const ImageMSParams&	imageMSParams)
-		: TestCase(testCtx, name, "")
-		, m_imageMSParams(imageMSParams)
-	{}
+    MultisampleCaseBase(tcu::TestContext &testCtx, const std::string &name, const ImageMSParams &imageMSParams)
+        : TestCase(testCtx, name, "")
+        , m_imageMSParams(imageMSParams)
+    {
+    }
 
-	virtual void checkSupport (Context&) const
-	{}
+    virtual void checkSupport(Context &) const
+    {
+    }
 
 protected:
-	const ImageMSParams m_imageMSParams;
+    const ImageMSParams m_imageMSParams;
 };
 
-typedef MultisampleCaseBase* (*MultisampleCaseFuncPtr)(tcu::TestContext& testCtx, const std::string& name, const ImageMSParams& imageMSParams);
+typedef MultisampleCaseBase *(*MultisampleCaseFuncPtr)(tcu::TestContext &testCtx, const std::string &name,
+                                                       const ImageMSParams &imageMSParams);
 
 class MultisampleInstanceBase : public TestInstance
 {
 public:
-								MultisampleInstanceBase		(Context&							context,
-															 const ImageMSParams&				imageMSParams)
-		: TestInstance		(context)
-		, m_imageMSParams	(imageMSParams)
-		, m_imageType		(IMAGE_TYPE_2D)
-		, m_imageFormat		(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8))
-	{}
+    MultisampleInstanceBase(Context &context, const ImageMSParams &imageMSParams)
+        : TestInstance(context)
+        , m_imageMSParams(imageMSParams)
+        , m_imageType(IMAGE_TYPE_2D)
+        , m_imageFormat(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8))
+    {
+    }
 
-	typedef std::vector<vk::VkVertexInputAttributeDescription> VertexAttribDescVec;
+    typedef std::vector<vk::VkVertexInputAttributeDescription> VertexAttribDescVec;
 
-	struct VertexDataDesc
-	{
-		vk::VkPrimitiveTopology	primitiveTopology;
-		deUint32				verticesCount;
-		deUint32				dataStride;
-		vk::VkDeviceSize		dataSize;
-		VertexAttribDescVec		vertexAttribDescVec;
-	};
+    struct VertexDataDesc
+    {
+        vk::VkPrimitiveTopology primitiveTopology;
+        uint32_t verticesCount;
+        uint32_t dataStride;
+        vk::VkDeviceSize dataSize;
+        VertexAttribDescVec vertexAttribDescVec;
+    };
 
 protected:
+    void validateImageSize(const vk::InstanceInterface &instance, const vk::VkPhysicalDevice physicalDevice,
+                           const ImageType imageType, const tcu::UVec3 &imageSize) const;
 
-	void					validateImageSize			(const vk::InstanceInterface&	instance,
-														 const vk::VkPhysicalDevice		physicalDevice,
-														 const ImageType				imageType,
-														 const tcu::UVec3&				imageSize) const;
+    void validateImageFeatureFlags(const vk::InstanceInterface &instance, const vk::VkPhysicalDevice physicalDevice,
+                                   const vk::VkFormat format, const vk::VkFormatFeatureFlags featureFlags) const;
 
-	void					validateImageFeatureFlags	(const vk::InstanceInterface&	instance,
-														 const vk::VkPhysicalDevice		physicalDevice,
-														 const vk::VkFormat				format,
-														 const vk::VkFormatFeatureFlags	featureFlags) const;
+    void validateImageInfo(const vk::InstanceInterface &instance, const vk::VkPhysicalDevice physicalDevice,
+                           const vk::VkImageCreateInfo &imageInfo) const;
 
-	void					validateImageInfo			(const vk::InstanceInterface&	instance,
-														 const vk::VkPhysicalDevice		physicalDevice,
-														 const vk::VkImageCreateInfo&	imageInfo) const;
+    virtual VertexDataDesc getVertexDataDescripton(void) const = 0;
 
-	virtual VertexDataDesc	getVertexDataDescripton		(void) const = 0;
+    virtual void uploadVertexData(const vk::Allocation &vertexBufferAllocation,
+                                  const VertexDataDesc &vertexDataDescripton) const = 0;
 
-	virtual void			uploadVertexData			(const vk::Allocation&			vertexBufferAllocation,
-														 const VertexDataDesc&			vertexDataDescripton) const = 0;
 protected:
-	const ImageMSParams			m_imageMSParams;
-	const ImageType				m_imageType;
-	const tcu::TextureFormat	m_imageFormat;
+    const ImageMSParams m_imageMSParams;
+    const ImageType m_imageType;
+    const tcu::TextureFormat m_imageFormat;
 };
 
-} // multisample
+} // namespace multisample
 
 template <class CaseClass>
-tcu::TestCaseGroup* makeMSGroup	(tcu::TestContext&							testCtx,
-								 const std::string							groupName,
-								 const tcu::UVec3							imageSizes[],
-								 const deUint32								imageSizesElemCount,
-								 const vk::VkSampleCountFlagBits			imageSamples[],
-								 const deUint32								imageSamplesElemCount,
-								 const multisample::ComponentData&			componentData = multisample::ComponentData{})
+tcu::TestCaseGroup *makeMSGroup(tcu::TestContext &testCtx, const std::string groupName, const tcu::UVec3 imageSizes[],
+                                const uint32_t imageSizesElemCount, const vk::VkSampleCountFlagBits imageSamples[],
+                                const uint32_t imageSamplesElemCount,
+                                const multisample::ComponentData &componentData = multisample::ComponentData{})
 {
-	de::MovePtr<tcu::TestCaseGroup> caseGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str(), ""));
+    de::MovePtr<tcu::TestCaseGroup> caseGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str(), ""));
 
-	for (deUint32 imageSizeNdx = 0u; imageSizeNdx < imageSizesElemCount; ++imageSizeNdx)
-	{
-		const tcu::UVec3	imageSize = imageSizes[imageSizeNdx];
-		std::ostringstream	imageSizeStream;
+    for (uint32_t imageSizeNdx = 0u; imageSizeNdx < imageSizesElemCount; ++imageSizeNdx)
+    {
+        const tcu::UVec3 imageSize = imageSizes[imageSizeNdx];
+        std::ostringstream imageSizeStream;
 
-		imageSizeStream << imageSize.x() << "_" << imageSize.y() << "_" << imageSize.z();
+        imageSizeStream << imageSize.x() << "_" << imageSize.y() << "_" << imageSize.z();
 
-		de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, imageSizeStream.str().c_str(), ""));
+        de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, imageSizeStream.str().c_str(), ""));
 
-		for (deUint32 imageSamplesNdx = 0u; imageSamplesNdx < imageSamplesElemCount; ++imageSamplesNdx)
-		{
-			const vk::VkSampleCountFlagBits		samples			= imageSamples[imageSamplesNdx];
-			const multisample::ImageMSParams	imageMSParams	= multisample::ImageMSParams(samples, imageSize, componentData);
+        for (uint32_t imageSamplesNdx = 0u; imageSamplesNdx < imageSamplesElemCount; ++imageSamplesNdx)
+        {
+            const vk::VkSampleCountFlagBits samples = imageSamples[imageSamplesNdx];
+            const multisample::ImageMSParams imageMSParams =
+                multisample::ImageMSParams(samples, imageSize, componentData);
 
-			sizeGroup->addChild(CaseClass::createCase(testCtx, "samples_" + de::toString(samples), imageMSParams));
-		}
+            sizeGroup->addChild(CaseClass::createCase(testCtx, "samples_" + de::toString(samples), imageMSParams));
+        }
 
-		caseGroup->addChild(sizeGroup.release());
-	}
-	return caseGroup.release();
+        caseGroup->addChild(sizeGroup.release());
+    }
+    return caseGroup.release();
 }
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEMULTISAMPLEBASE_HPP

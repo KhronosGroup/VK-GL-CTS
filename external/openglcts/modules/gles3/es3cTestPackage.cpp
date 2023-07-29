@@ -59,20 +59,21 @@ namespace es3cts
 class TestCaseWrapper : public tcu::TestCaseExecutor
 {
 public:
-	TestCaseWrapper(ES30TestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism);
-	~TestCaseWrapper(void);
+    TestCaseWrapper(ES30TestPackage &package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism);
+    ~TestCaseWrapper(void);
 
-	void init(tcu::TestCase* testCase, const std::string& path);
-	void deinit(tcu::TestCase* testCase);
-	tcu::TestNode::IterateResult iterate(tcu::TestCase* testCase);
+    void init(tcu::TestCase *testCase, const std::string &path);
+    void deinit(tcu::TestCase *testCase);
+    tcu::TestNode::IterateResult iterate(tcu::TestCase *testCase);
 
 private:
-	ES30TestPackage& m_testPackage;
-	de::SharedPtr<tcu::WaiverUtil> m_waiverMechanism;
+    ES30TestPackage &m_testPackage;
+    de::SharedPtr<tcu::WaiverUtil> m_waiverMechanism;
 };
 
-TestCaseWrapper::TestCaseWrapper(ES30TestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism)
-	: m_testPackage(package), m_waiverMechanism(waiverMechanism)
+TestCaseWrapper::TestCaseWrapper(ES30TestPackage &package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism)
+    : m_testPackage(package)
+    , m_waiverMechanism(waiverMechanism)
 {
 }
 
@@ -80,88 +81,88 @@ TestCaseWrapper::~TestCaseWrapper(void)
 {
 }
 
-void TestCaseWrapper::init(tcu::TestCase* testCase, const std::string& path)
+void TestCaseWrapper::init(tcu::TestCase *testCase, const std::string &path)
 {
-	if (m_waiverMechanism->isOnWaiverList(path))
-		throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
+    if (m_waiverMechanism->isOnWaiverList(path))
+        throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
 
-	glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
+    glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
 
-	testCase->init();
+    testCase->init();
 }
 
-void TestCaseWrapper::deinit(tcu::TestCase* testCase)
+void TestCaseWrapper::deinit(tcu::TestCase *testCase)
 {
-	testCase->deinit();
+    testCase->deinit();
 
-	glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
+    glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
 }
 
-tcu::TestNode::IterateResult TestCaseWrapper::iterate(tcu::TestCase* testCase)
+tcu::TestNode::IterateResult TestCaseWrapper::iterate(tcu::TestCase *testCase)
 {
-	tcu::TestContext&			 testCtx   = m_testPackage.getContext().getTestContext();
-	glu::RenderContext&			 renderCtx = m_testPackage.getContext().getRenderContext();
-	tcu::TestCase::IterateResult result;
+    tcu::TestContext &testCtx     = m_testPackage.getContext().getTestContext();
+    glu::RenderContext &renderCtx = m_testPackage.getContext().getRenderContext();
+    tcu::TestCase::IterateResult result;
 
-	// Clear to black
-	{
-		const glw::Functions& gl = renderCtx.getFunctions();
-		gl.clearColor(0.0f, 0.0f, 0.0f, 1.f);
-		gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	}
+    // Clear to black
+    {
+        const glw::Functions &gl = renderCtx.getFunctions();
+        gl.clearColor(0.0f, 0.0f, 0.0f, 1.f);
+        gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    }
 
-	result = testCase->iterate();
+    result = testCase->iterate();
 
-	// Call implementation specific post-iterate routine (usually handles native events and swaps buffers)
-	try
-	{
-		renderCtx.postIterate();
-		return result;
-	}
-	catch (const tcu::ResourceError&)
-	{
-		testCtx.getLog().endCase(QP_TEST_RESULT_RESOURCE_ERROR, "Resource error in context post-iteration routine");
-		testCtx.setTerminateAfter(true);
-		return tcu::TestNode::STOP;
-	}
-	catch (const std::exception&)
-	{
-		testCtx.getLog().endCase(QP_TEST_RESULT_FAIL, "Error in context post-iteration routine");
-		return tcu::TestNode::STOP;
-	}
+    // Call implementation specific post-iterate routine (usually handles native events and swaps buffers)
+    try
+    {
+        renderCtx.postIterate();
+        return result;
+    }
+    catch (const tcu::ResourceError &)
+    {
+        testCtx.getLog().endCase(QP_TEST_RESULT_RESOURCE_ERROR, "Resource error in context post-iteration routine");
+        testCtx.setTerminateAfter(true);
+        return tcu::TestNode::STOP;
+    }
+    catch (const std::exception &)
+    {
+        testCtx.getLog().endCase(QP_TEST_RESULT_FAIL, "Error in context post-iteration routine");
+        return tcu::TestNode::STOP;
+    }
 }
 
 class ShaderTests : public deqp::TestCaseGroup
 {
 public:
-	ShaderTests(deqp::Context& context) : TestCaseGroup(context, "shaders", "Shading Language Tests")
-	{
-	}
+    ShaderTests(deqp::Context &context) : TestCaseGroup(context, "shaders", "Shading Language Tests")
+    {
+    }
 
-	void init(void)
-	{
-		addChild(new deqp::ShaderLibraryGroup(m_context, "arrays", "Array Tests", "arrays.test"));
-		addChild(new deqp::ShaderLibraryGroup(m_context, "declarations", "Declaration Tests", "declarations.test"));
-		addChild(new deqp::FragDepthTests(m_context, glu::GLSL_VERSION_300_ES));
-		addChild(new deqp::ShaderIndexingTests(m_context, glu::GLSL_VERSION_300_ES));
-		addChild(new deqp::ShaderLoopTests(m_context, glu::GLSL_VERSION_300_ES));
-		addChild(new deqp::ShaderLibraryGroup(m_context, "preprocessor", "Preprocessor Tests", "preprocessor.test"));
-		addChild(new deqp::ShaderLibraryGroup(m_context, "literal_parsing", "Literal Parsing Tests",
-											  "literal_parsing.test"));
-		addChild(new deqp::ShaderLibraryGroup(m_context, "name_hiding", "Name Hiding Tests", "name_hiding.test"));
-		addChild(new deqp::ShaderStructTests(m_context, glu::GLSL_VERSION_300_ES));
-		addChild(new deqp::ShaderSwitchTests(m_context, glu::GLSL_VERSION_300_ES));
-		addChild(new deqp::UniformBlockTests(m_context, glu::GLSL_VERSION_300_ES));
-		addChild(new deqp::GLSLVectorConstructorTests(m_context, glu::GLSL_VERSION_300_ES));
-		addChild(new deqp::ShaderIntegerMixTests(m_context, glu::GLSL_VERSION_300_ES));
-		addChild(new deqp::ShaderNegativeTests(m_context, glu::GLSL_VERSION_300_ES));
-		addChild(new glcts::AggressiveShaderOptimizationsTests(m_context));
-	}
+    void init(void)
+    {
+        addChild(new deqp::ShaderLibraryGroup(m_context, "arrays", "Array Tests", "arrays.test"));
+        addChild(new deqp::ShaderLibraryGroup(m_context, "declarations", "Declaration Tests", "declarations.test"));
+        addChild(new deqp::FragDepthTests(m_context, glu::GLSL_VERSION_300_ES));
+        addChild(new deqp::ShaderIndexingTests(m_context, glu::GLSL_VERSION_300_ES));
+        addChild(new deqp::ShaderLoopTests(m_context, glu::GLSL_VERSION_300_ES));
+        addChild(new deqp::ShaderLibraryGroup(m_context, "preprocessor", "Preprocessor Tests", "preprocessor.test"));
+        addChild(new deqp::ShaderLibraryGroup(m_context, "literal_parsing", "Literal Parsing Tests",
+                                              "literal_parsing.test"));
+        addChild(new deqp::ShaderLibraryGroup(m_context, "name_hiding", "Name Hiding Tests", "name_hiding.test"));
+        addChild(new deqp::ShaderStructTests(m_context, glu::GLSL_VERSION_300_ES));
+        addChild(new deqp::ShaderSwitchTests(m_context, glu::GLSL_VERSION_300_ES));
+        addChild(new deqp::UniformBlockTests(m_context, glu::GLSL_VERSION_300_ES));
+        addChild(new deqp::GLSLVectorConstructorTests(m_context, glu::GLSL_VERSION_300_ES));
+        addChild(new deqp::ShaderIntegerMixTests(m_context, glu::GLSL_VERSION_300_ES));
+        addChild(new deqp::ShaderNegativeTests(m_context, glu::GLSL_VERSION_300_ES));
+        addChild(new glcts::AggressiveShaderOptimizationsTests(m_context));
+    }
 };
 
-ES30TestPackage::ES30TestPackage(tcu::TestContext& testCtx, const char* packageName)
-	: deqp::TestPackage(testCtx, packageName, "OpenGL ES 3 Conformance Tests", glu::ContextType(glu::ApiType::es(3, 0)),
-						"gl_cts/data/gles3/")
+ES30TestPackage::ES30TestPackage(tcu::TestContext &testCtx, const char *packageName)
+    : deqp::TestPackage(testCtx, packageName, "OpenGL ES 3 Conformance Tests", glu::ContextType(glu::ApiType::es(3, 0)),
+                        "gl_cts/data/gles3/")
 {
 }
 
@@ -171,38 +172,38 @@ ES30TestPackage::~ES30TestPackage(void)
 
 void ES30TestPackage::init(void)
 {
-	// Call init() in parent - this creates context.
-	deqp::TestPackage::init();
+    // Call init() in parent - this creates context.
+    deqp::TestPackage::init();
 
-	try
-	{
-		addChild(new ShaderTests(getContext()));
-		addChild(new glcts::TextureFilterAnisotropicTests(getContext()));
-		addChild(new glcts::TextureRepeatModeTests(getContext()));
-		addChild(new glcts::ExposedExtensionsTests(getContext()));
-		tcu::TestCaseGroup* coreGroup = new tcu::TestCaseGroup(getTestContext(), "core", "core tests");
-		coreGroup->addChild(new glcts::ShaderConstExprTests(getContext()));
-		coreGroup->addChild(new glcts::ShaderMacroTests(getContext()));
-		coreGroup->addChild(new glcts::InternalformatTests(getContext()));
-		coreGroup->addChild(new glcts::NearestEdgeCases(getContext()));
-		addChild(coreGroup);
-		addChild(new glcts::ParallelShaderCompileTests(getContext()));
-		addChild(new glcts::PackedPixelsTests(getContext()));
-		addChild(new glcts::PackedDepthStencilTests(getContext()));
-		addChild(new es3cts::CopyTexImageConversionsTests(getContext()));
-		addChild(new es3cts::NumberParsingTests(getContext()));
-	}
-	catch (...)
-	{
-		// Destroy context.
-		deqp::TestPackage::deinit();
-		throw;
-	}
+    try
+    {
+        addChild(new ShaderTests(getContext()));
+        addChild(new glcts::TextureFilterAnisotropicTests(getContext()));
+        addChild(new glcts::TextureRepeatModeTests(getContext()));
+        addChild(new glcts::ExposedExtensionsTests(getContext()));
+        tcu::TestCaseGroup *coreGroup = new tcu::TestCaseGroup(getTestContext(), "core", "core tests");
+        coreGroup->addChild(new glcts::ShaderConstExprTests(getContext()));
+        coreGroup->addChild(new glcts::ShaderMacroTests(getContext()));
+        coreGroup->addChild(new glcts::InternalformatTests(getContext()));
+        coreGroup->addChild(new glcts::NearestEdgeCases(getContext()));
+        addChild(coreGroup);
+        addChild(new glcts::ParallelShaderCompileTests(getContext()));
+        addChild(new glcts::PackedPixelsTests(getContext()));
+        addChild(new glcts::PackedDepthStencilTests(getContext()));
+        addChild(new es3cts::CopyTexImageConversionsTests(getContext()));
+        addChild(new es3cts::NumberParsingTests(getContext()));
+    }
+    catch (...)
+    {
+        // Destroy context.
+        deqp::TestPackage::deinit();
+        throw;
+    }
 }
 
-tcu::TestCaseExecutor* ES30TestPackage::createExecutor(void) const
+tcu::TestCaseExecutor *ES30TestPackage::createExecutor(void) const
 {
-	return new TestCaseWrapper(const_cast<ES30TestPackage&>(*this), m_waiverMechanism);
+    return new TestCaseWrapper(const_cast<ES30TestPackage &>(*this), m_waiverMechanism);
 }
 
-} // es3cts
+} // namespace es3cts

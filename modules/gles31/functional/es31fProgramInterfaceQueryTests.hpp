@@ -36,18 +36,18 @@ namespace Functional
 class ProgramInterfaceQueryTests : public TestCaseGroup
 {
 public:
-								ProgramInterfaceQueryTests	(Context& context);
-								~ProgramInterfaceQueryTests	(void);
+    ProgramInterfaceQueryTests(Context &context);
+    ~ProgramInterfaceQueryTests(void);
 
-	void						init						(void);
+    void init(void);
 
 private:
-								ProgramInterfaceQueryTests	(const ProgramInterfaceQueryTests& other);
-	ProgramInterfaceQueryTests&	operator=					(const ProgramInterfaceQueryTests& other);
+    ProgramInterfaceQueryTests(const ProgramInterfaceQueryTests &other);
+    ProgramInterfaceQueryTests &operator=(const ProgramInterfaceQueryTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FPROGRAMINTERFACEQUERYTESTS_HPP

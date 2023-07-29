@@ -79,98 +79,98 @@ namespace glcts
 /* Define allowed test variants for shaders */
 enum SHADER_TO_CHECK
 {
-	STC_COMPUTE_SHADER,
-	STC_FRAGMENT_SHADER,
-	STC_GEOMETRY_SHADER,
-	STC_TESSELLATION_CONTROL_SHADER,
-	STC_TESSELLATION_EVALUATION_SHADER,
-	STC_VERTEX_SHADER
+    STC_COMPUTE_SHADER,
+    STC_FRAGMENT_SHADER,
+    STC_GEOMETRY_SHADER,
+    STC_TESSELLATION_CONTROL_SHADER,
+    STC_TESSELLATION_EVALUATION_SHADER,
+    STC_VERTEX_SHADER
 };
 
 /* Location of dimensions in array StorageConfigIOC::m_dimensions */
 enum DIMENSIONS_LOCATION
 {
-	DL_WIDTH  = 0,
-	DL_HEIGHT = 1,
-	DL_DEPTH  = 2
+    DL_WIDTH  = 0,
+    DL_HEIGHT = 1,
+    DL_DEPTH  = 2
 };
 
 /* Define tested images formats */
 enum IMAGE_FORMATS
 {
-	IF_IMAGE  = 0,
-	IF_IIMAGE = 1,
-	IF_UIMAGE = 2
+    IF_IMAGE  = 0,
+    IF_IIMAGE = 1,
+    IF_UIMAGE = 2
 };
 
 class TextureCubeMapArrayImageOpCompute : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureCubeMapArrayImageOpCompute(Context& context, const ExtParameters& extParams, const char* name,
-									  const char* description, SHADER_TO_CHECK shaderToCheck);
+    /* Public methods */
+    TextureCubeMapArrayImageOpCompute(Context &context, const ExtParameters &extParams, const char *name,
+                                      const char *description, SHADER_TO_CHECK shaderToCheck);
 
-	virtual ~TextureCubeMapArrayImageOpCompute(void)
-	{
-	}
+    virtual ~TextureCubeMapArrayImageOpCompute(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
-	/* Public static constants */
-	static const glw::GLfloat m_f_base;
-	static const glw::GLint   m_i_base;
-	static const glw::GLuint  m_ui_base;
-	static const glw::GLuint  m_n_components;
-	static const glw::GLuint  m_n_dimensions;
-	static const glw::GLuint  m_n_image_formats;
-	static const glw::GLuint  m_n_resolutions;
-	static const glw::GLuint  m_n_storage_type;
-	static const char*		  m_mutable_storage;
-	static const char*		  m_immutable_storage;
+    /* Public static constants */
+    static const glw::GLfloat m_f_base;
+    static const glw::GLint m_i_base;
+    static const glw::GLuint m_ui_base;
+    static const glw::GLuint m_n_components;
+    static const glw::GLuint m_n_dimensions;
+    static const glw::GLuint m_n_image_formats;
+    static const glw::GLuint m_n_resolutions;
+    static const glw::GLuint m_n_storage_type;
+    static const char *m_mutable_storage;
+    static const char *m_immutable_storage;
 
 private:
-	/* Private methods */
-	void initTest(void);
-	void removeTextures(void);
-	void configureProgram(void);
-	void runShaders(glw::GLuint width, glw::GLuint height, glw::GLuint depth);
+    /* Private methods */
+    void initTest(void);
+    void removeTextures(void);
+    void configureProgram(void);
+    void runShaders(glw::GLuint width, glw::GLuint height, glw::GLuint depth);
 
-	const char* getComputeShaderCode(void);
-	const char* getFragmentShaderCode(void);
-	const char* getFragmentShaderCodeBoilerPlate(void);
-	const char* getGeometryShaderCode(void);
-	const char* getTessControlShaderCode(void);
-	const char* getTessControlShaderCodeBoilerPlate(void);
-	const char* getTessEvaluationShaderCode(void);
-	const char* getTessEvaluationShaderCodeBoilerPlate(void);
-	const char* getVertexShaderCode(void);
-	const char* getVertexShaderCodeBoilerPlate(void);
-	const char* getFloatingPointCopyShaderSource(void);
+    const char *getComputeShaderCode(void);
+    const char *getFragmentShaderCode(void);
+    const char *getFragmentShaderCodeBoilerPlate(void);
+    const char *getGeometryShaderCode(void);
+    const char *getTessControlShaderCode(void);
+    const char *getTessControlShaderCodeBoilerPlate(void);
+    const char *getTessEvaluationShaderCode(void);
+    const char *getTessEvaluationShaderCodeBoilerPlate(void);
+    const char *getVertexShaderCode(void);
+    const char *getVertexShaderCodeBoilerPlate(void);
+    const char *getFloatingPointCopyShaderSource(void);
 
-	/* Variables for general usage */
-	SHADER_TO_CHECK m_shader_to_check;
+    /* Variables for general usage */
+    SHADER_TO_CHECK m_shader_to_check;
 
-	glw::GLuint m_cs_id;
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_gs_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_tc_id;
-	glw::GLuint m_te_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_vs_id;
-	glw::GLuint m_copy_po_id;
-	glw::GLuint m_copy_cs_id;
+    glw::GLuint m_cs_id;
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_tc_id;
+    glw::GLuint m_te_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_id;
+    glw::GLuint m_copy_po_id;
+    glw::GLuint m_copy_cs_id;
 
-	glw::GLuint m_iimage_read_to_id;
-	glw::GLuint m_iimage_write_to_id;
-	glw::GLuint m_image_read_to_id;
-	glw::GLuint m_image_write_to_id;
-	glw::GLuint m_uimage_read_to_id;
-	glw::GLuint m_uimage_write_to_id;
+    glw::GLuint m_iimage_read_to_id;
+    glw::GLuint m_iimage_write_to_id;
+    glw::GLuint m_image_read_to_id;
+    glw::GLuint m_image_write_to_id;
+    glw::GLuint m_uimage_read_to_id;
+    glw::GLuint m_uimage_write_to_id;
 };
 
-} /* glcts */
+} // namespace glcts
 
 #endif // _ESEXTCTEXTURECUBEMAPARRAYIMAGEOPERATIONS_HPP

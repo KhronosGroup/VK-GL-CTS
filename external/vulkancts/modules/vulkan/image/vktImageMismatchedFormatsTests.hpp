@@ -33,9 +33,9 @@ namespace vkt
 namespace image
 {
 
-tcu::TestCaseGroup*		createImageMismatchedFormatsTests				(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageMismatchedFormatsTests(tcu::TestContext &testCtx);
 
-} // image
-} // vkt
+} // namespace image
+} // namespace vkt
 
 #endif // _VKTIMAGEMISMATCHEDFORMATSTESTS_HPP

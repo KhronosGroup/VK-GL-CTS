@@ -33,9 +33,9 @@ namespace vkt
 namespace sr
 {
 
-tcu::TestCaseGroup*	createTextureGatherTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTextureGatherTests(tcu::TestContext &testCtx);
 
-} // sr
-} // vkt
+} // namespace sr
+} // namespace vkt
 
 #endif // _VKTSHADERRENDERTEXTUREGATHERTESTS_HPP

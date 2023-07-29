@@ -32,9 +32,9 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup* createCrossStageInterfaceTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createCrossStageInterfaceTests(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMCROSSSTAGEINTERFACETESTS_HPP

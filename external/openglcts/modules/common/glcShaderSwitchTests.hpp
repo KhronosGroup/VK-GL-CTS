@@ -37,18 +37,18 @@ namespace deqp
 class ShaderSwitchTests : public TestCaseGroup
 {
 public:
-	ShaderSwitchTests(Context& context, glu::GLSLVersion glslVersion);
-	virtual ~ShaderSwitchTests(void);
+    ShaderSwitchTests(Context &context, glu::GLSLVersion glslVersion);
+    virtual ~ShaderSwitchTests(void);
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	ShaderSwitchTests(const ShaderSwitchTests&);			// not allowed!
-	ShaderSwitchTests& operator=(const ShaderSwitchTests&); // not allowed!
+    ShaderSwitchTests(const ShaderSwitchTests &);            // not allowed!
+    ShaderSwitchTests &operator=(const ShaderSwitchTests &); // not allowed!
 
-	glu::GLSLVersion m_glslVersion;
+    glu::GLSLVersion m_glslVersion;
 };
 
-} // deqp
+} // namespace deqp
 
 #endif // _GLCSHADERSWITCHTESTS_HPP

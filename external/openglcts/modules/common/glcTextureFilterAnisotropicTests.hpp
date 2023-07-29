@@ -41,65 +41,65 @@ namespace glcts
 class TextureFilterAnisotropicQueriesTestCase : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	TextureFilterAnisotropicQueriesTestCase(deqp::Context& context);
+    /* Public methods */
+    TextureFilterAnisotropicQueriesTestCase(deqp::Context &context);
 
-	void						 deinit();
-	void						 init();
-	tcu::TestNode::IterateResult iterate();
+    void deinit();
+    void init();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	bool verifyTexParameters(const glw::Functions& gl);
-	bool verifyGet(const glw::Functions& gl);
+    /* Private methods */
+    bool verifyTexParameters(const glw::Functions &gl);
+    bool verifyGet(const glw::Functions &gl);
 
-	/* Private members */
+    /* Private members */
 };
 
 class TextureFilterAnisotropicDrawingTestCase : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	TextureFilterAnisotropicDrawingTestCase(deqp::Context& context);
+    /* Public methods */
+    TextureFilterAnisotropicDrawingTestCase(deqp::Context &context);
 
-	void						 deinit();
-	void						 init();
-	tcu::TestNode::IterateResult iterate();
+    void deinit();
+    void init();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void generateTexture(const glw::Functions& gl, GLenum target);
-	void fillTexture(const glw::Functions& gl, GLenum target, GLenum internalFormat);
-	bool drawTexture(const glw::Functions& gl, GLenum target, GLfloat anisoDegree);
-	GLuint verifyScene(const glw::Functions& gl);
-	void releaseTexture(const glw::Functions& gl);
+    /* Private methods */
+    void generateTexture(const glw::Functions &gl, GLenum target);
+    void fillTexture(const glw::Functions &gl, GLenum target, GLenum internalFormat);
+    bool drawTexture(const glw::Functions &gl, GLenum target, GLfloat anisoDegree);
+    GLuint verifyScene(const glw::Functions &gl);
+    void releaseTexture(const glw::Functions &gl);
 
-	void generateTokens(GLenum target, std::string& refTexCoordType, std::string& refSamplerType);
+    void generateTokens(GLenum target, std::string &refTexCoordType, std::string &refSamplerType);
 
-	/* Private members */
-	const char* m_vertex;
-	const char* m_fragment;
+    /* Private members */
+    const char *m_vertex;
+    const char *m_fragment;
 
-	std::vector<GLenum> m_supportedTargets;
-	std::vector<GLenum> m_supportedInternalFormats;
+    std::vector<GLenum> m_supportedTargets;
+    std::vector<GLenum> m_supportedInternalFormats;
 
-	GLuint m_texture;
+    GLuint m_texture;
 };
 
 /** Test group which encapsulates all conformance tests */
 class TextureFilterAnisotropicTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	TextureFilterAnisotropicTests(deqp::Context& context);
+    /* Public methods */
+    TextureFilterAnisotropicTests(deqp::Context &context);
 
-	void init();
+    void init();
 
 private:
-	TextureFilterAnisotropicTests(const TextureFilterAnisotropicTests& other);
-	TextureFilterAnisotropicTests& operator=(const TextureFilterAnisotropicTests& other);
+    TextureFilterAnisotropicTests(const TextureFilterAnisotropicTests &other);
+    TextureFilterAnisotropicTests &operator=(const TextureFilterAnisotropicTests &other);
 };
 
-} /* glcts namespace */
+} // namespace glcts
 
 #endif // _GLCTEXTUREFILTERANISOTROPICTESTS_HPP

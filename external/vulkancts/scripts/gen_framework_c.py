@@ -29,8 +29,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scrip
 from build.common import DEQP_DIR
 from khr_util.format import writeInlFile
 
-VULKAN_H	= os.path.join(os.path.dirname(__file__), "src", "vulkan_core.h")
-VULKAN_DIR	= os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan")
+VULKAN_H = os.path.join(os.path.dirname(__file__), "src", "vulkan_core.h")
+VULKAN_DIR = os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan")
 
 INL_HEADER = """\
 /* WARNING: This is auto-generated file. Do not modify, since changes will
@@ -38,32 +38,32 @@ INL_HEADER = """\
  */\
 """
 
-TYPE_SUBSTITUTIONS		= [
-	("uint8_t",		"deUint8"),
-	("uint16_t",	"deUint16"),
-	("uint32_t",	"deUint32"),
-	("uint64_t",	"deUint64"),
-	("int8_t",		"deInt8"),
-	("int16_t",		"deInt16"),
-	("int32_t",		"deInt32"),
-	("int64_t",		"deInt64"),
-	("bool32_t",	"deUint32"),
-	("size_t",		"deUintptr"),
+TYPE_SUBSTITUTIONS = [
+    ("uint8_t", "uint8_t"),
+    ("uint16_t", "uint16_t"),
+    ("uint32_t", "uint32_t"),
+    ("uint64_t", "uint64_t"),
+    ("int8_t", "int8_t"),
+    ("int16_t", "int16_t"),
+    ("int32_t", "int32_t"),
+    ("int64_t", "int64_t"),
+    ("bool32_t", "uint32_t"),
+    ("size_t", "uintptr_t"),
 ]
 
 def readFile (filename):
-	with open(filename, 'rt') as f:
-		return f.read()
+    with open(filename, 'rt') as f:
+        return f.read()
 
 def writeVulkanCHeader (src, filename):
-	def gen ():
-		dst = src.replace('#include "vk_platform.h"','')
+    def gen ():
+        dst = src.replace('#include "vk_platform.h"','')
 
-		for old_type, new_type in TYPE_SUBSTITUTIONS:
-			dst = dst.replace(old_type, new_type)
-		yield dst
-	writeInlFile(filename, INL_HEADER, gen())
+        for old_type, new_type in TYPE_SUBSTITUTIONS:
+            dst = dst.replace(old_type, new_type)
+        yield dst
+    writeInlFile(filename, INL_HEADER, gen())
 
 if __name__ == "__main__":
-	src				= readFile(VULKAN_H)
-	writeVulkanCHeader				(src, os.path.join(VULKAN_DIR, "vkVulkan_c.inl"))
+    src = readFile(VULKAN_H)
+    writeVulkanCHeader                (src, os.path.join(VULKAN_DIR, "vkVulkan_c.inl"))

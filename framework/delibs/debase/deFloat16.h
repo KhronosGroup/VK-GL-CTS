@@ -28,37 +28,37 @@
 
 DE_BEGIN_EXTERN_C
 
-typedef		deUint16			deFloat16;
+typedef uint16_t deFloat16;
 
 #if defined(DE_DEPRECATED_TYPES)
-typedef		deFloat16			DEfloat16;
+typedef deFloat16 DEfloat16;
 #endif
 
 /*--------------------------------------------------------------------*//*!
  * \brief Convert 32-bit floating point number to 16 bit.
- * \param val32	Input value.
+ * \param val32    Input value.
  * \return Converted 16-bit floating-point value.
  *//*--------------------------------------------------------------------*/
-deFloat16	deFloat32To16				(float val32);
-deFloat16	deFloat32To16Round			(float val32, deRoundingMode mode);
-void		deFloat16_selfTest			(void);
+deFloat16 deFloat32To16(float val32);
+deFloat16 deFloat32To16Round(float val32, deRoundingMode mode);
+void deFloat16_selfTest(void);
 
-deFloat16	deFloat64To16				(double val64);
-deFloat16	deFloat64To16Round			(double val64, deRoundingMode mode);
+deFloat16 deFloat64To16(double val64);
+deFloat16 deFloat64To16Round(double val64, deRoundingMode mode);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Convert 16-bit floating point number to 32 bit.
- * \param val16	Input value.
+ * \param val16    Input value.
  * \return Converted 32-bit floating-point value.
  *//*--------------------------------------------------------------------*/
-float		deFloat16To32		(deFloat16 val16);
+float deFloat16To32(deFloat16 val16);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Convert 16-bit floating point number to 64 bit.
- * \param val16	Input value.
+ * \param val16    Input value.
  * \return Converted 64-bit floating-point value.
  *//*--------------------------------------------------------------------*/
-double		deFloat16To64		(deFloat16 val16);
+double deFloat16To64(deFloat16 val16);
 DE_END_EXTERN_C
 
 #endif /* _DEFLOAT16_H */

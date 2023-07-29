@@ -32,9 +32,9 @@ namespace vkt
 namespace wsi
 {
 
-void createDisplayTimingTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType);
+void createDisplayTimingTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType);
 
-} // wsi
-} // vkt
+} // namespace wsi
+} // namespace vkt
 
 #endif // _VKTWSIDISPLAYTIMINGTESTS_HPP

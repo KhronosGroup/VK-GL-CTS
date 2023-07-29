@@ -3,6 +3,6 @@
  */
 virtual VkResult			createInstance							(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance) const;
 virtual PFN_vkVoidFunction	getInstanceProcAddr						(VkInstance instance, const char* pName) const;
-virtual VkResult			enumerateInstanceExtensionProperties	(const char* pLayerName, deUint32* pPropertyCount, VkExtensionProperties* pProperties) const;
-virtual VkResult			enumerateInstanceLayerProperties		(deUint32* pPropertyCount, VkLayerProperties* pProperties) const;
-virtual VkResult			enumerateInstanceVersion				(deUint32* pApiVersion) const;
+virtual VkResult			enumerateInstanceExtensionProperties	(const char* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties) const;
+virtual VkResult			enumerateInstanceLayerProperties		(uint32_t* pPropertyCount, VkLayerProperties* pProperties) const;
+virtual VkResult			enumerateInstanceVersion				(uint32_t* pApiVersion) const;

@@ -37,74 +37,74 @@ namespace glcts
 template <typename T, size_t N>
 std::vector<T> makeVector(const T (&data)[N])
 {
-	return std::vector<T>(data, data + N);
+    return std::vector<T>(data, data + N);
 }
 
 enum eStageType
 {
-	VertexShader,
-	FragmentShader,
-	ComputeShader
+    VertexShader,
+    FragmentShader,
+    ComputeShader
 };
 
 struct StageType
 {
-	const char* name;
-	eStageType  type;
+    const char *name;
+    eStageType type;
 };
 
 enum eSurfaceType
 {
-	AtomicCounter,
-	Texture,
-	Image,
-	UniformBlock,
-	ShaderStorageBuffer
+    AtomicCounter,
+    Texture,
+    Image,
+    UniformBlock,
+    ShaderStorageBuffer
 };
 
 enum eTextureType
 {
-	None,
-	OneD,
-	TwoD,
-	ThreeD,
-	OneDArray,
-	TwoDArray
+    None,
+    OneD,
+    TwoD,
+    ThreeD,
+    OneDArray,
+    TwoDArray
 };
 
 struct LayoutBindingParameters
 {
-	char const*  keyword;	  // uniform, buffer
-	eSurfaceType surface_type; // Texture, Image...
-	eTextureType texture_type;
-	char const*  vector_type;		// lookup vector type
-	char const*  uniform_type;		// sampler2D, image2D...
-	char const*  coord_vector_type; // coord vector type
-	char const*  access_function;   // texture(), imageLoad()...
+    char const *keyword;       // uniform, buffer
+    eSurfaceType surface_type; // Texture, Image...
+    eTextureType texture_type;
+    char const *vector_type;       // lookup vector type
+    char const *uniform_type;      // sampler2D, image2D...
+    char const *coord_vector_type; // coord vector type
+    char const *access_function;   // texture(), imageLoad()...
 };
 
 class LayoutBindingTests : public TestCaseGroup
 {
 public:
-	LayoutBindingTests(glcts::Context& context, glu::GLSLVersion glslVersion);
-	~LayoutBindingTests(void);
+    LayoutBindingTests(glcts::Context &context, glu::GLSLVersion glslVersion);
+    ~LayoutBindingTests(void);
 
-	void init(void);
-
-private:
-	LayoutBindingTests(const LayoutBindingTests& other);
-	LayoutBindingTests& operator=(const LayoutBindingTests& other);
-
-	std::string createTestName(const StageType& stageType, const LayoutBindingParameters& testArgs);
+    void init(void);
 
 private:
-	glu::GLSLVersion m_glslVersion;
+    LayoutBindingTests(const LayoutBindingTests &other);
+    LayoutBindingTests &operator=(const LayoutBindingTests &other);
+
+    std::string createTestName(const StageType &stageType, const LayoutBindingParameters &testArgs);
 
 private:
-	static StageType			   stageTypes[];
-	static LayoutBindingParameters test_args[];
+    glu::GLSLVersion m_glslVersion;
+
+private:
+    static StageType stageTypes[];
+    static LayoutBindingParameters test_args[];
 };
 
-} // glcts
+} // namespace glcts
 
 #endif // _ES31CLAYOUTBINDINGTESTS_HPP

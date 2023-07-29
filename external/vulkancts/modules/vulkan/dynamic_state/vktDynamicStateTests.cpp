@@ -39,23 +39,23 @@ namespace DynamicState
 namespace
 {
 
-void createChildren (tcu::TestCaseGroup* group)
+void createChildren(tcu::TestCaseGroup *group)
 {
-	tcu::TestContext&	testCtx		= group->getTestContext();
+    tcu::TestContext &testCtx = group->getTestContext();
 
-	group->addChild(new DynamicStateVPTests(testCtx));
-	group->addChild(new DynamicStateRSTests(testCtx));
-	group->addChild(new DynamicStateCBTests(testCtx));
-	group->addChild(new DynamicStateDSTests(testCtx));
-	group->addChild(new DynamicStateGeneralTests(testCtx));
+    group->addChild(new DynamicStateVPTests(testCtx));
+    group->addChild(new DynamicStateRSTests(testCtx));
+    group->addChild(new DynamicStateCBTests(testCtx));
+    group->addChild(new DynamicStateDSTests(testCtx));
+    group->addChild(new DynamicStateGeneralTests(testCtx));
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "dynamic_state", "Dynamic State Tests", createChildren);
+    return createTestGroup(testCtx, "dynamic_state", "Dynamic State Tests", createChildren);
 }
 
-} // DynamicState
-} // vkt
+} // namespace DynamicState
+} // namespace vkt

@@ -39,42 +39,42 @@ namespace Android
 class TestThread : public RenderThread
 {
 public:
-							TestThread					(NativeActivity& activity, const std::string& cmdLineString, const CommandLine& cmdLine);
-							~TestThread					(void);
+    TestThread(NativeActivity &activity, const std::string &cmdLineString, const CommandLine &cmdLine);
+    ~TestThread(void);
 
-	void					run							(void);
+    void run(void);
 
 private:
-	virtual void			onWindowCreated				(ANativeWindow* window);
-	virtual void			onWindowResized				(ANativeWindow* window);
-	virtual void			onWindowDestroyed			(ANativeWindow* window);
-	virtual bool			render						(void);
+    virtual void onWindowCreated(ANativeWindow *window);
+    virtual void onWindowResized(ANativeWindow *window);
+    virtual void onWindowDestroyed(ANativeWindow *window);
+    virtual bool render(void);
 
-	const CommandLine&		m_cmdLine;
-	Platform				m_platform;
-	AssetArchive			m_archive;
-	TestLog					m_log;
-	App						m_app;
-	bool					m_finished;					//!< Is execution finished.
+    const CommandLine &m_cmdLine;
+    Platform m_platform;
+    AssetArchive m_archive;
+    TestLog m_log;
+    App m_app;
+    bool m_finished; //!< Is execution finished.
 };
 
 class TestActivity : public RenderActivity
 {
 public:
-							TestActivity				(ANativeActivity* nativeActivity);
-							~TestActivity				(void);
+    TestActivity(ANativeActivity *nativeActivity);
+    ~TestActivity(void);
 
-	virtual void			onStart						(void);
-	virtual void			onDestroy					(void);
-	virtual void			onConfigurationChanged		(void);
+    virtual void onStart(void);
+    virtual void onDestroy(void);
+    virtual void onConfigurationChanged(void);
 
 private:
-	CommandLine				m_cmdLine;
-	TestThread				m_testThread;
-	bool					m_started;
+    CommandLine m_cmdLine;
+    TestThread m_testThread;
+    bool m_started;
 };
 
-} // Android
-} // tcu
+} // namespace Android
+} // namespace tcu
 
 #endif // _TCUANDROIDTESTACTIVITY_HPP

@@ -38,74 +38,83 @@ namespace tcu
 class TestRunStatus
 {
 public:
-	TestRunStatus (void) { clear(); }
+    TestRunStatus(void)
+    {
+        clear();
+    }
 
-	void clear (void)
-	{
-		numExecuted		= 0;
-		numPassed		= 0;
-		numFailed		= 0;
-		numNotSupported	= 0;
-		numWarnings		= 0;
-		numWaived		= 0;
-		isComplete		= false;
-	}
+    void clear(void)
+    {
+        numExecuted     = 0;
+        numPassed       = 0;
+        numFailed       = 0;
+        numNotSupported = 0;
+        numWarnings     = 0;
+        numWaived       = 0;
+        isComplete      = false;
+    }
 
-	int		numExecuted;		//!< Total number of cases executed.
-	int		numPassed;			//!< Number of cases passed.
-	int		numFailed;			//!< Number of cases failed.
-	int		numNotSupported;	//!< Number of cases not supported.
-	int		numWarnings;		//!< Number of QualityWarning / CompatibilityWarning results.
-	int		numWaived;			//!< Number of waived tests.
-	bool	isComplete;			//!< Is run complete.
+    int numExecuted;     //!< Total number of cases executed.
+    int numPassed;       //!< Number of cases passed.
+    int numFailed;       //!< Number of cases failed.
+    int numNotSupported; //!< Number of cases not supported.
+    int numWarnings;     //!< Number of QualityWarning / CompatibilityWarning results.
+    int numWaived;       //!< Number of waived tests.
+    bool isComplete;     //!< Is run complete.
 };
 
 class TestSessionExecutor
 {
 public:
-									TestSessionExecutor	(TestPackageRoot& root, TestContext& testCtx);
-									~TestSessionExecutor(void);
+    TestSessionExecutor(TestPackageRoot &root, TestContext &testCtx);
+    ~TestSessionExecutor(void);
 
-	bool							iterate				(void);
+    bool iterate(void);
 
-	bool							isInTestCase		(void) const { return m_isInTestCase;	}
-	const TestRunStatus&			getStatus			(void) const { return m_status;			}
+    bool isInTestCase(void) const
+    {
+        return m_isInTestCase;
+    }
+    const TestRunStatus &getStatus(void) const
+    {
+        return m_status;
+    }
 
 private:
-	void							enterTestPackage	(TestPackage* testPackage);
-	void							leaveTestPackage	(TestPackage* testPackage);
+    void enterTestPackage(TestPackage *testPackage);
+    void leaveTestPackage(TestPackage *testPackage);
 
-	void							enterTestGroup		(const std::string& casePath);
-	void							leaveTestGroup		(const std::string& casePath);
+    void enterTestGroup(const std::string &casePath);
+    void leaveTestGroup(const std::string &casePath);
 
-	bool							enterTestCase		(TestCase* testCase, const std::string& casePath);
-	TestCase::IterateResult			iterateTestCase		(TestCase* testCase);
-	void							leaveTestCase		(TestCase* testCase);
+    bool enterTestCase(TestCase *testCase, const std::string &casePath);
+    TestCase::IterateResult iterateTestCase(TestCase *testCase);
+    void leaveTestCase(TestCase *testCase);
 
-	enum State
-	{
-		STATE_TRAVERSE_HIERARCHY = 0,
-		STATE_EXECUTE_TEST_CASE,
+    enum State
+    {
+        STATE_TRAVERSE_HIERARCHY = 0,
+        STATE_EXECUTE_TEST_CASE,
 
-		STATE_LAST
-	};
+        STATE_LAST
+    };
 
-	TestContext&					m_testCtx;
+    TestContext &m_testCtx;
 
-	DefaultHierarchyInflater		m_inflater;
-	de::MovePtr<CaseListFilter>		m_caseListFilter;
-	TestHierarchyIterator			m_iterator;
+    DefaultHierarchyInflater m_inflater;
+    de::MovePtr<CaseListFilter> m_caseListFilter;
+    TestHierarchyIterator m_iterator;
 
-	de::MovePtr<TestCaseExecutor>	m_caseExecutor;
-	TestRunStatus					m_status;
-	State							m_state;
-	bool							m_abortSession;
-	bool							m_isInTestCase;
-	deUint64						m_testStartTime;
-	deUint64						m_packageStartTime;
-	std::map<std::string, deUint64>	m_groupsDurationTime;
+    de::MovePtr<TestCaseExecutor> m_caseExecutor;
+    TestRunStatus m_status;
+    State m_state;
+    bool m_abortSession;
+    bool m_isInTestCase;
+    uint64_t m_testStartTime;
+    uint64_t m_packageStartTime;
+    std::map<std::string, uint64_t> m_groupsDurationTime;
 };
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUTESTSESSIONEXECUTOR_HPP

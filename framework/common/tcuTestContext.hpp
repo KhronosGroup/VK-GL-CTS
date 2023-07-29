@@ -48,48 +48,84 @@ class TestLog;
 class TestContext
 {
 public:
-							TestContext			(Platform& platform, Archive& rootArchive, TestLog& log, const CommandLine& cmdLine, qpWatchDog* watchDog);
-							~TestContext		(void) {}
+    TestContext(Platform &platform, Archive &rootArchive, TestLog &log, const CommandLine &cmdLine,
+                qpWatchDog *watchDog);
+    ~TestContext(void)
+    {
+    }
 
-	void					writeSessionInfo	(void);
+    void writeSessionInfo(void);
 
-	// API for test cases
-	TestLog&				getLog				(void)			{ return m_log;			}
-	Archive&				getArchive			(void)			{ return *m_curArchive;	} //!< \note Do not access in TestNode constructors.
-	Platform&				getPlatform			(void)			{ return m_platform;	}
-	void					setTestResult		(qpTestResult result, const char* description);
-	void					touchWatchdog		(void);
-	void					touchWatchdogAndDisableIntervalTimeLimit	(void);
-	void					touchWatchdogAndEnableIntervalTimeLimit		(void);
-	const CommandLine&		getCommandLine		(void) const	{ return m_cmdLine;		}
+    // API for test cases
+    TestLog &getLog(void)
+    {
+        return m_log;
+    }
+    Archive &getArchive(void)
+    {
+        return *m_curArchive;
+    } //!< \note Do not access in TestNode constructors.
+    Platform &getPlatform(void)
+    {
+        return m_platform;
+    }
+    void setTestResult(qpTestResult result, const char *description);
+    void touchWatchdog(void);
+    void touchWatchdogAndDisableIntervalTimeLimit(void);
+    void touchWatchdogAndEnableIntervalTimeLimit(void);
+    const CommandLine &getCommandLine(void) const
+    {
+        return m_cmdLine;
+    }
 
-	// API for test framework
-	qpTestResult			getTestResult		(void) const	{ return m_testResult;				}
-	const char*				getTestResultDesc	(void) const	{ return m_testResultDesc.c_str();	}
-	qpWatchDog*				getWatchDog			(void)			{ return m_watchDog;				}
+    // API for test framework
+    qpTestResult getTestResult(void) const
+    {
+        return m_testResult;
+    }
+    const char *getTestResultDesc(void) const
+    {
+        return m_testResultDesc.c_str();
+    }
+    qpWatchDog *getWatchDog(void)
+    {
+        return m_watchDog;
+    }
 
-	Archive&				getRootArchive		(void) const		{ return m_rootArchive;		}
-	void					setCurrentArchive	(Archive& archive)	{ m_curArchive = &archive;	}
+    Archive &getRootArchive(void) const
+    {
+        return m_rootArchive;
+    }
+    void setCurrentArchive(Archive &archive)
+    {
+        m_curArchive = &archive;
+    }
 
-	void					setTerminateAfter	(bool terminate)	{ m_terminateAfter = terminate;	}
-	bool					getTerminateAfter	(void) const		{ return m_terminateAfter;		}
+    void setTerminateAfter(bool terminate)
+    {
+        m_terminateAfter = terminate;
+    }
+    bool getTerminateAfter(void) const
+    {
+        return m_terminateAfter;
+    }
 
 protected:
-							TestContext			(const TestContext&);
-	TestContext&			operator=			(const TestContext&);
+    TestContext(const TestContext &);
+    TestContext &operator=(const TestContext &);
 
-	Platform&				m_platform;			//!< Platform port implementation.
-	Archive&				m_rootArchive;		//!< Root archive.
-	TestLog&				m_log;				//!< Test log.
-	const CommandLine&		m_cmdLine;			//!< Command line.
-	qpWatchDog*				m_watchDog;			//!< Watchdog (can be null).
+    Platform &m_platform;         //!< Platform port implementation.
+    Archive &m_rootArchive;       //!< Root archive.
+    TestLog &m_log;               //!< Test log.
+    const CommandLine &m_cmdLine; //!< Command line.
+    qpWatchDog *m_watchDog;       //!< Watchdog (can be null).
 
-	Archive*				m_curArchive;		//!< Current archive for test cases.
-	qpTestResult			m_testResult;		//!< Latest test result.
-	std::string				m_testResultDesc;	//!< Latest test result description.
-	bool					m_terminateAfter;	//!< Should tester terminate after execution of the current test
+    Archive *m_curArchive;        //!< Current archive for test cases.
+    qpTestResult m_testResult;    //!< Latest test result.
+    std::string m_testResultDesc; //!< Latest test result description.
+    bool m_terminateAfter;        //!< Should tester terminate after execution of the current test
 };
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUTESTCONTEXT_HPP

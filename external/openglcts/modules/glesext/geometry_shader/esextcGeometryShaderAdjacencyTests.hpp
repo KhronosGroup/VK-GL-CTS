@@ -203,48 +203,48 @@ namespace glcts
 class GeometryShaderAdjacencyTests : public glcts::TestCaseGroupBase
 {
 public:
-	/* Public methods */
-	GeometryShaderAdjacencyTests(glcts::Context& context, const ExtParameters& extParams, const char* name,
-								 const char* description);
+    /* Public methods */
+    GeometryShaderAdjacencyTests(glcts::Context &context, const ExtParameters &extParams, const char *name,
+                                 const char *description);
 
-	virtual ~GeometryShaderAdjacencyTests()
-	{
-	}
+    virtual ~GeometryShaderAdjacencyTests()
+    {
+    }
 
-	virtual void init(void);
-	virtual void deinit(void);
+    virtual void init(void);
+    virtual void deinit(void);
 
 private:
-	/* Private methods */
-	void configureTestDataLines(AdjacencyTestData& test_data, bool withGS = false, bool indiced = false);
-	void configureTestDataLineStrip(AdjacencyTestData& test_data, bool withGS = false, bool indiced = false);
-	void configureTestDataTriangles(AdjacencyTestData& test_data, bool withGS = false, bool indiced = false);
-	void configureTestDataTriangleStrip(AdjacencyTestData& test_data, bool withGS = false, bool indiced = false);
+    /* Private methods */
+    void configureTestDataLines(AdjacencyTestData &test_data, bool withGS = false, bool indiced = false);
+    void configureTestDataLineStrip(AdjacencyTestData &test_data, bool withGS = false, bool indiced = false);
+    void configureTestDataTriangles(AdjacencyTestData &test_data, bool withGS = false, bool indiced = false);
+    void configureTestDataTriangleStrip(AdjacencyTestData &test_data, bool withGS = false, bool indiced = false);
 
-	void createGrid(AdjacencyTestData& test_data);
-	void createGridLineSegments(AdjacencyTestData& test_data);
-	void createGridLineStrip(AdjacencyTestData& test_data);
-	void createGridTriangles(AdjacencyTestData& test_data);
-	void createGridTriangleStrip(AdjacencyTestData& test_data);
+    void createGrid(AdjacencyTestData &test_data);
+    void createGridLineSegments(AdjacencyTestData &test_data);
+    void createGridLineStrip(AdjacencyTestData &test_data);
+    void createGridTriangles(AdjacencyTestData &test_data);
+    void createGridTriangleStrip(AdjacencyTestData &test_data);
 
-	void setLinePointsNonindiced(AdjacencyTestData& test_data);
-	void setLinePointsindiced(AdjacencyTestData& test_data);
-	void setLineStripPointsNonindiced(AdjacencyTestData& test_data);
-	void setLineStripPointsIndiced(AdjacencyTestData& test_data);
-	void setTrianglePointsNonindiced(AdjacencyTestData& test_data);
-	void setTrianglePointsIndiced(AdjacencyTestData& test_data);
-	void setTriangleStripPointsIndiced(AdjacencyTestData& test_data);
-	void setTriangleStripPointsNonindiced(AdjacencyTestData& test_data);
+    void setLinePointsNonindiced(AdjacencyTestData &test_data);
+    void setLinePointsindiced(AdjacencyTestData &test_data);
+    void setLineStripPointsNonindiced(AdjacencyTestData &test_data);
+    void setLineStripPointsIndiced(AdjacencyTestData &test_data);
+    void setTrianglePointsNonindiced(AdjacencyTestData &test_data);
+    void setTrianglePointsIndiced(AdjacencyTestData &test_data);
+    void setTriangleStripPointsIndiced(AdjacencyTestData &test_data);
+    void setTriangleStripPointsNonindiced(AdjacencyTestData &test_data);
 
-	/* Private constants */
-	const unsigned int m_grid_granulity;
-	const unsigned int m_n_components_input;
-	const unsigned int m_n_components_output;
-	const unsigned int m_n_line_segments;
-	const unsigned int m_n_vertices_per_triangle;
+    /* Private constants */
+    const unsigned int m_grid_granulity;
+    const unsigned int m_n_components_input;
+    const unsigned int m_n_components_output;
+    const unsigned int m_n_line_segments;
+    const unsigned int m_n_vertices_per_triangle;
 
-	/* Private variables */
-	std::vector<AdjacencyTestData*> m_tests_data;
+    /* Private variables */
+    std::vector<AdjacencyTestData *> m_tests_data;
 };
 
 } // namespace glcts

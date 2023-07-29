@@ -35,16 +35,13 @@ namespace gles31
 namespace Functional
 {
 
-void verifyInfoLogQuery (tcu::ResultCollector&			result,
-						 glu::CallLogWrapper&			gl,
-						 int							logLen,
-						 glw::GLuint					object,
-						 void (glu::CallLogWrapper::	*getInfoLog)(glw::GLuint, glw::GLsizei, glw::GLsizei*, glw::GLchar*),
-						 const char*					getterName);
+void verifyInfoLogQuery(tcu::ResultCollector &result, glu::CallLogWrapper &gl, int logLen, glw::GLuint object,
+                        void (glu::CallLogWrapper::*getInfoLog)(glw::GLuint, glw::GLsizei, glw::GLsizei *,
+                                                                glw::GLchar *),
+                        const char *getterName);
 
-
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FINFOLOGQUERYSHARED_HPP

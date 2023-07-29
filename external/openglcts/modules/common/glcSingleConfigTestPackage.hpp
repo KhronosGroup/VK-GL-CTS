@@ -34,19 +34,18 @@ namespace glcts
 class SingleConfigTestPackage : public deqp::TestPackage
 {
 public:
-	SingleConfigTestPackage(tcu::TestContext& testCtx, const char* packageName,
-							glu::ContextType renderContextType);
-	~SingleConfigTestPackage(void);
+    SingleConfigTestPackage(tcu::TestContext &testCtx, const char *packageName, glu::ContextType renderContextType);
+    ~SingleConfigTestPackage(void);
 
-	void init(void);
+    void init(void);
 
-	virtual tcu::TestCaseExecutor* createExecutor(void) const;
+    virtual tcu::TestCaseExecutor *createExecutor(void) const;
 
 private:
-	SingleConfigTestPackage(const SingleConfigTestPackage& other);
-	SingleConfigTestPackage& operator=(const SingleConfigTestPackage& other);
+    SingleConfigTestPackage(const SingleConfigTestPackage &other);
+    SingleConfigTestPackage &operator=(const SingleConfigTestPackage &other);
 };
 
-} // glcts
+} // namespace glcts
 
 #endif // _GLCSINGLECONFIGTESTPACKAGE_HPP

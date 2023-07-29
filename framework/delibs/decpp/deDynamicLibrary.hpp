@@ -35,18 +35,21 @@ namespace de
 class DynamicLibrary
 {
 public:
-						DynamicLibrary			(const char* fileName);
-						~DynamicLibrary			(void);
+    DynamicLibrary(const char *fileName);
+    ~DynamicLibrary(void);
 
-	deFunctionPtr		getFunction				(const char* name) const { return deDynamicLibrary_getFunction(m_library, name); }
+    deFunctionPtr getFunction(const char *name) const
+    {
+        return deDynamicLibrary_getFunction(m_library, name);
+    }
 
 private:
-						DynamicLibrary			(const DynamicLibrary& other); // Not allowed!
-	DynamicLibrary&		operator=				(const DynamicLibrary& other); // Not allowed!
+    DynamicLibrary(const DynamicLibrary &other);            // Not allowed!
+    DynamicLibrary &operator=(const DynamicLibrary &other); // Not allowed!
 
-	deDynamicLibrary*	m_library;
+    deDynamicLibrary *m_library;
 };
 
-} // de
+} // namespace de
 
 #endif // _DEDYNAMICLIBRARY_HPP

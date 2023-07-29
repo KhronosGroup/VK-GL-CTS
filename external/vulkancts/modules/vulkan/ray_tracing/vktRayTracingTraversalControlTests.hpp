@@ -31,9 +31,9 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup*	createTraversalControlTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTraversalControlTests(tcu::TestContext &testCtx);
 
-} // RayTracing
-} // vkt
+} // namespace RayTracing
+} // namespace vkt
 
 #endif // _VKTRAYTRACINGTRAVERSALCONTROLTESTS_HPP

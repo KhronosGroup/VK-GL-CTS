@@ -31,9 +31,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createMultisampleMixedAttachmentSamplesTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createMultisampleMixedAttachmentSamplesTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEMULTISAMPLEMIXEDATTACHMENTSAMPLESTESTS_HPP

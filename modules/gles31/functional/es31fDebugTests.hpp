@@ -38,18 +38,20 @@ namespace Functional
 class DebugTests : public TestCaseGroup
 {
 public:
-					DebugTests				(Context& context);
-	virtual			~DebugTests				(void) {}
+    DebugTests(Context &context);
+    virtual ~DebugTests(void)
+    {
+    }
 
-	virtual void	init					(void);
+    virtual void init(void);
 
 private:
-					DebugTests				(const DebugTests& other);
-	DebugTests&		operator=				(const DebugTests& other);
+    DebugTests(const DebugTests &other);
+    DebugTests &operator=(const DebugTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FDEBUGTESTS_HPP

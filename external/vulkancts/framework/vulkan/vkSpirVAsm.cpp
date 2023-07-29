@@ -40,189 +40,208 @@ using std::vector;
 // the SPIRV-Tools headers.
 static spv_target_env getSpirvToolsEnvForValidatorOptions(SpirvValidatorOptions opts)
 {
-	const bool allow_1_4 = opts.supports_VK_KHR_spirv_1_4;
-	switch (opts.vulkanVersion)
-	{
-		case VK_MAKE_VERSION(1, 0, 0): return SPV_ENV_VULKAN_1_0;
-		case VK_MAKE_VERSION(1, 1, 0): return allow_1_4 ? SPV_ENV_VULKAN_1_1_SPIRV_1_4 : SPV_ENV_VULKAN_1_1;
-		case VK_MAKE_VERSION(1, 2, 0): return SPV_ENV_VULKAN_1_2;
-		default:
-			break;
-	}
-	TCU_THROW(InternalError, "Unexpected Vulkan Version version requested");
-	return SPV_ENV_VULKAN_1_0;
+    const bool allow_1_4 = opts.supports_VK_KHR_spirv_1_4;
+    switch (opts.vulkanVersion)
+    {
+    case VK_MAKE_VERSION(1, 0, 0):
+        return SPV_ENV_VULKAN_1_0;
+    case VK_MAKE_VERSION(1, 1, 0):
+        return allow_1_4 ? SPV_ENV_VULKAN_1_1_SPIRV_1_4 : SPV_ENV_VULKAN_1_1;
+    case VK_MAKE_VERSION(1, 2, 0):
+        return SPV_ENV_VULKAN_1_2;
+    default:
+        break;
+    }
+    TCU_THROW(InternalError, "Unexpected Vulkan Version version requested");
+    return SPV_ENV_VULKAN_1_0;
 }
 
 static spv_target_env mapTargetSpvEnvironment(SpirvVersion spirvVersion)
 {
-	spv_target_env result = SPV_ENV_UNIVERSAL_1_0;
+    spv_target_env result = SPV_ENV_UNIVERSAL_1_0;
 
-	switch (spirvVersion)
-	{
-		case SPIRV_VERSION_1_0: result = SPV_ENV_UNIVERSAL_1_0; break;	//!< SPIR-V 1.0
-		case SPIRV_VERSION_1_1: result = SPV_ENV_UNIVERSAL_1_1; break;	//!< SPIR-V 1.1
-		case SPIRV_VERSION_1_2: result = SPV_ENV_UNIVERSAL_1_2; break;	//!< SPIR-V 1.2
-		case SPIRV_VERSION_1_3: result = SPV_ENV_UNIVERSAL_1_3; break;	//!< SPIR-V 1.3
-		case SPIRV_VERSION_1_4: result = SPV_ENV_UNIVERSAL_1_4; break;	//!< SPIR-V 1.4
-		case SPIRV_VERSION_1_5: result = SPV_ENV_UNIVERSAL_1_5; break;	//!< SPIR-V 1.5
-		default:				TCU_THROW(InternalError, "Unknown SPIR-V version");
-	}
+    switch (spirvVersion)
+    {
+    case SPIRV_VERSION_1_0:
+        result = SPV_ENV_UNIVERSAL_1_0;
+        break; //!< SPIR-V 1.0
+    case SPIRV_VERSION_1_1:
+        result = SPV_ENV_UNIVERSAL_1_1;
+        break; //!< SPIR-V 1.1
+    case SPIRV_VERSION_1_2:
+        result = SPV_ENV_UNIVERSAL_1_2;
+        break; //!< SPIR-V 1.2
+    case SPIRV_VERSION_1_3:
+        result = SPV_ENV_UNIVERSAL_1_3;
+        break; //!< SPIR-V 1.3
+    case SPIRV_VERSION_1_4:
+        result = SPV_ENV_UNIVERSAL_1_4;
+        break; //!< SPIR-V 1.4
+    case SPIRV_VERSION_1_5:
+        result = SPV_ENV_UNIVERSAL_1_5;
+        break; //!< SPIR-V 1.5
+    default:
+        TCU_THROW(InternalError, "Unknown SPIR-V version");
+    }
 
-	return result;
+    return result;
 }
 
-bool assembleSpirV (const SpirVAsmSource* program, std::vector<deUint32>* dst, SpirVProgramInfo* buildInfo, SpirvVersion spirvVersion)
+bool assembleSpirV(const SpirVAsmSource *program, std::vector<uint32_t> *dst, SpirVProgramInfo *buildInfo,
+                   SpirvVersion spirvVersion)
 {
-	const spv_context	context		= spvContextCreate(mapTargetSpvEnvironment(spirvVersion));
-	spv_binary			binary		= DE_NULL;
-	spv_diagnostic		diagnostic	= DE_NULL;
+    const spv_context context = spvContextCreate(mapTargetSpvEnvironment(spirvVersion));
+    spv_binary binary         = DE_NULL;
+    spv_diagnostic diagnostic = DE_NULL;
 
-	if (!context)
-		throw std::bad_alloc();
+    if (!context)
+        throw std::bad_alloc();
 
-	try
-	{
-		const std::string&	spvSource			= program->source;
-		const deUint64		compileStartTime	= deGetMicroseconds();
-		const deUint32		options				= SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS;
-		const spv_result_t	compileOk			= spvTextToBinaryWithOptions(context, spvSource.c_str(), spvSource.size(), options, &binary, &diagnostic);
+    try
+    {
+        const std::string &spvSource    = program->source;
+        const uint64_t compileStartTime = deGetMicroseconds();
+        const uint32_t options          = SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS;
+        const spv_result_t compileOk =
+            spvTextToBinaryWithOptions(context, spvSource.c_str(), spvSource.size(), options, &binary, &diagnostic);
 
-		buildInfo->source			= spvSource;
-		buildInfo->infoLog			= diagnostic? diagnostic->error : ""; // \todo [2015-07-13 pyry] Include debug log?
-		buildInfo->compileTimeUs	= deGetMicroseconds() - compileStartTime;
-		buildInfo->compileOk		= (compileOk == SPV_SUCCESS);
+        buildInfo->source        = spvSource;
+        buildInfo->infoLog       = diagnostic ? diagnostic->error : ""; // \todo [2015-07-13 pyry] Include debug log?
+        buildInfo->compileTimeUs = deGetMicroseconds() - compileStartTime;
+        buildInfo->compileOk     = (compileOk == SPV_SUCCESS);
 
-		if (buildInfo->compileOk)
-		{
-			DE_ASSERT(binary->wordCount > 0);
-			dst->resize(binary->wordCount);
-			std::copy(&binary->code[0], &binary->code[0] + binary->wordCount, dst->begin());
-		}
+        if (buildInfo->compileOk)
+        {
+            DE_ASSERT(binary->wordCount > 0);
+            dst->resize(binary->wordCount);
+            std::copy(&binary->code[0], &binary->code[0] + binary->wordCount, dst->begin());
+        }
 
-		spvBinaryDestroy(binary);
-		spvDiagnosticDestroy(diagnostic);
-		spvContextDestroy(context);
+        spvBinaryDestroy(binary);
+        spvDiagnosticDestroy(diagnostic);
+        spvContextDestroy(context);
 
-		return compileOk == SPV_SUCCESS;
-	}
-	catch (...)
-	{
-		spvBinaryDestroy(binary);
-		spvDiagnosticDestroy(diagnostic);
-		spvContextDestroy(context);
+        return compileOk == SPV_SUCCESS;
+    }
+    catch (...)
+    {
+        spvBinaryDestroy(binary);
+        spvDiagnosticDestroy(diagnostic);
+        spvContextDestroy(context);
 
-		throw;
-	}
+        throw;
+    }
 }
 
-void disassembleSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostream* dst, SpirvVersion spirvVersion)
+void disassembleSpirV(size_t binarySizeInWords, const uint32_t *binary, std::ostream *dst, SpirvVersion spirvVersion)
 {
-	const spv_context	context		= spvContextCreate(mapTargetSpvEnvironment(spirvVersion));
-	spv_text			text		= DE_NULL;
-	spv_diagnostic		diagnostic	= DE_NULL;
+    const spv_context context = spvContextCreate(mapTargetSpvEnvironment(spirvVersion));
+    spv_text text             = DE_NULL;
+    spv_diagnostic diagnostic = DE_NULL;
 
-	if (!context)
-		throw std::bad_alloc();
+    if (!context)
+        throw std::bad_alloc();
 
-	try
-	{
-		const spv_result_t	result	= spvBinaryToText(context, binary, binarySizeInWords, 0, &text, &diagnostic);
+    try
+    {
+        const spv_result_t result = spvBinaryToText(context, binary, binarySizeInWords, 0, &text, &diagnostic);
 
-		if (result != SPV_SUCCESS)
-			TCU_THROW(InternalError, "Disassembling SPIR-V failed");
+        if (result != SPV_SUCCESS)
+            TCU_THROW(InternalError, "Disassembling SPIR-V failed");
 
-		*dst << text->str;
+        *dst << text->str;
 
-		spvTextDestroy(text);
-		spvDiagnosticDestroy(diagnostic);
-		spvContextDestroy(context);
-	}
-	catch (...)
-	{
-		spvTextDestroy(text);
-		spvDiagnosticDestroy(diagnostic);
-		spvContextDestroy(context);
+        spvTextDestroy(text);
+        spvDiagnosticDestroy(diagnostic);
+        spvContextDestroy(context);
+    }
+    catch (...)
+    {
+        spvTextDestroy(text);
+        spvDiagnosticDestroy(diagnostic);
+        spvContextDestroy(context);
 
-		throw;
-	}
+        throw;
+    }
 }
 
-bool validateSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostream* infoLog, const SpirvValidatorOptions &val_options)
+bool validateSpirV(size_t binarySizeInWords, const uint32_t *binary, std::ostream *infoLog,
+                   const SpirvValidatorOptions &val_options)
 {
-	const spv_context		context		= spvContextCreate(getSpirvToolsEnvForValidatorOptions(val_options));
-	spv_diagnostic			diagnostic	= DE_NULL;
-	spv_validator_options	options		= DE_NULL;
-	spv_text				disasmText	= DE_NULL;
+    const spv_context context     = spvContextCreate(getSpirvToolsEnvForValidatorOptions(val_options));
+    spv_diagnostic diagnostic     = DE_NULL;
+    spv_validator_options options = DE_NULL;
+    spv_text disasmText           = DE_NULL;
 
-	if (!context)
-		throw std::bad_alloc();
+    if (!context)
+        throw std::bad_alloc();
 
-	try
-	{
-		spv_const_binary_t		cbinary	= { binary, binarySizeInWords };
+    try
+    {
+        spv_const_binary_t cbinary = {binary, binarySizeInWords};
 
-		options = spvValidatorOptionsCreate();
+        options = spvValidatorOptionsCreate();
 
-		if (options == DE_NULL)
-			throw std::bad_alloc();
+        if (options == DE_NULL)
+            throw std::bad_alloc();
 
-		switch (val_options.blockLayout)
-		{
-			case SpirvValidatorOptions::kDefaultBlockLayout:
-				break;
-			case SpirvValidatorOptions::kNoneBlockLayout:
-				spvValidatorOptionsSetSkipBlockLayout(options, true);
-				break;
-			case SpirvValidatorOptions::kRelaxedBlockLayout:
-				spvValidatorOptionsSetRelaxBlockLayout(options, true);
-				break;
-			case SpirvValidatorOptions::kUniformStandardLayout:
-				spvValidatorOptionsSetUniformBufferStandardLayout(options, true);
-				break;
-			case SpirvValidatorOptions::kScalarBlockLayout:
-				spvValidatorOptionsSetScalarBlockLayout(options, true);
-				break;
-		}
+        switch (val_options.blockLayout)
+        {
+        case SpirvValidatorOptions::kDefaultBlockLayout:
+            break;
+        case SpirvValidatorOptions::kNoneBlockLayout:
+            spvValidatorOptionsSetSkipBlockLayout(options, true);
+            break;
+        case SpirvValidatorOptions::kRelaxedBlockLayout:
+            spvValidatorOptionsSetRelaxBlockLayout(options, true);
+            break;
+        case SpirvValidatorOptions::kUniformStandardLayout:
+            spvValidatorOptionsSetUniformBufferStandardLayout(options, true);
+            break;
+        case SpirvValidatorOptions::kScalarBlockLayout:
+            spvValidatorOptionsSetScalarBlockLayout(options, true);
+            break;
+        }
 
-		const spv_result_t		valid	= spvValidateWithOptions(context, options, &cbinary, &diagnostic);
-		const bool				passed	= (valid == SPV_SUCCESS);
+        const spv_result_t valid = spvValidateWithOptions(context, options, &cbinary, &diagnostic);
+        const bool passed        = (valid == SPV_SUCCESS);
 
-		*infoLog << "Validation " << (passed ? "PASSED: " : "FAILED: ");
+        *infoLog << "Validation " << (passed ? "PASSED: " : "FAILED: ");
 
-		if (diagnostic && diagnostic->error)
-		{
-			// Print the diagnostic whether validation passes or fails.
-			// In theory we could get a warning even in the pass case, but there are no cases
-			// like that now.
-			*infoLog << diagnostic->error << "\n";
+        if (diagnostic && diagnostic->error)
+        {
+            // Print the diagnostic whether validation passes or fails.
+            // In theory we could get a warning even in the pass case, but there are no cases
+            // like that now.
+            *infoLog << diagnostic->error << "\n";
 
-			const deUint32		disasmOptions	= SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES
-												| SPV_BINARY_TO_TEXT_OPTION_INDENT;
-			const spv_result_t	disasmResult	= spvBinaryToText(context, binary, binarySizeInWords, disasmOptions, &disasmText, DE_NULL);
+            const uint32_t disasmOptions = SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES | SPV_BINARY_TO_TEXT_OPTION_INDENT;
+            const spv_result_t disasmResult =
+                spvBinaryToText(context, binary, binarySizeInWords, disasmOptions, &disasmText, DE_NULL);
 
-			if (disasmResult != SPV_SUCCESS)
-				*infoLog << "Disassembly failed with code: " << de::toString(disasmResult) << "\n";
+            if (disasmResult != SPV_SUCCESS)
+                *infoLog << "Disassembly failed with code: " << de::toString(disasmResult) << "\n";
 
-			if (disasmText != DE_NULL)
-				*infoLog << disasmText->str << "\n";
-		}
+            if (disasmText != DE_NULL)
+                *infoLog << disasmText->str << "\n";
+        }
 
-		spvTextDestroy(disasmText);
-		spvValidatorOptionsDestroy(options);
-		spvDiagnosticDestroy(diagnostic);
-		spvContextDestroy(context);
+        spvTextDestroy(disasmText);
+        spvValidatorOptionsDestroy(options);
+        spvDiagnosticDestroy(diagnostic);
+        spvContextDestroy(context);
 
-		return passed;
-	}
-	catch (...)
-	{
-		spvTextDestroy(disasmText);
-		spvValidatorOptionsDestroy(options);
-		spvDiagnosticDestroy(diagnostic);
-		spvContextDestroy(context);
+        return passed;
+    }
+    catch (...)
+    {
+        spvTextDestroy(disasmText);
+        spvValidatorOptionsDestroy(options);
+        spvDiagnosticDestroy(diagnostic);
+        spvContextDestroy(context);
 
-		throw;
-	}
+        throw;
+    }
 }
 
-} // vk
+} // namespace vk

@@ -39,23 +39,24 @@ namespace LongStressTestUtil
 class ProgramLibrary
 {
 public:
-									ProgramLibrary							(glu::GLSLVersion glslVersion);
+    ProgramLibrary(glu::GLSLVersion glslVersion);
 
-	gls::ProgramContext				generateBufferContext					(int numDummyAttributes) const;
-	gls::ProgramContext				generateTextureContext					(int numTextureObjects, int texWid, int texHei, float positionFactor) const;
-	gls::ProgramContext				generateBufferAndTextureContext			(int numTextures, int texWid, int texHei) const;
-	gls::ProgramContext				generateFragmentPointLightContext		(int texWid, int texHei) const;
-	gls::ProgramContext				generateVertexUniformLoopLightContext	(int texWid, int texHei) const;
+    gls::ProgramContext generateBufferContext(int numDummyAttributes) const;
+    gls::ProgramContext generateTextureContext(int numTextureObjects, int texWid, int texHei,
+                                               float positionFactor) const;
+    gls::ProgramContext generateBufferAndTextureContext(int numTextures, int texWid, int texHei) const;
+    gls::ProgramContext generateFragmentPointLightContext(int texWid, int texHei) const;
+    gls::ProgramContext generateVertexUniformLoopLightContext(int texWid, int texHei) const;
 
 private:
-	std::string						substitute								(const std::string&) const;
-	std::string						substitute								(const std::string&, const std::map<std::string, std::string>&) const;
+    std::string substitute(const std::string &) const;
+    std::string substitute(const std::string &, const std::map<std::string, std::string> &) const;
 
-	glu::GLSLVersion				m_glslVersion;
+    glu::GLSLVersion m_glslVersion;
 };
 
-} // StressTestUtil
-} // gls
-} // deqp
+} // namespace LongStressTestUtil
+} // namespace gls
+} // namespace deqp
 
 #endif // _GLSLONGSTRESSTESTUTIL_HPP

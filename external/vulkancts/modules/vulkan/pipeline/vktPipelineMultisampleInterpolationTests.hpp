@@ -30,9 +30,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createMultisampleInterpolationTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createMultisampleInterpolationTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEMULTISAMPLEINTERPOLATIONTESTS_HPP

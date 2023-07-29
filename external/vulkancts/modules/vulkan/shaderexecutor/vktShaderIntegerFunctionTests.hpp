@@ -36,17 +36,17 @@ namespace shaderexecutor
 class ShaderIntegerFunctionTests : public tcu::TestCaseGroup
 {
 public:
-										ShaderIntegerFunctionTests		(tcu::TestContext& testCtx);
-	virtual								~ShaderIntegerFunctionTests		(void);
+    ShaderIntegerFunctionTests(tcu::TestContext &testCtx);
+    virtual ~ShaderIntegerFunctionTests(void);
 
-	virtual void						init							(void);
+    virtual void init(void);
 
 private:
-										ShaderIntegerFunctionTests		(const ShaderIntegerFunctionTests&);		// not allowed!
-	ShaderIntegerFunctionTests&			operator=						(const ShaderIntegerFunctionTests&);		// not allowed!
+    ShaderIntegerFunctionTests(const ShaderIntegerFunctionTests &);            // not allowed!
+    ShaderIntegerFunctionTests &operator=(const ShaderIntegerFunctionTests &); // not allowed!
 };
 
-} // shaderexecutor
-} // vkt
+} // namespace shaderexecutor
+} // namespace vkt
 
 #endif // _VKTSHADERINTEGERFUNCTIONTESTS_HPP

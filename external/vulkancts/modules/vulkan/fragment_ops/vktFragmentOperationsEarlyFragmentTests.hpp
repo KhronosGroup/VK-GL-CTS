@@ -32,9 +32,9 @@ namespace vkt
 namespace FragmentOperations
 {
 
-tcu::TestCaseGroup* createEarlyFragmentTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createEarlyFragmentTests(tcu::TestContext &testCtx);
 
-} // FragmentOperations
-} // vkt
+} // namespace FragmentOperations
+} // namespace vkt
 
 #endif // _VKTFRAGMENTOPERATIONSEARLYFRAGMENTTESTS_HPP

@@ -33,14 +33,14 @@ namespace Draw
 class MultipleClearsWithinRenderPassTests : public tcu::TestCaseGroup
 {
 public:
-						MultipleClearsWithinRenderPassTests		(tcu::TestContext &testCtx);
-						~MultipleClearsWithinRenderPassTests	();
-	void				init									();
+    MultipleClearsWithinRenderPassTests(tcu::TestContext &testCtx);
+    ~MultipleClearsWithinRenderPassTests();
+    void init();
 
 private:
-	MultipleClearsWithinRenderPassTests							(const MultipleClearsWithinRenderPassTests &other);
-	MultipleClearsWithinRenderPassTests&	operator=			(const MultipleClearsWithinRenderPassTests &other);
+    MultipleClearsWithinRenderPassTests(const MultipleClearsWithinRenderPassTests &other);
+    MultipleClearsWithinRenderPassTests &operator=(const MultipleClearsWithinRenderPassTests &other);
 };
-}
-}
+} // namespace Draw
+} // namespace vkt
 #endif // _VKTDRAWMULTIPLECLEARSWITHINRENDERPASS_HPP

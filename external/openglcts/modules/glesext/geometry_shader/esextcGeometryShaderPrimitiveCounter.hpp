@@ -31,14 +31,14 @@ namespace glcts
 
 struct DataPrimitiveIDInCounter
 {
-	glw::GLenum m_drawMode;
-	std::string m_emitVertexCodeForGeometryShader;
-	glw::GLenum m_feedbackMode;
-	std::string m_layoutIn;
-	std::string m_layoutOut;
-	glw::GLuint m_numberOfVerticesPerOneOutputPrimitive;
-	glw::GLuint m_numberOfVerticesPerOneInputPrimitive;
-	glw::GLuint m_numberOfDrawnPrimitives;
+    glw::GLenum m_drawMode;
+    std::string m_emitVertexCodeForGeometryShader;
+    glw::GLenum m_feedbackMode;
+    std::string m_layoutIn;
+    std::string m_layoutOut;
+    glw::GLuint m_numberOfVerticesPerOneOutputPrimitive;
+    glw::GLuint m_numberOfVerticesPerOneInputPrimitive;
+    glw::GLuint m_numberOfDrawnPrimitives;
 };
 
 /** Implementation of "Group 6" from CTS_EXT_geometry_shader.
@@ -48,15 +48,15 @@ struct DataPrimitiveIDInCounter
 class GeometryShaderPrimitiveCounterTestGroup : public TestCaseGroupBase
 {
 public:
-	/* Public methods */
-	GeometryShaderPrimitiveCounterTestGroup(Context& context, const ExtParameters& extParams, const char* name,
-											const char* description);
+    /* Public methods */
+    GeometryShaderPrimitiveCounterTestGroup(Context &context, const ExtParameters &extParams, const char *name,
+                                            const char *description);
 
-	virtual ~GeometryShaderPrimitiveCounterTestGroup()
-	{
-	}
+    virtual ~GeometryShaderPrimitiveCounterTestGroup()
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 };
 
 /**
@@ -89,56 +89,56 @@ public:
 class GeometryShaderPrimitiveCounter : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderPrimitiveCounter(Context& context, const ExtParameters& extParams, const char* name,
-								   const char* description, const DataPrimitiveIDInCounter& testConfiguration);
+    /* Public methods */
+    GeometryShaderPrimitiveCounter(Context &context, const ExtParameters &extParams, const char *name,
+                                   const char *description, const DataPrimitiveIDInCounter &testConfiguration);
 
-	virtual ~GeometryShaderPrimitiveCounter(void)
-	{
-	}
+    virtual ~GeometryShaderPrimitiveCounter(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 protected:
-	/* Protected methods */
-	bool checkResult(const glw::GLint* feedbackResult);
-	void createAndBuildProgramWithFeedback(void);
-	void drawAndGetFeedback(glw::GLint* feedbackResult);
-	void prepareBufferObjects();
+    /* Protected methods */
+    bool checkResult(const glw::GLint *feedbackResult);
+    void createAndBuildProgramWithFeedback(void);
+    void drawAndGetFeedback(glw::GLint *feedbackResult);
+    void prepareBufferObjects();
 
-	/* Protected virtual methods */
-	virtual void drawFunction();
+    /* Protected virtual methods */
+    virtual void drawFunction();
 
-	/* Protected members */
-	DataPrimitiveIDInCounter m_testConfiguration;
+    /* Protected members */
+    DataPrimitiveIDInCounter m_testConfiguration;
 
-	glw::GLuint m_nrVaryings;
-	glw::GLuint m_sizeOfDataArray;
-	glw::GLuint m_sizeOfFeedbackBuffer;
+    glw::GLuint m_nrVaryings;
+    glw::GLuint m_sizeOfDataArray;
+    glw::GLuint m_sizeOfFeedbackBuffer;
 
-	const glw::GLuint m_n_components;
+    const glw::GLuint m_n_components;
 
 private:
-	/* Private functions */
-	std::string GetGeometryShaderCode(const std::string& max_vertices, const std::string& layout_in,
-									  const std::string& layout_out, const std::string& emit_vertices,
-									  const std::string& n_iterations);
+    /* Private functions */
+    std::string GetGeometryShaderCode(const std::string &max_vertices, const std::string &layout_in,
+                                      const std::string &layout_out, const std::string &emit_vertices,
+                                      const std::string &n_iterations);
 
-	/* Private variables */
-	static const char* m_fragment_shader_code;
-	static const char* m_vertex_shader_code;
+    /* Private variables */
+    static const char *m_fragment_shader_code;
+    static const char *m_vertex_shader_code;
 
-	glw::GLint m_maxGeometryOutputVertices;
+    glw::GLint m_maxGeometryOutputVertices;
 
-	glw::GLuint m_fragment_shader_id;
-	glw::GLuint m_geometry_shader_id;
-	glw::GLuint m_vertex_shader_id;
-	glw::GLuint m_program_id;
+    glw::GLuint m_fragment_shader_id;
+    glw::GLuint m_geometry_shader_id;
+    glw::GLuint m_vertex_shader_id;
+    glw::GLuint m_program_id;
 
-	glw::GLuint m_tbo;
-	glw::GLuint m_vao;
-	glw::GLuint m_vbo;
+    glw::GLuint m_tbo;
+    glw::GLuint m_vao;
+    glw::GLuint m_vbo;
 };
 
 /** 2. Make sure that restarting a primitive topology with a primitive restart
@@ -155,27 +155,27 @@ private:
 class GeometryShaderPrimitiveCounterRestartingPrimitive : public GeometryShaderPrimitiveCounter
 {
 public:
-	/* Public methods */
-	GeometryShaderPrimitiveCounterRestartingPrimitive(Context& context, const ExtParameters& extParams,
-													  const char* name, const char* description,
-													  const DataPrimitiveIDInCounter& testConfiguration);
+    /* Public methods */
+    GeometryShaderPrimitiveCounterRestartingPrimitive(Context &context, const ExtParameters &extParams,
+                                                      const char *name, const char *description,
+                                                      const DataPrimitiveIDInCounter &testConfiguration);
 
-	virtual ~GeometryShaderPrimitiveCounterRestartingPrimitive(void)
-	{
-	}
+    virtual ~GeometryShaderPrimitiveCounterRestartingPrimitive(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 protected:
-	/* Protected functions */
-	virtual void drawFunction();
-	void		 setUpVertexAttributeArrays();
+    /* Protected functions */
+    virtual void drawFunction();
+    void setUpVertexAttributeArrays();
 
 private:
-	/* Private fields */
-	glw::GLuint m_bo_id;
-	glw::GLuint m_numberOfRestarts;
+    /* Private fields */
+    glw::GLuint m_bo_id;
+    glw::GLuint m_numberOfRestarts;
 };
 
 /** 3. Make sure that gl_PrimitiveID built-in variable can be read correctly
@@ -224,38 +224,38 @@ private:
 class GeometryShaderPrimitiveIDFromFragmentShader : public TestCaseBase
 {
 public:
-	/* Publi methods */
-	GeometryShaderPrimitiveIDFromFragmentShader(Context& context, const ExtParameters& extParams, const char* name,
-												const char* description);
+    /* Publi methods */
+    GeometryShaderPrimitiveIDFromFragmentShader(Context &context, const ExtParameters &extParams, const char *name,
+                                                const char *description);
 
-	virtual ~GeometryShaderPrimitiveIDFromFragmentShader(void)
-	{
-	}
+    virtual ~GeometryShaderPrimitiveIDFromFragmentShader(void)
+    {
+    }
 
-	void		  deinit(void);
-	IterateResult iterate(void);
+    void deinit(void);
+    IterateResult iterate(void);
 
 private:
-	/* Private fields */
-	static const char* m_fragment_shader_code;
-	static const char* m_geometry_shader_code;
-	static const char* m_vertex_shader_code;
+    /* Private fields */
+    static const char *m_fragment_shader_code;
+    static const char *m_geometry_shader_code;
+    static const char *m_vertex_shader_code;
 
-	const glw::GLuint m_n_drawn_vertices;
-	const glw::GLuint m_squareEdgeSize;
-	const glw::GLuint m_texture_height;
-	const glw::GLuint m_texture_n_components;
-	const glw::GLuint m_texture_n_levels;
-	const glw::GLuint m_texture_width;
+    const glw::GLuint m_n_drawn_vertices;
+    const glw::GLuint m_squareEdgeSize;
+    const glw::GLuint m_texture_height;
+    const glw::GLuint m_texture_n_components;
+    const glw::GLuint m_texture_n_levels;
+    const glw::GLuint m_texture_width;
 
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_fragment_shader_id;
-	glw::GLuint m_geometry_shader_id;
-	glw::GLuint m_program_id;
-	glw::GLuint m_texture_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_vbo_id;
-	glw::GLuint m_vertex_shader_id;
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_fragment_shader_id;
+    glw::GLuint m_geometry_shader_id;
+    glw::GLuint m_program_id;
+    glw::GLuint m_texture_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vbo_id;
+    glw::GLuint m_vertex_shader_id;
 };
 
 } // namespace glcts

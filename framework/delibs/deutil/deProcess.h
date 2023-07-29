@@ -31,28 +31,28 @@ DE_BEGIN_EXTERN_C
 /* Process types. */
 typedef struct deProcess_s deProcess;
 
-deProcess*		deProcess_create			(void);
-void			deProcess_destroy			(deProcess* process);
+deProcess *deProcess_create(void);
+void deProcess_destroy(deProcess *process);
 
-deBool			deProcess_start				(deProcess* process, const char* commandLine, const char* workingDirectory);
-deBool			deProcess_isRunning			(deProcess* process);
-deBool			deProcess_waitForFinish		(deProcess* process);
+bool deProcess_start(deProcess *process, const char *commandLine, const char *workingDirectory);
+bool deProcess_isRunning(deProcess *process);
+bool deProcess_waitForFinish(deProcess *process);
 
-const char*		deProcess_getLastError		(const deProcess* process);
-int				deProcess_getExitCode		(const deProcess* process);
+const char *deProcess_getLastError(const deProcess *process);
+int deProcess_getExitCode(const deProcess *process);
 
 /* Non-blocking operations. */
-deBool			deProcess_terminate			(deProcess* process);
-deBool			deProcess_kill				(deProcess* process);
+bool deProcess_terminate(deProcess *process);
+bool deProcess_kill(deProcess *process);
 
 /* Files are owned by process - don't call deFile_destroy(). */
-deFile*			deProcess_getStdIn			(deProcess* process);
-deFile*			deProcess_getStdOut			(deProcess* process);
-deFile*			deProcess_getStdErr			(deProcess* process);
+deFile *deProcess_getStdIn(deProcess *process);
+deFile *deProcess_getStdOut(deProcess *process);
+deFile *deProcess_getStdErr(deProcess *process);
 
-deBool			deProcess_closeStdIn		(deProcess* process);
-deBool			deProcess_closeStdOut		(deProcess* process);
-deBool			deProcess_closeStdErr		(deProcess* process);
+bool deProcess_closeStdIn(deProcess *process);
+bool deProcess_closeStdOut(deProcess *process);
+bool deProcess_closeStdErr(deProcess *process);
 
 DE_END_EXTERN_C
 

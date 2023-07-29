@@ -31,9 +31,9 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup*	createNullAccelerationStructureTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createNullAccelerationStructureTests(tcu::TestContext &testCtx);
 
-} // RayTracing
-} // vkt
+} // namespace RayTracing
+} // namespace vkt
 
 #endif // _VKTRAYTRACINGNULLASTESTS_HPP

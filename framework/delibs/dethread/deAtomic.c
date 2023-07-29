@@ -25,15 +25,15 @@
 
 #if (DE_COMPILER == DE_COMPILER_MSC)
 /* When compiling with MSC we assume that long can be exchanged to int. */
-DE_STATIC_ASSERT(sizeof(long) == sizeof(deInt32));
+DE_STATIC_ASSERT(sizeof(long) == sizeof(int32_t));
 
 #define WIN32_LEAN_AND_MEAN
 #define VC_EXTRALEAN
 #include <Windows.h>
 
-void deMemoryReadWriteFence (void)
+void deMemoryReadWriteFence(void)
 {
-	MemoryBarrier();
+    MemoryBarrier();
 }
 
 #endif
