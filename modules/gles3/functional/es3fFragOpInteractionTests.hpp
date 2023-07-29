@@ -36,18 +36,18 @@ namespace Functional
 class FragOpInteractionTests : public TestCaseGroup
 {
 public:
-								FragOpInteractionTests		(Context& context);
-								~FragOpInteractionTests		(void);
+    FragOpInteractionTests(Context &context);
+    ~FragOpInteractionTests(void);
 
-	void						init						(void);
+    void init(void);
 
 private:
-								FragOpInteractionTests		(const FragOpInteractionTests&);
-	FragOpInteractionTests&		operator=					(const FragOpInteractionTests&);
+    FragOpInteractionTests(const FragOpInteractionTests &);
+    FragOpInteractionTests &operator=(const FragOpInteractionTests &);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FFRAGOPINTERACTIONTESTS_HPP

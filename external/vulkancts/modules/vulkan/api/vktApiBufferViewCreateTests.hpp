@@ -33,9 +33,9 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup* createBufferViewCreateTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createBufferViewCreateTests(tcu::TestContext &testCtx);
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPIBUFFERVIEWCREATETESTS_HPP

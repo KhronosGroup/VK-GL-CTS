@@ -34,17 +34,17 @@ namespace Draw
 class SimpleDrawTests : public tcu::TestCaseGroup
 {
 public:
-						SimpleDrawTests			(tcu::TestContext &testCtx, const SharedGroupParams groupParams);
-						~SimpleDrawTests		(void);
-	void				init					(void);
+    SimpleDrawTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams);
+    ~SimpleDrawTests(void);
+    void init(void);
 
 private:
-	SimpleDrawTests								(const SimpleDrawTests &other);
-	SimpleDrawTests&	operator=				(const SimpleDrawTests &other);
+    SimpleDrawTests(const SimpleDrawTests &other);
+    SimpleDrawTests &operator=(const SimpleDrawTests &other);
 
-	const SharedGroupParams	m_groupParams;
+    const SharedGroupParams m_groupParams;
 };
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWSIMPLETEST_HPP

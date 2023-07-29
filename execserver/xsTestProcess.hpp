@@ -33,28 +33,34 @@ namespace xs
 class TestProcessException : public std::runtime_error
 {
 public:
-	TestProcessException (const std::string& message) : std::runtime_error(message) {}
+    TestProcessException(const std::string &message) : std::runtime_error(message)
+    {
+    }
 };
 
 class TestProcess
 {
 public:
-	virtual					~TestProcess			(void) {}
+    virtual ~TestProcess(void)
+    {
+    }
 
-	virtual void			start					(const char* name, const char* params, const char* workingDir, const char* caseList) = DE_NULL;
-	virtual void			terminate				(void)							= DE_NULL;
-	virtual void			cleanup					(void)							= DE_NULL;
+    virtual void start(const char *name, const char *params, const char *workingDir, const char *caseList) = DE_NULL;
+    virtual void terminate(void)                                                                           = DE_NULL;
+    virtual void cleanup(void)                                                                             = DE_NULL;
 
-	virtual bool			isRunning				(void)							= DE_NULL;
-	virtual int				getExitCode				(void) const					= DE_NULL;
+    virtual bool isRunning(void)        = DE_NULL;
+    virtual int getExitCode(void) const = DE_NULL;
 
-	virtual int				readTestLog				(deUint8* dst, int numBytes)	= DE_NULL;
-	virtual int				readInfoLog				(deUint8* dst, int numBytes)	= DE_NULL;
+    virtual int readTestLog(uint8_t *dst, int numBytes) = DE_NULL;
+    virtual int readInfoLog(uint8_t *dst, int numBytes) = DE_NULL;
 
 protected:
-							TestProcess				(void) {}
+    TestProcess(void)
+    {
+    }
 };
 
-} // xs
+} // namespace xs
 
 #endif // _XSTESTPROCESS_HPP

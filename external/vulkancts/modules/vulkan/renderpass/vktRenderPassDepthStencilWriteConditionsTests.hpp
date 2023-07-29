@@ -31,9 +31,9 @@ namespace vkt
 namespace renderpass
 {
 
-tcu::TestCaseGroup* createDepthStencilWriteConditionsTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDepthStencilWriteConditionsTests(tcu::TestContext &testCtx);
 
-} // renderpass
-} // vkt
+} // namespace renderpass
+} // namespace vkt
 
 #endif // _VKTRENDERPASSDEPTHSTENCILWRITECONDITIONSTESTS_HPP

@@ -31,9 +31,9 @@ namespace vkt
 namespace ycbcr
 {
 
-tcu::TestCaseGroup*	createStorageImageWriteTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createStorageImageWriteTests(tcu::TestContext &testCtx);
 
-} // ycbcr
-} // vkt
+} // namespace ycbcr
+} // namespace vkt
 
 #endif // _VKTYCBCRSTORAGEIMAGEWRITETESTS_HPP

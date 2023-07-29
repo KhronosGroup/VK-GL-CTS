@@ -216,9 +216,9 @@ static const PropertyStructCreationData propertyStructCreationArray[] =
 	{ createPropertyStructWrapper<VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT>, VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME, VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_SPEC_VERSION },
 };
 
-deUint32 getBlobPropertiesVersion (VkStructureType sType)
+uint32_t getBlobPropertiesVersion (VkStructureType sType)
 {
-	const std::map<VkStructureType, deUint32> sTypeBlobMap
+	const std::map<VkStructureType, uint32_t> sTypeBlobMap
 	{
 		// Vulkan11
 		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES,							VK_API_VERSION_1_1 },

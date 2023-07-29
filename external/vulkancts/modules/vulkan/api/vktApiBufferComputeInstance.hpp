@@ -33,41 +33,27 @@ namespace vkt
 namespace api
 {
 
-vk::Move<vk::VkBuffer>					createDataBuffer		(vkt::Context&					context,
-																 deUint32						offset,
-																 deUint32						bufferSize,
-																 deUint32						initData,
-																 deUint32						initDataSize,
-																 deUint32						uninitData,
-																 de::MovePtr<vk::Allocation>*	outAllocation);
+vk::Move<vk::VkBuffer> createDataBuffer(vkt::Context &context, uint32_t offset, uint32_t bufferSize, uint32_t initData,
+                                        uint32_t initDataSize, uint32_t uninitData,
+                                        de::MovePtr<vk::Allocation> *outAllocation);
 
-vk::Move<vk::VkBuffer>					createColorDataBuffer (	deUint32 offset,
-																deUint32 bufferSize,
-																const tcu::Vec4& color1,
-																const tcu::Vec4& color2,
-																de::MovePtr<vk::Allocation>* outAllocation,
-																vkt::Context& context);
+vk::Move<vk::VkBuffer> createColorDataBuffer(uint32_t offset, uint32_t bufferSize, const tcu::Vec4 &color1,
+                                             const tcu::Vec4 &color2, de::MovePtr<vk::Allocation> *outAllocation,
+                                             vkt::Context &context);
 
-vk::Move<vk::VkDescriptorSetLayout>		createDescriptorSetLayout (vkt::Context& context);
+vk::Move<vk::VkDescriptorSetLayout> createDescriptorSetLayout(vkt::Context &context);
 
-vk::Move<vk::VkDescriptorPool>			createDescriptorPool (vkt::Context& context);
+vk::Move<vk::VkDescriptorPool> createDescriptorPool(vkt::Context &context);
 
-vk::Move<vk::VkDescriptorSet>			createDescriptorSet		(vkt::Context&				context,
-																 vk::VkDescriptorPool		pool,
-																 vk::VkDescriptorSetLayout	layout,
-																 vk::VkBuffer				buffer,
-																 deUint32					offset,
-																 vk::VkBuffer				resBuf);
+vk::Move<vk::VkDescriptorSet> createDescriptorSet(vkt::Context &context, vk::VkDescriptorPool pool,
+                                                  vk::VkDescriptorSetLayout layout, vk::VkBuffer buffer,
+                                                  uint32_t offset, vk::VkBuffer resBuf);
 
-vk::Move<vk::VkDescriptorSet>			createDescriptorSet (vk::VkDescriptorPool pool,
-															  vk::VkDescriptorSetLayout layout,
-															  vk::VkBuffer viewA, deUint32 offsetA,
-															  vk::VkBuffer viewB,
-															  deUint32 offsetB,
-															  vk::VkBuffer resBuf,
-															  vkt::Context& context);
+vk::Move<vk::VkDescriptorSet> createDescriptorSet(vk::VkDescriptorPool pool, vk::VkDescriptorSetLayout layout,
+                                                  vk::VkBuffer viewA, uint32_t offsetA, vk::VkBuffer viewB,
+                                                  uint32_t offsetB, vk::VkBuffer resBuf, vkt::Context &context);
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPIBUFFERCOMPUTEINSTANCE_HPP

@@ -40,27 +40,27 @@ namespace ycbcr
 namespace
 {
 
-void populateTestGroup (tcu::TestCaseGroup* ycbcrTests)
+void populateTestGroup(tcu::TestCaseGroup *ycbcrTests)
 {
-	tcu::TestContext&	testCtx		= ycbcrTests->getTestContext();
+    tcu::TestContext &testCtx = ycbcrTests->getTestContext();
 
-	ycbcrTests->addChild(createFormatTests(testCtx));
-	ycbcrTests->addChild(createFilteringTests(testCtx));
-	ycbcrTests->addChild(createViewTests(testCtx));
-	ycbcrTests->addChild(createImageQueryTests(testCtx));
-	ycbcrTests->addChild(createConversionTests(testCtx));
-	ycbcrTests->addChild(createCopyTests(testCtx));
-	ycbcrTests->addChild(createDimensionsCopyTests(testCtx));
-	ycbcrTests->addChild(createStorageImageWriteTests(testCtx));
-	ycbcrTests->addChild(createImageOffsetTests(testCtx));
+    ycbcrTests->addChild(createFormatTests(testCtx));
+    ycbcrTests->addChild(createFilteringTests(testCtx));
+    ycbcrTests->addChild(createViewTests(testCtx));
+    ycbcrTests->addChild(createImageQueryTests(testCtx));
+    ycbcrTests->addChild(createConversionTests(testCtx));
+    ycbcrTests->addChild(createCopyTests(testCtx));
+    ycbcrTests->addChild(createDimensionsCopyTests(testCtx));
+    ycbcrTests->addChild(createStorageImageWriteTests(testCtx));
+    ycbcrTests->addChild(createImageOffsetTests(testCtx));
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "ycbcr", "YCbCr Conversion Tests", populateTestGroup);
+    return createTestGroup(testCtx, "ycbcr", "YCbCr Conversion Tests", populateTestGroup);
 }
 
-} // ycbcr
-} // vkt
+} // namespace ycbcr
+} // namespace vkt

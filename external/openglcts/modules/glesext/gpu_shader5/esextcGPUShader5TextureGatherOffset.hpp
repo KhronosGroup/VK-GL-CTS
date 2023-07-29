@@ -41,134 +41,134 @@ namespace glcts
 class GPUShader5TextureGatherOffsetTestBase : public TestCaseBase
 {
 public:
-	/* Public methods */
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    /* Public methods */
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 protected:
-	/* Protected types */
-	struct VertexBufferInfo
-	{
-		const glw::GLchar* attribute_name;
-		glw::GLuint		   n_components;
-		glw::GLenum		   type;
-		glw::GLvoid*	   data;
-		glw::GLuint		   data_size;
-	};
+    /* Protected types */
+    struct VertexBufferInfo
+    {
+        const glw::GLchar *attribute_name;
+        glw::GLuint n_components;
+        glw::GLenum type;
+        glw::GLvoid *data;
+        glw::GLuint data_size;
+    };
 
-	/* Protected methods */
-	GPUShader5TextureGatherOffsetTestBase(Context& context, const ExtParameters& extParams, const char* name,
-										  const char* description);
+    /* Protected methods */
+    GPUShader5TextureGatherOffsetTestBase(Context &context, const ExtParameters &extParams, const char *name,
+                                          const char *description);
 
-	virtual ~GPUShader5TextureGatherOffsetTestBase(void)
-	{
-	}
+    virtual ~GPUShader5TextureGatherOffsetTestBase(void)
+    {
+    }
 
-	virtual void initTest(void);
+    virtual void initTest(void);
 
-	/* To be implemented by inheriting classes */
-	virtual void getBorderColor(glw::GLfloat out_color[4])								  = 0;
-	virtual void getShaderParts(std::vector<const glw::GLchar*>& out_vertex_shader_parts) = 0;
+    /* To be implemented by inheriting classes */
+    virtual void getBorderColor(glw::GLfloat out_color[4])                                 = 0;
+    virtual void getShaderParts(std::vector<const glw::GLchar *> &out_vertex_shader_parts) = 0;
 
-	virtual void getTextureInfo(glw::GLuint& out_width, glw::GLenum& out_texture_internal_format,
-								glw::GLenum& out_texture_format, glw::GLenum& out_texture_type,
-								glw::GLuint& out_bytes_per_pixel) = 0;
+    virtual void getTextureInfo(glw::GLuint &out_width, glw::GLenum &out_texture_internal_format,
+                                glw::GLenum &out_texture_format, glw::GLenum &out_texture_type,
+                                glw::GLuint &out_bytes_per_pixel) = 0;
 
-	virtual void getTextureWrapMode(glw::GLenum& out_wrap_mode) = 0;
+    virtual void getTextureWrapMode(glw::GLenum &out_wrap_mode) = 0;
 
-	virtual void getTransformFeedBackDetails(glw::GLuint&					  buffer_size,
-											 std::vector<const glw::GLchar*>& captured_varyings) = 0;
+    virtual void getTransformFeedBackDetails(glw::GLuint &buffer_size,
+                                             std::vector<const glw::GLchar *> &captured_varyings) = 0;
 
-	virtual void isTextureArray(bool& out_is_texture_array)									  = 0;
-	virtual void prepareTextureData(glw::GLubyte* data)										  = 0;
-	virtual void prepareVertexBuffersData(std::vector<VertexBufferInfo>& vertex_buffer_infos) = 0;
-	virtual bool verifyResult(const void* result_data)										  = 0;
+    virtual void isTextureArray(bool &out_is_texture_array)                                   = 0;
+    virtual void prepareTextureData(glw::GLubyte *data)                                       = 0;
+    virtual void prepareVertexBuffersData(std::vector<VertexBufferInfo> &vertex_buffer_infos) = 0;
+    virtual bool verifyResult(const void *result_data)                                        = 0;
 
-	/* Utilities */
-	void logArray(const glw::GLint* data, unsigned int length, const char* description);
+    /* Utilities */
+    void logArray(const glw::GLint *data, unsigned int length, const char *description);
 
-	void logCoordinates(unsigned int index);
+    void logCoordinates(unsigned int index);
 
-	/* Protected fields */
-	/* GL_MIN_PROGRAM_TEXTURE_GATHER_OFFSET and GL_MAX_PROGRAM_TEXTURE_GATHER_OFFSET pname values */
-	glw::GLint m_min_texture_gather_offset;
-	glw::GLint m_max_texture_gather_offset;
+    /* Protected fields */
+    /* GL_MIN_PROGRAM_TEXTURE_GATHER_OFFSET and GL_MAX_PROGRAM_TEXTURE_GATHER_OFFSET pname values */
+    glw::GLint m_min_texture_gather_offset;
+    glw::GLint m_max_texture_gather_offset;
 
-	/* Number of drawn vertices */
-	static const unsigned int m_n_vertices;
+    /* Number of drawn vertices */
+    static const unsigned int m_n_vertices;
 
-	/* Number of components in captured varyings */
-	static const unsigned int m_n_components_per_varying;
+    /* Number of components in captured varyings */
+    static const unsigned int m_n_components_per_varying;
 
 private:
-	/* Private methods */
-	void prepareProgramInput();
-	void prepareTexture();
-	void prepareVertexBufferInfoForCoordinates();
-	void setCoordinatesData(glw::GLfloat x, glw::GLfloat y, unsigned int index);
-	void setCoordinatesData(glw::GLfloat x, glw::GLfloat y, glw::GLfloat z, unsigned int index);
+    /* Private methods */
+    void prepareProgramInput();
+    void prepareTexture();
+    void prepareVertexBufferInfoForCoordinates();
+    void setCoordinatesData(glw::GLfloat x, glw::GLfloat y, unsigned int index);
+    void setCoordinatesData(glw::GLfloat x, glw::GLfloat y, glw::GLfloat z, unsigned int index);
 
-	/* Private fields */
-	/* Program and shader ids */
-	glw::GLuint m_fragment_shader_id;
-	glw::GLuint m_program_object_id;
-	glw::GLuint m_vertex_shader_id;
+    /* Private fields */
+    /* Program and shader ids */
+    glw::GLuint m_fragment_shader_id;
+    glw::GLuint m_program_object_id;
+    glw::GLuint m_vertex_shader_id;
 
-	/* Vertex array object */
-	glw::GLuint m_vertex_array_object_id;
+    /* Vertex array object */
+    glw::GLuint m_vertex_array_object_id;
 
-	/* Texture id */
-	glw::GLuint m_texture_object_id;
+    /* Texture id */
+    glw::GLuint m_texture_object_id;
 
-	/* Sampler id */
-	glw::GLuint m_sampler_object_id;
+    /* Sampler id */
+    glw::GLuint m_sampler_object_id;
 
-	/* Shaders' code */
-	static const glw::GLchar* const m_fragment_shader_code;
-	std::vector<const glw::GLchar*> m_vertex_shader_parts;
+    /* Shaders' code */
+    static const glw::GLchar *const m_fragment_shader_code;
+    std::vector<const glw::GLchar *> m_vertex_shader_parts;
 
-	/* Name of uniforms */
-	static const glw::GLchar* const m_sampler_uniform_name;
-	static const glw::GLchar* const m_reference_sampler_uniform_name;
+    /* Name of uniforms */
+    static const glw::GLchar *const m_sampler_uniform_name;
+    static const glw::GLchar *const m_reference_sampler_uniform_name;
 
-	/* Vertex buffer infos */
-	std::vector<VertexBufferInfo> m_vertex_buffer_infos;
-	std::vector<glw::GLuint>	  m_vertex_buffer_ids;
+    /* Vertex buffer infos */
+    std::vector<VertexBufferInfo> m_vertex_buffer_infos;
+    std::vector<glw::GLuint> m_vertex_buffer_ids;
 
-	/* Texture info */
-	bool		m_is_texture_array;
-	glw::GLuint m_texture_bytes_per_pixel;
-	glw::GLenum m_texture_format;
-	glw::GLenum m_texture_internal_format;
-	glw::GLenum m_texture_type;
-	glw::GLuint m_texture_size;
-	glw::GLenum m_texture_wrap_mode;
+    /* Texture info */
+    bool m_is_texture_array;
+    glw::GLuint m_texture_bytes_per_pixel;
+    glw::GLenum m_texture_format;
+    glw::GLenum m_texture_internal_format;
+    glw::GLenum m_texture_type;
+    glw::GLuint m_texture_size;
+    glw::GLenum m_texture_wrap_mode;
 
-	/* Texture array length */
-	static const unsigned int m_n_texture_array_length;
+    /* Texture array length */
+    static const unsigned int m_n_texture_array_length;
 
-	/* Name of varyings */
-	std::vector<const glw::GLchar*> m_captured_varying_names;
+    /* Name of varyings */
+    std::vector<const glw::GLchar *> m_captured_varying_names;
 
-	/* Size of buffer used for transform feedback */
-	glw::GLuint m_transform_feedback_buffer_size;
+    /* Size of buffer used for transform feedback */
+    glw::GLuint m_transform_feedback_buffer_size;
 
-	/* Buffer object used in transform feedback */
-	glw::GLuint m_transform_feedback_buffer_object_id;
+    /* Buffer object used in transform feedback */
+    glw::GLuint m_transform_feedback_buffer_object_id;
 
-	/* Storage for texture coordinates */
-	std::vector<glw::GLfloat> m_coordinates_buffer_data;
+    /* Storage for texture coordinates */
+    std::vector<glw::GLfloat> m_coordinates_buffer_data;
 
-	/* Number of texture coordinates per vertex */
-	unsigned int m_n_coordinates_components;
+    /* Number of texture coordinates per vertex */
+    unsigned int m_n_coordinates_components;
 
-	/* Name of texture coordinate attribute */
-	static const glw::GLchar* const m_coordinates_attribute_name;
+    /* Name of texture coordinate attribute */
+    static const glw::GLchar *const m_coordinates_attribute_name;
 
-	/* Configuration of texture coordinate values generation */
-	static const int m_max_coordinate_value;
-	static const int m_min_coordinate_value;
-	static const int m_coordinate_resolution;
+    /* Configuration of texture coordinate values generation */
+    static const int m_max_coordinate_value;
+    static const int m_min_coordinate_value;
+    static const int m_coordinate_resolution;
 };
 
 /** Base class for test 9 and 11
@@ -177,57 +177,57 @@ private:
 class GPUShader5TextureGatherOffsetColorTestBase : public GPUShader5TextureGatherOffsetTestBase
 {
 protected:
-	/* Protected types */
-	struct CapturedVaryings
-	{
-		glw::GLint without_offset_0[4];
-		glw::GLint without_offset_1[4];
-		glw::GLint without_offset_2[4];
-		glw::GLint without_offset_3[4];
+    /* Protected types */
+    struct CapturedVaryings
+    {
+        glw::GLint without_offset_0[4];
+        glw::GLint without_offset_1[4];
+        glw::GLint without_offset_2[4];
+        glw::GLint without_offset_3[4];
 
-		glw::GLint with_offset_0[4];
-		glw::GLint with_offset_1[4];
-		glw::GLint with_offset_2[4];
-		glw::GLint with_offset_3[4];
-	};
+        glw::GLint with_offset_0[4];
+        glw::GLint with_offset_1[4];
+        glw::GLint with_offset_2[4];
+        glw::GLint with_offset_3[4];
+    };
 
-	/* Protected methods */
-	GPUShader5TextureGatherOffsetColorTestBase(Context& context, const ExtParameters& extParams, const char* name,
-											   const char* description);
+    /* Protected methods */
+    GPUShader5TextureGatherOffsetColorTestBase(Context &context, const ExtParameters &extParams, const char *name,
+                                               const char *description);
 
-	virtual ~GPUShader5TextureGatherOffsetColorTestBase(void)
-	{
-	}
+    virtual ~GPUShader5TextureGatherOffsetColorTestBase(void)
+    {
+    }
 
-	/* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
-	virtual void getBorderColor(glw::GLfloat out_color[4]);
+    /* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
+    virtual void getBorderColor(glw::GLfloat out_color[4]);
 
-	virtual void getTextureInfo(glw::GLuint& out_size, glw::GLenum& out_texture_internal_format,
-								glw::GLenum& out_texture_format, glw::GLenum& out_texture_type,
-								glw::GLuint& out_bytes_per_pixel);
+    virtual void getTextureInfo(glw::GLuint &out_size, glw::GLenum &out_texture_internal_format,
+                                glw::GLenum &out_texture_format, glw::GLenum &out_texture_type,
+                                glw::GLuint &out_bytes_per_pixel);
 
-	virtual void getTextureWrapMode(glw::GLenum& out_wrap_mode);
+    virtual void getTextureWrapMode(glw::GLenum &out_wrap_mode);
 
-	virtual void getTransformFeedBackDetails(glw::GLuint&					  out_buffer_size,
-											 std::vector<const glw::GLchar*>& out_captured_varyings);
+    virtual void getTransformFeedBackDetails(glw::GLuint &out_buffer_size,
+                                             std::vector<const glw::GLchar *> &out_captured_varyings);
 
-	virtual void isTextureArray(bool& out_is_texture_array);
-	virtual void prepareTextureData(glw::GLubyte* data);
-	virtual bool verifyResult(const void* result_data);
+    virtual void isTextureArray(bool &out_is_texture_array);
+    virtual void prepareTextureData(glw::GLubyte *data);
+    virtual bool verifyResult(const void *result_data);
 
-	/* Methods to be implemented by child classes */
-	virtual bool checkResult(const CapturedVaryings& captured_data, unsigned int index,
-							 unsigned int m_texture_size) = 0;
+    /* Methods to be implemented by child classes */
+    virtual bool checkResult(const CapturedVaryings &captured_data, unsigned int index,
+                             unsigned int m_texture_size) = 0;
 
-	/* Utilities */
-	void logVaryings(const CapturedVaryings& varyings);
+    /* Utilities */
+    void logVaryings(const CapturedVaryings &varyings);
 
 private:
-	/* Texture size */
-	static const glw::GLuint m_texture_size;
+    /* Texture size */
+    static const glw::GLuint m_texture_size;
 
-	/* Number of varyings captured per vertex */
-	unsigned int m_n_varyings_per_vertex;
+    /* Number of varyings captured per vertex */
+    unsigned int m_n_varyings_per_vertex;
 };
 
 /** Base class for test 10 and 11
@@ -236,52 +236,52 @@ private:
 class GPUShader5TextureGatherOffsetDepthTestBase : public GPUShader5TextureGatherOffsetTestBase
 {
 protected:
-	/* Protected types */
-	struct CapturedVaryings
-	{
-		glw::GLint floor_tex_coord[4];
-		glw::GLint without_offset[4];
-		glw::GLint with_offset[4];
-	};
+    /* Protected types */
+    struct CapturedVaryings
+    {
+        glw::GLint floor_tex_coord[4];
+        glw::GLint without_offset[4];
+        glw::GLint with_offset[4];
+    };
 
-	/* Protected methods */
-	GPUShader5TextureGatherOffsetDepthTestBase(Context& context, const ExtParameters& extParams, const char* name,
-											   const char* description);
+    /* Protected methods */
+    GPUShader5TextureGatherOffsetDepthTestBase(Context &context, const ExtParameters &extParams, const char *name,
+                                               const char *description);
 
-	virtual ~GPUShader5TextureGatherOffsetDepthTestBase(void)
-	{
-	}
+    virtual ~GPUShader5TextureGatherOffsetDepthTestBase(void)
+    {
+    }
 
-	/* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
-	virtual void getBorderColor(glw::GLfloat out_color[4]);
+    /* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
+    virtual void getBorderColor(glw::GLfloat out_color[4]);
 
-	virtual void getTextureInfo(glw::GLuint& out_width, glw::GLenum& out_texture_internal_format,
-								glw::GLenum& out_texture_format, glw::GLenum& out_texture_type,
-								glw::GLuint& out_bytes_per_pixel);
+    virtual void getTextureInfo(glw::GLuint &out_width, glw::GLenum &out_texture_internal_format,
+                                glw::GLenum &out_texture_format, glw::GLenum &out_texture_type,
+                                glw::GLuint &out_bytes_per_pixel);
 
-	virtual void getTextureWrapMode(glw::GLenum& out_wrap_mode);
+    virtual void getTextureWrapMode(glw::GLenum &out_wrap_mode);
 
-	virtual void getTransformFeedBackDetails(glw::GLuint&					  out_buffer_size,
-											 std::vector<const glw::GLchar*>& out_captured_varyings);
+    virtual void getTransformFeedBackDetails(glw::GLuint &out_buffer_size,
+                                             std::vector<const glw::GLchar *> &out_captured_varyings);
 
-	virtual void isTextureArray(bool& out_is_texture_array);
-	virtual void prepareTextureData(glw::GLubyte* data);
-	virtual bool verifyResult(const void* result_data);
+    virtual void isTextureArray(bool &out_is_texture_array);
+    virtual void prepareTextureData(glw::GLubyte *data);
+    virtual bool verifyResult(const void *result_data);
 
-	/* Methods to be implemented by child classes */
-	virtual bool checkResult(const CapturedVaryings& captured_data, unsigned int index, unsigned int texture_size) = 0;
+    /* Methods to be implemented by child classes */
+    virtual bool checkResult(const CapturedVaryings &captured_data, unsigned int index, unsigned int texture_size) = 0;
 
-	virtual void getVaryings(std::vector<const glw::GLchar*>& out_captured_varyings);
+    virtual void getVaryings(std::vector<const glw::GLchar *> &out_captured_varyings);
 
-	/* Utilities */
-	void logVaryings(const CapturedVaryings& varyings);
+    /* Utilities */
+    void logVaryings(const CapturedVaryings &varyings);
 
 private:
-	/* Texture size */
-	static const glw::GLuint m_texture_size;
+    /* Texture size */
+    static const glw::GLuint m_texture_size;
 
-	/* Number of varyings captured per vertex */
-	unsigned int m_n_varyings_per_vertex;
+    /* Number of varyings captured per vertex */
+    unsigned int m_n_varyings_per_vertex;
 };
 
 /** Implementation of "Test 9" from CTS_EXT_gpu_shader5. Test description follows:
@@ -417,39 +417,39 @@ private:
 class GPUShader5TextureGatherOffsetColor2DRepeatCaseTest : public GPUShader5TextureGatherOffsetColorTestBase
 {
 public:
-	/* Public methods */
-	GPUShader5TextureGatherOffsetColor2DRepeatCaseTest(Context& context, const ExtParameters& extParams,
-													   const char* name, const char* description);
+    /* Public methods */
+    GPUShader5TextureGatherOffsetColor2DRepeatCaseTest(Context &context, const ExtParameters &extParams,
+                                                       const char *name, const char *description);
 
-	virtual ~GPUShader5TextureGatherOffsetColor2DRepeatCaseTest(void)
-	{
-	}
+    virtual ~GPUShader5TextureGatherOffsetColor2DRepeatCaseTest(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	/* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
-	virtual void getShaderParts(std::vector<const glw::GLchar*>& out_vertex_shader_parts);
-	virtual void prepareVertexBuffersData(std::vector<VertexBufferInfo>& vertex_buffer_infos);
+    /* Protected methods */
+    /* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
+    virtual void getShaderParts(std::vector<const glw::GLchar *> &out_vertex_shader_parts);
+    virtual void prepareVertexBuffersData(std::vector<VertexBufferInfo> &vertex_buffer_infos);
 
-	/* Virtual methods from GPUShader5TextureGatherOffsetColorTestBase */
-	virtual bool checkResult(const CapturedVaryings& captured_data, unsigned int index, unsigned int texture_size);
+    /* Virtual methods from GPUShader5TextureGatherOffsetColorTestBase */
+    virtual bool checkResult(const CapturedVaryings &captured_data, unsigned int index, unsigned int texture_size);
 
-	/* Utilities */
-	void getOffsets(glw::GLint& out_x_offset, glw::GLint& out_y_offset, unsigned int index);
+    /* Utilities */
+    void getOffsets(glw::GLint &out_x_offset, glw::GLint &out_y_offset, unsigned int index);
 
 private:
-	/* Private fields */
-	/* Vertex shader code */
-	static const glw::GLchar* const m_vertex_shader_code;
+    /* Private fields */
+    /* Vertex shader code */
+    static const glw::GLchar *const m_vertex_shader_code;
 
-	/* Number of offsets per vertex */
-	static const unsigned int m_n_offsets_components;
+    /* Number of offsets per vertex */
+    static const unsigned int m_n_offsets_components;
 
-	/* Name of offset attribute */
-	static const glw::GLchar* const m_offsets_attribute_name;
+    /* Name of offset attribute */
+    static const glw::GLchar *const m_offsets_attribute_name;
 
-	/* Storage for offsets */
-	std::vector<glw::GLint> m_offsets_buffer_data;
+    /* Storage for offsets */
+    std::vector<glw::GLint> m_offsets_buffer_data;
 };
 
 /** Test configuration: wrap mode GL_REPEAT, sampler isampler2DArray, function textureGatherOffset
@@ -457,24 +457,24 @@ private:
 class GPUShader5TextureGatherOffsetColor2DArrayCaseTest : public GPUShader5TextureGatherOffsetColor2DRepeatCaseTest
 {
 public:
-	/* Public methods */
-	GPUShader5TextureGatherOffsetColor2DArrayCaseTest(Context& context, const ExtParameters& extParams,
-													  const char* name, const char* description);
+    /* Public methods */
+    GPUShader5TextureGatherOffsetColor2DArrayCaseTest(Context &context, const ExtParameters &extParams,
+                                                      const char *name, const char *description);
 
-	virtual ~GPUShader5TextureGatherOffsetColor2DArrayCaseTest(void)
-	{
-	}
+    virtual ~GPUShader5TextureGatherOffsetColor2DArrayCaseTest(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	/* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
-	virtual void getShaderParts(std::vector<const glw::GLchar*>& out_vertex_shader_parts);
-	virtual void isTextureArray(bool& out_is_texture_array);
+    /* Protected methods */
+    /* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
+    virtual void getShaderParts(std::vector<const glw::GLchar *> &out_vertex_shader_parts);
+    virtual void isTextureArray(bool &out_is_texture_array);
 
 private:
-	/* Private fields */
-	/* Vertex shader code */
-	static const glw::GLchar* const m_vertex_shader_code;
+    /* Private fields */
+    /* Vertex shader code */
+    static const glw::GLchar *const m_vertex_shader_code;
 };
 
 /** Test configuration: wrap mode GL_REPEAT, sampler isampler2D, function textureGatherOffsets
@@ -482,31 +482,31 @@ private:
 class GPUShader5TextureGatherOffsetColor2DOffsetsCaseTest : public GPUShader5TextureGatherOffsetColorTestBase
 {
 public:
-	/* Public methods */
-	GPUShader5TextureGatherOffsetColor2DOffsetsCaseTest(Context& context, const ExtParameters& extParams,
-														const char* name, const char* description);
+    /* Public methods */
+    GPUShader5TextureGatherOffsetColor2DOffsetsCaseTest(Context &context, const ExtParameters &extParams,
+                                                        const char *name, const char *description);
 
-	virtual ~GPUShader5TextureGatherOffsetColor2DOffsetsCaseTest(void)
-	{
-	}
+    virtual ~GPUShader5TextureGatherOffsetColor2DOffsetsCaseTest(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	/* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
-	virtual void getShaderParts(std::vector<const glw::GLchar*>& out_vertex_shader_parts);
-	virtual void prepareVertexBuffersData(std::vector<VertexBufferInfo>& vertex_buffer_infos);
+    /* Protected methods */
+    /* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
+    virtual void getShaderParts(std::vector<const glw::GLchar *> &out_vertex_shader_parts);
+    virtual void prepareVertexBuffersData(std::vector<VertexBufferInfo> &vertex_buffer_infos);
 
-	/* Virtual methods from GPUShader5TextureGatherOffsetColorTestBase */
-	virtual bool checkResult(const CapturedVaryings& captured_data, unsigned int index, unsigned int texture_size);
+    /* Virtual methods from GPUShader5TextureGatherOffsetColorTestBase */
+    virtual bool checkResult(const CapturedVaryings &captured_data, unsigned int index, unsigned int texture_size);
 
 private:
-	/* Private fields */
-	/* Vertex shader code */
-	static const glw::GLchar* const m_vertex_shader_code_preamble;
-	static const glw::GLchar* const m_vertex_shader_code_body;
+    /* Private fields */
+    /* Vertex shader code */
+    static const glw::GLchar *const m_vertex_shader_code_preamble;
+    static const glw::GLchar *const m_vertex_shader_code_body;
 
-	/* String used for definition of constant offsets */
-	std::string m_vertex_shader_code_offsets;
+    /* String used for definition of constant offsets */
+    std::string m_vertex_shader_code_offsets;
 };
 
 /** Implementation of "Test 10" from CTS_EXT_gpu_shader5. Test description follows:
@@ -631,39 +631,39 @@ private:
 class GPUShader5TextureGatherOffsetDepth2DRepeatCaseTest : public GPUShader5TextureGatherOffsetDepthTestBase
 {
 public:
-	/* Public methods */
-	GPUShader5TextureGatherOffsetDepth2DRepeatCaseTest(Context& context, const ExtParameters& extParams,
-													   const char* name, const char* description);
+    /* Public methods */
+    GPUShader5TextureGatherOffsetDepth2DRepeatCaseTest(Context &context, const ExtParameters &extParams,
+                                                       const char *name, const char *description);
 
-	virtual ~GPUShader5TextureGatherOffsetDepth2DRepeatCaseTest(void)
-	{
-	}
+    virtual ~GPUShader5TextureGatherOffsetDepth2DRepeatCaseTest(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	/* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
-	virtual void getShaderParts(std::vector<const glw::GLchar*>& out_vertex_shader_parts);
-	virtual void prepareVertexBuffersData(std::vector<VertexBufferInfo>& vertex_buffer_infos);
+    /* Protected methods */
+    /* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
+    virtual void getShaderParts(std::vector<const glw::GLchar *> &out_vertex_shader_parts);
+    virtual void prepareVertexBuffersData(std::vector<VertexBufferInfo> &vertex_buffer_infos);
 
-	/* Virtual methods from GPUShader5TextureGatherOffsetDepthTestBase */
-	virtual bool checkResult(const CapturedVaryings& captured_data, unsigned int index, unsigned int texture_size);
+    /* Virtual methods from GPUShader5TextureGatherOffsetDepthTestBase */
+    virtual bool checkResult(const CapturedVaryings &captured_data, unsigned int index, unsigned int texture_size);
 
-	/* Utilities */
-	void getOffsets(glw::GLint& out_x_offset, glw::GLint& out_y_offset, unsigned int index);
+    /* Utilities */
+    void getOffsets(glw::GLint &out_x_offset, glw::GLint &out_y_offset, unsigned int index);
 
-	/* Number of offsets per vertex */
-	static const unsigned int m_n_offsets_components;
+    /* Number of offsets per vertex */
+    static const unsigned int m_n_offsets_components;
 
-	/* Name of offset attribute */
-	static const glw::GLchar* const m_offsets_attribute_name;
+    /* Name of offset attribute */
+    static const glw::GLchar *const m_offsets_attribute_name;
 
-	/* Storage for offsets */
-	std::vector<glw::GLint> m_offsets_buffer_data;
+    /* Storage for offsets */
+    std::vector<glw::GLint> m_offsets_buffer_data;
 
 private:
-	/* Private fields */
-	/* Vertex shader code */
-	static const glw::GLchar* const m_vertex_shader_code;
+    /* Private fields */
+    /* Vertex shader code */
+    static const glw::GLchar *const m_vertex_shader_code;
 };
 
 /** Test configuration: wrap mode GL_REPEAT, sampler isampler2DShadow, function textureGatherOffset, axis Y
@@ -671,27 +671,27 @@ private:
 class GPUShader5TextureGatherOffsetDepth2DRepeatYCaseTest : public GPUShader5TextureGatherOffsetDepth2DRepeatCaseTest
 {
 public:
-	/* Public methods */
-	GPUShader5TextureGatherOffsetDepth2DRepeatYCaseTest(Context& context, const ExtParameters& extParams,
-														const char* name, const char* description);
+    /* Public methods */
+    GPUShader5TextureGatherOffsetDepth2DRepeatYCaseTest(Context &context, const ExtParameters &extParams,
+                                                        const char *name, const char *description);
 
-	virtual ~GPUShader5TextureGatherOffsetDepth2DRepeatYCaseTest(void)
-	{
-	}
+    virtual ~GPUShader5TextureGatherOffsetDepth2DRepeatYCaseTest(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	/* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
-	virtual void getShaderParts(std::vector<const glw::GLchar*>& out_vertex_shader_parts);
-	virtual void prepareTextureData(glw::GLubyte* data);
+    /* Protected methods */
+    /* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
+    virtual void getShaderParts(std::vector<const glw::GLchar *> &out_vertex_shader_parts);
+    virtual void prepareTextureData(glw::GLubyte *data);
 
-	/* Virtual methods from GPUShader5TextureGatherOffsetDepthTestBase */
-	virtual bool checkResult(const CapturedVaryings& captured_data, unsigned int index, unsigned int texture_size);
+    /* Virtual methods from GPUShader5TextureGatherOffsetDepthTestBase */
+    virtual bool checkResult(const CapturedVaryings &captured_data, unsigned int index, unsigned int texture_size);
 
 private:
-	/* Private fields */
-	/* Vertex shader code */
-	static const glw::GLchar* const m_vertex_shader_code;
+    /* Private fields */
+    /* Vertex shader code */
+    static const glw::GLchar *const m_vertex_shader_code;
 };
 
 /** Test configuration: wrap mode GL_REPEAT, sampler isampler2DShadowArray, function textureGatherOffset, axis X
@@ -699,24 +699,24 @@ private:
 class GPUShader5TextureGatherOffsetDepth2DArrayCaseTest : public GPUShader5TextureGatherOffsetDepth2DRepeatCaseTest
 {
 public:
-	/* Public methods */
-	GPUShader5TextureGatherOffsetDepth2DArrayCaseTest(Context& context, const ExtParameters& extParams,
-													  const char* name, const char* description);
+    /* Public methods */
+    GPUShader5TextureGatherOffsetDepth2DArrayCaseTest(Context &context, const ExtParameters &extParams,
+                                                      const char *name, const char *description);
 
-	virtual ~GPUShader5TextureGatherOffsetDepth2DArrayCaseTest(void)
-	{
-	}
+    virtual ~GPUShader5TextureGatherOffsetDepth2DArrayCaseTest(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	/* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
-	virtual void getShaderParts(std::vector<const glw::GLchar*>& out_vertex_shader_parts);
-	virtual void isTextureArray(bool& out_is_texture_array);
+    /* Protected methods */
+    /* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
+    virtual void getShaderParts(std::vector<const glw::GLchar *> &out_vertex_shader_parts);
+    virtual void isTextureArray(bool &out_is_texture_array);
 
 private:
-	/* Private fields */
-	/* Vertex shader code */
-	static const glw::GLchar* const m_vertex_shader_code;
+    /* Private fields */
+    /* Vertex shader code */
+    static const glw::GLchar *const m_vertex_shader_code;
 };
 
 /** Test configuration: wrap mode GL_REPEAT, sampler isampler2DShadow, function textureGatherOffsets, axis X
@@ -724,31 +724,31 @@ private:
 class GPUShader5TextureGatherOffsetDepth2DOffsetsCaseTest : public GPUShader5TextureGatherOffsetDepthTestBase
 {
 public:
-	/* Public methods */
-	GPUShader5TextureGatherOffsetDepth2DOffsetsCaseTest(Context& context, const ExtParameters& extParams,
-														const char* name, const char* description);
+    /* Public methods */
+    GPUShader5TextureGatherOffsetDepth2DOffsetsCaseTest(Context &context, const ExtParameters &extParams,
+                                                        const char *name, const char *description);
 
-	virtual ~GPUShader5TextureGatherOffsetDepth2DOffsetsCaseTest(void)
-	{
-	}
+    virtual ~GPUShader5TextureGatherOffsetDepth2DOffsetsCaseTest(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	/* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
-	virtual void getShaderParts(std::vector<const glw::GLchar*>& out_vertex_shader_parts);
-	virtual void prepareVertexBuffersData(std::vector<VertexBufferInfo>& vertex_buffer_infos);
+    /* Protected methods */
+    /* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
+    virtual void getShaderParts(std::vector<const glw::GLchar *> &out_vertex_shader_parts);
+    virtual void prepareVertexBuffersData(std::vector<VertexBufferInfo> &vertex_buffer_infos);
 
-	/* Virtual methods from GPUShader5TextureGatherOffsetDepthTestBase */
-	virtual bool checkResult(const CapturedVaryings& captured_data, unsigned int index, unsigned int texture_size);
+    /* Virtual methods from GPUShader5TextureGatherOffsetDepthTestBase */
+    virtual bool checkResult(const CapturedVaryings &captured_data, unsigned int index, unsigned int texture_size);
 
 private:
-	/* Private fields */
-	/* Vertex shader code */
-	static const glw::GLchar* const m_vertex_shader_code_preamble;
-	static const glw::GLchar* const m_vertex_shader_code_body;
+    /* Private fields */
+    /* Vertex shader code */
+    static const glw::GLchar *const m_vertex_shader_code_preamble;
+    static const glw::GLchar *const m_vertex_shader_code_body;
 
-	/* String used for definition of constant offsets */
-	std::string m_vertex_shader_code_offsets;
+    /* String used for definition of constant offsets */
+    std::string m_vertex_shader_code_offsets;
 };
 
 /** Implementation of "Test 11" from CTS_EXT_gpu_shader5. Test description follows:
@@ -909,129 +909,129 @@ private:
 /** Test configuration: wrap mode GL_CLAMP_TO_BORDER_EXT, sampler isampler2D, function textureGatherOffset
  */
 class GPUShader5TextureGatherOffsetColor2DClampToBorderCaseTest
-	: public GPUShader5TextureGatherOffsetColor2DRepeatCaseTest
+    : public GPUShader5TextureGatherOffsetColor2DRepeatCaseTest
 {
 public:
-	/* Public methods */
-	GPUShader5TextureGatherOffsetColor2DClampToBorderCaseTest(Context& context, const ExtParameters& extParams,
-															  const char* name, const char* description);
+    /* Public methods */
+    GPUShader5TextureGatherOffsetColor2DClampToBorderCaseTest(Context &context, const ExtParameters &extParams,
+                                                              const char *name, const char *description);
 
-	virtual ~GPUShader5TextureGatherOffsetColor2DClampToBorderCaseTest(void)
-	{
-	}
+    virtual ~GPUShader5TextureGatherOffsetColor2DClampToBorderCaseTest(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	/* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
-	virtual void getTextureWrapMode(glw::GLenum& out_wrap_mode);
-	virtual void getShaderParts(std::vector<const glw::GLchar*>& out_vertex_shader_parts);
+    /* Protected methods */
+    /* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
+    virtual void getTextureWrapMode(glw::GLenum &out_wrap_mode);
+    virtual void getShaderParts(std::vector<const glw::GLchar *> &out_vertex_shader_parts);
 
-	/* Virtual methods from GPUShader5TextureGatherOffsetColorTestBase */
-	virtual bool checkResult(const CapturedVaryings& captured_data, unsigned int index, unsigned int texture_size);
+    /* Virtual methods from GPUShader5TextureGatherOffsetColorTestBase */
+    virtual bool checkResult(const CapturedVaryings &captured_data, unsigned int index, unsigned int texture_size);
 
-	virtual void initTest(void);
+    virtual void initTest(void);
 
 private:
-	/* Private fields */
-	/* Vertex shader code */
-	static const glw::GLchar* const m_vertex_shader_code;
+    /* Private fields */
+    /* Vertex shader code */
+    static const glw::GLchar *const m_vertex_shader_code;
 };
 
 /** Test configuration: wrap mode GL_CLAMP_TO_EDGE, sampler isampler2D, function textureGatherOffset
  */
 class GPUShader5TextureGatherOffsetColor2DClampToEdgeCaseTest
-	: public GPUShader5TextureGatherOffsetColor2DRepeatCaseTest
+    : public GPUShader5TextureGatherOffsetColor2DRepeatCaseTest
 {
 public:
-	/* Public methods */
-	GPUShader5TextureGatherOffsetColor2DClampToEdgeCaseTest(Context& context, const ExtParameters& extParams,
-															const char* name, const char* description);
+    /* Public methods */
+    GPUShader5TextureGatherOffsetColor2DClampToEdgeCaseTest(Context &context, const ExtParameters &extParams,
+                                                            const char *name, const char *description);
 
-	virtual ~GPUShader5TextureGatherOffsetColor2DClampToEdgeCaseTest(void)
-	{
-	}
+    virtual ~GPUShader5TextureGatherOffsetColor2DClampToEdgeCaseTest(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	/* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
-	virtual void getTextureWrapMode(glw::GLenum& out_wrap_mode);
-	virtual void getShaderParts(std::vector<const glw::GLchar*>& out_vertex_shader_parts);
+    /* Protected methods */
+    /* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
+    virtual void getTextureWrapMode(glw::GLenum &out_wrap_mode);
+    virtual void getShaderParts(std::vector<const glw::GLchar *> &out_vertex_shader_parts);
 
-	/* Virtual methods from GPUShader5TextureGatherOffsetColorTestBase */
-	virtual bool checkResult(const CapturedVaryings& captured_data, unsigned int index, unsigned int texture_size);
-	virtual void initTest(void);
+    /* Virtual methods from GPUShader5TextureGatherOffsetColorTestBase */
+    virtual bool checkResult(const CapturedVaryings &captured_data, unsigned int index, unsigned int texture_size);
+    virtual void initTest(void);
 
 private:
-	/* Private fields */
-	/* Vertex shader code */
-	static const glw::GLchar* const m_vertex_shader_code;
+    /* Private fields */
+    /* Vertex shader code */
+    static const glw::GLchar *const m_vertex_shader_code;
 };
 
 /** Test configuration: wrap mode GL_CLAMP_TO_BORDER_EXT, sampler isampler2DShadow, function textureGatherOffset, axis X
  */
 class GPUShader5TextureGatherOffsetDepth2DClampToBorderCaseTest
-	: public GPUShader5TextureGatherOffsetDepth2DRepeatCaseTest
+    : public GPUShader5TextureGatherOffsetDepth2DRepeatCaseTest
 {
 public:
-	/* Public methods */
-	GPUShader5TextureGatherOffsetDepth2DClampToBorderCaseTest(Context& context, const ExtParameters& extParams,
-															  const char* name, const char* description);
+    /* Public methods */
+    GPUShader5TextureGatherOffsetDepth2DClampToBorderCaseTest(Context &context, const ExtParameters &extParams,
+                                                              const char *name, const char *description);
 
-	virtual ~GPUShader5TextureGatherOffsetDepth2DClampToBorderCaseTest(void)
-	{
-	}
+    virtual ~GPUShader5TextureGatherOffsetDepth2DClampToBorderCaseTest(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	/* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
-	virtual void getTextureWrapMode(glw::GLenum& out_wrap_mode);
-	virtual void getShaderParts(std::vector<const glw::GLchar*>& out_vertex_shader_parts);
-	virtual void prepareVertexBuffersData(std::vector<VertexBufferInfo>& vertex_buffer_infos);
+    /* Protected methods */
+    /* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
+    virtual void getTextureWrapMode(glw::GLenum &out_wrap_mode);
+    virtual void getShaderParts(std::vector<const glw::GLchar *> &out_vertex_shader_parts);
+    virtual void prepareVertexBuffersData(std::vector<VertexBufferInfo> &vertex_buffer_infos);
 
-	/* Virtual methods from GPUShader5TextureGatherOffsetDepthTestBase */
-	virtual bool checkResult(const CapturedVaryings& captured_data, unsigned int index, unsigned int texture_size);
+    /* Virtual methods from GPUShader5TextureGatherOffsetDepthTestBase */
+    virtual bool checkResult(const CapturedVaryings &captured_data, unsigned int index, unsigned int texture_size);
 
-	virtual void getVaryings(std::vector<const glw::GLchar*>& out_captured_varyings);
-	virtual void initTest(void);
+    virtual void getVaryings(std::vector<const glw::GLchar *> &out_captured_varyings);
+    virtual void initTest(void);
 
 private:
-	/* Private fields */
-	/* Vertex shader code */
-	static const glw::GLchar* const m_vertex_shader_code;
+    /* Private fields */
+    /* Vertex shader code */
+    static const glw::GLchar *const m_vertex_shader_code;
 };
 
 /** Test configuration: wrap mode GL_CLAMP_TO_EDGE, sampler isampler2DShadow, function textureGatherOffset, axis X
  */
 class GPUShader5TextureGatherOffsetDepth2DClampToEdgeCaseTest
-	: public GPUShader5TextureGatherOffsetDepth2DRepeatCaseTest
+    : public GPUShader5TextureGatherOffsetDepth2DRepeatCaseTest
 {
 public:
-	/* Public methods */
-	GPUShader5TextureGatherOffsetDepth2DClampToEdgeCaseTest(Context& context, const ExtParameters& extParams,
-															const char* name, const char* description);
+    /* Public methods */
+    GPUShader5TextureGatherOffsetDepth2DClampToEdgeCaseTest(Context &context, const ExtParameters &extParams,
+                                                            const char *name, const char *description);
 
-	virtual ~GPUShader5TextureGatherOffsetDepth2DClampToEdgeCaseTest(void)
-	{
-	}
+    virtual ~GPUShader5TextureGatherOffsetDepth2DClampToEdgeCaseTest(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	/* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
-	virtual void getTextureWrapMode(glw::GLenum& out_wrap_mode);
-	virtual void getShaderParts(std::vector<const glw::GLchar*>& out_vertex_shader_parts);
+    /* Protected methods */
+    /* Virtual methods from GPUShader5TextureGatherOffsetTestBase */
+    virtual void getTextureWrapMode(glw::GLenum &out_wrap_mode);
+    virtual void getShaderParts(std::vector<const glw::GLchar *> &out_vertex_shader_parts);
 
-	/* Virtual methods from GPUShader5TextureGatherOffsetDepthTestBase */
-	virtual bool checkResult(const CapturedVaryings& captured_data, unsigned int index, unsigned int texture_size);
+    /* Virtual methods from GPUShader5TextureGatherOffsetDepthTestBase */
+    virtual bool checkResult(const CapturedVaryings &captured_data, unsigned int index, unsigned int texture_size);
 
-	virtual void getVaryings(std::vector<const glw::GLchar*>& out_captured_varyings);
-	virtual void initTest(void);
+    virtual void getVaryings(std::vector<const glw::GLchar *> &out_captured_varyings);
+    virtual void initTest(void);
 
 private:
-	/* Private fields */
-	/* Vertex shader code */
-	static const glw::GLchar* const m_vertex_shader_code;
+    /* Private fields */
+    /* Vertex shader code */
+    static const glw::GLchar *const m_vertex_shader_code;
 };
 
-} /* glcts */
+} // namespace glcts
 
 #endif // _ESEXTCGPUSHADER5TEXTUREGATHEROFFSET_HPP

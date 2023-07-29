@@ -50,26 +50,28 @@ class FunctionLibrary;
 
 struct PlatformMemoryLimits
 {
-	// System memory properties
-	size_t			totalSystemMemory;					// #bytes of system memory (heap + HOST_LOCAL) tests must not exceed
+    // System memory properties
+    size_t totalSystemMemory; // #bytes of system memory (heap + HOST_LOCAL) tests must not exceed
 
-	// Device memory properties
-	std::uint64_t	totalDeviceLocalMemory;				// #bytes of total DEVICE_LOCAL memory tests must not exceed or 0 if DEVICE_LOCAL counts against system memory
-	std::uint64_t	deviceMemoryAllocationGranularity;	// VkDeviceMemory allocation granularity (typically page size)
+    // Device memory properties
+    std::uint64_t
+        totalDeviceLocalMemory; // #bytes of total DEVICE_LOCAL memory tests must not exceed or 0 if DEVICE_LOCAL counts against system memory
+    std::uint64_t deviceMemoryAllocationGranularity; // VkDeviceMemory allocation granularity (typically page size)
 
-	// Device memory page table geometry
-	std::uint64_t	devicePageSize;						// Page size on device (must be rounded up to the nearest POT)
-	std::uint64_t	devicePageTableEntrySize;			// Number of bytes per page table size
-	size_t			devicePageTableHierarchyLevels;		// Number of levels in device page table hierarchy
+    // Device memory page table geometry
+    std::uint64_t devicePageSize;           // Page size on device (must be rounded up to the nearest POT)
+    std::uint64_t devicePageTableEntrySize; // Number of bytes per page table size
+    size_t devicePageTableHierarchyLevels;  // Number of levels in device page table hierarchy
 
-	PlatformMemoryLimits (void)
-		: totalSystemMemory					(0)
-		, totalDeviceLocalMemory			(0)
-		, deviceMemoryAllocationGranularity	(0)
-		, devicePageSize					(0)
-		, devicePageTableEntrySize			(0)
-		, devicePageTableHierarchyLevels	(0)
-	{}
+    PlatformMemoryLimits(void)
+        : totalSystemMemory(0)
+        , totalDeviceLocalMemory(0)
+        , deviceMemoryAllocationGranularity(0)
+        , devicePageSize(0)
+        , devicePageTableEntrySize(0)
+        , devicePageTableHierarchyLevels(0)
+    {
+    }
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -93,62 +95,62 @@ struct PlatformMemoryLimits
 class Platform
 {
 public:
-									Platform			(void);
-	virtual							~Platform			(void);
+    Platform(void);
+    virtual ~Platform(void);
 
-	/*--------------------------------------------------------------------*//*!
-	 * \brief Process platform-specific events.
-	 *
-	 * Test framework will call this function between test cases and test case
-	 * iterations. Any event handling that must be done periodically should be
-	 * done here.
-	 *
-	 * Test framework will decide whether to continue test execution based on
-	 * return code. For instance if the application receives close event from OS,
-	 * it should communicate that to framework by returning false.
-	 *
-	 * \note Do not do rendering buffer swaps here.
-	 *       Do it in RenderContext::postIterate() instead.
-	 * \return true if test execution should continue, false otherwise.
-	 *//*--------------------------------------------------------------------*/
-	virtual bool					processEvents		(void);
+    /*--------------------------------------------------------------------*//*!
+     * \brief Process platform-specific events.
+     *
+     * Test framework will call this function between test cases and test case
+     * iterations. Any event handling that must be done periodically should be
+     * done here.
+     *
+     * Test framework will decide whether to continue test execution based on
+     * return code. For instance if the application receives close event from OS,
+     * it should communicate that to framework by returning false.
+     *
+     * \note Do not do rendering buffer swaps here.
+     *       Do it in RenderContext::postIterate() instead.
+     * \return true if test execution should continue, false otherwise.
+     *//*--------------------------------------------------------------------*/
+    virtual bool processEvents(void);
 
-	/*--------------------------------------------------------------------*//*!
-	 * \brief Get GL platform interface
-	 *
-	 * GL-specific platform interface is defined by glu::Platform. If your
-	 * platform port supports OpenGL (ES), you should implement this function.
-	 *
-	 * Default implementation throws tcu::NotSupportedError exception.
-	 *
-	 * \return Reference to GL platform interface.
-	 *//*--------------------------------------------------------------------*/
-	virtual const glu::Platform&	getGLPlatform		(void) const;
+    /*--------------------------------------------------------------------*//*!
+     * \brief Get GL platform interface
+     *
+     * GL-specific platform interface is defined by glu::Platform. If your
+     * platform port supports OpenGL (ES), you should implement this function.
+     *
+     * Default implementation throws tcu::NotSupportedError exception.
+     *
+     * \return Reference to GL platform interface.
+     *//*--------------------------------------------------------------------*/
+    virtual const glu::Platform &getGLPlatform(void) const;
 
-	/*--------------------------------------------------------------------*//*!
-	 * \brief Get EGL platform interface
-	 *
-	 * EGL-specific platform interface is defined by eglu::Platform. If your
-	 * platform port supports EGL, you should implement this function.
-	 *
-	 * Default implementation throws tcu::NotSupportedError exception.
-	 *
-	 * \return Reference to EGL platform interface.
-	 *//*--------------------------------------------------------------------*/
-	virtual const eglu::Platform&	getEGLPlatform		(void) const;
+    /*--------------------------------------------------------------------*//*!
+     * \brief Get EGL platform interface
+     *
+     * EGL-specific platform interface is defined by eglu::Platform. If your
+     * platform port supports EGL, you should implement this function.
+     *
+     * Default implementation throws tcu::NotSupportedError exception.
+     *
+     * \return Reference to EGL platform interface.
+     *//*--------------------------------------------------------------------*/
+    virtual const eglu::Platform &getEGLPlatform(void) const;
 
-	virtual const vk::Platform&		getVulkanPlatform	(void) const;
+    virtual const vk::Platform &getVulkanPlatform(void) const;
 
-	virtual void					getMemoryLimits		(PlatformMemoryLimits& limits) const;
+    virtual void getMemoryLimits(PlatformMemoryLimits &limits) const;
 };
 
-inline tcu::PlatformMemoryLimits getMemoryLimits (const tcu::Platform& platform)
+inline tcu::PlatformMemoryLimits getMemoryLimits(const tcu::Platform &platform)
 {
-	tcu::PlatformMemoryLimits limits;
-	platform.getMemoryLimits(limits);
-	return limits;
+    tcu::PlatformMemoryLimits limits;
+    platform.getMemoryLimits(limits);
+    return limits;
 }
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUPLATFORM_HPP

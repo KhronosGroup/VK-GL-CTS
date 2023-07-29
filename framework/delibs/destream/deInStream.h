@@ -32,33 +32,32 @@ DE_BEGIN_EXTERN_C
 /* Input stream struct, implemented as a wrapper to io stream */
 typedef struct deInStream_s
 {
-	deIOStream ioStream;
+    deIOStream ioStream;
 } deInStream;
 
-DE_INLINE deStreamResult	deInStream_read		(deInStream* stream, void* buf, deInt32 bufSize, deInt32* numWritten);
-DE_INLINE deStreamResult	deInStream_deinit	(deInStream* stream);
-DE_INLINE const char*		deInStream_getError (deInStream* stream);
-DE_INLINE deStreamStatus	deInStream_getStatus(deInStream* stream);
+DE_INLINE deStreamResult deInStream_read(deInStream *stream, void *buf, int32_t bufSize, int32_t *numWritten);
+DE_INLINE deStreamResult deInStream_deinit(deInStream *stream);
+DE_INLINE const char *deInStream_getError(deInStream *stream);
+DE_INLINE deStreamStatus deInStream_getStatus(deInStream *stream);
 
-
-DE_INLINE deStreamResult deInStream_read (deInStream* stream, void* buf, deInt32 bufSize, deInt32* numWritten)
+DE_INLINE deStreamResult deInStream_read(deInStream *stream, void *buf, int32_t bufSize, int32_t *numWritten)
 {
-	return deIOStream_read(&(stream->ioStream), buf, bufSize, numWritten);
+    return deIOStream_read(&(stream->ioStream), buf, bufSize, numWritten);
 }
 
-DE_INLINE deStreamResult deInStream_deinit (deInStream* stream)
+DE_INLINE deStreamResult deInStream_deinit(deInStream *stream)
 {
-	return deIOStream_deinit(&(stream->ioStream));
+    return deIOStream_deinit(&(stream->ioStream));
 }
 
-DE_INLINE const char* deInStream_getError (deInStream* stream)
+DE_INLINE const char *deInStream_getError(deInStream *stream)
 {
-	return deIOStream_getError(&(stream->ioStream));
+    return deIOStream_getError(&(stream->ioStream));
 }
 
-DE_INLINE deStreamStatus deInStream_getStatus(deInStream* stream)
+DE_INLINE deStreamStatus deInStream_getStatus(deInStream *stream)
 {
-	return deIOStream_getStatus(&(stream->ioStream));
+    return deIOStream_getStatus(&(stream->ioStream));
 }
 
 DE_END_EXTERN_C

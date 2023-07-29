@@ -30,8 +30,9 @@
 namespace vkt
 {
 
-de::MovePtr<tcu::TestCaseGroup>		createShaderLibraryGroup	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const std::string& filename);
+de::MovePtr<tcu::TestCaseGroup> createShaderLibraryGroup(tcu::TestContext &testCtx, const std::string &name,
+                                                         const std::string &description, const std::string &filename);
 
-} // vkt
+} // namespace vkt
 
 #endif // _VKTSHADERLIBRARY_HPP

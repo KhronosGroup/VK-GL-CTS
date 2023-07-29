@@ -36,18 +36,18 @@ namespace Performance
 class ShaderControlStatementTests : public TestCaseGroup
 {
 public:
-									ShaderControlStatementTests		(Context& context);
-									~ShaderControlStatementTests	(void);
+    ShaderControlStatementTests(Context &context);
+    ~ShaderControlStatementTests(void);
 
-	void							init							(void);
+    void init(void);
 
 private:
-									ShaderControlStatementTests		(const ShaderControlStatementTests& other);
-	ShaderControlStatementTests&	operator=						(const ShaderControlStatementTests& other);
+    ShaderControlStatementTests(const ShaderControlStatementTests &other);
+    ShaderControlStatementTests &operator=(const ShaderControlStatementTests &other);
 };
 
-} // Performance
-} // gles3
-} // deqp
+} // namespace Performance
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3PSHADERCONTROLSTATEMENTTESTS_HPP

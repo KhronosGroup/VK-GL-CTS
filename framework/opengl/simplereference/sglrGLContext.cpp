@@ -33,900 +33,893 @@
 namespace sglr
 {
 
-using std::vector;
 using std::string;
+using std::vector;
 using tcu::TestLog;
-using tcu::Vec4;
 using tcu::TextureFormat;
+using tcu::Vec4;
 
-GLContext::GLContext (const glu::RenderContext& context, tcu::TestLog& log, deUint32 logFlags, const tcu::IVec4& baseViewport)
-	: Context					(context.getType())
-	, m_context					(context)
-	, m_log						(log)
-	, m_logFlags				(logFlags)
-	, m_baseViewport			(baseViewport)
-	, m_curViewport				(0, 0, m_baseViewport.z(), m_baseViewport.w())
-	, m_curScissor				(0, 0, m_baseViewport.z(), m_baseViewport.w())
-	, m_readFramebufferBinding	(0)
-	, m_drawFramebufferBinding	(0)
-	, m_wrapper					(DE_NULL)
+GLContext::GLContext(const glu::RenderContext &context, tcu::TestLog &log, uint32_t logFlags,
+                     const tcu::IVec4 &baseViewport)
+    : Context(context.getType())
+    , m_context(context)
+    , m_log(log)
+    , m_logFlags(logFlags)
+    , m_baseViewport(baseViewport)
+    , m_curViewport(0, 0, m_baseViewport.z(), m_baseViewport.w())
+    , m_curScissor(0, 0, m_baseViewport.z(), m_baseViewport.w())
+    , m_readFramebufferBinding(0)
+    , m_drawFramebufferBinding(0)
+    , m_wrapper(DE_NULL)
 {
-	const glw::Functions& gl = m_context.getFunctions();
+    const glw::Functions &gl = m_context.getFunctions();
 
-	// Logging?
-	m_wrapper = new glu::CallLogWrapper(gl, log);
-	m_wrapper->enableLogging((logFlags & GLCONTEXT_LOG_CALLS) != 0);
+    // Logging?
+    m_wrapper = new glu::CallLogWrapper(gl, log);
+    m_wrapper->enableLogging((logFlags & GLCONTEXT_LOG_CALLS) != 0);
 
-	// Setup base viewport. This offset is active when default framebuffer is active.
-	// \note Calls related to setting up base viewport are not included in log.
-	gl.viewport(baseViewport.x(), baseViewport.y(), baseViewport.z(), baseViewport.w());
+    // Setup base viewport. This offset is active when default framebuffer is active.
+    // \note Calls related to setting up base viewport are not included in log.
+    gl.viewport(baseViewport.x(), baseViewport.y(), baseViewport.z(), baseViewport.w());
 }
 
-GLContext::~GLContext (void)
+GLContext::~GLContext(void)
 {
-	const glw::Functions& gl = m_context.getFunctions();
+    const glw::Functions &gl = m_context.getFunctions();
 
-	// Clean up all still alive objects
-	for (std::set<deUint32>::const_iterator i = m_allocatedFbos.begin();
-		 i != m_allocatedFbos.end(); i++)
-	{
-		deUint32 fbo = *i;
-		gl.deleteFramebuffers(1, &fbo);
-	}
+    // Clean up all still alive objects
+    for (std::set<uint32_t>::const_iterator i = m_allocatedFbos.begin(); i != m_allocatedFbos.end(); i++)
+    {
+        uint32_t fbo = *i;
+        gl.deleteFramebuffers(1, &fbo);
+    }
 
-	for (std::set<deUint32>::const_iterator i = m_allocatedRbos.begin();
-		 i != m_allocatedRbos.end(); i++)
-	{
-		deUint32 rbo = *i;
-		gl.deleteRenderbuffers(1, &rbo);
-	}
+    for (std::set<uint32_t>::const_iterator i = m_allocatedRbos.begin(); i != m_allocatedRbos.end(); i++)
+    {
+        uint32_t rbo = *i;
+        gl.deleteRenderbuffers(1, &rbo);
+    }
 
-	for (std::set<deUint32>::const_iterator i = m_allocatedTextures.begin();
-		 i != m_allocatedTextures.end(); i++)
-	{
-		deUint32 tex = *i;
-		gl.deleteTextures(1, &tex);
-	}
+    for (std::set<uint32_t>::const_iterator i = m_allocatedTextures.begin(); i != m_allocatedTextures.end(); i++)
+    {
+        uint32_t tex = *i;
+        gl.deleteTextures(1, &tex);
+    }
 
-	for (std::set<deUint32>::const_iterator i = m_allocatedBuffers.begin();
-		 i != m_allocatedBuffers.end(); i++)
-	{
-		deUint32 buf = *i;
-		gl.deleteBuffers(1, &buf);
-	}
+    for (std::set<uint32_t>::const_iterator i = m_allocatedBuffers.begin(); i != m_allocatedBuffers.end(); i++)
+    {
+        uint32_t buf = *i;
+        gl.deleteBuffers(1, &buf);
+    }
 
-	for (std::set<deUint32>::const_iterator i = m_allocatedVaos.begin();
-		 i != m_allocatedVaos.end(); i++)
-	{
-		deUint32 vao = *i;
-		gl.deleteVertexArrays(1, &vao);
-	}
+    for (std::set<uint32_t>::const_iterator i = m_allocatedVaos.begin(); i != m_allocatedVaos.end(); i++)
+    {
+        uint32_t vao = *i;
+        gl.deleteVertexArrays(1, &vao);
+    }
 
-	for (std::vector<glu::ShaderProgram*>::iterator i = m_programs.begin();
-		i != m_programs.end(); i++)
-	{
-		delete *i;
-	}
+    for (std::vector<glu::ShaderProgram *>::iterator i = m_programs.begin(); i != m_programs.end(); i++)
+    {
+        delete *i;
+    }
 
-	gl.useProgram(0);
+    gl.useProgram(0);
 
-	delete m_wrapper;
+    delete m_wrapper;
 }
 
-void GLContext::enableLogging (deUint32 logFlags)
+void GLContext::enableLogging(uint32_t logFlags)
 {
-	m_logFlags = logFlags;
-	m_wrapper->enableLogging((logFlags & GLCONTEXT_LOG_CALLS) != 0);
+    m_logFlags = logFlags;
+    m_wrapper->enableLogging((logFlags & GLCONTEXT_LOG_CALLS) != 0);
 }
 
-tcu::IVec2 GLContext::getDrawOffset (void) const
+tcu::IVec2 GLContext::getDrawOffset(void) const
 {
-	if (m_drawFramebufferBinding)
-		return tcu::IVec2(0, 0);
-	else
-		return tcu::IVec2(m_baseViewport.x(), m_baseViewport.y());
+    if (m_drawFramebufferBinding)
+        return tcu::IVec2(0, 0);
+    else
+        return tcu::IVec2(m_baseViewport.x(), m_baseViewport.y());
 }
 
-tcu::IVec2 GLContext::getReadOffset (void) const
+tcu::IVec2 GLContext::getReadOffset(void) const
 {
-	if (m_readFramebufferBinding)
-		return tcu::IVec2(0, 0);
-	else
-		return tcu::IVec2(m_baseViewport.x(), m_baseViewport.y());
+    if (m_readFramebufferBinding)
+        return tcu::IVec2(0, 0);
+    else
+        return tcu::IVec2(m_baseViewport.x(), m_baseViewport.y());
 }
 
-int GLContext::getWidth (void) const
+int GLContext::getWidth(void) const
 {
-	return m_baseViewport.z();
+    return m_baseViewport.z();
 }
 
-int GLContext::getHeight (void) const
+int GLContext::getHeight(void) const
 {
-	return m_baseViewport.w();
+    return m_baseViewport.w();
 }
 
-void GLContext::activeTexture (deUint32 texture)
+void GLContext::activeTexture(uint32_t texture)
 {
-	m_wrapper->glActiveTexture(texture);
+    m_wrapper->glActiveTexture(texture);
 }
 
-void GLContext::texParameteri (deUint32 target, deUint32 pname, int value)
+void GLContext::texParameteri(uint32_t target, uint32_t pname, int value)
 {
-	m_wrapper->glTexParameteri(target, pname, value);
+    m_wrapper->glTexParameteri(target, pname, value);
 }
 
-deUint32 GLContext::checkFramebufferStatus(deUint32 target)
+uint32_t GLContext::checkFramebufferStatus(uint32_t target)
 {
-	return m_wrapper->glCheckFramebufferStatus(target);
+    return m_wrapper->glCheckFramebufferStatus(target);
 }
 
-void GLContext::viewport (int x, int y, int width, int height)
+void GLContext::viewport(int x, int y, int width, int height)
 {
-	m_curViewport = tcu::IVec4(x, y, width, height);
-	tcu::IVec2 offset = getDrawOffset();
+    m_curViewport     = tcu::IVec4(x, y, width, height);
+    tcu::IVec2 offset = getDrawOffset();
 
-	// \note For clarity don't add the offset to log
-	if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
-		m_log << TestLog::Message << "glViewport(" << x << ", " << y << ", " << width << ", " << height << ");" << TestLog::EndMessage;
-	m_context.getFunctions().viewport(x+offset.x(), y+offset.y(), width, height);
+    // \note For clarity don't add the offset to log
+    if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
+        m_log << TestLog::Message << "glViewport(" << x << ", " << y << ", " << width << ", " << height << ");"
+              << TestLog::EndMessage;
+    m_context.getFunctions().viewport(x + offset.x(), y + offset.y(), width, height);
 }
 
-void GLContext::bindTexture (deUint32 target, deUint32 texture)
+void GLContext::bindTexture(uint32_t target, uint32_t texture)
 {
-	m_allocatedTextures.insert(texture);
-	m_wrapper->glBindTexture(target, texture);
+    m_allocatedTextures.insert(texture);
+    m_wrapper->glBindTexture(target, texture);
 }
 
-void GLContext::genTextures (int numTextures, deUint32* textures)
+void GLContext::genTextures(int numTextures, uint32_t *textures)
 {
-	m_wrapper->glGenTextures(numTextures, textures);
-	if (numTextures > 0)
-		m_allocatedTextures.insert(textures, textures+numTextures);
+    m_wrapper->glGenTextures(numTextures, textures);
+    if (numTextures > 0)
+        m_allocatedTextures.insert(textures, textures + numTextures);
 }
 
-void GLContext::deleteTextures (int numTextures, const deUint32* textures)
+void GLContext::deleteTextures(int numTextures, const uint32_t *textures)
 {
-	for (int i = 0; i < numTextures; i++)
-		m_allocatedTextures.erase(textures[i]);
-	m_wrapper->glDeleteTextures(numTextures, textures);
+    for (int i = 0; i < numTextures; i++)
+        m_allocatedTextures.erase(textures[i]);
+    m_wrapper->glDeleteTextures(numTextures, textures);
 }
 
-void GLContext::bindFramebuffer (deUint32 target, deUint32 framebuffer)
+void GLContext::bindFramebuffer(uint32_t target, uint32_t framebuffer)
 {
-	// \todo [2011-10-13 pyry] This is a bit of a hack since test cases assumes 0 default fbo.
-	deUint32 defaultFbo = m_context.getDefaultFramebuffer();
-	TCU_CHECK(framebuffer == 0 || framebuffer != defaultFbo);
+    // \todo [2011-10-13 pyry] This is a bit of a hack since test cases assumes 0 default fbo.
+    uint32_t defaultFbo = m_context.getDefaultFramebuffer();
+    TCU_CHECK(framebuffer == 0 || framebuffer != defaultFbo);
 
-	bool isValidTarget = target == GL_FRAMEBUFFER || target == GL_DRAW_FRAMEBUFFER || target == GL_READ_FRAMEBUFFER;
+    bool isValidTarget = target == GL_FRAMEBUFFER || target == GL_DRAW_FRAMEBUFFER || target == GL_READ_FRAMEBUFFER;
 
-	if (isValidTarget && framebuffer != 0)
-		m_allocatedFbos.insert(framebuffer);
+    if (isValidTarget && framebuffer != 0)
+        m_allocatedFbos.insert(framebuffer);
 
-	// Update bindings.
-	if (target == GL_FRAMEBUFFER || target == GL_READ_FRAMEBUFFER)
-		m_readFramebufferBinding = framebuffer;
+    // Update bindings.
+    if (target == GL_FRAMEBUFFER || target == GL_READ_FRAMEBUFFER)
+        m_readFramebufferBinding = framebuffer;
 
-	if (target == GL_FRAMEBUFFER || target == GL_DRAW_FRAMEBUFFER)
-		m_drawFramebufferBinding = framebuffer;
+    if (target == GL_FRAMEBUFFER || target == GL_DRAW_FRAMEBUFFER)
+        m_drawFramebufferBinding = framebuffer;
 
-	if (framebuffer == 0) // Redirect 0 to platform-defined default framebuffer.
-		m_wrapper->glBindFramebuffer(target, defaultFbo);
-	else
-		m_wrapper->glBindFramebuffer(target, framebuffer);
+    if (framebuffer == 0) // Redirect 0 to platform-defined default framebuffer.
+        m_wrapper->glBindFramebuffer(target, defaultFbo);
+    else
+        m_wrapper->glBindFramebuffer(target, framebuffer);
 
-	// Update viewport and scissor if we updated draw framebuffer binding \note Not logged for clarity
-	if (target == GL_FRAMEBUFFER || target == GL_DRAW_FRAMEBUFFER)
-	{
-		tcu::IVec2 offset = getDrawOffset();
-		m_context.getFunctions().viewport(m_curViewport.x()+offset.x(), m_curViewport.y()+offset.y(), m_curViewport.z(), m_curViewport.w());
-		m_context.getFunctions().scissor(m_curScissor.x()+offset.x(), m_curScissor.y()+offset.y(), m_curScissor.z(), m_curScissor.w());
-	}
+    // Update viewport and scissor if we updated draw framebuffer binding \note Not logged for clarity
+    if (target == GL_FRAMEBUFFER || target == GL_DRAW_FRAMEBUFFER)
+    {
+        tcu::IVec2 offset = getDrawOffset();
+        m_context.getFunctions().viewport(m_curViewport.x() + offset.x(), m_curViewport.y() + offset.y(),
+                                          m_curViewport.z(), m_curViewport.w());
+        m_context.getFunctions().scissor(m_curScissor.x() + offset.x(), m_curScissor.y() + offset.y(), m_curScissor.z(),
+                                         m_curScissor.w());
+    }
 }
 
-void GLContext::genFramebuffers (int numFramebuffers, deUint32* framebuffers)
+void GLContext::genFramebuffers(int numFramebuffers, uint32_t *framebuffers)
 {
-	m_wrapper->glGenFramebuffers(numFramebuffers, framebuffers);
-	if (numFramebuffers > 0)
-		m_allocatedFbos.insert(framebuffers, framebuffers+numFramebuffers);
+    m_wrapper->glGenFramebuffers(numFramebuffers, framebuffers);
+    if (numFramebuffers > 0)
+        m_allocatedFbos.insert(framebuffers, framebuffers + numFramebuffers);
 }
 
-void GLContext::deleteFramebuffers (int numFramebuffers, const deUint32* framebuffers)
+void GLContext::deleteFramebuffers(int numFramebuffers, const uint32_t *framebuffers)
 {
-	for (int i = 0; i < numFramebuffers; i++)
-		m_allocatedFbos.erase(framebuffers[i]);
-	m_wrapper->glDeleteFramebuffers(numFramebuffers, framebuffers);
+    for (int i = 0; i < numFramebuffers; i++)
+        m_allocatedFbos.erase(framebuffers[i]);
+    m_wrapper->glDeleteFramebuffers(numFramebuffers, framebuffers);
 }
 
-void GLContext::bindRenderbuffer (deUint32 target, deUint32 renderbuffer)
+void GLContext::bindRenderbuffer(uint32_t target, uint32_t renderbuffer)
 {
-	m_allocatedRbos.insert(renderbuffer);
-	m_wrapper->glBindRenderbuffer(target, renderbuffer);
+    m_allocatedRbos.insert(renderbuffer);
+    m_wrapper->glBindRenderbuffer(target, renderbuffer);
 }
 
-void GLContext::genRenderbuffers (int numRenderbuffers, deUint32* renderbuffers)
+void GLContext::genRenderbuffers(int numRenderbuffers, uint32_t *renderbuffers)
 {
-	m_wrapper->glGenRenderbuffers(numRenderbuffers, renderbuffers);
-	if (numRenderbuffers > 0)
-		m_allocatedRbos.insert(renderbuffers, renderbuffers+numRenderbuffers);
+    m_wrapper->glGenRenderbuffers(numRenderbuffers, renderbuffers);
+    if (numRenderbuffers > 0)
+        m_allocatedRbos.insert(renderbuffers, renderbuffers + numRenderbuffers);
 }
 
-void GLContext::deleteRenderbuffers (int numRenderbuffers, const deUint32* renderbuffers)
+void GLContext::deleteRenderbuffers(int numRenderbuffers, const uint32_t *renderbuffers)
 {
-	for (int i = 0; i < numRenderbuffers; i++)
-		m_allocatedRbos.erase(renderbuffers[i]);
-	m_wrapper->glDeleteRenderbuffers(numRenderbuffers, renderbuffers);
+    for (int i = 0; i < numRenderbuffers; i++)
+        m_allocatedRbos.erase(renderbuffers[i]);
+    m_wrapper->glDeleteRenderbuffers(numRenderbuffers, renderbuffers);
 }
 
-void GLContext::pixelStorei (deUint32 pname, int param)
+void GLContext::pixelStorei(uint32_t pname, int param)
 {
-	m_wrapper->glPixelStorei(pname, param);
+    m_wrapper->glPixelStorei(pname, param);
 }
 
-void GLContext::texImage1D (deUint32 target, int level, deUint32 internalFormat, int width, int border, deUint32 format, deUint32 type, const void* data)
+void GLContext::texImage1D(uint32_t target, int level, uint32_t internalFormat, int width, int border, uint32_t format,
+                           uint32_t type, const void *data)
 {
-	m_wrapper->glTexImage1D(target, level, internalFormat, width, border, format, type, data);
+    m_wrapper->glTexImage1D(target, level, internalFormat, width, border, format, type, data);
 }
 
-void GLContext::texImage2D (deUint32 target, int level, deUint32 internalFormat, int width, int height, int border, deUint32 format, deUint32 type, const void* data)
+void GLContext::texImage2D(uint32_t target, int level, uint32_t internalFormat, int width, int height, int border,
+                           uint32_t format, uint32_t type, const void *data)
 {
-	m_wrapper->glTexImage2D(target, level, internalFormat, width, height, border, format, type, data);
+    m_wrapper->glTexImage2D(target, level, internalFormat, width, height, border, format, type, data);
 }
 
-void GLContext::texImage3D (deUint32 target, int level, deUint32 internalFormat, int width, int height, int depth, int border, deUint32 format, deUint32 type, const void* data)
+void GLContext::texImage3D(uint32_t target, int level, uint32_t internalFormat, int width, int height, int depth,
+                           int border, uint32_t format, uint32_t type, const void *data)
 {
-	m_wrapper->glTexImage3D(target, level, internalFormat, width, height, depth, border, format, type, data);
+    m_wrapper->glTexImage3D(target, level, internalFormat, width, height, depth, border, format, type, data);
 }
 
-void GLContext::texSubImage1D (deUint32 target, int level, int xoffset, int width, deUint32 format, deUint32 type, const void* data)
+void GLContext::texSubImage1D(uint32_t target, int level, int xoffset, int width, uint32_t format, uint32_t type,
+                              const void *data)
 {
-	m_wrapper->glTexSubImage1D(target, level, xoffset, width, format, type, data);
+    m_wrapper->glTexSubImage1D(target, level, xoffset, width, format, type, data);
 }
 
-void GLContext::texSubImage2D (deUint32 target, int level, int xoffset, int yoffset, int width, int height, deUint32 format, deUint32 type, const void* data)
+void GLContext::texSubImage2D(uint32_t target, int level, int xoffset, int yoffset, int width, int height,
+                              uint32_t format, uint32_t type, const void *data)
 {
-	m_wrapper->glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, data);
+    m_wrapper->glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, data);
 }
 
-void GLContext::texSubImage3D (deUint32 target, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, deUint32 format, deUint32 type, const void* data)
+void GLContext::texSubImage3D(uint32_t target, int level, int xoffset, int yoffset, int zoffset, int width, int height,
+                              int depth, uint32_t format, uint32_t type, const void *data)
 {
-	m_wrapper->glTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, data);
+    m_wrapper->glTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, data);
 }
 
-void GLContext::copyTexImage1D (deUint32 target, int level, deUint32 internalFormat, int x, int y, int width, int border)
+void GLContext::copyTexImage1D(uint32_t target, int level, uint32_t internalFormat, int x, int y, int width, int border)
 {
-	// Don't log offset.
-	if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
-		m_log << TestLog::Message << "glCopyTexImage1D("
-								  << glu::getTextureTargetStr(target) << ", "
-								  << level << ", "
-								  << glu::getTextureFormatStr(internalFormat) << ", "
-								  << x << ", " << y << ", "
-								  << width << ", " << border << ")"
-			  << TestLog::EndMessage;
+    // Don't log offset.
+    if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
+        m_log << TestLog::Message << "glCopyTexImage1D(" << glu::getTextureTargetStr(target) << ", " << level << ", "
+              << glu::getTextureFormatStr(internalFormat) << ", " << x << ", " << y << ", " << width << ", " << border
+              << ")" << TestLog::EndMessage;
 
-	tcu::IVec2 offset = getReadOffset();
-	m_context.getFunctions().copyTexImage1D(target, level, internalFormat, offset.x()+x, offset.y()+y, width, border);
+    tcu::IVec2 offset = getReadOffset();
+    m_context.getFunctions().copyTexImage1D(target, level, internalFormat, offset.x() + x, offset.y() + y, width,
+                                            border);
 }
 
-void GLContext::copyTexImage2D (deUint32 target, int level, deUint32 internalFormat, int x, int y, int width, int height, int border)
+void GLContext::copyTexImage2D(uint32_t target, int level, uint32_t internalFormat, int x, int y, int width, int height,
+                               int border)
 {
-	// Don't log offset.
-	if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
-		m_log << TestLog::Message << "glCopyTexImage2D("
-								  << glu::getTextureTargetStr(target) << ", "
-								  << level << ", "
-								  << glu::getTextureFormatStr(internalFormat) << ", "
-								  << x << ", " << y << ", "
-								  << width << ", " << height
-								  << ", " << border << ")"
-			  << TestLog::EndMessage;
+    // Don't log offset.
+    if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
+        m_log << TestLog::Message << "glCopyTexImage2D(" << glu::getTextureTargetStr(target) << ", " << level << ", "
+              << glu::getTextureFormatStr(internalFormat) << ", " << x << ", " << y << ", " << width << ", " << height
+              << ", " << border << ")" << TestLog::EndMessage;
 
-	tcu::IVec2 offset = getReadOffset();
-	m_context.getFunctions().copyTexImage2D(target, level, internalFormat, offset.x()+x, offset.y()+y, width, height, border);
+    tcu::IVec2 offset = getReadOffset();
+    m_context.getFunctions().copyTexImage2D(target, level, internalFormat, offset.x() + x, offset.y() + y, width,
+                                            height, border);
 }
 
-void GLContext::copyTexSubImage1D (deUint32 target, int level, int xoffset, int x, int y, int width)
+void GLContext::copyTexSubImage1D(uint32_t target, int level, int xoffset, int x, int y, int width)
 {
-	if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
-		m_log << TestLog::Message << "glCopyTexSubImage1D("
-								  << glu::getTextureTargetStr(target) << ", "
-								  << level << ", "
-								  << xoffset << ", "
-								  << x << ", " << y << ", "
-								  << width << ")"
-			  << TestLog::EndMessage;
+    if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
+        m_log << TestLog::Message << "glCopyTexSubImage1D(" << glu::getTextureTargetStr(target) << ", " << level << ", "
+              << xoffset << ", " << x << ", " << y << ", " << width << ")" << TestLog::EndMessage;
 
-	tcu::IVec2 offset = getReadOffset();
-	m_context.getFunctions().copyTexSubImage1D(target, level, xoffset, offset.x()+x, offset.y()+y, width);
+    tcu::IVec2 offset = getReadOffset();
+    m_context.getFunctions().copyTexSubImage1D(target, level, xoffset, offset.x() + x, offset.y() + y, width);
 }
 
-void GLContext::copyTexSubImage2D (deUint32 target, int level, int xoffset, int yoffset, int x, int y, int width, int height)
+void GLContext::copyTexSubImage2D(uint32_t target, int level, int xoffset, int yoffset, int x, int y, int width,
+                                  int height)
 {
-	if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
-		m_log << TestLog::Message << "glCopyTexSubImage2D("
-								  << glu::getTextureTargetStr(target) << ", "
-								  << level
-								  << ", " << xoffset << ", " << yoffset << ", "
-								  << x << ", " << y << ", "
-								  << width << ", " << height << ")"
-			  << TestLog::EndMessage;
+    if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
+        m_log << TestLog::Message << "glCopyTexSubImage2D(" << glu::getTextureTargetStr(target) << ", " << level << ", "
+              << xoffset << ", " << yoffset << ", " << x << ", " << y << ", " << width << ", " << height << ")"
+              << TestLog::EndMessage;
 
-	tcu::IVec2 offset = getReadOffset();
-	m_context.getFunctions().copyTexSubImage2D(target, level, xoffset, yoffset, offset.x()+x, offset.y()+y, width, height);
+    tcu::IVec2 offset = getReadOffset();
+    m_context.getFunctions().copyTexSubImage2D(target, level, xoffset, yoffset, offset.x() + x, offset.y() + y, width,
+                                               height);
 }
 
-void GLContext::copyTexSubImage3D (deUint32 target, int level, int xoffset, int yoffset, int zoffset, int x, int y, int width, int height)
+void GLContext::copyTexSubImage3D(uint32_t target, int level, int xoffset, int yoffset, int zoffset, int x, int y,
+                                  int width, int height)
 {
-	if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
-		m_log << TestLog::Message << "glCopyTexSubImage3D("
-								  << glu::getTextureTargetStr(target) << ", "
-								  << level
-								  << ", " << xoffset << ", " << yoffset << ", " << zoffset << ", "
-								  << x << ", " << y << ", "
-								  << width << ", " << height << ")"
-			  << TestLog::EndMessage;
+    if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
+        m_log << TestLog::Message << "glCopyTexSubImage3D(" << glu::getTextureTargetStr(target) << ", " << level << ", "
+              << xoffset << ", " << yoffset << ", " << zoffset << ", " << x << ", " << y << ", " << width << ", "
+              << height << ")" << TestLog::EndMessage;
 
-	tcu::IVec2 offset = getReadOffset();
-	m_context.getFunctions().copyTexSubImage3D(target, level, xoffset, yoffset, zoffset, offset.x()+x, offset.y()+y, width, height);
+    tcu::IVec2 offset = getReadOffset();
+    m_context.getFunctions().copyTexSubImage3D(target, level, xoffset, yoffset, zoffset, offset.x() + x, offset.y() + y,
+                                               width, height);
 }
 
-void GLContext::texStorage2D (deUint32 target, int levels, deUint32 internalFormat, int width, int height)
+void GLContext::texStorage2D(uint32_t target, int levels, uint32_t internalFormat, int width, int height)
 {
-	m_wrapper->glTexStorage2D(target, levels, internalFormat, width, height);
+    m_wrapper->glTexStorage2D(target, levels, internalFormat, width, height);
 }
 
-void GLContext::texStorage3D (deUint32 target, int levels, deUint32 internalFormat, int width, int height, int depth)
+void GLContext::texStorage3D(uint32_t target, int levels, uint32_t internalFormat, int width, int height, int depth)
 {
-	m_wrapper->glTexStorage3D(target, levels, internalFormat, width, height, depth);
+    m_wrapper->glTexStorage3D(target, levels, internalFormat, width, height, depth);
 }
 
-void GLContext::framebufferTexture2D (deUint32 target, deUint32 attachment, deUint32 textarget, deUint32 texture, int level)
+void GLContext::framebufferTexture2D(uint32_t target, uint32_t attachment, uint32_t textarget, uint32_t texture,
+                                     int level)
 {
-	m_wrapper->glFramebufferTexture2D(target, attachment, textarget, texture, level);
+    m_wrapper->glFramebufferTexture2D(target, attachment, textarget, texture, level);
 }
 
-void GLContext::framebufferTextureLayer (deUint32 target, deUint32 attachment, deUint32 texture, int level, int layer)
+void GLContext::framebufferTextureLayer(uint32_t target, uint32_t attachment, uint32_t texture, int level, int layer)
 {
-	m_wrapper->glFramebufferTextureLayer(target, attachment, texture, level, layer);
+    m_wrapper->glFramebufferTextureLayer(target, attachment, texture, level, layer);
 }
 
-void GLContext::framebufferRenderbuffer (deUint32 target, deUint32 attachment, deUint32 renderbuffertarget, deUint32 renderbuffer)
+void GLContext::framebufferRenderbuffer(uint32_t target, uint32_t attachment, uint32_t renderbuffertarget,
+                                        uint32_t renderbuffer)
 {
-	m_wrapper->glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
+    m_wrapper->glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
 }
 
-void GLContext::getFramebufferAttachmentParameteriv (deUint32 target, deUint32 attachment, deUint32 pname, int* params)
+void GLContext::getFramebufferAttachmentParameteriv(uint32_t target, uint32_t attachment, uint32_t pname, int *params)
 {
-	m_wrapper->glGetFramebufferAttachmentParameteriv(target, attachment, pname, params);
+    m_wrapper->glGetFramebufferAttachmentParameteriv(target, attachment, pname, params);
 }
 
-void GLContext::renderbufferStorage (deUint32 target, deUint32 internalformat, int width, int height)
+void GLContext::renderbufferStorage(uint32_t target, uint32_t internalformat, int width, int height)
 {
-	m_wrapper->glRenderbufferStorage(target, internalformat, width, height);
+    m_wrapper->glRenderbufferStorage(target, internalformat, width, height);
 }
 
-void GLContext::renderbufferStorageMultisample (deUint32 target, int samples, deUint32 internalFormat, int width, int height)
+void GLContext::renderbufferStorageMultisample(uint32_t target, int samples, uint32_t internalFormat, int width,
+                                               int height)
 {
-	m_wrapper->glRenderbufferStorageMultisample(target, samples, internalFormat, width, height);
+    m_wrapper->glRenderbufferStorageMultisample(target, samples, internalFormat, width, height);
 }
 
-void GLContext::bindBuffer (deUint32 target, deUint32 buffer)
+void GLContext::bindBuffer(uint32_t target, uint32_t buffer)
 {
-	m_allocatedBuffers.insert(buffer);
-	m_wrapper->glBindBuffer(target, buffer);
+    m_allocatedBuffers.insert(buffer);
+    m_wrapper->glBindBuffer(target, buffer);
 }
 
-void GLContext::genBuffers (int numBuffers, deUint32* buffers)
+void GLContext::genBuffers(int numBuffers, uint32_t *buffers)
 {
-	m_wrapper->glGenBuffers(numBuffers, buffers);
-	if (numBuffers > 0)
-		m_allocatedBuffers.insert(buffers, buffers+numBuffers);
+    m_wrapper->glGenBuffers(numBuffers, buffers);
+    if (numBuffers > 0)
+        m_allocatedBuffers.insert(buffers, buffers + numBuffers);
 }
 
-void GLContext::deleteBuffers (int numBuffers, const deUint32* buffers)
+void GLContext::deleteBuffers(int numBuffers, const uint32_t *buffers)
 {
-	m_wrapper->glDeleteBuffers(numBuffers, buffers);
-	for (int i = 0; i < numBuffers; i++)
-		m_allocatedBuffers.erase(buffers[i]);
+    m_wrapper->glDeleteBuffers(numBuffers, buffers);
+    for (int i = 0; i < numBuffers; i++)
+        m_allocatedBuffers.erase(buffers[i]);
 }
 
-void GLContext::bufferData (deUint32 target, deIntptr size, const void* data, deUint32 usage)
+void GLContext::bufferData(uint32_t target, intptr_t size, const void *data, uint32_t usage)
 {
-	m_wrapper->glBufferData(target, (glw::GLsizeiptr)size, data, usage);
+    m_wrapper->glBufferData(target, (glw::GLsizeiptr)size, data, usage);
 }
 
-void GLContext::bufferSubData (deUint32 target, deIntptr offset, deIntptr size, const void* data)
+void GLContext::bufferSubData(uint32_t target, intptr_t offset, intptr_t size, const void *data)
 {
-	m_wrapper->glBufferSubData(target, (glw::GLintptr)offset, (glw::GLsizeiptr)size, data);
+    m_wrapper->glBufferSubData(target, (glw::GLintptr)offset, (glw::GLsizeiptr)size, data);
 }
 
-void GLContext::clearColor (float red, float green, float blue, float alpha)
+void GLContext::clearColor(float red, float green, float blue, float alpha)
 {
-	m_wrapper->glClearColor(red, green, blue, alpha);
+    m_wrapper->glClearColor(red, green, blue, alpha);
 }
 
-void GLContext::clearDepthf (float depth)
+void GLContext::clearDepthf(float depth)
 {
-	m_wrapper->glClearDepthf(depth);
+    m_wrapper->glClearDepthf(depth);
 }
 
-void GLContext::clearStencil (int stencil)
+void GLContext::clearStencil(int stencil)
 {
-	m_wrapper->glClearStencil(stencil);
+    m_wrapper->glClearStencil(stencil);
 }
 
-void GLContext::clear (deUint32 buffers)
+void GLContext::clear(uint32_t buffers)
 {
-	m_wrapper->glClear(buffers);
+    m_wrapper->glClear(buffers);
 }
 
-void GLContext::clearBufferiv (deUint32 buffer, int drawbuffer, const int* value)
+void GLContext::clearBufferiv(uint32_t buffer, int drawbuffer, const int *value)
 {
-	m_wrapper->glClearBufferiv(buffer, drawbuffer, value);
+    m_wrapper->glClearBufferiv(buffer, drawbuffer, value);
 }
 
-void GLContext::clearBufferfv (deUint32 buffer, int drawbuffer, const float* value)
+void GLContext::clearBufferfv(uint32_t buffer, int drawbuffer, const float *value)
 {
-	m_wrapper->glClearBufferfv(buffer, drawbuffer, value);
+    m_wrapper->glClearBufferfv(buffer, drawbuffer, value);
 }
 
-void GLContext::clearBufferuiv (deUint32 buffer, int drawbuffer, const deUint32* value)
+void GLContext::clearBufferuiv(uint32_t buffer, int drawbuffer, const uint32_t *value)
 {
-	m_wrapper->glClearBufferuiv(buffer, drawbuffer, value);
+    m_wrapper->glClearBufferuiv(buffer, drawbuffer, value);
 }
 
-void GLContext::clearBufferfi (deUint32 buffer, int drawbuffer, float depth, int stencil)
+void GLContext::clearBufferfi(uint32_t buffer, int drawbuffer, float depth, int stencil)
 {
-	m_wrapper->glClearBufferfi(buffer, drawbuffer, depth, stencil);
+    m_wrapper->glClearBufferfi(buffer, drawbuffer, depth, stencil);
 }
 
-void GLContext::scissor (int x, int y, int width, int height)
+void GLContext::scissor(int x, int y, int width, int height)
 {
-	m_curScissor = tcu::IVec4(x, y, width, height);
+    m_curScissor = tcu::IVec4(x, y, width, height);
 
-	// \note For clarity don't add the offset to log
-	if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
-		m_log << TestLog::Message << "glScissor(" << x << ", " << y << ", " << width << ", " << height << ");" << TestLog::EndMessage;
+    // \note For clarity don't add the offset to log
+    if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
+        m_log << TestLog::Message << "glScissor(" << x << ", " << y << ", " << width << ", " << height << ");"
+              << TestLog::EndMessage;
 
-	tcu::IVec2 offset = getDrawOffset();
-	m_context.getFunctions().scissor(offset.x()+x, offset.y()+y, width, height);
+    tcu::IVec2 offset = getDrawOffset();
+    m_context.getFunctions().scissor(offset.x() + x, offset.y() + y, width, height);
 }
 
-void GLContext::enable (deUint32 cap)
+void GLContext::enable(uint32_t cap)
 {
-	m_wrapper->glEnable(cap);
+    m_wrapper->glEnable(cap);
 }
 
-void GLContext::disable (deUint32 cap)
+void GLContext::disable(uint32_t cap)
 {
-	m_wrapper->glDisable(cap);
+    m_wrapper->glDisable(cap);
 }
 
-void GLContext::stencilFunc (deUint32 func, int ref, deUint32 mask)
+void GLContext::stencilFunc(uint32_t func, int ref, uint32_t mask)
 {
-	m_wrapper->glStencilFunc(func, ref, mask);
+    m_wrapper->glStencilFunc(func, ref, mask);
 }
 
-void GLContext::stencilOp (deUint32 sfail, deUint32 dpfail, deUint32 dppass)
+void GLContext::stencilOp(uint32_t sfail, uint32_t dpfail, uint32_t dppass)
 {
-	m_wrapper->glStencilOp(sfail, dpfail, dppass);
+    m_wrapper->glStencilOp(sfail, dpfail, dppass);
 }
 
-void GLContext::depthFunc (deUint32 func)
+void GLContext::depthFunc(uint32_t func)
 {
-	m_wrapper->glDepthFunc(func);
+    m_wrapper->glDepthFunc(func);
 }
 
-void GLContext::depthRangef (float n, float f)
+void GLContext::depthRangef(float n, float f)
 {
-	m_wrapper->glDepthRangef(n, f);
+    m_wrapper->glDepthRangef(n, f);
 }
 
-void GLContext::depthRange (double n, double f)
+void GLContext::depthRange(double n, double f)
 {
-	m_wrapper->glDepthRange(n, f);
+    m_wrapper->glDepthRange(n, f);
 }
 
-void GLContext::polygonOffset (float factor, float units)
+void GLContext::polygonOffset(float factor, float units)
 {
-	m_wrapper->glPolygonOffset(factor, units);
+    m_wrapper->glPolygonOffset(factor, units);
 }
 
-void GLContext::provokingVertex (deUint32 convention)
+void GLContext::provokingVertex(uint32_t convention)
 {
-	m_wrapper->glProvokingVertex(convention);
+    m_wrapper->glProvokingVertex(convention);
 }
 
-void GLContext::primitiveRestartIndex (deUint32 index)
+void GLContext::primitiveRestartIndex(uint32_t index)
 {
-	m_wrapper->glPrimitiveRestartIndex(index);
+    m_wrapper->glPrimitiveRestartIndex(index);
 }
 
-void GLContext::stencilFuncSeparate (deUint32 face, deUint32 func, int ref, deUint32 mask)
+void GLContext::stencilFuncSeparate(uint32_t face, uint32_t func, int ref, uint32_t mask)
 {
-	m_wrapper->glStencilFuncSeparate(face, func, ref, mask);
+    m_wrapper->glStencilFuncSeparate(face, func, ref, mask);
 }
 
-void GLContext::stencilOpSeparate (deUint32 face, deUint32 sfail, deUint32 dpfail, deUint32 dppass)
+void GLContext::stencilOpSeparate(uint32_t face, uint32_t sfail, uint32_t dpfail, uint32_t dppass)
 {
-	m_wrapper->glStencilOpSeparate(face, sfail, dpfail, dppass);
+    m_wrapper->glStencilOpSeparate(face, sfail, dpfail, dppass);
 }
 
-void GLContext::blendEquation (deUint32 mode)
+void GLContext::blendEquation(uint32_t mode)
 {
-	m_wrapper->glBlendEquation(mode);
+    m_wrapper->glBlendEquation(mode);
 }
 
-void GLContext::blendEquationSeparate (deUint32 modeRGB, deUint32 modeAlpha)
+void GLContext::blendEquationSeparate(uint32_t modeRGB, uint32_t modeAlpha)
 {
-	m_wrapper->glBlendEquationSeparate(modeRGB, modeAlpha);
+    m_wrapper->glBlendEquationSeparate(modeRGB, modeAlpha);
 }
 
-void GLContext::blendFunc (deUint32 src, deUint32 dst)
+void GLContext::blendFunc(uint32_t src, uint32_t dst)
 {
-	m_wrapper->glBlendFunc(src, dst);
+    m_wrapper->glBlendFunc(src, dst);
 }
 
-void GLContext::blendFuncSeparate (deUint32 srcRGB, deUint32 dstRGB, deUint32 srcAlpha, deUint32 dstAlpha)
+void GLContext::blendFuncSeparate(uint32_t srcRGB, uint32_t dstRGB, uint32_t srcAlpha, uint32_t dstAlpha)
 {
-	m_wrapper->glBlendFuncSeparate(srcRGB, dstRGB, srcAlpha, dstAlpha);
+    m_wrapper->glBlendFuncSeparate(srcRGB, dstRGB, srcAlpha, dstAlpha);
 }
 
-void GLContext::blendColor (float red, float green, float blue, float alpha)
+void GLContext::blendColor(float red, float green, float blue, float alpha)
 {
-	m_wrapper->glBlendColor(red, green, blue, alpha);
+    m_wrapper->glBlendColor(red, green, blue, alpha);
 }
 
-void GLContext::colorMask (deBool r, deBool g, deBool b, deBool a)
+void GLContext::colorMask(bool r, bool g, bool b, bool a)
 {
-	m_wrapper->glColorMask((glw::GLboolean)r, (glw::GLboolean)g, (glw::GLboolean)b, (glw::GLboolean)a);
+    m_wrapper->glColorMask((glw::GLboolean)r, (glw::GLboolean)g, (glw::GLboolean)b, (glw::GLboolean)a);
 }
 
-void GLContext::depthMask (deBool mask)
+void GLContext::depthMask(bool mask)
 {
-	m_wrapper->glDepthMask((glw::GLboolean)mask);
+    m_wrapper->glDepthMask((glw::GLboolean)mask);
 }
 
-void GLContext::stencilMask (deUint32 mask)
+void GLContext::stencilMask(uint32_t mask)
 {
-	m_wrapper->glStencilMask(mask);
+    m_wrapper->glStencilMask(mask);
 }
 
-void GLContext::stencilMaskSeparate (deUint32 face, deUint32 mask)
+void GLContext::stencilMaskSeparate(uint32_t face, uint32_t mask)
 {
-	m_wrapper->glStencilMaskSeparate(face, mask);
+    m_wrapper->glStencilMaskSeparate(face, mask);
 }
 
-void GLContext::blitFramebuffer (int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, deUint32 mask, deUint32 filter)
+void GLContext::blitFramebuffer(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1,
+                                uint32_t mask, uint32_t filter)
 {
-	tcu::IVec2	drawOffset	= getDrawOffset();
-	tcu::IVec2	readOffset	= getReadOffset();
+    tcu::IVec2 drawOffset = getDrawOffset();
+    tcu::IVec2 readOffset = getReadOffset();
 
-	if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
-		m_log << TestLog::Message << "glBlitFramebuffer("
-								  << srcX0 << ", " << srcY0 << ", " << srcX1 << ", " << srcY1 << ", "
-								  << dstX0 << ", " << dstY0 << ", " << dstX1 << ", " << dstY1 << ", "
-								  << glu::getBufferMaskStr(mask) << ", "
-								  << glu::getTextureFilterStr(filter) << ")"
-			  << TestLog::EndMessage;
+    if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
+        m_log << TestLog::Message << "glBlitFramebuffer(" << srcX0 << ", " << srcY0 << ", " << srcX1 << ", " << srcY1
+              << ", " << dstX0 << ", " << dstY0 << ", " << dstX1 << ", " << dstY1 << ", " << glu::getBufferMaskStr(mask)
+              << ", " << glu::getTextureFilterStr(filter) << ")" << TestLog::EndMessage;
 
-	m_context.getFunctions().blitFramebuffer(readOffset.x()+srcX0, readOffset.y()+srcY0, readOffset.x()+srcX1, readOffset.y()+srcY1,
-											 drawOffset.x()+dstX0, drawOffset.y()+dstY0, drawOffset.x()+dstX1, drawOffset.y()+dstY1,
-											 mask, filter);
+    m_context.getFunctions().blitFramebuffer(readOffset.x() + srcX0, readOffset.y() + srcY0, readOffset.x() + srcX1,
+                                             readOffset.y() + srcY1, drawOffset.x() + dstX0, drawOffset.y() + dstY0,
+                                             drawOffset.x() + dstX1, drawOffset.y() + dstY1, mask, filter);
 }
 
-void GLContext::invalidateSubFramebuffer (deUint32 target, int numAttachments, const deUint32* attachments, int x, int y, int width, int height)
+void GLContext::invalidateSubFramebuffer(uint32_t target, int numAttachments, const uint32_t *attachments, int x, int y,
+                                         int width, int height)
 {
-	tcu::IVec2 drawOffset = getDrawOffset();
+    tcu::IVec2 drawOffset = getDrawOffset();
 
-	if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
-		m_log << TestLog::Message << "glInvalidateSubFramebuffer("
-								  << glu::getFramebufferTargetStr(target) << ", " << numAttachments << ", "
-								  << glu::getInvalidateAttachmentStr(attachments, numAttachments) << ", "
-								  << x << ", " << y << ", " << width << ", " << height << ")"
-			  << TestLog::EndMessage;
+    if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
+        m_log << TestLog::Message << "glInvalidateSubFramebuffer(" << glu::getFramebufferTargetStr(target) << ", "
+              << numAttachments << ", " << glu::getInvalidateAttachmentStr(attachments, numAttachments) << ", " << x
+              << ", " << y << ", " << width << ", " << height << ")" << TestLog::EndMessage;
 
-	m_context.getFunctions().invalidateSubFramebuffer(target, numAttachments, attachments, x+drawOffset.x(), y+drawOffset.y(), width, height);
+    m_context.getFunctions().invalidateSubFramebuffer(target, numAttachments, attachments, x + drawOffset.x(),
+                                                      y + drawOffset.y(), width, height);
 }
 
-void GLContext::invalidateFramebuffer (deUint32 target, int numAttachments, const deUint32* attachments)
+void GLContext::invalidateFramebuffer(uint32_t target, int numAttachments, const uint32_t *attachments)
 {
-	m_wrapper->glInvalidateFramebuffer(target, numAttachments, attachments);
+    m_wrapper->glInvalidateFramebuffer(target, numAttachments, attachments);
 }
 
-void GLContext::bindVertexArray (deUint32 array)
+void GLContext::bindVertexArray(uint32_t array)
 {
-	m_wrapper->glBindVertexArray(array);
+    m_wrapper->glBindVertexArray(array);
 }
 
-void GLContext::genVertexArrays (int numArrays, deUint32* vertexArrays)
+void GLContext::genVertexArrays(int numArrays, uint32_t *vertexArrays)
 {
-	m_wrapper->glGenVertexArrays(numArrays, vertexArrays);
-	if (numArrays > 0)
-		m_allocatedVaos.insert(vertexArrays, vertexArrays+numArrays);
+    m_wrapper->glGenVertexArrays(numArrays, vertexArrays);
+    if (numArrays > 0)
+        m_allocatedVaos.insert(vertexArrays, vertexArrays + numArrays);
 }
 
-void GLContext::deleteVertexArrays (int numArrays, const deUint32* vertexArrays)
+void GLContext::deleteVertexArrays(int numArrays, const uint32_t *vertexArrays)
 {
-	for (int i = 0; i < numArrays; i++)
-		m_allocatedVaos.erase(vertexArrays[i]);
-	m_wrapper->glDeleteVertexArrays(numArrays, vertexArrays);
+    for (int i = 0; i < numArrays; i++)
+        m_allocatedVaos.erase(vertexArrays[i]);
+    m_wrapper->glDeleteVertexArrays(numArrays, vertexArrays);
 }
 
-void GLContext::vertexAttribPointer (deUint32 index, int size, deUint32 type, deBool normalized, int stride, const void *pointer)
+void GLContext::vertexAttribPointer(uint32_t index, int size, uint32_t type, bool normalized, int stride,
+                                    const void *pointer)
 {
-	m_wrapper->glVertexAttribPointer(index, size, type, (glw::GLboolean)normalized, stride, pointer);
+    m_wrapper->glVertexAttribPointer(index, size, type, (glw::GLboolean)normalized, stride, pointer);
 }
 
-void GLContext::vertexAttribIPointer (deUint32 index, int size, deUint32 type, int stride, const void *pointer)
+void GLContext::vertexAttribIPointer(uint32_t index, int size, uint32_t type, int stride, const void *pointer)
 {
-	m_wrapper->glVertexAttribIPointer(index, size, type, stride, pointer);
+    m_wrapper->glVertexAttribIPointer(index, size, type, stride, pointer);
 }
 
-void GLContext::enableVertexAttribArray (deUint32 index)
+void GLContext::enableVertexAttribArray(uint32_t index)
 {
-	m_wrapper->glEnableVertexAttribArray(index);
+    m_wrapper->glEnableVertexAttribArray(index);
 }
 
-void GLContext::disableVertexAttribArray (deUint32 index)
+void GLContext::disableVertexAttribArray(uint32_t index)
 {
-	m_wrapper->glDisableVertexAttribArray(index);
+    m_wrapper->glDisableVertexAttribArray(index);
 }
 
-void GLContext::vertexAttribDivisor (deUint32 index, deUint32 divisor)
+void GLContext::vertexAttribDivisor(uint32_t index, uint32_t divisor)
 {
-	m_wrapper->glVertexAttribDivisor(index, divisor);
+    m_wrapper->glVertexAttribDivisor(index, divisor);
 }
 
-void GLContext::vertexAttrib1f (deUint32 index, float x)
+void GLContext::vertexAttrib1f(uint32_t index, float x)
 {
-	m_wrapper->glVertexAttrib1f(index, x);
+    m_wrapper->glVertexAttrib1f(index, x);
 }
 
-void GLContext::vertexAttrib2f (deUint32 index, float x, float y)
+void GLContext::vertexAttrib2f(uint32_t index, float x, float y)
 {
-	m_wrapper->glVertexAttrib2f(index, x, y);
+    m_wrapper->glVertexAttrib2f(index, x, y);
 }
 
-void GLContext::vertexAttrib3f (deUint32 index, float x, float y, float z)
+void GLContext::vertexAttrib3f(uint32_t index, float x, float y, float z)
 {
-	m_wrapper->glVertexAttrib3f(index, x, y, z);
+    m_wrapper->glVertexAttrib3f(index, x, y, z);
 }
 
-void GLContext::vertexAttrib4f (deUint32 index, float x, float y, float z, float w)
+void GLContext::vertexAttrib4f(uint32_t index, float x, float y, float z, float w)
 {
-	m_wrapper->glVertexAttrib4f(index, x, y, z, w);
+    m_wrapper->glVertexAttrib4f(index, x, y, z, w);
 }
 
-void GLContext::vertexAttribI4i (deUint32 index, deInt32 x, deInt32 y, deInt32 z, deInt32 w)
+void GLContext::vertexAttribI4i(uint32_t index, int32_t x, int32_t y, int32_t z, int32_t w)
 {
-	m_wrapper->glVertexAttribI4i(index, x, y, z, w);
+    m_wrapper->glVertexAttribI4i(index, x, y, z, w);
 }
 
-void GLContext::vertexAttribI4ui (deUint32 index, deUint32 x, deUint32 y, deUint32 z, deUint32 w)
+void GLContext::vertexAttribI4ui(uint32_t index, uint32_t x, uint32_t y, uint32_t z, uint32_t w)
 {
-	m_wrapper->glVertexAttribI4ui(index, x, y, z, w);
+    m_wrapper->glVertexAttribI4ui(index, x, y, z, w);
 }
 
-deInt32 GLContext::getAttribLocation (deUint32 program, const char *name)
+int32_t GLContext::getAttribLocation(uint32_t program, const char *name)
 {
-	return m_wrapper->glGetAttribLocation(program, name);
+    return m_wrapper->glGetAttribLocation(program, name);
 }
 
-void GLContext::uniform1f (deInt32 location, float v0)
+void GLContext::uniform1f(int32_t location, float v0)
 {
-	m_wrapper->glUniform1f(location, v0);
+    m_wrapper->glUniform1f(location, v0);
 }
 
-void GLContext::uniform1i (deInt32 location, deInt32 v0)
+void GLContext::uniform1i(int32_t location, int32_t v0)
 {
-	m_wrapper->glUniform1i(location, v0);
+    m_wrapper->glUniform1i(location, v0);
 }
 
-void GLContext::uniform1fv (deInt32 location, deInt32 count, const float* value)
+void GLContext::uniform1fv(int32_t location, int32_t count, const float *value)
 {
-	m_wrapper->glUniform1fv(location, count, value);
+    m_wrapper->glUniform1fv(location, count, value);
 }
 
-void GLContext::uniform2fv (deInt32 location, deInt32 count, const float* value)
+void GLContext::uniform2fv(int32_t location, int32_t count, const float *value)
 {
-	m_wrapper->glUniform2fv(location, count, value);
+    m_wrapper->glUniform2fv(location, count, value);
 }
 
-void GLContext::uniform3fv (deInt32 location, deInt32 count, const float* value)
+void GLContext::uniform3fv(int32_t location, int32_t count, const float *value)
 {
-	m_wrapper->glUniform3fv(location, count, value);
+    m_wrapper->glUniform3fv(location, count, value);
 }
 
-void GLContext::uniform4fv (deInt32 location, deInt32 count, const float* value)
+void GLContext::uniform4fv(int32_t location, int32_t count, const float *value)
 {
-	m_wrapper->glUniform4fv(location, count, value);
+    m_wrapper->glUniform4fv(location, count, value);
 }
 
-void GLContext::uniform1iv (deInt32 location, deInt32 count, const deInt32* value)
+void GLContext::uniform1iv(int32_t location, int32_t count, const int32_t *value)
 {
-	m_wrapper->glUniform1iv(location, count, value);
+    m_wrapper->glUniform1iv(location, count, value);
 }
 
-void GLContext::uniform2iv (deInt32 location, deInt32 count, const deInt32* value)
+void GLContext::uniform2iv(int32_t location, int32_t count, const int32_t *value)
 {
-	m_wrapper->glUniform2iv(location, count, value);
+    m_wrapper->glUniform2iv(location, count, value);
 }
 
-void GLContext::uniform3iv (deInt32 location, deInt32 count, const deInt32* value)
+void GLContext::uniform3iv(int32_t location, int32_t count, const int32_t *value)
 {
-	m_wrapper->glUniform3iv(location, count, value);
+    m_wrapper->glUniform3iv(location, count, value);
 }
 
-void GLContext::uniform4iv (deInt32 location, deInt32 count, const deInt32* value)
+void GLContext::uniform4iv(int32_t location, int32_t count, const int32_t *value)
 {
-	m_wrapper->glUniform4iv(location, count, value);
+    m_wrapper->glUniform4iv(location, count, value);
 }
 
-void GLContext::uniformMatrix3fv (deInt32 location, deInt32 count, deBool transpose, const float *value)
+void GLContext::uniformMatrix3fv(int32_t location, int32_t count, bool transpose, const float *value)
 {
-	m_wrapper->glUniformMatrix3fv(location, count, (glw::GLboolean)transpose, value);
+    m_wrapper->glUniformMatrix3fv(location, count, (glw::GLboolean)transpose, value);
 }
 
-void GLContext::uniformMatrix4fv (deInt32 location, deInt32 count, deBool transpose, const float *value)
+void GLContext::uniformMatrix4fv(int32_t location, int32_t count, bool transpose, const float *value)
 {
-	m_wrapper->glUniformMatrix4fv(location, count, (glw::GLboolean)transpose, value);
+    m_wrapper->glUniformMatrix4fv(location, count, (glw::GLboolean)transpose, value);
 }
-deInt32 GLContext::getUniformLocation (deUint32 program, const char *name)
+int32_t GLContext::getUniformLocation(uint32_t program, const char *name)
 {
-	return m_wrapper->glGetUniformLocation(program, name);
+    return m_wrapper->glGetUniformLocation(program, name);
 }
 
-void GLContext::lineWidth (float w)
+void GLContext::lineWidth(float w)
 {
-	m_wrapper->glLineWidth(w);
+    m_wrapper->glLineWidth(w);
 }
 
-void GLContext::drawArrays (deUint32 mode, int first, int count)
+void GLContext::drawArrays(uint32_t mode, int first, int count)
 {
-	m_wrapper->glDrawArrays(mode, first, count);
+    m_wrapper->glDrawArrays(mode, first, count);
 }
 
-void GLContext::drawArraysInstanced (deUint32 mode, int first, int count, int instanceCount)
+void GLContext::drawArraysInstanced(uint32_t mode, int first, int count, int instanceCount)
 {
-	m_wrapper->glDrawArraysInstanced(mode, first, count, instanceCount);
+    m_wrapper->glDrawArraysInstanced(mode, first, count, instanceCount);
 }
 
-void GLContext::drawElements (deUint32 mode, int count, deUint32 type, const void *indices)
+void GLContext::drawElements(uint32_t mode, int count, uint32_t type, const void *indices)
 {
-	m_wrapper->glDrawElements(mode, count, type, indices);
+    m_wrapper->glDrawElements(mode, count, type, indices);
 }
 
-void GLContext::drawElementsInstanced (deUint32 mode, int count, deUint32 type, const void *indices, int instanceCount)
+void GLContext::drawElementsInstanced(uint32_t mode, int count, uint32_t type, const void *indices, int instanceCount)
 {
-	m_wrapper->glDrawElementsInstanced(mode, count, type, indices, instanceCount);
+    m_wrapper->glDrawElementsInstanced(mode, count, type, indices, instanceCount);
 }
 
-void GLContext::drawElementsBaseVertex (deUint32 mode, int count, deUint32 type, const void *indices, int baseVertex)
+void GLContext::drawElementsBaseVertex(uint32_t mode, int count, uint32_t type, const void *indices, int baseVertex)
 {
-	m_wrapper->glDrawElementsBaseVertex(mode, count, type, indices, baseVertex);
+    m_wrapper->glDrawElementsBaseVertex(mode, count, type, indices, baseVertex);
 }
 
-void GLContext::drawElementsInstancedBaseVertex (deUint32 mode, int count, deUint32 type, const void *indices, int instanceCount, int baseVertex)
+void GLContext::drawElementsInstancedBaseVertex(uint32_t mode, int count, uint32_t type, const void *indices,
+                                                int instanceCount, int baseVertex)
 {
-	m_wrapper->glDrawElementsInstancedBaseVertex(mode, count, type, indices, instanceCount, baseVertex);
+    m_wrapper->glDrawElementsInstancedBaseVertex(mode, count, type, indices, instanceCount, baseVertex);
 }
 
-void GLContext::drawRangeElements (deUint32 mode, deUint32 start, deUint32 end, int count, deUint32 type, const void *indices)
+void GLContext::drawRangeElements(uint32_t mode, uint32_t start, uint32_t end, int count, uint32_t type,
+                                  const void *indices)
 {
-	m_wrapper->glDrawRangeElements(mode, start, end, count, type, indices);
+    m_wrapper->glDrawRangeElements(mode, start, end, count, type, indices);
 }
 
-void GLContext::drawRangeElementsBaseVertex (deUint32 mode, deUint32 start, deUint32 end, int count, deUint32 type, const void *indices, int baseVertex)
+void GLContext::drawRangeElementsBaseVertex(uint32_t mode, uint32_t start, uint32_t end, int count, uint32_t type,
+                                            const void *indices, int baseVertex)
 {
-	m_wrapper->glDrawRangeElementsBaseVertex(mode, start, end, count, type, indices, baseVertex);
+    m_wrapper->glDrawRangeElementsBaseVertex(mode, start, end, count, type, indices, baseVertex);
 }
 
-void GLContext::drawArraysIndirect (deUint32 mode, const void *indirect)
+void GLContext::drawArraysIndirect(uint32_t mode, const void *indirect)
 {
-	m_wrapper->glDrawArraysIndirect(mode, indirect);
+    m_wrapper->glDrawArraysIndirect(mode, indirect);
 }
 
-void GLContext::drawElementsIndirect (deUint32 mode, deUint32 type, const void *indirect)
+void GLContext::drawElementsIndirect(uint32_t mode, uint32_t type, const void *indirect)
 {
-	m_wrapper->glDrawElementsIndirect(mode, type, indirect);
+    m_wrapper->glDrawElementsIndirect(mode, type, indirect);
 }
 
-void GLContext::multiDrawArrays (deUint32 mode, const int* first, const int* count, int primCount)
+void GLContext::multiDrawArrays(uint32_t mode, const int *first, const int *count, int primCount)
 {
-	m_wrapper->glMultiDrawArrays(mode, first, count, primCount);
+    m_wrapper->glMultiDrawArrays(mode, first, count, primCount);
 }
 
-void GLContext::multiDrawElements (deUint32 mode, const int* count, deUint32 type, const void** indices, int primCount)
+void GLContext::multiDrawElements(uint32_t mode, const int *count, uint32_t type, const void **indices, int primCount)
 {
-	m_wrapper->glMultiDrawElements(mode, count, type, indices, primCount);
+    m_wrapper->glMultiDrawElements(mode, count, type, indices, primCount);
 }
 
-void GLContext::multiDrawElementsBaseVertex (deUint32 mode, const int* count, deUint32 type, const void** indices, int primCount, const int* baseVertex)
+void GLContext::multiDrawElementsBaseVertex(uint32_t mode, const int *count, uint32_t type, const void **indices,
+                                            int primCount, const int *baseVertex)
 {
-	m_wrapper->glMultiDrawElementsBaseVertex(mode, count, type, indices, primCount, baseVertex);
+    m_wrapper->glMultiDrawElementsBaseVertex(mode, count, type, indices, primCount, baseVertex);
 }
 
-deUint32 GLContext::createProgram (ShaderProgram* shader)
+uint32_t GLContext::createProgram(ShaderProgram *shader)
 {
-	m_programs.reserve(m_programs.size()+1);
+    m_programs.reserve(m_programs.size() + 1);
 
-	glu::ShaderProgram* program = DE_NULL;
+    glu::ShaderProgram *program = DE_NULL;
 
-	if (!shader->m_hasGeometryShader)
-		program = new glu::ShaderProgram(m_context, glu::makeVtxFragSources(shader->m_vertSrc, shader->m_fragSrc));
-	else
-		program = new glu::ShaderProgram(m_context,
-										 glu::ProgramSources() << glu::VertexSource(shader->m_vertSrc)
-															   << glu::FragmentSource(shader->m_fragSrc)
-															   << glu::GeometrySource(shader->m_geomSrc));
+    if (!shader->m_hasGeometryShader)
+        program = new glu::ShaderProgram(m_context, glu::makeVtxFragSources(shader->m_vertSrc, shader->m_fragSrc));
+    else
+        program = new glu::ShaderProgram(m_context, glu::ProgramSources() << glu::VertexSource(shader->m_vertSrc)
+                                                                          << glu::FragmentSource(shader->m_fragSrc)
+                                                                          << glu::GeometrySource(shader->m_geomSrc));
 
-	if (!program->isOk())
-	{
-		m_log << *program;
-		delete program;
-		TCU_FAIL("Compile failed");
-	}
+    if (!program->isOk())
+    {
+        m_log << *program;
+        delete program;
+        TCU_FAIL("Compile failed");
+    }
 
-	if ((m_logFlags & GLCONTEXT_LOG_PROGRAMS) != 0)
-		m_log << *program;
+    if ((m_logFlags & GLCONTEXT_LOG_PROGRAMS) != 0)
+        m_log << *program;
 
-	m_programs.push_back(program);
-	return program->getProgram();
+    m_programs.push_back(program);
+    return program->getProgram();
 }
 
-void GLContext::deleteProgram (deUint32 program)
+void GLContext::deleteProgram(uint32_t program)
 {
-	for (std::vector<glu::ShaderProgram*>::iterator i = m_programs.begin(); i != m_programs.end(); i++)
-	{
-		if ((*i)->getProgram() == program)
-		{
-			delete *i;
-			m_programs.erase(i);
-			return;
-		}
-	}
+    for (std::vector<glu::ShaderProgram *>::iterator i = m_programs.begin(); i != m_programs.end(); i++)
+    {
+        if ((*i)->getProgram() == program)
+        {
+            delete *i;
+            m_programs.erase(i);
+            return;
+        }
+    }
 
-	DE_FATAL("invalid delete");
+    DE_FATAL("invalid delete");
 }
 
-void GLContext::useProgram (deUint32 program)
+void GLContext::useProgram(uint32_t program)
 {
-	m_wrapper->glUseProgram(program);
+    m_wrapper->glUseProgram(program);
 }
 
-void GLContext::readPixels (int x, int y, int width, int height, deUint32 format, deUint32 type, void* data)
+void GLContext::readPixels(int x, int y, int width, int height, uint32_t format, uint32_t type, void *data)
 {
-	// Don't log offset.
-	if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
-		m_log << TestLog::Message << "glReadPixels("
-								  << x << ", " << y << ", " << width << ", " << height << ", "
-								  << glu::getTextureFormatStr(format) << ", "
-								  << glu::getTypeStr(type) << ", " << data << ")"
-			  << TestLog::EndMessage;
+    // Don't log offset.
+    if ((m_logFlags & GLCONTEXT_LOG_CALLS) != 0)
+        m_log << TestLog::Message << "glReadPixels(" << x << ", " << y << ", " << width << ", " << height << ", "
+              << glu::getTextureFormatStr(format) << ", " << glu::getTypeStr(type) << ", " << data << ")"
+              << TestLog::EndMessage;
 
-	tcu::IVec2 offset = getReadOffset();
-	m_context.getFunctions().readPixels(x+offset.x(), y+offset.y(), width, height, format, type, data);
+    tcu::IVec2 offset = getReadOffset();
+    m_context.getFunctions().readPixels(x + offset.x(), y + offset.y(), width, height, format, type, data);
 }
 
-deUint32 GLContext::getError (void)
+uint32_t GLContext::getError(void)
 {
-	return m_wrapper->glGetError();
+    return m_wrapper->glGetError();
 }
 
-void GLContext::finish (void)
+void GLContext::finish(void)
 {
-	m_wrapper->glFinish();
+    m_wrapper->glFinish();
 }
 
-void GLContext::getIntegerv (deUint32 pname, int* params)
+void GLContext::getIntegerv(uint32_t pname, int *params)
 {
-	m_wrapper->glGetIntegerv(pname, params);
+    m_wrapper->glGetIntegerv(pname, params);
 }
 
-const char* GLContext::getString (deUint32 pname)
+const char *GLContext::getString(uint32_t pname)
 {
-	return (const char*)m_wrapper->glGetString(pname);
+    return (const char *)m_wrapper->glGetString(pname);
 }
 
-} // sglr
+} // namespace sglr

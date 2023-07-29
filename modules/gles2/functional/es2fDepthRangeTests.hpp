@@ -36,18 +36,18 @@ namespace Functional
 class DepthRangeTests : public TestCaseGroup
 {
 public:
-						DepthRangeTests		(Context& context);
-						~DepthRangeTests	(void);
+    DepthRangeTests(Context &context);
+    ~DepthRangeTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						DepthRangeTests		(const DepthRangeTests& other);
-	DepthRangeTests&	operator=			(const DepthRangeTests& other);
+    DepthRangeTests(const DepthRangeTests &other);
+    DepthRangeTests &operator=(const DepthRangeTests &other);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FDEPTHRANGETESTS_HPP

@@ -30,85 +30,85 @@
 namespace glslang
 {
 
-DE_STATIC_ASSERT(sizeof(deThreadLocal)	== sizeof(OS_TLSIndex));
-DE_STATIC_ASSERT(sizeof(deThread)		== sizeof(void*));
+DE_STATIC_ASSERT(sizeof(deThreadLocal) == sizeof(OS_TLSIndex));
+DE_STATIC_ASSERT(sizeof(deThread) == sizeof(void *));
 
 // Thread-local
 
-OS_TLSIndex OS_AllocTLSIndex (void)
+OS_TLSIndex OS_AllocTLSIndex(void)
 {
-	return (OS_TLSIndex)deThreadLocal_create();
+    return (OS_TLSIndex)deThreadLocal_create();
 }
 
-bool OS_SetTLSValue (OS_TLSIndex nIndex, void* lpvValue)
+bool OS_SetTLSValue(OS_TLSIndex nIndex, void *lpvValue)
 {
-	deThreadLocal_set((deThreadLocal)nIndex, lpvValue);
-	return true;
+    deThreadLocal_set((deThreadLocal)nIndex, lpvValue);
+    return true;
 }
 
-bool OS_FreeTLSIndex (OS_TLSIndex nIndex)
+bool OS_FreeTLSIndex(OS_TLSIndex nIndex)
 {
-	deThreadLocal_destroy((deThreadLocal)nIndex);
-	return true;
+    deThreadLocal_destroy((deThreadLocal)nIndex);
+    return true;
 }
 
-void* OS_GetTLSValue (OS_TLSIndex nIndex)
+void *OS_GetTLSValue(OS_TLSIndex nIndex)
 {
-	return deThreadLocal_get((deThreadLocal)nIndex);
+    return deThreadLocal_get((deThreadLocal)nIndex);
 }
 
 // Global lock
 
 static deMutex s_globalLock = 0;
 
-void InitGlobalLock (void)
+void InitGlobalLock(void)
 {
-	DE_ASSERT(s_globalLock == 0);
-	s_globalLock = deMutex_create(DE_NULL);
+    DE_ASSERT(s_globalLock == 0);
+    s_globalLock = deMutex_create(DE_NULL);
 }
 
-void GetGlobalLock (void)
+void GetGlobalLock(void)
 {
-	deMutex_lock(s_globalLock);
+    deMutex_lock(s_globalLock);
 }
 
-void ReleaseGlobalLock (void)
+void ReleaseGlobalLock(void)
 {
-	deMutex_unlock(s_globalLock);
+    deMutex_unlock(s_globalLock);
 }
 
 // Threading
 
-DE_STATIC_ASSERT(sizeof(void*) >= sizeof(deThread));
+DE_STATIC_ASSERT(sizeof(void *) >= sizeof(deThread));
 
-static void EnterGenericThread (void* entry)
+static void EnterGenericThread(void *entry)
 {
-	((TThreadEntrypoint)entry)(DE_NULL);
+    ((TThreadEntrypoint)entry)(DE_NULL);
 }
 
-void* OS_CreateThread (TThreadEntrypoint entry)
+void *OS_CreateThread(TThreadEntrypoint entry)
 {
-	return (void*)(deUintptr)deThread_create(EnterGenericThread, (void*)entry, DE_NULL);
+    return (void *)(uintptr_t)deThread_create(EnterGenericThread, (void *)entry, DE_NULL);
 }
 
-void OS_WaitForAllThreads (void* threads, int numThreads)
+void OS_WaitForAllThreads(void *threads, int numThreads)
 {
-	for (int ndx = 0; ndx < numThreads; ndx++)
-	{
-		const deThread thread = (deThread)(deUintptr)((void**)threads)[ndx];
-		deThread_join(thread);
-		deThread_destroy(thread);
-	}
+    for (int ndx = 0; ndx < numThreads; ndx++)
+    {
+        const deThread thread = (deThread)(uintptr_t)((void **)threads)[ndx];
+        deThread_join(thread);
+        deThread_destroy(thread);
+    }
 }
 
-void OS_Sleep (int milliseconds)
+void OS_Sleep(int milliseconds)
 {
-	deSleep(milliseconds);
+    deSleep(milliseconds);
 }
 
-void OS_DumpMemoryCounters (void)
+void OS_DumpMemoryCounters(void)
 {
-	// Not used
+    // Not used
 }
 
-} // glslang
+} // namespace glslang

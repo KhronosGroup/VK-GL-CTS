@@ -31,11 +31,11 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup*	createTraceRaysTests(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*	createTraceRaysMaintenance1Tests(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*	createTraceRays2Tests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTraceRaysTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createTraceRaysMaintenance1Tests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createTraceRays2Tests(tcu::TestContext &testCtx);
 
-} // RayTracing
-} // vkt
+} // namespace RayTracing
+} // namespace vkt
 
 #endif // _VKTRAYTRACINGTRACERAYSTESTS_HPP

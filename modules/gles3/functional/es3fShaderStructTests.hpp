@@ -35,18 +35,18 @@ namespace Functional
 class ShaderStructTests : public TestCaseGroup
 {
 public:
-							ShaderStructTests		(Context& context);
-	virtual					~ShaderStructTests		(void);
+    ShaderStructTests(Context &context);
+    virtual ~ShaderStructTests(void);
 
-	virtual void			init					(void);
+    virtual void init(void);
 
 private:
-							ShaderStructTests		(const ShaderStructTests&);		// not allowed!
-	ShaderStructTests&		operator=				(const ShaderStructTests&);		// not allowed!
+    ShaderStructTests(const ShaderStructTests &);            // not allowed!
+    ShaderStructTests &operator=(const ShaderStructTests &); // not allowed!
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FSHADERSTRUCTTESTS_HPP

@@ -56,55 +56,55 @@ namespace Utility
 class Program
 {
 public:
-	/* Public type definitions */
+    /* Public type definitions */
 
-	/** @struct CompilationStatus
-	 *
-	 *  @brief GLSL shader encapsulation class.
-	 */
-	struct CompilationStatus
-	{
-		glw::GLuint shader_id;
-		glw::GLint  shader_compilation_status;
-		std::string shader_log;
-	};
+    /** @struct CompilationStatus
+     *
+     *  @brief GLSL shader encapsulation class.
+     */
+    struct CompilationStatus
+    {
+        glw::GLuint shader_id;
+        glw::GLint shader_compilation_status;
+        std::string shader_log;
+    };
 
-	/** @struct CompilationStatus
-	 *
-	 *  @brief GLSL shader encapsulation class.
-	 */
-	struct LinkageStatus
-	{
-		glw::GLuint program_id;
-		glw::GLint  program_linkage_status;
-		std::string program_linkage_log;
-	};
+    /** @struct CompilationStatus
+     *
+     *  @brief GLSL shader encapsulation class.
+     */
+    struct LinkageStatus
+    {
+        glw::GLuint program_id;
+        glw::GLint program_linkage_status;
+        std::string program_linkage_log;
+    };
 
-	/* Public member variables */
-	Program(const glw::Functions& gl, const std::string& vertex_shader_code, const std::string& fragment_shader_code,
-			std::vector<std::string> transform_feedback_varyings = std::vector<std::string>());
+    /* Public member variables */
+    Program(const glw::Functions &gl, const std::string &vertex_shader_code, const std::string &fragment_shader_code,
+            std::vector<std::string> transform_feedback_varyings = std::vector<std::string>());
 
-	~Program();
+    ~Program();
 
-	const CompilationStatus& VertexShaderStatus() const;
-	const CompilationStatus& FragmentShaderStatus() const;
-	const LinkageStatus&	 ProgramStatus() const;
+    const CompilationStatus &VertexShaderStatus() const;
+    const CompilationStatus &FragmentShaderStatus() const;
+    const LinkageStatus &ProgramStatus() const;
 
-	void UseProgram() const;
+    void UseProgram() const;
 
 private:
-	/* Private member variables */
-	CompilationStatus m_vertex_shader_status;
-	CompilationStatus m_fragment_shader_status;
-	LinkageStatus	 m_program_status;
+    /* Private member variables */
+    CompilationStatus m_vertex_shader_status;
+    CompilationStatus m_fragment_shader_status;
+    LinkageStatus m_program_status;
 
-	const glw::Functions& m_gl;
+    const glw::Functions &m_gl;
 
-	/* Private member functions */
-	CompilationStatus compileShader(const glw::GLenum shader_type, const glw::GLchar* const* shader_code);
+    /* Private member functions */
+    CompilationStatus compileShader(const glw::GLenum shader_type, const glw::GLchar *const *shader_code);
 
-	LinkageStatus linkShaders(const CompilationStatus& vertex_shader, const CompilationStatus& fragment_shader,
-							  std::vector<std::string>& transform_feedback_varyings);
+    LinkageStatus linkShaders(const CompilationStatus &vertex_shader, const CompilationStatus &fragment_shader,
+                              std::vector<std::string> &transform_feedback_varyings);
 };
 /* Program class */
 
@@ -117,20 +117,20 @@ private:
 class Framebuffer
 {
 public:
-	Framebuffer(const glw::Functions& gl, const glw::GLsizei size_x, const glw::GLsizei size_y);
-	~Framebuffer();
+    Framebuffer(const glw::Functions &gl, const glw::GLsizei size_x, const glw::GLsizei size_y);
+    ~Framebuffer();
 
-	bool					  isValid();
-	void					  bind();
-	std::vector<glw::GLfloat> readPixels();
-	void					  clear();
+    bool isValid();
+    void bind();
+    std::vector<glw::GLfloat> readPixels();
+    void clear();
 
 private:
-	const glw::Functions& m_gl;
-	const glw::GLsizei	m_size_x;
-	const glw::GLsizei	m_size_y;
-	glw::GLuint			  m_framebuffer_id;
-	glw::GLuint			  m_renderbuffer_id;
+    const glw::Functions &m_gl;
+    const glw::GLsizei m_size_x;
+    const glw::GLsizei m_size_y;
+    glw::GLuint m_framebuffer_id;
+    glw::GLuint m_renderbuffer_id;
 };
 /* Framebuffer class */
 
@@ -141,17 +141,17 @@ private:
 class VertexArrayObject
 {
 public:
-	VertexArrayObject(const glw::Functions& gl, const glw::GLenum primitive_type); // create empty vao
-	~VertexArrayObject();
+    VertexArrayObject(const glw::Functions &gl, const glw::GLenum primitive_type); // create empty vao
+    ~VertexArrayObject();
 
-	void bind();
-	void draw(glw::GLuint first, glw::GLuint count);
-	void drawWithTransformFeedback(glw::GLuint first, glw::GLuint count, bool discard_rasterizer);
+    void bind();
+    void draw(glw::GLuint first, glw::GLuint count);
+    void drawWithTransformFeedback(glw::GLuint first, glw::GLuint count, bool discard_rasterizer);
 
 private:
-	const glw::Functions& m_gl;
-	glw::GLuint			  m_vertex_array_object_id;
-	glw::GLenum			  m_primitive_type;
+    const glw::Functions &m_gl;
+    glw::GLuint m_vertex_array_object_id;
+    glw::GLenum m_primitive_type;
 };
 /* VertexArrayObject class */
 
@@ -165,26 +165,26 @@ template <class T>
 class VertexBufferObject
 {
 public:
-	VertexBufferObject(const glw::Functions& gl, const glw::GLenum target, std::vector<T> data);
-	~VertexBufferObject();
+    VertexBufferObject(const glw::Functions &gl, const glw::GLenum target, std::vector<T> data);
+    ~VertexBufferObject();
 
-	bool bind();
-	bool useAsShaderInput(Program program, std::string input_attribute_name, glw::GLint number_of_components);
-	std::vector<T> readBuffer();
+    bool bind();
+    bool useAsShaderInput(Program program, std::string input_attribute_name, glw::GLint number_of_components);
+    std::vector<T> readBuffer();
 
 private:
-	const glw::Functions& m_gl;
-	glw::GLuint			  m_vertex_buffer_object_id;
-	glw::GLenum			  m_target;
-	glw::GLsizei		  m_size;
+    const glw::Functions &m_gl;
+    glw::GLuint m_vertex_buffer_object_id;
+    glw::GLenum m_target;
+    glw::GLsizei m_size;
 
-	std::vector<glw::GLint> m_enabled_arrays;
+    std::vector<glw::GLint> m_enabled_arrays;
 };
 /* VertexBufferObject template class */
 
 std::string preprocessCode(std::string source, std::string key, std::string value);
 std::string itoa(glw::GLint i);
-} /* Utility namespace */
+} // namespace Utility
 
 /** @class Tests
  *
@@ -193,15 +193,15 @@ std::string itoa(glw::GLint i);
 class Tests : public deqp::TestCaseGroup
 {
 public:
-	/* Public member functions */
-	Tests(deqp::Context& context);
+    /* Public member functions */
+    Tests(deqp::Context &context);
 
-	void init();
+    void init();
 
 private:
-	/* Private member functions */
-	Tests(const Tests& other);
-	Tests& operator=(const Tests& other);
+    /* Private member functions */
+    Tests(const Tests &other);
+    Tests &operator=(const Tests &other);
 };
 
 /** @class CoverageTest
@@ -211,34 +211,34 @@ private:
 class CoverageTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	CoverageTest(deqp::Context& context);
+    /* Public member functions */
+    CoverageTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	CoverageTest(const CoverageTest& other);
-	CoverageTest& operator=(const CoverageTest& other);
+    /* Private member functions */
+    CoverageTest(const CoverageTest &other);
+    CoverageTest &operator=(const CoverageTest &other);
 
-	bool MaxClipDistancesValueTest(const glw::Functions& gl);
-	bool EnableDisableTest(const glw::Functions& gl);
-	bool MaxClipDistancesValueInVertexShaderTest(const glw::Functions& gl);
-	bool MaxClipDistancesValueInFragmentShaderTest(const glw::Functions& gl);
-	bool ClipDistancesValuePassing(const glw::Functions& gl);
+    bool MaxClipDistancesValueTest(const glw::Functions &gl);
+    bool EnableDisableTest(const glw::Functions &gl);
+    bool MaxClipDistancesValueInVertexShaderTest(const glw::Functions &gl);
+    bool MaxClipDistancesValueInFragmentShaderTest(const glw::Functions &gl);
+    bool ClipDistancesValuePassing(const glw::Functions &gl);
 
-	/* Private member variables */
-	glw::GLint m_gl_max_clip_distances_value;
+    /* Private member variables */
+    glw::GLint m_gl_max_clip_distances_value;
 
-	/* Private static constants */
-	static const glw::GLchar* m_vertex_shader_code_case_0;
-	static const glw::GLchar* m_fragment_shader_code_case_0;
+    /* Private static constants */
+    static const glw::GLchar *m_vertex_shader_code_case_0;
+    static const glw::GLchar *m_fragment_shader_code_case_0;
 
-	static const glw::GLchar* m_vertex_shader_code_case_1;
-	static const glw::GLchar* m_fragment_shader_code_case_1;
+    static const glw::GLchar *m_vertex_shader_code_case_1;
+    static const glw::GLchar *m_fragment_shader_code_case_1;
 
-	static const glw::GLchar* m_vertex_shader_code_case_2;
-	static const glw::GLchar* m_fragment_shader_code_case_2;
+    static const glw::GLchar *m_vertex_shader_code_case_2;
+    static const glw::GLchar *m_fragment_shader_code_case_2;
 };
 
 /** @class FunctionalTest
@@ -248,42 +248,42 @@ private:
 class FunctionalTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	FunctionalTest(deqp::Context& context);
+    /* Public member functions */
+    FunctionalTest(deqp::Context &context);
 
-	virtual void						 init();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void init();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	FunctionalTest(const FunctionalTest& other);
-	FunctionalTest& operator=(const FunctionalTest& other);
+    /* Private member functions */
+    FunctionalTest(const FunctionalTest &other);
+    FunctionalTest &operator=(const FunctionalTest &other);
 
-	std::string prepareVertexShaderCode(bool explicit_redeclaration, bool dynamic_setter, glw::GLuint clip_count,
-										glw::GLuint clip_function, glw::GLenum primitive_type);
+    std::string prepareVertexShaderCode(bool explicit_redeclaration, bool dynamic_setter, glw::GLuint clip_count,
+                                        glw::GLuint clip_function, glw::GLenum primitive_type);
 
-	gl3cts::ClipDistance::Utility::VertexBufferObject<glw::GLfloat>* prepareGeometry(const glw::Functions& gl,
-																					 const glw::GLenum primitive_type);
+    gl3cts::ClipDistance::Utility::VertexBufferObject<glw::GLfloat> *prepareGeometry(const glw::Functions &gl,
+                                                                                     const glw::GLenum primitive_type);
 
-	bool checkResults(glw::GLenum primitive_type, glw::GLuint clip_function, std::vector<glw::GLfloat>& results);
+    bool checkResults(glw::GLenum primitive_type, glw::GLuint clip_function, std::vector<glw::GLfloat> &results);
 
-	/* Private member variables */
-	glw::GLint m_gl_max_clip_distances_value;
+    /* Private member variables */
+    glw::GLint m_gl_max_clip_distances_value;
 
-	/* Private static constants */
-	static const glw::GLchar* m_vertex_shader_code;
-	static const glw::GLchar* m_fragment_shader_code;
-	static const glw::GLchar* m_dynamic_array_setter;
-	static const glw::GLchar* m_static_array_setter;
-	static const glw::GLchar* m_explicit_redeclaration;
-	static const glw::GLchar* m_clip_function[];
-	static const glw::GLuint  m_clip_function_count;
+    /* Private static constants */
+    static const glw::GLchar *m_vertex_shader_code;
+    static const glw::GLchar *m_fragment_shader_code;
+    static const glw::GLchar *m_dynamic_array_setter;
+    static const glw::GLchar *m_static_array_setter;
+    static const glw::GLchar *m_explicit_redeclaration;
+    static const glw::GLchar *m_clip_function[];
+    static const glw::GLuint m_clip_function_count;
 
-	static const glw::GLenum m_primitive_types[];
-	static const glw::GLenum m_primitive_indices[];
-	static const glw::GLuint m_primitive_types_count;
+    static const glw::GLenum m_primitive_types[];
+    static const glw::GLenum m_primitive_indices[];
+    static const glw::GLuint m_primitive_types_count;
 
-	static const glw::GLfloat m_expected_integral[];
+    static const glw::GLfloat m_expected_integral[];
 };
 
 /** @class NegativeTest
@@ -293,28 +293,28 @@ private:
 class NegativeTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	NegativeTest(deqp::Context& context);
+    /* Public member functions */
+    NegativeTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	NegativeTest(const NegativeTest& other);
-	NegativeTest& operator=(const NegativeTest& other);
+    /* Private member functions */
+    NegativeTest(const NegativeTest &other);
+    NegativeTest &operator=(const NegativeTest &other);
 
-	bool testClipVertexBuildingErrors(const glw::Functions& gl);
-	bool testMaxClipDistancesBuildingErrors(const glw::Functions& gl);
-	bool testClipDistancesRedeclarationBuildingErrors(const glw::Functions& gl);
+    bool testClipVertexBuildingErrors(const glw::Functions &gl);
+    bool testMaxClipDistancesBuildingErrors(const glw::Functions &gl);
+    bool testClipDistancesRedeclarationBuildingErrors(const glw::Functions &gl);
 
-	/* Private static constants */
-	static const glw::GLchar* m_vertex_shader_code_case_0;
-	static const glw::GLchar* m_vertex_shader_code_case_1;
-	static const glw::GLchar* m_vertex_shader_code_case_2;
-	static const glw::GLchar* m_fragment_shader_code;
+    /* Private static constants */
+    static const glw::GLchar *m_vertex_shader_code_case_0;
+    static const glw::GLchar *m_vertex_shader_code_case_1;
+    static const glw::GLchar *m_vertex_shader_code_case_2;
+    static const glw::GLchar *m_fragment_shader_code;
 };
-} /* ClipDistance namespace */
-} /* gl3cts namespace */
+} // namespace ClipDistance
+} // namespace gl3cts
 
 /* Template classes' implementation */
 
@@ -327,36 +327,39 @@ private:
  *  @param [in] data             Data of the buffer (may be empty).
  */
 template <class T>
-gl3cts::ClipDistance::Utility::VertexBufferObject<T>::VertexBufferObject(const glw::Functions& gl,
-																		 const glw::GLenum target, std::vector<T> data)
-	: m_gl(gl), m_vertex_buffer_object_id(0), m_target(target), m_size(0)
+gl3cts::ClipDistance::Utility::VertexBufferObject<T>::VertexBufferObject(const glw::Functions &gl,
+                                                                         const glw::GLenum target, std::vector<T> data)
+    : m_gl(gl)
+    , m_vertex_buffer_object_id(0)
+    , m_target(target)
+    , m_size(0)
 {
-	m_gl.genBuffers(1, &m_vertex_buffer_object_id);
-	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGenBuffers call failed.");
+    m_gl.genBuffers(1, &m_vertex_buffer_object_id);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGenBuffers call failed.");
 
-	if (m_vertex_buffer_object_id)
-	{
-		m_size = (glw::GLsizei)(sizeof(T) * data.size());
+    if (m_vertex_buffer_object_id)
+    {
+        m_size = (glw::GLsizei)(sizeof(T) * data.size());
 
-		bind();
+        bind();
 
-		m_gl.bufferData(m_target, m_size, &data[0], GL_STATIC_DRAW);
-		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferData call failed.");
-	}
+        m_gl.bufferData(m_target, m_size, &data[0], GL_STATIC_DRAW);
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferData call failed.");
+    }
 }
 
 /** @brief Vertex Buffer Object destructor. */
 template <class T>
 gl3cts::ClipDistance::Utility::VertexBufferObject<T>::~VertexBufferObject()
 {
-	m_gl.deleteBuffers(1, &m_vertex_buffer_object_id); /* Delete silently unbinds the buffer. */
-	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDeleteBuffers call failed.");
+    m_gl.deleteBuffers(1, &m_vertex_buffer_object_id); /* Delete silently unbinds the buffer. */
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDeleteBuffers call failed.");
 
-	for (std::vector<glw::GLint>::iterator i_enabled_array = m_enabled_arrays.begin();
-		 i_enabled_array != m_enabled_arrays.end(); ++i_enabled_array)
-	{
-		m_gl.disableVertexAttribArray(*i_enabled_array);
-	}
+    for (std::vector<glw::GLint>::iterator i_enabled_array = m_enabled_arrays.begin();
+         i_enabled_array != m_enabled_arrays.end(); ++i_enabled_array)
+    {
+        m_gl.disableVertexAttribArray(*i_enabled_array);
+    }
 }
 
 /** @brief Bind Vertex Buffer Object to its target.
@@ -366,21 +369,21 @@ gl3cts::ClipDistance::Utility::VertexBufferObject<T>::~VertexBufferObject()
 template <class T>
 bool gl3cts::ClipDistance::Utility::VertexBufferObject<T>::bind()
 {
-	if (m_vertex_buffer_object_id)
-	{
-		m_gl.bindBuffer(m_target, m_vertex_buffer_object_id);
-		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer call failed.");
+    if (m_vertex_buffer_object_id)
+    {
+        m_gl.bindBuffer(m_target, m_vertex_buffer_object_id);
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer call failed.");
 
-		if (m_target == GL_TRANSFORM_FEEDBACK_BUFFER)
-		{
-			m_gl.bindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, m_vertex_buffer_object_id);
-			GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBufferBase call failed.");
-		}
+        if (m_target == GL_TRANSFORM_FEEDBACK_BUFFER)
+        {
+            m_gl.bindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, m_vertex_buffer_object_id);
+            GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBufferBase call failed.");
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	return false;
+    return false;
 }
 
 /** @brief Use VBO as attribute vertex array.
@@ -394,47 +397,47 @@ bool gl3cts::ClipDistance::Utility::VertexBufferObject<T>::bind()
  *  @return True on success, false otherwise.
  */
 template <class T>
-bool gl3cts::ClipDistance::Utility::VertexBufferObject<T>::useAsShaderInput(Program		program,
-																			std::string input_attribute_name,
-																			glw::GLint  number_of_components)
+bool gl3cts::ClipDistance::Utility::VertexBufferObject<T>::useAsShaderInput(Program program,
+                                                                            std::string input_attribute_name,
+                                                                            glw::GLint number_of_components)
 {
-	if (program.ProgramStatus().program_id)
-	{
-		glw::GLint location = m_gl.getAttribLocation(program.ProgramStatus().program_id, input_attribute_name.c_str());
-		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetAttribLocation call failed.");
+    if (program.ProgramStatus().program_id)
+    {
+        glw::GLint location = m_gl.getAttribLocation(program.ProgramStatus().program_id, input_attribute_name.c_str());
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetAttribLocation call failed.");
 
-		if (location >= 0)
-		{
-			const std::type_info& buffer_type = typeid(T);
-			const std::type_info& float_type  = typeid(glw::GLfloat);
-			const std::type_info& int_type	= typeid(glw::GLint);
+        if (location >= 0)
+        {
+            const std::type_info &buffer_type = typeid(T);
+            const std::type_info &float_type  = typeid(glw::GLfloat);
+            const std::type_info &int_type    = typeid(glw::GLint);
 
-			m_gl.enableVertexAttribArray(location);
-			GLU_EXPECT_NO_ERROR(m_gl.getError(), "glEnableVertexAttribArray call failed.");
-			m_enabled_arrays.push_back(location);
+            m_gl.enableVertexAttribArray(location);
+            GLU_EXPECT_NO_ERROR(m_gl.getError(), "glEnableVertexAttribArray call failed.");
+            m_enabled_arrays.push_back(location);
 
-			bind();
+            bind();
 
-			if (buffer_type == float_type)
-			{
-				m_gl.vertexAttribPointer(location, number_of_components, GL_FLOAT, false, 0, NULL);
-				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glVertexAttribPointer call failed.");
-			}
-			else if (buffer_type == int_type)
-			{
-				m_gl.vertexAttribIPointer(location, number_of_components, GL_FLOAT, 0, NULL);
-				GLU_EXPECT_NO_ERROR(m_gl.getError(), "glVertexAttribIPointer call failed.");
-			}
-			else
-			{
-				return false;
-			}
+            if (buffer_type == float_type)
+            {
+                m_gl.vertexAttribPointer(location, number_of_components, GL_FLOAT, false, 0, NULL);
+                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glVertexAttribPointer call failed.");
+            }
+            else if (buffer_type == int_type)
+            {
+                m_gl.vertexAttribIPointer(location, number_of_components, GL_FLOAT, 0, NULL);
+                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glVertexAttribIPointer call failed.");
+            }
+            else
+            {
+                return false;
+            }
 
-			return true;
-		}
-	}
+            return true;
+        }
+    }
 
-	return false;
+    return false;
 }
 
 /** @brief Read VBO content (potentially set by transform feedback).
@@ -444,19 +447,19 @@ bool gl3cts::ClipDistance::Utility::VertexBufferObject<T>::useAsShaderInput(Prog
 template <class T>
 std::vector<T> gl3cts::ClipDistance::Utility::VertexBufferObject<T>::readBuffer()
 {
-	std::vector<T> buffer_data(m_size / sizeof(T));
+    std::vector<T> buffer_data(m_size / sizeof(T));
 
-	bind();
+    bind();
 
-	glw::GLvoid* results = m_gl.mapBuffer(m_target, GL_READ_ONLY);
+    glw::GLvoid *results = m_gl.mapBuffer(m_target, GL_READ_ONLY);
 
-	if (results)
-	{
-		memcpy(&buffer_data[0], results, m_size);
-	}
+    if (results)
+    {
+        memcpy(&buffer_data[0], results, m_size);
+    }
 
-	m_gl.unmapBuffer(m_target);
+    m_gl.unmapBuffer(m_target);
 
-	return buffer_data;
+    return buffer_data;
 }
 #endif // _GL3CCLIPDISTANCE_HPP

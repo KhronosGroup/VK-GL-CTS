@@ -29,56 +29,56 @@ LICENSE_MIT      = 1
 LICENSE_MULTIPLE = 2
 LICENSE_UNKNOWN  = 3
 
-LICENSE_KEYS	= [
-	# \note Defined this way to avoid triggering license check error on this file
-	("P" + "ermission is hereby granted, free of charge",    LICENSE_MIT),
-	("L" + "icensed under the Apache License, Version 2.0",  LICENSE_APACHE2),
+LICENSE_KEYS = [
+    # \note Defined this way to avoid triggering license check error on this file
+    ("P" + "ermission is hereby granted, free of charge",    LICENSE_MIT),
+    ("L" + "icensed under the Apache License, Version 2.0",  LICENSE_APACHE2),
 ]
 
-SOURCE_FILES	= ["*.py", "*.java", "*.c", "*.h", "*.cpp", "*.hpp"]
+SOURCE_FILES = ["*.py", "*.java", "*.c", "*.h", "*.cpp", "*.hpp"]
 
 def readFile (file):
-	f = open(file, 'rt')
-	c = f.read()
-	f.close()
-	return c
+    f = open(file, 'rt')
+    c = f.read()
+    f.close()
+    return c
 
 def getFileLicense (file):
-	contents	= readFile(file)
-	detected	= LICENSE_UNKNOWN
+    contents = readFile(file)
+    detected = LICENSE_UNKNOWN
 
-	for searchStr, license in LICENSE_KEYS:
-		if contents.find(searchStr) != -1:
-			if detected != LICENSE_UNKNOWN:
-				detected = LICENSE_MULTIPLE
-			else:
-				detected = license
+    for searchStr, license in LICENSE_KEYS:
+        if contents.find(searchStr) != -1:
+            if detected != LICENSE_UNKNOWN:
+                detected = LICENSE_MULTIPLE
+            else:
+                detected = license
 
-	return detected
+    return detected
 
 def checkFileLicense (file):
-	license = getFileLicense(file)
+    license = getFileLicense(file)
 
-	if license == LICENSE_MIT:
-		print("%s: contains MIT license" % file)
-	elif license == LICENSE_MULTIPLE:
-		print("%s: contains multiple licenses" % file)
-	elif license == LICENSE_UNKNOWN:
-		print("%s: missing/unknown license" % file)
+    if license == LICENSE_MIT:
+        print("%s: contains MIT license" % file)
+    elif license == LICENSE_MULTIPLE:
+        print("%s: contains multiple licenses" % file)
+    elif license == LICENSE_UNKNOWN:
+        print("%s: missing/unknown license" % file)
 
-	return license == LICENSE_APACHE2
+    return license == LICENSE_APACHE2
 
 def isSourceFile (file):
-	for ptrn in SOURCE_FILES:
-		if fnmatch(file, ptrn):
-			return True
-	return False
+    for ptrn in SOURCE_FILES:
+        if fnmatch(file, ptrn):
+            return True
+    return False
 
 def checkLicense (files):
-	error = False
-	for file in files:
-		if isTextFile(file) and isSourceFile(file):
-			if not checkFileLicense(file):
-				error = True
+    error = False
+    for file in files:
+        if isTextFile(file) and isSourceFile(file):
+            if not checkFileLicense(file):
+                error = True
 
-	return not error
+    return not error

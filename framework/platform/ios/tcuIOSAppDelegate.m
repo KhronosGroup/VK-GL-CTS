@@ -30,66 +30,68 @@
 @synthesize window = _window;
 @synthesize viewController = _viewController;
 
-- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+- (BOOL)application:(UIApplication *)application
+    didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-	DE_UNREF(application && launchOptions);
+    DE_UNREF(application && launchOptions);
 
-	// Construct window.
-	self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-	if (!self.window)
-	{
-		[self release];
-		return NO;
-	}
+    // Construct window.
+    self.window =
+        [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    if (!self.window)
+    {
+        [self release];
+        return NO;
+    }
 
-	self.window.backgroundColor = [UIColor whiteColor];
+    self.window.backgroundColor = [UIColor whiteColor];
 
-	// Create view controller.
-	self.viewController = [tcuIOSViewController alloc];
+    // Create view controller.
+    self.viewController = [tcuIOSViewController alloc];
 
-	[self.window setRootViewController:self.viewController];
+    [self.window setRootViewController:self.viewController];
 
-	[self.window makeKeyAndVisible];
-	[self.window layoutSubviews];
+    [self.window makeKeyAndVisible];
+    [self.window layoutSubviews];
 
-	// Disable idle timer (keep screen on).
-	[[UIApplication sharedApplication] setIdleTimerDisabled: YES];
+    // Disable idle timer (keep screen on).
+    [[UIApplication sharedApplication] setIdleTimerDisabled:YES];
 
     return YES;
 }
 
 - (void)applicationWillResignActive:(UIApplication *)application
 {
-	DE_UNREF(application);
-	[self.viewController stopTestIteration];
+    DE_UNREF(application);
+    [self.viewController stopTestIteration];
 }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
-	DE_UNREF(application);
+    DE_UNREF(application);
 }
 
 - (void)applicationWillEnterForeground:(UIApplication *)application
 {
-	DE_UNREF(application);
+    DE_UNREF(application);
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
-	DE_UNREF(application);
-	[self.viewController startTestIteration];
+    DE_UNREF(application);
+    [self.viewController startTestIteration];
 }
 
 - (void)applicationWillTerminate:(UIApplication *)application
 {
-	DE_UNREF(application);
-	[self.viewController stopTestIteration];
+    DE_UNREF(application);
+    [self.viewController stopTestIteration];
 }
 
 - (void)dealloc
 {
-	[_window release];
-	[_viewController release];
+    [_window release];
+    [_viewController release];
     [super dealloc];
 }
 

@@ -32,9 +32,9 @@ namespace vkt
 namespace renderpass
 {
 
-tcu::TestCaseGroup* createDynamicRenderingRandomTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDynamicRenderingRandomTests(tcu::TestContext &testCtx);
 
-} // renderpass
-} // vkt
+} // namespace renderpass
+} // namespace vkt
 
 #endif // _VKTDYNAMICRENDERINGRANDOMTESTS_HPP

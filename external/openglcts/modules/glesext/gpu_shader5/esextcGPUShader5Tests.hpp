@@ -35,21 +35,21 @@ namespace glcts
 class GPUShader5Tests : public glcts::TestCaseGroupBase
 {
 public:
-	/* Public methods */
-	GPUShader5Tests(glcts::Context& context, const ExtParameters& extParams);
-	virtual ~GPUShader5Tests(void)
-	{
-	}
+    /* Public methods */
+    GPUShader5Tests(glcts::Context &context, const ExtParameters &extParams);
+    virtual ~GPUShader5Tests(void)
+    {
+    }
 
-	void init(void);
+    void init(void);
 
 private:
-	/* Private methods */
-	GPUShader5Tests(const GPUShader5Tests& other);
-	GPUShader5Tests& operator=(const GPUShader5Tests& other);
+    /* Private methods */
+    GPUShader5Tests(const GPUShader5Tests &other);
+    GPUShader5Tests &operator=(const GPUShader5Tests &other);
 
-	/* Private variables */
-	glu::GLSLVersion m_glslVersion;
+    /* Private variables */
+    glu::GLSLVersion m_glslVersion;
 };
 
 } // namespace glcts

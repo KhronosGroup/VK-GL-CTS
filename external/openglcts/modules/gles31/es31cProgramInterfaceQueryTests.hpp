@@ -33,15 +33,15 @@ namespace glcts
 class ProgramInterfaceQueryTests : public glcts::TestCaseGroup
 {
 public:
-	ProgramInterfaceQueryTests(glcts::Context& context);
-	~ProgramInterfaceQueryTests(void);
+    ProgramInterfaceQueryTests(glcts::Context &context);
+    ~ProgramInterfaceQueryTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	ProgramInterfaceQueryTests(const ProgramInterfaceQueryTests& other);
-	ProgramInterfaceQueryTests& operator=(const ProgramInterfaceQueryTests& other);
+    ProgramInterfaceQueryTests(const ProgramInterfaceQueryTests &other);
+    ProgramInterfaceQueryTests &operator=(const ProgramInterfaceQueryTests &other);
 };
-}
+} // namespace glcts
 
 #endif // _ES31CPROGRAMINTERFACEQUERYTESTS_HPP

@@ -26,13 +26,13 @@ import string
 from src_util import *
 
 def apiVersionDefinition(version):
-	return "#define %s\t1" % (version)
+    return "#define %s\t1" % (version)
 
 def genVersions (iface):
-	src = indentLines(map(apiVersionDefinition, iface.versions))
-	writeInlFile(os.path.join(OPENGL_INC_DIR, "glwVersions.inl"), src)
+    src = indentLines(map(apiVersionDefinition, iface.versions))
+    writeInlFile(os.path.join(OPENGL_INC_DIR, "glwVersions.inl"), src)
 
 if __name__ == "__main__":
-	import logging, sys
-	logging.basicConfig(stream=sys.stderr, level=logging.INFO)
-	genVersions(getHybridInterface())
+    import logging, sys
+    logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+    genVersions(getHybridInterface())

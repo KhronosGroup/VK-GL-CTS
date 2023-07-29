@@ -35,19 +35,25 @@ namespace de
 class ThreadLocal
 {
 public:
-						ThreadLocal			(void);
-						~ThreadLocal		(void);
+    ThreadLocal(void);
+    ~ThreadLocal(void);
 
-	inline void*		get					(void) const	{ return deThreadLocal_get(m_var);	}
-	inline void			set					(void* value)	{ deThreadLocal_set(m_var, value);	}
+    inline void *get(void) const
+    {
+        return deThreadLocal_get(m_var);
+    }
+    inline void set(void *value)
+    {
+        deThreadLocal_set(m_var, value);
+    }
 
 private:
-						ThreadLocal			(const ThreadLocal& other); // Not allowed!
-	ThreadLocal&		operator=			(const ThreadLocal& other); // Not allowed!
+    ThreadLocal(const ThreadLocal &other);            // Not allowed!
+    ThreadLocal &operator=(const ThreadLocal &other); // Not allowed!
 
-	deThreadLocal		m_var;
+    deThreadLocal m_var;
 };
 
-} // de
+} // namespace de
 
 #endif // _DETHREADLOCAL_HPP

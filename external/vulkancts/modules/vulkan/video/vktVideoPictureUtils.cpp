@@ -31,47 +31,46 @@ namespace vkt
 {
 namespace video
 {
-VulkanPicture::VulkanPicture()
-	: m_refCount ()
+VulkanPicture::VulkanPicture() : m_refCount()
 {
-	Clear();
+    Clear();
 }
 
-VulkanPicture::~VulkanPicture ()
+VulkanPicture::~VulkanPicture()
 {
 }
 
-void VulkanPicture::AddRef ()
+void VulkanPicture::AddRef()
 {
-	m_refCount++;
+    m_refCount++;
 }
 
-void VulkanPicture::Release ()
+void VulkanPicture::Release()
 {
-	int32_t ref = --m_refCount;
+    int32_t ref = --m_refCount;
 
-	if (ref == 0)
-		Reset();
-	else
-		DE_ASSERT(ref > 0);
+    if (ref == 0)
+        Reset();
+    else
+        DE_ASSERT(ref > 0);
 }
 
-void VulkanPicture::Clear ()
+void VulkanPicture::Clear()
 {
-	DE_ASSERT(m_refCount == 0);
+    DE_ASSERT(m_refCount == 0);
 
-	decodeWidth = 0;
-	decodeHeight = 0;
-	decodeSuperResWidth = 0;
-	deMemset(&reserved, 0, sizeof(reserved));
+    decodeWidth         = 0;
+    decodeHeight        = 0;
+    decodeSuperResWidth = 0;
+    deMemset(&reserved, 0, sizeof(reserved));
 }
 
 void VulkanPicture::Reset()
 {
-	DE_ASSERT(m_refCount == 0);
+    DE_ASSERT(m_refCount == 0);
 
-	delete this;
+    delete this;
 }
 
-} // video
-} // vkt
+} // namespace video
+} // namespace vkt

@@ -36,18 +36,18 @@ namespace Stress
 class StressTests : public TestCaseGroup
 {
 public:
-					StressTests		(Context& context);
-					~StressTests	(void);
+    StressTests(Context &context);
+    ~StressTests(void);
 
-	void			init			(void);
+    void init(void);
 
 private:
-					StressTests		(const StressTests& other);
-	StressTests&	operator=		(const StressTests& other);
+    StressTests(const StressTests &other);
+    StressTests &operator=(const StressTests &other);
 };
 
-} // Stress
-} // gles3
-} // deqp
+} // namespace Stress
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3SSTRESSTESTS_HPP

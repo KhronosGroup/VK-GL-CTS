@@ -32,9 +32,9 @@ namespace vkt
 namespace tessellation
 {
 
-tcu::TestCaseGroup* createGeometryPassthroughTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createGeometryPassthroughTests(tcu::TestContext &testCtx);
 
-} // tessellation
-} // vkt
+} // namespace tessellation
+} // namespace vkt
 
 #endif // _VKTTESSELLATIONGEOMETRYPASSTHROUGHTESTS_HPP

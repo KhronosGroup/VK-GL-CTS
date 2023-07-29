@@ -57,235 +57,235 @@ using deqp::TestCaseGroup;
 class DrawElementsBaseVertexTestBase : public TestCaseBase
 {
 public:
-	/* Public methods */
-	DrawElementsBaseVertexTestBase(glcts::Context& context, const ExtParameters& extParams, const char* name,
-								   const char* description);
+    /* Public methods */
+    DrawElementsBaseVertexTestBase(glcts::Context &context, const ExtParameters &extParams, const char *name,
+                                   const char *description);
 
 protected:
-	/* Protected type definitions */
-	/** Defines a draw call type that should be used for a single
-	 *  test case iteration.
-	 */
-	enum _function_type
-	{
-		FUNCTION_GL_DRAW_ELEMENTS_BASE_VERTEX,
-		FUNCTION_GL_DRAW_ELEMENTS_INSTANCED_BASE_VERTEX,
-		FUNCTION_GL_DRAW_RANGE_ELEMENTS_BASE_VERTEX,
-		FUNCTION_GL_MULTI_DRAW_ELEMENTS_BASE_VERTEX,
+    /* Protected type definitions */
+    /** Defines a draw call type that should be used for a single
+     *  test case iteration.
+     */
+    enum _function_type
+    {
+        FUNCTION_GL_DRAW_ELEMENTS_BASE_VERTEX,
+        FUNCTION_GL_DRAW_ELEMENTS_INSTANCED_BASE_VERTEX,
+        FUNCTION_GL_DRAW_RANGE_ELEMENTS_BASE_VERTEX,
+        FUNCTION_GL_MULTI_DRAW_ELEMENTS_BASE_VERTEX,
 
-		FUNCTION_COUNT
-	};
+        FUNCTION_COUNT
+    };
 
-	/** Defines a single test case. Each functional test fills the
-	 *  m_test_cases vector with test case descriptors, which are
-	 *  then traversed by base class'executeTestCases() method.
-	 */
-	typedef struct _test_case
-	{
-		glw::GLint basevertex; /* Tells the value of <basevertex> argument for the tested
-		 * basevertex draw call. */
-		_function_type function_type; /* Tells the type of the basevertex draw call that should
-		 * be used for the described iteration. */
-		const glw::GLuint* index_offset; /* Tells the value of <indices> argument for both basevertex
-		 * and regular draw calls */
-		glw::GLenum  index_type;					   /* GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT or GL_UNSIGNED_INT */
-		glw::GLuint  range_start;					   /* The range start for DrawRangeElements */
-		glw::GLuint  range_end;						   /* The range end for DrawRangeElements */
-		glw::GLsizei multi_draw_call_count_array[3];   /* an array of three elements storing "count" arguments
-		 * for multi draw calls used to generate contents of both
-		 * textures. */
-		glw::GLuint* multi_draw_call_indices_array[3]; /* an array of three elements holding "indices" arguments
-		 * for multi draw call used rto generate contents of base
-		 * texture */
-		glw::GLenum primitive_mode; /* Tells the primitive type that should be used for both
-		 * types of draw calls. */
-		glw::GLuint   regular_draw_call_offset;					   /* offset to be used for non-basevertex draw calls made
-		 * to generate reference texture contents. This value will
-		 * be added to test_case.index_offset for non-basevertex
-		 * draw calls. */
-		glw::GLuint*  regular_draw_call_offset2;				   /* offset to be used for non-basevertex draw calls made
-		 * to generate reference texture contents. This value will
-		 * NOT be added to test_case.index_offset for non-basevertex
-		 * draw calls. */
-		glw::GLenum   regular_draw_call_index_type;				   /* index type to be used for non-basevertex draw calls made
-		 * to generate reference texture contents. The index type
-		 is differenet with base draw call in overflow test.*/
-		glw::GLuint** regular_multi_draw_call_offseted_array[3];   /* an array of three elements storing offsets for the
-		 * multi draw call used to generate reference texture
-		 * contents */
-		bool		  should_base_texture_match_reference_texture; /* Tells if the iteration passes if the base and the reference
-		 * texture are a match (true), or if it should only pass if
-		 * contents of the textures are different. */
-		bool use_clientside_index_data; /* Tells if the index data should be taken from a client-side
-		 * buffer, or from a VBO */
-		bool use_clientside_vertex_data; /* Tells if the vertex (color & position) data should be taken
-		 * from a client-side buffer, or from a VBO */
-		bool use_geometry_shader_stage; /* Tells if the program object used for the iteration should
-		 * include geometry shader */
-		bool use_tessellation_shader_stage; /* Tells if the program object used for the iteration should
-		 * include tessellation control & evaluation shaders. */
-		bool use_vertex_attrib_binding; /* Tells if the iteration should use vertex attribute bindings
-		 * instead of setting vertex attribute arrays with
-		 * glVertexAttribPointer() call(s) */
-		bool use_overflow_test_vertices;
+    /** Defines a single test case. Each functional test fills the
+     *  m_test_cases vector with test case descriptors, which are
+     *  then traversed by base class'executeTestCases() method.
+     */
+    typedef struct _test_case
+    {
+        glw::GLint basevertex;                         /* Tells the value of <basevertex> argument for the tested
+                                                        * basevertex draw call. */
+        _function_type function_type;                  /* Tells the type of the basevertex draw call that should
+                                                        * be used for the described iteration. */
+        const glw::GLuint *index_offset;               /* Tells the value of <indices> argument for both basevertex
+                                                        * and regular draw calls */
+        glw::GLenum index_type;                        /* GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT or GL_UNSIGNED_INT */
+        glw::GLuint range_start;                       /* The range start for DrawRangeElements */
+        glw::GLuint range_end;                         /* The range end for DrawRangeElements */
+        glw::GLsizei multi_draw_call_count_array[3];   /* an array of three elements storing "count" arguments
+                                                        * for multi draw calls used to generate contents of both
+                                                        * textures. */
+        glw::GLuint *multi_draw_call_indices_array[3]; /* an array of three elements holding "indices" arguments
+                                                        * for multi draw call used rto generate contents of base
+                                                        * texture */
+        glw::GLenum primitive_mode;                    /* Tells the primitive type that should be used for both
+                                                        * types of draw calls. */
+        glw::GLuint regular_draw_call_offset;          /* offset to be used for non-basevertex draw calls made
+                                                        * to generate reference texture contents. This value will
+                                                        * be added to test_case.index_offset for non-basevertex
+                                                        * draw calls. */
+        glw::GLuint *regular_draw_call_offset2;        /* offset to be used for non-basevertex draw calls made
+                                                        * to generate reference texture contents. This value will
+                                                        * NOT be added to test_case.index_offset for non-basevertex
+                                                        * draw calls. */
+        glw::GLenum regular_draw_call_index_type;      /* index type to be used for non-basevertex draw calls made
+* to generate reference texture contents. The index type
+is differenet with base draw call in overflow test.*/
+        glw::GLuint **regular_multi_draw_call_offseted_array[3]; /* an array of three elements storing offsets for the
+                                                                  * multi draw call used to generate reference texture
+                                                                  * contents */
+        bool should_base_texture_match_reference_texture; /* Tells if the iteration passes if the base and the reference
+                                                           * texture are a match (true), or if it should only pass if
+                                                           * contents of the textures are different. */
+        bool use_clientside_index_data;                   /* Tells if the index data should be taken from a client-side
+                                                           * buffer, or from a VBO */
+        bool use_clientside_vertex_data;                  /* Tells if the vertex (color & position) data should be taken
+                                                           * from a client-side buffer, or from a VBO */
+        bool use_geometry_shader_stage;                   /* Tells if the program object used for the iteration should
+                                                           * include geometry shader */
+        bool use_tessellation_shader_stage;               /* Tells if the program object used for the iteration should
+                                                           * include tessellation control & evaluation shaders. */
+        bool use_vertex_attrib_binding;                   /* Tells if the iteration should use vertex attribute bindings
+                                                           * instead of setting vertex attribute arrays with
+                                                           * glVertexAttribPointer() call(s) */
+        bool use_overflow_test_vertices;
 
-		/** Constructor */
-		_test_case()
-			: basevertex(0)
-			, function_type(FUNCTION_COUNT)
-			, index_offset(NULL)
-			, index_type(0)
-			, range_start(0)
-			, range_end(0)
-			, primitive_mode((glw::GLenum)-1)
-			, regular_draw_call_offset(0)
-			, regular_draw_call_offset2(NULL)
-			, regular_draw_call_index_type(0)
-			, should_base_texture_match_reference_texture(false)
-			, use_clientside_index_data(false)
-			, use_clientside_vertex_data(false)
-			, use_geometry_shader_stage(false)
-			, use_tessellation_shader_stage(false)
-			, use_vertex_attrib_binding(false)
-			, use_overflow_test_vertices(false)
-		{
-			memset(multi_draw_call_count_array, 0, sizeof(multi_draw_call_count_array));
-			memset(multi_draw_call_indices_array, 0, sizeof(multi_draw_call_indices_array));
-			memset(regular_multi_draw_call_offseted_array, 0, sizeof(regular_multi_draw_call_offseted_array));
-		}
-	} _test_case;
+        /** Constructor */
+        _test_case()
+            : basevertex(0)
+            , function_type(FUNCTION_COUNT)
+            , index_offset(NULL)
+            , index_type(0)
+            , range_start(0)
+            , range_end(0)
+            , primitive_mode((glw::GLenum)-1)
+            , regular_draw_call_offset(0)
+            , regular_draw_call_offset2(NULL)
+            , regular_draw_call_index_type(0)
+            , should_base_texture_match_reference_texture(false)
+            , use_clientside_index_data(false)
+            , use_clientside_vertex_data(false)
+            , use_geometry_shader_stage(false)
+            , use_tessellation_shader_stage(false)
+            , use_vertex_attrib_binding(false)
+            , use_overflow_test_vertices(false)
+        {
+            memset(multi_draw_call_count_array, 0, sizeof(multi_draw_call_count_array));
+            memset(multi_draw_call_indices_array, 0, sizeof(multi_draw_call_indices_array));
+            memset(regular_multi_draw_call_offseted_array, 0, sizeof(regular_multi_draw_call_offseted_array));
+        }
+    } _test_case;
 
-	/** Type definitions for test case container */
-	typedef std::vector<_test_case>		_test_cases;
-	typedef _test_cases::const_iterator _test_cases_const_iterator;
-	typedef _test_cases::iterator		_test_cases_iterator;
+    /** Type definitions for test case container */
+    typedef std::vector<_test_case> _test_cases;
+    typedef _test_cases::const_iterator _test_cases_const_iterator;
+    typedef _test_cases::iterator _test_cases_iterator;
 
-	/* Protected methods */
-	void compareBaseAndReferenceTextures(bool should_be_equal);
+    /* Protected methods */
+    void compareBaseAndReferenceTextures(bool should_be_equal);
 
-	void computeVBODataOffsets(bool use_clientside_index_data, bool use_clientside_vertex_data);
+    void computeVBODataOffsets(bool use_clientside_index_data, bool use_clientside_vertex_data);
 
-	virtual void deinit();
+    virtual void deinit();
 
-	void executeTestCases();
+    void executeTestCases();
 
-	std::string getFunctionName(_function_type function_type);
+    std::string getFunctionName(_function_type function_type);
 
-	virtual void init();
+    virtual void init();
 
-	void setUpFunctionalTestObjects(bool use_clientside_vertex_data, bool use_clientside_index_data,
-									bool use_tessellation_shader_stage, bool use_geometry_shader_stage,
-									bool use_vertex_attrib_binding, bool use_overflow_test_vertices);
+    void setUpFunctionalTestObjects(bool use_clientside_vertex_data, bool use_clientside_index_data,
+                                    bool use_tessellation_shader_stage, bool use_geometry_shader_stage,
+                                    bool use_vertex_attrib_binding, bool use_overflow_test_vertices);
 
-	virtual void deinitPerTestObjects();
+    virtual void deinitPerTestObjects();
 
-	void setUpNegativeTestObjects(bool use_clientside_vertex_data, bool use_clientside_index_data);
+    void setUpNegativeTestObjects(bool use_clientside_vertex_data, bool use_clientside_index_data);
 
-	/* Protected variables */
-	bool m_is_draw_elements_base_vertex_supported; /* Corresponds to GL_EXT_draw_elements_base_vertex availability
-	 * under ES contexts and to GL_ARB_draw_elements_base_vertex
-	 * availability under GL contexts.
-	 */
-	bool m_is_ext_multi_draw_arrays_supported; /* Corresponds to GL_EXT_multi_draw_arrays availability under
-	 * both ES and GL contexts.
-	 */
-	bool m_is_geometry_shader_supported;	   /* Corresponds to GL_EXT_geometry_shader availability under
-	 * ES contexts and to GL_ARB_geometry_shader4 availability under
-	 * GL contexts.
-	 */
-	bool m_is_tessellation_shader_supported;   /* Corresponds to GL_EXT_tessellation_shader availability under
-	 * ES contexts and to GL_ARB_tessellation_shader availability
-	 * under GL contexts.
-	 */
-	bool m_is_vertex_attrib_binding_supported; /* Corresponds to GL_ARB_vertex_attrib_binding availability under
-	 * GL contexts. Under ES always set to true, since the conformance
-	 * tests are only run for >= ES 3.1 contexts, where VAA bindings
-	 * are core functionality.
-	 */
+    /* Protected variables */
+    bool m_is_draw_elements_base_vertex_supported; /* Corresponds to GL_EXT_draw_elements_base_vertex availability
+                                                    * under ES contexts and to GL_ARB_draw_elements_base_vertex
+                                                    * availability under GL contexts.
+                                                    */
+    bool m_is_ext_multi_draw_arrays_supported;     /* Corresponds to GL_EXT_multi_draw_arrays availability under
+                                                    * both ES and GL contexts.
+                                                    */
+    bool m_is_geometry_shader_supported;           /* Corresponds to GL_EXT_geometry_shader availability under
+                                                    * ES contexts and to GL_ARB_geometry_shader4 availability under
+                                                    * GL contexts.
+                                                    */
+    bool m_is_tessellation_shader_supported;       /* Corresponds to GL_EXT_tessellation_shader availability under
+                                                    * ES contexts and to GL_ARB_tessellation_shader availability
+                                                    * under GL contexts.
+                                                    */
+    bool m_is_vertex_attrib_binding_supported;     /* Corresponds to GL_ARB_vertex_attrib_binding availability under
+                                                    * GL contexts. Under ES always set to true, since the conformance
+                                                    * tests are only run for >= ES 3.1 contexts, where VAA bindings
+                                                    * are core functionality.
+                                                    */
 
-	glw::GLuint m_bo_id;
-	glw::GLuint m_bo_id_2;
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_gs_id;
-	glw::GLuint m_po_id;
-	glw::GLint  m_po_color_attribute_location;
-	bool		m_po_uses_gs_stage;
-	bool		m_po_uses_tc_te_stages;
-	bool		m_po_uses_vertex_attrib_binding;
-	glw::GLint  m_po_vertex_attribute_location;
-	glw::GLuint m_tc_id;
-	glw::GLuint m_te_id;
-	glw::GLuint m_to_base_id;
-	glw::GLuint m_to_ref_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_vs_id;
+    glw::GLuint m_bo_id;
+    glw::GLuint m_bo_id_2;
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_po_id;
+    glw::GLint m_po_color_attribute_location;
+    bool m_po_uses_gs_stage;
+    bool m_po_uses_tc_te_stages;
+    bool m_po_uses_vertex_attrib_binding;
+    glw::GLint m_po_vertex_attribute_location;
+    glw::GLuint m_tc_id;
+    glw::GLuint m_te_id;
+    glw::GLuint m_to_base_id;
+    glw::GLuint m_to_ref_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_id;
 
-	const glw::GLuint*   m_bo_functional2_data_index;		/* Holds functional second index data set data */
-	unsigned int		 m_bo_functional2_data_index_size;  /* Holds size of functional second index data set */
-	const glw::GLfloat*  m_bo_functional2_data_vertex;		/* Holds functional second vertex data set data */
-	unsigned int		 m_bo_functional2_data_vertex_size; /* Holds size of functional second vertex data set */
-	const glw::GLubyte*  m_bo_functional3_data_index;		/* Holds functional third index data set data */
-	unsigned int		 m_bo_functional3_data_index_size;  /* Holds size of functional third index data set */
-	const glw::GLushort* m_bo_functional4_data_index;		/* Holds functional fourth index data set data */
-	unsigned int		 m_bo_functional4_data_index_size;  /* Holds size of functional fourth index data set */
-	const glw::GLuint*   m_bo_functional5_data_index;		/* Holds functional fifth index data set data */
-	unsigned int		 m_bo_functional5_data_index_size;  /* Holds size of functional fifth index data set */
-	const glw::GLfloat*  m_bo_functional_data_color;		/* Holds functional first color data set data */
-	unsigned int		 m_bo_functional_data_color_size;   /* Holds size of functional first color data set */
-	const glw::GLuint*   m_bo_functional_data_index;		/* Holds functional first index data set data */
-	unsigned int		 m_bo_functional_data_index_size;   /* Holds size of functional first index data set */
-	const glw::GLfloat*  m_bo_functional_data_vertex;		/* Holds functional first vertex data set data */
-	unsigned int		 m_bo_functional_data_vertex_size;  /* Holds size of functional first vertex data set */
-	const glw::GLuint*   m_bo_negative_data_index;			/* Holds negative index data set data */
-	unsigned int		 m_bo_negative_data_index_size;		/* Holds size of negative index data set */
-	const glw::GLfloat*  m_bo_negative_data_vertex;			/* Holds negative vertex data set data */
-	unsigned int		 m_bo_negative_data_vertex_size;	/* Holds size of negative vertex data set */
-	const glw::GLfloat*  m_draw_call_color_offset;			/* Either holds buffer object storage offset to color data set OR
-	 * is a raw pointer to the color data store. Actual contents
-	 * is iteration-dependent */
-	const glw::GLuint*   m_draw_call_index_offset;			/* Either holds buffer object storage offset to first index data set OR
-	 * is a raw pointer to the index data store. Actual contents
-	 * is iteration-dependent */
-	const glw::GLuint*
-		m_draw_call_index2_offset; /* Either holds buffer object storage offset to second index data set OR
-	 * is a raw pointer to the index data store. Actual contents
-	 * is iteration-dependent */
-	const glw::GLubyte*
-		m_draw_call_index3_offset; /* Either holds buffer object storage offset to third index data set OR
-	 * is a raw pointer to the index data store. Actual contents
-	 * is iteration-dependent */
-	const glw::GLushort*
-		m_draw_call_index4_offset; /* Either holds buffer object storage offset to fourth index data set OR
-	 * is a raw pointer to the index data store. Actual contents
-	 * is iteration-dependent */
-	const glw::GLuint*
-		m_draw_call_index5_offset; /* Either holds buffer object storage offset to fifth index data set OR
-	 * is a raw pointer to the index data store. Actual contents
-	 * is iteration-dependent */
-	const glw::GLfloat*
-		m_draw_call_vertex_offset; /* Either holds buffer object storage offset to first vertex data set OR
-	 * is a raw pointer to the first vertex data store. Actual contents
-	 * is iteration-dependent */
-	const glw::GLfloat*
-		m_draw_call_vertex2_offset; /* Either holds buffer object storage offset to second vertex data set OR
-	 * is a raw pointer to the second vertex data store. Actual contents
-	 * is iteration-dependent */
+    const glw::GLuint *m_bo_functional2_data_index;   /* Holds functional second index data set data */
+    unsigned int m_bo_functional2_data_index_size;    /* Holds size of functional second index data set */
+    const glw::GLfloat *m_bo_functional2_data_vertex; /* Holds functional second vertex data set data */
+    unsigned int m_bo_functional2_data_vertex_size;   /* Holds size of functional second vertex data set */
+    const glw::GLubyte *m_bo_functional3_data_index;  /* Holds functional third index data set data */
+    unsigned int m_bo_functional3_data_index_size;    /* Holds size of functional third index data set */
+    const glw::GLushort *m_bo_functional4_data_index; /* Holds functional fourth index data set data */
+    unsigned int m_bo_functional4_data_index_size;    /* Holds size of functional fourth index data set */
+    const glw::GLuint *m_bo_functional5_data_index;   /* Holds functional fifth index data set data */
+    unsigned int m_bo_functional5_data_index_size;    /* Holds size of functional fifth index data set */
+    const glw::GLfloat *m_bo_functional_data_color;   /* Holds functional first color data set data */
+    unsigned int m_bo_functional_data_color_size;     /* Holds size of functional first color data set */
+    const glw::GLuint *m_bo_functional_data_index;    /* Holds functional first index data set data */
+    unsigned int m_bo_functional_data_index_size;     /* Holds size of functional first index data set */
+    const glw::GLfloat *m_bo_functional_data_vertex;  /* Holds functional first vertex data set data */
+    unsigned int m_bo_functional_data_vertex_size;    /* Holds size of functional first vertex data set */
+    const glw::GLuint *m_bo_negative_data_index;      /* Holds negative index data set data */
+    unsigned int m_bo_negative_data_index_size;       /* Holds size of negative index data set */
+    const glw::GLfloat *m_bo_negative_data_vertex;    /* Holds negative vertex data set data */
+    unsigned int m_bo_negative_data_vertex_size;      /* Holds size of negative vertex data set */
+    const glw::GLfloat *m_draw_call_color_offset;     /* Either holds buffer object storage offset to color data set OR
+                                                       * is a raw pointer to the color data store. Actual contents
+                                                       * is iteration-dependent */
+    const glw::GLuint *m_draw_call_index_offset; /* Either holds buffer object storage offset to first index data set OR
+                                                  * is a raw pointer to the index data store. Actual contents
+                                                  * is iteration-dependent */
+    const glw::GLuint
+        *m_draw_call_index2_offset; /* Either holds buffer object storage offset to second index data set OR
+                                     * is a raw pointer to the index data store. Actual contents
+                                     * is iteration-dependent */
+    const glw::GLubyte
+        *m_draw_call_index3_offset; /* Either holds buffer object storage offset to third index data set OR
+                                     * is a raw pointer to the index data store. Actual contents
+                                     * is iteration-dependent */
+    const glw::GLushort
+        *m_draw_call_index4_offset; /* Either holds buffer object storage offset to fourth index data set OR
+                                     * is a raw pointer to the index data store. Actual contents
+                                     * is iteration-dependent */
+    const glw::GLuint
+        *m_draw_call_index5_offset; /* Either holds buffer object storage offset to fifth index data set OR
+                                     * is a raw pointer to the index data store. Actual contents
+                                     * is iteration-dependent */
+    const glw::GLfloat
+        *m_draw_call_vertex_offset; /* Either holds buffer object storage offset to first vertex data set OR
+                                     * is a raw pointer to the first vertex data store. Actual contents
+                                     * is iteration-dependent */
+    const glw::GLfloat
+        *m_draw_call_vertex2_offset; /* Either holds buffer object storage offset to second vertex data set OR
+                                      * is a raw pointer to the second vertex data store. Actual contents
+                                      * is iteration-dependent */
 
-	_test_cases m_test_cases; /* Holds all test cases */
+    _test_cases m_test_cases; /* Holds all test cases */
 
 private:
-	/* Private methods */
-	void buildProgram(const char* fs_code, const char* vs_code, const char* tc_code, const char* te_code,
-					  const char* gs_code);
-	void deinitProgramAndShaderObjects();
+    /* Private methods */
+    void buildProgram(const char *fs_code, const char *vs_code, const char *tc_code, const char *te_code,
+                      const char *gs_code);
+    void deinitProgramAndShaderObjects();
 
-	/* Private data */
-	const unsigned int m_to_height;
-	const unsigned int m_to_width;
+    /* Private data */
+    const unsigned int m_to_height;
+    const unsigned int m_to_width;
 
-	unsigned char* m_to_base_data;
-	unsigned char* m_to_ref_data;
+    unsigned char *m_to_base_data;
+    unsigned char *m_to_ref_data;
 };
 
 /** Implements functional Tests I, II, III and IV. For clarity, the description
@@ -341,14 +341,14 @@ private:
 class DrawElementsBaseVertexFunctionalCorrectBaseVertexBehavior : public DrawElementsBaseVertexTestBase
 {
 public:
-	/* Public methods */
-	DrawElementsBaseVertexFunctionalCorrectBaseVertexBehavior(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    DrawElementsBaseVertexFunctionalCorrectBaseVertexBehavior(Context &context, const ExtParameters &extParams);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void setUpTestCases();
+    /* Private methods */
+    void setUpTestCases();
 };
 
 /** Implements Functional Test V. For clarity, the description is included below:
@@ -387,14 +387,14 @@ private:
 class DrawElementsBaseVertexFunctionalCorrectBaseVertexBehavior2 : public DrawElementsBaseVertexTestBase
 {
 public:
-	/* Public methods */
-	DrawElementsBaseVertexFunctionalCorrectBaseVertexBehavior2(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    DrawElementsBaseVertexFunctionalCorrectBaseVertexBehavior2(Context &context, const ExtParameters &extParams);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void setUpTestCases();
+    /* Private methods */
+    void setUpTestCases();
 };
 
 /** Implements Functional Test VIII. For clarity, the description is included below:
@@ -431,15 +431,15 @@ private:
 class DrawElementsBaseVertexFunctionalCorrectBaseVertexBehaviorUnderflow : public DrawElementsBaseVertexTestBase
 {
 public:
-	/* Public methods */
-	DrawElementsBaseVertexFunctionalCorrectBaseVertexBehaviorUnderflow(Context&				context,
-																	   const ExtParameters& extParams);
+    /* Public methods */
+    DrawElementsBaseVertexFunctionalCorrectBaseVertexBehaviorUnderflow(Context &context,
+                                                                       const ExtParameters &extParams);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void setUpTestCases();
+    /* Private methods */
+    void setUpTestCases();
 };
 
 /** Implements Functional Test IX. For clarity, the description is included below:
@@ -487,14 +487,14 @@ private:
 class DrawElementsBaseVertexFunctionalCorrectBaseVertexBehaviorOverflow : public DrawElementsBaseVertexTestBase
 {
 public:
-	/* Public methods */
-	DrawElementsBaseVertexFunctionalCorrectBaseVertexBehaviorOverflow(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    DrawElementsBaseVertexFunctionalCorrectBaseVertexBehaviorOverflow(Context &context, const ExtParameters &extParams);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void setUpTestCases();
+    /* Private methods */
+    void setUpTestCases();
 };
 
 /** Implements Functional Test VI. For clarity, the description is included below:
@@ -552,15 +552,15 @@ private:
 class DrawElementsBaseVertexFunctionalCorrectBaseVertexBehaviorAEPShaderStages : public DrawElementsBaseVertexTestBase
 {
 public:
-	/* Public methods */
-	DrawElementsBaseVertexFunctionalCorrectBaseVertexBehaviorAEPShaderStages(Context&			  context,
-																			 const ExtParameters& extParams);
+    /* Public methods */
+    DrawElementsBaseVertexFunctionalCorrectBaseVertexBehaviorAEPShaderStages(Context &context,
+                                                                             const ExtParameters &extParams);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void setUpTestCases();
+    /* Private methods */
+    void setUpTestCases();
 };
 
 /** Implements Negative Test IV. For clarity, the description is included below:
@@ -581,19 +581,19 @@ private:
 class DrawElementsBaseVertexNegativeActiveTransformFeedbackTest : public DrawElementsBaseVertexTestBase
 {
 public:
-	/* Public methods */
-	DrawElementsBaseVertexNegativeActiveTransformFeedbackTest(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    DrawElementsBaseVertexNegativeActiveTransformFeedbackTest(Context &context, const ExtParameters &extParams);
 
-	virtual void						 deinit();
-	virtual void						 init();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual void init();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private variables */
-	glw::GLuint m_bo_tf_result_id;
+    /* Private variables */
+    glw::GLuint m_bo_tf_result_id;
 
-	/* Private methods */
-	virtual void deinitPerTestObjects();
+    /* Private methods */
+    virtual void deinitPerTestObjects();
 };
 
 /** Implements Negative Test I.2 and II.1, II.2, II.3 (for the original test).
@@ -632,10 +632,10 @@ private:
 class DrawElementsBaseVertexNegativeInvalidCountArgumentTest : public DrawElementsBaseVertexTestBase
 {
 public:
-	/* Public methods */
-	DrawElementsBaseVertexNegativeInvalidCountArgumentTest(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    DrawElementsBaseVertexNegativeInvalidCountArgumentTest(Context &context, const ExtParameters &extParams);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 };
 
 /** Implements Negative Test I.6 and II.1, II.2, II.3 (for the original test).
@@ -657,10 +657,10 @@ public:
 class DrawElementsBaseVertexNegativeInvalidInstanceCountArgumentTest : public DrawElementsBaseVertexTestBase
 {
 public:
-	/* Public methods */
-	DrawElementsBaseVertexNegativeInvalidInstanceCountArgumentTest(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    DrawElementsBaseVertexNegativeInvalidInstanceCountArgumentTest(Context &context, const ExtParameters &extParams);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 };
 
 /** Implements Negative Test I.1 and II.1, II.2, II.3 (for the original test).
@@ -685,10 +685,10 @@ public:
 class DrawElementsBaseVertexNegativeInvalidModeArgumentTest : public DrawElementsBaseVertexTestBase
 {
 public:
-	/* Public methods */
-	DrawElementsBaseVertexNegativeInvalidModeArgumentTest(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    DrawElementsBaseVertexNegativeInvalidModeArgumentTest(Context &context, const ExtParameters &extParams);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 };
 
 /** Implements Negative Test I.4 and II.1, II.2, II.3 (for the original test).
@@ -710,10 +710,10 @@ public:
 class DrawElementsBaseVertexNegativeInvalidPrimcountArgumentTest : public DrawElementsBaseVertexTestBase
 {
 public:
-	/* Public methods */
-	DrawElementsBaseVertexNegativeInvalidPrimcountArgumentTest(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    DrawElementsBaseVertexNegativeInvalidPrimcountArgumentTest(Context &context, const ExtParameters &extParams);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 };
 
 /** Implements Negative Test I.5 and II.1, II.2, II.3 (for the original test).
@@ -735,10 +735,10 @@ public:
 class DrawElementsBaseVertexNegativeInvalidStartEndArgumentsTest : public DrawElementsBaseVertexTestBase
 {
 public:
-	/* Public methods */
-	DrawElementsBaseVertexNegativeInvalidStartEndArgumentsTest(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    DrawElementsBaseVertexNegativeInvalidStartEndArgumentsTest(Context &context, const ExtParameters &extParams);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 };
 
 /** Implements Negative Test I.3 and II.1, II.2, II.3 (for the original test).
@@ -763,10 +763,10 @@ public:
 class DrawElementsBaseVertexNegativeInvalidTypeArgumentTest : public DrawElementsBaseVertexTestBase
 {
 public:
-	/* Public methods */
-	DrawElementsBaseVertexNegativeInvalidTypeArgumentTest(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    DrawElementsBaseVertexNegativeInvalidTypeArgumentTest(Context &context, const ExtParameters &extParams);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 };
 
 /** Implements Negative Test III. For clarity, the description is included below:
@@ -792,10 +792,10 @@ public:
 class DrawElementsBaseVertexNegativeMappedBufferObjectsTest : public DrawElementsBaseVertexTestBase
 {
 public:
-	/* Public methods */
-	DrawElementsBaseVertexNegativeMappedBufferObjectsTest(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    DrawElementsBaseVertexNegativeMappedBufferObjectsTest(Context &context, const ExtParameters &extParams);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 };
 
 /** Test group which encapsulates all conformance tests for "draw elements base vertex"
@@ -804,16 +804,16 @@ public:
 class DrawElementsBaseVertexTests : public glcts::TestCaseGroupBase
 {
 public:
-	/* Public methods */
-	DrawElementsBaseVertexTests(glcts::Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    DrawElementsBaseVertexTests(glcts::Context &context, const ExtParameters &extParams);
 
-	void init(void);
+    void init(void);
 
 private:
-	DrawElementsBaseVertexTests(const DrawElementsBaseVertexTests& other);
-	DrawElementsBaseVertexTests& operator=(const DrawElementsBaseVertexTests& other);
+    DrawElementsBaseVertexTests(const DrawElementsBaseVertexTests &other);
+    DrawElementsBaseVertexTests &operator=(const DrawElementsBaseVertexTests &other);
 };
 
-} /* glcts namespace */
+} // namespace glcts
 
 #endif // _ESEXTCDRAWELEMENTSBASEVERTEXTESTS_HPP

@@ -28,122 +28,122 @@
 
 #include <sstream>
 
-using std::string;
 using std::map;
 using std::ostringstream;
+using std::string;
 
 namespace tcu
 {
 
-StringTemplate::StringTemplate (void)
+StringTemplate::StringTemplate(void)
 {
 }
 
-StringTemplate::StringTemplate (const std::string& str)
+StringTemplate::StringTemplate(const std::string &str)
 {
-	setString(str);
+    setString(str);
 }
 
-StringTemplate::StringTemplate (StringTemplate&& other)
-	: m_template(std::move(other.m_template))
-{}
-
-StringTemplate::~StringTemplate (void)
+StringTemplate::StringTemplate(StringTemplate &&other) : m_template(std::move(other.m_template))
 {
 }
 
-void StringTemplate::setString (const std::string& str)
+StringTemplate::~StringTemplate(void)
 {
-	m_template = str;
+}
+
+void StringTemplate::setString(const std::string &str)
+{
+    m_template = str;
 }
 
 const string kSingleLineFlag = "single-line";
-const string kOptFlag = "opt";
-const string kDefaultFlag = "default=";
+const string kOptFlag        = "opt";
+const string kDefaultFlag    = "default=";
 
-string StringTemplate::specialize (const map<string, string>& params) const
+string StringTemplate::specialize(const map<string, string> &params) const
 {
-	ostringstream res;
+    ostringstream res;
 
-	size_t curNdx = 0;
-	for (;;)
-	{
-		size_t paramNdx = m_template.find("${", curNdx);
-		if (paramNdx != string::npos)
-		{
-			// Append in-between stuff.
-			res << m_template.substr(curNdx, paramNdx - curNdx);
+    size_t curNdx = 0;
+    for (;;)
+    {
+        size_t paramNdx = m_template.find("${", curNdx);
+        if (paramNdx != string::npos)
+        {
+            // Append in-between stuff.
+            res << m_template.substr(curNdx, paramNdx - curNdx);
 
-			// Find end-of-param.
-			size_t paramEndNdx = m_template.find("}", paramNdx);
-			if (paramEndNdx == string::npos)
-				TCU_THROW(InternalError, "No '}' found in template parameter");
+            // Find end-of-param.
+            size_t paramEndNdx = m_template.find("}", paramNdx);
+            if (paramEndNdx == string::npos)
+                TCU_THROW(InternalError, "No '}' found in template parameter");
 
-			// Parse parameter contents.
-			string	paramStr		= m_template.substr(paramNdx+2, paramEndNdx-2-paramNdx);
-			bool	paramSingleLine	= false;
-			bool	paramOptional	= false;
-			bool	paramDefault	= false;
-			string	paramName;
-			string	defaultValue;
-			size_t colonNdx = paramStr.find(":");
-			if (colonNdx != string::npos)
-			{
-				paramName = paramStr.substr(0, colonNdx);
-				string flagsStr = paramStr.substr(colonNdx+1);
-				if (flagsStr == kSingleLineFlag)
-				{
-					paramSingleLine = true;
-				}
-				else if (flagsStr == kOptFlag)
-				{
-					paramOptional = true;
-				}
-				else if (de::beginsWith(flagsStr, kDefaultFlag))
-				{
-					paramDefault = true;
-					defaultValue = flagsStr.substr(kDefaultFlag.size());
-				}
-				else
-				{
-					TCU_THROW(InternalError, (string("Unrecognized flag") + paramStr).c_str());
-				}
-			}
-			else
-				paramName = paramStr;
+            // Parse parameter contents.
+            string paramStr      = m_template.substr(paramNdx + 2, paramEndNdx - 2 - paramNdx);
+            bool paramSingleLine = false;
+            bool paramOptional   = false;
+            bool paramDefault    = false;
+            string paramName;
+            string defaultValue;
+            size_t colonNdx = paramStr.find(":");
+            if (colonNdx != string::npos)
+            {
+                paramName       = paramStr.substr(0, colonNdx);
+                string flagsStr = paramStr.substr(colonNdx + 1);
+                if (flagsStr == kSingleLineFlag)
+                {
+                    paramSingleLine = true;
+                }
+                else if (flagsStr == kOptFlag)
+                {
+                    paramOptional = true;
+                }
+                else if (de::beginsWith(flagsStr, kDefaultFlag))
+                {
+                    paramDefault = true;
+                    defaultValue = flagsStr.substr(kDefaultFlag.size());
+                }
+                else
+                {
+                    TCU_THROW(InternalError, (string("Unrecognized flag") + paramStr).c_str());
+                }
+            }
+            else
+                paramName = paramStr;
 
-			// Fill in parameter value.
-			if (params.find(paramName) != params.end())
-			{
-				const string& val = (*params.find(paramName)).second;
-				if (paramSingleLine)
-				{
-					string tmp = val;
-					for (size_t ndx = tmp.find("\n"); ndx != string::npos; ndx = tmp.find("\n"))
-						tmp = tmp.replace(ndx, 1, " ");
-					res << tmp;
-				}
-				else
-					res << val;
-			}
-			else if (paramDefault)
-				res << defaultValue;
-			else if (!paramOptional)
-				TCU_THROW(InternalError, (string("Value for parameter '") + paramName + "' not found in map").c_str());
+            // Fill in parameter value.
+            if (params.find(paramName) != params.end())
+            {
+                const string &val = (*params.find(paramName)).second;
+                if (paramSingleLine)
+                {
+                    string tmp = val;
+                    for (size_t ndx = tmp.find("\n"); ndx != string::npos; ndx = tmp.find("\n"))
+                        tmp = tmp.replace(ndx, 1, " ");
+                    res << tmp;
+                }
+                else
+                    res << val;
+            }
+            else if (paramDefault)
+                res << defaultValue;
+            else if (!paramOptional)
+                TCU_THROW(InternalError, (string("Value for parameter '") + paramName + "' not found in map").c_str());
 
-			// Skip over template.
-			curNdx = paramEndNdx + 1;
-		}
-		else
-		{
-			if (curNdx < m_template.length())
-				res << &m_template[curNdx];
+            // Skip over template.
+            curNdx = paramEndNdx + 1;
+        }
+        else
+        {
+            if (curNdx < m_template.length())
+                res << &m_template[curNdx];
 
-			break;
-		}
-	}
+            break;
+        }
+    }
 
-	return res.str();
+    return res.str();
 }
 
-} // tcu
+} // namespace tcu

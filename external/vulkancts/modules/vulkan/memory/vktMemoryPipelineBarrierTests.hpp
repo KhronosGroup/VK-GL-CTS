@@ -31,9 +31,9 @@ namespace vkt
 namespace memory
 {
 
-tcu::TestCaseGroup*		createPipelineBarrierTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createPipelineBarrierTests(tcu::TestContext &testCtx);
 
-} // memory
-} // vkt
+} // namespace memory
+} // namespace vkt
 
 #endif // _VKTMEMORYPIPELINEBARRIERTESTS_HPP

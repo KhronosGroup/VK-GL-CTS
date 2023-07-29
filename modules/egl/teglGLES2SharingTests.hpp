@@ -34,11 +34,10 @@ namespace egl
 class SharingTests : public TestCaseGroup
 {
 public:
-			SharingTests		(EglTestContext& eglTestCtx);
-	void	init				(void);
+    SharingTests(EglTestContext &eglTestCtx);
+    void init(void);
 };
 
-
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 #endif // _TEGLGLES2SHARINGTESTS_HPP

@@ -34,10 +34,9 @@ namespace de
 /*--------------------------------------------------------------------*//*!
  * \brief Thread constructor.
  *//*--------------------------------------------------------------------*/
-Thread::Thread (void)
-	: m_thread(0)
+Thread::Thread(void) : m_thread(0)
 {
-	deMemset(&m_attribs, 0, sizeof(m_attribs));
+    deMemset(&m_attribs, 0, sizeof(m_attribs));
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -46,30 +45,30 @@ Thread::Thread (void)
  * If the thread is currently running, OS is instructed to destroy it
  * but the actual behavior is unspecified.
  *//*--------------------------------------------------------------------*/
-Thread::~Thread (void)
+Thread::~Thread(void)
 {
-	if (m_thread)
-		deThread_destroy(m_thread);
+    if (m_thread)
+        deThread_destroy(m_thread);
 }
 
 /*--------------------------------------------------------------------*//*!
  * \brief Set thread priority.
  * \param priority deThreadPriority as described in deThread.h. Currently
- *				   supported values are: DE_THREADPRIORITY_LOWEST,
- *				   DE_THREADPRIORITY_LOW, DE_THREADPRIORITY_NORMAL,
- *				   DE_THREADPRIORITY_HIGH, DE_THREADPRIORITY_HIGHEST.
+ *                   supported values are: DE_THREADPRIORITY_LOWEST,
+ *                   DE_THREADPRIORITY_LOW, DE_THREADPRIORITY_NORMAL,
+ *                   DE_THREADPRIORITY_HIGH, DE_THREADPRIORITY_HIGHEST.
  *
  * Sets priority for the thread start(). setPriority() has no effect
  * if the thread is already running.
  *//*--------------------------------------------------------------------*/
-void Thread::setPriority (deThreadPriority priority)
+void Thread::setPriority(deThreadPriority priority)
 {
-	m_attribs.priority = priority;
+    m_attribs.priority = priority;
 }
 
-static void threadFunc (void* arg)
+static void threadFunc(void *arg)
 {
-	static_cast<Thread*>(arg)->run();
+    static_cast<Thread *>(arg)->run();
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -80,12 +79,12 @@ static void threadFunc (void* arg)
  * The function will fail if the thread is currently running or has finished
  * but no join() has been called.
  *//*--------------------------------------------------------------------*/
-void Thread::start (void)
+void Thread::start(void)
 {
-	DE_ASSERT(!m_thread);
-	m_thread = deThread_create(threadFunc, this, &m_attribs);
-	if (!m_thread)
-		throw std::bad_alloc();
+    DE_ASSERT(!m_thread);
+    m_thread = deThread_create(threadFunc, this, &m_attribs);
+    if (!m_thread)
+        throw std::bad_alloc();
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -97,14 +96,14 @@ void Thread::start (void)
  *
  * join() can only be called after a successful call to start().
  *//*--------------------------------------------------------------------*/
-void Thread::join (void)
+void Thread::join(void)
 {
-	DE_ASSERT(m_thread);
-	if (!deThread_join(m_thread))
-		throw std::runtime_error("Thread::join() failed");
+    DE_ASSERT(m_thread);
+    if (!deThread_join(m_thread))
+        throw std::runtime_error("Thread::join() failed");
 
-	deThread_destroy(m_thread);
-	m_thread = 0;
+    deThread_destroy(m_thread);
+    m_thread = 0;
 }
 
-} // de
+} // namespace de

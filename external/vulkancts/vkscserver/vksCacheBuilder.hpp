@@ -29,27 +29,21 @@
 namespace vksc_server
 {
 
-void							exportFilesForExternalCompiler	(const VulkanPipelineCacheInput&	input,
-																 const std::string&					path,
-																 const std::string&					filePrefix);
-vector<u8>						buildOfflinePipelineCache		(const VulkanPipelineCacheInput&	input,
-																const std::string&					pipelineCompilerPath,
-																const std::string&					pipelineCompilerDataDir,
-																const std::string&					pipelineCompilerArgs,
-																const std::string&					pipelineCompilerOutputFile,
-																const std::string&					pipelineCompilerLogFile,
-																const std::string&					pipelineCompilerFilePrefix);
-vector<u8>						buildPipelineCache				(const VulkanPipelineCacheInput&	input,
-																 const vk::PlatformInterface&		vkp,
-																 vk::VkInstance						instance,
-																 const vk::InstanceInterface&		vki,
-																 vk::VkPhysicalDevice				physicalDevice,
-																 deUint32							queueIndex);
-std::vector<VulkanPipelineSize>	extractSizesFromPipelineCache	(const VulkanPipelineCacheInput&	input,
-																 const vector<u8>&					pipelineCache,
-																 deUint32							pipelineDefaultSize,
-																 bool								recyclePipelineMemory);
+void exportFilesForExternalCompiler(const VulkanPipelineCacheInput &input, const std::string &path,
+                                    const std::string &filePrefix);
+vector<u8> buildOfflinePipelineCache(const VulkanPipelineCacheInput &input, const std::string &pipelineCompilerPath,
+                                     const std::string &pipelineCompilerDataDir,
+                                     const std::string &pipelineCompilerArgs,
+                                     const std::string &pipelineCompilerOutputFile,
+                                     const std::string &pipelineCompilerLogFile,
+                                     const std::string &pipelineCompilerFilePrefix);
+vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::PlatformInterface &vkp,
+                              vk::VkInstance instance, const vk::InstanceInterface &vki,
+                              vk::VkPhysicalDevice physicalDevice, uint32_t queueIndex);
+std::vector<VulkanPipelineSize> extractSizesFromPipelineCache(const VulkanPipelineCacheInput &input,
+                                                              const vector<u8> &pipelineCache,
+                                                              uint32_t pipelineDefaultSize, bool recyclePipelineMemory);
 
-}
+} // namespace vksc_server
 
 #endif // _VKSCACHEBUILDER_HPP

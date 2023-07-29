@@ -34,16 +34,16 @@ namespace QueryPool
 class QueryPoolConcurrentTests : public tcu::TestCaseGroup
 {
 public:
-	QueryPoolConcurrentTests	(tcu::TestContext &testCtx);
-	~QueryPoolConcurrentTests	(void);
-	void init					(void);
+    QueryPoolConcurrentTests(tcu::TestContext &testCtx);
+    ~QueryPoolConcurrentTests(void);
+    void init(void);
 
 private:
-	QueryPoolConcurrentTests				(const QueryPoolConcurrentTests &other);
-	QueryPoolConcurrentTests&	operator=	(const QueryPoolConcurrentTests &other);
+    QueryPoolConcurrentTests(const QueryPoolConcurrentTests &other);
+    QueryPoolConcurrentTests &operator=(const QueryPoolConcurrentTests &other);
 };
 
-} // QueryPool
-} // vkt
+} // namespace QueryPool
+} // namespace vkt
 
 #endif // _VKTQUERYPOOLCONCURRENTTESTS_HPP

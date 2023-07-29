@@ -32,9 +32,9 @@ namespace vkt
 namespace robustness
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx);
 
-} // robustness
-} // vkt
+} // namespace robustness
+} // namespace vkt
 
 #endif // _VKTROBUSTNESSTESTS_HPP

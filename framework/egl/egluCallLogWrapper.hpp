@@ -38,20 +38,23 @@ namespace eglu
 class CallLogWrapper
 {
 public:
-							CallLogWrapper			(const eglw::Library& egl, tcu::TestLog& log);
-							~CallLogWrapper			(void);
+    CallLogWrapper(const eglw::Library &egl, tcu::TestLog &log);
+    ~CallLogWrapper(void);
 
 // EGL API is exposed as member functions
 #include "egluCallLogWrapperApi.inl"
 
-	void					enableLogging			(bool enable)	{ m_enableLog = enable; }
+    void enableLogging(bool enable)
+    {
+        m_enableLog = enable;
+    }
 
 private:
-	const eglw::Library&	m_egl;
-	tcu::TestLog&			m_log;
-	bool					m_enableLog;
+    const eglw::Library &m_egl;
+    tcu::TestLog &m_log;
+    bool m_enableLog;
 };
 
-} // eglu
+} // namespace eglu
 
 #endif // _EGLUCALLLOGWRAPPER_HPP

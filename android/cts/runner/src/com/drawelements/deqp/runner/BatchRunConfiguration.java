@@ -30,8 +30,8 @@ public class BatchRunConfiguration {
     private final String mSurfaceType;
     private final boolean mRequired;
 
-    public BatchRunConfiguration(String glConfig, String rotation, String surfaceType,
-            boolean required) {
+    public BatchRunConfiguration(String glConfig, String rotation,
+                                 String surfaceType, boolean required) {
         mGlConfig = glConfig;
         mRotation = rotation;
         mSurfaceType = surfaceType;
@@ -42,37 +42,30 @@ public class BatchRunConfiguration {
      * Get string that uniquely identifies this config
      */
     public String getId() {
-        return String.format("{glformat=%s,rotation=%s,surfacetype=%s,required=%b}",
-                mGlConfig, mRotation, mSurfaceType, mRequired);
+        return String.format(
+            "{glformat=%s,rotation=%s,surfacetype=%s,required=%b}", mGlConfig,
+            mRotation, mSurfaceType, mRequired);
     }
 
     /**
      * Get the GL config used in this configuration.
      */
-    public String getGlConfig() {
-        return mGlConfig;
-    }
+    public String getGlConfig() { return mGlConfig; }
 
     /**
      * Get the screen rotation used in this configuration.
      */
-    public String getRotation() {
-        return mRotation;
-    }
+    public String getRotation() { return mRotation; }
 
     /**
      * Get the surface type used in this configuration.
      */
-    public String getSurfaceType() {
-        return mSurfaceType;
-    }
+    public String getSurfaceType() { return mSurfaceType; }
 
     /**
      * Is this configuration mandatory to support, if target API is supported?
      */
-    public boolean isRequired() {
-        return mRequired;
-    }
+    public boolean isRequired() { return mRequired; }
 
     @Override
     public boolean equals(Object other) {

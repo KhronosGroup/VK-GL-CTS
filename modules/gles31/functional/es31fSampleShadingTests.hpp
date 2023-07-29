@@ -36,18 +36,18 @@ namespace Functional
 class SampleShadingTests : public TestCaseGroup
 {
 public:
-							SampleShadingTests		(Context& context);
-							~SampleShadingTests		(void);
+    SampleShadingTests(Context &context);
+    ~SampleShadingTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							SampleShadingTests		(const SampleShadingTests& other);
-	SampleShadingTests&		operator=				(const SampleShadingTests& other);
+    SampleShadingTests(const SampleShadingTests &other);
+    SampleShadingTests &operator=(const SampleShadingTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FSAMPLESHADINGTESTS_HPP

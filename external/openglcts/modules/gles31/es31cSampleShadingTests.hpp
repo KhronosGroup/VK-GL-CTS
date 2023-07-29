@@ -34,18 +34,18 @@ namespace glcts
 class SampleShadingTests : public glcts::TestCaseGroup
 {
 public:
-	SampleShadingTests(glcts::Context& context, glu::GLSLVersion glslVersion);
-	~SampleShadingTests(void);
+    SampleShadingTests(glcts::Context &context, glu::GLSLVersion glslVersion);
+    ~SampleShadingTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	SampleShadingTests(const SampleShadingTests& other);
-	SampleShadingTests& operator=(const SampleShadingTests& other);
+    SampleShadingTests(const SampleShadingTests &other);
+    SampleShadingTests &operator=(const SampleShadingTests &other);
 
-	glu::GLSLVersion m_glslVersion;
+    glu::GLSLVersion m_glslVersion;
 };
 
-} // glcts
+} // namespace glcts
 
 #endif // _ES31CSAMPLESHADINGTESTS_HPP

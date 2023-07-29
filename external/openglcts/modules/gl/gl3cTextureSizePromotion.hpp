@@ -43,18 +43,18 @@ namespace TextureSizePromotion
 class Tests : public deqp::TestCaseGroup
 {
 public:
-	/* Public member functions. */
-	Tests(deqp::Context& context); //!< Constructor.
-	virtual ~Tests()
-	{
-	} //!< Destructor
+    /* Public member functions. */
+    Tests(deqp::Context &context); //!< Constructor.
+    virtual ~Tests()
+    {
+    } //!< Destructor
 
-	virtual void init(void); //!< Initialization member function.
+    virtual void init(void); //!< Initialization member function.
 
 private:
-	/* Private member functions. */
-	Tests(const Tests&);			//!< Default copy constructor.
-	Tests& operator=(const Tests&); //!< Default assign constructor.
+    /* Private member functions. */
+    Tests(const Tests &);            //!< Default copy constructor.
+    Tests &operator=(const Tests &); //!< Default assign constructor.
 };
 
 /** Functional Test Class
@@ -108,270 +108,270 @@ private:
 class FunctionalTest : public deqp::TestCase
 {
 public:
-	/* Public member functions. */
-	FunctionalTest(deqp::Context& context);			//!< Functional test constructor.
-	virtual tcu::TestNode::IterateResult iterate(); //!< Member function to iterate over test cases.
+    /* Public member functions. */
+    FunctionalTest(deqp::Context &context);         //!< Functional test constructor.
+    virtual tcu::TestNode::IterateResult iterate(); //!< Member function to iterate over test cases.
 
 private:
-	/* Private member variables. */
-	glw::GLuint m_vao;				   //!< Vertex Array Object name.
-	glw::GLuint m_source_texture;	  //!< Source Texture  Object name.
-	glw::GLuint m_destination_texture; //!< Destination Texture Object name.
-	glw::GLuint m_framebuffer;		   //!< Framebuffer Object name.
-	glw::GLuint m_program;			   //!< Program Object name.
-	glw::GLint  m_max_samples;		   //!< Maximum samples available for usage in multisampled targets.
+    /* Private member variables. */
+    glw::GLuint m_vao;                 //!< Vertex Array Object name.
+    glw::GLuint m_source_texture;      //!< Source Texture  Object name.
+    glw::GLuint m_destination_texture; //!< Destination Texture Object name.
+    glw::GLuint m_framebuffer;         //!< Framebuffer Object name.
+    glw::GLuint m_program;             //!< Program Object name.
+    glw::GLint m_max_samples;          //!< Maximum samples available for usage in multisampled targets.
 
-	/* Private type definitions. */
+    /* Private type definitions. */
 
-	/** Texture Internal Format Description structure
-	 */
-	struct TextureInternalFormatDescriptor
-	{
-		glu::ContextType   required_by_context;  //!< Minimum context version by which format is required.
-		glw::GLenum		   internal_format;		 //!< Texture internal format.
-		const glw::GLchar* internal_format_name; //!< String representing texture internal format.
-		bool			   is_sRGB;				 //!< Is this format described in sRGB space.
-		bool			   is_color_renderable;  //!< Is this format color renderable.
+    /** Texture Internal Format Description structure
+     */
+    struct TextureInternalFormatDescriptor
+    {
+        glu::ContextType required_by_context;    //!< Minimum context version by which format is required.
+        glw::GLenum internal_format;             //!< Texture internal format.
+        const glw::GLchar *internal_format_name; //!< String representing texture internal format.
+        bool is_sRGB;                            //!< Is this format described in sRGB space.
+        bool is_color_renderable;                //!< Is this format color renderable.
 
-		glw::GLint min_red_size;	 //!< Minimum required red     component resolution (in bits).
-		glw::GLint min_green_size;   //!< Minimum required green   component resolution (in bits).
-		glw::GLint min_blue_size;	//!< Minimum required blue    component resolution (in bits).
-		glw::GLint min_alpha_size;   //!< Minimum required alpha   component resolution (in bits).
-		glw::GLint min_depth_size;   //!< Minimum required depth   component resolution (in bits).
-		glw::GLint min_stencil_size; //!< Minimum required stencil component resolution (in bits).
+        glw::GLint min_red_size;     //!< Minimum required red     component resolution (in bits).
+        glw::GLint min_green_size;   //!< Minimum required green   component resolution (in bits).
+        glw::GLint min_blue_size;    //!< Minimum required blue    component resolution (in bits).
+        glw::GLint min_alpha_size;   //!< Minimum required alpha   component resolution (in bits).
+        glw::GLint min_depth_size;   //!< Minimum required depth   component resolution (in bits).
+        glw::GLint min_stencil_size; //!< Minimum required stencil component resolution (in bits).
 
-		glw::GLenum expected_red_type;   //!< Expected type of red   component.
-		glw::GLenum expected_green_type; //!< Expected type of green component.
-		glw::GLenum expected_blue_type;  //!< Expected type of blue  component.
-		glw::GLenum expected_alpha_type; //!< Expected type of alpha component.
-		glw::GLenum expected_depth_type; //!< Expected type of depth component.
-	};
+        glw::GLenum expected_red_type;   //!< Expected type of red   component.
+        glw::GLenum expected_green_type; //!< Expected type of green component.
+        glw::GLenum expected_blue_type;  //!< Expected type of blue  component.
+        glw::GLenum expected_alpha_type; //!< Expected type of alpha component.
+        glw::GLenum expected_depth_type; //!< Expected type of depth component.
+    };
 
-	/** Color channels enumeration
-	 */
-	enum ColorChannelSelector
-	{
-		RED_COMPONENT,   //!< Red   component.
-		GREEN_COMPONENT, //!< Green component.
-		BLUE_COMPONENT,  //!< Blue  component.
-		ALPHA_COMPONENT, //!< Alpha component (must be last color channel).
-		COMPONENTS_COUNT //!< Number of components.
-	};
+    /** Color channels enumeration
+     */
+    enum ColorChannelSelector
+    {
+        RED_COMPONENT,   //!< Red   component.
+        GREEN_COMPONENT, //!< Green component.
+        BLUE_COMPONENT,  //!< Blue  component.
+        ALPHA_COMPONENT, //!< Alpha component (must be last color channel).
+        COMPONENTS_COUNT //!< Number of components.
+    };
 
-	/* Private class' static constants. */
-	static const glw::GLfloat s_source_texture_data_f[]; //!< Source texture for floating point type internal formats.
-	static const glw::GLfloat
-		s_source_texture_data_n[]; //!< Source texture for unsigned normalized integer type internal formats.
-	static const glw::GLfloat
-							 s_source_texture_data_sn[]; //!< Source texture for signed normalized integer type internal formats.
-	static const glw::GLint  s_source_texture_data_i[];  //!< Source texture for signed integer type internal formats.
-	static const glw::GLuint s_source_texture_data_ui[]; //!< Source texture for unsigned integer type internal formats.
-	static const glw::GLuint s_source_texture_size;		 //!< Linear size of the source texture.
-	static const glw::GLfloat s_destination_texture_data_f
-		[]; //!< Destination texture data (to be sure that it was overwritten) for floating point and normalized types internal formats.
-	static const glw::GLint s_destination_texture_data_i
-		[]; //!< Destination texture data (to be sure that it was overwritten) signed integer type internal formats.
-	static const glw::GLuint s_destination_texture_data_ui
-		[]; //!< Destination texture data (to be sure that it was overwritten) unsigned integer type internal formats.
+    /* Private class' static constants. */
+    static const glw::GLfloat s_source_texture_data_f[]; //!< Source texture for floating point type internal formats.
+    static const glw::GLfloat
+        s_source_texture_data_n[]; //!< Source texture for unsigned normalized integer type internal formats.
+    static const glw::GLfloat
+        s_source_texture_data_sn[]; //!< Source texture for signed normalized integer type internal formats.
+    static const glw::GLint s_source_texture_data_i[];   //!< Source texture for signed integer type internal formats.
+    static const glw::GLuint s_source_texture_data_ui[]; //!< Source texture for unsigned integer type internal formats.
+    static const glw::GLuint s_source_texture_size;      //!< Linear size of the source texture.
+    static const glw::GLfloat s_destination_texture_data_f
+        []; //!< Destination texture data (to be sure that it was overwritten) for floating point and normalized types internal formats.
+    static const glw::GLint s_destination_texture_data_i
+        []; //!< Destination texture data (to be sure that it was overwritten) signed integer type internal formats.
+    static const glw::GLuint s_destination_texture_data_ui
+        []; //!< Destination texture data (to be sure that it was overwritten) unsigned integer type internal formats.
 
-	static const glw::GLenum  s_source_texture_targets[];		//!< Targets to be tested.
-	static const glw::GLchar* s_source_texture_targets_names[]; //!< Targets' names (strings) for logging purpose.
-	static const glw::GLuint  s_source_texture_targets_count;   //!< Number of targets to be tested.
+    static const glw::GLenum s_source_texture_targets[];        //!< Targets to be tested.
+    static const glw::GLchar *s_source_texture_targets_names[]; //!< Targets' names (strings) for logging purpose.
+    static const glw::GLuint s_source_texture_targets_count;    //!< Number of targets to be tested.
 
-	static const glw::GLchar* s_color_channel_names[]; //!< Color channel names (like in enum) for logging purpose.
+    static const glw::GLchar *s_color_channel_names[]; //!< Color channel names (like in enum) for logging purpose.
 
-	static const glw::GLchar*
-							  s_vertex_shader_code; //!< Vertex shader source code for drawing quad depending on vertex ID of triangle strip.
-	static const glw::GLchar* s_fragment_shader_template; //!< Fragment shader source code template.
+    static const glw::GLchar
+        *s_vertex_shader_code; //!< Vertex shader source code for drawing quad depending on vertex ID of triangle strip.
+    static const glw::GLchar *s_fragment_shader_template; //!< Fragment shader source code template.
 
-	static const TextureInternalFormatDescriptor
-							 s_formats[]; //!< List of internal formats (and their descriptions) to be tested by Functional Test.
-	static const glw::GLuint s_formats_size; //!< number of internal format to be tested.
+    static const TextureInternalFormatDescriptor
+        s_formats[]; //!< List of internal formats (and their descriptions) to be tested by Functional Test.
+    static const glw::GLuint s_formats_size; //!< number of internal format to be tested.
 
-	/* Private member functions. */
+    /* Private member functions. */
 
-	/** Generate and bind an empty Vertex Array Object.
-	 */
-	void prepareVertexArrayObject();
+    /** Generate and bind an empty Vertex Array Object.
+     */
+    void prepareVertexArrayObject();
 
-	/** Generate, bind and upload source texture.
-	 *
-	 *  @param [in] descriptor      Internal format description.
-	 *  @param [in] target          Texture target to be used.
-	 */
-	void prepareSourceTexture(TextureInternalFormatDescriptor descriptor, glw::GLenum target);
+    /** Generate, bind and upload source texture.
+     *
+     *  @param [in] descriptor      Internal format description.
+     *  @param [in] target          Texture target to be used.
+     */
+    void prepareSourceTexture(TextureInternalFormatDescriptor descriptor, glw::GLenum target);
 
-	/** Generate, bind and clean destination texture.
-	 *
-	 *  @param [in] descriptor      Internal format description.
-	 *  @param [in] target          Texture target to be used.
-	 */
-	void prepareDestinationTextureAndFramebuffer(TextureInternalFormatDescriptor descriptor, glw::GLenum target);
+    /** Generate, bind and clean destination texture.
+     *
+     *  @param [in] descriptor      Internal format description.
+     *  @param [in] target          Texture target to be used.
+     */
+    void prepareDestinationTextureAndFramebuffer(TextureInternalFormatDescriptor descriptor, glw::GLenum target);
 
-	/** Preprocess, compile and linke GLSL program.
-	 *
-	 *  @param [in] target          Texture target to be used.
-	 *  @param [in] descriptor      Internal format description.
-	 *  @param [in] channel         Color channel to be tested.
-	 *
-	 *  @return Program name on success, 0 on failure.
-	 */
-	glw::GLuint prepareProgram(glw::GLenum target, TextureInternalFormatDescriptor descriptor,
-							   ColorChannelSelector channel);
+    /** Preprocess, compile and linke GLSL program.
+     *
+     *  @param [in] target          Texture target to be used.
+     *  @param [in] descriptor      Internal format description.
+     *  @param [in] channel         Color channel to be tested.
+     *
+     *  @return Program name on success, 0 on failure.
+     */
+    glw::GLuint prepareProgram(glw::GLenum target, TextureInternalFormatDescriptor descriptor,
+                               ColorChannelSelector channel);
 
-	/** Use GLSL program with source and destination textures.
-	 *
-	 *  @param [in] target          Texture target to be used.
-	 */
-	void makeProgramAndSourceTextureActive(glw::GLenum target);
+    /** Use GLSL program with source and destination textures.
+     *
+     *  @param [in] target          Texture target to be used.
+     */
+    void makeProgramAndSourceTextureActive(glw::GLenum target);
 
-	/** Check source texture queries.
-	 *
-	 *  @param [in] descriptor      Internal format description.
-	 *  @param [in] target          Texture target to be used.
-	 */
-	bool checkSourceTextureSizeAndType(TextureInternalFormatDescriptor descriptor, glw::GLenum target);
+    /** Check source texture queries.
+     *
+     *  @param [in] descriptor      Internal format description.
+     *  @param [in] target          Texture target to be used.
+     */
+    bool checkSourceTextureSizeAndType(TextureInternalFormatDescriptor descriptor, glw::GLenum target);
 
-	/** Draw quad using GL_TRIANGLE_STRIP.
-	 */
-	void drawQuad();
+    /** Draw quad using GL_TRIANGLE_STRIP.
+     */
+    void drawQuad();
 
-	/** Check rendered destination texture to match expected values.
-	 *
-	 *  @param [in] descriptor      Internal format description.
-	 *  @param [in] channel         Used color channel.
-	 *  @param [in] target          Texture target to be used.
-	 *  @param [in] target_name     Texture target name for logging purposes.
-	 *
-	 *  @return True if fetched value matches expected value within the range of precission, false otherwise.
-	 */
-	bool checkDestinationTexture(TextureInternalFormatDescriptor descriptor, ColorChannelSelector channel,
-								 glw::GLenum target, const glw::GLchar* target_name);
+    /** Check rendered destination texture to match expected values.
+     *
+     *  @param [in] descriptor      Internal format description.
+     *  @param [in] channel         Used color channel.
+     *  @param [in] target          Texture target to be used.
+     *  @param [in] target_name     Texture target name for logging purposes.
+     *
+     *  @return True if fetched value matches expected value within the range of precission, false otherwise.
+     */
+    bool checkDestinationTexture(TextureInternalFormatDescriptor descriptor, ColorChannelSelector channel,
+                                 glw::GLenum target, const glw::GLchar *target_name);
 
-	/** Clean source texture object.
-	 */
-	void cleanSourceTexture();
+    /** Clean source texture object.
+     */
+    void cleanSourceTexture();
 
-	/** Clean framebuffer object.
-	 */
-	void cleanFramebuffer();
+    /** Clean framebuffer object.
+     */
+    void cleanFramebuffer();
 
-	/** Clean destination texture object.
-	 */
-	void cleanDestinationTexture();
+    /** Clean destination texture object.
+     */
+    void cleanDestinationTexture();
 
-	/** Clean program object.
-	 */
-	void cleanProgram();
+    /** Clean program object.
+     */
+    void cleanProgram();
 
-	/** Clean vertex array object object.
-	 */
-	void cleanVertexArrayObject();
+    /** Clean vertex array object object.
+     */
+    void cleanVertexArrayObject();
 
-	/** Choose internal format of destination texture for rendered source texture.
-	 *
-	 *  @param [in] descriptor      Internal format description.
-	 */
-	glw::GLenum getDestinationFormatForChannel(TextureInternalFormatDescriptor descriptor);
+    /** Choose internal format of destination texture for rendered source texture.
+     *
+     *  @param [in] descriptor      Internal format description.
+     */
+    glw::GLenum getDestinationFormatForChannel(TextureInternalFormatDescriptor descriptor);
 
-	/** Is internal format a floating type.
-	 *
-	 *  @param [in] descriptor      Internal format description.
-	 *
-	 *  @return True if internal format is floating point type, false otherwise.
-	 */
-	bool isFloatType(TextureInternalFormatDescriptor descriptor);
+    /** Is internal format a floating type.
+     *
+     *  @param [in] descriptor      Internal format description.
+     *
+     *  @return True if internal format is floating point type, false otherwise.
+     */
+    bool isFloatType(TextureInternalFormatDescriptor descriptor);
 
-	/** Is internal format a fixed signed type.
-	 *
-	 *  @param [in] descriptor      Internal format description.
-	 *
-	 *  @return True if internal format is fixed signed type, false otherwise.
-	 */
-	bool isFixedSignedType(TextureInternalFormatDescriptor descriptor);
+    /** Is internal format a fixed signed type.
+     *
+     *  @param [in] descriptor      Internal format description.
+     *
+     *  @return True if internal format is fixed signed type, false otherwise.
+     */
+    bool isFixedSignedType(TextureInternalFormatDescriptor descriptor);
 
-	/** Is internal format a fixed unsigned type.
-	 *
-	 *  @param [in] descriptor      Internal format description.
-	 *
-	 *  @return True if internal format is fixed unsigned type, false otherwise.
-	 */
-	bool isFixedUnsignedType(TextureInternalFormatDescriptor descriptor);
+    /** Is internal format a fixed unsigned type.
+     *
+     *  @param [in] descriptor      Internal format description.
+     *
+     *  @return True if internal format is fixed unsigned type, false otherwise.
+     */
+    bool isFixedUnsignedType(TextureInternalFormatDescriptor descriptor);
 
-	/** Is internal format a signed integral type.
-	 *
-	 *  @param [in] descriptor      Internal format description.
-	 *
-	 *  @return True if internal format is integral signed type, false otherwise.
-	 */
-	bool isIntegerSignedType(TextureInternalFormatDescriptor descriptor);
+    /** Is internal format a signed integral type.
+     *
+     *  @param [in] descriptor      Internal format description.
+     *
+     *  @return True if internal format is integral signed type, false otherwise.
+     */
+    bool isIntegerSignedType(TextureInternalFormatDescriptor descriptor);
 
-	/** Is internal format an unsigned integral type.
-	 *
-	 *  @param [in] descriptor      Internal format description.
-	 *
-	 *  @return True if internal format is integral unsigned type, false otherwise.
-	 */
-	bool isIntegerUnsignedType(TextureInternalFormatDescriptor descriptor);
+    /** Is internal format an unsigned integral type.
+     *
+     *  @param [in] descriptor      Internal format description.
+     *
+     *  @return True if internal format is integral unsigned type, false otherwise.
+     */
+    bool isIntegerUnsignedType(TextureInternalFormatDescriptor descriptor);
 
-	/** Is internal format a depth type.
-	 *
-	 *  @param [in] descriptor      Internal format description.
-	 *
-	 *  @return True if internal format is depth type, false otherwise.
-	 */
-	bool isDepthType(TextureInternalFormatDescriptor descriptor);
+    /** Is internal format a depth type.
+     *
+     *  @param [in] descriptor      Internal format description.
+     *
+     *  @return True if internal format is depth type, false otherwise.
+     */
+    bool isDepthType(TextureInternalFormatDescriptor descriptor);
 
-	/** Is internal format a stencil type.
-	 *
-	 *  @param [in] descriptor      Internal format description.
-	 *
-	 *  @return True if internal format is stencil type, false otherwise.
-	 */
-	bool isStencilType(TextureInternalFormatDescriptor descriptor);
+    /** Is internal format a stencil type.
+     *
+     *  @param [in] descriptor      Internal format description.
+     *
+     *  @return True if internal format is stencil type, false otherwise.
+     */
+    bool isStencilType(TextureInternalFormatDescriptor descriptor);
 
-	/** Is channel of internal format a none type (does not appear in the texture internal format).
-	 *
-	 *  @param [in] descriptor      Internal format description.
-	 *  @param [in] channel         Color channel to be queried.
-	 *
-	 *  @return True if internal format is none type, false otherwise.
-	 */
-	bool isChannelTypeNone(TextureInternalFormatDescriptor descriptor, ColorChannelSelector channel);
+    /** Is channel of internal format a none type (does not appear in the texture internal format).
+     *
+     *  @param [in] descriptor      Internal format description.
+     *  @param [in] channel         Color channel to be queried.
+     *
+     *  @return True if internal format is none type, false otherwise.
+     */
+    bool isChannelTypeNone(TextureInternalFormatDescriptor descriptor, ColorChannelSelector channel);
 
-	/** Calculate minimal required precission for internal format's channel.
-	 *
-	 *  @note It is needed only for floating point and normalized fixed point types.
-	 *
-	 *  @param [in] descriptor      Internal format description.
-	 *  @param [in] channel         Color channel to be queried.
-	 *
-	 *  @return Minimum precission.
-	 */
-	glw::GLfloat getMinPrecision(TextureInternalFormatDescriptor descriptor, ColorChannelSelector channel);
+    /** Calculate minimal required precission for internal format's channel.
+     *
+     *  @note It is needed only for floating point and normalized fixed point types.
+     *
+     *  @param [in] descriptor      Internal format description.
+     *  @param [in] channel         Color channel to be queried.
+     *
+     *  @return Minimum precission.
+     */
+    glw::GLfloat getMinPrecision(TextureInternalFormatDescriptor descriptor, ColorChannelSelector channel);
 
-	/** Is target multisample.
-	 *
-	 *  @param [in] target      Target.
-	 *
-	 *  @return True if target is multisampled, false otherwise.
-	 */
-	bool isTargetMultisampled(glw::GLenum target);
+    /** Is target multisample.
+     *
+     *  @param [in] target      Target.
+     *
+     *  @return True if target is multisampled, false otherwise.
+     */
+    bool isTargetMultisampled(glw::GLenum target);
 
-	/** Render data to the source texture for multisampled texture.
-	 *
-	 *  @param [in] descriptor      Internal format description.
-	 *  @param [in] target          Texture target to be used.
-	 */
-	void renderDataIntoMultisampledTexture(TextureInternalFormatDescriptor descriptor, glw::GLenum target);
+    /** Render data to the source texture for multisampled texture.
+     *
+     *  @param [in] descriptor      Internal format description.
+     *  @param [in] target          Texture target to be used.
+     */
+    void renderDataIntoMultisampledTexture(TextureInternalFormatDescriptor descriptor, glw::GLenum target);
 
-	/** Convert value from sRGB space to linear space.
-	 *
-	 *  @param [in] value           Value to be converted (sRGB space).
-	 *
-	 *  @return Converted value (linear space).
-	 */
-	float convert_from_sRGB(float value);
+    /** Convert value from sRGB space to linear space.
+     *
+     *  @param [in] value           Value to be converted (sRGB space).
+     *
+     *  @return Converted value (linear space).
+     */
+    float convert_from_sRGB(float value);
 };
 /* class TextureSizePromotion */
 
@@ -386,8 +386,8 @@ namespace Utilities
  *
  *  @return OpenGL program shader ID or zero if error had occured.
  */
-glw::GLuint buildProgram(glw::Functions const& gl, tcu::TestLog& log, glw::GLchar const* const vertex_shader_source,
-						 glw::GLchar const* const fragment_shader_source);
+glw::GLuint buildProgram(glw::Functions const &gl, tcu::TestLog &log, glw::GLchar const *const vertex_shader_source,
+                         glw::GLchar const *const fragment_shader_source);
 
 /** Preprocess source string by replacing key tokens with new values.
  *
@@ -406,9 +406,9 @@ std::string preprocessString(std::string source, std::string key, std::string va
  *  @return String representing integer.
  */
 std::string itoa(glw::GLint i);
-}
+} // namespace Utilities
 
-} /* TextureSizePromotion namespace */
-} /* gl3cts namespace */
+} // namespace TextureSizePromotion
+} // namespace gl3cts
 
 #endif // _GL3CTEXTURESIZEPROMOTION_HPP

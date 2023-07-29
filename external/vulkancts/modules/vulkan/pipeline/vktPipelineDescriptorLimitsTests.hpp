@@ -32,9 +32,10 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createDescriptorLimitsTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
+tcu::TestCaseGroup *createDescriptorLimitsTests(tcu::TestContext &testCtx,
+                                                vk::PipelineConstructionType pipelineConstructionType);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEDESCRIPTORLIMITSTESTS_HPP

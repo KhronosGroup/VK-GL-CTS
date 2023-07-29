@@ -36,18 +36,18 @@ namespace Functional
 class ShaderMultisampleInterpolationTests : public TestCaseGroup
 {
 public:
-											ShaderMultisampleInterpolationTests		(Context& context);
-											~ShaderMultisampleInterpolationTests	(void);
+    ShaderMultisampleInterpolationTests(Context &context);
+    ~ShaderMultisampleInterpolationTests(void);
 
-	void									init									(void);
+    void init(void);
 
 private:
-											ShaderMultisampleInterpolationTests		(ShaderMultisampleInterpolationTests& other);
-	ShaderMultisampleInterpolationTests&	operator=								(const ShaderMultisampleInterpolationTests& other);
+    ShaderMultisampleInterpolationTests(ShaderMultisampleInterpolationTests &other);
+    ShaderMultisampleInterpolationTests &operator=(const ShaderMultisampleInterpolationTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FSHADERMULTISAMPLEINTERPOLATIONTESTS_HPP

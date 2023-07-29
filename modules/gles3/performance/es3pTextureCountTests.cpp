@@ -38,51 +38,44 @@ namespace gles3
 namespace Performance
 {
 
-TextureCountTests::TextureCountTests (Context& context)
-	: TestCaseGroup(context, "count", "Texture Count Performance Tests")
+TextureCountTests::TextureCountTests(Context &context)
+    : TestCaseGroup(context, "count", "Texture Count Performance Tests")
 {
 }
 
-TextureCountTests::~TextureCountTests (void)
+TextureCountTests::~TextureCountTests(void)
 {
 }
 
-void TextureCountTests::init (void)
+void TextureCountTests::init(void)
 {
-	static const struct
-	{
-		const char*	name;
-		deUint32	internalFormat;
-	} texFormats[] =
-	{
-		{ "rgb565",		GL_RGB565	},
-		{ "rgb8",		GL_RGB8		},
-		{ "rgba8",		GL_RGBA8	},
-		{ "rgba8ui",	GL_RGBA8UI	},
-		{ "rg16f",		GL_RG16F	},
-		{ "rgba16f",	GL_RGBA16F	},
-		{ "rgba32f",	GL_RGBA32F	}
-	};
-	static const int texCounts[] = { 1, 2, 4, 8 };
+    static const struct
+    {
+        const char *name;
+        uint32_t internalFormat;
+    } texFormats[] = {{"rgb565", GL_RGB565}, {"rgb8", GL_RGB8},       {"rgba8", GL_RGBA8},    {"rgba8ui", GL_RGBA8UI},
+                      {"rg16f", GL_RG16F},   {"rgba16f", GL_RGBA16F}, {"rgba32f", GL_RGBA32F}};
+    static const int texCounts[] = {1, 2, 4, 8};
 
-	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(texFormats); formatNdx++)
-	{
-		for (int cntNdx = 0; cntNdx < DE_LENGTH_OF_ARRAY(texCounts); cntNdx++)
-		{
-			deUint32	format			= texFormats[formatNdx].internalFormat;
-			deUint32	wrapS			= GL_CLAMP_TO_EDGE;
-			deUint32	wrapT			= GL_CLAMP_TO_EDGE;
-			deUint32	minFilter		= GL_NEAREST;
-			deUint32	magFilter		= GL_NEAREST;
-			int			numTextures		= texCounts[cntNdx];
-			string		name			= string(texFormats[formatNdx].name) + "_" + de::toString(numTextures);
-			string		description		= glu::getTextureFormatName(format);
+    for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(texFormats); formatNdx++)
+    {
+        for (int cntNdx = 0; cntNdx < DE_LENGTH_OF_ARRAY(texCounts); cntNdx++)
+        {
+            uint32_t format    = texFormats[formatNdx].internalFormat;
+            uint32_t wrapS     = GL_CLAMP_TO_EDGE;
+            uint32_t wrapT     = GL_CLAMP_TO_EDGE;
+            uint32_t minFilter = GL_NEAREST;
+            uint32_t magFilter = GL_NEAREST;
+            int numTextures    = texCounts[cntNdx];
+            string name        = string(texFormats[formatNdx].name) + "_" + de::toString(numTextures);
+            string description = glu::getTextureFormatName(format);
 
-			addChild(new Texture2DRenderCase(m_context, name.c_str(), description.c_str(), format, wrapS, wrapT, minFilter, magFilter, tcu::Mat3(), numTextures, false /* npot */));
-		}
-	}
+            addChild(new Texture2DRenderCase(m_context, name.c_str(), description.c_str(), format, wrapS, wrapT,
+                                             minFilter, magFilter, tcu::Mat3(), numTextures, false /* npot */));
+        }
+    }
 }
 
-} // Performance
-} // gles3
-} // deqp
+} // namespace Performance
+} // namespace gles3
+} // namespace deqp

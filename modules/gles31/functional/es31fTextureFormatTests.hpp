@@ -36,18 +36,18 @@ namespace Functional
 class TextureFormatTests : public TestCaseGroup
 {
 public:
-							TextureFormatTests		(Context& context);
-							~TextureFormatTests		(void);
+    TextureFormatTests(Context &context);
+    ~TextureFormatTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							TextureFormatTests		(const TextureFormatTests& other);
-	TextureFormatTests&		operator=				(const TextureFormatTests& other);
+    TextureFormatTests(const TextureFormatTests &other);
+    TextureFormatTests &operator=(const TextureFormatTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FTEXTUREFORMATTESTS_HPP

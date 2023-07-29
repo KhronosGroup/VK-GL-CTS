@@ -36,18 +36,18 @@ namespace Functional
 class FboInvalidateTests : public TestCaseGroup
 {
 public:
-							FboInvalidateTests		(Context& context);
-							~FboInvalidateTests		(void);
+    FboInvalidateTests(Context &context);
+    ~FboInvalidateTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							FboInvalidateTests		(const FboInvalidateTests& other);
-	FboInvalidateTests&		operator=				(const FboInvalidateTests& other);
+    FboInvalidateTests(const FboInvalidateTests &other);
+    FboInvalidateTests &operator=(const FboInvalidateTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FFBOINVALIDATETESTS_HPP

@@ -39,28 +39,28 @@ class GetBooleanVerifier;
 class GetIntegerVerifier;
 class GetFloatVerifier;
 
-} // FloatStateQueryVerifiers
+} // namespace FloatStateQueryVerifiers
 
 class FloatStateQueryTests : public TestCaseGroup
 {
 public:
-															FloatStateQueryTests				(Context& context);
-															~FloatStateQueryTests				(void);
+    FloatStateQueryTests(Context &context);
+    ~FloatStateQueryTests(void);
 
-	void													init								(void);
-	void													deinit								(void);
+    void init(void);
+    void deinit(void);
 
 private:
-															FloatStateQueryTests				(const FloatStateQueryTests& other);
-	FloatStateQueryTests&									operator=							(const FloatStateQueryTests& other);
+    FloatStateQueryTests(const FloatStateQueryTests &other);
+    FloatStateQueryTests &operator=(const FloatStateQueryTests &other);
 
-	FloatStateQueryVerifiers::GetBooleanVerifier*			m_verifierBoolean;
-	FloatStateQueryVerifiers::GetIntegerVerifier*			m_verifierInteger;
-	FloatStateQueryVerifiers::GetFloatVerifier*				m_verifierFloat;
+    FloatStateQueryVerifiers::GetBooleanVerifier *m_verifierBoolean;
+    FloatStateQueryVerifiers::GetIntegerVerifier *m_verifierInteger;
+    FloatStateQueryVerifiers::GetFloatVerifier *m_verifierFloat;
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FFLOATSTATEQUERYTESTS_HPP

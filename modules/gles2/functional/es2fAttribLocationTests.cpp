@@ -44,118 +44,129 @@ namespace gles2
 namespace Functional
 {
 
-TestCaseGroup* createAttributeLocationTests (Context& context)
+TestCaseGroup *createAttributeLocationTests(Context &context)
 {
-	const AttribType	types[] =
-	{
-		AttribType("float",	1,  GL_FLOAT),
-		AttribType("vec2",	1,  GL_FLOAT_VEC2),
-		AttribType("vec3",	1,  GL_FLOAT_VEC3),
-		AttribType("vec4",	1,  GL_FLOAT_VEC4),
+    const AttribType types[] = {AttribType("float", 1, GL_FLOAT),     AttribType("vec2", 1, GL_FLOAT_VEC2),
+                                AttribType("vec3", 1, GL_FLOAT_VEC3), AttribType("vec4", 1, GL_FLOAT_VEC4),
 
-		AttribType("mat2",	2,  GL_FLOAT_MAT2),
-		AttribType("mat3",	3,  GL_FLOAT_MAT3),
-		AttribType("mat4",	4,  GL_FLOAT_MAT4)
-	};
+                                AttribType("mat2", 2, GL_FLOAT_MAT2), AttribType("mat3", 3, GL_FLOAT_MAT3),
+                                AttribType("mat4", 4, GL_FLOAT_MAT4)};
 
-	TestCaseGroup* const root = new TestCaseGroup (context, "attribute_location", "Attribute location tests");
+    TestCaseGroup *const root = new TestCaseGroup(context, "attribute_location", "Attribute location tests");
 
-	// Basic bind attribute tests
-	{
-		TestCaseGroup* const bindAttributeGroup = new TestCaseGroup(context, "bind", "Basic attribute binding tests.");
+    // Basic bind attribute tests
+    {
+        TestCaseGroup *const bindAttributeGroup = new TestCaseGroup(context, "bind", "Basic attribute binding tests.");
 
-		root->addChild(bindAttributeGroup);
+        root->addChild(bindAttributeGroup);
 
-		for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(types); typeNdx++)
-		{
-			const AttribType& type = types[typeNdx];
-			bindAttributeGroup->addChild(new gls::BindAttributeTest(context.getTestContext(), context.getRenderContext(), type));
-		}
-	}
+        for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(types); typeNdx++)
+        {
+            const AttribType &type = types[typeNdx];
+            bindAttributeGroup->addChild(
+                new gls::BindAttributeTest(context.getTestContext(), context.getRenderContext(), type));
+        }
+    }
 
-	// Bind max number of attributes
-	{
-		TestCaseGroup* const bindMaxAttributeGroup = new TestCaseGroup(context, "bind_max_attributes", "Test using maximum attributes with bind.");
+    // Bind max number of attributes
+    {
+        TestCaseGroup *const bindMaxAttributeGroup =
+            new TestCaseGroup(context, "bind_max_attributes", "Test using maximum attributes with bind.");
 
-		root->addChild(bindMaxAttributeGroup);
+        root->addChild(bindMaxAttributeGroup);
 
-		for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(types); typeNdx++)
-		{
-			const AttribType& type = types[typeNdx];
-			bindMaxAttributeGroup->addChild(new gls::BindMaxAttributesTest(context.getTestContext(), context.getRenderContext(), type));
-		}
-	}
+        for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(types); typeNdx++)
+        {
+            const AttribType &type = types[typeNdx];
+            bindMaxAttributeGroup->addChild(
+                new gls::BindMaxAttributesTest(context.getTestContext(), context.getRenderContext(), type));
+        }
+    }
 
-	// Test aliasing
-	{
-		TestCaseGroup* const aliasingGroup = new TestCaseGroup(context, "bind_aliasing", "Test attribute location aliasing with bind.");
+    // Test aliasing
+    {
+        TestCaseGroup *const aliasingGroup =
+            new TestCaseGroup(context, "bind_aliasing", "Test attribute location aliasing with bind.");
 
-		root->addChild(aliasingGroup);
+        root->addChild(aliasingGroup);
 
-		for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(types); typeNdx++)
-		{
-			const AttribType& type = types[typeNdx];
+        for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(types); typeNdx++)
+        {
+            const AttribType &type = types[typeNdx];
 
-			// Simple aliasing cases
-			aliasingGroup->addChild(new gls::BindAliasingAttributeTest(context.getTestContext(), context.getRenderContext(), type));
+            // Simple aliasing cases
+            aliasingGroup->addChild(
+                new gls::BindAliasingAttributeTest(context.getTestContext(), context.getRenderContext(), type));
 
-			// For types which occupy more than one location. Alias second location.
-			if (type.getLocationSize() > 1)
-				aliasingGroup->addChild(new gls::BindAliasingAttributeTest(context.getTestContext(), context.getRenderContext(), type, 1));
+            // For types which occupy more than one location. Alias second location.
+            if (type.getLocationSize() > 1)
+                aliasingGroup->addChild(
+                    new gls::BindAliasingAttributeTest(context.getTestContext(), context.getRenderContext(), type, 1));
 
-			// Use more than maximum attributes with conditional aliasing
-			aliasingGroup->addChild(new gls::BindMaxAliasingAttributeTest(context.getTestContext(), context.getRenderContext(), type));
+            // Use more than maximum attributes with conditional aliasing
+            aliasingGroup->addChild(
+                new gls::BindMaxAliasingAttributeTest(context.getTestContext(), context.getRenderContext(), type));
 
-			// Use more than maximum attributes with inactive attributes
-			aliasingGroup->addChild(new gls::BindInactiveAliasingAttributeTest(context.getTestContext(), context.getRenderContext(), type));
-		}
-	}
+            // Use more than maximum attributes with inactive attributes
+            aliasingGroup->addChild(
+                new gls::BindInactiveAliasingAttributeTest(context.getTestContext(), context.getRenderContext(), type));
+        }
+    }
 
-	// Test filling holes in attribute location
-	{
-		TestCaseGroup* const holeGroup = new TestCaseGroup(context, "bind_hole", "Bind all, but one attribute and leave hole in location space for it.");
+    // Test filling holes in attribute location
+    {
+        TestCaseGroup *const holeGroup = new TestCaseGroup(
+            context, "bind_hole", "Bind all, but one attribute and leave hole in location space for it.");
 
-		root->addChild(holeGroup);
+        root->addChild(holeGroup);
 
-		for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(types); typeNdx++)
-		{
-			const AttribType& type = types[typeNdx];
+        for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(types); typeNdx++)
+        {
+            const AttribType &type = types[typeNdx];
 
-			// Bind first location, leave hole size of type and fill rest of locations
-			holeGroup->addChild(new gls::BindHoleAttributeTest(context.getTestContext(), context.getRenderContext(), type));
-		}
-	}
+            // Bind first location, leave hole size of type and fill rest of locations
+            holeGroup->addChild(
+                new gls::BindHoleAttributeTest(context.getTestContext(), context.getRenderContext(), type));
+        }
+    }
 
-	// Test binding at different times
-	{
-		TestCaseGroup* const bindTimeGroup = new TestCaseGroup(context, "bind_time", "Bind time tests. Test binding at different stages.");
+    // Test binding at different times
+    {
+        TestCaseGroup *const bindTimeGroup =
+            new TestCaseGroup(context, "bind_time", "Bind time tests. Test binding at different stages.");
 
-		root->addChild(bindTimeGroup);
+        root->addChild(bindTimeGroup);
 
-		bindTimeGroup->addChild(new gls::PreAttachBindAttributeTest(context.getTestContext(), context.getRenderContext()));
-		bindTimeGroup->addChild(new gls::PreLinkBindAttributeTest(context.getTestContext(), context.getRenderContext()));
-		bindTimeGroup->addChild(new gls::PostLinkBindAttributeTest(context.getTestContext(), context.getRenderContext()));
-		bindTimeGroup->addChild(new gls::BindRelinkAttributeTest(context.getTestContext(), context.getRenderContext()));
-		bindTimeGroup->addChild(new gls::BindReattachAttributeTest(context.getTestContext(), context.getRenderContext()));
-	}
+        bindTimeGroup->addChild(
+            new gls::PreAttachBindAttributeTest(context.getTestContext(), context.getRenderContext()));
+        bindTimeGroup->addChild(
+            new gls::PreLinkBindAttributeTest(context.getTestContext(), context.getRenderContext()));
+        bindTimeGroup->addChild(
+            new gls::PostLinkBindAttributeTest(context.getTestContext(), context.getRenderContext()));
+        bindTimeGroup->addChild(new gls::BindRelinkAttributeTest(context.getTestContext(), context.getRenderContext()));
+        bindTimeGroup->addChild(
+            new gls::BindReattachAttributeTest(context.getTestContext(), context.getRenderContext()));
+    }
 
-	// Test relinking program
-	{
-		TestCaseGroup* const relinkHoleGroup = new TestCaseGroup(context, "bind_relink_hole", "Test relinking with moving hole in attribute location space.");
+    // Test relinking program
+    {
+        TestCaseGroup *const relinkHoleGroup = new TestCaseGroup(
+            context, "bind_relink_hole", "Test relinking with moving hole in attribute location space.");
 
-		root->addChild(relinkHoleGroup);
+        root->addChild(relinkHoleGroup);
 
-		for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(types); typeNdx++)
-		{
-			const AttribType& type = types[typeNdx];
+        for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(types); typeNdx++)
+        {
+            const AttribType &type = types[typeNdx];
 
-			relinkHoleGroup->addChild(new gls::BindRelinkHoleAttributeTest(context.getTestContext(), context.getRenderContext(), type));
-		}
-	}
+            relinkHoleGroup->addChild(
+                new gls::BindRelinkHoleAttributeTest(context.getTestContext(), context.getRenderContext(), type));
+        }
+    }
 
-	return root;
+    return root;
 }
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp

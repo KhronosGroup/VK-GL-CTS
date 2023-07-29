@@ -55,39 +55,39 @@ namespace glcts
 class GeometryShaderCreateShaderProgramvTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderCreateShaderProgramvTest(Context& context, const ExtParameters& extParams, const char* name,
-										   const char* description);
+    /* Public methods */
+    GeometryShaderCreateShaderProgramvTest(Context &context, const ExtParameters &extParams, const char *name,
+                                           const char *description);
 
-	virtual ~GeometryShaderCreateShaderProgramvTest()
-	{
-	}
+    virtual ~GeometryShaderCreateShaderProgramvTest()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
-	void initFBO();
-	void initPipelineObject();
+    /* Private methods */
+    void initFBO();
+    void initPipelineObject();
 
-	/* Private variables */
-	static const char* fs_code;
-	static const char* gs_code;
-	static const char* vs_code;
+    /* Private variables */
+    static const char *fs_code;
+    static const char *gs_code;
+    static const char *vs_code;
 
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_fs_po_id;
-	glw::GLuint m_gs_po_id;
-	glw::GLuint m_pipeline_object_id;
-	glw::GLuint m_to_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_vs_po_id;
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_fs_po_id;
+    glw::GLuint m_gs_po_id;
+    glw::GLuint m_pipeline_object_id;
+    glw::GLuint m_to_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_po_id;
 
-	static const unsigned int m_to_height;
-	static const unsigned int m_to_width;
+    static const unsigned int m_to_height;
+    static const unsigned int m_to_width;
 };
 
 /* Implementation of "Group 18", test 2 from CTS_EXT_geometry_shader. Description follows:
@@ -104,24 +104,24 @@ private:
 class GeometryShaderGetShaderivTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderGetShaderivTest(Context& context, const ExtParameters& extParams, const char* name,
-								  const char* description);
+    /* Public methods */
+    GeometryShaderGetShaderivTest(Context &context, const ExtParameters &extParams, const char *name,
+                                  const char *description);
 
-	virtual ~GeometryShaderGetShaderivTest()
-	{
-	}
+    virtual ~GeometryShaderGetShaderivTest()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
+    /* Private methods */
 
-	/* Private variables */
-	glw::GLuint m_gs_id;
+    /* Private variables */
+    glw::GLuint m_gs_id;
 };
 
 /* Implementation of "Group 18", test 3 from CTS_EXT_geometry_shader. Description follows:
@@ -149,24 +149,24 @@ private:
 class GeometryShaderGetProgramivTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderGetProgramivTest(Context& context, const ExtParameters& extParams, const char* name,
-								   const char* description);
+    /* Public methods */
+    GeometryShaderGetProgramivTest(Context &context, const ExtParameters &extParams, const char *name,
+                                   const char *description);
 
-	virtual ~GeometryShaderGetProgramivTest()
-	{
-	}
+    virtual ~GeometryShaderGetProgramivTest()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
+    /* Private methods */
 
-	/* Private variables */
-	glw::GLuint m_po_id;
+    /* Private variables */
+    glw::GLuint m_po_id;
 };
 
 /* Implementation of "Group 18", test 4 from CTS_EXT_geometry_shader. Description follows:
@@ -195,26 +195,26 @@ private:
 class GeometryShaderGetProgramiv2Test : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderGetProgramiv2Test(Context& context, const ExtParameters& extParams, const char* name,
-									const char* description);
+    /* Public methods */
+    GeometryShaderGetProgramiv2Test(Context &context, const ExtParameters &extParams, const char *name,
+                                    const char *description);
 
-	virtual ~GeometryShaderGetProgramiv2Test()
-	{
-	}
+    virtual ~GeometryShaderGetProgramiv2Test()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
+    /* Private methods */
 
-	/* Private variables */
-	glw::GLuint m_fs_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_vs_id;
+    /* Private variables */
+    glw::GLuint m_fs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_vs_id;
 };
 
 /* Implementation of "Group 19", test 1 from CTS_EXT_geometry_shader. Description follows:
@@ -246,64 +246,64 @@ private:
 class GeometryShaderGetProgramiv3Test : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderGetProgramiv3Test(Context& context, const ExtParameters& extParams, const char* name,
-									const char* description);
+    /* Public methods */
+    GeometryShaderGetProgramiv3Test(Context &context, const ExtParameters &extParams, const char *name,
+                                    const char *description);
 
-	virtual ~GeometryShaderGetProgramiv3Test()
-	{
-	}
+    virtual ~GeometryShaderGetProgramiv3Test()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
-	typedef struct _run
-	{
-		glw::GLenum input_primitive_type;
-		int			invocations;
-		int			max_vertices;
-		glw::GLenum output_primitive_type;
+    /* Private type definition */
+    typedef struct _run
+    {
+        glw::GLenum input_primitive_type;
+        int invocations;
+        int max_vertices;
+        glw::GLenum output_primitive_type;
 
-		explicit _run(glw::GLenum in_input_primitive_type, int in_invocations, int in_max_vertices,
-					  glw::GLenum in_output_primitive_type)
-		{
-			input_primitive_type  = in_input_primitive_type;
-			invocations			  = in_invocations;
-			max_vertices		  = in_max_vertices;
-			output_primitive_type = in_output_primitive_type;
-		}
-	} _run;
+        explicit _run(glw::GLenum in_input_primitive_type, int in_invocations, int in_max_vertices,
+                      glw::GLenum in_output_primitive_type)
+        {
+            input_primitive_type  = in_input_primitive_type;
+            invocations           = in_invocations;
+            max_vertices          = in_max_vertices;
+            output_primitive_type = in_output_primitive_type;
+        }
+    } _run;
 
-	/* Private methods */
-	bool buildShader(glw::GLuint so_id, const char* so_body);
+    /* Private methods */
+    bool buildShader(glw::GLuint so_id, const char *so_body);
 
-	bool buildShaderProgram(glw::GLuint* out_spo_id, glw::GLenum spo_bits, const char* spo_body);
+    bool buildShaderProgram(glw::GLuint *out_spo_id, glw::GLenum spo_bits, const char *spo_body);
 
-	void deinitPO();
+    void deinitPO();
 
-	void deinitSOs(bool release_all_SOs);
+    void deinitSOs(bool release_all_SOs);
 
-	void deinitSPOs(bool release_all_SPOs);
+    void deinitSPOs(bool release_all_SPOs);
 
-	std::string getLayoutQualifierForPrimitiveType(glw::GLenum primitive_type);
+    std::string getLayoutQualifierForPrimitiveType(glw::GLenum primitive_type);
 
-	std::string getGSCode(const _run& run);
+    std::string getGSCode(const _run &run);
 
-	void initTestRuns();
+    void initTestRuns();
 
-	/* Private variables */
-	glw::GLuint m_fs_id;
-	glw::GLuint m_fs_po_id;
-	glw::GLuint m_gs_id;
-	glw::GLuint m_gs_po_id;
-	glw::GLuint m_pipeline_object_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_vs_id;
-	glw::GLuint m_vs_po_id;
+    /* Private variables */
+    glw::GLuint m_fs_id;
+    glw::GLuint m_fs_po_id;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_gs_po_id;
+    glw::GLuint m_pipeline_object_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_vs_id;
+    glw::GLuint m_vs_po_id;
 
-	std::vector<_run> _runs;
+    std::vector<_run> _runs;
 };
 
 /* Implementation of "Group 19", test 2 from CTS_EXT_geometry_shader. Description follows:
@@ -332,27 +332,27 @@ private:
 class GeometryShaderDrawCallWithFSAndGS : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderDrawCallWithFSAndGS(Context& context, const ExtParameters& extParams, const char* name,
-									  const char* description);
+    /* Public methods */
+    GeometryShaderDrawCallWithFSAndGS(Context &context, const ExtParameters &extParams, const char *name,
+                                      const char *description);
 
-	virtual ~GeometryShaderDrawCallWithFSAndGS()
-	{
-	}
+    virtual ~GeometryShaderDrawCallWithFSAndGS()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
+    /* Private methods */
 
-	/* Private variables */
-	glw::GLuint m_fs_po_id;
-	glw::GLuint m_gs_po_id;
-	glw::GLuint m_pipeline_object_id;
-	glw::GLuint m_vao_id;
+    /* Private variables */
+    glw::GLuint m_fs_po_id;
+    glw::GLuint m_gs_po_id;
+    glw::GLuint m_pipeline_object_id;
+    glw::GLuint m_vao_id;
 };
 
 /* Implementation of "Group 23", test 1 from CTS_EXT_geometry_shader. Description follows:
@@ -389,32 +389,32 @@ private:
 class GeometryShaderMaxImageUniformsTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderMaxImageUniformsTest(Context& context, const ExtParameters& extParams, const char* name,
-									   const char* description);
+    /* Public methods */
+    GeometryShaderMaxImageUniformsTest(Context &context, const ExtParameters &extParams, const char *name,
+                                       const char *description);
 
-	virtual ~GeometryShaderMaxImageUniformsTest()
-	{
-	}
+    virtual ~GeometryShaderMaxImageUniformsTest()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
-	std::string getGSCode();
+    /* Private methods */
+    std::string getGSCode();
 
-	/* Private variables */
-	glw::GLuint  m_fs_id;
-	glw::GLint   m_gl_max_geometry_image_uniforms_ext_value;
-	glw::GLuint  m_gs_id;
-	glw::GLuint  m_po_id;
-	glw::GLuint* m_texture_ids;
-	glw::GLuint  m_tfbo_id;
-	glw::GLuint  m_vao_id;
-	glw::GLuint  m_vs_id;
+    /* Private variables */
+    glw::GLuint m_fs_id;
+    glw::GLint m_gl_max_geometry_image_uniforms_ext_value;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint *m_texture_ids;
+    glw::GLuint m_tfbo_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_id;
 };
 
 /* Implementation of "Group 23", test 2 from CTS_EXT_geometry_shader. Description follows:
@@ -457,32 +457,32 @@ private:
 class GeometryShaderMaxShaderStorageBlocksTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderMaxShaderStorageBlocksTest(Context& context, const ExtParameters& extParams, const char* name,
-											 const char* description);
+    /* Public methods */
+    GeometryShaderMaxShaderStorageBlocksTest(Context &context, const ExtParameters &extParams, const char *name,
+                                             const char *description);
 
-	virtual ~GeometryShaderMaxShaderStorageBlocksTest()
-	{
-	}
+    virtual ~GeometryShaderMaxShaderStorageBlocksTest()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
-	std::string getGSCode();
+    /* Private methods */
+    std::string getGSCode();
 
-	/* Private variables */
-	glw::GLuint m_fs_id;
-	glw::GLint  m_gl_max_geometry_shader_storage_blocks_ext_value;
-	glw::GLuint m_gs_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_ssbo_id;
-	glw::GLuint m_tfbo_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_vs_id;
+    /* Private variables */
+    glw::GLuint m_fs_id;
+    glw::GLint m_gl_max_geometry_shader_storage_blocks_ext_value;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_ssbo_id;
+    glw::GLuint m_tfbo_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_id;
 };
 
 /* Implementation of "Group 23", test 3 from CTS_EXT_geometry_shader. Description follows:
@@ -521,31 +521,31 @@ private:
 class GeometryShaderMaxAtomicCountersTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderMaxAtomicCountersTest(Context& context, const ExtParameters& extParams, const char* name,
-										const char* description);
+    /* Public methods */
+    GeometryShaderMaxAtomicCountersTest(Context &context, const ExtParameters &extParams, const char *name,
+                                        const char *description);
 
-	virtual ~GeometryShaderMaxAtomicCountersTest()
-	{
-	}
+    virtual ~GeometryShaderMaxAtomicCountersTest()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
-	std::string getGSCode();
+    /* Private methods */
+    std::string getGSCode();
 
-	/* Private variables */
-	glw::GLuint m_acbo_id;
-	glw::GLuint m_fs_id;
-	glw::GLint  m_gl_max_geometry_atomic_counters_ext_value;
-	glw::GLuint m_gs_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_vs_id;
+    /* Private variables */
+    glw::GLuint m_acbo_id;
+    glw::GLuint m_fs_id;
+    glw::GLint m_gl_max_geometry_atomic_counters_ext_value;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_id;
 };
 
 /* Implementation of "Group 23", test 5 from CTS_EXT_geometry_shader. Description follows:
@@ -585,32 +585,32 @@ private:
 class GeometryShaderMaxAtomicCounterBuffersTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderMaxAtomicCounterBuffersTest(Context& context, const ExtParameters& extParams, const char* name,
-											  const char* description);
+    /* Public methods */
+    GeometryShaderMaxAtomicCounterBuffersTest(Context &context, const ExtParameters &extParams, const char *name,
+                                              const char *description);
 
-	virtual ~GeometryShaderMaxAtomicCounterBuffersTest()
-	{
-	}
+    virtual ~GeometryShaderMaxAtomicCounterBuffersTest()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
-	std::string getGSCode();
+    /* Private methods */
+    std::string getGSCode();
 
-	/* Private variables */
-	glw::GLuint* m_acbo_ids;
-	glw::GLuint  m_fs_id;
-	glw::GLint   m_gl_max_atomic_counter_buffer_bindings_value;
-	glw::GLint   m_gl_max_geometry_atomic_counter_buffers_ext_value;
-	glw::GLuint  m_gs_id;
-	glw::GLuint  m_po_id;
-	glw::GLuint  m_vao_id;
-	glw::GLuint  m_vs_id;
+    /* Private variables */
+    glw::GLuint *m_acbo_ids;
+    glw::GLuint m_fs_id;
+    glw::GLint m_gl_max_atomic_counter_buffer_bindings_value;
+    glw::GLint m_gl_max_geometry_atomic_counter_buffers_ext_value;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_id;
 };
 
 /* Implementation of "Group 24", test 2 from CTS_EXT_geometry_shader. Description follows:
@@ -635,29 +635,29 @@ private:
 class GeometryShaderPiplineProgramObjectWithoutActiveVSProgramTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderPiplineProgramObjectWithoutActiveVSProgramTest(Context& context, const ExtParameters& extParams,
-																 const char* name, const char* description);
+    /* Public methods */
+    GeometryShaderPiplineProgramObjectWithoutActiveVSProgramTest(Context &context, const ExtParameters &extParams,
+                                                                 const char *name, const char *description);
 
-	virtual ~GeometryShaderPiplineProgramObjectWithoutActiveVSProgramTest()
-	{
-	}
+    virtual ~GeometryShaderPiplineProgramObjectWithoutActiveVSProgramTest()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
+    /* Private methods */
 
-	/* Private variables */
-	glw::GLuint m_fs_id;
-	glw::GLuint m_fs_po_id;
-	glw::GLuint m_gs_id;
-	glw::GLuint m_gs_po_id;
-	glw::GLuint m_ppo_id;
-	glw::GLuint m_vao_id;
+    /* Private variables */
+    glw::GLuint m_fs_id;
+    glw::GLuint m_fs_po_id;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_gs_po_id;
+    glw::GLuint m_ppo_id;
+    glw::GLuint m_vao_id;
 };
 
 /* Implementation of "Group 24", test 3 from CTS_EXT_geometry_shader. Description follows:
@@ -756,29 +756,29 @@ private:
 class GeometryShaderIncompatibleDrawCallModeTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderIncompatibleDrawCallModeTest(Context& context, const ExtParameters& extParams, const char* name,
-											   const char* description);
+    /* Public methods */
+    GeometryShaderIncompatibleDrawCallModeTest(Context &context, const ExtParameters &extParams, const char *name,
+                                               const char *description);
 
-	virtual ~GeometryShaderIncompatibleDrawCallModeTest()
-	{
-	}
+    virtual ~GeometryShaderIncompatibleDrawCallModeTest()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
+    /* Private methods */
 
-	/* Private variables */
-	glw::GLuint		  m_fs_id;
-	glw::GLuint*	  m_gs_ids;
-	const glw::GLuint m_number_of_gs;
-	glw::GLuint*	  m_po_ids;
-	glw::GLuint		  m_vs_id;
-	glw::GLuint		  m_vao_id;
+    /* Private variables */
+    glw::GLuint m_fs_id;
+    glw::GLuint *m_gs_ids;
+    const glw::GLuint m_number_of_gs;
+    glw::GLuint *m_po_ids;
+    glw::GLuint m_vs_id;
+    glw::GLuint m_vao_id;
 };
 
 /* Implementation of "Group 24", test 5 from CTS_EXT_geometry_shader. Description follows:
@@ -829,36 +829,36 @@ private:
 class GeometryShaderInsufficientEmittedVerticesTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderInsufficientEmittedVerticesTest(Context& context, const ExtParameters& extParams, const char* name,
-												  const char* description);
+    /* Public methods */
+    GeometryShaderInsufficientEmittedVerticesTest(Context &context, const ExtParameters &extParams, const char *name,
+                                                  const char *description);
 
-	virtual ~GeometryShaderInsufficientEmittedVerticesTest()
-	{
-	}
+    virtual ~GeometryShaderInsufficientEmittedVerticesTest()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
+    /* Private methods */
 
-	/* Private variables */
-	glw::GLubyte* m_pixels;
+    /* Private variables */
+    glw::GLubyte *m_pixels;
 
-	glw::GLuint		  m_fbo_id;
-	glw::GLuint		  m_fs_id;
-	glw::GLuint*	  m_gs_ids;
-	const glw::GLuint m_number_of_color_components;
-	const glw::GLuint m_number_of_gs;
-	glw::GLuint*	  m_po_ids;
-	const glw::GLuint m_texture_height;
-	glw::GLuint		  m_texture_id;
-	const glw::GLuint m_texture_width;
-	glw::GLuint		  m_vs_id;
-	glw::GLuint		  m_vao_id;
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint *m_gs_ids;
+    const glw::GLuint m_number_of_color_components;
+    const glw::GLuint m_number_of_gs;
+    glw::GLuint *m_po_ids;
+    const glw::GLuint m_texture_height;
+    glw::GLuint m_texture_id;
+    const glw::GLuint m_texture_width;
+    glw::GLuint m_vs_id;
+    glw::GLuint m_vao_id;
 };
 
 /* Implementation of "Group 25", test 2 from CTS_EXT_geometry_shader. Description follows:
@@ -895,32 +895,32 @@ private:
 class GeometryShaderPipelineObjectTransformFeedbackVertexAndGeometryShaderCaptureTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderPipelineObjectTransformFeedbackVertexAndGeometryShaderCaptureTest(Context&			 context,
-																					const ExtParameters& extParams,
-																					const char*			 name,
-																					const char*			 description);
+    /* Public methods */
+    GeometryShaderPipelineObjectTransformFeedbackVertexAndGeometryShaderCaptureTest(Context &context,
+                                                                                    const ExtParameters &extParams,
+                                                                                    const char *name,
+                                                                                    const char *description);
 
-	virtual ~GeometryShaderPipelineObjectTransformFeedbackVertexAndGeometryShaderCaptureTest()
-	{
-	}
+    virtual ~GeometryShaderPipelineObjectTransformFeedbackVertexAndGeometryShaderCaptureTest()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
+    /* Private methods */
 
-	/* Private variables */
-	glw::GLuint m_gs_id;
-	glw::GLuint m_gs_po_id;
-	glw::GLuint m_ppo_id;
-	glw::GLuint m_tfbo_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_vs_id;
-	glw::GLuint m_vs_po_id;
+    /* Private variables */
+    glw::GLuint m_gs_id;
+    glw::GLuint m_gs_po_id;
+    glw::GLuint m_ppo_id;
+    glw::GLuint m_tfbo_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_id;
+    glw::GLuint m_vs_po_id;
 };
 
 /* Implementation of "Group 25", test 3 from CTS_EXT_geometry_shader. Description follows:
@@ -952,29 +952,29 @@ private:
 class GeometryShaderDrawPrimitivesDoNotMatchOutputPrimitives : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderDrawPrimitivesDoNotMatchOutputPrimitives(Context& context, const ExtParameters& extParams,
-														   const char* name, const char* description);
+    /* Public methods */
+    GeometryShaderDrawPrimitivesDoNotMatchOutputPrimitives(Context &context, const ExtParameters &extParams,
+                                                           const char *name, const char *description);
 
-	virtual ~GeometryShaderDrawPrimitivesDoNotMatchOutputPrimitives()
-	{
-	}
+    virtual ~GeometryShaderDrawPrimitivesDoNotMatchOutputPrimitives()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
+    /* Private methods */
 
-	/* Private variables */
-	glw::GLuint m_fs_id;
-	glw::GLuint m_gs_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_tfbo_id;
-	glw::GLuint m_vs_id;
-	glw::GLuint m_vao_id;
+    /* Private variables */
+    glw::GLuint m_fs_id;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_tfbo_id;
+    glw::GLuint m_vs_id;
+    glw::GLuint m_vao_id;
 };
 
 /* Implementation of "Group 25", test 4 from CTS_EXT_geometry_shader. Description follows:
@@ -1001,29 +1001,29 @@ private:
 class GeometryShaderDrawCallsWhileTFPaused : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderDrawCallsWhileTFPaused(Context& context, const ExtParameters& extParams, const char* name,
-										 const char* description);
+    /* Public methods */
+    GeometryShaderDrawCallsWhileTFPaused(Context &context, const ExtParameters &extParams, const char *name,
+                                         const char *description);
 
-	virtual ~GeometryShaderDrawCallsWhileTFPaused()
-	{
-	}
+    virtual ~GeometryShaderDrawCallsWhileTFPaused()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
+    /* Private methods */
 
-	/* Private variables */
-	glw::GLuint m_fs_id;
-	glw::GLuint m_gs_id;
-	glw::GLuint m_po_ids[15] /* All combinations of possible inputs and outputs in GS */;
-	glw::GLuint m_tfbo_id;
-	glw::GLuint m_vs_id;
-	glw::GLuint m_vao_id;
+    /* Private variables */
+    glw::GLuint m_fs_id;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_po_ids[15] /* All combinations of possible inputs and outputs in GS */;
+    glw::GLuint m_tfbo_id;
+    glw::GLuint m_vs_id;
+    glw::GLuint m_vao_id;
 };
 
 } // namespace glcts

@@ -36,18 +36,20 @@ namespace Functional
 class TextureCompletenessTests : public TestCaseGroup
 {
 public:
-								TextureCompletenessTests	(Context& context);
-								~TextureCompletenessTests	(void) {}
+    TextureCompletenessTests(Context &context);
+    ~TextureCompletenessTests(void)
+    {
+    }
 
-	void						init						(void);
+    void init(void);
 
 private:
-								TextureCompletenessTests	(const TextureCompletenessTests& other);
-	TextureCompletenessTests&	operator=					(const TextureCompletenessTests& other);
+    TextureCompletenessTests(const TextureCompletenessTests &other);
+    TextureCompletenessTests &operator=(const TextureCompletenessTests &other);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FTEXTURECOMPLETENESSTESTS_HPP

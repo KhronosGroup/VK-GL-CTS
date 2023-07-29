@@ -33,9 +33,9 @@ namespace glc
 namespace subgroups
 {
 
-deqp::TestCaseGroup* createSubgroupsBuiltinVarTests(deqp::Context& testCtx);
+deqp::TestCaseGroup *createSubgroupsBuiltinVarTests(deqp::Context &testCtx);
 
-} // subgroups
-} // glc
+} // namespace subgroups
+} // namespace glc
 
 #endif // _GLCSUBGROUPSBUILTINVARTESTS_HPP

@@ -42,37 +42,37 @@ namespace glcts
  * @param context       Test context
  * @param glslVersion   GLSL version
  **/
-DrawBuffersIndexedTests::DrawBuffersIndexedTests(glcts::Context& context, const ExtParameters& extParams)
-	: TestCaseGroupBase(context, extParams, "draw_buffers_indexed", "Draw Buffers Indexed Tests")
+DrawBuffersIndexedTests::DrawBuffersIndexedTests(glcts::Context &context, const ExtParameters &extParams)
+    : TestCaseGroupBase(context, extParams, "draw_buffers_indexed", "Draw Buffers Indexed Tests")
 {
-	/* No implementation needed */
+    /* No implementation needed */
 }
 
 /** Initializes test cases for Draw Buffers Indexed tests
  **/
 void DrawBuffersIndexedTests::init(void)
 {
-	/* Initialize base class */
-	TestCaseGroupBase::init();
+    /* Initialize base class */
+    TestCaseGroupBase::init();
 
-	/* Draw Buffers Indexed - 1. Coverage */
-	addChild(new DrawBuffersIndexedCoverage(m_context, m_extParams, "coverage", "Basic coverage test"));
+    /* Draw Buffers Indexed - 1. Coverage */
+    addChild(new DrawBuffersIndexedCoverage(m_context, m_extParams, "coverage", "Basic coverage test"));
 
-	/* Draw Buffers Indexed - 2. Default state */
-	addChild(
-		new DrawBuffersIndexedDefaultState(m_context, m_extParams, "default_state", "Default state verification test"));
+    /* Draw Buffers Indexed - 2. Default state */
+    addChild(
+        new DrawBuffersIndexedDefaultState(m_context, m_extParams, "default_state", "Default state verification test"));
 
-	/* Draw Buffers Indexed - 3. Set and get */
-	addChild(new DrawBuffersIndexedSetGet(m_context, m_extParams, "set_get", "Setting and getting state test"));
+    /* Draw Buffers Indexed - 3. Set and get */
+    addChild(new DrawBuffersIndexedSetGet(m_context, m_extParams, "set_get", "Setting and getting state test"));
 
-	/* Draw Buffers Indexed - 4. Color masks */
-	addChild(new DrawBuffersIndexedColorMasks(m_context, m_extParams, "color_masks", "Masking color test"));
+    /* Draw Buffers Indexed - 4. Color masks */
+    addChild(new DrawBuffersIndexedColorMasks(m_context, m_extParams, "color_masks", "Masking color test"));
 
-	/* Draw Buffers Indexed - 5. Blending */
-	addChild(new DrawBuffersIndexedBlending(m_context, m_extParams, "blending", "Blending test"));
+    /* Draw Buffers Indexed - 5. Blending */
+    addChild(new DrawBuffersIndexedBlending(m_context, m_extParams, "blending", "Blending test"));
 
-	/* Draw Buffers Indexed - 6. Negative */
-	addChild(new DrawBuffersIndexedNegative(m_context, m_extParams, "negative", "Negative test"));
+    /* Draw Buffers Indexed - 6. Negative */
+    addChild(new DrawBuffersIndexedNegative(m_context, m_extParams, "negative", "Negative test"));
 }
 
 } // namespace glcts

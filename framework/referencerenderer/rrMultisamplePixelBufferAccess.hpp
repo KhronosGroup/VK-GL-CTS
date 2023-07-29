@@ -39,21 +39,27 @@ namespace rr
  *//*--------------------------------------------------------------------*/
 class MultisamplePixelBufferAccess
 {
-												MultisamplePixelBufferAccess	(const tcu::PixelBufferAccess& rawAccess);
+    MultisamplePixelBufferAccess(const tcu::PixelBufferAccess &rawAccess);
 
 public:
-												MultisamplePixelBufferAccess	(void);
+    MultisamplePixelBufferAccess(void);
 
-	inline const tcu::PixelBufferAccess&		raw								(void) const { return m_access; }
-	inline int									getNumSamples					(void) const { return raw().getWidth(); }
+    inline const tcu::PixelBufferAccess &raw(void) const
+    {
+        return m_access;
+    }
+    inline int getNumSamples(void) const
+    {
+        return raw().getWidth();
+    }
 
-	const tcu::PixelBufferAccess				toSinglesampleAccess			(void) const;
+    const tcu::PixelBufferAccess toSinglesampleAccess(void) const;
 
-	static MultisamplePixelBufferAccess			fromSinglesampleAccess			(const tcu::PixelBufferAccess& singlesampledAccess);
-	static MultisamplePixelBufferAccess			fromMultisampleAccess			(const tcu::PixelBufferAccess& multisampledAccess);
+    static MultisamplePixelBufferAccess fromSinglesampleAccess(const tcu::PixelBufferAccess &singlesampledAccess);
+    static MultisamplePixelBufferAccess fromMultisampleAccess(const tcu::PixelBufferAccess &multisampledAccess);
 
 private:
-	tcu::PixelBufferAccess						m_access;
+    tcu::PixelBufferAccess m_access;
 } DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
@@ -66,40 +72,50 @@ private:
  *//*--------------------------------------------------------------------*/
 class MultisampleConstPixelBufferAccess
 {
-												MultisampleConstPixelBufferAccess		(const tcu::ConstPixelBufferAccess& rawAccess);
+    MultisampleConstPixelBufferAccess(const tcu::ConstPixelBufferAccess &rawAccess);
 
 public:
-												MultisampleConstPixelBufferAccess		(const rr::MultisamplePixelBufferAccess& msAccess);
-												MultisampleConstPixelBufferAccess		(void);
+    MultisampleConstPixelBufferAccess(const rr::MultisamplePixelBufferAccess &msAccess);
+    MultisampleConstPixelBufferAccess(void);
 
-	inline const tcu::ConstPixelBufferAccess&	raw										(void) const { return m_access; }
-	inline int									getNumSamples							(void) const { return raw().getWidth(); }
+    inline const tcu::ConstPixelBufferAccess &raw(void) const
+    {
+        return m_access;
+    }
+    inline int getNumSamples(void) const
+    {
+        return raw().getWidth();
+    }
 
-	const tcu::ConstPixelBufferAccess			toSinglesampleAccess					(void) const;
+    const tcu::ConstPixelBufferAccess toSinglesampleAccess(void) const;
 
-	static MultisampleConstPixelBufferAccess	fromSinglesampleAccess					(const tcu::ConstPixelBufferAccess& singlesampledAccess);
-	static MultisampleConstPixelBufferAccess	fromMultisampleAccess					(const tcu::ConstPixelBufferAccess& multisampledAccess);
+    static MultisampleConstPixelBufferAccess fromSinglesampleAccess(
+        const tcu::ConstPixelBufferAccess &singlesampledAccess);
+    static MultisampleConstPixelBufferAccess fromMultisampleAccess(
+        const tcu::ConstPixelBufferAccess &multisampledAccess);
 
 private:
-	tcu::ConstPixelBufferAccess					m_access;
+    tcu::ConstPixelBufferAccess m_access;
 } DE_WARN_UNUSED_TYPE;
 
 // Multisampled versions of tcu-utils
 
-MultisamplePixelBufferAccess		getSubregion					(const MultisamplePixelBufferAccess& access, int x, int y, int width, int height);
-MultisampleConstPixelBufferAccess	getSubregion					(const MultisampleConstPixelBufferAccess& access, int x, int y, int width, int height);
+MultisamplePixelBufferAccess getSubregion(const MultisamplePixelBufferAccess &access, int x, int y, int width,
+                                          int height);
+MultisampleConstPixelBufferAccess getSubregion(const MultisampleConstPixelBufferAccess &access, int x, int y, int width,
+                                               int height);
 
-void								resolveMultisampleColorBuffer	(const tcu::PixelBufferAccess& dst, const MultisampleConstPixelBufferAccess& src);
-void								resolveMultisampleDepthBuffer	(const tcu::PixelBufferAccess& dst, const MultisampleConstPixelBufferAccess& src);
-void								resolveMultisampleStencilBuffer	(const tcu::PixelBufferAccess& dst, const MultisampleConstPixelBufferAccess& src);
-void								resolveMultisampleBuffer		(const tcu::PixelBufferAccess& dst, const MultisampleConstPixelBufferAccess& src);
-tcu::Vec4							resolveMultisamplePixel			(const MultisampleConstPixelBufferAccess& access, int x, int y);
+void resolveMultisampleColorBuffer(const tcu::PixelBufferAccess &dst, const MultisampleConstPixelBufferAccess &src);
+void resolveMultisampleDepthBuffer(const tcu::PixelBufferAccess &dst, const MultisampleConstPixelBufferAccess &src);
+void resolveMultisampleStencilBuffer(const tcu::PixelBufferAccess &dst, const MultisampleConstPixelBufferAccess &src);
+void resolveMultisampleBuffer(const tcu::PixelBufferAccess &dst, const MultisampleConstPixelBufferAccess &src);
+tcu::Vec4 resolveMultisamplePixel(const MultisampleConstPixelBufferAccess &access, int x, int y);
 
-void								clear							(const MultisamplePixelBufferAccess& access, const tcu::Vec4& color);
-void								clear							(const MultisamplePixelBufferAccess& access, const tcu::IVec4& color);
-void								clearDepth						(const MultisamplePixelBufferAccess& access, float depth);
-void								clearStencil					(const MultisamplePixelBufferAccess& access, int stencil);
+void clear(const MultisamplePixelBufferAccess &access, const tcu::Vec4 &color);
+void clear(const MultisamplePixelBufferAccess &access, const tcu::IVec4 &color);
+void clearDepth(const MultisamplePixelBufferAccess &access, float depth);
+void clearStencil(const MultisamplePixelBufferAccess &access, int stencil);
 
-} // rr
+} // namespace rr
 
 #endif // _RRMULTISAMPLEPIXELBUFFERACCESS_HPP

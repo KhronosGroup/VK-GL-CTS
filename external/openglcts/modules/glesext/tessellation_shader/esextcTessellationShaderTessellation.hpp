@@ -37,19 +37,19 @@ namespace glcts
 class TessellationShaderTessellationTests : public glcts::TestCaseGroupBase
 {
 public:
-	/* Public methods */
-	TessellationShaderTessellationTests(glcts::Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderTessellationTests(glcts::Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderTessellationTests(void)
-	{
-	}
+    virtual ~TessellationShaderTessellationTests(void)
+    {
+    }
 
-	void init(void);
+    void init(void);
 
 private:
-	/* Private methods */
-	TessellationShaderTessellationTests(const TessellationShaderTessellationTests& other);
-	TessellationShaderTessellationTests& operator=(const TessellationShaderTessellationTests& other);
+    /* Private methods */
+    TessellationShaderTessellationTests(const TessellationShaderTessellationTests &other);
+    TessellationShaderTessellationTests &operator=(const TessellationShaderTessellationTests &other);
 };
 
 /** Implementation of Test Case 24
@@ -87,55 +87,55 @@ private:
 class TessellationShaderTessellationInputPatchDiscard : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TessellationShaderTessellationInputPatchDiscard(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderTessellationInputPatchDiscard(Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderTessellationInputPatchDiscard(void)
-	{
-	}
+    virtual ~TessellationShaderTessellationInputPatchDiscard(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	void				  initTest(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    void initTest(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private type definitions */
-	/** Defines a single test pass */
-	typedef struct _run
-	{
-		glw::GLuint					 po_id;
-		_tessellation_primitive_mode primitive_mode;
-		glw::GLuint					 tc_id;
-		glw::GLuint					 te_id;
+    /* Private type definitions */
+    /** Defines a single test pass */
+    typedef struct _run
+    {
+        glw::GLuint po_id;
+        _tessellation_primitive_mode primitive_mode;
+        glw::GLuint tc_id;
+        glw::GLuint te_id;
 
-		_run()
-		{
-			po_id		   = 0;
-			primitive_mode = TESSELLATION_SHADER_PRIMITIVE_MODE_UNKNOWN;
-			tc_id		   = 0;
-			te_id		   = 0;
-		}
-	} _run;
+        _run()
+        {
+            po_id          = 0;
+            primitive_mode = TESSELLATION_SHADER_PRIMITIVE_MODE_UNKNOWN;
+            tc_id          = 0;
+            te_id          = 0;
+        }
+    } _run;
 
-	/** Defines a vector of test passes */
-	typedef std::vector<_run>	 _runs;
-	typedef _runs::const_iterator _runs_const_iterator;
+    /** Defines a vector of test passes */
+    typedef std::vector<_run> _runs;
+    typedef _runs::const_iterator _runs_const_iterator;
 
-	/* Private methods */
-	std::string getTCCode();
-	std::string getTECode(_tessellation_primitive_mode primitive_mode);
+    /* Private methods */
+    std::string getTCCode();
+    std::string getTECode(_tessellation_primitive_mode primitive_mode);
 
-	void deinitRun(_run& test);
-	void initRun(_run& test, _tessellation_primitive_mode primitive_mode);
+    void deinitRun(_run &test);
+    void initRun(_run &test, _tessellation_primitive_mode primitive_mode);
 
-	/* Private variables */
-	glw::GLuint m_bo_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_vs_id;
-	glw::GLuint m_vao_id;
+    /* Private variables */
+    glw::GLuint m_bo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_vs_id;
+    glw::GLuint m_vao_id;
 
-	_runs					 m_runs;
-	TessellationShaderUtils* m_utils_ptr;
+    _runs m_runs;
+    TessellationShaderUtils *m_utils_ptr;
 };
 
 /**  Implementation for Test Case 18
@@ -173,74 +173,74 @@ private:
 class TessellationShaderTessellationgl_InvocationID_PatchVerticesIn_PrimitiveID : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TessellationShaderTessellationgl_InvocationID_PatchVerticesIn_PrimitiveID(Context&			   context,
-																			  const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderTessellationgl_InvocationID_PatchVerticesIn_PrimitiveID(Context &context,
+                                                                              const ExtParameters &extParams);
 
-	virtual ~TessellationShaderTessellationgl_InvocationID_PatchVerticesIn_PrimitiveID(void)
-	{
-	}
+    virtual ~TessellationShaderTessellationgl_InvocationID_PatchVerticesIn_PrimitiveID(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	void				  initTest(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    void initTest(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private type definitions */
-	/** Defines a single test run */
-	typedef struct _run
-	{
-		glw::GLuint					 bo_indices_id;
-		unsigned int				 drawcall_count_multiplier;
-		bool						 drawcall_is_indiced;
-		glw::GLuint					 drawcall_n_instances;
-		glw::GLuint					 n_instances;
-		glw::GLint					 n_patch_vertices;
-		unsigned int				 n_restart_indices;
-		unsigned int				 n_result_vertices;
-		glw::GLuint					 po_id;
-		_tessellation_primitive_mode primitive_mode;
-		glw::GLuint					 tc_id;
-		glw::GLuint					 te_id;
+    /* Private type definitions */
+    /** Defines a single test run */
+    typedef struct _run
+    {
+        glw::GLuint bo_indices_id;
+        unsigned int drawcall_count_multiplier;
+        bool drawcall_is_indiced;
+        glw::GLuint drawcall_n_instances;
+        glw::GLuint n_instances;
+        glw::GLint n_patch_vertices;
+        unsigned int n_restart_indices;
+        unsigned int n_result_vertices;
+        glw::GLuint po_id;
+        _tessellation_primitive_mode primitive_mode;
+        glw::GLuint tc_id;
+        glw::GLuint te_id;
 
-		_run()
-		{
-			bo_indices_id			  = 0;
-			drawcall_count_multiplier = 0;
-			drawcall_is_indiced		  = false;
-			drawcall_n_instances	  = 0;
-			n_result_vertices		  = 0;
-			n_instances				  = 0;
-			n_patch_vertices		  = 0;
-			n_restart_indices		  = 0;
-			po_id					  = 0;
-			primitive_mode			  = TESSELLATION_SHADER_PRIMITIVE_MODE_UNKNOWN;
-			tc_id					  = 0;
-			te_id					  = 0;
-		}
-	} _run;
+        _run()
+        {
+            bo_indices_id             = 0;
+            drawcall_count_multiplier = 0;
+            drawcall_is_indiced       = false;
+            drawcall_n_instances      = 0;
+            n_result_vertices         = 0;
+            n_instances               = 0;
+            n_patch_vertices          = 0;
+            n_restart_indices         = 0;
+            po_id                     = 0;
+            primitive_mode            = TESSELLATION_SHADER_PRIMITIVE_MODE_UNKNOWN;
+            tc_id                     = 0;
+            te_id                     = 0;
+        }
+    } _run;
 
-	/** Defines a vector of test runs */
-	typedef std::vector<_run>	 _runs;
-	typedef _runs::const_iterator _runs_const_iterator;
+    /** Defines a vector of test runs */
+    typedef std::vector<_run> _runs;
+    typedef _runs::const_iterator _runs_const_iterator;
 
-	/* Private methods */
-	std::string getTCCode(glw::GLuint n_patch_vertices);
-	std::string getTECode(_tessellation_primitive_mode primitive_mode);
+    /* Private methods */
+    std::string getTCCode(glw::GLuint n_patch_vertices);
+    std::string getTECode(_tessellation_primitive_mode primitive_mode);
 
-	void deinitRun(_run& run);
+    void deinitRun(_run &run);
 
-	void initRun(_run& run, _tessellation_primitive_mode primitive_mode, glw::GLint n_patch_vertices, bool is_indiced,
-				 glw::GLint n_instances, unsigned int drawcall_count_multiplier);
+    void initRun(_run &run, _tessellation_primitive_mode primitive_mode, glw::GLint n_patch_vertices, bool is_indiced,
+                 glw::GLint n_instances, unsigned int drawcall_count_multiplier);
 
-	/* Private variables */
-	glw::GLuint m_bo_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_vs_id;
-	glw::GLuint m_vao_id;
+    /* Private variables */
+    glw::GLuint m_bo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_vs_id;
+    glw::GLuint m_vao_id;
 
-	_runs					 m_runs;
-	TessellationShaderUtils* m_utils_ptr;
+    _runs m_runs;
+    TessellationShaderUtils *m_utils_ptr;
 };
 
 /** Implementation of Test Case 51
@@ -275,84 +275,84 @@ private:
  **/
 class TessellationShaderTessellationgl_TessCoord : public TestCaseBase
 {
-	static std::string getTypeName(_tessellation_test_type test_type);
+    static std::string getTypeName(_tessellation_test_type test_type);
 
 public:
-	/* Public methods */
-	TessellationShaderTessellationgl_TessCoord(Context& context, const ExtParameters& extParams,
-											   _tessellation_test_type test_type);
+    /* Public methods */
+    TessellationShaderTessellationgl_TessCoord(Context &context, const ExtParameters &extParams,
+                                               _tessellation_test_type test_type);
 
-	virtual ~TessellationShaderTessellationgl_TessCoord(void)
-	{
-	}
+    virtual ~TessellationShaderTessellationgl_TessCoord(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	void				  initTest(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    void initTest(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private type definitions */
-	/** Defines a single test pass */
-	typedef struct _test_descriptor
-	{
-		glw::GLint							n_patch_vertices;
-		glw::GLuint							po_id;
-		_tessellation_primitive_mode		primitive_mode;
-		glw::GLuint							tc_id;
-		glw::GLuint							te_id;
-		glw::GLfloat						tess_level_inner[2];
-		glw::GLfloat						tess_level_outer[4];
-		_tessellation_test_type				type;
-		_tessellation_shader_vertex_spacing vertex_spacing;
+    /* Private type definitions */
+    /** Defines a single test pass */
+    typedef struct _test_descriptor
+    {
+        glw::GLint n_patch_vertices;
+        glw::GLuint po_id;
+        _tessellation_primitive_mode primitive_mode;
+        glw::GLuint tc_id;
+        glw::GLuint te_id;
+        glw::GLfloat tess_level_inner[2];
+        glw::GLfloat tess_level_outer[4];
+        _tessellation_test_type type;
+        _tessellation_shader_vertex_spacing vertex_spacing;
 
-		glw::GLint inner_tess_level_uniform_location;
-		glw::GLint outer_tess_level_uniform_location;
+        glw::GLint inner_tess_level_uniform_location;
+        glw::GLint outer_tess_level_uniform_location;
 
-		_test_descriptor()
-		{
-			memset(tess_level_inner, 0, sizeof(tess_level_inner));
-			memset(tess_level_outer, 0, sizeof(tess_level_outer));
+        _test_descriptor()
+        {
+            memset(tess_level_inner, 0, sizeof(tess_level_inner));
+            memset(tess_level_outer, 0, sizeof(tess_level_outer));
 
-			n_patch_vertices = 0;
-			po_id			 = 0;
-			primitive_mode   = TESSELLATION_SHADER_PRIMITIVE_MODE_UNKNOWN;
-			tc_id			 = 0;
-			te_id			 = 0;
-			type			 = TESSELLATION_TEST_TYPE_UNKNOWN;
-			vertex_spacing   = TESSELLATION_SHADER_VERTEX_SPACING_UNKNOWN;
+            n_patch_vertices = 0;
+            po_id            = 0;
+            primitive_mode   = TESSELLATION_SHADER_PRIMITIVE_MODE_UNKNOWN;
+            tc_id            = 0;
+            te_id            = 0;
+            type             = TESSELLATION_TEST_TYPE_UNKNOWN;
+            vertex_spacing   = TESSELLATION_SHADER_VERTEX_SPACING_UNKNOWN;
 
-			inner_tess_level_uniform_location = -1;
-			outer_tess_level_uniform_location = -1;
-		}
-	} _test_descriptor;
+            inner_tess_level_uniform_location = -1;
+            outer_tess_level_uniform_location = -1;
+        }
+    } _test_descriptor;
 
-	/** Defines a vector of test passes */
-	typedef std::vector<_test_descriptor> _tests;
-	typedef _tests::const_iterator		  _tests_const_iterator;
+    /** Defines a vector of test passes */
+    typedef std::vector<_test_descriptor> _tests;
+    typedef _tests::const_iterator _tests_const_iterator;
 
-	/* Private methods */
-	std::string getTCCode(glw::GLint n_patch_vertices);
+    /* Private methods */
+    std::string getTCCode(glw::GLint n_patch_vertices);
 
-	std::string getTECode(_tessellation_shader_vertex_spacing vertex_spacing,
-						  _tessellation_primitive_mode		  primitive_mode);
+    std::string getTECode(_tessellation_shader_vertex_spacing vertex_spacing,
+                          _tessellation_primitive_mode primitive_mode);
 
-	void deinitTestDescriptor(_test_descriptor& test);
+    void deinitTestDescriptor(_test_descriptor &test);
 
-	void initTestDescriptor(_test_descriptor& test, _tessellation_shader_vertex_spacing vertex_spacing,
-							_tessellation_primitive_mode primitive_mode, glw::GLint n_patch_vertices,
-							const float* inner_tess_levels, const float* outer_tess_levels,
-							_tessellation_test_type test_type);
+    void initTestDescriptor(_test_descriptor &test, _tessellation_shader_vertex_spacing vertex_spacing,
+                            _tessellation_primitive_mode primitive_mode, glw::GLint n_patch_vertices,
+                            const float *inner_tess_levels, const float *outer_tess_levels,
+                            _tessellation_test_type test_type);
 
-	/* Private variables */
-	_tessellation_test_type m_test_type;
-	glw::GLuint				m_bo_id;
-	glw::GLuint				m_broken_ts_id;
-	glw::GLuint				m_fs_id;
-	glw::GLuint				m_vs_id;
-	glw::GLuint				m_vao_id;
+    /* Private variables */
+    _tessellation_test_type m_test_type;
+    glw::GLuint m_bo_id;
+    glw::GLuint m_broken_ts_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_vs_id;
+    glw::GLuint m_vao_id;
 
-	_tests					 m_tests;
-	TessellationShaderUtils* m_utils_ptr;
+    _tests m_tests;
+    TessellationShaderUtils *m_utils_ptr;
 };
 
 /* This test class implements the following test cases:
@@ -404,64 +404,64 @@ private:
 class TessellationShaderTessellationMaxInOut : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TessellationShaderTessellationMaxInOut(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderTessellationMaxInOut(Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderTessellationMaxInOut()
-	{
-	}
+    virtual ~TessellationShaderTessellationMaxInOut()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* private methods */
-	void initBufferObjects(void);
-	void initProgramObjects(void);
-	void initReferenceValues(void);
-	void initTest(void);
-	void retrieveGLConstantValues(void);
+    /* private methods */
+    void initBufferObjects(void);
+    void initProgramObjects(void);
+    void initReferenceValues(void);
+    void initTest(void);
+    void retrieveGLConstantValues(void);
 
-	bool compareValues(char const* description, glw::GLfloat* reference_values, int n_reference_values);
+    bool compareValues(char const *description, glw::GLfloat *reference_values, int n_reference_values);
 
-	/* private variables */
-	glw::GLuint m_po_id_1; /* program object name for case 1 */
-	glw::GLuint m_po_id_2; /* program object name for case 2 */
+    /* private variables */
+    glw::GLuint m_po_id_1; /* program object name for case 1 */
+    glw::GLuint m_po_id_2; /* program object name for case 2 */
 
-	glw::GLuint m_fs_id;	/* fragment shader object name */
-	glw::GLuint m_tcs_id_1; /* tessellation control shader object name for case 1 */
-	glw::GLuint m_tcs_id_2; /* tessellation control shader object name for case 2 */
-	glw::GLuint m_tes_id_1; /* tessellation evaluation shader object name for case 1 */
-	glw::GLuint m_tes_id_2; /* tessellation evaluation shader object name for case 2 */
-	glw::GLuint m_vs_id_1;  /* vertex shader object name for case 1 */
-	glw::GLuint m_vs_id_2;  /* vertex shader object name for case 2 */
+    glw::GLuint m_fs_id;    /* fragment shader object name */
+    glw::GLuint m_tcs_id_1; /* tessellation control shader object name for case 1 */
+    glw::GLuint m_tcs_id_2; /* tessellation control shader object name for case 2 */
+    glw::GLuint m_tes_id_1; /* tessellation evaluation shader object name for case 1 */
+    glw::GLuint m_tes_id_2; /* tessellation evaluation shader object name for case 2 */
+    glw::GLuint m_vs_id_1;  /* vertex shader object name for case 1 */
+    glw::GLuint m_vs_id_2;  /* vertex shader object name for case 2 */
 
-	glw::GLuint m_tf_bo_id_1;		/* buffer object name */
-	glw::GLuint m_tf_bo_id_2;		/* buffer object name */
-	glw::GLuint m_patch_data_bo_id; /* buffer object name for patch submission */
+    glw::GLuint m_tf_bo_id_1;       /* buffer object name */
+    glw::GLuint m_tf_bo_id_2;       /* buffer object name */
+    glw::GLuint m_patch_data_bo_id; /* buffer object name for patch submission */
 
-	glw::GLuint m_vao_id; /* vertex array object */
+    glw::GLuint m_vao_id; /* vertex array object */
 
-	glw::GLint m_gl_max_tess_control_input_components_value;	 /* value of MAX_TESS_CONTROL_INPUT_COMPONENTS */
-	glw::GLint m_gl_max_tess_control_output_components_value;	/* value of MAX_TESS_CONTROL_OUTPUT_COMPONENTS */
-	glw::GLint m_gl_max_tess_evaluation_input_components_value;  /* value of MAX_TESS_EVALUATION_INPUT_COMPONENTS */
-	glw::GLint m_gl_max_tess_evaluation_output_components_value; /* value of MAX_TESS_EVALUATION_OUTPUT_COMPONENTS */
-	glw::GLint
-			   m_gl_max_transform_feedback_interleaved_components_value; /* value of MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS */
-	glw::GLint m_gl_max_tess_patch_components_value;					 /* value of MAX_TESS_PATCH_COMPONENTS */
-	glw::GLint m_gl_max_vertex_output_components_value;					 /* value of MAX_VERTEX_OUTPUT_COMPONENTS */
+    glw::GLint m_gl_max_tess_control_input_components_value;     /* value of MAX_TESS_CONTROL_INPUT_COMPONENTS */
+    glw::GLint m_gl_max_tess_control_output_components_value;    /* value of MAX_TESS_CONTROL_OUTPUT_COMPONENTS */
+    glw::GLint m_gl_max_tess_evaluation_input_components_value;  /* value of MAX_TESS_EVALUATION_INPUT_COMPONENTS */
+    glw::GLint m_gl_max_tess_evaluation_output_components_value; /* value of MAX_TESS_EVALUATION_OUTPUT_COMPONENTS */
+    glw::GLint
+        m_gl_max_transform_feedback_interleaved_components_value; /* value of MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS */
+    glw::GLint m_gl_max_tess_patch_components_value;              /* value of MAX_TESS_PATCH_COMPONENTS */
+    glw::GLint m_gl_max_vertex_output_components_value;           /* value of MAX_VERTEX_OUTPUT_COMPONENTS */
 
-	glw::GLfloat  m_ref_patch_attributes[4]; /* reference values for max per-patch attributes case 2 */
-	glw::GLfloat* m_ref_vertex_attributes;   /* reference values for max per-vertex attributes case 1 */
+    glw::GLfloat m_ref_patch_attributes[4]; /* reference values for max per-patch attributes case 2 */
+    glw::GLfloat *m_ref_vertex_attributes;  /* reference values for max per-vertex attributes case 1 */
 
-	static const char* m_fs_code;	/* fragment shader code */
-	static const char* m_vs_code;	/* vertex shader code */
-	static const char* m_tcs_code_1; /* tessellation control shader code for per vertex components check */
-	static const char* m_tcs_code_2; /* tessellation control shader code per patch components check */
-	static const char* m_tes_code_1; /* tessellation evaluation shader code per vertex components check */
-	static const char* m_tes_code_2; /* tessellation evaluation shader code per patch components check */
+    static const char *m_fs_code;    /* fragment shader code */
+    static const char *m_vs_code;    /* vertex shader code */
+    static const char *m_tcs_code_1; /* tessellation control shader code for per vertex components check */
+    static const char *m_tcs_code_2; /* tessellation control shader code per patch components check */
+    static const char *m_tes_code_1; /* tessellation evaluation shader code per vertex components check */
+    static const char *m_tes_code_2; /* tessellation evaluation shader code per patch components check */
 
-	char** m_tf_varyings_names; /* transform feedback varyings names array */
+    char **m_tf_varyings_names; /* transform feedback varyings names array */
 };
 
 } // namespace glcts

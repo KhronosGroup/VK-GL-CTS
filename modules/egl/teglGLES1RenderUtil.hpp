@@ -34,12 +34,12 @@ namespace egl
 namespace gles1
 {
 
-void	clear		(int x, int y, int width, int height, const tcu::Vec4& color);
-void	readPixels	(tcu::Surface& dst, int x, int y, int width, int height);
-void	finish		(void);
+void clear(int x, int y, int width, int height, const tcu::Vec4 &color);
+void readPixels(tcu::Surface &dst, int x, int y, int width, int height);
+void finish(void);
 
-} // gles1
-} // egl
-} // deqp
+} // namespace gles1
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLGLES1RENDERUTIL_HPP

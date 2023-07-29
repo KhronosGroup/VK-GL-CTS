@@ -32,9 +32,9 @@ namespace vkt
 namespace RayQuery
 {
 
-tcu::TestCaseGroup*	createOpacityMicromapTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createOpacityMicromapTests(tcu::TestContext &testCtx);
 
-} // RayQuery
-} // vkt
+} // namespace RayQuery
+} // namespace vkt
 
 #endif // _VKTRAYQUERYOPACITYMICROMAPTESTS_HPP

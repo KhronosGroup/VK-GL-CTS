@@ -30,25 +30,25 @@
 namespace glcts
 {
 /** Test verifies if extensions with specified phrase are not exposed.
-	 */
+ */
 
 class ExposedExtensionsTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	ExposedExtensionsTests(deqp::Context& context);
-	virtual ~ExposedExtensionsTests()
-	{
-	}
+    /* Public methods */
+    ExposedExtensionsTests(deqp::Context &context);
+    virtual ~ExposedExtensionsTests()
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	/* Private methods */
-	ExposedExtensionsTests(const ExposedExtensionsTests&);
-	ExposedExtensionsTests& operator=(const ExposedExtensionsTests&);
+    /* Private methods */
+    ExposedExtensionsTests(const ExposedExtensionsTests &);
+    ExposedExtensionsTests &operator=(const ExposedExtensionsTests &);
 };
 
-} /* glcts namespace */
+} // namespace glcts
 
 #endif // _GLCEXPOSEDEXTENSIONSTESTS_HPP
