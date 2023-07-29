@@ -39,81 +39,84 @@ namespace Functional
 
 using tcu::TestLog;
 
-ApiCase::ApiCase (Context& context, const char* name, const char* description)
-	: TestCase		(context, name, description)
-	, CallLogWrapper(context.getRenderContext().getFunctions(), context.getTestContext().getLog())
-	, m_log			(getLog())
+ApiCase::ApiCase(Context &context, const char *name, const char *description)
+    : TestCase(context, name, description)
+    , CallLogWrapper(context.getRenderContext().getFunctions(), context.getTestContext().getLog())
+    , m_log(getLog())
 {
 }
 
-ApiCase::~ApiCase (void)
+ApiCase::~ApiCase(void)
 {
 }
 
-ApiCase::IterateResult ApiCase::iterate (void)
+ApiCase::IterateResult ApiCase::iterate(void)
 {
-	// Initialize result to pass.
-	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+    // Initialize result to pass.
+    m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
-	// Enable call logging.
-	enableLogging(true);
+    // Enable call logging.
+    enableLogging(true);
 
-	// Run test.
-	test();
+    // Run test.
+    test();
 
-	return STOP;
+    return STOP;
 }
 
-void ApiCase::expectError (deUint32 expected)
+void ApiCase::expectError(uint32_t expected)
 {
-	deUint32 err = glGetError();
-	if (err != expected)
-	{
-		m_log << TestLog::Message << "// ERROR: expected " << glu::getErrorStr(expected) << TestLog::EndMessage;
-		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid error");
-	}
+    uint32_t err = glGetError();
+    if (err != expected)
+    {
+        m_log << TestLog::Message << "// ERROR: expected " << glu::getErrorStr(expected) << TestLog::EndMessage;
+        if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid error");
+    }
 }
 
-void ApiCase::expectError (deUint32 expected0, deUint32 expected1)
+void ApiCase::expectError(uint32_t expected0, uint32_t expected1)
 {
-	deUint32 err = glGetError();
-	if (err != expected0 && err != expected1)
-	{
-		m_log << TestLog::Message << "// ERROR: expected " << glu::getErrorStr(expected0) << " or " << glu::getErrorStr(expected1) << TestLog::EndMessage;
-		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid error");
-	}
+    uint32_t err = glGetError();
+    if (err != expected0 && err != expected1)
+    {
+        m_log << TestLog::Message << "// ERROR: expected " << glu::getErrorStr(expected0) << " or "
+              << glu::getErrorStr(expected1) << TestLog::EndMessage;
+        if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid error");
+    }
 }
 
-void ApiCase::checkBooleans (deUint8 value, deUint8 expected)
+void ApiCase::checkBooleans(uint8_t value, uint8_t expected)
 {
-	checkBooleans((deInt32)value, expected);
+    checkBooleans((int32_t)value, expected);
 }
 
-void ApiCase::checkBooleans (deInt32 value, deUint8 expected)
+void ApiCase::checkBooleans(int32_t value, uint8_t expected)
 {
-	if (value != (deInt32)expected)
-	{
-		m_log << TestLog::Message << "// ERROR: expected " << (expected	? "GL_TRUE" : "GL_FALSE") << TestLog::EndMessage;
-		if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid boolean value");
-	}
+    if (value != (int32_t)expected)
+    {
+        m_log << TestLog::Message << "// ERROR: expected " << (expected ? "GL_TRUE" : "GL_FALSE")
+              << TestLog::EndMessage;
+        if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid boolean value");
+    }
 }
 
-void ApiCase::getSupportedExtensions (const deUint32 numSupportedValues, const deUint32 extension, std::vector<int>& values)
+void ApiCase::getSupportedExtensions(const uint32_t numSupportedValues, const uint32_t extension,
+                                     std::vector<int> &values)
 {
-	deInt32 numFormats;
-	GLU_CHECK_CALL(glGetIntegerv(numSupportedValues, &numFormats));
-	if (numFormats == 0)
-	{
-		m_log << TestLog::Message << "// No supported extensions available." << TestLog::EndMessage;
-		return;
-	}
-	values.resize(numFormats);
-	GLU_CHECK_CALL(glGetIntegerv(extension, &values[0]));
+    int32_t numFormats;
+    GLU_CHECK_CALL(glGetIntegerv(numSupportedValues, &numFormats));
+    if (numFormats == 0)
+    {
+        m_log << TestLog::Message << "// No supported extensions available." << TestLog::EndMessage;
+        return;
+    }
+    values.resize(numFormats);
+    GLU_CHECK_CALL(glGetIntegerv(extension, &values[0]));
 }
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp

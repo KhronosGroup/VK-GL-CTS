@@ -30,8 +30,8 @@ namespace vk
 
 class Library;
 
-Library*	createNullDriver	(void);
+Library *createNullDriver(void);
 
-} // vk
+} // namespace vk
 
 #endif // _VKNULLDRIVER_HPP

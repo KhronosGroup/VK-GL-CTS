@@ -29,14 +29,14 @@
 namespace de
 {
 
-void throwRuntimeError (const char* message, const char* expr, const char* file, int line)
+void throwRuntimeError(const char *message, const char *expr, const char *file, int line)
 {
-	std::ostringstream msg;
-	msg << (message ? message : "Runtime check failed") << ": ";
-	if (expr)
-		msg << '\'' << expr << '\'';
-	msg << " at " << file << ":" << line;
-	throw std::runtime_error(msg.str());
+    std::ostringstream msg;
+    msg << (message ? message : "Runtime check failed") << ": ";
+    if (expr)
+        msg << '\'' << expr << '\'';
+    msg << " at " << file << ":" << line;
+    throw std::runtime_error(msg.str());
 }
 
-} // de
+} // namespace de

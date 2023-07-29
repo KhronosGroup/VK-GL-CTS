@@ -34,10 +34,11 @@ namespace vkt
 namespace DynamicState
 {
 
-tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
+tcu::TestCaseGroup *createDynamicStateComputeTests(tcu::TestContext &testCtx,
+                                                   vk::PipelineConstructionType pipelineConstructionType);
 void cleanupDevice();
 
-} // DynamicState
-} // vkt
+} // namespace DynamicState
+} // namespace vkt
 
 #endif // _VKTDYNAMICSTATECOMPUTETESTS_HPP

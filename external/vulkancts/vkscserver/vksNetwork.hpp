@@ -23,7 +23,10 @@
 
 #include "vksCommon.hpp"
 
-namespace de { class Socket; };
+namespace de
+{
+class Socket;
+};
 
 namespace vksc_server
 {
@@ -31,23 +34,23 @@ namespace vksc_server
 constexpr auto DefaultPort = 59333;
 
 // Conver string (for example "192.168.0.1:59333") to host and port
-void		StringToAddress			(const string& str,		string& host,				int& port							);
+void StringToAddress(const string &str, string &host, int &port);
 
 // Scan buffer, looking for a packet and call packetInterpreter, returns true if there is possibitly for another packet
-bool		ProccessNetworkData		(vector<u8>& buffer,	const std::function<void(u32, vector<u8>)>& packetInterpreter	);
+bool ProccessNetworkData(vector<u8> &buffer, const std::function<void(u32, vector<u8>)> &packetInterpreter);
 
 // Sends whole bufer to socket
-void		Send					(de::Socket* socket,	const vector<u8>& buffer										);
+void Send(de::Socket *socket, const vector<u8> &buffer);
 
 // Send whole payload and insert [type, size] header before it
-void		SendPayloadWithHeader	(de::Socket* socket,	u32 type,					const vector<u8>& payload			);
+void SendPayloadWithHeader(de::Socket *socket, u32 type, const vector<u8> &payload);
 
 // Recv some bytes frome socket and insert it at the back of recvb
-void		RecvSome				(de::Socket* socket,	vector<u8>& recvb);
+void RecvSome(de::Socket *socket, vector<u8> &recvb);
 
 // Recv single packet from socket (it will block until this function get it)
-vector<u8>	RecvPacket				(de::Socket* socket,	vector<u8>&	recvb,			u32 type							);
+vector<u8> RecvPacket(de::Socket *socket, vector<u8> &recvb, u32 type);
 
-}
+} // namespace vksc_server
 
 #endif // _VKSNETWORK_HPP

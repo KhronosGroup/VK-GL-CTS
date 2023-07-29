@@ -32,12 +32,12 @@ namespace dit
 class FrameworkTests : public tcu::TestCaseGroup
 {
 public:
-					FrameworkTests			(tcu::TestContext& testCtx);
-					~FrameworkTests			(void);
+    FrameworkTests(tcu::TestContext &testCtx);
+    ~FrameworkTests(void);
 
-	void			init				(void);
+    void init(void);
 };
 
-} // dit
+} // namespace dit
 
 #endif // _DITFRAMEWORKTESTS_HPP

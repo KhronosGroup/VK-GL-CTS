@@ -32,14 +32,14 @@ namespace glcts
 class CopyImageTests : public deqp::TestCaseGroup
 {
 public:
-	CopyImageTests(deqp::Context& context);
-	~CopyImageTests(void);
+    CopyImageTests(deqp::Context &context);
+    ~CopyImageTests(void);
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	CopyImageTests(const CopyImageTests& other);
-	CopyImageTests& operator=(const CopyImageTests& other);
+    CopyImageTests(const CopyImageTests &other);
+    CopyImageTests &operator=(const CopyImageTests &other);
 };
 
 } /* namespace glcts */

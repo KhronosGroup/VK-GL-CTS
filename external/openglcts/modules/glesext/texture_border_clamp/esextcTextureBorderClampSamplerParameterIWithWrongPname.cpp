@@ -41,7 +41,7 @@ namespace glcts
 {
 
 /* Static constants */
-const glw::GLuint TextureBorderClampSamplerParameterIWithWrongPnameTest::m_buffer_size		  = 32;
+const glw::GLuint TextureBorderClampSamplerParameterIWithWrongPnameTest::m_buffer_size        = 32;
 const glw::GLuint TextureBorderClampSamplerParameterIWithWrongPnameTest::m_texture_unit_index = 0;
 
 /** Constructor
@@ -51,10 +51,12 @@ const glw::GLuint TextureBorderClampSamplerParameterIWithWrongPnameTest::m_textu
  *  @param description Test case's description
  **/
 TextureBorderClampSamplerParameterIWithWrongPnameTest::TextureBorderClampSamplerParameterIWithWrongPnameTest(
-	Context& context, const ExtParameters& extParams, const char* name, const char* description)
-	: TextureBorderClampBase(context, extParams, name, description), m_sampler_id(0), m_test_passed(true)
+    Context &context, const ExtParameters &extParams, const char *name, const char *description)
+    : TextureBorderClampBase(context, extParams, name, description)
+    , m_sampler_id(0)
+    , m_test_passed(true)
 {
-	/* No implementation needed */
+    /* No implementation needed */
 }
 
 /** Deinitializes GLES objects created during the test.
@@ -62,22 +64,22 @@ TextureBorderClampSamplerParameterIWithWrongPnameTest::TextureBorderClampSampler
  */
 void TextureBorderClampSamplerParameterIWithWrongPnameTest::deinit(void)
 {
-	/* Retrieve ES entry-points */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+    /* Retrieve ES entry-points */
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-	/* Bind the default sampler object */
-	gl.bindSampler(m_texture_unit_index, 0);
+    /* Bind the default sampler object */
+    gl.bindSampler(m_texture_unit_index, 0);
 
-	/* Delete a sampler object, if one was created during test execution */
-	if (0 != m_sampler_id)
-	{
-		gl.deleteSamplers(1, &m_sampler_id);
+    /* Delete a sampler object, if one was created during test execution */
+    if (0 != m_sampler_id)
+    {
+        gl.deleteSamplers(1, &m_sampler_id);
 
-		m_sampler_id = 0;
-	}
+        m_sampler_id = 0;
+    }
 
-	/* Deinitialize base class instance */
-	TestCaseBase::deinit();
+    /* Deinitialize base class instance */
+    TestCaseBase::deinit();
 }
 
 /** Initializes GLES objects used during the test.
@@ -85,34 +87,34 @@ void TextureBorderClampSamplerParameterIWithWrongPnameTest::deinit(void)
  */
 void TextureBorderClampSamplerParameterIWithWrongPnameTest::initTest(void)
 {
-	/* Check if EXT_texture_border_clamp is supported */
-	if (!m_is_texture_border_clamp_supported)
-	{
-		throw tcu::NotSupportedError(TEXTURE_BORDER_CLAMP_NOT_SUPPORTED, "", __FILE__, __LINE__);
-	}
+    /* Check if EXT_texture_border_clamp is supported */
+    if (!m_is_texture_border_clamp_supported)
+    {
+        throw tcu::NotSupportedError(TEXTURE_BORDER_CLAMP_NOT_SUPPORTED, "", __FILE__, __LINE__);
+    }
 
-	/* Retrieve ES entry-points */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+    /* Retrieve ES entry-points */
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-	/* Generate a sampler object */
-	gl.genSamplers(1, &m_sampler_id);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Error generating sampler object");
+    /* Generate a sampler object */
+    gl.genSamplers(1, &m_sampler_id);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Error generating sampler object");
 
-	/* Bind the sampler object to a texture unit */
-	gl.bindSampler(m_texture_unit_index, m_sampler_id);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Error binding sampler object");
+    /* Bind the sampler object to a texture unit */
+    gl.bindSampler(m_texture_unit_index, m_sampler_id);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Error binding sampler object");
 
-	/* Store all enums that should generate GL_INVALID_ENUM error when used
-	 * as parameter names for glGetSamplerParameterI*() and glSamplerParameterI*()
-	 * calls.
-	 */
-	m_pnames_list.push_back(GL_TEXTURE_BASE_LEVEL);
-	m_pnames_list.push_back(GL_TEXTURE_IMMUTABLE_FORMAT);
-	m_pnames_list.push_back(GL_TEXTURE_MAX_LEVEL);
-	m_pnames_list.push_back(GL_TEXTURE_SWIZZLE_R);
-	m_pnames_list.push_back(GL_TEXTURE_SWIZZLE_G);
-	m_pnames_list.push_back(GL_TEXTURE_SWIZZLE_B);
-	m_pnames_list.push_back(GL_TEXTURE_SWIZZLE_A);
+    /* Store all enums that should generate GL_INVALID_ENUM error when used
+     * as parameter names for glGetSamplerParameterI*() and glSamplerParameterI*()
+     * calls.
+     */
+    m_pnames_list.push_back(GL_TEXTURE_BASE_LEVEL);
+    m_pnames_list.push_back(GL_TEXTURE_IMMUTABLE_FORMAT);
+    m_pnames_list.push_back(GL_TEXTURE_MAX_LEVEL);
+    m_pnames_list.push_back(GL_TEXTURE_SWIZZLE_R);
+    m_pnames_list.push_back(GL_TEXTURE_SWIZZLE_G);
+    m_pnames_list.push_back(GL_TEXTURE_SWIZZLE_B);
+    m_pnames_list.push_back(GL_TEXTURE_SWIZZLE_A);
 }
 
 /** Executes the test.
@@ -125,33 +127,33 @@ void TextureBorderClampSamplerParameterIWithWrongPnameTest::initTest(void)
  **/
 tcu::TestNode::IterateResult TextureBorderClampSamplerParameterIWithWrongPnameTest::iterate(void)
 {
-	initTest();
+    initTest();
 
-	for (glw::GLuint i = 0; i < m_pnames_list.size(); ++i)
-	{
-		/* Check glGetSamplerParameterIivEXT() */
-		VerifyGLGetSamplerParameterIiv(m_sampler_id, m_pnames_list[i], GL_INVALID_ENUM);
+    for (glw::GLuint i = 0; i < m_pnames_list.size(); ++i)
+    {
+        /* Check glGetSamplerParameterIivEXT() */
+        VerifyGLGetSamplerParameterIiv(m_sampler_id, m_pnames_list[i], GL_INVALID_ENUM);
 
-		/* Check glGetSamplerParameterIuivEXT() */
-		VerifyGLGetSamplerParameterIuiv(m_sampler_id, m_pnames_list[i], GL_INVALID_ENUM);
+        /* Check glGetSamplerParameterIuivEXT() */
+        VerifyGLGetSamplerParameterIuiv(m_sampler_id, m_pnames_list[i], GL_INVALID_ENUM);
 
-		/* Check glSamplerParameterIivEXT() */
-		VerifyGLSamplerParameterIiv(m_sampler_id, m_pnames_list[i], GL_INVALID_ENUM);
+        /* Check glSamplerParameterIivEXT() */
+        VerifyGLSamplerParameterIiv(m_sampler_id, m_pnames_list[i], GL_INVALID_ENUM);
 
-		/* Check glSamplerParameterIuivEXT() */
-		VerifyGLSamplerParameterIuiv(m_sampler_id, m_pnames_list[i], GL_INVALID_ENUM);
-	} /* for (all pnames) */
+        /* Check glSamplerParameterIuivEXT() */
+        VerifyGLSamplerParameterIuiv(m_sampler_id, m_pnames_list[i], GL_INVALID_ENUM);
+    } /* for (all pnames) */
 
-	if (m_test_passed)
-	{
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	}
-	else
-	{
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-	}
+    if (m_test_passed)
+    {
+        m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+    }
+    else
+    {
+        m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+    }
 
-	return STOP;
+    return STOP;
 }
 
 /**
@@ -165,26 +167,26 @@ tcu::TestNode::IterateResult TextureBorderClampSamplerParameterIWithWrongPnameTe
  * @param expected_error expected GL error code.
  */
 void TextureBorderClampSamplerParameterIWithWrongPnameTest::VerifyGLGetSamplerParameterIiv(glw::GLuint sampler_id,
-																						   glw::GLenum pname,
-																						   glw::GLenum expected_error)
+                                                                                           glw::GLenum pname,
+                                                                                           glw::GLenum expected_error)
 {
-	glw::GLenum				error_code = GL_NO_ERROR;
-	const glw::Functions&   gl		   = m_context.getRenderContext().getFunctions();
-	std::vector<glw::GLint> params(m_buffer_size);
+    glw::GLenum error_code   = GL_NO_ERROR;
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+    std::vector<glw::GLint> params(m_buffer_size);
 
-	gl.getSamplerParameterIiv(sampler_id, pname, &params[0]);
+    gl.getSamplerParameterIiv(sampler_id, pname, &params[0]);
 
-	error_code = gl.getError();
-	if (expected_error != error_code)
-	{
-		m_test_passed = false;
+    error_code = gl.getError();
+    if (expected_error != error_code)
+    {
+        m_test_passed = false;
 
-		m_testCtx.getLog() << tcu::TestLog::Message << "glGetSamplerParameterIivEXT() failed:["
-						   << "sampler id:" << sampler_id << ", pname:" << getPNameString(pname)
-						   << "] reported error code:[" << glu::getErrorStr(error_code) << "] expected error code:["
-						   << glu::getErrorStr(expected_error) << "]\n"
-						   << tcu::TestLog::EndMessage;
-	}
+        m_testCtx.getLog() << tcu::TestLog::Message << "glGetSamplerParameterIivEXT() failed:["
+                           << "sampler id:" << sampler_id << ", pname:" << getPNameString(pname)
+                           << "] reported error code:[" << glu::getErrorStr(error_code) << "] expected error code:["
+                           << glu::getErrorStr(expected_error) << "]\n"
+                           << tcu::TestLog::EndMessage;
+    }
 }
 
 /**
@@ -198,26 +200,26 @@ void TextureBorderClampSamplerParameterIWithWrongPnameTest::VerifyGLGetSamplerPa
  * @param expected_error expected GL error code.
  */
 void TextureBorderClampSamplerParameterIWithWrongPnameTest::VerifyGLGetSamplerParameterIuiv(glw::GLuint sampler_id,
-																							glw::GLenum pname,
-																							glw::GLenum expected_error)
+                                                                                            glw::GLenum pname,
+                                                                                            glw::GLenum expected_error)
 {
-	glw::GLenum				 error_code = GL_NO_ERROR;
-	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
-	std::vector<glw::GLuint> params(m_buffer_size);
+    glw::GLenum error_code   = GL_NO_ERROR;
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+    std::vector<glw::GLuint> params(m_buffer_size);
 
-	gl.getSamplerParameterIuiv(sampler_id, pname, &params[0]);
+    gl.getSamplerParameterIuiv(sampler_id, pname, &params[0]);
 
-	error_code = gl.getError();
-	if (expected_error != error_code)
-	{
-		m_test_passed = false;
+    error_code = gl.getError();
+    if (expected_error != error_code)
+    {
+        m_test_passed = false;
 
-		m_testCtx.getLog() << tcu::TestLog::Message << "glGetSamplerParameterIuivEXT() failed:["
-						   << "sampler id:" << sampler_id << ", pname:" << getPNameString(pname)
-						   << "] reported error code:[" << glu::getErrorStr(error_code) << "] expected error code:["
-						   << glu::getErrorStr(expected_error) << "]\n"
-						   << tcu::TestLog::EndMessage;
-	}
+        m_testCtx.getLog() << tcu::TestLog::Message << "glGetSamplerParameterIuivEXT() failed:["
+                           << "sampler id:" << sampler_id << ", pname:" << getPNameString(pname)
+                           << "] reported error code:[" << glu::getErrorStr(error_code) << "] expected error code:["
+                           << glu::getErrorStr(expected_error) << "]\n"
+                           << tcu::TestLog::EndMessage;
+    }
 }
 
 /**
@@ -231,26 +233,26 @@ void TextureBorderClampSamplerParameterIWithWrongPnameTest::VerifyGLGetSamplerPa
  * @param expected_error expected GL error code.
  */
 void TextureBorderClampSamplerParameterIWithWrongPnameTest::VerifyGLSamplerParameterIiv(glw::GLuint sampler_id,
-																						glw::GLenum pname,
-																						glw::GLenum expected_error)
+                                                                                        glw::GLenum pname,
+                                                                                        glw::GLenum expected_error)
 {
-	glw::GLenum				error_code = GL_NO_ERROR;
-	const glw::Functions&   gl		   = m_context.getRenderContext().getFunctions();
-	std::vector<glw::GLint> params(m_buffer_size);
+    glw::GLenum error_code   = GL_NO_ERROR;
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+    std::vector<glw::GLint> params(m_buffer_size);
 
-	gl.samplerParameterIiv(sampler_id, pname, &params[0]);
+    gl.samplerParameterIiv(sampler_id, pname, &params[0]);
 
-	error_code = gl.getError();
-	if (expected_error != error_code)
-	{
-		m_test_passed = false;
+    error_code = gl.getError();
+    if (expected_error != error_code)
+    {
+        m_test_passed = false;
 
-		m_testCtx.getLog() << tcu::TestLog::Message << "glSamplerParameterIivEXT() failed:["
-						   << "sampler id:" << sampler_id << ", pname:" << getPNameString(pname)
-						   << "] reported error code:[" << glu::getErrorStr(error_code) << "] expected error code:["
-						   << glu::getErrorStr(expected_error) << "]\n"
-						   << tcu::TestLog::EndMessage;
-	}
+        m_testCtx.getLog() << tcu::TestLog::Message << "glSamplerParameterIivEXT() failed:["
+                           << "sampler id:" << sampler_id << ", pname:" << getPNameString(pname)
+                           << "] reported error code:[" << glu::getErrorStr(error_code) << "] expected error code:["
+                           << glu::getErrorStr(expected_error) << "]\n"
+                           << tcu::TestLog::EndMessage;
+    }
 }
 
 /**
@@ -264,26 +266,26 @@ void TextureBorderClampSamplerParameterIWithWrongPnameTest::VerifyGLSamplerParam
  * @param expected_error expected GL error code.
  **/
 void TextureBorderClampSamplerParameterIWithWrongPnameTest::VerifyGLSamplerParameterIuiv(glw::GLuint sampler_id,
-																						 glw::GLenum pname,
-																						 glw::GLenum expected_error)
+                                                                                         glw::GLenum pname,
+                                                                                         glw::GLenum expected_error)
 {
-	glw::GLenum				 error_code = GL_NO_ERROR;
-	const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
-	std::vector<glw::GLuint> params(m_buffer_size);
+    glw::GLenum error_code   = GL_NO_ERROR;
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+    std::vector<glw::GLuint> params(m_buffer_size);
 
-	gl.samplerParameterIuiv(sampler_id, pname, &params[0]);
+    gl.samplerParameterIuiv(sampler_id, pname, &params[0]);
 
-	error_code = gl.getError();
-	if (expected_error != error_code)
-	{
-		m_test_passed = false;
+    error_code = gl.getError();
+    if (expected_error != error_code)
+    {
+        m_test_passed = false;
 
-		m_testCtx.getLog() << tcu::TestLog::Message << "glSamplerParameterIuivEXT() failed:["
-						   << "sampler id:" << sampler_id << ", pname:" << getPNameString(pname)
-						   << "] reported error code:[" << glu::getErrorStr(error_code) << "] expected error code:["
-						   << glu::getErrorStr(expected_error) << "]\n"
-						   << tcu::TestLog::EndMessage;
-	}
+        m_testCtx.getLog() << tcu::TestLog::Message << "glSamplerParameterIuivEXT() failed:["
+                           << "sampler id:" << sampler_id << ", pname:" << getPNameString(pname)
+                           << "] reported error code:[" << glu::getErrorStr(error_code) << "] expected error code:["
+                           << glu::getErrorStr(expected_error) << "]\n"
+                           << tcu::TestLog::EndMessage;
+    }
 }
 
 } // namespace glcts

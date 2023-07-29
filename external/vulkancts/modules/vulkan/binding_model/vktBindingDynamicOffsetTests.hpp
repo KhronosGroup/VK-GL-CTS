@@ -33,9 +33,9 @@ namespace vkt
 namespace BindingModel
 {
 
-tcu::TestCaseGroup*	createDynamicOffsetTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDynamicOffsetTests(tcu::TestContext &testCtx);
 
-} // BindingModel
-} // vkt
+} // namespace BindingModel
+} // namespace vkt
 
 #endif // _VKTBINDINGDYNAMICOFFSETTESTS_HPP

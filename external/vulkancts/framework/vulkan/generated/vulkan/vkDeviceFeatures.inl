@@ -705,9 +705,9 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderDrawParametersFeatures>, DECL_SHADER_DRAW_PARAMETERS_EXTENSION_NAME, 0 },
 };
 
-deUint32 getBlobFeaturesVersion (VkStructureType sType)
+uint32_t getBlobFeaturesVersion (VkStructureType sType)
 {
-	const std::map<VkStructureType, deUint32> sTypeBlobMap
+	const std::map<VkStructureType, uint32_t> sTypeBlobMap
 	{
 		// Vulkan11
 		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR,							VK_API_VERSION_1_1 },

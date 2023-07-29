@@ -30,63 +30,65 @@
 #error "CTS runner requires API level 9 or greater"
 #endif
 
-static void createCTSActivity(ANativeActivity* activity, void* savedState, size_t savedStateSize, glu::ApiType type)
+static void createCTSActivity(ANativeActivity *activity, void *savedState, size_t savedStateSize, glu::ApiType type)
 {
-	DE_UNREF(savedState && savedStateSize);
-	try
-	{
-		glcts::Android::TestActivity* obj = new glcts::Android::TestActivity(activity, type);
-		DE_UNREF(obj);
-	}
-	catch (const std::exception& e)
-	{
-		tcu::die("Failed to create activity: %s", e.what());
-	}
+    DE_UNREF(savedState && savedStateSize);
+    try
+    {
+        glcts::Android::TestActivity *obj = new glcts::Android::TestActivity(activity, type);
+        DE_UNREF(obj);
+    }
+    catch (const std::exception &e)
+    {
+        tcu::die("Failed to create activity: %s", e.what());
+    }
 }
 
 DE_BEGIN_EXTERN_C
 
-JNIEXPORT void JNICALL createES2CTSActivity(ANativeActivity* activity, void* savedState, size_t savedStateSize)
+JNIEXPORT void JNICALL createES2CTSActivity(ANativeActivity *activity, void *savedState, size_t savedStateSize)
 {
-	createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::es(2, 0));
+    createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::es(2, 0));
 }
 
-JNIEXPORT void JNICALL createES3CTSActivity(ANativeActivity* activity, void* savedState, size_t savedStateSize)
+JNIEXPORT void JNICALL createES3CTSActivity(ANativeActivity *activity, void *savedState, size_t savedStateSize)
 {
-	createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::es(3, 0));
+    createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::es(3, 0));
 }
 
-JNIEXPORT void JNICALL createES31CTSActivity(ANativeActivity* activity, void* savedState, size_t savedStateSize)
+JNIEXPORT void JNICALL createES31CTSActivity(ANativeActivity *activity, void *savedState, size_t savedStateSize)
 {
-	createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::es(3, 1));
+    createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::es(3, 1));
 }
 
-JNIEXPORT void JNICALL createES32CTSActivity(ANativeActivity* activity, void* savedState, size_t savedStateSize)
+JNIEXPORT void JNICALL createES32CTSActivity(ANativeActivity *activity, void *savedState, size_t savedStateSize)
 {
-	createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::es(3, 2));
+    createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::es(3, 2));
 }
 
-JNIEXPORT void JNICALL createGL45CTSActivity(ANativeActivity* activity, void* savedState, size_t savedStateSize)
+JNIEXPORT void JNICALL createGL45CTSActivity(ANativeActivity *activity, void *savedState, size_t savedStateSize)
 {
-	createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::core(4, 5));
+    createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::core(4, 5));
 }
 
-JNIEXPORT void JNICALL createGL46CTSActivity(ANativeActivity* activity, void* savedState, size_t savedStateSize)
+JNIEXPORT void JNICALL createGL46CTSActivity(ANativeActivity *activity, void *savedState, size_t savedStateSize)
 {
-	createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::core(4, 6));
+    createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::core(4, 6));
 }
 
-JNIEXPORT void JNICALL createExportES32TestParamActivity (ANativeActivity* activity, void* savedState, size_t savedStateSize)
+JNIEXPORT void JNICALL createExportES32TestParamActivity(ANativeActivity *activity, void *savedState,
+                                                         size_t savedStateSize)
 {
-	DE_UNREF(savedState && savedStateSize);
-	try
-	{
-		glcts::Android::GetTestParamActivity* obj = new glcts::Android::GetTestParamActivity(activity, glu::ApiType::es(3, 2));
-		DE_UNREF(obj);
-	}
-	catch (const std::exception& e)
-	{
-		tcu::die("Failed to create activity: %s", e.what());
-	}
+    DE_UNREF(savedState && savedStateSize);
+    try
+    {
+        glcts::Android::GetTestParamActivity *obj =
+            new glcts::Android::GetTestParamActivity(activity, glu::ApiType::es(3, 2));
+        DE_UNREF(obj);
+    }
+    catch (const std::exception &e)
+    {
+        tcu::die("Failed to create activity: %s", e.what());
+    }
 }
 DE_END_EXTERN_C

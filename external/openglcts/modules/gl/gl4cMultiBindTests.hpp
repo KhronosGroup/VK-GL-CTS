@@ -49,15 +49,15 @@ namespace MultiBind
 class ErrorsBindBuffersTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	ErrorsBindBuffersTest(deqp::Context& context);
+    /* Public methods */
+    ErrorsBindBuffersTest(deqp::Context &context);
 
-	virtual ~ErrorsBindBuffersTest()
-	{
-	}
+    virtual ~ErrorsBindBuffersTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test ErrorsBindTextures. Description follows:
@@ -70,15 +70,15 @@ public:
 class ErrorsBindTexturesTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	ErrorsBindTexturesTest(deqp::Context& context);
+    /* Public methods */
+    ErrorsBindTexturesTest(deqp::Context &context);
 
-	virtual ~ErrorsBindTexturesTest()
-	{
-	}
+    virtual ~ErrorsBindTexturesTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test ErrorsBindSamplers. Description follows:
@@ -91,15 +91,15 @@ public:
 class ErrorsBindSamplersTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	ErrorsBindSamplersTest(deqp::Context& context);
+    /* Public methods */
+    ErrorsBindSamplersTest(deqp::Context &context);
 
-	virtual ~ErrorsBindSamplersTest()
-	{
-	}
+    virtual ~ErrorsBindSamplersTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test ErrorsBindImageTextures. Description follows:
@@ -116,15 +116,15 @@ public:
 class ErrorsBindImageTexturesTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	ErrorsBindImageTexturesTest(deqp::Context& context);
+    /* Public methods */
+    ErrorsBindImageTexturesTest(deqp::Context &context);
 
-	virtual ~ErrorsBindImageTexturesTest()
-	{
-	}
+    virtual ~ErrorsBindImageTexturesTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test ErrorsBindVertexBuffers. Description follows:
@@ -138,15 +138,15 @@ public:
 class ErrorsBindVertexBuffersTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	ErrorsBindVertexBuffersTest(deqp::Context& context);
+    /* Public methods */
+    ErrorsBindVertexBuffersTest(deqp::Context &context);
 
-	virtual ~ErrorsBindVertexBuffersTest()
-	{
-	}
+    virtual ~ErrorsBindVertexBuffersTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test FunctionalBindBuffersBase. Description follows:
@@ -182,15 +182,15 @@ public:
 class FunctionalBindBuffersBaseTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	FunctionalBindBuffersBaseTest(deqp::Context& context);
+    /* Public methods */
+    FunctionalBindBuffersBaseTest(deqp::Context &context);
 
-	virtual ~FunctionalBindBuffersBaseTest()
-	{
-	}
+    virtual ~FunctionalBindBuffersBaseTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test FunctionalBindBuffersRange. Description follows:
@@ -226,15 +226,15 @@ public:
 class FunctionalBindBuffersRangeTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	FunctionalBindBuffersRangeTest(deqp::Context& context);
+    /* Public methods */
+    FunctionalBindBuffersRangeTest(deqp::Context &context);
 
-	virtual ~FunctionalBindBuffersRangeTest()
-	{
-	}
+    virtual ~FunctionalBindBuffersRangeTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test FunctionalBindTextures. Description follows:
@@ -270,15 +270,15 @@ public:
 class FunctionalBindTexturesTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	FunctionalBindTexturesTest(deqp::Context& context);
+    /* Public methods */
+    FunctionalBindTexturesTest(deqp::Context &context);
 
-	virtual ~FunctionalBindTexturesTest()
-	{
-	}
+    virtual ~FunctionalBindTexturesTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test FunctionalBindSamplers. Description follows:
@@ -309,15 +309,15 @@ public:
 class FunctionalBindSamplersTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	FunctionalBindSamplersTest(deqp::Context& context);
+    /* Public methods */
+    FunctionalBindSamplersTest(deqp::Context &context);
 
-	virtual ~FunctionalBindSamplersTest()
-	{
-	}
+    virtual ~FunctionalBindSamplersTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test FunctionalBindImageTextures. Description follows:
@@ -350,15 +350,15 @@ public:
 class FunctionalBindImageTexturesTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	FunctionalBindImageTexturesTest(deqp::Context& context);
+    /* Public methods */
+    FunctionalBindImageTexturesTest(deqp::Context &context);
 
-	virtual ~FunctionalBindImageTexturesTest()
-	{
-	}
+    virtual ~FunctionalBindImageTexturesTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test FunctionalBindVertexBuffers. Description follows:
@@ -389,15 +389,15 @@ public:
 class FunctionalBindVertexBuffersTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	FunctionalBindVertexBuffersTest(deqp::Context& context);
+    /* Public methods */
+    FunctionalBindVertexBuffersTest(deqp::Context &context);
 
-	virtual ~FunctionalBindVertexBuffersTest()
-	{
-	}
+    virtual ~FunctionalBindVertexBuffersTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test DispatchBindBuffersBase. Description follows:
@@ -427,15 +427,15 @@ public:
 class DispatchBindBuffersBaseTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	DispatchBindBuffersBaseTest(deqp::Context& context);
+    /* Public methods */
+    DispatchBindBuffersBaseTest(deqp::Context &context);
 
-	virtual ~DispatchBindBuffersBaseTest()
-	{
-	}
+    virtual ~DispatchBindBuffersBaseTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test DispatchBindBuffersRange. Description follows:
@@ -472,15 +472,15 @@ public:
 class DispatchBindBuffersRangeTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	DispatchBindBuffersRangeTest(deqp::Context& context);
+    /* Public methods */
+    DispatchBindBuffersRangeTest(deqp::Context &context);
 
-	virtual ~DispatchBindBuffersRangeTest()
-	{
-	}
+    virtual ~DispatchBindBuffersRangeTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test DispatchBindTextures. Description follows:
@@ -496,14 +496,14 @@ public:
 class DispatchBindTexturesTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	DispatchBindTexturesTest(deqp::Context& context);
-	virtual ~DispatchBindTexturesTest()
-	{
-	}
+    /* Public methods */
+    DispatchBindTexturesTest(deqp::Context &context);
+    virtual ~DispatchBindTexturesTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test DispatchBindImageTextures. Description follows:
@@ -516,15 +516,15 @@ public:
 class DispatchBindImageTexturesTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	DispatchBindImageTexturesTest(deqp::Context& context);
+    /* Public methods */
+    DispatchBindImageTexturesTest(deqp::Context &context);
 
-	virtual ~DispatchBindImageTexturesTest()
-	{
-	}
+    virtual ~DispatchBindImageTexturesTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test DispatchBindSamplers. Description follows:
@@ -545,15 +545,15 @@ public:
 class DispatchBindSamplersTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	DispatchBindSamplersTest(deqp::Context& context);
+    /* Public methods */
+    DispatchBindSamplersTest(deqp::Context &context);
 
-	virtual ~DispatchBindSamplersTest()
-	{
-	}
+    virtual ~DispatchBindSamplersTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test DrawBindVertexBuffers. Description follows:
@@ -592,37 +592,37 @@ public:
 class DrawBindVertexBuffersTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	DrawBindVertexBuffersTest(deqp::Context& context);
+    /* Public methods */
+    DrawBindVertexBuffersTest(deqp::Context &context);
 
-	virtual ~DrawBindVertexBuffersTest()
-	{
-	}
+    virtual ~DrawBindVertexBuffersTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
-} /* MultiBind */
+} // namespace MultiBind
 
 /** Group class for multi bind conformance tests */
 class MultiBindTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	MultiBindTests(deqp::Context& context);
+    /* Public methods */
+    MultiBindTests(deqp::Context &context);
 
-	virtual ~MultiBindTests(void)
-	{
-	}
+    virtual ~MultiBindTests(void)
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	/* Private methods */
-	MultiBindTests(const MultiBindTests& other);
-	MultiBindTests& operator=(const MultiBindTests& other);
+    /* Private methods */
+    MultiBindTests(const MultiBindTests &other);
+    MultiBindTests &operator=(const MultiBindTests &other);
 };
 
-} /* gl4cts */
+} // namespace gl4cts
 
 #endif // _GL4CMULTIBINDTESTS_HPP

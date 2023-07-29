@@ -17,11 +17,11 @@ typedef ::std::map<uint32_t, FunctionInfosList> ApisMap;
 
 void initApisMap (ApisMap& apis)
 {
-	apis.clear();
-	apis.insert(::std::pair<uint32_t, FunctionInfosList>(VK_API_VERSION_1_0, FunctionInfosList()));
-	apis.insert(::std::pair<uint32_t, FunctionInfosList>(VK_API_VERSION_1_1, FunctionInfosList()));
-	apis.insert(::std::pair<uint32_t, FunctionInfosList>(VK_API_VERSION_1_2, FunctionInfosList()));
-	apis.insert(::std::pair<uint32_t, FunctionInfosList>(VK_API_VERSION_1_3, FunctionInfosList()));
+    apis.clear();
+    apis.insert(::std::pair<uint32_t, FunctionInfosList>(VK_API_VERSION_1_0, FunctionInfosList()));
+    apis.insert(::std::pair<uint32_t, FunctionInfosList>(VK_API_VERSION_1_1, FunctionInfosList()));
+    apis.insert(::std::pair<uint32_t, FunctionInfosList>(VK_API_VERSION_1_2, FunctionInfosList()));
+    apis.insert(::std::pair<uint32_t, FunctionInfosList>(VK_API_VERSION_1_3, FunctionInfosList()));
 
 	apis[VK_API_VERSION_1_0].push_back(FunctionInfo("vkGetCommandPoolMemoryConsumption",	FUNCTIONORIGIN_DEVICE));
 	apis[VK_API_VERSION_1_0].push_back(FunctionInfo("vkGetFaultData",						FUNCTIONORIGIN_DEVICE));

@@ -57,28 +57,28 @@ namespace glcts
 class GeometryShaderFlatInterpolationTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderFlatInterpolationTest(Context& context, const ExtParameters& extParams, const char* name,
-										const char* description);
+    /* Public methods */
+    GeometryShaderFlatInterpolationTest(Context &context, const ExtParameters &extParams, const char *name,
+                                        const char *description);
 
-	virtual ~GeometryShaderFlatInterpolationTest()
-	{
-	}
+    virtual ~GeometryShaderFlatInterpolationTest()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private methods */
-	void initProgram();
+    /* Private methods */
+    void initProgram();
 
-	/* Private variables */
-	glw::GLuint m_bo_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_gs_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_vs_id;
+    /* Private variables */
+    glw::GLuint m_bo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_id;
 };
 
 } // namespace glcts

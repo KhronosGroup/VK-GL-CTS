@@ -32,9 +32,9 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	createTerminateInvocationGroup (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTerminateInvocationGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMTERMINATEINVOCATIONTESTS_HPP

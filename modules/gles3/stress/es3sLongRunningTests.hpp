@@ -36,18 +36,18 @@ namespace Stress
 class LongRunningTests : public TestCaseGroup
 {
 public:
-						LongRunningTests	(Context& context);
-						~LongRunningTests	(void);
+    LongRunningTests(Context &context);
+    ~LongRunningTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						LongRunningTests	(const LongRunningTests& other);
-	LongRunningTests&	operator=			(const LongRunningTests& other);
+    LongRunningTests(const LongRunningTests &other);
+    LongRunningTests &operator=(const LongRunningTests &other);
 };
 
-} // Stress
-} // gles3
-} // deqp
+} // namespace Stress
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3SLONGRUNNINGTESTS_HPP

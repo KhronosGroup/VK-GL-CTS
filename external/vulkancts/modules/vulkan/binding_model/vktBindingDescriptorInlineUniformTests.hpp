@@ -34,9 +34,9 @@ namespace BindingModel
 {
 
 #ifndef CTS_USES_VULKANSC
-tcu::TestCaseGroup* createDescriptorInlineUniformTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDescriptorInlineUniformTests(tcu::TestContext &testCtx);
 #endif
-} // BindingModel
-} // vkt
+} // namespace BindingModel
+} // namespace vkt
 
 #endif // _VKTBINDINGDESCRIPTORINLINEUNIFORMTESTS_HPP

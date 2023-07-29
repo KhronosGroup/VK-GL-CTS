@@ -446,7 +446,7 @@ VkResult DeviceDriverSC::createComputePipelines (VkDevice device, VkPipelineCach
 {
 	if( m_computeOnlyMode )
 	{
-		for (deUint32 i=0; i<createInfoCount; ++i)
+		for (uint32_t i=0; i<createInfoCount; ++i)
 			if ((pCreateInfos[i].stage.stage & VK_SHADER_STAGE_ALL_GRAPHICS) != 0) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
 	}
 	std::lock_guard<std::mutex> lock(functionMutex);

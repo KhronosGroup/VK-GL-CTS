@@ -25,17 +25,22 @@
 #include "tcuPlatform.hpp"
 #include "vkPlatform.hpp"
 
-class FuchsiaVkLibrary : public vk::Library {
+class FuchsiaVkLibrary : public vk::Library
+{
 public:
-    FuchsiaVkLibrary(const char* library_path)
-        : library_(library_path ? library_path : "libvulkan.so"), driver_(library_) {}
+    FuchsiaVkLibrary(const char *library_path)
+        : library_(library_path ? library_path : "libvulkan.so")
+        , driver_(library_)
+    {
+    }
 
-    const vk::PlatformInterface& getPlatformInterface() const {
+    const vk::PlatformInterface &getPlatformInterface() const
+    {
         return driver_;
     }
-    const tcu::FunctionLibrary&             getFunctionLibrary              (void) const
+    const tcu::FunctionLibrary &getFunctionLibrary(void) const
     {
-            return library_;
+        return library_;
     }
 
 private:
@@ -43,16 +48,18 @@ private:
     const vk::PlatformDriver driver_;
 };
 
-class FuchsiaVkPlatform : public vk::Platform {
+class FuchsiaVkPlatform : public vk::Platform
+{
 public:
-    vk::Library* createLibrary(const char* library_path) const {
+    vk::Library *createLibrary(const char *library_path) const
+    {
         return new FuchsiaVkLibrary(library_path);
     }
 
-    void describePlatform (std::ostream& dst) const
+    void describePlatform(std::ostream &dst) const
     {
         dst << "OS: Fuchsia\n";
-        const char* cpu = "Unknown";
+        const char *cpu = "Unknown";
 #if defined(__x86_64__)
         cpu = "x86_64";
 #elif defined(__aarch64__)
@@ -61,27 +68,35 @@ public:
         dst << "CPU: " << cpu << "\n";
     }
 
-    void getMemoryLimits(tcu::PlatformMemoryLimits& limits) const {
+    void getMemoryLimits(tcu::PlatformMemoryLimits &limits) const
+    {
         // Copied from tcuX11VulkanPlatform.cpp
-        limits.totalSystemMemory = 256 * 1024 * 1024;
-        limits.totalDeviceLocalMemory = 0; // unified memory
+        limits.totalSystemMemory                 = 256 * 1024 * 1024;
+        limits.totalDeviceLocalMemory            = 0; // unified memory
         limits.deviceMemoryAllocationGranularity = 64 * 1024;
-        limits.devicePageSize = 4096;
-        limits.devicePageTableEntrySize = 8;
-        limits.devicePageTableHierarchyLevels = 3;
+        limits.devicePageSize                    = 4096;
+        limits.devicePageTableEntrySize          = 8;
+        limits.devicePageTableHierarchyLevels    = 3;
     }
 };
 
-class FuchsiaPlatform : public tcu::Platform {
+class FuchsiaPlatform : public tcu::Platform
+{
 public:
-    ~FuchsiaPlatform() {}
+    ~FuchsiaPlatform()
+    {
+    }
 
-    const vk::Platform& getVulkanPlatform() const { return vk_platform_; }
+    const vk::Platform &getVulkanPlatform() const
+    {
+        return vk_platform_;
+    }
 
 private:
     FuchsiaVkPlatform vk_platform_;
 };
 
-tcu::Platform* createPlatform() {
+tcu::Platform *createPlatform()
+{
     return new FuchsiaPlatform();
 }

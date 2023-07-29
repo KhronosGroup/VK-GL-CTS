@@ -33,111 +33,111 @@
 DE_BEGIN_EXTERN_C
 
 /* Socket types. */
-typedef struct deSocket_s			deSocket;
-typedef struct deSocketAddress_s	deSocketAddress;
+typedef struct deSocket_s deSocket;
+typedef struct deSocketAddress_s deSocketAddress;
 
 typedef enum deSocketFamily_e
 {
-	DE_SOCKETFAMILY_INET4 = 0,
-	DE_SOCKETFAMILY_INET6,
+    DE_SOCKETFAMILY_INET4 = 0,
+    DE_SOCKETFAMILY_INET6,
 
-	DE_SOCKETFAMILY_LAST
+    DE_SOCKETFAMILY_LAST
 } deSocketFamily;
 
 typedef enum deSocketType_e
 {
-	DE_SOCKETTYPE_STREAM	= 0,
-	DE_SOCKETTYPE_DATAGRAM,
+    DE_SOCKETTYPE_STREAM = 0,
+    DE_SOCKETTYPE_DATAGRAM,
 
-	DE_SOCKETTYPE_LAST
+    DE_SOCKETTYPE_LAST
 } deSocketType;
 
 typedef enum deSocketProtocol_e
 {
-	DE_SOCKETPROTOCOL_TCP = 0,
-	DE_SOCKETPROTOCOL_UDP,
+    DE_SOCKETPROTOCOL_TCP = 0,
+    DE_SOCKETPROTOCOL_UDP,
 
-	DE_SOCKETPROTOCOL_LAST
+    DE_SOCKETPROTOCOL_LAST
 } deSocketProtocol;
 
 typedef enum deSocketFlag_e
 {
-	DE_SOCKET_KEEPALIVE		= (1<<0),
-	DE_SOCKET_NODELAY		= (1<<1),
-	DE_SOCKET_NONBLOCKING	= (1<<2),
-	DE_SOCKET_CLOSE_ON_EXEC	= (1<<3)
+    DE_SOCKET_KEEPALIVE     = (1 << 0),
+    DE_SOCKET_NODELAY       = (1 << 1),
+    DE_SOCKET_NONBLOCKING   = (1 << 2),
+    DE_SOCKET_CLOSE_ON_EXEC = (1 << 3)
 } deSocketFlag;
 
 /* \todo [2012-07-09 pyry] Separate closed bits for send and receive channels. */
 
 typedef enum deSocketState_e
 {
-	DE_SOCKETSTATE_CLOSED					= 0,
-	DE_SOCKETSTATE_CONNECTED				= 1,
-	DE_SOCKETSTATE_LISTENING				= 2,
-	DE_SOCKETSTATE_DISCONNECTED				= 3,
+    DE_SOCKETSTATE_CLOSED       = 0,
+    DE_SOCKETSTATE_CONNECTED    = 1,
+    DE_SOCKETSTATE_LISTENING    = 2,
+    DE_SOCKETSTATE_DISCONNECTED = 3,
 
-	DE_SOCKETSTATE_LAST
+    DE_SOCKETSTATE_LAST
 } deSocketState;
 
 typedef enum deSocketResult_e
 {
-	DE_SOCKETRESULT_SUCCESS					= 0,
-	DE_SOCKETRESULT_WOULD_BLOCK				= 1,
-	DE_SOCKETRESULT_CONNECTION_CLOSED		= 2,
-	DE_SOCKETRESULT_CONNECTION_TERMINATED	= 3,
-	DE_SOCKETRESULT_ERROR					= 4,
+    DE_SOCKETRESULT_SUCCESS               = 0,
+    DE_SOCKETRESULT_WOULD_BLOCK           = 1,
+    DE_SOCKETRESULT_CONNECTION_CLOSED     = 2,
+    DE_SOCKETRESULT_CONNECTION_TERMINATED = 3,
+    DE_SOCKETRESULT_ERROR                 = 4,
 
-	DE_SOCKETRESULT_LAST
+    DE_SOCKETRESULT_LAST
 } deSocketResult;
 
 typedef enum deSocketChannel_e
 {
-	DE_SOCKETCHANNEL_RECEIVE	= (1<<0),
-	DE_SOCKETCHANNEL_SEND		= (1<<1),
+    DE_SOCKETCHANNEL_RECEIVE = (1 << 0),
+    DE_SOCKETCHANNEL_SEND    = (1 << 1),
 
-	DE_SOCKETCHANNEL_BOTH		= DE_SOCKETCHANNEL_RECEIVE|DE_SOCKETCHANNEL_SEND
+    DE_SOCKETCHANNEL_BOTH = DE_SOCKETCHANNEL_RECEIVE | DE_SOCKETCHANNEL_SEND
 } deSocketChannel;
 
 /* Socket API, similar to Berkeley sockets. */
 
-deSocketAddress*	deSocketAddress_create		(void);
-void				deSocketAddress_destroy		(deSocketAddress* address);
+deSocketAddress *deSocketAddress_create(void);
+void deSocketAddress_destroy(deSocketAddress *address);
 
-deBool				deSocketAddress_setFamily	(deSocketAddress* address, deSocketFamily family);
-deSocketFamily		deSocketAddress_getFamily	(const deSocketAddress* address);
-deBool				deSocketAddress_setType		(deSocketAddress* address, deSocketType type);
-deSocketType		deSocketAddress_getType		(const deSocketAddress* address);
-deBool				deSocketAddress_setProtocol	(deSocketAddress* address, deSocketProtocol protocol);
-deSocketProtocol	deSocketAddress_getProtocol	(const deSocketAddress* address);
-deBool				deSocketAddress_setPort		(deSocketAddress* address, int port);
-int					deSocketAddress_getPort		(const deSocketAddress* address);
-deBool				deSocketAddress_setHost		(deSocketAddress* address, const char* host);
-const char*			deSocketAddress_getHost		(const deSocketAddress* address);
+bool deSocketAddress_setFamily(deSocketAddress *address, deSocketFamily family);
+deSocketFamily deSocketAddress_getFamily(const deSocketAddress *address);
+bool deSocketAddress_setType(deSocketAddress *address, deSocketType type);
+deSocketType deSocketAddress_getType(const deSocketAddress *address);
+bool deSocketAddress_setProtocol(deSocketAddress *address, deSocketProtocol protocol);
+deSocketProtocol deSocketAddress_getProtocol(const deSocketAddress *address);
+bool deSocketAddress_setPort(deSocketAddress *address, int port);
+int deSocketAddress_getPort(const deSocketAddress *address);
+bool deSocketAddress_setHost(deSocketAddress *address, const char *host);
+const char *deSocketAddress_getHost(const deSocketAddress *address);
 
-deSocket*			deSocket_create				(void);
-void				deSocket_destroy			(deSocket* socket);
+deSocket *deSocket_create(void);
+void deSocket_destroy(deSocket *socket);
 
-deSocketState		deSocket_getState			(const deSocket* socket);
-deUint32			deSocket_getOpenChannels	(const deSocket* socket);
+deSocketState deSocket_getState(const deSocket *socket);
+uint32_t deSocket_getOpenChannels(const deSocket *socket);
 
-deBool				deSocket_setFlags			(deSocket* socket, deUint32 flags);
+bool deSocket_setFlags(deSocket *socket, uint32_t flags);
 
-deBool				deSocket_listen				(deSocket* socket, const deSocketAddress* address);
-deSocket*			deSocket_accept				(deSocket* socket, deSocketAddress* clientAddress);
+bool deSocket_listen(deSocket *socket, const deSocketAddress *address);
+deSocket *deSocket_accept(deSocket *socket, deSocketAddress *clientAddress);
 
-deBool				deSocket_connect			(deSocket* socket, const deSocketAddress* address);
+bool deSocket_connect(deSocket *socket, const deSocketAddress *address);
 
-deBool				deSocket_shutdown			(deSocket* socket, deUint32 channels);
-deBool				deSocket_close				(deSocket* socket);
+bool deSocket_shutdown(deSocket *socket, uint32_t channels);
+bool deSocket_close(deSocket *socket);
 
-deSocketResult		deSocket_send				(deSocket* socket, const void* buf, size_t bufSize, size_t* numSent);
-deSocketResult		deSocket_receive			(deSocket* socket, void* buf, size_t bufSize, size_t* numReceived);
+deSocketResult deSocket_send(deSocket *socket, const void *buf, size_t bufSize, size_t *numSent);
+deSocketResult deSocket_receive(deSocket *socket, void *buf, size_t bufSize, size_t *numReceived);
 
 /* Utilities. */
 
-const char*			deGetSocketFamilyName		(deSocketFamily family);
-const char*			deGetSocketResultName		(deSocketResult result);
+const char *deGetSocketFamilyName(deSocketFamily family);
+const char *deGetSocketResultName(deSocketResult result);
 
 DE_END_EXTERN_C
 

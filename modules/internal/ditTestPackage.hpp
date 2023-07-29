@@ -32,13 +32,13 @@ namespace dit
 class TestPackage : public tcu::TestPackage
 {
 public:
-									TestPackage				(tcu::TestContext& testCtx);
-	virtual							~TestPackage			(void);
+    TestPackage(tcu::TestContext &testCtx);
+    virtual ~TestPackage(void);
 
-	virtual void					init					(void);
-	tcu::TestCaseExecutor*			createExecutor			(void) const;
+    virtual void init(void);
+    tcu::TestCaseExecutor *createExecutor(void) const;
 };
 
-} // dit
+} // namespace dit
 
 #endif // _DITTESTPACKAGE_HPP

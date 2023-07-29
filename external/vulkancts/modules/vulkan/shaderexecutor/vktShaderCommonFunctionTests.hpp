@@ -36,17 +36,17 @@ namespace shaderexecutor
 class ShaderCommonFunctionTests : public tcu::TestCaseGroup
 {
 public:
-										ShaderCommonFunctionTests	(tcu::TestContext& testCtx);
-	virtual								~ShaderCommonFunctionTests	(void);
+    ShaderCommonFunctionTests(tcu::TestContext &testCtx);
+    virtual ~ShaderCommonFunctionTests(void);
 
-	virtual void						init						(void);
+    virtual void init(void);
 
 private:
-										ShaderCommonFunctionTests	(const ShaderCommonFunctionTests&);		// not allowed!
-	ShaderCommonFunctionTests&			operator=					(const ShaderCommonFunctionTests&);		// not allowed!
+    ShaderCommonFunctionTests(const ShaderCommonFunctionTests &);            // not allowed!
+    ShaderCommonFunctionTests &operator=(const ShaderCommonFunctionTests &); // not allowed!
 };
 
-} // shaderexecutor
-} // vkt
+} // namespace shaderexecutor
+} // namespace vkt
 
 #endif // _VKTSHADERCOMMONFUNCTIONTESTS_HPP

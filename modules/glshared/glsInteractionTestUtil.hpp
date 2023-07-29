@@ -42,88 +42,87 @@ namespace InteractionTestUtil
 
 struct BlendState
 {
-	deUint32	equation;
-	deUint32	srcFunc;
-	deUint32	dstFunc;
+    uint32_t equation;
+    uint32_t srcFunc;
+    uint32_t dstFunc;
 
-	BlendState (void)
-		: equation	(0)
-		, srcFunc	(0)
-		, dstFunc	(0)
-	{
-	}
+    BlendState(void) : equation(0), srcFunc(0), dstFunc(0)
+    {
+    }
 };
 
 struct StencilState
 {
-	deUint32	function;
-	int			reference;
-	deUint32	compareMask;
+    uint32_t function;
+    int reference;
+    uint32_t compareMask;
 
-	deUint32	stencilFailOp;
-	deUint32	depthFailOp;
-	deUint32	depthPassOp;
+    uint32_t stencilFailOp;
+    uint32_t depthFailOp;
+    uint32_t depthPassOp;
 
-	deUint32	writeMask;
+    uint32_t writeMask;
 
-	StencilState (void)
-		: function		(0)
-		, reference		(0)
-		, compareMask	(0)
-		, stencilFailOp	(0)
-		, depthFailOp	(0)
-		, depthPassOp	(0)
-		, writeMask		(0)
-	{
-	}
+    StencilState(void)
+        : function(0)
+        , reference(0)
+        , compareMask(0)
+        , stencilFailOp(0)
+        , depthFailOp(0)
+        , depthPassOp(0)
+        , writeMask(0)
+    {
+    }
 };
 
 struct RenderState
 {
-	bool				scissorTestEnabled;
-	rr::WindowRectangle	scissorRectangle;
+    bool scissorTestEnabled;
+    rr::WindowRectangle scissorRectangle;
 
-	bool				stencilTestEnabled;
-	StencilState		stencil[rr::FACETYPE_LAST];
+    bool stencilTestEnabled;
+    StencilState stencil[rr::FACETYPE_LAST];
 
-	bool				depthTestEnabled;
-	deUint32			depthFunc;
-	bool				depthWriteMask;
+    bool depthTestEnabled;
+    uint32_t depthFunc;
+    bool depthWriteMask;
 
-	bool				blendEnabled;
-	BlendState			blendRGBState;
-	BlendState			blendAState;
-	tcu::Vec4			blendColor;
+    bool blendEnabled;
+    BlendState blendRGBState;
+    BlendState blendAState;
+    tcu::Vec4 blendColor;
 
-	bool				ditherEnabled;
+    bool ditherEnabled;
 
-	tcu::BVec4			colorMask;
+    tcu::BVec4 colorMask;
 
-	RenderState (void)
-		: scissorTestEnabled	(false)
-		, scissorRectangle		(0, 0, 0, 0)
-		, stencilTestEnabled	(false)
-		, depthTestEnabled		(false)
-		, depthFunc				(0)
-		, depthWriteMask		(false)
-		, blendEnabled			(false)
-		, ditherEnabled			(false)
-	{
-	}
+    RenderState(void)
+        : scissorTestEnabled(false)
+        , scissorRectangle(0, 0, 0, 0)
+        , stencilTestEnabled(false)
+        , depthTestEnabled(false)
+        , depthFunc(0)
+        , depthWriteMask(false)
+        , blendEnabled(false)
+        , ditherEnabled(false)
+    {
+    }
 };
 
 struct RenderCommand
 {
-	gls::FragmentOpUtil::IntegerQuad	quad;
-	RenderState							state;
+    gls::FragmentOpUtil::IntegerQuad quad;
+    RenderState state;
 };
 
-void		computeRandomRenderState		(de::Random& rnd, RenderState& state, glu::ApiType apiType, int targetWidth, int targetHeight);
-void		computeRandomQuad				(de::Random& rnd, gls::FragmentOpUtil::IntegerQuad& quad, int targetWidth, int targetHeight);
-void		computeRandomRenderCommands		(de::Random& rnd, glu::ApiType apiType, int numCommands, int targetW, int targetH, std::vector<RenderCommand>& dst);
+void computeRandomRenderState(de::Random &rnd, RenderState &state, glu::ApiType apiType, int targetWidth,
+                              int targetHeight);
+void computeRandomQuad(de::Random &rnd, gls::FragmentOpUtil::IntegerQuad &quad, int targetWidth, int targetHeight);
+void computeRandomRenderCommands(de::Random &rnd, glu::ApiType apiType, int numCommands, int targetW, int targetH,
+                                 std::vector<RenderCommand> &dst);
 
-} // InteractionTestUtil
-} // gls
-} // deqp
+} // namespace InteractionTestUtil
+} // namespace gls
+} // namespace deqp
 
 #endif // _GLSINTERACTIONTESTUTIL_HPP

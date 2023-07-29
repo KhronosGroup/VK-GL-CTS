@@ -33,9 +33,9 @@ namespace vkt
 namespace texture
 {
 
-tcu::TestCaseGroup*	createTextureSubgroupLodTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTextureSubgroupLodTests(tcu::TestContext &testCtx);
 
-} // texture
-} // vkt
+} // namespace texture
+} // namespace vkt
 
 #endif // _VKTTEXTURESUBGROUPLODTESTS_HPP

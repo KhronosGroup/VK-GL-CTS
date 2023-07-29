@@ -40,56 +40,70 @@ namespace glu
  *//*--------------------------------------------------------------------*/
 enum ObjectType
 {
-	OBJECTTYPE_TEXTURE = 0,
-	OBJECTTYPE_BUFFER,
-	OBJECTTYPE_RENDERBUFFER,
-	OBJECTTYPE_FRAMEBUFFER,
-	OBJECTTYPE_TRANSFORM_FEEDBACK,
-	OBJECTTYPE_VERTEX_ARRAY,
-	OBJECTTYPE_QUERY,
-	OBJECTTYPE_SAMPLER,
+    OBJECTTYPE_TEXTURE = 0,
+    OBJECTTYPE_BUFFER,
+    OBJECTTYPE_RENDERBUFFER,
+    OBJECTTYPE_FRAMEBUFFER,
+    OBJECTTYPE_TRANSFORM_FEEDBACK,
+    OBJECTTYPE_VERTEX_ARRAY,
+    OBJECTTYPE_QUERY,
+    OBJECTTYPE_SAMPLER,
 
-	OBJECTTYPE_LAST
+    OBJECTTYPE_LAST
 };
 
 struct ObjectTraits
 {
-	const char*					name;
-	glw::glGenBuffersFunc		glw::Functions::*genFunc;
-	glw::glDeleteBuffersFunc	glw::Functions::*deleteFunc;
+    const char *name;
+    glw::glGenBuffersFunc glw::Functions::*genFunc;
+    glw::glDeleteBuffersFunc glw::Functions::*deleteFunc;
 };
 
-const ObjectTraits& objectTraits (ObjectType type);
+const ObjectTraits &objectTraits(ObjectType type);
 
 class ObjectWrapper
 {
 public:
-							ObjectWrapper		(const glw::Functions& gl, const ObjectTraits& traits);
-							ObjectWrapper		(const glw::Functions& gl, const ObjectTraits& traits, deUint32 object);
-							~ObjectWrapper		(void);
+    ObjectWrapper(const glw::Functions &gl, const ObjectTraits &traits);
+    ObjectWrapper(const glw::Functions &gl, const ObjectTraits &traits, uint32_t object);
+    ~ObjectWrapper(void);
 
-	inline deUint32			get					(void) const { return m_object; }
-	inline deUint32			operator*			(void) const { return m_object; }
+    inline uint32_t get(void) const
+    {
+        return m_object;
+    }
+    inline uint32_t operator*(void) const
+    {
+        return m_object;
+    }
 
 protected:
-	const glw::Functions&	m_gl;
-	const ObjectTraits&		m_traits;
-	deUint32				m_object;
+    const glw::Functions &m_gl;
+    const ObjectTraits &m_traits;
+    uint32_t m_object;
 
 private:
-							ObjectWrapper		(const ObjectWrapper& other);
-	ObjectWrapper&			operator=			(const ObjectWrapper& other);
+    ObjectWrapper(const ObjectWrapper &other);
+    ObjectWrapper &operator=(const ObjectWrapper &other);
 } DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
  * \brief API object wrapper template.
  *//*--------------------------------------------------------------------*/
-template<ObjectType Type> class TypedObjectWrapper : public ObjectWrapper
+template <ObjectType Type>
+class TypedObjectWrapper : public ObjectWrapper
 {
 public:
-				TypedObjectWrapper (const glw::Functions& gl, deUint32 object) : ObjectWrapper(gl, objectTraits(Type), object) {}
-	explicit	TypedObjectWrapper (const RenderContext& context) : ObjectWrapper(context.getFunctions(), objectTraits(Type)) {}
-	explicit	TypedObjectWrapper (const glw::Functions& gl) : ObjectWrapper(gl, objectTraits(Type)) {}
+    TypedObjectWrapper(const glw::Functions &gl, uint32_t object) : ObjectWrapper(gl, objectTraits(Type), object)
+    {
+    }
+    explicit TypedObjectWrapper(const RenderContext &context)
+        : ObjectWrapper(context.getFunctions(), objectTraits(Type))
+    {
+    }
+    explicit TypedObjectWrapper(const glw::Functions &gl) : ObjectWrapper(gl, objectTraits(Type))
+    {
+    }
 } DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
@@ -98,50 +112,69 @@ public:
 class ObjectVector
 {
 public:
-										ObjectVector		(const glw::Functions& gl, const ObjectTraits& traits, size_t numObjects = 0);
-										~ObjectVector		(void);
+    ObjectVector(const glw::Functions &gl, const ObjectTraits &traits, size_t numObjects = 0);
+    ~ObjectVector(void);
 
-	size_t								size				(void) const		{ return m_objects.size();	}
+    size_t size(void) const
+    {
+        return m_objects.size();
+    }
 
-	void								resize				(size_t newSize);
-	void								clear				(void);
+    void resize(size_t newSize);
+    void clear(void);
 
-	bool								empty				(void) const		{ return m_objects.empty();	}
+    bool empty(void) const
+    {
+        return m_objects.empty();
+    }
 
-	deUint32							get					(size_t ndx) const	{ return m_objects[ndx];	}
-	deUint32							operator[]			(size_t ndx) const	{ return get(ndx);			}
+    uint32_t get(size_t ndx) const
+    {
+        return m_objects[ndx];
+    }
+    uint32_t operator[](size_t ndx) const
+    {
+        return get(ndx);
+    }
 
 private:
-										ObjectVector		(const ObjectVector& other);
-	ObjectVector&						operator=			(const ObjectVector& other);
+    ObjectVector(const ObjectVector &other);
+    ObjectVector &operator=(const ObjectVector &other);
 
-	const glw::Functions&				m_gl;
-	const ObjectTraits&					m_traits;
-	std::vector<deUint32>				m_objects;
+    const glw::Functions &m_gl;
+    const ObjectTraits &m_traits;
+    std::vector<uint32_t> m_objects;
 } DE_WARN_UNUSED_TYPE;
 
-template<ObjectType Type> class TypedObjectVector : public ObjectVector
+template <ObjectType Type>
+class TypedObjectVector : public ObjectVector
 {
 public:
-	explicit	TypedObjectVector (const RenderContext& context, size_t numObjects = 0) : ObjectVector(context.getFunctions(), objectTraits(Type), numObjects) {}
-	explicit	TypedObjectVector (const glw::Functions& gl, size_t numObjects = 0) : ObjectVector(gl, objectTraits(Type), numObjects) {}
+    explicit TypedObjectVector(const RenderContext &context, size_t numObjects = 0)
+        : ObjectVector(context.getFunctions(), objectTraits(Type), numObjects)
+    {
+    }
+    explicit TypedObjectVector(const glw::Functions &gl, size_t numObjects = 0)
+        : ObjectVector(gl, objectTraits(Type), numObjects)
+    {
+    }
 };
 
 // Typedefs for simple wrappers without functionality.
 
-typedef TypedObjectWrapper<OBJECTTYPE_TEXTURE>				Texture;
-typedef TypedObjectWrapper<OBJECTTYPE_BUFFER>				Buffer;
-typedef TypedObjectWrapper<OBJECTTYPE_RENDERBUFFER>			Renderbuffer;
-typedef TypedObjectWrapper<OBJECTTYPE_FRAMEBUFFER>			Framebuffer;
-typedef TypedObjectWrapper<OBJECTTYPE_TRANSFORM_FEEDBACK>	TransformFeedback;
-typedef TypedObjectWrapper<OBJECTTYPE_VERTEX_ARRAY>			VertexArray;
-typedef TypedObjectWrapper<OBJECTTYPE_QUERY>				Query;
-typedef TypedObjectWrapper<OBJECTTYPE_SAMPLER>				Sampler;
+typedef TypedObjectWrapper<OBJECTTYPE_TEXTURE> Texture;
+typedef TypedObjectWrapper<OBJECTTYPE_BUFFER> Buffer;
+typedef TypedObjectWrapper<OBJECTTYPE_RENDERBUFFER> Renderbuffer;
+typedef TypedObjectWrapper<OBJECTTYPE_FRAMEBUFFER> Framebuffer;
+typedef TypedObjectWrapper<OBJECTTYPE_TRANSFORM_FEEDBACK> TransformFeedback;
+typedef TypedObjectWrapper<OBJECTTYPE_VERTEX_ARRAY> VertexArray;
+typedef TypedObjectWrapper<OBJECTTYPE_QUERY> Query;
+typedef TypedObjectWrapper<OBJECTTYPE_SAMPLER> Sampler;
 
-typedef TypedObjectVector<OBJECTTYPE_TEXTURE>				TextureVector;
-typedef TypedObjectVector<OBJECTTYPE_BUFFER>				BufferVector;
-typedef TypedObjectVector<OBJECTTYPE_RENDERBUFFER>			RenderbufferVector;
+typedef TypedObjectVector<OBJECTTYPE_TEXTURE> TextureVector;
+typedef TypedObjectVector<OBJECTTYPE_BUFFER> BufferVector;
+typedef TypedObjectVector<OBJECTTYPE_RENDERBUFFER> RenderbufferVector;
 
-} // glu
+} // namespace glu
 
 #endif // _GLUOBJECTWRAPPER_HPP

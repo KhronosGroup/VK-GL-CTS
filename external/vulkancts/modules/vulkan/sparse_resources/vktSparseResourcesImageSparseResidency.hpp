@@ -31,10 +31,10 @@ namespace vkt
 namespace sparse
 {
 
-tcu::TestCaseGroup* createImageSparseResidencyTests(tcu::TestContext& testCtx);
-tcu::TestCaseGroup* createDeviceGroupImageSparseResidencyTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageSparseResidencyTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createDeviceGroupImageSparseResidencyTests(tcu::TestContext &testCtx);
 
-} // sparse
-} // vkt
+} // namespace sparse
+} // namespace vkt
 
 #endif // _VKTSPARSERESOURCESIMAGESPARSERESIDENCY_HPP

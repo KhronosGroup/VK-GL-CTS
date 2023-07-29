@@ -31,7 +31,7 @@ namespace glu
 {
 class RenderContext;
 class ContextInfo;
-}
+} // namespace glu
 
 namespace deqp
 {
@@ -43,30 +43,27 @@ namespace gls
 class ShaderLibraryCase : public tcu::TestCase
 {
 public:
-	// Methods.
-											ShaderLibraryCase								(tcu::TestContext&							testCtx,
-																							 glu::RenderContext&						renderCtx,
-																							 const glu::ContextInfo&					contextInfo,
-																							 const char*								caseName,
-																							 const char*								description,
-																							 const glu::sl::ShaderCaseSpecification&	specification);
-	virtual									~ShaderLibraryCase								(void);
+    // Methods.
+    ShaderLibraryCase(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, const glu::ContextInfo &contextInfo,
+                      const char *caseName, const char *description,
+                      const glu::sl::ShaderCaseSpecification &specification);
+    virtual ~ShaderLibraryCase(void);
 
 private:
-	void									init											(void);
-	bool									execute											(void);
-	IterateResult							iterate											(void);
+    void init(void);
+    bool execute(void);
+    IterateResult iterate(void);
 
-											ShaderLibraryCase								(const ShaderLibraryCase&); // not allowed!
-	ShaderLibraryCase&						operator=										(const ShaderLibraryCase&); // not allowed!
+    ShaderLibraryCase(const ShaderLibraryCase &);            // not allowed!
+    ShaderLibraryCase &operator=(const ShaderLibraryCase &); // not allowed!
 
-	// Member variables.
-	glu::RenderContext&						m_renderCtx;
-	const glu::ContextInfo&					m_contextInfo;
-	const glu::sl::ShaderCaseSpecification	m_spec;
+    // Member variables.
+    glu::RenderContext &m_renderCtx;
+    const glu::ContextInfo &m_contextInfo;
+    const glu::sl::ShaderCaseSpecification m_spec;
 };
 
-} // gls
-} // deqp
+} // namespace gls
+} // namespace deqp
 
 #endif // _GLSSHADERLIBRARYCASE_HPP

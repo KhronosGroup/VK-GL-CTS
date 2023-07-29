@@ -72,49 +72,49 @@ namespace glcts
 class TextureBorderClampParameterTextureBorderColor : public TextureBorderClampBase
 {
 public:
-	/* Public methods */
-	TextureBorderClampParameterTextureBorderColor(Context& context, const ExtParameters& extParams, const char* name,
-												  const char* description);
+    /* Public methods */
+    TextureBorderClampParameterTextureBorderColor(Context &context, const ExtParameters &extParams, const char *name,
+                                                  const char *description);
 
-	virtual ~TextureBorderClampParameterTextureBorderColor()
-	{
-	}
+    virtual ~TextureBorderClampParameterTextureBorderColor()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	void initTest(void);
+    /* Private methods */
+    void initTest(void);
 
-	bool verifyGLGetSamplerParameterfvResult(glw::GLuint sampler_id, glw::GLenum target,
-											 const glw::GLfloat* expected_data);
+    bool verifyGLGetSamplerParameterfvResult(glw::GLuint sampler_id, glw::GLenum target,
+                                             const glw::GLfloat *expected_data);
 
-	bool verifyGLGetSamplerParameterivResult(glw::GLuint sampler_id, glw::GLenum target,
-											 const glw::GLint* expected_data);
+    bool verifyGLGetSamplerParameterivResult(glw::GLuint sampler_id, glw::GLenum target,
+                                             const glw::GLint *expected_data);
 
-	bool verifyGLGetSamplerParameterIivResult(glw::GLuint sampler_id, glw::GLenum target,
-											  const glw::GLint* expected_data);
+    bool verifyGLGetSamplerParameterIivResult(glw::GLuint sampler_id, glw::GLenum target,
+                                              const glw::GLint *expected_data);
 
-	bool verifyGLGetSamplerParameterIuivResult(glw::GLuint sampler_id, glw::GLenum target,
-											   const glw::GLuint* expected_data);
+    bool verifyGLGetSamplerParameterIuivResult(glw::GLuint sampler_id, glw::GLenum target,
+                                               const glw::GLuint *expected_data);
 
-	bool verifyGLGetTexParameterfvResult(glw::GLenum target, const glw::GLfloat* expected_data);
+    bool verifyGLGetTexParameterfvResult(glw::GLenum target, const glw::GLfloat *expected_data);
 
-	bool verifyGLGetTexParameterivResult(glw::GLenum target, const glw::GLint* expected_data);
+    bool verifyGLGetTexParameterivResult(glw::GLenum target, const glw::GLint *expected_data);
 
-	bool verifyGLGetTexParameterIivResult(glw::GLenum target, const glw::GLint* expected_data);
+    bool verifyGLGetTexParameterIivResult(glw::GLenum target, const glw::GLint *expected_data);
 
-	bool verifyGLGetTexParameterIuivResult(glw::GLenum target, const glw::GLuint* expected_data);
+    bool verifyGLGetTexParameterIuivResult(glw::GLenum target, const glw::GLuint *expected_data);
 
-	/* Private variables */
-	glw::GLuint				 m_sampler_id;
-	std::vector<glw::GLenum> m_texture_targets;
-	glw::GLuint				 m_to_id;
+    /* Private variables */
+    glw::GLuint m_sampler_id;
+    std::vector<glw::GLenum> m_texture_targets;
+    glw::GLuint m_to_id;
 
-	/* Private static constants */
-	static const glw::GLuint m_buffer_length;
-	static const glw::GLuint m_texture_unit_index;
+    /* Private static constants */
+    static const glw::GLuint m_buffer_length;
+    static const glw::GLuint m_texture_unit_index;
 };
 
 } // namespace glcts

@@ -38,22 +38,22 @@ namespace Android
 
 enum ScreenOrientation
 {
-	SCREEN_ORIENTATION_UNSPECIFIED			= 0xffffffff,
-	SCREEN_ORIENTATION_LANDSCAPE			= 0x00000000,
-	SCREEN_ORIENTATION_PORTRAIT				= 0x00000001,
-	SCREEN_ORIENTATION_REVERSE_LANDSCAPE	= 0x00000008,
-	SCREEN_ORIENTATION_REVERSE_PORTRAIT		= 0x00000009
+    SCREEN_ORIENTATION_UNSPECIFIED       = 0xffffffff,
+    SCREEN_ORIENTATION_LANDSCAPE         = 0x00000000,
+    SCREEN_ORIENTATION_PORTRAIT          = 0x00000001,
+    SCREEN_ORIENTATION_REVERSE_LANDSCAPE = 0x00000008,
+    SCREEN_ORIENTATION_REVERSE_PORTRAIT  = 0x00000009
 };
 
-std::string			getIntentStringExtra		(ANativeActivity* activity, const char* name);
-void				setRequestedOrientation		(ANativeActivity* activity, ScreenOrientation orientation);
+std::string getIntentStringExtra(ANativeActivity *activity, const char *name);
+void setRequestedOrientation(ANativeActivity *activity, ScreenOrientation orientation);
 
-ScreenOrientation	mapScreenRotation			(ScreenRotation rotation);
+ScreenOrientation mapScreenRotation(ScreenRotation rotation);
 
-void				describePlatform			(ANativeActivity* activity, std::ostream& dst);
+void describePlatform(ANativeActivity *activity, std::ostream &dst);
 
-size_t				getTotalAndroidSystemMemory	(ANativeActivity* activity);
-} // Android
-} // tcu
+size_t getTotalAndroidSystemMemory(ANativeActivity *activity);
+} // namespace Android
+} // namespace tcu
 
 #endif // _TCUANDROIDUTIL_HPP

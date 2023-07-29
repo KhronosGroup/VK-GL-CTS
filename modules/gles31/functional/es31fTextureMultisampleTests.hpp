@@ -36,18 +36,18 @@ namespace Functional
 class TextureMultisampleTests : public TestCaseGroup
 {
 public:
-								TextureMultisampleTests		(Context& context);
-								~TextureMultisampleTests	(void);
+    TextureMultisampleTests(Context &context);
+    ~TextureMultisampleTests(void);
 
-	void						init						(void);
+    void init(void);
 
 private:
-								TextureMultisampleTests		(const TextureMultisampleTests& other);
-	TextureMultisampleTests&	operator=					(const TextureMultisampleTests& other);
+    TextureMultisampleTests(const TextureMultisampleTests &other);
+    TextureMultisampleTests &operator=(const TextureMultisampleTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FTEXTUREMULTISAMPLETESTS_HPP

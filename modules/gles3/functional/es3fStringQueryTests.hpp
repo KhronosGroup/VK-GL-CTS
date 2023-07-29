@@ -36,18 +36,18 @@ namespace Functional
 class StringQueryTests : public TestCaseGroup
 {
 public:
-							StringQueryTests				(Context& context);
-							~StringQueryTests				(void);
+    StringQueryTests(Context &context);
+    ~StringQueryTests(void);
 
-	void					init							(void);
+    void init(void);
 
 private:
-							StringQueryTests				(const StringQueryTests& other);
-	StringQueryTests&		operator=						(const StringQueryTests& other);
+    StringQueryTests(const StringQueryTests &other);
+    StringQueryTests &operator=(const StringQueryTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FSTRINGQUERYTESTS_HPP

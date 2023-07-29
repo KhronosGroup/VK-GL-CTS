@@ -43,167 +43,169 @@ namespace
 using std::vector;
 using tcu::TestLog;
 
-void checkSupport (const glu::ContextInfo& ctxInfo)
+void checkSupport(const glu::ContextInfo &ctxInfo)
 {
-	if (!ctxInfo.isExtensionSupported("GL_EXT_debug_marker"))
-	{
+    if (!ctxInfo.isExtensionSupported("GL_EXT_debug_marker"))
+    {
 #if (DE_OS == DE_OS_ANDROID)
-		TCU_THROW(TestError, "Support for GL_EXT_debug_marker is mandatory on Android");
+        TCU_THROW(TestError, "Support for GL_EXT_debug_marker is mandatory on Android");
 #else
-		TCU_THROW(NotSupportedError, "GL_EXT_debug_marker is not supported");
+        TCU_THROW(NotSupportedError, "GL_EXT_debug_marker is not supported");
 #endif
-	}
-	// else no exception thrown
+    }
+    // else no exception thrown
 }
 
 class IsSupportedCase : public TestCase
 {
 public:
-	IsSupportedCase (Context& context)
-		: TestCase(context, "supported", "Is GL_EXT_debug_marker supported")
-	{
-	}
+    IsSupportedCase(Context &context) : TestCase(context, "supported", "Is GL_EXT_debug_marker supported")
+    {
+    }
 
-	IterateResult iterate (void)
-	{
-		checkSupport(m_context.getContextInfo());
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "GL_EXT_debug_marker is supported");
-		return STOP;
-	}
+    IterateResult iterate(void)
+    {
+        checkSupport(m_context.getContextInfo());
+        m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "GL_EXT_debug_marker is supported");
+        return STOP;
+    }
 };
 
-void getSimpleRndString (vector<char>& dst, de::Random& rnd, int maxLen)
+void getSimpleRndString(vector<char> &dst, de::Random &rnd, int maxLen)
 {
-	const char s_chars[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ -_";
+    const char s_chars[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ -_";
 
-	dst.resize(rnd.getInt(0, (int)maxLen));
+    dst.resize(rnd.getInt(0, (int)maxLen));
 
-	for (size_t ndx = 0; ndx < dst.size(); ndx++)
-		dst[ndx] = rnd.choose<char>(DE_ARRAY_BEGIN(s_chars), DE_ARRAY_END(s_chars));
+    for (size_t ndx = 0; ndx < dst.size(); ndx++)
+        dst[ndx] = rnd.choose<char>(DE_ARRAY_BEGIN(s_chars), DE_ARRAY_END(s_chars));
 }
 
-void getComplexRndString (vector<char>& dst, de::Random& rnd, int maxLen)
+void getComplexRndString(vector<char> &dst, de::Random &rnd, int maxLen)
 {
-	dst.resize(rnd.getInt(0, (int)maxLen));
+    dst.resize(rnd.getInt(0, (int)maxLen));
 
-	for (size_t ndx = 0; ndx < dst.size(); ndx++)
-		dst[ndx] = (char)rnd.getUint8();
+    for (size_t ndx = 0; ndx < dst.size(); ndx++)
+        dst[ndx] = (char)rnd.getUint8();
 }
 
 enum CallType
 {
-	CALL_TYPE_PUSH_GROUP	= 0,
-	CALL_TYPE_POP_GROUP,
-	CALL_TYPE_INSERT_MARKER,
+    CALL_TYPE_PUSH_GROUP = 0,
+    CALL_TYPE_POP_GROUP,
+    CALL_TYPE_INSERT_MARKER,
 
-	CALL_TYPE_LAST
+    CALL_TYPE_LAST
 };
 
 class RandomCase : public TestCase
 {
 public:
-	RandomCase (Context& context)
-		: TestCase(context, "random", "Random GL_EXT_debug_marker usage")
-	{
-	}
+    RandomCase(Context &context) : TestCase(context, "random", "Random GL_EXT_debug_marker usage")
+    {
+    }
 
-	void init (void)
-	{
-		checkSupport(m_context.getContextInfo());
-	}
+    void init(void)
+    {
+        checkSupport(m_context.getContextInfo());
+    }
 
-	IterateResult iterate (void)
-	{
-		const glw::Functions&	gl			= m_context.getRenderContext().getFunctions();
-		const int				numIters	= 1000;
-		const int				maxMsgLen	= 4096;
-		de::Random				rnd			(0xaf829c0);
+    IterateResult iterate(void)
+    {
+        const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+        const int numIters       = 1000;
+        const int maxMsgLen      = 4096;
+        de::Random rnd(0xaf829c0);
 
-		for (int iterNdx = 0; iterNdx < numIters; iterNdx++)
-		{
-			const CallType		callType	= CallType(rnd.getInt(0, CALL_TYPE_LAST-1));
+        for (int iterNdx = 0; iterNdx < numIters; iterNdx++)
+        {
+            const CallType callType = CallType(rnd.getInt(0, CALL_TYPE_LAST - 1));
 
-			if (callType == CALL_TYPE_PUSH_GROUP || callType == CALL_TYPE_INSERT_MARKER)
-			{
-				const bool		nullTerminate	= rnd.getBool();
-				const bool		passLength		= rnd.getBool();
-				const bool		complexMsg		= rnd.getBool();
-				vector<char>	message;
+            if (callType == CALL_TYPE_PUSH_GROUP || callType == CALL_TYPE_INSERT_MARKER)
+            {
+                const bool nullTerminate = rnd.getBool();
+                const bool passLength    = rnd.getBool();
+                const bool complexMsg    = rnd.getBool();
+                vector<char> message;
 
-				if (complexMsg)
-					getComplexRndString(message, rnd, maxMsgLen);
-				else
-					getSimpleRndString(message, rnd, maxMsgLen);
+                if (complexMsg)
+                    getComplexRndString(message, rnd, maxMsgLen);
+                else
+                    getSimpleRndString(message, rnd, maxMsgLen);
 
-				if (nullTerminate)
-					message.push_back(char(0));
+                if (nullTerminate)
+                    message.push_back(char(0));
 
-				{
-					const glw::GLsizei	length	= passLength ? glw::GLsizei(nullTerminate ? message.size()-1 : message.size()) : 0;
+                {
+                    const glw::GLsizei length =
+                        passLength ? glw::GLsizei(nullTerminate ? message.size() - 1 : message.size()) : 0;
 
-					if (callType == CALL_TYPE_PUSH_GROUP)
-						gl.pushGroupMarkerEXT(length, &message[0]);
-					else
-						gl.insertEventMarkerEXT(length, &message[0]);
-				}
-			}
-			else
-				gl.popGroupMarkerEXT();
-		}
+                    if (callType == CALL_TYPE_PUSH_GROUP)
+                        gl.pushGroupMarkerEXT(length, &message[0]);
+                    else
+                        gl.insertEventMarkerEXT(length, &message[0]);
+                }
+            }
+            else
+                gl.popGroupMarkerEXT();
+        }
 
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Debug marker calls must not set error state");
+        GLU_EXPECT_NO_ERROR(gl.getError(), "Debug marker calls must not set error state");
 
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "All calls passed");
-		return STOP;
-	}
+        m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "All calls passed");
+        return STOP;
+    }
 };
 
 class InvalidCase : public TestCase
 {
 public:
-	InvalidCase (Context& context)
-		: TestCase(context, "invalid", "Invalid GL_EXT_debug_marker usage")
-	{
-	}
+    InvalidCase(Context &context) : TestCase(context, "invalid", "Invalid GL_EXT_debug_marker usage")
+    {
+    }
 
-	void init (void)
-	{
-		checkSupport(m_context.getContextInfo());
-	}
+    void init(void)
+    {
+        checkSupport(m_context.getContextInfo());
+    }
 
-	IterateResult iterate (void)
-	{
-		const glw::Functions&	gl	= m_context.getRenderContext().getFunctions();
+    IterateResult iterate(void)
+    {
+        const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-		m_testCtx.getLog() << TestLog::Message << "Note: GL_EXT_debug_marker calls must not report an error even if invalid arguments are supplied." << TestLog::EndMessage;
+        m_testCtx.getLog()
+            << TestLog::Message
+            << "Note: GL_EXT_debug_marker calls must not report an error even if invalid arguments are supplied."
+            << TestLog::EndMessage;
 
-		gl.pushGroupMarkerEXT(-1, "foo");
-		gl.insertEventMarkerEXT(-1, "foo");
-		gl.pushGroupMarkerEXT(0, DE_NULL);
-		gl.insertEventMarkerEXT(0, DE_NULL);
-		gl.pushGroupMarkerEXT(-1, DE_NULL);
-		gl.insertEventMarkerEXT(-1, DE_NULL);
+        gl.pushGroupMarkerEXT(-1, "foo");
+        gl.insertEventMarkerEXT(-1, "foo");
+        gl.pushGroupMarkerEXT(0, DE_NULL);
+        gl.insertEventMarkerEXT(0, DE_NULL);
+        gl.pushGroupMarkerEXT(-1, DE_NULL);
+        gl.insertEventMarkerEXT(-1, DE_NULL);
 
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Debug marker calls must not set error state");
+        GLU_EXPECT_NO_ERROR(gl.getError(), "Debug marker calls must not set error state");
 
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "All calls passed");
-		return STOP;
-	}
+        m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "All calls passed");
+        return STOP;
+    }
 };
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createDebugMarkerTests (Context& context)
+tcu::TestCaseGroup *createDebugMarkerTests(Context &context)
 {
-	de::MovePtr<tcu::TestCaseGroup>	debugMarkerGroup	(new tcu::TestCaseGroup(context.getTestContext(), "debug_marker", "GL_EXT_debug_marker tests"));
+    de::MovePtr<tcu::TestCaseGroup> debugMarkerGroup(
+        new tcu::TestCaseGroup(context.getTestContext(), "debug_marker", "GL_EXT_debug_marker tests"));
 
-	debugMarkerGroup->addChild(new IsSupportedCase	(context));
-	debugMarkerGroup->addChild(new RandomCase		(context));
-	debugMarkerGroup->addChild(new InvalidCase		(context));
+    debugMarkerGroup->addChild(new IsSupportedCase(context));
+    debugMarkerGroup->addChild(new RandomCase(context));
+    debugMarkerGroup->addChild(new InvalidCase(context));
 
-	return debugMarkerGroup.release();
+    return debugMarkerGroup.release();
 }
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp

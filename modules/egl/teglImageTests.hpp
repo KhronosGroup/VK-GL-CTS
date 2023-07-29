@@ -34,13 +34,13 @@ namespace egl
 class ImageTests : public TestCaseGroup
 {
 public:
-					ImageTests			(EglTestContext& eglTestCtx);
-	virtual			~ImageTests			(void);
+    ImageTests(EglTestContext &eglTestCtx);
+    virtual ~ImageTests(void);
 
-	void			init				(void);
+    void init(void);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLIMAGETESTS_HPP

@@ -33,9 +33,9 @@ namespace vkt
 namespace image
 {
 
-tcu::TestCaseGroup*		createTransferQueueImageTests				(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTransferQueueImageTests(tcu::TestContext &testCtx);
 
-} // image
-} // vkt
+} // namespace image
+} // namespace vkt
 
 #endif // _VKTIMAGETRANSFER_HPP

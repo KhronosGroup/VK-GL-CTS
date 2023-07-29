@@ -34,11 +34,11 @@ namespace egl
 class MakeCurrentPerfTests : public TestCaseGroup
 {
 public:
-			MakeCurrentPerfTests	(EglTestContext& eglTestCtx);
-	void	init					(void);
+    MakeCurrentPerfTests(EglTestContext &eglTestCtx);
+    void init(void);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLMAKECURRENTPERFTESTS_HPP

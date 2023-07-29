@@ -31,9 +31,9 @@ namespace vkt
 namespace sc
 {
 
-tcu::TestCaseGroup*		createTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx);
 
-} // sc
-} // vkt
+} // namespace sc
+} // namespace vkt
 
 #endif // _VKTSAFETYCRITICALTESTS_HPP

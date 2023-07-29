@@ -36,18 +36,18 @@ namespace Functional
 class ShaderTextureSizeTests : public TestCaseGroup
 {
 public:
-									ShaderTextureSizeTests	(Context& context);
-									~ShaderTextureSizeTests	(void);
+    ShaderTextureSizeTests(Context &context);
+    ~ShaderTextureSizeTests(void);
 
-	void							init					(void);
+    void init(void);
 
 private:
-									ShaderTextureSizeTests	(const ShaderTextureSizeTests& other);
-	ShaderTextureSizeTests&			operator=				(const ShaderTextureSizeTests& other);
+    ShaderTextureSizeTests(const ShaderTextureSizeTests &other);
+    ShaderTextureSizeTests &operator=(const ShaderTextureSizeTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FSHADERTEXTURESIZETESTS_HPP

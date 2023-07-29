@@ -33,15 +33,15 @@ namespace glcts
 class TextureGatherTests : public glcts::TestCaseGroup
 {
 public:
-	TextureGatherTests(glcts::Context& context);
-	~TextureGatherTests(void);
+    TextureGatherTests(glcts::Context &context);
+    ~TextureGatherTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	TextureGatherTests(const TextureGatherTests& other);
-	TextureGatherTests& operator=(const TextureGatherTests& other);
+    TextureGatherTests(const TextureGatherTests &other);
+    TextureGatherTests &operator=(const TextureGatherTests &other);
 };
-}
+} // namespace glcts
 
 #endif // _ES31CTEXTUREGATHERTESTS_HPP

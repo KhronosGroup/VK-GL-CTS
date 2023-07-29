@@ -27,10 +27,10 @@
 class RegisterCTSPackages
 {
 public:
-	RegisterCTSPackages(void)
-	{
-		glcts::registerPackages();
-	}
+    RegisterCTSPackages(void)
+    {
+        glcts::registerPackages();
+    }
 };
 
 RegisterCTSPackages g_registerCTS;

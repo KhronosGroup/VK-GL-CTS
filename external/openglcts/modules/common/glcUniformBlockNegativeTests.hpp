@@ -39,7 +39,7 @@
 
 namespace glu
 {
-	class ShaderProgram;
+class ShaderProgram;
 }
 
 namespace deqp
@@ -49,30 +49,29 @@ namespace deqp
 class UniformBlockNegativeTestBase : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	UniformBlockNegativeTestBase(deqp::Context& context, glu::GLSLVersion glslVersion, const char* name, const char* desc);
+    /* Public methods */
+    UniformBlockNegativeTestBase(deqp::Context &context, glu::GLSLVersion glslVersion, const char *name,
+                                 const char *desc);
 
-	void						 deinit() override;
-	void						 init() override;
+    void deinit() override;
+    void init() override;
 
-	virtual tcu::TestNode::IterateResult iterate() override;
+    virtual tcu::TestNode::IterateResult iterate() override;
 
-	virtual tcu::TestNode::IterateResult run_test() = 0;
+    virtual tcu::TestNode::IterateResult run_test() = 0;
 
 protected:
+    /* Private members */
+    static const glw::GLchar *m_shader_vert;
+    static const glw::GLchar *m_shader_frag;
 
-	/* Private members */
-	static const glw::GLchar* m_shader_vert;
-	static const glw::GLchar* m_shader_frag;
+    std::map<std::string, std::string> specializationMap;
 
-	std::map<std::string, std::string> specializationMap;
+    bool m_isContextES;
+    bool m_isTestSupported;
 
-	bool m_isContextES;
-	bool m_isTestSupported;
-
-	glu::GLSLVersion m_glslVersion;
+    glu::GLSLVersion m_glslVersion;
 };
-
 
 /*
  * 4.2      Structure declaration
@@ -85,31 +84,30 @@ protected:
 class UniformBlockStructDeclarationNegativeTestBase : public UniformBlockNegativeTestBase
 {
 public:
-	UniformBlockStructDeclarationNegativeTestBase(deqp::Context& context, glu::GLSLVersion glslVersion);
+    UniformBlockStructDeclarationNegativeTestBase(deqp::Context &context, glu::GLSLVersion glslVersion);
 
-	virtual void deinit() override;
-	virtual void init() override;
+    virtual void deinit() override;
+    virtual void init() override;
 
-	tcu::TestNode::IterateResult run_test() override;
-
+    tcu::TestNode::IterateResult run_test() override;
 };
 
 /** Test group which encapsulates all conformance tests */
 class UniformBlockNegativeTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	UniformBlockNegativeTests(deqp::Context& context, glu::GLSLVersion glslVersion);
+    /* Public methods */
+    UniformBlockNegativeTests(deqp::Context &context, glu::GLSLVersion glslVersion);
 
-	void init();
+    void init();
 
 private:
-	UniformBlockNegativeTests(const UniformBlockNegativeTests& other);
-	UniformBlockNegativeTests& operator=(const UniformBlockNegativeTests& other);
+    UniformBlockNegativeTests(const UniformBlockNegativeTests &other);
+    UniformBlockNegativeTests &operator=(const UniformBlockNegativeTests &other);
 
-	glu::GLSLVersion m_glslVersion;
+    glu::GLSLVersion m_glslVersion;
 };
 
-} /* deqp namespace */
+} // namespace deqp
 
 #endif // _GLCUNIFORMBLOCKNEGATIVETESTS_HPP

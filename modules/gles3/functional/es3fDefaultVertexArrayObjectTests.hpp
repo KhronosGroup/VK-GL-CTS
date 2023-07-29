@@ -36,18 +36,20 @@ namespace Functional
 class DefaultVertexArrayObjectTests : public TestCaseGroup
 {
 public:
-										DefaultVertexArrayObjectTests	(Context& context);
-	virtual								~DefaultVertexArrayObjectTests	(void) {}
+    DefaultVertexArrayObjectTests(Context &context);
+    virtual ~DefaultVertexArrayObjectTests(void)
+    {
+    }
 
-	virtual void						init							(void);
+    virtual void init(void);
 
 private:
-										DefaultVertexArrayObjectTests	(const DefaultVertexArrayObjectTests& other);
-	DefaultVertexArrayObjectTests&		operator=						(const DefaultVertexArrayObjectTests& other);
+    DefaultVertexArrayObjectTests(const DefaultVertexArrayObjectTests &other);
+    DefaultVertexArrayObjectTests &operator=(const DefaultVertexArrayObjectTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FDEFAULTVERTEXARRAYOBJECTTESTS_HPP

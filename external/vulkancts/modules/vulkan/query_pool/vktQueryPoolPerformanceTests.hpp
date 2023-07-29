@@ -33,16 +33,18 @@ namespace QueryPool
 class QueryPoolPerformanceTests : public tcu::TestCaseGroup
 {
 public:
-	QueryPoolPerformanceTests	(tcu::TestContext &testCtx);
-	~QueryPoolPerformanceTests	(void)	{}
-	void init					(void);
+    QueryPoolPerformanceTests(tcu::TestContext &testCtx);
+    ~QueryPoolPerformanceTests(void)
+    {
+    }
+    void init(void);
 
 private:
-	QueryPoolPerformanceTests				(const QueryPoolPerformanceTests &other);
-	QueryPoolPerformanceTests&	operator=	(const QueryPoolPerformanceTests &other);
+    QueryPoolPerformanceTests(const QueryPoolPerformanceTests &other);
+    QueryPoolPerformanceTests &operator=(const QueryPoolPerformanceTests &other);
 };
 
-} // QueryPool
-} // vkt
+} // namespace QueryPool
+} // namespace vkt
 
 #endif // _VKTQUERYPOOLPERFORMANCETESTS_HPP

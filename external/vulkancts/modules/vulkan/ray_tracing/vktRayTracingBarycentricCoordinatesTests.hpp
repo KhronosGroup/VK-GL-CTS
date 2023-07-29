@@ -32,9 +32,9 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup*	createBarycentricCoordinatesTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createBarycentricCoordinatesTests(tcu::TestContext &testCtx);
 
-} // RayTracing
-} // vkt
+} // namespace RayTracing
+} // namespace vkt
 
 #endif // _VKTRAYTRACINGBARYCENTRICCOORDINATESTESTS_HPP

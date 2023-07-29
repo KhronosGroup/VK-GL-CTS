@@ -45,7 +45,7 @@ class NativePixmap;
 class NativeDisplayFactory;
 class NativeWindowFactory;
 class NativePixmapFactory;
-}
+} // namespace eglu
 
 namespace eglw
 {
@@ -60,49 +60,59 @@ namespace egl
 class EglTestContext
 {
 public:
-										EglTestContext			(tcu::TestContext& testCtx, const eglu::NativeDisplayFactory& displayFactory);
-										~EglTestContext			(void);
+    EglTestContext(tcu::TestContext &testCtx, const eglu::NativeDisplayFactory &displayFactory);
+    ~EglTestContext(void);
 
-	tcu::TestContext&					getTestContext			(void) const { return m_testCtx;				}
-	const eglu::NativeDisplayFactory&	getNativeDisplayFactory	(void) const { return m_nativeDisplayFactory;	}
-	eglu::NativeDisplay&				getNativeDisplay		(void) const { return *m_nativeDisplay;			}
-	const eglw::Library&				getLibrary				(void) const;
+    tcu::TestContext &getTestContext(void) const
+    {
+        return m_testCtx;
+    }
+    const eglu::NativeDisplayFactory &getNativeDisplayFactory(void) const
+    {
+        return m_nativeDisplayFactory;
+    }
+    eglu::NativeDisplay &getNativeDisplay(void) const
+    {
+        return *m_nativeDisplay;
+    }
+    const eglw::Library &getLibrary(void) const;
 
-	void								initGLFunctions			(glw::Functions* dst, glu::ApiType apiType) const;
-	void								initGLFunctions			(glw::Functions* dst, glu::ApiType apiType, int numExtensions, const char* const* extensions) const;
+    void initGLFunctions(glw::Functions *dst, glu::ApiType apiType) const;
+    void initGLFunctions(glw::Functions *dst, glu::ApiType apiType, int numExtensions,
+                         const char *const *extensions) const;
 
 private:
-										EglTestContext			(const EglTestContext&);
-	EglTestContext&						operator=				(const EglTestContext&);
+    EglTestContext(const EglTestContext &);
+    EglTestContext &operator=(const EglTestContext &);
 
-	tcu::TestContext&					m_testCtx;
-	const eglu::NativeDisplayFactory&	m_nativeDisplayFactory;
-	de::UniquePtr<eglu::NativeDisplay>	m_nativeDisplay;
-	mutable eglu::GLLibraryCache		m_glLibraryCache;
+    tcu::TestContext &m_testCtx;
+    const eglu::NativeDisplayFactory &m_nativeDisplayFactory;
+    de::UniquePtr<eglu::NativeDisplay> m_nativeDisplay;
+    mutable eglu::GLLibraryCache m_glLibraryCache;
 };
 
 class TestCaseGroup : public tcu::TestCaseGroup
 {
 public:
-						TestCaseGroup	(EglTestContext& eglTestCtx, const char* name, const char* description);
-	virtual				~TestCaseGroup	(void);
+    TestCaseGroup(EglTestContext &eglTestCtx, const char *name, const char *description);
+    virtual ~TestCaseGroup(void);
 
 protected:
-	EglTestContext&		m_eglTestCtx;
+    EglTestContext &m_eglTestCtx;
 };
 
 class TestCase : public tcu::TestCase
 {
 public:
-						TestCase		(EglTestContext& eglTestCtx, const char* name, const char* description);
-						TestCase		(EglTestContext& eglTestCtx, tcu::TestNodeType type, const char* name, const char* description);
-	virtual				~TestCase		(void);
+    TestCase(EglTestContext &eglTestCtx, const char *name, const char *description);
+    TestCase(EglTestContext &eglTestCtx, tcu::TestNodeType type, const char *name, const char *description);
+    virtual ~TestCase(void);
 
 protected:
-	EglTestContext&		m_eglTestCtx;
+    EglTestContext &m_eglTestCtx;
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLTESTCASE_HPP

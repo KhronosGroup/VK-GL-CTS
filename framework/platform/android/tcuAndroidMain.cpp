@@ -24,7 +24,7 @@
 #include "deDefs.h"
 
 #if (DE_OS != DE_OS_ANDROID)
-#	error Unsupported OS
+#error Unsupported OS
 #endif
 
 #if (DE_ANDROID_API >= 9)
@@ -34,18 +34,18 @@
 
 DE_BEGIN_EXTERN_C
 
-JNIEXPORT void JNICALL createTestActivity (ANativeActivity* activity, void* savedState, size_t savedStateSize)
+JNIEXPORT void JNICALL createTestActivity(ANativeActivity *activity, void *savedState, size_t savedStateSize)
 {
-	DE_UNREF(savedState && savedStateSize);
-	try
-	{
-		tcu::Android::TestActivity* obj = new tcu::Android::TestActivity(activity);
-		DE_UNREF(obj);
-	}
-	catch (const std::exception& e)
-	{
-		tcu::die("Failed to create activity: %s", e.what());
-	}
+    DE_UNREF(savedState && savedStateSize);
+    try
+    {
+        tcu::Android::TestActivity *obj = new tcu::Android::TestActivity(activity);
+        DE_UNREF(obj);
+    }
+    catch (const std::exception &e)
+    {
+        tcu::die("Failed to create activity: %s", e.what());
+    }
 }
 
 DE_END_EXTERN_C

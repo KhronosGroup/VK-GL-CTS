@@ -37,233 +37,296 @@ namespace ssbo
 
 enum BufferVarFlags
 {
-	LAYOUT_STD140		= (1<<0),
-	LAYOUT_STD430		= (1<<1),
-	LAYOUT_ROW_MAJOR	= (1<<2),
-	LAYOUT_COLUMN_MAJOR	= (1<<3),	//!< \note Lack of both flags means column-major matrix.
-	LAYOUT_SCALAR		= (1<<4),
-	LAYOUT_MASK			= LAYOUT_STD430|LAYOUT_STD140|LAYOUT_ROW_MAJOR|LAYOUT_COLUMN_MAJOR|LAYOUT_SCALAR,
+    LAYOUT_STD140       = (1 << 0),
+    LAYOUT_STD430       = (1 << 1),
+    LAYOUT_ROW_MAJOR    = (1 << 2),
+    LAYOUT_COLUMN_MAJOR = (1 << 3), //!< \note Lack of both flags means column-major matrix.
+    LAYOUT_SCALAR       = (1 << 4),
+    LAYOUT_MASK         = LAYOUT_STD430 | LAYOUT_STD140 | LAYOUT_ROW_MAJOR | LAYOUT_COLUMN_MAJOR | LAYOUT_SCALAR,
 
-	// \todo [2013-10-14 pyry] Investigate adding these.
-/*	QUALIFIER_COHERENT			= (1<<4),
-	QUALIFIER_VOLATILE			= (1<<5),
-	QUALIFIER_RESTRICT			= (1<<6),
-	QUALIFIER_READONLY			= (1<<7),
-	QUALIFIER_WRITEONLY			= (1<<8),*/
-	ACCESS_READ					= (1<<9),	//!< Buffer variable is read in the shader.
-	ACCESS_WRITE				= (1<<10),	//!< Buffer variable is written in the shader.
-	LAYOUT_RELAXED				= (1<<11),	//!< Support VK_KHR_relaxed_block_layout extension
-	LAYOUT_16BIT_STORAGE		= (1<<12),  //!< Support VK_KHR_16bit_storage extension
-	LAYOUT_8BIT_STORAGE			= (1 << 13),  //!< Support VK_KHR_8bit_storage extension
-	LAYOUT_DESCRIPTOR_INDEXING	= (1 << 14),  //!< Support VK_KHR_descriptor_indexing extension
+    // \todo [2013-10-14 pyry] Investigate adding these.
+    /*    QUALIFIER_COHERENT = (1<<4),
+        QUALIFIER_VOLATILE = (1<<5),
+        QUALIFIER_RESTRICT = (1<<6),
+        QUALIFIER_READONLY = (1<<7),
+        QUALIFIER_WRITEONLY = (1<<8),*/
+    ACCESS_READ                = (1 << 9),  //!< Buffer variable is read in the shader.
+    ACCESS_WRITE               = (1 << 10), //!< Buffer variable is written in the shader.
+    LAYOUT_RELAXED             = (1 << 11), //!< Support VK_KHR_relaxed_block_layout extension
+    LAYOUT_16BIT_STORAGE       = (1 << 12), //!< Support VK_KHR_16bit_storage extension
+    LAYOUT_8BIT_STORAGE        = (1 << 13), //!< Support VK_KHR_8bit_storage extension
+    LAYOUT_DESCRIPTOR_INDEXING = (1 << 14), //!< Support VK_KHR_descriptor_indexing extension
 };
 
 enum MatrixLoadFlags
 {
-	LOAD_FULL_MATRIX		= 0,
-	LOAD_MATRIX_COMPONENTS	= 1,
+    LOAD_FULL_MATRIX       = 0,
+    LOAD_MATRIX_COMPONENTS = 1,
 };
 
 enum MatrixStoreFlags
 {
-	STORE_FULL_MATRIX		= 0,
-	STORE_MATRIX_COLUMNS	= 1,
+    STORE_FULL_MATRIX    = 0,
+    STORE_MATRIX_COLUMNS = 1,
 };
 
 class BufferVar
 {
 public:
-						BufferVar		(const char* name, const glu::VarType& type, deUint32 flags);
+    BufferVar(const char *name, const glu::VarType &type, uint32_t flags);
 
-	const char*			getName			(void) const		{ return m_name.c_str();	}
-	const glu::VarType&	getType			(void) const		{ return m_type;			}
-	deUint32			getFlags		(void) const		{ return m_flags;			}
-	deUint32			getOffset		(void) const		{ return m_offset;			}
+    const char *getName(void) const
+    {
+        return m_name.c_str();
+    }
+    const glu::VarType &getType(void) const
+    {
+        return m_type;
+    }
+    uint32_t getFlags(void) const
+    {
+        return m_flags;
+    }
+    uint32_t getOffset(void) const
+    {
+        return m_offset;
+    }
 
-	void				setOffset		(deUint32 offset)	{ m_offset = offset;		}
+    void setOffset(uint32_t offset)
+    {
+        m_offset = offset;
+    }
 
 private:
-	std::string			m_name;
-	glu::VarType		m_type;
-	deUint32			m_flags;
-	deUint32			m_offset;
+    std::string m_name;
+    glu::VarType m_type;
+    uint32_t m_flags;
+    uint32_t m_offset;
 };
 
 class BufferBlock
 {
 public:
-	typedef std::vector<BufferVar>::iterator		iterator;
-	typedef std::vector<BufferVar>::const_iterator	const_iterator;
+    typedef std::vector<BufferVar>::iterator iterator;
+    typedef std::vector<BufferVar>::const_iterator const_iterator;
 
-							BufferBlock				(const char* blockName);
+    BufferBlock(const char *blockName);
 
-	const char*				getBlockName			(void) const				{ return m_blockName.c_str();										}
-	const char*				getInstanceName			(void) const				{ return m_instanceName.empty() ? DE_NULL : m_instanceName.c_str();	}
-	bool					isArray					(void) const				{ return m_arraySize > 0;											}
-	int						getArraySize			(void) const				{ return m_arraySize;												}
-	deUint32				getFlags				(void) const				{ return m_flags;													}
+    const char *getBlockName(void) const
+    {
+        return m_blockName.c_str();
+    }
+    const char *getInstanceName(void) const
+    {
+        return m_instanceName.empty() ? DE_NULL : m_instanceName.c_str();
+    }
+    bool isArray(void) const
+    {
+        return m_arraySize > 0;
+    }
+    int getArraySize(void) const
+    {
+        return m_arraySize;
+    }
+    uint32_t getFlags(void) const
+    {
+        return m_flags;
+    }
 
-	void					setInstanceName			(const char* name)			{ m_instanceName = name;											}
-	void					setFlags				(deUint32 flags)			{ m_flags = flags;													}
-	void					addMember				(const BufferVar& var)		{ m_variables.push_back(var);										}
-	void					setArraySize			(int arraySize);
+    void setInstanceName(const char *name)
+    {
+        m_instanceName = name;
+    }
+    void setFlags(uint32_t flags)
+    {
+        m_flags = flags;
+    }
+    void addMember(const BufferVar &var)
+    {
+        m_variables.push_back(var);
+    }
+    void setArraySize(int arraySize);
 
-	int						getLastUnsizedArraySize	(int instanceNdx) const		{ return m_lastUnsizedArraySizes[instanceNdx];						}
-	void					setLastUnsizedArraySize	(int instanceNdx, int size)	{ m_lastUnsizedArraySizes[instanceNdx] = size;						}
+    int getLastUnsizedArraySize(int instanceNdx) const
+    {
+        return m_lastUnsizedArraySizes[instanceNdx];
+    }
+    void setLastUnsizedArraySize(int instanceNdx, int size)
+    {
+        m_lastUnsizedArraySizes[instanceNdx] = size;
+    }
 
-	inline iterator			begin					(void)						{ return m_variables.begin();										}
-	inline const_iterator	begin					(void) const				{ return m_variables.begin();										}
-	inline iterator			end						(void)						{ return m_variables.end();											}
-	inline const_iterator	end						(void) const				{ return m_variables.end();											}
+    inline iterator begin(void)
+    {
+        return m_variables.begin();
+    }
+    inline const_iterator begin(void) const
+    {
+        return m_variables.begin();
+    }
+    inline iterator end(void)
+    {
+        return m_variables.end();
+    }
+    inline const_iterator end(void) const
+    {
+        return m_variables.end();
+    }
 
 private:
-	std::string				m_blockName;
-	std::string				m_instanceName;
-	std::vector<BufferVar>	m_variables;
-	int						m_arraySize;				//!< Array size or 0 if not interface block array.
-	std::vector<int>		m_lastUnsizedArraySizes;	//!< Sizes of last unsized array element, can be different per instance.
-	deUint32				m_flags;
+    std::string m_blockName;
+    std::string m_instanceName;
+    std::vector<BufferVar> m_variables;
+    int m_arraySize;                          //!< Array size or 0 if not interface block array.
+    std::vector<int> m_lastUnsizedArraySizes; //!< Sizes of last unsized array element, can be different per instance.
+    uint32_t m_flags;
 };
 
 class ShaderInterface
 {
 public:
-									ShaderInterface			(void);
-									~ShaderInterface		(void);
+    ShaderInterface(void);
+    ~ShaderInterface(void);
 
-	glu::StructType&				allocStruct				(const char* name);
-	const glu::StructType*			findStruct				(const char* name) const;
-	void							getNamedStructs			(std::vector<const glu::StructType*>& structs) const;
+    glu::StructType &allocStruct(const char *name);
+    const glu::StructType *findStruct(const char *name) const;
+    void getNamedStructs(std::vector<const glu::StructType *> &structs) const;
 
-	BufferBlock&					allocBlock				(const char* name);
+    BufferBlock &allocBlock(const char *name);
 
-	int								getNumBlocks			(void) const	{ return (int)m_bufferBlocks.size();	}
-	const BufferBlock&				getBlock				(int ndx) const	{ return *m_bufferBlocks[ndx];			}
-	BufferBlock&					getBlock				(int ndx)		{ return *m_bufferBlocks[ndx];			}
+    int getNumBlocks(void) const
+    {
+        return (int)m_bufferBlocks.size();
+    }
+    const BufferBlock &getBlock(int ndx) const
+    {
+        return *m_bufferBlocks[ndx];
+    }
+    BufferBlock &getBlock(int ndx)
+    {
+        return *m_bufferBlocks[ndx];
+    }
 
 private:
-									ShaderInterface			(const ShaderInterface&);
-	ShaderInterface&				operator=				(const ShaderInterface&);
+    ShaderInterface(const ShaderInterface &);
+    ShaderInterface &operator=(const ShaderInterface &);
 
-	std::vector<glu::StructType*>	m_structs;
-	std::vector<BufferBlock*>		m_bufferBlocks;
+    std::vector<glu::StructType *> m_structs;
+    std::vector<BufferBlock *> m_bufferBlocks;
 };
 
 struct BufferVarLayoutEntry
 {
-	BufferVarLayoutEntry (void)
-		: type					(glu::TYPE_LAST)
-		, blockNdx				(-1)
-		, offset				(-1)
-		, arraySize				(-1)
-		, arrayStride			(-1)
-		, matrixStride			(-1)
-		, topLevelArraySize		(-1)
-		, topLevelArrayStride	(-1)
-		, isRowMajor			(false)
-	{
-	}
+    BufferVarLayoutEntry(void)
+        : type(glu::TYPE_LAST)
+        , blockNdx(-1)
+        , offset(-1)
+        , arraySize(-1)
+        , arrayStride(-1)
+        , matrixStride(-1)
+        , topLevelArraySize(-1)
+        , topLevelArrayStride(-1)
+        , isRowMajor(false)
+    {
+    }
 
-	std::string			name;
-	glu::DataType		type;
-	int					blockNdx;
-	int					offset;
-	int					arraySize;
-	int					arrayStride;
-	int					matrixStride;
-	int					topLevelArraySize;
-	int					topLevelArrayStride;
-	bool				isRowMajor;
+    std::string name;
+    glu::DataType type;
+    int blockNdx;
+    int offset;
+    int arraySize;
+    int arrayStride;
+    int matrixStride;
+    int topLevelArraySize;
+    int topLevelArrayStride;
+    bool isRowMajor;
 };
 
 struct BlockLayoutEntry
 {
-	BlockLayoutEntry (void)
-		: size(0)
-	{
-	}
+    BlockLayoutEntry(void) : size(0)
+    {
+    }
 
-	std::string			name;
-	int					size;
-	std::vector<int>	activeVarIndices;
+    std::string name;
+    int size;
+    std::vector<int> activeVarIndices;
 };
 
 class BufferLayout
 {
 public:
-	std::vector<BlockLayoutEntry>		blocks;
-	std::vector<BufferVarLayoutEntry>	bufferVars;
+    std::vector<BlockLayoutEntry> blocks;
+    std::vector<BufferVarLayoutEntry> bufferVars;
 
-	int									getVariableIndex		(const std::string& name) const;
-	int									getBlockIndex			(const std::string& name) const;
+    int getVariableIndex(const std::string &name) const;
+    int getBlockIndex(const std::string &name) const;
 };
 
 // BlockDataPtr
 
 struct BlockDataPtr
 {
-	void*		ptr;
-	int			size;						//!< Redundant, for debugging purposes.
-	int			lastUnsizedArraySize;
+    void *ptr;
+    int size; //!< Redundant, for debugging purposes.
+    int lastUnsizedArraySize;
 
-	BlockDataPtr (void* ptr_, int size_, int lastUnsizedArraySize_)
-		: ptr					(ptr_)
-		, size					(size_)
-		, lastUnsizedArraySize	(lastUnsizedArraySize_)
-	{
-	}
+    BlockDataPtr(void *ptr_, int size_, int lastUnsizedArraySize_)
+        : ptr(ptr_)
+        , size(size_)
+        , lastUnsizedArraySize(lastUnsizedArraySize_)
+    {
+    }
 
-	BlockDataPtr (void)
-		: ptr					(DE_NULL)
-		, size					(0)
-		, lastUnsizedArraySize	(0)
-	{
-	}
+    BlockDataPtr(void) : ptr(DE_NULL), size(0), lastUnsizedArraySize(0)
+    {
+    }
 };
 
 struct RefDataStorage
 {
-	std::vector<deUint8>			data;
-	std::vector<BlockDataPtr>	pointers;
+    std::vector<uint8_t> data;
+    std::vector<BlockDataPtr> pointers;
 };
 
 class SSBOLayoutCase : public vkt::TestCase
 {
 public:
-	enum BufferMode
-	{
-		BUFFERMODE_SINGLE = 0,	//!< Single buffer shared between uniform blocks.
-		BUFFERMODE_PER_BLOCK,	//!< Per-block buffers
+    enum BufferMode
+    {
+        BUFFERMODE_SINGLE = 0, //!< Single buffer shared between uniform blocks.
+        BUFFERMODE_PER_BLOCK,  //!< Per-block buffers
 
-		BUFFERMODE_LAST
-	};
+        BUFFERMODE_LAST
+    };
 
-								SSBOLayoutCase				(tcu::TestContext& testCtx, const char* name, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag, MatrixStoreFlags matrixStoreFlag, bool usePhysStorageBuffer);
-	virtual						~SSBOLayoutCase				(void);
+    SSBOLayoutCase(tcu::TestContext &testCtx, const char *name, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag,
+                   MatrixStoreFlags matrixStoreFlag, bool usePhysStorageBuffer);
+    virtual ~SSBOLayoutCase(void);
 
-	virtual void				delayedInit					(void);
-	virtual void				initPrograms				(vk::SourceCollections& programCollection) const;
-	virtual TestInstance*		createInstance				(Context& context) const;
-	virtual void				checkSupport				(Context &context) const;
+    virtual void delayedInit(void);
+    virtual void initPrograms(vk::SourceCollections &programCollection) const;
+    virtual TestInstance *createInstance(Context &context) const;
+    virtual void checkSupport(Context &context) const;
 
 protected:
-	BufferMode					m_bufferMode;
-	ShaderInterface				m_interface;
-	MatrixLoadFlags				m_matrixLoadFlag;
-	MatrixStoreFlags			m_matrixStoreFlag;
-	std::string					m_computeShaderSrc;
-	bool						m_usePhysStorageBuffer;
+    BufferMode m_bufferMode;
+    ShaderInterface m_interface;
+    MatrixLoadFlags m_matrixLoadFlag;
+    MatrixStoreFlags m_matrixStoreFlag;
+    std::string m_computeShaderSrc;
+    bool m_usePhysStorageBuffer;
 
 private:
-								SSBOLayoutCase				(const SSBOLayoutCase&);
-	SSBOLayoutCase&				operator=					(const SSBOLayoutCase&);
+    SSBOLayoutCase(const SSBOLayoutCase &);
+    SSBOLayoutCase &operator=(const SSBOLayoutCase &);
 
-	BufferLayout				m_refLayout;
-	RefDataStorage				m_initialData;	// Initial data stored in buffer.
-	RefDataStorage				m_writeData;		// Data written by compute shader.
+    BufferLayout m_refLayout;
+    RefDataStorage m_initialData; // Initial data stored in buffer.
+    RefDataStorage m_writeData;   // Data written by compute shader.
 };
 
-} // ssbo
-} // vkt
+} // namespace ssbo
+} // namespace vkt
 
 #endif // _VKTSSBOLAYOUTCASE_HPP

@@ -36,14 +36,14 @@ namespace Functional
 class FboRenderTestGroup : public TestCaseGroup
 {
 public:
-					FboRenderTestGroup			(Context& context);
-	virtual			~FboRenderTestGroup			(void);
+    FboRenderTestGroup(Context &context);
+    virtual ~FboRenderTestGroup(void);
 
-	virtual void	init						(void);
+    virtual void init(void);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FFBORENDERTEST_HPP

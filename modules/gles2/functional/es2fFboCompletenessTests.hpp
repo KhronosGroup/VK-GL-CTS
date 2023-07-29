@@ -32,10 +32,10 @@ namespace gles2
 namespace Functional
 {
 
-tcu::TestCaseGroup* createFboCompletenessTests (Context& context);
+tcu::TestCaseGroup *createFboCompletenessTests(Context &context);
 
-} // Functioal
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FFBOCOMPLETENESSTESTS_HPP

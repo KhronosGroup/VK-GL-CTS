@@ -46,53 +46,53 @@ namespace wsi
 namespace
 {
 
-void createTypeSpecificTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
+void createTypeSpecificTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
 {
-	// VkSurface Tests
-	addTestGroup(testGroup, "surface", createSurfaceTests,					wsiType);
-	// VkSwapchain Tests
-	addTestGroup(testGroup, "swapchain", createSwapchainTests,				wsiType);
-	// Incremental present tests
-	addTestGroup(testGroup, "incremental_present", createIncrementalPresentTests,		wsiType);
-	// Display Timing Tests
-	addTestGroup(testGroup, "display_timing", createDisplayTimingTests,			wsiType);
-	// VK_KHR_shared_presentable_image tests
-	addTestGroup(testGroup, "shared_presentable_image", createSharedPresentableImageTests,	wsiType);
-	// ColorSpace tests
-	addTestGroup(testGroup, "colorspace", createColorSpaceTests,				wsiType);
-	// ColorSpace compare tests
-	addTestGroup(testGroup, "colorspace_compare", createColorspaceCompareTests,		wsiType);
-	// VK_EXT_full_screen_exclusive tests
-	addTestGroup(testGroup, "full_screen_exclusive", createFullScreenExclusiveTests,		wsiType);
-	// VK_KHR_present_(id|wait) tests
-	addTestGroup(testGroup, "present_id_wait", createPresentIdWaitTests,			wsiType);
-	// VK_KHR_(surface|swapchain)_maintenance1 tests
-	addTestGroup(testGroup, "maintenance1", createMaintenance1Tests,			wsiType);
+    // VkSurface Tests
+    addTestGroup(testGroup, "surface", createSurfaceTests, wsiType);
+    // VkSwapchain Tests
+    addTestGroup(testGroup, "swapchain", createSwapchainTests, wsiType);
+    // Incremental present tests
+    addTestGroup(testGroup, "incremental_present", createIncrementalPresentTests, wsiType);
+    // Display Timing Tests
+    addTestGroup(testGroup, "display_timing", createDisplayTimingTests, wsiType);
+    // VK_KHR_shared_presentable_image tests
+    addTestGroup(testGroup, "shared_presentable_image", createSharedPresentableImageTests, wsiType);
+    // ColorSpace tests
+    addTestGroup(testGroup, "colorspace", createColorSpaceTests, wsiType);
+    // ColorSpace compare tests
+    addTestGroup(testGroup, "colorspace_compare", createColorspaceCompareTests, wsiType);
+    // VK_EXT_full_screen_exclusive tests
+    addTestGroup(testGroup, "full_screen_exclusive", createFullScreenExclusiveTests, wsiType);
+    // VK_KHR_present_(id|wait) tests
+    addTestGroup(testGroup, "present_id_wait", createPresentIdWaitTests, wsiType);
+    // VK_KHR_(surface|swapchain)_maintenance1 tests
+    addTestGroup(testGroup, "maintenance1", createMaintenance1Tests, wsiType);
 }
 
-void createWsiTests (tcu::TestCaseGroup* apiTests)
+void createWsiTests(tcu::TestCaseGroup *apiTests)
 {
-	for (int typeNdx = 0; typeNdx < vk::wsi::TYPE_LAST; ++typeNdx)
-	{
-		const vk::wsi::Type	wsiType	= (vk::wsi::Type)typeNdx;
+    for (int typeNdx = 0; typeNdx < vk::wsi::TYPE_LAST; ++typeNdx)
+    {
+        const vk::wsi::Type wsiType = (vk::wsi::Type)typeNdx;
 
-		addTestGroup(apiTests, getName(wsiType), createTypeSpecificTests, wsiType);
-	}
+        addTestGroup(apiTests, getName(wsiType), createTypeSpecificTests, wsiType);
+    }
 
-	// Display coverage tests
-	addTestGroup(apiTests, "display", createDisplayCoverageTests);
-	// Display Control Tests
-	addTestGroup(apiTests, "display_control", createDisplayControlTests);
-	// Acquire Drm display tests
-	addTestGroup(apiTests, "acquire_drm_display", createAcquireDrmDisplayTests);
+    // Display coverage tests
+    addTestGroup(apiTests, "display", createDisplayCoverageTests);
+    // Display Control Tests
+    addTestGroup(apiTests, "display_control", createDisplayControlTests);
+    // Acquire Drm display tests
+    addTestGroup(apiTests, "acquire_drm_display", createAcquireDrmDisplayTests);
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
-	return createTestGroup(testCtx, name.c_str(), createWsiTests);
+    return createTestGroup(testCtx, name.c_str(), createWsiTests);
 }
 
-} // wsi
-} // vkt
+} // namespace wsi
+} // namespace vkt

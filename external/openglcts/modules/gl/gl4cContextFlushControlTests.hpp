@@ -67,15 +67,15 @@ namespace ContextFlushControl
 class Tests : public deqp::TestCaseGroup
 {
 public:
-	/* Public member functions */
-	Tests(deqp::Context& context);
+    /* Public member functions */
+    Tests(deqp::Context &context);
 
-	void init();
+    void init();
 
 private:
-	/* Private member functions */
-	Tests(const Tests& other);
-	Tests& operator=(const Tests& other);
+    /* Private member functions */
+    Tests(const Tests &other);
+    Tests &operator=(const Tests &other);
 };
 
 /** @class CoverageTest
@@ -85,18 +85,18 @@ private:
 class CoverageTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	CoverageTest(deqp::Context& context);
+    /* Public member functions */
+    CoverageTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	CoverageTest(const CoverageTest& other);
-	CoverageTest& operator=(const CoverageTest& other);
+    /* Private member functions */
+    CoverageTest(const CoverageTest &other);
+    CoverageTest &operator=(const CoverageTest &other);
 
-	bool testQuery(glu::RenderContext& context, glw::GLenum expected_value);
-	glu::RenderContext* createNoFlushContext();
+    bool testQuery(glu::RenderContext &context, glw::GLenum expected_value);
+    glu::RenderContext *createNoFlushContext();
 };
 
 /** @class FunctionalTest
@@ -126,57 +126,57 @@ private:
 class FunctionalTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	FunctionalTest(deqp::Context& context);
+    /* Public member functions */
+    FunctionalTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	FunctionalTest(const FunctionalTest& other);
-	FunctionalTest& operator=(const FunctionalTest& other);
+    /* Private member functions */
+    FunctionalTest(const FunctionalTest &other);
+    FunctionalTest &operator=(const FunctionalTest &other);
 
-	glw::GLfloat testTime(bool shall_flush_on_release);
+    glw::GLfloat testTime(bool shall_flush_on_release);
 
-	/** @brief Draw Setup class to encapsulate context with framebuffer and shader program.
-	 *
-	 *  The context and within framebuffer, renderbuffer, vertex array object,
-	 *  shader program is created on the construction. Using makeCurrent() one can swith to
-	 *  the encapsulated context. With draw() member function one can draw full screen quad.
-	 *  All objects are deallocated during object destruction.
-	 *
-	 *  Context will flush or will not flush on makeCurrent() switch depending on
-	 *  constructor setup shall_flush_on_release.
-	 */
-	class DrawSetup
-	{
-	public:
-		DrawSetup(deqp::Context& test_context, bool shall_flush_on_release);
-		~DrawSetup();
+    /** @brief Draw Setup class to encapsulate context with framebuffer and shader program.
+     *
+     *  The context and within framebuffer, renderbuffer, vertex array object,
+     *  shader program is created on the construction. Using makeCurrent() one can swith to
+     *  the encapsulated context. With draw() member function one can draw full screen quad.
+     *  All objects are deallocated during object destruction.
+     *
+     *  Context will flush or will not flush on makeCurrent() switch depending on
+     *  constructor setup shall_flush_on_release.
+     */
+    class DrawSetup
+    {
+    public:
+        DrawSetup(deqp::Context &test_context, bool shall_flush_on_release);
+        ~DrawSetup();
 
-		void makeCurrent();
-		void draw();
+        void makeCurrent();
+        void draw();
 
-	private:
-		deqp::Context&		m_test_context; //!< Test main context.
-		glu::RenderContext* m_context;		//!< Render context of this draw setup.
-		glw::GLuint			m_fbo;			//!< OpenGL framebuffer object identifier (in m_context).
-		glw::GLuint			m_rbo;			//!< OpenGL renderbuffer object identifier (in m_context).
-		glw::GLuint			m_vao;			//!< OpenGL vertex array object identifier (in m_context).
-		glw::GLuint			m_po;			//!< OpenGL GLSL program object identifier (in m_context).
+    private:
+        deqp::Context &m_test_context; //!< Test main context.
+        glu::RenderContext *m_context; //!< Render context of this draw setup.
+        glw::GLuint m_fbo;             //!< OpenGL framebuffer object identifier (in m_context).
+        glw::GLuint m_rbo;             //!< OpenGL renderbuffer object identifier (in m_context).
+        glw::GLuint m_vao;             //!< OpenGL vertex array object identifier (in m_context).
+        glw::GLuint m_po;              //!< OpenGL GLSL program object identifier (in m_context).
 
-		static const glw::GLuint s_view_size; //!< Framebuffer size (default 256).
-		static const glw::GLchar s_vertex_shader
-			[]; //!< Vertex shader source code (it draws quad using triangle strip depending on gl_VertexID).
-		static const glw::GLchar s_fragment_shader[]; //!< Fragment shader source code (setup vec4(1.0) as a color).
+        static const glw::GLuint s_view_size; //!< Framebuffer size (default 256).
+        static const glw::GLchar s_vertex_shader
+            []; //!< Vertex shader source code (it draws quad using triangle strip depending on gl_VertexID).
+        static const glw::GLchar s_fragment_shader[]; //!< Fragment shader source code (setup vec4(1.0) as a color).
 
-		void createContext(bool shall_flush_on_release);
-		void createView();
-		void createGeometry();
-		void createProgram();
-	};
+        void createContext(bool shall_flush_on_release);
+        void createView();
+        void createGeometry();
+        void createProgram();
+    };
 };
 
-} /* ContextFlushControl namespace */
-} /* gl4cts namespace */
+} // namespace ContextFlushControl
+} // namespace gl4cts
 #endif // _GL4CCONTEXTFLUSHCONTROLTESTS_HPP

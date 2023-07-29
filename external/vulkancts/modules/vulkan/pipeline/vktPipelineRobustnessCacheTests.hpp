@@ -32,9 +32,10 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createPipelineRobustnessCacheTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
+tcu::TestCaseGroup *createPipelineRobustnessCacheTests(tcu::TestContext &testCtx,
+                                                       vk::PipelineConstructionType pipelineConstructionType);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEROBUSTNESSCACHETESTS_HPP

@@ -32,9 +32,9 @@ namespace vkt
 namespace MeshShader
 {
 
-tcu::TestCaseGroup*	createTests	(tcu::TestContext& testCtx, const std::string& name);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name);
 
-} // MeshShader
-} // vkt
+} // namespace MeshShader
+} // namespace vkt
 
 #endif // _VKTMESHSHADERTESTS_HPP

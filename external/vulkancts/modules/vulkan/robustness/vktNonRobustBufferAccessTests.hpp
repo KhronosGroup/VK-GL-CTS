@@ -33,9 +33,9 @@ namespace vkt
 namespace robustness
 {
 
-tcu::TestCaseGroup* createNonRobustBufferAccessTests	(tcu::TestContext&);
+tcu::TestCaseGroup *createNonRobustBufferAccessTests(tcu::TestContext &);
 
-} // cts_amber
-} // vkt
+} // namespace robustness
+} // namespace vkt
 
 #endif // _VKTNONROBUSTBUFFERACCESSTESTS_HPP

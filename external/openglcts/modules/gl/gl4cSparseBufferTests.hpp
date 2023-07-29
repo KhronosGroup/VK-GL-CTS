@@ -40,20 +40,20 @@ namespace gl4cts
 class SparseBufferTestUtilities
 {
 public:
-	/* Public methods */
-	static unsigned int alignOffset(const unsigned int& offset, const unsigned int& value);
+    /* Public methods */
+    static unsigned int alignOffset(const unsigned int &offset, const unsigned int &value);
 
-	static glw::GLuint createComputeProgram(const glw::Functions& gl, const char** cs_body_parts,
-											unsigned int n_cs_body_parts);
+    static glw::GLuint createComputeProgram(const glw::Functions &gl, const char **cs_body_parts,
+                                            unsigned int n_cs_body_parts);
 
-	static glw::GLuint createProgram(const glw::Functions& gl, const char** fs_body_parts, unsigned int n_fs_body_parts,
-									 const char** vs_body_parts, unsigned int n_vs_body_parts,
-									 const char** attribute_names, const unsigned int* attribute_locations,
-									 unsigned int			   n_attribute_properties,
-									 const glw::GLchar* const* tf_varyings = DE_NULL, unsigned int n_tf_varyings = 0,
-									 glw::GLenum tf_varying_mode = GL_NONE);
+    static glw::GLuint createProgram(const glw::Functions &gl, const char **fs_body_parts, unsigned int n_fs_body_parts,
+                                     const char **vs_body_parts, unsigned int n_vs_body_parts,
+                                     const char **attribute_names, const unsigned int *attribute_locations,
+                                     unsigned int n_attribute_properties,
+                                     const glw::GLchar *const *tf_varyings = DE_NULL, unsigned int n_tf_varyings = 0,
+                                     glw::GLenum tf_varying_mode = GL_NONE);
 
-	static std::string getSparseBOFlagsString(glw::GLenum flags);
+    static std::string getSparseBOFlagsString(glw::GLenum flags);
 };
 
 /** * Verify glBufferPageCommitmentARB() returns GL_INVALID_ENUM if <target> is
@@ -96,22 +96,22 @@ public:
 class NegativeTests : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	NegativeTests(deqp::Context& context);
+    /* Public methods */
+    NegativeTests(deqp::Context &context);
 
-	void						 deinit();
-	void						 init();
-	tcu::TestNode::IterateResult iterate();
+    void deinit();
+    void init();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
+    /* Private methods */
 
-	/* Private members */
-	glw::GLuint		   m_helper_bo_id;	/* never allocated actual storage; bound to GL_ELEMENT_ARRAY_BUFFER */
-	glw::GLuint		   m_immutable_bo_id; /* bound to GL_COPY_READ_BUFFER */
-	const unsigned int m_immutable_bo_size;
+    /* Private members */
+    glw::GLuint m_helper_bo_id;    /* never allocated actual storage; bound to GL_ELEMENT_ARRAY_BUFFER */
+    glw::GLuint m_immutable_bo_id; /* bound to GL_COPY_READ_BUFFER */
+    const unsigned int m_immutable_bo_size;
 
-	glw::GLuint m_sparse_bo_id; /* bound to GL_ARRAY_BUFFER */
+    glw::GLuint m_sparse_bo_id; /* bound to GL_ARRAY_BUFFER */
 };
 
 /** 1. Make sure glGetBooleanv(), glGetDoublev(), glGetFloatv(), glGetIntegerv()
@@ -121,33 +121,33 @@ private:
 class PageSizeGetterTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	PageSizeGetterTest(deqp::Context& context);
+    /* Public methods */
+    PageSizeGetterTest(deqp::Context &context);
 
-	void						 deinit();
-	void						 init();
-	tcu::TestNode::IterateResult iterate();
+    void deinit();
+    void init();
+    tcu::TestNode::IterateResult iterate();
 };
 
 /** Interface class for test case implementation for the functional test 2. */
 class BufferStorageTestCase
 {
 public:
-	virtual ~BufferStorageTestCase()
-	{
-	}
+    virtual ~BufferStorageTestCase()
+    {
+    }
 
-	/* Public methods */
-	virtual void deinitTestCaseGlobal()						  = 0;
-	virtual bool execute(glw::GLuint sparse_bo_storage_flags) = 0;
-	virtual const char* getName()							  = 0;
-	virtual bool		initTestCaseGlobal()				  = 0;
-	virtual bool initTestCaseIteration(glw::GLuint sparse_bo) = 0;
+    /* Public methods */
+    virtual void deinitTestCaseGlobal()                       = 0;
+    virtual bool execute(glw::GLuint sparse_bo_storage_flags) = 0;
+    virtual const char *getName()                             = 0;
+    virtual bool initTestCaseGlobal()                         = 0;
+    virtual bool initTestCaseIteration(glw::GLuint sparse_bo) = 0;
 
-	virtual void deinitTestCaseIteration()
-	{
-		/* Stub by default */
-	}
+    virtual void deinitTestCaseIteration()
+    {
+        /* Stub by default */
+    }
 };
 
 /** Implements the test case e for the test 2:
@@ -174,42 +174,42 @@ public:
 class AtomicCounterBufferStorageTestCase : public BufferStorageTestCase
 {
 public:
-	/* Public methods */
-	AtomicCounterBufferStorageTestCase(const glw::Functions& gl, tcu::TestContext& testContext, glw::GLint page_size,
-									   bool all_pages_committed);
+    /* Public methods */
+    AtomicCounterBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size,
+                                       bool all_pages_committed);
 
-	/* BufferStorageTestCase implementation */
-	void deinitTestCaseGlobal();
-	void deinitTestCaseIteration();
+    /* BufferStorageTestCase implementation */
+    void deinitTestCaseGlobal();
+    void deinitTestCaseIteration();
 
-	bool execute(glw::GLuint sparse_bo_storage_flags);
-	bool initTestCaseGlobal();
-	bool initTestCaseIteration(glw::GLuint sparse_bo);
+    bool execute(glw::GLuint sparse_bo_storage_flags);
+    bool initTestCaseGlobal();
+    bool initTestCaseIteration(glw::GLuint sparse_bo);
 
-	const char* getName()
-	{
-		return "case e";
-	}
+    const char *getName()
+    {
+        return "case e";
+    }
 
 private:
-	/* Private fields */
-	bool				  m_all_pages_committed;
-	const glw::Functions& m_gl;
-	glw::GLint			  m_gl_atomic_counter_uniform_array_stride;
-	glw::GLint			  m_gl_max_vertex_atomic_counters_value;
-	glw::GLuint			  m_helper_bo;
-	unsigned int		  m_helper_bo_size;
-	unsigned int		  m_helper_bo_size_rounded;
-	const unsigned int	m_n_draw_calls;
-	glw::GLint			  m_page_size;
-	glw::GLuint			  m_po;
-	glw::GLuint			  m_sparse_bo;
-	unsigned int		  m_sparse_bo_data_size;
-	unsigned int		  m_sparse_bo_data_size_rounded; /* aligned to page size */
-	unsigned int		  m_sparse_bo_data_start_offset;
-	unsigned int m_sparse_bo_data_start_offset_rounded; /* <= m_sparse_bo_data_start_offset, aligned to page size */
-	tcu::TestContext& m_testCtx;
-	glw::GLuint		  m_vao;
+    /* Private fields */
+    bool m_all_pages_committed;
+    const glw::Functions &m_gl;
+    glw::GLint m_gl_atomic_counter_uniform_array_stride;
+    glw::GLint m_gl_max_vertex_atomic_counters_value;
+    glw::GLuint m_helper_bo;
+    unsigned int m_helper_bo_size;
+    unsigned int m_helper_bo_size_rounded;
+    const unsigned int m_n_draw_calls;
+    glw::GLint m_page_size;
+    glw::GLuint m_po;
+    glw::GLuint m_sparse_bo;
+    unsigned int m_sparse_bo_data_size;
+    unsigned int m_sparse_bo_data_size_rounded; /* aligned to page size */
+    unsigned int m_sparse_bo_data_start_offset;
+    unsigned int m_sparse_bo_data_start_offset_rounded; /* <= m_sparse_bo_data_start_offset, aligned to page size */
+    tcu::TestContext &m_testCtx;
+    glw::GLuint m_vao;
 };
 
 /** Implements the test case f for the test 2:
@@ -234,41 +234,41 @@ private:
 class BufferTextureStorageTestCase : public BufferStorageTestCase
 {
 public:
-	/* Public methods */
-	BufferTextureStorageTestCase(const glw::Functions& gl, deqp::Context& context, tcu::TestContext& testContext,
-								 glw::GLint page_size);
+    /* Public methods */
+    BufferTextureStorageTestCase(const glw::Functions &gl, deqp::Context &context, tcu::TestContext &testContext,
+                                 glw::GLint page_size);
 
-	/* BufferStorageTestCase implementation */
-	void deinitTestCaseGlobal();
-	void deinitTestCaseIteration();
-	bool execute(glw::GLuint sparse_bo_storage_flags);
-	bool initTestCaseGlobal();
-	bool initTestCaseIteration(glw::GLuint sparse_bo);
+    /* BufferStorageTestCase implementation */
+    void deinitTestCaseGlobal();
+    void deinitTestCaseIteration();
+    bool execute(glw::GLuint sparse_bo_storage_flags);
+    bool initTestCaseGlobal();
+    bool initTestCaseIteration(glw::GLuint sparse_bo);
 
-	const char* getName()
-	{
-		return "case f";
-	}
+    const char *getName()
+    {
+        return "case f";
+    }
 
 private:
-	/* Private fields */
-	const glw::Functions& m_gl;
-	glw::GLuint			  m_helper_bo;
-	unsigned char*		  m_helper_bo_data;
-	unsigned int		  m_helper_bo_data_size;
-	bool				  m_is_texture_buffer_range_supported;
-	glw::GLint			  m_page_size;
-	glw::GLuint			  m_po;
-	const unsigned int	m_po_local_wg_size;
-	glw::GLuint			  m_sparse_bo;
-	unsigned int		  m_sparse_bo_size;
-	unsigned int		  m_sparse_bo_size_rounded;
-	glw::GLuint			  m_ssbo;
-	unsigned char*		  m_ssbo_zero_data;
-	unsigned int		  m_ssbo_zero_data_size;
-	tcu::TestContext&	 m_testCtx;
-	glw::GLuint			  m_to;
-	const unsigned int	m_to_width;
+    /* Private fields */
+    const glw::Functions &m_gl;
+    glw::GLuint m_helper_bo;
+    unsigned char *m_helper_bo_data;
+    unsigned int m_helper_bo_data_size;
+    bool m_is_texture_buffer_range_supported;
+    glw::GLint m_page_size;
+    glw::GLuint m_po;
+    const unsigned int m_po_local_wg_size;
+    glw::GLuint m_sparse_bo;
+    unsigned int m_sparse_bo_size;
+    unsigned int m_sparse_bo_size_rounded;
+    glw::GLuint m_ssbo;
+    unsigned char *m_ssbo_zero_data;
+    unsigned int m_ssbo_zero_data_size;
+    tcu::TestContext &m_testCtx;
+    glw::GLuint m_to;
+    const unsigned int m_to_width;
 };
 
 /** Implements the test case c for the test 2:
@@ -285,31 +285,31 @@ private:
 class ClearOpsBufferStorageTestCase : public BufferStorageTestCase
 {
 public:
-	/* Public methods */
-	ClearOpsBufferStorageTestCase(const glw::Functions& gl, tcu::TestContext& testContext, glw::GLint page_size);
+    /* Public methods */
+    ClearOpsBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size);
 
-	/* BufferStorageTestCase implementation */
-	void deinitTestCaseGlobal();
-	void deinitTestCaseIteration();
-	bool execute(glw::GLuint sparse_bo_storage_flags);
-	bool initTestCaseGlobal();
-	bool initTestCaseIteration(glw::GLuint sparse_bo);
+    /* BufferStorageTestCase implementation */
+    void deinitTestCaseGlobal();
+    void deinitTestCaseIteration();
+    bool execute(glw::GLuint sparse_bo_storage_flags);
+    bool initTestCaseGlobal();
+    bool initTestCaseIteration(glw::GLuint sparse_bo);
 
-	const char* getName()
-	{
-		return "case c";
-	}
+    const char *getName()
+    {
+        return "case c";
+    }
 
 private:
-	/* Private fields */
-	const glw::Functions& m_gl;
-	glw::GLuint			  m_helper_bo;	/* holds m_sparse_bo_size_rounded bytes */
-	unsigned char*		  m_initial_data; /* holds m_sparse_bo_size_rounded bytes */
-	unsigned int		  m_n_pages_to_use;
-	glw::GLint			  m_page_size;
-	glw::GLuint			  m_sparse_bo;
-	unsigned int		  m_sparse_bo_size_rounded;
-	tcu::TestContext&	 m_testCtx;
+    /* Private fields */
+    const glw::Functions &m_gl;
+    glw::GLuint m_helper_bo;       /* holds m_sparse_bo_size_rounded bytes */
+    unsigned char *m_initial_data; /* holds m_sparse_bo_size_rounded bytes */
+    unsigned int m_n_pages_to_use;
+    glw::GLint m_page_size;
+    glw::GLuint m_sparse_bo;
+    unsigned int m_sparse_bo_size_rounded;
+    tcu::TestContext &m_testCtx;
 };
 
 /** Implements the test case g for the test 2:
@@ -344,64 +344,64 @@ private:
 class CopyOpsBufferStorageTestCase : public BufferStorageTestCase
 {
 public:
-	/* Public methods */
-	CopyOpsBufferStorageTestCase(const glw::Functions& gl, tcu::TestContext& testContext, glw::GLint page_size);
+    /* Public methods */
+    CopyOpsBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size);
 
-	/* BufferStorageTestCase implementation */
-	void deinitTestCaseGlobal();
-	void deinitTestCaseIteration();
-	bool execute(glw::GLuint sparse_bo_storage_flags);
-	bool initTestCaseGlobal();
-	bool initTestCaseIteration(glw::GLuint sparse_bo);
+    /* BufferStorageTestCase implementation */
+    void deinitTestCaseGlobal();
+    void deinitTestCaseIteration();
+    bool execute(glw::GLuint sparse_bo_storage_flags);
+    bool initTestCaseGlobal();
+    bool initTestCaseIteration(glw::GLuint sparse_bo);
 
-	const char* getName()
-	{
-		return "case g";
-	}
+    const char *getName()
+    {
+        return "case g";
+    }
 
 private:
-	/* Private type definitions */
-	typedef struct _test_case
-	{
-		glw::GLint		dst_bo_commit_size;
-		glw::GLint		dst_bo_commit_start_offset;
-		glw::GLuint		dst_bo_sparse_id;
-		bool			dst_bo_is_sparse;
-		unsigned short* dst_bo_ref_data;
-		glw::GLint		dst_bo_start_offset;
+    /* Private type definitions */
+    typedef struct _test_case
+    {
+        glw::GLint dst_bo_commit_size;
+        glw::GLint dst_bo_commit_start_offset;
+        glw::GLuint dst_bo_sparse_id;
+        bool dst_bo_is_sparse;
+        unsigned short *dst_bo_ref_data;
+        glw::GLint dst_bo_start_offset;
 
-		glw::GLint n_bytes_to_copy;
+        glw::GLint n_bytes_to_copy;
 
-		glw::GLint		src_bo_commit_size;
-		glw::GLint		src_bo_commit_start_offset;
-		glw::GLuint		src_bo_sparse_id;
-		bool			src_bo_is_sparse;
-		unsigned short* src_bo_ref_data;
-		glw::GLint		src_bo_start_offset;
-	} _test_case;
+        glw::GLint src_bo_commit_size;
+        glw::GLint src_bo_commit_start_offset;
+        glw::GLuint src_bo_sparse_id;
+        bool src_bo_is_sparse;
+        unsigned short *src_bo_ref_data;
+        glw::GLint src_bo_start_offset;
+    } _test_case;
 
-	typedef std::vector<_test_case>		_test_cases;
-	typedef _test_cases::const_iterator _test_cases_const_iterator;
-	typedef _test_cases::iterator		_test_cases_iterator;
+    typedef std::vector<_test_case> _test_cases;
+    typedef _test_cases::const_iterator _test_cases_const_iterator;
+    typedef _test_cases::iterator _test_cases_iterator;
 
-	/* Private methods */
-	void initReferenceData();
-	void initTestCases();
+    /* Private methods */
+    void initReferenceData();
+    void initTestCases();
 
-	/* Private fields */
-	const glw::Functions& m_gl;
-	glw::GLuint			  m_helper_bo;
-	glw::GLuint			  m_immutable_bo;
-	glw::GLint			  m_page_size;
-	unsigned short*		  m_ref_data[3];   /* [0] - immutable bo data, [1] - sparse bo[0] data, [2] - sparse bo[1] data.
-	 *
-	 * Each data buffer holds m_sparse_bo_size_rounded bytes.
-	 */
-	glw::GLuint			  m_sparse_bos[2]; /* [0] - provided by BufferStorageTest[0], [1] - managed by the test case */
-	unsigned int		  m_sparse_bo_size;
-	unsigned int		  m_sparse_bo_size_rounded;
-	_test_cases			  m_test_cases;
-	tcu::TestContext&	 m_testCtx;
+    /* Private fields */
+    const glw::Functions &m_gl;
+    glw::GLuint m_helper_bo;
+    glw::GLuint m_immutable_bo;
+    glw::GLint m_page_size;
+    unsigned short *m_ref_data[3]; /* [0] - immutable bo data, [1] - sparse bo[0] data, [2] - sparse bo[1] data.
+                                    *
+                                    * Each data buffer holds m_sparse_bo_size_rounded bytes.
+                                    */
+    glw::GLuint m_sparse_bos[2];   /* [0] - provided by BufferStorageTest[0], [1] - managed by the test case */
+    unsigned int m_sparse_bo_size;
+    unsigned int m_sparse_bo_size_rounded;
+    _test_cases m_test_cases;
+    tcu::TestContext &m_testCtx;
 };
 
 /** Implements the test case h for the test 2:
@@ -422,36 +422,36 @@ private:
 class IndirectDispatchBufferStorageTestCase : public BufferStorageTestCase
 {
 public:
-	/* Public methods */
-	IndirectDispatchBufferStorageTestCase(const glw::Functions& gl, tcu::TestContext& testContext,
-										  glw::GLint page_size);
+    /* Public methods */
+    IndirectDispatchBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext,
+                                          glw::GLint page_size);
 
-	/* BufferStorageTestCase implementation */
-	void deinitTestCaseGlobal();
-	void deinitTestCaseIteration();
-	bool execute(glw::GLuint sparse_bo_storage_flags);
-	bool initTestCaseGlobal();
-	bool initTestCaseIteration(glw::GLuint sparse_bo);
+    /* BufferStorageTestCase implementation */
+    void deinitTestCaseGlobal();
+    void deinitTestCaseIteration();
+    bool execute(glw::GLuint sparse_bo_storage_flags);
+    bool initTestCaseGlobal();
+    bool initTestCaseIteration(glw::GLuint sparse_bo);
 
-	const char* getName()
-	{
-		return "case h";
-	}
+    const char *getName()
+    {
+        return "case h";
+    }
 
 private:
-	/* Private fields */
-	unsigned int		  m_dispatch_draw_call_args_start_offset;
-	unsigned int		  m_expected_ac_value;
-	const glw::Functions& m_gl;
-	const unsigned int	m_global_wg_size_x;
-	glw::GLuint			  m_helper_bo; /* stores AC value + indirect dispatch call args */
-	const unsigned int	m_local_wg_size_x;
-	glw::GLint			  m_page_size;
-	glw::GLuint			  m_po;
-	glw::GLuint			  m_sparse_bo;
-	unsigned int		  m_sparse_bo_size;
-	unsigned int		  m_sparse_bo_size_rounded;
-	tcu::TestContext&	 m_testCtx;
+    /* Private fields */
+    unsigned int m_dispatch_draw_call_args_start_offset;
+    unsigned int m_expected_ac_value;
+    const glw::Functions &m_gl;
+    const unsigned int m_global_wg_size_x;
+    glw::GLuint m_helper_bo; /* stores AC value + indirect dispatch call args */
+    const unsigned int m_local_wg_size_x;
+    glw::GLint m_page_size;
+    glw::GLuint m_po;
+    glw::GLuint m_sparse_bo;
+    unsigned int m_sparse_bo_size;
+    unsigned int m_sparse_bo_size_rounded;
+    tcu::TestContext &m_testCtx;
 };
 
 /** Implements the test case d for the test 2:
@@ -466,29 +466,29 @@ private:
 class InvalidateBufferStorageTestCase : public BufferStorageTestCase
 {
 public:
-	/* Public methods */
-	InvalidateBufferStorageTestCase(const glw::Functions& gl, tcu::TestContext& testContext, glw::GLint page_size);
+    /* Public methods */
+    InvalidateBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size);
 
-	/* BufferStorageTestCase implementation */
-	void deinitTestCaseGlobal();
-	void deinitTestCaseIteration();
-	bool execute(glw::GLuint sparse_bo_storage_flags);
-	bool initTestCaseGlobal();
-	bool initTestCaseIteration(glw::GLuint sparse_bo);
+    /* BufferStorageTestCase implementation */
+    void deinitTestCaseGlobal();
+    void deinitTestCaseIteration();
+    bool execute(glw::GLuint sparse_bo_storage_flags);
+    bool initTestCaseGlobal();
+    bool initTestCaseIteration(glw::GLuint sparse_bo);
 
-	const char* getName()
-	{
-		return "case d";
-	}
+    const char *getName()
+    {
+        return "case d";
+    }
 
 private:
-	/* Private fields */
-	const glw::Functions& m_gl;
-	unsigned int		  m_n_pages_to_use;
-	const glw::GLint	  m_page_size;
-	glw::GLuint			  m_sparse_bo;
-	unsigned int		  m_sparse_bo_size;
-	unsigned int		  m_sparse_bo_size_rounded;
+    /* Private fields */
+    const glw::Functions &m_gl;
+    unsigned int m_n_pages_to_use;
+    const glw::GLint m_page_size;
+    glw::GLuint m_sparse_bo;
+    unsigned int m_sparse_bo_size;
+    unsigned int m_sparse_bo_size_rounded;
 };
 
 /** Implement the test case k from CTS_ARB_sparse_buffer:
@@ -511,38 +511,38 @@ private:
 class PixelPackBufferStorageTestCase : public BufferStorageTestCase
 {
 public:
-	/* Public methods */
-	PixelPackBufferStorageTestCase(const glw::Functions& gl, tcu::TestContext& testContext, glw::GLint page_size);
+    /* Public methods */
+    PixelPackBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size);
 
-	/* BufferStorageTestCase implementation */
-	void deinitTestCaseGlobal();
-	void deinitTestCaseIteration();
-	bool execute(glw::GLuint sparse_bo_storage_flags);
-	bool initTestCaseGlobal();
-	bool initTestCaseIteration(glw::GLuint sparse_bo);
+    /* BufferStorageTestCase implementation */
+    void deinitTestCaseGlobal();
+    void deinitTestCaseIteration();
+    bool execute(glw::GLuint sparse_bo_storage_flags);
+    bool initTestCaseGlobal();
+    bool initTestCaseIteration(glw::GLuint sparse_bo);
 
-	const char* getName()
-	{
-		return "case k";
-	}
+    const char *getName()
+    {
+        return "case k";
+    }
 
 private:
-	/* Private fields */
-	glw::GLuint			  m_color_rb;
-	const unsigned int	m_color_rb_height;
-	const unsigned int	m_color_rb_width;
-	glw::GLuint			  m_fbo;
-	const glw::Functions& m_gl;
-	glw::GLuint			  m_helper_bo;
-	glw::GLint			  m_page_size;
-	glw::GLuint			  m_po;
-	unsigned char*		  m_ref_data_ptr;
-	unsigned int		  m_ref_data_size;
-	glw::GLuint			  m_sparse_bo;
-	unsigned int		  m_sparse_bo_size;
-	unsigned int		  m_sparse_bo_size_rounded;
-	tcu::TestContext&	 m_testCtx;
-	glw::GLuint			  m_vao;
+    /* Private fields */
+    glw::GLuint m_color_rb;
+    const unsigned int m_color_rb_height;
+    const unsigned int m_color_rb_width;
+    glw::GLuint m_fbo;
+    const glw::Functions &m_gl;
+    glw::GLuint m_helper_bo;
+    glw::GLint m_page_size;
+    glw::GLuint m_po;
+    unsigned char *m_ref_data_ptr;
+    unsigned int m_ref_data_size;
+    glw::GLuint m_sparse_bo;
+    unsigned int m_sparse_bo_size;
+    unsigned int m_sparse_bo_size_rounded;
+    tcu::TestContext &m_testCtx;
+    glw::GLuint m_vao;
 };
 
 /** Implements the test case l for the test 2:
@@ -566,37 +566,37 @@ private:
 class PixelUnpackBufferStorageTestCase : public BufferStorageTestCase
 {
 public:
-	/* Public methods */
-	PixelUnpackBufferStorageTestCase(const glw::Functions& gl, tcu::TestContext& testContext, glw::GLint page_size);
+    /* Public methods */
+    PixelUnpackBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size);
 
-	/* BufferStorageTestCase implementation */
-	void deinitTestCaseGlobal();
-	void deinitTestCaseIteration();
-	bool execute(glw::GLuint sparse_bo_storage_flags);
-	bool initTestCaseGlobal();
-	bool initTestCaseIteration(glw::GLuint sparse_bo);
+    /* BufferStorageTestCase implementation */
+    void deinitTestCaseGlobal();
+    void deinitTestCaseIteration();
+    bool execute(glw::GLuint sparse_bo_storage_flags);
+    bool initTestCaseGlobal();
+    bool initTestCaseIteration(glw::GLuint sparse_bo);
 
-	const char* getName()
-	{
-		return "case l";
-	}
+    const char *getName()
+    {
+        return "case l";
+    }
 
 private:
-	/* Private fields */
-	const glw::Functions& m_gl;
-	glw::GLuint			  m_helper_bo;
-	glw::GLint			  m_page_size;
-	unsigned char*		  m_read_data_ptr;
-	glw::GLuint			  m_sparse_bo;
-	unsigned int		  m_sparse_bo_size;
-	unsigned int		  m_sparse_bo_size_rounded;
-	tcu::TestContext&	 m_testCtx;
-	unsigned char*		  m_texture_data_ptr;
-	unsigned int		  m_texture_data_size;
-	glw::GLuint			  m_to;
-	unsigned char*		  m_to_data_zero;
-	const unsigned int	m_to_height;
-	const unsigned int	m_to_width;
+    /* Private fields */
+    const glw::Functions &m_gl;
+    glw::GLuint m_helper_bo;
+    glw::GLint m_page_size;
+    unsigned char *m_read_data_ptr;
+    glw::GLuint m_sparse_bo;
+    unsigned int m_sparse_bo_size;
+    unsigned int m_sparse_bo_size_rounded;
+    tcu::TestContext &m_testCtx;
+    unsigned char *m_texture_data_ptr;
+    unsigned int m_texture_data_size;
+    glw::GLuint m_to;
+    unsigned char *m_to_data_zero;
+    const unsigned int m_to_height;
+    const unsigned int m_to_width;
 };
 
 /** Implements test cases a1-a6 for the test 2:
@@ -657,75 +657,74 @@ private:
 class QuadsBufferStorageTestCase : public BufferStorageTestCase
 {
 public:
-	/* Type definitions */
-	enum _ibo_usage
-	{
-		/* Use glDrawArrays() for the draw call */
-		IBO_USAGE_NONE,
-		/* Use glDrawElements() for the draw call */
-		IBO_USAGE_INDEXED_DRAW_CALL,
-		/* Use glDrawRangeElements() for the draw call */
-		IBO_USAGE_INDEXED_RANGED_DRAW_CALL
-	};
+    /* Type definitions */
+    enum _ibo_usage
+    {
+        /* Use glDrawArrays() for the draw call */
+        IBO_USAGE_NONE,
+        /* Use glDrawElements() for the draw call */
+        IBO_USAGE_INDEXED_DRAW_CALL,
+        /* Use glDrawRangeElements() for the draw call */
+        IBO_USAGE_INDEXED_RANGED_DRAW_CALL
+    };
 
-	/* Public methods */
-	QuadsBufferStorageTestCase(const glw::Functions& gl, tcu::TestContext& testContext, glw::GLint page_size,
-							   _ibo_usage ibo_usage, bool use_color_data);
+    /* Public methods */
+    QuadsBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size,
+                               _ibo_usage ibo_usage, bool use_color_data);
 
-	/* BufferStorageTestCase implementation */
-	void deinitTestCaseGlobal();
-	void deinitTestCaseIteration();
-	bool execute(glw::GLuint sparse_bo_storage_flags);
-	bool initTestCaseGlobal();
-	bool initTestCaseIteration(glw::GLuint sparse_bo);
+    /* BufferStorageTestCase implementation */
+    void deinitTestCaseGlobal();
+    void deinitTestCaseIteration();
+    bool execute(glw::GLuint sparse_bo_storage_flags);
+    bool initTestCaseGlobal();
+    bool initTestCaseIteration(glw::GLuint sparse_bo);
 
-	const char* getName()
-	{
-		return (!m_use_color_data && m_ibo_usage == IBO_USAGE_NONE) ?
-				   "cases a1-a2" :
-				   (!m_use_color_data && m_ibo_usage != IBO_USAGE_NONE) ?
-				   "cases a3-a4" :
-				   (m_use_color_data && m_ibo_usage != IBO_USAGE_NONE) ? "casea a5-a6" : "?!";
-	}
+    const char *getName()
+    {
+        return (!m_use_color_data && m_ibo_usage == IBO_USAGE_NONE) ? "cases a1-a2" :
+               (!m_use_color_data && m_ibo_usage != IBO_USAGE_NONE) ? "cases a3-a4" :
+               (m_use_color_data && m_ibo_usage != IBO_USAGE_NONE)  ? "casea a5-a6" :
+                                                                      "?!";
+    }
 
 private:
-	/* Private methods */
-	void createTestData(unsigned char** out_data, unsigned int* out_vbo_data_offset, unsigned int* out_ibo_data_offset,
-						unsigned int* out_color_data_offset) const;
+    /* Private methods */
+    void createTestData(unsigned char **out_data, unsigned int *out_vbo_data_offset, unsigned int *out_ibo_data_offset,
+                        unsigned int *out_color_data_offset) const;
 
-	void initHelperBO();
+    void initHelperBO();
 
-	void initSparseBO(bool decommit_data_pages_after_upload, bool is_dynamic_storage);
+    void initSparseBO(bool decommit_data_pages_after_upload, bool is_dynamic_storage);
 
-	/* Private fields */
-	glw::GLuint			  m_attribute_color_location;
-	glw::GLuint			  m_attribute_position_location;
-	glw::GLuint			  m_color_data_offset;
-	unsigned char*		  m_data;
-	glw::GLuint			  m_data_size;		   /* ibo, vbo, color data  */
-	glw::GLuint			  m_data_size_rounded; /* rounded up to page size */
-	glw::GLuint			  m_fbo;
-	const glw::Functions& m_gl;
-	glw::GLuint			  m_helper_bo;
-	glw::GLuint			  m_ibo_data_offset;
-	_ibo_usage			  m_ibo_usage;
-	const unsigned int	m_n_quad_delta_x;
-	const unsigned int	m_n_quad_delta_y;
-	const unsigned int	m_n_quad_height;
-	const unsigned int	m_n_quad_width;
-	const unsigned int	m_n_quads_x;
-	const unsigned int	m_n_quads_y;
-	unsigned int		  m_n_vertices_to_draw;
-	bool				  m_pages_committed;
-	glw::GLuint			  m_po;
-	glw::GLuint			  m_sparse_bo;
-	tcu::TestContext&	 m_testCtx;
-	glw::GLuint			  m_to;
-	const unsigned int	m_to_height;
-	const unsigned int	m_to_width;
-	bool				  m_use_color_data;
-	glw::GLuint			  m_vao;
-	glw::GLuint			  m_vbo_data_offset;
+    /* Private fields */
+    glw::GLuint m_attribute_color_location;
+    glw::GLuint m_attribute_position_location;
+    glw::GLuint m_color_data_offset;
+    unsigned char *m_data;
+    glw::GLuint m_data_size;         /* ibo, vbo, color data  */
+    glw::GLuint m_data_size_rounded; /* rounded up to page size */
+    glw::GLuint m_fbo;
+    const glw::Functions &m_gl;
+    glw::GLuint m_helper_bo;
+    glw::GLuint m_ibo_data_offset;
+    _ibo_usage m_ibo_usage;
+    const unsigned int m_n_quad_delta_x;
+    const unsigned int m_n_quad_delta_y;
+    const unsigned int m_n_quad_height;
+    const unsigned int m_n_quad_width;
+    const unsigned int m_n_quads_x;
+    const unsigned int m_n_quads_y;
+    unsigned int m_n_vertices_to_draw;
+    bool m_pages_committed;
+    glw::GLuint m_po;
+    glw::GLuint m_sparse_bo;
+    tcu::TestContext &m_testCtx;
+    glw::GLuint m_to;
+    const unsigned int m_to_height;
+    const unsigned int m_to_width;
+    bool m_use_color_data;
+    glw::GLuint m_vao;
+    glw::GLuint m_vbo_data_offset;
 };
 
 /** Implements test case m for the test 2:
@@ -748,34 +747,34 @@ private:
 class QueryBufferStorageTestCase : public BufferStorageTestCase
 {
 public:
-	/* Public methods */
-	QueryBufferStorageTestCase(const glw::Functions& gl, tcu::TestContext& testContext, glw::GLint page_size);
+    /* Public methods */
+    QueryBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size);
 
-	/* BufferStorageTestCase implementation */
-	void deinitTestCaseGlobal();
-	void deinitTestCaseIteration();
-	bool execute(glw::GLuint sparse_bo_storage_flags);
-	bool initTestCaseGlobal();
-	bool initTestCaseIteration(glw::GLuint sparse_bo);
+    /* BufferStorageTestCase implementation */
+    void deinitTestCaseGlobal();
+    void deinitTestCaseIteration();
+    bool execute(glw::GLuint sparse_bo_storage_flags);
+    bool initTestCaseGlobal();
+    bool initTestCaseIteration(glw::GLuint sparse_bo);
 
-	const char* getName()
-	{
-		return "case m";
-	}
+    const char *getName()
+    {
+        return "case m";
+    }
 
 private:
-	/* Private fields */
-	const glw::Functions& m_gl;
-	glw::GLuint			  m_helper_bo;
-	const unsigned int	m_n_triangles;
-	glw::GLint			  m_page_size;
-	glw::GLuint			  m_po;
-	glw::GLuint			  m_qo;
-	glw::GLuint			  m_sparse_bo;
-	unsigned int		  m_sparse_bo_size;
-	unsigned int		  m_sparse_bo_size_rounded;
-	tcu::TestContext&	 m_testCtx;
-	glw::GLuint			  m_vao;
+    /* Private fields */
+    const glw::Functions &m_gl;
+    glw::GLuint m_helper_bo;
+    const unsigned int m_n_triangles;
+    glw::GLint m_page_size;
+    glw::GLuint m_po;
+    glw::GLuint m_qo;
+    glw::GLuint m_sparse_bo;
+    unsigned int m_sparse_bo_size;
+    unsigned int m_sparse_bo_size_rounded;
+    tcu::TestContext &m_testCtx;
+    glw::GLuint m_vao;
 };
 
 /** Implements test case i for the test 2:
@@ -800,34 +799,34 @@ private:
 class SSBOStorageTestCase : public BufferStorageTestCase
 {
 public:
-	/* Public methods */
-	SSBOStorageTestCase(const glw::Functions& gl, tcu::TestContext& testContext, glw::GLint page_size);
+    /* Public methods */
+    SSBOStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size);
 
-	/* BufferStorageTestCase implementation */
-	void deinitTestCaseGlobal();
-	void deinitTestCaseIteration();
-	bool execute(glw::GLuint sparse_bo_storage_flags);
-	bool initTestCaseGlobal();
-	bool initTestCaseIteration(glw::GLuint sparse_bo);
+    /* BufferStorageTestCase implementation */
+    void deinitTestCaseGlobal();
+    void deinitTestCaseIteration();
+    bool execute(glw::GLuint sparse_bo_storage_flags);
+    bool initTestCaseGlobal();
+    bool initTestCaseIteration(glw::GLuint sparse_bo);
 
-	const char* getName()
-	{
-		return "case i";
-	}
+    const char *getName()
+    {
+        return "case i";
+    }
 
 private:
-	/* Private fields */
-	const glw::Functions& m_gl;
-	glw::GLuint			  m_helper_bo; /* holds m_sparse_bo_size bytes */
-	glw::GLint			  m_page_size;
-	glw::GLuint			  m_po;
-	const unsigned int	m_po_local_wg_size;
-	glw::GLuint			  m_result_bo;
-	glw::GLuint			  m_sparse_bo;
-	unsigned int		  m_sparse_bo_size;
-	unsigned int		  m_sparse_bo_size_rounded;
-	unsigned int*		  m_ssbo_data; /* holds m_sparse_bo_size bytes */
-	tcu::TestContext&	 m_testCtx;
+    /* Private fields */
+    const glw::Functions &m_gl;
+    glw::GLuint m_helper_bo; /* holds m_sparse_bo_size bytes */
+    glw::GLint m_page_size;
+    glw::GLuint m_po;
+    const unsigned int m_po_local_wg_size;
+    glw::GLuint m_result_bo;
+    glw::GLuint m_sparse_bo;
+    unsigned int m_sparse_bo_size;
+    unsigned int m_sparse_bo_size_rounded;
+    unsigned int *m_ssbo_data; /* holds m_sparse_bo_size bytes */
+    tcu::TestContext &m_testCtx;
 };
 
 /** Implements test cases b1-b2 for the test 2:
@@ -879,101 +878,101 @@ private:
 class TransformFeedbackBufferStorageTestCase : public BufferStorageTestCase
 {
 public:
-	/* Type definitions */
-	enum _draw_call
-	{
-		/* glDrawElements() */
-		DRAW_CALL_INDEXED,
-		/* glDrawElementsBaseVertex() */
-		DRAW_CALL_INDEXED_BASE_VERTEX,
-		/* glDrawElementsIndirect() */
-		DRAW_CALL_INDEXED_INDIRECT,
-		/* glMultiDrawElementIndirect() */
-		DRAW_CALL_INDEXED_INDIRECT_MULTI,
-		/* glMultiDrawElements() */
-		DRAW_CALL_INDEXED_MULTI,
-		/* glMultiDrawElementsBaseVertex() */
-		DRAW_CALL_INDEXED_MULTI_BASE_VERTEX,
-		/* glDrawElementsInstanced() */
-		DRAW_CALL_INSTANCED_INDEXED,
-		/* glDrawElementsInstancedBaseVertex() */
-		DRAW_CALL_INSTANCED_INDEXED_BASE_VERTEX,
-		/* glDrawElementsInstancedBaseVertexBaseInstance() */
-		DRAW_CALL_INSTANCED_INDEXED_BASE_VERTEX_BASE_INSTANCE,
-		/* glDrawArrays() */
-		DRAW_CALL_REGULAR,
-		/* glDrawArraysIndirect() */
-		DRAW_CALL_REGULAR_INDIRECT,
-		/* glMultiDrawArraysIndirect() */
-		DRAW_CALL_REGULAR_INDIRECT_MULTI,
-		/* glDrawArraysInstanced() */
-		DRAW_CALL_REGULAR_INSTANCED,
-		/* glDrawArraysInstancedBaseInstance() */
-		DRAW_CALL_REGULAR_INSTANCED_BASE_INSTANCE,
-		/* glMultiDrawArrays() */
-		DRAW_CALL_REGULAR_MULTI,
+    /* Type definitions */
+    enum _draw_call
+    {
+        /* glDrawElements() */
+        DRAW_CALL_INDEXED,
+        /* glDrawElementsBaseVertex() */
+        DRAW_CALL_INDEXED_BASE_VERTEX,
+        /* glDrawElementsIndirect() */
+        DRAW_CALL_INDEXED_INDIRECT,
+        /* glMultiDrawElementIndirect() */
+        DRAW_CALL_INDEXED_INDIRECT_MULTI,
+        /* glMultiDrawElements() */
+        DRAW_CALL_INDEXED_MULTI,
+        /* glMultiDrawElementsBaseVertex() */
+        DRAW_CALL_INDEXED_MULTI_BASE_VERTEX,
+        /* glDrawElementsInstanced() */
+        DRAW_CALL_INSTANCED_INDEXED,
+        /* glDrawElementsInstancedBaseVertex() */
+        DRAW_CALL_INSTANCED_INDEXED_BASE_VERTEX,
+        /* glDrawElementsInstancedBaseVertexBaseInstance() */
+        DRAW_CALL_INSTANCED_INDEXED_BASE_VERTEX_BASE_INSTANCE,
+        /* glDrawArrays() */
+        DRAW_CALL_REGULAR,
+        /* glDrawArraysIndirect() */
+        DRAW_CALL_REGULAR_INDIRECT,
+        /* glMultiDrawArraysIndirect() */
+        DRAW_CALL_REGULAR_INDIRECT_MULTI,
+        /* glDrawArraysInstanced() */
+        DRAW_CALL_REGULAR_INSTANCED,
+        /* glDrawArraysInstancedBaseInstance() */
+        DRAW_CALL_REGULAR_INSTANCED_BASE_INSTANCE,
+        /* glMultiDrawArrays() */
+        DRAW_CALL_REGULAR_MULTI,
 
-		/* Always last */
-		DRAW_CALL_COUNT
-	};
+        /* Always last */
+        DRAW_CALL_COUNT
+    };
 
-	/* Public methods */
-	TransformFeedbackBufferStorageTestCase(const glw::Functions& gl, tcu::TestContext& testContext,
-										   glw::GLint page_size, bool all_pages_committed);
+    /* Public methods */
+    TransformFeedbackBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext,
+                                           glw::GLint page_size, bool all_pages_committed);
 
-	/* BufferStorageTestCase implementation */
-	void deinitTestCaseGlobal();
-	bool execute(glw::GLuint sparse_bo_storage_flags);
-	bool initTestCaseGlobal();
-	bool initTestCaseIteration(glw::GLuint sparse_bo);
+    /* BufferStorageTestCase implementation */
+    void deinitTestCaseGlobal();
+    bool execute(glw::GLuint sparse_bo_storage_flags);
+    bool initTestCaseGlobal();
+    bool initTestCaseIteration(glw::GLuint sparse_bo);
 
-	const char* getName()
-	{
-		return (m_all_pages_committed) ? "case b1" : "case b2";
-	}
+    const char *getName()
+    {
+        return (m_all_pages_committed) ? "case b1" : "case b2";
+    }
 
 private:
-	/* Private methods */
-	const char* getDrawCallTypeString(_draw_call draw_call);
-	void initDataBO();
-	void initTestData();
+    /* Private methods */
+    const char *getDrawCallTypeString(_draw_call draw_call);
+    void initDataBO();
+    void initTestData();
 
-	/* Private fields */
-	bool				  m_all_pages_committed;
-	glw::GLuint			  m_data_bo;
-	unsigned int		  m_data_bo_index_data_offset;
-	unsigned int		  m_data_bo_indexed_indirect_arg_offset;
-	unsigned int		  m_data_bo_indexed_mdi_arg_offset;
-	unsigned int		  m_data_bo_regular_indirect_arg_offset;
-	unsigned int		  m_data_bo_regular_mdi_arg_offset;
-	glw::GLuint			  m_data_bo_size;
-	const unsigned int	m_draw_call_baseInstance;
-	const unsigned int	m_draw_call_baseVertex;
-	const unsigned int	m_draw_call_first;
-	const unsigned int	m_draw_call_firstIndex;
-	const glw::Functions& m_gl;
-	glw::GLuint			  m_helper_bo; /* of m_result_bo_size size */
-	glw::GLuint*		  m_index_data;
-	glw::GLuint			  m_index_data_size;
-	glw::GLuint*		  m_indirect_arg_data;
-	glw::GLuint			  m_indirect_arg_data_size;
-	const unsigned int	m_min_memory_page_span;
-	glw::GLint			  m_multidrawcall_basevertex[2];
-	glw::GLsizei		  m_multidrawcall_count[2];
-	unsigned int		  m_multidrawcall_drawcount;
-	glw::GLint			  m_multidrawcall_first[2];
-	glw::GLvoid*		  m_multidrawcall_index[2];
-	unsigned int		  m_multidrawcall_primcount;
-	const unsigned int	m_n_instances_to_test;
-	unsigned int		  m_n_vertices_per_instance;
-	glw::GLint			  m_page_size;
-	glw::GLuint			  m_po_ia; /* interleave attribs TF */
-	glw::GLuint			  m_po_sa; /* separate attribs TF */
-	glw::GLuint			  m_result_bo;
-	glw::GLuint			  m_result_bo_size;
-	glw::GLuint			  m_result_bo_size_rounded;
-	tcu::TestContext&	 m_testCtx;
-	glw::GLuint			  m_vao;
+    /* Private fields */
+    bool m_all_pages_committed;
+    glw::GLuint m_data_bo;
+    unsigned int m_data_bo_index_data_offset;
+    unsigned int m_data_bo_indexed_indirect_arg_offset;
+    unsigned int m_data_bo_indexed_mdi_arg_offset;
+    unsigned int m_data_bo_regular_indirect_arg_offset;
+    unsigned int m_data_bo_regular_mdi_arg_offset;
+    glw::GLuint m_data_bo_size;
+    const unsigned int m_draw_call_baseInstance;
+    const unsigned int m_draw_call_baseVertex;
+    const unsigned int m_draw_call_first;
+    const unsigned int m_draw_call_firstIndex;
+    const glw::Functions &m_gl;
+    glw::GLuint m_helper_bo; /* of m_result_bo_size size */
+    glw::GLuint *m_index_data;
+    glw::GLuint m_index_data_size;
+    glw::GLuint *m_indirect_arg_data;
+    glw::GLuint m_indirect_arg_data_size;
+    const unsigned int m_min_memory_page_span;
+    glw::GLint m_multidrawcall_basevertex[2];
+    glw::GLsizei m_multidrawcall_count[2];
+    unsigned int m_multidrawcall_drawcount;
+    glw::GLint m_multidrawcall_first[2];
+    glw::GLvoid *m_multidrawcall_index[2];
+    unsigned int m_multidrawcall_primcount;
+    const unsigned int m_n_instances_to_test;
+    unsigned int m_n_vertices_per_instance;
+    glw::GLint m_page_size;
+    glw::GLuint m_po_ia; /* interleave attribs TF */
+    glw::GLuint m_po_sa; /* separate attribs TF */
+    glw::GLuint m_result_bo;
+    glw::GLuint m_result_bo_size;
+    glw::GLuint m_result_bo_size_rounded;
+    tcu::TestContext &m_testCtx;
+    glw::GLuint m_vao;
 };
 
 /** Implements test case j for the test 2:
@@ -988,39 +987,39 @@ private:
 class UniformBufferStorageTestCase : public BufferStorageTestCase
 {
 public:
-	/* Public methods */
-	UniformBufferStorageTestCase(const glw::Functions& gl, tcu::TestContext& testContext, glw::GLint page_size);
+    /* Public methods */
+    UniformBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size);
 
-	/* BufferStorageTestCase implementation */
-	void deinitTestCaseGlobal();
-	void deinitTestCaseIteration();
-	bool execute(glw::GLuint sparse_bo_storage_flags);
-	bool initTestCaseGlobal();
-	bool initTestCaseIteration(glw::GLuint sparse_bo);
+    /* BufferStorageTestCase implementation */
+    void deinitTestCaseGlobal();
+    void deinitTestCaseIteration();
+    bool execute(glw::GLuint sparse_bo_storage_flags);
+    bool initTestCaseGlobal();
+    bool initTestCaseIteration(glw::GLuint sparse_bo);
 
-	const char* getName()
-	{
-		return "case j";
-	}
+    const char *getName()
+    {
+        return "case j";
+    }
 
 private:
-	/* Private fields */
-	const glw::Functions& m_gl;
-	glw::GLint			  m_gl_uniform_buffer_offset_alignment_value;
-	glw::GLuint			  m_helper_bo;
-	const unsigned int	m_n_pages_to_use;
-	unsigned int		  m_n_ubo_uints;
-	glw::GLint			  m_page_size;
-	glw::GLuint			  m_po;
-	glw::GLuint			  m_sparse_bo;
-	unsigned int		  m_sparse_bo_data_size;
-	unsigned int		  m_sparse_bo_data_start_offset;
-	unsigned int		  m_sparse_bo_size;
-	unsigned int		  m_sparse_bo_size_rounded;
-	tcu::TestContext&	 m_testCtx;
-	glw::GLuint			  m_tf_bo;
-	unsigned char*		  m_ubo_data;
-	glw::GLuint			  m_vao;
+    /* Private fields */
+    const glw::Functions &m_gl;
+    glw::GLint m_gl_uniform_buffer_offset_alignment_value;
+    glw::GLuint m_helper_bo;
+    const unsigned int m_n_pages_to_use;
+    unsigned int m_n_ubo_uints;
+    glw::GLint m_page_size;
+    glw::GLuint m_po;
+    glw::GLuint m_sparse_bo;
+    unsigned int m_sparse_bo_data_size;
+    unsigned int m_sparse_bo_data_start_offset;
+    unsigned int m_sparse_bo_size;
+    unsigned int m_sparse_bo_size_rounded;
+    tcu::TestContext &m_testCtx;
+    glw::GLuint m_tf_bo;
+    unsigned char *m_ubo_data;
+    glw::GLuint m_vao;
 };
 
 /** Implements conformance test 2 from the test specification:
@@ -1040,41 +1039,41 @@ private:
 class BufferStorageTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	BufferStorageTest(deqp::Context& context);
+    /* Public methods */
+    BufferStorageTest(deqp::Context &context);
 
-	void						 deinit();
-	void						 init();
-	tcu::TestNode::IterateResult iterate();
+    void deinit();
+    void init();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private type definitions */
-	typedef std::vector<BufferStorageTestCase*> TestCasesVector;
-	typedef TestCasesVector::const_iterator		TestCasesVectorConstIterator;
-	typedef TestCasesVector::iterator			TestCasesVectorIterator;
+    /* Private type definitions */
+    typedef std::vector<BufferStorageTestCase *> TestCasesVector;
+    typedef TestCasesVector::const_iterator TestCasesVectorConstIterator;
+    typedef TestCasesVector::iterator TestCasesVectorIterator;
 
-	/* Private methods */
-	void initTestCases();
+    /* Private methods */
+    void initTestCases();
 
-	/* Private members */
-	glw::GLuint		m_sparse_bo;
-	TestCasesVector m_testCases;
+    /* Private members */
+    glw::GLuint m_sparse_bo;
+    TestCasesVector m_testCases;
 };
 
 /** Test group which encapsulates all sparse buffer conformance tests */
 class SparseBufferTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	SparseBufferTests(deqp::Context& context);
+    /* Public methods */
+    SparseBufferTests(deqp::Context &context);
 
-	void init();
+    void init();
 
 private:
-	SparseBufferTests(const SparseBufferTests& other);
-	SparseBufferTests& operator=(const SparseBufferTests& other);
+    SparseBufferTests(const SparseBufferTests &other);
+    SparseBufferTests &operator=(const SparseBufferTests &other);
 };
 
-} /* glcts namespace */
+} // namespace gl4cts
 
 #endif // _GL4CSPARSEBUFFERTESTS_HPP

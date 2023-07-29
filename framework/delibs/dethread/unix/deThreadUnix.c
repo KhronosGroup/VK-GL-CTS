@@ -23,215 +23,216 @@
 
 #include "deThread.h"
 
-#if (DE_OS == DE_OS_UNIX || DE_OS == DE_OS_OSX || DE_OS == DE_OS_ANDROID || DE_OS == DE_OS_SYMBIAN || DE_OS == DE_OS_IOS || DE_OS == DE_OS_QNX || DE_OS == DE_OS_FUCHSIA)
+#if (DE_OS == DE_OS_UNIX || DE_OS == DE_OS_OSX || DE_OS == DE_OS_ANDROID || DE_OS == DE_OS_SYMBIAN || \
+     DE_OS == DE_OS_IOS || DE_OS == DE_OS_QNX || DE_OS == DE_OS_FUCHSIA)
 
 #include "deMemory.h"
 #include "deInt32.h"
 
 #if !defined(_XOPEN_SOURCE) || (_XOPEN_SOURCE < 500)
-#	error "You are using too old posix API!"
+#error "You are using too old posix API!"
 #endif
 
 #include <unistd.h>
 #include <pthread.h>
 #include <sched.h>
 #if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID)
-#	include <sys/syscall.h>
+#include <sys/syscall.h>
 #endif
 
 #if (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS)
-#	if !defined(_SC_NPROCESSORS_CONF)
-#		define _SC_NPROCESSORS_CONF 57
-#	endif
-#	if !defined(_SC_NPROCESSORS_ONLN)
-#		define _SC_NPROCESSORS_ONLN 58
-#	endif
+#if !defined(_SC_NPROCESSORS_CONF)
+#define _SC_NPROCESSORS_CONF 57
+#endif
+#if !defined(_SC_NPROCESSORS_ONLN)
+#define _SC_NPROCESSORS_ONLN 58
+#endif
 #endif
 
 typedef struct Thread_s
 {
-	pthread_t		thread;
-	deThreadFunc	func;
-	void*			arg;
+    pthread_t thread;
+    deThreadFunc func;
+    void *arg;
 } Thread;
 
-DE_STATIC_ASSERT(sizeof(deThread) >= sizeof(Thread*));
+DE_STATIC_ASSERT(sizeof(deThread) >= sizeof(Thread *));
 
-static void* startThread (void* entryPtr)
+static void *startThread(void *entryPtr)
 {
-	Thread*			thread	= (Thread*)entryPtr;
-	deThreadFunc	func	= thread->func;
-	void*			arg		= thread->arg;
+    Thread *thread    = (Thread *)entryPtr;
+    deThreadFunc func = thread->func;
+    void *arg         = thread->arg;
 
-	/* Start actual thread. */
-	func(arg);
+    /* Start actual thread. */
+    func(arg);
 
-	return DE_NULL;
+    return DE_NULL;
 }
 
-deThread deThread_create (deThreadFunc func, void* arg, const deThreadAttributes* attributes)
+deThread deThread_create(deThreadFunc func, void *arg, const deThreadAttributes *attributes)
 {
-	pthread_attr_t	attr;
-	Thread*			thread	= (Thread*)deCalloc(sizeof(Thread));
+    pthread_attr_t attr;
+    Thread *thread = (Thread *)deCalloc(sizeof(Thread));
 
-	if (!thread)
-		return 0;
+    if (!thread)
+        return 0;
 
-	thread->func	= func;
-	thread->arg		= arg;
+    thread->func = func;
+    thread->arg  = arg;
 
-	if (pthread_attr_init(&attr) != 0)
-	{
-		deFree(thread);
-		return 0;
-	}
+    if (pthread_attr_init(&attr) != 0)
+    {
+        deFree(thread);
+        return 0;
+    }
 
-	/* \todo [2009-11-12 pyry] Map attributes. */
-	DE_UNREF(attributes);
+    /* \todo [2009-11-12 pyry] Map attributes. */
+    DE_UNREF(attributes);
 
-	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE) != 0)
-	{
-		pthread_attr_destroy(&attr);
-		deFree(thread);
-		return 0;
-	}
+    if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE) != 0)
+    {
+        pthread_attr_destroy(&attr);
+        deFree(thread);
+        return 0;
+    }
 
-	if (pthread_create(&thread->thread, &attr, startThread, thread) != 0)
-	{
-		pthread_attr_destroy(&attr);
-		deFree(thread);
-		return 0;
-	}
-	DE_ASSERT(thread->thread);
+    if (pthread_create(&thread->thread, &attr, startThread, thread) != 0)
+    {
+        pthread_attr_destroy(&attr);
+        deFree(thread);
+        return 0;
+    }
+    DE_ASSERT(thread->thread);
 
-	pthread_attr_destroy(&attr);
+    pthread_attr_destroy(&attr);
 
-	return (deThread)thread;
+    return (deThread)thread;
 }
 
-deBool deThread_join (deThread threadptr)
+bool deThread_join(deThread threadptr)
 {
-	Thread*		thread	= (Thread*)threadptr;
-	int			ret;
+    Thread *thread = (Thread *)threadptr;
+    int ret;
 
-	DE_ASSERT(thread->thread);
-	ret = pthread_join(thread->thread, DE_NULL);
+    DE_ASSERT(thread->thread);
+    ret = pthread_join(thread->thread, DE_NULL);
 
-	/* If join fails for some reason, at least mark as detached. */
-	if (ret != 0)
-		pthread_detach(thread->thread);
+    /* If join fails for some reason, at least mark as detached. */
+    if (ret != 0)
+        pthread_detach(thread->thread);
 
-	/* Thread is no longer valid as far as we are concerned. */
-	thread->thread = 0;
+    /* Thread is no longer valid as far as we are concerned. */
+    thread->thread = 0;
 
-	return (ret == 0);
+    return (ret == 0);
 }
 
-void deThread_destroy (deThread threadptr)
+void deThread_destroy(deThread threadptr)
 {
-	Thread* thread = (Thread*)threadptr;
+    Thread *thread = (Thread *)threadptr;
 
-	if (thread->thread)
-	{
-		/* Not joined, detach. */
-		int ret = pthread_detach(thread->thread);
-		DE_ASSERT(ret == 0);
-		DE_UNREF(ret);
-	}
+    if (thread->thread)
+    {
+        /* Not joined, detach. */
+        int ret = pthread_detach(thread->thread);
+        DE_ASSERT(ret == 0);
+        DE_UNREF(ret);
+    }
 
-	deFree(thread);
+    deFree(thread);
 }
 
-void deSleep (deUint32 milliseconds)
+void deSleep(uint32_t milliseconds)
 {
-	/* Maximum value for usleep is 10^6. */
-	deUint32 seconds = milliseconds / 1000;
+    /* Maximum value for usleep is 10^6. */
+    uint32_t seconds = milliseconds / 1000;
 
-	milliseconds = milliseconds - seconds * 1000;
+    milliseconds = milliseconds - seconds * 1000;
 
-	if (seconds > 0)
-		sleep(seconds);
+    if (seconds > 0)
+        sleep(seconds);
 
-	usleep((useconds_t)milliseconds * (useconds_t)1000);
+    usleep((useconds_t)milliseconds * (useconds_t)1000);
 }
 
-void deYield (void)
+void deYield(void)
 {
-	sched_yield();
+    sched_yield();
 }
 
 #if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID)
 
-deUint32 deGetNumAvailableLogicalCores (void)
+uint32_t deGetNumAvailableLogicalCores(void)
 {
 #if !defined(__FreeBSD__)
-	unsigned long		mask		= 0;
-	const unsigned int	maskSize	= sizeof(mask);
-	long				ret;
+    unsigned long mask          = 0;
+    const unsigned int maskSize = sizeof(mask);
+    long ret;
 
-	deMemset(&mask, 0, sizeof(mask));
+    deMemset(&mask, 0, sizeof(mask));
 
-	ret = syscall(__NR_sched_getaffinity, 0, maskSize, &mask);
+    ret = syscall(__NR_sched_getaffinity, 0, maskSize, &mask);
 
-	if (ret > 0)
-	{
-		return (deUint32)dePop64(mask);
-	}
-	else
-	{
+    if (ret > 0)
+    {
+        return (uint32_t)dePop64(mask);
+    }
+    else
+    {
 #endif
 #if defined(_SC_NPROCESSORS_ONLN)
-		const long count = sysconf(_SC_NPROCESSORS_ONLN);
+        const long count = sysconf(_SC_NPROCESSORS_ONLN);
 
-		if (count <= 0)
-			return 1;
-		else
-			return (deUint32)count;
+        if (count <= 0)
+            return 1;
+        else
+            return (uint32_t)count;
 #else
-		return 1;
+    return 1;
 #endif
 
 #if !defined(__FreeBSD__)
-	}
+    }
 #endif
 }
 
 #else
 
-deUint32 deGetNumAvailableLogicalCores (void)
+uint32_t deGetNumAvailableLogicalCores(void)
 {
 #if defined(_SC_NPROCESSORS_ONLN)
-	const long count = sysconf(_SC_NPROCESSORS_ONLN);
+    const long count = sysconf(_SC_NPROCESSORS_ONLN);
 
-	if (count <= 0)
-		return 1;
-	else
-		return (deUint32)count;
+    if (count <= 0)
+        return 1;
+    else
+        return (uint32_t)count;
 #else
-	return 1;
+    return 1;
 #endif
 }
 
 #endif
 
-deUint32 deGetNumTotalLogicalCores (void)
+uint32_t deGetNumTotalLogicalCores(void)
 {
 #if defined(_SC_NPROCESSORS_CONF)
-	const long count = sysconf(_SC_NPROCESSORS_CONF);
+    const long count = sysconf(_SC_NPROCESSORS_CONF);
 
-	if (count <= 0)
-		return 1;
-	else
-		return (deUint32)count;
+    if (count <= 0)
+        return 1;
+    else
+        return (uint32_t)count;
 #else
-	return 1;
+    return 1;
 #endif
 }
 
-deUint32 deGetNumTotalPhysicalCores (void)
+uint32_t deGetNumTotalPhysicalCores(void)
 {
-	/* \todo [2015-04-09 pyry] Parse /proc/cpuinfo perhaps? */
-	return deGetNumTotalLogicalCores();
+    /* \todo [2015-04-09 pyry] Parse /proc/cpuinfo perhaps? */
+    return deGetNumTotalLogicalCores();
 }
 
 #endif /* DE_OS */

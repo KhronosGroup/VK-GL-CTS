@@ -36,11 +36,11 @@ namespace x11
 namespace glx
 {
 
-de::MovePtr<glu::ContextFactory> createContextFactory (EventState& eventState);
+de::MovePtr<glu::ContextFactory> createContextFactory(EventState &eventState);
 
-} // glx
-} // lnx
-} // x11
-} // tcu
+} // namespace glx
+} // namespace x11
+} // namespace lnx
+} // namespace tcu
 
 #endif // _TCULNXX11GLXPLATFORM_HPP

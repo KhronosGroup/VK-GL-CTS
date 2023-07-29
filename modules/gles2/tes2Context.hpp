@@ -30,7 +30,7 @@ namespace glu
 {
 class RenderContext;
 class ContextInfo;
-}
+} // namespace glu
 
 namespace tcu
 {
@@ -45,21 +45,30 @@ namespace gles2
 class Context
 {
 public:
-									Context					(tcu::TestContext& testCtx);
-									~Context				(void);
+    Context(tcu::TestContext &testCtx);
+    ~Context(void);
 
-	tcu::TestContext&				getTestContext			(void)			{ return m_testCtx;			}
-	glu::RenderContext&				getRenderContext		(void)			{ return *m_renderCtx;		}
-	const glu::ContextInfo&			getContextInfo			(void)			{ return *m_contextInfo;	}
-	const tcu::RenderTarget&		getRenderTarget			(void) const;
+    tcu::TestContext &getTestContext(void)
+    {
+        return m_testCtx;
+    }
+    glu::RenderContext &getRenderContext(void)
+    {
+        return *m_renderCtx;
+    }
+    const glu::ContextInfo &getContextInfo(void)
+    {
+        return *m_contextInfo;
+    }
+    const tcu::RenderTarget &getRenderTarget(void) const;
 
 private:
-	tcu::TestContext&				m_testCtx;
-	glu::RenderContext*				m_renderCtx;
-	glu::ContextInfo*				m_contextInfo;
+    tcu::TestContext &m_testCtx;
+    glu::RenderContext *m_renderCtx;
+    glu::ContextInfo *m_contextInfo;
 };
 
-} // gles2
-} // deqp
+} // namespace gles2
+} // namespace deqp
 
 #endif // _TES2CONTEXT_HPP
