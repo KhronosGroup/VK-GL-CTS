@@ -46,54 +46,54 @@ namespace synchronization
 namespace
 {
 
-void createBasicTests (tcu::TestCaseGroup* group)
+void createBasicTests(tcu::TestCaseGroup *group)
 {
-	group->addChild(createBasicFenceTests				(group->getTestContext()));
-	group->addChild(createBasicBinarySemaphoreTests		(group->getTestContext()));
-	group->addChild(createBasicTimelineSemaphoreTests	(group->getTestContext()));
-	group->addChild(createBasicEventTests				(group->getTestContext()));
+    group->addChild(createBasicFenceTests(group->getTestContext()));
+    group->addChild(createBasicBinarySemaphoreTests(group->getTestContext()));
+    group->addChild(createBasicTimelineSemaphoreTests(group->getTestContext()));
+    group->addChild(createBasicEventTests(group->getTestContext()));
 }
 
 class OperationTests : public tcu::TestCaseGroup
 {
 public:
-	OperationTests (tcu::TestContext& testCtx)
-		: tcu::TestCaseGroup(testCtx, "op", "Synchronization of a memory-modifying operation")
-	{
-	}
+    OperationTests(tcu::TestContext &testCtx)
+        : tcu::TestCaseGroup(testCtx, "op", "Synchronization of a memory-modifying operation")
+    {
+    }
 
-	void init (void)
-	{
-		addChild(createSynchronizedOperationSingleQueueTests(m_testCtx, m_pipelineCacheData));
-		addChild(createSynchronizedOperationMultiQueueTests (m_testCtx, m_pipelineCacheData));
-	}
+    void init(void)
+    {
+        addChild(createSynchronizedOperationSingleQueueTests(m_testCtx, m_pipelineCacheData));
+        addChild(createSynchronizedOperationMultiQueueTests(m_testCtx, m_pipelineCacheData));
+    }
 
 private:
-	// synchronization.op tests share pipeline cache data to speed up test
-	// execution.
-	PipelineCacheData	m_pipelineCacheData;
+    // synchronization.op tests share pipeline cache data to speed up test
+    // execution.
+    PipelineCacheData m_pipelineCacheData;
 };
 
-void createChildren (tcu::TestCaseGroup* group)
+void createChildren(tcu::TestCaseGroup *group)
 {
-	tcu::TestContext& testCtx = group->getTestContext();
+    tcu::TestContext &testCtx = group->getTestContext();
 
-	group->addChild(createSmokeTests(testCtx));
-	group->addChild(createTestGroup	(testCtx, "basic", "Basic synchronization tests", createBasicTests));
-	group->addChild(createTimelineSemaphoreTests(testCtx));
-	group->addChild(new OperationTests(testCtx));
-	group->addChild(createInternallySynchronizedObjects(testCtx));
-	group->addChild(synchronization::createCrossInstanceSharingTest(testCtx));
-	group->addChild(synchronization::createWin32KeyedMutexTest(testCtx));
-	group->addChild(synchronization::createSignalOrderTests(testCtx));
+    group->addChild(createSmokeTests(testCtx));
+    group->addChild(createTestGroup(testCtx, "basic", "Basic synchronization tests", createBasicTests));
+    group->addChild(createTimelineSemaphoreTests(testCtx));
+    group->addChild(new OperationTests(testCtx));
+    group->addChild(createInternallySynchronizedObjects(testCtx));
+    group->addChild(synchronization::createCrossInstanceSharingTest(testCtx));
+    group->addChild(synchronization::createWin32KeyedMutexTest(testCtx));
+    group->addChild(synchronization::createSignalOrderTests(testCtx));
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "synchronization", "Synchronization tests", createChildren);
+    return createTestGroup(testCtx, "synchronization", "Synchronization tests", createChildren);
 }
 
-} // synchronization
-} // vkt
+} // namespace synchronization
+} // namespace vkt

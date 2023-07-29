@@ -33,23 +33,23 @@ namespace cts_amber
 namespace
 {
 
-void createAmberTests (tcu::TestCaseGroup* tests)
+void createAmberTests(tcu::TestCaseGroup *tests)
 {
-	tcu::TestContext& testCtx = tests->getTestContext();
+    tcu::TestContext &testCtx = tests->getTestContext();
 
-	tests->addChild(createAmberTestCase(testCtx,				// tcu::TestContext		testCtx
-										"clear",				// const char*			name
-										"Example clear test",	// const char*			description
-										"example",				// const char*			category
-										"clear.amber"));		// const std::string&	filename
+    tests->addChild(createAmberTestCase(testCtx,              // tcu::TestContext        testCtx
+                                        "clear",              // const char*            name
+                                        "Example clear test", // const char*            description
+                                        "example",            // const char*            category
+                                        "clear.amber"));      // const std::string&    filename
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createExampleTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createExampleTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "amber-example", "Amber Tests", createAmberTests);
+    return createTestGroup(testCtx, "amber-example", "Amber Tests", createAmberTests);
 }
 
-} // cts_amber
-} // vkt
+} // namespace cts_amber
+} // namespace vkt

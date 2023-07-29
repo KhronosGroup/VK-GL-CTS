@@ -38,21 +38,21 @@ namespace glcts
 class TestCaseWrapper : public tcu::TestCaseExecutor
 {
 public:
-	TestCaseWrapper(SingleConfigTestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism);
-	~TestCaseWrapper(void);
+    TestCaseWrapper(SingleConfigTestPackage &package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism);
+    ~TestCaseWrapper(void);
 
-	void init(tcu::TestCase* testCase, const std::string& path);
-	void deinit(tcu::TestCase* testCase);
-	tcu::TestNode::IterateResult iterate(tcu::TestCase* testCase);
+    void init(tcu::TestCase *testCase, const std::string &path);
+    void deinit(tcu::TestCase *testCase);
+    tcu::TestNode::IterateResult iterate(tcu::TestCase *testCase);
 
 private:
-	SingleConfigTestPackage& m_testPackage;
-	de::SharedPtr<tcu::WaiverUtil> m_waiverMechanism;
+    SingleConfigTestPackage &m_testPackage;
+    de::SharedPtr<tcu::WaiverUtil> m_waiverMechanism;
 };
 
-TestCaseWrapper::TestCaseWrapper(SingleConfigTestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism)
-	: m_testPackage(package)
-	, m_waiverMechanism(waiverMechanism)
+TestCaseWrapper::TestCaseWrapper(SingleConfigTestPackage &package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism)
+    : m_testPackage(package)
+    , m_waiverMechanism(waiverMechanism)
 {
 }
 
@@ -60,88 +60,87 @@ TestCaseWrapper::~TestCaseWrapper(void)
 {
 }
 
-void TestCaseWrapper::init(tcu::TestCase* testCase, const std::string& path)
+void TestCaseWrapper::init(tcu::TestCase *testCase, const std::string &path)
 {
-	if (m_waiverMechanism->isOnWaiverList(path))
-		throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
+    if (m_waiverMechanism->isOnWaiverList(path))
+        throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
 
-	testCase->init();
+    testCase->init();
 }
 
-void TestCaseWrapper::deinit(tcu::TestCase* testCase)
+void TestCaseWrapper::deinit(tcu::TestCase *testCase)
 {
-	testCase->deinit();
+    testCase->deinit();
 
-	glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
+    glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
 }
 
-tcu::TestNode::IterateResult TestCaseWrapper::iterate(tcu::TestCase* testCase)
+tcu::TestNode::IterateResult TestCaseWrapper::iterate(tcu::TestCase *testCase)
 {
-	tcu::TestContext&			 testCtx   = m_testPackage.getContext().getTestContext();
-	glu::RenderContext&			 renderCtx = m_testPackage.getContext().getRenderContext();
-	tcu::TestCase::IterateResult result;
+    tcu::TestContext &testCtx     = m_testPackage.getContext().getTestContext();
+    glu::RenderContext &renderCtx = m_testPackage.getContext().getRenderContext();
+    tcu::TestCase::IterateResult result;
 
-	// Clear to surrender-blue
-	{
-		const glw::Functions& gl = renderCtx.getFunctions();
-		gl.clearColor(0.0f, 0.0f, 0.0f, 1.f);
-		gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	}
+    // Clear to surrender-blue
+    {
+        const glw::Functions &gl = renderCtx.getFunctions();
+        gl.clearColor(0.0f, 0.0f, 0.0f, 1.f);
+        gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    }
 
-	result = testCase->iterate();
+    result = testCase->iterate();
 
-	// Call implementation specific post-iterate routine (usually handles native events and swaps buffers)
-	try
-	{
-		renderCtx.postIterate();
-		return result;
-	}
-	catch (const tcu::ResourceError&)
-	{
-		testCtx.getLog().endCase(QP_TEST_RESULT_RESOURCE_ERROR, "Resource error in context post-iteration routine");
-		testCtx.setTerminateAfter(true);
-		return tcu::TestNode::STOP;
-	}
-	catch (const std::exception&)
-	{
-		testCtx.getLog().endCase(QP_TEST_RESULT_FAIL, "Error in context post-iteration routine");
-		return tcu::TestNode::STOP;
-	}
+    // Call implementation specific post-iterate routine (usually handles native events and swaps buffers)
+    try
+    {
+        renderCtx.postIterate();
+        return result;
+    }
+    catch (const tcu::ResourceError &)
+    {
+        testCtx.getLog().endCase(QP_TEST_RESULT_RESOURCE_ERROR, "Resource error in context post-iteration routine");
+        testCtx.setTerminateAfter(true);
+        return tcu::TestNode::STOP;
+    }
+    catch (const std::exception &)
+    {
+        testCtx.getLog().endCase(QP_TEST_RESULT_FAIL, "Error in context post-iteration routine");
+        return tcu::TestNode::STOP;
+    }
 }
 
-SingleConfigTestPackage::SingleConfigTestPackage(tcu::TestContext& testCtx, const char* packageName,
-												 glu::ContextType renderContextType)
-	: deqp::TestPackage(testCtx, packageName, "CTS Single Config Package",
-						renderContextType, "gl_cts/data/")
+SingleConfigTestPackage::SingleConfigTestPackage(tcu::TestContext &testCtx, const char *packageName,
+                                                 glu::ContextType renderContextType)
+    : deqp::TestPackage(testCtx, packageName, "CTS Single Config Package", renderContextType, "gl_cts/data/")
 {
 }
 
 SingleConfigTestPackage::~SingleConfigTestPackage(void)
 {
-	deqp::TestPackage::deinit();
+    deqp::TestPackage::deinit();
 }
 
 void SingleConfigTestPackage::init(void)
 {
-	// Call init() in parent - this creates context.
-	deqp::TestPackage::init();
+    // Call init() in parent - this creates context.
+    deqp::TestPackage::init();
 
-	try
-	{
-		// Add main test groups
-		addChild(new glc::subgroups::GlSubgroupTests(getContext()));
-	}
-	catch (...)
-	{
-		// Destroy context.
-		deqp::TestPackage::deinit();
-		throw;
-	}
+    try
+    {
+        // Add main test groups
+        addChild(new glc::subgroups::GlSubgroupTests(getContext()));
+    }
+    catch (...)
+    {
+        // Destroy context.
+        deqp::TestPackage::deinit();
+        throw;
+    }
 }
 
-tcu::TestCaseExecutor* SingleConfigTestPackage::createExecutor(void) const
+tcu::TestCaseExecutor *SingleConfigTestPackage::createExecutor(void) const
 {
-	return new TestCaseWrapper(const_cast<SingleConfigTestPackage&>(*this), m_waiverMechanism);
+    return new TestCaseWrapper(const_cast<SingleConfigTestPackage &>(*this), m_waiverMechanism);
 }
 
-} // glcts
+} // namespace glcts

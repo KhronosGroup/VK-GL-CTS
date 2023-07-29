@@ -29,59 +29,73 @@
 namespace xe
 {
 
-const char* getTestStatusCodeName (TestStatusCode code)
+const char *getTestStatusCodeName(TestStatusCode code)
 {
-	switch (code)
-	{
-		case TESTSTATUSCODE_PASS:					return "Pass";
-		case TESTSTATUSCODE_FAIL:					return "Fail";
-		case TESTSTATUSCODE_QUALITY_WARNING:		return "QualityWarning";
-		case TESTSTATUSCODE_COMPATIBILITY_WARNING:	return "CompatibilityWarning";
-		case TESTSTATUSCODE_PENDING:				return "Pending";
-		case TESTSTATUSCODE_RUNNING:				return "Running";
-		case TESTSTATUSCODE_NOT_SUPPORTED:			return "NotSupported";
-		case TESTSTATUSCODE_RESOURCE_ERROR:			return "ResourceError";
-		case TESTSTATUSCODE_INTERNAL_ERROR:			return "InternalError";
-		case TESTSTATUSCODE_CANCELED:				return "Canceled";
-		case TESTSTATUSCODE_TIMEOUT:				return "Timeout";
-		case TESTSTATUSCODE_CRASH:					return "Crash";
-		case TESTSTATUSCODE_DISABLED:				return "Disabled";
-		case TESTSTATUSCODE_TERMINATED:				return "Terminated";
-		default:
-			DE_ASSERT(false);
-			return DE_NULL;
-	}
+    switch (code)
+    {
+    case TESTSTATUSCODE_PASS:
+        return "Pass";
+    case TESTSTATUSCODE_FAIL:
+        return "Fail";
+    case TESTSTATUSCODE_QUALITY_WARNING:
+        return "QualityWarning";
+    case TESTSTATUSCODE_COMPATIBILITY_WARNING:
+        return "CompatibilityWarning";
+    case TESTSTATUSCODE_PENDING:
+        return "Pending";
+    case TESTSTATUSCODE_RUNNING:
+        return "Running";
+    case TESTSTATUSCODE_NOT_SUPPORTED:
+        return "NotSupported";
+    case TESTSTATUSCODE_RESOURCE_ERROR:
+        return "ResourceError";
+    case TESTSTATUSCODE_INTERNAL_ERROR:
+        return "InternalError";
+    case TESTSTATUSCODE_CANCELED:
+        return "Canceled";
+    case TESTSTATUSCODE_TIMEOUT:
+        return "Timeout";
+    case TESTSTATUSCODE_CRASH:
+        return "Crash";
+    case TESTSTATUSCODE_DISABLED:
+        return "Disabled";
+    case TESTSTATUSCODE_TERMINATED:
+        return "Terminated";
+    default:
+        DE_ASSERT(false);
+        return DE_NULL;
+    }
 }
 
 namespace ri
 {
 
-List::List (void)
+List::List(void)
 {
 }
 
-List::~List (void)
+List::~List(void)
 {
-	for (std::vector<Item*>::iterator i = m_items.begin(); i != m_items.end(); i++)
-		delete *i;
-	m_items.clear();
+    for (std::vector<Item *>::iterator i = m_items.begin(); i != m_items.end(); i++)
+        delete *i;
+    m_items.clear();
 }
 
-std::ostream& operator<< (std::ostream& str, const NumericValue& value)
+std::ostream &operator<<(std::ostream &str, const NumericValue &value)
 {
-	switch (value.getType())
-	{
-		case NumericValue::NUMVALTYPE_FLOAT64:
-			return str << std::setprecision(std::numeric_limits<double>::digits10 + 2) << value.getFloat64();
+    switch (value.getType())
+    {
+    case NumericValue::NUMVALTYPE_FLOAT64:
+        return str << std::setprecision(std::numeric_limits<double>::digits10 + 2) << value.getFloat64();
 
-		case NumericValue::NUMVALTYPE_INT64:
-			return str << value.getInt64();
+    case NumericValue::NUMVALTYPE_INT64:
+        return str << value.getInt64();
 
-		default:
-			DE_ASSERT(value.getType() == NumericValue::NUMVALTYPE_EMPTY);
-			return str;
-	}
+    default:
+        DE_ASSERT(value.getType() == NumericValue::NUMVALTYPE_EMPTY);
+        return str;
+    }
 }
 
-} // ri
-} // xe
+} // namespace ri
+} // namespace xe

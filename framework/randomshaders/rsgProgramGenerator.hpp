@@ -33,16 +33,16 @@ namespace rsg
 class ProgramGenerator
 {
 public:
-								ProgramGenerator		(void);
-								~ProgramGenerator		(void);
+    ProgramGenerator(void);
+    ~ProgramGenerator(void);
 
-	void						generate				(const ProgramParameters& programParams, Shader& vertexShader, Shader& fragmentShader);
+    void generate(const ProgramParameters &programParams, Shader &vertexShader, Shader &fragmentShader);
 
 private:
-								ProgramGenerator		(const ProgramGenerator& other);
-	ProgramGenerator&			operator=				(const ProgramGenerator& other);
+    ProgramGenerator(const ProgramGenerator &other);
+    ProgramGenerator &operator=(const ProgramGenerator &other);
 };
 
-} // rsg
+} // namespace rsg
 
 #endif // _RSGPROGRAMGENERATOR_HPP

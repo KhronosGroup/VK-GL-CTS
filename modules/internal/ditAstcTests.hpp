@@ -29,8 +29,8 @@
 namespace dit
 {
 
-tcu::TestCaseGroup*	createAstcTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createAstcTests(tcu::TestContext &testCtx);
 
-} // dit
+} // namespace dit
 
 #endif // _DITASTCTESTS_HPP

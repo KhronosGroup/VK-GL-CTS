@@ -39,42 +39,44 @@ namespace
 class IsNodeNamed
 {
 public:
-	IsNodeNamed(const std::string& name)
-		: checkName(name)
-	{}
-	bool operator()(tcu::TestNode* node)
-	{
-		return checkName == std::string(node->getName());
-	}
+    IsNodeNamed(const std::string &name) : checkName(name)
+    {
+    }
+    bool operator()(tcu::TestNode *node)
+    {
+        return checkName == std::string(node->getName());
+    }
+
 private:
-	const std::string checkName;
+    const std::string checkName;
 };
 
-}
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> robustnessTests(new tcu::TestCaseGroup(testCtx, "robustness", ""));
+    de::MovePtr<tcu::TestCaseGroup> robustnessTests(new tcu::TestCaseGroup(testCtx, "robustness", ""));
 
-	robustnessTests->addChild(createBufferAccessTests(testCtx));
-	robustnessTests->addChild(createVertexAccessTests(testCtx));
+    robustnessTests->addChild(createBufferAccessTests(testCtx));
+    robustnessTests->addChild(createVertexAccessTests(testCtx));
 
-	std::vector<tcu::TestNode*> children;
-	robustnessTests->getChildren(children);
-	std::vector<tcu::TestNode*>::iterator buffer_access = std::find_if(children.begin(), children.end(), IsNodeNamed("buffer_access"));
-	if (buffer_access != children.end())
-	{
-		(*buffer_access)->addChild(createBufferAccessWithVariablePointersTests(testCtx));
-	}
-	else
-	{
-		de::MovePtr<tcu::TestCaseGroup> bufferAccess(new tcu::TestCaseGroup(testCtx, "buffer_access", ""));
-		bufferAccess->addChild(createBufferAccessWithVariablePointersTests(testCtx));
-		robustnessTests->addChild(bufferAccess.release());
-	}
+    std::vector<tcu::TestNode *> children;
+    robustnessTests->getChildren(children);
+    std::vector<tcu::TestNode *>::iterator buffer_access =
+        std::find_if(children.begin(), children.end(), IsNodeNamed("buffer_access"));
+    if (buffer_access != children.end())
+    {
+        (*buffer_access)->addChild(createBufferAccessWithVariablePointersTests(testCtx));
+    }
+    else
+    {
+        de::MovePtr<tcu::TestCaseGroup> bufferAccess(new tcu::TestCaseGroup(testCtx, "buffer_access", ""));
+        bufferAccess->addChild(createBufferAccessWithVariablePointersTests(testCtx));
+        robustnessTests->addChild(bufferAccess.release());
+    }
 
-	return robustnessTests.release();
+    return robustnessTests.release();
 }
 
-} // robustness
-} // vkt
+} // namespace robustness
+} // namespace vkt

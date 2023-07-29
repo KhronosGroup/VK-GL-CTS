@@ -42,35 +42,36 @@ namespace wsi
 namespace
 {
 
-void createTypeSpecificTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
+void createTypeSpecificTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
 {
-	addTestGroup(testGroup, "surface",					"VkSurface Tests",							createSurfaceTests,					wsiType);
-	addTestGroup(testGroup, "swapchain",				"VkSwapchain Tests",						createSwapchainTests,				wsiType);
-	addTestGroup(testGroup, "incremental_present",		"Incremental present tests",				createIncrementalPresentTests,		wsiType);
-	addTestGroup(testGroup, "display_timing",			"Display Timing Tests",						createDisplayTimingTests,			wsiType);
-	addTestGroup(testGroup, "shared_presentable_image",	"VK_KHR_shared_presentable_image tests",	createSharedPresentableImageTests,	wsiType);
-	addTestGroup(testGroup, "colorspace",				"ColorSpace tests",							createColorSpaceTests,				wsiType);
+    addTestGroup(testGroup, "surface", "VkSurface Tests", createSurfaceTests, wsiType);
+    addTestGroup(testGroup, "swapchain", "VkSwapchain Tests", createSwapchainTests, wsiType);
+    addTestGroup(testGroup, "incremental_present", "Incremental present tests", createIncrementalPresentTests, wsiType);
+    addTestGroup(testGroup, "display_timing", "Display Timing Tests", createDisplayTimingTests, wsiType);
+    addTestGroup(testGroup, "shared_presentable_image", "VK_KHR_shared_presentable_image tests",
+                 createSharedPresentableImageTests, wsiType);
+    addTestGroup(testGroup, "colorspace", "ColorSpace tests", createColorSpaceTests, wsiType);
 }
 
-void createWsiTests (tcu::TestCaseGroup* apiTests)
+void createWsiTests(tcu::TestCaseGroup *apiTests)
 {
-	for (int typeNdx = 0; typeNdx < vk::wsi::TYPE_LAST; ++typeNdx)
-	{
-		const vk::wsi::Type	wsiType	= (vk::wsi::Type)typeNdx;
+    for (int typeNdx = 0; typeNdx < vk::wsi::TYPE_LAST; ++typeNdx)
+    {
+        const vk::wsi::Type wsiType = (vk::wsi::Type)typeNdx;
 
-		addTestGroup(apiTests, getName(wsiType), "", createTypeSpecificTests, wsiType);
-	}
+        addTestGroup(apiTests, getName(wsiType), "", createTypeSpecificTests, wsiType);
+    }
 
-	addTestGroup(apiTests, "display", "Display coverage tests", createDisplayCoverageTests);
-	addTestGroup(apiTests, "display_control", "Display Control Tests", createDisplayControlTests);
+    addTestGroup(apiTests, "display", "Display coverage tests", createDisplayCoverageTests);
+    addTestGroup(apiTests, "display_control", "Display Control Tests", createDisplayControlTests);
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "wsi", "WSI Tests", createWsiTests);
+    return createTestGroup(testCtx, "wsi", "WSI Tests", createWsiTests);
 }
 
-} // wsi
-} // vkt
+} // namespace wsi
+} // namespace vkt

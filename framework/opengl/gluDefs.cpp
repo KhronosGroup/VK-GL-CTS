@@ -32,56 +32,53 @@
 namespace glu
 {
 
-Error::Error (int error, const char* message, const char* expr, const char* file, int line)
-	: tcu::TestError	(message, expr, file, line)
-	, m_error			(error)
+Error::Error(int error, const char *message, const char *expr, const char *file, int line)
+    : tcu::TestError(message, expr, file, line)
+    , m_error(error)
 {
 }
 
-Error::Error (int error, const std::string& message)
-	: tcu::TestError	(message)
-	, m_error			(error)
+Error::Error(int error, const std::string &message) : tcu::TestError(message), m_error(error)
 {
 }
 
-Error::~Error (void) throw()
+Error::~Error(void) throw()
 {
 }
 
-OutOfMemoryError::OutOfMemoryError (const char* message, const char* expr, const char* file, int line)
-	: tcu::ResourceError(message, expr, file, line)
+OutOfMemoryError::OutOfMemoryError(const char *message, const char *expr, const char *file, int line)
+    : tcu::ResourceError(message, expr, file, line)
 {
 }
 
-OutOfMemoryError::OutOfMemoryError (const std::string& message)
-	: tcu::ResourceError(message)
+OutOfMemoryError::OutOfMemoryError(const std::string &message) : tcu::ResourceError(message)
 {
 }
 
-OutOfMemoryError::~OutOfMemoryError (void) throw()
+OutOfMemoryError::~OutOfMemoryError(void) throw()
 {
 }
 
-void checkError (const RenderContext& context, const char* msg, const char* file, int line)
+void checkError(const RenderContext &context, const char *msg, const char *file, int line)
 {
-	checkError(context.getFunctions().getError(), msg, file, line);
+    checkError(context.getFunctions().getError(), msg, file, line);
 }
 
-void checkError (deUint32 err, const char* msg, const char* file, int line)
+void checkError(uint32_t err, const char *msg, const char *file, int line)
 {
-	if (err != GL_NO_ERROR)
-	{
-		std::ostringstream msgStr;
-		if (msg)
-			msgStr << msg << ": ";
+    if (err != GL_NO_ERROR)
+    {
+        std::ostringstream msgStr;
+        if (msg)
+            msgStr << msg << ": ";
 
-		msgStr << "glGetError() returned " << getErrorStr(err);
+        msgStr << "glGetError() returned " << getErrorStr(err);
 
-		if (err == GL_OUT_OF_MEMORY)
-			throw OutOfMemoryError(msgStr.str().c_str(), DE_NULL, file, line);
-		else
-			throw Error(err, msgStr.str().c_str(), DE_NULL, file, line);
-	}
+        if (err == GL_OUT_OF_MEMORY)
+            throw OutOfMemoryError(msgStr.str().c_str(), DE_NULL, file, line);
+        else
+            throw Error(err, msgStr.str().c_str(), DE_NULL, file, line);
+    }
 }
 
-} // glu
+} // namespace glu

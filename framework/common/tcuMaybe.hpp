@@ -28,119 +28,122 @@
 namespace tcu
 {
 
-// \note Type T is always aligned to same alignment as deUint64.
-// \note This type always uses at least sizeof(T*) + sizeof(deUint64) of memory.
-template<typename T>
+// \note Type T is always aligned to same alignment as uint64_t.
+// \note This type always uses at least sizeof(T*) + sizeof(uint64_t) of memory.
+template <typename T>
 class Maybe
 {
 public:
-				Maybe			(void);
-				~Maybe			(void);
+    Maybe(void);
+    ~Maybe(void);
 
-				Maybe			(const T& val);
-	Maybe<T>&	operator=		(const T& val);
+    Maybe(const T &val);
+    Maybe<T> &operator=(const T &val);
 
-				Maybe			(const Maybe<T>& other);
-	Maybe<T>&	operator=		(const Maybe<T>& other);
+    Maybe(const Maybe<T> &other);
+    Maybe<T> &operator=(const Maybe<T> &other);
 
-	const T&	get				(void) const;
-	const T&	operator*		(void) const { return get(); }
+    const T &get(void) const;
+    const T &operator*(void) const
+    {
+        return get();
+    }
 
-	const T*	operator->		(void) const;
-				operator bool	(void) const { return !!m_ptr; }
+    const T *operator->(void) const;
+    operator bool(void) const
+    {
+        return !!m_ptr;
+    }
 
 private:
-	T*				m_ptr;
+    T *m_ptr;
 
-	union
-	{
-		deUint8		m_data[sizeof(T)];
-		deUint64	m_align;
-	};
+    union
+    {
+        uint8_t m_data[sizeof(T)];
+        uint64_t m_align;
+    };
 } DE_WARN_UNUSED_TYPE;
 
-template<typename T>
-Maybe<T> nothing (void)
+template <typename T>
+Maybe<T> nothing(void)
 {
-	return Maybe<T>();
+    return Maybe<T>();
 }
 
-template<typename T>
-Maybe<T> just (const T& value)
+template <typename T>
+Maybe<T> just(const T &value)
 {
-	return Maybe<T>(value);
+    return Maybe<T>(value);
 }
 
-template<typename T>
-Maybe<T>::Maybe (void)
-	: m_ptr (DE_NULL)
+template <typename T>
+Maybe<T>::Maybe(void) : m_ptr(DE_NULL)
 {
 }
 
-template<typename T>
-Maybe<T>::~Maybe (void)
+template <typename T>
+Maybe<T>::~Maybe(void)
 {
-	if (m_ptr)
-		m_ptr->~T();
+    if (m_ptr)
+        m_ptr->~T();
 }
 
-template<typename T>
-Maybe<T>::Maybe (const T& val)
-	: m_ptr (DE_NULL)
+template <typename T>
+Maybe<T>::Maybe(const T &val) : m_ptr(DE_NULL)
 {
-	m_ptr = new(m_data)T(val);
+    m_ptr = new (m_data) T(val);
 }
 
-template<typename T>
-Maybe<T>& Maybe<T>::operator= (const T& val)
+template <typename T>
+Maybe<T> &Maybe<T>::operator=(const T &val)
 {
-	if (m_ptr)
-		m_ptr->~T();
+    if (m_ptr)
+        m_ptr->~T();
 
-	m_ptr = new(m_data)T(val);
+    m_ptr = new (m_data) T(val);
 
-	return *this;
+    return *this;
 }
 
-template<typename T>
-Maybe<T>::Maybe (const Maybe<T>& other)
-	: m_ptr (DE_NULL)
+template <typename T>
+Maybe<T>::Maybe(const Maybe<T> &other) : m_ptr(DE_NULL)
 {
-	if (other.m_ptr)
-		m_ptr = new(m_data)T(*other.m_ptr);
+    if (other.m_ptr)
+        m_ptr = new (m_data) T(*other.m_ptr);
 }
 
-template<typename T>
-Maybe<T>& Maybe<T>::operator= (const Maybe<T>& other)
+template <typename T>
+Maybe<T> &Maybe<T>::operator=(const Maybe<T> &other)
 {
-	if (this == &other)
-		return *this;
+    if (this == &other)
+        return *this;
 
-	if (m_ptr)
-		m_ptr->~T();
+    if (m_ptr)
+        m_ptr->~T();
 
-	if (other.m_ptr)
-		m_ptr = new(m_data)T(*other.m_ptr);
-	else
-		m_ptr = DE_NULL;
+    if (other.m_ptr)
+        m_ptr = new (m_data) T(*other.m_ptr);
+    else
+        m_ptr = DE_NULL;
 
-	return *this;
+    return *this;
 }
 
-template<typename T>
-const T* Maybe<T>::operator-> (void) const
+template <typename T>
+const T *Maybe<T>::operator->(void) const
 {
-	DE_ASSERT(m_ptr);
-	return m_ptr;
+    DE_ASSERT(m_ptr);
+    return m_ptr;
 }
 
-template<typename T>
-const T& Maybe<T>::get (void) const
+template <typename T>
+const T &Maybe<T>::get(void) const
 {
-	DE_ASSERT(m_ptr);
-	return *m_ptr;
+    DE_ASSERT(m_ptr);
+    return *m_ptr;
 }
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUMAYBE_HPP

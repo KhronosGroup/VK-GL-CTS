@@ -50,35 +50,35 @@ namespace Draw
 namespace
 {
 
-void createChildren (tcu::TestCaseGroup* group)
+void createChildren(tcu::TestCaseGroup *group)
 {
-	tcu::TestContext&	testCtx		= group->getTestContext();
+    tcu::TestContext &testCtx = group->getTestContext();
 
-	group->addChild(new ConcurrentDrawTests				(testCtx));
-	group->addChild(new SimpleDrawTests					(testCtx));
-	group->addChild(new DrawIndexedTests				(testCtx));
-	group->addChild(new IndirectDrawTests				(testCtx));
-	group->addChild(createBasicDrawTests				(testCtx));
-	group->addChild(new InstancedTests					(testCtx));
-	group->addChild(new ShaderDrawParametersTests		(testCtx));
-	group->addChild(createNegativeViewportHeightTests	(testCtx));
-	group->addChild(createZeroViewportHeightTests		(testCtx));
-	group->addChild(createInvertedDepthRangesTests		(testCtx));
-	group->addChild(createDifferingInterpolationTests	(testCtx));
-	group->addChild(createShaderLayerTests				(testCtx));
-	group->addChild(createShaderViewportIndexTests		(testCtx));
-	group->addChild(createScissorTests					(testCtx));
-	group->addChild(createMultipleInterpolationTests	(testCtx));
-	group->addChild(createDiscardRectanglesTests		(testCtx));
-	group->addChild(createExplicitVertexParameterTests	(testCtx));
+    group->addChild(new ConcurrentDrawTests(testCtx));
+    group->addChild(new SimpleDrawTests(testCtx));
+    group->addChild(new DrawIndexedTests(testCtx));
+    group->addChild(new IndirectDrawTests(testCtx));
+    group->addChild(createBasicDrawTests(testCtx));
+    group->addChild(new InstancedTests(testCtx));
+    group->addChild(new ShaderDrawParametersTests(testCtx));
+    group->addChild(createNegativeViewportHeightTests(testCtx));
+    group->addChild(createZeroViewportHeightTests(testCtx));
+    group->addChild(createInvertedDepthRangesTests(testCtx));
+    group->addChild(createDifferingInterpolationTests(testCtx));
+    group->addChild(createShaderLayerTests(testCtx));
+    group->addChild(createShaderViewportIndexTests(testCtx));
+    group->addChild(createScissorTests(testCtx));
+    group->addChild(createMultipleInterpolationTests(testCtx));
+    group->addChild(createDiscardRectanglesTests(testCtx));
+    group->addChild(createExplicitVertexParameterTests(testCtx));
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "draw", "Simple Draw tests", createChildren);
+    return createTestGroup(testCtx, "draw", "Simple Draw tests", createChildren);
 }
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt

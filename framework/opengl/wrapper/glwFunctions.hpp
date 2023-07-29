@@ -37,13 +37,13 @@ extern "C"
 class Functions
 {
 public:
-	// Function definitions:
-	// glClearColorFunc		clearColor;
+    // Function definitions:
+    // glClearColorFunc clearColor;
 #include "glwFunctions.inl"
 
-	Functions (void);
+    Functions(void);
 };
 
-} // glw
+} // namespace glw
 
 #endif // _GLWFUNCTIONS_HPP

@@ -31,25 +31,24 @@
 namespace vk
 {
 
-YCbCrImageWithMemory::YCbCrImageWithMemory (const vk::DeviceInterface&		vk,
-											const vk::VkDevice				device,
-											vk::Allocator&					allocator,
-											const vk::VkImageCreateInfo&	imageCreateInfo,
-											const vk::MemoryRequirement		requirement)
-	: m_image	(createImage(vk, device, &imageCreateInfo))
+YCbCrImageWithMemory::YCbCrImageWithMemory(const vk::DeviceInterface &vk, const vk::VkDevice device,
+                                           vk::Allocator &allocator, const vk::VkImageCreateInfo &imageCreateInfo,
+                                           const vk::MemoryRequirement requirement)
+    : m_image(createImage(vk, device, &imageCreateInfo))
 {
-	if ((imageCreateInfo.flags & VK_IMAGE_CREATE_DISJOINT_BIT_KHR) != 0)
-	{
-		const deUint32	numPlanes	= getPlaneCount(imageCreateInfo.format);
+    if ((imageCreateInfo.flags & VK_IMAGE_CREATE_DISJOINT_BIT_KHR) != 0)
+    {
+        const uint32_t numPlanes = getPlaneCount(imageCreateInfo.format);
 
-		bindImagePlanesMemory(vk, device, *m_image, numPlanes, m_allocations, allocator, requirement);
-	}
-	else
-	{
-		const VkMemoryRequirements reqs = getImageMemoryRequirements(vk, device, *m_image);
-		m_allocations.push_back(AllocationSp(allocator.allocate(reqs, requirement).release()));
-		VK_CHECK(vk.bindImageMemory(device, *m_image, m_allocations.back()->getMemory(), m_allocations.back()->getOffset()));
-	}
+        bindImagePlanesMemory(vk, device, *m_image, numPlanes, m_allocations, allocator, requirement);
+    }
+    else
+    {
+        const VkMemoryRequirements reqs = getImageMemoryRequirements(vk, device, *m_image);
+        m_allocations.push_back(AllocationSp(allocator.allocate(reqs, requirement).release()));
+        VK_CHECK(
+            vk.bindImageMemory(device, *m_image, m_allocations.back()->getMemory(), m_allocations.back()->getOffset()));
+    }
 }
 
-} // vk
+} // namespace vk

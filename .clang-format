@@ -4,17 +4,23 @@ BasedOnStyle: LLVM
 # The extra indent or outdent of access modifiers, e.g. public:.
 AccessModifierOffset: -4
 
-# If true, aligns escaped newlines as far left as possible. Otherwise puts them into the right-most column.
-AlignEscapedNewlinesLeft: true
+# Aligns escaped newlines as far left as possible
+AlignEscapedNewlines: Left
 
 # This will align the assignment operators of consecutive lines.
-AlignConsecutiveAssignments: true
+AlignConsecutiveAssignments: Consecutive
 
-# This will align the declaration names of consecutive lines.
-AlignConsecutiveDeclarations: true
+# Do not align the declaration names.
+AlignConsecutiveDeclarations: None
+
+# Align the bitfield in declarations
+AlignConsecutiveBitFields: Consecutive
 
 # If true, aligns trailing comments.
 AlignTrailingComments: true
+
+# Align operands when the expression is broken in multiple lines.
+AlignOperands: Align
 
 # Allow putting all parameters of a function declaration onto the next line even if BinPackParameters is false.
 AllowAllParametersOfDeclarationOnNextLine: false
@@ -35,13 +41,14 @@ AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
 
 # If true, always break after function definition return types.
-AlwaysBreakAfterDefinitionReturnType: false
+AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakAfterReturnType: None
 
 # If true, always break before multiline string literals.
 AlwaysBreakBeforeMultilineStrings: false
 
 # If true, always break after the template<...> of a template declaration.
-AlwaysBreakTemplateDeclarations: true
+AlwaysBreakTemplateDeclarations: Yes
 
 # If false, a function call's arguments will either be all on the same line or will have one line each.
 BinPackArguments: true
@@ -60,7 +67,7 @@ BreakBeforeBraces: Allman
 BreakBeforeTernaryOperators: false
 
 # Always break constructor initializers before commas and align the commas with the colon.
-BreakConstructorInitializersBeforeComma: true
+BreakConstructorInitializers: BeforeComma
 
 # The column limit. A column limit of 0 means that there is no column limit.
 ColumnLimit: 120
@@ -69,7 +76,7 @@ ColumnLimit: 120
 CommentPragmas: '^ *'
 
 # If the constructor initializers don't fit on a line, put each initializer on its own line.
-ConstructorInitializerAllOnOneLineOrOnePerLine: true
+PackConstructorInitializers: CurrentLine
 
 # The number of characters to use for indentation of constructor initializer lists.
 ConstructorInitializerIndentWidth: 4
@@ -78,7 +85,7 @@ ConstructorInitializerIndentWidth: 4
 ContinuationIndentWidth: 4
 
 # If true, format braced lists as best suited for C++11 braced lists.
-Cpp11BracedListStyle: false
+Cpp11BracedListStyle: true
 
 # Disables formatting at all.
 DisableFormat: false
@@ -125,7 +132,10 @@ PenaltyExcessCharacter: 1000000
 PenaltyReturnTypeOnItsOwnLine: 1000000000
 
 # Pointer and reference alignment style. Possible values: Left, Right, Middle.
-PointerAlignment: Left
+PointerAlignment: Right
+
+# Do not sort includes, many generated headers don't appropriately include what they rely on.
+SortIncludes: Never
 
 # If true, a space may be inserted after C style casts.
 SpaceAfterCStyleCast: false
@@ -154,15 +164,26 @@ SpacesInContainerLiterals: false
 # If true, spaces will be inserted after '(' and before ')'.
 SpacesInParentheses: false
 
-# If true, spaces will be inserted after '[' and befor']'.
+# If true, spaces will be inserted after '[' and before ']'.
 SpacesInSquareBrackets: false
 
 # Format compatible with this standard, e.g. use A<A<int> > instead of A<A<int>> for LS_Cpp03. Possible values: Cpp03, Cpp11, Auto.
-Standard: Cpp03
+Standard: Cpp11
 
 # The number of columns used for tab stops.
 TabWidth: 4
 
 # The way to use tab characters in the resulting file. Possible values: Never, ForIndentation, Always.
-UseTab: Always
+UseTab: Never
 
+# Support formatting other languages too, mostly using default configs
+---
+Language: Java
+IndentWidth: 4
+---
+Language: Json
+IndentWidth: 4
+---
+Language: ObjC
+IndentWidth: 4
+BreakBeforeBraces: Allman

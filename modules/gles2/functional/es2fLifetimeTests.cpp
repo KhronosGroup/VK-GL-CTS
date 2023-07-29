@@ -44,31 +44,31 @@ using namespace glw;
 class TestGroup : public TestCaseGroup
 {
 public:
-							TestGroup		(Context& context)
-								: TestCaseGroup	(context, "lifetime", "Object lifetime tests")
-							{}
-	void					init			(void);
+    TestGroup(Context &context) : TestCaseGroup(context, "lifetime", "Object lifetime tests")
+    {
+    }
+    void init(void);
 
 private:
-	MovePtr<Types>			m_types;
+    MovePtr<Types> m_types;
 };
 
-void TestGroup::init (void)
+void TestGroup::init(void)
 {
-	gles2::Context&	ctx		= getContext();
-	lt::Context		ltCtx	(ctx.getRenderContext(), ctx.getTestContext());
+    gles2::Context &ctx = getContext();
+    lt::Context ltCtx(ctx.getRenderContext(), ctx.getTestContext());
 
-	m_types = MovePtr<Types>(new ES2Types(ltCtx));
-	addTestCases(*this, *m_types);
+    m_types = MovePtr<Types>(new ES2Types(ltCtx));
+    addTestCases(*this, *m_types);
 }
 
-} // anonymous
+} // namespace
 
-TestCaseGroup* createLifetimeTests (Context& context)
+TestCaseGroup *createLifetimeTests(Context &context)
 {
-	return new TestGroup(context);
+    return new TestGroup(context);
 }
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp

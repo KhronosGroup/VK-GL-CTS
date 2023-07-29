@@ -37,19 +37,28 @@ namespace null
 class Platform : public tcu::Platform, private glu::Platform, private eglu::Platform, private vk::Platform
 {
 public:
-									Platform			(void);
-	virtual							~Platform			(void);
+    Platform(void);
+    virtual ~Platform(void);
 
-	virtual const glu::Platform&	getGLPlatform		(void) const { return static_cast<const glu::Platform&>(*this); }
-	virtual const eglu::Platform&	getEGLPlatform		(void) const { return static_cast<const eglu::Platform&>(*this); }
-	virtual const vk::Platform&		getVulkanPlatform	(void) const { return static_cast<const vk::Platform&>(*this);	}
+    virtual const glu::Platform &getGLPlatform(void) const
+    {
+        return static_cast<const glu::Platform &>(*this);
+    }
+    virtual const eglu::Platform &getEGLPlatform(void) const
+    {
+        return static_cast<const eglu::Platform &>(*this);
+    }
+    virtual const vk::Platform &getVulkanPlatform(void) const
+    {
+        return static_cast<const vk::Platform &>(*this);
+    }
 
 private:
-	virtual vk::Library*			createLibrary		(void) const;
-	void							getMemoryLimits		(vk::PlatformMemoryLimits& limits) const;
+    virtual vk::Library *createLibrary(void) const;
+    void getMemoryLimits(vk::PlatformMemoryLimits &limits) const;
 };
 
-} // null
-} // tcu
+} // namespace null
+} // namespace tcu
 
 #endif // _TCUNULLPLATFORM_HPP

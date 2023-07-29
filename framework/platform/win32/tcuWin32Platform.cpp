@@ -31,64 +31,62 @@ namespace tcu
 namespace win32
 {
 
-Platform::Platform (void)
-	: m_instance		(GetModuleHandle(NULL))
-	, m_vulkanPlatform	(m_instance)
+Platform::Platform(void) : m_instance(GetModuleHandle(NULL)), m_vulkanPlatform(m_instance)
 {
-	// Set process priority to lower.
-	SetPriorityClass(GetCurrentProcess(), BELOW_NORMAL_PRIORITY_CLASS);
+    // Set process priority to lower.
+    SetPriorityClass(GetCurrentProcess(), BELOW_NORMAL_PRIORITY_CLASS);
 
-	{
-		wgl::ContextFactory* factory = DE_NULL;
+    {
+        wgl::ContextFactory *factory = DE_NULL;
 
-		try
-		{
-			factory = new wgl::ContextFactory(m_instance);
-		}
-		catch (const std::exception& e)
-		{
-			print("Warning: WGL not supported: %s\n", e.what());
-		}
+        try
+        {
+            factory = new wgl::ContextFactory(m_instance);
+        }
+        catch (const std::exception &e)
+        {
+            print("Warning: WGL not supported: %s\n", e.what());
+        }
 
-		if (factory)
-		{
-			try
-			{
-				m_contextFactoryRegistry.registerFactory(factory);
-			}
-			catch (...)
-			{
-				delete factory;
-				throw;
-			}
-		}
-	}
+        if (factory)
+        {
+            try
+            {
+                m_contextFactoryRegistry.registerFactory(factory);
+            }
+            catch (...)
+            {
+                delete factory;
+                throw;
+            }
+        }
+    }
 
-	m_nativeDisplayFactoryRegistry.registerFactory(new win32::EGLNativeDisplayFactory(m_instance));
-	m_contextFactoryRegistry.registerFactory(new eglu::GLContextFactory(m_nativeDisplayFactoryRegistry));
+    m_nativeDisplayFactoryRegistry.registerFactory(new win32::EGLNativeDisplayFactory(m_instance));
+    m_contextFactoryRegistry.registerFactory(new eglu::GLContextFactory(m_nativeDisplayFactoryRegistry));
 }
 
-Platform::~Platform (void)
+Platform::~Platform(void)
 {
 }
 
-bool Platform::processEvents (void)
+bool Platform::processEvents(void)
 {
-	MSG msg;
-	while (PeekMessage(&msg, (HWND)-1, 0, 0, PM_REMOVE))
-	{
-		DispatchMessage(&msg);
-		if (msg.message == WM_QUIT)
-			return false;
-	}
-	return true;
+    MSG msg;
+    while (PeekMessage(&msg, (HWND)-1, 0, 0, PM_REMOVE))
+    {
+        DispatchMessage(&msg);
+        if (msg.message == WM_QUIT)
+            return false;
+    }
+    return true;
 }
 
-} // win32
-} // tcu
+} // namespace win32
+} // namespace tcu
 
 // Create platform
-tcu::Platform* createPlatform (void)
+tcu::Platform *createPlatform(void)
 {
-	return new tcu::win32::Platform();
+    return new tcu::win32::Platform();
 }

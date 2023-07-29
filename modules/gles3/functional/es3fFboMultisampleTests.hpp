@@ -36,18 +36,18 @@ namespace Functional
 class FboMultisampleTests : public TestCaseGroup
 {
 public:
-							FboMultisampleTests		(Context& context);
-							~FboMultisampleTests	(void);
+    FboMultisampleTests(Context &context);
+    ~FboMultisampleTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							FboMultisampleTests		(const FboMultisampleTests& other);
-	FboMultisampleTests&	operator=				(const FboMultisampleTests& other);
+    FboMultisampleTests(const FboMultisampleTests &other);
+    FboMultisampleTests &operator=(const FboMultisampleTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FFBOMULTISAMPLETESTS_HPP

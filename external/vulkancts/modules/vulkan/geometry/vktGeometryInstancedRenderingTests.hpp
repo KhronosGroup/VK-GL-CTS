@@ -32,9 +32,9 @@ namespace vkt
 namespace geometry
 {
 
-tcu::TestCaseGroup* createInstancedRenderingTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createInstancedRenderingTests(tcu::TestContext &testCtx);
 
-} // geometry
-} // vkt
+} // namespace geometry
+} // namespace vkt
 
 #endif // _VKTGEOMETRYINSTANCEDRENDERINGTESTS_HPP

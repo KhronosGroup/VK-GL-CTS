@@ -43,114 +43,115 @@ namespace sl
 class ShaderCase : public tcu::TestCase
 {
 public:
-	enum CaseType
-	{
-		CASETYPE_COMPLETE = 0,  //!< Has both shaders.
-		CASETYPE_VERTEX_ONLY,   //!< Has only vertex shader.
-		CASETYPE_FRAGMENT_ONLY, //!< Has only fragment shader.
+    enum CaseType
+    {
+        CASETYPE_COMPLETE = 0,  //!< Has both shaders.
+        CASETYPE_VERTEX_ONLY,   //!< Has only vertex shader.
+        CASETYPE_FRAGMENT_ONLY, //!< Has only fragment shader.
 
-		CASETYPE_LAST
-	};
+        CASETYPE_LAST
+    };
 
-	enum ExpectResult
-	{
-		EXPECT_PASS = 0,
-		EXPECT_COMPILE_FAIL,
-		EXPECT_LINK_FAIL,
+    enum ExpectResult
+    {
+        EXPECT_PASS = 0,
+        EXPECT_COMPILE_FAIL,
+        EXPECT_LINK_FAIL,
 
-		EXPECT_LAST
-	};
+        EXPECT_LAST
+    };
 
-	struct Value
-	{
-		enum StorageType
-		{
-			STORAGE_UNIFORM,
-			STORAGE_INPUT,
-			STORAGE_OUTPUT,
+    struct Value
+    {
+        enum StorageType
+        {
+            STORAGE_UNIFORM,
+            STORAGE_INPUT,
+            STORAGE_OUTPUT,
 
-			STORAGE_LAST
-		};
+            STORAGE_LAST
+        };
 
-		/* \todo [2010-03-31 petri] Replace with another vector to allow a) arrays, b) compact representation */
-		union Element {
-			float   float32;
-			deInt32 int32;
-			deInt32 bool32;
-		};
+        /* \todo [2010-03-31 petri] Replace with another vector to allow a) arrays, b) compact representation */
+        union Element
+        {
+            float float32;
+            int32_t int32;
+            int32_t bool32;
+        };
 
-		StorageType			 storageType;
-		std::string			 valueName;
-		glu::DataType		 dataType;
-		int					 arrayLength; // Number of elements in array (currently always 1).
-		std::vector<Element> elements;	// Scalar values (length dataType.scalarSize * arrayLength).
-	};
+        StorageType storageType;
+        std::string valueName;
+        glu::DataType dataType;
+        int arrayLength;               // Number of elements in array (currently always 1).
+        std::vector<Element> elements; // Scalar values (length dataType.scalarSize * arrayLength).
+    };
 
-	struct ValueBlock
-	{
-		int				   arrayLength; // Combined array length of each value (lengths must be same, or one).
-		std::vector<Value> values;
-		ValueBlock(void)
-		{
-			arrayLength = 0;
-			values.empty();
-		}
-	};
+    struct ValueBlock
+    {
+        int arrayLength; // Combined array length of each value (lengths must be same, or one).
+        std::vector<Value> values;
+        ValueBlock(void)
+        {
+            arrayLength = 0;
+            values.empty();
+        }
+    };
 
-	// Methods.
-	ShaderCase(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* caseName, const char* description,
-			   ExpectResult expectResult, const std::vector<ValueBlock>& valueBlocks, glu::GLSLVersion targetVersion,
-			   const char* vertexSource, const char* fragmentSource);
+    // Methods.
+    ShaderCase(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, const char *caseName, const char *description,
+               ExpectResult expectResult, const std::vector<ValueBlock> &valueBlocks, glu::GLSLVersion targetVersion,
+               const char *vertexSource, const char *fragmentSource);
 
-	virtual ~ShaderCase(void);
+    virtual ~ShaderCase(void);
 
-	CaseType getCaseType(void) const
-	{
-		return m_caseType;
-	}
-	const std::vector<ValueBlock>& getValueBlocks(void) const
-	{
-		return m_valueBlocks;
-	}
-	const char* getVertexSource(void) const
-	{
-		return m_vertexSource.c_str();
-	}
-	const char* getFragmentSource(void) const
-	{
-		return m_fragmentSource.c_str();
-	}
+    CaseType getCaseType(void) const
+    {
+        return m_caseType;
+    }
+    const std::vector<ValueBlock> &getValueBlocks(void) const
+    {
+        return m_valueBlocks;
+    }
+    const char *getVertexSource(void) const
+    {
+        return m_vertexSource.c_str();
+    }
+    const char *getFragmentSource(void) const
+    {
+        return m_fragmentSource.c_str();
+    }
 
-	bool		  execute(void);
-	IterateResult iterate(void);
+    bool execute(void);
+    IterateResult iterate(void);
 
 private:
-	ShaderCase(const ShaderCase&);			  // not allowed!
-	ShaderCase& operator=(const ShaderCase&); // not allowed!
+    ShaderCase(const ShaderCase &);            // not allowed!
+    ShaderCase &operator=(const ShaderCase &); // not allowed!
 
-	std::string genVertexShader(const ValueBlock& valueBlock);
-	std::string genFragmentShader(const ValueBlock& valueBlock);
-	std::string specializeVertexShader(const char* src, const ValueBlock& valueBlock);
-	std::string specializeFragmentShader(const char* src, const ValueBlock& valueBlock);
+    std::string genVertexShader(const ValueBlock &valueBlock);
+    std::string genFragmentShader(const ValueBlock &valueBlock);
+    std::string specializeVertexShader(const char *src, const ValueBlock &valueBlock);
+    std::string specializeFragmentShader(const char *src, const ValueBlock &valueBlock);
 
-	void specializeShaders(const char* vertexSource, const char* fragmentSource, std::string& outVertexSource,
-						   std::string& outFragmentSource, const ValueBlock& valueBlock);
+    void specializeShaders(const char *vertexSource, const char *fragmentSource, std::string &outVertexSource,
+                           std::string &outFragmentSource, const ValueBlock &valueBlock);
 
-	void dumpValues(const ValueBlock& valueBlock, int arrayNdx);
+    void dumpValues(const ValueBlock &valueBlock, int arrayNdx);
 
-	bool checkPixels(tcu::Surface& surface, int minX, int maxX, int minY, int maxY);
+    bool checkPixels(tcu::Surface &surface, int minX, int maxX, int minY, int maxY);
 
-	// Member variables.
-	glu::RenderContext&		m_renderCtx;
-	CaseType				m_caseType;
-	ExpectResult			m_expectResult;
-	std::vector<ValueBlock> m_valueBlocks;
-	glu::GLSLVersion		m_targetVersion;
-	std::string				m_vertexSource;
-	std::string				m_fragmentSource;
+    // Member variables.
+    glu::RenderContext &m_renderCtx;
+    CaseType m_caseType;
+    ExpectResult m_expectResult;
+    std::vector<ValueBlock> m_valueBlocks;
+    glu::GLSLVersion m_targetVersion;
+    std::string m_vertexSource;
+    std::string m_fragmentSource;
 };
 
-} // sl
-} // deqp
+} // namespace sl
+} // namespace deqp
 
 #endif // _GLCSHADERLIBRARYCASE_HPP

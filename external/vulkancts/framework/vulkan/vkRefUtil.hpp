@@ -31,62 +31,44 @@ namespace vk
 
 #include "vkRefUtil.inl"
 
-Move<VkPipeline>		createGraphicsPipeline	(const DeviceInterface&					vk,
-												 VkDevice								device,
-												 VkPipelineCache						pipelineCache,
-												 const VkGraphicsPipelineCreateInfo*	pCreateInfo,
-												 const VkAllocationCallbacks*			pAllocator = DE_NULL);
-Move<VkPipeline>		createComputePipeline	(const DeviceInterface&					vk,
-												 VkDevice								device,
-												 VkPipelineCache						pipelineCache,
-												 const VkComputePipelineCreateInfo*		pCreateInfo,
-												 const VkAllocationCallbacks*			pAllocator = DE_NULL);
-Move<VkPipeline>		createRayTracingPipelineNV(const DeviceInterface&					vk,
-												 VkDevice								device,
-												 VkPipelineCache						pipelineCache,
-												 const VkRayTracingPipelineCreateInfoNV*	pCreateInfo,
-												 const VkAllocationCallbacks*			pAllocator = DE_NULL);
-Move<VkPipeline>		createRayTracingPipelineKHR	(const DeviceInterface&					vk,
-												 VkDevice									device,
-												 VkPipelineCache							pipelineCache,
-												 const VkRayTracingPipelineCreateInfoKHR*	pCreateInfo,
-												 const VkAllocationCallbacks*				pAllocator = DE_NULL);
-Move<VkCommandBuffer>	allocateCommandBuffer	(const DeviceInterface& vk, VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo);
-Move<VkDescriptorSet>	allocateDescriptorSet	(const DeviceInterface& vk, VkDevice device, const VkDescriptorSetAllocateInfo* pAllocateInfo);
+Move<VkPipeline> createGraphicsPipeline(const DeviceInterface &vk, VkDevice device, VkPipelineCache pipelineCache,
+                                        const VkGraphicsPipelineCreateInfo *pCreateInfo,
+                                        const VkAllocationCallbacks *pAllocator = DE_NULL);
+Move<VkPipeline> createComputePipeline(const DeviceInterface &vk, VkDevice device, VkPipelineCache pipelineCache,
+                                       const VkComputePipelineCreateInfo *pCreateInfo,
+                                       const VkAllocationCallbacks *pAllocator = DE_NULL);
+Move<VkPipeline> createRayTracingPipelineNV(const DeviceInterface &vk, VkDevice device, VkPipelineCache pipelineCache,
+                                            const VkRayTracingPipelineCreateInfoNV *pCreateInfo,
+                                            const VkAllocationCallbacks *pAllocator = DE_NULL);
+Move<VkPipeline> createRayTracingPipelineKHR(const DeviceInterface &vk, VkDevice device, VkPipelineCache pipelineCache,
+                                             const VkRayTracingPipelineCreateInfoKHR *pCreateInfo,
+                                             const VkAllocationCallbacks *pAllocator = DE_NULL);
+Move<VkCommandBuffer> allocateCommandBuffer(const DeviceInterface &vk, VkDevice device,
+                                            const VkCommandBufferAllocateInfo *pAllocateInfo);
+Move<VkDescriptorSet> allocateDescriptorSet(const DeviceInterface &vk, VkDevice device,
+                                            const VkDescriptorSetAllocateInfo *pAllocateInfo);
 
-Move<VkSemaphore>		createSemaphore			(const DeviceInterface&			vk,
-												 VkDevice						device,
-												 VkSemaphoreCreateFlags			flags		= (VkSemaphoreCreateFlags)0,
-												 const VkAllocationCallbacks*	pAllocator	= DE_NULL);
+Move<VkSemaphore> createSemaphore(const DeviceInterface &vk, VkDevice device,
+                                  VkSemaphoreCreateFlags flags            = (VkSemaphoreCreateFlags)0,
+                                  const VkAllocationCallbacks *pAllocator = DE_NULL);
 
-Move<VkSemaphore>		createSemaphoreType		(const DeviceInterface&			vk,
-												 VkDevice						device,
-												 VkSemaphoreType				type,
-												 VkSemaphoreCreateFlags			flags			= (VkSemaphoreCreateFlags)0,
-												 const deUint64					initialValue	= 0,
-												 const VkAllocationCallbacks*	pAllocator		= DE_NULL);
+Move<VkSemaphore> createSemaphoreType(const DeviceInterface &vk, VkDevice device, VkSemaphoreType type,
+                                      VkSemaphoreCreateFlags flags            = (VkSemaphoreCreateFlags)0,
+                                      const uint64_t initialValue             = 0,
+                                      const VkAllocationCallbacks *pAllocator = DE_NULL);
 
-Move<VkFence>			createFence				(const DeviceInterface&			vk,
-												 VkDevice						device,
-												 VkFenceCreateFlags				flags		= (VkFenceCreateFlags)0,
-												 const VkAllocationCallbacks*	pAllocator	= DE_NULL);
+Move<VkFence> createFence(const DeviceInterface &vk, VkDevice device, VkFenceCreateFlags flags = (VkFenceCreateFlags)0,
+                          const VkAllocationCallbacks *pAllocator = DE_NULL);
 
-Move<VkCommandPool>		createCommandPool		(const DeviceInterface&			vk,
-												 VkDevice						device,
-												 VkCommandPoolCreateFlags		flags,
-												 deUint32						queueFamilyIndex,
-												 const VkAllocationCallbacks*	pAllocator	= DE_NULL);
+Move<VkCommandPool> createCommandPool(const DeviceInterface &vk, VkDevice device, VkCommandPoolCreateFlags flags,
+                                      uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator = DE_NULL);
 
-Move<VkCommandBuffer>	allocateCommandBuffer	(const DeviceInterface&			vk,
-												 VkDevice						device,
-												 VkCommandPool					commandPool,
-												 VkCommandBufferLevel			level);
+Move<VkCommandBuffer> allocateCommandBuffer(const DeviceInterface &vk, VkDevice device, VkCommandPool commandPool,
+                                            VkCommandBufferLevel level);
 
-Move<VkEvent>			createEvent				(const DeviceInterface&			vk,
-												 VkDevice						device,
-												 VkEventCreateFlags				flags = (VkEventCreateFlags)0u,
-												 const VkAllocationCallbacks*	pAllocateInfo = DE_NULL);
+Move<VkEvent> createEvent(const DeviceInterface &vk, VkDevice device, VkEventCreateFlags flags = (VkEventCreateFlags)0u,
+                          const VkAllocationCallbacks *pAllocateInfo = DE_NULL);
 
-} // vk
+} // namespace vk
 
 #endif // _VKREFUTIL_HPP

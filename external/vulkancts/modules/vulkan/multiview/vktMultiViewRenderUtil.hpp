@@ -33,25 +33,44 @@ namespace vkt
 namespace MultiView
 {
 
-vk::VkImageAspectFlags				getAspectFlags					(tcu::TextureFormat format);
-vk::VkFormat						getStencilBufferFormat			(const vk::VkFormat depthStencilImageFormat);
-vk::VkFormat						getDepthBufferFormat			(const vk::VkFormat depthStencilImageFormat);
-vk::VkImageCreateInfo				makeImageCreateInfo				(const vk::VkImageType imageType, const vk::VkExtent3D& extent, const vk::VkFormat format, const vk::VkImageUsageFlags usage, const vk::VkSampleCountFlagBits samples);
-vk::Move<vk::VkDescriptorSetLayout>	makeDescriptorSetLayout			(const vk::DeviceInterface& vk, const vk::VkDevice device);
+vk::VkImageAspectFlags getAspectFlags(tcu::TextureFormat format);
+vk::VkFormat getStencilBufferFormat(const vk::VkFormat depthStencilImageFormat);
+vk::VkFormat getDepthBufferFormat(const vk::VkFormat depthStencilImageFormat);
+vk::VkImageCreateInfo makeImageCreateInfo(const vk::VkImageType imageType, const vk::VkExtent3D &extent,
+                                          const vk::VkFormat format, const vk::VkImageUsageFlags usage,
+                                          const vk::VkSampleCountFlagBits samples);
+vk::Move<vk::VkDescriptorSetLayout> makeDescriptorSetLayout(const vk::DeviceInterface &vk, const vk::VkDevice device);
 
-template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>
-vk::Move<vk::VkRenderPass>			makeRenderPass					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat, const std::vector<deUint32>& viewMasks, const vk::VkSampleCountFlagBits samples, const vk::VkAttachmentLoadOp colorLoadOp, const vk::VkFormat dsFormat);
+template <typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep,
+          typename RenderPassCreateInfo>
+vk::Move<vk::VkRenderPass> makeRenderPass(const vk::DeviceInterface &vk, const vk::VkDevice device,
+                                          const vk::VkFormat colorFormat, const std::vector<uint32_t> &viewMasks,
+                                          const vk::VkSampleCountFlagBits samples,
+                                          const vk::VkAttachmentLoadOp colorLoadOp, const vk::VkFormat dsFormat);
 
-template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>
-vk::Move<vk::VkRenderPass>			makeRenderPassWithAttachments	(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat, const std::vector<deUint32>& viewMasks, bool useAspects);
+template <typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep,
+          typename RenderPassCreateInfo>
+vk::Move<vk::VkRenderPass> makeRenderPassWithAttachments(const vk::DeviceInterface &vk, const vk::VkDevice device,
+                                                         const vk::VkFormat colorFormat,
+                                                         const std::vector<uint32_t> &viewMasks, bool useAspects);
 
-template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>
-vk::Move<vk::VkRenderPass>			makeRenderPassWithDepth			(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat, const std::vector<deUint32>& viewMasks, const vk::VkFormat dsFormat);
+template <typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep,
+          typename RenderPassCreateInfo>
+vk::Move<vk::VkRenderPass> makeRenderPassWithDepth(const vk::DeviceInterface &vk, const vk::VkDevice device,
+                                                   const vk::VkFormat colorFormat,
+                                                   const std::vector<uint32_t> &viewMasks, const vk::VkFormat dsFormat);
 
-void								beginSecondaryCommandBuffer		(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const deUint32 subpass, const vk::VkFramebuffer framebuffer);
-void								imageBarrier					(const vk::DeviceInterface& vk, const vk::VkCommandBuffer cmdBuffer, const vk::VkImage image, const vk::VkImageSubresourceRange subresourceRange, const vk::VkImageLayout oldLayout, const vk::VkImageLayout newLayout, const vk::VkAccessFlags srcAccessMask, const vk::VkAccessFlags dstAccessMask, const vk::VkPipelineStageFlags srcStageMask = vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, const vk::VkPipelineStageFlags dstStageMask = vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+void beginSecondaryCommandBuffer(const vk::DeviceInterface &vk, const vk::VkCommandBuffer commandBuffer,
+                                 const vk::VkRenderPass renderPass, const uint32_t subpass,
+                                 const vk::VkFramebuffer framebuffer);
+void imageBarrier(const vk::DeviceInterface &vk, const vk::VkCommandBuffer cmdBuffer, const vk::VkImage image,
+                  const vk::VkImageSubresourceRange subresourceRange, const vk::VkImageLayout oldLayout,
+                  const vk::VkImageLayout newLayout, const vk::VkAccessFlags srcAccessMask,
+                  const vk::VkAccessFlags dstAccessMask,
+                  const vk::VkPipelineStageFlags srcStageMask = vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+                  const vk::VkPipelineStageFlags dstStageMask = vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
-} // MultiView
-} // vkt
+} // namespace MultiView
+} // namespace vkt
 
 #endif // _VKTMULTIVIEWRENDERUTIL_HPP

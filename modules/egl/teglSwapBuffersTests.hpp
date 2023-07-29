@@ -34,15 +34,15 @@ namespace egl
 class SwapBuffersTests : public TestCaseGroup
 {
 public:
-						SwapBuffersTests	(EglTestContext& eglTestCtx);
-	void				init				(void);
+    SwapBuffersTests(EglTestContext &eglTestCtx);
+    void init(void);
 
 private:
-						SwapBuffersTests	(const SwapBuffersTests&);
-	SwapBuffersTests&	operator=			(const SwapBuffersTests&);
+    SwapBuffersTests(const SwapBuffersTests &);
+    SwapBuffersTests &operator=(const SwapBuffersTests &);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLSWAPBUFFERSTESTS_HPP

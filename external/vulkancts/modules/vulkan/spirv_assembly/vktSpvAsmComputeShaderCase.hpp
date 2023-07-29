@@ -46,25 +46,26 @@ namespace SpirVAssembly
 class SpvAsmComputeShaderInstance : public TestInstance
 {
 public:
-										SpvAsmComputeShaderInstance	(Context& ctx, const ComputeShaderSpec& spec);
-	tcu::TestStatus						iterate						(void);
+    SpvAsmComputeShaderInstance(Context &ctx, const ComputeShaderSpec &spec);
+    tcu::TestStatus iterate(void);
 
 private:
-	const ComputeShaderSpec&			m_shaderSpec;
+    const ComputeShaderSpec &m_shaderSpec;
 };
 
 class SpvAsmComputeShaderCase : public TestCase
 {
 public:
-						SpvAsmComputeShaderCase	(tcu::TestContext& testCtx, const char* name, const char* description, const ComputeShaderSpec& spec);
-	void				initPrograms			(vk::SourceCollections& programCollection) const;
-	TestInstance*		createInstance			(Context& ctx) const;
+    SpvAsmComputeShaderCase(tcu::TestContext &testCtx, const char *name, const char *description,
+                            const ComputeShaderSpec &spec);
+    void initPrograms(vk::SourceCollections &programCollection) const;
+    TestInstance *createInstance(Context &ctx) const;
 
 private:
-	ComputeShaderSpec	m_shaderSpec;
+    ComputeShaderSpec m_shaderSpec;
 };
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMCOMPUTESHADERCASE_HPP

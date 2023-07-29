@@ -34,22 +34,21 @@ namespace gles31
 namespace Stress
 {
 
-StressTests::StressTests (Context& context)
-	: TestCaseGroup(context, "stress", "Stress tests")
+StressTests::StressTests(Context &context) : TestCaseGroup(context, "stress", "Stress tests")
 {
 }
 
-StressTests::~StressTests (void)
+StressTests::~StressTests(void)
 {
 }
 
-void StressTests::init (void)
+void StressTests::init(void)
 {
-	addChild(new DrawTests								(m_context));
-	addChild(new VertexAttributeBindingTests			(m_context));
-	addChild(new TessellationGeometryInteractionTests	(m_context));
+    addChild(new DrawTests(m_context));
+    addChild(new VertexAttributeBindingTests(m_context));
+    addChild(new TessellationGeometryInteractionTests(m_context));
 }
 
-} // Stress
-} // gles31
-} // deqp
+} // namespace Stress
+} // namespace gles31
+} // namespace deqp

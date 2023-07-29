@@ -31,9 +31,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createMaxVaryingsTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createMaxVaryingsTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEMAXVARYINGSTESTS_HPP

@@ -33,11 +33,11 @@ namespace gles31
 namespace Functional
 {
 
-tcu::TestCaseGroup* createFboNoAttachmentTests(Context& context);
-tcu::TestCaseGroup* createFboNoAttachmentCompletenessTests(Context& context);
+tcu::TestCaseGroup *createFboNoAttachmentTests(Context &context);
+tcu::TestCaseGroup *createFboNoAttachmentCompletenessTests(Context &context);
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FFBONOATTACHMENTTESTS_HPP

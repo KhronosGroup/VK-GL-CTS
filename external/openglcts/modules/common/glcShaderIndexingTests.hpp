@@ -37,18 +37,18 @@ namespace deqp
 class ShaderIndexingTests : public TestCaseGroup
 {
 public:
-	ShaderIndexingTests(Context& context, glu::GLSLVersion glslVersion);
-	virtual ~ShaderIndexingTests(void);
+    ShaderIndexingTests(Context &context, glu::GLSLVersion glslVersion);
+    virtual ~ShaderIndexingTests(void);
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	ShaderIndexingTests(const ShaderIndexingTests&);			// not allowed!
-	ShaderIndexingTests& operator=(const ShaderIndexingTests&); // not allowed!
+    ShaderIndexingTests(const ShaderIndexingTests &);            // not allowed!
+    ShaderIndexingTests &operator=(const ShaderIndexingTests &); // not allowed!
 
-	glu::GLSLVersion m_glslVersion;
+    glu::GLSLVersion m_glslVersion;
 };
 
-} // deqp
+} // namespace deqp
 
 #endif // _GLCSHADERINDEXINGTESTS_HPP

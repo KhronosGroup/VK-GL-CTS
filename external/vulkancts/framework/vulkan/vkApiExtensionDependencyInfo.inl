@@ -3,7 +3,7 @@
  *
  * Generated from Khronos Vulkan API description (vk.xml) revision 22a5a1459fbe8be546079525c4c9d50bfc20b30b.
  */
-static const std::tuple<deUint32, deUint32, const char*, const char*>	instanceExtensionDependencies[]	=
+static const std::tuple<uint32_t, uint32_t, const char*, const char*>	instanceExtensionDependencies[]	=
 {
 	std::make_tuple(1, 0, "VK_EXT_acquire_xlib_display", "VK_EXT_direct_mode_display"),
 	std::make_tuple(1, 1, "VK_EXT_acquire_xlib_display", "VK_EXT_direct_mode_display"),
@@ -48,7 +48,7 @@ static const std::tuple<deUint32, deUint32, const char*, const char*>	instanceEx
 	std::make_tuple(1, 0, "VK_NN_vi_surface", "VK_KHR_surface"),
 	std::make_tuple(1, 1, "VK_NN_vi_surface", "VK_KHR_surface"),
 };
-static const std::tuple<deUint32, deUint32, const char*, const char*>	deviceExtensionDependencies[]	=
+static const std::tuple<uint32_t, uint32_t, const char*, const char*>	deviceExtensionDependencies[]	=
 {
 	std::make_tuple(1, 0, "VK_AMD_display_native_hdr", "VK_KHR_get_physical_device_properties2"),
 	std::make_tuple(1, 0, "VK_AMD_display_native_hdr", "VK_KHR_get_surface_capabilities2"),
@@ -200,7 +200,7 @@ static const std::tuple<deUint32, deUint32, const char*, const char*>	deviceExte
 	std::make_tuple(1, 0, "VK_NV_win32_keyed_mutex", "VK_NV_external_memory_win32"),
 	std::make_tuple(1, 1, "VK_NV_win32_keyed_mutex", "VK_NV_external_memory_win32"),
 };
-static const std::tuple<deUint32, deUint32, deUint32>	releasedApiVersions[]	=
+static const std::tuple<uint32_t, uint32_t, uint32_t>	releasedApiVersions[]	=
 {
 	std::make_tuple(4198400, 1, 1),
 	std::make_tuple(4194304, 1, 0),

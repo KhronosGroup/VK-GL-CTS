@@ -32,10 +32,10 @@ namespace gles31
 namespace Functional
 {
 
-TestCaseGroup*		createSeparateShaderTests	(Context& context);
+TestCaseGroup *createSeparateShaderTests(Context &context);
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FSEPARATESHADERTESTS_HPP

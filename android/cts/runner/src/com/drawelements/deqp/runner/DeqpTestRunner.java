@@ -45,7 +45,6 @@ import com.android.tradefed.util.AbiUtils;
 import com.android.tradefed.util.IRunUtil;
 import com.android.tradefed.util.RunInterruptedException;
 import com.android.tradefed.util.RunUtil;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -74,80 +73,106 @@ import java.util.regex.Pattern;
 /**
  * Test runner for dEQP tests
  *
- * Supports running drawElements Quality Program tests found under external/deqp.
+ * Supports running drawElements Quality Program tests found under
+ * external/deqp.
  */
-@OptionClass(alias="deqp-test-runner")
-public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
-        ITestFilterReceiver, IAbiReceiver, IShardableTest, ITestCollector,
-        IRuntimeHintProvider {
+@OptionClass(alias = "deqp-test-runner")
+public class DeqpTestRunner
+    implements IBuildReceiver, IDeviceTest, ITestFilterReceiver, IAbiReceiver,
+               IShardableTest, ITestCollector, IRuntimeHintProvider {
     private static final String DEQP_ONDEVICE_APK = "com.drawelements.deqp.apk";
     private static final String DEQP_ONDEVICE_PKG = "com.drawelements.deqp";
-    private static final String INCOMPLETE_LOG_MESSAGE = "Crash: Incomplete test log";
-    private static final String SKIPPED_INSTANCE_LOG_MESSAGE = "Configuration skipped";
-    private static final String NOT_EXECUTABLE_LOG_MESSAGE = "Abort: Test cannot be executed";
-    private static final String CASE_LIST_FILE_NAME = "/sdcard/dEQP-TestCaseList.txt";
+    private static final String INCOMPLETE_LOG_MESSAGE =
+        "Crash: Incomplete test log";
+    private static final String SKIPPED_INSTANCE_LOG_MESSAGE =
+        "Configuration skipped";
+    private static final String NOT_EXECUTABLE_LOG_MESSAGE =
+        "Abort: Test cannot be executed";
+    private static final String CASE_LIST_FILE_NAME =
+        "/sdcard/dEQP-TestCaseList.txt";
     private static final String LOG_FILE_NAME = "/sdcard/TestLog.qpa";
-    public static final String FEATURE_LANDSCAPE = "android.hardware.screen.landscape";
-    public static final String FEATURE_PORTRAIT = "android.hardware.screen.portrait";
-    public static final String FEATURE_VULKAN_LEVEL = "android.hardware.vulkan.level";
-    public static final String FEATURE_VULKAN_DEQP_LEVEL = "android.software.vulkan.deqp.level";
+    public static final String FEATURE_LANDSCAPE =
+        "android.hardware.screen.landscape";
+    public static final String FEATURE_PORTRAIT =
+        "android.hardware.screen.portrait";
+    public static final String FEATURE_VULKAN_LEVEL =
+        "android.hardware.vulkan.level";
+    public static final String FEATURE_VULKAN_DEQP_LEVEL =
+        "android.software.vulkan.deqp.level";
 
     private static final int TESTCASE_BATCH_LIMIT = 1000;
-    private static final int UNRESPONSIVE_CMD_TIMEOUT_MS = 10 * 60 * 1000; // 10min
+    private static final int UNRESPONSIVE_CMD_TIMEOUT_MS =
+        10 * 60 * 1000; // 10min
 
-    // !NOTE: There's a static method copyOptions() for copying options during split.
-    // If you add state update copyOptions() as appropriate!
+    // !NOTE: There's a static method copyOptions() for copying options during
+    // split. If you add state update copyOptions() as appropriate!
 
-    @Option(name="deqp-package",
-            description="Name of the deqp module used. Determines GLES version.",
-            importance=Option.Importance.ALWAYS)
+    @Option(name = "deqp-package",
+            description =
+                "Name of the deqp module used. Determines GLES version.",
+            importance = Option.Importance.ALWAYS)
     private String mDeqpPackage;
-    @Option(name="deqp-gl-config-name",
-            description="GL render target config. See deqp documentation for syntax. ",
-            importance=Option.Importance.NEVER)
+    @Option(name = "deqp-gl-config-name",
+            description =
+                "GL render target config. See deqp documentation for syntax. ",
+            importance = Option.Importance.NEVER)
     private String mConfigName = "";
-    @Option(name="deqp-caselist-file",
-            description="File listing the names of the cases to be run.",
-            importance=Option.Importance.ALWAYS)
+    @Option(name = "deqp-caselist-file",
+            description = "File listing the names of the cases to be run.",
+            importance = Option.Importance.ALWAYS)
     private String mCaselistFile;
-    @Option(name="deqp-screen-rotation",
-            description="Screen orientation. Defaults to 'unspecified'",
-            importance=Option.Importance.NEVER)
+    @Option(name = "deqp-screen-rotation",
+            description = "Screen orientation. Defaults to 'unspecified'",
+            importance = Option.Importance.NEVER)
     private String mScreenRotation = "unspecified";
-    @Option(name="deqp-surface-type",
-            description="Surface type ('window', 'pbuffer', 'fbo'). Defaults to 'window'",
-            importance=Option.Importance.NEVER)
+    @Option(
+        name = "deqp-surface-type",
+        description =
+            "Surface type ('window', 'pbuffer', 'fbo'). Defaults to 'window'",
+        importance = Option.Importance.NEVER)
     private String mSurfaceType = "window";
-    @Option(name="deqp-config-required",
-            description="Is current config required if API is supported? Defaults to false.",
-            importance=Option.Importance.NEVER)
+    @Option(
+        name = "deqp-config-required",
+        description =
+            "Is current config required if API is supported? Defaults to false.",
+        importance = Option.Importance.NEVER)
     private boolean mConfigRequired = false;
-    @Option(name = "include-filter",
-            description="Test include filter. '*' is zero or more letters. '.' has no special meaning.")
+    @Option(
+        name = "include-filter",
+        description =
+            "Test include filter. '*' is zero or more letters. '.' has no special meaning.")
     private List<String> mIncludeFilters = new ArrayList<>();
     @Option(name = "include-filter-file",
-            description="Load list of includes from the files given.")
+            description = "Load list of includes from the files given.")
     private List<String> mIncludeFilterFiles = new ArrayList<>();
-    @Option(name = "exclude-filter",
-            description="Test exclude filter. '*' is zero or more letters. '.' has no special meaning.")
+    @Option(
+        name = "exclude-filter",
+        description =
+            "Test exclude filter. '*' is zero or more letters. '.' has no special meaning.")
     private List<String> mExcludeFilters = new ArrayList<>();
     @Option(name = "exclude-filter-file",
-            description="Load list of excludes from the files given.")
+            description = "Load list of excludes from the files given.")
     private List<String> mExcludeFilterFiles = new ArrayList<>();
-    @Option(name = "collect-tests-only",
-            description = "Only invoke the instrumentation to collect list of applicable test "
-                    + "cases. All test run callbacks will be triggered, but test execution will "
-                    + "not be actually carried out.")
+    @Option(
+        name = "collect-tests-only",
+        description =
+            "Only invoke the instrumentation to collect list of applicable test "
+            +
+            "cases. All test run callbacks will be triggered, but test execution will "
+            + "not be actually carried out.")
     private boolean mCollectTestsOnly = false;
-    @Option(name = "runtime-hint",
-            isTimeVal = true,
-            description="The estimated config runtime. Defaults to 200ms x num tests.")
+    @Option(name = "runtime-hint", isTimeVal = true,
+            description =
+                "The estimated config runtime. Defaults to 200ms x num tests.")
     private long mRuntimeHint = -1;
 
     private Collection<TestDescription> mRemainingTests = null;
-    private Map<TestDescription, Set<BatchRunConfiguration>> mTestInstances = null;
-    private final TestInstanceResultListener mInstanceListerner = new TestInstanceResultListener();
-    private final Map<TestDescription, Integer> mTestInstabilityRatings = new HashMap<>();
+    private Map<TestDescription, Set<BatchRunConfiguration>> mTestInstances =
+        null;
+    private final TestInstanceResultListener mInstanceListerner =
+        new TestInstanceResultListener();
+    private final Map<TestDescription, Integer> mTestInstabilityRatings =
+        new HashMap<>();
     private IAbi mAbi;
     private CompatibilityBuildHelper mBuildHelper;
     private boolean mLogData = false;
@@ -158,15 +183,14 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     // When set will override the mCaselistFile for testing purposes.
     private Reader mCaselistReader = null;
 
-    private IRecovery mDeviceRecovery = new Recovery(); {
-        mDeviceRecovery.setSleepProvider(new SleepProvider());
-    }
+    private IRecovery mDeviceRecovery = new Recovery();
+    { mDeviceRecovery.setSleepProvider(new SleepProvider()); }
 
-    public DeqpTestRunner() {
-    }
+    public DeqpTestRunner() {}
 
-    private DeqpTestRunner(DeqpTestRunner optionTemplate,
-                Map<TestDescription, Set<BatchRunConfiguration>> tests) {
+    private DeqpTestRunner(
+        DeqpTestRunner optionTemplate,
+        Map<TestDescription, Set<BatchRunConfiguration>> tests) {
         copyOptions(this, optionTemplate);
         mTestInstances = tests;
     }
@@ -193,8 +217,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     }
 
     /**
-     * Exposed for better mockability during testing. In real use, always flows from
-     * setBuild() called by the framework
+     * Exposed for better mockability during testing. In real use, always flows
+     * from setBuild() called by the framework
      */
     public void setBuildHelper(CompatibilityBuildHelper helper) {
         mBuildHelper = helper;
@@ -203,16 +227,12 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     /**
      * Enable or disable raw dEQP test log collection.
      */
-    public void setCollectLogs(boolean logData) {
-        mLogData = logData;
-    }
+    public void setCollectLogs(boolean logData) { mLogData = logData; }
 
     /**
      * Get the deqp-package option contents.
      */
-    public String getPackageName() {
-        return mDeqpPackage;
-    }
+    public String getPackageName() { return mDeqpPackage; }
 
     /**
      * {@inheritDoc}
@@ -244,9 +264,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      *
      * Exposed for unit testing.
      */
-    public void setRunUtil(IRunUtil runUtil) {
-        mRunUtil = runUtil;
-    }
+    public void setRunUtil(IRunUtil runUtil) { mRunUtil = runUtil; }
 
     /**
      * Exposed for unit testing
@@ -255,8 +273,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         mCaselistReader = caselistReader;
     }
 
-    private static final class CapabilityQueryFailureException extends Exception {
-    }
+    private static final class CapabilityQueryFailureException
+        extends Exception {}
 
     /**
      * dEQP test instance listerer and invocation result forwarded
@@ -276,22 +294,20 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             Set<BatchRunConfiguration> remainingConfigs;
         }
 
-        private final Map<TestDescription, PendingResult> mPendingResults = new HashMap<>();
+        private final Map<TestDescription, PendingResult> mPendingResults =
+            new HashMap<>();
 
-        public void setSink(ITestInvocationListener sink) {
-            mSink = sink;
-        }
+        public void setSink(ITestInvocationListener sink) { mSink = sink; }
 
         public void setCurrentConfig(BatchRunConfiguration runConfig) {
             mRunConfig = runConfig;
         }
 
         /**
-         * Get currently processed test id, or null if not currently processing a test case
+         * Get currently processed test id, or null if not currently processing
+         * a test case
          */
-        public TestDescription getCurrentTestId() {
-            return mCurrentTestId;
-        }
+        public TestDescription getCurrentTestId() { return mCurrentTestId; }
 
         /**
          * Forward result to sink
@@ -309,12 +325,15 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                 // Test Log
                 if (mLogData) {
                     for (Map.Entry<BatchRunConfiguration, String> entry :
-                            result.testLogs.entrySet()) {
-                        final ByteArrayInputStreamSource source
-                                = new ByteArrayInputStreamSource(entry.getValue().getBytes());
+                         result.testLogs.entrySet()) {
+                        final ByteArrayInputStreamSource source =
+                            new ByteArrayInputStreamSource(
+                                entry.getValue().getBytes());
 
-                        mSink.testLog(testId.getClassName() + "." + testId.getTestName() + "@"
-                                + entry.getKey().getId(), LogDataType.XML, source);
+                        mSink.testLog(testId.getClassName() + "." +
+                                          testId.getTestName() + "@" +
+                                          entry.getKey().getId(),
+                                      LogDataType.XML, source);
 
                         source.close();
                     }
@@ -325,12 +344,13 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                     final StringBuilder errorLog = new StringBuilder();
 
                     for (Map.Entry<BatchRunConfiguration, String> entry :
-                            result.errorMessages.entrySet()) {
+                         result.errorMessages.entrySet()) {
                         if (errorLog.length() > 0) {
                             errorLog.append('\n');
                         }
-                        errorLog.append(String.format("=== with config %s ===\n",
-                                entry.getKey().getId()));
+                        errorLog.append(
+                            String.format("=== with config %s ===\n",
+                                          entry.getKey().getId()));
                         errorLog.append(entry.getValue());
                     }
 
@@ -345,14 +365,17 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         /**
          * Declare existence of a test and instances
          */
-        public void setTestInstances(TestDescription testId, Set<BatchRunConfiguration> configs) {
-            // Test instances cannot change at runtime, ignore if we have already set this
+        public void setTestInstances(TestDescription testId,
+                                     Set<BatchRunConfiguration> configs) {
+            // Test instances cannot change at runtime, ignore if we have
+            // already set this
             if (!mPendingResults.containsKey(testId)) {
                 final PendingResult pendingResult = new PendingResult();
                 pendingResult.allInstancesPassed = true;
                 pendingResult.testLogs = new LinkedHashMap<>();
                 pendingResult.errorMessages = new LinkedHashMap<>();
-                pendingResult.remainingConfigs = new HashSet<>(configs); // avoid mutating argument
+                pendingResult.remainingConfigs =
+                    new HashSet<>(configs); // avoid mutating argument
                 mPendingResults.put(testId, pendingResult);
             }
         }
@@ -361,16 +384,17 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
          * Query if test instance has not yet been executed
          */
         public boolean isPendingTestInstance(TestDescription testId,
-                BatchRunConfiguration config) {
+                                             BatchRunConfiguration config) {
             final PendingResult result = mPendingResults.get(testId);
             if (result == null) {
-                // test is not in the current working batch of the runner, i.e. it cannot be
-                // "partially" completed.
+                // test is not in the current working batch of the runner, i.e.
+                // it cannot be "partially" completed.
                 if (!mRemainingTests.contains(testId)) {
                     // The test has been fully executed. Not pending.
                     return false;
                 } else {
-                    // Test has not yet been executed. Check if such instance exists
+                    // Test has not yet been executed. Check if such instance
+                    // exists
                     return mTestInstances.get(testId).contains(config);
                 }
             } else {
@@ -433,13 +457,15 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
          * Handles beginning of dEQP testcase.
          */
         private void handleBeginTestCase(Map<String, String> values) {
-            mCurrentTestId = pathToIdentifier(values.get("dEQP-BeginTestCase-TestCasePath"));
+            mCurrentTestId =
+                pathToIdentifier(values.get("dEQP-BeginTestCase-TestCasePath"));
             mCurrentTestLog = "";
             mGotTestResult = false;
 
             // mark instance as started
             if (mPendingResults.get(mCurrentTestId) != null) {
-                mPendingResults.get(mCurrentTestId).remainingConfigs.remove(mRunConfig);
+                mPendingResults.get(mCurrentTestId)
+                    .remainingConfigs.remove(mRunConfig);
             } else {
                 CLog.w("Got unexpected start of %s", mCurrentTestId);
             }
@@ -454,10 +480,12 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             if (result != null) {
                 if (!mGotTestResult) {
                     result.allInstancesPassed = false;
-                    result.errorMessages.put(mRunConfig, INCOMPLETE_LOG_MESSAGE);
+                    result.errorMessages.put(mRunConfig,
+                                             INCOMPLETE_LOG_MESSAGE);
                 }
 
-                if (mLogData && mCurrentTestLog != null && mCurrentTestLog.length() > 0) {
+                if (mLogData && mCurrentTestLog != null &&
+                    mCurrentTestLog.length() > 0) {
                     result.testLogs.put(mRunConfig, mCurrentTestLog);
                 }
 
@@ -492,18 +520,20 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                 mGotTestResult = true;
             } else if (code.compareTo("CompatibilityWarning") == 0) {
                 mGotTestResult = true;
-            } else if (code.compareTo("Fail") == 0 || code.compareTo("ResourceError") == 0
-                    || code.compareTo("InternalError") == 0 || code.compareTo("Crash") == 0
-                    || code.compareTo("Timeout") == 0) {
+            } else if (code.compareTo("Fail") == 0 ||
+                       code.compareTo("ResourceError") == 0 ||
+                       code.compareTo("InternalError") == 0 ||
+                       code.compareTo("Crash") == 0 ||
+                       code.compareTo("Timeout") == 0) {
                 mPendingResults.get(mCurrentTestId).allInstancesPassed = false;
                 mPendingResults.get(mCurrentTestId)
-                        .errorMessages.put(mRunConfig, code + ": " + details);
+                    .errorMessages.put(mRunConfig, code + ": " + details);
                 mGotTestResult = true;
             } else {
                 String codeError = "Unknown result code: " + code;
                 mPendingResults.get(mCurrentTestId).allInstancesPassed = false;
                 mPendingResults.get(mCurrentTestId)
-                        .errorMessages.put(mRunConfig, codeError + ": " + details);
+                    .errorMessages.put(mRunConfig, codeError + ": " + details);
                 mGotTestResult = true;
             }
         }
@@ -518,7 +548,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                 String reason = values.get("dEQP-TerminateTestCase-Reason");
                 mPendingResults.get(mCurrentTestId).allInstancesPassed = false;
                 mPendingResults.get(mCurrentTestId)
-                        .errorMessages.put(mRunConfig, "Terminated: " + reason);
+                    .errorMessages.put(mRunConfig, "Terminated: " + reason);
 
                 // Pending result finished, report result
                 if (result.remainingConfigs.isEmpty()) {
@@ -536,7 +566,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
          * Handles dEQP testlog data.
          */
         private void handleTestLogData(Map<String, String> values) {
-            mCurrentTestLog = mCurrentTestLog + values.get("dEQP-TestLogData-Log");
+            mCurrentTestLog =
+                mCurrentTestLog + values.get("dEQP-TestLogData-Log");
         }
 
         /**
@@ -575,9 +606,11 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                 // Current instance was removed from remainingConfigs when case
                 // started. Mark current instance as pending.
                 if (mPendingResults.get(mCurrentTestId) != null) {
-                    mPendingResults.get(mCurrentTestId).remainingConfigs.add(mRunConfig);
+                    mPendingResults.get(mCurrentTestId)
+                        .remainingConfigs.add(mRunConfig);
                 } else {
-                    CLog.w("Got unexpected internal state of %s", mCurrentTestId);
+                    CLog.w("Got unexpected internal state of %s",
+                           mCurrentTestId);
                 }
             }
             mCurrentTestId = null;
@@ -596,7 +629,6 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         private int mResultCode;
         private boolean mGotExitValue = false;
 
-
         public InstrumentationParser(TestInstanceResultListener listener) {
             mListener = listener;
         }
@@ -607,7 +639,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         @Override
         public void processNewLines(String[] lines) {
             for (String line : lines) {
-                if (mValues == null) mValues = new HashMap<String, String>();
+                if (mValues == null)
+                    mValues = new HashMap<String, String>();
 
                 if (line.startsWith("INSTRUMENTATION_STATUS_CODE: ")) {
                     if (mCurrentName != null) {
@@ -676,23 +709,20 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         /**
          * Returns whether target instrumentation exited normally.
          */
-        public boolean wasSuccessful() {
-            return mGotExitValue;
-        }
+        public boolean wasSuccessful() { return mGotExitValue; }
 
         /**
          * Returns Instrumentation return code
          */
-        public int getResultCode() {
-            return mResultCode;
-        }
+        public int getResultCode() { return mResultCode; }
     }
 
     /**
      * dEQP platfom query instrumentation parser
      */
-    private static class PlatformQueryInstrumentationParser extends MultiLineReceiver {
-        private Map<String,String> mResultMap = new LinkedHashMap<>();
+    private static class PlatformQueryInstrumentationParser
+        extends MultiLineReceiver {
+        private Map<String, String> mResultMap = new LinkedHashMap<>();
         private int mResultCode;
         private boolean mGotExitValue = false;
 
@@ -703,7 +733,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         public void processNewLines(String[] lines) {
             for (String line : lines) {
                 if (line.startsWith("INSTRUMENTATION_RESULT: ")) {
-                    final String parts[] = line.substring(24).split("=",2);
+                    final String parts[] = line.substring(24).split("=", 2);
                     if (parts.length == 2) {
                         mResultMap.put(parts[0], parts[1]);
                     } else {
@@ -731,20 +761,14 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         /**
          * Returns whether target instrumentation exited normally.
          */
-        public boolean wasSuccessful() {
-            return mGotExitValue;
-        }
+        public boolean wasSuccessful() { return mGotExitValue; }
 
         /**
          * Returns Instrumentation return code
          */
-        public int getResultCode() {
-            return mResultCode;
-        }
+        public int getResultCode() { return mResultCode; }
 
-        public Map<String,String> getResultMap() {
-            return mResultMap;
-        }
+        public Map<String, String> getResultMap() { return mResultMap; }
     }
 
     /**
@@ -780,7 +804,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         public void setDevice(ITestDevice device);
 
         /**
-         * Informs Recovery that test execution has progressed since the last recovery
+         * Informs Recovery that test execution has progressed since the last
+         * recovery
          */
         public void onExecutionProgressed();
 
@@ -789,10 +814,12 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
          *
          * @throws DeviceNotAvailableException if recovery did not succeed
          */
-        public void recoverConnectionRefused() throws DeviceNotAvailableException;
+        public void recoverConnectionRefused()
+            throws DeviceNotAvailableException;
 
         /**
-         * Tries to recover device after abnormal execution termination or link failure.
+         * Tries to recover device after abnormal execution termination or link
+         * failure.
          *
          * @throws DeviceNotAvailableException if recovery did not succeed
          */
@@ -805,22 +832,21 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      * Exposed for unit testing
      */
     public static class Recovery implements IRecovery {
-        private int RETRY_COOLDOWN_MS = 6000; // 6 seconds
+        private int RETRY_COOLDOWN_MS = 6000;    // 6 seconds
         private int PROCESS_KILL_WAIT_MS = 1000; // 1 second
 
         private static enum MachineState {
-            WAIT, // recover by waiting
+            WAIT,    // recover by waiting
             RECOVER, // recover by calling recover()
-            REBOOT, // recover by rebooting
-            FAIL, // cannot recover
+            REBOOT,  // recover by rebooting
+            FAIL,    // cannot recover
         }
 
         private MachineState mState = MachineState.WAIT;
         private ITestDevice mDevice;
         private ISleepProvider mSleepProvider;
 
-        private static class ProcessKillFailureException extends Exception {
-        }
+        private static class ProcessKillFailureException extends Exception {}
 
         /**
          * {@inheritDoc}
@@ -850,40 +876,44 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
          * {@inheritDoc}
          */
         @Override
-        public void recoverConnectionRefused() throws DeviceNotAvailableException {
+        public void recoverConnectionRefused()
+            throws DeviceNotAvailableException {
             switch (mState) {
-                case WAIT: // not a valid stratedy for connection refusal, fallthrough
-                case RECOVER:
-                    // First failure, just try to recover
-                    CLog.w("ADB connection failed, trying to recover");
-                    mState = MachineState.REBOOT; // the next step is to reboot
+            case WAIT: // not a valid stratedy for connection refusal,
+                       // fallthrough
+            case RECOVER:
+                // First failure, just try to recover
+                CLog.w("ADB connection failed, trying to recover");
+                mState = MachineState.REBOOT; // the next step is to reboot
 
-                    try {
-                        recoverDevice();
-                    } catch (DeviceNotAvailableException ex) {
-                        // chain forward
-                        recoverConnectionRefused();
-                    }
-                    break;
+                try {
+                    recoverDevice();
+                } catch (DeviceNotAvailableException ex) {
+                    // chain forward
+                    recoverConnectionRefused();
+                }
+                break;
 
-                case REBOOT:
-                    // Second failure in a row, try to reboot
-                    CLog.w("ADB connection failed after recovery, rebooting device");
-                    mState = MachineState.FAIL; // the next step is to fail
+            case REBOOT:
+                // Second failure in a row, try to reboot
+                CLog.w(
+                    "ADB connection failed after recovery, rebooting device");
+                mState = MachineState.FAIL; // the next step is to fail
 
-                    try {
-                        rebootDevice();
-                    } catch (DeviceNotAvailableException ex) {
-                        // chain forward
-                        recoverConnectionRefused();
-                    }
-                    break;
+                try {
+                    rebootDevice();
+                } catch (DeviceNotAvailableException ex) {
+                    // chain forward
+                    recoverConnectionRefused();
+                }
+                break;
 
-                case FAIL:
-                    // Third failure in a row, just fail
-                    CLog.w("Cannot recover ADB connection");
-                    throw new DeviceNotAvailableException("failed to connect after reboot",
-                            mDevice.getSerialNumber());
+            case FAIL:
+                // Third failure in a row, just fail
+                CLog.w("Cannot recover ADB connection");
+                throw new DeviceNotAvailableException(
+                    "failed to connect after reboot",
+                    mDevice.getSerialNumber());
             }
         }
 
@@ -893,71 +923,73 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         @Override
         public void recoverComLinkKilled() throws DeviceNotAvailableException {
             switch (mState) {
-                case WAIT:
-                    // First failure, just try to wait and try again
-                    CLog.w("ADB link failed, retrying after a cooldown period");
-                    mState = MachineState.RECOVER; // the next step is to recover the device
+            case WAIT:
+                // First failure, just try to wait and try again
+                CLog.w("ADB link failed, retrying after a cooldown period");
+                mState = MachineState
+                             .RECOVER; // the next step is to recover the device
 
-                    waitCooldown();
+                waitCooldown();
 
-                    // even if the link to deqp on-device process was killed, the process might
-                    // still be alive. Locate and terminate such unwanted processes.
-                    try {
-                        killDeqpProcess();
-                    } catch (DeviceNotAvailableException ex) {
-                        // chain forward
-                        recoverComLinkKilled();
-                    } catch (ProcessKillFailureException ex) {
-                        // chain forward
-                        recoverComLinkKilled();
-                    }
-                    break;
+                // even if the link to deqp on-device process was killed, the
+                // process might still be alive. Locate and terminate such
+                // unwanted processes.
+                try {
+                    killDeqpProcess();
+                } catch (DeviceNotAvailableException ex) {
+                    // chain forward
+                    recoverComLinkKilled();
+                } catch (ProcessKillFailureException ex) {
+                    // chain forward
+                    recoverComLinkKilled();
+                }
+                break;
 
-                case RECOVER:
-                    // Second failure, just try to recover
-                    CLog.w("ADB link failed, trying to recover");
-                    mState = MachineState.REBOOT; // the next step is to reboot
+            case RECOVER:
+                // Second failure, just try to recover
+                CLog.w("ADB link failed, trying to recover");
+                mState = MachineState.REBOOT; // the next step is to reboot
 
-                    try {
-                        recoverDevice();
-                        killDeqpProcess();
-                    } catch (DeviceNotAvailableException ex) {
-                        // chain forward
-                        recoverComLinkKilled();
-                    } catch (ProcessKillFailureException ex) {
-                        // chain forward
-                        recoverComLinkKilled();
-                    }
-                    break;
+                try {
+                    recoverDevice();
+                    killDeqpProcess();
+                } catch (DeviceNotAvailableException ex) {
+                    // chain forward
+                    recoverComLinkKilled();
+                } catch (ProcessKillFailureException ex) {
+                    // chain forward
+                    recoverComLinkKilled();
+                }
+                break;
 
-                case REBOOT:
-                    // Third failure in a row, try to reboot
-                    CLog.w("ADB link failed after recovery, rebooting device");
-                    mState = MachineState.FAIL; // the next step is to fail
+            case REBOOT:
+                // Third failure in a row, try to reboot
+                CLog.w("ADB link failed after recovery, rebooting device");
+                mState = MachineState.FAIL; // the next step is to fail
 
-                    try {
-                        rebootDevice();
-                    } catch (DeviceNotAvailableException ex) {
-                        // chain forward
-                        recoverComLinkKilled();
-                    }
-                    break;
+                try {
+                    rebootDevice();
+                } catch (DeviceNotAvailableException ex) {
+                    // chain forward
+                    recoverComLinkKilled();
+                }
+                break;
 
-                case FAIL:
-                    // Fourth failure in a row, just fail
-                    CLog.w("Cannot recover ADB connection");
-                    throw new DeviceNotAvailableException("link killed after reboot",
-                            mDevice.getSerialNumber());
+            case FAIL:
+                // Fourth failure in a row, just fail
+                CLog.w("Cannot recover ADB connection");
+                throw new DeviceNotAvailableException(
+                    "link killed after reboot", mDevice.getSerialNumber());
             }
         }
 
-        private void waitCooldown() {
-            mSleepProvider.sleep(RETRY_COOLDOWN_MS);
-        }
+        private void waitCooldown() { mSleepProvider.sleep(RETRY_COOLDOWN_MS); }
 
-        private Iterable<Integer> getDeqpProcessPids() throws DeviceNotAvailableException {
+        private Iterable<Integer> getDeqpProcessPids()
+            throws DeviceNotAvailableException {
             final List<Integer> pids = new ArrayList<Integer>(2);
-            final String processes = mDevice.executeShellCommand("ps | grep com.drawelements");
+            final String processes =
+                mDevice.executeShellCommand("ps | grep com.drawelements");
             final String[] lines = processes.split("(\\r|\\n)+");
             for (String line : lines) {
                 final String[] fields = line.split("\\s+");
@@ -975,10 +1007,11 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             return pids;
         }
 
-        private void killDeqpProcess() throws DeviceNotAvailableException,
-                ProcessKillFailureException {
+        private void killDeqpProcess()
+            throws DeviceNotAvailableException, ProcessKillFailureException {
             for (Integer processId : getDeqpProcessPids()) {
-                mDevice.executeShellCommand(String.format("kill -9 %d", processId));
+                mDevice.executeShellCommand(
+                    String.format("kill -9 %d", processId));
             }
 
             mSleepProvider.sleep(PROCESS_KILL_WAIT_MS);
@@ -991,16 +1024,19 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         }
 
         public void recoverDevice() throws DeviceNotAvailableException {
-            // Work around the API. We need to call recoverDevice() on the test device and
-            // we know that mDevice is a TestDevice. However even though the recoverDevice()
-            // method is public suggesting it should be publicly accessible, the class itself
-            // and its super-interface (IManagedTestDevice) are package-private.
+            // Work around the API. We need to call recoverDevice() on the test
+            // device and we know that mDevice is a TestDevice. However even
+            // though the recoverDevice() method is public suggesting it should
+            // be publicly accessible, the class itself and its super-interface
+            // (IManagedTestDevice) are package-private.
             final Method recoverDeviceMethod;
             try {
-                recoverDeviceMethod = mDevice.getClass().getMethod("recoverDevice");
+                recoverDeviceMethod =
+                    mDevice.getClass().getMethod("recoverDevice");
                 recoverDeviceMethod.setAccessible(true);
             } catch (NoSuchMethodException ex) {
-                throw new AssertionError("Test device must have recoverDevice()");
+                throw new AssertionError(
+                    "Test device must have recoverDevice()");
             }
 
             try {
@@ -1023,36 +1059,41 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         }
     }
 
-    private static Map<TestDescription, Set<BatchRunConfiguration>> generateTestInstances(
-            Reader testlist, String configName, String screenRotation, String surfaceType,
-            boolean required) {
-        // Note: This is specifically a LinkedHashMap to guarantee that tests are iterated
-        // in the insertion order.
-        final Map<TestDescription, Set<BatchRunConfiguration>> instances = new LinkedHashMap<>();
+    private static Map<TestDescription, Set<BatchRunConfiguration>>
+    generateTestInstances(Reader testlist, String configName,
+                          String screenRotation, String surfaceType,
+                          boolean required) {
+        // Note: This is specifically a LinkedHashMap to guarantee that tests
+        // are iterated in the insertion order.
+        final Map<TestDescription, Set<BatchRunConfiguration>> instances =
+            new LinkedHashMap<>();
         try {
             BufferedReader testlistReader = new BufferedReader(testlist);
             String testName;
             while ((testName = testlistReader.readLine()) != null) {
                 if (testName.length() > 0) {
                     // Test name -> testId -> only one config -> done.
-                    final Set<BatchRunConfiguration> testInstanceSet = new LinkedHashSet<>();
-                    BatchRunConfiguration config = new BatchRunConfiguration(configName, screenRotation, surfaceType, required);
+                    final Set<BatchRunConfiguration> testInstanceSet =
+                        new LinkedHashSet<>();
+                    BatchRunConfiguration config = new BatchRunConfiguration(
+                        configName, screenRotation, surfaceType, required);
                     testInstanceSet.add(config);
                     TestDescription test = pathToIdentifier(testName);
                     instances.put(test, testInstanceSet);
                 }
             }
             testlistReader.close();
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException("Failure while reading the test case list for deqp: " + e.getMessage());
+        } catch (IOException e) {
+            throw new RuntimeException(
+                "Failure while reading the test case list for deqp: " +
+                e.getMessage());
         }
 
         return instances;
     }
 
-    private Set<BatchRunConfiguration> getTestRunConfigs(TestDescription testId) {
+    private Set<BatchRunConfiguration>
+    getTestRunConfigs(TestDescription testId) {
         return mTestInstances.get(testId);
     }
 
@@ -1069,7 +1110,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     private static TestDescription pathToIdentifier(String testPath) {
         int indexOfLastDot = testPath.lastIndexOf('.');
         String className = testPath.substring(0, indexOfLastDot);
-        String testName = testPath.substring(indexOfLastDot+1);
+        String testName = testPath.substring(indexOfLastDot + 1);
 
         return new TestDescription(className, testName);
     }
@@ -1080,9 +1121,11 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     }
 
     /**
-     * Generates tescase trie from dEQP testcase paths. Used to define which testcases to execute.
+     * Generates tescase trie from dEQP testcase paths. Used to define which
+     * testcases to execute.
      */
-    private static String generateTestCaseTrieFromPaths(Collection<String> tests) {
+    private static String
+    generateTestCaseTrieFromPaths(Collection<String> tests) {
         String result = "{";
         boolean first = true;
 
@@ -1103,7 +1146,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         }
 
         if (!tests.isEmpty()) {
-            HashMap<String, ArrayList<String> > testGroups = new HashMap<>();
+            HashMap<String, ArrayList<String>> testGroups = new HashMap<>();
 
             // Collect all sub testgroups
             for (String test : tests) {
@@ -1115,7 +1158,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                     testGroups.put(components[0], testGroup);
                 }
 
-                testGroup.add(test.substring(components[0].length()+1));
+                testGroup.add(test.substring(components[0].length() + 1));
             }
 
             for (String testGroup : testGroups.keySet()) {
@@ -1124,8 +1167,9 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                 }
 
                 first = false;
-                result = result + testGroup
-                        + generateTestCaseTrieFromPaths(testGroups.get(testGroup));
+                result =
+                    result + testGroup +
+                    generateTestCaseTrieFromPaths(testGroups.get(testGroup));
             }
         }
 
@@ -1135,7 +1179,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     /**
      * Generates testcase trie from TestDescriptions.
      */
-    private static String generateTestCaseTrie(Collection<TestDescription> tests) {
+    private static String
+    generateTestCaseTrie(Collection<TestDescription> tests) {
         ArrayList<String> testPaths = new ArrayList<String>();
 
         for (TestDescription test : tests) {
@@ -1154,13 +1199,13 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      * Creates a TestBatch from the given tests or null if not tests remaining.
      *
      *  @param pool List of tests to select from
-     *  @param requiredConfig Select only instances with pending requiredConfig, or null to select
-     *         any run configuration.
+     *  @param requiredConfig Select only instances with pending requiredConfig,
+     * or null to select any run configuration.
      */
     private TestBatch selectRunBatch(Collection<TestDescription> pool,
-            BatchRunConfiguration requiredConfig) {
-        // select one test (leading test) that is going to be executed and then pack along as many
-        // other compatible instances as possible.
+                                     BatchRunConfiguration requiredConfig) {
+        // select one test (leading test) that is going to be executed and then
+        // pack along as many other compatible instances as possible.
 
         TestDescription leadingTest = null;
         for (TestDescription test : pool) {
@@ -1168,7 +1213,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                 continue;
             }
             if (requiredConfig != null &&
-                    !mInstanceListerner.isPendingTestInstance(test, requiredConfig)) {
+                !mInstanceListerner.isPendingTestInstance(test,
+                                                          requiredConfig)) {
                 continue;
             }
             leadingTest = test;
@@ -1184,8 +1230,10 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         if (requiredConfig != null) {
             leadingTestConfig = requiredConfig;
         } else {
-            for (BatchRunConfiguration runConfig : getTestRunConfigs(leadingTest)) {
-                if (mInstanceListerner.isPendingTestInstance(leadingTest, runConfig)) {
+            for (BatchRunConfiguration runConfig :
+                 getTestRunConfigs(leadingTest)) {
+                if (mInstanceListerner.isPendingTestInstance(leadingTest,
+                                                             runConfig)) {
                     leadingTestConfig = runConfig;
                     break;
                 }
@@ -1209,17 +1257,20 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                 // do not re-select the leading tests
                 continue;
             }
-            if (!mInstanceListerner.isPendingTestInstance(test, leadingTestConfig)) {
+            if (!mInstanceListerner.isPendingTestInstance(test,
+                                                          leadingTestConfig)) {
                 // select only compatible
                 continue;
             }
             if (getTestInstabilityRating(test) != leadingInstability) {
-                // pack along only cases in the same stability category. Packing more dangerous
-                // tests along jeopardizes the stability of this run. Packing more stable tests
-                // along jeopardizes their stability rating.
+                // pack along only cases in the same stability category. Packing
+                // more dangerous tests along jeopardizes the stability of this
+                // run. Packing more stable tests along jeopardizes their
+                // stability rating.
                 continue;
             }
-            if (runBatch.tests.size() >= getBatchSizeLimitForInstability(leadingInstability)) {
+            if (runBatch.tests.size() >=
+                getBatchSizeLimitForInstability(leadingInstability)) {
                 // batch size is limited.
                 break;
             }
@@ -1241,7 +1292,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
 
     private int getBatchSizeLimitForInstability(int batchInstabilityRating) {
         // reduce group size exponentially down to one
-        return Math.max(1, TESTCASE_BATCH_LIMIT / (1 << batchInstabilityRating));
+        return Math.max(1,
+                        TESTCASE_BATCH_LIMIT / (1 << batchInstabilityRating));
     }
 
     private int getTestInstabilityRating(TestDescription testId) {
@@ -1253,7 +1305,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     }
 
     private void recordTestInstability(TestDescription testId) {
-        mTestInstabilityRatings.put(testId, getTestInstabilityRating(testId) + 1);
+        mTestInstabilityRatings.put(testId,
+                                    getTestInstabilityRating(testId) + 1);
     }
 
     private void clearTestInstability(TestDescription testId) {
@@ -1263,7 +1316,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     /**
      * Executes all tests on the device.
      */
-    private void runTests() throws DeviceNotAvailableException, CapabilityQueryFailureException {
+    private void runTests()
+        throws DeviceNotAvailableException, CapabilityQueryFailureException {
         for (;;) {
             TestBatch batch = selectRunBatch(mRemainingTests, null);
 
@@ -1278,8 +1332,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     /**
      * Runs a TestBatch by either faking it or executing it on a device.
      */
-    private void runTestRunBatch(TestBatch batch) throws DeviceNotAvailableException,
-            CapabilityQueryFailureException {
+    private void runTestRunBatch(TestBatch batch)
+        throws DeviceNotAvailableException, CapabilityQueryFailureException {
         // prepare instance listener
         mInstanceListerner.setCurrentConfig(batch.config);
         for (TestDescription test : batch.tests) {
@@ -1299,17 +1353,19 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     }
 
     private boolean isSupportedRunConfiguration(BatchRunConfiguration runConfig)
-            throws DeviceNotAvailableException, CapabilityQueryFailureException {
+        throws DeviceNotAvailableException, CapabilityQueryFailureException {
         // orientation support
-        if (!BatchRunConfiguration.ROTATION_UNSPECIFIED.equals(runConfig.getRotation())) {
-            final Map<String, Optional<Integer>> features = getDeviceFeatures(mDevice);
+        if (!BatchRunConfiguration.ROTATION_UNSPECIFIED.equals(
+                runConfig.getRotation())) {
+            final Map<String, Optional<Integer>> features =
+                getDeviceFeatures(mDevice);
 
             if (isPortraitClassRotation(runConfig.getRotation()) &&
-                    !features.containsKey(FEATURE_PORTRAIT)) {
+                !features.containsKey(FEATURE_PORTRAIT)) {
                 return false;
             }
             if (isLandscapeClassRotation(runConfig.getRotation()) &&
-                    !features.containsKey(FEATURE_LANDSCAPE)) {
+                !features.containsKey(FEATURE_LANDSCAPE)) {
                 return false;
             }
         }
@@ -1338,14 +1394,17 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      * Executes a given command in adb shell
      *
      * @throws AdbComLinkOpenError if connection cannot be established.
-     * @throws AdbComLinkKilledError if established connection is killed prematurely.
+     * @throws AdbComLinkKilledError if established connection is killed
+     *     prematurely.
      */
-    private void executeShellCommandAndReadOutput(final String command,
-            final IShellOutputReceiver receiver)
-            throws AdbComLinkOpenError, AdbComLinkKilledError {
+    private void
+    executeShellCommandAndReadOutput(final String command,
+                                     final IShellOutputReceiver receiver)
+        throws AdbComLinkOpenError, AdbComLinkKilledError {
         try {
-            mDevice.getIDevice().executeShellCommand(command, receiver,
-                    UNRESPONSIVE_CMD_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            mDevice.getIDevice().executeShellCommand(
+                command, receiver, UNRESPONSIVE_CMD_TIMEOUT_MS,
+                TimeUnit.MILLISECONDS);
         } catch (TimeoutException ex) {
             // Opening connection timed out
             throw new AdbComLinkOpenError("opening connection timed out", ex);
@@ -1364,12 +1423,14 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     /**
      * Executes given test batch on a device
      */
-    private void executeTestRunBatch(TestBatch batch) throws DeviceNotAvailableException {
+    private void executeTestRunBatch(TestBatch batch)
+        throws DeviceNotAvailableException {
         // attempt full run once
         executeTestRunBatchRun(batch);
 
-        // split remaining tests to two sub batches and execute both. This will terminate
-        // since executeTestRunBatchRun will always progress for a batch of size 1.
+        // split remaining tests to two sub batches and execute both. This will
+        // terminate since executeTestRunBatchRun will always progress for a
+        // batch of size 1.
         final ArrayList<TestDescription> pendingTests = new ArrayList<>();
 
         for (TestDescription test : batch.tests) {
@@ -1379,8 +1440,10 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         }
 
         final int divisorNdx = pendingTests.size() / 2;
-        final List<TestDescription> headList = pendingTests.subList(0, divisorNdx);
-        final List<TestDescription> tailList = pendingTests.subList(divisorNdx, pendingTests.size());
+        final List<TestDescription> headList =
+            pendingTests.subList(0, divisorNdx);
+        final List<TestDescription> tailList =
+            pendingTests.subList(divisorNdx, pendingTests.size());
 
         // head
         for (;;) {
@@ -1405,19 +1468,22 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         }
 
         if (getBatchNumPendingCases(batch) != 0) {
-            throw new AssertionError("executeTestRunBatch postcondition failed");
+            throw new AssertionError(
+                "executeTestRunBatch postcondition failed");
         }
     }
 
     /**
      * Runs one execution pass over the given batch.
      *
-     * Tries to run the batch. Always makes progress (executes instances or modifies stability
-     * scores).
+     * Tries to run the batch. Always makes progress (executes instances or
+     * modifies stability scores).
      */
-    private void executeTestRunBatchRun(TestBatch batch) throws DeviceNotAvailableException {
+    private void executeTestRunBatchRun(TestBatch batch)
+        throws DeviceNotAvailableException {
         if (getBatchNumPendingCases(batch) != batch.tests.size()) {
-            throw new AssertionError("executeTestRunBatchRun precondition failed");
+            throw new AssertionError(
+                "executeTestRunBatchRun precondition failed");
         }
 
         checkInterrupted(); // throws if interrupted
@@ -1429,7 +1495,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         mDevice.pushString(testCases + "\n", CASE_LIST_FILE_NAME);
 
         final String instrumentationName =
-                "com.drawelements.deqp/com.drawelements.deqp.testercore.DeqpInstrumentation";
+            "com.drawelements.deqp/com.drawelements.deqp.testercore.DeqpInstrumentation";
 
         final StringBuilder deqpCmdLine = new StringBuilder();
         deqpCmdLine.append("--deqp-caselist-file=");
@@ -1437,7 +1503,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         deqpCmdLine.append(" ");
         deqpCmdLine.append(getRunConfigDisplayCmdLine(batch.config));
 
-        // If we are not logging data, do not bother outputting the images from the test exe.
+        // If we are not logging data, do not bother outputting the images from
+        // the test exe.
         if (!mLogData) {
             deqpCmdLine.append(" --deqp-log-images=disable");
         }
@@ -1445,13 +1512,14 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         deqpCmdLine.append(" --deqp-watchdog=enable");
 
         final String command = String.format(
-                "am instrument %s -w -e deqpLogFileName \"%s\" -e deqpCmdLine \"%s\""
-                    + " -e deqpLogData \"%s\" %s",
-                AbiUtils.createAbiFlag(mAbi.getName()), LOG_FILE_NAME, deqpCmdLine.toString(),
-                mLogData, instrumentationName);
+            "am instrument %s -w -e deqpLogFileName \"%s\" -e deqpCmdLine \"%s\""
+                + " -e deqpLogData \"%s\" %s",
+            AbiUtils.createAbiFlag(mAbi.getName()), LOG_FILE_NAME,
+            deqpCmdLine.toString(), mLogData, instrumentationName);
 
         final int numRemainingInstancesBefore = getNumRemainingInstances();
-        final InstrumentationParser parser = new InstrumentationParser(mInstanceListerner);
+        final InstrumentationParser parser =
+            new InstrumentationParser(mInstanceListerner);
         Throwable interruptingError = null;
 
         try {
@@ -1462,8 +1530,9 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             parser.flush();
         }
 
-        final boolean progressedSinceLastCall = mInstanceListerner.getCurrentTestId() != null ||
-                getNumRemainingInstances() < numRemainingInstancesBefore;
+        final boolean progressedSinceLastCall =
+            mInstanceListerner.getCurrentTestId() != null ||
+            getNumRemainingInstances() < numRemainingInstancesBefore;
 
         if (progressedSinceLastCall) {
             mDeviceRecovery.onExecutionProgressed();
@@ -1493,38 +1562,44 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         if (batch.tests.size() == 1) {
             final TestDescription onlyTest = batch.tests.iterator().next();
             final boolean wasTestExecuted =
-                    !mInstanceListerner.isPendingTestInstance(onlyTest, batch.config) &&
-                    mInstanceListerner.getCurrentTestId() == null;
-            final boolean wasLinkFailure = !parser.wasSuccessful() || interruptingError != null;
+                !mInstanceListerner.isPendingTestInstance(onlyTest,
+                                                          batch.config) &&
+                mInstanceListerner.getCurrentTestId() == null;
+            final boolean wasLinkFailure =
+                !parser.wasSuccessful() || interruptingError != null;
 
-            // Link failures can be caused by external events, require at least two observations
-            // until bailing.
-            if (!wasTestExecuted && (!wasLinkFailure || getTestInstabilityRating(onlyTest) > 0)) {
+            // Link failures can be caused by external events, require at least
+            // two observations until bailing.
+            if (!wasTestExecuted &&
+                (!wasLinkFailure || getTestInstabilityRating(onlyTest) > 0)) {
                 recordTestInstability(onlyTest);
                 // If we cannot finish the test, mark the case as a crash.
                 //
-                // If we couldn't even start the test, fail the test instance as non-executable.
-                // This is required so that a consistently crashing or non-existent tests will
-                // not cause futile (non-terminating) re-execution attempts.
+                // If we couldn't even start the test, fail the test instance as
+                // non-executable. This is required so that a consistently
+                // crashing or non-existent tests will not cause futile
+                // (non-terminating) re-execution attempts.
                 if (mInstanceListerner.getCurrentTestId() != null) {
-                    mInstanceListerner.abortTest(onlyTest, INCOMPLETE_LOG_MESSAGE);
+                    mInstanceListerner.abortTest(onlyTest,
+                                                 INCOMPLETE_LOG_MESSAGE);
                 } else {
-                    mInstanceListerner.abortTest(onlyTest, NOT_EXECUTABLE_LOG_MESSAGE);
+                    mInstanceListerner.abortTest(onlyTest,
+                                                 NOT_EXECUTABLE_LOG_MESSAGE);
                 }
             } else if (wasTestExecuted) {
                 clearTestInstability(onlyTest);
             }
-        }
-        else
-        {
-            // Analyze results to update test stability ratings. If there is no interrupting test
-            // logged, increase instability rating of all remaining tests. If there is a
-            // interrupting test logged, increase only its instability rating.
+        } else {
+            // Analyze results to update test stability ratings. If there is no
+            // interrupting test logged, increase instability rating of all
+            // remaining tests. If there is a interrupting test logged, increase
+            // only its instability rating.
             //
             // A successful run of tests clears instability rating.
             if (mInstanceListerner.getCurrentTestId() == null) {
                 for (TestDescription test : batch.tests) {
-                    if (mInstanceListerner.isPendingTestInstance(test, batch.config)) {
+                    if (mInstanceListerner.isPendingTestInstance(
+                            test, batch.config)) {
                         recordTestInstability(test);
                     } else {
                         clearTestInstability(test);
@@ -1533,10 +1608,12 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             } else {
                 recordTestInstability(mInstanceListerner.getCurrentTestId());
                 for (TestDescription test : batch.tests) {
-                    // \note: isPendingTestInstance is false for getCurrentTestId. Current ID is
-                    // considered 'running' and will be restored to 'pending' in endBatch().
+                    // \note: isPendingTestInstance is false for
+                    // getCurrentTestId. Current ID is considered 'running' and
+                    // will be restored to 'pending' in endBatch().
                     if (!test.equals(mInstanceListerner.getCurrentTestId()) &&
-                            !mInstanceListerner.isPendingTestInstance(test, batch.config)) {
+                        !mInstanceListerner.isPendingTestInstance(
+                            test, batch.config)) {
                         clearTestInstability(test);
                     }
                 }
@@ -1546,7 +1623,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         mInstanceListerner.endBatch();
     }
 
-    private static String getRunConfigDisplayCmdLine(BatchRunConfiguration runConfig) {
+    private static String
+    getRunConfigDisplayCmdLine(BatchRunConfiguration runConfig) {
         final StringBuilder deqpCmdLine = new StringBuilder();
         if (!runConfig.getGlConfig().isEmpty()) {
             deqpCmdLine.append("--deqp-gl-config-name=");
@@ -1572,11 +1650,12 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     private int getNumRemainingInstances() {
         int retVal = 0;
         for (TestDescription testId : mRemainingTests) {
-            // If case is in current working set, sum only not yet executed instances.
-            // If case is not in current working set, sum all instances (since they are not yet
-            // executed).
+            // If case is in current working set, sum only not yet executed
+            // instances. If case is not in current working set, sum all
+            // instances (since they are not yet executed).
             if (mInstanceListerner.mPendingResults.containsKey(testId)) {
-                retVal += mInstanceListerner.mPendingResults.get(testId).remainingConfigs.size();
+                retVal += mInstanceListerner.mPendingResults.get(testId)
+                              .remainingConfigs.size();
             } else {
                 retVal += mTestInstances.get(testId).size();
             }
@@ -1585,11 +1664,12 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     }
 
     /**
-     * Checks if this execution has been marked as interrupted and throws if it has.
+     * Checks if this execution has been marked as interrupted and throws if it
+     * has.
      */
     private void checkInterrupted() throws RunInterruptedException {
-        // Work around the API. RunUtil::checkInterrupted is private but we can call it indirectly
-        // by sleeping a value <= 0.
+        // Work around the API. RunUtil::checkInterrupted is private but we can
+        // call it indirectly by sleeping a value <= 0.
         mRunUtil.sleep(0);
     }
 
@@ -1598,8 +1678,9 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      */
     private void fakePassTestRunBatch(TestBatch batch) {
         for (TestDescription test : batch.tests) {
-            CLog.d("Marking '%s' invocation in config '%s' as passed without running", test.toString(),
-                    batch.config.getId());
+            CLog.d(
+                "Marking '%s' invocation in config '%s' as passed without running",
+                test.toString(), batch.config.getId());
             mInstanceListerner.skipTest(test);
         }
     }
@@ -1609,8 +1690,9 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      */
     private void fakeFailTestRunBatch(TestBatch batch) {
         for (TestDescription test : batch.tests) {
-            CLog.d("Marking '%s' invocation in config '%s' as failed without running", test.toString(),
-                    batch.config.getId());
+            CLog.d(
+                "Marking '%s' invocation in config '%s' as failed without running",
+                test.toString(), batch.config.getId());
             mInstanceListerner.abortTest(test, "Required config not supported");
         }
     }
@@ -1625,17 +1707,20 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             listener.testEnded(test, emptyMap);
         }
         // Log only once all the skipped tests
-        CLog.d("Skipping tests '%s', either because they are not supported by the device or "
-            + "because tests are simply being collected", mRemainingTests);
+        CLog.d(
+            "Skipping tests '%s', either because they are not supported by the device or "
+                + "because tests are simply being collected",
+            mRemainingTests);
         mRemainingTests.clear();
     }
 
     /**
      * Check if device supports Vulkan.
      */
-    private boolean isSupportedVulkan ()
-            throws DeviceNotAvailableException, CapabilityQueryFailureException {
-        final Map<String, Optional<Integer>> features = getDeviceFeatures(mDevice);
+    private boolean isSupportedVulkan()
+        throws DeviceNotAvailableException, CapabilityQueryFailureException {
+        final Map<String, Optional<Integer>> features =
+            getDeviceFeatures(mDevice);
 
         for (String feature : features.keySet()) {
             if (feature.startsWith(FEATURE_VULKAN_LEVEL)) {
@@ -1647,8 +1732,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     }
 
     /**
-     * Check whether the device's claimed Vulkan dEQP level is high enough that it should pass the
-     * tests in the caselist.
+     * Check whether the device's claimed Vulkan dEQP level is high enough that
+     * it should pass the tests in the caselist.
      *
      * Precondition: the package must be a Vulkan package.
      */
@@ -1656,49 +1741,64 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         throws CapabilityQueryFailureException, DeviceNotAvailableException {
 
         if (!isVulkanPackage()) {
-            throw new AssertionError("Claims about Vulkan dEQP support should only be checked for "
+            throw new AssertionError(
+                "Claims about Vulkan dEQP support should only be checked for "
                 + "Vulkan packages");
         }
-        final Map<String, Optional<Integer>> features = getDeviceFeatures(mDevice);
+        final Map<String, Optional<Integer>> features =
+            getDeviceFeatures(mDevice);
         for (String feature : features.keySet()) {
             if (feature.startsWith(FEATURE_VULKAN_DEQP_LEVEL)) {
-                final Optional<Integer> claimedVulkanDeqpLevel = features.get(feature);
+                final Optional<Integer> claimedVulkanDeqpLevel =
+                    features.get(feature);
                 if (!claimedVulkanDeqpLevel.isPresent()) {
-                    throw new IllegalStateException("Feature " + FEATURE_VULKAN_DEQP_LEVEL
-                        + " has no associated version");
+                    throw new IllegalStateException(
+                        "Feature " + FEATURE_VULKAN_DEQP_LEVEL +
+                        " has no associated version");
                 }
-                // A Vulkan case list filename has the form 'vk-master-YYYY-MM-DD.txt'
-                final Pattern caseListFilenamePattern = Pattern
-                    .compile("vk-master-(\\d\\d\\d\\d)-(\\d\\d)-(\\d\\d)\\.txt");
-                final Matcher matcher = caseListFilenamePattern.matcher(mCaselistFile);
+                // A Vulkan case list filename has the form
+                // 'vk-master-YYYY-MM-DD.txt'
+                final Pattern caseListFilenamePattern = Pattern.compile(
+                    "vk-master-(\\d\\d\\d\\d)-(\\d\\d)-(\\d\\d)\\.txt");
+                final Matcher matcher =
+                    caseListFilenamePattern.matcher(mCaselistFile);
                 if (matcher.find()) {
                     final int year = Integer.parseInt(matcher.group(1));
                     final int month = Integer.parseInt(matcher.group(2));
                     final int day = Integer.parseInt(matcher.group(3));
-                    CLog.d("Case list date is %s-%s-%s", String.format("04d", year),
-                        String.format("02d", month), String.format("02d", day));
+                    CLog.d("Case list date is %s-%s-%s",
+                           String.format("04d", year),
+                           String.format("02d", month),
+                           String.format("02d", day));
                     // As per the documentation for FEATURE_VULKAN_DEQP_LEVEL in
-                    // android.content.pm.PackageManager, a year is encoded as an integer by
-                    // devoting bits 31-16 to year, 15-8 to month and 7-0 to day
+                    // android.content.pm.PackageManager, a year is encoded as
+                    // an integer by devoting bits 31-16 to year, 15-8 to month
+                    // and 7-0 to day
                     final int minimumLevel = (year << 16) + (month << 8) + day;
-                    CLog.d("Minimum level required to run this case list is %d", minimumLevel);
-                    CLog.d("Claimed level for this device is %d", claimedVulkanDeqpLevel.get());
+                    CLog.d("Minimum level required to run this case list is %d",
+                           minimumLevel);
+                    CLog.d("Claimed level for this device is %d",
+                           claimedVulkanDeqpLevel.get());
                     return claimedVulkanDeqpLevel.get() >= minimumLevel;
                 } else {
-                    throw new IllegalStateException("Case list filename " + mCaselistFile
-                        + " is malformed");
+                    throw new IllegalStateException("Case list filename " +
+                                                    mCaselistFile +
+                                                    " is malformed");
                 }
             }
         }
-        throw new IllegalStateException("Device supports Vulkan, so must have feature "
-            + FEATURE_VULKAN_DEQP_LEVEL);
+        throw new IllegalStateException(
+            "Device supports Vulkan, so must have feature " +
+            FEATURE_VULKAN_DEQP_LEVEL);
     }
 
     /**
      * Check if device supports OpenGL ES version.
      */
-    private static boolean isSupportedGles(ITestDevice device, int requiredMajorVersion,
-            int requiredMinorVersion) throws DeviceNotAvailableException {
+    private static boolean isSupportedGles(ITestDevice device,
+                                           int requiredMajorVersion,
+                                           int requiredMinorVersion)
+        throws DeviceNotAvailableException {
         String roOpenglesVersion = device.getProperty("ro.opengles.version");
 
         if (roOpenglesVersion == null)
@@ -1709,18 +1809,19 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         int majorVersion = ((intValue & 0xffff0000) >> 16);
         int minorVersion = (intValue & 0xffff);
 
-        return (majorVersion > requiredMajorVersion)
-                || (majorVersion == requiredMajorVersion && minorVersion >= requiredMinorVersion);
+        return (majorVersion > requiredMajorVersion) ||
+            (majorVersion == requiredMajorVersion &&
+             minorVersion >= requiredMinorVersion);
     }
 
     /**
      * Query if rendertarget is supported
      */
     private boolean isSupportedGlesRenderConfig(BatchRunConfiguration runConfig)
-            throws DeviceNotAvailableException, CapabilityQueryFailureException {
+        throws DeviceNotAvailableException, CapabilityQueryFailureException {
         // query if configuration is supported
         final StringBuilder configCommandLine =
-                new StringBuilder(getRunConfigDisplayCmdLine(runConfig));
+            new StringBuilder(getRunConfigDisplayCmdLine(runConfig));
         if (configCommandLine.length() != 0) {
             configCommandLine.append(" ");
         }
@@ -1736,26 +1837,29 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             return mConfigQuerySupportCache.get(commandLine);
         }
 
-        final boolean supported = queryIsSupportedConfigCommandLine(commandLine);
+        final boolean supported =
+            queryIsSupportedConfigCommandLine(commandLine);
         mConfigQuerySupportCache.put(commandLine, supported);
         return supported;
     }
 
     private boolean queryIsSupportedConfigCommandLine(String deqpCommandLine)
-            throws DeviceNotAvailableException, CapabilityQueryFailureException {
+        throws DeviceNotAvailableException, CapabilityQueryFailureException {
         final String instrumentationName =
-                "com.drawelements.deqp/com.drawelements.deqp.platformutil.DeqpPlatformCapabilityQueryInstrumentation";
+            "com.drawelements.deqp/com.drawelements.deqp.platformutil.DeqpPlatformCapabilityQueryInstrumentation";
         final String command = String.format(
-                "am instrument %s -w -e deqpQueryType renderConfigSupported -e deqpCmdLine \"%s\""
-                    + " %s",
-                AbiUtils.createAbiFlag(mAbi.getName()), deqpCommandLine, instrumentationName);
+            "am instrument %s -w -e deqpQueryType renderConfigSupported -e deqpCmdLine \"%s\""
+                + " %s",
+            AbiUtils.createAbiFlag(mAbi.getName()), deqpCommandLine,
+            instrumentationName);
 
-        final PlatformQueryInstrumentationParser parser = new PlatformQueryInstrumentationParser();
+        final PlatformQueryInstrumentationParser parser =
+            new PlatformQueryInstrumentationParser();
         mDevice.executeShellCommand(command, parser);
         parser.flush();
 
         if (parser.wasSuccessful() && parser.getResultCode() == 0 &&
-                parser.getResultMap().containsKey("Supported")) {
+            parser.getResultMap().containsKey("Supported")) {
             if ("Yes".equals(parser.getResultMap().get("Supported"))) {
                 return true;
             } else if ("No".equals(parser.getResultMap().get("Supported"))) {
@@ -1766,7 +1870,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             }
         } else if (parser.wasSuccessful()) {
             CLog.e("Failed to run capability query. Code: %d, Result: %s",
-                    parser.getResultCode(), parser.getResultMap().toString());
+                   parser.getResultCode(), parser.getResultMap().toString());
             throw new CapabilityQueryFailureException();
         } else {
             CLog.e("Failed to run capability query");
@@ -1775,10 +1879,11 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     }
 
     /**
-     * Return feature set supported by the device, mapping integer-valued features to their values
+     * Return feature set supported by the device, mapping integer-valued
+     * features to their values
      */
     private Map<String, Optional<Integer>> getDeviceFeatures(ITestDevice device)
-            throws DeviceNotAvailableException, CapabilityQueryFailureException {
+        throws DeviceNotAvailableException, CapabilityQueryFailureException {
         if (mDeviceFeatures == null) {
             mDeviceFeatures = queryDeviceFeatures(device);
         }
@@ -1788,8 +1893,9 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     /**
      * Query feature set supported by the device
      */
-    private static Map<String, Optional<Integer>> queryDeviceFeatures(ITestDevice device)
-            throws DeviceNotAvailableException, CapabilityQueryFailureException {
+    private static Map<String, Optional<Integer>>
+    queryDeviceFeatures(ITestDevice device)
+        throws DeviceNotAvailableException, CapabilityQueryFailureException {
         // NOTE: Almost identical code in BaseDevicePolicyTest#hasDeviceFeatures
         // TODO: Move this logic to ITestDevice.
         String command = "pm list features";
@@ -1797,27 +1903,31 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
 
         // Extract the id of the new user.
         Map<String, Optional<Integer>> availableFeatures = new HashMap<>();
-        for (String feature: commandOutput.split("\\s+")) {
-            // Each line in the output of the command has the format "feature:{FEATURE_NAME}",
-            // optionally followed by "={FEATURE_VERSION}".
+        for (String feature : commandOutput.split("\\s+")) {
+            // Each line in the output of the command has the format
+            // "feature:{FEATURE_NAME}", optionally followed by
+            // "={FEATURE_VERSION}".
             String[] tokens = feature.split(":|=");
             if (tokens.length < 2 || !"feature".equals(tokens[0])) {
-                CLog.e("Failed parse features. Unexpect format on line \"%s\"", feature);
+                CLog.e("Failed parse features. Unexpect format on line \"%s\"",
+                       feature);
                 throw new CapabilityQueryFailureException();
             }
             final String featureName = tokens[1];
             Optional<Integer> featureValue = Optional.empty();
             if (tokens.length > 2) {
                 try {
-                    // Integer.decode, rather than Integer.parseInt, is used here since some
-                    // feature versions may be presented in decimal and others in hexadecimal.
+                    // Integer.decode, rather than Integer.parseInt, is used
+                    // here since some feature versions may be presented in
+                    // decimal and others in hexadecimal.
                     featureValue = Optional.of(Integer.decode(tokens[2]));
                 } catch (NumberFormatException numberFormatException) {
-                    CLog.e("Failed parse features. Feature value \"%s\" was not an integer on "
-                        + "line \"%s\"", tokens[2], feature);
+                    CLog.e(
+                        "Failed parse features. Feature value \"%s\" was not an integer on "
+                            + "line \"%s\"",
+                        tokens[2], feature);
                     throw new CapabilityQueryFailureException();
                 }
-
             }
             availableFeatures.put(featureName, featureValue);
         }
@@ -1826,26 +1936,28 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
 
     private boolean isPortraitClassRotation(String rotation) {
         return BatchRunConfiguration.ROTATION_PORTRAIT.equals(rotation) ||
-                BatchRunConfiguration.ROTATION_REVERSE_PORTRAIT.equals(rotation);
+            BatchRunConfiguration.ROTATION_REVERSE_PORTRAIT.equals(rotation);
     }
 
     private boolean isLandscapeClassRotation(String rotation) {
         return BatchRunConfiguration.ROTATION_LANDSCAPE.equals(rotation) ||
-                BatchRunConfiguration.ROTATION_REVERSE_LANDSCAPE.equals(rotation);
+            BatchRunConfiguration.ROTATION_REVERSE_LANDSCAPE.equals(rotation);
     }
 
     /**
      * Parse gl nature from package name
      */
     private boolean isOpenGlEsPackage() {
-        if ("dEQP-GLES2".equals(mDeqpPackage) || "dEQP-GLES3".equals(mDeqpPackage) ||
-                "dEQP-GLES31".equals(mDeqpPackage)) {
+        if ("dEQP-GLES2".equals(mDeqpPackage) ||
+            "dEQP-GLES3".equals(mDeqpPackage) ||
+            "dEQP-GLES31".equals(mDeqpPackage)) {
             return true;
         } else if ("dEQP-EGL".equals(mDeqpPackage) ||
-                "dEQP-VK".equals(mDeqpPackage)) {
+                   "dEQP-VK".equals(mDeqpPackage)) {
             return false;
         } else {
-            throw new IllegalStateException("dEQP runner was created with illegal name");
+            throw new IllegalStateException(
+                "dEQP runner was created with illegal name");
         }
     }
 
@@ -1853,13 +1965,16 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      * Parse vulkan nature from package name
      */
     private boolean isVulkanPackage() {
-        if ("dEQP-GLES2".equals(mDeqpPackage) || "dEQP-GLES3".equals(mDeqpPackage) ||
-                "dEQP-GLES31".equals(mDeqpPackage) || "dEQP-EGL".equals(mDeqpPackage)) {
+        if ("dEQP-GLES2".equals(mDeqpPackage) ||
+            "dEQP-GLES3".equals(mDeqpPackage) ||
+            "dEQP-GLES31".equals(mDeqpPackage) ||
+            "dEQP-EGL".equals(mDeqpPackage)) {
             return false;
         } else if ("dEQP-VK".equals(mDeqpPackage)) {
             return true;
         } else {
-            throw new IllegalStateException("dEQP runner was created with illegal name");
+            throw new IllegalStateException(
+                "dEQP runner was created with illegal name");
         }
     }
 
@@ -1867,7 +1982,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      * Check GL support (based on package name)
      */
     private boolean isSupportedGles() throws DeviceNotAvailableException {
-        return isSupportedGles(mDevice, getGlesMajorVersion(), getGlesMinorVersion());
+        return isSupportedGles(mDevice, getGlesMajorVersion(),
+                               getGlesMinorVersion());
     }
 
     /**
@@ -1881,7 +1997,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         } else if ("dEQP-GLES31".equals(mDeqpPackage)) {
             return 3;
         } else {
-            throw new IllegalStateException("getGlesMajorVersion called for non gles pkg");
+            throw new IllegalStateException(
+                "getGlesMajorVersion called for non gles pkg");
         }
     }
 
@@ -1896,7 +2013,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         } else if ("dEQP-GLES31".equals(mDeqpPackage)) {
             return 1;
         } else {
-            throw new IllegalStateException("getGlesMinorVersion called for non gles pkg");
+            throw new IllegalStateException(
+                "getGlesMinorVersion called for non gles pkg");
         }
     }
 
@@ -1904,7 +2022,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         List<Pattern> patterns = new ArrayList<Pattern>();
         for (String filter : filters) {
             if (filter.contains("*")) {
-                patterns.add(Pattern.compile(filter.replace(".","\\.").replace("*",".*")));
+                patterns.add(Pattern.compile(
+                    filter.replace(".", "\\.").replace("*", ".*")));
             }
         }
         return patterns;
@@ -1914,15 +2033,15 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         Set<String> nonPatternFilters = new HashSet<String>();
         for (String filter : filters) {
             if (!filter.contains("*")) {
-                // Deqp usesly only dots for separating between parts of the names
-                // Convert last dot to hash if needed.
+                // Deqp usesly only dots for separating between parts of the
+                // names Convert last dot to hash if needed.
                 if (!filter.contains("#")) {
                     int lastSeparator = filter.lastIndexOf('.');
-                    String filterWithHash = filter.substring(0, lastSeparator) + "#" +
+                    String filterWithHash =
+                        filter.substring(0, lastSeparator) + "#" +
                         filter.substring(lastSeparator + 1, filter.length());
                     nonPatternFilters.add(filterWithHash);
-                }
-                else {
+                } else {
                     nonPatternFilters.add(filter);
                 }
             }
@@ -1930,7 +2049,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         return nonPatternFilters;
     }
 
-    private static boolean matchesAny(TestDescription test, List<Pattern> patterns) {
+    private static boolean matchesAny(TestDescription test,
+                                      List<Pattern> patterns) {
         for (Pattern pattern : patterns) {
             if (pattern.matcher(test.toString()).matches()) {
                 return true;
@@ -1945,9 +2065,9 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      * '*' is 0 or more characters.
      * '.' is interpreted verbatim.
      */
-    private static void filterTests(Map<TestDescription, Set<BatchRunConfiguration>> tests,
-                                    List<String> includeFilters,
-                                    List<String> excludeFilters) {
+    private static void
+    filterTests(Map<TestDescription, Set<BatchRunConfiguration>> tests,
+                List<String> includeFilters, List<String> excludeFilters) {
         // We could filter faster by building the test case tree.
         // Let's see if this is fast enough.
         Set<String> includeStrings = getNonPatternFilters(includeFilters);
@@ -1961,10 +2081,12 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                 tests.remove(test); // remove test if explicitly excluded
                 continue;
             }
-            boolean includesExist = !includeStrings.isEmpty() || !includePatterns.isEmpty();
-            boolean testIsIncluded = includeStrings.contains(test.toString())
-                    || matchesAny(test, includePatterns);
-            if ((includesExist && !testIsIncluded) || matchesAny(test, excludePatterns)) {
+            boolean includesExist =
+                !includeStrings.isEmpty() || !includePatterns.isEmpty();
+            boolean testIsIncluded = includeStrings.contains(test.toString()) ||
+                                     matchesAny(test, includePatterns);
+            if ((includesExist && !testIsIncluded) ||
+                matchesAny(test, excludePatterns)) {
                 // if this test isn't included and other tests are,
                 // or if test matches exclude pattern, exclude test
                 tests.remove(test);
@@ -1979,7 +2101,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      * reasons, to add directly to the target list instead of using
      * intermediate return value.
      */
-    static private void readFilterFile(List<String> filterList, File file) throws FileNotFoundException {
+    static private void readFilterFile(List<String> filterList, File file)
+        throws FileNotFoundException {
         if (!file.canRead()) {
             CLog.e("Failed to read filter file '%s'", file.getPath());
             throw new FileNotFoundException();
@@ -1992,11 +2115,9 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                 filterList.add(filter);
             }
             // Rely on try block to autoclose
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException("Failed to read filter list file '" + file.getPath() + "': " +
-                     e.getMessage());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read filter list file '" +
+                                       file.getPath() + "': " + e.getMessage());
         }
     }
 
@@ -2019,30 +2140,32 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      * that no tests have been loaded for this instance before.
      */
     private void loadTests() {
-        if (mTestInstances != null) throw new AssertionError("Re-load of tests not supported");
+        if (mTestInstances != null)
+            throw new AssertionError("Re-load of tests not supported");
 
         try {
             Reader reader = mCaselistReader;
             if (reader == null) {
-                File testlist = new File(mBuildHelper.getTestsDir(), mCaselistFile);
+                File testlist =
+                    new File(mBuildHelper.getTestsDir(), mCaselistFile);
                 if (!testlist.isFile()) {
                     throw new FileNotFoundException();
                 }
                 reader = new FileReader(testlist);
             }
-            mTestInstances = generateTestInstances(reader, mConfigName, mScreenRotation, mSurfaceType, mConfigRequired);
+            mTestInstances =
+                generateTestInstances(reader, mConfigName, mScreenRotation,
+                                      mSurfaceType, mConfigRequired);
             mCaselistReader = null;
             reader.close();
-        }
-        catch (FileNotFoundException e) {
-            throw new RuntimeException("Cannot read deqp test list file: "  + mCaselistFile);
-        }
-        catch (IOException e) {
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException("Cannot read deqp test list file: " +
+                                       mCaselistFile);
+        } catch (IOException e) {
             CLog.w("Failed to close test list reader.");
         }
 
-        try
-        {
+        try {
             for (String filterFile : mIncludeFilterFiles) {
                 CLog.d("Read include filter file '%s'", filterFile);
                 File file = new File(mBuildHelper.getTestsDir(), filterFile);
@@ -2053,9 +2176,9 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                 File file = new File(mBuildHelper.getTestsDir(), filterFile);
                 readFilterFile(mExcludeFilters, file);
             }
-        }
-        catch (FileNotFoundException e) {
-            throw new RuntimeException("Cannot read deqp filter list file:" + e.getMessage());
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException("Cannot read deqp filter list file:" +
+                                       e.getMessage());
         }
 
         CLog.d("Include filters:");
@@ -2065,12 +2188,14 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
 
         long originalTestCount = mTestInstances.size();
         CLog.i("Num tests before filtering: %d", originalTestCount);
-        if ((!mIncludeFilters.isEmpty() || !mExcludeFilters.isEmpty()) && originalTestCount > 0) {
+        if ((!mIncludeFilters.isEmpty() || !mExcludeFilters.isEmpty()) &&
+            originalTestCount > 0) {
             filterTests(mTestInstances, mIncludeFilters, mExcludeFilters);
 
             // Update runtime estimation hint.
             if (mRuntimeHint != -1) {
-                mRuntimeHint = (mRuntimeHint * mTestInstances.size()) / originalTestCount;
+                mRuntimeHint =
+                    (mRuntimeHint * mTestInstances.size()) / originalTestCount;
             }
         }
         CLog.i("Num tests after filtering: %d", mTestInstances.size());
@@ -2080,7 +2205,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      * {@inheritDoc}
      */
     @Override
-    public void run(ITestInvocationListener listener) throws DeviceNotAvailableException {
+    public void run(ITestInvocationListener listener)
+        throws DeviceNotAvailableException {
         final Map<String, String> emptyMap = Collections.emptyMap();
         // If sharded, split() will load the tests.
         if (mTestInstances == null) {
@@ -2096,15 +2222,18 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                 CLog.d("No tests to run.");
                 return;
             }
-            final boolean isSupportedApi = (isOpenGlEsPackage() && isSupportedGles())
-                                            || (isVulkanPackage() && isSupportedVulkan())
-                                            || (!isOpenGlEsPackage() && !isVulkanPackage());
-            final boolean deviceClaimsToSupportTests = !isVulkanPackage()
-                || claimedVuklanDeqpLevelIsRecentEnough();
-            if (!isSupportedApi || !deviceClaimsToSupportTests || mCollectTestsOnly) {
+            final boolean isSupportedApi =
+                (isOpenGlEsPackage() && isSupportedGles()) ||
+                (isVulkanPackage() && isSupportedVulkan()) ||
+                (!isOpenGlEsPackage() && !isVulkanPackage());
+            final boolean deviceClaimsToSupportTests =
+                !isVulkanPackage() || claimedVuklanDeqpLevelIsRecentEnough();
+            if (!isSupportedApi || !deviceClaimsToSupportTests ||
+                mCollectTestsOnly) {
                 // Pass all tests trivially if:
                 // - the OpenGL ES or Vulkan is not supported, or
-                // - the device's feature flags do not claim to pass the tests, or
+                // - the device's feature flags do not claim to pass the tests,
+                // or
                 // - we are collecting the names of the tests only
                 fakePassTests(listener);
             } else if (!mRemainingTests.isEmpty()) {
@@ -2113,16 +2242,18 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                 runTests();
             }
         } catch (CapabilityQueryFailureException ex) {
-            // Platform is not behaving correctly, for example crashing when trying to create
-            // a window. Instead of silenty failing, signal failure by leaving the rest of the
-            // test cases in "NotExecuted" state
+            // Platform is not behaving correctly, for example crashing when
+            // trying to create a window. Instead of silenty failing, signal
+            // failure by leaving the rest of the test cases in "NotExecuted"
+            // state
             CLog.e("Capability query failed - leaving tests unexecuted.");
         } finally {
-            listener.testRunEnded(System.currentTimeMillis() - startTime, emptyMap);
+            listener.testRunEnded(System.currentTimeMillis() - startTime,
+                                  emptyMap);
         }
     }
 
-   /**
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -2194,7 +2325,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         mCollectTestsOnly = collectTests;
     }
 
-    private static void copyOptions(DeqpTestRunner destination, DeqpTestRunner source) {
+    private static void copyOptions(DeqpTestRunner destination,
+                                    DeqpTestRunner source) {
         destination.mDeqpPackage = source.mDeqpPackage;
         destination.mConfigName = source.mConfigName;
         destination.mCaselistFile = source.mCaselistFile;
@@ -2202,9 +2334,11 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         destination.mSurfaceType = source.mSurfaceType;
         destination.mConfigRequired = source.mConfigRequired;
         destination.mIncludeFilters = new ArrayList<>(source.mIncludeFilters);
-        destination.mIncludeFilterFiles = new ArrayList<>(source.mIncludeFilterFiles);
+        destination.mIncludeFilterFiles =
+            new ArrayList<>(source.mIncludeFilterFiles);
         destination.mExcludeFilters = new ArrayList<>(source.mExcludeFilters);
-        destination.mExcludeFilterFiles = new ArrayList<>(source.mExcludeFilterFiles);
+        destination.mExcludeFilterFiles =
+            new ArrayList<>(source.mExcludeFilterFiles);
         destination.mAbi = source.mAbi;
         destination.mLogData = source.mLogData;
         destination.mCollectTestsOnly = source.mCollectTestsOnly;
@@ -2213,12 +2347,15 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     /**
      * Helper to update the RuntimeHint of the tests after being sharded.
      */
-    private void updateRuntimeHint(long originalSize, Collection<IRemoteTest> runners) {
+    private void updateRuntimeHint(long originalSize,
+                                   Collection<IRemoteTest> runners) {
         if (originalSize > 0) {
             long fullRuntimeMs = getRuntimeHint();
-            for (IRemoteTest remote: runners) {
+            for (IRemoteTest remote : runners) {
                 DeqpTestRunner runner = (DeqpTestRunner)remote;
-                long shardRuntime = (fullRuntimeMs * runner.mTestInstances.size()) / originalSize;
+                long shardRuntime =
+                    (fullRuntimeMs * runner.mTestInstances.size()) /
+                    originalSize;
                 runner.mRuntimeHint = shardRuntime;
             }
         }
@@ -2230,18 +2367,22 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     @Override
     public Collection<IRemoteTest> split() {
         if (mTestInstances != null) {
-            throw new AssertionError("Re-splitting or splitting running instance?");
+            throw new AssertionError(
+                "Re-splitting or splitting running instance?");
         }
-        // \todo [2015-11-23 kalle] If we split to batches at shard level, we could
-        // basically get rid of batching. Except that sharding is optional?
+        // \todo [2015-11-23 kalle] If we split to batches at shard level, we
+        // could basically get rid of batching. Except that sharding is
+        // optional?
 
         // Assume that tests have not been yet loaded.
         loadTests();
 
         Collection<IRemoteTest> runners = new ArrayList<>();
         // NOTE: Use linked hash map to keep the insertion order in iteration
-        Map<TestDescription, Set<BatchRunConfiguration>> currentSet = new LinkedHashMap<>();
-        Map<TestDescription, Set<BatchRunConfiguration>> iterationSet = this.mTestInstances;
+        Map<TestDescription, Set<BatchRunConfiguration>> currentSet =
+            new LinkedHashMap<>();
+        Map<TestDescription, Set<BatchRunConfiguration>> iterationSet =
+            this.mTestInstances;
 
         if (iterationSet.keySet().isEmpty()) {
             CLog.i("Cannot split deqp tests, no tests to run");
@@ -2249,11 +2390,12 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         }
 
         // Go through tests, split
-        for (TestDescription test: iterationSet.keySet()) {
+        for (TestDescription test : iterationSet.keySet()) {
             currentSet.put(test, iterationSet.get(test));
             if (currentSet.size() >= TESTCASE_BATCH_LIMIT) {
                 runners.add(new DeqpTestRunner(this, currentSet));
-                // NOTE: Use linked hash map to keep the insertion order in iteration
+                // NOTE: Use linked hash map to keep the insertion order in
+                // iteration
                 currentSet = new LinkedHashMap<>();
             }
         }

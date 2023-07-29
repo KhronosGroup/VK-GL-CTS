@@ -34,32 +34,32 @@ namespace xs
 
 enum
 {
-	PROTOCOL_VERSION			= 18,
-	MESSAGE_HEADER_SIZE			= 8,
+    PROTOCOL_VERSION    = 18,
+    MESSAGE_HEADER_SIZE = 8,
 
-	// Times are in milliseconds.
-	KEEPALIVE_SEND_INTERVAL		= 5000,
-	KEEPALIVE_TIMEOUT			= 30000,
+    // Times are in milliseconds.
+    KEEPALIVE_SEND_INTERVAL = 5000,
+    KEEPALIVE_TIMEOUT       = 30000,
 };
 
 enum MessageType
 {
-	MESSAGETYPE_NONE					= 0,	//!< Not valid.
+    MESSAGETYPE_NONE = 0, //!< Not valid.
 
-	// Commands (from Client to ExecServer).
-	MESSAGETYPE_HELLO					= 100,	//!< First message from client, specifies the protocol version
-	MESSAGETYPE_TEST					= 101,	//!< Debug only
-	MESSAGETYPE_EXECUTE_BINARY			= 111,	//!< Request execution of a test package binary.
-	MESSAGETYPE_STOP_EXECUTION			= 112,	//!< Request cancellation of the currently executing binary.
+    // Commands (from Client to ExecServer).
+    MESSAGETYPE_HELLO          = 100, //!< First message from client, specifies the protocol version
+    MESSAGETYPE_TEST           = 101, //!< Debug only
+    MESSAGETYPE_EXECUTE_BINARY = 111, //!< Request execution of a test package binary.
+    MESSAGETYPE_STOP_EXECUTION = 112, //!< Request cancellation of the currently executing binary.
 
-	// Responses (from ExecServer to Client)
-	MESSAGETYPE_PROCESS_STARTED			= 200,	//!< Requested process has started.
-	MESSAGETYPE_PROCESS_LAUNCH_FAILED	= 201,	//!< Requested process failed to launch.
-	MESSAGETYPE_PROCESS_FINISHED		= 202,	//!< Requested process has finished (for any reason).
-	MESSAGETYPE_PROCESS_LOG_DATA		= 203,	//!< Unprocessed log data from TestResults.qpa.
-	MESSAGETYPE_INFO					= 204,	//!< Generic info message from ExecServer (for debugging purposes).
+    // Responses (from ExecServer to Client)
+    MESSAGETYPE_PROCESS_STARTED       = 200, //!< Requested process has started.
+    MESSAGETYPE_PROCESS_LAUNCH_FAILED = 201, //!< Requested process failed to launch.
+    MESSAGETYPE_PROCESS_FINISHED      = 202, //!< Requested process has finished (for any reason).
+    MESSAGETYPE_PROCESS_LOG_DATA      = 203, //!< Unprocessed log data from TestResults.qpa.
+    MESSAGETYPE_INFO                  = 204, //!< Generic info message from ExecServer (for debugging purposes).
 
-	MESSAGETYPE_KEEPALIVE				= 102	//!< Keep-alive packet
+    MESSAGETYPE_KEEPALIVE = 102 //!< Keep-alive packet
 };
 
 class MessageWriter;
@@ -67,21 +67,25 @@ class MessageWriter;
 class Message
 {
 public:
-	MessageType		type;
+    MessageType type;
 
-					Message			(MessageType type_) : type(type_) {}
-	virtual			 ~Message		(void) {}
+    Message(MessageType type_) : type(type_)
+    {
+    }
+    virtual ~Message(void)
+    {
+    }
 
-	virtual void	write			(std::vector<deUint8>& buf) const = DE_NULL;
+    virtual void write(std::vector<uint8_t> &buf) const = DE_NULL;
 
-	static void		parseHeader		(const deUint8* data, size_t dataSize, MessageType& type, size_t& messageSize);
-	static void		writeHeader		(MessageType type, size_t messageSize, deUint8* dst, size_t bufSize);
+    static void parseHeader(const uint8_t *data, size_t dataSize, MessageType &type, size_t &messageSize);
+    static void writeHeader(MessageType type, size_t messageSize, uint8_t *dst, size_t bufSize);
 
 protected:
-	void			writeNoData		(std::vector<deUint8>& buf) const;
+    void writeNoData(std::vector<uint8_t> &buf) const;
 
-					Message			(const Message& other);
-	Message&		operator=		(const Message& other);
+    Message(const Message &other);
+    Message &operator=(const Message &other);
 };
 
 // Simple messages without any data.
@@ -89,102 +93,133 @@ template <int MsgType>
 class SimpleMessage : public Message
 {
 public:
-					SimpleMessage	(const deUint8* data, size_t dataSize) : Message((MessageType)MsgType) { DE_UNREF(data); XS_CHECK_MSG(dataSize == 0, "No payload expected"); }
-					SimpleMessage	(void) : Message((MessageType)MsgType) {}
-					~SimpleMessage	(void) {}
+    SimpleMessage(const uint8_t *data, size_t dataSize) : Message((MessageType)MsgType)
+    {
+        DE_UNREF(data);
+        XS_CHECK_MSG(dataSize == 0, "No payload expected");
+    }
+    SimpleMessage(void) : Message((MessageType)MsgType)
+    {
+    }
+    ~SimpleMessage(void)
+    {
+    }
 
-	void			write			(std::vector<deUint8>& buf) const { writeNoData(buf); }
+    void write(std::vector<uint8_t> &buf) const
+    {
+        writeNoData(buf);
+    }
 };
 
-typedef SimpleMessage<MESSAGETYPE_STOP_EXECUTION>			StopExecutionMessage;
-typedef SimpleMessage<MESSAGETYPE_PROCESS_STARTED>			ProcessStartedMessage;
-typedef SimpleMessage<MESSAGETYPE_KEEPALIVE>				KeepAliveMessage;
+typedef SimpleMessage<MESSAGETYPE_STOP_EXECUTION> StopExecutionMessage;
+typedef SimpleMessage<MESSAGETYPE_PROCESS_STARTED> ProcessStartedMessage;
+typedef SimpleMessage<MESSAGETYPE_KEEPALIVE> KeepAliveMessage;
 
 class HelloMessage : public Message
 {
 public:
-	int				version;
+    int version;
 
-					HelloMessage	(const deUint8* data, size_t dataSize);
-					HelloMessage	(void) : Message(MESSAGETYPE_HELLO), version(PROTOCOL_VERSION) {}
-					~HelloMessage	(void) {}
+    HelloMessage(const uint8_t *data, size_t dataSize);
+    HelloMessage(void) : Message(MESSAGETYPE_HELLO), version(PROTOCOL_VERSION)
+    {
+    }
+    ~HelloMessage(void)
+    {
+    }
 
-	void			write			(std::vector<deUint8>& buf) const;
+    void write(std::vector<uint8_t> &buf) const;
 };
 
 class ExecuteBinaryMessage : public Message
 {
 public:
-	std::string		name;
-	std::string		params;
-	std::string		workDir;
-	std::string		caseList;
+    std::string name;
+    std::string params;
+    std::string workDir;
+    std::string caseList;
 
-					ExecuteBinaryMessage	(const deUint8* data, size_t dataSize);
-					ExecuteBinaryMessage	(void) : Message(MESSAGETYPE_EXECUTE_BINARY) {}
-					~ExecuteBinaryMessage	(void) {};
+    ExecuteBinaryMessage(const uint8_t *data, size_t dataSize);
+    ExecuteBinaryMessage(void) : Message(MESSAGETYPE_EXECUTE_BINARY)
+    {
+    }
+    ~ExecuteBinaryMessage(void){};
 
-	void			write			(std::vector<deUint8>& buf) const;
+    void write(std::vector<uint8_t> &buf) const;
 };
 
 class ProcessLogDataMessage : public Message
 {
 public:
-	std::string		logData;
+    std::string logData;
 
-					ProcessLogDataMessage		(const deUint8* data, size_t dataSize);
-					~ProcessLogDataMessage		(void) {}
+    ProcessLogDataMessage(const uint8_t *data, size_t dataSize);
+    ~ProcessLogDataMessage(void)
+    {
+    }
 
-	void			write						(std::vector<deUint8>& buf) const;
+    void write(std::vector<uint8_t> &buf) const;
 };
 
 class ProcessLaunchFailedMessage : public Message
 {
 public:
-	std::string		reason;
+    std::string reason;
 
-					ProcessLaunchFailedMessage			(const deUint8* data, size_t dataSize);
-					ProcessLaunchFailedMessage			(const char* reason_) : Message(MESSAGETYPE_PROCESS_LAUNCH_FAILED), reason(reason_) {}
-					~ProcessLaunchFailedMessage			(void) {}
+    ProcessLaunchFailedMessage(const uint8_t *data, size_t dataSize);
+    ProcessLaunchFailedMessage(const char *reason_) : Message(MESSAGETYPE_PROCESS_LAUNCH_FAILED), reason(reason_)
+    {
+    }
+    ~ProcessLaunchFailedMessage(void)
+    {
+    }
 
-	void			write								(std::vector<deUint8>& buf) const;
+    void write(std::vector<uint8_t> &buf) const;
 };
 
 class ProcessFinishedMessage : public Message
 {
 public:
-	int				exitCode;
+    int exitCode;
 
-					ProcessFinishedMessage			(const deUint8* data, size_t dataSize);
-					ProcessFinishedMessage			(int exitCode_) : Message(MESSAGETYPE_PROCESS_FINISHED), exitCode(exitCode_) {}
-					~ProcessFinishedMessage			(void) {}
+    ProcessFinishedMessage(const uint8_t *data, size_t dataSize);
+    ProcessFinishedMessage(int exitCode_) : Message(MESSAGETYPE_PROCESS_FINISHED), exitCode(exitCode_)
+    {
+    }
+    ~ProcessFinishedMessage(void)
+    {
+    }
 
-	void			write							(std::vector<deUint8>& buf) const;
+    void write(std::vector<uint8_t> &buf) const;
 };
 
 class InfoMessage : public Message
 {
 public:
-	std::string		info;
+    std::string info;
 
-					InfoMessage			(const deUint8* data, size_t dataSize);
-					~InfoMessage		(void) {}
+    InfoMessage(const uint8_t *data, size_t dataSize);
+    ~InfoMessage(void)
+    {
+    }
 
-	void			write				(std::vector<deUint8>& buf) const;
+    void write(std::vector<uint8_t> &buf) const;
 };
 
 // For debug purposes only.
 class TestMessage : public Message
 {
 public:
-	std::string		test;
+    std::string test;
 
-					TestMessage		(const deUint8* data, size_t dataSize);
-					~TestMessage	(void) {}
+    TestMessage(const uint8_t *data, size_t dataSize);
+    ~TestMessage(void)
+    {
+    }
 
-	void			write			(std::vector<deUint8>& buf) const;
+    void write(std::vector<uint8_t> &buf) const;
 };
 
-} // xs
+} // namespace xs
 
 #endif // _XSPROTOCOL_HPP

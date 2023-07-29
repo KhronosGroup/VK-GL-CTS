@@ -36,18 +36,18 @@ namespace Functional
 class ProgramUniformTests : public TestCaseGroup
 {
 public:
-							ProgramUniformTests		(Context& context);
-							~ProgramUniformTests	(void);
+    ProgramUniformTests(Context &context);
+    ~ProgramUniformTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							ProgramUniformTests		(const ProgramUniformTests& other);
-	ProgramUniformTests&	operator=				(const ProgramUniformTests& other);
+    ProgramUniformTests(const ProgramUniformTests &other);
+    ProgramUniformTests &operator=(const ProgramUniformTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FPROGRAMUNIFORMTESTS_HPP

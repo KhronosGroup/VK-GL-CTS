@@ -32,9 +32,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup*	createVertexOnlyTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createVertexOnlyTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEVERTEXONLYTESTS_HPP

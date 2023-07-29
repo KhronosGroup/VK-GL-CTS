@@ -36,17 +36,17 @@ namespace Functional
 class RboStateQueryTests : public TestCaseGroup
 {
 public:
-							RboStateQueryTests	(Context& context);
+    RboStateQueryTests(Context &context);
 
-	void					init				(void);
+    void init(void);
 
 private:
-							RboStateQueryTests	(const RboStateQueryTests& other);
-	RboStateQueryTests&		operator=			(const RboStateQueryTests& other);
+    RboStateQueryTests(const RboStateQueryTests &other);
+    RboStateQueryTests &operator=(const RboStateQueryTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FRBOSTATEQUERYTESTS_HPP

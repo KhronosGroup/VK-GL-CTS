@@ -31,30 +31,30 @@
 
 DE_STATIC_ASSERT(sizeof(deThreadLocal) >= sizeof(DWORD));
 
-deThreadLocal deThreadLocal_create (void)
+deThreadLocal deThreadLocal_create(void)
 {
-	DWORD handle = TlsAlloc();
-	if (handle == TLS_OUT_OF_INDEXES)
-		return 0;
-	return (deThreadLocal)handle;
+    DWORD handle = TlsAlloc();
+    if (handle == TLS_OUT_OF_INDEXES)
+        return 0;
+    return (deThreadLocal)handle;
 }
 
-void deThreadLocal_destroy (deThreadLocal threadLocal)
+void deThreadLocal_destroy(deThreadLocal threadLocal)
 {
-	DE_ASSERT(threadLocal != 0);
-	TlsFree((DWORD)threadLocal);
+    DE_ASSERT(threadLocal != 0);
+    TlsFree((DWORD)threadLocal);
 }
 
-void* deThreadLocal_get (deThreadLocal threadLocal)
+void *deThreadLocal_get(deThreadLocal threadLocal)
 {
-	DE_ASSERT(threadLocal != 0);
-	return TlsGetValue((DWORD)threadLocal);
+    DE_ASSERT(threadLocal != 0);
+    return TlsGetValue((DWORD)threadLocal);
 }
 
-void deThreadLocal_set (deThreadLocal threadLocal, void* value)
+void deThreadLocal_set(deThreadLocal threadLocal, void *value)
 {
-	DE_ASSERT(threadLocal != 0);
-	TlsSetValue((DWORD)threadLocal, value);
+    DE_ASSERT(threadLocal != 0);
+    TlsSetValue((DWORD)threadLocal, value);
 }
 
 #endif /* DE_OS */

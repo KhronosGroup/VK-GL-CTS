@@ -37,40 +37,26 @@ namespace egl
 class SingleThreadColorClearCase : public MultiContextRenderCase
 {
 public:
-					SingleThreadColorClearCase	(EglTestContext&					eglTestCtx,
-												 const char*						name,
-												 const char*						description,
-												 eglw::EGLint						api,
-												 eglw::EGLint						surfaceType,
-												 const eglu::FilterList&			filters,
-												 int								numContextsPerApi);
+    SingleThreadColorClearCase(EglTestContext &eglTestCtx, const char *name, const char *description, eglw::EGLint api,
+                               eglw::EGLint surfaceType, const eglu::FilterList &filters, int numContextsPerApi);
 
 private:
-	virtual void	executeForContexts			(eglw::EGLDisplay												display,
-												 eglw::EGLSurface												surface,
-												 const Config&													config,
-												 const std::vector<std::pair<eglw::EGLint, eglw::EGLContext> >&	contexts);
+    virtual void executeForContexts(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config &config,
+                                    const std::vector<std::pair<eglw::EGLint, eglw::EGLContext>> &contexts);
 };
 
 class MultiThreadColorClearCase : public MultiContextRenderCase
 {
 public:
-					MultiThreadColorClearCase	(EglTestContext&					eglTestCtx,
-												 const char*						name,
-												 const char*						description,
-												 eglw::EGLint						api,
-												 eglw::EGLint						surfaceType,
-												 const eglu::FilterList&			filters,
-												 int								numContextsPerApi);
+    MultiThreadColorClearCase(EglTestContext &eglTestCtx, const char *name, const char *description, eglw::EGLint api,
+                              eglw::EGLint surfaceType, const eglu::FilterList &filters, int numContextsPerApi);
 
 private:
-	virtual void	executeForContexts			(eglw::EGLDisplay												display,
-												 eglw::EGLSurface												surface,
-												 const Config&													config,
-												 const std::vector<std::pair<eglw::EGLint, eglw::EGLContext> >&	contexts);
+    virtual void executeForContexts(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config &config,
+                                    const std::vector<std::pair<eglw::EGLint, eglw::EGLContext>> &contexts);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLCOLORCLEARCASE_HPP

@@ -33,16 +33,15 @@ namespace Draw
 class IndirectDrawTests : public tcu::TestCaseGroup
 {
 public:
-						IndirectDrawTests		(tcu::TestContext &testCtx);
-						~IndirectDrawTests		(void);
-	void				init					(void);
+    IndirectDrawTests(tcu::TestContext &testCtx);
+    ~IndirectDrawTests(void);
+    void init(void);
 
 private:
-	IndirectDrawTests							(const IndirectDrawTests &other);
-	IndirectDrawTests&	operator=				(const IndirectDrawTests &other);
-
+    IndirectDrawTests(const IndirectDrawTests &other);
+    IndirectDrawTests &operator=(const IndirectDrawTests &other);
 };
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWINDIRECTTEST_HPP

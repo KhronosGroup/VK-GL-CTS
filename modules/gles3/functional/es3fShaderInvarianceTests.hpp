@@ -36,18 +36,18 @@ namespace Functional
 class ShaderInvarianceTests : public TestCaseGroup
 {
 public:
-							ShaderInvarianceTests	(Context& context);
-							~ShaderInvarianceTests	(void);
+    ShaderInvarianceTests(Context &context);
+    ~ShaderInvarianceTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							ShaderInvarianceTests	(const ShaderInvarianceTests& other);
-	ShaderInvarianceTests&	operator=				(const ShaderInvarianceTests& other);
+    ShaderInvarianceTests(const ShaderInvarianceTests &other);
+    ShaderInvarianceTests &operator=(const ShaderInvarianceTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FSHADERINVARIANCETESTS_HPP

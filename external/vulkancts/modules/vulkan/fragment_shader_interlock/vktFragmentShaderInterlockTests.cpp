@@ -34,19 +34,19 @@ namespace FragmentShaderInterlock
 namespace
 {
 
-void createChildren (tcu::TestCaseGroup* group)
+void createChildren(tcu::TestCaseGroup *group)
 {
-	tcu::TestContext&	testCtx		= group->getTestContext();
+    tcu::TestContext &testCtx = group->getTestContext();
 
-	group->addChild(createBasicTests(testCtx));
+    group->addChild(createBasicTests(testCtx));
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "fragment_shader_interlock", "Fragment shader interlock tests", createChildren);
+    return createTestGroup(testCtx, "fragment_shader_interlock", "Fragment shader interlock tests", createChildren);
 }
 
-} // FragmentShaderInterlock
-} // vkt
+} // namespace FragmentShaderInterlock
+} // namespace vkt

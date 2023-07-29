@@ -36,18 +36,18 @@ namespace Functional
 class InstancedRenderingTests : public TestCaseGroup
 {
 public:
-								InstancedRenderingTests		(Context& context);
-								~InstancedRenderingTests	(void);
+    InstancedRenderingTests(Context &context);
+    ~InstancedRenderingTests(void);
 
-	void						init						(void);
+    void init(void);
 
 private:
-								InstancedRenderingTests		(const InstancedRenderingTests& other);
-	InstancedRenderingTests&	operator=					(const InstancedRenderingTests& other);
+    InstancedRenderingTests(const InstancedRenderingTests &other);
+    InstancedRenderingTests &operator=(const InstancedRenderingTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FINSTANCEDRENDERINGTESTS_HPP

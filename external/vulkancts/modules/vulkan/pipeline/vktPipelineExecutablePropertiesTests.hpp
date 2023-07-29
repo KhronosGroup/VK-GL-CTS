@@ -31,9 +31,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createExecutablePropertiesTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createExecutablePropertiesTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEEXECUTABLEPROPERTIESTESTS_HPP

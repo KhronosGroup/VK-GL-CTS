@@ -25,251 +25,224 @@ package com.drawelements.deqp.testercore;
 
 import android.app.Instrumentation;
 import android.os.Bundle;
-
-import java.lang.Thread;
 import java.io.File;
+import java.lang.Thread;
 
-public class DeqpInstrumentation extends Instrumentation
-{
-	private static final String	LOG_TAG					= "dEQP/Instrumentation";
-	private static final long	LAUNCH_TIMEOUT_MS		= 10000;
-	private static final long	NO_DATA_TIMEOUT_MS		= 5000;
-	private static final long	NO_ACTIVITY_SLEEP_MS	= 100;
-	private static final long	REMOTE_DEAD_SLEEP_MS	= 100;
+public class DeqpInstrumentation extends Instrumentation {
+    private static final String LOG_TAG = "dEQP/Instrumentation";
+    private static final long LAUNCH_TIMEOUT_MS = 10000;
+    private static final long NO_DATA_TIMEOUT_MS = 5000;
+    private static final long NO_ACTIVITY_SLEEP_MS = 100;
+    private static final long REMOTE_DEAD_SLEEP_MS = 100;
 
-	private String				m_cmdLine;
-	private String				m_logFileName;
-	private boolean				m_logData;
+    private String m_cmdLine;
+    private String m_logFileName;
+    private boolean m_logData;
 
-	@Override
-	public void onCreate (Bundle arguments) {
-		super.onCreate(arguments);
+    @Override
+    public void onCreate(Bundle arguments) {
+        super.onCreate(arguments);
 
-		m_cmdLine		= arguments.getString("deqpCmdLine");
-		m_logFileName	= arguments.getString("deqpLogFilename");
+        m_cmdLine = arguments.getString("deqpCmdLine");
+        m_logFileName = arguments.getString("deqpLogFilename");
 
-		if (m_cmdLine == null)
-			m_cmdLine = "";
+        if (m_cmdLine == null)
+            m_cmdLine = "";
 
-		if (m_logFileName == null)
-			m_logFileName = "/sdcard/TestLog.qpa";
+        if (m_logFileName == null)
+            m_logFileName = "/sdcard/TestLog.qpa";
 
-		if (arguments.getString("deqpLogData") != null)
-		{
-			if (arguments.getString("deqpLogData").compareToIgnoreCase("true") == 0)
-				m_logData = true;
-			else
-				m_logData = false;
-		}
-		else
-			m_logData = false;
+        if (arguments.getString("deqpLogData") != null) {
+            if (arguments.getString("deqpLogData")
+                    .compareToIgnoreCase("true") == 0)
+                m_logData = true;
+            else
+                m_logData = false;
+        } else
+            m_logData = false;
 
-		start();
-	}
+        start();
+    }
 
-	@Override
-	public void onStart () {
-		super.onStart();
+    @Override
+    public void onStart() {
+        super.onStart();
 
-		final RemoteAPI		remoteApi	= new RemoteAPI(getTargetContext(), m_logFileName);
-		final TestLogParser	parser		= new TestLogParser();
+        final RemoteAPI remoteApi =
+            new RemoteAPI(getTargetContext(), m_logFileName);
+        final TestLogParser parser = new TestLogParser();
 
-		try
-		{
-			Log.d(LOG_TAG, "onStart");
+        try {
+            Log.d(LOG_TAG, "onStart");
 
-			final String	testerName		= "";
-			final File		logFile			= new File(m_logFileName);
+            final String testerName = "";
+            final File logFile = new File(m_logFileName);
 
-			if (logFile.exists())
-				logFile.delete(); // Remove log file left by previous session
+            if (logFile.exists())
+                logFile.delete(); // Remove log file left by previous session
 
-			remoteApi.start(testerName, m_cmdLine, null);
+            remoteApi.start(testerName, m_cmdLine, null);
 
-			{
-				final long startTimeMs = System.currentTimeMillis();
+            {
+                final long startTimeMs = System.currentTimeMillis();
 
-				while (true)
-				{
-					final long timeSinceStartMs = System.currentTimeMillis()-startTimeMs;
+                while (true) {
+                    final long timeSinceStartMs =
+                        System.currentTimeMillis() - startTimeMs;
 
-					if (logFile.exists())
-						break;
-					else if (timeSinceStartMs > LAUNCH_TIMEOUT_MS)
-					{
-						remoteApi.kill();
-						throw new Exception("Timeout while waiting for log file");
-					}
-					else
-						Thread.sleep(NO_ACTIVITY_SLEEP_MS);
-				}
-			}
+                    if (logFile.exists())
+                        break;
+                    else if (timeSinceStartMs > LAUNCH_TIMEOUT_MS) {
+                        remoteApi.kill();
+                        throw new Exception(
+                            "Timeout while waiting for log file");
+                    } else
+                        Thread.sleep(NO_ACTIVITY_SLEEP_MS);
+                }
+            }
 
-			parser.init(this, m_logFileName, m_logData);
+            parser.init(this, m_logFileName, m_logData);
 
-			// parse until tester dies
-			{
-				while (true)
-				{
-					if (!parser.parse())
-					{
-						Thread.sleep(NO_ACTIVITY_SLEEP_MS);
-						if (!remoteApi.isRunning())
-							break;
-					}
-				}
-			}
+            // parse until tester dies
+            {
+                while (true) {
+                    if (!parser.parse()) {
+                        Thread.sleep(NO_ACTIVITY_SLEEP_MS);
+                        if (!remoteApi.isRunning())
+                            break;
+                    }
+                }
+            }
 
-			// parse remaining messages
-			{
-				long lastDataMs = System.currentTimeMillis();
+            // parse remaining messages
+            {
+                long lastDataMs = System.currentTimeMillis();
 
-				while (true)
-				{
-					if (parser.parse())
-						lastDataMs = System.currentTimeMillis();
-					else
-					{
-						final long timeSinceLastDataMs = System.currentTimeMillis()-lastDataMs;
+                while (true) {
+                    if (parser.parse())
+                        lastDataMs = System.currentTimeMillis();
+                    else {
+                        final long timeSinceLastDataMs =
+                            System.currentTimeMillis() - lastDataMs;
 
-						if (timeSinceLastDataMs > NO_DATA_TIMEOUT_MS)
-							break; // Assume no data is available for reading any more
+                        if (timeSinceLastDataMs > NO_DATA_TIMEOUT_MS)
+                            break; // Assume no data is available for reading
+                                   // any more
 
-						// Remote is dead, wait a bit until trying to read again
-						Thread.sleep(REMOTE_DEAD_SLEEP_MS);
-					}
-				}
-			}
+                        // Remote is dead, wait a bit until trying to read again
+                        Thread.sleep(REMOTE_DEAD_SLEEP_MS);
+                    }
+                }
+            }
 
-			finish(0, new Bundle());
-		}
-		catch (Exception e)
-		{
-			Log.e(LOG_TAG, "Exception", e);
+            finish(0, new Bundle());
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Exception", e);
 
-			Bundle info = new Bundle();
-			info.putString("Exception", e.getMessage());
-			finish(1, info);
-		}
-		finally
-		{
-			try
-			{
-				parser.deinit();
-			}
-			catch (Exception e)
-			{
-				Log.w(LOG_TAG, "Got exception while closing log", e);
-			}
-			remoteApi.kill();
-		}
-	}
+            Bundle info = new Bundle();
+            info.putString("Exception", e.getMessage());
+            finish(1, info);
+        } finally {
+            try {
+                parser.deinit();
+            } catch (Exception e) {
+                Log.w(LOG_TAG, "Got exception while closing log", e);
+            }
+            remoteApi.kill();
+        }
+    }
 
-	public void testCaseResult (String code, String details)
-	{
-		Bundle info = new Bundle();
+    public void testCaseResult(String code, String details) {
+        Bundle info = new Bundle();
 
-		info.putString("dEQP-EventType", "TestCaseResult");
-		info.putString("dEQP-TestCaseResult-Code", code);
-		info.putString("dEQP-TestCaseResult-Details", details);
+        info.putString("dEQP-EventType", "TestCaseResult");
+        info.putString("dEQP-TestCaseResult-Code", code);
+        info.putString("dEQP-TestCaseResult-Details", details);
 
-		sendStatus(0, info);
-	}
+        sendStatus(0, info);
+    }
 
-	public void beginTestCase (String testCase)
-	{
-		Bundle info = new Bundle();
+    public void beginTestCase(String testCase) {
+        Bundle info = new Bundle();
 
-		info.putString("dEQP-EventType", "BeginTestCase");
-		info.putString("dEQP-BeginTestCase-TestCasePath", testCase);
+        info.putString("dEQP-EventType", "BeginTestCase");
+        info.putString("dEQP-BeginTestCase-TestCasePath", testCase);
 
-		sendStatus(0, info);
-	}
+        sendStatus(0, info);
+    }
 
-	public void endTestCase ()
-	{
-		Bundle info = new Bundle();
+    public void endTestCase() {
+        Bundle info = new Bundle();
 
-		info.putString("dEQP-EventType", "EndTestCase");
-		sendStatus(0, info);
-	}
+        info.putString("dEQP-EventType", "EndTestCase");
+        sendStatus(0, info);
+    }
 
-	public void testLogData (String log) throws InterruptedException
-	{
-		if (m_logData)
-		{
-			final int chunkSize = 4*1024;
+    public void testLogData(String log) throws InterruptedException {
+        if (m_logData) {
+            final int chunkSize = 4 * 1024;
 
-			while (log != null)
-			{
-				String message;
+            while (log != null) {
+                String message;
 
-				if (log.length() > chunkSize)
-				{
-					message = log.substring(0, chunkSize);
-					log = log.substring(chunkSize);
-				}
-				else
-				{
-					message = log;
-					log = null;
-				}
+                if (log.length() > chunkSize) {
+                    message = log.substring(0, chunkSize);
+                    log = log.substring(chunkSize);
+                } else {
+                    message = log;
+                    log = null;
+                }
 
-				Bundle info = new Bundle();
+                Bundle info = new Bundle();
 
-				info.putString("dEQP-EventType", "TestLogData");
-				info.putString("dEQP-TestLogData-Log", message);
-				sendStatus(0, info);
+                info.putString("dEQP-EventType", "TestLogData");
+                info.putString("dEQP-TestLogData-Log", message);
+                sendStatus(0, info);
 
-				if (log != null)
-				{
-					Thread.sleep(1); // 1ms
-				}
-			}
-		}
-	}
+                if (log != null) {
+                    Thread.sleep(1); // 1ms
+                }
+            }
+        }
+    }
 
-	public void beginSession ()
-	{
-		Bundle info = new Bundle();
+    public void beginSession() {
+        Bundle info = new Bundle();
 
-		info.putString("dEQP-EventType", "BeginSession");
-		sendStatus(0, info);
-	}
+        info.putString("dEQP-EventType", "BeginSession");
+        sendStatus(0, info);
+    }
 
-	public void endSession ()
-	{
-		Bundle info = new Bundle();
+    public void endSession() {
+        Bundle info = new Bundle();
 
-		info.putString("dEQP-EventType", "EndSession");
-		sendStatus(0, info);
-	}
+        info.putString("dEQP-EventType", "EndSession");
+        sendStatus(0, info);
+    }
 
-	public void sessionInfo (String name, String value)
-	{
-		Bundle info = new Bundle();
+    public void sessionInfo(String name, String value) {
+        Bundle info = new Bundle();
 
-		info.putString("dEQP-EventType", "SessionInfo");
-		info.putString("dEQP-SessionInfo-Name", name);
-		info.putString("dEQP-SessionInfo-Value", value);
+        info.putString("dEQP-EventType", "SessionInfo");
+        info.putString("dEQP-SessionInfo-Name", name);
+        info.putString("dEQP-SessionInfo-Value", value);
 
-		sendStatus(0, info);
-	}
+        sendStatus(0, info);
+    }
 
-	public void terminateTestCase (String reason)
-	{
-		Bundle info = new Bundle();
+    public void terminateTestCase(String reason) {
+        Bundle info = new Bundle();
 
-		info.putString("dEQP-EventType", "TerminateTestCase");
-		info.putString("dEQP-TerminateTestCase-Reason", reason);
+        info.putString("dEQP-EventType", "TerminateTestCase");
+        info.putString("dEQP-TerminateTestCase-Reason", reason);
 
-		sendStatus(0, info);
-	}
+        sendStatus(0, info);
+    }
 
-	@Override
-	public void onDestroy() {
-		Log.e(LOG_TAG, "onDestroy");
-		super.onDestroy();
-		Log.e(LOG_TAG, "onDestroy");
-	}
+    @Override
+    public void onDestroy() {
+        Log.e(LOG_TAG, "onDestroy");
+        super.onDestroy();
+        Log.e(LOG_TAG, "onDestroy");
+    }
 }

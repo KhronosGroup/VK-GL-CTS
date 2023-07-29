@@ -39,93 +39,101 @@ namespace glu
 //! Interface block info.
 struct InterfaceBlockInfo
 {
-	std::string			name;
-	deUint32			index;
-	deUint32			bufferBinding;		//!< GL_BUFFER_BINDING
-	deUint32			dataSize;			//!< GL_BUFFER_DATA_SIZE
-	std::vector<int>	activeVariables;	//!< GL_ACTIVE_VARIABLES
+    std::string name;
+    uint32_t index;
+    uint32_t bufferBinding;           //!< GL_BUFFER_BINDING
+    uint32_t dataSize;                //!< GL_BUFFER_DATA_SIZE
+    std::vector<int> activeVariables; //!< GL_ACTIVE_VARIABLES
 
-	InterfaceBlockInfo (void)
-		: index				(~0u /* GL_INVALID_INDEX */)
-		, bufferBinding		(0)
-		, dataSize			(0)
-	{
-	}
+    InterfaceBlockInfo(void) : index(~0u /* GL_INVALID_INDEX */), bufferBinding(0), dataSize(0)
+    {
+    }
 };
 
 //! Interface variable (uniform in uniform block, buffer variable) info.
 struct InterfaceVariableInfo
 {
-	std::string			name;
-	deUint32			index;
-	deUint32			blockIndex;					//!< GL_BLOCK_INDEX
-	deUint32			atomicCounterBufferIndex;	//!< GL_ATOMIC_COUNTER_BUFFER_INDEX
-	deUint32			type;						//!< GL_TYPE
-	deUint32			arraySize;					//!< GL_ARRAY_SIZE
-	deUint32			offset;						//!< GL_OFFSET
-	deInt32				arrayStride;				//!< GL_ARRAY_STRIDE
-	deInt32				matrixStride;				//!< GL_MATRIX_STRIDE
-	deUint32			topLevelArraySize;			//!< GL_TOP_LEVEL_ARRAY_SIZE	- set only for GL_BUFFER_VARIABLEs
-	deInt32				topLevelArrayStride;		//!< GL_TOP_LEVEL_ARRAY_STRIDE	- set only for GL_BUFFER_VARIABLEs
-	bool				isRowMajor;					//!< GL_IS_ROW_MAJOR
+    std::string name;
+    uint32_t index;
+    uint32_t blockIndex;               //!< GL_BLOCK_INDEX
+    uint32_t atomicCounterBufferIndex; //!< GL_ATOMIC_COUNTER_BUFFER_INDEX
+    uint32_t type;                     //!< GL_TYPE
+    uint32_t arraySize;                //!< GL_ARRAY_SIZE
+    uint32_t offset;                   //!< GL_OFFSET
+    int32_t arrayStride;               //!< GL_ARRAY_STRIDE
+    int32_t matrixStride;              //!< GL_MATRIX_STRIDE
+    uint32_t topLevelArraySize;        //!< GL_TOP_LEVEL_ARRAY_SIZE    - set only for GL_BUFFER_VARIABLEs
+    int32_t topLevelArrayStride;       //!< GL_TOP_LEVEL_ARRAY_STRIDE    - set only for GL_BUFFER_VARIABLEs
+    bool isRowMajor;                   //!< GL_IS_ROW_MAJOR
 
-	InterfaceVariableInfo (void)
-		: index						(~0u /* GL_INVALID_INDEX */)
-		, blockIndex				(~0u /* GL_INVALID_INDEX */)
-		, atomicCounterBufferIndex	(~0u /* GL_INVALID_INDEX */)
-		, type						(0)
-		, arraySize					(0)
-		, offset					(0)
-		, arrayStride				(0)
-		, matrixStride				(0)
-		, topLevelArraySize			(0)
-		, topLevelArrayStride		(0)
-		, isRowMajor				(0)
-	{
-	}
+    InterfaceVariableInfo(void)
+        : index(~0u /* GL_INVALID_INDEX */)
+        , blockIndex(~0u /* GL_INVALID_INDEX */)
+        , atomicCounterBufferIndex(~0u /* GL_INVALID_INDEX */)
+        , type(0)
+        , arraySize(0)
+        , offset(0)
+        , arrayStride(0)
+        , matrixStride(0)
+        , topLevelArraySize(0)
+        , topLevelArrayStride(0)
+        , isRowMajor(0)
+    {
+    }
 };
 
+int getProgramResourceInt(const glw::Functions &gl, uint32_t program, uint32_t programInterface, uint32_t index,
+                          uint32_t queryParam);
+uint32_t getProgramResourceUint(const glw::Functions &gl, uint32_t program, uint32_t programInterface, uint32_t index,
+                                uint32_t queryParam);
 
-int						getProgramResourceInt			(const glw::Functions& gl, deUint32 program, deUint32 programInterface, deUint32 index, deUint32 queryParam);
-deUint32				getProgramResourceUint			(const glw::Functions& gl, deUint32 program, deUint32 programInterface, deUint32 index, deUint32 queryParam);
+void getProgramResourceName(const glw::Functions &gl, uint32_t program, uint32_t programInterface, uint32_t index,
+                            std::string &dst);
+std::string getProgramResourceName(const glw::Functions &gl, uint32_t program, uint32_t programInterface,
+                                   uint32_t index);
 
-void					getProgramResourceName			(const glw::Functions& gl, deUint32 program, deUint32 programInterface, deUint32 index, std::string& dst);
-std::string				getProgramResourceName			(const glw::Functions& gl, deUint32 program, deUint32 programInterface, deUint32 index);
+void getProgramInterfaceBlockInfo(const glw::Functions &gl, uint32_t program, uint32_t programInterface, uint32_t index,
+                                  InterfaceBlockInfo &info);
+InterfaceBlockInfo getProgramInterfaceBlockInfo(const glw::Functions &gl, uint32_t program, uint32_t programInterface,
+                                                uint32_t index);
 
-void					getProgramInterfaceBlockInfo	(const glw::Functions& gl, deUint32 program, deUint32 programInterface, deUint32 index, InterfaceBlockInfo& info);
-InterfaceBlockInfo		getProgramInterfaceBlockInfo	(const glw::Functions& gl, deUint32 program, deUint32 programInterface, deUint32 index);
-
-void					getProgramInterfaceVariableInfo	(const glw::Functions& gl, deUint32 program, deUint32 programInterface, deUint32 index, InterfaceVariableInfo& info);
-InterfaceVariableInfo	getProgramInterfaceVariableInfo	(const glw::Functions& gl, deUint32 program, deUint32 programInterface, deUint32 index);
+void getProgramInterfaceVariableInfo(const glw::Functions &gl, uint32_t program, uint32_t programInterface,
+                                     uint32_t index, InterfaceVariableInfo &info);
+InterfaceVariableInfo getProgramInterfaceVariableInfo(const glw::Functions &gl, uint32_t program,
+                                                      uint32_t programInterface, uint32_t index);
 
 // Inline implementations for optimization (RVO in most cases).
 
-inline int getProgramResourceInt (const glw::Functions& gl, deUint32 program, deUint32 programInterface, deUint32 index, deUint32 queryParam)
+inline int getProgramResourceInt(const glw::Functions &gl, uint32_t program, uint32_t programInterface, uint32_t index,
+                                 uint32_t queryParam)
 {
-	return (int)getProgramResourceUint(gl, program, programInterface, index, queryParam);
+    return (int)getProgramResourceUint(gl, program, programInterface, index, queryParam);
 }
 
-inline std::string getProgramResourceName (const glw::Functions& gl, deUint32 program, deUint32 programInterface, deUint32 index)
+inline std::string getProgramResourceName(const glw::Functions &gl, uint32_t program, uint32_t programInterface,
+                                          uint32_t index)
 {
-	std::string name;
-	getProgramResourceName(gl, program, programInterface, index, name);
-	return name;
+    std::string name;
+    getProgramResourceName(gl, program, programInterface, index, name);
+    return name;
 }
 
-inline InterfaceBlockInfo getProgramInterfaceBlockInfo (const glw::Functions& gl, deUint32 program, deUint32 programInterface, deUint32 index)
+inline InterfaceBlockInfo getProgramInterfaceBlockInfo(const glw::Functions &gl, uint32_t program,
+                                                       uint32_t programInterface, uint32_t index)
 {
-	InterfaceBlockInfo info;
-	getProgramInterfaceBlockInfo(gl, program, programInterface, index, info);
-	return info;
+    InterfaceBlockInfo info;
+    getProgramInterfaceBlockInfo(gl, program, programInterface, index, info);
+    return info;
 }
 
-inline InterfaceVariableInfo getProgramInterfaceVariableInfo (const glw::Functions& gl, deUint32 program, deUint32 programInterface, deUint32 index)
+inline InterfaceVariableInfo getProgramInterfaceVariableInfo(const glw::Functions &gl, uint32_t program,
+                                                             uint32_t programInterface, uint32_t index)
 {
-	InterfaceVariableInfo info;
-	getProgramInterfaceVariableInfo(gl, program, programInterface, index, info);
-	return info;
+    InterfaceVariableInfo info;
+    getProgramInterfaceVariableInfo(gl, program, programInterface, index, info);
+    return info;
 }
 
-} // glu
+} // namespace glu
 
 #endif // _GLUPROGRAMINTERFACEQUERY_HPP

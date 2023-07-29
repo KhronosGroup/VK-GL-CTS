@@ -36,19 +36,18 @@ namespace Functional
 class SRGBDecodeTests : public TestCaseGroup
 {
 public:
-						 SRGBDecodeTests	(Context& context);
-						~SRGBDecodeTests	(void);
+    SRGBDecodeTests(Context &context);
+    ~SRGBDecodeTests(void);
 
 private:
-	void				init				(void);
+    void init(void);
 
-						SRGBDecodeTests		(const SRGBDecodeTests& other);
-	SRGBDecodeTests&	operator=			(const SRGBDecodeTests& other);
+    SRGBDecodeTests(const SRGBDecodeTests &other);
+    SRGBDecodeTests &operator=(const SRGBDecodeTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
-
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FSRGBDECODETESTS_HPP

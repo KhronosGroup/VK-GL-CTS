@@ -32,28 +32,27 @@ namespace Android
 namespace internal
 {
 
-using std::string;
 using de::DynamicLibrary;
+using std::string;
 
-template<typename Func>
-void setFuncPtr (Func*& funcPtr, DynamicLibrary& lib, const string& symname)
+template <typename Func>
+void setFuncPtr(Func *&funcPtr, DynamicLibrary &lib, const string &symname)
 {
-	funcPtr = reinterpret_cast<Func*>(lib.getFunction(symname.c_str()));
-	if (!funcPtr)
-		TCU_THROW(NotSupportedError, ("Unable to look up symbol from shared object: " + symname).c_str());
+    funcPtr = reinterpret_cast<Func *>(lib.getFunction(symname.c_str()));
+    if (!funcPtr)
+        TCU_THROW(NotSupportedError, ("Unable to look up symbol from shared object: " + symname).c_str());
 }
 
-LibUI::LibUI (void)
-	: m_library	("libui.so")
+LibUI::LibUI(void) : m_library("libui.so")
 {
-	GraphicBufferFunctions& gb = m_functions.graphicBuffer;
+    GraphicBufferFunctions &gb = m_functions.graphicBuffer;
 
-	setFuncPtr(gb.constructor,		m_library,	"_ZN7android13GraphicBufferC1Ejjij");
-	setFuncPtr(gb.destructor,		m_library,	"_ZN7android13GraphicBufferD1Ev");
-	setFuncPtr(gb.getNativeBuffer,	m_library,	"_ZNK7android13GraphicBuffer15getNativeBufferEv");
-	setFuncPtr(gb.lock,				m_library,	"_ZN7android13GraphicBuffer4lockEjPPv");
-	setFuncPtr(gb.unlock,			m_library,	"_ZN7android13GraphicBuffer6unlockEv");
-	setFuncPtr(gb.initCheck,		m_library,	"_ZNK7android13GraphicBuffer9initCheckEv");
+    setFuncPtr(gb.constructor, m_library, "_ZN7android13GraphicBufferC1Ejjij");
+    setFuncPtr(gb.destructor, m_library, "_ZN7android13GraphicBufferD1Ev");
+    setFuncPtr(gb.getNativeBuffer, m_library, "_ZNK7android13GraphicBuffer15getNativeBufferEv");
+    setFuncPtr(gb.lock, m_library, "_ZN7android13GraphicBuffer4lockEjPPv");
+    setFuncPtr(gb.unlock, m_library, "_ZN7android13GraphicBuffer6unlockEv");
+    setFuncPtr(gb.initCheck, m_library, "_ZNK7android13GraphicBuffer9initCheckEv");
 }
 
 #define GRAPHICBUFFER_SIZE 1024 // Hopefully enough
@@ -62,216 +61,215 @@ typedef void (*GenericFptr)();
 
 //! call constructor with 4 arguments
 template <typename RT, typename T1, typename T2, typename T3, typename T4>
-RT* callConstructor4 (GenericFptr fptr, void* memory, size_t memorySize, T1 param1, T2 param2, T3 param3, T4 param4)
+RT *callConstructor4(GenericFptr fptr, void *memory, size_t memorySize, T1 param1, T2 param2, T3 param3, T4 param4)
 {
-	DE_UNREF(memorySize);
+    DE_UNREF(memorySize);
 
 #if (DE_CPU == DE_CPU_ARM)
-	// C1 constructors return pointer
-	typedef RT* (*ABIFptr)(void*, T1, T2, T3, T4);
-	(void)((ABIFptr)fptr)(memory, param1, param2, param3, param4);
-	return reinterpret_cast<RT*>(memory);
+    // C1 constructors return pointer
+    typedef RT *(*ABIFptr)(void *, T1, T2, T3, T4);
+    (void)((ABIFptr)fptr)(memory, param1, param2, param3, param4);
+    return reinterpret_cast<RT *>(memory);
 #elif (DE_CPU == DE_CPU_ARM_64)
-	// C1 constructors return void
-	typedef void (*ABIFptr)(void*, T1, T2, T3, T4);
-	((ABIFptr)fptr)(memory, param1, param2, param3, param4);
-	return reinterpret_cast<RT*>(memory);
+    // C1 constructors return void
+    typedef void (*ABIFptr)(void *, T1, T2, T3, T4);
+    ((ABIFptr)fptr)(memory, param1, param2, param3, param4);
+    return reinterpret_cast<RT *>(memory);
 #elif (DE_CPU == DE_CPU_X86)
-	// ctor returns void
-	typedef void (*ABIFptr)(void*, T1, T2, T3, T4);
-	((ABIFptr)fptr)(memory, param1, param2, param3, param4);
-	return reinterpret_cast<RT*>(memory);
+    // ctor returns void
+    typedef void (*ABIFptr)(void *, T1, T2, T3, T4);
+    ((ABIFptr)fptr)(memory, param1, param2, param3, param4);
+    return reinterpret_cast<RT *>(memory);
 #elif (DE_CPU == DE_CPU_X86_64)
-	// ctor returns void
-	typedef void (*ABIFptr)(void*, T1, T2, T3, T4);
-	((ABIFptr)fptr)(memory, param1, param2, param3, param4);
-	return reinterpret_cast<RT*>(memory);
+    // ctor returns void
+    typedef void (*ABIFptr)(void *, T1, T2, T3, T4);
+    ((ABIFptr)fptr)(memory, param1, param2, param3, param4);
+    return reinterpret_cast<RT *>(memory);
 #else
-	DE_UNREF(fptr);
-	DE_UNREF(memory);
-	DE_UNREF(param1);
-	DE_UNREF(param2);
-	DE_UNREF(param3);
-	DE_UNREF(param4);
-	TCU_THROW(NotSupportedError, "ABI not supported");
-	return DE_NULL;
+    DE_UNREF(fptr);
+    DE_UNREF(memory);
+    DE_UNREF(param1);
+    DE_UNREF(param2);
+    DE_UNREF(param3);
+    DE_UNREF(param4);
+    TCU_THROW(NotSupportedError, "ABI not supported");
+    return DE_NULL;
 #endif
 }
 
 template <typename T>
-void callDestructor (GenericFptr fptr, T* obj)
+void callDestructor(GenericFptr fptr, T *obj)
 {
 #if (DE_CPU == DE_CPU_ARM)
-	// D1 destructor returns ptr
-	typedef void* (*ABIFptr)(T* obj);
-	(void)((ABIFptr)fptr)(obj);
+    // D1 destructor returns ptr
+    typedef void *(*ABIFptr)(T *obj);
+    (void)((ABIFptr)fptr)(obj);
 #elif (DE_CPU == DE_CPU_ARM_64)
-	// D1 destructor returns void
-	typedef void (*ABIFptr)(T* obj);
-	((ABIFptr)fptr)(obj);
+    // D1 destructor returns void
+    typedef void (*ABIFptr)(T *obj);
+    ((ABIFptr)fptr)(obj);
 #elif (DE_CPU == DE_CPU_X86)
-	// dtor returns void
-	typedef void (*ABIFptr)(T* obj);
-	((ABIFptr)fptr)(obj);
+    // dtor returns void
+    typedef void (*ABIFptr)(T *obj);
+    ((ABIFptr)fptr)(obj);
 #elif (DE_CPU == DE_CPU_X86_64)
-	// dtor returns void
-	typedef void (*ABIFptr)(T* obj);
-	((ABIFptr)fptr)(obj);
+    // dtor returns void
+    typedef void (*ABIFptr)(T *obj);
+    ((ABIFptr)fptr)(obj);
 #else
-	DE_UNREF(fptr);
-	DE_UNREF(obj);
-	TCU_THROW(NotSupportedError, "ABI not supported");
+    DE_UNREF(fptr);
+    DE_UNREF(obj);
+    TCU_THROW(NotSupportedError, "ABI not supported");
 #endif
 }
 
-template<typename T1, typename T2>
-T1* pointerToOffset (T2* ptr, size_t bytes)
+template <typename T1, typename T2>
+T1 *pointerToOffset(T2 *ptr, size_t bytes)
 {
-	return reinterpret_cast<T1*>((deUint8*)ptr + bytes);
+    return reinterpret_cast<T1 *>((uint8_t *)ptr + bytes);
 }
 
-static android::android_native_base_t* getAndroidNativeBase (android::GraphicBuffer* gb)
+static android::android_native_base_t *getAndroidNativeBase(android::GraphicBuffer *gb)
 {
-	// \note: assuming Itanium ABI
-	return pointerToOffset<android::android_native_base_t>(gb, 2 * DE_PTR_SIZE);
+    // \note: assuming Itanium ABI
+    return pointerToOffset<android::android_native_base_t>(gb, 2 * DE_PTR_SIZE);
 }
 
 //! android_native_base_t::magic for ANativeWindowBuffer
-static deInt32 getExpectedNativeBufferVersion (void)
+static int32_t getExpectedNativeBufferVersion(void)
 {
 #if (DE_PTR_SIZE == 4)
-	return 96;
+    return 96;
 #elif (DE_PTR_SIZE == 8)
-	return 168;
+    return 168;
 #else
-#	error Invalid DE_PTR_SIZE
+#error Invalid DE_PTR_SIZE
 #endif
 }
 
 //! access android_native_base_t::magic
-static deUint32 getNativeBaseMagic (android::android_native_base_t* base)
+static uint32_t getNativeBaseMagic(android::android_native_base_t *base)
 {
-	return *pointerToOffset<deUint32>(base, 0);
+    return *pointerToOffset<uint32_t>(base, 0);
 }
 
 //! access android_native_base_t::version
-static deUint32 getNativeBaseVersion (android::android_native_base_t* base)
+static uint32_t getNativeBaseVersion(android::android_native_base_t *base)
 {
-	return *pointerToOffset<deInt32>(base, 4);
+    return *pointerToOffset<int32_t>(base, 4);
 }
 
 //! access android_native_base_t::incRef
-static NativeBaseFunctions::incRefFunc getNativeBaseIncRefFunc (android::android_native_base_t* base)
+static NativeBaseFunctions::incRefFunc getNativeBaseIncRefFunc(android::android_native_base_t *base)
 {
-	return *pointerToOffset<NativeBaseFunctions::incRefFunc>(base, 8 + DE_PTR_SIZE*4);
+    return *pointerToOffset<NativeBaseFunctions::incRefFunc>(base, 8 + DE_PTR_SIZE * 4);
 }
 
 //! access android_native_base_t::decRef
-static NativeBaseFunctions::decRefFunc getNativeBaseDecRefFunc (android::android_native_base_t* base)
+static NativeBaseFunctions::decRefFunc getNativeBaseDecRefFunc(android::android_native_base_t *base)
 {
-	return *pointerToOffset<NativeBaseFunctions::decRefFunc>(base, 8 + DE_PTR_SIZE*5);
+    return *pointerToOffset<NativeBaseFunctions::decRefFunc>(base, 8 + DE_PTR_SIZE * 5);
 }
 
-static android::GraphicBuffer* createGraphicBuffer (const GraphicBufferFunctions& functions, NativeBaseFunctions& baseFunctions, deUint32 w, deUint32 h, PixelFormat format, deUint32 usage)
+static android::GraphicBuffer *createGraphicBuffer(const GraphicBufferFunctions &functions,
+                                                   NativeBaseFunctions &baseFunctions, uint32_t w, uint32_t h,
+                                                   PixelFormat format, uint32_t usage)
 {
-	// \note: Hopefully uses the same allocator as libui
-	void* const memory = deMalloc(GRAPHICBUFFER_SIZE);
-	if (memory == DE_NULL)
-		TCU_THROW(ResourceError, "Could not alloc for GraphicBuffer");
-	else
-	{
-		try
-		{
-			android::GraphicBuffer* const			gb			= callConstructor4<android::GraphicBuffer, deUint32, deUint32, PixelFormat, deUint32>(functions.constructor,
-																																					  memory,
-																																					  GRAPHICBUFFER_SIZE,
-																																					  w,
-																																					  h,
-																																					  format,
-																																					  usage);
-			android::android_native_base_t* const	base		= getAndroidNativeBase(gb);
-			status_t								ctorStatus	= functions.initCheck(gb);
+    // \note: Hopefully uses the same allocator as libui
+    void *const memory = deMalloc(GRAPHICBUFFER_SIZE);
+    if (memory == DE_NULL)
+        TCU_THROW(ResourceError, "Could not alloc for GraphicBuffer");
+    else
+    {
+        try
+        {
+            android::GraphicBuffer *const gb =
+                callConstructor4<android::GraphicBuffer, uint32_t, uint32_t, PixelFormat, uint32_t>(
+                    functions.constructor, memory, GRAPHICBUFFER_SIZE, w, h, format, usage);
+            android::android_native_base_t *const base = getAndroidNativeBase(gb);
+            status_t ctorStatus                        = functions.initCheck(gb);
 
-			if (ctorStatus)
-			{
-				// ctor failed
-				callDestructor<android::GraphicBuffer>(functions.destructor, gb);
-				TCU_THROW(NotSupportedError, ("GraphicBuffer ctor failed, initCheck returned " + de::toString(ctorStatus)).c_str());
-			}
+            if (ctorStatus)
+            {
+                // ctor failed
+                callDestructor<android::GraphicBuffer>(functions.destructor, gb);
+                TCU_THROW(NotSupportedError,
+                          ("GraphicBuffer ctor failed, initCheck returned " + de::toString(ctorStatus)).c_str());
+            }
 
-			// check object layout
-			{
-				const deUint32 magic		= getNativeBaseMagic(base);
-				const deUint32 bufferMagic	= 0x5f626672u; // "_bfr"
+            // check object layout
+            {
+                const uint32_t magic       = getNativeBaseMagic(base);
+                const uint32_t bufferMagic = 0x5f626672u; // "_bfr"
 
-				if (magic != bufferMagic)
-					TCU_THROW(NotSupportedError, "GraphicBuffer layout unexpected");
-			}
+                if (magic != bufferMagic)
+                    TCU_THROW(NotSupportedError, "GraphicBuffer layout unexpected");
+            }
 
-			// check object version
-			{
-				const deInt32 version			= getNativeBaseVersion(base);
-				const deInt32 expectedVersion	= getExpectedNativeBufferVersion();
+            // check object version
+            {
+                const int32_t version         = getNativeBaseVersion(base);
+                const int32_t expectedVersion = getExpectedNativeBufferVersion();
 
-				if (version != expectedVersion)
-					TCU_THROW(NotSupportedError, "GraphicBuffer version unexpected");
-			}
+                if (version != expectedVersion)
+                    TCU_THROW(NotSupportedError, "GraphicBuffer version unexpected");
+            }
 
-			// locate refcounting functions
+            // locate refcounting functions
 
-			if (!baseFunctions.incRef || !baseFunctions.decRef)
-			{
-				baseFunctions.incRef = getNativeBaseIncRefFunc(base);
-				baseFunctions.decRef = getNativeBaseDecRefFunc(base);
-			}
+            if (!baseFunctions.incRef || !baseFunctions.decRef)
+            {
+                baseFunctions.incRef = getNativeBaseIncRefFunc(base);
+                baseFunctions.decRef = getNativeBaseDecRefFunc(base);
+            }
 
-			// take the initial reference and return
-			baseFunctions.incRef(base);
-			return gb;
-		}
-		catch (...)
-		{
-			deFree(memory);
-			throw;
-		}
-	}
+            // take the initial reference and return
+            baseFunctions.incRef(base);
+            return gb;
+        }
+        catch (...)
+        {
+            deFree(memory);
+            throw;
+        }
+    }
 }
 
-GraphicBuffer::GraphicBuffer (const LibUI& lib, deUint32 width, deUint32 height, PixelFormat format, deUint32 usage)
-	: m_functions	(lib.getFunctions().graphicBuffer)
-	, m_impl		(DE_NULL)
+GraphicBuffer::GraphicBuffer(const LibUI &lib, uint32_t width, uint32_t height, PixelFormat format, uint32_t usage)
+    : m_functions(lib.getFunctions().graphicBuffer)
+    , m_impl(DE_NULL)
 {
-	m_baseFunctions.incRef = DE_NULL;
-	m_baseFunctions.decRef = DE_NULL;
+    m_baseFunctions.incRef = DE_NULL;
+    m_baseFunctions.decRef = DE_NULL;
 
-	// \note createGraphicBuffer updates m_baseFunctions
-	m_impl = createGraphicBuffer(m_functions, m_baseFunctions, width, height, format, usage);
+    // \note createGraphicBuffer updates m_baseFunctions
+    m_impl = createGraphicBuffer(m_functions, m_baseFunctions, width, height, format, usage);
 }
 
-GraphicBuffer::~GraphicBuffer (void)
+GraphicBuffer::~GraphicBuffer(void)
 {
-	if (m_impl && m_baseFunctions.decRef)
-	{
-		m_baseFunctions.decRef(getAndroidNativeBase(m_impl));
-		m_impl = DE_NULL;
-	}
+    if (m_impl && m_baseFunctions.decRef)
+    {
+        m_baseFunctions.decRef(getAndroidNativeBase(m_impl));
+        m_impl = DE_NULL;
+    }
 }
 
-status_t GraphicBuffer::lock (deUint32 usage, void** vaddr)
+status_t GraphicBuffer::lock(uint32_t usage, void **vaddr)
 {
-	return m_functions.lock(m_impl, usage, vaddr);
+    return m_functions.lock(m_impl, usage, vaddr);
 }
 
-status_t GraphicBuffer::unlock (void)
+status_t GraphicBuffer::unlock(void)
 {
-	return m_functions.unlock(m_impl);
+    return m_functions.unlock(m_impl);
 }
 
-ANativeWindowBuffer* GraphicBuffer::getNativeBuffer (void) const
+ANativeWindowBuffer *GraphicBuffer::getNativeBuffer(void) const
 {
-	return m_functions.getNativeBuffer(m_impl);
+    return m_functions.getNativeBuffer(m_impl);
 }
 
-} // internal
-} // Android
-} // tcu
+} // namespace internal
+} // namespace Android
+} // namespace tcu

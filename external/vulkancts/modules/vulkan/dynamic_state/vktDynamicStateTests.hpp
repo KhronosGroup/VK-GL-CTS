@@ -32,9 +32,9 @@ namespace vkt
 namespace DynamicState
 {
 
-tcu::TestCaseGroup*		createTests			(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx);
 
-} // DynamicState
-} // vkt
+} // namespace DynamicState
+} // namespace vkt
 
 #endif // _VKTDYNAMICSTATETESTS_HPP

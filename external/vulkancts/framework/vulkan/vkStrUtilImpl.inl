@@ -3841,7 +3841,7 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceProperties& val
 	s << "\tdeviceID = " << value.deviceID << '\n';
 	s << "\tdeviceType = " << value.deviceType << '\n';
 	s << "\tdeviceName = " << (const char*)value.deviceName << '\n';
-	s << "\tpipelineCacheUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.pipelineCacheUUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.pipelineCacheUUID))) << '\n';
+	s << "\tpipelineCacheUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.pipelineCacheUUID)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.pipelineCacheUUID))) << '\n';
 	s << "\tlimits = " << value.limits << '\n';
 	s << "\tsparseProperties = " << value.sparseProperties << '\n';
 	s << '}';
@@ -5714,9 +5714,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceIDProperties& v
 	s << "VkPhysicalDeviceIDProperties = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tdeviceUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.deviceUUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.deviceUUID))) << '\n';
-	s << "\tdriverUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.driverUUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.driverUUID))) << '\n';
-	s << "\tdeviceLUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.deviceLUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.deviceLUID))) << '\n';
+	s << "\tdeviceUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.deviceUUID)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.deviceUUID))) << '\n';
+	s << "\tdriverUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.driverUUID)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.driverUUID))) << '\n';
+	s << "\tdeviceLUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.deviceLUID)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.deviceLUID))) << '\n';
 	s << "\tdeviceNodeMask = " << value.deviceNodeMask << '\n';
 	s << "\tdeviceLUIDValid = " << value.deviceLUIDValid << '\n';
 	s << '}';
@@ -5874,9 +5874,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVulkan11Propert
 	s << "VkPhysicalDeviceVulkan11Properties = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tdeviceUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.deviceUUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.deviceUUID))) << '\n';
-	s << "\tdriverUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.driverUUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.driverUUID))) << '\n';
-	s << "\tdeviceLUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.deviceLUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.deviceLUID))) << '\n';
+	s << "\tdeviceUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.deviceUUID)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.deviceUUID))) << '\n';
+	s << "\tdriverUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.driverUUID)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.driverUUID))) << '\n';
+	s << "\tdeviceLUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.deviceLUID)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.deviceLUID))) << '\n';
 	s << "\tdeviceNodeMask = " << value.deviceNodeMask << '\n';
 	s << "\tdeviceLUIDValid = " << value.deviceLUIDValid << '\n';
 	s << "\tsubgroupSize = " << value.subgroupSize << '\n';
@@ -6999,7 +6999,7 @@ std::ostream& operator<< (std::ostream& s, const VkPerformanceCounterKHR& value)
 	s << "\tunit = " << value.unit << '\n';
 	s << "\tscope = " << value.scope << '\n';
 	s << "\tstorage = " << value.storage << '\n';
-	s << "\tuuid = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.uuid)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.uuid))) << '\n';
+	s << "\tuuid = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.uuid)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.uuid))) << '\n';
 	s << '}';
 	return s;
 }

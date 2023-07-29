@@ -36,7 +36,7 @@ namespace android
 {
 class GraphicBuffer;
 class android_native_base_t;
-}
+} // namespace android
 
 namespace tcu
 {
@@ -51,138 +51,142 @@ namespace internal
 // utils/Errors.h
 enum
 {
-	OK					= 0,
-	UNKNOWN_ERROR		= (-2147483647-1),
-	NO_MEMORY			= -ENOMEM,
-	INVALID_OPERATION	= -ENOSYS,
-	BAD_VALUE			= -EINVAL,
-	BAD_TYPE			= (UNKNOWN_ERROR + 1),
-	NAME_NOT_FOUND		= -ENOENT,
-	PERMISSION_DENIED	= -EPERM,
-	NO_INIT				= -ENODEV,
-	ALREADY_EXISTS		= -EEXIST,
-	DEAD_OBJECT			= -EPIPE,
-	FAILED_TRANSACTION	= (UNKNOWN_ERROR + 2),
-	BAD_INDEX			= -E2BIG,
-	NOT_ENOUGH_DATA		= (UNKNOWN_ERROR + 3),
-	WOULD_BLOCK			= (UNKNOWN_ERROR + 4),
-	TIMED_OUT			= (UNKNOWN_ERROR + 5),
-	UNKNOWN_TRANSACTION = (UNKNOWN_ERROR + 6),
-	FDS_NOT_ALLOWED		= (UNKNOWN_ERROR + 7),
+    OK                  = 0,
+    UNKNOWN_ERROR       = (-2147483647 - 1),
+    NO_MEMORY           = -ENOMEM,
+    INVALID_OPERATION   = -ENOSYS,
+    BAD_VALUE           = -EINVAL,
+    BAD_TYPE            = (UNKNOWN_ERROR + 1),
+    NAME_NOT_FOUND      = -ENOENT,
+    PERMISSION_DENIED   = -EPERM,
+    NO_INIT             = -ENODEV,
+    ALREADY_EXISTS      = -EEXIST,
+    DEAD_OBJECT         = -EPIPE,
+    FAILED_TRANSACTION  = (UNKNOWN_ERROR + 2),
+    BAD_INDEX           = -E2BIG,
+    NOT_ENOUGH_DATA     = (UNKNOWN_ERROR + 3),
+    WOULD_BLOCK         = (UNKNOWN_ERROR + 4),
+    TIMED_OUT           = (UNKNOWN_ERROR + 5),
+    UNKNOWN_TRANSACTION = (UNKNOWN_ERROR + 6),
+    FDS_NOT_ALLOWED     = (UNKNOWN_ERROR + 7),
 };
 
-typedef deInt32 status_t;
+typedef int32_t status_t;
 
 // ui/PixelFormat.h, system/graphics.h
 enum
 {
-	PIXEL_FORMAT_UNKNOWN				= 0,
-	PIXEL_FORMAT_NONE					= 0,
-	PIXEL_FORMAT_CUSTOM					= -4,
-	PIXEL_FORMAT_TRANSLUCENT			= -3,
-	PIXEL_FORMAT_TRANSPARENT			= -2,
-	PIXEL_FORMAT_OPAQUE					= -1,
-	PIXEL_FORMAT_RGBA_8888				= 1,
-	PIXEL_FORMAT_RGBX_8888				= 2,
-	PIXEL_FORMAT_RGB_888				= 3,
-	PIXEL_FORMAT_RGB_565				= 4,
-	PIXEL_FORMAT_BGRA_8888				= 5,
-	PIXEL_FORMAT_RGBA_5551				= 6,
-	PIXEL_FORMAT_RGBA_4444				= 7,
+    PIXEL_FORMAT_UNKNOWN     = 0,
+    PIXEL_FORMAT_NONE        = 0,
+    PIXEL_FORMAT_CUSTOM      = -4,
+    PIXEL_FORMAT_TRANSLUCENT = -3,
+    PIXEL_FORMAT_TRANSPARENT = -2,
+    PIXEL_FORMAT_OPAQUE      = -1,
+    PIXEL_FORMAT_RGBA_8888   = 1,
+    PIXEL_FORMAT_RGBX_8888   = 2,
+    PIXEL_FORMAT_RGB_888     = 3,
+    PIXEL_FORMAT_RGB_565     = 4,
+    PIXEL_FORMAT_BGRA_8888   = 5,
+    PIXEL_FORMAT_RGBA_5551   = 6,
+    PIXEL_FORMAT_RGBA_4444   = 7,
 };
 
-typedef deInt32 PixelFormat;
+typedef int32_t PixelFormat;
 
 // ui/GraphicBuffer.h
 struct GraphicBufferFunctions
 {
-	typedef void					(*genericFunc)			();
-	typedef status_t				(*initCheckFunc)		(android::GraphicBuffer* buffer);
-	typedef status_t				(*lockFunc)				(android::GraphicBuffer* buffer, deUint32 usage, void** vaddr);
-	typedef status_t				(*unlockFunc)			(android::GraphicBuffer* buffer);
-	typedef ANativeWindowBuffer*	(*getNativeBufferFunc)	(const android::GraphicBuffer* buffer);
+    typedef void (*genericFunc)();
+    typedef status_t (*initCheckFunc)(android::GraphicBuffer *buffer);
+    typedef status_t (*lockFunc)(android::GraphicBuffer *buffer, uint32_t usage, void **vaddr);
+    typedef status_t (*unlockFunc)(android::GraphicBuffer *buffer);
+    typedef ANativeWindowBuffer *(*getNativeBufferFunc)(const android::GraphicBuffer *buffer);
 
-	genericFunc						constructor;
-	genericFunc						destructor;
-	lockFunc						lock;
-	unlockFunc						unlock;
-	getNativeBufferFunc				getNativeBuffer;
-	initCheckFunc					initCheck;
+    genericFunc constructor;
+    genericFunc destructor;
+    lockFunc lock;
+    unlockFunc unlock;
+    getNativeBufferFunc getNativeBuffer;
+    initCheckFunc initCheck;
 };
 
 // system/window.h
 struct NativeBaseFunctions
 {
-	typedef void	(*incRefFunc)			(android::android_native_base_t* base);
-	typedef void	(*decRefFunc)			(android::android_native_base_t* base);
+    typedef void (*incRefFunc)(android::android_native_base_t *base);
+    typedef void (*decRefFunc)(android::android_native_base_t *base);
 
-	incRefFunc		incRef;
-	decRefFunc		decRef;
+    incRefFunc incRef;
+    decRefFunc decRef;
 };
 
 struct LibUIFunctions
 {
-	GraphicBufferFunctions graphicBuffer;
+    GraphicBufferFunctions graphicBuffer;
 };
 
 class LibUI
 {
 public:
-	struct Functions
-	{
-		GraphicBufferFunctions graphicBuffer;
-	};
+    struct Functions
+    {
+        GraphicBufferFunctions graphicBuffer;
+    };
 
-							LibUI			(void);
-	const Functions&		getFunctions	(void) const { return m_functions; }
+    LibUI(void);
+    const Functions &getFunctions(void) const
+    {
+        return m_functions;
+    }
 
 private:
-	Functions				m_functions;
-	de::DynamicLibrary		m_library;
+    Functions m_functions;
+    de::DynamicLibrary m_library;
 };
 
 class GraphicBuffer
 {
 public:
-	// ui/GraphicBuffer.h, hardware/gralloc.h
-	enum {
-		USAGE_SW_READ_NEVER		= 0x00000000,
-		USAGE_SW_READ_RARELY	= 0x00000002,
-		USAGE_SW_READ_OFTEN		= 0x00000003,
-		USAGE_SW_READ_MASK		= 0x0000000f,
+    // ui/GraphicBuffer.h, hardware/gralloc.h
+    enum
+    {
+        USAGE_SW_READ_NEVER  = 0x00000000,
+        USAGE_SW_READ_RARELY = 0x00000002,
+        USAGE_SW_READ_OFTEN  = 0x00000003,
+        USAGE_SW_READ_MASK   = 0x0000000f,
 
-		USAGE_SW_WRITE_NEVER	= 0x00000000,
-		USAGE_SW_WRITE_RARELY	= 0x00000020,
-		USAGE_SW_WRITE_OFTEN	= 0x00000030,
-		USAGE_SW_WRITE_MASK		= 0x000000f0,
+        USAGE_SW_WRITE_NEVER  = 0x00000000,
+        USAGE_SW_WRITE_RARELY = 0x00000020,
+        USAGE_SW_WRITE_OFTEN  = 0x00000030,
+        USAGE_SW_WRITE_MASK   = 0x000000f0,
 
-		USAGE_SOFTWARE_MASK		= USAGE_SW_READ_MASK | USAGE_SW_WRITE_MASK,
+        USAGE_SOFTWARE_MASK = USAGE_SW_READ_MASK | USAGE_SW_WRITE_MASK,
 
-		USAGE_PROTECTED			= 0x00004000,
+        USAGE_PROTECTED = 0x00004000,
 
-		USAGE_HW_TEXTURE		= 0x00000100,
-		USAGE_HW_RENDER			= 0x00000200,
-		USAGE_HW_2D				= 0x00000400,
-		USAGE_HW_COMPOSER		= 0x00000800,
-		USAGE_HW_VIDEO_ENCODER	= 0x00010000,
-		USAGE_HW_MASK			= 0x00071F00,
-	};
+        USAGE_HW_TEXTURE       = 0x00000100,
+        USAGE_HW_RENDER        = 0x00000200,
+        USAGE_HW_2D            = 0x00000400,
+        USAGE_HW_COMPOSER      = 0x00000800,
+        USAGE_HW_VIDEO_ENCODER = 0x00010000,
+        USAGE_HW_MASK          = 0x00071F00,
+    };
 
-									GraphicBuffer			(const LibUI& lib, deUint32 width, deUint32 height, PixelFormat format, deUint32 usage);
-									~GraphicBuffer			();
+    GraphicBuffer(const LibUI &lib, uint32_t width, uint32_t height, PixelFormat format, uint32_t usage);
+    ~GraphicBuffer();
 
-	status_t						lock					(deUint32 usage, void** vaddr);
-	status_t						unlock					(void);
-	ANativeWindowBuffer*			getNativeBuffer			(void) const;
+    status_t lock(uint32_t usage, void **vaddr);
+    status_t unlock(void);
+    ANativeWindowBuffer *getNativeBuffer(void) const;
 
 private:
-	const GraphicBufferFunctions&	m_functions;
-	NativeBaseFunctions				m_baseFunctions;
-	android::GraphicBuffer*			m_impl;
+    const GraphicBufferFunctions &m_functions;
+    NativeBaseFunctions m_baseFunctions;
+    android::GraphicBuffer *m_impl;
 };
 
-} // internal
-} // Android
-} // tcu
+} // namespace internal
+} // namespace Android
+} // namespace tcu
 
 #endif // _TCUANDROIDINTERNALS_HPP

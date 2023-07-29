@@ -36,18 +36,18 @@ namespace Stress
 class TessellationGeometryInteractionTests : public TestCaseGroup
 {
 public:
-											TessellationGeometryInteractionTests	(Context& context);
-											~TessellationGeometryInteractionTests	(void);
+    TessellationGeometryInteractionTests(Context &context);
+    ~TessellationGeometryInteractionTests(void);
 
-	void									init									(void);
+    void init(void);
 
 private:
-											TessellationGeometryInteractionTests	(const TessellationGeometryInteractionTests& other);
-	TessellationGeometryInteractionTests&	operator=								(const TessellationGeometryInteractionTests& other);
+    TessellationGeometryInteractionTests(const TessellationGeometryInteractionTests &other);
+    TessellationGeometryInteractionTests &operator=(const TessellationGeometryInteractionTests &other);
 };
 
-} // Stress
-} // gles31
-} // deqp
+} // namespace Stress
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31STESSELLATIONGEOMETRYINTERACTIONTESTS_HPP

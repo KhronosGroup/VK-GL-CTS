@@ -31,9 +31,9 @@ namespace vkt
 namespace wsi
 {
 
-void createDisplayControlTests (tcu::TestCaseGroup* testGroup);
+void createDisplayControlTests(tcu::TestCaseGroup *testGroup);
 
-} // wsi
-} // vkt
+} // namespace wsi
+} // namespace vkt
 
 #endif // _VKTWSIDISPLAYCONTROLTESTS_HPP

@@ -40,20 +40,20 @@ namespace glcts
 class MultisampleTextureFunctionalTestsBlittingTest : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureFunctionalTestsBlittingTest(Context& context);
+    /* Public methods */
+    MultisampleTextureFunctionalTestsBlittingTest(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private variables */
-	glw::GLuint dst_fbo_id;
-	glw::GLuint dst_to_color_id;
-	glw::GLuint dst_to_depth_stencil_id;
-	glw::GLuint src_fbo_id;
-	glw::GLuint src_to_color_id;
-	glw::GLuint src_to_depth_stencil_id;
+    /* Private variables */
+    glw::GLuint dst_fbo_id;
+    glw::GLuint dst_to_color_id;
+    glw::GLuint dst_to_depth_stencil_id;
+    glw::GLuint src_fbo_id;
+    glw::GLuint src_to_color_id;
+    glw::GLuint src_to_depth_stencil_id;
 };
 
 /** Test case: Verifies data rendered as a result of blitting depth multisample data
@@ -62,25 +62,25 @@ private:
 class MultisampleTextureFunctionalTestsBlittingMultisampledDepthAttachmentTest : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureFunctionalTestsBlittingMultisampledDepthAttachmentTest(Context& context);
+    /* Public methods */
+    MultisampleTextureFunctionalTestsBlittingMultisampledDepthAttachmentTest(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private variables */
-	glw::GLuint fbo_dst_id;
-	glw::GLuint fbo_src_id;
-	glw::GLuint fs_depth_preview_id;
-	glw::GLuint fs_id;
-	glw::GLuint po_depth_preview_id;
-	glw::GLuint po_id;
-	glw::GLuint to_dst_preview_id;
-	glw::GLuint to_dst_id;
-	glw::GLuint to_src_id;
-	glw::GLuint vao_id;
-	glw::GLuint vs_id;
+    /* Private variables */
+    glw::GLuint fbo_dst_id;
+    glw::GLuint fbo_src_id;
+    glw::GLuint fs_depth_preview_id;
+    glw::GLuint fs_id;
+    glw::GLuint po_depth_preview_id;
+    glw::GLuint po_id;
+    glw::GLuint to_dst_preview_id;
+    glw::GLuint to_dst_id;
+    glw::GLuint to_src_id;
+    glw::GLuint vao_id;
+    glw::GLuint vs_id;
 };
 
 /** Test case: Verifies data rendered as a result of blitting integer multisample data
@@ -89,21 +89,21 @@ private:
 class MultisampleTextureFunctionalTestsBlittingMultisampledIntegerAttachmentTest : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureFunctionalTestsBlittingMultisampledIntegerAttachmentTest(Context& context);
+    /* Public methods */
+    MultisampleTextureFunctionalTestsBlittingMultisampledIntegerAttachmentTest(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private variables */
-	glw::GLuint dst_to_id;
-	glw::GLuint fbo_draw_id;
-	glw::GLuint fbo_read_id;
-	glw::GLuint fs_id;
-	glw::GLuint po_id;
-	glw::GLuint src_to_id;
-	glw::GLuint vs_id;
+    /* Private variables */
+    glw::GLuint dst_to_id;
+    glw::GLuint fbo_draw_id;
+    glw::GLuint fbo_read_id;
+    glw::GLuint fs_id;
+    glw::GLuint po_id;
+    glw::GLuint src_to_id;
+    glw::GLuint vs_id;
 };
 
 /** Test case: Verify that blitting to a multisampled framebuffer object results
@@ -112,47 +112,47 @@ private:
 class MultisampleTextureFunctionalTestsBlittingToMultisampledFBOIsForbiddenTest : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureFunctionalTestsBlittingToMultisampledFBOIsForbiddenTest(Context& context);
+    /* Public methods */
+    MultisampleTextureFunctionalTestsBlittingToMultisampledFBOIsForbiddenTest(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private variables */
-	glw::GLuint dst_to_id;
-	glw::GLuint fbo_draw_id;
-	glw::GLuint fbo_read_id;
-	glw::GLuint src_to_id;
+    /* Private variables */
+    glw::GLuint dst_to_id;
+    glw::GLuint fbo_draw_id;
+    glw::GLuint fbo_read_id;
+    glw::GLuint src_to_id;
 };
 
 /** Test case: Verify sample masking mechanism for non-integer color-renderable internalformats used for 2D multisample textures */
 class MultisampleTextureFunctionalTestsSampleMaskingForNonIntegerColorRenderableTexturesTest : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureFunctionalTestsSampleMaskingForNonIntegerColorRenderableTexturesTest(Context& context);
+    /* Public methods */
+    MultisampleTextureFunctionalTestsSampleMaskingForNonIntegerColorRenderableTexturesTest(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	virtual void compileShader(glw::GLuint id, const glw::GLchar* source);
-	virtual void linkProgram(glw::GLuint id);
+    /* Private methods */
+    virtual void compileShader(glw::GLuint id, const glw::GLchar *source);
+    virtual void linkProgram(glw::GLuint id);
 
-	void initInternals();
+    void initInternals();
 
-	/* Private variables */
-	glw::GLuint bo_id;
-	glw::GLuint fbo_id;
-	glw::GLuint fs_draw_id;
-	glw::GLuint po_draw_id;
-	glw::GLuint po_verify_id;
-	glw::GLuint tfo_id;
-	glw::GLuint to_2d_multisample_id;
-	glw::GLuint vs_draw_id;
-	glw::GLuint vs_verify_id;
+    /* Private variables */
+    glw::GLuint bo_id;
+    glw::GLuint fbo_id;
+    glw::GLuint fs_draw_id;
+    glw::GLuint po_draw_id;
+    glw::GLuint po_verify_id;
+    glw::GLuint tfo_id;
+    glw::GLuint to_2d_multisample_id;
+    glw::GLuint vs_draw_id;
+    glw::GLuint vs_verify_id;
 };
 
 /** Test case: Verify sample masking mechanism for normalized/unsigned integer/signed integer color-renderable
@@ -160,28 +160,28 @@ private:
 class MultisampleTextureFunctionalTestsSampleMaskingTexturesTest : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureFunctionalTestsSampleMaskingTexturesTest(Context& context);
+    /* Public methods */
+    MultisampleTextureFunctionalTestsSampleMaskingTexturesTest(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	virtual void compileShader(glw::GLuint id, const glw::GLchar* source);
-	void		 initInternals();
-	virtual void linkProgram(glw::GLuint id);
+    /* Private methods */
+    virtual void compileShader(glw::GLuint id, const glw::GLchar *source);
+    void initInternals();
+    virtual void linkProgram(glw::GLuint id);
 
-	/* Private variables */
-	glw::GLuint bo_id;
-	glw::GLuint fbo_id;
-	glw::GLuint fs_draw_id;
-	glw::GLuint po_draw_id;
-	glw::GLuint po_verify_id;
-	glw::GLuint tfo_id;
-	glw::GLuint to_2d_multisample_id;
-	glw::GLuint vs_draw_id;
-	glw::GLuint vs_verify_id;
+    /* Private variables */
+    glw::GLuint bo_id;
+    glw::GLuint fbo_id;
+    glw::GLuint fs_draw_id;
+    glw::GLuint po_draw_id;
+    glw::GLuint po_verify_id;
+    glw::GLuint tfo_id;
+    glw::GLuint to_2d_multisample_id;
+    glw::GLuint vs_draw_id;
+    glw::GLuint vs_verify_id;
 };
 
 /** Test case: Verify 2D/2D array multisample texture size can be queried successfully
@@ -190,20 +190,20 @@ private:
 class MultisampleTextureFunctionalTestsTextureSizeFragmentShadersTest : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureFunctionalTestsTextureSizeFragmentShadersTest(Context& context);
+    /* Public methods */
+    MultisampleTextureFunctionalTestsTextureSizeFragmentShadersTest(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private variables */
-	glw::GLuint fbo_id;
-	glw::GLuint fs_id;
-	glw::GLuint po_id;
-	glw::GLuint to_2d_multisample_id;
-	glw::GLuint to_2d_multisample_array_id;
-	glw::GLuint vs_id;
+    /* Private variables */
+    glw::GLuint fbo_id;
+    glw::GLuint fs_id;
+    glw::GLuint po_id;
+    glw::GLuint to_2d_multisample_id;
+    glw::GLuint to_2d_multisample_array_id;
+    glw::GLuint vs_id;
 };
 
 /** Test case: Verify 2D/2D array multisample texture size can be queried successfully
@@ -212,24 +212,24 @@ private:
 class MultisampleTextureFunctionalTestsTextureSizeVertexShadersTest : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureFunctionalTestsTextureSizeVertexShadersTest(Context& context);
+    /* Public methods */
+    MultisampleTextureFunctionalTestsTextureSizeVertexShadersTest(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private variables */
-	glw::GLuint bo_id;
-	glw::GLuint fbo_id;
-	glw::GLuint fs_id;
-	glw::GLuint po_id;
-	glw::GLuint tfo_id;
-	glw::GLuint to_2d_multisample_id;
-	glw::GLuint to_2d_multisample_array_id;
-	glw::GLuint vs_2d_array_id;
-	glw::GLuint vs_2d_id;
+    /* Private variables */
+    glw::GLuint bo_id;
+    glw::GLuint fbo_id;
+    glw::GLuint fs_id;
+    glw::GLuint po_id;
+    glw::GLuint tfo_id;
+    glw::GLuint to_2d_multisample_id;
+    glw::GLuint to_2d_multisample_array_id;
+    glw::GLuint vs_2d_array_id;
+    glw::GLuint vs_2d_id;
 };
-} /* glcts namespace */
+} // namespace glcts
 
 #endif // _ES31CTEXTURESTORAGEMULTISAMPLEFUNCTIONALTESTS_HPP

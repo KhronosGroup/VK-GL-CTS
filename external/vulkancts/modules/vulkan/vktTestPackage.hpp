@@ -34,13 +34,13 @@ namespace vkt
 class TestPackage : public tcu::TestPackage
 {
 public:
-								TestPackage			(tcu::TestContext& testCtx);
-	virtual						~TestPackage		(void);
+    TestPackage(tcu::TestContext &testCtx);
+    virtual ~TestPackage(void);
 
-	virtual void				init				(void);
-	tcu::TestCaseExecutor*		createExecutor		(void) const;
+    virtual void init(void);
+    tcu::TestCaseExecutor *createExecutor(void) const;
 };
 
-} // vkt
+} // namespace vkt
 
 #endif // _VKTTESTPACKAGE_HPP

@@ -36,9 +36,10 @@ namespace deqp
 namespace egl
 {
 
-void chooseConfigReference (const eglw::Library& egl, eglw::EGLDisplay display, std::vector<eglw::EGLConfig>& dst, const std::vector<std::pair<eglw::EGLenum, eglw::EGLint> >& attributes);
+void chooseConfigReference(const eglw::Library &egl, eglw::EGLDisplay display, std::vector<eglw::EGLConfig> &dst,
+                           const std::vector<std::pair<eglw::EGLenum, eglw::EGLint>> &attributes);
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLCHOOSECONFIGREFERENCE_HPP

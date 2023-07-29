@@ -32,91 +32,84 @@ namespace vkt
 class TestGroupHelper0 : public tcu::TestCaseGroup
 {
 public:
-	typedef void (*CreateChildrenFunc) (tcu::TestCaseGroup* testGroup);
-	typedef void (*CleanupGroupFunc) (tcu::TestCaseGroup* testGroup);
+    typedef void (*CreateChildrenFunc)(tcu::TestCaseGroup *testGroup);
+    typedef void (*CleanupGroupFunc)(tcu::TestCaseGroup *testGroup);
 
-								TestGroupHelper0	(tcu::TestContext&		testCtx,
-													 const std::string&		name,
-													 const std::string&		description,
-													 CreateChildrenFunc		createChildren,
-													 CleanupGroupFunc		cleanupGroup);
-								~TestGroupHelper0	(void);
+    TestGroupHelper0(tcu::TestContext &testCtx, const std::string &name, const std::string &description,
+                     CreateChildrenFunc createChildren, CleanupGroupFunc cleanupGroup);
+    ~TestGroupHelper0(void);
 
-	void						init				(void);
-	void						deinit				(void);
+    void init(void);
+    void deinit(void);
 
 private:
-	const CreateChildrenFunc	m_createChildren;
-	const CleanupGroupFunc		m_cleanupGroup;
+    const CreateChildrenFunc m_createChildren;
+    const CleanupGroupFunc m_cleanupGroup;
 };
 
-template<typename Arg0>
+template <typename Arg0>
 class TestGroupHelper1 : public tcu::TestCaseGroup
 {
 public:
-	typedef void (*CreateChildrenFunc) (tcu::TestCaseGroup* testGroup, Arg0 arg0);
-	typedef void (*CleanupGroupFunc) (tcu::TestCaseGroup* testGroup, Arg0 arg0);
+    typedef void (*CreateChildrenFunc)(tcu::TestCaseGroup *testGroup, Arg0 arg0);
+    typedef void (*CleanupGroupFunc)(tcu::TestCaseGroup *testGroup, Arg0 arg0);
 
-								TestGroupHelper1	(tcu::TestContext&		testCtx,
-													 const std::string&		name,
-													 const std::string&		description,
-													 CreateChildrenFunc		createChildren,
-													 const Arg0&			arg0,
-													 CleanupGroupFunc		cleanupGroup)
-									: tcu::TestCaseGroup	(testCtx, name.c_str(), description.c_str())
-									, m_createChildren		(createChildren)
-									, m_cleanupGroup		(cleanupGroup)
-									, m_arg0				(arg0)
-								{}
+    TestGroupHelper1(tcu::TestContext &testCtx, const std::string &name, const std::string &description,
+                     CreateChildrenFunc createChildren, const Arg0 &arg0, CleanupGroupFunc cleanupGroup)
+        : tcu::TestCaseGroup(testCtx, name.c_str(), description.c_str())
+        , m_createChildren(createChildren)
+        , m_cleanupGroup(cleanupGroup)
+        , m_arg0(arg0)
+    {
+    }
 
-	void						init				(void) { m_createChildren(this, m_arg0); }
-	void						deinit				(void) { if (m_cleanupGroup) m_cleanupGroup(this, m_arg0); }
+    void init(void)
+    {
+        m_createChildren(this, m_arg0);
+    }
+    void deinit(void)
+    {
+        if (m_cleanupGroup)
+            m_cleanupGroup(this, m_arg0);
+    }
 
 private:
-	const CreateChildrenFunc	m_createChildren;
-	const CleanupGroupFunc		m_cleanupGroup;
-	const Arg0					m_arg0;
+    const CreateChildrenFunc m_createChildren;
+    const CleanupGroupFunc m_cleanupGroup;
+    const Arg0 m_arg0;
 };
 
-inline tcu::TestCaseGroup* createTestGroup (tcu::TestContext&										testCtx,
-											const std::string&										name,
-											const std::string&										description,
-											TestGroupHelper0::CreateChildrenFunc					createChildren,
-											TestGroupHelper0::CleanupGroupFunc						cleanupGroup = DE_NULL)
+inline tcu::TestCaseGroup *createTestGroup(tcu::TestContext &testCtx, const std::string &name,
+                                           const std::string &description,
+                                           TestGroupHelper0::CreateChildrenFunc createChildren,
+                                           TestGroupHelper0::CleanupGroupFunc cleanupGroup = DE_NULL)
 {
-	return new TestGroupHelper0(testCtx, name, description, createChildren, cleanupGroup);
+    return new TestGroupHelper0(testCtx, name, description, createChildren, cleanupGroup);
 }
 
-template<typename Arg0>
-tcu::TestCaseGroup* createTestGroup (tcu::TestContext&										testCtx,
-									 const std::string&										name,
-									 const std::string&										description,
-									 typename TestGroupHelper1<Arg0>::CreateChildrenFunc	createChildren,
-									 Arg0													arg0,
-									 typename TestGroupHelper1<Arg0>::CleanupGroupFunc		cleanupGroup = DE_NULL)
+template <typename Arg0>
+tcu::TestCaseGroup *createTestGroup(tcu::TestContext &testCtx, const std::string &name, const std::string &description,
+                                    typename TestGroupHelper1<Arg0>::CreateChildrenFunc createChildren, Arg0 arg0,
+                                    typename TestGroupHelper1<Arg0>::CleanupGroupFunc cleanupGroup = DE_NULL)
 {
-	return new TestGroupHelper1<Arg0>(testCtx, name, description, createChildren, arg0, cleanupGroup);
+    return new TestGroupHelper1<Arg0>(testCtx, name, description, createChildren, arg0, cleanupGroup);
 }
 
-inline void addTestGroup (tcu::TestCaseGroup*					parent,
-						  const std::string&					name,
-						  const std::string&					description,
-						  TestGroupHelper0::CreateChildrenFunc	createChildren)
+inline void addTestGroup(tcu::TestCaseGroup *parent, const std::string &name, const std::string &description,
+                         TestGroupHelper0::CreateChildrenFunc createChildren)
 {
-	parent->addChild(createTestGroup(parent->getTestContext(), name, description, createChildren));
+    parent->addChild(createTestGroup(parent->getTestContext(), name, description, createChildren));
 }
 
-template<typename Arg0>
-void addTestGroup (tcu::TestCaseGroup*									parent,
-				   const std::string&									name,
-				   const std::string&									description,
-				   typename TestGroupHelper1<Arg0>::CreateChildrenFunc	createChildren,
-				   Arg0													arg0,
-				   typename TestGroupHelper1<Arg0>::CleanupGroupFunc	cleanupGroup = DE_NULL)
+template <typename Arg0>
+void addTestGroup(tcu::TestCaseGroup *parent, const std::string &name, const std::string &description,
+                  typename TestGroupHelper1<Arg0>::CreateChildrenFunc createChildren, Arg0 arg0,
+                  typename TestGroupHelper1<Arg0>::CleanupGroupFunc cleanupGroup = DE_NULL)
 {
-	parent->addChild(createTestGroup<Arg0>(parent->getTestContext(), name, description, createChildren, arg0, cleanupGroup));
+    parent->addChild(
+        createTestGroup<Arg0>(parent->getTestContext(), name, description, createChildren, arg0, cleanupGroup));
 }
 
-} // vkt
+} // namespace vkt
 
 #endif // _VKTTESTGROUPUTIL_HPP

@@ -36,18 +36,20 @@ namespace Functional
 class DepthStencilClearTests : public TestCaseGroup
 {
 public:
-								DepthStencilClearTests		(Context& context);
-	virtual						~DepthStencilClearTests		(void) {}
+    DepthStencilClearTests(Context &context);
+    virtual ~DepthStencilClearTests(void)
+    {
+    }
 
-	virtual void				init						(void);
+    virtual void init(void);
 
 private:
-								DepthStencilClearTests		(const DepthStencilClearTests&);
-	DepthStencilClearTests&		operator=					(const DepthStencilClearTests&);
+    DepthStencilClearTests(const DepthStencilClearTests &);
+    DepthStencilClearTests &operator=(const DepthStencilClearTests &);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FDEPTHSTENCILCLEARTESTS_HPP

@@ -31,10 +31,9 @@ namespace vkt
 namespace synchronization
 {
 
-tcu::TestCaseGroup*		createSignalOrderTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSignalOrderTests(tcu::TestContext &testCtx);
 
-} //synchronization
-} // vkt
-
+} // namespace synchronization
+} // namespace vkt
 
 #endif // _VKTSYNCHRONIZATIONSIGNALORDERTESTS_HPP

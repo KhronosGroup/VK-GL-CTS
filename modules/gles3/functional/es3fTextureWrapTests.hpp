@@ -36,18 +36,18 @@ namespace Functional
 class TextureWrapTests : public TestCaseGroup
 {
 public:
-							TextureWrapTests		(Context& context);
-							~TextureWrapTests		(void);
+    TextureWrapTests(Context &context);
+    ~TextureWrapTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							TextureWrapTests		(const TextureWrapTests& other);
-	TextureWrapTests&		operator=				(const TextureWrapTests& other);
+    TextureWrapTests(const TextureWrapTests &other);
+    TextureWrapTests &operator=(const TextureWrapTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FTEXTUREWRAPTESTS_HPP

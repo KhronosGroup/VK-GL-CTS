@@ -32,9 +32,9 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup*	createToolingInfoTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createToolingInfoTests(tcu::TestContext &testCtx);
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPITOOLINGINFOTESTS_HPP

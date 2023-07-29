@@ -36,18 +36,18 @@ namespace Functional
 class TessellationGeometryInteractionTests : public TestCaseGroup
 {
 public:
-											TessellationGeometryInteractionTests	(Context& context);
-											~TessellationGeometryInteractionTests	(void);
+    TessellationGeometryInteractionTests(Context &context);
+    ~TessellationGeometryInteractionTests(void);
 
-	void									init									(void);
+    void init(void);
 
 private:
-											TessellationGeometryInteractionTests	(const TessellationGeometryInteractionTests& other);
-	TessellationGeometryInteractionTests&	operator=								(const TessellationGeometryInteractionTests& other);
+    TessellationGeometryInteractionTests(const TessellationGeometryInteractionTests &other);
+    TessellationGeometryInteractionTests &operator=(const TessellationGeometryInteractionTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FTESSELLATIONGEOMETRYINTERACTIONTESTS_HPP

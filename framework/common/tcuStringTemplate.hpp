@@ -32,21 +32,21 @@ namespace tcu
 class StringTemplate
 {
 public:
-						StringTemplate		(void);
-						StringTemplate		(const std::string& str);
-						~StringTemplate		(void);
+    StringTemplate(void);
+    StringTemplate(const std::string &str);
+    ~StringTemplate(void);
 
-	void				setString			(const std::string& str);
+    void setString(const std::string &str);
 
-	std::string			specialize			(const std::map<std::string, std::string>& params) const;
+    std::string specialize(const std::map<std::string, std::string> &params) const;
 
 private:
-						StringTemplate		(const StringTemplate&);		// not allowed!
-	StringTemplate&		operator=			(const StringTemplate&);		// not allowed!
+    StringTemplate(const StringTemplate &);            // not allowed!
+    StringTemplate &operator=(const StringTemplate &); // not allowed!
 
-	std::string			m_template;
+    std::string m_template;
 } DE_WARN_UNUSED_TYPE;
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUSTRINGTEMPLATE_HPP

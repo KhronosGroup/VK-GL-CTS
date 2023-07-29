@@ -36,9 +36,12 @@ namespace vkt
 namespace FragmentOperations
 {
 
-vk::Move<vk::VkPipeline>		makeComputePipeline		(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkShaderModule shaderModule, const vk::VkSpecializationInfo* specInfo);
+vk::Move<vk::VkPipeline> makeComputePipeline(const vk::DeviceInterface &vk, const vk::VkDevice device,
+                                             const vk::VkPipelineLayout pipelineLayout,
+                                             const vk::VkShaderModule shaderModule,
+                                             const vk::VkSpecializationInfo *specInfo);
 
-} // FragmentOperations
-} // vkt
+} // namespace FragmentOperations
+} // namespace vkt
 
 #endif // _VKTFRAGMENTOPERATIONSMAKEUTIL_HPP

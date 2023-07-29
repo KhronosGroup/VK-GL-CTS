@@ -35,11 +35,11 @@ namespace Functional
 namespace NegativeTestShared
 {
 
-std::vector<FunctionContainer> getNegativeSampleVariablesTestFunctions (void);
+std::vector<FunctionContainer> getNegativeSampleVariablesTestFunctions(void);
 
-} // NegativeTestShared
-} // Functional
-} // gles31
-} // deqp
+} // namespace NegativeTestShared
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FNEGATIVESAMPLEVARIABLESTESTS_HPP

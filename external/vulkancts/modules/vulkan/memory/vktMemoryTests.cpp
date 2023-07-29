@@ -39,25 +39,25 @@ namespace memory
 namespace
 {
 
-void createChildren (tcu::TestCaseGroup* memoryTests)
+void createChildren(tcu::TestCaseGroup *memoryTests)
 {
-	tcu::TestContext&	testCtx		= memoryTests->getTestContext();
+    tcu::TestContext &testCtx = memoryTests->getTestContext();
 
-	memoryTests->addChild(createAllocationTests					(testCtx));
-	memoryTests->addChild(createDeviceGroupAllocationTests		(testCtx));
-	memoryTests->addChild(createMappingTests					(testCtx));
-	memoryTests->addChild(createPipelineBarrierTests			(testCtx));
-	memoryTests->addChild(createRequirementsTests				(testCtx));
-	memoryTests->addChild(createMemoryBindingTests				(testCtx));
-	memoryTests->addChild(createMemoryExternalMemoryHostTests	(testCtx));
+    memoryTests->addChild(createAllocationTests(testCtx));
+    memoryTests->addChild(createDeviceGroupAllocationTests(testCtx));
+    memoryTests->addChild(createMappingTests(testCtx));
+    memoryTests->addChild(createPipelineBarrierTests(testCtx));
+    memoryTests->addChild(createRequirementsTests(testCtx));
+    memoryTests->addChild(createMemoryBindingTests(testCtx));
+    memoryTests->addChild(createMemoryExternalMemoryHostTests(testCtx));
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "memory", "Memory Tests", createChildren);
+    return createTestGroup(testCtx, "memory", "Memory Tests", createChildren);
 }
 
-} // memory
-} // vkt
+} // namespace memory
+} // namespace vkt

@@ -50,282 +50,282 @@ typedef std::vector<std::string> CapabilitiesVec;
 class SpirvModulesPositiveTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	SpirvModulesPositiveTest(deqp::Context& context);
+    /* Public methods */
+    SpirvModulesPositiveTest(deqp::Context &context);
 
-	void init();
-	void deinit();
+    void init();
+    void deinit();
 
-	tcu::TestNode::IterateResult iterate();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
+    /* Private methods */
 
-	/* Private members */
-	GLuint m_texture;
-	GLuint m_fbo;
+    /* Private members */
+    GLuint m_texture;
+    GLuint m_fbo;
 
-	std::string m_vertex;
-	std::string m_tesselationCtrl;
-	std::string m_tesselationEval;
-	std::string m_geometry;
-	std::string m_fragment;
+    std::string m_vertex;
+    std::string m_tesselationCtrl;
+    std::string m_tesselationEval;
+    std::string m_geometry;
+    std::string m_fragment;
 };
 
 /**  Verifies if one binary module can be associated with multiple shader objects. */
 class SpirvShaderBinaryMultipleShaderObjectsTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	SpirvShaderBinaryMultipleShaderObjectsTest(deqp::Context& context);
+    /* Public methods */
+    SpirvShaderBinaryMultipleShaderObjectsTest(deqp::Context &context);
 
-	void init();
-	void deinit();
+    void init();
+    void deinit();
 
-	tcu::TestNode::IterateResult iterate();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
+    /* Private methods */
 
-	/* Private members */
-	std::string m_spirv;
+    /* Private members */
+    std::string m_spirv;
 };
 
 /**  Verifies if state queries for new features added by ARB_gl_spirv works as expected. */
 class SpirvModulesStateQueriesTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	SpirvModulesStateQueriesTest(deqp::Context& context);
+    /* Public methods */
+    SpirvModulesStateQueriesTest(deqp::Context &context);
 
-	void init();
-	void deinit();
+    void init();
+    void deinit();
 
-	tcu::TestNode::IterateResult iterate();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
+    /* Private methods */
 
-	/* Private members */
-	std::string m_vertex;
+    /* Private members */
+    std::string m_vertex;
 };
 
 /**  Verifies if new features added by ARB_gl_spirv generate error messages as expected. */
 class SpirvModulesErrorVerificationTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	SpirvModulesErrorVerificationTest(deqp::Context& context);
+    /* Public methods */
+    SpirvModulesErrorVerificationTest(deqp::Context &context);
 
-	void init();
-	void deinit();
+    void init();
+    void deinit();
 
-	tcu::TestNode::IterateResult iterate();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
+    /* Private methods */
 
-	/* Private members */
-	std::string m_vertex;
+    /* Private members */
+    std::string m_vertex;
 
-	GLuint m_glslShaderId;
-	GLuint m_spirvShaderId;
-	GLuint m_programId;
-	GLuint m_textureId;
+    GLuint m_glslShaderId;
+    GLuint m_spirvShaderId;
+    GLuint m_programId;
+    GLuint m_textureId;
 };
 
 /**  Verifies if GLSL to Spir-V converter supports Spir-V features. */
 class SpirvGlslToSpirVEnableTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	SpirvGlslToSpirVEnableTest(deqp::Context& context);
+    /* Public methods */
+    SpirvGlslToSpirVEnableTest(deqp::Context &context);
 
-	void init();
-	void deinit();
+    void init();
+    void deinit();
 
-	tcu::TestNode::IterateResult iterate();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
+    /* Private methods */
 
-	/* Private members */
-	std::string m_vertex;
+    /* Private members */
+    std::string m_vertex;
 };
 
 /**  Verifies if GLSL built-in functions are supported by Spir-V. */
 class SpirvGlslToSpirVBuiltInFunctionsTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	SpirvGlslToSpirVBuiltInFunctionsTest(deqp::Context& context);
+    /* Public methods */
+    SpirvGlslToSpirVBuiltInFunctionsTest(deqp::Context &context);
 
-	void init();
-	void deinit();
+    void init();
+    void deinit();
 
-	tcu::TestNode::IterateResult iterate();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void initMappings();
+    /* Private methods */
+    void initMappings();
 
-	/* Private members */
-	SpirVMapping m_mappings;
+    /* Private members */
+    SpirVMapping m_mappings;
 
-	std::string				  m_commonVertex;
-	std::string				  m_commonTessEval;
-	std::vector<ShaderSource> m_sources;
+    std::string m_commonVertex;
+    std::string m_commonTessEval;
+    std::vector<ShaderSource> m_sources;
 };
 
 /**  Verifies if constant specialization feature works as expected. */
 class SpirvGlslToSpirVSpecializationConstantsTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	SpirvGlslToSpirVSpecializationConstantsTest(deqp::Context& context);
+    /* Public methods */
+    SpirvGlslToSpirVSpecializationConstantsTest(deqp::Context &context);
 
-	void init();
-	void deinit();
+    void init();
+    void deinit();
 
-	tcu::TestNode::IterateResult iterate();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
+    /* Private methods */
 
-	/* Private members */
-	GLuint m_texture;
-	GLuint m_fbo;
+    /* Private members */
+    GLuint m_texture;
+    GLuint m_fbo;
 
-	std::string m_vertex;
-	std::string m_fragment;
+    std::string m_vertex;
+    std::string m_fragment;
 };
 
 /**  Verifies if Spir-V built in variable decorations works as expected. */
 class SpirvValidationBuiltInVariableDecorationsTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	SpirvValidationBuiltInVariableDecorationsTest(deqp::Context& context);
+    /* Public methods */
+    SpirvValidationBuiltInVariableDecorationsTest(deqp::Context &context);
 
-	void init();
-	void deinit();
+    void init();
+    void deinit();
 
-	tcu::TestNode::IterateResult iterate();
+    tcu::TestNode::IterateResult iterate();
 
 private: /* Private structs */
-	struct ValidationOutputStruct
-	{
-		GLubyte x, y, z;
-		GLuint  value;
+    struct ValidationOutputStruct
+    {
+        GLubyte x, y, z;
+        GLuint value;
 
-		ValidationOutputStruct() : x(0), y(0), z(0), value(0)
-		{
-		}
+        ValidationOutputStruct() : x(0), y(0), z(0), value(0)
+        {
+        }
 
-		ValidationOutputStruct(GLubyte _x, GLubyte _y, GLuint _value) : x(_x), y(_y), z(0), value(_value)
-		{
-		}
+        ValidationOutputStruct(GLubyte _x, GLubyte _y, GLuint _value) : x(_x), y(_y), z(0), value(_value)
+        {
+        }
 
-		ValidationOutputStruct(GLubyte _x, GLubyte _y, GLubyte _z, GLuint _value) : x(_x), y(_y), z(_z), value(_value)
-		{
-		}
-	};
+        ValidationOutputStruct(GLubyte _x, GLubyte _y, GLubyte _z, GLuint _value) : x(_x), y(_y), z(_z), value(_value)
+        {
+        }
+    };
 
-	typedef std::vector<ValidationOutputStruct> ValidationOutputVec;
+    typedef std::vector<ValidationOutputStruct> ValidationOutputVec;
 
-	typedef bool (SpirvValidationBuiltInVariableDecorationsTest::*ValidationFuncPtr)(ValidationOutputVec& outputs);
+    typedef bool (SpirvValidationBuiltInVariableDecorationsTest::*ValidationFuncPtr)(ValidationOutputVec &outputs);
 
-	struct ValidationStruct
-	{
-		std::vector<ShaderSource> shaders;
-		ValidationOutputVec		  outputs;
-		ValidationFuncPtr		  validationFuncPtr;
+    struct ValidationStruct
+    {
+        std::vector<ShaderSource> shaders;
+        ValidationOutputVec outputs;
+        ValidationFuncPtr validationFuncPtr;
 
-		ValidationStruct() : validationFuncPtr(DE_NULL)
-		{
-		}
+        ValidationStruct() : validationFuncPtr(DE_NULL)
+        {
+        }
 
-		ValidationStruct(ValidationFuncPtr funcPtr) : validationFuncPtr(funcPtr)
-		{
-		}
-	};
+        ValidationStruct(ValidationFuncPtr funcPtr) : validationFuncPtr(funcPtr)
+        {
+        }
+    };
 
-	/* Private methods */
-	bool validComputeFunc(ValidationOutputVec& outputs);
-	bool validPerVertexFragFunc(ValidationOutputVec& outputs);
-	bool validPerVertexPointFunc(ValidationOutputVec& outputs);
-	bool validTesselationGeometryFunc(ValidationOutputVec& outputs);
-	bool validMultiSamplingFunc(ValidationOutputVec& outputs);
+    /* Private methods */
+    bool validComputeFunc(ValidationOutputVec &outputs);
+    bool validPerVertexFragFunc(ValidationOutputVec &outputs);
+    bool validPerVertexPointFunc(ValidationOutputVec &outputs);
+    bool validTesselationGeometryFunc(ValidationOutputVec &outputs);
+    bool validMultiSamplingFunc(ValidationOutputVec &outputs);
 
-	/* Private members */
-	SpirVMapping m_mappings;
+    /* Private members */
+    SpirVMapping m_mappings;
 
-	std::vector<ValidationStruct> m_validations;
+    std::vector<ValidationStruct> m_validations;
 
-	std::string m_compute;
-	std::string m_vertex;
-	std::string m_tesselationCtrl;
-	std::string m_tesselationEval;
-	std::string m_geometry;
-	std::string m_fragment;
+    std::string m_compute;
+    std::string m_vertex;
+    std::string m_tesselationCtrl;
+    std::string m_tesselationEval;
+    std::string m_geometry;
+    std::string m_fragment;
 };
 
 /**  Verifies if Spir-V capabilities works as expected. */
 class SpirvValidationCapabilitiesTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	SpirvValidationCapabilitiesTest(deqp::Context& context);
+    /* Public methods */
+    SpirvValidationCapabilitiesTest(deqp::Context &context);
 
-	void init();
-	void deinit();
+    void init();
+    void deinit();
 
-	tcu::TestNode::IterateResult iterate();
+    tcu::TestNode::IterateResult iterate();
 
-	int spirVCapabilityCutOff(std::string spirVSrcInput, std::string& spirVSrcOutput, CapabilitiesVec& capabilities,
-							  int& currentCapability);
+    int spirVCapabilityCutOff(std::string spirVSrcInput, std::string &spirVSrcOutput, CapabilitiesVec &capabilities,
+                              int &currentCapability);
 
 private:
-	typedef std::map<glu::ShaderType, CapabilitiesVec> CapabilitiesMap;
+    typedef std::map<glu::ShaderType, CapabilitiesVec> CapabilitiesMap;
 
-	struct ShaderStage
-	{
-		std::string		name;
-		ShaderSource	source;
-		ShaderBinary	binary;
-		CapabilitiesVec caps;
+    struct ShaderStage
+    {
+        std::string name;
+        ShaderSource source;
+        ShaderBinary binary;
+        CapabilitiesVec caps;
 
-		ShaderStage()
-		{
-		}
+        ShaderStage()
+        {
+        }
 
-		ShaderStage(std::string _name) : name(_name)
-		{
-		}
-	};
+        ShaderStage(std::string _name) : name(_name)
+        {
+        }
+    };
 
-	typedef std::vector<ShaderStage> Pipeline;
+    typedef std::vector<ShaderStage> Pipeline;
 
-	/* Private methods */
+    /* Private methods */
 
-	/* Private members */
-	std::vector<Pipeline> m_pipelines;
+    /* Private members */
+    std::vector<Pipeline> m_pipelines;
 };
 
 /** Test group which encapsulates all sparse buffer conformance tests */
 class GlSpirvTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	GlSpirvTests(deqp::Context& context);
+    /* Public methods */
+    GlSpirvTests(deqp::Context &context);
 
-	void init();
+    void init();
 
 private:
-	GlSpirvTests(const GlSpirvTests& other);
-	GlSpirvTests& operator=(const GlSpirvTests& other);
+    GlSpirvTests(const GlSpirvTests &other);
+    GlSpirvTests &operator=(const GlSpirvTests &other);
 };
 
-} /* glcts namespace */
+} // namespace gl4cts
 
 #endif // _GL4CGLSPIRVTESTS_HPP

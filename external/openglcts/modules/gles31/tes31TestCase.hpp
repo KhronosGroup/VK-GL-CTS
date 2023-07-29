@@ -34,18 +34,18 @@ using deqp::Context;
 using deqp::TestCase;
 using deqp::TestCaseGroup;
 
-} // gles31
-} // deqp
+} // namespace gles31
+} // namespace deqp
 
 namespace glcts
 {
 
 using deqp::Context;
+using deqp::GLWrapper;
+using deqp::SubcaseBase;
 using deqp::TestCase;
 using deqp::TestCaseGroup;
-using deqp::SubcaseBase;
 using deqp::TestSubcase;
-using deqp::GLWrapper;
-}
+} // namespace glcts
 
 #endif // _TES31TESTCASE_HPP

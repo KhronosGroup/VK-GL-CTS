@@ -34,59 +34,63 @@ namespace vk
 
 struct DebugReportMessage
 {
-	VkDebugReportFlagsEXT		flags;
-	VkDebugReportObjectTypeEXT	objectType;
-	deUint64					object;
-	size_t						location;
-	deInt32						messageCode;
-	std::string					layerPrefix;
-	std::string					message;
+    VkDebugReportFlagsEXT flags;
+    VkDebugReportObjectTypeEXT objectType;
+    uint64_t object;
+    size_t location;
+    int32_t messageCode;
+    std::string layerPrefix;
+    std::string message;
 
-	DebugReportMessage (void)
-		: flags			(0)
-		, objectType	((VkDebugReportObjectTypeEXT)0)
-		, object		(0)
-		, location		(0)
-		, messageCode	(0)
-	{}
+    DebugReportMessage(void)
+        : flags(0)
+        , objectType((VkDebugReportObjectTypeEXT)0)
+        , object(0)
+        , location(0)
+        , messageCode(0)
+    {
+    }
 
-	DebugReportMessage (VkDebugReportFlagsEXT		flags_,
-						VkDebugReportObjectTypeEXT	objectType_,
-						deUint64					object_,
-						size_t						location_,
-						deInt32						messageCode_,
-						const std::string&			layerPrefix_,
-						const std::string&			message_)
-		: flags			(flags_)
-		, objectType	(objectType_)
-		, object		(object_)
-		, location		(location_)
-		, messageCode	(messageCode_)
-		, layerPrefix	(layerPrefix_)
-		, message		(message_)
-	{}
+    DebugReportMessage(VkDebugReportFlagsEXT flags_, VkDebugReportObjectTypeEXT objectType_, uint64_t object_,
+                       size_t location_, int32_t messageCode_, const std::string &layerPrefix_,
+                       const std::string &message_)
+        : flags(flags_)
+        , objectType(objectType_)
+        , object(object_)
+        , location(location_)
+        , messageCode(messageCode_)
+        , layerPrefix(layerPrefix_)
+        , message(message_)
+    {
+    }
 };
 
-std::ostream&	operator<<	(std::ostream& str, const DebugReportMessage& message);
+std::ostream &operator<<(std::ostream &str, const DebugReportMessage &message);
 
 class DebugReportRecorder
 {
 public:
-	typedef de::AppendList<DebugReportMessage>	MessageList;
+    typedef de::AppendList<DebugReportMessage> MessageList;
 
-											DebugReportRecorder		(const InstanceInterface& vki, VkInstance instance);
-											~DebugReportRecorder	(void);
+    DebugReportRecorder(const InstanceInterface &vki, VkInstance instance);
+    ~DebugReportRecorder(void);
 
-	const MessageList&						getMessages				(void) const { return m_messages; }
-	void									clearMessages			(void) { m_messages.clear(); }
+    const MessageList &getMessages(void) const
+    {
+        return m_messages;
+    }
+    void clearMessages(void)
+    {
+        m_messages.clear();
+    }
 
 private:
-	MessageList								m_messages;
-	const Unique<VkDebugReportCallbackEXT>	m_callback;
+    MessageList m_messages;
+    const Unique<VkDebugReportCallbackEXT> m_callback;
 };
 
-bool	isDebugReportSupported		(const PlatformInterface& vkp);
+bool isDebugReportSupported(const PlatformInterface &vkp);
 
-} // vk
+} // namespace vk
 
 #endif // _VKDEBUGREPORTUTIL_HPP

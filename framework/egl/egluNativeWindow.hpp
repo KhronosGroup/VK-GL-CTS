@@ -41,116 +41,138 @@ class NativeDisplay;
 
 struct WindowParams
 {
-	enum Visibility
-	{
-		VISIBILITY_HIDDEN = 0,
-		VISIBILITY_VISIBLE,
-		VISIBILITY_FULLSCREEN,
-		VISIBILITY_DONT_CARE,
+    enum Visibility
+    {
+        VISIBILITY_HIDDEN = 0,
+        VISIBILITY_VISIBLE,
+        VISIBILITY_FULLSCREEN,
+        VISIBILITY_DONT_CARE,
 
-		VISIBILITY_LAST
-	};
+        VISIBILITY_LAST
+    };
 
-	enum
-	{
-		SIZE_DONT_CARE = - 1
-	};
+    enum
+    {
+        SIZE_DONT_CARE = -1
+    };
 
-	int			width;		//!< Positive size, or SIZE_DONT_CARE
-	int			height;		//!< Positive size, or SIZE_DONT_CARE
-	Visibility	visibility;	//!< Visibility for window
+    int width;             //!< Positive size, or SIZE_DONT_CARE
+    int height;            //!< Positive size, or SIZE_DONT_CARE
+    Visibility visibility; //!< Visibility for window
 
-	WindowParams (void) : width(SIZE_DONT_CARE), height(SIZE_DONT_CARE), visibility(VISIBILITY_DONT_CARE) {}
-	WindowParams (int width_, int height_, Visibility visibility_) : width(width_), height(height_), visibility(visibility_) {}
+    WindowParams(void) : width(SIZE_DONT_CARE), height(SIZE_DONT_CARE), visibility(VISIBILITY_DONT_CARE)
+    {
+    }
+    WindowParams(int width_, int height_, Visibility visibility_)
+        : width(width_)
+        , height(height_)
+        , visibility(visibility_)
+    {
+    }
 };
 
 class WindowDestroyedError : public tcu::ResourceError
 {
 public:
-	WindowDestroyedError (const std::string& message) : tcu::ResourceError(message) {}
+    WindowDestroyedError(const std::string &message) : tcu::ResourceError(message)
+    {
+    }
 };
 
 class NativeWindow
 {
 public:
-	enum Capability
-	{
-		CAPABILITY_CREATE_SURFACE_LEGACY				= (1<<0),	//!< EGL surface can be created with eglCreateWindowSurface()
-		CAPABILITY_CREATE_SURFACE_PLATFORM_EXTENSION	= (1<<1),	//!< EGL surface can be created with eglCreatePlatformWindowSurfaceEXT()
-		CAPABILITY_CREATE_SURFACE_PLATFORM				= (1<<2),	//!< EGL surface can be created with eglCreatePlatformWindowSurface()
-		CAPABILITY_GET_SURFACE_SIZE						= (1<<3),
-		CAPABILITY_SET_SURFACE_SIZE						= (1<<4),
-		CAPABILITY_GET_SCREEN_SIZE						= (1<<5),
-		CAPABILITY_READ_SCREEN_PIXELS					= (1<<6),
-		CAPABILITY_CHANGE_VISIBILITY					= (1<<7)
-	};
+    enum Capability
+    {
+        CAPABILITY_CREATE_SURFACE_LEGACY = (1 << 0), //!< EGL surface can be created with eglCreateWindowSurface()
+        CAPABILITY_CREATE_SURFACE_PLATFORM_EXTENSION =
+            (1 << 1), //!< EGL surface can be created with eglCreatePlatformWindowSurfaceEXT()
+        CAPABILITY_CREATE_SURFACE_PLATFORM =
+            (1 << 2), //!< EGL surface can be created with eglCreatePlatformWindowSurface()
+        CAPABILITY_GET_SURFACE_SIZE   = (1 << 3),
+        CAPABILITY_SET_SURFACE_SIZE   = (1 << 4),
+        CAPABILITY_GET_SCREEN_SIZE    = (1 << 5),
+        CAPABILITY_READ_SCREEN_PIXELS = (1 << 6),
+        CAPABILITY_CHANGE_VISIBILITY  = (1 << 7)
+    };
 
-	virtual								~NativeWindow					(void) {}
+    virtual ~NativeWindow(void)
+    {
+    }
 
-	//! Return EGLNativeWindowType that can be used with eglCreateWindowSurface(). Default implementation throws tcu::NotSupportedError().
-	virtual eglw::EGLNativeWindowType	getLegacyNative					(void);
+    //! Return EGLNativeWindowType that can be used with eglCreateWindowSurface(). Default implementation throws tcu::NotSupportedError().
+    virtual eglw::EGLNativeWindowType getLegacyNative(void);
 
-	//! Return native pointer that can be used with eglCreatePlatformWindowSurfaceEXT(). Default implementation throws tcu::NotSupportedError().
-	virtual void*						getPlatformExtension			(void);
+    //! Return native pointer that can be used with eglCreatePlatformWindowSurfaceEXT(). Default implementation throws tcu::NotSupportedError().
+    virtual void *getPlatformExtension(void);
 
-	//! Return native pointer that can be used with eglCreatePlatformWindowSurface(). Default implementation throws tcu::NotSupportedError().
-	virtual void*						getPlatformNative				(void);
+    //! Return native pointer that can be used with eglCreatePlatformWindowSurface(). Default implementation throws tcu::NotSupportedError().
+    virtual void *getPlatformNative(void);
 
-	// Process window events. Defaults to dummy implementation, that does nothing.
-	virtual void						processEvents					(void) {}
+    // Process window events. Defaults to dummy implementation, that does nothing.
+    virtual void processEvents(void)
+    {
+    }
 
-	// Get current size of window's logical surface. Default implementation throws tcu::NotSupportedError()
-	virtual tcu::IVec2					getSurfaceSize					(void) const;
+    // Get current size of window's logical surface. Default implementation throws tcu::NotSupportedError()
+    virtual tcu::IVec2 getSurfaceSize(void) const;
 
-	// Set the size of the window's logical surface. Default implementation throws tcu::NotSupportedError()
-	virtual void						setSurfaceSize					(tcu::IVec2 size);
+    // Set the size of the window's logical surface. Default implementation throws tcu::NotSupportedError()
+    virtual void setSurfaceSize(tcu::IVec2 size);
 
-	// Get the size of the window in screen pixels. Default implementation throws tcu::NotSupportedError()
-	virtual tcu::IVec2					getScreenSize					(void) const;
+    // Get the size of the window in screen pixels. Default implementation throws tcu::NotSupportedError()
+    virtual tcu::IVec2 getScreenSize(void) const;
 
-	// Read screen (visible) pixels from window. Default implementation throws tcu::NotSupportedError()
-	virtual void						readScreenPixels				(tcu::TextureLevel* dst) const;
+    // Read screen (visible) pixels from window. Default implementation throws tcu::NotSupportedError()
+    virtual void readScreenPixels(tcu::TextureLevel *dst) const;
 
-	// Change window visibility. Default throws tcu::NotSupportedError().
-	virtual void						setVisibility					(WindowParams::Visibility visibility);
+    // Change window visibility. Default throws tcu::NotSupportedError().
+    virtual void setVisibility(WindowParams::Visibility visibility);
 
-	Capability							getCapabilities					(void) const { return m_capabilities; }
+    Capability getCapabilities(void) const
+    {
+        return m_capabilities;
+    }
 
 protected:
-										NativeWindow					(Capability capabilities);
+    NativeWindow(Capability capabilities);
 
 private:
-										NativeWindow					(const NativeWindow&);
-	NativeWindow&						operator=						(const NativeWindow&);
+    NativeWindow(const NativeWindow &);
+    NativeWindow &operator=(const NativeWindow &);
 
-	const Capability					m_capabilities;
+    const Capability m_capabilities;
 };
 
 class NativeWindowFactory : public tcu::FactoryBase
 {
 public:
-	virtual								~NativeWindowFactory			(void);
+    virtual ~NativeWindowFactory(void);
 
-	//! Create generic NativeWindow
-	virtual NativeWindow*				createWindow					(NativeDisplay* nativeDisplay, const WindowParams& params) const = 0;
+    //! Create generic NativeWindow
+    virtual NativeWindow *createWindow(NativeDisplay *nativeDisplay, const WindowParams &params) const = 0;
 
-	//! Create NativeWindow that matches given config. Defaults to generic createWindow().
-	virtual NativeWindow*				createWindow					(NativeDisplay* nativeDisplay, eglw::EGLDisplay display, eglw::EGLConfig config, const eglw::EGLAttrib* attribList, const WindowParams& params) const;
+    //! Create NativeWindow that matches given config. Defaults to generic createWindow().
+    virtual NativeWindow *createWindow(NativeDisplay *nativeDisplay, eglw::EGLDisplay display, eglw::EGLConfig config,
+                                       const eglw::EGLAttrib *attribList, const WindowParams &params) const;
 
-	NativeWindow::Capability			getCapabilities					(void) const { return m_capabilities; }
+    NativeWindow::Capability getCapabilities(void) const
+    {
+        return m_capabilities;
+    }
 
 protected:
-										NativeWindowFactory				(const std::string& name, const std::string& description, NativeWindow::Capability capabilities);
+    NativeWindowFactory(const std::string &name, const std::string &description, NativeWindow::Capability capabilities);
 
 private:
-										NativeWindowFactory				(const NativeWindowFactory&);
-	NativeWindowFactory&				operator=						(const NativeWindowFactory&);
+    NativeWindowFactory(const NativeWindowFactory &);
+    NativeWindowFactory &operator=(const NativeWindowFactory &);
 
-	const NativeWindow::Capability		m_capabilities;
+    const NativeWindow::Capability m_capabilities;
 };
 
 typedef tcu::FactoryRegistry<NativeWindowFactory> NativeWindowFactoryRegistry;
 
-} // eglu
+} // namespace eglu
 
 #endif // _EGLUNATIVEWINDOW_HPP

@@ -25,24 +25,25 @@
 
 #include "deDefs.h"
 
-typedef struct qpWatchDog_s	qpWatchDog;
+typedef struct qpWatchDog_s qpWatchDog;
 
 typedef enum qpTimeoutReason_e
 {
-	QP_TIMEOUT_REASON_INTERVAL_LIMIT = 0,
-	QP_TIMEOUT_REASON_TOTAL_LIMIT,
+    QP_TIMEOUT_REASON_INTERVAL_LIMIT = 0,
+    QP_TIMEOUT_REASON_TOTAL_LIMIT,
 
-	QP_TIMEOUT_REASON_LAST
+    QP_TIMEOUT_REASON_LAST
 } qpTimeoutReason;
 
-typedef void		(*qpWatchDogFunc)		(qpWatchDog* dog, void* userPtr, qpTimeoutReason reason);
+typedef void (*qpWatchDogFunc)(qpWatchDog *dog, void *userPtr, qpTimeoutReason reason);
 
 DE_BEGIN_EXTERN_C
 
-qpWatchDog*		qpWatchDog_create		(qpWatchDogFunc watchDogFunc, void* userPtr, int totalTimeLimitSecs, int intervalTimeLimitSecs);
-void			qpWatchDog_destroy		(qpWatchDog* dog);
-void			qpWatchDog_reset		(qpWatchDog* dog);
-void			qpWatchDog_touch		(qpWatchDog* dog);
+qpWatchDog *qpWatchDog_create(qpWatchDogFunc watchDogFunc, void *userPtr, int totalTimeLimitSecs,
+                              int intervalTimeLimitSecs);
+void qpWatchDog_destroy(qpWatchDog *dog);
+void qpWatchDog_reset(qpWatchDog *dog);
+void qpWatchDog_touch(qpWatchDog *dog);
 
 DE_END_EXTERN_C
 

@@ -14,7 +14,7 @@ inline VkAllocationCallbacks makeAllocationCallbacks (void* pUserData, PFN_vkAll
 	return res;
 }
 
-inline VkExtent3D makeExtent3D (deUint32 width, deUint32 height, deUint32 depth)
+inline VkExtent3D makeExtent3D (uint32_t width, uint32_t height, uint32_t depth)
 {
 	VkExtent3D res;
 	res.width	= width;
@@ -23,7 +23,7 @@ inline VkExtent3D makeExtent3D (deUint32 width, deUint32 height, deUint32 depth)
 	return res;
 }
 
-inline VkMemoryRequirements makeMemoryRequirements (VkDeviceSize size, VkDeviceSize alignment, deUint32 memoryTypeBits)
+inline VkMemoryRequirements makeMemoryRequirements (VkDeviceSize size, VkDeviceSize alignment, uint32_t memoryTypeBits)
 {
 	VkMemoryRequirements res;
 	res.size			= size;
@@ -43,7 +43,7 @@ inline VkSparseMemoryBind makeSparseMemoryBind (VkDeviceSize resourceOffset, VkD
 	return res;
 }
 
-inline VkSparseBufferMemoryBindInfo makeSparseBufferMemoryBindInfo (VkBuffer buffer, deUint32 bindCount, const VkSparseMemoryBind* pBinds)
+inline VkSparseBufferMemoryBindInfo makeSparseBufferMemoryBindInfo (VkBuffer buffer, uint32_t bindCount, const VkSparseMemoryBind* pBinds)
 {
 	VkSparseBufferMemoryBindInfo res;
 	res.buffer		= buffer;
@@ -52,7 +52,7 @@ inline VkSparseBufferMemoryBindInfo makeSparseBufferMemoryBindInfo (VkBuffer buf
 	return res;
 }
 
-inline VkSparseImageOpaqueMemoryBindInfo makeSparseImageOpaqueMemoryBindInfo (VkImage image, deUint32 bindCount, const VkSparseMemoryBind* pBinds)
+inline VkSparseImageOpaqueMemoryBindInfo makeSparseImageOpaqueMemoryBindInfo (VkImage image, uint32_t bindCount, const VkSparseMemoryBind* pBinds)
 {
 	VkSparseImageOpaqueMemoryBindInfo res;
 	res.image		= image;
@@ -61,7 +61,7 @@ inline VkSparseImageOpaqueMemoryBindInfo makeSparseImageOpaqueMemoryBindInfo (Vk
 	return res;
 }
 
-inline VkImageSubresource makeImageSubresource (VkImageAspectFlags aspectMask, deUint32 mipLevel, deUint32 arrayLayer)
+inline VkImageSubresource makeImageSubresource (VkImageAspectFlags aspectMask, uint32_t mipLevel, uint32_t arrayLayer)
 {
 	VkImageSubresource res;
 	res.aspectMask	= aspectMask;
@@ -70,7 +70,7 @@ inline VkImageSubresource makeImageSubresource (VkImageAspectFlags aspectMask, d
 	return res;
 }
 
-inline VkOffset3D makeOffset3D (deInt32 x, deInt32 y, deInt32 z)
+inline VkOffset3D makeOffset3D (int32_t x, int32_t y, int32_t z)
 {
 	VkOffset3D res;
 	res.x	= x;
@@ -79,7 +79,7 @@ inline VkOffset3D makeOffset3D (deInt32 x, deInt32 y, deInt32 z)
 	return res;
 }
 
-inline VkSparseImageMemoryBindInfo makeSparseImageMemoryBindInfo (VkImage image, deUint32 bindCount, const VkSparseImageMemoryBind* pBinds)
+inline VkSparseImageMemoryBindInfo makeSparseImageMemoryBindInfo (VkImage image, uint32_t bindCount, const VkSparseImageMemoryBind* pBinds)
 {
 	VkSparseImageMemoryBindInfo res;
 	res.image		= image;
@@ -109,7 +109,7 @@ inline VkComponentMapping makeComponentMapping (VkComponentSwizzle r, VkComponen
 	return res;
 }
 
-inline VkImageSubresourceRange makeImageSubresourceRange (VkImageAspectFlags aspectMask, deUint32 baseMipLevel, deUint32 levelCount, deUint32 baseArrayLayer, deUint32 layerCount)
+inline VkImageSubresourceRange makeImageSubresourceRange (VkImageAspectFlags aspectMask, uint32_t baseMipLevel, uint32_t levelCount, uint32_t baseArrayLayer, uint32_t layerCount)
 {
 	VkImageSubresourceRange res;
 	res.aspectMask		= aspectMask;
@@ -120,7 +120,7 @@ inline VkImageSubresourceRange makeImageSubresourceRange (VkImageAspectFlags asp
 	return res;
 }
 
-inline VkSpecializationMapEntry makeSpecializationMapEntry (deUint32 constantID, deUint32 offset, deUintptr size)
+inline VkSpecializationMapEntry makeSpecializationMapEntry (uint32_t constantID, uint32_t offset, uintptr_t size)
 {
 	VkSpecializationMapEntry res;
 	res.constantID	= constantID;
@@ -129,7 +129,7 @@ inline VkSpecializationMapEntry makeSpecializationMapEntry (deUint32 constantID,
 	return res;
 }
 
-inline VkSpecializationInfo makeSpecializationInfo (deUint32 mapEntryCount, const VkSpecializationMapEntry* pMapEntries, deUintptr dataSize, const void* pData)
+inline VkSpecializationInfo makeSpecializationInfo (uint32_t mapEntryCount, const VkSpecializationMapEntry* pMapEntries, uintptr_t dataSize, const void* pData)
 {
 	VkSpecializationInfo res;
 	res.mapEntryCount	= mapEntryCount;
@@ -139,7 +139,7 @@ inline VkSpecializationInfo makeSpecializationInfo (deUint32 mapEntryCount, cons
 	return res;
 }
 
-inline VkVertexInputBindingDescription makeVertexInputBindingDescription (deUint32 binding, deUint32 stride, VkVertexInputRate inputRate)
+inline VkVertexInputBindingDescription makeVertexInputBindingDescription (uint32_t binding, uint32_t stride, VkVertexInputRate inputRate)
 {
 	VkVertexInputBindingDescription res;
 	res.binding		= binding;
@@ -148,7 +148,7 @@ inline VkVertexInputBindingDescription makeVertexInputBindingDescription (deUint
 	return res;
 }
 
-inline VkVertexInputAttributeDescription makeVertexInputAttributeDescription (deUint32 location, deUint32 binding, VkFormat format, deUint32 offset)
+inline VkVertexInputAttributeDescription makeVertexInputAttributeDescription (uint32_t location, uint32_t binding, VkFormat format, uint32_t offset)
 {
 	VkVertexInputAttributeDescription res;
 	res.location	= location;
@@ -170,7 +170,7 @@ inline VkViewport makeViewport (float x, float y, float width, float height, flo
 	return res;
 }
 
-inline VkOffset2D makeOffset2D (deInt32 x, deInt32 y)
+inline VkOffset2D makeOffset2D (int32_t x, int32_t y)
 {
 	VkOffset2D res;
 	res.x	= x;
@@ -178,7 +178,7 @@ inline VkOffset2D makeOffset2D (deInt32 x, deInt32 y)
 	return res;
 }
 
-inline VkExtent2D makeExtent2D (deUint32 width, deUint32 height)
+inline VkExtent2D makeExtent2D (uint32_t width, uint32_t height)
 {
 	VkExtent2D res;
 	res.width	= width;
@@ -186,7 +186,7 @@ inline VkExtent2D makeExtent2D (deUint32 width, deUint32 height)
 	return res;
 }
 
-inline VkStencilOpState makeStencilOpState (VkStencilOp failOp, VkStencilOp passOp, VkStencilOp depthFailOp, VkCompareOp compareOp, deUint32 compareMask, deUint32 writeMask, deUint32 reference)
+inline VkStencilOpState makeStencilOpState (VkStencilOp failOp, VkStencilOp passOp, VkStencilOp depthFailOp, VkCompareOp compareOp, uint32_t compareMask, uint32_t writeMask, uint32_t reference)
 {
 	VkStencilOpState res;
 	res.failOp		= failOp;
@@ -213,7 +213,7 @@ inline VkPipelineColorBlendAttachmentState makePipelineColorBlendAttachmentState
 	return res;
 }
 
-inline VkPushConstantRange makePushConstantRange (VkShaderStageFlags stageFlags, deUint32 offset, deUint32 size)
+inline VkPushConstantRange makePushConstantRange (VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size)
 {
 	VkPushConstantRange res;
 	res.stageFlags	= stageFlags;
@@ -222,7 +222,7 @@ inline VkPushConstantRange makePushConstantRange (VkShaderStageFlags stageFlags,
 	return res;
 }
 
-inline VkDescriptorSetLayoutBinding makeDescriptorSetLayoutBinding (deUint32 binding, VkDescriptorType descriptorType, deUint32 descriptorCount, VkShaderStageFlags stageFlags, const VkSampler* pImmutableSamplers)
+inline VkDescriptorSetLayoutBinding makeDescriptorSetLayoutBinding (uint32_t binding, VkDescriptorType descriptorType, uint32_t descriptorCount, VkShaderStageFlags stageFlags, const VkSampler* pImmutableSamplers)
 {
 	VkDescriptorSetLayoutBinding res;
 	res.binding				= binding;
@@ -233,7 +233,7 @@ inline VkDescriptorSetLayoutBinding makeDescriptorSetLayoutBinding (deUint32 bin
 	return res;
 }
 
-inline VkDescriptorPoolSize makeDescriptorPoolSize (VkDescriptorType type, deUint32 descriptorCount)
+inline VkDescriptorPoolSize makeDescriptorPoolSize (VkDescriptorType type, uint32_t descriptorCount)
 {
 	VkDescriptorPoolSize res;
 	res.type			= type;
@@ -274,7 +274,7 @@ inline VkAttachmentDescription makeAttachmentDescription (VkAttachmentDescriptio
 	return res;
 }
 
-inline VkAttachmentReference makeAttachmentReference (deUint32 attachment, VkImageLayout layout)
+inline VkAttachmentReference makeAttachmentReference (uint32_t attachment, VkImageLayout layout)
 {
 	VkAttachmentReference res;
 	res.attachment	= attachment;
@@ -282,7 +282,7 @@ inline VkAttachmentReference makeAttachmentReference (deUint32 attachment, VkIma
 	return res;
 }
 
-inline VkSubpassDescription makeSubpassDescription (VkSubpassDescriptionFlags flags, VkPipelineBindPoint pipelineBindPoint, deUint32 inputAttachmentCount, const VkAttachmentReference* pInputAttachments, deUint32 colorAttachmentCount, const VkAttachmentReference* pColorAttachments, const VkAttachmentReference* pResolveAttachments, const VkAttachmentReference* pDepthStencilAttachment, deUint32 preserveAttachmentCount, const deUint32* pPreserveAttachments)
+inline VkSubpassDescription makeSubpassDescription (VkSubpassDescriptionFlags flags, VkPipelineBindPoint pipelineBindPoint, uint32_t inputAttachmentCount, const VkAttachmentReference* pInputAttachments, uint32_t colorAttachmentCount, const VkAttachmentReference* pColorAttachments, const VkAttachmentReference* pResolveAttachments, const VkAttachmentReference* pDepthStencilAttachment, uint32_t preserveAttachmentCount, const uint32_t* pPreserveAttachments)
 {
 	VkSubpassDescription res;
 	res.flags					= flags;
@@ -298,7 +298,7 @@ inline VkSubpassDescription makeSubpassDescription (VkSubpassDescriptionFlags fl
 	return res;
 }
 
-inline VkSubpassDependency makeSubpassDependency (deUint32 srcSubpass, deUint32 dstSubpass, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkDependencyFlags dependencyFlags)
+inline VkSubpassDependency makeSubpassDependency (uint32_t srcSubpass, uint32_t dstSubpass, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkDependencyFlags dependencyFlags)
 {
 	VkSubpassDependency res;
 	res.srcSubpass		= srcSubpass;
@@ -320,7 +320,7 @@ inline VkBufferCopy makeBufferCopy (VkDeviceSize srcOffset, VkDeviceSize dstOffs
 	return res;
 }
 
-inline VkImageSubresourceLayers makeImageSubresourceLayers (VkImageAspectFlags aspectMask, deUint32 mipLevel, deUint32 baseArrayLayer, deUint32 layerCount)
+inline VkImageSubresourceLayers makeImageSubresourceLayers (VkImageAspectFlags aspectMask, uint32_t mipLevel, uint32_t baseArrayLayer, uint32_t layerCount)
 {
 	VkImageSubresourceLayers res;
 	res.aspectMask		= aspectMask;
@@ -330,7 +330,7 @@ inline VkImageSubresourceLayers makeImageSubresourceLayers (VkImageAspectFlags a
 	return res;
 }
 
-inline VkClearDepthStencilValue makeClearDepthStencilValue (float depth, deUint32 stencil)
+inline VkClearDepthStencilValue makeClearDepthStencilValue (float depth, uint32_t stencil)
 {
 	VkClearDepthStencilValue res;
 	res.depth	= depth;
@@ -338,7 +338,7 @@ inline VkClearDepthStencilValue makeClearDepthStencilValue (float depth, deUint3
 	return res;
 }
 
-inline VkDispatchIndirectCommand makeDispatchIndirectCommand (deUint32 x, deUint32 y, deUint32 z)
+inline VkDispatchIndirectCommand makeDispatchIndirectCommand (uint32_t x, uint32_t y, uint32_t z)
 {
 	VkDispatchIndirectCommand res;
 	res.x	= x;
@@ -347,7 +347,7 @@ inline VkDispatchIndirectCommand makeDispatchIndirectCommand (deUint32 x, deUint
 	return res;
 }
 
-inline VkDrawIndexedIndirectCommand makeDrawIndexedIndirectCommand (deUint32 indexCount, deUint32 instanceCount, deUint32 firstIndex, deInt32 vertexOffset, deUint32 firstInstance)
+inline VkDrawIndexedIndirectCommand makeDrawIndexedIndirectCommand (uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance)
 {
 	VkDrawIndexedIndirectCommand res;
 	res.indexCount		= indexCount;
@@ -358,7 +358,7 @@ inline VkDrawIndexedIndirectCommand makeDrawIndexedIndirectCommand (deUint32 ind
 	return res;
 }
 
-inline VkDrawIndirectCommand makeDrawIndirectCommand (deUint32 vertexCount, deUint32 instanceCount, deUint32 firstVertex, deUint32 firstInstance)
+inline VkDrawIndirectCommand makeDrawIndirectCommand (uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
 {
 	VkDrawIndirectCommand res;
 	res.vertexCount		= vertexCount;
@@ -368,7 +368,7 @@ inline VkDrawIndirectCommand makeDrawIndirectCommand (deUint32 vertexCount, deUi
 	return res;
 }
 
-inline VkInputAttachmentAspectReference makeInputAttachmentAspectReference (deUint32 subpass, deUint32 inputAttachmentIndex, VkImageAspectFlags aspectMask)
+inline VkInputAttachmentAspectReference makeInputAttachmentAspectReference (uint32_t subpass, uint32_t inputAttachmentIndex, VkImageAspectFlags aspectMask)
 {
 	VkInputAttachmentAspectReference res;
 	res.subpass					= subpass;
@@ -377,7 +377,7 @@ inline VkInputAttachmentAspectReference makeInputAttachmentAspectReference (deUi
 	return res;
 }
 
-inline VkDescriptorUpdateTemplateEntry makeDescriptorUpdateTemplateEntry (deUint32 dstBinding, deUint32 dstArrayElement, deUint32 descriptorCount, VkDescriptorType descriptorType, deUintptr offset, deUintptr stride)
+inline VkDescriptorUpdateTemplateEntry makeDescriptorUpdateTemplateEntry (uint32_t dstBinding, uint32_t dstArrayElement, uint32_t descriptorCount, VkDescriptorType descriptorType, uintptr_t offset, uintptr_t stride)
 {
 	VkDescriptorUpdateTemplateEntry res;
 	res.dstBinding		= dstBinding;
@@ -398,7 +398,7 @@ inline VkExternalMemoryProperties makeExternalMemoryProperties (VkExternalMemory
 	return res;
 }
 
-inline VkConformanceVersion makeConformanceVersion (deUint8 major, deUint8 minor, deUint8 subminor, deUint8 patch)
+inline VkConformanceVersion makeConformanceVersion (uint8_t major, uint8_t minor, uint8_t subminor, uint8_t patch)
 {
 	VkConformanceVersion res;
 	res.major		= major;
@@ -416,7 +416,7 @@ inline VkSurfaceFormatKHR makeSurfaceFormatKHR (VkFormat format, VkColorSpaceKHR
 	return res;
 }
 
-inline VkDisplayPlanePropertiesKHR makeDisplayPlanePropertiesKHR (VkDisplayKHR currentDisplay, deUint32 currentStackIndex)
+inline VkDisplayPlanePropertiesKHR makeDisplayPlanePropertiesKHR (VkDisplayKHR currentDisplay, uint32_t currentStackIndex)
 {
 	VkDisplayPlanePropertiesKHR res;
 	res.currentDisplay		= currentDisplay;
@@ -424,7 +424,7 @@ inline VkDisplayPlanePropertiesKHR makeDisplayPlanePropertiesKHR (VkDisplayKHR c
 	return res;
 }
 
-inline VkPresentRegionKHR makePresentRegionKHR (deUint32 rectangleCount, const VkRectLayerKHR* pRectangles)
+inline VkPresentRegionKHR makePresentRegionKHR (uint32_t rectangleCount, const VkRectLayerKHR* pRectangles)
 {
 	VkPresentRegionKHR res;
 	res.rectangleCount	= rectangleCount;
@@ -432,7 +432,7 @@ inline VkPresentRegionKHR makePresentRegionKHR (deUint32 rectangleCount, const V
 	return res;
 }
 
-inline VkShaderResourceUsageAMD makeShaderResourceUsageAMD (deUint32 numUsedVgprs, deUint32 numUsedSgprs, deUint32 ldsSizePerLocalWorkGroup, deUintptr ldsUsageSizeInBytes, deUintptr scratchMemUsageInBytes)
+inline VkShaderResourceUsageAMD makeShaderResourceUsageAMD (uint32_t numUsedVgprs, uint32_t numUsedSgprs, uint32_t ldsSizePerLocalWorkGroup, uintptr_t ldsUsageSizeInBytes, uintptr_t scratchMemUsageInBytes)
 {
 	VkShaderResourceUsageAMD res;
 	res.numUsedVgprs				= numUsedVgprs;
@@ -451,14 +451,14 @@ inline VkViewportWScalingNV makeViewportWScalingNV (float xcoeff, float ycoeff)
 	return res;
 }
 
-inline VkRefreshCycleDurationGOOGLE makeRefreshCycleDurationGOOGLE (deUint64 refreshDuration)
+inline VkRefreshCycleDurationGOOGLE makeRefreshCycleDurationGOOGLE (uint64_t refreshDuration)
 {
 	VkRefreshCycleDurationGOOGLE res;
 	res.refreshDuration	= refreshDuration;
 	return res;
 }
 
-inline VkPastPresentationTimingGOOGLE makePastPresentationTimingGOOGLE (deUint32 presentID, deUint64 desiredPresentTime, deUint64 actualPresentTime, deUint64 earliestPresentTime, deUint64 presentMargin)
+inline VkPastPresentationTimingGOOGLE makePastPresentationTimingGOOGLE (uint32_t presentID, uint64_t desiredPresentTime, uint64_t actualPresentTime, uint64_t earliestPresentTime, uint64_t presentMargin)
 {
 	VkPastPresentationTimingGOOGLE res;
 	res.presentID			= presentID;
@@ -469,7 +469,7 @@ inline VkPastPresentationTimingGOOGLE makePastPresentationTimingGOOGLE (deUint32
 	return res;
 }
 
-inline VkPresentTimeGOOGLE makePresentTimeGOOGLE (deUint32 presentID, deUint64 desiredPresentTime)
+inline VkPresentTimeGOOGLE makePresentTimeGOOGLE (uint32_t presentID, uint64_t desiredPresentTime)
 {
 	VkPresentTimeGOOGLE res;
 	res.presentID			= presentID;
@@ -503,7 +503,7 @@ inline VkSampleLocationEXT makeSampleLocationEXT (float x, float y)
 	return res;
 }
 
-inline VkDrmFormatModifierPropertiesEXT makeDrmFormatModifierPropertiesEXT (deUint64 drmFormatModifier, deUint32 drmFormatModifierPlaneCount, VkFormatFeatureFlags drmFormatModifierTilingFeatures)
+inline VkDrmFormatModifierPropertiesEXT makeDrmFormatModifierPropertiesEXT (uint64_t drmFormatModifier, uint32_t drmFormatModifierPlaneCount, VkFormatFeatureFlags drmFormatModifierTilingFeatures)
 {
 	VkDrmFormatModifierPropertiesEXT res;
 	res.drmFormatModifier				= drmFormatModifier;
@@ -512,7 +512,7 @@ inline VkDrmFormatModifierPropertiesEXT makeDrmFormatModifierPropertiesEXT (deUi
 	return res;
 }
 
-inline VkShadingRatePaletteNV makeShadingRatePaletteNV (deUint32 shadingRatePaletteEntryCount, const VkShadingRatePaletteEntryNV* pShadingRatePaletteEntries)
+inline VkShadingRatePaletteNV makeShadingRatePaletteNV (uint32_t shadingRatePaletteEntryCount, const VkShadingRatePaletteEntryNV* pShadingRatePaletteEntries)
 {
 	VkShadingRatePaletteNV res;
 	res.shadingRatePaletteEntryCount	= shadingRatePaletteEntryCount;
@@ -520,7 +520,7 @@ inline VkShadingRatePaletteNV makeShadingRatePaletteNV (deUint32 shadingRatePale
 	return res;
 }
 
-inline VkCoarseSampleLocationNV makeCoarseSampleLocationNV (deUint32 pixelX, deUint32 pixelY, deUint32 sample)
+inline VkCoarseSampleLocationNV makeCoarseSampleLocationNV (uint32_t pixelX, uint32_t pixelY, uint32_t sample)
 {
 	VkCoarseSampleLocationNV res;
 	res.pixelX	= pixelX;
@@ -529,7 +529,7 @@ inline VkCoarseSampleLocationNV makeCoarseSampleLocationNV (deUint32 pixelX, deU
 	return res;
 }
 
-inline VkCoarseSampleOrderCustomNV makeCoarseSampleOrderCustomNV (VkShadingRatePaletteEntryNV shadingRate, deUint32 sampleCount, deUint32 sampleLocationCount, const VkCoarseSampleLocationNV* pSampleLocations)
+inline VkCoarseSampleOrderCustomNV makeCoarseSampleOrderCustomNV (VkShadingRatePaletteEntryNV shadingRate, uint32_t sampleCount, uint32_t sampleLocationCount, const VkCoarseSampleLocationNV* pSampleLocations)
 {
 	VkCoarseSampleOrderCustomNV res;
 	res.shadingRate			= shadingRate;
@@ -551,7 +551,7 @@ inline VkAabbPositionsKHR makeAabbPositionsKHR (float minX, float minY, float mi
 	return res;
 }
 
-inline VkVertexInputBindingDivisorDescriptionEXT makeVertexInputBindingDivisorDescriptionEXT (deUint32 binding, deUint32 divisor)
+inline VkVertexInputBindingDivisorDescriptionEXT makeVertexInputBindingDivisorDescriptionEXT (uint32_t binding, uint32_t divisor)
 {
 	VkVertexInputBindingDivisorDescriptionEXT res;
 	res.binding	= binding;
@@ -559,7 +559,7 @@ inline VkVertexInputBindingDivisorDescriptionEXT makeVertexInputBindingDivisorDe
 	return res;
 }
 
-inline VkPipelineCreationFeedbackEXT makePipelineCreationFeedbackEXT (VkPipelineCreationFeedbackFlagsEXT flags, deUint64 duration)
+inline VkPipelineCreationFeedbackEXT makePipelineCreationFeedbackEXT (VkPipelineCreationFeedbackFlagsEXT flags, uint64_t duration)
 {
 	VkPipelineCreationFeedbackEXT res;
 	res.flags		= flags;
@@ -567,7 +567,7 @@ inline VkPipelineCreationFeedbackEXT makePipelineCreationFeedbackEXT (VkPipeline
 	return res;
 }
 
-inline VkDrawMeshTasksIndirectCommandNV makeDrawMeshTasksIndirectCommandNV (deUint32 taskCount, deUint32 firstTask)
+inline VkDrawMeshTasksIndirectCommandNV makeDrawMeshTasksIndirectCommandNV (uint32_t taskCount, uint32_t firstTask)
 {
 	VkDrawMeshTasksIndirectCommandNV res;
 	res.taskCount	= taskCount;
@@ -575,14 +575,14 @@ inline VkDrawMeshTasksIndirectCommandNV makeDrawMeshTasksIndirectCommandNV (deUi
 	return res;
 }
 
-inline VkBindShaderGroupIndirectCommandNV makeBindShaderGroupIndirectCommandNV (deUint32 groupIndex)
+inline VkBindShaderGroupIndirectCommandNV makeBindShaderGroupIndirectCommandNV (uint32_t groupIndex)
 {
 	VkBindShaderGroupIndirectCommandNV res;
 	res.groupIndex	= groupIndex;
 	return res;
 }
 
-inline VkBindIndexBufferIndirectCommandNV makeBindIndexBufferIndirectCommandNV (VkDeviceAddress bufferAddress, deUint32 size, VkIndexType indexType)
+inline VkBindIndexBufferIndirectCommandNV makeBindIndexBufferIndirectCommandNV (VkDeviceAddress bufferAddress, uint32_t size, VkIndexType indexType)
 {
 	VkBindIndexBufferIndirectCommandNV res;
 	res.bufferAddress	= bufferAddress;
@@ -591,7 +591,7 @@ inline VkBindIndexBufferIndirectCommandNV makeBindIndexBufferIndirectCommandNV (
 	return res;
 }
 
-inline VkBindVertexBufferIndirectCommandNV makeBindVertexBufferIndirectCommandNV (VkDeviceAddress bufferAddress, deUint32 size, deUint32 stride)
+inline VkBindVertexBufferIndirectCommandNV makeBindVertexBufferIndirectCommandNV (VkDeviceAddress bufferAddress, uint32_t size, uint32_t stride)
 {
 	VkBindVertexBufferIndirectCommandNV res;
 	res.bufferAddress	= bufferAddress;
@@ -600,7 +600,7 @@ inline VkBindVertexBufferIndirectCommandNV makeBindVertexBufferIndirectCommandNV
 	return res;
 }
 
-inline VkSetStateFlagsIndirectCommandNV makeSetStateFlagsIndirectCommandNV (deUint32 data)
+inline VkSetStateFlagsIndirectCommandNV makeSetStateFlagsIndirectCommandNV (uint32_t data)
 {
 	VkSetStateFlagsIndirectCommandNV res;
 	res.data	= data;
@@ -615,7 +615,7 @@ inline VkIndirectCommandsStreamNV makeIndirectCommandsStreamNV (VkBuffer buffer,
 	return res;
 }
 
-inline VkAccelerationStructureBuildOffsetInfoKHR makeAccelerationStructureBuildOffsetInfoKHR (deUint32 primitiveCount, deUint32 primitiveOffset, deUint32 firstVertex, deUint32 transformOffset)
+inline VkAccelerationStructureBuildOffsetInfoKHR makeAccelerationStructureBuildOffsetInfoKHR (uint32_t primitiveCount, uint32_t primitiveOffset, uint32_t firstVertex, uint32_t transformOffset)
 {
 	VkAccelerationStructureBuildOffsetInfoKHR res;
 	res.primitiveCount	= primitiveCount;
@@ -635,7 +635,7 @@ inline VkStridedBufferRegionKHR makeStridedBufferRegionKHR (VkBuffer buffer, VkD
 	return res;
 }
 
-inline VkTraceRaysIndirectCommandKHR makeTraceRaysIndirectCommandKHR (deUint32 width, deUint32 height, deUint32 depth)
+inline VkTraceRaysIndirectCommandKHR makeTraceRaysIndirectCommandKHR (uint32_t width, uint32_t height, uint32_t depth)
 {
 	VkTraceRaysIndirectCommandKHR res;
 	res.width	= width;

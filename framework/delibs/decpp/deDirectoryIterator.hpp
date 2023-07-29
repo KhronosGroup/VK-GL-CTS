@@ -26,24 +26,25 @@
 #include "deDefs.hpp"
 #include "deFilePath.hpp"
 
-#define DE_DIRITER_WIN32		0
-#define DE_DIRITER_POSIX		1
+#define DE_DIRITER_WIN32 0
+#define DE_DIRITER_POSIX 1
 
 #if (DE_OS == DE_OS_WIN32 && DE_COMPILER == DE_COMPILER_MSC)
-#	define DE_DIRITER DE_DIRITER_WIN32
-#elif (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_SYMBIAN) || (DE_OS == DE_OS_IOS) || (DE_OS == DE_OS_QNX) || (DE_OS == DE_OS_WIN32 && DE_COMPILER == DE_COMPILER_CLANG)
-#	define DE_DIRITER DE_DIRITER_POSIX
+#define DE_DIRITER DE_DIRITER_WIN32
+#elif (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_SYMBIAN) || \
+    (DE_OS == DE_OS_IOS) || (DE_OS == DE_OS_QNX) || (DE_OS == DE_OS_WIN32 && DE_COMPILER == DE_COMPILER_CLANG)
+#define DE_DIRITER DE_DIRITER_POSIX
 #endif
 
 #if !defined(DE_DIRITER)
-#	error Implement tcu::DirectoryIterator for your platform.
+#error Implement tcu::DirectoryIterator for your platform.
 #endif
 
 #if (DE_DIRITER == DE_DIRITER_WIN32)
-#	include <io.h> /* _finddata32_t */
+#include <io.h> /* _finddata32_t */
 #elif (DE_DIRITER == DE_DIRITER_POSIX)
-#	include <sys/types.h>
-#	include <dirent.h>
+#include <sys/types.h>
+#include <dirent.h>
 #endif
 
 namespace de
@@ -52,32 +53,32 @@ namespace de
 class DirectoryIterator
 {
 public:
-							DirectoryIterator		(const FilePath& path);
-							~DirectoryIterator		(void);
+    DirectoryIterator(const FilePath &path);
+    ~DirectoryIterator(void);
 
-	FilePath				getItem					(void) const;
-	bool					hasItem					(void) const;
-	void					next					(void);
+    FilePath getItem(void) const;
+    bool hasItem(void) const;
+    void next(void);
 
 private:
-							DirectoryIterator		(const DirectoryIterator& other);
-	DirectoryIterator&		operator=				(const DirectoryIterator& other);
+    DirectoryIterator(const DirectoryIterator &other);
+    DirectoryIterator &operator=(const DirectoryIterator &other);
 
-	FilePath				m_path;
+    FilePath m_path;
 
 #if (DE_DIRITER == DE_DIRITER_WIN32)
-	void					skipCurAndParent		(void);
+    void skipCurAndParent(void);
 
-	bool					m_hasItem;
-	deIntptr				m_handle;
-	struct _finddata32_t	m_fileInfo;
+    bool m_hasItem;
+    intptr_t m_handle;
+    struct _finddata32_t m_fileInfo;
 
 #elif (DE_DIRITER == DE_DIRITER_POSIX)
-	DIR*					m_handle;
-	struct dirent*			m_curEntry;
+    DIR *m_handle;
+    struct dirent *m_curEntry;
 #endif
 };
 
-} // de
+} // namespace de
 
 #endif // _DEDIRECTORYITERATOR_HPP

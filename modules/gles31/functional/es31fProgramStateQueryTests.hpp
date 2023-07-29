@@ -36,18 +36,18 @@ namespace Functional
 class ProgramStateQueryTests : public TestCaseGroup
 {
 public:
-								ProgramStateQueryTests		(Context& context);
-								~ProgramStateQueryTests		(void);
+    ProgramStateQueryTests(Context &context);
+    ~ProgramStateQueryTests(void);
 
-	void						init						(void);
+    void init(void);
 
 private:
-								ProgramStateQueryTests		(const ProgramStateQueryTests& other);
-	ProgramStateQueryTests&		operator=					(const ProgramStateQueryTests& other);
+    ProgramStateQueryTests(const ProgramStateQueryTests &other);
+    ProgramStateQueryTests &operator=(const ProgramStateQueryTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FPROGRAMSTATEQUERYTESTS_HPP

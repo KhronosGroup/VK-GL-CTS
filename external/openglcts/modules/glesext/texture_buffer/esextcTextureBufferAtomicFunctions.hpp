@@ -94,28 +94,28 @@ namespace glcts
 class TextureBufferAtomicFunctions : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureBufferAtomicFunctions(Context& context, const ExtParameters& extParams, const char* name,
-								 const char* description);
+    /* Public methods */
+    TextureBufferAtomicFunctions(Context &context, const ExtParameters &extParams, const char *name,
+                                 const char *description);
 
-	virtual ~TextureBufferAtomicFunctions()
-	{
-	}
+    virtual ~TextureBufferAtomicFunctions()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	void		initTest(void);
-	std::string getComputeShaderCode(glw::GLint work_group_size) const;
+    /* Private methods */
+    void initTest(void);
+    std::string getComputeShaderCode(glw::GLint work_group_size) const;
 
-	/* Variables for general usage */
-	glw::GLuint m_cs_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_tbo_id;
-	glw::GLuint m_tbo_tex_id;
-	glw::GLuint m_n_texels_in_texture_buffer;
+    /* Variables for general usage */
+    glw::GLuint m_cs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_tbo_id;
+    glw::GLuint m_tbo_tex_id;
+    glw::GLuint m_n_texels_in_texture_buffer;
 };
 
 } // namespace glcts

@@ -28,10 +28,10 @@ namespace vk
 namespace wsi
 {
 
-void Window::resize (const tcu::UVec2&)
+void Window::resize(const tcu::UVec2 &)
 {
-	TCU_THROW(InternalError, "resize() called on window not supporting it");
+    TCU_THROW(InternalError, "resize() called on window not supporting it");
 }
 
-} // wsi
-} // vk
+} // namespace wsi
+} // namespace vk

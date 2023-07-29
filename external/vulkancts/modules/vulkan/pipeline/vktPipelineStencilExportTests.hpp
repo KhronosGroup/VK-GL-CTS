@@ -30,9 +30,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createStencilExportTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createStencilExportTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINESTENCILEXPORTTESTS_HPP

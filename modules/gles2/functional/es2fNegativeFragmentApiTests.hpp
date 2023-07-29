@@ -36,18 +36,18 @@ namespace Functional
 class NegativeFragmentApiTests : public TestCaseGroup
 {
 public:
-								NegativeFragmentApiTests		(Context& context);
-								~NegativeFragmentApiTests		(void);
+    NegativeFragmentApiTests(Context &context);
+    ~NegativeFragmentApiTests(void);
 
-	void						init							(void);
+    void init(void);
 
 private:
-								NegativeFragmentApiTests		(const NegativeFragmentApiTests& other);
-	NegativeFragmentApiTests&	operator=						(const NegativeFragmentApiTests& other);
+    NegativeFragmentApiTests(const NegativeFragmentApiTests &other);
+    NegativeFragmentApiTests &operator=(const NegativeFragmentApiTests &other);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FNEGATIVEFRAGMENTAPITESTS_HPP

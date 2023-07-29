@@ -32,9 +32,9 @@ namespace vkt
 namespace cts_amber
 {
 
-tcu::TestCaseGroup*	createExampleTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createExampleTests(tcu::TestContext &testCtx);
 
-} // cts_amber
-} // vkt
+} // namespace cts_amber
+} // namespace vkt
 
 #endif // _VKTAMBEREXAMPLETESTS_HPP
