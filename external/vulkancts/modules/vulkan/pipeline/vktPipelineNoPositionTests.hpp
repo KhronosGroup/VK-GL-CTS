@@ -32,9 +32,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup*	createNoPositionTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createNoPositionTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINENOPOSITIONTESTS_HPP

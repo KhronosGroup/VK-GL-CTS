@@ -39,27 +39,27 @@ namespace glcts
 class DrawBuffersIndexedColorMasks : public DrawBuffersIndexedBase
 {
 public:
-	/** Public methods
-	 **/
-	DrawBuffersIndexedColorMasks(Context& context, const ExtParameters& extParams, const char* name,
-								 const char* description);
-	virtual ~DrawBuffersIndexedColorMasks()
-	{
-	}
+    /** Public methods
+     **/
+    DrawBuffersIndexedColorMasks(Context &context, const ExtParameters &extParams, const char *name,
+                                 const char *description);
+    virtual ~DrawBuffersIndexedColorMasks()
+    {
+    }
 
 private:
-	/** Private methods
-	 **/
-	virtual IterateResult iterate();
+    /** Private methods
+     **/
+    virtual IterateResult iterate();
 
-	void		 prepareFramebuffer(void);
-	void		 releaseFramebuffer(void);
-	unsigned int NumComponents(glw::GLenum format);
-	glw::GLenum ReadableType(glw::GLenum format);
-	tcu::RGBA GetEpsilon();
-	bool VerifyImg(const tcu::TextureLevel& textureLevel, tcu::RGBA expectedColor, tcu::RGBA epsilon);
+    void prepareFramebuffer(void);
+    void releaseFramebuffer(void);
+    unsigned int NumComponents(glw::GLenum format);
+    glw::GLenum ReadableType(glw::GLenum format);
+    tcu::RGBA GetEpsilon();
+    bool VerifyImg(const tcu::TextureLevel &textureLevel, tcu::RGBA expectedColor, tcu::RGBA epsilon);
 
-	glw::GLuint m_fbo;
+    glw::GLuint m_fbo;
 };
 
 } // namespace glcts

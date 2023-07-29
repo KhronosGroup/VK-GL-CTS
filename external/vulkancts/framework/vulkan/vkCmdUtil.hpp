@@ -29,97 +29,54 @@
 namespace vk
 {
 
-void beginCommandBuffer		(const DeviceInterface&		vk,
-							 const VkCommandBuffer		commandBuffer,
-							 VkCommandBufferUsageFlags	flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+void beginCommandBuffer(const DeviceInterface &vk, const VkCommandBuffer commandBuffer,
+                        VkCommandBufferUsageFlags flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-void endCommandBuffer		(const DeviceInterface&	vk,
-							 const VkCommandBuffer	commandBuffer);
+void endCommandBuffer(const DeviceInterface &vk, const VkCommandBuffer commandBuffer);
 
-void beginRenderPass (const DeviceInterface&	vk,
-					  const VkCommandBuffer		commandBuffer,
-					  const VkRenderPass		renderPass,
-					  const VkFramebuffer		framebuffer,
-					  const VkRect2D&			renderArea,
-					  const deUint32			clearValueCount,
-					  const VkClearValue*		clearValues,
-					  const VkSubpassContents	contents			= VK_SUBPASS_CONTENTS_INLINE,
-					  const void*				pNext				= DE_NULL);
+void beginRenderPass(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkRenderPass renderPass,
+                     const VkFramebuffer framebuffer, const VkRect2D &renderArea, const uint32_t clearValueCount,
+                     const VkClearValue *clearValues, const VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE,
+                     const void *pNext = DE_NULL);
 
-void beginRenderPass (const DeviceInterface&	vk,
-					  const VkCommandBuffer		commandBuffer,
-					  const VkRenderPass		renderPass,
-					  const VkFramebuffer		framebuffer,
-					  const VkRect2D&			renderArea,
-					  const VkClearValue&		clearValue,
-					  const VkSubpassContents	contents = VK_SUBPASS_CONTENTS_INLINE);
+void beginRenderPass(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkRenderPass renderPass,
+                     const VkFramebuffer framebuffer, const VkRect2D &renderArea, const VkClearValue &clearValue,
+                     const VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE);
 
-void beginRenderPass (const DeviceInterface&	vk,
-					  const VkCommandBuffer		commandBuffer,
-					  const VkRenderPass		renderPass,
-					  const VkFramebuffer		framebuffer,
-					  const VkRect2D&			renderArea,
-					  const VkSubpassContents	contents = VK_SUBPASS_CONTENTS_INLINE);
+void beginRenderPass(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkRenderPass renderPass,
+                     const VkFramebuffer framebuffer, const VkRect2D &renderArea,
+                     const VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE);
 
-void beginRenderPass (const DeviceInterface&	vk,
-					  const VkCommandBuffer		commandBuffer,
-					  const VkRenderPass		renderPass,
-					  const VkFramebuffer		framebuffer,
-					  const VkRect2D&			renderArea,
-					  const tcu::Vec4&			clearColor,
-					  const VkSubpassContents	contents = VK_SUBPASS_CONTENTS_INLINE);
+void beginRenderPass(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkRenderPass renderPass,
+                     const VkFramebuffer framebuffer, const VkRect2D &renderArea, const tcu::Vec4 &clearColor,
+                     const VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE);
 
-void beginRenderPass (const DeviceInterface&	vk,
-					  const VkCommandBuffer		commandBuffer,
-					  const VkRenderPass		renderPass,
-					  const VkFramebuffer		framebuffer,
-					  const VkRect2D&			renderArea,
-					  const tcu::Vec4&			clearColor,
-					  const void*				pNext,
-					  const VkSubpassContents	contents = VK_SUBPASS_CONTENTS_INLINE);
+void beginRenderPass(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkRenderPass renderPass,
+                     const VkFramebuffer framebuffer, const VkRect2D &renderArea, const tcu::Vec4 &clearColor,
+                     const void *pNext, const VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE);
 
-void beginRenderPass (const DeviceInterface&	vk,
-					  const VkCommandBuffer		commandBuffer,
-					  const VkRenderPass		renderPass,
-					  const VkFramebuffer		framebuffer,
-					  const VkRect2D&			renderArea,
-					  const tcu::Vec4&			clearColor,
-					  const float				clearDepth,
-					  const deUint32			clearStencil,
-					  const void*				pNext,
-					  const VkSubpassContents	contents = VK_SUBPASS_CONTENTS_INLINE);
+void beginRenderPass(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkRenderPass renderPass,
+                     const VkFramebuffer framebuffer, const VkRect2D &renderArea, const tcu::Vec4 &clearColor,
+                     const float clearDepth, const uint32_t clearStencil, const void *pNext,
+                     const VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE);
 
-void beginRenderPass (const DeviceInterface&	vk,
-					  const VkCommandBuffer		commandBuffer,
-					  const VkRenderPass		renderPass,
-					  const VkFramebuffer		framebuffer,
-					  const VkRect2D&			renderArea,
-					  const tcu::UVec4&			clearColor,
-					  const VkSubpassContents	contents = VK_SUBPASS_CONTENTS_INLINE);
+void beginRenderPass(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkRenderPass renderPass,
+                     const VkFramebuffer framebuffer, const VkRect2D &renderArea, const tcu::UVec4 &clearColor,
+                     const VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE);
 
-void beginRenderPass (const DeviceInterface&	vk,
-					  const VkCommandBuffer		commandBuffer,
-					  const VkRenderPass		renderPass,
-					  const VkFramebuffer		framebuffer,
-					  const VkRect2D&			renderArea,
-					  const tcu::Vec4&			clearColor,
-					  const float				clearDepth,
-					  const deUint32			clearStencil,
-					  const VkSubpassContents	contents = VK_SUBPASS_CONTENTS_INLINE);
+void beginRenderPass(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkRenderPass renderPass,
+                     const VkFramebuffer framebuffer, const VkRect2D &renderArea, const tcu::Vec4 &clearColor,
+                     const float clearDepth, const uint32_t clearStencil,
+                     const VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE);
 
-void endRenderPass (const DeviceInterface&	vk,
-					const VkCommandBuffer	commandBuffer);
+void endRenderPass(const DeviceInterface &vk, const VkCommandBuffer commandBuffer);
 
-void submitCommandsAndWait	(const DeviceInterface&			vk,
-							 const VkDevice					device,
-							 const VkQueue					queue,
-							 const VkCommandBuffer			commandBuffer,
-							 const bool						useDeviceGroups = false,
-							 const deUint32					deviceMask = 1u,
-							 const deUint32					waitSemaphoreCount = 0u,
-							 const VkSemaphore*				waitSemaphores = nullptr,
-							 const VkPipelineStageFlags*	waitStages = nullptr);
+void submitCommandsAndWait(const DeviceInterface &vk, const VkDevice device, const VkQueue queue,
+                           const VkCommandBuffer commandBuffer, const bool useDeviceGroups = false,
+                           const uint32_t deviceMask = 1u, const uint32_t waitSemaphoreCount = 0u,
+                           const VkSemaphore *waitSemaphores      = nullptr,
+                           const VkPipelineStageFlags *waitStages = nullptr);
 
-} // vk
+} // namespace vk
 
 #endif // _VKCMDUTIL_HPP

@@ -29,9 +29,9 @@
 namespace vkt
 {
 
-tcu::TestCaseGroup* createSynchronizationTests(tcu::TestContext& testCtx);
-tcu::TestCaseGroup* createSynchronization2Tests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSynchronizationTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createSynchronization2Tests(tcu::TestContext &testCtx);
 
-} // vkt
+} // namespace vkt
 
 #endif // _VKTSYNCHRONIZATIONTESTS_HPP

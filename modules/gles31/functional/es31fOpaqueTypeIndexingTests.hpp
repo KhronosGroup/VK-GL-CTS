@@ -36,18 +36,18 @@ namespace Functional
 class OpaqueTypeIndexingTests : public TestCaseGroup
 {
 public:
-								OpaqueTypeIndexingTests		(Context& context);
-								~OpaqueTypeIndexingTests	(void);
+    OpaqueTypeIndexingTests(Context &context);
+    ~OpaqueTypeIndexingTests(void);
 
-	void						init						(void);
+    void init(void);
 
 private:
-								OpaqueTypeIndexingTests		(const OpaqueTypeIndexingTests&);
-	OpaqueTypeIndexingTests&	operator=					(const OpaqueTypeIndexingTests&);
+    OpaqueTypeIndexingTests(const OpaqueTypeIndexingTests &);
+    OpaqueTypeIndexingTests &operator=(const OpaqueTypeIndexingTests &);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FOPAQUETYPEINDEXINGTESTS_HPP

@@ -30,17 +30,17 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scrip
 from build.common import DEQP_DIR
 from khr_util.format import writeInlFile
 
-VULKAN_H	= { "" : [
-						os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codecs_common.h"),
-						os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h264std.h"),
-						os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h264std_encode.h"),
-						os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h265std.h"),
-						os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h264std_decode.h"),
-						os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h265std_decode.h"),
-						os.path.join(os.path.dirname(__file__), "src", "vulkan_core.h") ],
-				"SC" : [ os.path.join(os.path.dirname(__file__), "src", "vulkan_sc_core.h") ] }
-VULKAN_DIR	= { "" :	os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan"),
-				"SC" :	os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkansc") }
+VULKAN_H = { "" : [
+                        os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codecs_common.h"),
+                        os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h264std.h"),
+                        os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h264std_encode.h"),
+                        os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h265std.h"),
+                        os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h264std_decode.h"),
+                        os.path.join(os.path.dirname(__file__), "src", "vk_video", "vulkan_video_codec_h265std_decode.h"),
+                        os.path.join(os.path.dirname(__file__), "src", "vulkan_core.h") ],
+                "SC" : [ os.path.join(os.path.dirname(__file__), "src", "vulkan_sc_core.h") ] }
+VULKAN_DIR = { "" : os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan"),
+                "SC" : os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkansc") }
 
 INL_HEADER = """\
 /* WARNING: This is auto-generated file. Do not modify, since changes will
@@ -48,51 +48,51 @@ INL_HEADER = """\
  */\
 """
 
-TYPE_SUBSTITUTIONS		= [
-	("uint8_t",		"deUint8"),
-	("uint16_t",	"deUint16"),
-	("uint32_t",	"deUint32"),
-	("uint64_t",	"deUint64"),
-	("int8_t",		"deInt8"),
-	("int16_t",		"deInt16"),
-	("int32_t",		"deInt32"),
-	("int64_t",		"deInt64"),
-	("bool32_t",	"deUint32"),
-	("size_t",		"deUintptr"),
+TYPE_SUBSTITUTIONS = [
+    ("uint8_t", "uint8_t"),
+    ("uint16_t", "uint16_t"),
+    ("uint32_t", "uint32_t"),
+    ("uint64_t", "uint64_t"),
+    ("int8_t", "int8_t"),
+    ("int16_t", "int16_t"),
+    ("int32_t", "int32_t"),
+    ("int64_t", "int64_t"),
+    ("bool32_t", "uint32_t"),
+    ("size_t", "uintptr_t"),
 ]
 
 def readFile (filename):
-	with open(filename, 'rt') as f:
-		return f.read()
+    with open(filename, 'rt') as f:
+        return f.read()
 
 def writeVulkanCHeader (src, filename):
-	def gen ():
-		dst = re.sub(r'(#include "[^\s,\n}]+")', '', src)
+    def gen ():
+        dst = re.sub(r'(#include "[^\s,\n}]+")', '', src)
 
-		for old_type, new_type in TYPE_SUBSTITUTIONS:
-			dst = dst.replace(old_type, new_type)
-		yield dst
-	writeInlFile(filename, INL_HEADER, gen())
+        for old_type, new_type in TYPE_SUBSTITUTIONS:
+            dst = dst.replace(old_type, new_type)
+        yield dst
+    writeInlFile(filename, INL_HEADER, gen())
 
 def parseCmdLineArgs():
-	parser = argparse.ArgumentParser(description = "Generate Vulkan INL files",
-									 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-	parser.add_argument("-a",
-						"--api",
-						dest="api",
-						default="",
-						help="Choose between Vulkan and Vulkan SC")
-	return parser.parse_args()
+    parser = argparse.ArgumentParser(description = "Generate Vulkan INL files",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("-a",
+                        "--api",
+                        dest="api",
+                        default="",
+                        help="Choose between Vulkan and Vulkan SC")
+    return parser.parse_args()
 
 def getApiName (args):
-	if len(args)<2:
-		return ''
-	return args[1]
+    if len(args)<2:
+        return ''
+    return args[1]
 
 if __name__ == "__main__":
-	args					= parseCmdLineArgs()
-	src = ""
-	for file in VULKAN_H[args.api]:
-		src += readFile(file)
+    args = parseCmdLineArgs()
+    src = ""
+    for file in VULKAN_H[args.api]:
+        src += readFile(file)
 
-	writeVulkanCHeader				(src, os.path.join(VULKAN_DIR[args.api], "vkVulkan_c.inl"))
+    writeVulkanCHeader                (src, os.path.join(VULKAN_DIR[args.api], "vkVulkan_c.inl"))

@@ -39,19 +39,19 @@
 #include "tcuResource.hpp"
 #include "tcuTestLog.hpp"
 
-tcu::Platform* createPlatform (void);
+tcu::Platform *createPlatform(void);
 
 struct VkscServer
 {
-	const vk::PlatformInterface&					vkp;
-	vk::VkInstance									instance;
-	const vk::InstanceInterface&					vki;
-	vk::VkPhysicalDevice							physicalDevice;
-	deUint32										queueIndex;
-	const vk::VkPhysicalDeviceFeatures2&			enabledFeatures;
+    const vk::PlatformInterface &vkp;
+    vk::VkInstance instance;
+    const vk::InstanceInterface &vki;
+    vk::VkPhysicalDevice physicalDevice;
+    uint32_t queueIndex;
+    const vk::VkPhysicalDeviceFeatures2 &enabledFeatures;
 };
 
-VkscServer* createServerVKSC(const std::string& logFile);
+VkscServer *createServerVKSC(const std::string &logFile);
 std::unique_ptr<VkscServer> vkscServer;
 
 namespace vksc_server
@@ -61,123 +61,116 @@ using namespace json;
 
 Store ServiceStore;
 
-bool LoadPhysicalFile (const string& path, vector<u8>& content)
+bool LoadPhysicalFile(const string &path, vector<u8> &content)
 {
-	std::ifstream file(path, std::ios::binary);
-	if (!file) return false;
+    std::ifstream file(path, std::ios::binary);
+    if (!file)
+        return false;
 
-	content.assign((std::istreambuf_iterator<char>(file)),
-					std::istreambuf_iterator<char>());
+    content.assign((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
-	return true;
+    return true;
 }
 
-bool StoreFile (const string& uniqueFilename, const vector<u8>& content)
+bool StoreFile(const string &uniqueFilename, const vector<u8> &content)
 {
-	return ServiceStore.Set(uniqueFilename, content);
+    return ServiceStore.Set(uniqueFilename, content);
 }
 
-bool GetFile (const string& path, vector<u8>& content, bool removeAfter)
+bool GetFile(const string &path, vector<u8> &content, bool removeAfter)
 {
-	return ServiceStore.Get(path, content, removeAfter) || LoadPhysicalFile(path, content);
+    return ServiceStore.Get(path, content, removeAfter) || LoadPhysicalFile(path, content);
 }
 
-bool AppendFile (const string& path, const vector<u8>& content, bool clear)
+bool AppendFile(const string &path, const vector<u8> &content, bool clear)
 {
-	auto mode = clear ? std::ios::binary : std::ios::binary | std::ios::app;
+    auto mode = clear ? std::ios::binary : std::ios::binary | std::ios::app;
 
-	std::ofstream file(path, mode);
-	if (!file) return false;
+    std::ofstream file(path, mode);
+    if (!file)
+        return false;
 
-	std::copy(content.begin(), content.end(), std::ostream_iterator<u8>{file});
+    std::copy(content.begin(), content.end(), std::ostream_iterator<u8>{file});
 
-	return true;
+    return true;
 }
 
-void CreateVulkanSCCache (const VulkanPipelineCacheInput& input, int caseFraction, vector<u8>& binary, const CmdLineParams& cmdLineParams, const std::string& logFile)
+void CreateVulkanSCCache(const VulkanPipelineCacheInput &input, int caseFraction, vector<u8> &binary,
+                         const CmdLineParams &cmdLineParams, const std::string &logFile)
 {
-	if (!cmdLineParams.compilerPath.empty())
-	{
-		std::stringstream prefix;
-		if (caseFraction >= 0)
-			prefix << "sub_" << caseFraction << "_";
-		else
-			prefix << "";
+    if (!cmdLineParams.compilerPath.empty())
+    {
+        std::stringstream prefix;
+        if (caseFraction >= 0)
+            prefix << "sub_" << caseFraction << "_";
+        else
+            prefix << "";
 
-		binary = vksc_server::buildOfflinePipelineCache(input,
-														cmdLineParams.compilerPath,
-														cmdLineParams.compilerDataDir,
-														cmdLineParams.compilerArgs,
-														cmdLineParams.compilerPipelineCacheFile,
-														cmdLineParams.compilerLogFile,
-														prefix.str());
-	}
-	else
-	{
-		if (vkscServer.get() == DE_NULL)
-			vkscServer.reset(createServerVKSC(logFile));
+        binary = vksc_server::buildOfflinePipelineCache(
+            input, cmdLineParams.compilerPath, cmdLineParams.compilerDataDir, cmdLineParams.compilerArgs,
+            cmdLineParams.compilerPipelineCacheFile, cmdLineParams.compilerLogFile, prefix.str());
+    }
+    else
+    {
+        if (vkscServer.get() == DE_NULL)
+            vkscServer.reset(createServerVKSC(logFile));
 
-		binary = buildPipelineCache(input,
-									vkscServer->vkp,
-									vkscServer->instance,
-									vkscServer->vki,
-									vkscServer->physicalDevice,
-									vkscServer->queueIndex);
-	}
+        binary = buildPipelineCache(input, vkscServer->vkp, vkscServer->instance, vkscServer->vki,
+                                    vkscServer->physicalDevice, vkscServer->queueIndex);
+    }
 }
 
-bool CompileShader (const SourceVariant& source, const string& commandLine, vector<u8>& binary)
+bool CompileShader(const SourceVariant &source, const string &commandLine, vector<u8> &binary)
 {
-	glu::ShaderProgramInfo programInfo;
-	vk::SpirVProgramInfo programInfoSpirv;
-	tcu::CommandLine cmd(commandLine);
+    glu::ShaderProgramInfo programInfo;
+    vk::SpirVProgramInfo programInfoSpirv;
+    tcu::CommandLine cmd(commandLine);
 
-	std::unique_ptr<vk::ProgramBinary> programBinary;
+    std::unique_ptr<vk::ProgramBinary> programBinary;
 
-	if (source.active == "glsl") programBinary.reset( vk::buildProgram(source.glsl, &programInfo, cmd) );
-	else if (source.active == "hlsl") programBinary.reset( vk::buildProgram(source.hlsl, &programInfo, cmd) );
-	else if (source.active == "spirv") programBinary.reset( vk::assembleProgram(source.spirv, &programInfoSpirv, cmd) );
-	else return false;
+    if (source.active == "glsl")
+        programBinary.reset(vk::buildProgram(source.glsl, &programInfo, cmd));
+    else if (source.active == "hlsl")
+        programBinary.reset(vk::buildProgram(source.hlsl, &programInfo, cmd));
+    else if (source.active == "spirv")
+        programBinary.reset(vk::assembleProgram(source.spirv, &programInfoSpirv, cmd));
+    else
+        return false;
 
-	if (!programBinary || programBinary->getBinary() == nullptr)
-	{
-		return false;
-	}
+    if (!programBinary || programBinary->getBinary() == nullptr)
+    {
+        return false;
+    }
 
-	if (programBinary->getFormat() != vk::PROGRAM_FORMAT_SPIRV)
-	{
-		throw std::runtime_error("CompileShader supports only PROGRAM_FORMAT_SPIRV binary output");
-	}
+    if (programBinary->getFormat() != vk::PROGRAM_FORMAT_SPIRV)
+    {
+        throw std::runtime_error("CompileShader supports only PROGRAM_FORMAT_SPIRV binary output");
+    }
 
-	binary.assign(	programBinary->getBinary(),
-					programBinary->getBinary() + programBinary->getSize()	);
+    binary.assign(programBinary->getBinary(), programBinary->getBinary() + programBinary->getSize());
 
-	return true;
+    return true;
 }
 
-} // vksc_server
+} // namespace vksc_server
 
-VkscServer* createServerVKSC(const std::string& logFile)
+VkscServer *createServerVKSC(const std::string &logFile)
 {
-	tcu::CommandLine				cmdLine		{"--deqp-vk-device-id=0"};
-	tcu::DirArchive					archive		{""};
-	tcu::TestLog					log			{ logFile.c_str() }; log.supressLogging(true);
-	tcu::Platform*					platform	{createPlatform()};
-	vk::Library*					library		{platform->getVulkanPlatform().createLibrary()};
-	tcu::TestContext*				tcx			= new tcu::TestContext{*platform, archive, log, cmdLine, nullptr};
-	vk::ResourceInterface*			resource	= new vk::ResourceInterfaceStandard{*tcx};
-	vk::BinaryCollection*			collection  = new vk::BinaryCollection{};
-	vkt::Context*					context		= new vkt::Context(*tcx, library->getPlatformInterface(), *collection, de::SharedPtr<vk::ResourceInterface>{resource});
+    tcu::CommandLine cmdLine{"--deqp-vk-device-id=0"};
+    tcu::DirArchive archive{""};
+    tcu::TestLog log{logFile.c_str()};
+    log.supressLogging(true);
+    tcu::Platform *platform{createPlatform()};
+    vk::Library *library{platform->getVulkanPlatform().createLibrary()};
+    tcu::TestContext *tcx            = new tcu::TestContext{*platform, archive, log, cmdLine, nullptr};
+    vk::ResourceInterface *resource  = new vk::ResourceInterfaceStandard{*tcx};
+    vk::BinaryCollection *collection = new vk::BinaryCollection{};
+    vkt::Context *context            = new vkt::Context(*tcx, library->getPlatformInterface(), *collection,
+                                                        de::SharedPtr<vk::ResourceInterface>{resource});
 
-	VkscServer* result = new VkscServer
-	{
-		library->getPlatformInterface(),
-		context->getInstance(),
-		context->getInstanceInterface(),
-		context->getPhysicalDevice(),
-		context->getUniversalQueueFamilyIndex(),
-		context->getDeviceFeatures2()
-	};
+    VkscServer *result = new VkscServer{library->getPlatformInterface(),         context->getInstance(),
+                                        context->getInstanceInterface(),         context->getPhysicalDevice(),
+                                        context->getUniversalQueueFamilyIndex(), context->getDeviceFeatures2()};
 
-	return result;
+    return result;
 }

@@ -33,16 +33,15 @@ namespace Draw
 class ConcurrentDrawTests : public tcu::TestCaseGroup
 {
 public:
-						ConcurrentDrawTests		(tcu::TestContext &testCtx);
-						~ConcurrentDrawTests	(void);
-	void				init					(void);
+    ConcurrentDrawTests(tcu::TestContext &testCtx);
+    ~ConcurrentDrawTests(void);
+    void init(void);
 
 private:
-	ConcurrentDrawTests							(const ConcurrentDrawTests &other);
-	ConcurrentDrawTests&	operator=			(const ConcurrentDrawTests &other);
-
+    ConcurrentDrawTests(const ConcurrentDrawTests &other);
+    ConcurrentDrawTests &operator=(const ConcurrentDrawTests &other);
 };
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWCONCURRENTTESTS_HPP

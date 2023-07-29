@@ -38,18 +38,18 @@ namespace glcts
 class DrawBuffersIndexedSetGet : public DrawBuffersIndexedBase
 {
 public:
-	/** Public methods
-	 **/
-	DrawBuffersIndexedSetGet(Context& context, const ExtParameters& extParams, const char* name,
-							 const char* description);
-	virtual ~DrawBuffersIndexedSetGet()
-	{
-	}
+    /** Public methods
+     **/
+    DrawBuffersIndexedSetGet(Context &context, const ExtParameters &extParams, const char *name,
+                             const char *description);
+    virtual ~DrawBuffersIndexedSetGet()
+    {
+    }
 
 private:
-	/** Private methods
-	 **/
-	virtual IterateResult iterate();
+    /** Private methods
+     **/
+    virtual IterateResult iterate();
 };
 
 } // namespace glcts

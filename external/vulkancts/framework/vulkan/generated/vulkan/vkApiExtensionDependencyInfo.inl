@@ -3,7 +3,7 @@
  *
  * Generated from Khronos Vulkan API description (vk.xml) revision cee0f4b12acde766e64d0d038b03458c74bb67f1.
  */
-static const std::tuple<deUint32, deUint32, deUint32, const char*, const char*>	instanceExtensionDependencies[]	=
+static const std::tuple<uint32_t, uint32_t, uint32_t, const char*, const char*>	instanceExtensionDependencies[]	=
 {
 	std::make_tuple(0, 1, 0, "VK_EXT_acquire_xlib_display", "VK_EXT_direct_mode_display"),
 	std::make_tuple(0, 1, 1, "VK_EXT_acquire_xlib_display", "VK_EXT_direct_mode_display"),
@@ -71,7 +71,7 @@ static const std::tuple<deUint32, deUint32, deUint32, const char*, const char*>	
 	std::make_tuple(0, 1, 1, "VK_NN_vi_surface", "VK_KHR_surface"),
 	std::make_tuple(0, 1, 2, "VK_NN_vi_surface", "VK_KHR_surface"),
 };
-static const std::tuple<deUint32, deUint32, deUint32, const char*, const char*>	deviceExtensionDependencies[]	=
+static const std::tuple<uint32_t, uint32_t, uint32_t, const char*, const char*>	deviceExtensionDependencies[]	=
 {
 	std::make_tuple(0, 1, 0, "VK_AMD_display_native_hdr", "VK_KHR_get_physical_device_properties2"),
 	std::make_tuple(0, 1, 0, "VK_AMD_display_native_hdr", "VK_KHR_get_surface_capabilities2"),
@@ -285,13 +285,13 @@ static const std::tuple<deUint32, deUint32, deUint32, const char*, const char*>	
 	std::make_tuple(0, 1, 2, "VK_QCOM_render_pass_transform", "VK_KHR_swapchain"),
 	std::make_tuple(0, 1, 2, "VK_QCOM_render_pass_transform", "VK_KHR_surface"),
 };
-static const std::tuple<deUint32, deUint32, deUint32, deUint32>	releasedApiVersions[]	=
+static const std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>	releasedApiVersions[]	=
 {
 	std::make_tuple(4202496, 0, 1, 2),
 	std::make_tuple(4198400, 0, 1, 1),
 	std::make_tuple(4194304, 0, 1, 0),
 };
-static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVersion[]	 =
+static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVersion[]	 =
 {
 	std::make_tuple(1, 0, "VK_AMD_buffer_marker"),
 	std::make_tuple(1, 0, "VK_AMD_device_coherent_memory"),

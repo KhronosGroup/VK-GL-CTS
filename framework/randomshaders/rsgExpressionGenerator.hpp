@@ -36,18 +36,18 @@ namespace rsg
 class ExpressionGenerator
 {
 public:
-								ExpressionGenerator				(GeneratorState& state);
-								~ExpressionGenerator			(void);
+    ExpressionGenerator(GeneratorState &state);
+    ~ExpressionGenerator(void);
 
-	Expression*					generate						(const ValueRange& valueRange, int initialDepth = 0);
+    Expression *generate(const ValueRange &valueRange, int initialDepth = 0);
 
 private:
-	void						generate						(Expression* root);
+    void generate(Expression *root);
 
-	GeneratorState&				m_state;
-	std::vector<Expression*>	m_expressionStack;
+    GeneratorState &m_state;
+    std::vector<Expression *> m_expressionStack;
 };
 
-} // rsg
+} // namespace rsg
 
 #endif // _RSGEXPRESSIONGENERATOR_HPP

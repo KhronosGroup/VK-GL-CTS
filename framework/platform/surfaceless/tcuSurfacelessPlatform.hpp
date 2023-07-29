@@ -26,9 +26,9 @@
 
 namespace tcu
 {
-	class Platform;
+class Platform;
 }
 
-tcu::Platform* createPlatform (void);
+tcu::Platform *createPlatform(void);
 
 #endif // _TCUSURFACELESSPLATFORM_HPP

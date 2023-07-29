@@ -34,15 +34,15 @@ namespace Draw
 class InstancedTests : public tcu::TestCaseGroup
 {
 public:
-					InstancedTests	(tcu::TestContext &testCtx);
-					~InstancedTests	(void);
+    InstancedTests(tcu::TestContext &testCtx);
+    ~InstancedTests(void);
 
 private:
-					InstancedTests	(const InstancedTests &other);
-	InstancedTests&	operator=		(const InstancedTests &other);
+    InstancedTests(const InstancedTests &other);
+    InstancedTests &operator=(const InstancedTests &other);
 };
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWINSTANCEDTESTS_HPP

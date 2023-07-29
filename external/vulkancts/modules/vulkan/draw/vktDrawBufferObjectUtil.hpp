@@ -37,42 +37,41 @@ namespace Draw
 class Buffer
 {
 public:
+    static de::SharedPtr<Buffer> create(const vk::DeviceInterface &vk, vk::VkDevice device,
+                                        const vk::VkBufferCreateInfo &createInfo);
 
-	static de::SharedPtr<Buffer> create			(const vk::DeviceInterface& vk, vk::VkDevice device, const vk::VkBufferCreateInfo &createInfo);
+    static de::SharedPtr<Buffer> createAndAlloc(
+        const vk::DeviceInterface &vk, vk::VkDevice device, const vk::VkBufferCreateInfo &createInfo,
+        vk::Allocator &allocator, vk::MemoryRequirement allocationMemoryProperties = vk::MemoryRequirement::Any);
 
-	static de::SharedPtr<Buffer> createAndAlloc (const vk::DeviceInterface&		vk,
-												 vk::VkDevice					device,
-												 const vk::VkBufferCreateInfo&	createInfo,
-												 vk::Allocator&					allocator,
-												 vk::MemoryRequirement			allocationMemoryProperties = vk::MemoryRequirement::Any);
+    Buffer(const vk::DeviceInterface &vk, vk::VkDevice device, vk::Move<vk::VkBuffer> object);
 
-								Buffer			(const vk::DeviceInterface &vk, vk::VkDevice device, vk::Move<vk::VkBuffer> object);
+    void bindMemory(de::MovePtr<vk::Allocation> allocation);
 
-	void						bindMemory		(de::MovePtr<vk::Allocation> allocation);
-
-	vk::VkBuffer				object			(void) const								{ return *m_object;		}
-	vk::Allocation				getBoundMemory	(void) const								{ return *m_allocation;	}
+    vk::VkBuffer object(void) const
+    {
+        return *m_object;
+    }
+    vk::Allocation getBoundMemory(void) const
+    {
+        return *m_allocation;
+    }
 
 private:
+    Buffer(const Buffer &other);            // Not allowed!
+    Buffer &operator=(const Buffer &other); // Not allowed!
 
-	Buffer										(const Buffer& other);	// Not allowed!
-	Buffer&						operator=		(const Buffer& other);	// Not allowed!
+    de::MovePtr<vk::Allocation> m_allocation;
+    vk::Unique<vk::VkBuffer> m_object;
 
-	de::MovePtr<vk::Allocation>		m_allocation;
-	vk::Unique<vk::VkBuffer>		m_object;
-
-	const vk::DeviceInterface&		m_vk;
-	vk::VkDevice					m_device;
+    const vk::DeviceInterface &m_vk;
+    vk::VkDevice m_device;
 };
 
-void bufferBarrier (const vk::DeviceInterface&	vk,
-					vk::VkCommandBuffer			cmdBuffer,
-					vk::VkBuffer				buffer,
-					vk::VkAccessFlags			srcAccessMask,
-					vk::VkAccessFlags			dstAccessMask,
-					vk::VkPipelineStageFlags	srcStageMask,
-					vk::VkPipelineStageFlags	dstStageMask);
-} // Draw
-} // vkt
+void bufferBarrier(const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer, vk::VkBuffer buffer,
+                   vk::VkAccessFlags srcAccessMask, vk::VkAccessFlags dstAccessMask,
+                   vk::VkPipelineStageFlags srcStageMask, vk::VkPipelineStageFlags dstStageMask);
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWBUFFEROBJECTUTIL_HPP

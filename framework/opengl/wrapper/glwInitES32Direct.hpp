@@ -29,8 +29,8 @@
 namespace glw
 {
 
-void	initES32Direct	(Functions* gl);	//!< Load all OpenGL ES 3.2 functions using compile-time linkage.
+void initES32Direct(Functions *gl); //!< Load all OpenGL ES 3.2 functions using compile-time linkage.
 
-} // glw
+} // namespace glw
 
 #endif // _GLWINITES32DIRECT_HPP

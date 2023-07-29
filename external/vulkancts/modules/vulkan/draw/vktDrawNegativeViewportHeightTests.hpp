@@ -31,10 +31,10 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup*	createNegativeViewportHeightTests	(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*	createZeroViewportHeightTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createNegativeViewportHeightTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createZeroViewportHeightTests(tcu::TestContext &testCtx);
 
-}	// Draw
-}	// vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWNEGATIVEVIEWPORTHEIGHTTESTS_HPP

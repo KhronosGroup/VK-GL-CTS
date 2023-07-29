@@ -33,14 +33,14 @@ namespace glcts
 class CompressedFormatTests : public deqp::TestCaseGroup
 {
 public:
-	CompressedFormatTests(deqp::Context& context);
-	~CompressedFormatTests(void);
+    CompressedFormatTests(deqp::Context &context);
+    ~CompressedFormatTests(void);
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	CompressedFormatTests(const CompressedFormatTests& other) = delete;
-	CompressedFormatTests& operator=(const CompressedFormatTests& other) = delete;
+    CompressedFormatTests(const CompressedFormatTests &other)            = delete;
+    CompressedFormatTests &operator=(const CompressedFormatTests &other) = delete;
 };
 
 } // namespace glcts

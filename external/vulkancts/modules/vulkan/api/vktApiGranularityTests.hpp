@@ -33,9 +33,9 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup*		createGranularityQueryTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createGranularityQueryTests(tcu::TestContext &testCtx);
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPIGRANULARITYTESTS_HPP

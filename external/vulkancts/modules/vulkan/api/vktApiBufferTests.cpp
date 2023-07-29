@@ -47,786 +47,758 @@ using namespace vk;
 
 enum AllocationKind
 {
-	ALLOCATION_KIND_SUBALLOCATED = 0,
-	ALLOCATION_KIND_DEDICATED,
+    ALLOCATION_KIND_SUBALLOCATED = 0,
+    ALLOCATION_KIND_DEDICATED,
 
-	ALLOCATION_KIND_LAST,
+    ALLOCATION_KIND_LAST,
 };
 
-PlatformMemoryLimits getPlatformMemoryLimits (Context& context)
+PlatformMemoryLimits getPlatformMemoryLimits(Context &context)
 {
-	PlatformMemoryLimits	memoryLimits;
+    PlatformMemoryLimits memoryLimits;
 
-	context.getTestContext().getPlatform().getVulkanPlatform().getMemoryLimits(memoryLimits);
+    context.getTestContext().getPlatform().getVulkanPlatform().getMemoryLimits(memoryLimits);
 
-	return memoryLimits;
+    return memoryLimits;
 }
 
-VkDeviceSize getMaxBufferSize(const VkDeviceSize& bufferSize,
-							  const VkDeviceSize& alignment,
-							  const PlatformMemoryLimits& limits)
+VkDeviceSize getMaxBufferSize(const VkDeviceSize &bufferSize, const VkDeviceSize &alignment,
+                              const PlatformMemoryLimits &limits)
 {
-	VkDeviceSize size = bufferSize;
+    VkDeviceSize size = bufferSize;
 
-	if (limits.totalDeviceLocalMemory == 0)
-	{
-		// 'UMA' systems where device memory counts against system memory
-		size = std::min(bufferSize, limits.totalSystemMemory - alignment);
-	}
-	else
-	{
-		// 'LMA' systems where device memory is local to the GPU
-		size = std::min(bufferSize, limits.totalDeviceLocalMemory - alignment);
-	}
+    if (limits.totalDeviceLocalMemory == 0)
+    {
+        // 'UMA' systems where device memory counts against system memory
+        size = std::min(bufferSize, limits.totalSystemMemory - alignment);
+    }
+    else
+    {
+        // 'LMA' systems where device memory is local to the GPU
+        size = std::min(bufferSize, limits.totalDeviceLocalMemory - alignment);
+    }
 
-	return size;
+    return size;
 }
 
 struct BufferCaseParameters
 {
-	VkBufferUsageFlags	usage;
-	VkBufferCreateFlags	flags;
-	VkSharingMode		sharingMode;
+    VkBufferUsageFlags usage;
+    VkBufferCreateFlags flags;
+    VkSharingMode sharingMode;
 };
 
 class BufferTestInstance : public TestInstance
 {
 public:
-										BufferTestInstance				(Context&					ctx,
-																		 BufferCaseParameters		testCase)
-										: TestInstance					(ctx)
-										, m_testCase					(testCase)
-	{
-	}
-	virtual tcu::TestStatus				iterate							(void);
-	virtual tcu::TestStatus				bufferCreateAndAllocTest		(VkDeviceSize				size);
+    BufferTestInstance(Context &ctx, BufferCaseParameters testCase) : TestInstance(ctx), m_testCase(testCase)
+    {
+    }
+    virtual tcu::TestStatus iterate(void);
+    virtual tcu::TestStatus bufferCreateAndAllocTest(VkDeviceSize size);
 
 protected:
-	BufferCaseParameters				m_testCase;
+    BufferCaseParameters m_testCase;
 };
 
 class DedicatedAllocationBufferTestInstance : public BufferTestInstance
 {
 public:
-										DedicatedAllocationBufferTestInstance
-																		(Context&					ctx,
-																		 BufferCaseParameters		testCase)
-										: BufferTestInstance			(ctx, testCase)
-	{
-	}
-	virtual tcu::TestStatus				bufferCreateAndAllocTest		(VkDeviceSize				size);
+    DedicatedAllocationBufferTestInstance(Context &ctx, BufferCaseParameters testCase)
+        : BufferTestInstance(ctx, testCase)
+    {
+    }
+    virtual tcu::TestStatus bufferCreateAndAllocTest(VkDeviceSize size);
 };
 
 class BuffersTestCase : public TestCase
 {
 public:
-										BuffersTestCase					(tcu::TestContext&			testCtx,
-																		 const std::string&			name,
-																		 const std::string&			description,
-																		 BufferCaseParameters		testCase)
-										: TestCase						(testCtx, name, description)
-										, m_testCase					(testCase)
-	{
-	}
+    BuffersTestCase(tcu::TestContext &testCtx, const std::string &name, const std::string &description,
+                    BufferCaseParameters testCase)
+        : TestCase(testCtx, name, description)
+        , m_testCase(testCase)
+    {
+    }
 
-	virtual								~BuffersTestCase				(void)
-	{
-	}
+    virtual ~BuffersTestCase(void)
+    {
+    }
 
-	virtual TestInstance*				createInstance					(Context&					ctx) const
-	{
-		tcu::TestLog&					log								= m_testCtx.getLog();
-		log << tcu::TestLog::Message << getBufferUsageFlagsStr(m_testCase.usage) << tcu::TestLog::EndMessage;
-		return new BufferTestInstance(ctx, m_testCase);
-	}
+    virtual TestInstance *createInstance(Context &ctx) const
+    {
+        tcu::TestLog &log = m_testCtx.getLog();
+        log << tcu::TestLog::Message << getBufferUsageFlagsStr(m_testCase.usage) << tcu::TestLog::EndMessage;
+        return new BufferTestInstance(ctx, m_testCase);
+    }
 
-	virtual void						checkSupport					(Context&					ctx) const
-	{
-		const VkPhysicalDeviceFeatures&		physicalDeviceFeatures = getPhysicalDeviceFeatures(ctx.getInstanceInterface(), ctx.getPhysicalDevice());
+    virtual void checkSupport(Context &ctx) const
+    {
+        const VkPhysicalDeviceFeatures &physicalDeviceFeatures =
+            getPhysicalDeviceFeatures(ctx.getInstanceInterface(), ctx.getPhysicalDevice());
 
-		if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) && !physicalDeviceFeatures.sparseBinding)
-			TCU_THROW(NotSupportedError, "Sparse bindings feature is not supported");
+        if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) && !physicalDeviceFeatures.sparseBinding)
+            TCU_THROW(NotSupportedError, "Sparse bindings feature is not supported");
 
-		if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT) && !physicalDeviceFeatures.sparseResidencyBuffer)
-			TCU_THROW(NotSupportedError, "Sparse buffer residency feature is not supported");
+        if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT) && !physicalDeviceFeatures.sparseResidencyBuffer)
+            TCU_THROW(NotSupportedError, "Sparse buffer residency feature is not supported");
 
-		if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_ALIASED_BIT) && !physicalDeviceFeatures.sparseResidencyAliased)
-			TCU_THROW(NotSupportedError, "Sparse aliased residency feature is not supported");
-	}
+        if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_ALIASED_BIT) && !physicalDeviceFeatures.sparseResidencyAliased)
+            TCU_THROW(NotSupportedError, "Sparse aliased residency feature is not supported");
+    }
 
 private:
-	BufferCaseParameters				m_testCase;
+    BufferCaseParameters m_testCase;
 };
 
 class DedicatedAllocationBuffersTestCase : public TestCase
 {
-	public:
-										DedicatedAllocationBuffersTestCase
-																		(tcu::TestContext&			testCtx,
-																		 const std::string&			name,
-																		 const std::string&			description,
-																		 BufferCaseParameters		testCase)
-										: TestCase						(testCtx, name, description)
-										, m_testCase					(testCase)
-	{
-	}
+public:
+    DedicatedAllocationBuffersTestCase(tcu::TestContext &testCtx, const std::string &name,
+                                       const std::string &description, BufferCaseParameters testCase)
+        : TestCase(testCtx, name, description)
+        , m_testCase(testCase)
+    {
+    }
 
-	virtual								~DedicatedAllocationBuffersTestCase
-																		(void)
-	{
-	}
+    virtual ~DedicatedAllocationBuffersTestCase(void)
+    {
+    }
 
-	virtual TestInstance*				createInstance					(Context&					ctx) const
-	{
-		tcu::TestLog&					log								= m_testCtx.getLog();
-		log << tcu::TestLog::Message << getBufferUsageFlagsStr(m_testCase.usage) << tcu::TestLog::EndMessage;
-		return new DedicatedAllocationBufferTestInstance(ctx, m_testCase);
-	}
+    virtual TestInstance *createInstance(Context &ctx) const
+    {
+        tcu::TestLog &log = m_testCtx.getLog();
+        log << tcu::TestLog::Message << getBufferUsageFlagsStr(m_testCase.usage) << tcu::TestLog::EndMessage;
+        return new DedicatedAllocationBufferTestInstance(ctx, m_testCase);
+    }
 
-	virtual void						checkSupport					(Context&					ctx) const
-	{
-		if (!ctx.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation"))
-			TCU_THROW(NotSupportedError, "Not supported");
-	}
+    virtual void checkSupport(Context &ctx) const
+    {
+        if (!ctx.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation"))
+            TCU_THROW(NotSupportedError, "Not supported");
+    }
+
 private:
-	BufferCaseParameters				m_testCase;
+    BufferCaseParameters m_testCase;
 };
 
-tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest			(VkDeviceSize				size)
+tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest(VkDeviceSize size)
 {
-	const VkPhysicalDevice				vkPhysicalDevice				= m_context.getPhysicalDevice();
-	const InstanceInterface&			vkInstance						= m_context.getInstanceInterface();
-	const VkDevice						vkDevice						= m_context.getDevice();
-	const DeviceInterface&				vk								= m_context.getDeviceInterface();
-	const deUint32						queueFamilyIndex				= m_context.getSparseQueueFamilyIndex();
-	const VkPhysicalDeviceMemoryProperties
-										memoryProperties				= getPhysicalDeviceMemoryProperties(vkInstance, vkPhysicalDevice);
-	const VkPhysicalDeviceLimits		limits							= getPhysicalDeviceProperties(vkInstance, vkPhysicalDevice).limits;
-	Move<VkBuffer>						buffer;
-	Move<VkDeviceMemory>				memory;
-	VkMemoryRequirements				memReqs;
+    const VkPhysicalDevice vkPhysicalDevice = m_context.getPhysicalDevice();
+    const InstanceInterface &vkInstance     = m_context.getInstanceInterface();
+    const VkDevice vkDevice                 = m_context.getDevice();
+    const DeviceInterface &vk               = m_context.getDeviceInterface();
+    const uint32_t queueFamilyIndex         = m_context.getSparseQueueFamilyIndex();
+    const VkPhysicalDeviceMemoryProperties memoryProperties =
+        getPhysicalDeviceMemoryProperties(vkInstance, vkPhysicalDevice);
+    const VkPhysicalDeviceLimits limits = getPhysicalDeviceProperties(vkInstance, vkPhysicalDevice).limits;
+    Move<VkBuffer> buffer;
+    Move<VkDeviceMemory> memory;
+    VkMemoryRequirements memReqs;
 
-	if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) != 0)
-	{
-		size = std::min(size, limits.sparseAddressSpaceSize);
-	}
+    if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) != 0)
+    {
+        size = std::min(size, limits.sparseAddressSpaceSize);
+    }
 
-	// Create the test buffer and a memory allocation for it
-	{
-		// Create a minimal buffer first to get the supported memory types
-		VkBufferCreateInfo				bufferParams					=
-		{
-			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,						// VkStructureType			sType;
-			DE_NULL,													// const void*				pNext;
-			m_testCase.flags,											// VkBufferCreateFlags		flags;
-			1u,															// VkDeviceSize				size;
-			m_testCase.usage,											// VkBufferUsageFlags		usage;
-			m_testCase.sharingMode,										// VkSharingMode			sharingMode;
-			1u,															// uint32_t					queueFamilyIndexCount;
-			&queueFamilyIndex,											// const uint32_t*			pQueueFamilyIndices;
-		};
+    // Create the test buffer and a memory allocation for it
+    {
+        // Create a minimal buffer first to get the supported memory types
+        VkBufferCreateInfo bufferParams = {
+            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
+            DE_NULL,                              // const void* pNext;
+            m_testCase.flags,                     // VkBufferCreateFlags flags;
+            1u,                                   // VkDeviceSize size;
+            m_testCase.usage,                     // VkBufferUsageFlags usage;
+            m_testCase.sharingMode,               // VkSharingMode sharingMode;
+            1u,                                   // uint32_t queueFamilyIndexCount;
+            &queueFamilyIndex,                    // const uint32_t* pQueueFamilyIndices;
+        };
 
-		buffer = createBuffer(vk, vkDevice, &bufferParams);
-		vk.getBufferMemoryRequirements(vkDevice, *buffer, &memReqs);
+        buffer = createBuffer(vk, vkDevice, &bufferParams);
+        vk.getBufferMemoryRequirements(vkDevice, *buffer, &memReqs);
 
-		const deUint32					heapTypeIndex					= (deUint32)deCtz32(memReqs.memoryTypeBits);
-		const VkMemoryType				memoryType						= memoryProperties.memoryTypes[heapTypeIndex];
-		const VkMemoryHeap				memoryHeap						= memoryProperties.memoryHeaps[memoryType.heapIndex];
-		const deUint32					shrinkBits						= 4u;	// number of bits to shift when reducing the size with each iteration
+        const uint32_t heapTypeIndex  = (uint32_t)deCtz32(memReqs.memoryTypeBits);
+        const VkMemoryType memoryType = memoryProperties.memoryTypes[heapTypeIndex];
+        const VkMemoryHeap memoryHeap = memoryProperties.memoryHeaps[memoryType.heapIndex];
+        const uint32_t shrinkBits     = 4u; // number of bits to shift when reducing the size with each iteration
 
-		// Buffer size - Choose half of the reported heap size for the maximum buffer size, we
-		// should attempt to test as large a portion as possible.
-		//
-		// However on a system where device memory is shared with the system, the maximum size
-		// should be tested against the platform memory limits as significant portion of the heap
-		// may already be in use by the operating system and other running processes.
-		const VkDeviceSize  availableBufferSize	= getMaxBufferSize(memoryHeap.size,
-																   memReqs.alignment,
-																   getPlatformMemoryLimits(m_context));
+        // Buffer size - Choose half of the reported heap size for the maximum buffer size, we
+        // should attempt to test as large a portion as possible.
+        //
+        // However on a system where device memory is shared with the system, the maximum size
+        // should be tested against the platform memory limits as significant portion of the heap
+        // may already be in use by the operating system and other running processes.
+        const VkDeviceSize availableBufferSize =
+            getMaxBufferSize(memoryHeap.size, memReqs.alignment, getPlatformMemoryLimits(m_context));
 
-		// For our test buffer size, halve the maximum available size and align
-		const VkDeviceSize maxBufferSize = deAlign64(availableBufferSize >> 1, memReqs.alignment);
+        // For our test buffer size, halve the maximum available size and align
+        const VkDeviceSize maxBufferSize = deAlign64(availableBufferSize >> 1, memReqs.alignment);
 
-		size = std::min(size, maxBufferSize);
+        size = std::min(size, maxBufferSize);
 
-		while (*memory == DE_NULL)
-		{
-			// Create the buffer
-			{
-				VkResult				result							= VK_ERROR_OUT_OF_HOST_MEMORY;
-				VkBuffer				rawBuffer						= DE_NULL;
+        while (*memory == DE_NULL)
+        {
+            // Create the buffer
+            {
+                VkResult result    = VK_ERROR_OUT_OF_HOST_MEMORY;
+                VkBuffer rawBuffer = DE_NULL;
 
-				bufferParams.size = size;
-				buffer = Move<VkBuffer>();		// free the previous buffer, if any
-				result = vk.createBuffer(vkDevice, &bufferParams, (vk::VkAllocationCallbacks*)DE_NULL, &rawBuffer);
+                bufferParams.size = size;
+                buffer            = Move<VkBuffer>(); // free the previous buffer, if any
+                result = vk.createBuffer(vkDevice, &bufferParams, (vk::VkAllocationCallbacks *)DE_NULL, &rawBuffer);
 
-				if (result != VK_SUCCESS)
-				{
-					size = deAlign64(size >> shrinkBits, memReqs.alignment);
+                if (result != VK_SUCCESS)
+                {
+                    size = deAlign64(size >> shrinkBits, memReqs.alignment);
 
-					if (size == 0 || bufferParams.size == memReqs.alignment)
-					{
-						return tcu::TestStatus::fail("Buffer creation failed! (" + de::toString(getResultName(result)) + ")");
-					}
+                    if (size == 0 || bufferParams.size == memReqs.alignment)
+                    {
+                        return tcu::TestStatus::fail("Buffer creation failed! (" + de::toString(getResultName(result)) +
+                                                     ")");
+                    }
 
-					continue;	// didn't work, try with a smaller buffer
-				}
+                    continue; // didn't work, try with a smaller buffer
+                }
 
-				buffer = Move<VkBuffer>(check<VkBuffer>(rawBuffer), Deleter<VkBuffer>(vk, vkDevice, DE_NULL));
-			}
+                buffer = Move<VkBuffer>(check<VkBuffer>(rawBuffer), Deleter<VkBuffer>(vk, vkDevice, DE_NULL));
+            }
 
-			vk.getBufferMemoryRequirements(vkDevice, *buffer, &memReqs);	// get the proper size requirement
+            vk.getBufferMemoryRequirements(vkDevice, *buffer, &memReqs); // get the proper size requirement
 
 #ifdef CTS_USES_VULKANSC
-			if (m_context.getTestContext().getCommandLine().isSubProcess())
+            if (m_context.getTestContext().getCommandLine().isSubProcess())
 #endif // CTS_USES_VULKANSC
-			{
-				if (size > memReqs.size)
-				{
-					std::ostringstream		errorMsg;
-					errorMsg << "Required memory size (" << memReqs.size << " bytes) smaller than the buffer's size (" << size << " bytes)!";
-					return tcu::TestStatus::fail(errorMsg.str());
-				}
-			}
+            {
+                if (size > memReqs.size)
+                {
+                    std::ostringstream errorMsg;
+                    errorMsg << "Required memory size (" << memReqs.size << " bytes) smaller than the buffer's size ("
+                             << size << " bytes)!";
+                    return tcu::TestStatus::fail(errorMsg.str());
+                }
+            }
 
-			// Allocate the memory
-			{
-				VkResult				result							= VK_ERROR_OUT_OF_HOST_MEMORY;
-				VkDeviceMemory			rawMemory						= DE_NULL;
+            // Allocate the memory
+            {
+                VkResult result          = VK_ERROR_OUT_OF_HOST_MEMORY;
+                VkDeviceMemory rawMemory = DE_NULL;
 
-				const VkMemoryAllocateInfo
-										memAlloc						=
-				{
-					VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,				// VkStructureType			sType;
-					NULL,												// const void*				pNext;
-					memReqs.size,										// VkDeviceSize				allocationSize;
-					heapTypeIndex,										// uint32_t					memoryTypeIndex;
-				};
+                const VkMemoryAllocateInfo memAlloc = {
+                    VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // VkStructureType sType;
+                    NULL,                                   // const void* pNext;
+                    memReqs.size,                           // VkDeviceSize allocationSize;
+                    heapTypeIndex,                          // uint32_t memoryTypeIndex;
+                };
 
-				result = vk.allocateMemory(vkDevice, &memAlloc, (VkAllocationCallbacks*)DE_NULL, &rawMemory);
+                result = vk.allocateMemory(vkDevice, &memAlloc, (VkAllocationCallbacks *)DE_NULL, &rawMemory);
 
-				if (result != VK_SUCCESS)
-				{
-					size = deAlign64(size >> shrinkBits, memReqs.alignment);
+                if (result != VK_SUCCESS)
+                {
+                    size = deAlign64(size >> shrinkBits, memReqs.alignment);
 
-					if (size == 0 || memReqs.size == memReqs.alignment)
-					{
-						return tcu::TestStatus::fail("Unable to allocate " + de::toString(memReqs.size) + " bytes of memory");
-					}
+                    if (size == 0 || memReqs.size == memReqs.alignment)
+                    {
+                        return tcu::TestStatus::fail("Unable to allocate " + de::toString(memReqs.size) +
+                                                     " bytes of memory");
+                    }
 
-					continue;	// didn't work, try with a smaller allocation (and a smaller buffer)
-				}
+                    continue; // didn't work, try with a smaller allocation (and a smaller buffer)
+                }
 
-				memory = Move<VkDeviceMemory>(check<VkDeviceMemory>(rawMemory), Deleter<VkDeviceMemory>(vk, vkDevice, DE_NULL));
-			}
-		} // while
-	}
+                memory = Move<VkDeviceMemory>(check<VkDeviceMemory>(rawMemory),
+                                              Deleter<VkDeviceMemory>(vk, vkDevice, DE_NULL));
+            }
+        } // while
+    }
 
-	// Bind the memory
+    // Bind the memory
 #ifndef CTS_USES_VULKANSC
-	if ((m_testCase.flags & (VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT | VK_BUFFER_CREATE_SPARSE_ALIASED_BIT)) != 0)
-	{
-		const VkQueue					queue							= m_context.getSparseQueue();
+    if ((m_testCase.flags & (VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT |
+                             VK_BUFFER_CREATE_SPARSE_ALIASED_BIT)) != 0)
+    {
+        const VkQueue queue = m_context.getSparseQueue();
 
-		const VkSparseMemoryBind		sparseMemoryBind				=
-		{
-			0,															// VkDeviceSize				resourceOffset;
-			memReqs.size,												// VkDeviceSize				size;
-			*memory,													// VkDeviceMemory			memory;
-			0,															// VkDeviceSize				memoryOffset;
-			0															// VkSparseMemoryBindFlags	flags;
-		};
+        const VkSparseMemoryBind sparseMemoryBind = {
+            0,            // VkDeviceSize resourceOffset;
+            memReqs.size, // VkDeviceSize size;
+            *memory,      // VkDeviceMemory memory;
+            0,            // VkDeviceSize memoryOffset;
+            0             // VkSparseMemoryBindFlags flags;
+        };
 
-		const VkSparseBufferMemoryBindInfo
-										sparseBufferMemoryBindInfo		=
-		{
-			*buffer,													// VkBuffer					buffer;
-			1u,															// deUint32					bindCount;
-			&sparseMemoryBind											// const VkSparseMemoryBind* pBinds;
-		};
+        const VkSparseBufferMemoryBindInfo sparseBufferMemoryBindInfo = {
+            *buffer,          // VkBuffer buffer;
+            1u,               // uint32_t bindCount;
+            &sparseMemoryBind // const VkSparseMemoryBind* pBinds;
+        };
 
-		const VkBindSparseInfo			bindSparseInfo					=
-		{
-			VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,							// VkStructureType			sType;
-			DE_NULL,													// const void*				pNext;
-			0,															// deUint32					waitSemaphoreCount;
-			DE_NULL,													// const VkSemaphore*		pWaitSemaphores;
-			1u,															// deUint32					bufferBindCount;
-			&sparseBufferMemoryBindInfo,								// const VkSparseBufferMemoryBindInfo* pBufferBinds;
-			0,															// deUint32					imageOpaqueBindCount;
-			DE_NULL,													// const VkSparseImageOpaqueMemoryBindInfo*	pImageOpaqueBinds;
-			0,															// deUint32					imageBindCount;
-			DE_NULL,													// const VkSparseImageMemoryBindInfo* pImageBinds;
-			0,															// deUint32					signalSemaphoreCount;
-			DE_NULL,													// const VkSemaphore*		pSignalSemaphores;
-		};
+        const VkBindSparseInfo bindSparseInfo = {
+            VK_STRUCTURE_TYPE_BIND_SPARSE_INFO, // VkStructureType sType;
+            DE_NULL,                            // const void* pNext;
+            0,                                  // uint32_t waitSemaphoreCount;
+            DE_NULL,                            // const VkSemaphore* pWaitSemaphores;
+            1u,                                 // uint32_t bufferBindCount;
+            &sparseBufferMemoryBindInfo,        // const VkSparseBufferMemoryBindInfo* pBufferBinds;
+            0,                                  // uint32_t imageOpaqueBindCount;
+            DE_NULL,                            // const VkSparseImageOpaqueMemoryBindInfo* pImageOpaqueBinds;
+            0,                                  // uint32_t imageBindCount;
+            DE_NULL,                            // const VkSparseImageMemoryBindInfo* pImageBinds;
+            0,                                  // uint32_t signalSemaphoreCount;
+            DE_NULL,                            // const VkSemaphore* pSignalSemaphores;
+        };
 
-		const vk::Unique<vk::VkFence>	fence							(vk::createFence(vk, vkDevice));
+        const vk::Unique<vk::VkFence> fence(vk::createFence(vk, vkDevice));
 
-		if (vk.queueBindSparse(queue, 1, &bindSparseInfo, *fence) != VK_SUCCESS)
-			return tcu::TestStatus::fail("Bind sparse buffer memory failed! (requested memory size: " + de::toString(size) + ")");
+        if (vk.queueBindSparse(queue, 1, &bindSparseInfo, *fence) != VK_SUCCESS)
+            return tcu::TestStatus::fail(
+                "Bind sparse buffer memory failed! (requested memory size: " + de::toString(size) + ")");
 
-		VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), VK_TRUE, ~(0ull) /* infinity */));
-	}
-	else if (vk.bindBufferMemory(vkDevice, *buffer, *memory, 0) != VK_SUCCESS)
-		return tcu::TestStatus::fail("Bind buffer memory failed! (requested memory size: " + de::toString(size) + ")");
+        VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), VK_TRUE, ~(0ull) /* infinity */));
+    }
+    else if (vk.bindBufferMemory(vkDevice, *buffer, *memory, 0) != VK_SUCCESS)
+        return tcu::TestStatus::fail("Bind buffer memory failed! (requested memory size: " + de::toString(size) + ")");
 #else
-	if (vk.bindBufferMemory(vkDevice, *buffer, *memory, 0) != VK_SUCCESS)
-		return tcu::TestStatus::fail("Bind buffer memory failed! (requested memory size: " + de::toString(size) + ")");
+    if (vk.bindBufferMemory(vkDevice, *buffer, *memory, 0) != VK_SUCCESS)
+        return tcu::TestStatus::fail("Bind buffer memory failed! (requested memory size: " + de::toString(size) + ")");
 #endif // CTS_USES_VULKANSC
 
-	return tcu::TestStatus::pass("Pass");
+    return tcu::TestStatus::pass("Pass");
 }
 
-tcu::TestStatus							BufferTestInstance::iterate		(void)
+tcu::TestStatus BufferTestInstance::iterate(void)
 {
-	const VkDeviceSize					testSizes[]						=
-	{
-		1,
-		1181,
-		15991,
-		16384,
+    const VkDeviceSize testSizes[] = {
+        1,     1181, 15991, 16384,
 #ifndef CTS_USES_VULKANSC
-		~0ull,		// try to exercise a very large buffer too (will be clamped to a sensible size later)
-#endif // CTS_USES_VULKANSC
-	};
+        ~0ull, // try to exercise a very large buffer too (will be clamped to a sensible size later)
+#endif         // CTS_USES_VULKANSC
+    };
 
-	for (int i = 0; i < DE_LENGTH_OF_ARRAY(testSizes); ++i)
-	{
-		const tcu::TestStatus			testStatus						= bufferCreateAndAllocTest(testSizes[i]);
+    for (int i = 0; i < DE_LENGTH_OF_ARRAY(testSizes); ++i)
+    {
+        const tcu::TestStatus testStatus = bufferCreateAndAllocTest(testSizes[i]);
 
-		if (testStatus.getCode() != QP_TEST_RESULT_PASS)
-			return testStatus;
-	}
+        if (testStatus.getCode() != QP_TEST_RESULT_PASS)
+            return testStatus;
+    }
 
-	return tcu::TestStatus::pass("Pass");
+    return tcu::TestStatus::pass("Pass");
 }
 
-tcu::TestStatus							DedicatedAllocationBufferTestInstance::bufferCreateAndAllocTest
-																		(VkDeviceSize				size)
+tcu::TestStatus DedicatedAllocationBufferTestInstance::bufferCreateAndAllocTest(VkDeviceSize size)
 {
-	const VkPhysicalDevice				vkPhysicalDevice				= m_context.getPhysicalDevice();
-	const InstanceInterface&			vkInstance						= m_context.getInstanceInterface();
-	const VkDevice						vkDevice						= m_context.getDevice();
-	const DeviceInterface&				vk								= m_context.getDeviceInterface();
-	const deUint32						queueFamilyIndex				= m_context.getUniversalQueueFamilyIndex();
-	const VkPhysicalDeviceMemoryProperties
-										memoryProperties				= getPhysicalDeviceMemoryProperties(vkInstance, vkPhysicalDevice);
-	const VkPhysicalDeviceLimits		limits							= getPhysicalDeviceProperties(vkInstance, vkPhysicalDevice).limits;
+    const VkPhysicalDevice vkPhysicalDevice = m_context.getPhysicalDevice();
+    const InstanceInterface &vkInstance     = m_context.getInstanceInterface();
+    const VkDevice vkDevice                 = m_context.getDevice();
+    const DeviceInterface &vk               = m_context.getDeviceInterface();
+    const uint32_t queueFamilyIndex         = m_context.getUniversalQueueFamilyIndex();
+    const VkPhysicalDeviceMemoryProperties memoryProperties =
+        getPhysicalDeviceMemoryProperties(vkInstance, vkPhysicalDevice);
+    const VkPhysicalDeviceLimits limits = getPhysicalDeviceProperties(vkInstance, vkPhysicalDevice).limits;
 
-	VkMemoryDedicatedRequirements	dedicatedRequirements			=
-	{
-		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,				// VkStructureType			sType;
-		DE_NULL,														// const void*				pNext;
-		false,															// VkBool32					prefersDedicatedAllocation
-		false															// VkBool32					requiresDedicatedAllocation
-	};
-	VkMemoryRequirements2			memReqs							=
-	{
-		VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,						// VkStructureType			sType
-		&dedicatedRequirements,											// void*					pNext
-		{0, 0, 0}														// VkMemoryRequirements		memoryRequirements
-	};
+    VkMemoryDedicatedRequirements dedicatedRequirements = {
+        VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS, // VkStructureType sType;
+        DE_NULL,                                         // const void* pNext;
+        false,                                           // VkBool32                    prefersDedicatedAllocation
+        false                                            // VkBool32                    requiresDedicatedAllocation
+    };
+    VkMemoryRequirements2 memReqs = {
+        VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, // VkStructureType            sType
+        &dedicatedRequirements,                  // void*                    pNext
+        {0, 0, 0}                                // VkMemoryRequirements        memoryRequirements
+    };
 
-	if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) != 0)
-		size = std::min(size, limits.sparseAddressSpaceSize);
+    if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) != 0)
+        size = std::min(size, limits.sparseAddressSpaceSize);
 
-	// Create a minimal buffer first to get the supported memory types
-	VkBufferCreateInfo					bufferParams					=
-	{
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,							// VkStructureType			sType
-		DE_NULL,														// const void*				pNext
-		m_testCase.flags,												// VkBufferCreateFlags		flags
-		1u,																// VkDeviceSize				size
-		m_testCase.usage,												// VkBufferUsageFlags		usage
-		m_testCase.sharingMode,											// VkSharingMode			sharingMode
-		1u,																// uint32_t					queueFamilyIndexCount
-		&queueFamilyIndex,												// const uint32_t*			pQueueFamilyIndices
-	};
+    // Create a minimal buffer first to get the supported memory types
+    VkBufferCreateInfo bufferParams = {
+        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType            sType
+        DE_NULL,                              // const void*                pNext
+        m_testCase.flags,                     // VkBufferCreateFlags        flags
+        1u,                                   // VkDeviceSize                size
+        m_testCase.usage,                     // VkBufferUsageFlags        usage
+        m_testCase.sharingMode,               // VkSharingMode            sharingMode
+        1u,                                   // uint32_t                    queueFamilyIndexCount
+        &queueFamilyIndex,                    // const uint32_t*            pQueueFamilyIndices
+    };
 
-	Move<VkBuffer>						buffer							= createBuffer(vk, vkDevice, &bufferParams);
+    Move<VkBuffer> buffer = createBuffer(vk, vkDevice, &bufferParams);
 
-	VkBufferMemoryRequirementsInfo2	info							=
-	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,			// VkStructureType			sType
-		DE_NULL,														// const void*				pNext
-		*buffer															// VkBuffer					buffer
-	};
+    VkBufferMemoryRequirementsInfo2 info = {
+        VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2, // VkStructureType            sType
+        DE_NULL,                                             // const void*                pNext
+        *buffer                                              // VkBuffer                    buffer
+    };
 
-	vk.getBufferMemoryRequirements2(vkDevice, &info, &memReqs);
+    vk.getBufferMemoryRequirements2(vkDevice, &info, &memReqs);
 
-	if (dedicatedRequirements.requiresDedicatedAllocation == VK_TRUE)
-	{
-		std::ostringstream				errorMsg;
-		errorMsg << "Nonexternal objects cannot require dedicated allocation.";
-		return tcu::TestStatus::fail(errorMsg.str());
-	}
+    if (dedicatedRequirements.requiresDedicatedAllocation == VK_TRUE)
+    {
+        std::ostringstream errorMsg;
+        errorMsg << "Nonexternal objects cannot require dedicated allocation.";
+        return tcu::TestStatus::fail(errorMsg.str());
+    }
 
-	if(memReqs.memoryRequirements.memoryTypeBits == 0)
-		return tcu::TestStatus::fail("memoryTypeBits is 0");
+    if (memReqs.memoryRequirements.memoryTypeBits == 0)
+        return tcu::TestStatus::fail("memoryTypeBits is 0");
 
-	const deUint32						heapTypeIndex					= static_cast<deUint32>(deCtz32(memReqs.memoryRequirements.memoryTypeBits));
-	const VkMemoryType					memoryType						= memoryProperties.memoryTypes[heapTypeIndex];
-	const VkMemoryHeap					memoryHeap						= memoryProperties.memoryHeaps[memoryType.heapIndex];
-	const deUint32						shrinkBits						= 4u;	// number of bits to shift when reducing the size with each iteration
+    const uint32_t heapTypeIndex  = static_cast<uint32_t>(deCtz32(memReqs.memoryRequirements.memoryTypeBits));
+    const VkMemoryType memoryType = memoryProperties.memoryTypes[heapTypeIndex];
+    const VkMemoryHeap memoryHeap = memoryProperties.memoryHeaps[memoryType.heapIndex];
+    const uint32_t shrinkBits     = 4u; // number of bits to shift when reducing the size with each iteration
 
-	// Buffer size - Choose half of the reported heap size for the maximum buffer size, we
-	// should attempt to test as large a portion as possible.
-	//
-	// However on a system where device memory is shared with the system, the maximum size
-	// should be tested against the platform memory limits as a significant portion of the heap
-	// may already be in use by the operating system and other running processes.
-	const VkDeviceSize maxBufferSize = getMaxBufferSize(memoryHeap.size,
-													   memReqs.memoryRequirements.alignment,
-													   getPlatformMemoryLimits(m_context));
+    // Buffer size - Choose half of the reported heap size for the maximum buffer size, we
+    // should attempt to test as large a portion as possible.
+    //
+    // However on a system where device memory is shared with the system, the maximum size
+    // should be tested against the platform memory limits as a significant portion of the heap
+    // may already be in use by the operating system and other running processes.
+    const VkDeviceSize maxBufferSize =
+        getMaxBufferSize(memoryHeap.size, memReqs.memoryRequirements.alignment, getPlatformMemoryLimits(m_context));
 
-	Move<VkDeviceMemory>				memory;
-	size = deAlign64(std::min(size, maxBufferSize >> 1), memReqs.memoryRequirements.alignment);
-	while (*memory == DE_NULL)
-	{
-		// Create the buffer
-		{
-			VkResult					result							= VK_ERROR_OUT_OF_HOST_MEMORY;
-			VkBuffer					rawBuffer						= DE_NULL;
+    Move<VkDeviceMemory> memory;
+    size = deAlign64(std::min(size, maxBufferSize >> 1), memReqs.memoryRequirements.alignment);
+    while (*memory == DE_NULL)
+    {
+        // Create the buffer
+        {
+            VkResult result    = VK_ERROR_OUT_OF_HOST_MEMORY;
+            VkBuffer rawBuffer = DE_NULL;
 
-			bufferParams.size = size;
-			buffer = Move<VkBuffer>(); // free the previous buffer, if any
-			result = vk.createBuffer(vkDevice, &bufferParams, (VkAllocationCallbacks*)DE_NULL, &rawBuffer);
+            bufferParams.size = size;
+            buffer            = Move<VkBuffer>(); // free the previous buffer, if any
+            result            = vk.createBuffer(vkDevice, &bufferParams, (VkAllocationCallbacks *)DE_NULL, &rawBuffer);
 
-			if (result != VK_SUCCESS)
-			{
-				size = deAlign64(size >> shrinkBits, memReqs.memoryRequirements.alignment);
+            if (result != VK_SUCCESS)
+            {
+                size = deAlign64(size >> shrinkBits, memReqs.memoryRequirements.alignment);
 
-				if (size == 0 || bufferParams.size == memReqs.memoryRequirements.alignment)
-					return tcu::TestStatus::fail("Buffer creation failed! (" + de::toString(getResultName(result)) + ")");
+                if (size == 0 || bufferParams.size == memReqs.memoryRequirements.alignment)
+                    return tcu::TestStatus::fail("Buffer creation failed! (" + de::toString(getResultName(result)) +
+                                                 ")");
 
-				continue; // didn't work, try with a smaller buffer
-			}
+                continue; // didn't work, try with a smaller buffer
+            }
 
-			buffer = Move<VkBuffer>(check<VkBuffer>(rawBuffer), Deleter<VkBuffer>(vk, vkDevice, DE_NULL));
-		}
+            buffer = Move<VkBuffer>(check<VkBuffer>(rawBuffer), Deleter<VkBuffer>(vk, vkDevice, DE_NULL));
+        }
 
-		info.buffer = *buffer;
-		vk.getBufferMemoryRequirements2(vkDevice, &info, &memReqs);		// get the proper size requirement
+        info.buffer = *buffer;
+        vk.getBufferMemoryRequirements2(vkDevice, &info, &memReqs); // get the proper size requirement
 
-		if (size > memReqs.memoryRequirements.size)
-		{
-			std::ostringstream			errorMsg;
-			errorMsg << "Requied memory size (" << memReqs.memoryRequirements.size << " bytes) smaller than the buffer's size (" << size << " bytes)!";
-			return tcu::TestStatus::fail(errorMsg.str());
-		}
+        if (size > memReqs.memoryRequirements.size)
+        {
+            std::ostringstream errorMsg;
+            errorMsg << "Requied memory size (" << memReqs.memoryRequirements.size
+                     << " bytes) smaller than the buffer's size (" << size << " bytes)!";
+            return tcu::TestStatus::fail(errorMsg.str());
+        }
 
-		// Allocate the memory
-		{
-			VkResult					result							= VK_ERROR_OUT_OF_HOST_MEMORY;
-			VkDeviceMemory				rawMemory						= DE_NULL;
+        // Allocate the memory
+        {
+            VkResult result          = VK_ERROR_OUT_OF_HOST_MEMORY;
+            VkDeviceMemory rawMemory = DE_NULL;
 
-			vk::VkMemoryDedicatedAllocateInfo
-										dedicatedInfo					=
-			{
-				VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,		// VkStructureType			sType
-				DE_NULL,												// const void*				pNext
-				DE_NULL,												// VkImage					image
-				*buffer													// VkBuffer					buffer
-			};
+            vk::VkMemoryDedicatedAllocateInfo dedicatedInfo = {
+                VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType            sType
+                DE_NULL,                                          // const void*                pNext
+                DE_NULL,                                          // VkImage                    image
+                *buffer                                           // VkBuffer                    buffer
+            };
 
-			VkMemoryAllocateInfo		memoryAllocateInfo				=
-			{
-				VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,					// VkStructureType			sType
-				&dedicatedInfo,											// const void*				pNext
-				memReqs.memoryRequirements.size,						// VkDeviceSize				allocationSize
-				heapTypeIndex,											// deUint32					memoryTypeIndex
-			};
+            VkMemoryAllocateInfo memoryAllocateInfo = {
+                VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // VkStructureType            sType
+                &dedicatedInfo,                         // const void*                pNext
+                memReqs.memoryRequirements.size,        // VkDeviceSize                allocationSize
+                heapTypeIndex,                          // uint32_t                    memoryTypeIndex
+            };
 
-			result = vk.allocateMemory(vkDevice, &memoryAllocateInfo, (VkAllocationCallbacks*)DE_NULL, &rawMemory);
+            result = vk.allocateMemory(vkDevice, &memoryAllocateInfo, (VkAllocationCallbacks *)DE_NULL, &rawMemory);
 
-			if (result != VK_SUCCESS)
-			{
-				size = deAlign64(size >> shrinkBits, memReqs.memoryRequirements.alignment);
+            if (result != VK_SUCCESS)
+            {
+                size = deAlign64(size >> shrinkBits, memReqs.memoryRequirements.alignment);
 
-				if (size == 0 || memReqs.memoryRequirements.size == memReqs.memoryRequirements.alignment)
-					return tcu::TestStatus::fail("Unable to allocate " + de::toString(memReqs.memoryRequirements.size) + " bytes of memory");
+                if (size == 0 || memReqs.memoryRequirements.size == memReqs.memoryRequirements.alignment)
+                    return tcu::TestStatus::fail("Unable to allocate " + de::toString(memReqs.memoryRequirements.size) +
+                                                 " bytes of memory");
 
-				continue; // didn't work, try with a smaller allocation (and a smaller buffer)
-			}
+                continue; // didn't work, try with a smaller allocation (and a smaller buffer)
+            }
 
-			memory = Move<VkDeviceMemory>(check<VkDeviceMemory>(rawMemory), Deleter<VkDeviceMemory>(vk, vkDevice, DE_NULL));
-		}
-	} // while
+            memory =
+                Move<VkDeviceMemory>(check<VkDeviceMemory>(rawMemory), Deleter<VkDeviceMemory>(vk, vkDevice, DE_NULL));
+        }
+    } // while
 
-	if (vk.bindBufferMemory(vkDevice, *buffer, *memory, 0) != VK_SUCCESS)
-		return tcu::TestStatus::fail("Bind buffer memory failed! (requested memory size: " + de::toString(size) + ")");
+    if (vk.bindBufferMemory(vkDevice, *buffer, *memory, 0) != VK_SUCCESS)
+        return tcu::TestStatus::fail("Bind buffer memory failed! (requested memory size: " + de::toString(size) + ")");
 
-	return tcu::TestStatus::pass("Pass");
+    return tcu::TestStatus::pass("Pass");
 }
 
-std::string getBufferUsageFlagsName (const VkBufferUsageFlags flags)
+std::string getBufferUsageFlagsName(const VkBufferUsageFlags flags)
 {
-	switch (flags)
-	{
-		case VK_BUFFER_USAGE_TRANSFER_SRC_BIT:			return "transfer_src";
-		case VK_BUFFER_USAGE_TRANSFER_DST_BIT:			return "transfer_dst";
-		case VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT:	return "uniform_texel";
-		case VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT:	return "storage_texel";
-		case VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT:		return "uniform";
-		case VK_BUFFER_USAGE_STORAGE_BUFFER_BIT:		return "storage";
-		case VK_BUFFER_USAGE_INDEX_BUFFER_BIT:			return "index";
-		case VK_BUFFER_USAGE_VERTEX_BUFFER_BIT:			return "vertex";
-		case VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT:		return "indirect";
-		default:
-			DE_FATAL("Unknown buffer usage flag");
-			return "";
-	}
+    switch (flags)
+    {
+    case VK_BUFFER_USAGE_TRANSFER_SRC_BIT:
+        return "transfer_src";
+    case VK_BUFFER_USAGE_TRANSFER_DST_BIT:
+        return "transfer_dst";
+    case VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT:
+        return "uniform_texel";
+    case VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT:
+        return "storage_texel";
+    case VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT:
+        return "uniform";
+    case VK_BUFFER_USAGE_STORAGE_BUFFER_BIT:
+        return "storage";
+    case VK_BUFFER_USAGE_INDEX_BUFFER_BIT:
+        return "index";
+    case VK_BUFFER_USAGE_VERTEX_BUFFER_BIT:
+        return "vertex";
+    case VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT:
+        return "indirect";
+    default:
+        DE_FATAL("Unknown buffer usage flag");
+        return "";
+    }
 }
 
-std::string getBufferCreateFlagsName (const VkBufferCreateFlags flags)
+std::string getBufferCreateFlagsName(const VkBufferCreateFlags flags)
 {
-	std::ostringstream name;
+    std::ostringstream name;
 
-	if (flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT)
-		name << "_binding";
-	if (flags & VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT)
-		name << "_residency";
-	if (flags & VK_BUFFER_CREATE_SPARSE_ALIASED_BIT)
-		name << "_aliased";
-	if (flags == 0u)
-		name << "_zero";
+    if (flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT)
+        name << "_binding";
+    if (flags & VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT)
+        name << "_residency";
+    if (flags & VK_BUFFER_CREATE_SPARSE_ALIASED_BIT)
+        name << "_aliased";
+    if (flags == 0u)
+        name << "_zero";
 
-	DE_ASSERT(!name.str().empty());
+    DE_ASSERT(!name.str().empty());
 
-	return name.str().substr(1);
+    return name.str().substr(1);
 }
 
 // Create all VkBufferUsageFlags combinations recursively
-void createBufferUsageCases (tcu::TestCaseGroup& testGroup, const deUint32 firstNdx, const deUint32 bufferUsageFlags, const AllocationKind allocationKind)
+void createBufferUsageCases(tcu::TestCaseGroup &testGroup, const uint32_t firstNdx, const uint32_t bufferUsageFlags,
+                            const AllocationKind allocationKind)
 {
-	const VkBufferUsageFlags			bufferUsageModes[]	=
-	{
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-		VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,
-		VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT,
-		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-		VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-		VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT
-	};
+    const VkBufferUsageFlags bufferUsageModes[] = {
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,         VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT, VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT,
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VK_BUFFER_USAGE_INDEX_BUFFER_BIT,         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT};
 
-	tcu::TestContext&					testCtx				= testGroup.getTestContext();
+    tcu::TestContext &testCtx = testGroup.getTestContext();
 
-	// Add test groups
-	for (deUint32 currentNdx = firstNdx; currentNdx < DE_LENGTH_OF_ARRAY(bufferUsageModes); currentNdx++)
-	{
-		const deUint32					newBufferUsageFlags	= bufferUsageFlags | bufferUsageModes[currentNdx];
-		const std::string				newGroupName		= getBufferUsageFlagsName(bufferUsageModes[currentNdx]);
-		de::MovePtr<tcu::TestCaseGroup>	newTestGroup		(new tcu::TestCaseGroup(testCtx, newGroupName.c_str(), ""));
+    // Add test groups
+    for (uint32_t currentNdx = firstNdx; currentNdx < DE_LENGTH_OF_ARRAY(bufferUsageModes); currentNdx++)
+    {
+        const uint32_t newBufferUsageFlags = bufferUsageFlags | bufferUsageModes[currentNdx];
+        const std::string newGroupName     = getBufferUsageFlagsName(bufferUsageModes[currentNdx]);
+        de::MovePtr<tcu::TestCaseGroup> newTestGroup(new tcu::TestCaseGroup(testCtx, newGroupName.c_str(), ""));
 
-		createBufferUsageCases(*newTestGroup, currentNdx + 1u, newBufferUsageFlags, allocationKind);
-		testGroup.addChild(newTestGroup.release());
-	}
+        createBufferUsageCases(*newTestGroup, currentNdx + 1u, newBufferUsageFlags, allocationKind);
+        testGroup.addChild(newTestGroup.release());
+    }
 
-	// Add test cases
-	if (bufferUsageFlags != 0u)
-	{
-		// \note SPARSE_RESIDENCY and SPARSE_ALIASED have to be used together with the SPARSE_BINDING flag.
-		const VkBufferCreateFlags		bufferCreateFlags[]		=
-		{
-			0,
+    // Add test cases
+    if (bufferUsageFlags != 0u)
+    {
+        // \note SPARSE_RESIDENCY and SPARSE_ALIASED have to be used together with the SPARSE_BINDING flag.
+        const VkBufferCreateFlags bufferCreateFlags[] = {
+            0,
 #ifndef CTS_USES_VULKANSC
-			VK_BUFFER_CREATE_SPARSE_BINDING_BIT,
-			VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,
-			VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,
-			VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT | VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,
+            VK_BUFFER_CREATE_SPARSE_BINDING_BIT,
+            VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,
+            VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,
+            VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT |
+                VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,
 #endif // CTS_USES_VULKANSC
-		};
+        };
 
-		// Dedicated allocation does not support sparse feature
-		const int						numBufferCreateFlags	= (allocationKind == ALLOCATION_KIND_SUBALLOCATED) ? DE_LENGTH_OF_ARRAY(bufferCreateFlags) : 1;
+        // Dedicated allocation does not support sparse feature
+        const int numBufferCreateFlags =
+            (allocationKind == ALLOCATION_KIND_SUBALLOCATED) ? DE_LENGTH_OF_ARRAY(bufferCreateFlags) : 1;
 
-		de::MovePtr<tcu::TestCaseGroup>	newTestGroup			(new tcu::TestCaseGroup(testCtx, "create", ""));
+        de::MovePtr<tcu::TestCaseGroup> newTestGroup(new tcu::TestCaseGroup(testCtx, "create", ""));
 
-		for (int bufferCreateFlagsNdx = 0; bufferCreateFlagsNdx < numBufferCreateFlags; bufferCreateFlagsNdx++)
-		{
-			const BufferCaseParameters	testParams	=
-			{
-				bufferUsageFlags,
-				bufferCreateFlags[bufferCreateFlagsNdx],
-				VK_SHARING_MODE_EXCLUSIVE
-			};
+        for (int bufferCreateFlagsNdx = 0; bufferCreateFlagsNdx < numBufferCreateFlags; bufferCreateFlagsNdx++)
+        {
+            const BufferCaseParameters testParams = {bufferUsageFlags, bufferCreateFlags[bufferCreateFlagsNdx],
+                                                     VK_SHARING_MODE_EXCLUSIVE};
 
-			const std::string			allocStr	= (allocationKind == ALLOCATION_KIND_SUBALLOCATED) ? "suballocation of " : "dedicated alloc. of ";
-			const std::string			caseName	= getBufferCreateFlagsName(bufferCreateFlags[bufferCreateFlagsNdx]);
-			const std::string			caseDesc	= "vkCreateBuffer test: " + allocStr + de::toString(bufferUsageFlags) + " " + de::toString(testParams.flags);
+            const std::string allocStr =
+                (allocationKind == ALLOCATION_KIND_SUBALLOCATED) ? "suballocation of " : "dedicated alloc. of ";
+            const std::string caseName = getBufferCreateFlagsName(bufferCreateFlags[bufferCreateFlagsNdx]);
+            const std::string caseDesc = "vkCreateBuffer test: " + allocStr + de::toString(bufferUsageFlags) + " " +
+                                         de::toString(testParams.flags);
 
-			switch (allocationKind)
-			{
-				case ALLOCATION_KIND_SUBALLOCATED:
-					newTestGroup->addChild(new BuffersTestCase(testCtx, caseName.c_str(), caseDesc.c_str(), testParams));
-					break;
-				case ALLOCATION_KIND_DEDICATED:
-					newTestGroup->addChild(new DedicatedAllocationBuffersTestCase(testCtx, caseName.c_str(), caseDesc.c_str(), testParams));
-					break;
-				default:
-					DE_FATAL("Unknown test type");
-			}
-		}
-		testGroup.addChild(newTestGroup.release());
-	}
+            switch (allocationKind)
+            {
+            case ALLOCATION_KIND_SUBALLOCATED:
+                newTestGroup->addChild(new BuffersTestCase(testCtx, caseName.c_str(), caseDesc.c_str(), testParams));
+                break;
+            case ALLOCATION_KIND_DEDICATED:
+                newTestGroup->addChild(
+                    new DedicatedAllocationBuffersTestCase(testCtx, caseName.c_str(), caseDesc.c_str(), testParams));
+                break;
+            default:
+                DE_FATAL("Unknown test type");
+            }
+        }
+        testGroup.addChild(newTestGroup.release());
+    }
 }
 
-tcu::TestStatus testDepthStencilBufferFeatures(Context& context, VkFormat format)
+tcu::TestStatus testDepthStencilBufferFeatures(Context &context, VkFormat format)
 {
-	const InstanceInterface&	vki				= context.getInstanceInterface();
-	VkPhysicalDevice			physicalDevice	= context.getPhysicalDevice();
-	VkFormatProperties			formatProperties;
+    const InstanceInterface &vki    = context.getInstanceInterface();
+    VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    VkFormatProperties formatProperties;
 
-	vki.getPhysicalDeviceFormatProperties(physicalDevice, format, &formatProperties);
+    vki.getPhysicalDeviceFormatProperties(physicalDevice, format, &formatProperties);
 
-	if (formatProperties.bufferFeatures == 0x0)
-		return tcu::TestStatus::pass("Pass");
-	else
-		return tcu::TestStatus::fail("Fail");
+    if (formatProperties.bufferFeatures == 0x0)
+        return tcu::TestStatus::pass("Pass");
+    else
+        return tcu::TestStatus::fail("Fail");
 }
 
 struct LargeBufferParameters
 {
-	deUint64				bufferSize;
-	bool					useMaxBufferSize;
-	VkBufferCreateFlags		flags;
+    uint64_t bufferSize;
+    bool useMaxBufferSize;
+    VkBufferCreateFlags flags;
 };
 
-tcu::TestStatus testLargeBuffer(Context& context, LargeBufferParameters params)
+tcu::TestStatus testLargeBuffer(Context &context, LargeBufferParameters params)
 {
-	const DeviceInterface&	vk					= context.getDeviceInterface();
-	const VkDevice			vkDevice			= context.getDevice();
-	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-	VkBuffer				rawBuffer			= DE_NULL;
+    const DeviceInterface &vk       = context.getDeviceInterface();
+    const VkDevice vkDevice         = context.getDevice();
+    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+    VkBuffer rawBuffer              = DE_NULL;
 
 #ifndef CTS_USES_VULKANSC
-	if (params.useMaxBufferSize)
-		params.bufferSize = context.getMaintenance4Properties().maxBufferSize;
+    if (params.useMaxBufferSize)
+        params.bufferSize = context.getMaintenance4Properties().maxBufferSize;
 #endif // CTS_USES_VULKANSC
 
-	VkBufferCreateInfo bufferParams =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType			sType;
-		DE_NULL,								// const void*				pNext;
-		params.flags,							// VkBufferCreateFlags		flags;
-		params.bufferSize,						// VkDeviceSize				size;
-		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,		// VkBufferUsageFlags		usage;
-		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode			sharingMode;
-		1u,										// uint32_t					queueFamilyIndexCount;
-		&queueFamilyIndex,						// const uint32_t*			pQueueFamilyIndices;
-	};
+    VkBufferCreateInfo bufferParams = {
+        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                              // const void* pNext;
+        params.flags,                         // VkBufferCreateFlags flags;
+        params.bufferSize,                    // VkDeviceSize size;
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,   // VkBufferUsageFlags usage;
+        VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
+        1u,                                   // uint32_t queueFamilyIndexCount;
+        &queueFamilyIndex,                    // const uint32_t* pQueueFamilyIndices;
+    };
 
-	VkResult result = vk.createBuffer(vkDevice, &bufferParams, (vk::VkAllocationCallbacks*)DE_NULL, &rawBuffer);
+    VkResult result = vk.createBuffer(vkDevice, &bufferParams, (vk::VkAllocationCallbacks *)DE_NULL, &rawBuffer);
 
-	// if buffer creation succeeds verify that the correct amount of memory was bound to it
-	if (result == VK_SUCCESS)
-	{
-		VkMemoryRequirements memoryRequirements;
-		vk.getBufferMemoryRequirements(vkDevice, rawBuffer, &memoryRequirements);
-		vk.destroyBuffer(vkDevice, rawBuffer, DE_NULL);
+    // if buffer creation succeeds verify that the correct amount of memory was bound to it
+    if (result == VK_SUCCESS)
+    {
+        VkMemoryRequirements memoryRequirements;
+        vk.getBufferMemoryRequirements(vkDevice, rawBuffer, &memoryRequirements);
+        vk.destroyBuffer(vkDevice, rawBuffer, DE_NULL);
 
-		if (memoryRequirements.size >= params.bufferSize)
-			return tcu::TestStatus::pass("Pass");
-		return tcu::TestStatus::fail("Fail");
-	}
+        if (memoryRequirements.size >= params.bufferSize)
+            return tcu::TestStatus::pass("Pass");
+        return tcu::TestStatus::fail("Fail");
+    }
 
-	vk.destroyBuffer(vkDevice, rawBuffer, DE_NULL);
+    vk.destroyBuffer(vkDevice, rawBuffer, DE_NULL);
 
-	// check if one of the allowed errors was returned
-	if ((result == VK_ERROR_OUT_OF_DEVICE_MEMORY) ||
-		(result == VK_ERROR_OUT_OF_HOST_MEMORY))
-		return tcu::TestStatus::pass("Pass");
+    // check if one of the allowed errors was returned
+    if ((result == VK_ERROR_OUT_OF_DEVICE_MEMORY) || (result == VK_ERROR_OUT_OF_HOST_MEMORY))
+        return tcu::TestStatus::pass("Pass");
 
-	return tcu::TestStatus::fail("Fail");
+    return tcu::TestStatus::fail("Fail");
 }
 
 #ifndef CTS_USES_VULKANSC
-void checkMaintenance4Support(Context& context, LargeBufferParameters params)
+void checkMaintenance4Support(Context &context, LargeBufferParameters params)
 {
-	context.requireDeviceFunctionality("VK_KHR_maintenance4");
+    context.requireDeviceFunctionality("VK_KHR_maintenance4");
 
-	const VkPhysicalDeviceFeatures& physicalDeviceFeatures = getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
-	if ((params.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) && !physicalDeviceFeatures.sparseBinding)
-		TCU_THROW(NotSupportedError, "Sparse bindings feature is not supported");
+    const VkPhysicalDeviceFeatures &physicalDeviceFeatures =
+        getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
+    if ((params.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) && !physicalDeviceFeatures.sparseBinding)
+        TCU_THROW(NotSupportedError, "Sparse bindings feature is not supported");
 }
 #endif // CTS_USES_VULKANSC
 
-} // anonymous
+} // namespace
 
- tcu::TestCaseGroup* createBufferTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createBufferTests(tcu::TestContext &testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> buffersTests (new tcu::TestCaseGroup(testCtx, "buffer", "Buffer Tests"));
+    de::MovePtr<tcu::TestCaseGroup> buffersTests(new tcu::TestCaseGroup(testCtx, "buffer", "Buffer Tests"));
 
-	{
-		de::MovePtr<tcu::TestCaseGroup>	regularAllocation	(new tcu::TestCaseGroup(testCtx, "suballocation", "Regular suballocation of memory."));
-		createBufferUsageCases(*regularAllocation, 0u, 0u, ALLOCATION_KIND_SUBALLOCATED);
-		buffersTests->addChild(regularAllocation.release());
-	}
+    {
+        de::MovePtr<tcu::TestCaseGroup> regularAllocation(
+            new tcu::TestCaseGroup(testCtx, "suballocation", "Regular suballocation of memory."));
+        createBufferUsageCases(*regularAllocation, 0u, 0u, ALLOCATION_KIND_SUBALLOCATED);
+        buffersTests->addChild(regularAllocation.release());
+    }
 
-	{
-		de::MovePtr<tcu::TestCaseGroup>	dedicatedAllocation	(new tcu::TestCaseGroup(testCtx, "dedicated_alloc", "Dedicated allocation of memory."));
-		createBufferUsageCases(*dedicatedAllocation, 0u, 0u, ALLOCATION_KIND_DEDICATED);
-		buffersTests->addChild(dedicatedAllocation.release());
-	}
+    {
+        de::MovePtr<tcu::TestCaseGroup> dedicatedAllocation(
+            new tcu::TestCaseGroup(testCtx, "dedicated_alloc", "Dedicated allocation of memory."));
+        createBufferUsageCases(*dedicatedAllocation, 0u, 0u, ALLOCATION_KIND_DEDICATED);
+        buffersTests->addChild(dedicatedAllocation.release());
+    }
 
-	{
-		de::MovePtr<tcu::TestCaseGroup> basicTests(new tcu::TestCaseGroup(testCtx, "basic", "Basic buffer tests."));
+    {
+        de::MovePtr<tcu::TestCaseGroup> basicTests(new tcu::TestCaseGroup(testCtx, "basic", "Basic buffer tests."));
 #ifndef CTS_USES_VULKANSC
-		addFunctionCase(basicTests.get(), "max_size", "Creating buffer using maxBufferSize limit.",
-						checkMaintenance4Support, testLargeBuffer, LargeBufferParameters
-						{
-							0u,
-							true,
-							0u
-						});
-		addFunctionCase(basicTests.get(), "max_size_sparse", "Creating sparse buffer using maxBufferSize limit.",
-						checkMaintenance4Support, testLargeBuffer, LargeBufferParameters
-						{
-							0u,
-							true,
-							VK_BUFFER_CREATE_SPARSE_BINDING_BIT
-						});
+        addFunctionCase(basicTests.get(), "max_size", "Creating buffer using maxBufferSize limit.",
+                        checkMaintenance4Support, testLargeBuffer, LargeBufferParameters{0u, true, 0u});
+        addFunctionCase(basicTests.get(), "max_size_sparse", "Creating sparse buffer using maxBufferSize limit.",
+                        checkMaintenance4Support, testLargeBuffer,
+                        LargeBufferParameters{0u, true, VK_BUFFER_CREATE_SPARSE_BINDING_BIT});
 #endif // CTS_USES_VULKANSC
-		addFunctionCase(basicTests.get(), "size_max_uint64", "Creating a ULLONG_MAX buffer and verify that it either succeeds or returns one of the allowed errors.",
-						testLargeBuffer, LargeBufferParameters
-						{
-							std::numeric_limits<deUint64>::max(),
-							false,
-							0u
-						});
-		buffersTests->addChild(basicTests.release());
-	}
+        addFunctionCase(
+            basicTests.get(), "size_max_uint64",
+            "Creating a ULLONG_MAX buffer and verify that it either succeeds or returns one of the allowed errors.",
+            testLargeBuffer, LargeBufferParameters{std::numeric_limits<uint64_t>::max(), false, 0u});
+        buffersTests->addChild(basicTests.release());
+    }
 
-	{
-		static const VkFormat dsFormats[] =
-		{
-			VK_FORMAT_S8_UINT,
-			VK_FORMAT_D16_UNORM,
-			VK_FORMAT_D16_UNORM_S8_UINT,
-			VK_FORMAT_D24_UNORM_S8_UINT,
-			VK_FORMAT_D32_SFLOAT,
-			VK_FORMAT_D32_SFLOAT_S8_UINT,
-			VK_FORMAT_X8_D24_UNORM_PACK32
-		};
+    {
+        static const VkFormat dsFormats[] = {VK_FORMAT_S8_UINT,
+                                             VK_FORMAT_D16_UNORM,
+                                             VK_FORMAT_D16_UNORM_S8_UINT,
+                                             VK_FORMAT_D24_UNORM_S8_UINT,
+                                             VK_FORMAT_D32_SFLOAT,
+                                             VK_FORMAT_D32_SFLOAT_S8_UINT,
+                                             VK_FORMAT_X8_D24_UNORM_PACK32};
 
-		de::MovePtr<tcu::TestCaseGroup>	invalidBufferFeatures(new tcu::TestCaseGroup(testCtx, "invalid_buffer_features", "Checks that drivers are not exposing undesired format features for depth/stencil formats."));
+        de::MovePtr<tcu::TestCaseGroup> invalidBufferFeatures(new tcu::TestCaseGroup(
+            testCtx, "invalid_buffer_features",
+            "Checks that drivers are not exposing undesired format features for depth/stencil formats."));
 
-		for (const auto& testFormat : dsFormats)
-		{
-			std::string formatName = de::toLower(getFormatName(testFormat));
+        for (const auto &testFormat : dsFormats)
+        {
+            std::string formatName = de::toLower(getFormatName(testFormat));
 
-			addFunctionCase(invalidBufferFeatures.get(), formatName, formatName, testDepthStencilBufferFeatures, testFormat);
-		}
+            addFunctionCase(invalidBufferFeatures.get(), formatName, formatName, testDepthStencilBufferFeatures,
+                            testFormat);
+        }
 
-		buffersTests->addChild(invalidBufferFeatures.release());
-	}
+        buffersTests->addChild(invalidBufferFeatures.release());
+    }
 
-	return buffersTests.release();
+    return buffersTests.release();
 }
 
-} // api
-} // vk
+} // namespace api
+} // namespace vkt

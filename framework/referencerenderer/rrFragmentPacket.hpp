@@ -31,7 +31,7 @@ namespace rr
 
 enum
 {
-	NUM_FRAGMENTS_PER_PACKET	= 4
+    NUM_FRAGMENTS_PER_PACKET = 4
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -49,11 +49,11 @@ enum
  *//*--------------------------------------------------------------------*/
 struct FragmentPacket
 {
-	tcu::IVec2		position;			//!< Position of (0,0) fragment.
-	deUint64		coverage;			//!< Coverage mask.
-	tcu::Vec4		barycentric[3];		//!< Perspective-correct barycentric values.
+    tcu::IVec2 position;      //!< Position of (0,0) fragment.
+    uint64_t coverage;        //!< Coverage mask.
+    tcu::Vec4 barycentric[3]; //!< Perspective-correct barycentric values.
 };
 
-} // rr
+} // namespace rr
 
 #endif // _RRFRAGMENTPACKET_HPP

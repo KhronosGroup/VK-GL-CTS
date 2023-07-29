@@ -32,27 +32,24 @@ using tcu::toHex;
 namespace glu
 {
 
-CallLogWrapper::CallLogWrapper (const glw::Functions& gl, tcu::TestLog& log)
-	: m_gl			(gl)
-	, m_log			(log)
-	, m_enableLog	(false)
+CallLogWrapper::CallLogWrapper(const glw::Functions &gl, tcu::TestLog &log) : m_gl(gl), m_log(log), m_enableLog(false)
 {
 }
 
-CallLogWrapper::~CallLogWrapper (void)
+CallLogWrapper::~CallLogWrapper(void)
 {
 }
 
 template <typename T>
-inline tcu::Format::ArrayPointer<T> getPointerStr (const T* arr, deUint32 size)
+inline tcu::Format::ArrayPointer<T> getPointerStr(const T *arr, uint32_t size)
 {
-	return tcu::formatArray(arr, (int)size);
+    return tcu::formatArray(arr, (int)size);
 }
 
 template <typename T>
-inline tcu::Format::ArrayPointer<T> getPointerStr (const T* arr, int size)
+inline tcu::Format::ArrayPointer<T> getPointerStr(const T *arr, int size)
 {
-	return tcu::formatArray(arr, de::max(size, 0));
+    return tcu::formatArray(arr, de::max(size, 0));
 }
 
 // String formatter.
@@ -60,72 +57,82 @@ inline tcu::Format::ArrayPointer<T> getPointerStr (const T* arr, int size)
 class StringFmt
 {
 public:
-	const glw::GLchar* str;
-	StringFmt (const glw::GLchar* str_) : str(str_) {}
+    const glw::GLchar *str;
+    StringFmt(const glw::GLchar *str_) : str(str_)
+    {
+    }
 };
 
-inline std::ostream& operator<< (std::ostream& str, StringFmt fmt)
+inline std::ostream &operator<<(std::ostream &str, StringFmt fmt)
 {
-	return str << (fmt.str ? (const char*)fmt.str : "NULL");
+    return str << (fmt.str ? (const char *)fmt.str : "NULL");
 }
 
-inline StringFmt getStringStr (const char*			value)	{ return StringFmt(value);				}
-inline StringFmt getStringStr (const glw::GLubyte*	value)	{ return StringFmt((const char*)value);	}
+inline StringFmt getStringStr(const char *value)
+{
+    return StringFmt(value);
+}
+inline StringFmt getStringStr(const glw::GLubyte *value)
+{
+    return StringFmt((const char *)value);
+}
 
 // Framebuffer parameter pointer formatter.
 
 class FboParamPtrFmt
 {
 public:
-	deUint32	param;
-	const int*	value;
+    uint32_t param;
+    const int *value;
 
-	FboParamPtrFmt (deUint32 param_, const int* value_) : param(param_), value(value_) {}
+    FboParamPtrFmt(uint32_t param_, const int *value_) : param(param_), value(value_)
+    {
+    }
 };
 
-std::ostream& operator<< (std::ostream& str, FboParamPtrFmt fmt)
+std::ostream &operator<<(std::ostream &str, FboParamPtrFmt fmt)
 {
-	if (fmt.value)
-	{
-		switch (fmt.param)
-		{
-			case GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE:
-				return str << tcu::Format::Enum<int, 2>(getFramebufferAttachmentTypeName, *fmt.value);
+    if (fmt.value)
+    {
+        switch (fmt.param)
+        {
+        case GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE:
+            return str << tcu::Format::Enum<int, 2>(getFramebufferAttachmentTypeName, *fmt.value);
 
-			case GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE:
-				return str << tcu::Format::Enum<int, 2>(getCubeMapFaceName, *fmt.value);
+        case GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE:
+            return str << tcu::Format::Enum<int, 2>(getCubeMapFaceName, *fmt.value);
 
-			case GL_FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE:
-				return str << tcu::Format::Enum<int, 2>(getTypeName, *fmt.value);
+        case GL_FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE:
+            return str << tcu::Format::Enum<int, 2>(getTypeName, *fmt.value);
 
-			case GL_FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING:
-				return str << tcu::Format::Enum<int, 2>(getFramebufferColorEncodingName, *fmt.value);
+        case GL_FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING:
+            return str << tcu::Format::Enum<int, 2>(getFramebufferColorEncodingName, *fmt.value);
 
-			case GL_FRAMEBUFFER_ATTACHMENT_LAYERED:
-				return str << tcu::Format::Enum<int, 2>(getBooleanName, *fmt.value);
+        case GL_FRAMEBUFFER_ATTACHMENT_LAYERED:
+            return str << tcu::Format::Enum<int, 2>(getBooleanName, *fmt.value);
 
-			case GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME:
-			case GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER:
-			case GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL:
-			case GL_FRAMEBUFFER_ATTACHMENT_RED_SIZE:
-			case GL_FRAMEBUFFER_ATTACHMENT_GREEN_SIZE:
-			case GL_FRAMEBUFFER_ATTACHMENT_BLUE_SIZE:
-			case GL_FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE:
-			case GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE:
-			case GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE:
-				return str << *fmt.value;
+        case GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME:
+        case GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER:
+        case GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL:
+        case GL_FRAMEBUFFER_ATTACHMENT_RED_SIZE:
+        case GL_FRAMEBUFFER_ATTACHMENT_GREEN_SIZE:
+        case GL_FRAMEBUFFER_ATTACHMENT_BLUE_SIZE:
+        case GL_FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE:
+        case GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE:
+        case GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE:
+            return str << *fmt.value;
 
-			default:
-				return str << tcu::toHex(*fmt.value);
-		}
-	}
-	else
-		return str << "(null)";
+        default:
+            return str << tcu::toHex(*fmt.value);
+        }
+    }
+    else
+        return str << "(null)";
 }
 
-inline FboParamPtrFmt getFramebufferAttachmentParameterValueStr (deUint32 param, const int* value)
+inline FboParamPtrFmt getFramebufferAttachmentParameterValueStr(uint32_t param, const int *value)
 {
-	return FboParamPtrFmt(param, value);
+    return FboParamPtrFmt(param, value);
 }
 
 #include "gluQueryUtil.inl"
@@ -134,4 +141,4 @@ inline FboParamPtrFmt getFramebufferAttachmentParameterValueStr (deUint32 param,
 // API entry-point implementations are auto-generated
 #include "gluCallLogWrapper.inl"
 
-} // glu
+} // namespace glu

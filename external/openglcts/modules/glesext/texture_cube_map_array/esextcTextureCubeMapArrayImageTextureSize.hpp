@@ -74,272 +74,272 @@ namespace glcts
 class TextureCubeMapArrayTextureSizeBase : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureCubeMapArrayTextureSizeBase(Context& context, const ExtParameters& extParams, const char* name,
-									   const char* description);
+    /* Public methods */
+    TextureCubeMapArrayTextureSizeBase(Context &context, const ExtParameters &extParams, const char *name,
+                                       const char *description);
 
-	virtual ~TextureCubeMapArrayTextureSizeBase(void)
-	{
-	}
+    virtual ~TextureCubeMapArrayTextureSizeBase(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
-	/* Public static constants  */
-	static const glw::GLuint m_n_dimensions;
-	static const glw::GLuint m_n_resolutions;
+    /* Public static constants  */
+    static const glw::GLuint m_n_dimensions;
+    static const glw::GLuint m_n_resolutions;
 
 protected:
-	/* Protected methods */
-	void initTest(void);
-	void createCubeMapArrayTexture(glw::GLuint& texId, glw::GLuint width, glw::GLuint height, glw::GLuint depth,
-								   STORAGE_TYPE storType, glw::GLboolean shadow);
+    /* Protected methods */
+    void initTest(void);
+    void createCubeMapArrayTexture(glw::GLuint &texId, glw::GLuint width, glw::GLuint height, glw::GLuint depth,
+                                   STORAGE_TYPE storType, glw::GLboolean shadow);
 
-	virtual void configureProgram(void) = 0;
-	virtual void deleteProgram(void)	= 0;
-	virtual void configureUniforms(void);
-	virtual void configureTestSpecificObjects(void) = 0;
-	virtual void deleteTestSpecificObjects(void)	= 0;
-	virtual void configureTextures(glw::GLuint width, glw::GLuint height, glw::GLuint depth, STORAGE_TYPE storType);
-	virtual void		   deleteTextures(void);
-	virtual void		   runShaders(void) = 0;
-	virtual glw::GLboolean checkResults(glw::GLuint width, glw::GLuint height, glw::GLuint depth,
-										STORAGE_TYPE storType) = 0;
-	virtual glw::GLboolean isMutableTextureTestable(void);
+    virtual void configureProgram(void) = 0;
+    virtual void deleteProgram(void)    = 0;
+    virtual void configureUniforms(void);
+    virtual void configureTestSpecificObjects(void) = 0;
+    virtual void deleteTestSpecificObjects(void)    = 0;
+    virtual void configureTextures(glw::GLuint width, glw::GLuint height, glw::GLuint depth, STORAGE_TYPE storType);
+    virtual void deleteTextures(void);
+    virtual void runShaders(void)                              = 0;
+    virtual glw::GLboolean checkResults(glw::GLuint width, glw::GLuint height, glw::GLuint depth,
+                                        STORAGE_TYPE storType) = 0;
+    virtual glw::GLboolean isMutableTextureTestable(void);
 
-	/* Protected variables */
-	glw::GLuint m_po_id;
-	glw::GLuint m_to_std_id;
-	glw::GLuint m_to_shw_id;
-	glw::GLuint m_vao_id;
+    /* Protected variables */
+    glw::GLuint m_po_id;
+    glw::GLuint m_to_std_id;
+    glw::GLuint m_to_shw_id;
+    glw::GLuint m_vao_id;
 
-	/* Protected static constants */
-	static const glw::GLuint m_n_layers_per_cube;
-	static const glw::GLuint m_n_storage_types;
-	static const glw::GLuint m_n_texture_components;
+    /* Protected static constants */
+    static const glw::GLuint m_n_layers_per_cube;
+    static const glw::GLuint m_n_storage_types;
+    static const glw::GLuint m_n_texture_components;
 };
 
 /* Base class for tests using transform feedback to fetch result */
 class TextureCubeMapArrayTextureSizeTFBase : public TextureCubeMapArrayTextureSizeBase
 {
 public:
-	/* Public methods */
-	TextureCubeMapArrayTextureSizeTFBase(Context& context, const ExtParameters& extParams, const char* name,
-										 const char* description);
+    /* Public methods */
+    TextureCubeMapArrayTextureSizeTFBase(Context &context, const ExtParameters &extParams, const char *name,
+                                         const char *description);
 
-	virtual ~TextureCubeMapArrayTextureSizeTFBase(void)
-	{
-	}
+    virtual ~TextureCubeMapArrayTextureSizeTFBase(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void configureProgram(void) = 0;
-	virtual void deleteProgram(void)	= 0;
-	virtual void configureTestSpecificObjects(void);
-	virtual void deleteTestSpecificObjects(void);
-	virtual void configureTextures(glw::GLuint width, glw::GLuint height, glw::GLuint depth, STORAGE_TYPE storType);
-	virtual void		   runShaders(void) = 0;
-	virtual glw::GLboolean checkResults(glw::GLuint width, glw::GLuint height, glw::GLuint depth,
-										STORAGE_TYPE storType);
+    /* Protected methods */
+    virtual void configureProgram(void) = 0;
+    virtual void deleteProgram(void)    = 0;
+    virtual void configureTestSpecificObjects(void);
+    virtual void deleteTestSpecificObjects(void);
+    virtual void configureTextures(glw::GLuint width, glw::GLuint height, glw::GLuint depth, STORAGE_TYPE storType);
+    virtual void runShaders(void) = 0;
+    virtual glw::GLboolean checkResults(glw::GLuint width, glw::GLuint height, glw::GLuint depth,
+                                        STORAGE_TYPE storType);
 
-	/* Protected variables */
-	glw::GLuint m_tf_bo_id;
+    /* Protected variables */
+    glw::GLuint m_tf_bo_id;
 
-	/* Protected static constants */
-	static const glw::GLsizei m_n_varyings;
-	static const glw::GLuint  m_n_tf_components;
+    /* Protected static constants */
+    static const glw::GLsizei m_n_varyings;
+    static const glw::GLuint m_n_tf_components;
 };
 
 class TextureCubeMapArrayTextureSizeTFVertexShader : public TextureCubeMapArrayTextureSizeTFBase
 {
 public:
-	/* Public methods */
-	TextureCubeMapArrayTextureSizeTFVertexShader(Context& context, const ExtParameters& extParams, const char* name,
-												 const char* description);
+    /* Public methods */
+    TextureCubeMapArrayTextureSizeTFVertexShader(Context &context, const ExtParameters &extParams, const char *name,
+                                                 const char *description);
 
-	virtual ~TextureCubeMapArrayTextureSizeTFVertexShader(void)
-	{
-	}
+    virtual ~TextureCubeMapArrayTextureSizeTFVertexShader(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void configureProgram(void);
-	virtual void deleteProgram(void);
-	virtual void runShaders(void);
+    /* Protected methods */
+    virtual void configureProgram(void);
+    virtual void deleteProgram(void);
+    virtual void runShaders(void);
 
-	const char* getVertexShaderCode(void);
-	const char* getFragmentShaderCode(void);
+    const char *getVertexShaderCode(void);
+    const char *getFragmentShaderCode(void);
 
-	/* Protected variables */
-	glw::GLuint m_vs_id;
-	glw::GLuint m_fs_id;
+    /* Protected variables */
+    glw::GLuint m_vs_id;
+    glw::GLuint m_fs_id;
 };
 
 class TextureCubeMapArrayTextureSizeTFGeometryShader : public TextureCubeMapArrayTextureSizeTFBase
 {
 public:
-	/* Public methods */
-	TextureCubeMapArrayTextureSizeTFGeometryShader(Context& context, const ExtParameters& extParams, const char* name,
-												   const char* description);
+    /* Public methods */
+    TextureCubeMapArrayTextureSizeTFGeometryShader(Context &context, const ExtParameters &extParams, const char *name,
+                                                   const char *description);
 
-	virtual ~TextureCubeMapArrayTextureSizeTFGeometryShader(void)
-	{
-	}
+    virtual ~TextureCubeMapArrayTextureSizeTFGeometryShader(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void configureProgram(void);
-	virtual void deleteProgram(void);
-	virtual void runShaders(void);
+    /* Protected methods */
+    virtual void configureProgram(void);
+    virtual void deleteProgram(void);
+    virtual void runShaders(void);
 
-	const char* getVertexShaderCode(void);
-	const char* getGeometryShaderCode(void);
-	const char* getFragmentShaderCode(void);
+    const char *getVertexShaderCode(void);
+    const char *getGeometryShaderCode(void);
+    const char *getFragmentShaderCode(void);
 
-	/* Protected variables */
-	glw::GLuint m_vs_id;
-	glw::GLuint m_gs_id;
-	glw::GLuint m_fs_id;
+    /* Protected variables */
+    glw::GLuint m_vs_id;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_fs_id;
 };
 
 class TextureCubeMapArrayTextureSizeTFTessControlShader : public TextureCubeMapArrayTextureSizeTFBase
 {
 public:
-	/* Public methods */
-	TextureCubeMapArrayTextureSizeTFTessControlShader(Context& context, const ExtParameters& extParams,
-													  const char* name, const char* description);
+    /* Public methods */
+    TextureCubeMapArrayTextureSizeTFTessControlShader(Context &context, const ExtParameters &extParams,
+                                                      const char *name, const char *description);
 
-	virtual ~TextureCubeMapArrayTextureSizeTFTessControlShader(void)
-	{
-	}
+    virtual ~TextureCubeMapArrayTextureSizeTFTessControlShader(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void configureProgram(void);
-	virtual void deleteProgram(void);
-	virtual void runShaders(void);
+    /* Protected methods */
+    virtual void configureProgram(void);
+    virtual void deleteProgram(void);
+    virtual void runShaders(void);
 
-	const char*			getVertexShaderCode(void);
-	virtual const char* getTessellationControlShaderCode(void);
-	virtual const char* getTessellationEvaluationShaderCode(void);
-	const char*			getFragmentShaderCode(void);
+    const char *getVertexShaderCode(void);
+    virtual const char *getTessellationControlShaderCode(void);
+    virtual const char *getTessellationEvaluationShaderCode(void);
+    const char *getFragmentShaderCode(void);
 
-	/* Protected variables */
-	glw::GLuint m_vs_id;
-	glw::GLuint m_tcs_id;
-	glw::GLuint m_tes_id;
-	glw::GLuint m_fs_id;
+    /* Protected variables */
+    glw::GLuint m_vs_id;
+    glw::GLuint m_tcs_id;
+    glw::GLuint m_tes_id;
+    glw::GLuint m_fs_id;
 };
 
 class TextureCubeMapArrayTextureSizeTFTessEvaluationShader : public TextureCubeMapArrayTextureSizeTFTessControlShader
 {
 public:
-	/* Public methods */
-	TextureCubeMapArrayTextureSizeTFTessEvaluationShader(Context& context, const ExtParameters& extParams,
-														 const char* name, const char* description);
+    /* Public methods */
+    TextureCubeMapArrayTextureSizeTFTessEvaluationShader(Context &context, const ExtParameters &extParams,
+                                                         const char *name, const char *description);
 
-	virtual ~TextureCubeMapArrayTextureSizeTFTessEvaluationShader(void)
-	{
-	}
+    virtual ~TextureCubeMapArrayTextureSizeTFTessEvaluationShader(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual const char* getTessellationControlShaderCode(void);
-	virtual const char* getTessellationEvaluationShaderCode(void);
+    /* Protected methods */
+    virtual const char *getTessellationControlShaderCode(void);
+    virtual const char *getTessellationEvaluationShaderCode(void);
 };
 
 /* Base class for tests using rendering to texture to fetch result */
 class TextureCubeMapArrayTextureSizeRTBase : public TextureCubeMapArrayTextureSizeBase
 {
 public:
-	/* Public methods */
-	TextureCubeMapArrayTextureSizeRTBase(Context& context, const ExtParameters& extParams, const char* name,
-										 const char* description);
+    /* Public methods */
+    TextureCubeMapArrayTextureSizeRTBase(Context &context, const ExtParameters &extParams, const char *name,
+                                         const char *description);
 
-	virtual ~TextureCubeMapArrayTextureSizeRTBase(void)
-	{
-	}
+    virtual ~TextureCubeMapArrayTextureSizeRTBase(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void		   configureProgram(void) = 0;
-	virtual void		   deleteProgram(void)	= 0;
-	virtual void		   configureTestSpecificObjects(void);
-	virtual void		   deleteTestSpecificObjects(void);
-	virtual void		   runShaders(void) = 0;
-	virtual glw::GLboolean checkResults(glw::GLuint width, glw::GLuint height, glw::GLuint depth,
-										STORAGE_TYPE storType);
-	void checkFramebufferStatus(glw::GLenum framebuffer);
+    /* Protected methods */
+    virtual void configureProgram(void) = 0;
+    virtual void deleteProgram(void)    = 0;
+    virtual void configureTestSpecificObjects(void);
+    virtual void deleteTestSpecificObjects(void);
+    virtual void runShaders(void) = 0;
+    virtual glw::GLboolean checkResults(glw::GLuint width, glw::GLuint height, glw::GLuint depth,
+                                        STORAGE_TYPE storType);
+    void checkFramebufferStatus(glw::GLenum framebuffer);
 
-	/* Protected variables */
-	glw::GLuint m_read_fbo_id;
-	glw::GLuint m_rt_std_id;
-	glw::GLuint m_rt_shw_id;
+    /* Protected variables */
+    glw::GLuint m_read_fbo_id;
+    glw::GLuint m_rt_std_id;
+    glw::GLuint m_rt_shw_id;
 
-	/* Protected static constants */
-	static const glw::GLuint m_n_rt_components;
+    /* Protected static constants */
+    static const glw::GLuint m_n_rt_components;
 };
 
 class TextureCubeMapArrayTextureSizeRTFragmentShader : public TextureCubeMapArrayTextureSizeRTBase
 {
 public:
-	/* Public methods */
-	TextureCubeMapArrayTextureSizeRTFragmentShader(Context& context, const ExtParameters& extParams, const char* name,
-												   const char* description);
+    /* Public methods */
+    TextureCubeMapArrayTextureSizeRTFragmentShader(Context &context, const ExtParameters &extParams, const char *name,
+                                                   const char *description);
 
-	virtual ~TextureCubeMapArrayTextureSizeRTFragmentShader(void)
-	{
-	}
+    virtual ~TextureCubeMapArrayTextureSizeRTFragmentShader(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void configureProgram(void);
-	virtual void deleteProgram(void);
-	virtual void configureTestSpecificObjects(void);
-	virtual void deleteTestSpecificObjects(void);
-	virtual void runShaders(void);
+    /* Protected methods */
+    virtual void configureProgram(void);
+    virtual void deleteProgram(void);
+    virtual void configureTestSpecificObjects(void);
+    virtual void deleteTestSpecificObjects(void);
+    virtual void runShaders(void);
 
-	const char* getVertexShaderCode(void);
-	const char* getFragmentShaderCode(void);
+    const char *getVertexShaderCode(void);
+    const char *getFragmentShaderCode(void);
 
-	/* Protected variables */
-	glw::GLuint m_draw_fbo_id;
-	glw::GLuint m_vs_id;
-	glw::GLuint m_fs_id;
+    /* Protected variables */
+    glw::GLuint m_draw_fbo_id;
+    glw::GLuint m_vs_id;
+    glw::GLuint m_fs_id;
 };
 
 class TextureCubeMapArrayTextureSizeRTComputeShader : public TextureCubeMapArrayTextureSizeRTBase
 {
 public:
-	/* Public methods */
-	TextureCubeMapArrayTextureSizeRTComputeShader(Context& context, const ExtParameters& extParams, const char* name,
-												  const char* description);
+    /* Public methods */
+    TextureCubeMapArrayTextureSizeRTComputeShader(Context &context, const ExtParameters &extParams, const char *name,
+                                                  const char *description);
 
-	virtual ~TextureCubeMapArrayTextureSizeRTComputeShader(void)
-	{
-	}
+    virtual ~TextureCubeMapArrayTextureSizeRTComputeShader(void)
+    {
+    }
 
 private:
-	/* Private methods */
-	virtual void configureProgram(void);
-	virtual void deleteProgram(void);
-	virtual void configureTestSpecificObjects(void);
-	virtual void deleteTestSpecificObjects(void);
-	virtual void configureTextures(glw::GLuint width, glw::GLuint height, glw::GLuint depth, STORAGE_TYPE storType);
-	virtual void		   deleteTextures(void);
-	virtual void		   runShaders(void);
-	virtual glw::GLboolean checkResults(glw::GLuint width, glw::GLuint height, glw::GLuint depth,
-										STORAGE_TYPE storType);
-	virtual glw::GLboolean isMutableTextureTestable(void);
+    /* Private methods */
+    virtual void configureProgram(void);
+    virtual void deleteProgram(void);
+    virtual void configureTestSpecificObjects(void);
+    virtual void deleteTestSpecificObjects(void);
+    virtual void configureTextures(glw::GLuint width, glw::GLuint height, glw::GLuint depth, STORAGE_TYPE storType);
+    virtual void deleteTextures(void);
+    virtual void runShaders(void);
+    virtual glw::GLboolean checkResults(glw::GLuint width, glw::GLuint height, glw::GLuint depth,
+                                        STORAGE_TYPE storType);
+    virtual glw::GLboolean isMutableTextureTestable(void);
 
-	const char* getComputeShaderCode(void);
+    const char *getComputeShaderCode(void);
 
-	/* Private variables */
-	glw::GLuint m_cs_id;
-	glw::GLuint m_to_img_id;
-	glw::GLuint m_rt_img_id;
+    /* Private variables */
+    glw::GLuint m_cs_id;
+    glw::GLuint m_to_img_id;
+    glw::GLuint m_rt_img_id;
 };
 
-} /* glcts */
+} // namespace glcts
 
 #endif // _ESEXTCTEXTURECUBEMAPARRAYIMAGETEXTURESIZE_HPP

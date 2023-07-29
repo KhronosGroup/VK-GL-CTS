@@ -32,12 +32,12 @@ namespace dit
 class ImageCompareTests : public tcu::TestCaseGroup
 {
 public:
-					ImageCompareTests		(tcu::TestContext& testCtx);
-					~ImageCompareTests		(void);
+    ImageCompareTests(tcu::TestContext &testCtx);
+    ~ImageCompareTests(void);
 
-	void			init					(void);
+    void init(void);
 };
 
-} // dit
+} // namespace dit
 
 #endif // _DITIMAGECOMPARETESTS_HPP

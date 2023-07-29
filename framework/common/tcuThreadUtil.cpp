@@ -26,283 +26,269 @@
 #include "deClock.h"
 #include "deMemory.h"
 
-using std::vector;
 using de::SharedPtr;
+using std::vector;
 
 namespace tcu
 {
 namespace ThreadUtil
 {
 
-Event::Event (void)
-	: m_result		(RESULT_NOT_READY)
-	, m_waiterCount	(0)
-	, m_waiters		(0, 0)
+Event::Event(void) : m_result(RESULT_NOT_READY), m_waiterCount(0), m_waiters(0, 0)
 {
 }
 
-Event::~Event (void)
+Event::~Event(void)
 {
 }
 
-void Event::setResult (Result result)
+void Event::setResult(Result result)
 {
-	m_lock.lock();
-	DE_ASSERT(m_result == RESULT_NOT_READY);
-	m_result = result;
-	m_lock.unlock();
+    m_lock.lock();
+    DE_ASSERT(m_result == RESULT_NOT_READY);
+    m_result = result;
+    m_lock.unlock();
 
-	for (int i = 0; i < m_waiterCount; i++)
-		m_waiters.increment();
+    for (int i = 0; i < m_waiterCount; i++)
+        m_waiters.increment();
 }
 
-Event::Result Event::waitReady (void)
+Event::Result Event::waitReady(void)
 {
-	m_lock.lock();
+    m_lock.lock();
 
-	if (m_result == RESULT_NOT_READY)
-		m_waiterCount++;
-	else
-	{
-		m_lock.unlock();
-		return m_result;
-	}
+    if (m_result == RESULT_NOT_READY)
+        m_waiterCount++;
+    else
+    {
+        m_lock.unlock();
+        return m_result;
+    }
 
-	m_lock.unlock();
+    m_lock.unlock();
 
-	m_waiters.decrement();
+    m_waiters.decrement();
 
-	return m_result;
+    return m_result;
 }
 
-Object::Object (const char* type, SharedPtr<Event> e)
-	: m_type	(type)
-	, m_modify	(e)
-{
-}
-
-Object::~Object	(void)
+Object::Object(const char *type, SharedPtr<Event> e) : m_type(type), m_modify(e)
 {
 }
 
-void Object::read (SharedPtr<Event> event, std::vector<SharedPtr<Event> >& deps)
-{
-	// Make call depend on last modifying call
-	deps.push_back(m_modify);
-
-	// Add read dependency
-	m_reads.push_back(event);
-}
-
-void Object::modify (SharedPtr<Event> event, std::vector<SharedPtr<Event> >& deps)
-{
-	// Make call depend on all reads
-	for (int readNdx = 0; readNdx < (int)m_reads.size(); readNdx++)
-	{
-		deps.push_back(m_reads[readNdx]);
-	}
-	deps.push_back(m_modify);
-
-	// Update last modifying call
-	m_modify = event;
-
-	// Clear read dependencies of last "version" of this object
-	m_reads.clear();
-}
-
-Operation::Operation (const char* name)
-	: m_name	(name)
-	, m_event	(new Event)
+Object::~Object(void)
 {
 }
 
-Operation::~Operation (void)
+void Object::read(SharedPtr<Event> event, std::vector<SharedPtr<Event>> &deps)
+{
+    // Make call depend on last modifying call
+    deps.push_back(m_modify);
+
+    // Add read dependency
+    m_reads.push_back(event);
+}
+
+void Object::modify(SharedPtr<Event> event, std::vector<SharedPtr<Event>> &deps)
+{
+    // Make call depend on all reads
+    for (int readNdx = 0; readNdx < (int)m_reads.size(); readNdx++)
+    {
+        deps.push_back(m_reads[readNdx]);
+    }
+    deps.push_back(m_modify);
+
+    // Update last modifying call
+    m_modify = event;
+
+    // Clear read dependencies of last "version" of this object
+    m_reads.clear();
+}
+
+Operation::Operation(const char *name) : m_name(name), m_event(new Event)
 {
 }
 
-void Operation::execute (Thread& thread)
+Operation::~Operation(void)
 {
-	bool success = true;
+}
 
-	// Wait for dependencies and check that they succeeded
-	for (int depNdx = 0; depNdx < (int)m_deps.size(); depNdx++)
-	{
-		if (m_deps[depNdx]->waitReady() != Event::RESULT_OK)
-			success = false;
-	}
+void Operation::execute(Thread &thread)
+{
+    bool success = true;
 
-	// Try execute operation
-	if (success)
-	{
-		try
-		{
-			exec(thread);
-		}
-		catch (...)
-		{
-			// Got exception event failed
-			m_event->setResult(Event::RESULT_FAILED);
-			throw;
-		}
+    // Wait for dependencies and check that they succeeded
+    for (int depNdx = 0; depNdx < (int)m_deps.size(); depNdx++)
+    {
+        if (m_deps[depNdx]->waitReady() != Event::RESULT_OK)
+            success = false;
+    }
 
-		m_event->setResult(Event::RESULT_OK);
-	}
-	else
-		// Some dependencies failed
-		m_event->setResult(Event::RESULT_FAILED);
+    // Try execute operation
+    if (success)
+    {
+        try
+        {
+            exec(thread);
+        }
+        catch (...)
+        {
+            // Got exception event failed
+            m_event->setResult(Event::RESULT_FAILED);
+            throw;
+        }
 
-	// Release resources
-	m_deps.clear();
-	m_event = SharedPtr<Event>();
+        m_event->setResult(Event::RESULT_OK);
+    }
+    else
+        // Some dependencies failed
+        m_event->setResult(Event::RESULT_FAILED);
+
+    // Release resources
+    m_deps.clear();
+    m_event = SharedPtr<Event>();
 }
 
 const MessageBuilder::EndToken Message::End = MessageBuilder::EndToken();
 
-void MessageBuilder::operator<< (const EndToken&)
+void MessageBuilder::operator<<(const EndToken &)
 {
-	m_thread.pushMessage(m_stream.str());
+    m_thread.pushMessage(m_stream.str());
 }
 
-Thread::Thread (deUint32 seed)
-	: m_random	(seed)
-	, m_status	(THREADSTATUS_NOT_STARTED)
+Thread::Thread(uint32_t seed) : m_random(seed), m_status(THREADSTATUS_NOT_STARTED)
 {
 }
 
-Thread::~Thread (void)
+Thread::~Thread(void)
 {
-	for (int operationNdx = 0; operationNdx < (int)m_operations.size(); operationNdx++)
-		delete m_operations[operationNdx];
+    for (int operationNdx = 0; operationNdx < (int)m_operations.size(); operationNdx++)
+        delete m_operations[operationNdx];
 
-	m_operations.clear();
+    m_operations.clear();
 }
 
-deUint8* Thread::getDummyData (size_t size)
+uint8_t *Thread::getDummyData(size_t size)
 {
-	if (m_dummyData.size() < size)
-	{
-		m_dummyData.resize(size);
-	}
+    if (m_dummyData.size() < size)
+    {
+        m_dummyData.resize(size);
+    }
 
-	return &(m_dummyData[0]);
+    return &(m_dummyData[0]);
 }
 
-void Thread::addOperation (Operation* operation)
+void Thread::addOperation(Operation *operation)
 {
-	m_operations.push_back(operation);
+    m_operations.push_back(operation);
 }
 
-void Thread::run (void)
+void Thread::run(void)
 {
-	setStatus(THREADSTATUS_RUNNING);
-	bool initOk = false;
+    setStatus(THREADSTATUS_RUNNING);
+    bool initOk = false;
 
-	// Reserve at least two messages for each operation
-	m_messages.reserve(m_operations.size()*2);
-	try
-	{
-		init();
-		initOk = true;
-		for (int operationNdx = 0; operationNdx < (int)m_operations.size(); operationNdx++)
-			m_operations[operationNdx]->execute(*this);
+    // Reserve at least two messages for each operation
+    m_messages.reserve(m_operations.size() * 2);
+    try
+    {
+        init();
+        initOk = true;
+        for (int operationNdx = 0; operationNdx < (int)m_operations.size(); operationNdx++)
+            m_operations[operationNdx]->execute(*this);
 
-		deinit();
-		setStatus(THREADSTATUS_READY);
-	}
-	catch (const tcu::NotSupportedError& e)
-	{
-		newMessage() << "tcu::NotSupportedError '" << e.what() << "'" << Message::End;
-		deinit();
-		setStatus(initOk ? THREADSTATUS_NOT_SUPPORTED : THREADSTATUS_INIT_FAILED);
-	}
-	catch (const tcu::Exception& e)
-	{
-		newMessage() << "tcu::Exception '" << e.what() << "'" << Message::End;
-		deinit();
-		setStatus(initOk ? THREADSTATUS_FAILED : THREADSTATUS_INIT_FAILED);
-	}
-	catch (const std::exception& error)
-	{
-		newMessage() << "std::exception '" << error.what() << "'" << Message::End;
-		deinit();
-		setStatus(initOk ? THREADSTATUS_FAILED : THREADSTATUS_INIT_FAILED);
-	}
-	catch (...)
-	{
-		newMessage() << "Unkown exception" << Message::End;
-		deinit();
-		setStatus(initOk ? THREADSTATUS_FAILED : THREADSTATUS_INIT_FAILED);
-	}
+        deinit();
+        setStatus(THREADSTATUS_READY);
+    }
+    catch (const tcu::NotSupportedError &e)
+    {
+        newMessage() << "tcu::NotSupportedError '" << e.what() << "'" << Message::End;
+        deinit();
+        setStatus(initOk ? THREADSTATUS_NOT_SUPPORTED : THREADSTATUS_INIT_FAILED);
+    }
+    catch (const tcu::Exception &e)
+    {
+        newMessage() << "tcu::Exception '" << e.what() << "'" << Message::End;
+        deinit();
+        setStatus(initOk ? THREADSTATUS_FAILED : THREADSTATUS_INIT_FAILED);
+    }
+    catch (const std::exception &error)
+    {
+        newMessage() << "std::exception '" << error.what() << "'" << Message::End;
+        deinit();
+        setStatus(initOk ? THREADSTATUS_FAILED : THREADSTATUS_INIT_FAILED);
+    }
+    catch (...)
+    {
+        newMessage() << "Unkown exception" << Message::End;
+        deinit();
+        setStatus(initOk ? THREADSTATUS_FAILED : THREADSTATUS_INIT_FAILED);
+    }
 }
 
-void Thread::exec (void)
+void Thread::exec(void)
 {
-	start();
+    start();
 }
 
-void Thread::pushMessage (const std::string& str)
+void Thread::pushMessage(const std::string &str)
 {
-	de::ScopedLock lock(m_messageLock);
-	m_messages.push_back(Message(deGetMicroseconds(), str.c_str()));
+    de::ScopedLock lock(m_messageLock);
+    m_messages.push_back(Message(deGetMicroseconds(), str.c_str()));
 }
 
-int Thread::getMessageCount	 (void) const
+int Thread::getMessageCount(void) const
 {
-	de::ScopedLock lock(m_messageLock);
-	return (int)(m_messages.size());
+    de::ScopedLock lock(m_messageLock);
+    return (int)(m_messages.size());
 }
 
-Message Thread::getMessage (int index) const
+Message Thread::getMessage(int index) const
 {
-	de::ScopedLock lock(m_messageLock);
-	return m_messages[index];
+    de::ScopedLock lock(m_messageLock);
+    return m_messages[index];
 }
 
-
-DataBlock::DataBlock (SharedPtr<Event> event)
-	: Object("DataBlock", event)
+DataBlock::DataBlock(SharedPtr<Event> event) : Object("DataBlock", event)
 {
 }
 
-void DataBlock::setData (size_t size, const void* data)
+void DataBlock::setData(size_t size, const void *data)
 {
-	m_data = std::vector<deUint8>(size);
-	deMemcpy(&(m_data[0]), data, size);
+    m_data = std::vector<uint8_t>(size);
+    deMemcpy(&(m_data[0]), data, size);
 }
 
-CompareData::CompareData (SharedPtr<DataBlock> a, SharedPtr<DataBlock> b)
-	: Operation	("CompareData")
-	, m_a		(a)
-	, m_b		(b)
+CompareData::CompareData(SharedPtr<DataBlock> a, SharedPtr<DataBlock> b) : Operation("CompareData"), m_a(a), m_b(b)
 {
-	readObject(SharedPtr<Object>(a));
-	readObject(SharedPtr<Object>(b));
+    readObject(SharedPtr<Object>(a));
+    readObject(SharedPtr<Object>(b));
 }
 
-void CompareData::exec (Thread& thread)
+void CompareData::exec(Thread &thread)
 {
-	bool result = true;
-	DE_ASSERT(m_a->getSize() == m_b->getSize());
+    bool result = true;
+    DE_ASSERT(m_a->getSize() == m_b->getSize());
 
-	thread.newMessage() << "Begin -- CompareData" << Message::End;
+    thread.newMessage() << "Begin -- CompareData" << Message::End;
 
-	for (int byteNdx = 0; byteNdx < (int)m_a->getSize(); byteNdx++)
-	{
-		if (m_a->getData()[byteNdx] != m_b->getData()[byteNdx])
-		{
-			result = false;
-			thread.newMessage() << "CompareData failed at offset :" << byteNdx << Message::End;
-			break;
-		}
-	}
+    for (int byteNdx = 0; byteNdx < (int)m_a->getSize(); byteNdx++)
+    {
+        if (m_a->getData()[byteNdx] != m_b->getData()[byteNdx])
+        {
+            result = false;
+            thread.newMessage() << "CompareData failed at offset :" << byteNdx << Message::End;
+            break;
+        }
+    }
 
-	if (result)
-		thread.newMessage() << "CompareData passed" << Message::End;
-	else
-		TCU_FAIL("Data comparision failed");
+    if (result)
+        thread.newMessage() << "CompareData passed" << Message::End;
+    else
+        TCU_FAIL("Data comparision failed");
 
-	thread.newMessage() << "End -- CompareData" << Message::End;
+    thread.newMessage() << "End -- CompareData" << Message::End;
 }
 
-} // ThreadUtil
-} // tcu
+} // namespace ThreadUtil
+} // namespace tcu

@@ -8461,11 +8461,11 @@ static const VkFormatFeatureFlagBits2KHR VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHO
 static const VkFormatFeatureFlagBits2KHR VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR = 0x200000000ULL;
 
 typedef struct VkFormatPropertiesExtendedKHR {
-	VkStructureType             sType;
-	void*                       pNext;
-	VkFormatFeatureFlags2KHR    linearTilingFeatures;
-	VkFormatFeatureFlags2KHR    optimalTilingFeatures;
-	VkFormatFeatureFlags2KHR    bufferFeatures;
+    VkStructureType             sType;
+    void*                       pNext;
+    VkFormatFeatureFlags2KHR    linearTilingFeatures;
+    VkFormatFeatureFlags2KHR    optimalTilingFeatures;
+    VkFormatFeatureFlags2KHR    bufferFeatures;
 } VkFormatPropertiesExtendedKHR;
 
 #define VK_KHR_maintenance4 1

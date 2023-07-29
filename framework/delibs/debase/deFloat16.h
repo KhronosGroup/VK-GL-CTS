@@ -28,66 +28,66 @@
 
 DE_BEGIN_EXTERN_C
 
-typedef		deUint16			deFloat16;
+typedef uint16_t deFloat16;
 
 #if defined(DE_DEPRECATED_TYPES)
-typedef		deFloat16			DEfloat16;
+typedef deFloat16 DEfloat16;
 #endif
 
 /*--------------------------------------------------------------------*//*!
  * \brief Convert 32-bit floating point number to 16 bit.
- * \param val32	Input value.
+ * \param val32    Input value.
  * \return Converted 16-bit floating-point value.
  *//*--------------------------------------------------------------------*/
-deFloat16	deFloat32To16				(float val32);
-deFloat16	deFloat32To16Round			(float val32, deRoundingMode mode);
-void		deFloat16_selfTest			(void);
+deFloat16 deFloat32To16(float val32);
+deFloat16 deFloat32To16Round(float val32, deRoundingMode mode);
+void deFloat16_selfTest(void);
 
-deFloat16	deFloat64To16				(double val64);
-deFloat16	deFloat64To16Round			(double val64, deRoundingMode mode);
+deFloat16 deFloat64To16(double val64);
+deFloat16 deFloat64To16Round(double val64, deRoundingMode mode);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Convert 16-bit floating point number to 32 bit.
- * \param val16	Input value.
+ * \param val16    Input value.
  * \return Converted 32-bit floating-point value.
  *//*--------------------------------------------------------------------*/
-float		deFloat16To32		(deFloat16 val16);
+float deFloat16To32(deFloat16 val16);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Convert 16-bit floating point number to 64 bit.
- * \param val16	Input value.
+ * \param val16    Input value.
  * \return Converted 64-bit floating-point value.
  *//*--------------------------------------------------------------------*/
-double		deFloat16To64		(deFloat16 val16);
+double deFloat16To64(deFloat16 val16);
 
-DE_INLINE deBool deHalfIsPositiveZero(deFloat16 x)
+DE_INLINE bool deHalfIsPositiveZero(deFloat16 x)
 {
-	return deFloat16To32(x) == 0 && (x >> 15) == 0;
+    return deFloat16To32(x) == 0 && (x >> 15) == 0;
 }
 
-DE_INLINE deBool deHalfIsNegativeZero(deFloat16 x)
+DE_INLINE bool deHalfIsNegativeZero(deFloat16 x)
 {
-	return deFloat16To32(x) == 0 && (x >> 15) != 0;
+    return deFloat16To32(x) == 0 && (x >> 15) != 0;
 }
 
 static const deFloat16 deFloat16SignalingNaN = 0x7c01;
-static const deFloat16 deFloat16QuietNaN = 0x7e01;
+static const deFloat16 deFloat16QuietNaN     = 0x7e01;
 
-DE_INLINE deBool deHalfIsIEEENaN(deFloat16 x)
+DE_INLINE bool deHalfIsIEEENaN(deFloat16 x)
 {
-	deUint16 e = (deUint16)( (x & 0x7c00u) >> 10 );
-	deUint16 m = (x & 0x03ffu);
-	return e == 0x1f && m != 0;
+    uint16_t e = (uint16_t)((x & 0x7c00u) >> 10);
+    uint16_t m = (x & 0x03ffu);
+    return e == 0x1f && m != 0;
 }
 
-DE_INLINE deBool deHalfIsSignalingNaN(deFloat16 x)
+DE_INLINE bool deHalfIsSignalingNaN(deFloat16 x)
 {
-	return deHalfIsIEEENaN(x) && (x & (1u << 9)) == 0;
+    return deHalfIsIEEENaN(x) && (x & (1u << 9)) == 0;
 }
 
-DE_INLINE deBool deHalfIsQuietNaN(deFloat16 x)
+DE_INLINE bool deHalfIsQuietNaN(deFloat16 x)
 {
-	return deHalfIsIEEENaN(x) && (x & (1u << 9)) != 0;
+    return deHalfIsIEEENaN(x) && (x & (1u << 9)) != 0;
 }
 
 DE_END_EXTERN_C

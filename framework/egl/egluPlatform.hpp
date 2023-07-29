@@ -31,7 +31,7 @@ namespace tcu
 {
 class CommandLine;
 class FunctionLibrary;
-}
+} // namespace tcu
 
 namespace eglu
 {
@@ -64,48 +64,51 @@ namespace eglu
 class Platform
 {
 public:
-										Platform						(void);
-	// Code outside porting layer will never attempt to delete eglu::Platform
-	virtual								~Platform						(void);
+    Platform(void);
+    // Code outside porting layer will never attempt to delete eglu::Platform
+    virtual ~Platform(void);
 
-	const NativeDisplayFactoryRegistry&	getNativeDisplayFactoryRegistry	(void) const { return m_nativeDisplayFactoryRegistry;	}
+    const NativeDisplayFactoryRegistry &getNativeDisplayFactoryRegistry(void) const
+    {
+        return m_nativeDisplayFactoryRegistry;
+    }
 
-	/*--------------------------------------------------------------------*//*!
-	 * \brief Get fallback GL library
-	 *
-	 * EGL tests use eglGetProcAddress() to load API entry points. However,
-	 * if the platform does not support EGL_KHR_get_all_proc_addresses extension,
-	 * core API entry points must be loaded using alternative method, namely
-	 * this default GL function library.
-	 *
-	 * You may implement platform-specific way for loading GL entry points
-	 * by implementing this method.
-	 *
-	 * Default implementation provides entry points for ES2 and ES3 APIs
-	 * if binary is directly linked against GLES library.
-	 *
-	 * \param contextType	GL context type
-	 * \param cmdLine		Reserved for future use
-	 *//*--------------------------------------------------------------------*/
-	virtual tcu::FunctionLibrary*		createDefaultGLFunctionLibrary	(glu::ApiType apiType, const tcu::CommandLine& cmdLine) const;
+    /*--------------------------------------------------------------------*//*!
+     * \brief Get fallback GL library
+     *
+     * EGL tests use eglGetProcAddress() to load API entry points. However,
+     * if the platform does not support EGL_KHR_get_all_proc_addresses extension,
+     * core API entry points must be loaded using alternative method, namely
+     * this default GL function library.
+     *
+     * You may implement platform-specific way for loading GL entry points
+     * by implementing this method.
+     *
+     * Default implementation provides entry points for ES2 and ES3 APIs
+     * if binary is directly linked against GLES library.
+     *
+     * \param contextType    GL context type
+     * \param cmdLine        Reserved for future use
+     *//*--------------------------------------------------------------------*/
+    virtual tcu::FunctionLibrary *createDefaultGLFunctionLibrary(glu::ApiType apiType,
+                                                                 const tcu::CommandLine &cmdLine) const;
 
 protected:
-
-	/*--------------------------------------------------------------------*//*!
-	 * \brief Native display factory registry
-	 *
-	 * Native display factory registry holds list of eglu::NativeDisplayFactory
-	 * objects that can create eglu::NativeDisplay instances. You should
-	 * implement eglu::NativeDisplay and eglu::NativeDisplayFactory and add
-	 * instance of that factory implementation to this registry.
-	 *
-	 * --deqp-egl-display-type command line argument is used to select the
-	 * display factory to use. If no type is given in command line, first entry
-	 * is used.
-	 *//*--------------------------------------------------------------------*/
-	NativeDisplayFactoryRegistry		m_nativeDisplayFactoryRegistry;
+    /*--------------------------------------------------------------------*//*!
+     * \brief Native display factory registry
+     *
+     * Native display factory registry holds list of eglu::NativeDisplayFactory
+     * objects that can create eglu::NativeDisplay instances. You should
+     * implement eglu::NativeDisplay and eglu::NativeDisplayFactory and add
+     * instance of that factory implementation to this registry.
+     *
+     * --deqp-egl-display-type command line argument is used to select the
+     * display factory to use. If no type is given in command line, first entry
+     * is used.
+     *//*--------------------------------------------------------------------*/
+    NativeDisplayFactoryRegistry m_nativeDisplayFactoryRegistry;
 };
 
-} // eglu
+} // namespace eglu
 
 #endif // _EGLUPLATFORM_HPP

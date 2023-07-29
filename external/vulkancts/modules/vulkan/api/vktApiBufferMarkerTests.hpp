@@ -31,9 +31,9 @@ namespace vkt
 namespace api
 {
 
-extern tcu::TestCaseGroup* createBufferMarkerTests (tcu::TestContext& testCtx);
+extern tcu::TestCaseGroup *createBufferMarkerTests(tcu::TestContext &testCtx);
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPIBUFFERMARKERTESTS_HPP

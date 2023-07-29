@@ -32,10 +32,10 @@ namespace egl
 namespace Image
 {
 
-de::MovePtr<ImageSource> createAndroidNativeImageSource		(glw::GLenum format, deUint32 numLayers);
+de::MovePtr<ImageSource> createAndroidNativeImageSource(glw::GLenum format, uint32_t numLayers);
 
-} // Image
-} // egl
-} // deqp
+} // namespace Image
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLANDROIDUTIL_HPP

@@ -44,9 +44,8 @@ extern "C"
 {
 
 #include "glwTypes.inl"
-
 }
 
-} // glw
+} // namespace glw
 
 #endif // _GLWDEFS_HPP

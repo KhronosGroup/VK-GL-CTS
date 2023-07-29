@@ -31,9 +31,9 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMINSTRUCTIONTESTS_HPP

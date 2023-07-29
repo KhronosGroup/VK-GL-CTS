@@ -35,143 +35,143 @@
 #include <iostream>
 #include <stdexcept>
 
-using std::vector;
-using std::string;
-using std::set;
 using std::map;
+using std::set;
+using std::string;
+using std::vector;
 
-void writeSampleList (const char* casePath, int listNdx, const xe::ri::SampleList& sampleList)
+void writeSampleList(const char *casePath, int listNdx, const xe::ri::SampleList &sampleList)
 {
-	const string	filename	= string(casePath) + "." + de::toString(listNdx) + ".csv";
-	std::ofstream	out			(filename.c_str(), std::ios_base::binary);
+    const string filename = string(casePath) + "." + de::toString(listNdx) + ".csv";
+    std::ofstream out(filename.c_str(), std::ios_base::binary);
 
-	if (!out.good())
-		throw std::runtime_error("Failed to open " + filename);
+    if (!out.good())
+        throw std::runtime_error("Failed to open " + filename);
 
-	// Header
-	for (int ndx = 0; ndx < sampleList.sampleInfo.valueInfos.getNumItems(); ndx++)
-	{
-		if (ndx != 0)
-			out << ",";
-		out << static_cast<const xe::ri::ValueInfo&>(sampleList.sampleInfo.valueInfos.getItem(ndx)).name;
-	}
-	out << "\n";
+    // Header
+    for (int ndx = 0; ndx < sampleList.sampleInfo.valueInfos.getNumItems(); ndx++)
+    {
+        if (ndx != 0)
+            out << ",";
+        out << static_cast<const xe::ri::ValueInfo &>(sampleList.sampleInfo.valueInfos.getItem(ndx)).name;
+    }
+    out << "\n";
 
-	// Samples
-	for (int sampleNdx = 0; sampleNdx < sampleList.samples.getNumItems(); sampleNdx++)
-	{
-		const xe::ri::Sample&	sample	= static_cast<const xe::ri::Sample&>(sampleList.samples.getItem(sampleNdx));
+    // Samples
+    for (int sampleNdx = 0; sampleNdx < sampleList.samples.getNumItems(); sampleNdx++)
+    {
+        const xe::ri::Sample &sample = static_cast<const xe::ri::Sample &>(sampleList.samples.getItem(sampleNdx));
 
-		for (int valNdx = 0; valNdx < sample.values.getNumItems(); valNdx++)
-		{
-			const xe::ri::SampleValue&	value	= static_cast<const xe::ri::SampleValue&>(sample.values.getItem(valNdx));
+        for (int valNdx = 0; valNdx < sample.values.getNumItems(); valNdx++)
+        {
+            const xe::ri::SampleValue &value = static_cast<const xe::ri::SampleValue &>(sample.values.getItem(valNdx));
 
-			if (valNdx != 0)
-				out << ",";
+            if (valNdx != 0)
+                out << ",";
 
-			out << value.value;
-		}
-		out << "\n";
-	}
+            out << value.value;
+        }
+        out << "\n";
+    }
 }
 
-void extractSampleLists (const char* casePath, int* listNdx, const xe::ri::List& items)
+void extractSampleLists(const char *casePath, int *listNdx, const xe::ri::List &items)
 {
-	for (int itemNdx = 0; itemNdx < items.getNumItems(); itemNdx++)
-	{
-		const xe::ri::Item& child = items.getItem(itemNdx);
+    for (int itemNdx = 0; itemNdx < items.getNumItems(); itemNdx++)
+    {
+        const xe::ri::Item &child = items.getItem(itemNdx);
 
-		if (child.getType() == xe::ri::TYPE_SECTION)
-			extractSampleLists(casePath, listNdx, static_cast<const xe::ri::Section&>(child).items);
-		else if (child.getType() == xe::ri::TYPE_SAMPLELIST)
-		{
-			writeSampleList(casePath, *listNdx, static_cast<const xe::ri::SampleList&>(child));
-			*listNdx += 1;
-		}
-	}
+        if (child.getType() == xe::ri::TYPE_SECTION)
+            extractSampleLists(casePath, listNdx, static_cast<const xe::ri::Section &>(child).items);
+        else if (child.getType() == xe::ri::TYPE_SAMPLELIST)
+        {
+            writeSampleList(casePath, *listNdx, static_cast<const xe::ri::SampleList &>(child));
+            *listNdx += 1;
+        }
+    }
 }
 
-void extractSampleLists (const xe::TestCaseResult& result)
+void extractSampleLists(const xe::TestCaseResult &result)
 {
-	int listNdx = 0;
-	extractSampleLists(result.casePath.c_str(), &listNdx, result.resultItems);
+    int listNdx = 0;
+    extractSampleLists(result.casePath.c_str(), &listNdx, result.resultItems);
 }
 
 class SampleListParser : public xe::TestLogHandler
 {
 public:
-	SampleListParser (void)
-	{
-	}
+    SampleListParser(void)
+    {
+    }
 
-	void setSessionInfo (const xe::SessionInfo&)
-	{
-		// Ignored.
-	}
+    void setSessionInfo(const xe::SessionInfo &)
+    {
+        // Ignored.
+    }
 
-	xe::TestCaseResultPtr startTestCaseResult (const char* casePath)
-	{
-		return xe::TestCaseResultPtr(new xe::TestCaseResultData(casePath));
-	}
+    xe::TestCaseResultPtr startTestCaseResult(const char *casePath)
+    {
+        return xe::TestCaseResultPtr(new xe::TestCaseResultData(casePath));
+    }
 
-	void testCaseResultUpdated (const xe::TestCaseResultPtr&)
-	{
-		// Ignored.
-	}
+    void testCaseResultUpdated(const xe::TestCaseResultPtr &)
+    {
+        // Ignored.
+    }
 
-	void testCaseResultComplete (const xe::TestCaseResultPtr& caseData)
-	{
-		xe::TestCaseResult result;
-		xe::parseTestCaseResultFromData(&m_testResultParser, &result, *caseData.get());
-		extractSampleLists(result);
-	}
+    void testCaseResultComplete(const xe::TestCaseResultPtr &caseData)
+    {
+        xe::TestCaseResult result;
+        xe::parseTestCaseResultFromData(&m_testResultParser, &result, *caseData.get());
+        extractSampleLists(result);
+    }
 
 private:
-	xe::TestResultParser	m_testResultParser;
+    xe::TestResultParser m_testResultParser;
 };
 
-static void processLogFile (const char* filename)
+static void processLogFile(const char *filename)
 {
-	std::ifstream		in				(filename, std::ifstream::binary|std::ifstream::in);
-	SampleListParser	resultHandler;
-	xe::TestLogParser	parser			(&resultHandler);
-	deUint8				buf				[1024];
-	int					numRead			= 0;
+    std::ifstream in(filename, std::ifstream::binary | std::ifstream::in);
+    SampleListParser resultHandler;
+    xe::TestLogParser parser(&resultHandler);
+    uint8_t buf[1024];
+    int numRead = 0;
 
-	if (!in.good())
-		throw std::runtime_error(string("Failed to open '") + filename + "'");
+    if (!in.good())
+        throw std::runtime_error(string("Failed to open '") + filename + "'");
 
-	for (;;)
-	{
-		in.read((char*)&buf[0], DE_LENGTH_OF_ARRAY(buf));
-		numRead = (int)in.gcount();
+    for (;;)
+    {
+        in.read((char *)&buf[0], DE_LENGTH_OF_ARRAY(buf));
+        numRead = (int)in.gcount();
 
-		if (numRead <= 0)
-			break;
+        if (numRead <= 0)
+            break;
 
-		parser.parse(&buf[0], numRead);
-	}
+        parser.parse(&buf[0], numRead);
+    }
 
-	in.close();
+    in.close();
 }
 
-int main (int argc, const char* const* argv)
+int main(int argc, const char *const *argv)
 {
-	if (argc != 2)
-	{
-		printf("%s: [filename]\n", de::FilePath(argv[0]).getBaseName().c_str());
-		return -1;
-	}
+    if (argc != 2)
+    {
+        printf("%s: [filename]\n", de::FilePath(argv[0]).getBaseName().c_str());
+        return -1;
+    }
 
-	try
-	{
-		processLogFile(argv[1]);
-	}
-	catch (const std::exception& e)
-	{
-		printf("FATAL ERROR: %s\n", e.what());
-		return -1;
-	}
+    try
+    {
+        processLogFile(argv[1]);
+    }
+    catch (const std::exception &e)
+    {
+        printf("FATAL ERROR: %s\n", e.what());
+        return -1;
+    }
 
-	return 0;
+    return 0;
 }

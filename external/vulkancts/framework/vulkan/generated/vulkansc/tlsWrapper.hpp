@@ -27,22 +27,29 @@
 #include <thread>
 
 template <class T>
-class TLSContainer {
-    struct item {
+class TLSContainer
+{
+    struct item
+    {
         std::thread::id owner;
-        T * p;
+        T *p;
     };
     std::mutex mutex;
     std::vector<item> all;
+
 public:
-    T * find(bool remove) {
-        T * r = nullptr;
+    T *find(bool remove)
+    {
+        T *r                = nullptr;
         std::thread::id tid = std::this_thread::get_id();
         mutex.lock();
-        for(uint32_t i=0; i < all.size(); i++) {
-            if (all[i].owner == tid) {
+        for (uint32_t i = 0; i < all.size(); i++)
+        {
+            if (all[i].owner == tid)
+            {
                 r = all[i].p;
-                if (remove) {
+                if (remove)
+                {
                     all.erase(all.begin() + i);
                 }
                 break;
@@ -52,16 +59,21 @@ public:
         return r;
     }
 
-    void add(T * p) {
+    void add(T *p)
+    {
         item i;
         i.owner = std::this_thread::get_id();
-        i.p = p;
+        i.p     = p;
         mutex.lock();
         all.push_back(i);
         mutex.unlock();
     }
-    TLSContainer() {}
-    ~TLSContainer() {}
+    TLSContainer()
+    {
+    }
+    ~TLSContainer()
+    {
+    }
 
     static TLSContainer<T> instance;
 };
@@ -70,16 +82,22 @@ template <class T>
 class TLSWrapper
 {
 public:
-    TLSWrapper() {}
-    ~TLSWrapper() {
-        T * p = TLSContainer<T>::instance.find(true);
-        if (p) {
+    TLSWrapper()
+    {
+    }
+    ~TLSWrapper()
+    {
+        T *p = TLSContainer<T>::instance.find(true);
+        if (p)
+        {
             delete p;
         }
     }
-    T & attach() {
-        T * p = TLSContainer<T>::instance.find(false);
-        if (!p ){
+    T &attach()
+    {
+        T *p = TLSContainer<T>::instance.find(false);
+        if (!p)
+        {
             p = new T();
             TLSContainer<T>::instance.add(p);
         }
@@ -88,8 +106,10 @@ public:
     static thread_local TLSWrapper<T> instance;
 };
 
-#define TLS_INSTANCE()													\
-	template<class T> TLSContainer<T> TLSContainer<T>::instance;		\
-	template<class T> thread_local TLSWrapper<T> TLSWrapper<T>::instance
+#define TLS_INSTANCE()                         \
+    template <class T>                         \
+    TLSContainer<T> TLSContainer<T>::instance; \
+    template <class T>                         \
+    thread_local TLSWrapper<T> TLSWrapper<T>::instance
 
 #endif // _TLSWRAPPER_HPP

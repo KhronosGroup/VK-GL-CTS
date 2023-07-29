@@ -41,99 +41,93 @@ namespace gles2
 namespace Functional
 {
 
-StringQueryTests::StringQueryTests (Context& context)
-	: TestCaseGroup (context, "string", "String Query tests")
+StringQueryTests::StringQueryTests(Context &context) : TestCaseGroup(context, "string", "String Query tests")
 {
 }
 
-StringQueryTests::~StringQueryTests (void)
+StringQueryTests::~StringQueryTests(void)
 {
 }
 
-void StringQueryTests::init (void)
+void StringQueryTests::init(void)
 {
-	using tcu::TestLog;
+    using tcu::TestLog;
 
-	ES2F_ADD_API_CASE(renderer, "RENDERER",
-	{
-		const GLubyte* string = glGetString(GL_RENDERER);
-		if (string == NULL)
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid string");
-	});
-	ES2F_ADD_API_CASE(vendor, "VENDOR",
-	{
-		const GLubyte* string = glGetString(GL_VENDOR);
-		if (string == NULL)
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid string");
-	});
-	ES2F_ADD_API_CASE(version, "VERSION",
-	{
-		const char* string				= (const char*)glGetString(GL_VERSION);
-		const char	referenceString[]	= "OpenGL ES ";
+    ES2F_ADD_API_CASE(renderer, "RENDERER", {
+        const GLubyte *string = glGetString(GL_RENDERER);
+        if (string == NULL)
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid string");
+    });
+    ES2F_ADD_API_CASE(vendor, "VENDOR", {
+        const GLubyte *string = glGetString(GL_VENDOR);
+        if (string == NULL)
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid string");
+    });
+    ES2F_ADD_API_CASE(version, "VERSION", {
+        const char *string           = (const char *)glGetString(GL_VERSION);
+        const char referenceString[] = "OpenGL ES ";
 
-		if (string == NULL)
-			TCU_FAIL("Got invalid string");
+        if (string == NULL)
+            TCU_FAIL("Got invalid string");
 
-		if (!deStringBeginsWith(string, referenceString))
-			TCU_FAIL("Got invalid string prefix");
+        if (!deStringBeginsWith(string, referenceString))
+            TCU_FAIL("Got invalid string prefix");
 
-		{
-			std::string tmpString;
-			char		versionDelimiter;
-			int			glMajor				= 0;
-			int			glMinor				= 0;
+        {
+            std::string tmpString;
+            char versionDelimiter;
+            int glMajor = 0;
+            int glMinor = 0;
 
-			std::istringstream versionStream(string);
-			versionStream >> tmpString;			// OpenGL
-			versionStream >> tmpString;			// ES
-			versionStream >> glMajor;			// x
-			versionStream >> std::noskipws;
-			versionStream >> versionDelimiter;	// .
-			versionStream >> glMinor;			// x
+            std::istringstream versionStream(string);
+            versionStream >> tmpString; // OpenGL
+            versionStream >> tmpString; // ES
+            versionStream >> glMajor;   // x
+            versionStream >> std::noskipws;
+            versionStream >> versionDelimiter; // .
+            versionStream >> glMinor;          // x
 
-			if (!versionStream)
-				TCU_FAIL("Got invalid string format");
-		}
-	});
-	ES2F_ADD_API_CASE(shading_language_version, "SHADING_LANGUAGE_VERSION",
-	{
-		const char* string				= (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
-		const char	referenceString[]	= "OpenGL ES GLSL ES ";
+            if (!versionStream)
+                TCU_FAIL("Got invalid string format");
+        }
+    });
+    ES2F_ADD_API_CASE(shading_language_version, "SHADING_LANGUAGE_VERSION", {
+        const char *string           = (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION);
+        const char referenceString[] = "OpenGL ES GLSL ES ";
 
-		if (string == NULL)
-			TCU_FAIL("Got invalid string");
+        if (string == NULL)
+            TCU_FAIL("Got invalid string");
 
-		if (!deStringBeginsWith(string, referenceString))
-			TCU_FAIL("Got invalid string prefix");
+        if (!deStringBeginsWith(string, referenceString))
+            TCU_FAIL("Got invalid string prefix");
 
-		{
-			std::string tmpString;
-			char		versionDelimiter;
-			int			glslMajor			= 0;
-			int			glslMinor			= 0;
+        {
+            std::string tmpString;
+            char versionDelimiter;
+            int glslMajor = 0;
+            int glslMinor = 0;
 
-			std::istringstream versionStream(string);
-			versionStream >> tmpString;			// OpenGL
-			versionStream >> tmpString;			// ES
-			versionStream >> tmpString;			// GLSL
-			versionStream >> tmpString;			// ES
-			versionStream >> glslMajor;			// x
-			versionStream >> std::noskipws;
-			versionStream >> versionDelimiter;	// .
-			versionStream >> glslMinor;			// x
+            std::istringstream versionStream(string);
+            versionStream >> tmpString; // OpenGL
+            versionStream >> tmpString; // ES
+            versionStream >> tmpString; // GLSL
+            versionStream >> tmpString; // ES
+            versionStream >> glslMajor; // x
+            versionStream >> std::noskipws;
+            versionStream >> versionDelimiter; // .
+            versionStream >> glslMinor;        // x
 
-			if (!versionStream)
-				TCU_FAIL("Got invalid string format");
-		}
-	});
-	ES2F_ADD_API_CASE(extensions, "EXTENSIONS",
-	{
-		const char* extensions_cstring = (const char*)glGetString(GL_EXTENSIONS);
-		if (extensions_cstring == NULL)
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid string");
-	});
+            if (!versionStream)
+                TCU_FAIL("Got invalid string format");
+        }
+    });
+    ES2F_ADD_API_CASE(extensions, "EXTENSIONS", {
+        const char *extensions_cstring = (const char *)glGetString(GL_EXTENSIONS);
+        if (extensions_cstring == NULL)
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid string");
+    });
 }
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp

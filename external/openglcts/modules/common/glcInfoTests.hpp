@@ -33,12 +33,12 @@ namespace deqp
 class InfoTests : public TestCaseGroup
 {
 public:
-	InfoTests(Context& context);
-	~InfoTests(void);
+    InfoTests(Context &context);
+    ~InfoTests(void);
 
-	void init(void);
+    void init(void);
 };
 
-} // deqp
+} // namespace deqp
 
 #endif // _GLCINFOTESTS_HPP

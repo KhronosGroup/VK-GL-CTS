@@ -28,17 +28,16 @@
 namespace de
 {
 
-ThreadLocal::ThreadLocal (void)
-	: m_var(deThreadLocal_create())
+ThreadLocal::ThreadLocal(void) : m_var(deThreadLocal_create())
 {
-	if (m_var == 0)
-		throw std::bad_alloc();
+    if (m_var == 0)
+        throw std::bad_alloc();
 }
 
-ThreadLocal::~ThreadLocal (void)
+ThreadLocal::~ThreadLocal(void)
 {
-	if (m_var)
-		deThreadLocal_destroy(m_var);
+    if (m_var)
+        deThreadLocal_destroy(m_var);
 }
 
-} // de
+} // namespace de

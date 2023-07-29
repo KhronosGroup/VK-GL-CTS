@@ -32,16 +32,16 @@ namespace gl4cts
 class ShaderImageLoadStoreTests : public deqp::TestCaseGroup
 {
 public:
-	ShaderImageLoadStoreTests(deqp::Context& context);
-	~ShaderImageLoadStoreTests(void);
+    ShaderImageLoadStoreTests(deqp::Context &context);
+    ~ShaderImageLoadStoreTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	ShaderImageLoadStoreTests(const ShaderImageLoadStoreTests& other);
-	ShaderImageLoadStoreTests& operator=(const ShaderImageLoadStoreTests& other);
+    ShaderImageLoadStoreTests(const ShaderImageLoadStoreTests &other);
+    ShaderImageLoadStoreTests &operator=(const ShaderImageLoadStoreTests &other);
 };
 
-} // gl4cts
+} // namespace gl4cts
 
 #endif // _GL4CSHADERIMAGELOADSTORETESTS_HPP

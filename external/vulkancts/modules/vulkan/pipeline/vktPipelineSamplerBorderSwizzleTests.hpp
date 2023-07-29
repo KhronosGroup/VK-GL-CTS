@@ -30,10 +30,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createSamplerBorderSwizzleTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSamplerBorderSwizzleTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
-
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINESAMPLERBORDERSWIZZLETESTS_HPP

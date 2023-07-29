@@ -30,87 +30,86 @@ namespace eglu
 
 using namespace eglw;
 
-UniqueDisplay::UniqueDisplay (const Library& egl, EGLDisplay display)
-	: m_egl		(egl)
-	, m_display	(display)
+UniqueDisplay::UniqueDisplay(const Library &egl, EGLDisplay display) : m_egl(egl), m_display(display)
 {
 }
 
-UniqueDisplay::~UniqueDisplay (void)
+UniqueDisplay::~UniqueDisplay(void)
 {
-	if (m_display != EGL_NO_DISPLAY)
-		m_egl.terminate(m_display);
+    if (m_display != EGL_NO_DISPLAY)
+        m_egl.terminate(m_display);
 }
 
-UniqueDisplay::operator bool (void) const
+UniqueDisplay::operator bool(void) const
 {
-	return m_display != EGL_NO_DISPLAY;
+    return m_display != EGL_NO_DISPLAY;
 }
 
-UniqueSurface::UniqueSurface (const Library& egl, EGLDisplay display, EGLSurface surface)
-	: m_egl		(egl)
-	, m_display	(display)
-	, m_surface	(surface)
-{
-}
-
-UniqueSurface::~UniqueSurface (void)
-{
-	if (m_surface != EGL_NO_SURFACE)
-		m_egl.destroySurface(m_display, m_surface);
-}
-
-UniqueSurface::operator bool (void) const
-{
-	return m_surface != EGL_NO_SURFACE;
-}
-
-UniqueContext::UniqueContext (const Library& egl, EGLDisplay display, EGLContext context)
-	: m_egl		(egl)
-	, m_display	(display)
-	, m_context	(context)
+UniqueSurface::UniqueSurface(const Library &egl, EGLDisplay display, EGLSurface surface)
+    : m_egl(egl)
+    , m_display(display)
+    , m_surface(surface)
 {
 }
 
-UniqueContext::~UniqueContext (void)
+UniqueSurface::~UniqueSurface(void)
 {
-	if (m_context != EGL_NO_CONTEXT)
-		m_egl.destroyContext(m_display, m_context);
+    if (m_surface != EGL_NO_SURFACE)
+        m_egl.destroySurface(m_display, m_surface);
 }
 
-UniqueContext::operator bool (void) const
+UniqueSurface::operator bool(void) const
 {
-	return m_context != EGL_NO_CONTEXT;
+    return m_surface != EGL_NO_SURFACE;
 }
 
-ScopedCurrentContext::ScopedCurrentContext (const Library& egl, EGLDisplay display, EGLSurface draw, EGLSurface read, EGLContext context)
-	: m_egl		(egl)
-	, m_display (display)
-{
-	EGLU_CHECK_CALL(m_egl, makeCurrent(display, draw, read, context));
-}
-
-ScopedCurrentContext::~ScopedCurrentContext (void)
-{
-	m_egl.makeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-}
-
-UniqueImage::UniqueImage (const Library& egl, EGLDisplay display, EGLImage image)
-	: m_egl		(egl)
-	, m_display	(display)
-	, m_image	(image)
+UniqueContext::UniqueContext(const Library &egl, EGLDisplay display, EGLContext context)
+    : m_egl(egl)
+    , m_display(display)
+    , m_context(context)
 {
 }
 
-UniqueImage::~UniqueImage (void)
+UniqueContext::~UniqueContext(void)
 {
-	if (m_image != EGL_NO_IMAGE)
-		m_egl.destroyImageKHR(m_display, m_image);
+    if (m_context != EGL_NO_CONTEXT)
+        m_egl.destroyContext(m_display, m_context);
 }
 
-UniqueImage::operator bool (void) const
+UniqueContext::operator bool(void) const
 {
-	return m_image != EGL_NO_IMAGE;
+    return m_context != EGL_NO_CONTEXT;
 }
 
-} // eglu
+ScopedCurrentContext::ScopedCurrentContext(const Library &egl, EGLDisplay display, EGLSurface draw, EGLSurface read,
+                                           EGLContext context)
+    : m_egl(egl)
+    , m_display(display)
+{
+    EGLU_CHECK_CALL(m_egl, makeCurrent(display, draw, read, context));
+}
+
+ScopedCurrentContext::~ScopedCurrentContext(void)
+{
+    m_egl.makeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+}
+
+UniqueImage::UniqueImage(const Library &egl, EGLDisplay display, EGLImage image)
+    : m_egl(egl)
+    , m_display(display)
+    , m_image(image)
+{
+}
+
+UniqueImage::~UniqueImage(void)
+{
+    if (m_image != EGL_NO_IMAGE)
+        m_egl.destroyImageKHR(m_display, m_image);
+}
+
+UniqueImage::operator bool(void) const
+{
+    return m_image != EGL_NO_IMAGE;
+}
+
+} // namespace eglu

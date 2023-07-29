@@ -33,76 +33,76 @@
 
 typedef struct NamedSemaphore_s
 {
-	sem_t*	semaphore;
+    sem_t *semaphore;
 } NamedSemaphore;
 
-static void NamedSemaphore_getName (const NamedSemaphore* sem, char* buf, int bufSize)
+static void NamedSemaphore_getName(const NamedSemaphore *sem, char *buf, int bufSize)
 {
-	deSprintf(buf, bufSize, "/desem-%d-%p", getpid(), (void*)sem);
+    deSprintf(buf, bufSize, "/desem-%d-%p", getpid(), (void *)sem);
 }
 
-DE_STATIC_ASSERT(sizeof(deSemaphore) >= sizeof(NamedSemaphore*));
+DE_STATIC_ASSERT(sizeof(deSemaphore) >= sizeof(NamedSemaphore *));
 
-deSemaphore deSemaphore_create (int initialValue, const deSemaphoreAttributes* attributes)
+deSemaphore deSemaphore_create(int initialValue, const deSemaphoreAttributes *attributes)
 {
-	NamedSemaphore*	sem		= (NamedSemaphore*)deCalloc(sizeof(NamedSemaphore));
-	char			name[128];
-	deUint32		mode	= 0700;
+    NamedSemaphore *sem = (NamedSemaphore *)deCalloc(sizeof(NamedSemaphore));
+    char name[128];
+    uint32_t mode = 0700;
 
-	DE_UNREF(attributes);
+    DE_UNREF(attributes);
 
-	if (!sem)
-		return 0;
+    if (!sem)
+        return 0;
 
-	NamedSemaphore_getName(sem, name, DE_LENGTH_OF_ARRAY(name));
+    NamedSemaphore_getName(sem, name, DE_LENGTH_OF_ARRAY(name));
 
-	sem->semaphore = sem_open(name, O_CREAT|O_EXCL, mode, initialValue);
+    sem->semaphore = sem_open(name, O_CREAT | O_EXCL, mode, initialValue);
 
-	if (sem->semaphore == SEM_FAILED)
-	{
-		deFree(sem);
-		return 0;
-	}
+    if (sem->semaphore == SEM_FAILED)
+    {
+        deFree(sem);
+        return 0;
+    }
 
-	return (deSemaphore)sem;
+    return (deSemaphore)sem;
 }
 
-void deSemaphore_destroy (deSemaphore semaphore)
+void deSemaphore_destroy(deSemaphore semaphore)
 {
-	NamedSemaphore* sem			= (NamedSemaphore*)semaphore;
-	char			name[128];
-	int				res;
+    NamedSemaphore *sem = (NamedSemaphore *)semaphore;
+    char name[128];
+    int res;
 
-	NamedSemaphore_getName(sem, name, DE_LENGTH_OF_ARRAY(name));
+    NamedSemaphore_getName(sem, name, DE_LENGTH_OF_ARRAY(name));
 
-	res = sem_close(sem->semaphore);
-	DE_ASSERT(res == 0);
-	res = sem_unlink(name);
-	DE_ASSERT(res == 0);
-	DE_UNREF(res);
-	deFree(sem);
+    res = sem_close(sem->semaphore);
+    DE_ASSERT(res == 0);
+    res = sem_unlink(name);
+    DE_ASSERT(res == 0);
+    DE_UNREF(res);
+    deFree(sem);
 }
 
-void deSemaphore_increment (deSemaphore semaphore)
+void deSemaphore_increment(deSemaphore semaphore)
 {
-	sem_t*	sem		= ((NamedSemaphore*)semaphore)->semaphore;
-	int		res		= sem_post(sem);
-	DE_ASSERT(res == 0);
-	DE_UNREF(res);
+    sem_t *sem = ((NamedSemaphore *)semaphore)->semaphore;
+    int res    = sem_post(sem);
+    DE_ASSERT(res == 0);
+    DE_UNREF(res);
 }
 
-void deSemaphore_decrement (deSemaphore semaphore)
+void deSemaphore_decrement(deSemaphore semaphore)
 {
-	sem_t*	sem		= ((NamedSemaphore*)semaphore)->semaphore;
-	int		res		= sem_wait(sem);
-	DE_ASSERT(res == 0);
-	DE_UNREF(res);
+    sem_t *sem = ((NamedSemaphore *)semaphore)->semaphore;
+    int res    = sem_wait(sem);
+    DE_ASSERT(res == 0);
+    DE_UNREF(res);
 }
 
-deBool deSemaphore_tryDecrement (deSemaphore semaphore)
+bool deSemaphore_tryDecrement(deSemaphore semaphore)
 {
-	sem_t* sem = ((NamedSemaphore*)semaphore)->semaphore;
-	return (sem_trywait(sem) == 0);
+    sem_t *sem = ((NamedSemaphore *)semaphore)->semaphore;
+    return (sem_trywait(sem) == 0);
 }
 
 #endif /* DE_OS */

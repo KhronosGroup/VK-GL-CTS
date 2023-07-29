@@ -46,11 +46,11 @@ namespace glcts
  *  @param context Rendering context handle.
  **/
 MultisampleTextureGetMultisamplefvIndexEqualGLSamplesRejectedTest::
-	MultisampleTextureGetMultisamplefvIndexEqualGLSamplesRejectedTest(Context& context)
-	: TestCase(context, "multisample_texture_get_multisamplefv_index_equal_gl_samples_rejected",
-			   "Verifies GetMultisamplefv() rejects index equal to GL_SAMPLES value")
+    MultisampleTextureGetMultisamplefvIndexEqualGLSamplesRejectedTest(Context &context)
+    : TestCase(context, "multisample_texture_get_multisamplefv_index_equal_gl_samples_rejected",
+               "Verifies GetMultisamplefv() rejects index equal to GL_SAMPLES value")
 {
-	/* Left blank on purpose */
+    /* Left blank on purpose */
 }
 
 /** Executes test iteration.
@@ -59,28 +59,28 @@ MultisampleTextureGetMultisamplefvIndexEqualGLSamplesRejectedTest::
  */
 tcu::TestNode::IterateResult MultisampleTextureGetMultisamplefvIndexEqualGLSamplesRejectedTest::iterate()
 {
-	const glw::Functions& gl			   = m_context.getRenderContext().getFunctions();
-	glw::GLint			  gl_samples_value = 0;
+    const glw::Functions &gl    = m_context.getRenderContext().getFunctions();
+    glw::GLint gl_samples_value = 0;
 
-	/* Get GL_SAMPLES value */
-	gl.getIntegerv(GL_SAMPLES, &gl_samples_value);
+    /* Get GL_SAMPLES value */
+    gl.getIntegerv(GL_SAMPLES, &gl_samples_value);
 
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to retrieve GL_SAMPLES value");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to retrieve GL_SAMPLES value");
 
-	/* Issue call with valid parameters, but invalid index equal to GL_SAMPLES value */
-	glw::GLfloat val[2];
-	gl.getMultisamplefv(GL_SAMPLE_POSITION, gl_samples_value, val);
+    /* Issue call with valid parameters, but invalid index equal to GL_SAMPLES value */
+    glw::GLfloat val[2];
+    gl.getMultisamplefv(GL_SAMPLE_POSITION, gl_samples_value, val);
 
-	/* Check if the expected error code was reported */
-	if (gl.getError() != GL_INVALID_VALUE)
-	{
-		TCU_FAIL("Invalid error code reported");
-	}
+    /* Check if the expected error code was reported */
+    if (gl.getError() != GL_INVALID_VALUE)
+    {
+        TCU_FAIL("Invalid error code reported");
+    }
 
-	/* Test case passed */
-	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+    /* Test case passed */
+    m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
-	return STOP;
+    return STOP;
 }
 
 /** Constructor.
@@ -88,11 +88,11 @@ tcu::TestNode::IterateResult MultisampleTextureGetMultisamplefvIndexEqualGLSampl
  *  @param context Rendering context handle.
  **/
 MultisampleTextureGetMultisamplefvIndexGreaterGLSamplesRejectedTest::
-	MultisampleTextureGetMultisamplefvIndexGreaterGLSamplesRejectedTest(Context& context)
-	: TestCase(context, "multisample_texture_get_multisamplefv_index_greater_gl_samples_rejected",
-			   "Verifies GetMultisamplefv() rejects index greater than GL_SAMPLES value")
+    MultisampleTextureGetMultisamplefvIndexGreaterGLSamplesRejectedTest(Context &context)
+    : TestCase(context, "multisample_texture_get_multisamplefv_index_greater_gl_samples_rejected",
+               "Verifies GetMultisamplefv() rejects index greater than GL_SAMPLES value")
 {
-	/* Left blank on purpose */
+    /* Left blank on purpose */
 }
 
 /** Executes test iteration.
@@ -101,28 +101,28 @@ MultisampleTextureGetMultisamplefvIndexGreaterGLSamplesRejectedTest::
  */
 tcu::TestNode::IterateResult MultisampleTextureGetMultisamplefvIndexGreaterGLSamplesRejectedTest::iterate()
 {
-	const glw::Functions& gl			   = m_context.getRenderContext().getFunctions();
-	glw::GLint			  gl_samples_value = 0;
+    const glw::Functions &gl    = m_context.getRenderContext().getFunctions();
+    glw::GLint gl_samples_value = 0;
 
-	/* Get GL_SAMPLES value */
-	gl.getIntegerv(GL_SAMPLES, &gl_samples_value);
+    /* Get GL_SAMPLES value */
+    gl.getIntegerv(GL_SAMPLES, &gl_samples_value);
 
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to retrieve GL_SAMPLES value");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to retrieve GL_SAMPLES value");
 
-	/* Issue call with valid parameters, but invalid index greater than GL_SAMPLES value */
-	glw::GLfloat val[2];
-	gl.getMultisamplefv(GL_SAMPLE_POSITION, gl_samples_value + 1, val);
+    /* Issue call with valid parameters, but invalid index greater than GL_SAMPLES value */
+    glw::GLfloat val[2];
+    gl.getMultisamplefv(GL_SAMPLE_POSITION, gl_samples_value + 1, val);
 
-	/* Check if the expected error code was reported */
-	if (gl.getError() != GL_INVALID_VALUE)
-	{
-		TCU_FAIL("Invalid error code reported");
-	}
+    /* Check if the expected error code was reported */
+    if (gl.getError() != GL_INVALID_VALUE)
+    {
+        TCU_FAIL("Invalid error code reported");
+    }
 
-	/* Test case passed */
-	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+    /* Test case passed */
+    m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
-	return STOP;
+    return STOP;
 }
 
 /** Constructor.
@@ -130,11 +130,11 @@ tcu::TestNode::IterateResult MultisampleTextureGetMultisamplefvIndexGreaterGLSam
  *  @param context Rendering context handle.
  **/
 MultisampleTextureGetMultisamplefvInvalidPnameRejectedTest::MultisampleTextureGetMultisamplefvInvalidPnameRejectedTest(
-	Context& context)
-	: TestCase(context, "multisample_texture_get_multisamplefv_invalid_pname_rejected",
-			   "Verifies GetMultisamplefv() rejects invalid pname")
+    Context &context)
+    : TestCase(context, "multisample_texture_get_multisamplefv_invalid_pname_rejected",
+               "Verifies GetMultisamplefv() rejects invalid pname")
 {
-	/* Left blank on purpose */
+    /* Left blank on purpose */
 }
 
 /** Executes test iteration.
@@ -143,24 +143,24 @@ MultisampleTextureGetMultisamplefvInvalidPnameRejectedTest::MultisampleTextureGe
  */
 tcu::TestNode::IterateResult MultisampleTextureGetMultisamplefvInvalidPnameRejectedTest::iterate()
 {
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-	/* Issue call with valid parameters, but invalid pname GL_SAMPLES */
-	glw::GLfloat val[2];
-	gl.getMultisamplefv(GL_SAMPLES, 0, val);
+    /* Issue call with valid parameters, but invalid pname GL_SAMPLES */
+    glw::GLfloat val[2];
+    gl.getMultisamplefv(GL_SAMPLES, 0, val);
 
-	/* Check if the expected error code was reported */
-	glw::GLenum error_code = gl.getError();
+    /* Check if the expected error code was reported */
+    glw::GLenum error_code = gl.getError();
 
-	if (error_code != GL_INVALID_ENUM)
-	{
-		TCU_FAIL("Invalid error code reported");
-	}
+    if (error_code != GL_INVALID_ENUM)
+    {
+        TCU_FAIL("Invalid error code reported");
+    }
 
-	/* Test case passed */
-	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+    /* Test case passed */
+    m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
-	return STOP;
+    return STOP;
 }
 
 /** Constructor.
@@ -168,13 +168,13 @@ tcu::TestNode::IterateResult MultisampleTextureGetMultisamplefvInvalidPnameRejec
  *  @param context Rendering context handle.
  **/
 MultisampleTextureGetMultisamplefvNullValArgumentsAcceptedTest::
-	MultisampleTextureGetMultisamplefvNullValArgumentsAcceptedTest(Context& context)
-	: TestCase(context, "multisample_texture_get_multisamplefv_null_val_arguments_accepted",
-			   "Verifies NULL val arguments accepted for valid glGetMultisamplefv() calls.")
-	, fbo_id(0)
-	, to_2d_multisample_id(0)
+    MultisampleTextureGetMultisamplefvNullValArgumentsAcceptedTest(Context &context)
+    : TestCase(context, "multisample_texture_get_multisamplefv_null_val_arguments_accepted",
+               "Verifies NULL val arguments accepted for valid glGetMultisamplefv() calls.")
+    , fbo_id(0)
+    , to_2d_multisample_id(0)
 {
-	/* Left blank on purpose */
+    /* Left blank on purpose */
 }
 
 /** Executes test iteration.
@@ -183,127 +183,127 @@ MultisampleTextureGetMultisamplefvNullValArgumentsAcceptedTest::
  */
 tcu::TestNode::IterateResult MultisampleTextureGetMultisamplefvNullValArgumentsAcceptedTest::iterate()
 {
-	/* Issue call with valid parameters, but invalid pname GL_SAMPLES */
-	glw::GLenum			  error_code = GL_NO_ERROR;
-	const glw::Functions& gl		 = m_context.getRenderContext().getFunctions();
+    /* Issue call with valid parameters, but invalid pname GL_SAMPLES */
+    glw::GLenum error_code   = GL_NO_ERROR;
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-	/* gl.getMultisamplefv(GL_SAMPLES, 0, NULL) is not legal, removed */
+    /* gl.getMultisamplefv(GL_SAMPLES, 0, NULL) is not legal, removed */
 
-	/* Create multisampled FBO, as default framebuffer is not multisampled */
+    /* Create multisampled FBO, as default framebuffer is not multisampled */
 
-	gl.genTextures(1, &to_2d_multisample_id);
+    gl.genTextures(1, &to_2d_multisample_id);
 
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenTextures() call failed");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "glGenTextures() call failed");
 
-	if (to_2d_multisample_id == 0)
-	{
-		TCU_FAIL("Texture object has not been generated properly");
-	}
+    if (to_2d_multisample_id == 0)
+    {
+        TCU_FAIL("Texture object has not been generated properly");
+    }
 
-	glw::GLint samples = 0;
+    glw::GLint samples = 0;
 
-	gl.getInternalformativ(GL_TEXTURE_2D_MULTISAMPLE, /* target */
-						   GL_RGBA8, GL_SAMPLES, 1,   /* bufSize */
-						   &samples);
+    gl.getInternalformativ(GL_TEXTURE_2D_MULTISAMPLE, /* target */
+                           GL_RGBA8, GL_SAMPLES, 1,   /* bufSize */
+                           &samples);
 
-	GLU_EXPECT_NO_ERROR(gl.getError(), "getInternalformativ() call failed");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "getInternalformativ() call failed");
 
-	gl.bindTexture(GL_TEXTURE_2D_MULTISAMPLE, to_2d_multisample_id);
+    gl.bindTexture(GL_TEXTURE_2D_MULTISAMPLE, to_2d_multisample_id);
 
-	/* Configure the texture object storage */
-	gl.texStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, 1, /* width */
-							   1,												/* height */
-							   GL_TRUE);										/* fixedsamplelocations */
+    /* Configure the texture object storage */
+    gl.texStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, 1, /* width */
+                               1,                                               /* height */
+                               GL_TRUE);                                        /* fixedsamplelocations */
 
-	GLU_EXPECT_NO_ERROR(gl.getError(), "texStorage2DMultisample() call failed");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "texStorage2DMultisample() call failed");
 
-	gl.genFramebuffers(1, &fbo_id);
+    gl.genFramebuffers(1, &fbo_id);
 
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenFramebuffers() call failed");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "glGenFramebuffers() call failed");
 
-	if (fbo_id == 0)
-	{
-		TCU_FAIL("Framebuffer object has not been generated properly");
-	}
+    if (fbo_id == 0)
+    {
+        TCU_FAIL("Framebuffer object has not been generated properly");
+    }
 
-	gl.bindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_id);
+    gl.bindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_id);
 
-	gl.framebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, to_2d_multisample_id,
-							0);
+    gl.framebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, to_2d_multisample_id,
+                            0);
 
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Could not set up framebuffer's attachments");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Could not set up framebuffer's attachments");
 
-	glw::GLenum fbo_completeness_status = 0;
+    glw::GLenum fbo_completeness_status = 0;
 
-	fbo_completeness_status = gl.checkFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+    fbo_completeness_status = gl.checkFramebufferStatus(GL_DRAW_FRAMEBUFFER);
 
-	if (fbo_completeness_status != GL_FRAMEBUFFER_COMPLETE)
-	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "Source FBO completeness status is: " << fbo_completeness_status
-						   << ", expected: GL_FRAMEBUFFER_COMPLETE" << tcu::TestLog::EndMessage;
+    if (fbo_completeness_status != GL_FRAMEBUFFER_COMPLETE)
+    {
+        m_testCtx.getLog() << tcu::TestLog::Message << "Source FBO completeness status is: " << fbo_completeness_status
+                           << ", expected: GL_FRAMEBUFFER_COMPLETE" << tcu::TestLog::EndMessage;
 
-		TCU_FAIL("Source FBO is considered incomplete which is invalid");
-	}
+        TCU_FAIL("Source FBO is considered incomplete which is invalid");
+    }
 
-	gl.bindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_id);
+    gl.bindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_id);
 
-	/* Get GL_SAMPLES value */
-	glw::GLint gl_samples_value = 0;
+    /* Get GL_SAMPLES value */
+    glw::GLint gl_samples_value = 0;
 
-	gl.getIntegerv(GL_SAMPLES, &gl_samples_value);
+    gl.getIntegerv(GL_SAMPLES, &gl_samples_value);
 
-	error_code = gl.getError();
-	GLU_EXPECT_NO_ERROR(error_code, "Failed to retrieve GL_SAMPLES value");
+    error_code = gl.getError();
+    GLU_EXPECT_NO_ERROR(error_code, "Failed to retrieve GL_SAMPLES value");
 
-	glw::GLfloat val[2];
-	gl.getMultisamplefv(GL_SAMPLE_POSITION, 0, val);
+    glw::GLfloat val[2];
+    gl.getMultisamplefv(GL_SAMPLE_POSITION, 0, val);
 
-	error_code = gl.getError();
+    error_code = gl.getError();
 
-	GLU_EXPECT_NO_ERROR(error_code, "glGetMultisamplefv() call failed");
+    GLU_EXPECT_NO_ERROR(error_code, "glGetMultisamplefv() call failed");
 
-	/* Iterate through valid index values */
-	for (glw::GLint index = 0; index < gl_samples_value; ++index)
-	{
-		/* Execute the test */
-		gl.getMultisamplefv(GL_SAMPLE_POSITION, index, val);
+    /* Iterate through valid index values */
+    for (glw::GLint index = 0; index < gl_samples_value; ++index)
+    {
+        /* Execute the test */
+        gl.getMultisamplefv(GL_SAMPLE_POSITION, index, val);
 
-		error_code = gl.getError();
-		GLU_EXPECT_NO_ERROR(error_code, "A valid glGetMultisamplefv() call reported an error");
-	} /* for (all valid index argument values) */
+        error_code = gl.getError();
+        GLU_EXPECT_NO_ERROR(error_code, "A valid glGetMultisamplefv() call reported an error");
+    } /* for (all valid index argument values) */
 
-	/* Test case passed */
-	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+    /* Test case passed */
+    m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
-	return STOP;
+    return STOP;
 }
 
 /** Deinitializes ES objects created during test execution */
 void MultisampleTextureGetMultisamplefvNullValArgumentsAcceptedTest::deinit()
 {
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-	/* Unbind framebuffer object bound to GL_DRAW_FRAMEBUFFER target */
-	gl.bindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    /* Unbind framebuffer object bound to GL_DRAW_FRAMEBUFFER target */
+    gl.bindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-	/* Unbind texture object bound to GL_TEXTURE_2D_MULTISAMPLE texture target */
-	gl.bindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+    /* Unbind texture object bound to GL_TEXTURE_2D_MULTISAMPLE texture target */
+    gl.bindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 
-	/* Delete a 2D multisample texture object of id to_2d_multisample_id */
-	if (to_2d_multisample_id != 0)
-	{
-		gl.deleteTextures(1, &to_2d_multisample_id);
+    /* Delete a 2D multisample texture object of id to_2d_multisample_id */
+    if (to_2d_multisample_id != 0)
+    {
+        gl.deleteTextures(1, &to_2d_multisample_id);
 
-		to_2d_multisample_id = 0;
-	}
+        to_2d_multisample_id = 0;
+    }
 
-	/* Delete a framebuffer object of id fbo_id */
-	if (fbo_id != 0)
-	{
-		gl.deleteFramebuffers(1, &fbo_id);
+    /* Delete a framebuffer object of id fbo_id */
+    if (fbo_id != 0)
+    {
+        gl.deleteFramebuffers(1, &fbo_id);
 
-		fbo_id = 0;
-	}
+        fbo_id = 0;
+    }
 }
 
 /** Constructor.
@@ -311,11 +311,11 @@ void MultisampleTextureGetMultisamplefvNullValArgumentsAcceptedTest::deinit()
  *  @param context Rendering context handle.
  **/
 MultisampleTextureGetMultisamplefvSamplePositionValuesValidationTest::
-	MultisampleTextureGetMultisamplefvSamplePositionValuesValidationTest(Context& context)
-	: TestCase(context, "multisample_texture_get_multisamplefv_sample_position_values_validation",
-			   "Verifies spec-wise correct values are reported for valid calls with GL_SAMPLE_POSITION pname")
+    MultisampleTextureGetMultisamplefvSamplePositionValuesValidationTest(Context &context)
+    : TestCase(context, "multisample_texture_get_multisamplefv_sample_position_values_validation",
+               "Verifies spec-wise correct values are reported for valid calls with GL_SAMPLE_POSITION pname")
 {
-	/* Left blank on purpose */
+    /* Left blank on purpose */
 }
 
 /** Executes test iteration.
@@ -324,35 +324,35 @@ MultisampleTextureGetMultisamplefvSamplePositionValuesValidationTest::
  */
 tcu::TestNode::IterateResult MultisampleTextureGetMultisamplefvSamplePositionValuesValidationTest::iterate()
 {
-	/* Get GL_SAMPLES value */
-	const glw::Functions& gl			   = m_context.getRenderContext().getFunctions();
-	glw::GLint			  gl_samples_value = 0;
+    /* Get GL_SAMPLES value */
+    const glw::Functions &gl    = m_context.getRenderContext().getFunctions();
+    glw::GLint gl_samples_value = 0;
 
-	gl.getIntegerv(GL_SAMPLES, &gl_samples_value);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to retrieve GL_SAMPLES value");
+    gl.getIntegerv(GL_SAMPLES, &gl_samples_value);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to retrieve GL_SAMPLES value");
 
-	/* Iterate through valid index values */
-	for (glw::GLint index = 0; index < gl_samples_value; ++index)
-	{
-		/* Execute the test */
-		glw::GLfloat val[2] = { -1.0f, -1.0f };
+    /* Iterate through valid index values */
+    for (glw::GLint index = 0; index < gl_samples_value; ++index)
+    {
+        /* Execute the test */
+        glw::GLfloat val[2] = {-1.0f, -1.0f};
 
-		gl.getMultisamplefv(GL_SAMPLE_POSITION, index, val);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "A valid glGetMultisamplefv() call reported an error");
+        gl.getMultisamplefv(GL_SAMPLE_POSITION, index, val);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "A valid glGetMultisamplefv() call reported an error");
 
-		if (val[0] < 0.0f || val[0] > 1.0f || val[1] < 0.0f || val[1] > 1.0f)
-		{
-			m_testCtx.getLog() << tcu::TestLog::Message << "One or more coordinates used to describe sample position: "
-							   << "(" << val[0] << ", " << val[1] << ") is outside the valid <0, 1> range."
-							   << tcu::TestLog::EndMessage;
+        if (val[0] < 0.0f || val[0] > 1.0f || val[1] < 0.0f || val[1] > 1.0f)
+        {
+            m_testCtx.getLog() << tcu::TestLog::Message << "One or more coordinates used to describe sample position: "
+                               << "(" << val[0] << ", " << val[1] << ") is outside the valid <0, 1> range."
+                               << tcu::TestLog::EndMessage;
 
-			TCU_FAIL("Invalid sample position reported");
-		}
-	} /* for (all valid index argument values) */
+            TCU_FAIL("Invalid sample position reported");
+        }
+    } /* for (all valid index argument values) */
 
-	/* Test case passed */
-	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+    /* Test case passed */
+    m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
-	return STOP;
+    return STOP;
 }
-} /* glcts namespace */
+} // namespace glcts

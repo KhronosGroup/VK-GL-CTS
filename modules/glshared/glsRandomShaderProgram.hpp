@@ -31,7 +31,7 @@ namespace rsg
 {
 class Shader;
 class ShaderInput;
-}
+} // namespace rsg
 
 namespace deqp
 {
@@ -41,29 +41,33 @@ namespace gls
 class RandomShaderProgram : public sglr::ShaderProgram
 {
 public:
-										RandomShaderProgram			(const rsg::Shader& vertexShader, const rsg::Shader& fragmentShader, int numUnifiedUniforms, const rsg::ShaderInput* const* unifiedUniforms);
+    RandomShaderProgram(const rsg::Shader &vertexShader, const rsg::Shader &fragmentShader, int numUnifiedUniforms,
+                        const rsg::ShaderInput *const *unifiedUniforms);
 
 private:
-	virtual void						shadeVertices				(const rr::VertexAttrib* inputs, rr::VertexPacket* const* packets, const int numPackets) const;
-	virtual void						shadeFragments				(rr::FragmentPacket* packets, const int numPackets, const rr::FragmentShadingContext& context) const;
+    virtual void shadeVertices(const rr::VertexAttrib *inputs, rr::VertexPacket *const *packets,
+                               const int numPackets) const;
+    virtual void shadeFragments(rr::FragmentPacket *packets, const int numPackets,
+                                const rr::FragmentShadingContext &context) const;
 
-	void								refreshUniforms				(void) const;
+    void refreshUniforms(void) const;
 
-	const rsg::Shader&					m_vertexShader;
-	const rsg::Shader&					m_fragmentShader;
-	const int							m_numUnifiedUniforms;
-	const rsg::ShaderInput* const*		m_unifiedUniforms;
+    const rsg::Shader &m_vertexShader;
+    const rsg::Shader &m_fragmentShader;
+    const int m_numUnifiedUniforms;
+    const rsg::ShaderInput *const *m_unifiedUniforms;
 
-	const rsg::Variable*				m_positionVar;
-	std::vector<const rsg::Variable*>	m_vertexOutputs;			//!< Other vertex outputs in the order they are passed to fragment shader.
-	const rsg::Variable*				m_fragColorVar;
+    const rsg::Variable *m_positionVar;
+    std::vector<const rsg::Variable *>
+        m_vertexOutputs; //!< Other vertex outputs in the order they are passed to fragment shader.
+    const rsg::Variable *m_fragColorVar;
 
-	rsg::Sampler2DMap					m_sampler2DMap;
-	rsg::SamplerCubeMap					m_samplerCubeMap;
-	mutable rsg::ExecutionContext		m_execCtx;
+    rsg::Sampler2DMap m_sampler2DMap;
+    rsg::SamplerCubeMap m_samplerCubeMap;
+    mutable rsg::ExecutionContext m_execCtx;
 };
 
-} // gls
-} // deqp
+} // namespace gls
+} // namespace deqp
 
 #endif // _GLSRANDOMSHADERPROGRAM_HPP

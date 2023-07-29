@@ -32,64 +32,64 @@ namespace glcts
 class GeometryShaderLayeredRenderingBoundaryCondition : public TestCaseBase
 {
 public:
-	/* Public methods */
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    /* Public methods */
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 protected:
-	/* Protected data types */
-	struct TextureInfo
-	{
-		glw::GLint  m_depth;
-		glw::GLenum m_draw_buffer;
-		glw::GLuint m_id;
-		glw::GLenum m_texture_target;
-	};
+    /* Protected data types */
+    struct TextureInfo
+    {
+        glw::GLint m_depth;
+        glw::GLenum m_draw_buffer;
+        glw::GLuint m_id;
+        glw::GLenum m_texture_target;
+    };
 
-	/* Protected methods */
-	GeometryShaderLayeredRenderingBoundaryCondition(Context& context, const ExtParameters& extParams, const char* name,
-													const char* description);
+    /* Protected methods */
+    GeometryShaderLayeredRenderingBoundaryCondition(Context &context, const ExtParameters &extParams, const char *name,
+                                                    const char *description);
 
-	virtual ~GeometryShaderLayeredRenderingBoundaryCondition(void);
+    virtual ~GeometryShaderLayeredRenderingBoundaryCondition(void);
 
-	virtual void		initTest(void);
-	virtual const char* getFragmentShaderCode();
-	virtual const char* getGeometryShaderCode();
-	virtual const char* getVertexShaderCode();
+    virtual void initTest(void);
+    virtual const char *getFragmentShaderCode();
+    virtual const char *getGeometryShaderCode();
+    virtual const char *getVertexShaderCode();
 
-	virtual bool comparePixels(glw::GLint width, glw::GLint height, glw::GLint pixelSize,
-							   const unsigned char* textureData, const unsigned char* referencePixel, int att,
-							   int layer);
+    virtual bool comparePixels(glw::GLint width, glw::GLint height, glw::GLint pixelSize,
+                               const unsigned char *textureData, const unsigned char *referencePixel, int att,
+                               int layer);
 
-	virtual void getReferenceColor(glw::GLint layerIndex, unsigned char* colorBuffer,
-								   int colorBufferSize = m_texture_components) = 0;
+    virtual void getReferenceColor(glw::GLint layerIndex, unsigned char *colorBuffer,
+                                   int colorBufferSize = m_texture_components) = 0;
 
 protected:
-	/* Protected variables */
-	glw::GLenum				 m_draw_mode;
-	glw::GLuint				 m_n_points;
-	bool					 m_is_fbo_layered;
-	std::vector<TextureInfo> m_textures_info;
-	unsigned char*			 m_blue_color;
-	unsigned char*			 m_green_color;
-	unsigned char*			 m_red_color;
-	unsigned char*			 m_white_color;
+    /* Protected variables */
+    glw::GLenum m_draw_mode;
+    glw::GLuint m_n_points;
+    bool m_is_fbo_layered;
+    std::vector<TextureInfo> m_textures_info;
+    unsigned char *m_blue_color;
+    unsigned char *m_green_color;
+    unsigned char *m_red_color;
+    unsigned char *m_white_color;
 
 private:
-	/* Private constants */
-	static const glw::GLint m_height;
-	static const glw::GLint m_max_depth;
-	static const glw::GLint m_texture_components;
-	static const glw::GLint m_width;
+    /* Private constants */
+    static const glw::GLint m_height;
+    static const glw::GLint m_max_depth;
+    static const glw::GLint m_texture_components;
+    static const glw::GLint m_width;
 
-	/* Private variables */
-	glw::GLuint m_fbo_draw_id;
-	glw::GLuint m_fbo_read_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_gs_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_vs_id;
+    /* Private variables */
+    glw::GLuint m_fbo_draw_id;
+    glw::GLuint m_fbo_read_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_id;
 };
 
 /**
@@ -120,22 +120,22 @@ private:
  *       objects were modified.
  */
 class GeometryShaderLayeredRenderingBoundaryConditionVariousTextures
-	: public GeometryShaderLayeredRenderingBoundaryCondition
+    : public GeometryShaderLayeredRenderingBoundaryCondition
 {
 public:
-	/* Public methods */
-	GeometryShaderLayeredRenderingBoundaryConditionVariousTextures(Context& context, const ExtParameters& extParams,
-																   const char* name, const char* description);
+    /* Public methods */
+    GeometryShaderLayeredRenderingBoundaryConditionVariousTextures(Context &context, const ExtParameters &extParams,
+                                                                   const char *name, const char *description);
 
-	virtual ~GeometryShaderLayeredRenderingBoundaryConditionVariousTextures(void)
-	{
-	}
+    virtual ~GeometryShaderLayeredRenderingBoundaryConditionVariousTextures(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	const char* getFragmentShaderCode();
-	const char* getGeometryShaderCode();
-	void getReferenceColor(glw::GLint layerIndex, unsigned char* colorBuffer, int colorBufferSize);
+    /* Protected methods */
+    const char *getFragmentShaderCode();
+    const char *getGeometryShaderCode();
+    void getReferenceColor(glw::GLint layerIndex, unsigned char *colorBuffer, int colorBufferSize);
 };
 
 /**
@@ -176,18 +176,18 @@ protected:
 class GeometryShaderLayeredRenderingBoundaryConditionNoGS : public GeometryShaderLayeredRenderingBoundaryCondition
 {
 public:
-	/* Public methods */
-	GeometryShaderLayeredRenderingBoundaryConditionNoGS(Context& context, const ExtParameters& extParams,
-														const char* name, const char* description);
+    /* Public methods */
+    GeometryShaderLayeredRenderingBoundaryConditionNoGS(Context &context, const ExtParameters &extParams,
+                                                        const char *name, const char *description);
 
-	virtual ~GeometryShaderLayeredRenderingBoundaryConditionNoGS(void)
-	{
-	}
+    virtual ~GeometryShaderLayeredRenderingBoundaryConditionNoGS(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	const char* getVertexShaderCode();
-	void getReferenceColor(glw::GLint layerIndex, unsigned char* colorBuffer, int colorBufferSize);
+    /* Protected methods */
+    const char *getVertexShaderCode();
+    void getReferenceColor(glw::GLint layerIndex, unsigned char *colorBuffer, int colorBufferSize);
 };
 
 /**
@@ -211,18 +211,18 @@ protected:
 class GeometryShaderLayeredRenderingBoundaryConditionNoLayerSet : public GeometryShaderLayeredRenderingBoundaryCondition
 {
 public:
-	/* Public methods */
-	GeometryShaderLayeredRenderingBoundaryConditionNoLayerSet(Context& context, const ExtParameters& extParams,
-															  const char* name, const char* description);
+    /* Public methods */
+    GeometryShaderLayeredRenderingBoundaryConditionNoLayerSet(Context &context, const ExtParameters &extParams,
+                                                              const char *name, const char *description);
 
-	virtual ~GeometryShaderLayeredRenderingBoundaryConditionNoLayerSet(void)
-	{
-	}
+    virtual ~GeometryShaderLayeredRenderingBoundaryConditionNoLayerSet(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	const char* getGeometryShaderCode();
-	void getReferenceColor(glw::GLint layerIndex, unsigned char* colorBuffer, int colorBufferSize);
+    /* Protected methods */
+    const char *getGeometryShaderCode();
+    void getReferenceColor(glw::GLint layerIndex, unsigned char *colorBuffer, int colorBufferSize);
 };
 
 /**    4. Layer number specified by geometry shader is ignored if current draw
@@ -252,21 +252,21 @@ protected:
  *
  */
 class GeometryShaderLayeredRenderingBoundaryConditionNoLayeredFBO
-	: public GeometryShaderLayeredRenderingBoundaryCondition
+    : public GeometryShaderLayeredRenderingBoundaryCondition
 {
 public:
-	/* Public methods */
-	GeometryShaderLayeredRenderingBoundaryConditionNoLayeredFBO(Context& context, const ExtParameters& extParams,
-																const char* name, const char* description);
+    /* Public methods */
+    GeometryShaderLayeredRenderingBoundaryConditionNoLayeredFBO(Context &context, const ExtParameters &extParams,
+                                                                const char *name, const char *description);
 
-	virtual ~GeometryShaderLayeredRenderingBoundaryConditionNoLayeredFBO(void)
-	{
-	}
+    virtual ~GeometryShaderLayeredRenderingBoundaryConditionNoLayeredFBO(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual const char* getGeometryShaderCode();
-	virtual void getReferenceColor(glw::GLint layerIndex, unsigned char* colorBuffer, int colorBufferSize);
+    /* Protected methods */
+    virtual const char *getGeometryShaderCode();
+    virtual void getReferenceColor(glw::GLint layerIndex, unsigned char *colorBuffer, int colorBufferSize);
 };
 
 } // namespace glcts

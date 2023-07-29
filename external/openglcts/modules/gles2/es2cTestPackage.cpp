@@ -41,21 +41,21 @@ namespace es2cts
 class TestCaseWrapper : public tcu::TestCaseExecutor
 {
 public:
-	TestCaseWrapper(TestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism);
-	~TestCaseWrapper(void);
+    TestCaseWrapper(TestPackage &package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism);
+    ~TestCaseWrapper(void);
 
-	void init(tcu::TestCase* testCase, const std::string& path);
-	void deinit(tcu::TestCase* testCase);
-	tcu::TestNode::IterateResult iterate(tcu::TestCase* testCase);
+    void init(tcu::TestCase *testCase, const std::string &path);
+    void deinit(tcu::TestCase *testCase);
+    tcu::TestNode::IterateResult iterate(tcu::TestCase *testCase);
 
 private:
-	es2cts::TestPackage& m_testPackage;
-	de::SharedPtr<tcu::WaiverUtil> m_waiverMechanism;
+    es2cts::TestPackage &m_testPackage;
+    de::SharedPtr<tcu::WaiverUtil> m_waiverMechanism;
 };
 
-TestCaseWrapper::TestCaseWrapper(TestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism)
-	: m_testPackage(package)
-	, m_waiverMechanism(waiverMechanism)
+TestCaseWrapper::TestCaseWrapper(TestPackage &package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism)
+    : m_testPackage(package)
+    , m_waiverMechanism(waiverMechanism)
 {
 }
 
@@ -63,76 +63,76 @@ TestCaseWrapper::~TestCaseWrapper(void)
 {
 }
 
-void TestCaseWrapper::init(tcu::TestCase* testCase, const std::string& path)
+void TestCaseWrapper::init(tcu::TestCase *testCase, const std::string &path)
 {
-	if (m_waiverMechanism->isOnWaiverList(path))
-		throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
+    if (m_waiverMechanism->isOnWaiverList(path))
+        throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
 
-	glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
+    glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
 
-	testCase->init();
+    testCase->init();
 }
 
-void TestCaseWrapper::deinit(tcu::TestCase* testCase)
+void TestCaseWrapper::deinit(tcu::TestCase *testCase)
 {
-	testCase->deinit();
+    testCase->deinit();
 
-	glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
+    glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
 }
 
-tcu::TestNode::IterateResult TestCaseWrapper::iterate(tcu::TestCase* testCase)
+tcu::TestNode::IterateResult TestCaseWrapper::iterate(tcu::TestCase *testCase)
 {
-	tcu::TestContext&			 testCtx   = m_testPackage.getContext().getTestContext();
-	glu::RenderContext&			 renderCtx = m_testPackage.getContext().getRenderContext();
-	tcu::TestCase::IterateResult result;
+    tcu::TestContext &testCtx     = m_testPackage.getContext().getTestContext();
+    glu::RenderContext &renderCtx = m_testPackage.getContext().getRenderContext();
+    tcu::TestCase::IterateResult result;
 
-	// Clear to black
-	{
-		const glw::Functions& gl = renderCtx.getFunctions();
-		gl.clearColor(0.0f, 0.0f, 0.0f, 1.f);
-		gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	}
+    // Clear to black
+    {
+        const glw::Functions &gl = renderCtx.getFunctions();
+        gl.clearColor(0.0f, 0.0f, 0.0f, 1.f);
+        gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    }
 
-	result = testCase->iterate();
+    result = testCase->iterate();
 
-	// Call implementation specific post-iterate routine (usually handles native events and swaps buffers)
-	try
-	{
-		renderCtx.postIterate();
-		return result;
-	}
-	catch (const tcu::ResourceError& e)
-	{
-		testCtx.getLog() << e;
-		testCtx.setTestResult(QP_TEST_RESULT_RESOURCE_ERROR, "Resource error in context post-iteration routine");
-		testCtx.setTerminateAfter(true);
-		return tcu::TestNode::STOP;
-	}
-	catch (const std::exception& e)
-	{
-		testCtx.getLog() << e;
-		testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Error in context post-iteration routine");
-		return tcu::TestNode::STOP;
-	}
+    // Call implementation specific post-iterate routine (usually handles native events and swaps buffers)
+    try
+    {
+        renderCtx.postIterate();
+        return result;
+    }
+    catch (const tcu::ResourceError &e)
+    {
+        testCtx.getLog() << e;
+        testCtx.setTestResult(QP_TEST_RESULT_RESOURCE_ERROR, "Resource error in context post-iteration routine");
+        testCtx.setTerminateAfter(true);
+        return tcu::TestNode::STOP;
+    }
+    catch (const std::exception &e)
+    {
+        testCtx.getLog() << e;
+        testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Error in context post-iteration routine");
+        return tcu::TestNode::STOP;
+    }
 }
 
 class ShaderTests : public deqp::TestCaseGroup
 {
 public:
-	ShaderTests(deqp::Context& context) : TestCaseGroup(context, "shaders", "Shading Language Tests")
-	{
-	}
+    ShaderTests(deqp::Context &context) : TestCaseGroup(context, "shaders", "Shading Language Tests")
+    {
+    }
 
-	void init(void)
-	{
-		addChild(new deqp::ShaderNegativeTests(m_context, glu::GLSL_VERSION_100_ES));
-		addChild(new glcts::AggressiveShaderOptimizationsTests(m_context));
-	}
+    void init(void)
+    {
+        addChild(new deqp::ShaderNegativeTests(m_context, glu::GLSL_VERSION_100_ES));
+        addChild(new glcts::AggressiveShaderOptimizationsTests(m_context));
+    }
 };
 
-TestPackage::TestPackage(tcu::TestContext& testCtx, const char* packageName)
-	: deqp::TestPackage(testCtx, packageName, "OpenGL ES 2 Conformance Tests", glu::ContextType(glu::ApiType::es(2, 0)),
-						"gl_cts/data/gles2/")
+TestPackage::TestPackage(tcu::TestContext &testCtx, const char *packageName)
+    : deqp::TestPackage(testCtx, packageName, "OpenGL ES 2 Conformance Tests", glu::ContextType(glu::ApiType::es(2, 0)),
+                        "gl_cts/data/gles2/")
 {
 }
 
@@ -142,28 +142,28 @@ TestPackage::~TestPackage(void)
 
 void TestPackage::init(void)
 {
-	// Call init() in parent - this creates context.
-	deqp::TestPackage::init();
+    // Call init() in parent - this creates context.
+    deqp::TestPackage::init();
 
-	try
-	{
-		addChild(new ShaderTests(getContext()));
-		addChild(new Texture3DTests(getContext()));
-		tcu::TestCaseGroup* coreGroup = new tcu::TestCaseGroup(getTestContext(), "core", "core tests");
-		coreGroup->addChild(new glcts::InternalformatTests(getContext()));
-		addChild(coreGroup);
-	}
-	catch (...)
-	{
-		// Destroy context.
-		deqp::TestPackage::deinit();
-		throw;
-	}
+    try
+    {
+        addChild(new ShaderTests(getContext()));
+        addChild(new Texture3DTests(getContext()));
+        tcu::TestCaseGroup *coreGroup = new tcu::TestCaseGroup(getTestContext(), "core", "core tests");
+        coreGroup->addChild(new glcts::InternalformatTests(getContext()));
+        addChild(coreGroup);
+    }
+    catch (...)
+    {
+        // Destroy context.
+        deqp::TestPackage::deinit();
+        throw;
+    }
 }
 
-tcu::TestCaseExecutor* TestPackage::createExecutor(void) const
+tcu::TestCaseExecutor *TestPackage::createExecutor(void) const
 {
-	return new TestCaseWrapper(const_cast<TestPackage&>(*this), m_waiverMechanism);
+    return new TestCaseWrapper(const_cast<TestPackage &>(*this), m_waiverMechanism);
 }
 
-} // es2cts
+} // namespace es2cts

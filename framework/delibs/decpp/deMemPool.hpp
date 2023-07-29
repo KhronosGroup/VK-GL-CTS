@@ -37,72 +37,84 @@ namespace de
 class MemPool
 {
 public:
-					MemPool					(const deMemPoolUtil* util = DE_NULL, deUint32 flags = 0u);
-					MemPool					(MemPool* parent);
-					~MemPool				(void);
+    MemPool(const deMemPoolUtil *util = DE_NULL, uint32_t flags = 0u);
+    MemPool(MemPool *parent);
+    ~MemPool(void);
 
-	deMemPool*		getRawPool				(void)					{ return m_pool;																}
+    deMemPool *getRawPool(void)
+    {
+        return m_pool;
+    }
 
-	int				getNumChildren			(void) const			{ return deMemPool_getNumChildren(m_pool);										}
+    int getNumChildren(void) const
+    {
+        return deMemPool_getNumChildren(m_pool);
+    }
 
-	deUintptr		getNumAllocatedBytes	(bool recurse) const	{ return deMemPool_getNumAllocatedBytes(m_pool, recurse ? DE_TRUE : DE_FALSE);	}
-	deUintptr		getCapacity				(bool recurse) const	{ return deMemPool_getCapacity(m_pool, recurse ? DE_TRUE : DE_FALSE);			}
+    uintptr_t getNumAllocatedBytes(bool recurse) const
+    {
+        return deMemPool_getNumAllocatedBytes(m_pool, recurse ? true : false);
+    }
+    uintptr_t getCapacity(bool recurse) const
+    {
+        return deMemPool_getCapacity(m_pool, recurse ? true : false);
+    }
 
-	void*			alloc					(deUintptr numBytes);
-	void*			alignedAlloc			(deUintptr numBytes, deUint32 alignBytes);
+    void *alloc(uintptr_t numBytes);
+    void *alignedAlloc(uintptr_t numBytes, uint32_t alignBytes);
 
 private:
-					MemPool					(const MemPool& other); // Not allowed!
-	MemPool&		operator=				(const MemPool& other); // Not allowed!
+    MemPool(const MemPool &other);            // Not allowed!
+    MemPool &operator=(const MemPool &other); // Not allowed!
 
-	deMemPool*		m_pool;
+    deMemPool *m_pool;
 };
 
 // MemPool utils.
 
-char* copyToPool (de::MemPool* pool, const char* string);
+char *copyToPool(de::MemPool *pool, const char *string);
 
 // MemPool inline implementations.
 
-inline MemPool::MemPool (const deMemPoolUtil* util, deUint32 flags)
+inline MemPool::MemPool(const deMemPoolUtil *util, uint32_t flags)
 {
-	m_pool = deMemPool_createRoot(util, flags);
-	if (!m_pool)
-		throw std::bad_alloc();
+    m_pool = deMemPool_createRoot(util, flags);
+    if (!m_pool)
+        throw std::bad_alloc();
 }
 
-inline MemPool::MemPool (MemPool* parent)
+inline MemPool::MemPool(MemPool *parent)
 {
-	m_pool = deMemPool_create(parent->m_pool);
-	if (!m_pool)
-		throw std::bad_alloc();
+    m_pool = deMemPool_create(parent->m_pool);
+    if (!m_pool)
+        throw std::bad_alloc();
 }
 
-inline MemPool::~MemPool (void)
+inline MemPool::~MemPool(void)
 {
-	deMemPool_destroy(m_pool);
+    deMemPool_destroy(m_pool);
 }
 
-inline void* MemPool::alloc (deUintptr numBytes)
+inline void *MemPool::alloc(uintptr_t numBytes)
 {
-	// \todo [2013-02-07 pyry] Use deUintptr in deMemPool.
-	DE_ASSERT((deUintptr)(int)numBytes == numBytes);
-	void* ptr = deMemPool_alloc(m_pool, (int)numBytes);
-	if (!ptr)
-		throw std::bad_alloc();
-	return ptr;
+    // \todo [2013-02-07 pyry] Use uintptr_t in deMemPool.
+    DE_ASSERT((uintptr_t)(int)numBytes == numBytes);
+    void *ptr = deMemPool_alloc(m_pool, (int)numBytes);
+    if (!ptr)
+        throw std::bad_alloc();
+    return ptr;
 }
 
-inline void* MemPool::alignedAlloc (deUintptr numBytes, deUint32 alignBytes)
+inline void *MemPool::alignedAlloc(uintptr_t numBytes, uint32_t alignBytes)
 {
-	// \todo [2013-02-07 pyry] Use deUintptr in deMemPool.
-	DE_ASSERT((deUintptr)(int)numBytes == numBytes);
-	void* ptr = deMemPool_alignedAlloc(m_pool, (int)numBytes, alignBytes);
-	if (!ptr)
-		throw std::bad_alloc();
-	return ptr;
+    // \todo [2013-02-07 pyry] Use uintptr_t in deMemPool.
+    DE_ASSERT((uintptr_t)(int)numBytes == numBytes);
+    void *ptr = deMemPool_alignedAlloc(m_pool, (int)numBytes, alignBytes);
+    if (!ptr)
+        throw std::bad_alloc();
+    return ptr;
 }
 
-} // de
+} // namespace de
 
 #endif // _DEMEMPOOL_HPP

@@ -34,7 +34,7 @@ namespace glu
 class Platform;
 struct RenderConfig;
 
-} // glu
+} // namespace glu
 
 namespace tcu
 {
@@ -53,27 +53,39 @@ class Context;
 class RenderContext : public glu::RenderContext
 {
 public:
-										RenderContext			(const glu::RenderConfig& config);
-	virtual								~RenderContext			(void);
+    RenderContext(const glu::RenderConfig &config);
+    virtual ~RenderContext(void);
 
-	virtual glu::ContextType			getType					(void) const	{ return m_ctxType;			}
-	virtual const glw::Functions&		getFunctions			(void) const	{ return m_functions;		}
-	virtual const tcu::RenderTarget&	getRenderTarget			(void) const	{ return m_renderTarget;	}
-	virtual deUint32					getDefaultFramebuffer	(void) const	{ return 0;					}
+    virtual glu::ContextType getType(void) const
+    {
+        return m_ctxType;
+    }
+    virtual const glw::Functions &getFunctions(void) const
+    {
+        return m_functions;
+    }
+    virtual const tcu::RenderTarget &getRenderTarget(void) const
+    {
+        return m_renderTarget;
+    }
+    virtual uint32_t getDefaultFramebuffer(void) const
+    {
+        return 0;
+    }
 
-	virtual void						postIterate				(void);
+    virtual void postIterate(void);
 
-	virtual void						makeCurrent				(void);
+    virtual void makeCurrent(void);
 
 private:
-	const glu::ContextType				m_ctxType;
-	const tcu::RenderTarget				m_renderTarget;
+    const glu::ContextType m_ctxType;
+    const tcu::RenderTarget m_renderTarget;
 
-	Context*							m_context;
-	glw::Functions						m_functions;
+    Context *m_context;
+    glw::Functions m_functions;
 };
 
-} // null
-} // tcu
+} // namespace null
+} // namespace tcu
 
 #endif // _TCUNULLRENDERCONTEXT_HPP

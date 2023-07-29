@@ -35,20 +35,21 @@ namespace sglr
 namespace rr_util
 {
 
-rr::VertexAttribType			mapGLPureIntegerVertexAttributeType		(deUint32 type);
-rr::VertexAttribType			mapGLFloatVertexAttributeType			(deUint32 type, bool normalizedInteger, int size, glu::ContextType ctxType);
-int								mapGLSize								(int size);
-rr::PrimitiveType				mapGLPrimitiveType						(deUint32 type);
-rr::IndexType					mapGLIndexType							(deUint32 type);
-rr::GeometryShaderOutputType	mapGLGeometryShaderOutputType			(deUint32 primitive);
-rr::GeometryShaderInputType		mapGLGeometryShaderInputType			(deUint32 primitive);
-rr::TestFunc					mapGLTestFunc							(deUint32 func);
-rr::StencilOp					mapGLStencilOp							(deUint32 op);
-rr::BlendEquation				mapGLBlendEquation						(deUint32 equation);
-rr::BlendEquationAdvanced		mapGLBlendEquationAdvanced				(deUint32 equation);
-rr::BlendFunc					mapGLBlendFunc							(deUint32 func);
+rr::VertexAttribType mapGLPureIntegerVertexAttributeType(uint32_t type);
+rr::VertexAttribType mapGLFloatVertexAttributeType(uint32_t type, bool normalizedInteger, int size,
+                                                   glu::ContextType ctxType);
+int mapGLSize(int size);
+rr::PrimitiveType mapGLPrimitiveType(uint32_t type);
+rr::IndexType mapGLIndexType(uint32_t type);
+rr::GeometryShaderOutputType mapGLGeometryShaderOutputType(uint32_t primitive);
+rr::GeometryShaderInputType mapGLGeometryShaderInputType(uint32_t primitive);
+rr::TestFunc mapGLTestFunc(uint32_t func);
+rr::StencilOp mapGLStencilOp(uint32_t op);
+rr::BlendEquation mapGLBlendEquation(uint32_t equation);
+rr::BlendEquationAdvanced mapGLBlendEquationAdvanced(uint32_t equation);
+rr::BlendFunc mapGLBlendFunc(uint32_t func);
 
-} // rr_util
-} // sglr
+} // namespace rr_util
+} // namespace sglr
 
 #endif // _SGLRREFERENCEUTILS_HPP

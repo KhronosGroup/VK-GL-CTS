@@ -34,147 +34,143 @@
 #include <cstdio>
 #include <fstream>
 
-using std::vector;
-using std::string;
 using std::map;
+using std::string;
+using std::vector;
 
 struct CommandLine
 {
-	CommandLine (void)
-	{
-	}
+    CommandLine(void)
+    {
+    }
 
-	std::string		batchResultFile;
-	std::string		outputFile;
+    std::string batchResultFile;
+    std::string outputFile;
 };
 
-static void printHelp (const char* binName)
+static void printHelp(const char *binName)
 {
-	printf("%s: [testlog] [output file]\n", binName);
+    printf("%s: [testlog] [output file]\n", binName);
 }
 
-static void parseCommandLine (CommandLine& cmdLine, int argc, const char* const* argv)
+static void parseCommandLine(CommandLine &cmdLine, int argc, const char *const *argv)
 {
-	if (argc != 3)
-		throw xe::Error("Expected input and output paths");
+    if (argc != 3)
+        throw xe::Error("Expected input and output paths");
 
-	cmdLine.batchResultFile	= argv[argc-2];
-	cmdLine.outputFile		= argv[argc-1];
+    cmdLine.batchResultFile = argv[argc - 2];
+    cmdLine.outputFile      = argv[argc - 1];
 }
 
-static void parseBatchResult (xe::TestLogParser& parser, const char* filename)
+static void parseBatchResult(xe::TestLogParser &parser, const char *filename)
 {
-	std::ifstream	in			(filename, std::ios_base::binary);
-	deUint8			buf[2048];
+    std::ifstream in(filename, std::ios_base::binary);
+    uint8_t buf[2048];
 
-	for (;;)
-	{
-		in.read((char*)&buf[0], sizeof(buf));
-		int numRead = (int)in.gcount();
+    for (;;)
+    {
+        in.read((char *)&buf[0], sizeof(buf));
+        int numRead = (int)in.gcount();
 
-		if (numRead > 0)
-			parser.parse(&buf[0], numRead);
+        if (numRead > 0)
+            parser.parse(&buf[0], numRead);
 
-		if (numRead < (int)sizeof(buf))
-			break;
-	}
+        if (numRead < (int)sizeof(buf))
+            break;
+    }
 }
 
 class ResultToJUnitHandler : public xe::TestLogHandler
 {
 public:
-	ResultToJUnitHandler (xe::xml::Writer& writer)
-		: m_writer(writer)
-	{
-	}
+    ResultToJUnitHandler(xe::xml::Writer &writer) : m_writer(writer)
+    {
+    }
 
-	void setSessionInfo (const xe::SessionInfo&)
-	{
-	}
+    void setSessionInfo(const xe::SessionInfo &)
+    {
+    }
 
-	xe::TestCaseResultPtr startTestCaseResult (const char* casePath)
-	{
-		return xe::TestCaseResultPtr(new xe::TestCaseResultData(casePath));
-	}
+    xe::TestCaseResultPtr startTestCaseResult(const char *casePath)
+    {
+        return xe::TestCaseResultPtr(new xe::TestCaseResultData(casePath));
+    }
 
-	void testCaseResultUpdated (const xe::TestCaseResultPtr&)
-	{
-	}
+    void testCaseResultUpdated(const xe::TestCaseResultPtr &)
+    {
+    }
 
-	void testCaseResultComplete (const xe::TestCaseResultPtr& resultData)
-	{
-		using xe::xml::Writer;
+    void testCaseResultComplete(const xe::TestCaseResultPtr &resultData)
+    {
+        using xe::xml::Writer;
 
-		xe::TestCaseResult result;
+        xe::TestCaseResult result;
 
-		xe::parseTestCaseResultFromData(&m_resultParser, &result, *resultData.get());
+        xe::parseTestCaseResultFromData(&m_resultParser, &result, *resultData.get());
 
-		// Split group and case names.
-		size_t			sepPos		= result.casePath.find_last_of('.');
-		std::string		caseName	= result.casePath.substr(sepPos+1);
-		std::string		groupName	= result.casePath.substr(0, sepPos);
+        // Split group and case names.
+        size_t sepPos         = result.casePath.find_last_of('.');
+        std::string caseName  = result.casePath.substr(sepPos + 1);
+        std::string groupName = result.casePath.substr(0, sepPos);
 
-		// Write result.
-		m_writer << Writer::BeginElement("testcase")
-				 << Writer::Attribute("name", caseName)
-				 << Writer::Attribute("classname", groupName);
+        // Write result.
+        m_writer << Writer::BeginElement("testcase") << Writer::Attribute("name", caseName)
+                 << Writer::Attribute("classname", groupName);
 
-		if (result.statusCode != xe::TESTSTATUSCODE_PASS)
-			m_writer << Writer::BeginElement("failure")
-					 << Writer::Attribute("type", xe::getTestStatusCodeName(result.statusCode))
-					 << result.statusDetails
-					 << Writer::EndElement;
+        if (result.statusCode != xe::TESTSTATUSCODE_PASS)
+            m_writer << Writer::BeginElement("failure")
+                     << Writer::Attribute("type", xe::getTestStatusCodeName(result.statusCode)) << result.statusDetails
+                     << Writer::EndElement;
 
-		m_writer << Writer::EndElement;
-	}
+        m_writer << Writer::EndElement;
+    }
 
 private:
-	xe::xml::Writer&		m_writer;
-	xe::TestResultParser	m_resultParser;
+    xe::xml::Writer &m_writer;
+    xe::TestResultParser m_resultParser;
 };
 
-static void batchResultToJUnitReport (const char* batchResultFilename, const char* dstFileName)
+static void batchResultToJUnitReport(const char *batchResultFilename, const char *dstFileName)
 {
-	std::ofstream				out			(dstFileName, std::ios_base::binary);
-	xe::xml::Writer				writer		(out);
-	ResultToJUnitHandler		handler		(writer);
-	xe::TestLogParser			parser		(&handler);
+    std::ofstream out(dstFileName, std::ios_base::binary);
+    xe::xml::Writer writer(out);
+    ResultToJUnitHandler handler(writer);
+    xe::TestLogParser parser(&handler);
 
-	XE_CHECK(out.good());
+    XE_CHECK(out.good());
 
-	out << "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
+    out << "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
 
-	writer << xe::xml::Writer::BeginElement("testsuites")
-		   << xe::xml::Writer::BeginElement("testsuite");
+    writer << xe::xml::Writer::BeginElement("testsuites") << xe::xml::Writer::BeginElement("testsuite");
 
-	// Parse and write individual cases
-	parseBatchResult(parser, batchResultFilename);
+    // Parse and write individual cases
+    parseBatchResult(parser, batchResultFilename);
 
-	writer << xe::xml::Writer::EndElement << xe::xml::Writer::EndElement;
+    writer << xe::xml::Writer::EndElement << xe::xml::Writer::EndElement;
 }
 
-int main (int argc, const char* const* argv)
+int main(int argc, const char *const *argv)
 {
-	CommandLine cmdLine;
-	try
-	{
-		parseCommandLine(cmdLine, argc, argv);
-	}
-	catch (const std::exception&)
-	{
-		printHelp(argv[0]);
-		return -1;
-	}
+    CommandLine cmdLine;
+    try
+    {
+        parseCommandLine(cmdLine, argc, argv);
+    }
+    catch (const std::exception &)
+    {
+        printHelp(argv[0]);
+        return -1;
+    }
 
-	try
-	{
-		batchResultToJUnitReport(cmdLine.batchResultFile.c_str(), cmdLine.outputFile.c_str());
-	}
-	catch (const std::exception& e)
-	{
-		printf("%s\n", e.what());
-		return -1;
-	}
+    try
+    {
+        batchResultToJUnitReport(cmdLine.batchResultFile.c_str(), cmdLine.outputFile.c_str());
+    }
+    catch (const std::exception &e)
+    {
+        printf("%s\n", e.what());
+        return -1;
+    }
 
-	return 0;
+    return 0;
 }

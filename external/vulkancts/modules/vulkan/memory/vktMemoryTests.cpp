@@ -42,32 +42,32 @@ namespace memory
 namespace
 {
 
-void createChildren (tcu::TestCaseGroup* memoryTests)
+void createChildren(tcu::TestCaseGroup *memoryTests)
 {
-	tcu::TestContext&	testCtx		= memoryTests->getTestContext();
+    tcu::TestContext &testCtx = memoryTests->getTestContext();
 
 #ifndef CTS_USES_VULKANSC
-	// In Vulkan SC subsequent tests allocate memory but do not make it free, because vkFreeMemory was removed.
-	// As a consequence - random memory allocation tests start to report ResourceError ( VK_ERROR_OUT_OF_*_MEMORY )
-	memoryTests->addChild(createAllocationTests					(testCtx));
-	memoryTests->addChild(createDeviceGroupAllocationTests		(testCtx));
-	memoryTests->addChild(createMappingTests					(testCtx));
-	memoryTests->addChild(createPipelineBarrierTests			(testCtx));
+    // In Vulkan SC subsequent tests allocate memory but do not make it free, because vkFreeMemory was removed.
+    // As a consequence - random memory allocation tests start to report ResourceError ( VK_ERROR_OUT_OF_*_MEMORY )
+    memoryTests->addChild(createAllocationTests(testCtx));
+    memoryTests->addChild(createDeviceGroupAllocationTests(testCtx));
+    memoryTests->addChild(createMappingTests(testCtx));
+    memoryTests->addChild(createPipelineBarrierTests(testCtx));
 #endif // CTS_USES_VULKANSC
-	memoryTests->addChild(createRequirementsTests				(testCtx));
-	memoryTests->addChild(createMemoryBindingTests				(testCtx));
-	memoryTests->addChild(createMemoryExternalMemoryHostTests	(testCtx));
+    memoryTests->addChild(createRequirementsTests(testCtx));
+    memoryTests->addChild(createMemoryBindingTests(testCtx));
+    memoryTests->addChild(createMemoryExternalMemoryHostTests(testCtx));
 #ifndef CTS_USES_VULKANSC
-	memoryTests->addChild(createDeviceMemoryReportTests			(testCtx));
+    memoryTests->addChild(createDeviceMemoryReportTests(testCtx));
 #endif
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "memory", "Memory Tests", createChildren);
+    return createTestGroup(testCtx, "memory", "Memory Tests", createChildren);
 }
 
-} // memory
-} // vkt
+} // namespace memory
+} // namespace vkt

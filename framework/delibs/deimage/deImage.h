@@ -28,35 +28,35 @@
 
 typedef enum deImageFormat_e
 {
-	DE_IMAGEFORMAT_XRGB8888 = 0,
-	DE_IMAGEFORMAT_ARGB8888,
+    DE_IMAGEFORMAT_XRGB8888 = 0,
+    DE_IMAGEFORMAT_ARGB8888,
 
-	DE_IMAGEFORMAT_LAST
+    DE_IMAGEFORMAT_LAST
 } deImageFormat;
 
 typedef struct deImage_s
 {
-	int				width;
-	int				height;
-	deImageFormat	format;
-	void*			pixels;
+    int width;
+    int height;
+    deImageFormat format;
+    void *pixels;
 } deImage;
 
-deImage*	deImage_create					(int width, int height, deImageFormat format);
-void		deImage_destroy					(deImage* image);
+deImage *deImage_create(int width, int height, deImageFormat format);
+void deImage_destroy(deImage *image);
 
-int			deImage_getWidth				(const deImage* image);
-int			deImage_getHeight				(const deImage* image);
-void*		deImage_getPixelPtr				(const deImage* image);
+int deImage_getWidth(const deImage *image);
+int deImage_getHeight(const deImage *image);
+void *deImage_getPixelPtr(const deImage *image);
 
-deARGB		deImage_getPixel				(const deImage* image, int x, int y);
-void		deImage_setPixel				(deImage* image, int x, int y, deARGB argb);
+deARGB deImage_getPixel(const deImage *image, int x, int y);
+void deImage_setPixel(deImage *image, int x, int y, deARGB argb);
 
-deImage*	deImage_loadTarga				(const char* fileName);
-deBool		deImage_saveTarga				(const deImage* image, const char* fileName);
+deImage *deImage_loadTarga(const char *fileName);
+bool deImage_saveTarga(const deImage *image, const char *fileName);
 
-deImage*	deImage_convertFormat			(const deImage* image, deImageFormat format);
-deImage*	deImage_scale					(const deImage* image, int dstWidth, int dstHeight);
-void		deImage_copyToUint8RGBA			(const deImage* image, deUint8* pixels);
+deImage *deImage_convertFormat(const deImage *image, deImageFormat format);
+deImage *deImage_scale(const deImage *image, int dstWidth, int dstHeight);
+void deImage_copyToUint8RGBA(const deImage *image, uint8_t *pixels);
 
 #endif /* _DEIMAGE_H */

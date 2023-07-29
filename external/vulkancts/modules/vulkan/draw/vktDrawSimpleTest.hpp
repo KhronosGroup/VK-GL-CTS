@@ -33,16 +33,15 @@ namespace Draw
 class SimpleDrawTests : public tcu::TestCaseGroup
 {
 public:
-						SimpleDrawTests			(tcu::TestContext &testCtx);
-						~SimpleDrawTests		(void);
-	void				init					(void);
+    SimpleDrawTests(tcu::TestContext &testCtx);
+    ~SimpleDrawTests(void);
+    void init(void);
 
 private:
-	SimpleDrawTests								(const SimpleDrawTests &other);
-	SimpleDrawTests&	operator=				(const SimpleDrawTests &other);
-
+    SimpleDrawTests(const SimpleDrawTests &other);
+    SimpleDrawTests &operator=(const SimpleDrawTests &other);
 };
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWSIMPLETEST_HPP

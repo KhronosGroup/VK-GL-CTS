@@ -49,67 +49,67 @@ namespace StencilTexturing
 class FunctionalTest : public deqp::TestCase
 {
 public:
-	FunctionalTest(deqp::Context& context);
+    FunctionalTest(deqp::Context &context);
 
-	~FunctionalTest()
-	{
-	}
+    ~FunctionalTest()
+    {
+    }
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private routines */
-	void dispatch(glw::GLuint program_id, bool is_stencil, glw::GLuint dst_texture_id, glw::GLuint src_texture_id);
+    /* Private routines */
+    void dispatch(glw::GLuint program_id, bool is_stencil, glw::GLuint dst_texture_id, glw::GLuint src_texture_id);
 
-	void draw(glw::GLuint program_id, glw::GLuint dst_texture_id, glw::GLuint src_texture_id);
+    void draw(glw::GLuint program_id, glw::GLuint dst_texture_id, glw::GLuint src_texture_id);
 
-	glw::GLuint prepareDestinationTexture(bool is_stencil);
+    glw::GLuint prepareDestinationTexture(bool is_stencil);
 
-	glw::GLuint prepareProgram(bool is_draw, bool is_stencil);
+    glw::GLuint prepareProgram(bool is_draw, bool is_stencil);
 
-	glw::GLuint prepareSourceTexture(glw::GLenum internal_format, bool is_stencil,
-									 const std::vector<glw::GLubyte>& texture_data);
+    glw::GLuint prepareSourceTexture(glw::GLenum internal_format, bool is_stencil,
+                                     const std::vector<glw::GLubyte> &texture_data);
 
-	void prepareSourceTextureData(glw::GLenum internal_format, std::vector<glw::GLubyte>& texture_data);
+    void prepareSourceTextureData(glw::GLenum internal_format, std::vector<glw::GLubyte> &texture_data);
 
-	bool verifyTexture(glw::GLuint id, glw::GLenum source_internal_format, bool is_stencil,
-					   const std::vector<glw::GLubyte>& src_texture_data);
+    bool verifyTexture(glw::GLuint id, glw::GLenum source_internal_format, bool is_stencil,
+                       const std::vector<glw::GLubyte> &src_texture_data);
 
-	bool test(glw::GLenum internal_format, bool is_stencil);
+    bool test(glw::GLenum internal_format, bool is_stencil);
 
-	/* Private constants */
-	static const glw::GLchar* m_compute_shader_code;
-	static const glw::GLchar* m_fragment_shader_code;
-	static const glw::GLchar* m_geometry_shader_code;
-	static const glw::GLchar* m_tesselation_control_shader_code;
-	static const glw::GLchar* m_tesselation_evaluation_shader_code;
-	static const glw::GLchar* m_vertex_shader_code;
-	static const glw::GLchar* m_expected_value_depth;
-	static const glw::GLchar* m_expected_value_stencil;
-	static const glw::GLchar* m_image_definition_depth;
-	static const glw::GLchar* m_image_definition_stencil;
-	static const glw::GLchar* m_output_type_depth;
-	static const glw::GLchar* m_output_type_stencil;
-	static const glw::GLchar* m_sampler_definition_depth;
-	static const glw::GLchar* m_sampler_definition_stencil;
-	static const glw::GLuint  m_height;
-	static const glw::GLint   m_image_unit;
-	static const glw::GLint   m_texture_unit;
-	static const glw::GLuint  m_width;
+    /* Private constants */
+    static const glw::GLchar *m_compute_shader_code;
+    static const glw::GLchar *m_fragment_shader_code;
+    static const glw::GLchar *m_geometry_shader_code;
+    static const glw::GLchar *m_tesselation_control_shader_code;
+    static const glw::GLchar *m_tesselation_evaluation_shader_code;
+    static const glw::GLchar *m_vertex_shader_code;
+    static const glw::GLchar *m_expected_value_depth;
+    static const glw::GLchar *m_expected_value_stencil;
+    static const glw::GLchar *m_image_definition_depth;
+    static const glw::GLchar *m_image_definition_stencil;
+    static const glw::GLchar *m_output_type_depth;
+    static const glw::GLchar *m_output_type_stencil;
+    static const glw::GLchar *m_sampler_definition_depth;
+    static const glw::GLchar *m_sampler_definition_stencil;
+    static const glw::GLuint m_height;
+    static const glw::GLint m_image_unit;
+    static const glw::GLint m_texture_unit;
+    static const glw::GLuint m_width;
 };
 } /* namespace StencilTexturing */
 
 class StencilTexturingTests : public deqp::TestCaseGroup
 {
 public:
-	StencilTexturingTests(deqp::Context& context);
-	~StencilTexturingTests(void);
+    StencilTexturingTests(deqp::Context &context);
+    ~StencilTexturingTests(void);
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	StencilTexturingTests(const StencilTexturingTests& other);
-	StencilTexturingTests& operator=(const StencilTexturingTests& other);
+    StencilTexturingTests(const StencilTexturingTests &other);
+    StencilTexturingTests &operator=(const StencilTexturingTests &other);
 };
 } /* namespace gl4cts */
 

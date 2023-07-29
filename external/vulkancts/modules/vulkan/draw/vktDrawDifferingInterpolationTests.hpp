@@ -33,9 +33,9 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup*	createDifferingInterpolationTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDifferingInterpolationTests(tcu::TestContext &testCtx);
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWDIFFERINGINTERPOLATIONTESTS_HPP

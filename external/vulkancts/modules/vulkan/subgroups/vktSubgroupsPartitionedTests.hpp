@@ -33,9 +33,9 @@ namespace vkt
 namespace subgroups
 {
 
-tcu::TestCaseGroup* createSubgroupsPartitionedTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSubgroupsPartitionedTests(tcu::TestContext &testCtx);
 
-} // subgroups
-} // vkt
+} // namespace subgroups
+} // namespace vkt
 
 #endif // _VKTSUBGROUPSPARTITIONEDTESTS_HPP

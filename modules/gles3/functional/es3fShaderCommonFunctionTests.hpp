@@ -35,18 +35,18 @@ namespace Functional
 class ShaderCommonFunctionTests : public TestCaseGroup
 {
 public:
-									ShaderCommonFunctionTests		(Context& context);
-	virtual							~ShaderCommonFunctionTests		(void);
+    ShaderCommonFunctionTests(Context &context);
+    virtual ~ShaderCommonFunctionTests(void);
 
-	virtual void					init							(void);
+    virtual void init(void);
 
 private:
-									ShaderCommonFunctionTests		(const ShaderCommonFunctionTests&);		// not allowed!
-	ShaderCommonFunctionTests&		operator=						(const ShaderCommonFunctionTests&);		// not allowed!
+    ShaderCommonFunctionTests(const ShaderCommonFunctionTests &);            // not allowed!
+    ShaderCommonFunctionTests &operator=(const ShaderCommonFunctionTests &); // not allowed!
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FSHADERCOMMONFUNCTIONTESTS_HPP

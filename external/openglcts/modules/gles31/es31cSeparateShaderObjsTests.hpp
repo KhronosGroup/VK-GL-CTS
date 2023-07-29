@@ -33,18 +33,18 @@ namespace glcts
 class SeparateShaderObjsTests : public TestCaseGroup
 {
 public:
-	SeparateShaderObjsTests(Context& context, glu::GLSLVersion glslVersion);
-	~SeparateShaderObjsTests(void);
+    SeparateShaderObjsTests(Context &context, glu::GLSLVersion glslVersion);
+    ~SeparateShaderObjsTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	SeparateShaderObjsTests(const SeparateShaderObjsTests& other);			  // not allowed
-	SeparateShaderObjsTests& operator=(const SeparateShaderObjsTests& other); // not allowed
+    SeparateShaderObjsTests(const SeparateShaderObjsTests &other);            // not allowed
+    SeparateShaderObjsTests &operator=(const SeparateShaderObjsTests &other); // not allowed
 
-	glu::GLSLVersion m_glslVersion;
+    glu::GLSLVersion m_glslVersion;
 };
 
-} // glcts
+} // namespace glcts
 
 #endif // _ES31CSEPARATESHADEROBJSTESTS_HPP
