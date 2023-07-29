@@ -36,18 +36,18 @@ class VertexAttrib64BitTests : public deqp::TestCaseGroup
 {
 
 public:
-	VertexAttrib64BitTests(deqp::Context& context);
+    VertexAttrib64BitTests(deqp::Context &context);
 
-	virtual ~VertexAttrib64BitTests()
-	{
-	}
+    virtual ~VertexAttrib64BitTests()
+    {
+    }
 
-	virtual void init();
+    virtual void init();
 
 private:
-	/* Block copy constructor and operator = */
-	VertexAttrib64BitTests(const VertexAttrib64BitTests&);
-	VertexAttrib64BitTests& operator=(const VertexAttrib64BitTests&);
+    /* Block copy constructor and operator = */
+    VertexAttrib64BitTests(const VertexAttrib64BitTests &);
+    VertexAttrib64BitTests &operator=(const VertexAttrib64BitTests &);
 };
 
 } /* namespace gl4cts */

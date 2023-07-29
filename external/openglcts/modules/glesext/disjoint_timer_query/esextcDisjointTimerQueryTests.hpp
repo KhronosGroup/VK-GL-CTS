@@ -40,17 +40,17 @@ namespace glcts
 class DisjointTimerQueryTests : public TestCaseGroupBase
 {
 public:
-	DisjointTimerQueryTests				(glcts::Context& context, const ExtParameters& extParams);
+    DisjointTimerQueryTests(glcts::Context &context, const ExtParameters &extParams);
 
-	virtual ~DisjointTimerQueryTests	(void)
-	{
-	}
+    virtual ~DisjointTimerQueryTests(void)
+    {
+    }
 
-	void init (void);
+    void init(void);
 
 private:
-	DisjointTimerQueryTests				(const DisjointTimerQueryTests& other);
-	DisjointTimerQueryTests& operator=	(const DisjointTimerQueryTests& other);
+    DisjointTimerQueryTests(const DisjointTimerQueryTests &other);
+    DisjointTimerQueryTests &operator=(const DisjointTimerQueryTests &other);
 };
 
 } // namespace glcts

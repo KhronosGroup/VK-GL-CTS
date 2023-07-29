@@ -24,37 +24,37 @@
 package com.drawelements.deqp.execserver;
 
 import android.app.Activity;
-import android.os.Bundle;
-import com.drawelements.deqp.testercore.Log;
-import com.drawelements.deqp.execserver.ExecService;
 import android.content.Intent;
+import android.os.Bundle;
+import com.drawelements.deqp.execserver.ExecService;
+import com.drawelements.deqp.testercore.Log;
 
 public class ServiceStarter extends Activity {
 
-	@Override
-	public void onCreate(Bundle savedInstance) {
-		super.onCreate(savedInstance);
-	}
+    @Override
+    public void onCreate(Bundle savedInstance) {
+        super.onCreate(savedInstance);
+    }
 
-	@Override
-	public void onStart() {
-		super.onStart();
+    @Override
+    public void onStart() {
+        super.onStart();
 
-		final int port = getIntent().getIntExtra("port", ExecService.DEFAULT_PORT);
+        final int port =
+            getIntent().getIntExtra("port", ExecService.DEFAULT_PORT);
 
-		try {
-			Intent svc = new Intent(this, ExecService.class);
-			svc.putExtra("port", port);
-			startService(svc);
-		}
-		catch (Exception e) {
-			Log.e(ExecService.LOG_TAG, "Failed to start ExecService", e);
-		}
-		finish();
-	}
+        try {
+            Intent svc = new Intent(this, ExecService.class);
+            svc.putExtra("port", port);
+            startService(svc);
+        } catch (Exception e) {
+            Log.e(ExecService.LOG_TAG, "Failed to start ExecService", e);
+        }
+        finish();
+    }
 
-	@Override
-	protected void onDestroy() {
-		super.onDestroy();
-	}
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+    }
 }

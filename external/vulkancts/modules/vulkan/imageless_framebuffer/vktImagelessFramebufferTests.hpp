@@ -31,9 +31,9 @@ namespace vkt
 namespace imageless
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name);
 
-} // imageless
-} // vkt
+} // namespace imageless
+} // namespace vkt
 
 #endif // _VKTIMAGELESSFRAMEBUFFERTESTS_HPP

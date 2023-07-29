@@ -34,53 +34,55 @@ namespace Functional
 
 using gls::FragOpInteractionCase;
 
-FragOpInteractionTests::FragOpInteractionTests (Context& context)
-	: TestCaseGroup(context, "interaction", "Shader - Render State Interaction Tests")
+FragOpInteractionTests::FragOpInteractionTests(Context &context)
+    : TestCaseGroup(context, "interaction", "Shader - Render State Interaction Tests")
 {
 }
 
-FragOpInteractionTests::~FragOpInteractionTests (void)
+FragOpInteractionTests::~FragOpInteractionTests(void)
 {
 }
 
-void FragOpInteractionTests::init (void)
+void FragOpInteractionTests::init(void)
 {
-	// .basic
-	{
-		tcu::TestCaseGroup* const	basicGroup	= new tcu::TestCaseGroup(m_testCtx, "basic_shader", "Basic shaders");
-		const deUint32				baseSeed	= 0x667eacfd;
-		const int					numCases	= 100;
-		rsg::ProgramParameters		params;
+    // .basic
+    {
+        tcu::TestCaseGroup *const basicGroup = new tcu::TestCaseGroup(m_testCtx, "basic_shader", "Basic shaders");
+        const uint32_t baseSeed              = 0x667eacfd;
+        const int numCases                   = 100;
+        rsg::ProgramParameters params;
 
-		addChild(basicGroup);
+        addChild(basicGroup);
 
-		params.version					= rsg::VERSION_100;
+        params.version = rsg::VERSION_100;
 
-		params.useScalarConversions		= true;
-		params.useSwizzle				= true;
-		params.useComparisonOps			= true;
-		params.useConditionals			= true;
+        params.useScalarConversions = true;
+        params.useSwizzle           = true;
+        params.useComparisonOps     = true;
+        params.useConditionals      = true;
 
-		params.vertexParameters.randomize						= true;
-		params.vertexParameters.maxStatementDepth				= 3;
-		params.vertexParameters.maxStatementsPerBlock			= 4;
-		params.vertexParameters.maxExpressionDepth				= 4;
-		params.vertexParameters.maxCombinedVariableScalars		= 64;
+        params.vertexParameters.randomize                  = true;
+        params.vertexParameters.maxStatementDepth          = 3;
+        params.vertexParameters.maxStatementsPerBlock      = 4;
+        params.vertexParameters.maxExpressionDepth         = 4;
+        params.vertexParameters.maxCombinedVariableScalars = 64;
 
-		params.fragmentParameters.randomize						= true;
-		params.fragmentParameters.maxStatementDepth				= 3;
-		params.fragmentParameters.maxStatementsPerBlock			= 4;
-		params.fragmentParameters.maxExpressionDepth			= 4;
-		params.fragmentParameters.maxCombinedVariableScalars	= 64;
+        params.fragmentParameters.randomize                  = true;
+        params.fragmentParameters.maxStatementDepth          = 3;
+        params.fragmentParameters.maxStatementsPerBlock      = 4;
+        params.fragmentParameters.maxExpressionDepth         = 4;
+        params.fragmentParameters.maxCombinedVariableScalars = 64;
 
-		for (int ndx = 0; ndx < numCases; ndx++)
-		{
-			params.seed = baseSeed ^ deInt32Hash(ndx);
-			basicGroup->addChild(new FragOpInteractionCase(m_testCtx, m_context.getRenderContext(), m_context.getContextInfo(), de::toString(ndx).c_str(), params));
-		}
-	}
+        for (int ndx = 0; ndx < numCases; ndx++)
+        {
+            params.seed = baseSeed ^ deInt32Hash(ndx);
+            basicGroup->addChild(new FragOpInteractionCase(m_testCtx, m_context.getRenderContext(),
+                                                           m_context.getContextInfo(), de::toString(ndx).c_str(),
+                                                           params));
+        }
+    }
 }
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp

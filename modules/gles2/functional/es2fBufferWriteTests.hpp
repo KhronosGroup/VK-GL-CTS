@@ -36,18 +36,18 @@ namespace Functional
 class BufferWriteTests : public TestCaseGroup
 {
 public:
-						BufferWriteTests	(Context& context);
-						~BufferWriteTests	(void);
+    BufferWriteTests(Context &context);
+    ~BufferWriteTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						BufferWriteTests	(const BufferWriteTests& other);
-	BufferWriteTests&	operator=			(const BufferWriteTests& other);
+    BufferWriteTests(const BufferWriteTests &other);
+    BufferWriteTests &operator=(const BufferWriteTests &other);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FBUFFERWRITETESTS_HPP

@@ -32,126 +32,128 @@
 namespace de
 {
 
-void ThreadSafeRingBuffer_selfTest (void);
+void ThreadSafeRingBuffer_selfTest(void);
 
 /** Thread-safe ring buffer template. */
 template <typename T>
 class ThreadSafeRingBuffer
 {
 public:
-					ThreadSafeRingBuffer	(size_t size);
-					~ThreadSafeRingBuffer	(void) {}
+    ThreadSafeRingBuffer(size_t size);
+    ~ThreadSafeRingBuffer(void)
+    {
+    }
 
-	void			pushFront				(const T& elem);
-	bool			tryPushFront			(const T& elem);
-	T				popBack					(void);
-	bool			tryPopBack				(T& dst);
+    void pushFront(const T &elem);
+    bool tryPushFront(const T &elem);
+    T popBack(void);
+    bool tryPopBack(T &dst);
 
 protected:
-	void			pushFrontInternal		(const T& elem);
-	T				popBackInternal			(void);
+    void pushFrontInternal(const T &elem);
+    T popBackInternal(void);
 
-	const size_t	m_size;
-	std::vector<T>	m_elements;
+    const size_t m_size;
+    std::vector<T> m_elements;
 
-	size_t			m_front;
-	size_t			m_back;
+    size_t m_front;
+    size_t m_back;
 
-	Mutex			m_writeMutex;
-	Mutex			m_readMutex;
+    Mutex m_writeMutex;
+    Mutex m_readMutex;
 
-	Semaphore		m_fill;
-	Semaphore		m_empty;
+    Semaphore m_fill;
+    Semaphore m_empty;
 };
 
 // ThreadSafeRingBuffer implementation.
 
 template <typename T>
-ThreadSafeRingBuffer<T>::ThreadSafeRingBuffer (size_t size)
-	: m_size		(size+1)
-	, m_elements	(m_size)
-	, m_front		(0)
-	, m_back		(0)
-	, m_fill		(0)
-	, m_empty		((int)size)
+ThreadSafeRingBuffer<T>::ThreadSafeRingBuffer(size_t size)
+    : m_size(size + 1)
+    , m_elements(m_size)
+    , m_front(0)
+    , m_back(0)
+    , m_fill(0)
+    , m_empty((int)size)
 {
-	// Semaphores currently only support INT_MAX
-	DE_ASSERT(size > 0 && size < 0x7fffffff);
+    // Semaphores currently only support INT_MAX
+    DE_ASSERT(size > 0 && size < 0x7fffffff);
 }
 
 template <typename T>
-inline void ThreadSafeRingBuffer<T>::pushFrontInternal (const T& elem)
+inline void ThreadSafeRingBuffer<T>::pushFrontInternal(const T &elem)
 {
-	m_elements[m_front] = elem;
-	m_front = (m_front + 1) % m_size;
+    m_elements[m_front] = elem;
+    m_front             = (m_front + 1) % m_size;
 }
 
 template <typename T>
-inline T ThreadSafeRingBuffer<T>::popBackInternal ()
+inline T ThreadSafeRingBuffer<T>::popBackInternal()
 {
-	const size_t ndx = m_back;
-	m_back = (m_back + 1) % m_size;
-	return m_elements[ndx];
+    const size_t ndx = m_back;
+    m_back           = (m_back + 1) % m_size;
+    return m_elements[ndx];
 }
 
 template <typename T>
-void ThreadSafeRingBuffer<T>::pushFront (const T& elem)
+void ThreadSafeRingBuffer<T>::pushFront(const T &elem)
 {
-	m_writeMutex.lock();
-	m_empty.decrement();
-	pushFrontInternal(elem);
-	m_fill.increment();
-	m_writeMutex.unlock();
+    m_writeMutex.lock();
+    m_empty.decrement();
+    pushFrontInternal(elem);
+    m_fill.increment();
+    m_writeMutex.unlock();
 }
 
 template <typename T>
-bool ThreadSafeRingBuffer<T>::tryPushFront (const T& elem)
+bool ThreadSafeRingBuffer<T>::tryPushFront(const T &elem)
 {
-	if (!m_writeMutex.tryLock())
-		return false;
+    if (!m_writeMutex.tryLock())
+        return false;
 
-	const bool success = m_empty.tryDecrement();
+    const bool success = m_empty.tryDecrement();
 
-	if (success)
-	{
-		pushFrontInternal(elem);
-		m_fill.increment();
-	}
+    if (success)
+    {
+        pushFrontInternal(elem);
+        m_fill.increment();
+    }
 
-	m_writeMutex.unlock();
-	return success;
+    m_writeMutex.unlock();
+    return success;
 }
 
 template <typename T>
-T ThreadSafeRingBuffer<T>::popBack ()
+T ThreadSafeRingBuffer<T>::popBack()
 {
-	m_readMutex.lock();
-	m_fill.decrement();
-	T elem = popBackInternal();
-	m_empty.increment();
-	m_readMutex.unlock();
-	return elem;
+    m_readMutex.lock();
+    m_fill.decrement();
+    T elem = popBackInternal();
+    m_empty.increment();
+    m_readMutex.unlock();
+    return elem;
 }
 
 template <typename T>
-bool ThreadSafeRingBuffer<T>::tryPopBack (T& dst)
+bool ThreadSafeRingBuffer<T>::tryPopBack(T &dst)
 {
-	if (!m_readMutex.tryLock())
-		return false;
+    if (!m_readMutex.tryLock())
+        return false;
 
-	bool success = m_fill.tryDecrement();
+    bool success = m_fill.tryDecrement();
 
-	if (success)
-	{
-		dst = popBackInternal();
-		m_empty.increment();
-	}
+    if (success)
+    {
+        dst = popBackInternal();
+        m_empty.increment();
+    }
 
-	m_readMutex.unlock();
+    m_readMutex.unlock();
 
-	return success;
+    return success;
 }
 
-} // de
+} // namespace de
 
 #endif // _DETHREADSAFERINGBUFFER_HPP

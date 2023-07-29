@@ -36,17 +36,17 @@ namespace Functional
 class SamplerStateQueryTests : public TestCaseGroup
 {
 public:
-							SamplerStateQueryTests	(Context& context);
+    SamplerStateQueryTests(Context &context);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							SamplerStateQueryTests	(const SamplerStateQueryTests& other);
-	SamplerStateQueryTests&	operator=				(const SamplerStateQueryTests& other);
+    SamplerStateQueryTests(const SamplerStateQueryTests &other);
+    SamplerStateQueryTests &operator=(const SamplerStateQueryTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FSAMPLERSTATEQUERYTESTS_HPP

@@ -33,15 +33,15 @@ namespace glcts
 class ShaderImageLoadStoreTests : public glcts::TestCaseGroup
 {
 public:
-	ShaderImageLoadStoreTests(glcts::Context& context);
-	~ShaderImageLoadStoreTests(void);
+    ShaderImageLoadStoreTests(glcts::Context &context);
+    ~ShaderImageLoadStoreTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	ShaderImageLoadStoreTests(const ShaderImageLoadStoreTests& other);
-	ShaderImageLoadStoreTests& operator=(const ShaderImageLoadStoreTests& other);
+    ShaderImageLoadStoreTests(const ShaderImageLoadStoreTests &other);
+    ShaderImageLoadStoreTests &operator=(const ShaderImageLoadStoreTests &other);
 };
-}
+} // namespace glcts
 
 #endif // _ES31CSHADERIMAGELOADSTORETESTS_HPP

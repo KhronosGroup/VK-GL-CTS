@@ -33,15 +33,15 @@ namespace es3cts
 class NumberParsingTests : public deqp::TestCaseGroup
 {
 public:
-	NumberParsingTests(deqp::Context& context);
-	virtual ~NumberParsingTests(void);
+    NumberParsingTests(deqp::Context &context);
+    virtual ~NumberParsingTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	NumberParsingTests(const NumberParsingTests& other) = delete;
-	NumberParsingTests& operator=(const NumberParsingTests& other) = delete;
+    NumberParsingTests(const NumberParsingTests &other)            = delete;
+    NumberParsingTests &operator=(const NumberParsingTests &other) = delete;
 };
 
-}
+} // namespace es3cts
 #endif // _ES3CNUMBERPARSINGTESTS_HPP

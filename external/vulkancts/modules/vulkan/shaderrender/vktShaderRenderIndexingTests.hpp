@@ -32,9 +32,9 @@ namespace vkt
 namespace sr
 {
 
-tcu::TestCaseGroup*	createIndexingTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createIndexingTests(tcu::TestContext &testCtx);
 
-} // sr
-} // vkt
+} // namespace sr
+} // namespace vkt
 
 #endif // _VKTSHADERRENDERINDEXINGTESTS_HPP

@@ -31,7 +31,6 @@
 #include "tcuMaybe.hpp"
 #include "tcuVectorType.hpp"
 
-
 namespace vkt
 {
 namespace wsi
@@ -40,32 +39,29 @@ namespace wsi
 class NativeObjects
 {
 public:
-	using Extensions = std::vector<vk::VkExtensionProperties>;
+    using Extensions = std::vector<vk::VkExtensionProperties>;
 
-												NativeObjects	(Context&						context,
-																 const Extensions&				supportedExtensions,
-																 vk::wsi::Type					wsiType,
-																 size_t							windowCount = 1u,
-																 const tcu::Maybe<tcu::UVec2>&	initialWindowSize = tcu::Nothing);
+    NativeObjects(Context &context, const Extensions &supportedExtensions, vk::wsi::Type wsiType,
+                  size_t windowCount = 1u, const tcu::Maybe<tcu::UVec2> &initialWindowSize = tcu::Nothing);
 
-												NativeObjects	(NativeObjects&& other);
+    NativeObjects(NativeObjects &&other);
 
-	vk::wsi::Display&							getDisplay		() const;
+    vk::wsi::Display &getDisplay() const;
 
-	vk::wsi::Window&							getWindow		(size_t index = 0u) const;
+    vk::wsi::Window &getWindow(size_t index = 0u) const;
 
-	static de::MovePtr<vk::wsi::Window>			createWindow	(const vk::wsi::Display& display, const tcu::Maybe<tcu::UVec2>& initialSize);
+    static de::MovePtr<vk::wsi::Window> createWindow(const vk::wsi::Display &display,
+                                                     const tcu::Maybe<tcu::UVec2> &initialSize);
 
-	static de::MovePtr<vk::wsi::Display>		createDisplay	(const vk::Platform&	platform,
-																 const Extensions&		supportedExtensions,
-																 vk::wsi::Type			wsiType);
+    static de::MovePtr<vk::wsi::Display> createDisplay(const vk::Platform &platform,
+                                                       const Extensions &supportedExtensions, vk::wsi::Type wsiType);
+
 private:
-	de::UniquePtr<vk::wsi::Display>				display;
-	std::vector<de::MovePtr<vk::wsi::Window>>	windows;
-
+    de::UniquePtr<vk::wsi::Display> display;
+    std::vector<de::MovePtr<vk::wsi::Window>> windows;
 };
 
-} // wsi
-} // vkt
+} // namespace wsi
+} // namespace vkt
 
 #endif // _VKTNATIVEOBJECTSUTIL_HPP

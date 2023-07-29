@@ -33,7 +33,7 @@ namespace vkt
 namespace postmortem
 {
 
-tcu::TestCaseGroup *createTests (tcu::TestContext &testCtx, const std::string& name);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name);
 
 } // namespace postmortem
 } // namespace vkt

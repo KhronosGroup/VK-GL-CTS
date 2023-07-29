@@ -34,9 +34,9 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup*	createAhbExternalFormatResolveTests (tcu::TestContext& testCtx, const SharedGroupParams& params);
+tcu::TestCaseGroup *createAhbExternalFormatResolveTests(tcu::TestContext &testCtx, const SharedGroupParams &params);
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWAHBEXTERNALFORMATRESOLVETESTS_HPP

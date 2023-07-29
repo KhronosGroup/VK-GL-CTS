@@ -62,7 +62,7 @@ namespace video
 // TODO: Eventually convert all the debug logging from the NVIDIA samples code to TCU printing functions.
 #define DEBUGLOG(X)
 
-} // video
-} // vkt
+} // namespace video
+} // namespace vkt
 
 #endif // _EXTNVIDIAVIDEOPARSERIF_HPP

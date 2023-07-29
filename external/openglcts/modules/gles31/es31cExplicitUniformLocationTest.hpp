@@ -33,29 +33,29 @@ namespace glcts
 class ExplicitUniformLocationGLTests : public glcts::TestCaseGroup
 {
 public:
-	ExplicitUniformLocationGLTests(glcts::Context& context);
-	~ExplicitUniformLocationGLTests(void);
+    ExplicitUniformLocationGLTests(glcts::Context &context);
+    ~ExplicitUniformLocationGLTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	ExplicitUniformLocationGLTests(const ExplicitUniformLocationGLTests& other);
-	ExplicitUniformLocationGLTests& operator=(const ExplicitUniformLocationGLTests& other);
+    ExplicitUniformLocationGLTests(const ExplicitUniformLocationGLTests &other);
+    ExplicitUniformLocationGLTests &operator=(const ExplicitUniformLocationGLTests &other);
 };
 
 class ExplicitUniformLocationES31Tests : public glcts::TestCaseGroup
 {
 public:
-	ExplicitUniformLocationES31Tests(glcts::Context& context);
-	~ExplicitUniformLocationES31Tests(void);
+    ExplicitUniformLocationES31Tests(glcts::Context &context);
+    ~ExplicitUniformLocationES31Tests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	ExplicitUniformLocationES31Tests(const ExplicitUniformLocationES31Tests& other);
-	ExplicitUniformLocationES31Tests& operator=(const ExplicitUniformLocationES31Tests& other);
+    ExplicitUniformLocationES31Tests(const ExplicitUniformLocationES31Tests &other);
+    ExplicitUniformLocationES31Tests &operator=(const ExplicitUniformLocationES31Tests &other);
 };
 
-} // glcts
+} // namespace glcts
 
 #endif // _ES31CEXPLICITUNIFORMLOCATIONTEST_HPP

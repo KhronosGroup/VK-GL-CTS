@@ -31,10 +31,10 @@ namespace vkt
 namespace ycbcr
 {
 
-tcu::TestCaseGroup*	createCopyTests				(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*	createDimensionsCopyTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createCopyTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createDimensionsCopyTests(tcu::TestContext &testCtx);
 
-} // ycbcr
-} // vkt
+} // namespace ycbcr
+} // namespace vkt
 
 #endif // _VKTYCBCRCOPYTESTS_HPP

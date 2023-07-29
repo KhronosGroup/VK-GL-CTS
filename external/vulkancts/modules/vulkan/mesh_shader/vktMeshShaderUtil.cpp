@@ -31,36 +31,55 @@ namespace MeshShader
 
 using namespace vk;
 
-VkExtent2D getShadingRateSize (FragmentSize fragmentSize)
+VkExtent2D getShadingRateSize(FragmentSize fragmentSize)
 {
-	VkExtent2D result {0u, 0u};
-	switch (fragmentSize)
-	{
-	case FragmentSize::SIZE_2X2:		result.width = 2; result.height = 2; break;
-	case FragmentSize::SIZE_2X1:		result.width = 2; result.height = 1; break;
-	case FragmentSize::SIZE_1X1:		result.width = 1; result.height = 1; break;
-	default:							DE_ASSERT(false); break;
-	}
+    VkExtent2D result{0u, 0u};
+    switch (fragmentSize)
+    {
+    case FragmentSize::SIZE_2X2:
+        result.width  = 2;
+        result.height = 2;
+        break;
+    case FragmentSize::SIZE_2X1:
+        result.width  = 2;
+        result.height = 1;
+        break;
+    case FragmentSize::SIZE_1X1:
+        result.width  = 1;
+        result.height = 1;
+        break;
+    default:
+        DE_ASSERT(false);
+        break;
+    }
 
-	return result;
+    return result;
 }
 
-std::string getGLSLShadingRateMask (FragmentSize fragmentSize)
+std::string getGLSLShadingRateMask(FragmentSize fragmentSize)
 {
-	std::string shadingRateMask;
+    std::string shadingRateMask;
 
-	switch (fragmentSize)
-	{
-	case FragmentSize::SIZE_2X2:	shadingRateMask = "(gl_ShadingRateFlag2HorizontalPixelsEXT|gl_ShadingRateFlag2VerticalPixelsEXT)";	break;
-	case FragmentSize::SIZE_2X1:	shadingRateMask = "gl_ShadingRateFlag2HorizontalPixelsEXT";											break;
-	case FragmentSize::SIZE_1X1:	shadingRateMask = "0";																				break;
-	default:						DE_ASSERT(false);																					break;
-	}
+    switch (fragmentSize)
+    {
+    case FragmentSize::SIZE_2X2:
+        shadingRateMask = "(gl_ShadingRateFlag2HorizontalPixelsEXT|gl_ShadingRateFlag2VerticalPixelsEXT)";
+        break;
+    case FragmentSize::SIZE_2X1:
+        shadingRateMask = "gl_ShadingRateFlag2HorizontalPixelsEXT";
+        break;
+    case FragmentSize::SIZE_1X1:
+        shadingRateMask = "0";
+        break;
+    default:
+        DE_ASSERT(false);
+        break;
+    }
 
-	return shadingRateMask;
+    return shadingRateMask;
 }
 
-int getSPVShadingRateValue (FragmentSize fragmentSize)
+int getSPVShadingRateValue(FragmentSize fragmentSize)
 {
 #if 0
       const int gl_ShadingRateFlag2VerticalPixelsEXT = 1;
@@ -68,58 +87,66 @@ int getSPVShadingRateValue (FragmentSize fragmentSize)
       const int gl_ShadingRateFlag2HorizontalPixelsEXT = 4;
       const int gl_ShadingRateFlag4HorizontalPixelsEXT = 8;
 #endif
-	int shadingRateValue = 0;
+    int shadingRateValue = 0;
 
-	switch (fragmentSize)
-	{
-	case FragmentSize::SIZE_2X2:	shadingRateValue = 5;	break;	// (gl_ShadingRateFlag2HorizontalPixelsEXT|gl_ShadingRateFlag2VerticalPixelsEXT)
-	case FragmentSize::SIZE_2X1:	shadingRateValue = 4;	break;	// gl_ShadingRateFlag2HorizontalPixelsEXT
-	case FragmentSize::SIZE_1X1:	shadingRateValue = 0;	break;
-	default:						DE_ASSERT(false);		break;
-	}
+    switch (fragmentSize)
+    {
+    case FragmentSize::SIZE_2X2:
+        shadingRateValue = 5;
+        break; // (gl_ShadingRateFlag2HorizontalPixelsEXT|gl_ShadingRateFlag2VerticalPixelsEXT)
+    case FragmentSize::SIZE_2X1:
+        shadingRateValue = 4;
+        break; // gl_ShadingRateFlag2HorizontalPixelsEXT
+    case FragmentSize::SIZE_1X1:
+        shadingRateValue = 0;
+        break;
+    default:
+        DE_ASSERT(false);
+        break;
+    }
 
-	return shadingRateValue;
+    return shadingRateValue;
 }
 
-void checkTaskMeshShaderSupportNV (Context& context, bool requireTask, bool requireMesh)
+void checkTaskMeshShaderSupportNV(Context &context, bool requireTask, bool requireMesh)
 {
-	context.requireDeviceFunctionality("VK_NV_mesh_shader");
+    context.requireDeviceFunctionality("VK_NV_mesh_shader");
 
-	DE_ASSERT(requireTask || requireMesh);
+    DE_ASSERT(requireTask || requireMesh);
 
-	const auto& meshFeatures = context.getMeshShaderFeatures();
+    const auto &meshFeatures = context.getMeshShaderFeatures();
 
-	if (requireTask && !meshFeatures.taskShader)
-		TCU_THROW(NotSupportedError, "Task shader not supported");
+    if (requireTask && !meshFeatures.taskShader)
+        TCU_THROW(NotSupportedError, "Task shader not supported");
 
-	if (requireMesh && !meshFeatures.meshShader)
-		TCU_THROW(NotSupportedError, "Mesh shader not supported");
+    if (requireMesh && !meshFeatures.meshShader)
+        TCU_THROW(NotSupportedError, "Mesh shader not supported");
 }
 
-void checkTaskMeshShaderSupportEXT (Context& context, bool requireTask, bool requireMesh)
+void checkTaskMeshShaderSupportEXT(Context &context, bool requireTask, bool requireMesh)
 {
-	context.requireDeviceFunctionality("VK_EXT_mesh_shader");
+    context.requireDeviceFunctionality("VK_EXT_mesh_shader");
 
-	DE_ASSERT(requireTask || requireMesh);
+    DE_ASSERT(requireTask || requireMesh);
 
-	const auto& meshFeatures = context.getMeshShaderFeaturesEXT();
+    const auto &meshFeatures = context.getMeshShaderFeaturesEXT();
 
-	if (requireTask && !meshFeatures.taskShader)
-		TCU_THROW(NotSupportedError, "Task shader not supported");
+    if (requireTask && !meshFeatures.taskShader)
+        TCU_THROW(NotSupportedError, "Task shader not supported");
 
-	if (requireMesh && !meshFeatures.meshShader)
-		TCU_THROW(NotSupportedError, "Mesh shader not supported");
+    if (requireMesh && !meshFeatures.meshShader)
+        TCU_THROW(NotSupportedError, "Mesh shader not supported");
 }
 
-vk::ShaderBuildOptions getMinMeshEXTBuildOptions (uint32_t vulkanVersion, uint32_t flags)
+vk::ShaderBuildOptions getMinMeshEXTBuildOptions(uint32_t vulkanVersion, uint32_t flags)
 {
-	return vk::ShaderBuildOptions(vulkanVersion, vk::SPIRV_VERSION_1_4, flags, true);
+    return vk::ShaderBuildOptions(vulkanVersion, vk::SPIRV_VERSION_1_4, flags, true);
 }
 
-vk::SpirVAsmBuildOptions getMinMeshEXTSpvBuildOptions (uint32_t vulkanVersion, bool allowMaintenance4)
+vk::SpirVAsmBuildOptions getMinMeshEXTSpvBuildOptions(uint32_t vulkanVersion, bool allowMaintenance4)
 {
-	return vk::SpirVAsmBuildOptions(vulkanVersion, vk::SPIRV_VERSION_1_4, true/*allowSpirv14*/, allowMaintenance4);
+    return vk::SpirVAsmBuildOptions(vulkanVersion, vk::SPIRV_VERSION_1_4, true /*allowSpirv14*/, allowMaintenance4);
 }
 
-}
-}
+} // namespace MeshShader
+} // namespace vkt

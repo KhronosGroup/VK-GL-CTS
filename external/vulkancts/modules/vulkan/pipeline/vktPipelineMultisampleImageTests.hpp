@@ -31,11 +31,14 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createMultisampleSampledImageTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
-tcu::TestCaseGroup* createMultisampleStorageImageTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
-tcu::TestCaseGroup* createMultisampleStandardSamplePositionTests(tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
+tcu::TestCaseGroup *createMultisampleSampledImageTests(tcu::TestContext &testCtx,
+                                                       vk::PipelineConstructionType pipelineConstructionType);
+tcu::TestCaseGroup *createMultisampleStorageImageTests(tcu::TestContext &testCtx,
+                                                       vk::PipelineConstructionType pipelineConstructionType);
+tcu::TestCaseGroup *createMultisampleStandardSamplePositionTests(tcu::TestContext &testCtx,
+                                                                 vk::PipelineConstructionType pipelineConstructionType);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEMULTISAMPLEIMAGETESTS_HPP

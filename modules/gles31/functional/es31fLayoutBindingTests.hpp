@@ -37,18 +37,18 @@ namespace Functional
 class LayoutBindingTests : public TestCaseGroup
 {
 public:
-						LayoutBindingTests		(Context& context);
-						~LayoutBindingTests		(void);
+    LayoutBindingTests(Context &context);
+    ~LayoutBindingTests(void);
 
-	void				init					(void);
+    void init(void);
 
 private:
-	LayoutBindingTests&	operator=				(const LayoutBindingTests&);
-	LayoutBindingTests							(const LayoutBindingTests&);
+    LayoutBindingTests &operator=(const LayoutBindingTests &);
+    LayoutBindingTests(const LayoutBindingTests &);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FLAYOUTBINDINGTESTS_HPP

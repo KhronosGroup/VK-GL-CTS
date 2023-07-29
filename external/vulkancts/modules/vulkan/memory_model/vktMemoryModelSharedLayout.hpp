@@ -31,9 +31,9 @@ namespace vkt
 namespace MemoryModel
 {
 
-tcu::TestCaseGroup* createSharedMemoryLayoutTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSharedMemoryLayoutTests(tcu::TestContext &testCtx);
 
-} // MemoryModel
-} // vkt
+} // namespace MemoryModel
+} // namespace vkt
 
 #endif // _VKTMEMORYMODELSHAREDLAYOUT_HPP

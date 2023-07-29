@@ -33,42 +33,42 @@ namespace glcts
 class DrawIndirectTestsGL40 : public glcts::TestCaseGroup
 {
 public:
-	DrawIndirectTestsGL40(glcts::Context& context);
-	~DrawIndirectTestsGL40(void);
+    DrawIndirectTestsGL40(glcts::Context &context);
+    ~DrawIndirectTestsGL40(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	DrawIndirectTestsGL40(const DrawIndirectTestsGL40& other);
-	DrawIndirectTestsGL40& operator=(const DrawIndirectTestsGL40& other);
+    DrawIndirectTestsGL40(const DrawIndirectTestsGL40 &other);
+    DrawIndirectTestsGL40 &operator=(const DrawIndirectTestsGL40 &other);
 };
 
 class DrawIndirectTestsGL43 : public glcts::TestCaseGroup
 {
 public:
-	DrawIndirectTestsGL43(glcts::Context& context);
-	~DrawIndirectTestsGL43(void);
+    DrawIndirectTestsGL43(glcts::Context &context);
+    ~DrawIndirectTestsGL43(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	DrawIndirectTestsGL43(const DrawIndirectTestsGL43& other);
-	DrawIndirectTestsGL43& operator=(const DrawIndirectTestsGL43& other);
+    DrawIndirectTestsGL43(const DrawIndirectTestsGL43 &other);
+    DrawIndirectTestsGL43 &operator=(const DrawIndirectTestsGL43 &other);
 };
 
 class DrawIndirectTestsES31 : public glcts::TestCaseGroup
 {
 public:
-	DrawIndirectTestsES31(glcts::Context& context);
-	~DrawIndirectTestsES31(void);
+    DrawIndirectTestsES31(glcts::Context &context);
+    ~DrawIndirectTestsES31(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	DrawIndirectTestsES31(const DrawIndirectTestsES31& other);
-	DrawIndirectTestsES31& operator=(const DrawIndirectTestsES31& other);
+    DrawIndirectTestsES31(const DrawIndirectTestsES31 &other);
+    DrawIndirectTestsES31 &operator=(const DrawIndirectTestsES31 &other);
 };
 
-} // gl4cts
+} // namespace glcts
 
 #endif // _ES31CDRAWINDIRECTTESTS_HPP

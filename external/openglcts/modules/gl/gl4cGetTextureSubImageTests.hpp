@@ -53,14 +53,14 @@ namespace GetTextureSubImage
 class Tests : public deqp::TestCaseGroup
 {
 public:
-	Tests(deqp::Context& context);
-	~Tests(void);
-	virtual void init(void);
+    Tests(deqp::Context &context);
+    ~Tests(void);
+    virtual void init(void);
 
 private:
-	/* Private member functions. */
-	Tests(const Tests& other);
-	Tests& operator=(const Tests& other);
+    /* Private member functions. */
+    Tests(const Tests &other);
+    Tests &operator=(const Tests &other);
 };
 /* Tests class. */
 
@@ -105,67 +105,67 @@ private:
 class Errors : public deqp::TestCase
 {
 public:
-	Errors(deqp::Context& context);
-	~Errors(void);
-	IterateResult iterate(void);
+    Errors(deqp::Context &context);
+    ~Errors(void);
+    IterateResult iterate(void);
 
 private:
-	/* Private member variables. */
-	deqp::Context& m_context;
-	glw::GLuint	m_texture_1D;
-	glw::GLuint	m_texture_1D_array;
-	glw::GLuint	m_texture_2D;
-	glw::GLuint	m_texture_rectangle;
-	glw::GLuint	m_texture_2D_compressed;
-	glw::GLuint	m_texture_2D_multisampled;
-	glw::GLubyte*  m_destination_buffer;
+    /* Private member variables. */
+    deqp::Context &m_context;
+    glw::GLuint m_texture_1D;
+    glw::GLuint m_texture_1D_array;
+    glw::GLuint m_texture_2D;
+    glw::GLuint m_texture_rectangle;
+    glw::GLuint m_texture_2D_compressed;
+    glw::GLuint m_texture_2D_multisampled;
+    glw::GLubyte *m_destination_buffer;
 
-	/* Get(Compressed)TextureSubImage function pointer and type declarations. */
-	typedef void(GLW_APIENTRY* PFNGLGETTEXTURESUBIMAGEPROC)(glw::GLuint texture, glw::GLint level, glw::GLint xoffset,
-															glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width,
-															glw::GLsizei height, glw::GLsizei depth, glw::GLenum format,
-															glw::GLenum type, glw::GLsizei bufSize, void* pixels);
+    /* Get(Compressed)TextureSubImage function pointer and type declarations. */
+    typedef void(GLW_APIENTRY *PFNGLGETTEXTURESUBIMAGEPROC)(glw::GLuint texture, glw::GLint level, glw::GLint xoffset,
+                                                            glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width,
+                                                            glw::GLsizei height, glw::GLsizei depth, glw::GLenum format,
+                                                            glw::GLenum type, glw::GLsizei bufSize, void *pixels);
 
-	typedef void(GLW_APIENTRY* PFNGLGETCOMPRESSEDTEXTURESUBIMAGEPROC)(glw::GLuint texture, glw::GLint level,
-																	  glw::GLint xoffset, glw::GLint yoffset,
-																	  glw::GLint zoffset, glw::GLsizei width,
-																	  glw::GLsizei height, glw::GLsizei depth,
-																	  glw::GLsizei bufSize, void* pixels);
+    typedef void(GLW_APIENTRY *PFNGLGETCOMPRESSEDTEXTURESUBIMAGEPROC)(glw::GLuint texture, glw::GLint level,
+                                                                      glw::GLint xoffset, glw::GLint yoffset,
+                                                                      glw::GLint zoffset, glw::GLsizei width,
+                                                                      glw::GLsizei height, glw::GLsizei depth,
+                                                                      glw::GLsizei bufSize, void *pixels);
 
-	PFNGLGETTEXTURESUBIMAGEPROC			  m_gl_GetTextureSubImage;
-	PFNGLGETCOMPRESSEDTEXTURESUBIMAGEPROC m_gl_GetCompressedTextureSubImage;
+    PFNGLGETTEXTURESUBIMAGEPROC m_gl_GetTextureSubImage;
+    PFNGLGETCOMPRESSEDTEXTURESUBIMAGEPROC m_gl_GetCompressedTextureSubImage;
 
-	/* Private member functions. */
-	void prepare();
+    /* Private member functions. */
+    void prepare();
 
-	bool testExistingTextureObjectError();
+    bool testExistingTextureObjectError();
 
-	bool testBufferOrMultisampledTargetError();
+    bool testBufferOrMultisampledTargetError();
 
-	bool testNegativeOffsetError();
+    bool testNegativeOffsetError();
 
-	bool testBoundsError();
+    bool testBoundsError();
 
-	bool testOneDimmensionalTextureErrors();
+    bool testOneDimmensionalTextureErrors();
 
-	bool testTwoDimmensionalTextureErrors();
+    bool testTwoDimmensionalTextureErrors();
 
-	bool testBufferSizeError();
+    bool testBufferSizeError();
 
-	void clean();
+    void clean();
 
-	/* Private static constants. */
-	static const glw::GLubyte s_texture_data[];
-	static const glw::GLuint  s_texture_data_size;
-	static const glw::GLuint  s_texture_data_width;
-	static const glw::GLuint  s_texture_data_height;
+    /* Private static constants. */
+    static const glw::GLubyte s_texture_data[];
+    static const glw::GLuint s_texture_data_size;
+    static const glw::GLuint s_texture_data_width;
+    static const glw::GLuint s_texture_data_height;
 
-	static const glw::GLubyte s_texture_data_compressed[];
-	static const glw::GLuint  s_texture_data_compressed_size;
-	static const glw::GLuint  s_texture_data_compressed_width;
-	static const glw::GLuint  s_texture_data_compressed_height;
+    static const glw::GLubyte s_texture_data_compressed[];
+    static const glw::GLuint s_texture_data_compressed_size;
+    static const glw::GLuint s_texture_data_compressed_width;
+    static const glw::GLuint s_texture_data_compressed_height;
 
-	static const glw::GLuint s_destination_buffer_size;
+    static const glw::GLuint s_destination_buffer_size;
 };
 /* Errors class. */
 
@@ -209,44 +209,44 @@ private:
 class Functional : public deqp::TestCase
 {
 public:
-	Functional(deqp::Context& context);
-	~Functional(void);
-	IterateResult iterate(void);
+    Functional(deqp::Context &context);
+    ~Functional(void);
+    IterateResult iterate(void);
 
 private:
-	/* Private member variables. */
-	deqp::Context& m_context;
-	glw::GLuint	m_texture;
+    /* Private member variables. */
+    deqp::Context &m_context;
+    glw::GLuint m_texture;
 
-	/* Private member functions. */
-	void prepare(glw::GLenum target, bool is_compressed);
-	bool check(glw::GLenum target, bool is_compressed);
-	void clean();
+    /* Private member functions. */
+    void prepare(glw::GLenum target, bool is_compressed);
+    bool check(glw::GLenum target, bool is_compressed);
+    void clean();
 
-	/* Get(Compressed)TextureSubImage function pointer and type declarations. */
-	typedef void(GLW_APIENTRY* PFNGLGETTEXTURESUBIMAGEPROC)(glw::GLuint texture, glw::GLint level, glw::GLint xoffset,
-															glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width,
-															glw::GLsizei height, glw::GLsizei depth, glw::GLenum format,
-															glw::GLenum type, glw::GLsizei bufSize, void* pixels);
+    /* Get(Compressed)TextureSubImage function pointer and type declarations. */
+    typedef void(GLW_APIENTRY *PFNGLGETTEXTURESUBIMAGEPROC)(glw::GLuint texture, glw::GLint level, glw::GLint xoffset,
+                                                            glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width,
+                                                            glw::GLsizei height, glw::GLsizei depth, glw::GLenum format,
+                                                            glw::GLenum type, glw::GLsizei bufSize, void *pixels);
 
-	typedef void(GLW_APIENTRY* PFNGLGETCOMPRESSEDTEXTURESUBIMAGEPROC)(glw::GLuint texture, glw::GLint level,
-																	  glw::GLint xoffset, glw::GLint yoffset,
-																	  glw::GLint zoffset, glw::GLsizei width,
-																	  glw::GLsizei height, glw::GLsizei depth,
-																	  glw::GLsizei bufSize, void* pixels);
+    typedef void(GLW_APIENTRY *PFNGLGETCOMPRESSEDTEXTURESUBIMAGEPROC)(glw::GLuint texture, glw::GLint level,
+                                                                      glw::GLint xoffset, glw::GLint yoffset,
+                                                                      glw::GLint zoffset, glw::GLsizei width,
+                                                                      glw::GLsizei height, glw::GLsizei depth,
+                                                                      glw::GLsizei bufSize, void *pixels);
 
-	PFNGLGETTEXTURESUBIMAGEPROC			  m_gl_GetTextureSubImage;
-	PFNGLGETCOMPRESSEDTEXTURESUBIMAGEPROC m_gl_GetCompressedTextureSubImage;
+    PFNGLGETTEXTURESUBIMAGEPROC m_gl_GetTextureSubImage;
+    PFNGLGETCOMPRESSEDTEXTURESUBIMAGEPROC m_gl_GetCompressedTextureSubImage;
 
-	/* Static constants. */
-	static const glw::GLubyte s_texture_data[];
-	static const glw::GLsizei s_texture_data_size;
-	static const glw::GLsizei s_texture_data_width;
-	static const glw::GLsizei s_texture_data_height;
-	static const glw::GLsizei s_texture_data_depth;
+    /* Static constants. */
+    static const glw::GLubyte s_texture_data[];
+    static const glw::GLsizei s_texture_data_size;
+    static const glw::GLsizei s_texture_data_width;
+    static const glw::GLsizei s_texture_data_height;
+    static const glw::GLsizei s_texture_data_depth;
 
-	static const glw::GLubyte s_texture_data_compressed[];
-	static const glw::GLsizei s_texture_data_compressed_size;
+    static const glw::GLubyte s_texture_data_compressed[];
+    static const glw::GLsizei s_texture_data_compressed_size;
 };
 
 /* Functional class */

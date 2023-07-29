@@ -31,9 +31,9 @@ namespace vkt
 namespace image
 {
 
-tcu::TestCaseGroup* createImageSizeTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageSizeTests(tcu::TestContext &testCtx);
 
-} // image
-} // vkt
+} // namespace image
+} // namespace vkt
 
 #endif // _VKTIMAGESIZETESTS_HPP

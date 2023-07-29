@@ -33,9 +33,9 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup* createNonSemanticInfoGroup(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createNonSemanticInfoGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMNONSEMANTICINFOTESTS_HPP

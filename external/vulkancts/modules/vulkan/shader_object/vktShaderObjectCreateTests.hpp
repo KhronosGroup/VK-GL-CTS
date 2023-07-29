@@ -31,8 +31,8 @@ namespace vkt
 {
 namespace ShaderObject
 {
-tcu::TestCaseGroup* createShaderObjectCreateTests (tcu::TestContext& testCtx);
-} // ShaderObject
-} // vkt
+tcu::TestCaseGroup *createShaderObjectCreateTests(tcu::TestContext &testCtx);
+} // namespace ShaderObject
+} // namespace vkt
 
 #endif // _VKTSHADEROBJECTCREATETESTS_HPP

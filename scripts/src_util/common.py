@@ -22,6 +22,7 @@
 
 import os
 import subprocess
+import sys
 
 TEXT_FILE_EXTENSION = [
     ".bat",
@@ -58,13 +59,16 @@ BINARY_FILE_EXTENSION = [
     ".h264",
     ".h265",
     ".mp4",
-	".diff",
+    ".diff",
     ".yuv"
     ]
 
 def isTextFile (filePath):
     # Special case for a preprocessor test file that uses a non-ascii/utf8 encoding
     if filePath.endswith("preprocessor.test"):
+        return False
+    # Special case for clang-format which is a baked binary from clang
+    if filePath.endswith("clang-format"):
         return False
 
     ext = os.path.splitext(filePath)[1]
@@ -111,10 +115,48 @@ def getAbsolutePathPathFromProjectRelativePath (projectRelativePath):
 def getChangedFiles ():
     # Added, Copied, Moved, Renamed
     output = git('diff', '--cached', '--name-only', '-z', '--diff-filter=ACMR')
-    relativePaths = output.split('\0')[:-1] # remove trailing ''
+    if not output:
+        return []
+    relativePaths = output.decode().split('\0')[:-1] # remove trailing ''
     return [getAbsolutePathPathFromProjectRelativePath(path) for path in relativePaths]
+
+def getFilesChangedSince (commit):
+    # Get all the files changed since a given commit
+    output = git('diff', '--name-only', '-U0', '-z', '--no-color', '--no-relative', '--diff-filter=ACMR', commit)
+    relativePaths = output.decode().split('\0')[:-1] # remove trailing ''
+    return [getAbsolutePathPathFromProjectRelativePath(path) for path in relativePaths]
+
+def getFilesCurrentlyDirty ():
+    # Get all the files currently dirty and uncommitted
+    return getFilesChangedSize('HEAD')
+
+def getFilesModifiedSinceLastCommit ():
+    # Try to get only the modified files.  In a shallow clone with depth 1,
+    # HEAD^ doesn't exist, so we have no choice but to return all the files.
+    try:
+        return getFilesChangedSize('HEAD^')
+    except:
+        return getAllProjectFiles()
 
 def getAllProjectFiles ():
     output = git('ls-files', '--cached', '-z').decode()
     relativePaths = output.split('\0')[:-1] # remove trailing ''
     return [getAbsolutePathPathFromProjectRelativePath(path) for path in relativePaths]
+
+def runCommand (command):
+    process = runCommandAsync(command)
+    waitAsyncCommand(process, command)
+
+def runCommandAsync (command):
+    try:
+        return subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError as e:
+        raise RuntimeError('Failed to run command "%s": %s' % (' '.join(command), e.strerror))
+
+def waitAsyncCommand (process, command):
+    (out, err) = process.communicate()
+    if process.returncode == 0:
+        return out
+    else:
+        print('Failed to run command "%s": %s' % (' '.join(command), err))
+        sys.exit(process.returncode)

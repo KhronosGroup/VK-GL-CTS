@@ -32,27 +32,27 @@ namespace egl
 namespace gles2
 {
 
-void clear (const glw::Functions& gl, int x, int y, int width, int height, const tcu::Vec4& color)
+void clear(const glw::Functions &gl, int x, int y, int width, int height, const tcu::Vec4 &color)
 {
-	gl.disable(GL_DITHER);
-	gl.enable(GL_SCISSOR_TEST);
-	gl.scissor(x, y, width, height);
-	gl.clearColor(color.x(), color.y(), color.z(), color.w());
-	gl.clear(GL_COLOR_BUFFER_BIT);
-	gl.disable(GL_SCISSOR_TEST);
+    gl.disable(GL_DITHER);
+    gl.enable(GL_SCISSOR_TEST);
+    gl.scissor(x, y, width, height);
+    gl.clearColor(color.x(), color.y(), color.z(), color.w());
+    gl.clear(GL_COLOR_BUFFER_BIT);
+    gl.disable(GL_SCISSOR_TEST);
 }
 
-void readPixels (const glw::Functions& gl, tcu::Surface& dst, int x, int y, int width, int height)
+void readPixels(const glw::Functions &gl, tcu::Surface &dst, int x, int y, int width, int height)
 {
-	dst.setSize(width, height);
-	gl.readPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, dst.getAccess().getDataPtr());
+    dst.setSize(width, height);
+    gl.readPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, dst.getAccess().getDataPtr());
 }
 
-void finish (const glw::Functions& gl)
+void finish(const glw::Functions &gl)
 {
-	gl.finish();
+    gl.finish();
 }
 
-} // gles2
-} // egl
-} // deqp
+} // namespace gles2
+} // namespace egl
+} // namespace deqp

@@ -24,93 +24,91 @@
 #include "xeBatchResult.hpp"
 #include "deMemory.h"
 
-using std::vector;
-using std::string;
 using std::map;
+using std::string;
+using std::vector;
 
 namespace xe
 {
 
 // InfoLog
 
-InfoLog::InfoLog (void)
+InfoLog::InfoLog(void)
 {
 }
 
-void InfoLog::append (const deUint8* bytes, size_t numBytes)
+void InfoLog::append(const uint8_t *bytes, size_t numBytes)
 {
-	DE_ASSERT(numBytes > 0);
-	const size_t oldSize = m_data.size();
-	m_data.resize(oldSize+numBytes);
-	deMemcpy(&m_data[oldSize], bytes, numBytes);
+    DE_ASSERT(numBytes > 0);
+    const size_t oldSize = m_data.size();
+    m_data.resize(oldSize + numBytes);
+    deMemcpy(&m_data[oldSize], bytes, numBytes);
 }
 
 // TestCaseResultData
 
-TestCaseResultData::TestCaseResultData (const char* casePath)
-	: m_casePath	(casePath)
-	, m_statusCode	(TESTSTATUSCODE_LAST)
+TestCaseResultData::TestCaseResultData(const char *casePath) : m_casePath(casePath), m_statusCode(TESTSTATUSCODE_LAST)
 {
 }
 
-TestCaseResultData::~TestCaseResultData (void)
+TestCaseResultData::~TestCaseResultData(void)
 {
 }
 
-void TestCaseResultData::setTestResult (TestStatusCode statusCode, const char* statusDetails)
+void TestCaseResultData::setTestResult(TestStatusCode statusCode, const char *statusDetails)
 {
-	m_statusCode	= statusCode;
-	m_statusDetails	= statusDetails;
+    m_statusCode    = statusCode;
+    m_statusDetails = statusDetails;
 }
 
-void TestCaseResultData::clear (void)
+void TestCaseResultData::clear(void)
 {
-	m_statusCode = TESTSTATUSCODE_LAST;
-	m_statusDetails.clear();
-	m_casePath.clear();
-	m_data.clear();
+    m_statusCode = TESTSTATUSCODE_LAST;
+    m_statusDetails.clear();
+    m_casePath.clear();
+    m_data.clear();
 }
 
 // BatchResult
 
-BatchResult::BatchResult (void)
+BatchResult::BatchResult(void)
 {
 }
 
-BatchResult::~BatchResult (void)
+BatchResult::~BatchResult(void)
 {
 }
 
-bool BatchResult::hasTestCaseResult (const char* casePath) const
+bool BatchResult::hasTestCaseResult(const char *casePath) const
 {
-	return m_resultMap.find(casePath) != m_resultMap.end();
+    return m_resultMap.find(casePath) != m_resultMap.end();
 }
 
-ConstTestCaseResultPtr BatchResult::getTestCaseResult (const char* casePath) const
+ConstTestCaseResultPtr BatchResult::getTestCaseResult(const char *casePath) const
 {
-	map<string, int>::const_iterator pos = m_resultMap.find(casePath);
-	DE_ASSERT(pos != m_resultMap.end());
-	return getTestCaseResult(pos->second);
+    map<string, int>::const_iterator pos = m_resultMap.find(casePath);
+    DE_ASSERT(pos != m_resultMap.end());
+    return getTestCaseResult(pos->second);
 }
 
-TestCaseResultPtr BatchResult::getTestCaseResult (const char* casePath)
+TestCaseResultPtr BatchResult::getTestCaseResult(const char *casePath)
 {
-	map<string, int>::const_iterator pos = m_resultMap.find(casePath);
-	DE_ASSERT(pos != m_resultMap.end());
-	return getTestCaseResult(pos->second);
+    map<string, int>::const_iterator pos = m_resultMap.find(casePath);
+    DE_ASSERT(pos != m_resultMap.end());
+    return getTestCaseResult(pos->second);
 }
 
-TestCaseResultPtr BatchResult::createTestCaseResult (const char* casePath)
+TestCaseResultPtr BatchResult::createTestCaseResult(const char *casePath)
 {
-	DE_ASSERT(!hasTestCaseResult(casePath));
+    DE_ASSERT(!hasTestCaseResult(casePath));
 
-	m_testCaseResults.reserve(m_testCaseResults.size()+1);
-	m_resultMap[casePath] = (int)m_testCaseResults.size();
+    m_testCaseResults.reserve(m_testCaseResults.size() + 1);
+    m_resultMap[casePath] = (int)m_testCaseResults.size();
 
-	TestCaseResultPtr caseResult(new TestCaseResultData(casePath));
-	m_testCaseResults.push_back(caseResult);
+    TestCaseResultPtr caseResult(new TestCaseResultData(casePath));
+    m_testCaseResults.push_back(caseResult);
 
-	return caseResult;
+    return caseResult;
 }
 
-} // xe
+} // namespace xe

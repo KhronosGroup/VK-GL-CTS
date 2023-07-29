@@ -34,16 +34,16 @@ namespace QueryPool
 class QueryPoolOcclusionTests : public tcu::TestCaseGroup
 {
 public:
-	QueryPoolOcclusionTests		(tcu::TestContext &testCtx);
-	~QueryPoolOcclusionTests	(void);
-	void init					(void);
+    QueryPoolOcclusionTests(tcu::TestContext &testCtx);
+    ~QueryPoolOcclusionTests(void);
+    void init(void);
 
 private:
-	QueryPoolOcclusionTests					(const QueryPoolOcclusionTests &other);
-	QueryPoolOcclusionTests&	operator=	(const QueryPoolOcclusionTests &other);
+    QueryPoolOcclusionTests(const QueryPoolOcclusionTests &other);
+    QueryPoolOcclusionTests &operator=(const QueryPoolOcclusionTests &other);
 };
 
-} // QueryPool
-} // vkt
+} // namespace QueryPool
+} // namespace vkt
 
 #endif // _VKTQUERYPOOLOCCLUSIONTESTS_HPP

@@ -38,36 +38,36 @@ namespace glcts
 class CubeMapArrayDataStorage
 {
 public:
-	/* Public functions */
-	CubeMapArrayDataStorage();
-	~CubeMapArrayDataStorage();
+    /* Public functions */
+    CubeMapArrayDataStorage();
+    ~CubeMapArrayDataStorage();
 
-	void deinit(void);
-	void init(const glw::GLuint width, const glw::GLuint height, const glw::GLuint depth,
-			  glw::GLubyte initial_value = 0);
+    void deinit(void);
+    void init(const glw::GLuint width, const glw::GLuint height, const glw::GLuint depth,
+              glw::GLubyte initial_value = 0);
 
-	inline glw::GLuint getDepth() const
-	{
-		return m_depth;
-	}
-	inline glw::GLuint getHeight() const
-	{
-		return m_height;
-	}
-	inline glw::GLuint getWidth() const
-	{
-		return m_width;
-	}
+    inline glw::GLuint getDepth() const
+    {
+        return m_depth;
+    }
+    inline glw::GLuint getHeight() const
+    {
+        return m_height;
+    }
+    inline glw::GLuint getWidth() const
+    {
+        return m_width;
+    }
 
-	glw::GLuint   getArraySize() const;
-	glw::GLubyte* getDataArray() const;
+    glw::GLuint getArraySize() const;
+    glw::GLubyte *getDataArray() const;
 
 protected:
-	/* Protected variables */
-	glw::GLubyte* m_data_array;
-	glw::GLuint   m_depth;
-	glw::GLuint   m_height;
-	glw::GLuint   m_width;
+    /* Protected variables */
+    glw::GLubyte *m_data_array;
+    glw::GLuint m_depth;
+    glw::GLuint m_height;
+    glw::GLuint m_width;
 };
 
 /**  Implementation of Test 3 from CTS_EXT_texture_cube_map_array.
@@ -102,60 +102,60 @@ protected:
 class TextureCubeMapArrayStencilAttachments : public TestCaseBase
 {
 public:
-	/* Public functions */
-	TextureCubeMapArrayStencilAttachments(Context& context, const ExtParameters& extParams, const char* name,
-										  const char* description, glw::GLboolean immutable_storage,
-										  glw::GLboolean fbo_layered);
+    /* Public functions */
+    TextureCubeMapArrayStencilAttachments(Context &context, const ExtParameters &extParams, const char *name,
+                                          const char *description, glw::GLboolean immutable_storage,
+                                          glw::GLboolean fbo_layered);
 
-	virtual ~TextureCubeMapArrayStencilAttachments()
-	{
-	}
+    virtual ~TextureCubeMapArrayStencilAttachments()
+    {
+    }
 
-	virtual IterateResult iterate(void);
-	virtual void		  deinit(void);
+    virtual IterateResult iterate(void);
+    virtual void deinit(void);
 
-	/* Public variables */
-	static const glw::GLuint m_n_components;
-	static const glw::GLuint m_n_cube_map_array_configurations;
-	static const glw::GLuint m_n_vertices_gs;
+    /* Public variables */
+    static const glw::GLuint m_n_components;
+    static const glw::GLuint m_n_cube_map_array_configurations;
+    static const glw::GLuint m_n_vertices_gs;
 
 private:
-	/* Private variables */
-	static const char* m_fragment_shader_code;
-	static const char* m_vertex_shader_code;
+    /* Private variables */
+    static const char *m_fragment_shader_code;
+    static const char *m_vertex_shader_code;
 
-	glw::GLboolean m_fbo_layered;
-	glw::GLboolean m_immutable_storage;
+    glw::GLboolean m_fbo_layered;
+    glw::GLboolean m_immutable_storage;
 
-	glw::GLuint m_fbo_draw_id;
-	glw::GLuint m_fbo_read_id;
-	glw::GLuint m_fragment_shader_id;
-	glw::GLuint m_geometry_shader_id;
-	glw::GLuint m_program_id;
-	glw::GLuint m_texture_cube_array_stencil_id;
-	glw::GLuint m_texture_cube_array_color_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_vbo_id;
-	glw::GLuint m_vertex_shader_id;
+    glw::GLuint m_fbo_draw_id;
+    glw::GLuint m_fbo_read_id;
+    glw::GLuint m_fragment_shader_id;
+    glw::GLuint m_geometry_shader_id;
+    glw::GLuint m_program_id;
+    glw::GLuint m_texture_cube_array_stencil_id;
+    glw::GLuint m_texture_cube_array_color_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vbo_id;
+    glw::GLuint m_vertex_shader_id;
 
-	CubeMapArrayDataStorage* m_cube_map_array_data;
-	glw::GLubyte*			 m_result_data;
+    CubeMapArrayDataStorage *m_cube_map_array_data;
+    glw::GLubyte *m_result_data;
 
-	/* Private functions */
-	void buildAndUseProgram(glw::GLuint test_index);
-	void checkFramebufferStatus(glw::GLenum framebuffer_status);
-	void cleanAfterTest(void);
-	void createImmutableCubeArrayColor(glw::GLuint test_index);
-	void createImmutableCubeArrayStencil(glw::GLuint test_index);
-	void createMutableCubeArrayColor(glw::GLuint test_index);
-	void createMutableCubeArrayStencil(glw::GLuint test_index);
-	void fillStencilData(glw::GLuint test_index);
-	std::string getGeometryShaderCode(const std::string& max_vertices, const std::string& n_layers);
-	void initTest(void);
-	void initTestIteration(glw::GLuint test_index);
-	bool readPixelsAndCompareWithExpectedResult(glw::GLuint test_index);
-	void setupLayeredFramebuffer(void);
-	void setupNonLayeredFramebuffer(void);
+    /* Private functions */
+    void buildAndUseProgram(glw::GLuint test_index);
+    void checkFramebufferStatus(glw::GLenum framebuffer_status);
+    void cleanAfterTest(void);
+    void createImmutableCubeArrayColor(glw::GLuint test_index);
+    void createImmutableCubeArrayStencil(glw::GLuint test_index);
+    void createMutableCubeArrayColor(glw::GLuint test_index);
+    void createMutableCubeArrayStencil(glw::GLuint test_index);
+    void fillStencilData(glw::GLuint test_index);
+    std::string getGeometryShaderCode(const std::string &max_vertices, const std::string &n_layers);
+    void initTest(void);
+    void initTestIteration(glw::GLuint test_index);
+    bool readPixelsAndCompareWithExpectedResult(glw::GLuint test_index);
+    void setupLayeredFramebuffer(void);
+    void setupNonLayeredFramebuffer(void);
 };
 
 } // namespace glcts

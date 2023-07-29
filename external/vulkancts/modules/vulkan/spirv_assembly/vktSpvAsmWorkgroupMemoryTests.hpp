@@ -31,9 +31,9 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	createWorkgroupMemoryComputeGroup	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createWorkgroupMemoryComputeGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMWORKGROUPMEMORYTESTS_HPP

@@ -36,18 +36,18 @@ namespace Stress
 class VertexAttributeBindingTests : public TestCaseGroup
 {
 public:
-										VertexAttributeBindingTests		(Context& context);
-										~VertexAttributeBindingTests	(void);
+    VertexAttributeBindingTests(Context &context);
+    ~VertexAttributeBindingTests(void);
 
-	void								init							(void);
+    void init(void);
 
 private:
-										VertexAttributeBindingTests		(const VertexAttributeBindingTests& other);
-	VertexAttributeBindingTests&		operator=						(const VertexAttributeBindingTests& other);
+    VertexAttributeBindingTests(const VertexAttributeBindingTests &other);
+    VertexAttributeBindingTests &operator=(const VertexAttributeBindingTests &other);
 };
 
-} // Stress
-} // gles31
-} // deqp
+} // namespace Stress
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31SVERTEXATTRIBUTEBINDINGTESTS_HPP

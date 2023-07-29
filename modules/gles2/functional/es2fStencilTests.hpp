@@ -36,18 +36,18 @@ namespace Functional
 class StencilTests : public TestCaseGroup
 {
 public:
-						StencilTests			(Context& context);
-						~StencilTests			(void);
+    StencilTests(Context &context);
+    ~StencilTests(void);
 
-	void				init					(void);
+    void init(void);
 
 private:
-						StencilTests			(const StencilTests& other);
-	StencilTests&		operator=				(const StencilTests& other);
+    StencilTests(const StencilTests &other);
+    StencilTests &operator=(const StencilTests &other);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FSTENCILTESTS_HPP

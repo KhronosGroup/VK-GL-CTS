@@ -52,31 +52,30 @@ class VertexPacketAllocator;
  *//*--------------------------------------------------------------------*/
 struct VertexPacket
 {
-	// Inputs.
-	int				instanceNdx;	//!< Instance index.
-	int				vertexNdx;		//!< Vertex index.
+    // Inputs.
+    int instanceNdx; //!< Instance index.
+    int vertexNdx;   //!< Vertex index.
 
-	// Outputs.
-	tcu::Vec4		position;		//!< Transformed position - must be written always.
-	float			pointSize;		//!< Point size, required when rendering points.
-	int				primitiveID;	//!< Geometry shader output
+    // Outputs.
+    tcu::Vec4 position; //!< Transformed position - must be written always.
+    float pointSize;    //!< Point size, required when rendering points.
+    int primitiveID;    //!< Geometry shader output
 
-	GenericVec4		outputs[1];		//!< Generic vertex shader outputs - passed to subsequent shader stages. Array length is the number of outputs.
-	// --- DO NOT ADD ANY MEMBER VARIABLES AFTER OUTPUTS, OUTPUTS IS VARIABLE-SIZED --- //
+    GenericVec4 outputs
+        [1]; //!< Generic vertex shader outputs - passed to subsequent shader stages. Array length is the number of outputs.
+    // --- DO NOT ADD ANY MEMBER VARIABLES AFTER OUTPUTS, OUTPUTS IS VARIABLE-SIZED --- //
 
 private:
-	// Allow creation and destruction only for Allocator
-					VertexPacket	(void);
-					VertexPacket	(const VertexPacket&);  // disabled, non-copyable
-					~VertexPacket	(void);
+    // Allow creation and destruction only for Allocator
+    VertexPacket(void);
+    VertexPacket(const VertexPacket &); // disabled, non-copyable
+    ~VertexPacket(void);
 
-	// Assignment cannot work without knowing the output array length => prevent assignment
-	VertexPacket&	operator=		(const VertexPacket&);  // disabled, non-copyable
+    // Assignment cannot work without knowing the output array length => prevent assignment
+    VertexPacket &operator=(const VertexPacket &); // disabled, non-copyable
 
-
-	friend class VertexPacketAllocator;
+    friend class VertexPacketAllocator;
 } DE_WARN_UNUSED_TYPE;
-
 
 /*--------------------------------------------------------------------*//*!
  * \brief Vertex packet allocator
@@ -94,23 +93,26 @@ private:
 class VertexPacketAllocator
 {
 public:
-								VertexPacketAllocator	(const size_t numberOfVertexOutputs);
-								~VertexPacketAllocator	(void);
+    VertexPacketAllocator(const size_t numberOfVertexOutputs);
+    ~VertexPacketAllocator(void);
 
-	std::vector<VertexPacket*>	allocArray				(size_t count); // throws bad_alloc
-	VertexPacket*				alloc					(void);			// throws bad_alloc
+    std::vector<VertexPacket *> allocArray(size_t count); // throws bad_alloc
+    VertexPacket *alloc(void);                            // throws bad_alloc
 
-	inline size_t				getNumVertexOutputs		(void) const	{ return m_numberOfVertexOutputs; }
+    inline size_t getNumVertexOutputs(void) const
+    {
+        return m_numberOfVertexOutputs;
+    }
 
 private:
-								VertexPacketAllocator	(const VertexPacketAllocator&); // disabled, non-copyable
-	VertexPacketAllocator&		operator=				(const VertexPacketAllocator&); // disabled, non-copyable
+    VertexPacketAllocator(const VertexPacketAllocator &);            // disabled, non-copyable
+    VertexPacketAllocator &operator=(const VertexPacketAllocator &); // disabled, non-copyable
 
-	const size_t				m_numberOfVertexOutputs;
-	std::vector<deInt8*>		m_allocations;
-	std::vector<VertexPacket*>	m_singleAllocPool;
+    const size_t m_numberOfVertexOutputs;
+    std::vector<int8_t *> m_allocations;
+    std::vector<VertexPacket *> m_singleAllocPool;
 } DE_WARN_UNUSED_TYPE;
 
-} // rr
+} // namespace rr
 
 #endif // _RRVERTEXPACKET_HPP

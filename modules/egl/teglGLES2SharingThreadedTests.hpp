@@ -26,7 +26,6 @@
 #include "tcuDefs.hpp"
 #include "teglTestCase.hpp"
 
-
 namespace deqp
 {
 namespace egl
@@ -35,10 +34,10 @@ namespace egl
 class GLES2SharingThreadedTests : public TestCaseGroup
 {
 public:
-			GLES2SharingThreadedTests	(EglTestContext& eglTestCtx);
-	void	init						(void);
+    GLES2SharingThreadedTests(EglTestContext &eglTestCtx);
+    void init(void);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 #endif // _TEGLGLES2SHARINGTHREADEDTESTS_HPP

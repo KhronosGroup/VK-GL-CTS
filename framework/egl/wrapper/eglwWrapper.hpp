@@ -30,8 +30,8 @@ namespace eglw
 
 class Library;
 
-void    setCurrentThreadLibrary   (const eglw::Library* egl);
+void setCurrentThreadLibrary(const eglw::Library *egl);
 
-}
+} // namespace eglw
 
 #endif // _EGLWWRAPPER_HPP

@@ -36,6 +36,6 @@ float halfFloatToFloat(glw::GLhalf hf);
 float unsignedF11ToFloat(glw::GLuint value);
 float unsignedF10ToFloat(glw::GLuint value);
 
-} // glcts
+} // namespace glcts
 
 #endif // _GLCMISC_HPP

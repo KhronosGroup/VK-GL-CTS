@@ -32,16 +32,16 @@ namespace gl4cts
 class ProgramInterfaceQueryTests : public deqp::TestCaseGroup
 {
 public:
-	ProgramInterfaceQueryTests(deqp::Context& context);
-	~ProgramInterfaceQueryTests(void);
+    ProgramInterfaceQueryTests(deqp::Context &context);
+    ~ProgramInterfaceQueryTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	ProgramInterfaceQueryTests(const ProgramInterfaceQueryTests& other);
-	ProgramInterfaceQueryTests& operator=(const ProgramInterfaceQueryTests& other);
+    ProgramInterfaceQueryTests(const ProgramInterfaceQueryTests &other);
+    ProgramInterfaceQueryTests &operator=(const ProgramInterfaceQueryTests &other);
 };
 
-} // gl4cts
+} // namespace gl4cts
 
 #endif // _GL4CPROGRAMINTERFACEQUERYTESTS_HPP

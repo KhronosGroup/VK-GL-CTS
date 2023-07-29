@@ -26,6 +26,4 @@ package org.khronos.cts;
 
 import android.app.NativeActivity;
 
-public class GL46Activity extends NativeActivity
-{
-}
+public class GL46Activity extends NativeActivity {}

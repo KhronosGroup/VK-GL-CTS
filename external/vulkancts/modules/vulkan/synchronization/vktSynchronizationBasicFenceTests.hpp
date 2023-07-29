@@ -32,10 +32,10 @@ namespace vkt
 namespace synchronization
 {
 
-tcu::TestCaseGroup*		createBasicFenceTests	(tcu::TestContext& testCtx, VideoCodecOperationFlags VideoCodecOperationFlags = 0);
+tcu::TestCaseGroup *createBasicFenceTests(tcu::TestContext &testCtx,
+                                          VideoCodecOperationFlags VideoCodecOperationFlags = 0);
 
-} //synchronization
-} // vkt
-
+} // namespace synchronization
+} // namespace vkt
 
 #endif // _VKTSYNCHRONIZATIONBASICFENCETESTS_HPP

@@ -31,15 +31,15 @@ namespace vk
 
 #include "vkStrUtil.inl"
 
-template<typename T>
-const char*	getTypeName	(void);
+template <typename T>
+const char *getTypeName(void);
 
-template<HandleType Type>
-inline std::ostream& operator<< (std::ostream& s, const Handle<Type>& handle)
+template <HandleType Type>
+inline std::ostream &operator<<(std::ostream &s, const Handle<Type> &handle)
 {
-	return s << tcu::toHex(handle.getInternal());
+    return s << tcu::toHex(handle.getInternal());
 }
 
-} // vk
+} // namespace vk
 
 #endif // _VKSTRUTIL_HPP

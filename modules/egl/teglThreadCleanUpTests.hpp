@@ -31,9 +31,9 @@ namespace deqp
 namespace egl
 {
 
-TestCaseGroup* createThreadCleanUpTest (EglTestContext& eglTestCtx);
+TestCaseGroup *createThreadCleanUpTest(EglTestContext &eglTestCtx);
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLTHREADCLEANUPTESTS_HPP
