@@ -37,16 +37,16 @@ namespace
 
 void createChildren(tcu::TestCaseGroup *postmortemTests)
 {
-	tcu::TestContext &testCtx = postmortemTests->getTestContext();
-	postmortemTests->addChild(createShaderTimeoutTests(testCtx));
-	postmortemTests->addChild(createUseAfterFreeTests(testCtx));
+    tcu::TestContext &testCtx = postmortemTests->getTestContext();
+    postmortemTests->addChild(createShaderTimeoutTests(testCtx));
+    postmortemTests->addChild(createUseAfterFreeTests(testCtx));
 }
 
 } // namespace
 
 tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "postmortem", "Crash postmortem tests", createChildren);
+    return createTestGroup(testCtx, "postmortem", "Crash postmortem tests", createChildren);
 }
 
 } // namespace postmortem

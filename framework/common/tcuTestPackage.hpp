@@ -53,11 +53,13 @@ namespace tcu
 class TestCaseExecutor
 {
 public:
-	virtual								~TestCaseExecutor	(void) {}
+    virtual ~TestCaseExecutor(void)
+    {
+    }
 
-	virtual void						init				(TestCase* testCase, const std::string& path) = 0;
-	virtual void						deinit				(TestCase* testCase) = 0;
-	virtual TestNode::IterateResult		iterate				(TestCase* testCase) = 0;
+    virtual void init(TestCase *testCase, const std::string &path) = 0;
+    virtual void deinit(TestCase *testCase)                        = 0;
+    virtual TestNode::IterateResult iterate(TestCase *testCase)    = 0;
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -69,48 +71,53 @@ public:
 class TestPackage : public TestNode
 {
 public:
-									TestPackage			(TestContext& testCtx, const char* name, const char* description);
-	virtual							~TestPackage		(void);
+    TestPackage(TestContext &testCtx, const char *name, const char *description);
+    virtual ~TestPackage(void);
 
-	virtual TestCaseExecutor*		createExecutor		(void) const = 0;
+    virtual TestCaseExecutor *createExecutor(void) const = 0;
 
-	// Deprecated
-	virtual Archive*				getArchive			(void) { return DE_NULL; }
+    // Deprecated
+    virtual Archive *getArchive(void)
+    {
+        return DE_NULL;
+    }
 
-	virtual IterateResult			iterate				(void);
+    virtual IterateResult iterate(void);
 };
 
 // TestPackageRegistry
 
-typedef TestPackage* (*TestPackageCreateFunc)	(TestContext& testCtx);
+typedef TestPackage *(*TestPackageCreateFunc)(TestContext &testCtx);
 
 class TestPackageRegistry
 {
 public:
-	struct PackageInfo
-	{
-		PackageInfo (std::string name_, TestPackageCreateFunc createFunc_) : name(name_), createFunc(createFunc_) {}
+    struct PackageInfo
+    {
+        PackageInfo(std::string name_, TestPackageCreateFunc createFunc_) : name(name_), createFunc(createFunc_)
+        {
+        }
 
-		std::string				name;
-		TestPackageCreateFunc	createFunc;
-	};
+        std::string name;
+        TestPackageCreateFunc createFunc;
+    };
 
-	static TestPackageRegistry*			getSingleton			(void);
-	static void							destroy					(void);
+    static TestPackageRegistry *getSingleton(void);
+    static void destroy(void);
 
-	void								registerPackage			(const char* name, TestPackageCreateFunc createFunc);
-	const std::vector<PackageInfo*>&	getPackageInfos			(void) const;
-	PackageInfo*						getPackageInfoByName	(const char* name) const;
-	TestPackage*						createPackage			(const char* name, TestContext& testCtx) const;
+    void registerPackage(const char *name, TestPackageCreateFunc createFunc);
+    const std::vector<PackageInfo *> &getPackageInfos(void) const;
+    PackageInfo *getPackageInfoByName(const char *name) const;
+    TestPackage *createPackage(const char *name, TestContext &testCtx) const;
 
 private:
-										TestPackageRegistry		(void);
-										~TestPackageRegistry	(void);
+    TestPackageRegistry(void);
+    ~TestPackageRegistry(void);
 
-	static TestPackageRegistry*			getOrDestroy			(bool isCreate);
+    static TestPackageRegistry *getOrDestroy(bool isCreate);
 
-	// Member variables.
-	std::vector<PackageInfo*>			m_packageInfos;
+    // Member variables.
+    std::vector<PackageInfo *> m_packageInfos;
 };
 
 // TestPackageDescriptor
@@ -118,8 +125,8 @@ private:
 class TestPackageDescriptor
 {
 public:
-						TestPackageDescriptor		(const char* name, TestPackageCreateFunc createFunc);
-						~TestPackageDescriptor		(void);
+    TestPackageDescriptor(const char *name, TestPackageCreateFunc createFunc);
+    ~TestPackageDescriptor(void);
 };
 
 // TestPackageRoot
@@ -127,14 +134,14 @@ public:
 class TestPackageRoot : public TestNode
 {
 public:
-							TestPackageRoot		(TestContext& testCtx);
-							TestPackageRoot		(TestContext& testCtx, const std::vector<TestNode*>& children);
-							TestPackageRoot		(TestContext& testCtx, const TestPackageRegistry* packageRegistry);
-	virtual					~TestPackageRoot	(void);
+    TestPackageRoot(TestContext &testCtx);
+    TestPackageRoot(TestContext &testCtx, const std::vector<TestNode *> &children);
+    TestPackageRoot(TestContext &testCtx, const TestPackageRegistry *packageRegistry);
+    virtual ~TestPackageRoot(void);
 
-	virtual IterateResult	iterate				(void);
+    virtual IterateResult iterate(void);
 };
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUTESTPACKAGE_HPP

@@ -63,60 +63,60 @@ namespace glcts
 class TessellationShaderMaxPatchVertices : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TessellationShaderMaxPatchVertices(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderMaxPatchVertices(Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderMaxPatchVertices()
-	{
-	}
+    virtual ~TessellationShaderMaxPatchVertices()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* private methods */
-	void initTest(void);
-	void initProgramObjects(void);
-	void initVertexBufferObjects(void);
-	void initTransformFeedbackBufferObjects(void);
-	void initReferenceValues(void);
+    /* private methods */
+    void initTest(void);
+    void initProgramObjects(void);
+    void initVertexBufferObjects(void);
+    void initTransformFeedbackBufferObjects(void);
+    void initReferenceValues(void);
 
-	bool compareResults(const char* description, glw::GLfloat ref_fv[4]);
-	bool compareResults(const char* description, glw::GLint ref_iv[4]);
+    bool compareResults(const char *description, glw::GLfloat ref_fv[4]);
+    bool compareResults(const char *description, glw::GLint ref_iv[4]);
 
-	/* Private variables */
-	glw::GLuint m_bo_id_f_1; /* buffer object name for transform feedback of vec4 for case 1 */
-	glw::GLuint m_bo_id_f_2; /* buffer object name for transform feedback of vec4 for case 2 */
-	glw::GLuint m_bo_id_i_1; /* buffer object name for transform feedback of ivec4 for case 1 */
-	glw::GLuint m_bo_id_i_2; /* buffer object name for transform feedback of ivec4 for case 2 */
-	glw::GLuint m_fs_id;	 /* fragment shader object name */
-	glw::GLuint m_po_id_1;   /* program object name for case 1 */
-	glw::GLuint m_po_id_2;   /* program object name for case 2 */
-	glw::GLuint m_tc_id;	 /* tessellation control shader object name for case 1 */
-	glw::GLuint m_te_id;	 /* tessellation evaluation shader object name */
-	glw::GLuint m_tf_id_1;   /* transform feedback object name for case 1 */
-	glw::GLuint m_tf_id_2;   /* transform feedback object name for case 2 */
-	glw::GLuint m_vs_id;	 /* vertex shader object name */
-	glw::GLuint m_vao_id;	/* vertex array object */
+    /* Private variables */
+    glw::GLuint m_bo_id_f_1; /* buffer object name for transform feedback of vec4 for case 1 */
+    glw::GLuint m_bo_id_f_2; /* buffer object name for transform feedback of vec4 for case 2 */
+    glw::GLuint m_bo_id_i_1; /* buffer object name for transform feedback of ivec4 for case 1 */
+    glw::GLuint m_bo_id_i_2; /* buffer object name for transform feedback of ivec4 for case 2 */
+    glw::GLuint m_fs_id;     /* fragment shader object name */
+    glw::GLuint m_po_id_1;   /* program object name for case 1 */
+    glw::GLuint m_po_id_2;   /* program object name for case 2 */
+    glw::GLuint m_tc_id;     /* tessellation control shader object name for case 1 */
+    glw::GLuint m_te_id;     /* tessellation evaluation shader object name */
+    glw::GLuint m_tf_id_1;   /* transform feedback object name for case 1 */
+    glw::GLuint m_tf_id_2;   /* transform feedback object name for case 2 */
+    glw::GLuint m_vs_id;     /* vertex shader object name */
+    glw::GLuint m_vao_id;    /* vertex array object */
 
-	glw::GLint m_gl_max_patch_vertices; /* GL_MAX_PATCH_VERTICES_EXT pname value */
+    glw::GLint m_gl_max_patch_vertices; /* GL_MAX_PATCH_VERTICES_EXT pname value */
 
-	glw::GLuint   m_patch_vertices_bo_f_id; /* buffer object name for patch vertices submission */
-	glw::GLuint   m_patch_vertices_bo_i_id; /* buffer object name for patch vertices submission */
-	glw::GLfloat* m_patch_vertices_f;		/* input array of patches for submission */
-	glw::GLint*   m_patch_vertices_i;		/* input array of patches for submission */
+    glw::GLuint m_patch_vertices_bo_f_id; /* buffer object name for patch vertices submission */
+    glw::GLuint m_patch_vertices_bo_i_id; /* buffer object name for patch vertices submission */
+    glw::GLfloat *m_patch_vertices_f;     /* input array of patches for submission */
+    glw::GLint *m_patch_vertices_i;       /* input array of patches for submission */
 
-	static const char*		 m_fs_code;		  /* fragment shader code */
-	static const char*		 m_vs_code;		  /* vertex shader code */
-	static const char*		 m_tc_code;		  /* tessellation control shader code */
-	static const char*		 m_te_code;		  /* tessellation evaluation shader code */
-	static const char* const m_tf_varyings[]; /* transform feedback varyings */
+    static const char *m_fs_code;             /* fragment shader code */
+    static const char *m_vs_code;             /* vertex shader code */
+    static const char *m_tc_code;             /* tessellation control shader code */
+    static const char *m_te_code;             /* tessellation evaluation shader code */
+    static const char *const m_tf_varyings[]; /* transform feedback varyings */
 
-	glw::GLfloat m_ref_fv_case_1[4]; /* reference values of vec4 outputs for case 1 */
-	glw::GLint   m_ref_iv_case_1[4]; /* reference values of ivec4 outputs for case 1 */
+    glw::GLfloat m_ref_fv_case_1[4]; /* reference values of vec4 outputs for case 1 */
+    glw::GLint m_ref_iv_case_1[4];   /* reference values of ivec4 outputs for case 1 */
 
-	glw::GLfloat m_ref_fv_case_2[4]; /* reference values of vec4 outputs for case 2 */
-	glw::GLint   m_ref_iv_case_2[4]; /* reference values of ivec4 outputs for case 2 */
+    glw::GLfloat m_ref_fv_case_2[4]; /* reference values of vec4 outputs for case 2 */
+    glw::GLint m_ref_iv_case_2[4];   /* reference values of ivec4 outputs for case 2 */
 };
 
 } // namespace glcts

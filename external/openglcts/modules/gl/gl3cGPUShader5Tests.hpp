@@ -40,51 +40,51 @@ namespace gl3cts
 class Utils
 {
 public:
-	/* Public type definitions */
-	/* Defines GLSL variable type */
-	enum _variable_type
-	{
-		VARIABLE_TYPE_FLOAT,
-		VARIABLE_TYPE_INT,
-		VARIABLE_TYPE_IVEC2,
-		VARIABLE_TYPE_IVEC3,
-		VARIABLE_TYPE_IVEC4,
-		VARIABLE_TYPE_UINT,
-		VARIABLE_TYPE_UVEC2,
-		VARIABLE_TYPE_UVEC3,
-		VARIABLE_TYPE_UVEC4,
-		VARIABLE_TYPE_VEC2,
-		VARIABLE_TYPE_VEC3,
-		VARIABLE_TYPE_VEC4,
+    /* Public type definitions */
+    /* Defines GLSL variable type */
+    enum _variable_type
+    {
+        VARIABLE_TYPE_FLOAT,
+        VARIABLE_TYPE_INT,
+        VARIABLE_TYPE_IVEC2,
+        VARIABLE_TYPE_IVEC3,
+        VARIABLE_TYPE_IVEC4,
+        VARIABLE_TYPE_UINT,
+        VARIABLE_TYPE_UVEC2,
+        VARIABLE_TYPE_UVEC3,
+        VARIABLE_TYPE_UVEC4,
+        VARIABLE_TYPE_VEC2,
+        VARIABLE_TYPE_VEC3,
+        VARIABLE_TYPE_VEC4,
 
-		/* Always last */
-		VARIABLE_TYPE_UNKNOWN
-	};
+        /* Always last */
+        VARIABLE_TYPE_UNKNOWN
+    };
 
-	/** Store information about program object
-	 *
-	 **/
-	struct programInfo
-	{
-		programInfo(deqp::Context& context);
-		~programInfo();
+    /** Store information about program object
+     *
+     **/
+    struct programInfo
+    {
+        programInfo(deqp::Context &context);
+        ~programInfo();
 
-		void build(const glw::GLchar* fragment_shader_code, const glw::GLchar* vertex_shader_code);
-		void compile(glw::GLuint shader_id, const glw::GLchar* shader_code) const;
-		void link() const;
+        void build(const glw::GLchar *fragment_shader_code, const glw::GLchar *vertex_shader_code);
+        void compile(glw::GLuint shader_id, const glw::GLchar *shader_code) const;
+        void link() const;
 
-		void setUniform(Utils::_variable_type type, const glw::GLchar* name, const glw::GLvoid* data);
+        void setUniform(Utils::_variable_type type, const glw::GLchar *name, const glw::GLvoid *data);
 
-		deqp::Context& m_context;
+        deqp::Context &m_context;
 
-		glw::GLuint m_fragment_shader_id;
-		glw::GLuint m_program_object_id;
-		glw::GLuint m_vertex_shader_id;
-	};
+        glw::GLuint m_fragment_shader_id;
+        glw::GLuint m_program_object_id;
+        glw::GLuint m_vertex_shader_id;
+    };
 
-	/* Public static methods */
-	static void replaceToken(const glw::GLchar* token, size_t& search_position, const glw::GLchar* text,
-							 std::string& string);
+    /* Public static methods */
+    static void replaceToken(const glw::GLchar *token, size_t &search_position, const glw::GLchar *text,
+                             std::string &string);
 };
 
 /** Implements ImplicitConversions test, description follows:
@@ -142,43 +142,43 @@ public:
 class GPUShader5ImplicitConversionsTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	GPUShader5ImplicitConversionsTest(deqp::Context& context);
-	GPUShader5ImplicitConversionsTest(deqp::Context& context, const char* name, const char* description);
+    /* Public methods */
+    GPUShader5ImplicitConversionsTest(deqp::Context &context);
+    GPUShader5ImplicitConversionsTest(deqp::Context &context, const char *name, const char *description);
 
-	void								 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 protected:
-	/* Protected methods*/
-	void testInit();
-	void verifyImage(glw::GLuint color, bool is_expected) const;
+    /* Protected methods*/
+    void testInit();
+    void verifyImage(glw::GLuint color, bool is_expected) const;
 
 private:
-	/* Private type definitions */
-	struct testCase
-	{
-		const glw::GLchar*	m_destination_type;
-		bool				  m_is_white_expected;
-		const glw::GLchar*	m_source_type;
-		Utils::_variable_type m_source_variable_type;
-		const void*			  m_u1_data;
-		const void*			  m_u2_data;
-	};
+    /* Private type definitions */
+    struct testCase
+    {
+        const glw::GLchar *m_destination_type;
+        bool m_is_white_expected;
+        const glw::GLchar *m_source_type;
+        Utils::_variable_type m_source_variable_type;
+        const void *m_u1_data;
+        const void *m_u2_data;
+    };
 
-	/* Private methods */
-	void executeTestCase(const testCase& test_case);
-	std::string getFragmentShader();
-	std::string getVertexShader(const glw::GLchar* destination_type, const glw::GLchar* source_type);
+    /* Private methods */
+    void executeTestCase(const testCase &test_case);
+    std::string getFragmentShader();
+    std::string getVertexShader(const glw::GLchar *destination_type, const glw::GLchar *source_type);
 
-	/* Private fields */
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_tex_id;
-	glw::GLuint m_vao_id;
+    /* Private fields */
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_tex_id;
+    glw::GLuint m_vao_id;
 
-	/* Private constants */
-	static const glw::GLsizei m_width;
-	static const glw::GLsizei m_height;
+    /* Private constants */
+    static const glw::GLsizei m_width;
+    static const glw::GLsizei m_height;
 };
 
 /** Implements FunctionOverloading test, description follows:
@@ -224,14 +224,14 @@ private:
 class GPUShader5FunctionOverloadingTest : public GPUShader5ImplicitConversionsTest
 {
 public:
-	/* Public methods */
-	GPUShader5FunctionOverloadingTest(deqp::Context& context);
+    /* Public methods */
+    GPUShader5FunctionOverloadingTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void execute(const glw::GLint* u1_data, const glw::GLuint* u2_data, bool is_black_expected);
+    /* Private methods */
+    void execute(const glw::GLint *u1_data, const glw::GLuint *u2_data, bool is_black_expected);
 };
 
 /** Implements FunctionOverloading test, description follows:
@@ -277,50 +277,50 @@ private:
 class GPUShader5FloatEncodingTest : public GPUShader5ImplicitConversionsTest
 {
 public:
-	/* Public methods */
-	GPUShader5FloatEncodingTest(deqp::Context& context);
+    /* Public methods */
+    GPUShader5FloatEncodingTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private types */
-	struct valueInfo
-	{
-		const Utils::_variable_type m_type;
-		const glw::GLchar*			m_type_name;
-		const void*					m_data;
-	};
+    /* Private types */
+    struct valueInfo
+    {
+        const Utils::_variable_type m_type;
+        const glw::GLchar *m_type_name;
+        const void *m_data;
+    };
 
-	struct testCase
-	{
-		const valueInfo	m_expected_value;
-		const valueInfo	m_value;
-		const glw::GLchar* m_function_name;
-		bool			   m_is_white_expected;
-	};
+    struct testCase
+    {
+        const valueInfo m_expected_value;
+        const valueInfo m_value;
+        const glw::GLchar *m_function_name;
+        bool m_is_white_expected;
+    };
 
-	/* Private methods */
-	void execute(const testCase& test_case);
-	std::string getVertexShader(const testCase& test_case) const;
+    /* Private methods */
+    void execute(const testCase &test_case);
+    std::string getVertexShader(const testCase &test_case) const;
 };
 
 /** Group class for GPU Shader 5 conformance tests */
 class GPUShader5Tests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	GPUShader5Tests(deqp::Context& context);
-	virtual ~GPUShader5Tests()
-	{
-	}
+    /* Public methods */
+    GPUShader5Tests(deqp::Context &context);
+    virtual ~GPUShader5Tests()
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	/* Private methods */
-	GPUShader5Tests(const GPUShader5Tests&);
-	GPUShader5Tests& operator=(const GPUShader5Tests&);
+    /* Private methods */
+    GPUShader5Tests(const GPUShader5Tests &);
+    GPUShader5Tests &operator=(const GPUShader5Tests &);
 };
-} /* gl3cts namespace */
+} // namespace gl3cts
 
 #endif // _GL3CGPUSHADER5TESTS_HPP

@@ -33,10 +33,10 @@ namespace gles2
 namespace Performance
 {
 
-void addShaderCompilationPerformanceCases (TestCaseGroup& parentGroup);
+void addShaderCompilationPerformanceCases(TestCaseGroup &parentGroup);
 
-} // Performance
-} // gles2
-} // deqp
+} // namespace Performance
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2PSHADERCOMPILATIONCASES_HPP

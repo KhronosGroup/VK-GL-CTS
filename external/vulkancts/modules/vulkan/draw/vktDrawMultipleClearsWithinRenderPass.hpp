@@ -33,17 +33,17 @@ namespace Draw
 class MultipleClearsWithinRenderPassTests : public tcu::TestCaseGroup
 {
 public:
-						MultipleClearsWithinRenderPassTests		(tcu::TestContext &testCtx, bool useDynamicRendering);
-						~MultipleClearsWithinRenderPassTests	();
-	void				init									();
+    MultipleClearsWithinRenderPassTests(tcu::TestContext &testCtx, bool useDynamicRendering);
+    ~MultipleClearsWithinRenderPassTests();
+    void init();
 
 private:
-	MultipleClearsWithinRenderPassTests							(const MultipleClearsWithinRenderPassTests &other);
-	MultipleClearsWithinRenderPassTests&	operator=			(const MultipleClearsWithinRenderPassTests &other);
+    MultipleClearsWithinRenderPassTests(const MultipleClearsWithinRenderPassTests &other);
+    MultipleClearsWithinRenderPassTests &operator=(const MultipleClearsWithinRenderPassTests &other);
 
 private:
-	const bool m_useDynamicRendering;
+    const bool m_useDynamicRendering;
 };
-}
-}
+} // namespace Draw
+} // namespace vkt
 #endif // _VKTDRAWMULTIPLECLEARSWITHINRENDERPASS_HPP

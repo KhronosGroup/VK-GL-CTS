@@ -32,7 +32,7 @@ namespace glu
 {
 class RenderContext;
 class ContextInfo;
-}
+} // namespace glu
 
 namespace sglr
 {
@@ -49,42 +49,43 @@ class RandomShaderProgram;
 class FragOpInteractionCase : public tcu::TestCase
 {
 public:
-											FragOpInteractionCase	(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, const char* name, const rsg::ProgramParameters& params);
-											~FragOpInteractionCase	(void);
+    FragOpInteractionCase(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, const glu::ContextInfo &ctxInfo,
+                          const char *name, const rsg::ProgramParameters &params);
+    ~FragOpInteractionCase(void);
 
-	void									init					(void);
-	void									deinit					(void);
-	IterateResult							iterate					(void);
+    void init(void);
+    void deinit(void);
+    IterateResult iterate(void);
 
 private:
-											FragOpInteractionCase	(const FragOpInteractionCase&);
-	FragOpInteractionCase&					operator=				(const FragOpInteractionCase&);
+    FragOpInteractionCase(const FragOpInteractionCase &);
+    FragOpInteractionCase &operator=(const FragOpInteractionCase &);
 
-	struct ReferenceContext;
+    struct ReferenceContext;
 
-	glu::RenderContext&						m_renderCtx;
-	const glu::ContextInfo&					m_ctxInfo;
+    glu::RenderContext &m_renderCtx;
+    const glu::ContextInfo &m_ctxInfo;
 
-	rsg::ProgramParameters					m_params;
+    rsg::ProgramParameters m_params;
 
-	rsg::Shader								m_vertexShader;
-	rsg::Shader								m_fragmentShader;
-	std::vector<const rsg::ShaderInput*>	m_unifiedUniforms;
+    rsg::Shader m_vertexShader;
+    rsg::Shader m_fragmentShader;
+    std::vector<const rsg::ShaderInput *> m_unifiedUniforms;
 
-	gls::RandomShaderProgram*				m_program;
+    gls::RandomShaderProgram *m_program;
 
-	sglr::GLContext*						m_glCtx;
-	ReferenceContext*						m_referenceCtx;
+    sglr::GLContext *m_glCtx;
+    ReferenceContext *m_referenceCtx;
 
-	deUint32								m_glProgram;
-	deUint32								m_refProgram;
+    uint32_t m_glProgram;
+    uint32_t m_refProgram;
 
-	tcu::IVec2								m_viewportSize;
+    tcu::IVec2 m_viewportSize;
 
-	int										m_iterNdx;
+    int m_iterNdx;
 };
 
-} // gls
-} // deqp
+} // namespace gls
+} // namespace deqp
 
 #endif // _GLSFRAGOPINTERACTIONCASE_HPP

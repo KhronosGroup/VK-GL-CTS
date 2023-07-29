@@ -51,15 +51,15 @@ namespace ConditionalRenderInverted
 class Tests : public deqp::TestCaseGroup
 {
 public:
-	/* Public member functions. */
-	Tests(deqp::Context& context);
+    /* Public member functions. */
+    Tests(deqp::Context &context);
 
-	void init();
+    void init();
 
 private:
-	/* Private member functions. */
-	Tests(const Tests& other);
-	Tests& operator=(const Tests& other);
+    /* Private member functions. */
+    Tests(const Tests &other);
+    Tests &operator=(const Tests &other);
 };
 
 /** @class CoverageTest
@@ -79,22 +79,22 @@ private:
 class CoverageTest : public deqp::TestCase
 {
 public:
-	/* Public member functions. */
-	CoverageTest(deqp::Context& context);
+    /* Public member functions. */
+    CoverageTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	CoverageTest(const CoverageTest& other);
-	CoverageTest& operator=(const CoverageTest& other);
+    /* Private member functions */
+    CoverageTest(const CoverageTest &other);
+    CoverageTest &operator=(const CoverageTest &other);
 
-	void createQueryObject();
-	void clean();
-	bool test(glw::GLenum mode);
+    void createQueryObject();
+    void clean();
+    bool test(glw::GLenum mode);
 
-	/* Private member variables. */
-	glw::GLuint m_qo_id;
+    /* Private member variables. */
+    glw::GLuint m_qo_id;
 };
 /* class CoverageTest */
 
@@ -155,55 +155,55 @@ private:
 class FunctionalTest : public deqp::TestCase
 {
 public:
-	/* Public member functions. */
-	FunctionalTest(deqp::Context& context);
+    /* Public member functions. */
+    FunctionalTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	FunctionalTest(const FunctionalTest& other);
-	FunctionalTest& operator=(const FunctionalTest& other);
+    /* Private member functions. */
+    FunctionalTest(const FunctionalTest &other);
+    FunctionalTest &operator=(const FunctionalTest &other);
 
-	void createProgram();
-	void createVertexArrayObject();
-	void createView();
-	void createQueryObject();
-	void setupColor(const glw::GLfloat red);
-	void setupPassSwitch(const bool shall_pass);
-	void clearView();
+    void createProgram();
+    void createVertexArrayObject();
+    void createView();
+    void createQueryObject();
+    void setupColor(const glw::GLfloat red);
+    void setupPassSwitch(const bool shall_pass);
+    void clearView();
 
-	void draw(const bool conditional_or_query_draw, const glw::GLenum condition_mode_or_query_target);
+    void draw(const bool conditional_or_query_draw, const glw::GLenum condition_mode_or_query_target);
 
-	bool		 fragmentsPassed();
-	glw::GLfloat readPixel();
-	void		 cleanQueryObject();
-	void		 cleanProgramViewAndVAO();
+    bool fragmentsPassed();
+    glw::GLfloat readPixel();
+    void cleanQueryObject();
+    void cleanProgramViewAndVAO();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo_id; //!<    Test's framebuffer object id.
-	glw::GLuint m_rbo_id; //!<    Test's renderbuffer object id.
-	glw::GLuint m_vao_id; //!<    Test's vertex array object id.
-	glw::GLuint m_po_id;  //!<    Test's program object id.
-	glw::GLuint m_qo_id;  //!<    Test's query object id.
+    /* Private member variables. */
+    glw::GLuint m_fbo_id; //!<    Test's framebuffer object id.
+    glw::GLuint m_rbo_id; //!<    Test's renderbuffer object id.
+    glw::GLuint m_vao_id; //!<    Test's vertex array object id.
+    glw::GLuint m_po_id;  //!<    Test's program object id.
+    glw::GLuint m_qo_id;  //!<    Test's query object id.
 
-	/* Private static constants. */
-	static const glw::GLchar s_vertex_shader[];		 //!<    Vertex shader source code.
-	static const glw::GLchar s_fragment_shader[];	//!<    Fragment shader source code.
-	static const glw::GLchar s_color_uniform_name[]; //!<    Name of the color uniform.
-	static const glw::GLchar
-							 s_pass_switch_uniform_name[]; //!<    Name of the fragment pass or discarded uniform switch.
-	static const glw::GLuint s_view_size;				   //!<    Size of view (1 by design).
+    /* Private static constants. */
+    static const glw::GLchar s_vertex_shader[];      //!<    Vertex shader source code.
+    static const glw::GLchar s_fragment_shader[];    //!<    Fragment shader source code.
+    static const glw::GLchar s_color_uniform_name[]; //!<    Name of the color uniform.
+    static const glw::GLchar
+        s_pass_switch_uniform_name[];     //!<    Name of the fragment pass or discarded uniform switch.
+    static const glw::GLuint s_view_size; //!<    Size of view (1 by design).
 };
 /* class FunctionalTest*/
 
 namespace Utilities
 {
-const glw::GLchar* modeToChars(glw::GLenum mode);
-const glw::GLchar* queryTargetToChars(glw::GLenum mode);
-}
+const glw::GLchar *modeToChars(glw::GLenum mode);
+const glw::GLchar *queryTargetToChars(glw::GLenum mode);
+} // namespace Utilities
 
-} /* ConditionalRenderInverted namespace */
-} /* gl4cts namespace */
+} // namespace ConditionalRenderInverted
+} // namespace gl4cts
 
 #endif // _GL4CCONDITIONALRENDERINVERTEDTESTS_HPP

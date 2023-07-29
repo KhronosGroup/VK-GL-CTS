@@ -45,7 +45,7 @@ namespace vk
  * \note No linking is currently supported so src may contain source
  *       for only one shader stage.
  *//*--------------------------------------------------------------------*/
-bool	compileGlslToSpirV		(const GlslSource& src, std::vector<deUint32>* dst, glu::ShaderProgramInfo* buildInfo);
+bool compileGlslToSpirV(const GlslSource &src, std::vector<uint32_t> *dst, glu::ShaderProgramInfo *buildInfo);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Compile HLSL program to SPIR-V binary
@@ -60,7 +60,7 @@ bool	compileGlslToSpirV		(const GlslSource& src, std::vector<deUint32>* dst, glu
  * \note No linking is currently supported so src may contain source
  *       for only one shader stage.
  *//*--------------------------------------------------------------------*/
-bool	compileHlslToSpirV		(const HlslSource& src, std::vector<deUint32>* dst, glu::ShaderProgramInfo* buildInfo);
+bool compileHlslToSpirV(const HlslSource &src, std::vector<uint32_t> *dst, glu::ShaderProgramInfo *buildInfo);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Strip SPIR-V binary
@@ -72,8 +72,8 @@ bool	compileHlslToSpirV		(const HlslSource& src, std::vector<deUint32>* dst, glu
  * If deqp was built without glslang (and thus compiler is not available)
  * tcu::NotSupportedError will be thrown instead.
  *//*--------------------------------------------------------------------*/
-void	stripSpirVDebugInfo		(const size_t numSrcInstrs, const deUint32* srcInstrs, std::vector<deUint32>* dst);
+void stripSpirVDebugInfo(const size_t numSrcInstrs, const uint32_t *srcInstrs, std::vector<uint32_t> *dst);
 
-} // vk
+} // namespace vk
 
 #endif // _VKSHADERTOSPIRV_HPP

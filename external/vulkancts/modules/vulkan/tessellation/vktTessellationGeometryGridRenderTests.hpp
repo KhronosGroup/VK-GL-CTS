@@ -32,10 +32,10 @@ namespace vkt
 namespace tessellation
 {
 
-tcu::TestCaseGroup* createGeometryGridRenderLimitsTests  (tcu::TestContext& testCtx);
-tcu::TestCaseGroup* createGeometryGridRenderScatterTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createGeometryGridRenderLimitsTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createGeometryGridRenderScatterTests(tcu::TestContext &testCtx);
 
-} // tessellation
-} // vkt
+} // namespace tessellation
+} // namespace vkt
 
 #endif // _VKTTESSELLATIONGEOMETRYGRIDRENDERTESTS_HPP

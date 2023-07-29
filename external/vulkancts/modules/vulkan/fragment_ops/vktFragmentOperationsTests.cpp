@@ -34,21 +34,21 @@ namespace FragmentOperations
 namespace
 {
 
-void addFragmentOperationsTests (tcu::TestCaseGroup* fragmentOperationsTestsGroup)
+void addFragmentOperationsTests(tcu::TestCaseGroup *fragmentOperationsTestsGroup)
 {
-	tcu::TestContext& testCtx = fragmentOperationsTestsGroup->getTestContext();
+    tcu::TestContext &testCtx = fragmentOperationsTestsGroup->getTestContext();
 
-	fragmentOperationsTestsGroup->addChild(createScissorTests		(testCtx));
-	fragmentOperationsTestsGroup->addChild(createEarlyFragmentTests	(testCtx));
-	fragmentOperationsTestsGroup->addChild(createOcclusionQueryTests(testCtx));
+    fragmentOperationsTestsGroup->addChild(createScissorTests(testCtx));
+    fragmentOperationsTestsGroup->addChild(createEarlyFragmentTests(testCtx));
+    fragmentOperationsTestsGroup->addChild(createOcclusionQueryTests(testCtx));
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "fragment_operations", "Fragment operations tests", addFragmentOperationsTests);
+    return createTestGroup(testCtx, "fragment_operations", "Fragment operations tests", addFragmentOperationsTests);
 }
 
-} // FragmentOperations
-} // vkt
+} // namespace FragmentOperations
+} // namespace vkt

@@ -31,10 +31,10 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	createPointerParameterComputeGroup	(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*	createPointerParameterGraphicsGroup	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createPointerParameterComputeGroup(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createPointerParameterGraphicsGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMPOINTERPARAMETERTESTS_HPP

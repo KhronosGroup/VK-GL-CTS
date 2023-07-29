@@ -38,109 +38,109 @@ namespace Android
 
 // TestThread
 
-TestThread::TestThread (NativeActivity& activity, const std::string& cmdLineString, const CommandLine& cmdLine)
-	: RenderThread	(activity)
-	, m_cmdLine		(cmdLine)
-	, m_platform	(activity)
-	, m_archive		(activity.getNativeActivity()->assetManager)
-	, m_log			(m_cmdLine.getLogFileName(), m_cmdLine.getLogFlags())
-	, m_app			(m_platform, m_archive, m_log, m_cmdLine)
-	, m_finished	(false)
+TestThread::TestThread(NativeActivity &activity, const std::string &cmdLineString, const CommandLine &cmdLine)
+    : RenderThread(activity)
+    , m_cmdLine(cmdLine)
+    , m_platform(activity)
+    , m_archive(activity.getNativeActivity()->assetManager)
+    , m_log(m_cmdLine.getLogFileName(), m_cmdLine.getLogFlags())
+    , m_app(m_platform, m_archive, m_log, m_cmdLine)
+    , m_finished(false)
 {
-	const std::string sessionInfo = "#sessionInfo commandLineParameters \"";
-	m_log.writeSessionInfo(sessionInfo + cmdLineString + "\"\n");
+    const std::string sessionInfo = "#sessionInfo commandLineParameters \"";
+    m_log.writeSessionInfo(sessionInfo + cmdLineString + "\"\n");
 }
 
-TestThread::~TestThread (void)
+TestThread::~TestThread(void)
 {
-	// \note m_testApp is managed by thread.
+    // \note m_testApp is managed by thread.
 }
 
-void TestThread::run (void)
+void TestThread::run(void)
 {
-	RenderThread::run();
+    RenderThread::run();
 }
 
-void TestThread::onWindowCreated (ANativeWindow* window)
+void TestThread::onWindowCreated(ANativeWindow *window)
 {
-	m_platform.getWindowRegistry().addWindow(window);
+    m_platform.getWindowRegistry().addWindow(window);
 }
 
-void TestThread::onWindowDestroyed (ANativeWindow* window)
+void TestThread::onWindowDestroyed(ANativeWindow *window)
 {
-	m_platform.getWindowRegistry().destroyWindow(window);
+    m_platform.getWindowRegistry().destroyWindow(window);
 }
 
-void TestThread::onWindowResized (ANativeWindow* window)
+void TestThread::onWindowResized(ANativeWindow *window)
 {
-	DE_UNREF(window);
-	print("Warning: Native window was resized, results may be undefined");
+    DE_UNREF(window);
+    print("Warning: Native window was resized, results may be undefined");
 }
 
-bool TestThread::render (void)
+bool TestThread::render(void)
 {
-	if (!m_finished)
-		m_finished = !m_app.iterate();
-	return !m_finished;
+    if (!m_finished)
+        m_finished = !m_app.iterate();
+    return !m_finished;
 }
 
 // TestActivity
 
-TestActivity::TestActivity (ANativeActivity* activity)
-	: RenderActivity	(activity)
-	, m_cmdLine			(getIntentStringExtra(activity, "cmdLine"))
-	, m_testThread		(*this, getIntentStringExtra(activity, "cmdLine"), m_cmdLine)
-	, m_started			(false)
+TestActivity::TestActivity(ANativeActivity *activity)
+    : RenderActivity(activity)
+    , m_cmdLine(getIntentStringExtra(activity, "cmdLine"))
+    , m_testThread(*this, getIntentStringExtra(activity, "cmdLine"), m_cmdLine)
+    , m_started(false)
 {
-	// Set initial orientation.
-	setRequestedOrientation(getNativeActivity(), mapScreenRotation(m_cmdLine.getScreenRotation()));
+    // Set initial orientation.
+    setRequestedOrientation(getNativeActivity(), mapScreenRotation(m_cmdLine.getScreenRotation()));
 
-	// Set up window flags.
-	ANativeActivity_setWindowFlags(activity, AWINDOW_FLAG_KEEP_SCREEN_ON	|
-											 AWINDOW_FLAG_TURN_SCREEN_ON	|
-											 AWINDOW_FLAG_FULLSCREEN		|
-											 AWINDOW_FLAG_SHOW_WHEN_LOCKED, 0);
+    // Set up window flags.
+    ANativeActivity_setWindowFlags(activity,
+                                   AWINDOW_FLAG_KEEP_SCREEN_ON | AWINDOW_FLAG_TURN_SCREEN_ON | AWINDOW_FLAG_FULLSCREEN |
+                                       AWINDOW_FLAG_SHOW_WHEN_LOCKED,
+                                   0);
 }
 
-TestActivity::~TestActivity (void)
+TestActivity::~TestActivity(void)
 {
 }
 
-void TestActivity::onStart (void)
+void TestActivity::onStart(void)
 {
-	if (!m_started)
-	{
-		setThread(&m_testThread);
-		m_testThread.start();
-		m_started = true;
-	}
+    if (!m_started)
+    {
+        setThread(&m_testThread);
+        m_testThread.start();
+        m_started = true;
+    }
 
-	RenderActivity::onStart();
+    RenderActivity::onStart();
 }
 
-void TestActivity::onDestroy (void)
+void TestActivity::onDestroy(void)
 {
-	if (m_started)
-	{
-		setThread(DE_NULL);
-		m_testThread.stop();
-		m_started = false;
-	}
+    if (m_started)
+    {
+        setThread(DE_NULL);
+        m_testThread.stop();
+        m_started = false;
+    }
 
-	RenderActivity::onDestroy();
+    RenderActivity::onDestroy();
 
-	// Kill this process.
-	print("Done, killing process");
-	exit(0);
+    // Kill this process.
+    print("Done, killing process");
+    exit(0);
 }
 
-void TestActivity::onConfigurationChanged (void)
+void TestActivity::onConfigurationChanged(void)
 {
-	RenderActivity::onConfigurationChanged();
+    RenderActivity::onConfigurationChanged();
 
-	// Update rotation.
-	setRequestedOrientation(getNativeActivity(), mapScreenRotation(m_cmdLine.getScreenRotation()));
+    // Update rotation.
+    setRequestedOrientation(getNativeActivity(), mapScreenRotation(m_cmdLine.getScreenRotation()));
 }
 
-} // Android
-} // tcu
+} // namespace Android
+} // namespace tcu

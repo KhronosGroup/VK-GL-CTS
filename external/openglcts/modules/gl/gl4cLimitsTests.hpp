@@ -30,20 +30,20 @@ namespace gl4cts
 class LimitsTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	LimitsTests(deqp::Context& context);
-	virtual ~LimitsTests()
-	{
-	}
+    /* Public methods */
+    LimitsTests(deqp::Context &context);
+    virtual ~LimitsTests()
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	/* Private methods */
-	LimitsTests(const LimitsTests&);
-	LimitsTests& operator=(const LimitsTests&);
+    /* Private methods */
+    LimitsTests(const LimitsTests &);
+    LimitsTests &operator=(const LimitsTests &);
 };
 
-} /* gl4cts namespace */
+} // namespace gl4cts
 
 #endif // _GL4CLIMITSTESTS_HPP

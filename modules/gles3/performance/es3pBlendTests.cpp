@@ -37,140 +37,138 @@ namespace Performance
 
 using namespace gls;
 using namespace glw; // GL types
-using tcu::Vec4;
 using tcu::TestLog;
+using tcu::Vec4;
 
 class BlendCase : public ShaderPerformanceCase
 {
 public:
-						BlendCase			(Context& context, const char* name, const char* description, GLenum modeRGB, GLenum modeAlpha, GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha);
-						~BlendCase			(void);
+    BlendCase(Context &context, const char *name, const char *description, GLenum modeRGB, GLenum modeAlpha,
+              GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha);
+    ~BlendCase(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-	void				setupRenderState	(void);
+    void setupRenderState(void);
 
-	GLenum				m_modeRGB;
-	GLenum				m_modeAlpha;
-	GLenum				m_srcRGB;
-	GLenum				m_dstRGB;
-	GLenum				m_srcAlpha;
-	GLenum				m_dstAlpha;
+    GLenum m_modeRGB;
+    GLenum m_modeAlpha;
+    GLenum m_srcRGB;
+    GLenum m_dstRGB;
+    GLenum m_srcAlpha;
+    GLenum m_dstAlpha;
 };
 
-BlendCase::BlendCase (Context& context, const char* name, const char* description, GLenum modeRGB, GLenum modeAlpha, GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha)
-	: ShaderPerformanceCase	(context.getTestContext(), context.getRenderContext(), name, description, CASETYPE_FRAGMENT)
-	, m_modeRGB				(modeRGB)
-	, m_modeAlpha			(modeAlpha)
-	, m_srcRGB				(srcRGB)
-	, m_dstRGB				(dstRGB)
-	, m_srcAlpha			(srcAlpha)
-	, m_dstAlpha			(dstAlpha)
+BlendCase::BlendCase(Context &context, const char *name, const char *description, GLenum modeRGB, GLenum modeAlpha,
+                     GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha)
+    : ShaderPerformanceCase(context.getTestContext(), context.getRenderContext(), name, description, CASETYPE_FRAGMENT)
+    , m_modeRGB(modeRGB)
+    , m_modeAlpha(modeAlpha)
+    , m_srcRGB(srcRGB)
+    , m_dstRGB(dstRGB)
+    , m_srcAlpha(srcAlpha)
+    , m_dstAlpha(dstAlpha)
 {
 }
 
-BlendCase::~BlendCase (void)
+BlendCase::~BlendCase(void)
 {
 }
 
-void BlendCase::init (void)
+void BlendCase::init(void)
 {
-	TestLog& log = m_testCtx.getLog();
+    TestLog &log = m_testCtx.getLog();
 
-	log << TestLog::Message << "modeRGB: " << glu::getBlendEquationStr(m_modeRGB) << TestLog::EndMessage;
-	log << TestLog::Message << "modeAlpha: " << glu::getBlendEquationStr(m_modeAlpha) << TestLog::EndMessage;
-	log << TestLog::Message << "srcRGB: " << glu::getBlendFactorStr(m_srcRGB) << TestLog::EndMessage;
-	log << TestLog::Message << "dstRGB: " << glu::getBlendFactorStr(m_dstRGB) << TestLog::EndMessage;
-	log << TestLog::Message << "srcAlpha: " << glu::getBlendFactorStr(m_srcAlpha) << TestLog::EndMessage;
-	log << TestLog::Message << "dstAlpha: " << glu::getBlendFactorStr(m_dstAlpha) << TestLog::EndMessage;
+    log << TestLog::Message << "modeRGB: " << glu::getBlendEquationStr(m_modeRGB) << TestLog::EndMessage;
+    log << TestLog::Message << "modeAlpha: " << glu::getBlendEquationStr(m_modeAlpha) << TestLog::EndMessage;
+    log << TestLog::Message << "srcRGB: " << glu::getBlendFactorStr(m_srcRGB) << TestLog::EndMessage;
+    log << TestLog::Message << "dstRGB: " << glu::getBlendFactorStr(m_dstRGB) << TestLog::EndMessage;
+    log << TestLog::Message << "srcAlpha: " << glu::getBlendFactorStr(m_srcAlpha) << TestLog::EndMessage;
+    log << TestLog::Message << "dstAlpha: " << glu::getBlendFactorStr(m_dstAlpha) << TestLog::EndMessage;
 
-	m_vertShaderSource =
-		"#version 300 es\n"
-		"in highp vec4 a_position;\n"
-		"in mediump vec4 a_color;\n"
-		"out mediump vec4 v_color;\n"
-		"void main (void)\n"
-		"{\n"
-		"	gl_Position = a_position;\n"
-		"	v_color = a_color;\n"
-		"}\n";
-	m_fragShaderSource =
-		"#version 300 es\n"
-		"in mediump vec4 v_color;\n"
-		"layout(location = 0) out mediump vec4 o_color;\n"
-		"void main (void)\n"
-		"{\n"
-		"	o_color = v_color;\n"
-		"}\n";
+    m_vertShaderSource = "#version 300 es\n"
+                         "in highp vec4 a_position;\n"
+                         "in mediump vec4 a_color;\n"
+                         "out mediump vec4 v_color;\n"
+                         "void main (void)\n"
+                         "{\n"
+                         "    gl_Position = a_position;\n"
+                         "    v_color = a_color;\n"
+                         "}\n";
+    m_fragShaderSource = "#version 300 es\n"
+                         "in mediump vec4 v_color;\n"
+                         "layout(location = 0) out mediump vec4 o_color;\n"
+                         "void main (void)\n"
+                         "{\n"
+                         "    o_color = v_color;\n"
+                         "}\n";
 
-	m_attributes.push_back(AttribSpec("a_color", Vec4(0.0f, 0.5f, 0.5f, 1.0f),
-												 Vec4(0.5f, 1.0f, 0.0f, 0.5f),
-												 Vec4(0.5f, 0.0f, 1.0f, 0.5f),
-												 Vec4(1.0f, 0.5f, 0.5f, 0.0f)));
+    m_attributes.push_back(AttribSpec("a_color", Vec4(0.0f, 0.5f, 0.5f, 1.0f), Vec4(0.5f, 1.0f, 0.0f, 0.5f),
+                                      Vec4(0.5f, 0.0f, 1.0f, 0.5f), Vec4(1.0f, 0.5f, 0.5f, 0.0f)));
 
-	ShaderPerformanceCase::init();
+    ShaderPerformanceCase::init();
 }
 
-void BlendCase::setupRenderState (void)
+void BlendCase::setupRenderState(void)
 {
-	const glw::Functions& gl = m_renderCtx.getFunctions();
+    const glw::Functions &gl = m_renderCtx.getFunctions();
 
-	gl.enable(GL_BLEND);
-	gl.blendEquationSeparate(m_modeRGB, m_modeAlpha);
-	gl.blendFuncSeparate(m_srcRGB, m_dstRGB, m_srcAlpha, m_dstAlpha);
+    gl.enable(GL_BLEND);
+    gl.blendEquationSeparate(m_modeRGB, m_modeAlpha);
+    gl.blendFuncSeparate(m_srcRGB, m_dstRGB, m_srcAlpha, m_dstAlpha);
 
-	GLU_EXPECT_NO_ERROR(gl.getError(), "After render state setup");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "After render state setup");
 }
 
-BlendTests::BlendTests (Context& context)
-	: TestCaseGroup(context, "blend", "Blend Performance Tests")
+BlendTests::BlendTests(Context &context) : TestCaseGroup(context, "blend", "Blend Performance Tests")
 {
 }
 
-BlendTests::~BlendTests (void)
+BlendTests::~BlendTests(void)
 {
 }
 
-void BlendTests::init (void)
+void BlendTests::init(void)
 {
-	static const struct
-	{
-		const char*	name;
-		GLenum		modeRGB;
-		GLenum		modeAlpha;
-		GLenum		srcRGB;
-		GLenum		dstRGB;
-		GLenum		srcAlpha;
-		GLenum		dstAlpha;
-	} cases[] =
-	{
-		// Single blend func, factor one.
-		{ "add",						GL_FUNC_ADD,				GL_FUNC_ADD,				GL_ONE,		GL_ONE,		GL_ONE,		GL_ONE		},
-		{ "subtract",					GL_FUNC_SUBTRACT,			GL_FUNC_SUBTRACT,			GL_ONE,		GL_ONE,		GL_ONE,		GL_ONE		},
-		{ "reverse_subtract",			GL_FUNC_REVERSE_SUBTRACT,	GL_FUNC_REVERSE_SUBTRACT,	GL_ONE,		GL_ONE,		GL_ONE,		GL_ONE		},
-		{ "min",						GL_MIN,						GL_MIN,						GL_ONE,		GL_ONE,		GL_ONE,		GL_ONE		},
-		{ "max",						GL_MAX,						GL_MAX,						GL_ONE,		GL_ONE,		GL_ONE,		GL_ONE		},
+    static const struct
+    {
+        const char *name;
+        GLenum modeRGB;
+        GLenum modeAlpha;
+        GLenum srcRGB;
+        GLenum dstRGB;
+        GLenum srcAlpha;
+        GLenum dstAlpha;
+    } cases[] = {
+        // Single blend func, factor one.
+        {"add", GL_FUNC_ADD, GL_FUNC_ADD, GL_ONE, GL_ONE, GL_ONE, GL_ONE},
+        {"subtract", GL_FUNC_SUBTRACT, GL_FUNC_SUBTRACT, GL_ONE, GL_ONE, GL_ONE, GL_ONE},
+        {"reverse_subtract", GL_FUNC_REVERSE_SUBTRACT, GL_FUNC_REVERSE_SUBTRACT, GL_ONE, GL_ONE, GL_ONE, GL_ONE},
+        {"min", GL_MIN, GL_MIN, GL_ONE, GL_ONE, GL_ONE, GL_ONE},
+        {"max", GL_MAX, GL_MAX, GL_ONE, GL_ONE, GL_ONE, GL_ONE},
 
-		// Porter-duff modes that can be implemented.
-		{ "dst_atop",					GL_FUNC_ADD,				GL_FUNC_ADD,				GL_ONE_MINUS_DST_ALPHA,		GL_SRC_ALPHA,				GL_ONE,					GL_ZERO					},
-		{ "dst_in",						GL_FUNC_ADD,				GL_FUNC_ADD,				GL_ZERO,					GL_SRC_ALPHA,				GL_ZERO,				GL_SRC_ALPHA			},
-		{ "dst_out",					GL_FUNC_ADD,				GL_FUNC_ADD,				GL_ZERO,					GL_ONE_MINUS_SRC_ALPHA,		GL_ZERO,				GL_ONE_MINUS_SRC_ALPHA	},
-		{ "dst_over",					GL_FUNC_ADD,				GL_FUNC_ADD,				GL_ONE_MINUS_DST_ALPHA,		GL_ONE,						GL_ONE,					GL_ONE_MINUS_SRC_ALPHA	},
-		{ "src_atop",					GL_FUNC_ADD,				GL_FUNC_ADD,				GL_DST_ALPHA,				GL_ONE_MINUS_SRC_ALPHA,		GL_ZERO,				GL_ONE					},
-		{ "src_in",						GL_FUNC_ADD,				GL_FUNC_ADD,				GL_DST_ALPHA,				GL_ZERO,					GL_DST_ALPHA,			GL_ZERO					},
-		{ "src_out",					GL_FUNC_ADD,				GL_FUNC_ADD,				GL_ONE_MINUS_DST_ALPHA,		GL_ZERO,					GL_ONE_MINUS_DST_ALPHA,	GL_ZERO					},
-		{ "src_over",					GL_FUNC_ADD,				GL_FUNC_ADD,				GL_ONE,						GL_ONE_MINUS_SRC_ALPHA,		GL_ONE,					GL_ONE_MINUS_SRC_ALPHA	},
-		{ "multiply",					GL_FUNC_ADD,				GL_FUNC_ADD,				GL_DST_COLOR,				GL_ZERO,					GL_DST_ALPHA,			GL_ZERO					},
-		{ "screen",						GL_FUNC_ADD,				GL_FUNC_ADD,				GL_ONE,						GL_ONE_MINUS_SRC_COLOR,		GL_ONE,					GL_ONE_MINUS_SRC_ALPHA	},
+        // Porter-duff modes that can be implemented.
+        {"dst_atop", GL_FUNC_ADD, GL_FUNC_ADD, GL_ONE_MINUS_DST_ALPHA, GL_SRC_ALPHA, GL_ONE, GL_ZERO},
+        {"dst_in", GL_FUNC_ADD, GL_FUNC_ADD, GL_ZERO, GL_SRC_ALPHA, GL_ZERO, GL_SRC_ALPHA},
+        {"dst_out", GL_FUNC_ADD, GL_FUNC_ADD, GL_ZERO, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE_MINUS_SRC_ALPHA},
+        {"dst_over", GL_FUNC_ADD, GL_FUNC_ADD, GL_ONE_MINUS_DST_ALPHA, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA},
+        {"src_atop", GL_FUNC_ADD, GL_FUNC_ADD, GL_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE},
+        {"src_in", GL_FUNC_ADD, GL_FUNC_ADD, GL_DST_ALPHA, GL_ZERO, GL_DST_ALPHA, GL_ZERO},
+        {"src_out", GL_FUNC_ADD, GL_FUNC_ADD, GL_ONE_MINUS_DST_ALPHA, GL_ZERO, GL_ONE_MINUS_DST_ALPHA, GL_ZERO},
+        {"src_over", GL_FUNC_ADD, GL_FUNC_ADD, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA},
+        {"multiply", GL_FUNC_ADD, GL_FUNC_ADD, GL_DST_COLOR, GL_ZERO, GL_DST_ALPHA, GL_ZERO},
+        {"screen", GL_FUNC_ADD, GL_FUNC_ADD, GL_ONE, GL_ONE_MINUS_SRC_COLOR, GL_ONE, GL_ONE_MINUS_SRC_ALPHA},
 
-		{ "alpha_saturate",				GL_FUNC_ADD,				GL_FUNC_ADD,				GL_SRC_ALPHA_SATURATE,		GL_ONE,						GL_ONE,					GL_ONE					},
-	};
+        {"alpha_saturate", GL_FUNC_ADD, GL_FUNC_ADD, GL_SRC_ALPHA_SATURATE, GL_ONE, GL_ONE, GL_ONE},
+    };
 
-	for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); caseNdx++)
-		addChild(new BlendCase(m_context, cases[caseNdx].name, "", cases[caseNdx].modeRGB, cases[caseNdx].modeAlpha, cases[caseNdx].srcRGB, cases[caseNdx].dstRGB, cases[caseNdx].srcAlpha, cases[caseNdx].dstAlpha));
+    for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); caseNdx++)
+        addChild(new BlendCase(m_context, cases[caseNdx].name, "", cases[caseNdx].modeRGB, cases[caseNdx].modeAlpha,
+                               cases[caseNdx].srcRGB, cases[caseNdx].dstRGB, cases[caseNdx].srcAlpha,
+                               cases[caseNdx].dstAlpha));
 }
 
-} // Performance
-} // gles3
-} // deqp
+} // namespace Performance
+} // namespace gles3
+} // namespace deqp

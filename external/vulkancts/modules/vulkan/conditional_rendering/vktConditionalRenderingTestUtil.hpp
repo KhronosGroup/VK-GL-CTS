@@ -37,52 +37,49 @@ namespace conditional
 
 struct ConditionalData
 {
-	bool		conditionInPrimaryCommandBuffer;
-	bool		conditionInSecondaryCommandBuffer;
-	bool		conditionInverted;
-	bool		conditionInherited;
-	deUint32	conditionValue;
-	bool		padConditionValue;
+    bool conditionInPrimaryCommandBuffer;
+    bool conditionInSecondaryCommandBuffer;
+    bool conditionInverted;
+    bool conditionInherited;
+    uint32_t conditionValue;
+    bool padConditionValue;
 
-	bool		expectCommandExecution;
+    bool expectCommandExecution;
 };
 
-static const ConditionalData s_testsData[] =
-{
-	//	CONDPRI	CONDSEC	INV		INH		V	PAD		RES
-	{	true,	false,	false,	false,	1,	false,	true	},
-	{	true,	false,	false,	false,	0,	false,	false	},
-	{	true,	false,	true,	false,	0,	false,	true	},
-	{	true,	false,	true,	false,	1,	false,	false	},
-	{	true,	false,	false,	true,	1,	false,	true	},
-	{	true,	false,	false,	true,	0,	false,	false	},
-	{	true,	false,	true,	true,	0,	false,	true	},
-	{	true,	false,	true,	true,	1,	false,	false	},
+static const ConditionalData s_testsData[] = {
+    //    CONDPRI    CONDSEC    INV        INH        V    PAD        RES
+    {true, false, false, false, 1, false, true},
+    {true, false, false, false, 0, false, false},
+    {true, false, true, false, 0, false, true},
+    {true, false, true, false, 1, false, false},
+    {true, false, false, true, 1, false, true},
+    {true, false, false, true, 0, false, false},
+    {true, false, true, true, 0, false, true},
+    {true, false, true, true, 1, false, false},
 
-	{	false,	true,	false,	false,	1,	false,	true	},
-	{	false,	true,	false,	false,	0,	false,	false	},
-	{	false,	true,	true,	false,	0,	false,	true	},
-	{	false,	true,	true,	false,	1,	false,	false	},
+    {false, true, false, false, 1, false, true},
+    {false, true, false, false, 0, false, false},
+    {false, true, true, false, 0, false, true},
+    {false, true, true, false, 1, false, false},
 
-	// Test that inheritance does not affect outcome of secondary command buffer with conditional rendering or not.
-	{	false,	false,	false,	true,	0,	false,	true	},
+    // Test that inheritance does not affect outcome of secondary command buffer with conditional rendering or not.
+    {false, false, false, true, 0, false, true},
 
-	{	false,	true,	false,	true,	1,	false,	true	},
-	{	false,	true,	false,	true,	0,	false,	false	},
-	{	false,	true,	true,	true,	1,	false,	false	},
-	{	false,	true,	true,	true,	0,	false,	true	},
+    {false, true, false, true, 1, false, true},
+    {false, true, false, true, 0, false, false},
+    {false, true, true, true, 1, false, false},
+    {false, true, true, true, 0, false, true},
 };
 
-std::ostream&				operator<< (std::ostream& str, ConditionalData const& c);
+std::ostream &operator<<(std::ostream &str, ConditionalData const &c);
 
-void						checkConditionalRenderingCapabilities	(vkt::Context& context, const ConditionalData& data);
-de::SharedPtr<Draw::Buffer>	createConditionalRenderingBuffer		(vkt::Context& context, const ConditionalData& data);
-void						beginConditionalRendering				(const vk::DeviceInterface& vk,
-																	 vk::VkCommandBuffer cmdBuffer,
-																	 Draw::Buffer& buffer,
-																	 const ConditionalData& data);
+void checkConditionalRenderingCapabilities(vkt::Context &context, const ConditionalData &data);
+de::SharedPtr<Draw::Buffer> createConditionalRenderingBuffer(vkt::Context &context, const ConditionalData &data);
+void beginConditionalRendering(const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer, Draw::Buffer &buffer,
+                               const ConditionalData &data);
 
-} // conditional
-} // vkt
+} // namespace conditional
+} // namespace vkt
 
 #endif // _VKTCONDITIONALRENDERINGTESTUTIL_HPP

@@ -52,48 +52,58 @@ class FilterList;
 
 typedef std::map<eglw::EGLint, eglw::EGLint> AttribMap;
 
-std::vector<eglw::EGLint>		attribMapToList				(const AttribMap& map);
+std::vector<eglw::EGLint> attribMapToList(const AttribMap &map);
 
-Version							getVersion					(const eglw::Library& egl, eglw::EGLDisplay display);
+Version getVersion(const eglw::Library &egl, eglw::EGLDisplay display);
 
-std::vector<std::string>		getClientExtensions			(const eglw::Library& egl);
-std::vector<std::string>		getDisplayExtensions		(const eglw::Library& egl, eglw::EGLDisplay display);
-bool							hasExtension				(const eglw::Library& egl, eglw::EGLDisplay display, const std::string& extName);
+std::vector<std::string> getClientExtensions(const eglw::Library &egl);
+std::vector<std::string> getDisplayExtensions(const eglw::Library &egl, eglw::EGLDisplay display);
+bool hasExtension(const eglw::Library &egl, eglw::EGLDisplay display, const std::string &extName);
 
-std::vector<eglw::EGLConfig>	getConfigs					(const eglw::Library& egl, eglw::EGLDisplay display);
-std::vector<eglw::EGLConfig>	chooseConfigs				(const eglw::Library& egl, eglw::EGLDisplay display, const AttribMap& attribs);
-std::vector<eglw::EGLConfig>	chooseConfigs				(const eglw::Library& egl, eglw::EGLDisplay display, const FilterList& filters);
-std::vector<eglw::EGLConfig>	chooseConfigs				(const eglw::Library& egl, eglw::EGLDisplay display, const eglw::EGLint* attribs);
-eglw::EGLConfig					chooseSingleConfig			(const eglw::Library& egl, eglw::EGLDisplay display, const AttribMap& attribs);
-eglw::EGLConfig					chooseSingleConfig			(const eglw::Library& egl, eglw::EGLDisplay display, const eglw::EGLint* attribs);
-eglw::EGLConfig					chooseSingleConfig			(const eglw::Library& egl, eglw::EGLDisplay display, const FilterList& filters);
-eglw::EGLConfig					chooseConfigByID			(const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLint id);
-eglw::EGLint					getConfigAttribInt			(const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLConfig config, eglw::EGLint attrib);
-eglw::EGLint					getConfigID					(const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLConfig config);
+std::vector<eglw::EGLConfig> getConfigs(const eglw::Library &egl, eglw::EGLDisplay display);
+std::vector<eglw::EGLConfig> chooseConfigs(const eglw::Library &egl, eglw::EGLDisplay display,
+                                           const AttribMap &attribs);
+std::vector<eglw::EGLConfig> chooseConfigs(const eglw::Library &egl, eglw::EGLDisplay display,
+                                           const FilterList &filters);
+std::vector<eglw::EGLConfig> chooseConfigs(const eglw::Library &egl, eglw::EGLDisplay display,
+                                           const eglw::EGLint *attribs);
+eglw::EGLConfig chooseSingleConfig(const eglw::Library &egl, eglw::EGLDisplay display, const AttribMap &attribs);
+eglw::EGLConfig chooseSingleConfig(const eglw::Library &egl, eglw::EGLDisplay display, const eglw::EGLint *attribs);
+eglw::EGLConfig chooseSingleConfig(const eglw::Library &egl, eglw::EGLDisplay display, const FilterList &filters);
+eglw::EGLConfig chooseConfigByID(const eglw::Library &egl, eglw::EGLDisplay display, eglw::EGLint id);
+eglw::EGLint getConfigAttribInt(const eglw::Library &egl, eglw::EGLDisplay display, eglw::EGLConfig config,
+                                eglw::EGLint attrib);
+eglw::EGLint getConfigID(const eglw::Library &egl, eglw::EGLDisplay display, eglw::EGLConfig config);
 
-eglw::EGLint					querySurfaceInt				(const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLSurface surface, eglw::EGLint attrib);
-tcu::IVec2						getSurfaceSize				(const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLSurface surface);
-tcu::IVec2						getSurfaceResolution		(const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLSurface surface);
+eglw::EGLint querySurfaceInt(const eglw::Library &egl, eglw::EGLDisplay display, eglw::EGLSurface surface,
+                             eglw::EGLint attrib);
+tcu::IVec2 getSurfaceSize(const eglw::Library &egl, eglw::EGLDisplay display, eglw::EGLSurface surface);
+tcu::IVec2 getSurfaceResolution(const eglw::Library &egl, eglw::EGLDisplay display, eglw::EGLSurface surface);
 
-eglw::EGLDisplay				getDisplay					(NativeDisplay& nativeDisplay);
-eglw::EGLDisplay				getAndInitDisplay			(NativeDisplay& nativeDisplay, Version* version = DE_NULL);
-void							terminateDisplay			(const eglw::Library& egl, eglw::EGLDisplay display);
-eglw::EGLSurface				createWindowSurface			(NativeDisplay& nativeDisplay, NativeWindow& window, eglw::EGLDisplay display, eglw::EGLConfig config, const eglw::EGLAttrib* attribList);
-eglw::EGLSurface				createPixmapSurface			(NativeDisplay& nativeDisplay, NativePixmap& pixmap, eglw::EGLDisplay display, eglw::EGLConfig config, const eglw::EGLAttrib* attribList);
+eglw::EGLDisplay getDisplay(NativeDisplay &nativeDisplay);
+eglw::EGLDisplay getAndInitDisplay(NativeDisplay &nativeDisplay, Version *version = DE_NULL);
+void terminateDisplay(const eglw::Library &egl, eglw::EGLDisplay display);
+eglw::EGLSurface createWindowSurface(NativeDisplay &nativeDisplay, NativeWindow &window, eglw::EGLDisplay display,
+                                     eglw::EGLConfig config, const eglw::EGLAttrib *attribList);
+eglw::EGLSurface createPixmapSurface(NativeDisplay &nativeDisplay, NativePixmap &pixmap, eglw::EGLDisplay display,
+                                     eglw::EGLConfig config, const eglw::EGLAttrib *attribList);
 
-const NativeDisplayFactory&		selectNativeDisplayFactory	(const NativeDisplayFactoryRegistry& registry, const tcu::CommandLine& cmdLine);
-const NativeWindowFactory&		selectNativeWindowFactory	(const NativeDisplayFactory& factory, const tcu::CommandLine& cmdLine);
-const NativePixmapFactory&		selectNativePixmapFactory	(const NativeDisplayFactory& factory, const tcu::CommandLine& cmdLine);
+const NativeDisplayFactory &selectNativeDisplayFactory(const NativeDisplayFactoryRegistry &registry,
+                                                       const tcu::CommandLine &cmdLine);
+const NativeWindowFactory &selectNativeWindowFactory(const NativeDisplayFactory &factory,
+                                                     const tcu::CommandLine &cmdLine);
+const NativePixmapFactory &selectNativePixmapFactory(const NativeDisplayFactory &factory,
+                                                     const tcu::CommandLine &cmdLine);
 
-WindowParams::Visibility		parseWindowVisibility		(const tcu::CommandLine& commandLine);
-eglw::EGLenum					parseClientAPI				(const std::string& api);
-std::vector<eglw::EGLenum>		parseClientAPIs				(const std::string& apiList);
-std::vector<eglw::EGLenum>		getClientAPIs				(const eglw::Library& egl, eglw::EGLDisplay display);
+WindowParams::Visibility parseWindowVisibility(const tcu::CommandLine &commandLine);
+eglw::EGLenum parseClientAPI(const std::string &api);
+std::vector<eglw::EGLenum> parseClientAPIs(const std::string &apiList);
+std::vector<eglw::EGLenum> getClientAPIs(const eglw::Library &egl, eglw::EGLDisplay display);
 
-eglw::EGLint					getRenderableAPIsMask		(const eglw::Library& egl, eglw::EGLDisplay display);
+eglw::EGLint getRenderableAPIsMask(const eglw::Library &egl, eglw::EGLDisplay display);
 
-std::vector<eglw::EGLint>		toLegacyAttribList			(const eglw::EGLAttrib* attribs);
+std::vector<eglw::EGLint> toLegacyAttribList(const eglw::EGLAttrib *attribs);
 
-} // eglu
+} // namespace eglu
 
 #endif // _EGLUUTIL_HPP

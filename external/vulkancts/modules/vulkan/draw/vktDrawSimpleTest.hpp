@@ -33,17 +33,17 @@ namespace Draw
 class SimpleDrawTests : public tcu::TestCaseGroup
 {
 public:
-						SimpleDrawTests			(tcu::TestContext &testCtx, bool useDynamicRendering);
-						~SimpleDrawTests		(void);
-	void				init					(void);
+    SimpleDrawTests(tcu::TestContext &testCtx, bool useDynamicRendering);
+    ~SimpleDrawTests(void);
+    void init(void);
 
 private:
-	SimpleDrawTests								(const SimpleDrawTests &other);
-	SimpleDrawTests&	operator=				(const SimpleDrawTests &other);
+    SimpleDrawTests(const SimpleDrawTests &other);
+    SimpleDrawTests &operator=(const SimpleDrawTests &other);
 
-	const bool m_useDynamicRendering;
+    const bool m_useDynamicRendering;
 };
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWSIMPLETEST_HPP

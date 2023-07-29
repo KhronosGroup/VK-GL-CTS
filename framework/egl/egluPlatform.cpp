@@ -28,21 +28,21 @@
 namespace eglu
 {
 
-Platform::Platform (void)
+Platform::Platform(void)
 {
 }
 
-Platform::~Platform (void)
+Platform::~Platform(void)
 {
 }
 
-tcu::FunctionLibrary* Platform::createDefaultGLFunctionLibrary (glu::ApiType apiType, const tcu::CommandLine&) const
+tcu::FunctionLibrary *Platform::createDefaultGLFunctionLibrary(glu::ApiType apiType, const tcu::CommandLine &) const
 {
-	// \todo [2014-03-14 pyry] Do we want to implement tcu::DynamicFunctionLibrary-based fallback?
-	if (apiType.getProfile() == glu::PROFILE_ES)
-		return createStaticESLibrary();
-	else
-		return new tcu::StaticFunctionLibrary(DE_NULL, 0);
+    // \todo [2014-03-14 pyry] Do we want to implement tcu::DynamicFunctionLibrary-based fallback?
+    if (apiType.getProfile() == glu::PROFILE_ES)
+        return createStaticESLibrary();
+    else
+        return new tcu::StaticFunctionLibrary(DE_NULL, 0);
 }
 
-} // eglu
+} // namespace eglu

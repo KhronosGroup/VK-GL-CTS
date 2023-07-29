@@ -44,563 +44,563 @@ namespace GLSL420Pack
 class Utils
 {
 public:
-	/* Public enums */
-	enum TEXTURE_TYPES
-	{
-		TEX_BUFFER,
-		TEX_2D,
-		TEX_2D_RECT,
-		TEX_2D_ARRAY,
-		TEX_3D,
-		TEX_CUBE,
-		TEX_1D,
-		TEX_1D_ARRAY,
-
-		/* */
-		TEXTURE_TYPES_MAX
-	};
-
-	enum SHADER_STAGES
-	{
-		COMPUTE_SHADER = 0,
-		VERTEX_SHADER,
-		TESS_CTRL_SHADER,
-		TESS_EVAL_SHADER,
-		GEOMETRY_SHADER,
-		FRAGMENT_SHADER,
-
-		/* */
-		SHADER_STAGES_MAX
-	};
-
-	enum UTF8_CHARACTERS
-	{
-		TWO_BYTES,
-		THREE_BYTES,
-		FOUR_BYTES,
-		FIVE_BYTES,
-		SIX_BYTES,
-		REDUNDANT_ASCII,
-
-		/* */
-		EMPTY
-	};
-
-	enum TYPES
-	{
-		FLOAT,
-		DOUBLE,
-		INT,
-		UINT,
-
-		/* */
-		TYPES_MAX
-	};
-
-	enum QUALIFIER_CLASSES
-	{
-		QUAL_CLS_INVARIANCE = 0,
-		QUAL_CLS_INTERPOLATION,
-		QUAL_CLS_LAYOUT,
-		QUAL_CLS_AUXILARY_STORAGE,
-		QUAL_CLS_STORAGE,
-		QUAL_CLS_PRECISION,
-
-		/* */
-		QUAL_CLS_MAX
-	};
-
-	enum QUALIFIERS
-	{
-		QUAL_NONE,
-
-		/* CONSTNESS */
-		QUAL_CONST,
-
-		/* STORAGE */
-		QUAL_IN,
-		QUAL_OUT,
-		QUAL_INOUT,
-		QUAL_UNIFORM,
-
-		/* AUXILARY */
-		QUAL_PATCH,
-		QUAL_CENTROID,
-		QUAL_SAMPLE,
-
-		/* INTERPOLATION */
-		QUAL_FLAT,
-		QUAL_NOPERSPECTIVE,
-		QUAL_SMOOTH,
-
-		/* LAYOUT */
-		QUAL_LOCATION,
-
-		/* PRECISION */
-		QUAL_LOWP,
-		QUAL_MEDIUMP,
-		QUAL_HIGHP,
-		QUAL_PRECISE,
-
-		/* INVARIANCE */
-		QUAL_INVARIANT,
-
-		/* */
-		QUAL_MAX
-	};
+    /* Public enums */
+    enum TEXTURE_TYPES
+    {
+        TEX_BUFFER,
+        TEX_2D,
+        TEX_2D_RECT,
+        TEX_2D_ARRAY,
+        TEX_3D,
+        TEX_CUBE,
+        TEX_1D,
+        TEX_1D_ARRAY,
+
+        /* */
+        TEXTURE_TYPES_MAX
+    };
+
+    enum SHADER_STAGES
+    {
+        COMPUTE_SHADER = 0,
+        VERTEX_SHADER,
+        TESS_CTRL_SHADER,
+        TESS_EVAL_SHADER,
+        GEOMETRY_SHADER,
+        FRAGMENT_SHADER,
+
+        /* */
+        SHADER_STAGES_MAX
+    };
+
+    enum UTF8_CHARACTERS
+    {
+        TWO_BYTES,
+        THREE_BYTES,
+        FOUR_BYTES,
+        FIVE_BYTES,
+        SIX_BYTES,
+        REDUNDANT_ASCII,
+
+        /* */
+        EMPTY
+    };
+
+    enum TYPES
+    {
+        FLOAT,
+        DOUBLE,
+        INT,
+        UINT,
+
+        /* */
+        TYPES_MAX
+    };
+
+    enum QUALIFIER_CLASSES
+    {
+        QUAL_CLS_INVARIANCE = 0,
+        QUAL_CLS_INTERPOLATION,
+        QUAL_CLS_LAYOUT,
+        QUAL_CLS_AUXILARY_STORAGE,
+        QUAL_CLS_STORAGE,
+        QUAL_CLS_PRECISION,
+
+        /* */
+        QUAL_CLS_MAX
+    };
+
+    enum QUALIFIERS
+    {
+        QUAL_NONE,
+
+        /* CONSTNESS */
+        QUAL_CONST,
+
+        /* STORAGE */
+        QUAL_IN,
+        QUAL_OUT,
+        QUAL_INOUT,
+        QUAL_UNIFORM,
+
+        /* AUXILARY */
+        QUAL_PATCH,
+        QUAL_CENTROID,
+        QUAL_SAMPLE,
+
+        /* INTERPOLATION */
+        QUAL_FLAT,
+        QUAL_NOPERSPECTIVE,
+        QUAL_SMOOTH,
+
+        /* LAYOUT */
+        QUAL_LOCATION,
+
+        /* PRECISION */
+        QUAL_LOWP,
+        QUAL_MEDIUMP,
+        QUAL_HIGHP,
+        QUAL_PRECISE,
+
+        /* INVARIANCE */
+        QUAL_INVARIANT,
+
+        /* */
+        QUAL_MAX
+    };
 
-	enum VARIABLE_STORAGE
-	{
-		INPUT,
-		OUTPUT,
-		UNIFORM,
+    enum VARIABLE_STORAGE
+    {
+        INPUT,
+        OUTPUT,
+        UNIFORM,
 
-		/* */
-		STORAGE_MAX
-	};
+        /* */
+        STORAGE_MAX
+    };
 
-	enum VARIABLE_FLAVOUR
-	{
-		BASIC,
-		ARRAY,
-		INDEXED_BY_INVOCATION_ID
-	};
+    enum VARIABLE_FLAVOUR
+    {
+        BASIC,
+        ARRAY,
+        INDEXED_BY_INVOCATION_ID
+    };
 
-	/* Public types */
-	struct buffer
-	{
-		buffer(deqp::Context& context);
-		~buffer();
+    /* Public types */
+    struct buffer
+    {
+        buffer(deqp::Context &context);
+        ~buffer();
 
-		void bind() const;
+        void bind() const;
 
-		void bindRange(glw::GLuint index, glw::GLintptr offset, glw::GLsizeiptr size);
+        void bindRange(glw::GLuint index, glw::GLintptr offset, glw::GLsizeiptr size);
 
-		void generate(glw::GLenum target);
-		void* map(glw::GLenum access) const;
-		void unmap() const;
+        void generate(glw::GLenum target);
+        void *map(glw::GLenum access) const;
+        void unmap() const;
 
-		void update(glw::GLsizeiptr size, glw::GLvoid* data, glw::GLenum usage);
+        void update(glw::GLsizeiptr size, glw::GLvoid *data, glw::GLenum usage);
 
-		void		release();
-		glw::GLuint m_id;
+        void release();
+        glw::GLuint m_id;
 
-	private:
-		deqp::Context& m_context;
-		glw::GLenum	m_target;
-	};
+    private:
+        deqp::Context &m_context;
+        glw::GLenum m_target;
+    };
 
-	struct framebuffer
-	{
-		framebuffer(deqp::Context& context);
-		~framebuffer();
+    struct framebuffer
+    {
+        framebuffer(deqp::Context &context);
+        ~framebuffer();
 
-		void attachTexture(glw::GLenum attachment, glw::GLuint texture_id, glw::GLuint width, glw::GLuint height);
+        void attachTexture(glw::GLenum attachment, glw::GLuint texture_id, glw::GLuint width, glw::GLuint height);
 
-		void bind();
-		void clear(glw::GLenum mask);
+        void bind();
+        void clear(glw::GLenum mask);
 
-		void clearColor(glw::GLfloat red, glw::GLfloat green, glw::GLfloat blue, glw::GLfloat alpha);
+        void clearColor(glw::GLfloat red, glw::GLfloat green, glw::GLfloat blue, glw::GLfloat alpha);
 
-		void generate();
+        void generate();
 
-		glw::GLuint m_id;
+        glw::GLuint m_id;
 
-	private:
-		deqp::Context& m_context;
-	};
+    private:
+        deqp::Context &m_context;
+    };
 
-	struct shaderSource
-	{
-		shaderSource();
-		shaderSource(const shaderSource& source);
-		shaderSource(const glw::GLchar* source_code);
+    struct shaderSource
+    {
+        shaderSource();
+        shaderSource(const shaderSource &source);
+        shaderSource(const glw::GLchar *source_code);
 
-		struct shaderPart
-		{
-			std::string m_code;
-			glw::GLint  m_length;
-		};
+        struct shaderPart
+        {
+            std::string m_code;
+            glw::GLint m_length;
+        };
 
-		std::vector<shaderPart> m_parts;
-		bool					m_use_lengths;
-	};
+        std::vector<shaderPart> m_parts;
+        bool m_use_lengths;
+    };
 
-	class shaderCompilationException : public std::exception
-	{
-	public:
-		shaderCompilationException(const shaderSource& source, const glw::GLchar* message);
+    class shaderCompilationException : public std::exception
+    {
+    public:
+        shaderCompilationException(const shaderSource &source, const glw::GLchar *message);
 
-		virtual ~shaderCompilationException() throw()
-		{
-		}
+        virtual ~shaderCompilationException() throw()
+        {
+        }
 
-		virtual const char* what() const throw();
+        virtual const char *what() const throw();
 
-		shaderSource m_shader_source;
-		std::string  m_error_message;
-	};
+        shaderSource m_shader_source;
+        std::string m_error_message;
+    };
 
-	class programLinkageException : public std::exception
-	{
-	public:
-		programLinkageException(const glw::GLchar* error_message);
+    class programLinkageException : public std::exception
+    {
+    public:
+        programLinkageException(const glw::GLchar *error_message);
 
-		virtual ~programLinkageException() throw()
-		{
-		}
+        virtual ~programLinkageException() throw()
+        {
+        }
 
-		virtual const char* what() const throw();
+        virtual const char *what() const throw();
 
-		std::string m_error_message;
-	};
+        std::string m_error_message;
+    };
 
-	/** Store information about program object
-	 *
-	 **/
-	struct program
-	{
-		program(deqp::Context& context);
-		~program();
+    /** Store information about program object
+     *
+     **/
+    struct program
+    {
+        program(deqp::Context &context);
+        ~program();
 
-		void build(const glw::GLchar* compute_shader_code, const glw::GLchar* fragment_shader_code,
-				   const glw::GLchar* geometry_shader_code, const glw::GLchar* tesselation_control_shader_code,
-				   const glw::GLchar* tesselation_evaluation_shader_code, const glw::GLchar* vertex_shader_code,
-				   const glw::GLchar* const* varying_names, glw::GLuint n_varying_names, bool is_separable = false);
+        void build(const glw::GLchar *compute_shader_code, const glw::GLchar *fragment_shader_code,
+                   const glw::GLchar *geometry_shader_code, const glw::GLchar *tesselation_control_shader_code,
+                   const glw::GLchar *tesselation_evaluation_shader_code, const glw::GLchar *vertex_shader_code,
+                   const glw::GLchar *const *varying_names, glw::GLuint n_varying_names, bool is_separable = false);
 
-		void build(const shaderSource& compute_shader, const shaderSource& fragment_shader,
-				   const shaderSource& geometry_shader, const shaderSource& tesselation_control_shader,
-				   const shaderSource& tesselation_evaluation_shader, const shaderSource& vertex_shader,
-				   const glw::GLchar* const* varying_names, glw::GLuint n_varying_names, bool is_separable = false);
+        void build(const shaderSource &compute_shader, const shaderSource &fragment_shader,
+                   const shaderSource &geometry_shader, const shaderSource &tesselation_control_shader,
+                   const shaderSource &tesselation_evaluation_shader, const shaderSource &vertex_shader,
+                   const glw::GLchar *const *varying_names, glw::GLuint n_varying_names, bool is_separable = false);
 
-		void compile(glw::GLuint shader_id, const shaderSource& source) const;
+        void compile(glw::GLuint shader_id, const shaderSource &source) const;
 
-		void createFromBinary(const std::vector<glw::GLubyte>& binary, glw::GLenum binary_format);
+        void createFromBinary(const std::vector<glw::GLubyte> &binary, glw::GLenum binary_format);
 
-		glw::GLint getAttribLocation(const glw::GLchar* name) const;
+        glw::GLint getAttribLocation(const glw::GLchar *name) const;
 
-		void getBinary(std::vector<glw::GLubyte>& binary, glw::GLenum& binary_format) const;
+        void getBinary(std::vector<glw::GLubyte> &binary, glw::GLenum &binary_format) const;
 
-		glw::GLuint getSubroutineIndex(const glw::GLchar* subroutine_name, glw::GLenum shader_stage) const;
+        glw::GLuint getSubroutineIndex(const glw::GLchar *subroutine_name, glw::GLenum shader_stage) const;
 
-		glw::GLint getSubroutineUniformLocation(const glw::GLchar* uniform_name, glw::GLenum shader_stage) const;
+        glw::GLint getSubroutineUniformLocation(const glw::GLchar *uniform_name, glw::GLenum shader_stage) const;
 
-		glw::GLint getUniform1i(glw::GLuint location) const;
-		glw::GLint getUniformLocation(const glw::GLchar* uniform_name) const;
+        glw::GLint getUniform1i(glw::GLuint location) const;
+        glw::GLint getUniformLocation(const glw::GLchar *uniform_name) const;
 
-		void link() const;
-		void remove();
+        void link() const;
+        void remove();
 
-		void uniform(const glw::GLchar* uniform_name, TYPES type, glw::GLuint n_columns, glw::GLuint n_rows,
-					 const void* data) const;
+        void uniform(const glw::GLchar *uniform_name, TYPES type, glw::GLuint n_columns, glw::GLuint n_rows,
+                     const void *data) const;
 
-		void use() const;
+        void use() const;
 
-		/* */
-		static void printShaderSource(const shaderSource& source, tcu::MessageBuilder& log);
+        /* */
+        static void printShaderSource(const shaderSource &source, tcu::MessageBuilder &log);
 
-		static const glw::GLenum ARB_COMPUTE_SHADER;
+        static const glw::GLenum ARB_COMPUTE_SHADER;
 
-		glw::GLuint m_compute_shader_id;
-		glw::GLuint m_fragment_shader_id;
-		glw::GLuint m_geometry_shader_id;
-		glw::GLuint m_program_object_id;
-		glw::GLuint m_tesselation_control_shader_id;
-		glw::GLuint m_tesselation_evaluation_shader_id;
-		glw::GLuint m_vertex_shader_id;
+        glw::GLuint m_compute_shader_id;
+        glw::GLuint m_fragment_shader_id;
+        glw::GLuint m_geometry_shader_id;
+        glw::GLuint m_program_object_id;
+        glw::GLuint m_tesselation_control_shader_id;
+        glw::GLuint m_tesselation_evaluation_shader_id;
+        glw::GLuint m_vertex_shader_id;
 
-	private:
-		deqp::Context& m_context;
-	};
+    private:
+        deqp::Context &m_context;
+    };
 
-	struct texture
-	{
-		texture(deqp::Context& context);
-		~texture();
+    struct texture
+    {
+        texture(deqp::Context &context);
+        ~texture();
 
-		void bind() const;
+        void bind() const;
 
-		void create(glw::GLuint width, glw::GLuint height, glw::GLenum internal_format);
+        void create(glw::GLuint width, glw::GLuint height, glw::GLenum internal_format);
 
-		void create(glw::GLuint width, glw::GLuint height, glw::GLuint depth, glw::GLenum internal_format,
-					TEXTURE_TYPES texture_type);
+        void create(glw::GLuint width, glw::GLuint height, glw::GLuint depth, glw::GLenum internal_format,
+                    TEXTURE_TYPES texture_type);
 
-		void createBuffer(glw::GLenum internal_format, glw::GLuint buffer_id);
+        void createBuffer(glw::GLenum internal_format, glw::GLuint buffer_id);
 
-		void get(glw::GLenum format, glw::GLenum type, glw::GLvoid* out_data) const;
+        void get(glw::GLenum format, glw::GLenum type, glw::GLvoid *out_data) const;
 
-		void release();
+        void release();
 
-		void update(glw::GLuint width, glw::GLuint height, glw::GLuint depth, glw::GLenum format, glw::GLenum type,
-					glw::GLvoid* data);
+        void update(glw::GLuint width, glw::GLuint height, glw::GLuint depth, glw::GLenum format, glw::GLenum type,
+                    glw::GLvoid *data);
 
-		glw::GLuint m_id;
+        glw::GLuint m_id;
 
-	private:
-		glw::GLuint	m_buffer_id;
-		deqp::Context& m_context;
-		TEXTURE_TYPES  m_texture_type;
-	};
+    private:
+        glw::GLuint m_buffer_id;
+        deqp::Context &m_context;
+        TEXTURE_TYPES m_texture_type;
+    };
 
-	struct vertexArray
-	{
-		vertexArray(deqp::Context& Context);
-		~vertexArray();
+    struct vertexArray
+    {
+        vertexArray(deqp::Context &Context);
+        ~vertexArray();
 
-		void generate();
-		void bind();
+        void generate();
+        void bind();
 
-		glw::GLuint m_id;
+        glw::GLuint m_id;
 
-	private:
-		deqp::Context& m_context;
-	};
+    private:
+        deqp::Context &m_context;
+    };
 
-	/* Public typedefs */
-	typedef std::vector<Utils::QUALIFIERS> qualifierSet;
+    /* Public typedefs */
+    typedef std::vector<Utils::QUALIFIERS> qualifierSet;
 
-	/* UniformN*v prototypes */
-	typedef GLW_APICALL void(GLW_APIENTRY* uniformNdv)(glw::GLint, glw::GLsizei, const glw::GLdouble*);
-	typedef GLW_APICALL void(GLW_APIENTRY* uniformNfv)(glw::GLint, glw::GLsizei, const glw::GLfloat*);
-	typedef GLW_APICALL void(GLW_APIENTRY* uniformNiv)(glw::GLint, glw::GLsizei, const glw::GLint*);
-	typedef GLW_APICALL void(GLW_APIENTRY* uniformNuiv)(glw::GLint, glw::GLsizei, const glw::GLuint*);
-	typedef GLW_APICALL void(GLW_APIENTRY* uniformMatrixNdv)(glw::GLint, glw::GLsizei, glw::GLboolean,
-															 const glw::GLdouble*);
-	typedef GLW_APICALL void(GLW_APIENTRY* uniformMatrixNfv)(glw::GLint, glw::GLsizei, glw::GLboolean,
-															 const glw::GLfloat*);
+    /* UniformN*v prototypes */
+    typedef GLW_APICALL void(GLW_APIENTRY *uniformNdv)(glw::GLint, glw::GLsizei, const glw::GLdouble *);
+    typedef GLW_APICALL void(GLW_APIENTRY *uniformNfv)(glw::GLint, glw::GLsizei, const glw::GLfloat *);
+    typedef GLW_APICALL void(GLW_APIENTRY *uniformNiv)(glw::GLint, glw::GLsizei, const glw::GLint *);
+    typedef GLW_APICALL void(GLW_APIENTRY *uniformNuiv)(glw::GLint, glw::GLsizei, const glw::GLuint *);
+    typedef GLW_APICALL void(GLW_APIENTRY *uniformMatrixNdv)(glw::GLint, glw::GLsizei, glw::GLboolean,
+                                                             const glw::GLdouble *);
+    typedef GLW_APICALL void(GLW_APIENTRY *uniformMatrixNfv)(glw::GLint, glw::GLsizei, glw::GLboolean,
+                                                             const glw::GLfloat *);
 
-	/* Public static methods */
-	/* UniformN*v routine getters */
-	static uniformNdv getUniformNdv(const glw::Functions& gl, glw::GLuint n_rows);
+    /* Public static methods */
+    /* UniformN*v routine getters */
+    static uniformNdv getUniformNdv(const glw::Functions &gl, glw::GLuint n_rows);
 
-	static uniformNfv getUniformNfv(const glw::Functions& gl, glw::GLuint n_rows);
+    static uniformNfv getUniformNfv(const glw::Functions &gl, glw::GLuint n_rows);
 
-	static uniformNiv getUniformNiv(const glw::Functions& gl, glw::GLuint n_rows);
+    static uniformNiv getUniformNiv(const glw::Functions &gl, glw::GLuint n_rows);
 
-	static uniformNuiv getUniformNuiv(const glw::Functions& gl, glw::GLuint n_rows);
+    static uniformNuiv getUniformNuiv(const glw::Functions &gl, glw::GLuint n_rows);
 
-	static uniformMatrixNdv getUniformMatrixNdv(const glw::Functions& gl, glw::GLuint n_columns, glw::GLuint n_rows);
+    static uniformMatrixNdv getUniformMatrixNdv(const glw::Functions &gl, glw::GLuint n_columns, glw::GLuint n_rows);
 
-	static uniformMatrixNfv getUniformMatrixNfv(const glw::Functions& gl, glw::GLuint n_columns, glw::GLuint n_rows);
+    static uniformMatrixNfv getUniformMatrixNfv(const glw::Functions &gl, glw::GLuint n_columns, glw::GLuint n_rows);
 
-	/* GLSL qualifiers */
-	static bool doesContainQualifier(QUALIFIERS qualifier, const qualifierSet& qualifiers);
+    /* GLSL qualifiers */
+    static bool doesContainQualifier(QUALIFIERS qualifier, const qualifierSet &qualifiers);
 
-	static bool doesStageSupportQualifier(SHADER_STAGES stage, VARIABLE_STORAGE storage, QUALIFIERS qualifier);
+    static bool doesStageSupportQualifier(SHADER_STAGES stage, VARIABLE_STORAGE storage, QUALIFIERS qualifier);
 
-	static const glw::GLchar* getQualifierString(QUALIFIERS qualifier);
-	static std::string getQualifiersListString(const qualifierSet& qualifiers);
+    static const glw::GLchar *getQualifierString(QUALIFIERS qualifier);
+    static std::string getQualifiersListString(const qualifierSet &qualifiers);
 
-	static qualifierSet prepareQualifiersSet(const qualifierSet& in_qualifiers, SHADER_STAGES stage,
-											 VARIABLE_STORAGE storage);
+    static qualifierSet prepareQualifiersSet(const qualifierSet &in_qualifiers, SHADER_STAGES stage,
+                                             VARIABLE_STORAGE storage);
 
-	/* Variable name */
-	static std::string getBlockVariableDefinition(const Utils::qualifierSet& qualifiers, const glw::GLchar* type_name,
-												  const glw::GLchar* variable_name);
+    /* Variable name */
+    static std::string getBlockVariableDefinition(const Utils::qualifierSet &qualifiers, const glw::GLchar *type_name,
+                                                  const glw::GLchar *variable_name);
 
-	static std::string getBlockVariableReference(VARIABLE_FLAVOUR flavour, const glw::GLchar* variable_name,
-												 const glw::GLchar* block_name);
+    static std::string getBlockVariableReference(VARIABLE_FLAVOUR flavour, const glw::GLchar *variable_name,
+                                                 const glw::GLchar *block_name);
 
-	static std::string getVariableDefinition(VARIABLE_FLAVOUR flavour, const Utils::qualifierSet& qualifiers,
-											 const glw::GLchar* type_name, const glw::GLchar* variable_name);
+    static std::string getVariableDefinition(VARIABLE_FLAVOUR flavour, const Utils::qualifierSet &qualifiers,
+                                             const glw::GLchar *type_name, const glw::GLchar *variable_name);
 
-	static VARIABLE_FLAVOUR getVariableFlavour(Utils::SHADER_STAGES stage, Utils::VARIABLE_STORAGE storage,
-											   const Utils::qualifierSet& qualifiers);
+    static VARIABLE_FLAVOUR getVariableFlavour(Utils::SHADER_STAGES stage, Utils::VARIABLE_STORAGE storage,
+                                               const Utils::qualifierSet &qualifiers);
 
-	static std::string getVariableName(Utils::SHADER_STAGES stage, Utils::VARIABLE_STORAGE storage,
-									   const glw::GLchar* variable_name);
+    static std::string getVariableName(Utils::SHADER_STAGES stage, Utils::VARIABLE_STORAGE storage,
+                                       const glw::GLchar *variable_name);
 
-	static std::string getVariableReference(VARIABLE_FLAVOUR flavour, const glw::GLchar* variable_name);
+    static std::string getVariableReference(VARIABLE_FLAVOUR flavour, const glw::GLchar *variable_name);
 
-	static void prepareBlockVariableStrings(Utils::SHADER_STAGES in_stage, Utils::VARIABLE_STORAGE in_storage,
-											const Utils::qualifierSet& in_qualifiers, const glw::GLchar* in_type_name,
-											const glw::GLchar* in_variable_name, const glw::GLchar* in_block_name,
-											std::string& out_definition, std::string& out_reference);
+    static void prepareBlockVariableStrings(Utils::SHADER_STAGES in_stage, Utils::VARIABLE_STORAGE in_storage,
+                                            const Utils::qualifierSet &in_qualifiers, const glw::GLchar *in_type_name,
+                                            const glw::GLchar *in_variable_name, const glw::GLchar *in_block_name,
+                                            std::string &out_definition, std::string &out_reference);
 
-	static void prepareVariableStrings(Utils::SHADER_STAGES in_stage, Utils::VARIABLE_STORAGE in_storage,
-									   const Utils::qualifierSet& in_qualifiers, const glw::GLchar* in_type_name,
-									   const glw::GLchar* in_variable_name, std::string& out_definition,
-									   std::string& out_reference);
+    static void prepareVariableStrings(Utils::SHADER_STAGES in_stage, Utils::VARIABLE_STORAGE in_storage,
+                                       const Utils::qualifierSet &in_qualifiers, const glw::GLchar *in_type_name,
+                                       const glw::GLchar *in_variable_name, std::string &out_definition,
+                                       std::string &out_reference);
 
-	/* Textures */
-	static const glw::GLchar* getImageType(TEXTURE_TYPES type);
-	static glw::GLuint getNumberOfCoordinates(TEXTURE_TYPES type);
-	static const glw::GLchar* getSamplerType(TEXTURE_TYPES type);
-	static glw::GLenum getTextureTartet(TEXTURE_TYPES type);
-	static const glw::GLchar* getTextureTypeName(TEXTURE_TYPES type);
+    /* Textures */
+    static const glw::GLchar *getImageType(TEXTURE_TYPES type);
+    static glw::GLuint getNumberOfCoordinates(TEXTURE_TYPES type);
+    static const glw::GLchar *getSamplerType(TEXTURE_TYPES type);
+    static glw::GLenum getTextureTartet(TEXTURE_TYPES type);
+    static const glw::GLchar *getTextureTypeName(TEXTURE_TYPES type);
 
-	/* Stuff */
-	static bool checkUniformBinding(Utils::program& program, const glw::GLchar* name, glw::GLint expected_binding);
-	static bool checkUniformArrayBinding(Utils::program& program, const glw::GLchar* name, glw::GLuint index,
-										 glw::GLint expected_binding);
-	static bool doesTypeSupportMatrix(TYPES type);
-	static const glw::GLchar* getShaderStageName(SHADER_STAGES stage);
-	static const glw::GLchar* getTypeName(TYPES type, glw::GLuint n_columns, glw::GLuint n_rows);
-	static const glw::GLchar* getUtf8Character(UTF8_CHARACTERS character);
-	static bool isExtensionSupported(deqp::Context& context, const glw::GLchar* extension_name);
-	static bool isGLVersionAtLeast(const glw::Functions& gl, glw::GLint required_major, glw::GLint required_minor);
-	static void replaceToken(const glw::GLchar* token, size_t& search_position, const glw::GLchar* text,
-							 std::string& string);
-	static void replaceAllTokens(const glw::GLchar* token, const glw::GLchar* text, std::string& string);
+    /* Stuff */
+    static bool checkUniformBinding(Utils::program &program, const glw::GLchar *name, glw::GLint expected_binding);
+    static bool checkUniformArrayBinding(Utils::program &program, const glw::GLchar *name, glw::GLuint index,
+                                         glw::GLint expected_binding);
+    static bool doesTypeSupportMatrix(TYPES type);
+    static const glw::GLchar *getShaderStageName(SHADER_STAGES stage);
+    static const glw::GLchar *getTypeName(TYPES type, glw::GLuint n_columns, glw::GLuint n_rows);
+    static const glw::GLchar *getUtf8Character(UTF8_CHARACTERS character);
+    static bool isExtensionSupported(deqp::Context &context, const glw::GLchar *extension_name);
+    static bool isGLVersionAtLeast(const glw::Functions &gl, glw::GLint required_major, glw::GLint required_minor);
+    static void replaceToken(const glw::GLchar *token, size_t &search_position, const glw::GLchar *text,
+                             std::string &string);
+    static void replaceAllTokens(const glw::GLchar *token, const glw::GLchar *text, std::string &string);
 };
 
 /** Base class for tests **/
 class TestBase : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	TestBase(deqp::Context& context, const glw::GLchar* test_name, const glw::GLchar* test_description);
-	virtual ~TestBase()
-	{
-	}
+    /* Public methods */
+    TestBase(deqp::Context &context, const glw::GLchar *test_name, const glw::GLchar *test_description);
+    virtual ~TestBase()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual void getShaderSourceConfig(glw::GLuint& out_n_parts, bool& out_use_lengths);
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source) = 0;
-	virtual void prepareUniforms(Utils::program& program);
-	virtual bool testInit();
-	virtual bool testCompute()						 = 0;
-	virtual bool testDrawArray(bool use_version_400) = 0;
+    /* Methods to be implemented by child class */
+    virtual void getShaderSourceConfig(glw::GLuint &out_n_parts, bool &out_use_lengths);
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source) = 0;
+    virtual void prepareUniforms(Utils::program &program);
+    virtual bool testInit();
+    virtual bool testCompute()                       = 0;
+    virtual bool testDrawArray(bool use_version_400) = 0;
 
-	/* Methods available to child classes */
-	const glw::GLchar* getStageSpecificLayout(Utils::SHADER_STAGES stage) const;
-	const glw::GLchar* getVersionString(Utils::SHADER_STAGES stage, bool use_version_400) const;
-	void initShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400, Utils::shaderSource& out_source);
-	int maxImageUniforms(Utils::SHADER_STAGES stage) const;
+    /* Methods available to child classes */
+    const glw::GLchar *getStageSpecificLayout(Utils::SHADER_STAGES stage) const;
+    const glw::GLchar *getVersionString(Utils::SHADER_STAGES stage, bool use_version_400) const;
+    void initShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400, Utils::shaderSource &out_source);
+    int maxImageUniforms(Utils::SHADER_STAGES stage) const;
 
-	/* Protected variables */
-	bool m_is_compute_shader_supported;
-	bool m_is_explicit_uniform_location;
-	bool m_is_shader_language_420pack;
+    /* Protected variables */
+    bool m_is_compute_shader_supported;
+    bool m_is_explicit_uniform_location;
+    bool m_is_shader_language_420pack;
 
 private:
-	/* Private methods */
-	bool test();
+    /* Private methods */
+    bool test();
 };
 
 /** Base class for API tests */
 class APITestBase : public TestBase
 {
 public:
-	/* Public methods */
-	APITestBase(deqp::Context& context, const glw::GLchar* test_name, const glw::GLchar* test_description);
+    /* Public methods */
+    APITestBase(deqp::Context &context, const glw::GLchar *test_name, const glw::GLchar *test_description);
 
-	virtual ~APITestBase()
-	{
-	}
+    virtual ~APITestBase()
+    {
+    }
 
 protected:
-	/* Protected methods inherited from TestBase */
-	virtual bool testCompute();
-	virtual bool testDrawArray(bool use_version_400);
+    /* Protected methods inherited from TestBase */
+    virtual bool testCompute();
+    virtual bool testDrawArray(bool use_version_400);
 
-	/* Protected methods to be implemented by child class */
-	virtual bool checkResults(Utils::program& program) = 0;
+    /* Protected methods to be implemented by child class */
+    virtual bool checkResults(Utils::program &program) = 0;
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source) = 0;
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source) = 0;
 };
 
 /** Base class for GLSL tests **/
 class GLSLTestBase : public TestBase
 {
 public:
-	/* Public methods */
-	GLSLTestBase(deqp::Context& context, const glw::GLchar* test_name, const glw::GLchar* test_description);
+    /* Public methods */
+    GLSLTestBase(deqp::Context &context, const glw::GLchar *test_name, const glw::GLchar *test_description);
 
-	virtual ~GLSLTestBase()
-	{
-	}
+    virtual ~GLSLTestBase()
+    {
+    }
 
 protected:
-	/* Protected methods inherited from TestBase */
-	virtual bool testCompute();
-	virtual bool testDrawArray(bool use_version_400);
+    /* Protected methods inherited from TestBase */
+    virtual bool testCompute();
+    virtual bool testDrawArray(bool use_version_400);
 
-	/* Protected methods to be implemented by child class */
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source) = 0;
+    /* Protected methods to be implemented by child class */
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source) = 0;
 
-	virtual const glw::GLchar* prepareSourceTexture(Utils::texture& texture);
+    virtual const glw::GLchar *prepareSourceTexture(Utils::texture &texture);
 
-	virtual void prepareVertexBuffer(const Utils::program& program, Utils::buffer& buffer, Utils::vertexArray& vao);
+    virtual void prepareVertexBuffer(const Utils::program &program, Utils::buffer &buffer, Utils::vertexArray &vao);
 
-	virtual bool verifyAdditionalResults() const;
-	virtual void releaseResource();
+    virtual bool verifyAdditionalResults() const;
+    virtual void releaseResource();
 
 private:
-	/* Private methods */
-	void bindTextureToimage(Utils::program& program, Utils::texture& texture, const glw::GLchar* uniform_name) const;
+    /* Private methods */
+    void bindTextureToimage(Utils::program &program, Utils::texture &texture, const glw::GLchar *uniform_name) const;
 
-	void bindTextureToSampler(Utils::program& program, Utils::texture& texture, const glw::GLchar* uniform_name) const;
+    void bindTextureToSampler(Utils::program &program, Utils::texture &texture, const glw::GLchar *uniform_name) const;
 
-	bool checkResults(Utils::texture& color_texture) const;
+    bool checkResults(Utils::texture &color_texture) const;
 
-	void prepareFramebuffer(Utils::framebuffer& framebuffer, Utils::texture& color_texture) const;
+    void prepareFramebuffer(Utils::framebuffer &framebuffer, Utils::texture &color_texture) const;
 
-	void prepareImage(Utils::program& program, Utils::texture& color_texture) const;
+    void prepareImage(Utils::program &program, Utils::texture &color_texture) const;
 
-	/* Private constants */
-	static const glw::GLenum m_color_texture_internal_format;
-	static const glw::GLenum m_color_texture_format;
-	static const glw::GLenum m_color_texture_type;
-	static const glw::GLuint m_color_texture_width;
-	static const glw::GLuint m_color_texture_height;
+    /* Private constants */
+    static const glw::GLenum m_color_texture_internal_format;
+    static const glw::GLenum m_color_texture_format;
+    static const glw::GLenum m_color_texture_type;
+    static const glw::GLuint m_color_texture_width;
+    static const glw::GLuint m_color_texture_height;
 };
 
 /** Base class for negative tests **/
 class NegativeTestBase : public TestBase
 {
 public:
-	/* Public methods */
-	NegativeTestBase(deqp::Context& context, const glw::GLchar* test_name, const glw::GLchar* test_description);
+    /* Public methods */
+    NegativeTestBase(deqp::Context &context, const glw::GLchar *test_name, const glw::GLchar *test_description);
 
-	virtual ~NegativeTestBase()
-	{
-	}
+    virtual ~NegativeTestBase()
+    {
+    }
 
 protected:
-	/* Protected methods inherited from TestBase */
-	virtual bool testCompute();
-	virtual bool testDrawArray(bool use_version_400);
+    /* Protected methods inherited from TestBase */
+    virtual bool testCompute();
+    virtual bool testDrawArray(bool use_version_400);
 
-	/* Protected methods to be implemented by child class */
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source) = 0;
+    /* Protected methods to be implemented by child class */
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source) = 0;
 };
 
 /** Base class for "binding image" tests **/
 class BindingImageTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	BindingImageTest(deqp::Context& context, const glw::GLchar* test_name, const glw::GLchar* test_description);
+    /* Public methods */
+    BindingImageTest(deqp::Context &context, const glw::GLchar *test_name, const glw::GLchar *test_description);
 
-	virtual ~BindingImageTest()
-	{
-	}
+    virtual ~BindingImageTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	void prepareBuffer(Utils::buffer& buffer, glw::GLuint color);
+    /* Protected methods */
+    void prepareBuffer(Utils::buffer &buffer, glw::GLuint color);
 
-	void prepareTexture(Utils::texture& texture, const Utils::buffer& buffer, Utils::TEXTURE_TYPES texture_type,
-						glw::GLuint color, glw::GLuint unit);
+    void prepareTexture(Utils::texture &texture, const Utils::buffer &buffer, Utils::TEXTURE_TYPES texture_type,
+                        glw::GLuint color, glw::GLuint unit);
 
-	bool verifyBuffer(const Utils::buffer& buffer) const;
-	bool verifyTexture(const Utils::texture& texture) const;
+    bool verifyBuffer(const Utils::buffer &buffer) const;
+    bool verifyTexture(const Utils::texture &texture) const;
 
-	/* Protected constants */
-	static const glw::GLuint m_width;
-	static const glw::GLuint m_green_color;
-	static const glw::GLuint m_height;
-	static const glw::GLuint m_depth;
+    /* Protected constants */
+    static const glw::GLuint m_width;
+    static const glw::GLuint m_green_color;
+    static const glw::GLuint m_height;
+    static const glw::GLuint m_depth;
 };
 
 /** Test implementation, description follows:
@@ -630,7 +630,7 @@ protected:
  *    following GLSL code:
  *
  *        #define ADD_ONE(XX) (X\\
-         *        X + 1.0)
+ *        X + 1.0)
  *        vec4 getColor(float f) {
  *            return vec4(0.0, ADD_ONE(0.0), 0.0, 1.0);
  *        }
@@ -682,93 +682,93 @@ protected:
 class LineContinuationTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	LineContinuationTest(deqp::Context&);
+    /* Public methods */
+    LineContinuationTest(deqp::Context &);
 
-	virtual ~LineContinuationTest()
-	{
-	}
+    virtual ~LineContinuationTest()
+    {
+    }
 
 protected:
-	/* Protected methods inherited from GLSLTestBase */
-	virtual void getShaderSourceConfig(glw::GLuint& out_n_parts, bool& out_use_lengths);
+    /* Protected methods inherited from GLSLTestBase */
+    virtual void getShaderSourceConfig(glw::GLuint &out_n_parts, bool &out_use_lengths);
 
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual const glw::GLchar* prepareSourceTexture(Utils::texture& texture);
+    virtual const glw::GLchar *prepareSourceTexture(Utils::texture &texture);
 
-	virtual void prepareVertexBuffer(const Utils::program& program, Utils::buffer& buffer, Utils::vertexArray& vao);
+    virtual void prepareVertexBuffer(const Utils::program &program, Utils::buffer &buffer, Utils::vertexArray &vao);
 
 private:
-	/* Private enums */
-	enum CASES
-	{
-		ASSIGNMENT_BEFORE_OPERATOR = 0,
-		ASSIGNMENT_AFTER_OPERATOR,
-		VECTOR_VARIABLE_INITIALIZER,
-		TOKEN_INSIDE_FUNCTION_NAME,
-		TOKEN_INSIDE_TYPE_NAME,
-		TOKEN_INSIDE_VARIABLE_NAME,
-		PREPROCESSOR_TOKEN_INSIDE,
-		PREPROCESSOR_TOKEN_BETWEEN,
-		COMMENT,
-		SOURCE_TERMINATION_NULL,
-		SOURCE_TERMINATION_NON_NULL,
-		PART_TERMINATION_NULL,
-		PART_NEXT_TO_TERMINATION_NULL,
-		PART_TERMINATION_NON_NULL,
-		PART_NEXT_TO_TERMINATION_NON_NULL,
+    /* Private enums */
+    enum CASES
+    {
+        ASSIGNMENT_BEFORE_OPERATOR = 0,
+        ASSIGNMENT_AFTER_OPERATOR,
+        VECTOR_VARIABLE_INITIALIZER,
+        TOKEN_INSIDE_FUNCTION_NAME,
+        TOKEN_INSIDE_TYPE_NAME,
+        TOKEN_INSIDE_VARIABLE_NAME,
+        PREPROCESSOR_TOKEN_INSIDE,
+        PREPROCESSOR_TOKEN_BETWEEN,
+        COMMENT,
+        SOURCE_TERMINATION_NULL,
+        SOURCE_TERMINATION_NON_NULL,
+        PART_TERMINATION_NULL,
+        PART_NEXT_TO_TERMINATION_NULL,
+        PART_TERMINATION_NON_NULL,
+        PART_NEXT_TO_TERMINATION_NON_NULL,
 
-		/* DEBUG: there will be no line continuations at all */
-		DEBUG_CASE
-	};
+        /* DEBUG: there will be no line continuations at all */
+        DEBUG_CASE
+    };
 
-	enum REPETITIONS
-	{
-		ONCE = 0,
-		MULTIPLE_TIMES,
-	};
+    enum REPETITIONS
+    {
+        ONCE = 0,
+        MULTIPLE_TIMES,
+    };
 
-	enum LINE_ENDINGS
-	{
-		UNIX = 0,
-		DOS,
-	};
+    enum LINE_ENDINGS
+    {
+        UNIX = 0,
+        DOS,
+    };
 
-	/* Private types */
-	/** Declare test case
-	 *
-	 **/
-	struct testCase
-	{
-		glw::GLuint m_case;
-		glw::GLuint m_repetitions;
-		glw::GLuint m_line_endings;
-	};
+    /* Private types */
+    /** Declare test case
+     *
+     **/
+    struct testCase
+    {
+        glw::GLuint m_case;
+        glw::GLuint m_repetitions;
+        glw::GLuint m_line_endings;
+    };
 
-	/* Private methods */
-	const glw::GLchar* casesToStr(CASES cases) const;
-	const glw::GLchar* getExpectedValueString() const;
-	std::string		   getLineContinuationString() const;
-	bool			   isShaderMultipart() const;
-	const glw::GLchar* lineEndingsToStr(LINE_ENDINGS line_ending) const;
-	void prepareComputShaderSource(Utils::shaderSource& shaderSource);
+    /* Private methods */
+    const glw::GLchar *casesToStr(CASES cases) const;
+    const glw::GLchar *getExpectedValueString() const;
+    std::string getLineContinuationString() const;
+    bool isShaderMultipart() const;
+    const glw::GLchar *lineEndingsToStr(LINE_ENDINGS line_ending) const;
+    void prepareComputShaderSource(Utils::shaderSource &shaderSource);
 
-	void prepareShaderSourceForDraw(Utils::SHADER_STAGES stage, bool use_version_400, Utils::shaderSource& source);
+    void prepareShaderSourceForDraw(Utils::SHADER_STAGES stage, bool use_version_400, Utils::shaderSource &source);
 
-	const glw::GLchar* repetitionsToStr(REPETITIONS repetitions) const;
-	void replaceAllCaseTokens(std::string& source) const;
-	bool useSourceLengths() const;
+    const glw::GLchar *repetitionsToStr(REPETITIONS repetitions) const;
+    void replaceAllCaseTokens(std::string &source) const;
+    bool useSourceLengths() const;
 
-	/* Private constants */
-	static const glw::GLuint  m_n_repetitions;
-	static const glw::GLchar* m_texture_coordinates_name;
+    /* Private constants */
+    static const glw::GLuint m_n_repetitions;
+    static const glw::GLchar *m_texture_coordinates_name;
 
-	/* Private variables */
-	testCase m_test_case;
+    /* Private variables */
+    testCase m_test_case;
 };
 
 /** Test implementation, description follows:
@@ -783,8 +783,8 @@ private:
  * so the expected value is N - 2 (where N is the "raw" line number).
  *
  *     ivec4 glsl\\
-         *     Test\\
-         *     Func(float f) {
+ *     Test\\
+ *     Func(float f) {
  *         obvious = error;
  *         return vec4(__LINE__, 0, 0, 1);
  *     }
@@ -792,17 +792,17 @@ private:
 class LineNumberingTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	LineNumberingTest(deqp::Context&);
+    /* Public methods */
+    LineNumberingTest(deqp::Context &);
 
-	virtual ~LineNumberingTest()
-	{
-	}
+    virtual ~LineNumberingTest()
+    {
+    }
 
 protected:
-	/* Protected methods inherited from GLSLTestBase */
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    /* Protected methods inherited from GLSLTestBase */
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 };
 
 /** Test implementation, description follows:
@@ -842,47 +842,47 @@ protected:
 class UTF8CharactersTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	UTF8CharactersTest(deqp::Context&);
+    /* Public methods */
+    UTF8CharactersTest(deqp::Context &);
 
-	virtual ~UTF8CharactersTest()
-	{
-	}
+    virtual ~UTF8CharactersTest()
+    {
+    }
 
-	/* Protected methods inherited from GLSLTestBase */
-	virtual void getShaderSourceConfig(glw::GLuint& out_n_parts, bool& out_use_lengths);
+    /* Protected methods inherited from GLSLTestBase */
+    virtual void getShaderSourceConfig(glw::GLuint &out_n_parts, bool &out_use_lengths);
 
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual const glw::GLchar* prepareSourceTexture(Utils::texture& texture);
+    virtual const glw::GLchar *prepareSourceTexture(Utils::texture &texture);
 
 private:
-	/* Private enums */
-	enum CASES
-	{
-		IN_COMMENT = 0,
-		IN_PREPROCESSOR,
-		AS_LAST_CHARACTER_NULL_TERMINATED,
-		AS_LAST_CHARACTER_NON_NULL_TERMINATED,
+    /* Private enums */
+    enum CASES
+    {
+        IN_COMMENT = 0,
+        IN_PREPROCESSOR,
+        AS_LAST_CHARACTER_NULL_TERMINATED,
+        AS_LAST_CHARACTER_NON_NULL_TERMINATED,
 
-		DEBUG_CASE
-	};
+        DEBUG_CASE
+    };
 
-	/* Private types */
-	struct testCase
-	{
-		CASES				   m_case;
-		Utils::UTF8_CHARACTERS m_character;
-	};
+    /* Private types */
+    struct testCase
+    {
+        CASES m_case;
+        Utils::UTF8_CHARACTERS m_character;
+    };
 
-	/* Private methods */
-	const glw::GLchar* casesToStr() const;
+    /* Private methods */
+    const glw::GLchar *casesToStr() const;
 
-	/* Private variables */
-	testCase m_test_case;
+    /* Private variables */
+    testCase m_test_case;
 };
 
 /** Test implementation, description follows:
@@ -895,22 +895,22 @@ private:
 class UTF8InSourceTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	UTF8InSourceTest(deqp::Context&);
+    /* Public methods */
+    UTF8InSourceTest(deqp::Context &);
 
-	virtual ~UTF8InSourceTest()
-	{
-	}
+    virtual ~UTF8InSourceTest()
+    {
+    }
 
-	/* Protected methods inherited from GLSLTestBase */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Protected methods inherited from GLSLTestBase */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
 private:
-	/* Private variables */
-	Utils::UTF8_CHARACTERS m_character;
+    /* Private variables */
+    Utils::UTF8_CHARACTERS m_character;
 };
 
 /** Test implementation, description follows:
@@ -939,47 +939,47 @@ private:
 class ImplicitConversionsValidTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	ImplicitConversionsValidTest(deqp::Context&);
+    /* Public methods */
+    ImplicitConversionsValidTest(deqp::Context &);
 
-	virtual ~ImplicitConversionsValidTest()
-	{
-	}
+    virtual ~ImplicitConversionsValidTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
-	virtual bool testInit();
+    virtual void prepareUniforms(Utils::program &program);
+    virtual bool testInit();
 
 private:
-	/* Private types */
-	struct typesPair
-	{
-		Utils::TYPES m_t1;
-		Utils::TYPES m_t2;
-	};
+    /* Private types */
+    struct typesPair
+    {
+        Utils::TYPES m_t1;
+        Utils::TYPES m_t2;
+    };
 
-	struct testCase
-	{
-		typesPair   m_types;
-		glw::GLuint m_n_cols;
-		glw::GLuint m_n_rows;
-	};
+    struct testCase
+    {
+        typesPair m_types;
+        glw::GLuint m_n_cols;
+        glw::GLuint m_n_rows;
+    };
 
-	/* Private methods */
-	const testCase& getCurrentTestCase();
+    /* Private methods */
+    const testCase &getCurrentTestCase();
 
-	std::string getValueList(glw::GLuint n_columns, glw::GLuint n_rows);
+    std::string getValueList(glw::GLuint n_columns, glw::GLuint n_rows);
 
-	/* Private variables */
-	testCase			  m_debug_test_case;
-	std::vector<testCase> m_test_cases;
-	glw::GLuint			  m_current_test_case_index;
+    /* Private variables */
+    testCase m_debug_test_case;
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_current_test_case_index;
 };
 
 /** Test implementation, description follows:
@@ -992,26 +992,26 @@ private:
 class ImplicitConversionsInvalidTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	ImplicitConversionsInvalidTest(deqp::Context&);
+    /* Public methods */
+    ImplicitConversionsInvalidTest(deqp::Context &);
 
-	virtual ~ImplicitConversionsInvalidTest()
-	{
-	}
+    virtual ~ImplicitConversionsInvalidTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
 private:
-	/* Private methods */
-	std::string getValueList(glw::GLuint n_rows);
+    /* Private methods */
+    std::string getValueList(glw::GLuint n_rows);
 
-	/* Private variables */
-	glw::GLuint m_current_test_case_index;
+    /* Private variables */
+    glw::GLuint m_current_test_case_index;
 };
 
 /** Test implementation, description follows:
@@ -1032,19 +1032,19 @@ private:
 class ConstDynamicValueTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	ConstDynamicValueTest(deqp::Context&);
+    /* Public methods */
+    ConstDynamicValueTest(deqp::Context &);
 
-	virtual ~ConstDynamicValueTest()
-	{
-	}
+    virtual ~ConstDynamicValueTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    /* Methods to be implemented by child class */
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
+    virtual void prepareUniforms(Utils::program &program);
 };
 
 /** Test implementation, description follows:
@@ -1067,23 +1067,23 @@ protected:
 class ConstAssignmentTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	ConstAssignmentTest(deqp::Context&);
+    /* Public methods */
+    ConstAssignmentTest(deqp::Context &);
 
-	virtual ~ConstAssignmentTest()
-	{
-	}
+    virtual ~ConstAssignmentTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
 private:
-	/* Private variables */
-	glw::GLuint m_current_test_case_index;
+    /* Private variables */
+    glw::GLuint m_current_test_case_index;
 };
 
 /** Test implementation, description follows:
@@ -1105,17 +1105,17 @@ private:
 class ConstDynamicValueAsConstExprTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	ConstDynamicValueAsConstExprTest(deqp::Context&);
+    /* Public methods */
+    ConstDynamicValueAsConstExprTest(deqp::Context &);
 
-	virtual ~ConstDynamicValueAsConstExprTest()
-	{
-	}
+    virtual ~ConstDynamicValueAsConstExprTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    /* Methods to be implemented by child class */
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 };
 
 /** Test implementation, description follows:
@@ -1170,31 +1170,31 @@ protected:
 class QualifierOrderTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	QualifierOrderTest(deqp::Context&);
+    /* Public methods */
+    QualifierOrderTest(deqp::Context &);
 
-	virtual ~QualifierOrderTest()
-	{
-	}
+    virtual ~QualifierOrderTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareVertexBuffer(const Utils::program& program, Utils::buffer& buffer, Utils::vertexArray& vao);
+    virtual void prepareVertexBuffer(const Utils::program &program, Utils::buffer &buffer, Utils::vertexArray &vao);
 
-	virtual bool testInit();
+    virtual bool testInit();
 
 private:
-	/* Private methods */
-	const Utils::qualifierSet& getCurrentTestCase();
+    /* Private methods */
+    const Utils::qualifierSet &getCurrentTestCase();
 
-	/* Private varaibles */
-	std::vector<Utils::qualifierSet> m_test_cases;
-	glw::GLuint						 m_current_test_case_index;
+    /* Private varaibles */
+    std::vector<Utils::qualifierSet> m_test_cases;
+    glw::GLuint m_current_test_case_index;
 };
 
 /** Test implementation, description follows:
@@ -1238,31 +1238,31 @@ private:
 class QualifierOrderBlockTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	QualifierOrderBlockTest(deqp::Context&);
+    /* Public methods */
+    QualifierOrderBlockTest(deqp::Context &);
 
-	virtual ~QualifierOrderBlockTest()
-	{
-	}
+    virtual ~QualifierOrderBlockTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareVertexBuffer(const Utils::program& program, Utils::buffer& buffer, Utils::vertexArray& vao);
+    virtual void prepareVertexBuffer(const Utils::program &program, Utils::buffer &buffer, Utils::vertexArray &vao);
 
-	virtual bool testInit();
+    virtual bool testInit();
 
 private:
-	/* Private methods */
-	const Utils::qualifierSet& getCurrentTestCase();
+    /* Private methods */
+    const Utils::qualifierSet &getCurrentTestCase();
 
-	/* Private varaibles */
-	std::vector<Utils::qualifierSet> m_test_cases;
-	glw::GLuint						 m_current_test_case_index;
+    /* Private varaibles */
+    std::vector<Utils::qualifierSet> m_test_cases;
+    glw::GLuint m_current_test_case_index;
 };
 
 /** Test implementation, description follows:
@@ -1280,31 +1280,31 @@ private:
 class QualifierOrderUniformTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	QualifierOrderUniformTest(deqp::Context&);
+    /* Public methods */
+    QualifierOrderUniformTest(deqp::Context &);
 
-	virtual ~QualifierOrderUniformTest()
-	{
-	}
+    virtual ~QualifierOrderUniformTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
+    virtual void prepareUniforms(Utils::program &program);
 
-	virtual bool testInit();
+    virtual bool testInit();
 
 private:
-	/* Private methods */
-	const Utils::qualifierSet& getCurrentTestCase();
+    /* Private methods */
+    const Utils::qualifierSet &getCurrentTestCase();
 
-	/* Private varaibles */
-	std::vector<Utils::qualifierSet> m_test_cases;
-	glw::GLuint						 m_current_test_case_index;
+    /* Private varaibles */
+    std::vector<Utils::qualifierSet> m_test_cases;
+    glw::GLuint m_current_test_case_index;
 };
 
 /** Test implementation, description follows:
@@ -1319,30 +1319,30 @@ private:
 class QualifierOrderFunctionInoutTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	QualifierOrderFunctionInoutTest(deqp::Context&);
+    /* Public methods */
+    QualifierOrderFunctionInoutTest(deqp::Context &);
 
-	virtual ~QualifierOrderFunctionInoutTest()
-	{
-	}
+    virtual ~QualifierOrderFunctionInoutTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
-	virtual bool testInit();
+    virtual void prepareUniforms(Utils::program &program);
+    virtual bool testInit();
 
 private:
-	/* Private methods */
-	const Utils::qualifierSet& getCurrentTestCase();
+    /* Private methods */
+    const Utils::qualifierSet &getCurrentTestCase();
 
-	/* Private varaibles */
-	std::vector<Utils::qualifierSet> m_test_cases;
-	glw::GLuint						 m_current_test_case_index;
+    /* Private varaibles */
+    std::vector<Utils::qualifierSet> m_test_cases;
+    glw::GLuint m_current_test_case_index;
 };
 
 /** Test implementation, description follows:
@@ -1358,30 +1358,30 @@ private:
 class QualifierOrderFunctionInputTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	QualifierOrderFunctionInputTest(deqp::Context&);
+    /* Public methods */
+    QualifierOrderFunctionInputTest(deqp::Context &);
 
-	virtual ~QualifierOrderFunctionInputTest()
-	{
-	}
+    virtual ~QualifierOrderFunctionInputTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
-	virtual bool testInit();
+    virtual void prepareUniforms(Utils::program &program);
+    virtual bool testInit();
 
 private:
-	/* Private methods */
-	const Utils::qualifierSet& getCurrentTestCase();
+    /* Private methods */
+    const Utils::qualifierSet &getCurrentTestCase();
 
-	/* Private varaibles */
-	std::vector<Utils::qualifierSet> m_test_cases;
-	glw::GLuint						 m_current_test_case_index;
+    /* Private varaibles */
+    std::vector<Utils::qualifierSet> m_test_cases;
+    glw::GLuint m_current_test_case_index;
 };
 
 /** Test implementation, description follows:
@@ -1396,30 +1396,30 @@ private:
 class QualifierOrderFunctionOutputTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	QualifierOrderFunctionOutputTest(deqp::Context&);
+    /* Public methods */
+    QualifierOrderFunctionOutputTest(deqp::Context &);
 
-	virtual ~QualifierOrderFunctionOutputTest()
-	{
-	}
+    virtual ~QualifierOrderFunctionOutputTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
-	virtual bool testInit();
+    virtual void prepareUniforms(Utils::program &program);
+    virtual bool testInit();
 
 private:
-	/* Private methods */
-	const Utils::qualifierSet& getCurrentTestCase();
+    /* Private methods */
+    const Utils::qualifierSet &getCurrentTestCase();
 
-	/* Private varaibles */
-	std::vector<Utils::qualifierSet> m_test_cases;
-	glw::GLuint						 m_current_test_case_index;
+    /* Private varaibles */
+    std::vector<Utils::qualifierSet> m_test_cases;
+    glw::GLuint m_current_test_case_index;
 };
 
 /** Test implementation, description follows:
@@ -1449,19 +1449,19 @@ private:
 class QualifierOverrideLayoutTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	QualifierOverrideLayoutTest(deqp::Context&);
+    /* Public methods */
+    QualifierOverrideLayoutTest(deqp::Context &);
 
-	virtual ~QualifierOverrideLayoutTest()
-	{
-	}
+    virtual ~QualifierOverrideLayoutTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    /* Methods to be implemented by child class */
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareVertexBuffer(const Utils::program& program, Utils::buffer& buffer, Utils::vertexArray& vao);
+    virtual void prepareVertexBuffer(const Utils::program &program, Utils::buffer &buffer, Utils::vertexArray &vao);
 };
 
 /** Test implementation, description follows:
@@ -1498,26 +1498,26 @@ protected:
 class BindingUniformBlocksTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	BindingUniformBlocksTest(deqp::Context&);
+    /* Public methods */
+    BindingUniformBlocksTest(deqp::Context &);
 
-	virtual ~BindingUniformBlocksTest()
-	{
-	}
+    virtual ~BindingUniformBlocksTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    /* Methods to be implemented by child class */
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
-	virtual void releaseResource();
+    virtual void prepareUniforms(Utils::program &program);
+    virtual void releaseResource();
 
 private:
-	/* Private variables */
-	Utils::buffer m_goku_buffer;
-	Utils::buffer m_vegeta_buffer;
-	Utils::buffer m_children_buffer;
+    /* Private variables */
+    Utils::buffer m_goku_buffer;
+    Utils::buffer m_vegeta_buffer;
+    Utils::buffer m_children_buffer;
 };
 
 /** Test implementation, description follows:
@@ -1534,27 +1534,27 @@ private:
 class BindingUniformSingleBlockTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	BindingUniformSingleBlockTest(deqp::Context&);
+    /* Public methods */
+    BindingUniformSingleBlockTest(deqp::Context &);
 
-	virtual ~BindingUniformSingleBlockTest()
-	{
-	}
+    virtual ~BindingUniformSingleBlockTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
-	virtual void releaseResource();
+    virtual void prepareUniforms(Utils::program &program);
+    virtual void releaseResource();
 
 private:
-	/* Private variables */
-	Utils::buffer		 m_goku_buffer;
-	Utils::SHADER_STAGES m_test_stage;
+    /* Private variables */
+    Utils::buffer m_goku_buffer;
+    Utils::SHADER_STAGES m_test_stage;
 };
 
 /** Test implementation, description follows:
@@ -1580,40 +1580,40 @@ private:
 class BindingUniformBlockArrayTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	BindingUniformBlockArrayTest(deqp::Context&);
+    /* Public methods */
+    BindingUniformBlockArrayTest(deqp::Context &);
 
-	virtual ~BindingUniformBlockArrayTest()
-	{
-	}
+    virtual ~BindingUniformBlockArrayTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    /* Methods to be implemented by child class */
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
-	virtual void releaseResource();
+    virtual void prepareUniforms(Utils::program &program);
+    virtual void releaseResource();
 
 private:
-	/* Private methods */
-	void checkBinding(Utils::program& program, glw::GLuint index, glw::GLint expected_binding);
+    /* Private methods */
+    void checkBinding(Utils::program &program, glw::GLuint index, glw::GLint expected_binding);
 
-	/* Private variables */
-	Utils::buffer m_goku_00_buffer;
-	Utils::buffer m_goku_01_buffer;
-	Utils::buffer m_goku_02_buffer;
-	Utils::buffer m_goku_03_buffer;
-	Utils::buffer m_goku_04_buffer;
-	Utils::buffer m_goku_05_buffer;
-	Utils::buffer m_goku_06_buffer;
-	Utils::buffer m_goku_07_buffer;
-	Utils::buffer m_goku_08_buffer;
-	Utils::buffer m_goku_09_buffer;
-	Utils::buffer m_goku_10_buffer;
-	Utils::buffer m_goku_11_buffer;
-	Utils::buffer m_goku_12_buffer;
-	Utils::buffer m_goku_13_buffer;
+    /* Private variables */
+    Utils::buffer m_goku_00_buffer;
+    Utils::buffer m_goku_01_buffer;
+    Utils::buffer m_goku_02_buffer;
+    Utils::buffer m_goku_03_buffer;
+    Utils::buffer m_goku_04_buffer;
+    Utils::buffer m_goku_05_buffer;
+    Utils::buffer m_goku_06_buffer;
+    Utils::buffer m_goku_07_buffer;
+    Utils::buffer m_goku_08_buffer;
+    Utils::buffer m_goku_09_buffer;
+    Utils::buffer m_goku_10_buffer;
+    Utils::buffer m_goku_11_buffer;
+    Utils::buffer m_goku_12_buffer;
+    Utils::buffer m_goku_13_buffer;
 };
 
 /** Test implementation, description follows:
@@ -1627,19 +1627,19 @@ private:
 class BindingUniformDefaultTest : public APITestBase
 {
 public:
-	/* Public methods */
-	BindingUniformDefaultTest(deqp::Context&);
+    /* Public methods */
+    BindingUniformDefaultTest(deqp::Context &);
 
-	virtual ~BindingUniformDefaultTest()
-	{
-	}
+    virtual ~BindingUniformDefaultTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool checkResults(Utils::program& program);
+    /* Methods to be implemented by child class */
+    virtual bool checkResults(Utils::program &program);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 };
 
 /** Test implementation, description follows:
@@ -1655,24 +1655,24 @@ protected:
 class BindingUniformAPIOverirdeTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	BindingUniformAPIOverirdeTest(deqp::Context&);
+    /* Public methods */
+    BindingUniformAPIOverirdeTest(deqp::Context &);
 
-	virtual ~BindingUniformAPIOverirdeTest()
-	{
-	}
+    virtual ~BindingUniformAPIOverirdeTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    /* Methods to be implemented by child class */
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
-	virtual void releaseResource();
+    virtual void prepareUniforms(Utils::program &program);
+    virtual void releaseResource();
 
 private:
-	/* Private variables */
-	Utils::buffer m_goku_buffer;
+    /* Private variables */
+    Utils::buffer m_goku_buffer;
 };
 
 /** Test implementation, description follows:
@@ -1685,17 +1685,17 @@ private:
 class BindingUniformGlobalBlockTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	BindingUniformGlobalBlockTest(deqp::Context&);
+    /* Public methods */
+    BindingUniformGlobalBlockTest(deqp::Context &);
 
-	virtual ~BindingUniformGlobalBlockTest()
-	{
-	}
+    virtual ~BindingUniformGlobalBlockTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    /* Methods to be implemented by child class */
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 };
 
 /** Test implementation, description follows:
@@ -1716,38 +1716,38 @@ protected:
 class BindingUniformInvalidTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	BindingUniformInvalidTest(deqp::Context&);
+    /* Public methods */
+    BindingUniformInvalidTest(deqp::Context &);
 
-	virtual ~BindingUniformInvalidTest()
-	{
-	}
+    virtual ~BindingUniformInvalidTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
 private:
-	/* Private enums */
-	enum TESTCASES
-	{
-		NEGATIVE_VALUE,
-		VARIABLE_NAME,
-		STD140,
-		MISSING,
+    /* Private enums */
+    enum TESTCASES
+    {
+        NEGATIVE_VALUE,
+        VARIABLE_NAME,
+        STD140,
+        MISSING,
 
-		/* */
-		TEST_CASES_MAX
-	};
+        /* */
+        TEST_CASES_MAX
+    };
 
-	/* Private methods */
-	const glw::GLchar* getCaseString(TESTCASES test_case);
+    /* Private methods */
+    const glw::GLchar *getCaseString(TESTCASES test_case);
 
-	/* Provate variables */
-	TESTCASES m_case;
+    /* Provate variables */
+    TESTCASES m_case;
 };
 
 /** Test implementation, description follows:
@@ -1794,33 +1794,33 @@ private:
 class BindingSamplersTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	BindingSamplersTest(deqp::Context&);
+    /* Public methods */
+    BindingSamplersTest(deqp::Context &);
 
-	virtual ~BindingSamplersTest()
-	{
-	}
+    virtual ~BindingSamplersTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
-	virtual void releaseResource();
+    virtual void prepareUniforms(Utils::program &program);
+    virtual void releaseResource();
 
 private:
-	/* Private methods */
-	void prepareTexture(Utils::texture& texture, Utils::TEXTURE_TYPES texture_type, glw::GLuint color);
+    /* Private methods */
+    void prepareTexture(Utils::texture &texture, Utils::TEXTURE_TYPES texture_type, glw::GLuint color);
 
-	/* Private variables */
-	Utils::texture		 m_goku_texture;
-	Utils::texture		 m_vegeta_texture;
-	Utils::texture		 m_trunks_texture;
-	Utils::buffer		 m_buffer;
-	Utils::TEXTURE_TYPES m_test_case;
+    /* Private variables */
+    Utils::texture m_goku_texture;
+    Utils::texture m_vegeta_texture;
+    Utils::texture m_trunks_texture;
+    Utils::buffer m_buffer;
+    Utils::TEXTURE_TYPES m_test_case;
 };
 
 /** Test implementation, description follows:
@@ -1837,27 +1837,27 @@ private:
 class BindingSamplerSingleTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	BindingSamplerSingleTest(deqp::Context&);
+    /* Public methods */
+    BindingSamplerSingleTest(deqp::Context &);
 
-	virtual ~BindingSamplerSingleTest()
-	{
-	}
+    virtual ~BindingSamplerSingleTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
-	virtual void releaseResource();
+    virtual void prepareUniforms(Utils::program &program);
+    virtual void releaseResource();
 
 private:
-	/* Private variables */
-	Utils::texture		 m_goku_texture;
-	Utils::SHADER_STAGES m_test_stage;
+    /* Private variables */
+    Utils::texture m_goku_texture;
+    Utils::SHADER_STAGES m_test_stage;
 };
 
 /** Test implementation, description follows:
@@ -1881,33 +1881,33 @@ private:
 class BindingSamplerArrayTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	BindingSamplerArrayTest(deqp::Context&);
+    /* Public methods */
+    BindingSamplerArrayTest(deqp::Context &);
 
-	virtual ~BindingSamplerArrayTest()
-	{
-	}
+    virtual ~BindingSamplerArrayTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    /* Methods to be implemented by child class */
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
-	virtual void releaseResource();
+    virtual void prepareUniforms(Utils::program &program);
+    virtual void releaseResource();
 
 private:
-	/* Private methods */
-	void checkBinding(Utils::program& program, glw::GLuint index, glw::GLint expected_binding);
+    /* Private methods */
+    void checkBinding(Utils::program &program, glw::GLuint index, glw::GLint expected_binding);
 
-	/* Private variables */
-	Utils::texture m_goku_00_texture;
-	Utils::texture m_goku_01_texture;
-	Utils::texture m_goku_02_texture;
-	Utils::texture m_goku_03_texture;
-	Utils::texture m_goku_04_texture;
-	Utils::texture m_goku_05_texture;
-	Utils::texture m_goku_06_texture;
+    /* Private variables */
+    Utils::texture m_goku_00_texture;
+    Utils::texture m_goku_01_texture;
+    Utils::texture m_goku_02_texture;
+    Utils::texture m_goku_03_texture;
+    Utils::texture m_goku_04_texture;
+    Utils::texture m_goku_05_texture;
+    Utils::texture m_goku_06_texture;
 };
 
 /** Test implementation, description follows:
@@ -1921,19 +1921,19 @@ private:
 class BindingSamplerDefaultTest : public APITestBase
 {
 public:
-	/* Public methods */
-	BindingSamplerDefaultTest(deqp::Context&);
+    /* Public methods */
+    BindingSamplerDefaultTest(deqp::Context &);
 
-	virtual ~BindingSamplerDefaultTest()
-	{
-	}
+    virtual ~BindingSamplerDefaultTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool checkResults(Utils::program& program);
+    /* Methods to be implemented by child class */
+    virtual bool checkResults(Utils::program &program);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 };
 
 /** Test implementation, description follows:
@@ -1949,24 +1949,24 @@ protected:
 class BindingSamplerAPIOverrideTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	BindingSamplerAPIOverrideTest(deqp::Context&);
+    /* Public methods */
+    BindingSamplerAPIOverrideTest(deqp::Context &);
 
-	virtual ~BindingSamplerAPIOverrideTest()
-	{
-	}
+    virtual ~BindingSamplerAPIOverrideTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    /* Methods to be implemented by child class */
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
-	virtual void releaseResource();
+    virtual void prepareUniforms(Utils::program &program);
+    virtual void releaseResource();
 
 private:
-	/* Private variables */
-	Utils::texture m_goku_texture;
+    /* Private variables */
+    Utils::texture m_goku_texture;
 };
 
 /** Test implementation, description follows:
@@ -1986,37 +1986,37 @@ private:
 class BindingSamplerInvalidTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	BindingSamplerInvalidTest(deqp::Context&);
-	virtual ~BindingSamplerInvalidTest()
-	{
-	}
+    /* Public methods */
+    BindingSamplerInvalidTest(deqp::Context &);
+    virtual ~BindingSamplerInvalidTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
 private:
-	/* Private enums */
-	enum TESTCASES
-	{
-		NEGATIVE_VALUE,
-		VARIABLE_NAME,
-		STD140,
-		MISSING,
+    /* Private enums */
+    enum TESTCASES
+    {
+        NEGATIVE_VALUE,
+        VARIABLE_NAME,
+        STD140,
+        MISSING,
 
-		/* */
-		TEST_CASES_MAX
-	};
+        /* */
+        TEST_CASES_MAX
+    };
 
-	/* Private methods */
-	const glw::GLchar* getCaseString(TESTCASES test_case);
+    /* Private methods */
+    const glw::GLchar *getCaseString(TESTCASES test_case);
 
-	/* Provate variables */
-	TESTCASES m_case;
+    /* Provate variables */
+    TESTCASES m_case;
 };
 
 /** Test implementation, description follows:
@@ -2064,38 +2064,38 @@ private:
 class BindingImagesTest : public BindingImageTest
 {
 public:
-	/* Public methods */
-	BindingImagesTest(deqp::Context&);
+    /* Public methods */
+    BindingImagesTest(deqp::Context &);
 
-	virtual ~BindingImagesTest()
-	{
-	}
+    virtual ~BindingImagesTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
-	virtual bool verifyAdditionalResults() const;
-	virtual void releaseResource();
+    virtual void prepareUniforms(Utils::program &program);
+    virtual bool verifyAdditionalResults() const;
+    virtual void releaseResource();
 
 private:
-	/* Private variables */
-	Utils::texture		 m_goku_texture;
-	Utils::texture		 m_vegeta_texture;
-	Utils::texture		 m_trunks_texture;
-	Utils::buffer		 m_goku_buffer;
-	Utils::buffer		 m_vegeta_buffer;
-	Utils::buffer		 m_trunks_buffer;
-	Utils::TEXTURE_TYPES m_test_case;
+    /* Private variables */
+    Utils::texture m_goku_texture;
+    Utils::texture m_vegeta_texture;
+    Utils::texture m_trunks_texture;
+    Utils::buffer m_goku_buffer;
+    Utils::buffer m_vegeta_buffer;
+    Utils::buffer m_trunks_buffer;
+    Utils::TEXTURE_TYPES m_test_case;
 
-	/* Private constant */
-	static const glw::GLuint m_goku_data;
-	static const glw::GLuint m_vegeta_data;
-	static const glw::GLuint m_trunks_data;
+    /* Private constant */
+    static const glw::GLuint m_goku_data;
+    static const glw::GLuint m_vegeta_data;
+    static const glw::GLuint m_trunks_data;
 };
 
 /** Test implementation, description follows:
@@ -2112,28 +2112,28 @@ private:
 class BindingImageSingleTest : public BindingImageTest
 {
 public:
-	/* Public methods */
-	BindingImageSingleTest(deqp::Context&);
+    /* Public methods */
+    BindingImageSingleTest(deqp::Context &);
 
-	virtual ~BindingImageSingleTest()
-	{
-	}
+    virtual ~BindingImageSingleTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
-	virtual bool verifyAdditionalResults() const;
-	virtual void releaseResource();
+    virtual void prepareUniforms(Utils::program &program);
+    virtual bool verifyAdditionalResults() const;
+    virtual void releaseResource();
 
 private:
-	/* Private variables */
-	Utils::texture		 m_goku_texture;
-	Utils::SHADER_STAGES m_test_stage;
+    /* Private variables */
+    Utils::texture m_goku_texture;
+    Utils::SHADER_STAGES m_test_stage;
 };
 
 /** Test implementation, description follows:
@@ -2158,33 +2158,33 @@ private:
 class BindingImageArrayTest : public BindingImageTest
 {
 public:
-	/* Public methods */
-	BindingImageArrayTest(deqp::Context&);
+    /* Public methods */
+    BindingImageArrayTest(deqp::Context &);
 
-	virtual ~BindingImageArrayTest()
-	{
-	}
+    virtual ~BindingImageArrayTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    /* Methods to be implemented by child class */
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
-	virtual void releaseResource();
+    virtual void prepareUniforms(Utils::program &program);
+    virtual void releaseResource();
 
 private:
-	/* Private methods */
-	void checkBinding(Utils::program& program, glw::GLuint index, glw::GLint expected_binding);
+    /* Private methods */
+    void checkBinding(Utils::program &program, glw::GLuint index, glw::GLint expected_binding);
 
-	/* Private variables */
-	Utils::texture m_goku_00_texture;
-	Utils::texture m_goku_01_texture;
-	Utils::texture m_goku_02_texture;
-	Utils::texture m_goku_03_texture;
-	Utils::texture m_goku_04_texture;
-	Utils::texture m_goku_05_texture;
-	Utils::texture m_goku_06_texture;
+    /* Private variables */
+    Utils::texture m_goku_00_texture;
+    Utils::texture m_goku_01_texture;
+    Utils::texture m_goku_02_texture;
+    Utils::texture m_goku_03_texture;
+    Utils::texture m_goku_04_texture;
+    Utils::texture m_goku_05_texture;
+    Utils::texture m_goku_06_texture;
 };
 
 /** Test implementation, description follows:
@@ -2198,19 +2198,19 @@ private:
 class BindingImageDefaultTest : public APITestBase
 {
 public:
-	/* Public methods */
-	BindingImageDefaultTest(deqp::Context&);
+    /* Public methods */
+    BindingImageDefaultTest(deqp::Context &);
 
-	virtual ~BindingImageDefaultTest()
-	{
-	}
+    virtual ~BindingImageDefaultTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool checkResults(Utils::program& program);
+    /* Methods to be implemented by child class */
+    virtual bool checkResults(Utils::program &program);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 };
 
 /** Test implementation, description follows:
@@ -2226,24 +2226,24 @@ protected:
 class BindingImageAPIOverrideTest : public BindingImageTest
 {
 public:
-	/* Public methods */
-	BindingImageAPIOverrideTest(deqp::Context&);
+    /* Public methods */
+    BindingImageAPIOverrideTest(deqp::Context &);
 
-	virtual ~BindingImageAPIOverrideTest()
-	{
-	}
+    virtual ~BindingImageAPIOverrideTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    /* Methods to be implemented by child class */
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
-	virtual void releaseResource();
+    virtual void prepareUniforms(Utils::program &program);
+    virtual void releaseResource();
 
 private:
-	/* Private variables */
-	Utils::texture m_goku_texture;
+    /* Private variables */
+    Utils::texture m_goku_texture;
 };
 
 /** Test implementation, description follows:
@@ -2263,38 +2263,38 @@ private:
 class BindingImageInvalidTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	BindingImageInvalidTest(deqp::Context&);
+    /* Public methods */
+    BindingImageInvalidTest(deqp::Context &);
 
-	virtual ~BindingImageInvalidTest()
-	{
-	}
+    virtual ~BindingImageInvalidTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
 private:
-	/* Private enums */
-	enum TESTCASES
-	{
-		NEGATIVE_VALUE,
-		VARIABLE_NAME,
-		STD140,
-		MISSING,
+    /* Private enums */
+    enum TESTCASES
+    {
+        NEGATIVE_VALUE,
+        VARIABLE_NAME,
+        STD140,
+        MISSING,
 
-		/* */
-		TEST_CASES_MAX
-	};
+        /* */
+        TEST_CASES_MAX
+    };
 
-	/* Private methods */
-	const glw::GLchar* getCaseString(TESTCASES test_case);
+    /* Private methods */
+    const glw::GLchar *getCaseString(TESTCASES test_case);
 
-	/* Provate variables */
-	TESTCASES m_case;
+    /* Provate variables */
+    TESTCASES m_case;
 };
 
 /** Test implementation, description follows:
@@ -2364,7 +2364,7 @@ private:
  *     constructor.
  *
  *   - Check nested structures. Members initialized using initializer lists.\
-         *
+ *
  *   - Check nested structures with multiple nesting levels.
  *
  *   - Check structures of arrays of structures. Initialize all members using
@@ -2400,92 +2400,92 @@ private:
 class InitializerListTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	InitializerListTest(deqp::Context&);
+    /* Public methods */
+    InitializerListTest(deqp::Context &);
 
-	virtual ~InitializerListTest()
-	{
-	}
+    virtual ~InitializerListTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
-	virtual bool testInit();
+    virtual void prepareUniforms(Utils::program &program);
+    virtual bool testInit();
 
 private:
-	/* Private enums */
-	enum TESTED_INITIALIZERS
-	{
-		VECTOR,
-		MATRIX,
-		MATRIX_ROWS,
-		STRUCT,
-		ARRAY_SCALAR,
-		ARRAY_VECTOR_CTR,
-		ARRAY_VECTOR_LIST,
-		ARRAY_MATRIX_CTR,
-		ARRAY_MATRIX_LIST,
-		ARRAY_STRUCT,
-		NESTED_STRUCT_CTR,
-		NESTED_STRUCT_LIST,
-		NESTED_STURCT_ARRAYS_STRUCT_LIST,
-		NESTED_STURCT_ARRAYS_STRUCT_MIX,
-		NESTED_ARRAY_STRUCT_STRUCT_LIST,
-		NESTED_ARRAY_STRUCT_STRUCT_MIX,
-		NESTED_STRUCT_STRUCT_ARRAY_LIST,
-		NESTED_STRUCT_STRUCT_ARRAY_MIX,
-		UNSIZED_ARRAY_SCALAR,
-		UNSIZED_ARRAY_VECTOR,
-		UNSIZED_ARRAY_MATRIX,
-		UNSIZED_ARRAY_STRUCT,
+    /* Private enums */
+    enum TESTED_INITIALIZERS
+    {
+        VECTOR,
+        MATRIX,
+        MATRIX_ROWS,
+        STRUCT,
+        ARRAY_SCALAR,
+        ARRAY_VECTOR_CTR,
+        ARRAY_VECTOR_LIST,
+        ARRAY_MATRIX_CTR,
+        ARRAY_MATRIX_LIST,
+        ARRAY_STRUCT,
+        NESTED_STRUCT_CTR,
+        NESTED_STRUCT_LIST,
+        NESTED_STURCT_ARRAYS_STRUCT_LIST,
+        NESTED_STURCT_ARRAYS_STRUCT_MIX,
+        NESTED_ARRAY_STRUCT_STRUCT_LIST,
+        NESTED_ARRAY_STRUCT_STRUCT_MIX,
+        NESTED_STRUCT_STRUCT_ARRAY_LIST,
+        NESTED_STRUCT_STRUCT_ARRAY_MIX,
+        UNSIZED_ARRAY_SCALAR,
+        UNSIZED_ARRAY_VECTOR,
+        UNSIZED_ARRAY_MATRIX,
+        UNSIZED_ARRAY_STRUCT,
 
-		/* */
-		TESTED_INITIALIZERS_MAX
-	};
+        /* */
+        TESTED_INITIALIZERS_MAX
+    };
 
-	/* Private types */
-	struct testCase
-	{
-		TESTED_INITIALIZERS m_initializer;
+    /* Private types */
+    struct testCase
+    {
+        TESTED_INITIALIZERS m_initializer;
 
-		glw::GLuint m_n_cols;
-		glw::GLuint m_n_rows;
-	};
+        glw::GLuint m_n_cols;
+        glw::GLuint m_n_rows;
+    };
 
-	/* Private methods */
-	std::string getArrayDefinition();
-	std::string getExpectedValue();
-	std::string getInitialization();
-	void		logTestCaseName();
-	std::string getSum();
-	std::string getTypeDefinition();
-	std::string getTypeName();
+    /* Private methods */
+    std::string getArrayDefinition();
+    std::string getExpectedValue();
+    std::string getInitialization();
+    void logTestCaseName();
+    std::string getSum();
+    std::string getTypeDefinition();
+    std::string getTypeName();
 
-	std::string getVectorArrayCtr(glw::GLuint columns, glw::GLuint size);
+    std::string getVectorArrayCtr(glw::GLuint columns, glw::GLuint size);
 
-	std::string getVectorArrayList(glw::GLuint columns, glw::GLuint size);
+    std::string getVectorArrayList(glw::GLuint columns, glw::GLuint size);
 
-	std::string getVectorConstructor(glw::GLuint column, glw::GLuint size);
+    std::string getVectorConstructor(glw::GLuint column, glw::GLuint size);
 
-	std::string getVectorInitializer(glw::GLuint column, glw::GLuint size);
+    std::string getVectorInitializer(glw::GLuint column, glw::GLuint size);
 
-	std::string getVectorArraySum(const glw::GLchar* array_name, glw::GLuint columns, glw::GLuint size);
+    std::string getVectorArraySum(const glw::GLchar *array_name, glw::GLuint columns, glw::GLuint size);
 
-	std::string getVectorSum(const glw::GLchar* vector_name, glw::GLuint size);
+    std::string getVectorSum(const glw::GLchar *vector_name, glw::GLuint size);
 
-	std::string getVectorValues(glw::GLuint column, glw::GLuint size);
+    std::string getVectorValues(glw::GLuint column, glw::GLuint size);
 
-	/* Private variables */
-	std::vector<testCase> m_test_cases;
-	glw::GLint			  m_current_test_case_index;
+    /* Private variables */
+    std::vector<testCase> m_test_cases;
+    glw::GLint m_current_test_case_index;
 
-	/* Private constants */
-	static const glw::GLfloat m_value;
+    /* Private constants */
+    static const glw::GLfloat m_value;
 };
 
 /** Test implementation, description follows:
@@ -2533,56 +2533,56 @@ private:
 class InitializerListNegativeTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	InitializerListNegativeTest(deqp::Context&);
+    /* Public methods */
+    InitializerListNegativeTest(deqp::Context &);
 
-	virtual ~InitializerListNegativeTest()
-	{
-	}
+    virtual ~InitializerListNegativeTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual bool testInit();
+    virtual bool testInit();
 
 private:
-	/* Private enums */
-	enum TESTED_ERRORS
-	{
-		TYPE_UIVEC_BOOL,
-		TYPE_IVEC_BOOL,
-		TYPE_VEC_BOOL,
-		TYPE_MAT_BOOL,
-		COMPONENTS_VEC_LESS,
-		COMPONENTS_VEC_MORE,
-		COMPONENTS_MAT_LESS_ROWS,
-		COMPONENTS_MAT_LESS_COLUMNS,
-		COMPONENTS_MAT_MORE_ROWS,
-		COMPONENTS_MAT_MORE_COLUMNS,
-		LIST_IN_CONSTRUCTOR,
-		STRUCT_LAYOUT_MEMBER_TYPE,
-		STRUCT_LAYOUT_MEMBER_COUNT_MORE,
-		STRUCT_LAYOUT_MEMBER_COUNT_LESS,
-		STRUCT_LAYOUT_MEMBER_ORDER,
+    /* Private enums */
+    enum TESTED_ERRORS
+    {
+        TYPE_UIVEC_BOOL,
+        TYPE_IVEC_BOOL,
+        TYPE_VEC_BOOL,
+        TYPE_MAT_BOOL,
+        COMPONENTS_VEC_LESS,
+        COMPONENTS_VEC_MORE,
+        COMPONENTS_MAT_LESS_ROWS,
+        COMPONENTS_MAT_LESS_COLUMNS,
+        COMPONENTS_MAT_MORE_ROWS,
+        COMPONENTS_MAT_MORE_COLUMNS,
+        LIST_IN_CONSTRUCTOR,
+        STRUCT_LAYOUT_MEMBER_TYPE,
+        STRUCT_LAYOUT_MEMBER_COUNT_MORE,
+        STRUCT_LAYOUT_MEMBER_COUNT_LESS,
+        STRUCT_LAYOUT_MEMBER_ORDER,
 
-		/* */
-		TESTED_ERRORS_MAX
-	};
+        /* */
+        TESTED_ERRORS_MAX
+    };
 
-	/* Private methods */
-	std::string getInitialization();
-	void		logTestCaseName();
-	std::string getSum();
-	std::string getTypeDefinition();
-	std::string getTypeName();
+    /* Private methods */
+    std::string getInitialization();
+    void logTestCaseName();
+    std::string getSum();
+    std::string getTypeDefinition();
+    std::string getTypeName();
 
-	/* Private variables */
-	std::vector<TESTED_ERRORS> m_test_cases;
-	glw::GLint				   m_current_test_case_index;
+    /* Private variables */
+    std::vector<TESTED_ERRORS> m_test_cases;
+    glw::GLint m_current_test_case_index;
 };
 
 /** Test implementation, description follows:
@@ -2609,51 +2609,51 @@ private:
 class LengthOfVectorAndMatrixTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	LengthOfVectorAndMatrixTest(deqp::Context&);
+    /* Public methods */
+    LengthOfVectorAndMatrixTest(deqp::Context &);
 
-	virtual ~LengthOfVectorAndMatrixTest()
-	{
-	}
+    virtual ~LengthOfVectorAndMatrixTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
+    virtual void prepareUniforms(Utils::program &program);
 
-	virtual void prepareVertexBuffer(const Utils::program& program, Utils::buffer& buffer, Utils::vertexArray& vao);
+    virtual void prepareVertexBuffer(const Utils::program &program, Utils::buffer &buffer, Utils::vertexArray &vao);
 
-	virtual bool testInit();
+    virtual bool testInit();
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		Utils::TYPES m_type;
-		glw::GLuint  m_n_cols;
-		glw::GLuint  m_n_rows;
-	};
+    /* Private types */
+    struct testCase
+    {
+        Utils::TYPES m_type;
+        glw::GLuint m_n_cols;
+        glw::GLuint m_n_rows;
+    };
 
-	/* Private methods */
-	std::string getExpectedValue(Utils::SHADER_STAGES in_stage);
-	std::string getInitialization();
+    /* Private methods */
+    std::string getExpectedValue(Utils::SHADER_STAGES in_stage);
+    std::string getInitialization();
 
-	std::string getMatrixInitializer(glw::GLuint n_cols, glw::GLuint n_rows);
+    std::string getMatrixInitializer(glw::GLuint n_cols, glw::GLuint n_rows);
 
-	std::string getVectorInitializer(Utils::TYPES type, glw::GLuint n_rows);
+    std::string getVectorInitializer(Utils::TYPES type, glw::GLuint n_rows);
 
-	void prepareComputeShaderSource(Utils::shaderSource& out_source);
+    void prepareComputeShaderSource(Utils::shaderSource &out_source);
 
-	void prepareDrawShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-								 Utils::shaderSource& out_source);
+    void prepareDrawShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                 Utils::shaderSource &out_source);
 
-	glw::GLuint			  m_current_test_case_index;
-	bool				  m_is_compute_program;
-	std::vector<testCase> m_test_cases;
+    glw::GLuint m_current_test_case_index;
+    bool m_is_compute_program;
+    std::vector<testCase> m_test_cases;
 };
 
 /** Test implementation, description follows:
@@ -2703,19 +2703,19 @@ private:
 class LengthOfComputeResultTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	LengthOfComputeResultTest(deqp::Context&);
+    /* Public methods */
+    LengthOfComputeResultTest(deqp::Context &);
 
-	virtual ~LengthOfComputeResultTest()
-	{
-	}
+    virtual ~LengthOfComputeResultTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    /* Methods to be implemented by child class */
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
+    virtual void prepareUniforms(Utils::program &program);
 };
 
 /** Test implementation, description follows:
@@ -2749,19 +2749,19 @@ protected:
 class ScalarSwizzlersTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	ScalarSwizzlersTest(deqp::Context&);
+    /* Public methods */
+    ScalarSwizzlersTest(deqp::Context &);
 
-	virtual ~ScalarSwizzlersTest()
-	{
-	}
+    virtual ~ScalarSwizzlersTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    /* Methods to be implemented by child class */
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
+    virtual void prepareUniforms(Utils::program &program);
 };
 
 /** Test implementation, description follows:
@@ -2783,34 +2783,34 @@ protected:
 class ScalarSwizzlersInvalidTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	ScalarSwizzlersInvalidTest(deqp::Context&);
+    /* Public methods */
+    ScalarSwizzlersInvalidTest(deqp::Context &);
 
-	virtual ~ScalarSwizzlersInvalidTest()
-	{
-	}
+    virtual ~ScalarSwizzlersInvalidTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
 private:
-	/* Private enums */
-	enum TESTED_CASES
-	{
-		INVALID_Y,
-		INVALID_B,
-		INVALID_Q,
-		INVALID_XY,
-		INVALID_XRS,
-		WRONG,
-		MISSING_PARENTHESIS,
-	};
+    /* Private enums */
+    enum TESTED_CASES
+    {
+        INVALID_Y,
+        INVALID_B,
+        INVALID_Q,
+        INVALID_XY,
+        INVALID_XRS,
+        WRONG,
+        MISSING_PARENTHESIS,
+    };
 
-	TESTED_CASES m_case;
+    TESTED_CASES m_case;
 };
 
 /** Test implementation, description follows:
@@ -2834,29 +2834,29 @@ private:
 class BuiltInValuesTest : public GLSLTestBase
 {
 public:
-	/* Public methods */
-	BuiltInValuesTest(deqp::Context&);
+    /* Public methods */
+    BuiltInValuesTest(deqp::Context &);
 
-	virtual ~BuiltInValuesTest()
-	{
-	}
+    virtual ~BuiltInValuesTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    /* Methods to be implemented by child class */
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
-	virtual void prepareUniforms(Utils::program& program);
-	virtual bool testInit();
+    virtual void prepareUniforms(Utils::program &program);
+    virtual bool testInit();
 
 private:
-	/* Private constants */
-	static const glw::GLint m_min_program_texel_offset_limit;
-	static const glw::GLint m_max_program_texel_offset_limit;
+    /* Private constants */
+    static const glw::GLint m_min_program_texel_offset_limit;
+    static const glw::GLint m_max_program_texel_offset_limit;
 
-	/* Private variables */
-	glw::GLint m_min_program_texel_offset;
-	glw::GLint m_max_program_texel_offset;
+    /* Private variables */
+    glw::GLint m_min_program_texel_offset;
+    glw::GLint m_max_program_texel_offset;
 };
 
 /** Test implementation, description follows:
@@ -2865,45 +2865,45 @@ private:
 class BuiltInAssignmentTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	BuiltInAssignmentTest(deqp::Context&);
+    /* Public methods */
+    BuiltInAssignmentTest(deqp::Context &);
 
-	virtual ~BuiltInAssignmentTest()
-	{
-	}
+    virtual ~BuiltInAssignmentTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
 
-	virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-									 Utils::shaderSource& out_source);
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
 
 private:
-	/* Private variables */
-	glw::GLuint m_case;
+    /* Private variables */
+    glw::GLuint m_case;
 };
-} /* GLSL420Pack namespace */
+} // namespace GLSL420Pack
 
 /** Group class for Shader Language 420Pack conformance tests */
 class ShadingLanguage420PackTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	ShadingLanguage420PackTests(deqp::Context& context);
+    /* Public methods */
+    ShadingLanguage420PackTests(deqp::Context &context);
 
-	virtual ~ShadingLanguage420PackTests(void)
-	{
-	}
+    virtual ~ShadingLanguage420PackTests(void)
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	/* Private methods */
-	ShadingLanguage420PackTests(const ShadingLanguage420PackTests& other);
-	ShadingLanguage420PackTests& operator=(const ShadingLanguage420PackTests& other);
+    /* Private methods */
+    ShadingLanguage420PackTests(const ShadingLanguage420PackTests &other);
+    ShadingLanguage420PackTests &operator=(const ShadingLanguage420PackTests &other);
 };
 
-} // gl4cts
+} // namespace gl4cts
 
 #endif // _GL4CSHADINGLANGUAGE420PACKTESTS_HPP

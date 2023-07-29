@@ -32,9 +32,9 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup* createDiscardRectanglesTests (tcu::TestContext& testCtx, bool useDynamicRendering);
+tcu::TestCaseGroup *createDiscardRectanglesTests(tcu::TestContext &testCtx, bool useDynamicRendering);
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWDISCARDRECTANGLESTESTS_HPP

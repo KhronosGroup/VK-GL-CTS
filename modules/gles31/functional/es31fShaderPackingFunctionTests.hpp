@@ -35,18 +35,18 @@ namespace Functional
 class ShaderPackingFunctionTests : public TestCaseGroup
 {
 public:
-									ShaderPackingFunctionTests		(Context& context);
-	virtual							~ShaderPackingFunctionTests		(void);
+    ShaderPackingFunctionTests(Context &context);
+    virtual ~ShaderPackingFunctionTests(void);
 
-	virtual void					init							(void);
+    virtual void init(void);
 
 private:
-									ShaderPackingFunctionTests		(const ShaderPackingFunctionTests&);		// not allowed!
-	ShaderPackingFunctionTests&		operator=						(const ShaderPackingFunctionTests&);		// not allowed!
+    ShaderPackingFunctionTests(const ShaderPackingFunctionTests &);            // not allowed!
+    ShaderPackingFunctionTests &operator=(const ShaderPackingFunctionTests &); // not allowed!
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FSHADERPACKINGFUNCTIONTESTS_HPP

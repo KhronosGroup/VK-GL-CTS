@@ -23,12 +23,12 @@
 
 #include "tcuLnxEglPlatform.hpp"
 
-#if defined (DEQP_SUPPORT_X11)
-#	include "tcuLnxX11EglDisplayFactory.hpp"
+#if defined(DEQP_SUPPORT_X11)
+#include "tcuLnxX11EglDisplayFactory.hpp"
 #endif // DEQP_SUPPORT_X11
 
-#if defined (DEQP_SUPPORT_WAYLAND)
-#	include "tcuLnxWaylandEglDisplayFactory.hpp"
+#if defined(DEQP_SUPPORT_WAYLAND)
+#include "tcuLnxWaylandEglDisplayFactory.hpp"
 #endif // DEQP_SUPPORT_WAYLAND
 
 #include "egluGLContextFactory.hpp"
@@ -40,24 +40,22 @@ namespace lnx
 namespace egl
 {
 
-Platform::Platform (EventState& eventState)
+Platform::Platform(EventState &eventState)
 {
-#if defined (DEQP_SUPPORT_X11)
-	m_nativeDisplayFactoryRegistry.registerFactory(x11::egl::createDisplayFactory(eventState));
+#if defined(DEQP_SUPPORT_X11)
+    m_nativeDisplayFactoryRegistry.registerFactory(x11::egl::createDisplayFactory(eventState));
 #endif // DEQP_SUPPORT_X11
 
-#if defined (DEQP_SUPPORT_WAYLAND)
-	m_nativeDisplayFactoryRegistry.registerFactory(wayland::egl::createDisplayFactory(eventState));
+#if defined(DEQP_SUPPORT_WAYLAND)
+    m_nativeDisplayFactoryRegistry.registerFactory(wayland::egl::createDisplayFactory(eventState));
 #endif // DEQP_SUPPORT_WAYLAND
-
 }
 
-de::MovePtr<glu::ContextFactory> Platform::createContextFactory (void)
+de::MovePtr<glu::ContextFactory> Platform::createContextFactory(void)
 {
-	return de::MovePtr<glu::ContextFactory>(new eglu::GLContextFactory(m_nativeDisplayFactoryRegistry));
+    return de::MovePtr<glu::ContextFactory>(new eglu::GLContextFactory(m_nativeDisplayFactoryRegistry));
 }
 
-} // egl
-} // linux
-} // tcu
-
+} // namespace egl
+} // namespace lnx
+} // namespace tcu

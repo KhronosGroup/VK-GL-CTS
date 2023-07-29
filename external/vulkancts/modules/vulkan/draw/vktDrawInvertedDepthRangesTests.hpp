@@ -32,9 +32,9 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup*	createInvertedDepthRangesTests (tcu::TestContext& testCtx, bool useDynamicRendering);
+tcu::TestCaseGroup *createInvertedDepthRangesTests(tcu::TestContext &testCtx, bool useDynamicRendering);
 
-}	// Draw
-}	// vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWINVERTEDDEPTHRANGESTESTS_HPP

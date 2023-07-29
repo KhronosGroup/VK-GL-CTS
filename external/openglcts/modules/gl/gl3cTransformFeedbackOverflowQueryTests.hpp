@@ -30,21 +30,21 @@ namespace gl3cts
 class TransformFeedbackOverflowQueryTests : public deqp::TestCaseGroup
 {
 public:
-	enum API
-	{
-		API_GL_ARB_transform_feedback_overflow_query,
-	};
+    enum API
+    {
+        API_GL_ARB_transform_feedback_overflow_query,
+    };
 
-	TransformFeedbackOverflowQueryTests(deqp::Context& context, API api);
-	~TransformFeedbackOverflowQueryTests(void);
-	void init(void);
+    TransformFeedbackOverflowQueryTests(deqp::Context &context, API api);
+    ~TransformFeedbackOverflowQueryTests(void);
+    void init(void);
 
 private:
-	TransformFeedbackOverflowQueryTests(const TransformFeedbackOverflowQueryTests& other);
-	TransformFeedbackOverflowQueryTests& operator=(const TransformFeedbackOverflowQueryTests& other);
-	API m_api;
+    TransformFeedbackOverflowQueryTests(const TransformFeedbackOverflowQueryTests &other);
+    TransformFeedbackOverflowQueryTests &operator=(const TransformFeedbackOverflowQueryTests &other);
+    API m_api;
 };
 
-} /* gl3cts namespace */
+} // namespace gl3cts
 
 #endif // _GL3CTRANSFORMFEEDBACKOVERFLOWQUERYTESTS_HPP

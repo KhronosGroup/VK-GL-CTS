@@ -29,92 +29,92 @@ FRAGMENT = "FRAGMENT"
 
 CASE_FRAGMENT_SHADER_TEMPLATE = """
 case ${{NAME}}
-	version 310 es
-	expect ${{EXPECT}}
+    version 310 es
+    expect ${{EXPECT}}
 
-	vertex ""
-		#version 310 es
-		precision highp float;
+    vertex ""
+        #version 310 es
+        precision highp float;
 
-		in vec4 a_pos;
+        in vec4 a_pos;
 
-		void main()
-		{
-			gl_Position = a_pos;
-		}
-	""
+        void main()
+        {
+            gl_Position = a_pos;
+        }
+    ""
 
-	fragment ""
-		${{SOURCE}}
-	""
+    fragment ""
+        ${{SOURCE}}
+    ""
 end"""[1:]
 
 CASE_VERTEX_SHADER_TEMPLATE = """
 case ${{NAME}}
-	version 310 es
-	expect ${{EXPECT}}
+    version 310 es
+    expect ${{EXPECT}}
 
-	vertex ""
-		${{SOURCE}}
-	""
+    vertex ""
+        ${{SOURCE}}
+    ""
 
-	fragment ""
-		#version 310 es
-		precision highp float;
+    fragment ""
+        #version 310 es
+        precision highp float;
 
-		layout(location=0) out vec4 o_color;
+        layout(location=0) out vec4 o_color;
 
-		void main()
-		{
-			o_color = vec4(1.0);
-		}
-	""
+        void main()
+        {
+            o_color = vec4(1.0);
+        }
+    ""
 end"""[1:]
 
 class UniformBlockCase(ShaderCase):
-	def __init__(self, name, shaderType, source, valid):
-		self.name = name
-		self.shaderType = shaderType
-		self.source = source
-		self.valid = valid
+    def __init__(self, name, shaderType, source, valid):
+        self.name = name
+        self.shaderType = shaderType
+        self.source = source
+        self.valid = valid
 
-	def __str__(self):
-		if self.shaderType == FRAGMENT:
-			sourceParams = {
-				"OUTPUT":				"o_color",
-				"OUTPUT_DECLARATION":	"layout(location=0) out vec4 o_color;"
-			}
+    def __str__(self):
+        if self.shaderType == FRAGMENT:
+            sourceParams = {
+                "OUTPUT": "o_color",
+                "OUTPUT_DECLARATION": "layout(location=0) out vec4 o_color;"
+            }
 
-			source = fillTemplate(self.source, sourceParams)
+            source = fillTemplate(self.source, sourceParams)
 
-			testCaseParams = {
-				"NAME":		self.name,
-				"SOURCE":	source,
-				"EXPECT":	("build_successful" if self.valid else "compile_fail")
-			}
+            testCaseParams = {
+                "NAME": self.name,
+                "SOURCE": source,
+                "EXPECT": ("build_successful" if self.valid else "compile_fail")
+            }
 
-			return fillTemplate(CASE_FRAGMENT_SHADER_TEMPLATE, testCaseParams)
-		elif self.shaderType == VERTEX:
-			sourceParams = {
-				"OUTPUT":				"gl_Position",
-				"OUTPUT_DECLARATION":	""
-			}
+            return fillTemplate(CASE_FRAGMENT_SHADER_TEMPLATE, testCaseParams)
+        elif self.shaderType == VERTEX:
+            sourceParams = {
+                "OUTPUT": "gl_Position",
+                "OUTPUT_DECLARATION": ""
+            }
 
-			source = fillTemplate(self.source, sourceParams)
+            source = fillTemplate(self.source, sourceParams)
 
-			testCaseParams = {
-				"NAME":		self.name,
-				"SOURCE":	source,
-				"EXPECT":	("build_successful" if self.valid else "compile_fail")
-			}
+            testCaseParams = {
+                "NAME": self.name,
+                "SOURCE": source,
+                "EXPECT": ("build_successful" if self.valid else "compile_fail")
+            }
 
-			return fillTemplate(CASE_VERTEX_SHADER_TEMPLATE, testCaseParams)
+            return fillTemplate(CASE_VERTEX_SHADER_TEMPLATE, testCaseParams)
 
-		assert False
+        assert False
 
 def createCases(name, source, valid):
-	return [UniformBlockCase(name + "_vertex", VERTEX, source, valid),
-			UniformBlockCase(name + "_fragment", FRAGMENT, source, valid)]
+    return [UniformBlockCase(name + "_vertex", VERTEX, source, valid),
+            UniformBlockCase(name + "_fragment", FRAGMENT, source, valid)]
 
 repeatShaderTemplate = """
 #version 310 es
@@ -124,12 +124,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	uniform vec4 uniformMember;
+    uniform vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
 layoutQualifierShaderTemplate = """
@@ -140,12 +140,12 @@ ${{OUTPUT_DECLARATION}}
 
 layout(%s) uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
 layoutGlobalQualifierShaderTemplate = """
@@ -158,12 +158,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
 layoutMemberQualifierShaderTemplate = """
@@ -174,12 +174,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	layout(%s) mat4 uniformMember;
+    layout(%s) mat4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember[0];
+    ${{OUTPUT}} = uniformBlock.uniformMember[0];
 }"""[1:]
 
 layoutMemberVec4QualifierShaderTemplate = """
@@ -190,12 +190,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	layout(%s) vec4 uniformMember;
+    layout(%s) vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
 noInstanceNameShaderTemplate = """
@@ -206,12 +206,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 };
 
 void main()
 {
-	${{OUTPUT}} = uniformMember;
+    ${{OUTPUT}} = uniformMember;
 }"""[1:]
 
 sameVariableAndInstanceNameShaderTemplate = """
@@ -222,13 +222,13 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	vec4 uniformBlock = vec4(0.0);
-	${{OUTPUT}} = uniformBlock;
+    vec4 uniformBlock = vec4(0.0);
+    ${{OUTPUT}} = uniformBlock;
 }"""[1:]
 
 sameVariableAndBlockNameShaderTemplate = """
@@ -239,13 +239,13 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	vec4 UniformBlock = vec4(0.0);
-	${{OUTPUT}} = UniformBlock + uniformBlock.uniformMember;
+    vec4 UniformBlock = vec4(0.0);
+    ${{OUTPUT}} = UniformBlock + uniformBlock.uniformMember;
 }"""[1:]
 
 repeatedBlockShaderTemplate = """
@@ -256,17 +256,17 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlockA;
 
 uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlockB;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlockA.uniformMember + uniformBlockB.uniformMember;
+    ${{OUTPUT}} = uniformBlockA.uniformMember + uniformBlockB.uniformMember;
 }"""[1:]
 
 repeatedBlockNoInstanceNameShaderTemplate = """
@@ -277,17 +277,17 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 };
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember + uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember + uniformMember;
 }"""[1:]
 
 structMemberShaderTemplate = """
@@ -298,17 +298,17 @@ ${{OUTPUT_DECLARATION}}
 
 struct Struct
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 };
 
 uniform UniformBlock
 {
-	Struct st;
+    Struct st;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.st.uniformMember;
+    ${{OUTPUT}} = uniformBlock.st.uniformMember;
 }"""[1:]
 
 layoutStructMemberQualifierShaderTemplate = """
@@ -319,17 +319,17 @@ ${{OUTPUT_DECLARATION}}
 
 struct Struct
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 };
 
 uniform UniformBlock
 {
-	layout(%s) Struct st;
+    layout(%s) Struct st;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.st.uniformMember;
+    ${{OUTPUT}} = uniformBlock.st.uniformMember;
 }"""[1:]
 
 longIdentifierBlockNameShaderTemplate = ("""
@@ -341,12 +341,12 @@ ${{OUTPUT_DECLARATION}}
 // Total of 1024 characters
 uniform """ + ("a" * 1024) + """
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }""")[1:]
 
 longIdentifierInstanceNameShaderTemplate = ("""
@@ -357,13 +357,13 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } """ + ("a" * 1024) + """;
 // Total of 1024 characters
 
 void main()
 {
-	${{OUTPUT}} = """ + ("a" * 1024) + """.uniformMember;
+    ${{OUTPUT}} = """ + ("a" * 1024) + """.uniformMember;
 }""")[1:]
 
 underscoreIdentifierInstanceNameShaderTemplate = ("""
@@ -374,12 +374,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } _;
 
 void main()
 {
-	${{OUTPUT}} = _.uniformMember;
+    ${{OUTPUT}} = _.uniformMember;
 }""")[1:]
 
 underscoreIdentifierBlockNameShaderTemplate = ("""
@@ -390,41 +390,41 @@ ${{OUTPUT_DECLARATION}}
 
 uniform _
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }""")[1:]
 
 validCases = (createCases("repeat_interface_qualifier", repeatShaderTemplate, True)
-			+ sum([createCases("layout_%s" % qualifier, layoutQualifierShaderTemplate % qualifier, True)
-						for qualifier in ["shared", "packed", "std140", "row_major", "column_major"]], [])
-			+ createCases("layout_all", layoutQualifierShaderTemplate % "shared, packed, std140, row_major, column_major", True)
-			+ createCases("layout_all_8_times", layoutQualifierShaderTemplate % str.join(", ", ["shared", "packed", "std140", "row_major", "column_major"] * 8), True)
-			+ sum([createCases("global_layout_%s" % qualifier, layoutGlobalQualifierShaderTemplate % qualifier, True)
-						for qualifier in ["shared", "packed", "std140", "row_major", "column_major"]], [])
-			+ createCases("global_layout_all", layoutGlobalQualifierShaderTemplate % "shared, packed, std140, row_major, column_major", True)
-			+ createCases("global_layout_all_8_times", layoutGlobalQualifierShaderTemplate % str.join(", ", ["shared", "packed", "std140", "row_major", "column_major"] * 8), True)
-			+ sum([createCases("member_layout_%s" % qualifier, layoutMemberQualifierShaderTemplate % qualifier, True)
-						for qualifier in ["row_major", "column_major"]], [])
-			+ sum([createCases("member_layout_%s_vec4" % qualifier, layoutMemberVec4QualifierShaderTemplate % qualifier, True)
-						for qualifier in ["row_major", "column_major"]], [])
-			+ createCases("member_layout_all", layoutMemberQualifierShaderTemplate % "row_major, column_major", True)
-			+ createCases("member_layout_all_8_times", layoutMemberQualifierShaderTemplate % str.join(", ", ["row_major", "column_major"] * 8), True)
-			+ createCases("no_instance_name", noInstanceNameShaderTemplate, True)
-			+ createCases("same_variable_and_block_name", sameVariableAndBlockNameShaderTemplate, True)
-			+ createCases("same_variable_and_instance_name", sameVariableAndInstanceNameShaderTemplate, True)
-			+ createCases("struct_member", structMemberShaderTemplate, True)
-			+ sum([createCases("struct_member_layout_%s" % qualifier, layoutStructMemberQualifierShaderTemplate % qualifier, True)
-						for qualifier in ["row_major", "column_major"]], [])
-			+ createCases("struct_member_layout_all", layoutStructMemberQualifierShaderTemplate % "row_major, column_major", True)
-			+ createCases("struct_member_layout_all_8_times", layoutStructMemberQualifierShaderTemplate % str.join(", ", ["row_major", "column_major"] * 8), True)
-			+ createCases("long_block_name", longIdentifierBlockNameShaderTemplate, True)
-			+ createCases("long_instance_name", longIdentifierInstanceNameShaderTemplate, True)
-			+ createCases("underscore_block_name", underscoreIdentifierBlockNameShaderTemplate, True)
-			+ createCases("underscore_instance_name", underscoreIdentifierInstanceNameShaderTemplate, True))
+            + sum([createCases("layout_%s" % qualifier, layoutQualifierShaderTemplate % qualifier, True)
+                        for qualifier in ["shared", "packed", "std140", "row_major", "column_major"]], [])
+            + createCases("layout_all", layoutQualifierShaderTemplate % "shared, packed, std140, row_major, column_major", True)
+            + createCases("layout_all_8_times", layoutQualifierShaderTemplate % str.join(", ", ["shared", "packed", "std140", "row_major", "column_major"] * 8), True)
+            + sum([createCases("global_layout_%s" % qualifier, layoutGlobalQualifierShaderTemplate % qualifier, True)
+                        for qualifier in ["shared", "packed", "std140", "row_major", "column_major"]], [])
+            + createCases("global_layout_all", layoutGlobalQualifierShaderTemplate % "shared, packed, std140, row_major, column_major", True)
+            + createCases("global_layout_all_8_times", layoutGlobalQualifierShaderTemplate % str.join(", ", ["shared", "packed", "std140", "row_major", "column_major"] * 8), True)
+            + sum([createCases("member_layout_%s" % qualifier, layoutMemberQualifierShaderTemplate % qualifier, True)
+                        for qualifier in ["row_major", "column_major"]], [])
+            + sum([createCases("member_layout_%s_vec4" % qualifier, layoutMemberVec4QualifierShaderTemplate % qualifier, True)
+                        for qualifier in ["row_major", "column_major"]], [])
+            + createCases("member_layout_all", layoutMemberQualifierShaderTemplate % "row_major, column_major", True)
+            + createCases("member_layout_all_8_times", layoutMemberQualifierShaderTemplate % str.join(", ", ["row_major", "column_major"] * 8), True)
+            + createCases("no_instance_name", noInstanceNameShaderTemplate, True)
+            + createCases("same_variable_and_block_name", sameVariableAndBlockNameShaderTemplate, True)
+            + createCases("same_variable_and_instance_name", sameVariableAndInstanceNameShaderTemplate, True)
+            + createCases("struct_member", structMemberShaderTemplate, True)
+            + sum([createCases("struct_member_layout_%s" % qualifier, layoutStructMemberQualifierShaderTemplate % qualifier, True)
+                        for qualifier in ["row_major", "column_major"]], [])
+            + createCases("struct_member_layout_all", layoutStructMemberQualifierShaderTemplate % "row_major, column_major", True)
+            + createCases("struct_member_layout_all_8_times", layoutStructMemberQualifierShaderTemplate % str.join(", ", ["row_major", "column_major"] * 8), True)
+            + createCases("long_block_name", longIdentifierBlockNameShaderTemplate, True)
+            + createCases("long_instance_name", longIdentifierInstanceNameShaderTemplate, True)
+            + createCases("underscore_block_name", underscoreIdentifierBlockNameShaderTemplate, True)
+            + createCases("underscore_instance_name", underscoreIdentifierInstanceNameShaderTemplate, True))
 
 invalidMemberInterfaceQualifierShaderTemplate = """
 #version 310 es
@@ -434,12 +434,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	%s vec4 uniformMember;
+    %s vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
 conflictingInstanceNamesShaderTemplate = """
@@ -450,17 +450,17 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlockA
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 uniform UniformBlockB
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
 conflictingFunctionAndInstanceNameShaderTemplate = """
@@ -471,17 +471,17 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 float uniformBlock (float x)
 {
-	return x;
+    return x;
 }
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
 conflictingFunctionAndBlockNameShaderTemplate = """
@@ -492,17 +492,17 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 float UniformBlock (float x)
 {
-	return x;
+    return x;
 }
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
 conflictingVariableAndInstanceNameShaderTemplate = """
@@ -513,14 +513,14 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 %s vec4 uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
 conflictingVariableAndBlockNameShaderTemplate = """
@@ -531,14 +531,14 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 %s vec4 UniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
 
@@ -550,12 +550,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } UniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = UniformBlock.uniformMember;
+    ${{OUTPUT}} = UniformBlock.uniformMember;
 }"""[1:]
 
 referenceUsingBlockNameShaderTemplate = """
@@ -566,12 +566,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = UniformBlock.uniformMember;
+    ${{OUTPUT}} = UniformBlock.uniformMember;
 }"""[1:]
 
 emptyBlockShaderTemplate = """
@@ -586,7 +586,7 @@ uniform UniformBlock
 
 void main()
 {
-	${{OUTPUT}} = vec4(0.0);
+    ${{OUTPUT}} = vec4(0.0);
 }"""[1:]
 
 emptyLayoutShaderTemplate = """
@@ -597,12 +597,12 @@ ${{OUTPUT_DECLARATION}}
 
 layout() uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
 emptyGlobalLayoutShaderTemplate = """
@@ -615,12 +615,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
 emptyMemberLayoutShaderTemplate = """
@@ -631,12 +631,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	layout() vec4 uniformMember;
+    layout() vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
 invalidMemberLayoutShaderTemplate = """
@@ -647,12 +647,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	layout(%s) vec4 uniformMember;
+    layout(%s) vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
 structureDefinitionShaderTemplate = """
@@ -663,15 +663,15 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	struct A
-	{
-		vec4 uniformMember;
-	} a;
+    struct A
+    {
+        vec4 uniformMember;
+    } a;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.a.uniformMember;
+    ${{OUTPUT}} = uniformBlock.a.uniformMember;
 }"""[1:]
 
 samplerShaderTemplate = """
@@ -682,13 +682,13 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	sampler2D sampler;
-	vec4 uniformMember;
+    sampler2D sampler;
+    vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
 missingBlockNameShaderTemplate = """
@@ -699,12 +699,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
 invalidNumberBlockNameShaderTemplate = """
@@ -715,12 +715,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform 0UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
 invalidHashBlockNameShaderTemplate = """
@@ -731,12 +731,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform #UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
 invalidDollarBlockNameShaderTemplate = """
@@ -747,12 +747,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform $UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
 invalidIdentifierBlockNameShaderTemplate = """
@@ -763,12 +763,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform gl_UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }"""[1:]
 
 tooLongIdentifierBlockNameShaderTemplate = ("""
@@ -780,12 +780,12 @@ ${{OUTPUT_DECLARATION}}
 // Total of 1025 characters
 uniform """ + ("a" * 1025) + """
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = uniformBlock.uniformMember;
+    ${{OUTPUT}} = uniformBlock.uniformMember;
 }""")[1:]
 
 invalidNumberInstanceNameShaderTemplate = """
@@ -796,12 +796,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformInstance
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } 0uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = 0uniformBlock.uniformMember;
+    ${{OUTPUT}} = 0uniformBlock.uniformMember;
 }"""[1:]
 
 invalidHashInstanceNameShaderTemplate = """
@@ -812,12 +812,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformInstance
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } #uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = #uniformBlock.uniformMember;
+    ${{OUTPUT}} = #uniformBlock.uniformMember;
 }"""[1:]
 
 invalidDollarInstanceNameShaderTemplate = """
@@ -828,12 +828,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformInstance
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } $uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = $uniformBlock.uniformMember;
+    ${{OUTPUT}} = $uniformBlock.uniformMember;
 }"""[1:]
 
 invalidIdentifierInstanceNameShaderTemplate = """
@@ -844,12 +844,12 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } gl_uniformBlock;
 
 void main()
 {
-	${{OUTPUT}} = gl_uniformBlock.uniformMember;
+    ${{OUTPUT}} = gl_uniformBlock.uniformMember;
 }"""[1:]
 
 tooLongIdentifierInstanceNameShaderTemplate = ("""
@@ -860,55 +860,55 @@ ${{OUTPUT_DECLARATION}}
 
 uniform UniformBlock
 {
-	vec4 uniformMember;
+    vec4 uniformMember;
 } """ + ("a" * 1025) + """;
 // Total of 1025 characters
 
 void main()
 {
-	${{OUTPUT}} = """ + ("a" * 1025) + """.uniformMember;
+    ${{OUTPUT}} = """ + ("a" * 1025) + """.uniformMember;
 }""")[1:]
 
 invalidCases = (
-			sum([createCases("member_%s_interface_qualifier" % qualifier, invalidMemberInterfaceQualifierShaderTemplate % qualifier, False)
-					for qualifier in ["in", "out", "buffer", "attribute", "varying"]], [])
-			+ createCases("conflicting_instance_names", conflictingInstanceNamesShaderTemplate, False)
-			+ createCases("conflicting_function_and_instance_name", conflictingFunctionAndInstanceNameShaderTemplate, False)
-			+ createCases("conflicting_function_and_block_name", conflictingFunctionAndBlockNameShaderTemplate, False)
-			+ sum([createCases("conflicting_%s_and_instance_name" % qualifier, conflictingVariableAndInstanceNameShaderTemplate % qualifier, False)
-					for qualifier in ["uniform", "in", "out"]], [])
-			+ sum([createCases("conflicting_%s_and_block_name" % qualifier, conflictingVariableAndBlockNameShaderTemplate % qualifier, False)
-					for qualifier in ["uniform", "in", "out"]], [])
-			+ createCases("matching_instance_and_block_name", matchingInstanceAndBlockNameShaderTemplate, False)
-			+ createCases("reference_using_block_name", referenceUsingBlockNameShaderTemplate, False)
-			+ createCases("empty_block", emptyBlockShaderTemplate, False)
-			+ createCases("empty_layout", emptyLayoutShaderTemplate, False)
-			+ createCases("empty_member_layout", emptyMemberLayoutShaderTemplate, False)
-			+ createCases("empty_global_layout", emptyGlobalLayoutShaderTemplate, False)
-			+ createCases("structure_definition", structureDefinitionShaderTemplate, False)
-			+ sum([createCases("member_layout_%s" % qualifier, invalidMemberLayoutShaderTemplate % qualifier, False)
-					for qualifier in ["shared", "packed", "std140" "std430",]], [])
-			+ createCases("missing_block_name", missingBlockNameShaderTemplate, False)
-			+ createCases("invalid_number_block_name", invalidNumberBlockNameShaderTemplate, False)
-			+ createCases("invalid_identifier_block_name", invalidIdentifierBlockNameShaderTemplate, False)
-			+ createCases("invalid_hash_block_name", invalidHashBlockNameShaderTemplate, False)
-			+ createCases("invalid_dollar_block_name", invalidDollarBlockNameShaderTemplate, False)
-			+ createCases("too_long_block_name", tooLongIdentifierBlockNameShaderTemplate, False)
-			+ createCases("invalid_number_instance_name", invalidNumberInstanceNameShaderTemplate, False)
-			+ createCases("invalid_identifier_instance_name", invalidIdentifierInstanceNameShaderTemplate, False)
-			+ createCases("invalid_hash_instance_name", invalidHashInstanceNameShaderTemplate, False)
-			+ createCases("invalid_dollar_instance_name", invalidDollarInstanceNameShaderTemplate, False)
-			+ createCases("repeated_block", repeatedBlockShaderTemplate, False)
-			+ createCases("repeated_block_no_instance_name", repeatedBlockNoInstanceNameShaderTemplate, False)
-			+ sum([createCases("layout_%s" % qualifier, layoutQualifierShaderTemplate % qualifier, False)
-						for qualifier in ["std430"]], [])
-			+ sum([createCases("global_layout_%s" % qualifier, layoutGlobalQualifierShaderTemplate % qualifier, False)
-						for qualifier in ["std430"]], [])
-		)
+            sum([createCases("member_%s_interface_qualifier" % qualifier, invalidMemberInterfaceQualifierShaderTemplate % qualifier, False)
+                    for qualifier in ["in", "out", "buffer", "attribute", "varying"]], [])
+            + createCases("conflicting_instance_names", conflictingInstanceNamesShaderTemplate, False)
+            + createCases("conflicting_function_and_instance_name", conflictingFunctionAndInstanceNameShaderTemplate, False)
+            + createCases("conflicting_function_and_block_name", conflictingFunctionAndBlockNameShaderTemplate, False)
+            + sum([createCases("conflicting_%s_and_instance_name" % qualifier, conflictingVariableAndInstanceNameShaderTemplate % qualifier, False)
+                    for qualifier in ["uniform", "in", "out"]], [])
+            + sum([createCases("conflicting_%s_and_block_name" % qualifier, conflictingVariableAndBlockNameShaderTemplate % qualifier, False)
+                    for qualifier in ["uniform", "in", "out"]], [])
+            + createCases("matching_instance_and_block_name", matchingInstanceAndBlockNameShaderTemplate, False)
+            + createCases("reference_using_block_name", referenceUsingBlockNameShaderTemplate, False)
+            + createCases("empty_block", emptyBlockShaderTemplate, False)
+            + createCases("empty_layout", emptyLayoutShaderTemplate, False)
+            + createCases("empty_member_layout", emptyMemberLayoutShaderTemplate, False)
+            + createCases("empty_global_layout", emptyGlobalLayoutShaderTemplate, False)
+            + createCases("structure_definition", structureDefinitionShaderTemplate, False)
+            + sum([createCases("member_layout_%s" % qualifier, invalidMemberLayoutShaderTemplate % qualifier, False)
+                    for qualifier in ["shared", "packed", "std140" "std430",]], [])
+            + createCases("missing_block_name", missingBlockNameShaderTemplate, False)
+            + createCases("invalid_number_block_name", invalidNumberBlockNameShaderTemplate, False)
+            + createCases("invalid_identifier_block_name", invalidIdentifierBlockNameShaderTemplate, False)
+            + createCases("invalid_hash_block_name", invalidHashBlockNameShaderTemplate, False)
+            + createCases("invalid_dollar_block_name", invalidDollarBlockNameShaderTemplate, False)
+            + createCases("too_long_block_name", tooLongIdentifierBlockNameShaderTemplate, False)
+            + createCases("invalid_number_instance_name", invalidNumberInstanceNameShaderTemplate, False)
+            + createCases("invalid_identifier_instance_name", invalidIdentifierInstanceNameShaderTemplate, False)
+            + createCases("invalid_hash_instance_name", invalidHashInstanceNameShaderTemplate, False)
+            + createCases("invalid_dollar_instance_name", invalidDollarInstanceNameShaderTemplate, False)
+            + createCases("repeated_block", repeatedBlockShaderTemplate, False)
+            + createCases("repeated_block_no_instance_name", repeatedBlockNoInstanceNameShaderTemplate, False)
+            + sum([createCases("layout_%s" % qualifier, layoutQualifierShaderTemplate % qualifier, False)
+                        for qualifier in ["std430"]], [])
+            + sum([createCases("global_layout_%s" % qualifier, layoutGlobalQualifierShaderTemplate % qualifier, False)
+                        for qualifier in ["std430"]], [])
+        )
 
 allCases.append(CaseGroup("valid", "Valid uniform interface block syntax tests.", validCases))
 allCases.append(CaseGroup("invalid", "Invalid uniform interface block syntax tests.", invalidCases))
 
 if __name__ == "__main__":
-	print("Generating shader case files.")
-	writeAllCases("uniform_block.test", allCases)
+    print("Generating shader case files.")
+    writeAllCases("uniform_block.test", allCases)

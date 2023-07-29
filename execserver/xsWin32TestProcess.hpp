@@ -31,13 +31,13 @@
 #include <string>
 
 #if !defined(VC_EXTRALEAN)
-#	define VC_EXTRALEAN 1
+#define VC_EXTRALEAN 1
 #endif
 #if !defined(WIN32_LEAN_AND_MEAN)
-#	define WIN32_LEAN_AND_MEAN 1
+#define WIN32_LEAN_AND_MEAN 1
 #endif
 #if !defined(NOMINMAX)
-#	define NOMINMAX 1
+#define NOMINMAX 1
 #endif
 #include <windows.h>
 
@@ -49,166 +49,190 @@ namespace win32
 class Error : public std::runtime_error
 {
 public:
-							Error				(DWORD error, const char* msg);
+    Error(DWORD error, const char *msg);
 
 private:
-	DWORD					m_error;
+    DWORD m_error;
 };
 
 class Event
 {
 public:
-							Event				(bool manualReset, bool initialState);
-							~Event				(void);
+    Event(bool manualReset, bool initialState);
+    ~Event(void);
 
-	void					setSignaled			(void);
-	void					reset				(void);
+    void setSignaled(void);
+    void reset(void);
 
-	HANDLE					getHandle			(void) const { return m_handle; }
+    HANDLE getHandle(void) const
+    {
+        return m_handle;
+    }
 
 private:
-							Event				(const Event& other);
-	Event&					operator=			(const Event& other);
+    Event(const Event &other);
+    Event &operator=(const Event &other);
 
-	HANDLE					m_handle;
+    HANDLE m_handle;
 };
 
 class CaseListWriter : public de::Thread
 {
 public:
-							CaseListWriter		(void);
-							~CaseListWriter		(void);
+    CaseListWriter(void);
+    ~CaseListWriter(void);
 
-	void					start				(const char* caseList, HANDLE dst);
-	void					stop				(void);
+    void start(const char *caseList, HANDLE dst);
+    void stop(void);
 
-	void					run					(void);
+    void run(void);
 
 private:
-	std::vector<char>		m_caseList;
-	HANDLE					m_dst;
-	Event					m_cancelEvent;
+    std::vector<char> m_caseList;
+    HANDLE m_dst;
+    Event m_cancelEvent;
 };
 
 class FileReader : public de::Thread
 {
 public:
-							FileReader			(ThreadedByteBuffer* dst);
-							~FileReader			(void);
+    FileReader(ThreadedByteBuffer *dst);
+    ~FileReader(void);
 
-	void					start				(HANDLE file);
-	void					stop				(void);
+    void start(HANDLE file);
+    void stop(void);
 
-	void					run					(void);
+    void run(void);
 
 private:
-	ThreadedByteBuffer*		m_dstBuf;
-	HANDLE					m_handle;
-	Event					m_cancelEvent;
+    ThreadedByteBuffer *m_dstBuf;
+    HANDLE m_handle;
+    Event m_cancelEvent;
 };
 
 class TestLogReader
 {
 public:
-							TestLogReader		(void);
-							~TestLogReader		(void);
+    TestLogReader(void);
+    ~TestLogReader(void);
 
-	void					start				(const char* filename);
-	void					stop				(void);
+    void start(const char *filename);
+    void stop(void);
 
-	bool					isRunning			(void) const					{ return m_reader.isStarted();					}
+    bool isRunning(void) const
+    {
+        return m_reader.isStarted();
+    }
 
-	int						read				(deUint8* dst, int numBytes)	{ return m_logBuffer.tryRead(numBytes, dst);	}
+    int read(uint8_t *dst, int numBytes)
+    {
+        return m_logBuffer.tryRead(numBytes, dst);
+    }
 
 private:
-	ThreadedByteBuffer		m_logBuffer;
-	HANDLE					m_logFile;
+    ThreadedByteBuffer m_logBuffer;
+    HANDLE m_logFile;
 
-	FileReader				m_reader;
+    FileReader m_reader;
 };
 
 // \note deProcess uses anonymous pipes that don't have overlapped IO available.
-//		 For ExecServer purposes we need overlapped IO, and it makes the handles
-//		 incompatible with deFile. Thus separate Process implementation is used for now.
+//         For ExecServer purposes we need overlapped IO, and it makes the handles
+//         incompatible with deFile. Thus separate Process implementation is used for now.
 class Process
 {
 public:
-							Process				(void);
-							~Process			(void);
+    Process(void);
+    ~Process(void);
 
-	void					start				(const char* commandLine, const char* workingDirectory);
+    void start(const char *commandLine, const char *workingDirectory);
 
-	void					waitForFinish		(void);
-	void					terminate			(void);
-	void					kill				(void);
+    void waitForFinish(void);
+    void terminate(void);
+    void kill(void);
 
-	bool					isRunning			(void);
-	int						getExitCode			(void) const { return m_exitCode;		}
+    bool isRunning(void);
+    int getExitCode(void) const
+    {
+        return m_exitCode;
+    }
 
-	HANDLE					getStdIn			(void) const { return m_standardIn;		}
-	HANDLE					getStdOut			(void) const { return m_standardOut;	}
-	HANDLE					getStdErr			(void) const { return m_standardErr;	}
+    HANDLE getStdIn(void) const
+    {
+        return m_standardIn;
+    }
+    HANDLE getStdOut(void) const
+    {
+        return m_standardOut;
+    }
+    HANDLE getStdErr(void) const
+    {
+        return m_standardErr;
+    }
 
 private:
-							Process				(const Process& other);
-	Process&				operator=			(const Process& other);
+    Process(const Process &other);
+    Process &operator=(const Process &other);
 
-	void					stopProcess			(bool kill);
-	void					cleanupHandles		(void);
+    void stopProcess(bool kill);
+    void cleanupHandles(void);
 
-	enum State
-	{
-		STATE_NOT_STARTED = 0,
-		STATE_RUNNING,
-		STATE_FINISHED,
+    enum State
+    {
+        STATE_NOT_STARTED = 0,
+        STATE_RUNNING,
+        STATE_FINISHED,
 
-		STATE_LAST
-	};
+        STATE_LAST
+    };
 
-	State					m_state;
-	int						m_exitCode;
+    State m_state;
+    int m_exitCode;
 
-	PROCESS_INFORMATION		m_procInfo;
-	HANDLE					m_standardIn;
-	HANDLE					m_standardOut;
-	HANDLE					m_standardErr;
+    PROCESS_INFORMATION m_procInfo;
+    HANDLE m_standardIn;
+    HANDLE m_standardOut;
+    HANDLE m_standardErr;
 };
 
-} // win32
+} // namespace win32
 
 class Win32TestProcess : public TestProcess
 {
 public:
-							Win32TestProcess		(void);
-	virtual					~Win32TestProcess		(void);
+    Win32TestProcess(void);
+    virtual ~Win32TestProcess(void);
 
-	virtual void			start					(const char* name, const char* params, const char* workingDir, const char* caseList);
-	virtual void			terminate				(void);
-	virtual void			cleanup					(void);
+    virtual void start(const char *name, const char *params, const char *workingDir, const char *caseList);
+    virtual void terminate(void);
+    virtual void cleanup(void);
 
-	virtual bool			isRunning				(void);
-	virtual int				getExitCode				(void) const;
+    virtual bool isRunning(void);
+    virtual int getExitCode(void) const;
 
-	virtual int				readTestLog				(deUint8* dst, int numBytes);
-	virtual int				readInfoLog				(deUint8* dst, int numBytes) { return m_infoBuffer.tryRead(numBytes, dst); }
+    virtual int readTestLog(uint8_t *dst, int numBytes);
+    virtual int readInfoLog(uint8_t *dst, int numBytes)
+    {
+        return m_infoBuffer.tryRead(numBytes, dst);
+    }
 
 private:
-							Win32TestProcess		(const Win32TestProcess& other);
-	Win32TestProcess&		operator=				(const Win32TestProcess& other);
+    Win32TestProcess(const Win32TestProcess &other);
+    Win32TestProcess &operator=(const Win32TestProcess &other);
 
-	win32::Process*			m_process;
-	deUint64				m_processStartTime;
-	std::string				m_logFileName;
+    win32::Process *m_process;
+    uint64_t m_processStartTime;
+    std::string m_logFileName;
 
-	ThreadedByteBuffer		m_infoBuffer;
+    ThreadedByteBuffer m_infoBuffer;
 
-	// Threads.
-	win32::CaseListWriter	m_caseListWriter;
-	win32::FileReader		m_stdOutReader;
-	win32::FileReader		m_stdErrReader;
-	win32::TestLogReader	m_testLogReader;
+    // Threads.
+    win32::CaseListWriter m_caseListWriter;
+    win32::FileReader m_stdOutReader;
+    win32::FileReader m_stdErrReader;
+    win32::TestLogReader m_testLogReader;
 };
 
-} // xs
+} // namespace xs
 
 #endif // _XSWIN32TESTPROCESS_HPP

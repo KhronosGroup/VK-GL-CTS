@@ -48,28 +48,28 @@ namespace subgroups
  *
  *  @param context Rendering context.
  */
-GlSubgroupTests::GlSubgroupTests(deqp::Context& context)
-	: TestCaseGroup(context, "subgroups", "Shader Subgroup Operation tests")
+GlSubgroupTests::GlSubgroupTests(deqp::Context &context)
+    : TestCaseGroup(context, "subgroups", "Shader Subgroup Operation tests")
 {
 }
 
 /** Initializes the test group contents. */
 void GlSubgroupTests::init()
 {
-	addChild(createSubgroupsBuiltinVarTests(m_context));
-	addChild(createSubgroupsBuiltinMaskVarTests(m_context));
-	addChild(createSubgroupsBasicTests(m_context));
-	addChild(createSubgroupsVoteTests(m_context));
-	addChild(createSubgroupsBallotTests(m_context));
-	addChild(createSubgroupsBallotBroadcastTests(m_context));
-	addChild(createSubgroupsBallotOtherTests(m_context));
-	addChild(createSubgroupsArithmeticTests(m_context));
-	addChild(createSubgroupsClusteredTests(m_context));
-	addChild(createSubgroupsPartitionedTests(m_context));
-	addChild(createSubgroupsShuffleTests(m_context));
-	addChild(createSubgroupsQuadTests(m_context));
-	addChild(createSubgroupsShapeTests(m_context));
+    addChild(createSubgroupsBuiltinVarTests(m_context));
+    addChild(createSubgroupsBuiltinMaskVarTests(m_context));
+    addChild(createSubgroupsBasicTests(m_context));
+    addChild(createSubgroupsVoteTests(m_context));
+    addChild(createSubgroupsBallotTests(m_context));
+    addChild(createSubgroupsBallotBroadcastTests(m_context));
+    addChild(createSubgroupsBallotOtherTests(m_context));
+    addChild(createSubgroupsArithmeticTests(m_context));
+    addChild(createSubgroupsClusteredTests(m_context));
+    addChild(createSubgroupsPartitionedTests(m_context));
+    addChild(createSubgroupsShuffleTests(m_context));
+    addChild(createSubgroupsQuadTests(m_context));
+    addChild(createSubgroupsShapeTests(m_context));
 }
 
-} // subgroups
-} // glc
+} // namespace subgroups
+} // namespace glc

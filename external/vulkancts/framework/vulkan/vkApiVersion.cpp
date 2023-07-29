@@ -26,20 +26,18 @@
 namespace vk
 {
 
-ApiVersion unpackVersion (deUint32 version)
+ApiVersion unpackVersion(uint32_t version)
 {
-	return ApiVersion((version & 0xFFC00000) >> 22,
-					  (version & 0x003FF000) >> 12,
-					   version & 0x00000FFF);
+    return ApiVersion((version & 0xFFC00000) >> 22, (version & 0x003FF000) >> 12, version & 0x00000FFF);
 }
 
-deUint32 pack (const ApiVersion& version)
+uint32_t pack(const ApiVersion &version)
 {
-	DE_ASSERT((version.majorNum & ~0x3FF) == 0);
-	DE_ASSERT((version.minorNum & ~0x3FF) == 0);
-	DE_ASSERT((version.patchNum & ~0xFFF) == 0);
+    DE_ASSERT((version.majorNum & ~0x3FF) == 0);
+    DE_ASSERT((version.minorNum & ~0x3FF) == 0);
+    DE_ASSERT((version.patchNum & ~0xFFF) == 0);
 
-	return (version.majorNum << 22) | (version.minorNum << 12) | version.patchNum;
+    return (version.majorNum << 22) | (version.minorNum << 12) | version.patchNum;
 }
 
-} // vk
+} // namespace vk

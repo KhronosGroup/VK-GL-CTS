@@ -106,38 +106,38 @@ namespace glcts
 class GeometryShaderLayeredRenderingFBONoAttachment : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderLayeredRenderingFBONoAttachment(Context& context, const ExtParameters& extParams, const char* name,
-												  const char* description);
+    /* Public methods */
+    GeometryShaderLayeredRenderingFBONoAttachment(Context &context, const ExtParameters &extParams, const char *name,
+                                                  const char *description);
 
-	virtual ~GeometryShaderLayeredRenderingFBONoAttachment(void)
-	{
-	}
+    virtual ~GeometryShaderLayeredRenderingFBONoAttachment(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private variables */
-	static const char* m_fs_code;
-	static const char* m_vs_code;
-	static const char* m_gs_code;
+    /* Private variables */
+    static const char *m_fs_code;
+    static const char *m_vs_code;
+    static const char *m_gs_code;
 
-	static const glw::GLint m_height;
-	static const glw::GLint m_width;
-	static const int		m_n_layers;
-	static const glw::GLint m_n_texture_components;
+    static const glw::GLint m_height;
+    static const glw::GLint m_width;
+    static const int m_n_layers;
+    static const glw::GLint m_n_texture_components;
 
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_gs_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_to_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_vs_id;
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_to_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_id;
 
-	glw::GLint* m_all_layers_data;
-	glw::GLint* m_layer_data;
+    glw::GLint *m_all_layers_data;
+    glw::GLint *m_layer_data;
 };
 
 } // namespace glcts

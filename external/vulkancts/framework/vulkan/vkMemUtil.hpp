@@ -54,135 +54,151 @@ namespace vk
 class Allocation
 {
 public:
-	virtual					~Allocation		(void);
+    virtual ~Allocation(void);
 
-	//! Get VkDeviceMemory backing this allocation
-	VkDeviceMemory			getMemory		(void) const { return m_memory;							}
+    //! Get VkDeviceMemory backing this allocation
+    VkDeviceMemory getMemory(void) const
+    {
+        return m_memory;
+    }
 
-	//! Get offset in VkDeviceMemory for this allocation
-	VkDeviceSize			getOffset		(void) const { return m_offset;							}
+    //! Get offset in VkDeviceMemory for this allocation
+    VkDeviceSize getOffset(void) const
+    {
+        return m_offset;
+    }
 
-	//! Get host pointer for this allocation. Only available for host-visible allocations
-	void*					getHostPtr		(void) const { DE_ASSERT(m_hostPtr); return m_hostPtr;	}
+    //! Get host pointer for this allocation. Only available for host-visible allocations
+    void *getHostPtr(void) const
+    {
+        DE_ASSERT(m_hostPtr);
+        return m_hostPtr;
+    }
 
 protected:
-							Allocation		(VkDeviceMemory memory, VkDeviceSize offset, void* hostPtr);
+    Allocation(VkDeviceMemory memory, VkDeviceSize offset, void *hostPtr);
 
 private:
-	const VkDeviceMemory	m_memory;
-	const VkDeviceSize		m_offset;
-	void* const				m_hostPtr;
+    const VkDeviceMemory m_memory;
+    const VkDeviceSize m_offset;
+    void *const m_hostPtr;
 };
 
-void	flushAlloc		(const DeviceInterface& vkd, VkDevice device, const Allocation& alloc);
-void	invalidateAlloc	(const DeviceInterface& vkd, VkDevice device, const Allocation& alloc);
+void flushAlloc(const DeviceInterface &vkd, VkDevice device, const Allocation &alloc);
+void invalidateAlloc(const DeviceInterface &vkd, VkDevice device, const Allocation &alloc);
 
 //! Memory allocation requirements
 class MemoryRequirement
 {
 public:
-	static const MemoryRequirement	Any;
-	static const MemoryRequirement	HostVisible;
-	static const MemoryRequirement	Coherent;
-	static const MemoryRequirement	LazilyAllocated;
-	static const MemoryRequirement	Protected;
-	static const MemoryRequirement	Local;
-	static const MemoryRequirement	Cached;
-	static const MemoryRequirement	NonLocal;
-	static const MemoryRequirement	DeviceAddress;
+    static const MemoryRequirement Any;
+    static const MemoryRequirement HostVisible;
+    static const MemoryRequirement Coherent;
+    static const MemoryRequirement LazilyAllocated;
+    static const MemoryRequirement Protected;
+    static const MemoryRequirement Local;
+    static const MemoryRequirement Cached;
+    static const MemoryRequirement NonLocal;
+    static const MemoryRequirement DeviceAddress;
 
-	inline MemoryRequirement		operator|			(MemoryRequirement requirement) const
-	{
-		return MemoryRequirement(m_flags | requirement.m_flags);
-	}
+    inline MemoryRequirement operator|(MemoryRequirement requirement) const
+    {
+        return MemoryRequirement(m_flags | requirement.m_flags);
+    }
 
-	inline MemoryRequirement		operator&			(MemoryRequirement requirement) const
-	{
-		return MemoryRequirement(m_flags & requirement.m_flags);
-	}
+    inline MemoryRequirement operator&(MemoryRequirement requirement) const
+    {
+        return MemoryRequirement(m_flags & requirement.m_flags);
+    }
 
-	bool							matchesHeap			(VkMemoryPropertyFlags heapFlags) const;
+    bool matchesHeap(VkMemoryPropertyFlags heapFlags) const;
 
-	inline operator					bool				(void) const { return m_flags != 0u; }
+    inline operator bool(void) const
+    {
+        return m_flags != 0u;
+    }
 
 private:
-	explicit						MemoryRequirement	(deUint32 flags);
+    explicit MemoryRequirement(uint32_t flags);
 
-	const deUint32					m_flags;
+    const uint32_t m_flags;
 
-	enum Flags
-	{
-		FLAG_HOST_VISIBLE		= 1u << 0u,
-		FLAG_COHERENT			= 1u << 1u,
-		FLAG_LAZY_ALLOCATION	= 1u << 2u,
-		FLAG_PROTECTED			= 1u << 3u,
-		FLAG_LOCAL				= 1u << 4u,
-		FLAG_CACHED				= 1u << 5u,
-		FLAG_NON_LOCAL			= 1u << 6u,
-		FLAG_DEVICE_ADDRESS		= 1u << 7u,
-	};
+    enum Flags
+    {
+        FLAG_HOST_VISIBLE    = 1u << 0u,
+        FLAG_COHERENT        = 1u << 1u,
+        FLAG_LAZY_ALLOCATION = 1u << 2u,
+        FLAG_PROTECTED       = 1u << 3u,
+        FLAG_LOCAL           = 1u << 4u,
+        FLAG_CACHED          = 1u << 5u,
+        FLAG_NON_LOCAL       = 1u << 6u,
+        FLAG_DEVICE_ADDRESS  = 1u << 7u,
+    };
 };
 
 //! Memory allocator interface
 class Allocator
 {
 public:
-									Allocator	(void) {}
-	virtual							~Allocator	(void) {}
+    Allocator(void)
+    {
+    }
+    virtual ~Allocator(void)
+    {
+    }
 
-	virtual de::MovePtr<Allocation>	allocate	(const VkMemoryAllocateInfo& allocInfo, VkDeviceSize alignment) = 0;
-	virtual de::MovePtr<Allocation>	allocate	(const VkMemoryRequirements& memRequirements, MemoryRequirement requirement) = 0;
+    virtual de::MovePtr<Allocation> allocate(const VkMemoryAllocateInfo &allocInfo, VkDeviceSize alignment) = 0;
+    virtual de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memRequirements,
+                                             MemoryRequirement requirement)                                 = 0;
 };
 
 //! Allocator that backs every allocation with its own VkDeviceMemory
 class SimpleAllocator : public Allocator
 {
 public:
-											SimpleAllocator	(const DeviceInterface& vk, VkDevice device, const VkPhysicalDeviceMemoryProperties& deviceMemProps);
+    SimpleAllocator(const DeviceInterface &vk, VkDevice device, const VkPhysicalDeviceMemoryProperties &deviceMemProps);
 
-	de::MovePtr<Allocation>					allocate		(const VkMemoryAllocateInfo& allocInfo, VkDeviceSize alignment);
-	de::MovePtr<Allocation>					allocate		(const VkMemoryRequirements& memRequirements, MemoryRequirement requirement);
+    de::MovePtr<Allocation> allocate(const VkMemoryAllocateInfo &allocInfo, VkDeviceSize alignment);
+    de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memRequirements, MemoryRequirement requirement);
 
 private:
-	const DeviceInterface&					m_vk;
-	const VkDevice							m_device;
-	const VkPhysicalDeviceMemoryProperties	m_memProps;
+    const DeviceInterface &m_vk;
+    const VkDevice m_device;
+    const VkPhysicalDeviceMemoryProperties m_memProps;
 };
 
-de::MovePtr<Allocation>	allocateExtended			(const InstanceInterface& vki, const DeviceInterface& vkd, const VkPhysicalDevice& physDevice, const VkDevice device, const VkMemoryRequirements& memReqs, const MemoryRequirement requirement, const void* pNext);
-de::MovePtr<Allocation>	allocateDedicated			(const InstanceInterface& vki, const DeviceInterface& vkd, const VkPhysicalDevice& physDevice, const VkDevice device, const VkBuffer buffer, MemoryRequirement requirement);
-de::MovePtr<Allocation>	allocateDedicated			(const InstanceInterface& vki, const DeviceInterface& vkd, const VkPhysicalDevice& physDevice, const VkDevice device, const VkImage image, MemoryRequirement requirement);
+de::MovePtr<Allocation> allocateExtended(const InstanceInterface &vki, const DeviceInterface &vkd,
+                                         const VkPhysicalDevice &physDevice, const VkDevice device,
+                                         const VkMemoryRequirements &memReqs, const MemoryRequirement requirement,
+                                         const void *pNext);
+de::MovePtr<Allocation> allocateDedicated(const InstanceInterface &vki, const DeviceInterface &vkd,
+                                          const VkPhysicalDevice &physDevice, const VkDevice device,
+                                          const VkBuffer buffer, MemoryRequirement requirement);
+de::MovePtr<Allocation> allocateDedicated(const InstanceInterface &vki, const DeviceInterface &vkd,
+                                          const VkPhysicalDevice &physDevice, const VkDevice device,
+                                          const VkImage image, MemoryRequirement requirement);
 
-void*					mapMemory					(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory mem, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags);
-void					flushMappedMemoryRange		(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
-void					invalidateMappedMemoryRange	(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
+void *mapMemory(const DeviceInterface &vkd, VkDevice device, VkDeviceMemory mem, VkDeviceSize offset, VkDeviceSize size,
+                VkMemoryMapFlags flags);
+void flushMappedMemoryRange(const DeviceInterface &vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset,
+                            VkDeviceSize size);
+void invalidateMappedMemoryRange(const DeviceInterface &vkd, VkDevice device, VkDeviceMemory memory,
+                                 VkDeviceSize offset, VkDeviceSize size);
 
-deUint32				getCompatibleMemoryTypes	(const VkPhysicalDeviceMemoryProperties& deviceMemProps, MemoryRequirement requirement);
-void					bindImagePlanesMemory		(const vk::DeviceInterface&					vkd,
-													 const vk::VkDevice							device,
-													 const vk::VkImage							image,
-													 const deUint32								numPlanes,
-													 std::vector<de::SharedPtr<Allocation> >&	allocations,
-													 vk::Allocator&								allocator,
-													 const vk::MemoryRequirement				requirement);
+uint32_t getCompatibleMemoryTypes(const VkPhysicalDeviceMemoryProperties &deviceMemProps,
+                                  MemoryRequirement requirement);
+void bindImagePlanesMemory(const vk::DeviceInterface &vkd, const vk::VkDevice device, const vk::VkImage image,
+                           const uint32_t numPlanes, std::vector<de::SharedPtr<Allocation>> &allocations,
+                           vk::Allocator &allocator, const vk::MemoryRequirement requirement);
 
-de::MovePtr<Allocation>	bindImage					(const DeviceInterface&		vk,
-													 const VkDevice				device,
-													 Allocator&					allocator,
-													 const VkImage				image,
-													 const MemoryRequirement	requirement);
+de::MovePtr<Allocation> bindImage(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
+                                  const VkImage image, const MemoryRequirement requirement);
 
-de::MovePtr<Allocation>	bindBuffer					(const DeviceInterface&		vk,
-													 const VkDevice				device,
-													 Allocator&					allocator,
-													 const VkBuffer				buffer,
-													 const MemoryRequirement	requirement);
+de::MovePtr<Allocation> bindBuffer(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
+                                   const VkBuffer buffer, const MemoryRequirement requirement);
 
-void					zeroBuffer					(const DeviceInterface&	vk,
-													 const VkDevice			device,
-													 const Allocation&		alloc,
-													 const VkDeviceSize		size);
+void zeroBuffer(const DeviceInterface &vk, const VkDevice device, const Allocation &alloc, const VkDeviceSize size);
 
-} // vk
+} // namespace vk
 
 #endif // _VKMEMUTIL_HPP

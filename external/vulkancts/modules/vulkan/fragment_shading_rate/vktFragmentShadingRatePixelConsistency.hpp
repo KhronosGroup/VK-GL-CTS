@@ -32,9 +32,9 @@ namespace vkt
 namespace FragmentShadingRate
 {
 
-void createPixelConsistencyTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* group);
+void createPixelConsistencyTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *group);
 
-} // FragmentShadingRate
-} // vkt
+} // namespace FragmentShadingRate
+} // namespace vkt
 
 #endif // _VKTFRAGMENTSHADINGRATEPIXELCONSISTENCY_HPP

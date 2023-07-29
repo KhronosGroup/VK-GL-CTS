@@ -32,9 +32,9 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup*	createBasicDrawTests (tcu::TestContext& testCtx, bool useDynamicRendering);
+tcu::TestCaseGroup *createBasicDrawTests(tcu::TestContext &testCtx, bool useDynamicRendering);
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTBASICDRAWTESTS_HPP

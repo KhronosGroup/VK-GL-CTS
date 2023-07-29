@@ -35,39 +35,56 @@ namespace de
 class ProcessError : public std::runtime_error
 {
 public:
-	ProcessError (const std::string& message) : std::runtime_error(message) {}
+    ProcessError(const std::string &message) : std::runtime_error(message)
+    {
+    }
 };
 
 class Process
 {
 public:
-						Process				(void);
-						~Process			(void);
+    Process(void);
+    ~Process(void);
 
-	void				start				(const char* commandLine, const char* workingDirectory);
+    void start(const char *commandLine, const char *workingDirectory);
 
-	void				waitForFinish		(void);
-	void				terminate			(void);
-	void				kill				(void);
+    void waitForFinish(void);
+    void terminate(void);
+    void kill(void);
 
-	bool				isRunning			(void)			{ return deProcess_isRunning(m_process) == DE_TRUE;	}
-	int					getExitCode			(void) const	{ return deProcess_getExitCode(m_process);			}
+    bool isRunning(void)
+    {
+        return deProcess_isRunning(m_process) == true;
+    }
+    int getExitCode(void) const
+    {
+        return deProcess_getExitCode(m_process);
+    }
 
-	deFile*				getStdIn			(void)			{ return deProcess_getStdIn(m_process);				}
-	deFile*				getStdOut			(void)			{ return deProcess_getStdOut(m_process);			}
-	deFile*				getStdErr			(void)			{ return deProcess_getStdErr(m_process);			}
+    deFile *getStdIn(void)
+    {
+        return deProcess_getStdIn(m_process);
+    }
+    deFile *getStdOut(void)
+    {
+        return deProcess_getStdOut(m_process);
+    }
+    deFile *getStdErr(void)
+    {
+        return deProcess_getStdErr(m_process);
+    }
 
-	void				closeStdIn			(void);
-	void				closeStdOut			(void);
-	void				closeStdErr			(void);
+    void closeStdIn(void);
+    void closeStdOut(void);
+    void closeStdErr(void);
 
 private:
-						Process				(const Process& other);
-	Process&			operator=			(const Process& other);
+    Process(const Process &other);
+    Process &operator=(const Process &other);
 
-	deProcess*			m_process;
+    deProcess *m_process;
 };
 
-} // de
+} // namespace de
 
 #endif // _DEPROCESS_HPP

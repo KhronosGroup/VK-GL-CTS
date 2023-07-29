@@ -31,27 +31,27 @@ struct RenderDocPrivate
 {
 };
 
-RenderDocUtil::RenderDocUtil (void)
+RenderDocUtil::RenderDocUtil(void)
 {
 }
 
-RenderDocUtil::~RenderDocUtil (void)
+RenderDocUtil::~RenderDocUtil(void)
 {
 }
 
-bool RenderDocUtil::isValid (void)
+bool RenderDocUtil::isValid(void)
 {
-	return false;
+    return false;
 }
 
-void RenderDocUtil::startFrame (vk::VkInstance instance)
+void RenderDocUtil::startFrame(vk::VkInstance instance)
 {
-	DE_UNREF(instance);
+    DE_UNREF(instance);
 }
 
-void RenderDocUtil::endFrame (vk::VkInstance instance)
+void RenderDocUtil::endFrame(vk::VkInstance instance)
 {
-	DE_UNREF(instance);
+    DE_UNREF(instance);
 }
 
-} // vk
+} // namespace vk

@@ -38,19 +38,19 @@ namespace glcts
 class DrawBuffersIndexedDefaultState : public DrawBuffersIndexedBase
 {
 public:
-	/** Public methods
-	 **/
-	DrawBuffersIndexedDefaultState(Context& context, const ExtParameters& extParams, const char* name,
-								   const char* description);
+    /** Public methods
+     **/
+    DrawBuffersIndexedDefaultState(Context &context, const ExtParameters &extParams, const char *name,
+                                   const char *description);
 
-	virtual ~DrawBuffersIndexedDefaultState()
-	{
-	}
+    virtual ~DrawBuffersIndexedDefaultState()
+    {
+    }
 
 private:
-	/** Private methods
-	 **/
-	virtual IterateResult iterate();
+    /** Private methods
+     **/
+    virtual IterateResult iterate();
 };
 
 } // namespace glcts

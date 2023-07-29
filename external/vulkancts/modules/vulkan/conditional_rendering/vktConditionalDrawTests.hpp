@@ -34,17 +34,16 @@ namespace conditional
 class ConditionalDrawTests : public tcu::TestCaseGroup
 {
 public:
-						ConditionalDrawTests	(tcu::TestContext &testCtx);
-						~ConditionalDrawTests	(void);
-	void				init					(void);
+    ConditionalDrawTests(tcu::TestContext &testCtx);
+    ~ConditionalDrawTests(void);
+    void init(void);
 
 private:
-	ConditionalDrawTests						(const ConditionalDrawTests &other);
-	ConditionalDrawTests&	operator=			(const ConditionalDrawTests &other);
-
+    ConditionalDrawTests(const ConditionalDrawTests &other);
+    ConditionalDrawTests &operator=(const ConditionalDrawTests &other);
 };
 
-} // conditional
-} // vkt
+} // namespace conditional
+} // namespace vkt
 
 #endif // _VKTCONDITIONALDRAWTESTS_HPP

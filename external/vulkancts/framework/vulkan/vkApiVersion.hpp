@@ -32,28 +32,26 @@ namespace vk
 
 struct ApiVersion
 {
-	deUint32	majorNum;
-	deUint32	minorNum;
-	deUint32	patchNum;
+    uint32_t majorNum;
+    uint32_t minorNum;
+    uint32_t patchNum;
 
-	ApiVersion (deUint32	majorNum_,
-				deUint32	minorNum_,
-				deUint32	patchNum_)
-		: majorNum	(majorNum_)
-		, minorNum	(minorNum_)
-		, patchNum	(patchNum_)
-	{
-	}
+    ApiVersion(uint32_t majorNum_, uint32_t minorNum_, uint32_t patchNum_)
+        : majorNum(majorNum_)
+        , minorNum(minorNum_)
+        , patchNum(patchNum_)
+    {
+    }
 };
 
-ApiVersion		unpackVersion		(deUint32 version);
-deUint32		pack				(const ApiVersion& version);
+ApiVersion unpackVersion(uint32_t version);
+uint32_t pack(const ApiVersion &version);
 
-inline std::ostream& operator<< (std::ostream& s, const ApiVersion& version)
+inline std::ostream &operator<<(std::ostream &s, const ApiVersion &version)
 {
-	return s << version.majorNum << "." << version.minorNum << "." << version.patchNum;
+    return s << version.majorNum << "." << version.minorNum << "." << version.patchNum;
 }
 
-} // vk
+} // namespace vk
 
 #endif // _VKAPIVERSION_HPP

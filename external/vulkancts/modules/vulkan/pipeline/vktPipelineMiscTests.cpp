@@ -37,72 +37,73 @@ namespace
 
 enum AmberFeatureBits
 {
-	AMBER_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS	= (1 <<	0),
-	AMBER_FEATURE_TESSELATION_SHADER					= (1 <<	1),
-	AMBER_FEATURE_GEOMETRY_SHADER						= (1 <<	2),
+    AMBER_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS = (1 << 0),
+    AMBER_FEATURE_TESSELATION_SHADER                 = (1 << 1),
+    AMBER_FEATURE_GEOMETRY_SHADER                    = (1 << 2),
 };
 
-using AmberFeatureFlags = deUint32;
+using AmberFeatureFlags = uint32_t;
 
-std::vector<std::string> getFeatureList (AmberFeatureFlags flags)
+std::vector<std::string> getFeatureList(AmberFeatureFlags flags)
 {
-	std::vector<std::string> requirements;
+    std::vector<std::string> requirements;
 
-	if (flags & AMBER_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS)
-		requirements.push_back("Features.vertexPipelineStoresAndAtomics");
+    if (flags & AMBER_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS)
+        requirements.push_back("Features.vertexPipelineStoresAndAtomics");
 
-	if (flags & AMBER_FEATURE_TESSELATION_SHADER)
-		requirements.push_back("Features.tessellationShader");
+    if (flags & AMBER_FEATURE_TESSELATION_SHADER)
+        requirements.push_back("Features.tessellationShader");
 
-	if (flags & AMBER_FEATURE_GEOMETRY_SHADER)
-		requirements.push_back("Features.geometryShader");
+    if (flags & AMBER_FEATURE_GEOMETRY_SHADER)
+        requirements.push_back("Features.geometryShader");
 
-	return requirements;
+    return requirements;
 }
 
-void addTests (tcu::TestCaseGroup* tests, const char* data_dir)
+void addTests(tcu::TestCaseGroup *tests, const char *data_dir)
 {
-	tcu::TestContext& testCtx = tests->getTestContext();
+    tcu::TestContext &testCtx = tests->getTestContext();
 
-	// Shader test files are saved in <path>/external/vulkancts/data/vulkan/amber/<data_dir>/<basename>.amber
-	struct Case {
-		const char*			basename;
-		const char*			description;
-		AmberFeatureFlags	flags;
-	};
+    // Shader test files are saved in <path>/external/vulkancts/data/vulkan/amber/<data_dir>/<basename>.amber
+    struct Case
+    {
+        const char *basename;
+        const char *description;
+        AmberFeatureFlags flags;
+    };
 
-	const Case cases[] =
-	{
-		{
-			"position_to_ssbo",
-			"Write position data into ssbo using only the vertex shader in a pipeline",
-			(AMBER_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS),
-		},
-		{
-			"primitive_id_from_tess",
-			"Read primitive id from tessellation shaders without a geometry shader",
-			(AMBER_FEATURE_TESSELATION_SHADER | AMBER_FEATURE_GEOMETRY_SHADER),
-		},
-	};
+    const Case cases[] = {
+        {
+            "position_to_ssbo",
+            "Write position data into ssbo using only the vertex shader in a pipeline",
+            (AMBER_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS),
+        },
+        {
+            "primitive_id_from_tess",
+            "Read primitive id from tessellation shaders without a geometry shader",
+            (AMBER_FEATURE_TESSELATION_SHADER | AMBER_FEATURE_GEOMETRY_SHADER),
+        },
+    };
 
-	for (unsigned i = 0; i < DE_LENGTH_OF_ARRAY(cases) ; ++i)
-	{
-		std::string					file			= std::string(cases[i].basename) + ".amber";
-		std::vector<std::string>	requirements	= getFeatureList(cases[i].flags);
-		cts_amber::AmberTestCase	*testCase		= cts_amber::createAmberTestCase(testCtx, cases[i].basename, cases[i].description, data_dir, file, requirements);
+    for (unsigned i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
+    {
+        std::string file                      = std::string(cases[i].basename) + ".amber";
+        std::vector<std::string> requirements = getFeatureList(cases[i].flags);
+        cts_amber::AmberTestCase *testCase    = cts_amber::createAmberTestCase(
+            testCtx, cases[i].basename, cases[i].description, data_dir, file, requirements);
 
-		tests->addChild(testCase);
-	}
+        tests->addChild(testCase);
+    }
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createMiscTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createMiscTests(tcu::TestContext &testCtx)
 {
-	// Location of the Amber script files under the data/vulkan/amber source tree.
-	const char* data_dir = "pipeline";
-	return createTestGroup(testCtx, "misc", "Miscellaneous pipeline tests", addTests, data_dir);
+    // Location of the Amber script files under the data/vulkan/amber source tree.
+    const char *data_dir = "pipeline";
+    return createTestGroup(testCtx, "misc", "Miscellaneous pipeline tests", addTests, data_dir);
 }
 
-} // SpirVAssembly
-} // vkt
+} // namespace pipeline
+} // namespace vkt

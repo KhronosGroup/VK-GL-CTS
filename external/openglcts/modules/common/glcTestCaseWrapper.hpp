@@ -35,18 +35,18 @@ namespace deqp
 class TestCaseWrapper
 {
 public:
-	TestCaseWrapper(Context& context);
-	virtual ~TestCaseWrapper(void);
+    TestCaseWrapper(Context &context);
+    virtual ~TestCaseWrapper(void);
 
-	virtual bool initTestCase(tcu::TestCase* testCase);
-	virtual bool deinitTestCase(tcu::TestCase* testCase);
-	virtual tcu::TestNode::IterateResult iterateTestCase(tcu::TestCase* testCase);
+    virtual bool initTestCase(tcu::TestCase *testCase);
+    virtual bool deinitTestCase(tcu::TestCase *testCase);
+    virtual tcu::TestNode::IterateResult iterateTestCase(tcu::TestCase *testCase);
 
 private:
-	tcu::TestContext& m_testCtx;
-	Context&		  m_context;
+    tcu::TestContext &m_testCtx;
+    Context &m_context;
 };
 
-} // deqp
+} // namespace deqp
 
 #endif // _GLCTESTCASEWRAPPER_HPP

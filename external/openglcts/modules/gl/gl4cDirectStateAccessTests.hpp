@@ -49,15 +49,15 @@ namespace DirectStateAccess
 class Tests : public deqp::TestCaseGroup
 {
 public:
-	/* Public member functions */
-	Tests(deqp::Context& context);
+    /* Public member functions */
+    Tests(deqp::Context &context);
 
-	void init();
+    void init();
 
 private:
-	/* Private member functions */
-	Tests(const Tests& other);
-	Tests& operator=(const Tests& other);
+    /* Private member functions */
+    Tests(const Tests &other);
+    Tests &operator=(const Tests &other);
 };
 /* Tests class */
 
@@ -85,15 +85,15 @@ namespace TransformFeedback
 class CreationTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	CreationTest(deqp::Context& context);
+    /* Public member functions */
+    CreationTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	CreationTest(const CreationTest& other);
-	CreationTest& operator=(const CreationTest& other);
+    /* Private member functions */
+    CreationTest(const CreationTest &other);
+    CreationTest &operator=(const CreationTest &other);
 };
 /* CreationTest class */
 
@@ -124,39 +124,39 @@ private:
 class DefaultsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	DefaultsTest(deqp::Context& context);
+    /* Public member functions */
+    DefaultsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	DefaultsTest(const DefaultsTest& other);
-	DefaultsTest& operator=(const DefaultsTest& other);
+    /* Private member functions */
+    DefaultsTest(const DefaultsTest &other);
+    DefaultsTest &operator=(const DefaultsTest &other);
 
-	/* Function pointers type definitions and declarations. */
-	typedef void(GLW_APIENTRY* GetTransformFeedbackiv_ProcAddress)(glw::GLuint xfb, glw::GLenum pname,
-																   glw::GLint* param);
-	typedef void(GLW_APIENTRY* GetTransformFeedbacki_v_ProcAddress)(glw::GLuint xfb, glw::GLenum pname,
-																	glw::GLuint index, glw::GLint* param);
-	typedef void(GLW_APIENTRY* GetTransformFeedbacki64_v_ProcAddress)(glw::GLuint xfb, glw::GLenum pname,
-																	  glw::GLuint index, glw::GLint64* param);
+    /* Function pointers type definitions and declarations. */
+    typedef void(GLW_APIENTRY *GetTransformFeedbackiv_ProcAddress)(glw::GLuint xfb, glw::GLenum pname,
+                                                                   glw::GLint *param);
+    typedef void(GLW_APIENTRY *GetTransformFeedbacki_v_ProcAddress)(glw::GLuint xfb, glw::GLenum pname,
+                                                                    glw::GLuint index, glw::GLint *param);
+    typedef void(GLW_APIENTRY *GetTransformFeedbacki64_v_ProcAddress)(glw::GLuint xfb, glw::GLenum pname,
+                                                                      glw::GLuint index, glw::GLint64 *param);
 
-	GetTransformFeedbackiv_ProcAddress	m_gl_getTransformFeedbackiv;
-	GetTransformFeedbacki_v_ProcAddress   m_gl_getTransformFeedbacki_v;
-	GetTransformFeedbacki64_v_ProcAddress m_gl_getTransformFeedbacki64_v;
+    GetTransformFeedbackiv_ProcAddress m_gl_getTransformFeedbackiv;
+    GetTransformFeedbacki_v_ProcAddress m_gl_getTransformFeedbacki_v;
+    GetTransformFeedbacki64_v_ProcAddress m_gl_getTransformFeedbacki64_v;
 
-	/* Private member variables */
-	glw::GLuint m_xfb_dsa;
-	glw::GLint  m_xfb_indexed_binding_points_count;
+    /* Private member variables */
+    glw::GLuint m_xfb_dsa;
+    glw::GLint m_xfb_indexed_binding_points_count;
 
-	/* Private member functions. */
-	void prepare();
-	bool testBuffersBindingPoints();
-	bool testBuffersDimensions();
-	bool testActive();
-	bool testPaused();
-	void clean();
+    /* Private member functions. */
+    void prepare();
+    bool testBuffersBindingPoints();
+    bool testBuffersDimensions();
+    bool testActive();
+    bool testPaused();
+    void clean();
 };
 /* DefaultsTest class */
 
@@ -193,50 +193,50 @@ private:
 class BuffersTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	BuffersTest(deqp::Context& context);
+    /* Public member functions */
+    BuffersTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	BuffersTest(const BuffersTest& other);
-	BuffersTest& operator=(const BuffersTest& other);
+    /* Private member functions */
+    BuffersTest(const BuffersTest &other);
+    BuffersTest &operator=(const BuffersTest &other);
 
-	/* Function pointers type definitions and declarations. */
-	typedef void(GLW_APIENTRY* GetTransformFeedbacki_v_ProcAddress)(glw::GLuint xfb, glw::GLenum pname,
-																	glw::GLuint index, glw::GLint* param);
-	typedef void(GLW_APIENTRY* GetTransformFeedbacki64_v_ProcAddress)(glw::GLuint xfb, glw::GLenum pname,
-																	  glw::GLuint index, glw::GLint64* param);
-	typedef void(GLW_APIENTRY* TransformFeedbackBufferBase_ProcAddress)(glw::GLuint xfb, glw::GLuint index,
-																		glw::GLuint buffer);
-	typedef void(GLW_APIENTRY* TransformFeedbackBufferRange_ProcAddress)(glw::GLuint xfb, glw::GLuint index,
-																		 glw::GLuint buffer, glw::GLintptr offset,
-																		 glw::GLsizeiptr size);
+    /* Function pointers type definitions and declarations. */
+    typedef void(GLW_APIENTRY *GetTransformFeedbacki_v_ProcAddress)(glw::GLuint xfb, glw::GLenum pname,
+                                                                    glw::GLuint index, glw::GLint *param);
+    typedef void(GLW_APIENTRY *GetTransformFeedbacki64_v_ProcAddress)(glw::GLuint xfb, glw::GLenum pname,
+                                                                      glw::GLuint index, glw::GLint64 *param);
+    typedef void(GLW_APIENTRY *TransformFeedbackBufferBase_ProcAddress)(glw::GLuint xfb, glw::GLuint index,
+                                                                        glw::GLuint buffer);
+    typedef void(GLW_APIENTRY *TransformFeedbackBufferRange_ProcAddress)(glw::GLuint xfb, glw::GLuint index,
+                                                                         glw::GLuint buffer, glw::GLintptr offset,
+                                                                         glw::GLsizeiptr size);
 
-	GetTransformFeedbacki_v_ProcAddress		 m_gl_getTransformFeedbacki_v;
-	GetTransformFeedbacki64_v_ProcAddress	m_gl_getTransformFeedbacki64_v;
-	TransformFeedbackBufferBase_ProcAddress  m_gl_TransformFeedbackBufferBase;
-	TransformFeedbackBufferRange_ProcAddress m_gl_TransformFeedbackBufferRange;
+    GetTransformFeedbacki_v_ProcAddress m_gl_getTransformFeedbacki_v;
+    GetTransformFeedbacki64_v_ProcAddress m_gl_getTransformFeedbacki64_v;
+    TransformFeedbackBufferBase_ProcAddress m_gl_TransformFeedbackBufferBase;
+    TransformFeedbackBufferRange_ProcAddress m_gl_TransformFeedbackBufferRange;
 
-	/* Private member variables */
-	glw::GLuint m_xfb_dsa;
-	glw::GLuint m_bo_a;
-	glw::GLuint m_bo_b;
+    /* Private member variables */
+    glw::GLuint m_xfb_dsa;
+    glw::GLuint m_bo_a;
+    glw::GLuint m_bo_b;
 
-	/* Private static variables */
-	static const glw::GLuint s_bo_size;
+    /* Private static variables */
+    static const glw::GLuint s_bo_size;
 
-	/* Private member functions. */
-	void prepareObjects();
-	bool prepareTestSetup();
-	bool testBindingPoint(glw::GLuint const index, glw::GLint const expected_value,
-						  glw::GLchar const* const tested_function_name);
-	bool testStart(glw::GLuint const index, glw::GLint const expected_value,
-				   glw::GLchar const* const tested_function_name);
-	bool testSize(glw::GLuint const index, glw::GLint const expected_value,
-				  glw::GLchar const* const tested_function_name);
-	void clean();
+    /* Private member functions. */
+    void prepareObjects();
+    bool prepareTestSetup();
+    bool testBindingPoint(glw::GLuint const index, glw::GLint const expected_value,
+                          glw::GLchar const *const tested_function_name);
+    bool testStart(glw::GLuint const index, glw::GLint const expected_value,
+                   glw::GLchar const *const tested_function_name);
+    bool testSize(glw::GLuint const index, glw::GLint const expected_value,
+                  glw::GLchar const *const tested_function_name);
+    void clean();
 };
 /* BuffersTest class */
 
@@ -271,38 +271,38 @@ private:
 class ErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	ErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    ErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	ErrorsTest(const ErrorsTest& other);
-	ErrorsTest& operator=(const ErrorsTest& other);
+    /* Private member functions */
+    ErrorsTest(const ErrorsTest &other);
+    ErrorsTest &operator=(const ErrorsTest &other);
 
-	/* Function pointers type definitions and declarations. */
-	typedef void(GLW_APIENTRY* GetTransformFeedbackiv_ProcAddress)(glw::GLuint xfb, glw::GLenum pname,
-																   glw::GLint* param);
-	typedef void(GLW_APIENTRY* GetTransformFeedbacki_v_ProcAddress)(glw::GLuint xfb, glw::GLenum pname,
-																	glw::GLuint index, glw::GLint* param);
-	typedef void(GLW_APIENTRY* GetTransformFeedbacki64_v_ProcAddress)(glw::GLuint xfb, glw::GLenum pname,
-																	  glw::GLuint index, glw::GLint64* param);
+    /* Function pointers type definitions and declarations. */
+    typedef void(GLW_APIENTRY *GetTransformFeedbackiv_ProcAddress)(glw::GLuint xfb, glw::GLenum pname,
+                                                                   glw::GLint *param);
+    typedef void(GLW_APIENTRY *GetTransformFeedbacki_v_ProcAddress)(glw::GLuint xfb, glw::GLenum pname,
+                                                                    glw::GLuint index, glw::GLint *param);
+    typedef void(GLW_APIENTRY *GetTransformFeedbacki64_v_ProcAddress)(glw::GLuint xfb, glw::GLenum pname,
+                                                                      glw::GLuint index, glw::GLint64 *param);
 
-	GetTransformFeedbackiv_ProcAddress	m_gl_getTransformFeedbackiv;
-	GetTransformFeedbacki_v_ProcAddress   m_gl_getTransformFeedbacki_v;
-	GetTransformFeedbacki64_v_ProcAddress m_gl_getTransformFeedbacki64_v;
+    GetTransformFeedbackiv_ProcAddress m_gl_getTransformFeedbackiv;
+    GetTransformFeedbacki_v_ProcAddress m_gl_getTransformFeedbacki_v;
+    GetTransformFeedbacki64_v_ProcAddress m_gl_getTransformFeedbacki64_v;
 
-	/* Private member functions. */
-	void prepareFunctionPointers();
-	void cleanErrors();
+    /* Private member functions. */
+    void prepareFunctionPointers();
+    void cleanErrors();
 
-	bool testCreateTransformFeedbacksForInvalidNumberOfObjects();
-	bool testQueriesForInvalidNameOfObject();
-	bool testGetTransformFeedbackivQueryForInvalidParameterName();
-	bool testGetTransformFeedbacki_vQueryForInvalidParameterName();
-	bool testGetTransformFeedbacki64_vQueryForInvalidParameterName();
-	bool testIndexedQueriesForInvalidBindingPoint();
+    bool testCreateTransformFeedbacksForInvalidNumberOfObjects();
+    bool testQueriesForInvalidNameOfObject();
+    bool testGetTransformFeedbackivQueryForInvalidParameterName();
+    bool testGetTransformFeedbacki_vQueryForInvalidParameterName();
+    bool testGetTransformFeedbacki64_vQueryForInvalidParameterName();
+    bool testIndexedQueriesForInvalidBindingPoint();
 };
 /* BuffersTest class */
 
@@ -353,52 +353,52 @@ private:
 class FunctionalTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	FunctionalTest(deqp::Context& context);
+    /* Public member functions */
+    FunctionalTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	FunctionalTest(const FunctionalTest& other);
-	FunctionalTest& operator=(const FunctionalTest& other);
+    /* Private member functions */
+    FunctionalTest(const FunctionalTest &other);
+    FunctionalTest &operator=(const FunctionalTest &other);
 
-	/* Function pointers type definitions and declarations. */
-	typedef void(GLW_APIENTRY* GetTransformFeedbackiv_ProcAddress)(glw::GLuint xfb, glw::GLenum pname,
-																   glw::GLint* param);
-	typedef void(GLW_APIENTRY* TransformFeedbackBufferBase_ProcAddress)(glw::GLuint xfb, glw::GLuint index,
-																		glw::GLuint buffer);
+    /* Function pointers type definitions and declarations. */
+    typedef void(GLW_APIENTRY *GetTransformFeedbackiv_ProcAddress)(glw::GLuint xfb, glw::GLenum pname,
+                                                                   glw::GLint *param);
+    typedef void(GLW_APIENTRY *TransformFeedbackBufferBase_ProcAddress)(glw::GLuint xfb, glw::GLuint index,
+                                                                        glw::GLuint buffer);
 
-	GetTransformFeedbackiv_ProcAddress		m_gl_getTransformFeedbackiv;
-	TransformFeedbackBufferBase_ProcAddress m_gl_TransformFeedbackBufferBase;
+    GetTransformFeedbackiv_ProcAddress m_gl_getTransformFeedbackiv;
+    TransformFeedbackBufferBase_ProcAddress m_gl_TransformFeedbackBufferBase;
 
-	/* Private member variables. */
-	glw::GLuint m_xfb_dsa;
-	glw::GLuint m_bo;
-	glw::GLuint m_po;
-	glw::GLuint m_vao;
+    /* Private member variables. */
+    glw::GLuint m_xfb_dsa;
+    glw::GLuint m_bo;
+    glw::GLuint m_po;
+    glw::GLuint m_vao;
 
-	/* Private member functions. */
-	void prepareFunctionPointers();
-	void prepareTransformFeedback();
-	void prepareBuffer();
-	void prepareProgram();
-	void prepareVertexArrayObject();
+    /* Private member functions. */
+    void prepareFunctionPointers();
+    void prepareTransformFeedback();
+    void prepareBuffer();
+    void prepareProgram();
+    void prepareVertexArrayObject();
 
-	bool draw();
-	bool testTransformFeedbackStatus(glw::GLenum parameter_name, glw::GLint expected_value);
-	bool verifyBufferContent();
+    bool draw();
+    bool testTransformFeedbackStatus(glw::GLenum parameter_name, glw::GLint expected_value);
+    bool verifyBufferContent();
 
-	void clean();
+    void clean();
 
-	/* Private static variables. */
-	static const glw::GLuint		s_bo_size;
-	static const glw::GLchar		s_vertex_shader[];
-	static const glw::GLchar		s_fragment_shader[];
-	static const glw::GLchar* const s_xfb_varying;
+    /* Private static variables. */
+    static const glw::GLuint s_bo_size;
+    static const glw::GLchar s_vertex_shader[];
+    static const glw::GLchar s_fragment_shader[];
+    static const glw::GLchar *const s_xfb_varying;
 };
 /* FunctionalTest class */
-} /* xfb namespace */
+} // namespace TransformFeedback
 
 namespace Samplers
 {
@@ -419,15 +419,15 @@ namespace Samplers
 class CreationTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	CreationTest(deqp::Context& context);
+    /* Public member functions */
+    CreationTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	CreationTest(const CreationTest& other);
-	CreationTest& operator=(const CreationTest& other);
+    /* Private member functions */
+    CreationTest(const CreationTest &other);
+    CreationTest &operator=(const CreationTest &other);
 };
 /* CreationTest class */
 
@@ -477,25 +477,25 @@ private:
 class DefaultsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	DefaultsTest(deqp::Context& context);
+    /* Public member functions */
+    DefaultsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	DefaultsTest(const DefaultsTest& other);
-	DefaultsTest& operator=(const DefaultsTest& other);
+    /* Private member functions */
+    DefaultsTest(const DefaultsTest &other);
+    DefaultsTest &operator=(const DefaultsTest &other);
 
-	/* Private member variables */
-	glw::GLuint m_sampler_dsa;
+    /* Private member variables */
+    glw::GLuint m_sampler_dsa;
 
-	/* Private member functions. */
-	void prepare();
-	bool testSamplerIntegerParameter(glw::GLenum pname, glw::GLint expected_value);
-	bool testSamplerFloatParameter(glw::GLenum pname, glw::GLfloat expected_value);
-	bool testSamplerFloatVectorParameter(glw::GLenum pname, glw::GLfloat expected_value[4]);
-	void clean();
+    /* Private member functions. */
+    void prepare();
+    bool testSamplerIntegerParameter(glw::GLenum pname, glw::GLint expected_value);
+    bool testSamplerFloatParameter(glw::GLenum pname, glw::GLfloat expected_value);
+    bool testSamplerFloatVectorParameter(glw::GLenum pname, glw::GLfloat expected_value[4]);
+    void clean();
 };
 /* DefaultsTest class */
 
@@ -511,15 +511,15 @@ private:
 class ErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	ErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    ErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	ErrorsTest(const ErrorsTest& other);
-	ErrorsTest& operator=(const ErrorsTest& other);
+    /* Private member functions */
+    ErrorsTest(const ErrorsTest &other);
+    ErrorsTest &operator=(const ErrorsTest &other);
 };
 /* ErrorsTest class */
 
@@ -560,41 +560,41 @@ private:
 class FunctionalTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	FunctionalTest(deqp::Context& context);
+    /* Public member functions */
+    FunctionalTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	FunctionalTest(const FunctionalTest& other);
-	FunctionalTest& operator=(const FunctionalTest& other);
+    /* Private member functions. */
+    FunctionalTest(const FunctionalTest &other);
+    FunctionalTest &operator=(const FunctionalTest &other);
 
-	void prepareFramebuffer();
-	void prepareVertexArrayObject();
-	void prepareProgram();
-	void prepareTexture();
-	void prepareSampler();
-	void draw();
-	bool checkFramebufferContent();
-	void clean();
+    void prepareFramebuffer();
+    void prepareVertexArrayObject();
+    void prepareProgram();
+    void prepareTexture();
+    void prepareSampler();
+    void draw();
+    bool checkFramebufferContent();
+    void clean();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo;
-	glw::GLuint m_rbo;
-	glw::GLuint m_vao;
-	glw::GLuint m_to;
-	glw::GLuint m_so;
-	glw::GLuint m_po;
+    /* Private member variables. */
+    glw::GLuint m_fbo;
+    glw::GLuint m_rbo;
+    glw::GLuint m_vao;
+    glw::GLuint m_to;
+    glw::GLuint m_so;
+    glw::GLuint m_po;
 
-	/* Private static variables. */
-	static const glw::GLchar  s_vertex_shader[];
-	static const glw::GLchar  s_fragment_shader[];
-	static const glw::GLchar  s_uniform_sampler[];
-	static const glw::GLubyte s_texture_data[];
+    /* Private static variables. */
+    static const glw::GLchar s_vertex_shader[];
+    static const glw::GLchar s_fragment_shader[];
+    static const glw::GLchar s_uniform_sampler[];
+    static const glw::GLubyte s_texture_data[];
 };
 /* FunctionalTest class */
-} /* Samplers namespace */
+} // namespace Samplers
 
 namespace ProgramPipelines
 {
@@ -617,15 +617,15 @@ namespace ProgramPipelines
 class CreationTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	CreationTest(deqp::Context& context);
+    /* Public member functions */
+    CreationTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	CreationTest(const CreationTest& other);
-	CreationTest& operator=(const CreationTest& other);
+    /* Private member functions */
+    CreationTest(const CreationTest &other);
+    CreationTest &operator=(const CreationTest &other);
 };
 /* CreationTest class */
 
@@ -672,24 +672,24 @@ private:
 class DefaultsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	DefaultsTest(deqp::Context& context);
+    /* Public member functions */
+    DefaultsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	DefaultsTest(const DefaultsTest& other);
-	DefaultsTest& operator=(const DefaultsTest& other);
+    /* Private member functions */
+    DefaultsTest(const DefaultsTest &other);
+    DefaultsTest &operator=(const DefaultsTest &other);
 
-	/* Private member variables */
-	glw::GLuint m_program_pipeline_dsa;
+    /* Private member variables */
+    glw::GLuint m_program_pipeline_dsa;
 
-	/* Private member functions. */
-	void prepare();
-	bool testProgramPipelineParameter(glw::GLenum pname, glw::GLint expected_value);
-	bool testProgramPipelineInfoLog(glw::GLchar* expected_value);
-	void clean();
+    /* Private member functions. */
+    void prepare();
+    bool testProgramPipelineParameter(glw::GLenum pname, glw::GLint expected_value);
+    bool testProgramPipelineInfoLog(glw::GLchar *expected_value);
+    void clean();
 };
 /* DefaultsTest class */
 
@@ -705,15 +705,15 @@ private:
 class ErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	ErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    ErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	ErrorsTest(const ErrorsTest& other);
-	ErrorsTest& operator=(const ErrorsTest& other);
+    /* Private member functions */
+    ErrorsTest(const ErrorsTest &other);
+    ErrorsTest &operator=(const ErrorsTest &other);
 };
 /* ErrorsTest class */
 
@@ -749,38 +749,38 @@ private:
 class FunctionalTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	FunctionalTest(deqp::Context& context);
+    /* Public member functions */
+    FunctionalTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	FunctionalTest(const FunctionalTest& other);
-	FunctionalTest& operator=(const FunctionalTest& other);
+    /* Private member functions. */
+    FunctionalTest(const FunctionalTest &other);
+    FunctionalTest &operator=(const FunctionalTest &other);
 
-	void prepareFramebuffer();
-	void prepareVertexArrayObject();
-	void prepareShaderPrograms();
-	void preparePipeline();
-	void draw();
-	bool checkFramebufferContent();
-	void clean();
+    void prepareFramebuffer();
+    void prepareVertexArrayObject();
+    void prepareShaderPrograms();
+    void preparePipeline();
+    void draw();
+    bool checkFramebufferContent();
+    void clean();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo;
-	glw::GLuint m_rbo;
-	glw::GLuint m_vao;
-	glw::GLuint m_spo_v;
-	glw::GLuint m_spo_f;
-	glw::GLuint m_ppo;
+    /* Private member variables. */
+    glw::GLuint m_fbo;
+    glw::GLuint m_rbo;
+    glw::GLuint m_vao;
+    glw::GLuint m_spo_v;
+    glw::GLuint m_spo_f;
+    glw::GLuint m_ppo;
 
-	/* Private static variables. */
-	static const glw::GLchar* s_vertex_shader;
-	static const glw::GLchar* s_fragment_shader;
+    /* Private static variables. */
+    static const glw::GLchar *s_vertex_shader;
+    static const glw::GLchar *s_fragment_shader;
 };
 /* FunctionalTest class */
-} /* ProgramPipelines namespace */
+} // namespace ProgramPipelines
 
 namespace Queries
 {
@@ -812,15 +812,15 @@ namespace Queries
 class CreationTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	CreationTest(deqp::Context& context);
+    /* Public member functions */
+    CreationTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	CreationTest(const CreationTest& other);
-	CreationTest& operator=(const CreationTest& other);
+    /* Private member functions */
+    CreationTest(const CreationTest &other);
+    CreationTest &operator=(const CreationTest &other);
 };
 /* CreationTest class */
 
@@ -854,23 +854,23 @@ private:
 class DefaultsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	DefaultsTest(deqp::Context& context);
+    /* Public member functions */
+    DefaultsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	DefaultsTest(const DefaultsTest& other);
-	DefaultsTest& operator=(const DefaultsTest& other);
+    /* Private member functions */
+    DefaultsTest(const DefaultsTest &other);
+    DefaultsTest &operator=(const DefaultsTest &other);
 
-	/* Private member variables */
-	glw::GLuint m_query_dsa;
+    /* Private member variables */
+    glw::GLuint m_query_dsa;
 
-	/* Private member functions. */
-	void prepare(const glw::GLenum target);
-	bool testQueryParameter(const glw::GLenum pname, const glw::GLuint expected_value, const glw::GLchar* target_name);
-	void clean();
+    /* Private member functions. */
+    void prepare(const glw::GLenum target);
+    bool testQueryParameter(const glw::GLenum pname, const glw::GLuint expected_value, const glw::GLchar *target_name);
+    void clean();
 };
 /* DefaultsTest class */
 
@@ -923,41 +923,41 @@ private:
 class ErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	ErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    ErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	ErrorsTest(const ErrorsTest& other);
-	ErrorsTest& operator=(const ErrorsTest& other);
+    /* Private member functions */
+    ErrorsTest(const ErrorsTest &other);
+    ErrorsTest &operator=(const ErrorsTest &other);
 
-	/* Private member functions. */
-	bool testNegativeNumberOfObjects();
-	bool testInvalidTarget();
-	bool testInvalidQueryName();
-	bool testInvalidBufferName();
-	bool testInvalidParameterName();
-	bool testBufferOverflow();
-	bool testBufferNegativeOffset();
+    /* Private member functions. */
+    bool testNegativeNumberOfObjects();
+    bool testInvalidTarget();
+    bool testInvalidQueryName();
+    bool testInvalidBufferName();
+    bool testInvalidParameterName();
+    bool testBufferOverflow();
+    bool testBufferNegativeOffset();
 
-	bool isTarget(glw::GLenum maybe_target);
-	bool isParameterName(glw::GLenum maybe_pname);
+    bool isTarget(glw::GLenum maybe_target);
+    bool isParameterName(glw::GLenum maybe_pname);
 
-	/* Function pointers. */
-	typedef void(GLW_APIENTRY* PFNGLGETQUERYBUFFEROBJECT)(glw::GLuint id, glw::GLuint buffer, glw::GLenum pname,
-														  glw::GLintptr offset);
+    /* Function pointers. */
+    typedef void(GLW_APIENTRY *PFNGLGETQUERYBUFFEROBJECT)(glw::GLuint id, glw::GLuint buffer, glw::GLenum pname,
+                                                          glw::GLintptr offset);
 
-	PFNGLGETQUERYBUFFEROBJECT m_pGetQueryBufferObjectiv;
-	PFNGLGETQUERYBUFFEROBJECT m_pGetQueryBufferObjectuiv;
-	PFNGLGETQUERYBUFFEROBJECT m_pGetQueryBufferObjecti64v;
-	PFNGLGETQUERYBUFFEROBJECT m_pGetQueryBufferObjectui64v;
+    PFNGLGETQUERYBUFFEROBJECT m_pGetQueryBufferObjectiv;
+    PFNGLGETQUERYBUFFEROBJECT m_pGetQueryBufferObjectuiv;
+    PFNGLGETQUERYBUFFEROBJECT m_pGetQueryBufferObjecti64v;
+    PFNGLGETQUERYBUFFEROBJECT m_pGetQueryBufferObjectui64v;
 
-	/* Private static variables. */
-	static const glw::GLenum  s_targets[];
-	static const glw::GLchar* s_target_names[];
-	static const glw::GLuint  s_targets_count;
+    /* Private static variables. */
+    static const glw::GLenum s_targets[];
+    static const glw::GLchar *s_target_names[];
+    static const glw::GLuint s_targets_count;
 };
 /* ErrorsTest class */
 
@@ -1023,67 +1023,67 @@ private:
 class FunctionalTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	FunctionalTest(deqp::Context& context);
+    /* Public member functions */
+    FunctionalTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	FunctionalTest(const FunctionalTest& other);
-	FunctionalTest& operator=(const FunctionalTest& other);
+    /* Private member functions. */
+    FunctionalTest(const FunctionalTest &other);
+    FunctionalTest &operator=(const FunctionalTest &other);
 
-	/* Function pointers. */
-	typedef void(GLW_APIENTRY* PFNGLGETQUERYBUFFEROBJECT)(glw::GLuint id, glw::GLuint buffer, glw::GLenum pname,
-														  glw::GLintptr offset);
+    /* Function pointers. */
+    typedef void(GLW_APIENTRY *PFNGLGETQUERYBUFFEROBJECT)(glw::GLuint id, glw::GLuint buffer, glw::GLenum pname,
+                                                          glw::GLintptr offset);
 
-	PFNGLGETQUERYBUFFEROBJECT m_pGetQueryBufferObjectiv;
-	PFNGLGETQUERYBUFFEROBJECT m_pGetQueryBufferObjectuiv;
-	PFNGLGETQUERYBUFFEROBJECT m_pGetQueryBufferObjecti64v;
-	PFNGLGETQUERYBUFFEROBJECT m_pGetQueryBufferObjectui64v;
+    PFNGLGETQUERYBUFFEROBJECT m_pGetQueryBufferObjectiv;
+    PFNGLGETQUERYBUFFEROBJECT m_pGetQueryBufferObjectuiv;
+    PFNGLGETQUERYBUFFEROBJECT m_pGetQueryBufferObjecti64v;
+    PFNGLGETQUERYBUFFEROBJECT m_pGetQueryBufferObjectui64v;
 
-	/* Private templated functions. */
-	template <typename T>
-	static bool equal(T, T);
+    /* Private templated functions. */
+    template <typename T>
+    static bool equal(T, T);
 
-	template <typename T>
-	static bool less(T, T);
+    template <typename T>
+    static bool less(T, T);
 
-	template <typename T>
-	void GetQueryBufferObject(glw::GLuint id, glw::GLuint buffer, glw::GLenum pname, glw::GLintptr offset);
+    template <typename T>
+    void GetQueryBufferObject(glw::GLuint id, glw::GLuint buffer, glw::GLenum pname, glw::GLintptr offset);
 
-	template <typename T>
-	bool checkQueryBufferObject(glw::GLuint query, glw::GLenum pname, T expected_value, bool (*comparison)(T, T));
+    template <typename T>
+    bool checkQueryBufferObject(glw::GLuint query, glw::GLenum pname, T expected_value, bool (*comparison)(T, T));
 
-	/* Private member functions. */
-	void prepareView();
-	void prepareVertexArray();
-	void prepareBuffers();
-	void prepareQueries();
-	void prepareProgram();
-	void draw();
-	bool checkView();
-	bool checkXFB();
-	void clean();
+    /* Private member functions. */
+    void prepareView();
+    void prepareVertexArray();
+    void prepareBuffers();
+    void prepareQueries();
+    void prepareProgram();
+    void draw();
+    bool checkView();
+    bool checkXFB();
+    void clean();
 
-	/* Private member variables. */
-	glw::GLuint  m_fbo;
-	glw::GLuint  m_rbo;
-	glw::GLuint  m_vao;
-	glw::GLuint  m_bo_query;
-	glw::GLuint  m_bo_xfb;
-	glw::GLuint* m_qo;
-	glw::GLuint  m_po;
+    /* Private member variables. */
+    glw::GLuint m_fbo;
+    glw::GLuint m_rbo;
+    glw::GLuint m_vao;
+    glw::GLuint m_bo_query;
+    glw::GLuint m_bo_xfb;
+    glw::GLuint *m_qo;
+    glw::GLuint m_po;
 
-	/* Private static variables. */
-	static const glw::GLenum s_targets[];
-	static const glw::GLuint s_targets_count;
+    /* Private static variables. */
+    static const glw::GLenum s_targets[];
+    static const glw::GLuint s_targets_count;
 
-	static const glw::GLint s_results[];
+    static const glw::GLint s_results[];
 
-	static const glw::GLchar  s_vertex_shader[];
-	static const glw::GLchar  s_fragment_shader[];
-	static const glw::GLchar* s_xfb_varying_name;
+    static const glw::GLchar s_vertex_shader[];
+    static const glw::GLchar s_fragment_shader[];
+    static const glw::GLchar *s_xfb_varying_name;
 };
 /* FunctionalTest class */
 
@@ -1102,19 +1102,19 @@ private:
 class ReuseTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	ReuseTest(deqp::Context& context);
+    /* Public member functions */
+    ReuseTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	ReuseTest(const ReuseTest& other);
-	ReuseTest& operator=(const ReuseTest& other);
+    /* Private member functions */
+    ReuseTest(const ReuseTest &other);
+    ReuseTest &operator=(const ReuseTest &other);
 };
 /* ReuseTest class */
 
-} /* Queries namespace */
+} // namespace Queries
 
 namespace Buffers
 {
@@ -1135,15 +1135,15 @@ namespace Buffers
 class CreationTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	CreationTest(deqp::Context& context);
+    /* Public member functions */
+    CreationTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	CreationTest(const CreationTest& other);
-	CreationTest& operator=(const CreationTest& other);
+    /* Private member functions */
+    CreationTest(const CreationTest &other);
+    CreationTest &operator=(const CreationTest &other);
 };
 /* CreationTest class */
 
@@ -1194,46 +1194,46 @@ private:
 class DataTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	DataTest(deqp::Context& context);
+    /* Public member functions */
+    DataTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	DataTest(const DataTest& other);
-	DataTest& operator=(const DataTest& other);
+    /* Private member functions */
+    DataTest(const DataTest &other);
+    DataTest &operator=(const DataTest &other);
 
-	typedef void(GLW_APIENTRY* PFNGLNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLsizeiptr size, const glw::GLvoid* data,
-													 glw::GLenum usage);
-	typedef void(GLW_APIENTRY* PFNGLNAMEDBUFFERSUBDATA)(glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr size,
-														const glw::GLvoid* data);
-	typedef void(GLW_APIENTRY* PFNGLNAMEDBUFFERSTORAGE)(glw::GLuint buffer, glw::GLsizeiptr size,
-														const glw::GLvoid* data, glw::GLbitfield flags);
-	typedef void(GLW_APIENTRY* PFNGLCOPYNAMEDBUFFERSUBDATA)(glw::GLuint readBuffer, glw::GLuint writeBuffer,
-															glw::GLintptr readOffset, glw::GLintptr writeOffset,
-															glw::GLsizeiptr size);
+    typedef void(GLW_APIENTRY *PFNGLNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLsizeiptr size, const glw::GLvoid *data,
+                                                     glw::GLenum usage);
+    typedef void(GLW_APIENTRY *PFNGLNAMEDBUFFERSUBDATA)(glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr size,
+                                                        const glw::GLvoid *data);
+    typedef void(GLW_APIENTRY *PFNGLNAMEDBUFFERSTORAGE)(glw::GLuint buffer, glw::GLsizeiptr size,
+                                                        const glw::GLvoid *data, glw::GLbitfield flags);
+    typedef void(GLW_APIENTRY *PFNGLCOPYNAMEDBUFFERSUBDATA)(glw::GLuint readBuffer, glw::GLuint writeBuffer,
+                                                            glw::GLintptr readOffset, glw::GLintptr writeOffset,
+                                                            glw::GLsizeiptr size);
 
-	PFNGLNAMEDBUFFERDATA		m_pNamedBufferData;
-	PFNGLNAMEDBUFFERSUBDATA		m_pNamedBufferSubData;
-	PFNGLNAMEDBUFFERSTORAGE		m_pNamedBufferStorage;
-	PFNGLCOPYNAMEDBUFFERSUBDATA m_pCopyNamedBufferSubData;
+    PFNGLNAMEDBUFFERDATA m_pNamedBufferData;
+    PFNGLNAMEDBUFFERSUBDATA m_pNamedBufferSubData;
+    PFNGLNAMEDBUFFERSTORAGE m_pNamedBufferStorage;
+    PFNGLCOPYNAMEDBUFFERSUBDATA m_pCopyNamedBufferSubData;
 
-	bool TestCase(void (DataTest::*UploadDataFunction)(glw::GLuint, glw::GLenum), glw::GLenum parameter);
+    bool TestCase(void (DataTest::*UploadDataFunction)(glw::GLuint, glw::GLenum), glw::GLenum parameter);
 
-	void UploadUsingNamedBufferData(glw::GLuint id, glw::GLenum parameter);
-	void UploadUsingNamedBufferSubData(glw::GLuint id, glw::GLenum parameter);
-	void UploadUsingNamedBufferStorage(glw::GLuint id, glw::GLenum parameter);
-	void UploadUsingCopyNamedBufferSubData(glw::GLuint id, glw::GLenum parameter);
+    void UploadUsingNamedBufferData(glw::GLuint id, glw::GLenum parameter);
+    void UploadUsingNamedBufferSubData(glw::GLuint id, glw::GLenum parameter);
+    void UploadUsingNamedBufferStorage(glw::GLuint id, glw::GLenum parameter);
+    void UploadUsingCopyNamedBufferSubData(glw::GLuint id, glw::GLenum parameter);
 
-	bool compare(const glw::GLuint* data, const glw::GLuint* reference, const glw::GLsizei count);
-	void LogFail(void (DataTest::*UploadDataFunction)(glw::GLuint, glw::GLenum), glw::GLenum parameter,
-				 const glw::GLuint* data, const glw::GLuint* reference, const glw::GLsizei count);
-	void LogError(void (DataTest::*UploadDataFunction)(glw::GLuint, glw::GLenum), glw::GLenum parameter);
+    bool compare(const glw::GLuint *data, const glw::GLuint *reference, const glw::GLsizei count);
+    void LogFail(void (DataTest::*UploadDataFunction)(glw::GLuint, glw::GLenum), glw::GLenum parameter,
+                 const glw::GLuint *data, const glw::GLuint *reference, const glw::GLsizei count);
+    void LogError(void (DataTest::*UploadDataFunction)(glw::GLuint, glw::GLenum), glw::GLenum parameter);
 
-	static const glw::GLuint  s_reference[];
-	static const glw::GLsizei s_reference_size;
-	static const glw::GLsizei s_reference_count;
+    static const glw::GLuint s_reference[];
+    static const glw::GLsizei s_reference_size;
+    static const glw::GLsizei s_reference_count;
 };
 /* DataTest class */
 
@@ -1300,46 +1300,46 @@ private:
 class ClearTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	ClearTest(deqp::Context& context);
+    /* Public member functions */
+    ClearTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	ClearTest(const ClearTest& other);
-	ClearTest& operator=(const ClearTest& other);
+    /* Private member functions */
+    ClearTest(const ClearTest &other);
+    ClearTest &operator=(const ClearTest &other);
 
-	typedef void(GLW_APIENTRY* PFNGLNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLsizeiptr size, const glw::GLvoid* data,
-													 glw::GLenum usage);
-	typedef void(GLW_APIENTRY* PFNGLCLEARNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLenum internalformat,
-														  glw::GLenum format, glw::GLenum type,
-														  const glw::GLvoid* data);
-	typedef void(GLW_APIENTRY* PFNGLCLEARNAMEDBUFFERSUBDATA)(glw::GLuint buffer, glw::GLenum internalformat,
-															 glw::GLintptr offset, glw::GLsizeiptr size,
-															 glw::GLenum format, glw::GLenum type,
-															 const glw::GLvoid* data);
+    typedef void(GLW_APIENTRY *PFNGLNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLsizeiptr size, const glw::GLvoid *data,
+                                                     glw::GLenum usage);
+    typedef void(GLW_APIENTRY *PFNGLCLEARNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLenum internalformat,
+                                                          glw::GLenum format, glw::GLenum type,
+                                                          const glw::GLvoid *data);
+    typedef void(GLW_APIENTRY *PFNGLCLEARNAMEDBUFFERSUBDATA)(glw::GLuint buffer, glw::GLenum internalformat,
+                                                             glw::GLintptr offset, glw::GLsizeiptr size,
+                                                             glw::GLenum format, glw::GLenum type,
+                                                             const glw::GLvoid *data);
 
-	PFNGLNAMEDBUFFERDATA		 m_pNamedBufferData;
-	PFNGLCLEARNAMEDBUFFERDATA	m_pClearNamedBufferData;
-	PFNGLCLEARNAMEDBUFFERSUBDATA m_pClearNamedBufferSubData;
+    PFNGLNAMEDBUFFERDATA m_pNamedBufferData;
+    PFNGLCLEARNAMEDBUFFERDATA m_pClearNamedBufferData;
+    PFNGLCLEARNAMEDBUFFERSUBDATA m_pClearNamedBufferSubData;
 
-	template <typename T, bool USE_SUB_DATA>
-	bool TestClearNamedBufferData(glw::GLenum internalformat, glw::GLsizei count, glw::GLenum format, glw::GLenum type,
-								  T* data);
+    template <typename T, bool USE_SUB_DATA>
+    bool TestClearNamedBufferData(glw::GLenum internalformat, glw::GLsizei count, glw::GLenum format, glw::GLenum type,
+                                  T *data);
 
-	template <bool USE_SUB_DATA>
-	void ClearNamedBuffer(glw::GLuint buffer, glw::GLenum internalformat, glw::GLsizei size, glw::GLenum format,
-						  glw::GLenum type, glw::GLvoid* data);
+    template <bool USE_SUB_DATA>
+    void ClearNamedBuffer(glw::GLuint buffer, glw::GLenum internalformat, glw::GLsizei size, glw::GLenum format,
+                          glw::GLenum type, glw::GLvoid *data);
 
-	template <typename T>
-	bool Compare(const T* data, const T* reference, const glw::GLsizei count);
+    template <typename T>
+    bool Compare(const T *data, const T *reference, const glw::GLsizei count);
 
-	template <typename T>
-	void LogFail(bool use_sub_data, glw::GLenum internalformat, const T* data, const T* reference,
-				 const glw::GLsizei count);
+    template <typename T>
+    void LogFail(bool use_sub_data, glw::GLenum internalformat, const T *data, const T *reference,
+                 const glw::GLsizei count);
 
-	void LogError(bool use_sub_data, glw::GLenum internalformat);
+    void LogError(bool use_sub_data, glw::GLenum internalformat);
 };
 /* ClearTest class */
 
@@ -1366,29 +1366,29 @@ private:
 class MapReadOnlyTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	MapReadOnlyTest(deqp::Context& context);
+    /* Public member functions */
+    MapReadOnlyTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	MapReadOnlyTest(const MapReadOnlyTest& other);
-	MapReadOnlyTest& operator=(const MapReadOnlyTest& other);
+    /* Private member functions */
+    MapReadOnlyTest(const MapReadOnlyTest &other);
+    MapReadOnlyTest &operator=(const MapReadOnlyTest &other);
 
-	/* API entry points. */
-	typedef void(GLW_APIENTRY* PFNGLNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLsizeiptr size, const glw::GLvoid* data,
-													 glw::GLenum usage);
-	typedef void*(GLW_APIENTRY* PFNGLMAPNAMEDBUFFER)(glw::GLuint buffer, glw::GLenum access);
-	typedef glw::GLboolean(GLW_APIENTRY* PFNGLUNMAPNAMEDBUFFER)(glw::GLuint buffer);
+    /* API entry points. */
+    typedef void(GLW_APIENTRY *PFNGLNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLsizeiptr size, const glw::GLvoid *data,
+                                                     glw::GLenum usage);
+    typedef void *(GLW_APIENTRY *PFNGLMAPNAMEDBUFFER)(glw::GLuint buffer, glw::GLenum access);
+    typedef glw::GLboolean(GLW_APIENTRY *PFNGLUNMAPNAMEDBUFFER)(glw::GLuint buffer);
 
-	PFNGLNAMEDBUFFERDATA  m_pNamedBufferData;
-	PFNGLMAPNAMEDBUFFER   m_pMapNamedBuffer;
-	PFNGLUNMAPNAMEDBUFFER m_pUnmapNamedBuffer;
+    PFNGLNAMEDBUFFERDATA m_pNamedBufferData;
+    PFNGLMAPNAMEDBUFFER m_pMapNamedBuffer;
+    PFNGLUNMAPNAMEDBUFFER m_pUnmapNamedBuffer;
 
-	static const glw::GLuint  s_reference[];	 //<! Reference data.
-	static const glw::GLsizei s_reference_size;  //<! Reference data size.
-	static const glw::GLsizei s_reference_count; //<! Reference data count (number of GLuint elements).
+    static const glw::GLuint s_reference[];      //<! Reference data.
+    static const glw::GLsizei s_reference_size;  //<! Reference data size.
+    static const glw::GLsizei s_reference_count; //<! Reference data count (number of GLuint elements).
 };
 /* MapReadOnlyTest class */
 
@@ -1422,29 +1422,29 @@ private:
 class MapReadWriteTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	MapReadWriteTest(deqp::Context& context);
+    /* Public member functions */
+    MapReadWriteTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	MapReadWriteTest(const MapReadWriteTest& other);
-	MapReadWriteTest& operator=(const MapReadWriteTest& other);
+    /* Private member functions */
+    MapReadWriteTest(const MapReadWriteTest &other);
+    MapReadWriteTest &operator=(const MapReadWriteTest &other);
 
-	/* API entry points. */
-	typedef void(GLW_APIENTRY* PFNGLNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLsizeiptr size, const glw::GLvoid* data,
-													 glw::GLenum usage);
-	typedef void*(GLW_APIENTRY* PFNGLMAPNAMEDBUFFER)(glw::GLuint buffer, glw::GLenum access);
-	typedef glw::GLboolean(GLW_APIENTRY* PFNGLUNMAPNAMEDBUFFER)(glw::GLuint buffer);
+    /* API entry points. */
+    typedef void(GLW_APIENTRY *PFNGLNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLsizeiptr size, const glw::GLvoid *data,
+                                                     glw::GLenum usage);
+    typedef void *(GLW_APIENTRY *PFNGLMAPNAMEDBUFFER)(glw::GLuint buffer, glw::GLenum access);
+    typedef glw::GLboolean(GLW_APIENTRY *PFNGLUNMAPNAMEDBUFFER)(glw::GLuint buffer);
 
-	PFNGLNAMEDBUFFERDATA  m_pNamedBufferData;
-	PFNGLMAPNAMEDBUFFER   m_pMapNamedBuffer;
-	PFNGLUNMAPNAMEDBUFFER m_pUnmapNamedBuffer;
+    PFNGLNAMEDBUFFERDATA m_pNamedBufferData;
+    PFNGLMAPNAMEDBUFFER m_pMapNamedBuffer;
+    PFNGLUNMAPNAMEDBUFFER m_pUnmapNamedBuffer;
 
-	static const glw::GLuint  s_reference[];	 //<! Reference data.
-	static const glw::GLsizei s_reference_size;  //<! Reference data size.
-	static const glw::GLsizei s_reference_count; //<! Reference data count (number of GLuint elements).
+    static const glw::GLuint s_reference[];      //<! Reference data.
+    static const glw::GLsizei s_reference_size;  //<! Reference data size.
+    static const glw::GLsizei s_reference_count; //<! Reference data count (number of GLuint elements).
 };
 /* MapReadWriteTest class */
 
@@ -1477,29 +1477,29 @@ private:
 class MapWriteOnlyTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	MapWriteOnlyTest(deqp::Context& context);
+    /* Public member functions */
+    MapWriteOnlyTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	MapWriteOnlyTest(const MapWriteOnlyTest& other);
-	MapWriteOnlyTest& operator=(const MapWriteOnlyTest& other);
+    /* Private member functions */
+    MapWriteOnlyTest(const MapWriteOnlyTest &other);
+    MapWriteOnlyTest &operator=(const MapWriteOnlyTest &other);
 
-	/* API entry points. */
-	typedef void(GLW_APIENTRY* PFNGLNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLsizeiptr size, const glw::GLvoid* data,
-													 glw::GLenum usage);
-	typedef void*(GLW_APIENTRY* PFNGLMAPNAMEDBUFFER)(glw::GLuint buffer, glw::GLenum access);
-	typedef glw::GLboolean(GLW_APIENTRY* PFNGLUNMAPNAMEDBUFFER)(glw::GLuint buffer);
+    /* API entry points. */
+    typedef void(GLW_APIENTRY *PFNGLNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLsizeiptr size, const glw::GLvoid *data,
+                                                     glw::GLenum usage);
+    typedef void *(GLW_APIENTRY *PFNGLMAPNAMEDBUFFER)(glw::GLuint buffer, glw::GLenum access);
+    typedef glw::GLboolean(GLW_APIENTRY *PFNGLUNMAPNAMEDBUFFER)(glw::GLuint buffer);
 
-	PFNGLNAMEDBUFFERDATA  m_pNamedBufferData;
-	PFNGLMAPNAMEDBUFFER   m_pMapNamedBuffer;
-	PFNGLUNMAPNAMEDBUFFER m_pUnmapNamedBuffer;
+    PFNGLNAMEDBUFFERDATA m_pNamedBufferData;
+    PFNGLMAPNAMEDBUFFER m_pMapNamedBuffer;
+    PFNGLUNMAPNAMEDBUFFER m_pUnmapNamedBuffer;
 
-	static const glw::GLuint  s_reference[];	 //<! Reference data.
-	static const glw::GLsizei s_reference_size;  //<! Reference data size.
-	static const glw::GLsizei s_reference_count; //<! Reference data count (number of GLuint elements).
+    static const glw::GLuint s_reference[];      //<! Reference data.
+    static const glw::GLsizei s_reference_size;  //<! Reference data size.
+    static const glw::GLsizei s_reference_count; //<! Reference data count (number of GLuint elements).
 };
 /* MapReadOnlyTest class */
 
@@ -1538,32 +1538,32 @@ private:
 class MapRangeReadBitTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	MapRangeReadBitTest(deqp::Context& context);
+    /* Public member functions */
+    MapRangeReadBitTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	MapRangeReadBitTest(const MapRangeReadBitTest& other);
-	MapRangeReadBitTest& operator=(const MapRangeReadBitTest& other);
+    /* Private member functions */
+    MapRangeReadBitTest(const MapRangeReadBitTest &other);
+    MapRangeReadBitTest &operator=(const MapRangeReadBitTest &other);
 
-	/* API entry points. */
-	typedef void(GLW_APIENTRY* PFNGLNAMEDBUFFERSTORAGE)(glw::GLuint buffer, glw::GLsizeiptr size,
-														const glw::GLvoid* data, glw::GLbitfield flags);
-	typedef void*(GLW_APIENTRY* PFNGLMAPNAMEDBUFFERRANGE)(glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr length,
-														  glw::GLbitfield access);
-	typedef glw::GLboolean(GLW_APIENTRY* PFNGLUNMAPNAMEDBUFFER)(glw::GLuint buffer);
+    /* API entry points. */
+    typedef void(GLW_APIENTRY *PFNGLNAMEDBUFFERSTORAGE)(glw::GLuint buffer, glw::GLsizeiptr size,
+                                                        const glw::GLvoid *data, glw::GLbitfield flags);
+    typedef void *(GLW_APIENTRY *PFNGLMAPNAMEDBUFFERRANGE)(glw::GLuint buffer, glw::GLintptr offset,
+                                                           glw::GLsizeiptr length, glw::GLbitfield access);
+    typedef glw::GLboolean(GLW_APIENTRY *PFNGLUNMAPNAMEDBUFFER)(glw::GLuint buffer);
 
-	PFNGLNAMEDBUFFERSTORAGE  m_pNamedBufferStorage;
-	PFNGLMAPNAMEDBUFFERRANGE m_pMapNamedBufferRange;
-	PFNGLUNMAPNAMEDBUFFER	m_pUnmapNamedBuffer;
+    PFNGLNAMEDBUFFERSTORAGE m_pNamedBufferStorage;
+    PFNGLMAPNAMEDBUFFERRANGE m_pMapNamedBufferRange;
+    PFNGLUNMAPNAMEDBUFFER m_pUnmapNamedBuffer;
 
-	bool CompareWithReference(glw::GLuint* data, glw::GLintptr offset, glw::GLsizei length);
+    bool CompareWithReference(glw::GLuint *data, glw::GLintptr offset, glw::GLsizei length);
 
-	static const glw::GLuint  s_reference[];	 //<! Reference data.
-	static const glw::GLsizei s_reference_size;  //<! Reference data size.
-	static const glw::GLsizei s_reference_count; //<! Reference data count (number of GLuint elements).
+    static const glw::GLuint s_reference[];      //<! Reference data.
+    static const glw::GLsizei s_reference_size;  //<! Reference data size.
+    static const glw::GLsizei s_reference_count; //<! Reference data count (number of GLuint elements).
 };
 /* MapRangeReadBitTest class */
 
@@ -1617,35 +1617,35 @@ private:
 class MapRangeWriteBitTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	MapRangeWriteBitTest(deqp::Context& context);
+    /* Public member functions */
+    MapRangeWriteBitTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	MapRangeWriteBitTest(const MapRangeWriteBitTest& other);
-	MapRangeWriteBitTest& operator=(const MapRangeWriteBitTest& other);
+    /* Private member functions */
+    MapRangeWriteBitTest(const MapRangeWriteBitTest &other);
+    MapRangeWriteBitTest &operator=(const MapRangeWriteBitTest &other);
 
-	/* API entry points. */
-	typedef void(GLW_APIENTRY* PFNGLNAMEDBUFFERSTORAGE)(glw::GLuint buffer, glw::GLsizeiptr size,
-														const glw::GLvoid* data, glw::GLbitfield flags);
-	typedef void*(GLW_APIENTRY* PFNGLMAPNAMEDBUFFERRANGE)(glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr length,
-														  glw::GLbitfield access);
-	typedef glw::GLboolean(GLW_APIENTRY* PFNGLUNMAPNAMEDBUFFER)(glw::GLuint buffer);
-	typedef void(GLW_APIENTRY* PFNGLFLUSHMAPPEDNAMEDBUFFERRANGE)(glw::GLuint buffer, glw::GLintptr offset,
-																 glw::GLsizeiptr length);
+    /* API entry points. */
+    typedef void(GLW_APIENTRY *PFNGLNAMEDBUFFERSTORAGE)(glw::GLuint buffer, glw::GLsizeiptr size,
+                                                        const glw::GLvoid *data, glw::GLbitfield flags);
+    typedef void *(GLW_APIENTRY *PFNGLMAPNAMEDBUFFERRANGE)(glw::GLuint buffer, glw::GLintptr offset,
+                                                           glw::GLsizeiptr length, glw::GLbitfield access);
+    typedef glw::GLboolean(GLW_APIENTRY *PFNGLUNMAPNAMEDBUFFER)(glw::GLuint buffer);
+    typedef void(GLW_APIENTRY *PFNGLFLUSHMAPPEDNAMEDBUFFERRANGE)(glw::GLuint buffer, glw::GLintptr offset,
+                                                                 glw::GLsizeiptr length);
 
-	PFNGLNAMEDBUFFERSTORAGE			 m_pNamedBufferStorage;
-	PFNGLMAPNAMEDBUFFERRANGE		 m_pMapNamedBufferRange;
-	PFNGLUNMAPNAMEDBUFFER			 m_pUnmapNamedBuffer;
-	PFNGLFLUSHMAPPEDNAMEDBUFFERRANGE m_pFlushMappedNamedBufferRange;
+    PFNGLNAMEDBUFFERSTORAGE m_pNamedBufferStorage;
+    PFNGLMAPNAMEDBUFFERRANGE m_pMapNamedBufferRange;
+    PFNGLUNMAPNAMEDBUFFER m_pUnmapNamedBuffer;
+    PFNGLFLUSHMAPPEDNAMEDBUFFERRANGE m_pFlushMappedNamedBufferRange;
 
-	bool CompareWithReference(glw::GLuint buffer, glw::GLbitfield access_flag);
+    bool CompareWithReference(glw::GLuint buffer, glw::GLbitfield access_flag);
 
-	static const glw::GLuint  s_reference[];	 //<! Reference data.
-	static const glw::GLsizei s_reference_size;  //<! Reference data size.
-	static const glw::GLsizei s_reference_count; //<! Reference data count (number of GLuint elements).
+    static const glw::GLuint s_reference[];      //<! Reference data.
+    static const glw::GLsizei s_reference_size;  //<! Reference data size.
+    static const glw::GLsizei s_reference_count; //<! Reference data count (number of GLuint elements).
 };
 /* MapRangeWriteBitTest class */
 
@@ -1670,28 +1670,28 @@ private:
 class SubDataQueryTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	SubDataQueryTest(deqp::Context& context);
+    /* Public member functions */
+    SubDataQueryTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	SubDataQueryTest(const SubDataQueryTest& other);
-	SubDataQueryTest& operator=(const SubDataQueryTest& other);
+    /* Private member functions */
+    SubDataQueryTest(const SubDataQueryTest &other);
+    SubDataQueryTest &operator=(const SubDataQueryTest &other);
 
-	/* API entry points. */
-	typedef void(GLW_APIENTRY* PFNGLNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLsizeiptr size, const glw::GLvoid* data,
-													 glw::GLenum usage);
-	typedef void(GLW_APIENTRY* PFNGLGETNAMEDBUFFERSUBDATA)(glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr size,
-														   glw::GLvoid* data);
+    /* API entry points. */
+    typedef void(GLW_APIENTRY *PFNGLNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLsizeiptr size, const glw::GLvoid *data,
+                                                     glw::GLenum usage);
+    typedef void(GLW_APIENTRY *PFNGLGETNAMEDBUFFERSUBDATA)(glw::GLuint buffer, glw::GLintptr offset,
+                                                           glw::GLsizeiptr size, glw::GLvoid *data);
 
-	PFNGLNAMEDBUFFERDATA	   m_pNamedBufferData;
-	PFNGLGETNAMEDBUFFERSUBDATA m_pGetNamedBufferSubData;
+    PFNGLNAMEDBUFFERDATA m_pNamedBufferData;
+    PFNGLGETNAMEDBUFFERSUBDATA m_pGetNamedBufferSubData;
 
-	static const glw::GLuint  s_reference[];	 //<! Reference data.
-	static const glw::GLsizei s_reference_size;  //<! Reference data size.
-	static const glw::GLsizei s_reference_count; //<! Reference data count (number of GLuint elements).
+    static const glw::GLuint s_reference[];      //<! Reference data.
+    static const glw::GLsizei s_reference_size;  //<! Reference data size.
+    static const glw::GLsizei s_reference_count; //<! Reference data count (number of GLuint elements).
 };
 /* SubDataQueryTest class */
 
@@ -1721,35 +1721,35 @@ private:
 class DefaultsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	DefaultsTest(deqp::Context& context);
+    /* Public member functions */
+    DefaultsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	DefaultsTest(const DefaultsTest& other);
-	DefaultsTest& operator=(const DefaultsTest& other);
+    /* Private member functions */
+    DefaultsTest(const DefaultsTest &other);
+    DefaultsTest &operator=(const DefaultsTest &other);
 
-	bool CheckParameterError(const glw::GLchar* pname_string, const glw::GLchar* function_string);
+    bool CheckParameterError(const glw::GLchar *pname_string, const glw::GLchar *function_string);
 
-	template <typename T>
-	bool CheckValue(const T value, const T reference_value, const glw::GLchar* pname_string,
-					const glw::GLchar* function_string);
+    template <typename T>
+    bool CheckValue(const T value, const T reference_value, const glw::GLchar *pname_string,
+                    const glw::GLchar *function_string);
 
-	/* API entry points. */
-	typedef void(GLW_APIENTRY* PFNGLNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLsizeiptr size, const glw::GLvoid* data,
-													 glw::GLenum usage);
-	typedef void(GLW_APIENTRY* PFNGLGETNAMEDBUFFERPARAMETERI64V)(glw::GLuint buffer, glw::GLenum pname,
-																 glw::GLint64* data);
-	typedef void(GLW_APIENTRY* PFNGLGETNAMEDBUFFERPARAMETERIV)(glw::GLuint buffer, glw::GLenum pname, glw::GLint* data);
-	typedef void(GLW_APIENTRY* PFNGLGETNAMEDBUFFERPOINTERV)(glw::GLuint buffer, glw::GLenum pname,
-															glw::GLvoid** params);
+    /* API entry points. */
+    typedef void(GLW_APIENTRY *PFNGLNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLsizeiptr size, const glw::GLvoid *data,
+                                                     glw::GLenum usage);
+    typedef void(GLW_APIENTRY *PFNGLGETNAMEDBUFFERPARAMETERI64V)(glw::GLuint buffer, glw::GLenum pname,
+                                                                 glw::GLint64 *data);
+    typedef void(GLW_APIENTRY *PFNGLGETNAMEDBUFFERPARAMETERIV)(glw::GLuint buffer, glw::GLenum pname, glw::GLint *data);
+    typedef void(GLW_APIENTRY *PFNGLGETNAMEDBUFFERPOINTERV)(glw::GLuint buffer, glw::GLenum pname,
+                                                            glw::GLvoid **params);
 
-	PFNGLNAMEDBUFFERDATA			 m_pNamedBufferData;
-	PFNGLGETNAMEDBUFFERPARAMETERI64V m_pGetNamedBufferParameteri64v;
-	PFNGLGETNAMEDBUFFERPARAMETERIV   m_pGetNamedBufferParameteriv;
-	PFNGLGETNAMEDBUFFERPOINTERV		 m_pGetNamedBufferPointerv;
+    PFNGLNAMEDBUFFERDATA m_pNamedBufferData;
+    PFNGLGETNAMEDBUFFERPARAMETERI64V m_pGetNamedBufferParameteri64v;
+    PFNGLGETNAMEDBUFFERPARAMETERIV m_pGetNamedBufferParameteriv;
+    PFNGLGETNAMEDBUFFERPOINTERV m_pGetNamedBufferPointerv;
 };
 /* DefaultsTest class */
 
@@ -1962,80 +1962,80 @@ private:
 class ErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	ErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    ErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	ErrorsTest(const ErrorsTest& other);
-	ErrorsTest& operator=(const ErrorsTest& other);
+    /* Private member functions */
+    ErrorsTest(const ErrorsTest &other);
+    ErrorsTest &operator=(const ErrorsTest &other);
 
-	/* API entry points. */
-	typedef void(GLW_APIENTRY* PFNGLCLEARNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLenum internalformat,
-														  glw::GLenum format, glw::GLenum type,
-														  const glw::GLvoid* data);
-	typedef void(GLW_APIENTRY* PFNGLCLEARNAMEDBUFFERSUBDATA)(glw::GLuint buffer, glw::GLenum internalformat,
-															 glw::GLintptr offset, glw::GLsizeiptr size,
-															 glw::GLenum format, glw::GLenum type,
-															 const glw::GLvoid* data);
-	typedef void(GLW_APIENTRY* PFNGLCOPYNAMEDBUFFERSUBDATA)(glw::GLuint readBuffer, glw::GLuint writeBuffer,
-															glw::GLintptr readOffset, glw::GLintptr writeOffset,
-															glw::GLsizeiptr size);
-	typedef void(GLW_APIENTRY* PFNGLFLUSHMAPPEDNAMEDBUFFERRANGE)(glw::GLuint buffer, glw::GLintptr offset,
-																 glw::GLsizeiptr length);
-	typedef void(GLW_APIENTRY* PFNGLGETNAMEDBUFFERPARAMETERI64V)(glw::GLuint buffer, glw::GLenum pname,
-																 glw::GLint64* data);
-	typedef void(GLW_APIENTRY* PFNGLGETNAMEDBUFFERPARAMETERIV)(glw::GLuint buffer, glw::GLenum pname, glw::GLint* data);
-	typedef void(GLW_APIENTRY* PFNGLGETNAMEDBUFFERPOINTERV)(glw::GLuint buffer, glw::GLenum pname,
-															glw::GLvoid** params);
-	typedef void(GLW_APIENTRY* PFNGLGETNAMEDBUFFERSUBDATA)(glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr size,
-														   glw::GLvoid* data);
-	typedef void*(GLW_APIENTRY* PFNGLMAPNAMEDBUFFER)(glw::GLuint buffer, glw::GLenum access);
-	typedef void*(GLW_APIENTRY* PFNGLMAPNAMEDBUFFERRANGE)(glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr length,
-														  glw::GLbitfield access);
-	typedef void(GLW_APIENTRY* PFNGLNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLsizeiptr size, const glw::GLvoid* data,
-													 glw::GLenum usage);
-	typedef void(GLW_APIENTRY* PFNGLNAMEDBUFFERSTORAGE)(glw::GLuint buffer, glw::GLsizeiptr size,
-														const glw::GLvoid* data, glw::GLbitfield flags);
-	typedef void(GLW_APIENTRY* PFNGLNAMEDBUFFERSUBDATA)(glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr size,
-														const glw::GLvoid* data);
-	typedef glw::GLboolean(GLW_APIENTRY* PFNGLUNMAPNAMEDBUFFER)(glw::GLuint buffer);
+    /* API entry points. */
+    typedef void(GLW_APIENTRY *PFNGLCLEARNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLenum internalformat,
+                                                          glw::GLenum format, glw::GLenum type,
+                                                          const glw::GLvoid *data);
+    typedef void(GLW_APIENTRY *PFNGLCLEARNAMEDBUFFERSUBDATA)(glw::GLuint buffer, glw::GLenum internalformat,
+                                                             glw::GLintptr offset, glw::GLsizeiptr size,
+                                                             glw::GLenum format, glw::GLenum type,
+                                                             const glw::GLvoid *data);
+    typedef void(GLW_APIENTRY *PFNGLCOPYNAMEDBUFFERSUBDATA)(glw::GLuint readBuffer, glw::GLuint writeBuffer,
+                                                            glw::GLintptr readOffset, glw::GLintptr writeOffset,
+                                                            glw::GLsizeiptr size);
+    typedef void(GLW_APIENTRY *PFNGLFLUSHMAPPEDNAMEDBUFFERRANGE)(glw::GLuint buffer, glw::GLintptr offset,
+                                                                 glw::GLsizeiptr length);
+    typedef void(GLW_APIENTRY *PFNGLGETNAMEDBUFFERPARAMETERI64V)(glw::GLuint buffer, glw::GLenum pname,
+                                                                 glw::GLint64 *data);
+    typedef void(GLW_APIENTRY *PFNGLGETNAMEDBUFFERPARAMETERIV)(glw::GLuint buffer, glw::GLenum pname, glw::GLint *data);
+    typedef void(GLW_APIENTRY *PFNGLGETNAMEDBUFFERPOINTERV)(glw::GLuint buffer, glw::GLenum pname,
+                                                            glw::GLvoid **params);
+    typedef void(GLW_APIENTRY *PFNGLGETNAMEDBUFFERSUBDATA)(glw::GLuint buffer, glw::GLintptr offset,
+                                                           glw::GLsizeiptr size, glw::GLvoid *data);
+    typedef void *(GLW_APIENTRY *PFNGLMAPNAMEDBUFFER)(glw::GLuint buffer, glw::GLenum access);
+    typedef void *(GLW_APIENTRY *PFNGLMAPNAMEDBUFFERRANGE)(glw::GLuint buffer, glw::GLintptr offset,
+                                                           glw::GLsizeiptr length, glw::GLbitfield access);
+    typedef void(GLW_APIENTRY *PFNGLNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLsizeiptr size, const glw::GLvoid *data,
+                                                     glw::GLenum usage);
+    typedef void(GLW_APIENTRY *PFNGLNAMEDBUFFERSTORAGE)(glw::GLuint buffer, glw::GLsizeiptr size,
+                                                        const glw::GLvoid *data, glw::GLbitfield flags);
+    typedef void(GLW_APIENTRY *PFNGLNAMEDBUFFERSUBDATA)(glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr size,
+                                                        const glw::GLvoid *data);
+    typedef glw::GLboolean(GLW_APIENTRY *PFNGLUNMAPNAMEDBUFFER)(glw::GLuint buffer);
 
-	PFNGLCLEARNAMEDBUFFERDATA		 m_pClearNamedBufferData;
-	PFNGLCLEARNAMEDBUFFERSUBDATA	 m_pClearNamedBufferSubData;
-	PFNGLCOPYNAMEDBUFFERSUBDATA		 m_pCopyNamedBufferSubData;
-	PFNGLFLUSHMAPPEDNAMEDBUFFERRANGE m_pFlushMappedNamedBufferRange;
-	PFNGLGETNAMEDBUFFERPARAMETERI64V m_pGetNamedBufferParameteri64v;
-	PFNGLGETNAMEDBUFFERPARAMETERIV   m_pGetNamedBufferParameteriv;
-	PFNGLGETNAMEDBUFFERPOINTERV		 m_pGetNamedBufferPointerv;
-	PFNGLGETNAMEDBUFFERSUBDATA		 m_pGetNamedBufferSubData;
-	PFNGLMAPNAMEDBUFFER				 m_pMapNamedBuffer;
-	PFNGLMAPNAMEDBUFFERRANGE		 m_pMapNamedBufferRange;
-	PFNGLNAMEDBUFFERDATA			 m_pNamedBufferData;
-	PFNGLNAMEDBUFFERSTORAGE			 m_pNamedBufferStorage;
-	PFNGLNAMEDBUFFERSUBDATA			 m_pNamedBufferSubData;
-	PFNGLUNMAPNAMEDBUFFER			 m_pUnmapNamedBuffer;
+    PFNGLCLEARNAMEDBUFFERDATA m_pClearNamedBufferData;
+    PFNGLCLEARNAMEDBUFFERSUBDATA m_pClearNamedBufferSubData;
+    PFNGLCOPYNAMEDBUFFERSUBDATA m_pCopyNamedBufferSubData;
+    PFNGLFLUSHMAPPEDNAMEDBUFFERRANGE m_pFlushMappedNamedBufferRange;
+    PFNGLGETNAMEDBUFFERPARAMETERI64V m_pGetNamedBufferParameteri64v;
+    PFNGLGETNAMEDBUFFERPARAMETERIV m_pGetNamedBufferParameteriv;
+    PFNGLGETNAMEDBUFFERPOINTERV m_pGetNamedBufferPointerv;
+    PFNGLGETNAMEDBUFFERSUBDATA m_pGetNamedBufferSubData;
+    PFNGLMAPNAMEDBUFFER m_pMapNamedBuffer;
+    PFNGLMAPNAMEDBUFFERRANGE m_pMapNamedBufferRange;
+    PFNGLNAMEDBUFFERDATA m_pNamedBufferData;
+    PFNGLNAMEDBUFFERSTORAGE m_pNamedBufferStorage;
+    PFNGLNAMEDBUFFERSUBDATA m_pNamedBufferSubData;
+    PFNGLUNMAPNAMEDBUFFER m_pUnmapNamedBuffer;
 
-	/* Private member functions */
-	bool TestErrorsOfClearNamedBufferData();
-	bool TestErrorsOfClearNamedBufferSubData();
-	bool TestErrorsOfCopyNamedBufferSubData();
-	bool TestErrorsOfCreateBuffers();
-	bool TestErrorsOfFlushMappedNamedBufferRange();
-	bool TestErrorsOfGetNamedBufferParameter();
-	bool TestErrorsOfGetNamedBufferPointerv();
-	bool TestErrorsOfGetNamedBufferSubData();
-	bool TestErrorsOfMapNamedBuffer();
-	bool TestErrorsOfMapNamedBufferRange();
-	bool TestErrorsOfNamedBufferData();
-	bool TestErrorsOfNamedBufferStorage();
-	bool TestErrorsOfNamedBufferSubData();
-	bool TestErrorsOfUnmapNamedBuffer();
+    /* Private member functions */
+    bool TestErrorsOfClearNamedBufferData();
+    bool TestErrorsOfClearNamedBufferSubData();
+    bool TestErrorsOfCopyNamedBufferSubData();
+    bool TestErrorsOfCreateBuffers();
+    bool TestErrorsOfFlushMappedNamedBufferRange();
+    bool TestErrorsOfGetNamedBufferParameter();
+    bool TestErrorsOfGetNamedBufferPointerv();
+    bool TestErrorsOfGetNamedBufferSubData();
+    bool TestErrorsOfMapNamedBuffer();
+    bool TestErrorsOfMapNamedBufferRange();
+    bool TestErrorsOfNamedBufferData();
+    bool TestErrorsOfNamedBufferStorage();
+    bool TestErrorsOfNamedBufferSubData();
+    bool TestErrorsOfUnmapNamedBuffer();
 
-	bool ErrorCheckAndLog(const glw::GLchar* function_name, const glw::GLenum expected_error,
-						  const glw::GLchar* when_shall_be_generated);
+    bool ErrorCheckAndLog(const glw::GLchar *function_name, const glw::GLenum expected_error,
+                          const glw::GLchar *when_shall_be_generated);
 };
 /* ErrorsTest class */
 
@@ -2112,92 +2112,92 @@ private:
 class FunctionalTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	FunctionalTest(deqp::Context& context);
+    /* Public member functions */
+    FunctionalTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	FunctionalTest(const FunctionalTest& other);
-	FunctionalTest& operator=(const FunctionalTest& other);
+    /* Private member functions */
+    FunctionalTest(const FunctionalTest &other);
+    FunctionalTest &operator=(const FunctionalTest &other);
 
-	/* API entry points. */
-	typedef void(GLW_APIENTRY* PFNGLCLEARNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLenum internalformat,
-														  glw::GLenum format, glw::GLenum type,
-														  const glw::GLvoid* data);
-	typedef void(GLW_APIENTRY* PFNGLCLEARNAMEDBUFFERSUBDATA)(glw::GLuint buffer, glw::GLenum internalformat,
-															 glw::GLintptr offset, glw::GLsizeiptr size,
-															 glw::GLenum format, glw::GLenum type,
-															 const glw::GLvoid* data);
-	typedef void(GLW_APIENTRY* PFNGLCOPYNAMEDBUFFERSUBDATA)(glw::GLuint readBuffer, glw::GLuint writeBuffer,
-															glw::GLintptr readOffset, glw::GLintptr writeOffset,
-															glw::GLsizeiptr size);
-	typedef void(GLW_APIENTRY* PFNGLFLUSHMAPPEDNAMEDBUFFERRANGE)(glw::GLuint buffer, glw::GLintptr offset,
-																 glw::GLsizeiptr length);
-	typedef void(GLW_APIENTRY* PFNGLGETNAMEDBUFFERPARAMETERI64V)(glw::GLuint buffer, glw::GLenum pname,
-																 glw::GLint64* data);
-	typedef void(GLW_APIENTRY* PFNGLGETNAMEDBUFFERPARAMETERIV)(glw::GLuint buffer, glw::GLenum pname, glw::GLint* data);
-	typedef void(GLW_APIENTRY* PFNGLGETNAMEDBUFFERPOINTERV)(glw::GLuint buffer, glw::GLenum pname,
-															glw::GLvoid** params);
-	typedef void(GLW_APIENTRY* PFNGLGETNAMEDBUFFERSUBDATA)(glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr size,
-														   glw::GLvoid* data);
-	typedef void*(GLW_APIENTRY* PFNGLMAPNAMEDBUFFER)(glw::GLuint buffer, glw::GLenum access);
-	typedef void*(GLW_APIENTRY* PFNGLMAPNAMEDBUFFERRANGE)(glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr length,
-														  glw::GLbitfield access);
-	typedef void(GLW_APIENTRY* PFNGLNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLsizeiptr size, const glw::GLvoid* data,
-													 glw::GLenum usage);
-	typedef void(GLW_APIENTRY* PFNGLNAMEDBUFFERSTORAGE)(glw::GLuint buffer, glw::GLsizeiptr size,
-														const glw::GLvoid* data, glw::GLbitfield flags);
-	typedef void(GLW_APIENTRY* PFNGLNAMEDBUFFERSUBDATA)(glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr size,
-														const glw::GLvoid* data);
-	typedef glw::GLboolean(GLW_APIENTRY* PFNGLUNMAPNAMEDBUFFER)(glw::GLuint buffer);
+    /* API entry points. */
+    typedef void(GLW_APIENTRY *PFNGLCLEARNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLenum internalformat,
+                                                          glw::GLenum format, glw::GLenum type,
+                                                          const glw::GLvoid *data);
+    typedef void(GLW_APIENTRY *PFNGLCLEARNAMEDBUFFERSUBDATA)(glw::GLuint buffer, glw::GLenum internalformat,
+                                                             glw::GLintptr offset, glw::GLsizeiptr size,
+                                                             glw::GLenum format, glw::GLenum type,
+                                                             const glw::GLvoid *data);
+    typedef void(GLW_APIENTRY *PFNGLCOPYNAMEDBUFFERSUBDATA)(glw::GLuint readBuffer, glw::GLuint writeBuffer,
+                                                            glw::GLintptr readOffset, glw::GLintptr writeOffset,
+                                                            glw::GLsizeiptr size);
+    typedef void(GLW_APIENTRY *PFNGLFLUSHMAPPEDNAMEDBUFFERRANGE)(glw::GLuint buffer, glw::GLintptr offset,
+                                                                 glw::GLsizeiptr length);
+    typedef void(GLW_APIENTRY *PFNGLGETNAMEDBUFFERPARAMETERI64V)(glw::GLuint buffer, glw::GLenum pname,
+                                                                 glw::GLint64 *data);
+    typedef void(GLW_APIENTRY *PFNGLGETNAMEDBUFFERPARAMETERIV)(glw::GLuint buffer, glw::GLenum pname, glw::GLint *data);
+    typedef void(GLW_APIENTRY *PFNGLGETNAMEDBUFFERPOINTERV)(glw::GLuint buffer, glw::GLenum pname,
+                                                            glw::GLvoid **params);
+    typedef void(GLW_APIENTRY *PFNGLGETNAMEDBUFFERSUBDATA)(glw::GLuint buffer, glw::GLintptr offset,
+                                                           glw::GLsizeiptr size, glw::GLvoid *data);
+    typedef void *(GLW_APIENTRY *PFNGLMAPNAMEDBUFFER)(glw::GLuint buffer, glw::GLenum access);
+    typedef void *(GLW_APIENTRY *PFNGLMAPNAMEDBUFFERRANGE)(glw::GLuint buffer, glw::GLintptr offset,
+                                                           glw::GLsizeiptr length, glw::GLbitfield access);
+    typedef void(GLW_APIENTRY *PFNGLNAMEDBUFFERDATA)(glw::GLuint buffer, glw::GLsizeiptr size, const glw::GLvoid *data,
+                                                     glw::GLenum usage);
+    typedef void(GLW_APIENTRY *PFNGLNAMEDBUFFERSTORAGE)(glw::GLuint buffer, glw::GLsizeiptr size,
+                                                        const glw::GLvoid *data, glw::GLbitfield flags);
+    typedef void(GLW_APIENTRY *PFNGLNAMEDBUFFERSUBDATA)(glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr size,
+                                                        const glw::GLvoid *data);
+    typedef glw::GLboolean(GLW_APIENTRY *PFNGLUNMAPNAMEDBUFFER)(glw::GLuint buffer);
 
-	PFNGLCLEARNAMEDBUFFERDATA		 m_pClearNamedBufferData;
-	PFNGLCLEARNAMEDBUFFERSUBDATA	 m_pClearNamedBufferSubData;
-	PFNGLCOPYNAMEDBUFFERSUBDATA		 m_pCopyNamedBufferSubData;
-	PFNGLFLUSHMAPPEDNAMEDBUFFERRANGE m_pFlushMappedNamedBufferRange;
-	PFNGLGETNAMEDBUFFERPARAMETERI64V m_pGetNamedBufferParameteri64v;
-	PFNGLGETNAMEDBUFFERPARAMETERIV   m_pGetNamedBufferParameteriv;
-	PFNGLGETNAMEDBUFFERPOINTERV		 m_pGetNamedBufferPointerv;
-	PFNGLGETNAMEDBUFFERSUBDATA		 m_pGetNamedBufferSubData;
-	PFNGLMAPNAMEDBUFFER				 m_pMapNamedBuffer;
-	PFNGLMAPNAMEDBUFFERRANGE		 m_pMapNamedBufferRange;
-	PFNGLNAMEDBUFFERDATA			 m_pNamedBufferData;
-	PFNGLNAMEDBUFFERSTORAGE			 m_pNamedBufferStorage;
-	PFNGLNAMEDBUFFERSUBDATA			 m_pNamedBufferSubData;
-	PFNGLUNMAPNAMEDBUFFER			 m_pUnmapNamedBuffer;
+    PFNGLCLEARNAMEDBUFFERDATA m_pClearNamedBufferData;
+    PFNGLCLEARNAMEDBUFFERSUBDATA m_pClearNamedBufferSubData;
+    PFNGLCOPYNAMEDBUFFERSUBDATA m_pCopyNamedBufferSubData;
+    PFNGLFLUSHMAPPEDNAMEDBUFFERRANGE m_pFlushMappedNamedBufferRange;
+    PFNGLGETNAMEDBUFFERPARAMETERI64V m_pGetNamedBufferParameteri64v;
+    PFNGLGETNAMEDBUFFERPARAMETERIV m_pGetNamedBufferParameteriv;
+    PFNGLGETNAMEDBUFFERPOINTERV m_pGetNamedBufferPointerv;
+    PFNGLGETNAMEDBUFFERSUBDATA m_pGetNamedBufferSubData;
+    PFNGLMAPNAMEDBUFFER m_pMapNamedBuffer;
+    PFNGLMAPNAMEDBUFFERRANGE m_pMapNamedBufferRange;
+    PFNGLNAMEDBUFFERDATA m_pNamedBufferData;
+    PFNGLNAMEDBUFFERSTORAGE m_pNamedBufferStorage;
+    PFNGLNAMEDBUFFERSUBDATA m_pNamedBufferSubData;
+    PFNGLUNMAPNAMEDBUFFER m_pUnmapNamedBuffer;
 
-	/* Private member variables. */
-	glw::GLuint m_po;
-	glw::GLuint m_vao;
-	glw::GLuint m_bo_in;
-	glw::GLuint m_bo_out;
-	glw::GLint  m_attrib_location;
+    /* Private member variables. */
+    glw::GLuint m_po;
+    glw::GLuint m_vao;
+    glw::GLuint m_bo_in;
+    glw::GLuint m_bo_out;
+    glw::GLint m_attrib_location;
 
-	/* Private static variables. */
-	static const glw::GLchar  s_vertex_shader[];
-	static const glw::GLchar  s_fragment_shader[];
-	static const glw::GLchar  s_vertex_shader_input_name[];
-	static const glw::GLchar* s_vertex_shader_output_name;
+    /* Private static variables. */
+    static const glw::GLchar s_vertex_shader[];
+    static const glw::GLchar s_fragment_shader[];
+    static const glw::GLchar s_vertex_shader_input_name[];
+    static const glw::GLchar *s_vertex_shader_output_name;
 
-	static const glw::GLint s_initial_data_a[];
-	static const glw::GLint s_initial_data_b[];
-	static const glw::GLint s_expected_data[];
+    static const glw::GLint s_initial_data_a[];
+    static const glw::GLint s_initial_data_b[];
+    static const glw::GLint s_expected_data[];
 
-	/* Private member functions */
-	void BuildProgram();
-	void PrepareVertexArrayObject();
-	bool PrepareInputBuffer();
-	bool PrepareOutputBuffer();
-	void Draw();
-	bool CheckArrayBufferImmutableFlag();
-	bool CheckTransformFeedbackBufferSize();
-	bool CheckTransformFeedbackResult();
-	void Cleanup();
+    /* Private member functions */
+    void BuildProgram();
+    void PrepareVertexArrayObject();
+    bool PrepareInputBuffer();
+    bool PrepareOutputBuffer();
+    void Draw();
+    bool CheckArrayBufferImmutableFlag();
+    bool CheckTransformFeedbackBufferSize();
+    bool CheckTransformFeedbackResult();
+    void Cleanup();
 };
 /* FunctionalTest class */
-} /* Buffers namespace */
+} // namespace Buffers
 
 namespace Framebuffers
 {
@@ -2215,15 +2215,15 @@ namespace Framebuffers
 class CreationTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	CreationTest(deqp::Context& context);
+    /* Public member functions */
+    CreationTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	CreationTest(const CreationTest& other);
-	CreationTest& operator=(const CreationTest& other);
+    /* Private member functions */
+    CreationTest(const CreationTest &other);
+    CreationTest &operator=(const CreationTest &other);
 };
 /* CreationTest class */
 
@@ -2253,22 +2253,22 @@ private:
 class RenderbufferAttachmentTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	RenderbufferAttachmentTest(deqp::Context& context);
+    /* Public member functions */
+    RenderbufferAttachmentTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	RenderbufferAttachmentTest(const RenderbufferAttachmentTest& other);
-	RenderbufferAttachmentTest& operator=(const RenderbufferAttachmentTest& other);
+    /* Private member functions */
+    RenderbufferAttachmentTest(const RenderbufferAttachmentTest &other);
+    RenderbufferAttachmentTest &operator=(const RenderbufferAttachmentTest &other);
 
-	bool Test(glw::GLenum attachment, glw::GLenum internalformat);
-	void Clean();
+    bool Test(glw::GLenum attachment, glw::GLenum internalformat);
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo;
-	glw::GLuint m_rbo;
+    /* Private member variables. */
+    glw::GLuint m_fbo;
+    glw::GLuint m_rbo;
 };
 /* RenderbufferAttachmentTest class */
 
@@ -2311,39 +2311,39 @@ private:
 class TextureAttachmentTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	TextureAttachmentTest(deqp::Context& context);
+    /* Public member functions */
+    TextureAttachmentTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	TextureAttachmentTest(const TextureAttachmentTest& other);
-	TextureAttachmentTest& operator=(const TextureAttachmentTest& other);
+    /* Private member functions */
+    TextureAttachmentTest(const TextureAttachmentTest &other);
+    TextureAttachmentTest &operator=(const TextureAttachmentTest &other);
 
-	bool Test(glw::GLenum attachment, bool is_color_attachment, glw::GLenum texture_target, glw::GLenum internalformat,
-			  glw::GLuint levels);
-	bool SubTestAttachmentError(glw::GLenum attachment, glw::GLenum texture_target, glw::GLuint level,
-								glw::GLuint levels);
-	bool SubTestStatus(glw::GLenum attachment, glw::GLenum texture_target, glw::GLuint level, glw::GLuint levels);
-	bool SubTestContent(glw::GLenum attachment, glw::GLenum texture_target, glw::GLenum internalformat,
-						glw::GLuint level, glw::GLuint levels);
-	glw::GLuint MaxTextureLevels(glw::GLenum texture_target);
-	void Clear();
-	void Clean();
+    bool Test(glw::GLenum attachment, bool is_color_attachment, glw::GLenum texture_target, glw::GLenum internalformat,
+              glw::GLuint levels);
+    bool SubTestAttachmentError(glw::GLenum attachment, glw::GLenum texture_target, glw::GLuint level,
+                                glw::GLuint levels);
+    bool SubTestStatus(glw::GLenum attachment, glw::GLenum texture_target, glw::GLuint level, glw::GLuint levels);
+    bool SubTestContent(glw::GLenum attachment, glw::GLenum texture_target, glw::GLenum internalformat,
+                        glw::GLuint level, glw::GLuint levels);
+    glw::GLuint MaxTextureLevels(glw::GLenum texture_target);
+    void Clear();
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo;
-	glw::GLuint m_to;
+    /* Private member variables. */
+    glw::GLuint m_fbo;
+    glw::GLuint m_to;
 
-	/* Static private variables. */
-	static const glw::GLenum s_targets[];
-	static const glw::GLuint s_targets_count;
+    /* Static private variables. */
+    static const glw::GLenum s_targets[];
+    static const glw::GLuint s_targets_count;
 
-	static const glw::GLfloat s_reference_color[4];
-	static const glw::GLint   s_reference_color_integer[4];
-	static const glw::GLfloat s_reference_depth;
-	static const glw::GLint   s_reference_stencil;
+    static const glw::GLfloat s_reference_color[4];
+    static const glw::GLint s_reference_color_integer[4];
+    static const glw::GLfloat s_reference_depth;
+    static const glw::GLint s_reference_stencil;
 };
 /* TextureAttachmentTest class */
 
@@ -2389,41 +2389,41 @@ private:
 class TextureLayerAttachmentTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	TextureLayerAttachmentTest(deqp::Context& context);
+    /* Public member functions */
+    TextureLayerAttachmentTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	TextureLayerAttachmentTest(const TextureLayerAttachmentTest& other);
-	TextureLayerAttachmentTest& operator=(const TextureLayerAttachmentTest& other);
+    /* Private member functions */
+    TextureLayerAttachmentTest(const TextureLayerAttachmentTest &other);
+    TextureLayerAttachmentTest &operator=(const TextureLayerAttachmentTest &other);
 
-	bool Test(glw::GLenum attachment, bool is_color_attachment, glw::GLenum texture_target, glw::GLenum internalformat,
-			  glw::GLuint levels, glw::GLint layers);
-	bool SubTestAttachmentError(glw::GLenum attachment, glw::GLenum texture_target, glw::GLuint level, glw::GLint layer,
-								glw::GLuint levels, glw::GLint layers);
-	bool SubTestStatus(glw::GLenum attachment, glw::GLenum texture_target, glw::GLuint level, glw::GLint layer,
-					   glw::GLuint levels, glw::GLint layers);
-	bool SubTestContent(glw::GLenum attachment, glw::GLenum texture_target, glw::GLenum internalformat,
-						glw::GLuint level, glw::GLint layer, glw::GLuint levels, glw::GLint layers);
-	void		Clear();
-	glw::GLuint MaxTextureLevels(glw::GLenum texture_target);
-	glw::GLuint MaxTextureLayers(glw::GLenum texture_target);
-	void Clean();
+    bool Test(glw::GLenum attachment, bool is_color_attachment, glw::GLenum texture_target, glw::GLenum internalformat,
+              glw::GLuint levels, glw::GLint layers);
+    bool SubTestAttachmentError(glw::GLenum attachment, glw::GLenum texture_target, glw::GLuint level, glw::GLint layer,
+                                glw::GLuint levels, glw::GLint layers);
+    bool SubTestStatus(glw::GLenum attachment, glw::GLenum texture_target, glw::GLuint level, glw::GLint layer,
+                       glw::GLuint levels, glw::GLint layers);
+    bool SubTestContent(glw::GLenum attachment, glw::GLenum texture_target, glw::GLenum internalformat,
+                        glw::GLuint level, glw::GLint layer, glw::GLuint levels, glw::GLint layers);
+    void Clear();
+    glw::GLuint MaxTextureLevels(glw::GLenum texture_target);
+    glw::GLuint MaxTextureLayers(glw::GLenum texture_target);
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo;
-	glw::GLuint m_to;
+    /* Private member variables. */
+    glw::GLuint m_fbo;
+    glw::GLuint m_to;
 
-	/* Static private variables. */
-	static const glw::GLenum s_targets[];
-	static const glw::GLuint s_targets_count;
+    /* Static private variables. */
+    static const glw::GLenum s_targets[];
+    static const glw::GLuint s_targets_count;
 
-	static const glw::GLfloat s_reference_color[4];
-	static const glw::GLint   s_reference_color_integer[4];
-	static const glw::GLfloat s_reference_depth;
-	static const glw::GLint   s_reference_stencil;
+    static const glw::GLfloat s_reference_color[4];
+    static const glw::GLint s_reference_color_integer[4];
+    static const glw::GLfloat s_reference_depth;
+    static const glw::GLint s_reference_stencil;
 };
 /* TextureLayerAttachmentTest class */
 
@@ -2447,15 +2447,15 @@ private:
 class DrawReadBufferTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	DrawReadBufferTest(deqp::Context& context);
+    /* Public member functions */
+    DrawReadBufferTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	DrawReadBufferTest(const DrawReadBufferTest& other);
-	DrawReadBufferTest& operator=(const DrawReadBufferTest& other);
+    /* Private member functions */
+    DrawReadBufferTest(const DrawReadBufferTest &other);
+    DrawReadBufferTest &operator=(const DrawReadBufferTest &other);
 };
 /* DrawReadBufferTest class */
 
@@ -2475,18 +2475,18 @@ private:
 class DrawBuffersTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	DrawBuffersTest(deqp::Context& context);
+    /* Public member functions */
+    DrawBuffersTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	DrawBuffersTest(const DrawBuffersTest& other);
-	DrawBuffersTest& operator=(const DrawBuffersTest& other);
+    /* Private member functions */
+    DrawBuffersTest(const DrawBuffersTest &other);
+    DrawBuffersTest &operator=(const DrawBuffersTest &other);
 
-	/* Private static constants. */
-	static const glw::GLfloat s_rgba[4];
+    /* Private static constants. */
+    static const glw::GLfloat s_rgba[4];
 };
 /* DrawReadBuffersTest class */
 
@@ -2514,18 +2514,18 @@ private:
 class InvalidateDataTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	InvalidateDataTest(deqp::Context& context);
+    /* Public member functions */
+    InvalidateDataTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	InvalidateDataTest(const InvalidateDataTest& other);
-	InvalidateDataTest& operator=(const InvalidateDataTest& other);
+    /* Private member functions */
+    InvalidateDataTest(const InvalidateDataTest &other);
+    InvalidateDataTest &operator=(const InvalidateDataTest &other);
 
-	bool CheckErrorAndLog(const glw::GLenum attachment);
-	bool CheckErrorAndLog(const glw::GLenum attachments[], const glw::GLuint count);
+    bool CheckErrorAndLog(const glw::GLenum attachment);
+    bool CheckErrorAndLog(const glw::GLenum attachments[], const glw::GLuint count);
 };
 /* InvalidateDataTest class */
 
@@ -2553,18 +2553,18 @@ private:
 class InvalidateSubDataTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	InvalidateSubDataTest(deqp::Context& context);
+    /* Public member functions */
+    InvalidateSubDataTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	InvalidateSubDataTest(const InvalidateSubDataTest& other);
-	InvalidateSubDataTest& operator=(const InvalidateSubDataTest& other);
+    /* Private member functions */
+    InvalidateSubDataTest(const InvalidateSubDataTest &other);
+    InvalidateSubDataTest &operator=(const InvalidateSubDataTest &other);
 
-	bool CheckErrorAndLog(const glw::GLenum attachment);
-	bool CheckErrorAndLog(const glw::GLenum attachments[], const glw::GLuint count);
+    bool CheckErrorAndLog(const glw::GLenum attachment);
+    bool CheckErrorAndLog(const glw::GLenum attachments[], const glw::GLuint count);
 };
 /* InvalidateSubDataTest class */
 
@@ -2600,41 +2600,41 @@ private:
 class ClearTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	ClearTest(deqp::Context& context);
+    /* Public member functions */
+    ClearTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	ClearTest(const ClearTest& other);
-	ClearTest& operator=(const ClearTest& other);
+    /* Private member functions */
+    ClearTest(const ClearTest &other);
+    ClearTest &operator=(const ClearTest &other);
 
-	void PrepareFramebuffer(glw::GLenum buffer, glw::GLenum internalformat);
+    void PrepareFramebuffer(glw::GLenum buffer, glw::GLenum internalformat);
 
-	template <typename T>
-	bool TestClearColor(glw::GLenum buffer, glw::GLenum attachment, T value);
+    template <typename T>
+    bool TestClearColor(glw::GLenum buffer, glw::GLenum attachment, T value);
 
-	template <typename T>
-	bool ClearColor(glw::GLenum buffer, glw::GLint drawbuffer, T value);
+    template <typename T>
+    bool ClearColor(glw::GLenum buffer, glw::GLint drawbuffer, T value);
 
-	bool TestClearDepthAndStencil(glw::GLfloat depth, glw::GLint stencil);
+    bool TestClearDepthAndStencil(glw::GLfloat depth, glw::GLint stencil);
 
-	template <typename T>
-	glw::GLenum Format();
+    template <typename T>
+    glw::GLenum Format();
 
-	template <typename T>
-	glw::GLenum Type();
+    template <typename T>
+    glw::GLenum Type();
 
-	template <typename T>
-	bool Compare(const T first, const T second);
+    template <typename T>
+    bool Compare(const T first, const T second);
 
-	void Clean();
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint  m_fbo;
-	glw::GLuint* m_renderbuffers;
-	glw::GLuint  m_renderbuffers_count;
+    /* Private member variables. */
+    glw::GLuint m_fbo;
+    glw::GLuint *m_renderbuffers;
+    glw::GLuint m_renderbuffers_count;
 };
 /* ClearTest class */
 
@@ -2693,33 +2693,33 @@ private:
 class BlitTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	BlitTest(deqp::Context& context);
+    /* Public member functions */
+    BlitTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	BlitTest(const BlitTest& other);
-	BlitTest& operator=(const BlitTest& other);
+    /* Private member functions */
+    BlitTest(const BlitTest &other);
+    BlitTest &operator=(const BlitTest &other);
 
-	void PrepareFramebuffers();
-	bool Test();
-	void ClearFramebuffer(glw::GLfloat red, glw::GLfloat green, glw::GLfloat blue, glw::GLfloat depth,
-						  glw::GLint stencil);
-	bool CheckErrorAndLog();
-	bool CheckColor();
-	bool CheckDepth();
-	bool CheckStencil();
-	void Clean();
+    void PrepareFramebuffers();
+    bool Test();
+    void ClearFramebuffer(glw::GLfloat red, glw::GLfloat green, glw::GLfloat blue, glw::GLfloat depth,
+                          glw::GLint stencil);
+    bool CheckErrorAndLog();
+    bool CheckColor();
+    bool CheckDepth();
+    bool CheckStencil();
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo_src;
-	glw::GLuint m_rbo_color_src;
-	glw::GLuint m_rbo_depth_stencil_src;
-	glw::GLuint m_fbo_dst;
-	glw::GLuint m_rbo_color_dst;
-	glw::GLuint m_rbo_depth_stencil_dst;
+    /* Private member variables. */
+    glw::GLuint m_fbo_src;
+    glw::GLuint m_rbo_color_src;
+    glw::GLuint m_rbo_depth_stencil_src;
+    glw::GLuint m_fbo_dst;
+    glw::GLuint m_rbo_color_dst;
+    glw::GLuint m_rbo_depth_stencil_dst;
 };
 /* BlitTest class */
 
@@ -2798,21 +2798,21 @@ private:
 class CheckStatusTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	CheckStatusTest(deqp::Context& context);
+    /* Public member functions */
+    CheckStatusTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	CheckStatusTest(const CheckStatusTest& other);
-	CheckStatusTest& operator=(const CheckStatusTest& other);
+    /* Private member functions */
+    CheckStatusTest(const CheckStatusTest &other);
+    CheckStatusTest &operator=(const CheckStatusTest &other);
 
-	bool IncompleteAttachmentTestCase();
-	bool MissingAttachmentTestCase();
-	bool IncompleteMultisampleRenderbufferTestCase();
-	bool IncompleteMultisampleTextureTestCase();
-	bool IncompleteLayerTargetsTestCase();
+    bool IncompleteAttachmentTestCase();
+    bool MissingAttachmentTestCase();
+    bool IncompleteMultisampleRenderbufferTestCase();
+    bool IncompleteMultisampleTextureTestCase();
+    bool IncompleteLayerTargetsTestCase();
 };
 /* CheckStatusTest class */
 
@@ -2874,24 +2874,24 @@ private:
 class GetParametersTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	GetParametersTest(deqp::Context& context);
+    /* Public member functions */
+    GetParametersTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	GetParametersTest(const GetParametersTest& other);
-	GetParametersTest& operator=(const GetParametersTest& other);
+    /* Private member functions */
+    GetParametersTest(const GetParametersTest &other);
+    GetParametersTest &operator=(const GetParametersTest &other);
 
-	void PrepareFramebuffer();
-	bool TestDefaultFramebuffer();
-	bool TestCustomFramebuffer();
-	void Clean();
+    void PrepareFramebuffer();
+    bool TestDefaultFramebuffer();
+    bool TestCustomFramebuffer();
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo;
-	glw::GLuint m_rbo;
+    /* Private member variables. */
+    glw::GLuint m_fbo;
+    glw::GLuint m_rbo;
 };
 /* GetParametersTest class */
 
@@ -2996,27 +2996,27 @@ private:
 class GetAttachmentParametersTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	GetAttachmentParametersTest(deqp::Context& context);
+    /* Public member functions */
+    GetAttachmentParametersTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	GetAttachmentParametersTest(const GetAttachmentParametersTest& other);
-	GetAttachmentParametersTest& operator=(const GetAttachmentParametersTest& other);
+    /* Private member functions */
+    GetAttachmentParametersTest(const GetAttachmentParametersTest &other);
+    GetAttachmentParametersTest &operator=(const GetAttachmentParametersTest &other);
 
-	void CreateRenderbufferFramebuffer(bool depth, bool stencil);
-	void CreateTextureFramebuffer(bool depth, bool stencil);
-	bool TestDefaultFramebuffer();
-	bool TestRenderbufferFramebuffer(bool depth_stencil);
-	bool TestTextureFramebuffer(bool depth_stencil);
-	void Clean();
+    void CreateRenderbufferFramebuffer(bool depth, bool stencil);
+    void CreateTextureFramebuffer(bool depth, bool stencil);
+    bool TestDefaultFramebuffer();
+    bool TestRenderbufferFramebuffer(bool depth_stencil);
+    bool TestTextureFramebuffer(bool depth_stencil);
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo;
-	glw::GLuint m_rbo[2];
-	glw::GLuint m_to[2];
+    /* Private member variables. */
+    glw::GLuint m_fbo;
+    glw::GLuint m_rbo[2];
+    glw::GLuint m_to[2];
 };
 /* GetParametersTest class */
 
@@ -3028,15 +3028,15 @@ private:
 class CreationErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	CreationErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    CreationErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	CreationErrorsTest(const CreationErrorsTest& other);
-	CreationErrorsTest& operator=(const CreationErrorsTest& other);
+    /* Private member functions */
+    CreationErrorsTest(const CreationErrorsTest &other);
+    CreationErrorsTest &operator=(const CreationErrorsTest &other);
 };
 /* CreationErrorsTest class */
 
@@ -3065,29 +3065,29 @@ private:
 class RenderbufferAttachmentErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	RenderbufferAttachmentErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    RenderbufferAttachmentErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	RenderbufferAttachmentErrorsTest(const RenderbufferAttachmentErrorsTest& other);
-	RenderbufferAttachmentErrorsTest& operator=(const RenderbufferAttachmentErrorsTest& other);
+    /* Private member functions */
+    RenderbufferAttachmentErrorsTest(const RenderbufferAttachmentErrorsTest &other);
+    RenderbufferAttachmentErrorsTest &operator=(const RenderbufferAttachmentErrorsTest &other);
 
-	void PrepareObjects();
-	bool ExpectError(glw::GLenum expected_error, bool framebuffer, bool attachment, bool color_attachment,
-					 bool renderbuffertarget, bool renderbuffer);
-	void Clean();
+    void PrepareObjects();
+    bool ExpectError(glw::GLenum expected_error, bool framebuffer, bool attachment, bool color_attachment,
+                     bool renderbuffertarget, bool renderbuffer);
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo_valid;
-	glw::GLuint m_rbo_valid;
-	glw::GLuint m_fbo_invalid;
-	glw::GLuint m_rbo_invalid;
-	glw::GLenum m_color_attachment_invalid;
-	glw::GLenum m_attachment_invalid;
-	glw::GLenum m_renderbuffer_target_invalid;
+    /* Private member variables. */
+    glw::GLuint m_fbo_valid;
+    glw::GLuint m_rbo_valid;
+    glw::GLuint m_fbo_invalid;
+    glw::GLuint m_rbo_invalid;
+    glw::GLenum m_color_attachment_invalid;
+    glw::GLenum m_attachment_invalid;
+    glw::GLenum m_renderbuffer_target_invalid;
 };
 /* RenderbufferAttachmentErrorsTest class */
 
@@ -3136,38 +3136,38 @@ private:
 class TextureAttachmentErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	TextureAttachmentErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    TextureAttachmentErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	TextureAttachmentErrorsTest(const TextureAttachmentErrorsTest& other);
-	TextureAttachmentErrorsTest& operator=(const TextureAttachmentErrorsTest& other);
+    /* Private member functions */
+    TextureAttachmentErrorsTest(const TextureAttachmentErrorsTest &other);
+    TextureAttachmentErrorsTest &operator=(const TextureAttachmentErrorsTest &other);
 
-	void PrepareObjects();
-	bool ExpectError(glw::GLenum expected_error, const glw::GLchar* function_name, bool framebuffer, bool attachment,
-					 bool color_attachment, bool texture, bool level, const glw::GLchar* texture_type, bool layer);
-	void Clean();
+    void PrepareObjects();
+    bool ExpectError(glw::GLenum expected_error, const glw::GLchar *function_name, bool framebuffer, bool attachment,
+                     bool color_attachment, bool texture, bool level, const glw::GLchar *texture_type, bool layer);
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo_valid;
-	glw::GLuint m_to_valid;
-	glw::GLuint m_to_3d_valid;
-	glw::GLuint m_to_array_valid;
-	glw::GLuint m_to_cubearray_valid;
-	glw::GLuint m_tbo_valid;
-	glw::GLuint m_fbo_invalid;
-	glw::GLuint m_to_invalid;
-	glw::GLuint m_to_layer_invalid; /* it is valid rectangle texture, but invalid for NamedFramebufferTextureLayer */
-	glw::GLenum m_color_attachment_invalid;
-	glw::GLenum m_attachment_invalid;
-	glw::GLint  m_level_invalid;
-	glw::GLint  m_max_3d_texture_size;
-	glw::GLint  m_max_3d_texture_depth;
-	glw::GLint  m_max_array_texture_layers;
-	glw::GLint  m_max_cube_map_texture_size;
+    /* Private member variables. */
+    glw::GLuint m_fbo_valid;
+    glw::GLuint m_to_valid;
+    glw::GLuint m_to_3d_valid;
+    glw::GLuint m_to_array_valid;
+    glw::GLuint m_to_cubearray_valid;
+    glw::GLuint m_tbo_valid;
+    glw::GLuint m_fbo_invalid;
+    glw::GLuint m_to_invalid;
+    glw::GLuint m_to_layer_invalid; /* it is valid rectangle texture, but invalid for NamedFramebufferTextureLayer */
+    glw::GLenum m_color_attachment_invalid;
+    glw::GLenum m_attachment_invalid;
+    glw::GLint m_level_invalid;
+    glw::GLint m_max_3d_texture_size;
+    glw::GLint m_max_3d_texture_depth;
+    glw::GLint m_max_array_texture_layers;
+    glw::GLint m_max_cube_map_texture_size;
 };
 /* TextureAttachmentErrorsTest class */
 
@@ -3240,36 +3240,36 @@ private:
 class DrawReadBuffersErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	DrawReadBuffersErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    DrawReadBuffersErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	DrawReadBuffersErrorsTest(const DrawReadBuffersErrorsTest& other);
-	DrawReadBuffersErrorsTest operator=(const DrawReadBuffersErrorsTest& other);
+    /* Private member functions */
+    DrawReadBuffersErrorsTest(const DrawReadBuffersErrorsTest &other);
+    DrawReadBuffersErrorsTest operator=(const DrawReadBuffersErrorsTest &other);
 
-	void PrepareObjects();
-	bool ExpectError(glw::GLenum expected_error, const glw::GLchar* function, const glw::GLchar* conditions);
-	void Clean();
+    void PrepareObjects();
+    bool ExpectError(glw::GLenum expected_error, const glw::GLchar *function, const glw::GLchar *conditions);
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint  m_fbo_valid;
-	glw::GLuint  m_fbo_invalid;
-	glw::GLenum  m_attachment_color;
-	glw::GLenum  m_attachment_back_left;
-	glw::GLenum  m_attachment_right;
-	glw::GLenum  m_attachment_left;
-	glw::GLenum  m_attachment_front;
-	glw::GLenum  m_attachment_front_and_back;
-	glw::GLenum  m_attachment_back;
-	glw::GLenum  m_attachment_invalid;
-	glw::GLenum  m_attachments_invalid[2];
-	glw::GLenum  m_attachments_back_invalid[2];
-	glw::GLint   m_attachments_too_many_count;
-	glw::GLenum* m_attachments_too_many;
-	glw::GLint   m_max_color_attachments;
+    /* Private member variables. */
+    glw::GLuint m_fbo_valid;
+    glw::GLuint m_fbo_invalid;
+    glw::GLenum m_attachment_color;
+    glw::GLenum m_attachment_back_left;
+    glw::GLenum m_attachment_right;
+    glw::GLenum m_attachment_left;
+    glw::GLenum m_attachment_front;
+    glw::GLenum m_attachment_front_and_back;
+    glw::GLenum m_attachment_back;
+    glw::GLenum m_attachment_invalid;
+    glw::GLenum m_attachments_invalid[2];
+    glw::GLenum m_attachments_back_invalid[2];
+    glw::GLint m_attachments_too_many_count;
+    glw::GLenum *m_attachments_too_many;
+    glw::GLint m_max_color_attachments;
 };
 /* DrawReadBuffersErrorsTest class */
 
@@ -3329,28 +3329,28 @@ private:
 class InvalidateDataAndSubDataErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	InvalidateDataAndSubDataErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    InvalidateDataAndSubDataErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	InvalidateDataAndSubDataErrorsTest(const InvalidateDataAndSubDataErrorsTest& other);
-	InvalidateDataAndSubDataErrorsTest operator=(const InvalidateDataAndSubDataErrorsTest& other);
+    /* Private member functions */
+    InvalidateDataAndSubDataErrorsTest(const InvalidateDataAndSubDataErrorsTest &other);
+    InvalidateDataAndSubDataErrorsTest operator=(const InvalidateDataAndSubDataErrorsTest &other);
 
-	void PrepareObjects();
-	bool ExpectError(glw::GLenum expected_error, const glw::GLchar* function, const glw::GLchar* conditions);
-	void Clean();
+    void PrepareObjects();
+    bool ExpectError(glw::GLenum expected_error, const glw::GLchar *function, const glw::GLchar *conditions);
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo_valid;
-	glw::GLuint m_rbo;
-	glw::GLuint m_fbo_invalid;
-	glw::GLenum m_fbo_attachment_valid;
-	glw::GLenum m_fbo_attachment_invalid;
-	glw::GLenum m_color_attachment_invalid;
-	glw::GLenum m_default_attachment_invalid;
+    /* Private member variables. */
+    glw::GLuint m_fbo_valid;
+    glw::GLuint m_rbo;
+    glw::GLuint m_fbo_invalid;
+    glw::GLenum m_fbo_attachment_valid;
+    glw::GLenum m_fbo_attachment_invalid;
+    glw::GLenum m_color_attachment_invalid;
+    glw::GLenum m_default_attachment_invalid;
 };
 /* InvalidateDataAndSubDataErrorsTest class */
 
@@ -3380,25 +3380,25 @@ private:
 class ClearNamedFramebufferErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	ClearNamedFramebufferErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    ClearNamedFramebufferErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	ClearNamedFramebufferErrorsTest(const ClearNamedFramebufferErrorsTest& other);
-	ClearNamedFramebufferErrorsTest& operator=(const ClearNamedFramebufferErrorsTest& other);
+    /* Private member functions */
+    ClearNamedFramebufferErrorsTest(const ClearNamedFramebufferErrorsTest &other);
+    ClearNamedFramebufferErrorsTest &operator=(const ClearNamedFramebufferErrorsTest &other);
 
-	void PrepareObjects();
-	bool ExpectError(glw::GLenum expected_error, const glw::GLchar* function, const glw::GLchar* conditions);
-	void Clean();
+    void PrepareObjects();
+    bool ExpectError(glw::GLenum expected_error, const glw::GLchar *function, const glw::GLchar *conditions);
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo_valid;
-	glw::GLuint m_rbo_color;
-	glw::GLuint m_rbo_depth_stencil;
-	glw::GLuint m_fbo_invalid;
+    /* Private member variables. */
+    glw::GLuint m_fbo_valid;
+    glw::GLuint m_rbo_color;
+    glw::GLuint m_rbo_depth_stencil;
+    glw::GLuint m_fbo_invalid;
 };
 /* ClearNamedFramebufferErrorsTest class */
 
@@ -3414,24 +3414,24 @@ private:
 class CheckStatusErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	CheckStatusErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    CheckStatusErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	CheckStatusErrorsTest(const CheckStatusErrorsTest& other);
-	CheckStatusErrorsTest& operator=(const CheckStatusErrorsTest& other);
+    /* Private member functions */
+    CheckStatusErrorsTest(const CheckStatusErrorsTest &other);
+    CheckStatusErrorsTest &operator=(const CheckStatusErrorsTest &other);
 
-	void PrepareObjects();
-	bool ExpectError(glw::GLenum expected_error, const glw::GLchar* function, const glw::GLchar* conditions);
-	void Clean();
+    void PrepareObjects();
+    bool ExpectError(glw::GLenum expected_error, const glw::GLchar *function, const glw::GLchar *conditions);
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo_valid;
-	glw::GLuint m_fbo_invalid;
-	glw::GLuint m_target_invalid;
+    /* Private member variables. */
+    glw::GLuint m_fbo_valid;
+    glw::GLuint m_fbo_invalid;
+    glw::GLuint m_target_invalid;
 };
 /* CheckStatusErrorsTest class */
 
@@ -3452,24 +3452,24 @@ private:
 class GetParameterErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	GetParameterErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    GetParameterErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	GetParameterErrorsTest(const GetParameterErrorsTest& other);
-	GetParameterErrorsTest& operator=(const GetParameterErrorsTest& other);
+    /* Private member functions */
+    GetParameterErrorsTest(const GetParameterErrorsTest &other);
+    GetParameterErrorsTest &operator=(const GetParameterErrorsTest &other);
 
-	void PrepareObjects();
-	bool ExpectError(glw::GLenum expected_error, const glw::GLchar* function, const glw::GLchar* conditions);
-	void Clean();
+    void PrepareObjects();
+    bool ExpectError(glw::GLenum expected_error, const glw::GLchar *function, const glw::GLchar *conditions);
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo_valid;
-	glw::GLuint m_fbo_invalid;
-	glw::GLuint m_parameter_invalid;
+    /* Private member variables. */
+    glw::GLuint m_fbo_valid;
+    glw::GLuint m_fbo_invalid;
+    glw::GLuint m_parameter_invalid;
 };
 /* GetParameterErrorsTest class */
 
@@ -3513,29 +3513,29 @@ private:
 class GetAttachmentParameterErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	GetAttachmentParameterErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    GetAttachmentParameterErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	GetAttachmentParameterErrorsTest(const GetAttachmentParameterErrorsTest& other);
-	GetAttachmentParameterErrorsTest& operator=(const GetAttachmentParameterErrorsTest& other);
+    /* Private member functions */
+    GetAttachmentParameterErrorsTest(const GetAttachmentParameterErrorsTest &other);
+    GetAttachmentParameterErrorsTest &operator=(const GetAttachmentParameterErrorsTest &other);
 
-	void PrepareObjects();
-	bool ExpectError(glw::GLenum expected_error, const glw::GLchar* function, const glw::GLchar* conditions);
-	void Clean();
+    void PrepareObjects();
+    bool ExpectError(glw::GLenum expected_error, const glw::GLchar *function, const glw::GLchar *conditions);
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo_valid;
-	glw::GLuint m_rbo_color;
-	glw::GLuint m_rbo_depth_stencil;
-	glw::GLuint m_fbo_invalid;
-	glw::GLuint m_parameter_invalid;
-	glw::GLenum m_attachment_invalid;
-	glw::GLenum m_default_attachment_invalid;
-	glw::GLint  m_max_color_attachments;
+    /* Private member variables. */
+    glw::GLuint m_fbo_valid;
+    glw::GLuint m_rbo_color;
+    glw::GLuint m_rbo_depth_stencil;
+    glw::GLuint m_fbo_invalid;
+    glw::GLuint m_parameter_invalid;
+    glw::GLenum m_attachment_invalid;
+    glw::GLenum m_default_attachment_invalid;
+    glw::GLint m_max_color_attachments;
 };
 /* GetAttachmentParameterErrorsTest class */
 
@@ -3582,52 +3582,52 @@ private:
 class FunctionalTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	FunctionalTest(deqp::Context& context);
+    /* Public member functions */
+    FunctionalTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	FunctionalTest(const FunctionalTest& other);
-	FunctionalTest& operator=(const FunctionalTest& other);
+    /* Private member functions */
+    FunctionalTest(const FunctionalTest &other);
+    FunctionalTest &operator=(const FunctionalTest &other);
 
-	bool PrepareFirstFramebuffer();
-	bool PrepareSecondFramebuffer();
-	bool ClearFramebuffers();
-	void PrepareProgram();
-	void PrepareBuffersAndVertexArrays();
-	bool DrawAndBlit();
-	bool CheckSecondFramebufferContent();
-	void Clean();
+    bool PrepareFirstFramebuffer();
+    bool PrepareSecondFramebuffer();
+    bool ClearFramebuffers();
+    void PrepareProgram();
+    void PrepareBuffersAndVertexArrays();
+    bool DrawAndBlit();
+    bool CheckSecondFramebufferContent();
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo_1st;
-	glw::GLuint m_fbo_2nd;
-	glw::GLuint m_rbo_color;
-	glw::GLuint m_rbo_depth_stencil;
-	glw::GLuint m_to_color;
-	glw::GLuint m_po;
-	glw::GLuint m_vao_stencil_pass_quad;
-	glw::GLuint m_vao_depth_pass_quad;
-	glw::GLuint m_vao_color_pass_quad;
-	glw::GLuint m_bo_stencil_pass_quad;
-	glw::GLuint m_bo_depth_pass_quad;
-	glw::GLuint m_bo_color_pass_quad;
+    /* Private member variables. */
+    glw::GLuint m_fbo_1st;
+    glw::GLuint m_fbo_2nd;
+    glw::GLuint m_rbo_color;
+    glw::GLuint m_rbo_depth_stencil;
+    glw::GLuint m_to_color;
+    glw::GLuint m_po;
+    glw::GLuint m_vao_stencil_pass_quad;
+    glw::GLuint m_vao_depth_pass_quad;
+    glw::GLuint m_vao_color_pass_quad;
+    glw::GLuint m_bo_stencil_pass_quad;
+    glw::GLuint m_bo_depth_pass_quad;
+    glw::GLuint m_bo_color_pass_quad;
 
-	/* Private static variables. */
-	static const glw::GLchar  s_vertex_shader[];
-	static const glw::GLchar  s_fragment_shader[];
-	static const glw::GLchar  s_attribute[];
-	static const glw::GLfloat s_stencil_pass_quad[];
-	static const glw::GLfloat s_depth_pass_quad[];
-	static const glw::GLfloat s_color_pass_quad[];
-	static const glw::GLuint  s_stencil_pass_quad_size;
-	static const glw::GLuint  s_depth_pass_quad_size;
-	static const glw::GLuint  s_color_pass_quad_size;
+    /* Private static variables. */
+    static const glw::GLchar s_vertex_shader[];
+    static const glw::GLchar s_fragment_shader[];
+    static const glw::GLchar s_attribute[];
+    static const glw::GLfloat s_stencil_pass_quad[];
+    static const glw::GLfloat s_depth_pass_quad[];
+    static const glw::GLfloat s_color_pass_quad[];
+    static const glw::GLuint s_stencil_pass_quad_size;
+    static const glw::GLuint s_depth_pass_quad_size;
+    static const glw::GLuint s_color_pass_quad_size;
 };
 /* FunctionalTest class */
-} /* Framebuffers namespace */
+} // namespace Framebuffers
 
 namespace Renderbuffers
 {
@@ -3646,15 +3646,15 @@ namespace Renderbuffers
 class CreationTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	CreationTest(deqp::Context& context);
+    /* Public member functions */
+    CreationTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	CreationTest(const CreationTest& other);
-	CreationTest& operator=(const CreationTest& other);
+    /* Private member functions */
+    CreationTest(const CreationTest &other);
+    CreationTest &operator=(const CreationTest &other);
 };
 /* CreationTest class */
 
@@ -3692,46 +3692,46 @@ private:
 class StorageTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	StorageTest(deqp::Context& context);
+    /* Public member functions */
+    StorageTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private static variables. */
-	static const struct RenderbufferInternalFormatConfiguration
-	{
-		glw::GLenum		   internalformat;
-		const glw::GLchar* internalformat_name;
-		bool			   hasRedComponent;
-		bool			   hasGreenComponent;
-		bool			   hasBlueComponent;
-		bool			   hasAlphaComponent;
-		bool			   hasDepthComponent;
-		bool			   hasStencilComponent;
-		bool			   isColorIntegralFormat;
-	} s_renderbuffer_internalformat_configuration[];
+    /* Private static variables. */
+    static const struct RenderbufferInternalFormatConfiguration
+    {
+        glw::GLenum internalformat;
+        const glw::GLchar *internalformat_name;
+        bool hasRedComponent;
+        bool hasGreenComponent;
+        bool hasBlueComponent;
+        bool hasAlphaComponent;
+        bool hasDepthComponent;
+        bool hasStencilComponent;
+        bool isColorIntegralFormat;
+    } s_renderbuffer_internalformat_configuration[];
 
-	static const glw::GLuint s_renderbuffer_internalformat_configuration_count;
+    static const glw::GLuint s_renderbuffer_internalformat_configuration_count;
 
-	static const glw::GLfloat s_reference_color[4];
-	static const glw::GLint   s_reference_color_integer[4];
-	static const glw::GLfloat s_reference_depth;
-	static const glw::GLint   s_reference_stencil;
+    static const glw::GLfloat s_reference_color[4];
+    static const glw::GLint s_reference_color_integer[4];
+    static const glw::GLfloat s_reference_depth;
+    static const glw::GLint s_reference_stencil;
 
-	/* Private member functions */
-	StorageTest(const StorageTest& other);
-	StorageTest& operator=(const StorageTest& other);
+    /* Private member functions */
+    StorageTest(const StorageTest &other);
+    StorageTest &operator=(const StorageTest &other);
 
-	bool PrepareRenderbuffer(StorageTest::RenderbufferInternalFormatConfiguration format, glw::GLuint width,
-							 glw::GLuint height);
-	void Clear(bool isIntegralFormat);
-	bool Check(StorageTest::RenderbufferInternalFormatConfiguration format, glw::GLuint width, glw::GLuint height);
-	void Clean();
+    bool PrepareRenderbuffer(StorageTest::RenderbufferInternalFormatConfiguration format, glw::GLuint width,
+                             glw::GLuint height);
+    void Clear(bool isIntegralFormat);
+    bool Check(StorageTest::RenderbufferInternalFormatConfiguration format, glw::GLuint width, glw::GLuint height);
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo;
-	glw::GLuint m_rbo;
+    /* Private member variables. */
+    glw::GLuint m_fbo;
+    glw::GLuint m_rbo;
 };
 /* StorageTest class */
 
@@ -3774,50 +3774,50 @@ private:
 class StorageMultisampleTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	StorageMultisampleTest(deqp::Context& context);
+    /* Public member functions */
+    StorageMultisampleTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private static variables. */
-	static const struct RenderbufferInternalFormatConfiguration
-	{
-		glw::GLenum		   internalformat;
-		const glw::GLchar* internalformat_name;
-		bool			   hasRedComponent;
-		bool			   hasGreenComponent;
-		bool			   hasBlueComponent;
-		bool			   hasAlphaComponent;
-		bool			   hasDepthComponent;
-		bool			   hasStencilComponent;
-		bool			   isColorIntegralFormat;
-	} s_renderbuffer_internalformat_configuration[];
+    /* Private static variables. */
+    static const struct RenderbufferInternalFormatConfiguration
+    {
+        glw::GLenum internalformat;
+        const glw::GLchar *internalformat_name;
+        bool hasRedComponent;
+        bool hasGreenComponent;
+        bool hasBlueComponent;
+        bool hasAlphaComponent;
+        bool hasDepthComponent;
+        bool hasStencilComponent;
+        bool isColorIntegralFormat;
+    } s_renderbuffer_internalformat_configuration[];
 
-	static const glw::GLuint s_renderbuffer_internalformat_configuration_count;
+    static const glw::GLuint s_renderbuffer_internalformat_configuration_count;
 
-	static const glw::GLfloat s_reference_color[4];
-	static const glw::GLint   s_reference_color_integer[4];
-	static const glw::GLfloat s_reference_depth;
-	static const glw::GLint   s_reference_stencil;
+    static const glw::GLfloat s_reference_color[4];
+    static const glw::GLint s_reference_color_integer[4];
+    static const glw::GLfloat s_reference_depth;
+    static const glw::GLint s_reference_stencil;
 
-	/* Private member functions */
-	StorageMultisampleTest(const StorageMultisampleTest& other);
-	StorageMultisampleTest& operator=(const StorageMultisampleTest& other);
+    /* Private member functions */
+    StorageMultisampleTest(const StorageMultisampleTest &other);
+    StorageMultisampleTest &operator=(const StorageMultisampleTest &other);
 
-	bool PrepareRenderbuffer(StorageMultisampleTest::RenderbufferInternalFormatConfiguration format, glw::GLuint width,
-							 glw::GLuint height, glw::GLsizei samples);
-	void Bind(glw::GLenum target, glw::GLuint selector);
-	void Blit(glw::GLuint width, glw::GLuint height);
-	void Clear(bool isIntegralFormat);
-	bool Check(StorageMultisampleTest::RenderbufferInternalFormatConfiguration format, glw::GLuint width,
-			   glw::GLuint height);
-	void Clean();
-	glw::GLint GetMaxConformantSampleCount(glw::GLenum target, glw::GLenum internalFormat);
+    bool PrepareRenderbuffer(StorageMultisampleTest::RenderbufferInternalFormatConfiguration format, glw::GLuint width,
+                             glw::GLuint height, glw::GLsizei samples);
+    void Bind(glw::GLenum target, glw::GLuint selector);
+    void Blit(glw::GLuint width, glw::GLuint height);
+    void Clear(bool isIntegralFormat);
+    bool Check(StorageMultisampleTest::RenderbufferInternalFormatConfiguration format, glw::GLuint width,
+               glw::GLuint height);
+    void Clean();
+    glw::GLint GetMaxConformantSampleCount(glw::GLenum target, glw::GLenum internalFormat);
 
-	/* Private member variables. */
-	glw::GLuint m_fbo[2];
-	glw::GLuint m_rbo[2];
+    /* Private member variables. */
+    glw::GLuint m_fbo[2];
+    glw::GLuint m_rbo[2];
 };
 /* StorageMultisampleTest class */
 
@@ -3851,19 +3851,19 @@ private:
 class GetParametersTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	GetParametersTest(deqp::Context& context);
+    /* Public member functions */
+    GetParametersTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	GetParametersTest(const GetParametersTest& other);
-	GetParametersTest& operator=(const GetParametersTest& other);
+    /* Private member functions */
+    GetParametersTest(const GetParametersTest &other);
+    GetParametersTest &operator=(const GetParametersTest &other);
 
-	/* Private member variables. */
-	glw::GLuint m_fbo;
-	glw::GLuint m_rbo;
+    /* Private member variables. */
+    glw::GLuint m_fbo;
+    glw::GLuint m_rbo;
 };
 /* GetParametersTest class */
 
@@ -3875,15 +3875,15 @@ private:
 class CreationErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	CreationErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    CreationErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	CreationErrorsTest(const CreationErrorsTest& other);
-	CreationErrorsTest& operator=(const CreationErrorsTest& other);
+    /* Private member functions */
+    CreationErrorsTest(const CreationErrorsTest &other);
+    CreationErrorsTest &operator=(const CreationErrorsTest &other);
 };
 /* CreationErrorsTest class */
 
@@ -3899,24 +3899,24 @@ private:
 class StorageErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	StorageErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    StorageErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	StorageErrorsTest(const StorageErrorsTest& other);
-	StorageErrorsTest& operator=(const StorageErrorsTest& other);
+    /* Private member functions */
+    StorageErrorsTest(const StorageErrorsTest &other);
+    StorageErrorsTest &operator=(const StorageErrorsTest &other);
 
-	void PrepareObjects();
-	bool ExpectError(glw::GLenum expected_error, const glw::GLchar* function, const glw::GLchar* conditions);
-	void Clean();
+    void PrepareObjects();
+    bool ExpectError(glw::GLenum expected_error, const glw::GLchar *function, const glw::GLchar *conditions);
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_rbo_valid;
-	glw::GLuint m_rbo_invalid;
-	glw::GLenum m_internalformat_invalid;
+    /* Private member variables. */
+    glw::GLuint m_rbo_valid;
+    glw::GLuint m_rbo_invalid;
+    glw::GLenum m_internalformat_invalid;
 };
 /* StorageErrorsTest class */
 
@@ -3946,26 +3946,26 @@ private:
 class StorageMultisampleErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	StorageMultisampleErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    StorageMultisampleErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	StorageMultisampleErrorsTest(const StorageMultisampleErrorsTest& other);
-	StorageMultisampleErrorsTest& operator=(const StorageMultisampleErrorsTest& other);
+    /* Private member functions */
+    StorageMultisampleErrorsTest(const StorageMultisampleErrorsTest &other);
+    StorageMultisampleErrorsTest &operator=(const StorageMultisampleErrorsTest &other);
 
-	void PrepareObjects();
-	bool ExpectError(glw::GLenum expected_error, const glw::GLchar* function, const glw::GLchar* conditions);
-	void Clean();
+    void PrepareObjects();
+    bool ExpectError(glw::GLenum expected_error, const glw::GLchar *function, const glw::GLchar *conditions);
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_rbo_valid;
-	glw::GLuint m_rbo_invalid;
-	glw::GLenum m_internalformat_invalid;
-	glw::GLint  m_max_samples;
-	glw::GLint  m_max_integer_samples;
+    /* Private member variables. */
+    glw::GLuint m_rbo_valid;
+    glw::GLuint m_rbo_invalid;
+    glw::GLenum m_internalformat_invalid;
+    glw::GLint m_max_samples;
+    glw::GLint m_max_integer_samples;
 };
 /* StorageMultisampleErrorsTest class */
 
@@ -3982,27 +3982,27 @@ private:
 class GetParameterErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	GetParameterErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    GetParameterErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	GetParameterErrorsTest(const GetParameterErrorsTest& other);
-	GetParameterErrorsTest& operator=(const GetParameterErrorsTest& other);
+    /* Private member functions */
+    GetParameterErrorsTest(const GetParameterErrorsTest &other);
+    GetParameterErrorsTest &operator=(const GetParameterErrorsTest &other);
 
-	void PrepareObjects();
-	bool ExpectError(glw::GLenum expected_error, const glw::GLchar* function, const glw::GLchar* conditions);
-	void Clean();
+    void PrepareObjects();
+    bool ExpectError(glw::GLenum expected_error, const glw::GLchar *function, const glw::GLchar *conditions);
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_rbo_valid;
-	glw::GLuint m_rbo_invalid;
-	glw::GLenum m_parameter_invalid;
+    /* Private member variables. */
+    glw::GLuint m_rbo_valid;
+    glw::GLuint m_rbo_invalid;
+    glw::GLenum m_parameter_invalid;
 };
 /* GetParameterErrorsTest class */
-} /* Renderbuffers namespace */
+} // namespace Renderbuffers
 
 namespace VertexArrays
 {
@@ -4020,15 +4020,15 @@ namespace VertexArrays
 class CreationTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	CreationTest(deqp::Context& context);
+    /* Public member functions */
+    CreationTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	CreationTest(const CreationTest& other);
-	CreationTest& operator=(const CreationTest& other);
+    /* Private member functions */
+    CreationTest(const CreationTest &other);
+    CreationTest &operator=(const CreationTest &other);
 };
 /* CreationTest class */
 
@@ -4076,35 +4076,35 @@ private:
 class EnableDisableAttributesTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	EnableDisableAttributesTest(deqp::Context& context);
+    /* Public member functions */
+    EnableDisableAttributesTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	EnableDisableAttributesTest(const EnableDisableAttributesTest& other);
-	EnableDisableAttributesTest& operator=(const EnableDisableAttributesTest& other);
+    /* Private member functions. */
+    EnableDisableAttributesTest(const EnableDisableAttributesTest &other);
+    EnableDisableAttributesTest &operator=(const EnableDisableAttributesTest &other);
 
-	glw::GLuint PrepareProgram(const bool bind_even_or_odd);
-	glw::GLuint BuildProgram(const char* vertex_shader, const bool bind_even_or_odd);
-	void PrepareVAO();
-	void PrepareXFB();
-	bool DrawAndCheck(bool bind_even_or_odd);
-	bool TurnOnAttributes(bool enable_even, bool enable_odd);
-	void Clean();
+    glw::GLuint PrepareProgram(const bool bind_even_or_odd);
+    glw::GLuint BuildProgram(const char *vertex_shader, const bool bind_even_or_odd);
+    void PrepareVAO();
+    void PrepareXFB();
+    bool DrawAndCheck(bool bind_even_or_odd);
+    bool TurnOnAttributes(bool enable_even, bool enable_odd);
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_po_even;
-	glw::GLuint m_po_odd;
-	glw::GLuint m_vao;
-	glw::GLuint m_bo;
-	glw::GLuint m_bo_xfb;
-	glw::GLint  m_max_attributes;
+    /* Private member variables. */
+    glw::GLuint m_po_even;
+    glw::GLuint m_po_odd;
+    glw::GLuint m_vao;
+    glw::GLuint m_bo;
+    glw::GLuint m_bo_xfb;
+    glw::GLint m_max_attributes;
 
-	/* Private static constants. */
-	static const glw::GLchar s_vertex_shader_template[];
-	static const glw::GLchar s_fragment_shader[];
+    /* Private static constants. */
+    static const glw::GLchar s_vertex_shader_template[];
+    static const glw::GLchar s_fragment_shader[];
 };
 /* EnableDisableAttributesTest class */
 
@@ -4133,32 +4133,32 @@ private:
 class ElementBufferTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	ElementBufferTest(deqp::Context& context);
+    /* Public member functions */
+    ElementBufferTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	ElementBufferTest(const ElementBufferTest& other);
-	ElementBufferTest& operator=(const ElementBufferTest& other);
+    /* Private member functions. */
+    ElementBufferTest(const ElementBufferTest &other);
+    ElementBufferTest &operator=(const ElementBufferTest &other);
 
-	void PrepareProgram();
-	bool PrepareVAO();
-	void PrepareXFB();
-	bool DrawAndCheck();
-	void Clean();
+    void PrepareProgram();
+    bool PrepareVAO();
+    void PrepareXFB();
+    bool DrawAndCheck();
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_po;
-	glw::GLuint m_vao;
-	glw::GLuint m_bo_array;
-	glw::GLuint m_bo_elements;
-	glw::GLuint m_bo_xfb;
+    /* Private member variables. */
+    glw::GLuint m_po;
+    glw::GLuint m_vao;
+    glw::GLuint m_bo_array;
+    glw::GLuint m_bo_elements;
+    glw::GLuint m_bo_xfb;
 
-	/* Private static constants. */
-	static const glw::GLchar s_vertex_shader[];
-	static const glw::GLchar s_fragment_shader[];
+    /* Private static constants. */
+    static const glw::GLchar s_vertex_shader[];
+    static const glw::GLchar s_fragment_shader[];
 };
 /* ElementBufferTest class */
 
@@ -4187,32 +4187,32 @@ private:
 class VertexBuffersTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	VertexBuffersTest(deqp::Context& context);
+    /* Public member functions */
+    VertexBuffersTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	VertexBuffersTest(const VertexBuffersTest& other);
-	VertexBuffersTest& operator=(const VertexBuffersTest& other);
+    /* Private member functions. */
+    VertexBuffersTest(const VertexBuffersTest &other);
+    VertexBuffersTest &operator=(const VertexBuffersTest &other);
 
-	void PrepareProgram();
-	bool PrepareVAO(bool use_multiple_buffers_function);
-	void PrepareXFB();
-	bool DrawAndCheck();
-	void Clean();
+    void PrepareProgram();
+    bool PrepareVAO(bool use_multiple_buffers_function);
+    void PrepareXFB();
+    bool DrawAndCheck();
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_po;
-	glw::GLuint m_vao;
-	glw::GLuint m_bo_array_0;
-	glw::GLuint m_bo_array_1;
-	glw::GLuint m_bo_xfb;
+    /* Private member variables. */
+    glw::GLuint m_po;
+    glw::GLuint m_vao;
+    glw::GLuint m_bo_array_0;
+    glw::GLuint m_bo_array_1;
+    glw::GLuint m_bo_xfb;
 
-	/* Private static constants. */
-	static const glw::GLchar s_vertex_shader[];
-	static const glw::GLchar s_fragment_shader[];
+    /* Private static constants. */
+    static const glw::GLchar s_vertex_shader[];
+    static const glw::GLchar s_fragment_shader[];
 };
 /* VertexBuffersTest class */
 
@@ -4247,57 +4247,57 @@ private:
 class AttributeFormatTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	AttributeFormatTest(deqp::Context& context);
+    /* Public member functions */
+    AttributeFormatTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private state enumerations. */
-	enum AtributeFormatFunctionType
-	{
-		ATTRIBUTE_FORMAT_FUNCTION_FLOAT,
-		ATTRIBUTE_FORMAT_FUNCTION_DOUBLE,
-		ATTRIBUTE_FORMAT_FUNCTION_INTEGER,
-		ATTRIBUTE_FORMAT_FUNCTION_COUNT /* Must be last */
-	};
+    /* Private state enumerations. */
+    enum AtributeFormatFunctionType
+    {
+        ATTRIBUTE_FORMAT_FUNCTION_FLOAT,
+        ATTRIBUTE_FORMAT_FUNCTION_DOUBLE,
+        ATTRIBUTE_FORMAT_FUNCTION_INTEGER,
+        ATTRIBUTE_FORMAT_FUNCTION_COUNT /* Must be last */
+    };
 
-	/* Private member functions. */
-	AttributeFormatTest(const AttributeFormatTest& other);
-	AttributeFormatTest& operator=(const AttributeFormatTest& other);
+    /* Private member functions. */
+    AttributeFormatTest(const AttributeFormatTest &other);
+    AttributeFormatTest &operator=(const AttributeFormatTest &other);
 
-	template <typename T>
-	bool compare(T a, T b);
+    template <typename T>
+    bool compare(T a, T b);
 
-	void PrepareProgram(glw::GLint size, AtributeFormatFunctionType function_selector);
+    void PrepareProgram(glw::GLint size, AtributeFormatFunctionType function_selector);
 
-	template <typename T>
-	glw::GLdouble NormalizationScaleFactor();
+    template <typename T>
+    glw::GLdouble NormalizationScaleFactor();
 
-	template <typename T>
-	bool PrepareVAO(glw::GLint size, glw::GLenum type_gl_name, bool normalized,
-					AtributeFormatFunctionType function_selector);
+    template <typename T>
+    bool PrepareVAO(glw::GLint size, glw::GLenum type_gl_name, bool normalized,
+                    AtributeFormatFunctionType function_selector);
 
-	void PrepareXFB();
+    void PrepareXFB();
 
-	template <typename T>
-	bool DrawAndCheck(glw::GLint size, bool normalized);
+    template <typename T>
+    bool DrawAndCheck(glw::GLint size, bool normalized);
 
-	void CleanVAO();
-	void CleanProgram();
-	void CleanXFB();
+    void CleanVAO();
+    void CleanProgram();
+    void CleanXFB();
 
-	/* Private member variables. */
-	glw::GLuint m_po;
-	glw::GLuint m_vao;
-	glw::GLuint m_bo_array;
-	glw::GLuint m_bo_xfb;
+    /* Private member variables. */
+    glw::GLuint m_po;
+    glw::GLuint m_vao;
+    glw::GLuint m_bo_array;
+    glw::GLuint m_bo_xfb;
 
-	/* Private static constants. */
-	static const glw::GLchar* s_vertex_shader_head;
-	static const glw::GLchar* s_vertex_shader_body;
-	static const glw::GLchar* s_vertex_shader_declaration[ATTRIBUTE_FORMAT_FUNCTION_COUNT][4 /* sizes count */];
-	static const glw::GLchar* s_fragment_shader;
+    /* Private static constants. */
+    static const glw::GLchar *s_vertex_shader_head;
+    static const glw::GLchar *s_vertex_shader_body;
+    static const glw::GLchar *s_vertex_shader_declaration[ATTRIBUTE_FORMAT_FUNCTION_COUNT][4 /* sizes count */];
+    static const glw::GLchar *s_fragment_shader;
 };
 /* AttributeFormatTest class */
 
@@ -4323,64 +4323,64 @@ private:
 class AttributeBindingTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	AttributeBindingTest(deqp::Context& context);
+    /* Public member functions */
+    AttributeBindingTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	AttributeBindingTest(const AttributeBindingTest& other);
-	AttributeBindingTest& operator=(const AttributeBindingTest& other);
+    /* Private member functions. */
+    AttributeBindingTest(const AttributeBindingTest &other);
+    AttributeBindingTest &operator=(const AttributeBindingTest &other);
 
-	void PrepareProgram();
-	bool PrepareVAO();
-	void PrepareXFB();
-	bool DrawAndCheck();
-	void Clean();
+    void PrepareProgram();
+    bool PrepareVAO();
+    void PrepareXFB();
+    bool DrawAndCheck();
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_po;
-	glw::GLuint m_vao;
-	glw::GLuint m_bo_array;
-	glw::GLuint m_bo_xfb;
+    /* Private member variables. */
+    glw::GLuint m_po;
+    glw::GLuint m_vao;
+    glw::GLuint m_bo_array;
+    glw::GLuint m_bo_xfb;
 
-	/* Private static constants. */
-	static const glw::GLchar s_vertex_shader[];
-	static const glw::GLchar s_fragment_shader[];
+    /* Private static constants. */
+    static const glw::GLchar s_vertex_shader[];
+    static const glw::GLchar s_fragment_shader[];
 };
 /* AttributeBindingTest class */
 
 class AttributeBindingDivisorTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	AttributeBindingDivisorTest(deqp::Context& context);
+    /* Public member functions */
+    AttributeBindingDivisorTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	AttributeBindingDivisorTest(const AttributeBindingDivisorTest& other);
-	AttributeBindingDivisorTest& operator=(const AttributeBindingDivisorTest& other);
+    /* Private member functions. */
+    AttributeBindingDivisorTest(const AttributeBindingDivisorTest &other);
+    AttributeBindingDivisorTest &operator=(const AttributeBindingDivisorTest &other);
 
-	void PrepareProgram();
-	void PrepareVAO();
-	void PrepareXFB();
-	void Draw(glw::GLuint number_of_points, glw::GLuint number_of_instances);
-	bool SetDivisor(glw::GLuint divisor);
-	bool CheckXFB(const glw::GLuint count, const glw::GLint expected[], const glw::GLchar* log_message);
-	void Clean();
+    void PrepareProgram();
+    void PrepareVAO();
+    void PrepareXFB();
+    void Draw(glw::GLuint number_of_points, glw::GLuint number_of_instances);
+    bool SetDivisor(glw::GLuint divisor);
+    bool CheckXFB(const glw::GLuint count, const glw::GLint expected[], const glw::GLchar *log_message);
+    void Clean();
 
-	/* Private member variables. */
-	glw::GLuint m_po;
-	glw::GLuint m_vao;
-	glw::GLuint m_bo_array;
-	glw::GLuint m_bo_xfb;
+    /* Private member variables. */
+    glw::GLuint m_po;
+    glw::GLuint m_vao;
+    glw::GLuint m_bo_array;
+    glw::GLuint m_bo_xfb;
 
-	/* Private static constants. */
-	static const glw::GLchar s_vertex_shader[];
-	static const glw::GLchar s_fragment_shader[];
+    /* Private static constants. */
+    static const glw::GLchar s_vertex_shader[];
+    static const glw::GLchar s_fragment_shader[];
 };
 /* AttributeBindingDivisorTest class */
 
@@ -4399,15 +4399,15 @@ private:
 class GetVertexArrayTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	GetVertexArrayTest(deqp::Context& context);
+    /* Public member functions */
+    GetVertexArrayTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	GetVertexArrayTest(const GetVertexArrayTest& other);
-	GetVertexArrayTest& operator=(const GetVertexArrayTest& other);
+    /* Private member functions. */
+    GetVertexArrayTest(const GetVertexArrayTest &other);
+    GetVertexArrayTest &operator=(const GetVertexArrayTest &other);
 };
 /* GetVertexArrayTest class */
 
@@ -4463,23 +4463,23 @@ private:
 class GetVertexArrayIndexedTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	GetVertexArrayIndexedTest(deqp::Context& context);
+    /* Public member functions */
+    GetVertexArrayIndexedTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	GetVertexArrayIndexedTest(const GetVertexArrayIndexedTest& other);
-	GetVertexArrayIndexedTest& operator=(const GetVertexArrayIndexedTest& other);
+    /* Private member functions. */
+    GetVertexArrayIndexedTest(const GetVertexArrayIndexedTest &other);
+    GetVertexArrayIndexedTest &operator=(const GetVertexArrayIndexedTest &other);
 
-	void PrepareVAO();
-	bool Check(const glw::GLenum pname, const glw::GLuint index, const glw::GLint expected);
-	bool Check64(const glw::GLenum pname, const glw::GLuint index, const glw::GLint64 expected);
+    void PrepareVAO();
+    bool Check(const glw::GLenum pname, const glw::GLuint index, const glw::GLint expected);
+    bool Check64(const glw::GLenum pname, const glw::GLuint index, const glw::GLint64 expected);
 
-	/* Private member variables. */
-	glw::GLuint m_vao;
-	glw::GLuint m_bo[4];
+    /* Private member variables. */
+    glw::GLuint m_vao;
+    glw::GLuint m_bo[4];
 };
 /* GetVertexArrayIndexedTest class */
 
@@ -4524,23 +4524,23 @@ private:
 class DefaultsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	DefaultsTest(deqp::Context& context);
+    /* Public member functions */
+    DefaultsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	DefaultsTest(const DefaultsTest& other);
-	DefaultsTest& operator=(const DefaultsTest& other);
+    /* Private member functions. */
+    DefaultsTest(const DefaultsTest &other);
+    DefaultsTest &operator=(const DefaultsTest &other);
 
-	void PrepareVAO();
-	bool Check(const glw::GLenum pname, const glw::GLint expected);
-	bool CheckIndexed(const glw::GLenum pname, const glw::GLuint index, const glw::GLint expected);
-	bool CheckIndexed64(const glw::GLenum pname, const glw::GLuint index, const glw::GLint64 expected);
+    void PrepareVAO();
+    bool Check(const glw::GLenum pname, const glw::GLint expected);
+    bool CheckIndexed(const glw::GLenum pname, const glw::GLuint index, const glw::GLint expected);
+    bool CheckIndexed64(const glw::GLenum pname, const glw::GLuint index, const glw::GLint64 expected);
 
-	/* Private member variables. */
-	glw::GLuint m_vao;
+    /* Private member variables. */
+    glw::GLuint m_vao;
 };
 /* DefaultsTest class */
 
@@ -4551,17 +4551,17 @@ private:
 class CreationErrorTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	CreationErrorTest(deqp::Context& context);
+    /* Public member functions */
+    CreationErrorTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	CreationErrorTest(const CreationErrorTest& other);
-	CreationErrorTest& operator=(const CreationErrorTest& other);
+    /* Private member functions. */
+    CreationErrorTest(const CreationErrorTest &other);
+    CreationErrorTest &operator=(const CreationErrorTest &other);
 
-	bool CheckError(const glw::GLenum expected, const glw::GLchar* log_message);
+    bool CheckError(const glw::GLenum expected, const glw::GLchar *log_message);
 };
 /* CreationErrorTest class */
 
@@ -4577,17 +4577,17 @@ private:
 class EnableDisableAttributeErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	EnableDisableAttributeErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    EnableDisableAttributeErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	EnableDisableAttributeErrorsTest(const EnableDisableAttributeErrorsTest& other);
-	EnableDisableAttributeErrorsTest& operator=(const EnableDisableAttributeErrorsTest& other);
+    /* Private member functions. */
+    EnableDisableAttributeErrorsTest(const EnableDisableAttributeErrorsTest &other);
+    EnableDisableAttributeErrorsTest &operator=(const EnableDisableAttributeErrorsTest &other);
 
-	bool CheckError(const glw::GLenum expected, const glw::GLchar* log_message);
+    bool CheckError(const glw::GLenum expected, const glw::GLchar *log_message);
 };
 /* EnableDisableAttributeErrorsTest class */
 
@@ -4602,17 +4602,17 @@ private:
 class ElementBufferErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	ElementBufferErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    ElementBufferErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	ElementBufferErrorsTest(const ElementBufferErrorsTest& other);
-	ElementBufferErrorsTest& operator=(const ElementBufferErrorsTest& other);
+    /* Private member functions. */
+    ElementBufferErrorsTest(const ElementBufferErrorsTest &other);
+    ElementBufferErrorsTest &operator=(const ElementBufferErrorsTest &other);
 
-	bool CheckError(const glw::GLenum expected, const glw::GLchar* log_message);
+    bool CheckError(const glw::GLenum expected, const glw::GLchar *log_message);
 };
 /* ElementBuffersErrorsTest class */
 
@@ -4648,17 +4648,17 @@ private:
 class VertexBuffersErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	VertexBuffersErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    VertexBuffersErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	VertexBuffersErrorsTest(const VertexBuffersErrorsTest& other);
-	VertexBuffersErrorsTest& operator=(const VertexBuffersErrorsTest& other);
+    /* Private member functions. */
+    VertexBuffersErrorsTest(const VertexBuffersErrorsTest &other);
+    VertexBuffersErrorsTest &operator=(const VertexBuffersErrorsTest &other);
 
-	bool CheckError(const glw::GLenum expected, const glw::GLchar* log_message);
+    bool CheckError(const glw::GLenum expected, const glw::GLchar *log_message);
 };
 /* VertexBuffersErrorsTest class */
 
@@ -4695,17 +4695,17 @@ private:
 class AttributeFormatErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	AttributeFormatErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    AttributeFormatErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	AttributeFormatErrorsTest(const AttributeFormatErrorsTest& other);
-	AttributeFormatErrorsTest& operator=(const AttributeFormatErrorsTest& other);
+    /* Private member functions. */
+    AttributeFormatErrorsTest(const AttributeFormatErrorsTest &other);
+    AttributeFormatErrorsTest &operator=(const AttributeFormatErrorsTest &other);
 
-	bool CheckError(const glw::GLenum expected, const glw::GLchar* log_message);
+    bool CheckError(const glw::GLenum expected, const glw::GLchar *log_message);
 };
 /* AttributeFormatErrorsTest class */
 
@@ -4724,17 +4724,17 @@ private:
 class AttributeBindingErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	AttributeBindingErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    AttributeBindingErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	AttributeBindingErrorsTest(const AttributeBindingErrorsTest& other);
-	AttributeBindingErrorsTest& operator=(const AttributeBindingErrorsTest& other);
+    /* Private member functions. */
+    AttributeBindingErrorsTest(const AttributeBindingErrorsTest &other);
+    AttributeBindingErrorsTest &operator=(const AttributeBindingErrorsTest &other);
 
-	bool CheckError(const glw::GLenum expected, const glw::GLchar* log_message);
+    bool CheckError(const glw::GLenum expected, const glw::GLchar *log_message);
 };
 /* AttributeBindingErrorsTest class */
 
@@ -4750,17 +4750,17 @@ private:
 class AttributeBindingDivisorErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	AttributeBindingDivisorErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    AttributeBindingDivisorErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	AttributeBindingDivisorErrorsTest(const AttributeBindingDivisorErrorsTest& other);
-	AttributeBindingDivisorErrorsTest& operator=(const AttributeBindingDivisorErrorsTest& other);
+    /* Private member functions. */
+    AttributeBindingDivisorErrorsTest(const AttributeBindingDivisorErrorsTest &other);
+    AttributeBindingDivisorErrorsTest &operator=(const AttributeBindingDivisorErrorsTest &other);
 
-	bool CheckError(const glw::GLenum expected, const glw::GLchar* log_message);
+    bool CheckError(const glw::GLenum expected, const glw::GLchar *log_message);
 };
 /* AttributeBindingDivisorErrorsTest class */
 
@@ -4775,17 +4775,17 @@ private:
 class GetVertexArrayErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	GetVertexArrayErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    GetVertexArrayErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	GetVertexArrayErrorsTest(const GetVertexArrayErrorsTest& other);
-	GetVertexArrayErrorsTest& operator=(const GetVertexArrayErrorsTest& other);
+    /* Private member functions. */
+    GetVertexArrayErrorsTest(const GetVertexArrayErrorsTest &other);
+    GetVertexArrayErrorsTest &operator=(const GetVertexArrayErrorsTest &other);
 
-	bool CheckError(const glw::GLenum expected, const glw::GLchar* log_message);
+    bool CheckError(const glw::GLenum expected, const glw::GLchar *log_message);
 };
 /* GetVertexArrayErrorsTest class */
 
@@ -4817,26 +4817,26 @@ private:
 class GetVertexArrayIndexedErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	GetVertexArrayIndexedErrorsTest(deqp::Context& context);
+    /* Public member functions */
+    GetVertexArrayIndexedErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions. */
-	GetVertexArrayIndexedErrorsTest(const GetVertexArrayIndexedErrorsTest& other);
-	GetVertexArrayIndexedErrorsTest& operator=(const GetVertexArrayIndexedErrorsTest& other);
+    /* Private member functions. */
+    GetVertexArrayIndexedErrorsTest(const GetVertexArrayIndexedErrorsTest &other);
+    GetVertexArrayIndexedErrorsTest &operator=(const GetVertexArrayIndexedErrorsTest &other);
 
-	bool CheckError(const glw::GLenum expected, const glw::GLchar* log_message);
+    bool CheckError(const glw::GLenum expected, const glw::GLchar *log_message);
 };
 /* GetVertexArrayIndexedErrorsTest class */
 
 namespace Utilities
 {
 std::string itoa(glw::GLuint i);
-std::string replace(const std::string& src, const std::string& key, const std::string& value);
-} /* Vertex Arrays utilities class */
-} /* VertexArrays namespace */
+std::string replace(const std::string &src, const std::string &key, const std::string &value);
+} // namespace Utilities
+} // namespace VertexArrays
 
 /* Direct State Access Textures Tests */
 namespace Textures
@@ -4870,43 +4870,43 @@ namespace Textures
 class CreationTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	CreationTest(deqp::Context& context);
+    /* Public member functions */
+    CreationTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	CreationTest(const CreationTest& other);
-	CreationTest& operator=(const CreationTest& other);
+    /* Private member functions */
+    CreationTest(const CreationTest &other);
+    CreationTest &operator=(const CreationTest &other);
 };
 /* CreationTest class */
 
 class Reference
 {
 public:
-	template <typename T, glw::GLint S, bool N>
-	static glw::GLenum InternalFormat();
+    template <typename T, glw::GLint S, bool N>
+    static glw::GLenum InternalFormat();
 
-	template <glw::GLint S, bool N>
-	static glw::GLenum Format();
+    template <glw::GLint S, bool N>
+    static glw::GLenum Format();
 
-	template <typename T>
-	static glw::GLenum Type();
+    template <typename T>
+    static glw::GLenum Type();
 
-	template <typename T, bool N>
-	static const T* ReferenceData();
+    template <typename T, bool N>
+    static const T *ReferenceData();
 
-	static glw::GLuint ReferenceDataCount();
+    static glw::GLuint ReferenceDataCount();
 
-	template <typename T>
-	static glw::GLuint ReferenceDataSize();
+    template <typename T>
+    static glw::GLuint ReferenceDataSize();
 
-	template <typename T>
-	static bool Compare(const T a, const T b);
+    template <typename T>
+    static bool Compare(const T a, const T b);
 
 private:
-	static const glw::GLuint s_reference_count = 2 /* 1D */ * 3 /* 2D */ * 4 /* 3D */ * 4 /* components */;
+    static const glw::GLuint s_reference_count = 2 /* 1D */ * 3 /* 2D */ * 4 /* 3D */ * 4 /* components */;
 };
 
 /** @class BufferTest
@@ -4978,62 +4978,62 @@ template <typename T, glw::GLint S, bool N>
 class BufferTest : public deqp::TestCase, Reference
 {
 public:
-	/* Public member functions. */
-	BufferTest(deqp::Context& context, const char* name);
+    /* Public member functions. */
+    BufferTest(deqp::Context &context, const char *name);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	BufferTest(const BufferTest& other);
-	BufferTest& operator=(const BufferTest& other);
+    /* Private constructors. */
+    BufferTest(const BufferTest &other);
+    BufferTest &operator=(const BufferTest &other);
 
-	/* Private member functions. */
-	static glw::GLuint   TestReferenceDataCount();
+    /* Private member functions. */
+    static glw::GLuint TestReferenceDataCount();
 
-	static glw::GLuint TestReferenceDataSize();
+    static glw::GLuint TestReferenceDataSize();
 
-	static const glw::GLchar* FragmentShaderDeclaration();
+    static const glw::GLchar *FragmentShaderDeclaration();
 
-	bool CreateBufferTexture(bool use_range_version);
+    bool CreateBufferTexture(bool use_range_version);
 
-	bool Check();
+    bool Check();
 
-	bool Test(bool use_range_version);
+    bool Test(bool use_range_version);
 
-	bool PrepareFramebuffer(const glw::GLenum internal_format);
-	void PrepareProgram(const glw::GLchar* variable_declaration);
-	void PrepareVertexArray();
-	void Draw();
-	void CleanBufferTexture();
-	void CleanFramebuffer();
-	void CleanProgram();
-	void CleanErrors();
-	void CleanVertexArray();
+    bool PrepareFramebuffer(const glw::GLenum internal_format);
+    void PrepareProgram(const glw::GLchar *variable_declaration);
+    void PrepareVertexArray();
+    void Draw();
+    void CleanBufferTexture();
+    void CleanFramebuffer();
+    void CleanProgram();
+    void CleanErrors();
+    void CleanVertexArray();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo;
-	glw::GLuint m_rbo;
-	glw::GLuint m_po;
-	glw::GLuint m_to;
-	glw::GLuint m_bo;
-	glw::GLuint m_vao;
+    /* Private member variables. */
+    glw::GLuint m_fbo;
+    glw::GLuint m_rbo;
+    glw::GLuint m_po;
+    glw::GLuint m_to;
+    glw::GLuint m_bo;
+    glw::GLuint m_vao;
 
-	/* Private static constants. */
-	static const glw::GLuint  s_fbo_size_x = 6;
-	static const glw::GLuint  s_fbo_size_y = 1;
-	static const glw::GLchar* s_vertex_shader;
-	static const glw::GLchar* s_fragment_shader_head;
-	static const glw::GLchar* s_fragment_shader_fdecl_lowp;
-	static const glw::GLchar* s_fragment_shader_idecl_lowp;
-	static const glw::GLchar* s_fragment_shader_udecl_lowp;
-	static const glw::GLchar* s_fragment_shader_fdecl_mediump;
-	static const glw::GLchar* s_fragment_shader_idecl_mediump;
-	static const glw::GLchar* s_fragment_shader_udecl_mediump;
-	static const glw::GLchar* s_fragment_shader_fdecl_highp;
-	static const glw::GLchar* s_fragment_shader_idecl_highp;
-	static const glw::GLchar* s_fragment_shader_udecl_highp;
-	static const glw::GLchar* s_fragment_shader_tail;
+    /* Private static constants. */
+    static const glw::GLuint s_fbo_size_x = 6;
+    static const glw::GLuint s_fbo_size_y = 1;
+    static const glw::GLchar *s_vertex_shader;
+    static const glw::GLchar *s_fragment_shader_head;
+    static const glw::GLchar *s_fragment_shader_fdecl_lowp;
+    static const glw::GLchar *s_fragment_shader_idecl_lowp;
+    static const glw::GLchar *s_fragment_shader_udecl_lowp;
+    static const glw::GLchar *s_fragment_shader_fdecl_mediump;
+    static const glw::GLchar *s_fragment_shader_idecl_mediump;
+    static const glw::GLchar *s_fragment_shader_udecl_mediump;
+    static const glw::GLchar *s_fragment_shader_fdecl_highp;
+    static const glw::GLchar *s_fragment_shader_idecl_highp;
+    static const glw::GLchar *s_fragment_shader_udecl_highp;
+    static const glw::GLchar *s_fragment_shader_tail;
 };
 
 /** @brief Fragment shader part selector.
@@ -5041,39 +5041,39 @@ private:
  *  @return Array of characters with source code.
  */
 template <typename T, glw::GLint S, bool N>
-const glw::GLchar* BufferTest<T, S, N>::FragmentShaderDeclaration()
+const glw::GLchar *BufferTest<T, S, N>::FragmentShaderDeclaration()
 {
-	if (typeid(T) == typeid(glw::GLbyte))
-	{
-		return s_fragment_shader_idecl_lowp;
-	}
+    if (typeid(T) == typeid(glw::GLbyte))
+    {
+        return s_fragment_shader_idecl_lowp;
+    }
 
-	if (typeid(T) == typeid(glw::GLubyte))
-	{
-		return N ? s_fragment_shader_fdecl_lowp : s_fragment_shader_udecl_lowp;
-	}
+    if (typeid(T) == typeid(glw::GLubyte))
+    {
+        return N ? s_fragment_shader_fdecl_lowp : s_fragment_shader_udecl_lowp;
+    }
 
-	if (typeid(T) == typeid(glw::GLshort))
-	{
-		return s_fragment_shader_idecl_mediump;
-	}
+    if (typeid(T) == typeid(glw::GLshort))
+    {
+        return s_fragment_shader_idecl_mediump;
+    }
 
-	if (typeid(T) == typeid(glw::GLushort))
-	{
-		return N ? s_fragment_shader_fdecl_mediump : s_fragment_shader_udecl_mediump;
-	}
+    if (typeid(T) == typeid(glw::GLushort))
+    {
+        return N ? s_fragment_shader_fdecl_mediump : s_fragment_shader_udecl_mediump;
+    }
 
-	if (typeid(T) == typeid(glw::GLint))
-	{
-		return s_fragment_shader_idecl_highp;
-	}
+    if (typeid(T) == typeid(glw::GLint))
+    {
+        return s_fragment_shader_idecl_highp;
+    }
 
-	if (typeid(T) == typeid(glw::GLuint))
-	{
-		return s_fragment_shader_udecl_highp;
-	}
+    if (typeid(T) == typeid(glw::GLuint))
+    {
+        return s_fragment_shader_udecl_highp;
+    }
 
-	return s_fragment_shader_fdecl_highp;
+    return s_fragment_shader_fdecl_highp;
 }
 
 /* BufferTest class */
@@ -5148,96 +5148,96 @@ template <typename T, glw::GLint S, bool N, glw::GLuint D, bool I>
 class StorageAndSubImageTest : public deqp::TestCase, Reference
 {
 public:
-	/* Public member functions. */
-	StorageAndSubImageTest(deqp::Context& context, const char* name);
+    /* Public member functions. */
+    StorageAndSubImageTest(deqp::Context &context, const char *name);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	StorageAndSubImageTest(const StorageAndSubImageTest& other);
-	StorageAndSubImageTest& operator=(const StorageAndSubImageTest& other);
+    /* Private constructors. */
+    StorageAndSubImageTest(const StorageAndSubImageTest &other);
+    StorageAndSubImageTest &operator=(const StorageAndSubImageTest &other);
 
-	/* Private member functions. */
-	static glw::GLuint TestReferenceDataCount();
+    /* Private member functions. */
+    static glw::GLuint TestReferenceDataCount();
 
-	static glw::GLuint	TestReferenceDataWidth();
+    static glw::GLuint TestReferenceDataWidth();
 
-	static glw::GLuint	TestReferenceDataHeight();
+    static glw::GLuint TestReferenceDataHeight();
 
-	static glw::GLuint	TestReferenceDataDepth();
+    static glw::GLuint TestReferenceDataDepth();
 
-	static glw::GLuint TestReferenceDataSize();
+    static glw::GLuint TestReferenceDataSize();
 
-	static const glw::GLchar* FragmentShaderDeclaration();
+    static const glw::GLchar *FragmentShaderDeclaration();
 
-	static const glw::GLchar* FragmentShaderTail();
+    static const glw::GLchar *FragmentShaderTail();
 
-	static glw::GLenum	TextureTarget();
+    static glw::GLenum TextureTarget();
 
-	bool TextureSubImage(glw::GLenum target, glw::GLuint texture, glw::GLint level,
-						 glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format,
-						 glw::GLenum type, const glw::GLvoid* data);
+    bool TextureSubImage(glw::GLenum target, glw::GLuint texture, glw::GLint level, glw::GLsizei width,
+                         glw::GLsizei height, glw::GLsizei depth, glw::GLenum format, glw::GLenum type,
+                         const glw::GLvoid *data);
 
-	bool TextureStorage(glw::GLenum target, glw::GLuint texture, glw::GLsizei levels, glw::GLenum internalformat,
-						glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth);
+    bool TextureStorage(glw::GLenum target, glw::GLuint texture, glw::GLsizei levels, glw::GLenum internalformat,
+                        glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth);
 
-	bool CreateTexture();
+    bool CreateTexture();
 
-	bool Check();
+    bool Check();
 
-	bool Test();
+    bool Test();
 
-	void PrepareFramebuffer(const glw::GLenum internal_format);
-	void PrepareProgram(const glw::GLchar* variable_declaration, const glw::GLchar* tail);
-	void PrepareVertexArray();
-	void Draw();
-	void CleanTexture();
-	void CleanFramebuffer();
-	void CleanProgram();
-	void CleanErrors();
-	void CleanVertexArray();
+    void PrepareFramebuffer(const glw::GLenum internal_format);
+    void PrepareProgram(const glw::GLchar *variable_declaration, const glw::GLchar *tail);
+    void PrepareVertexArray();
+    void Draw();
+    void CleanTexture();
+    void CleanFramebuffer();
+    void CleanProgram();
+    void CleanErrors();
+    void CleanVertexArray();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo;
-	glw::GLuint m_rbo;
-	glw::GLuint m_po;
-	glw::GLuint m_to;
-	glw::GLuint m_vao;
+    /* Private member variables. */
+    glw::GLuint m_fbo;
+    glw::GLuint m_rbo;
+    glw::GLuint m_po;
+    glw::GLuint m_to;
+    glw::GLuint m_vao;
 
-	/* Private static constants. */
-	static const glw::GLchar* s_vertex_shader;
-	static const glw::GLchar* s_fragment_shader_head;
-	static const glw::GLchar* s_fragment_shader_1D_fdecl_lowp;
-	static const glw::GLchar* s_fragment_shader_1D_idecl_lowp;
-	static const glw::GLchar* s_fragment_shader_1D_udecl_lowp;
-	static const glw::GLchar* s_fragment_shader_1D_fdecl_mediump;
-	static const glw::GLchar* s_fragment_shader_1D_idecl_mediump;
-	static const glw::GLchar* s_fragment_shader_1D_udecl_mediump;
-	static const glw::GLchar* s_fragment_shader_1D_fdecl_highp;
-	static const glw::GLchar* s_fragment_shader_1D_idecl_highp;
-	static const glw::GLchar* s_fragment_shader_1D_udecl_highp;
-	static const glw::GLchar* s_fragment_shader_2D_fdecl_lowp;
-	static const glw::GLchar* s_fragment_shader_2D_idecl_lowp;
-	static const glw::GLchar* s_fragment_shader_2D_udecl_lowp;
-	static const glw::GLchar* s_fragment_shader_2D_fdecl_mediump;
-	static const glw::GLchar* s_fragment_shader_2D_idecl_mediump;
-	static const glw::GLchar* s_fragment_shader_2D_udecl_mediump;
-	static const glw::GLchar* s_fragment_shader_2D_fdecl_highp;
-	static const glw::GLchar* s_fragment_shader_2D_idecl_highp;
-	static const glw::GLchar* s_fragment_shader_2D_udecl_highp;
-	static const glw::GLchar* s_fragment_shader_3D_fdecl_lowp;
-	static const glw::GLchar* s_fragment_shader_3D_idecl_lowp;
-	static const glw::GLchar* s_fragment_shader_3D_udecl_lowp;
-	static const glw::GLchar* s_fragment_shader_3D_fdecl_mediump;
-	static const glw::GLchar* s_fragment_shader_3D_idecl_mediump;
-	static const glw::GLchar* s_fragment_shader_3D_udecl_mediump;
-	static const glw::GLchar* s_fragment_shader_3D_fdecl_highp;
-	static const glw::GLchar* s_fragment_shader_3D_idecl_highp;
-	static const glw::GLchar* s_fragment_shader_3D_udecl_highp;
-	static const glw::GLchar* s_fragment_shader_1D_tail;
-	static const glw::GLchar* s_fragment_shader_2D_tail;
-	static const glw::GLchar* s_fragment_shader_3D_tail;
+    /* Private static constants. */
+    static const glw::GLchar *s_vertex_shader;
+    static const glw::GLchar *s_fragment_shader_head;
+    static const glw::GLchar *s_fragment_shader_1D_fdecl_lowp;
+    static const glw::GLchar *s_fragment_shader_1D_idecl_lowp;
+    static const glw::GLchar *s_fragment_shader_1D_udecl_lowp;
+    static const glw::GLchar *s_fragment_shader_1D_fdecl_mediump;
+    static const glw::GLchar *s_fragment_shader_1D_idecl_mediump;
+    static const glw::GLchar *s_fragment_shader_1D_udecl_mediump;
+    static const glw::GLchar *s_fragment_shader_1D_fdecl_highp;
+    static const glw::GLchar *s_fragment_shader_1D_idecl_highp;
+    static const glw::GLchar *s_fragment_shader_1D_udecl_highp;
+    static const glw::GLchar *s_fragment_shader_2D_fdecl_lowp;
+    static const glw::GLchar *s_fragment_shader_2D_idecl_lowp;
+    static const glw::GLchar *s_fragment_shader_2D_udecl_lowp;
+    static const glw::GLchar *s_fragment_shader_2D_fdecl_mediump;
+    static const glw::GLchar *s_fragment_shader_2D_idecl_mediump;
+    static const glw::GLchar *s_fragment_shader_2D_udecl_mediump;
+    static const glw::GLchar *s_fragment_shader_2D_fdecl_highp;
+    static const glw::GLchar *s_fragment_shader_2D_idecl_highp;
+    static const glw::GLchar *s_fragment_shader_2D_udecl_highp;
+    static const glw::GLchar *s_fragment_shader_3D_fdecl_lowp;
+    static const glw::GLchar *s_fragment_shader_3D_idecl_lowp;
+    static const glw::GLchar *s_fragment_shader_3D_udecl_lowp;
+    static const glw::GLchar *s_fragment_shader_3D_fdecl_mediump;
+    static const glw::GLchar *s_fragment_shader_3D_idecl_mediump;
+    static const glw::GLchar *s_fragment_shader_3D_udecl_mediump;
+    static const glw::GLchar *s_fragment_shader_3D_fdecl_highp;
+    static const glw::GLchar *s_fragment_shader_3D_idecl_highp;
+    static const glw::GLchar *s_fragment_shader_3D_udecl_highp;
+    static const glw::GLchar *s_fragment_shader_1D_tail;
+    static const glw::GLchar *s_fragment_shader_2D_tail;
+    static const glw::GLchar *s_fragment_shader_3D_tail;
 };
 /* StorageAndSubImageTest class */
 
@@ -5316,117 +5316,117 @@ template <typename T, glw::GLint S, bool N, glw::GLuint D>
 class StorageMultisampleTest : public deqp::TestCase, Reference
 {
 public:
-	/* Public member functions. */
-	StorageMultisampleTest(deqp::Context& context, const char *name);
+    /* Public member functions. */
+    StorageMultisampleTest(deqp::Context &context, const char *name);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	StorageMultisampleTest(const StorageMultisampleTest& other);
-	StorageMultisampleTest& operator=(const StorageMultisampleTest& other);
+    /* Private constructors. */
+    StorageMultisampleTest(const StorageMultisampleTest &other);
+    StorageMultisampleTest &operator=(const StorageMultisampleTest &other);
 
-	/* Private member functions. */
-	static glw::GLuint TestReferenceDataCount();
+    /* Private member functions. */
+    static glw::GLuint TestReferenceDataCount();
 
-	static glw::GLuint	TestReferenceDataWidth();
+    static glw::GLuint TestReferenceDataWidth();
 
-	static glw::GLuint	TestReferenceDataHeight();
+    static glw::GLuint TestReferenceDataHeight();
 
-	static glw::GLuint	TestReferenceDataDepth();
+    static glw::GLuint TestReferenceDataDepth();
 
-	static glw::GLuint TestReferenceDataSize();
+    static glw::GLuint TestReferenceDataSize();
 
-	static const glw::GLchar* FragmentShaderDeclarationMultisample();
+    static const glw::GLchar *FragmentShaderDeclarationMultisample();
 
-	static const glw::GLchar* FragmentShaderDeclarationAuxiliary();
+    static const glw::GLchar *FragmentShaderDeclarationAuxiliary();
 
-	static const glw::GLchar* FragmentShaderTail();
+    static const glw::GLchar *FragmentShaderTail();
 
-	static glw::GLenum	InputTextureTarget();
+    static glw::GLenum InputTextureTarget();
 
-	static glw::GLenum	MultisampleTextureTarget();
+    static glw::GLenum MultisampleTextureTarget();
 
-	void InputTextureImage(const glw::GLenum internal_format, const glw::GLuint width, const glw::GLuint height,
-						   const glw::GLuint depth, const glw::GLenum format, const glw::GLenum type,
-						   const glw::GLvoid* data);
+    void InputTextureImage(const glw::GLenum internal_format, const glw::GLuint width, const glw::GLuint height,
+                           const glw::GLuint depth, const glw::GLenum format, const glw::GLenum type,
+                           const glw::GLvoid *data);
 
-	void CreateInputTexture();
+    void CreateInputTexture();
 
-	bool Check();
+    bool Check();
 
-	bool Test();
+    bool Test();
 
-	bool PrepareFramebufferMultisample(const glw::GLenum internal_format);
+    bool PrepareFramebufferMultisample(const glw::GLenum internal_format);
 
-	void PrepareFramebufferAuxiliary(const glw::GLenum internal_format);
+    void PrepareFramebufferAuxiliary(const glw::GLenum internal_format);
 
-	glw::GLuint PrepareProgram(const glw::GLchar* variable_declaration, const glw::GLchar* tail);
-	void PrepareVertexArray();
+    glw::GLuint PrepareProgram(const glw::GLchar *variable_declaration, const glw::GLchar *tail);
+    void PrepareVertexArray();
 
-	void Draw();
+    void Draw();
 
-	void CleanInputTexture();
-	void CleanAuxiliaryTexture();
-	void CleanFramebuffers();
-	void CleanPrograms();
-	void CleanErrors();
-	void CleanVertexArray();
+    void CleanInputTexture();
+    void CleanAuxiliaryTexture();
+    void CleanFramebuffers();
+    void CleanPrograms();
+    void CleanErrors();
+    void CleanVertexArray();
 
-	/* Private member variables. */
-	glw::GLuint m_fbo_ms;
-	glw::GLuint m_fbo_aux;
-	glw::GLuint m_to_ms;
-	glw::GLuint m_po_ms;
-	glw::GLuint m_po_aux;
-	glw::GLuint m_to;
-	glw::GLuint m_to_aux;
-	glw::GLuint m_vao;
+    /* Private member variables. */
+    glw::GLuint m_fbo_ms;
+    glw::GLuint m_fbo_aux;
+    glw::GLuint m_to_ms;
+    glw::GLuint m_po_ms;
+    glw::GLuint m_po_aux;
+    glw::GLuint m_to;
+    glw::GLuint m_to_aux;
+    glw::GLuint m_vao;
 
-	/* Private static constants. */
-	static const glw::GLchar* s_vertex_shader;
-	static const glw::GLchar* s_fragment_shader_head;
-	static const glw::GLchar* s_fragment_shader_ms_2D_fdecl_lowp;
-	static const glw::GLchar* s_fragment_shader_ms_2D_idecl_lowp;
-	static const glw::GLchar* s_fragment_shader_ms_2D_udecl_lowp;
-	static const glw::GLchar* s_fragment_shader_ms_2D_fdecl_mediump;
-	static const glw::GLchar* s_fragment_shader_ms_2D_idecl_mediump;
-	static const glw::GLchar* s_fragment_shader_ms_2D_udecl_mediump;
-	static const glw::GLchar* s_fragment_shader_ms_2D_fdecl_highp;
-	static const glw::GLchar* s_fragment_shader_ms_2D_idecl_highp;
-	static const glw::GLchar* s_fragment_shader_ms_2D_udecl_highp;
+    /* Private static constants. */
+    static const glw::GLchar *s_vertex_shader;
+    static const glw::GLchar *s_fragment_shader_head;
+    static const glw::GLchar *s_fragment_shader_ms_2D_fdecl_lowp;
+    static const glw::GLchar *s_fragment_shader_ms_2D_idecl_lowp;
+    static const glw::GLchar *s_fragment_shader_ms_2D_udecl_lowp;
+    static const glw::GLchar *s_fragment_shader_ms_2D_fdecl_mediump;
+    static const glw::GLchar *s_fragment_shader_ms_2D_idecl_mediump;
+    static const glw::GLchar *s_fragment_shader_ms_2D_udecl_mediump;
+    static const glw::GLchar *s_fragment_shader_ms_2D_fdecl_highp;
+    static const glw::GLchar *s_fragment_shader_ms_2D_idecl_highp;
+    static const glw::GLchar *s_fragment_shader_ms_2D_udecl_highp;
 
-	static const glw::GLchar* s_fragment_shader_ms_3D_fdecl_lowp;
-	static const glw::GLchar* s_fragment_shader_ms_3D_idecl_lowp;
-	static const glw::GLchar* s_fragment_shader_ms_3D_udecl_lowp;
-	static const glw::GLchar* s_fragment_shader_ms_3D_fdecl_mediump;
-	static const glw::GLchar* s_fragment_shader_ms_3D_idecl_mediump;
-	static const glw::GLchar* s_fragment_shader_ms_3D_udecl_mediump;
-	static const glw::GLchar* s_fragment_shader_ms_3D_fdecl_highp;
-	static const glw::GLchar* s_fragment_shader_ms_3D_idecl_highp;
-	static const glw::GLchar* s_fragment_shader_ms_3D_udecl_highp;
+    static const glw::GLchar *s_fragment_shader_ms_3D_fdecl_lowp;
+    static const glw::GLchar *s_fragment_shader_ms_3D_idecl_lowp;
+    static const glw::GLchar *s_fragment_shader_ms_3D_udecl_lowp;
+    static const glw::GLchar *s_fragment_shader_ms_3D_fdecl_mediump;
+    static const glw::GLchar *s_fragment_shader_ms_3D_idecl_mediump;
+    static const glw::GLchar *s_fragment_shader_ms_3D_udecl_mediump;
+    static const glw::GLchar *s_fragment_shader_ms_3D_fdecl_highp;
+    static const glw::GLchar *s_fragment_shader_ms_3D_idecl_highp;
+    static const glw::GLchar *s_fragment_shader_ms_3D_udecl_highp;
 
-	static const glw::GLchar* s_fragment_shader_aux_2D_fdecl_lowp;
-	static const glw::GLchar* s_fragment_shader_aux_2D_idecl_lowp;
-	static const glw::GLchar* s_fragment_shader_aux_2D_udecl_lowp;
-	static const glw::GLchar* s_fragment_shader_aux_2D_fdecl_mediump;
-	static const glw::GLchar* s_fragment_shader_aux_2D_idecl_mediump;
-	static const glw::GLchar* s_fragment_shader_aux_2D_udecl_mediump;
-	static const glw::GLchar* s_fragment_shader_aux_2D_fdecl_highp;
-	static const glw::GLchar* s_fragment_shader_aux_2D_idecl_highp;
-	static const glw::GLchar* s_fragment_shader_aux_2D_udecl_highp;
+    static const glw::GLchar *s_fragment_shader_aux_2D_fdecl_lowp;
+    static const glw::GLchar *s_fragment_shader_aux_2D_idecl_lowp;
+    static const glw::GLchar *s_fragment_shader_aux_2D_udecl_lowp;
+    static const glw::GLchar *s_fragment_shader_aux_2D_fdecl_mediump;
+    static const glw::GLchar *s_fragment_shader_aux_2D_idecl_mediump;
+    static const glw::GLchar *s_fragment_shader_aux_2D_udecl_mediump;
+    static const glw::GLchar *s_fragment_shader_aux_2D_fdecl_highp;
+    static const glw::GLchar *s_fragment_shader_aux_2D_idecl_highp;
+    static const glw::GLchar *s_fragment_shader_aux_2D_udecl_highp;
 
-	static const glw::GLchar* s_fragment_shader_aux_3D_fdecl_lowp;
-	static const glw::GLchar* s_fragment_shader_aux_3D_idecl_lowp;
-	static const glw::GLchar* s_fragment_shader_aux_3D_udecl_lowp;
-	static const glw::GLchar* s_fragment_shader_aux_3D_fdecl_mediump;
-	static const glw::GLchar* s_fragment_shader_aux_3D_idecl_mediump;
-	static const glw::GLchar* s_fragment_shader_aux_3D_udecl_mediump;
-	static const glw::GLchar* s_fragment_shader_aux_3D_fdecl_highp;
-	static const glw::GLchar* s_fragment_shader_aux_3D_idecl_highp;
-	static const glw::GLchar* s_fragment_shader_aux_3D_udecl_highp;
-	static const glw::GLchar* s_fragment_shader_tail_2D;
-	static const glw::GLchar* s_fragment_shader_tail_3D;
+    static const glw::GLchar *s_fragment_shader_aux_3D_fdecl_lowp;
+    static const glw::GLchar *s_fragment_shader_aux_3D_idecl_lowp;
+    static const glw::GLchar *s_fragment_shader_aux_3D_udecl_lowp;
+    static const glw::GLchar *s_fragment_shader_aux_3D_fdecl_mediump;
+    static const glw::GLchar *s_fragment_shader_aux_3D_idecl_mediump;
+    static const glw::GLchar *s_fragment_shader_aux_3D_udecl_mediump;
+    static const glw::GLchar *s_fragment_shader_aux_3D_fdecl_highp;
+    static const glw::GLchar *s_fragment_shader_aux_3D_idecl_highp;
+    static const glw::GLchar *s_fragment_shader_aux_3D_udecl_highp;
+    static const glw::GLchar *s_fragment_shader_tail_2D;
+    static const glw::GLchar *s_fragment_shader_tail_3D;
 };
 /* StorageMultisampleTest class */
 
@@ -5521,65 +5521,65 @@ private:
 class CompressedSubImageTest : public deqp::TestCase
 {
 public:
-	/* Public member functions. */
-	CompressedSubImageTest(deqp::Context& context);
+    /* Public member functions. */
+    CompressedSubImageTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	CompressedSubImageTest(const CompressedSubImageTest& other);
-	CompressedSubImageTest& operator=(const CompressedSubImageTest& other);
+    /* Private constructors. */
+    CompressedSubImageTest(const CompressedSubImageTest &other);
+    CompressedSubImageTest &operator=(const CompressedSubImageTest &other);
 
-	void CreateTextures(glw::GLenum target);
+    void CreateTextures(glw::GLenum target);
 
-	template <glw::GLuint D>
-	glw::GLenum			  TextureTarget();
+    template <glw::GLuint D>
+    glw::GLenum TextureTarget();
 
-	template <glw::GLuint D>
-	bool TextureImage(glw::GLint internalformat);
+    template <glw::GLuint D>
+    bool TextureImage(glw::GLint internalformat);
 
-	template <glw::GLuint D>
-	void CompressedTexImage(glw::GLint internalformat);
+    template <glw::GLuint D>
+    void CompressedTexImage(glw::GLint internalformat);
 
-	template <glw::GLuint D>
-	bool CompressedTextureSubImage(glw::GLint internalformat);
+    template <glw::GLuint D>
+    bool CompressedTextureSubImage(glw::GLint internalformat);
 
-	template <glw::GLuint D>
-	bool PrepareReferenceData(glw::GLenum internalformat);
+    template <glw::GLuint D>
+    bool PrepareReferenceData(glw::GLenum internalformat);
 
-	template <glw::GLuint D>
-	void PrepareStorage(glw::GLenum internalformat);
+    template <glw::GLuint D>
+    void PrepareStorage(glw::GLenum internalformat);
 
-	template <glw::GLuint D>
-	void PrepareCompressedStorage(glw::GLenum internalformat);
+    template <glw::GLuint D>
+    void PrepareCompressedStorage(glw::GLenum internalformat);
 
-	template <glw::GLuint D>
-	bool CheckData(glw::GLenum internalformat);
-	void		CleanAll();
-	std::string DataToString(glw::GLuint count, const glw::GLubyte data[]);
+    template <glw::GLuint D>
+    bool CheckData(glw::GLenum internalformat);
+    void CleanAll();
+    std::string DataToString(glw::GLuint count, const glw::GLubyte data[]);
 
-	template <glw::GLuint D>
-	bool Test(glw::GLenum internalformat, bool can_be_unsupported);
+    template <glw::GLuint D>
+    bool Test(glw::GLenum internalformat, bool can_be_unsupported);
 
-	/* Private member variables. */
-	glw::GLuint   m_to;
-	glw::GLuint   m_to_aux;
-	glw::GLubyte* m_compressed_texture_data;
-	glw::GLubyte* m_reference;
-	glw::GLubyte* m_result;
-	glw::GLuint   m_reference_size;
-	glw::GLuint   m_reference_internalformat;
+    /* Private member variables. */
+    glw::GLuint m_to;
+    glw::GLuint m_to_aux;
+    glw::GLubyte *m_compressed_texture_data;
+    glw::GLubyte *m_reference;
+    glw::GLubyte *m_result;
+    glw::GLuint m_reference_size;
+    glw::GLuint m_reference_internalformat;
 
-	/* Private static constants. */
-	static const glw::GLubyte s_texture_data[];
-	static const glw::GLuint  s_texture_width;
-	static const glw::GLuint  s_texture_height;
-	static const glw::GLuint  s_texture_depth;
-	static const glw::GLuint  s_block_count;
-	static const glw::GLuint  s_block_2d_size_x;
-	static const glw::GLuint  s_block_2d_size_y;
-	static const glw::GLuint  s_block_3d_size;
+    /* Private static constants. */
+    static const glw::GLubyte s_texture_data[];
+    static const glw::GLuint s_texture_width;
+    static const glw::GLuint s_texture_height;
+    static const glw::GLuint s_texture_depth;
+    static const glw::GLuint s_block_count;
+    static const glw::GLuint s_block_2d_size_x;
+    static const glw::GLuint s_block_2d_size_y;
+    static const glw::GLuint s_block_3d_size;
 };
 /* CompressedSubImageTest class */
 
@@ -5609,59 +5609,59 @@ private:
 class CopyTest : public deqp::TestCase
 {
 public:
-	/* Public member functions. */
-	CopyTest(deqp::Context& context);
+    /* Public member functions. */
+    CopyTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	CopyTest(const CopyTest& other);
-	CopyTest& operator=(const CopyTest& other);
+    /* Private constructors. */
+    CopyTest(const CopyTest &other);
+    CopyTest &operator=(const CopyTest &other);
 
-	/* Private member functions. */
-	template <glw::GLuint D>
-	glw::GLenum			  TextureTarget();
+    /* Private member functions. */
+    template <glw::GLuint D>
+    glw::GLenum TextureTarget();
 
-	bool CopyTextureSubImage1DAndCheckErrors(glw::GLuint texture, glw::GLint level, glw::GLint xoffset, glw::GLint x,
-											 glw::GLint y, glw::GLsizei width);
-	bool CopyTextureSubImage2DAndCheckErrors(glw::GLuint texture, glw::GLint level, glw::GLint xoffset,
-											 glw::GLint yoffset, glw::GLint x, glw::GLint y, glw::GLsizei width,
-											 glw::GLsizei height);
-	bool CopyTextureSubImage3DAndCheckErrors(glw::GLuint texture, glw::GLint level, glw::GLint xoffset,
-											 glw::GLint yoffset, glw::GLint zoffset, glw::GLint x, glw::GLint y,
-											 glw::GLsizei width, glw::GLsizei height);
+    bool CopyTextureSubImage1DAndCheckErrors(glw::GLuint texture, glw::GLint level, glw::GLint xoffset, glw::GLint x,
+                                             glw::GLint y, glw::GLsizei width);
+    bool CopyTextureSubImage2DAndCheckErrors(glw::GLuint texture, glw::GLint level, glw::GLint xoffset,
+                                             glw::GLint yoffset, glw::GLint x, glw::GLint y, glw::GLsizei width,
+                                             glw::GLsizei height);
+    bool CopyTextureSubImage3DAndCheckErrors(glw::GLuint texture, glw::GLint level, glw::GLint xoffset,
+                                             glw::GLint yoffset, glw::GLint zoffset, glw::GLint x, glw::GLint y,
+                                             glw::GLsizei width, glw::GLsizei height);
 
-	template <glw::GLuint D>
-	void				  CreateSourceTexture();
+    template <glw::GLuint D>
+    void CreateSourceTexture();
 
-	template <glw::GLuint D>
-	void				  CreateDestinationTexture();
+    template <glw::GLuint D>
+    void CreateDestinationTexture();
 
-	template <glw::GLuint D>
-	void				  CreateSourceFramebuffer();
+    template <glw::GLuint D>
+    void CreateSourceFramebuffer();
 
-	template <glw::GLuint D>
-	void				  CreateAll();
+    template <glw::GLuint D>
+    void CreateAll();
 
-	template <glw::GLuint D>
-	bool				  Test();
+    template <glw::GLuint D>
+    bool Test();
 
-	bool CheckData(glw::GLenum target, glw::GLuint size);
-	std::string DataToString(glw::GLuint count, const glw::GLubyte data[]);
-	void CleanAll();
+    bool CheckData(glw::GLenum target, glw::GLuint size);
+    std::string DataToString(glw::GLuint count, const glw::GLubyte data[]);
+    void CleanAll();
 
-	/* Private member variables. */
-	glw::GLuint   m_fbo;
-	glw::GLuint   m_to_src;
-	glw::GLuint   m_to_dst;
-	glw::GLubyte* m_result;
+    /* Private member variables. */
+    glw::GLuint m_fbo;
+    glw::GLuint m_to_src;
+    glw::GLuint m_to_dst;
+    glw::GLubyte *m_result;
 
-	/* Private static constants. */
-	static const glw::GLubyte s_texture_data[];
-	static const glw::GLuint  s_texture_width;
-	static const glw::GLuint  s_texture_height;
-	static const glw::GLuint  s_texture_depth;
+    /* Private static constants. */
+    static const glw::GLubyte s_texture_data[];
+    static const glw::GLuint s_texture_width;
+    static const glw::GLuint s_texture_height;
+    static const glw::GLuint s_texture_depth;
 };
 /* CopyTest class */
 
@@ -5715,23 +5715,23 @@ private:
 class GetSetParameterTest : public deqp::TestCase
 {
 public:
-	/* Public member functions. */
-	GetSetParameterTest(deqp::Context& context);
+    /* Public member functions. */
+    GetSetParameterTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	GetSetParameterTest(const GetSetParameterTest& other);
-	GetSetParameterTest& operator=(const GetSetParameterTest& other);
+    /* Private constructors. */
+    GetSetParameterTest(const GetSetParameterTest &other);
+    GetSetParameterTest &operator=(const GetSetParameterTest &other);
 
-	bool CheckErrorAndLog(const glw::GLchar* fname, glw::GLenum pname);
-	bool CompareAndLog(glw::GLint value_src, glw::GLint value_dst, glw::GLenum pname);
-	bool CompareAndLog(glw::GLuint value_src, glw::GLuint value_dst, glw::GLenum pname);
-	bool CompareAndLog(glw::GLfloat value_src, glw::GLfloat value_dst, glw::GLenum pname);
-	bool CompareAndLog(glw::GLfloat value_src[4], glw::GLfloat value_dst[4], glw::GLenum pname);
-	bool CompareAndLog(glw::GLint value_src[4], glw::GLint value_dst[4], glw::GLenum pname);
-	bool CompareAndLog(glw::GLuint value_src[4], glw::GLuint value_dst[4], glw::GLenum pname);
+    bool CheckErrorAndLog(const glw::GLchar *fname, glw::GLenum pname);
+    bool CompareAndLog(glw::GLint value_src, glw::GLint value_dst, glw::GLenum pname);
+    bool CompareAndLog(glw::GLuint value_src, glw::GLuint value_dst, glw::GLenum pname);
+    bool CompareAndLog(glw::GLfloat value_src, glw::GLfloat value_dst, glw::GLenum pname);
+    bool CompareAndLog(glw::GLfloat value_src[4], glw::GLfloat value_dst[4], glw::GLenum pname);
+    bool CompareAndLog(glw::GLint value_src[4], glw::GLint value_dst[4], glw::GLenum pname);
+    bool CompareAndLog(glw::GLuint value_src[4], glw::GLuint value_dst[4], glw::GLenum pname);
 };
 /* GetSetParameterTest class */
 
@@ -5771,22 +5771,22 @@ private:
 class DefaultsTest : public deqp::TestCase
 {
 public:
-	/* Public member functions. */
-	DefaultsTest(deqp::Context& context);
+    /* Public member functions. */
+    DefaultsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	DefaultsTest(const DefaultsTest& other);
-	DefaultsTest& operator=(const DefaultsTest& other);
+    /* Private constructors. */
+    DefaultsTest(const DefaultsTest &other);
+    DefaultsTest &operator=(const DefaultsTest &other);
 
-	bool CompareAndLog(glw::GLint value_ref, glw::GLint value_dst, glw::GLenum pname);
-	bool CompareAndLog(glw::GLuint value_ref, glw::GLuint value_dst, glw::GLenum pname);
-	bool CompareAndLog(glw::GLfloat value_ref, glw::GLfloat value_dst, glw::GLenum pname);
-	bool CompareAndLog(glw::GLfloat value_ref[4], glw::GLfloat value_dst[4], glw::GLenum pname);
-	bool CompareAndLog(glw::GLint value_ref[4], glw::GLint value_dst[4], glw::GLenum pname);
-	bool CompareAndLog(glw::GLuint value_ref[4], glw::GLuint value_dst[4], glw::GLenum pname);
+    bool CompareAndLog(glw::GLint value_ref, glw::GLint value_dst, glw::GLenum pname);
+    bool CompareAndLog(glw::GLuint value_ref, glw::GLuint value_dst, glw::GLenum pname);
+    bool CompareAndLog(glw::GLfloat value_ref, glw::GLfloat value_dst, glw::GLenum pname);
+    bool CompareAndLog(glw::GLfloat value_ref[4], glw::GLfloat value_dst[4], glw::GLenum pname);
+    bool CompareAndLog(glw::GLint value_ref[4], glw::GLint value_dst[4], glw::GLenum pname);
+    bool CompareAndLog(glw::GLuint value_ref[4], glw::GLuint value_dst[4], glw::GLenum pname);
 };
 /* DefaultsTest class */
 
@@ -5805,20 +5805,20 @@ private:
 class GenerateMipmapTest : public deqp::TestCase
 {
 public:
-	/* Public member functions. */
-	GenerateMipmapTest(deqp::Context& context);
+    /* Public member functions. */
+    GenerateMipmapTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	GenerateMipmapTest(const GenerateMipmapTest& other);
-	GenerateMipmapTest& operator=(const GenerateMipmapTest& other);
+    /* Private constructors. */
+    GenerateMipmapTest(const GenerateMipmapTest &other);
+    GenerateMipmapTest &operator=(const GenerateMipmapTest &other);
 
-	/* Private static constants. */
-	static const glw::GLubyte s_texture_data[];
-	static const glw::GLuint  s_texture_width;
-	static const glw::GLuint  s_texture_width_log;
+    /* Private static constants. */
+    static const glw::GLubyte s_texture_data[];
+    static const glw::GLuint s_texture_width;
+    static const glw::GLuint s_texture_width_log;
 };
 /* GenerateMipmapTest class */
 
@@ -5845,45 +5845,45 @@ private:
 class BindUnitTest : public deqp::TestCase
 {
 public:
-	/* Public member functions. */
-	BindUnitTest(deqp::Context& context);
+    /* Public member functions. */
+    BindUnitTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	BindUnitTest(const BindUnitTest& other);
-	BindUnitTest& operator=(const BindUnitTest& other);
+    /* Private constructors. */
+    BindUnitTest(const BindUnitTest &other);
+    BindUnitTest &operator=(const BindUnitTest &other);
 
-	void		CreateProgram();
-	void		CreateTextures();
-	void		CreateFrambuffer();
-	void		CreateVertexArray();
-	bool		Draw();
-	bool		Check();
-	void		CleanAll();
-	std::string DataToString(glw::GLuint count, const glw::GLubyte data[]);
+    void CreateProgram();
+    void CreateTextures();
+    void CreateFrambuffer();
+    void CreateVertexArray();
+    bool Draw();
+    bool Check();
+    void CleanAll();
+    std::string DataToString(glw::GLuint count, const glw::GLubyte data[]);
 
-	/* Private member variables. */
-	glw::GLuint   m_po;
-	glw::GLuint   m_to[4];
-	glw::GLuint   m_fbo;
-	glw::GLuint   m_rbo;
-	glw::GLuint   m_vao;
-	glw::GLubyte* m_result;
+    /* Private member variables. */
+    glw::GLuint m_po;
+    glw::GLuint m_to[4];
+    glw::GLuint m_fbo;
+    glw::GLuint m_rbo;
+    glw::GLuint m_vao;
+    glw::GLubyte *m_result;
 
-	/* Private static constants. */
-	static const glw::GLubyte s_texture_data_r[];
-	static const glw::GLubyte s_texture_data_g[];
-	static const glw::GLubyte s_texture_data_b[];
-	static const glw::GLubyte s_texture_data_a[];
-	static const glw::GLubyte s_texture_data_rgba[];
-	static const glw::GLuint  s_texture_width;
-	static const glw::GLuint  s_texture_height;
-	static const glw::GLuint  s_texture_count_rgba;
-	static const glw::GLchar* s_vertex_shader;
-	static const glw::GLchar* s_fragment_shader;
-	static const glw::GLchar* s_fragment_shader_samplers[4];
+    /* Private static constants. */
+    static const glw::GLubyte s_texture_data_r[];
+    static const glw::GLubyte s_texture_data_g[];
+    static const glw::GLubyte s_texture_data_b[];
+    static const glw::GLubyte s_texture_data_a[];
+    static const glw::GLubyte s_texture_data_rgba[];
+    static const glw::GLuint s_texture_width;
+    static const glw::GLuint s_texture_height;
+    static const glw::GLuint s_texture_count_rgba;
+    static const glw::GLchar *s_vertex_shader;
+    static const glw::GLchar *s_fragment_shader;
+    static const glw::GLchar *s_fragment_shader_samplers[4];
 };
 /* GenerateMipmapTest class */
 
@@ -5904,27 +5904,27 @@ private:
 class GetImageTest : public deqp::TestCase
 {
 public:
-	/* Public member functions. */
-	GetImageTest(deqp::Context& context);
+    /* Public member functions. */
+    GetImageTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	GetImageTest(const GetImageTest& other);
-	GetImageTest& operator=(const GetImageTest& other);
+    /* Private constructors. */
+    GetImageTest(const GetImageTest &other);
+    GetImageTest &operator=(const GetImageTest &other);
 
-	std::string DataToString(glw::GLuint count, const glw::GLubyte data[]);
+    std::string DataToString(glw::GLuint count, const glw::GLubyte data[]);
 
-	/* Private static constants. */
-	static const glw::GLubyte s_texture_data[];
-	static const glw::GLubyte s_texture_data_compressed[];
-	static const glw::GLuint  s_texture_width;
-	static const glw::GLuint  s_texture_height;
-	static const glw::GLuint  s_texture_size;
-	static const glw::GLuint  s_texture_size_compressed;
-	static const glw::GLuint  s_texture_count;
-	static const glw::GLuint  s_texture_count_compressed;
+    /* Private static constants. */
+    static const glw::GLubyte s_texture_data[];
+    static const glw::GLubyte s_texture_data_compressed[];
+    static const glw::GLuint s_texture_width;
+    static const glw::GLuint s_texture_height;
+    static const glw::GLuint s_texture_size;
+    static const glw::GLuint s_texture_size_compressed;
+    static const glw::GLuint s_texture_count;
+    static const glw::GLuint s_texture_count_compressed;
 };
 /* GetImageTest class */
 
@@ -5959,21 +5959,21 @@ private:
 class GetLevelParameterTest : public deqp::TestCase
 {
 public:
-	/* Public member functions. */
-	GetLevelParameterTest(deqp::Context& context);
+    /* Public member functions. */
+    GetLevelParameterTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	GetLevelParameterTest(const GetLevelParameterTest& other);
-	GetLevelParameterTest& operator=(const GetLevelParameterTest& other);
+    /* Private constructors. */
+    GetLevelParameterTest(const GetLevelParameterTest &other);
+    GetLevelParameterTest &operator=(const GetLevelParameterTest &other);
 
-	/* Private static constants. */
-	static const glw::GLubyte s_texture_data[];
-	static const glw::GLuint  s_texture_width;
-	static const glw::GLuint  s_texture_height;
-	static const glw::GLuint  s_texture_depth;
+    /* Private static constants. */
+    static const glw::GLubyte s_texture_data[];
+    static const glw::GLuint s_texture_width;
+    static const glw::GLuint s_texture_height;
+    static const glw::GLuint s_texture_depth;
 };
 /* GetLevelParameterTest class */
 
@@ -5984,8 +5984,8 @@ private:
 class ErrorsUtilities
 {
 public:
-	bool CheckErrorAndLog(deqp::Context& context, glw::GLuint expected_error, const glw::GLchar* function_name,
-						  const glw::GLchar* log);
+    bool CheckErrorAndLog(deqp::Context &context, glw::GLuint expected_error, const glw::GLchar *function_name,
+                          const glw::GLchar *log);
 };
 /* ErrorsUtilities  */
 
@@ -5999,17 +5999,17 @@ public:
 class CreationErrorsTest : public deqp::TestCase, ErrorsUtilities
 {
 public:
-	/* Public member functions. */
-	CreationErrorsTest(deqp::Context& context);
+    /* Public member functions. */
+    CreationErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	CreationErrorsTest(const CreationErrorsTest& other);
-	CreationErrorsTest& operator=(const CreationErrorsTest& other);
+    /* Private constructors. */
+    CreationErrorsTest(const CreationErrorsTest &other);
+    CreationErrorsTest &operator=(const CreationErrorsTest &other);
 
-	glw::GLenum NotATarget();
+    glw::GLenum NotATarget();
 };
 /* CreationErrorsTest class */
 
@@ -6030,15 +6030,15 @@ private:
 class BufferErrorsTest : public deqp::TestCase, ErrorsUtilities
 {
 public:
-	/* Public member functions. */
-	BufferErrorsTest(deqp::Context& context);
+    /* Public member functions. */
+    BufferErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	BufferErrorsTest(const BufferErrorsTest& other);
-	BufferErrorsTest& operator=(const BufferErrorsTest& other);
+    /* Private constructors. */
+    BufferErrorsTest(const BufferErrorsTest &other);
+    BufferErrorsTest &operator=(const BufferErrorsTest &other);
 };
 /* BufferErrorsTest class */
 
@@ -6066,15 +6066,15 @@ private:
 class BufferRangeErrorsTest : public deqp::TestCase, ErrorsUtilities
 {
 public:
-	/* Public member functions. */
-	BufferRangeErrorsTest(deqp::Context& context);
+    /* Public member functions. */
+    BufferRangeErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	BufferRangeErrorsTest(const BufferRangeErrorsTest& other);
-	BufferRangeErrorsTest& operator=(const BufferRangeErrorsTest& other);
+    /* Private constructors. */
+    BufferRangeErrorsTest(const BufferRangeErrorsTest &other);
+    BufferRangeErrorsTest &operator=(const BufferRangeErrorsTest &other);
 };
 /* BufferErrorsTest class */
 
@@ -6195,38 +6195,38 @@ private:
 class StorageErrorsTest : public deqp::TestCase, ErrorsUtilities
 {
 public:
-	/* Public member functions. */
-	StorageErrorsTest(deqp::Context& context);
+    /* Public member functions. */
+    StorageErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	StorageErrorsTest(const StorageErrorsTest& other);
-	StorageErrorsTest& operator=(const StorageErrorsTest& other);
+    /* Private constructors. */
+    StorageErrorsTest(const StorageErrorsTest &other);
+    StorageErrorsTest &operator=(const StorageErrorsTest &other);
 
-	glw::GLuint m_to_1D;
-	glw::GLuint m_to_1D_array;
-	glw::GLuint m_to_2D;
-	glw::GLuint m_to_2D_array;
-	glw::GLuint m_to_3D;
-	glw::GLuint m_to_2D_ms;
-	glw::GLuint m_to_2D_ms_immutable;
-	glw::GLuint m_to_3D_ms;
-	glw::GLuint m_to_3D_ms_immutable;
-	glw::GLuint m_to_invalid;
-	glw::GLuint m_internalformat_invalid;
-	glw::GLint  m_max_texture_size;
-	glw::GLint  m_max_samples;
-	glw::GLint  m_max_array_texture_layers;
+    glw::GLuint m_to_1D;
+    glw::GLuint m_to_1D_array;
+    glw::GLuint m_to_2D;
+    glw::GLuint m_to_2D_array;
+    glw::GLuint m_to_3D;
+    glw::GLuint m_to_2D_ms;
+    glw::GLuint m_to_2D_ms_immutable;
+    glw::GLuint m_to_3D_ms;
+    glw::GLuint m_to_3D_ms_immutable;
+    glw::GLuint m_to_invalid;
+    glw::GLuint m_internalformat_invalid;
+    glw::GLint m_max_texture_size;
+    glw::GLint m_max_samples;
+    glw::GLint m_max_array_texture_layers;
 
-	void Prepare();
-	bool Test1D();
-	bool Test2D();
-	bool Test3D();
-	bool Test2DMultisample();
-	bool Test3DMultisample();
-	void Clean();
+    void Prepare();
+    bool Test1D();
+    bool Test2D();
+    bool Test3D();
+    bool Test2DMultisample();
+    bool Test3DMultisample();
+    void Clean();
 };
 /* StorageErrorsTest class */
 
@@ -6465,68 +6465,68 @@ private:
 class SubImageErrorsTest : public deqp::TestCase, ErrorsUtilities
 {
 public:
-	/* Public member functions. */
-	SubImageErrorsTest(deqp::Context& context);
+    /* Public member functions. */
+    SubImageErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	SubImageErrorsTest(const SubImageErrorsTest& other);
-	SubImageErrorsTest& operator=(const SubImageErrorsTest& other);
+    /* Private constructors. */
+    SubImageErrorsTest(const SubImageErrorsTest &other);
+    SubImageErrorsTest &operator=(const SubImageErrorsTest &other);
 
-	glw::GLuint   m_to_1D_empty;
-	glw::GLuint   m_to_2D_empty;
-	glw::GLuint   m_to_3D_empty;
-	glw::GLuint   m_to_1D;
-	glw::GLuint   m_to_2D;
-	glw::GLuint   m_to_3D;
-	glw::GLuint   m_to_1D_compressed;
-	glw::GLuint   m_to_2D_compressed;
-	glw::GLuint   m_to_3D_compressed;
-	glw::GLuint   m_to_rectangle_compressed;
-	glw::GLuint   m_to_invalid;
-	glw::GLuint   m_bo;
-	glw::GLuint   m_format_invalid;
-	glw::GLuint   m_type_invalid;
-	glw::GLint	m_max_texture_size;
-	glw::GLubyte* m_reference_compressed_1D;
-	glw::GLubyte* m_reference_compressed_2D;
-	glw::GLubyte* m_reference_compressed_3D;
-	glw::GLubyte* m_reference_compressed_rectangle;
-	glw::GLint	m_reference_compressed_1D_size;
-	glw::GLint	m_reference_compressed_2D_size;
-	glw::GLint	m_reference_compressed_3D_size;
-	glw::GLint	m_reference_compressed_rectangle_size;
-	glw::GLint	m_reference_compressed_1D_format;
-	glw::GLint	m_reference_compressed_2D_format;
-	glw::GLint	m_reference_compressed_3D_format;
-	glw::GLint	m_reference_compressed_rectangle_format;
-	glw::GLint	m_not_matching_compressed_1D_format;
-	glw::GLint	m_not_matching_compressed_1D_size;
-	glw::GLint	m_not_matching_compressed_2D_format;
-	glw::GLint	m_not_matching_compressed_2D_size;
-	glw::GLint	m_not_matching_compressed_3D_format;
-	glw::GLint	m_not_matching_compressed_3D_size;
+    glw::GLuint m_to_1D_empty;
+    glw::GLuint m_to_2D_empty;
+    glw::GLuint m_to_3D_empty;
+    glw::GLuint m_to_1D;
+    glw::GLuint m_to_2D;
+    glw::GLuint m_to_3D;
+    glw::GLuint m_to_1D_compressed;
+    glw::GLuint m_to_2D_compressed;
+    glw::GLuint m_to_3D_compressed;
+    glw::GLuint m_to_rectangle_compressed;
+    glw::GLuint m_to_invalid;
+    glw::GLuint m_bo;
+    glw::GLuint m_format_invalid;
+    glw::GLuint m_type_invalid;
+    glw::GLint m_max_texture_size;
+    glw::GLubyte *m_reference_compressed_1D;
+    glw::GLubyte *m_reference_compressed_2D;
+    glw::GLubyte *m_reference_compressed_3D;
+    glw::GLubyte *m_reference_compressed_rectangle;
+    glw::GLint m_reference_compressed_1D_size;
+    glw::GLint m_reference_compressed_2D_size;
+    glw::GLint m_reference_compressed_3D_size;
+    glw::GLint m_reference_compressed_rectangle_size;
+    glw::GLint m_reference_compressed_1D_format;
+    glw::GLint m_reference_compressed_2D_format;
+    glw::GLint m_reference_compressed_3D_format;
+    glw::GLint m_reference_compressed_rectangle_format;
+    glw::GLint m_not_matching_compressed_1D_format;
+    glw::GLint m_not_matching_compressed_1D_size;
+    glw::GLint m_not_matching_compressed_2D_format;
+    glw::GLint m_not_matching_compressed_2D_size;
+    glw::GLint m_not_matching_compressed_3D_format;
+    glw::GLint m_not_matching_compressed_3D_size;
 
-	void Prepare();
-	bool Test1D();
-	bool Test2D();
-	bool Test3D();
-	bool Test1DCompressed();
-	bool Test2DCompressed();
-	bool Test3DCompressed();
-	void Clean();
+    void Prepare();
+    bool Test1D();
+    bool Test2D();
+    bool Test3D();
+    bool Test1DCompressed();
+    bool Test2DCompressed();
+    bool Test3DCompressed();
+    void Clean();
 
-	static const glw::GLushort s_reference[];
-	static const glw::GLuint   s_reference_width;
-	static const glw::GLuint   s_reference_height;
-	static const glw::GLuint   s_reference_depth;
-	static const glw::GLuint   s_reference_size;
-	static const glw::GLenum   s_reference_internalformat;
-	static const glw::GLenum   s_reference_internalformat_compressed;
-	static const glw::GLenum   s_reference_format;
-	static const glw::GLenum   s_reference_type;
+    static const glw::GLushort s_reference[];
+    static const glw::GLuint s_reference_width;
+    static const glw::GLuint s_reference_height;
+    static const glw::GLuint s_reference_depth;
+    static const glw::GLuint s_reference_size;
+    static const glw::GLenum s_reference_internalformat;
+    static const glw::GLenum s_reference_internalformat_compressed;
+    static const glw::GLenum s_reference_format;
+    static const glw::GLenum s_reference_type;
 };
 /* SubImageErrorsTest class */
 
@@ -6609,36 +6609,36 @@ private:
 class CopyErrorsTest : public deqp::TestCase, ErrorsUtilities
 {
 public:
-	/* Public member functions. */
-	CopyErrorsTest(deqp::Context& context);
+    /* Public member functions. */
+    CopyErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	CopyErrorsTest(const CopyErrorsTest& other);
-	CopyErrorsTest& operator=(const CopyErrorsTest& other);
+    /* Private constructors. */
+    CopyErrorsTest(const CopyErrorsTest &other);
+    CopyErrorsTest &operator=(const CopyErrorsTest &other);
 
-	glw::GLuint m_fbo;
-	glw::GLuint m_fbo_ms;
-	glw::GLuint m_fbo_incomplete;
-	glw::GLuint m_to_src;
-	glw::GLuint m_to_src_ms;
-	glw::GLuint m_to_1D_dst;
-	glw::GLuint m_to_2D_dst;
-	glw::GLuint m_to_3D_dst;
-	glw::GLuint m_to_invalid;
+    glw::GLuint m_fbo;
+    glw::GLuint m_fbo_ms;
+    glw::GLuint m_fbo_incomplete;
+    glw::GLuint m_to_src;
+    glw::GLuint m_to_src_ms;
+    glw::GLuint m_to_1D_dst;
+    glw::GLuint m_to_2D_dst;
+    glw::GLuint m_to_3D_dst;
+    glw::GLuint m_to_invalid;
 
-	void Prepare();
-	bool Test1D();
-	bool Test2D();
-	bool Test3D();
-	void Clean();
+    void Prepare();
+    bool Test1D();
+    bool Test2D();
+    bool Test3D();
+    void Clean();
 
-	static const glw::GLuint s_width;
-	static const glw::GLuint s_height;
-	static const glw::GLuint s_depth;
-	static const glw::GLuint s_internalformat;
+    static const glw::GLuint s_width;
+    static const glw::GLuint s_height;
+    static const glw::GLuint s_depth;
+    static const glw::GLuint s_internalformat;
 };
 /* CopyErrorsTest class */
 
@@ -6688,36 +6688,36 @@ private:
 class ParameterSetupErrorsTest : public deqp::TestCase, ErrorsUtilities
 {
 public:
-	/* Public member functions. */
-	ParameterSetupErrorsTest(deqp::Context& context);
+    /* Public member functions. */
+    ParameterSetupErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	ParameterSetupErrorsTest(const ParameterSetupErrorsTest& other);
-	ParameterSetupErrorsTest& operator=(const ParameterSetupErrorsTest& other);
+    /* Private constructors. */
+    ParameterSetupErrorsTest(const ParameterSetupErrorsTest &other);
+    ParameterSetupErrorsTest &operator=(const ParameterSetupErrorsTest &other);
 
-	glw::GLuint m_to_2D;
-	glw::GLuint m_to_2D_ms;
-	glw::GLuint m_to_rectangle;
-	glw::GLuint m_to_invalid;
-	glw::GLenum m_pname_invalid;
-	glw::GLenum m_depth_stencil_mode_invalid;
+    glw::GLuint m_to_2D;
+    glw::GLuint m_to_2D_ms;
+    glw::GLuint m_to_rectangle;
+    glw::GLuint m_to_invalid;
+    glw::GLenum m_pname_invalid;
+    glw::GLenum m_depth_stencil_mode_invalid;
 
-	void Prepare();
-	bool Testf();
-	bool Testi();
-	bool Testfv();
-	bool Testiv();
-	bool TestIiv();
-	bool TestIuiv();
-	void Clean();
+    void Prepare();
+    bool Testf();
+    bool Testi();
+    bool Testfv();
+    bool Testiv();
+    bool TestIiv();
+    bool TestIuiv();
+    void Clean();
 
-	static const glw::GLuint s_width;
-	static const glw::GLuint s_height;
-	static const glw::GLuint s_depth;
-	static const glw::GLuint s_internalformat;
+    static const glw::GLuint s_width;
+    static const glw::GLuint s_height;
+    static const glw::GLuint s_depth;
+    static const glw::GLuint s_internalformat;
 };
 /* ParameterSetupErrorsTest class */
 
@@ -6734,22 +6734,22 @@ private:
 class GenerateMipmapErrorsTest : public deqp::TestCase, ErrorsUtilities
 {
 public:
-	/* Public member functions. */
-	GenerateMipmapErrorsTest(deqp::Context& context);
+    /* Public member functions. */
+    GenerateMipmapErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	GenerateMipmapErrorsTest(const GenerateMipmapErrorsTest& other);
-	GenerateMipmapErrorsTest& operator=(const GenerateMipmapErrorsTest& other);
+    /* Private constructors. */
+    GenerateMipmapErrorsTest(const GenerateMipmapErrorsTest &other);
+    GenerateMipmapErrorsTest &operator=(const GenerateMipmapErrorsTest &other);
 
-	static const glw::GLubyte s_reference_data[];
-	static const glw::GLuint  s_reference_width;
-	static const glw::GLuint  s_reference_height;
-	static const glw::GLenum  s_reference_internalformat;
-	static const glw::GLenum  s_reference_format;
-	static const glw::GLenum  s_reference_type;
+    static const glw::GLubyte s_reference_data[];
+    static const glw::GLuint s_reference_width;
+    static const glw::GLuint s_reference_height;
+    static const glw::GLenum s_reference_internalformat;
+    static const glw::GLenum s_reference_format;
+    static const glw::GLenum s_reference_type;
 };
 /* GenerateMipmapErrorsTest class */
 
@@ -6761,15 +6761,15 @@ private:
 class BindUnitErrorsTest : public deqp::TestCase, ErrorsUtilities
 {
 public:
-	/* Public member functions. */
-	BindUnitErrorsTest(deqp::Context& context);
+    /* Public member functions. */
+    BindUnitErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	BindUnitErrorsTest(const BindUnitErrorsTest& other);
-	BindUnitErrorsTest& operator=(const BindUnitErrorsTest& other);
+    /* Private constructors. */
+    BindUnitErrorsTest(const BindUnitErrorsTest &other);
+    BindUnitErrorsTest &operator=(const BindUnitErrorsTest &other);
 };
 /* BindUnitErrorsTest class */
 
@@ -6849,25 +6849,25 @@ private:
 class ImageQueryErrorsTest : public deqp::TestCase, ErrorsUtilities
 {
 public:
-	/* Public member functions. */
-	ImageQueryErrorsTest(deqp::Context& context);
+    /* Public member functions. */
+    ImageQueryErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	ImageQueryErrorsTest(const ImageQueryErrorsTest& other);
-	ImageQueryErrorsTest& operator=(const ImageQueryErrorsTest& other);
+    /* Private constructors. */
+    ImageQueryErrorsTest(const ImageQueryErrorsTest &other);
+    ImageQueryErrorsTest &operator=(const ImageQueryErrorsTest &other);
 
-	static const glw::GLuint s_reference_data[];
-	static const glw::GLuint s_reference_width;
-	static const glw::GLuint s_reference_height;
-	static const glw::GLuint s_reference_size;
-	static const glw::GLenum s_reference_internalformat;
-	static const glw::GLenum s_reference_internalformat_int;
-	static const glw::GLenum s_reference_internalformat_compressed;
-	static const glw::GLenum s_reference_format;
-	static const glw::GLenum s_reference_type;
+    static const glw::GLuint s_reference_data[];
+    static const glw::GLuint s_reference_width;
+    static const glw::GLuint s_reference_height;
+    static const glw::GLuint s_reference_size;
+    static const glw::GLenum s_reference_internalformat;
+    static const glw::GLenum s_reference_internalformat_int;
+    static const glw::GLenum s_reference_internalformat_compressed;
+    static const glw::GLenum s_reference_format;
+    static const glw::GLenum s_reference_type;
 };
 /* ImageQueryErrorsTest class */
 
@@ -6893,15 +6893,15 @@ private:
 class LevelParameterErrorsTest : public deqp::TestCase, ErrorsUtilities
 {
 public:
-	/* Public member functions. */
-	LevelParameterErrorsTest(deqp::Context& context);
+    /* Public member functions. */
+    LevelParameterErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	LevelParameterErrorsTest(const LevelParameterErrorsTest& other);
-	LevelParameterErrorsTest& operator=(const LevelParameterErrorsTest& other);
+    /* Private constructors. */
+    LevelParameterErrorsTest(const LevelParameterErrorsTest &other);
+    LevelParameterErrorsTest &operator=(const LevelParameterErrorsTest &other);
 };
 /* LevelParameterErrorsTest class */
 
@@ -6918,19 +6918,19 @@ private:
 class ParameterErrorsTest : public deqp::TestCase, ErrorsUtilities
 {
 public:
-	/* Public member functions. */
-	ParameterErrorsTest(deqp::Context& context);
+    /* Public member functions. */
+    ParameterErrorsTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private constructors. */
-	ParameterErrorsTest(const ParameterErrorsTest& other);
-	ParameterErrorsTest& operator=(const ParameterErrorsTest& other);
+    /* Private constructors. */
+    ParameterErrorsTest(const ParameterErrorsTest &other);
+    ParameterErrorsTest &operator=(const ParameterErrorsTest &other);
 };
 /* ParameterErrorsTest class */
-} /* Textures namespace */
-} /* DirectStateAccess namespace */
-} /* gl4cts namespace */
+} // namespace Textures
+} // namespace DirectStateAccess
+} // namespace gl4cts
 
 #endif // _GL4CDIRECTSTATEACCESSTESTS_HPP

@@ -31,22 +31,22 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
 from build.common import *
 
-EXTERNAL_DIR	= os.path.realpath(os.path.normpath(os.path.dirname(__file__)))
+EXTERNAL_DIR = os.path.realpath(os.path.normpath(os.path.dirname(__file__)))
 SHA1 = "0c79cf7443872c9f6d59c33e1fecfc9a79a4b42b"
 
 PACKAGES = [
-	GitRepo(
-		"https://gitlab.khronos.org/opengl/kc-cts.git",
-		"git@gitlab.khronos.org:opengl/kc-cts.git",
-		SHA1,
-		"kc-cts"),
+    GitRepo(
+        "https://gitlab.khronos.org/opengl/kc-cts.git",
+        "git@gitlab.khronos.org:opengl/kc-cts.git",
+        SHA1,
+        "kc-cts"),
 ]
 
 if __name__ == "__main__":
-	args = parseArgs()
+    args = parseArgs()
 
-	for pkg in PACKAGES:
-		if args.clean:
-			pkg.clean()
-		else:
-			pkg.update(args.protocol)
+    for pkg in PACKAGES:
+        if args.clean:
+            pkg.clean()
+        else:
+            pkg.update(args.protocol)

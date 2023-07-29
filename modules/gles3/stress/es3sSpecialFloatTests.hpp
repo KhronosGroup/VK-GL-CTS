@@ -36,18 +36,18 @@ namespace Stress
 class SpecialFloatTests : public TestCaseGroup
 {
 public:
-						SpecialFloatTests	(Context& context);
-						~SpecialFloatTests	(void);
+    SpecialFloatTests(Context &context);
+    ~SpecialFloatTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						SpecialFloatTests	(const SpecialFloatTests& other);
-	SpecialFloatTests&	operator=			(const SpecialFloatTests& other);
+    SpecialFloatTests(const SpecialFloatTests &other);
+    SpecialFloatTests &operator=(const SpecialFloatTests &other);
 };
 
-} // Stress
-} // gles3
-} // deqp
+} // namespace Stress
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3SSPECIALFLOATTESTS_HPP

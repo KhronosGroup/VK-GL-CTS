@@ -36,24 +36,19 @@ namespace Functional
 {
 namespace bpt = gls::BuiltinPrecisionTests;
 
-TestCaseGroup* createBuiltinPrecisionTests (Context& context)
+TestCaseGroup *createBuiltinPrecisionTests(Context &context)
 {
-	TestCaseGroup*							group		= new TestCaseGroup(
-		context, "precision", "Builtin precision tests");
-	std::vector<glu::ShaderType>			shaderTypes;
-	de::MovePtr<const bpt::CaseFactories>	es3Cases	= bpt::createES3BuiltinCases();
+    TestCaseGroup *group = new TestCaseGroup(context, "precision", "Builtin precision tests");
+    std::vector<glu::ShaderType> shaderTypes;
+    de::MovePtr<const bpt::CaseFactories> es3Cases = bpt::createES3BuiltinCases();
 
-	shaderTypes.push_back(glu::SHADERTYPE_VERTEX);
-	shaderTypes.push_back(glu::SHADERTYPE_FRAGMENT);
+    shaderTypes.push_back(glu::SHADERTYPE_VERTEX);
+    shaderTypes.push_back(glu::SHADERTYPE_FRAGMENT);
 
-	bpt::addBuiltinPrecisionTests(context.getTestContext(),
-								  context.getRenderContext(),
-								  *es3Cases,
-								  shaderTypes,
-								  *group);
-	return group;
+    bpt::addBuiltinPrecisionTests(context.getTestContext(), context.getRenderContext(), *es3Cases, shaderTypes, *group);
+    return group;
 }
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp

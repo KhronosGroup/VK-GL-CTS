@@ -30,143 +30,146 @@
 namespace xs
 {
 
-TcpServer::TcpServer (deSocketFamily family, int port)
-	: m_socket()
+TcpServer::TcpServer(deSocketFamily family, int port) : m_socket()
 {
-	de::SocketAddress address;
-	address.setFamily(family);
-	address.setPort(port);
-	address.setType(DE_SOCKETTYPE_STREAM);
-	address.setProtocol(DE_SOCKETPROTOCOL_TCP);
+    de::SocketAddress address;
+    address.setFamily(family);
+    address.setPort(port);
+    address.setType(DE_SOCKETTYPE_STREAM);
+    address.setProtocol(DE_SOCKETPROTOCOL_TCP);
 
-	m_socket.listen(address);
-	m_socket.setFlags(DE_SOCKET_CLOSE_ON_EXEC);
+    m_socket.listen(address);
+    m_socket.setFlags(DE_SOCKET_CLOSE_ON_EXEC);
 }
 
-void TcpServer::runServer (void)
+void TcpServer::runServer(void)
 {
-	de::Socket*			clientSocket	= DE_NULL;
-	de::SocketAddress	clientAddr;
+    de::Socket *clientSocket = DE_NULL;
+    de::SocketAddress clientAddr;
 
-	while ((clientSocket = m_socket.accept(clientAddr)) != DE_NULL)
-	{
-		ConnectionHandler* handler = DE_NULL;
+    while ((clientSocket = m_socket.accept(clientAddr)) != DE_NULL)
+    {
+        ConnectionHandler *handler = DE_NULL;
 
-		try
-		{
-			handler = createHandler(clientSocket, clientAddr);
-		}
-		catch (...)
-		{
-			delete clientSocket;
-			throw;
-		}
+        try
+        {
+            handler = createHandler(clientSocket, clientAddr);
+        }
+        catch (...)
+        {
+            delete clientSocket;
+            throw;
+        }
 
-		try
-		{
-			addLiveConnection(handler);
-		}
-		catch (...)
-		{
-			delete handler;
-			throw;
-		}
+        try
+        {
+            addLiveConnection(handler);
+        }
+        catch (...)
+        {
+            delete handler;
+            throw;
+        }
 
-		// Start handler.
-		handler->start();
+        // Start handler.
+        handler->start();
 
-		// Perform connection list cleanup.
-		deleteDoneConnections();
-	}
+        // Perform connection list cleanup.
+        deleteDoneConnections();
+    }
 
-	// One more cleanup pass.
-	deleteDoneConnections();
+    // One more cleanup pass.
+    deleteDoneConnections();
 }
 
-void TcpServer::connectionDone (ConnectionHandler* handler)
+void TcpServer::connectionDone(ConnectionHandler *handler)
 {
-	de::ScopedLock lock(m_connectionListLock);
+    de::ScopedLock lock(m_connectionListLock);
 
-	std::vector<ConnectionHandler*>::iterator liveListPos = std::find(m_liveConnections.begin(), m_liveConnections.end(), handler);
-	DE_ASSERT(liveListPos != m_liveConnections.end());
+    std::vector<ConnectionHandler *>::iterator liveListPos =
+        std::find(m_liveConnections.begin(), m_liveConnections.end(), handler);
+    DE_ASSERT(liveListPos != m_liveConnections.end());
 
-	m_doneConnections.reserve(m_doneConnections.size()+1);
-	m_liveConnections.erase(liveListPos);
-	m_doneConnections.push_back(handler);
+    m_doneConnections.reserve(m_doneConnections.size() + 1);
+    m_liveConnections.erase(liveListPos);
+    m_doneConnections.push_back(handler);
 }
 
-void TcpServer::addLiveConnection (ConnectionHandler* handler)
+void TcpServer::addLiveConnection(ConnectionHandler *handler)
 {
-	de::ScopedLock lock(m_connectionListLock);
-	m_liveConnections.push_back(handler);
+    de::ScopedLock lock(m_connectionListLock);
+    m_liveConnections.push_back(handler);
 }
 
-void TcpServer::deleteDoneConnections (void)
+void TcpServer::deleteDoneConnections(void)
 {
-	de::ScopedLock lock(m_connectionListLock);
+    de::ScopedLock lock(m_connectionListLock);
 
-	for (std::vector<ConnectionHandler*>::iterator i = m_doneConnections.begin(); i != m_doneConnections.end(); i++)
-		delete *i;
+    for (std::vector<ConnectionHandler *>::iterator i = m_doneConnections.begin(); i != m_doneConnections.end(); i++)
+        delete *i;
 
-	m_doneConnections.clear();
+    m_doneConnections.clear();
 }
 
-void TcpServer::stopServer (void)
+void TcpServer::stopServer(void)
 {
-	// Close socket. This should get accept() to return null.
-	m_socket.close();
+    // Close socket. This should get accept() to return null.
+    m_socket.close();
 }
 
-TcpServer::~TcpServer (void)
+TcpServer::~TcpServer(void)
 {
-	try
-	{
-		std::vector<ConnectionHandler*> allConnections;
+    try
+    {
+        std::vector<ConnectionHandler *> allConnections;
 
-		if (m_connectionListLock.tryLock())
-		{
-			// \note [pyry] It is possible that cleanup actually fails.
-			try
-			{
-				std::copy(m_liveConnections.begin(), m_liveConnections.end(), std::inserter(allConnections, allConnections.end()));
-				std::copy(m_doneConnections.begin(), m_doneConnections.end(), std::inserter(allConnections, allConnections.end()));
-			}
-			catch (...)
-			{
-			}
-			m_connectionListLock.unlock();
-		}
+        if (m_connectionListLock.tryLock())
+        {
+            // \note [pyry] It is possible that cleanup actually fails.
+            try
+            {
+                std::copy(m_liveConnections.begin(), m_liveConnections.end(),
+                          std::inserter(allConnections, allConnections.end()));
+                std::copy(m_doneConnections.begin(), m_doneConnections.end(),
+                          std::inserter(allConnections, allConnections.end()));
+            }
+            catch (...)
+            {
+            }
+            m_connectionListLock.unlock();
+        }
 
-		for (std::vector<ConnectionHandler*>::const_iterator i = allConnections.begin(); i != allConnections.end(); i++)
-			delete *i;
+        for (std::vector<ConnectionHandler *>::const_iterator i = allConnections.begin(); i != allConnections.end();
+             i++)
+            delete *i;
 
-		if (m_socket.getState() != DE_SOCKETSTATE_CLOSED)
-			m_socket.close();
-	}
-	catch (...)
-	{
-		// Nada, we're at destructor.
-	}
+        if (m_socket.getState() != DE_SOCKETSTATE_CLOSED)
+            m_socket.close();
+    }
+    catch (...)
+    {
+        // Nada, we're at destructor.
+    }
 }
 
-ConnectionHandler::~ConnectionHandler (void)
+ConnectionHandler::~ConnectionHandler(void)
 {
-	delete m_socket;
+    delete m_socket;
 }
 
-void ConnectionHandler::run (void)
+void ConnectionHandler::run(void)
 {
-	try
-	{
-		handle();
-	}
-	catch (const std::exception& e)
-	{
-		printf("ConnectionHandler::run(): %s\n", e.what());
-	}
+    try
+    {
+        handle();
+    }
+    catch (const std::exception &e)
+    {
+        printf("ConnectionHandler::run(): %s\n", e.what());
+    }
 
-	// Notify server that this connection is done.
-	m_server->connectionDone(this);
+    // Notify server that this connection is done.
+    m_server->connectionDone(this);
 }
 
-} // xs
+} // namespace xs

@@ -45,31 +45,31 @@ namespace texture
 namespace
 {
 
-void createTextureTests (tcu::TestCaseGroup* textureTests)
+void createTextureTests(tcu::TestCaseGroup *textureTests)
 {
-	tcu::TestContext&	testCtx	= textureTests->getTestContext();
+    tcu::TestContext &testCtx = textureTests->getTestContext();
 
-	textureTests->addChild(createTextureFilteringTests			(testCtx));
-	textureTests->addChild(createTextureMipmappingTests			(testCtx));
-	textureTests->addChild(createExplicitLodTests				(testCtx));
-	textureTests->addChild(createTextureShadowTests				(testCtx));
-	textureTests->addChild(createFilteringAnisotropyTests		(testCtx));
-	textureTests->addChild(createTextureCompressedFormatTests	(testCtx));
-	textureTests->addChild(create3DTextureCompressedFormatTests	(testCtx));
-	textureTests->addChild(createTextureSwizzleTests			(testCtx));
-	textureTests->addChild(createTextureSubgroupLodTests		(testCtx));
-	textureTests->addChild(createTextureConversionTests			(testCtx));
-	textureTests->addChild(createTextureTexelBufferTests		(testCtx));
-	textureTests->addChild(createTextureMultisampleTests		(testCtx));
-	textureTests->addChild(createTextureTexelOffsetTests		(testCtx));
+    textureTests->addChild(createTextureFilteringTests(testCtx));
+    textureTests->addChild(createTextureMipmappingTests(testCtx));
+    textureTests->addChild(createExplicitLodTests(testCtx));
+    textureTests->addChild(createTextureShadowTests(testCtx));
+    textureTests->addChild(createFilteringAnisotropyTests(testCtx));
+    textureTests->addChild(createTextureCompressedFormatTests(testCtx));
+    textureTests->addChild(create3DTextureCompressedFormatTests(testCtx));
+    textureTests->addChild(createTextureSwizzleTests(testCtx));
+    textureTests->addChild(createTextureSubgroupLodTests(testCtx));
+    textureTests->addChild(createTextureConversionTests(testCtx));
+    textureTests->addChild(createTextureTexelBufferTests(testCtx));
+    textureTests->addChild(createTextureMultisampleTests(testCtx));
+    textureTests->addChild(createTextureTexelOffsetTests(testCtx));
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "texture", "Texture Tests", createTextureTests);
+    return createTestGroup(testCtx, "texture", "Texture Tests", createTextureTests);
 }
 
-} // texture
-} // vkt
+} // namespace texture
+} // namespace vkt

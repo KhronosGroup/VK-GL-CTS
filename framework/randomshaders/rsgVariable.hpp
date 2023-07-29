@@ -37,43 +37,64 @@ class GeneratorState;
 class Variable
 {
 public:
-	enum Storage
-	{
-		STORAGE_LOCAL,
-		STORAGE_SHADER_IN,
-		STORAGE_SHADER_OUT,
-		STORAGE_UNIFORM,
-		STORAGE_CONST,
-		STORAGE_PARAMETER_IN,
-		STORAGE_PARAMETER_OUT,
-		STORAGE_PARAMETER_INOUT,
+    enum Storage
+    {
+        STORAGE_LOCAL,
+        STORAGE_SHADER_IN,
+        STORAGE_SHADER_OUT,
+        STORAGE_UNIFORM,
+        STORAGE_CONST,
+        STORAGE_PARAMETER_IN,
+        STORAGE_PARAMETER_OUT,
+        STORAGE_PARAMETER_INOUT,
 
-		STORAGE_LAST
-	};
+        STORAGE_LAST
+    };
 
-								Variable			(const VariableType& type, Storage storage, const char* name);
-								~Variable			(void);
+    Variable(const VariableType &type, Storage storage, const char *name);
+    ~Variable(void);
 
-	const VariableType&			getType				(void) const { return m_type;					}
-	Storage						getStorage			(void) const { return m_storage;				}
-	const char*					getName				(void) const { return m_name.c_str();			}
-	int							getLayoutLocation	(void) const { return m_layoutLocation;			}
-	bool						hasLayoutLocation	(void) const { return m_layoutLocation >= 0;	}
+    const VariableType &getType(void) const
+    {
+        return m_type;
+    }
+    Storage getStorage(void) const
+    {
+        return m_storage;
+    }
+    const char *getName(void) const
+    {
+        return m_name.c_str();
+    }
+    int getLayoutLocation(void) const
+    {
+        return m_layoutLocation;
+    }
+    bool hasLayoutLocation(void) const
+    {
+        return m_layoutLocation >= 0;
+    }
 
-	void						setStorage			(Storage storage)	{ m_storage = storage;			}
-	void						setLayoutLocation	(int location)		{ m_layoutLocation = location;	}
+    void setStorage(Storage storage)
+    {
+        m_storage = storage;
+    }
+    void setLayoutLocation(int location)
+    {
+        m_layoutLocation = location;
+    }
 
-	bool						isWritable			(void) const;
+    bool isWritable(void) const;
 
-	void						tokenizeDeclaration	(GeneratorState& state, TokenStream& str) const;
+    void tokenizeDeclaration(GeneratorState &state, TokenStream &str) const;
 
 private:
-	VariableType				m_type;
-	Storage						m_storage;
-	std::string					m_name;
-	int							m_layoutLocation;
+    VariableType m_type;
+    Storage m_storage;
+    std::string m_name;
+    int m_layoutLocation;
 };
 
-} // rsg
+} // namespace rsg
 
 #endif // _RSGVARIABLE_HPP

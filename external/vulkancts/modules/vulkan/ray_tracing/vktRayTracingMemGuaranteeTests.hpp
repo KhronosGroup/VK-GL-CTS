@@ -31,9 +31,9 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup*	createMemGuaranteeTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createMemGuaranteeTests(tcu::TestContext &testCtx);
 
-} // RayTracing
-} // vkt
+} // namespace RayTracing
+} // namespace vkt
 
 #endif // _VKTRAYTRACINGMEMGUARANTEETESTS_HPP

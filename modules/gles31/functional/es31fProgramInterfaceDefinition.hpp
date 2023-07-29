@@ -37,16 +37,16 @@ namespace Functional
 
 enum ProgramInterface
 {
-	PROGRAMINTERFACE_UNIFORM = 0,
-	PROGRAMINTERFACE_UNIFORM_BLOCK,
-	PROGRAMINTERFACE_ATOMIC_COUNTER_BUFFER,
-	PROGRAMINTERFACE_PROGRAM_INPUT,
-	PROGRAMINTERFACE_PROGRAM_OUTPUT,
-	PROGRAMINTERFACE_TRANSFORM_FEEDBACK_VARYING,
-	PROGRAMINTERFACE_BUFFER_VARIABLE,
-	PROGRAMINTERFACE_SHADER_STORAGE_BLOCK,
+    PROGRAMINTERFACE_UNIFORM = 0,
+    PROGRAMINTERFACE_UNIFORM_BLOCK,
+    PROGRAMINTERFACE_ATOMIC_COUNTER_BUFFER,
+    PROGRAMINTERFACE_PROGRAM_INPUT,
+    PROGRAMINTERFACE_PROGRAM_OUTPUT,
+    PROGRAMINTERFACE_TRANSFORM_FEEDBACK_VARYING,
+    PROGRAMINTERFACE_BUFFER_VARIABLE,
+    PROGRAMINTERFACE_SHADER_STORAGE_BLOCK,
 
-	PROGRAMINTERFACE_LAST
+    PROGRAMINTERFACE_LAST
 };
 
 namespace ProgramInterfaceDefinition
@@ -56,78 +56,90 @@ class Program;
 
 struct DefaultBlock
 {
-	std::vector<glu::VariableDeclaration>	variables;
-	std::vector<glu::InterfaceBlock>		interfaceBlocks;
+    std::vector<glu::VariableDeclaration> variables;
+    std::vector<glu::InterfaceBlock> interfaceBlocks;
 };
 
 class Shader
 {
 public:
-	glu::ShaderType					getType			(void) const	{ return m_shaderType;		}
-	glu::GLSLVersion				getVersion		(void) const	{ return m_version;			}
-	bool							isValid			(void) const;
+    glu::ShaderType getType(void) const
+    {
+        return m_shaderType;
+    }
+    glu::GLSLVersion getVersion(void) const
+    {
+        return m_version;
+    }
+    bool isValid(void) const;
 
-	DefaultBlock&					getDefaultBlock	(void)			{ return m_defaultBlock;	}
-	const DefaultBlock&				getDefaultBlock	(void) const	{ return m_defaultBlock;	}
+    DefaultBlock &getDefaultBlock(void)
+    {
+        return m_defaultBlock;
+    }
+    const DefaultBlock &getDefaultBlock(void) const
+    {
+        return m_defaultBlock;
+    }
 
 private:
-									Shader		(glu::ShaderType type, glu::GLSLVersion version);
-									~Shader		(void);
+    Shader(glu::ShaderType type, glu::GLSLVersion version);
+    ~Shader(void);
 
-									Shader		(const Shader&);
-	Shader&							operator=	(const Shader&);
+    Shader(const Shader &);
+    Shader &operator=(const Shader &);
 
-	const glu::ShaderType			m_shaderType;
-	const glu::GLSLVersion			m_version;
-	DefaultBlock					m_defaultBlock;
+    const glu::ShaderType m_shaderType;
+    const glu::GLSLVersion m_version;
+    DefaultBlock m_defaultBlock;
 
-	friend class					Program;
+    friend class Program;
 };
 
 class Program
 {
 public:
-									Program									(void);
-									~Program								(void);
+    Program(void);
+    ~Program(void);
 
-	Shader*							addShader								(glu::ShaderType type, glu::GLSLVersion version);
+    Shader *addShader(glu::ShaderType type, glu::GLSLVersion version);
 
-	void							setSeparable							(bool separable);
-	bool							isSeparable								(void) const;
+    void setSeparable(bool separable);
+    bool isSeparable(void) const;
 
-	const std::vector<Shader*>&		getShaders								(void) const;
-	glu::ShaderType					getFirstStage							(void) const;
-	glu::ShaderType					getLastStage							(void) const;
-	bool							hasStage								(glu::ShaderType stage) const;
+    const std::vector<Shader *> &getShaders(void) const;
+    glu::ShaderType getFirstStage(void) const;
+    glu::ShaderType getLastStage(void) const;
+    bool hasStage(glu::ShaderType stage) const;
 
-	void							addTransformFeedbackVarying				(const std::string& varName);
-	const std::vector<std::string>&	getTransformFeedbackVaryings			(void) const;
-	void							setTransformFeedbackMode				(deUint32 mode);
-	deUint32						getTransformFeedbackMode				(void) const;
+    void addTransformFeedbackVarying(const std::string &varName);
+    const std::vector<std::string> &getTransformFeedbackVaryings(void) const;
+    void setTransformFeedbackMode(uint32_t mode);
+    uint32_t getTransformFeedbackMode(void) const;
 
-	deUint32						getGeometryNumOutputVertices			(void) const;
-	void							setGeometryNumOutputVertices			(deUint32);
-	deUint32						getTessellationNumOutputPatchVertices	(void) const;
-	void							setTessellationNumOutputPatchVertices	(deUint32);
+    uint32_t getGeometryNumOutputVertices(void) const;
+    void setGeometryNumOutputVertices(uint32_t);
+    uint32_t getTessellationNumOutputPatchVertices(void) const;
+    void setTessellationNumOutputPatchVertices(uint32_t);
 
-	bool							isValid									(void) const;
+    bool isValid(void) const;
 
 private:
-	Program&						operator=								(const Program&);
-									Program									(const Program&);
+    Program &operator=(const Program &);
+    Program(const Program &);
 
-	bool							m_separable;
-	std::vector<Shader*>			m_shaders;
-	std::vector<std::string>		m_xfbVaryings;
-	deUint32						m_xfbMode;
-	deUint32						m_geoNumOutputVertices;
-	deUint32						m_tessNumOutputVertices;
+    bool m_separable;
+    std::vector<Shader *> m_shaders;
+    std::vector<std::string> m_xfbVaryings;
+    uint32_t m_xfbMode;
+    uint32_t m_geoNumOutputVertices;
+    uint32_t m_tessNumOutputVertices;
 };
 
-} // ProgramInterfaceDefinition
+} // namespace ProgramInterfaceDefinition
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FPROGRAMINTERFACEDEFINITION_HPP

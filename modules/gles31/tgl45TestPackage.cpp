@@ -39,64 +39,64 @@ namespace deqp
 namespace gles31
 {
 
-TestPackageGL45::TestPackageGL45 (tcu::TestContext& testCtx)
-	: tcu::TestPackage	(testCtx, "dEQP-GL45", "dEQP OpenGL ES 3.1 Tests On GL4.5 Context")
-	, m_archive			(testCtx.getRootArchive(), "gles31/")
-	, m_context			(DE_NULL)
-	, m_waiverMechanism (new tcu::WaiverUtil)
+TestPackageGL45::TestPackageGL45(tcu::TestContext &testCtx)
+    : tcu::TestPackage(testCtx, "dEQP-GL45", "dEQP OpenGL ES 3.1 Tests On GL4.5 Context")
+    , m_archive(testCtx.getRootArchive(), "gles31/")
+    , m_context(DE_NULL)
+    , m_waiverMechanism(new tcu::WaiverUtil)
 {
 }
 
-TestPackageGL45::~TestPackageGL45 (void)
+TestPackageGL45::~TestPackageGL45(void)
 {
-	// Destroy children first since destructors may access context.
-	TestNode::deinit();
-	delete m_context;
+    // Destroy children first since destructors may access context.
+    TestNode::deinit();
+    delete m_context;
 }
 
-void TestPackageGL45::init (void)
+void TestPackageGL45::init(void)
 {
-	try
-	{
-		// Create context
-		m_context = new Context(m_testCtx, glu::ApiType::core(4, 5));
+    try
+    {
+        // Create context
+        m_context = new Context(m_testCtx, glu::ApiType::core(4, 5));
 
-		// Setup waiver mechanism
-		if (m_testCtx.getCommandLine().getRunMode() == tcu::RUNMODE_EXECUTE)
-		{
-			const glu::ContextInfo&	contextInfo = m_context->getContextInfo();
-			std::string				vendor		= contextInfo.getString(GL_VENDOR);
-			std::string				renderer	= contextInfo.getString(GL_RENDERER);
-			const tcu::CommandLine&	commandLine	= m_context->getTestContext().getCommandLine();
-			tcu::SessionInfo		sessionInfo	(vendor, renderer, commandLine.getInitialCmdLine());
-			m_waiverMechanism->setup(commandLine.getWaiverFileName(), m_name, vendor, renderer, sessionInfo);
-			m_context->getTestContext().getLog().writeSessionInfo(sessionInfo.get());
-		}
+        // Setup waiver mechanism
+        if (m_testCtx.getCommandLine().getRunMode() == tcu::RUNMODE_EXECUTE)
+        {
+            const glu::ContextInfo &contextInfo = m_context->getContextInfo();
+            std::string vendor                  = contextInfo.getString(GL_VENDOR);
+            std::string renderer                = contextInfo.getString(GL_RENDERER);
+            const tcu::CommandLine &commandLine = m_context->getTestContext().getCommandLine();
+            tcu::SessionInfo sessionInfo(vendor, renderer, commandLine.getInitialCmdLine());
+            m_waiverMechanism->setup(commandLine.getWaiverFileName(), m_name, vendor, renderer, sessionInfo);
+            m_context->getTestContext().getLog().writeSessionInfo(sessionInfo.get());
+        }
 
-		// Add main test groups
-		addChild(new InfoTests							(*m_context));
-		addChild(new Functional::GL45FunctionalTests	(*m_context));
-	}
-	catch (...)
-	{
-		delete m_context;
-		m_context = DE_NULL;
+        // Add main test groups
+        addChild(new InfoTests(*m_context));
+        addChild(new Functional::GL45FunctionalTests(*m_context));
+    }
+    catch (...)
+    {
+        delete m_context;
+        m_context = DE_NULL;
 
-		throw;
-	}
+        throw;
+    }
 }
 
-void TestPackageGL45::deinit (void)
+void TestPackageGL45::deinit(void)
 {
-	TestNode::deinit();
-	delete m_context;
-	m_context = DE_NULL;
+    TestNode::deinit();
+    delete m_context;
+    m_context = DE_NULL;
 }
 
-tcu::TestCaseExecutor* TestPackageGL45::createExecutor (void) const
+tcu::TestCaseExecutor *TestPackageGL45::createExecutor(void) const
 {
-	return new TestCaseWrapper<TestPackageGL45>(const_cast<TestPackageGL45&>(*this), m_waiverMechanism);
+    return new TestCaseWrapper<TestPackageGL45>(const_cast<TestPackageGL45 &>(*this), m_waiverMechanism);
 }
 
-} // gles31
-} // deqp
+} // namespace gles31
+} // namespace deqp

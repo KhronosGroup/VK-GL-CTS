@@ -67,53 +67,53 @@ class FunctionLibrary;
 class Platform
 {
 public:
-									Platform			(void);
-	virtual							~Platform			(void);
+    Platform(void);
+    virtual ~Platform(void);
 
-	/*--------------------------------------------------------------------*//*!
-	 * \brief Process platform-specific events.
-	 *
-	 * Test framework will call this function between test cases and test case
-	 * iterations. Any event handling that must be done periodically should be
-	 * done here.
-	 *
-	 * Test framework will decide whether to continue test execution based on
-	 * return code. For instance if the application receives close event from OS,
-	 * it should communicate that to framework by returning false.
-	 *
-	 * \note Do not do rendering buffer swaps here.
-	 *       Do it in RenderContext::postIterate() instead.
-	 * \return true if test execution should continue, false otherwise.
-	 *//*--------------------------------------------------------------------*/
-	virtual bool					processEvents		(void);
+    /*--------------------------------------------------------------------*//*!
+     * \brief Process platform-specific events.
+     *
+     * Test framework will call this function between test cases and test case
+     * iterations. Any event handling that must be done periodically should be
+     * done here.
+     *
+     * Test framework will decide whether to continue test execution based on
+     * return code. For instance if the application receives close event from OS,
+     * it should communicate that to framework by returning false.
+     *
+     * \note Do not do rendering buffer swaps here.
+     *       Do it in RenderContext::postIterate() instead.
+     * \return true if test execution should continue, false otherwise.
+     *//*--------------------------------------------------------------------*/
+    virtual bool processEvents(void);
 
-	/*--------------------------------------------------------------------*//*!
-	 * \brief Get GL platform interface
-	 *
-	 * GL-specific platform interface is defined by glu::Platform. If your
-	 * platform port supports OpenGL (ES), you should implement this function.
-	 *
-	 * Default implementation throws tcu::NotSupportedError exception.
-	 *
-	 * \return Reference to GL platform interface.
-	 *//*--------------------------------------------------------------------*/
-	virtual const glu::Platform&	getGLPlatform		(void) const;
+    /*--------------------------------------------------------------------*//*!
+     * \brief Get GL platform interface
+     *
+     * GL-specific platform interface is defined by glu::Platform. If your
+     * platform port supports OpenGL (ES), you should implement this function.
+     *
+     * Default implementation throws tcu::NotSupportedError exception.
+     *
+     * \return Reference to GL platform interface.
+     *//*--------------------------------------------------------------------*/
+    virtual const glu::Platform &getGLPlatform(void) const;
 
-	/*--------------------------------------------------------------------*//*!
-	 * \brief Get EGL platform interface
-	 *
-	 * EGL-specific platform interface is defined by eglu::Platform. If your
-	 * platform port supports EGL, you should implement this function.
-	 *
-	 * Default implementation throws tcu::NotSupportedError exception.
-	 *
-	 * \return Reference to EGL platform interface.
-	 *//*--------------------------------------------------------------------*/
-	virtual const eglu::Platform&	getEGLPlatform		(void) const;
+    /*--------------------------------------------------------------------*//*!
+     * \brief Get EGL platform interface
+     *
+     * EGL-specific platform interface is defined by eglu::Platform. If your
+     * platform port supports EGL, you should implement this function.
+     *
+     * Default implementation throws tcu::NotSupportedError exception.
+     *
+     * \return Reference to EGL platform interface.
+     *//*--------------------------------------------------------------------*/
+    virtual const eglu::Platform &getEGLPlatform(void) const;
 
-	virtual const vk::Platform&		getVulkanPlatform	(void) const;
+    virtual const vk::Platform &getVulkanPlatform(void) const;
 };
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUPLATFORM_HPP

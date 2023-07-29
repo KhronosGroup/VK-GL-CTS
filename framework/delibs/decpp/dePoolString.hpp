@@ -42,60 +42,81 @@ namespace de
 class PoolString : public PoolArray<char>
 {
 public:
-	explicit		PoolString			(MemPool* pool);
-					PoolString			(MemPool* pool, const PoolString& other);
-					~PoolString			(void);
+    explicit PoolString(MemPool *pool);
+    PoolString(MemPool *pool, const PoolString &other);
+    ~PoolString(void);
 
-	void			toString			(std::string& str) const;
-	std::string		toString			(void) const;
+    void toString(std::string &str) const;
+    std::string toString(void) const;
 
-	void			append				(const char* str);
-	void			append				(const std::string& str);
-	void			append				(const PoolString& str);
+    void append(const char *str);
+    void append(const std::string &str);
+    void append(const PoolString &str);
 
-	PoolString&		operator=			(const char* str)			{ clear();	append(str);	return *this;	}
-	PoolString&		operator=			(const std::string& str)	{ clear();	append(str);	return *this;	}
-	PoolString&		operator=			(const PoolString& str);
+    PoolString &operator=(const char *str)
+    {
+        clear();
+        append(str);
+        return *this;
+    }
+    PoolString &operator=(const std::string &str)
+    {
+        clear();
+        append(str);
+        return *this;
+    }
+    PoolString &operator=(const PoolString &str);
 
-	PoolString&		operator+=			(const char* str)			{ append(str);	return *this;	}
-	PoolString&		operator+=			(const std::string& str)	{ append(str);	return *this;	}
-	PoolString&		operator+=			(const PoolString& str)		{ append(str);	return *this;	}
+    PoolString &operator+=(const char *str)
+    {
+        append(str);
+        return *this;
+    }
+    PoolString &operator+=(const std::string &str)
+    {
+        append(str);
+        return *this;
+    }
+    PoolString &operator+=(const PoolString &str)
+    {
+        append(str);
+        return *this;
+    }
 
 private:
-					PoolString			(const PoolString& other);
+    PoolString(const PoolString &other);
 };
 
 // Operators.
-std::ostream&	operator<<	(std::ostream& stream, const PoolString& string);
+std::ostream &operator<<(std::ostream &stream, const PoolString &string);
 
 // PoolString inline implementations.
 
-inline PoolString::PoolString (MemPool* pool)
-	: PoolArray<char>(pool)
+inline PoolString::PoolString(MemPool *pool) : PoolArray<char>(pool)
 {
 }
 
-inline PoolString::~PoolString (void)
+inline PoolString::~PoolString(void)
 {
 }
 
-inline std::string PoolString::toString (void) const
+inline std::string PoolString::toString(void) const
 {
-	std::string str;
-	toString(str);
-	return str;
+    std::string str;
+    toString(str);
+    return str;
 }
 
-inline PoolString& PoolString::operator= (const PoolString& str)
+inline PoolString &PoolString::operator=(const PoolString &str)
 {
-	if (this == &str)
-		return *this;
+    if (this == &str)
+        return *this;
 
-	clear();
-	append(str);
-	return *this;
+    clear();
+    append(str);
+    return *this;
 }
 
-} // de
+} // namespace de
 
 #endif // _DEPOOLSTRING_HPP

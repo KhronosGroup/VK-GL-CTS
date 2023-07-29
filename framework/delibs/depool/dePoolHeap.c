@@ -29,25 +29,25 @@
 
 typedef struct HeapItem_s
 {
-	int		priority;
-	int		value;
+    int priority;
+    int value;
 } HeapItem;
 
-DE_INLINE HeapItem HeapItem_create (int priority, int value)
+DE_INLINE HeapItem HeapItem_create(int priority, int value)
 {
-	HeapItem h;
-	h.priority	= priority;
-	h.value		= value;
-	return h;
+    HeapItem h;
+    h.priority = priority;
+    h.value    = value;
+    return h;
 }
 
-DE_INLINE int HeapItem_cmp (HeapItem a, HeapItem b)
+DE_INLINE int HeapItem_cmp(HeapItem a, HeapItem b)
 {
-	if (a.priority < b.priority)
-		return -1;
-	if (a.priority > b.priority)
-		return +1;
-	return 0;
+    if (a.priority < b.priority)
+        return -1;
+    if (a.priority > b.priority)
+        return +1;
+    return 0;
 }
 
 DE_DECLARE_POOL_HEAP(TestHeap, HeapItem, HeapItem_cmp);
@@ -56,67 +56,67 @@ DE_DECLARE_POOL_HEAP(TestHeap, HeapItem, HeapItem_cmp);
  * \internal
  * \brief Test heap functionality.
  *//*--------------------------------------------------------------------*/
-void dePoolHeap_selfTest (void)
+void dePoolHeap_selfTest(void)
 {
-	deMemPool*		pool	= deMemPool_createRoot(DE_NULL, 0);
-	TestHeap*		heap	= TestHeap_create(pool);
-	int				i;
+    deMemPool *pool = deMemPool_createRoot(DE_NULL, 0);
+    TestHeap *heap  = TestHeap_create(pool);
+    int i;
 
-	TestHeap_push(heap, HeapItem_create(10, 10));
-	TestHeap_push(heap, HeapItem_create(0, 10));
-	TestHeap_push(heap, HeapItem_create(20, 10));
-	DE_TEST_ASSERT(TestHeap_getNumElements(heap) == 3);
+    TestHeap_push(heap, HeapItem_create(10, 10));
+    TestHeap_push(heap, HeapItem_create(0, 10));
+    TestHeap_push(heap, HeapItem_create(20, 10));
+    DE_TEST_ASSERT(TestHeap_getNumElements(heap) == 3);
 
-	DE_TEST_ASSERT(TestHeap_popMin(heap).priority == 0);
-	DE_TEST_ASSERT(TestHeap_popMin(heap).priority == 10);
-	DE_TEST_ASSERT(TestHeap_popMin(heap).priority == 20);
-	DE_TEST_ASSERT(TestHeap_getNumElements(heap) == 0);
+    DE_TEST_ASSERT(TestHeap_popMin(heap).priority == 0);
+    DE_TEST_ASSERT(TestHeap_popMin(heap).priority == 10);
+    DE_TEST_ASSERT(TestHeap_popMin(heap).priority == 20);
+    DE_TEST_ASSERT(TestHeap_getNumElements(heap) == 0);
 
-	/* Push items -1000..1000 into heap. */
-	for (i = -1000; i < 1000; i++)
-	{
-		/* Dummy alloc to try to break alignments. */
-		deMemPool_alloc(pool, 1);
-		TestHeap_push(heap, HeapItem_create(i, -i));
-	}
-	DE_TEST_ASSERT(TestHeap_getNumElements(heap) == 2000);
+    /* Push items -1000..1000 into heap. */
+    for (i = -1000; i < 1000; i++)
+    {
+        /* Dummy alloc to try to break alignments. */
+        deMemPool_alloc(pool, 1);
+        TestHeap_push(heap, HeapItem_create(i, -i));
+    }
+    DE_TEST_ASSERT(TestHeap_getNumElements(heap) == 2000);
 
-	/* Push items -2500..-3000 into heap. */
-	for (i = -2501; i >= -3000; i--)
-		TestHeap_push(heap, HeapItem_create(i, -i));
-	DE_TEST_ASSERT(TestHeap_getNumElements(heap) == 2500);
+    /* Push items -2500..-3000 into heap. */
+    for (i = -2501; i >= -3000; i--)
+        TestHeap_push(heap, HeapItem_create(i, -i));
+    DE_TEST_ASSERT(TestHeap_getNumElements(heap) == 2500);
 
-	/* Push items 6000..7500 into heap. */
-	for (i = 6000; i < 7500; i++)
-		TestHeap_push(heap, HeapItem_create(i, -i));
-	DE_TEST_ASSERT(TestHeap_getNumElements(heap) == 4000);
+    /* Push items 6000..7500 into heap. */
+    for (i = 6000; i < 7500; i++)
+        TestHeap_push(heap, HeapItem_create(i, -i));
+    DE_TEST_ASSERT(TestHeap_getNumElements(heap) == 4000);
 
-	/* Pop -3000..-2500 from heap. */
-	for (i = -3000; i < -2500; i++)
-	{
-		HeapItem h = TestHeap_popMin(heap);
-		DE_TEST_ASSERT(h.priority == i);
-		DE_TEST_ASSERT(h.value == -h.priority);
-	}
-	DE_TEST_ASSERT(TestHeap_getNumElements(heap) == 3500);
+    /* Pop -3000..-2500 from heap. */
+    for (i = -3000; i < -2500; i++)
+    {
+        HeapItem h = TestHeap_popMin(heap);
+        DE_TEST_ASSERT(h.priority == i);
+        DE_TEST_ASSERT(h.value == -h.priority);
+    }
+    DE_TEST_ASSERT(TestHeap_getNumElements(heap) == 3500);
 
-	/* Pop -1000..1000 from heap. */
-	for (i = -1000; i < 1000; i++)
-	{
-		HeapItem h = TestHeap_popMin(heap);
-		DE_TEST_ASSERT(h.priority == i);
-		DE_TEST_ASSERT(h.value == -h.priority);
-	}
-	DE_TEST_ASSERT(TestHeap_getNumElements(heap) == 1500);
+    /* Pop -1000..1000 from heap. */
+    for (i = -1000; i < 1000; i++)
+    {
+        HeapItem h = TestHeap_popMin(heap);
+        DE_TEST_ASSERT(h.priority == i);
+        DE_TEST_ASSERT(h.value == -h.priority);
+    }
+    DE_TEST_ASSERT(TestHeap_getNumElements(heap) == 1500);
 
-	/* Pop 6000..7500 from heap. */
-	for (i = 6000; i < 7500; i++)
-	{
-		HeapItem h = TestHeap_popMin(heap);
-		DE_TEST_ASSERT(h.priority == i);
-		DE_TEST_ASSERT(h.value == -h.priority);
-	}
-	DE_TEST_ASSERT(TestHeap_getNumElements(heap) == 0);
+    /* Pop 6000..7500 from heap. */
+    for (i = 6000; i < 7500; i++)
+    {
+        HeapItem h = TestHeap_popMin(heap);
+        DE_TEST_ASSERT(h.priority == i);
+        DE_TEST_ASSERT(h.value == -h.priority);
+    }
+    DE_TEST_ASSERT(TestHeap_getNumElements(heap) == 0);
 
-	deMemPool_destroy(pool);
+    deMemPool_destroy(pool);
 }

@@ -33,9 +33,9 @@
 
 DE_BEGIN_EXTERN_C
 
-void deFileIOStream_init	(deIOStream* stream, const char* filename, deFileMode mode);
-void deFileInStream_init	(deInStream* stream, const char* filename, deFileMode mode);
-void deFileOutStream_init	(deOutStream* stream, const char* filename, deFileMode mode);
+void deFileIOStream_init(deIOStream *stream, const char *filename, deFileMode mode);
+void deFileInStream_init(deInStream *stream, const char *filename, deFileMode mode);
+void deFileOutStream_init(deOutStream *stream, const char *filename, deFileMode mode);
 
 DE_END_EXTERN_C
 

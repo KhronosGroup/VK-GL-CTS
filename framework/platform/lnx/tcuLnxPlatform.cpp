@@ -30,12 +30,12 @@
 #include "gluPlatform.hpp"
 #include "vkPlatform.hpp"
 
-#if defined (DEQP_SUPPORT_X11)
-#	include <X11/Xlib.h>
+#if defined(DEQP_SUPPORT_X11)
+#include <X11/Xlib.h>
 #endif // DEQP_SUPPORT_X11
 
-#if defined (DEQP_SUPPORT_GLX)
-#	include "tcuLnxX11GlxPlatform.hpp"
+#if defined(DEQP_SUPPORT_GLX)
+#include "tcuLnxX11GlxPlatform.hpp"
 #endif // DEQP_SUPPORT_GLX
 
 using de::MovePtr;
@@ -49,54 +49,64 @@ namespace lnx
 class LinuxGLPlatform : public glu::Platform
 {
 public:
-	void		registerFactory	(de::MovePtr<glu::ContextFactory> factory)
-	{
-		m_contextFactoryRegistry.registerFactory(factory.release());
-	}
+    void registerFactory(de::MovePtr<glu::ContextFactory> factory)
+    {
+        m_contextFactoryRegistry.registerFactory(factory.release());
+    }
 };
 
 class LinuxPlatform : public tcu::Platform
 {
 public:
-							LinuxPlatform		(void);
-	bool					processEvents		(void) { return !m_eventState.getQuitFlag(); }
+    LinuxPlatform(void);
+    bool processEvents(void)
+    {
+        return !m_eventState.getQuitFlag();
+    }
 
-	const vk::Platform&		getVulkanPlatform	(void) const { return m_vkPlatform; }
-	const eglu::Platform&	getEGLPlatform		(void) const { return m_eglPlatform; }
-	const glu::Platform&	getGLPlatform		(void) const { return m_glPlatform; }
+    const vk::Platform &getVulkanPlatform(void) const
+    {
+        return m_vkPlatform;
+    }
+    const eglu::Platform &getEGLPlatform(void) const
+    {
+        return m_eglPlatform;
+    }
+    const glu::Platform &getGLPlatform(void) const
+    {
+        return m_glPlatform;
+    }
 
 private:
-	EventState				m_eventState;
-	VulkanPlatform			m_vkPlatform;
-	egl::Platform			m_eglPlatform;
-	LinuxGLPlatform			m_glPlatform;
+    EventState m_eventState;
+    VulkanPlatform m_vkPlatform;
+    egl::Platform m_eglPlatform;
+    LinuxGLPlatform m_glPlatform;
 };
 
-LinuxPlatform::LinuxPlatform (void)
-	: m_vkPlatform	(m_eventState)
-	, m_eglPlatform	(m_eventState)
+LinuxPlatform::LinuxPlatform(void) : m_vkPlatform(m_eventState), m_eglPlatform(m_eventState)
 {
-#if defined (DEQP_SUPPORT_GLX)
-	m_glPlatform.registerFactory(x11::glx::createContextFactory(m_eventState));
+#if defined(DEQP_SUPPORT_GLX)
+    m_glPlatform.registerFactory(x11::glx::createContextFactory(m_eventState));
 #endif // DEQP_SUPPORT_GLX
 
-	m_glPlatform.registerFactory(m_eglPlatform.createContextFactory());
+    m_glPlatform.registerFactory(m_eglPlatform.createContextFactory());
 }
 
-} // lnx
-} // tcu
+} // namespace lnx
+} // namespace tcu
 
-tcu::Platform* createPlatform (void)
+tcu::Platform *createPlatform(void)
 {
-#if defined (DEQP_SUPPORT_X11)
-	// From man:XinitThreads(3):
-	//
-	//     The XInitThreads function initializes Xlib support for concurrent
-	//     threads.  This function must be the first Xlib function
-	//     a multi-threaded program calls, and it must complete before any other
-	//     Xlib call is made.
-	DE_CHECK_RUNTIME_ERR(XInitThreads() != 0);
+#if defined(DEQP_SUPPORT_X11)
+    // From man:XinitThreads(3):
+    //
+    //     The XInitThreads function initializes Xlib support for concurrent
+    //     threads.  This function must be the first Xlib function
+    //     a multi-threaded program calls, and it must complete before any other
+    //     Xlib call is made.
+    DE_CHECK_RUNTIME_ERR(XInitThreads() != 0);
 #endif // DEQP_SUPPORT_X11
 
-	return new tcu::lnx::LinuxPlatform();
+    return new tcu::lnx::LinuxPlatform();
 }

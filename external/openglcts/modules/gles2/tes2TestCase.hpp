@@ -32,7 +32,7 @@ namespace gles2
 using deqp::Context;
 using deqp::TestCaseGroup;
 
-} // gles2
-} // deqp
+} // namespace gles2
+} // namespace deqp
 
 #endif // _TES2TESTCASE_HPP

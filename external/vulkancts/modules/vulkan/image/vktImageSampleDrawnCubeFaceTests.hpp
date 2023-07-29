@@ -31,9 +31,9 @@ namespace vkt
 namespace image
 {
 
-tcu::TestCaseGroup* createImageSampleDrawnCubeFaceTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageSampleDrawnCubeFaceTests(tcu::TestContext &testCtx);
 
-} // image
-} // vkt
+} // namespace image
+} // namespace vkt
 
 #endif // _VKTIMAGESAMPLEDRAWNCUBEFACETESTS_HPP

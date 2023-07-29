@@ -36,29 +36,53 @@ class TestLog;
 
 enum CompareLogMode
 {
-	COMPARE_LOG_EVERYTHING	= 0,	//!< Always log both reference, result and error mask.
-	COMPARE_LOG_RESULT,				//!< If comparison passes, log result only. If fails, everything is written to log.
-	COMPARE_LOG_ON_ERROR,			//!< If comparison passes, nothing is logged. If fails, everything is written to log.
+    COMPARE_LOG_EVERYTHING = 0, //!< Always log both reference, result and error mask.
+    COMPARE_LOG_RESULT,         //!< If comparison passes, log result only. If fails, everything is written to log.
+    COMPARE_LOG_ON_ERROR,       //!< If comparison passes, nothing is logged. If fails, everything is written to log.
 
-	COMPARE_LOG_LAST
+    COMPARE_LOG_LAST
 };
 
 // Utilities for comparing and logging.
-bool	pixelThresholdCompare								(TestLog& log, const char* imageSetName, const char* imageSetDesc, const Surface& reference, const Surface& result, const RGBA& threshold, CompareLogMode logMode);
-bool	fuzzyCompare										(TestLog& log, const char* imageSetName, const char* imageSetDesc, const Surface& reference, const Surface& result, float threshold, CompareLogMode logMode);
-int		measurePixelDiffAccuracy							(TestLog& log, const char* imageSetName, const char* imageSetDesc, const Surface& reference, const Surface& result, int bestScoreDiff, int worstScoreDiff, CompareLogMode logMode);
+bool pixelThresholdCompare(TestLog &log, const char *imageSetName, const char *imageSetDesc, const Surface &reference,
+                           const Surface &result, const RGBA &threshold, CompareLogMode logMode);
+bool fuzzyCompare(TestLog &log, const char *imageSetName, const char *imageSetDesc, const Surface &reference,
+                  const Surface &result, float threshold, CompareLogMode logMode);
+int measurePixelDiffAccuracy(TestLog &log, const char *imageSetName, const char *imageSetDesc, const Surface &reference,
+                             const Surface &result, int bestScoreDiff, int worstScoreDiff, CompareLogMode logMode);
 
-bool	fuzzyCompare										(TestLog& log, const char* imageSetName, const char* imageSetDesc, const ConstPixelBufferAccess& reference, const ConstPixelBufferAccess& result, float threshold, CompareLogMode logMode);
-bool	floatUlpThresholdCompare							(TestLog& log, const char* imageSetName, const char* imageSetDesc, const ConstPixelBufferAccess& reference, const ConstPixelBufferAccess& result, const UVec4& threshold, CompareLogMode logMode);
-bool	floatThresholdCompare								(TestLog& log, const char* imageSetName, const char* imageSetDesc, const ConstPixelBufferAccess& reference, const ConstPixelBufferAccess& result, const Vec4& threshold, CompareLogMode logMode);
-bool	floatThresholdCompare								(TestLog& log, const char* imageSetName, const char* imageSetDesc, const Vec4& reference, const ConstPixelBufferAccess& result, const Vec4& threshold, CompareLogMode logMode);
-bool	intThresholdCompare									(TestLog& log, const char* imageSetName, const char* imageSetDesc, const ConstPixelBufferAccess& reference, const ConstPixelBufferAccess& result, const UVec4& threshold, CompareLogMode logMode, bool use64Bits = false);
-bool	intThresholdPositionDeviationCompare				(TestLog& log, const char* imageSetName, const char* imageSetDesc, const ConstPixelBufferAccess& reference, const ConstPixelBufferAccess& result, const UVec4& threshold, const tcu::IVec3& maxPositionDeviation, bool acceptOutOfBoundsAsAnyValue, CompareLogMode logMode);
-bool	intThresholdPositionDeviationErrorThresholdCompare	(TestLog& log, const char* imageSetName, const char* imageSetDesc, const ConstPixelBufferAccess& reference, const ConstPixelBufferAccess& result, const UVec4& threshold, const tcu::IVec3& maxPositionDeviation, bool acceptOutOfBoundsAsAnyValue, int maxAllowedFailingPixels, CompareLogMode logMode);
-bool	dsThresholdCompare									(TestLog& log, const char* imageSetName, const char* imageSetDesc, const ConstPixelBufferAccess& reference, const ConstPixelBufferAccess& result, const float threshold, CompareLogMode logMode);
-int		measurePixelDiffAccuracy							(TestLog& log, const char* imageSetName, const char* imageSetDesc, const ConstPixelBufferAccess& reference, const ConstPixelBufferAccess& result, int bestScoreDiff, int worstScoreDiff, CompareLogMode logMode);
-bool	bilinearCompare										(TestLog& log, const char* imageSetName, const char* imageSetDesc, const ConstPixelBufferAccess& reference, const ConstPixelBufferAccess& result, const RGBA threshold, CompareLogMode logMode);
+bool fuzzyCompare(TestLog &log, const char *imageSetName, const char *imageSetDesc,
+                  const ConstPixelBufferAccess &reference, const ConstPixelBufferAccess &result, float threshold,
+                  CompareLogMode logMode);
+bool floatUlpThresholdCompare(TestLog &log, const char *imageSetName, const char *imageSetDesc,
+                              const ConstPixelBufferAccess &reference, const ConstPixelBufferAccess &result,
+                              const UVec4 &threshold, CompareLogMode logMode);
+bool floatThresholdCompare(TestLog &log, const char *imageSetName, const char *imageSetDesc,
+                           const ConstPixelBufferAccess &reference, const ConstPixelBufferAccess &result,
+                           const Vec4 &threshold, CompareLogMode logMode);
+bool floatThresholdCompare(TestLog &log, const char *imageSetName, const char *imageSetDesc, const Vec4 &reference,
+                           const ConstPixelBufferAccess &result, const Vec4 &threshold, CompareLogMode logMode);
+bool intThresholdCompare(TestLog &log, const char *imageSetName, const char *imageSetDesc,
+                         const ConstPixelBufferAccess &reference, const ConstPixelBufferAccess &result,
+                         const UVec4 &threshold, CompareLogMode logMode, bool use64Bits = false);
+bool intThresholdPositionDeviationCompare(TestLog &log, const char *imageSetName, const char *imageSetDesc,
+                                          const ConstPixelBufferAccess &reference, const ConstPixelBufferAccess &result,
+                                          const UVec4 &threshold, const tcu::IVec3 &maxPositionDeviation,
+                                          bool acceptOutOfBoundsAsAnyValue, CompareLogMode logMode);
+bool intThresholdPositionDeviationErrorThresholdCompare(
+    TestLog &log, const char *imageSetName, const char *imageSetDesc, const ConstPixelBufferAccess &reference,
+    const ConstPixelBufferAccess &result, const UVec4 &threshold, const tcu::IVec3 &maxPositionDeviation,
+    bool acceptOutOfBoundsAsAnyValue, int maxAllowedFailingPixels, CompareLogMode logMode);
+bool dsThresholdCompare(TestLog &log, const char *imageSetName, const char *imageSetDesc,
+                        const ConstPixelBufferAccess &reference, const ConstPixelBufferAccess &result,
+                        const float threshold, CompareLogMode logMode);
+int measurePixelDiffAccuracy(TestLog &log, const char *imageSetName, const char *imageSetDesc,
+                             const ConstPixelBufferAccess &reference, const ConstPixelBufferAccess &result,
+                             int bestScoreDiff, int worstScoreDiff, CompareLogMode logMode);
+bool bilinearCompare(TestLog &log, const char *imageSetName, const char *imageSetDesc,
+                     const ConstPixelBufferAccess &reference, const ConstPixelBufferAccess &result,
+                     const RGBA threshold, CompareLogMode logMode);
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUIMAGECOMPARE_HPP

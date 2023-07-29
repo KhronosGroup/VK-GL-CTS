@@ -31,9 +31,9 @@ namespace vkt
 namespace synchronization
 {
 
-tcu::TestCaseGroup* createImageLayoutTransitionTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageLayoutTransitionTests(tcu::TestContext &testCtx);
 
-} //synchronization
-} // vkt
+} // namespace synchronization
+} // namespace vkt
 
 #endif // _VKTSYNCHRONIZATIONIMAGELAYOUTTRANSITIONTESTS_HPP

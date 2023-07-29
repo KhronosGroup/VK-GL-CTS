@@ -49,440 +49,439 @@ namespace
 using tcu::Vec3;
 using tcu::Vec4;
 
-const deUint32 widthArea	= 32u;
-const deUint32 heightArea	= 32u;
+const uint32_t widthArea  = 32u;
+const uint32_t heightArea = 32u;
 
 static const float A1 = 0.750f; // Between 1    and 0.5
 static const float A2 = 0.375f; // Between 0.5  and 0.25
 static const float A3 = 0.125f; // Between 0.25 and 0.0
 
 const Vec4 srcColors[] = {
-					   // Test that pre-multiplied is converted correctly.
-					   // Should not test invalid premultiplied colours (1, 1, 1, 0).
-					   { 1.000f, 0.750f, 0.500f, 1.00f },
-					   { 0.250f, 0.125f, 0.000f, 1.00f },
+    // Test that pre-multiplied is converted correctly.
+    // Should not test invalid premultiplied colours (1, 1, 1, 0).
+    {1.000f, 0.750f, 0.500f, 1.00f},
+    {0.250f, 0.125f, 0.000f, 1.00f},
 
-					   // Test clamping.
-					   { 1.000f, 0.750f, 0.500f, 1.00f },
-					   { 0.250f, 0.125f, 0.000f, 1.00f },
-					   { 1.000f, 0.750f, 0.500f, 1.00f },
-					   { 0.250f, 0.125f, 0.000f, 1.00f },
+    // Test clamping.
+    {1.000f, 0.750f, 0.500f, 1.00f},
+    {0.250f, 0.125f, 0.000f, 1.00f},
+    {1.000f, 0.750f, 0.500f, 1.00f},
+    {0.250f, 0.125f, 0.000f, 1.00f},
 
-					   // Combinations that test other branches of blend equations.
-					   { 1.000f, 0.750f, 0.500f, 1.00f },
-					   { 0.250f, 0.125f, 0.000f, 1.00f },
-					   { 1.000f, 0.750f, 0.500f, 1.00f },
-					   { 0.250f, 0.125f, 0.000f, 1.00f },
-					   { 1.000f, 0.750f, 0.500f, 1.00f },
-					   { 0.250f, 0.125f, 0.000f, 1.00f },
-					   { 1.000f, 0.750f, 0.500f, 1.00f },
-					   { 0.250f, 0.125f, 0.000f, 1.00f },
-					   { 1.000f, 0.750f, 0.500f, 1.00f },
-					   { 0.250f, 0.125f, 0.000f, 1.00f },
+    // Combinations that test other branches of blend equations.
+    {1.000f, 0.750f, 0.500f, 1.00f},
+    {0.250f, 0.125f, 0.000f, 1.00f},
+    {1.000f, 0.750f, 0.500f, 1.00f},
+    {0.250f, 0.125f, 0.000f, 1.00f},
+    {1.000f, 0.750f, 0.500f, 1.00f},
+    {0.250f, 0.125f, 0.000f, 1.00f},
+    {1.000f, 0.750f, 0.500f, 1.00f},
+    {0.250f, 0.125f, 0.000f, 1.00f},
+    {1.000f, 0.750f, 0.500f, 1.00f},
+    {0.250f, 0.125f, 0.000f, 1.00f},
 
-					   // Above block with few different pre-multiplied alpha values.
-					   { 1.000f * A1, 0.750f * A1, 0.500f * A1, 1.00f * A1},
-					   { 0.250f * A1, 0.125f * A1, 0.000f * A1, 1.00f * A1},
-					   { 1.000f * A1, 0.750f * A1, 0.500f * A1, 1.00f * A1},
-					   { 0.250f * A1, 0.125f * A1, 0.000f * A1, 1.00f * A1},
-					   { 1.000f * A1, 0.750f * A1, 0.500f * A1, 1.00f * A1},
-					   { 0.250f * A1, 0.125f * A1, 0.000f * A1, 1.00f * A1},
-					   { 1.000f * A1, 0.750f * A1, 0.500f * A1, 1.00f * A1},
-					   { 0.250f * A1, 0.125f * A1, 0.000f * A1, 1.00f * A1},
-					   { 1.000f * A1, 0.750f * A1, 0.500f * A1, 1.00f * A1},
-					   { 0.250f * A1, 0.125f * A1, 0.000f * A1, 1.00f * A1},
+    // Above block with few different pre-multiplied alpha values.
+    {1.000f * A1, 0.750f * A1, 0.500f * A1, 1.00f * A1},
+    {0.250f * A1, 0.125f * A1, 0.000f * A1, 1.00f * A1},
+    {1.000f * A1, 0.750f * A1, 0.500f * A1, 1.00f * A1},
+    {0.250f * A1, 0.125f * A1, 0.000f * A1, 1.00f * A1},
+    {1.000f * A1, 0.750f * A1, 0.500f * A1, 1.00f * A1},
+    {0.250f * A1, 0.125f * A1, 0.000f * A1, 1.00f * A1},
+    {1.000f * A1, 0.750f * A1, 0.500f * A1, 1.00f * A1},
+    {0.250f * A1, 0.125f * A1, 0.000f * A1, 1.00f * A1},
+    {1.000f * A1, 0.750f * A1, 0.500f * A1, 1.00f * A1},
+    {0.250f * A1, 0.125f * A1, 0.000f * A1, 1.00f * A1},
 
-					   { 1.000f * A2, 0.750f * A2, 0.500f * A2, 1.00f * A2},
-					   { 0.250f * A2, 0.125f * A2, 0.000f * A2, 1.00f * A2},
-					   { 1.000f * A2, 0.750f * A2, 0.500f * A2, 1.00f * A2},
-					   { 0.250f * A2, 0.125f * A2, 0.000f * A2, 1.00f * A2},
-					   { 1.000f * A2, 0.750f * A2, 0.500f * A2, 1.00f * A2},
-					   { 0.250f * A2, 0.125f * A2, 0.000f * A2, 1.00f * A2},
-					   { 1.000f * A2, 0.750f * A2, 0.500f * A2, 1.00f * A2},
-					   { 0.250f * A2, 0.125f * A2, 0.000f * A2, 1.00f * A2},
-					   { 1.000f * A2, 0.750f * A2, 0.500f * A2, 1.00f * A2},
-					   { 0.250f * A2, 0.125f * A2, 0.000f * A2, 1.00f * A2},
+    {1.000f * A2, 0.750f * A2, 0.500f * A2, 1.00f * A2},
+    {0.250f * A2, 0.125f * A2, 0.000f * A2, 1.00f * A2},
+    {1.000f * A2, 0.750f * A2, 0.500f * A2, 1.00f * A2},
+    {0.250f * A2, 0.125f * A2, 0.000f * A2, 1.00f * A2},
+    {1.000f * A2, 0.750f * A2, 0.500f * A2, 1.00f * A2},
+    {0.250f * A2, 0.125f * A2, 0.000f * A2, 1.00f * A2},
+    {1.000f * A2, 0.750f * A2, 0.500f * A2, 1.00f * A2},
+    {0.250f * A2, 0.125f * A2, 0.000f * A2, 1.00f * A2},
+    {1.000f * A2, 0.750f * A2, 0.500f * A2, 1.00f * A2},
+    {0.250f * A2, 0.125f * A2, 0.000f * A2, 1.00f * A2},
 
-					   { 1.000f * A3, 0.750f * A3, 0.500f * A3, 1.00f * A3},
-					   { 0.250f * A3, 0.125f * A3, 0.000f * A3, 1.00f * A3},
-					   { 1.000f * A3, 0.750f * A3, 0.500f * A3, 1.00f * A3},
-					   { 0.250f * A3, 0.125f * A3, 0.000f * A3, 1.00f * A3},
-					   { 1.000f * A3, 0.750f * A3, 0.500f * A3, 1.00f * A3},
-					   { 0.250f * A3, 0.125f * A3, 0.000f * A3, 1.00f * A3},
-					   { 1.000f * A3, 0.750f * A3, 0.500f * A3, 1.00f * A3},
-					   { 0.250f * A3, 0.125f * A3, 0.000f * A3, 1.00f * A3},
-					   { 1.000f * A3, 0.750f * A3, 0.500f * A3, 1.00f * A3},
-					   { 0.250f * A3, 0.125f * A3, 0.000f * A3, 1.00f * A3},
+    {1.000f * A3, 0.750f * A3, 0.500f * A3, 1.00f * A3},
+    {0.250f * A3, 0.125f * A3, 0.000f * A3, 1.00f * A3},
+    {1.000f * A3, 0.750f * A3, 0.500f * A3, 1.00f * A3},
+    {0.250f * A3, 0.125f * A3, 0.000f * A3, 1.00f * A3},
+    {1.000f * A3, 0.750f * A3, 0.500f * A3, 1.00f * A3},
+    {0.250f * A3, 0.125f * A3, 0.000f * A3, 1.00f * A3},
+    {1.000f * A3, 0.750f * A3, 0.500f * A3, 1.00f * A3},
+    {0.250f * A3, 0.125f * A3, 0.000f * A3, 1.00f * A3},
+    {1.000f * A3, 0.750f * A3, 0.500f * A3, 1.00f * A3},
+    {0.250f * A3, 0.125f * A3, 0.000f * A3, 1.00f * A3},
 
-					   // Add some source colors with alpha component that is different than the respective destination color
-					   { 0.750f, 0.750f, 0.500f, 0.750f },
-					   { 0.250f, 0.500f, 0.500f, 0.750f },
-					   { 0.250f, 0.125f, 0.000f, 0.500f },
-					   { 0.250f, 0.250f, 0.500f, 0.500f },
-					   { 0.250f, 0.125f, 0.000f, 0.250f },
-					   { 0.125f, 0.125f, 0.125f, 0.250f }};
+    // Add some source colors with alpha component that is different than the respective destination color
+    {0.750f, 0.750f, 0.500f, 0.750f},
+    {0.250f, 0.500f, 0.500f, 0.750f},
+    {0.250f, 0.125f, 0.000f, 0.500f},
+    {0.250f, 0.250f, 0.500f, 0.500f},
+    {0.250f, 0.125f, 0.000f, 0.250f},
+    {0.125f, 0.125f, 0.125f, 0.250f}};
 
 const Vec4 dstColors[] = {
-					   // Test that pre-multiplied is converted correctly.
-					   // Should not test invalid premultiplied colours (1, 1, 1, 0).
-					   { 0.000f, 0.000f, 0.000f, 0.00f },
-					   { 0.000f, 0.000f, 0.000f, 0.00f },
+    // Test that pre-multiplied is converted correctly.
+    // Should not test invalid premultiplied colours (1, 1, 1, 0).
+    {0.000f, 0.000f, 0.000f, 0.00f},
+    {0.000f, 0.000f, 0.000f, 0.00f},
 
-					   // Test clamping.
-					   { -0.125f, -0.125f, -0.125f, 1.00f },
-					   { -0.125f, -0.125f, -0.125f, 1.00f },
-					   {  1.125f,  1.125f,  1.125f, 1.00f },
-					   {  1.125f,  1.125f,  1.125f, 1.00f },
+    // Test clamping.
+    {-0.125f, -0.125f, -0.125f, 1.00f},
+    {-0.125f, -0.125f, -0.125f, 1.00f},
+    {1.125f, 1.125f, 1.125f, 1.00f},
+    {1.125f, 1.125f, 1.125f, 1.00f},
 
-					   // Combinations that test other branches of blend equations.
-					   { 1.000f, 1.000f, 1.000f, 1.00f },
-					   { 1.000f, 1.000f, 1.000f, 1.00f },
-					   { 0.500f, 0.500f, 0.500f, 1.00f },
-					   { 0.500f, 0.500f, 0.500f, 1.00f },
-					   { 0.250f, 0.250f, 0.250f, 1.00f },
-					   { 0.250f, 0.250f, 0.250f, 1.00f },
-					   { 0.125f, 0.125f, 0.125f, 1.00f },
-					   { 0.125f, 0.125f, 0.125f, 1.00f },
-					   { 0.000f, 0.000f, 0.000f, 1.00f },
-					   { 0.000f, 0.000f, 0.000f, 1.00f },
+    // Combinations that test other branches of blend equations.
+    {1.000f, 1.000f, 1.000f, 1.00f},
+    {1.000f, 1.000f, 1.000f, 1.00f},
+    {0.500f, 0.500f, 0.500f, 1.00f},
+    {0.500f, 0.500f, 0.500f, 1.00f},
+    {0.250f, 0.250f, 0.250f, 1.00f},
+    {0.250f, 0.250f, 0.250f, 1.00f},
+    {0.125f, 0.125f, 0.125f, 1.00f},
+    {0.125f, 0.125f, 0.125f, 1.00f},
+    {0.000f, 0.000f, 0.000f, 1.00f},
+    {0.000f, 0.000f, 0.000f, 1.00f},
 
-					   // Above block with few different pre-multiplied alpha values.
-					   { 1.000f * A1, 1.000f * A1, 1.000f * A1, 1.00f * A1},
-					   { 1.000f * A1, 1.000f * A1, 1.000f * A1, 1.00f * A1},
-					   { 0.500f * A1, 0.500f * A1, 0.500f * A1, 1.00f * A1},
-					   { 0.500f * A1, 0.500f * A1, 0.500f * A1, 1.00f * A1},
-					   { 0.250f * A1, 0.250f * A1, 0.250f * A1, 1.00f * A1},
-					   { 0.250f * A1, 0.250f * A1, 0.250f * A1, 1.00f * A1},
-					   { 0.125f * A1, 0.125f * A1, 0.125f * A1, 1.00f * A1},
-					   { 0.125f * A1, 0.125f * A1, 0.125f * A1, 1.00f * A1},
-					   { 0.000f * A1, 0.000f * A1, 0.000f * A1, 1.00f * A1},
-					   { 0.000f * A1, 0.000f * A1, 0.000f * A1, 1.00f * A1},
+    // Above block with few different pre-multiplied alpha values.
+    {1.000f * A1, 1.000f * A1, 1.000f * A1, 1.00f * A1},
+    {1.000f * A1, 1.000f * A1, 1.000f * A1, 1.00f * A1},
+    {0.500f * A1, 0.500f * A1, 0.500f * A1, 1.00f * A1},
+    {0.500f * A1, 0.500f * A1, 0.500f * A1, 1.00f * A1},
+    {0.250f * A1, 0.250f * A1, 0.250f * A1, 1.00f * A1},
+    {0.250f * A1, 0.250f * A1, 0.250f * A1, 1.00f * A1},
+    {0.125f * A1, 0.125f * A1, 0.125f * A1, 1.00f * A1},
+    {0.125f * A1, 0.125f * A1, 0.125f * A1, 1.00f * A1},
+    {0.000f * A1, 0.000f * A1, 0.000f * A1, 1.00f * A1},
+    {0.000f * A1, 0.000f * A1, 0.000f * A1, 1.00f * A1},
 
-					   { 1.000f * A2, 1.000f * A2, 1.000f * A2, 1.00f * A2},
-					   { 1.000f * A2, 1.000f * A2, 1.000f * A2, 1.00f * A2},
-					   { 0.500f * A2, 0.500f * A2, 0.500f * A2, 1.00f * A2},
-					   { 0.500f * A2, 0.500f * A2, 0.500f * A2, 1.00f * A2},
-					   { 0.250f * A2, 0.250f * A2, 0.250f * A2, 1.00f * A2},
-					   { 0.250f * A2, 0.250f * A2, 0.250f * A2, 1.00f * A2},
-					   { 0.125f * A2, 0.125f * A2, 0.125f * A2, 1.00f * A2},
-					   { 0.125f * A2, 0.125f * A2, 0.125f * A2, 1.00f * A2},
-					   { 0.000f * A2, 0.000f * A2, 0.000f * A2, 1.00f * A2},
-					   { 0.000f * A2, 0.000f * A2, 0.000f * A2, 1.00f * A2},
+    {1.000f * A2, 1.000f * A2, 1.000f * A2, 1.00f * A2},
+    {1.000f * A2, 1.000f * A2, 1.000f * A2, 1.00f * A2},
+    {0.500f * A2, 0.500f * A2, 0.500f * A2, 1.00f * A2},
+    {0.500f * A2, 0.500f * A2, 0.500f * A2, 1.00f * A2},
+    {0.250f * A2, 0.250f * A2, 0.250f * A2, 1.00f * A2},
+    {0.250f * A2, 0.250f * A2, 0.250f * A2, 1.00f * A2},
+    {0.125f * A2, 0.125f * A2, 0.125f * A2, 1.00f * A2},
+    {0.125f * A2, 0.125f * A2, 0.125f * A2, 1.00f * A2},
+    {0.000f * A2, 0.000f * A2, 0.000f * A2, 1.00f * A2},
+    {0.000f * A2, 0.000f * A2, 0.000f * A2, 1.00f * A2},
 
-					   { 1.000f * A3, 1.000f * A3, 1.000f * A3, 1.00f * A3},
-					   { 1.000f * A3, 1.000f * A3, 1.000f * A3, 1.00f * A3},
-					   { 0.500f * A3, 0.500f * A3, 0.500f * A3, 1.00f * A3},
-					   { 0.500f * A3, 0.500f * A3, 0.500f * A3, 1.00f * A3},
-					   { 0.250f * A3, 0.250f * A3, 0.250f * A3, 1.00f * A3 },
-					   { 0.250f * A3, 0.250f * A3, 0.250f * A3, 1.00f * A3 },
-					   { 0.125f * A3, 0.125f * A3, 0.125f * A3, 1.00f * A3 },
-					   { 0.125f * A3, 0.125f * A3, 0.125f * A3, 1.00f * A3 },
-					   { 0.000f * A3, 0.000f * A3, 0.000f * A3, 1.00f * A3 },
-					   { 0.000f * A3, 0.000f * A3, 0.000f * A3, 1.00f * A3 },
+    {1.000f * A3, 1.000f * A3, 1.000f * A3, 1.00f * A3},
+    {1.000f * A3, 1.000f * A3, 1.000f * A3, 1.00f * A3},
+    {0.500f * A3, 0.500f * A3, 0.500f * A3, 1.00f * A3},
+    {0.500f * A3, 0.500f * A3, 0.500f * A3, 1.00f * A3},
+    {0.250f * A3, 0.250f * A3, 0.250f * A3, 1.00f * A3},
+    {0.250f * A3, 0.250f * A3, 0.250f * A3, 1.00f * A3},
+    {0.125f * A3, 0.125f * A3, 0.125f * A3, 1.00f * A3},
+    {0.125f * A3, 0.125f * A3, 0.125f * A3, 1.00f * A3},
+    {0.000f * A3, 0.000f * A3, 0.000f * A3, 1.00f * A3},
+    {0.000f * A3, 0.000f * A3, 0.000f * A3, 1.00f * A3},
 
-					   // Add some source colors with alpha component that is different than the respective source color
-					   { 1.000f, 1.000f, 1.000f, 1.000f },
-					   { 0.250f, 0.250f, 0.250f, 0.500f },
-					   { 0.500f, 0.500f, 0.500f, 0.750f },
-					   { 0.250f, 0.250f, 0.250f, 0.250f },
-					   { 0.250f, 0.250f, 0.250f, 0.500f },
-					   { 0.125f, 0.125f, 0.125f, 0.125f }};
+    // Add some source colors with alpha component that is different than the respective source color
+    {1.000f, 1.000f, 1.000f, 1.000f},
+    {0.250f, 0.250f, 0.250f, 0.500f},
+    {0.500f, 0.500f, 0.500f, 0.750f},
+    {0.250f, 0.250f, 0.250f, 0.250f},
+    {0.250f, 0.250f, 0.250f, 0.500f},
+    {0.125f, 0.125f, 0.125f, 0.125f}};
 
-const	Vec4	clearColorVec4  (1.0f, 1.0f, 1.0f, 1.0f);
+const Vec4 clearColorVec4(1.0f, 1.0f, 1.0f, 1.0f);
 
 enum TestMode
 {
-	TEST_MODE_GENERIC = 0,
-	TEST_MODE_COHERENT = 1,
+    TEST_MODE_GENERIC  = 0,
+    TEST_MODE_COHERENT = 1,
 };
 
 struct BlendOperationAdvancedParam
 {
-	TestMode						testMode;
-	deUint32						testNumber;
-	std::vector<VkBlendOp>			blendOps;
-	deBool							coherentOperations;
-	deBool							independentBlend;
-	deUint32						colorAttachmentsCount;
-	VkBool32						premultipliedSrcColor;
-	VkBool32						premultipliedDstColor;
-	VkBlendOverlapEXT				overlap;
+    TestMode testMode;
+    uint32_t testNumber;
+    std::vector<VkBlendOp> blendOps;
+    bool coherentOperations;
+    bool independentBlend;
+    uint32_t colorAttachmentsCount;
+    VkBool32 premultipliedSrcColor;
+    VkBool32 premultipliedDstColor;
+    VkBlendOverlapEXT overlap;
 };
 
 // helper functions
-const std::string generateTestName (struct BlendOperationAdvancedParam param)
+const std::string generateTestName(struct BlendOperationAdvancedParam param)
 {
-	std::ostringstream result;
+    std::ostringstream result;
 
-	result << ((param.testMode == TEST_MODE_COHERENT && !param.coherentOperations) ? "barrier_" : "");
-	result << "color_attachments_" << param.colorAttachmentsCount;
-	result << "_" << de::toLower(getBlendOverlapEXTStr(param.overlap).toString().substr(3));
-	result << (!param.premultipliedSrcColor ? "_nonpremultipliedsrc" : "");
-	result << (!param.premultipliedDstColor ? "_nonpremultiplieddst" : "");
-	result << "_" << param.testNumber;
-	return result.str();
+    result << ((param.testMode == TEST_MODE_COHERENT && !param.coherentOperations) ? "barrier_" : "");
+    result << "color_attachments_" << param.colorAttachmentsCount;
+    result << "_" << de::toLower(getBlendOverlapEXTStr(param.overlap).toString().substr(3));
+    result << (!param.premultipliedSrcColor ? "_nonpremultipliedsrc" : "");
+    result << (!param.premultipliedDstColor ? "_nonpremultiplieddst" : "");
+    result << "_" << param.testNumber;
+    return result.str();
 }
 
-const std::string generateTestDescription ()
+const std::string generateTestDescription()
 {
-	std::string result("Test advanced blend operations");
-	return result;
+    std::string result("Test advanced blend operations");
+    return result;
 }
 
-Vec3 calculateWeightingFactors(BlendOperationAdvancedParam param,
-									float alphaSrc, float alphaDst)
+Vec3 calculateWeightingFactors(BlendOperationAdvancedParam param, float alphaSrc, float alphaDst)
 {
-	Vec3 p = Vec3(0.0f, 0.0f, 0.0f);
-	switch(param.overlap)
-	{
-	case VK_BLEND_OVERLAP_UNCORRELATED_EXT:
-		p.x() = alphaSrc * alphaDst;
-		p.y() = alphaSrc * (1.0f - alphaDst);
-		p.z() = alphaDst * (1.0f - alphaSrc);
-		break;
-	case VK_BLEND_OVERLAP_CONJOINT_EXT:
-		p.x() = deFloatMin(alphaSrc, alphaDst);
-		p.y() = deFloatMax(alphaSrc - alphaDst, 0.0f);
-		p.z() = deFloatMax(alphaDst - alphaSrc, 0.0f);
-		break;
-	case VK_BLEND_OVERLAP_DISJOINT_EXT:
-		p.x() = deFloatMax(alphaSrc + alphaDst - 1.0f, 0.0f);
-		p.y() = deFloatMin(alphaSrc, 1.0f - alphaDst);
-		p.z() = deFloatMin(alphaDst, 1.0f - alphaSrc);
-		break;
-	default:
-		DE_FATAL("Unsupported Advanced Blend Overlap Mode");
-	}
-	return p;
+    Vec3 p = Vec3(0.0f, 0.0f, 0.0f);
+    switch (param.overlap)
+    {
+    case VK_BLEND_OVERLAP_UNCORRELATED_EXT:
+        p.x() = alphaSrc * alphaDst;
+        p.y() = alphaSrc * (1.0f - alphaDst);
+        p.z() = alphaDst * (1.0f - alphaSrc);
+        break;
+    case VK_BLEND_OVERLAP_CONJOINT_EXT:
+        p.x() = deFloatMin(alphaSrc, alphaDst);
+        p.y() = deFloatMax(alphaSrc - alphaDst, 0.0f);
+        p.z() = deFloatMax(alphaDst - alphaSrc, 0.0f);
+        break;
+    case VK_BLEND_OVERLAP_DISJOINT_EXT:
+        p.x() = deFloatMax(alphaSrc + alphaDst - 1.0f, 0.0f);
+        p.y() = deFloatMin(alphaSrc, 1.0f - alphaDst);
+        p.z() = deFloatMin(alphaDst, 1.0f - alphaSrc);
+        break;
+    default:
+        DE_FATAL("Unsupported Advanced Blend Overlap Mode");
+    }
+    return p;
 }
 
-	Vec3 calculateXYZFactors(VkBlendOp op)
+Vec3 calculateXYZFactors(VkBlendOp op)
 {
-	Vec3 xyz = Vec3(0.0f, 0.0f, 0.0f);
-	switch (op)
-	{
-	case VK_BLEND_OP_ZERO_EXT:
-		xyz = Vec3(0.0f, 0.0f, 0.0f);
-		break;
+    Vec3 xyz = Vec3(0.0f, 0.0f, 0.0f);
+    switch (op)
+    {
+    case VK_BLEND_OP_ZERO_EXT:
+        xyz = Vec3(0.0f, 0.0f, 0.0f);
+        break;
 
-	case VK_BLEND_OP_DST_ATOP_EXT:
-	case VK_BLEND_OP_SRC_EXT:
-		xyz = Vec3(1.0f, 1.0f, 0.0f);
-		break;
+    case VK_BLEND_OP_DST_ATOP_EXT:
+    case VK_BLEND_OP_SRC_EXT:
+        xyz = Vec3(1.0f, 1.0f, 0.0f);
+        break;
 
-	case VK_BLEND_OP_DST_EXT:
-		xyz = Vec3(1.0f, 0.0f, 1.0f);
-		break;
+    case VK_BLEND_OP_DST_EXT:
+        xyz = Vec3(1.0f, 0.0f, 1.0f);
+        break;
 
-	case VK_BLEND_OP_HSL_LUMINOSITY_EXT:
-	case VK_BLEND_OP_HSL_COLOR_EXT:
-	case VK_BLEND_OP_HSL_SATURATION_EXT:
-	case VK_BLEND_OP_HSL_HUE_EXT:
-	case VK_BLEND_OP_HARDMIX_EXT:
-	case VK_BLEND_OP_PINLIGHT_EXT:
-	case VK_BLEND_OP_LINEARLIGHT_EXT:
-	case VK_BLEND_OP_VIVIDLIGHT_EXT:
-	case VK_BLEND_OP_LINEARBURN_EXT:
-	case VK_BLEND_OP_LINEARDODGE_EXT:
-	case VK_BLEND_OP_EXCLUSION_EXT:
-	case VK_BLEND_OP_DIFFERENCE_EXT:
-	case VK_BLEND_OP_SOFTLIGHT_EXT:
-	case VK_BLEND_OP_HARDLIGHT_EXT:
-	case VK_BLEND_OP_COLORBURN_EXT:
-	case VK_BLEND_OP_COLORDODGE_EXT:
-	case VK_BLEND_OP_LIGHTEN_EXT:
-	case VK_BLEND_OP_DARKEN_EXT:
-	case VK_BLEND_OP_OVERLAY_EXT:
-	case VK_BLEND_OP_SCREEN_EXT:
-	case VK_BLEND_OP_MULTIPLY_EXT:
-	case VK_BLEND_OP_SRC_OVER_EXT:
-	case VK_BLEND_OP_DST_OVER_EXT:
-		xyz = Vec3(1.0f, 1.0f, 1.0f);
-		break;
+    case VK_BLEND_OP_HSL_LUMINOSITY_EXT:
+    case VK_BLEND_OP_HSL_COLOR_EXT:
+    case VK_BLEND_OP_HSL_SATURATION_EXT:
+    case VK_BLEND_OP_HSL_HUE_EXT:
+    case VK_BLEND_OP_HARDMIX_EXT:
+    case VK_BLEND_OP_PINLIGHT_EXT:
+    case VK_BLEND_OP_LINEARLIGHT_EXT:
+    case VK_BLEND_OP_VIVIDLIGHT_EXT:
+    case VK_BLEND_OP_LINEARBURN_EXT:
+    case VK_BLEND_OP_LINEARDODGE_EXT:
+    case VK_BLEND_OP_EXCLUSION_EXT:
+    case VK_BLEND_OP_DIFFERENCE_EXT:
+    case VK_BLEND_OP_SOFTLIGHT_EXT:
+    case VK_BLEND_OP_HARDLIGHT_EXT:
+    case VK_BLEND_OP_COLORBURN_EXT:
+    case VK_BLEND_OP_COLORDODGE_EXT:
+    case VK_BLEND_OP_LIGHTEN_EXT:
+    case VK_BLEND_OP_DARKEN_EXT:
+    case VK_BLEND_OP_OVERLAY_EXT:
+    case VK_BLEND_OP_SCREEN_EXT:
+    case VK_BLEND_OP_MULTIPLY_EXT:
+    case VK_BLEND_OP_SRC_OVER_EXT:
+    case VK_BLEND_OP_DST_OVER_EXT:
+        xyz = Vec3(1.0f, 1.0f, 1.0f);
+        break;
 
-	case VK_BLEND_OP_SRC_IN_EXT:
-	case VK_BLEND_OP_DST_IN_EXT:
-		xyz = Vec3(1.0f, 0.0f, 0.0f);
-		break;
+    case VK_BLEND_OP_SRC_IN_EXT:
+    case VK_BLEND_OP_DST_IN_EXT:
+        xyz = Vec3(1.0f, 0.0f, 0.0f);
+        break;
 
-	case VK_BLEND_OP_SRC_OUT_EXT:
-		xyz = Vec3(0.0f, 1.0f, 0.0f);
-		break;
+    case VK_BLEND_OP_SRC_OUT_EXT:
+        xyz = Vec3(0.0f, 1.0f, 0.0f);
+        break;
 
-	case VK_BLEND_OP_DST_OUT_EXT:
-		xyz = Vec3(0.0f, 0.0f, 1.0f);
-		break;
+    case VK_BLEND_OP_DST_OUT_EXT:
+        xyz = Vec3(0.0f, 0.0f, 1.0f);
+        break;
 
-	case VK_BLEND_OP_INVERT_RGB_EXT:
-	case VK_BLEND_OP_INVERT_EXT:
-	case VK_BLEND_OP_SRC_ATOP_EXT:
-		xyz = Vec3(1.0f, 0.0f, 1.0f);
-		break;
+    case VK_BLEND_OP_INVERT_RGB_EXT:
+    case VK_BLEND_OP_INVERT_EXT:
+    case VK_BLEND_OP_SRC_ATOP_EXT:
+        xyz = Vec3(1.0f, 0.0f, 1.0f);
+        break;
 
-	case VK_BLEND_OP_XOR_EXT:
-		xyz = Vec3(0.0f, 1.0f, 1.0f);
-		break;
+    case VK_BLEND_OP_XOR_EXT:
+        xyz = Vec3(0.0f, 1.0f, 1.0f);
+        break;
 
-	default:
-		DE_FATAL("Unsupported f/X/Y/Z Advanced Blend Operations Mode");
-	}
+    default:
+        DE_FATAL("Unsupported f/X/Y/Z Advanced Blend Operations Mode");
+    }
 
-	return xyz;
+    return xyz;
 }
 
 float blendOpOverlay(float src, float dst)
 {
-	if (dst <= 0.5f)
-		return (2.0f * src * dst);
-	else
-		return (1.0f - (2.0f * (1.0f - src) * (1.0f - dst)));
+    if (dst <= 0.5f)
+        return (2.0f * src * dst);
+    else
+        return (1.0f - (2.0f * (1.0f - src) * (1.0f - dst)));
 }
 
 float blendOpColorDodge(float src, float dst)
 {
-	if (dst <= 0.0f)
-		return 0.0f;
-	else if (src < 1.0f)
-		return deFloatMin(1.0f, (dst / (1.0f - src)));
-	else
-		return 1.0f;
+    if (dst <= 0.0f)
+        return 0.0f;
+    else if (src < 1.0f)
+        return deFloatMin(1.0f, (dst / (1.0f - src)));
+    else
+        return 1.0f;
 }
 
 float blendOpColorBurn(float src, float dst)
 {
-	if (dst >= 1.0f)
-		return 1.0f;
-	else if (src > 0.0f)
-		return 1.0f - deFloatMin(1.0f, (1.0f - dst) / src);
-	else
-		return 0.0f;
+    if (dst >= 1.0f)
+        return 1.0f;
+    else if (src > 0.0f)
+        return 1.0f - deFloatMin(1.0f, (1.0f - dst) / src);
+    else
+        return 0.0f;
 }
 
 float blendOpHardlight(float src, float dst)
 {
-	if (src <= 0.5f)
-		return 2.0f * src * dst;
-	else
-		return 1.0f - (2.0f * (1.0f - src) * (1.0f - dst));
+    if (src <= 0.5f)
+        return 2.0f * src * dst;
+    else
+        return 1.0f - (2.0f * (1.0f - src) * (1.0f - dst));
 }
 
 float blendOpSoftlight(float src, float dst)
 {
-	if (src <= 0.5f)
-		return dst - ((1.0f - (2.0f * src)) * dst * (1.0f - dst));
-	else if (dst <= 0.25f)
-		return dst + (((2.0f * src) - 1.0f) * dst * ((((16.0f * dst) - 12.0f) * dst) + 3.0f));
-	else
-		return dst + (((2.0f * src) - 1.0f) * (deFloatSqrt(dst) - dst));
+    if (src <= 0.5f)
+        return dst - ((1.0f - (2.0f * src)) * dst * (1.0f - dst));
+    else if (dst <= 0.25f)
+        return dst + (((2.0f * src) - 1.0f) * dst * ((((16.0f * dst) - 12.0f) * dst) + 3.0f));
+    else
+        return dst + (((2.0f * src) - 1.0f) * (deFloatSqrt(dst) - dst));
 }
 
 float blendOpLinearDodge(float src, float dst)
 {
-	if ((src + dst) <= 1.0f)
-		return src + dst;
-	else
-		return 1.0f;
+    if ((src + dst) <= 1.0f)
+        return src + dst;
+    else
+        return 1.0f;
 }
 
 float blendOpLinearBurn(float src, float dst)
 {
-	if ((src + dst) > 1.0f)
-		return src + dst - 1.0f;
-	else
-		return 0.0f;
+    if ((src + dst) > 1.0f)
+        return src + dst - 1.0f;
+    else
+        return 0.0f;
 }
 
 float blendOpVividLight(float src, float dst)
 {
-	if (src <= 0.0f)
-		return 0.0f;
-	if (src < 0.5f)
-		return 1.0f - (deFloatMin(1.0f, (1.0f - dst) / (2.0f * src)));
-	if (src < 1.0f)
-		return deFloatMin(1.0f, dst / (2.0f * (1.0f - src)));
-	else
-		return 1.0f;
+    if (src <= 0.0f)
+        return 0.0f;
+    if (src < 0.5f)
+        return 1.0f - (deFloatMin(1.0f, (1.0f - dst) / (2.0f * src)));
+    if (src < 1.0f)
+        return deFloatMin(1.0f, dst / (2.0f * (1.0f - src)));
+    else
+        return 1.0f;
 }
 
 float blendOpLinearLight(float src, float dst)
 {
-	if ((2.0f * src + dst) > 2.0f)
-		return 1.0f;
-	if ((2.0f * src + dst) <= 1.0f)
-		return 0.0f;
-	return (2.0f * src) + dst - 1.0f;
+    if ((2.0f * src + dst) > 2.0f)
+        return 1.0f;
+    if ((2.0f * src + dst) <= 1.0f)
+        return 0.0f;
+    return (2.0f * src) + dst - 1.0f;
 }
 
 float blendOpPinLight(float src, float dst)
 {
-	if (((2.0f * src - 1.0f) > dst) && src < 0.5f)
-		return 0.0f;
-	if (((2.0f * src - 1.0f) > dst) && src >= 0.5f)
-		return 2.0f * src - 1.0f;
-	if (((2.0f * src - 1.0f) <= dst) && src < (0.5f * dst))
-		return 2.0f * src;
-	if (((2.0f * src - 1.0f) <= dst) && src >= (0.5f * dst))
-		return dst;
-	return 0.0f;
+    if (((2.0f * src - 1.0f) > dst) && src < 0.5f)
+        return 0.0f;
+    if (((2.0f * src - 1.0f) > dst) && src >= 0.5f)
+        return 2.0f * src - 1.0f;
+    if (((2.0f * src - 1.0f) <= dst) && src < (0.5f * dst))
+        return 2.0f * src;
+    if (((2.0f * src - 1.0f) <= dst) && src >= (0.5f * dst))
+        return dst;
+    return 0.0f;
 }
 
 float blendOpHardmix(float src, float dst)
 {
-	if ((src + dst) < 1.0f)
-		return 0.0f;
-	else
-		return 1.0f;
+    if ((src + dst) < 1.0f)
+        return 0.0f;
+    else
+        return 1.0f;
 }
 
 float minv3(Vec3 c)
 {
-	return deFloatMin(deFloatMin(c.x(), c.y()), c.z());
+    return deFloatMin(deFloatMin(c.x(), c.y()), c.z());
 }
 
 float maxv3(Vec3 c)
 {
-	return deFloatMax(deFloatMax(c.x(), c.y()), c.z());
+    return deFloatMax(deFloatMax(c.x(), c.y()), c.z());
 }
 
 float lumv3(Vec3 c)
 {
-	return dot(c, Vec3(0.3f, 0.59f, 0.11f));
+    return dot(c, Vec3(0.3f, 0.59f, 0.11f));
 }
 
 float satv3(Vec3 c)
 {
-	return maxv3(c) - minv3(c);
+    return maxv3(c) - minv3(c);
 }
 
 // If any color components are outside [0,1], adjust the color to
 // get the components in range.
 Vec3 clipColor(Vec3 color)
 {
-	float lum = lumv3(color);
-	float mincol = minv3(color);
-	float maxcol = maxv3(color);
+    float lum    = lumv3(color);
+    float mincol = minv3(color);
+    float maxcol = maxv3(color);
 
-	if (mincol < 0.0)
-	{
-		color = lum + ((color - lum) * lum) / (lum - mincol);
-	}
-	if (maxcol > 1.0)
-	{
-		color = lum + ((color - lum) * (1.0f - lum)) / (maxcol - lum);
-	}
-	return color;
+    if (mincol < 0.0)
+    {
+        color = lum + ((color - lum) * lum) / (lum - mincol);
+    }
+    if (maxcol > 1.0)
+    {
+        color = lum + ((color - lum) * (1.0f - lum)) / (maxcol - lum);
+    }
+    return color;
 }
 
 // Take the base RGB color <cbase> and override its luminosity
 // with that of the RGB color <clum>.
 Vec3 setLum(Vec3 cbase, Vec3 clum)
 {
-	float lbase = lumv3(cbase);
-	float llum = lumv3(clum);
-	float ldiff = llum - lbase;
+    float lbase = lumv3(cbase);
+    float llum  = lumv3(clum);
+    float ldiff = llum - lbase;
 
-	Vec3 color = cbase + Vec3(ldiff);
-	return clipColor(color);
+    Vec3 color = cbase + Vec3(ldiff);
+    return clipColor(color);
 }
 
 // Take the base RGB color <cbase> and override its saturation with
@@ -490,2031 +489,2003 @@ Vec3 setLum(Vec3 cbase, Vec3 clum)
 // result with that of the RGB color <clum>.
 Vec3 setLumSat(Vec3 cbase, Vec3 csat, Vec3 clum)
 {
-	float minbase = minv3(cbase);
-	float sbase = satv3(cbase);
-	float ssat = satv3(csat);
-	Vec3 color;
+    float minbase = minv3(cbase);
+    float sbase   = satv3(cbase);
+    float ssat    = satv3(csat);
+    Vec3 color;
 
-	if (sbase > 0)
-	{
-		// Equivalent (modulo rounding errors) to setting the
-		// smallest (R,G,B) component to 0, the largest to <ssat>,
-		// and interpolating the "middle" component based on its
-		// original value relative to the smallest/largest.
-		color = (cbase - minbase) * ssat / sbase;
-	} else {
-		color = Vec3(0.0f);
-	}
-	return setLum(color, clum);
+    if (sbase > 0)
+    {
+        // Equivalent (modulo rounding errors) to setting the
+        // smallest (R,G,B) component to 0, the largest to <ssat>,
+        // and interpolating the "middle" component based on its
+        // original value relative to the smallest/largest.
+        color = (cbase - minbase) * ssat / sbase;
+    }
+    else
+    {
+        color = Vec3(0.0f);
+    }
+    return setLum(color, clum);
 }
 
-Vec3 calculateFFunction(VkBlendOp op,
-						Vec3 src, Vec3 dst)
+Vec3 calculateFFunction(VkBlendOp op, Vec3 src, Vec3 dst)
 {
-	Vec3 f = Vec3(0.0f, 0.0f, 0.0f);
+    Vec3 f = Vec3(0.0f, 0.0f, 0.0f);
 
-	switch (op)
-	{
-	case VK_BLEND_OP_XOR_EXT:
-	case VK_BLEND_OP_SRC_OUT_EXT:
-	case VK_BLEND_OP_DST_OUT_EXT:
-	case VK_BLEND_OP_ZERO_EXT:
-		f = Vec3(0.0f, 0.0f, 0.0f);
-		break;
+    switch (op)
+    {
+    case VK_BLEND_OP_XOR_EXT:
+    case VK_BLEND_OP_SRC_OUT_EXT:
+    case VK_BLEND_OP_DST_OUT_EXT:
+    case VK_BLEND_OP_ZERO_EXT:
+        f = Vec3(0.0f, 0.0f, 0.0f);
+        break;
 
-	case VK_BLEND_OP_SRC_ATOP_EXT:
-	case VK_BLEND_OP_SRC_IN_EXT:
-	case VK_BLEND_OP_SRC_OVER_EXT:
-	case VK_BLEND_OP_SRC_EXT:
-		f = src;
-		break;
+    case VK_BLEND_OP_SRC_ATOP_EXT:
+    case VK_BLEND_OP_SRC_IN_EXT:
+    case VK_BLEND_OP_SRC_OVER_EXT:
+    case VK_BLEND_OP_SRC_EXT:
+        f = src;
+        break;
 
-	case VK_BLEND_OP_DST_ATOP_EXT:
-	case VK_BLEND_OP_DST_IN_EXT:
-	case VK_BLEND_OP_DST_OVER_EXT:
-	case VK_BLEND_OP_DST_EXT:
-		f = dst;
-		break;
+    case VK_BLEND_OP_DST_ATOP_EXT:
+    case VK_BLEND_OP_DST_IN_EXT:
+    case VK_BLEND_OP_DST_OVER_EXT:
+    case VK_BLEND_OP_DST_EXT:
+        f = dst;
+        break;
 
-	case VK_BLEND_OP_MULTIPLY_EXT:
-		f = src * dst;
-		break;
+    case VK_BLEND_OP_MULTIPLY_EXT:
+        f = src * dst;
+        break;
 
-	case VK_BLEND_OP_SCREEN_EXT:
-		f = src + dst - (src*dst);
-		break;
+    case VK_BLEND_OP_SCREEN_EXT:
+        f = src + dst - (src * dst);
+        break;
 
-	case VK_BLEND_OP_OVERLAY_EXT:
-		f.x() = blendOpOverlay(src.x(), dst.x());
-		f.y() = blendOpOverlay(src.y(), dst.y());
-		f.z() = blendOpOverlay(src.z(), dst.z());
-		break;
+    case VK_BLEND_OP_OVERLAY_EXT:
+        f.x() = blendOpOverlay(src.x(), dst.x());
+        f.y() = blendOpOverlay(src.y(), dst.y());
+        f.z() = blendOpOverlay(src.z(), dst.z());
+        break;
 
-	case VK_BLEND_OP_DARKEN_EXT:
-		f.x() = deFloatMin(src.x(), dst.x());
-		f.y() = deFloatMin(src.y(), dst.y());
-		f.z() = deFloatMin(src.z(), dst.z());
-		break;
+    case VK_BLEND_OP_DARKEN_EXT:
+        f.x() = deFloatMin(src.x(), dst.x());
+        f.y() = deFloatMin(src.y(), dst.y());
+        f.z() = deFloatMin(src.z(), dst.z());
+        break;
 
-	case VK_BLEND_OP_LIGHTEN_EXT:
-		f.x() = deFloatMax(src.x(), dst.x());
-		f.y() = deFloatMax(src.y(), dst.y());
-		f.z() = deFloatMax(src.z(), dst.z());
-		break;
+    case VK_BLEND_OP_LIGHTEN_EXT:
+        f.x() = deFloatMax(src.x(), dst.x());
+        f.y() = deFloatMax(src.y(), dst.y());
+        f.z() = deFloatMax(src.z(), dst.z());
+        break;
 
-	case VK_BLEND_OP_COLORDODGE_EXT:
-		f.x() = blendOpColorDodge(src.x(), dst.x());
-		f.y() = blendOpColorDodge(src.y(), dst.y());
-		f.z() = blendOpColorDodge(src.z(), dst.z());
-		break;
+    case VK_BLEND_OP_COLORDODGE_EXT:
+        f.x() = blendOpColorDodge(src.x(), dst.x());
+        f.y() = blendOpColorDodge(src.y(), dst.y());
+        f.z() = blendOpColorDodge(src.z(), dst.z());
+        break;
 
-	case VK_BLEND_OP_COLORBURN_EXT:
-		f.x() = blendOpColorBurn(src.x(), dst.x());
-		f.y() = blendOpColorBurn(src.y(), dst.y());
-		f.z() = blendOpColorBurn(src.z(), dst.z());
-		break;
+    case VK_BLEND_OP_COLORBURN_EXT:
+        f.x() = blendOpColorBurn(src.x(), dst.x());
+        f.y() = blendOpColorBurn(src.y(), dst.y());
+        f.z() = blendOpColorBurn(src.z(), dst.z());
+        break;
 
-	case VK_BLEND_OP_HARDLIGHT_EXT:
-		f.x() = blendOpHardlight(src.x(), dst.x());
-		f.y() = blendOpHardlight(src.y(), dst.y());
-		f.z() = blendOpHardlight(src.z(), dst.z());
-		break;
+    case VK_BLEND_OP_HARDLIGHT_EXT:
+        f.x() = blendOpHardlight(src.x(), dst.x());
+        f.y() = blendOpHardlight(src.y(), dst.y());
+        f.z() = blendOpHardlight(src.z(), dst.z());
+        break;
 
-	case VK_BLEND_OP_SOFTLIGHT_EXT:
-		f.x() = blendOpSoftlight(src.x(), dst.x());
-		f.y() = blendOpSoftlight(src.y(), dst.y());
-		f.z() = blendOpSoftlight(src.z(), dst.z());
-		break;
+    case VK_BLEND_OP_SOFTLIGHT_EXT:
+        f.x() = blendOpSoftlight(src.x(), dst.x());
+        f.y() = blendOpSoftlight(src.y(), dst.y());
+        f.z() = blendOpSoftlight(src.z(), dst.z());
+        break;
 
-	case VK_BLEND_OP_DIFFERENCE_EXT:
-		f.x() = deFloatAbs(dst.x() - src.x());
-		f.y() = deFloatAbs(dst.y() - src.y());
-		f.z() = deFloatAbs(dst.z() - src.z());
-		break;
+    case VK_BLEND_OP_DIFFERENCE_EXT:
+        f.x() = deFloatAbs(dst.x() - src.x());
+        f.y() = deFloatAbs(dst.y() - src.y());
+        f.z() = deFloatAbs(dst.z() - src.z());
+        break;
 
+    case VK_BLEND_OP_EXCLUSION_EXT:
+        f = src + dst - (2.0f * src * dst);
+        break;
 
-	case VK_BLEND_OP_EXCLUSION_EXT:
-		f = src + dst - (2.0f * src * dst);
-		break;
+    case VK_BLEND_OP_INVERT_EXT:
+        f = 1.0f - dst;
+        break;
 
-	case VK_BLEND_OP_INVERT_EXT:
-		f = 1.0f - dst;
-		break;
+    case VK_BLEND_OP_INVERT_RGB_EXT:
+        f = src * (1.0f - dst);
+        break;
 
-	case VK_BLEND_OP_INVERT_RGB_EXT:
-		f = src * (1.0f - dst);
-		break;
+    case VK_BLEND_OP_LINEARDODGE_EXT:
+        f.x() = blendOpLinearDodge(src.x(), dst.x());
+        f.y() = blendOpLinearDodge(src.y(), dst.y());
+        f.z() = blendOpLinearDodge(src.z(), dst.z());
+        break;
 
-	case VK_BLEND_OP_LINEARDODGE_EXT:
-		f.x() = blendOpLinearDodge(src.x(), dst.x());
-		f.y() = blendOpLinearDodge(src.y(), dst.y());
-		f.z() = blendOpLinearDodge(src.z(), dst.z());
-		break;
+    case VK_BLEND_OP_LINEARBURN_EXT:
+        f.x() = blendOpLinearBurn(src.x(), dst.x());
+        f.y() = blendOpLinearBurn(src.y(), dst.y());
+        f.z() = blendOpLinearBurn(src.z(), dst.z());
+        break;
 
-	case VK_BLEND_OP_LINEARBURN_EXT:
-		f.x() = blendOpLinearBurn(src.x(), dst.x());
-		f.y() = blendOpLinearBurn(src.y(), dst.y());
-		f.z() = blendOpLinearBurn(src.z(), dst.z());
-		break;
+    case VK_BLEND_OP_VIVIDLIGHT_EXT:
+        f.x() = blendOpVividLight(src.x(), dst.x());
+        f.y() = blendOpVividLight(src.y(), dst.y());
+        f.z() = blendOpVividLight(src.z(), dst.z());
+        break;
 
-	case VK_BLEND_OP_VIVIDLIGHT_EXT:
-		f.x() = blendOpVividLight(src.x(), dst.x());
-		f.y() = blendOpVividLight(src.y(), dst.y());
-		f.z() = blendOpVividLight(src.z(), dst.z());
-		break;
+    case VK_BLEND_OP_LINEARLIGHT_EXT:
+        f.x() = blendOpLinearLight(src.x(), dst.x());
+        f.y() = blendOpLinearLight(src.y(), dst.y());
+        f.z() = blendOpLinearLight(src.z(), dst.z());
+        break;
 
-	case VK_BLEND_OP_LINEARLIGHT_EXT:
-		f.x() = blendOpLinearLight(src.x(), dst.x());
-		f.y() = blendOpLinearLight(src.y(), dst.y());
-		f.z() = blendOpLinearLight(src.z(), dst.z());
-		break;
+    case VK_BLEND_OP_PINLIGHT_EXT:
+        f.x() = blendOpPinLight(src.x(), dst.x());
+        f.y() = blendOpPinLight(src.y(), dst.y());
+        f.z() = blendOpPinLight(src.z(), dst.z());
+        break;
 
-	case VK_BLEND_OP_PINLIGHT_EXT:
-		f.x() = blendOpPinLight(src.x(), dst.x());
-		f.y() = blendOpPinLight(src.y(), dst.y());
-		f.z() = blendOpPinLight(src.z(), dst.z());
-		break;
+    case VK_BLEND_OP_HARDMIX_EXT:
+        f.x() = blendOpHardmix(src.x(), dst.x());
+        f.y() = blendOpHardmix(src.y(), dst.y());
+        f.z() = blendOpHardmix(src.z(), dst.z());
+        break;
 
-	case VK_BLEND_OP_HARDMIX_EXT:
-		f.x() = blendOpHardmix(src.x(), dst.x());
-		f.y() = blendOpHardmix(src.y(), dst.y());
-		f.z() = blendOpHardmix(src.z(), dst.z());
-		break;
+    case VK_BLEND_OP_HSL_HUE_EXT:
+        f = setLumSat(src, dst, dst);
+        break;
 
-	case VK_BLEND_OP_HSL_HUE_EXT:
-		f = setLumSat(src, dst, dst);
-		break;
+    case VK_BLEND_OP_HSL_SATURATION_EXT:
+        f = setLumSat(dst, src, dst);
+        break;
 
-	case VK_BLEND_OP_HSL_SATURATION_EXT:
-		f = setLumSat(dst, src, dst);
-		break;
+    case VK_BLEND_OP_HSL_COLOR_EXT:
+        f = setLum(src, dst);
+        break;
 
-	case VK_BLEND_OP_HSL_COLOR_EXT:
-		f = setLum(src, dst);
-		break;
+    case VK_BLEND_OP_HSL_LUMINOSITY_EXT:
+        f = setLum(dst, src);
+        break;
 
-	case VK_BLEND_OP_HSL_LUMINOSITY_EXT:
-		f = setLum(dst, src);
-		break;
+    default:
+        DE_FATAL("Unsupported f/X/Y/Z Advanced Blend Operations Mode");
+    }
 
-	default:
-		DE_FATAL("Unsupported f/X/Y/Z Advanced Blend Operations Mode");
-	}
-
-	return f;
+    return f;
 }
 
-Vec4 additionalRGBBlendOperations(VkBlendOp op,
-								  Vec4 src, Vec4 dst)
+Vec4 additionalRGBBlendOperations(VkBlendOp op, Vec4 src, Vec4 dst)
 {
-	Vec4 res = Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    Vec4 res = Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
-	switch (op)
-	{
-	case VK_BLEND_OP_PLUS_EXT:
-		res = src + dst;
-		break;
+    switch (op)
+    {
+    case VK_BLEND_OP_PLUS_EXT:
+        res = src + dst;
+        break;
 
-	case VK_BLEND_OP_PLUS_CLAMPED_EXT:
-		res.x() = deFloatMin(1.0f, src.x() + dst.x());
-		res.y() = deFloatMin(1.0f, src.y() + dst.y());
-		res.z() = deFloatMin(1.0f, src.z() + dst.z());
-		res.w() = deFloatMin(1.0f, src.w() + dst.w());
-		break;
+    case VK_BLEND_OP_PLUS_CLAMPED_EXT:
+        res.x() = deFloatMin(1.0f, src.x() + dst.x());
+        res.y() = deFloatMin(1.0f, src.y() + dst.y());
+        res.z() = deFloatMin(1.0f, src.z() + dst.z());
+        res.w() = deFloatMin(1.0f, src.w() + dst.w());
+        break;
 
-	case VK_BLEND_OP_PLUS_CLAMPED_ALPHA_EXT:
-		res.x() = deFloatMin(deFloatMin(1.0f, src.w() + dst.w()), src.x() + dst.x());
-		res.y() = deFloatMin(deFloatMin(1.0f, src.w() + dst.w()), src.y() + dst.y());
-		res.z() = deFloatMin(deFloatMin(1.0f, src.w() + dst.w()), src.z() + dst.z());
-		res.w() = deFloatMin(1.0f, src.w() + dst.w());
-		break;
+    case VK_BLEND_OP_PLUS_CLAMPED_ALPHA_EXT:
+        res.x() = deFloatMin(deFloatMin(1.0f, src.w() + dst.w()), src.x() + dst.x());
+        res.y() = deFloatMin(deFloatMin(1.0f, src.w() + dst.w()), src.y() + dst.y());
+        res.z() = deFloatMin(deFloatMin(1.0f, src.w() + dst.w()), src.z() + dst.z());
+        res.w() = deFloatMin(1.0f, src.w() + dst.w());
+        break;
 
-	case VK_BLEND_OP_PLUS_DARKER_EXT:
-		res.x() = deFloatMax(0.0f, deFloatMin(1.0f, src.w() + dst.w()) - ((src.w() - src.x()) + (dst.w() - dst.x())));
-		res.y() = deFloatMax(0.0f, deFloatMin(1.0f, src.w() + dst.w()) - ((src.w() - src.y()) + (dst.w() - dst.y())));
-		res.z() = deFloatMax(0.0f, deFloatMin(1.0f, src.w() + dst.w()) - ((src.w() - src.z()) + (dst.w() - dst.z())));
-		res.w() = deFloatMin(1.0f, src.w() + dst.w());
-		break;
+    case VK_BLEND_OP_PLUS_DARKER_EXT:
+        res.x() = deFloatMax(0.0f, deFloatMin(1.0f, src.w() + dst.w()) - ((src.w() - src.x()) + (dst.w() - dst.x())));
+        res.y() = deFloatMax(0.0f, deFloatMin(1.0f, src.w() + dst.w()) - ((src.w() - src.y()) + (dst.w() - dst.y())));
+        res.z() = deFloatMax(0.0f, deFloatMin(1.0f, src.w() + dst.w()) - ((src.w() - src.z()) + (dst.w() - dst.z())));
+        res.w() = deFloatMin(1.0f, src.w() + dst.w());
+        break;
 
-	case VK_BLEND_OP_MINUS_EXT:
-		res = dst - src;
-		break;
+    case VK_BLEND_OP_MINUS_EXT:
+        res = dst - src;
+        break;
 
-	case VK_BLEND_OP_MINUS_CLAMPED_EXT:
-		res.x() = deFloatMax(0.0f, dst.x() - src.x());
-		res.y() = deFloatMax(0.0f, dst.y() - src.y());
-		res.z() = deFloatMax(0.0f, dst.z() - src.z());
-		res.w() = deFloatMax(0.0f, dst.w() - src.w());
-		break;
+    case VK_BLEND_OP_MINUS_CLAMPED_EXT:
+        res.x() = deFloatMax(0.0f, dst.x() - src.x());
+        res.y() = deFloatMax(0.0f, dst.y() - src.y());
+        res.z() = deFloatMax(0.0f, dst.z() - src.z());
+        res.w() = deFloatMax(0.0f, dst.w() - src.w());
+        break;
 
-	case VK_BLEND_OP_CONTRAST_EXT:
-		res.x() = (dst.w() / 2.0f) + 2.0f * (dst.x() - (dst.w() / 2.0f)) * (src.x() - (src.w() / 2.0f));
-		res.y() = (dst.w() / 2.0f) + 2.0f * (dst.y() - (dst.w() / 2.0f)) * (src.y() - (src.w() / 2.0f));
-		res.z() = (dst.w() / 2.0f) + 2.0f * (dst.z() - (dst.w() / 2.0f)) * (src.z() - (src.w() / 2.0f));
-		res.w() = dst.w();
-		break;
+    case VK_BLEND_OP_CONTRAST_EXT:
+        res.x() = (dst.w() / 2.0f) + 2.0f * (dst.x() - (dst.w() / 2.0f)) * (src.x() - (src.w() / 2.0f));
+        res.y() = (dst.w() / 2.0f) + 2.0f * (dst.y() - (dst.w() / 2.0f)) * (src.y() - (src.w() / 2.0f));
+        res.z() = (dst.w() / 2.0f) + 2.0f * (dst.z() - (dst.w() / 2.0f)) * (src.z() - (src.w() / 2.0f));
+        res.w() = dst.w();
+        break;
 
-	case VK_BLEND_OP_INVERT_OVG_EXT:
-		res.x() = src.w() * (1.0f - dst.x()) + (1.0f - src.w()) * dst.x();
-		res.y() = src.w() * (1.0f - dst.y()) + (1.0f - src.w()) * dst.y();
-		res.z() = src.w() * (1.0f - dst.z()) + (1.0f - src.w()) * dst.z();
-		res.w() = src.w() + dst.w() - src.w() * dst.w();
-		break;
+    case VK_BLEND_OP_INVERT_OVG_EXT:
+        res.x() = src.w() * (1.0f - dst.x()) + (1.0f - src.w()) * dst.x();
+        res.y() = src.w() * (1.0f - dst.y()) + (1.0f - src.w()) * dst.y();
+        res.z() = src.w() * (1.0f - dst.z()) + (1.0f - src.w()) * dst.z();
+        res.w() = src.w() + dst.w() - src.w() * dst.w();
+        break;
 
-	case VK_BLEND_OP_RED_EXT:
-		res = dst;
-		res.x() = src.x();
-		break;
+    case VK_BLEND_OP_RED_EXT:
+        res     = dst;
+        res.x() = src.x();
+        break;
 
-	case VK_BLEND_OP_GREEN_EXT:
-		res = dst;
-		res.y() = src.y();
-		break;
+    case VK_BLEND_OP_GREEN_EXT:
+        res     = dst;
+        res.y() = src.y();
+        break;
 
-	case VK_BLEND_OP_BLUE_EXT:
-		res = dst;
-		res.z() = src.z();
-		break;
+    case VK_BLEND_OP_BLUE_EXT:
+        res     = dst;
+        res.z() = src.z();
+        break;
 
-	default:
-		DE_FATAL("Unsupported blend operation");
-	}
-	return res;
+    default:
+        DE_FATAL("Unsupported blend operation");
+    }
+    return res;
 }
 
-Vec4 calculateFinalColor(BlendOperationAdvancedParam param, VkBlendOp op,
-						 Vec4 source, Vec4 destination)
+Vec4 calculateFinalColor(BlendOperationAdvancedParam param, VkBlendOp op, Vec4 source, Vec4 destination)
 {
-	Vec4 result = Vec4(0.0f, 0.0f, 0.0f, 1.0f);
-	Vec3 srcColor = source.xyz();
-	Vec3 dstColor = destination.xyz();
+    Vec4 result   = Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    Vec3 srcColor = source.xyz();
+    Vec3 dstColor = destination.xyz();
 
-	// Calculate weighting factors
-	Vec3 p = calculateWeightingFactors(param, source.w(), destination.w());
+    // Calculate weighting factors
+    Vec3 p = calculateWeightingFactors(param, source.w(), destination.w());
 
-	if (op > VK_BLEND_OP_MAX && op < VK_BLEND_OP_PLUS_EXT)
-	{
-		{
-			// If srcPremultiplied is set to VK_TRUE, the fragment color components
-			// are considered to have been premultiplied by the A component prior to
-			// blending. The base source color (Rs',Gs',Bs') is obtained by dividing
-			// through by the A component.
-			if (param.premultipliedSrcColor)
-			{
-				if (source.w() != 0.0f)
-					srcColor = srcColor / source.w();
-				else
-					srcColor = Vec3(0.0f, 0.0f, 0.0f);
-			}
-			// If dstPremultiplied is set to VK_TRUE, the destination components are
-			// considered to have been premultiplied by the A component prior to
-			// blending. The base destination color (Rd',Gd',Bd') is obtained by dividing
-			// through by the A component.
-			if (param.premultipliedDstColor)
-			{
-				if (destination.w() != 0.0f)
-					dstColor = dstColor / destination.w();
-				else
-					dstColor = Vec3(0.0f, 0.0f, 0.0f);
-			}
-		}
+    if (op > VK_BLEND_OP_MAX && op < VK_BLEND_OP_PLUS_EXT)
+    {
+        {
+            // If srcPremultiplied is set to VK_TRUE, the fragment color components
+            // are considered to have been premultiplied by the A component prior to
+            // blending. The base source color (Rs',Gs',Bs') is obtained by dividing
+            // through by the A component.
+            if (param.premultipliedSrcColor)
+            {
+                if (source.w() != 0.0f)
+                    srcColor = srcColor / source.w();
+                else
+                    srcColor = Vec3(0.0f, 0.0f, 0.0f);
+            }
+            // If dstPremultiplied is set to VK_TRUE, the destination components are
+            // considered to have been premultiplied by the A component prior to
+            // blending. The base destination color (Rd',Gd',Bd') is obtained by dividing
+            // through by the A component.
+            if (param.premultipliedDstColor)
+            {
+                if (destination.w() != 0.0f)
+                    dstColor = dstColor / destination.w();
+                else
+                    dstColor = Vec3(0.0f, 0.0f, 0.0f);
+            }
+        }
 
-		// Calculate X, Y, Z terms of the equation
-		Vec3 xyz = calculateXYZFactors(op);
-		Vec3 fSrcDst = calculateFFunction(op, srcColor, dstColor);
+        // Calculate X, Y, Z terms of the equation
+        Vec3 xyz     = calculateXYZFactors(op);
+        Vec3 fSrcDst = calculateFFunction(op, srcColor, dstColor);
 
-		result.x() = fSrcDst.x() * p.x() + xyz.y() * srcColor.x() * p.y() + xyz.z() * dstColor.x() * p.z();
-		result.y() = fSrcDst.y() * p.x() + xyz.y() * srcColor.y() * p.y() + xyz.z() * dstColor.y() * p.z();
-		result.z() = fSrcDst.z() * p.x() + xyz.y() * srcColor.z() * p.y() + xyz.z() * dstColor.z() * p.z();
-		result.w() = xyz.x() * p.x() + xyz.y() * p.y() + xyz.z() * p.z();
-	}
-	else if (op >= VK_BLEND_OP_PLUS_EXT && op < VK_BLEND_OP_MAX_ENUM)
-	{
-		// Premultiply colors for additional RGB blend operations. The formula is different than the rest of operations.
-		{
-			if (!param.premultipliedSrcColor)
-			{
-				srcColor = srcColor * source.w();
-			}
+        result.x() = fSrcDst.x() * p.x() + xyz.y() * srcColor.x() * p.y() + xyz.z() * dstColor.x() * p.z();
+        result.y() = fSrcDst.y() * p.x() + xyz.y() * srcColor.y() * p.y() + xyz.z() * dstColor.y() * p.z();
+        result.z() = fSrcDst.z() * p.x() + xyz.y() * srcColor.z() * p.y() + xyz.z() * dstColor.z() * p.z();
+        result.w() = xyz.x() * p.x() + xyz.y() * p.y() + xyz.z() * p.z();
+    }
+    else if (op >= VK_BLEND_OP_PLUS_EXT && op < VK_BLEND_OP_MAX_ENUM)
+    {
+        // Premultiply colors for additional RGB blend operations. The formula is different than the rest of operations.
+        {
+            if (!param.premultipliedSrcColor)
+            {
+                srcColor = srcColor * source.w();
+            }
 
-			if (!param.premultipliedDstColor)
-			{
-				dstColor = dstColor * destination.w();
-			}
-
-		}
-		Vec4 src = Vec4(srcColor.x(), srcColor.y(), srcColor.z(), source.w());
-		Vec4 dst = Vec4(dstColor.x(), dstColor.y(), dstColor.z(), destination.w());
-		result = additionalRGBBlendOperations(op, src, dst);
-	}
-	else
-	{
-		DE_FATAL("Unsupported Blend Operation");
-	}
-	return result;
+            if (!param.premultipliedDstColor)
+            {
+                dstColor = dstColor * destination.w();
+            }
+        }
+        Vec4 src = Vec4(srcColor.x(), srcColor.y(), srcColor.z(), source.w());
+        Vec4 dst = Vec4(dstColor.x(), dstColor.y(), dstColor.z(), destination.w());
+        result   = additionalRGBBlendOperations(op, src, dst);
+    }
+    else
+    {
+        DE_FATAL("Unsupported Blend Operation");
+    }
+    return result;
 }
 
-static inline void getCoordinates (deUint32 index, deInt32 &x, deInt32 &y)
+static inline void getCoordinates(uint32_t index, int32_t &x, int32_t &y)
 {
-	x = index % widthArea;
-	y = index / heightArea;
+    x = index % widthArea;
+    y = index / heightArea;
 }
 
-static inline std::vector<Vec4> createPoints (void)
+static inline std::vector<Vec4> createPoints(void)
 {
-	std::vector<Vec4> vertices;
-	vertices.push_back(Vec4(-1.0f, -1.0f, 0.0f, 1.0f));
-	vertices.push_back(Vec4( 1.0f,  1.0f, 0.0f, 1.0f));
-	vertices.push_back(Vec4(-1.0f,  1.0f, 0.0f, 1.0f));
-	vertices.push_back(Vec4(-1.0f, -1.0f, 0.0f, 1.0f));
-	vertices.push_back(Vec4( 1.0f,  1.0f, 0.0f, 1.0f));
-	vertices.push_back(Vec4( 1.0f, -1.0f, 0.0f, 1.0f));
-	return vertices;
+    std::vector<Vec4> vertices;
+    vertices.push_back(Vec4(-1.0f, -1.0f, 0.0f, 1.0f));
+    vertices.push_back(Vec4(1.0f, 1.0f, 0.0f, 1.0f));
+    vertices.push_back(Vec4(-1.0f, 1.0f, 0.0f, 1.0f));
+    vertices.push_back(Vec4(-1.0f, -1.0f, 0.0f, 1.0f));
+    vertices.push_back(Vec4(1.0f, 1.0f, 0.0f, 1.0f));
+    vertices.push_back(Vec4(1.0f, -1.0f, 0.0f, 1.0f));
+    return vertices;
 }
 
 template <class Test>
-vkt::TestCase* newTestCase (tcu::TestContext&					testContext,
-							const BlendOperationAdvancedParam	testParam)
+vkt::TestCase *newTestCase(tcu::TestContext &testContext, const BlendOperationAdvancedParam testParam)
 {
-	return new Test(testContext,
-					generateTestName(testParam).c_str(),
-					generateTestDescription().c_str(),
-					testParam);
+    return new Test(testContext, generateTestName(testParam).c_str(), generateTestDescription().c_str(), testParam);
 }
 
-Move<VkRenderPass> makeTestRenderPass (BlendOperationAdvancedParam			param,
-									   const DeviceInterface&				vk,
-									   const VkDevice						device,
-									   const VkFormat						colorFormat,
-									   VkAttachmentLoadOp					colorLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR)
+Move<VkRenderPass> makeTestRenderPass(BlendOperationAdvancedParam param, const DeviceInterface &vk,
+                                      const VkDevice device, const VkFormat colorFormat,
+                                      VkAttachmentLoadOp colorLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR)
 {
-	const VkAttachmentDescription			colorAttachmentDescription			=
-	{
-		(VkAttachmentDescriptionFlags)0,				// VkAttachmentDescriptionFlags		flags
-		colorFormat,									// VkFormat							format
-		VK_SAMPLE_COUNT_1_BIT,							// VkSampleCountFlagBits			samples
-		colorLoadOp,									// VkAttachmentLoadOp				loadOp
-		VK_ATTACHMENT_STORE_OP_STORE,					// VkAttachmentStoreOp				storeOp
-		VK_ATTACHMENT_LOAD_OP_DONT_CARE,				// VkAttachmentLoadOp				stencilLoadOp
-		VK_ATTACHMENT_STORE_OP_DONT_CARE,				// VkAttachmentStoreOp				stencilStoreOp
-		(colorLoadOp == VK_ATTACHMENT_LOAD_OP_LOAD) ?
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL :
-			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout					initialLayout
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL		// VkImageLayout					finalLayout
-	};
+    const VkAttachmentDescription colorAttachmentDescription = {
+        (VkAttachmentDescriptionFlags)0,  // VkAttachmentDescriptionFlags        flags
+        colorFormat,                      // VkFormat                            format
+        VK_SAMPLE_COUNT_1_BIT,            // VkSampleCountFlagBits            samples
+        colorLoadOp,                      // VkAttachmentLoadOp                loadOp
+        VK_ATTACHMENT_STORE_OP_STORE,     // VkAttachmentStoreOp                storeOp
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp                stencilLoadOp
+        VK_ATTACHMENT_STORE_OP_DONT_CARE, // VkAttachmentStoreOp                stencilStoreOp
+        (colorLoadOp == VK_ATTACHMENT_LOAD_OP_LOAD) ?
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL :
+            VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout                    initialLayout
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL // VkImageLayout                    finalLayout
+    };
 
-	std::vector<VkAttachmentDescription>	attachmentDescriptions;
-	std::vector<VkAttachmentReference>		colorAttachmentRefs;
+    std::vector<VkAttachmentDescription> attachmentDescriptions;
+    std::vector<VkAttachmentReference> colorAttachmentRefs;
 
+    for (uint32_t i = 0; i < param.colorAttachmentsCount; i++)
+    {
+        attachmentDescriptions.push_back(colorAttachmentDescription);
+        const VkAttachmentReference colorAttachmentRef = {
+            i,                                       // uint32_t        attachment
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL // VkImageLayout    layout
+        };
 
-	for (deUint32 i = 0; i < param.colorAttachmentsCount; i++)
-	{
-		attachmentDescriptions.push_back(colorAttachmentDescription);
-		const VkAttachmentReference		colorAttachmentRef	=
-		{
-			i,											// deUint32		attachment
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout	layout
-		};
+        colorAttachmentRefs.push_back(colorAttachmentRef);
+    }
 
-		colorAttachmentRefs.push_back(colorAttachmentRef);
-	}
+    const VkSubpassDescription subpassDescription = {
+        (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags        flags
+        VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint                pipelineBindPoint
+        0u,                              // uint32_t                            inputAttachmentCount
+        DE_NULL,                         // const VkAttachmentReference*        pInputAttachments
+        param.colorAttachmentsCount,     // uint32_t                            colorAttachmentCount
+        colorAttachmentRefs.data(),      // const VkAttachmentReference*        pColorAttachments
+        DE_NULL,                         // const VkAttachmentReference*        pResolveAttachments
+        DE_NULL,                         // const VkAttachmentReference*        pDepthStencilAttachment
+        0u,                              // uint32_t                            preserveAttachmentCount
+        DE_NULL                          // const uint32_t*                    pPreserveAttachments
+    };
 
-	const VkSubpassDescription				subpassDescription					=
-	{
-		(VkSubpassDescriptionFlags)0,							// VkSubpassDescriptionFlags		flags
-		VK_PIPELINE_BIND_POINT_GRAPHICS,						// VkPipelineBindPoint				pipelineBindPoint
-		0u,														// deUint32							inputAttachmentCount
-		DE_NULL,												// const VkAttachmentReference*		pInputAttachments
-		param.colorAttachmentsCount,							// deUint32							colorAttachmentCount
-		colorAttachmentRefs.data(),								// const VkAttachmentReference*		pColorAttachments
-		DE_NULL,												// const VkAttachmentReference*		pResolveAttachments
-		DE_NULL,												// const VkAttachmentReference*		pDepthStencilAttachment
-		0u,														// deUint32							preserveAttachmentCount
-		DE_NULL													// const deUint32*					pPreserveAttachments
-	};
+    const VkRenderPassCreateInfo renderPassInfo = {
+        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType                    sType
+        DE_NULL,                                   // const void*                        pNext
+        (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags            flags
+        (uint32_t)attachmentDescriptions.size(),   // uint32_t                            attachmentCount
+        attachmentDescriptions.data(),             // const VkAttachmentDescription*    pAttachments
+        1u,                                        // uint32_t                            subpassCount
+        &subpassDescription,                       // const VkSubpassDescription*        pSubpasses
+        0u,                                        // uint32_t                            dependencyCount
+        DE_NULL                                    // const VkSubpassDependency*        pDependencies
+    };
 
-	const VkRenderPassCreateInfo			renderPassInfo						=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,									// VkStructureType					sType
-		DE_NULL,																	// const void*						pNext
-		(VkRenderPassCreateFlags)0,													// VkRenderPassCreateFlags			flags
-		(deUint32)attachmentDescriptions.size(),									// deUint32							attachmentCount
-		attachmentDescriptions.data(),												// const VkAttachmentDescription*	pAttachments
-		1u,																			// deUint32							subpassCount
-		&subpassDescription,														// const VkSubpassDescription*		pSubpasses
-		0u,																			// deUint32							dependencyCount
-		DE_NULL																		// const VkSubpassDependency*		pDependencies
-	};
-
-	return createRenderPass(vk, device, &renderPassInfo, DE_NULL);
+    return createRenderPass(vk, device, &renderPassInfo, DE_NULL);
 }
 
-Move<VkBuffer> createBufferAndBindMemory (Context& context, VkDeviceSize size, VkBufferUsageFlags usage, de::MovePtr<Allocation>* pAlloc)
+Move<VkBuffer> createBufferAndBindMemory(Context &context, VkDeviceSize size, VkBufferUsageFlags usage,
+                                         de::MovePtr<Allocation> *pAlloc)
 {
-	const DeviceInterface&	vk				 = context.getDeviceInterface();
-	const VkDevice			vkDevice		 = context.getDevice();
-	const deUint32			queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+    const DeviceInterface &vk       = context.getDeviceInterface();
+    const VkDevice vkDevice         = context.getDevice();
+    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
 
-	const VkBufferCreateInfo vertexBufferParams =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
-		DE_NULL,									// const void*			pNext;
-		0u,											// VkBufferCreateFlags	flags;
-		size,										// VkDeviceSize			size;
-		usage,										// VkBufferUsageFlags	usage;
-		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-		1u,											// deUint32				queueFamilyCount;
-		&queueFamilyIndex							// const deUint32*		pQueueFamilyIndices;
-	};
+    const VkBufferCreateInfo vertexBufferParams = {
+        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                              // const void* pNext;
+        0u,                                   // VkBufferCreateFlags flags;
+        size,                                 // VkDeviceSize size;
+        usage,                                // VkBufferUsageFlags usage;
+        VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
+        1u,                                   // uint32_t queueFamilyCount;
+        &queueFamilyIndex                     // const uint32_t* pQueueFamilyIndices;
+    };
 
-	Move<VkBuffer> vertexBuffer = createBuffer(vk, vkDevice, &vertexBufferParams);
+    Move<VkBuffer> vertexBuffer = createBuffer(vk, vkDevice, &vertexBufferParams);
 
-	*pAlloc = context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vk, vkDevice, *vertexBuffer), MemoryRequirement::HostVisible);
-	VK_CHECK(vk.bindBufferMemory(vkDevice, *vertexBuffer, (*pAlloc)->getMemory(), (*pAlloc)->getOffset()));
+    *pAlloc = context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vk, vkDevice, *vertexBuffer),
+                                                     MemoryRequirement::HostVisible);
+    VK_CHECK(vk.bindBufferMemory(vkDevice, *vertexBuffer, (*pAlloc)->getMemory(), (*pAlloc)->getOffset()));
 
-	return vertexBuffer;
+    return vertexBuffer;
 }
 
-Move<VkImage> createImage2DAndBindMemory (Context&							context,
-										  VkFormat							format,
-										  deUint32							width,
-										  deUint32							height,
-										  VkImageUsageFlags					usage,
-										  VkSampleCountFlagBits				sampleCount,
-										  de::details::MovePtr<Allocation>* pAlloc)
+Move<VkImage> createImage2DAndBindMemory(Context &context, VkFormat format, uint32_t width, uint32_t height,
+                                         VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount,
+                                         de::details::MovePtr<Allocation> *pAlloc)
 {
-	const DeviceInterface&	vk				 = context.getDeviceInterface();
-	const VkDevice			vkDevice		 = context.getDevice();
-	const deUint32			queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+    const DeviceInterface &vk       = context.getDeviceInterface();
+    const VkDevice vkDevice         = context.getDevice();
+    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
 
-	const VkImageCreateInfo colorImageParams =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,										// VkStructureType		sType;
-		DE_NULL,																	// const void*			pNext;
-		0u,																			// VkImageCreateFlags	flags;
-		VK_IMAGE_TYPE_2D,															// VkImageType			imageType;
-		format,																		// VkFormat				format;
-		{ width, height, 1u },														// VkExtent3D			extent;
-		1u,																			// deUint32				mipLevels;
-		1u,																			// deUint32				arraySize;
-		sampleCount,																// deUint32				samples;
-		VK_IMAGE_TILING_OPTIMAL,													// VkImageTiling		tiling;
-		usage,																		// VkImageUsageFlags	usage;
-		VK_SHARING_MODE_EXCLUSIVE,													// VkSharingMode		sharingMode;
-		1u,																			// deUint32				queueFamilyCount;
-		&queueFamilyIndex,															// const deUint32*		pQueueFamilyIndices;
-		VK_IMAGE_LAYOUT_UNDEFINED,													// VkImageLayout		initialLayout;
-	};
+    const VkImageCreateInfo colorImageParams = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                             // const void* pNext;
+        0u,                                  // VkImageCreateFlags flags;
+        VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
+        format,                              // VkFormat format;
+        {width, height, 1u},                 // VkExtent3D extent;
+        1u,                                  // uint32_t mipLevels;
+        1u,                                  // uint32_t arraySize;
+        sampleCount,                         // uint32_t samples;
+        VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling tiling;
+        usage,                               // VkImageUsageFlags usage;
+        VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
+        1u,                                  // uint32_t queueFamilyCount;
+        &queueFamilyIndex,                   // const uint32_t* pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
+    };
 
-	Move<VkImage> image = createImage(vk, vkDevice, &colorImageParams);
+    Move<VkImage> image = createImage(vk, vkDevice, &colorImageParams);
 
-	*pAlloc = context.getDefaultAllocator().allocate(getImageMemoryRequirements(vk, vkDevice, *image), MemoryRequirement::Any);
-	VK_CHECK(vk.bindImageMemory(vkDevice, *image, (*pAlloc)->getMemory(), (*pAlloc)->getOffset()));
+    *pAlloc = context.getDefaultAllocator().allocate(getImageMemoryRequirements(vk, vkDevice, *image),
+                                                     MemoryRequirement::Any);
+    VK_CHECK(vk.bindImageMemory(vkDevice, *image, (*pAlloc)->getMemory(), (*pAlloc)->getOffset()));
 
-	return image;
+    return image;
 }
 
 // Test Classes
 class BlendOperationAdvancedTestInstance : public vkt::TestInstance
 {
 public:
-								BlendOperationAdvancedTestInstance		(Context&				context,
-																		 const BlendOperationAdvancedParam	param);
-	virtual						~BlendOperationAdvancedTestInstance		(void);
-	virtual tcu::TestStatus		iterate									(void);
+    BlendOperationAdvancedTestInstance(Context &context, const BlendOperationAdvancedParam param);
+    virtual ~BlendOperationAdvancedTestInstance(void);
+    virtual tcu::TestStatus iterate(void);
+
 protected:
-			void				prepareRenderPass						(VkFramebuffer framebuffer, VkPipeline pipeline) const;
-			void				prepareCommandBuffer					(void) const;
-			void				buildPipeline							(VkBool32 premultiplySrc, VkBool32 premultiplyDst);
-			void				bindShaderStage							(VkShaderStageFlagBits					stage,
-																		 const char*							sourceName,
-																		 const char*							entryName);
-			deBool				verifyTestResult						(void);
+    void prepareRenderPass(VkFramebuffer framebuffer, VkPipeline pipeline) const;
+    void prepareCommandBuffer(void) const;
+    void buildPipeline(VkBool32 premultiplySrc, VkBool32 premultiplyDst);
+    void bindShaderStage(VkShaderStageFlagBits stage, const char *sourceName, const char *entryName);
+    bool verifyTestResult(void);
+
 protected:
-	const BlendOperationAdvancedParam		m_param;
-	const tcu::UVec2						m_renderSize;
-	const VkFormat							m_colorFormat;
-	Move<VkPipelineLayout>					m_pipelineLayout;
+    const BlendOperationAdvancedParam m_param;
+    const tcu::UVec2 m_renderSize;
+    const VkFormat m_colorFormat;
+    Move<VkPipelineLayout> m_pipelineLayout;
 
-	Move<VkBuffer>							m_vertexBuffer;
-	de::MovePtr<Allocation>					m_vertexBufferMemory;
-	std::vector<Vec4>						m_vertices;
+    Move<VkBuffer> m_vertexBuffer;
+    de::MovePtr<Allocation> m_vertexBufferMemory;
+    std::vector<Vec4> m_vertices;
 
-	Move<VkRenderPass>						m_renderPass;
-	Move<VkCommandPool>						m_cmdPool;
-	Move<VkCommandBuffer>					m_cmdBuffer;
-	std::vector<Move<VkImage>>				m_colorImages;
-	std::vector<Move<VkImageView>>			m_colorAttachmentViews;
-	std::vector<de::MovePtr<Allocation>>	m_colorImageAllocs;
-	std::vector<VkImageMemoryBarrier>		m_imageLayoutBarriers;
-	Move<VkFramebuffer>						m_framebuffer;
-	Move<VkPipeline>						m_pipeline;
+    Move<VkRenderPass> m_renderPass;
+    Move<VkCommandPool> m_cmdPool;
+    Move<VkCommandBuffer> m_cmdBuffer;
+    std::vector<Move<VkImage>> m_colorImages;
+    std::vector<Move<VkImageView>> m_colorAttachmentViews;
+    std::vector<de::MovePtr<Allocation>> m_colorImageAllocs;
+    std::vector<VkImageMemoryBarrier> m_imageLayoutBarriers;
+    Move<VkFramebuffer> m_framebuffer;
+    Move<VkPipeline> m_pipeline;
 
-	Move<VkShaderModule>					m_shaderModules[2];
-	deUint32								m_shaderStageCount;
-	VkPipelineShaderStageCreateInfo			m_shaderStageInfo[2];
+    Move<VkShaderModule> m_shaderModules[2];
+    uint32_t m_shaderStageCount;
+    VkPipelineShaderStageCreateInfo m_shaderStageInfo[2];
 };
 
-void BlendOperationAdvancedTestInstance::bindShaderStage (VkShaderStageFlagBits	stage,
-														  const char*			sourceName,
-														  const char*			entryName)
+void BlendOperationAdvancedTestInstance::bindShaderStage(VkShaderStageFlagBits stage, const char *sourceName,
+                                                         const char *entryName)
 {
-	const DeviceInterface&	vk			= m_context.getDeviceInterface();
-	const VkDevice			vkDevice	= m_context.getDevice();
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice vkDevice   = m_context.getDevice();
 
-	// Create shader module
-	deUint32*				code		= (deUint32*)m_context.getBinaryCollection().get(sourceName).getBinary();
-	deUint32				codeSize	= (deUint32)m_context.getBinaryCollection().get(sourceName).getSize();
+    // Create shader module
+    uint32_t *code    = (uint32_t *)m_context.getBinaryCollection().get(sourceName).getBinary();
+    uint32_t codeSize = (uint32_t)m_context.getBinaryCollection().get(sourceName).getSize();
 
-	const VkShaderModuleCreateInfo moduleCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,				// VkStructureType				sType;
-		DE_NULL,													// const void*					pNext;
-		0u,															// VkShaderModuleCreateFlags	flags;
-		codeSize,													// deUintptr					codeSize;
-		code,														// const deUint32*				pCode;
-	};
+    const VkShaderModuleCreateInfo moduleCreateInfo = {
+        VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                     // const void* pNext;
+        0u,                                          // VkShaderModuleCreateFlags flags;
+        codeSize,                                    // uintptr_t codeSize;
+        code,                                        // const uint32_t* pCode;
+    };
 
-	m_shaderModules[m_shaderStageCount] = createShaderModule(vk, vkDevice, &moduleCreateInfo);
+    m_shaderModules[m_shaderStageCount] = createShaderModule(vk, vkDevice, &moduleCreateInfo);
 
-	// Prepare shader stage info
-	m_shaderStageInfo[m_shaderStageCount].sType					= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	m_shaderStageInfo[m_shaderStageCount].pNext					= DE_NULL;
-	m_shaderStageInfo[m_shaderStageCount].flags					= 0u;
-	m_shaderStageInfo[m_shaderStageCount].stage					= stage;
-	m_shaderStageInfo[m_shaderStageCount].module				= *m_shaderModules[m_shaderStageCount];
-	m_shaderStageInfo[m_shaderStageCount].pName					= entryName;
-	m_shaderStageInfo[m_shaderStageCount].pSpecializationInfo	= DE_NULL;
+    // Prepare shader stage info
+    m_shaderStageInfo[m_shaderStageCount].sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    m_shaderStageInfo[m_shaderStageCount].pNext               = DE_NULL;
+    m_shaderStageInfo[m_shaderStageCount].flags               = 0u;
+    m_shaderStageInfo[m_shaderStageCount].stage               = stage;
+    m_shaderStageInfo[m_shaderStageCount].module              = *m_shaderModules[m_shaderStageCount];
+    m_shaderStageInfo[m_shaderStageCount].pName               = entryName;
+    m_shaderStageInfo[m_shaderStageCount].pSpecializationInfo = DE_NULL;
 
-	m_shaderStageCount++;
+    m_shaderStageCount++;
 }
 
-void BlendOperationAdvancedTestInstance::buildPipeline (VkBool32 srcPremultiplied,
-													   VkBool32 dstPremultiplied)
+void BlendOperationAdvancedTestInstance::buildPipeline(VkBool32 srcPremultiplied, VkBool32 dstPremultiplied)
 {
-	const DeviceInterface&		vk					= m_context.getDeviceInterface();
-	const VkDevice				vkDevice			= m_context.getDevice();
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice vkDevice   = m_context.getDevice();
 
-	// Create pipeline
-	const VkVertexInputBindingDescription vertexInputBindingDescription =
-	{
-		0u,									// deUint32				binding;
-		sizeof(Vec4),						// deUint32				strideInBytes;
-		VK_VERTEX_INPUT_RATE_VERTEX,		// VkVertexInputRate	inputRate;
-	};
+    // Create pipeline
+    const VkVertexInputBindingDescription vertexInputBindingDescription = {
+        0u,                          // uint32_t binding;
+        sizeof(Vec4),                // uint32_t strideInBytes;
+        VK_VERTEX_INPUT_RATE_VERTEX, // VkVertexInputRate inputRate;
+    };
 
-	const VkVertexInputAttributeDescription vertexInputAttributeDescription =
-	{
-		0u,									// deUint32 location;
-		0u,									// deUint32 binding;
-		VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat format;
-		0u									// deUint32 offsetInBytes;
-	};
+    const VkVertexInputAttributeDescription vertexInputAttributeDescription = {
+        0u,                            // uint32_t location;
+        0u,                            // uint32_t binding;
+        VK_FORMAT_R32G32B32A32_SFLOAT, // VkFormat format;
+        0u                             // uint32_t offsetInBytes;
+    };
 
-	const VkPipelineVertexInputStateCreateInfo vertexInputStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType							sType;
-		DE_NULL,														// const void*								pNext;
-		0u,																// VkPipelineVertexInputStateCreateFlags	flags;
-		1u,																// deUint32									vertexBindingDescriptionCount;
-		&vertexInputBindingDescription,									// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
-		1u,																// deUint32									vertexAttributeDescriptionCount;
-		&vertexInputAttributeDescription,								// const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
-	};
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                                   // const void* pNext;
+        0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
+        1u,                                                        // uint32_t vertexBindingDescriptionCount;
+        &vertexInputBindingDescription,   // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+        1u,                               // uint32_t vertexAttributeDescriptionCount;
+        &vertexInputAttributeDescription, // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+    };
 
-	const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType							sType;
-		DE_NULL,														// const void*								pNext;
-		0u,																// VkPipelineInputAssemblyStateCreateFlags	flags;
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// VkPrimitiveTopology						topology;
-		VK_FALSE,														// VkBool32									primitiveRestartEnable;
-	};
+    const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                                     // const void* pNext;
+        0u,                                                          // VkPipelineInputAssemblyStateCreateFlags flags;
+        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,                         // VkPrimitiveTopology topology;
+        VK_FALSE,                                                    // VkBool32 primitiveRestartEnable;
+    };
 
-	const VkRect2D		scissor		= makeRect2D(m_renderSize);
-	VkViewport			viewport	= makeViewport(m_renderSize);
+    const VkRect2D scissor = makeRect2D(m_renderSize);
+    VkViewport viewport    = makeViewport(m_renderSize);
 
-	const VkPipelineViewportStateCreateInfo viewportStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType							sType;
-		DE_NULL,														// const void*								pNext;
-		0u,																// VkPipelineViewportStateCreateFlags		flags;
-		1u,																// deUint32									viewportCount;
-		&viewport,														// const VkViewport*						pViewports;
-		1u,																// deUint32									scissorCount;
-		&scissor														// const VkRect2D*							pScissors;
-	};
+    const VkPipelineViewportStateCreateInfo viewportStateParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                               // const void* pNext;
+        0u,                                                    // VkPipelineViewportStateCreateFlags flags;
+        1u,                                                    // uint32_t viewportCount;
+        &viewport,                                             // const VkViewport* pViewports;
+        1u,                                                    // uint32_t scissorCount;
+        &scissor                                               // const VkRect2D* pScissors;
+    };
 
-	const VkPipelineRasterizationStateCreateInfo rasterStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		// VkStructureType							sType;
-		DE_NULL,														// const void*								pNext;
-		0u,																// VkPipelineRasterizationStateCreateFlags	flags;
-		VK_FALSE,														// VkBool32									depthClampEnable;
-		VK_FALSE,														// VkBool32									rasterizerDiscardEnable;
-		VK_POLYGON_MODE_FILL,											// VkPolygonMode							polygonMode;
-		VK_CULL_MODE_NONE,												// VkCullModeFlags							cullMode;
-		VK_FRONT_FACE_COUNTER_CLOCKWISE,								// VkFrontFace								frontFace;
-		VK_FALSE,														// VkBool32									depthBiasEnable;
-		0.0f,															// float									depthBiasConstantFactor;
-		0.0f,															// float									depthBiasClamp;
-		0.0f,															// float									depthBiasSlopeFactor;
-		1.0f,															// float									lineWidth;
-	};
+    const VkPipelineRasterizationStateCreateInfo rasterStateParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                                    // const void* pNext;
+        0u,                                                         // VkPipelineRasterizationStateCreateFlags flags;
+        VK_FALSE,                                                   // VkBool32 depthClampEnable;
+        VK_FALSE,                                                   // VkBool32 rasterizerDiscardEnable;
+        VK_POLYGON_MODE_FILL,                                       // VkPolygonMode polygonMode;
+        VK_CULL_MODE_NONE,                                          // VkCullModeFlags cullMode;
+        VK_FRONT_FACE_COUNTER_CLOCKWISE,                            // VkFrontFace frontFace;
+        VK_FALSE,                                                   // VkBool32 depthBiasEnable;
+        0.0f,                                                       // float depthBiasConstantFactor;
+        0.0f,                                                       // float depthBiasClamp;
+        0.0f,                                                       // float depthBiasSlopeFactor;
+        1.0f,                                                       // float lineWidth;
+    };
 
-	const VkPipelineColorBlendAdvancedStateCreateInfoEXT blendAdvancedStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_ADVANCED_STATE_CREATE_INFO_EXT,	// VkStructureType		sType;
-		DE_NULL,																// const void*			pNext;
-		srcPremultiplied,														// VkBool32				srcPremultiplied;
-		dstPremultiplied,														// VkBool32				dstPremultiplied;
-		m_param.overlap,														// VkBlendOverlapEXT	blendOverlap;
-	};
+    const VkPipelineColorBlendAdvancedStateCreateInfoEXT blendAdvancedStateParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_ADVANCED_STATE_CREATE_INFO_EXT, // VkStructureType sType;
+        DE_NULL,                                                               // const void* pNext;
+        srcPremultiplied,                                                      // VkBool32 srcPremultiplied;
+        dstPremultiplied,                                                      // VkBool32 dstPremultiplied;
+        m_param.overlap,                                                       // VkBlendOverlapEXT blendOverlap;
+    };
 
-	std::vector<VkPipelineColorBlendAttachmentState>	colorBlendAttachmentStates;
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates;
 
-	for (deUint32 i = 0; i < m_param.colorAttachmentsCount; i++)
-	{
-		const VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
-		{
-			VK_TRUE,														// VkBool32									blendEnable;
-			VK_BLEND_FACTOR_ONE,											// VkBlendFactor							srcColorBlendFactor;
-			VK_BLEND_FACTOR_ONE,											// VkBlendFactor							dstColorBlendFactor;
-			m_param.blendOps[i],											// VkBlendOp								colorBlendOp;
-			VK_BLEND_FACTOR_ONE,											// VkBlendFactor							srcAlphaBlendFactor;
-			VK_BLEND_FACTOR_ONE,											// VkBlendFactor							dstAlphaBlendFactor;
-			m_param.blendOps[i],											// VkBlendOp								alphaBlendOp;
-			VK_COLOR_COMPONENT_R_BIT |
-			VK_COLOR_COMPONENT_G_BIT |
-			VK_COLOR_COMPONENT_B_BIT |
-			VK_COLOR_COMPONENT_A_BIT										// VkColorComponentFlags					colorWriteMask;
-		};
-		colorBlendAttachmentStates.emplace_back(colorBlendAttachmentState);
-	}
+    for (uint32_t i = 0; i < m_param.colorAttachmentsCount; i++)
+    {
+        const VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {
+            VK_TRUE,             // VkBool32 blendEnable;
+            VK_BLEND_FACTOR_ONE, // VkBlendFactor srcColorBlendFactor;
+            VK_BLEND_FACTOR_ONE, // VkBlendFactor dstColorBlendFactor;
+            m_param.blendOps[i], // VkBlendOp colorBlendOp;
+            VK_BLEND_FACTOR_ONE, // VkBlendFactor srcAlphaBlendFactor;
+            VK_BLEND_FACTOR_ONE, // VkBlendFactor dstAlphaBlendFactor;
+            m_param.blendOps[i], // VkBlendOp alphaBlendOp;
+            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                VK_COLOR_COMPONENT_A_BIT // VkColorComponentFlags colorWriteMask;
+        };
+        colorBlendAttachmentStates.emplace_back(colorBlendAttachmentState);
+    }
 
-	const VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
-		&blendAdvancedStateParams,									// const void*									pNext;
-		0u,															// VkPipelineColorBlendStateCreateFlags			flags;
-		VK_FALSE,													// VkBool32										logicOpEnable;
-		VK_LOGIC_OP_COPY,											// VkLogicOp									logicOp;
-		(deUint32)colorBlendAttachmentStates.size(),				// deUint32										attachmentCount;
-		colorBlendAttachmentStates.data(),							// const VkPipelineColorBlendAttachmentState*	pAttachments;
-		{ 0.0f, 0.0f, 0.0f, 0.0f },									// float										blendConst[4];
-	};
+    const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
+        &blendAdvancedStateParams,                                // const void* pNext;
+        0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
+        VK_FALSE,                                                 // VkBool32 logicOpEnable;
+        VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
+        (uint32_t)colorBlendAttachmentStates.size(),              // uint32_t attachmentCount;
+        colorBlendAttachmentStates.data(), // const VkPipelineColorBlendAttachmentState* pAttachments;
+        {0.0f, 0.0f, 0.0f, 0.0f},          // float blendConst[4];
+    };
 
-	const VkPipelineMultisampleStateCreateInfo  multisampleStateParams	=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType								sType;
-		DE_NULL,													// const void*									pNext;
-		0u,															// VkPipelineMultisampleStateCreateFlags		flags;
-		VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits						rasterizationSamples;
-		VK_FALSE,													// VkBool32										sampleShadingEnable;
-		0.0f,														// float										minSampleShading;
-		DE_NULL,													// const VkSampleMask*							pSampleMask;
-		VK_FALSE,													// VkBool32										alphaToCoverageEnable;
-		VK_FALSE,													// VkBool32										alphaToOneEnable;
-	};
+    const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                                  // const void* pNext;
+        0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
+        VK_SAMPLE_COUNT_1_BIT,                                    // VkSampleCountFlagBits rasterizationSamples;
+        VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
+        0.0f,                                                     // float minSampleShading;
+        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
+        VK_FALSE,                                                 // VkBool32 alphaToOneEnable;
+    };
 
-	VkPipelineDepthStencilStateCreateInfo depthStencilStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType								sType;
-		DE_NULL,													// const void*									pNext;
-		0u,															// VkPipelineDepthStencilStateCreateFlags		flags;
-		VK_FALSE,													// VkBool32										depthTestEnable;
-		VK_FALSE,													// VkBool32										depthWriteEnable;
-		VK_COMPARE_OP_NEVER,										// VkCompareOp									depthCompareOp;
-		VK_FALSE,													// VkBool32										depthBoundsTestEnable;
-		VK_FALSE,													// VkBool32										stencilTestEnable;
-		// VkStencilOpState front;
-		{
-			VK_STENCIL_OP_KEEP,		// VkStencilOp	failOp;
-			VK_STENCIL_OP_KEEP,		// VkStencilOp	passOp;
-			VK_STENCIL_OP_KEEP,		// VkStencilOp	depthFailOp;
-			VK_COMPARE_OP_NEVER,	// VkCompareOp	compareOp;
-			0u,						// deUint32		compareMask;
-			0u,						// deUint32		writeMask;
-			0u,						// deUint32		reference;
-		},
-		// VkStencilOpState back;
-		{
-			VK_STENCIL_OP_KEEP,		// VkStencilOp	failOp;
-			VK_STENCIL_OP_KEEP,		// VkStencilOp	passOp;
-			VK_STENCIL_OP_KEEP,		// VkStencilOp	depthFailOp;
-			VK_COMPARE_OP_NEVER,	// VkCompareOp	compareOp;
-			0u,						// deUint32		compareMask;
-			0u,						// deUint32		writeMask;
-			0u,						// deUint32		reference;
-		},
-		0.0f,														// float										minDepthBounds;
-		1.0f,														// float										maxDepthBounds;
-	};
+    VkPipelineDepthStencilStateCreateInfo depthStencilStateParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                                    // const void* pNext;
+        0u,                                                         // VkPipelineDepthStencilStateCreateFlags flags;
+        VK_FALSE,                                                   // VkBool32 depthTestEnable;
+        VK_FALSE,                                                   // VkBool32 depthWriteEnable;
+        VK_COMPARE_OP_NEVER,                                        // VkCompareOp depthCompareOp;
+        VK_FALSE,                                                   // VkBool32 depthBoundsTestEnable;
+        VK_FALSE,                                                   // VkBool32 stencilTestEnable;
+        // VkStencilOpState front;
+        {
+            VK_STENCIL_OP_KEEP,  // VkStencilOp failOp;
+            VK_STENCIL_OP_KEEP,  // VkStencilOp passOp;
+            VK_STENCIL_OP_KEEP,  // VkStencilOp depthFailOp;
+            VK_COMPARE_OP_NEVER, // VkCompareOp compareOp;
+            0u,                  // uint32_t compareMask;
+            0u,                  // uint32_t writeMask;
+            0u,                  // uint32_t reference;
+        },
+        // VkStencilOpState back;
+        {
+            VK_STENCIL_OP_KEEP,  // VkStencilOp failOp;
+            VK_STENCIL_OP_KEEP,  // VkStencilOp passOp;
+            VK_STENCIL_OP_KEEP,  // VkStencilOp depthFailOp;
+            VK_COMPARE_OP_NEVER, // VkCompareOp compareOp;
+            0u,                  // uint32_t compareMask;
+            0u,                  // uint32_t writeMask;
+            0u,                  // uint32_t reference;
+        },
+        0.0f, // float minDepthBounds;
+        1.0f, // float maxDepthBounds;
+    };
 
-	const VkDynamicState dynamicState = VK_DYNAMIC_STATE_SCISSOR;
-	const VkPipelineDynamicStateCreateInfo dynamicStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	// VkStructureType						sType;
-		DE_NULL,												// const void*							pNext;
-		0u,														// VkPipelineDynamicStateCreateFlags	flags;
-		1u,														// uint32_t								dynamicStateCount;
-		&dynamicState											// const VkDynamicState*				pDynamicStates;
-	};
+    const VkDynamicState dynamicState                         = VK_DYNAMIC_STATE_SCISSOR;
+    const VkPipelineDynamicStateCreateInfo dynamicStateParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                              // const void* pNext;
+        0u,                                                   // VkPipelineDynamicStateCreateFlags flags;
+        1u,                                                   // uint32_t dynamicStateCount;
+        &dynamicState                                         // const VkDynamicState* pDynamicStates;
+    };
 
-	const VkGraphicsPipelineCreateInfo graphicsPipelineParams =
-	{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType										sType;
-		DE_NULL,											// const void*											pNext;
-		0u,													// VkPipelineCreateFlags								flags;
-		m_shaderStageCount,									// deUint32												stageCount;
-		m_shaderStageInfo,									// const VkPipelineShaderStageCreateInfo*				pStages;
-		&vertexInputStateParams,							// const VkPipelineVertexInputStateCreateInfo*			pVertexInputState;
-		&inputAssemblyStateParams,							// const VkPipelineInputAssemblyStateCreateInfo*		pInputAssemblyState;
-		DE_NULL,											// const VkPipelineTessellationStateCreateInfo*			pTessellationState;
-		&viewportStateParams,								// const VkPipelineViewportStateCreateInfo*				pViewportState;
-		&rasterStateParams,									// const VkPipelineRasterizationStateCreateInfo*		pRasterState;
-		&multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*			pMultisampleState;
-		&depthStencilStateParams,							// const VkPipelineDepthStencilStateCreateInfo*			pDepthStencilState;
-		&colorBlendStateParams,								// const VkPipelineColorBlendStateCreateInfo*			pColorBlendState;
-		&dynamicStateParams,								// const VkPipelineDynamicStateCreateInfo*				pDynamicState;
-		*m_pipelineLayout,									// VkPipelineLayout										layout;
-		*m_renderPass,										// VkRenderPass											renderPass;
-		0u,													// deUint32												subpass;
-		DE_NULL,											// VkPipeline											basePipelineHandle;
-		0u,													// deInt32												basePipelineIndex;
-	};
+    const VkGraphicsPipelineCreateInfo graphicsPipelineParams = {
+        VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                         // const void* pNext;
+        0u,                                              // VkPipelineCreateFlags flags;
+        m_shaderStageCount,                              // uint32_t stageCount;
+        m_shaderStageInfo,                               // const VkPipelineShaderStageCreateInfo* pStages;
+        &vertexInputStateParams,   // const VkPipelineVertexInputStateCreateInfo* pVertexInputState;
+        &inputAssemblyStateParams, // const VkPipelineInputAssemblyStateCreateInfo* pInputAssemblyState;
+        DE_NULL,                   // const VkPipelineTessellationStateCreateInfo* pTessellationState;
+        &viewportStateParams,      // const VkPipelineViewportStateCreateInfo* pViewportState;
+        &rasterStateParams,        // const VkPipelineRasterizationStateCreateInfo* pRasterState;
+        &multisampleStateParams,   // const VkPipelineMultisampleStateCreateInfo* pMultisampleState;
+        &depthStencilStateParams,  // const VkPipelineDepthStencilStateCreateInfo* pDepthStencilState;
+        &colorBlendStateParams,    // const VkPipelineColorBlendStateCreateInfo* pColorBlendState;
+        &dynamicStateParams,       // const VkPipelineDynamicStateCreateInfo* pDynamicState;
+        *m_pipelineLayout,         // VkPipelineLayout layout;
+        *m_renderPass,             // VkRenderPass renderPass;
+        0u,                        // uint32_t subpass;
+        DE_NULL,                   // VkPipeline basePipelineHandle;
+        0u,                        // int32_t basePipelineIndex;
+    };
 
-	m_pipeline = createGraphicsPipeline(vk, vkDevice, DE_NULL, &graphicsPipelineParams);
+    m_pipeline = createGraphicsPipeline(vk, vkDevice, DE_NULL, &graphicsPipelineParams);
 }
 
-void BlendOperationAdvancedTestInstance::prepareRenderPass (VkFramebuffer framebuffer, VkPipeline pipeline) const
+void BlendOperationAdvancedTestInstance::prepareRenderPass(VkFramebuffer framebuffer, VkPipeline pipeline) const
 {
-	const DeviceInterface&	vk				 = m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_context.getDeviceInterface();
 
-	std::vector<VkClearValue>	attachmentClearValues;
+    std::vector<VkClearValue> attachmentClearValues;
 
-	for (deUint32 i = 0; i < m_param.colorAttachmentsCount; i++)
-		attachmentClearValues.emplace_back(makeClearValueColor(clearColorVec4));
+    for (uint32_t i = 0; i < m_param.colorAttachmentsCount; i++)
+        attachmentClearValues.emplace_back(makeClearValueColor(clearColorVec4));
 
-	beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()),
-					m_param.colorAttachmentsCount, attachmentClearValues.data());
-	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-	VkDeviceSize offsets = 0u;
-	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &offsets);
+    beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()),
+                    m_param.colorAttachmentsCount, attachmentClearValues.data());
+    vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    VkDeviceSize offsets = 0u;
+    vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &offsets);
 
-	// Draw all colors
-	deUint32 skippedColors = 0u;
-	for (deUint32 color = 0; color < DE_LENGTH_OF_ARRAY(srcColors); color++)
-	{
-		// Skip ill-formed colors when we have non-premultiplied destination colors.
-		if (m_param.premultipliedDstColor == VK_FALSE)
-		{
-			deBool skipColor = false;
-			for (deUint32 i = 0; i < m_param.colorAttachmentsCount; i++)
-			{
-				Vec4 calculatedColor = calculateFinalColor(m_param, m_param.blendOps[i], srcColors[color], dstColors[color]);
-				if (calculatedColor.w() <= 0.0f && calculatedColor != Vec4(0.0f))
-				{
-					// Skip ill-formed colors, because the spec says the result is undefined.
-					skippedColors++;
-					skipColor = true;
-					break;
-				}
-			}
-			if (skipColor)
-				continue;
-		}
+    // Draw all colors
+    uint32_t skippedColors = 0u;
+    for (uint32_t color = 0; color < DE_LENGTH_OF_ARRAY(srcColors); color++)
+    {
+        // Skip ill-formed colors when we have non-premultiplied destination colors.
+        if (m_param.premultipliedDstColor == VK_FALSE)
+        {
+            bool skipColor = false;
+            for (uint32_t i = 0; i < m_param.colorAttachmentsCount; i++)
+            {
+                Vec4 calculatedColor =
+                    calculateFinalColor(m_param, m_param.blendOps[i], srcColors[color], dstColors[color]);
+                if (calculatedColor.w() <= 0.0f && calculatedColor != Vec4(0.0f))
+                {
+                    // Skip ill-formed colors, because the spec says the result is undefined.
+                    skippedColors++;
+                    skipColor = true;
+                    break;
+                }
+            }
+            if (skipColor)
+                continue;
+        }
 
-		deInt32 x = 0;
-		deInt32 y = 0;
-		getCoordinates(color, x, y);
+        int32_t x = 0;
+        int32_t y = 0;
+        getCoordinates(color, x, y);
 
-		// Set source color as push constant
-		vk.cmdPushConstants(*m_cmdBuffer, *m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(Vec4), &srcColors[color]);
+        // Set source color as push constant
+        vk.cmdPushConstants(*m_cmdBuffer, *m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(Vec4),
+                            &srcColors[color]);
 
-		VkRect2D scissor = makeRect2D(x, y, 1u, 1u);
-		vk.cmdSetScissor(*m_cmdBuffer, 0u, 1u, &scissor);
+        VkRect2D scissor = makeRect2D(x, y, 1u, 1u);
+        vk.cmdSetScissor(*m_cmdBuffer, 0u, 1u, &scissor);
 
-		// To set destination color, we do clear attachment restricting the area to the respective pixel of each color attachment.
-		{
-			// Set destination color as push constant.
-			std::vector<VkClearAttachment> attachments;
-			VkClearValue clearValue = vk::makeClearValueColorVec4(dstColors[color]);
+        // To set destination color, we do clear attachment restricting the area to the respective pixel of each color attachment.
+        {
+            // Set destination color as push constant.
+            std::vector<VkClearAttachment> attachments;
+            VkClearValue clearValue = vk::makeClearValueColorVec4(dstColors[color]);
 
-			for (deUint32 i = 0; i < m_param.colorAttachmentsCount; i++)
-			{
-				VkClearAttachment	attachment	=
-				{
-					VK_IMAGE_ASPECT_COLOR_BIT,
-					i,
-					clearValue
-				};
-				attachments.emplace_back(attachment);
-			}
+            for (uint32_t i = 0; i < m_param.colorAttachmentsCount; i++)
+            {
+                VkClearAttachment attachment = {VK_IMAGE_ASPECT_COLOR_BIT, i, clearValue};
+                attachments.emplace_back(attachment);
+            }
 
-			const VkClearRect rect =
-			{
-				scissor,
-				0u,
-				1u
-			};
-			vk.cmdClearAttachments(*m_cmdBuffer, (deUint32)attachments.size(), attachments.data(), 1u, &rect);
-		}
+            const VkClearRect rect = {scissor, 0u, 1u};
+            vk.cmdClearAttachments(*m_cmdBuffer, (uint32_t)attachments.size(), attachments.data(), 1u, &rect);
+        }
 
-		// Draw
-		vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1u, 0u, 0u);
-	}
+        // Draw
+        vk.cmdDraw(*m_cmdBuffer, (uint32_t)m_vertices.size(), 1u, 0u, 0u);
+    }
 
-	// If we break this assert, then we are not testing anything in this test.
-	DE_ASSERT(skippedColors < DE_LENGTH_OF_ARRAY(srcColors));
+    // If we break this assert, then we are not testing anything in this test.
+    DE_ASSERT(skippedColors < DE_LENGTH_OF_ARRAY(srcColors));
 
-	// Log number of skipped colors
-	if (skippedColors != 0u)
-	{
-		tcu::TestLog& log = m_context.getTestContext().getLog();
-		log << tcu::TestLog::Message << "Skipped " << skippedColors << " out of " << DE_LENGTH_OF_ARRAY(srcColors) << " color cases due to ill-formed colors" << tcu::TestLog::EndMessage;
-	}
-	endRenderPass(vk, *m_cmdBuffer);
+    // Log number of skipped colors
+    if (skippedColors != 0u)
+    {
+        tcu::TestLog &log = m_context.getTestContext().getLog();
+        log << tcu::TestLog::Message << "Skipped " << skippedColors << " out of " << DE_LENGTH_OF_ARRAY(srcColors)
+            << " color cases due to ill-formed colors" << tcu::TestLog::EndMessage;
+    }
+    endRenderPass(vk, *m_cmdBuffer);
 }
 
-void BlendOperationAdvancedTestInstance::prepareCommandBuffer () const
+void BlendOperationAdvancedTestInstance::prepareCommandBuffer() const
 {
-	const DeviceInterface&	vk				 = m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_context.getDeviceInterface();
 
+    beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
-	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+    vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                          (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, (uint32_t)m_imageLayoutBarriers.size(),
+                          m_imageLayoutBarriers.data());
 
-	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
-						  0u, DE_NULL, 0u, DE_NULL, (deUint32)m_imageLayoutBarriers.size(), m_imageLayoutBarriers.data());
+    prepareRenderPass(*m_framebuffer, *m_pipeline);
 
-	prepareRenderPass(*m_framebuffer, *m_pipeline);
-
-	endCommandBuffer(vk, *m_cmdBuffer);
+    endCommandBuffer(vk, *m_cmdBuffer);
 }
 
-BlendOperationAdvancedTestInstance::BlendOperationAdvancedTestInstance	(Context&							context,
-																		 const BlendOperationAdvancedParam	param)
-	: TestInstance			(context)
-	, m_param				(param)
-	, m_renderSize			(tcu::UVec2(widthArea, heightArea))
-	, m_colorFormat			(VK_FORMAT_R16G16B16A16_SFLOAT)
-	, m_shaderStageCount	(0)
+BlendOperationAdvancedTestInstance::BlendOperationAdvancedTestInstance(Context &context,
+                                                                       const BlendOperationAdvancedParam param)
+    : TestInstance(context)
+    , m_param(param)
+    , m_renderSize(tcu::UVec2(widthArea, heightArea))
+    , m_colorFormat(VK_FORMAT_R16G16B16A16_SFLOAT)
+    , m_shaderStageCount(0)
 {
-	const DeviceInterface&		vk				 = m_context.getDeviceInterface();
-	const VkDevice				vkDevice		 = m_context.getDevice();
-	const deUint32				queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice vkDevice         = m_context.getDevice();
+    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
 
-	// Create vertex buffer and upload data
-	{
-		// Load vertices into vertex buffer
-		m_vertices		= createPoints();
-		DE_ASSERT((deUint32)m_vertices.size() == 6);
+    // Create vertex buffer and upload data
+    {
+        // Load vertices into vertex buffer
+        m_vertices = createPoints();
+        DE_ASSERT((uint32_t)m_vertices.size() == 6);
 
-		m_vertexBuffer	= createBufferAndBindMemory(m_context, m_vertices.size() * sizeof(Vec4), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &m_vertexBufferMemory);
-		deMemcpy(m_vertexBufferMemory->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vec4));
-		flushAlloc(vk, vkDevice, *m_vertexBufferMemory);
-	}
+        m_vertexBuffer = createBufferAndBindMemory(m_context, m_vertices.size() * sizeof(Vec4),
+                                                   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &m_vertexBufferMemory);
+        deMemcpy(m_vertexBufferMemory->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vec4));
+        flushAlloc(vk, vkDevice, *m_vertexBufferMemory);
+    }
 
-	// Create render pass
-	m_renderPass = makeTestRenderPass(param, vk, vkDevice, m_colorFormat);
+    // Create render pass
+    m_renderPass = makeTestRenderPass(param, vk, vkDevice, m_colorFormat);
 
-	const VkComponentMapping	componentMappingRGBA = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
+    const VkComponentMapping componentMappingRGBA = {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G,
+                                                     VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
 
-	// Create color images
-	for (deUint32 i = 0; i < param.colorAttachmentsCount; i++)
-	{
-		de::MovePtr<Allocation>	colorImageAlloc;
-		m_colorImageAllocs.emplace_back(colorImageAlloc);
+    // Create color images
+    for (uint32_t i = 0; i < param.colorAttachmentsCount; i++)
+    {
+        de::MovePtr<Allocation> colorImageAlloc;
+        m_colorImageAllocs.emplace_back(colorImageAlloc);
 
-		Move<VkImage>			colorImage	= createImage2DAndBindMemory(m_context,
-																		 m_colorFormat,
-																		 m_renderSize.x(),
-																		 m_renderSize.y(),
-																		 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-																		 VK_SAMPLE_COUNT_1_BIT,
-																		 &m_colorImageAllocs.back());
-		m_colorImages.emplace_back(colorImage);
+        Move<VkImage> colorImage =
+            createImage2DAndBindMemory(m_context, m_colorFormat, m_renderSize.x(), m_renderSize.y(),
+                                       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                                       VK_SAMPLE_COUNT_1_BIT, &m_colorImageAllocs.back());
+        m_colorImages.emplace_back(colorImage);
 
-		// Set up image layout transition barriers
-		{
-			VkImageMemoryBarrier colorImageBarrier =
-			{
-				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,					// VkStructureType			sType;
-				DE_NULL,												// const void*				pNext;
-				0u,														// VkAccessFlags			srcAccessMask;
-				(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-				 VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT),	// VkAccessFlags			dstAccessMask;
-				VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout			oldLayout;
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout			newLayout;
-				VK_QUEUE_FAMILY_IGNORED,								// deUint32					srcQueueFamilyIndex;
-				VK_QUEUE_FAMILY_IGNORED,								// deUint32					dstQueueFamilyIndex;
-				*m_colorImages.back(),									// VkImage					image;
-				{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },			// VkImageSubresourceRange	subresourceRange;
-			};
+        // Set up image layout transition barriers
+        {
+            VkImageMemoryBarrier colorImageBarrier = {
+                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+                DE_NULL,                                // const void* pNext;
+                0u,                                     // VkAccessFlags srcAccessMask;
+                (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                 VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT), // VkAccessFlags dstAccessMask;
+                VK_IMAGE_LAYOUT_UNDEFINED,                             // VkImageLayout oldLayout;
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,              // VkImageLayout newLayout;
+                VK_QUEUE_FAMILY_IGNORED,                               // uint32_t srcQueueFamilyIndex;
+                VK_QUEUE_FAMILY_IGNORED,                               // uint32_t dstQueueFamilyIndex;
+                *m_colorImages.back(),                                 // VkImage image;
+                {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u},           // VkImageSubresourceRange subresourceRange;
+            };
 
-			m_imageLayoutBarriers.emplace_back(colorImageBarrier);
-		}
+            m_imageLayoutBarriers.emplace_back(colorImageBarrier);
+        }
 
-		// Create color attachment view
-		{
-			VkImageViewCreateInfo colorAttachmentViewParams =
-			{
-				VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType			sType;
-				DE_NULL,										// const void*				pNext;
-				0u,												// VkImageViewCreateFlags	flags;
-				*m_colorImages.back(),							// VkImage					image;
-				VK_IMAGE_VIEW_TYPE_2D,							// VkImageViewType			viewType;
-				m_colorFormat,									// VkFormat					format;
-				componentMappingRGBA,							// VkComponentMapping		components;
-				{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },	// VkImageSubresourceRange	subresourceRange;
-			};
+        // Create color attachment view
+        {
+            VkImageViewCreateInfo colorAttachmentViewParams = {
+                VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // VkStructureType sType;
+                DE_NULL,                                     // const void* pNext;
+                0u,                                          // VkImageViewCreateFlags flags;
+                *m_colorImages.back(),                       // VkImage image;
+                VK_IMAGE_VIEW_TYPE_2D,                       // VkImageViewType viewType;
+                m_colorFormat,                               // VkFormat format;
+                componentMappingRGBA,                        // VkComponentMapping components;
+                {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}, // VkImageSubresourceRange subresourceRange;
+            };
 
-			m_colorAttachmentViews.emplace_back(createImageView(vk, vkDevice, &colorAttachmentViewParams));
-		}
-	}
+            m_colorAttachmentViews.emplace_back(createImageView(vk, vkDevice, &colorAttachmentViewParams));
+        }
+    }
 
-	// Create framebuffer
-	{
-		std::vector<VkImageView>	imageViews;
+    // Create framebuffer
+    {
+        std::vector<VkImageView> imageViews;
 
-		for (auto& movePtr : m_colorAttachmentViews)
-			imageViews.push_back(movePtr.get());
+        for (auto &movePtr : m_colorAttachmentViews)
+            imageViews.push_back(movePtr.get());
 
-		const VkFramebufferCreateInfo framebufferParams =
-		{
-			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,			// VkStructureType				sType;
-			DE_NULL,											// const void*					pNext;
-			0u,													// VkFramebufferCreateFlags		flags;
-			*m_renderPass,										// VkRenderPass					renderPass;
-			(deUint32)imageViews.size(),						// deUint32						attachmentCount;
-			imageViews.data(),									// const VkImageView*			pAttachments;
-			(deUint32)m_renderSize.x(),							// deUint32						width;
-			(deUint32)m_renderSize.y(),							// deUint32						height;
-			1u,													// deUint32						layers;
-		};
+        const VkFramebufferCreateInfo framebufferParams = {
+            VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
+            DE_NULL,                                   // const void* pNext;
+            0u,                                        // VkFramebufferCreateFlags flags;
+            *m_renderPass,                             // VkRenderPass renderPass;
+            (uint32_t)imageViews.size(),               // uint32_t attachmentCount;
+            imageViews.data(),                         // const VkImageView* pAttachments;
+            (uint32_t)m_renderSize.x(),                // uint32_t width;
+            (uint32_t)m_renderSize.y(),                // uint32_t height;
+            1u,                                        // uint32_t layers;
+        };
 
-		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
-	}
+        m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
+    }
 
-	// Bind shader stages
-	{
-		bindShaderStage(VK_SHADER_STAGE_VERTEX_BIT, "vert", "main");
-		bindShaderStage(VK_SHADER_STAGE_FRAGMENT_BIT, "frag", "main");
-	}
+    // Bind shader stages
+    {
+        bindShaderStage(VK_SHADER_STAGE_VERTEX_BIT, "vert", "main");
+        bindShaderStage(VK_SHADER_STAGE_FRAGMENT_BIT, "frag", "main");
+    }
 
+    // Create pipeline layout
+    {
+        const VkPushConstantRange pushConstantRange = {
+            VK_SHADER_STAGE_FRAGMENT_BIT, // VkShaderStageFlags    stageFlags
+            0,                            // uint32_t                offset
+            sizeof(Vec4)                  // uint32_t                size
+        };
 
-	// Create pipeline layout
-	{
-		const VkPushConstantRange pushConstantRange =
-		{
-			VK_SHADER_STAGE_FRAGMENT_BIT,		// VkShaderStageFlags	stageFlags
-			0,									// deUint32				offset
-			sizeof(Vec4)						// deUint32				size
-		};
+        const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
+            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
+            DE_NULL,                                       // const void* pNext;
+            0u,                                            // VkPipelineLayoutCreateFlags flags;
+            0u,                                            // uint32_t setLayoutCount;
+            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            1u,                                            // uint32_t pushConstantRangeCount;
+            &pushConstantRange                             // const VkPushConstantRange* pPushConstantRanges;
+        };
 
-		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
-			DE_NULL,											// const void*						pNext;
-			0u,													// VkPipelineLayoutCreateFlags		flags;
-			0u,													// deUint32							setLayoutCount;
-			DE_NULL,											// const VkDescriptorSetLayout*		pSetLayouts;
-			1u,													// deUint32							pushConstantRangeCount;
-			&pushConstantRange									// const VkPushConstantRange*		pPushConstantRanges;
-		};
+        m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+    }
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
-	}
+    // Create pipeline
+    buildPipeline(m_param.premultipliedSrcColor, m_param.premultipliedDstColor);
 
-	// Create pipeline
-	buildPipeline(m_param.premultipliedSrcColor, m_param.premultipliedDstColor);
+    // Create command pool
+    m_cmdPool = createCommandPool(
+        vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+        queueFamilyIndex);
 
-	// Create command pool
-	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
-
-	// Create command buffer
-	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    // Create command buffer
+    m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 }
 
-BlendOperationAdvancedTestInstance::~BlendOperationAdvancedTestInstance (void)
+BlendOperationAdvancedTestInstance::~BlendOperationAdvancedTestInstance(void)
 {
 }
 
-tcu::TestStatus BlendOperationAdvancedTestInstance::iterate (void)
+tcu::TestStatus BlendOperationAdvancedTestInstance::iterate(void)
 {
-	const DeviceInterface&	vk					= m_context.getDeviceInterface();
-	const VkDevice			vkDevice			= m_context.getDevice();
-	const VkQueue			queue				= m_context.getUniversalQueue();
-	tcu::TestLog&			log					= m_context.getTestContext().getLog();
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice vkDevice   = m_context.getDevice();
+    const VkQueue queue       = m_context.getUniversalQueue();
+    tcu::TestLog &log         = m_context.getTestContext().getLog();
 
-	// Log the blend operations to test
-	{
-		if (m_param.independentBlend)
-		{
-			for (deUint32 i = 0; (i < m_param.colorAttachmentsCount); i++)
-				log << tcu::TestLog::Message << "Color attachment " << i << " uses depth op: "<< de::toLower(getBlendOpStr(m_param.blendOps[i]).toString().substr(3)) << tcu::TestLog::EndMessage;
+    // Log the blend operations to test
+    {
+        if (m_param.independentBlend)
+        {
+            for (uint32_t i = 0; (i < m_param.colorAttachmentsCount); i++)
+                log << tcu::TestLog::Message << "Color attachment " << i
+                    << " uses depth op: " << de::toLower(getBlendOpStr(m_param.blendOps[i]).toString().substr(3))
+                    << tcu::TestLog::EndMessage;
+        }
+        else
+        {
+            log << tcu::TestLog::Message << "All color attachments use depth op: "
+                << de::toLower(getBlendOpStr(m_param.blendOps[0]).toString().substr(3)) << tcu::TestLog::EndMessage;
+        }
+    }
+    prepareCommandBuffer();
+    submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
-		}
-		else
-		{
-			log << tcu::TestLog::Message << "All color attachments use depth op: " << de::toLower(getBlendOpStr(m_param.blendOps[0]).toString().substr(3)) << tcu::TestLog::EndMessage;
+    if (verifyTestResult() == false)
+        return tcu::TestStatus::fail("Image mismatch");
 
-		}
-	}
-	prepareCommandBuffer();
-	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
-
-	if (verifyTestResult() == DE_FALSE)
-		return tcu::TestStatus::fail("Image mismatch");
-
-	return tcu::TestStatus::pass("Result images matches references");
+    return tcu::TestStatus::pass("Result images matches references");
 }
 
-deBool BlendOperationAdvancedTestInstance::verifyTestResult ()
+bool BlendOperationAdvancedTestInstance::verifyTestResult()
 {
-	deBool							compareOk			= DE_TRUE;
-	const DeviceInterface&			vk					= m_context.getDeviceInterface();
-	const VkDevice					vkDevice			= m_context.getDevice();
-	const VkQueue					queue				= m_context.getUniversalQueue();
-	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	Allocator&						allocator			= m_context.getDefaultAllocator();
-	std::vector<tcu::TextureLevel>	referenceImages;
+    bool compareOk                  = true;
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice vkDevice         = m_context.getDevice();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    Allocator &allocator            = m_context.getDefaultAllocator();
+    std::vector<tcu::TextureLevel> referenceImages;
 
-	for (deUint32 colorAtt = 0; colorAtt < m_param.colorAttachmentsCount; colorAtt++)
-	{
-		tcu::TextureLevel		refImage			(vk::mapVkFormat(m_colorFormat), 32, 32);
-		tcu::clear(refImage.getAccess(), clearColorVec4);
-		referenceImages.emplace_back(refImage);
-	}
+    for (uint32_t colorAtt = 0; colorAtt < m_param.colorAttachmentsCount; colorAtt++)
+    {
+        tcu::TextureLevel refImage(vk::mapVkFormat(m_colorFormat), 32, 32);
+        tcu::clear(refImage.getAccess(), clearColorVec4);
+        referenceImages.emplace_back(refImage);
+    }
 
-	for (deUint32 color = 0; color < DE_LENGTH_OF_ARRAY(srcColors); color++)
-	{
-		deBool skipColor = DE_FALSE;
+    for (uint32_t color = 0; color < DE_LENGTH_OF_ARRAY(srcColors); color++)
+    {
+        bool skipColor = false;
 
-		// Check if any color attachment will generate an ill-formed color. If that's the case, skip that color in the verification.
-		for (deUint32 colorAtt = 0; colorAtt < m_param.colorAttachmentsCount; colorAtt++)
-		{
-			Vec4 rectColor = calculateFinalColor(m_param, m_param.blendOps[colorAtt], srcColors[color], dstColors[color]);
-			if (m_param.premultipliedDstColor == VK_FALSE)
-			{
-				if (rectColor.w() > 0.0f)
-				{
-					rectColor.x() = rectColor.x() / rectColor.w();
-					rectColor.y() = rectColor.y() / rectColor.w();
-					rectColor.z() = rectColor.z() / rectColor.w();
-				}
-				else
-				{
-					// Skip the color check if it is ill-formed.
-					if (rectColor != Vec4(0.0f))
-					{
-						skipColor = DE_TRUE;
-						break;
-					}
-				}
-			}
-		}
+        // Check if any color attachment will generate an ill-formed color. If that's the case, skip that color in the verification.
+        for (uint32_t colorAtt = 0; colorAtt < m_param.colorAttachmentsCount; colorAtt++)
+        {
+            Vec4 rectColor =
+                calculateFinalColor(m_param, m_param.blendOps[colorAtt], srcColors[color], dstColors[color]);
+            if (m_param.premultipliedDstColor == VK_FALSE)
+            {
+                if (rectColor.w() > 0.0f)
+                {
+                    rectColor.x() = rectColor.x() / rectColor.w();
+                    rectColor.y() = rectColor.y() / rectColor.w();
+                    rectColor.z() = rectColor.z() / rectColor.w();
+                }
+                else
+                {
+                    // Skip the color check if it is ill-formed.
+                    if (rectColor != Vec4(0.0f))
+                    {
+                        skipColor = true;
+                        break;
+                    }
+                }
+            }
+        }
 
-		// Skip ill-formed colors that appears in any color attachment.
-		if (skipColor)
-			continue;
+        // Skip ill-formed colors that appears in any color attachment.
+        if (skipColor)
+            continue;
 
-		// If we reach this point, the final color for all color attachment is not ill-formed.
-		for (deUint32 colorAtt = 0; colorAtt < m_param.colorAttachmentsCount; colorAtt++)
-		{
-			Vec4 rectColor = calculateFinalColor(m_param, m_param.blendOps[colorAtt], srcColors[color], dstColors[color]);
-			if (m_param.premultipliedDstColor == VK_FALSE)
-			{
-				if (rectColor.w() > 0.0f)
-				{
-					rectColor.x() = rectColor.x() / rectColor.w();
-					rectColor.y() = rectColor.y() / rectColor.w();
-					rectColor.z() = rectColor.z() / rectColor.w();
-				}
-				else
-				{
-					// Ill-formed colors were already skipped
-					DE_ASSERT(rectColor == Vec4(0.0f));
-				}
-			}
-			deInt32 x = 0;
-			deInt32 y = 0;
-			getCoordinates(color, x, y);
-			tcu::clear(tcu::getSubregion(referenceImages[colorAtt].getAccess(), x, y, 1u, 1u), rectColor);
-		}
-	}
+        // If we reach this point, the final color for all color attachment is not ill-formed.
+        for (uint32_t colorAtt = 0; colorAtt < m_param.colorAttachmentsCount; colorAtt++)
+        {
+            Vec4 rectColor =
+                calculateFinalColor(m_param, m_param.blendOps[colorAtt], srcColors[color], dstColors[color]);
+            if (m_param.premultipliedDstColor == VK_FALSE)
+            {
+                if (rectColor.w() > 0.0f)
+                {
+                    rectColor.x() = rectColor.x() / rectColor.w();
+                    rectColor.y() = rectColor.y() / rectColor.w();
+                    rectColor.z() = rectColor.z() / rectColor.w();
+                }
+                else
+                {
+                    // Ill-formed colors were already skipped
+                    DE_ASSERT(rectColor == Vec4(0.0f));
+                }
+            }
+            int32_t x = 0;
+            int32_t y = 0;
+            getCoordinates(color, x, y);
+            tcu::clear(tcu::getSubregion(referenceImages[colorAtt].getAccess(), x, y, 1u, 1u), rectColor);
+        }
+    }
 
-	for (deUint32 colorAtt = 0; colorAtt < m_param.colorAttachmentsCount; colorAtt++)
-	{
-		// Compare image
-		de::MovePtr<tcu::TextureLevel> result = vkt::pipeline::readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_colorImages[colorAtt], m_colorFormat, m_renderSize);
-		std::ostringstream name;
-		name << "Image comparison. Color attachment: "  << colorAtt << ". Depth op: " << de::toLower(getBlendOpStr(m_param.blendOps[colorAtt]).toString().substr(3));
+    for (uint32_t colorAtt = 0; colorAtt < m_param.colorAttachmentsCount; colorAtt++)
+    {
+        // Compare image
+        de::MovePtr<tcu::TextureLevel> result = vkt::pipeline::readColorAttachment(
+            vk, vkDevice, queue, queueFamilyIndex, allocator, *m_colorImages[colorAtt], m_colorFormat, m_renderSize);
+        std::ostringstream name;
+        name << "Image comparison. Color attachment: " << colorAtt
+             << ". Depth op: " << de::toLower(getBlendOpStr(m_param.blendOps[colorAtt]).toString().substr(3));
 
-		compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(),
-											   "FloatImageCompare",
-											   name.str().c_str(),
-											   referenceImages[colorAtt].getAccess(),
-											   result->getAccess(),
-											   Vec4(0.01f, 0.01f, 0.01f, 0.01f),
-											   tcu::COMPARE_LOG_RESULT);
-		if (!compareOk)
-			return DE_FALSE;
-	}
-	return DE_TRUE;
+        compareOk =
+            tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "FloatImageCompare", name.str().c_str(),
+                                       referenceImages[colorAtt].getAccess(), result->getAccess(),
+                                       Vec4(0.01f, 0.01f, 0.01f, 0.01f), tcu::COMPARE_LOG_RESULT);
+        if (!compareOk)
+            return false;
+    }
+    return true;
 }
 
 class BlendOperationAdvancedTest : public vkt::TestCase
 {
 public:
-							BlendOperationAdvancedTest	(tcu::TestContext&					testContext,
-														 const std::string&					name,
-														 const std::string&					description,
-														 const BlendOperationAdvancedParam	param)
-								: vkt::TestCase (testContext, name, description)
-								, m_param		(param)
-								{ }
-	virtual					~BlendOperationAdvancedTest	(void) { }
-	virtual void			initPrograms		(SourceCollections&	programCollection) const;
-	virtual TestInstance*	createInstance		(Context&				context) const;
-	virtual void			checkSupport		(Context& context) const;
+    BlendOperationAdvancedTest(tcu::TestContext &testContext, const std::string &name, const std::string &description,
+                               const BlendOperationAdvancedParam param)
+        : vkt::TestCase(testContext, name, description)
+        , m_param(param)
+    {
+    }
+    virtual ~BlendOperationAdvancedTest(void)
+    {
+    }
+    virtual void initPrograms(SourceCollections &programCollection) const;
+    virtual TestInstance *createInstance(Context &context) const;
+    virtual void checkSupport(Context &context) const;
 
 protected:
-		const BlendOperationAdvancedParam       m_param;
+    const BlendOperationAdvancedParam m_param;
 };
 
-void BlendOperationAdvancedTest::checkSupport(Context& context) const
+void BlendOperationAdvancedTest::checkSupport(Context &context) const
 {
-	const InstanceInterface&	vki				 = context.getInstanceInterface();
+    const InstanceInterface &vki = context.getInstanceInterface();
 
-	context.requireDeviceFunctionality("VK_EXT_blend_operation_advanced");
+    context.requireDeviceFunctionality("VK_EXT_blend_operation_advanced");
 
-	VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT blendProperties;
-	blendProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BLEND_OPERATION_ADVANCED_PROPERTIES_EXT;
-	blendProperties.pNext = DE_NULL;
+    VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT blendProperties;
+    blendProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BLEND_OPERATION_ADVANCED_PROPERTIES_EXT;
+    blendProperties.pNext = DE_NULL;
 
-	VkPhysicalDeviceProperties2 properties2;
-	properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-	properties2.pNext = &blendProperties;
-	vki.getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties2);
+    VkPhysicalDeviceProperties2 properties2;
+    properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    properties2.pNext = &blendProperties;
+    vki.getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties2);
 
-	if (!blendProperties.advancedBlendAllOperations)
-	{
-		for (deUint32 index = 0u; index < m_param.blendOps.size(); index++)
-		{
-			switch (m_param.blendOps[index])
-			{
-			case VK_BLEND_OP_MULTIPLY_EXT:
-			case VK_BLEND_OP_SCREEN_EXT:
-			case VK_BLEND_OP_OVERLAY_EXT:
-			case VK_BLEND_OP_DARKEN_EXT:
-			case VK_BLEND_OP_LIGHTEN_EXT:
-			case VK_BLEND_OP_COLORDODGE_EXT:
-			case VK_BLEND_OP_COLORBURN_EXT:
-			case VK_BLEND_OP_HARDLIGHT_EXT:
-			case VK_BLEND_OP_SOFTLIGHT_EXT:
-			case VK_BLEND_OP_DIFFERENCE_EXT:
-			case VK_BLEND_OP_EXCLUSION_EXT:
-			case VK_BLEND_OP_HSL_HUE_EXT:
-			case VK_BLEND_OP_HSL_SATURATION_EXT:
-			case VK_BLEND_OP_HSL_COLOR_EXT:
-			case VK_BLEND_OP_HSL_LUMINOSITY_EXT:
-				break;
-			default:
-				throw tcu::NotSupportedError("Unsupported all advanced blend operations and unsupported advanced blend operation");
-			}
-		}
-	}
+    if (!blendProperties.advancedBlendAllOperations)
+    {
+        for (uint32_t index = 0u; index < m_param.blendOps.size(); index++)
+        {
+            switch (m_param.blendOps[index])
+            {
+            case VK_BLEND_OP_MULTIPLY_EXT:
+            case VK_BLEND_OP_SCREEN_EXT:
+            case VK_BLEND_OP_OVERLAY_EXT:
+            case VK_BLEND_OP_DARKEN_EXT:
+            case VK_BLEND_OP_LIGHTEN_EXT:
+            case VK_BLEND_OP_COLORDODGE_EXT:
+            case VK_BLEND_OP_COLORBURN_EXT:
+            case VK_BLEND_OP_HARDLIGHT_EXT:
+            case VK_BLEND_OP_SOFTLIGHT_EXT:
+            case VK_BLEND_OP_DIFFERENCE_EXT:
+            case VK_BLEND_OP_EXCLUSION_EXT:
+            case VK_BLEND_OP_HSL_HUE_EXT:
+            case VK_BLEND_OP_HSL_SATURATION_EXT:
+            case VK_BLEND_OP_HSL_COLOR_EXT:
+            case VK_BLEND_OP_HSL_LUMINOSITY_EXT:
+                break;
+            default:
+                throw tcu::NotSupportedError(
+                    "Unsupported all advanced blend operations and unsupported advanced blend operation");
+            }
+        }
+    }
 
-	if (m_param.colorAttachmentsCount > blendProperties.advancedBlendMaxColorAttachments)
-	{
-		std::ostringstream error;
-		error << "Unsupported number of color attachments (" << blendProperties.advancedBlendMaxColorAttachments << " < " << m_param.colorAttachmentsCount;
-		throw tcu::NotSupportedError(error.str().c_str());
-	}
+    if (m_param.colorAttachmentsCount > blendProperties.advancedBlendMaxColorAttachments)
+    {
+        std::ostringstream error;
+        error << "Unsupported number of color attachments (" << blendProperties.advancedBlendMaxColorAttachments
+              << " < " << m_param.colorAttachmentsCount;
+        throw tcu::NotSupportedError(error.str().c_str());
+    }
 
-	if (m_param.overlap != VK_BLEND_OVERLAP_UNCORRELATED_EXT && !blendProperties.advancedBlendCorrelatedOverlap)
-	{
-		throw tcu::NotSupportedError("Unsupported blend correlated overlap");
-	}
+    if (m_param.overlap != VK_BLEND_OVERLAP_UNCORRELATED_EXT && !blendProperties.advancedBlendCorrelatedOverlap)
+    {
+        throw tcu::NotSupportedError("Unsupported blend correlated overlap");
+    }
 
-	if (m_param.colorAttachmentsCount > 1 && m_param.independentBlend && !blendProperties.advancedBlendIndependentBlend)
-	{
-		throw tcu::NotSupportedError("Unsupported independent blend");
-	}
+    if (m_param.colorAttachmentsCount > 1 && m_param.independentBlend && !blendProperties.advancedBlendIndependentBlend)
+    {
+        throw tcu::NotSupportedError("Unsupported independent blend");
+    }
 
-	if (!m_param.premultipliedSrcColor && !blendProperties.advancedBlendNonPremultipliedSrcColor)
-	{
-		throw tcu::NotSupportedError("Unsupported non-premultiplied source color");
-	}
+    if (!m_param.premultipliedSrcColor && !blendProperties.advancedBlendNonPremultipliedSrcColor)
+    {
+        throw tcu::NotSupportedError("Unsupported non-premultiplied source color");
+    }
 
-	if (!m_param.premultipliedDstColor && !blendProperties.advancedBlendNonPremultipliedDstColor)
-	{
-		throw tcu::NotSupportedError("Unsupported non-premultiplied destination color");
-	}
+    if (!m_param.premultipliedDstColor && !blendProperties.advancedBlendNonPremultipliedDstColor)
+    {
+        throw tcu::NotSupportedError("Unsupported non-premultiplied destination color");
+    }
 
-	const VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT blendFeatures = context.getBlendOperationAdvancedFeaturesEXT();
-	if (m_param.coherentOperations && !blendFeatures.advancedBlendCoherentOperations)
-	{
-		throw tcu::NotSupportedError("Unsupported required coherent operations");
-	}
+    const VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT blendFeatures =
+        context.getBlendOperationAdvancedFeaturesEXT();
+    if (m_param.coherentOperations && !blendFeatures.advancedBlendCoherentOperations)
+    {
+        throw tcu::NotSupportedError("Unsupported required coherent operations");
+    }
 }
 
-void BlendOperationAdvancedTest::initPrograms (SourceCollections& programCollection) const
+void BlendOperationAdvancedTest::initPrograms(SourceCollections &programCollection) const
 {
-	programCollection.glslSources.add("vert") << glu::VertexSource(
-				"#version 310 es\n"
-				"layout(location = 0) in vec4 position;\n"
-				"void main (void)\n"
-				"{\n"
-				"  gl_Position = position;\n"
-				"}\n");
+    programCollection.glslSources.add("vert") << glu::VertexSource("#version 310 es\n"
+                                                                   "layout(location = 0) in vec4 position;\n"
+                                                                   "void main (void)\n"
+                                                                   "{\n"
+                                                                   "  gl_Position = position;\n"
+                                                                   "}\n");
 
-	std::ostringstream fragmentSource;
-	fragmentSource << "#version 310 es\n";
-	fragmentSource << "layout(push_constant) uniform Color { highp vec4 color; };\n";
-	for (deUint32 i = 0; i < m_param.colorAttachmentsCount; i++)
-		fragmentSource << "layout(location = "<< i <<") out highp vec4 fragColor" << i <<";\n";
-	fragmentSource << "void main (void)\n";
-	fragmentSource << "{\n";
-	for (deUint32 i = 0; i < m_param.colorAttachmentsCount; i++)
-		fragmentSource << "  fragColor" << i <<" = color;\n";
-	fragmentSource << "}\n";
-	programCollection.glslSources.add("frag") << glu::FragmentSource(fragmentSource.str().c_str());
+    std::ostringstream fragmentSource;
+    fragmentSource << "#version 310 es\n";
+    fragmentSource << "layout(push_constant) uniform Color { highp vec4 color; };\n";
+    for (uint32_t i = 0; i < m_param.colorAttachmentsCount; i++)
+        fragmentSource << "layout(location = " << i << ") out highp vec4 fragColor" << i << ";\n";
+    fragmentSource << "void main (void)\n";
+    fragmentSource << "{\n";
+    for (uint32_t i = 0; i < m_param.colorAttachmentsCount; i++)
+        fragmentSource << "  fragColor" << i << " = color;\n";
+    fragmentSource << "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(fragmentSource.str().c_str());
 }
 
 class BlendOperationAdvancedTestCoherentInstance : public vkt::TestInstance
 {
 public:
-								BlendOperationAdvancedTestCoherentInstance		(Context&				context,
-																				 const BlendOperationAdvancedParam	param);
-	virtual						~BlendOperationAdvancedTestCoherentInstance		(void);
-	virtual tcu::TestStatus		iterate									(void);
-protected:
-			void				prepareRenderPass						(VkFramebuffer framebuffer, VkPipeline pipeline,
-																		 VkRenderPass renderpass, deBool secondDraw);
-	virtual	void				prepareCommandBuffer					(void);
-	virtual	void				buildPipeline							(void);
-	virtual	void				bindShaderStage							(VkShaderStageFlagBits					stage,
-																		 const char*							sourceName,
-																		 const char*							entryName);
-	virtual	tcu::TestStatus		verifyTestResult						(void);
+    BlendOperationAdvancedTestCoherentInstance(Context &context, const BlendOperationAdvancedParam param);
+    virtual ~BlendOperationAdvancedTestCoherentInstance(void);
+    virtual tcu::TestStatus iterate(void);
 
 protected:
-	const BlendOperationAdvancedParam		m_param;
-	const tcu::UVec2						m_renderSize;
-	const VkFormat							m_colorFormat;
-	Move<VkPipelineLayout>					m_pipelineLayout;
+    void prepareRenderPass(VkFramebuffer framebuffer, VkPipeline pipeline, VkRenderPass renderpass, bool secondDraw);
+    virtual void prepareCommandBuffer(void);
+    virtual void buildPipeline(void);
+    virtual void bindShaderStage(VkShaderStageFlagBits stage, const char *sourceName, const char *entryName);
+    virtual tcu::TestStatus verifyTestResult(void);
 
-	Move<VkBuffer>							m_vertexBuffer;
-	de::MovePtr<Allocation>					m_vertexBufferMemory;
-	std::vector<Vec4>						m_vertices;
+protected:
+    const BlendOperationAdvancedParam m_param;
+    const tcu::UVec2 m_renderSize;
+    const VkFormat m_colorFormat;
+    Move<VkPipelineLayout> m_pipelineLayout;
 
-	std::vector<Move<VkRenderPass>>			m_renderPasses;
-	Move<VkCommandPool>						m_cmdPool;
-	Move<VkCommandBuffer>					m_cmdBuffer;
-	Move<VkImage>							m_colorImage;
-	Move<VkImageView>						m_colorAttachmentView;
-	de::MovePtr<Allocation>					m_colorImageAlloc;
-	std::vector<VkImageMemoryBarrier>		m_imageLayoutBarriers;
-	std::vector<Move<VkFramebuffer>>		m_framebuffers;
-	std::vector<Move<VkPipeline>>			m_pipelines;
+    Move<VkBuffer> m_vertexBuffer;
+    de::MovePtr<Allocation> m_vertexBufferMemory;
+    std::vector<Vec4> m_vertices;
 
-	Move<VkShaderModule>					m_shaderModules[2];
-	deUint32								m_shaderStageCount;
-	VkPipelineShaderStageCreateInfo			m_shaderStageInfo[2];
+    std::vector<Move<VkRenderPass>> m_renderPasses;
+    Move<VkCommandPool> m_cmdPool;
+    Move<VkCommandBuffer> m_cmdBuffer;
+    Move<VkImage> m_colorImage;
+    Move<VkImageView> m_colorAttachmentView;
+    de::MovePtr<Allocation> m_colorImageAlloc;
+    std::vector<VkImageMemoryBarrier> m_imageLayoutBarriers;
+    std::vector<Move<VkFramebuffer>> m_framebuffers;
+    std::vector<Move<VkPipeline>> m_pipelines;
+
+    Move<VkShaderModule> m_shaderModules[2];
+    uint32_t m_shaderStageCount;
+    VkPipelineShaderStageCreateInfo m_shaderStageInfo[2];
 };
 
-BlendOperationAdvancedTestCoherentInstance::~BlendOperationAdvancedTestCoherentInstance (void)
+BlendOperationAdvancedTestCoherentInstance::~BlendOperationAdvancedTestCoherentInstance(void)
 {
 }
 
-void BlendOperationAdvancedTestCoherentInstance::bindShaderStage (VkShaderStageFlagBits	stage,
-																 const char*			sourceName,
-																 const char*			entryName)
+void BlendOperationAdvancedTestCoherentInstance::bindShaderStage(VkShaderStageFlagBits stage, const char *sourceName,
+                                                                 const char *entryName)
 {
-	const DeviceInterface&	vk			= m_context.getDeviceInterface();
-	const VkDevice			vkDevice	= m_context.getDevice();
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice vkDevice   = m_context.getDevice();
 
-	// Create shader module
-	deUint32*				code		= (deUint32*)m_context.getBinaryCollection().get(sourceName).getBinary();
-	deUint32				codeSize	= (deUint32)m_context.getBinaryCollection().get(sourceName).getSize();
+    // Create shader module
+    uint32_t *code    = (uint32_t *)m_context.getBinaryCollection().get(sourceName).getBinary();
+    uint32_t codeSize = (uint32_t)m_context.getBinaryCollection().get(sourceName).getSize();
 
-	const VkShaderModuleCreateInfo moduleCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,				// VkStructureType				sType;
-		DE_NULL,													// const void*					pNext;
-		0u,															// VkShaderModuleCreateFlags	flags;
-		codeSize,													// deUintptr					codeSize;
-		code,														// const deUint32*				pCode;
-	};
+    const VkShaderModuleCreateInfo moduleCreateInfo = {
+        VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                     // const void* pNext;
+        0u,                                          // VkShaderModuleCreateFlags flags;
+        codeSize,                                    // uintptr_t codeSize;
+        code,                                        // const uint32_t* pCode;
+    };
 
-	m_shaderModules[m_shaderStageCount] = createShaderModule(vk, vkDevice, &moduleCreateInfo);
+    m_shaderModules[m_shaderStageCount] = createShaderModule(vk, vkDevice, &moduleCreateInfo);
 
-	// Prepare shader stage info
-	m_shaderStageInfo[m_shaderStageCount].sType					= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	m_shaderStageInfo[m_shaderStageCount].pNext					= DE_NULL;
-	m_shaderStageInfo[m_shaderStageCount].flags					= 0u;
-	m_shaderStageInfo[m_shaderStageCount].stage					= stage;
-	m_shaderStageInfo[m_shaderStageCount].module				= *m_shaderModules[m_shaderStageCount];
-	m_shaderStageInfo[m_shaderStageCount].pName					= entryName;
-	m_shaderStageInfo[m_shaderStageCount].pSpecializationInfo	= DE_NULL;
+    // Prepare shader stage info
+    m_shaderStageInfo[m_shaderStageCount].sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    m_shaderStageInfo[m_shaderStageCount].pNext               = DE_NULL;
+    m_shaderStageInfo[m_shaderStageCount].flags               = 0u;
+    m_shaderStageInfo[m_shaderStageCount].stage               = stage;
+    m_shaderStageInfo[m_shaderStageCount].module              = *m_shaderModules[m_shaderStageCount];
+    m_shaderStageInfo[m_shaderStageCount].pName               = entryName;
+    m_shaderStageInfo[m_shaderStageCount].pSpecializationInfo = DE_NULL;
 
-	m_shaderStageCount++;
+    m_shaderStageCount++;
 }
 
-void BlendOperationAdvancedTestCoherentInstance::buildPipeline ()
+void BlendOperationAdvancedTestCoherentInstance::buildPipeline()
 {
-	const DeviceInterface&		vk					= m_context.getDeviceInterface();
-	const VkDevice				vkDevice			= m_context.getDevice();
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice vkDevice   = m_context.getDevice();
 
-	// Create pipeline
-	const VkVertexInputBindingDescription vertexInputBindingDescription =
-	{
-		0u,									// deUint32				binding;
-		sizeof(Vec4)		,				// deUint32				strideInBytes;
-		VK_VERTEX_INPUT_RATE_VERTEX,		// VkVertexInputRate	inputRate;
-	};
+    // Create pipeline
+    const VkVertexInputBindingDescription vertexInputBindingDescription = {
+        0u,                          // uint32_t binding;
+        sizeof(Vec4),                // uint32_t strideInBytes;
+        VK_VERTEX_INPUT_RATE_VERTEX, // VkVertexInputRate inputRate;
+    };
 
-	const VkVertexInputAttributeDescription vertexInputAttributeDescription =
-	{
-		0u,									// deUint32 location;
-		0u,									// deUint32 binding;
-		VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat format;
-		0u									// deUint32 offsetInBytes;
-	};
+    const VkVertexInputAttributeDescription vertexInputAttributeDescription = {
+        0u,                            // uint32_t location;
+        0u,                            // uint32_t binding;
+        VK_FORMAT_R32G32B32A32_SFLOAT, // VkFormat format;
+        0u                             // uint32_t offsetInBytes;
+    };
 
-	const VkPipelineVertexInputStateCreateInfo vertexInputStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType							sType;
-		DE_NULL,														// const void*								pNext;
-		0u,																// VkPipelineVertexInputStateCreateFlags	flags;
-		1u,																// deUint32									vertexBindingDescriptionCount;
-		&vertexInputBindingDescription,									// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
-		1u,																// deUint32									vertexAttributeDescriptionCount;
-		&vertexInputAttributeDescription,								// const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
-	};
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                                   // const void* pNext;
+        0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
+        1u,                                                        // uint32_t vertexBindingDescriptionCount;
+        &vertexInputBindingDescription,   // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+        1u,                               // uint32_t vertexAttributeDescriptionCount;
+        &vertexInputAttributeDescription, // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+    };
 
-	const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType							sType;
-		DE_NULL,														// const void*								pNext;
-		0u,																// VkPipelineInputAssemblyStateCreateFlags	flags;
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// VkPrimitiveTopology						topology;
-		VK_FALSE,														// VkBool32									primitiveRestartEnable;
-	};
+    const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                                     // const void* pNext;
+        0u,                                                          // VkPipelineInputAssemblyStateCreateFlags flags;
+        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,                         // VkPrimitiveTopology topology;
+        VK_FALSE,                                                    // VkBool32 primitiveRestartEnable;
+    };
 
-	const VkRect2D		scissor		= makeRect2D(m_renderSize);
-	VkViewport			viewport	= makeViewport(m_renderSize);
+    const VkRect2D scissor = makeRect2D(m_renderSize);
+    VkViewport viewport    = makeViewport(m_renderSize);
 
-	const VkPipelineViewportStateCreateInfo viewportStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType							sType;
-		DE_NULL,														// const void*								pNext;
-		0u,																// VkPipelineViewportStateCreateFlags		flags;
-		1u,																// deUint32									viewportCount;
-		&viewport,														// const VkViewport*						pViewports;
-		1u,																// deUint32									scissorCount;
-		&scissor														// const VkRect2D*							pScissors;
-	};
+    const VkPipelineViewportStateCreateInfo viewportStateParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                               // const void* pNext;
+        0u,                                                    // VkPipelineViewportStateCreateFlags flags;
+        1u,                                                    // uint32_t viewportCount;
+        &viewport,                                             // const VkViewport* pViewports;
+        1u,                                                    // uint32_t scissorCount;
+        &scissor                                               // const VkRect2D* pScissors;
+    };
 
-	const VkPipelineRasterizationStateCreateInfo rasterStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		// VkStructureType							sType;
-		DE_NULL,														// const void*								pNext;
-		0u,																// VkPipelineRasterizationStateCreateFlags	flags;
-		VK_FALSE,														// VkBool32									depthClampEnable;
-		VK_FALSE,														// VkBool32									rasterizerDiscardEnable;
-		VK_POLYGON_MODE_FILL,											// VkPolygonMode							polygonMode;
-		VK_CULL_MODE_NONE,												// VkCullModeFlags							cullMode;
-		VK_FRONT_FACE_COUNTER_CLOCKWISE,								// VkFrontFace								frontFace;
-		VK_FALSE,														// VkBool32									depthBiasEnable;
-		0.0f,															// float									depthBiasConstantFactor;
-		0.0f,															// float									depthBiasClamp;
-		0.0f,															// float									depthBiasSlopeFactor;
-		1.0f,															// float									lineWidth;
-	};
+    const VkPipelineRasterizationStateCreateInfo rasterStateParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                                    // const void* pNext;
+        0u,                                                         // VkPipelineRasterizationStateCreateFlags flags;
+        VK_FALSE,                                                   // VkBool32 depthClampEnable;
+        VK_FALSE,                                                   // VkBool32 rasterizerDiscardEnable;
+        VK_POLYGON_MODE_FILL,                                       // VkPolygonMode polygonMode;
+        VK_CULL_MODE_NONE,                                          // VkCullModeFlags cullMode;
+        VK_FRONT_FACE_COUNTER_CLOCKWISE,                            // VkFrontFace frontFace;
+        VK_FALSE,                                                   // VkBool32 depthBiasEnable;
+        0.0f,                                                       // float depthBiasConstantFactor;
+        0.0f,                                                       // float depthBiasClamp;
+        0.0f,                                                       // float depthBiasSlopeFactor;
+        1.0f,                                                       // float lineWidth;
+    };
 
-	const VkPipelineColorBlendAdvancedStateCreateInfoEXT blendAdvancedStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_ADVANCED_STATE_CREATE_INFO_EXT,	// VkStructureType		sType;
-		DE_NULL,																// const void*			pNext;
-		VK_TRUE,																// VkBool32				srcPremultiplied;
-		VK_TRUE,																// VkBool32				dstPremultiplied;
-		m_param.overlap,														// VkBlendOverlapEXT	blendOverlap;
-	};
+    const VkPipelineColorBlendAdvancedStateCreateInfoEXT blendAdvancedStateParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_ADVANCED_STATE_CREATE_INFO_EXT, // VkStructureType sType;
+        DE_NULL,                                                               // const void* pNext;
+        VK_TRUE,                                                               // VkBool32 srcPremultiplied;
+        VK_TRUE,                                                               // VkBool32 dstPremultiplied;
+        m_param.overlap,                                                       // VkBlendOverlapEXT blendOverlap;
+    };
 
-	std::vector<VkPipelineColorBlendAttachmentState>	colorBlendAttachmentStates;
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates;
 
-	// One VkPipelineColorBlendAttachmentState for each pipeline, we only have one color attachment.
-	for (deUint32 i = 0; i < 2; i++)
-	{
-		const VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
-		{
-			VK_TRUE,														// VkBool32									blendEnable;
-			VK_BLEND_FACTOR_ONE,											// VkBlendFactor							srcColorBlendFactor;
-			VK_BLEND_FACTOR_ONE,											// VkBlendFactor							dstColorBlendFactor;
-			m_param.blendOps[i],											// VkBlendOp								colorBlendOp;
-			VK_BLEND_FACTOR_ONE,											// VkBlendFactor							srcAlphaBlendFactor;
-			VK_BLEND_FACTOR_ONE,											// VkBlendFactor							dstAlphaBlendFactor;
-			m_param.blendOps[i],											// VkBlendOp								alphaBlendOp;
-			VK_COLOR_COMPONENT_R_BIT |
-			VK_COLOR_COMPONENT_G_BIT |
-			VK_COLOR_COMPONENT_B_BIT |
-			VK_COLOR_COMPONENT_A_BIT										// VkColorComponentFlags					colorWriteMask;
-		};
-		colorBlendAttachmentStates.emplace_back(colorBlendAttachmentState);
-	}
+    // One VkPipelineColorBlendAttachmentState for each pipeline, we only have one color attachment.
+    for (uint32_t i = 0; i < 2; i++)
+    {
+        const VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {
+            VK_TRUE,             // VkBool32 blendEnable;
+            VK_BLEND_FACTOR_ONE, // VkBlendFactor srcColorBlendFactor;
+            VK_BLEND_FACTOR_ONE, // VkBlendFactor dstColorBlendFactor;
+            m_param.blendOps[i], // VkBlendOp colorBlendOp;
+            VK_BLEND_FACTOR_ONE, // VkBlendFactor srcAlphaBlendFactor;
+            VK_BLEND_FACTOR_ONE, // VkBlendFactor dstAlphaBlendFactor;
+            m_param.blendOps[i], // VkBlendOp alphaBlendOp;
+            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                VK_COLOR_COMPONENT_A_BIT // VkColorComponentFlags colorWriteMask;
+        };
+        colorBlendAttachmentStates.emplace_back(colorBlendAttachmentState);
+    }
 
-	std::vector<VkPipelineColorBlendStateCreateInfo> colorBlendStateParams;
-	VkPipelineColorBlendStateCreateInfo colorBlendStateParam =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
-		&blendAdvancedStateParams,									// const void*									pNext;
-		0u,															// VkPipelineColorBlendStateCreateFlags			flags;
-		VK_FALSE,													// VkBool32										logicOpEnable;
-		VK_LOGIC_OP_COPY,											// VkLogicOp									logicOp;
-		1u,															// deUint32										attachmentCount;
-		&colorBlendAttachmentStates[0],								// const VkPipelineColorBlendAttachmentState*	pAttachments;
-		{ 0.0f, 0.0f, 0.0f, 0.0f },									// float										blendConst[4];
-	};
-	colorBlendStateParams.emplace_back(colorBlendStateParam);
+    std::vector<VkPipelineColorBlendStateCreateInfo> colorBlendStateParams;
+    VkPipelineColorBlendStateCreateInfo colorBlendStateParam = {
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
+        &blendAdvancedStateParams,                                // const void* pNext;
+        0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
+        VK_FALSE,                                                 // VkBool32 logicOpEnable;
+        VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
+        1u,                                                       // uint32_t attachmentCount;
+        &colorBlendAttachmentStates[0], // const VkPipelineColorBlendAttachmentState* pAttachments;
+        {0.0f, 0.0f, 0.0f, 0.0f},       // float blendConst[4];
+    };
+    colorBlendStateParams.emplace_back(colorBlendStateParam);
 
-	// For the second pipeline, the blendOp changed.
-	colorBlendStateParam.pAttachments = &colorBlendAttachmentStates[1];
-	colorBlendStateParams.emplace_back(colorBlendStateParam);
+    // For the second pipeline, the blendOp changed.
+    colorBlendStateParam.pAttachments = &colorBlendAttachmentStates[1];
+    colorBlendStateParams.emplace_back(colorBlendStateParam);
 
-	const VkPipelineMultisampleStateCreateInfo  multisampleStateParams	=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType								sType;
-		DE_NULL,													// const void*									pNext;
-		0u,															// VkPipelineMultisampleStateCreateFlags		flags;
-		VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits						rasterizationSamples;
-		VK_FALSE,													// VkBool32										sampleShadingEnable;
-		0.0f,														// float										minSampleShading;
-		DE_NULL,													// const VkSampleMask*							pSampleMask;
-		VK_FALSE,													// VkBool32										alphaToCoverageEnable;
-		VK_FALSE,													// VkBool32										alphaToOneEnable;
-	};
+    const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                                  // const void* pNext;
+        0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
+        VK_SAMPLE_COUNT_1_BIT,                                    // VkSampleCountFlagBits rasterizationSamples;
+        VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
+        0.0f,                                                     // float minSampleShading;
+        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
+        VK_FALSE,                                                 // VkBool32 alphaToOneEnable;
+    };
 
-	VkPipelineDepthStencilStateCreateInfo depthStencilStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType								sType;
-		DE_NULL,													// const void*									pNext;
-		0u,															// VkPipelineDepthStencilStateCreateFlags		flags;
-		VK_FALSE,													// VkBool32										depthTestEnable;
-		VK_FALSE,													// VkBool32										depthWriteEnable;
-		VK_COMPARE_OP_NEVER,										// VkCompareOp									depthCompareOp;
-		VK_FALSE,													// VkBool32										depthBoundsTestEnable;
-		VK_FALSE,													// VkBool32										stencilTestEnable;
-		// VkStencilOpState front;
-		{
-			VK_STENCIL_OP_KEEP,		// VkStencilOp	failOp;
-			VK_STENCIL_OP_KEEP,		// VkStencilOp	passOp;
-			VK_STENCIL_OP_KEEP,		// VkStencilOp	depthFailOp;
-			VK_COMPARE_OP_NEVER,	// VkCompareOp	compareOp;
-			0u,						// deUint32		compareMask;
-			0u,						// deUint32		writeMask;
-			0u,						// deUint32		reference;
-		},
-		// VkStencilOpState back;
-		{
-			VK_STENCIL_OP_KEEP,		// VkStencilOp	failOp;
-			VK_STENCIL_OP_KEEP,		// VkStencilOp	passOp;
-			VK_STENCIL_OP_KEEP,		// VkStencilOp	depthFailOp;
-			VK_COMPARE_OP_NEVER,	// VkCompareOp	compareOp;
-			0u,						// deUint32		compareMask;
-			0u,						// deUint32		writeMask;
-			0u,						// deUint32		reference;
-		},
-		0.0f,														// float										minDepthBounds;
-		1.0f,														// float										maxDepthBounds;
-	};
+    VkPipelineDepthStencilStateCreateInfo depthStencilStateParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                                    // const void* pNext;
+        0u,                                                         // VkPipelineDepthStencilStateCreateFlags flags;
+        VK_FALSE,                                                   // VkBool32 depthTestEnable;
+        VK_FALSE,                                                   // VkBool32 depthWriteEnable;
+        VK_COMPARE_OP_NEVER,                                        // VkCompareOp depthCompareOp;
+        VK_FALSE,                                                   // VkBool32 depthBoundsTestEnable;
+        VK_FALSE,                                                   // VkBool32 stencilTestEnable;
+        // VkStencilOpState front;
+        {
+            VK_STENCIL_OP_KEEP,  // VkStencilOp failOp;
+            VK_STENCIL_OP_KEEP,  // VkStencilOp passOp;
+            VK_STENCIL_OP_KEEP,  // VkStencilOp depthFailOp;
+            VK_COMPARE_OP_NEVER, // VkCompareOp compareOp;
+            0u,                  // uint32_t compareMask;
+            0u,                  // uint32_t writeMask;
+            0u,                  // uint32_t reference;
+        },
+        // VkStencilOpState back;
+        {
+            VK_STENCIL_OP_KEEP,  // VkStencilOp failOp;
+            VK_STENCIL_OP_KEEP,  // VkStencilOp passOp;
+            VK_STENCIL_OP_KEEP,  // VkStencilOp depthFailOp;
+            VK_COMPARE_OP_NEVER, // VkCompareOp compareOp;
+            0u,                  // uint32_t compareMask;
+            0u,                  // uint32_t writeMask;
+            0u,                  // uint32_t reference;
+        },
+        0.0f, // float minDepthBounds;
+        1.0f, // float maxDepthBounds;
+    };
 
-	const VkDynamicState dynamicState = VK_DYNAMIC_STATE_SCISSOR;
-	const VkPipelineDynamicStateCreateInfo dynamicStateParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	// VkStructureType						sType;
-		DE_NULL,												// const void*							pNext;
-		0u,														// VkPipelineDynamicStateCreateFlags	flags;
-		1u,														// uint32_t								dynamicStateCount;
-		&dynamicState											// const VkDynamicState*				pDynamicStates;
-	};
+    const VkDynamicState dynamicState                         = VK_DYNAMIC_STATE_SCISSOR;
+    const VkPipelineDynamicStateCreateInfo dynamicStateParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                              // const void* pNext;
+        0u,                                                   // VkPipelineDynamicStateCreateFlags flags;
+        1u,                                                   // uint32_t dynamicStateCount;
+        &dynamicState                                         // const VkDynamicState* pDynamicStates;
+    };
 
-	VkGraphicsPipelineCreateInfo graphicsPipelineParams =
-	{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType										sType;
-		DE_NULL,											// const void*											pNext;
-		0u,													// VkPipelineCreateFlags								flags;
-		m_shaderStageCount,									// deUint32												stageCount;
-		m_shaderStageInfo,									// const VkPipelineShaderStageCreateInfo*				pStages;
-		&vertexInputStateParams,							// const VkPipelineVertexInputStateCreateInfo*			pVertexInputState;
-		&inputAssemblyStateParams,							// const VkPipelineInputAssemblyStateCreateInfo*		pInputAssemblyState;
-		DE_NULL,											// const VkPipelineTessellationStateCreateInfo*			pTessellationState;
-		&viewportStateParams,								// const VkPipelineViewportStateCreateInfo*				pViewportState;
-		&rasterStateParams,									// const VkPipelineRasterizationStateCreateInfo*		pRasterState;
-		&multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*			pMultisampleState;
-		&depthStencilStateParams,							// const VkPipelineDepthStencilStateCreateInfo*			pDepthStencilState;
-		&colorBlendStateParams[0],							// const VkPipelineColorBlendStateCreateInfo*			pColorBlendState;
-		&dynamicStateParams,								// const VkPipelineDynamicStateCreateInfo*				pDynamicState;
-		*m_pipelineLayout,									// VkPipelineLayout										layout;
-		m_renderPasses[0].get(),							// VkRenderPass											renderPass;
-		0u,													// deUint32												subpass;
-		DE_NULL,											// VkPipeline											basePipelineHandle;
-		0u,													// deInt32												basePipelineIndex;
-	};
+    VkGraphicsPipelineCreateInfo graphicsPipelineParams = {
+        VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                         // const void* pNext;
+        0u,                                              // VkPipelineCreateFlags flags;
+        m_shaderStageCount,                              // uint32_t stageCount;
+        m_shaderStageInfo,                               // const VkPipelineShaderStageCreateInfo* pStages;
+        &vertexInputStateParams,   // const VkPipelineVertexInputStateCreateInfo* pVertexInputState;
+        &inputAssemblyStateParams, // const VkPipelineInputAssemblyStateCreateInfo* pInputAssemblyState;
+        DE_NULL,                   // const VkPipelineTessellationStateCreateInfo* pTessellationState;
+        &viewportStateParams,      // const VkPipelineViewportStateCreateInfo* pViewportState;
+        &rasterStateParams,        // const VkPipelineRasterizationStateCreateInfo* pRasterState;
+        &multisampleStateParams,   // const VkPipelineMultisampleStateCreateInfo* pMultisampleState;
+        &depthStencilStateParams,  // const VkPipelineDepthStencilStateCreateInfo* pDepthStencilState;
+        &colorBlendStateParams[0], // const VkPipelineColorBlendStateCreateInfo* pColorBlendState;
+        &dynamicStateParams,       // const VkPipelineDynamicStateCreateInfo* pDynamicState;
+        *m_pipelineLayout,         // VkPipelineLayout layout;
+        m_renderPasses[0].get(),   // VkRenderPass renderPass;
+        0u,                        // uint32_t subpass;
+        DE_NULL,                   // VkPipeline basePipelineHandle;
+        0u,                        // int32_t basePipelineIndex;
+    };
 
-	// Create first pipeline
-	m_pipelines.emplace_back(createGraphicsPipeline(vk, vkDevice, DE_NULL, &graphicsPipelineParams));
-	// Create second pipeline
-	graphicsPipelineParams.pColorBlendState = &colorBlendStateParams[1];
-	graphicsPipelineParams.renderPass = m_renderPasses[1].get();
-	m_pipelines.emplace_back(createGraphicsPipeline(vk, vkDevice, DE_NULL, &graphicsPipelineParams));
+    // Create first pipeline
+    m_pipelines.emplace_back(createGraphicsPipeline(vk, vkDevice, DE_NULL, &graphicsPipelineParams));
+    // Create second pipeline
+    graphicsPipelineParams.pColorBlendState = &colorBlendStateParams[1];
+    graphicsPipelineParams.renderPass       = m_renderPasses[1].get();
+    m_pipelines.emplace_back(createGraphicsPipeline(vk, vkDevice, DE_NULL, &graphicsPipelineParams));
 }
 
-void BlendOperationAdvancedTestCoherentInstance::prepareRenderPass (VkFramebuffer framebuffer, VkPipeline pipeline, VkRenderPass renderpass, deBool secondDraw)
+void BlendOperationAdvancedTestCoherentInstance::prepareRenderPass(VkFramebuffer framebuffer, VkPipeline pipeline,
+                                                                   VkRenderPass renderpass, bool secondDraw)
 {
-	const DeviceInterface&	vk				 = m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_context.getDeviceInterface();
 
-	VkClearValue	attachmentClearValue = makeClearValueColor(clearColorVec4);
+    VkClearValue attachmentClearValue = makeClearValueColor(clearColorVec4);
 
-	beginRenderPass(vk, *m_cmdBuffer, renderpass, framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()),
-					(secondDraw ? 0u : 1u),
-					(secondDraw ? DE_NULL : &attachmentClearValue));
+    beginRenderPass(vk, *m_cmdBuffer, renderpass, framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()),
+                    (secondDraw ? 0u : 1u), (secondDraw ? DE_NULL : &attachmentClearValue));
 
-	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-	VkDeviceSize offsets = 0u;
-	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &offsets);
+    vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    VkDeviceSize offsets = 0u;
+    vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &offsets);
 
-	// There are two different renderpasses, each of them draw
-	// one half of the colors.
-	deUint32 skippedColors = 0u;
-	for (deUint32 color = 0; color < DE_LENGTH_OF_ARRAY(srcColors)/2; color++)
-	{
-		// Skip ill-formed colors when we have non-premultiplied destination colors.
-		if (m_param.premultipliedDstColor == VK_FALSE)
-		{
-			deBool skipColor = false;
-			for (deUint32 i = 0; i < m_param.colorAttachmentsCount; i++)
-			{
-				Vec4 calculatedColor = calculateFinalColor(m_param, m_param.blendOps[i], srcColors[color], dstColors[color]);
-				if (calculatedColor.w() <= 0.0f && calculatedColor != Vec4(0.0f))
-				{
-					// Skip ill-formed colors, because the spec says the result is undefined.
-					skippedColors++;
-					skipColor = true;
-					break;
-				}
-			}
-			if (skipColor)
-				continue;
-		}
-		deInt32 x = 0;
-		deInt32 y = 0;
-		getCoordinates(color, x, y);
+    // There are two different renderpasses, each of them draw
+    // one half of the colors.
+    uint32_t skippedColors = 0u;
+    for (uint32_t color = 0; color < DE_LENGTH_OF_ARRAY(srcColors) / 2; color++)
+    {
+        // Skip ill-formed colors when we have non-premultiplied destination colors.
+        if (m_param.premultipliedDstColor == VK_FALSE)
+        {
+            bool skipColor = false;
+            for (uint32_t i = 0; i < m_param.colorAttachmentsCount; i++)
+            {
+                Vec4 calculatedColor =
+                    calculateFinalColor(m_param, m_param.blendOps[i], srcColors[color], dstColors[color]);
+                if (calculatedColor.w() <= 0.0f && calculatedColor != Vec4(0.0f))
+                {
+                    // Skip ill-formed colors, because the spec says the result is undefined.
+                    skippedColors++;
+                    skipColor = true;
+                    break;
+                }
+            }
+            if (skipColor)
+                continue;
+        }
+        int32_t x = 0;
+        int32_t y = 0;
+        getCoordinates(color, x, y);
 
-		deUint32 index = secondDraw ? (color + DE_LENGTH_OF_ARRAY(srcColors) / 2) : color;
+        uint32_t index = secondDraw ? (color + DE_LENGTH_OF_ARRAY(srcColors) / 2) : color;
 
-		// Set source color as push constant
-		vk.cmdPushConstants(*m_cmdBuffer, *m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(Vec4), &srcColors[index]);
-		VkRect2D scissor = makeRect2D(x, y, 1u, 1u);
-		vk.cmdSetScissor(*m_cmdBuffer, 0u, 1u, &scissor);
+        // Set source color as push constant
+        vk.cmdPushConstants(*m_cmdBuffer, *m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(Vec4),
+                            &srcColors[index]);
+        VkRect2D scissor = makeRect2D(x, y, 1u, 1u);
+        vk.cmdSetScissor(*m_cmdBuffer, 0u, 1u, &scissor);
 
-		// To set destination color, we do clear attachment restricting the area to the respective pixel of each color attachment.
-		// Only clear in the first draw, for the second draw the destination color is the result of the first draw's blend.
-		if (secondDraw == DE_FALSE)
-		{
-			std::vector<VkClearAttachment> attachments;
-			VkClearValue clearValue = vk::makeClearValueColorVec4(dstColors[index]);
+        // To set destination color, we do clear attachment restricting the area to the respective pixel of each color attachment.
+        // Only clear in the first draw, for the second draw the destination color is the result of the first draw's blend.
+        if (secondDraw == false)
+        {
+            std::vector<VkClearAttachment> attachments;
+            VkClearValue clearValue = vk::makeClearValueColorVec4(dstColors[index]);
 
-			const VkClearAttachment	attachment	=
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT,
-				0u,
-				clearValue
-			};
+            const VkClearAttachment attachment = {VK_IMAGE_ASPECT_COLOR_BIT, 0u, clearValue};
 
-			const VkClearRect rect =
-			{
-				scissor,
-				0u,
-				1u
-			};
-			vk.cmdClearAttachments(*m_cmdBuffer, 1u, &attachment, 1u, &rect);
-		}
+            const VkClearRect rect = {scissor, 0u, 1u};
+            vk.cmdClearAttachments(*m_cmdBuffer, 1u, &attachment, 1u, &rect);
+        }
 
-		// Draw
-		vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1u, 0u, 0u);
-	}
+        // Draw
+        vk.cmdDraw(*m_cmdBuffer, (uint32_t)m_vertices.size(), 1u, 0u, 0u);
+    }
 
-	// If we break this assert, then we are not testing anything in this test.
-	DE_ASSERT(skippedColors < (DE_LENGTH_OF_ARRAY(srcColors) / 2));
+    // If we break this assert, then we are not testing anything in this test.
+    DE_ASSERT(skippedColors < (DE_LENGTH_OF_ARRAY(srcColors) / 2));
 
-	// Log number of skipped colors
-	if (skippedColors != 0u)
-	{
-		tcu::TestLog& log = m_context.getTestContext().getLog();
-		log << tcu::TestLog::Message << "Skipped " << skippedColors << " out of " << (DE_LENGTH_OF_ARRAY(srcColors) / 2) << " color cases due to ill-formed colors" << tcu::TestLog::EndMessage;
-	}
-	endRenderPass(vk, *m_cmdBuffer);
+    // Log number of skipped colors
+    if (skippedColors != 0u)
+    {
+        tcu::TestLog &log = m_context.getTestContext().getLog();
+        log << tcu::TestLog::Message << "Skipped " << skippedColors << " out of " << (DE_LENGTH_OF_ARRAY(srcColors) / 2)
+            << " color cases due to ill-formed colors" << tcu::TestLog::EndMessage;
+    }
+    endRenderPass(vk, *m_cmdBuffer);
 }
 
-void BlendOperationAdvancedTestCoherentInstance::prepareCommandBuffer ()
+void BlendOperationAdvancedTestCoherentInstance::prepareCommandBuffer()
 {
-	const DeviceInterface&	vk				 = m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_context.getDeviceInterface();
 
-	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+    beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
-	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
-						  0u, DE_NULL, 0u, DE_NULL, (deUint32)m_imageLayoutBarriers.size(), m_imageLayoutBarriers.data());
+    vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                          (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, (uint32_t)m_imageLayoutBarriers.size(),
+                          m_imageLayoutBarriers.data());
 
-	prepareRenderPass(m_framebuffers[0].get(), m_pipelines[0].get(), m_renderPasses[0].get(), false);
+    prepareRenderPass(m_framebuffers[0].get(), m_pipelines[0].get(), m_renderPasses[0].get(), false);
 
-	if (m_param.coherentOperations == DE_FALSE)
-	{
-		const VkImageMemoryBarrier colorImageBarrier =
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,					// VkStructureType			sType;
-			DE_NULL,												// const void*				pNext;
-			(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-			 VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT),	// VkAccessFlags			srcAccessMask;
-			(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-			 VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT),	// VkAccessFlags			dstAccessMask;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout			newLayout;
-			VK_QUEUE_FAMILY_IGNORED,								// deUint32					srcQueueFamilyIndex;
-			VK_QUEUE_FAMILY_IGNORED,								// deUint32					dstQueueFamilyIndex;
-			*m_colorImage,											// VkImage					image;
-			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },			// VkImageSubresourceRange	subresourceRange;
-		};
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-							  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
-							  0u, DE_NULL, 0u, DE_NULL, 1u, &colorImageBarrier);
-	}
+    if (m_param.coherentOperations == false)
+    {
+        const VkImageMemoryBarrier colorImageBarrier = {
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+            DE_NULL,                                // const void* pNext;
+            (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+             VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT), // VkAccessFlags srcAccessMask;
+            (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+             VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT), // VkAccessFlags dstAccessMask;
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,              // VkImageLayout oldLayout;
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,              // VkImageLayout newLayout;
+            VK_QUEUE_FAMILY_IGNORED,                               // uint32_t srcQueueFamilyIndex;
+            VK_QUEUE_FAMILY_IGNORED,                               // uint32_t dstQueueFamilyIndex;
+            *m_colorImage,                                         // VkImage image;
+            {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u},           // VkImageSubresourceRange subresourceRange;
+        };
+        vk.cmdPipelineBarrier(*m_cmdBuffer,
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                              (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, 1u, &colorImageBarrier);
+    }
 
-	prepareRenderPass(m_framebuffers[1].get(), m_pipelines[1].get(), m_renderPasses[1].get(), true);
+    prepareRenderPass(m_framebuffers[1].get(), m_pipelines[1].get(), m_renderPasses[1].get(), true);
 
-	endCommandBuffer(vk, *m_cmdBuffer);
+    endCommandBuffer(vk, *m_cmdBuffer);
 }
 
-BlendOperationAdvancedTestCoherentInstance::BlendOperationAdvancedTestCoherentInstance	(Context&							context,
-																						 const BlendOperationAdvancedParam	param)
-	: TestInstance			(context)
-	, m_param				(param)
-	, m_renderSize			(tcu::UVec2(widthArea, heightArea))
-	, m_colorFormat			(VK_FORMAT_R16G16B16A16_SFLOAT)
-	, m_shaderStageCount	(0)
+BlendOperationAdvancedTestCoherentInstance::BlendOperationAdvancedTestCoherentInstance(
+    Context &context, const BlendOperationAdvancedParam param)
+    : TestInstance(context)
+    , m_param(param)
+    , m_renderSize(tcu::UVec2(widthArea, heightArea))
+    , m_colorFormat(VK_FORMAT_R16G16B16A16_SFLOAT)
+    , m_shaderStageCount(0)
 {
-	const DeviceInterface&		vk				 = m_context.getDeviceInterface();
-	const VkDevice				vkDevice		 = m_context.getDevice();
-	const deUint32				queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice vkDevice         = m_context.getDevice();
+    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
 
-	// Create vertex buffer
-	{
-		m_vertices		= createPoints();
-		DE_ASSERT((deUint32)m_vertices.size() == 6);
+    // Create vertex buffer
+    {
+        m_vertices = createPoints();
+        DE_ASSERT((uint32_t)m_vertices.size() == 6);
 
-		m_vertexBuffer	= createBufferAndBindMemory(m_context, m_vertices.size() * sizeof(Vec4), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &m_vertexBufferMemory);
-		// Load vertices into vertex buffer
-		deMemcpy(m_vertexBufferMemory->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vec4));
-		flushAlloc(vk, vkDevice, *m_vertexBufferMemory);
-	}
+        m_vertexBuffer = createBufferAndBindMemory(m_context, m_vertices.size() * sizeof(Vec4),
+                                                   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &m_vertexBufferMemory);
+        // Load vertices into vertex buffer
+        deMemcpy(m_vertexBufferMemory->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vec4));
+        flushAlloc(vk, vkDevice, *m_vertexBufferMemory);
+    }
 
-	// Create render passes
-	m_renderPasses.emplace_back(makeTestRenderPass(param, vk, vkDevice, m_colorFormat, VK_ATTACHMENT_LOAD_OP_CLEAR));
-	m_renderPasses.emplace_back(makeTestRenderPass(param, vk, vkDevice, m_colorFormat, VK_ATTACHMENT_LOAD_OP_LOAD));
+    // Create render passes
+    m_renderPasses.emplace_back(makeTestRenderPass(param, vk, vkDevice, m_colorFormat, VK_ATTACHMENT_LOAD_OP_CLEAR));
+    m_renderPasses.emplace_back(makeTestRenderPass(param, vk, vkDevice, m_colorFormat, VK_ATTACHMENT_LOAD_OP_LOAD));
 
-	const VkComponentMapping	componentMappingRGBA = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
+    const VkComponentMapping componentMappingRGBA = {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G,
+                                                     VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
 
-	// Create color image
-	m_colorImage	= createImage2DAndBindMemory(m_context,
-												 m_colorFormat,
-												 m_renderSize.x(),
-												 m_renderSize.y(),
-												 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-												 VK_SAMPLE_COUNT_1_BIT,
-												 &m_colorImageAlloc);
-	// Set up image layout transition barriers
-	{
-		VkImageMemoryBarrier colorImageBarrier =
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,					// VkStructureType			sType;
-			DE_NULL,												// const void*				pNext;
-			0u,														// VkAccessFlags			srcAccessMask;
-			(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-			 VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT),	// VkAccessFlags			dstAccessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout			newLayout;
-			VK_QUEUE_FAMILY_IGNORED,								// deUint32					srcQueueFamilyIndex;
-			VK_QUEUE_FAMILY_IGNORED,								// deUint32					dstQueueFamilyIndex;
-			*m_colorImage,											// VkImage					image;
-			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },			// VkImageSubresourceRange	subresourceRange;
-		};
+    // Create color image
+    m_colorImage = createImage2DAndBindMemory(m_context, m_colorFormat, m_renderSize.x(), m_renderSize.y(),
+                                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                                              VK_SAMPLE_COUNT_1_BIT, &m_colorImageAlloc);
+    // Set up image layout transition barriers
+    {
+        VkImageMemoryBarrier colorImageBarrier = {
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+            DE_NULL,                                // const void* pNext;
+            0u,                                     // VkAccessFlags srcAccessMask;
+            (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+             VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT), // VkAccessFlags dstAccessMask;
+            VK_IMAGE_LAYOUT_UNDEFINED,                             // VkImageLayout oldLayout;
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,              // VkImageLayout newLayout;
+            VK_QUEUE_FAMILY_IGNORED,                               // uint32_t srcQueueFamilyIndex;
+            VK_QUEUE_FAMILY_IGNORED,                               // uint32_t dstQueueFamilyIndex;
+            *m_colorImage,                                         // VkImage image;
+            {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u},           // VkImageSubresourceRange subresourceRange;
+        };
 
-		m_imageLayoutBarriers.emplace_back(colorImageBarrier);
-	}
+        m_imageLayoutBarriers.emplace_back(colorImageBarrier);
+    }
 
-	// Create color attachment view
-	{
-		VkImageViewCreateInfo colorAttachmentViewParams =
-		{
-			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			0u,												// VkImageViewCreateFlags	flags;
-			*m_colorImage,									// VkImage					image;
-			VK_IMAGE_VIEW_TYPE_2D,							// VkImageViewType			viewType;
-			m_colorFormat,									// VkFormat					format;
-			componentMappingRGBA,							// VkComponentMapping		components;
-			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },	// VkImageSubresourceRange	subresourceRange;
-		};
+    // Create color attachment view
+    {
+        VkImageViewCreateInfo colorAttachmentViewParams = {
+            VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // VkStructureType sType;
+            DE_NULL,                                     // const void* pNext;
+            0u,                                          // VkImageViewCreateFlags flags;
+            *m_colorImage,                               // VkImage image;
+            VK_IMAGE_VIEW_TYPE_2D,                       // VkImageViewType viewType;
+            m_colorFormat,                               // VkFormat format;
+            componentMappingRGBA,                        // VkComponentMapping components;
+            {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}, // VkImageSubresourceRange subresourceRange;
+        };
 
-		m_colorAttachmentView = createImageView(vk, vkDevice, &colorAttachmentViewParams);
-	}
+        m_colorAttachmentView = createImageView(vk, vkDevice, &colorAttachmentViewParams);
+    }
 
-	// Create framebuffers
-	{
-		VkFramebufferCreateInfo framebufferParams =
-		{
-			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,			// VkStructureType				sType;
-			DE_NULL,											// const void*					pNext;
-			0u,													// VkFramebufferCreateFlags		flags;
-			m_renderPasses[0].get(),							// VkRenderPass					renderPass;
-			1u,													// deUint32						attachmentCount;
-			&m_colorAttachmentView.get(),						// const VkImageView*			pAttachments;
-			(deUint32)m_renderSize.x(),							// deUint32						width;
-			(deUint32)m_renderSize.y(),							// deUint32						height;
-			1u,													// deUint32						layers;
-		};
+    // Create framebuffers
+    {
+        VkFramebufferCreateInfo framebufferParams = {
+            VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
+            DE_NULL,                                   // const void* pNext;
+            0u,                                        // VkFramebufferCreateFlags flags;
+            m_renderPasses[0].get(),                   // VkRenderPass renderPass;
+            1u,                                        // uint32_t attachmentCount;
+            &m_colorAttachmentView.get(),              // const VkImageView* pAttachments;
+            (uint32_t)m_renderSize.x(),                // uint32_t width;
+            (uint32_t)m_renderSize.y(),                // uint32_t height;
+            1u,                                        // uint32_t layers;
+        };
 
-		m_framebuffers.emplace_back(createFramebuffer(vk, vkDevice, &framebufferParams));
-		framebufferParams.renderPass = m_renderPasses[1].get();
-		m_framebuffers.emplace_back(createFramebuffer(vk, vkDevice, &framebufferParams));
-	}
+        m_framebuffers.emplace_back(createFramebuffer(vk, vkDevice, &framebufferParams));
+        framebufferParams.renderPass = m_renderPasses[1].get();
+        m_framebuffers.emplace_back(createFramebuffer(vk, vkDevice, &framebufferParams));
+    }
 
-	// Bind shader stages
-	{
-		bindShaderStage(VK_SHADER_STAGE_VERTEX_BIT, "vert", "main");
-		bindShaderStage(VK_SHADER_STAGE_FRAGMENT_BIT, "frag", "main");
-	}
+    // Bind shader stages
+    {
+        bindShaderStage(VK_SHADER_STAGE_VERTEX_BIT, "vert", "main");
+        bindShaderStage(VK_SHADER_STAGE_FRAGMENT_BIT, "frag", "main");
+    }
 
+    // Create pipeline layout
+    {
+        const VkPushConstantRange pushConstantRange = {
+            VK_SHADER_STAGE_FRAGMENT_BIT, // VkShaderStageFlags    stageFlags
+            0,                            // uint32_t                offset
+            sizeof(Vec4)                  // uint32_t                size
+        };
 
-	// Create pipeline layout
-	{
-		const VkPushConstantRange pushConstantRange =
-		{
-			VK_SHADER_STAGE_FRAGMENT_BIT,		// VkShaderStageFlags	stageFlags
-			0,									// deUint32				offset
-			sizeof(Vec4)						// deUint32				size
-		};
+        const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
+            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
+            DE_NULL,                                       // const void* pNext;
+            0u,                                            // VkPipelineLayoutCreateFlags flags;
+            0u,                                            // uint32_t setLayoutCount;
+            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            1u,                                            // uint32_t pushConstantRangeCount;
+            &pushConstantRange                             // const VkPushConstantRange* pPushConstantRanges;
+        };
 
-		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
-			DE_NULL,											// const void*						pNext;
-			0u,													// VkPipelineLayoutCreateFlags		flags;
-			0u,													// deUint32							setLayoutCount;
-			DE_NULL,											// const VkDescriptorSetLayout*		pSetLayouts;
-			1u,													// deUint32							pushConstantRangeCount;
-			&pushConstantRange									// const VkPushConstantRange*		pPushConstantRanges;
-		};
+        m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+    }
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
-	}
+    // Create pipeline
+    buildPipeline();
 
-	// Create pipeline
-	buildPipeline();
+    // Create command pool
+    m_cmdPool = createCommandPool(
+        vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+        queueFamilyIndex);
 
-	// Create command pool
-	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
-
-	// Create command buffer
-	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    // Create command buffer
+    m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 }
 
-tcu::TestStatus BlendOperationAdvancedTestCoherentInstance::iterate (void)
+tcu::TestStatus BlendOperationAdvancedTestCoherentInstance::iterate(void)
 {
-	const DeviceInterface&	vk					= m_context.getDeviceInterface();
-	const VkDevice			vkDevice			= m_context.getDevice();
-	const VkQueue			queue				= m_context.getUniversalQueue();
-	tcu::TestLog&			log					= m_context.getTestContext().getLog();
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice vkDevice   = m_context.getDevice();
+    const VkQueue queue       = m_context.getUniversalQueue();
+    tcu::TestLog &log         = m_context.getTestContext().getLog();
 
-	// Log the blend operations to test
-	{
-		DE_ASSERT(m_param.blendOps.size() == 2u);
-		log << tcu::TestLog::Message << "First depth op: " << de::toLower(getBlendOpStr(m_param.blendOps[0]).toString().substr(3)) << tcu::TestLog::EndMessage;
-		log << tcu::TestLog::Message << "Second depth op: " << de::toLower(getBlendOpStr(m_param.blendOps[1]).toString().substr(3)) << tcu::TestLog::EndMessage;
+    // Log the blend operations to test
+    {
+        DE_ASSERT(m_param.blendOps.size() == 2u);
+        log << tcu::TestLog::Message
+            << "First depth op: " << de::toLower(getBlendOpStr(m_param.blendOps[0]).toString().substr(3))
+            << tcu::TestLog::EndMessage;
+        log << tcu::TestLog::Message
+            << "Second depth op: " << de::toLower(getBlendOpStr(m_param.blendOps[1]).toString().substr(3))
+            << tcu::TestLog::EndMessage;
+    }
 
-	}
+    prepareCommandBuffer();
 
-	prepareCommandBuffer();
-
-	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
-	return verifyTestResult();
+    submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+    return verifyTestResult();
 }
 
-tcu::TestStatus BlendOperationAdvancedTestCoherentInstance::verifyTestResult (void)
+tcu::TestStatus BlendOperationAdvancedTestCoherentInstance::verifyTestResult(void)
 {
-	deBool					compareOk			= DE_TRUE;
-	const DeviceInterface&	vk					= m_context.getDeviceInterface();
-	const VkDevice			vkDevice			= m_context.getDevice();
-	const VkQueue			queue				= m_context.getUniversalQueue();
-	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	Allocator&				allocator			= m_context.getDefaultAllocator();
-	tcu::TextureLevel		refImage			(vk::mapVkFormat(m_colorFormat), 32, 32);
+    bool compareOk                  = true;
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice vkDevice         = m_context.getDevice();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    Allocator &allocator            = m_context.getDefaultAllocator();
+    tcu::TextureLevel refImage(vk::mapVkFormat(m_colorFormat), 32, 32);
 
-	tcu::clear(refImage.getAccess(), clearColorVec4);
+    tcu::clear(refImage.getAccess(), clearColorVec4);
 
-	// Generate reference image
-	for (deUint32 color = 0; color < DE_LENGTH_OF_ARRAY(srcColors)/2; color++)
-	{
-		deUint32 secondDrawColorIndex = color + DE_LENGTH_OF_ARRAY(srcColors)/2;
-		// Calculate first draw final color
-		Vec4 rectColorTmp = calculateFinalColor(m_param, m_param.blendOps[0], srcColors[color], dstColors[color]);
+    // Generate reference image
+    for (uint32_t color = 0; color < DE_LENGTH_OF_ARRAY(srcColors) / 2; color++)
+    {
+        uint32_t secondDrawColorIndex = color + DE_LENGTH_OF_ARRAY(srcColors) / 2;
+        // Calculate first draw final color
+        Vec4 rectColorTmp = calculateFinalColor(m_param, m_param.blendOps[0], srcColors[color], dstColors[color]);
 
-		if (m_param.premultipliedDstColor == VK_FALSE)
-		{
-			if (rectColorTmp.w() > 0.0f)
-			{
-				rectColorTmp.x() = rectColorTmp.x() / rectColorTmp.w();
-				rectColorTmp.y() = rectColorTmp.y() / rectColorTmp.w();
-				rectColorTmp.z() = rectColorTmp.z() / rectColorTmp.w();
-			}
-			else
-			{
-				// Skip the color check if it is ill-formed.
-				if (rectColorTmp != Vec4(0.0f))
-					continue;
-			}
-		}
-		// Calculate second draw final color
-		Vec4 rectColor = calculateFinalColor(m_param, m_param.blendOps[1], srcColors[secondDrawColorIndex], rectColorTmp);
-		if (m_param.premultipliedDstColor == VK_FALSE)
-		{
-			if (rectColor.w() > 0.0f)
-			{
-				rectColor.x() = rectColor.x() / rectColor.w();
-				rectColor.y() = rectColor.y() / rectColor.w();
-				rectColor.z() = rectColor.z() / rectColor.w();
-			}
-			else
-			{
-				// Skip the color check if it is ill-formed.
-				if (rectColor != Vec4(0.0f))
-					continue;
-			}
-		}
+        if (m_param.premultipliedDstColor == VK_FALSE)
+        {
+            if (rectColorTmp.w() > 0.0f)
+            {
+                rectColorTmp.x() = rectColorTmp.x() / rectColorTmp.w();
+                rectColorTmp.y() = rectColorTmp.y() / rectColorTmp.w();
+                rectColorTmp.z() = rectColorTmp.z() / rectColorTmp.w();
+            }
+            else
+            {
+                // Skip the color check if it is ill-formed.
+                if (rectColorTmp != Vec4(0.0f))
+                    continue;
+            }
+        }
+        // Calculate second draw final color
+        Vec4 rectColor =
+            calculateFinalColor(m_param, m_param.blendOps[1], srcColors[secondDrawColorIndex], rectColorTmp);
+        if (m_param.premultipliedDstColor == VK_FALSE)
+        {
+            if (rectColor.w() > 0.0f)
+            {
+                rectColor.x() = rectColor.x() / rectColor.w();
+                rectColor.y() = rectColor.y() / rectColor.w();
+                rectColor.z() = rectColor.z() / rectColor.w();
+            }
+            else
+            {
+                // Skip the color check if it is ill-formed.
+                if (rectColor != Vec4(0.0f))
+                    continue;
+            }
+        }
 
-		deInt32 x = 0;
-		deInt32 y = 0;
-		getCoordinates(color, x, y);
-		tcu::clear(tcu::getSubregion(refImage.getAccess(), x, y, 1u, 1u), rectColor);
-	}
+        int32_t x = 0;
+        int32_t y = 0;
+        getCoordinates(color, x, y);
+        tcu::clear(tcu::getSubregion(refImage.getAccess(), x, y, 1u, 1u), rectColor);
+    }
 
-	de::MovePtr<tcu::TextureLevel> result = vkt::pipeline::readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_colorImage, m_colorFormat, m_renderSize);
-	std::ostringstream name;
-	name << "Image comparison. Depth ops: " << de::toLower(getBlendOpStr(m_param.blendOps[0]).toString().substr(3)) << " and " << de::toLower(getBlendOpStr(m_param.blendOps[1]).toString().substr(3));
-	compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(),
-										   "FloatImageCompare",
-										   name.str().c_str(),
-										   refImage.getAccess(),
-										   result->getAccess(),
-										   Vec4(0.01f, 0.01f, 0.01f, 0.01f),
-										   tcu::COMPARE_LOG_RESULT);
-	if (!compareOk)
-		return tcu::TestStatus::fail("Image mismatch");
+    de::MovePtr<tcu::TextureLevel> result = vkt::pipeline::readColorAttachment(
+        vk, vkDevice, queue, queueFamilyIndex, allocator, *m_colorImage, m_colorFormat, m_renderSize);
+    std::ostringstream name;
+    name << "Image comparison. Depth ops: " << de::toLower(getBlendOpStr(m_param.blendOps[0]).toString().substr(3))
+         << " and " << de::toLower(getBlendOpStr(m_param.blendOps[1]).toString().substr(3));
+    compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "FloatImageCompare", name.str().c_str(),
+                                           refImage.getAccess(), result->getAccess(), Vec4(0.01f, 0.01f, 0.01f, 0.01f),
+                                           tcu::COMPARE_LOG_RESULT);
+    if (!compareOk)
+        return tcu::TestStatus::fail("Image mismatch");
 
-	return tcu::TestStatus::pass("Result images matches references");
+    return tcu::TestStatus::pass("Result images matches references");
 }
 
-TestInstance* BlendOperationAdvancedTest::createInstance (Context& context) const
+TestInstance *BlendOperationAdvancedTest::createInstance(Context &context) const
 {
-	if (m_param.testMode == TEST_MODE_GENERIC)
-		return new BlendOperationAdvancedTestInstance(context, m_param);
-	else
-		return new BlendOperationAdvancedTestCoherentInstance(context, m_param);
+    if (m_param.testMode == TEST_MODE_GENERIC)
+        return new BlendOperationAdvancedTestInstance(context, m_param);
+    else
+        return new BlendOperationAdvancedTestCoherentInstance(context, m_param);
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createBlendOperationAdvancedTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createBlendOperationAdvancedTests(tcu::TestContext &testCtx)
 {
-	enum nonpremultiplyEnum
-	{
-		PREMULTIPLY_SRC = 1u,
-		PREMULTIPLY_DST = 2u
-	};
-	deUint32	premultiplyModes[] = { 0u, PREMULTIPLY_SRC, PREMULTIPLY_DST, PREMULTIPLY_SRC | PREMULTIPLY_DST };
-	deUint32	colorAttachmentCounts[] = { 1u, 2u, 4u, 8u, 16u };
-	deBool		coherentOps[] = { DE_FALSE, DE_TRUE };
-	VkBlendOp	blendOps[] =
-	{
-		VK_BLEND_OP_ZERO_EXT, VK_BLEND_OP_SRC_EXT, VK_BLEND_OP_DST_EXT,	VK_BLEND_OP_SRC_OVER_EXT, VK_BLEND_OP_DST_OVER_EXT,
-		VK_BLEND_OP_SRC_IN_EXT, VK_BLEND_OP_DST_IN_EXT, VK_BLEND_OP_SRC_OUT_EXT, VK_BLEND_OP_DST_OUT_EXT, VK_BLEND_OP_SRC_ATOP_EXT,
-		VK_BLEND_OP_DST_ATOP_EXT, VK_BLEND_OP_XOR_EXT, VK_BLEND_OP_MULTIPLY_EXT, VK_BLEND_OP_SCREEN_EXT, VK_BLEND_OP_OVERLAY_EXT,
-		VK_BLEND_OP_DARKEN_EXT, VK_BLEND_OP_LIGHTEN_EXT, VK_BLEND_OP_COLORDODGE_EXT, VK_BLEND_OP_COLORBURN_EXT, VK_BLEND_OP_HARDLIGHT_EXT,
-		VK_BLEND_OP_SOFTLIGHT_EXT, VK_BLEND_OP_DIFFERENCE_EXT, VK_BLEND_OP_EXCLUSION_EXT, VK_BLEND_OP_INVERT_EXT, VK_BLEND_OP_INVERT_RGB_EXT,
-		VK_BLEND_OP_LINEARDODGE_EXT, VK_BLEND_OP_LINEARBURN_EXT, VK_BLEND_OP_VIVIDLIGHT_EXT, VK_BLEND_OP_LINEARLIGHT_EXT, VK_BLEND_OP_PINLIGHT_EXT,
-		VK_BLEND_OP_HARDMIX_EXT, VK_BLEND_OP_HSL_HUE_EXT, VK_BLEND_OP_HSL_SATURATION_EXT, VK_BLEND_OP_HSL_COLOR_EXT, VK_BLEND_OP_HSL_LUMINOSITY_EXT,
-		VK_BLEND_OP_PLUS_EXT, VK_BLEND_OP_PLUS_CLAMPED_EXT, VK_BLEND_OP_PLUS_CLAMPED_ALPHA_EXT, VK_BLEND_OP_PLUS_DARKER_EXT, VK_BLEND_OP_MINUS_EXT,
-		VK_BLEND_OP_MINUS_CLAMPED_EXT, VK_BLEND_OP_CONTRAST_EXT, VK_BLEND_OP_INVERT_OVG_EXT, VK_BLEND_OP_RED_EXT, VK_BLEND_OP_GREEN_EXT, VK_BLEND_OP_BLUE_EXT,
-	};
+    enum nonpremultiplyEnum
+    {
+        PREMULTIPLY_SRC = 1u,
+        PREMULTIPLY_DST = 2u
+    };
+    uint32_t premultiplyModes[]      = {0u, PREMULTIPLY_SRC, PREMULTIPLY_DST, PREMULTIPLY_SRC | PREMULTIPLY_DST};
+    uint32_t colorAttachmentCounts[] = {1u, 2u, 4u, 8u, 16u};
+    bool coherentOps[]               = {false, true};
+    VkBlendOp blendOps[]             = {
+        VK_BLEND_OP_ZERO_EXT,
+        VK_BLEND_OP_SRC_EXT,
+        VK_BLEND_OP_DST_EXT,
+        VK_BLEND_OP_SRC_OVER_EXT,
+        VK_BLEND_OP_DST_OVER_EXT,
+        VK_BLEND_OP_SRC_IN_EXT,
+        VK_BLEND_OP_DST_IN_EXT,
+        VK_BLEND_OP_SRC_OUT_EXT,
+        VK_BLEND_OP_DST_OUT_EXT,
+        VK_BLEND_OP_SRC_ATOP_EXT,
+        VK_BLEND_OP_DST_ATOP_EXT,
+        VK_BLEND_OP_XOR_EXT,
+        VK_BLEND_OP_MULTIPLY_EXT,
+        VK_BLEND_OP_SCREEN_EXT,
+        VK_BLEND_OP_OVERLAY_EXT,
+        VK_BLEND_OP_DARKEN_EXT,
+        VK_BLEND_OP_LIGHTEN_EXT,
+        VK_BLEND_OP_COLORDODGE_EXT,
+        VK_BLEND_OP_COLORBURN_EXT,
+        VK_BLEND_OP_HARDLIGHT_EXT,
+        VK_BLEND_OP_SOFTLIGHT_EXT,
+        VK_BLEND_OP_DIFFERENCE_EXT,
+        VK_BLEND_OP_EXCLUSION_EXT,
+        VK_BLEND_OP_INVERT_EXT,
+        VK_BLEND_OP_INVERT_RGB_EXT,
+        VK_BLEND_OP_LINEARDODGE_EXT,
+        VK_BLEND_OP_LINEARBURN_EXT,
+        VK_BLEND_OP_VIVIDLIGHT_EXT,
+        VK_BLEND_OP_LINEARLIGHT_EXT,
+        VK_BLEND_OP_PINLIGHT_EXT,
+        VK_BLEND_OP_HARDMIX_EXT,
+        VK_BLEND_OP_HSL_HUE_EXT,
+        VK_BLEND_OP_HSL_SATURATION_EXT,
+        VK_BLEND_OP_HSL_COLOR_EXT,
+        VK_BLEND_OP_HSL_LUMINOSITY_EXT,
+        VK_BLEND_OP_PLUS_EXT,
+        VK_BLEND_OP_PLUS_CLAMPED_EXT,
+        VK_BLEND_OP_PLUS_CLAMPED_ALPHA_EXT,
+        VK_BLEND_OP_PLUS_DARKER_EXT,
+        VK_BLEND_OP_MINUS_EXT,
+        VK_BLEND_OP_MINUS_CLAMPED_EXT,
+        VK_BLEND_OP_CONTRAST_EXT,
+        VK_BLEND_OP_INVERT_OVG_EXT,
+        VK_BLEND_OP_RED_EXT,
+        VK_BLEND_OP_GREEN_EXT,
+        VK_BLEND_OP_BLUE_EXT,
+    };
 
-	de::MovePtr<tcu::TestCaseGroup> tests (new tcu::TestCaseGroup(testCtx, "blend_operation_advanced", "VK_EXT_blend_operation_advanced tests"));
-	de::Random						rnd				(deStringHash(tests->getName()));
+    de::MovePtr<tcu::TestCaseGroup> tests(
+        new tcu::TestCaseGroup(testCtx, "blend_operation_advanced", "VK_EXT_blend_operation_advanced tests"));
+    de::Random rnd(deStringHash(tests->getName()));
 
-	de::MovePtr<tcu::TestCaseGroup> opsTests (new tcu::TestCaseGroup(testCtx, "ops", "Test each blend operation advance op"));
+    de::MovePtr<tcu::TestCaseGroup> opsTests(
+        new tcu::TestCaseGroup(testCtx, "ops", "Test each blend operation advance op"));
 
+    for (uint32_t colorAttachmentCount = 0u; colorAttachmentCount < DE_LENGTH_OF_ARRAY(colorAttachmentCounts);
+         colorAttachmentCount++)
+    {
+        for (uint32_t overlap = 0; overlap <= VK_BLEND_OVERLAP_CONJOINT_EXT; overlap++)
+        {
+            for (uint32_t premultiply = 0u; premultiply < DE_LENGTH_OF_ARRAY(premultiplyModes); premultiply++)
+            {
+                uint32_t testNumber = 0u;
+                for (uint64_t blendOp = 0u; blendOp < DE_LENGTH_OF_ARRAY(blendOps); blendOp++)
+                {
+                    bool isAdditionalRGBBlendOp =
+                        blendOps[blendOp] >= VK_BLEND_OP_PLUS_EXT && blendOps[blendOp] < VK_BLEND_OP_MAX_ENUM;
 
-	for (deUint32 colorAttachmentCount = 0u; colorAttachmentCount < DE_LENGTH_OF_ARRAY(colorAttachmentCounts); colorAttachmentCount++)
-	{
-		for (deUint32 overlap = 0; overlap <= VK_BLEND_OVERLAP_CONJOINT_EXT; overlap++)
-		{
-			for (deUint32 premultiply = 0u; premultiply < DE_LENGTH_OF_ARRAY(premultiplyModes); premultiply++)
-			{
-				deUint32 testNumber = 0u;
-				for (deUint64 blendOp = 0u; blendOp < DE_LENGTH_OF_ARRAY(blendOps); blendOp++)
-				{
-					deBool isAdditionalRGBBlendOp = blendOps[blendOp] >= VK_BLEND_OP_PLUS_EXT && blendOps[blendOp] < VK_BLEND_OP_MAX_ENUM;
+                    // Additional RGB Blend operations are not affected by the blend overlap modes
+                    if (isAdditionalRGBBlendOp && overlap != VK_BLEND_OVERLAP_UNCORRELATED_EXT)
+                        continue;
 
-					// Additional RGB Blend operations are not affected by the blend overlap modes
-					if (isAdditionalRGBBlendOp && overlap != VK_BLEND_OVERLAP_UNCORRELATED_EXT)
-						continue;
+                    BlendOperationAdvancedParam testParams;
+                    testParams.testMode              = TEST_MODE_GENERIC;
+                    testParams.overlap               = (VkBlendOverlapEXT)overlap;
+                    testParams.coherentOperations    = false;
+                    testParams.colorAttachmentsCount = colorAttachmentCounts[colorAttachmentCount];
+                    testParams.independentBlend      = false;
+                    testParams.premultipliedSrcColor =
+                        (premultiplyModes[premultiply] & PREMULTIPLY_SRC) ? VK_TRUE : VK_FALSE;
+                    testParams.premultipliedDstColor =
+                        (premultiplyModes[premultiply] & PREMULTIPLY_DST) ? VK_TRUE : VK_FALSE;
+                    testParams.testNumber = testNumber++;
 
-					BlendOperationAdvancedParam testParams;
-					testParams.testMode					= TEST_MODE_GENERIC;
-					testParams.overlap					= (VkBlendOverlapEXT) overlap;
-					testParams.coherentOperations		= DE_FALSE;
-					testParams.colorAttachmentsCount	= colorAttachmentCounts[colorAttachmentCount];
-					testParams.independentBlend			= DE_FALSE;
-					testParams.premultipliedSrcColor	= (premultiplyModes[premultiply] & PREMULTIPLY_SRC) ? VK_TRUE : VK_FALSE;
-					testParams.premultipliedDstColor	= (premultiplyModes[premultiply] & PREMULTIPLY_DST) ? VK_TRUE : VK_FALSE;
-					testParams.testNumber				= testNumber++;
+                    for (uint32_t numColorAtt = 0; numColorAtt < colorAttachmentCounts[colorAttachmentCount];
+                         numColorAtt++)
+                        testParams.blendOps.push_back(blendOps[blendOp]);
+                    opsTests->addChild(newTestCase<BlendOperationAdvancedTest>(testCtx, testParams));
+                }
+            }
+        }
+    }
+    tests->addChild(opsTests.release());
 
-					for (deUint32 numColorAtt = 0; numColorAtt < colorAttachmentCounts[colorAttachmentCount]; numColorAtt++)
-						testParams.blendOps.push_back(blendOps[blendOp]);
-					opsTests->addChild(newTestCase<BlendOperationAdvancedTest>(testCtx, testParams));
-				}
-			}
-		}
-	}
-	tests->addChild(opsTests.release());
+    // Independent Blend Tests: test more than one color attachment.
+    de::MovePtr<tcu::TestCaseGroup> independentTests(
+        new tcu::TestCaseGroup(testCtx, "independent", "Test independent blend feature"));
+    uint32_t testNumber = 0u;
 
-	// Independent Blend Tests: test more than one color attachment.
-	de::MovePtr<tcu::TestCaseGroup> independentTests (new tcu::TestCaseGroup(testCtx, "independent", "Test independent blend feature"));
-	deUint32 testNumber = 0u;
+    for (uint32_t colorAttachmentCount = 1u; colorAttachmentCount < DE_LENGTH_OF_ARRAY(colorAttachmentCounts);
+         colorAttachmentCount++)
+    {
+        BlendOperationAdvancedParam testParams;
+        testParams.testMode              = TEST_MODE_GENERIC;
+        testParams.overlap               = VK_BLEND_OVERLAP_UNCORRELATED_EXT;
+        testParams.coherentOperations    = false;
+        testParams.colorAttachmentsCount = colorAttachmentCounts[colorAttachmentCount];
+        testParams.independentBlend      = true;
+        testParams.premultipliedSrcColor = VK_TRUE;
+        testParams.premultipliedDstColor = VK_TRUE;
+        testParams.testNumber            = testNumber++;
 
-	for (deUint32 colorAttachmentCount = 1u; colorAttachmentCount < DE_LENGTH_OF_ARRAY(colorAttachmentCounts); colorAttachmentCount++)
-	{
-		BlendOperationAdvancedParam testParams;
-		testParams.testMode					= TEST_MODE_GENERIC;
-		testParams.overlap					= VK_BLEND_OVERLAP_UNCORRELATED_EXT;
-		testParams.coherentOperations		= DE_FALSE;
-		testParams.colorAttachmentsCount	= colorAttachmentCounts[colorAttachmentCount];
-		testParams.independentBlend			= DE_TRUE;
-		testParams.premultipliedSrcColor	= VK_TRUE;
-		testParams.premultipliedDstColor	= VK_TRUE;
-		testParams.testNumber				= testNumber++;
+        for (uint32_t numColorAtt = 0; numColorAtt < colorAttachmentCounts[colorAttachmentCount]; numColorAtt++)
+        {
+            uint32_t i = de::randomScalar<uint32_t>(rnd, 0, DE_LENGTH_OF_ARRAY(blendOps) - 1);
+            testParams.blendOps.push_back(blendOps[i]);
+        }
+        independentTests->addChild(newTestCase<BlendOperationAdvancedTest>(testCtx, testParams));
+    }
 
-		for (deUint32 numColorAtt = 0; numColorAtt < colorAttachmentCounts[colorAttachmentCount]; numColorAtt++)
-		{
-			deUint32 i = de::randomScalar<deUint32>(rnd, 0, DE_LENGTH_OF_ARRAY(blendOps) - 1);
-			testParams.blendOps.push_back(blendOps[i]);
-		}
-		independentTests->addChild(newTestCase<BlendOperationAdvancedTest>(testCtx, testParams));
-	}
+    tests->addChild(independentTests.release());
 
-	tests->addChild(independentTests.release());
+    // Coherent tests, do two consecutive advanced blending operations on the same color attachment.
+    de::MovePtr<tcu::TestCaseGroup> coherentTests(new tcu::TestCaseGroup(testCtx, "coherent", "Test coherent memory"));
+    testNumber = 0u;
 
-	// Coherent tests, do two consecutive advanced blending operations on the same color attachment.
-	de::MovePtr<tcu::TestCaseGroup> coherentTests (new tcu::TestCaseGroup(testCtx, "coherent", "Test coherent memory"));
-	testNumber = 0u;
+    for (uint32_t coherent = 0u; coherent < DE_LENGTH_OF_ARRAY(coherentOps); coherent++)
+    {
+        BlendOperationAdvancedParam testParams;
+        testParams.testMode              = TEST_MODE_COHERENT;
+        testParams.overlap               = VK_BLEND_OVERLAP_UNCORRELATED_EXT;
+        testParams.coherentOperations    = coherentOps[coherent];
+        testParams.colorAttachmentsCount = 1u;
+        testParams.independentBlend      = false;
+        testParams.premultipliedSrcColor = VK_TRUE;
+        testParams.premultipliedDstColor = VK_TRUE;
+        testParams.testNumber            = testNumber++;
 
-	for (deUint32 coherent = 0u; coherent < DE_LENGTH_OF_ARRAY(coherentOps); coherent++)
-	{
-		BlendOperationAdvancedParam testParams;
-		testParams.testMode					= TEST_MODE_COHERENT;
-		testParams.overlap					= VK_BLEND_OVERLAP_UNCORRELATED_EXT;
-		testParams.coherentOperations		= coherentOps[coherent];
-		testParams.colorAttachmentsCount	= 1u;
-		testParams.independentBlend			= DE_FALSE;
-		testParams.premultipliedSrcColor	= VK_TRUE;
-		testParams.premultipliedDstColor	= VK_TRUE;
-		testParams.testNumber				= testNumber++;
+        // We do two consecutive advanced blending operations
+        uint32_t i = de::randomScalar<uint32_t>(rnd, 0, DE_LENGTH_OF_ARRAY(blendOps) - 1);
+        testParams.blendOps.push_back(blendOps[i]);
+        i = de::randomScalar<uint32_t>(rnd, 0, DE_LENGTH_OF_ARRAY(blendOps) - 1);
+        testParams.blendOps.push_back(blendOps[i]);
 
-		// We do two consecutive advanced blending operations
-		deUint32 i = de::randomScalar<deUint32>(rnd, 0, DE_LENGTH_OF_ARRAY(blendOps) - 1);
-		testParams.blendOps.push_back(blendOps[i]);
-		i = de::randomScalar<deUint32>(rnd, 0, DE_LENGTH_OF_ARRAY(blendOps) - 1);
-		testParams.blendOps.push_back(blendOps[i]);
+        coherentTests->addChild(newTestCase<BlendOperationAdvancedTest>(testCtx, testParams));
+    }
+    tests->addChild(coherentTests.release());
 
-		coherentTests->addChild(newTestCase<BlendOperationAdvancedTest>(testCtx, testParams));
-	}
-	tests->addChild(coherentTests.release());
-
-
-	return tests.release();
+    return tests.release();
 }
 
-} // pipeline
+} // namespace pipeline
 
-} // vkt
+} // namespace vkt

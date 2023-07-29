@@ -50,110 +50,106 @@ namespace Draw
 
 struct PositionColorVertex
 {
-				PositionColorVertex (tcu::Vec4 position_, tcu::Vec4 color_)
-					: position	(position_)
-					, color		(color_)
-				{}
+    PositionColorVertex(tcu::Vec4 position_, tcu::Vec4 color_) : position(position_), color(color_)
+    {
+    }
 
-	tcu::Vec4	position;
-	tcu::Vec4	color;
+    tcu::Vec4 position;
+    tcu::Vec4 color;
 };
 
 struct VertexElementData : public PositionColorVertex
 {
-				VertexElementData (tcu::Vec4 position_, tcu::Vec4 color_, deUint32 refVertexIndex_)
-					: PositionColorVertex	(position_, color_)
-					, refVertexIndex		(refVertexIndex_)
-				{
-				}
+    VertexElementData(tcu::Vec4 position_, tcu::Vec4 color_, uint32_t refVertexIndex_)
+        : PositionColorVertex(position_, color_)
+        , refVertexIndex(refVertexIndex_)
+    {
+    }
 
-	deUint32	refVertexIndex;
+    uint32_t refVertexIndex;
 };
 
 struct ReferenceImageCoordinates
 {
-	ReferenceImageCoordinates (void)
-		: left		(-0.3)
-		, right		(0.3)
-		, top		(0.3)
-		, bottom	(-0.3)
-	{
-	}
+    ReferenceImageCoordinates(void) : left(-0.3), right(0.3), top(0.3), bottom(-0.3)
+    {
+    }
 
-	double left;
-	double right;
-	double top;
-	double bottom;
+    double left;
+    double right;
+    double top;
+    double bottom;
 };
 
 struct ReferenceImageInstancedCoordinates
 {
-	ReferenceImageInstancedCoordinates (void)
-		: left		(-0.3)
-		, right		(0.6)
-		, top		(0.3)
-		, bottom	(-0.6)
-	{
-	}
+    ReferenceImageInstancedCoordinates(void) : left(-0.3), right(0.6), top(0.3), bottom(-0.6)
+    {
+    }
 
-	double left;
-	double right;
-	double top;
-	double bottom;
+    double left;
+    double right;
+    double top;
+    double bottom;
 };
 
 class DrawTestsBaseClass : public TestInstance
 {
 public:
-								DrawTestsBaseClass	(Context& context, const char* vertexShaderName, const char* fragmentShaderName, bool useDynamicRendering, vk::VkPrimitiveTopology topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+    DrawTestsBaseClass(Context &context, const char *vertexShaderName, const char *fragmentShaderName,
+                       bool useDynamicRendering,
+                       vk::VkPrimitiveTopology topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
 
 protected:
-	void						initialize			(void);
-	virtual void				initPipeline		(const vk::VkDevice device);
-	void						beginRender			(const vk::VkSubpassContents content = vk::VK_SUBPASS_CONTENTS_INLINE);
-	void						endRender			(void);
-	virtual tcu::TestStatus		iterate				(void)						{ TCU_FAIL("Implement iterate() method!");	}
+    void initialize(void);
+    virtual void initPipeline(const vk::VkDevice device);
+    void beginRender(const vk::VkSubpassContents content = vk::VK_SUBPASS_CONTENTS_INLINE);
+    void endRender(void);
+    virtual tcu::TestStatus iterate(void)
+    {
+        TCU_FAIL("Implement iterate() method!");
+    }
 
-	enum
-	{
-		WIDTH = 256,
-		HEIGHT = 256
-	};
+    enum
+    {
+        WIDTH  = 256,
+        HEIGHT = 256
+    };
 
-	vk::VkFormat									m_colorAttachmentFormat;
+    vk::VkFormat m_colorAttachmentFormat;
 
-	const bool										m_useDynamicRendering;
-	const vk::VkPrimitiveTopology					m_topology;
+    const bool m_useDynamicRendering;
+    const vk::VkPrimitiveTopology m_topology;
 
-	const vk::DeviceInterface&						m_vk;
+    const vk::DeviceInterface &m_vk;
 
-	vk::Move<vk::VkPipeline>						m_pipeline;
-	vk::Move<vk::VkPipelineLayout>					m_pipelineLayout;
+    vk::Move<vk::VkPipeline> m_pipeline;
+    vk::Move<vk::VkPipelineLayout> m_pipelineLayout;
 
-	de::SharedPtr<Image>							m_colorTargetImage;
-	vk::Move<vk::VkImageView>						m_colorTargetView;
+    de::SharedPtr<Image> m_colorTargetImage;
+    vk::Move<vk::VkImageView> m_colorTargetView;
 
-	// vertex buffer for vertex colors & position
-	de::SharedPtr<Buffer>							m_vertexBuffer;
+    // vertex buffer for vertex colors & position
+    de::SharedPtr<Buffer> m_vertexBuffer;
 
-	// vertex buffer with reference data used in VS
-	de::SharedPtr<Buffer>							m_vertexRefDataBuffer;
+    // vertex buffer with reference data used in VS
+    de::SharedPtr<Buffer> m_vertexRefDataBuffer;
 
-	PipelineCreateInfo::VertexInputState			m_vertexInputState;
+    PipelineCreateInfo::VertexInputState m_vertexInputState;
 
-	vk::Move<vk::VkCommandPool>						m_cmdPool;
-	vk::Move<vk::VkCommandBuffer>					m_cmdBuffer;
+    vk::Move<vk::VkCommandPool> m_cmdPool;
+    vk::Move<vk::VkCommandBuffer> m_cmdBuffer;
 
-	vk::Move<vk::VkFramebuffer>						m_framebuffer;
-	vk::Move<vk::VkRenderPass>						m_renderPass;
+    vk::Move<vk::VkFramebuffer> m_framebuffer;
+    vk::Move<vk::VkRenderPass> m_renderPass;
 
-	const std::string								m_vertexShaderName;
-	const std::string								m_fragmentShaderName;
+    const std::string m_vertexShaderName;
+    const std::string m_fragmentShaderName;
 
-	std::vector<VertexElementData>					m_data;
+    std::vector<VertexElementData> m_data;
 };
 
-}	// Draw
-}	// vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWBASECLASS_HPP
