@@ -26,65 +26,65 @@
 namespace rr
 {
 
-VertexPacket::VertexPacket (void)
+VertexPacket::VertexPacket(void)
 {
 }
 
-VertexPacket::~VertexPacket (void)
+VertexPacket::~VertexPacket(void)
 {
 }
 
-VertexPacketAllocator::VertexPacketAllocator (const size_t numberOfVertexOutputs)
-	: m_numberOfVertexOutputs(numberOfVertexOutputs)
+VertexPacketAllocator::VertexPacketAllocator(const size_t numberOfVertexOutputs)
+    : m_numberOfVertexOutputs(numberOfVertexOutputs)
 {
 }
 
-VertexPacketAllocator::~VertexPacketAllocator (void)
+VertexPacketAllocator::~VertexPacketAllocator(void)
 {
-	for (size_t i = 0; i < m_allocations.size(); ++i)
-		delete [] m_allocations[i];
-	m_allocations.clear();
+    for (size_t i = 0; i < m_allocations.size(); ++i)
+        delete[] m_allocations[i];
+    m_allocations.clear();
 }
 
-std::vector<VertexPacket*> VertexPacketAllocator::allocArray (size_t count)
+std::vector<VertexPacket *> VertexPacketAllocator::allocArray(size_t count)
 {
-	if (!count)
-		return std::vector<VertexPacket*>();
+    if (!count)
+        return std::vector<VertexPacket *>();
 
-	const size_t extraVaryings	= (m_numberOfVertexOutputs == 0) ? (0) : (m_numberOfVertexOutputs-1);
-	const size_t packetSize		= sizeof(VertexPacket) + extraVaryings * sizeof(GenericVec4);
+    const size_t extraVaryings = (m_numberOfVertexOutputs == 0) ? (0) : (m_numberOfVertexOutputs - 1);
+    const size_t packetSize    = sizeof(VertexPacket) + extraVaryings * sizeof(GenericVec4);
 
-	std::vector<VertexPacket*>	retVal;
-	deInt8*						ptr = new deInt8[packetSize * count]; // throws bad_alloc => ok
+    std::vector<VertexPacket *> retVal;
+    int8_t *ptr = new int8_t[packetSize * count]; // throws bad_alloc => ok
 
-	// *.push_back might throw bad_alloc
-	try
-	{
-		// run ctors
-		for (size_t i = 0; i < count; ++i)
-			retVal.push_back(new (ptr + i*packetSize) VertexPacket()); // throws bad_alloc
+    // *.push_back might throw bad_alloc
+    try
+    {
+        // run ctors
+        for (size_t i = 0; i < count; ++i)
+            retVal.push_back(new (ptr + i * packetSize) VertexPacket()); // throws bad_alloc
 
-		m_allocations.push_back(ptr); // throws bad_alloc
-	}
-	catch (std::bad_alloc& )
-	{
-		delete [] ptr;
-		throw;
-	}
+        m_allocations.push_back(ptr); // throws bad_alloc
+    }
+    catch (std::bad_alloc &)
+    {
+        delete[] ptr;
+        throw;
+    }
 
-	return retVal;
+    return retVal;
 }
 
-VertexPacket* VertexPacketAllocator::alloc (void)
+VertexPacket *VertexPacketAllocator::alloc(void)
 {
-	const size_t poolSize = 8;
+    const size_t poolSize = 8;
 
-	if (m_singleAllocPool.empty())
-		m_singleAllocPool = allocArray(poolSize);
+    if (m_singleAllocPool.empty())
+        m_singleAllocPool = allocArray(poolSize);
 
-	VertexPacket* packet = *--m_singleAllocPool.end();
-	m_singleAllocPool.pop_back();
-	return packet;
+    VertexPacket *packet = *--m_singleAllocPool.end();
+    m_singleAllocPool.pop_back();
+    return packet;
 }
 
-} // rr
+} // namespace rr

@@ -37,38 +37,39 @@ namespace Draw
 namespace
 {
 
-void checkHelperInvocationTestSupport(Context& context, std::string testName)
+void checkHelperInvocationTestSupport(Context &context, std::string testName)
 {
-	DE_UNREF(testName);
+    DE_UNREF(testName);
 
-	if ((context.getSubgroupProperties().supportedOperations & VK_SUBGROUP_FEATURE_QUAD_BIT) == 0u)
-	{
-		TCU_THROW(NotSupportedError, "Device does not support subgroup quad operations");
-	}
+    if ((context.getSubgroupProperties().supportedOperations & VK_SUBGROUP_FEATURE_QUAD_BIT) == 0u)
+    {
+        TCU_THROW(NotSupportedError, "Device does not support subgroup quad operations");
+    }
 
-	if (!context.isDeviceFunctionalitySupported("VK_EXT_shader_demote_to_helper_invocation"))
-	{
-		TCU_THROW(NotSupportedError, "VK_EXT_shader_demote_to_helper_invocation not supported.");
-	}
+    if (!context.isDeviceFunctionalitySupported("VK_EXT_shader_demote_to_helper_invocation"))
+    {
+        TCU_THROW(NotSupportedError, "VK_EXT_shader_demote_to_helper_invocation not supported.");
+    }
 }
 
-void createTests(tcu::TestCaseGroup* testGroup)
+void createTests(tcu::TestCaseGroup *testGroup)
 {
-	tcu::TestContext&			testCtx		= testGroup->getTestContext();
-	static const char			dataDir[]	= "draw/shader_invocation";
-	cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, "helper_invocation", "", dataDir, "helper_invocation.amber");
+    tcu::TestContext &testCtx   = testGroup->getTestContext();
+    static const char dataDir[] = "draw/shader_invocation";
+    cts_amber::AmberTestCase *testCase =
+        cts_amber::createAmberTestCase(testCtx, "helper_invocation", "", dataDir, "helper_invocation.amber");
 
-	testCase->setCheckSupportCallback(checkHelperInvocationTestSupport);
+    testCase->setCheckSupportCallback(checkHelperInvocationTestSupport);
 
-	testGroup->addChild(testCase);
+    testGroup->addChild(testCase);
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createShaderInvocationTests(tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createShaderInvocationTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "shader_invocation", "Shader Invocation tests", createTests);
+    return createTestGroup(testCtx, "shader_invocation", "Shader Invocation tests", createTests);
 }
 
-}	// DrawTests
-}	// vkt
+} // namespace Draw
+} // namespace vkt

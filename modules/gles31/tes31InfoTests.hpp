@@ -34,13 +34,13 @@ namespace gles31
 class InfoTests : public TestCaseGroup
 {
 public:
-				InfoTests		(Context& context);
-				~InfoTests		(void);
+    InfoTests(Context &context);
+    ~InfoTests(void);
 
-	void		init			(void);
+    void init(void);
 };
 
-} // gles31
-} // deqp
+} // namespace gles31
+} // namespace deqp
 
 #endif // _TES31INFOTESTS_HPP

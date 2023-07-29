@@ -36,19 +36,19 @@ namespace rsg
 class ShaderGenerator
 {
 public:
-								ShaderGenerator			(GeneratorState& state);
-								~ShaderGenerator		(void);
+    ShaderGenerator(GeneratorState &state);
+    ~ShaderGenerator(void);
 
-	void						generate				(const ShaderParameters& shaderParams, Shader& shader, const std::vector<ShaderInput*>& outputs);
+    void generate(const ShaderParameters &shaderParams, Shader &shader, const std::vector<ShaderInput *> &outputs);
 
 private:
-								ShaderGenerator			(const ShaderGenerator& other);
-	ShaderGenerator&			operator=				(const ShaderGenerator& other);
+    ShaderGenerator(const ShaderGenerator &other);
+    ShaderGenerator &operator=(const ShaderGenerator &other);
 
-	GeneratorState&				m_state;
-	VariableManager				m_varManager;
+    GeneratorState &m_state;
+    VariableManager m_varManager;
 };
 
-} // rsg
+} // namespace rsg
 
 #endif // _RSGSHADERGENERATOR_HPP

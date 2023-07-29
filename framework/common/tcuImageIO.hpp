@@ -36,14 +36,14 @@ class CompressedTexture;
 namespace ImageIO
 {
 
-void				loadImage				(TextureLevel& dst, const tcu::Archive& archive, const char* fileName);
+void loadImage(TextureLevel &dst, const tcu::Archive &archive, const char *fileName);
 
-void				loadPNG					(TextureLevel& dst, const tcu::Archive& archive, const char* fileName);
-void				savePNG					(const ConstPixelBufferAccess& src, const char* fileName);
+void loadPNG(TextureLevel &dst, const tcu::Archive &archive, const char *fileName);
+void savePNG(const ConstPixelBufferAccess &src, const char *fileName);
 
-void				loadPKM					(CompressedTexture& dst, const tcu::Archive& archive, const char* fileName);
+void loadPKM(CompressedTexture &dst, const tcu::Archive &archive, const char *fileName);
 
-} // ImageIO
-} // tcu
+} // namespace ImageIO
+} // namespace tcu
 
 #endif // _TCUIMAGEIO_HPP

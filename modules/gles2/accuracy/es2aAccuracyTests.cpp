@@ -36,33 +36,31 @@ namespace Accuracy
 class TextureTests : public TestCaseGroup
 {
 public:
-	TextureTests (Context& context)
-		: TestCaseGroup(context, "texture", "Texturing Accuracy Tests")
-	{
-	}
+    TextureTests(Context &context) : TestCaseGroup(context, "texture", "Texturing Accuracy Tests")
+    {
+    }
 
-	void init (void)
-	{
-		addChild(new TextureFilteringTests	(m_context));
-		addChild(new TextureMipmapTests		(m_context));
-	}
+    void init(void)
+    {
+        addChild(new TextureFilteringTests(m_context));
+        addChild(new TextureMipmapTests(m_context));
+    }
 };
 
-AccuracyTests::AccuracyTests (Context& context)
-	: TestCaseGroup(context, "accuracy", "Accuracy Tests")
+AccuracyTests::AccuracyTests(Context &context) : TestCaseGroup(context, "accuracy", "Accuracy Tests")
 {
 }
 
-AccuracyTests::~AccuracyTests (void)
+AccuracyTests::~AccuracyTests(void)
 {
 }
 
-void AccuracyTests::init (void)
+void AccuracyTests::init(void)
 {
-	addChild(new VaryingInterpolationTests	(m_context));
-	addChild(new TextureTests				(m_context));
+    addChild(new VaryingInterpolationTests(m_context));
+    addChild(new TextureTests(m_context));
 }
 
-} // Accuracy
-} // gles2
-} // deqp
+} // namespace Accuracy
+} // namespace gles2
+} // namespace deqp

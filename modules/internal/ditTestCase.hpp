@@ -32,25 +32,25 @@ namespace dit
 class SelfCheckCase : public tcu::TestCase
 {
 public:
-	typedef void (*Function) (void);
+    typedef void (*Function)(void);
 
-	SelfCheckCase (tcu::TestContext& testCtx, const char* name, const char* desc, Function func)
-		: tcu::TestCase	(testCtx, name, desc)
-		, m_function	(func)
-	{
-	}
+    SelfCheckCase(tcu::TestContext &testCtx, const char *name, const char *desc, Function func)
+        : tcu::TestCase(testCtx, name, desc)
+        , m_function(func)
+    {
+    }
 
-	IterateResult iterate (void)
-	{
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-		m_function();
-		return STOP;
-	}
+    IterateResult iterate(void)
+    {
+        m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+        m_function();
+        return STOP;
+    }
 
 private:
-	Function m_function;
+    Function m_function;
 };
 
-} // dit
+} // namespace dit
 
 #endif // _DITTESTCASE_HPP

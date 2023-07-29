@@ -36,35 +36,27 @@ namespace Functional
 {
 namespace bpt = gls::BuiltinPrecisionTests;
 
-TestCaseGroup* createBuiltinPrecisionTests (Context& context)
+TestCaseGroup *createBuiltinPrecisionTests(Context &context)
 {
-	TestCaseGroup*							group		= new TestCaseGroup(
-		context, "precision", "Builtin precision tests");
-	std::vector<glu::ShaderType>			shaderTypes;
-	de::MovePtr<const bpt::CaseFactories>	es3Cases		= bpt::createES3BuiltinCases();
-	de::MovePtr<const bpt::CaseFactories>	es31Cases		= bpt::createES31BuiltinCases();
+    TestCaseGroup *group = new TestCaseGroup(context, "precision", "Builtin precision tests");
+    std::vector<glu::ShaderType> shaderTypes;
+    de::MovePtr<const bpt::CaseFactories> es3Cases  = bpt::createES3BuiltinCases();
+    de::MovePtr<const bpt::CaseFactories> es31Cases = bpt::createES31BuiltinCases();
 
-	shaderTypes.push_back(glu::SHADERTYPE_COMPUTE);
+    shaderTypes.push_back(glu::SHADERTYPE_COMPUTE);
 
-	bpt::addBuiltinPrecisionTests(context.getTestContext(),
-								  context.getRenderContext(),
-								  *es3Cases,
-								  shaderTypes,
-								  *group);
+    bpt::addBuiltinPrecisionTests(context.getTestContext(), context.getRenderContext(), *es3Cases, shaderTypes, *group);
 
-	shaderTypes.clear();
-	shaderTypes.push_back(glu::SHADERTYPE_VERTEX);
-	shaderTypes.push_back(glu::SHADERTYPE_FRAGMENT);
-	shaderTypes.push_back(glu::SHADERTYPE_COMPUTE);
+    shaderTypes.clear();
+    shaderTypes.push_back(glu::SHADERTYPE_VERTEX);
+    shaderTypes.push_back(glu::SHADERTYPE_FRAGMENT);
+    shaderTypes.push_back(glu::SHADERTYPE_COMPUTE);
 
-	bpt::addBuiltinPrecisionTests(context.getTestContext(),
-								  context.getRenderContext(),
-								  *es31Cases,
-								  shaderTypes,
-								  *group);
-	return group;
+    bpt::addBuiltinPrecisionTests(context.getTestContext(), context.getRenderContext(), *es31Cases, shaderTypes,
+                                  *group);
+    return group;
 }
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp

@@ -26,23 +26,24 @@
 namespace tcu
 {
 
-RenderTarget::RenderTarget (void)
-	: m_width		(0)
-	, m_height		(0)
-	, m_pixelFormat	(PixelFormat(0, 0, 0, 0))
-	, m_depthBits	(0)
-	, m_stencilBits	(0)
-	, m_numSamples	(0)
+RenderTarget::RenderTarget(void)
+    : m_width(0)
+    , m_height(0)
+    , m_pixelFormat(PixelFormat(0, 0, 0, 0))
+    , m_depthBits(0)
+    , m_stencilBits(0)
+    , m_numSamples(0)
 {
 }
 
-RenderTarget::RenderTarget (int width, int height, const PixelFormat& format, int depthBits, int stencilBits, int numSamples)
-	: m_width		(width)
-	, m_height		(height)
-	, m_pixelFormat	(format)
-	, m_depthBits	(depthBits)
-	, m_stencilBits	(stencilBits)
-	, m_numSamples	(numSamples)
+RenderTarget::RenderTarget(int width, int height, const PixelFormat &format, int depthBits, int stencilBits,
+                           int numSamples)
+    : m_width(width)
+    , m_height(height)
+    , m_pixelFormat(format)
+    , m_depthBits(depthBits)
+    , m_stencilBits(stencilBits)
+    , m_numSamples(numSamples)
 {
 }
 

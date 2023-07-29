@@ -34,19 +34,19 @@ namespace cts_amber
 namespace
 {
 
-void createAmberTests (tcu::TestCaseGroup* group)
+void createAmberTests(tcu::TestCaseGroup *group)
 {
-	tcu::TestContext& testCtx = group->getTestContext();
+    tcu::TestContext &testCtx = group->getTestContext();
 
-	createAmberTestsFromIndexFile(testCtx, group, "index.txt", "graphicsfuzz");
+    createAmberTestsFromIndexFile(testCtx, group, "index.txt", "graphicsfuzz");
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createGraphicsFuzzTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createGraphicsFuzzTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "graphicsfuzz", "Amber GraphicsFuzz Tests", createAmberTests);
+    return createTestGroup(testCtx, "graphicsfuzz", "Amber GraphicsFuzz Tests", createAmberTests);
 }
 
-} // cts_amber
-} // vkt
+} // namespace cts_amber
+} // namespace vkt

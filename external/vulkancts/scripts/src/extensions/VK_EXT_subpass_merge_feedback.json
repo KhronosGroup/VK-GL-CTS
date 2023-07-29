@@ -1,9 +1,17 @@
 {
-	"mandatory_features":
-	{
-		"VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT":
-		[
-			{ "features": ["subpassMergeFeedback"],	"requirements": ["VK_KHR_create_renderpass2", "VK_EXT_subpass_merge_feedback"]	}
-		]
-	}
+    "mandatory_features":
+        {
+            "VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT":
+                [
+                    {
+                        "features": [
+                            "subpassMergeFeedback"
+                        ],
+                        "requirements": [
+                            "VK_KHR_create_renderpass2",
+                            "VK_EXT_subpass_merge_feedback"
+                        ]
+                    }
+                ]
+        }
 }

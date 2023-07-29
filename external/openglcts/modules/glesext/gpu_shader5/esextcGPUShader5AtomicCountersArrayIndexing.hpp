@@ -65,29 +65,29 @@ namespace glcts
 class GPUShader5AtomicCountersArrayIndexing : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GPUShader5AtomicCountersArrayIndexing(Context& context, const ExtParameters& extParams, const char* name,
-										  const char* description);
+    /* Public methods */
+    GPUShader5AtomicCountersArrayIndexing(Context &context, const ExtParameters &extParams, const char *name,
+                                          const char *description);
 
-	virtual ~GPUShader5AtomicCountersArrayIndexing()
-	{
-	}
+    virtual ~GPUShader5AtomicCountersArrayIndexing()
+    {
+    }
 
-	virtual IterateResult iterate(void);
-	virtual void		  deinit(void);
+    virtual IterateResult iterate(void);
+    virtual void deinit(void);
 
 private:
-	/* Private methods */
-	void initTest(void);
+    /* Private methods */
+    void initTest(void);
 
-	/* Private variables */
-	static const char*		 m_compute_shader_code;
-	static const glw::GLuint m_atomic_counters_array_size;
+    /* Private variables */
+    static const char *m_compute_shader_code;
+    static const glw::GLuint m_atomic_counters_array_size;
 
-	glw::GLuint m_buffer_id;
-	glw::GLuint m_compute_shader_id;
-	glw::GLuint m_program_id;
+    glw::GLuint m_buffer_id;
+    glw::GLuint m_compute_shader_id;
+    glw::GLuint m_program_id;
 };
-}
+} // namespace glcts
 
 #endif // _ESEXTCGPUSHADER5ATOMICCOUNTERSARRAYINDEXING_HPP

@@ -38,81 +38,81 @@ namespace glcts
 
 #if defined(GLCTS_SUPPORT_WGL)
 
-static void getDefaultWglConfigList(tcu::win32::Platform& wglPlatform, glu::ApiType type, ConfigList& configList)
+static void getDefaultWglConfigList(tcu::win32::Platform &wglPlatform, glu::ApiType type, ConfigList &configList)
 {
-	const HINSTANCE			 instance = GetModuleHandle(DE_NULL);
-	const tcu::wgl::Core&	wgl(instance);
-	const tcu::win32::Window tmpWindow(instance, 1, 1);
-	const std::vector<int>   pixelFormats = wgl.getPixelFormats(tmpWindow.getDeviceContext());
+    const HINSTANCE instance = GetModuleHandle(DE_NULL);
+    const tcu::wgl::Core &wgl(instance);
+    const tcu::win32::Window tmpWindow(instance, 1, 1);
+    const std::vector<int> pixelFormats = wgl.getPixelFormats(tmpWindow.getDeviceContext());
 
-	DE_UNREF(type); // \todo [2013-09-16 pyry] Check for support.
+    DE_UNREF(type); // \todo [2013-09-16 pyry] Check for support.
 
-	for (std::vector<int>::const_iterator fmtIter = pixelFormats.begin(); fmtIter != pixelFormats.end(); ++fmtIter)
-	{
-		const int						pixelFormat = *fmtIter;
-		const tcu::wgl::PixelFormatInfo fmtInfo		= wgl.getPixelFormatInfo(tmpWindow.getDeviceContext(), pixelFormat);
+    for (std::vector<int>::const_iterator fmtIter = pixelFormats.begin(); fmtIter != pixelFormats.end(); ++fmtIter)
+    {
+        const int pixelFormat                   = *fmtIter;
+        const tcu::wgl::PixelFormatInfo fmtInfo = wgl.getPixelFormatInfo(tmpWindow.getDeviceContext(), pixelFormat);
 
-		if (!tcu::wgl::isSupportedByTests(fmtInfo))
-			continue;
+        if (!tcu::wgl::isSupportedByTests(fmtInfo))
+            continue;
 
-		bool isAOSPOk = (fmtInfo.surfaceTypes & tcu::wgl::PixelFormatInfo::SURFACE_WINDOW) && fmtInfo.supportOpenGL &&
-						fmtInfo.pixelType == tcu::wgl::PixelFormatInfo::PIXELTYPE_RGBA;
-		bool isOk = isAOSPOk && (fmtInfo.sampleBuffers == 0);
+        bool isAOSPOk = (fmtInfo.surfaceTypes & tcu::wgl::PixelFormatInfo::SURFACE_WINDOW) && fmtInfo.supportOpenGL &&
+                        fmtInfo.pixelType == tcu::wgl::PixelFormatInfo::PIXELTYPE_RGBA;
+        bool isOk = isAOSPOk && (fmtInfo.sampleBuffers == 0);
 
-		if (isOk && (type.getProfile() == glu::PROFILE_ES) &&
-			(fmtInfo.redBits > 8 || fmtInfo.greenBits > 8 || fmtInfo.blueBits > 8 || fmtInfo.alphaBits > 8))
-		{
-			// The OpenGL ES tests use of glReadPixels is not compatible with default framebufer pixel
-			// formats with more than 8-bits per pixel component.
-			isOk = false;
-		}
+        if (isOk && (type.getProfile() == glu::PROFILE_ES) &&
+            (fmtInfo.redBits > 8 || fmtInfo.greenBits > 8 || fmtInfo.blueBits > 8 || fmtInfo.alphaBits > 8))
+        {
+            // The OpenGL ES tests use of glReadPixels is not compatible with default framebufer pixel
+            // formats with more than 8-bits per pixel component.
+            isOk = false;
+        }
 
-		if (isOk && (type.getProfile() == glu::PROFILE_ES) && fmtInfo.sRGB)
-		{
-			// The OpenGL ES tests don't interact correctly with a default framebuffer
-			// in the sRGB color space.
-			isOk = false;
-		}
+        if (isOk && (type.getProfile() == glu::PROFILE_ES) && fmtInfo.sRGB)
+        {
+            // The OpenGL ES tests don't interact correctly with a default framebuffer
+            // in the sRGB color space.
+            isOk = false;
+        }
 
-		if (isAOSPOk)
-		{
-			configList.aospConfigs.push_back(AOSPConfig(
-				CONFIGTYPE_WGL, pixelFormat, SURFACETYPE_WINDOW, fmtInfo.redBits, fmtInfo.greenBits, fmtInfo.blueBits,
-				fmtInfo.alphaBits, fmtInfo.depthBits, fmtInfo.stencilBits, fmtInfo.samples));
-		}
+        if (isAOSPOk)
+        {
+            configList.aospConfigs.push_back(AOSPConfig(
+                CONFIGTYPE_WGL, pixelFormat, SURFACETYPE_WINDOW, fmtInfo.redBits, fmtInfo.greenBits, fmtInfo.blueBits,
+                fmtInfo.alphaBits, fmtInfo.depthBits, fmtInfo.stencilBits, fmtInfo.samples));
+        }
 
-		if (isOk)
-		{
-			configList.configs.push_back(Config(CONFIGTYPE_WGL, pixelFormat, SURFACETYPE_WINDOW));
-		}
-		else
-		{
-			configList.excludedConfigs.push_back(
-				ExcludedConfig(CONFIGTYPE_WGL, pixelFormat, EXCLUDEREASON_NOT_COMPATIBLE));
-		}
-	}
+        if (isOk)
+        {
+            configList.configs.push_back(Config(CONFIGTYPE_WGL, pixelFormat, SURFACETYPE_WINDOW));
+        }
+        else
+        {
+            configList.excludedConfigs.push_back(
+                ExcludedConfig(CONFIGTYPE_WGL, pixelFormat, EXCLUDEREASON_NOT_COMPATIBLE));
+        }
+    }
 }
 
-void getConfigListWGL(tcu::Platform& platform, glu::ApiType type, ConfigList& configList)
+void getConfigListWGL(tcu::Platform &platform, glu::ApiType type, ConfigList &configList)
 {
-	try
-	{
-		tcu::win32::Platform& wglPlatform = dynamic_cast<tcu::win32::Platform&>(platform);
-		getDefaultWglConfigList(wglPlatform, type, configList);
-	}
-	catch (const std::bad_cast&)
-	{
-		throw tcu::Exception("Platform is not tcu::WGLPlatform");
-	}
+    try
+    {
+        tcu::win32::Platform &wglPlatform = dynamic_cast<tcu::win32::Platform &>(platform);
+        getDefaultWglConfigList(wglPlatform, type, configList);
+    }
+    catch (const std::bad_cast &)
+    {
+        throw tcu::Exception("Platform is not tcu::WGLPlatform");
+    }
 }
 
 #else
 
-void getConfigListWGL(tcu::Platform&, glu::ApiType, ConfigList&)
+void getConfigListWGL(tcu::Platform &, glu::ApiType, ConfigList &)
 {
-	throw tcu::Exception("WGL is not supported on this OS");
+    throw tcu::Exception("WGL is not supported on this OS");
 }
 
 #endif
 
-} // glcts
+} // namespace glcts

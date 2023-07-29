@@ -56,428 +56,459 @@ namespace
 
 enum Constants
 {
-	RENDER_SIZE = 32,
+    RENDER_SIZE = 32,
 };
 
 enum FlagBits
 {
-	FLAG_VERTEX_SET						= 1u << 0,		// !< set gl_PointSize in vertex shader
-	FLAG_TESSELLATION_EVALUATION_SET	= 1u << 1,		// !< set gl_PointSize in tessellation evaluation shader
-	FLAG_TESSELLATION_ADD				= 1u << 2,		// !< read and add to gl_PointSize in tessellation shader pair
-	FLAG_GEOMETRY_SET					= 1u << 3,		// !< set gl_PointSize in geometry shader
-	FLAG_GEOMETRY_ADD					= 1u << 4,		// !< read and add to gl_PointSize in geometry shader
+    FLAG_VERTEX_SET                  = 1u << 0, // !< set gl_PointSize in vertex shader
+    FLAG_TESSELLATION_EVALUATION_SET = 1u << 1, // !< set gl_PointSize in tessellation evaluation shader
+    FLAG_TESSELLATION_ADD            = 1u << 2, // !< read and add to gl_PointSize in tessellation shader pair
+    FLAG_GEOMETRY_SET                = 1u << 3, // !< set gl_PointSize in geometry shader
+    FLAG_GEOMETRY_ADD                = 1u << 4, // !< read and add to gl_PointSize in geometry shader
 };
-typedef deUint32 Flags;
+typedef uint32_t Flags;
 
-void checkPointSizeRequirements (const InstanceInterface& vki, const VkPhysicalDevice physDevice, const int maxPointSize)
+void checkPointSizeRequirements(const InstanceInterface &vki, const VkPhysicalDevice physDevice, const int maxPointSize)
 {
-	const VkPhysicalDeviceProperties properties = getPhysicalDeviceProperties(vki, physDevice);
-	if (maxPointSize > static_cast<int>(properties.limits.pointSizeRange[1]))
-		throw tcu::NotSupportedError("Test requires point size " + de::toString(maxPointSize));
-	// Point size granularity must be 1.0 at most, so no need to check it for this test.
+    const VkPhysicalDeviceProperties properties = getPhysicalDeviceProperties(vki, physDevice);
+    if (maxPointSize > static_cast<int>(properties.limits.pointSizeRange[1]))
+        throw tcu::NotSupportedError("Test requires point size " + de::toString(maxPointSize));
+    // Point size granularity must be 1.0 at most, so no need to check it for this test.
 }
 
-int getExpectedPointSize (const Flags flags)
+int getExpectedPointSize(const Flags flags)
 {
-	int addition = 0;
+    int addition = 0;
 
-	// geometry
-	if (flags & FLAG_GEOMETRY_SET)
-		return 6;
-	else if (flags & FLAG_GEOMETRY_ADD)
-		addition += 2;
+    // geometry
+    if (flags & FLAG_GEOMETRY_SET)
+        return 6;
+    else if (flags & FLAG_GEOMETRY_ADD)
+        addition += 2;
 
-	// tessellation
-	if (flags & FLAG_TESSELLATION_EVALUATION_SET)
-		return 4 + addition;
-	else if (flags & FLAG_TESSELLATION_ADD)
-		addition += 2;
+    // tessellation
+    if (flags & FLAG_TESSELLATION_EVALUATION_SET)
+        return 4 + addition;
+    else if (flags & FLAG_TESSELLATION_ADD)
+        addition += 2;
 
-	// vertex
-	if (flags & FLAG_VERTEX_SET)
-		return 2 + addition;
+    // vertex
+    if (flags & FLAG_VERTEX_SET)
+        return 2 + addition;
 
-	// undefined
-	DE_ASSERT(false);
-	return -1;
+    // undefined
+    DE_ASSERT(false);
+    return -1;
 }
 
-inline bool isTessellationStage (const Flags flags)
+inline bool isTessellationStage(const Flags flags)
 {
-	return (flags & (FLAG_TESSELLATION_EVALUATION_SET | FLAG_TESSELLATION_ADD)) != 0;
+    return (flags & (FLAG_TESSELLATION_EVALUATION_SET | FLAG_TESSELLATION_ADD)) != 0;
 }
 
-inline bool isGeometryStage (const Flags flags)
+inline bool isGeometryStage(const Flags flags)
 {
-	return (flags & (FLAG_GEOMETRY_SET | FLAG_GEOMETRY_ADD)) != 0;
+    return (flags & (FLAG_GEOMETRY_SET | FLAG_GEOMETRY_ADD)) != 0;
 }
 
-bool verifyImage (tcu::TestLog& log, const tcu::ConstPixelBufferAccess image, const int expectedSize)
+bool verifyImage(tcu::TestLog &log, const tcu::ConstPixelBufferAccess image, const int expectedSize)
 {
-	log << tcu::TestLog::Message << "Verifying rendered point size. Expecting " << expectedSize << " pixels." << tcu::TestLog::EndMessage;
+    log << tcu::TestLog::Message << "Verifying rendered point size. Expecting " << expectedSize << " pixels."
+        << tcu::TestLog::EndMessage;
 
-	bool			resultAreaFound	= false;
-	tcu::IVec4		resultArea;
-	const tcu::Vec4	black(0.0, 0.0, 0.0, 1.0);
+    bool resultAreaFound = false;
+    tcu::IVec4 resultArea;
+    const tcu::Vec4 black(0.0, 0.0, 0.0, 1.0);
 
-	// Find rasterization output area
+    // Find rasterization output area
 
-	for (int y = 0; y < image.getHeight(); ++y)
-	for (int x = 0; x < image.getWidth();  ++x)
-		if (image.getPixel(x, y) != black)
-		{
-			if (!resultAreaFound)
-			{
-				// first fragment
-				resultArea = tcu::IVec4(x, y, x + 1, y + 1);
-				resultAreaFound = true;
-			}
-			else
-			{
-				// union area
-				resultArea.x() = de::min(resultArea.x(), x);
-				resultArea.y() = de::min(resultArea.y(), y);
-				resultArea.z() = de::max(resultArea.z(), x+1);
-				resultArea.w() = de::max(resultArea.w(), y+1);
-			}
-		}
+    for (int y = 0; y < image.getHeight(); ++y)
+        for (int x = 0; x < image.getWidth(); ++x)
+            if (image.getPixel(x, y) != black)
+            {
+                if (!resultAreaFound)
+                {
+                    // first fragment
+                    resultArea      = tcu::IVec4(x, y, x + 1, y + 1);
+                    resultAreaFound = true;
+                }
+                else
+                {
+                    // union area
+                    resultArea.x() = de::min(resultArea.x(), x);
+                    resultArea.y() = de::min(resultArea.y(), y);
+                    resultArea.z() = de::max(resultArea.z(), x + 1);
+                    resultArea.w() = de::max(resultArea.w(), y + 1);
+                }
+            }
 
-	if (!resultAreaFound)
-	{
-		log << tcu::TestLog::Message << "Verification failed, could not find any point fragments." << tcu::TestLog::EndMessage;
-		return false;
-	}
+    if (!resultAreaFound)
+    {
+        log << tcu::TestLog::Message << "Verification failed, could not find any point fragments."
+            << tcu::TestLog::EndMessage;
+        return false;
+    }
 
-	const tcu::IVec2 pointSize = resultArea.swizzle(2,3) - resultArea.swizzle(0, 1);
+    const tcu::IVec2 pointSize = resultArea.swizzle(2, 3) - resultArea.swizzle(0, 1);
 
-	if (pointSize.x() != pointSize.y())
-	{
-		log << tcu::TestLog::Message << "ERROR! Rasterized point is not a square. Point size was " << pointSize << tcu::TestLog::EndMessage;
-		return false;
-	}
+    if (pointSize.x() != pointSize.y())
+    {
+        log << tcu::TestLog::Message << "ERROR! Rasterized point is not a square. Point size was " << pointSize
+            << tcu::TestLog::EndMessage;
+        return false;
+    }
 
-	if (pointSize.x() != expectedSize)
-	{
-		log << tcu::TestLog::Message << "ERROR! Point size invalid, expected " << expectedSize << ", got " << pointSize.x() << tcu::TestLog::EndMessage;
-		return false;
-	}
+    if (pointSize.x() != expectedSize)
+    {
+        log << tcu::TestLog::Message << "ERROR! Point size invalid, expected " << expectedSize << ", got "
+            << pointSize.x() << tcu::TestLog::EndMessage;
+        return false;
+    }
 
-	return true;
+    return true;
 }
 
-void initPrograms (vk::SourceCollections& programCollection, const Flags flags)
+void initPrograms(vk::SourceCollections &programCollection, const Flags flags)
 {
-	// Vertex shader
-	{
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "    gl_Position = vec4(0.0, 0.0, 0.0, 1.0);\n";
+    // Vertex shader
+    {
+        std::ostringstream src;
+        src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+            << "\n"
+            << "void main (void)\n"
+            << "{\n"
+            << "    gl_Position = vec4(0.0, 0.0, 0.0, 1.0);\n";
 
-		if (flags & FLAG_VERTEX_SET)
-			src << "    gl_PointSize = 2.0;\n";
+        if (flags & FLAG_VERTEX_SET)
+            src << "    gl_PointSize = 2.0;\n";
 
-		src << "}\n";
+        src << "}\n";
 
-		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
-	}
+        programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+    }
 
-	// Fragment shader
-	{
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-			<< "layout(location = 0) out mediump vec4 fragColor;\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "    fragColor = vec4(1.0);\n"
-			<< "}\n";
+    // Fragment shader
+    {
+        std::ostringstream src;
+        src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+            << "layout(location = 0) out mediump vec4 fragColor;\n"
+            << "\n"
+            << "void main (void)\n"
+            << "{\n"
+            << "    fragColor = vec4(1.0);\n"
+            << "}\n";
 
-		programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
-	}
+        programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
+    }
 
-	if (isTessellationStage(flags))
-	{
-		// Tessellation control shader
-		{
-			std::ostringstream src;
-			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-				<< "#extension GL_EXT_tessellation_shader : require\n"
-				<< "#extension GL_EXT_tessellation_point_size : require\n"
-				<< "layout(vertices = 1) out;\n"
-				<< "\n"
-				<< "void main (void)\n"
-				<< "{\n"
-				<< "    gl_TessLevelOuter[0] = 3.0;\n"
-				<< "    gl_TessLevelOuter[1] = 3.0;\n"
-				<< "    gl_TessLevelOuter[2] = 3.0;\n"
-				<< "    gl_TessLevelInner[0] = 3.0;\n"
-				<< "\n"
-				<< "    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n";
+    if (isTessellationStage(flags))
+    {
+        // Tessellation control shader
+        {
+            std::ostringstream src;
+            src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+                << "#extension GL_EXT_tessellation_shader : require\n"
+                << "#extension GL_EXT_tessellation_point_size : require\n"
+                << "layout(vertices = 1) out;\n"
+                << "\n"
+                << "void main (void)\n"
+                << "{\n"
+                << "    gl_TessLevelOuter[0] = 3.0;\n"
+                << "    gl_TessLevelOuter[1] = 3.0;\n"
+                << "    gl_TessLevelOuter[2] = 3.0;\n"
+                << "    gl_TessLevelInner[0] = 3.0;\n"
+                << "\n"
+                << "    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n";
 
-			if (flags & FLAG_TESSELLATION_ADD)
-				src << "    // pass as is to eval\n"
-					<< "    gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n";
+            if (flags & FLAG_TESSELLATION_ADD)
+                src << "    // pass as is to eval\n"
+                    << "    gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n";
 
-			src << "}\n";
+            src << "}\n";
 
-			programCollection.glslSources.add("tesc") << glu::TessellationControlSource(src.str());
-		}
+            programCollection.glslSources.add("tesc") << glu::TessellationControlSource(src.str());
+        }
 
-		// Tessellation evaluation shader
-		{
-			std::ostringstream src;
-			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-				<< "#extension GL_EXT_tessellation_shader : require\n"
-				<< "#extension GL_EXT_tessellation_point_size : require\n"
-				<< "layout(triangles, point_mode) in;\n"
-				<< "\n"
-				<< "void main (void)\n"
-				<< "{\n"
-				<< "    // hide all but one vertex\n"
-				<< "    if (gl_TessCoord.x < 0.99)\n"
-				<< "        gl_Position = vec4(-2.0, 0.0, 0.0, 1.0);\n"
-				<< "    else\n"
-				<< "        gl_Position = gl_in[0].gl_Position;\n";
+        // Tessellation evaluation shader
+        {
+            std::ostringstream src;
+            src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+                << "#extension GL_EXT_tessellation_shader : require\n"
+                << "#extension GL_EXT_tessellation_point_size : require\n"
+                << "layout(triangles, point_mode) in;\n"
+                << "\n"
+                << "void main (void)\n"
+                << "{\n"
+                << "    // hide all but one vertex\n"
+                << "    if (gl_TessCoord.x < 0.99)\n"
+                << "        gl_Position = vec4(-2.0, 0.0, 0.0, 1.0);\n"
+                << "    else\n"
+                << "        gl_Position = gl_in[0].gl_Position;\n";
 
-			if (flags & FLAG_TESSELLATION_ADD)
-				src << "\n"
-					<< "    // add to point size\n"
-					<< "    gl_PointSize = gl_in[0].gl_PointSize + 2.0;\n";
-			else if (flags & FLAG_TESSELLATION_EVALUATION_SET)
-				src << "\n"
-					<< "    // set point size\n"
-					<< "    gl_PointSize = 4.0;\n";
+            if (flags & FLAG_TESSELLATION_ADD)
+                src << "\n"
+                    << "    // add to point size\n"
+                    << "    gl_PointSize = gl_in[0].gl_PointSize + 2.0;\n";
+            else if (flags & FLAG_TESSELLATION_EVALUATION_SET)
+                src << "\n"
+                    << "    // set point size\n"
+                    << "    gl_PointSize = 4.0;\n";
 
-			src << "}\n";
+            src << "}\n";
 
-			programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
-		}
-	}
+            programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+        }
+    }
 
-	if (isGeometryStage(flags))
-	{
-		// Geometry shader
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-			<< "#extension GL_EXT_geometry_shader : require\n"
-			<< "#extension GL_EXT_geometry_point_size : require\n"
-			<< "layout(points) in;\n"
-			<< "layout(points, max_vertices = 1) out;\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "    gl_Position  = gl_in[0].gl_Position;\n";
+    if (isGeometryStage(flags))
+    {
+        // Geometry shader
+        std::ostringstream src;
+        src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+            << "#extension GL_EXT_geometry_shader : require\n"
+            << "#extension GL_EXT_geometry_point_size : require\n"
+            << "layout(points) in;\n"
+            << "layout(points, max_vertices = 1) out;\n"
+            << "\n"
+            << "void main (void)\n"
+            << "{\n"
+            << "    gl_Position  = gl_in[0].gl_Position;\n";
 
-		if (flags & FLAG_GEOMETRY_SET)
-			src << "    gl_PointSize = 6.0;\n";
-		else if (flags & FLAG_GEOMETRY_ADD)
-			src << "    gl_PointSize = gl_in[0].gl_PointSize + 2.0;\n";
+        if (flags & FLAG_GEOMETRY_SET)
+            src << "    gl_PointSize = 6.0;\n";
+        else if (flags & FLAG_GEOMETRY_ADD)
+            src << "    gl_PointSize = gl_in[0].gl_PointSize + 2.0;\n";
 
-		src << "\n"
-			<< "    EmitVertex();\n"
-			<< "}\n";
+        src << "\n"
+            << "    EmitVertex();\n"
+            << "}\n";
 
-		programCollection.glslSources.add("geom") << glu::GeometrySource(src.str());
-	}
+        programCollection.glslSources.add("geom") << glu::GeometrySource(src.str());
+    }
 }
 
-tcu::TestStatus test (Context& context, const Flags flags)
+tcu::TestStatus test(Context &context, const Flags flags)
 {
-	const int expectedPointSize = getExpectedPointSize(flags);
-	{
-		const InstanceInterface& vki        = context.getInstanceInterface();
-		const VkPhysicalDevice   physDevice = context.getPhysicalDevice();
+    const int expectedPointSize = getExpectedPointSize(flags);
+    {
+        const InstanceInterface &vki      = context.getInstanceInterface();
+        const VkPhysicalDevice physDevice = context.getPhysicalDevice();
 
-		requireFeatures           (vki, physDevice, FEATURE_TESSELLATION_SHADER | FEATURE_GEOMETRY_SHADER | FEATURE_SHADER_TESSELLATION_AND_GEOMETRY_POINT_SIZE);
-		checkPointSizeRequirements(vki, physDevice, expectedPointSize);
-	}
-	{
-		tcu::TestLog& log = context.getTestContext().getLog();
+        requireFeatures(vki, physDevice,
+                        FEATURE_TESSELLATION_SHADER | FEATURE_GEOMETRY_SHADER |
+                            FEATURE_SHADER_TESSELLATION_AND_GEOMETRY_POINT_SIZE);
+        checkPointSizeRequirements(vki, physDevice, expectedPointSize);
+    }
+    {
+        tcu::TestLog &log = context.getTestContext().getLog();
 
-		if (flags & FLAG_VERTEX_SET)
-			log << tcu::TestLog::Message << "Setting point size in vertex shader to 2.0." << tcu::TestLog::EndMessage;
-		if (flags & FLAG_TESSELLATION_EVALUATION_SET)
-			log << tcu::TestLog::Message << "Setting point size in tessellation evaluation shader to 4.0." << tcu::TestLog::EndMessage;
-		if (flags & FLAG_TESSELLATION_ADD)
-			log << tcu::TestLog::Message << "Reading point size in tessellation control shader and adding 2.0 to it in evaluation." << tcu::TestLog::EndMessage;
-		if (flags & FLAG_GEOMETRY_SET)
-			log << tcu::TestLog::Message << "Setting point size in geometry shader to 6.0." << tcu::TestLog::EndMessage;
-		if (flags & FLAG_GEOMETRY_ADD)
-			log << tcu::TestLog::Message << "Reading point size in geometry shader and adding 2.0." << tcu::TestLog::EndMessage;
-	}
+        if (flags & FLAG_VERTEX_SET)
+            log << tcu::TestLog::Message << "Setting point size in vertex shader to 2.0." << tcu::TestLog::EndMessage;
+        if (flags & FLAG_TESSELLATION_EVALUATION_SET)
+            log << tcu::TestLog::Message << "Setting point size in tessellation evaluation shader to 4.0."
+                << tcu::TestLog::EndMessage;
+        if (flags & FLAG_TESSELLATION_ADD)
+            log << tcu::TestLog::Message
+                << "Reading point size in tessellation control shader and adding 2.0 to it in evaluation."
+                << tcu::TestLog::EndMessage;
+        if (flags & FLAG_GEOMETRY_SET)
+            log << tcu::TestLog::Message << "Setting point size in geometry shader to 6.0." << tcu::TestLog::EndMessage;
+        if (flags & FLAG_GEOMETRY_ADD)
+            log << tcu::TestLog::Message << "Reading point size in geometry shader and adding 2.0."
+                << tcu::TestLog::EndMessage;
+    }
 
-	const DeviceInterface&	vk					= context.getDeviceInterface();
-	const VkDevice			device				= context.getDevice();
-	const VkQueue			queue				= context.getUniversalQueue();
-	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-	Allocator&				allocator			= context.getDefaultAllocator();
+    const DeviceInterface &vk       = context.getDeviceInterface();
+    const VkDevice device           = context.getDevice();
+    const VkQueue queue             = context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+    Allocator &allocator            = context.getDefaultAllocator();
 
-	// Color attachment
+    // Color attachment
 
-	const tcu::IVec2			  renderSize				 = tcu::IVec2(RENDER_SIZE, RENDER_SIZE);
-	const VkFormat				  colorFormat				 = VK_FORMAT_R8G8B8A8_UNORM;
-	const VkImageSubresourceRange colorImageSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-	const ImageWithMemory		  colorAttachmentImage		 (vk, device, allocator,
-															 makeImageCreateInfo(renderSize, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 1u),
-															 MemoryRequirement::Any);
+    const tcu::IVec2 renderSize = tcu::IVec2(RENDER_SIZE, RENDER_SIZE);
+    const VkFormat colorFormat  = VK_FORMAT_R8G8B8A8_UNORM;
+    const VkImageSubresourceRange colorImageSubresourceRange =
+        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+    const ImageWithMemory colorAttachmentImage(
+        vk, device, allocator,
+        makeImageCreateInfo(renderSize, colorFormat,
+                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 1u),
+        MemoryRequirement::Any);
 
-	// Color output buffer
+    // Color output buffer
 
-	const VkDeviceSize		colorBufferSizeBytes = renderSize.x()*renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
-	const BufferWithMemory	colorBuffer          (vk, device, allocator, makeBufferCreateInfo(colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
+    const VkDeviceSize colorBufferSizeBytes =
+        renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
+    const BufferWithMemory colorBuffer(vk, device, allocator,
+                                       makeBufferCreateInfo(colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+                                       MemoryRequirement::HostVisible);
 
-	// Pipeline
+    // Pipeline
 
-	const Unique<VkImageView>		colorAttachmentView	(makeImageView			(vk, device, *colorAttachmentImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorImageSubresourceRange));
-	const Unique<VkRenderPass>		renderPass			(makeRenderPass			(vk, device, colorFormat));
-	const Unique<VkFramebuffer>		framebuffer			(makeFramebuffer		(vk, device, *renderPass, *colorAttachmentView, renderSize.x(), renderSize.y()));
-	const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout		(vk, device));
-	const Unique<VkCommandPool>		cmdPool				(makeCommandPool		(vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer	(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+    const Unique<VkImageView> colorAttachmentView(makeImageView(
+        vk, device, *colorAttachmentImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorImageSubresourceRange));
+    const Unique<VkRenderPass> renderPass(makeRenderPass(vk, device, colorFormat));
+    const Unique<VkFramebuffer> framebuffer(
+        makeFramebuffer(vk, device, *renderPass, *colorAttachmentView, renderSize.x(), renderSize.y()));
+    const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device));
+    const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
+    const Unique<VkCommandBuffer> cmdBuffer(
+        allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-	GraphicsPipelineBuilder			pipelineBuilder;
+    GraphicsPipelineBuilder pipelineBuilder;
 
-	pipelineBuilder
-		.setPrimitiveTopology		  (VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
-		.setRenderSize				  (renderSize)
-		.setPatchControlPoints		  (1)
-		.setShader					  (vk, device, VK_SHADER_STAGE_VERTEX_BIT,					context.getBinaryCollection().get("vert"), DE_NULL)
-		.setShader					  (vk, device, VK_SHADER_STAGE_FRAGMENT_BIT,				context.getBinaryCollection().get("frag"), DE_NULL);
+    pipelineBuilder.setPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
+        .setRenderSize(renderSize)
+        .setPatchControlPoints(1)
+        .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("vert"), DE_NULL)
+        .setShader(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT, context.getBinaryCollection().get("frag"), DE_NULL);
 
-	if (isTessellationStage(flags))
-		pipelineBuilder
-			.setShader				  (vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,	context.getBinaryCollection().get("tesc"), DE_NULL)
-			.setShader				  (vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, context.getBinaryCollection().get("tese"), DE_NULL);
+    if (isTessellationStage(flags))
+        pipelineBuilder
+            .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, context.getBinaryCollection().get("tesc"),
+                       DE_NULL)
+            .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+                       context.getBinaryCollection().get("tese"), DE_NULL);
 
-	if (isGeometryStage(flags))
-		pipelineBuilder
-			.setShader				  (vk, device, VK_SHADER_STAGE_GEOMETRY_BIT,				context.getBinaryCollection().get("geom"), DE_NULL);
+    if (isGeometryStage(flags))
+        pipelineBuilder.setShader(vk, device, VK_SHADER_STAGE_GEOMETRY_BIT, context.getBinaryCollection().get("geom"),
+                                  DE_NULL);
 
-	const Unique<VkPipeline> pipeline(pipelineBuilder.build(vk, device, *pipelineLayout, *renderPass));
+    const Unique<VkPipeline> pipeline(pipelineBuilder.build(vk, device, *pipelineLayout, *renderPass));
 
-	// Draw commands
+    // Draw commands
 
-	beginCommandBuffer(vk, *cmdBuffer);
+    beginCommandBuffer(vk, *cmdBuffer);
 
-	{
-		const VkImageMemoryBarrier colorAttachmentLayoutBarrier = makeImageMemoryBarrier(
-			(VkAccessFlags)0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-			*colorAttachmentImage, colorImageSubresourceRange);
+    {
+        const VkImageMemoryBarrier colorAttachmentLayoutBarrier = makeImageMemoryBarrier(
+            (VkAccessFlags)0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *colorAttachmentImage, colorImageSubresourceRange);
 
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u,
-			0u, DE_NULL, 0u, DE_NULL, 1u, &colorAttachmentLayoutBarrier);
-	}
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                              &colorAttachmentLayoutBarrier);
+    }
 
-	// Begin render pass
-	{
-		const VkRect2D	renderArea	= makeRect2D(renderSize);
-		const tcu::Vec4	clearColor	(0.0f, 0.0f, 0.0f, 1.0f);
+    // Begin render pass
+    {
+        const VkRect2D renderArea = makeRect2D(renderSize);
+        const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor);
-	}
+        beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor);
+    }
 
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+    vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 
-	vk.cmdDraw(*cmdBuffer, 1u, 1u, 0u, 0u);
-	endRenderPass(vk, *cmdBuffer);
+    vk.cmdDraw(*cmdBuffer, 1u, 1u, 0u, 0u);
+    endRenderPass(vk, *cmdBuffer);
 
-	// Copy render result to a host-visible buffer
-	copyImageToBuffer(vk, *cmdBuffer, *colorAttachmentImage, *colorBuffer, renderSize);
+    // Copy render result to a host-visible buffer
+    copyImageToBuffer(vk, *cmdBuffer, *colorAttachmentImage, *colorBuffer, renderSize);
 
-	endCommandBuffer(vk, *cmdBuffer);
-	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+    endCommandBuffer(vk, *cmdBuffer);
+    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
-	// Verify results
-	{
-		const Allocation&			alloc	= colorBuffer.getAllocation();
-		tcu::TestLog&				log		= context.getTestContext().getLog();
+    // Verify results
+    {
+        const Allocation &alloc = colorBuffer.getAllocation();
+        tcu::TestLog &log       = context.getTestContext().getLog();
 
-		invalidateAlloc(vk, device, alloc);
+        invalidateAlloc(vk, device, alloc);
 
-		tcu::ConstPixelBufferAccess	image	(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, alloc.getHostPtr());
+        tcu::ConstPixelBufferAccess image(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1,
+                                          alloc.getHostPtr());
 
-		log << tcu::LogImage("color0", "", image);
+        log << tcu::LogImage("color0", "", image);
 
-		if (verifyImage(log, image, expectedPointSize))
-			return tcu::TestStatus::pass("OK");
-		else
-			return tcu::TestStatus::fail("Didn't render expected point");
-	}
+        if (verifyImage(log, image, expectedPointSize))
+            return tcu::TestStatus::pass("OK");
+        else
+            return tcu::TestStatus::fail("Didn't render expected point");
+    }
 }
 
-std::string getTestCaseName (const Flags flags)
+std::string getTestCaseName(const Flags flags)
 {
-	std::ostringstream buf;
+    std::ostringstream buf;
 
-	// join per-bit descriptions into a single string with '_' separator
-	if (flags & FLAG_VERTEX_SET)					buf																		<< "vertex_set";
-	if (flags & FLAG_TESSELLATION_EVALUATION_SET)	buf << ((flags & (FLAG_TESSELLATION_EVALUATION_SET-1))	? ("_") : (""))	<< "evaluation_set";
-	if (flags & FLAG_TESSELLATION_ADD)				buf << ((flags & (FLAG_TESSELLATION_ADD-1))				? ("_") : (""))	<< "control_pass_eval_add";
-	if (flags & FLAG_GEOMETRY_SET)					buf << ((flags & (FLAG_GEOMETRY_SET-1))					? ("_") : (""))	<< "geometry_set";
-	if (flags & FLAG_GEOMETRY_ADD)					buf << ((flags & (FLAG_GEOMETRY_ADD-1))					? ("_") : (""))	<< "geometry_add";
+    // join per-bit descriptions into a single string with '_' separator
+    if (flags & FLAG_VERTEX_SET)
+        buf << "vertex_set";
+    if (flags & FLAG_TESSELLATION_EVALUATION_SET)
+        buf << ((flags & (FLAG_TESSELLATION_EVALUATION_SET - 1)) ? ("_") : ("")) << "evaluation_set";
+    if (flags & FLAG_TESSELLATION_ADD)
+        buf << ((flags & (FLAG_TESSELLATION_ADD - 1)) ? ("_") : ("")) << "control_pass_eval_add";
+    if (flags & FLAG_GEOMETRY_SET)
+        buf << ((flags & (FLAG_GEOMETRY_SET - 1)) ? ("_") : ("")) << "geometry_set";
+    if (flags & FLAG_GEOMETRY_ADD)
+        buf << ((flags & (FLAG_GEOMETRY_ADD - 1)) ? ("_") : ("")) << "geometry_add";
 
-	return buf.str();
+    return buf.str();
 }
 
-std::string getTestCaseDescription (const Flags flags)
+std::string getTestCaseDescription(const Flags flags)
 {
-	std::ostringstream buf;
+    std::ostringstream buf;
 
-	// join per-bit descriptions into a single string with ", " separator
-	if (flags & FLAG_VERTEX_SET)					buf																			<< "set point size in vertex shader";
-	if (flags & FLAG_TESSELLATION_EVALUATION_SET)	buf << ((flags & (FLAG_TESSELLATION_EVALUATION_SET-1))	? (", ") : (""))	<< "set point size in tessellation evaluation shader";
-	if (flags & FLAG_TESSELLATION_ADD)				buf << ((flags & (FLAG_TESSELLATION_ADD-1))				? (", ") : (""))	<< "add to point size in tessellation shader";
-	if (flags & FLAG_GEOMETRY_SET)					buf << ((flags & (FLAG_GEOMETRY_SET-1))					? (", ") : (""))	<< "set point size in geometry shader";
-	if (flags & FLAG_GEOMETRY_ADD)					buf << ((flags & (FLAG_GEOMETRY_ADD-1))					? (", ") : (""))	<< "add to point size in geometry shader";
+    // join per-bit descriptions into a single string with ", " separator
+    if (flags & FLAG_VERTEX_SET)
+        buf << "set point size in vertex shader";
+    if (flags & FLAG_TESSELLATION_EVALUATION_SET)
+        buf << ((flags & (FLAG_TESSELLATION_EVALUATION_SET - 1)) ? (", ") : (""))
+            << "set point size in tessellation evaluation shader";
+    if (flags & FLAG_TESSELLATION_ADD)
+        buf << ((flags & (FLAG_TESSELLATION_ADD - 1)) ? (", ") : ("")) << "add to point size in tessellation shader";
+    if (flags & FLAG_GEOMETRY_SET)
+        buf << ((flags & (FLAG_GEOMETRY_SET - 1)) ? (", ") : ("")) << "set point size in geometry shader";
+    if (flags & FLAG_GEOMETRY_ADD)
+        buf << ((flags & (FLAG_GEOMETRY_ADD - 1)) ? (", ") : ("")) << "add to point size in geometry shader";
 
-	return buf.str();
+    return buf.str();
 }
 
-void checkSupportTess (Context& context, const Flags flags)
+void checkSupportTess(Context &context, const Flags flags)
 {
 #ifndef CTS_USES_VULKANSC
-	if (isTessellationStage(flags))
-		if (const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR* const features = getPortability(context))
-			checkPointMode(*features);
+    if (isTessellationStage(flags))
+        if (const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR *const features = getPortability(context))
+            checkPointMode(*features);
 #else
-	DE_UNREF(context);
-	DE_UNREF(flags);
+    DE_UNREF(context);
+    DE_UNREF(flags);
 #endif // CTS_USES_VULKANSC
 }
 
-} // anonymous
+} // namespace
 
 //! Ported from dEQP-GLES31.functional.tessellation_geometry_interaction.point_size.*
 //! with the exception of the default 1.0 point size cases (not valid in Vulkan).
-tcu::TestCaseGroup* createGeometryPointSizeTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createGeometryPointSizeTests(tcu::TestContext &testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "point_size", "Test point size"));
+    de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "point_size", "Test point size"));
 
-	static const Flags caseFlags[] =
-	{
-		FLAG_VERTEX_SET,
-							FLAG_TESSELLATION_EVALUATION_SET,
-																	FLAG_GEOMETRY_SET,
-		FLAG_VERTEX_SET	|	FLAG_TESSELLATION_EVALUATION_SET,
-		FLAG_VERTEX_SET |											FLAG_GEOMETRY_SET,
-		FLAG_VERTEX_SET	|	FLAG_TESSELLATION_EVALUATION_SET	|	FLAG_GEOMETRY_SET,
-		FLAG_VERTEX_SET	|	FLAG_TESSELLATION_ADD				|	FLAG_GEOMETRY_ADD,
-	};
+    static const Flags caseFlags[] = {
+        FLAG_VERTEX_SET,
+        FLAG_TESSELLATION_EVALUATION_SET,
+        FLAG_GEOMETRY_SET,
+        FLAG_VERTEX_SET | FLAG_TESSELLATION_EVALUATION_SET,
+        FLAG_VERTEX_SET | FLAG_GEOMETRY_SET,
+        FLAG_VERTEX_SET | FLAG_TESSELLATION_EVALUATION_SET | FLAG_GEOMETRY_SET,
+        FLAG_VERTEX_SET | FLAG_TESSELLATION_ADD | FLAG_GEOMETRY_ADD,
+    };
 
-	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(caseFlags); ++ndx)
-	{
-		const std::string name = getTestCaseName       (caseFlags[ndx]);
-		const std::string desc = getTestCaseDescription(caseFlags[ndx]);
+    for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(caseFlags); ++ndx)
+    {
+        const std::string name = getTestCaseName(caseFlags[ndx]);
+        const std::string desc = getTestCaseDescription(caseFlags[ndx]);
 
-		addFunctionCaseWithPrograms(group.get(), name, desc, checkSupportTess, initPrograms, test, caseFlags[ndx]);
-	}
+        addFunctionCaseWithPrograms(group.get(), name, desc, checkSupportTess, initPrograms, test, caseFlags[ndx]);
+    }
 
-	return group.release();
+    return group.release();
 }
 
-} // tessellation
-} // vkt
+} // namespace tessellation
+} // namespace vkt

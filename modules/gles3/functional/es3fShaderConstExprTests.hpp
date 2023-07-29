@@ -36,18 +36,18 @@ namespace Functional
 class ShaderConstExprTests : public TestCaseGroup
 {
 public:
-							ShaderConstExprTests		(Context& context);
-	virtual					~ShaderConstExprTests		(void);
+    ShaderConstExprTests(Context &context);
+    virtual ~ShaderConstExprTests(void);
 
-	void					init						(void);
+    void init(void);
 
 private:
-							ShaderConstExprTests		(const ShaderConstExprTests& other);
-	ShaderConstExprTests&	operator=					(const ShaderConstExprTests& other);
+    ShaderConstExprTests(const ShaderConstExprTests &other);
+    ShaderConstExprTests &operator=(const ShaderConstExprTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FSHADERCONSTEXPRTESTS_HPP

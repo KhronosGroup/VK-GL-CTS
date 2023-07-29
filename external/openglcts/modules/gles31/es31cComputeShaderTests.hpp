@@ -34,14 +34,14 @@ namespace glcts
 class ComputeShaderTests : public glcts::TestCaseGroup
 {
 public:
-	ComputeShaderTests(glcts::Context& context);
-	~ComputeShaderTests(void);
-	void init(void);
+    ComputeShaderTests(glcts::Context &context);
+    ~ComputeShaderTests(void);
+    void init(void);
 
 private:
-	ComputeShaderTests(const ComputeShaderTests& other);
-	ComputeShaderTests& operator=(const ComputeShaderTests& other);
+    ComputeShaderTests(const ComputeShaderTests &other);
+    ComputeShaderTests &operator=(const ComputeShaderTests &other);
 };
-}
+} // namespace glcts
 
 #endif // _ES31CCOMPUTESHADERTESTS_HPP

@@ -29,20 +29,21 @@ DE_BEGIN_EXTERN_C
 
 /* Thread-local qualifier for variable - not defined if not supported. */
 #if (DE_OS == DE_OS_WIN32) && (DE_COMPILER == DE_COMPILER_MSC)
-#	define DE_THREAD_LOCAL __declspec(thread)
-#elif ((DE_OS == DE_OS_UNIX || DE_OS == DE_OS_QNX) && (DE_COMPILER == DE_COMPILER_GCC || DE_COMPILER == DE_COMPILER_CLANG))
-#	define DE_THREAD_LOCAL __thread
+#define DE_THREAD_LOCAL __declspec(thread)
+#elif ((DE_OS == DE_OS_UNIX || DE_OS == DE_OS_QNX) && \
+       (DE_COMPILER == DE_COMPILER_GCC || DE_COMPILER == DE_COMPILER_CLANG))
+#define DE_THREAD_LOCAL __thread
 #else
-	/* Not supported - not defined. */
+/* Not supported - not defined. */
 #endif
 
-typedef deUintptr deThreadLocal;
+typedef uintptr_t deThreadLocal;
 
-deThreadLocal	deThreadLocal_create		(void);
-void			deThreadLocal_destroy		(deThreadLocal threadLocal);
+deThreadLocal deThreadLocal_create(void);
+void deThreadLocal_destroy(deThreadLocal threadLocal);
 
-void*			deThreadLocal_get			(deThreadLocal threadLocal);
-void			deThreadLocal_set			(deThreadLocal threadLocal, void* value);
+void *deThreadLocal_get(deThreadLocal threadLocal);
+void deThreadLocal_set(deThreadLocal threadLocal, void *value);
 
 DE_END_EXTERN_C
 

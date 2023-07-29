@@ -27,19 +27,19 @@
 namespace eglw
 {
 
-Functions::Functions (void)
+Functions::Functions(void)
 {
-	deMemset(this, 0, sizeof(*this));
+    deMemset(this, 0, sizeof(*this));
 }
 
-void initCore (Functions* dst, const FunctionLoader* loader)
+void initCore(Functions *dst, const FunctionLoader *loader)
 {
 #include "eglwInitCore.inl"
 }
 
-void initExtensions (Functions* dst, const FunctionLoader* loader)
+void initExtensions(Functions *dst, const FunctionLoader *loader)
 {
 #include "eglwInitExtensions.inl"
 }
 
-} // eglw
+} // namespace eglw

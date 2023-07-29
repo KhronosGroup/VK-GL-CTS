@@ -33,17 +33,17 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::Vec4						defaultClearColor				(const tcu::TextureFormat& format);
-tcu::IVec4						defaultClearColorInt			(const tcu::TextureFormat& format);
-tcu::UVec4						defaultClearColorUint			(const tcu::TextureFormat& format);
-tcu::Vec4						defaultClearColorUnorm			(void);
-float							defaultClearDepth				(void);
-deUint32						defaultClearStencil				(void);
+tcu::Vec4 defaultClearColor(const tcu::TextureFormat &format);
+tcu::IVec4 defaultClearColorInt(const tcu::TextureFormat &format);
+tcu::UVec4 defaultClearColorUint(const tcu::TextureFormat &format);
+tcu::Vec4 defaultClearColorUnorm(void);
+float defaultClearDepth(void);
+uint32_t defaultClearStencil(void);
 
-vk::VkClearDepthStencilValue	defaultClearDepthStencilValue	(void);
-vk::VkClearValue				defaultClearValue				(vk::VkFormat format);
+vk::VkClearDepthStencilValue defaultClearDepthStencilValue(void);
+vk::VkClearValue defaultClearValue(vk::VkFormat format);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINECLEARUTIL_HPP

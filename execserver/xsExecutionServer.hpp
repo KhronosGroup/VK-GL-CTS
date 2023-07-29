@@ -37,93 +37,109 @@ namespace xs
 class ExecutionServer : public TcpServer
 {
 public:
-	enum RunMode
-	{
-		RUNMODE_SINGLE_EXEC	= 0,
-		RUNMODE_FOREVER,
+    enum RunMode
+    {
+        RUNMODE_SINGLE_EXEC = 0,
+        RUNMODE_FOREVER,
 
-		RUNMODE_LAST
-	};
+        RUNMODE_LAST
+    };
 
-							ExecutionServer			(xs::TestProcess* testProcess, deSocketFamily family, int port, RunMode runMode);
-							~ExecutionServer		(void);
+    ExecutionServer(xs::TestProcess *testProcess, deSocketFamily family, int port, RunMode runMode);
+    ~ExecutionServer(void);
 
-	ConnectionHandler*		createHandler			(de::Socket* socket, const de::SocketAddress& clientAddress);
+    ConnectionHandler *createHandler(de::Socket *socket, const de::SocketAddress &clientAddress);
 
-	TestDriver*				acquireTestDriver		(void);
-	void					releaseTestDriver		(TestDriver* driver);
+    TestDriver *acquireTestDriver(void);
+    void releaseTestDriver(TestDriver *driver);
 
-	void					connectionDone			(ConnectionHandler* handler);
+    void connectionDone(ConnectionHandler *handler);
 
 private:
-	TestDriver				m_testDriver;
-	de::Mutex				m_testDriverLock;
-	RunMode					m_runMode;
+    TestDriver m_testDriver;
+    de::Mutex m_testDriverLock;
+    RunMode m_runMode;
 };
 
 class MessageBuilder
 {
 public:
-							MessageBuilder		(void) { clear(); }
-							~MessageBuilder		(void) {}
+    MessageBuilder(void)
+    {
+        clear();
+    }
+    ~MessageBuilder(void)
+    {
+    }
 
-	void					read				(ByteBuffer& buffer);
-	void					clear				(void);
+    void read(ByteBuffer &buffer);
+    void clear(void);
 
-	bool					isComplete			(void) const;
-	MessageType				getMessageType		(void) const	{ return m_messageType;	}
-	size_t					getMessageSize		(void) const	{ return m_messageSize; }
-	const deUint8*			getMessageData		(void) const;
-	size_t					getMessageDataSize	(void) const;
+    bool isComplete(void) const;
+    MessageType getMessageType(void) const
+    {
+        return m_messageType;
+    }
+    size_t getMessageSize(void) const
+    {
+        return m_messageSize;
+    }
+    const uint8_t *getMessageData(void) const;
+    size_t getMessageDataSize(void) const;
 
 private:
-	std::vector<deUint8>	m_buffer;
-	MessageType				m_messageType;
-	size_t					m_messageSize;
+    std::vector<uint8_t> m_buffer;
+    MessageType m_messageType;
+    size_t m_messageSize;
 };
 
 class ExecutionRequestHandler : public ConnectionHandler
 {
 public:
-								ExecutionRequestHandler			(ExecutionServer* server, de::Socket* socket);
-								~ExecutionRequestHandler		(void);
+    ExecutionRequestHandler(ExecutionServer *server, de::Socket *socket);
+    ~ExecutionRequestHandler(void);
 
 protected:
-	void						handle							(void);
+    void handle(void);
 
 private:
-								ExecutionRequestHandler			(const ExecutionRequestHandler& handler);
-	ExecutionRequestHandler&	operator=						(const ExecutionRequestHandler& handler);
+    ExecutionRequestHandler(const ExecutionRequestHandler &handler);
+    ExecutionRequestHandler &operator=(const ExecutionRequestHandler &handler);
 
-	void						processSession					(void);
-	void						processMessage					(MessageType type, const deUint8* data, size_t dataSize);
+    void processSession(void);
+    void processMessage(MessageType type, const uint8_t *data, size_t dataSize);
 
-	inline TestDriver*			getTestDriver					(void) { if (!m_testDriver) acquireTestDriver(); return m_testDriver; }
-	void						acquireTestDriver				(void);
+    inline TestDriver *getTestDriver(void)
+    {
+        if (!m_testDriver)
+            acquireTestDriver();
+        return m_testDriver;
+    }
+    void acquireTestDriver(void);
 
-	void						initKeepAlives					(void);
-	void						keepAliveReceived				(void);
-	void						pollKeepAlives					(void);
+    void initKeepAlives(void);
+    void keepAliveReceived(void);
+    void pollKeepAlives(void);
 
-	bool						receive							(void);
-	bool						send							(void);
+    bool receive(void);
+    bool send(void);
 
-	ExecutionServer*			m_execServer;
-	TestDriver*					m_testDriver;
+    ExecutionServer *m_execServer;
+    TestDriver *m_testDriver;
 
-	ByteBuffer					m_bufferIn;
-	ByteBuffer					m_bufferOut;
+    ByteBuffer m_bufferIn;
+    ByteBuffer m_bufferOut;
 
-	bool						m_run;
-	MessageBuilder				m_msgBuilder;
+    bool m_run;
+    MessageBuilder m_msgBuilder;
 
-	// \todo [2011-09-30 pyry] Move to some watchdog class instead.
-	deUint64					m_lastKeepAliveSent;
-	deUint64					m_lastKeepAliveReceived;
+    // \todo [2011-09-30 pyry] Move to some watchdog class instead.
+    uint64_t m_lastKeepAliveSent;
+    uint64_t m_lastKeepAliveReceived;
 
-	std::vector<deUint8>		m_sendRecvTmpBuf;
+    std::vector<uint8_t> m_sendRecvTmpBuf;
 };
 
-} // xs
+} // namespace xs
 
 #endif // _XSEXECUTIONSERVER_HPP

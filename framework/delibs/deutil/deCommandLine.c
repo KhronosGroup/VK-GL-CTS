@@ -29,189 +29,196 @@
 
 #include <string.h>
 
-DE_DECLARE_POOL_ARRAY(CharPtrArray, char*);
+DE_DECLARE_POOL_ARRAY(CharPtrArray, char *);
 
 enum
 {
-	MAX_ARGS = 64
+    MAX_ARGS = 64
 };
 
-deCommandLine* deCommandLine_parse (const char* commandLine)
+deCommandLine *deCommandLine_parse(const char *commandLine)
 {
-	deMemPool*		tmpPool		= deMemPool_createRoot(DE_NULL, 0);
-	CharPtrArray*	args		= tmpPool ? CharPtrArray_create(tmpPool) : DE_NULL;
-	char*			buf			= DE_NULL;
-	char*			outPtr;
-	int				pos;
-	int				argNdx;
-	char			strChr;
+    deMemPool *tmpPool = deMemPool_createRoot(DE_NULL, 0);
+    CharPtrArray *args = tmpPool ? CharPtrArray_create(tmpPool) : DE_NULL;
+    char *buf          = DE_NULL;
+    char *outPtr;
+    int pos;
+    int argNdx;
+    char strChr;
 
-	if (!args)
-	{
-		if (tmpPool)
-			deMemPool_destroy(tmpPool);
-		return DE_NULL;
-	}
+    if (!args)
+    {
+        if (tmpPool)
+            deMemPool_destroy(tmpPool);
+        return DE_NULL;
+    }
 
-	DE_ASSERT(commandLine);
+    DE_ASSERT(commandLine);
 
-	/* Create buffer for args (no expansion can happen). */
-	buf		= (char*)deCalloc(strlen(commandLine)+1);
-	pos		= 0;
-	argNdx	= 0;
-	outPtr	= buf;
-	strChr	= 0;
+    /* Create buffer for args (no expansion can happen). */
+    buf    = (char *)deCalloc(strlen(commandLine) + 1);
+    pos    = 0;
+    argNdx = 0;
+    outPtr = buf;
+    strChr = 0;
 
-	if (!buf || !CharPtrArray_pushBack(args, buf))
-	{
-		deMemPool_destroy(tmpPool);
-		return DE_NULL;
-	}
+    if (!buf || !CharPtrArray_pushBack(args, buf))
+    {
+        deMemPool_destroy(tmpPool);
+        return DE_NULL;
+    }
 
-	while (commandLine[pos] != 0)
-	{
-		char c = commandLine[pos++];
+    while (commandLine[pos] != 0)
+    {
+        char c = commandLine[pos++];
 
-		if (strChr != 0 && c == '\\')
-		{
-			/* Escape. */
-			c = commandLine[pos++];
-			switch (c)
-			{
-				case 'n':	*outPtr++ = '\n';	break;
-				case 't':	*outPtr++ = '\t';	break;
-				default:	*outPtr++ = c;		break;
-			}
-		}
-		else if (strChr != 0 && c == strChr)
-		{
-			/* String end. */
-			strChr = 0;
-		}
-		else if (strChr == 0 && (c == '"' || c == '\''))
-		{
-			/* String start. */
-			strChr = c;
-		}
-		else if (c == ' ' && strChr == 0)
-		{
-			/* Arg end. */
-			*outPtr++		 = 0;
-			argNdx			+= 1;
-			if (!CharPtrArray_pushBack(args, outPtr))
-			{
-				deFree(buf);
-				deMemPool_destroy(tmpPool);
-				return DE_NULL;
-			}
-		}
-		else
-			*outPtr++ = c;
-	}
+        if (strChr != 0 && c == '\\')
+        {
+            /* Escape. */
+            c = commandLine[pos++];
+            switch (c)
+            {
+            case 'n':
+                *outPtr++ = '\n';
+                break;
+            case 't':
+                *outPtr++ = '\t';
+                break;
+            default:
+                *outPtr++ = c;
+                break;
+            }
+        }
+        else if (strChr != 0 && c == strChr)
+        {
+            /* String end. */
+            strChr = 0;
+        }
+        else if (strChr == 0 && (c == '"' || c == '\''))
+        {
+            /* String start. */
+            strChr = c;
+        }
+        else if (c == ' ' && strChr == 0)
+        {
+            /* Arg end. */
+            *outPtr++ = 0;
+            argNdx += 1;
+            if (!CharPtrArray_pushBack(args, outPtr))
+            {
+                deFree(buf);
+                deMemPool_destroy(tmpPool);
+                return DE_NULL;
+            }
+        }
+        else
+            *outPtr++ = c;
+    }
 
-	DE_ASSERT(commandLine[pos] == 0);
+    DE_ASSERT(commandLine[pos] == 0);
 
-	/* Terminate last arg. */
-	*outPtr = 0;
+    /* Terminate last arg. */
+    *outPtr = 0;
 
-	/* Create deCommandLine. */
-	{
-		deCommandLine* cmdLine = (deCommandLine*)deCalloc(sizeof(deCommandLine));
+    /* Create deCommandLine. */
+    {
+        deCommandLine *cmdLine = (deCommandLine *)deCalloc(sizeof(deCommandLine));
 
-		if (!cmdLine || !(cmdLine->args = (char**)deCalloc(sizeof(char*)*(size_t)CharPtrArray_getNumElements(args))))
-		{
-			deFree(cmdLine);
-			deFree(buf);
-			deMemPool_destroy(tmpPool);
-			return DE_NULL;
-		}
+        if (!cmdLine ||
+            !(cmdLine->args = (char **)deCalloc(sizeof(char *) * (size_t)CharPtrArray_getNumElements(args))))
+        {
+            deFree(cmdLine);
+            deFree(buf);
+            deMemPool_destroy(tmpPool);
+            return DE_NULL;
+        }
 
-		cmdLine->numArgs	= CharPtrArray_getNumElements(args);
-		cmdLine->argBuf		= buf;
+        cmdLine->numArgs = CharPtrArray_getNumElements(args);
+        cmdLine->argBuf  = buf;
 
-		for (argNdx = 0; argNdx < cmdLine->numArgs; argNdx++)
-			cmdLine->args[argNdx] = CharPtrArray_get(args, argNdx);
+        for (argNdx = 0; argNdx < cmdLine->numArgs; argNdx++)
+            cmdLine->args[argNdx] = CharPtrArray_get(args, argNdx);
 
-		deMemPool_destroy(tmpPool);
-		return cmdLine;
-	}
+        deMemPool_destroy(tmpPool);
+        return cmdLine;
+    }
 }
 
-void deCommandLine_destroy (deCommandLine* cmdLine)
+void deCommandLine_destroy(deCommandLine *cmdLine)
 {
-	deFree(cmdLine->argBuf);
-	deFree(cmdLine);
+    deFree(cmdLine->argBuf);
+    deFree(cmdLine);
 }
 
-static void testParse (const char* cmdLine, const char* const* refArgs, int numArgs)
+static void testParse(const char *cmdLine, const char *const *refArgs, int numArgs)
 {
-	deCommandLine*	parsedCmdLine	= deCommandLine_parse(cmdLine);
-	int				argNdx;
+    deCommandLine *parsedCmdLine = deCommandLine_parse(cmdLine);
+    int argNdx;
 
-	DE_TEST_ASSERT(parsedCmdLine);
-	DE_TEST_ASSERT(parsedCmdLine->numArgs == numArgs);
+    DE_TEST_ASSERT(parsedCmdLine);
+    DE_TEST_ASSERT(parsedCmdLine->numArgs == numArgs);
 
-	for (argNdx = 0; argNdx < numArgs; argNdx++)
-		DE_TEST_ASSERT(deStringEqual(parsedCmdLine->args[argNdx], refArgs[argNdx]));
+    for (argNdx = 0; argNdx < numArgs; argNdx++)
+        DE_TEST_ASSERT(deStringEqual(parsedCmdLine->args[argNdx], refArgs[argNdx]));
 
-	deCommandLine_destroy(parsedCmdLine);
+    deCommandLine_destroy(parsedCmdLine);
 }
 
-void deCommandLine_selfTest (void)
+void deCommandLine_selfTest(void)
 {
-	{
-		const char* cmdLine	= "hello";
-		const char* ref[]	= { "hello" };
-		testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
-	}
-	{
-		const char* cmdLine	= "hello world";
-		const char* ref[]	= { "hello", "world" };
-		testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
-	}
-	{
-		const char* cmdLine	= "hello/world";
-		const char* ref[]	= { "hello/world" };
-		testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
-	}
-	{
-		const char* cmdLine	= "hello/world --help";
-		const char* ref[]	= { "hello/world", "--help" };
-		testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
-	}
-	{
-		const char* cmdLine	= "hello/world --help foo";
-		const char* ref[]	= { "hello/world", "--help", "foo" };
-		testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
-	}
-	{
-		const char* cmdLine	= "hello\\world --help foo";
-		const char* ref[]	= { "hello\\world", "--help", "foo" };
-		testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
-	}
-	{
-		const char* cmdLine	= "\"hello/worl d\" --help --foo=\"bar\" \"ba z\\\"\"";
-		const char* ref[]	= { "hello/worl d", "--help", "--foo=bar", "ba z\"" };
-		testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
-	}
-	{
-		const char* cmdLine	= "'hello/worl d' --help --foo='bar' 'ba z\\\''";
-		const char* ref[]	= { "hello/worl d", "--help", "--foo=bar", "ba z'" };
-		testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
-	}
-	{
-		const char* cmdLine	= "hello \"'world'\"";
-		const char* ref[]	= { "hello", "'world'" };
-		testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
-	}
-	{
-		const char* cmdLine	= "hello '\"world\"'";
-		const char* ref[]	= { "hello", "\"world\"" };
-		testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
-	}
-	{
-		const char* cmdLine	= "hello \"world\\n\"";
-		const char* ref[]	= { "hello", "world\n" };
-		testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
-	}
+    {
+        const char *cmdLine = "hello";
+        const char *ref[]   = {"hello"};
+        testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
+    }
+    {
+        const char *cmdLine = "hello world";
+        const char *ref[]   = {"hello", "world"};
+        testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
+    }
+    {
+        const char *cmdLine = "hello/world";
+        const char *ref[]   = {"hello/world"};
+        testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
+    }
+    {
+        const char *cmdLine = "hello/world --help";
+        const char *ref[]   = {"hello/world", "--help"};
+        testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
+    }
+    {
+        const char *cmdLine = "hello/world --help foo";
+        const char *ref[]   = {"hello/world", "--help", "foo"};
+        testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
+    }
+    {
+        const char *cmdLine = "hello\\world --help foo";
+        const char *ref[]   = {"hello\\world", "--help", "foo"};
+        testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
+    }
+    {
+        const char *cmdLine = "\"hello/worl d\" --help --foo=\"bar\" \"ba z\\\"\"";
+        const char *ref[]   = {"hello/worl d", "--help", "--foo=bar", "ba z\""};
+        testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
+    }
+    {
+        const char *cmdLine = "'hello/worl d' --help --foo='bar' 'ba z\\\''";
+        const char *ref[]   = {"hello/worl d", "--help", "--foo=bar", "ba z'"};
+        testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
+    }
+    {
+        const char *cmdLine = "hello \"'world'\"";
+        const char *ref[]   = {"hello", "'world'"};
+        testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
+    }
+    {
+        const char *cmdLine = "hello '\"world\"'";
+        const char *ref[]   = {"hello", "\"world\""};
+        testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
+    }
+    {
+        const char *cmdLine = "hello \"world\\n\"";
+        const char *ref[]   = {"hello", "world\n"};
+        testParse(cmdLine, ref, DE_LENGTH_OF_ARRAY(ref));
+    }
 }

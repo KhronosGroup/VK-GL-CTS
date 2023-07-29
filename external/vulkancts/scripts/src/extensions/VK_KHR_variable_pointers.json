@@ -1,14 +1,21 @@
 {
-	"register_extension":
-	{
-		"type": "device",
-		"core": "0.1.1.0"
-	},
-	"mandatory_features":
-	{
-		"VkPhysicalDeviceVariablePointersFeatures":
-		[
-			{ "features": ["variablePointersStorageBuffer"],		"requirements": ["VK_KHR_variable_pointers"] }
-		]
-	}
+    "register_extension":
+        {
+            "type": "device",
+            "core": "0.1.1.0"
+        },
+    "mandatory_features":
+        {
+            "VkPhysicalDeviceVariablePointersFeatures":
+                [
+                    {
+                        "features": [
+                            "variablePointersStorageBuffer"
+                        ],
+                        "requirements": [
+                            "VK_KHR_variable_pointers"
+                        ]
+                    }
+                ]
+        }
 }

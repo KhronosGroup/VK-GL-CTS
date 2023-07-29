@@ -38,12 +38,12 @@ namespace deqp
 class ShaderNegativeTests : public TestCaseGroup
 {
 public:
-	ShaderNegativeTests(Context& context, glu::GLSLVersion glslVersion);
-	~ShaderNegativeTests();
+    ShaderNegativeTests(Context &context, glu::GLSLVersion glslVersion);
+    ~ShaderNegativeTests();
 
-	void init(void);
+    void init(void);
 
-	glu::GLSLVersion m_glslVersion;
+    glu::GLSLVersion m_glslVersion;
 };
 
 } // namespace deqp

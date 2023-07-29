@@ -33,9 +33,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createPushDescriptorTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineType);
+tcu::TestCaseGroup *createPushDescriptorTests(tcu::TestContext &testCtx, vk::PipelineConstructionType pipelineType);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEPUSHDESCRIPTORTESTS_HPP

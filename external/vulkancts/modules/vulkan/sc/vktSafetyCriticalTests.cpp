@@ -42,26 +42,26 @@ namespace sc
 namespace
 {
 
-void createChildren (tcu::TestCaseGroup* scTests)
+void createChildren(tcu::TestCaseGroup *scTests)
 {
-	tcu::TestContext&	testCtx		= scTests->getTestContext();
+    tcu::TestContext &testCtx = scTests->getTestContext();
 
-	scTests->addChild(createSafetyCriticalAPITests				(testCtx));
-	scTests->addChild(createDeviceObjectReservationTests		(testCtx));
-	scTests->addChild(createPipelineIdentifierTests				(testCtx));
-	scTests->addChild(createPipelineCacheTests					(testCtx));
-	scTests->addChild(createFaultHandlingTests					(testCtx));
-	scTests->addChild(createCommandPoolMemoryReservationTests	(testCtx));
-	scTests->addChild(createObjectRefreshTests					(testCtx));
-	scTests->addChild(createApplicationParametersTests			(testCtx));
+    scTests->addChild(createSafetyCriticalAPITests(testCtx));
+    scTests->addChild(createDeviceObjectReservationTests(testCtx));
+    scTests->addChild(createPipelineIdentifierTests(testCtx));
+    scTests->addChild(createPipelineCacheTests(testCtx));
+    scTests->addChild(createFaultHandlingTests(testCtx));
+    scTests->addChild(createCommandPoolMemoryReservationTests(testCtx));
+    scTests->addChild(createObjectRefreshTests(testCtx));
+    scTests->addChild(createApplicationParametersTests(testCtx));
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "sc", "SC Device Creation Tests", createChildren);
+    return createTestGroup(testCtx, "sc", "SC Device Creation Tests", createChildren);
 }
 
-} // sc
-} // vkt
+} // namespace sc
+} // namespace vkt

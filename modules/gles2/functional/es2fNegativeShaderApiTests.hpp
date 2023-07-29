@@ -36,18 +36,18 @@ namespace Functional
 class NegativeShaderApiTests : public TestCaseGroup
 {
 public:
-									NegativeShaderApiTests		(Context& context);
-									~NegativeShaderApiTests		(void);
+    NegativeShaderApiTests(Context &context);
+    ~NegativeShaderApiTests(void);
 
-	void							init						(void);
+    void init(void);
 
 private:
-									NegativeShaderApiTests		(const NegativeShaderApiTests& other);
-	NegativeShaderApiTests&			operator=					(const NegativeShaderApiTests& other);
+    NegativeShaderApiTests(const NegativeShaderApiTests &other);
+    NegativeShaderApiTests &operator=(const NegativeShaderApiTests &other);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FNEGATIVESHADERAPITESTS_HPP

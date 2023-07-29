@@ -32,16 +32,16 @@ namespace gl4cts
 class ShaderImageSizeTests : public deqp::TestCaseGroup
 {
 public:
-	ShaderImageSizeTests(deqp::Context& context);
-	~ShaderImageSizeTests(void);
+    ShaderImageSizeTests(deqp::Context &context);
+    ~ShaderImageSizeTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	ShaderImageSizeTests(const ShaderImageSizeTests& other);
-	ShaderImageSizeTests& operator=(const ShaderImageSizeTests& other);
+    ShaderImageSizeTests(const ShaderImageSizeTests &other);
+    ShaderImageSizeTests &operator=(const ShaderImageSizeTests &other);
 };
 
-} // gl4cts
+} // namespace gl4cts
 
 #endif // _GL4CSHADERIMAGESIZETESTS_HPP

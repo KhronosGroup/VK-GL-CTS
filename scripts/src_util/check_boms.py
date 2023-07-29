@@ -25,62 +25,62 @@ import sys
 import codecs
 from optparse import OptionParser
 
-FILE_PATTERNS		= ["*.hpp", "*.h", "*.cpp", "*.py"]
-IGNORE_FILES		= set()
-CHECK_END_COMMENT	= True
+FILE_PATTERNS = ["*.hpp", "*.h", "*.cpp", "*.py"]
+IGNORE_FILES = set()
+CHECK_END_COMMENT = True
 
 def hasBOM (file):
-	with open(file, 'rb') as f:
-		line0 = f.readline()
-		if line0.startswith(codecs.BOM_UTF8):
-			return True
-	return False
+    with open(file, 'rb') as f:
+        line0 = f.readline()
+        if line0.startswith(codecs.BOM_UTF8):
+            return True
+    return False
 
 def removeBOM (file):
-	with open(file, 'r+b') as f:
-		chunk = f.read(1024)
-		if chunk.startswith(codecs.BOM_UTF8):
-			chunk = chunk[3:]
-		else:
-			return
-		readpos = 1024;
-		writepos = 0;
-		while chunk:
-			f.seek(writepos, os.SEEK_SET)
-			f.write(chunk)
-			writepos += len(chunk)
-			f.seek(readpos, os.SEEK_SET)
-			chunk = f.read(1024)
-			readpos += len(chunk)
-		f.truncate(readpos-3)
+    with open(file, 'r+b') as f:
+        chunk = f.read(1024)
+        if chunk.startswith(codecs.BOM_UTF8):
+            chunk = chunk[3:]
+        else:
+            return
+        readpos = 1024;
+        writepos = 0;
+        while chunk:
+            f.seek(writepos, os.SEEK_SET)
+            f.write(chunk)
+            writepos += len(chunk)
+            f.seek(readpos, os.SEEK_SET)
+            chunk = f.read(1024)
+            readpos += len(chunk)
+        f.truncate(readpos-3)
 
 def getFileList (path):
-	if os.path.isfile(path):
-		yield path
-	elif os.path.isdir(path):
-		for root, dirs, files in os.walk(path):
-			for file in files:
-				yield os.path.join(root, file)
+    if os.path.isfile(path):
+        yield path
+    elif os.path.isdir(path):
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                yield os.path.join(root, file)
 
 def checkBOMs (files, fix):
-	correct = True
-	for file in files:
-		if hasBOM(file):
-			if fix:
-				removeBOM(file)
-				print("File %s contained BOM and was fixed" % file)
-			else:
-				correct = False
-				print("File %s contains BOM" % file)
-	return correct
+    correct = True
+    for file in files:
+        if hasBOM(file):
+            if fix:
+                removeBOM(file)
+                print("File %s contained BOM and was fixed" % file)
+            else:
+                correct = False
+                print("File %s contains BOM" % file)
+    return correct
 
 if __name__ == "__main__":
-	parser = OptionParser()
-	parser.add_option("-x", "--fix", action="store_true", dest="fix", default=False, help="attempt to fix BOMs")
+    parser = OptionParser()
+    parser.add_option("-x", "--fix", action="store_true", dest="fix", default=False, help="attempt to fix BOMs")
 
-	(options, args)	= parser.parse_args()
-	fix				= options.fix
+    (options, args) = parser.parse_args()
+    fix = options.fix
 
-	print("Checking BOMs...")
-	for dir in args:
-		checkBOMs(getFileList(os.path.normpath(dir)), fix)
+    print("Checking BOMs...")
+    for dir in args:
+        checkBOMs(getFileList(os.path.normpath(dir)), fix)

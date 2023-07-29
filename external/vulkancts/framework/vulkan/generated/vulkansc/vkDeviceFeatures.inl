@@ -313,9 +313,9 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceYcbcrImageArraysFeaturesEXT>, VK_EXT_YCBCR_IMAGE_ARRAYS_EXTENSION_NAME, VK_EXT_YCBCR_IMAGE_ARRAYS_SPEC_VERSION },
 };
 
-deUint32 getBlobFeaturesVersion (VkStructureType sType)
+uint32_t getBlobFeaturesVersion (VkStructureType sType)
 {
-	const std::map<VkStructureType, deUint32> sTypeBlobMap
+	const std::map<VkStructureType, uint32_t> sTypeBlobMap
 	{
 		// Vulkan11
 		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES,								VK_API_VERSION_1_1 },

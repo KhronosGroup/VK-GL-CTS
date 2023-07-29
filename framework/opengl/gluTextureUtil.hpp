@@ -41,58 +41,54 @@ class TextureBuffer;
  *//*--------------------------------------------------------------------*/
 struct TransferFormat
 {
-	deUint32	format;		//!< Pixel format.
-	deUint32	dataType;	//!< Data type.
+    uint32_t format;   //!< Pixel format.
+    uint32_t dataType; //!< Data type.
 
-	TransferFormat (void)
-		: format	(0)
-		, dataType	(0)
-	{
-	}
+    TransferFormat(void) : format(0), dataType(0)
+    {
+    }
 
-	TransferFormat (deUint32 format_, deUint32 dataType_)
-		: format	(format_)
-		, dataType	(dataType_)
-	{
-	}
+    TransferFormat(uint32_t format_, uint32_t dataType_) : format(format_), dataType(dataType_)
+    {
+    }
 } DE_WARN_UNUSED_TYPE;
 
-tcu::TextureFormat				mapGLTransferFormat					(deUint32 format, deUint32 dataType);
-tcu::TextureFormat				mapGLInternalFormat					(deUint32 internalFormat);
-tcu::CompressedTexFormat		mapGLCompressedTexFormat			(deUint32 format);
-bool							isGLInternalColorFormatFilterable	(deUint32 internalFormat);
-tcu::Sampler					mapGLSampler						(deUint32 wrapS, deUint32 minFilter, deUint32 magFilter);
-tcu::Sampler					mapGLSampler						(deUint32 wrapS, deUint32 wrapT, deUint32 minFilter, deUint32 magFilter);
-tcu::Sampler					mapGLSampler						(deUint32 wrapS, deUint32 wrapT, deUint32 wrapR, deUint32 minFilter, deUint32 magFilter);
-tcu::Sampler::CompareMode		mapGLCompareFunc					(deUint32 mode);
+tcu::TextureFormat mapGLTransferFormat(uint32_t format, uint32_t dataType);
+tcu::TextureFormat mapGLInternalFormat(uint32_t internalFormat);
+tcu::CompressedTexFormat mapGLCompressedTexFormat(uint32_t format);
+bool isGLInternalColorFormatFilterable(uint32_t internalFormat);
+tcu::Sampler mapGLSampler(uint32_t wrapS, uint32_t minFilter, uint32_t magFilter);
+tcu::Sampler mapGLSampler(uint32_t wrapS, uint32_t wrapT, uint32_t minFilter, uint32_t magFilter);
+tcu::Sampler mapGLSampler(uint32_t wrapS, uint32_t wrapT, uint32_t wrapR, uint32_t minFilter, uint32_t magFilter);
+tcu::Sampler::CompareMode mapGLCompareFunc(uint32_t mode);
 
-TransferFormat					getTransferFormat					(tcu::TextureFormat format);
-deUint32						getInternalFormat					(tcu::TextureFormat format);
-deUint32						getGLFormat							(tcu::CompressedTexFormat format);
+TransferFormat getTransferFormat(tcu::TextureFormat format);
+uint32_t getInternalFormat(tcu::TextureFormat format);
+uint32_t getGLFormat(tcu::CompressedTexFormat format);
 
-deUint32						getGLWrapMode						(tcu::Sampler::WrapMode wrapMode);
-deUint32						getGLFilterMode						(tcu::Sampler::FilterMode filterMode);
-deUint32						getGLCompareFunc					(tcu::Sampler::CompareMode compareMode);
+uint32_t getGLWrapMode(tcu::Sampler::WrapMode wrapMode);
+uint32_t getGLFilterMode(tcu::Sampler::FilterMode filterMode);
+uint32_t getGLCompareFunc(tcu::Sampler::CompareMode compareMode);
 
-deUint32						getGLCubeFace						(tcu::CubeFace face);
-tcu::CubeFace					getCubeFaceFromGL					(deUint32 face);
+uint32_t getGLCubeFace(tcu::CubeFace face);
+tcu::CubeFace getCubeFaceFromGL(uint32_t face);
 
-DataType						getSampler1DType					(tcu::TextureFormat format);
-DataType						getSampler2DType					(tcu::TextureFormat format);
-DataType						getSamplerCubeType					(tcu::TextureFormat format);
-DataType						getSampler1DArrayType				(tcu::TextureFormat format);
-DataType						getSampler2DArrayType				(tcu::TextureFormat format);
-DataType						getSampler3DType					(tcu::TextureFormat format);
-DataType						getSamplerCubeArrayType				(tcu::TextureFormat format);
+DataType getSampler1DType(tcu::TextureFormat format);
+DataType getSampler2DType(tcu::TextureFormat format);
+DataType getSamplerCubeType(tcu::TextureFormat format);
+DataType getSampler1DArrayType(tcu::TextureFormat format);
+DataType getSampler2DArrayType(tcu::TextureFormat format);
+DataType getSampler3DType(tcu::TextureFormat format);
+DataType getSamplerCubeArrayType(tcu::TextureFormat format);
 
-bool							isSizedFormatColorRenderable		(const RenderContext& renderCtx, const ContextInfo& contextInfo, deUint32 sizedFormat);
-bool							isCompressedFormat					(deUint32 internalFormat);
+bool isSizedFormatColorRenderable(const RenderContext &renderCtx, const ContextInfo &contextInfo, uint32_t sizedFormat);
+bool isCompressedFormat(uint32_t internalFormat);
 
-const tcu::IVec2				(&getDefaultGatherOffsets			(void))[4];
+const tcu::IVec2 (&getDefaultGatherOffsets(void))[4];
 
-tcu::PixelBufferAccess			getTextureBufferEffectiveRefTexture	(TextureBuffer& buffer, int maxTextureBufferSize);
-tcu::ConstPixelBufferAccess		getTextureBufferEffectiveRefTexture	(const TextureBuffer& buffer, int maxTextureBufferSize);
+tcu::PixelBufferAccess getTextureBufferEffectiveRefTexture(TextureBuffer &buffer, int maxTextureBufferSize);
+tcu::ConstPixelBufferAccess getTextureBufferEffectiveRefTexture(const TextureBuffer &buffer, int maxTextureBufferSize);
 
-} // glu
+} // namespace glu
 
 #endif // _GLUTEXTUREUTIL_HPP

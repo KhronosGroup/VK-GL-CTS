@@ -203,129 +203,129 @@ namespace glcts
 /* Helper class for storing point data */
 struct AdjacencyGridPoint
 {
-	/* Public variables */
-	glw::GLuint  index;
-	glw::GLfloat x;
-	glw::GLfloat y;
+    /* Public variables */
+    glw::GLuint index;
+    glw::GLfloat x;
+    glw::GLfloat y;
 };
 
 /* Helper class for storing line data */
 struct AdjacencyGridLineSegment
 {
-	/* Public variables */
-	AdjacencyGridPoint* m_point_end;
-	AdjacencyGridPoint* m_point_end_adjacent;
-	AdjacencyGridPoint* m_point_start;
-	AdjacencyGridPoint* m_point_start_adjacent;
+    /* Public variables */
+    AdjacencyGridPoint *m_point_end;
+    AdjacencyGridPoint *m_point_end_adjacent;
+    AdjacencyGridPoint *m_point_start;
+    AdjacencyGridPoint *m_point_start_adjacent;
 };
 
 /* Helper class for storing strip data */
 class AdjacencyGridStrip
 {
 public:
-	/* Public metods */
-	AdjacencyGridStrip();
-	virtual ~AdjacencyGridStrip();
+    /* Public metods */
+    AdjacencyGridStrip();
+    virtual ~AdjacencyGridStrip();
 
-	/* Public variables */
-	glw::GLuint			m_n_points;
-	AdjacencyGridPoint* m_points;
+    /* Public variables */
+    glw::GLuint m_n_points;
+    AdjacencyGridPoint *m_points;
 };
 
 /* Helper class for storing triangle data */
 class AdjacencyGridTriangle
 {
 public:
-	/* Public variables */
-	AdjacencyGridPoint* m_vertex_x;
-	AdjacencyGridPoint* m_vertex_x_adjacent;
-	AdjacencyGridPoint* m_vertex_y;
-	AdjacencyGridPoint* m_vertex_y_adjacent;
-	AdjacencyGridPoint* m_vertex_z;
-	AdjacencyGridPoint* m_vertex_z_adjacent;
+    /* Public variables */
+    AdjacencyGridPoint *m_vertex_x;
+    AdjacencyGridPoint *m_vertex_x_adjacent;
+    AdjacencyGridPoint *m_vertex_y;
+    AdjacencyGridPoint *m_vertex_y_adjacent;
+    AdjacencyGridPoint *m_vertex_z;
+    AdjacencyGridPoint *m_vertex_z_adjacent;
 };
 
 /* Helper class for storing grid data */
 class AdjacencyGrid
 {
 public:
-	/* Public metods */
-	AdjacencyGrid(void);
-	virtual ~AdjacencyGrid(void);
+    /* Public metods */
+    AdjacencyGrid(void);
+    virtual ~AdjacencyGrid(void);
 
-	/* Public variables */
-	AdjacencyGridLineSegment* m_line_segments;
-	AdjacencyGridStrip		  m_line_strip;
-	AdjacencyGridPoint*		  m_points;
-	AdjacencyGridTriangle*	m_triangles;
-	AdjacencyGridStrip		  m_triangle_strip;
+    /* Public variables */
+    AdjacencyGridLineSegment *m_line_segments;
+    AdjacencyGridStrip m_line_strip;
+    AdjacencyGridPoint *m_points;
+    AdjacencyGridTriangle *m_triangles;
+    AdjacencyGridStrip m_triangle_strip;
 
-	glw::GLuint m_n_points;
-	glw::GLuint m_n_segments;
-	glw::GLuint m_n_triangles;
+    glw::GLuint m_n_points;
+    glw::GLuint m_n_segments;
+    glw::GLuint m_n_triangles;
 };
 
 /* Helper class for storing test data */
 class AdjacencyTestData
 {
 public:
-	/* Public metods */
-	AdjacencyTestData(void);
-	virtual ~AdjacencyTestData(void);
+    /* Public metods */
+    AdjacencyTestData(void);
+    virtual ~AdjacencyTestData(void);
 
-	/* Public variables */
-	const char*	m_gs_code;
-	glw::GLenum	m_mode;
-	glw::GLuint	m_n_vertices;
-	AdjacencyGrid* m_grid;
-	glw::GLuint	m_geometry_bo_size;
-	glw::GLuint	m_index_data_bo_size;
-	glw::GLuint	m_vertex_data_bo_size;
-	glw::GLfloat*  m_expected_adjacency_geometry;
-	glw::GLfloat*  m_expected_geometry;
-	glw::GLuint*   m_index_data;
-	glw::GLenum	m_tf_mode;
-	glw::GLfloat*  m_vertex_data;
+    /* Public variables */
+    const char *m_gs_code;
+    glw::GLenum m_mode;
+    glw::GLuint m_n_vertices;
+    AdjacencyGrid *m_grid;
+    glw::GLuint m_geometry_bo_size;
+    glw::GLuint m_index_data_bo_size;
+    glw::GLuint m_vertex_data_bo_size;
+    glw::GLfloat *m_expected_adjacency_geometry;
+    glw::GLfloat *m_expected_geometry;
+    glw::GLuint *m_index_data;
+    glw::GLenum m_tf_mode;
+    glw::GLfloat *m_vertex_data;
 };
 
 /* Test class implementation */
 class GeometryShaderAdjacency : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderAdjacency(Context& context, const ExtParameters& extParams, const char* name, const char* description,
-							AdjacencyTestData& testData);
+    /* Public methods */
+    GeometryShaderAdjacency(Context &context, const ExtParameters &extParams, const char *name, const char *description,
+                            AdjacencyTestData &testData);
 
-	virtual ~GeometryShaderAdjacency()
-	{
-	}
+    virtual ~GeometryShaderAdjacency()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 protected:
-	/* Protected methods */
-	void		initTest(void);
-	const char* getFragmentShaderCode();
-	const char* getVertexShaderCode();
+    /* Protected methods */
+    void initTest(void);
+    const char *getFragmentShaderCode();
+    const char *getVertexShaderCode();
 
 private:
-	/* Private variables */
-	glw::GLuint		   m_adjacency_geometry_bo_id;
-	glw::GLuint		   m_fs_id;
-	glw::GLuint		   m_geometry_bo_id;
-	glw::GLuint		   m_gs_id;
-	glw::GLuint		   m_index_data_bo_id;
-	glw::GLuint		   m_vertex_data_bo_id;
-	glw::GLuint		   m_po_id;
-	AdjacencyTestData& m_test_data;
-	glw::GLuint		   m_vao_id;
-	glw::GLuint		   m_vs_id;
+    /* Private variables */
+    glw::GLuint m_adjacency_geometry_bo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_geometry_bo_id;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_index_data_bo_id;
+    glw::GLuint m_vertex_data_bo_id;
+    glw::GLuint m_po_id;
+    AdjacencyTestData &m_test_data;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_id;
 
-	/* Private constants */
-	glw::GLuint  m_components_input;
-	glw::GLfloat m_epsilon;
-	glw::GLuint  m_position_attribute_location;
+    /* Private constants */
+    glw::GLuint m_components_input;
+    glw::GLfloat m_epsilon;
+    glw::GLuint m_position_attribute_location;
 };
 
 } // namespace glcts

@@ -29,10 +29,10 @@
 namespace vkt
 {
 
-tcu::TestCaseGroup*	createRenderPassSparseRenderTargetTests(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*	createRenderPass2SparseRenderTargetTests(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*	createDynamicRenderingSparseRenderTargetTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createRenderPassSparseRenderTargetTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createRenderPass2SparseRenderTargetTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createDynamicRenderingSparseRenderTargetTests(tcu::TestContext &testCtx);
 
-} // vkt
+} // namespace vkt
 
 #endif // _VKTRENDERPASSSPARSERENDERTARGETTESTS_HPP

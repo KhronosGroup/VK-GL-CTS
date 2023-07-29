@@ -31,8 +31,8 @@ namespace vkt
 {
 namespace MemoryModel
 {
-tcu::TestCaseGroup* createPaddingTests (tcu::TestContext& testCtx);
-} // MemoryModel
-} // vkt
+tcu::TestCaseGroup *createPaddingTests(tcu::TestContext &testCtx);
+} // namespace MemoryModel
+} // namespace vkt
 
 #endif // _VKTMEMORYMODELPADDING_HPP

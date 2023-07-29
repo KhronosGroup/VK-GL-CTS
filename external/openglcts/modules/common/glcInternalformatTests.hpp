@@ -35,23 +35,23 @@ struct TestData;
 class InternalformatTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	InternalformatTests(deqp::Context& context);
+    /* Public methods */
+    InternalformatTests(deqp::Context &context);
 
-	void init(void);
+    void init(void);
 
 protected:
-	void getESTestData(TestData& testData, glu::ContextType& contextType);
-	void getGLTestData(TestData& testData, glu::ContextType& contextType);
+    void getESTestData(TestData &testData, glu::ContextType &contextType);
+    void getGLTestData(TestData &testData, glu::ContextType &contextType);
 
 private:
-	InternalformatTests(const InternalformatTests& other);
-	InternalformatTests& operator=(const InternalformatTests& other);
+    InternalformatTests(const InternalformatTests &other);
+    InternalformatTests &operator=(const InternalformatTests &other);
 
-	template <typename Data, unsigned int Size>
-	void append(std::vector<Data>& dataVector, const Data (&dataArray)[Size]);
+    template <typename Data, unsigned int Size>
+    void append(std::vector<Data> &dataVector, const Data (&dataArray)[Size]);
 };
 
-} /* glcts namespace */
+} // namespace glcts
 
 #endif // _GLCINTERNALFORMATTESTS_HPP

@@ -33,9 +33,10 @@ namespace synchronization
 
 class PipelineCacheData;
 
-tcu::TestCaseGroup* createSynchronizedOperationSingleQueueTests (tcu::TestContext& testCtx, SynchronizationType type, PipelineCacheData& pipelineCacheData);
+tcu::TestCaseGroup *createSynchronizedOperationSingleQueueTests(tcu::TestContext &testCtx, SynchronizationType type,
+                                                                PipelineCacheData &pipelineCacheData);
 
-} // synchronization
-} // vkt
+} // namespace synchronization
+} // namespace vkt
 
 #endif // _VKTSYNCHRONIZATIONOPERATIONSINGLEQUEUETESTS_HPP

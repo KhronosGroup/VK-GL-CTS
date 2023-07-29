@@ -77,102 +77,107 @@ using namespace vk;
 namespace
 {
 
-void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelineConstructionType)
+void createChildren(tcu::TestCaseGroup *group, PipelineConstructionType pipelineConstructionType)
 {
-	tcu::TestContext& testCtx = group->getTestContext();
+    tcu::TestContext &testCtx = group->getTestContext();
 
-	group->addChild(createStencilTests					(testCtx, pipelineConstructionType));
-	group->addChild(createBlendTests					(testCtx, pipelineConstructionType));
-	group->addChild(createDepthTests					(testCtx, pipelineConstructionType));
-	group->addChild(createDynamicOffsetTests			(testCtx, pipelineConstructionType));
+    group->addChild(createStencilTests(testCtx, pipelineConstructionType));
+    group->addChild(createBlendTests(testCtx, pipelineConstructionType));
+    group->addChild(createDepthTests(testCtx, pipelineConstructionType));
+    group->addChild(createDynamicOffsetTests(testCtx, pipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
-	group->addChild(createEarlyDestroyTests				(testCtx, pipelineConstructionType));
+    group->addChild(createEarlyDestroyTests(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
-	group->addChild(createImageTests					(testCtx, pipelineConstructionType));
-	group->addChild(createSamplerTests					(testCtx, pipelineConstructionType));
-	group->addChild(createImageViewTests				(testCtx, pipelineConstructionType));
+    group->addChild(createImageTests(testCtx, pipelineConstructionType));
+    group->addChild(createSamplerTests(testCtx, pipelineConstructionType));
+    group->addChild(createImageViewTests(testCtx, pipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
-	group->addChild(createImage2DViewOf3DTests			(testCtx, pipelineConstructionType));
+    group->addChild(createImage2DViewOf3DTests(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
-	group->addChild(createLogicOpTests					(testCtx, pipelineConstructionType));
+    group->addChild(createLogicOpTests(testCtx, pipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
-	group->addChild(createPushConstantTests				(testCtx, pipelineConstructionType));
-	group->addChild(createPushDescriptorTests			(testCtx, pipelineConstructionType));
-	group->addChild(createMatchedAttachmentsTests		(testCtx, pipelineConstructionType));
+    group->addChild(createPushConstantTests(testCtx, pipelineConstructionType));
+    group->addChild(createPushDescriptorTests(testCtx, pipelineConstructionType));
+    group->addChild(createMatchedAttachmentsTests(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
-	group->addChild(createSpecConstantTests				(testCtx, pipelineConstructionType));
-	group->addChild(createMultisampleTests				(testCtx, pipelineConstructionType, false));
-	group->addChild(createMultisampleTests				(testCtx, pipelineConstructionType, true));
-	group->addChild(createMultisampleInterpolationTests	(testCtx, pipelineConstructionType));
+    group->addChild(createSpecConstantTests(testCtx, pipelineConstructionType));
+    group->addChild(createMultisampleTests(testCtx, pipelineConstructionType, false));
+    group->addChild(createMultisampleTests(testCtx, pipelineConstructionType, true));
+    group->addChild(createMultisampleInterpolationTests(testCtx, pipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
-	group->addChild(createMultisampleShaderBuiltInTests	(testCtx, pipelineConstructionType));
+    group->addChild(createMultisampleShaderBuiltInTests(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
-	group->addChild(createTestGroup						(testCtx, "vertex_input", "", createVertexInputTests, pipelineConstructionType));
-	group->addChild(createInputAssemblyTests			(testCtx, pipelineConstructionType));
-	group->addChild(createInterfaceMatchingTests		(testCtx, pipelineConstructionType));
-	group->addChild(createTimestampTests				(testCtx, pipelineConstructionType));
+    group->addChild(createTestGroup(testCtx, "vertex_input", "", createVertexInputTests, pipelineConstructionType));
+    group->addChild(createInputAssemblyTests(testCtx, pipelineConstructionType));
+    group->addChild(createInterfaceMatchingTests(testCtx, pipelineConstructionType));
+    group->addChild(createTimestampTests(testCtx, pipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
-	group->addChild(createCacheTests					(testCtx, pipelineConstructionType));
-	group->addChild(createFramebufferAttachmentTests	(testCtx, pipelineConstructionType));
+    group->addChild(createCacheTests(testCtx, pipelineConstructionType));
+    group->addChild(createFramebufferAttachmentTests(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
-	group->addChild(createRenderToImageTests			(testCtx, pipelineConstructionType));
-	group->addChild(createStencilExportTests			(testCtx, pipelineConstructionType));
+    group->addChild(createRenderToImageTests(testCtx, pipelineConstructionType));
+    group->addChild(createStencilExportTests(testCtx, pipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
-	group->addChild(createCreationFeedbackTests			(testCtx, pipelineConstructionType));
-	group->addChild(createDepthRangeUnrestrictedTests	(testCtx, pipelineConstructionType));
-	group->addChild(createExecutablePropertiesTests		(testCtx, pipelineConstructionType));
+    group->addChild(createCreationFeedbackTests(testCtx, pipelineConstructionType));
+    group->addChild(createDepthRangeUnrestrictedTests(testCtx, pipelineConstructionType));
+    group->addChild(createExecutablePropertiesTests(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
-	group->addChild(createMaxVaryingsTests				(testCtx, pipelineConstructionType));
-	group->addChild(createBlendOperationAdvancedTests	(testCtx, pipelineConstructionType));
-	group->addChild(createExtendedDynamicStateTests		(testCtx, pipelineConstructionType));
-	group->addChild(createNoPositionTests				(testCtx, pipelineConstructionType));
+    group->addChild(createMaxVaryingsTests(testCtx, pipelineConstructionType));
+    group->addChild(createBlendOperationAdvancedTests(testCtx, pipelineConstructionType));
+    group->addChild(createExtendedDynamicStateTests(testCtx, pipelineConstructionType));
+    group->addChild(createNoPositionTests(testCtx, pipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
-	group->addChild(createBindPointTests				(testCtx, pipelineConstructionType));
+    group->addChild(createBindPointTests(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
-	group->addChild(createColorWriteEnableTests			(testCtx, pipelineConstructionType));
+    group->addChild(createColorWriteEnableTests(testCtx, pipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
-	group->addChild(createShaderModuleIdentifierTests	(testCtx, pipelineConstructionType));
+    group->addChild(createShaderModuleIdentifierTests(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
-	group->addChild(createColorWriteEnable2Tests		(testCtx, pipelineConstructionType));
+    group->addChild(createColorWriteEnable2Tests(testCtx, pipelineConstructionType));
 
-	// NOTE: all new pipeline tests should use GraphicsPipelineWrapper for pipeline creation
+    // NOTE: all new pipeline tests should use GraphicsPipelineWrapper for pipeline creation
 
-	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
-	{
-		// there is no support for pipelineConstructionType in amber
-		group->addChild(createMiscTests						(testCtx));
+    if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+    {
+        // there is no support for pipelineConstructionType in amber
+        group->addChild(createMiscTests(testCtx));
 
 #ifndef CTS_USES_VULKANSC
-		// compute pipeline tests should not be repeated basing on pipelineConstructionType
-		group->addChild(createDerivativeTests				(testCtx));
+        // compute pipeline tests should not be repeated basing on pipelineConstructionType
+        group->addChild(createDerivativeTests(testCtx));
 
-		// dont repeat tests requiring timing execution of vkCreate*Pipelines
-		group->addChild(createCacheControlTests				(testCtx));
+        // dont repeat tests requiring timing execution of vkCreate*Pipelines
+        group->addChild(createCacheControlTests(testCtx));
 #endif // CTS_USES_VULKANSC
-	}
+    }
 #ifndef CTS_USES_VULKANSC
-	else if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
-	{
-		// execute pipeline library specific tests only once
-		group->addChild(createPipelineLibraryTests		(testCtx));
-	}
+    else if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
+    {
+        // execute pipeline library specific tests only once
+        group->addChild(createPipelineLibraryTests(testCtx));
+    }
 #endif // CTS_USES_VULKANSC
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> monolithicGroup			(createTestGroup(testCtx, "monolithic",				"Monolithic pipeline tests",					createChildren, PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC));
-	de::MovePtr<tcu::TestCaseGroup> pipelineLibraryGroup	(createTestGroup(testCtx, "pipeline_library",		"Graphics pipeline library tests",				createChildren, PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY));
-	de::MovePtr<tcu::TestCaseGroup> fastLinkedLibraryGroup	(createTestGroup(testCtx, "fast_linked_library",	"Fast linked graphics pipeline library tests",	createChildren, PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY));
+    de::MovePtr<tcu::TestCaseGroup> monolithicGroup(createTestGroup(
+        testCtx, "monolithic", "Monolithic pipeline tests", createChildren, PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC));
+    de::MovePtr<tcu::TestCaseGroup> pipelineLibraryGroup(
+        createTestGroup(testCtx, "pipeline_library", "Graphics pipeline library tests", createChildren,
+                        PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY));
+    de::MovePtr<tcu::TestCaseGroup> fastLinkedLibraryGroup(
+        createTestGroup(testCtx, "fast_linked_library", "Fast linked graphics pipeline library tests", createChildren,
+                        PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY));
 
-	de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, "pipeline", "Pipeline Tests"));
-	mainGroup->addChild(monolithicGroup.release());
-	mainGroup->addChild(pipelineLibraryGroup.release());
-	mainGroup->addChild(fastLinkedLibraryGroup.release());
-	return mainGroup.release();
+    de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, "pipeline", "Pipeline Tests"));
+    mainGroup->addChild(monolithicGroup.release());
+    mainGroup->addChild(pipelineLibraryGroup.release());
+    mainGroup->addChild(fastLinkedLibraryGroup.release());
+    return mainGroup.release();
 }
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt

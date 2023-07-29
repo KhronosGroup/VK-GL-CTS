@@ -38,7 +38,7 @@ typedef struct deDynamicLibrary_s deDynamicLibrary;
  * This function opens and loads dynamic library to current process.
  * If library is already loaded, its reference count will be increased.
  *//*--------------------------------------------------------------------*/
-deDynamicLibrary*		deDynamicLibrary_open			(const char* fileName);
+deDynamicLibrary *deDynamicLibrary_open(const char *fileName);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Load function symbol from dynamic library.
@@ -48,7 +48,7 @@ deDynamicLibrary*		deDynamicLibrary_open			(const char* fileName);
  * \note Returned pointers will be invalidated if dynamic library is
  *       unloaded.
  *//*--------------------------------------------------------------------*/
-deFunctionPtr			deDynamicLibrary_getFunction	(const deDynamicLibrary* library, const char* symbolName);
+deFunctionPtr deDynamicLibrary_getFunction(const deDynamicLibrary *library, const char *symbolName);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Close dynamic library.
@@ -57,7 +57,7 @@ deFunctionPtr			deDynamicLibrary_getFunction	(const deDynamicLibrary* library, c
  * Closing library handle decrements reference count. Library is unloaded
  * from process if reference count reaches zero.
  *//*--------------------------------------------------------------------*/
-void					deDynamicLibrary_close			(deDynamicLibrary* library);
+void deDynamicLibrary_close(deDynamicLibrary *library);
 
 DE_END_EXTERN_C
 

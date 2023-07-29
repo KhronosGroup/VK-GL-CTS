@@ -30,7 +30,7 @@
 namespace de
 {
 class Random;
-} // de
+} // namespace de
 
 namespace deqp
 {
@@ -42,62 +42,57 @@ namespace ub
 
 enum FeatureBits
 {
-	FEATURE_VECTORS				= (1<<0),
-	FEATURE_MATRICES			= (1<<1),
-	FEATURE_ARRAYS				= (1<<2),
-	FEATURE_STRUCTS				= (1<<3),
-	FEATURE_NESTED_STRUCTS		= (1<<4),
-	FEATURE_INSTANCE_ARRAYS		= (1<<5),
-	FEATURE_VERTEX_BLOCKS		= (1<<6),
-	FEATURE_FRAGMENT_BLOCKS		= (1<<7),
-	FEATURE_SHARED_BLOCKS		= (1<<8),
-	FEATURE_UNUSED_UNIFORMS		= (1<<9),
-	FEATURE_UNUSED_MEMBERS		= (1<<10),
-	FEATURE_PACKED_LAYOUT		= (1<<11),
-	FEATURE_SHARED_LAYOUT		= (1<<12),
-	FEATURE_STD140_LAYOUT		= (1<<13),
-	FEATURE_MATRIX_LAYOUT		= (1<<14),	//!< Matrix layout flags.
-	FEATURE_ARRAYS_OF_ARRAYS	= (1<<15)
+    FEATURE_VECTORS          = (1 << 0),
+    FEATURE_MATRICES         = (1 << 1),
+    FEATURE_ARRAYS           = (1 << 2),
+    FEATURE_STRUCTS          = (1 << 3),
+    FEATURE_NESTED_STRUCTS   = (1 << 4),
+    FEATURE_INSTANCE_ARRAYS  = (1 << 5),
+    FEATURE_VERTEX_BLOCKS    = (1 << 6),
+    FEATURE_FRAGMENT_BLOCKS  = (1 << 7),
+    FEATURE_SHARED_BLOCKS    = (1 << 8),
+    FEATURE_UNUSED_UNIFORMS  = (1 << 9),
+    FEATURE_UNUSED_MEMBERS   = (1 << 10),
+    FEATURE_PACKED_LAYOUT    = (1 << 11),
+    FEATURE_SHARED_LAYOUT    = (1 << 12),
+    FEATURE_STD140_LAYOUT    = (1 << 13),
+    FEATURE_MATRIX_LAYOUT    = (1 << 14), //!< Matrix layout flags.
+    FEATURE_ARRAYS_OF_ARRAYS = (1 << 15)
 };
 
-} // ub
+} // namespace ub
 
 class RandomUniformBlockCase : public UniformBlockCase
 {
 public:
-							RandomUniformBlockCase		(tcu::TestContext&		testCtx,
-														 glu::RenderContext&	renderCtx,
-														 glu::GLSLVersion		glslVersion,
-														 const char*			name,
-														 const char*			description,
-														 BufferMode				bufferMode,
-														 deUint32				features,
-														 deUint32				seed);
+    RandomUniformBlockCase(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, glu::GLSLVersion glslVersion,
+                           const char *name, const char *description, BufferMode bufferMode, uint32_t features,
+                           uint32_t seed);
 
-	void					init						(void);
+    void init(void);
 
 private:
-	void					generateBlock				(de::Random& rnd, deUint32 layoutFlags);
-	void					generateUniform				(de::Random& rnd, ub::UniformBlock& block);
-	ub::VarType				generateType				(de::Random& rnd, int typeDepth, bool arrayOk);
+    void generateBlock(de::Random &rnd, uint32_t layoutFlags);
+    void generateUniform(de::Random &rnd, ub::UniformBlock &block);
+    ub::VarType generateType(de::Random &rnd, int typeDepth, bool arrayOk);
 
-	const deUint32			m_features;
-	const int				m_maxVertexBlocks;
-	const int				m_maxFragmentBlocks;
-	const int				m_maxSharedBlocks;
-	const int				m_maxInstances;
-	const int				m_maxArrayLength;
-	const int				m_maxStructDepth;
-	const int				m_maxBlockMembers;
-	const int				m_maxStructMembers;
-	const deUint32			m_seed;
+    const uint32_t m_features;
+    const int m_maxVertexBlocks;
+    const int m_maxFragmentBlocks;
+    const int m_maxSharedBlocks;
+    const int m_maxInstances;
+    const int m_maxArrayLength;
+    const int m_maxStructDepth;
+    const int m_maxBlockMembers;
+    const int m_maxStructMembers;
+    const uint32_t m_seed;
 
-	int						m_blockNdx;
-	int						m_uniformNdx;
-	int						m_structNdx;
+    int m_blockNdx;
+    int m_uniformNdx;
+    int m_structNdx;
 };
 
-} // gls
-} // deqp
+} // namespace gls
+} // namespace deqp
 
 #endif // _GLSRANDOMUNIFORMBLOCKCASE_HPP

@@ -35,28 +35,48 @@ namespace tcu
 class RenderTarget
 {
 public:
-							RenderTarget		(void);
-							RenderTarget		(int width, int height, const PixelFormat& pixelFormat, int depthBits, int stencilBits, int numSamples);
-							~RenderTarget		(void) {}
+    RenderTarget(void);
+    RenderTarget(int width, int height, const PixelFormat &pixelFormat, int depthBits, int stencilBits, int numSamples);
+    ~RenderTarget(void)
+    {
+    }
 
-	const PixelFormat&		getPixelFormat		(void) const { return m_pixelFormat;	}
-	int						getDepthBits		(void) const { return m_depthBits;		}
-	int						getStencilBits		(void) const { return m_stencilBits;	}
-	int						getNumSamples		(void) const { return m_numSamples;		}
-	int						getWidth			(void) const { return m_width;			}
-	int						getHeight			(void) const { return m_height;			}
+    const PixelFormat &getPixelFormat(void) const
+    {
+        return m_pixelFormat;
+    }
+    int getDepthBits(void) const
+    {
+        return m_depthBits;
+    }
+    int getStencilBits(void) const
+    {
+        return m_stencilBits;
+    }
+    int getNumSamples(void) const
+    {
+        return m_numSamples;
+    }
+    int getWidth(void) const
+    {
+        return m_width;
+    }
+    int getHeight(void) const
+    {
+        return m_height;
+    }
 
 private:
-	// \note Copy constructor and assignment operators are public and auto-generated
+    // \note Copy constructor and assignment operators are public and auto-generated
 
-	int						m_width;
-	int						m_height;
-	PixelFormat				m_pixelFormat;
-	int						m_depthBits;
-	int						m_stencilBits;
-	int						m_numSamples;		//!< MSAA sample count.
+    int m_width;
+    int m_height;
+    PixelFormat m_pixelFormat;
+    int m_depthBits;
+    int m_stencilBits;
+    int m_numSamples; //!< MSAA sample count.
 };
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCURENDERTARGET_HPP

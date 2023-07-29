@@ -31,8 +31,8 @@ namespace glw
 class Functions;
 
 //! Set function table for current thread.
-void	setCurrentThreadFunctions	(const glw::Functions* gl);
+void setCurrentThreadFunctions(const glw::Functions *gl);
 
-}
+} // namespace glw
 
 #endif // _GLWWRAPPER_HPP

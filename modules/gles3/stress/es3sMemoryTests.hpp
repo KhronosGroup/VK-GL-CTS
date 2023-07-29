@@ -36,18 +36,18 @@ namespace Stress
 class MemoryTests : public TestCaseGroup
 {
 public:
-					MemoryTests		(Context& testCtx);
-					~MemoryTests	(void);
+    MemoryTests(Context &testCtx);
+    ~MemoryTests(void);
 
-	void			init			(void);
+    void init(void);
 
 private:
-					MemoryTests		(const MemoryTests& other);
-	MemoryTests&	operator=		(const MemoryTests& other);
+    MemoryTests(const MemoryTests &other);
+    MemoryTests &operator=(const MemoryTests &other);
 };
 
-} // Stress
-} // gles3
-} // deqp
+} // namespace Stress
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3SMEMORYTESTS_HPP

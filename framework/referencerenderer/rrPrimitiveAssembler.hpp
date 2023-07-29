@@ -33,481 +33,509 @@ namespace pa
 
 struct Triangle
 {
-	enum
-	{
-		NUM_VERTICES = 3
-	};
+    enum
+    {
+        NUM_VERTICES = 3
+    };
 
-	Triangle (void)
-		: v0				(DE_NULL)
-		, v1				(DE_NULL)
-		, v2				(DE_NULL)
-		, provokingIndex	(-1)
-	{
-	}
+    Triangle(void) : v0(DE_NULL), v1(DE_NULL), v2(DE_NULL), provokingIndex(-1)
+    {
+    }
 
-	Triangle (VertexPacket* v0_, VertexPacket* v1_, VertexPacket* v2_, int provokingIndex_)
-		: v0				(v0_)
-		, v1				(v1_)
-		, v2				(v2_)
-		, provokingIndex	(provokingIndex_)
-	{
-	}
+    Triangle(VertexPacket *v0_, VertexPacket *v1_, VertexPacket *v2_, int provokingIndex_)
+        : v0(v0_)
+        , v1(v1_)
+        , v2(v2_)
+        , provokingIndex(provokingIndex_)
+    {
+    }
 
-	VertexPacket* getProvokingVertex (void)
-	{
-		switch (provokingIndex)
-		{
-			case 0: return v0;
-			case 1: return v1;
-			case 2: return v2;
-			default:
-				DE_ASSERT(false);
-				return DE_NULL;
-		}
-	}
+    VertexPacket *getProvokingVertex(void)
+    {
+        switch (provokingIndex)
+        {
+        case 0:
+            return v0;
+        case 1:
+            return v1;
+        case 2:
+            return v2;
+        default:
+            DE_ASSERT(false);
+            return DE_NULL;
+        }
+    }
 
-	VertexPacket*	v0;
-	VertexPacket*	v1;
-	VertexPacket*	v2;
+    VertexPacket *v0;
+    VertexPacket *v1;
+    VertexPacket *v2;
 
-	int				provokingIndex;
+    int provokingIndex;
 } DE_WARN_UNUSED_TYPE;
 
 struct Triangles
 {
-	template <typename Iterator>
-	static void exec (Iterator outputIterator, VertexPacket* const* vertices, size_t numVertices, rr::ProvokingVertex provokingConvention)
-	{
-		const int provokingOffset = (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (2);
+    template <typename Iterator>
+    static void exec(Iterator outputIterator, VertexPacket *const *vertices, size_t numVertices,
+                     rr::ProvokingVertex provokingConvention)
+    {
+        const int provokingOffset = (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (2);
 
-		for (size_t ndx = 0; ndx + 2 < numVertices; ndx += 3)
-			*(outputIterator++) = Triangle(vertices[ndx], vertices[ndx+1], vertices[ndx+2], provokingOffset);
-	}
+        for (size_t ndx = 0; ndx + 2 < numVertices; ndx += 3)
+            *(outputIterator++) = Triangle(vertices[ndx], vertices[ndx + 1], vertices[ndx + 2], provokingOffset);
+    }
 
-	static size_t getPrimitiveCount (size_t vertices)
-	{
-		return vertices / 3;
-	}
+    static size_t getPrimitiveCount(size_t vertices)
+    {
+        return vertices / 3;
+    }
 } DE_WARN_UNUSED_TYPE;
 
 struct TriangleStrip
 {
-	template <typename Iterator>
-	static void exec (Iterator outputIterator, VertexPacket* const* vertices, size_t numVertices, rr::ProvokingVertex provokingConvention)
-	{
-		if (numVertices < 3)
-		{
-		}
-		else
-		{
-			VertexPacket* vert0 = vertices[0];
-			VertexPacket* vert1 = vertices[1];
-			size_t ndx = 2;
+    template <typename Iterator>
+    static void exec(Iterator outputIterator, VertexPacket *const *vertices, size_t numVertices,
+                     rr::ProvokingVertex provokingConvention)
+    {
+        if (numVertices < 3)
+        {
+        }
+        else
+        {
+            VertexPacket *vert0 = vertices[0];
+            VertexPacket *vert1 = vertices[1];
+            size_t ndx          = 2;
 
-			for (;;)
-			{
-				{
-					if (ndx >= numVertices)
-						break;
+            for (;;)
+            {
+                {
+                    if (ndx >= numVertices)
+                        break;
 
-					*(outputIterator++) = Triangle(vert0, vert1, vertices[ndx], (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (2));
-					vert0 = vertices[ndx];
+                    *(outputIterator++) = Triangle(vert0, vert1, vertices[ndx],
+                                                   (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (2));
+                    vert0               = vertices[ndx];
 
-					ndx++;
-				}
+                    ndx++;
+                }
 
-				{
-					if (ndx >= numVertices)
-						break;
+                {
+                    if (ndx >= numVertices)
+                        break;
 
-					*(outputIterator++) = Triangle(vert0, vert1, vertices[ndx], (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (1) : (2));
-					vert1 = vertices[ndx];
+                    *(outputIterator++) = Triangle(vert0, vert1, vertices[ndx],
+                                                   (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (1) : (2));
+                    vert1               = vertices[ndx];
 
-					ndx++;
-				}
-			}
-		}
-	}
+                    ndx++;
+                }
+            }
+        }
+    }
 
-	static size_t getPrimitiveCount (size_t vertices)
-	{
-		return (vertices < 3) ? (0) : (vertices - 2);
-	}
+    static size_t getPrimitiveCount(size_t vertices)
+    {
+        return (vertices < 3) ? (0) : (vertices - 2);
+    }
 } DE_WARN_UNUSED_TYPE;
 
 struct TriangleFan
 {
-	template <typename Iterator>
-	static void exec (Iterator outputIterator, VertexPacket* const* vertices, size_t numVertices, rr::ProvokingVertex provokingConvention)
-	{
-		if (numVertices == 0)
-		{
-		}
-		else
-		{
-			const int			provokingOffset	= (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (1) : (2);
-			VertexPacket* const	first			= vertices[0];
+    template <typename Iterator>
+    static void exec(Iterator outputIterator, VertexPacket *const *vertices, size_t numVertices,
+                     rr::ProvokingVertex provokingConvention)
+    {
+        if (numVertices == 0)
+        {
+        }
+        else
+        {
+            const int provokingOffset = (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (1) : (2);
+            VertexPacket *const first = vertices[0];
 
-			for (size_t ndx = 1; ndx + 1 < numVertices; ++ndx)
-				*(outputIterator++) = Triangle(first, vertices[ndx], vertices[ndx+1], provokingOffset);
-		}
-	}
+            for (size_t ndx = 1; ndx + 1 < numVertices; ++ndx)
+                *(outputIterator++) = Triangle(first, vertices[ndx], vertices[ndx + 1], provokingOffset);
+        }
+    }
 
-	static size_t getPrimitiveCount (size_t vertices)
-	{
-		return (vertices < 3) ? (0) : (vertices - 2);
-	}
+    static size_t getPrimitiveCount(size_t vertices)
+    {
+        return (vertices < 3) ? (0) : (vertices - 2);
+    }
 } DE_WARN_UNUSED_TYPE;
 
 struct Line
 {
-	enum
-	{
-		NUM_VERTICES = 2
-	};
+    enum
+    {
+        NUM_VERTICES = 2
+    };
 
-	Line (void)
-		: v0				(DE_NULL)
-		, v1				(DE_NULL)
-		, provokingIndex	(-1)
-	{
-	}
+    Line(void) : v0(DE_NULL), v1(DE_NULL), provokingIndex(-1)
+    {
+    }
 
-	Line (VertexPacket* v0_, VertexPacket* v1_, int provokingIndex_)
-		: v0				(v0_)
-		, v1				(v1_)
-		, provokingIndex	(provokingIndex_)
-	{
-	}
+    Line(VertexPacket *v0_, VertexPacket *v1_, int provokingIndex_) : v0(v0_), v1(v1_), provokingIndex(provokingIndex_)
+    {
+    }
 
-	VertexPacket* getProvokingVertex (void)
-	{
-		switch (provokingIndex)
-		{
-			case 0: return v0;
-			case 1: return v1;
-			default:
-				DE_ASSERT(false);
-				return DE_NULL;
-		}
-	}
+    VertexPacket *getProvokingVertex(void)
+    {
+        switch (provokingIndex)
+        {
+        case 0:
+            return v0;
+        case 1:
+            return v1;
+        default:
+            DE_ASSERT(false);
+            return DE_NULL;
+        }
+    }
 
-	VertexPacket*	v0;
-	VertexPacket*	v1;
+    VertexPacket *v0;
+    VertexPacket *v1;
 
-	int				provokingIndex;
+    int provokingIndex;
 } DE_WARN_UNUSED_TYPE;
 
 struct Lines
 {
-	template <typename Iterator>
-	static void exec (Iterator outputIterator, VertexPacket* const* vertices, size_t numVertices, rr::ProvokingVertex provokingConvention)
-	{
-		const int provokingOffset = (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (1);
+    template <typename Iterator>
+    static void exec(Iterator outputIterator, VertexPacket *const *vertices, size_t numVertices,
+                     rr::ProvokingVertex provokingConvention)
+    {
+        const int provokingOffset = (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (1);
 
-		for (size_t ndx = 0; ndx + 1 < numVertices; ndx += 2)
-			*(outputIterator++) = Line(vertices[ndx], vertices[ndx+1], provokingOffset);
-	}
+        for (size_t ndx = 0; ndx + 1 < numVertices; ndx += 2)
+            *(outputIterator++) = Line(vertices[ndx], vertices[ndx + 1], provokingOffset);
+    }
 
-	static size_t getPrimitiveCount (size_t vertices)
-	{
-		return vertices / 2;
-	}
+    static size_t getPrimitiveCount(size_t vertices)
+    {
+        return vertices / 2;
+    }
 } DE_WARN_UNUSED_TYPE;
 
 struct LineStrip
 {
-	template <typename Iterator>
-	static void exec (Iterator outputIterator, VertexPacket* const* vertices, size_t numVertices, rr::ProvokingVertex provokingConvention)
-	{
-		if (numVertices == 0)
-		{
-		}
-		else
-		{
-			VertexPacket* prev = vertices[0];
+    template <typename Iterator>
+    static void exec(Iterator outputIterator, VertexPacket *const *vertices, size_t numVertices,
+                     rr::ProvokingVertex provokingConvention)
+    {
+        if (numVertices == 0)
+        {
+        }
+        else
+        {
+            VertexPacket *prev = vertices[0];
 
-			for (size_t ndx = 1; ndx < numVertices; ++ndx)
-			{
-				*(outputIterator++) = Line(prev, vertices[ndx], (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (1));
-				prev = vertices[ndx];
-			}
-		}
-	}
+            for (size_t ndx = 1; ndx < numVertices; ++ndx)
+            {
+                *(outputIterator++) =
+                    Line(prev, vertices[ndx], (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (1));
+                prev = vertices[ndx];
+            }
+        }
+    }
 
-	static size_t getPrimitiveCount (size_t vertices)
-	{
-		return (vertices < 2) ? (0) : (vertices - 1);
-	}
+    static size_t getPrimitiveCount(size_t vertices)
+    {
+        return (vertices < 2) ? (0) : (vertices - 1);
+    }
 } DE_WARN_UNUSED_TYPE;
 
 struct LineLoop
 {
-	template <typename Iterator>
-	static void exec (Iterator outputIterator, VertexPacket* const* vertices, size_t numVertices, rr::ProvokingVertex provokingConvention)
-	{
-		if (numVertices < 2)
-		{
-		}
-		else
-		{
-			VertexPacket* prev = vertices[0];
+    template <typename Iterator>
+    static void exec(Iterator outputIterator, VertexPacket *const *vertices, size_t numVertices,
+                     rr::ProvokingVertex provokingConvention)
+    {
+        if (numVertices < 2)
+        {
+        }
+        else
+        {
+            VertexPacket *prev = vertices[0];
 
-			for (size_t ndx = 1; ndx < numVertices; ++ndx)
-			{
-				*(outputIterator++) = Line(prev, vertices[ndx], (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (1));
-				prev = vertices[ndx];
-			}
+            for (size_t ndx = 1; ndx < numVertices; ++ndx)
+            {
+                *(outputIterator++) =
+                    Line(prev, vertices[ndx], (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (1));
+                prev = vertices[ndx];
+            }
 
-			*(outputIterator++) = Line(prev, vertices[0], (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (1));
-		}
-	}
+            *(outputIterator++) =
+                Line(prev, vertices[0], (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (1));
+        }
+    }
 
-	static size_t getPrimitiveCount (size_t vertices)
-	{
-		return (vertices < 2) ? (0) : (vertices);
-	}
+    static size_t getPrimitiveCount(size_t vertices)
+    {
+        return (vertices < 2) ? (0) : (vertices);
+    }
 } DE_WARN_UNUSED_TYPE;
 
 struct Point
 {
-	enum
-	{
-		NUM_VERTICES = 1
-	};
+    enum
+    {
+        NUM_VERTICES = 1
+    };
 
-	Point (void)
-		: v0(DE_NULL)
-	{
-	}
+    Point(void) : v0(DE_NULL)
+    {
+    }
 
-	Point (VertexPacket* v0_)
-		: v0(v0_)
-	{
-	}
+    Point(VertexPacket *v0_) : v0(v0_)
+    {
+    }
 
-	VertexPacket* v0;
+    VertexPacket *v0;
 } DE_WARN_UNUSED_TYPE;
 
 struct Points
 {
-	template <typename Iterator>
-	static void exec (Iterator outputIterator, VertexPacket* const* vertices, size_t numVertices, rr::ProvokingVertex provokingConvention)
-	{
-		DE_UNREF(provokingConvention);
+    template <typename Iterator>
+    static void exec(Iterator outputIterator, VertexPacket *const *vertices, size_t numVertices,
+                     rr::ProvokingVertex provokingConvention)
+    {
+        DE_UNREF(provokingConvention);
 
-		for (size_t ndx = 0; ndx < numVertices; ++ndx)
-			*(outputIterator++) = Point(vertices[ndx]);
-	}
+        for (size_t ndx = 0; ndx < numVertices; ++ndx)
+            *(outputIterator++) = Point(vertices[ndx]);
+    }
 
-	static size_t getPrimitiveCount (size_t vertices)
-	{
-		return (vertices);
-	}
+    static size_t getPrimitiveCount(size_t vertices)
+    {
+        return (vertices);
+    }
 } DE_WARN_UNUSED_TYPE;
 
 struct LineAdjacency
 {
-	enum
-	{
-		NUM_VERTICES = 4
-	};
+    enum
+    {
+        NUM_VERTICES = 4
+    };
 
-	LineAdjacency (void)
-		: v0				(DE_NULL)
-		, v1				(DE_NULL)
-		, v2				(DE_NULL)
-		, v3				(DE_NULL)
-		, provokingIndex	(-1)
-	{
-	}
+    LineAdjacency(void) : v0(DE_NULL), v1(DE_NULL), v2(DE_NULL), v3(DE_NULL), provokingIndex(-1)
+    {
+    }
 
-	LineAdjacency (VertexPacket* v0_, VertexPacket* v1_, VertexPacket* v2_, VertexPacket* v3_, int provokingIndex_)
-		: v0				(v0_)
-		, v1				(v1_)
-		, v2				(v2_)
-		, v3				(v3_)
-		, provokingIndex	(provokingIndex_)
-	{
-	}
+    LineAdjacency(VertexPacket *v0_, VertexPacket *v1_, VertexPacket *v2_, VertexPacket *v3_, int provokingIndex_)
+        : v0(v0_)
+        , v1(v1_)
+        , v2(v2_)
+        , v3(v3_)
+        , provokingIndex(provokingIndex_)
+    {
+    }
 
-	VertexPacket* getProvokingVertex (void)
-	{
-		switch (provokingIndex)
-		{
-			case 1: return v1;
-			case 2: return v2;
-			default:
-				DE_ASSERT(false);
-				return DE_NULL;
-		}
-	}
+    VertexPacket *getProvokingVertex(void)
+    {
+        switch (provokingIndex)
+        {
+        case 1:
+            return v1;
+        case 2:
+            return v2;
+        default:
+            DE_ASSERT(false);
+            return DE_NULL;
+        }
+    }
 
-	VertexPacket*	v0;
-	VertexPacket*	v1;
-	VertexPacket*	v2;
-	VertexPacket*	v3;
+    VertexPacket *v0;
+    VertexPacket *v1;
+    VertexPacket *v2;
+    VertexPacket *v3;
 
-	int				provokingIndex;
+    int provokingIndex;
 } DE_WARN_UNUSED_TYPE;
 
 struct LinesAdjacency
 {
-	template <typename Iterator>
-	static void exec (Iterator outputIterator, VertexPacket* const* vertices, size_t numVertices, rr::ProvokingVertex provokingConvention)
-	{
-		const int provokingOffset = (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (1) : (2);
+    template <typename Iterator>
+    static void exec(Iterator outputIterator, VertexPacket *const *vertices, size_t numVertices,
+                     rr::ProvokingVertex provokingConvention)
+    {
+        const int provokingOffset = (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (1) : (2);
 
-		for (size_t ndx = 0; ndx + 3 < numVertices; ndx += 4)
-			*(outputIterator++) = LineAdjacency(vertices[ndx], vertices[ndx+1], vertices[ndx+2], vertices[ndx+3], provokingOffset);
-	}
+        for (size_t ndx = 0; ndx + 3 < numVertices; ndx += 4)
+            *(outputIterator++) =
+                LineAdjacency(vertices[ndx], vertices[ndx + 1], vertices[ndx + 2], vertices[ndx + 3], provokingOffset);
+    }
 
-	static size_t getPrimitiveCount (size_t vertices)
-	{
-		return vertices / 4;
-	}
+    static size_t getPrimitiveCount(size_t vertices)
+    {
+        return vertices / 4;
+    }
 } DE_WARN_UNUSED_TYPE;
 
 struct LineStripAdjacency
 {
-	template <typename Iterator>
-	static void exec (Iterator outputIterator, VertexPacket* const* vertices, size_t numVertices, rr::ProvokingVertex provokingConvention)
-	{
-		const int provokingOffset = (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (1) : (2);
+    template <typename Iterator>
+    static void exec(Iterator outputIterator, VertexPacket *const *vertices, size_t numVertices,
+                     rr::ProvokingVertex provokingConvention)
+    {
+        const int provokingOffset = (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (1) : (2);
 
-		for (size_t ndx = 0; ndx + 3 < numVertices; ++ndx)
-			*(outputIterator++) = LineAdjacency(vertices[ndx], vertices[ndx+1], vertices[ndx+2], vertices[ndx+3], provokingOffset);
-	}
+        for (size_t ndx = 0; ndx + 3 < numVertices; ++ndx)
+            *(outputIterator++) =
+                LineAdjacency(vertices[ndx], vertices[ndx + 1], vertices[ndx + 2], vertices[ndx + 3], provokingOffset);
+    }
 
-	static size_t getPrimitiveCount (size_t vertices)
-	{
-		return (vertices < 4) ? (0) : (vertices - 3);
-	}
+    static size_t getPrimitiveCount(size_t vertices)
+    {
+        return (vertices < 4) ? (0) : (vertices - 3);
+    }
 } DE_WARN_UNUSED_TYPE;
 
 struct TriangleAdjacency
 {
-	enum
-	{
-		NUM_VERTICES = 6
-	};
+    enum
+    {
+        NUM_VERTICES = 6
+    };
 
-	TriangleAdjacency (void)
-		: v0				(DE_NULL)
-		, v1				(DE_NULL)
-		, v2				(DE_NULL)
-		, v3				(DE_NULL)
-		, v4				(DE_NULL)
-		, v5				(DE_NULL)
-		, provokingIndex	(-1)
-	{
-	}
+    TriangleAdjacency(void)
+        : v0(DE_NULL)
+        , v1(DE_NULL)
+        , v2(DE_NULL)
+        , v3(DE_NULL)
+        , v4(DE_NULL)
+        , v5(DE_NULL)
+        , provokingIndex(-1)
+    {
+    }
 
-	TriangleAdjacency (VertexPacket* v0_, VertexPacket* v1_, VertexPacket* v2_, VertexPacket* v3_, VertexPacket* v4_, VertexPacket* v5_, int provokingIndex_)
-		: v0				(v0_)
-		, v1				(v1_)
-		, v2				(v2_)
-		, v3				(v3_)
-		, v4				(v4_)
-		, v5				(v5_)
-		, provokingIndex	(provokingIndex_)
-	{
-	}
+    TriangleAdjacency(VertexPacket *v0_, VertexPacket *v1_, VertexPacket *v2_, VertexPacket *v3_, VertexPacket *v4_,
+                      VertexPacket *v5_, int provokingIndex_)
+        : v0(v0_)
+        , v1(v1_)
+        , v2(v2_)
+        , v3(v3_)
+        , v4(v4_)
+        , v5(v5_)
+        , provokingIndex(provokingIndex_)
+    {
+    }
 
-	VertexPacket* getProvokingVertex (void)
-	{
-		switch (provokingIndex)
-		{
-			case 0: return v0;
-			case 2: return v2;
-			case 4: return v4;
-			default:
-				DE_ASSERT(false);
-				return DE_NULL;
-		}
-	}
+    VertexPacket *getProvokingVertex(void)
+    {
+        switch (provokingIndex)
+        {
+        case 0:
+            return v0;
+        case 2:
+            return v2;
+        case 4:
+            return v4;
+        default:
+            DE_ASSERT(false);
+            return DE_NULL;
+        }
+    }
 
-	VertexPacket*	v0;
-	VertexPacket*	v1;	//!< adjacent
-	VertexPacket*	v2;
-	VertexPacket*	v3;	//!< adjacent
-	VertexPacket*	v4;
-	VertexPacket*	v5;	//!< adjacent
+    VertexPacket *v0;
+    VertexPacket *v1; //!< adjacent
+    VertexPacket *v2;
+    VertexPacket *v3; //!< adjacent
+    VertexPacket *v4;
+    VertexPacket *v5; //!< adjacent
 
-	int				provokingIndex;
+    int provokingIndex;
 } DE_WARN_UNUSED_TYPE;
 
 struct TrianglesAdjacency
 {
-	template <typename Iterator>
-	static void exec (Iterator outputIterator, VertexPacket* const* vertices, size_t numVertices, rr::ProvokingVertex provokingConvention)
-	{
-		const int provokingOffset = (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (4);
+    template <typename Iterator>
+    static void exec(Iterator outputIterator, VertexPacket *const *vertices, size_t numVertices,
+                     rr::ProvokingVertex provokingConvention)
+    {
+        const int provokingOffset = (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (4);
 
-		for (size_t ndx = 0; ndx + 5 < numVertices; ndx += 6)
-			*(outputIterator++) = TriangleAdjacency(vertices[ndx], vertices[ndx+1], vertices[ndx+2], vertices[ndx+3], vertices[ndx+4], vertices[ndx+5], provokingOffset);
-	}
+        for (size_t ndx = 0; ndx + 5 < numVertices; ndx += 6)
+            *(outputIterator++) =
+                TriangleAdjacency(vertices[ndx], vertices[ndx + 1], vertices[ndx + 2], vertices[ndx + 3],
+                                  vertices[ndx + 4], vertices[ndx + 5], provokingOffset);
+    }
 
-	static size_t getPrimitiveCount (size_t vertices)
-	{
-		return vertices / 6;
-	}
+    static size_t getPrimitiveCount(size_t vertices)
+    {
+        return vertices / 6;
+    }
 } DE_WARN_UNUSED_TYPE;
 
 struct TriangleStripAdjacency
 {
-	template <typename Iterator>
-	static void exec (Iterator outputIterator, VertexPacket* const* vertices, size_t numVertices, rr::ProvokingVertex provokingConvention)
-	{
-		if (numVertices < 6)
-		{
-		}
-		else if (numVertices < 8)
-		{
-			*(outputIterator++) = TriangleAdjacency(vertices[0], vertices[1], vertices[2], vertices[5], vertices[4], vertices[3], (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (4));
-		}
-		else
-		{
-			const size_t primitiveCount = getPrimitiveCount(numVertices);
-			size_t i;
+    template <typename Iterator>
+    static void exec(Iterator outputIterator, VertexPacket *const *vertices, size_t numVertices,
+                     rr::ProvokingVertex provokingConvention)
+    {
+        if (numVertices < 6)
+        {
+        }
+        else if (numVertices < 8)
+        {
+            *(outputIterator++) =
+                TriangleAdjacency(vertices[0], vertices[1], vertices[2], vertices[5], vertices[4], vertices[3],
+                                  (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (4));
+        }
+        else
+        {
+            const size_t primitiveCount = getPrimitiveCount(numVertices);
+            size_t i;
 
-			// first
-			*(outputIterator++) = TriangleAdjacency(vertices[0], vertices[1], vertices[2], vertices[6], vertices[4], vertices[3], (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (4));
+            // first
+            *(outputIterator++) =
+                TriangleAdjacency(vertices[0], vertices[1], vertices[2], vertices[6], vertices[4], vertices[3],
+                                  (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (4));
 
-			// middle
-			for (i = 1; i + 1 < primitiveCount; ++i)
-			{
-				// odd
-				if (i % 2 == 1)
-				{
-					*(outputIterator++) = TriangleAdjacency(vertices[2*i+2], vertices[2*i-2], vertices[2*i+0], vertices[2*i+3], vertices[2*i+4], vertices[2*i+6], (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (2) : (4));
-				}
-				// even
-				else
-				{
-					*(outputIterator++) = TriangleAdjacency(vertices[2*i+0], vertices[2*i-2], vertices[2*i+2], vertices[2*i+6], vertices[2*i+4], vertices[2*i+3], (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (4));
-				}
-			}
+            // middle
+            for (i = 1; i + 1 < primitiveCount; ++i)
+            {
+                // odd
+                if (i % 2 == 1)
+                {
+                    *(outputIterator++) =
+                        TriangleAdjacency(vertices[2 * i + 2], vertices[2 * i - 2], vertices[2 * i + 0],
+                                          vertices[2 * i + 3], vertices[2 * i + 4], vertices[2 * i + 6],
+                                          (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (2) : (4));
+                }
+                // even
+                else
+                {
+                    *(outputIterator++) =
+                        TriangleAdjacency(vertices[2 * i + 0], vertices[2 * i - 2], vertices[2 * i + 2],
+                                          vertices[2 * i + 6], vertices[2 * i + 4], vertices[2 * i + 3],
+                                          (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (4));
+                }
+            }
 
-			// last
+            // last
 
-			// odd
-			if (i % 2 == 1)
-				*(outputIterator++) = TriangleAdjacency(vertices[2*i+2], vertices[2*i-2], vertices[2*i+0], vertices[2*i+3], vertices[2*i+4], vertices[2*i+5], (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (2) : (4));
-			// even
-			else
-				*(outputIterator++) = TriangleAdjacency(vertices[2*i+0], vertices[2*i-2], vertices[2*i+2], vertices[2*i+5], vertices[2*i+4], vertices[2*i+3], (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (4));
-		}
-	}
+            // odd
+            if (i % 2 == 1)
+                *(outputIterator++) = TriangleAdjacency(vertices[2 * i + 2], vertices[2 * i - 2], vertices[2 * i + 0],
+                                                        vertices[2 * i + 3], vertices[2 * i + 4], vertices[2 * i + 5],
+                                                        (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (2) : (4));
+            // even
+            else
+                *(outputIterator++) = TriangleAdjacency(vertices[2 * i + 0], vertices[2 * i - 2], vertices[2 * i + 2],
+                                                        vertices[2 * i + 5], vertices[2 * i + 4], vertices[2 * i + 3],
+                                                        (provokingConvention == rr::PROVOKINGVERTEX_FIRST) ? (0) : (4));
+        }
+    }
 
-	static size_t getPrimitiveCount (size_t vertices)
-	{
-		return (vertices < 6) ? 0 : ((vertices - 4) / 2);
-	}
+    static size_t getPrimitiveCount(size_t vertices)
+    {
+        return (vertices < 6) ? 0 : ((vertices - 4) / 2);
+    }
 } DE_WARN_UNUSED_TYPE;
 
-} // pa
-} // rr
+} // namespace pa
+} // namespace rr
 
 #endif // _RRPRIMITIVEASSEMBLER_HPP

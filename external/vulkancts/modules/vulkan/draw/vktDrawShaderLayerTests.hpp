@@ -33,9 +33,9 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup*		createShaderLayerTests	(tcu::TestContext& testCtx, const SharedGroupParams groupParams);
+tcu::TestCaseGroup *createShaderLayerTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams);
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWSHADERLAYERTESTS_HPP

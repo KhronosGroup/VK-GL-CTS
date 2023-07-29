@@ -42,19 +42,19 @@ namespace glcts
 class GLCoverageExtensionSpecificEnumsAreRecognizedTest : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	GLCoverageExtensionSpecificEnumsAreRecognizedTest(Context& context);
+    /* Public methods */
+    GLCoverageExtensionSpecificEnumsAreRecognizedTest(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
+    /* Private methods */
 
-	/* Private fields */
-	glw::GLboolean gl_oes_texture_storage_multisample_2d_array_supported;
-	glw::GLuint	to_id_2d_multisample;
-	glw::GLuint	to_id_2d_multisample_array;
+    /* Private fields */
+    glw::GLboolean gl_oes_texture_storage_multisample_2d_array_supported;
+    glw::GLuint to_id_2d_multisample;
+    glw::GLuint to_id_2d_multisample_array;
 };
 
 /** Test case: glGetTexParameter*() should accept GL_TEXTURE_2D_MULTISAMPLE
@@ -64,17 +64,17 @@ private:
 class GLCoverageGLGetTexParameterReportsCorrectDefaultValuesForMultisampleTextureTargets : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	GLCoverageGLGetTexParameterReportsCorrectDefaultValuesForMultisampleTextureTargets(Context& context);
+    /* Public methods */
+    GLCoverageGLGetTexParameterReportsCorrectDefaultValuesForMultisampleTextureTargets(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	glw::GLboolean gl_oes_texture_storage_multisample_2d_array_supported;
-	glw::GLuint	to_id_2d;
-	glw::GLuint	to_id_2d_array;
+    /* Private methods */
+    glw::GLboolean gl_oes_texture_storage_multisample_2d_array_supported;
+    glw::GLuint to_id_2d;
+    glw::GLuint to_id_2d_array;
 };
 
 /** Test case: Checks disabled/enabled status of GL_SAMPLE_MASK mode is reported correctly.
@@ -82,10 +82,10 @@ private:
 class GLCoverageGLSampleMaskModeStatusIsReportedCorrectlyTest : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	GLCoverageGLSampleMaskModeStatusIsReportedCorrectlyTest(Context& context);
+    /* Public methods */
+    GLCoverageGLSampleMaskModeStatusIsReportedCorrectlyTest(Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 };
 
 /** Test case: glTexParameter*() should not generate an error if application
@@ -97,21 +97,21 @@ public:
 class GLCoverageGLTexParameterHandlersAcceptZeroBaseLevelForExtensionSpecificTextureTargetsTest : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	GLCoverageGLTexParameterHandlersAcceptZeroBaseLevelForExtensionSpecificTextureTargetsTest(Context& context);
+    /* Public methods */
+    GLCoverageGLTexParameterHandlersAcceptZeroBaseLevelForExtensionSpecificTextureTargetsTest(Context &context);
 
-	virtual void						 deinit();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void deinit();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void initInternals();
+    /* Private methods */
+    void initInternals();
 
-	/* Private variables */
-	bool		are_2d_array_multisample_tos_supported;
-	glw::GLuint to_id_2d;
-	glw::GLuint to_id_2d_array;
+    /* Private variables */
+    bool are_2d_array_multisample_tos_supported;
+    glw::GLuint to_id_2d;
+    glw::GLuint to_id_2d_array;
 };
-} /* glcts namespace */
+} // namespace glcts
 
 #endif // _ES31CTEXTURESTORAGEMULTISAMPLEGLCOVERAGETESTS_HPP

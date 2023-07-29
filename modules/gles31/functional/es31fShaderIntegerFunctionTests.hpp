@@ -35,18 +35,18 @@ namespace Functional
 class ShaderIntegerFunctionTests : public TestCaseGroup
 {
 public:
-									ShaderIntegerFunctionTests		(Context& context);
-	virtual							~ShaderIntegerFunctionTests		(void);
+    ShaderIntegerFunctionTests(Context &context);
+    virtual ~ShaderIntegerFunctionTests(void);
 
-	virtual void					init							(void);
+    virtual void init(void);
 
 private:
-									ShaderIntegerFunctionTests		(const ShaderIntegerFunctionTests&);		// not allowed!
-	ShaderIntegerFunctionTests&		operator=						(const ShaderIntegerFunctionTests&);		// not allowed!
+    ShaderIntegerFunctionTests(const ShaderIntegerFunctionTests &);            // not allowed!
+    ShaderIntegerFunctionTests &operator=(const ShaderIntegerFunctionTests &); // not allowed!
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FSHADERINTEGERFUNCTIONTESTS_HPP

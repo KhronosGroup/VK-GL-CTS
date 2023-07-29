@@ -36,18 +36,18 @@ namespace Stress
 class DrawTests : public TestCaseGroup
 {
 public:
-					DrawTests		(Context& testCtx);
-					~DrawTests		(void);
+    DrawTests(Context &testCtx);
+    ~DrawTests(void);
 
-	void			init			(void);
+    void init(void);
 
 private:
-					DrawTests		(const DrawTests& other);
-	DrawTests&		operator=		(const DrawTests& other);
+    DrawTests(const DrawTests &other);
+    DrawTests &operator=(const DrawTests &other);
 };
 
-} // Stress
-} // gles3
-} // deqp
+} // namespace Stress
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3SDRAWTESTS_HPP

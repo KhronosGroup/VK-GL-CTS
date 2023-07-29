@@ -36,19 +36,19 @@ namespace glcts
 class TessellationShaderTrianglesTests : public glcts::TestCaseGroupBase
 {
 public:
-	/* Public methods */
-	TessellationShaderTrianglesTests(glcts::Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderTrianglesTests(glcts::Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderTrianglesTests(void)
-	{
-	}
+    virtual ~TessellationShaderTrianglesTests(void)
+    {
+    }
 
-	void init(void);
+    void init(void);
 
 private:
-	/* Private methods */
-	TessellationShaderTrianglesTests(const TessellationShaderTrianglesTests& other);
-	TessellationShaderTrianglesTests& operator=(const TessellationShaderTrianglesTests& other);
+    /* Private methods */
+    TessellationShaderTrianglesTests(const TessellationShaderTrianglesTests &other);
+    TessellationShaderTrianglesTests &operator=(const TessellationShaderTrianglesTests &other);
 };
 
 /** Implementation of Test Caes 29
@@ -68,49 +68,49 @@ private:
 class TessellationShaderTrianglesDegenerateTriangle : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TessellationShaderTrianglesDegenerateTriangle(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderTrianglesDegenerateTriangle(Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderTrianglesDegenerateTriangle(void)
-	{
-	}
+    virtual ~TessellationShaderTrianglesDegenerateTriangle(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	void				  initTest(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    void initTest(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private type definitions */
-	typedef struct _test_descriptor
-	{
-		glw::GLuint							po_id;
-		glw::GLuint							te_id;
-		_tessellation_shader_vertex_spacing vertex_spacing;
+    /* Private type definitions */
+    typedef struct _test_descriptor
+    {
+        glw::GLuint po_id;
+        glw::GLuint te_id;
+        _tessellation_shader_vertex_spacing vertex_spacing;
 
-		_test_descriptor()
-		{
-			po_id		   = 0;
-			te_id		   = 0;
-			vertex_spacing = TESSELLATION_SHADER_VERTEX_SPACING_UNKNOWN;
-		}
-	} _test_descriptor;
+        _test_descriptor()
+        {
+            po_id          = 0;
+            te_id          = 0;
+            vertex_spacing = TESSELLATION_SHADER_VERTEX_SPACING_UNKNOWN;
+        }
+    } _test_descriptor;
 
-	typedef std::vector<_test_descriptor> _tests;
-	typedef _tests::const_iterator		  _tests_const_iterator;
+    typedef std::vector<_test_descriptor> _tests;
+    typedef _tests::const_iterator _tests_const_iterator;
 
-	/* Private methods */
-	void deinitTestDescriptor(_test_descriptor& test);
+    /* Private methods */
+    void deinitTestDescriptor(_test_descriptor &test);
 
-	void initTestDescriptor(_test_descriptor& test, _tessellation_shader_vertex_spacing vertex_spacing);
+    void initTestDescriptor(_test_descriptor &test, _tessellation_shader_vertex_spacing vertex_spacing);
 
-	/* Private variables */
-	glw::GLuint m_bo_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_tc_id;
-	glw::GLuint m_vs_id;
-	glw::GLuint m_vao_id;
+    /* Private variables */
+    glw::GLuint m_bo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_tc_id;
+    glw::GLuint m_vs_id;
+    glw::GLuint m_vao_id;
 
-	_tests m_tests;
+    _tests m_tests;
 };
 
 /** Implementation of Test Case 28
@@ -139,48 +139,48 @@ private:
 class TessellationShaderTrianglesIdenticalTriangles : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TessellationShaderTrianglesIdenticalTriangles(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderTrianglesIdenticalTriangles(Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderTrianglesIdenticalTriangles(void)
-	{
-	}
+    virtual ~TessellationShaderTrianglesIdenticalTriangles(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	void				  initTest(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    void initTest(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private type definitions */
-	typedef struct _run
-	{
-		float base_inner[2];
-		float base_outer[4];
-		float reference_inner[2];
-		float reference_outer[4];
+    /* Private type definitions */
+    typedef struct _run
+    {
+        float base_inner[2];
+        float base_outer[4];
+        float reference_inner[2];
+        float reference_outer[4];
 
-		std::vector<char> base_data;
-		std::vector<char> reference_data;
-		unsigned int	  n_vertices;
+        std::vector<char> base_data;
+        std::vector<char> reference_data;
+        unsigned int n_vertices;
 
-		_run()
-		{
-			memset(base_inner, 0, sizeof(base_inner));
-			memset(base_outer, 0, sizeof(base_outer));
-			memset(reference_inner, 0, sizeof(reference_inner));
-			memset(reference_outer, 0, sizeof(reference_outer));
+        _run()
+        {
+            memset(base_inner, 0, sizeof(base_inner));
+            memset(base_outer, 0, sizeof(base_outer));
+            memset(reference_inner, 0, sizeof(reference_inner));
+            memset(reference_outer, 0, sizeof(reference_outer));
 
-			n_vertices = 0;
-		}
-	} _run;
+            n_vertices = 0;
+        }
+    } _run;
 
-	typedef std::vector<_run>	 _runs;
-	typedef _runs::const_iterator _runs_const_iterator;
+    typedef std::vector<_run> _runs;
+    typedef _runs::const_iterator _runs_const_iterator;
 
-	/* Private variables */
-	glw::GLuint				 m_vao_id;
-	_runs					 m_runs;
-	TessellationShaderUtils* m_utils;
+    /* Private variables */
+    glw::GLuint m_vao_id;
+    _runs m_runs;
+    TessellationShaderUtils *m_utils;
 };
 
 /**  Implementation of Test Case 30
@@ -212,50 +212,50 @@ private:
 class TessellationShaderTrianglesInnerTessellationLevelRounding : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TessellationShaderTrianglesInnerTessellationLevelRounding(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderTrianglesInnerTessellationLevelRounding(Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderTrianglesInnerTessellationLevelRounding(void)
-	{
-	}
+    virtual ~TessellationShaderTrianglesInnerTessellationLevelRounding(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
-	void				  runTestIterations(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
+    void runTestIterations(void);
 
 private:
-	/* Private type definitions */
-	typedef struct _run
-	{
-		float								set1_inner[2];
-		float								set1_outer[4];
-		float								set2_inner[2];
-		float								set2_outer[4];
-		_tessellation_shader_vertex_spacing vertex_spacing;
+    /* Private type definitions */
+    typedef struct _run
+    {
+        float set1_inner[2];
+        float set1_outer[4];
+        float set2_inner[2];
+        float set2_outer[4];
+        _tessellation_shader_vertex_spacing vertex_spacing;
 
-		std::vector<char> set1_data;
-		std::vector<char> set2_data;
-		unsigned int	  n_vertices;
+        std::vector<char> set1_data;
+        std::vector<char> set2_data;
+        unsigned int n_vertices;
 
-		_run()
-		{
-			memset(set1_inner, 0, sizeof(set1_inner));
-			memset(set1_outer, 0, sizeof(set1_outer));
-			memset(set2_inner, 0, sizeof(set2_inner));
-			memset(set2_outer, 0, sizeof(set2_outer));
+        _run()
+        {
+            memset(set1_inner, 0, sizeof(set1_inner));
+            memset(set1_outer, 0, sizeof(set1_outer));
+            memset(set2_inner, 0, sizeof(set2_inner));
+            memset(set2_outer, 0, sizeof(set2_outer));
 
-			n_vertices	 = 0;
-			vertex_spacing = TESSELLATION_SHADER_VERTEX_SPACING_UNKNOWN;
-		}
-	} _run;
+            n_vertices     = 0;
+            vertex_spacing = TESSELLATION_SHADER_VERTEX_SPACING_UNKNOWN;
+        }
+    } _run;
 
-	typedef std::vector<_run>	 _runs;
-	typedef _runs::const_iterator _runs_const_iterator;
+    typedef std::vector<_run> _runs;
+    typedef _runs::const_iterator _runs_const_iterator;
 
-	/* Private variables */
-	glw::GLuint				 m_vao_id;
-	_runs					 m_runs;
-	TessellationShaderUtils* m_utils;
+    /* Private variables */
+    glw::GLuint m_vao_id;
+    _runs m_runs;
+    TessellationShaderUtils *m_utils;
 };
 
 } // namespace glcts

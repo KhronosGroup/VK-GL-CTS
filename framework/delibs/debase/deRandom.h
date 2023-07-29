@@ -38,18 +38,18 @@ DE_BEGIN_EXTERN_C
  *//*--------------------------------------------------------------------*/
 typedef struct deRandom_s
 {
-	deUint32	x;		/*!< Current random state.		*/
-	deUint32	y;
-	deUint32	z;
-	deUint32	w;
+    uint32_t x; /*!< Current random state.        */
+    uint32_t y;
+    uint32_t z;
+    uint32_t w;
 } deRandom;
 
-void		deRandom_init			(deRandom* rnd, deUint32 seed);
-deUint32	deRandom_getUint32		(deRandom* rnd);
-deUint64	deRandom_getUint64		(deRandom* rnd);
-float		deRandom_getFloat		(deRandom* rnd);
-double		deRandom_getDouble		(deRandom* rnd);
-deBool		deRandom_getBool		(deRandom* rnd);
+void deRandom_init(deRandom *rnd, uint32_t seed);
+uint32_t deRandom_getUint32(deRandom *rnd);
+uint64_t deRandom_getUint64(deRandom *rnd);
+float deRandom_getFloat(deRandom *rnd);
+double deRandom_getDouble(deRandom *rnd);
+bool deRandom_getBool(deRandom *rnd);
 
 DE_END_EXTERN_C
 

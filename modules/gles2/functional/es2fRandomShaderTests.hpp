@@ -36,18 +36,18 @@ namespace Functional
 class RandomShaderTests : public TestCaseGroup
 {
 public:
-							RandomShaderTests			(Context& context);
-							~RandomShaderTests			(void);
+    RandomShaderTests(Context &context);
+    ~RandomShaderTests(void);
 
-	void					init						(void);
+    void init(void);
 
 private:
-							RandomShaderTests			(const RandomShaderTests& other);
-	RandomShaderTests&		operator=					(const RandomShaderTests& other);
+    RandomShaderTests(const RandomShaderTests &other);
+    RandomShaderTests &operator=(const RandomShaderTests &other);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FRANDOMSHADERTESTS_HPP

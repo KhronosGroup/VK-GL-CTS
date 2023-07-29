@@ -32,9 +32,9 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	createSignedOpTestsGroup (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSignedOpTestsGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMSIGNEDOPTESTS_HPP

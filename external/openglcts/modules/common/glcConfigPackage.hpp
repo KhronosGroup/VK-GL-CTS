@@ -34,23 +34,23 @@ namespace glcts
 class ConfigPackage : public tcu::TestPackage
 {
 public:
-	ConfigPackage(tcu::TestContext& testCtx, const char* name);
-	virtual ~ConfigPackage(void);
+    ConfigPackage(tcu::TestContext &testCtx, const char *name);
+    virtual ~ConfigPackage(void);
 
-	void init(void);
+    void init(void);
 
-	tcu::Archive* getArchive(void)
-	{
-		return &m_testCtx.getRootArchive();
-	}
+    tcu::Archive *getArchive(void)
+    {
+        return &m_testCtx.getRootArchive();
+    }
 
-	virtual tcu::TestCaseExecutor* createExecutor(void) const;
+    virtual tcu::TestCaseExecutor *createExecutor(void) const;
 
 private:
-	ConfigPackage(const ConfigPackage& other);
-	ConfigPackage& operator=(const ConfigPackage& other);
+    ConfigPackage(const ConfigPackage &other);
+    ConfigPackage &operator=(const ConfigPackage &other);
 };
 
-} // deqp
+} // namespace glcts
 
 #endif // _GLCCONFIGPACKAGE_HPP

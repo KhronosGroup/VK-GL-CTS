@@ -31,10 +31,10 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	createVariableInitComputeGroup	(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*	createVariableInitGraphicsGroup	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createVariableInitComputeGroup(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createVariableInitGraphicsGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMVARIABLEINITTESTS_HPP

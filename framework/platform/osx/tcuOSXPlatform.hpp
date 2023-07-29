@@ -25,6 +25,6 @@
 
 #include "tcuPlatform.hpp"
 
-tcu::Platform* createPlatform (void);
+tcu::Platform *createPlatform(void);
 
 #endif // _TCUOSXPLATFORM_HPP
