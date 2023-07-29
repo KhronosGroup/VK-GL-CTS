@@ -28,23 +28,23 @@
 DE_BEGIN_EXTERN_C
 
 /* Semaphore type. */
-typedef deUintptr		deSemaphore;
+typedef uintptr_t deSemaphore;
 
 /*--------------------------------------------------------------------*//*!
  * \brief Semaphore attributes.
  *//*--------------------------------------------------------------------*/
 typedef struct deSemaphoreAttributes_s
 {
-	deUint32		flags;
+    uint32_t flags;
 } deSemaphoreAttributes;
 
-deSemaphore		deSemaphore_create			(int initialValue, const deSemaphoreAttributes* attributes);
-void			deSemaphore_destroy			(deSemaphore semaphore);
+deSemaphore deSemaphore_create(int initialValue, const deSemaphoreAttributes *attributes);
+void deSemaphore_destroy(deSemaphore semaphore);
 
-void			deSemaphore_increment		(deSemaphore semaphore);
-void			deSemaphore_decrement		(deSemaphore semaphore);
+void deSemaphore_increment(deSemaphore semaphore);
+void deSemaphore_decrement(deSemaphore semaphore);
 
-deBool			deSemaphore_tryDecrement	(deSemaphore semaphore);
+bool deSemaphore_tryDecrement(deSemaphore semaphore);
 
 DE_END_EXTERN_C
 

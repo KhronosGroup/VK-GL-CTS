@@ -31,9 +31,9 @@ namespace vkt
 namespace ycbcr
 {
 
-tcu::TestCaseGroup*	createViewTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createViewTests(tcu::TestContext &testCtx);
 
-} // ycbcr
-} // vkt
+} // namespace ycbcr
+} // namespace vkt
 
 #endif // _VKTYCBCRVIEWTESTS_HPP

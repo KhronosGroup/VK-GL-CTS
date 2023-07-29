@@ -32,9 +32,9 @@ namespace vkt
 namespace sr
 {
 
-tcu::TestCaseGroup*	createReturnTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createReturnTests(tcu::TestContext &testCtx);
 
 }
-}
+} // namespace vkt
 
 #endif // _VKTSHADERRENDERRETURNTESTS_HPP

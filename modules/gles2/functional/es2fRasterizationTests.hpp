@@ -36,18 +36,18 @@ namespace Functional
 class RasterizationTests : public TestCaseGroup
 {
 public:
-							RasterizationTests	(Context& context);
-							~RasterizationTests	(void);
+    RasterizationTests(Context &context);
+    ~RasterizationTests(void);
 
-	void					init				(void);
+    void init(void);
 
 private:
-							RasterizationTests	(const RasterizationTests& other);
-	RasterizationTests&		operator=			(const RasterizationTests& other);
+    RasterizationTests(const RasterizationTests &other);
+    RasterizationTests &operator=(const RasterizationTests &other);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FRASTERIZATIONTESTS_HPP

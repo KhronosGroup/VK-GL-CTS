@@ -39,90 +39,90 @@
 
 enum
 {
-	CRITICAL_SECTION_SPIN_COUNT	= 2048
+    CRITICAL_SECTION_SPIN_COUNT = 2048
 };
 
-DE_STATIC_ASSERT(sizeof(deMutex) >= sizeof(CRITICAL_SECTION*));
+DE_STATIC_ASSERT(sizeof(deMutex) >= sizeof(CRITICAL_SECTION *));
 
-deMutex deMutex_create (const deMutexAttributes* attributes)
+deMutex deMutex_create(const deMutexAttributes *attributes)
 {
-	CRITICAL_SECTION* criticalSection = (CRITICAL_SECTION*)deMalloc(sizeof(CRITICAL_SECTION));
-	if (!criticalSection)
-		return 0;
+    CRITICAL_SECTION *criticalSection = (CRITICAL_SECTION *)deMalloc(sizeof(CRITICAL_SECTION));
+    if (!criticalSection)
+        return 0;
 
-	DE_UNREF(attributes);
-	/* \note [2012-11-05 pyry] Critical sections are always recursive. */
+    DE_UNREF(attributes);
+    /* \note [2012-11-05 pyry] Critical sections are always recursive. */
 
-	if (!InitializeCriticalSectionAndSpinCount(criticalSection, CRITICAL_SECTION_SPIN_COUNT))
-	{
-		deFree(criticalSection);
-		return 0;
-	}
+    if (!InitializeCriticalSectionAndSpinCount(criticalSection, CRITICAL_SECTION_SPIN_COUNT))
+    {
+        deFree(criticalSection);
+        return 0;
+    }
 
-	return (deMutex)criticalSection;
+    return (deMutex)criticalSection;
 }
 
-void deMutex_destroy (deMutex mutex)
+void deMutex_destroy(deMutex mutex)
 {
-	DeleteCriticalSection((CRITICAL_SECTION*)mutex);
-	deFree((CRITICAL_SECTION*)mutex);
+    DeleteCriticalSection((CRITICAL_SECTION *)mutex);
+    deFree((CRITICAL_SECTION *)mutex);
 }
 
-void deMutex_lock (deMutex mutex)
+void deMutex_lock(deMutex mutex)
 {
-	EnterCriticalSection((CRITICAL_SECTION*)mutex);
+    EnterCriticalSection((CRITICAL_SECTION *)mutex);
 }
 
-void deMutex_unlock (deMutex mutex)
+void deMutex_unlock(deMutex mutex)
 {
-	LeaveCriticalSection((CRITICAL_SECTION*)mutex);
+    LeaveCriticalSection((CRITICAL_SECTION *)mutex);
 }
 
-deBool deMutex_tryLock (deMutex mutex)
+bool deMutex_tryLock(deMutex mutex)
 {
-	return TryEnterCriticalSection((CRITICAL_SECTION*)mutex) == TRUE;
+    return TryEnterCriticalSection((CRITICAL_SECTION *)mutex) == TRUE;
 }
 
 #else
 
 DE_STATIC_ASSERT(sizeof(deMutex) >= sizeof(HANDLE));
 
-deMutex deMutex_create (const deMutexAttributes* attributes)
+deMutex deMutex_create(const deMutexAttributes *attributes)
 {
-	HANDLE handle = DE_NULL;
+    HANDLE handle = DE_NULL;
 
-	DE_UNREF(attributes);
-	/* \note [2009-11-12 pyry] Created mutex is always recursive. */
+    DE_UNREF(attributes);
+    /* \note [2009-11-12 pyry] Created mutex is always recursive. */
 
-	handle = CreateMutex(DE_NULL, FALSE, DE_NULL);
-	return (deMutex)handle;
+    handle = CreateMutex(DE_NULL, FALSE, DE_NULL);
+    return (deMutex)handle;
 }
 
-void deMutex_destroy (deMutex mutex)
+void deMutex_destroy(deMutex mutex)
 {
-	HANDLE handle = (HANDLE)mutex;
-	CloseHandle(handle);
+    HANDLE handle = (HANDLE)mutex;
+    CloseHandle(handle);
 }
 
-void deMutex_lock (deMutex mutex)
+void deMutex_lock(deMutex mutex)
 {
-	HANDLE	handle	= (HANDLE)mutex;
-	DWORD	ret		= WaitForSingleObject(handle, INFINITE);
-	DE_ASSERT(ret == WAIT_OBJECT_0);
+    HANDLE handle = (HANDLE)mutex;
+    DWORD ret     = WaitForSingleObject(handle, INFINITE);
+    DE_ASSERT(ret == WAIT_OBJECT_0);
 }
 
-void deMutex_unlock (deMutex mutex)
+void deMutex_unlock(deMutex mutex)
 {
-	HANDLE	handle	= (HANDLE)mutex;
-	BOOL	ret		= ReleaseMutex(handle);
-	DE_ASSERT(ret == TRUE);
+    HANDLE handle = (HANDLE)mutex;
+    BOOL ret      = ReleaseMutex(handle);
+    DE_ASSERT(ret == TRUE);
 }
 
-deBool deMutex_tryLock (deMutex mutex)
+bool deMutex_tryLock(deMutex mutex)
 {
-	HANDLE	handle	= (HANDLE)mutex;
-	DWORD	ret		= WaitForSingleObject(handle, 0);
-	return (ret == WAIT_OBJECT_0);
+    HANDLE handle = (HANDLE)mutex;
+    DWORD ret     = WaitForSingleObject(handle, 0);
+    return (ret == WAIT_OBJECT_0);
 }
 
 #endif /* USE_CRITICAL_SECTION */

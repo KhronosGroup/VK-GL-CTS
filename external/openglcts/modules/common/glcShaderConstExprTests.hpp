@@ -34,16 +34,16 @@ namespace glcts
 class ShaderConstExprTests : public deqp::TestCaseGroup
 {
 public:
-	ShaderConstExprTests(deqp::Context& context);
-	virtual ~ShaderConstExprTests(void);
+    ShaderConstExprTests(deqp::Context &context);
+    virtual ~ShaderConstExprTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	ShaderConstExprTests(const ShaderConstExprTests& other);
-	ShaderConstExprTests& operator=(const ShaderConstExprTests& other);
+    ShaderConstExprTests(const ShaderConstExprTests &other);
+    ShaderConstExprTests &operator=(const ShaderConstExprTests &other);
 };
 
-} // glcts
+} // namespace glcts
 
 #endif // _GLCSHADERCONSTEXPRTESTS_HPP

@@ -36,18 +36,18 @@ namespace Functional
 class SSBOLayoutTests : public TestCaseGroup
 {
 public:
-							SSBOLayoutTests		(Context& context);
-							~SSBOLayoutTests	(void);
+    SSBOLayoutTests(Context &context);
+    ~SSBOLayoutTests(void);
 
-	void					init				(void);
+    void init(void);
 
 private:
-							SSBOLayoutTests		(const SSBOLayoutTests& other);
-	SSBOLayoutTests&		operator=			(const SSBOLayoutTests& other);
+    SSBOLayoutTests(const SSBOLayoutTests &other);
+    SSBOLayoutTests &operator=(const SSBOLayoutTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FSSBOLAYOUTTESTS_HPP

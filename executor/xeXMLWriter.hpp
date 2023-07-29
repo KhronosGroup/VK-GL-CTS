@@ -38,79 +38,91 @@ namespace xml
 class EscapeStreambuf : public std::streambuf
 {
 public:
-						EscapeStreambuf	(std::ostream& dst) : m_dst(dst) {}
+    EscapeStreambuf(std::ostream &dst) : m_dst(dst)
+    {
+    }
 
 protected:
-	std::streamsize		xsputn			(const char* s, std::streamsize count);
-	int					overflow		(int ch = -1);
+    std::streamsize xsputn(const char *s, std::streamsize count);
+    int overflow(int ch = -1);
 
 private:
-	std::ostream&		m_dst;
+    std::ostream &m_dst;
 };
 
 class Writer
 {
 public:
-	struct BeginElement
-	{
-		std::string element;
-		BeginElement (const char* element_) : element(element_) {}
-	};
+    struct BeginElement
+    {
+        std::string element;
+        BeginElement(const char *element_) : element(element_)
+        {
+        }
+    };
 
-	struct Attribute
-	{
-		std::string name;
-		std::string value;
-		Attribute (const char* name_, const char* value_) : name(name_), value(value_) {}
-		Attribute (const char* name_, const std::string& value_) : name(name_), value(value_) {}
-		Attribute (const std::string& name_, const std::string& value_) : name(name_), value(value_) {}
-	};
+    struct Attribute
+    {
+        std::string name;
+        std::string value;
+        Attribute(const char *name_, const char *value_) : name(name_), value(value_)
+        {
+        }
+        Attribute(const char *name_, const std::string &value_) : name(name_), value(value_)
+        {
+        }
+        Attribute(const std::string &name_, const std::string &value_) : name(name_), value(value_)
+        {
+        }
+    };
 
-	static const struct EndElementType {} EndElement;
+    static const struct EndElementType
+    {
+    } EndElement;
 
-								Writer			(std::ostream& dst);
-								~Writer			(void);
+    Writer(std::ostream &dst);
+    ~Writer(void);
 
-	Writer&						operator<<		(const BeginElement& begin);
-	Writer&						operator<<		(const Attribute& attribute);
-	Writer&						operator<<		(const EndElementType& end);
+    Writer &operator<<(const BeginElement &begin);
+    Writer &operator<<(const Attribute &attribute);
+    Writer &operator<<(const EndElementType &end);
 
-	template <typename T>
-	Writer&						operator<<		(const T& value);	//!< Write data.
+    template <typename T>
+    Writer &operator<<(const T &value); //!< Write data.
 
 private:
-								Writer			(const Writer& other);
-	Writer&						operator=		(const Writer& other);
+    Writer(const Writer &other);
+    Writer &operator=(const Writer &other);
 
-	enum State
-	{
-		STATE_DATA		= 0,
-		STATE_ELEMENT,
-		STATE_ELEMENT_END,
+    enum State
+    {
+        STATE_DATA = 0,
+        STATE_ELEMENT,
+        STATE_ELEMENT_END,
 
-		STATE_LAST
-	};
+        STATE_LAST
+    };
 
-	std::ostream&				m_rawDst;
-	EscapeStreambuf				m_dataBuf;
-	std::ostream				m_dataStr;
-	State						m_state;
-	std::vector<std::string>	m_elementStack;
+    std::ostream &m_rawDst;
+    EscapeStreambuf m_dataBuf;
+    std::ostream m_dataStr;
+    State m_state;
+    std::vector<std::string> m_elementStack;
 };
 
 template <typename T>
-Writer& Writer::operator<< (const T& value)
+Writer &Writer::operator<<(const T &value)
 {
-	if (m_state == STATE_ELEMENT)
-		m_rawDst << ">";
+    if (m_state == STATE_ELEMENT)
+        m_rawDst << ">";
 
-	m_dataStr << value;
-	m_state = STATE_DATA;
+    m_dataStr << value;
+    m_state = STATE_DATA;
 
-	return *this;
+    return *this;
 }
 
-} // xml
-} // xe
+} // namespace xml
+} // namespace xe
 
 #endif // _XEXMLWRITER_HPP

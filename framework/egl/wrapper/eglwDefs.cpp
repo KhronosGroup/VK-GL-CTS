@@ -31,9 +31,9 @@ namespace eglw
 
 // Verify typedefs
 
-DE_STATIC_ASSERT(sizeof(EGLint)		== 4);
-DE_STATIC_ASSERT(sizeof(EGLBoolean)	== 4);
-DE_STATIC_ASSERT(sizeof(EGLAttrib)	== sizeof(void*));
-DE_STATIC_ASSERT(sizeof(EGLTime)	== 8);
+DE_STATIC_ASSERT(sizeof(EGLint) == 4);
+DE_STATIC_ASSERT(sizeof(EGLBoolean) == 4);
+DE_STATIC_ASSERT(sizeof(EGLAttrib) == sizeof(void *));
+DE_STATIC_ASSERT(sizeof(EGLTime) == 8);
 
-} // eglw
+} // namespace eglw

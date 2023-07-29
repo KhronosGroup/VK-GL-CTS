@@ -1,9 +1,16 @@
 {
-	"mandatory_features":
-	{
-		"VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE":
-		[
-			{ "features": ["mutableDescriptorType"],	"requirements": ["VK_VALVE_mutable_descriptor_type"] }
-		]
-	}
+    "mandatory_features":
+        {
+            "VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE":
+                [
+                    {
+                        "features": [
+                            "mutableDescriptorType"
+                        ],
+                        "requirements": [
+                            "VK_VALVE_mutable_descriptor_type"
+                        ]
+                    }
+                ]
+        }
 }

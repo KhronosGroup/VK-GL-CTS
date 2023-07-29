@@ -25,7 +25,7 @@
 #include "tcuCommandLine.hpp"
 
 // See tcuMain.cpp for application entry point example.
-tcu::Platform* createPlatform (void)
+tcu::Platform *createPlatform(void)
 {
-	return new tcu::Platform();
+    return new tcu::Platform();
 }

@@ -33,24 +33,24 @@ namespace glcts
 class GeometryShaderLayeredFBOShared
 {
 public:
-	static bool checkFBOCompleteness(tcu::TestContext& test_context, const glw::Functions& gl, glw::GLenum fbo_id,
-									 glw::GLenum expected_completeness_status);
+    static bool checkFBOCompleteness(tcu::TestContext &test_context, const glw::Functions &gl, glw::GLenum fbo_id,
+                                     glw::GLenum expected_completeness_status);
 
-	static void deinitFBOs(const glw::Functions& gl, const glw::GLuint* fbo_ids);
+    static void deinitFBOs(const glw::Functions &gl, const glw::GLuint *fbo_ids);
 
-	static void deinitTOs(const glw::Functions& gl, const glw::GLuint* to_ids);
+    static void deinitTOs(const glw::Functions &gl, const glw::GLuint *to_ids);
 
-	static void initFBOs(const glw::Functions& gl, glw::glFramebufferTextureFunc pGLFramebufferTexture,
-						 const glw::GLuint* to_ids, glw::GLuint* out_fbo_ids);
+    static void initFBOs(const glw::Functions &gl, glw::glFramebufferTextureFunc pGLFramebufferTexture,
+                         const glw::GLuint *to_ids, glw::GLuint *out_fbo_ids);
 
-	static void initTOs(const glw::Functions& gl, glw::glTexStorage3DMultisampleFunc pGLTexStorage3DMultisample,
-						glw::GLuint* out_to_ids);
+    static void initTOs(const glw::Functions &gl, glw::glTexStorage3DMultisampleFunc pGLTexStorage3DMultisample,
+                        glw::GLuint *out_to_ids);
 
-	static const unsigned int n_shared_fbo_ids;
-	static const unsigned int n_shared_to_ids;
-	static const glw::GLuint  shared_to_depth;
-	static const glw::GLuint  shared_to_height;
-	static const glw::GLuint  shared_to_width;
+    static const unsigned int n_shared_fbo_ids;
+    static const unsigned int n_shared_to_ids;
+    static const glw::GLuint shared_to_depth;
+    static const glw::GLuint shared_to_height;
+    static const glw::GLuint shared_to_width;
 };
 
 /** Implementation of Test 21.1 from CTS_EXT_geometry_shader. Description follows:
@@ -116,23 +116,23 @@ public:
 class GeometryShaderIncompleteLayeredFBOTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderIncompleteLayeredFBOTest(Context& context, const ExtParameters& extParams, const char* name,
-										   const char* description);
+    /* Public methods */
+    GeometryShaderIncompleteLayeredFBOTest(Context &context, const ExtParameters &extParams, const char *name,
+                                           const char *description);
 
-	virtual ~GeometryShaderIncompleteLayeredFBOTest()
-	{
-	}
+    virtual ~GeometryShaderIncompleteLayeredFBOTest()
+    {
+    }
 
-	void		  deinit(void);
-	IterateResult iterate(void);
+    void deinit(void);
+    IterateResult iterate(void);
 
 private:
-	/* Private functions */
+    /* Private functions */
 
-	/* Private variables */
-	glw::GLuint* m_fbo_ids;
-	glw::GLuint* m_to_ids;
+    /* Private variables */
+    glw::GLuint *m_fbo_ids;
+    glw::GLuint *m_to_ids;
 };
 
 /** Implementation of Test 21.2 from CTS_EXT_geometry_shader. Description follows:
@@ -150,23 +150,23 @@ private:
 class GeometryShaderIncompleteLayeredAttachmentsTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderIncompleteLayeredAttachmentsTest(Context& context, const ExtParameters& extParams, const char* name,
-												   const char* description);
+    /* Public methods */
+    GeometryShaderIncompleteLayeredAttachmentsTest(Context &context, const ExtParameters &extParams, const char *name,
+                                                   const char *description);
 
-	virtual ~GeometryShaderIncompleteLayeredAttachmentsTest()
-	{
-	}
+    virtual ~GeometryShaderIncompleteLayeredAttachmentsTest()
+    {
+    }
 
-	void		  deinit(void);
-	IterateResult iterate(void);
+    void deinit(void);
+    IterateResult iterate(void);
 
 private:
-	/* Private functions */
+    /* Private functions */
 
-	/* Private variables */
-	glw::GLuint* m_fbo_ids;
-	glw::GLuint* m_to_ids;
+    /* Private variables */
+    glw::GLuint *m_fbo_ids;
+    glw::GLuint *m_to_ids;
 };
 
 /* Implementation of "Group 26", test 1 from CTS_EXT_geometry_shader. Description follows:
@@ -184,25 +184,25 @@ private:
 class GeometryShaderFramebufferTextureInvalidTarget : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderFramebufferTextureInvalidTarget(Context& context, const ExtParameters& extParams, const char* name,
-												  const char* description);
+    /* Public methods */
+    GeometryShaderFramebufferTextureInvalidTarget(Context &context, const ExtParameters &extParams, const char *name,
+                                                  const char *description);
 
-	virtual ~GeometryShaderFramebufferTextureInvalidTarget()
-	{
-	}
+    virtual ~GeometryShaderFramebufferTextureInvalidTarget()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
+    /* Private methods */
 
-	/* Private variables */
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_to_id;
+    /* Private variables */
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_to_id;
 };
 
 /* Implementation of "Group 26", test 2 from CTS_EXT_geometry_shader. Description follows:
@@ -226,24 +226,24 @@ private:
 class GeometryShaderFramebufferTextureNoFBOBoundToTarget : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderFramebufferTextureNoFBOBoundToTarget(Context& context, const ExtParameters& extParams,
-													   const char* name, const char* description);
+    /* Public methods */
+    GeometryShaderFramebufferTextureNoFBOBoundToTarget(Context &context, const ExtParameters &extParams,
+                                                       const char *name, const char *description);
 
-	virtual ~GeometryShaderFramebufferTextureNoFBOBoundToTarget()
-	{
-	}
+    virtual ~GeometryShaderFramebufferTextureNoFBOBoundToTarget()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
+    /* Private methods */
 
-	/* Private variables */
-	glw::GLuint m_to_id;
+    /* Private variables */
+    glw::GLuint m_to_id;
 };
 
 /* Implementation of "Group 26", test 3 from CTS_EXT_geometry_shader. Description follows:
@@ -262,25 +262,25 @@ private:
 class GeometryShaderFramebufferTextureInvalidAttachment : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderFramebufferTextureInvalidAttachment(Context& context, const ExtParameters& extParams,
-													  const char* name, const char* description);
+    /* Public methods */
+    GeometryShaderFramebufferTextureInvalidAttachment(Context &context, const ExtParameters &extParams,
+                                                      const char *name, const char *description);
 
-	virtual ~GeometryShaderFramebufferTextureInvalidAttachment()
-	{
-	}
+    virtual ~GeometryShaderFramebufferTextureInvalidAttachment()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
+    /* Private methods */
 
-	/* Private variables */
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_to_id;
+    /* Private variables */
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_to_id;
 };
 
 /* Implementation of "Group 26", test 4 from CTS_EXT_geometry_shader. Description follows:
@@ -300,24 +300,24 @@ private:
 class GeometryShaderFramebufferTextureInvalidValue : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderFramebufferTextureInvalidValue(Context& context, const ExtParameters& extParams, const char* name,
-												 const char* description);
+    /* Public methods */
+    GeometryShaderFramebufferTextureInvalidValue(Context &context, const ExtParameters &extParams, const char *name,
+                                                 const char *description);
 
-	virtual ~GeometryShaderFramebufferTextureInvalidValue()
-	{
-	}
+    virtual ~GeometryShaderFramebufferTextureInvalidValue()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
+    /* Private methods */
 
-	/* Private variables */
-	glw::GLuint m_fbo_id;
+    /* Private variables */
+    glw::GLuint m_fbo_id;
 };
 
 /* Implementation of "Group 26", test 5 from CTS_EXT_geometry_shader. Description follows:
@@ -341,30 +341,30 @@ private:
 class GeometryShaderFramebufferTextureInvalidLevelNumber : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderFramebufferTextureInvalidLevelNumber(Context& context, const ExtParameters& extParams,
-													   const char* name, const char* description);
+    /* Public methods */
+    GeometryShaderFramebufferTextureInvalidLevelNumber(Context &context, const ExtParameters &extParams,
+                                                       const char *name, const char *description);
 
-	virtual ~GeometryShaderFramebufferTextureInvalidLevelNumber()
-	{
-	}
+    virtual ~GeometryShaderFramebufferTextureInvalidLevelNumber()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
+    /* Private methods */
 
-	/* Private variables */
-	glw::GLuint   m_fbo_id;
-	glw::GLubyte* m_texels;
-	glw::GLushort m_tex_depth;
-	glw::GLushort m_tex_height;
-	glw::GLushort m_tex_width;
-	glw::GLuint   m_to_2d_array_id;
-	glw::GLuint   m_to_3d_id;
+    /* Private variables */
+    glw::GLuint m_fbo_id;
+    glw::GLubyte *m_texels;
+    glw::GLushort m_tex_depth;
+    glw::GLushort m_tex_height;
+    glw::GLushort m_tex_width;
+    glw::GLuint m_to_2d_array_id;
+    glw::GLuint m_to_3d_id;
 };
 
 /* Implementation of "Group 26", test 6 from CTS_EXT_geometry_shader. Description follows:
@@ -388,29 +388,29 @@ private:
 class GeometryShaderFramebufferTextureArgumentRefersToBufferTexture : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderFramebufferTextureArgumentRefersToBufferTexture(Context& context, const ExtParameters& extParams,
-																  const char* name, const char* description);
+    /* Public methods */
+    GeometryShaderFramebufferTextureArgumentRefersToBufferTexture(Context &context, const ExtParameters &extParams,
+                                                                  const char *name, const char *description);
 
-	virtual ~GeometryShaderFramebufferTextureArgumentRefersToBufferTexture()
-	{
-	}
+    virtual ~GeometryShaderFramebufferTextureArgumentRefersToBufferTexture()
+    {
+    }
 
-	virtual void		  deinit();
-	virtual IterateResult iterate();
+    virtual void deinit();
+    virtual IterateResult iterate();
 
 private:
-	/* Private type definition */
+    /* Private type definition */
 
-	/* Private methods */
+    /* Private methods */
 
-	/* Private variables */
-	glw::GLuint m_bo_id;
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_tbo_id;
-	glw::GLuint m_tex_height;
-	glw::GLuint m_tex_width;
-	glw::GLint* m_texels;
+    /* Private variables */
+    glw::GLuint m_bo_id;
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_tbo_id;
+    glw::GLuint m_tex_height;
+    glw::GLuint m_tex_width;
+    glw::GLint *m_texels;
 };
 
 } // namespace glcts

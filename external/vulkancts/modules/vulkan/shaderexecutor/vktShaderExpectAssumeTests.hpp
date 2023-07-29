@@ -32,7 +32,7 @@ namespace vkt
 namespace shaderexecutor
 {
 
-tcu::TestCaseGroup* createShaderExpectAssumeTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createShaderExpectAssumeTests(tcu::TestContext &testCtx);
 
 } // namespace shaderexecutor
 } // namespace vkt

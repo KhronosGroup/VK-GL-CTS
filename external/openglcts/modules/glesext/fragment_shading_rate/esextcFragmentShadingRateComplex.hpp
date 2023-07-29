@@ -34,17 +34,17 @@ namespace glcts
 class FragmentShadingRateComplex : public TestCaseGroupBase
 {
 public:
-	FragmentShadingRateComplex(glcts::Context& context, const ExtParameters& extParams);
+    FragmentShadingRateComplex(glcts::Context &context, const ExtParameters &extParams);
 
-	~FragmentShadingRateComplex(void) override
-	{
-	}
+    ~FragmentShadingRateComplex(void) override
+    {
+    }
 
-	void init(void) override;
+    void init(void) override;
 
 private:
-	FragmentShadingRateComplex(const FragmentShadingRateComplex& other);
-	FragmentShadingRateComplex& operator=(const FragmentShadingRateComplex& other);
+    FragmentShadingRateComplex(const FragmentShadingRateComplex &other);
+    FragmentShadingRateComplex &operator=(const FragmentShadingRateComplex &other);
 };
 
 } // namespace glcts

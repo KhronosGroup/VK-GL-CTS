@@ -28,89 +28,89 @@ from genutil import *
 
 INVALID_IMPLICIT_CONVESION_TEMPLATE0 = """
 case ${{NAME}}
-	expect compile_fail
-	version 300 es
+    expect compile_fail
+    version 300 es
 
-	both ""
-		#version 300 es
-		precision mediump float;
-		precision mediump int;
+    both ""
+        #version 300 es
+        precision mediump float;
+        precision mediump int;
 
-		${DECLARATIONS}
+        ${DECLARATIONS}
 
-		void main()
-		{
-			${{TYPE0}} c;
-			${{TYPE0}} a;
-			${{TYPE1}} b;
-			${{TYPE0}} c = a ${{OPERATION}} b;
-		}
-	""
+        void main()
+        {
+            ${{TYPE0}} c;
+            ${{TYPE0}} a;
+            ${{TYPE1}} b;
+            ${{TYPE0}} c = a ${{OPERATION}} b;
+        }
+    ""
 end
 """[1:-1]
 
 INVALID_IMPLICIT_CONVESION_TEMPLATE1 = """
 case ${{NAME}}
-	expect compile_fail
-	version 300 es
+    expect compile_fail
+    version 300 es
 
-	both ""
-		#version 300 es
-		precision mediump float;
-		precision mediump int;
+    both ""
+        #version 300 es
+        precision mediump float;
+        precision mediump int;
 
-		 ${DECLARATIONS}
+         ${DECLARATIONS}
 
-		void main()
-		{
-			${{TYPE1}} c;
-			${{TYPE0}} a;
-			${{TYPE1}} b;
-			${{TYPE1}} c = a ${{OPERATION}} b;
-		}
-	""
+        void main()
+        {
+            ${{TYPE1}} c;
+            ${{TYPE0}} a;
+            ${{TYPE1}} b;
+            ${{TYPE1}} c = a ${{OPERATION}} b;
+        }
+    ""
 end
 """[1:-1]
 
 arithOperations = {'+': 'add', '*':'mul', '/': 'div', '-':'sub'}
 
 class InvalidImplicitConversionCase(ShaderCase):
-	def __init__(self, operation, type0, type1):
-		self.name		= arithOperations[operation] + '_' + type0 + '_' + type1
-		self.operation	= operation
-		self.type0		= type0
-		self.type1		= type1
+    def __init__(self, operation, type0, type1):
+        self.name = arithOperations[operation] + '_' + type0 + '_' + type1
+        self.operation = operation
+        self.type0 = type0
+        self.type1 = type1
 
-	def __str__(self):
+    def __str__(self):
 
-		params0 = { "NAME": self.name + '_' + self.type0, "TYPE0": self.type0, "TYPE1": self.type1, "OPERATION": self.operation }
-		params1 = { "NAME": self.name + '_' + self.type1, "TYPE0": self.type0, "TYPE1": self.type1, "OPERATION": self.operation }
-		return fillTemplate(INVALID_IMPLICIT_CONVESION_TEMPLATE0, params0) + '\n' + fillTemplate(INVALID_IMPLICIT_CONVESION_TEMPLATE1, params1)
+        params0 = { "NAME": self.name + '_' + self.type0, "TYPE0": self.type0, "TYPE1": self.type1, "OPERATION": self.operation }
+        params1 = { "NAME": self.name + '_' + self.type1, "TYPE0": self.type0, "TYPE1": self.type1, "OPERATION": self.operation }
+        return fillTemplate(INVALID_IMPLICIT_CONVESION_TEMPLATE0, params0) + '\n' + fillTemplate(INVALID_IMPLICIT_CONVESION_TEMPLATE1, params1)
 
 def createCase(operation, type0, type1):
-	cases = []
-	for t0 in type0:
-		for t1 in type1:
-			case = InvalidImplicitConversionCase(operation, t0, t1)
-			cases.append(case)
-	return cases
+    cases = []
+    for t0 in type0:
+        for t1 in type1:
+            case = InvalidImplicitConversionCase(operation, t0, t1)
+            cases.append(case)
+    return cases
 
-floats		= ['float', 'vec2', 'vec3', 'vec4']
-sintegers	= ['int', 'ivec2', 'ivec3', 'ivec4']
-uintegers	= ['uint', 'uvec2', 'uvec3', 'uvec4']
-cases		= []
+floats = ['float', 'vec2', 'vec3', 'vec4']
+sintegers = ['int', 'ivec2', 'ivec3', 'ivec4']
+uintegers = ['uint', 'uvec2', 'uvec3', 'uvec4']
+cases = []
 for op in arithOperations:
-	caseFpInt = createCase(op, floats, sintegers)
-	cases = cases + caseFpInt
-	caseFpUint = createCase(op, floats, uintegers)
-	cases = cases + caseFpUint
-	caseIntUint = createCase(op, sintegers, uintegers)
-	cases = cases + caseIntUint
+    caseFpInt = createCase(op, floats, sintegers)
+    cases = cases + caseFpInt
+    caseFpUint = createCase(op, floats, uintegers)
+    cases = cases + caseFpUint
+    caseIntUint = createCase(op, sintegers, uintegers)
+    cases = cases + caseIntUint
 
 invalidImplicitConversionCases = [
-		CaseGroup("invalid_implicit_conversions", "Invalid Implicit Conversions", cases),
+        CaseGroup("invalid_implicit_conversions", "Invalid Implicit Conversions", cases),
 ]
 
 if __name__ == "__main__":
-	print("Generating shader case files.")
-	writeAllCases("invalid_implicit_conversions.test", invalidImplicitConversionCases)
+    print("Generating shader case files.")
+    writeAllCases("invalid_implicit_conversions.test", invalidImplicitConversionCases)

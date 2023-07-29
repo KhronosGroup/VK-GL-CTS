@@ -34,13 +34,13 @@ namespace egl
 class ColorClearTests : public TestCaseGroup
 {
 public:
-							ColorClearTests				(EglTestContext& eglTestCtx);
-	virtual					~ColorClearTests			(void);
+    ColorClearTests(EglTestContext &eglTestCtx);
+    virtual ~ColorClearTests(void);
 
-	void					init						(void);
+    void init(void);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLCOLORCLEARTESTS_HPP

@@ -36,18 +36,18 @@ namespace Functional
 class BufferCopyTests : public TestCaseGroup
 {
 public:
-						BufferCopyTests		(Context& context);
-						~BufferCopyTests	(void);
+    BufferCopyTests(Context &context);
+    ~BufferCopyTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						BufferCopyTests		(const BufferCopyTests& other);
-	BufferCopyTests&	operator=			(const BufferCopyTests& other);
+    BufferCopyTests(const BufferCopyTests &other);
+    BufferCopyTests &operator=(const BufferCopyTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FBUFFERCOPYTESTS_HPP

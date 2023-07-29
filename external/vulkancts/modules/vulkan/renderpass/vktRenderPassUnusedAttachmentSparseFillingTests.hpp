@@ -33,9 +33,10 @@ namespace vkt
 namespace renderpass
 {
 
-tcu::TestCaseGroup* createRenderPassUnusedAttachmentSparseFillingTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams);
+tcu::TestCaseGroup *createRenderPassUnusedAttachmentSparseFillingTests(tcu::TestContext &testCtx,
+                                                                       const SharedGroupParams groupParams);
 
-} // renderpass
-} // vkt
+} // namespace renderpass
+} // namespace vkt
 
 #endif // _VKTRENDERPASSUNUSEDATTACHMENTSPARSEFILLINGTESTS_HPP

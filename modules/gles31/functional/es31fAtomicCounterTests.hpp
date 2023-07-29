@@ -36,18 +36,18 @@ namespace Functional
 class AtomicCounterTests : public TestCaseGroup
 {
 public:
-						AtomicCounterTests	(Context& context);
-						~AtomicCounterTests	(void);
+    AtomicCounterTests(Context &context);
+    ~AtomicCounterTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						AtomicCounterTests	(const AtomicCounterTests& other);
-	AtomicCounterTests&	operator=			(const AtomicCounterTests& other);
+    AtomicCounterTests(const AtomicCounterTests &other);
+    AtomicCounterTests &operator=(const AtomicCounterTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FATOMICCOUNTERTESTS_HPP

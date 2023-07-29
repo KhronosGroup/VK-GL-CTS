@@ -35,18 +35,18 @@ namespace Functional
 class ShaderSwitchTests : public TestCaseGroup
 {
 public:
-							ShaderSwitchTests		(Context& context);
-	virtual					~ShaderSwitchTests		(void);
+    ShaderSwitchTests(Context &context);
+    virtual ~ShaderSwitchTests(void);
 
-	virtual void			init					(void);
+    virtual void init(void);
 
 private:
-							ShaderSwitchTests		(const ShaderSwitchTests&);		// not allowed!
-	ShaderSwitchTests&		operator=				(const ShaderSwitchTests&);		// not allowed!
+    ShaderSwitchTests(const ShaderSwitchTests &);            // not allowed!
+    ShaderSwitchTests &operator=(const ShaderSwitchTests &); // not allowed!
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FSHADERSWITCHTESTS_HPP

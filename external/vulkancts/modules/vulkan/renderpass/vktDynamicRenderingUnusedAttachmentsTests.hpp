@@ -32,9 +32,9 @@ namespace vkt
 namespace renderpass
 {
 
-tcu::TestCaseGroup* createDynamicRenderingUnusedAttachmentsTests (tcu::TestContext& testCtx, bool useSecondaries);
+tcu::TestCaseGroup *createDynamicRenderingUnusedAttachmentsTests(tcu::TestContext &testCtx, bool useSecondaries);
 
-} // renderpass
-} // vkt
+} // namespace renderpass
+} // namespace vkt
 
 #endif // _VKTDYNAMICRENDERINGUNUSEDATTACHMENTSTESTS_HPP

@@ -33,9 +33,9 @@ namespace glc
 namespace subgroups
 {
 
-deqp::TestCaseGroup* createSubgroupsBallotOtherTests(deqp::Context& testCtx);
+deqp::TestCaseGroup *createSubgroupsBallotOtherTests(deqp::Context &testCtx);
 
-} // subgroups
-} // glc
+} // namespace subgroups
+} // namespace glc
 
 #endif // _GLCSUBGROUPSBALLOTOTHERTESTS_HPP

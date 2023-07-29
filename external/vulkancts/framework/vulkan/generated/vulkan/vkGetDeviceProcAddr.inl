@@ -17,46 +17,46 @@ namespace vkt
 
 using namespace vk;
 
-tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
+tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 {
-	tcu::TestLog&								log						(context.getTestContext().getLog());
-	const PlatformInterface&					platformInterface		= context.getPlatformInterface();
-	const auto									validationEnabled		= context.getTestContext().getCommandLine().isValidationEnabled();
-	const CustomInstance						instance				(createCustomInstanceFromContext(context));
-	const InstanceDriver&						instanceDriver			= instance.getDriver();
-	const VkPhysicalDevice						physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-	const deUint32								queueFamilyIndex		= 0;
-	const deUint32								queueCount				= 1;
-	const float									queuePriority			= 1.0f;
-	const std::vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+    tcu::TestLog&                                log                        (context.getTestContext().getLog());
+    const PlatformInterface&                    platformInterface = context.getPlatformInterface();
+    const auto                                    validationEnabled = context.getTestContext().getCommandLine().isValidationEnabled();
+    const CustomInstance                        instance                (createCustomInstanceFromContext(context));
+    const InstanceDriver&                        instanceDriver = instance.getDriver();
+    const VkPhysicalDevice                        physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const uint32_t                                queueFamilyIndex = 0;
+    const uint32_t                                queueCount = 1;
+    const float                                    queuePriority = 1.0f;
+    const std::vector<VkQueueFamilyProperties>    queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
-	const VkDeviceQueueCreateInfo			deviceQueueCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	//  VkStructureType				sType;
-		DE_NULL,									//  const void*					pNext;
-		(VkDeviceQueueCreateFlags)0u,				//  VkDeviceQueueCreateFlags	flags;
-		queueFamilyIndex,							//  deUint32					queueFamilyIndex;
-		queueCount,									//  deUint32					queueCount;
-		&queuePriority,								//  const float*				pQueuePriorities;
-	};
+    const VkDeviceQueueCreateInfo            deviceQueueCreateInfo =
+    {
+        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, //  VkStructureType sType;
+        DE_NULL, //  const void* pNext;
+        (VkDeviceQueueCreateFlags)0u, //  VkDeviceQueueCreateFlags flags;
+        queueFamilyIndex, //  uint32_t queueFamilyIndex;
+        queueCount, //  uint32_t queueCount;
+        &queuePriority, //  const float* pQueuePriorities;
+    };
 
-	const VkDeviceCreateInfo				deviceCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,		//  VkStructureType					sType;
-		DE_NULL,									//  const void*						pNext;
-		(VkDeviceCreateFlags)0u,					//  VkDeviceCreateFlags				flags;
-		1u,											//  deUint32						queueCreateInfoCount;
-		&deviceQueueCreateInfo,						//  const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
-		0u,											//  deUint32						enabledLayerCount;
-		DE_NULL,									//  const char* const*				ppEnabledLayerNames;
-		0u,											//  deUint32						enabledExtensionCount;
-		DE_NULL,									//  const char* const*				ppEnabledExtensionNames;
-		DE_NULL,									//  const VkPhysicalDeviceFeatures*	pEnabledFeatures;
-	};
-	const Unique<VkDevice>					device			(createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
+    const VkDeviceCreateInfo                deviceCreateInfo =
+    {
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //  VkStructureType sType;
+        DE_NULL, //  const void* pNext;
+        (VkDeviceCreateFlags)0u, //  VkDeviceCreateFlags flags;
+        1u, //  uint32_t queueCreateInfoCount;
+        &deviceQueueCreateInfo, //  const VkDeviceQueueCreateInfo* pQueueCreateInfos;
+        0u, //  uint32_t enabledLayerCount;
+        DE_NULL, //  const char* const* ppEnabledLayerNames;
+        0u, //  uint32_t enabledExtensionCount;
+        DE_NULL, //  const char* const* ppEnabledExtensionNames;
+        DE_NULL, //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
+    };
+    const Unique<VkDevice>                    device            (createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+    const DeviceDriver                        deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 
-	const std::vector<std::string> functions{
+    const std::vector<std::string> functions{
 		"vkDestroySurfaceKHR",
 		"vkGetPhysicalDeviceSurfaceSupportKHR",
 		"vkGetPhysicalDeviceSurfaceCapabilitiesKHR",
@@ -577,20 +577,20 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCmdPushDescriptorSetWithTemplate2KHR",
 		"vkCmdSetDescriptorBufferOffsets2EXT",
 		"vkCmdBindDescriptorBufferEmbeddedSamplers2EXT",
-	};
+    };
 
-	bool fail = false;
-	for (const auto& function : functions)
-	{
-		if (deviceDriver.getDeviceProcAddr(device.get(), function.c_str()) != DE_NULL)
-		{
-			fail = true;
-			log << tcu::TestLog::Message << "Function " << function << " is not NULL" << tcu::TestLog::EndMessage;
-		}
-	}
-	if (fail)
-		return tcu::TestStatus::fail("Fail");
-	return tcu::TestStatus::pass("All functions are NULL");
+    bool fail = false;
+    for (const auto& function : functions)
+    {
+        if (deviceDriver.getDeviceProcAddr(device.get(), function.c_str()) != DE_NULL)
+        {
+            fail = true;
+            log << tcu::TestLog::Message << "Function " << function << " is not NULL" << tcu::TestLog::EndMessage;
+        }
+    }
+    if (fail)
+        return tcu::TestStatus::fail("Fail");
+    return tcu::TestStatus::pass("All functions are NULL");
 }
 
 void addGetDeviceProcAddrTests (tcu::TestCaseGroup* testGroup)

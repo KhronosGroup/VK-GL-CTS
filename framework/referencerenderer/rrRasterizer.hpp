@@ -28,57 +28,56 @@
 #include "rrRenderState.hpp"
 #include "rrFragmentPacket.hpp"
 
-
 namespace rr
 {
 
 //! Rasterizer configuration
 enum
 {
-	RASTERIZER_MAX_SAMPLES_PER_FRAGMENT	= 16
+    RASTERIZER_MAX_SAMPLES_PER_FRAGMENT = 16
 };
 
 //! Get coverage bit value.
-inline deUint64 getCoverageBit (int numSamples, int x, int y, int sampleNdx)
+inline uint64_t getCoverageBit(int numSamples, int x, int y, int sampleNdx)
 {
-	const int	numBits		= (int)sizeof(deUint64)*8;
-	const int	maxSamples	= numBits/4;
-	DE_STATIC_ASSERT(maxSamples >= RASTERIZER_MAX_SAMPLES_PER_FRAGMENT);
-	DE_ASSERT(de::inRange(numSamples, 1, maxSamples) && de::inBounds(x, 0, 2) && de::inBounds(y, 0, 2));
-	return 1ull << ((x*2 + y)*numSamples + sampleNdx);
+    const int numBits    = (int)sizeof(uint64_t) * 8;
+    const int maxSamples = numBits / 4;
+    DE_STATIC_ASSERT(maxSamples >= RASTERIZER_MAX_SAMPLES_PER_FRAGMENT);
+    DE_ASSERT(de::inRange(numSamples, 1, maxSamples) && de::inBounds(x, 0, 2) && de::inBounds(y, 0, 2));
+    return 1ull << ((x * 2 + y) * numSamples + sampleNdx);
 }
 
 //! Get all sample bits for fragment
-inline deUint64 getCoverageFragmentSampleBits (int numSamples, int x, int y)
+inline uint64_t getCoverageFragmentSampleBits(int numSamples, int x, int y)
 {
-	DE_ASSERT(de::inBounds(x, 0, 2) && de::inBounds(y, 0, 2));
-	const deUint64 fragMask = (1ull << numSamples) - 1;
-	return fragMask << (x*2 + y)*numSamples;
+    DE_ASSERT(de::inBounds(x, 0, 2) && de::inBounds(y, 0, 2));
+    const uint64_t fragMask = (1ull << numSamples) - 1;
+    return fragMask << (x * 2 + y) * numSamples;
 }
 
 //! Set bit in coverage mask.
-inline deUint64 setCoverageValue (deUint64 mask, int numSamples, int x, int y, int sampleNdx, bool val)
+inline uint64_t setCoverageValue(uint64_t mask, int numSamples, int x, int y, int sampleNdx, bool val)
 {
-	const deUint64 bit = getCoverageBit(numSamples, x, y, sampleNdx);
-	return val ? (mask | bit) : (mask & ~bit);
+    const uint64_t bit = getCoverageBit(numSamples, x, y, sampleNdx);
+    return val ? (mask | bit) : (mask & ~bit);
 }
 
 //! Get coverage bit value in mask.
-inline bool getCoverageValue (deUint64 mask, int numSamples, int x, int y, int sampleNdx)
+inline bool getCoverageValue(uint64_t mask, int numSamples, int x, int y, int sampleNdx)
 {
-	return (mask & getCoverageBit(numSamples, x, y, sampleNdx)) != 0;
+    return (mask & getCoverageBit(numSamples, x, y, sampleNdx)) != 0;
 }
 
 //! Test if any sample for fragment is live
-inline bool getCoverageAnyFragmentSampleLive (deUint64 mask, int numSamples, int x, int y)
+inline bool getCoverageAnyFragmentSampleLive(uint64_t mask, int numSamples, int x, int y)
 {
-	return (mask & getCoverageFragmentSampleBits(numSamples, x, y)) != 0;
+    return (mask & getCoverageFragmentSampleBits(numSamples, x, y)) != 0;
 }
 
 //! Get position of first coverage bit of fragment - equivalent to deClz64(getCoverageFragmentSampleBits(numSamples, x, y)).
-inline int getCoverageOffset (int numSamples, int x, int y)
+inline int getCoverageOffset(int numSamples, int x, int y)
 {
-	return (x*2 + y)*numSamples;
+    return (x * 2 + y) * numSamples;
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -96,12 +95,14 @@ inline int getCoverageOffset (int numSamples, int x, int y)
  *//*--------------------------------------------------------------------*/
 struct EdgeFunction
 {
-	inline EdgeFunction (void) : a(0), b(0), c(0), inclusive(false) {}
+    inline EdgeFunction(void) : a(0), b(0), c(0), inclusive(false)
+    {
+    }
 
-	deInt64			a;
-	deInt64			b;
-	deInt64			c;
-	bool			inclusive;	//!< True if edge is inclusive according to fill rules.
+    int64_t a;
+    int64_t b;
+    int64_t c;
+    bool inclusive; //!< True if edge is inclusive according to fill rules.
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -126,42 +127,48 @@ struct EdgeFunction
 class TriangleRasterizer
 {
 public:
-							TriangleRasterizer		(const tcu::IVec4& viewport, const int numSamples, const RasterizationState& state, const int suppixelBits);
+    TriangleRasterizer(const tcu::IVec4 &viewport, const int numSamples, const RasterizationState &state,
+                       const int suppixelBits);
 
-	void					init					(const tcu::Vec4& v0, const tcu::Vec4& v1, const tcu::Vec4& v2);
+    void init(const tcu::Vec4 &v0, const tcu::Vec4 &v1, const tcu::Vec4 &v2);
 
-	// Following functions are only available after init()
-	FaceType				getVisibleFace			(void) const { return m_face; }
-	void					rasterize				(FragmentPacket* const fragmentPackets, float* const depthValues, const int maxFragmentPackets, int& numPacketsRasterized);
+    // Following functions are only available after init()
+    FaceType getVisibleFace(void) const
+    {
+        return m_face;
+    }
+    void rasterize(FragmentPacket *const fragmentPackets, float *const depthValues, const int maxFragmentPackets,
+                   int &numPacketsRasterized);
 
 private:
-	void					rasterizeSingleSample	(FragmentPacket* const fragmentPackets, float* const depthValues, const int maxFragmentPackets, int& numPacketsRasterized);
+    void rasterizeSingleSample(FragmentPacket *const fragmentPackets, float *const depthValues,
+                               const int maxFragmentPackets, int &numPacketsRasterized);
 
-	template<int NumSamples>
-	void					rasterizeMultiSample	(FragmentPacket* const fragmentPackets, float* const depthValues, const int maxFragmentPackets, int& numPacketsRasterized);
+    template <int NumSamples>
+    void rasterizeMultiSample(FragmentPacket *const fragmentPackets, float *const depthValues,
+                              const int maxFragmentPackets, int &numPacketsRasterized);
 
-	// Constant rasterization state.
-	const tcu::IVec4		m_viewport;
-	const int				m_numSamples;
-	const Winding			m_winding;
-	const HorizontalFill	m_horizontalFill;
-	const VerticalFill		m_verticalFill;
-	const int				m_subpixelBits;
+    // Constant rasterization state.
+    const tcu::IVec4 m_viewport;
+    const int m_numSamples;
+    const Winding m_winding;
+    const HorizontalFill m_horizontalFill;
+    const VerticalFill m_verticalFill;
+    const int m_subpixelBits;
 
-	// Per-triangle rasterization state.
-	tcu::Vec4				m_v0;
-	tcu::Vec4				m_v1;
-	tcu::Vec4				m_v2;
-	EdgeFunction			m_edge01;
-	EdgeFunction			m_edge12;
-	EdgeFunction			m_edge20;
-	FaceType				m_face;					//!< Triangle orientation, eg. visible face.
-	tcu::IVec2				m_bboxMin;				//!< Bounding box min (inclusive).
-	tcu::IVec2				m_bboxMax;				//!< Bounding box max (inclusive).
-	tcu::IVec2				m_curPos;				//!< Current rasterization position.
-	ViewportOrientation		m_viewportOrientation;	//!< Direction of +x+y axis
+    // Per-triangle rasterization state.
+    tcu::Vec4 m_v0;
+    tcu::Vec4 m_v1;
+    tcu::Vec4 m_v2;
+    EdgeFunction m_edge01;
+    EdgeFunction m_edge12;
+    EdgeFunction m_edge20;
+    FaceType m_face;                           //!< Triangle orientation, eg. visible face.
+    tcu::IVec2 m_bboxMin;                      //!< Bounding box min (inclusive).
+    tcu::IVec2 m_bboxMax;                      //!< Bounding box max (inclusive).
+    tcu::IVec2 m_curPos;                       //!< Current rasterization position.
+    ViewportOrientation m_viewportOrientation; //!< Direction of +x+y axis
 } DE_WARN_UNUSED_TYPE;
-
 
 /*--------------------------------------------------------------------*//*!
  * \brief Single sample line rasterizer
@@ -178,37 +185,41 @@ private:
 class SingleSampleLineRasterizer
 {
 public:
-									SingleSampleLineRasterizer	(const tcu::IVec4& viewport, const int subpixelBits);
-									~SingleSampleLineRasterizer	(void);
+    SingleSampleLineRasterizer(const tcu::IVec4 &viewport, const int subpixelBits);
+    ~SingleSampleLineRasterizer(void);
 
-	void							init						(const tcu::Vec4& v0, const tcu::Vec4& v1, float lineWidth, deUint32 stippleFactor, deUint16 stipplePattern);
+    void init(const tcu::Vec4 &v0, const tcu::Vec4 &v1, float lineWidth, uint32_t stippleFactor,
+              uint16_t stipplePattern);
 
-	// only available after init()
-	void							rasterize					(FragmentPacket* const fragmentPackets, float* const depthValues, const int maxFragmentPackets, int& numPacketsRasterized);
+    // only available after init()
+    void rasterize(FragmentPacket *const fragmentPackets, float *const depthValues, const int maxFragmentPackets,
+                   int &numPacketsRasterized);
 
-	void							resetStipple				() { m_stippleCounter = 0; }
+    void resetStipple()
+    {
+        m_stippleCounter = 0;
+    }
 
 private:
-									SingleSampleLineRasterizer	(const SingleSampleLineRasterizer&); // not allowed
-	SingleSampleLineRasterizer&		operator=					(const SingleSampleLineRasterizer&); // not allowed
+    SingleSampleLineRasterizer(const SingleSampleLineRasterizer &);            // not allowed
+    SingleSampleLineRasterizer &operator=(const SingleSampleLineRasterizer &); // not allowed
 
-	// Constant rasterization state.
-	const tcu::IVec4				m_viewport;
-	const int						m_subpixelBits;
+    // Constant rasterization state.
+    const tcu::IVec4 m_viewport;
+    const int m_subpixelBits;
 
-	// Per-line rasterization state.
-	tcu::Vec4						m_v0;
-	tcu::Vec4						m_v1;
-	tcu::IVec2						m_bboxMin;			//!< Bounding box min (inclusive).
-	tcu::IVec2						m_bboxMax;			//!< Bounding box max (inclusive).
-	tcu::IVec2						m_curPos;			//!< Current rasterization position.
-	deInt32							m_curRowFragment;	//!< Current rasterization position of one fragment in column of lineWidth fragments
-	float							m_lineWidth;
-	deUint32						m_stippleFactor;
-	deUint16						m_stipplePattern;
-	deUint32						m_stippleCounter;
+    // Per-line rasterization state.
+    tcu::Vec4 m_v0;
+    tcu::Vec4 m_v1;
+    tcu::IVec2 m_bboxMin;     //!< Bounding box min (inclusive).
+    tcu::IVec2 m_bboxMax;     //!< Bounding box max (inclusive).
+    tcu::IVec2 m_curPos;      //!< Current rasterization position.
+    int32_t m_curRowFragment; //!< Current rasterization position of one fragment in column of lineWidth fragments
+    float m_lineWidth;
+    uint32_t m_stippleFactor;
+    uint16_t m_stipplePattern;
+    uint32_t m_stippleCounter;
 } DE_WARN_UNUSED_TYPE;
-
 
 /*--------------------------------------------------------------------*//*!
  * \brief Multisampled line rasterizer
@@ -225,26 +236,27 @@ private:
 class MultiSampleLineRasterizer
 {
 public:
-								MultiSampleLineRasterizer	(const int numSamples, const tcu::IVec4& viewport, const int subpixelBits);
-								~MultiSampleLineRasterizer	();
+    MultiSampleLineRasterizer(const int numSamples, const tcu::IVec4 &viewport, const int subpixelBits);
+    ~MultiSampleLineRasterizer();
 
-	void						init						(const tcu::Vec4& v0, const tcu::Vec4& v1, float lineWidth);
+    void init(const tcu::Vec4 &v0, const tcu::Vec4 &v1, float lineWidth);
 
-	// only available after init()
-	void						rasterize					(FragmentPacket* const fragmentPackets, float* const depthValues, const int maxFragmentPackets, int& numPacketsRasterized);
+    // only available after init()
+    void rasterize(FragmentPacket *const fragmentPackets, float *const depthValues, const int maxFragmentPackets,
+                   int &numPacketsRasterized);
 
 private:
-								MultiSampleLineRasterizer	(const MultiSampleLineRasterizer&); // not allowed
-	MultiSampleLineRasterizer&	operator=					(const MultiSampleLineRasterizer&); // not allowed
+    MultiSampleLineRasterizer(const MultiSampleLineRasterizer &);            // not allowed
+    MultiSampleLineRasterizer &operator=(const MultiSampleLineRasterizer &); // not allowed
 
-	// Constant rasterization state.
-	const int					m_numSamples;
+    // Constant rasterization state.
+    const int m_numSamples;
 
-	// Per-line rasterization state.
-	TriangleRasterizer			m_triangleRasterizer0; //!< not in array because we want to initialize these in the initialization list
-	TriangleRasterizer			m_triangleRasterizer1;
+    // Per-line rasterization state.
+    TriangleRasterizer
+        m_triangleRasterizer0; //!< not in array because we want to initialize these in the initialization list
+    TriangleRasterizer m_triangleRasterizer1;
 } DE_WARN_UNUSED_TYPE;
-
 
 /*--------------------------------------------------------------------*//*!
  * \brief Pixel diamond
@@ -253,7 +265,7 @@ private:
  *//*--------------------------------------------------------------------*/
 struct LineExitDiamond
 {
-	tcu::IVec2	position;
+    tcu::IVec2 position;
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -268,28 +280,28 @@ struct LineExitDiamond
 class LineExitDiamondGenerator
 {
 public:
-									LineExitDiamondGenerator	(const int subpixelBits);
-									~LineExitDiamondGenerator	(void);
+    LineExitDiamondGenerator(const int subpixelBits);
+    ~LineExitDiamondGenerator(void);
 
-	void							init						(const tcu::Vec4& v0, const tcu::Vec4& v1);
+    void init(const tcu::Vec4 &v0, const tcu::Vec4 &v1);
 
-	// only available after init()
-	void							rasterize					(LineExitDiamond* const lineDiamonds, const int maxDiamonds, int& numWritten);
+    // only available after init()
+    void rasterize(LineExitDiamond *const lineDiamonds, const int maxDiamonds, int &numWritten);
 
 private:
-									LineExitDiamondGenerator	(const LineExitDiamondGenerator&); // not allowed
-	LineExitDiamondGenerator&		operator=					(const LineExitDiamondGenerator&); // not allowed
+    LineExitDiamondGenerator(const LineExitDiamondGenerator &);            // not allowed
+    LineExitDiamondGenerator &operator=(const LineExitDiamondGenerator &); // not allowed
 
-	const int						m_subpixelBits;
+    const int m_subpixelBits;
 
-	// Per-line rasterization state.
-	tcu::Vec4						m_v0;
-	tcu::Vec4						m_v1;
-	tcu::IVec2						m_bboxMin;			//!< Bounding box min (inclusive).
-	tcu::IVec2						m_bboxMax;			//!< Bounding box max (inclusive).
-	tcu::IVec2						m_curPos;			//!< Current rasterization position.
+    // Per-line rasterization state.
+    tcu::Vec4 m_v0;
+    tcu::Vec4 m_v1;
+    tcu::IVec2 m_bboxMin; //!< Bounding box min (inclusive).
+    tcu::IVec2 m_bboxMax; //!< Bounding box max (inclusive).
+    tcu::IVec2 m_curPos;  //!< Current rasterization position.
 };
 
-} // rr
+} // namespace rr
 
 #endif // _RRRASTERIZER_HPP

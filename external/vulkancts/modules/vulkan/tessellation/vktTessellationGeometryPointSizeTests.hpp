@@ -32,9 +32,9 @@ namespace vkt
 namespace tessellation
 {
 
-tcu::TestCaseGroup* createGeometryPointSizeTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createGeometryPointSizeTests(tcu::TestContext &testCtx);
 
-} // tessellation
-} // vkt
+} // namespace tessellation
+} // namespace vkt
 
 #endif // _VKTTESSELLATIONGEOMETRYPOINTSIZETESTS_HPP

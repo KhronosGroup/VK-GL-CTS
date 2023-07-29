@@ -34,18 +34,18 @@ namespace Draw
 class ShaderDrawParametersTests : public tcu::TestCaseGroup
 {
 public:
-								ShaderDrawParametersTests	(tcu::TestContext& testCtx, const SharedGroupParams groupParams);
-	void						init						(void);
+    ShaderDrawParametersTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams);
+    void init(void);
 
 private:
-								ShaderDrawParametersTests	(const ShaderDrawParametersTests& other);
-	ShaderDrawParametersTests&	operator=					(const ShaderDrawParametersTests& other);
+    ShaderDrawParametersTests(const ShaderDrawParametersTests &other);
+    ShaderDrawParametersTests &operator=(const ShaderDrawParametersTests &other);
 
 private:
-	const SharedGroupParams	m_groupParams;
+    const SharedGroupParams m_groupParams;
 };
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWSHADERDRAWPARAMETERSTESTS_HPP

@@ -32,9 +32,9 @@ namespace vkt
 namespace FragmentOperations
 {
 
-tcu::TestCaseGroup*		createScissorMultiViewportTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createScissorMultiViewportTests(tcu::TestContext &testCtx);
 
-} // FragmentOperations
-} // vkt
+} // namespace FragmentOperations
+} // namespace vkt
 
 #endif // _VKTFRAGMENTOPERATIONSSCISSORMULTIVIEWPORTTESTS_HPP

@@ -34,13 +34,13 @@ namespace egl
 class RenderTests : public TestCaseGroup
 {
 public:
-							RenderTests					(EglTestContext& eglTestCtx);
-	virtual					~RenderTests				(void);
+    RenderTests(EglTestContext &eglTestCtx);
+    virtual ~RenderTests(void);
 
-	void					init						(void);
+    void init(void);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLRENDERTESTS_HPP

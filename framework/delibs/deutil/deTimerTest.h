@@ -27,7 +27,7 @@
 
 DE_BEGIN_EXTERN_C
 
-void deTimer_selfTest (void);
+void deTimer_selfTest(void);
 
 DE_END_EXTERN_C
 

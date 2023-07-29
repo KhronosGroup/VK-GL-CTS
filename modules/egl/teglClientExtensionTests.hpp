@@ -34,11 +34,11 @@ namespace egl
 class ClientExtensionTests : public TestCaseGroup
 {
 public:
-			ClientExtensionTests	(EglTestContext& eglTestCtx);
-	void	init					(void);
+    ClientExtensionTests(EglTestContext &eglTestCtx);
+    void init(void);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLCLIENTEXTENSIONTESTS_HPP

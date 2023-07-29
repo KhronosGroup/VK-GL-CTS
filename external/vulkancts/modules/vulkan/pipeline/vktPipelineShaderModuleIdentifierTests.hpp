@@ -32,9 +32,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createShaderModuleIdentifierTests (tcu::TestContext&, vk::PipelineConstructionType);
+tcu::TestCaseGroup *createShaderModuleIdentifierTests(tcu::TestContext &, vk::PipelineConstructionType);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINESHADERMODULEIDENTIFIERTESTS_HPP

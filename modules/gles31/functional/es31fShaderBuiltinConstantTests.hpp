@@ -35,18 +35,18 @@ namespace Functional
 class ShaderBuiltinConstantTests : public TestCaseGroup
 {
 public:
-								ShaderBuiltinConstantTests	(Context& context);
-	virtual						~ShaderBuiltinConstantTests	(void);
+    ShaderBuiltinConstantTests(Context &context);
+    virtual ~ShaderBuiltinConstantTests(void);
 
-	virtual void				init						(void);
+    virtual void init(void);
 
 private:
-								ShaderBuiltinConstantTests	(const ShaderBuiltinConstantTests&);
-	ShaderBuiltinConstantTests&	operator=					(const ShaderBuiltinConstantTests&);
+    ShaderBuiltinConstantTests(const ShaderBuiltinConstantTests &);
+    ShaderBuiltinConstantTests &operator=(const ShaderBuiltinConstantTests &);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FSHADERBUILTINCONSTANTTESTS_HPP

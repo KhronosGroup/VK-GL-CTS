@@ -29,8 +29,8 @@
 namespace dit
 {
 
-tcu::TestCaseGroup*	createTextureFormatTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTextureFormatTests(tcu::TestContext &testCtx);
 
-} // dit
+} // namespace dit
 
 #endif // _DITTEXTUREFORMATTESTS_HPP

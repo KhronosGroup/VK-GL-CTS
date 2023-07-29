@@ -30,8 +30,8 @@
 namespace glcts
 {
 
-void getConfigListEGL(tcu::Platform& platform, glu::ApiType type, ConfigList& configList);
+void getConfigListEGL(tcu::Platform &platform, glu::ApiType type, ConfigList &configList);
 
-} // glcts
+} // namespace glcts
 
 #endif // _GLCCONFIGLISTEGL_HPP

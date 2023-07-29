@@ -31,9 +31,9 @@ namespace vkt
 namespace BindingModel
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name);
 
-} // BindingModel
-} // vkt
+} // namespace BindingModel
+} // namespace vkt
 
 #endif // _VKTBINDINGMODELTESTS_HPP

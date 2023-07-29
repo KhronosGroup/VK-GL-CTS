@@ -32,20 +32,19 @@ namespace vkt
 namespace compute
 {
 
-VkBufferImageCopy makeBufferImageCopy (const VkExtent3D extent,
-									   const deUint32	arraySize)
+VkBufferImageCopy makeBufferImageCopy(const VkExtent3D extent, const uint32_t arraySize)
 {
-	const VkBufferImageCopy copyParams =
-	{
-		0ull,																		//	VkDeviceSize				bufferOffset;
-		0u,																			//	deUint32					bufferRowLength;
-		0u,																			//	deUint32					bufferImageHeight;
-		makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, arraySize),	//	VkImageSubresourceLayers	imageSubresource;
-		makeOffset3D(0, 0, 0),														//	VkOffset3D					imageOffset;
-		extent,																		//	VkExtent3D					imageExtent;
-	};
-	return copyParams;
+    const VkBufferImageCopy copyParams = {
+        0ull, // VkDeviceSize bufferOffset;
+        0u,   // uint32_t bufferRowLength;
+        0u,   // uint32_t bufferImageHeight;
+        makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u,
+                                   arraySize), // VkImageSubresourceLayers imageSubresource;
+        makeOffset3D(0, 0, 0),                 // VkOffset3D imageOffset;
+        extent,                                // VkExtent3D imageExtent;
+    };
+    return copyParams;
 }
 
-} // compute
-} // vkt
+} // namespace compute
+} // namespace vkt

@@ -29,8 +29,8 @@
 namespace vkt
 {
 
-tcu::TestCaseGroup*	createRenderPass2DepthStencilResolveTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createRenderPass2DepthStencilResolveTests(tcu::TestContext &testCtx);
 
-} // vkt
+} // namespace vkt
 
 #endif // _VKTRENDERPASSDEPTHSTENCILRESOLVETESTS_HPP

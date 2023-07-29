@@ -31,11 +31,13 @@
 namespace vkt
 {
 
-tcu::TestCaseGroup* createSynchronizationTests (tcu::TestContext& testCtx, const std::string& name);
-tcu::TestCaseGroup* createSynchronization2Tests (tcu::TestContext& testCtx, const std::string& name);
-tcu::TestCaseGroup* createSynchronizationTests (tcu::TestContext& testCtx, const std::string& name, synchronization::VideoCodecOperationFlags videoCodecOperation);
-tcu::TestCaseGroup* createSynchronization2Tests (tcu::TestContext& testCtx, const std::string& name, synchronization::VideoCodecOperationFlags videoCodecOperation);
+tcu::TestCaseGroup *createSynchronizationTests(tcu::TestContext &testCtx, const std::string &name);
+tcu::TestCaseGroup *createSynchronization2Tests(tcu::TestContext &testCtx, const std::string &name);
+tcu::TestCaseGroup *createSynchronizationTests(tcu::TestContext &testCtx, const std::string &name,
+                                               synchronization::VideoCodecOperationFlags videoCodecOperation);
+tcu::TestCaseGroup *createSynchronization2Tests(tcu::TestContext &testCtx, const std::string &name,
+                                                synchronization::VideoCodecOperationFlags videoCodecOperation);
 
-} // vkt
+} // namespace vkt
 
 #endif // _VKTSYNCHRONIZATIONTESTS_HPP

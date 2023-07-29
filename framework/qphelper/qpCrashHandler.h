@@ -26,19 +26,19 @@
 #include "deDefs.h"
 
 #if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS)
-#	define QP_USE_SIGNAL_HANDLER 1
+#define QP_USE_SIGNAL_HANDLER 1
 #endif
 
-typedef struct qpCrashHandler_s	qpCrashHandler;
+typedef struct qpCrashHandler_s qpCrashHandler;
 
-typedef void		(*qpCrashHandlerFunc)		(qpCrashHandler* crashHandler, void* userPtr);
-typedef void		(*qpWriteCrashInfoFunc)		(void* userPtr, const char* infoString);
+typedef void (*qpCrashHandlerFunc)(qpCrashHandler *crashHandler, void *userPtr);
+typedef void (*qpWriteCrashInfoFunc)(void *userPtr, const char *infoString);
 
 DE_BEGIN_EXTERN_C
 
-qpCrashHandler*		qpCrashHandler_create			(qpCrashHandlerFunc handlerFunc, void* userPointer);
-void				qpCrashHandler_destroy			(qpCrashHandler* crashHandler);
-void				qpCrashHandler_writeCrashInfo	(qpCrashHandler* crashHandler, qpWriteCrashInfoFunc writeInfoFunc, void* userPointer);
+qpCrashHandler *qpCrashHandler_create(qpCrashHandlerFunc handlerFunc, void *userPointer);
+void qpCrashHandler_destroy(qpCrashHandler *crashHandler);
+void qpCrashHandler_writeCrashInfo(qpCrashHandler *crashHandler, qpWriteCrashInfoFunc writeInfoFunc, void *userPointer);
 
 DE_END_EXTERN_C
 

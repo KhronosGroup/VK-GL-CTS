@@ -34,15 +34,15 @@ namespace conditional
 class ConditionalTransformFeedbackTests : public tcu::TestCaseGroup
 {
 public:
-						ConditionalTransformFeedbackTests	(tcu::TestContext &testCtx);
-						~ConditionalTransformFeedbackTests	(void);
-	void				init								(void);
+    ConditionalTransformFeedbackTests(tcu::TestContext &testCtx);
+    ~ConditionalTransformFeedbackTests(void);
+    void init(void);
 
 private:
-	ConditionalTransformFeedbackTests						(const ConditionalTransformFeedbackTests &other);
+    ConditionalTransformFeedbackTests(const ConditionalTransformFeedbackTests &other);
 };
 
-} // conditional
-} // vkt
+} // namespace conditional
+} // namespace vkt
 
 #endif // _VKTCONDITIONALTRANSFORMFEEDBACKTESTS_HPP

@@ -32,14 +32,14 @@ namespace gl4cts
 class ComputeShaderTests : public deqp::TestCaseGroup
 {
 public:
-	ComputeShaderTests(deqp::Context& context);
-	~ComputeShaderTests(void);
-	void init(void);
+    ComputeShaderTests(deqp::Context &context);
+    ~ComputeShaderTests(void);
+    void init(void);
 
 private:
-	ComputeShaderTests(const ComputeShaderTests& other);
-	ComputeShaderTests& operator=(const ComputeShaderTests& other);
+    ComputeShaderTests(const ComputeShaderTests &other);
+    ComputeShaderTests &operator=(const ComputeShaderTests &other);
 };
-}
+} // namespace gl4cts
 
 #endif // _GL4CCOMPUTESHADERTESTS_HPP

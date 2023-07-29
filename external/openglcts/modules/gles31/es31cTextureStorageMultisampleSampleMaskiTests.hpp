@@ -39,30 +39,30 @@ namespace glcts
 class MultisampleTextureSampleMaskiIndexLowerThanGLMaxSampleMaskWordsTest : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureSampleMaskiIndexLowerThanGLMaxSampleMaskWordsTest(Context& context);
+    /* Public methods */
+    MultisampleTextureSampleMaskiIndexLowerThanGLMaxSampleMaskWordsTest(Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 };
 
 /** Test case: glSampleMaski(): GL_INVALID_VALUE error is reported if index argument is equal to GL_MAX_SAMPLE_MASK_WORDS value. */
 class MultisampleTextureSampleMaskiIndexEqualToGLMaxSampleMaskWordsTest : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureSampleMaskiIndexEqualToGLMaxSampleMaskWordsTest(Context& context);
+    /* Public methods */
+    MultisampleTextureSampleMaskiIndexEqualToGLMaxSampleMaskWordsTest(Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 };
 
 /** Test case: glSampleMaski(): GL_INVALID_VALUE error is reported if index argument is larger than GL_MAX_SAMPLE_MASK_WORDS value. */
 class MultisampleTextureSampleMaskiIndexGreaterGLMaxSampleMaskWordsTest : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureSampleMaskiIndexGreaterGLMaxSampleMaskWordsTest(Context& context);
+    /* Public methods */
+    MultisampleTextureSampleMaskiIndexGreaterGLMaxSampleMaskWordsTest(Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 };
 
 /** Test case:  glSampleMaski(): Sample masks set with the call are correctly reported for
@@ -71,11 +71,11 @@ public:
 class MultisampleTextureSampleMaskiGettersTest : public glcts::TestCase
 {
 public:
-	/* Public methods */
-	MultisampleTextureSampleMaskiGettersTest(Context& context);
+    /* Public methods */
+    MultisampleTextureSampleMaskiGettersTest(Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 };
-} /* glcts namespace */
+} // namespace glcts
 
 #endif // _ES31CTEXTURESTORAGEMULTISAMPLESAMPLEMASKITESTS_HPP

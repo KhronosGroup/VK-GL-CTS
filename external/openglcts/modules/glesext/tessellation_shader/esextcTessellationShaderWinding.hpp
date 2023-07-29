@@ -34,19 +34,19 @@ namespace glcts
 class TesselationShaderWindingTests : public glcts::TestCaseGroupBase
 {
 public:
-	/* Public methods */
-	TesselationShaderWindingTests(glcts::Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TesselationShaderWindingTests(glcts::Context &context, const ExtParameters &extParams);
 
-	virtual ~TesselationShaderWindingTests(void)
-	{
-	}
+    virtual ~TesselationShaderWindingTests(void)
+    {
+    }
 
-	void init(void);
+    void init(void);
 
 private:
-	/* Private methods */
-	TesselationShaderWindingTests(const TesselationShaderWindingTests& other);
-	TesselationShaderWindingTests& operator=(const TesselationShaderWindingTests& other);
+    /* Private methods */
+    TesselationShaderWindingTests(const TesselationShaderWindingTests &other);
+    TesselationShaderWindingTests &operator=(const TesselationShaderWindingTests &other);
 };
 
 } // namespace glcts

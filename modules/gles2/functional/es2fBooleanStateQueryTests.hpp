@@ -40,29 +40,29 @@ class GetBooleanVerifier;
 class GetIntegerVerifier;
 class GetFloatVerifier;
 
-} // BooleanStateQueryVerifiers
+} // namespace BooleanStateQueryVerifiers
 
 class BooleanStateQueryTests : public TestCaseGroup
 {
 public:
-																BooleanStateQueryTests	(Context& context);
-																~BooleanStateQueryTests	(void);
+    BooleanStateQueryTests(Context &context);
+    ~BooleanStateQueryTests(void);
 
-	void														init					(void);
-	void														deinit					(void);
+    void init(void);
+    void deinit(void);
 
 private:
-																BooleanStateQueryTests	(const BooleanStateQueryTests& other);
-	BooleanStateQueryTests&										operator=				(const BooleanStateQueryTests& other);
+    BooleanStateQueryTests(const BooleanStateQueryTests &other);
+    BooleanStateQueryTests &operator=(const BooleanStateQueryTests &other);
 
-	BooleanStateQueryVerifiers::IsEnabledVerifier*				m_verifierIsEnabled;
-	BooleanStateQueryVerifiers::GetBooleanVerifier*				m_verifierBoolean;
-	BooleanStateQueryVerifiers::GetIntegerVerifier*				m_verifierInteger;
-	BooleanStateQueryVerifiers::GetFloatVerifier*				m_verifierFloat;
+    BooleanStateQueryVerifiers::IsEnabledVerifier *m_verifierIsEnabled;
+    BooleanStateQueryVerifiers::GetBooleanVerifier *m_verifierBoolean;
+    BooleanStateQueryVerifiers::GetIntegerVerifier *m_verifierInteger;
+    BooleanStateQueryVerifiers::GetFloatVerifier *m_verifierFloat;
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FBOOLEANSTATEQUERYTESTS_HPP

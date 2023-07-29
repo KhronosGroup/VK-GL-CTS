@@ -36,18 +36,18 @@ namespace Stress
 class LongShaderTests : public TestCaseGroup
 {
 public:
-						LongShaderTests		(Context& testCtx);
-						~LongShaderTests	(void);
+    LongShaderTests(Context &testCtx);
+    ~LongShaderTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						LongShaderTests		(const LongShaderTests& other);
-	LongShaderTests&	operator=			(const LongShaderTests& other);
+    LongShaderTests(const LongShaderTests &other);
+    LongShaderTests &operator=(const LongShaderTests &other);
 };
 
-} // Stress
-} // gles3
-} // deqp
+} // namespace Stress
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3SLONGSHADERTESTS_HPP

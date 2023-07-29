@@ -33,9 +33,9 @@ namespace vkt
 namespace sr
 {
 
-tcu::TestCaseGroup*	createDerivateTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDerivateTests(tcu::TestContext &testCtx);
 
-} // sr
-} // vkt
+} // namespace sr
+} // namespace vkt
 
 #endif // _VKTSHADERRENDERDERIVATETESTS_HPP
