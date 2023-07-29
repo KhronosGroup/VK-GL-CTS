@@ -5,7 +5,7 @@
 
 namespace vk
 {
-template<typename T> VkObjectType getObjectType	(void);
+template<typename T> VkObjectType getObjectType    (void);
 template<> inline VkObjectType	getObjectType<VkInstance>					(void) { return VK_OBJECT_TYPE_INSTANCE;					}
 template<> inline VkObjectType	getObjectType<VkPhysicalDevice>				(void) { return VK_OBJECT_TYPE_PHYSICAL_DEVICE;				}
 template<> inline VkObjectType	getObjectType<VkDevice>						(void) { return VK_OBJECT_TYPE_DEVICE;						}

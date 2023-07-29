@@ -33,10 +33,10 @@ namespace gles2
 namespace Functional
 {
 
-tcu::TestCaseGroup*		createDebugMarkerTests		(Context& context);
+tcu::TestCaseGroup *createDebugMarkerTests(Context &context);
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FDEBUGMARKERTESTS_HPP

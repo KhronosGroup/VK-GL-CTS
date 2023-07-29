@@ -31,9 +31,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createDerivativeTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDerivativeTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEDERIVATIVETESTS_HPP

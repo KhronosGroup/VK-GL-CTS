@@ -34,18 +34,17 @@ namespace conditional
 class ConditionalIgnoreTests : public tcu::TestCaseGroup
 {
 public:
-						ConditionalIgnoreTests	(tcu::TestContext &testCtx);
-						~ConditionalIgnoreTests(void);
+    ConditionalIgnoreTests(tcu::TestContext &testCtx);
+    ~ConditionalIgnoreTests(void);
 
-	void init (void);
+    void init(void);
 
 private:
-	ConditionalIgnoreTests					(const ConditionalIgnoreTests &other);
-	ConditionalIgnoreTests&	operator=		(const ConditionalIgnoreTests &other);
-
+    ConditionalIgnoreTests(const ConditionalIgnoreTests &other);
+    ConditionalIgnoreTests &operator=(const ConditionalIgnoreTests &other);
 };
 
-} // conditional
-} // vkt
+} // namespace conditional
+} // namespace vkt
 
 #endif // _VKTCONDITIONALIGNORETESTS_HPP

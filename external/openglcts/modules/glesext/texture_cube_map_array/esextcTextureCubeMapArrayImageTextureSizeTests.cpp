@@ -40,13 +40,13 @@ namespace glcts
  * @param name          Test case's name
  * @param description   Test case's description
  **/
-TextureCubeMapArrayImageTextureSizeTests::TextureCubeMapArrayImageTextureSizeTests(Context&				context,
-																				   const ExtParameters& extParams,
-																				   const char*			name,
-																				   const char*			description)
-	: TestCaseGroupBase(context, extParams, name, description)
+TextureCubeMapArrayImageTextureSizeTests::TextureCubeMapArrayImageTextureSizeTests(Context &context,
+                                                                                   const ExtParameters &extParams,
+                                                                                   const char *name,
+                                                                                   const char *description)
+    : TestCaseGroupBase(context, extParams, name, description)
 {
-	/* Nothing to be done here */
+    /* Nothing to be done here */
 }
 
 /** Deinitializes tests group
@@ -54,8 +54,8 @@ TextureCubeMapArrayImageTextureSizeTests::TextureCubeMapArrayImageTextureSizeTes
  **/
 void TextureCubeMapArrayImageTextureSizeTests::deinit(void)
 {
-	/* Call base class' deinit() function. */
-	glcts::TestCaseGroupBase::deinit();
+    /* Call base class' deinit() function. */
+    glcts::TestCaseGroupBase::deinit();
 }
 
 /** Initializes tests group
@@ -63,18 +63,18 @@ void TextureCubeMapArrayImageTextureSizeTests::deinit(void)
  **/
 void TextureCubeMapArrayImageTextureSizeTests::init(void)
 {
-	addChild(new TextureCubeMapArrayTextureSizeTFVertexShader(m_context, m_extParams, "texture_size_vertex_sh",
-															  "test 10.1"));
-	addChild(new TextureCubeMapArrayTextureSizeTFGeometryShader(m_context, m_extParams, "texture_size_geometry_sh",
-																"test 10.2"));
-	addChild(new TextureCubeMapArrayTextureSizeTFTessControlShader(m_context, m_extParams,
-																   "texture_size_tesselation_con_sh", "test 10.3"));
-	addChild(new TextureCubeMapArrayTextureSizeTFTessEvaluationShader(m_context, m_extParams,
-																	  "texture_size_tesselation_ev_sh", "test 10.4"));
-	addChild(new TextureCubeMapArrayTextureSizeRTFragmentShader(m_context, m_extParams, "texture_size_fragment_sh",
-																"test 10.5"));
-	addChild(new TextureCubeMapArrayTextureSizeRTComputeShader(m_context, m_extParams, "texture_size_compute_sh",
-															   "test 10.6"));
+    addChild(new TextureCubeMapArrayTextureSizeTFVertexShader(m_context, m_extParams, "texture_size_vertex_sh",
+                                                              "test 10.1"));
+    addChild(new TextureCubeMapArrayTextureSizeTFGeometryShader(m_context, m_extParams, "texture_size_geometry_sh",
+                                                                "test 10.2"));
+    addChild(new TextureCubeMapArrayTextureSizeTFTessControlShader(m_context, m_extParams,
+                                                                   "texture_size_tesselation_con_sh", "test 10.3"));
+    addChild(new TextureCubeMapArrayTextureSizeTFTessEvaluationShader(m_context, m_extParams,
+                                                                      "texture_size_tesselation_ev_sh", "test 10.4"));
+    addChild(new TextureCubeMapArrayTextureSizeRTFragmentShader(m_context, m_extParams, "texture_size_fragment_sh",
+                                                                "test 10.5"));
+    addChild(new TextureCubeMapArrayTextureSizeRTComputeShader(m_context, m_extParams, "texture_size_compute_sh",
+                                                               "test 10.6"));
 }
 
 } // namespace glcts

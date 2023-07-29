@@ -32,9 +32,9 @@ namespace vkt
 namespace subgroups
 {
 
-tcu::TestCaseGroup* createSubgroupsBallotBroadcastTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSubgroupsBallotBroadcastTests(tcu::TestContext &testCtx);
 
-} // subgroups
-} // vkt
+} // namespace subgroups
+} // namespace vkt
 
 #endif // _VKTSUBGROUPSBALLOTBROADCASTTESTS_HPP

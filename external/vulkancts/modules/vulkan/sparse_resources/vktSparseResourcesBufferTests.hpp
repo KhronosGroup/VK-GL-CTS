@@ -31,9 +31,9 @@ namespace vkt
 namespace sparse
 {
 
-tcu::TestCaseGroup* createSparseBufferTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSparseBufferTests(tcu::TestContext &testCtx);
 
-} // sparse
-} // vkt
+} // namespace sparse
+} // namespace vkt
 
 #endif // _VKTSPARSERESOURCESBUFFERTESTS_HPP

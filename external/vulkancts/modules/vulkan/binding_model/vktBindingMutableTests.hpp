@@ -31,9 +31,9 @@ namespace vkt
 namespace BindingModel
 {
 
-tcu::TestCaseGroup* createDescriptorMutableTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDescriptorMutableTests(tcu::TestContext &testCtx);
 
-} // BindingModel
-} // vkt
+} // namespace BindingModel
+} // namespace vkt
 
 #endif // _VKTBINDINGMUTABLETESTS_HPP

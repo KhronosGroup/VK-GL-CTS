@@ -31,9 +31,9 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup*		createSmokeTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSmokeTests(tcu::TestContext &testCtx);
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPISMOKETESTS_HPP

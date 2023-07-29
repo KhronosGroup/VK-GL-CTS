@@ -38,27 +38,27 @@ namespace BufferParamVerifiers
 class GetBufferParameterIVerifier;
 class GetBufferParameterI64Verifier;
 
-} // BufferParamVerifiers
+} // namespace BufferParamVerifiers
 
 class BufferObjectQueryTests : public TestCaseGroup
 {
 public:
-																		BufferObjectQueryTests	(Context& context);
-																		~BufferObjectQueryTests	(void);
+    BufferObjectQueryTests(Context &context);
+    ~BufferObjectQueryTests(void);
 
-	void																init					(void);
-	void																deinit					(void);
+    void init(void);
+    void deinit(void);
 
 private:
-																		BufferObjectQueryTests	(const BufferObjectQueryTests& other);
-	BufferObjectQueryTests&												operator=				(const BufferObjectQueryTests& other);
+    BufferObjectQueryTests(const BufferObjectQueryTests &other);
+    BufferObjectQueryTests &operator=(const BufferObjectQueryTests &other);
 
-	BufferParamVerifiers::GetBufferParameterIVerifier*					m_verifierInt;
-	BufferParamVerifiers::GetBufferParameterI64Verifier*				m_verifierInt64;
+    BufferParamVerifiers::GetBufferParameterIVerifier *m_verifierInt;
+    BufferParamVerifiers::GetBufferParameterI64Verifier *m_verifierInt64;
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FBUFFEROBJECTQUERYTESTS_HPP

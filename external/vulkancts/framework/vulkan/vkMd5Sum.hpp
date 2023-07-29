@@ -11,7 +11,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *	  http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -52,20 +52,20 @@ namespace vk
 // The output of an MD5 operation.
 struct MD5Digest
 {
-	unsigned char a[16];
+    unsigned char a[16];
 };
 
 // Used for storing intermediate data during an MD5 computation. Callers
 // should not access the data.
 typedef char MD5Context[88];
 
-void MD5Sum(const void* data, std::size_t length, MD5Digest* digest);
+void MD5Sum(const void *data, std::size_t length, MD5Digest *digest);
 
 // Converts a digest into human-readable hexadecimal.
-std::string MD5DigestToBase16(const MD5Digest& digest);
+std::string MD5DigestToBase16(const MD5Digest &digest);
 
 // Helper for doing the common case of MD5Sum followed by MD5DigestToBase16.
-std::string MD5SumBase16(const void* data, std::size_t length);
+std::string MD5SumBase16(const void *data, std::size_t length);
 
 } // namespace vk
 

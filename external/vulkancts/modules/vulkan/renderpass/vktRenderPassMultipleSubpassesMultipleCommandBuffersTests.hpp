@@ -32,9 +32,9 @@ namespace vkt
 namespace renderpass
 {
 
-tcu::TestCaseGroup* createRenderPassMultipleSubpassesMultipleCommandBuffersTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createRenderPassMultipleSubpassesMultipleCommandBuffersTests(tcu::TestContext &testCtx);
 
-} // renderpass
-} // vkt
+} // namespace renderpass
+} // namespace vkt
 
 #endif // _VKTRENDERPASSMULTIPLESUBPASSESMULTIPLECOMMANDBUFFERSTESTS_HPP

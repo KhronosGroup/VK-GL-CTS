@@ -32,9 +32,9 @@ namespace vkt
 namespace wsi
 {
 
-void	createSurfaceTests		(tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType);
+void createSurfaceTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType);
 
-} // wsi
-} // vkt
+} // namespace wsi
+} // namespace vkt
 
 #endif // _VKTWSISURFACETESTS_HPP

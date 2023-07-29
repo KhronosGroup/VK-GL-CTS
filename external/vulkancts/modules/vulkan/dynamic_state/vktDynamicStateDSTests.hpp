@@ -36,18 +36,18 @@ namespace DynamicState
 class DynamicStateDSTests : public tcu::TestCaseGroup
 {
 public:
-							DynamicStateDSTests		(tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
-							~DynamicStateDSTests	(void);
-	void					init					(void);
+    DynamicStateDSTests(tcu::TestContext &testCtx, vk::PipelineConstructionType pipelineConstructionType);
+    ~DynamicStateDSTests(void);
+    void init(void);
 
 private:
-	DynamicStateDSTests								(const DynamicStateDSTests& other);
-	DynamicStateDSTests&	operator=				(const DynamicStateDSTests& other);
+    DynamicStateDSTests(const DynamicStateDSTests &other);
+    DynamicStateDSTests &operator=(const DynamicStateDSTests &other);
 
-	vk::PipelineConstructionType	m_pipelineConstructionType;
+    vk::PipelineConstructionType m_pipelineConstructionType;
 };
 
-} // DynamicState
-} // vkt
+} // namespace DynamicState
+} // namespace vkt
 
 #endif // _VKTDYNAMICSTATEDSTESTS_HPP

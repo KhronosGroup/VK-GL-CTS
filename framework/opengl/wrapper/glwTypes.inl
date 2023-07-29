@@ -43,19 +43,19 @@
 #endif
 
 /* Signed basic types. */
-typedef deInt8				GLbyte;
-typedef deInt16				GLshort;
-typedef deInt32				GLint;
-typedef deInt64				GLint64;
+typedef int8_t				GLbyte;
+typedef int16_t				GLshort;
+typedef int32_t				GLint;
+typedef int64_t				GLint64;
 
 /* Unsigned basic types. */
-typedef deUint8				GLubyte;
-typedef deUint16			GLushort;
-typedef deUint32			GLuint;
-typedef deUint64			GLuint64;
+typedef uint8_t				GLubyte;
+typedef uint16_t			GLushort;
+typedef uint32_t			GLuint;
+typedef uint64_t			GLuint64;
 
 /* Floating-point types. */
-typedef deUint16			GLhalf;
+typedef uint16_t			GLhalf;
 typedef float				GLfloat;
 typedef float				GLclampf;
 typedef double				GLdouble;
@@ -63,11 +63,11 @@ typedef double				GLclampd;
 
 /* Special types. */
 typedef char				GLchar;
-typedef deUint8				GLboolean;
-typedef deUint32			GLenum;
-typedef deUint32			GLbitfield;
-typedef deInt32				GLsizei;
-typedef deInt32				GLfixed;
+typedef uint8_t				GLboolean;
+typedef uint32_t			GLenum;
+typedef uint32_t			GLbitfield;
+typedef int32_t				GLsizei;
+typedef int32_t				GLfixed;
 typedef void				GLvoid;
 
 #if (DE_OS == DE_OS_WIN32 && DE_CPU == DE_CPU_X86_64)

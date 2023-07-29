@@ -30,39 +30,39 @@ namespace glcts
 class TextureCubeMapArrayETC2Support : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureCubeMapArrayETC2Support(glcts::Context& context, const ExtParameters& extParams, const char* name,
-								   const char* description);
+    /* Public methods */
+    TextureCubeMapArrayETC2Support(glcts::Context &context, const ExtParameters &extParams, const char *name,
+                                   const char *description);
 
-	virtual ~TextureCubeMapArrayETC2Support()
-	{
-	}
+    virtual ~TextureCubeMapArrayETC2Support()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 protected:
-	void prepareFramebuffer();
-	void prepareVertexArrayObject();
-	void prepareProgram();
-	void prepareTexture();
-	void draw();
-	bool isRenderedImageValid();
-	void clean();
+    void prepareFramebuffer();
+    void prepareVertexArrayObject();
+    void prepareProgram();
+    void prepareTexture();
+    void draw();
+    bool isRenderedImageValid();
+    void clean();
 
 private:
-	glw::GLuint m_fbo;
-	glw::GLuint m_rbo;
-	glw::GLuint m_vao;
-	glw::GLuint m_texture;
-	glw::GLuint m_program;
+    glw::GLuint m_fbo;
+    glw::GLuint m_rbo;
+    glw::GLuint m_vao;
+    glw::GLuint m_texture;
+    glw::GLuint m_program;
 
-	static const glw::GLchar  s_vertex_shader[];
-	static const glw::GLchar  s_fragment_shader[];
-	static const glw::GLubyte s_RGB_texture_data[];
-	static const glw::GLsizei s_RGB_texture_data_size;
-	static const glw::GLubyte s_compressed_RGB_texture_data[];
-	static const glw::GLsizei s_compressed_RGB_texture_data_size;
+    static const glw::GLchar s_vertex_shader[];
+    static const glw::GLchar s_fragment_shader[];
+    static const glw::GLubyte s_RGB_texture_data[];
+    static const glw::GLsizei s_RGB_texture_data_size;
+    static const glw::GLubyte s_compressed_RGB_texture_data[];
+    static const glw::GLsizei s_compressed_RGB_texture_data_size;
 };
 
 } // namespace glcts

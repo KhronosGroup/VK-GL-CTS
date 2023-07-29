@@ -31,9 +31,9 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup*	createBuildIndirectTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createBuildIndirectTests(tcu::TestContext &testCtx);
 
-} // RayTracing
-} // vkt
+} // namespace RayTracing
+} // namespace vkt
 
 #endif // _VKTRAYTRACINGBUILDINDIRECTTESTS_HPP

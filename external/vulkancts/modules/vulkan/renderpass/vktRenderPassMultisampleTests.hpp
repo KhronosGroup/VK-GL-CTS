@@ -30,9 +30,9 @@
 namespace vkt
 {
 
-tcu::TestCaseGroup*	createRenderPassMultisampleTests	(tcu::TestContext& testCtx);
-tcu::TestCaseGroup* createRenderPass2MultisampleTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createRenderPassMultisampleTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createRenderPass2MultisampleTests(tcu::TestContext &testCtx);
 
-} // vkt
+} // namespace vkt
 
 #endif // _VKTRENDERPASSMULTISAMPLETESTS_HPP

@@ -112,69 +112,70 @@ namespace glcts
 class GeometryShaderLayeredRendering : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderLayeredRendering(Context& context, const ExtParameters& extParams, const char* name,
-								   const char* description);
+    /* Public methods */
+    GeometryShaderLayeredRendering(Context &context, const ExtParameters &extParams, const char *name,
+                                   const char *description);
 
-	virtual ~GeometryShaderLayeredRendering(void)
-	{
-	}
+    virtual ~GeometryShaderLayeredRendering(void)
+    {
+    }
 
-	void		  deinit(void);
-	IterateResult iterate(void);
+    void deinit(void);
+    IterateResult iterate(void);
 
 private:
-	/* Private type definitions */
-	/** Describes type of the test iteration being considered */
-	typedef enum {
-		LAYERED_RENDERING_TEST_ITERATION_2D_ARRAY,
-		LAYERED_RENDERING_TEST_ITERATION_2D_MULTISAMPLE_ARRAY,
-		LAYERED_RENDERING_TEST_ITERATION_3D,
-		LAYERED_RENDERING_TEST_ITERATION_CUBEMAP,
+    /* Private type definitions */
+    /** Describes type of the test iteration being considered */
+    typedef enum
+    {
+        LAYERED_RENDERING_TEST_ITERATION_2D_ARRAY,
+        LAYERED_RENDERING_TEST_ITERATION_2D_MULTISAMPLE_ARRAY,
+        LAYERED_RENDERING_TEST_ITERATION_3D,
+        LAYERED_RENDERING_TEST_ITERATION_CUBEMAP,
 
-		/* Always last */
-		LAYERED_RENDERING_TEST_ITERATION_LAST
-	} _layered_rendering_test_iteration;
+        /* Always last */
+        LAYERED_RENDERING_TEST_ITERATION_LAST
+    } _layered_rendering_test_iteration;
 
-	/** Holds data necessary to perform a single iteration of a single layered rendering test iteration */
-	typedef struct
-	{
-		glw::GLuint fbo_id;
-		glw::GLuint fs_id;
-		glw::GLuint gs_id;
-		glw::GLuint po_id;
-		glw::GLuint to_id;
-		glw::GLuint vs_id;
+    /** Holds data necessary to perform a single iteration of a single layered rendering test iteration */
+    typedef struct
+    {
+        glw::GLuint fbo_id;
+        glw::GLuint fs_id;
+        glw::GLuint gs_id;
+        glw::GLuint po_id;
+        glw::GLuint to_id;
+        glw::GLuint vs_id;
 
-		const char** fs_parts;
-		const char** gs_parts;
-		const char** vs_parts;
-		unsigned int n_fs_parts;
-		unsigned int n_gs_parts;
-		unsigned int n_vs_parts;
+        const char **fs_parts;
+        const char **gs_parts;
+        const char **vs_parts;
+        unsigned int n_fs_parts;
+        unsigned int n_gs_parts;
+        unsigned int n_vs_parts;
 
-		_layered_rendering_test_iteration iteration;
-		unsigned int					  n_layers;
-	} _layered_rendering_test;
+        _layered_rendering_test_iteration iteration;
+        unsigned int n_layers;
+    } _layered_rendering_test;
 
-	/* Private functions */
-	bool buildProgramForLRTest(_layered_rendering_test* test);
+    /* Private functions */
+    bool buildProgramForLRTest(_layered_rendering_test *test);
 
-	/* Private variables */
-	static const unsigned char m_layered_rendering_expected_layer_data[6 * 4];
-	static const char*		   m_layered_rendering_fs_code;
-	static const char*		   m_layered_rendering_gs_code_preamble;
-	static const char*		   m_layered_rendering_gs_code_2d_array;
-	static const char*		   m_layered_rendering_gs_code_2d_marray;
-	static const char*		   m_layered_rendering_gs_code_3d;
-	static const char*		   m_layered_rendering_gs_code_cm;
-	static const char*		   m_layered_rendering_gs_code_main;
-	static const char*		   m_layered_rendering_vs_code;
+    /* Private variables */
+    static const unsigned char m_layered_rendering_expected_layer_data[6 * 4];
+    static const char *m_layered_rendering_fs_code;
+    static const char *m_layered_rendering_gs_code_preamble;
+    static const char *m_layered_rendering_gs_code_2d_array;
+    static const char *m_layered_rendering_gs_code_2d_marray;
+    static const char *m_layered_rendering_gs_code_3d;
+    static const char *m_layered_rendering_gs_code_cm;
+    static const char *m_layered_rendering_gs_code_main;
+    static const char *m_layered_rendering_vs_code;
 
-	glw::GLuint m_vao_id;
+    glw::GLuint m_vao_id;
 
-	/* Holds pointers to test instances that are to be executed */
-	_layered_rendering_test m_tests[LAYERED_RENDERING_TEST_ITERATION_LAST];
+    /* Holds pointers to test instances that are to be executed */
+    _layered_rendering_test m_tests[LAYERED_RENDERING_TEST_ITERATION_LAST];
 };
 
 } // namespace glcts

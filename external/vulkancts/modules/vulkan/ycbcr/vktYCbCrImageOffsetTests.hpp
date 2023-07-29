@@ -31,9 +31,9 @@ namespace vkt
 namespace ycbcr
 {
 
-tcu::TestCaseGroup* createImageOffsetTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageOffsetTests(tcu::TestContext &testCtx);
 
-} // memory
-} // vkt
+} // namespace ycbcr
+} // namespace vkt
 
 #endif // _VKTYCBCRIMAGEOFFSETTESTS_HPP

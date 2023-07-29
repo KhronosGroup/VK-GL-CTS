@@ -36,18 +36,18 @@ namespace Functional
 class DrawElementsBaseVertexTests : public TestCaseGroup
 {
 public:
-									DrawElementsBaseVertexTests		(Context& context);
-									~DrawElementsBaseVertexTests	(void);
+    DrawElementsBaseVertexTests(Context &context);
+    ~DrawElementsBaseVertexTests(void);
 
-	void							init							(void);
+    void init(void);
 
 private:
-									DrawElementsBaseVertexTests		(const DrawElementsBaseVertexTests& other);
-	DrawElementsBaseVertexTests&	operator=						(const DrawElementsBaseVertexTests& other);
+    DrawElementsBaseVertexTests(const DrawElementsBaseVertexTests &other);
+    DrawElementsBaseVertexTests &operator=(const DrawElementsBaseVertexTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FDRAWELEMENTSBASEVERTEXTESTS_HPP

@@ -28,45 +28,46 @@
 namespace rr
 {
 
-GeometryEmitter::GeometryEmitter (VertexPacketAllocator& vpalloc, size_t numVertices)
-	: m_vpalloc		(vpalloc)
-	, m_numEmitted	(0)
-	, m_maxVertices	(numVertices)
+GeometryEmitter::GeometryEmitter(VertexPacketAllocator &vpalloc, size_t numVertices)
+    : m_vpalloc(vpalloc)
+    , m_numEmitted(0)
+    , m_maxVertices(numVertices)
 {
 }
 
-void GeometryEmitter::EmitVertex (const tcu::Vec4& position, float pointSize, const GenericVec4* varyings, int primitiveID)
+void GeometryEmitter::EmitVertex(const tcu::Vec4 &position, float pointSize, const GenericVec4 *varyings,
+                                 int primitiveID)
 {
-	VertexPacket* packet;
+    VertexPacket *packet;
 
-	if (++m_numEmitted > m_maxVertices)
-	{
-		DE_FATAL("Undefined results, too many vertices emitted.");
-		return;
-	}
+    if (++m_numEmitted > m_maxVertices)
+    {
+        DE_FATAL("Undefined results, too many vertices emitted.");
+        return;
+    }
 
-	packet = m_vpalloc.alloc();
+    packet = m_vpalloc.alloc();
 
-	packet->position = position;
-	packet->pointSize = pointSize;
-	packet->primitiveID = primitiveID;
+    packet->position    = position;
+    packet->pointSize   = pointSize;
+    packet->primitiveID = primitiveID;
 
-	for (size_t ndx = 0; ndx < m_vpalloc.getNumVertexOutputs(); ++ndx)
-		packet->outputs[ndx] = varyings[ndx];
+    for (size_t ndx = 0; ndx < m_vpalloc.getNumVertexOutputs(); ++ndx)
+        packet->outputs[ndx] = varyings[ndx];
 
-	m_emitted.push_back(packet);
+    m_emitted.push_back(packet);
 }
 
-void GeometryEmitter::EndPrimitive (void)
+void GeometryEmitter::EndPrimitive(void)
 {
-	m_numEmitted = 0;
-	m_emitted.push_back(DE_NULL);
+    m_numEmitted = 0;
+    m_emitted.push_back(DE_NULL);
 }
 
-void GeometryEmitter::moveEmittedTo (std::vector<VertexPacket*>& output)
+void GeometryEmitter::moveEmittedTo(std::vector<VertexPacket *> &output)
 {
-	m_emitted.swap(output);
-	m_emitted.clear();
+    m_emitted.swap(output);
+    m_emitted.clear();
 }
 
-} // rr
+} // namespace rr

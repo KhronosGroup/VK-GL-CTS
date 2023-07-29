@@ -26,7 +26,7 @@ using namespace glw;
 template<typename DataType>
 LimitCase<DataType>::LimitCase(deqp::Context& context,
 							   const char* caseName,
-							   deUint32 limitToken,
+							   uint32_t limitToken,
 							   DataType limitBoundary,
 							   bool isBoundaryMaximum,
 							   const char* glslVersion,

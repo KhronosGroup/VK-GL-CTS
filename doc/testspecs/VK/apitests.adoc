@@ -76,7 +76,7 @@ tcu::TestStatus createSamplerTest (Context& context)
             VK_TEX_ADDRESS_CLAMP,                   //  VkTexAddress    addressV;
             VK_TEX_ADDRESS_CLAMP,                   //  VkTexAddress    addressW;
             0.0f,                                   //  float           mipLodBias;
-            0u,                                     //  deUint32        maxAnisotropy;
+            0u,                                     //  uint32_t        maxAnisotropy;
             VK_COMPARE_OP_ALWAYS,                   //  VkCompareOp     compareOp;
             0.0f,                                   //  float           minLod;
             0.0f,                                   //  float           maxLod;

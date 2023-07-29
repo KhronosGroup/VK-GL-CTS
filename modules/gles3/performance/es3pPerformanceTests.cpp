@@ -49,17 +49,16 @@ namespace Performance
 class TextureTestGroup : public TestCaseGroup
 {
 public:
-	TextureTestGroup (Context& context)
-		: TestCaseGroup(context, "texture", "Texture Performance Tests")
-	{
-	}
+    TextureTestGroup(Context &context) : TestCaseGroup(context, "texture", "Texture Performance Tests")
+    {
+    }
 
-	virtual void init (void)
-	{
-		addChild(new TextureFormatTests		(m_context));
-		addChild(new TextureFilteringTests	(m_context));
-		addChild(new TextureCountTests		(m_context));
-	}
+    virtual void init(void)
+    {
+        addChild(new TextureFormatTests(m_context));
+        addChild(new TextureFilteringTests(m_context));
+        addChild(new TextureCountTests(m_context));
+    }
 };
 
 // ShadersTestGroup
@@ -67,16 +66,15 @@ public:
 class ShadersTestGroup : public TestCaseGroup
 {
 public:
-	ShadersTestGroup (Context& context)
-		: TestCaseGroup(context, "shader", "Shader Performance Tests")
-	{
-	}
+    ShadersTestGroup(Context &context) : TestCaseGroup(context, "shader", "Shader Performance Tests")
+    {
+    }
 
-	virtual void init (void)
-	{
-		addChild(new ShaderOperatorTests			(m_context));
-		addChild(new ShaderControlStatementTests	(m_context));
-	}
+    virtual void init(void)
+    {
+        addChild(new ShaderOperatorTests(m_context));
+        addChild(new ShaderControlStatementTests(m_context));
+    }
 };
 
 // APITests
@@ -84,17 +82,16 @@ public:
 class APITests : public TestCaseGroup
 {
 public:
-	APITests (Context& context)
-		: TestCaseGroup(context, "api", "API Performance Tests")
-	{
-	}
+    APITests(Context &context) : TestCaseGroup(context, "api", "API Performance Tests")
+    {
+    }
 
-	virtual void init (void)
-	{
-		addChild(new StateChangeCallTests		(m_context));
-		addChild(new StateChangeTests			(m_context));
-		addChild(new RedundantStateChangeTests	(m_context));
-	}
+    virtual void init(void)
+    {
+        addChild(new StateChangeCallTests(m_context));
+        addChild(new StateChangeTests(m_context));
+        addChild(new RedundantStateChangeTests(m_context));
+    }
 };
 
 // BufferTestGroup
@@ -102,39 +99,37 @@ public:
 class BufferTestGroup : public TestCaseGroup
 {
 public:
-	BufferTestGroup (Context& context)
-		: TestCaseGroup(context, "buffer", "Buffer Performance Tests")
-	{
-	}
+    BufferTestGroup(Context &context) : TestCaseGroup(context, "buffer", "Buffer Performance Tests")
+    {
+    }
 
-	virtual void init (void)
-	{
-		addChild(new BufferDataUploadTests	(m_context));
-	}
+    virtual void init(void)
+    {
+        addChild(new BufferDataUploadTests(m_context));
+    }
 };
 
 // PerformanceTests
 
-PerformanceTests::PerformanceTests (Context& context)
-	: TestCaseGroup(context, "performance", "Performance Tests")
+PerformanceTests::PerformanceTests(Context &context) : TestCaseGroup(context, "performance", "Performance Tests")
 {
 }
 
-PerformanceTests::~PerformanceTests (void)
+PerformanceTests::~PerformanceTests(void)
 {
 }
 
-void PerformanceTests::init (void)
+void PerformanceTests::init(void)
 {
-	addChild(new BlendTests				(m_context));
-	addChild(new TextureTestGroup		(m_context));
-	addChild(new ShadersTestGroup		(m_context));
-	addChild(new ShaderCompilerTests	(m_context));
-	addChild(new APITests				(m_context));
-	addChild(new BufferTestGroup		(m_context));
-	addChild(new DepthTests				(m_context));
+    addChild(new BlendTests(m_context));
+    addChild(new TextureTestGroup(m_context));
+    addChild(new ShadersTestGroup(m_context));
+    addChild(new ShaderCompilerTests(m_context));
+    addChild(new APITests(m_context));
+    addChild(new BufferTestGroup(m_context));
+    addChild(new DepthTests(m_context));
 }
 
-} // Performance
-} // gles3
-} // deqp
+} // namespace Performance
+} // namespace gles3
+} // namespace deqp

@@ -52,36 +52,36 @@ namespace
 using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 }
 
-tcu::TestCaseGroup*	createTests	(tcu::TestContext& testCtx, const std::string& name)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
-	GroupPtr mainGroup	(new tcu::TestCaseGroup(testCtx, name.c_str(), "Mesh Shader Tests"));
-	// Tests for VK_NV_mesh_shader
-	GroupPtr nvGroup	(new tcu::TestCaseGroup(testCtx, "nv"));
-	GroupPtr extGroup	(new tcu::TestCaseGroup(testCtx, "ext", "Tests for VK_EXT_mesh_shader"));
+    GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), "Mesh Shader Tests"));
+    // Tests for VK_NV_mesh_shader
+    GroupPtr nvGroup(new tcu::TestCaseGroup(testCtx, "nv"));
+    GroupPtr extGroup(new tcu::TestCaseGroup(testCtx, "ext", "Tests for VK_EXT_mesh_shader"));
 
-	nvGroup->addChild(createMeshShaderSmokeTests(testCtx));
-	nvGroup->addChild(createMeshShaderApiTests(testCtx));
-	nvGroup->addChild(createMeshShaderSyncTests(testCtx));
-	nvGroup->addChild(createMeshShaderPropertyTests(testCtx));
-	nvGroup->addChild(createMeshShaderBuiltinTests(testCtx));
-	nvGroup->addChild(createMeshShaderMiscTests(testCtx));
-	nvGroup->addChild(createMeshShaderInOutTests(testCtx));
+    nvGroup->addChild(createMeshShaderSmokeTests(testCtx));
+    nvGroup->addChild(createMeshShaderApiTests(testCtx));
+    nvGroup->addChild(createMeshShaderSyncTests(testCtx));
+    nvGroup->addChild(createMeshShaderPropertyTests(testCtx));
+    nvGroup->addChild(createMeshShaderBuiltinTests(testCtx));
+    nvGroup->addChild(createMeshShaderMiscTests(testCtx));
+    nvGroup->addChild(createMeshShaderInOutTests(testCtx));
 
-	extGroup->addChild(createMeshShaderSmokeTestsEXT(testCtx));
-	extGroup->addChild(createMeshShaderApiTestsEXT(testCtx));
-	extGroup->addChild(createMeshShaderSyncTestsEXT(testCtx));
-	extGroup->addChild(createMeshShaderBuiltinTestsEXT(testCtx));
-	extGroup->addChild(createMeshShaderMiscTestsEXT(testCtx));
-	extGroup->addChild(createMeshShaderInOutTestsEXT(testCtx));
-	extGroup->addChild(createMeshShaderPropertyTestsEXT(testCtx));
-	extGroup->addChild(createMeshShaderConditionalRenderingTestsEXT(testCtx));
-	extGroup->addChild(createMeshShaderProvokingVertexTestsEXT(testCtx));
-	extGroup->addChild(createMeshShaderQueryTestsEXT(testCtx));
+    extGroup->addChild(createMeshShaderSmokeTestsEXT(testCtx));
+    extGroup->addChild(createMeshShaderApiTestsEXT(testCtx));
+    extGroup->addChild(createMeshShaderSyncTestsEXT(testCtx));
+    extGroup->addChild(createMeshShaderBuiltinTestsEXT(testCtx));
+    extGroup->addChild(createMeshShaderMiscTestsEXT(testCtx));
+    extGroup->addChild(createMeshShaderInOutTestsEXT(testCtx));
+    extGroup->addChild(createMeshShaderPropertyTestsEXT(testCtx));
+    extGroup->addChild(createMeshShaderConditionalRenderingTestsEXT(testCtx));
+    extGroup->addChild(createMeshShaderProvokingVertexTestsEXT(testCtx));
+    extGroup->addChild(createMeshShaderQueryTestsEXT(testCtx));
 
-	mainGroup->addChild(nvGroup.release());
-	mainGroup->addChild(extGroup.release());
-	return mainGroup.release();
+    mainGroup->addChild(nvGroup.release());
+    mainGroup->addChild(extGroup.release());
+    return mainGroup.release();
 }
 
-} // MeshShader
-} // vkt
+} // namespace MeshShader
+} // namespace vkt

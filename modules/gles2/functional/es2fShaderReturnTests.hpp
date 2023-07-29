@@ -35,18 +35,18 @@ namespace Functional
 class ShaderReturnTests : public TestCaseGroup
 {
 public:
-							ShaderReturnTests		(Context& context);
-	virtual					~ShaderReturnTests		(void);
+    ShaderReturnTests(Context &context);
+    virtual ~ShaderReturnTests(void);
 
-	virtual void			init					(void);
+    virtual void init(void);
 
 private:
-							ShaderReturnTests		(const ShaderReturnTests&);		// not allowed!
-	ShaderReturnTests&		operator=				(const ShaderReturnTests&);		// not allowed!
+    ShaderReturnTests(const ShaderReturnTests &);            // not allowed!
+    ShaderReturnTests &operator=(const ShaderReturnTests &); // not allowed!
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FSHADERRETURNTESTS_HPP

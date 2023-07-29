@@ -26,47 +26,47 @@
 DE_BEGIN_EXTERN_C
 
 #if defined(DEQP_USE_RELEASE_INFO_FILE)
-#	include "qpReleaseInfo.inl"
+#include "qpReleaseInfo.inl"
 #else
-#	define DEQP_RELEASE_NAME				"unknown"
-#	define DEQP_RELEASE_ID					0xcafebabe
-#	define DEQP_RELEASE_GLSL_NAME			"unknown"
-#	define DEQP_RELEASE_SPIRV_TOOLS_NAME	"unknown"
-#	define DEQP_RELEASE_SPIRV_HEADERS_NAME	"unknown"
+#define DEQP_RELEASE_NAME "unknown"
+#define DEQP_RELEASE_ID 0xcafebabe
+#define DEQP_RELEASE_GLSL_NAME "unknown"
+#define DEQP_RELEASE_SPIRV_TOOLS_NAME "unknown"
+#define DEQP_RELEASE_SPIRV_HEADERS_NAME "unknown"
 #endif
 
-const char* qpGetTargetName (void)
+const char *qpGetTargetName(void)
 {
 #if defined(DEQP_TARGET_NAME)
-	return DEQP_TARGET_NAME;
+    return DEQP_TARGET_NAME;
 #else
-#	error DEQP_TARGET_NAME is not defined!
+#error DEQP_TARGET_NAME is not defined!
 #endif
 }
 
-const char* qpGetReleaseName (void)
+const char *qpGetReleaseName(void)
 {
-	return DEQP_RELEASE_NAME;
+    return DEQP_RELEASE_NAME;
 }
 
-deUint32 qpGetReleaseId (void)
+uint32_t qpGetReleaseId(void)
 {
-	return DEQP_RELEASE_ID;
+    return DEQP_RELEASE_ID;
 }
 
-const char* qpGetReleaseGlslName (void)
+const char *qpGetReleaseGlslName(void)
 {
-	return DEQP_RELEASE_GLSL_NAME;
+    return DEQP_RELEASE_GLSL_NAME;
 }
 
-const char* qpGetReleaseSpirvToolsName (void)
+const char *qpGetReleaseSpirvToolsName(void)
 {
-	return DEQP_RELEASE_SPIRV_TOOLS_NAME;
+    return DEQP_RELEASE_SPIRV_TOOLS_NAME;
 }
 
-const char* qpGetReleaseSpirvHeadersName (void)
+const char *qpGetReleaseSpirvHeadersName(void)
 {
-	return DEQP_RELEASE_SPIRV_HEADERS_NAME;
+    return DEQP_RELEASE_SPIRV_HEADERS_NAME;
 }
 
 DE_END_EXTERN_C

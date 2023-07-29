@@ -38,26 +38,26 @@ namespace vkt
 namespace sparse
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
-	de::MovePtr<tcu::TestCaseGroup> sparseTests (new tcu::TestCaseGroup(testCtx, name.c_str()));
+    de::MovePtr<tcu::TestCaseGroup> sparseTests(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
-	sparseTests->addChild(createSparseBufferTests							(testCtx));
-	sparseTests->addChild(createImageSparseBindingTests						(testCtx));
-	sparseTests->addChild(createDeviceGroupImageSparseBindingTests			(testCtx));
-	sparseTests->addChild(createImageSparseResidencyTests					(testCtx));
-	sparseTests->addChild(createImageAlignedMipSizeTests					(testCtx));
-	sparseTests->addChild(createImageBlockShapesTests						(testCtx));
-	sparseTests->addChild(createDeviceGroupImageSparseResidencyTests		(testCtx));
-	sparseTests->addChild(createMipmapSparseResidencyTests					(testCtx));
-	sparseTests->addChild(createDeviceGroupMipmapSparseResidencyTests		(testCtx));
-	sparseTests->addChild(createImageSparseMemoryAliasingTests				(testCtx));
-	sparseTests->addChild(createDeviceGroupImageSparseMemoryAliasingTests	(testCtx));
-	sparseTests->addChild(createSparseResourcesShaderIntrinsicsTests		(testCtx));
-	sparseTests->addChild(createQueueBindSparseTests						(testCtx));
+    sparseTests->addChild(createSparseBufferTests(testCtx));
+    sparseTests->addChild(createImageSparseBindingTests(testCtx));
+    sparseTests->addChild(createDeviceGroupImageSparseBindingTests(testCtx));
+    sparseTests->addChild(createImageSparseResidencyTests(testCtx));
+    sparseTests->addChild(createImageAlignedMipSizeTests(testCtx));
+    sparseTests->addChild(createImageBlockShapesTests(testCtx));
+    sparseTests->addChild(createDeviceGroupImageSparseResidencyTests(testCtx));
+    sparseTests->addChild(createMipmapSparseResidencyTests(testCtx));
+    sparseTests->addChild(createDeviceGroupMipmapSparseResidencyTests(testCtx));
+    sparseTests->addChild(createImageSparseMemoryAliasingTests(testCtx));
+    sparseTests->addChild(createDeviceGroupImageSparseMemoryAliasingTests(testCtx));
+    sparseTests->addChild(createSparseResourcesShaderIntrinsicsTests(testCtx));
+    sparseTests->addChild(createQueueBindSparseTests(testCtx));
 
-	return sparseTests.release();
+    return sparseTests.release();
 }
 
-} // sparse
-} // vkt
+} // namespace sparse
+} // namespace vkt

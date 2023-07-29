@@ -36,18 +36,18 @@ namespace Functional
 class FboDepthTests : public TestCaseGroup
 {
 public:
-						FboDepthTests		(Context& context);
-						~FboDepthTests		(void);
+    FboDepthTests(Context &context);
+    ~FboDepthTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						FboDepthTests		(const FboDepthTests& other);
-	FboDepthTests&		operator=			(const FboDepthTests& other);
+    FboDepthTests(const FboDepthTests &other);
+    FboDepthTests &operator=(const FboDepthTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FFBODEPTHBUFFERTESTS_HPP

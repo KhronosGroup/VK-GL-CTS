@@ -27,23 +27,13 @@
 namespace vksc_server
 {
 
-bool StoreFile				(const string&						uniqueFilename,
-							 const vector<u8>&					content);
-bool GetFile				(const string&						path,
-							 vector<u8>&						content,
-							 bool								removeAfter);
-bool AppendFile				(const string&						path,
-							 const vector<u8>&					content,
-							 bool								clear);
-void CreateVulkanSCCache	(const VulkanPipelineCacheInput&	input,
-							 int								caseFraction,
-							 vector<u8>&						binary,
-							 const CmdLineParams&				cmdLineParams,
-							 const std::string&					logFile);
-bool CompileShader			(const SourceVariant&				source,
-							 const string&						commandLine,
-							 vector<u8>&						binary	);
+bool StoreFile(const string &uniqueFilename, const vector<u8> &content);
+bool GetFile(const string &path, vector<u8> &content, bool removeAfter);
+bool AppendFile(const string &path, const vector<u8> &content, bool clear);
+void CreateVulkanSCCache(const VulkanPipelineCacheInput &input, int caseFraction, vector<u8> &binary,
+                         const CmdLineParams &cmdLineParams, const std::string &logFile);
+bool CompileShader(const SourceVariant &source, const string &commandLine, vector<u8> &binary);
 
-}
+} // namespace vksc_server
 
 #endif // _VKSSERVICES_HPP

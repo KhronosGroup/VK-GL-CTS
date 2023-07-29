@@ -40,28 +40,27 @@ namespace gles3
 namespace Stress
 {
 
-StressTests::StressTests (Context& context)
-	: TestCaseGroup(context, "stress", "Stress tests")
+StressTests::StressTests(Context &context) : TestCaseGroup(context, "stress", "Stress tests")
 {
 }
 
-StressTests::~StressTests (void)
+StressTests::~StressTests(void)
 {
 }
 
-void StressTests::init (void)
+void StressTests::init(void)
 {
-	addChild(new MemoryTests			(m_context));
-	addChild(new OcclusionQueryTests	(m_context));
-	addChild(new SyncTests				(m_context));
-	addChild(new LongRunningTests		(m_context));
-	addChild(new SpecialFloatTests		(m_context));
-	addChild(new DrawTests				(m_context));
-	addChild(new VertexArrayTests		(m_context));
-	addChild(new LongShaderTests		(m_context));
-	addChild(new LongRunningShaderTests	(m_context));
+    addChild(new MemoryTests(m_context));
+    addChild(new OcclusionQueryTests(m_context));
+    addChild(new SyncTests(m_context));
+    addChild(new LongRunningTests(m_context));
+    addChild(new SpecialFloatTests(m_context));
+    addChild(new DrawTests(m_context));
+    addChild(new VertexArrayTests(m_context));
+    addChild(new LongShaderTests(m_context));
+    addChild(new LongRunningShaderTests(m_context));
 }
 
-} // Stress
-} // gles3
-} // deqp
+} // namespace Stress
+} // namespace gles3
+} // namespace deqp

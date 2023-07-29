@@ -34,14 +34,14 @@ namespace es3cts
 class CopyTexImageConversionsTests : public deqp::TestCaseGroup
 {
 public:
-	CopyTexImageConversionsTests(deqp::Context& context);
+    CopyTexImageConversionsTests(deqp::Context &context);
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	CopyTexImageConversionsTests(const CopyTexImageConversionsTests& other);
-	CopyTexImageConversionsTests& operator=(const CopyTexImageConversionsTests& other);
+    CopyTexImageConversionsTests(const CopyTexImageConversionsTests &other);
+    CopyTexImageConversionsTests &operator=(const CopyTexImageConversionsTests &other);
 };
-}
+} // namespace es3cts
 
 #endif // _ES3CCOPYTEXIMAGECONVERSIONSTESTS_HPP

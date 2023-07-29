@@ -30,9 +30,9 @@ namespace vkt
 namespace robustness
 {
 
-tcu::TestCaseGroup* createRobustness1VertexAccessTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createRobustness1VertexAccessTests(tcu::TestContext &testCtx);
 
-} // robustness
-} // vkt
+} // namespace robustness
+} // namespace vkt
 
 #endif // _VKTROBUSTNESS1VERTEXACCESSTESTS_HPP

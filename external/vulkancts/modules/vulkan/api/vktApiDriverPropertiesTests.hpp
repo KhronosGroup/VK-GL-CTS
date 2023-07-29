@@ -32,9 +32,9 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup*	createDriverPropertiesTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDriverPropertiesTests(tcu::TestContext &testCtx);
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPIDRIVERPROPERTIESTESTS_HPP

@@ -116,38 +116,38 @@ namespace glcts
 class TextureBufferParameters : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureBufferParameters(Context& context, const ExtParameters& extParams, const char* name,
-							const char* description);
+    /* Public methods */
+    TextureBufferParameters(Context &context, const ExtParameters &extParams, const char *name,
+                            const char *description);
 
-	virtual ~TextureBufferParameters()
-	{
-	}
+    virtual ~TextureBufferParameters()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	void initTest(void);
+    /* Private methods */
+    void initTest(void);
 
-	glw::GLboolean queryTextureBindingBuffer(glw::GLint expected);
-	glw::GLboolean queryTextureBufferBinding(glw::GLint expected);
-	glw::GLboolean queryTextureBufferDataStoreBinding(glw::GLint expected);
-	glw::GLboolean queryTextureBufferOffset(glw::GLint expected);
-	glw::GLboolean queryTextureBufferSize(glw::GLint expected);
-	glw::GLboolean queryTextureInternalFormat(glw::GLint expected);
-	glw::GLboolean queryTextureInvalidLevel();
+    glw::GLboolean queryTextureBindingBuffer(glw::GLint expected);
+    glw::GLboolean queryTextureBufferBinding(glw::GLint expected);
+    glw::GLboolean queryTextureBufferDataStoreBinding(glw::GLint expected);
+    glw::GLboolean queryTextureBufferOffset(glw::GLint expected);
+    glw::GLboolean queryTextureBufferSize(glw::GLint expected);
+    glw::GLboolean queryTextureInternalFormat(glw::GLint expected);
+    glw::GLboolean queryTextureInvalidLevel();
 
-	static const glw::GLuint m_n_texels_phase_one;
-	static const glw::GLuint m_n_texels_phase_two;
+    static const glw::GLuint m_n_texels_phase_one;
+    static const glw::GLuint m_n_texels_phase_two;
 
-	typedef std::map<glw::GLint, glw::GLuint> InternalFormatsMap;
+    typedef std::map<glw::GLint, glw::GLuint> InternalFormatsMap;
 
-	/* Private variables */
-	InternalFormatsMap m_internal_formats; /* Maps internal format to texel size for that format */
-	glw::GLuint		   m_tbo_id;		   /* Texture Buffer Object*/
-	glw::GLuint		   m_to_id;			   /* Texture Object*/
+    /* Private variables */
+    InternalFormatsMap m_internal_formats; /* Maps internal format to texel size for that format */
+    glw::GLuint m_tbo_id;                  /* Texture Buffer Object*/
+    glw::GLuint m_to_id;                   /* Texture Object*/
 };
 
 } // namespace glcts

@@ -33,9 +33,10 @@
 namespace vk
 {
 
-bool readApplicationParameters (std::vector<VkApplicationParametersEXT>& appParams, const tcu::CommandLine& cmdLine, const bool readInstanceAppParams);
+bool readApplicationParameters(std::vector<VkApplicationParametersEXT> &appParams, const tcu::CommandLine &cmdLine,
+                               const bool readInstanceAppParams);
 
-} //vk
+} // namespace vk
 
 #endif // CTS_USES_VULKANSC
 

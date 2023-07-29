@@ -10,7 +10,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *	  http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,7 +32,6 @@
 #include <string>
 #include <sstream>
 
-
 namespace vkt
 {
 namespace video
@@ -40,39 +39,39 @@ namespace video
 
 enum ClipName
 {
-	CLIP_A = 0,
-	CLIP_B,
-	CLIP_C,
-	CLIP_D,
-	CLIP_H264_4K_26_IBP_MAIN,
-	CLIP_JELLY_HEVC,
+    CLIP_A = 0,
+    CLIP_B,
+    CLIP_C,
+    CLIP_D,
+    CLIP_H264_4K_26_IBP_MAIN,
+    CLIP_JELLY_HEVC,
 
-	CLIP_LAST,
+    CLIP_LAST,
 };
 
 struct VideoProfileInfo
 {
-	VkVideoCodecOperationFlagBitsKHR	codecOperation;
-	VkVideoChromaSubsamplingFlagBitsKHR subsamplingFlags;
-	VkVideoComponentBitDepthFlagBitsKHR lumaBitDepth;
-	VkVideoComponentBitDepthFlagBitsKHR chromaBitDepth;
+    VkVideoCodecOperationFlagBitsKHR codecOperation;
+    VkVideoChromaSubsamplingFlagBitsKHR subsamplingFlags;
+    VkVideoComponentBitDepthFlagBitsKHR lumaBitDepth;
+    VkVideoComponentBitDepthFlagBitsKHR chromaBitDepth;
 
-	int profileIDC; // TODO: Avoid type-punning
+    int profileIDC; // TODO: Avoid type-punning
 };
 
 struct ClipInfo
 {
-	ClipName	 name;
-	const char*	 filename;
-	VideoProfileInfo profile;
-	int			 totalFrames;
-	int			 framesInGOP;
-	int			 numGOPs;
-	const char** frameChecksums;
+    ClipName name;
+    const char *filename;
+    VideoProfileInfo profile;
+    int totalFrames;
+    int framesInGOP;
+    int numGOPs;
+    const char **frameChecksums;
 };
 
-const ClipInfo* clipInfo(ClipName c);
-const char* checksumForClipFrame(const ClipInfo* cinfo, int frameNumber);
+const ClipInfo *clipInfo(ClipName c);
+const char *checksumForClipFrame(const ClipInfo *cinfo, int frameNumber);
 
 } // namespace video
 } // namespace vkt

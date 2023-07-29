@@ -70,29 +70,29 @@ namespace glcts
 class GeometryShaderLayeredFramebufferBlending : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderLayeredFramebufferBlending(Context& context, const ExtParameters& extParams, const char* name,
-											 const char* description);
+    /* Public methods */
+    GeometryShaderLayeredFramebufferBlending(Context &context, const ExtParameters &extParams, const char *name,
+                                             const char *description);
 
-	virtual ~GeometryShaderLayeredFramebufferBlending()
-	{
-	}
+    virtual ~GeometryShaderLayeredFramebufferBlending()
+    {
+    }
 
-	void		  deinit(void);
-	IterateResult iterate(void);
+    void deinit(void);
+    IterateResult iterate(void);
 
 private:
-	/* Private functions */
+    /* Private functions */
 
-	/* Private variables */
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_gs_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_read_fbo_id;
-	glw::GLuint m_to_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_vs_id;
+    /* Private variables */
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_read_fbo_id;
+    glw::GLuint m_to_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_id;
 };
 
 /** Implementation of Tests 11.4 and 11.5 from CTS_EXT_geometry_shader. Description follows:
@@ -138,24 +138,24 @@ private:
 class GeometryShaderLayeredFramebufferClear : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderLayeredFramebufferClear(Context& context, const ExtParameters& extParams, const char* name,
-										  const char* description);
+    /* Public methods */
+    GeometryShaderLayeredFramebufferClear(Context &context, const ExtParameters &extParams, const char *name,
+                                          const char *description);
 
-	void		  deinit(void);
-	IterateResult iterate(void);
+    void deinit(void);
+    IterateResult iterate(void);
 
 private:
-	/* Private functions */
+    /* Private functions */
 
-	/* Private variables */
-	glw::GLuint m_fbo_char_id;
-	glw::GLuint m_fbo_int_id;
-	glw::GLuint m_fbo_uint_id;
-	glw::GLuint m_read_fbo_id;
-	glw::GLuint m_to_rgba32i_id;
-	glw::GLuint m_to_rgba32ui_id;
-	glw::GLuint m_to_rgba8_id;
+    /* Private variables */
+    glw::GLuint m_fbo_char_id;
+    glw::GLuint m_fbo_int_id;
+    glw::GLuint m_fbo_uint_id;
+    glw::GLuint m_read_fbo_id;
+    glw::GLuint m_to_rgba32i_id;
+    glw::GLuint m_to_rgba32ui_id;
+    glw::GLuint m_to_rgba8_id;
 };
 
 /** Implementation of Tests 11.2 from CTS_EXT_geometry_shader. Description follows:
@@ -207,26 +207,26 @@ private:
 class GeometryShaderLayeredFramebufferDepth : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderLayeredFramebufferDepth(Context& context, const ExtParameters& extParams, const char* name,
-										  const char* description);
+    /* Public methods */
+    GeometryShaderLayeredFramebufferDepth(Context &context, const ExtParameters &extParams, const char *name,
+                                          const char *description);
 
-	void		  deinit(void);
-	IterateResult iterate(void);
+    void deinit(void);
+    IterateResult iterate(void);
 
 private:
-	/* Private functions */
+    /* Private functions */
 
-	/* Private variables */
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_gs_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_read_fbo_id;
-	glw::GLuint m_to_a_id;
-	glw::GLuint m_to_b_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_vs_id;
+    /* Private variables */
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_read_fbo_id;
+    glw::GLuint m_to_a_id;
+    glw::GLuint m_to_b_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_id;
 };
 
 /** Implementation of Tests 11.1 from CTS_EXT_geometry_shader. Description follows:
@@ -281,25 +281,25 @@ private:
 class GeometryShaderLayeredFramebufferStencil : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderLayeredFramebufferStencil(Context& context, const ExtParameters& extParams, const char* name,
-											const char* description);
+    /* Public methods */
+    GeometryShaderLayeredFramebufferStencil(Context &context, const ExtParameters &extParams, const char *name,
+                                            const char *description);
 
-	void		  deinit(void);
-	IterateResult iterate(void);
+    void deinit(void);
+    IterateResult iterate(void);
 
 private:
-	/* Private functions */
+    /* Private functions */
 
-	/* Private variables */
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_gs_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_to_a_id;
-	glw::GLuint m_to_b_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_vs_id;
+    /* Private variables */
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_to_a_id;
+    glw::GLuint m_to_b_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_id;
 };
 
 } // namespace glcts

@@ -27,30 +27,30 @@ from egl.common import *
 from khr_util.format import indentLines, normalizeConstant
 
 TYPED_VALUES = [
-	"EGL_DONT_CARE",
-	"EGL_UNKNOWN",
-	"EGL_NO_CONTEXT",
-	"EGL_NO_DISPLAY",
-	"EGL_DEFAULT_DISPLAY",
-	"EGL_NO_SURFACE",
-	"EGL_NO_IMAGE",
-	"EGL_NO_SYNC",
-	"EGL_NO_IMAGE_KHR",
-	"EGL_NO_SYNC_KHR"
+    "EGL_DONT_CARE",
+    "EGL_UNKNOWN",
+    "EGL_NO_CONTEXT",
+    "EGL_NO_DISPLAY",
+    "EGL_DEFAULT_DISPLAY",
+    "EGL_NO_SURFACE",
+    "EGL_NO_IMAGE",
+    "EGL_NO_SYNC",
+    "EGL_NO_IMAGE_KHR",
+    "EGL_NO_SYNC_KHR"
 ]
 
 def enumValue (enum, typePrefix = ""):
-	if enum.name in TYPED_VALUES:
+    if enum.name in TYPED_VALUES:
           # incoming is EGL_CAST(<type>, <value>)
           n,v = enum.value.split(",", 1)
           # output is ((<typePrefix>::<type>)<value>)
           return "((%s%s)%s" % (typePrefix, n.replace("EGL_CAST(", ""), v)
 
-	else:
-		return normalizeConstant(enum.value)
+    else:
+        return normalizeConstant(enum.value)
 
 def enumDefinition (enum):
-	return "#define %s\t%s" % (enum.name, enumValue(enum, "eglw::"))
+    return "#define %s\t%s" % (enum.name, enumValue(enum, "eglw::"))
 
 def gen (iface):
-	writeInlFile(os.path.join(EGL_WRAPPER_DIR, "eglwEnums.inl"), indentLines(map(enumDefinition, iface.enums)))
+    writeInlFile(os.path.join(EGL_WRAPPER_DIR, "eglwEnums.inl"), indentLines(map(enumDefinition, iface.enums)))

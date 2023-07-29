@@ -36,18 +36,18 @@ namespace Functional
 class FboColorTests : public TestCaseGroup
 {
 public:
-						FboColorTests			(Context& context);
-						~FboColorTests			(void);
+    FboColorTests(Context &context);
+    ~FboColorTests(void);
 
-	void				init					(void);
+    void init(void);
 
 private:
-						FboColorTests			(const FboColorTests& other);
-	FboColorTests&		operator=				(const FboColorTests& other);
+    FboColorTests(const FboColorTests &other);
+    FboColorTests &operator=(const FboColorTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FFBOCOLORBUFFERTESTS_HPP

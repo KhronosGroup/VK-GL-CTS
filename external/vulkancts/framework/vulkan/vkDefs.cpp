@@ -26,108 +26,105 @@
 
 #include <sstream>
 
-DE_STATIC_ASSERT(sizeof(vk::VkImageType)	== sizeof(deUint32));
-DE_STATIC_ASSERT(sizeof(vk::VkResult)		== sizeof(deUint32));
-DE_STATIC_ASSERT(sizeof(vk::VkDevice)		== sizeof(void*));
-DE_STATIC_ASSERT(sizeof(vk::VkBuffer)		== sizeof(deUint64));
+DE_STATIC_ASSERT(sizeof(vk::VkImageType) == sizeof(uint32_t));
+DE_STATIC_ASSERT(sizeof(vk::VkResult) == sizeof(uint32_t));
+DE_STATIC_ASSERT(sizeof(vk::VkDevice) == sizeof(void *));
+DE_STATIC_ASSERT(sizeof(vk::VkBuffer) == sizeof(uint64_t));
 
 namespace vk
 {
 
-static bool isOutOfMemoryError (VkResult result)
+static bool isOutOfMemoryError(VkResult result)
 {
-	return result == VK_ERROR_OUT_OF_DEVICE_MEMORY	||
-		   result == VK_ERROR_OUT_OF_HOST_MEMORY;
+    return result == VK_ERROR_OUT_OF_DEVICE_MEMORY || result == VK_ERROR_OUT_OF_HOST_MEMORY;
 }
 
-Error::Error (VkResult error, const char* message, const char* expr, const char* file, int line)
-	: tcu::TestError	(message, expr, file, line)
-	, m_error			(error)
-{
-}
-
-Error::Error (VkResult error, const std::string& message)
-	: tcu::TestError	(message)
-	, m_error			(error)
+Error::Error(VkResult error, const char *message, const char *expr, const char *file, int line)
+    : tcu::TestError(message, expr, file, line)
+    , m_error(error)
 {
 }
 
-Error::~Error (void) throw()
+Error::Error(VkResult error, const std::string &message) : tcu::TestError(message), m_error(error)
 {
 }
 
-NotSupportedError::NotSupportedError (VkResult error, const char* message, const char* expr, const char* file, int line)
-	: tcu::NotSupportedError	(message, expr, file, line)
-	, m_error					(error)
+Error::~Error(void) throw()
 {
 }
 
-NotSupportedError::NotSupportedError (VkResult error, const std::string& message)
-	: tcu::NotSupportedError	(message)
-	, m_error					(error)
+NotSupportedError::NotSupportedError(VkResult error, const char *message, const char *expr, const char *file, int line)
+    : tcu::NotSupportedError(message, expr, file, line)
+    , m_error(error)
 {
 }
 
-NotSupportedError::~NotSupportedError (void) throw()
+NotSupportedError::NotSupportedError(VkResult error, const std::string &message)
+    : tcu::NotSupportedError(message)
+    , m_error(error)
 {
 }
 
-OutOfMemoryError::OutOfMemoryError (VkResult error, const char* message, const char* expr, const char* file, int line)
-	: tcu::ResourceError(message, expr, file, line)
-	, m_error			(error)
-{
-	DE_ASSERT(isOutOfMemoryError(error));
-}
-
-OutOfMemoryError::OutOfMemoryError (VkResult error, const std::string& message)
-	: tcu::ResourceError(message)
-	, m_error			(error)
-{
-	DE_ASSERT(isOutOfMemoryError(error));
-}
-
-OutOfMemoryError::~OutOfMemoryError (void) throw()
+NotSupportedError::~NotSupportedError(void) throw()
 {
 }
 
-template<typename ERROR>
-static void checkResult (VkResult result, const char* msg, const char* file, int line)
+OutOfMemoryError::OutOfMemoryError(VkResult error, const char *message, const char *expr, const char *file, int line)
+    : tcu::ResourceError(message, expr, file, line)
+    , m_error(error)
 {
-	if (result != VK_SUCCESS)
-	{
-		std::ostringstream msgStr;
-		if (msg)
-			msgStr << msg << ": ";
-
-		msgStr << getResultStr(result);
-
-		if (isOutOfMemoryError(result))
-			throw OutOfMemoryError(result, msgStr.str().c_str(), DE_NULL, file, line);
-		else
-			throw ERROR(result, msgStr.str().c_str(), DE_NULL, file, line);
-	}
+    DE_ASSERT(isOutOfMemoryError(error));
 }
 
-void checkResult (VkResult result, const char* msg, const char* file, int line)
+OutOfMemoryError::OutOfMemoryError(VkResult error, const std::string &message)
+    : tcu::ResourceError(message)
+    , m_error(error)
 {
-	checkResult<Error>(result, msg, file, line);
+    DE_ASSERT(isOutOfMemoryError(error));
 }
 
-void checkResultSupported (VkResult result, const char* msg, const char* file, int line)
+OutOfMemoryError::~OutOfMemoryError(void) throw()
 {
-	checkResult<NotSupportedError>(result, msg, file, line);
 }
 
-void checkWsiResult (VkResult result, const char* msg, const char* file, int line)
+template <typename ERROR>
+static void checkResult(VkResult result, const char *msg, const char *file, int line)
 {
-	if (result == VK_SUBOPTIMAL_KHR)
-		return;
+    if (result != VK_SUCCESS)
+    {
+        std::ostringstream msgStr;
+        if (msg)
+            msgStr << msg << ": ";
+
+        msgStr << getResultStr(result);
+
+        if (isOutOfMemoryError(result))
+            throw OutOfMemoryError(result, msgStr.str().c_str(), DE_NULL, file, line);
+        else
+            throw ERROR(result, msgStr.str().c_str(), DE_NULL, file, line);
+    }
+}
+
+void checkResult(VkResult result, const char *msg, const char *file, int line)
+{
+    checkResult<Error>(result, msg, file, line);
+}
+
+void checkResultSupported(VkResult result, const char *msg, const char *file, int line)
+{
+    checkResult<NotSupportedError>(result, msg, file, line);
+}
+
+void checkWsiResult(VkResult result, const char *msg, const char *file, int line)
+{
+    if (result == VK_SUBOPTIMAL_KHR)
+        return;
 #ifndef CTS_USES_VULKANSC
-	if (result == VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT)
-		return;
+    if (result == VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT)
+        return;
 #endif // CTS_USES_VULKANSC
 
-	checkResult(result, msg, file, line);
+    checkResult(result, msg, file, line);
 }
 
-} // vk
+} // namespace vk

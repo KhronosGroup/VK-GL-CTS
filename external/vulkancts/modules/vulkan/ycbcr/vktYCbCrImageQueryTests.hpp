@@ -31,9 +31,9 @@ namespace vkt
 namespace ycbcr
 {
 
-tcu::TestCaseGroup*	createImageQueryTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageQueryTests(tcu::TestContext &testCtx);
 
-} // ycbcr
-} // vkt
+} // namespace ycbcr
+} // namespace vkt
 
 #endif // _VKTYCBCRIMAGEQUERYTESTS_HPP

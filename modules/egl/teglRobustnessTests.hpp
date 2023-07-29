@@ -31,9 +31,9 @@ namespace deqp
 namespace egl
 {
 
-TestCaseGroup* createRobustnessTests (EglTestContext& eglTestCtx);
+TestCaseGroup *createRobustnessTests(EglTestContext &eglTestCtx);
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLROBUSTNESSTESTS_HPP

@@ -29,7 +29,7 @@
 namespace de
 {
 class Random;
-} // de
+} // namespace de
 
 namespace vkt
 {
@@ -38,62 +38,59 @@ namespace ubo
 
 enum FeatureBits
 {
-	FEATURE_VECTORS					= (1<<0),
-	FEATURE_MATRICES				= (1<<1),
-	FEATURE_ARRAYS					= (1<<2),
-	FEATURE_STRUCTS					= (1<<3),
-	FEATURE_NESTED_STRUCTS			= (1<<4),
-	FEATURE_INSTANCE_ARRAYS			= (1<<5),
-	FEATURE_VERTEX_BLOCKS			= (1<<6),
-	FEATURE_FRAGMENT_BLOCKS			= (1<<7),
-	FEATURE_SHARED_BLOCKS			= (1<<8),
-	FEATURE_UNUSED_UNIFORMS			= (1<<9),
-	FEATURE_UNUSED_MEMBERS			= (1<<10),
-	FEATURE_PACKED_LAYOUT			= (1<<12),
-	FEATURE_SHARED_LAYOUT			= (1<<13),
-	FEATURE_STD140_LAYOUT			= (1<<14),
-	FEATURE_MATRIX_LAYOUT			= (1<<15),	//!< Matrix layout flags.
-	FEATURE_ARRAYS_OF_ARRAYS		= (1<<16),
-	FEATURE_OUT_OF_ORDER_OFFSETS	= (1<<17),
-	FEATURE_16BIT_STORAGE			= (1<<18),
-	FEATURE_8BIT_STORAGE			= (1<<19),
-	FEATURE_STD430_LAYOUT			= (1<<20),
-	FEATURE_SCALAR_LAYOUT			= (1<<21),
-	FEATURE_DESCRIPTOR_INDEXING		= (1<<22),
+    FEATURE_VECTORS              = (1 << 0),
+    FEATURE_MATRICES             = (1 << 1),
+    FEATURE_ARRAYS               = (1 << 2),
+    FEATURE_STRUCTS              = (1 << 3),
+    FEATURE_NESTED_STRUCTS       = (1 << 4),
+    FEATURE_INSTANCE_ARRAYS      = (1 << 5),
+    FEATURE_VERTEX_BLOCKS        = (1 << 6),
+    FEATURE_FRAGMENT_BLOCKS      = (1 << 7),
+    FEATURE_SHARED_BLOCKS        = (1 << 8),
+    FEATURE_UNUSED_UNIFORMS      = (1 << 9),
+    FEATURE_UNUSED_MEMBERS       = (1 << 10),
+    FEATURE_PACKED_LAYOUT        = (1 << 12),
+    FEATURE_SHARED_LAYOUT        = (1 << 13),
+    FEATURE_STD140_LAYOUT        = (1 << 14),
+    FEATURE_MATRIX_LAYOUT        = (1 << 15), //!< Matrix layout flags.
+    FEATURE_ARRAYS_OF_ARRAYS     = (1 << 16),
+    FEATURE_OUT_OF_ORDER_OFFSETS = (1 << 17),
+    FEATURE_16BIT_STORAGE        = (1 << 18),
+    FEATURE_8BIT_STORAGE         = (1 << 19),
+    FEATURE_STD430_LAYOUT        = (1 << 20),
+    FEATURE_SCALAR_LAYOUT        = (1 << 21),
+    FEATURE_DESCRIPTOR_INDEXING  = (1 << 22),
 };
 
 class RandomUniformBlockCase : public UniformBlockCase
 {
 public:
-							RandomUniformBlockCase		(tcu::TestContext&		testCtx,
-														 const std::string&		name,
-														 BufferMode				bufferMode,
-														 deUint32				features,
-														 deUint32				seed);
+    RandomUniformBlockCase(tcu::TestContext &testCtx, const std::string &name, BufferMode bufferMode, uint32_t features,
+                           uint32_t seed);
 
 private:
-	void					generateBlock				(de::Random& rnd, deUint32 layoutFlags);
-	void					generateUniform				(de::Random& rnd, UniformBlock& block, deUint32 complexity);
-	VarType					generateType				(de::Random& rnd, int typeDepth, bool arrayOk, deUint32 complexity);
+    void generateBlock(de::Random &rnd, uint32_t layoutFlags);
+    void generateUniform(de::Random &rnd, UniformBlock &block, uint32_t complexity);
+    VarType generateType(de::Random &rnd, int typeDepth, bool arrayOk, uint32_t complexity);
 
-	const deUint32			m_features;
-	const int				m_maxVertexBlocks;
-	const int				m_maxFragmentBlocks;
-	const int				m_maxSharedBlocks;
-	const int				m_maxInstances;
-	const int				m_maxArrayLength;
-	const int				m_maxStructDepth;
-	const int				m_maxBlockMembers;
-	const int				m_maxStructMembers;
-	const deUint32			m_seed;
+    const uint32_t m_features;
+    const int m_maxVertexBlocks;
+    const int m_maxFragmentBlocks;
+    const int m_maxSharedBlocks;
+    const int m_maxInstances;
+    const int m_maxArrayLength;
+    const int m_maxStructDepth;
+    const int m_maxBlockMembers;
+    const int m_maxStructMembers;
+    const uint32_t m_seed;
 
-	int						m_blockNdx;
-	int						m_uniformNdx;
-	int						m_structNdx;
-	int						m_availableDescriptorUniformBuffers;
+    int m_blockNdx;
+    int m_uniformNdx;
+    int m_structNdx;
+    int m_availableDescriptorUniformBuffers;
 };
 
-} // ubo
-} // vkt
+} // namespace ubo
+} // namespace vkt
 
 #endif // _VKTRANDOMUNIFORMBLOCKCASE_HPP

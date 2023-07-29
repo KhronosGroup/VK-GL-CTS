@@ -32,11 +32,12 @@ namespace vkt
 namespace synchronization
 {
 
-tcu::TestCaseGroup*		createBasicEventTests					(tcu::TestContext& testCtx, VideoCodecOperationFlags VideoCodecOperationFlags = 0);
-tcu::TestCaseGroup*		createSynchronization2BasicEventTests	(tcu::TestContext& testCtx, VideoCodecOperationFlags VideoCodecOperationFlags = 0);
+tcu::TestCaseGroup *createBasicEventTests(tcu::TestContext &testCtx,
+                                          VideoCodecOperationFlags VideoCodecOperationFlags = 0);
+tcu::TestCaseGroup *createSynchronization2BasicEventTests(tcu::TestContext &testCtx,
+                                                          VideoCodecOperationFlags VideoCodecOperationFlags = 0);
 
-} //synchronization
-} // vkt
-
+} // namespace synchronization
+} // namespace vkt
 
 #endif // _VKTSYNCHRONIZATIONBASICEVENTTESTS_HPP

@@ -31,9 +31,9 @@ namespace vkt
 namespace BindingModel
 {
 
-tcu::TestCaseGroup* createBufferDeviceAddressTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createBufferDeviceAddressTests(tcu::TestContext &testCtx);
 
-} // BindingModel
-} // vkt
+} // namespace BindingModel
+} // namespace vkt
 
 #endif // _VKTBINDINGBUFFERDEVICEADDRESSTESTS_HPP
