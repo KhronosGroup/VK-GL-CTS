@@ -876,8 +876,11 @@ void TimestampTestInstance::createCustomDeviceWithTransferOnlyQueue(void)
 	auto queryResetFeatures			= m_context.getHostQueryResetFeatures();
 	auto deviceFeatures2			= m_context.getDeviceFeatures2();
 
-	queryResetFeatures.pNext = &deviceFeatures2;
-	const void* pNext = &queryResetFeatures;
+	const void* pNext = &deviceFeatures2;
+	if (m_context.getUsedApiVersion() < VK_API_VERSION_1_2) {
+		queryResetFeatures.pNext = &deviceFeatures2;
+		pNext = &queryResetFeatures;
+	}
 
 #ifdef CTS_USES_VULKANSC
 	VkDeviceObjectReservationCreateInfo memReservationInfo = m_context.getTestContext().getCommandLine().isSubProcess() ? m_context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
