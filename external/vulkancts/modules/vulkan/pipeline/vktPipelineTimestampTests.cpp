@@ -2749,6 +2749,147 @@ void TransferTestInstance::initialImageTransition (VkCommandBuffer cmdBuffer, Vk
 	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &imageMemBarrier);
 }
 
+class FillBufferBeforeCopyTest : public vkt::TestCase
+{
+public:
+	FillBufferBeforeCopyTest(tcu::TestContext& testContext,
+		const std::string& name,
+		const std::string& description)
+		: vkt::TestCase(testContext, name, description)
+	{ }
+	virtual               ~FillBufferBeforeCopyTest(void) { }
+	virtual void          initPrograms(SourceCollections& programCollection) const;
+	virtual TestInstance* createInstance(Context& context) const;
+};
+
+class FillBufferBeforeCopyTestInstance : public vkt::TestInstance
+{
+public:
+	FillBufferBeforeCopyTestInstance(Context& context);
+	virtual					~FillBufferBeforeCopyTestInstance(void) { }
+	virtual tcu::TestStatus	iterate(void);
+protected:
+	struct TimestampWithAvailability
+	{
+		deUint64 timestamp;
+		deUint64 availability;
+	};
+
+	Move<VkCommandPool>		m_cmdPool;
+	Move<VkCommandBuffer>	m_cmdBuffer;
+	Move<VkQueryPool>		m_queryPool;
+
+	Move<VkBuffer>			m_resultBuffer;
+	de::MovePtr<Allocation>	m_resultBufferMemory;
+};
+
+void FillBufferBeforeCopyTest::initPrograms(SourceCollections& programCollection) const
+{
+	vkt::TestCase::initPrograms(programCollection);
+}
+
+TestInstance* FillBufferBeforeCopyTest::createInstance(Context& context) const
+{
+	return new FillBufferBeforeCopyTestInstance(context);
+}
+
+FillBufferBeforeCopyTestInstance::FillBufferBeforeCopyTestInstance(Context& context)
+	: vkt::TestInstance(context)
+{
+	const DeviceInterface& vk = context.getDeviceInterface();
+	const VkDevice			vkDevice = context.getDevice();
+	const deUint32			queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+	Allocator& allocator = m_context.getDefaultAllocator();
+
+	// Check support for timestamp queries
+	checkTimestampsSupported(context.getInstanceInterface(), context.getPhysicalDevice(), queueFamilyIndex);
+
+	const VkQueryPoolCreateInfo queryPoolParams =
+	{
+		VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,	// VkStructureType               sType;
+		DE_NULL,									// const void*                   pNext;
+		0u,											// VkQueryPoolCreateFlags        flags;
+		VK_QUERY_TYPE_TIMESTAMP,					// VkQueryType                   queryType;
+		1u,											// deUint32                      entryCount;
+		0u,											// VkQueryPipelineStatisticFlags pipelineStatistics;
+	};
+
+	m_queryPool = createQueryPool(vk, vkDevice, &queryPoolParams);
+	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	// Create results buffer.
+	const VkBufferCreateInfo bufferCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
+		DE_NULL,									// const void*			pNext;
+		0u,											// VkBufferCreateFlags	flags;
+		sizeof(TimestampWithAvailability),			// VkDeviceSize			size;
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// VkBufferUsageFlags	usage;
+		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
+		1u,											// deUint32				queueFamilyIndexCount;
+		&queueFamilyIndex							// const deUint32*		pQueueFamilyIndices;
+	};
+
+	m_resultBuffer = createBuffer(vk, vkDevice, &bufferCreateInfo);
+	m_resultBufferMemory = allocator.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_resultBuffer), MemoryRequirement::HostVisible);
+	VK_CHECK(vk.bindBufferMemory(vkDevice, *m_resultBuffer, m_resultBufferMemory->getMemory(), m_resultBufferMemory->getOffset()));
+
+	const vk::VkBufferMemoryBarrier fillBufferBarrier =
+	{
+		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+		DE_NULL,										// const void*		pNext;
+		vk::VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
+		vk::VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,						// deUint32			srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,						// deUint32			dstQueueFamilyIndex;
+		*m_resultBuffer,								// VkBuffer			buffer;
+		0ull,											// VkDeviceSize		offset;
+		VK_WHOLE_SIZE									// VkDeviceSize		size;
+	};
+
+	const vk::VkBufferMemoryBarrier bufferBarrier =
+	{
+		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+		DE_NULL,										// const void*		pNext;
+		vk::VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
+		vk::VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,						// deUint32			srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,						// deUint32			dstQueueFamilyIndex;
+		*m_resultBuffer,								// VkBuffer			buffer;
+		0ull,											// VkDeviceSize		offset;
+		VK_WHOLE_SIZE									// VkDeviceSize		size;
+	};
+
+	// Prepare command buffer.
+	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, 1u);
+	vk.cmdFillBuffer(*m_cmdBuffer, *m_resultBuffer, 0u, bufferCreateInfo.size, 0u);
+	vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 1u, &fillBufferBarrier, 0u, DE_NULL);
+	vk.cmdWriteTimestamp(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, *m_queryPool, 0u);
+	vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, 0u, 1u, *m_resultBuffer, 0u, sizeof(TimestampWithAvailability), (VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
+	vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
+	endCommandBuffer(vk, *m_cmdBuffer);
+}
+
+tcu::TestStatus FillBufferBeforeCopyTestInstance::iterate(void)
+{
+	const DeviceInterface& vk = m_context.getDeviceInterface();
+	const VkDevice				vkDevice = m_context.getDevice();
+	const VkQueue				queue = m_context.getUniversalQueue();
+	TimestampWithAvailability	ta;
+
+	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+	invalidateAlloc(vk, vkDevice, *m_resultBufferMemory);
+	deMemcpy(&ta, m_resultBufferMemory->getHostPtr(), sizeof(ta));
+	if (ta.availability) {
+		if (ta.timestamp == 0) {
+			return tcu::TestStatus::fail("Timestamp not written");
+		}
+	}
+	return tcu::TestStatus::pass("Pass");
+}
+
 class ResetTimestampQueryBeforeCopyTest : public vkt::TestCase
 {
 public:
@@ -3462,6 +3603,12 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx, PipelineCon
 		miscTests->addChild(new ResetTimestampQueryBeforeCopyTest(testCtx,
 																"reset_query_before_copy",
 																"Issue a timestamp query and reset it before copying results"));
+
+		// Fill buffer with 0s before copying results.
+		miscTests->addChild(new FillBufferBeforeCopyTest(testCtx,
+                                                        "fill_buffer_before_copy",
+                                                        "Fill the results buffer before copying results"));
+
 
 		// Check consistency between 32 and 64 bits.
 		miscTests->addChild(new ConsistentQueryResultsTest(testCtx,
