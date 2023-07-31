@@ -1621,11 +1621,11 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate (void)
 	if (m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_3)
 	{
 		beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer, *renderPass, *framebuffer);
-		vk.cmdBeginQuery(*secondaryCmdBuffer, *psqPool, 0, queryControlFlags);
+		vk.cmdBeginQueryIndexedEXT(*secondaryCmdBuffer, *pgqPool, 0, queryControlFlags, m_parameters.pgqStreamIndex());
 		vk.cmdBindPipeline(*secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 		vk.cmdBindVertexBuffers(*secondaryCmdBuffer, 0, 1, &vtxBuffer.get(), &vertexBufferOffset);
 		draw(vk, *secondaryCmdBuffer, vertexCount, indirectBuffer->get());
-		vk.cmdEndQuery(*secondaryCmdBuffer, *psqPool, 0);
+		vk.cmdEndQueryIndexedEXT(*secondaryCmdBuffer, *pgqPool, 0, m_parameters.pgqStreamIndex());
 		vk.endCommandBuffer(*secondaryCmdBuffer);
 	}
 
@@ -1747,7 +1747,7 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate (void)
 			}
 			else if (m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_3)
 			{
-				vk.cmdBeginQueryIndexedEXT(cmdBuffer, *pgqPool, 0, queryControlFlags, m_parameters.pgqStreamIndex());
+				vk.cmdBeginQuery(cmdBuffer, *psqPool, 0, queryControlFlags);
 
 				beginRenderPass(vk, cmdBuffer, *renderPass, *framebuffer, makeRect2D(makeExtent2D(m_imageWidth, m_imageHeight)), clearColor, vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 				vk.cmdExecuteCommands(cmdBuffer, 1u, &*secondaryCmdBuffer);
@@ -1757,7 +1757,7 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate (void)
 				draw(vk, cmdBuffer, vertexCount, indirectBuffer->get());
 				endRenderPass(vk, cmdBuffer);
 
-				vk.cmdEndQueryIndexedEXT(cmdBuffer, *pgqPool, 0, m_parameters.pgqStreamIndex());
+				vk.cmdEndQuery(cmdBuffer, *psqPool, 0);
 			}
 		}
 	}
@@ -1796,7 +1796,7 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate (void)
 		deUint32 pgqDrawCount = 1;
 		if (m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_TWO_XFB_INSIDE_PGQ)
 			pgqDrawCount = 5;
-		else if (m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_2 || m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_3)
+		else if (m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_2)
 			pgqDrawCount = 2;
 		const deUint32 totalPrimitivesGenerated = static_cast<deUint32>(primitivesGenerated * pgqDrawCount);
 
@@ -1863,7 +1863,9 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate (void)
 			const QueryResults*			psqCounters					= reinterpret_cast<QueryResults*>(psqResults[0].data());
 			const deUint64				inputAssemblyPrimitives		= psqCounters->elements32[0];
 
-			deUint32 drawCount = (m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_1) ? 2 : 1;
+			deUint32 drawCount = (m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_1 ||
+								  m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_3)
+								 ? 2 : 1;
 
 			if (inputAssemblyPrimitives != primitivesGenerated * drawCount)
 			{
