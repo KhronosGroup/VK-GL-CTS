@@ -409,10 +409,11 @@ VideoBaseDecoder::VideoBaseDecoder(Parameters&& params)
 	, m_framesToCheck(params.framesToCheck)
 	, m_dpb(3)
 	, m_videoFrameBuffer(params.framebuffer)
-	// TODO: interface cleanup
 	, m_decodeFramesData(params.context->getDeviceDriver(), params.context->device, params.context->decodeQueueFamilyIdx())
 	, m_resetPictureParametersFrameTriggerHack(params.pictureParameterUpdateTriggerHack)
 	, m_queryResultWithStatus(params.queryDecodeStatus)
+	, m_useInlineQueries(params.useInlineQueries)
+	, m_resourcesWithoutProfiles(params.resourcesWithoutProfiles)
 	, m_outOfOrderDecoding(params.outOfOrderDecoding)
 	, m_alwaysRecreateDPB(params.alwaysRecreateDPB)
 	, m_intraOnlyDecoding(params.intraOnlyDecoding)
@@ -546,6 +547,7 @@ void VideoBaseDecoder::StartVideoSequence (const VkParserDetectedVideoFormat* pV
 											m_dpbImageFormat,
 											maxDpbSlotCount,
 											std::min<deUint32>(maxDpbSlotCount, m_videoCaps.maxActiveReferencePictures),
+											m_useInlineQueries,
 											m_videoSession));
 		// after creating a new video session, we need codec reset.
 		m_resetDecoder = true;
@@ -1663,9 +1665,12 @@ void VideoBaseDecoder::RecordCommandBuffer(de::MovePtr<CachedDecodeParameters> &
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 	beginInfo.pInheritanceInfo = nullptr;
 
+	VkVideoInlineQueryInfoKHR inlineQueryInfo{};
+	inlineQueryInfo.sType = VK_STRUCTURE_TYPE_VIDEO_INLINE_QUERY_INFO_KHR;
+
 	vk.beginCommandBuffer(commandBuffer, &beginInfo);
 
-	if (m_queryResultWithStatus)
+	if (m_queryResultWithStatus || m_useInlineQueries)
 	{
 		vk.cmdResetQueryPool(commandBuffer, cachedParameters->frameSynchronizationInfo.queryPool, cachedParameters->frameSynchronizationInfo.startQueryId,
 							 cachedParameters->frameSynchronizationInfo.numQueries);
@@ -1694,14 +1699,24 @@ void VideoBaseDecoder::RecordCommandBuffer(de::MovePtr<CachedDecodeParameters> &
 	};
 	vk.cmdPipelineBarrier2(commandBuffer, &dependencyInfo);
 
-	if (m_queryResultWithStatus)
+	if (m_useInlineQueries)
+	{
+		const void* currentPNext = cachedParameters->pictureParams.decodeFrameInfo.pNext;
+		inlineQueryInfo.pNext = currentPNext;
+		inlineQueryInfo.queryPool = cachedParameters->frameSynchronizationInfo.queryPool;
+		inlineQueryInfo.firstQuery = cachedParameters->frameSynchronizationInfo.startQueryId;
+		inlineQueryInfo.queryCount = cachedParameters->frameSynchronizationInfo.numQueries;
+		cachedParameters->pictureParams.decodeFrameInfo.pNext = &inlineQueryInfo;
+	}
+
+	if (m_queryResultWithStatus && !m_useInlineQueries)
 	{
 		vk.cmdBeginQuery(commandBuffer, cachedParameters->frameSynchronizationInfo.queryPool, cachedParameters->frameSynchronizationInfo.startQueryId, VkQueryControlFlags());
 	}
 
 	vk.cmdDecodeVideoKHR(commandBuffer, &cachedParameters->pictureParams.decodeFrameInfo);
 
-	if (m_queryResultWithStatus)
+	if (m_queryResultWithStatus && !m_useInlineQueries)
 	{
 		vk.cmdEndQuery(commandBuffer, cachedParameters->frameSynchronizationInfo.queryPool, cachedParameters->frameSynchronizationInfo.startQueryId);
 	}
@@ -1815,7 +1830,7 @@ void VideoBaseDecoder::decodeFramesOutOfOrder()
 	{
 		auto& cachedParams = m_cachedDecodeParams[i];
 		SubmitQueue(cachedParams);
-		if (m_queryResultWithStatus)
+		if (m_queryResultWithStatus || m_useInlineQueries)
 		{
 			QueryDecodeResults(cachedParams);
 		}
@@ -2449,6 +2464,7 @@ VkResult VulkanVideoSession::Create(DeviceContext& vkDevCtx,
 								   VkFormat            referencePicturesFormat,
 								   deUint32            maxDpbSlots,
 								   deUint32            maxActiveReferencePictures,
+								   bool				   useInlineVideoQueries,
 								   VkSharedBaseObj<VulkanVideoSession>& videoSession)
 {
 	auto& vk = vkDevCtx.getDeviceDriver();
@@ -2463,7 +2479,7 @@ VkResult VulkanVideoSession::Create(DeviceContext& vkDevCtx,
 	static const VkExtensionProperties h265EncodeStdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H265_ENCODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H265_ENCODE_SPEC_VERSION };
 
 	VkVideoSessionCreateInfoKHR& createInfo = pNewVideoSession->m_createInfo;
-	createInfo.flags = 0;
+	createInfo.flags = useInlineVideoQueries ? VK_VIDEO_SESSION_CREATE_INLINE_QUERIES_BIT_KHR : 0;
 	createInfo.pVideoProfile = pVideoProfile->GetProfile();
 	createInfo.queueFamilyIndex = videoQueueFamily;
 	createInfo.pictureFormat = pictureFormat;

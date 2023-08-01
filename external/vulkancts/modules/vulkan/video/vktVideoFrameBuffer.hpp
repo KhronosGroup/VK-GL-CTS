@@ -303,6 +303,7 @@ public:
 
 	static VkResult Create(DeviceContext*							devCtx,
 						   bool										supportsQueries,
+						   bool										resourcesWithoutProfiles,
 						   VkSharedBaseObj<VulkanVideoFrameBuffer>& vkVideoFrameBuffer);
 };
 

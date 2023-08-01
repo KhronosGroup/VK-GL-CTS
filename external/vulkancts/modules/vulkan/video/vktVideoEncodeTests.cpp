@@ -1074,7 +1074,8 @@ static MovePtr<VideoBaseDecoder> createBasicDecoder(DeviceContext *deviceContext
 	VkSharedBaseObj<VulkanVideoFrameBuffer> vkVideoFrameBuffer;
 
 	VK_CHECK(VulkanVideoFrameBuffer::Create(deviceContext,
-											false,
+											false, // UseResultStatusQueries
+											false, // ResourcesWithoutProfiles
 											vkVideoFrameBuffer));
 
 	VideoBaseDecoder::Parameters params;

@@ -213,7 +213,8 @@ public:
 				 bool useImageArray = false,
 				 bool useImageViewArray = false,
 				 bool useSeparateOutputImages = false,
-				 bool useLinearOutput = false);
+				 bool useLinearOutput = false,
+				 bool resourcesWithoutProfiles = false);
 
 	~NvPerFrameDecodeImageSet()
 	{
@@ -313,12 +314,13 @@ class VkVideoFrameBuffer : public VulkanVideoFrameBuffer {
 public:
 	static constexpr size_t maxFramebufferImages = 32;
 
-	VkVideoFrameBuffer(DeviceContext& vkDevCtx, bool supportsQueries)
+	VkVideoFrameBuffer(DeviceContext& vkDevCtx, bool supportsQueries, bool resourcesWithoutProfiles)
 		: m_vkDevCtx(vkDevCtx),
 		m_refCount(0),
 		m_perFrameDecodeImageSet(),
 		m_displayFrames(),
 		m_supportsQueries(supportsQueries),
+		m_resourcesWithoutProfiles(resourcesWithoutProfiles),
 		m_queryPool(VK_NULL_HANDLE),
 		m_ownedByDisplayMask(0),
 		m_frameNumInDecodeOrder(0),
@@ -506,6 +508,7 @@ private:
 	NvPerFrameDecodeImageSet m_perFrameDecodeImageSet;
 	std::queue<deUint8> m_displayFrames;
 	bool m_supportsQueries;
+	bool m_resourcesWithoutProfiles;
 	VkQueryPool m_queryPool;
 	deUint32 m_ownedByDisplayMask;
 	int32_t m_frameNumInDecodeOrder;
@@ -515,9 +518,10 @@ private:
 
 VkResult VulkanVideoFrameBuffer::Create(DeviceContext* vkDevCtx,
 										bool supportsQueries,
+										bool resourcesWithoutProfiles,
 										VkSharedBaseObj<VulkanVideoFrameBuffer>& vkVideoFrameBuffer)
 {
-	VkSharedBaseObj<VkVideoFrameBuffer> videoFrameBuffer(new VkVideoFrameBuffer(*vkDevCtx, supportsQueries));
+	VkSharedBaseObj<VkVideoFrameBuffer> videoFrameBuffer(new VkVideoFrameBuffer(*vkDevCtx, supportsQueries, resourcesWithoutProfiles));
 	if (videoFrameBuffer) {
 		vkVideoFrameBuffer = videoFrameBuffer;
 		return VK_SUCCESS;
@@ -722,7 +726,7 @@ int32_t VkVideoFrameBuffer::InitImagePool(const VkVideoProfileInfoKHR* pDecodePr
 	int32_t imageSetCreateResult = m_perFrameDecodeImageSet.init(
 		m_vkDevCtx, pDecodeProfile, numImages, dpbImageFormat, outImageFormat, maxImageExtent, dpbImageUsage, outImageUsage,
 		queueFamilyIndex,
-		useImageArray, useImageViewArray, useSeparateOutputImage, useLinearOutput);
+		useImageArray, useImageViewArray, useSeparateOutputImage, useLinearOutput, m_resourcesWithoutProfiles);
 	m_numberParameterUpdates++;
 
 	return imageSetCreateResult;
@@ -907,7 +911,8 @@ int32_t NvPerFrameDecodeImageSet::init(DeviceContext& vkDevCtx,
 									   bool                     useImageArray,
 									   bool                     useImageViewArray,
 									   bool                     useSeparateOutputImage,
-									   bool                     useLinearOutput)
+									   bool                     useLinearOutput,
+									   bool                     resourcesWithoutProfiles)
 {
 	if (numImages > m_perFrameDecodeResources.size()) {
 		DE_ASSERT(!"Number of requested images exceeds the max size of the image array");
@@ -938,8 +943,7 @@ int32_t NvPerFrameDecodeImageSet::init(DeviceContext& vkDevCtx,
 
 	// Image create info for the DPBs
 	m_dpbImageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	// m_imageCreateInfo.pNext = m_videoProfile.GetProfile();
-	m_dpbImageCreateInfo.pNext = m_videoProfile.GetProfileListInfo();
+	m_dpbImageCreateInfo.pNext = resourcesWithoutProfiles ? nullptr : m_videoProfile.GetProfileListInfo();
 	m_dpbImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
 	m_dpbImageCreateInfo.format = dpbImageFormat;
 	m_dpbImageCreateInfo.extent = { maxImageExtent.width, maxImageExtent.height, 1 };
@@ -952,7 +956,7 @@ int32_t NvPerFrameDecodeImageSet::init(DeviceContext& vkDevCtx,
 	m_dpbImageCreateInfo.queueFamilyIndexCount = 1;
 	m_dpbImageCreateInfo.pQueueFamilyIndices = &m_queueFamilyIndex;
 	m_dpbImageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	m_dpbImageCreateInfo.flags = 0;
+	m_dpbImageCreateInfo.flags = resourcesWithoutProfiles ? VK_IMAGE_CREATE_VIDEO_PROFILE_INDEPENDENT_BIT_KHR : 0;
 
 	// Image create info for the output
 	if (useSeparateOutputImage || useLinearOutput) {
