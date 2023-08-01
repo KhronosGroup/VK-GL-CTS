@@ -1199,7 +1199,7 @@ void BindVertexBuffers2Case::initPrograms (vk::SourceCollections& programCollect
 	vert << "#version 450\n";
 	vert << "layout(location = 0) in vec3 in_color;\n";
 	for (deUint32 i = 1; i < m_params.bufferCount; ++i)
-	vert << "layout(location = " << i << ") in vec2 pos" << i << ";\n";
+		vert << "layout(location = " << i << ") in vec2 pos" << i << ";\n";
 	vert << "layout(location = 0) out vec3 out_color;\n";
 	vert << "void main() {\n";
 	vert << "  gl_Position = vec4(";
@@ -1230,19 +1230,32 @@ TestInstance* BindVertexBuffers2Case::createInstance (Context& context) const
 {
 	DevicePtr		device;
 	DeviceDriverPtr	driver;
+
 	if (m_robustnessVersion != 0)
 	{
-		vk::VkPhysicalDeviceFeatures2 features2 = vk::initVulkanStructure();
-		features2.features.robustBufferAccess = DE_TRUE;
+		vk::VkPhysicalDeviceFeatures2							features2			= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features	= vk::initVulkanStructure();
+#ifndef CTS_USES_VULKANSC
+		vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	gplFeatures			= vk::initVulkanStructure();
+#endif // CTS_USES_VULKANSC
 
-		void** nextPtr = &features2.pNext;
+		features2.features.robustBufferAccess		= VK_TRUE;
+		robustness2Features.robustBufferAccess2		= VK_TRUE;
+#ifndef CTS_USES_VULKANSC
+		gplFeatures.graphicsPipelineLibrary			= VK_TRUE;
+#endif // CTS_USES_VULKANSC
 
-		vk::VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = vk::initVulkanStructure();
+		const auto addFeatures = vk::makeStructChainAdder(&features2);
+
 		if (m_robustnessVersion > 1u)
-		{
-			robustness2Features.robustBufferAccess2 = DE_TRUE;
-			addToChainVulkanStructure(&nextPtr, robustness2Features);
-		}
+			addFeatures(&robustness2Features);
+
+#ifndef CTS_USES_VULKANSC
+		if (m_pipelineConstructionType != vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+			addFeatures(&gplFeatures);
+#else
+		TCU_THROW(NotSupportedError, "VulkanSC does not support VK_EXT_graphics_pipeline_library");
+#endif // CTS_USES_VULKANSC
 
 		device = createRobustBufferAccessDevice(context, &features2);
 		driver =
