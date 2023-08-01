@@ -172,6 +172,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateDiscardTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateGeneralTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateInheritanceTests.cpp \
+	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateLineWidthTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateRSTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateVPTests.cpp \
