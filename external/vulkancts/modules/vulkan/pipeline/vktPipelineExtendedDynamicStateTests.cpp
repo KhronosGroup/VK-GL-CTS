@@ -5653,6 +5653,17 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 
 		DE_ASSERT(!m_testConfig.useExtraDynPipeline || !m_testConfig.useMeshShaders);
 
+		const vk::VkPipelineVertexInputStateCreateInfo emptyVertexInputStateCreateInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	//	VkStructureType								sType;
+			DE_NULL,														//	const void*									pNext;
+			0u,																//	VkPipelineVertexInputStateCreateFlags		flags;
+			0u,																//	deUint32									vertexBindingDescriptionCount;
+			DE_NULL,														//	const VkVertexInputBindingDescription*		pVertexBindingDescriptions;
+			0u,																//	deUint32									vertexAttributeDescriptionCount;
+			DE_NULL,														//	const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+		};
+
 #ifndef CTS_USES_VULKANSC
 		if (m_testConfig.useMeshShaders)
 		{
@@ -5676,17 +5687,6 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			const auto staticInputAssemblyStateCreateInfo	= ((m_testConfig.favorStaticNullPointers && m_testConfig.primRestartEnableConfig.dynamicValue && m_testConfig.topologyConfig.dynamicValue)
 															? nullptr
 															: &inputAssemblyStateCreateInfo);
-
-			const vk::VkPipelineVertexInputStateCreateInfo emptyVertexInputStateCreateInfo =
-			{
-				vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	//	VkStructureType								sType;
-				DE_NULL,														//	const void*									pNext;
-				0u,																//	VkPipelineVertexInputStateCreateFlags		flags;
-				0u,																//	deUint32									vertexBindingDescriptionCount;
-				DE_NULL,														//	const VkVertexInputBindingDescription*		pVertexBindingDescriptions;
-				0u,																//	deUint32									vertexAttributeDescriptionCount;
-				DE_NULL,														//	const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
-			};
 
 			graphicsPipeline.setupVertexInputState(
 												staticVertexInputStateCreateInfo,
