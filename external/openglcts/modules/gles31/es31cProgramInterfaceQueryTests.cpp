@@ -1144,8 +1144,12 @@ class UniformTypes : public PIQBase
 			   "    tmp = tmp + d[0][0] + j.b.x;     \n"
 			   "    tmp = tmp + k.b[0].c[0][0];      \n"
 			   "    tmp = tmp + l[2].a.c[0][1];      \n"
-			   "    tmp = tmp + l[2].b[1].d[0];      \n"
-			   "    tmp = tmp + float(l[0].c.x);            \n"
+			   "    int i = int(tmp);                \n"
+			   "    if (i < 2)                       \n"
+			   "        tmp = tmp + l[2].b[1].d[i];  \n"
+			   "    else                             \n"
+			   "        tmp = tmp + l[2].b[1].d[0];  \n"
+			   "    tmp = tmp + float(l[0].c.x);     \n"
 			   "    color = vec4(0, 1, 0, 1) * tmp;  \n"
 			   "}";
 	}
@@ -2622,7 +2626,11 @@ class ArraysOfArrays : public SimpleShaders
 			   "uniform mediump vec4 a[3][4][5];             \n"
 			   "void main(void)                      \n"
 			   "{                                                 \n"
-			   "    gl_Position = position + a[2][1][0];          \n"
+			   "    int i = int(position.x);                      \n"
+			   "    if (i < 5)                                    \n"
+			   "        gl_Position = position + a[2][1][i];      \n"
+			   "    else                                          \n"
+			   "        gl_Position = position + a[2][1][0];      \n"
 			   "}";
 	}
 
