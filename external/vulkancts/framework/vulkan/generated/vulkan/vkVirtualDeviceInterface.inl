@@ -74,6 +74,7 @@ virtual void				destroyFramebuffer										(VkDevice device, VkFramebuffer fram
 virtual VkResult			createRenderPass										(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass) const = 0;
 virtual void				destroyRenderPass										(VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual void				getRenderAreaGranularity								(VkDevice device, VkRenderPass renderPass, VkExtent2D* pGranularity) const = 0;
+virtual void				getRenderingAreaGranularityKHR							(VkDevice device, const VkRenderingAreaInfoKHR* pRenderingAreaInfo, VkExtent2D* pGranularity) const = 0;
 virtual VkResult			createCommandPool										(VkDevice device, const VkCommandPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCommandPool* pCommandPool) const = 0;
 virtual void				destroyCommandPool										(VkDevice device, VkCommandPool commandPool, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual VkResult			resetCommandPool										(VkDevice device, VkCommandPool commandPool, VkCommandPoolResetFlags flags) const = 0;
@@ -107,6 +108,7 @@ virtual void				cmdDispatchIndirect										(VkCommandBuffer commandBuffer, VkB
 virtual void				cmdSubpassShadingHUAWEI									(VkCommandBuffer commandBuffer) const = 0;
 virtual void				cmdDrawClusterHUAWEI									(VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const = 0;
 virtual void				cmdDrawClusterIndirectHUAWEI							(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset) const = 0;
+virtual void				cmdUpdatePipelineIndirectBufferNV						(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline) const = 0;
 virtual void				cmdCopyBuffer											(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions) const = 0;
 virtual void				cmdCopyImage											(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageCopy* pRegions) const = 0;
 virtual void				cmdBlitImage											(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit* pRegions, VkFilter filter) const = 0;
@@ -319,11 +321,14 @@ virtual void				destroyDeferredOperationKHR								(VkDevice device, VkDeferredO
 virtual uint32_t			getDeferredOperationMaxConcurrencyKHR					(VkDevice device, VkDeferredOperationKHR operation) const = 0;
 virtual VkResult			getDeferredOperationResultKHR							(VkDevice device, VkDeferredOperationKHR operation) const = 0;
 virtual VkResult			deferredOperationJoinKHR								(VkDevice device, VkDeferredOperationKHR operation) const = 0;
+virtual void				getPipelineIndirectMemoryRequirementsNV					(VkDevice device, const VkComputePipelineCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements) const = 0;
+virtual VkDeviceAddress		getPipelineIndirectDeviceAddressNV						(VkDevice device, const VkPipelineIndirectDeviceAddressInfoNV* pInfo) const = 0;
 virtual void				cmdSetCullMode											(VkCommandBuffer commandBuffer, VkCullModeFlags cullMode) const = 0;
 virtual void				cmdSetFrontFace											(VkCommandBuffer commandBuffer, VkFrontFace frontFace) const = 0;
 virtual void				cmdSetPrimitiveTopology									(VkCommandBuffer commandBuffer, VkPrimitiveTopology primitiveTopology) const = 0;
 virtual void				cmdSetViewportWithCount									(VkCommandBuffer commandBuffer, uint32_t viewportCount, const VkViewport* pViewports) const = 0;
 virtual void				cmdSetScissorWithCount									(VkCommandBuffer commandBuffer, uint32_t scissorCount, const VkRect2D* pScissors) const = 0;
+virtual void				cmdBindIndexBuffer2KHR									(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkIndexType indexType) const = 0;
 virtual void				cmdBindVertexBuffers2									(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes, const VkDeviceSize* pStrides) const = 0;
 virtual void				cmdSetDepthTestEnable									(VkCommandBuffer commandBuffer, VkBool32 depthTestEnable) const = 0;
 virtual void				cmdSetDepthWriteEnable									(VkCommandBuffer commandBuffer, VkBool32 depthWriteEnable) const = 0;
@@ -390,6 +395,10 @@ virtual VkResult			queueSubmit2											(VkQueue queue, uint32_t submitCount, 
 virtual void				cmdWriteTimestamp2										(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkQueryPool queryPool, uint32_t query) const = 0;
 virtual void				cmdWriteBufferMarker2AMD								(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker) const = 0;
 virtual void				getQueueCheckpointData2NV								(VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointData2NV* pCheckpointData) const = 0;
+virtual VkResult			copyMemoryToImageEXT									(VkDevice device, const VkCopyMemoryToImageInfoEXT* pCopyMemoryToImageInfo) const = 0;
+virtual VkResult			copyImageToMemoryEXT									(VkDevice device, const VkCopyImageToMemoryInfoEXT* pCopyImageToMemoryInfo) const = 0;
+virtual VkResult			copyImageToImageEXT										(VkDevice device, const VkCopyImageToImageInfoEXT* pCopyImageToImageInfo) const = 0;
+virtual VkResult			transitionImageLayoutEXT								(VkDevice device, uint32_t transitionCount, const VkHostImageLayoutTransitionInfoEXT* pTransitions) const = 0;
 virtual VkResult			createVideoSessionKHR									(VkDevice device, const VkVideoSessionCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionKHR* pVideoSession) const = 0;
 virtual void				destroyVideoSessionKHR									(VkDevice device, VkVideoSessionKHR videoSession, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual VkResult			createVideoSessionParametersKHR							(VkDevice device, const VkVideoSessionParametersCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionParametersKHR* pVideoSessionParameters) const = 0;
@@ -448,7 +457,7 @@ virtual void				getDeviceMicromapCompatibilityEXT						(VkDevice device, const V
 virtual void				getMicromapBuildSizesEXT								(VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkMicromapBuildInfoEXT* pBuildInfo, VkMicromapBuildSizesInfoEXT* pSizeInfo) const = 0;
 virtual void				getShaderModuleIdentifierEXT							(VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier) const = 0;
 virtual void				getShaderModuleCreateInfoIdentifierEXT					(VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, VkShaderModuleIdentifierEXT* pIdentifier) const = 0;
-virtual void				getImageSubresourceLayout2EXT							(VkDevice device, VkImage image, const VkImageSubresource2EXT* pSubresource, VkSubresourceLayout2EXT* pLayout) const = 0;
+virtual void				getImageSubresourceLayout2KHR							(VkDevice device, VkImage image, const VkImageSubresource2KHR* pSubresource, VkSubresourceLayout2KHR* pLayout) const = 0;
 virtual VkResult			getPipelinePropertiesEXT								(VkDevice device, const VkPipelineInfoEXT* pPipelineInfo, VkBaseOutStructure* pPipelineProperties) const = 0;
 virtual void				exportMetalObjectsEXT									(VkDevice device, VkExportMetalObjectsInfoEXT* pMetalObjectsInfo) const = 0;
 virtual VkResult			getFramebufferTilePropertiesQCOM						(VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties) const = 0;
@@ -460,6 +469,7 @@ virtual void				cmdOpticalFlowExecuteNV									(VkCommandBuffer commandBuffer, 
 virtual VkResult			getDeviceFaultInfoEXT									(VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo) const = 0;
 virtual void				cmdSetDepthBias2EXT										(VkCommandBuffer commandBuffer, const VkDepthBiasInfoEXT* pDepthBiasInfo) const = 0;
 virtual VkResult			releaseSwapchainImagesEXT								(VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo) const = 0;
+virtual void				getDeviceImageSubresourceLayoutKHR						(VkDevice device, const VkDeviceImageSubresourceInfoKHR* pInfo, VkSubresourceLayout2KHR* pLayout) const = 0;
 virtual VkResult			mapMemory2KHR											(VkDevice device, const VkMemoryMapInfoKHR* pMemoryMapInfo, void** ppData) const = 0;
 virtual VkResult			unmapMemory2KHR											(VkDevice device, const VkMemoryUnmapInfoKHR* pMemoryUnmapInfo) const = 0;
 virtual VkResult			createShadersEXT										(VkDevice device, uint32_t createInfoCount, const VkShaderCreateInfoEXT* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkShaderEXT* pShaders) const = 0;
@@ -467,3 +477,10 @@ virtual void				destroyShaderEXT										(VkDevice device, VkShaderEXT shader, 
 virtual VkResult			getShaderBinaryDataEXT									(VkDevice device, VkShaderEXT shader, size_t* pDataSize, void* pData) const = 0;
 virtual void				cmdBindShadersEXT										(VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders) const = 0;
 virtual VkResult			getScreenBufferPropertiesQNX							(VkDevice device, const struct _screen_buffer* buffer, VkScreenBufferPropertiesQNX* pProperties) const = 0;
+virtual VkResult			getExecutionGraphPipelineScratchSizeAMDX				(VkDevice device, VkPipeline executionGraph, VkExecutionGraphPipelineScratchSizeAMDX* pSizeInfo) const = 0;
+virtual VkResult			getExecutionGraphPipelineNodeIndexAMDX					(VkDevice device, VkPipeline executionGraph, const VkPipelineShaderStageNodeCreateInfoAMDX* pNodeInfo, uint32_t* pNodeIndex) const = 0;
+virtual VkResult			createExecutionGraphPipelinesAMDX						(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkExecutionGraphPipelineCreateInfoAMDX* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const = 0;
+virtual void				cmdInitializeGraphScratchMemoryAMDX						(VkCommandBuffer commandBuffer, VkDeviceAddress scratch) const = 0;
+virtual void				cmdDispatchGraphAMDX									(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo) const = 0;
+virtual void				cmdDispatchGraphIndirectAMDX							(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo) const = 0;
+virtual void				cmdDispatchGraphIndirectCountAMDX						(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceAddress countInfo) const = 0;

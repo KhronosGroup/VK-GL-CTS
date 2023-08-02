@@ -154,6 +154,16 @@ void freeHandle (Handle handle, const VkAllocationCallbacks* pAllocator)
 }
 
 template<typename Object, typename BaseObject, typename Handle, typename Parent, typename CreateInfo>
+void allocateNonDispHandleArray (Parent parent, VkPipelineCache pipelineCache, uint32_t createInfoCount, const CreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, Handle* pHandles)
+{
+	(void)pipelineCache;
+	for (uint32_t i = 0; i < createInfoCount; i++) {
+		Object* const	obj		= allocateHandle<Object, Object*>(parent, &pCreateInfos[i], pAllocator);
+		pHandles[i] = Handle((deUint64)(deUintptr)obj);
+	}
+}
+
+template<typename Object, typename BaseObject, typename Handle, typename Parent, typename CreateInfo>
 Handle allocateNonDispHandle (Parent parent, const CreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
 {
 	Object* const	obj		= allocateHandle<Object, Object*>(parent, pCreateInfo, pAllocator);
@@ -305,6 +315,7 @@ public:
 #ifndef CTS_USES_VULKANSC
 	Pipeline (VkDevice, const VkRayTracingPipelineCreateInfoNV*) {}
 	Pipeline (VkDevice, const VkRayTracingPipelineCreateInfoKHR*) {}
+	Pipeline (VkDevice, const VkExecutionGraphPipelineCreateInfoAMDX*) {}
 #endif // CTS_USES_VULKANSC
 };
 
