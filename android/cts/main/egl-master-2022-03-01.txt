@@ -110,3 +110,6 @@ dEQP-EGL.functional.image.render_multiple_contexts.gles2_android_native_rgb10a2_
 dEQP-EGL.functional.image.render_multiple_contexts.gles2_android_native_rgba16f_texture
 dEQP-EGL.functional.image.render_multiple_contexts.gles2_android_native_rgba16f_read_pixels
 dEQP-EGL.functional.image.render_multiple_contexts.gles2_android_native_s8_stencil_buffer
+dEQP-EGL.functional.choose_config.simple.selection_only.recordable_android
+dEQP-EGL.functional.choose_config.simple.selection_and_sort.recordable_android
+dEQP-EGL.functional.query_config.get_config_attrib.recordable_android

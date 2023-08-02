@@ -18,6 +18,8 @@ set(DEQP_VK_RASTERIZATION_SRCS
 	vktRasterizationOrderAttachmentAccessTests.hpp
 	vktRasterizationDepthBiasControlTests.cpp
 	vktRasterizationDepthBiasControlTests.hpp
+	vktShaderTileImageTests.cpp
+	vktShaderTileImageTests.hpp
 	)
 
 include_directories("../../../../../external/amber/src/include")

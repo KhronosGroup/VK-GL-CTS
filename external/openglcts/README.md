@@ -104,7 +104,7 @@ the Standard Template Library (STL).
 Configuring and Building the Tests
 ------------------------
 The CTS is built via CMake build system. The requirements for the build are as follows:
-- CMake 3.17.2 or newer
+- CMake 3.20.0 or newer
 - C++ compiler with STL and exceptions support
 - Unix: Make + GCC / Clang
 - Windows: Visual Studio or Windows SDK (available free-of-charge)
@@ -252,7 +252,6 @@ using Cmake.
 
 Requirements:
 - Visual Studio (2015 or newer recommended) or Windows SDK
-- CMake 3.17.2 Windows native version (i.e. not Cygwin version)
 - For GL/ES2/ES3.x tests: OpengGL, OpenGL ES 2 or ES 3.x libraries and headers
 
 To choose the backend build system for CMake, choose one of the following Generator Names for the
@@ -299,7 +298,6 @@ function wcmake () {
 
 Required tools:
 - Standard build utilities (make, gcc, etc.)
-- CMake 3.17.2
 - Necessary API libraries (OpenGL, GLES, EGL depending on configuration)
 
 Building ES2 or ES3.x conformance tests:

@@ -29,6 +29,7 @@
 #include "vktQueryPoolStatisticsTests.hpp"
 #include "vktQueryPoolPerformanceTests.hpp"
 #include "vktQueryPoolConcurrentTests.hpp"
+#include "vktQueryPoolFragInvocationTests.hpp"
 
 namespace vkt
 {
@@ -48,6 +49,7 @@ void createChildren (tcu::TestCaseGroup* queryPoolTests)
 	queryPoolTests->addChild(new QueryPoolPerformanceTests(testCtx));
 #endif
 	queryPoolTests->addChild(new QueryPoolConcurrentTests(testCtx));
+	queryPoolTests->addChild(createFragInvocationTests(testCtx));
 }
 
 } // anonymous

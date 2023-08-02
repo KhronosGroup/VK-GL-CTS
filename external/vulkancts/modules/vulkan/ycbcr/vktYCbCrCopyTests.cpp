@@ -49,6 +49,7 @@ using tcu::UVec2;
 using tcu::Vec4;
 using tcu::TestLog;
 
+
 using std::string;
 using std::vector;
 using std::pair;
@@ -97,7 +98,66 @@ struct TestConfig
 
 void checkFormatSupport(Context& context, const ImageConfig& config)
 {
-	try
+	const auto&							instInt	(context.getInstanceInterface());
+
+	{
+		const vk::VkPhysicalDeviceImageFormatInfo2			imageFormatInfo				=
+		{
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	// sType;
+			DE_NULL,													// pNext;
+			config.format,												// format;
+			vk::VK_IMAGE_TYPE_2D,										// type;
+			vk::VK_IMAGE_TILING_OPTIMAL,								// tiling;
+			vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+			vk::VK_IMAGE_USAGE_SAMPLED_BIT,									// usage;
+			(vk::VkImageCreateFlags)0u										// flags
+		};
+
+		vk::VkSamplerYcbcrConversionImageFormatProperties	samplerYcbcrConversionImage = {};
+		samplerYcbcrConversionImage.sType = vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
+		samplerYcbcrConversionImage.pNext = DE_NULL;
+
+		vk::VkImageFormatProperties2						imageFormatProperties		= {};
+		imageFormatProperties.sType = vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
+		imageFormatProperties.pNext = &samplerYcbcrConversionImage;
+
+		vk::VkResult result = instInt.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo, &imageFormatProperties);
+		if (result == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Format not supported.");
+		VK_CHECK(result);
+
+		// Check for plane compatible format support when the disjoint flag is being used
+		if (config.disjoint)
+		{
+			const vk::PlanarFormatDescription				formatDescription		= vk::getPlanarFormatDescription(config.format);
+
+			for (deUint32 channelNdx = 0; channelNdx < 4; ++channelNdx)
+			{
+				if (!formatDescription.hasChannelNdx(channelNdx))
+					continue;
+				deUint32					planeNdx					= formatDescription.channels[channelNdx].planeNdx;
+				vk::VkFormat				planeCompatibleFormat		= getPlaneCompatibleFormat(formatDescription, planeNdx);
+
+				const vk::VkPhysicalDeviceImageFormatInfo2			planeImageFormatInfo				=
+				{
+					vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	// sType;
+					DE_NULL,												// pNext;
+					planeCompatibleFormat,									// format;
+					vk::VK_IMAGE_TYPE_2D,										// type;
+					vk::VK_IMAGE_TILING_OPTIMAL,								// tiling;
+					vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+					vk::VK_IMAGE_USAGE_SAMPLED_BIT,								// usage;
+					(vk::VkImageCreateFlags)0u									// flags
+				};
+
+				vk::VkResult planesResult = instInt.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &planeImageFormatInfo, &imageFormatProperties);
+				if (planesResult == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+					TCU_THROW(NotSupportedError, "Plane compatibile format not supported.");
+				VK_CHECK(planesResult);
+			}
+		}
+	}
+
 	{
 		const vk::VkFormatProperties	properties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), config.format));
 		const vk::VkFormatFeatureFlags	features	(config.tiling == vk::VK_IMAGE_TILING_OPTIMAL
@@ -112,13 +172,6 @@ void checkFormatSupport(Context& context, const ImageConfig& config)
 
 		if (config.disjoint && ((features & vk::VK_FORMAT_FEATURE_DISJOINT_BIT) == 0))
 			TCU_THROW(NotSupportedError, "Format doesn't support disjoint planes");
-	}
-	catch (const vk::Error& err)
-	{
-		if (err.getError() == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-			TCU_THROW(NotSupportedError, "Format not supported");
-
-		throw;
 	}
 }
 

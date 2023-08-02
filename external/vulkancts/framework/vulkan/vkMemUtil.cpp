@@ -187,36 +187,50 @@ SimpleAllocation::~SimpleAllocation (void)
 {
 }
 
-SimpleAllocator::SimpleAllocator (const DeviceInterface& vk, VkDevice device, const VkPhysicalDeviceMemoryProperties& deviceMemProps, size_t offset)
-	: m_vk		(vk)
-	, m_device	(device)
-	, m_memProps(deviceMemProps)
-	, m_offset	(offset)
+SimpleAllocator::SimpleAllocator (const DeviceInterface& vk, VkDevice device, const VkPhysicalDeviceMemoryProperties& deviceMemProps, const OptionalOffsetParams& offsetParams)
+	: m_vk					(vk)
+	, m_device				(device)
+	, m_memProps			(deviceMemProps)
+	, m_offsetParams		(offsetParams)
 {
+	if (m_offsetParams)
+	{
+		const auto zero = VkDeviceSize{0};
+		DE_UNREF(zero); // For release builds.
+		// If an offset is provided, a non-coherent atom size must be provided too.
+		DE_ASSERT(m_offsetParams->offset == zero || m_offsetParams->nonCoherentAtomSize != zero);
+	}
 }
 
 MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryAllocateInfo& allocInfo, VkDeviceSize alignment)
 {
 	// Align the offset to the requirements.
-	size_t offset = deAlignSize(m_offset, static_cast<size_t>(alignment));
+	// Aligning to the non coherent atom size prevents flush and memory invalidation valid usage errors.
+	const auto	requiredAlignment	= (m_offsetParams ? de::lcm(m_offsetParams->nonCoherentAtomSize, alignment) : alignment);
+	const auto	offset				= (m_offsetParams ? de::roundUp(m_offsetParams->offset, requiredAlignment) : 0);
+
 	VkMemoryAllocateInfo info = allocInfo;
 	info.allocationSize += offset;
+
 	Move<VkDeviceMemory>	mem		= allocateMemory(m_vk, m_device, &info);
 	MovePtr<HostPtr>		hostPtr;
 
 	if (isHostVisibleMemory(m_memProps, info.memoryTypeIndex))
 		hostPtr = MovePtr<HostPtr>(new HostPtr(m_vk, m_device, *mem, offset, info.allocationSize, 0u));
 
-	return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr, offset));
+	return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr, static_cast<size_t>(offset)));
 }
 
 MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memReqs, MemoryRequirement requirement)
 {
-	const deUint32				memoryTypeNdx	= selectMatchingMemoryType(m_memProps, memReqs.memoryTypeBits, requirement);
-	// Align the offset to the requirements.
-	size_t offset = deAlignSize(m_offset, static_cast<size_t>(memReqs.alignment));
+	const auto memoryTypeNdx		= selectMatchingMemoryType(m_memProps, memReqs.memoryTypeBits, requirement);
 
-	VkMemoryAllocateInfo		allocInfo		=
+	// Align the offset to the requirements.
+	// Aligning to the non coherent atom size prevents flush and memory invalidation valid usage errors.
+	const auto requiredAlignment	= (m_offsetParams ? de::lcm(m_offsetParams->nonCoherentAtomSize, memReqs.alignment) : memReqs.alignment);
+	const auto offset				= (m_offsetParams ? de::roundUp(m_offsetParams->offset, requiredAlignment) : 0);
+
+	VkMemoryAllocateInfo allocInfo =
 	{
 		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	//	VkStructureType			sType;
 		DE_NULL,								//	const void*				pNext;
@@ -224,12 +238,12 @@ MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memRe
 		memoryTypeNdx,							//	deUint32				memoryTypeIndex;
 	};
 
-	VkMemoryAllocateFlagsInfo	allocFlagsInfo =
+	VkMemoryAllocateFlagsInfo allocFlagsInfo =
 	{
-		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,	//	VkStructureType	sType
-		DE_NULL,										//	const void*		pNext
-		0,												//	VkMemoryAllocateFlags    flags
-		0,												//	uint32_t                 deviceMask
+		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,	//	VkStructureType			sType
+		DE_NULL,										//	const void*				pNext
+		0,												//	VkMemoryAllocateFlags	flags
+		0,												//	uint32_t				deviceMask
 	};
 
 	if (requirement & MemoryRequirement::DeviceAddress)
@@ -250,7 +264,7 @@ MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memRe
 		hostPtr = MovePtr<HostPtr>(new HostPtr(m_vk, m_device, *mem, offset, memReqs.size, 0u));
 	}
 
-	return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr, offset));
+	return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr, static_cast<size_t>(offset)));
 }
 
 MovePtr<Allocation> allocateExtended (const InstanceInterface&		vki,

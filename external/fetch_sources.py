@@ -306,23 +306,23 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
 		"git@github.com:KhronosGroup/SPIRV-Tools.git",
-		"01828dac778d08f4ebafd2e06bd419f6c84e5984",
+		"6f276e05ccab210584996bc40a0bef82b91f4f40",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		"git@github.com:KhronosGroup/glslang.git",
-		"cd2082e0584d4e39d11e3f401184e0d558ab304f",
+		"77417d5c9e0a5d4c79ddd0285d530b45f7259f0d",
 		"glslang",
 		removeTags = ["main-tot"]),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
 		"git@github.com:KhronosGroup/SPIRV-Headers.git",
-		"1feaf4414eb2b353764d01d88f8aa4bcc67b60db",
+		"8e2ad27488ed2f87c068c01a8f5e8979f7086405",
 		"spirv-headers"),
 	GitRepo(
-		"https://gitlab.khronos.org/vulkan/vulkan.git",
-		"git@gitlab.khronos.org:vulkan/vulkan.git",
-		"e09424e814da03fa31a7005c850ff3206d359f46",
+		"https://github.com/KhronosGroup/Vulkan-Docs.git",
+		"git@github.com:KhronosGroup/Vulkan-Docs.git",
+		"3dae5d7fbf332970ae0a97d5ab05ae5db93e62f0",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",
@@ -334,15 +334,18 @@ PACKAGES = [
 		"git@github.com:open-source-parsers/jsoncpp.git",
 		"9059f5cad030ba11d37818847443a53918c327b1",
 		"jsoncpp"),
+	# NOTE: The samples application is not well suited to external
+	# integration, this fork contains the small fixes needed for use
+	# by the CTS.
 	GitRepo(
-		"https://github.com/nvpro-samples/vk_video_samples.git",
-		None,
-		"7d68747d3524842afaf050c5e00a10f5b8c07904",
-		"video-parser"),
+		"https://github.com/Igalia/vk_video_samples.git",
+		"git@github.com:Igalia/vk_video_samples.git",
+		"cts-integration-0.9.9-1",
+		"nvidia-video-samples"),
 	GitRepo(
 		"https://github.com/Igalia/ESExtractor.git",
 		"git@github.com:Igalia/ESExtractor.git",
-		"v0.2.5",
+		"v0.3.3",
 		"ESExtractor"),
 ]
 

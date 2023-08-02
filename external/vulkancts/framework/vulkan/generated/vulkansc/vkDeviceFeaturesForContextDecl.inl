@@ -34,6 +34,7 @@ const vk::VkPhysicalDeviceExternalMemorySciBufFeaturesNV&				getExternalMemorySc
 const vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT&				getExtendedDynamicState2FeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceColorWriteEnableFeaturesEXT&					getColorWriteEnableFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceExternalSciSync2FeaturesNV&					getExternalSciSync2Features						(void) const;
+const vk::VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&		getExternalMemoryScreenBufferFeaturesQNX		(void) const;
 const vk::VkPhysicalDeviceVariablePointersFeatures&						getVariablePointersFeatures						(void) const;
 const vk::VkPhysicalDeviceMultiviewFeatures&							getMultiviewFeatures							(void) const;
 const vk::VkPhysicalDevice16BitStorageFeatures&							get16BitStorageFeatures							(void) const;

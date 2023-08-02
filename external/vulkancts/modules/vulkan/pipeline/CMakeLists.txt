@@ -104,12 +104,16 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineBlendOperationAdvancedTests.hpp
 	vktPipelineExtendedDynamicStateTests.cpp
 	vktPipelineExtendedDynamicStateTests.hpp
+	vktPipelineExtendedDynamicStateMiscTests.cpp
+	vktPipelineExtendedDynamicStateMiscTests.hpp
 	vktPipelineNoPositionTests.cpp
 	vktPipelineNoPositionTests.hpp
 	vktPipelineDynamicControlPoints.cpp
 	vktPipelineDynamicControlPoints.hpp
 	vktPipelineBindVertexBuffers2Tests.cpp
 	vktPipelineBindVertexBuffers2Tests.hpp
+	vktPipelineInputAttributeOffsetTests.cpp
+	vktPipelineInputAttributeOffsetTests.hpp
 	)
 
 set(DEQP_VK_PIPELINE_SRCS

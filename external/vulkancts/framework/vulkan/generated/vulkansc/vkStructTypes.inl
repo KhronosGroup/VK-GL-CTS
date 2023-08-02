@@ -3614,7 +3614,7 @@ struct VkFaultData
 struct VkFaultCallbackInfo
 {
 	VkStructureType				sType;
-	void*						pNext;
+	const void*					pNext;
 	uint32_t					faultCount;
 	VkFaultData*				pFaults;
 	PFN_vkFaultCallbackFunction	pfnFaultCallback;
@@ -4189,6 +4189,50 @@ struct VkDrmFormatModifierPropertiesList2EXT
 	void*								pNext;
 	uint32_t							drmFormatModifierCount;
 	VkDrmFormatModifierProperties2EXT*	pDrmFormatModifierProperties;
+};
+
+struct VkImportScreenBufferInfoQNX
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	struct _screen_buffer*	buffer;
+};
+
+struct VkScreenBufferPropertiesQNX
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	allocationSize;
+	uint32_t		memoryTypeBits;
+};
+
+struct VkScreenBufferFormatPropertiesQNX
+{
+	VkStructureType					sType;
+	void*							pNext;
+	VkFormat						format;
+	uint64_t						externalFormat;
+	uint64_t						screenUsage;
+	VkFormatFeatureFlags			formatFeatures;
+	VkComponentMapping				samplerYcbcrConversionComponents;
+	VkSamplerYcbcrModelConversion	suggestedYcbcrModel;
+	VkSamplerYcbcrRange				suggestedYcbcrRange;
+	VkChromaLocation				suggestedXChromaOffset;
+	VkChromaLocation				suggestedYChromaOffset;
+};
+
+struct VkExternalFormatQNX
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint64_t		externalFormat;
+};
+
+struct VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		screenBufferImport;
 };
 
 typedef VkPhysicalDeviceExternalMemorySciBufFeaturesNV VkPhysicalDeviceExternalSciBufFeaturesNV;

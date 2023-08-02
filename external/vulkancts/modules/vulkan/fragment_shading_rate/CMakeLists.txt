@@ -10,8 +10,10 @@ set(DEQP_VK_FRAGMENT_SHADING_RATE_SRCS
 	vktFragmentShadingRateTests.hpp
 	vktFragmentShadingRateBasic.cpp
 	vktFragmentShadingRateBasic.hpp
-	vktFragmentShadingRatePixelConsistency.hpp
 	vktFragmentShadingRatePixelConsistency.cpp
+	vktFragmentShadingRatePixelConsistency.hpp
+	vktFragmentShadingRateMiscTests.cpp
+	vktFragmentShadingRateMiscTests.hpp
 )
 
 PCH(DEQP_VK_FRAGMENT_SHADING_RATE_SRCS ../pch.cpp)

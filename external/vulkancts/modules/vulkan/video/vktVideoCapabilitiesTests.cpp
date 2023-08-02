@@ -30,7 +30,6 @@
 
 #include "vktTestCase.hpp"
 #include "vktCustomInstancesDevices.hpp"
-#include "vktVideoBaseDecodeUtils.hpp"
 
 
 namespace vkt
@@ -219,25 +218,25 @@ VideoFormatPropertiesQueryTestInstance<ProfileOperation>::~VideoFormatProperties
 template<>
 VkVideoDecodeH264ProfileInfoKHR VideoFormatPropertiesQueryTestInstance<VkVideoDecodeH264ProfileInfoKHR>::getProfileOperation (void)
 {
-	return getProfileOperationH264D();
+	return getProfileOperationH264Decode();
 }
 
 template<>
-VkVideoEncodeH264ProfileInfoEXT VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH264ProfileInfoEXT>::getProfileOperation (void)
+VkVideoEncodeH264ProfileInfoEXT VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH264ProfileInfoEXT>::getProfileOperation ()
 {
-	return getProfileOperationH264E();
+	return getProfileOperationH264Encode();
 }
 
 template<>
-VkVideoDecodeH265ProfileInfoKHR VideoFormatPropertiesQueryTestInstance<VkVideoDecodeH265ProfileInfoKHR>::getProfileOperation (void)
+VkVideoDecodeH265ProfileInfoKHR VideoFormatPropertiesQueryTestInstance<VkVideoDecodeH265ProfileInfoKHR>::getProfileOperation ()
 {
-	return getProfileOperationH265D();
+	return getProfileOperationH265Decode();
 }
 
 template<>
-VkVideoEncodeH265ProfileInfoEXT VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH265ProfileInfoEXT>::getProfileOperation (void)
+VkVideoEncodeH265ProfileInfoEXT VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH265ProfileInfoEXT>::getProfileOperation ()
 {
-	return getProfileOperationH265E();
+	return getProfileOperationH265Encode();
 }
 
 template<typename ProfileOperation>
@@ -467,7 +466,7 @@ void VideoCapabilitiesQueryTestInstance::validateVideoEncodeCapabilities (const 
 	VALIDATE_FIELD_EQUAL(videoEncodeCapabilitiesKHR, videoEncodeCapabilitiesKHRSecond, rateControlModes);
 	VALIDATE_FIELD_EQUAL(videoEncodeCapabilitiesKHR, videoEncodeCapabilitiesKHRSecond, maxRateControlLayers);
 	VALIDATE_FIELD_EQUAL(videoEncodeCapabilitiesKHR, videoEncodeCapabilitiesKHRSecond, maxQualityLevels);
-	VALIDATE_FIELD_EQUAL(videoEncodeCapabilitiesKHR, videoEncodeCapabilitiesKHRSecond, inputImageDataFillAlignment);
+	VALIDATE_FIELD_EQUAL(videoEncodeCapabilitiesKHR, videoEncodeCapabilitiesKHRSecond, encodeInputPictureGranularity);
 	VALIDATE_FIELD_EQUAL(videoEncodeCapabilitiesKHR, videoEncodeCapabilitiesKHRSecond, supportedEncodeFeedbackFlags);
 
 	const VkVideoEncodeCapabilityFlagsKHR		videoEncodeCapabilityFlags		= VK_VIDEO_ENCODE_CAPABILITY_PRECEDING_EXTERNALLY_ENCODED_BYTES_BIT_KHR;
@@ -673,59 +672,36 @@ tcu::TestStatus VideoCapabilitiesQueryH264EncodeTestInstance::iterate (void)
 
 void VideoCapabilitiesQueryH264EncodeTestInstance::validateVideoCapabilitiesExt (const VkVideoEncodeH264CapabilitiesEXT& videoCapabilitiesKHR, const VkVideoEncodeH264CapabilitiesEXT& videoCapabilitiesKHRSecond)
 {
-	const VkVideoEncodeH264CapabilityFlagsEXT	videoCapabilityFlags			= VK_VIDEO_ENCODE_H264_CAPABILITY_DIRECT_8X8_INFERENCE_ENABLED_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_DIRECT_8X8_INFERENCE_DISABLED_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_SEPARATE_COLOUR_PLANE_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_QPPRIME_Y_ZERO_TRANSFORM_BYPASS_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_SCALING_LISTS_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_HRD_COMPLIANCE_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_CHROMA_QP_OFFSET_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_SECOND_CHROMA_QP_OFFSET_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_PIC_INIT_QP_MINUS26_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_WEIGHTED_PRED_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_WEIGHTED_BIPRED_EXPLICIT_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_WEIGHTED_BIPRED_IMPLICIT_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_WEIGHTED_PRED_NO_TABLE_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_TRANSFORM_8X8_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_CABAC_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_CAVLC_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_DEBLOCKING_FILTER_DISABLED_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_DEBLOCKING_FILTER_ENABLED_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_DEBLOCKING_FILTER_PARTIAL_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_DISABLE_DIRECT_SPATIAL_MV_PRED_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_MULTIPLE_SLICE_PER_FRAME_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_SLICE_MB_COUNT_BIT_EXT
+	const VkVideoEncodeH264CapabilityFlagsEXT	videoCapabilityFlags			= VK_VIDEO_ENCODE_H264_CAPABILITY_HRD_COMPLIANCE_BIT_EXT
+																				| VK_VIDEO_ENCODE_H264_CAPABILITY_PREDICTION_WEIGHT_TABLE_GENERATED_BIT_EXT
 																				| VK_VIDEO_ENCODE_H264_CAPABILITY_ROW_UNALIGNED_SLICE_BIT_EXT
 																				| VK_VIDEO_ENCODE_H264_CAPABILITY_DIFFERENT_SLICE_TYPE_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_B_FRAME_IN_L1_LIST_BIT_EXT;
-	const VkVideoEncodeH264CapabilityFlagsEXT	videoCapabilityFlagsEntropyReq	= VK_VIDEO_ENCODE_H264_CAPABILITY_CABAC_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_CAVLC_BIT_EXT;
-	const VkVideoEncodeH264CapabilityFlagsEXT	videoCapabilityFlagsDeblockReq	= VK_VIDEO_ENCODE_H264_CAPABILITY_DEBLOCKING_FILTER_DISABLED_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_DEBLOCKING_FILTER_ENABLED_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_DEBLOCKING_FILTER_PARTIAL_BIT_EXT;
+																				| VK_VIDEO_ENCODE_H264_CAPABILITY_B_FRAME_IN_L0_LIST_BIT_EXT
+																				| VK_VIDEO_ENCODE_H264_CAPABILITY_B_FRAME_IN_L1_LIST_BIT_EXT
+																				| VK_VIDEO_ENCODE_H264_CAPABILITY_PER_PICTURE_TYPE_MIN_MAX_QP_BIT_EXT
+																				| VK_VIDEO_ENCODE_H264_CAPABILITY_PER_SLICE_CONSTANT_QP_BIT_EXT
+																				| VK_VIDEO_ENCODE_H264_CAPABILITY_GENERATE_PREFIX_NALU_BIT_EXT;
+
 
 	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, sType);
 	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, flags);
+	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxLevelIdc);
+	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxSliceCount);
 	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxPPictureL0ReferenceCount);
 	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxBPictureL0ReferenceCount);
 	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxL1ReferenceCount);
-	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, motionVectorsOverPicBoundariesFlag);
-	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxBytesPerPicDenom);
-	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxBitsPerMbDenom);
-	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, log2MaxMvLengthHorizontal);
-	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, log2MaxMvLengthVertical);
+	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxTemporalLayerCount);
+	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, expectDyadicTemporalLayerPattern);
+	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, minQp);
+	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxQp);
+	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, prefersGopRemainingFrames);
+	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, requiresGopRemainingFrames);
 
 	if (videoCapabilitiesKHR.flags == 0)
 		TCU_FAIL("videoCapabilitiesKHR.flags must not be 0");
 
 	if ((videoCapabilitiesKHR.flags & ~videoCapabilityFlags) != 0)
 		TCU_FAIL("Undefined videoCapabilitiesKHR.flags");
-
-	if ((videoCapabilitiesKHR.flags & videoCapabilityFlagsEntropyReq) == 0)
-		TCU_FAIL("An implementation must support at least one entropy coding mode");
-
-	if ((videoCapabilitiesKHR.flags & videoCapabilityFlagsDeblockReq) == 0)
-		TCU_FAIL("An implementation must support at least one deblocking filter mode");
 }
 
 
@@ -909,23 +885,18 @@ void VideoCapabilitiesQueryH265EncodeTestInstance::validateVideoCapabilitiesExt 
 
 	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, sType);
 	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, flags);
-	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, ctbSizes);
-	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, transformBlockSizes);
+	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxLevelIdc);
+	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxSliceSegmentCount);
+	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxTiles);
 	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxPPictureL0ReferenceCount);
 	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxBPictureL0ReferenceCount);
 	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxL1ReferenceCount);
-	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxSubLayersCount);
-	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, minLog2MinLumaCodingBlockSizeMinus3);
-	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxLog2MinLumaCodingBlockSizeMinus3);
-	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, minLog2MinLumaTransformBlockSizeMinus2);
-	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxLog2MinLumaTransformBlockSizeMinus2);
-	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, minMaxTransformHierarchyDepthInter);
-	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxMaxTransformHierarchyDepthInter);
-	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, minMaxTransformHierarchyDepthIntra);
-	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxMaxTransformHierarchyDepthIntra);
-	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxDiffCuQpDeltaDepth);
-	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, minMaxNumMergeCand);
-	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxMaxNumMergeCand);
+	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxSubLayerCount);
+	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, expectDyadicTemporalSubLayerPattern);
+	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, minQp);
+	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxQp);
+	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, prefersGopRemainingFrames);
+	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, requiresGopRemainingFrames);
 
 	if (videoCapabilitiesKHR.flags != 0)
 		TCU_FAIL("videoCapabilitiesKHR.flags must be 0");

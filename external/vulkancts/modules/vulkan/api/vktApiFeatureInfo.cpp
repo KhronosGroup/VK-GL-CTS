@@ -1868,7 +1868,7 @@ void createTestDevice (Context& context, void* pNext, const char* const* ppEnabl
 		DE_NULL,									//  const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	const Unique<VkDevice>					device					(createCustomDevice(validationEnabled, platformInterface, *instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver						deviceDriver			(platformInterface, instance.get(), device.get());
+	const DeviceDriver						deviceDriver			(platformInterface, instance.get(), device.get(), context.getUsedApiVersion());
 	const VkQueue							queue					= getDeviceQueue(deviceDriver, *device,  queueFamilyIndex, queueIndex);
 
 	VK_CHECK(deviceDriver.queueWaitIdle(queue));
@@ -3182,7 +3182,7 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 	};
 
 	Move<VkDevice>		deviceGroup = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
-	const DeviceDriver	vk	(vkp, instance, *deviceGroup);
+	const DeviceDriver	vk	(vkp, instance, *deviceGroup, context.getUsedApiVersion());
 	context.getInstanceInterface().getPhysicalDeviceMemoryProperties(deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &memProps);
 
 	peerMemFeatures = reinterpret_cast<VkPeerMemoryFeatureFlags*>(buffer);
@@ -3745,6 +3745,17 @@ bool requiresYCbCrConversion(Context& context, VkFormat format)
 
 VkFormatFeatureFlags getAllowedOptimalTilingFeatures (Context &context, VkFormat format)
 {
+
+	VkFormatFeatureFlags vulkanOnlyFeatureFlags = 0;
+#ifndef CTS_USES_VULKANSC
+	if (context.isDeviceFunctionalitySupported(VK_KHR_VIDEO_DECODE_QUEUE_EXTENSION_NAME))
+		vulkanOnlyFeatureFlags |= VK_FORMAT_FEATURE_VIDEO_DECODE_DPB_BIT_KHR |
+								  VK_FORMAT_FEATURE_VIDEO_DECODE_OUTPUT_BIT_KHR;
+	if (context.isDeviceFunctionalitySupported(VK_KHR_VIDEO_ENCODE_QUEUE_EXTENSION_NAME))
+		vulkanOnlyFeatureFlags |= VK_FORMAT_FEATURE_VIDEO_ENCODE_INPUT_BIT_KHR |
+							      VK_FORMAT_FEATURE_VIDEO_ENCODE_DPB_BIT_KHR;
+#endif
+
 	// YCbCr formats only support a subset of format feature flags
 	const VkFormatFeatureFlags ycbcrAllows =
 		VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
@@ -3759,7 +3770,8 @@ VkFormatFeatureFlags getAllowedOptimalTilingFeatures (Context &context, VkFormat
 		VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT |
 		VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT |
 		VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT |
-		VK_FORMAT_FEATURE_DISJOINT_BIT;
+		VK_FORMAT_FEATURE_DISJOINT_BIT |
+		vulkanOnlyFeatureFlags;
 
 	// By default everything is allowed.
 	VkFormatFeatureFlags allow = (VkFormatFeatureFlags)~0u;
@@ -3787,6 +3799,7 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 
 	TestLog&					log			= context.getTestContext().getLog();
 	const VkFormatProperties	properties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
+	const bool					apiVersion10WithoutKhrMaintenance1 = isApiVersionEqual(context.getUsedApiVersion(), VK_API_VERSION_1_0) && !context.isDeviceFunctionalitySupported("VK_KHR_maintenance1");
 
 	const VkFormatFeatureFlags reqImg	= getRequiredOptimalTilingFeatures(context, format);
 	const VkFormatFeatureFlags reqBuf	= getRequiredBufferFeatures(format);
@@ -3812,9 +3825,14 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 	for (int fieldNdx = 0; fieldNdx < DE_LENGTH_OF_ARRAY(fields); fieldNdx++)
 	{
 		const char* const			fieldName	= fields[fieldNdx].fieldName;
-		const VkFormatFeatureFlags	supported	= fields[fieldNdx].supportedFeatures;
+		VkFormatFeatureFlags		supported	= fields[fieldNdx].supportedFeatures;
 		const VkFormatFeatureFlags	required	= fields[fieldNdx].requiredFeatures;
 		const VkFormatFeatureFlags	allowed		= fields[fieldNdx].allowedFeatures;
+
+		if (apiVersion10WithoutKhrMaintenance1 && supported)
+		{
+			supported |= VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
+		}
 
 		results.check((supported & required) == required, de::toString(fieldName) + ": required: " + de::toString(getFormatFeatureFlagsStr(required)) + "  missing: " + de::toString(getFormatFeatureFlagsStr(~supported & required)));
 
@@ -3840,9 +3858,16 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 
 bool optimalTilingFeaturesSupported (Context& context, VkFormat format, VkFormatFeatureFlags features)
 {
-	const VkFormatProperties	properties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
+	const VkFormatProperties	properties							= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
+	const bool					apiVersion10WithoutKhrMaintenance1	= isApiVersionEqual(context.getUsedApiVersion(), VK_API_VERSION_1_0) && !context.isDeviceFunctionalitySupported("VK_KHR_maintenance1");
+	VkFormatFeatureFlags		supported							= properties.optimalTilingFeatures;
 
-	return (properties.optimalTilingFeatures & features) == features;
+	if (apiVersion10WithoutKhrMaintenance1 && supported)
+	{
+		supported |= VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
+	}
+
+	return (supported & features) == features;
 }
 
 bool optimalTilingFeaturesSupportedForAll (Context& context, const VkFormat* begin, const VkFormat* end, VkFormatFeatureFlags features)
@@ -6687,6 +6712,13 @@ void createImageFormatTests (tcu::TestCaseGroup* testGroup, ImageFormatPropertyC
 namespace android
 {
 
+void checkSupportAndroid (Context&)
+{
+#if (DE_OS != DE_OS_ANDROID)
+	TCU_THROW(NotSupportedError, "Test is only for Android");
+#endif
+}
+
 void checkExtensions (tcu::ResultCollector& results, const set<string>& allowedExtensions, const vector<VkExtensionProperties>& reportedExtensions)
 {
 	for (vector<VkExtensionProperties>::const_iterator extension = reportedExtensions.begin(); extension != reportedExtensions.end(); ++extension)
@@ -6946,9 +6978,9 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 	{
 		de::MovePtr<tcu::TestCaseGroup>	androidTests	(new tcu::TestCaseGroup(testCtx, "android", "Android CTS Tests"));
 
-		addFunctionCase(androidTests.get(),	"mandatory_extensions",		"Test that all mandatory extensions are supported",	android::testMandatoryExtensions);
-		addFunctionCase(androidTests.get(), "no_unknown_extensions",	"Test for unknown device or instance extensions",	android::testNoUnknownExtensions);
-		addFunctionCase(androidTests.get(), "no_layers",				"Test that no layers are enumerated",				android::testNoLayers);
+		addFunctionCase(androidTests.get(),	"mandatory_extensions",		"Test that all mandatory extensions are supported",	android::checkSupportAndroid,	android::testMandatoryExtensions);
+		addFunctionCase(androidTests.get(), "no_unknown_extensions",	"Test for unknown device or instance extensions",	android::checkSupportAndroid,	android::testNoUnknownExtensions);
+		addFunctionCase(androidTests.get(), "no_layers",				"Test that no layers are enumerated",				android::checkSupportAndroid,	android::testNoLayers);
 
 		infoTests->addChild(androidTests.release());
 	}

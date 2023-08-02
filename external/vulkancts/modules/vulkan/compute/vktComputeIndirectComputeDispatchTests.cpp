@@ -389,9 +389,9 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 											m_queueFamilyIndex);
 		m_device = m_customDevice.get();
 #ifndef CTS_USES_VULKANSC
-		m_deviceDriver = de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), m_device));
+		m_deviceDriver = de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), m_device, m_context.getUsedApiVersion()));
 #else
-		m_deviceDriver = de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>(new vk::DeviceDriverSC(m_context.getPlatformInterface(), m_customInstance, m_device, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), m_device));
+		m_deviceDriver = de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>(new vk::DeviceDriverSC(m_context.getPlatformInterface(), m_customInstance, m_device, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), m_context.getUsedApiVersion()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), m_device));
 #endif // CTS_USES_VULKANSC
 	}
 #ifndef CTS_USES_VULKANSC

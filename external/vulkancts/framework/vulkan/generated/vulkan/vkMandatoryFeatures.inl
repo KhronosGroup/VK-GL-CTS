@@ -605,6 +605,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceRayTracingPipelineFeaturesKHR.pNext;
 	}
 
+	vk::VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR physicalDeviceRayTracingPositionFetchFeaturesKHR;
+	deMemset(&physicalDeviceRayTracingPositionFetchFeaturesKHR, 0, sizeof(physicalDeviceRayTracingPositionFetchFeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_ray_tracing_position_fetch") )
+	{
+		physicalDeviceRayTracingPositionFetchFeaturesKHR.sType = getStructureType<VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR>();
+		*nextPtr = &physicalDeviceRayTracingPositionFetchFeaturesKHR;
+		nextPtr  = &physicalDeviceRayTracingPositionFetchFeaturesKHR.pNext;
+	}
+
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV physicalDeviceRepresentativeFragmentTestFeaturesNV;
 	deMemset(&physicalDeviceRepresentativeFragmentTestFeaturesNV, 0, sizeof(physicalDeviceRepresentativeFragmentTestFeaturesNV));
@@ -2084,6 +2094,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceRayTracingPipelineFeaturesKHR.rayTraversalPrimitiveCulling == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature rayTraversalPrimitiveCulling not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_ray_tracing_position_fetch")) )
+	{
+		if ( physicalDeviceRayTracingPositionFetchFeaturesKHR.rayTracingPositionFetch == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature rayTracingPositionFetch not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

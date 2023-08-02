@@ -35,6 +35,7 @@
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "tcuTestLog.hpp"
+#include <cstdio>
 
 namespace vkt
 {
@@ -67,9 +68,33 @@ struct TestParameters
 	}
 };
 
+vk::VkFormat getPlaneCompatibleFormatForWriting(const vk::PlanarFormatDescription& formatInfo, deUint32 planeNdx)
+{
+	DE_ASSERT(planeNdx < formatInfo.numPlanes);
+	vk::VkFormat result = formatInfo.planes[planeNdx].planeCompatibleFormat;
+
+	// redirect result for some of the YCbCr image formats
+	static const std::pair<vk::VkFormat, vk::VkFormat> ycbcrFormats[] =
+	{
+		{ VK_FORMAT_G8B8G8R8_422_UNORM,						VK_FORMAT_R8G8B8A8_UNORM		},
+		{ VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16,	VK_FORMAT_R16G16B16A16_UNORM	},
+		{ VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16,	VK_FORMAT_R16G16B16A16_UNORM	},
+		{ VK_FORMAT_G16B16G16R16_422_UNORM,					VK_FORMAT_R16G16B16A16_UNORM	},
+		{ VK_FORMAT_B8G8R8G8_422_UNORM,						VK_FORMAT_R8G8B8A8_UNORM		},
+		{ VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16,	VK_FORMAT_R16G16B16A16_UNORM	},
+		{ VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16,	VK_FORMAT_R16G16B16A16_UNORM	},
+		{ VK_FORMAT_B16G16R16G16_422_UNORM,					VK_FORMAT_R16G16B16A16_UNORM	}
+	};
+	auto it = std::find_if(std::begin(ycbcrFormats), std::end(ycbcrFormats), [result](const std::pair<vk::VkFormat, vk::VkFormat>& p) { return p.first == result; });
+	if (it != std::end(ycbcrFormats))
+		result = it->second;
+	return result;
+}
+
 void checkSupport (Context& context, const TestParameters params)
 {
 	const bool							disjoint = (params.flags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0;
+	const auto&							instInt	(context.getInstanceInterface());
 	std::vector<std::string>			reqExts;
 
 	if (disjoint)
@@ -87,11 +112,70 @@ void checkSupport (Context& context, const TestParameters params)
 	}
 
 	{
+		const VkPhysicalDeviceImageFormatInfo2			imageFormatInfo				=
+		{
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	// sType;
+			DE_NULL,												// pNext;
+			params.format,											// format;
+			VK_IMAGE_TYPE_2D,										// type;
+			VK_IMAGE_TILING_OPTIMAL,								// tiling;
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+			VK_IMAGE_USAGE_SAMPLED_BIT,								// usage;
+			(VkImageCreateFlags)0u									// flags
+		};
+
+		VkSamplerYcbcrConversionImageFormatProperties	samplerYcbcrConversionImage = {};
+		samplerYcbcrConversionImage.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
+		samplerYcbcrConversionImage.pNext = DE_NULL;
+
+		VkImageFormatProperties2						imageFormatProperties		= {};
+		imageFormatProperties.sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
+		imageFormatProperties.pNext = &samplerYcbcrConversionImage;
+
+		VkResult result = instInt.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo, &imageFormatProperties);
+		if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Format not supported.");
+		VK_CHECK(result);
+
+
+		// Check for plane compatible format support when the disjoint flag is being used
+		if (disjoint)
+		{
+			const PlanarFormatDescription				formatDescription		= getPlanarFormatDescription(params.format);
+
+			for (deUint32 channelNdx = 0; channelNdx < 4; ++channelNdx)
+			{
+				if (!formatDescription.hasChannelNdx(channelNdx))
+					continue;
+				deUint32					planeNdx					= formatDescription.channels[channelNdx].planeNdx;
+				vk::VkFormat				planeCompatibleFormat		= getPlaneCompatibleFormatForWriting(formatDescription, planeNdx);
+
+				const VkPhysicalDeviceImageFormatInfo2			planeImageFormatInfo				=
+				{
+					VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	// sType;
+					DE_NULL,												// pNext;
+					planeCompatibleFormat,									// format;
+					VK_IMAGE_TYPE_2D,										// type;
+					VK_IMAGE_TILING_OPTIMAL,								// tiling;
+					VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+					VK_IMAGE_USAGE_SAMPLED_BIT,								// usage;
+					(VkImageCreateFlags)0u									// flags
+				};
+
+				VkResult planesResult = instInt.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &planeImageFormatInfo, &imageFormatProperties);
+				if (planesResult == VK_ERROR_FORMAT_NOT_SUPPORTED)
+					TCU_THROW(NotSupportedError, "Plane compatibile format not supported.");
+				VK_CHECK(planesResult);
+			}
+		}
+	}
+
+	{
 		const VkFormatProperties	formatProperties = getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
 			context.getPhysicalDevice(),
 			params.format);
 
-		if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
+		if (!disjoint && (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
 			TCU_THROW(NotSupportedError, "Storage images are not supported for this format");
 
 		if (disjoint && ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DISJOINT_BIT) == 0))
@@ -117,29 +201,6 @@ tcu::UVec3 computeWorkGroupSize(const VkExtent3D& planeExtent)
 	return tcu::UVec3(xWorkGroupSize, yWorkGroupSize, zWorkGroupSize);
 }
 
-vk::VkFormat getPlaneCompatibleFormatForWriting(const vk::PlanarFormatDescription& formatInfo, deUint32 planeNdx)
-{
-	DE_ASSERT(planeNdx < formatInfo.numPlanes);
-	vk::VkFormat result = formatInfo.planes[planeNdx].planeCompatibleFormat;
-
-	// redirect result for some of the YCbCr image formats
-	static const std::pair<vk::VkFormat, vk::VkFormat> ycbcrFormats[] =
-	{
-		{ VK_FORMAT_G8B8G8R8_422_UNORM,						VK_FORMAT_R8G8B8A8_UNORM		},
-		{ VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16,	VK_FORMAT_R16G16B16A16_UNORM	},
-		{ VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16,	VK_FORMAT_R16G16B16A16_UNORM	},
-		{ VK_FORMAT_G16B16G16R16_422_UNORM,					VK_FORMAT_R16G16B16A16_UNORM	},
-		{ VK_FORMAT_B8G8R8G8_422_UNORM,						VK_FORMAT_R8G8B8A8_UNORM		},
-		{ VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16,	VK_FORMAT_R16G16B16A16_UNORM	},
-		{ VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16,	VK_FORMAT_R16G16B16A16_UNORM	},
-		{ VK_FORMAT_B16G16R16G16_422_UNORM,					VK_FORMAT_R16G16B16A16_UNORM	}
-	};
-	auto it = std::find_if(std::begin(ycbcrFormats), std::end(ycbcrFormats), [result](const std::pair<vk::VkFormat, vk::VkFormat>& p) { return p.first == result; });
-	if (it != std::end(ycbcrFormats))
-		result = it->second;
-	return result;
-}
-
 tcu::TestStatus testStorageImageWrite (Context& context, TestParameters params)
 {
 	const DeviceInterface&						vkd						= context.getDeviceInterface();
@@ -147,6 +208,8 @@ tcu::TestStatus testStorageImageWrite (Context& context, TestParameters params)
 	const deUint32								queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 	const VkQueue								queue					= context.getUniversalQueue();
 	const PlanarFormatDescription				formatDescription		= getPlanarFormatDescription(params.format);
+	const bool									disjoint				= (params.flags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0;
+	const bool									transferByViews			= disjoint && (formatDescription.numPlanes > 1);
 
 	VkImageCreateInfo							imageCreateInfo =
 	{
@@ -169,7 +232,7 @@ tcu::TestStatus testStorageImageWrite (Context& context, TestParameters params)
 
 	// check if we need to create VkImageView with different VkFormat than VkImage format
 	VkFormat planeCompatibleFormat0 = getPlaneCompatibleFormatForWriting(formatDescription, 0);
-	if (planeCompatibleFormat0 != getPlaneCompatibleFormat(formatDescription, 0))
+	if (planeCompatibleFormat0 != params.format)
 	{
 		imageCreateInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
 	}
@@ -186,7 +249,7 @@ tcu::TestStatus testStorageImageWrite (Context& context, TestParameters params)
 
 	// Create descriptor sets
 	const Unique<VkDescriptorPool>				descriptorPool			(DescriptorPoolBuilder()
-		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1u)
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, vk::PlanarFormatDescription::MAX_PLANES)
 		.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, vk::PlanarFormatDescription::MAX_PLANES));
 
 	// Create command buffer for compute and transfer operations
@@ -228,7 +291,14 @@ tcu::TestStatus testStorageImageWrite (Context& context, TestParameters params)
 			auto							descriptorSet			= makeVkSharedPtr(makeDescriptorSet(vkd, device, *descriptorPool, *descriptorSetLayout));
 			descriptorSets.push_back(descriptorSet);
 
-			auto							imageView				= makeVkSharedPtr(makeImageView(vkd, device, *image, VK_IMAGE_VIEW_TYPE_2D, planeCompatibleFormat, subresourceRange));
+			VkImageViewUsageCreateInfo imageViewUsageCreateInfo =
+			{
+				VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,		//VkStructureType		sType;
+				DE_NULL,											//const void*			pNext;
+				VK_IMAGE_USAGE_STORAGE_BIT,							//VkImageUsageFlags		usage;
+			};
+
+			auto							imageView				= makeVkSharedPtr(makeImageView(vkd, device, *image, VK_IMAGE_VIEW_TYPE_2D, planeCompatibleFormat, subresourceRange, transferByViews ? &imageViewUsageCreateInfo : DE_NULL));
 			imageViews.push_back(imageView);
 			const VkDescriptorImageInfo		imageInfo				= makeDescriptorImageInfo(DE_NULL, imageView->get(), VK_IMAGE_LAYOUT_GENERAL);
 
@@ -672,7 +742,7 @@ tcu::TestCaseGroup* populateStorageImageWriteFormatGroup (tcu::TestContext& test
 			de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, stream.str().c_str(), ""));
 
 			addFunctionCaseWithPrograms(sizeGroup.get(), "joint", "", checkSupport, initPrograms, testStorageImageWrite, TestParameters(format, imageSize, 0u));
-			addFunctionCaseWithPrograms(sizeGroup.get(), "disjoint", "", checkSupport, initPrograms, testStorageImageWrite, TestParameters(format, imageSize, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT));
+			addFunctionCaseWithPrograms(sizeGroup.get(), "disjoint", "", checkSupport, initPrograms, testStorageImageWrite, TestParameters(format, imageSize, (VkImageCreateFlags)(VK_IMAGE_CREATE_DISJOINT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT)));
 
 			formatGroup->addChild(sizeGroup.release());
 		}

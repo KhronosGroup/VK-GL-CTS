@@ -1625,6 +1625,7 @@ void SharedFragLibraryCase::initPrograms (vk::SourceCollections &programCollecti
 		<< "}\n"
 		;
 	programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+	programCollection.glslSources.add("vert_1_2") << glu::VertexSource(vert.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_5, 0u, true);
 
 	// The mesh shader emits geometry to layer 2.
 	std::ostringstream mesh;
@@ -1758,7 +1759,7 @@ tcu::TestStatus SharedFragLibraryInstance::iterate (void)
 
 	// Shader modules.
 	const auto&	binaries	= m_context.getBinaryCollection();
-	const auto	vertModule	= createShaderModule(vkd, device, binaries.get("vert"));
+	const auto	vertModule	= createShaderModule(vkd, device, (m_context.contextSupports(VK_API_VERSION_1_2)) ? binaries.get("vert_1_2") : binaries.get("vert"));
 	const auto	meshModule	= createShaderModule(vkd, device, binaries.get("mesh"));
 	const auto	fragModule	= createShaderModule(vkd, device, binaries.get("frag"));
 

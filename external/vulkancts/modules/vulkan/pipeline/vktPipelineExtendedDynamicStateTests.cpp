@@ -23,6 +23,7 @@
 *//*--------------------------------------------------------------------*/
 
 #include "vktPipelineExtendedDynamicStateTests.hpp"
+#include "vktPipelineExtendedDynamicStateMiscTests.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktCustomInstancesDevices.hpp"
@@ -1241,6 +1242,7 @@ using OptLineRasterMode	= tcu::Maybe<LineRasterizationMode>;
 using OptSampleCount	= tcu::Maybe<vk::VkSampleCountFlagBits>;
 using CovModTableVec	= std::vector<float>;
 using BlendConstArray	= std::array<float, 4>;
+using DepthBoundsParams	= std::pair<float, float>;
 #ifndef CTS_USES_VULKANSC
 using ViewportSwzVec	= std::vector<vk::VkViewportSwizzleNV>;
 using OptDepthBiasRepr	= tcu::Maybe<vk::VkDepthBiasRepresentationInfoEXT>;
@@ -1290,6 +1292,7 @@ using DepthTestEnableConfig			= BooleanFlagConfig;
 using DepthWriteEnableConfig		= BooleanFlagConfig;
 using DepthCompareOpConfig			= StaticAndDynamicPair<vk::VkCompareOp>;
 using DepthBoundsTestEnableConfig	= BooleanFlagConfig;
+using DepthBoundsConfig				= StaticAndDynamicPair<DepthBoundsParams>;
 using StencilTestEnableConfig		= BooleanFlagConfig;
 using StencilOpConfig				= StaticAndDynamicPair<StencilOpVec>;	// At least one element.
 using VertexGeneratorConfig			= StaticAndDynamicPair<const VertexGenerator*>;
@@ -1324,6 +1327,7 @@ using LineRasterModeConfig			= StaticAndDynamicPair<OptLineRasterMode>;
 using CoverageToColorEnableConfig	= BooleanFlagConfig;
 using CoverageToColorLocationConfig	= StaticAndDynamicPair<uint32_t>;
 using RasterizationSamplesConfig	= StaticAndDynamicPair<vk::VkSampleCountFlagBits>;
+using LineWidthConfig				= StaticAndDynamicPair<float>;
 #ifndef CTS_USES_VULKANSC
 using CoverageModulationModeConfig	= StaticAndDynamicPair<vk::VkCoverageModulationModeNV>;
 using CoverageModTableEnableConfig	= BooleanFlagConfig;
@@ -1807,7 +1811,6 @@ LineRasterizationMode selectLineRasterizationMode (const vk::VkPhysicalDeviceLin
 	return selectedMode;
 }
 
-#ifndef CTS_USES_VULKANSC
 vk::VkLineRasterizationModeEXT makeLineRasterizationMode (LineRasterizationMode mode)
 {
 	vk::VkLineRasterizationModeEXT modeEXT = vk::VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT;
@@ -1824,7 +1827,6 @@ vk::VkLineRasterizationModeEXT makeLineRasterizationMode (LineRasterizationMode 
 
 	return modeEXT;
 }
-#endif // CTS_USES_VULKANSC
 
 struct TestConfig
 {
@@ -1850,10 +1852,6 @@ struct TestConfig
 
 	// Optional verification routine.
 	tcu::Maybe<ColorVerificator>	colorVerificator;
-
-	// Depth bounds parameters for the pipeline.
-	float							minDepthBounds;
-	float							maxDepthBounds;
 
 	// Force inclusion of passthrough geometry shader or not.
 	bool							forceGeometryShader;
@@ -1886,6 +1884,8 @@ struct TestConfig
 	// Bind and draw with a pipeline that uses dynamic patch control points but doesn't actually use a tessellation
 	// shader, before using the real pipelines being tested.
 	bool							useExtraDynPCPPipeline;
+	// Bind and draw with a pipeline that uses same dynamic states, before using the real pipelines being tested.
+	bool							useExtraDynPipeline;
 
 	// Optional, to be used specifically for color attachments when testing coverage modulation and reduction.
 	bool							coverageModulation;
@@ -1937,6 +1937,12 @@ struct TestConfig
 	// Use dual source blending.
 	bool							dualSrcBlend;
 
+	// Use null pointers when possible for static state.
+	bool							favorStaticNullPointers;
+
+	// Force using atomic counters in the frag shader to count frag shader invocations.
+	bool							forceAtomicCounters;
+
 	// When setting the sample mask dynamically, we can use an alternative sample count specified here.
 	OptSampleCount					dynamicSampleMaskCount;
 
@@ -1947,6 +1953,10 @@ struct TestConfig
 
 	tcu::TextureChannelClass		neededDepthChannelClass;
 	float							extraDepthThreshold;
+
+	// Static values for sampleShadingEnable and minSampleShading.
+	bool							sampleShadingEnable;
+	float							minSampleShading;
 
 	// Static and dynamic pipeline configuration.
 	VertexGeneratorConfig			vertexGenerator;
@@ -1960,6 +1970,7 @@ struct TestConfig
 	DepthWriteEnableConfig			depthWriteEnableConfig;
 	DepthCompareOpConfig			depthCompareOpConfig;
 	DepthBoundsTestEnableConfig		depthBoundsTestEnableConfig;
+	DepthBoundsConfig				depthBoundsConfig;
 	StencilTestEnableConfig			stencilTestEnableConfig;
 	StencilOpConfig					stencilOpConfig;
 	DepthBiasEnableConfig			depthBiasEnableConfig;
@@ -1993,6 +2004,7 @@ struct TestConfig
 	CoverageToColorEnableConfig		coverageToColorEnableConfig;
 	CoverageToColorLocationConfig	coverageToColorLocationConfig;
 	RasterizationSamplesConfig		rasterizationSamplesConfig;
+	LineWidthConfig					lineWidthConfig;
 #ifndef CTS_USES_VULKANSC
 	CoverageModulationModeConfig	coverageModulationModeConfig;
 	CoverageModTableEnableConfig	coverageModTableEnableConfig;
@@ -2017,8 +2029,6 @@ struct TestConfig
 		, expectedDepth					(1.0f)
 		, expectedStencil				(0u)
 		, colorVerificator				(tcu::Nothing)
-		, minDepthBounds				(0.0f)
-		, maxDepthBounds				(1.0f)
 		, forceGeometryShader			(false)
 		, useMeshShaders				(useMeshShaders_)
 		, bindUnusedMeshShadingPipeline	(false)
@@ -2031,6 +2041,7 @@ struct TestConfig
 		, vertexDataOffset				(0ull)
 		, vertexDataExtraBytes			(0ull)
 		, useExtraDynPCPPipeline		(false)
+		, useExtraDynPipeline			(false)
 		, coverageModulation			(false)
 		, coverageReduction				(false)
 		, colorSampleCount				(tcu::Nothing)
@@ -2048,12 +2059,16 @@ struct TestConfig
 		, forceUnormColorFormat			(false)
 		, nullStaticColorBlendAttPtr	(false)
 		, dualSrcBlend					(false)
+		, favorStaticNullPointers		(false)
+		, forceAtomicCounters			(false)
 		, dynamicSampleMaskCount		(tcu::Nothing)
 #ifndef CTS_USES_VULKANSC
 		, depthBiasReprInfo				(tcu::Nothing)
 #endif // CTS_USES_VULKANSC
 		, neededDepthChannelClass		(tcu::TEXTURECHANNELCLASS_LAST)
 		, extraDepthThreshold			(0.0f)
+		, sampleShadingEnable			(false)
+		, minSampleShading				(0.0f)
 		, vertexGenerator				(makeVertexGeneratorConfig(staticVertexGenerator, dynamicVertexGenerator))
 		, cullModeConfig				(static_cast<vk::VkCullModeFlags>(vk::VK_CULL_MODE_NONE))
 		, frontFaceConfig				(vk::VK_FRONT_FACE_COUNTER_CLOCKWISE)
@@ -2067,6 +2082,7 @@ struct TestConfig
 		, depthWriteEnableConfig		(false)
 		, depthCompareOpConfig			(vk::VK_COMPARE_OP_NEVER)
 		, depthBoundsTestEnableConfig	(false)
+		, depthBoundsConfig				(std::make_pair(0.0f, 1.0f))
 		, stencilTestEnableConfig		(false)
 		, stencilOpConfig				(StencilOpVec(1u, kDefaultStencilOpParams))
 		, depthBiasEnableConfig			(false)
@@ -2100,6 +2116,7 @@ struct TestConfig
 		, coverageToColorEnableConfig	(false)
 		, coverageToColorLocationConfig	(0u)
 		, rasterizationSamplesConfig	(kSingleSampleCount)
+		, lineWidthConfig				(1.0f)
 #ifndef CTS_USES_VULKANSC
 		, coverageModulationModeConfig	(vk::VK_COVERAGE_MODULATION_MODE_NONE_NV)
 		, coverageModTableEnableConfig	(false)
@@ -2126,8 +2143,6 @@ struct TestConfig
 		, expectedDepth					(other.expectedDepth)
 		, expectedStencil				(other.expectedStencil)
 		, colorVerificator				(other.colorVerificator)
-		, minDepthBounds				(other.minDepthBounds)
-		, maxDepthBounds				(other.maxDepthBounds)
 		, forceGeometryShader			(other.forceGeometryShader)
 		, useMeshShaders				(other.useMeshShaders)
 		, bindUnusedMeshShadingPipeline	(other.bindUnusedMeshShadingPipeline)
@@ -2140,6 +2155,7 @@ struct TestConfig
 		, vertexDataOffset				(other.vertexDataOffset)
 		, vertexDataExtraBytes			(other.vertexDataExtraBytes)
 		, useExtraDynPCPPipeline		(other.useExtraDynPCPPipeline)
+		, useExtraDynPipeline			(other.useExtraDynPipeline)
 		, coverageModulation			(other.coverageModulation)
 		, coverageReduction				(other.coverageReduction)
 		, colorSampleCount				(other.colorSampleCount)
@@ -2157,12 +2173,16 @@ struct TestConfig
 		, forceUnormColorFormat			(other.forceUnormColorFormat)
 		, nullStaticColorBlendAttPtr	(other.nullStaticColorBlendAttPtr)
 		, dualSrcBlend					(other.dualSrcBlend)
+		, favorStaticNullPointers		(other.favorStaticNullPointers)
+		, forceAtomicCounters			(other.forceAtomicCounters)
 		, dynamicSampleMaskCount		(other.dynamicSampleMaskCount)
 #ifndef CTS_USES_VULKANSC
 		, depthBiasReprInfo				(other.depthBiasReprInfo)
 #endif // CTS_USES_VULKANSC
 		, neededDepthChannelClass		(other.neededDepthChannelClass)
 		, extraDepthThreshold			(other.extraDepthThreshold)
+		, sampleShadingEnable			(other.sampleShadingEnable)
+		, minSampleShading				(other.minSampleShading)
 		, vertexGenerator				(other.vertexGenerator)
 		, cullModeConfig				(other.cullModeConfig)
 		, frontFaceConfig				(other.frontFaceConfig)
@@ -2174,6 +2194,7 @@ struct TestConfig
 		, depthWriteEnableConfig		(other.depthWriteEnableConfig)
 		, depthCompareOpConfig			(other.depthCompareOpConfig)
 		, depthBoundsTestEnableConfig	(other.depthBoundsTestEnableConfig)
+		, depthBoundsConfig				(other.depthBoundsConfig)
 		, stencilTestEnableConfig		(other.stencilTestEnableConfig)
 		, stencilOpConfig				(other.stencilOpConfig)
 		, depthBiasEnableConfig			(other.depthBiasEnableConfig)
@@ -2207,6 +2228,7 @@ struct TestConfig
 		, coverageToColorEnableConfig	(other.coverageToColorEnableConfig)
 		, coverageToColorLocationConfig	(other.coverageToColorLocationConfig)
 		, rasterizationSamplesConfig	(other.rasterizationSamplesConfig)
+		, lineWidthConfig				(other.lineWidthConfig)
 #ifndef CTS_USES_VULKANSC
 		, coverageModulationModeConfig	(other.coverageModulationModeConfig)
 		, coverageModTableEnableConfig	(other.coverageModTableEnableConfig)
@@ -2376,6 +2398,11 @@ struct TestConfig
 		return ((hasDynamicValue && !m_swappedValues) ? dynamicValue.get() : staticValue);
 	}
 
+	float getActiveLineWidth () const
+	{
+		return ((static_cast<bool>(lineWidthConfig.dynamicValue) && !m_swappedValues) ? lineWidthConfig.dynamicValue.get() : lineWidthConfig.staticValue);
+	}
+
 	// Returns true if there is more than one viewport.
 	bool isMultiViewport () const
 	{
@@ -2398,6 +2425,20 @@ struct TestConfig
 				sequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC);
 	}
 
+	// Returns true if the ordering needs to bind a static pipeline first.
+	bool bindStaticFirst () const
+	{
+		return (sequenceOrdering == SequenceOrdering::BETWEEN_PIPELINES	||
+				sequenceOrdering == SequenceOrdering::AFTER_PIPELINES	||
+				sequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC);
+	}
+
+	// Returns true if the test uses a static pipeline.
+	bool useStaticPipeline () const
+	{
+		return (bindStaticFirst() || isReversed());
+	}
+
 	// Swaps static and dynamic configuration values.
 	void swapValues ()
 	{
@@ -2412,6 +2453,7 @@ struct TestConfig
 		depthWriteEnableConfig.swapValues();
 		depthCompareOpConfig.swapValues();
 		depthBoundsTestEnableConfig.swapValues();
+		depthBoundsConfig.swapValues();
 		stencilTestEnableConfig.swapValues();
 		stencilOpConfig.swapValues();
 		depthBiasEnableConfig.swapValues();
@@ -2445,6 +2487,7 @@ struct TestConfig
 		coverageToColorEnableConfig.swapValues();
 		coverageToColorLocationConfig.swapValues();
 		rasterizationSamplesConfig.swapValues();
+		lineWidthConfig.swapValues();
 #ifndef CTS_USES_VULKANSC
 		coverageModulationModeConfig.swapValues();
 		coverageModTableEnableConfig.swapValues();
@@ -2601,7 +2644,7 @@ struct TestConfig
 				||	(!!viewportWScalingEnableConfig.dynamicValue)
 				||	(!!reprFragTestEnableConfig.dynamicValue)
 #endif // CTS_USES_VULKANSC
-				);
+				||	favorStaticNullPointers);
 	}
 
 	// Returns the appropriate color image format for the test.
@@ -2636,6 +2679,7 @@ struct TestConfig
 	{
 		std::vector<vk::VkDynamicState> dynamicStates;
 
+		if (lineWidthConfig.dynamicValue)				dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_WIDTH);
 		if (depthBiasConfig.dynamicValue)				dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_BIAS);
 		if (cullModeConfig.dynamicValue)				dynamicStates.push_back(vk::VK_DYNAMIC_STATE_CULL_MODE_EXT);
 		if (frontFaceConfig.dynamicValue)				dynamicStates.push_back(vk::VK_DYNAMIC_STATE_FRONT_FACE_EXT);
@@ -2647,6 +2691,7 @@ struct TestConfig
 		if (depthWriteEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE_EXT);
 		if (depthCompareOpConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_COMPARE_OP_EXT);
 		if (depthBoundsTestEnableConfig.dynamicValue)	dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE_EXT);
+		if (depthBoundsConfig.dynamicValue)				dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_BOUNDS);
 		if (stencilTestEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT);
 		if (stencilOpConfig.dynamicValue)				dynamicStates.push_back(vk::VK_DYNAMIC_STATE_STENCIL_OP_EXT);
 		if (vertexGenerator.dynamicValue)				dynamicStates.push_back(vk::VK_DYNAMIC_STATE_VERTEX_INPUT_EXT);
@@ -2655,6 +2700,9 @@ struct TestConfig
 		if (depthBiasEnableConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_BIAS_ENABLE_EXT);
 		if (logicOpConfig.dynamicValue)					dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LOGIC_OP_EXT);
 		if (primRestartEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE_EXT);
+		if (colorWriteEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT);
+		if (blendConstantsConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_BLEND_CONSTANTS);
+		if (lineStippleParamsConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_STIPPLE_EXT);
 #ifndef CTS_USES_VULKANSC
 		if (tessDomainOriginConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_TESSELLATION_DOMAIN_ORIGIN_EXT);
 		if (depthClampEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_CLAMP_ENABLE_EXT);
@@ -2662,14 +2710,13 @@ struct TestConfig
 		if (sampleMaskConfig.dynamicValue)				dynamicStates.push_back(vk::VK_DYNAMIC_STATE_SAMPLE_MASK_EXT);
 		if (alphaToCoverageConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT);
 		if (alphaToOneConfig.dynamicValue)				dynamicStates.push_back(vk::VK_DYNAMIC_STATE_ALPHA_TO_ONE_ENABLE_EXT);
-		if (colorWriteEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT);
 		if (colorWriteMaskConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT);
 		if (rasterizationStreamConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_RASTERIZATION_STREAM_EXT);
 		if (logicOpEnableConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LOGIC_OP_ENABLE_EXT);
 		if (colorBlendEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_BLEND_ENABLE_EXT);
 		if (colorBlendEquationConfig.dynamicValue)
 		{
-			if (colorBlendBoth)
+			if (colorBlendBoth || nullStaticColorBlendAttPtr)
 			{
 														dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT);
 														dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_BLEND_ADVANCED_EXT);
@@ -2681,12 +2728,10 @@ struct TestConfig
 															: vk::VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT);
 			}
 		}
-		if (blendConstantsConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_BLEND_CONSTANTS);
 		if (provokingVertexConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_PROVOKING_VERTEX_MODE_EXT);
 		if (negativeOneToOneConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_CLIP_NEGATIVE_ONE_TO_ONE_EXT);
 		if (depthClipEnableConfig.dynamicValue)			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_CLIP_ENABLE_EXT);
 		if (lineStippleEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_STIPPLE_ENABLE_EXT);
-		if (lineStippleParamsConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_STIPPLE_EXT);
 		if (sampleLocationsEnableConfig.dynamicValue)	dynamicStates.push_back(vk::VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_ENABLE_EXT);
 		if (conservativeRasterModeConfig.dynamicValue)	dynamicStates.push_back(vk::VK_DYNAMIC_STATE_CONSERVATIVE_RASTERIZATION_MODE_EXT);
 		if (extraPrimitiveOverEstConfig.dynamicValue)	dynamicStates.push_back(vk::VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT);
@@ -2702,8 +2747,6 @@ struct TestConfig
 		if (shadingRateImageEnableConfig.dynamicValue)	dynamicStates.push_back(vk::VK_DYNAMIC_STATE_SHADING_RATE_IMAGE_ENABLE_NV);
 		if (viewportWScalingEnableConfig.dynamicValue)	dynamicStates.push_back(vk::VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_ENABLE_NV);
 		if (reprFragTestEnableConfig.dynamicValue)		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_REPRESENTATIVE_FRAGMENT_TEST_ENABLE_NV);
-#else
-		DE_ASSERT(false);
 #endif // CTS_USES_VULKANSC
 
 		return dynamicStates;
@@ -2851,6 +2894,11 @@ struct TestConfig
 	uint32_t getFragDescriptorSetIndex () const
 	{
 		return (useMeshShaders ? 1u : 0u);
+	}
+
+	bool useFragShaderAtomics () const
+	{
+		return (representativeFragmentTest || forceAtomicCounters);
 	}
 
 private:
@@ -3016,6 +3064,16 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 
 		TCU_THROW(NotSupportedError, "VK_AMD_mixed_attachment_samples or VK_NV_framebuffer_mixed_samples are not supported");
 
+	if (m_testConfig.rasterizationSamplesConfig.dynamicValue &&
+		(m_testConfig.sequenceOrdering == SequenceOrdering::BETWEEN_PIPELINES ||
+		 m_testConfig.sequenceOrdering == SequenceOrdering::AFTER_PIPELINES ||
+		 m_testConfig.sequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC ||
+		 m_testConfig.isReversed()) &&
+		(context.isDeviceFunctionalitySupported("VK_AMD_mixed_attachment_samples") ||
+		context.isDeviceFunctionalitySupported("VK_NV_framebuffer_mixed_samples")))
+
+		TCU_THROW(NotSupportedError, "Test not supported with VK_AMD_mixed_attachment_samples or VK_NV_framebuffer_mixed_samples");
+
 	// Check the number of viewports needed and the corresponding limits.
 	const auto&	viewportConfig	= m_testConfig.viewportConfig;
 	auto		numViewports	= viewportConfig.staticValue.size();
@@ -3119,7 +3177,7 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 		{
 			const auto isAdvanced = m_testConfig.colorBlendEquationConfig.staticValue.isAdvanced();
 
-			if (isAdvanced || m_testConfig.colorBlendBoth)
+			if (isAdvanced || m_testConfig.colorBlendBoth || m_testConfig.nullStaticColorBlendAttPtr)
 			{
 				if (!eds3Features.extendedDynamicState3ColorBlendAdvanced)
 					TCU_THROW(NotSupportedError, "extendedDynamicState3ColorBlendAdvanced not supported");
@@ -3191,8 +3249,8 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 				for (uint32_t i = 0U; i < combinationCount; ++i) {
 					if (combinations[i].rasterizationSamples == m_testConfig.rasterizationSamplesConfig.staticValue &&
 						combinations[i].colorSamples == m_testConfig.getColorSampleCount() &&
-						combinations[i].coverageReductionMode == coverageReductionMode) {
-
+						combinations[i].coverageReductionMode == coverageReductionMode)
+					{
 						return true;
 					}
 				}
@@ -3310,7 +3368,7 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 		}
 	}
 
-	if (m_testConfig.representativeFragmentTest)
+	if (m_testConfig.useFragShaderAtomics())
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
 
 #ifndef CTS_USES_VULKANSC
@@ -3331,7 +3389,29 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 		if (reprInfo.depthBiasRepresentation == vk::VK_DEPTH_BIAS_REPRESENTATION_FLOAT_EXT && !dbcFeatures.floatRepresentation)
 			TCU_THROW(NotSupportedError, "floatRepresentation not supported");
 	}
+#else
+	TCU_THROW(NotSupportedError, "VulkanSC does not support VK_EXT_depth_bias_control");
 #endif // CTS_USES_VULKANSC
+
+	if (m_testConfig.getActiveLineWidth() != 1.0f)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_WIDE_LINES);
+
+	if (m_testConfig.favorStaticNullPointers)
+	{
+		if (m_testConfig.primRestartEnableConfig.dynamicValue && m_testConfig.topologyConfig.dynamicValue)
+		{
+#ifndef CTS_USES_VULKANSC
+			const auto& eds3Properties = context.getExtendedDynamicState3PropertiesEXT();
+			if (!eds3Properties.dynamicPrimitiveTopologyUnrestricted)
+				TCU_THROW(NotSupportedError, "dynamicPrimitiveTopologyUnrestricted not supported");
+#else
+			TCU_THROW(NotSupportedError, "VulkanSC does not support VK_EXT_extended_dynamic_state3");
+#endif // CTS_USES_VULKANSC
+		}
+	}
+
+	if (m_testConfig.sampleShadingEnable && !baseFeatures.sampleRateShading)
+		TCU_THROW(NotSupportedError, "sampleRateShading not supported");
 
 	checkPipelineLibraryRequirements(vki, physicalDevice, m_testConfig.pipelineConstructionType);
 }
@@ -3480,11 +3560,12 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 	const auto colorFormat	= m_testConfig.colorFormat();
 	const auto vecType		= (vk::isUnormFormat(colorFormat) ? "vec4" : "uvec4");
 	const auto fragSetIndex	= std::to_string(m_testConfig.getFragDescriptorSetIndex());
+	const auto fragAtomics	= m_testConfig.useFragShaderAtomics();
 
 	fragSourceTemplateStream
 		<< "#version 450\n"
 		<< (m_testConfig.representativeFragmentTest ? "layout(early_fragment_tests) in;\n" : "")
-		<< (m_testConfig.representativeFragmentTest ? "layout(set=" + fragSetIndex + ", binding=0, std430) buffer AtomicBlock { uint fragCounter; } counterBuffer;\n" : "")
+		<< (fragAtomics ? "layout(set=" + fragSetIndex + ", binding=0, std430) buffer AtomicBlock { uint fragCounter; } counterBuffer;\n" : "")
 		<< pushConstants
 		<< fragOutputLocations
 		<< "${FRAG_INPUTS}"
@@ -3501,7 +3582,7 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 
 	fragSourceTemplateStream
 		<< "${FRAG_CALCULATIONS}"
-		<< (m_testConfig.representativeFragmentTest ? "    atomicAdd(counterBuffer.fragCounter, 1u);\n" : "")
+		<< (fragAtomics ? "    atomicAdd(counterBuffer.fragCounter, 1u);\n" : "")
 		<< "}\n"
 		;
 
@@ -3720,7 +3801,7 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 	}
 
 	// Extra vert and frag shaders for the extra patch control points pipeline. These draw offscreen.
-	if (m_testConfig.useExtraDynPCPPipeline)
+	if (m_testConfig.useExtraDynPCPPipeline || m_testConfig.useExtraDynPipeline)
 	{
 		std::ostringstream vertDPCP;
 		vertDPCP
@@ -3802,6 +3883,15 @@ void copyAndFlush(const vk::DeviceInterface& vkd, vk::VkDevice device, vk::Buffe
 // Sets values for dynamic states if needed according to the test configuration.
 void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& vkd, vk::VkCommandBuffer cmdBuffer)
 {
+	if (testConfig.lineWidthConfig.dynamicValue)
+		vkd.cmdSetLineWidth(cmdBuffer, testConfig.lineWidthConfig.dynamicValue.get());
+
+	if (testConfig.depthBoundsConfig.dynamicValue)
+	{
+		const auto& minMaxDepth = testConfig.depthBoundsConfig.dynamicValue.get();
+		vkd.cmdSetDepthBounds(cmdBuffer, minMaxDepth.first, minMaxDepth.second);
+	}
+
 	if (testConfig.cullModeConfig.dynamicValue)
 #ifndef CTS_USES_VULKANSC
 		vkd.cmdSetCullMode(cmdBuffer, testConfig.cullModeConfig.dynamicValue.get());
@@ -3946,6 +4036,21 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 			static_cast<deUint32>(attributes.size()), de::dataOrNull(attributes));
 	}
 
+	if (testConfig.colorWriteEnableConfig.dynamicValue)
+	{
+		const std::vector<vk::VkBool32> colorWriteEnableValues (testConfig.colorAttachmentCount, makeVkBool32(testConfig.colorWriteEnableConfig.dynamicValue.get()));
+		vkd.cmdSetColorWriteEnableEXT(cmdBuffer, de::sizeU32(colorWriteEnableValues), de::dataOrNull(colorWriteEnableValues));
+	}
+
+	if (testConfig.blendConstantsConfig.dynamicValue)
+		vkd.cmdSetBlendConstants(cmdBuffer, testConfig.blendConstantsConfig.dynamicValue.get().data());
+
+	if (testConfig.lineStippleParamsConfig.dynamicValue && static_cast<bool>(testConfig.lineStippleParamsConfig.dynamicValue.get()))
+	{
+		const auto& stippleParams = testConfig.lineStippleParamsConfig.dynamicValue->get();
+		vkd.cmdSetLineStippleEXT(cmdBuffer, stippleParams.factor, stippleParams.pattern);
+	}
+
 #ifndef CTS_USES_VULKANSC
 	if (testConfig.tessDomainOriginConfig.dynamicValue)
 		vkd.cmdSetTessellationDomainOriginEXT(cmdBuffer, testConfig.tessDomainOriginConfig.dynamicValue.get());
@@ -3973,12 +4078,6 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 	if (testConfig.alphaToOneConfig.dynamicValue)
 		vkd.cmdSetAlphaToOneEnableEXT(cmdBuffer, makeVkBool32(testConfig.alphaToOneConfig.dynamicValue.get()));
 
-	if (testConfig.colorWriteEnableConfig.dynamicValue)
-	{
-		const std::vector<vk::VkBool32> colorWriteEnableValues (testConfig.colorAttachmentCount, makeVkBool32(testConfig.colorWriteEnableConfig.dynamicValue.get()));
-		vkd.cmdSetColorWriteEnableEXT(cmdBuffer, de::sizeU32(colorWriteEnableValues), de::dataOrNull(colorWriteEnableValues));
-	}
-
 	if (testConfig.colorWriteMaskConfig.dynamicValue)
 	{
 		const std::vector<vk::VkColorComponentFlags> writeMasks (testConfig.colorAttachmentCount, testConfig.colorWriteMaskConfig.dynamicValue.get());
@@ -4003,7 +4102,7 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 		const auto&	configEq	= testConfig.colorBlendEquationConfig.dynamicValue.get();
 		const auto	isAdvanced	= testConfig.colorBlendEquationConfig.staticValue.isAdvanced();
 
-		if (isAdvanced || testConfig.colorBlendBoth)
+		if (isAdvanced || testConfig.colorBlendBoth || testConfig.nullStaticColorBlendAttPtr)
 		{
 			const vk::VkColorBlendAdvancedEXT equation =
 			{
@@ -4044,9 +4143,6 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 		}
 	}
 
-	if (testConfig.blendConstantsConfig.dynamicValue)
-		vkd.cmdSetBlendConstants(cmdBuffer, testConfig.blendConstantsConfig.dynamicValue.get().data());
-
 	if (testConfig.provokingVertexConfig.dynamicValue && static_cast<bool>(testConfig.provokingVertexConfig.dynamicValue.get()))
 	{
 		const auto provokingVertexMode = makeProvokingVertexMode(testConfig.provokingVertexConfig.dynamicValue->get());
@@ -4061,12 +4157,6 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 
 	if (testConfig.lineStippleEnableConfig.dynamicValue)
 		vkd.cmdSetLineStippleEnableEXT(cmdBuffer, makeVkBool32(testConfig.lineStippleEnableConfig.dynamicValue.get()));
-
-	if (testConfig.lineStippleParamsConfig.dynamicValue && static_cast<bool>(testConfig.lineStippleParamsConfig.dynamicValue.get()))
-	{
-		const auto& stippleParams = testConfig.lineStippleParamsConfig.dynamicValue->get();
-		vkd.cmdSetLineStippleEXT(cmdBuffer, stippleParams.factor, stippleParams.pattern);
-	}
 
 	if (testConfig.sampleLocationsEnableConfig.dynamicValue)
 		vkd.cmdSetSampleLocationsEnableEXT(cmdBuffer, makeVkBool32(testConfig.sampleLocationsEnableConfig.dynamicValue.get()));
@@ -4115,8 +4205,7 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 
 	if (testConfig.reprFragTestEnableConfig.dynamicValue)
 		vkd.cmdSetRepresentativeFragmentTestEnableNV(cmdBuffer, makeVkBool32(testConfig.reprFragTestEnableConfig.dynamicValue.get()));
-#else
-	DE_ASSERT(false);
+
 #endif // CTS_USES_VULKANSC
 }
 
@@ -4359,7 +4448,7 @@ public:
 		};
 
 		m_device	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &deviceCreateInfo);
-		m_vkd		.reset(new vk::DeviceDriver(vkp, instance, m_device.get()));
+		m_vkd		.reset(new vk::DeviceDriver(vkp, instance, m_device.get(), context.getUsedApiVersion()));
 		m_queue		= getDeviceQueue(*m_vkd, *m_device, m_queueFamilyIndex, 0u);
 		m_allocator	.reset(new vk::SimpleAllocator(*m_vkd, m_device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	}
@@ -4427,6 +4516,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	auto&		log					= m_context.getTestContext().getLog();
 
 	const auto	kReversed			= m_testConfig.isReversed();
+	const auto	kBindStaticFirst	= m_testConfig.bindStaticFirst();
+	const auto	kUseStaticPipeline	= m_testConfig.useStaticPipeline();
 	const auto	kNumIterations		= m_testConfig.numIterations();
 	const auto	kColorAttCount		= m_testConfig.colorAttachmentCount;
 	const auto	kSequenceOrdering	= m_testConfig.sequenceOrdering;
@@ -4439,6 +4530,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	const auto	pipelineBindPoint	= vk::VK_PIPELINE_BIND_POINT_GRAPHICS;
 	const bool	kUseResolveAtt		= (colorSampleCount != kSingleSampleCount);
 	const bool	kMultisampleDS		= (activeSampleCount != kSingleSampleCount);
+	const bool	kFragAtomics		= m_testConfig.useFragShaderAtomics();
 
 	// Choose depth/stencil format.
 	const DepthStencilFormat* dsFormatInfo = nullptr;
@@ -4724,7 +4816,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	BufferWithMemoryPtr	counterBuffer;
 	const auto			counterBufferSize	= static_cast<vk::VkDeviceSize>(sizeof(uint32_t));
 
-	if (m_testConfig.representativeFragmentTest)
+	if (kFragAtomics)
 	{
 		const auto		counterBufferInfo	= vk::makeBufferCreateInfo(counterBufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 		const uint32_t	initialValue		= 0u;
@@ -4737,7 +4829,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	vk::Move<vk::VkDescriptorSetLayout> fragSetLayout;
 	{
 		vk::DescriptorSetLayoutBuilder layoutBuilder;
-		if (m_testConfig.representativeFragmentTest)
+		if (kFragAtomics)
 			layoutBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_FRAGMENT_BIT);
 		fragSetLayout = layoutBuilder.build(vkd, device);
 	}
@@ -4746,7 +4838,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	vk::Move<vk::VkDescriptorPool>	fragDescriptorPool;
 	vk::Move<vk::VkDescriptorSet>	fragDescriptorSet;
 
-	if (m_testConfig.representativeFragmentTest)
+	if (kFragAtomics)
 	{
 		vk::DescriptorPoolBuilder poolBuilder;
 		poolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -5064,17 +5156,19 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	void* rasterizationPnext	= nullptr;
 	void* viewportPnext			= nullptr;
 
+	const bool			staticStreamInfo			= static_cast<bool>(m_testConfig.rasterizationStreamConfig.staticValue);
+	const bool			staticProvokingVtxInfo		= static_cast<bool>(m_testConfig.provokingVertexConfig.staticValue);
+	const bool			staticDepthClipEnableInfo	= static_cast<bool>(m_testConfig.depthClipEnableConfig.staticValue);
+	const bool			staticDepthClipControlInfo	= static_cast<bool>(m_testConfig.negativeOneToOneConfig.staticValue);
 #ifndef CTS_USES_VULKANSC
 	using RastStreamInfoPtr		= de::MovePtr<vk::VkPipelineRasterizationStateStreamCreateInfoEXT>;
 	using ProvokingVtxModePtr	= de::MovePtr<vk::VkPipelineRasterizationProvokingVertexStateCreateInfoEXT>;
 	using DepthClipControlPtr	= de::MovePtr<vk::VkPipelineViewportDepthClipControlCreateInfoEXT>;
 	using DepthClipEnablePtr	= de::MovePtr<vk::VkPipelineRasterizationDepthClipStateCreateInfoEXT>;
-	using LineRasterModePtr		= de::MovePtr<vk::VkPipelineRasterizationLineStateCreateInfoEXT>;
 	using ConservativeRastPtr	= de::MovePtr<vk::VkPipelineRasterizationConservativeStateCreateInfoEXT>;
 	using DepthBiasReprInfoPtr	= de::MovePtr<vk::VkDepthBiasRepresentationInfoEXT>;
 
 	RastStreamInfoPtr	pRasterizationStreamInfo;
-	const bool			staticStreamInfo			= static_cast<bool>(m_testConfig.rasterizationStreamConfig.staticValue);
 
 	if (staticStreamInfo)
 	{
@@ -5084,7 +5178,6 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	}
 
 	ProvokingVtxModePtr	pProvokingVertexModeInfo;
-	const bool			staticProvokingVtxInfo		= static_cast<bool>(m_testConfig.provokingVertexConfig.staticValue);
 
 	if (staticProvokingVtxInfo)
 	{
@@ -5094,7 +5187,6 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	}
 
 	DepthClipEnablePtr	pDepthClipEnableInfo;
-	const bool			staticDepthClipEnableInfo	= static_cast<bool>(m_testConfig.depthClipEnableConfig.staticValue);
 
 	if (staticDepthClipEnableInfo)
 	{
@@ -5104,32 +5196,12 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	}
 
 	DepthClipControlPtr	pDepthClipControlInfo;
-	const bool			staticDepthClipControlInfo	= static_cast<bool>(m_testConfig.negativeOneToOneConfig.staticValue);
 
 	if (staticDepthClipControlInfo)
 	{
 		pDepthClipControlInfo = DepthClipControlPtr(new vk::VkPipelineViewportDepthClipControlCreateInfoEXT(vk::initVulkanStructure(viewportPnext)));
 		pDepthClipControlInfo->negativeOneToOne = makeVkBool32(m_testConfig.negativeOneToOneConfig.staticValue.get());
 		viewportPnext = pDepthClipControlInfo.get();
-	}
-
-	LineRasterModePtr	pLineRasterModeInfo;
-
-	if (m_testConfig.lineRasterStruct())
-	{
-		DE_ASSERT(static_cast<bool>(m_testConfig.lineStippleParamsConfig.staticValue));
-
-		pLineRasterModeInfo = LineRasterModePtr(new vk::VkPipelineRasterizationLineStateCreateInfoEXT(vk::initVulkanStructure(rasterizationPnext)));
-		rasterizationPnext = pLineRasterModeInfo.get();
-
-		const auto&	lineRasterFeatures	= m_context.getLineRasterizationFeaturesEXT();
-		const auto	lineRasterMode		= selectLineRasterizationMode(lineRasterFeatures, m_testConfig.lineStippleSupportRequired(), m_testConfig.lineRasterModeConfig.staticValue);
-		const auto&	staticParams		= m_testConfig.lineStippleParamsConfig.staticValue.get();
-
-		pLineRasterModeInfo->stippledLineEnable		= m_testConfig.lineStippleEnableConfig.staticValue;
-		pLineRasterModeInfo->lineRasterizationMode	= makeLineRasterizationMode(lineRasterMode);
-		pLineRasterModeInfo->lineStippleFactor		= staticParams.factor;
-		pLineRasterModeInfo->lineStipplePattern		= staticParams.pattern;
 	}
 
 	ConservativeRastPtr	pConservativeRasterModeInfo;
@@ -5156,8 +5228,36 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		pDepthBiasReprInfo->depthBiasExact			= reprInfo.depthBiasExact;
 	}
 #else
-	DE_ASSERT(false);
+	DE_ASSERT(!staticStreamInfo);
+	DE_ASSERT(!staticProvokingVtxInfo);
+	DE_ASSERT(!staticDepthClipEnableInfo);
+	DE_ASSERT(!staticDepthClipControlInfo);
+	DE_ASSERT(!m_testConfig.conservativeRasterStruct());
+	DE_UNREF(staticStreamInfo);
+	DE_UNREF(staticProvokingVtxInfo);
+	DE_UNREF(staticDepthClipEnableInfo);
+	DE_UNREF(staticDepthClipControlInfo);
 #endif // CTS_USES_VULKANSC
+
+	using LineRasterModePtr		= de::MovePtr<vk::VkPipelineRasterizationLineStateCreateInfoEXT>;
+	LineRasterModePtr	pLineRasterModeInfo;
+
+	if (m_testConfig.lineRasterStruct())
+	{
+		DE_ASSERT(static_cast<bool>(m_testConfig.lineStippleParamsConfig.staticValue));
+
+		pLineRasterModeInfo = LineRasterModePtr(new vk::VkPipelineRasterizationLineStateCreateInfoEXT(vk::initVulkanStructure(rasterizationPnext)));
+		rasterizationPnext = pLineRasterModeInfo.get();
+
+		const auto&	lineRasterFeatures	= m_context.getLineRasterizationFeaturesEXT();
+		const auto	lineRasterMode		= selectLineRasterizationMode(lineRasterFeatures, m_testConfig.lineStippleSupportRequired(), m_testConfig.lineRasterModeConfig.staticValue);
+		const auto&	staticParams		= m_testConfig.lineStippleParamsConfig.staticValue.get();
+
+		pLineRasterModeInfo->stippledLineEnable		= m_testConfig.lineStippleEnableConfig.staticValue;
+		pLineRasterModeInfo->lineRasterizationMode	= makeLineRasterizationMode(lineRasterMode);
+		pLineRasterModeInfo->lineStippleFactor		= staticParams.factor;
+		pLineRasterModeInfo->lineStipplePattern		= staticParams.pattern;
+	}
 
 	const vk::VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo =
 	{
@@ -5173,7 +5273,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		m_testConfig.depthBiasConfig.staticValue.constantFactor,		//	float									depthBiasConstantFactor;
 		m_testConfig.depthBiasConfig.staticValue.clamp,					//	float									depthBiasClamp;
 		0.0f,															//	float									depthBiasSlopeFactor;
-		1.0f,															//	float									lineWidth;
+		m_testConfig.lineWidthConfig.staticValue,						//	float									lineWidth;
 	};
 
 	using SampleLocationsPtr = de::MovePtr<vk::VkPipelineSampleLocationsStateCreateInfoEXT>;
@@ -5307,8 +5407,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		multisamplePnext,												//	const void*								pNext;
 		0u,																//	VkPipelineMultisampleStateCreateFlags	flags;
 		m_testConfig.rasterizationSamplesConfig.staticValue,			//	VkSampleCountFlagBits					rasterizationSamples;
-		VK_FALSE,														//	VkBool32								sampleShadingEnable;
-		0.0f,															//	float									minSampleShading;
+		makeVkBool32(m_testConfig.sampleShadingEnable),					//	VkBool32								sampleShadingEnable;
+		m_testConfig.minSampleShading,									//	float									minSampleShading;
 		de::dataOrNull(m_testConfig.sampleMaskConfig.staticValue),		//	const VkSampleMask*						pSampleMask;
 		makeVkBool32(m_testConfig.alphaToCoverageConfig.staticValue),	//	VkBool32								alphaToCoverageEnable;
 		makeVkBool32(m_testConfig.alphaToOneConfig.staticValue),		//	VkBool32								alphaToOneEnable;
@@ -5358,8 +5458,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		makeVkBool32(m_testConfig.stencilTestEnableConfig.staticValue),		//	VkBool32								stencilTestEnable;
 		staticFrontStencil,													//	VkStencilOpState						front;
 		staticBackStencil,													//	VkStencilOpState						back;
-		m_testConfig.minDepthBounds,										//	float									minDepthBounds;
-		m_testConfig.maxDepthBounds,										//	float									maxDepthBounds;
+		m_testConfig.depthBoundsConfig.staticValue.first,					//	float									minDepthBounds;
+		m_testConfig.depthBoundsConfig.staticValue.second,					//	float									maxDepthBounds;
 	};
 
 	// Dynamic state. Here we will set all states which have a dynamic value.
@@ -5441,11 +5541,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		},
 	};
 
-	vk::GraphicsPipelineWrapper	staticPipeline		(vkd, device, m_testConfig.pipelineConstructionType);
-	const bool					bindStaticFirst		= (kSequenceOrdering == SequenceOrdering::BETWEEN_PIPELINES	||
-													   kSequenceOrdering == SequenceOrdering::AFTER_PIPELINES	||
-													   kSequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC);
-	const bool					useStaticPipeline	= (bindStaticFirst || kReversed);
+	vk::GraphicsPipelineWrapper	staticPipeline (vkd, device, m_testConfig.pipelineConstructionType);
 
 	// Create extra dynamic patch control points pipeline if needed.
 	vk::Move<vk::VkPipeline> extraDynPCPPipeline;
@@ -5477,9 +5573,13 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			renderPass.get(), viewports, scissors, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u,
 			&extraDPCPInputState, nullptr, nullptr, nullptr, nullptr, &extraDynamicStateInfo);
 	}
+	else if (m_testConfig.useExtraDynPipeline)
+	{
+		vertDPCPModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vertDPCP"));
+	}
 
 	// Create static pipeline when needed.
-	if (useStaticPipeline)
+	if (kUseStaticPipeline)
 	{
 		auto viewports	= m_testConfig.viewportConfig.staticValue;
 		auto scissors	= m_testConfig.scissorConfig.staticValue;
@@ -5540,6 +5640,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 
 	// Create dynamic pipeline.
 	vk::GraphicsPipelineWrapper graphicsPipeline(vkd, device, m_testConfig.pipelineConstructionType);
+	vk::GraphicsPipelineWrapper extraDynPipeline(vkd, device, m_testConfig.pipelineConstructionType);
 	{
 		auto viewports	= m_testConfig.viewportConfig.staticValue;
 		auto scissors	= m_testConfig.scissorConfig.staticValue;
@@ -5558,6 +5659,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		if (m_testConfig.viewportConfig.dynamicValue)
 		{
 			graphicsPipeline.setDefaultViewportsCount();
+			if (m_testConfig.useExtraDynPipeline)
+				extraDynPipeline.setDefaultViewportsCount();
 			viewports = std::vector<vk::VkViewport>();
 		}
 		else
@@ -5566,15 +5669,45 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		if (m_testConfig.scissorConfig.dynamicValue)
 		{
 			graphicsPipeline.setDefaultScissorsCount();
+			if (m_testConfig.useExtraDynPipeline)
+				extraDynPipeline.setDefaultScissorsCount();
 			scissors = std::vector<vk::VkRect2D>();
 		}
 		else
 			scissors.resize(minDynamicCount);
 
+		// Setting patch control points to std::numeric_limits<uint32_t>::max() will force null tessellation state pointer.
+		const auto patchControlPoints	= ((m_testConfig.favorStaticNullPointers && m_testConfig.patchControlPointsConfig.dynamicValue)
+										? std::numeric_limits<uint32_t>::max()
+										: m_testConfig.patchControlPointsConfig.staticValue);
+
+		const auto disableViewportState	= (m_testConfig.favorStaticNullPointers && m_testConfig.viewportConfig.dynamicValue && m_testConfig.scissorConfig.dynamicValue);
+
 		graphicsPipeline.setDynamicState(&dynamicStateCreateInfo)
-						.setDefaultPatchControlPoints(m_testConfig.patchControlPointsConfig.staticValue)
+						.setDefaultPatchControlPoints(patchControlPoints)
 						.setViewportStatePnext(viewportPnext)
-						.setDefaultTessellationDomainOrigin(m_testConfig.tessDomainOriginConfig.staticValue);
+						.setDefaultTessellationDomainOrigin(m_testConfig.tessDomainOriginConfig.staticValue)
+						.disableViewportState(disableViewportState);
+		if (m_testConfig.useExtraDynPipeline)
+			extraDynPipeline.setDynamicState(&dynamicStateCreateInfo)
+							.setDefaultPatchControlPoints(patchControlPoints)
+							.setViewportStatePnext(viewportPnext)
+							.setDefaultTessellationDomainOrigin(m_testConfig.tessDomainOriginConfig.staticValue)
+							.disableViewportState(disableViewportState);
+
+		const auto staticRasterizationStateCreateInfo	= ((m_testConfig.favorStaticNullPointers
+															&& m_testConfig.depthClampEnableConfig.dynamicValue
+															&& m_testConfig.rastDiscardEnableConfig.dynamicValue
+															&& m_testConfig.polygonModeConfig.dynamicValue
+															&& m_testConfig.cullModeConfig.dynamicValue
+															&& m_testConfig.frontFaceConfig.dynamicValue
+															&& m_testConfig.depthBiasEnableConfig.dynamicValue
+															&& m_testConfig.depthBiasConfig.dynamicValue
+															&& m_testConfig.lineWidthConfig.dynamicValue)
+														? nullptr
+														: &rasterizationStateCreateInfo);
+
+		DE_ASSERT(!m_testConfig.useExtraDynPipeline || !m_testConfig.useMeshShaders);
 
 #ifndef CTS_USES_VULKANSC
 		if (m_testConfig.useMeshShaders)
@@ -5587,12 +5720,36 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 												0u,
 												DE_NULL,
 												*dynamicMeshModule,
-												&rasterizationStateCreateInfo);
+												staticRasterizationStateCreateInfo);
 		}
 		else
 #endif // CTS_USES_VULKANSC
 		{
-			graphicsPipeline.setupVertexInputState(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
+			const auto staticVertexInputStateCreateInfo		= ((m_testConfig.favorStaticNullPointers && m_testConfig.testVertexDynamic())
+															? nullptr
+															: &vertexInputStateCreateInfo);
+
+			const auto staticInputAssemblyStateCreateInfo	= ((m_testConfig.favorStaticNullPointers && m_testConfig.primRestartEnableConfig.dynamicValue && m_testConfig.topologyConfig.dynamicValue)
+															? nullptr
+															: &inputAssemblyStateCreateInfo);
+
+			const vk::VkPipelineVertexInputStateCreateInfo emptyVertexInputStateCreateInfo =
+			{
+				vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	//	VkStructureType								sType;
+				DE_NULL,														//	const void*									pNext;
+				0u,																//	VkPipelineVertexInputStateCreateFlags		flags;
+				0u,																//	deUint32									vertexBindingDescriptionCount;
+				DE_NULL,														//	const VkVertexInputBindingDescription*		pVertexBindingDescriptions;
+				0u,																//	deUint32									vertexAttributeDescriptionCount;
+				DE_NULL,														//	const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+			};
+
+			graphicsPipeline.setupVertexInputState(
+												staticVertexInputStateCreateInfo,
+												staticInputAssemblyStateCreateInfo,
+												VK_NULL_HANDLE,
+												vk::PipelineCreationFeedbackCreateInfoWrapper(),
+												m_testConfig.favorStaticNullPointers)
 							.setupPreRasterizationShaderState(
 												viewports,
 												scissors,
@@ -5600,20 +5757,75 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 												*renderPass,
 												0u,
 												*dynamicVertModule,
-												&rasterizationStateCreateInfo,
+												staticRasterizationStateCreateInfo,
 												*tescModule,
 												*teseModule,
 												*geomModule);
+
+			if (m_testConfig.useExtraDynPipeline)
+				extraDynPipeline.setupVertexInputState(
+													&emptyVertexInputStateCreateInfo,
+													staticInputAssemblyStateCreateInfo,
+													VK_NULL_HANDLE,
+													vk::PipelineCreationFeedbackCreateInfoWrapper(),
+													m_testConfig.favorStaticNullPointers)
+								.setupPreRasterizationShaderState(
+													viewports,
+													scissors,
+													*pipelineLayout,
+													*renderPass,
+													0u,
+													*vertDPCPModule,
+													staticRasterizationStateCreateInfo);
 		}
 
+		const auto staticMultisampleStateCreateInfo	= ((m_testConfig.favorStaticNullPointers
+														&& m_testConfig.rasterizationSamplesConfig.dynamicValue
+														&& m_testConfig.sampleMaskConfig.dynamicValue
+														&& m_testConfig.alphaToCoverageConfig.dynamicValue
+														&& m_testConfig.alphaToOneConfig.dynamicValue)
+													? nullptr
+													: &multisampleStateCreateInfo);
+
+		const auto staticDepthStencilStateCreateInfo	= ((m_testConfig.favorStaticNullPointers
+															&& m_testConfig.depthTestEnableConfig.dynamicValue
+															&& m_testConfig.depthWriteEnableConfig.dynamicValue
+															&& m_testConfig.depthCompareOpConfig.dynamicValue
+															&& m_testConfig.depthBoundsTestEnableConfig.dynamicValue
+															&& m_testConfig.stencilTestEnableConfig.dynamicValue
+															&& m_testConfig.stencilOpConfig.dynamicValue
+															&& m_testConfig.depthBoundsConfig.dynamicValue)
+														? nullptr
+														: &depthStencilStateCreateInfo);
+
+		const auto staticColorBlendStateCreateInfo		= ((m_testConfig.favorStaticNullPointers
+															&& m_testConfig.logicOpEnableConfig.dynamicValue
+															&& m_testConfig.logicOpConfig.dynamicValue
+															&& m_testConfig.colorBlendEnableConfig.dynamicValue
+															&& m_testConfig.colorBlendEquationConfig.dynamicValue
+															&& (m_testConfig.colorBlendBoth
+																|| !m_testConfig.colorBlendEquationConfig.staticValue.isAdvanced())
+															&& m_testConfig.colorWriteMaskConfig.dynamicValue
+															&& m_testConfig.blendConstantsConfig.dynamicValue)
+														? nullptr
+														: &colorBlendStateCreateInfo);
 		graphicsPipeline
 #ifndef CTS_USES_VULKANSC
 						.setRepresentativeFragmentTestState(pReprFragment.get())
 #endif // CTS_USES_VULKANSC
-						.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *dynamicFragModule, &depthStencilStateCreateInfo, &multisampleStateCreateInfo)
-						.setupFragmentOutputState(*renderPass, 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
+						.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *dynamicFragModule, staticDepthStencilStateCreateInfo, staticMultisampleStateCreateInfo)
+						.setupFragmentOutputState(*renderPass, 0u, staticColorBlendStateCreateInfo, staticMultisampleStateCreateInfo)
 						.setMonolithicPipelineLayout(*pipelineLayout)
 						.buildPipeline();
+		if (m_testConfig.useExtraDynPipeline)
+			extraDynPipeline
+	#ifndef CTS_USES_VULKANSC
+							.setRepresentativeFragmentTestState(pReprFragment.get())
+	#endif // CTS_USES_VULKANSC
+							.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *dynamicFragModule, staticDepthStencilStateCreateInfo, staticMultisampleStateCreateInfo)
+							.setupFragmentOutputState(*renderPass, 0u, staticColorBlendStateCreateInfo, staticMultisampleStateCreateInfo)
+							.setMonolithicPipelineLayout(*pipelineLayout)
+							.buildPipeline();
 	}
 
 	vk::GraphicsPipelineWrapper meshNoOutPipeline(vkd, device, m_testConfig.pipelineConstructionType);
@@ -5688,7 +5900,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		vk::beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffers[iteration].get(), vk::makeRect2D(kFramebufferWidth, kFramebufferHeight), static_cast<deUint32>(clearValues.size()), clearValues.data());
 
 			// Bind a static pipeline first if needed.
-			if (bindStaticFirst && iteration == 0u)
+			if (kBindStaticFirst && iteration == 0u)
 				vkd.cmdBindPipeline(cmdBuffer, pipelineBindPoint, staticPipeline.getPipeline());
 
 			// Maybe set extended dynamic state here.
@@ -5718,6 +5930,16 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 					// setting it to a wrong value here, resulting in test failures. We keep the right value instead.
 					if (kSequenceOrdering != SequenceOrdering::CMD_BUFFER_START && kSequenceOrdering != SequenceOrdering::BETWEEN_PIPELINES)
 						vkd.cmdSetPatchControlPointsEXT(cmdBuffer, m_testConfig.patchControlPointsConfig.staticValue);
+
+					vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+				}
+
+				if (m_testConfig.useExtraDynPipeline)
+				{
+					vkd.cmdBindPipeline(cmdBuffer, pipelineBindPoint, extraDynPipeline.getPipeline());
+
+					if (kSequenceOrdering == SequenceOrdering::BEFORE_DRAW || kSequenceOrdering == SequenceOrdering::AFTER_PIPELINES || kSequenceOrdering == SequenceOrdering::BEFORE_GOOD_STATIC)
+						setDynamicStates(m_testConfig, vkd, cmdBuffer);
 
 					vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
 				}
@@ -5795,7 +6017,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 						vkd.cmdBindShadingRateImageNV(cmdBuffer, VK_NULL_HANDLE, vk::VK_IMAGE_LAYOUT_GENERAL);
 #endif // CTS_USES_VULKANSC
 
-					if (m_testConfig.representativeFragmentTest)
+					if (kFragAtomics)
 						vkd.cmdBindDescriptorSets(cmdBuffer, pipelineBindPoint, pipelineLayout.get(), m_testConfig.getFragDescriptorSetIndex(), 1u, &fragDescriptorSet.get(), 0u, nullptr);
 
 					// Draw mesh.
@@ -5863,7 +6085,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		vk::endRenderPass(vkd, cmdBuffer);
 	}
 
-	if (m_testConfig.representativeFragmentTest)
+	if (kFragAtomics)
 	{
 		const auto bufferBarrier = vk::makeMemoryBarrier(vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT);
 		vk::cmdPipelineMemoryBarrier(vkd, cmdBuffer, vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, &bufferBarrier);
@@ -5983,19 +6205,36 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	}
 
 	// Check storage buffer if used.
-	if (m_testConfig.representativeFragmentTest)
+	uint32_t fragCounter = 0u;
+
+	if (kFragAtomics)
 	{
 		DE_ASSERT(m_testConfig.oversizedTriangle);
 		DE_ASSERT(m_testConfig.meshParams.size() == 1u);
 		DE_ASSERT(!m_testConfig.depthWriteEnableConfig.dynamicValue);	// No dynamic value for depth writes.
 		DE_ASSERT(!m_testConfig.depthWriteEnableConfig.staticValue);	// No depth writes.
 
+		auto& counterBufferAlloc	= counterBuffer->getAllocation();
+		void* counterBufferData		= counterBufferAlloc.getHostPtr();
+		vk::invalidateAlloc(vkd, device, counterBufferAlloc);
+
+		deMemcpy(&fragCounter, counterBufferData, sizeof(fragCounter));
+	}
+
+	if (m_testConfig.representativeFragmentTest)
+	{
+		DE_ASSERT(!m_testConfig.rasterizationSamplesConfig.dynamicValue);
+
 		// The expected number of invocations depends on how many draws are performed with the test enabled.
 		// Draws with the test disabled should always result in kFramebufferHeight * kFramebufferWidth invocations.
 		// Draws with the test enabled should result in at least 1 invocation, maybe more.
 		uint32_t minValue = 0u;
 
-		const uint32_t minInvocations[] = { (kFramebufferHeight * kFramebufferWidth), 1u };
+		const uint32_t minInvocations[] =
+		{
+			(kFramebufferHeight * kFramebufferWidth * static_cast<uint32_t>(m_testConfig.rasterizationSamplesConfig.staticValue)),
+			1u,
+		};
 
 		if (kNumIterations == 1u)
 		{
@@ -6004,7 +6243,6 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		}
 		else if (kNumIterations == 2u)
 		{
-
 			for (uint32_t i = 0u; i < kNumIterations; ++i)
 			{
 				bool testEnabled = false;
@@ -6031,13 +6269,6 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			DE_ASSERT(false);
 		}
 
-		auto& counterBufferAlloc	= counterBuffer->getAllocation();
-		void* counterBufferData		= counterBufferAlloc.getHostPtr();
-		vk::invalidateAlloc(vkd, device, counterBufferAlloc);
-
-		uint32_t fragCounter;
-		deMemcpy(&fragCounter, counterBufferData, sizeof(fragCounter));
-
 		log << tcu::TestLog::Message << "Fragment counter minimum value: " << minValue << tcu::TestLog::EndMessage;
 		log << tcu::TestLog::Message << "Fragment counter: " << fragCounter << tcu::TestLog::EndMessage;
 
@@ -6045,6 +6276,48 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		{
 			std::ostringstream msg;
 			msg << "Fragment shader invocation counter lower than expected: found " << fragCounter << " and expected at least " << minValue;
+			return tcu::TestStatus::fail(msg.str());
+		}
+	}
+	else if (kFragAtomics)
+	{
+		// The expected number of invocations depends on how many draws are performed and the sample count of each one.
+		// Draws with the test disabled should always result in kFramebufferHeight * kFramebufferWidth invocations.
+		// Draws with the test enabled should result in at least 1 invocation, maybe more.
+		uint32_t sampleCount = 0u;
+
+		if (kNumIterations == 1u)
+		{
+			sampleCount += static_cast<uint32_t>(m_testConfig.getActiveSampleCount());
+		}
+		else if (kNumIterations == 2u)
+		{
+			for (uint32_t i = 0u; i < kNumIterations; ++i)
+			{
+				// Actually varies depending on TWO_DRAWS_STATIC/_DYNAMIC, but does not affect results.
+				const bool staticDraw = (i == 0u);
+
+				if (staticDraw)
+					sampleCount += static_cast<uint32_t>(m_testConfig.rasterizationSamplesConfig.staticValue);
+				else
+				{
+					sampleCount += static_cast<uint32_t>(m_testConfig.rasterizationSamplesConfig.dynamicValue
+									? m_testConfig.rasterizationSamplesConfig.dynamicValue.get()
+									: m_testConfig.rasterizationSamplesConfig.staticValue);
+				}
+			}
+		}
+		else
+		{
+			DE_ASSERT(false);
+		}
+
+		const uint32_t expectedValue = sampleCount * kFramebufferWidth * kFramebufferHeight;
+
+		if (fragCounter != expectedValue)
+		{
+			std::ostringstream msg;
+			msg << "Fragment shader invocation count does not match expected value: found " << fragCounter << " and expected " << expectedValue;
 			return tcu::TestStatus::fail(msg.str());
 		}
 	}
@@ -7103,6 +7376,71 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_disable", "Dynamically disable depth clamp", config));
 		}
 
+		// "If the depth clamping state is changed dynamically, and the pipeline was not created with
+		// VK_DYNAMIC_STATE_DEPTH_CLIP_ENABLE_EXT enabled, then depth clipping is enabled when depth clamping is disabled and vice
+		// versa"
+		//
+		// Try to verify the implementation ignores the static depth clipping state. We cannot test the following sequence orderings for this:
+		// - BEFORE_GOOD_STATIC and TWO_DRAWS_STATIC because they use static-state pipelines, but for this specific case we need dynamic state as per the spec.
+		// - TWO_DRAWS_DYNAMIC because the first draw may modify the framebuffer with undesired side-effects.
+		if (kOrdering != SequenceOrdering::BEFORE_GOOD_STATIC && kOrdering != SequenceOrdering::TWO_DRAWS_DYNAMIC && kOrdering != SequenceOrdering::TWO_DRAWS_STATIC)
+		{
+			{
+				TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+				config.meshParams[0].depth					= -0.5f;
+				config.clearDepthValue						= 1.0f;
+				config.depthTestEnableConfig.staticValue	= true;
+				config.depthWriteEnableConfig.staticValue	= true;
+				config.depthCompareOpConfig.staticValue		= vk::VK_COMPARE_OP_ALWAYS;
+				config.viewportConfig.staticValue			= ViewportVec(1u, vk::makeViewport(0.0f, 0.0f, kWidthF, kHeightF, 0.5f, 1.0f));
+				config.expectedDepth						= 0.5f; // Geometry will be clamped to this value.
+
+				config.depthClampEnableConfig.staticValue	= false;
+				config.depthClampEnableConfig.dynamicValue	= true;
+
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_enable_no_clip", "Dynamically enable depth clamp while making sure depth clip is disabled", config));
+			}
+			{
+				TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+				config.meshParams[0].depth					= -0.5f;
+				config.clearDepthValue						= 1.0f;
+				config.depthTestEnableConfig.staticValue	= true;
+				config.depthWriteEnableConfig.staticValue	= true;
+				config.depthCompareOpConfig.staticValue		= vk::VK_COMPARE_OP_ALWAYS;
+				config.viewportConfig.staticValue			= ViewportVec(1u, vk::makeViewport(0.0f, 0.0f, kWidthF, kHeightF, 0.5f, 1.0f));
+				config.expectedDepth						= 1.0f; // Geometry should be clipped in this case.
+				config.referenceColor.reset					(new SingleColorGenerator(kDefaultClearColor));
+
+				// Enable clamping dynamically, with clipping enabled statically.
+				config.depthClampEnableConfig.staticValue	= false;
+				config.depthClampEnableConfig.dynamicValue	= true;
+				config.depthClipEnableConfig.staticValue	= OptBoolean(true);
+
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_enable_with_clip", "Dynamically enable depth clamp while keeping depth clip enabled statically", config));
+			}
+			{
+				TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+				config.meshParams[0].depth					= -0.5f;
+				config.clearDepthValue						= 1.0f;
+				config.depthTestEnableConfig.staticValue	= true;
+				config.depthWriteEnableConfig.staticValue	= true;
+				config.depthCompareOpConfig.staticValue		= vk::VK_COMPARE_OP_ALWAYS;
+				config.viewportConfig.staticValue			= ViewportVec(1u, vk::makeViewport(0.0f, 0.0f, kWidthF, kHeightF, 0.5f, 1.0f));
+				config.expectedDepth						= 1.0f; // Geometry should be clipped in this case.
+				config.referenceColor.reset					(new SingleColorGenerator(kDefaultClearColor));
+
+				config.depthClampEnableConfig.staticValue	= true;
+				config.depthClampEnableConfig.dynamicValue	= false;
+
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_disable_with_clip", "Dynamically disable depth clamp making sure depth clipping is enabled", config));
+			}
+			// Note: the combination of depth clamp disabled and depth clip disabled cannot be tested because if Zf falls outside
+			// [Zmin,Zmax] from the viewport, then the value of Zf is undefined during the depth test.
+		}
+
 		// Polygon mode.
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -7135,9 +7473,14 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			// Sample count.
 			{
 				TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
-				config.rasterizationSamplesConfig.staticValue	= inactiveSampleCount;
-				config.rasterizationSamplesConfig.dynamicValue	= activeSampleCount;
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, namePrefix + "rasterization_samples", "Dynamically set the rasterization sample count" + descSuffix, config));
+
+				// The static pipeline would be illegal due to VUID-VkGraphicsPipelineCreateInfo-multisampledRenderToSingleSampled-06853.
+				if (!config.useStaticPipeline())
+				{
+					config.rasterizationSamplesConfig.staticValue	= inactiveSampleCount;
+					config.rasterizationSamplesConfig.dynamicValue	= activeSampleCount;
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, namePrefix + "rasterization_samples", "Dynamically set the rasterization sample count" + descSuffix, config));
+				}
 			}
 
 			// Sample mask
@@ -7225,6 +7568,30 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.referenceColor.reset				(new TopLeftBorderGenerator(kDefaultTriangleColor, kDefaultTriangleColor, kDefaultClearColor, kDefaultClearColor));
 
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "sample_mask_count", "Dynamically set sample mask with slightly different sample count", config));
+		}
+
+		// Special rasterization samples case: make sure rasterization samples is taken from the dynamic value, but provide a larger mask.
+		{
+			const auto kLargeRasterizationSampleCount = vk::VK_SAMPLE_COUNT_64_BIT;
+			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+			// We cannot create a static pipeline with the configuration below because the render pass attachments will have a
+			// sample count of kMultiSampleCount and VUID-VkGraphicsPipelineCreateInfo-multisampledRenderToSingleSampled-06853
+			// applies here.
+			if (!config.useStaticPipeline())
+			{
+				config.rasterizationSamplesConfig.staticValue	= kLargeRasterizationSampleCount;
+				config.rasterizationSamplesConfig.dynamicValue	= kMultiSampleCount;
+				config.sampleMaskConfig.staticValue				= SampleMaskVec{ 0xFFFFFFF0u, 0xFFFFFFFFu }; // Last 4 bits off.
+				config.referenceColor.reset						(new SingleColorGenerator(kDefaultClearColor));
+
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "large_static_rasterization_samples_off", "Dynamically set the rasterization samples to a low value while disabling bits corresponding to the dynamic sample count", config));
+
+				config.sampleMaskConfig.staticValue				= SampleMaskVec{ 0xFu, 0u }; // Last 4 bits on.
+				config.referenceColor.reset						(new SingleColorGenerator(kDefaultTriangleColor));
+
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "large_static_rasterization_samples_on", "Dynamically set the rasterization samples to a low value while enabling bits corresponding to the dynamic sample count", config));
+			}
 		}
 
 		// Color write mask.
@@ -8097,8 +8464,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 		// Depth bounds test.
 		{
 			TestConfig baseConfig(pipelineConstructionType, kOrdering, kUseMeshShaders);
-			baseConfig.minDepthBounds							= 0.25f;
-			baseConfig.maxDepthBounds							= 0.75f;
+			baseConfig.depthBoundsConfig.staticValue			= std::make_pair(0.25f, 0.75f);
 			baseConfig.meshParams[0].depth						= 0.0f;
 
 			{
@@ -8213,135 +8579,149 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 						for (int subCaseIdx = 0; subCaseIdx < subCases; ++subCaseIdx)
 						{
-							const bool depthFail	= (subCaseIdx > 0);				// depthFail would be the second variant.
-							const bool globalPass	= (wouldPass && !depthFail);	// Global result of the stencil+depth test.
-
-							// Start tuning test parameters.
-							TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
-
-							// No face culling is applied by default, so both the front and back operations could apply depending on the mesh.
-							if (face.face == vk::VK_STENCIL_FACE_FRONT_BIT)
+							for (int extraPipelineIter = 0; extraPipelineIter < 2; ++extraPipelineIter)
 							{
-								// Default parameters are OK.
-							}
-							else if (face.face == vk::VK_STENCIL_FACE_BACK_BIT)
-							{
-								// Reverse the mesh so it applies the back operation.
-								config.meshParams[0].reversed = true;
-							}
-							else	// Front and back.
-							{
-								// Draw both a front and a back-facing mesh so both are applied.
-								// The first mesh will be drawn in the top half and the second mesh in the bottom half.
+								const bool useExtraPipeline = (extraPipelineIter > 0);		// Bind and draw with another pipeline using the same dynamic states.
 
-								// Make the second mesh a reversed copy of the first mesh.
-								config.meshParams.push_back(config.meshParams.front());
-								config.meshParams.back().reversed = true;
+								if (useExtraPipeline && (kOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC || kOrdering == SequenceOrdering::TWO_DRAWS_STATIC))
+									continue;
 
-								// Apply scale and offset to the top mesh.
-								config.meshParams.front().scaleY = 0.5f;
-								config.meshParams.front().offsetY = -0.5f;
+								if (useExtraPipeline && kUseMeshShaders)
+									continue;
 
-								// Apply scale and offset to the bottom mesh.
-								config.meshParams.back().scaleY = 0.5f;
-								config.meshParams.back().offsetY = 0.5f;
-							}
+								const bool depthFail		= (subCaseIdx > 0);				// depthFail would be the second variant.
+								const bool globalPass		= (wouldPass && !depthFail);	// Global result of the stencil+depth test.
 
-							// Enable the stencil test.
-							config.stencilTestEnableConfig.staticValue = true;
+								// Start tuning test parameters.
+								TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
 
-							// Set dynamic configuration.
-							StencilOpParams dynamicStencilConfig;
-							dynamicStencilConfig.faceMask		= face.face;
-							dynamicStencilConfig.compareOp		= compare.compareOp;
-							dynamicStencilConfig.failOp			= vk::VK_STENCIL_OP_MAX_ENUM;
-							dynamicStencilConfig.passOp			= vk::VK_STENCIL_OP_MAX_ENUM;
-							dynamicStencilConfig.depthFailOp	= vk::VK_STENCIL_OP_MAX_ENUM;
-
-							// Set operations so only the appropriate operation for this case gives the right result.
-							vk::VkStencilOp* activeOp		= nullptr;
-							vk::VkStencilOp* inactiveOps[2]	= { nullptr, nullptr };
-							if (wouldPass)
-							{
-								if (depthFail)
+								// No face culling is applied by default, so both the front and back operations could apply depending on the mesh.
+								if (face.face == vk::VK_STENCIL_FACE_FRONT_BIT)
 								{
-									activeOp		= &dynamicStencilConfig.depthFailOp;
-									inactiveOps[0]	= &dynamicStencilConfig.passOp;
-									inactiveOps[1]	= &dynamicStencilConfig.failOp;
+									// Default parameters are OK.
+								}
+								else if (face.face == vk::VK_STENCIL_FACE_BACK_BIT)
+								{
+									// Reverse the mesh so it applies the back operation.
+									config.meshParams[0].reversed = true;
+								}
+								else	// Front and back.
+								{
+									// Draw both a front and a back-facing mesh so both are applied.
+									// The first mesh will be drawn in the top half and the second mesh in the bottom half.
+
+									// Make the second mesh a reversed copy of the first mesh.
+									config.meshParams.push_back(config.meshParams.front());
+									config.meshParams.back().reversed = true;
+
+									// Apply scale and offset to the top mesh.
+									config.meshParams.front().scaleY = 0.5f;
+									config.meshParams.front().offsetY = -0.5f;
+
+									// Apply scale and offset to the bottom mesh.
+									config.meshParams.back().scaleY = 0.5f;
+									config.meshParams.back().offsetY = 0.5f;
+								}
+
+								// Enable the stencil test.
+								config.stencilTestEnableConfig.staticValue = true;
+
+								// Set dynamic configuration.
+								StencilOpParams dynamicStencilConfig;
+								dynamicStencilConfig.faceMask		= face.face;
+								dynamicStencilConfig.compareOp		= compare.compareOp;
+								dynamicStencilConfig.failOp			= vk::VK_STENCIL_OP_MAX_ENUM;
+								dynamicStencilConfig.passOp			= vk::VK_STENCIL_OP_MAX_ENUM;
+								dynamicStencilConfig.depthFailOp	= vk::VK_STENCIL_OP_MAX_ENUM;
+
+								// Set operations so only the appropriate operation for this case gives the right result.
+								vk::VkStencilOp* activeOp		= nullptr;
+								vk::VkStencilOp* inactiveOps[2]	= { nullptr, nullptr };
+								if (wouldPass)
+								{
+									if (depthFail)
+									{
+										activeOp		= &dynamicStencilConfig.depthFailOp;
+										inactiveOps[0]	= &dynamicStencilConfig.passOp;
+										inactiveOps[1]	= &dynamicStencilConfig.failOp;
+									}
+									else
+									{
+										activeOp		= &dynamicStencilConfig.passOp;
+										inactiveOps[0]	= &dynamicStencilConfig.depthFailOp;
+										inactiveOps[1]	= &dynamicStencilConfig.failOp;
+									}
 								}
 								else
 								{
-									activeOp		= &dynamicStencilConfig.passOp;
-									inactiveOps[0]	= &dynamicStencilConfig.depthFailOp;
-									inactiveOps[1]	= &dynamicStencilConfig.failOp;
+									activeOp		= &dynamicStencilConfig.failOp;
+									inactiveOps[0]	= &dynamicStencilConfig.passOp;
+									inactiveOps[1]	= &dynamicStencilConfig.depthFailOp;
 								}
+
+								*activeOp = op.stencilOp;
+								*inactiveOps[0] = op.incompatibleOp;
+								*inactiveOps[1] = op.incompatibleOp;
+
+								// Make sure all ops have been configured properly.
+								DE_ASSERT(dynamicStencilConfig.failOp != vk::VK_STENCIL_OP_MAX_ENUM);
+								DE_ASSERT(dynamicStencilConfig.passOp != vk::VK_STENCIL_OP_MAX_ENUM);
+								DE_ASSERT(dynamicStencilConfig.depthFailOp != vk::VK_STENCIL_OP_MAX_ENUM);
+
+								// Set an incompatible static operation too.
+								auto& staticStencilConfig		= config.stencilOpConfig.staticValue.front();
+								staticStencilConfig.faceMask	= face.face;
+								staticStencilConfig.compareOp	= (globalPass ? vk::VK_COMPARE_OP_NEVER : vk::VK_COMPARE_OP_ALWAYS);
+								staticStencilConfig.passOp		= op.incompatibleOp;
+								staticStencilConfig.failOp		= op.incompatibleOp;
+								staticStencilConfig.depthFailOp	= op.incompatibleOp;
+
+								// Set dynamic configuration.
+								StencilOpVec stencilOps;
+								stencilOps.push_back(dynamicStencilConfig);
+
+								if (stencilOps.front().faceMask == vk::VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM)
+								{
+									// This is the dual case. We will set the front and back face values with two separate calls.
+									stencilOps.push_back(stencilOps.front());
+									stencilOps.front().faceMask		= vk::VK_STENCIL_FACE_FRONT_BIT;
+									stencilOps.back().faceMask		= vk::VK_STENCIL_FACE_BACK_BIT;
+									staticStencilConfig.faceMask	= vk::VK_STENCIL_FACE_FRONT_AND_BACK;
+								}
+
+								config.stencilOpConfig.dynamicValue	= tcu::just(stencilOps);
+								config.clearStencilValue			= clearVal;
+								config.referenceStencil				= refValU32;
+
+								if (depthFail)
+								{
+									// Enable depth test and make it fail.
+									config.depthTestEnableConfig.staticValue	= true;
+									config.clearDepthValue						= 0.5f;
+									config.depthCompareOpConfig.staticValue		= vk::VK_COMPARE_OP_LESS;
+
+									for (auto& meshPar : config.meshParams)
+										meshPar.depth = 0.75f;
+								}
+
+								// Set expected outcome.
+								config.referenceColor.reset	(new SingleColorGenerator(globalPass ? kDefaultTriangleColor : kDefaultClearColor));
+								config.expectedDepth		= config.clearDepthValue; // No depth writing by default.
+								config.expectedStencil		= stencilResult(op.stencilOp, clearVal, refValU8, kMinVal, kMaxVal);
+
+								config.useExtraDynPipeline	= useExtraPipeline;
+
+								const std::string testName = std::string("stencil_state")
+									+ ((useExtraPipeline) ? "_extra_pipeline" : "")
+									+ "_" + face.name
+									+ "_" + compare.name
+									+ "_" + op.name
+									+ "_clear_" + de::toString(static_cast<int>(clearVal))
+									+ "_ref_" + de::toString(refVal)
+									+ "_" + (wouldPass ? (depthFail ? "depthfail" : "pass") : "fail");
+
+								orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, "Dynamically configure stencil test, variant " + testName, config));
 							}
-							else
-							{
-								activeOp		= &dynamicStencilConfig.failOp;
-								inactiveOps[0]	= &dynamicStencilConfig.passOp;
-								inactiveOps[1]	= &dynamicStencilConfig.depthFailOp;
-							}
-
-							*activeOp = op.stencilOp;
-							*inactiveOps[0] = op.incompatibleOp;
-							*inactiveOps[1] = op.incompatibleOp;
-
-							// Make sure all ops have been configured properly.
-							DE_ASSERT(dynamicStencilConfig.failOp != vk::VK_STENCIL_OP_MAX_ENUM);
-							DE_ASSERT(dynamicStencilConfig.passOp != vk::VK_STENCIL_OP_MAX_ENUM);
-							DE_ASSERT(dynamicStencilConfig.depthFailOp != vk::VK_STENCIL_OP_MAX_ENUM);
-
-							// Set an incompatible static operation too.
-							auto& staticStencilConfig		= config.stencilOpConfig.staticValue.front();
-							staticStencilConfig.faceMask	= face.face;
-							staticStencilConfig.compareOp	= (globalPass ? vk::VK_COMPARE_OP_NEVER : vk::VK_COMPARE_OP_ALWAYS);
-							staticStencilConfig.passOp		= op.incompatibleOp;
-							staticStencilConfig.failOp		= op.incompatibleOp;
-							staticStencilConfig.depthFailOp	= op.incompatibleOp;
-
-							// Set dynamic configuration.
-							StencilOpVec stencilOps;
-							stencilOps.push_back(dynamicStencilConfig);
-
-							if (stencilOps.front().faceMask == vk::VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM)
-							{
-								// This is the dual case. We will set the front and back face values with two separate calls.
-								stencilOps.push_back(stencilOps.front());
-								stencilOps.front().faceMask		= vk::VK_STENCIL_FACE_FRONT_BIT;
-								stencilOps.back().faceMask		= vk::VK_STENCIL_FACE_BACK_BIT;
-								staticStencilConfig.faceMask	= vk::VK_STENCIL_FACE_FRONT_AND_BACK;
-							}
-
-							config.stencilOpConfig.dynamicValue	= tcu::just(stencilOps);
-							config.clearStencilValue			= clearVal;
-							config.referenceStencil				= refValU32;
-
-							if (depthFail)
-							{
-								// Enable depth test and make it fail.
-								config.depthTestEnableConfig.staticValue	= true;
-								config.clearDepthValue						= 0.5f;
-								config.depthCompareOpConfig.staticValue		= vk::VK_COMPARE_OP_LESS;
-
-								for (auto& meshPar : config.meshParams)
-									meshPar.depth = 0.75f;
-							}
-
-							// Set expected outcome.
-							config.referenceColor.reset	(new SingleColorGenerator(globalPass ? kDefaultTriangleColor : kDefaultClearColor));
-							config.expectedDepth		= config.clearDepthValue; // No depth writing by default.
-							config.expectedStencil		= stencilResult(op.stencilOp, clearVal, refValU8, kMinVal, kMaxVal);
-
-							const std::string testName = std::string("stencil_state")
-								+ "_" + face.name
-								+ "_" + compare.name
-								+ "_" + op.name
-								+ "_clear_" + de::toString(static_cast<int>(clearVal))
-								+ "_ref_" + de::toString(refVal)
-								+ "_" + (wouldPass ? (depthFail ? "depthfail" : "pass") : "fail");
-
-							orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, "Dynamically configure stencil test, variant " + testName, config));
 						}
 					}
 				}
@@ -8418,11 +8798,146 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			}
 		}
 
+		// Null state pointers.
+		{
+			TestConfig baseConfig(pipelineConstructionType, kOrdering, kUseMeshShaders);
+			baseConfig.favorStaticNullPointers = true;
+
+			if (!kUseMeshShaders)
+			{
+				TestConfig config(pipelineConstructionType, kOrdering, false, getVertexWithPaddingGenerator(), getVertexWithExtraAttributesGenerator());
+				config.favorStaticNullPointers = true;
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_vertex_input_state", "Use null pVertexInputState", config));
+			}
+
+			if (!kUseMeshShaders)
+			{
+				TestConfig config(baseConfig);
+				config.topologyConfig.staticValue			= vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+				config.topologyConfig.dynamicValue			= vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
+				config.extraLineRestarts					= true;
+				config.primRestartEnableConfig.staticValue	= false;
+				config.primRestartEnableConfig.dynamicValue	= tcu::just(true);
+				config.referenceColor.reset					(new CenterStripGenerator(kDefaultTriangleColor, kDefaultClearColor));
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_input_assembly_state", "Use null pVertexInputState", config));
+			}
+
+			if (!kUseMeshShaders)
+			{
+				TestConfig config(baseConfig);
+				config.topologyConfig.staticValue = vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+				config.patchControlPointsConfig.staticValue = 1;
+				config.patchControlPointsConfig.dynamicValue = 3;
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_tessellation_state", "Use null pTessellationState", config));
+			}
+
+			{
+				TestConfig config(baseConfig);
+
+				config.viewportConfig.staticValue	= ViewportVec{
+					vk::makeViewport(kHalfWidthF, 0.0f, kHalfWidthF, kHeightF, 0.0f, 1.0f),	// Right.
+					vk::makeViewport(0.0f, 0.0f, kHalfWidthF, kHeightF, 0.0f, 1.0f),		// Left.
+				};
+
+				config.scissorConfig.staticValue	= ScissorVec{
+					vk::makeRect2D(kHalfWidthI, 0, kHalfWidthU, kFramebufferHeight),
+					vk::makeRect2D(kHalfWidthU, kFramebufferHeight),
+				};
+
+				config.scissorConfig.dynamicValue	= ScissorVec{config.scissorConfig.staticValue.back(), config.scissorConfig.staticValue.front()};
+				config.viewportConfig.dynamicValue	= ViewportVec{config.viewportConfig.staticValue.back(), config.viewportConfig.staticValue.front()};
+
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_viewport_state", "Use null pViewportState", config));
+			}
+
+			{
+				TestConfig config(baseConfig);
+				config.depthClampEnableConfig.staticValue		= true;
+				config.depthClampEnableConfig.dynamicValue		= false;
+				config.rastDiscardEnableConfig.staticValue		= true;
+				config.rastDiscardEnableConfig.dynamicValue		= false;
+				config.polygonModeConfig.staticValue			= vk::VK_POLYGON_MODE_POINT;
+				config.polygonModeConfig.dynamicValue			= vk::VK_POLYGON_MODE_FILL;
+				config.cullModeConfig.staticValue				= vk::VK_CULL_MODE_FRONT_AND_BACK;
+				config.cullModeConfig.dynamicValue				= vk::VK_CULL_MODE_NONE;
+				config.frontFaceConfig.staticValue				= vk::VK_FRONT_FACE_CLOCKWISE;
+				config.frontFaceConfig.dynamicValue				= vk::VK_FRONT_FACE_COUNTER_CLOCKWISE;
+				config.depthBiasEnableConfig.staticValue		= true;
+				config.depthBiasEnableConfig.dynamicValue		= false;
+				config.depthBiasConfig.staticValue				= DepthBiasParams{1.0f, 1.0f};
+				config.depthBiasConfig.dynamicValue				= kNoDepthBiasParams;
+				config.lineWidthConfig.staticValue				= 0.0f;
+				config.lineWidthConfig.dynamicValue				= 1.0f;
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_rasterization_state", "Use null pRasterizationState", config));
+			}
+
+			{
+				TestConfig config(baseConfig);
+				config.rasterizationSamplesConfig.staticValue	= kMultiSampleCount;
+				config.rasterizationSamplesConfig.dynamicValue	= kSingleSampleCount;
+				config.sampleMaskConfig.staticValue				= SampleMaskVec(1u, 0u);
+				config.sampleMaskConfig.dynamicValue			= SampleMaskVec(1u, 0xFFu);
+				config.alphaToCoverageConfig.staticValue		= true;
+				config.alphaToCoverageConfig.dynamicValue		= false;
+				config.alphaToOneConfig.staticValue				= true;
+				config.alphaToOneConfig.dynamicValue			= false;
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_multisample_state", "Use null pMultisampleState", config));
+			}
+
+			{
+				TestConfig config(baseConfig);
+				config.depthTestEnableConfig.staticValue		= true;
+				config.depthTestEnableConfig.dynamicValue		= false;
+				config.depthWriteEnableConfig.staticValue		= true;
+				config.depthWriteEnableConfig.dynamicValue		= false;
+				config.depthCompareOpConfig.staticValue			= vk::VK_COMPARE_OP_NEVER;
+				config.depthCompareOpConfig.dynamicValue		= vk::VK_COMPARE_OP_ALWAYS;
+				config.depthBoundsTestEnableConfig.staticValue	= true;
+				config.depthBoundsTestEnableConfig.dynamicValue	= false;
+				config.stencilTestEnableConfig.staticValue		= true;
+				config.stencilTestEnableConfig.dynamicValue		= false;
+				config.stencilOpConfig.staticValue				= StencilOpVec(1u, StencilOpParams{vk::VK_STENCIL_FACE_FRONT_AND_BACK, vk::VK_STENCIL_OP_INVERT, vk::VK_STENCIL_OP_INVERT, vk::VK_STENCIL_OP_INVERT, vk::VK_COMPARE_OP_NEVER});
+				config.stencilOpConfig.dynamicValue				= StencilOpVec(1u, StencilOpParams{vk::VK_STENCIL_FACE_FRONT_AND_BACK, vk::VK_STENCIL_OP_KEEP, vk::VK_STENCIL_OP_KEEP, vk::VK_STENCIL_OP_KEEP, vk::VK_COMPARE_OP_ALWAYS});
+				config.depthBoundsConfig.staticValue			= std::make_pair(1.0f, 1.0f);
+				config.depthBoundsConfig.dynamicValue			= std::make_pair(0.0f, 0.0f);
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_depth_stencil_state", "Use null pDepthStencilState", config));
+			}
+
+			{
+				TestConfig config(baseConfig);
+				config.logicOpEnableConfig.staticValue			= true;
+				config.logicOpEnableConfig.dynamicValue			= false;
+				config.logicOpConfig.staticValue				= vk::VK_LOGIC_OP_CLEAR;
+				config.logicOpConfig.dynamicValue				= vk::VK_LOGIC_OP_COPY;
+				config.colorBlendEnableConfig.staticValue		= true;
+				config.colorBlendEnableConfig.dynamicValue		= false;
+				config.colorBlendEquationConfig.staticValue		= ColorBlendEq();
+				config.colorBlendEquationConfig.dynamicValue	= ColorBlendEq(vk::VK_BLEND_FACTOR_ONE, vk::VK_BLEND_FACTOR_ONE, vk::VK_BLEND_OP_ADD, vk::VK_BLEND_FACTOR_ONE, vk::VK_BLEND_FACTOR_ONE, vk::VK_BLEND_OP_ADD);
+				config.colorWriteMaskConfig.staticValue			= 0u;
+				config.colorWriteMaskConfig.dynamicValue		= (CR | CG | CB | CA);
+				config.blendConstantsConfig.staticValue			= BlendConstArray{1.0f, 1.0f, 1.0f, 1.0f};
+				config.blendConstantsConfig.dynamicValue		= BlendConstArray{0.0f, 0.0f, 0.0f, 0.0f};
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_color_blend_state", "Use null pColorBlendState", config));
+			}
+		}
+
+		{
+			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+			config.sampleShadingEnable						= true;
+			config.minSampleShading							= 1.0f;
+			config.forceAtomicCounters						= true;
+			config.oversizedTriangle						= true;
+			config.rasterizationSamplesConfig.staticValue	= kSingleSampleCount;
+			config.rasterizationSamplesConfig.dynamicValue	= kMultiSampleCount;
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "sample_shading_sample_count", "Test number of frag shader invocations with sample shading enabled and dynamic sample counts", config));
+		}
+
 		tcu::TestCaseGroup* group = (kUseMeshShaders ? meshShaderGroup.get() : extendedDynamicStateGroup.get());
 		group->addChild(orderingGroup.release());
 	}
 
 	extendedDynamicStateGroup->addChild(meshShaderGroup.release());
+	extendedDynamicStateGroup->addChild(createExtendedDynamicStateMiscTests(testCtx, pipelineConstructionType));
 	return extendedDynamicStateGroup.release();
 }
 
