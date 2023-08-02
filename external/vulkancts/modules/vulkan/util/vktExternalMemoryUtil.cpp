@@ -35,6 +35,7 @@
 
 #if (DE_OS == DE_OS_WIN32)
 #	define WIN32_LEAN_AND_MEAN
+#	define NOMINMAX
 #	include <windows.h>
 #endif
 
@@ -54,6 +55,8 @@
 #	include <zircon/types.h>
 #endif
 
+#include <limits>
+
 namespace vkt
 {
 namespace ExternalMemoryUtil
@@ -61,10 +64,12 @@ namespace ExternalMemoryUtil
 namespace
 {
 
+constexpr int kInvalidFd = std::numeric_limits<int>::min();
+
 } // anonymous
 
 NativeHandle::NativeHandle (void)
-	: m_fd						(-1)
+	: m_fd						(kInvalidFd)
 	, m_zirconHandle			(0)
 	, m_win32HandleType			(WIN32HANDLETYPE_LAST)
 	, m_win32Handle				(DE_NULL)
@@ -74,7 +79,7 @@ NativeHandle::NativeHandle (void)
 }
 
 NativeHandle::NativeHandle (const NativeHandle& other)
-	: m_fd						(-1)
+	: m_fd						(kInvalidFd)
 	, m_zirconHandle			(0)
 	, m_win32HandleType			(WIN32HANDLETYPE_LAST)
 	, m_win32Handle				(DE_NULL)
@@ -110,7 +115,7 @@ NativeHandle::NativeHandle (const NativeHandle& other)
 		{
 			case WIN32HANDLETYPE_NT:
 			{
-				DE_ASSERT(other.m_fd == -1);
+				DE_ASSERT(other.m_fd == kInvalidFd);
 				DE_ASSERT(!other.m_androidHardwareBuffer.internal);
 
 				const HANDLE process = ::GetCurrentProcess();
@@ -134,7 +139,7 @@ NativeHandle::NativeHandle (const NativeHandle& other)
 	}
 	else if (other.m_androidHardwareBuffer.internal)
 	{
-		DE_ASSERT(other.m_fd == -1);
+		DE_ASSERT(other.m_fd == kInvalidFd);
 		DE_ASSERT(!other.m_win32Handle.internal);
 		m_androidHardwareBuffer = other.m_androidHardwareBuffer;
 
@@ -158,7 +163,7 @@ NativeHandle::NativeHandle (int fd)
 }
 
 NativeHandle::NativeHandle (Win32HandleType handleType, vk::pt::Win32Handle handle)
-	: m_fd						(-1)
+	: m_fd						(kInvalidFd)
 	, m_zirconHandle			(0)
 	, m_win32HandleType			(handleType)
 	, m_win32Handle				(handle)
@@ -168,7 +173,7 @@ NativeHandle::NativeHandle (Win32HandleType handleType, vk::pt::Win32Handle hand
 }
 
 NativeHandle::NativeHandle (vk::pt::AndroidHardwareBufferPtr buffer)
-	: m_fd						(-1)
+	: m_fd						(kInvalidFd)
 	, m_zirconHandle			(0)
 	, m_win32HandleType			(WIN32HANDLETYPE_LAST)
 	, m_win32Handle				(DE_NULL)
@@ -211,7 +216,7 @@ void NativeHandle::reset (void)
 		switch (m_win32HandleType)
 		{
 			case WIN32HANDLETYPE_NT:
-				DE_ASSERT(m_fd == -1);
+				DE_ASSERT(m_fd == kInvalidFd);
 				DE_ASSERT(!m_androidHardwareBuffer.internal);
 				::CloseHandle((HANDLE)m_win32Handle.internal);
 				break;
@@ -228,7 +233,7 @@ void NativeHandle::reset (void)
 	}
 	if (m_androidHardwareBuffer.internal)
 	{
-		DE_ASSERT(m_fd == -1);
+		DE_ASSERT(m_fd == kInvalidFd);
 		DE_ASSERT(!m_win32Handle.internal);
 
 		if (AndroidHardwareBufferExternalApi* ahbApi = AndroidHardwareBufferExternalApi::getInstance())
@@ -236,7 +241,7 @@ void NativeHandle::reset (void)
 		else
 			DE_FATAL("Platform doesn't support Android Hardware Buffer handles");
 	}
-	m_fd					= -1;
+	m_fd					= kInvalidFd;
 	m_zirconHandle			= vk::pt::zx_handle_t(0);
 	m_win32Handle			= vk::pt::Win32Handle(DE_NULL);
 	m_win32HandleType		= WIN32HANDLETYPE_LAST;
@@ -286,7 +291,7 @@ void NativeHandle::setHostPtr(void* hostPtr)
 
 void NativeHandle::disown (void)
 {
-	m_fd = -1;
+	m_fd = kInvalidFd;
 	m_zirconHandle = vk::pt::zx_handle_t(0);
 	m_win32Handle = vk::pt::Win32Handle(DE_NULL);
 	m_androidHardwareBuffer = vk::pt::AndroidHardwareBufferPtr(DE_NULL);
@@ -295,11 +300,16 @@ void NativeHandle::disown (void)
 
 vk::pt::Win32Handle NativeHandle::getWin32Handle (void) const
 {
-	DE_ASSERT(m_fd == -1);
+	DE_ASSERT(m_fd == kInvalidFd);
 	DE_ASSERT(!m_androidHardwareBuffer.internal);
 	DE_ASSERT(m_hostPtr == DE_NULL);
 
 	return m_win32Handle;
+}
+
+bool NativeHandle::hasValidFd (void) const
+{
+	return (m_fd != kInvalidFd);
 }
 
 int NativeHandle::getFd (void) const
@@ -321,7 +331,7 @@ vk::pt::zx_handle_t NativeHandle::getZirconHandle (void) const
 
 vk::pt::AndroidHardwareBufferPtr NativeHandle::getAndroidHardwareBuffer (void) const
 {
-	DE_ASSERT(m_fd == -1);
+	DE_ASSERT(m_fd == kInvalidFd);
 	DE_ASSERT(!m_win32Handle.internal);
 	DE_ASSERT(m_hostPtr == DE_NULL);
 	return m_androidHardwareBuffer;
@@ -329,7 +339,7 @@ vk::pt::AndroidHardwareBufferPtr NativeHandle::getAndroidHardwareBuffer (void) c
 
 void* NativeHandle::getHostPtr(void) const
 {
-	DE_ASSERT(m_fd == -1);
+	DE_ASSERT(m_fd == kInvalidFd);
 	DE_ASSERT(!m_win32Handle.internal);
 	return m_hostPtr;
 }
@@ -529,7 +539,7 @@ int getMemoryFd (const vk::DeviceInterface&					vkd,
 		memory,
 		externalType
 	};
-	int								fd		= -1;
+	int								fd		= kInvalidFd;
 
 	VK_CHECK(vkd.getMemoryFdKHR(device, &info, &fd));
 	TCU_CHECK(fd >= 0);
@@ -554,7 +564,7 @@ void getMemoryNative (const vk::DeviceInterface&					vkd,
 			memory,
 			externalType
 		};
-		int								fd		= -1;
+		int								fd		= kInvalidFd;
 
 		VK_CHECK(vkd.getMemoryFdKHR(device, &info, &fd));
 		TCU_CHECK(fd >= 0);
@@ -660,7 +670,7 @@ int getFenceFd (const vk::DeviceInterface&					vkd,
 		fence,
 		externalType
 	};
-	int								fd	= -1;
+	int								fd	= kInvalidFd;
 
 	VK_CHECK(vkd.getFenceFdKHR(device, &info, &fd));
 	TCU_CHECK(fd >= 0);
@@ -686,7 +696,7 @@ void getFenceNative (const vk::DeviceInterface&					vkd,
 			fence,
 			externalType
 		};
-		int								fd	= -1;
+		int								fd	= kInvalidFd;
 
 		VK_CHECK(vkd.getFenceFdKHR(device, &info, &fd));
 
@@ -853,7 +863,7 @@ int getSemaphoreFd (const vk::DeviceInterface&					vkd,
 		semaphore,
 		externalType
 	};
-	int										fd	= -1;
+	int										fd	= kInvalidFd;
 
 	VK_CHECK(vkd.getSemaphoreFdKHR(device, &info, &fd));
 	TCU_CHECK(fd >= 0);
@@ -878,7 +888,7 @@ void getSemaphoreNative (const vk::DeviceInterface&					vkd,
 			semaphore,
 			externalType
 		};
-		int										fd	= -1;
+		int										fd	= kInvalidFd;
 
 		VK_CHECK(vkd.getSemaphoreFdKHR(device, &info, &fd));
 
@@ -1413,6 +1423,12 @@ vk::Move<vk::VkImage> createExternalImage (const vk::DeviceInterface&					vkd,
 #  if defined(__ANDROID_API_P__) && (DE_ANDROID_API >= __ANDROID_API_P__)
 #      define BUILT_WITH_ANDROID_P_HARDWARE_BUFFER 1
 #  endif
+#  if defined(__ANDROID_API_T__) && (DE_ANDROID_API >= __ANDROID_API_T__)
+#      define BUILT_WITH_ANDROID_T_HARDWARE_BUFFER 1
+#  endif
+#  if defined(__ANDROID_API_U__) && (DE_ANDROID_API >= __ANDROID_API_U__)
+#      define BUILT_WITH_ANDROID_U_HARDWARE_BUFFER 1
+#  endif
 
 static deInt32 androidGetSdkVersion()
 {
@@ -1754,6 +1770,39 @@ deUint32 AndroidHardwareBufferExternalApi33::vkFormatToAhbFormat(vk::VkFormat vk
 }
 
 #endif // defined(BUILT_WITH_ANDROID_T_HARDWARE_BUFFER)
+
+#if defined(BUILT_WITH_ANDROID_U_HARDWARE_BUFFER)
+class AndroidHardwareBufferExternalApi34 : public  AndroidHardwareBufferExternalApi33
+{
+public:
+
+	virtual deUint32 vkFormatToAhbFormat(vk::VkFormat vkFormat);
+
+	AndroidHardwareBufferExternalApi34() : AndroidHardwareBufferExternalApi33() {};
+	virtual ~AndroidHardwareBufferExternalApi34() {};
+
+private:
+	// Stop the compiler generating methods of copy the object
+	AndroidHardwareBufferExternalApi34(AndroidHardwareBufferExternalApi34 const& copy);            // Not Implemented
+	AndroidHardwareBufferExternalApi34& operator=(AndroidHardwareBufferExternalApi34 const& copy); // Not Implemented
+};
+
+deUint32 AndroidHardwareBufferExternalApi34::vkFormatToAhbFormat(vk::VkFormat vkFormat)
+{
+	switch(vkFormat)
+	{
+	  case vk::VK_FORMAT_R16_UINT:
+		return AHARDWAREBUFFER_FORMAT_R16_UINT;
+	  case vk::VK_FORMAT_R16G16_UINT:
+		return AHARDWAREBUFFER_FORMAT_R16G16_UINT;
+	  case vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16:
+		return AHARDWAREBUFFER_FORMAT_R10G10B10A10_UNORM;
+	  default:
+		return AndroidHardwareBufferExternalApi33::vkFormatToAhbFormat(vkFormat);
+	}
+}
+
+#endif // defined(BUILT_WITH_ANDROID_U_HARDWARE_BUFFER)
 #endif // defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
 #endif // (DE_OS == DE_OS_ANDROID)
 
@@ -1762,6 +1811,20 @@ AndroidHardwareBufferExternalApi* AndroidHardwareBufferExternalApi::getInstance(
 #if (DE_OS == DE_OS_ANDROID)
 	deInt32 sdkVersion = checkAnbApiBuild();
 #if defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
+#  if defined(__ANDROID_API_U__) && (DE_ANDROID_API >= __ANDROID_API_U__)
+	if (sdkVersion >= __ANDROID_API_U__ )
+	{
+		static AndroidHardwareBufferExternalApi34 api34Instance;
+		return &api34Instance;
+	}
+#  endif
+#  if defined(__ANDROID_API_T__) && (DE_ANDROID_API >= __ANDROID_API_T__)
+	if (sdkVersion >= __ANDROID_API_T__ )
+	{
+		static AndroidHardwareBufferExternalApi33 api33Instance;
+		return &api33Instance;
+	}
+#  endif
 #  if defined(__ANDROID_API_P__) && (DE_ANDROID_API >= __ANDROID_API_P__)
 	if (sdkVersion >= __ANDROID_API_P__ )
 	{

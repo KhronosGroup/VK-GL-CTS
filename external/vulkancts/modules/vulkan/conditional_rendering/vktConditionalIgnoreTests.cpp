@@ -80,6 +80,8 @@ public:
 	void            checkSupport            (Context& context) const override
 	{
 		context.requireDeviceFunctionality("VK_EXT_conditional_rendering");
+		if (m_data.conditionInherited && !context.getConditionalRenderingFeaturesEXT().inheritedConditionalRendering)
+			TCU_THROW(NotSupportedError, "Device does not support inherited conditional rendering");
 	}
 private:
 	const ConditionalData m_data;

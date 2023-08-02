@@ -249,10 +249,10 @@ vk::VkRect2D getRenderFrameRect (size_t		frameNdx,
 								: de::min(((deUint32)frameNdx) % imageHeight, imageHeight - 1u);
 	const deUint32		width	= frameNdx == 0
 								? imageWidth
-								: 1 + de::min((deUint32)(frameNdx) % de::min<deUint32>(100, imageWidth / 3), imageWidth - x);
+								: 1 + de::min((deUint32)(frameNdx) % de::min<deUint32>(100, imageWidth / 3), imageWidth - x - 1);
 	const deUint32		height	= frameNdx == 0
 								? imageHeight
-								: 1 + de::min((deUint32)(frameNdx) % de::min<deUint32>(100, imageHeight / 3), imageHeight - y);
+								: 1 + de::min((deUint32)(frameNdx) % de::min<deUint32>(100, imageHeight / 3), imageHeight - y - 1);
 	const vk::VkRect2D	rect	=
 	{
 		{ (deInt32)x, (deInt32)y },
@@ -377,7 +377,7 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer (const vk::DeviceInterface&	vk
 			image,
 			subRange
 		};
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_ACCESS_TRANSFER_WRITE_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
 	}
 
 	beginRenderPass(vkd, *commandBuffer, renderPass, framebuffer, vk::makeRect2D(imageWidth, imageHeight), tcu::Vec4(0.25f, 0.5f, 0.75f, 1.0f));
@@ -811,7 +811,7 @@ IncrementalPresentTestInstance::IncrementalPresentTestInstance (Context& context
 	, m_queueFamilyIndex		(vk::wsi::chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
 	, m_deviceExtensions		(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
 	, m_device					(createDeviceWithWsi(m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, testConfig.useIncrementalPresent, context.getTestContext().getCommandLine().isValidationEnabled()))
-	, m_vkd						(m_vkp, m_instance, *m_device)
+	, m_vkd						(m_vkp, m_instance, *m_device, context.getUsedApiVersion())
 	, m_queue					(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 
 	, m_commandPool				(createCommandPool(m_vkd, *m_device, m_queueFamilyIndex))

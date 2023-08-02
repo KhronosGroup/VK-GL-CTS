@@ -196,13 +196,14 @@ typedef VKAPI_ATTR PFN_vkVoidFunction (VKAPI_CALL* PFN_vkGetInstanceProcAddrLUNA
 
 #endif // CTS_USES_VULKANSC
 
-typedef VKAPI_ATTR VkBool32 (VKAPI_CALL *PFN_vkDebugUtilsMessengerCallbackEXT)	(VkDebugUtilsMessageSeverityFlagBitsEXT				messageSeverity,
+typedef VKAPI_ATTR VkBool32	(VKAPI_CALL *PFN_vkDebugUtilsMessengerCallbackEXT)	(VkDebugUtilsMessageSeverityFlagBitsEXT				messageSeverity,
 																				 VkDebugUtilsMessageTypeFlagsEXT					messageTypes,
 																				 const struct VkDebugUtilsMessengerCallbackDataEXT*	pCallbackData,
 																				 void*												pUserData);
 
 typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkDeviceMemoryReportCallbackEXT)	(const struct VkDeviceMemoryReportCallbackDataEXT*	pCallbackData,
 																				 void*												pUserData);
+
 
 #ifdef CTS_USES_VULKANSC
 struct VkFaultData;

@@ -208,8 +208,8 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 	if (!subgroups::isSubgroupSupported(context))
 		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
 
-	if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_QUAD_BIT))
-		TCU_THROW(NotSupportedError, "Device does not support subgroup quad operations");
+	if (!subgroups::areQuadOperationsSupportedForStages(context, caseDef.shaderStage))
+		TCU_THROW(NotSupportedError, "Device does not support subgroup quad operations in this shader stage");
 
 	if (!subgroups::isFormatSupportedForDevice(context, caseDef.format))
 		TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");

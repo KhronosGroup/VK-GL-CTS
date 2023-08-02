@@ -159,6 +159,8 @@ set(VKUTILNOSHADER_SRCS
 	vkSafetyCriticalUtil.cpp
 	vkResourceInterface.hpp
 	vkResourceInterface.cpp
+	vkMd5Sum.hpp
+	vkMd5Sum.cpp
 	)
 
 set(VKUTILNOSHADER_INLS
@@ -189,12 +191,6 @@ set(VKUTIL_SRCS
 set(VKUTILNOSHADER_LIBS
 	glutil
 	tcutil
-	)
-
-set(VKUTIL_LIBS
-	glutil
-	tcutil
-	vkutilnoshader
 	)
 
 include_directories(${GLSLANG_INCLUDE_PATH})
@@ -229,16 +225,15 @@ PCH(VKUTILNOSHADER_INLS ../../modules/vulkan/pch.cpp)
 PCH(VKSCUTILNOSHADER_INLS ../../modules/vulkan/pch.cpp)
 
 add_library(vkutilnoshader STATIC ${VKUTILNOSHADER_SRCS} ${VKUTILNOSHADER_INLS})
-
-
 target_compile_definitions(vkutilnoshader PUBLIC CTS_USES_VULKAN)
+target_include_directories(vkutilnoshader PUBLIC generated/vulkan)
 target_link_libraries(vkutilnoshader PUBLIC ${VKUTILNOSHADER_LIBS})
 add_dependencies(vkutilnoshader deqp-vk-inl)
 
 add_library(vkscutilnoshader STATIC ${VKUTILNOSHADER_SRCS} ${VKSCUTILNOSHADER_INLS})
-target_include_directories(vkscutilnoshader BEFORE PUBLIC generated/vulkansc)
-target_include_directories(vkscutilnoshader BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/vkscserver)
 target_compile_definitions(vkscutilnoshader PUBLIC CTS_USES_VULKANSC)
+target_include_directories(vkscutilnoshader BEFORE PUBLIC generated/vulkansc)
+target_include_directories(vkscutilnoshader BEFORE PUBLIC ${PROJECT_SOURCE_DIR}/external/vulkancts/vkscserver)
 target_link_libraries(vkscutilnoshader PUBLIC ${VKUTILNOSHADER_LIBS} jsoncpp_static vksc-server-util)
 
 if (DEQP_USE_X11)
@@ -267,7 +262,5 @@ target_include_directories(vkutil PUBLIC ${GLSLANG_INCLUDE_PATH} ${spirv-tools_S
 target_link_libraries(vkutil PUBLIC vkutilnoshader ${GLSLANG_LIBRARIES} SPIRV-Tools SPIRV-Tools-opt)
 
 add_library(vkscutil STATIC ${VKUTIL_SRCS})
-target_include_directories(vkscutil BEFORE PUBLIC generated/vulkansc)
 target_include_directories(vkscutil PUBLIC ${GLSLANG_INCLUDE_PATH} ${spirv-tools_SOURCE_DIR}/include ${spirv-tools_SOURCE_DIR}/external/include )
 target_link_libraries(vkscutil PUBLIC vkscutilnoshader ${GLSLANG_LIBRARIES} SPIRV-Tools SPIRV-Tools-opt)
-

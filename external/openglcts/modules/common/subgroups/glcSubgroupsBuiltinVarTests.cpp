@@ -357,7 +357,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	{
 		const string controlSourceGLSL =
 			"${VERSION_DECL}\n"
-			"#extension GL_EXT_tessellation_shader : require\n"
+			"${TESS_EXTENSION}\n"
 			"layout(vertices = 2) out;\n"
 			"layout(location = 0) out vec4 out_color[];\n"
 			"void main (void)\n"
@@ -375,7 +375,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		const string evaluationSourceGLSL =
 			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_basic: enable\n"
-			"#extension GL_EXT_tessellation_shader : require\n"
+			"${TESS_EXTENSION}\n"
 			"layout(isolines, equal_spacing, ccw ) in;\n"
 			"layout(location = 0) in vec4 in_color[];\n"
 			"layout(location = 0) out vec4 out_color;\n"
@@ -391,7 +391,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	{
 		const string controlSourceGLSL =
 			"${VERSION_DECL}\n"
-			"#extension GL_EXT_tessellation_shader : require\n"
+			"${TESS_EXTENSION}\n"
 			"#extension GL_KHR_shader_subgroup_basic: enable\n"
 			"layout(vertices = 2) out;\n"
 			"layout(location = 0) out vec4 out_color[];\n"
@@ -410,7 +410,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		const string  evaluationSourceGLSL =
 			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_basic: enable\n"
-			"#extension GL_EXT_tessellation_shader : require\n"
+			"${TESS_EXTENSION}\n"
 			"layout(isolines, equal_spacing, ccw ) in;\n"
 			"layout(location = 0) in vec4 in_color[];\n"
 			"layout(location = 0) out vec4 out_color;\n"

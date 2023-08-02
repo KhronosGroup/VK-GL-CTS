@@ -48,6 +48,4 @@ add_library(deqp-vk-texture STATIC ${DEQP_VK_TEXTURE_SRCS})
 target_link_libraries(deqp-vk-texture deqp-vk-shaderexecutor tcutil vkutil)
 
 add_library(deqp-vksc-texture STATIC ${DEQP_VK_TEXTURE_SRCS})
-target_include_directories(deqp-vksc-texture BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-texture PUBLIC deqp-vksc-shaderexecutor deqp-vksc-util tcutil vkscutil)
-

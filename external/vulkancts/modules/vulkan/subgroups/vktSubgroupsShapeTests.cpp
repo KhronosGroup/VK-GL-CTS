@@ -238,15 +238,15 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 	{
 		if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_CLUSTERED_BIT))
 		{
-			TCU_THROW(NotSupportedError, "Subgroup shape tests require that clustered operations are supported!");
+			TCU_THROW(NotSupportedError, "Test requires that clustered operations are supported!");
 		}
 	}
 
 	if (OPTYPE_QUAD == caseDef.opType)
 	{
-		if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_QUAD_BIT))
+		if (!subgroups::areQuadOperationsSupportedForStages(context, caseDef.shaderStage))
 		{
-			TCU_THROW(NotSupportedError, "Subgroup shape tests require that quad operations are supported!");
+			TCU_THROW(NotSupportedError, "Test requires that quad operations are supported!");
 		}
 	}
 

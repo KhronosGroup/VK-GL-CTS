@@ -643,9 +643,6 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 
 		if (m_param->getPipelineConstructionType() == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 		{
-			pipelineCreationFeedbackCreateInfo[4].pipelineStageCreationFeedbackCount	= zeroOutFeedbackCount ? 0u : (1u + geometryStages);
-			pipelineCreationFeedbackCreateInfo[4].pPipelineStageCreationFeedbacks		= pipelineStageCreationFeedbacks;
-
 			pipelineCreationIsHeavy[4] = true;
 		}
 	}

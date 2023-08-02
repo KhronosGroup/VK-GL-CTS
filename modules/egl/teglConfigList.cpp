@@ -174,6 +174,9 @@ tcu::TestNode::IterateResult ConfigList::iterate (void)
 		egl.getConfigAttrib(display, configs[i], EGL_TRANSPARENT_BLUE_VALUE, &val);
 		info.transparentBlueValue = val;
 
+		egl.getConfigAttrib(display, configs[i], EGL_RECORDABLE_ANDROID, &val);
+		info.recordableAndroid = val == EGL_TRUE ? DE_TRUE : DE_FALSE;
+
 		log.writeEglConfig(&info);
 	}
 	log.endEglConfigSet();

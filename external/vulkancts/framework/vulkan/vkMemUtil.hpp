@@ -25,6 +25,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
+#include "tcuMaybe.hpp"
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
 #include <vector>
@@ -140,7 +141,14 @@ public:
 class SimpleAllocator : public Allocator
 {
 public:
-											SimpleAllocator	(const DeviceInterface& vk, VkDevice device, const VkPhysicalDeviceMemoryProperties& deviceMemProps, size_t offset = 0);
+	struct OffsetParams
+	{
+		const vk::VkDeviceSize nonCoherentAtomSize;
+		const vk::VkDeviceSize offset;
+	};
+	typedef tcu::Maybe<OffsetParams> OptionalOffsetParams;
+
+											SimpleAllocator	(const DeviceInterface& vk, VkDevice device, const VkPhysicalDeviceMemoryProperties& deviceMemProps, const OptionalOffsetParams& offsetParams = tcu::Nothing);
 
 	de::MovePtr<Allocation>					allocate		(const VkMemoryAllocateInfo& allocInfo, VkDeviceSize alignment);
 	de::MovePtr<Allocation>					allocate		(const VkMemoryRequirements& memRequirements, MemoryRequirement requirement);
@@ -149,7 +157,7 @@ private:
 	const DeviceInterface&					m_vk;
 	const VkDevice							m_device;
 	const VkPhysicalDeviceMemoryProperties	m_memProps;
-	size_t									m_offset;
+	const tcu::Maybe<OffsetParams>			m_offsetParams;
 };
 
 de::MovePtr<Allocation>	allocateExtended			(const InstanceInterface& vki, const DeviceInterface& vkd, const VkPhysicalDevice& physDevice, const VkDevice device, const VkMemoryRequirements& memReqs, const MemoryRequirement requirement, const void* pNext);

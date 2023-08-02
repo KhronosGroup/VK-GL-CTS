@@ -151,7 +151,7 @@ void CooperativeMatrixTestCase::checkSupport(Context& context) const
 		TCU_THROW(NotSupportedError, "Vulkan 1.1 not supported");
 	}
 
-	if (!context.getCooperativeMatrixFeatures().cooperativeMatrix)
+	if (!context.getCooperativeMatrixFeaturesNV().cooperativeMatrix)
 	{
 		TCU_THROW(NotSupportedError, "cooperativeMatrix not supported");
 	}

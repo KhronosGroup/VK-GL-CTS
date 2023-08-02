@@ -187,6 +187,10 @@ macro(check_fenv_access_support PRAGMA)
 	if (DE_COMPILER_IS_CLANG OR DE_COMPILER_IS_GCC)
 		set(CMAKE_REQUIRED_FLAGS "-Wall")
 	endif ()
+	# In addition to failing the test if "unknown-pragmas" is
+	# given, also fail if "ignored-pragmas" is generated,
+	# indicating the platform does not support the pragma, which
+	# currently happens on 32-bit ARM builds with Clang.
 	check_c_source_compiles("
 #include <fenv.h>
 ${PRAGMA}
@@ -196,7 +200,7 @@ int main() {
 #else
 	#error \"FENV_ACCESS not available\"
 #endif
-}" HAVE_FENV_ACCESS FAIL_REGEX "unknown-pragmas")
+}" HAVE_FENV_ACCESS FAIL_REGEX "unknown-pragmas" "ignored-pragmas")
 	if (HAVE_FENV_ACCESS)
 		set(FENV_ACCESS_PRAGMA ${PRAGMA})
 	endif()

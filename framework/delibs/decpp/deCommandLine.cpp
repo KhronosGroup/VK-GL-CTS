@@ -36,7 +36,7 @@ namespace cmdline
 
 namespace
 {
-struct Help { typedef bool ValueType; };
+DE_DECLARE_COMMAND_LINE_OPT(Help,		bool);
 }
 
 namespace detail

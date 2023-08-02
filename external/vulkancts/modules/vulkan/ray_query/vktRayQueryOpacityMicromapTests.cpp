@@ -655,7 +655,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate (void)
 
 	if (m_params.copyType != CT_NONE) {
 		copyMicromapBackingBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
-			vkd, device, alloc, micromapBackingBufferCreateInfo, MemoryRequirement::Local));
+			vkd, device, alloc, micromapBackingBufferCreateInfo, MemoryRequirement::Local | MemoryRequirement::DeviceAddress));
 
 		origMicromap = micromap;
 

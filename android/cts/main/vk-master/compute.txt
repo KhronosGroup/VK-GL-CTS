@@ -5468,3 +5468,4 @@ dEQP-VK.compute.basic.image_barrier_multiple
 dEQP-VK.compute.basic.secondary_compute_only_queue
 dEQP-VK.compute.basic.write_ssbo_array
 dEQP-VK.compute.basic.branch_past_barrier
+dEQP-VK.compute.basic.webgl_spirv_loop

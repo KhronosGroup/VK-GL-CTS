@@ -1789,53 +1789,56 @@ tcu::TestStatus createDestroyObjectTest (Context& context, typename Object::Para
 		}
 	}
 
-	Move<VkDevice> device = createDeviceWithAdressBindingReport(
-		context.getTestContext().getCommandLine().isValidationEnabled(),
-		context.getPlatformInterface(),
-		customInstance,
-		customInstance.getDriver(),
-		physicalDevice,
-		queueFamilyIndex);
-
-	de::MovePtr<DeviceDriver> deviceInterface = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), customInstance, device.get()));
-
-	const Environment	env	(context.getPlatformInterface(),
-							 customInstance.getDriver(),
-							 customInstance,
-							 physicalDevice,
-							 *deviceInterface.get(),
-							 device.get(),
-							 queueFamilyIndex,
-							 context.getBinaryCollection(),
-							 context.getTestContext().getCommandLine(),
-							 &recorder);
-
 	VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
-		nullptr,
-		0,
-		VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT,
-		VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT,
-		recorder.callback,
-		&recorder
-	};
+		{
+			VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+			nullptr,
+			0,
+			VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT,
+			VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT,
+			recorder.callback,
+			&recorder
+		};
 
-	env.vki.createDebugUtilsMessengerEXT(
-		customInstance,
-		&debugUtilsMessengerCreateInfo,
-		nullptr,
-		&messenger);
+	customInstance.getDriver().createDebugUtilsMessengerEXT(
+			customInstance,
+			&debugUtilsMessengerCreateInfo,
+			nullptr,
+			&messenger);
 
 	{
-		const typename Object::Resources	res					(env, params);
-		Unique<typename Object::Type>		obj	(Object::create(env, res, params));
+		Move<VkDevice> device = createDeviceWithAdressBindingReport(
+			context.getTestContext().getCommandLine().isValidationEnabled(),
+			context.getPlatformInterface(),
+			customInstance,
+			customInstance.getDriver(),
+			physicalDevice,
+			queueFamilyIndex);
+
+		de::MovePtr<DeviceDriver> deviceInterface = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), customInstance, device.get(), context.getUsedApiVersion()));
+
+		const Environment	env	(context.getPlatformInterface(),
+								customInstance.getDriver(),
+								customInstance,
+								physicalDevice,
+								*deviceInterface.get(),
+								device.get(),
+								queueFamilyIndex,
+								context.getBinaryCollection(),
+								context.getTestContext().getCommandLine(),
+								&recorder);
+
+
+		{
+			const typename Object::Resources	res					(env, params);
+			Unique<typename Object::Type>		obj	(Object::create(env, res, params));
+		}
 	}
 
-	env.vki.destroyDebugUtilsMessengerEXT(
-		customInstance,
-		messenger,
-		nullptr);
+	customInstance.getDriver().destroyDebugUtilsMessengerEXT(
+			customInstance,
+			messenger,
+			nullptr);
 
 	if (!validateCallbackRecords(context, recorder))
 	{

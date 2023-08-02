@@ -54,7 +54,7 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		DE_NULL,									//  const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	const Unique<VkDevice>					device			(createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get());
+	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion());
 
 	const std::vector<std::string> loaderExceptions{
 		"vkSetDebugUtilsObjectNameEXT",
@@ -355,12 +355,15 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCmdBindPipelineShaderGroupNV",
 		"vkCreateIndirectCommandsLayoutNV",
 		"vkDestroyIndirectCommandsLayoutNV",
+		"vkCmdSetDepthBias2EXT",
 		"vkAcquireDrmDisplayEXT",
 		"vkGetDrmDisplayEXT",
 		"vkCreatePrivateDataSlotEXT",
 		"vkDestroyPrivateDataSlotEXT",
 		"vkSetPrivateDataEXT",
 		"vkGetPrivateDataEXT",
+		"vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR",
+		"vkGetEncodedVideoSessionParametersKHR",
 		"vkCmdEncodeVideoKHR",
 		"vkExportMetalObjectsEXT",
 		"vkCmdSetEvent2KHR",
@@ -541,7 +544,9 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCmdSetCoverageReductionModeNV",
 		"vkGetFramebufferTilePropertiesQCOM",
 		"vkGetDynamicRenderingTilePropertiesQCOM",
+		"vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR",
 		"vkCmdSetAttachmentFeedbackLoopEnableEXT",
+		"vkGetScreenBufferPropertiesQNX",
 	};
 
 	bool fail = false;

@@ -34,6 +34,7 @@ const VkPhysicalDeviceExternalMemorySciBufFeaturesNV&				getExternalMemorySciBuf
 const VkPhysicalDeviceExtendedDynamicState2FeaturesEXT&				getExtendedDynamicState2FeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceExtendedDynamicState2FeaturesEXT>();			}
 const VkPhysicalDeviceColorWriteEnableFeaturesEXT&					getColorWriteEnableFeaturesEXT					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceColorWriteEnableFeaturesEXT>();				}
 const VkPhysicalDeviceExternalSciSync2FeaturesNV&					getExternalSciSync2Features						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceExternalSciSync2FeaturesNV>();				}
+const VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&		getExternalMemoryScreenBufferFeaturesQNX		(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX>();		}
 const VkPhysicalDeviceVariablePointersFeatures&						getVariablePointersFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVariablePointersFeatures>();					}
 const VkPhysicalDeviceMultiviewFeatures&							getMultiviewFeatures							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceMultiviewFeatures>();							}
 const VkPhysicalDevice16BitStorageFeatures&							get16BitStorageFeatures							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevice16BitStorageFeatures>();						}

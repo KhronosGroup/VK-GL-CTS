@@ -3684,6 +3684,7 @@ class AdvancedLargeStrideAndOffsetsNewAndLegacyAPI : public VertexAttribBindingB
 		glDrawArraysInstanced(GL_POINTS, 0, 2, 2);
 
 		{
+			glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
 			glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_ssbo);
 			GLubyte* ptr = static_cast<GLubyte*>(glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY));
 

@@ -71,28 +71,18 @@ class SourcePackage (Source):
 		self.archiveDir		= "packages"
 		self.postExtract	= postExtract
 
-		if SYSTEM_NAME == 'Windows' or SYSTEM_NAME.startswith('CYGWIN') or SYSTEM_NAME.startswith('MINGW'):
-			self.sysNdx = 0
-		elif SYSTEM_NAME == 'Linux':
-			self.sysNdx = 1
-		elif SYSTEM_NAME == 'Darwin':
-			self.sysNdx = 2
-		else:
-			self.sysNdx = -1  # unknown system
-
 	def clean (self):
 		Source.clean(self)
 		self.removeArchives()
 
 	def update (self, cmdProtocol = None, force = False):
-		if self.sysNdx != 2:
-			if not self.isArchiveUpToDate():
-				self.fetchAndVerifyArchive()
+		if not self.isArchiveUpToDate():
+			self.fetchAndVerifyArchive()
 
-			if self.getExtractedChecksum() != self.checksum:
-				Source.clean(self)
-				self.extract()
-				self.storeExtractedChecksum(self.checksum)
+		if self.getExtractedChecksum() != self.checksum:
+			Source.clean(self)
+			self.extract()
+			self.storeExtractedChecksum(self.checksum)
 
 	def removeArchives (self):
 		archiveDir = os.path.join(EXTERNAL_DIR, pkg.baseDir, pkg.archiveDir)
@@ -298,19 +288,6 @@ def postExtractLibpng (path):
 	shutil.copy(os.path.join(path, "scripts", "pnglibconf.h.prebuilt"),
 				os.path.join(path, "pnglibconf.h"))
 
-if SYSTEM_NAME == 'Windows' or SYSTEM_NAME.startswith('CYGWIN') or SYSTEM_NAME.startswith('MINGW'):
-    ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-win64-lgpl-shared-4.4.zip"
-    ffmpeg_hash_value = "670df8e9d2ddd5e761459b3538f64b8826566270ef1ed13bcbfc63e73aab3fd9"
-elif SYSTEM_NAME == 'Linux':
-    ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-linux64-gpl-shared-4.4.tar.xz"
-    ffmpeg_hash_value = "817f8c93ff1ef7ede3dad15b20415d5e366bcd6848844d55046111fd3de827d0"
-elif SYSTEM_NAME == 'Darwin':
-    ffmpeg_url = ""
-    ffmpeg_hash_value = ""
-else:
-    ffmpeg_url = None
-    ffmpeg_hash_value = None
-
 PACKAGES = [
 	SourcePackage(
 		"http://zlib.net/fossils/zlib-1.2.13.tar.gz",
@@ -329,23 +306,23 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
 		"git@github.com:KhronosGroup/SPIRV-Tools.git",
-		"01828dac778d08f4ebafd2e06bd419f6c84e5984",
+		"6f276e05ccab210584996bc40a0bef82b91f4f40",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		"git@github.com:KhronosGroup/glslang.git",
-		"cd2082e0584d4e39d11e3f401184e0d558ab304f",
+		"77417d5c9e0a5d4c79ddd0285d530b45f7259f0d",
 		"glslang",
-		removeTags = ["master-tot"]),
+		removeTags = ["main-tot"]),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
 		"git@github.com:KhronosGroup/SPIRV-Headers.git",
-		"1feaf4414eb2b353764d01d88f8aa4bcc67b60db",
+		"8e2ad27488ed2f87c068c01a8f5e8979f7086405",
 		"spirv-headers"),
 	GitRepo(
-		"https://gitlab.khronos.org/vulkan/vulkan.git",
-		"git@gitlab.khronos.org:vulkan/vulkan.git",
-		"054de6a6be35c981f04e233e43765d3730d8e6af",
+		"https://github.com/KhronosGroup/Vulkan-Docs.git",
+		"git@github.com:KhronosGroup/Vulkan-Docs.git",
+		"3dae5d7fbf332970ae0a97d5ab05ae5db93e62f0",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",
@@ -357,15 +334,18 @@ PACKAGES = [
 		"git@github.com:open-source-parsers/jsoncpp.git",
 		"9059f5cad030ba11d37818847443a53918c327b1",
 		"jsoncpp"),
+	# NOTE: The samples application is not well suited to external
+	# integration, this fork contains the small fixes needed for use
+	# by the CTS.
 	GitRepo(
-		"https://github.com/nvpro-samples/vk_video_samples.git",
-		None,
-		"7d68747d3524842afaf050c5e00a10f5b8c07904",
-		"video-parser"),
+		"https://github.com/Igalia/vk_video_samples.git",
+		"git@github.com:Igalia/vk_video_samples.git",
+		"cts-integration-0.9.9-1",
+		"nvidia-video-samples"),
 	GitRepo(
 		"https://github.com/Igalia/ESExtractor.git",
 		"git@github.com:Igalia/ESExtractor.git",
-		"v0.2.5",
+		"v0.3.3",
 		"ESExtractor"),
 ]
 
@@ -414,24 +394,10 @@ def run(*popenargs, **kwargs):
 	return retcode, stdout, stderr
 
 if __name__ == "__main__":
-	# Rerun script with python3 as python2 does not have lzma (xz) decompression support
-	if sys.version_info < (3, 0):
-		if SYSTEM_NAME == 'Windows' or SYSTEM_NAME.startswith('CYGWIN') or SYSTEM_NAME.startswith('MINGW'):
-			cmd = ['py', '-3']
-		elif SYSTEM_NAME == 'Linux':
-			cmd = ['python3']
-		elif SYSTEM_NAME == 'Darwin':
-			cmd = ['python3']
+	args = parseArgs()
+
+	for pkg in PACKAGES:
+		if args.clean:
+			pkg.clean()
 		else:
-			cmd = None  # unknown system
-
-		cmd = cmd + sys.argv
-		run(cmd)
-	else:
-		args = parseArgs()
-
-		for pkg in PACKAGES:
-			if args.clean:
-				pkg.clean()
-			else:
-				pkg.update(args.protocol, args.force)
+			pkg.update(args.protocol, args.force)

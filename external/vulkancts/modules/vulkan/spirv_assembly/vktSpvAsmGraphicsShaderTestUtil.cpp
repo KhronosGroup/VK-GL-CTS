@@ -1852,7 +1852,8 @@ void createUnusedVariableModules (vk::SourceCollections& dst, UnusedVariableCont
 		}
 		shader	<< "OpExecutionMode %geom1_main Triangles\n"
 				<< "OpExecutionMode %geom1_main OutputTriangleStrip\n"
-				<< "OpExecutionMode %geom1_main OutputVertices 3\n";
+				<< "OpExecutionMode %geom1_main OutputVertices 3\n"
+				<< "OpExecutionMode %geom1_main Invocations 1\n";
 
 		// Decorations.
 		shader	<< "OpDecorate %out_gl_position BuiltIn Position\n"
@@ -2280,6 +2281,8 @@ void createMultipleEntries (vk::SourceCollections& dst, InstanceContext)
 		"OpExecutionMode %geom2_main OutputTriangleStrip\n"
 		"OpExecutionMode %geom1_main OutputVertices 3\n"
 		"OpExecutionMode %geom2_main OutputVertices 3\n"
+		"OpExecutionMode %geom1_main Invocations 1\n"
+		"OpExecutionMode %geom2_main Invocations 1\n"
 		"OpDecorate %out_gl_position BuiltIn Position\n"
 		"OpMemberDecorate %per_vertex_in 0 BuiltIn Position\n"
 		"OpMemberDecorate %per_vertex_in 1 BuiltIn PointSize\n"

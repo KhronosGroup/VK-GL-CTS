@@ -132,7 +132,7 @@ struct DeviceHelper
 
 		// Create custom device and related objects
 		device		= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &createInfo);
-		vkd			= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get()));
+		vkd			= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion()));
 		queue		= getDeviceQueue(*vkd, *device, queueFamilyIndex, 0u);
 		allocator	= de::MovePtr<SimpleAllocator>(new SimpleAllocator(*vkd, device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	}
