@@ -595,6 +595,17 @@ public:
 			deviceCreateInfo.queueCreateInfoCount			= 1u;
 			deviceCreateInfo.pQueueCreateInfos				= &deviceQueueCreateInfo;
 
+#ifndef CTS_USES_VULKANSC
+			char const * extensionName						= "VK_KHR_maintenance5";
+			deviceCreateInfo.enabledExtensionCount			= 1u;
+			deviceCreateInfo.ppEnabledExtensionNames		= &extensionName;
+
+			vk::VkPhysicalDeviceMaintenance5FeaturesKHR maint5 = initVulkanStructure();
+			vk::VkPhysicalDeviceFeatures2 features2			= initVulkanStructure(&maint5);
+			instanceDriver->getPhysicalDeviceFeatures2(physicalDevice, &features2);
+			deviceCreateInfo.pNext							= &features2;
+#endif // CTS_USES_VULKANSC
+
 			// create custom device
 			const Unique<VkDevice>	device			(createCustomDevice(false, vkp, *customInstance, *instanceDriver, physicalDevice, &deviceCreateInfo));
 			const DeviceDriver		deviceDriver	(vkp, *customInstance, *device);
