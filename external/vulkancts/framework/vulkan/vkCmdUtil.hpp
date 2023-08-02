@@ -150,15 +150,17 @@ void endRendering (const DeviceInterface&		vk,
 				   const VkCommandBuffer		commandBuffer);
 #endif // CTS_USES_VULKANSC
 
-void submitCommandsAndWait	(const DeviceInterface&			vk,
-							 const VkDevice					device,
-							 const VkQueue					queue,
-							 const VkCommandBuffer			commandBuffer,
-							 const bool						useDeviceGroups = false,
-							 const deUint32					deviceMask = 1u,
-							 const deUint32					waitSemaphoreCount = 0u,
-							 const VkSemaphore*				waitSemaphores = nullptr,
-							 const VkPipelineStageFlags*	waitStages = nullptr);
+void submitCommandsAndWait (const DeviceInterface& vk,
+							const VkDevice					device,
+							const VkQueue					queue,
+							const VkCommandBuffer			commandBuffer,
+							const bool						useDeviceGroups = false,
+							const deUint32					deviceMask = 1u,
+							const deUint32					waitSemaphoreCount = 0u,
+							const VkSemaphore*				waitSemaphores = nullptr,
+							const VkPipelineStageFlags*		waitStages = nullptr,
+							const deUint32					signalSemaphoreCount = 0u,
+							const VkSemaphore*				pSignalSemaphores = nullptr);
 
 vk::Move<VkFence> submitCommands (const DeviceInterface&		vk,
 								  const VkDevice				device,
@@ -168,7 +170,9 @@ vk::Move<VkFence> submitCommands (const DeviceInterface&		vk,
 								  const deUint32				deviceMask = 1u,
 								  const deUint32				waitSemaphoreCount = 0u,
 								  const VkSemaphore*			waitSemaphores = nullptr,
-								  const VkPipelineStageFlags*	waitStages = nullptr);
+								  const VkPipelineStageFlags*	waitStages = nullptr,
+								  const deUint32				signalSemaphoreCount = 0u,
+								  const VkSemaphore*			pSignalSemaphores = nullptr);
 
 void waitForFence (const DeviceInterface& vk, const VkDevice device, const VkFence fence, uint64_t timeoutNanos = (~0ull));
 

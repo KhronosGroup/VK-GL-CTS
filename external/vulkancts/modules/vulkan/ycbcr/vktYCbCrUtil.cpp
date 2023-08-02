@@ -372,7 +372,7 @@ vector<AllocationSp> allocateAndBindImageMemory (const DeviceInterface&	vkd,
 
 	return allocations;
 }
-
+// Accept only NV12
 void uploadImage (const DeviceInterface&		vkd,
 				  VkDevice						device,
 				  deUint32						queueFamilyNdx,

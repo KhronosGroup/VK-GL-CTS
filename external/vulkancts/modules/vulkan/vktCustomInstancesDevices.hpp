@@ -159,7 +159,8 @@ public:
 		VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_DECODE_SUPPORT	= 0x00000001,
 		VIDEO_DEVICE_FLAG_REQUIRE_YCBCR_OR_NOT_SUPPORTED		= 0x00000002,
 		VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED		= 0x00000004,
-		VIDEO_DEVICE_FLAG_REQUIRE_TIMELINE_OR_NOT_SUPPORTED		= 0x00000008
+		VIDEO_DEVICE_FLAG_REQUIRE_TIMELINE_OR_NOT_SUPPORTED		= 0x00000008,
+		VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_ENCODE_SUPPORT	= 0x00000010,
 	};
 
 	typedef uint32_t VideoDeviceFlags;
@@ -189,10 +190,10 @@ public:
 																 const VideoCodecOperationFlags	videoCodecOperationFlags,
 																 const VideoDeviceFlags			videoDeviceFlags = VIDEO_DEVICE_FLAG_NONE);
 	const vk::DeviceDriver&			getDeviceDriver				(void);
-	deUint32					getQueueFamilyIndexTransfer	(void) const;
-	deUint32					getQueueFamilyIndexDecode	(void) const;
-	deUint32					getQueueFamilyIndexEncode	(void) const;
-	deUint32					getQueueFamilyVideo			(void) const;
+	deUint32						getQueueFamilyIndexTransfer	(void) const;
+	deUint32						getQueueFamilyIndexDecode	(void) const;
+	deUint32						getQueueFamilyIndexEncode	(void) const;
+	deUint32						getQueueFamilyVideo			(void) const;
 	vk::Allocator&					getAllocator				(void);
 
 protected:

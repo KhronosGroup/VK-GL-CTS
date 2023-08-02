@@ -135,7 +135,6 @@ VkDeviceSize BitstreamBufferImpl::Clone(VkDeviceSize, VkDeviceSize, VkDeviceSize
 	TCU_THROW(InternalError, "Presentation only interface from the samples app should not be needed in CTS");
 }
 
-
 deUint8* BitstreamBufferImpl::CheckAccess(VkDeviceSize offset, VkDeviceSize size) const
 {
 	DE_ASSERT(size > 0 && offset + size < m_bufferSize);

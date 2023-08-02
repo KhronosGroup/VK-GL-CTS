@@ -175,7 +175,8 @@ VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			size,
 VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize				size,
 										 const VkBufferUsageFlags		usage,
 										 const std::vector<deUint32>&	queueFamilyIndices,
-										 const VkBufferCreateFlags		createFlags = 0);
+										 const VkBufferCreateFlags		createFlags = 0,
+										 const void*					pNext = DE_NULL);
 
 Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 										   const VkDevice				device,

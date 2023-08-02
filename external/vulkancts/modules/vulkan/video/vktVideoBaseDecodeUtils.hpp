@@ -21,7 +21,7 @@
  */
 /*!
  * \file
- * \brief Video Decoding Base Classe Functionality
+ * \brief Video Encoding Base Classe Functionality
  */
 /*--------------------------------------------------------------------*/
 /*
@@ -40,9 +40,9 @@
  * limitations under the License.
  */
 
-#include "extNvidiaVideoParserIf.hpp"
 #include "vktVideoTestUtils.hpp"
 #include "vktVideoFrameBuffer.hpp"
+#include "extESExtractor.hpp"
 
 #include "deMemory.h"
 #include "vkBufferWithMemory.hpp"
@@ -65,6 +65,11 @@ using namespace std;
 #define MAKEFRAMERATE(num, den) (((num) << 14) | (den))
 #define NV_FRAME_RATE_NUM(rate) ((rate) >> 14)
 #define NV_FRAME_RATE_DEN(rate) ((rate)&0x3fff)
+
+// Set this to 1 to have the decoded YCbCr frames written to the
+// filesystem in the YV12 format.
+// Check the relevant sections to change the file name and so on...
+#define FRAME_DUMP_DEBUG 0
 
 const uint64_t TIMEOUT_100ms = 100 * 1000 * 1000;
 
@@ -976,6 +981,177 @@ public:
 	bool														m_useImageViewArray{false};
 	bool														m_useSeparateOutputImages{false};
 	bool														m_resetDecoder{false};
+};
+
+
+using VkVideoParser = VkSharedBaseObj<VulkanVideoDecodeParser>;
+
+void createParser(VkVideoCodecOperationFlagBitsKHR codecOperation, const VkExtensionProperties* extensionProperties, VideoBaseDecoder* decoder, VkSharedBaseObj<VulkanVideoDecodeParser>& parser);
+
+class DataProvider
+{
+public:
+	DataProvider(const BufferWithMemory& buffer, VkDeviceSize bufferSize)
+		: m_data(reinterpret_cast<unsigned char*>(buffer.getAllocation().getHostPtr())),
+		  m_size(bufferSize)
+	  {}
+
+	  uint32_t getData(unsigned char *buffer, uint32_t size, int32_t offset) const {
+		if (offset < 0 || static_cast<VkDeviceSize>(offset) >= m_size)
+			return 0;
+
+		uint32_t real_size = std::min(static_cast<uint32_t>(m_size - offset), size);
+
+		std::memcpy(buffer, m_data + offset, real_size);
+
+		return real_size;
+	  }
+
+private:
+	unsigned char*	m_data;
+	VkDeviceSize	m_size;
+};
+
+
+class FrameProcessor
+{
+public:
+	static const int DECODER_QUEUE_SIZE = 6;
+
+	FrameProcessor(DeviceContext* devctx, const char* clipName, VkVideoCodecOperationFlagBitsKHR codecOperation, const VkExtensionProperties* extensionProperties, VideoBaseDecoder* decoder, tcu::TestLog& log)
+		: m_devctx(devctx)
+		, m_demuxer(clipName, log)
+		, m_decoder(decoder)
+		, m_frameData(DECODER_QUEUE_SIZE)
+		, m_frameDataIdx(0)
+	{
+		createParser(codecOperation, extensionProperties, m_decoder, m_parser);
+		for (auto& frame : m_frameData)
+			frame.Reset();
+	}
+
+	FrameProcessor(DeviceContext* devctx, ese_read_buffer_func func, void *data, VkVideoCodecOperationFlagBitsKHR codecOperation, const VkExtensionProperties* extensionProperties, VideoBaseDecoder* decoder, tcu::TestLog& log)
+		: m_devctx(devctx)
+		, m_demuxer(func,data, log)
+		, m_decoder(decoder)
+		, m_frameData(DECODER_QUEUE_SIZE)
+		, m_frameDataIdx(0)
+	{
+		createParser(codecOperation, extensionProperties, m_decoder, m_parser);
+		for (auto& frame : m_frameData)
+			frame.Reset();
+	}
+
+	void parseNextChunk()
+	{
+		deUint8* pData = 0;
+		deInt64					size = 0;
+		bool					demuxerSuccess = m_demuxer.Demux(&pData, &size);
+
+		VkParserBitstreamPacket pkt;
+		pkt.pByteStream = pData; // Ptr to byte stream data decode/display event
+		pkt.nDataLength = size; // Data length for this packet
+		pkt.llPTS = 0; // Presentation Time Stamp for this packet (clock rate specified at initialization)
+		pkt.bEOS = !demuxerSuccess; // true if this is an End-Of-Stream packet (flush everything)
+		pkt.bPTSValid = false; // true if llPTS is valid (also used to detect frame boundaries for VC1 SP/MP)
+		pkt.bDiscontinuity = false; // true if DecMFT is signalling a discontinuity
+		pkt.bPartialParsing = 0; // 0: parse entire packet, 1: parse until next
+		pkt.bEOP = false; // true if the packet in pByteStream is exactly one frame
+		pkt.pbSideData = nullptr; // Auxiliary encryption information
+		pkt.nSideDataLength = 0; // Auxiliary encrypton information length
+
+		size_t	   parsedBytes = 0;
+		const bool parserSuccess = m_parser->ParseByteStream(&pkt, &parsedBytes);
+		if (videoLoggingEnabled())
+			std::cout << "Parsed " << parsedBytes << " bytes from bitstream" << std::endl;
+
+		m_videoStreamHasEnded = !(demuxerSuccess && parserSuccess);
+	}
+
+	int getNextFrame(DecodedFrame* pFrame)
+	{
+		// The below call to DequeueDecodedPicture allows returning the next frame without parsing of the stream.
+		// Parsing is only done when there are no more frames in the queue.
+		int32_t framesInQueue = m_decoder->GetVideoFrameBuffer()->DequeueDecodedPicture(pFrame);
+
+		// Loop until a frame (or more) is parsed and added to the queue.
+		while ((framesInQueue == 0) && !m_videoStreamHasEnded)
+		{
+			parseNextChunk();
+			framesInQueue = m_decoder->GetVideoFrameBuffer()->DequeueDecodedPicture(pFrame);
+		}
+
+		if ((framesInQueue == 0) && m_videoStreamHasEnded)
+		{
+			return -1;
+		}
+
+		return framesInQueue;
+	}
+
+	const DecodedFrame* decodeFrame()
+	{
+		auto& vk = m_devctx->getDeviceDriver();
+		auto		  device = m_devctx->device;
+		DecodedFrame* pLastDecodedFrame = &m_frameData[m_frameDataIdx];
+
+		// Make sure the frame complete fence signaled (video frame is processed) before returning the frame.
+		if (pLastDecodedFrame->frameCompleteFence != VK_NULL_HANDLE)
+		{
+			VK_CHECK(vk.waitForFences(device, 1, &pLastDecodedFrame->frameCompleteFence, true, TIMEOUT_100ms));
+			VK_CHECK(vk.getFenceStatus(device, pLastDecodedFrame->frameCompleteFence));
+		}
+
+		m_decoder->ReleaseDisplayedFrame(pLastDecodedFrame);
+		pLastDecodedFrame->Reset();
+
+		TCU_CHECK_MSG(getNextFrame(pLastDecodedFrame) > 0, "Unexpected decode result");
+		TCU_CHECK_MSG(pLastDecodedFrame, "Unexpected decode result");
+
+		if (videoLoggingEnabled())
+			std::cout << "<= Wait on picIdx: " << pLastDecodedFrame->pictureIndex
+			<< "\t\tdisplayWidth: " << pLastDecodedFrame->displayWidth
+			<< "\t\tdisplayHeight: " << pLastDecodedFrame->displayHeight
+			<< "\t\tdisplayOrder: " << pLastDecodedFrame->displayOrder
+			<< "\tdecodeOrder: " << pLastDecodedFrame->decodeOrder
+			<< "\ttimestamp " << pLastDecodedFrame->timestamp
+			<< "\tdstImageView " << (pLastDecodedFrame->outputImageView ? pLastDecodedFrame->outputImageView->GetImageResource()->GetImage() : VK_NULL_HANDLE)
+			<< std::endl;
+
+		m_frameDataIdx = (m_frameDataIdx + 1) % m_frameData.size();
+		return pLastDecodedFrame;
+	}
+
+	void bufferFrames(int framesToDecode)
+	{
+		// This loop is for the out-of-order submissions cases. First all the frame information is gathered from the parser<->decoder loop
+		// then the command buffers are recorded in a random order, as well as the queue submissions, depending on the configuration of
+		// the test.
+		// NOTE: For this sequence to work, the frame buffer must have enough decode surfaces for the GOP intended for decode, otherwise
+		// picture allocation will fail pretty quickly! See m_numDecodeSurfaces, m_maxDecodeFramesCount
+		// The previous CTS cases were not actually randomizing the queue submission order (despite claiming too!)
+		DE_ASSERT(m_decoder->m_outOfOrderDecoding);
+		do
+		{
+			parseNextChunk();
+			size_t decodedFrames = m_decoder->GetVideoFrameBuffer()->GetDisplayedFrameCount();
+			if (decodedFrames == framesToDecode)
+				break;
+		} while (!m_videoStreamHasEnded);
+		DE_ASSERT(m_decoder->m_cachedDecodeParams.size() == framesToDecode);
+	}
+
+	int getBufferedDisplayCount() const { return m_decoder->GetVideoFrameBuffer()->GetDisplayedFrameCount(); }
+private:
+	DeviceContext* m_devctx;
+	ESEDemuxer m_demuxer;
+	VkVideoParser m_parser;
+	VideoBaseDecoder* m_decoder;
+
+	std::vector<DecodedFrame> m_frameData;
+	size_t m_frameDataIdx{};
+
+	bool m_videoStreamHasEnded{ false };
 };
 
 } // namespace video
