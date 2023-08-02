@@ -57,6 +57,22 @@ struct TestParams {
 	bool destroyDescriptorSetLayout;
 };
 
+vk::VkFormat findDSFormat (const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physicalDevice)
+{
+	const vk::VkFormat dsFormats[] = {
+		vk::VK_FORMAT_D24_UNORM_S8_UINT,
+		vk::VK_FORMAT_D32_SFLOAT_S8_UINT,
+		vk::VK_FORMAT_D16_UNORM_S8_UINT,
+	};
+
+	for (deUint32 i = 0; i < 3; ++i) {
+		const vk::VkFormatProperties	formatProperties = getPhysicalDeviceFormatProperties(vki, physicalDevice, dsFormats[i]);
+		if ((formatProperties.optimalTilingFeatures & vk::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0)
+			return dsFormats[i];
+	}
+	return vk::VK_FORMAT_UNDEFINED;
+}
+
 class ShaderObjectMiscInstance : public vkt::TestInstance
 {
 public:
@@ -1111,7 +1127,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate (void)
 	tcu::TestLog&						log								= m_context.getTestContext().getLog();
 
 	vk::VkFormat						colorAttachmentFormat			= vk::VK_FORMAT_R8G8B8A8_UNORM;
-	vk::VkFormat						depthStencilAttachmentFormat	= vk::VK_FORMAT_D24_UNORM_S8_UINT;
+	vk::VkFormat						depthStencilAttachmentFormat	= findDSFormat(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
 	const auto							subresourceRange				= makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
 	const auto							subresourceLayers				= vk::makeImageSubresourceLayers(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
 	auto								depthSubresourceRange			= vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_DEPTH_BIT | vk::VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 1u, 0u, 1u);
@@ -1734,8 +1750,7 @@ void ShaderObjectStateCase::checkSupport (Context& context) const
 
 	const auto&						vki					= context.getInstanceInterface();
 	const auto						physicalDevice		= context.getPhysicalDevice();
-	const vk::VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(vki, physicalDevice, vk::VK_FORMAT_D24_UNORM_S8_UINT);
-	if ((formatProperties.optimalTilingFeatures & vk::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0)
+	if (findDSFormat(vki, physicalDevice) == vk::VK_FORMAT_UNDEFINED)
 		TCU_THROW(NotSupportedError, "Required depth/stencil format not supported");
 
 	if (!m_params.pipeline)
@@ -1823,11 +1838,15 @@ void ShaderObjectStateCase::checkSupport (Context& context) const
 			TCU_THROW(NotSupportedError, "extendedDynamicState3ConservativeRasterizationMode not supported");
 	}
 	if (m_params.sampleLocations)
+	{
 		context.requireDeviceFunctionality("VK_EXT_sample_locations");
+		if (m_params.sampleLocationsEnable && (context.getSampleLocationsPropertiesEXT().sampleLocationSampleCounts & vk::VK_SAMPLE_COUNT_1_BIT) == 0)
+			TCU_THROW(NotSupportedError, "VK_SAMPLE_COUNT_1_BIT not supported in sampleLocationSampleCounts");
+	}
 	if (m_params.provokingVertex)
 	{
 		context.requireDeviceFunctionality("VK_EXT_provoking_vertex");
-		if (m_params.pipeline && eds3Features.extendedDynamicState3ProvokingVertexMode)
+		if (m_params.pipeline && !eds3Features.extendedDynamicState3ProvokingVertexMode)
 			TCU_THROW(NotSupportedError, "extendedDynamicState3ProvokingVertexMode not supported");
 	}
 	if (m_params.lineRasterization)
@@ -1835,10 +1854,12 @@ void ShaderObjectStateCase::checkSupport (Context& context) const
 		context.requireDeviceFunctionality("VK_EXT_line_rasterization");
 		if (!context.getLineRasterizationFeaturesEXT().rectangularLines)
 			TCU_THROW(NotSupportedError, "rectangularLines not supported");
-		if (m_params.pipeline && eds3Features.extendedDynamicState3LineRasterizationMode)
+		if (m_params.pipeline && !eds3Features.extendedDynamicState3LineRasterizationMode)
 			TCU_THROW(NotSupportedError, "extendedDynamicState3LineRasterizationMode not supported");
-		if (m_params.pipeline && eds3Features.extendedDynamicState3LineStippleEnable)
+		if (m_params.pipeline && !eds3Features.extendedDynamicState3LineStippleEnable)
 			TCU_THROW(NotSupportedError, "extendedDynamicState3LineStippleEnable not supported");
+		if (m_params.stippledLineEnable && !context.getLineRasterizationFeaturesEXT().stippledRectangularLines)
+			TCU_THROW(NotSupportedError, "stippledRectangularLines not supported");
 	}
 	if (m_params.geomShader)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
@@ -1852,8 +1873,14 @@ void ShaderObjectStateCase::checkSupport (Context& context) const
 	}
 	if (m_params.lines)
 	{
-		if (m_params.pipeline && edsFeatures.extendedDynamicState)
+		if (m_params.pipeline && !edsFeatures.extendedDynamicState)
 			TCU_THROW(NotSupportedError, "extendedDynamicState not supported");
+	}
+	if (m_params.colorBlendEnable && m_params.pipeline)
+	{
+		context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state3");
+		if (!eds3Features.extendedDynamicState3ColorBlendEnable)
+			TCU_THROW(NotSupportedError, "extendedDynamicState3ColorBlendEnable not supported");
 	}
 }
 
@@ -2718,7 +2745,7 @@ tcu::TestCaseGroup* createShaderObjectMiscTests(tcu::TestContext& testCtx)
 	} pipelineTests[] =
 	{
 		{ false,	"shaders"	},
-		// { true,		"pipeline"	},
+		{ true,		"pipeline"	},
 	};
 
 	const struct
