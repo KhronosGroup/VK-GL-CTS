@@ -592,10 +592,10 @@ void VideoDevice::checkSupport (Context&						context,
 		context.requireDeviceFunctionality("VK_KHR_video_decode_queue");
 
 	if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR) != 0)
-		context.requireDeviceFunctionality("VK_EXT_video_encode_h264");
+		context.requireDeviceFunctionality("VK_KHR_video_encode_h264");
 
 	if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR) != 0)
-		context.requireDeviceFunctionality("VK_EXT_video_encode_h265");
+		context.requireDeviceFunctionality("VK_KHR_video_encode_h265");
 
 	if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR) != 0)
 		context.requireDeviceFunctionality("VK_KHR_video_decode_h264");
@@ -630,6 +630,8 @@ VideoDevice::VideoDevice (Context&							context,
 	: VideoDevice	(context)
 {
 #ifndef CTS_USES_VULKANSC
+
+	// TODO encode only device case
 	const vk::VkQueueFlags	queueFlagsRequired	= getQueueFlags(videoCodecOperation);
 	const vk::VkDevice		result				= getDeviceSupportingQueue(queueFlagsRequired, videoCodecOperation, videoDeviceFlags);
 
@@ -707,8 +709,8 @@ void VideoDevice::addVideoDeviceExtensions (std::vector<const char*>&		deviceExt
 	static const char videoQueue[]			= "VK_KHR_video_queue";
 	static const char videoEncodeQueue[]	= "VK_KHR_video_encode_queue";
 	static const char videoDecodeQueue[]	= "VK_KHR_video_decode_queue";
-	static const char videoEncodeH264[]		= "VK_EXT_video_encode_h264";
-	static const char videoEncodeH265[]		= "VK_EXT_video_encode_h265";
+	static const char videoEncodeH264[]		= "VK_KHR_video_encode_h264";
+	static const char videoEncodeH265[]		= "VK_KHR_video_encode_h265";
 	static const char videoDecodeH264[]		= "VK_KHR_video_decode_h264";
 	static const char videoDecodeH265[]		= "VK_KHR_video_decode_h265";
 
@@ -782,6 +784,7 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 	const deUint32												apiVersion									= m_context.getUsedApiVersion();
 	const bool													validationEnabled							= m_context.getTestContext().getCommandLine().isValidationEnabled();
 	const bool													queryWithStatusForDecodeSupport				= (videoDeviceFlags & VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_DECODE_SUPPORT) != 0;
+	const bool													queryWithStatusForEncodeSupport				= (videoDeviceFlags & VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_ENCODE_SUPPORT) != 0;
 	const bool													requireYCBCRorNotSupported					= (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_YCBCR_OR_NOT_SUPPORTED) != 0;
 	const bool													requireSync2orNotSupported					= (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED) != 0;
 	const bool													requireTimelineSemOrNotSupported			= (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_TIMELINE_OR_NOT_SUPPORTED) != 0;
@@ -854,8 +857,11 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 
 				if ((usefulQueueFlags & vk::VK_QUEUE_VIDEO_ENCODE_BIT_KHR) != 0 && queueFamilyEncode == VK_QUEUE_FAMILY_IGNORED)
 				{
-					queueFamilyEncode	= ndx;
-					assigned			= true;
+					if (!queryWithStatusForEncodeSupport || (queryWithStatusForEncodeSupport && VkQueueFamilyQueryResultStatusPropertiesKHR[ndx].queryResultStatusSupport))
+					{
+						queueFamilyEncode	= ndx;
+						assigned			= true;
+					}
 				}
 			}
 

@@ -88,7 +88,7 @@ public:
     VkDeviceSize GetOffsetAlignment() const override;
     VkDeviceSize GetSizeAlignment() const override;
     VkDeviceSize Resize(VkDeviceSize newSize, VkDeviceSize copySize = 0, VkDeviceSize copyOffset = 0) override;
-	VkDeviceSize Clone(VkDeviceSize newSize, VkDeviceSize copySize, VkDeviceSize copyOffset, VkSharedBaseObj<VulkanBitstreamBuffer>& vulkanBitstreamBuffer) override;
+    VkDeviceSize Clone(VkDeviceSize newSize, VkDeviceSize copySize, VkDeviceSize copyOffset, VkSharedBaseObj<VulkanBitstreamBuffer>& vulkanBitstreamBuffer) override;
 
     int64_t  MemsetData(deUint32 value, VkDeviceSize offset, VkDeviceSize size) override;
     int64_t  CopyDataToBuffer(deUint8 *dstBuffer, VkDeviceSize dstOffset,

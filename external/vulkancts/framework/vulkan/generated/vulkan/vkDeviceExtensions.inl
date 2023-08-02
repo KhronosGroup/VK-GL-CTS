@@ -92,6 +92,8 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_video_decode_h264",
 	"VK_KHR_video_decode_h265",
 	"VK_KHR_video_decode_queue",
+	"VK_KHR_video_encode_h264",
+	"VK_KHR_video_encode_h265",
 	"VK_KHR_video_queue",
 	"VK_KHR_vulkan_memory_model",
 	"VK_KHR_win32_keyed_mutex",

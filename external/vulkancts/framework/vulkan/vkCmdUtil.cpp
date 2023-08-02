@@ -351,9 +351,11 @@ void submitCommandsAndWait (const DeviceInterface&		vk,
 							const deUint32				deviceMask,
 							const deUint32				waitSemaphoreCount,
 							const VkSemaphore*			waitSemaphores,
-							const VkPipelineStageFlags*	waitStages)
+							const VkPipelineStageFlags*	waitStages,
+							const deUint32				signalSemaphoreCount,
+							const VkSemaphore*			pSignalSemaphores)
 {
-	const auto fence = submitCommands(vk, device, queue, commandBuffer, useDeviceGroups, deviceMask, waitSemaphoreCount, waitSemaphores, waitStages);
+	const auto fence = submitCommands(vk, device, queue, commandBuffer, useDeviceGroups, deviceMask, waitSemaphoreCount, waitSemaphores, waitStages, signalSemaphoreCount, pSignalSemaphores);
 	waitForFence(vk, device, *fence);
 }
 
@@ -370,7 +372,9 @@ vk::Move<VkFence> submitCommands (const DeviceInterface&		vk,
 								  const deUint32				deviceMask,
 								  const deUint32				waitSemaphoreCount,
 								  const VkSemaphore*			waitSemaphores,
-								  const VkPipelineStageFlags*	waitStages)
+								  const VkPipelineStageFlags*	waitStages,
+								  const deUint32				signalSemaphoreCount,
+								  const VkSemaphore*			pSignalSemaphores)
 {
 	// For simplicity. A more complete approach can be found in vkt::sparse::submitCommandsAndWait().
 	DE_ASSERT(!(useDeviceGroups && waitSemaphoreCount > 0u));
@@ -402,8 +406,8 @@ vk::Move<VkFence> submitCommands (const DeviceInterface&		vk,
 		waitStages,											// const VkPipelineStageFlags*	pWaitDstStageMask;
 		1u,													// deUint32						commandBufferCount;
 		&commandBuffer,										// const VkCommandBuffer*		pCommandBuffers;
-		0u,													// deUint32						signalSemaphoreCount;
-		nullptr,											// const VkSemaphore*			pSignalSemaphores;
+		signalSemaphoreCount,								// deUint32						signalSemaphoreCount;
+		pSignalSemaphores,									// const VkSemaphore*			pSignalSemaphores;
 	};
 
 	Move<VkFence> fence (createFence(vk, device));

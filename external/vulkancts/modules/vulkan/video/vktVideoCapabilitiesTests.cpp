@@ -530,7 +530,7 @@ tcu::TestStatus VideoCapabilitiesQueryH264DecodeTestInstance::iterate (void)
 		VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_KHR,	//  VkStructureType							sType;
 		DE_NULL,												//  const void*								pNext;
 		STD_VIDEO_H264_PROFILE_IDC_BASELINE,					//  StdVideoH264ProfileIdc					stdProfileIdc;
-		VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_KHR,	//  VkVideoDecodeH264PictureLayoutFlagsEXT	pictureLayout;
+		VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_KHR,	//  VkVideoDecodeH264PictureLayoutFlagsKHR	pictureLayout;
 	};
 	const VkVideoProfileInfoKHR					videoProfile			=
 	{
@@ -898,9 +898,6 @@ void VideoCapabilitiesQueryH265EncodeTestInstance::validateVideoCapabilitiesExt 
 	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, prefersGopRemainingFrames);
 	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, requiresGopRemainingFrames);
 
-	if (videoCapabilitiesKHR.flags != 0)
-		TCU_FAIL("videoCapabilitiesKHR.flags must be 0");
-
 	if (videoCapabilitiesKHR.ctbSizes == 0)
 		TCU_FAIL("Invalid videoCapabilitiesKHR.ctbSizes");
 
@@ -948,15 +945,15 @@ void VideoCapabilitiesQueryTestCase::checkSupport (Context& context) const
 		case TEST_TYPE_H264_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
 		case TEST_TYPE_H264_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	context.requireDeviceFunctionality("VK_KHR_video_decode_h264"); break;
 		case TEST_TYPE_H264_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:
-		case TEST_TYPE_H264_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	context.requireDeviceFunctionality("VK_EXT_video_encode_h264"); break;
+		case TEST_TYPE_H264_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	context.requireDeviceFunctionality("VK_KHR_video_encode_h264"); break;
 		case TEST_TYPE_H265_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
 		case TEST_TYPE_H265_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	context.requireDeviceFunctionality("VK_KHR_video_decode_h265"); break;
 		case TEST_TYPE_H265_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:
-		case TEST_TYPE_H265_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	context.requireDeviceFunctionality("VK_EXT_video_encode_h265"); break;
+		case TEST_TYPE_H265_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	context.requireDeviceFunctionality("VK_KHR_video_encode_h265"); break;
 		case TEST_TYPE_H264_DECODE_CAPABILITIES_QUERY:				context.requireDeviceFunctionality("VK_KHR_video_decode_h264"); break;
-		case TEST_TYPE_H264_ENCODE_CAPABILITIES_QUERY:				context.requireDeviceFunctionality("VK_EXT_video_encode_h264"); break;
+		case TEST_TYPE_H264_ENCODE_CAPABILITIES_QUERY:				context.requireDeviceFunctionality("VK_KHR_video_encode_h264"); break;
 		case TEST_TYPE_H265_DECODE_CAPABILITIES_QUERY:				context.requireDeviceFunctionality("VK_KHR_video_decode_h265"); break;
-		case TEST_TYPE_H265_ENCODE_CAPABILITIES_QUERY:				context.requireDeviceFunctionality("VK_EXT_video_encode_h265"); break;
+		case TEST_TYPE_H265_ENCODE_CAPABILITIES_QUERY:				context.requireDeviceFunctionality("VK_KHR_video_encode_h265"); break;
 		default:													TCU_THROW(NotSupportedError, "Unknown TestType");
 	}
 }
@@ -992,7 +989,7 @@ const char* getTestName (const TestType testType)
 		case TEST_TYPE_H264_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:	return "h264_encode_src_video_format_support_query";
 		case TEST_TYPE_H264_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	return "h264_encode_dpb_video_format_support_query";
 		case TEST_TYPE_H265_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:	return "h265_decode_dst_video_format_support_query";
-		case TEST_TYPE_H265_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	return "h265_decode_spb_video_format_support_query";
+		case TEST_TYPE_H265_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	return "h265_decode_dpb_video_format_support_query";
 		case TEST_TYPE_H265_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:	return "h265_encode_src_video_format_support_query";
 		case TEST_TYPE_H265_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	return "h265_encode_dpb_video_format_support_query";
 		case TEST_TYPE_H264_DECODE_CAPABILITIES_QUERY:				return "h264_decode_capabilities_query";

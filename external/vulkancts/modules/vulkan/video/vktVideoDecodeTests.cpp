@@ -38,19 +38,12 @@
 #include "tcuCommandLine.hpp"
 
 #include "vktVideoClipInfo.hpp"
-
 #include <deDefs.h>
 
 #ifdef DE_BUILD_VIDEO
 #include "extESExtractor.hpp"
 #include "vktVideoBaseDecodeUtils.hpp"
-
 #include "extNvidiaVideoParserIf.hpp"
-// FIXME: The samples repo is missing this internal include from their H265 decoder
-#include "nvVulkanh265ScalingList.h"
-#include <VulkanH264Decoder.h>
-#include <VulkanH265Decoder.h>
-
 #include <utility>
 #endif
 
@@ -58,11 +51,6 @@ namespace vkt
 {
 namespace video
 {
-
-// Set this to 1 to have the decoded YCbCr frames written to the
-// filesystem in the YV12 format.
-// Check the relevant sections to change the file name and so on...
-#define FRAME_DUMP_DEBUG 0
 
 namespace
 {
@@ -158,28 +146,28 @@ const char* getTestName(TestType type)
 	return testName;
 }
 
-
-enum DecoderOption : deUint32
+enum Option : deUint32
 {
 	// The default is to do nothing additional to ordinary playback.
-	Default			  = 0,
+	Default = 0,
 	// All decode operations will have their status checked for success (Q2 2023: not all vendors support these)
-	UseStatusQueries  = 1 << 0,
+	UseStatusQueries = 1 << 0,
 	// Do not playback the clip in the "normal fashion", instead cached decode parameters for later process
 	// this is primarily used to support out-of-order submission test cases, and per-GOP handling.
-	CachedDecoding	  = 1 << 1,
+	CachedDecoding = 1 << 1,
 	// When a parameter object changes the resolution of the test content, and the new video session would otherwise
 	// still be compatible with the last session (for example, larger decode surfaces preceeding smaller decode surfaces,
 	// a frame downsize), force the session to be recreated anyway.
 	RecreateDPBImages = 1 << 2,
 };
+
 static const int ALL_FRAMES = 0;
 
 struct BaseDecodeParam
 {
-	ClipName	  clip;
-	int			  framesToCheck;
-	DecoderOption decoderOptions;
+	ClipName		clip;
+	int				framesToCheck;
+	Option			decoderOptions;
 };
 
 struct DecodeTestParam
@@ -188,22 +176,22 @@ struct DecodeTestParam
 	BaseDecodeParam stream;
 
 } g_DecodeTests[] = {
-	{TEST_TYPE_H264_DECODE_I, {CLIP_A, 1, DecoderOption::Default}},
-	{TEST_TYPE_H264_DECODE_I_P, {CLIP_A, 2, DecoderOption::Default}},
-	{TEST_TYPE_H264_DECODE_I_P_NOT_MATCHING_ORDER, {CLIP_A, 2, DecoderOption::CachedDecoding}},
-	{TEST_TYPE_H264_DECODE_CLIP_A, {CLIP_A, ALL_FRAMES, DecoderOption::Default}},
-	{TEST_TYPE_H264_DECODE_I_P_B_13, {CLIP_H264_4K_26_IBP_MAIN, ALL_FRAMES, DecoderOption::Default}},
-	{TEST_TYPE_H264_DECODE_I_P_B_13_NOT_MATCHING_ORDER, {CLIP_H264_4K_26_IBP_MAIN, ALL_FRAMES, DecoderOption::CachedDecoding}},
-	{TEST_TYPE_H264_DECODE_QUERY_RESULT_WITH_STATUS, {CLIP_A, ALL_FRAMES, DecoderOption::UseStatusQueries}},
-	{TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE, {CLIP_C, ALL_FRAMES, DecoderOption::Default}},
-	{TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE_DPB, {CLIP_C, ALL_FRAMES, DecoderOption::RecreateDPBImages}},
+	{TEST_TYPE_H264_DECODE_I, {CLIP_A, 1, Option::Default}},
+	{TEST_TYPE_H264_DECODE_I_P, {CLIP_A, 2, Option::Default}},
+	{TEST_TYPE_H264_DECODE_I_P_NOT_MATCHING_ORDER, {CLIP_A, 2, Option::CachedDecoding}},
+	{TEST_TYPE_H264_DECODE_CLIP_A, {CLIP_A, ALL_FRAMES, Option::Default}},
+	{TEST_TYPE_H264_DECODE_I_P_B_13, {CLIP_H264_4K_26_IBP_MAIN, ALL_FRAMES, Option::Default}},
+	{TEST_TYPE_H264_DECODE_I_P_B_13_NOT_MATCHING_ORDER, {CLIP_H264_4K_26_IBP_MAIN, ALL_FRAMES, Option::CachedDecoding}},
+	{TEST_TYPE_H264_DECODE_QUERY_RESULT_WITH_STATUS, {CLIP_A, ALL_FRAMES, Option::UseStatusQueries}},
+	{TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE, {CLIP_C, ALL_FRAMES, Option::Default}},
+	{TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE_DPB, {CLIP_C, ALL_FRAMES, Option::RecreateDPBImages}},
 
-	{TEST_TYPE_H265_DECODE_I, {CLIP_D, 1, DecoderOption::Default}},
-	{TEST_TYPE_H265_DECODE_I_P, {CLIP_D, 2, DecoderOption::Default}},
-	{TEST_TYPE_H265_DECODE_I_P_NOT_MATCHING_ORDER, {CLIP_D, 2, DecoderOption::CachedDecoding}},
-	{TEST_TYPE_H265_DECODE_I_P_B_13, {CLIP_JELLY_HEVC, ALL_FRAMES, DecoderOption::Default}},
-	{TEST_TYPE_H265_DECODE_I_P_B_13_NOT_MATCHING_ORDER, {CLIP_JELLY_HEVC, ALL_FRAMES, DecoderOption::CachedDecoding}},
-	{TEST_TYPE_H265_DECODE_CLIP_D, {CLIP_D, ALL_FRAMES, DecoderOption::Default}},
+	{TEST_TYPE_H265_DECODE_I, {CLIP_D, 1, Option::Default}},
+	{TEST_TYPE_H265_DECODE_I_P, {CLIP_D, 2, Option::Default}},
+	{TEST_TYPE_H265_DECODE_I_P_NOT_MATCHING_ORDER, {CLIP_D, 2, Option::CachedDecoding}},
+	{TEST_TYPE_H265_DECODE_I_P_B_13, {CLIP_JELLY_HEVC, ALL_FRAMES, Option::Default}},
+	{TEST_TYPE_H265_DECODE_I_P_B_13_NOT_MATCHING_ORDER, {CLIP_JELLY_HEVC, ALL_FRAMES, Option::CachedDecoding}},
+	{TEST_TYPE_H265_DECODE_CLIP_D, {CLIP_D, ALL_FRAMES, Option::Default}},
 };
 
 struct InterleavingDecodeTestParams
@@ -212,8 +200,8 @@ struct InterleavingDecodeTestParams
 	BaseDecodeParam streamA;
 	BaseDecodeParam streamB;
 } g_InterleavingTests[] = {
-	{TEST_TYPE_H264_DECODE_INTERLEAVED, {CLIP_A, ALL_FRAMES, DecoderOption::CachedDecoding}, {CLIP_A, ALL_FRAMES, DecoderOption::CachedDecoding}},
-	{TEST_TYPE_H264_H265_DECODE_INTERLEAVED, {CLIP_A, ALL_FRAMES, DecoderOption::CachedDecoding}, {CLIP_D, ALL_FRAMES, DecoderOption::CachedDecoding}},
+	{TEST_TYPE_H264_DECODE_INTERLEAVED, {CLIP_A, ALL_FRAMES, Option::CachedDecoding}, {CLIP_A, ALL_FRAMES, Option::CachedDecoding}},
+	{TEST_TYPE_H264_H265_DECODE_INTERLEAVED, {CLIP_A, ALL_FRAMES, Option::CachedDecoding}, {CLIP_D, ALL_FRAMES, Option::CachedDecoding}},
 };
 
 class TestDefinition
@@ -269,7 +257,7 @@ public:
 		return m_params.stream.framesToCheck;
 	}
 
-	bool hasOption(DecoderOption o) const
+	bool hasOption(Option o) const
 	{
 		return (m_params.stream.decoderOptions & o) != 0;
 	}
@@ -282,7 +270,7 @@ public:
 	VideoDevice::VideoDeviceFlags requiredDeviceFlags() const
 	{
 		return VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED |
-			   (hasOption(DecoderOption::UseStatusQueries) ? VideoDevice::VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_DECODE_SUPPORT : VideoDevice::VIDEO_DEVICE_FLAG_NONE);
+			   (hasOption(Option::UseStatusQueries) ? VideoDevice::VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_DECODE_SUPPORT : VideoDevice::VIDEO_DEVICE_FLAG_NONE);
 	}
 
 	const VkExtensionProperties* extensionProperties() const
@@ -326,74 +314,12 @@ private:
 // Vulkan video is not supported on android platform
 // all external libraries, helper functions and test instances has been excluded
 #ifdef DE_BUILD_VIDEO
-using VkVideoParser = VkSharedBaseObj<VulkanVideoDecodeParser>;
-
-void createParser(const TestDefinition* params, VideoBaseDecoder* decoder, VkSharedBaseObj<VulkanVideoDecodeParser>& parser)
-{
-	VkVideoCapabilitiesKHR		 videoCaps{};
-	VkVideoDecodeCapabilitiesKHR videoDecodeCaps{};
-	util::getVideoDecodeCapabilities(*decoder->m_deviceContext, decoder->m_profile, videoCaps, videoDecodeCaps);
-
-	const VkParserInitDecodeParameters pdParams = {
-		NV_VULKAN_VIDEO_PARSER_API_VERSION,
-		dynamic_cast<VkParserVideoDecodeClient*>(decoder),
-		static_cast<deUint32>(2 * 1024 * 1024), // 2MiB is the default bitstream buffer size
-		static_cast<deUint32>(videoCaps.minBitstreamBufferOffsetAlignment),
-		static_cast<deUint32>(videoCaps.minBitstreamBufferSizeAlignment),
-		0,
-		0,
-		nullptr,
-		true,
-	};
-
-	if (videoLoggingEnabled())
-	{
-		tcu::print("Creating a parser with offset alignment=%d and size alignment=%d\n",
-				   static_cast<deUint32>(videoCaps.minBitstreamBufferOffsetAlignment),
-				   static_cast<deUint32>(videoCaps.minBitstreamBufferSizeAlignment));
-	}
-
-	const VkExtensionProperties* pStdExtensionVersion = params->extensionProperties();
-	DE_ASSERT(pStdExtensionVersion);
-
-	switch (params->getCodecOperation())
-	{
-		case VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR:
-		{
-			if (strcmp(pStdExtensionVersion->extensionName, VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME) || pStdExtensionVersion->specVersion != VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_SPEC_VERSION)
-			{
-				tcu::die("The requested decoder h.264 Codec STD version is NOT supported. The supported decoder h.264 Codec STD version is version %d of %s\n",
-						 VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_SPEC_VERSION,
-						 VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME);
-			}
-			VkSharedBaseObj<VulkanH264Decoder> nvVideoH264DecodeParser(new VulkanH264Decoder(params->getCodecOperation()));
-			parser = nvVideoH264DecodeParser;
-			break;
-		}
-		case VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR:
-		{
-			if (strcmp(pStdExtensionVersion->extensionName, VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME) || pStdExtensionVersion->specVersion != VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION)
-			{
-				tcu::die("The requested decoder h.265 Codec STD version is NOT supported. The supported decoder h.265 Codec STD version is version %d of %s\n",
-						 VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION,
-						 VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME);
-			}
-			VkSharedBaseObj<VulkanH265Decoder> nvVideoH265DecodeParser(new VulkanH265Decoder(params->getCodecOperation()));
-			parser = nvVideoH265DecodeParser;
-			break;
-		}
-		default:
-			TCU_FAIL("Unsupported codec type!");
-	}
-
-	VK_CHECK(parser->Initialize(&pdParams));
-}
 
 static MovePtr<VideoBaseDecoder> decoderFromTestDefinition(DeviceContext* devctx, const TestDefinition& test)
 {
 	VkSharedBaseObj<VulkanVideoFrameBuffer> vkVideoFrameBuffer;
 	VK_CHECK(VulkanVideoFrameBuffer::Create(devctx,
-											test.hasOption(DecoderOption::UseStatusQueries),
+											test.hasOption(Option::UseStatusQueries),
 											vkVideoFrameBuffer));
 
 	VideoBaseDecoder::Parameters params;
@@ -401,143 +327,13 @@ static MovePtr<VideoBaseDecoder> decoderFromTestDefinition(DeviceContext* devctx
 	params.context							 = devctx;
 	params.framebuffer						 = vkVideoFrameBuffer;
 	params.framesToCheck					 = test.framesToCheck();
-	params.queryDecodeStatus				 = test.hasOption(DecoderOption::UseStatusQueries);
-	params.outOfOrderDecoding				 = test.hasOption(DecoderOption::CachedDecoding);
-	params.alwaysRecreateDPB				 = test.hasOption(DecoderOption::RecreateDPBImages);
+	params.queryDecodeStatus				 = test.hasOption(Option::UseStatusQueries);
+	params.outOfOrderDecoding				 = test.hasOption(Option::CachedDecoding);
+	params.alwaysRecreateDPB				 = test.hasOption(Option::RecreateDPBImages);
 	params.pictureParameterUpdateTriggerHack = test.getParamaterUpdateHackRequirement();
 
 	return MovePtr<VideoBaseDecoder>(new VideoBaseDecoder(std::move(params)));
 }
-
-class FrameProcessor
-{
-public:
-	static const int DECODER_QUEUE_SIZE = 6;
-
-	FrameProcessor(DeviceContext* devctx, const TestDefinition* params, VideoBaseDecoder* decoder, tcu::TestLog& log)
-		: m_devctx(devctx)
-		, m_demuxer(params->getClipFilename(), log)
-		, m_decoder(decoder)
-		, m_frameData(DECODER_QUEUE_SIZE)
-		, m_frameDataIdx(0)
-	{
-		createParser(params, m_decoder, m_parser);
-		for (auto& frame : m_frameData)
-			frame.Reset();
-	}
-
-	void parseNextChunk()
-	{
-		deUint8*				pData		   = 0;
-		deInt64					size		   = 0;
-		bool					demuxerSuccess = m_demuxer.Demux(&pData, &size);
-
-		VkParserBitstreamPacket pkt;
-		pkt.pByteStream			 = pData; // Ptr to byte stream data decode/display event
-		pkt.nDataLength			 = size; // Data length for this packet
-		pkt.llPTS				 = 0; // Presentation Time Stamp for this packet (clock rate specified at initialization)
-		pkt.bEOS				 = !demuxerSuccess; // true if this is an End-Of-Stream packet (flush everything)
-		pkt.bPTSValid			 = false; // true if llPTS is valid (also used to detect frame boundaries for VC1 SP/MP)
-		pkt.bDiscontinuity		 = false; // true if DecMFT is signalling a discontinuity
-		pkt.bPartialParsing		 = 0; // 0: parse entire packet, 1: parse until next
-		pkt.bEOP				 = false; // true if the packet in pByteStream is exactly one frame
-		pkt.pbSideData			 = nullptr; // Auxiliary encryption information
-		pkt.nSideDataLength		 = 0; // Auxiliary encrypton information length
-
-		size_t	   parsedBytes	 = 0;
-		const bool parserSuccess = m_parser->ParseByteStream(&pkt, &parsedBytes);
-		if (videoLoggingEnabled())
-			std::cout << "Parsed " << parsedBytes << " bytes from bitstream" << std::endl;
-
-		m_videoStreamHasEnded = !(demuxerSuccess && parserSuccess);
-	}
-
-	int getNextFrame(DecodedFrame* pFrame)
-	{
-		// The below call to DequeueDecodedPicture allows returning the next frame without parsing of the stream.
-		// Parsing is only done when there are no more frames in the queue.
-		int32_t framesInQueue = m_decoder->GetVideoFrameBuffer()->DequeueDecodedPicture(pFrame);
-
-		// Loop until a frame (or more) is parsed and added to the queue.
-		while ((framesInQueue == 0) && !m_videoStreamHasEnded)
-		{
-			parseNextChunk();
-			framesInQueue		= m_decoder->GetVideoFrameBuffer()->DequeueDecodedPicture(pFrame);
-		}
-
-		if ((framesInQueue == 0) && m_videoStreamHasEnded)
-		{
-			return -1;
-		}
-
-		return framesInQueue;
-	}
-
-	const DecodedFrame* decodeFrame()
-	{
-		auto&		  vk				= m_devctx->getDeviceDriver();
-		auto		  device			= m_devctx->device;
-		DecodedFrame* pLastDecodedFrame = &m_frameData[m_frameDataIdx];
-
-		// Make sure the frame complete fence signaled (video frame is processed) before returning the frame.
-		if (pLastDecodedFrame->frameCompleteFence != VK_NULL_HANDLE)
-		{
-			VK_CHECK(vk.waitForFences(device, 1, &pLastDecodedFrame->frameCompleteFence, true, TIMEOUT_100ms));
-			VK_CHECK(vk.getFenceStatus(device, pLastDecodedFrame->frameCompleteFence));
-		}
-
-		m_decoder->ReleaseDisplayedFrame(pLastDecodedFrame);
-		pLastDecodedFrame->Reset();
-
-		TCU_CHECK_MSG(getNextFrame(pLastDecodedFrame) > 0, "Unexpected decode result");
-		TCU_CHECK_MSG(pLastDecodedFrame, "Unexpected decode result");
-
-		if (videoLoggingEnabled())
-			std::cout << "<= Wait on picIdx: " << pLastDecodedFrame->pictureIndex
-					  << "\t\tdisplayWidth: " << pLastDecodedFrame->displayWidth
-					  << "\t\tdisplayHeight: " << pLastDecodedFrame->displayHeight
-					  << "\t\tdisplayOrder: " << pLastDecodedFrame->displayOrder
-					  << "\tdecodeOrder: " << pLastDecodedFrame->decodeOrder
-					  << "\ttimestamp " << pLastDecodedFrame->timestamp
-					  << "\tdstImageView " << (pLastDecodedFrame->outputImageView ? pLastDecodedFrame->outputImageView->GetImageResource()->GetImage() : VK_NULL_HANDLE)
-					  << std::endl;
-
-		m_frameDataIdx = (m_frameDataIdx + 1) % m_frameData.size();
-		return pLastDecodedFrame;
-	}
-
-	void bufferFrames(int framesToDecode)
-	{
-		// This loop is for the out-of-order submissions cases. First all the frame information is gathered from the parser<->decoder loop
-		// then the command buffers are recorded in a random order, as well as the queue submissions, depending on the configuration of
-		// the test.
-		// NOTE: For this sequence to work, the frame buffer must have enough decode surfaces for the GOP intended for decode, otherwise
-		// picture allocation will fail pretty quickly! See m_numDecodeSurfaces, m_maxDecodeFramesCount
-		// The previous CTS cases were not actually randomizing the queue submission order (despite claiming too!)
-		DE_ASSERT(m_decoder->m_outOfOrderDecoding);
-		do
-		{
-			parseNextChunk();
-			size_t decodedFrames	= m_decoder->GetVideoFrameBuffer()->GetDisplayedFrameCount();
-			if (decodedFrames == framesToDecode)
-				break;
-		}
-		while (!m_videoStreamHasEnded);
-		DE_ASSERT(m_decoder->m_cachedDecodeParams.size() == framesToDecode);
-	}
-
-	int getBufferedDisplayCount() const { return (int)m_decoder->GetVideoFrameBuffer()->GetDisplayedFrameCount(); }
-private:
-	DeviceContext* m_devctx;
-	ESEDemuxer m_demuxer;
-	VkVideoParser m_parser;
-	VideoBaseDecoder* m_decoder;
-
-	std::vector<DecodedFrame> m_frameData;
-	size_t m_frameDataIdx{};
-
-	bool m_videoStreamHasEnded{false};
-};
 
 de::MovePtr<vkt::ycbcr::MultiPlaneImageData> getDecodedImage(DeviceContext&		 devctx,
 															 VkImageLayout		 layout,
@@ -576,7 +372,7 @@ de::MovePtr<vkt::ycbcr::MultiPlaneImageData> getDecodedImage(DeviceContext&		 de
 																						 queueFamilyIndexTransfer);
 	const VkImageMemoryBarrier2KHR			 imageBarrierOwnershipTransfer = makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,
 																							 VK_ACCESS_NONE_KHR,
-																							 VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,
+																							 VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 																							 VK_ACCESS_NONE_KHR,
 																							 VK_IMAGE_LAYOUT_GENERAL,
 																							 VK_IMAGE_LAYOUT_GENERAL,
@@ -584,10 +380,10 @@ de::MovePtr<vkt::ycbcr::MultiPlaneImageData> getDecodedImage(DeviceContext&		 de
 																							 imageSubresourceRange,
 																							 queueFamilyIndexDecode,
 																							 queueFamilyIndexTransfer);
-	const VkImageMemoryBarrier2KHR			 imageBarrierTransfer		   = makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,
-																					 VK_ACCESS_2_TRANSFER_READ_BIT_KHR,
-																					 VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR,
-																					 VK_ACCESS_NONE_KHR,
+	const VkImageMemoryBarrier2KHR			 imageBarrierTransfer		   = makeImageMemoryBarrier2(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+																					 VK_ACCESS_MEMORY_WRITE_BIT,
+																					 VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,
+																					 VK_ACCESS_TRANSFER_READ_BIT,
 																					 VK_IMAGE_LAYOUT_GENERAL,
 																					 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 																					 image,
@@ -712,7 +508,9 @@ protected:
 };
 
 InterleavingDecodeTestInstance::InterleavingDecodeTestInstance(Context& context, const std::vector<MovePtr<TestDefinition>>& testDefinitions)
-	: VideoBaseTestInstance(context), m_testDefinitions(std::move(testDefinitions))
+	: VideoBaseTestInstance(context)
+	, m_testDefinitions(std::move(testDefinitions))
+	, m_deviceContext(&m_context, &m_videoDevice)
 {
 	int							  requiredCodecs	  = VK_VIDEO_CODEC_OPERATION_NONE_KHR;
 	VideoDevice::VideoDeviceFlags requiredDeviceFlags = VideoDevice::VideoDeviceFlagBits::VIDEO_DEVICE_FLAG_NONE;
@@ -724,36 +522,32 @@ InterleavingDecodeTestInstance::InterleavingDecodeTestInstance(Context& context,
 	}
 	VkDevice device			= getDeviceSupportingQueue(VK_QUEUE_VIDEO_DECODE_BIT_KHR | VK_QUEUE_TRANSFER_BIT, requiredCodecs, requiredDeviceFlags);
 
-	m_deviceContext.context = &m_context;
-	m_deviceContext.device	= device;
-	m_deviceContext.phys	= m_context.getPhysicalDevice();
-	m_deviceContext.vd		= &m_videoDevice;
-	// TODO: Support for multiple queues / multithreading
-	m_deviceContext.transferQueue =
-		getDeviceQueue(m_context.getDeviceInterface(), device, m_videoDevice.getQueueFamilyIndexTransfer(), 0);
-	m_deviceContext.decodeQueue =
-		getDeviceQueue(m_context.getDeviceInterface(), device, m_videoDevice.getQueueFamilyIndexDecode(), 0);
+	m_deviceContext.updateDevice(
+		m_context.getPhysicalDevice(),
+		device,
+		getDeviceQueue(m_context.getDeviceInterface(), device, m_videoDevice.getQueueFamilyIndexDecode(), 0),
+		nullptr,
+		getDeviceQueue(m_context.getDeviceInterface(), device, m_videoDevice.getQueueFamilyIndexTransfer(), 0));
 
 	for (const auto& test : m_testDefinitions)
 		m_decoders.push_back(decoderFromTestDefinition(&m_deviceContext, *test));
 }
 
 VideoDecodeTestInstance::VideoDecodeTestInstance(Context& context, const TestDefinition* testDefinition)
-	: VideoBaseTestInstance(context), m_testDefinition(testDefinition)
+	: VideoBaseTestInstance(context)
+	, m_testDefinition(testDefinition)
+	, m_deviceContext(&m_context, &m_videoDevice)
 {
 	VkDevice device			= getDeviceSupportingQueue(VK_QUEUE_VIDEO_DECODE_BIT_KHR | VK_QUEUE_TRANSFER_BIT,
 											   m_testDefinition->getCodecOperation(),
 											   m_testDefinition->requiredDeviceFlags());
 
-	m_deviceContext.context = &m_context;
-	m_deviceContext.device	= device;
-	m_deviceContext.phys	= m_context.getPhysicalDevice();
-	m_deviceContext.vd		= &m_videoDevice;
-	// TODO: Support for multiple queues / multithreading
-	m_deviceContext.transferQueue =
-		getDeviceQueue(m_context.getDeviceInterface(), device, m_videoDevice.getQueueFamilyIndexTransfer(), 0);
-	m_deviceContext.decodeQueue =
-		getDeviceQueue(m_context.getDeviceInterface(), device, m_videoDevice.getQueueFamilyIndexDecode(), 0);
+	m_deviceContext.updateDevice(
+		m_context.getPhysicalDevice(),
+		device,
+		getDeviceQueue(m_context.getDeviceInterface(), device, m_videoDevice.getQueueFamilyIndexDecode(), 0),
+		nullptr,
+		getDeviceQueue(m_context.getDeviceInterface(), device, m_videoDevice.getQueueFamilyIndexTransfer(), 0));
 
 	m_decoder = decoderFromTestDefinition(&m_deviceContext, *m_testDefinition);
 }
@@ -768,11 +562,11 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
 #endif
 #endif
 
-	FrameProcessor	 processor(&m_deviceContext, m_testDefinition, m_decoder.get(), m_context.getTestContext().getLog());
+	FrameProcessor	 processor(&m_deviceContext, m_testDefinition->getClipFilename(), m_testDefinition->getCodecOperation(), m_testDefinition->extensionProperties(), m_decoder.get(), m_context.getTestContext().getLog());
 	std::vector<int> incorrectFrames;
 	std::vector<int> correctFrames;
 
-	if (m_testDefinition->hasOption(DecoderOption::CachedDecoding))
+	if (m_testDefinition->hasOption(Option::CachedDecoding))
 	{
 		processor.bufferFrames(m_testDefinition->framesToCheck());
 		m_decoder->decodeFramesOutOfOrder();
@@ -833,7 +627,7 @@ tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
 	std::vector<MovePtr<FrameProcessor>> processors;
 	for (int i = 0; i < m_testDefinitions.size(); i++)
 	{
-		processors.push_back(MovePtr<FrameProcessor>(new FrameProcessor(&m_deviceContext, m_testDefinitions[i].get(), m_decoders[i].get(), m_context.getTestContext().getLog())));
+		processors.push_back(MovePtr<FrameProcessor>(new FrameProcessor(&m_deviceContext, m_testDefinitions[i].get()->getClipFilename(), m_testDefinitions[i].get()->getCodecOperation(), m_testDefinitions[i].get()->extensionProperties(), m_decoders[i].get(), m_context.getTestContext().getLog())));
 	}
 
 #if FRAME_DUMP_DEBUG
@@ -885,7 +679,7 @@ tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
 			auto& decoder = m_decoders[decoderIdx];
 			auto& test	  = m_testDefinitions[decoderIdx];
 			decoder->SubmitQueue(decoder->m_cachedDecodeParams[i]);
-			if (test->hasOption(DecoderOption::UseStatusQueries))
+			if (test->hasOption(Option::UseStatusQueries))
 			{
 				decoder->QueryDecodeResults(decoder->m_cachedDecodeParams[i]);
 			}

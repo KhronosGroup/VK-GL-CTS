@@ -44,31 +44,71 @@ enum ClipName
 	CLIP_B,
 	CLIP_C,
 	CLIP_D,
+	CLIP_E,
+	CLIP_F,
+	CLIP_G,
+	CLIP_H,
 	CLIP_H264_4K_26_IBP_MAIN,
 	CLIP_JELLY_HEVC,
+	CLIP_NONE_HEVC,
 
 	CLIP_LAST,
 };
-
 struct VideoProfileInfo
 {
-	VkVideoCodecOperationFlagBitsKHR	codecOperation;
-	VkVideoChromaSubsamplingFlagBitsKHR subsamplingFlags;
-	VkVideoComponentBitDepthFlagBitsKHR lumaBitDepth;
-	VkVideoComponentBitDepthFlagBitsKHR chromaBitDepth;
+	VkVideoCodecOperationFlagBitsKHR		codecOperation;
+	VkVideoChromaSubsamplingFlagBitsKHR		subsamplingFlags;
+	VkVideoComponentBitDepthFlagBitsKHR		lumaBitDepth;
+	VkVideoComponentBitDepthFlagBitsKHR		chromaBitDepth;
+	int										profileIDC;
 
-	int profileIDC; // TODO: Avoid type-punning
+	VideoProfileInfo(
+		VkVideoCodecOperationFlagBitsKHR	codecOp,
+		VkVideoChromaSubsamplingFlagBitsKHR	subsampleFlags = VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,
+		VkVideoComponentBitDepthFlagBitsKHR	lumaDepth = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,
+		VkVideoComponentBitDepthFlagBitsKHR	chromaDepth = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,
+		int									profile = 0
+	) :
+		codecOperation(codecOp),
+		subsamplingFlags(subsampleFlags),
+		lumaBitDepth(lumaDepth),
+		chromaBitDepth(chromaDepth),
+		profileIDC(profile) {}
 };
 
 struct ClipInfo
 {
-	ClipName	 name;
-	const char*	 filename;
-	VideoProfileInfo profile;
-	int			 totalFrames;
-	int			 framesInGOP;
-	int			 numGOPs;
-	const char** frameChecksums;
+	ClipName				name;
+	const char*				filename;
+	VideoProfileInfo		profile;
+	uint32_t				frameWidth;
+	uint32_t				frameHeight;
+	uint32_t				frameRate;
+	int						totalFrames;
+	uint32_t				framesInGOP;
+	const char**			frameChecksums;
+
+
+	ClipInfo(
+		ClipName			cName,
+		const char*			fName,
+		VideoProfileInfo	vProfile,
+		uint32_t			fFrameWidth = 0,
+		uint32_t			fFameHeight = 0,
+		uint32_t			fFrameRate = 0,
+		int					tFrames = 0,
+		uint32_t			fInGOP = 0,
+		const char**		fChecksums = nullptr
+	) :
+		name(cName),
+		filename(fName),
+		profile(vProfile),
+		frameWidth(fFrameWidth),
+		frameHeight(fFameHeight),
+		frameRate(fFrameRate),
+		totalFrames(tFrames),
+		framesInGOP(fInGOP),
+		frameChecksums(fChecksums) {}
 };
 
 const ClipInfo* clipInfo(ClipName c);

@@ -20,67 +20,74 @@
 #include "tcuTestLog.hpp"
 
 class ESEDemuxer {
-    ESExtractor *extractor{};
-    ESEPacket* pkt{};
-    ESEVideoCodec eVideoCodec{ESE_VIDEO_CODEC_UNKNOWN};
+	ESExtractor* extractor{};
+	ESEPacket* pkt{};
+	ESEVideoCodec eVideoCodec{ ESE_VIDEO_CODEC_UNKNOWN };
 
-    tcu::TestLog& log;
+	tcu::TestLog& log;
 
 public:
-    ESEDemuxer(const std::string& filePath, tcu::TestLog& log_)
+	ESEDemuxer(const std::string& filePath, tcu::TestLog& log_)
 		: extractor(es_extractor_new(filePath.c_str(), "Alignment:NAL"))
+		, log(log_)
+	{
+		eVideoCodec = es_extractor_video_codec(extractor);
+		log << tcu::TestLog::Message << "ESEDemuxer found video codec: " << eVideoCodec << tcu::TestLog::EndMessage;
+	}
+	ESEDemuxer(ese_read_buffer_func func, void *data, tcu::TestLog& log_)
+		: extractor(es_extractor_new_with_read_func(func, data, "Alignment:NAL"))
 		, log(log_)
 	{
         eVideoCodec = es_extractor_video_codec(extractor);
         log << tcu::TestLog::Message << "ESEDemuxer found video codec: " << eVideoCodec << tcu::TestLog::EndMessage;
     }
 
-    ~ESEDemuxer()
+	~ESEDemuxer()
 	{
-        if (pkt) {
-            es_extractor_clear_packet(pkt);
-        }
-        es_extractor_teardown(extractor);
-    }
+		if (pkt) {
+			es_extractor_clear_packet(pkt);
+		}
+		es_extractor_teardown(extractor);
+	}
 
-    ESEVideoCodec GetVideoCodec() {
-        if (!extractor) {
-            return ESE_VIDEO_CODEC_UNKNOWN;
-        }
-        return eVideoCodec;
-    }
+	ESEVideoCodec GetVideoCodec() {
+		if (!extractor) {
+			return ESE_VIDEO_CODEC_UNKNOWN;
+		}
+		return eVideoCodec;
+	}
 
     bool Demux(deUint8 **ppVideo, deInt64 *pnVideoBytes) {
         if (!extractor) {
             return false;
         }
 
-        *pnVideoBytes = 0;
+		*pnVideoBytes = 0;
 
-        if (pkt) {
-            es_extractor_clear_packet(pkt);
-            pkt = nullptr;
-        }
+		if (pkt) {
+			es_extractor_clear_packet(pkt);
+			pkt = nullptr;
+		}
 
-        int e = 0;
-        e = es_extractor_read_packet(extractor, &pkt);
+		int e = 0;
+		e = es_extractor_read_packet(extractor, &pkt);
 
-        if (e > ESE_RESULT_LAST_PACKET) {
-            return false;
-        }
+		if (e > ESE_RESULT_LAST_PACKET) {
+			return false;
+		}
 
-        *ppVideo = pkt->data;
-        *pnVideoBytes = static_cast<int>(pkt->data_size);
+		*ppVideo = pkt->data;
+		*pnVideoBytes = static_cast<int>(pkt->data_size);
 
-        return true;
-    }
+		return true;
+	}
 };
 
 inline vk::VkVideoCodecOperationFlagBitsKHR EXExtractor2NvCodecId(ESEVideoCodec id) {
-    switch (id) {
-        case ESE_VIDEO_CODEC_H264       : return vk::VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR;
-        case ESE_VIDEO_CODEC_H265       : return vk::VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR;
-        default                     : /* assert(false); */ return vk::VkVideoCodecOperationFlagBitsKHR(0);
-    }
+	switch (id) {
+	case ESE_VIDEO_CODEC_H264: return vk::VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR;
+	case ESE_VIDEO_CODEC_H265: return vk::VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR;
+	default: /* assert(false); */ return vk::VkVideoCodecOperationFlagBitsKHR(0);
+	}
 }
 #endif // _EXTESEXTRACTOR_HPP

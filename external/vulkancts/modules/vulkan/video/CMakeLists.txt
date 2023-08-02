@@ -8,7 +8,6 @@ if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
 	add_compile_definitions(DE_BUILD_VIDEO)
 endif()
 
-
 set(DEQP_VK_VIDEO_SRC_TARGET_DEPENDENT
 	extESExtractor.hpp
 	extNvidiaVideoParserIf.hpp
@@ -25,6 +24,8 @@ set(DEQP_VK_VIDEO_SRCS_TARGET_INDEPENDENT
 	vktVideoCapabilitiesTests.hpp
 	vktVideoDecodeTests.cpp
 	vktVideoDecodeTests.hpp
+	vktVideoEncodeTests.cpp
+	vktVideoEncodeTests.hpp
 	vktVideoTestUtils.cpp
 	vktVideoTestUtils.hpp
 	vktVideoTests.cpp
