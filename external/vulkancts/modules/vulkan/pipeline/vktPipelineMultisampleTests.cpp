@@ -958,11 +958,12 @@ void initMultisamplePrograms (SourceCollections& sources, MultisampleTestParams 
 	sources.glslSources.add("color_frag") << glu::FragmentSource(fragmentSource);
 }
 
-void initSampleShadingPrograms (SourceCollections& sources, MultisampleTestParams params)
+void initSampleShadingPrograms (SourceCollections& sources, MultisampleTestParams params, bool minSampleShadingEnabled)
 {
 	{
 		const std::string	pointSize		= params.geometryType == GEOMETRY_TYPE_OPAQUE_POINT ? (std::string("	gl_PointSize = ") + de::toString(params.pointSize) + ".0f;\n") : std::string("");
 		std::ostringstream	vertexSource;
+		std::ostringstream	fragmentSource;
 
 		vertexSource <<
 			"#version 440\n"
@@ -974,17 +975,18 @@ void initSampleShadingPrograms (SourceCollections& sources, MultisampleTestParam
 			<< pointSize
 			<< "}\n";
 
-		static const char* fragmentSource =
-			"#version 440\n"
+		fragmentSource << "#version 440\n"
 			"layout(location = 0) out highp vec4 fragColor;\n"
 			"void main (void)\n"
-			"{\n"
-			"	uint sampleId = gl_SampleID;\n" // Enable sample shading for shader objects by reading gl_SampleID
-			"	fragColor = vec4(fract(gl_FragCoord.xy), 0.0, 1.0);\n"
+			"{\n";
+		if (minSampleShadingEnabled) {
+			fragmentSource << "    uint sampleId = gl_SampleID;\n"; // Enable sample shading for shader objects by reading gl_SampleID
+		}
+		fragmentSource << "    fragColor = vec4(fract(gl_FragCoord.xy), 0.0, 1.0);\n"
 			"}\n";
 
 		sources.glslSources.add("color_vert") << glu::VertexSource(vertexSource.str());
-		sources.glslSources.add("color_frag") << glu::FragmentSource(fragmentSource);
+		sources.glslSources.add("color_frag") << glu::FragmentSource(fragmentSource.str());
 	}
 
 	{
@@ -1466,7 +1468,7 @@ void MinSampleShadingTest::checkSupport (Context& context) const
 void MinSampleShadingTest::initPrograms (SourceCollections& programCollection) const
 {
 	MultisampleTestParams params = {m_pipelineConstructionType, m_geometryType, m_pointSize, m_backingMode, m_useFragmentShadingRate};
-	initSampleShadingPrograms(programCollection, params);
+	initSampleShadingPrograms(programCollection, params, m_minSampleShadingEnabled);
 }
 
 TestInstance* MinSampleShadingTest::createMultisampleTestInstance (Context&										context,
