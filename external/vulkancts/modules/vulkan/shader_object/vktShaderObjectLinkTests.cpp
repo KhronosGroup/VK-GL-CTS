@@ -525,10 +525,13 @@ void ShaderObjectLinkCase::checkSupport (Context& context) const
 {
 	context.requireDeviceFunctionality("VK_EXT_shader_object");
 
-	if (m_params.shaders.tesellation_control != UNUSED || m_params.shaders.tesellation_evaluation != UNUSED)
+	if (m_params.shaders.tesellation_control != UNUSED || m_params.shaders.tesellation_evaluation != UNUSED
+		|| (m_params.nextStages.vertNextStage | vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) > 0)
 		context.requireDeviceCoreFeature(vkt::DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
 
-	if (m_params.shaders.geometry != UNUSED)
+	if (m_params.shaders.geometry != UNUSED
+		|| (m_params.nextStages.vertNextStage | vk::VK_SHADER_STAGE_GEOMETRY_BIT) > 0
+		|| (m_params.nextStages.teseNextStage | vk::VK_SHADER_STAGE_GEOMETRY_BIT) > 0)
 		context.requireDeviceCoreFeature(vkt::DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 }
 
@@ -1089,8 +1092,8 @@ tcu::TestCaseGroup* createShaderObjectLinkTests (tcu::TestContext& testCtx)
 	const struct
 	{
 		Shaders		shaders;
-		NextStages nextStages;
-		const char* name;
+		NextStages	nextStages;
+		const char*	name;
 	} nextStageTests[] =
 	{
 		{
