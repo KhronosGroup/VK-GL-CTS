@@ -1015,6 +1015,93 @@ tcu::TestStatus TransformFeedbackWindingOrderTestInstance::iterate (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
+template <typename T, int Size>
+bool operator>(const tcu::Vector<T, Size>& a, const tcu::Vector<T, Size>& b)
+{
+	return tcu::boolAny(tcu::greaterThan(a, b));
+}
+
+template <typename T, int Size>
+tcu::Vector<T, Size> elemAbsDiff (const tcu::Vector<T, Size>& a, const tcu::Vector<T, Size>& b)
+{
+	return tcu::absDiff(a, b);
+}
+
+uint32_t elemAbsDiff (uint32_t a, uint32_t b)
+{
+	if (a > b)
+		return a - b;
+	return b - a;
+}
+
+template <typename T>
+std::vector<std::string> verifyVertexDataWithWinding (const std::vector<T>& reference, const T* result, const size_t vertexCount, const size_t verticesPerPrimitive, const T& threshold)
+{
+	//DE_ASSERT(vertexCount % verticesPerPrimitive == 0);
+	//DE_ASSERT(reference.size() == vertexCount);
+	const size_t primitiveCount = vertexCount / verticesPerPrimitive;
+
+	std::vector<std::string> errors;
+
+	for (size_t primIdx = 0; primIdx < primitiveCount; ++primIdx)
+	{
+		const auto	pastVertexCount	= verticesPerPrimitive * primIdx;
+		const T*	resultPrim		= result + pastVertexCount;
+		const T*	referencePrim	= &reference.at(pastVertexCount);
+		bool		primitiveOK		= false;
+
+		// Vertices must be in the same winding order, but the first vertex may vary. We test every rotation below.
+		// E.g. vertices 0 1 2 could be stored as 0 1 2, 2 0 1 or 1 2 0.
+		for (size_t firstVertex = 0; firstVertex < verticesPerPrimitive; ++firstVertex)
+		{
+			bool match = true;
+			for (size_t vertIdx = 0; vertIdx < verticesPerPrimitive; ++vertIdx)
+			{
+				const auto& refVertex = referencePrim[(firstVertex + vertIdx) % verticesPerPrimitive]; // Rotation.
+				const auto& resVertex = resultPrim[vertIdx];
+
+				if (elemAbsDiff(refVertex, resVertex) > threshold)
+				{
+					match = false;
+					break;
+				}
+			}
+
+			if (match)
+			{
+				primitiveOK = true;
+				break;
+			}
+		}
+
+		if (!primitiveOK)
+		{
+			// Log error.
+			std::ostringstream err;
+			err << "Primitive " << primIdx << " failed: expected rotation of [";
+			for (size_t i = 0; i < verticesPerPrimitive; ++i)
+				err << ((i > 0) ? ", " : "") << referencePrim[i];
+			err << "] but found [";
+			for (size_t i = 0; i < verticesPerPrimitive; ++i)
+				err << ((i > 0) ? ", " : "") << resultPrim[i];
+			err << "]; threshold: " << threshold;
+			errors.push_back(err.str());
+		}
+	}
+
+	return errors;
+}
+
+void checkErrorVec (tcu::TestLog& log, const std::vector<std::string>& errors)
+{
+	if (!errors.empty())
+	{
+		for (const auto& err : errors)
+			log << tcu::TestLog::Message << err << tcu::TestLog::EndMessage;
+		TCU_FAIL("Vertex data verification failed; check log for details");
+	}
+}
+
 void TransformFeedbackWindingOrderTestInstance::verifyTransformFeedbackBuffer (const MovePtr<Allocation>&	bufAlloc,
 																			   const deUint32				bufBytes)
 {
@@ -1025,46 +1112,18 @@ void TransformFeedbackWindingOrderTestInstance::verifyTransformFeedbackBuffer (c
 	const deUint32			numPrimitives		= numPoints / vertexPerPrimitive;
 	const deUint32*			tfData				= getInvalidatedHostPtr<deUint32>(vk, device, *bufAlloc);
 
-	for (deUint32 primitiveIndex = 0; primitiveIndex < numPrimitives; ++primitiveIndex)
+	std::vector<uint32_t> referenceValues;
+	referenceValues.reserve(numPrimitives * vertexPerPrimitive);
+
+	for (uint32_t primIdx = 0; primIdx < numPrimitives; ++primIdx)
 	{
-		const deUint32*			tfDataForPrimitive			= &tfData[primitiveIndex * vertexPerPrimitive];
-		std::vector<deUint32>	expectedDataForPrimitive	= m_tParameters.getExpectedValuesForPrimitive(primitiveIndex);
-
-		// For multi - vertex primitives, all values for a given vertex are written before writing values for any other vertex.
-		// Implementations may write out any vertex within the primitive first, but all subsequent vertices for that primitive
-		// must be written out in a consistent winding order
-		bool correctWinding = true;
-		for (deUint32 combinationIndex = 0; combinationIndex < vertexPerPrimitive; combinationIndex++)
-		{
-			correctWinding = true;
-			for (deUint32 vertexIndex = 0; vertexIndex < vertexPerPrimitive; vertexIndex++)
-			{
-				correctWinding &= (tfDataForPrimitive[vertexIndex] == expectedDataForPrimitive[(combinationIndex + vertexIndex) % vertexPerPrimitive]);
-
-				// if data for this vertex is not correct then there
-				// is no need to check other, go to next combination
-				if (!correctWinding)
-					break;
-			}
-
-			// no need to check other combinations, we found correct one
-			if (correctWinding)
-				break;
-		}
-
-		if (!correctWinding)
-		{
-			std::stringstream message;
-			message << "Failed at primitive " << primitiveIndex << " received: [";
-			for (deUint32 vertexIndex = 0; vertexIndex < vertexPerPrimitive; vertexIndex++)
-				message << de::toString(tfDataForPrimitive[vertexIndex]) << " ";
-			message << "] expected: [";
-			for (deUint32 vertexIndex = 0; vertexIndex < vertexPerPrimitive; vertexIndex++)
-				message << de::toString(expectedDataForPrimitive[vertexIndex]) << " ";
-			message << "]";
-			TCU_FAIL(message.str());
-		}
+		const auto expectedValues = m_tParameters.getExpectedValuesForPrimitive(primIdx);
+		for (const auto& value : expectedValues)
+			referenceValues.push_back(value);
 	}
+
+	const auto errors = verifyVertexDataWithWinding(referenceValues, tfData, numPoints, vertexPerPrimitive, 0u/*threshold*/);
+	checkErrorVec(m_context.getTestContext().getLog(), errors);
 }
 
 class TransformFeedbackBuiltinTestInstance : public TransformFeedbackTestInstance
@@ -2425,26 +2484,9 @@ void TransformFeedbackLinesOrTrianglesTestInstance::verifyTransformFeedbackBuffe
 
 	DE_ASSERT(reference.size() == numPoints);
 
-	for (deUint32 i = 0; i < numPoints; ++i)
-	{
-		if (tfData[i] != reference[i])
-		{
-			tcu::TestLog&		log		= m_context.getTestContext().getLog();
-			std::stringstream	err;
-			std::stringstream	css;
-
-			err << "Failed at item " << i
-				<< " received:" << tfData[i]
-				<< " expected:" << reference[i];
-
-			for (deUint32 j = 0; j < numPoints; ++j)
-				css << j << ": " << tfData[j] << (i == j ? " <= fail" : "") <<std::endl;
-
-			log << tcu::TestLog::Message << css.str() << tcu::TestLog::EndMessage;
-
-			TCU_FAIL(err.str());
-		}
-	}
+	const tcu::Vec4 threshold (0.0001f, 0.0001f, 0.0001f, 0.0001f);
+	const auto errors = verifyVertexDataWithWinding(reference, tfData, numPoints, 2u, threshold);
+	checkErrorVec(m_context.getTestContext().getLog(), errors);
 }
 
 void TransformFeedbackLinesOrTrianglesTestInstance::verifyTransformFeedbackBufferTriangles (const MovePtr<Allocation>&		bufAlloc,
@@ -2498,26 +2540,9 @@ void TransformFeedbackLinesOrTrianglesTestInstance::verifyTransformFeedbackBuffe
 
 	DE_ASSERT(reference.size() == numPoints);
 
-	for (deUint32 i = 0; i < numPoints; ++i)
-	{
-		if (tfData[i] != reference[i])
-		{
-			tcu::TestLog&		log		= m_context.getTestContext().getLog();
-			std::stringstream	err;
-			std::stringstream	css;
-
-			err << "Failed at item " << i
-				<< " received:" << tfData[i]
-				<< " expected:" << reference[i];
-
-			for (deUint32 j = 0; j < numPoints; ++j)
-				css << j << ": " << tfData[j] << (i == j ? " <= fail" : "") <<std::endl;
-
-			log << tcu::TestLog::Message << css.str() << tcu::TestLog::EndMessage;
-
-			TCU_FAIL(err.str());
-		}
-	}
+	const tcu::Vec4 threshold (0.0001f, 0.0001f, 0.0001f, 0.0001f);
+	const auto errors = verifyVertexDataWithWinding(reference, tfData, numPoints, 3u, threshold);
+	checkErrorVec(m_context.getTestContext().getLog(), errors);
 }
 
 tcu::TestStatus TransformFeedbackLinesOrTrianglesTestInstance::iterate (void)
