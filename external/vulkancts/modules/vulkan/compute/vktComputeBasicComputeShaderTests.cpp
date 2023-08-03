@@ -2538,7 +2538,9 @@ void ComputeTestInstance::createDeviceGroup (void)
 	deviceFeatures2.features = deviceFeatures;
 
 #ifndef CTS_USES_VULKANSC
-	VkPhysicalDeviceShaderObjectFeaturesEXT			shaderObjectFeatures	= initVulkanStructure();
+	VkPhysicalDeviceDynamicRenderingFeaturesKHR		dynamicRenderingFeatures	= initVulkanStructure();
+	dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
+	VkPhysicalDeviceShaderObjectFeaturesEXT			shaderObjectFeatures		= initVulkanStructure(&dynamicRenderingFeatures);
 	shaderObjectFeatures.shaderObject = VK_TRUE;
 	if (m_computePipelineConstructionType)
 	{
@@ -3353,7 +3355,9 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 	std::vector<const char*> deviceExtensions;
 
 #ifndef CTS_USES_VULKANSC
-	VkPhysicalDeviceShaderObjectFeaturesEXT			shaderObjectFeatures = initVulkanStructure();
+	VkPhysicalDeviceDynamicRenderingFeaturesKHR		dynamicRenderingFeatures = initVulkanStructure();
+	dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
+	VkPhysicalDeviceShaderObjectFeaturesEXT			shaderObjectFeatures = initVulkanStructure(&dynamicRenderingFeatures);
 	shaderObjectFeatures.shaderObject = VK_TRUE;
 
 	if (m_computePipelineConstructionType != COMPUTE_PIPELINE_CONSTRUCTION_TYPE_PIPELINE)

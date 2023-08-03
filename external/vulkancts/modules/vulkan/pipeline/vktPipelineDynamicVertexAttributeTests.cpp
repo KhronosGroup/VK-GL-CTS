@@ -130,10 +130,16 @@ vk::Move<vk::VkDevice> createDynamicVertexStateDevice (Context& context, const d
 
 	if (vk::isConstructionTypeLibrary(pipelineConstructionType))
 		pNext = &graphicsPipelineFeatures;
-
-	vk::VkPhysicalDeviceShaderObjectFeaturesEXT				shaderObjectFeatures{
+	vk::VkPhysicalDeviceDynamicRenderingFeaturesKHR			dynamicRenderingFeatures
+	{
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,	// VkStructureType	sType;
+		pNext,																	// void* pNext;
+		VK_TRUE,																// VkBool32		dynamicRendering;
+	};
+	vk::VkPhysicalDeviceShaderObjectFeaturesEXT				shaderObjectFeatures
+	{
 		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT,	// VkStructureType	sType;
-		pNext,																// void*			pNext;
+		&dynamicRenderingFeatures,											// void*			pNext;
 		VK_TRUE,															// VkBool32			shaderObject;
 	};
 

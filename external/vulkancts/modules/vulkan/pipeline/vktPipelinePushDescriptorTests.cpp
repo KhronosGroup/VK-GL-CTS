@@ -134,8 +134,9 @@ Move<VkDevice> createDeviceWithPushDescriptor (const Context&				context,
 
 	vector<string>										requiredExtensionsStr				= { "VK_KHR_push_descriptor" };
 	VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	graphicsPipelineLibraryFeaturesEXT	= initVulkanStructure();
-	VkPhysicalDeviceShaderObjectFeaturesEXT				shaderObjectFeaturesEXT				= initVulkanStructure(&graphicsPipelineLibraryFeaturesEXT);
-	VkPhysicalDeviceFeatures2 features2 = initVulkanStructure(&shaderObjectFeaturesEXT);
+	VkPhysicalDeviceDynamicRenderingFeaturesKHR			dynamicRenderingFeaturesKHR			= initVulkanStructure(&graphicsPipelineLibraryFeaturesEXT);
+	VkPhysicalDeviceShaderObjectFeaturesEXT				shaderObjectFeaturesEXT				= initVulkanStructure(&dynamicRenderingFeaturesKHR);
+	VkPhysicalDeviceFeatures2							features2							= initVulkanStructure(&shaderObjectFeaturesEXT);
 	if (isConstructionTypeLibrary(params.pipelineConstructionType))
 	{
 		requiredExtensionsStr.push_back("VK_KHR_pipeline_library");
