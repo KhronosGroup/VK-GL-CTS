@@ -58,19 +58,26 @@ vk::VkShaderStageFlags getShaderObjectNextStages (vk::VkShaderStageFlagBits shad
 			flags |= vk::VK_SHADER_STAGE_GEOMETRY_BIT;
 		return flags;
 	}
-	if (shaderStage == vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
+	else if (shaderStage == vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
 	{
 		return vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 	}
-	if (shaderStage == vk::VK_SHADER_STAGE_GEOMETRY_BIT)
+	else if (shaderStage == vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
+	{
+		vk::VkShaderStageFlags flags = vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		if (geometryShaderFeature)
+			flags |= vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+		return flags;
+	}
+	else if (shaderStage == vk::VK_SHADER_STAGE_GEOMETRY_BIT)
 	{
 		return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
 	}
-	if (shaderStage == vk::VK_SHADER_STAGE_TASK_BIT_EXT)
+	else if (shaderStage == vk::VK_SHADER_STAGE_TASK_BIT_EXT)
 	{
 		return vk::VK_SHADER_STAGE_MESH_BIT_EXT;
 	}
-	if (shaderStage == vk::VK_SHADER_STAGE_MESH_BIT_EXT)
+	else if (shaderStage == vk::VK_SHADER_STAGE_MESH_BIT_EXT)
 	{
 		return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
 	}
