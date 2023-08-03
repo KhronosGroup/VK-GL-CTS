@@ -1274,6 +1274,8 @@ void SizeTest::checkSupport(Context& context) const
 
 	if (context.getDeviceProperties().limits.maxComputeSharedMemorySize < m_size)
 		TCU_THROW(NotSupportedError, "Not enough shared memory supported.");
+
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 }
 
 void SizeTest::initPrograms(SourceCollections& sourceCollections) const
@@ -1348,12 +1350,15 @@ cts_amber::AmberTestCase* CreateAmberTestCase(tcu::TestContext& testCtx,
 											  const char* description,
 											  const std::string& filename,
 											  const std::vector<std::string>& requirements = std::vector<std::string>(),
-											  bool zeroinit = false)
+											  bool zeroinit = false,
+											  bool shaderObjects = false)
 {
 	vk::SpirVAsmBuildOptions asm_options(VK_MAKE_API_VERSION(0, 1, 1, 0), vk::SPIRV_VERSION_1_4);
 	asm_options.supports_VK_KHR_spirv_1_4 = true;
 
-	cts_amber::AmberTestCase *t = cts_amber::createAmberTestCase(testCtx, name, description, "compute/workgroup_memory_explicit_layout", filename, requirements);
+	const std::string test_filename = shaderObjects ? "shader_object_" + std::string(filename) : filename;
+
+	cts_amber::AmberTestCase *t = cts_amber::createAmberTestCase(testCtx, name, description, "compute/workgroup_memory_explicit_layout", test_filename.c_str(), requirements);
 	t->setSpirVAsmBuildOptions(asm_options);
 	t->addRequirement("VK_KHR_workgroup_memory_explicit_layout");
 	t->addRequirement("VK_KHR_spirv_1_4");
@@ -1361,26 +1366,34 @@ cts_amber::AmberTestCase* CreateAmberTestCase(tcu::TestContext& testCtx,
 	{
 		t->addRequirement("VK_KHR_zero_initialize_workgroup_memory");
 	}
+	if (shaderObjects)
+	{
+		t->addRequirement("VK_EXT_shader_object");
+	}
 	return t;
 }
 
-void AddCopyMemoryTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType)
+void AddCopyMemoryTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType pipelineConstructionType)
 {
 	tcu::TestContext& testCtx = group->getTestContext();
 
-	group->addChild(CreateAmberTestCase(testCtx, "basic", "", "copy_memory_basic.amber"));
-	group->addChild(CreateAmberTestCase(testCtx, "two_invocations", "", "copy_memory_two_invocations.amber"));
+	bool shaderObject = (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV) || (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY);
+
+	group->addChild(CreateAmberTestCase(testCtx, "basic", "", "copy_memory_basic.amber", {}, false, shaderObject));
+	group->addChild(CreateAmberTestCase(testCtx, "two_invocations", "", "copy_memory_two_invocations.amber", {}, false, shaderObject));
 	group->addChild(CreateAmberTestCase(testCtx, "variable_pointers", "", "copy_memory_variable_pointers.amber",
-										{ "VariablePointerFeatures.variablePointers" }));
+										{ "VariablePointerFeatures.variablePointers" }, false, shaderObject));
 }
 
-void AddZeroInitializeExtensionTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType)
+void AddZeroInitializeExtensionTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType pipelineConstructionType)
 {
 	tcu::TestContext& testCtx = group->getTestContext();
 
-	group->addChild(CreateAmberTestCase(testCtx, "block", "", "zero_ext_block.amber", std::vector<std::string>(), true));
-	group->addChild(CreateAmberTestCase(testCtx, "other_block", "", "zero_ext_other_block.amber", std::vector<std::string>(), true));
-	group->addChild(CreateAmberTestCase(testCtx, "block_with_offset", "", "zero_ext_block_with_offset.amber", std::vector<std::string>(), true));
+	bool shaderObject = (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV) || (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY);
+
+	group->addChild(CreateAmberTestCase(testCtx, "block", "", "zero_ext_block.amber", std::vector<std::string>(), true, shaderObject));
+	group->addChild(CreateAmberTestCase(testCtx, "other_block", "", "zero_ext_other_block.amber", std::vector<std::string>(), true, shaderObject));
+	group->addChild(CreateAmberTestCase(testCtx, "block_with_offset", "", "zero_ext_block_with_offset.amber", std::vector<std::string>(), true, shaderObject));
 }
 
 } // anonymous
