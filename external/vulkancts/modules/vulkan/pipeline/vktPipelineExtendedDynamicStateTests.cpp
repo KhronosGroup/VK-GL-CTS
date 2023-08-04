@@ -7385,6 +7385,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 				config.depthClampEnableConfig.staticValue	= true;
 				config.depthClampEnableConfig.dynamicValue	= false;
+				if (vk::isConstructionTypeShaderObject(pipelineConstructionType))
+					config.depthClipEnableConfig.staticValue = OptBoolean(true);
 
 				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_disable_with_clip", "Dynamically disable depth clamp making sure depth clipping is enabled", config));
 			}
