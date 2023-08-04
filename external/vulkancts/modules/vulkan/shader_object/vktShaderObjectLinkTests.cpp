@@ -972,6 +972,8 @@ void MeshShaderObjectLinkCase::initPrograms (vk::SourceCollections& programColle
 
 void MeshShaderObjectLinkCase::checkSupport (Context& context) const
 {
+	context.requireDeviceFunctionality("VK_EXT_shader_object");
+
 	context.requireDeviceFunctionality("VK_EXT_mesh_shader");
 	const auto& features = context.getMeshShaderFeaturesEXT();
 	if (!features.taskShader)
