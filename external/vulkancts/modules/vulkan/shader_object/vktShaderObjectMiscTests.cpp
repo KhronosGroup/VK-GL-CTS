@@ -123,6 +123,8 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate (void)
 	const auto							deviceExtensions			= vk::removeUnsupportedShaderObjectExtensions(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
 	const bool							tessellationSupported		= m_context.getDeviceFeatures().tessellationShader;
 	const bool							geometrySupported			= m_context.getDeviceFeatures().geometryShader;
+	const bool							taskSupported				= m_context.getMeshShaderFeatures().taskShader;
+	const bool							meshSupported				= m_context.getMeshShaderFeatures().meshShader;
 
 	vk::VkFormat						colorAttachmentFormat		= vk::VK_FORMAT_R8G8B8A8_UNORM;
 	const auto							subresourceRange			= vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -304,7 +306,7 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate (void)
 
 	vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0, 1, &descriptorSet.get(), 0, DE_NULL);
 
-	vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragShader);
+	vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragShader, taskSupported, meshSupported);
 	vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 	vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 
@@ -1134,6 +1136,9 @@ tcu::TestStatus ShaderObjectStateInstance::iterate (void)
 	const vk::VkRect2D					renderArea						= vk::makeRect2D(0, 0, 32, 32);
 	vk::VkExtent3D						extent							= { renderArea.extent.width, renderArea.extent.height, 1};
 
+	const bool							taskSupported					= m_context.getMeshShaderFeatures().taskShader;
+	const bool							meshSupported					= m_context.getMeshShaderFeatures().meshShader;
+
 	const vk::VkImageCreateInfo	createInfo =
 	{
 		vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType
@@ -1480,7 +1485,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate (void)
 		}
 		else
 		{
-			vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, *geomShader, *fragShader);
+			vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, *geomShader, *fragShader, taskSupported, meshSupported);
 		}
 	}
 	setDynamicStates(vk, *cmdBuffer);
@@ -2105,6 +2110,8 @@ tcu::TestStatus ShaderObjectUnusedBuiltinInstance::iterate (void)
 	const auto							deviceExtensions			= vk::removeUnsupportedShaderObjectExtensions(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
 	const bool							tessellationSupported		= m_context.getDeviceFeatures().tessellationShader;
 	const bool							geometrySupported			= m_context.getDeviceFeatures().geometryShader;
+	const bool							taskSupported				= m_context.getMeshShaderFeatures().taskShader;
+	const bool							meshSupported				= m_context.getMeshShaderFeatures().meshShader;
 
 	vk::VkFormat						colorAttachmentFormat		= vk::VK_FORMAT_R8G8B8A8_UNORM;
 	const auto							subresourceRange			= makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -2167,7 +2174,7 @@ tcu::TestStatus ShaderObjectUnusedBuiltinInstance::iterate (void)
 	const vk::VkClearValue				clearValue = vk::makeClearValueColor({ 0.0f, 0.0f, 0.0f, 0.0f });
 	vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
 
-	vk::bindGraphicsShaders(vk, *cmdBuffer, shaders[0], shaders[1], shaders[2], shaders[3], shaders[4]);
+	vk::bindGraphicsShaders(vk, *cmdBuffer, shaders[0], shaders[1], shaders[2], shaders[3], shaders[4], taskSupported, meshSupported);
 	vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST);
 
 	vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
@@ -2408,6 +2415,8 @@ tcu::TestStatus ShaderObjectTessellationModesInstance::iterate (void)
 	const auto							deviceExtensions			= vk::removeUnsupportedShaderObjectExtensions(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
 	const bool							tessellationSupported		= m_context.getDeviceFeatures().tessellationShader;
 	const bool							geometrySupported			= m_context.getDeviceFeatures().geometryShader;
+	const bool							taskSupported				= m_context.getMeshShaderFeatures().taskShader;
+	const bool							meshSupported				= m_context.getMeshShaderFeatures().meshShader;
 
 	vk::VkFormat						colorAttachmentFormat		= vk::VK_FORMAT_R8G8B8A8_UNORM;
 	const auto							subresourceRange			= makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -2458,7 +2467,7 @@ tcu::TestStatus ShaderObjectTessellationModesInstance::iterate (void)
 	const vk::VkClearValue				clearValue = vk::makeClearValueColor({ 0.0f, 0.0f, 0.0f, 0.0f });
 	vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
 
-	vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, VK_NULL_HANDLE, *fragShader);
+	vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, VK_NULL_HANDLE, *fragShader, taskSupported, meshSupported);
 	vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST);
 
 	vk.cmdSetPolygonModeEXT(*cmdBuffer, vk::VK_POLYGON_MODE_LINE);
