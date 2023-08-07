@@ -749,6 +749,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderModuleIdentifierFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceShaderObjectFeaturesEXT physicalDeviceShaderObjectFeaturesEXT;
+	deMemset(&physicalDeviceShaderObjectFeaturesEXT, 0, sizeof(physicalDeviceShaderObjectFeaturesEXT));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_object") )
+	{
+		physicalDeviceShaderObjectFeaturesEXT.sType = getStructureType<VkPhysicalDeviceShaderObjectFeaturesEXT>();
+		*nextPtr = &physicalDeviceShaderObjectFeaturesEXT;
+		nextPtr  = &physicalDeviceShaderObjectFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures physicalDeviceShaderSubgroupExtendedTypesFeatures;
 	deMemset(&physicalDeviceShaderSubgroupExtendedTypesFeatures, 0, sizeof(physicalDeviceShaderSubgroupExtendedTypesFeatures));
 
@@ -1815,6 +1825,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceShaderModuleIdentifierFeaturesEXT.shaderModuleIdentifier == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderModuleIdentifier not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_object")) )
+	{
+		if ( physicalDeviceShaderObjectFeaturesEXT.shaderObject == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderObject not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

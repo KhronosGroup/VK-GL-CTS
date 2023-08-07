@@ -24,6 +24,10 @@ vk-master-2022-03-01/multiview.txt
 vk-master-2022-03-01/pipeline/fast-linked-library.txt
 vk-master-2022-03-01/pipeline/monolithic.txt
 vk-master-2022-03-01/pipeline/pipeline-library.txt
+vk-master-2022-03-01/pipeline/shader-object-linked-binary.txt
+vk-master-2022-03-01/pipeline/shader-object-linked-spirv.txt
+vk-master-2022-03-01/pipeline/shader-object-unlinked-binary.txt
+vk-master-2022-03-01/pipeline/shader-object-unlinked-spirv.txt
 vk-master-2022-03-01/protected-memory.txt
 vk-master-2022-03-01/query-pool.txt
 vk-master-2022-03-01/rasterization.txt
@@ -33,6 +37,7 @@ vk-master-2022-03-01/reconvergence.txt
 vk-master-2022-03-01/renderpass.txt
 vk-master-2022-03-01/renderpass2.txt
 vk-master-2022-03-01/robustness.txt
+vk-master-2022-03-01/shader-object.txt
 vk-master-2022-03-01/sparse-resources.txt
 vk-master-2022-03-01/spirv-assembly.txt
 vk-master-2022-03-01/ssbo.txt
