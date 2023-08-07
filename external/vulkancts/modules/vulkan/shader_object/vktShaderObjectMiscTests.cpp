@@ -775,7 +775,7 @@ void ShaderObjectStateInstance::createDevice (void)
 	};
 
 	m_customDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_context.getInstance(), m_context.getInstanceInterface(), m_context.getPhysicalDevice(), &deviceInfo);
-	m_logicalDeviceInterface = de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *m_customDevice));
+	m_logicalDeviceInterface = de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *m_customDevice, m_context.getUsedApiVersion()));
 	m_logicalDeviceInterface->getDeviceQueue(*m_customDevice, m_context.getUniversalQueueFamilyIndex(), 0, &m_logicalDeviceQueue);
 }
 
