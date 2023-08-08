@@ -233,13 +233,14 @@ class Composite:
 		self.members		= members			# list of CompositeMember objects
 
 class FunctionArgument:
-	def __init__ (self, name, qualifiers, aType, pointer = None, secondPointerIsConst = False, arraySize = None):
+	def __init__ (self, name, qualifiers, aType, pointer = None, secondPointerIsConst = False, arraySize = None, len = None):
 		self.name					= name
 		self.qualifiers				= qualifiers
 		self.type					= aType
 		self.pointer				= pointer			# None, '*' or '**'
 		self.secondPointerIsConst	= secondPointerIsConst
 		self.arraySize				= arraySize
+		self.len					= len
 
 		# check if type should be swaped
 		substituteType(self)
@@ -452,13 +453,15 @@ class API:
 			nameNode	= paramNode.find("name")
 			typeNode	= paramNode.find("type")
 			starCount	= typeNode.tail.count('*')
+			lenAttr		= paramNode.get("len")
 			functionParams.append(FunctionArgument(
 				nameNode.text,
 				paramNode.text,
 				paramNode.find("type").text,
 				'*' * starCount if starCount > 0 else None,
 				'const' in typeNode.tail,
-				nameNode.tail
+				nameNode.tail,
+				lenAttr
 			))
 		# memorize whole function
 		self.functions.append(Function(
@@ -1899,7 +1902,7 @@ def writeNullDriverImpl (api, filename):
 				"vkGetPhysicalDeviceExternalBufferPropertiesKHR",
 				"vkGetPhysicalDeviceImageFormatProperties2KHR",
 				"vkGetMemoryAndroidHardwareBufferANDROID",
-                "vkCreateShadersEXT",
+				"vkCreateShadersEXT",
 			]
 
 		specialFuncs		= [f for f in api.functions if f.name in specialFuncNames]
@@ -1921,10 +1924,13 @@ def writeNullDriverImpl (api, filename):
 			yield "{"
 			yield "\tDE_UNREF(%s);" % function.arguments[-2].name
 
-			if getHandle(objectType).type == "VK_DEFINE_NON_DISPATCHABLE_HANDLE":
-				yield "\tVK_NULL_RETURN((*%s = allocateNonDispHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
+			if function.arguments[-1].len != None:
+				yield "\tVK_NULL_RETURN((allocateNonDispHandleArray<%s, %s>(%s, %s)));" % (objectType[2:], objectType, argsStr, function.arguments[-1].name)
 			else:
-				yield "\tVK_NULL_RETURN((*%s = allocateHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
+				if getHandle(objectType).type == "VK_DEFINE_NON_DISPATCHABLE_HANDLE":
+					yield "\tVK_NULL_RETURN((*%s = allocateNonDispHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
+				else:
+					yield "\tVK_NULL_RETURN((*%s = allocateHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
 			yield "}"
 			yield ""
 
@@ -2603,7 +2609,7 @@ def generateDeviceFeaturesOrPropertiesDefs(api, FeaturesOrProperties):
 						structureTypeName = structureType.name
 						break
 				# use data in structextends to skip structures that should not be passed to vkGetPhysicalDeviceProperties(/Features)2 function
-				if structureType.structextends is None or structureExtendsPattern not in structureType.structextends:
+				if structureType is None or structureType.structextends is None or structureExtendsPattern not in structureType.structextends:
 					continue
 				# meke sure that structure was not added earlier - this handles special
 				# cases like VkPhysicalDeviceIDPropertiesKHR added by 3 extensions

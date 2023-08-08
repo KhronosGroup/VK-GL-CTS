@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2021 The Khronos Group Inc.
  * Copyright (c) 2021 Valve Corporation.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -163,7 +165,7 @@ void BorderSwizzleCase::checkSupport (Context& context) const
 	if (m_params.useSamplerSwizzleHint)
 		context.requireDeviceFunctionality("VK_EXT_border_color_swizzle");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 
 	if (m_params.isCustom())
 	{
@@ -774,7 +776,9 @@ VkClearColorValue getBorderClearColorValue (const TestParams& params)
 
 tcu::TestStatus BorderSwizzleInstance::iterate (void)
 {
+	const auto&	vki						= m_context.getInstanceInterface();
 	const auto&	vkd						= m_context.getDeviceInterface();
+	const auto	physicalDevice			= m_context.getPhysicalDevice();
 	const auto	device					= m_context.getDevice();
 	auto&		alloc					= m_context.getDefaultAllocator();
 	const auto	queue					= m_context.getUniversalQueue();
@@ -916,7 +920,7 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 	const auto dsLayout = dsLayoutBuilder.build(vkd, device);
 
 	// Pipeline layout.
-	const auto pipelineLayout = makePipelineLayout(vkd, device, dsLayout.get());
+	const PipelineLayoutWrapper pipelineLayout (m_params.pipelineConstructionType, vkd, device, dsLayout.get());
 
 	// Descriptor pool.
 	DescriptorPoolBuilder poolBuilder;
@@ -935,11 +939,11 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 	}
 
 	// Render pass.
-	const auto renderPass = makeRenderPass(vkd, device, colorAttachmentFormat);
+	RenderPassWrapper renderPass (m_params.pipelineConstructionType, vkd, device, colorAttachmentFormat);
 
 	// Shader modules.
-	const auto vertShader = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
-	const auto fragShader = createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+	const auto vertShader = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+	const auto fragShader = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
 
 	const SpecConstants specConstantData =
 	{
@@ -986,7 +990,7 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 		{ .0f, .0f, .0f, .0f },										//	float										blendConstants[4];
 	};
 
-	GraphicsPipelineWrapper graphicsPipeline(vkd, device, m_params.pipelineConstructionType);
+	GraphicsPipelineWrapper graphicsPipeline(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
 	graphicsPipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
 					.setDefaultDepthStencilState()
 					.setDefaultRasterizationState()
@@ -994,23 +998,23 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 					.setupVertexInputState(&vertexInputInfo)
 					.setupPreRasterizationShaderState(viewport,
 									scissor,
-									*pipelineLayout,
+									pipelineLayout,
 									*renderPass,
 									0u,
-									*vertShader)
-					.setupFragmentShaderState(*pipelineLayout,
+									vertShader)
+					.setupFragmentShaderState(pipelineLayout,
 									*renderPass,
 									0u,
-									*fragShader,
+									fragShader,
 									DE_NULL,
 									DE_NULL,
 									&specializationInfo)
 					.setupFragmentOutputState(*renderPass, 0u, &colorBlendInfo)
-					.setMonolithicPipelineLayout(*pipelineLayout)
+					.setMonolithicPipelineLayout(pipelineLayout)
 					.buildPipeline();
 
 	// Framebuffer.
-	const auto framebuffer = makeFramebuffer(vkd, device, renderPass.get(), colorAttachmentView.get(), extent.width, extent.height);
+	renderPass.createFramebuffer(vkd, device, colorAttachment.get(), colorAttachmentView.get(), extent.width, extent.height);
 
 	// Command pool and buffer.
 	const auto cmdPool		= makeCommandPool(vkd, device, qIndex);
@@ -1050,11 +1054,11 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &postClearBarrier);
 
 	// Read from the texture to render a full-screen quad to the color buffer.
-	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissor[0], zeroClearColor);
-	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.getPipeline());
+	renderPass.begin(vkd, cmdBuffer, scissor[0], zeroClearColor);
+	graphicsPipeline.bind(cmdBuffer);
 	vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
 	vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
-	endRenderPass(vkd, cmdBuffer);
+	renderPass.end(vkd, cmdBuffer);
 
 	endCommandBuffer(vkd, cmdBuffer);
 	submitCommandsAndWait(vkd, device, queue, cmdBuffer);

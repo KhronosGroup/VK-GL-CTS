@@ -106,6 +106,12 @@ enum RenderingType
 	RENDERING_TYPE_DYNAMIC_RENDERING
 };
 
+enum QueryType
+{
+	QUERY_TYPE_GET_QUERY_POOL_RESULTS,
+	QUERY_TYPE_CMD_COPY_QUERY_POOL_RESULTS
+};
+
 struct TestParameters
 {
 	VkExtent3D				extent;
@@ -113,6 +119,7 @@ struct TestParameters
 	TestType				viewIndex;
 	VkSampleCountFlagBits	samples;
 	VkFormat				colorFormat;
+	QueryType				queryType;
 	RenderingType			renderingType;
 
 	bool geometryShaderNeeded (void) const
@@ -319,6 +326,7 @@ protected:
 
 	const TestParameters			m_parameters;
 	const bool						m_useDynamicRendering;
+	const bool						m_cmdCopyQueryPoolResults;
 	const int						m_seed;
 	const deUint32					m_squareCount;
 
@@ -349,12 +357,13 @@ protected:
 };
 
 MultiViewRenderTestInstance::MultiViewRenderTestInstance (Context& context, const TestParameters& parameters)
-	: TestInstance			(context)
-	, m_parameters			(fillMissingParameters(parameters))
-	, m_useDynamicRendering	(parameters.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
-	, m_seed				(context.getTestContext().getCommandLine().getBaseSeed())
-	, m_squareCount			(4u)
-	, m_queueFamilyIndex	(0u)
+	: TestInstance				(context)
+	, m_parameters				(fillMissingParameters(parameters))
+	, m_useDynamicRendering		(parameters.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+	, m_cmdCopyQueryPoolResults	(parameters.queryType == QUERY_TYPE_CMD_COPY_QUERY_POOL_RESULTS)
+	, m_seed					(context.getTestContext().getCommandLine().getBaseSeed())
+	, m_squareCount				(4u)
+	, m_queueFamilyIndex		(0u)
 {
 	const float v	= 0.75f;
 	const float o	= 0.25f;
@@ -2945,11 +2954,11 @@ MultiViewQueriesTestInstance::MultiViewQueriesTestInstance (Context& context, co
 
 void verifyAvailabilityBits (const std::vector<uint64_t>& bits, const char* setName)
 {
-	constexpr auto expectedValue = uint64_t{1};
+	constexpr auto invalidValue = uint64_t{0};
 	for (size_t i = 0u; i < bits.size(); ++i)
 	{
-		if (bits[i] != expectedValue)
-			TCU_FAIL(setName + std::string(" availability bit ") + de::toString(i) + " not " + de::toString(expectedValue));
+		if (bits[i] == invalidValue)
+			TCU_FAIL(setName + std::string(" availability bit ") + de::toString(i) + " is " + de::toString(invalidValue));
 	}
 }
 
@@ -3156,6 +3165,15 @@ void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPa
 	const Unique<VkQueryPool>	timestampEndQueryPool			(createQueryPool(*m_device, *m_logicalDevice, &timestampQueryPoolCreateInfo));
 	deUint32					queryStartIndex					= 0;
 
+	const bool					withAvailability				= (m_parameters.viewIndex == TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY);
+	const uint32_t				valuesPerQuery					= (withAvailability ? 2u : 1u);
+	const uint32_t				valuesNumber					= queryCountersNumber * valuesPerQuery;
+	const auto					queryStride						= static_cast<VkDeviceSize>(sizeof(uint64_t) * valuesPerQuery);
+	const auto					extraFlag						= (withAvailability ? VK_QUERY_RESULT_WITH_AVAILABILITY_BIT : static_cast<VkQueryResultFlagBits>(0));
+	const auto					queryFlags						= (VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT | extraFlag);
+
+	vk::BufferWithMemory		queryBuffer						(m_context.getDeviceInterface(), *m_logicalDevice, *m_allocator, makeBufferCreateInfo(valuesNumber * sizeof(uint64_t), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT), vk::MemoryRequirement::HostVisible);
+
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
 	beforeRenderPass();
@@ -3252,15 +3270,11 @@ void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPa
 
 	afterRenderPass();
 
+	if (m_cmdCopyQueryPoolResults)
+		m_device->cmdCopyQueryPoolResults(*m_cmdBuffer, *occlusionQueryPool, 0u, queryCountersNumber, *queryBuffer, 0u, queryStride, queryFlags);
+
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
-
-	const bool		withAvailability		= (m_parameters.viewIndex == TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY);
-	const uint32_t	valuesPerQuery			= (withAvailability ? 2u : 1u);
-	const uint32_t	valuesNumber			= queryCountersNumber * valuesPerQuery;
-	const auto		queryStride				= static_cast<VkDeviceSize>(sizeof(uint64_t) * valuesPerQuery);
-	const auto		extraFlag				= (withAvailability ? VK_QUERY_RESULT_WITH_AVAILABILITY_BIT : static_cast<VkQueryResultFlagBits>(0));
-	const auto		queryFlags				= (VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT | extraFlag);
 
 	// These vectors will temporarily hold results.
 	std::vector<uint64_t>	occlusionQueryResultsBuffer			(valuesNumber, 0u);
@@ -3278,13 +3292,21 @@ void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPa
 		m_timestampEndAvailabilityValues.resize(queryCountersNumber);
 	}
 
-	m_device->getQueryPoolResults(*m_logicalDevice, *occlusionQueryPool, 0u, queryCountersNumber, de::dataSize(occlusionQueryResultsBuffer), de::dataOrNull(occlusionQueryResultsBuffer), queryStride, queryFlags);
+	if (m_cmdCopyQueryPoolResults)
+	{
+		memcpy(occlusionQueryResultsBuffer.data(), queryBuffer.getAllocation().getHostPtr(), de::dataSize(occlusionQueryResultsBuffer));
+		memcpy(timestampStartQueryResultsBuffer.data(), queryBuffer.getAllocation().getHostPtr(), de::dataSize(timestampStartQueryResultsBuffer));
+		memcpy(timestampEndQueryResultsBuffer.data(), queryBuffer.getAllocation().getHostPtr(), de::dataSize(timestampEndQueryResultsBuffer));
+	}
+	else
+	{
+		m_device->getQueryPoolResults(*m_logicalDevice, *occlusionQueryPool, 0u, queryCountersNumber, de::dataSize(occlusionQueryResultsBuffer), de::dataOrNull(occlusionQueryResultsBuffer), queryStride, queryFlags);
+		m_device->getQueryPoolResults(*m_logicalDevice, *timestampStartQueryPool, 0u, queryCountersNumber, de::dataSize(timestampStartQueryResultsBuffer), de::dataOrNull(timestampStartQueryResultsBuffer), queryStride, queryFlags);
+		m_device->getQueryPoolResults(*m_logicalDevice, *timestampEndQueryPool, 0u, queryCountersNumber, de::dataSize(timestampEndQueryResultsBuffer), de::dataOrNull(timestampEndQueryResultsBuffer), queryStride, queryFlags);
+	}
+
 	unpackValues(occlusionQueryResultsBuffer, &m_occlusionValues, (withAvailability ? &m_occlusionAvailabilityValues : nullptr));
-
-	m_device->getQueryPoolResults(*m_logicalDevice, *timestampStartQueryPool, 0u, queryCountersNumber, de::dataSize(timestampStartQueryResultsBuffer), de::dataOrNull(timestampStartQueryResultsBuffer), queryStride, queryFlags);
 	unpackValues(timestampStartQueryResultsBuffer, &m_timestampStartValues, (withAvailability ? &m_timestampStartAvailabilityValues : nullptr));
-
-	m_device->getQueryPoolResults(*m_logicalDevice, *timestampEndQueryPool, 0u, queryCountersNumber, de::dataSize(timestampEndQueryResultsBuffer), de::dataOrNull(timestampEndQueryResultsBuffer), queryStride, queryFlags);
 	unpackValues(timestampEndQueryResultsBuffer, &m_timestampEndValues, (withAvailability ? &m_timestampEndAvailabilityValues : nullptr));
 
 	for (deUint32 ndx = 0; ndx < m_timestampStartValues.size(); ++ndx)
@@ -3757,9 +3779,9 @@ void MultiViewDepthStencilTestInstance::readImage (VkImage image, const tcu::Pix
 tcu::TestStatus MultiViewDepthStencilTestInstance::iterate (void)
 {
 	const deUint32								subpassCount	= static_cast<deUint32>(m_parameters.viewMasks.size());
-	Move<VkRenderPass>						renderPass;
+	Move<VkRenderPass>							renderPass;
 	vector<VkImageView>							attachments		(makeAttachmentsVector());
-	Move<VkFramebuffer>						frameBuffer;
+	Move<VkFramebuffer>							frameBuffer;
 	Unique<VkPipelineLayout>					pipelineLayout	(makePipelineLayout(*m_device, *m_logicalDevice));
 	vector<PipelineSp>							pipelines		(subpassCount);
 	const vector<tcu::Vec2>						depthRanges		(getDepthRanges());
@@ -4551,34 +4573,42 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 			if ((testTypeNdx == TEST_TYPE_INPUT_ATTACHMENTS) && (renderPassType == RENDERING_TYPE_DYNAMIC_RENDERING))
 				continue;
 
-			if (testTypeNdx == TEST_TYPE_DEPTH ||
-				testTypeNdx == TEST_TYPE_DEPTH_DIFFERENT_RANGES ||
-				testTypeNdx == TEST_TYPE_STENCIL)
+			for (int queryTypeNdx = 0; queryTypeNdx < 2; ++queryTypeNdx)
 			{
-				const VkExtent3D		dsTestExtent3D	= { 64u, 64u, 4u };
-				const TestParameters	parameters		= { dsTestExtent3D, tripleDepthStencilMasks(depthStencilMasks), testType, sampleCountFlags, colorFormat, renderPassType };
-				const std::string		testName		= createViewMasksName(parameters.viewMasks);
+				const std::string queryTestName = queryTypeNdx == 0 ? "get_query_pool_results" : "cmd_copy_query_pool_results";
+				const auto queryType = queryTypeNdx == 0 ? QUERY_TYPE_GET_QUERY_POOL_RESULTS : QUERY_TYPE_CMD_COPY_QUERY_POOL_RESULTS;
+				MovePtr<tcu::TestCaseGroup>	queryTypeGroup(new tcu::TestCaseGroup(testCtx, queryTestName.c_str(), "Query type."));
 
-				groupShader->addChild(new MultiViewRenderTestsCase(testCtx, testName.c_str(), "", parameters));
-			}
-			else
-			{
-				for (deUint32 testCaseNdx = 0u; testCaseNdx < testCaseCount; ++testCaseNdx)
+				if (testTypeNdx == TEST_TYPE_DEPTH ||
+					testTypeNdx == TEST_TYPE_DEPTH_DIFFERENT_RANGES ||
+					testTypeNdx == TEST_TYPE_STENCIL)
 				{
-					const TestParameters	parameters	=	{ extent3D[testCaseNdx], viewMasks[testCaseNdx], testType, sampleCountFlags, colorFormat, renderPassType };
-					const std::string		testName	=	createViewMasksName(parameters.viewMasks);
+					const VkExtent3D		dsTestExtent3D	= { 64u, 64u, 4u };
+					const TestParameters	parameters		= { dsTestExtent3D, tripleDepthStencilMasks(depthStencilMasks), testType, sampleCountFlags, colorFormat, queryType, renderPassType };
+					const std::string		testName		= createViewMasksName(parameters.viewMasks);
 
-					groupShader->addChild(new MultiViewRenderTestsCase(testCtx, testName.c_str(), "", parameters));
+					queryTypeGroup->addChild(new MultiViewRenderTestsCase(testCtx, testName.c_str(), "", parameters));
 				}
-
-				// maxMultiviewViewCount case
+				else
 				{
-					const VkExtent3D		incompleteExtent3D	= { 16u, 16u, 0u };
-					const vector<deUint32>	unusedMasks;
-					const TestParameters	parameters			= { incompleteExtent3D, unusedMasks, testType, sampleCountFlags, colorFormat, renderPassType };
+					for (deUint32 testCaseNdx = 0u; testCaseNdx < testCaseCount; ++testCaseNdx)
+					{
+						const TestParameters	parameters	=	{ extent3D[testCaseNdx], viewMasks[testCaseNdx], testType, sampleCountFlags, colorFormat, queryType, renderPassType };
+						const std::string		testName	=	createViewMasksName(parameters.viewMasks);
 
-					groupShader->addChild(new MultiViewRenderTestsCase(testCtx, "max_multi_view_view_count", "", parameters));
+						queryTypeGroup->addChild(new MultiViewRenderTestsCase(testCtx, testName.c_str(), "", parameters));
+					}
+
+					// maxMultiviewViewCount case
+					{
+						const VkExtent3D		incompleteExtent3D	= { 16u, 16u, 0u };
+						const vector<deUint32>	unusedMasks;
+						const TestParameters	parameters			= { incompleteExtent3D, unusedMasks, testType, sampleCountFlags, colorFormat, queryType, renderPassType };
+
+						queryTypeGroup->addChild(new MultiViewRenderTestsCase(testCtx, "max_multi_view_view_count", "", parameters));
+					}
 				}
+				groupShader->addChild(queryTypeGroup.release());
 			}
 
 			switch (testType)

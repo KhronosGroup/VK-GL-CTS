@@ -290,7 +290,7 @@ void InputAttributeOffsetCase::checkSupport (Context &context) const
 	const auto&			vki				= context.getInstanceInterface();
 	const auto			physicalDevice	= context.getPhysicalDevice();
 
-	checkPipelineLibraryRequirements(vki, physicalDevice, m_params.constructionType);
+	checkPipelineConstructionRequirements(vki, physicalDevice, m_params.constructionType);
 
 #ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset"))
@@ -372,13 +372,13 @@ tcu::TestStatus InputAttributeOffsetInstance::iterate (void)
 	ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, vkExtent, colorFormat, colorUsage, VK_IMAGE_TYPE_2D);
 
 	// Render pass and framebuffer.
-	const auto renderPass	= makeRenderPass(ctx.vkd, ctx.device, colorFormat);
-	const auto framebuffer	= makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(), vkExtent.width, vkExtent.height);
+	auto renderPass	= RenderPassWrapper(m_params.constructionType, ctx.vkd, ctx.device, colorFormat);
+	renderPass.createFramebuffer(ctx.vkd, ctx.device, colorBuffer.getImage(), colorBuffer.getImageView(), vkExtent.width, vkExtent.height);
 
 	// Shaders.
 	const auto&	binaries	= m_context.getBinaryCollection();
-	const auto	vertModule	= createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
-	const auto	fragModule	= createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+	const auto	vertModule	= ShaderWrapper(ctx.vkd, ctx.device, binaries.get("vert"));
+	const auto	fragModule	= ShaderWrapper(ctx.vkd, ctx.device, binaries.get("frag"));
 
 	std::vector<VkDynamicState> dynamicStates;
 	if (m_params.dynamic)
@@ -413,10 +413,10 @@ tcu::TestStatus InputAttributeOffsetInstance::iterate (void)
 	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(vkExtent));
 
 	// Pipeline.
-	const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device);
-	GraphicsPipelineWrapper pipelineWrapper (ctx.vkd, ctx.device, m_params.constructionType);
+	const PipelineLayoutWrapper pipelineLayout(m_params.constructionType, ctx.vkd, ctx.device);
+	GraphicsPipelineWrapper pipelineWrapper (ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, m_context.getDeviceExtensions(), m_params.constructionType);
 	pipelineWrapper
-		.setMonolithicPipelineLayout(*pipelineLayout)
+		.setMonolithicPipelineLayout(pipelineLayout)
 		.setDefaultDepthStencilState()
 		.setDefaultColorBlendState()
 		.setDefaultRasterizationState()
@@ -425,8 +425,8 @@ tcu::TestStatus InputAttributeOffsetInstance::iterate (void)
 		.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 		.setDynamicState(&dynamicStateCreateInfo)
 		.setupVertexInputState(pipelineVertexInputState.get())
-		.setupPreRasterizationShaderState(viewports, scissors, *pipelineLayout, *renderPass, 0u, *vertModule)
-		.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragModule)
+		.setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertModule)
+		.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragModule)
 		.setupFragmentOutputState(*renderPass, 0u)
 		.buildPipeline();
 
@@ -436,8 +436,8 @@ tcu::TestStatus InputAttributeOffsetInstance::iterate (void)
 	// Draw and copy image to verification buffer.
 	beginCommandBuffer(ctx.vkd, cmdBuffer);
 	{
-		beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.at(0u), getClearColor());
-		ctx.vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineWrapper.getPipeline());
+		renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u), getClearColor());
+		pipelineWrapper.bind(cmdBuffer);
 		ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 		if (m_params.dynamic)
 		{
@@ -456,7 +456,7 @@ tcu::TestStatus InputAttributeOffsetInstance::iterate (void)
 			ctx.vkd.cmdSetVertexInputEXT(cmdBuffer, 1u, &dynamicBinding, 1u, &dynamicAttribute);
 		}
 		ctx.vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
-		endRenderPass(ctx.vkd, cmdBuffer);
+		renderPass.end(ctx.vkd, cmdBuffer);
 	}
 	{
 		copyImageToBuffer(

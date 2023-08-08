@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Intel Corporation
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +86,7 @@ public:
 		setDynamicBlendState();
 		setDynamicDepthStencilState();
 
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.getPipeline());
+		m_pipeline.bind(*m_cmdBuffer);
 
 #ifndef CTS_USES_VULKANSC
 		if (m_isMesh)
@@ -119,7 +121,7 @@ public:
 			m_vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_data.size()), 1, 0, 0);
 		}
 
-		endRenderPass(m_vk, *m_cmdBuffer);
+		m_renderPass.end(m_vk, *m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
 
 		submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
@@ -196,7 +198,7 @@ public:
 		setDynamicDepthStencilState();
 		setDynamicViewportState(1, &viewport, &scissor_1);
 
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.getPipeline());
+		m_pipeline.bind(*m_cmdBuffer);
 
 #ifndef CTS_USES_VULKANSC
 		if (m_isMesh)
@@ -239,7 +241,7 @@ public:
 			m_vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_data.size()), 1, 0, 0);
 		}
 
-		endRenderPass(m_vk, *m_cmdBuffer);
+		m_renderPass.end(m_vk, *m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
 
 		submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
@@ -290,7 +292,7 @@ protected:
 public:
 	StatePersistenceTestInstance (Context& context, vk::PipelineConstructionType pipelineConstructionType, const ShaderMap& shaders)
 		: DynamicStateBaseClass (context, pipelineConstructionType, shaders.at(glu::SHADERTYPE_VERTEX), shaders.at(glu::SHADERTYPE_FRAGMENT), shaders.at(glu::SHADERTYPE_MESH))
-		, m_pipelineAdditional	(context.getDeviceInterface(), context.getDevice(), pipelineConstructionType)
+		, m_pipelineAdditional	(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType)
 	{
 		// This test does not make sense for mesh shader variants.
 		DE_ASSERT(!m_isMesh);
@@ -311,8 +313,8 @@ public:
 	}
 	virtual void initPipeline (const vk::VkDevice device)
 	{
-		const vk::Unique<vk::VkShaderModule>	vs			(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
-		const vk::Unique<vk::VkShaderModule>	fs			(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
+		const vk::ShaderWrapper					vs			(vk::ShaderWrapper(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
+		const vk::ShaderWrapper					fs			(vk::ShaderWrapper(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
 		std::vector<vk::VkViewport>				viewports	{ { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } };
 		std::vector<vk::VkRect2D>				scissors	{ { { 0u, 0u }, { 0u, 0u } } };
 
@@ -328,14 +330,14 @@ public:
 				  .setupVertexInputState(&m_vertexInputState)
 				  .setupPreRasterizationShaderState(viewports,
 													scissors,
-													*m_pipelineLayout,
+													m_pipelineLayout,
 													*m_renderPass,
 													0u,
-													*vs,
+													vs,
 													static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState))
-				  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&depthStencilState))
+				  .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&depthStencilState))
 				  .setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState))
-				  .setMonolithicPipelineLayout(*m_pipelineLayout)
+				  .setMonolithicPipelineLayout(m_pipelineLayout)
 				  .buildPipeline();
 
 		m_pipelineAdditional.setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
@@ -344,14 +346,14 @@ public:
 				  .setupVertexInputState(&m_vertexInputState)
 				  .setupPreRasterizationShaderState(viewports,
 													scissors,
-													*m_pipelineLayout,
+													m_pipelineLayout,
 													*m_renderPass,
 													0u,
-													*vs,
+													vs,
 													static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState))
-				  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&depthStencilState))
+				  .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&depthStencilState))
 				  .setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState))
-				  .setMonolithicPipelineLayout(*m_pipelineLayout)
+				  .setMonolithicPipelineLayout(m_pipelineLayout)
 				  .buildPipeline();
 	}
 
@@ -372,7 +374,7 @@ public:
 		setDynamicBlendState();
 		setDynamicDepthStencilState();
 
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.getPipeline());
+		m_pipeline.bind(*m_cmdBuffer);
 
 		const vk::VkDeviceSize vertexBufferOffset = 0;
 		const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
@@ -383,14 +385,14 @@ public:
 		// draw quad using vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP
 		m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 0, 0);
 
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineAdditional.getPipeline());
+		m_pipelineAdditional.bind(*m_cmdBuffer);
 
 		// bind second state
 		setDynamicViewportState(1, &viewport, &scissor_2);
 		// draw quad using vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
 		m_vk.cmdDraw(*m_cmdBuffer, 6, 1, 4, 0);
 
-		endRenderPass(m_vk, *m_cmdBuffer);
+		m_renderPass.end(m_vk, *m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
 
 		submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());

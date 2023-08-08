@@ -4,6 +4,8 @@
 *
 * Copyright (c) 2020 The Khronos Group Inc.
 * Copyright (c) 2020 Valve Corporation.
+* Copyright (c) 2023 LunarG, Inc.
+* Copyright (c) 2023 Nintendo
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -3413,7 +3415,7 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 	if (m_testConfig.sampleShadingEnable && !baseFeatures.sampleRateShading)
 		TCU_THROW(NotSupportedError, "sampleRateShading not supported");
 
-	checkPipelineLibraryRequirements(vki, physicalDevice, m_testConfig.pipelineConstructionType);
+	checkPipelineConstructionRequirements(vki, physicalDevice, m_testConfig.pipelineConstructionType);
 }
 
 void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programCollection) const
@@ -3583,6 +3585,7 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 	fragSourceTemplateStream
 		<< "${FRAG_CALCULATIONS}"
 		<< (fragAtomics ? "    atomicAdd(counterBuffer.fragCounter, 1u);\n" : "")
+		<< (m_testConfig.sampleShadingEnable ? "    uint sampleId = gl_SampleID;\n" : "") // Enable sample shading for shader objects by reading gl_SampleID
 		<< "}\n"
 		;
 
@@ -4314,11 +4317,12 @@ class DeviceHelper
 {
 public:
 	virtual ~DeviceHelper () {}
-	virtual const vk::DeviceInterface&	getDeviceInterface	(void) const = 0;
-	virtual vk::VkDevice				getDevice			(void) const = 0;
-	virtual uint32_t					getQueueFamilyIndex	(void) const = 0;
-	virtual vk::VkQueue					getQueue			(void) const = 0;
-	virtual vk::Allocator&				getAllocator		(void) const = 0;
+	virtual const vk::DeviceInterface&		getDeviceInterface	(void) const = 0;
+	virtual vk::VkDevice					getDevice			(void) const = 0;
+	virtual uint32_t						getQueueFamilyIndex	(void) const = 0;
+	virtual vk::VkQueue						getQueue			(void) const = 0;
+	virtual vk::Allocator&					getAllocator		(void) const = 0;
+	virtual const std::vector<std::string>&	getDeviceExtensions	(void) const = 0;
 };
 
 // This one just reuses the default device from the context.
@@ -4331,15 +4335,17 @@ public:
 		, m_queueFamilyIndex	(context.getUniversalQueueFamilyIndex())
 		, m_queue				(context.getUniversalQueue())
 		, m_allocator			(context.getDefaultAllocator())
+		, m_extensions			(context.getDeviceExtensions())
 		{}
 
 	virtual ~ContextDeviceHelper () {}
 
-	const vk::DeviceInterface&	getDeviceInterface	(void) const override	{ return m_deviceInterface;		}
-	vk::VkDevice				getDevice			(void) const override	{ return m_device;				}
-	uint32_t					getQueueFamilyIndex	(void) const override	{ return m_queueFamilyIndex;	}
-	vk::VkQueue					getQueue			(void) const override	{ return m_queue;				}
-	vk::Allocator&				getAllocator		(void) const override	{ return m_allocator;			}
+	const vk::DeviceInterface&		getDeviceInterface	(void) const override	{ return m_deviceInterface;		}
+	vk::VkDevice					getDevice			(void) const override	{ return m_device;				}
+	uint32_t						getQueueFamilyIndex	(void) const override	{ return m_queueFamilyIndex;	}
+	vk::VkQueue						getQueue			(void) const override	{ return m_queue;				}
+	vk::Allocator&					getAllocator		(void) const override	{ return m_allocator;			}
+	const std::vector<std::string>& getDeviceExtensions	(void) const override	{ return m_extensions; }
 
 protected:
 	const vk::DeviceInterface&	m_deviceInterface;
@@ -4347,6 +4353,7 @@ protected:
 	const uint32_t				m_queueFamilyIndex;
 	const vk::VkQueue			m_queue;
 	vk::Allocator&				m_allocator;
+	std::vector<std::string>	m_extensions;
 };
 
 // This one creates a new device with VK_NV_shading_rate_image and VK_EXT_extended_dynamic_state3.
@@ -4380,17 +4387,21 @@ public:
 		const auto&	contextMeshFeatures	= context.getMeshShaderFeaturesEXT();
 		const auto& contextGPLFeatures	= context.getGraphicsPipelineLibraryFeaturesEXT();
 		const auto& contextDBCFeatures	= context.getDepthBiasControlFeaturesEXT();
+		const auto&	contextSOFeatures	= context.getShaderObjectFeaturesEXT();
+
 		const bool	meshShaderSupport	= contextMeshFeatures.meshShader;
 		const bool	gplSupport			= contextGPLFeatures.graphicsPipelineLibrary;
 		const bool	dbcSupport			= contextDBCFeatures.depthBiasControl;
-
-		vk::VkPhysicalDeviceDepthBiasControlFeaturesEXT			dbcFeatures					= vk::initVulkanStructure();
-		vk::VkPhysicalDeviceMeshShaderFeaturesEXT				meshFeatures				= vk::initVulkanStructure();
-		vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	gplFeatures					= vk::initVulkanStructure();
+		const bool  shaderObjectSupport = contextSOFeatures.shaderObject;
 
 		vk::VkPhysicalDeviceExtendedDynamicState3FeaturesEXT	eds3Features				= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceShadingRateImageFeaturesNV			shadingRateImageFeatures	= vk::initVulkanStructure(&eds3Features);
 		vk::VkPhysicalDeviceFeatures2							features2					= vk::initVulkanStructure(&shadingRateImageFeatures);
+
+		vk::VkPhysicalDeviceDepthBiasControlFeaturesEXT			dbcFeatures					= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceMeshShaderFeaturesEXT				meshFeatures				= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	gplFeatures					= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceShaderObjectFeaturesEXT				shaderObjectFeatures		= vk::initVulkanStructure();
 
 		const auto addFeatures = vk::makeStructChainAdder(&features2);
 
@@ -4402,6 +4413,9 @@ public:
 
 		if (dbcSupport)
 			addFeatures(&dbcFeatures);
+
+		if (shaderObjectSupport)
+			addFeatures(&shaderObjectFeatures);
 
 		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 #endif // CTS_USES_VULKANSC
@@ -4425,9 +4439,15 @@ public:
 		if (dbcSupport)
 			extensions.push_back("VK_EXT_depth_bias_control");
 
+		if (shaderObjectSupport)
+			extensions.push_back("VK_EXT_shader_object");
+
 		// Disable robustness.
 		features2.features.robustBufferAccess = VK_FALSE;
 #endif // CTS_USES_VULKANSC
+
+		for (const auto& ext : extensions)
+			m_extensions.push_back(ext);
 
 		const vk::VkDeviceCreateInfo deviceCreateInfo =
 		{
@@ -4455,11 +4475,12 @@ public:
 
 	virtual ~ShadingRateImageDeviceHelper () {}
 
-	const vk::DeviceInterface&	getDeviceInterface	(void) const override	{ return *m_vkd;				}
-	vk::VkDevice				getDevice			(void) const override	{ return m_device.get();		}
-	uint32_t					getQueueFamilyIndex	(void) const override	{ return m_queueFamilyIndex;	}
-	vk::VkQueue					getQueue			(void) const override	{ return m_queue;				}
-	vk::Allocator&				getAllocator		(void) const override	{ return *m_allocator;			}
+	const vk::DeviceInterface&		getDeviceInterface	(void) const override	{ return *m_vkd;				}
+	vk::VkDevice					getDevice			(void) const override	{ return m_device.get();		}
+	uint32_t						getQueueFamilyIndex	(void) const override	{ return m_queueFamilyIndex;	}
+	vk::VkQueue						getQueue			(void) const override	{ return m_queue;				}
+	vk::Allocator&					getAllocator		(void) const override	{ return *m_allocator;			}
+	const std::vector<std::string>&	getDeviceExtensions	(void) const override	{ return m_extensions;			}
 
 protected:
 	vk::Move<vk::VkDevice>					m_device;
@@ -4467,6 +4488,7 @@ protected:
 	deUint32								m_queueFamilyIndex;
 	vk::VkQueue								m_queue;
 	std::unique_ptr<vk::SimpleAllocator>	m_allocator;
+	std::vector<std::string>				m_extensions;
 };
 
 std::unique_ptr<DeviceHelper> g_shadingRateDeviceHelper;
@@ -4503,7 +4525,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 {
 	using ImageWithMemoryVec	= std::vector<std::unique_ptr<vk::ImageWithMemory>>;
 	using ImageViewVec			= std::vector<vk::Move<vk::VkImageView>>;
-	using FramebufferVec		= std::vector<vk::Move<vk::VkFramebuffer>>;
+	using RenderPassVec			= std::vector<vk::RenderPassWrapper>;
 
 	const auto&	vki					= m_context.getInstanceInterface();
 	const auto	physicalDevice		= m_context.getPhysicalDevice();
@@ -4947,7 +4969,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		1u,													//	deUint32						pushConstantRangeCount;
 		&pushConstantRange,									//	const VkPushConstantRange*		pPushConstantRanges;
 	};
-	const auto pipelineLayout = vk::createPipelineLayout(vkd, device, &pipelineLayoutCreateInfo);
+	const vk::PipelineLayoutWrapper pipelineLayout (m_testConfig.pipelineConstructionType, vkd, device, &pipelineLayoutCreateInfo);
 
 	// Render pass with single subpass. Attachment order:
 	// 1) Color attachments (kColorAttCount items).
@@ -5040,6 +5062,9 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		}
 	}
 
+	// Render pass and framebuffers.
+	RenderPassVec renderPassFramebuffers;
+
 	const vk::VkRenderPassCreateInfo renderPassCreateInfo =
 	{
 		vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			//	VkStructureType					sType;
@@ -5052,10 +5077,6 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		0u,														//	deUint32						dependencyCount;
 		nullptr,												//	const VkSubpassDependency*		pDependencies;
 	};
-	const auto renderPass = vk::createRenderPass(vkd, device, &renderPassCreateInfo);
-
-	// Framebuffers.
-	FramebufferVec framebuffers;
 
 	DE_ASSERT(colorImageViews.size() == dsImageViews.size() * kColorAttCount);
 
@@ -5064,14 +5085,17 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 
 	for (size_t iterIdx = 0; iterIdx < dsImageViews.size(); ++iterIdx)
 	{
-		std::vector<vk::VkImageView> attachments;
+		std::vector<vk::VkImage>		images;
+		std::vector<vk::VkImageView>	attachments;
 
 		for (uint32_t colorAttIdx = 0u; colorAttIdx < kColorAttCount; ++colorAttIdx)
 		{
 			const auto colorViewIdx = iterIdx * kColorAttCount + colorAttIdx;
+			images.push_back(colorImages[colorViewIdx].get()->get());
 			attachments.push_back(colorImageViews[colorViewIdx].get());
 		}
 
+		images.push_back(dsImages[iterIdx].get()->get());
 		attachments.push_back(dsImageViews[iterIdx].get());
 
 		if (kUseResolveAtt)
@@ -5079,16 +5103,19 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			for (uint32_t resolveAttIdx = 0u; resolveAttIdx < kColorAttCount; ++resolveAttIdx)
 			{
 				const auto resolveViewIdx = iterIdx * kColorAttCount + resolveAttIdx;
+				images.push_back(resolveImages[resolveViewIdx].get()->get());
 				attachments.push_back(resolveImageViews[resolveViewIdx].get());
 			}
 		}
+
+		renderPassFramebuffers.emplace_back(m_testConfig.pipelineConstructionType, vkd, device, &renderPassCreateInfo);
 
 		const vk::VkFramebufferCreateInfo framebufferCreateInfo =
 		{
 			vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	//	VkStructureType				sType;
 			nullptr,										//	const void*					pNext;
 			0u,												//	VkFramebufferCreateFlags	flags;
-			renderPass.get(),								//	VkRenderPass				renderPass;
+			renderPassFramebuffers[iterIdx].get(),			//	VkRenderPass				renderPass;
 			static_cast<deUint32>(attachments.size()),		//	deUint32					attachmentCount;
 			attachments.data(),								//	const VkImageView*			pAttachments;
 			kFramebufferWidth,								//	deUint32					width;
@@ -5096,24 +5123,24 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			1u,												//	deUint32					layers;
 		};
 
-		framebuffers.emplace_back(vk::createFramebuffer(vkd, device, &framebufferCreateInfo));
+		renderPassFramebuffers[iterIdx].createFramebuffer(vkd, device, &framebufferCreateInfo, images);
 	}
 
 	// Shader modules.
 	const auto&	binaries			= m_context.getBinaryCollection();
-	const auto	dynamicVertModule	= vk::createShaderModule(vkd, device, binaries.get("dynamicVert"));
-	const auto	staticVertModule	= vk::createShaderModule(vkd, device, binaries.get("staticVert"));
-	const auto	dynamicFragModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("dynamicFrag"), 0u);
-	const auto	staticFragModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("staticFrag"), 0u);
-	const auto	geomModule			= (m_testConfig.needsGeometryShader() ? vk::createShaderModule(vkd, device, binaries.get("geom")) : vk::Move<vk::VkShaderModule>());
-	const auto	tescModule			= (m_testConfig.needsTessellation() ? vk::createShaderModule(vkd, device, binaries.get("tesc")) : vk::Move<vk::VkShaderModule>());
-	const auto	teseModule			= (m_testConfig.needsTessellation() ? vk::createShaderModule(vkd, device, binaries.get("tese")) : vk::Move<vk::VkShaderModule>());
-	const auto	dynamicMeshModule	= (m_testConfig.useMeshShaders ? vk::createShaderModule(vkd, device, binaries.get("dynamicMesh")) : vk::Move<vk::VkShaderModule>());
-	const auto	staticMeshModule	= (m_testConfig.useMeshShaders ? vk::createShaderModule(vkd, device, binaries.get("staticMesh")) : vk::Move<vk::VkShaderModule>());
-	const auto	meshNoOutModule		= (m_testConfig.bindUnusedMeshShadingPipeline ? vk::createShaderModule(vkd, device, binaries.get("meshNoOut")) : vk::Move<vk::VkShaderModule>());
+	const auto	dynamicVertModule	= vk::ShaderWrapper(vkd, device, binaries.get("dynamicVert"));
+	const auto	staticVertModule	= vk::ShaderWrapper(vkd, device, binaries.get("staticVert"));
+	const auto	dynamicFragModule	= vk::ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("dynamicFrag"), 0u);
+	const auto	staticFragModule	= vk::ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("staticFrag"), 0u);
+	const auto	geomModule			= (m_testConfig.needsGeometryShader() ? vk::ShaderWrapper(vkd, device, binaries.get("geom")) : vk::ShaderWrapper());
+	const auto	tescModule			= (m_testConfig.needsTessellation() ? vk::ShaderWrapper(vkd, device, binaries.get("tesc")) : vk::ShaderWrapper());
+	const auto	teseModule			= (m_testConfig.needsTessellation() ? vk::ShaderWrapper(vkd, device, binaries.get("tese")) : vk::ShaderWrapper());
+	const auto	dynamicMeshModule	= (m_testConfig.useMeshShaders ? vk::ShaderWrapper(vkd, device, binaries.get("dynamicMesh")) : vk::ShaderWrapper());
+	const auto	staticMeshModule	= (m_testConfig.useMeshShaders ? vk::ShaderWrapper(vkd, device, binaries.get("staticMesh")) : vk::ShaderWrapper());
+	const auto	meshNoOutModule		= (m_testConfig.bindUnusedMeshShadingPipeline ? vk::ShaderWrapper(vkd, device, binaries.get("meshNoOut")) : vk::ShaderWrapper());
 
-	vk::Move<vk::VkShaderModule>	vertDPCPModule;
-	vk::Move<vk::VkShaderModule>	fragDPCPModule;
+	vk::ShaderWrapper	vertDPCPModule;
+	vk::ShaderWrapper	fragDPCPModule;
 
 	// Input state.
 	const auto vertexBindings	= m_testConfig.vertexGenerator.staticValue->getBindingDescriptions(m_testConfig.strideConfig.staticValue);
@@ -5541,15 +5568,15 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		},
 	};
 
-	vk::GraphicsPipelineWrapper	staticPipeline (vkd, device, m_testConfig.pipelineConstructionType);
+	vk::GraphicsPipelineWrapper	staticPipeline		(vki, vkd, physicalDevice, device, deviceHelper.getDeviceExtensions(), m_testConfig.pipelineConstructionType);
 
 	// Create extra dynamic patch control points pipeline if needed.
-	vk::Move<vk::VkPipeline> extraDynPCPPipeline;
+	vk::GraphicsPipelineWrapper extraDynPCPPipeline (vki, vkd, physicalDevice, device, deviceHelper.getDeviceExtensions(), m_testConfig.pipelineConstructionType);
 
 	if (m_testConfig.useExtraDynPCPPipeline)
 	{
-		vertDPCPModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vertDPCP"));
-		fragDPCPModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("fragDPCP"));
+		vertDPCPModule = vk::ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vertDPCP"));
+		fragDPCPModule = vk::ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("fragDPCP"));
 
 		const vk::VkPipelineVertexInputStateCreateInfo	extraDPCPInputState		= vk::initVulkanStructure();
 		const vk::VkDynamicState						extraDynamicState		= vk::VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT;
@@ -5559,23 +5586,35 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			nullptr,													//	const void*							pNext;
 			0u,															//	VkPipelineDynamicStateCreateFlags	flags;
 			1u,															//	uint32_t							dynamicStateCount;
-			&extraDynamicState,												//	const VkDynamicState*				pDynamicStates;
+			&extraDynamicState,											//	const VkDynamicState*				pDynamicStates;
 		};
 
-		const auto extraPipelineLayout = vk::makePipelineLayout(vkd, device);
+		const vk::PipelineLayoutWrapper extraPipelineLayout (m_testConfig.pipelineConstructionType, vkd, device);
 
 		const auto viewports	= m_testConfig.viewportConfig.staticValue;
 		const auto scissors		= m_testConfig.scissorConfig.staticValue;
 
-		extraDynPCPPipeline = vk::makeGraphicsPipeline(
-			vkd, device, *extraPipelineLayout,
-			vertDPCPModule.get(), DE_NULL, DE_NULL, DE_NULL, fragDPCPModule.get(),
-			renderPass.get(), viewports, scissors, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u,
-			&extraDPCPInputState, nullptr, nullptr, nullptr, nullptr, &extraDynamicStateInfo);
+		extraDynPCPPipeline.setDynamicState(&extraDynamicStateInfo)
+						   .setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+						   .setDefaultColorBlendState()
+						   .setDefaultMultisampleState()
+						   .setupVertexInputState(&extraDPCPInputState)
+						   .setupPreRasterizationShaderState(
+										viewports,
+										scissors,
+										extraPipelineLayout,
+										*renderPassFramebuffers[0],
+										0u,
+										vertDPCPModule,
+										&rasterizationStateCreateInfo)
+						   .setupFragmentShaderState(extraPipelineLayout, *renderPassFramebuffers[0], 0u, fragDPCPModule, &depthStencilStateCreateInfo)
+						   .setupFragmentOutputState(*renderPassFramebuffers[0], 0u)
+						   .setMonolithicPipelineLayout(extraPipelineLayout)
+						   .buildPipeline();
 	}
 	else if (m_testConfig.useExtraDynPipeline)
 	{
-		vertDPCPModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vertDPCP"));
+		vertDPCPModule = vk::ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vertDPCP"));
 	}
 
 	// Create static pipeline when needed.
@@ -5604,11 +5643,11 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			staticPipeline.setupPreRasterizationMeshShaderState(
 												viewports,
 												scissors,
-												*pipelineLayout,
-												*renderPass,
+												pipelineLayout,
+												*renderPassFramebuffers[0],
 												0u,
-												VK_NULL_HANDLE,
-												*staticMeshModule,
+												vk::ShaderWrapper(),
+												staticMeshModule,
 												&rasterizationStateCreateInfo);
 		}
 		else
@@ -5618,29 +5657,29 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 						  .setupPreRasterizationShaderState(
 												viewports,
 												scissors,
-												*pipelineLayout,
-												*renderPass,
+												pipelineLayout,
+												*renderPassFramebuffers[0],
 												0u,
-												*staticVertModule,
+												staticVertModule,
 												&rasterizationStateCreateInfo,
-												*tescModule,
-												*teseModule,
-												*geomModule);
+												tescModule,
+												teseModule,
+												geomModule);
 		}
 
 		staticPipeline
 #ifndef CTS_USES_VULKANSC
 					  .setRepresentativeFragmentTestState(pReprFragment.get())
 #endif // CTS_USES_VULKANSC
-					  .setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *staticFragModule, &depthStencilStateCreateInfo, &multisampleStateCreateInfo)
-					  .setupFragmentOutputState(*renderPass, 0u, &staticCBStateInfo, &multisampleStateCreateInfo)
-					  .setMonolithicPipelineLayout(*pipelineLayout)
+					  .setupFragmentShaderState(pipelineLayout, *renderPassFramebuffers[0], 0u, staticFragModule, &depthStencilStateCreateInfo, &multisampleStateCreateInfo)
+					  .setupFragmentOutputState(*renderPassFramebuffers[0], 0u, &staticCBStateInfo, &multisampleStateCreateInfo)
+					  .setMonolithicPipelineLayout(pipelineLayout)
 					  .buildPipeline();
 	}
 
 	// Create dynamic pipeline.
-	vk::GraphicsPipelineWrapper graphicsPipeline(vkd, device, m_testConfig.pipelineConstructionType);
-	vk::GraphicsPipelineWrapper extraDynPipeline(vkd, device, m_testConfig.pipelineConstructionType);
+	vk::GraphicsPipelineWrapper graphicsPipeline(vki, vkd, physicalDevice, device, deviceHelper.getDeviceExtensions(), m_testConfig.pipelineConstructionType);
+	vk::GraphicsPipelineWrapper extraDynPipeline(vki, vkd, physicalDevice, device, deviceHelper.getDeviceExtensions(), m_testConfig.pipelineConstructionType);
 	{
 		auto viewports	= m_testConfig.viewportConfig.staticValue;
 		auto scissors	= m_testConfig.scissorConfig.staticValue;
@@ -5715,11 +5754,11 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			graphicsPipeline.setupPreRasterizationMeshShaderState(
 												viewports,
 												scissors,
-												*pipelineLayout,
-												*renderPass,
+												pipelineLayout,
+												*renderPassFramebuffers[0],
 												0u,
-												DE_NULL,
-												*dynamicMeshModule,
+												vk::ShaderWrapper(),
+												dynamicMeshModule,
 												staticRasterizationStateCreateInfo);
 		}
 		else
@@ -5753,14 +5792,14 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 							.setupPreRasterizationShaderState(
 												viewports,
 												scissors,
-												*pipelineLayout,
-												*renderPass,
+												pipelineLayout,
+												*renderPassFramebuffers[0],
 												0u,
-												*dynamicVertModule,
+												dynamicVertModule,
 												staticRasterizationStateCreateInfo,
-												*tescModule,
-												*teseModule,
-												*geomModule);
+												tescModule,
+												teseModule,
+												geomModule);
 
 			if (m_testConfig.useExtraDynPipeline)
 				extraDynPipeline.setupVertexInputState(
@@ -5772,10 +5811,10 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 								.setupPreRasterizationShaderState(
 													viewports,
 													scissors,
-													*pipelineLayout,
-													*renderPass,
+													pipelineLayout,
+													*renderPassFramebuffers[0],
 													0u,
-													*vertDPCPModule,
+													vertDPCPModule,
 													staticRasterizationStateCreateInfo);
 		}
 
@@ -5813,22 +5852,22 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 #ifndef CTS_USES_VULKANSC
 						.setRepresentativeFragmentTestState(pReprFragment.get())
 #endif // CTS_USES_VULKANSC
-						.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *dynamicFragModule, staticDepthStencilStateCreateInfo, staticMultisampleStateCreateInfo)
-						.setupFragmentOutputState(*renderPass, 0u, staticColorBlendStateCreateInfo, staticMultisampleStateCreateInfo)
-						.setMonolithicPipelineLayout(*pipelineLayout)
+						.setupFragmentShaderState(pipelineLayout, *renderPassFramebuffers[0], 0u, dynamicFragModule, staticDepthStencilStateCreateInfo, staticMultisampleStateCreateInfo)
+						.setupFragmentOutputState(*renderPassFramebuffers[0], 0u, staticColorBlendStateCreateInfo, staticMultisampleStateCreateInfo)
+						.setMonolithicPipelineLayout(pipelineLayout)
 						.buildPipeline();
 		if (m_testConfig.useExtraDynPipeline)
 			extraDynPipeline
 	#ifndef CTS_USES_VULKANSC
 							.setRepresentativeFragmentTestState(pReprFragment.get())
 	#endif // CTS_USES_VULKANSC
-							.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *dynamicFragModule, staticDepthStencilStateCreateInfo, staticMultisampleStateCreateInfo)
-							.setupFragmentOutputState(*renderPass, 0u, staticColorBlendStateCreateInfo, staticMultisampleStateCreateInfo)
-							.setMonolithicPipelineLayout(*pipelineLayout)
+							.setupFragmentShaderState(pipelineLayout, *renderPassFramebuffers[0], 0u, dynamicFragModule, staticDepthStencilStateCreateInfo, staticMultisampleStateCreateInfo)
+							.setupFragmentOutputState(*renderPassFramebuffers[0], 0u, staticColorBlendStateCreateInfo, staticMultisampleStateCreateInfo)
+							.setMonolithicPipelineLayout(pipelineLayout)
 							.buildPipeline();
 	}
 
-	vk::GraphicsPipelineWrapper meshNoOutPipeline(vkd, device, m_testConfig.pipelineConstructionType);
+	vk::GraphicsPipelineWrapper meshNoOutPipeline(vki, vkd, physicalDevice, device, deviceHelper.getDeviceExtensions(), m_testConfig.pipelineConstructionType);
 
 #ifndef CTS_USES_VULKANSC
 	if (m_testConfig.bindUnusedMeshShadingPipeline)
@@ -5859,15 +5898,15 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 						 .setupPreRasterizationMeshShaderState(
 											viewports,
 											scissors,
-											*pipelineLayout,
-											*renderPass,
+											pipelineLayout,
+											*renderPassFramebuffers[0],
 											0u,
-											VK_NULL_HANDLE,
-											*meshNoOutModule,
+											vk::ShaderWrapper(),
+											meshNoOutModule,
 											&rasterizationStateCreateInfo)
-						 .setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, VK_NULL_HANDLE, &depthStencilStateCreateInfo, &multisampleStateCreateInfo)
-						 .setupFragmentOutputState(*renderPass, 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
-						 .setMonolithicPipelineLayout(*pipelineLayout)
+						 .setupFragmentShaderState(pipelineLayout, *renderPassFramebuffers[0], 0u, vk::ShaderWrapper(), &depthStencilStateCreateInfo, &multisampleStateCreateInfo)
+						 .setupFragmentOutputState(*renderPassFramebuffers[0], 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo)
+						 .setMonolithicPipelineLayout(pipelineLayout)
 						 .buildPipeline();
 	}
 #endif // CTS_USES_VULKANSC
@@ -5897,11 +5936,11 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		}
 
 		// Begin render pass.
-		vk::beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffers[iteration].get(), vk::makeRect2D(kFramebufferWidth, kFramebufferHeight), static_cast<deUint32>(clearValues.size()), clearValues.data());
+		renderPassFramebuffers[iteration].begin(vkd, cmdBuffer, vk::makeRect2D(kFramebufferWidth, kFramebufferHeight), static_cast<deUint32>(clearValues.size()), clearValues.data());
 
 			// Bind a static pipeline first if needed.
 			if (kBindStaticFirst && iteration == 0u)
-				vkd.cmdBindPipeline(cmdBuffer, pipelineBindPoint, staticPipeline.getPipeline());
+				staticPipeline.bind(cmdBuffer);
 
 			// Maybe set extended dynamic state here.
 			if (kSequenceOrdering == SequenceOrdering::BETWEEN_PIPELINES)
@@ -5919,12 +5958,12 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 				if (m_testConfig.bindUnusedMeshShadingPipeline)
 				{
 					DE_ASSERT(kSequenceOrdering == SequenceOrdering::CMD_BUFFER_START);
-					vkd.cmdBindPipeline(cmdBuffer, pipelineBindPoint, meshNoOutPipeline.getPipeline());
+					meshNoOutPipeline.bind(cmdBuffer);
 				}
 
 				if (m_testConfig.useExtraDynPCPPipeline)
 				{
-					vkd.cmdBindPipeline(cmdBuffer, pipelineBindPoint, extraDynPCPPipeline.get());
+					extraDynPCPPipeline.bind(cmdBuffer);
 
 					// In these two sequence orderings, the right dynamic state value will have been set before and we would be
 					// setting it to a wrong value here, resulting in test failures. We keep the right value instead.
@@ -5936,7 +5975,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 
 				if (m_testConfig.useExtraDynPipeline)
 				{
-					vkd.cmdBindPipeline(cmdBuffer, pipelineBindPoint, extraDynPipeline.getPipeline());
+					extraDynPipeline.bind(cmdBuffer);
 
 					if (kSequenceOrdering == SequenceOrdering::BEFORE_DRAW || kSequenceOrdering == SequenceOrdering::AFTER_PIPELINES || kSequenceOrdering == SequenceOrdering::BEFORE_GOOD_STATIC)
 						setDynamicStates(m_testConfig, vkd, cmdBuffer);
@@ -5944,7 +5983,11 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 					vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
 				}
 
-				vkd.cmdBindPipeline(cmdBuffer, pipelineBindPoint, graphicsPipeline.getPipeline());
+				graphicsPipeline.bind(cmdBuffer);
+
+				// When shader objects are used vkCmdSetVertexInput() will overwrite vkCmdBindBuffers2 so we have to call it again
+				if (boundInAdvance && vk::isConstructionTypeShaderObject(m_testConfig.pipelineConstructionType))
+					maybeBindVertexBufferDynStride(m_testConfig, vkd, cmdBuffer, 0u, vertBuffers, rvertBuffers);
 			}
 
 			if (kSequenceOrdering == SequenceOrdering::BEFORE_GOOD_STATIC ||
@@ -5959,7 +6002,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			if (kSequenceOrdering == SequenceOrdering::BEFORE_GOOD_STATIC ||
 				(kSequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC && iteration > 0u))
 			{
-				vkd.cmdBindPipeline(cmdBuffer, pipelineBindPoint, staticPipeline.getPipeline());
+				staticPipeline.bind(cmdBuffer);
 			}
 
 			const auto& viewportVec = m_testConfig.getActiveViewportVec();
@@ -6082,7 +6125,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 				}
 			}
 
-		vk::endRenderPass(vkd, cmdBuffer);
+		renderPassFramebuffers[iteration].end(vkd, cmdBuffer);
 	}
 
 	if (kFragAtomics)
@@ -6439,6 +6482,9 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 	for (const auto& kMeshShadingCase : kMeshShadingCases)
 	for (const auto& kOrderingCase : kOrderingCases)
 	{
+		if (vk::isConstructionTypeShaderObject(pipelineConstructionType) && (kOrderingCase.ordering == SequenceOrdering::BETWEEN_PIPELINES || kOrderingCase.ordering == SequenceOrdering::AFTER_PIPELINES))
+			continue;
+
 		const auto& kUseMeshShaders	= kMeshShadingCase.useMeshShaders;
 		const auto& kOrdering		= kOrderingCase.ordering;
 
@@ -8063,6 +8109,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 		}
 
 		// Shading rate image enable.
+		// VK_NV_shading_rate_image is disabled when using shader objects due to interaction with VK_KHR_fragment_shading_rate
+		if (!vk::isConstructionTypeShaderObject(pipelineConstructionType))
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
 

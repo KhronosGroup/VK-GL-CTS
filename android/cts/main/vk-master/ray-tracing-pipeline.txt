@@ -11133,3 +11133,9 @@ dEQP-VK.ray_tracing_pipeline.acceleration_structures.copy_within_pipeline.cpu.ac
 dEQP-VK.ray_tracing_pipeline.acceleration_structures.copy_within_pipeline.gpu.stage_as_copy_bit
 dEQP-VK.ray_tracing_pipeline.acceleration_structures.copy_within_pipeline.gpu.stage_all_transfer
 dEQP-VK.ray_tracing_pipeline.acceleration_structures.copy_within_pipeline.gpu.access_sbt_read
+dEQP-VK.ray_tracing_pipeline.acceleration_structures.update.cpu.vertices
+dEQP-VK.ray_tracing_pipeline.acceleration_structures.update.cpu.indices
+dEQP-VK.ray_tracing_pipeline.acceleration_structures.update.cpu.transform
+dEQP-VK.ray_tracing_pipeline.acceleration_structures.update.gpu.vertices
+dEQP-VK.ray_tracing_pipeline.acceleration_structures.update.gpu.indices
+dEQP-VK.ray_tracing_pipeline.acceleration_structures.update.gpu.transform
