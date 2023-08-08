@@ -398,160 +398,162 @@ BuildStats buildPrograms (tcu::TestContext&			testCtx,
 						  const bool				allowSpirV14)
 {
 	const deUint32						numThreads			= deGetNumAvailableLogicalCores();
-	// Limit dictated by the memory limitations of the CI system
-	const deUint32						numThreadsUsed			= numThreads > 16 ? 16 : numThreads;
+	const size_t						numNodesInChunk		= 500000;
 
-	TaskExecutor						executor			(numThreadsUsed);
+	const UniquePtr<tcu::TestPackageRoot>	root			(createRoot(testCtx));
+	tcu::DefaultHierarchyInflater			inflater		(testCtx);
+	de::MovePtr<tcu::CaseListFilter>		caseListFilter	(testCtx.getCommandLine().createCaseListFilter(testCtx.getArchive()));
+	tcu::TestHierarchyIterator				iterator		(*root, inflater, *caseListFilter);
+	BuildStats	stats;
+	int notSupported = 0;
 
-	// de::PoolArray<> is faster to build than std::vector
-	de::MemPool							programPool;
-	de::PoolArray<Program>				programs			(&programPool);
-	int									notSupported		= 0;
-
+	while (iterator.getState() != tcu::TestHierarchyIterator::STATE_FINISHED)
 	{
+
+		TaskExecutor						executor			(numThreads);
+
+		// de::PoolArray<> is faster to build than std::vector
+		de::MemPool							programPool;
+		de::PoolArray<Program>				programs			(&programPool);
+
 		de::MemPool							tmpPool;
 		de::PoolArray<BuildHighLevelShaderTask<vk::GlslSource> >	buildGlslTasks		(&tmpPool);
 		de::PoolArray<BuildHighLevelShaderTask<vk::HlslSource> >	buildHlslTasks		(&tmpPool);
 		de::PoolArray<BuildSpirVAsmTask>	buildSpirvAsmTasks	(&tmpPool);
 
-		// Collect build tasks
+		// Collect build tasks. We perform tests in chunks to reduce memory usage
+		size_t numNodesAdded = 0;
+		while (iterator.getState() != tcu::TestHierarchyIterator::STATE_FINISHED && numNodesAdded < numNodesInChunk)
 		{
-			const UniquePtr<tcu::TestPackageRoot>	root			(createRoot(testCtx));
-			tcu::DefaultHierarchyInflater			inflater		(testCtx);
-			de::MovePtr<tcu::CaseListFilter>		caseListFilter	(testCtx.getCommandLine().createCaseListFilter(testCtx.getArchive()));
-			tcu::TestHierarchyIterator				iterator		(*root, inflater, *caseListFilter);
-
-			while (iterator.getState() != tcu::TestHierarchyIterator::STATE_FINISHED)
+			if (iterator.getState() == tcu::TestHierarchyIterator::STATE_ENTER_NODE &&
+				tcu::isTestNodeTypeExecutable(iterator.getNode()->getNodeType()))
 			{
-				if (iterator.getState() == tcu::TestHierarchyIterator::STATE_ENTER_NODE &&
-					tcu::isTestNodeTypeExecutable(iterator.getNode()->getNodeType()))
+				numNodesAdded++;
+				TestCase* const				testCase					= dynamic_cast<TestCase*>(iterator.getNode());
+				const string				casePath					= iterator.getNodePath();
+				vk::ShaderBuildOptions		defaultGlslBuildOptions		(usedVulkanVersion, baselineSpirvVersion, 0u);
+				vk::ShaderBuildOptions		defaultHlslBuildOptions		(usedVulkanVersion, baselineSpirvVersion, 0u);
+				vk::SpirVAsmBuildOptions	defaultSpirvAsmBuildOptions	(usedVulkanVersion, baselineSpirvVersion);
+				vk::SourceCollections		sourcePrograms				(usedVulkanVersion, defaultGlslBuildOptions, defaultHlslBuildOptions, defaultSpirvAsmBuildOptions);
+
+				try
 				{
-					TestCase* const				testCase					= dynamic_cast<TestCase*>(iterator.getNode());
-					const string				casePath					= iterator.getNodePath();
-					vk::ShaderBuildOptions		defaultGlslBuildOptions		(usedVulkanVersion, baselineSpirvVersion, 0u);
-					vk::ShaderBuildOptions		defaultHlslBuildOptions		(usedVulkanVersion, baselineSpirvVersion, 0u);
-					vk::SpirVAsmBuildOptions	defaultSpirvAsmBuildOptions	(usedVulkanVersion, baselineSpirvVersion);
-					vk::SourceCollections		sourcePrograms				(usedVulkanVersion, defaultGlslBuildOptions, defaultHlslBuildOptions, defaultSpirvAsmBuildOptions);
-
-					try
-					{
-						testCase->delayedInit();
-						testCase->initPrograms(sourcePrograms);
-					}
-					catch (const tcu::NotSupportedError& )
-					{
-						notSupported++;
-						iterator.next();
-						continue;
-					}
-
-					for (vk::GlslSourceCollection::Iterator progIter = sourcePrograms.glslSources.begin();
-						 progIter != sourcePrograms.glslSources.end();
-						 ++progIter)
-					{
-						// Source program requires higher SPIR-V version than available: skip it to avoid fail
-						// Unless this is SPIR-V 1.4 and is explicitly allowed.
-						if (progIter.getProgram().buildOptions.targetVersion > maxSpirvVersion && !(allowSpirV14 && progIter.getProgram().buildOptions.supports_VK_KHR_spirv_1_4 && progIter.getProgram().buildOptions.targetVersion == vk::SPIRV_VERSION_1_4))
-							continue;
-
-						programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName()), progIter.getProgram().buildOptions.getSpirvValidatorOptions()));
-						buildGlslTasks.pushBack(BuildHighLevelShaderTask<vk::GlslSource>(progIter.getProgram(), &programs.back()));
-						buildGlslTasks.back().setCommandline(testCtx.getCommandLine());
-						executor.submit(&buildGlslTasks.back());
-					}
-
-					for (vk::HlslSourceCollection::Iterator progIter = sourcePrograms.hlslSources.begin();
-						 progIter != sourcePrograms.hlslSources.end();
-						 ++progIter)
-					{
-						// Source program requires higher SPIR-V version than available: skip it to avoid fail
-						// Unless this is SPIR-V 1.4 and is explicitly allowed.
-						if (progIter.getProgram().buildOptions.targetVersion > maxSpirvVersion && !(allowSpirV14 && progIter.getProgram().buildOptions.supports_VK_KHR_spirv_1_4 && progIter.getProgram().buildOptions.targetVersion == vk::SPIRV_VERSION_1_4))
-							continue;
-
-						programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName()), progIter.getProgram().buildOptions.getSpirvValidatorOptions()));
-						buildHlslTasks.pushBack(BuildHighLevelShaderTask<vk::HlslSource>(progIter.getProgram(), &programs.back()));
-						buildHlslTasks.back().setCommandline(testCtx.getCommandLine());
-						executor.submit(&buildHlslTasks.back());
-					}
-
-					for (vk::SpirVAsmCollection::Iterator progIter = sourcePrograms.spirvAsmSources.begin();
-						 progIter != sourcePrograms.spirvAsmSources.end();
-						 ++progIter)
-					{
-						// Source program requires higher SPIR-V version than available: skip it to avoid fail
-						// Unless this is SPIR-V 1.4 and is explicitly allowed.
-						if (progIter.getProgram().buildOptions.targetVersion > maxSpirvVersion && !(allowSpirV14 && progIter.getProgram().buildOptions.supports_VK_KHR_spirv_1_4 && progIter.getProgram().buildOptions.targetVersion == vk::SPIRV_VERSION_1_4))
-							continue;
-
-						programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName()), progIter.getProgram().buildOptions.getSpirvValidatorOptions()));
-						buildSpirvAsmTasks.pushBack(BuildSpirVAsmTask(progIter.getProgram(), &programs.back()));
-						buildSpirvAsmTasks.back().setCommandline(testCtx.getCommandLine());
-						executor.submit(&buildSpirvAsmTasks.back());
-					}
+					testCase->delayedInit();
+					testCase->initPrograms(sourcePrograms);
+				}
+				catch (const tcu::NotSupportedError& )
+				{
+					notSupported++;
+					iterator.next();
+					continue;
 				}
 
-				iterator.next();
+				for (vk::GlslSourceCollection::Iterator progIter = sourcePrograms.glslSources.begin();
+						progIter != sourcePrograms.glslSources.end();
+						++progIter)
+				{
+					// Source program requires higher SPIR-V version than available: skip it to avoid fail
+					// Unless this is SPIR-V 1.4 and is explicitly allowed.
+					if (progIter.getProgram().buildOptions.targetVersion > maxSpirvVersion && !(allowSpirV14 && progIter.getProgram().buildOptions.supports_VK_KHR_spirv_1_4 && progIter.getProgram().buildOptions.targetVersion == vk::SPIRV_VERSION_1_4))
+						continue;
+
+					programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName()), progIter.getProgram().buildOptions.getSpirvValidatorOptions()));
+					buildGlslTasks.pushBack(BuildHighLevelShaderTask<vk::GlslSource>(progIter.getProgram(), &programs.back()));
+					buildGlslTasks.back().setCommandline(testCtx.getCommandLine());
+					executor.submit(&buildGlslTasks.back());
+				}
+
+				for (vk::HlslSourceCollection::Iterator progIter = sourcePrograms.hlslSources.begin();
+						progIter != sourcePrograms.hlslSources.end();
+						++progIter)
+				{
+					// Source program requires higher SPIR-V version than available: skip it to avoid fail
+					// Unless this is SPIR-V 1.4 and is explicitly allowed.
+					if (progIter.getProgram().buildOptions.targetVersion > maxSpirvVersion && !(allowSpirV14 && progIter.getProgram().buildOptions.supports_VK_KHR_spirv_1_4 && progIter.getProgram().buildOptions.targetVersion == vk::SPIRV_VERSION_1_4))
+						continue;
+
+					programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName()), progIter.getProgram().buildOptions.getSpirvValidatorOptions()));
+					buildHlslTasks.pushBack(BuildHighLevelShaderTask<vk::HlslSource>(progIter.getProgram(), &programs.back()));
+					buildHlslTasks.back().setCommandline(testCtx.getCommandLine());
+					executor.submit(&buildHlslTasks.back());
+				}
+
+				for (vk::SpirVAsmCollection::Iterator progIter = sourcePrograms.spirvAsmSources.begin();
+						progIter != sourcePrograms.spirvAsmSources.end();
+						++progIter)
+				{
+					// Source program requires higher SPIR-V version than available: skip it to avoid fail
+					// Unless this is SPIR-V 1.4 and is explicitly allowed.
+					if (progIter.getProgram().buildOptions.targetVersion > maxSpirvVersion && !(allowSpirV14 && progIter.getProgram().buildOptions.supports_VK_KHR_spirv_1_4 && progIter.getProgram().buildOptions.targetVersion == vk::SPIRV_VERSION_1_4))
+						continue;
+
+					programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName()), progIter.getProgram().buildOptions.getSpirvValidatorOptions()));
+					buildSpirvAsmTasks.pushBack(BuildSpirVAsmTask(progIter.getProgram(), &programs.back()));
+					buildSpirvAsmTasks.back().setCommandline(testCtx.getCommandLine());
+					executor.submit(&buildSpirvAsmTasks.back());
+				}
 			}
+
+			iterator.next();
 		}
 
 		// Need to wait until tasks completed before freeing task memory
 		executor.waitForComplete();
-	}
 
-	if (validateBinaries)
-	{
-		std::vector<ValidateBinaryTask>	validationTasks;
-
-		validationTasks.reserve(programs.size());
-
-		for (de::PoolArray<Program>::iterator progIter = programs.begin(); progIter != programs.end(); ++progIter)
+		if (validateBinaries)
 		{
-			if (progIter->buildStatus == Program::STATUS_PASSED)
+			std::vector<ValidateBinaryTask>	validationTasks;
+
+			validationTasks.reserve(programs.size());
+
+			for (de::PoolArray<Program>::iterator progIter = programs.begin(); progIter != programs.end(); ++progIter)
 			{
-				validationTasks.push_back(ValidateBinaryTask(&*progIter));
-				executor.submit(&validationTasks.back());
+				if (progIter->buildStatus == Program::STATUS_PASSED)
+				{
+					validationTasks.push_back(ValidateBinaryTask(&*progIter));
+					executor.submit(&validationTasks.back());
+				}
 			}
+
+			executor.waitForComplete();
 		}
 
-		executor.waitForComplete();
-	}
-
-	{
-		vk::BinaryRegistryWriter	registryWriter		(dstPath);
-
-		for (de::PoolArray<Program>::iterator progIter = programs.begin(); progIter != programs.end(); ++progIter)
 		{
-			if (progIter->buildStatus == Program::STATUS_PASSED)
-				registryWriter.addProgram(progIter->id, *progIter->binary);
-		}
+			vk::BinaryRegistryWriter	registryWriter		(dstPath);
 
-		registryWriter.write();
-	}
-
-	{
-		BuildStats	stats;
-		stats.notSupported = notSupported;
-		for (de::PoolArray<Program>::iterator progIter = programs.begin(); progIter != programs.end(); ++progIter)
-		{
-			const bool	buildOk			= progIter->buildStatus == Program::STATUS_PASSED;
-			const bool	validationOk	= progIter->validationStatus != Program::STATUS_FAILED;
-
-			if (buildOk && validationOk)
-				stats.numSucceeded += 1;
-			else
+			for (de::PoolArray<Program>::iterator progIter = programs.begin(); progIter != programs.end(); ++progIter)
 			{
-				stats.numFailed += 1;
-				tcu::print("ERROR: %s / %s: %s failed\n",
-						   progIter->id.testCasePath.c_str(),
-						   progIter->id.programName.c_str(),
-						   (buildOk ? "validation" : "build"));
-				tcu::print("%s\n", (buildOk ? progIter->validationLog.c_str() : progIter->buildLog.c_str()));
+				if (progIter->buildStatus == Program::STATUS_PASSED)
+					registryWriter.addProgram(progIter->id, *progIter->binary);
 			}
+
+			registryWriter.write();
 		}
 
-		return stats;
+		{
+			stats.notSupported = notSupported;
+			for (de::PoolArray<Program>::iterator progIter = programs.begin(); progIter != programs.end(); ++progIter)
+			{
+				const bool	buildOk			= progIter->buildStatus == Program::STATUS_PASSED;
+				const bool	validationOk	= progIter->validationStatus != Program::STATUS_FAILED;
+
+				if (buildOk && validationOk)
+					stats.numSucceeded += 1;
+				else
+				{
+					stats.numFailed += 1;
+					tcu::print("ERROR: %s / %s: %s failed\n",
+							progIter->id.testCasePath.c_str(),
+							progIter->id.programName.c_str(),
+							(buildOk ? "validation" : "build"));
+					tcu::print("%s\n", (buildOk ? progIter->validationLog.c_str() : progIter->buildLog.c_str()));
+				}
+			}
+
+		}
 	}
+
+	return stats;
 }
 
 } // vkt
