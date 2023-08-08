@@ -277,7 +277,7 @@ struct DeviceHelper
 												 queueFamilyIndex,
 												 context.getTestContext().getCommandLine().isValidationEnabled(),
 												 pAllocator))
-		, vkd				(context.getPlatformInterface(), instance, *device)
+		, vkd				(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion())
 		, queue				(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
 	{
 	}
@@ -320,7 +320,7 @@ struct MultiQueueDeviceHelper
 												 queueFamilyIndices,
 												 context.getTestContext().getCommandLine().isValidationEnabled(),
 												 pAllocator))
-		, vkd				(context.getPlatformInterface(), instance, *device)
+		, vkd				(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion())
 	{
 	}
 
@@ -1725,7 +1725,7 @@ tcu::TestStatus deviceGroupRenderTest (Context& context, Type wsiType)
 	};
 
 	Move<VkDevice>					groupDevice					= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), instHelper.instance, instHelper.vki, physicalDevicesInGroup[deviceIdx], &deviceCreateInfo);
-	const DeviceDriver				vkd							(context.getPlatformInterface(), instHelper.instance, *groupDevice);
+	const DeviceDriver				vkd							(context.getPlatformInterface(), instHelper.instance, *groupDevice, context.getUsedApiVersion());
 	VkQueue							queue						(getDeviceQueue(vkd, *groupDevice, queueFamilyIndex, 0));
 	SimpleAllocator					allocator					(vkd, *groupDevice, getPhysicalDeviceMemoryProperties(instHelper.vki, physicalDevicesInGroup[deviceIdx]));
 
@@ -1956,7 +1956,7 @@ tcu::TestStatus deviceGroupRenderTest2 (Context& context, Type wsiType)
 	};
 
 	Move<VkDevice>						groupDevice			= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), instHelper.instance, instHelper.vki, physicalDevicesInGroup[deviceIdx], &deviceCreateInfo);
-	const DeviceDriver					vkd					(context.getPlatformInterface(), instHelper.instance, *groupDevice);
+	const DeviceDriver					vkd					(context.getPlatformInterface(), instHelper.instance, *groupDevice, context.getUsedApiVersion());
 	VkQueue								queue				(getDeviceQueue(vkd, *groupDevice, queueFamilyIndex, 0));
 	SimpleAllocator						allocator			(vkd, *groupDevice, getPhysicalDeviceMemoryProperties(instHelper.vki, physicalDevicesInGroup[deviceIdx]));
 

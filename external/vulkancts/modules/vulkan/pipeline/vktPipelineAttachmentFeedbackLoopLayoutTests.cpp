@@ -3,6 +3,8 @@
  * ------------------------
  *
  * Copyright (c) 2021 Valve Corporation.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -690,14 +692,18 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup (void)
 			de::dataOrNull(subpassDependencies),				// const VkSubpassDependency*		pDependencies;
 		};
 
-		m_renderPass = createRenderPass(vk, vkDevice, &renderPassParams);
+		m_renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, &renderPassParams);
 	}
 
 	// Create framebuffer
 	{
+		std::vector<VkImage> images(m_imageCount);
 		std::vector<VkImageView> pAttachments(m_imageCount);
 		for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
+		{
+			images[imgNdx] = m_colorImages[imgNdx]->get();
 			pAttachments[imgNdx] =  m_colorAttachmentViews[imgNdx]->get();
+		}
 
 		const VkFramebufferCreateInfo framebufferParams =
 		{
@@ -712,7 +718,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup (void)
 			1u													// deUint32					layers;
 		};
 
-		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
+		m_renderPass.createFramebuffer(vk, vkDevice, &framebufferParams, images);
 	}
 
 	// Create pipeline layouts
@@ -721,32 +727,32 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup (void)
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			0u,													// VkPipelineLayoutCreateFlags	flags;
+			VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT,	// VkPipelineLayoutCreateFlags	flags;
 			0u,													// deUint32						setLayoutCount;
 			DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
 			0u,													// deUint32						pushConstantRangeCount;
 			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
 		};
 
-		m_preRasterizationStatePipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_preRasterizationStatePipelineLayout = PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 	}
 	{
 		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			0u,													// VkPipelineLayoutCreateFlags	flags;
+			VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT,	// VkPipelineLayoutCreateFlags	flags;
 			1u,													// deUint32						setLayoutCount;
 			&m_descriptorSetLayout.get(),						// const VkDescriptorSetLayout*	pSetLayouts;
 			0u,													// deUint32						pushConstantRangeCount;
 			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
 		};
 
-		m_fragmentStatePipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_fragmentStatePipelineLayout = PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 	}
 
-	m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("tex_vert"), 0);
-	m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("tex_frag"), 0);
+	m_vertexShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("tex_vert"), 0);
+	m_fragmentShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("tex_frag"), 0);
 
 	// Create pipeline
 	{
@@ -832,18 +838,18 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup (void)
 		};
 
 		m_graphicsPipeline.setDynamicState(&dynamicStateInfo)
-						  .setMonolithicPipelineLayout(*m_fragmentStatePipelineLayout)
+						  .setMonolithicPipelineLayout(m_fragmentStatePipelineLayout)
 						  .setDefaultDepthStencilState()
 						  .setDefaultRasterizationState()
 						  .setDefaultMultisampleState()
 						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 														scissors,
-														*m_preRasterizationStatePipelineLayout,
+														m_preRasterizationStatePipelineLayout,
 														*m_renderPass,
 														0u,
-														*m_vertexShaderModule)
-						  .setupFragmentShaderState(*m_fragmentStatePipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule)
+														m_vertexShaderModule)
+						  .setupFragmentShaderState(m_fragmentStatePipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule)
 						  .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
 						  .buildPipeline();
 	}
@@ -927,15 +933,15 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup (void)
 			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0,
 								  0u, DE_NULL, 0u, DE_NULL, (deUint32)m_imageCount, &preAttachmentBarriers[0]);
 
-			beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), (deUint32)attachmentClearValues.size(), &attachmentClearValues[0]);
+			m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), (deUint32)attachmentClearValues.size(), &attachmentClearValues[0]);
 		}
 		else
 		{
 			// Do not clear the color attachments as we are using the sampled texture as color attachment as well.
-			beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), 0u, DE_NULL);
+			m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), 0u, DE_NULL);
 		}
 
-		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
+		m_graphicsPipeline.bind(*m_cmdBuffer);
 
 		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_fragmentStatePipelineLayout, 0, 1, &m_descriptorSet.get(), 0, DE_NULL);
 
@@ -947,7 +953,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup (void)
 
 		vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
 
-		endRenderPass(vk, *m_cmdBuffer);
+		m_renderPass.end(vk, *m_cmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }
@@ -1210,14 +1216,16 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup (void)
 			de::dataOrNull(subpassDependencies),				// const VkSubpassDependency*		pDependencies;
 		};
 
-		m_renderPass = createRenderPass(vk, vkDevice, &renderPassParams);
+		m_renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, &renderPassParams);
 	}
 
 	// Create framebuffer
 	{
+		std::vector<VkImage> images(m_imageCount);
 		std::vector<VkImageView> pAttachments(m_imageCount);
 		for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
 		{
+			images[imgNdx] = m_dsImages[imgNdx]->get();
 			pAttachments[imgNdx] = m_dsAttachmentViews[imgNdx]->get();
 		}
 
@@ -1234,10 +1242,10 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup (void)
 			1u													// deUint32					layers;
 		};
 
-		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
+		m_renderPass.createFramebuffer(vk, vkDevice, &framebufferParams, images);
 	}
 
-	// Create pipeline layout
+	// Create pipeline layouts
 	{
 		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
 		{
@@ -1250,25 +1258,39 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup (void)
 			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
 		};
 
-		m_preRasterizationStatePipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_preRasterizationStatePipelineLayout = PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 	}
 	{
 		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			0u,													// VkPipelineLayoutCreateFlags	flags;
+			VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT,	// VkPipelineLayoutCreateFlags	flags;
+			0u,													// deUint32						setLayoutCount;
+			DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
+			0u,													// deUint32						pushConstantRangeCount;
+			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
+		};
+
+		m_preRasterizationStatePipelineLayout = PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
+	}
+	{
+		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
+			DE_NULL,											// const void*					pNext;
+			VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT,	// VkPipelineLayoutCreateFlags	flags;
 			1u,													// deUint32						setLayoutCount;
 			&m_descriptorSetLayout.get(),						// const VkDescriptorSetLayout*	pSetLayouts;
 			0u,													// deUint32						pushConstantRangeCount;
 			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
 		};
 
-		m_fragmentStatePipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_fragmentStatePipelineLayout = PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 	}
 
-	m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("tex_vert"), 0);
-	m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("tex_frag"), 0);
+	m_vertexShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("tex_vert"), 0);
+	m_fragmentShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("tex_frag"), 0);
 
 	// Create pipeline
 	{
@@ -1376,18 +1398,18 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup (void)
 		};
 
 		m_graphicsPipeline.setDynamicState(&dynamicStateInfo)
-						  .setMonolithicPipelineLayout(*m_fragmentStatePipelineLayout)
+						  .setMonolithicPipelineLayout(m_fragmentStatePipelineLayout)
 						  .setDefaultDepthStencilState()
 						  .setDefaultRasterizationState()
 						  .setDefaultMultisampleState()
 						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 														scissors,
-														*m_preRasterizationStatePipelineLayout,
+														m_preRasterizationStatePipelineLayout,
 														*m_renderPass,
 														0u,
-														*m_vertexShaderModule)
-						  .setupFragmentShaderState(*m_fragmentStatePipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule, &depthStencilStateCreateInfo)
+														m_vertexShaderModule)
+						  .setupFragmentShaderState(m_fragmentStatePipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule, &depthStencilStateCreateInfo)
 						  .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
 						  .buildPipeline();
 
@@ -1447,9 +1469,9 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup (void)
 			0u, DE_NULL, 0u, DE_NULL, (deUint32)m_imageCount, &preAttachmentBarriers[0]);
 
 		// Do not clear the color attachments as we are using the texture as color attachment.
-		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), 0u, DE_NULL);
+		m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), 0u, DE_NULL);
 
-		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
+		m_graphicsPipeline.bind(*m_cmdBuffer);
 
 		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_fragmentStatePipelineLayout, 0, 1, &m_descriptorSet.get(), 0, DE_NULL);
 
@@ -1461,7 +1483,7 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup (void)
 
 		vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
 
-		endRenderPass(vk, *m_cmdBuffer);
+		m_renderPass.end(vk, *m_cmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }
@@ -1851,7 +1873,7 @@ void AttachmentFeedbackLoopLayoutSamplerTest::checkSupport (Context& context) co
 	if (m_pipelineStateMode != PipelineStateMode::STATIC)
 		context.requireDeviceFunctionality("VK_EXT_attachment_feedback_loop_dynamic_state");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 
 	vk::VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT attachmentFeedbackLoopLayoutFeatures =
 	{

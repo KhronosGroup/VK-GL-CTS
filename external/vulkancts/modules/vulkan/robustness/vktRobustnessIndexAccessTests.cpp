@@ -404,10 +404,10 @@ TestInstance* DrawIndexedTestCase::createInstance(Context& context) const
 	Move<VkDevice>	device = createRobustBufferAccessDevice(context, &features2);
 	DeviceDriverPtr deviceDriver =
 #ifndef CTS_USES_VULKANSC
-		DeviceDriverPtr(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device));
+		DeviceDriverPtr(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion()));
 #else
 		DeviceDriverPtr(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *device, context.getTestContext().getCommandLine(),
-										   context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties()),
+										   context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), context.getUsedApiVersion()),
 						vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
 #endif // CTS_USES_VULKANSC
 

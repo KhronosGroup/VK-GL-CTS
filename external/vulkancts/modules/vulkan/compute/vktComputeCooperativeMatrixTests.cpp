@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2019 The Khronos Group Inc.
  * Copyright (c) 2018-2019 NVIDIA Corporation
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,6 +101,7 @@ struct CaseDef
 	VkComponentTypeNV outputType;
 	bool colMajor;
 	StorageClass storageClass;
+	vk::ComputePipelineConstructionType computePipelineConstructionType;
 };
 
 class CooperativeMatrixTestInstance : public TestInstance
@@ -106,7 +109,7 @@ class CooperativeMatrixTestInstance : public TestInstance
 public:
 						CooperativeMatrixTestInstance	(Context& context, const CaseDef& data);
 						~CooperativeMatrixTestInstance	(void);
-	tcu::TestStatus		iterate				(void);
+	tcu::TestStatus		iterate							(void);
 private:
 	CaseDef			m_data;
 };
@@ -144,14 +147,14 @@ CooperativeMatrixTestCase::~CooperativeMatrixTestCase	(void)
 {
 }
 
-void CooperativeMatrixTestCase::checkSupport(Context& context) const
+void CooperativeMatrixTestCase::checkSupport (Context& context) const
 {
 	if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
 	{
 		TCU_THROW(NotSupportedError, "Vulkan 1.1 not supported");
 	}
 
-	if (!context.getCooperativeMatrixFeatures().cooperativeMatrix)
+	if (!context.getCooperativeMatrixFeaturesNV().cooperativeMatrix)
 	{
 		TCU_THROW(NotSupportedError, "cooperativeMatrix not supported");
 	}
@@ -229,6 +232,8 @@ void CooperativeMatrixTestCase::checkSupport(Context& context) const
 
 	if (!supported[0] || !supported[1])
 		TCU_THROW(NotSupportedError, "cooperative matrix combination not supported");
+
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_data.computePipelineConstructionType);
 }
 
 struct {
@@ -876,21 +881,6 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 
 		setUpdateBuilder.update(vk, device);
 
-		const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,				// sType
-			DE_NULL,													// pNext
-			(VkPipelineLayoutCreateFlags)0,
-			1,															// setLayoutCount
-			&descriptorSetLayout.get(),									// pSetLayouts
-			0u,															// pushConstantRangeCount
-			DE_NULL,													// pPushConstantRanges
-		};
-
-		Move<VkPipelineLayout> pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo, NULL);
-
-		Move<VkPipeline> pipeline;
-
 		VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
 
 		const deUint32 specData[9] =
@@ -947,30 +937,10 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 		flushAlloc(vk, device, buffers[2]->getAllocation());
 		flushAlloc(vk, device, buffers[3]->getAllocation());
 
-		const Unique<VkShaderModule>	shader						(createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0));
-
-		const VkPipelineShaderStageCreateInfo	shaderCreateInfo =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			DE_NULL,
-			(VkPipelineShaderStageCreateFlags)0,
-			VK_SHADER_STAGE_COMPUTE_BIT,								// stage
-			*shader,													// shader
-			"main",
-			&specInfo,													// pSpecializationInfo
-		};
-
-		const VkComputePipelineCreateInfo		pipelineCreateInfo =
-		{
-			VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-			DE_NULL,
-			0u,															// flags
-			shaderCreateInfo,											// cs
-			*pipelineLayout,											// layout
-			(vk::VkPipeline)0,											// basePipelineHandle
-			0u,															// basePipelineIndex
-		};
-		pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
+		ComputePipelineWrapper			pipeline(vk, device, m_data.computePipelineConstructionType, m_context.getBinaryCollection().get("test"));
+		pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+		pipeline.setSpecializationInfo(specInfo);
+		pipeline.buildPipeline();
 
 		const VkQueue					queue					= m_context.getUniversalQueue();
 		Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, 0, m_context.getUniversalQueueFamilyIndex());
@@ -978,8 +948,8 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 
 		beginCommandBuffer(vk, *cmdBuffer, 0u);
 
-		vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, DE_NULL);
-		vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
+		vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, pipeline.getPipelineLayout(), 0u, 1, &*descriptorSet, 0u, DE_NULL);
+		pipeline.bind(*cmdBuffer);
 
 		vk.cmdDispatch(*cmdBuffer, m_data.workgroupsX, m_data.workgroupsY, 1);
 
@@ -1239,7 +1209,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 
 }	// anonymous
 
-tcu::TestCaseGroup*	createCooperativeMatrixTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createCooperativeMatrixTests (tcu::TestContext& testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
 			testCtx, "cooperative_matrix", "GL_NV_cooperative_matrix tests"));
@@ -1344,6 +1314,7 @@ tcu::TestCaseGroup*	createCooperativeMatrixTests (tcu::TestContext& testCtx)
 						(VkComponentTypeNV)outputType,		// VkComponentTypeNV outputType;
 						!!colCases[colNdx].value,			// bool colMajor;
 						(StorageClass)scCases[scNdx].value,	// StorageClass storageClass;
+						computePipelineConstructionType,	//vk::ComputePipelineConstructionType;
 					};
 
 					scGroup->addChild(new CooperativeMatrixTestCase(testCtx, colCases[colNdx].name, colCases[colNdx].description, c));

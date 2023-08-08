@@ -33,6 +33,7 @@
 #include "vktRayQueryBarycentricCoordinatesTests.hpp"
 #include "vktRayQueryNonUniformArgsTests.hpp"
 #include "vktRayQueryOpacityMicromapTests.hpp"
+#include "vktRayQueryPositionFetchTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -61,6 +62,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createNonUniformArgsTests(testCtx));
 	group->addChild(addHelperInvocationsTests(testCtx));
 	group->addChild(createOpacityMicromapTests(testCtx));
+	group->addChild(createPositionFetchTests(testCtx));
 
 	return group.release();
 }

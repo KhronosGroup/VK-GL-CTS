@@ -20,6 +20,10 @@ vksc-main/multiview.txt
 vksc-main/pipeline/fast-linked-library.txt
 vksc-main/pipeline/monolithic.txt
 vksc-main/pipeline/pipeline-library.txt
+vksc-main/pipeline/shader-object-linked-binary.txt
+vksc-main/pipeline/shader-object-linked-spirv.txt
+vksc-main/pipeline/shader-object-unlinked-binary.txt
+vksc-main/pipeline/shader-object-unlinked-spirv.txt
 vksc-main/protected-memory.txt
 vksc-main/query-pool.txt
 vksc-main/rasterization.txt

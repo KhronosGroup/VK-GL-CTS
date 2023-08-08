@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR":
+		[
+			{ "features": ["rayTracingPositionFetch"],	"requirements": ["VK_KHR_ray_tracing_position_fetch"] }
+		]
+	}
+}

@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2022 The Khronos Group Inc.
  * Copyright (c) 2022 Google Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,9 +94,10 @@ tcu::TextureLevel generateColorImage (const VkFormat format, const tcu::IVec2 &r
 	return image;
 }
 
-Move<VkRenderPass> makeRenderPassInputAttachment (const DeviceInterface&	vk,
-												  const VkDevice			device,
-												  const VkFormat			colorFormat)
+RenderPassWrapper makeRenderPassInputAttachment (const DeviceInterface&				vk,
+												  const VkDevice					device,
+												  const PipelineConstructionType	pipelineConstructionType,
+												  const VkFormat					colorFormat)
 {
 	const VkAttachmentDescription				colorAttachmentDescription	=
 	{
@@ -155,7 +158,7 @@ Move<VkRenderPass> makeRenderPassInputAttachment (const DeviceInterface&	vk,
 		DE_NULL										// const VkSubpassDependency*		pDependencies
 	};
 
-	return createRenderPass(vk, device, &renderPassInfo, DE_NULL);
+	return RenderPassWrapper(pipelineConstructionType, vk, device, &renderPassInfo);
 }
 
 struct TestParams
@@ -214,7 +217,9 @@ private:
 tcu::TestStatus DescriptorLimitTestInstance::iterate (void)
 {
 	tcu::TestLog&							log										= m_context.getTestContext().getLog();
+	const InstanceInterface&				vki										= m_context.getInstanceInterface();
 	const DeviceInterface&					vk										= m_context.getDeviceInterface();
+	const VkPhysicalDevice					physicalDevice							= m_context.getPhysicalDevice();
 	const VkDevice							vkDevice								= m_context.getDevice();
 	Allocator&								allocator								= m_context.getDefaultAllocator();
 	const VkQueue							queue									= m_context.getUniversalQueue();
@@ -238,8 +243,8 @@ tcu::TestStatus DescriptorLimitTestInstance::iterate (void)
 																					: VkImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	// Create shaders
-	Move<VkShaderModule>					vertexShaderModule						= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("vert"), 0u);
-	Move<VkShaderModule>					testedShaderModule						= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("test"), 0u);
+	ShaderWrapper							vertexShaderModule						= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("vert"), 0u);
+	ShaderWrapper							testedShaderModule						= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("test"), 0u);
 
 	// Create images
 	const VkImageSubresourceRange			colorSubresourceRange					= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -267,6 +272,7 @@ tcu::TestStatus DescriptorLimitTestInstance::iterate (void)
 			pipelineStageFlags);
 	}
 
+	std::vector<VkImage>					images;
 	std::vector<VkImageView>				attachmentImages;
 
 	// Create Samplers
@@ -327,10 +333,12 @@ tcu::TestStatus DescriptorLimitTestInstance::iterate (void)
 	{
 		for (deUint32 image = 0; image < 2; image++)
 		{
+			images.push_back(*inputImages[image]);
 			attachmentImages.push_back(*inputImageViews[image]);
 		}
 	}
 
+	images.push_back(*colorImage);
 	attachmentImages.push_back(*colorImageView);
 
 	// Result image buffer for fragment shader run
@@ -470,11 +478,13 @@ tcu::TestStatus DescriptorLimitTestInstance::iterate (void)
 	}
 
 	// Setup renderpass and framebuffer.
-	const Move<VkRenderPass>				renderPass								(m_params.m_testType == TestType::InputAttachments
-																					? (makeRenderPassInputAttachment(vk, vkDevice, colorFormat))
-																					: (makeRenderPass(vk, vkDevice, colorFormat)));
+	RenderPassWrapper						renderPass;
+	if (m_params.m_testType == TestType::InputAttachments)
+		renderPass = (makeRenderPassInputAttachment(vk, vkDevice, m_params.m_pipelineConstructionType, colorFormat));
+	else
+		renderPass = (RenderPassWrapper(m_params.m_pipelineConstructionType, vk, vkDevice, colorFormat));
 
-	const Move<VkFramebuffer>				framebuffer								(makeFramebuffer(vk, vkDevice, *renderPass, static_cast<deUint32>(attachmentImages.size()), attachmentImages.data(), m_params.m_framebufferSize.x(), m_params.m_framebufferSize.y()));
+	renderPass.createFramebuffer(vk, vkDevice, static_cast<deUint32>(attachmentImages.size()), images.data(), attachmentImages.data(), m_params.m_framebufferSize.x(), m_params.m_framebufferSize.y());
 
 	// Command buffer
 	const Move<VkCommandPool>				cmdPool									(createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
@@ -596,13 +606,13 @@ tcu::TestStatus DescriptorLimitTestInstance::iterate (void)
 		DE_NULL											// const VkPushDescriptorRange*	pPushDescriptorRanges;
 	};
 
-	const Move<VkPipelineLayout>			pipelineLayout							= createPipelineLayout(vk, vkDevice, &pipelineLayoutInfo);
+	const PipelineLayoutWrapper				pipelineLayout							(m_params.m_pipelineConstructionType, vk, vkDevice, &pipelineLayoutInfo);
 	Move<VkPipeline>						computePipeline							{};
-	GraphicsPipelineWrapper					graphicsPipelineWrapper					{ vk, vkDevice, m_params.m_pipelineConstructionType };
+	GraphicsPipelineWrapper					graphicsPipelineWrapper					{ vki, vk, physicalDevice, vkDevice, m_context.getDeviceExtensions(), m_params.m_pipelineConstructionType };
 
 	if (m_params.m_useCompShader)
 	{
-		computePipeline = (makeComputePipeline(vk, vkDevice, pipelineLayout.get(), testedShaderModule.get()));
+		computePipeline = (makeComputePipeline(vk, vkDevice, pipelineLayout.get(), testedShaderModule.getModule()));
 	}
 	else
 	{
@@ -629,18 +639,18 @@ tcu::TestStatus DescriptorLimitTestInstance::iterate (void)
 			.setupVertexInputState()
 			.setupPreRasterizationShaderState(viewports,
 				scissors,
-				pipelineLayout.get(),
+				pipelineLayout,
 				renderPass.get(),
 				0u,
-				vertexShaderModule.get())
-			.setupFragmentShaderState(pipelineLayout.get(),
+				vertexShaderModule)
+			.setupFragmentShaderState(pipelineLayout,
 				renderPass.get(),
 				0u,
-				testedShaderModule.get(),
+				testedShaderModule,
 				DE_NULL,
 				&multisampleStateCreateInfo)
 			.setupFragmentOutputState(renderPass.get(), 0u, DE_NULL, &multisampleStateCreateInfo)
-			.setMonolithicPipelineLayout(pipelineLayout.get())
+			.setMonolithicPipelineLayout(pipelineLayout)
 			.buildPipeline();
 	}
 
@@ -656,12 +666,12 @@ tcu::TestStatus DescriptorLimitTestInstance::iterate (void)
 	}
 	else
 	{
-		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, m_params.m_framebufferSize.x(), m_params.m_framebufferSize.y()), static_cast<deUint32>(clearColorValues.size()), clearColorValues.data());
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineWrapper.getPipeline());
+		renderPass.begin(vk, *cmdBuffer, makeRect2D(0, 0, m_params.m_framebufferSize.x(), m_params.m_framebufferSize.y()), static_cast<deUint32>(clearColorValues.size()), clearColorValues.data());
+		graphicsPipelineWrapper.bind(*cmdBuffer);
 		vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 		vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
-		endRenderPass(vk, *cmdBuffer);
+		renderPass.end(vk, *cmdBuffer);
 		copyImageToBuffer(vk, *cmdBuffer, *colorImage, *resultImageBuffer, m_params.m_framebufferSize, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
 	}
 
@@ -878,7 +888,7 @@ void DescriptorLimitTest::checkSupport (Context& context) const
 			TCU_THROW(NotSupportedError, "maxPerStageDescriptorInputAttachments (" + std::to_string(limits.maxPerStageDescriptorInputAttachments) + ")");
 	}
 
-	checkPipelineLibraryRequirements(vki, physDevice, m_params.m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(vki, physDevice, m_params.m_pipelineConstructionType);
 }
 
 TestInstance* DescriptorLimitTest::createInstance (Context& context) const
@@ -969,6 +979,7 @@ tcu::TestCaseGroup* createDescriptorLimitsTests (tcu::TestContext& testCtx, Pipe
 			fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "storage_images_" + std::to_string(testValue), "", params));
 		}
 
+		if (!vk::isConstructionTypeShaderObject(pipelineConstructionType))
 		{
 			TestParams params(pipelineConstructionType, TestType::InputAttachments, false, frameBufferSize, testValue);
 			fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "input_attachments_" + std::to_string(testValue), "", params));

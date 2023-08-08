@@ -25,8 +25,11 @@
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkDeviceUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 #include "vktTestCase.hpp"
 #include "deStringUtil.hpp"
+#include "tcuCommandLine.hpp"
 #include <vector>
 
 using namespace vk;
@@ -38,134 +41,55 @@ namespace synchronization
 
 deUint32 findQueueFamilyIndex (const InstanceInterface&	vki,
 							   VkPhysicalDevice			dev,
+							   VkQueueGlobalPriorityKHR	priority,
 							   VkQueueFlags				includeFlags,
 							   VkQueueFlags				excludeFlags,
-							   bool						priorityQueryEnabled,
-							   QueueGlobalPriorities	priorities,
-							   const bool				eitherAnyOrAll)
+							   deUint32					excludeIndex)
 {
 	deUint32 queueFamilyPropertyCount = 0;
 	vki.getPhysicalDeviceQueueFamilyProperties2(dev, &queueFamilyPropertyCount, nullptr);
+	DE_ASSERT(queueFamilyPropertyCount);
 
-	std::vector<VkQueueFamilyGlobalPriorityPropertiesKHR>	familyPriorityProperties
-			(priorityQueryEnabled ? queueFamilyPropertyCount : 0);
-	std::vector<VkQueueFamilyProperties2>	familyProperties2(queueFamilyPropertyCount);
+	std::vector<VkQueueFamilyProperties2>					familyProperties2(queueFamilyPropertyCount);
+	std::vector<VkQueueFamilyGlobalPriorityPropertiesKHR>	familyPriorityProperties(queueFamilyPropertyCount);
 
-	for (deUint32 i = 0; i < queueFamilyPropertyCount; ++i)
+	for (deUint32 familyIdx = 0; familyIdx < queueFamilyPropertyCount; ++familyIdx)
 	{
-		VkQueueFamilyGlobalPriorityPropertiesKHR* item = nullptr;
-		if (priorityQueryEnabled)
-		{
-			item = &familyPriorityProperties[i];
-			*item = {};
-			item->sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_KHR;
-		}
+		VkQueueFamilyGlobalPriorityPropertiesKHR* pPriorityProps = &familyPriorityProperties[familyIdx];
+		pPriorityProps->sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_KHR;
 
-		VkQueueFamilyProperties2& item2 = familyProperties2[i];
-		item2 = {};
-		item2.sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2;
-		item2.pNext = item;
+		VkQueueFamilyProperties2* pFamilyProps = &familyProperties2[familyIdx];
+		pFamilyProps->sType	= VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2;
+		pFamilyProps->pNext	= pPriorityProps;
 	}
 
 	vki.getPhysicalDeviceQueueFamilyProperties2(dev, &queueFamilyPropertyCount, familyProperties2.data());
 
-	for (deUint32 familyIndex = 0; familyIndex < queueFamilyPropertyCount; ++familyIndex)
-	{
-		const VkQueueFamilyProperties& props = familyProperties2[familyIndex].queueFamilyProperties;
-		const VkQueueFlags queueFlags = props.queueFlags;
+	deUint32 familyFound = INVALID_UINT32;
 
-		if ( ((queueFlags & excludeFlags) == 0) && ((queueFlags & includeFlags) == includeFlags) )
+	for (deUint32 familyIdx = 0; familyIdx < queueFamilyPropertyCount; ++familyIdx)
+	{
+		if (familyIdx == excludeIndex) continue;
+
+		bool priorityMatches = false;
+		for (uint32_t priorityIdx = 0; !priorityMatches && priorityIdx < familyPriorityProperties[familyIdx].priorityCount; ++priorityIdx)
 		{
-			bool matches = true;
-			if (priorityQueryEnabled)
-			{
-				const QueueGlobalPriorities	prios(familyPriorityProperties[familyIndex]);
-				if (eitherAnyOrAll)
-					matches = priorities.any(prios);
-				else matches = priorities.all(prios);
-			}
-			if (matches)
-			{
-				return familyIndex;
-			}
+			priorityMatches = (priority == familyPriorityProperties[familyIdx].priorities[priorityIdx]);
+		}
+		if (!priorityMatches) continue;
+
+		const VkQueueFlags queueFlags = familyProperties2[familyIdx].queueFamilyProperties.queueFlags;
+		if ( ((queueFlags & includeFlags) == includeFlags) && ((queueFlags & excludeFlags) == 0) )
+		{
+			familyFound = familyIdx;
+			break;
 		}
 	}
 
-	return INVALID_UINT32;
+	return familyFound;
 }
 
-QueueGlobalPriorities::QueueGlobalPriorities ()
-	: m_priorities	{}
-{
-}
-QueueGlobalPriorities::QueueGlobalPriorities (const QueueGlobalPriorities& other)
-	: m_priorities	(other.m_priorities)
-{
-}
-QueueGlobalPriorities::QueueGlobalPriorities (const VkQueueFamilyGlobalPriorityPropertiesKHR& source)
-	: m_priorities	()
-{
-	for (deUint32 i = 0; i < source.priorityCount; ++i)
-		m_priorities.insert(source.priorities[i]);
-}
-QueueGlobalPriorities::QueueGlobalPriorities (std::initializer_list<Priority> priorities)
-{
-	for (auto i = priorities.begin(); i != priorities.end(); ++i)
-		m_priorities.insert(*i);
-}
-QueueGlobalPriorities QueueGlobalPriorities::full ()
-{
-	return QueueGlobalPriorities(
-	{
-		VK_QUEUE_GLOBAL_PRIORITY_LOW_KHR,
-		VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR,
-		VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR,
-		VK_QUEUE_GLOBAL_PRIORITY_REALTIME_KHR
-	});
-}
-bool QueueGlobalPriorities::insert (const Priority& prio)
-{
-	auto item = m_priorities.find(prio);
-	if (m_priorities.end() == item)	{
-		m_priorities.insert(prio);
-		return true;
-	}
-	return false;
-}
-bool QueueGlobalPriorities::remove (const Priority& prio)
-{
-	auto item = m_priorities.find(prio);
-	if (m_priorities.end() != item)	{
-		m_priorities.erase(item);
-		return true;
-	}
-	return false;
-}
-bool QueueGlobalPriorities::any (const Priority& prio) const
-{
-	return m_priorities.find(prio) != m_priorities.end();
-}
-auto QueueGlobalPriorities::make (void* pNext) const -> VkQueueFamilyGlobalPriorityPropertiesKHR
-{
-	auto start = m_priorities.begin();
-	VkQueueFamilyGlobalPriorityPropertiesKHR	res{};
-	res.sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_KHR;
-	res.pNext = pNext;
-	res.priorityCount = static_cast<deUint32>(m_priorities.size());
-	for (auto i = start; i != m_priorities.end(); ++i)
-		res.priorities[std::distance(start, i)] = *i;
-	return res;
-}
-bool QueueGlobalPriorities::any	(const QueueGlobalPriorities& other) const
-{
-	for (auto i = other.m_priorities.begin(); i != other.m_priorities.end(); ++i)
-		if (any(*i)) return true;
-	return false;
-}
-bool QueueGlobalPriorities::all (const QueueGlobalPriorities& other) const
-{
-	return m_priorities == other.m_priorities;
-}
+#define SAVEEXPR(expr, text, file, line) (text=#expr,file=__FILE__,line=__LINE__,expr)
 
 SpecialDevice::SpecialDevice	(Context&						ctx,
 								 VkQueueFlagBits				transitionFrom,
@@ -176,24 +100,34 @@ SpecialDevice::SpecialDevice	(Context&						ctx,
 								 bool							enableSparseBinding)
 		: queueFamilyIndexFrom	(m_queueFamilyIndexFrom)
 		, queueFamilyIndexTo	(m_queueFamilyIndexTo)
-		, device				(m_device)
+		, handle				(m_deviceHandle)
 		, queueFrom				(m_queueFrom)
 		, queueTo				(m_queueTo)
-		, m_vkd						(ctx.getDeviceInterface())
+		, createResult			(m_createResult)
+		, createExpression		(m_createExpression)
+		, createFileName		(m_createFileName)
+		, createFileLine		(m_createFileLine)
+		, m_context					(ctx)
 		, m_transitionFrom			(transitionFrom)
 		, m_transitionTo			(transitionTo)
 		, m_queueFamilyIndexFrom	(INVALID_UINT32)
 		, m_queueFamilyIndexTo		(INVALID_UINT32)
-		, m_device					(0)
-		, m_queueFrom				(0)
-		, m_queueTo					(0)
+		, m_deviceHandle			(VK_NULL_HANDLE)
+		, m_queueFrom				(VK_NULL_HANDLE)
+		, m_queueTo					(VK_NULL_HANDLE)
 		, m_allocator				()
-		, m_creationResult			(VK_RESULT_MAX_ENUM)
+		, m_createResult			(VK_ERROR_UNKNOWN)
+		, m_createExpression		(nullptr)
+		, m_createFileName			(nullptr)
+		, m_createFileLine			(INVALID_UINT32)
 {
-	const InstanceInterface&				vki					= ctx.getInstanceInterface();
 	const DeviceInterface&					vkd					= ctx.getDeviceInterface();
-	const VkPhysicalDevice					dev					= ctx.getPhysicalDevice();
-	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, dev);
+	const InstanceInterface&				vki					= ctx.getInstanceInterface();
+	const VkInstance						instance			= ctx.getInstance();
+	const tcu::CommandLine&					cmdLine				= ctx.getTestContext().getCommandLine();
+	const VkPhysicalDevice					phys				= chooseDevice(vki, instance, cmdLine);
+	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, phys);
+
 
 	VkQueueFlags	flagFrom	= transitionFrom;
 	VkQueueFlags	flagTo		= transitionTo;
@@ -208,13 +142,13 @@ SpecialDevice::SpecialDevice	(Context&						ctx,
 		flagTo	|= VK_QUEUE_SPARSE_BINDING_BIT;
 	}
 
-	m_queueFamilyIndexFrom	= findQueueFamilyIndex(vki, dev, flagFrom, getColissionFlags(transitionFrom), true, { priorityFrom });
-	m_queueFamilyIndexTo	= findQueueFamilyIndex(vki, dev, flagTo, getColissionFlags(transitionTo), true, { priorityTo });
+	m_queueFamilyIndexFrom	= findQueueFamilyIndex(vki, phys, priorityFrom, flagFrom, getColissionFlags(transitionFrom), INVALID_UINT32);
+	m_queueFamilyIndexTo	= findQueueFamilyIndex(vki, phys, priorityTo, flagTo, getColissionFlags(transitionTo), m_queueFamilyIndexFrom);
 
 	DE_ASSERT(m_queueFamilyIndexFrom != INVALID_UINT32);
 	DE_ASSERT(m_queueFamilyIndexTo != INVALID_UINT32);
 
-	const float									queuePriority = 1.0f;
+	const float									queuePriorities[2] { 1.0f, 0.0f };
 	VkDeviceQueueCreateInfo						queueCreateInfos[2];
 	VkDeviceQueueGlobalPriorityCreateInfoKHR	priorityCreateInfos[2];
 	{
@@ -228,53 +162,42 @@ SpecialDevice::SpecialDevice	(Context&						ctx,
 		priorityCreateInfos[0].globalPriority	= priorityFrom;
 		queueCreateInfos[0].pNext		= &priorityCreateInfos[0];
 		queueCreateInfos[0].queueFamilyIndex = m_queueFamilyIndexFrom;
+		queueCreateInfos[0].pQueuePriorities = &queuePriorities[0];
 
 		priorityCreateInfos[1].globalPriority	= priorityTo;
 		queueCreateInfos[1].pNext		= &priorityCreateInfos[1];
 		queueCreateInfos[1].queueFamilyIndex = m_queueFamilyIndexTo;
-
-		queueCreateInfos[0].pQueuePriorities = &queuePriority;
-		queueCreateInfos[1].pQueuePriorities = &queuePriority;
+		queueCreateInfos[1].pQueuePriorities = &queuePriorities[1];
 	}
 
-	const VkPhysicalDeviceFeatures& deviceFeatures	= ctx.getDeviceFeatures();
-
-	std::vector<const char*> extensions;
-	std::vector<std::string> filteredExtensions;
+	VkPhysicalDeviceProtectedMemoryFeatures memFeatures
 	{
-		const deUint32 majorApi	= VK_API_VERSION_MAJOR(ctx.getUsedApiVersion());
-		const deUint32 minorApi	= VK_API_VERSION_MINOR(ctx.getUsedApiVersion());
-		std::vector<VkExtensionProperties> availableExtensions = enumerateDeviceExtensionProperties(vki, dev, nullptr);
-		const bool khrBufferAddress = availableExtensions.end() !=
-				std::find_if(availableExtensions.begin(), availableExtensions.end(),
-							 [](const VkExtensionProperties& p) { return deStringEqual(p.extensionName, "VK_KHR_buffer_device_address"); });
-		for (const auto& ext : availableExtensions)
-		{
-			if (khrBufferAddress && deStringEqual(ext.extensionName, "VK_EXT_buffer_device_address"))
-				continue;
-			if (VK_API_VERSION_MAJOR(ext.specVersion) <= majorApi && VK_API_VERSION_MINOR(ext.specVersion) <= minorApi)
-				filteredExtensions.emplace_back(ext.extensionName);
-		}
-		extensions.resize(filteredExtensions.size());
-		std::transform(filteredExtensions.begin(), filteredExtensions.end(), extensions.begin(), [](const std::string& s) { return s.c_str(); });
-	}
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES,
+		DE_NULL,
+		VK_TRUE
+	};
+	VkPhysicalDeviceFeatures2 devFeatures = ctx.getDeviceFeatures2();
+	if (enableProtected) devFeatures.pNext = &memFeatures;
+
+	const std::vector<const char*>& extensions = ctx.getDeviceCreationExtensions();
 
 	VkDeviceCreateInfo deviceCreateInfo			{};
 	deviceCreateInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	deviceCreateInfo.pNext						= &devFeatures;
+	deviceCreateInfo.flags						= VkDeviceCreateFlags(0);
 	deviceCreateInfo.queueCreateInfoCount		= 2;
 	deviceCreateInfo.pQueueCreateInfos			= queueCreateInfos;
-
-	deviceCreateInfo.pEnabledFeatures			= &deviceFeatures;
+	deviceCreateInfo.pEnabledFeatures			= nullptr;
 	deviceCreateInfo.enabledExtensionCount		= static_cast<deUint32>(extensions.size());
 	deviceCreateInfo.ppEnabledExtensionNames	= de::dataOrNull(extensions);
 	deviceCreateInfo.ppEnabledLayerNames		= nullptr;
 	deviceCreateInfo.enabledLayerCount			= 0;
 
-	m_creationResult = vki.createDevice(dev, &deviceCreateInfo, nullptr, &m_device);
-
-	if (VK_SUCCESS == m_creationResult && VkDevice(0) != m_device)
+	m_createResult = SAVEEXPR(createUncheckedDevice(cmdLine.isValidationEnabled(), vki, phys, &deviceCreateInfo, nullptr, &m_deviceHandle),
+							  m_createExpression, m_createFileName, m_createFileLine);
+	if (VK_SUCCESS == m_createResult && VK_NULL_HANDLE != m_deviceHandle)
 	{
-		m_allocator = de::MovePtr<vk::Allocator>(new SimpleAllocator(vkd, m_device, memoryProperties));
+		m_allocator		= de::MovePtr<vk::Allocator>(new SimpleAllocator(vkd, m_deviceHandle, memoryProperties));
 
 		if (enableProtected)
 		{
@@ -284,72 +207,40 @@ SpecialDevice::SpecialDevice	(Context&						ctx,
 			queueInfo.queueIndex	= 0;
 
 			queueInfo.queueFamilyIndex = m_queueFamilyIndexFrom;
-			m_vkd.getDeviceQueue2(m_device, &queueInfo, &m_queueFrom);
+			vkd.getDeviceQueue2(m_deviceHandle, &queueInfo, &m_queueFrom);
 
 			queueInfo.queueFamilyIndex = m_queueFamilyIndexTo;
-			m_vkd.getDeviceQueue2(m_device, &queueInfo, &m_queueTo);
+			vkd.getDeviceQueue2(m_deviceHandle, &queueInfo, &m_queueTo);
 		}
 		else
 		{
-			m_vkd.getDeviceQueue(m_device, m_queueFamilyIndexFrom, 0, &m_queueFrom);
-			m_vkd.getDeviceQueue(m_device, m_queueFamilyIndexTo, 0, &m_queueTo);
+			vkd.getDeviceQueue(m_deviceHandle, m_queueFamilyIndexFrom, 0, &m_queueFrom);
+			vkd.getDeviceQueue(m_deviceHandle, m_queueFamilyIndexTo, 0, &m_queueTo);
 		}
 	}
 }
-VkQueueFlags SpecialDevice::getColissionFlags (VkQueueFlagBits bits)
-{
-	switch (bits)
-	{
-		case VK_QUEUE_TRANSFER_BIT:
-			return (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
-		case VK_QUEUE_COMPUTE_BIT:
-			return VK_QUEUE_GRAPHICS_BIT;
-		case VK_QUEUE_GRAPHICS_BIT:
-			return 0;
-		default: break;
-	}
-	DE_ASSERT(false);
-	return 0;
-}
-Allocator& SpecialDevice::getAllocator() const
-{
-	return *m_allocator;
-}
-SpecialDevice::SpecialDevice (SpecialDevice&& src)
-	: queueFamilyIndexFrom	(m_queueFamilyIndexFrom)
-	, queueFamilyIndexTo	(m_queueFamilyIndexTo)
-	, device				(m_device)
-	, queueFrom				(m_queueFrom)
-	, queueTo				(m_queueTo)
-	, m_vkd						(src.m_vkd)
-	, m_transitionFrom			(src.m_transitionFrom)
-	, m_transitionTo			(src.m_transitionTo)
-	, m_queueFamilyIndexFrom	(src.m_queueFamilyIndexFrom)
-	, m_queueFamilyIndexTo		(src.m_queueFamilyIndexTo)
-	, m_device					(src.m_device)
-	, m_queueFrom				(src.m_queueFrom)
-	, m_queueTo					(src.m_queueTo)
-	, m_allocator				(src.m_allocator.release())
-	, m_creationResult			(src.m_creationResult)
-{
-	src.m_queueFamilyIndexFrom	= INVALID_UINT32;
-	src.m_queueFamilyIndexTo	= INVALID_UINT32;
-	src.m_device				= VkDevice(0);
-	src.m_queueFrom				= VkQueue(0);
-	src.m_queueTo				= VkQueue(0);
-}
 SpecialDevice::~SpecialDevice ()
 {
-	if (VkDevice(0) != m_device)
+	if (VK_NULL_HANDLE != m_deviceHandle)
 	{
-		m_vkd.destroyDevice (m_device, nullptr);
-		m_device = VkDevice(0);
+		m_context.getDeviceInterface().destroyDevice(m_deviceHandle, nullptr);
+		m_createResult = VK_ERROR_UNKNOWN;
+		m_deviceHandle = VK_NULL_HANDLE;
 	}
 }
-bool SpecialDevice::isValid (VkResult& creationResult) const
+VkQueueFlags SpecialDevice::getColissionFlags (VkQueueFlags flags)
 {
-	creationResult = m_creationResult;
-	return (VkDevice(0) != m_device);
+	if (flags & VK_QUEUE_TRANSFER_BIT)
+		return (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+
+	if (flags & VK_QUEUE_COMPUTE_BIT)
+		return VK_QUEUE_GRAPHICS_BIT;
+
+	if (flags & VK_QUEUE_GRAPHICS_BIT)
+		return 0;
+
+	DE_ASSERT(false);
+	return 0;
 }
 
 BufferWithMemory::BufferWithMemory	(const vk::InstanceInterface&	vki,
@@ -363,13 +254,14 @@ BufferWithMemory::BufferWithMemory	(const vk::InstanceInterface&	vki,
 	: m_amISparse		((bufferCreateInfo.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) != 0)
 	, m_buffer			(createBuffer(vkd, device, &bufferCreateInfo))
 	, m_requirements	(getBufferMemoryRequirements(vkd, device, *m_buffer))
+	, m_allocations		()
+	, m_size			(bufferCreateInfo.size)
 {
 	if (m_amISparse)
 	{
 		DE_ASSERT(sparseQueue != VkQueue(0));
 		const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, phys);
 		const deUint32							memoryTypeIndex		= selectMatchingMemoryType(memoryProperties, m_requirements.memoryTypeBits, memoryRequirement);
-		const VkDeviceSize						alignment			= 0;
 		const VkDeviceSize						lastChunkSize		= m_requirements.size % m_requirements.alignment;
 		const uint32_t							chunkCount			= static_cast<uint32_t>(m_requirements.size / m_requirements.alignment + (lastChunkSize ? 1 : 0));
 		Move<VkFence>							fence				= createFence(vkd, device);
@@ -384,7 +276,7 @@ BufferWithMemory::BufferWithMemory	(const vk::InstanceInterface&	vki,
 			allocInfo.allocationSize	= m_requirements.alignment;
 			allocInfo.memoryTypeIndex	= memoryTypeIndex;
 
-			de::MovePtr<Allocation>		allocation	= allocator.allocate(allocInfo, alignment /*unreferenced parameter*/);
+			de::MovePtr<Allocation>		allocation	= allocator.allocate(allocInfo, m_requirements.alignment);
 
 			VkSparseMemoryBind&			binding = bindings[i];
 			binding.resourceOffset		= m_requirements.alignment * i;

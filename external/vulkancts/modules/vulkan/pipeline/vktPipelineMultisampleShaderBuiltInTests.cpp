@@ -3,6 +3,8 @@
 * ------------------------
 *
 * Copyright (c) 2016 The Khronos Group Inc.
+* Copyright (c) 2023 LunarG, Inc.
+* Copyright (c) 2023 Nintendo
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -1221,7 +1223,7 @@ void WriteSampleTest::checkSupport (Context& context) const
 	if (!(imgProps.sampleCounts & m_params.sampleCount))
 		TCU_THROW(NotSupportedError, "Format does not support the required sample count");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void WriteSampleTest::initPrograms (vk::SourceCollections& programCollection) const
@@ -1388,8 +1390,8 @@ tcu::TestStatus WriteSampleTestInstance::iterate (void)
 	updateBuilder.update(vkd, device);
 
 	// Create write and verification compute pipelines.
-	auto shaderWriteModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("write"), 0u);
-	auto shaderVerifyModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("verify"), 0u);
+	auto shaderWriteModule	= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("write"), 0u);
+	auto shaderVerifyModule	= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("verify"), 0u);
 	auto pipelineLayout		= vk::makePipelineLayout(vkd, device, descriptorSetLayout.get());
 
 	const vk::VkComputePipelineCreateInfo writePipelineCreateInfo =
@@ -1402,7 +1404,7 @@ tcu::TestStatus WriteSampleTestInstance::iterate (void)
 			nullptr,													// const void*							pNext;
 			0u,															// VkPipelineShaderStageCreateFlags		flags;
 			vk::VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
-			shaderWriteModule.get(),									// VkShaderModule						module;
+			shaderWriteModule.getModule(),								// VkShaderModule						module;
 			"main",														// const char*							pName;
 			nullptr,													// const VkSpecializationInfo*			pSpecializationInfo;
 		},
@@ -1412,7 +1414,7 @@ tcu::TestStatus WriteSampleTestInstance::iterate (void)
 	};
 
 	auto verificationPipelineCreateInfo = writePipelineCreateInfo;
-	verificationPipelineCreateInfo.stage.module = shaderVerifyModule.get();
+	verificationPipelineCreateInfo.stage.module = shaderVerifyModule.getModule();
 
 	auto writePipeline			= vk::createComputePipeline(vkd, device, DE_NULL, &writePipelineCreateInfo);
 	auto verificationPipeline	= vk::createComputePipeline(vkd, device, DE_NULL, &verificationPipelineCreateInfo);
@@ -1574,7 +1576,7 @@ void WriteSampleMaskTestCase::checkSupport (Context& context) const
 	if (!(imgProps.sampleCounts & m_params.sampleCount))
 		TCU_THROW(NotSupportedError, "Format does not support the required sample count");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void WriteSampleMaskTestCase::initPrograms (vk::SourceCollections& programCollection) const
@@ -1673,7 +1675,9 @@ WriteSampleMaskTestInstance::WriteSampleMaskTestInstance (Context& context, cons
 
 tcu::TestStatus WriteSampleMaskTestInstance::iterate (void)
 {
+	const auto&		vki					= m_context.getInstanceInterface();
 	const auto&		vkd					= m_context.getDeviceInterface();
+	const auto		physicalDevice		= m_context.getPhysicalDevice();
 	const auto		device				= m_context.getDevice();
 	auto&			alloc				= m_context.getDefaultAllocator();
 	const auto		queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
@@ -1852,26 +1856,31 @@ tcu::TestStatus WriteSampleMaskTestInstance::iterate (void)
 		static_cast<deUint32>(subpassDependencies.size()),	//	deUint32						dependencyCount;
 		subpassDependencies.data(),							//	const VkSubpassDependency*		pDependencies;
 	};
-	const auto renderPass = vk::createRenderPass(vkd, device, &renderPassInfo);
+	RenderPassWrapper renderPass (m_params.pipelineConstructionType, vkd, device, &renderPassInfo);
 
 	// Framebuffer.
-	const std::vector<vk::VkImageView> imageViews =
+	const std::vector<vk::VkImage>		images		=
+	{
+		colorImage.get(),
+		auxiliarImage.get(),
+	};
+	const std::vector<vk::VkImageView>	imageViews	=
 	{
 		colorImageView.get(),
 		auxiliarImageView.get(),
 	};
-	const auto framebuffer = vk::makeFramebuffer(vkd, device, renderPass.get(), static_cast<deUint32>(imageViews.size()), imageViews.data(), kImageExtent.width, kImageExtent.height);
+	renderPass.createFramebuffer(vkd, device, static_cast<deUint32>(imageViews.size()), images.data(), imageViews.data(), kImageExtent.width, kImageExtent.height);
 
 	// Empty pipeline layout for the first subpass.
-	const auto emptyPipelineLayout = vk::makePipelineLayout(vkd, device);
+	const PipelineLayoutWrapper emptyPipelineLayout (m_params.pipelineConstructionType, vkd, device);
 
 	// Pipeline layout for the second subpass.
-	const auto checkPipelineLayout = vk::makePipelineLayout(vkd, device, descriptorSetLayout.get());
+	const PipelineLayoutWrapper checkPipelineLayout (m_params.pipelineConstructionType, vkd, device, descriptorSetLayout.get());
 
 	// Shader modules.
-	const auto vertModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
-	const auto writeModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag_write"), 0u);
-	const auto checkModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag_check"), 0u);
+	const auto vertModule	= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+	const auto writeModule	= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag_write"), 0u);
+	const auto checkModule	= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag_check"), 0u);
 
 	const std::vector<vk::VkVertexInputBindingDescription> vertexBindings =
 	{
@@ -1984,25 +1993,25 @@ tcu::TestStatus WriteSampleMaskTestInstance::iterate (void)
 	};
 
 	// Pipeline for the first subpass.
-	vk::GraphicsPipelineWrapper firstSubpassPipeline(vkd, device, m_params.pipelineConstructionType);
+	vk::GraphicsPipelineWrapper firstSubpassPipeline(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
 	firstSubpassPipeline.setDynamicState(&dynamicStateInfo)
 						.setDefaultRasterizationState()
 						.setupVertexInputState(&vertexInputInfo, &inputAssemblyInfo)
-						.setupPreRasterizationShaderState(viewport, scissor, *emptyPipelineLayout, *renderPass, 0u, *vertModule)
-						.setupFragmentShaderState(*emptyPipelineLayout, *renderPass, 0u, *writeModule, &depthStencilInfo, &multisampleInfo)
+						.setupPreRasterizationShaderState(viewport, scissor, emptyPipelineLayout, *renderPass, 0u, vertModule)
+						.setupFragmentShaderState(emptyPipelineLayout, *renderPass, 0u, writeModule, &depthStencilInfo, &multisampleInfo)
 						.setupFragmentOutputState(*renderPass, 0u, &colorBlendInfo, &multisampleInfo)
-						.setMonolithicPipelineLayout(*emptyPipelineLayout)
+						.setMonolithicPipelineLayout(emptyPipelineLayout)
 						.buildPipeline();
 
 	// Pipeline for the second subpass.
-	vk::GraphicsPipelineWrapper secondSubpassPipeline(vkd, device, m_params.pipelineConstructionType);
+	vk::GraphicsPipelineWrapper secondSubpassPipeline(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
 	secondSubpassPipeline.setDynamicState(&dynamicStateInfo)
 						.setDefaultRasterizationState()
 						.setupVertexInputState(&vertexInputInfo, &inputAssemblyInfo)
-						.setupPreRasterizationShaderState(viewport, scissor, *checkPipelineLayout, *renderPass, 1u, *vertModule)
-						.setupFragmentShaderState(*checkPipelineLayout, *renderPass, 1u, *checkModule, &depthStencilInfo, &multisampleInfo)
+						.setupPreRasterizationShaderState(viewport, scissor, checkPipelineLayout, *renderPass, 1u, vertModule)
+						.setupFragmentShaderState(checkPipelineLayout, *renderPass, 1u, checkModule, &depthStencilInfo, &multisampleInfo)
 						.setupFragmentOutputState(*renderPass, 1u, &colorBlendInfo, &multisampleInfo)
-						.setMonolithicPipelineLayout(*checkPipelineLayout)
+						.setMonolithicPipelineLayout(checkPipelineLayout)
 						.buildPipeline();
 
 	// Command pool and command buffer.
@@ -2024,17 +2033,17 @@ tcu::TestStatus WriteSampleMaskTestInstance::iterate (void)
 	// Run pipelines.
 	vk::beginCommandBuffer(vkd, cmdBuffer);
 
-	vk::beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), vk::makeRect2D(kImageExtent), WriteSampleMaskTestCase::kClearColor);
+	renderPass.begin(vkd, cmdBuffer, vk::makeRect2D(kImageExtent), WriteSampleMaskTestCase::kClearColor);
 	vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-	vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, firstSubpassPipeline.getPipeline());
+	firstSubpassPipeline.bind(cmdBuffer);
 	vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(quadVertices.size()), 1u, 0u, 0u);
 
-	vkd.cmdNextSubpass(cmdBuffer, vk::VK_SUBPASS_CONTENTS_INLINE);
-	vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, secondSubpassPipeline.getPipeline());
+	renderPass.nextSubpass(vkd, cmdBuffer, vk::VK_SUBPASS_CONTENTS_INLINE);
+	secondSubpassPipeline.bind(cmdBuffer);
 	vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, checkPipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
 	vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(quadVertices.size()), 1u, 0u, 0u);
 
-	vk::endRenderPass(vkd, cmdBuffer);
+	renderPass.end(vkd, cmdBuffer);
 	vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 1u, &bufferBarrier, 0u, nullptr);
 	vk::endCommandBuffer(vkd, cmdBuffer);
 

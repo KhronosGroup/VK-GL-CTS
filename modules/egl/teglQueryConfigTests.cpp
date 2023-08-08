@@ -77,6 +77,19 @@ static bool isAttributePresent (const eglu::Version& version, EGLenum attribute)
 	return true;
 }
 
+static bool hasRequiredExtension(const eglw::Library& egl, EGLDisplay display, EGLenum attribute)
+{
+	switch (attribute)
+	{
+	case EGL_RECORDABLE_ANDROID:
+		return eglu::hasExtension(egl, display, "EGL_ANDROID_recordable");
+	default:
+		break;
+	}
+
+	return true;
+}
+
 class GetConfigsBoundsCase : public TestCase, protected eglu::CallLogWrapper
 {
 public:
@@ -388,6 +401,7 @@ public:
 			case EGL_BIND_TO_TEXTURE_RGB:
 			case EGL_BIND_TO_TEXTURE_RGBA:
 			case EGL_NATIVE_RENDERABLE:
+			case EGL_RECORDABLE_ANDROID:
 				checkBoolean(attrib, value);
 				break;
 			default:
@@ -403,6 +417,11 @@ public:
 		if (!isAttributePresent(version, m_attrib))
 		{
 			log << TestLog::Message << eglu::getConfigAttribStr(m_attrib) << " not supported by this EGL version";
+		}
+		else if(!hasRequiredExtension(m_eglTestCtx.getLibrary(), m_display, m_attrib))
+		{
+			std::string     message = std::string(eglu::getConfigAttribName(m_attrib)) + " not supported due to missing extension";
+			TCU_THROW(NotSupportedError, message);
 		}
 		else
 		{
@@ -582,7 +601,8 @@ void QueryConfigTests::init (void)
 			{ EGL_TRANSPARENT_TYPE,			"transparent_type"			},
 			{ EGL_TRANSPARENT_RED_VALUE,	"transparent_red_value"		},
 			{ EGL_TRANSPARENT_GREEN_VALUE,	"transparent_green_value"	},
-			{ EGL_TRANSPARENT_BLUE_VALUE,	"transparent_blue_value"	}
+			{ EGL_TRANSPARENT_BLUE_VALUE,	"transparent_blue_value"	},
+			{ EGL_RECORDABLE_ANDROID,		"recordable_android"		},
 		};
 
 		tcu::TestCaseGroup* simpleGroup = new tcu::TestCaseGroup(m_testCtx, "get_config_attrib", "eglGetConfigAttrib() tests");

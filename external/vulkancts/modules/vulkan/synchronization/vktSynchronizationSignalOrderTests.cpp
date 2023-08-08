@@ -605,7 +605,7 @@ public:
 		const VkDevice&										deviceA						= m_context.getDevice();
 		const Unique<VkDevice>&								deviceB						(SingletonDevice::getDevice(m_context));
 		const DeviceInterface&								vkA							= m_context.getDeviceInterface();
-		const DeviceDriver									vkB							(m_context.getPlatformInterface(), m_context.getInstance(), *deviceB);
+		const DeviceDriver									vkB							(m_context.getPlatformInterface(), m_context.getInstance(), *deviceB, m_context.getUsedApiVersion());
 		UniquePtr<SimpleAllocator>							allocatorA					(new SimpleAllocator(vkA, deviceA, vk::getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(),
 																																								 m_context.getPhysicalDevice())));
 		UniquePtr<SimpleAllocator>							allocatorB					(new SimpleAllocator(vkB, *deviceB, vk::getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(),
@@ -1283,7 +1283,7 @@ public:
 		, m_resourceDesc		(resourceDesc)
 		, m_semaphoreType		(semaphoreType)
 		, m_device				(SingletonDevice::getDevice(context))
-		, m_deviceInterface		(context.getPlatformInterface(), context.getInstance(), *m_device)
+		, m_deviceInterface		(context.getPlatformInterface(), context.getInstance(), *m_device, context.getUsedApiVersion())
 		, m_allocator			(new SimpleAllocator(m_deviceInterface,
 													 *m_device,
 													 getPhysicalDeviceMemoryProperties(context.getInstanceInterface(),

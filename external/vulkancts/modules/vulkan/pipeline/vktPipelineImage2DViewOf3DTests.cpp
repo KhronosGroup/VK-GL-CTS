@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2022 The Khronos Group Inc.
  * Copyright (c) 2022 Google LLC.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -236,15 +238,17 @@ void Image2DView3DImageInstance::runGraphicsPipeline (const VkDescriptorSet&		de
 													  VkImage						image,
 													  VkBuffer						outputBuffer)
 {
+	const InstanceInterface&						vki								= m_context.getInstanceInterface();
 	const DeviceInterface&							vk								= m_context.getDeviceInterface();
+	const VkPhysicalDevice							physicalDevice					= m_context.getPhysicalDevice();
 	const VkDevice									device							= m_context.getDevice();
 	const VkQueue									queue							= m_context.getUniversalQueue();
 	const bool										useSampler						= m_testParameters.imageType != StorageImage;
 
-	const Unique<VkShaderModule>					vertShader						(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkShaderModule>					fragShader						(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
-	const Unique<VkPipelineLayout>					pipelineLayout					(makePipelineLayout(vk, device, descriptorSetLayout));
-	const Move<VkRenderPass>						renderPass						= makeRenderPass(vk, device);
+	const ShaderWrapper								vertShader						(ShaderWrapper(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
+	const ShaderWrapper								fragShader						(ShaderWrapper(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
+	const PipelineLayoutWrapper						pipelineLayout					(m_testParameters.pipelineConstructionType, vk, device, descriptorSetLayout);
+	RenderPassWrapper								renderPass						(m_testParameters.pipelineConstructionType, vk, device);
 	const std::vector<VkViewport>					viewport						= {makeViewport	(m_testParameters.imageSize.x(), m_testParameters.imageSize.y())};
 	const std::vector<VkRect2D>						scissor							= {makeRect2D	(m_testParameters.imageSize.x(), m_testParameters.imageSize.y())};
 
@@ -283,23 +287,23 @@ void Image2DView3DImageInstance::runGraphicsPipeline (const VkDescriptorSet&		de
 			&vertexInputAttributeDescription							// const VkVertexInputAttributeDescription*		pVertexAttributeDescriptions
 		};
 
-	vk::GraphicsPipelineWrapper		graphicsPipeline	(vk, device, m_testParameters.pipelineConstructionType, 0u);
-	graphicsPipeline.setMonolithicPipelineLayout(*pipelineLayout)
+	vk::GraphicsPipelineWrapper		graphicsPipeline	(vki, vk, physicalDevice, device, m_context.getDeviceExtensions(), m_testParameters.pipelineConstructionType, 0u);
+	graphicsPipeline.setMonolithicPipelineLayout(pipelineLayout)
 			.setDefaultDepthStencilState()
 			.setDefaultRasterizationState()
 			.setDefaultMultisampleState()
 			.setupVertexInputState(&vertexInputStateCreateInfoDefault, &inputAssemblyStateCreateInfo)
 			.setupPreRasterizationShaderState(viewport,
 											  scissor,
-											  *pipelineLayout,
+											  pipelineLayout,
 											  *renderPass,
 											  0u,
-											  *vertShader)
-			.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragShader)
+											  vertShader)
+			.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragShader)
 			.setupFragmentOutputState(*renderPass, 0u)
 			.buildPipeline();
 
-	const Move<VkFramebuffer> framebuffer = makeFramebuffer(vk, device, *renderPass, 0u, DE_NULL, testMipLevelSize.x(), testMipLevelSize.y());
+	renderPass.createFramebuffer(vk, device, 0u, DE_NULL, DE_NULL, testMipLevelSize.x(), testMipLevelSize.y());
 
 	// Create vertex buffer and fill it with full screen quad.
 	const std::vector<tcu::Vec4> vertexData = {
@@ -321,12 +325,12 @@ void Image2DView3DImageInstance::runGraphicsPipeline (const VkDescriptorSet&		de
 	VkDeviceSize vertexBufferOffset = 0;
 	vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &*vertexBuffer, &vertexBufferOffset);
 
-	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.getPipeline());
+	graphicsPipeline.bind(cmdBuffer);
 	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet, 0u, DE_NULL);
 
-	beginRenderPass(vk, cmdBuffer, *renderPass, *framebuffer, makeRect2D(testMipLevelSize.xy()));
+	renderPass.begin(vk, cmdBuffer, makeRect2D(testMipLevelSize.xy()));
 	vk.cmdDraw(cmdBuffer, 4, 1, 0, 0);
-	endRenderPass(vk, cmdBuffer);
+	renderPass.end(vk, cmdBuffer);
 
 	// Copy the result image to a buffer.
 	copyImageLayerToBuffer(vk, cmdBuffer, image, outputBuffer, testMipLevelSize.xy(), VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, useSampler ? 0u : m_testParameters.layerNdx, useSampler ? 0u : m_testParameters.mipLevel);
@@ -734,7 +738,7 @@ void FragmentImage2DView3DImageTest::initPrograms (SourceCollections& sourceColl
 
 void FragmentImage2DView3DImageTest::checkSupport (Context& context) const
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_testParameters.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_testParameters.pipelineConstructionType);
 
 	if (!context.isDeviceFunctionalitySupported("VK_EXT_image_2d_view_of_3d"))
 		TCU_THROW(NotSupportedError, "VK_EXT_image_2d_view_of_3d functionality not supported.");
