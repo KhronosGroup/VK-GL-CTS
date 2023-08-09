@@ -1363,6 +1363,10 @@ void createShaderFragmentMaskTestsInGroup (tcu::TestCaseGroup* rootGroup, Pipeli
 			MovePtr<tcu::TestCaseGroup> sampleCountGroup (new tcu::TestCaseGroup(rootGroup->getTestContext(), ("samples_" + de::toString(*pSampleCount)).c_str(), ""));
 			for (const SourceCase* pSourceCase = sourceCases; pSourceCase != DE_ARRAY_END(sourceCases); ++pSourceCase)
 			{
+				// Input attachments cannot be used with dynamic rendering.
+				if (pSourceCase->sampleSource == SAMPLE_SOURCE_SUBPASS_INPUT && isConstructionTypeShaderObject(pipelineConstructionType))
+					continue;
+
 				MovePtr<tcu::TestCaseGroup> sourceGroup (new tcu::TestCaseGroup(rootGroup->getTestContext(), pSourceCase->name, ""));
 				for (const VkFormat* pColorFormat = colorFormats; pColorFormat != DE_ARRAY_END(colorFormats); ++pColorFormat)
 				{
