@@ -767,9 +767,21 @@ std::vector<uint32_t> RayTracingPipelineLibraryTestInstance::runTest (bool repla
 				}
 			}
 
-			// Save capture/replay handles for a later replay.
-			if (!normalHandles && !replay)
-				m_captureReplayHandles = allHandles;
+			// Save or check capture/replay handles.
+			if (!normalHandles)
+			{
+				if (replay)
+				{
+					// Check saved handles.
+					if (allHandles != m_captureReplayHandles)
+						TCU_FAIL("Capture Replay Shader Group Handles do not match creation handles for top-level pipeline");
+				}
+				else
+				{
+					// Save handles for the replay phase.
+					m_captureReplayHandles = allHandles;
+				}
+			}
 		}
 	}
 
