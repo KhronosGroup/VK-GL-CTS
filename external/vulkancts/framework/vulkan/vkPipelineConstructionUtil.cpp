@@ -1870,7 +1870,6 @@ std::vector<VkDynamicState> getDynamicStates(const VkPipelineDynamicStateCreateI
 		VK_DYNAMIC_STATE_COVERAGE_MODULATION_TABLE_NV,
 		VK_DYNAMIC_STATE_COVERAGE_REDUCTION_MODE_NV,
 		VK_DYNAMIC_STATE_REPRESENTATIVE_FRAGMENT_TEST_ENABLE_NV,
-
 #endif
 	};
 
@@ -1898,11 +1897,22 @@ std::vector<VkDynamicState> getDynamicStates(const VkPipelineDynamicStateCreateI
 		VK_DYNAMIC_STATE_COVERAGE_MODULATION_TABLE_NV,
 		VK_DYNAMIC_STATE_COVERAGE_REDUCTION_MODE_NV,
 		VK_DYNAMIC_STATE_REPRESENTATIVE_FRAGMENT_TEST_ENABLE_NV,
+		VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT,
 #endif
 	};
 
 	const std::set<VkDynamicState> dynamicStates (dynamicStateInfo->pDynamicStates,
 												  dynamicStateInfo->pDynamicStates + dynamicStateInfo->dynamicStateCount);
+
+	// Verify all passed states are contained in at least one of the vectors above, so they won't get lost.
+	for (const auto dynState : dynamicStates)
+	{
+		DE_UNREF(dynState); // For release builds.
+		DE_ASSERT(		de::contains(vertexInputStates.begin(),	vertexInputStates.end(),	dynState)
+				  ||	de::contains(preRastStates.begin(),		preRastStates.end(),		dynState)
+				  ||	de::contains(fragShaderStates.begin(),	fragShaderStates.end(),		dynState)
+				  ||	de::contains(fragOutputStates.begin(),	fragOutputStates.end(),		dynState));
+	}
 
 	std::set<VkDynamicState> intersectedStates;
 

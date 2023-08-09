@@ -76,6 +76,18 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	}
 
 #if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT;
+	deMemset(&physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT, 0, sizeof(physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_attachment_feedback_loop_dynamic_state") )
+	{
+		physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT.sType = getStructureType<VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT>();
+		*nextPtr = &physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT;
+		nextPtr  = &physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT;
 	deMemset(&physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT, 0, sizeof(physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT));
 
@@ -1019,6 +1031,17 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_attachment_feedback_loop_dynamic_state")) )
+	{
+		if ( physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT.attachmentFeedbackLoopDynamicState == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature attachmentFeedbackLoopDynamicState not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
 
 #if defined(CTS_USES_VULKAN)
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_attachment_feedback_loop_layout")) )
