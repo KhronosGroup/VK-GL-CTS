@@ -1243,11 +1243,12 @@ using OptStippleParams	= tcu::Maybe<LineStippleParams>;
 using OptLineRasterMode	= tcu::Maybe<LineRasterizationMode>;
 using OptSampleCount	= tcu::Maybe<vk::VkSampleCountFlagBits>;
 using CovModTableVec	= std::vector<float>;
-#ifndef CTS_USES_VULKANSC
-using ViewportSwzVec	= std::vector<vk::VkViewportSwizzleNV>;
-#endif // CTS_USES_VULKANSC
 using BlendConstArray	= std::array<float, 4>;
 using DepthBoundsParams	= std::pair<float, float>;
+#ifndef CTS_USES_VULKANSC
+using ViewportSwzVec	= std::vector<vk::VkViewportSwizzleNV>;
+using OptDepthBiasRepr	= tcu::Maybe<vk::VkDepthBiasRepresentationInfoEXT>;
+#endif // CTS_USES_VULKANSC
 
 // Generic, to be used with any state than can be set statically and, as an option, dynamically.
 template<typename T>
@@ -1947,6 +1948,14 @@ struct TestConfig
 	// When setting the sample mask dynamically, we can use an alternative sample count specified here.
 	OptSampleCount					dynamicSampleMaskCount;
 
+#ifndef CTS_USES_VULKANSC
+	// This structure is optional and can be included statically in the rasterization info or dynamically in vkCmdSetDepthBias2.
+	OptDepthBiasRepr				depthBiasReprInfo;
+#endif // CTS_USES_VULKANSC
+
+	tcu::TextureChannelClass		neededDepthChannelClass;
+	float							extraDepthThreshold;
+
 	// Static values for sampleShadingEnable and minSampleShading.
 	bool							sampleShadingEnable;
 	float							minSampleShading;
@@ -2055,6 +2064,11 @@ struct TestConfig
 		, favorStaticNullPointers		(false)
 		, forceAtomicCounters			(false)
 		, dynamicSampleMaskCount		(tcu::Nothing)
+#ifndef CTS_USES_VULKANSC
+		, depthBiasReprInfo				(tcu::Nothing)
+#endif // CTS_USES_VULKANSC
+		, neededDepthChannelClass		(tcu::TEXTURECHANNELCLASS_LAST)
+		, extraDepthThreshold			(0.0f)
 		, sampleShadingEnable			(false)
 		, minSampleShading				(0.0f)
 		, vertexGenerator				(makeVertexGeneratorConfig(staticVertexGenerator, dynamicVertexGenerator))
@@ -2164,6 +2178,11 @@ struct TestConfig
 		, favorStaticNullPointers		(other.favorStaticNullPointers)
 		, forceAtomicCounters			(other.forceAtomicCounters)
 		, dynamicSampleMaskCount		(other.dynamicSampleMaskCount)
+#ifndef CTS_USES_VULKANSC
+		, depthBiasReprInfo				(other.depthBiasReprInfo)
+#endif // CTS_USES_VULKANSC
+		, neededDepthChannelClass		(other.neededDepthChannelClass)
+		, extraDepthThreshold			(other.extraDepthThreshold)
 		, sampleShadingEnable			(other.sampleShadingEnable)
 		, minSampleShading				(other.minSampleShading)
 		, vertexGenerator				(other.vertexGenerator)
@@ -3354,6 +3373,28 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 	if (m_testConfig.useFragShaderAtomics())
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
 
+#ifndef CTS_USES_VULKANSC
+	if (m_testConfig.depthBiasReprInfo)
+	{
+		const auto& reprInfo	= m_testConfig.depthBiasReprInfo.get();
+		const auto& dbcFeatures	= context.getDepthBiasControlFeaturesEXT();
+
+		if (reprInfo.depthBiasExact && !dbcFeatures.depthBiasExact)
+			TCU_THROW(NotSupportedError, "depthBiasExact not supported");
+
+		if (reprInfo.depthBiasRepresentation == vk::VK_DEPTH_BIAS_REPRESENTATION_LEAST_REPRESENTABLE_VALUE_FORCE_UNORM_EXT
+			&& !dbcFeatures.leastRepresentableValueForceUnormRepresentation)
+		{
+			TCU_THROW(NotSupportedError, "leastRepresentableValueForceUnormRepresentation not supported");
+		}
+
+		if (reprInfo.depthBiasRepresentation == vk::VK_DEPTH_BIAS_REPRESENTATION_FLOAT_EXT && !dbcFeatures.floatRepresentation)
+			TCU_THROW(NotSupportedError, "floatRepresentation not supported");
+	}
+#else
+	TCU_THROW(NotSupportedError, "VulkanSC does not support VK_EXT_depth_bias_control");
+#endif // CTS_USES_VULKANSC
+
 	if (m_testConfig.getActiveLineWidth() != 1.0f)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_WIDE_LINES);
 
@@ -3940,7 +3981,21 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 	if (testConfig.depthBiasConfig.dynamicValue)
 	{
 		const auto& bias = testConfig.depthBiasConfig.dynamicValue.get();
-		vkd.cmdSetDepthBias(cmdBuffer, bias.constantFactor, bias.clamp, 0.0f);
+
+#ifndef CTS_USES_VULKANSC
+		if (testConfig.depthBiasReprInfo && !testConfig.isReversed())
+		{
+			vk::VkDepthBiasInfoEXT depthBiasInfo	= vk::initVulkanStructureConst(&testConfig.depthBiasReprInfo.get());
+			depthBiasInfo.depthBiasConstantFactor	= bias.constantFactor;
+			depthBiasInfo.depthBiasClamp			= bias.clamp;
+
+			vkd.cmdSetDepthBias2EXT(cmdBuffer, &depthBiasInfo);
+		}
+		else
+#endif // CTS_USES_VULKANSC
+		{
+			vkd.cmdSetDepthBias(cmdBuffer, bias.constantFactor, bias.clamp, 0.0f);
+		}
 	}
 
 	if (testConfig.rastDiscardEnableConfig.dynamicValue)
@@ -4302,7 +4357,7 @@ protected:
 };
 
 // This one creates a new device with VK_NV_shading_rate_image and VK_EXT_extended_dynamic_state3.
-// It also enables VK_EXT_mesh_shader if supported, as some tests need it.
+// It also enables other extensions like VK_EXT_mesh_shader if supported, as some tests need them.
 class ShadingRateImageDeviceHelper : public DeviceHelper
 {
 public:
@@ -4331,29 +4386,36 @@ public:
 #ifndef CTS_USES_VULKANSC
 		const auto&	contextMeshFeatures	= context.getMeshShaderFeaturesEXT();
 		const auto& contextGPLFeatures	= context.getGraphicsPipelineLibraryFeaturesEXT();
+		const auto& contextDBCFeatures	= context.getDepthBiasControlFeaturesEXT();
+		const auto&	contextSOFeatures	= context.getShaderObjectFeaturesEXT();
+
 		const bool	meshShaderSupport	= contextMeshFeatures.meshShader;
 		const bool	gplSupport			= contextGPLFeatures.graphicsPipelineLibrary;
-		const bool  shaderObjectSupport = context.getShaderObjectFeaturesEXT().shaderObject;
-
-		vk::VkPhysicalDeviceMeshShaderFeaturesEXT				meshFeatures				= vk::initVulkanStructure();
-		vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	gplFeatures					= vk::initVulkanStructure();
+		const bool	dbcSupport			= contextDBCFeatures.depthBiasControl;
+		const bool  shaderObjectSupport = contextSOFeatures.shaderObject;
 
 		vk::VkPhysicalDeviceExtendedDynamicState3FeaturesEXT	eds3Features				= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceShadingRateImageFeaturesNV			shadingRateImageFeatures	= vk::initVulkanStructure(&eds3Features);
-		vk::VkPhysicalDeviceShaderObjectFeaturesEXT				shaderObjectFeatures		= vk::initVulkanStructure(&shadingRateImageFeatures);
-		vk::VkPhysicalDeviceFeatures2							features2					= vk::initVulkanStructure(&shaderObjectFeatures);
+		vk::VkPhysicalDeviceFeatures2							features2					= vk::initVulkanStructure(&shadingRateImageFeatures);
+
+		vk::VkPhysicalDeviceDepthBiasControlFeaturesEXT			dbcFeatures					= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceMeshShaderFeaturesEXT				meshFeatures				= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	gplFeatures					= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceShaderObjectFeaturesEXT				shaderObjectFeatures		= vk::initVulkanStructure();
+
+		const auto addFeatures = vk::makeStructChainAdder(&features2);
 
 		if (meshShaderSupport)
-		{
-			meshFeatures.pNext	= features2.pNext;
-			features2.pNext		= &meshFeatures;
-		}
+			addFeatures(&meshFeatures);
 
 		if (gplSupport)
-		{
-			gplFeatures.pNext	= features2.pNext;
-			features2.pNext		= &gplFeatures;
-		}
+			addFeatures(&gplFeatures);
+
+		if (dbcSupport)
+			addFeatures(&dbcFeatures);
+
+		if (shaderObjectSupport)
+			addFeatures(&shaderObjectFeatures);
 
 		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 #endif // CTS_USES_VULKANSC
@@ -4374,11 +4436,14 @@ public:
 			extensions.push_back("VK_EXT_graphics_pipeline_library");
 		}
 
-		// Disable robustness.
-		features2.features.robustBufferAccess = VK_FALSE;
+		if (dbcSupport)
+			extensions.push_back("VK_EXT_depth_bias_control");
 
 		if (shaderObjectSupport)
 			extensions.push_back("VK_EXT_shader_object");
+
+		// Disable robustness.
+		features2.features.robustBufferAccess = VK_FALSE;
 #endif // CTS_USES_VULKANSC
 
 		for (const auto& ext : extensions)
@@ -4449,6 +4514,13 @@ void cleanupDevices()
 	g_contextDeviceHelper.reset(nullptr);
 }
 
+tcu::TextureChannelClass getChannelClass (const tcu::TextureFormat& format)
+{
+	const auto generalClass = getTextureChannelClass(format.type);
+	// Workaround for VK_FORMAT_X8_D24_UNORM_PACK32.
+	return ((generalClass == tcu::TEXTURECHANNELCLASS_LAST) ? tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT : generalClass);
+}
+
 tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 {
 	using ImageWithMemoryVec	= std::vector<std::unique_ptr<vk::ImageWithMemory>>;
@@ -4505,6 +4577,15 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		// Sample count not supported.
 		if ((formatProps.sampleCounts & activeSampleCount) != activeSampleCount)
 			continue;
+
+		if (m_testConfig.neededDepthChannelClass != tcu::TEXTURECHANNELCLASS_LAST)
+		{
+			const auto tcuDSFormat	= vk::getDepthCopyFormat(kDepthStencilFormat.imageFormat);
+			const auto channelClass	= getChannelClass(tcuDSFormat);
+
+			if (channelClass != m_testConfig.neededDepthChannelClass)
+				continue;
+		}
 
 		dsFormatInfo = &kDepthStencilFormat;
 		break;
@@ -5112,6 +5193,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	using DepthClipControlPtr	= de::MovePtr<vk::VkPipelineViewportDepthClipControlCreateInfoEXT>;
 	using DepthClipEnablePtr	= de::MovePtr<vk::VkPipelineRasterizationDepthClipStateCreateInfoEXT>;
 	using ConservativeRastPtr	= de::MovePtr<vk::VkPipelineRasterizationConservativeStateCreateInfoEXT>;
+	using DepthBiasReprInfoPtr	= de::MovePtr<vk::VkDepthBiasRepresentationInfoEXT>;
 
 	RastStreamInfoPtr	pRasterizationStreamInfo;
 
@@ -5158,6 +5240,19 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 
 		pConservativeRasterModeInfo->conservativeRasterizationMode		= m_testConfig.conservativeRasterModeConfig.staticValue;
 		pConservativeRasterModeInfo->extraPrimitiveOverestimationSize	= m_testConfig.extraPrimitiveOverEstConfig.staticValue;
+	}
+
+	DepthBiasReprInfoPtr pDepthBiasReprInfo;
+
+	if (m_testConfig.depthBiasReprInfo && (!m_testConfig.depthBiasConfig.dynamicValue || kReversed))
+	{
+		// Representation info will be passed statically.
+		pDepthBiasReprInfo = DepthBiasReprInfoPtr(new vk::VkDepthBiasRepresentationInfoEXT(vk::initVulkanStructure(rasterizationPnext)));
+		rasterizationPnext = pDepthBiasReprInfo.get();
+
+		const auto& reprInfo = m_testConfig.depthBiasReprInfo.get();
+		pDepthBiasReprInfo->depthBiasRepresentation	= reprInfo.depthBiasRepresentation;
+		pDepthBiasReprInfo->depthBiasExact			= reprInfo.depthBiasExact;
 	}
 #else
 	DE_ASSERT(!staticStreamInfo);
@@ -6087,8 +6182,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 
 	// Check expected values.
 	const bool	hasCustomVerif	= static_cast<bool>(m_testConfig.colorVerificator);
-	const auto	minDepth		= m_testConfig.expectedDepth - dsFormatInfo->depthThreshold;
-	const auto	maxDepth		= m_testConfig.expectedDepth + dsFormatInfo->depthThreshold;
+	const auto	minDepth		= m_testConfig.expectedDepth - dsFormatInfo->depthThreshold - m_testConfig.extraDepthThreshold;
+	const auto	maxDepth		= m_testConfig.expectedDepth + dsFormatInfo->depthThreshold + m_testConfig.extraDepthThreshold;
 	bool		colorMatch		= true;
 	bool		depthMatch		= true;
 	bool		stencilMatch	= true;
@@ -8217,6 +8312,78 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				}
 			}
 		}
+
+#ifndef CTS_USES_VULKANSC
+		// Depth bias representation info.
+		{
+			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+			// Enable depth test and writes.
+			config.depthTestEnableConfig.staticValue	= true;
+			config.depthWriteEnableConfig.staticValue	= true;
+			config.depthCompareOpConfig.staticValue		= vk::VK_COMPARE_OP_ALWAYS;
+			config.clearDepthValue						= 0.0f;
+			config.meshParams[0].depth					= 0.125f;
+			const double targetBias						= 0.5f;
+			config.expectedDepth						= 0.625f; // mesh depth + target bias
+
+			vk::VkDepthBiasRepresentationInfoEXT depthBiasReprInfo	= vk::initVulkanStructure();
+			depthBiasReprInfo.depthBiasRepresentation				= vk::VK_DEPTH_BIAS_REPRESENTATION_LEAST_REPRESENTABLE_VALUE_FORCE_UNORM_EXT;
+			depthBiasReprInfo.depthBiasExact						= VK_TRUE;
+			config.depthBiasReprInfo								= depthBiasReprInfo;
+			config.neededDepthChannelClass							= tcu::TEXTURECHANNELCLASS_FLOATING_POINT;
+
+			// We will choose a format with floating point representation, but force a UNORM exact depth bias representation.
+			// With this, the value of R should be 2^(-N), with N being the number of mantissa bits plus one (2^(-24) for D32_SFLOAT).
+			// To reach our target bias, the constant factor must be calculated based on it and the value of R.
+			//
+			// If the VkDepthBiasRepresentationInfoEXT is not taken into account, the value of R would be 2^(E-N), such that:
+			// E is the maximum exponent in the range of Z values that the primitive uses (-3 for our mesh depth of 0.125).
+			// N is the number of mantissa bits in the floating point format (23 in our case)
+			// R would be wrongly calculated as 2^(-26) (1/4th of the intended value).
+			const double minR			= 1.0 / static_cast<double>(1u << 24u);
+			const double constantFactor	= targetBias / minR;
+
+			const DepthBiasParams kPositiveBias			{ static_cast<float>(constantFactor), 0.0f };
+			config.depthBiasEnableConfig.staticValue	= true;
+			config.depthBiasConfig.staticValue			= kNoDepthBiasParams;
+			config.depthBiasConfig.dynamicValue			= kPositiveBias;
+			config.extraDepthThreshold					= static_cast<float>(minR);
+
+			const char* caseName = "depth_bias_repr_info";
+			const char* caseDesc = "Dynamically set the depth bias representation information";
+
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, caseName, caseDesc, config));
+		}
+		{
+			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+			// Enable depth test and writes.
+			config.depthTestEnableConfig.staticValue	= true;
+			config.depthWriteEnableConfig.staticValue	= true;
+			config.depthCompareOpConfig.staticValue		= vk::VK_COMPARE_OP_ALWAYS;
+			config.clearDepthValue						= 0.25f;	// Clear depth buffer to 0.25.
+			config.meshParams[0].depth					= 0.5f;		// Set mesh depth to 0.5 as a base.
+
+			// Enable dynamic depth bias to add a 0.25 bias to the mesh depth (using float representation), expecting the final
+			// depth to be 0.75.
+			vk::VkDepthBiasRepresentationInfoEXT depthBiasReprInfo	= vk::initVulkanStructure();
+			depthBiasReprInfo.depthBiasRepresentation				= vk::VK_DEPTH_BIAS_REPRESENTATION_FLOAT_EXT;
+			depthBiasReprInfo.depthBiasExact						= VK_FALSE;
+			config.depthBiasReprInfo								= depthBiasReprInfo;
+
+			const DepthBiasParams kPositiveBias			{ 0.25f, 0.0f };
+			config.depthBiasEnableConfig.staticValue	= true;
+			config.depthBiasConfig.staticValue			= kNoDepthBiasParams;
+			config.depthBiasConfig.dynamicValue			= kPositiveBias;
+			config.expectedDepth						= 0.75f;
+
+			const char* caseName = "depth_bias_repr_info_float";
+			const char* caseDesc = "Dynamically set the depth bias representation information to float representation";
+
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, caseName, caseDesc, config));
+		}
+#endif // CTS_USES_VULKANSC
 
 		// Depth compare op.
 		{

@@ -58,6 +58,7 @@
 #include "vkBufferWithMemory.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktRasterizationOrderAttachmentAccessTests.hpp"
+#include "vktRasterizationDepthBiasControlTests.hpp"
 #include "vktShaderTileImageTests.hpp"
 #endif // CTS_USES_VULKANSC
 
@@ -7768,6 +7769,11 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 
 		rasterizationTests->addChild(depthBias);
 	}
+#endif // CTS_USES_VULKANSC
+
+#ifndef CTS_USES_VULKANSC
+	// Depth bias control.
+	rasterizationTests->addChild(createDepthBiasControlTests(testCtx));
 #endif // CTS_USES_VULKANSC
 
 	// Fragment shader side effects.

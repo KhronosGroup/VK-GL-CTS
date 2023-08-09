@@ -141,6 +141,18 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+#if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceDepthBiasControlFeaturesEXT physicalDeviceDepthBiasControlFeaturesEXT;
+	deMemset(&physicalDeviceDepthBiasControlFeaturesEXT, 0, sizeof(physicalDeviceDepthBiasControlFeaturesEXT));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_depth_bias_control") )
+	{
+		physicalDeviceDepthBiasControlFeaturesEXT.sType = getStructureType<VkPhysicalDeviceDepthBiasControlFeaturesEXT>();
+		*nextPtr = &physicalDeviceDepthBiasControlFeaturesEXT;
+		nextPtr  = &physicalDeviceDepthBiasControlFeaturesEXT.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
 	vk::VkPhysicalDeviceDepthClampZeroOneFeaturesEXT physicalDeviceDepthClampZeroOneFeaturesEXT;
 	deMemset(&physicalDeviceDepthClampZeroOneFeaturesEXT, 0, sizeof(physicalDeviceDepthClampZeroOneFeaturesEXT));
 
@@ -1059,6 +1071,17 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_depth_bias_control")) )
+	{
+		if ( physicalDeviceDepthBiasControlFeaturesEXT.depthBiasControl == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature depthBiasControl not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
 
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_depth_clamp_zero_one")) )
 	{
