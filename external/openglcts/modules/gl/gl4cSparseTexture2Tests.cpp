@@ -1307,14 +1307,14 @@ bool SparseTexture2CommitmentTestCase::verifyTextureData(const Functions& gl, GL
 				gl.bindImageTexture(0, //unit
 									verifyTexture,
 									0,		  //level
-									GL_FALSE, //layered
+									depth > 1, //layered
 									0,		  //layer
 									GL_WRITE_ONLY, GL_R8UI);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
 				gl.bindImageTexture(1, //unit
 									texture,
 									level,	//level
-									GL_FALSE, //layered
+									depth > 1, //layered
 									0,		  //layer
 									GL_READ_ONLY, format);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
@@ -2986,7 +2986,7 @@ bool SparseTexture2LookupTestCase::verifyLookupTextureData(const Functions& gl, 
 			gl.bindImageTexture(1, //unit
 								verifyTexture,
 								0,		 //level
-								GL_TRUE, //layered
+								depth > 1, //layered
 								0,		 //layer
 								GL_WRITE_ONLY, GL_R8UI);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
@@ -3008,7 +3008,7 @@ bool SparseTexture2LookupTestCase::verifyLookupTextureData(const Functions& gl, 
 				gl.bindImageTexture(0, //unit
 									texture,
 									level,	//level
-									GL_FALSE, //layered
+									depth > 1, //layered
 									0,		  //layer
 									GL_READ_ONLY, format);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
