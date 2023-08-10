@@ -651,7 +651,7 @@ tcu::TestStatus framebufferCompatibleRenderPassTest (Context& context)
 																					VK_ATTACHMENT_STORE_OP_STORE,
 																					VK_IMAGE_LAYOUT_GENERAL));
 
-	beginRenderPass(vk, commandBuffer.get(), renderPassB.get(), frameBuffer.get(), makeRect2D(0, 0, 0u, 0u));
+	beginRenderPass(vk, commandBuffer.get(), renderPassB.get(), frameBuffer.get(), makeRect2D(0, 0, 1u, 1u));
 	endRenderPass(vk, commandBuffer.get());
 
 	VK_CHECK(vk.endCommandBuffer(commandBuffer.get()));
