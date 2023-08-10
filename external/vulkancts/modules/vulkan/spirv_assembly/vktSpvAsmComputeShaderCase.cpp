@@ -384,21 +384,21 @@ void SpvAsmComputeShaderCase::checkSupport(Context& context) const
 
 	// Core features
 	// Check that we're not skipping tests needlessly based on things that don't affect compute.
-	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.fullDrawIndexUint32						== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.fullDrawIndexUint32					== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.independentBlend						== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.geometryShader							== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.tessellationShader						== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.sampleRateShading						== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.dualSrcBlend							== DE_FALSE);
-	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.logicOp									== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.logicOp								== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.multiDrawIndirect						== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.drawIndirectFirstInstance				== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.depthClamp								== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.depthBiasClamp							== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.fillModeNonSolid						== DE_FALSE);
-	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.depthBounds								== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.depthBounds							== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.wideLines								== DE_FALSE);
-	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.largePoints								== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.largePoints							== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.alphaToOne								== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.multiViewport							== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.occlusionQueryPrecise					== DE_FALSE);
@@ -408,7 +408,7 @@ void SpvAsmComputeShaderCase::checkSupport(Context& context) const
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.shaderClipDistance						== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.shaderCullDistance						== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.sparseBinding							== DE_FALSE);
-	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.variableMultisampleRate					== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.variableMultisampleRate				== DE_FALSE);
 
 	const char* unsupportedFeature = DE_NULL;
 	if (!isVulkanFeaturesSupported(context, m_shaderSpec.requestedVulkanFeatures, &unsupportedFeature))
