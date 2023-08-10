@@ -2978,10 +2978,16 @@ tcu::TestStatus TransformFeedbackDrawOutsideTestInstance::iterate (void)
 class TransformFeedbackHolesInstance : public vkt::TestInstance
 {
 public:
-						TransformFeedbackHolesInstance	(Context& context) : vkt::TestInstance(context) {}
+						TransformFeedbackHolesInstance	(Context& context, const bool extraDraw)
+							: vkt::TestInstance	(context)
+							, m_extraDraw		(extraDraw)
+							{}
 						~TransformFeedbackHolesInstance	(void) {}
 
 	tcu::TestStatus		iterate							(void) override;
+
+protected:
+	const bool m_extraDraw;
 };
 
 tcu::TestStatus TransformFeedbackHolesInstance::iterate (void)
@@ -3001,6 +3007,7 @@ tcu::TestStatus TransformFeedbackHolesInstance::iterate (void)
 	const auto			dataStages		= (hasGeom ? VK_SHADER_STAGE_GEOMETRY_BIT : VK_SHADER_STAGE_VERTEX_BIT);
 	const auto			xfbCompCount	= 3u; // Per vertex.
 	const auto			xfbChunkSize	= xfbCompCount * sizeof(float); // Per vertex, in bytes.
+	const auto			totalDraws		= (m_extraDraw ? 2u : 1u);
 
 	// Color buffer with verification buffer.
 	ImageWithBuffer colorBuffer (
@@ -3026,8 +3033,9 @@ tcu::TestStatus TransformFeedbackHolesInstance::iterate (void)
 	deMemcpy(vbData, de::dataOrNull(vertices), de::dataSize(vertices));
 	flushAlloc(ctx.vkd, ctx.device, vbAlloc);
 
-	// XFB buffer.
-	const auto			xfbBufferSize	= static_cast<VkDeviceSize>(xfbChunkSize * vertices.size());
+	// XFB buffer. When using an extra draw, leave space for a possible second draw (NB: but it should not be recorded, see below).
+	const auto			xfbSizeFactor	= static_cast<VkDeviceSize>(totalDraws);
+	const auto			xfbBufferSize	= static_cast<VkDeviceSize>(xfbChunkSize * vertices.size()) * xfbSizeFactor;
 	const auto			xfbBufferInfo	= makeBufferCreateInfo(xfbBufferSize, VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT);
 	BufferWithMemory	xfbBuffer		(ctx.vkd, ctx.device, ctx.allocator, xfbBufferInfo, MemoryRequirement::HostVisible);
 	const auto			xfbBufferAlloc	= xfbBuffer.getAllocation();
@@ -3070,6 +3078,13 @@ tcu::TestStatus TransformFeedbackHolesInstance::iterate (void)
 	ctx.vkd.cmdBeginTransformFeedbackEXT(cmdBuffer, 0u, 0u, nullptr, nullptr);
 	ctx.vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
 	ctx.vkd.cmdEndTransformFeedbackEXT(cmdBuffer, 0u, 0u, nullptr, nullptr);
+	if (m_extraDraw)
+	{
+		// When m_extraDraw is true, record a new draw outside the transform feedback section. The XFB buffer will have enough space
+		// to record this draw, but it should not be recorded, obviously, so the values in the buffer should stay zero. We are also
+		// avoiding any state changes between both draws.
+		ctx.vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
+	}
 	endRenderPass(ctx.vkd, cmdBuffer);
 	const auto xfbBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT, VK_ACCESS_HOST_READ_BIT);
 	ctx.vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &xfbBarrier, 0u, nullptr, 0u, nullptr);
@@ -3092,20 +3107,25 @@ tcu::TestStatus TransformFeedbackHolesInstance::iterate (void)
 		return tcu::TestStatus::fail("Unexpected color in result buffer; check log for details");
 
 	// Verify XFB buffer.
-	const tcu::Vec3	expectedValues	{ pcData.x(), 0.0f, pcData.z() }; // Per-vertex, must match vert/geom shader, note Y is not saved.
-	const auto		dataPtr			= reinterpret_cast<const char*>(xfbBufferData);
+	const tcu::Vec3	refRecordedValues	{ pcData.x(), 0.0f, pcData.z() };	// Per-vertex, must match vert/geom shader, note Y is not saved.
+	const tcu::Vec3	refEmptyValues		{ 0.0f, 0.0f, 0.0f };				// For empty areas of the XFB buffer.
+	const auto		dataPtr				= reinterpret_cast<const char*>(xfbBufferData);
 
-	for (size_t vertIdx = 0u; vertIdx < vertices.size(); ++vertIdx)
+	for (uint32_t drawIdx = 0u; drawIdx < totalDraws; ++drawIdx)
 	{
-		const auto	vertexDataPtr	= dataPtr + (vertIdx * xfbChunkSize);
-		tcu::Vec3	vertValues		(0.0f, 0.0f, 0.0f);
-		deMemcpy(&vertValues, vertexDataPtr, sizeof(vertValues));
-
-		if (vertValues != expectedValues)
+		const auto& refValues = ((drawIdx > 0u) ? refEmptyValues : refRecordedValues);
+		for (size_t vertIdx = 0u; vertIdx < vertices.size(); ++vertIdx)
 		{
-			std::ostringstream msg;
-			msg << "Invalid data found for vertex " << vertIdx << ": expected " << expectedValues << " and found " << vertValues;
-			TCU_FAIL(msg.str());
+			const auto	vertexDataPtr	= dataPtr + (vertIdx * xfbChunkSize) + (drawIdx * vertices.size() * xfbChunkSize);
+			tcu::Vec3	vertValues		(0.0f, 0.0f, 0.0f);
+			deMemcpy(&vertValues, vertexDataPtr, sizeof(vertValues));
+
+			if (vertValues != refValues)
+			{
+				std::ostringstream msg;
+				msg << "Invalid data found for vertex " << vertIdx << ": expected " << refRecordedValues << " and found " << vertValues;
+				TCU_FAIL(msg.str());
+			}
 		}
 	}
 
@@ -3214,7 +3234,11 @@ vkt::TestInstance*	TransformFeedbackTestCase::createInstance (vkt::Context& cont
 		return new TransformFeedbackDrawOutsideTestInstance(context, m_parameters);
 
 	if (m_parameters.testType == TEST_TYPE_HOLES_VERTEX || m_parameters.testType == TEST_TYPE_HOLES_GEOMETRY)
-		return new TransformFeedbackHolesInstance (context);
+	{
+		// We repurpose partCount to indicate somehow the number of draws.
+		const bool extraDraw = (m_parameters.partCount > 1u);
+		return new TransformFeedbackHolesInstance (context, extraDraw);
+	}
 
 	TCU_THROW(InternalError, "Specified test type not found");
 }
@@ -4652,13 +4676,17 @@ void createTransformFeedbackStreamsSimpleTests (tcu::TestCaseGroup* group)
 			{ TEST_TYPE_HOLES_VERTEX,	"_vert" },
 			{ TEST_TYPE_HOLES_GEOMETRY,	"_geom" },
 		};
-		const std::string testName = "holes";
+		const std::string testNameBase = "holes";
 
 		for (const auto& holeCase : holeCases)
-		{
-			const TestParameters parameters { holeCase.testType, 0u, 0u, 0u, 1u, 0u, STREAM_ID_0_NORMAL, false, false, false, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false };;
-			group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + holeCase.suffix).c_str(), "Test skipping components in the XFB buffer", parameters));
-		}
+			for (const auto& extraDraw : { false, true})
+			{
+				const auto				partCount	= (extraDraw ? 2u : 1u);
+				const auto				testName	= testNameBase + (extraDraw ? "_extra_draw" : "");
+				const TestParameters	parameters	{ holeCase.testType, 0u, partCount, 0u, 1u, 0u, STREAM_ID_0_NORMAL, false, false, false, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false };;
+
+				group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + holeCase.suffix).c_str(), "Test skipping components in the XFB buffer", parameters));
+			}
 	}
 }
 
