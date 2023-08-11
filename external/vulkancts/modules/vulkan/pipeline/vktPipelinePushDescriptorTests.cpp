@@ -4389,7 +4389,7 @@ tcu::TestCaseGroup* createPushDescriptorTests (tcu::TestContext& testCtx, Pipeli
 	if (pipelineType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
 		TestParams testParams = { pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 0u, 1u, true };
-		graphicsTests->addChild(new PushDescriptorTexelBufferGraphicsTest(testCtx, "maintenance5_unifor_texel_buffer", "", testParams));
+		graphicsTests->addChild(new PushDescriptorTexelBufferGraphicsTest(testCtx, "maintenance5_uniform_texel_buffer", "", testParams));
 		testParams.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
 		graphicsTests->addChild(new PushDescriptorTexelBufferGraphicsTest(testCtx, "maintenance5_storage_texel_buffer", "", testParams));
 		testParams.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;

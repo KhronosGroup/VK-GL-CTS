@@ -512,21 +512,38 @@ tcu::TestStatus BindBuffers2Instance::iterate (void)
 	invalidateAlloc(vk, device, outBufferAlloc);
 	const tcu::ConstPixelBufferAccess result(vk::mapVkFormat(vk::VK_FORMAT_R32G32B32A32_SFLOAT), tcu::IVec3(extent.width, extent.height, 1), (const char*)outBufferAlloc.getHostPtr());
 
-	const deUint32 h = result.getHeight();
-	const deUint32 w = result.getWidth();
-	for (deUint32 y = 0; y < h; y++)
-	{
-		for (deUint32 x = 0; x < w; x++)
-		{
-			tcu::Vec4	pix = result.getPixel(x, y);
+	const int	h		= result.getHeight();
+	const int	w		= result.getWidth();
+	bool		imageOK	= true;
+	tcu::Vec4	refPix	(0.0f, 0.0f, 0.0f, 0.0f);
+	auto&		log		= m_context.getTestContext().getLog();
 
-			if (x >= w / 2 && y >= h / 2 && pix != colors[0]) return tcu::TestStatus::fail("Fail");
-			if (x < w / 2 && y >= h / 2 && pix != colors[colorStride == 0 ? 0 : 1]) return tcu::TestStatus::fail("Fail");
-			if (x >= w / 2 && y < h / 2 && pix != colors[colorStride == 0 ? 0 : 2]) return tcu::TestStatus::fail("Fail");
-			if (x < w / 2 && y < h / 2 && pix != colors[colorStride == 0 ? 0 : 3]) return tcu::TestStatus::fail("Fail");
+	// Note: we do not use floatThresholdCompare because of the image format: the logged image would be confusing.
+	for (int y = 0; y < h; y++)
+	{
+		for (int x = 0; x < w; x++)
+		{
+			const tcu::Vec4 pix = result.getPixel(x, y);
+
+			if      (x >= w / 2 && y >= h / 2) refPix = colors[0];
+			else if (x  < w / 2 && y >= h / 2) refPix = colors[colorStride == 0 ? 0 : 1];
+			else if (x >= w / 2 && y  < h / 2) refPix = colors[colorStride == 0 ? 0 : 2];
+			else if (x  < w / 2 && y  < h / 2) refPix = colors[colorStride == 0 ? 0 : 3];
+			else                               DE_ASSERT(false);
+
+			if (pix != refPix)
+			{
+				const tcu::IVec2 coords(x, y);
+				log << tcu::TestLog::Message
+				    << "Mismatch at pixel " << coords << ": expected " << refPix << " but got " << pix
+					<< tcu::TestLog::EndMessage;
+				imageOK = false;
+			}
 		}
 	}
 
+	if (!imageOK)
+		return tcu::TestStatus::fail("Fail; check log for details");
 	return tcu::TestStatus::pass("Pass");
 }
 
@@ -968,7 +985,7 @@ tcu::TestStatus BindVertexBuffers2Instance::iterate (void)
 	invalidateAlloc(vk, device, outBufferAlloc);
 	const tcu::ConstPixelBufferAccess result(vk::mapVkFormat(colorFormat), extent.width, extent.height, 1, outBufferAlloc.getHostPtr());
 
-	bool		verdict			= false;
+	bool		testPasses		= false;
 	deUint32	equalClearCount = 0;
 	deUint32	halfWidth		= m_params.width / 2;
 	deUint32	halfHeight		= m_params.height / 2;
@@ -987,17 +1004,37 @@ tcu::TestStatus BindVertexBuffers2Instance::iterate (void)
 	const double mismatch = double(equalClearCount) / double(halfWidth * halfHeight);
 	const std::string mismatchText = "Mismatch: " + std::to_string(deUint32(mismatch * 100.9)) + '%';
 
-	const float eps = 0.2f;
-	const tcu::Vec4 px = result.getPixel(halfWidth - 1, halfHeight - 1);
-	const bool secondCondition = px.x() < eps && px.y() < eps && px.z() < eps;
+	const float			eps				= 0.2f;
+	const tcu::Vec3		threshold		(eps, eps, eps);
+	const tcu::UVec2	middle			(halfWidth - 1u, halfHeight - 1u);
+	const tcu::Vec4		rgba			= result.getPixel(middle.x(), middle.y());
+	const tcu::Vec3		rgb				= rgba.swizzle(0, 1, 2);
+	const bool			belowThreshold	= tcu::boolAll(tcu::lessThan(rgb, threshold));
 
 	if (m_robustnessVersion == 0)
 	{
-		verdict = (secondCondition == false) && (mismatch == 0.0);
+		const auto expectedMismatch = 0.0;
+		testPasses = (belowThreshold == false) && (mismatch == expectedMismatch);
+		if (!testPasses)
+		{
+			std::ostringstream msg;
+			msg << "FAILURE: no robustness; pixel at " << middle << " is " << rgb << " (should be >= "
+			    << threshold << "); mismatch in upper left quarter " << mismatch << " (should be " << expectedMismatch << ")";
+			log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+		}
 	}
 	else
 	{
-		verdict = (secondCondition == true) && (mismatch < 0.25);
+		const auto mismatchLimit = 0.25;
+		testPasses = (belowThreshold == true) && (mismatch < mismatchLimit);
+		if (!testPasses)
+		{
+			std::ostringstream msg;
+			msg << "FAILURE: robusness version " << m_robustnessVersion << "; pixel at " << middle << " is " << rgb
+			    << " (should be < " << threshold << "); mismatch in upper left quarter " << mismatch
+				<< " (should be below " << mismatchLimit << ")";
+			log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+		}
 	}
 
 	auto logOffsets = (log << tcu::TestLog::Message << "Offsets: ");
@@ -1018,7 +1055,7 @@ tcu::TestStatus BindVertexBuffers2Instance::iterate (void)
 		logStrides << strides[k];
 	} logStrides << tcu::TestLog::EndMessage;
 
-	if (!verdict)
+	if (!testPasses)
 	{
 		std::ostringstream os;
 		os << (m_params.topology == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP ? "list" : "strip");
@@ -1036,7 +1073,9 @@ tcu::TestStatus BindVertexBuffers2Instance::iterate (void)
 			<< tcu::TestLog::EndImageSet;
 	}
 
-	return (*(verdict ? &tcu::TestStatus::pass : &tcu::TestStatus::fail))(mismatchText);
+	if (!testPasses)
+		return tcu::TestStatus::fail(mismatchText + "; check log for details");
+	return tcu::TestStatus::pass(mismatchText);
 }
 
 class BindBuffers2Case : public vkt::TestCase
