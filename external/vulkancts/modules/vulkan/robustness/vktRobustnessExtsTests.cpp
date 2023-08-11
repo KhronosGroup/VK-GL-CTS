@@ -476,7 +476,7 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 	const auto&	vki				= context.getInstanceInterface();
 	const auto	physicalDevice	= context.getPhysicalDevice();
 
-	checkPipelineLibraryRequirements(vki, physicalDevice, getConstructionTypeFromRobustnessCase(m_data.pipelineRobustnessCase));
+	checkPipelineConstructionRequirements(vki, physicalDevice, getConstructionTypeFromRobustnessCase(m_data.pipelineRobustnessCase));
 
 	// We need to query some features using the physical device instead of using the reported context features because robustness2
 	// and image robustness are always disabled in the default device but they may be available.
