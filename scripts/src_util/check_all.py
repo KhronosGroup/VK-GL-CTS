@@ -52,7 +52,7 @@ if __name__ == "__main__":
 		checkWhitespace(files),
 		checkIncludeGuards(files),
 		checkLicense(files),
-		checkFilesSizeLimit (files, 100000000),
+		checkFilesSizeLimit (files, 100 * 1024 * 1024),
 		#todo checkRedundantIncludeGuards(files),
 		])
 
