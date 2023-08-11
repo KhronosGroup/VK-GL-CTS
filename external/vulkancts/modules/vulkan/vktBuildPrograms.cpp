@@ -707,4 +707,6 @@ int main (int argc, const char* argv[])
 	{
 		tcu::die("%s", e.what());
 	}
+
+	return -1;
 }
