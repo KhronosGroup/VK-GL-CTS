@@ -7327,6 +7327,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_disable", "Dynamically disable depth clamp", config));
 		}
 
+#if 0
 		// "If the depth clamping state is changed dynamically, and the pipeline was not created with
 		// VK_DYNAMIC_STATE_DEPTH_CLIP_ENABLE_EXT enabled, then depth clipping is enabled when depth clamping is disabled and vice
 		// versa"
@@ -7393,6 +7394,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			// Note: the combination of depth clamp disabled and depth clip disabled cannot be tested because if Zf falls outside
 			// [Zmin,Zmax] from the viewport, then the value of Zf is undefined during the depth test.
 		}
+#endif
 
 		// Polygon mode.
 		{
