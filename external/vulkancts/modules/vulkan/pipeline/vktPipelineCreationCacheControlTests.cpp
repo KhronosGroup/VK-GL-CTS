@@ -909,6 +909,7 @@ TestStatus testInstance(Context& context, const TestParams& testParameter)
 			for (deUint32 ci = 0; ci < createInfos.size(); ++ci)
 			{
 				flags2CreateInfo[ci].flags	= translateCreateFlag(createInfos[ci].flags);
+				flags2CreateInfo[ci].pNext  = createInfos[ci].pNext;
 				createInfos[ci].flags		= 0;
 				createInfos[ci].pNext		= &flags2CreateInfo[ci];
 			}

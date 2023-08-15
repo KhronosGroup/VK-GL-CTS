@@ -1076,11 +1076,12 @@ Move<VkPipeline> buildGraphicsPipeline(const DeviceInterface&						vk,
 		0																									// deInt32											basePipelineIndex;
 	};
 
-	VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo;
+	VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo {};
 	if (useDensityMapAttachment && useMaintenance5)
 	{
 		pipelineFlags2CreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO_KHR;
 		pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_KHR;
+		pipelineFlags2CreateInfo.pNext = pipelineCreateInfo.pNext;
 		pipelineCreateInfo.pNext = &pipelineFlags2CreateInfo;
 		pipelineCreateInfo.flags = 0;
 	}
