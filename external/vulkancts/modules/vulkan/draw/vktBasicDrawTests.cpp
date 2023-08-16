@@ -427,7 +427,7 @@ void DrawTestInstanceBase::initialize (const DrawParamsBase& data)
 	{
 		bufferUsageFlags2.usage = vk::VK_BUFFER_USAGE_2_VERTEX_BUFFER_BIT_KHR;
 		createInfo.pNext = &bufferUsageFlags2;
-		createInfo.usage = 0;
+		createInfo.usage = 0xBAD00000;
 	}
 #endif // CTS_USES_VULKANSC
 
@@ -485,6 +485,18 @@ void DrawTestInstanceBase::initPipeline (const vk::VkDevice device)
 
 	if (m_data.groupParams.useDynamicRendering)
 		pipelineCreateInfo.pNext = &renderingCreateInfo;
+
+	vk::VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO_KHR,
+		pipelineCreateInfo.pNext,
+		0
+	};
+	if (m_data.useMaintenance5)
+	{
+		pipelineCreateInfo.flags = 0xBAD00000;
+		pipelineCreateInfo.pNext = &pipelineFlags2CreateInfo;
+	}
 #endif // CTS_USES_VULKANSC
 
 	m_pipeline = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo);
@@ -1369,7 +1381,7 @@ tcu::TestStatus DrawTestInstance<DrawIndexedIndirectParams>::iterate (void)
 		{
 			bufferUsageFlags2.usage = vk::VK_BUFFER_USAGE_2_INDIRECT_BUFFER_BIT_KHR;
 			indirectCreateInfo.pNext = &bufferUsageFlags2;
-			indirectCreateInfo.usage = 0;
+			indirectCreateInfo.usage = 0xBAD00000;
 		}
 #endif // CTS_USES_VULKANSC
 
@@ -1404,7 +1416,7 @@ tcu::TestStatus DrawTestInstance<DrawIndexedIndirectParams>::iterate (void)
 	{
 		bufferUsageFlags2.usage = vk::VK_BUFFER_USAGE_2_INDEX_BUFFER_BIT_KHR;
 		bufferCreateInfo.pNext = &bufferUsageFlags2;
-		bufferCreateInfo.usage = 0;
+		bufferCreateInfo.usage = 0xBAD00000;
 	}
 #endif // CTS_USES_VULKANSC
 
