@@ -741,6 +741,12 @@ class API:
 				for typeItem in typesNode:
 					self.readType(typeItem)
 
+		# Verify that promotedto extensions are supported by the api
+		for ext in self.extensions:
+			if ext.promotedto is not None and "VK_VERSION" not in ext.promotedto:
+				if not any(x.name == ext.promotedto for x in self.extensions):
+					ext.promotedto = None
+
 	def postProcess (self):
 
 		# temporary workaround for extensions that are marked only for vulkan api in xml while
