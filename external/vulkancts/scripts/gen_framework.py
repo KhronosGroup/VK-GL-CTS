@@ -2292,14 +2292,17 @@ def writeExtensionFunctions (api, filename):
 		isFirstWrite = True
 		dg_list = []	# Device groups functions need special casing, as Vulkan 1.0 keeps them in VK_KHR_device_groups whereas 1.1 moved them into VK_KHR_swapchain
 		if functionType == Function.TYPE_INSTANCE:
-			yield 'void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::std::vector<const char*>& functions)\n{'
+			yield 'void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::string> vIEP, const std::vector<std::string> vDEP, const std::string extName, ::std::vector<const char*>& functions)\n{'
+			yield '\t(void)vIEP;\n(void)vDEP;'
 			dg_list = ["vkGetPhysicalDevicePresentRectanglesKHR"]
 		elif functionType == Function.TYPE_DEVICE:
-			yield 'void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::std::vector<const char*>& functions)\n{'
+			yield 'void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::string> vIEP, const std::vector<std::string> vDEP, const std::string extName, ::std::vector<const char*>& functions)\n{'
+			yield '\t(void)vIEP;\n(void)vDEP;'
 			dg_list = ["vkGetDeviceGroupPresentCapabilitiesKHR", "vkGetDeviceGroupSurfacePresentModesKHR", "vkAcquireNextImage2KHR"]
 		for ext in api.extensions:
-			funcNames = []
+			parsedRequirements = []
 			for requirement in ext.requirementsList:
+				funcNames = []
 				for requiredCommand in requirement.newCommands:
 					commandName = requiredCommand.name
 					# find function that has specified name
@@ -2323,20 +2326,33 @@ def writeExtensionFunctions (api, filename):
 						logging.error("%s in %s not valid" % (commandName, ext.name))
 						assert(False)
 					if func.getType() == functionType:
-						# only add functions with same vendor as extension
-						# this is a workaround for entrypoints requiring more
-						# than one extension and lack of the dependency in vk.xml
-						vendor = ext.name.split('_')[1]
-						if commandName.endswith(vendor):
-							funcNames.append(commandName)
+						funcNames.append(commandName)
+				condition = None
+				if requirement.depends is not None:
+					try:
+						condition = transformDependsToCondition(requirement.depends, api, 'checkVersion(%s, %s, apiVersion)', 'extensionIsSupported(%s, "%s")')
+					except Exception as e:
+						if api.apiName != "vulkansc":
+							raise e
+				parsedRequirements.append((requirement.depends, condition, funcNames))
 			if ext.name:
 				yield '\tif (extName == "%s")' % ext.name
 				yield '\t{'
-				for funcName in funcNames:
-					if funcName in dg_list:
-						yield '\t\tif(apiVersion >= VK_API_VERSION_1_1) functions.push_back("%s");' % funcName
-					else:
-						yield '\t\tfunctions.push_back("%s");' % funcName
+				for depends, condition, funcNames in parsedRequirements:
+					if len(funcNames) == 0:
+						continue
+					indent = '\t\t'
+					if depends is not None:
+						yield '\t\t// Dependencies: %s' % depends
+						yield '\t\tif (%s) {' % condition
+						indent = '\t\t\t'
+					for funcName in funcNames:
+						if funcName in dg_list:
+							yield '%sif(apiVersion >= VK_API_VERSION_1_1) functions.push_back("%s");' % (indent, funcName)
+						else:
+							yield '%sfunctions.push_back("%s");' % (indent, funcName)
+					if depends is not None:
+						yield '\t\t}'
 				if ext.name == "VK_KHR_device_group":
 					for dg_func in dg_list:
 						yield '\t\tif(apiVersion < VK_API_VERSION_1_1) functions.push_back("%s");' % dg_func
@@ -2347,7 +2363,28 @@ def writeExtensionFunctions (api, filename):
 			yield '\tDE_FATAL("Extension name not found");'
 			yield '}'
 
+	def genHelperFunctions():
+		yield 'bool checkVersion(deUint32 major, deUint32 minor, const uint32_t testedApiVersion)'
+		yield '{'
+		yield '\tuint32_t testedMajor = VK_API_VERSION_MAJOR(testedApiVersion);'
+		yield '\tuint32_t testedMinor = VK_API_VERSION_MINOR(testedApiVersion);'
+		yield '\t// return true when tested api version is greater'
+		yield '\t// or equal to version represented by two uints'
+		yield '\tif (major == testedMajor)'
+		yield '\t\treturn minor <= testedMinor;'
+		yield '\treturn major < testedMajor;'
+		yield '}\n'
+		yield 'bool extensionIsSupported(const std::vector<std::string> extNames, const std::string& ext)'
+		yield '{'
+		yield '\tfor (const std::string& supportedExtension : extNames)'
+		yield '\t{'
+		yield '\t\tif (supportedExtension == ext) return true;'
+		yield '\t}'
+		yield '\treturn false;'
+		yield '}\n'
+
 	lines = ['']
+	lines.extend(genHelperFunctions())
 	for line in writeExtensionFunctions(Function.TYPE_INSTANCE):
 		lines += [line]
 	lines += ['']
@@ -3477,6 +3514,58 @@ def writeExtensionList(api, filename, extensionType):
 	stream.append('};\n')
 	writeInlFile(filename, INL_HEADER, stream)
 
+def transformDependsToCondition(depends, api, checkVersionString, checkExtensionString):
+	depList = re.split(r'(\W+)', depends)
+	for idx, depPart in enumerate(depList):
+		if ',' in depPart:
+			depList[idx] = depList[idx].replace(',', ' || ')
+		elif '+' in depPart:
+			depList[idx] = depList[idx].replace('+', ' && ')
+		elif 'VK_' in depPart:
+			if 'VK_VERSION' in depPart:
+				if idx > 0 and ' || ' in depList[idx-1]:
+					# some vk.xml entries include "promoted to" version preceded by logical OR operator in the extension "depends" attribute
+					# script don't rely on this optional information and will find "promoted to" versions for all dependencies of all extensions in the below code
+					# accordingly the one from vk.xml is ignored to avoid redundant isCompatibile() checks
+					depList[idx-1] = depList[idx-1].replace(' || ', '')
+					depList[idx] = ''
+					continue
+				# when dependency is vulkan version then replace it with proper condition
+				depList[idx] = checkVersionString % (depPart[-3], depPart[-1])
+			else:
+				# when dependency is extension check if it was promoted
+				extNotFound = True
+				for dExt in api.extensions:
+					if depPart == dExt.name:
+						depExtVector = 'vDEP' if dExt.type == 'device' else 'vIEP'
+						isSupportedCheck = checkExtensionString % (depExtVector, depPart)
+						if dExt.promotedto is not None:
+							p = dExt.promotedto
+							# check if dependency was promoted to vulkan version or other extension
+							if 'VK_VERSION' in p:
+								depList[idx] = f'({checkVersionString % (p[-3], p[-1])} || {isSupportedCheck})'
+							else:
+								depList[idx] = f'({checkExtensionString % (depExtVector, depPart)} || {isSupportedCheck})'
+						else:
+							depList[idx] = isSupportedCheck
+						extNotFound = False
+						break
+				# for SC when extension was not found try checking also not supported
+				# extensions and see if this extension is part of core
+				if extNotFound and api.apiName == "vulkansc":
+					for dExt in api.notSupportedExtensions:
+						if depPart == dExt.name:
+							p = dExt.promotedto
+							if p is None:
+								break
+							if int(p[-1]) > 2:
+								break
+							extNotFound = False
+							depList[idx] = "true"
+				if extNotFound:
+					assert False, f"{depPart} from dependencies ({depends}) not found"
+	return ''.join(depList)
+
 def writeApiExtensionDependencyInfo(api, filename):
 
 	def genHelperFunctions():
@@ -3530,58 +3619,9 @@ def writeApiExtensionDependencyInfo(api, filename):
 			yield f'\n\tif (!isSupported({extVector}, "{ext.name}"))'
 			yield '\t\treturn true;\n'
 			# replace dependent extensions/versions with proper conditions
-			depList = re.split(r'(\W+)', ext.depends)
-			for idx, depPart in enumerate(depList):
-				if ',' in depPart:
-					depList[idx] = depList[idx].replace(',', ' || ')
-				elif '+' in depPart:
-					depList[idx] = depList[idx].replace('+', ' && ')
-				elif 'VK_' in depPart:
-					if 'VK_VERSION' in depPart:
-						if idx > 0 and ' || ' in depList[idx-1]:
-							# some vk.xml entries include "promoted to" version preceded by logical OR operator in the extension "depends" attribute
-							# script don't rely on this optional information and will find "promoted to" versions for all dependencies of all extensions in the below code
-							# accordingly the one from vk.xml is ignored to avoid redundant isCompatibile() checks
-							depList[idx-1] = depList[idx-1].replace(' || ', '')
-							depList[idx] = ''
-							continue
-						# when dependency is vulkan version then replace it with proper condition
-						depList[idx] = f'isCompatibile({depPart[-3]}, {depPart[-1]}, v)'
-					else:
-						# when dependency is extension check if it was promoted
-						extNotFound = True
-						for dExt in api.extensions:
-							if depPart == dExt.name:
-								depExtVector = 'vDEP' if dExt.type == 'device' else 'vIEP'
-								isSupportedCheck = f'isSupported({depExtVector}, "{depPart}")'
-								if dExt.promotedto is not None:
-									p = dExt.promotedto
-									# check if dependency was promoted to vulkan version or other extension
-									if 'VK_VERSION' in p:
-										depList[idx] = f'(isCompatibile({p[-3]}, {p[-1]}, v) || {isSupportedCheck})'
-									else:
-										depList[idx] = f'(isSupported({depExtVector}, "{p}") || {isSupportedCheck})'
-								else:
-									depList[idx] = isSupportedCheck
-								extNotFound = False
-								break
-						# for SC when extension was not found try checking also not supported
-						# extensions and see if this extension is part of core
-						if extNotFound and api.apiName == "vulkansc":
-							for dExt in api.notSupportedExtensions:
-								if depPart == dExt.name:
-									p = dExt.promotedto
-									if p is None:
-										break
-									if int(p[-1]) > 2:
-										break
-									extNotFound = False
-									depList[idx] = "true"
-						if extNotFound:
-							assert False, f"{depPart} from dependencies not found"
+			finalCondition = transformDependsToCondition(ext.depends, api, 'isCompatibile(%s, %s, v)', 'isSupported(%s, "%s")')
 			yield f'\t// depends attribute in xml: {ext.depends}'
-			finalConditon = ''.join(depList)
-			yield f'\treturn {finalConditon};'
+			yield f'\treturn {finalCondition};'
 			yield '}\n'
 		# save list of all device/instance extensions
 		yield 'static const DependencyCheckVect {}ExtensionDependencies'.format(extType)

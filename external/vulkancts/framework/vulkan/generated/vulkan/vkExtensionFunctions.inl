@@ -4,8 +4,30 @@
  */
 
 
-void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::std::vector<const char*>& functions)
+bool checkVersion(deUint32 major, deUint32 minor, const uint32_t testedApiVersion)
 {
+	uint32_t testedMajor = VK_API_VERSION_MAJOR(testedApiVersion);
+	uint32_t testedMinor = VK_API_VERSION_MINOR(testedApiVersion);
+	// return true when tested api version is greater
+	// or equal to version represented by two uints
+	if (major == testedMajor)
+		return minor <= testedMinor;
+	return major < testedMajor;
+}
+
+bool extensionIsSupported(const std::vector<std::string> extNames, const std::string& ext)
+{
+	for (const std::string& supportedExtension : extNames)
+	{
+		if (supportedExtension == ext) return true;
+	}
+	return false;
+}
+
+void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::string> vIEP, const std::vector<std::string> vDEP, const std::string extName, ::std::vector<const char*>& functions)
+{
+	(void)vIEP;
+(void)vDEP;
 	if (extName == "VK_KHR_surface")
 	{
 		functions.push_back("vkDestroySurfaceKHR");
@@ -17,7 +39,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	}
 	if (extName == "VK_KHR_swapchain")
 	{
-		if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetPhysicalDevicePresentRectanglesKHR");
+		// Dependencies: VK_VERSION_1_1
+		if (checkVersion(1, 1, apiVersion)) {
+			if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetPhysicalDevicePresentRectanglesKHR");
+		}
 		return;
 	}
 	if (extName == "VK_KHR_display")
@@ -224,7 +249,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	}
 	if (extName == "VK_KHR_device_group")
 	{
-		if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetPhysicalDevicePresentRectanglesKHR");
+		// Dependencies: VK_KHR_surface
+		if (extensionIsSupported(vIEP, "VK_KHR_surface")) {
+			if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetPhysicalDevicePresentRectanglesKHR");
+		}
 		if(apiVersion < VK_API_VERSION_1_1) functions.push_back("vkGetPhysicalDevicePresentRectanglesKHR");
 		return;
 	}
@@ -1525,8 +1553,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	DE_FATAL("Extension name not found");
 }
 
-void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::std::vector<const char*>& functions)
+void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::string> vIEP, const std::vector<std::string> vDEP, const std::string extName, ::std::vector<const char*>& functions)
 {
+	(void)vIEP;
+(void)vDEP;
 	if (extName == "VK_KHR_surface")
 	{
 		return;
@@ -1538,9 +1568,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetSwapchainImagesKHR");
 		functions.push_back("vkAcquireNextImageKHR");
 		functions.push_back("vkQueuePresentKHR");
-		if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupPresentCapabilitiesKHR");
-		if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupSurfacePresentModesKHR");
-		if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkAcquireNextImage2KHR");
+		// Dependencies: VK_VERSION_1_1
+		if (checkVersion(1, 1, apiVersion)) {
+			if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupPresentCapabilitiesKHR");
+			if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupSurfacePresentModesKHR");
+			if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkAcquireNextImage2KHR");
+		}
 		return;
 	}
 	if (extName == "VK_KHR_display")
@@ -1756,9 +1789,15 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetDeviceGroupPeerMemoryFeaturesKHR");
 		functions.push_back("vkCmdSetDeviceMaskKHR");
 		functions.push_back("vkCmdDispatchBaseKHR");
-		if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupPresentCapabilitiesKHR");
-		if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupSurfacePresentModesKHR");
-		if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkAcquireNextImage2KHR");
+		// Dependencies: VK_KHR_surface
+		if (extensionIsSupported(vIEP, "VK_KHR_surface")) {
+			if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupPresentCapabilitiesKHR");
+			if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupSurfacePresentModesKHR");
+		}
+		// Dependencies: VK_KHR_swapchain
+		if (extensionIsSupported(vDEP, "VK_KHR_swapchain")) {
+			if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkAcquireNextImage2KHR");
+		}
 		if(apiVersion < VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupPresentCapabilitiesKHR");
 		if(apiVersion < VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupSurfacePresentModesKHR");
 		if(apiVersion < VK_API_VERSION_1_1) functions.push_back("vkAcquireNextImage2KHR");
@@ -1852,8 +1891,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	if (extName == "VK_KHR_push_descriptor")
 	{
 		functions.push_back("vkCmdPushDescriptorSetKHR");
-		functions.push_back("vkCmdPushDescriptorSetWithTemplateKHR");
-		functions.push_back("vkCmdPushDescriptorSetWithTemplateKHR");
+		// Dependencies: VK_VERSION_1_1
+		if (checkVersion(1, 1, apiVersion)) {
+			functions.push_back("vkCmdPushDescriptorSetWithTemplateKHR");
+		}
+		// Dependencies: VK_KHR_descriptor_update_template
+		if ((checkVersion(1, 1, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_descriptor_update_template"))) {
+			functions.push_back("vkCmdPushDescriptorSetWithTemplateKHR");
+		}
 		return;
 	}
 	if (extName == "VK_EXT_conditional_rendering")
@@ -1879,7 +1924,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkCreateDescriptorUpdateTemplateKHR");
 		functions.push_back("vkDestroyDescriptorUpdateTemplateKHR");
 		functions.push_back("vkUpdateDescriptorSetWithTemplateKHR");
-		functions.push_back("vkCmdPushDescriptorSetWithTemplateKHR");
+		// Dependencies: VK_KHR_push_descriptor
+		if (extensionIsSupported(vDEP, "VK_KHR_push_descriptor")) {
+			functions.push_back("vkCmdPushDescriptorSetWithTemplateKHR");
+		}
 		return;
 	}
 	if (extName == "VK_NV_clip_space_w_scaling")
@@ -2537,8 +2585,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		functions.push_back("vkAcquireFullScreenExclusiveModeEXT");
 		functions.push_back("vkReleaseFullScreenExclusiveModeEXT");
-		functions.push_back("vkGetDeviceGroupSurfacePresentModes2EXT");
-		functions.push_back("vkGetDeviceGroupSurfacePresentModes2EXT");
+		// Dependencies: VK_KHR_device_group
+		if ((checkVersion(1, 1, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_device_group"))) {
+			functions.push_back("vkGetDeviceGroupSurfacePresentModes2EXT");
+		}
+		// Dependencies: VK_VERSION_1_1
+		if (checkVersion(1, 1, apiVersion)) {
+			functions.push_back("vkGetDeviceGroupSurfacePresentModes2EXT");
+		}
 		return;
 	}
 	if (extName == "VK_EXT_headless_surface")
@@ -2754,6 +2808,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdPipelineBarrier2KHR");
 		functions.push_back("vkCmdWriteTimestamp2KHR");
 		functions.push_back("vkQueueSubmit2KHR");
+		// Dependencies: VK_AMD_buffer_marker
+		if (extensionIsSupported(vDEP, "VK_AMD_buffer_marker")) {
+			functions.push_back("vkCmdWriteBufferMarker2AMD");
+		}
+		// Dependencies: VK_NV_device_diagnostic_checkpoints
+		if (extensionIsSupported(vDEP, "VK_NV_device_diagnostic_checkpoints")) {
+			functions.push_back("vkGetQueueCheckpointData2NV");
+		}
 		return;
 	}
 	if (extName == "VK_EXT_descriptor_buffer")
@@ -2768,7 +2830,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetImageOpaqueCaptureDescriptorDataEXT");
 		functions.push_back("vkGetImageViewOpaqueCaptureDescriptorDataEXT");
 		functions.push_back("vkGetSamplerOpaqueCaptureDescriptorDataEXT");
-		functions.push_back("vkGetAccelerationStructureOpaqueCaptureDescriptorDataEXT");
+		// Dependencies: VK_KHR_acceleration_structure,VK_NV_ray_tracing
+		if (extensionIsSupported(vDEP, "VK_KHR_acceleration_structure") || extensionIsSupported(vDEP, "VK_NV_ray_tracing")) {
+			functions.push_back("vkGetAccelerationStructureOpaqueCaptureDescriptorDataEXT");
+		}
 		return;
 	}
 	if (extName == "VK_EXT_graphics_pipeline_library")
@@ -2970,7 +3035,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_ray_tracing_maintenance1")
 	{
-		functions.push_back("vkCmdTraceRaysIndirect2KHR");
+		// Dependencies: VK_KHR_ray_tracing_pipeline
+		if (extensionIsSupported(vDEP, "VK_KHR_ray_tracing_pipeline")) {
+			functions.push_back("vkCmdTraceRaysIndirect2KHR");
+		}
 		return;
 	}
 	if (extName == "VK_EXT_global_priority_query")
@@ -3147,6 +3215,37 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdSetLineRasterizationModeEXT");
 		functions.push_back("vkCmdSetLineStippleEnableEXT");
 		functions.push_back("vkCmdSetDepthClipNegativeOneToOneEXT");
+		// Dependencies: VK_NV_clip_space_w_scaling
+		if (extensionIsSupported(vDEP, "VK_NV_clip_space_w_scaling")) {
+			functions.push_back("vkCmdSetViewportWScalingEnableNV");
+		}
+		// Dependencies: VK_NV_viewport_swizzle
+		if (extensionIsSupported(vDEP, "VK_NV_viewport_swizzle")) {
+			functions.push_back("vkCmdSetViewportSwizzleNV");
+		}
+		// Dependencies: VK_NV_fragment_coverage_to_color
+		if (extensionIsSupported(vDEP, "VK_NV_fragment_coverage_to_color")) {
+			functions.push_back("vkCmdSetCoverageToColorEnableNV");
+			functions.push_back("vkCmdSetCoverageToColorLocationNV");
+		}
+		// Dependencies: VK_NV_framebuffer_mixed_samples
+		if (extensionIsSupported(vDEP, "VK_NV_framebuffer_mixed_samples")) {
+			functions.push_back("vkCmdSetCoverageModulationModeNV");
+			functions.push_back("vkCmdSetCoverageModulationTableEnableNV");
+			functions.push_back("vkCmdSetCoverageModulationTableNV");
+		}
+		// Dependencies: VK_NV_shading_rate_image
+		if (extensionIsSupported(vDEP, "VK_NV_shading_rate_image")) {
+			functions.push_back("vkCmdSetShadingRateImageEnableNV");
+		}
+		// Dependencies: VK_NV_representative_fragment_test
+		if (extensionIsSupported(vDEP, "VK_NV_representative_fragment_test")) {
+			functions.push_back("vkCmdSetRepresentativeFragmentTestEnableNV");
+		}
+		// Dependencies: VK_NV_coverage_reduction_mode
+		if (extensionIsSupported(vDEP, "VK_NV_coverage_reduction_mode")) {
+			functions.push_back("vkCmdSetCoverageReductionModeNV");
+		}
 		return;
 	}
 	if (extName == "VK_EXT_subpass_merge_feedback")
@@ -3244,6 +3343,37 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdSetLineRasterizationModeEXT");
 		functions.push_back("vkCmdSetLineStippleEnableEXT");
 		functions.push_back("vkCmdSetDepthClipNegativeOneToOneEXT");
+		// Dependencies: VK_NV_clip_space_w_scaling
+		if (extensionIsSupported(vDEP, "VK_NV_clip_space_w_scaling")) {
+			functions.push_back("vkCmdSetViewportWScalingEnableNV");
+		}
+		// Dependencies: VK_NV_viewport_swizzle
+		if (extensionIsSupported(vDEP, "VK_NV_viewport_swizzle")) {
+			functions.push_back("vkCmdSetViewportSwizzleNV");
+		}
+		// Dependencies: VK_NV_fragment_coverage_to_color
+		if (extensionIsSupported(vDEP, "VK_NV_fragment_coverage_to_color")) {
+			functions.push_back("vkCmdSetCoverageToColorEnableNV");
+			functions.push_back("vkCmdSetCoverageToColorLocationNV");
+		}
+		// Dependencies: VK_NV_framebuffer_mixed_samples
+		if (extensionIsSupported(vDEP, "VK_NV_framebuffer_mixed_samples")) {
+			functions.push_back("vkCmdSetCoverageModulationModeNV");
+			functions.push_back("vkCmdSetCoverageModulationTableEnableNV");
+			functions.push_back("vkCmdSetCoverageModulationTableNV");
+		}
+		// Dependencies: VK_NV_shading_rate_image
+		if (extensionIsSupported(vDEP, "VK_NV_shading_rate_image")) {
+			functions.push_back("vkCmdSetShadingRateImageEnableNV");
+		}
+		// Dependencies: VK_NV_representative_fragment_test
+		if (extensionIsSupported(vDEP, "VK_NV_representative_fragment_test")) {
+			functions.push_back("vkCmdSetRepresentativeFragmentTestEnableNV");
+		}
+		// Dependencies: VK_NV_coverage_reduction_mode
+		if (extensionIsSupported(vDEP, "VK_NV_coverage_reduction_mode")) {
+			functions.push_back("vkCmdSetCoverageReductionModeNV");
+		}
 		return;
 	}
 	if (extName == "VK_QCOM_tile_properties")

@@ -2720,7 +2720,7 @@ bool check_VK_EXT_global_priority_query(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_EXT_global_priority+VK_KHR_get_physical_device_properties2
-	return (isSupported(vDEP, "VK_KHR_global_priority") || isSupported(vDEP, "VK_EXT_global_priority")) && (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vDEP, "VK_EXT_global_priority") || isSupported(vDEP, "VK_EXT_global_priority")) && (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
 bool check_VK_EXT_image_view_min_lod(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
