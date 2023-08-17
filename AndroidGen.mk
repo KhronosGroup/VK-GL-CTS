@@ -404,6 +404,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/reconvergence/vktReconvergenceTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktDynamicRenderingRandomTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktDynamicRenderingTests.cpp \
+	external/vulkancts/modules/vulkan/renderpass/vktDynamicRenderingUnusedAttachmentsTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassDepthStencilResolveTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassDepthStencilWriteConditionsTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassDitheringTests.cpp \
