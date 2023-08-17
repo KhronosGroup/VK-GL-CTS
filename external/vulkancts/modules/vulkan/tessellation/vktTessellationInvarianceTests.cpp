@@ -1437,6 +1437,9 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 
 	for (int tessLevelCaseNdx = 0; tessLevelCaseNdx < static_cast<int>(tessLevelCases.size()); ++tessLevelCaseNdx)
 	{
+		if (m_caseDef.caseType == CASETYPE_INVARIANT_OUTER_TRIANGLE_SET)
+			m_context.getTestContext().touchWatchdog();
+
 		const LevelCase& levelCase = tessLevelCases[tessLevelCaseNdx];
 		PerPrimitiveVec  firstPrim;
 
