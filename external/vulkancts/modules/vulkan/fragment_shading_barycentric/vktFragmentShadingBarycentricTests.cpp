@@ -23,6 +23,7 @@
 
 #include "vktFragmentShadingBarycentricTests.hpp"
 
+#include "deDefs.h"
 #include "vkDefs.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -41,6 +42,8 @@
 #include "tcuImageCompare.hpp"
 #include "tcuVectorUtil.hpp"
 
+#include <cstdint>
+#include <ostream>
 #include <string>
 #include <vector>
 #include <map>
@@ -75,7 +78,26 @@ enum TestSubtype
 	TEST_SUBTYPE_MSAA_CENTROID_QUALIFIER,
 	TEST_SUBTYPE_MSAA_SAMPLE_QUALIFIER,
 	TEST_SUBTYPE_PERVERTEX_CORRECTNESS,
+	TEST_SUBTYPE_TESS_SHADER,
+	TEST_SUBTYPE_GEOMETRY_SHADER,
+	TEST_SUBTYPE_TESSGEOM_SHADER,
 };
+
+const char* getShaderComboName(uint32_t testSubType)
+{
+	uint32_t idx = testSubType - TEST_SUBTYPE_TESS_SHADER;
+
+	DE_ASSERT(idx < 3);
+
+	static const char* sc_names[] =
+	{
+		"with_tess_shader",
+		"with_geom_shader",
+		"with_tess_geom_shader",
+	};
+
+	return sc_names[idx];
+}
 
 const size_t	DATA_TEST_WIDTH		= 8u;
 const size_t	DATA_TEST_HEIGHT	= 8u;
@@ -230,7 +252,10 @@ static GraphicsPipelinePtr makeGraphicsPipeline (PipelineConstructionType			pipe
 												 const VkSampleCountFlagBits		rasterizationSamples,
 												 const bool							withColor = false,
 												 const bool							provokingVertexLast = false,
-												 const bool							dynamicTopology = false)
+												 const bool							dynamicTopology = false,
+												 const ShaderWrapper				tessCtrlShaderModule = ShaderWrapper(),
+												 const ShaderWrapper				tessEvalShaderModule = ShaderWrapper(),
+												 const ShaderWrapper				geometryShaderModule = ShaderWrapper())
 {
 	const std::vector<VkViewport>									viewports							(1, makeViewport(width, height));
 	const std::vector<VkRect2D>										scissors							(1, makeRect2D(width, height));
@@ -325,7 +350,8 @@ static GraphicsPipelinePtr makeGraphicsPipeline (PipelineConstructionType			pipe
 		.setDefaultTopology(topology)
 		.setDynamicState(pDynamicStateCreateInfo)
 		.setupVertexInputState(pVertexInputStateCreateInfo)
-		.setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPass, 0u, vertShaderModule, &rasterizationStateCreateInfo)
+		.setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPass, 0u, vertShaderModule, &rasterizationStateCreateInfo,
+										tessCtrlShaderModule, tessEvalShaderModule, geometryShaderModule)
 		.setupFragmentShaderState(pipelineLayout, renderPass, 0u, fragShaderModule)
 		.setupFragmentOutputState(renderPass, 0u, nullptr, &multisampleStateInfo)
 		.buildPipeline();
@@ -446,6 +472,7 @@ vector<tcu::Vec4> FragmentShadingBarycentricDataTestInstance::generateVertexBuff
 			break;
 		}
 
+		case VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
 		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
 		{
 			verticesCount = 6;
@@ -702,6 +729,10 @@ tcu::TestStatus FragmentShadingBarycentricDataTestInstance::iterate (void)
 
 	const string					shaderSuffix				= (provokingVertexLast == m_testParams.provokingVertexLast) ? "" : "-forced";
 	const ShaderWrapper				vertModule					= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert" + shaderSuffix), 0u);
+
+	const ShaderWrapper				tessCtrlShaderModule		= ((m_testParams.testSubtype == TEST_SUBTYPE_TESS_SHADER) || (m_testParams.testSubtype == TEST_SUBTYPE_TESSGEOM_SHADER)) ? ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("tess_ctrl" + shaderSuffix), 0u) : ShaderWrapper();
+	const ShaderWrapper				tessEvalShaderModule		= ((m_testParams.testSubtype == TEST_SUBTYPE_TESS_SHADER) || (m_testParams.testSubtype == TEST_SUBTYPE_TESSGEOM_SHADER)) ? ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("tess_eval" + shaderSuffix), 0u) : ShaderWrapper();
+	const ShaderWrapper				geometryShaderModule		= ((m_testParams.testSubtype == TEST_SUBTYPE_GEOMETRY_SHADER) || (m_testParams.testSubtype == TEST_SUBTYPE_TESSGEOM_SHADER)) ? ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("geom" + shaderSuffix), 0u) : ShaderWrapper();
 	const ShaderWrapper				fragModule					= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag" + shaderSuffix), 0u);
 	RenderPassWrapper				renderPass					= RenderPassWrapper(m_testParams.pipelineConstructionType, vkd, device, format);
 	renderPass.createFramebuffer(vkd, device, **image, *imageView, width, height);
@@ -710,8 +741,7 @@ tcu::TestStatus FragmentShadingBarycentricDataTestInstance::iterate (void)
 	const VkPushConstantRange*		pushConstantRangePtr		= m_testParams.dynamicIndexing ? &pushConstantRange : DE_NULL;
 	const deUint32					pushConstantRangeCount		= m_testParams.dynamicIndexing ? 1 : 0;
 	const PipelineLayoutWrapper		pipelineLayout				(m_testParams.pipelineConstructionType, vkd, device, 0, DE_NULL, pushConstantRangeCount, pushConstantRangePtr);
-	const auto						pipelineWrapper				= makeGraphicsPipeline(m_testParams.pipelineConstructionType, vki, vkd, physicalDevice, device, deviceExtensions, pipelineLayout, *renderPass, vertModule, fragModule, width, height, topology, VK_SAMPLE_COUNT_1_BIT, withColor, provokingVertexLast);
-
+	const auto						pipelineWrapper				= makeGraphicsPipeline(m_testParams.pipelineConstructionType, vki, vkd, physicalDevice, device, deviceExtensions, pipelineLayout, *renderPass, vertModule, fragModule, width, height, topology, VK_SAMPLE_COUNT_1_BIT, withColor, provokingVertexLast, false, tessCtrlShaderModule, tessEvalShaderModule, geometryShaderModule);
 	const Move<VkCommandPool>		commandPool					= createCommandPool(vkd, device, 0, queueFamilyIndex);
 	const Move<VkCommandBuffer>		commandBuffer				= allocateCommandBuffer(vkd, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
@@ -1195,6 +1225,8 @@ public:
 private:
 	void					initDataPrograms					(SourceCollections&	programCollection) const;
 	void					initMiscDataPrograms				(SourceCollections& programCollection) const;
+	void					initMiscDataTessPrograms			(SourceCollections& programCollection, map<string, string>& attributes) const;
+	void					initMiscDataGeomPrograms			(SourceCollections& programCollection, map<string, string>& attributes) const;
 	void					initWeightPrograms					(SourceCollections&	programCollection) const;
 	string					getDataPrimitiveFormula				(void) const;
 	string					getDataVertexFormula				(const uint32_t		vertex,
@@ -1262,13 +1294,20 @@ void FragmentShadingBarycentricTestCase::checkSupport (Context& context) const
 			TCU_THROW(NotSupportedError, "shaderFloat64 not supported");
 		}
 	}
+
+	if ((m_testParams.testSubtype == TEST_SUBTYPE_TESS_SHADER) || (m_testParams.testSubtype == TEST_SUBTYPE_TESSGEOM_SHADER))
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+
+	if ((m_testParams.testSubtype == TEST_SUBTYPE_GEOMETRY_SHADER) || (m_testParams.testSubtype == TEST_SUBTYPE_TESSGEOM_SHADER))
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 }
 
 TestInstance* FragmentShadingBarycentricTestCase::createInstance (Context& context) const
 {
 	switch (m_testParams.testType)
 	{
-		case TEST_TYPE_DATA:	return new FragmentShadingBarycentricDataTestInstance(context, m_testParams);
+		case TEST_TYPE_DATA:
+			return new FragmentShadingBarycentricDataTestInstance(context, m_testParams);
 		case TEST_TYPE_WEIGHTS:	return new FragmentShadingBarycentricWeightTestInstance(context, m_testParams);
 		default:				TCU_THROW(InternalError, "Unknown testType");
 	}
@@ -1306,7 +1345,7 @@ string FragmentShadingBarycentricTestCase::getDataPrimitiveFormula (void) const
 		"2*y",				//  VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY
 		"(x < y) ? 0 : 1",	//  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY
 		"(x < y) ? 0 : 1",	//  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY
-		"NOT IMPLEMENTED",	//  VK_PRIMITIVE_TOPOLOGY_PATCH_LIST
+		"(x < y) ? 0 : 1",	//  VK_PRIMITIVE_TOPOLOGY_PATCH_LIST
 	};
 
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(primitiveFormulas) == vk::VK_PRIMITIVE_TOPOLOGY_LAST);
@@ -1332,7 +1371,7 @@ string FragmentShadingBarycentricTestCase::getDataVertexFormula (const uint32_t 
 		{	"p+1",				"p+2",				"p+2"				},	//  VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY
 		{	"6*p",				"6*p+2",			"6*p+4"				},	//  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY
 		{	"2*p",				"even?2*p+2:2*p+4",	"even?2*p+4:2*p+2"	},	//  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY
-		{	"",					"",					""					},	//  VK_PRIMITIVE_TOPOLOGY_PATCH_LIST
+		{	"3*p",				"3*p+1",			"3*p+2"				},	//  VK_PRIMITIVE_TOPOLOGY_PATCH_LIST
 	};
 	const TriVertexFormula	topologyVertexFormulasLast[]	=
 	{
@@ -1425,9 +1464,24 @@ void FragmentShadingBarycentricTestCase::initDataPrograms (SourceCollections& pr
 		"${dataStruct}\n"
 		"\n"
 		"${dynamicIndexing}\n"
-		"layout(location = 0) pervertexEXT in ${typePrefix} data[]${typeSuffix};\n"
 		"layout(location = 0) out uvec4 out_color;\n"
 		"\n"
+		+ string(
+		((m_testParams.testSubtype == TEST_SUBTYPE_TESS_SHADER) || (m_testParams.testSubtype == TEST_SUBTYPE_TESSGEOM_SHADER)) ?
+			"struct InDataStruct {uint idx; ${typePrefix} data${typeSuffix};};\n"
+			"layout(location = 0) pervertexEXT in InDataStruct inParam[];\n"
+			"void getData(uint i, out ${typePrefix} ds${typeSuffix})\n"
+			"{\n"
+			"    for(uint k = 0; k < ${componentCount}; k++)\n"
+			"    {\n"
+			"        if (inParam[k].idx == i)\n"
+			"            ds = " + string(m_testParams.aggregate == 2 ? "${typePrefix}${typeSuffix}(inParam[k].data[0],inParam[k].data[1])" : "inParam[k].data") + ";\n"
+			"    }\n"
+			"}\n"
+		:
+			"layout(location = 0) pervertexEXT in ${typePrefix} data[]${typeSuffix};\n"
+		)
+		+
 		"void main()\n"
 		"{\n"
 		"    const int  w    = " + de::toString(m_testParams.width) + ";\n"
@@ -1443,9 +1497,19 @@ void FragmentShadingBarycentricTestCase::initDataPrograms (SourceCollections& pr
 		"\n"
 		"    ${scalarName} e[${componentCount}] = { ${expected} };\n"
 		"\n"
-		"    ${typePrefix} vA${typeSuffix}; { vA = " + string(m_testParams.aggregate == 2 ? "${typePrefix}${typeSuffix}(data[${i0}][0],data[${i0}][1])" : "data[${i0}]") + "; }\n"
-		"    ${typePrefix} vB${typeSuffix}; { vB = " + string(m_testParams.aggregate == 2 ? "${typePrefix}${typeSuffix}(data[${i1}][0],data[${i1}][1])" : "data[${i1}]") + "; }\n"
-		"    ${typePrefix} vC${typeSuffix}; { vC = " + string(m_testParams.aggregate == 2 ? "${typePrefix}${typeSuffix}(data[${i2}][0],data[${i2}][1])" : "data[${i2}]") + "; }\n"
+		+ string(
+		((m_testParams.testSubtype == TEST_SUBTYPE_TESS_SHADER) || (m_testParams.testSubtype == TEST_SUBTYPE_TESSGEOM_SHADER)) ?
+			"    ${typePrefix} vA${typeSuffix}; { getData(${i0}, vA); }\n"
+			"    ${typePrefix} vB${typeSuffix}; { getData(${i1}, vB); }\n"
+			"    ${typePrefix} vC${typeSuffix}; { getData(${i2}, vC); }\n"
+		:
+			"    ${typePrefix} vA${typeSuffix}; { vA = " + string(m_testParams.aggregate == 2 ? "${typePrefix}${typeSuffix}(data[${i0}][0],data[${i0}][1])" : "data[${i0}]") + "; }\n"
+			"    ${typePrefix} vB${typeSuffix}; { vB = " + string(m_testParams.aggregate == 2 ? "${typePrefix}${typeSuffix}(data[${i1}][0],data[${i1}][1])" : "data[${i1}]") + "; }\n"
+			"    ${typePrefix} vC${typeSuffix}; { vC = " + string(m_testParams.aggregate == 2 ? "${typePrefix}${typeSuffix}(data[${i2}][0],data[${i2}][1])" : "data[${i2}]") + "; }\n"
+
+		)
+		+
+
 		"    ${scalarName} v[${componentCount}] = { ${arrived} };\n"
 		"\n"
 		"    int mask = 0;\n"
@@ -1497,6 +1561,16 @@ void FragmentShadingBarycentricTestCase::initDataPrograms (SourceCollections& pr
 		programCollection.glslSources.add("vert-forced") << glu::VertexSource(vertShader.specialize(attributes));
 		programCollection.glslSources.add("frag-forced") << glu::FragmentSource(fragShader.specialize(attributes));
 	}
+
+	if (m_testParams.testSubtype == TEST_SUBTYPE_TESS_SHADER)
+		initMiscDataTessPrograms(programCollection, attributes);
+	else if (m_testParams.testSubtype == TEST_SUBTYPE_GEOMETRY_SHADER)
+		initMiscDataGeomPrograms(programCollection, attributes);
+	else if (m_testParams.testSubtype == TEST_SUBTYPE_TESSGEOM_SHADER)
+	{
+		initMiscDataTessPrograms(programCollection, attributes);
+		initMiscDataGeomPrograms(programCollection, attributes);
+	}
 }
 
 void FragmentShadingBarycentricTestCase::initMiscDataPrograms(SourceCollections& programCollection) const
@@ -1532,6 +1606,155 @@ void FragmentShadingBarycentricTestCase::initMiscDataPrograms(SourceCollections&
 
 	programCollection.glslSources.add("vert") << glu::VertexSource(vertShader);
 	programCollection.glslSources.add("frag") << glu::FragmentSource(fragShader);
+}
+
+void FragmentShadingBarycentricTestCase::initMiscDataTessPrograms(SourceCollections& programCollection, map<string, string>& attributes) const
+{
+	// Tessellation control
+	const tcu::StringTemplate tesc (string(
+		"#version 450\n"
+		"#extension GL_EXT_tessellation_shader : require\n"
+		"layout (vertices=6) out;\n"
+		"in gl_PerVertex\n"
+		"{\n"
+		"    vec4 gl_Position;\n"
+		"	float gl_PointSize;\n"
+		"} gl_in[];\n"
+		"out gl_PerVertex\n"
+		"{\n"
+		"    vec4 gl_Position;\n"
+		"	float gl_PointSize;\n"
+		"} gl_out[];\n"
+		"\n"
+		"${dataStruct}\n"
+		"\n"
+		"layout (location=0) in ${typePrefix} inData[]${typeSuffix};\n"
+		"layout (location=0) out ${typePrefix} outData[]${typeSuffix};\n"
+		"\n"
+		"void main (void)\n"
+		"{\n"
+		"	if (gl_InvocationID == 0)\n"
+		"	{\n"
+		"		gl_TessLevelInner[0] = 1.0;\n"
+		"		gl_TessLevelInner[1] = 1.0;\n"
+		"		gl_TessLevelOuter[0] = 1.0;\n"
+		"		gl_TessLevelOuter[1] = 1.0;\n"
+		"		gl_TessLevelOuter[2] = 1.0;\n"
+		"		gl_TessLevelOuter[3] = 1.0;\n"
+		"	}\n"
+		"    outData[gl_InvocationID] = inData[gl_InvocationID];\n"
+		"    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+		"}\n"
+	));
+	programCollection.glslSources.add("tess_ctrl") << glu::TessellationControlSource(tesc.specialize(attributes));
+
+	// Tessellation evaluation shader
+	const tcu::StringTemplate tese (string(
+		"#version 450\n"
+		"#extension GL_EXT_tessellation_shader : require\n"
+		"layout (triangles) in;\n"
+		"in gl_PerVertex\n"
+		"{\n"
+		"    vec4 gl_Position;\n"
+		"	float gl_PointSize;\n"
+		"} gl_in[];\n"
+		"out gl_PerVertex\n"
+		"{\n"
+		"    vec4 gl_Position;\n"
+		"	float gl_PointSize;\n"
+		"};\n"
+		"\n"
+		"${dataStruct}\n"
+		"\n"
+		"layout (location=0) in ${typePrefix} inData[]${typeSuffix};\n"
+		"struct OutDataStruct {int idx; ${typePrefix} data${typeSuffix};};\n"
+		"layout (location=0) flat out OutDataStruct outParam;\n"
+		"\n"
+		"void main (void)\n"
+		"{\n"
+		"    gl_Position = (gl_TessCoord.x * gl_in[0].gl_Position) +\n"
+		"                  (gl_TessCoord.y * gl_in[1].gl_Position) +\n"
+		"                  (gl_TessCoord.z * gl_in[2].gl_Position);\n"
+		"    if (gl_TessCoord.xyz == vec3(0.0,1.0,0.0)) {outParam.idx = ${i2}; outParam.data = " + string(m_testParams.aggregate == 2 ? "${typePrefix}${typeSuffix}(inData[${i2}][0],inData[${i2}][1])" : "inData[${i2}]") + "; }\n"
+		"    else if (gl_TessCoord.xyz == vec3(1.0,0.0,0.0)) {outParam.idx = ${i0}; outParam.data = " + string(m_testParams.aggregate == 2 ? "${typePrefix}${typeSuffix}(inData[${i0}][0],inData[${i0}][1])" : "inData[${i0}]") + "; }\n"
+		"    else if (gl_TessCoord.xyz == vec3(0.0,0.0,1.0)) {outParam.idx = ${i1}; outParam.data = " + string(m_testParams.aggregate == 2 ? "${typePrefix}${typeSuffix}(inData[${i1}][0],inData[${i1}][1])" : "inData[${i1}]") + "; }\n"
+		"}\n"
+	));
+	programCollection.glslSources.add("tess_eval") << glu::TessellationEvaluationSource(tese.specialize(attributes));
+}
+
+void FragmentShadingBarycentricTestCase::initMiscDataGeomPrograms(SourceCollections& programCollection, map<string, string>& attributes) const
+{
+	// Geometry shader
+	const tcu::StringTemplate geom (
+		string(
+		"#version 460\n"
+		"\n"
+		"layout (triangles) in;\n"
+		"layout (triangle_strip, max_vertices=3) out;\n"
+		"in gl_PerVertex\n"
+		"{\n"
+		"    vec4 gl_Position;\n"
+		"	float gl_PointSize;\n"
+		"} gl_in[3];\n"
+		"out gl_PerVertex\n"
+		"{\n"
+		"    vec4 gl_Position;\n"
+		"	float gl_PointSize;\n"
+		"};\n"
+		"\n"
+		"${dataStruct}\n"
+		"\n")
+		+ string(
+		((m_testParams.testSubtype == TEST_SUBTYPE_TESS_SHADER) || (m_testParams.testSubtype == TEST_SUBTYPE_TESSGEOM_SHADER)) ?
+			"struct InOutDataStruct {uint idx; ${typePrefix} data${typeSuffix};};\n"
+			"layout(location = 0) in InOutDataStruct inParam[];\n"
+		:
+			"layout (location=0) in ${typePrefix} inData[]${typeSuffix};\n"
+		)
+		+ string(
+		((m_testParams.testSubtype == TEST_SUBTYPE_TESS_SHADER) || (m_testParams.testSubtype == TEST_SUBTYPE_TESSGEOM_SHADER)) ?
+			"layout (location=0) flat out InOutDataStruct outParam;\n"
+		:
+			"layout (location=0) out ${typePrefix} outData${typeSuffix};\n"
+		)
+		+ string(
+		"\n"
+		"void main ()\n"
+		"{\n"
+		"    gl_Position = gl_in[0].gl_Position;\n")
+		+ string(
+		((m_testParams.testSubtype == TEST_SUBTYPE_TESS_SHADER) || (m_testParams.testSubtype == TEST_SUBTYPE_TESSGEOM_SHADER)) ?
+			"    outParam = inParam[${i0}];\n"
+		:
+			"    outData = inData[${i0}];\n"
+		)
+		+ string(
+		"    EmitVertex();\n"
+
+		"    gl_Position = gl_in[1].gl_Position;\n")
+		+ string(
+		((m_testParams.testSubtype == TEST_SUBTYPE_TESS_SHADER) || (m_testParams.testSubtype == TEST_SUBTYPE_TESSGEOM_SHADER)) ?
+			"    outParam = inParam[${i1}];\n"
+		:
+			"    outData = inData[${i1}];\n"
+		)
+		+ string(
+		"    EmitVertex();\n"
+
+
+		"    gl_Position = gl_in[2].gl_Position;\n")
+		+ string(
+		((m_testParams.testSubtype == TEST_SUBTYPE_TESS_SHADER) || (m_testParams.testSubtype == TEST_SUBTYPE_TESSGEOM_SHADER)) ?
+			"    outParam = inParam[${i2}];\n"
+		:
+			"    outData = inData[${i2}];\n"
+		)
+		+ string(
+		"    EmitVertex();\n"
+		"}\n")
+	);
+	programCollection.glslSources.add("geom") << glu::GeometrySource(geom.specialize(attributes));
 }
 
 void FragmentShadingBarycentricTestCase::initWeightPrograms (SourceCollections& programCollection) const
@@ -1879,6 +2102,54 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 			};
 			miscGroup->addChild(new FragmentShadingBarycentricTestCase(testCtx, "pervertex_correctness", "", testParams));
 			testTypeGroup->addChild(miscGroup.release());
+
+		}
+
+		{
+			MovePtr<tcu::TestCaseGroup> scGroup(new tcu::TestCaseGroup(testCtx, "shader_combos", ""));
+			for (uint32_t testSubType = (uint32_t) TEST_SUBTYPE_TESS_SHADER; testSubType <= (uint32_t) TEST_SUBTYPE_TESSGEOM_SHADER; testSubType++)
+			{
+				VkPrimitiveTopology	primitiveType	=	(((TestSubtype) testSubType) == TEST_SUBTYPE_GEOMETRY_SHADER) ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST: VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+				const std::string	shaderComboName	=	getShaderComboName(testSubType);
+
+				MovePtr<tcu::TestCaseGroup> scSubGroup(new tcu::TestCaseGroup(testCtx, shaderComboName.c_str(), ""));
+
+				for (size_t aggregateNdx = 0; aggregateNdx < 3; ++aggregateNdx)
+				{
+					const string				aggregateName	= aggregateNdx == 0 ? "type"
+																: aggregateNdx == 1 ? "struct"
+																: "array" + de::toString(aggregateNdx);
+					MovePtr<tcu::TestCaseGroup>	aggregateGroup	(new tcu::TestCaseGroup(testCtx, aggregateName.c_str(), ""));
+
+					for (size_t dataTypeNdx = 0; dataTypeNdx < DE_LENGTH_OF_ARRAY(dataTypes); ++dataTypeNdx)
+					{
+						const glu::DataType	dataType		= dataTypes[dataTypeNdx];
+						const char*			dataTypeName	= getDataTypeName(dataType);
+
+						const TestParams testParamsShaders
+						{
+							constructionTypeCase.constructionType,
+							TEST_TYPE_DATA,							//  TestType				testType;
+							(TestSubtype) testSubType,				//  TestSubtype				testSubtype;
+							primitiveType,							//  VkPrimitiveTopology		topology;
+							notused,								//  bool					dynamicIndexing;
+							aggregateNdx,							//  size_t					aggregate;
+							dataType,								//  glu::DataType			dataType;
+							DATA_TEST_WIDTH,						//  uint32_t				width;
+							DATA_TEST_HEIGHT,						//  uint32_t				height;
+							notused,								//  bool					perspective;
+							notused,								//  bool					provokingVertexLast;
+							(uint32_t)notused,						//  uint32_t				rotation;
+							notused,								//  bool					dynamicTopologyInPipeline
+							VK_SAMPLE_COUNT_1_BIT,					//  VkSampleCountFlagBits	sampleCount;
+						};
+						aggregateGroup->addChild(new FragmentShadingBarycentricTestCase(testCtx, dataTypeName, "", testParamsShaders));
+					}
+					scSubGroup->addChild(aggregateGroup.release());
+				}
+				scGroup->addChild(scSubGroup.release());
+			}
+			testTypeGroup->addChild(scGroup.release());
 		}
 
 		constructionTypeCase.testGroup->addChild(testTypeGroup.release());
