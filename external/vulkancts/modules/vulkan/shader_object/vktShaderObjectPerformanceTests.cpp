@@ -581,6 +581,9 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate (void)
 	indexDataPtr[2] = 2u;
 	indexDataPtr[3] = 3u;
 
+	const vk::VkDeviceSize				bufferSize			= 64;
+	de::MovePtr<vk::BufferWithMemory>	buffer				= de::MovePtr<vk::BufferWithMemory>(new vk::BufferWithMemory(vk, device, alloc, vk::makeBufferCreateInfo(bufferSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), vk::MemoryRequirement::HostVisible));
+
 	// Do a dummy run, to ensure memory allocations are done with before performance testing
 	{
 		vk::beginCommandBuffer(vk, *cmdBuffer, 0u);
@@ -641,6 +644,9 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate (void)
 			else
 			{
 				vk::beginCommandBuffer(vk, *cmdBuffer, 0u);
+				vk::VkDeviceSize offset = 0u;
+				vk::VkDeviceSize stride = 16u;
+				vk.cmdBindVertexBuffers2(*cmdBuffer, 0u, 1u, &**buffer, &offset, &bufferSize, &stride);
 				vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, topology, false, !m_context.getExtendedDynamicStateFeaturesEXT().extendedDynamicState);
 				vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 				vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_CLEAR);

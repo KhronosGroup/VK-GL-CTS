@@ -694,15 +694,20 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate (void)
 	};
 	vk::VkColorComponentFlags		colorWriteMask = vk::VK_COLOR_COMPONENT_R_BIT | vk::VK_COLOR_COMPONENT_G_BIT |
 		vk::VK_COLOR_COMPONENT_B_BIT | vk::VK_COLOR_COMPONENT_A_BIT;
-	for (deUint32 i = 0; i < colorAttachmentCount + m_params.extraFragmentOutputCount; ++i)
-	{
-		vk.cmdSetColorBlendEnableEXT(*cmdBuffer, i, 1u, &colorBlendEnable);
-		vk.cmdSetColorBlendEquationEXT(*cmdBuffer, i, 1u, &colorBlendEquation);
-		vk.cmdSetColorWriteMaskEXT(*cmdBuffer, i, 1u, &colorWriteMask);
-	}
+	deUint32 count = colorAttachmentCount + m_params.extraFragmentOutputCount;
+	if (count == 0) ++count;
+	std::vector<vk::VkBool32>					colorBlendEnables	(count, colorBlendEnable);
+	std::vector<vk::VkColorBlendEquationEXT>	colorBlendEquations	(count, colorBlendEquation);
+	std::vector<vk::VkColorComponentFlags>		colorWriteMasks		(count, colorWriteMask);
+	vk.cmdSetColorBlendEnableEXT(*cmdBuffer, 0u, count, colorBlendEnables.data());
+	vk.cmdSetColorBlendEquationEXT(*cmdBuffer, 0u, count, colorBlendEquations.data());
+	vk.cmdSetColorWriteMaskEXT(*cmdBuffer, 0u, count, colorWriteMasks.data());
+	std::vector<vk::VkBool32> colorWriteEnables	(count, VK_TRUE);
+	vk.cmdSetColorWriteEnableEXT(*cmdBuffer, count, colorWriteEnables.data());
 	vk.cmdSetDepthWriteEnable(*cmdBuffer, VK_TRUE);
 	vk.cmdSetDepthTestEnable(*cmdBuffer, VK_TRUE);
 	vk.cmdSetDepthCompareOp(*cmdBuffer, vk::VK_COMPARE_OP_LESS);
+	vk::bindNullTaskMeshShaders(vk, *cmdBuffer, m_context.getMeshShaderFeaturesEXT());
 	if (!m_params.bindShadersBeforeBeginRendering)
 		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragShader, taskSupported, meshSupported);
 	vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);

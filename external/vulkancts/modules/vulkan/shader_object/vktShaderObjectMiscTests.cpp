@@ -658,6 +658,13 @@ void ShaderObjectStateInstance::createDevice (void)
 	vk::VkPhysicalDeviceExtendedDynamicState3FeaturesEXT	eds3Features	= m_context.getExtendedDynamicState3FeaturesEXT();
 	vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT	viFeatures		= m_context.getVertexInputDynamicStateFeaturesEXT();
 
+	dynamicRenderingFeatures.pNext = DE_NULL;
+	shaderObjectFeatures.pNext = DE_NULL;
+	edsFeatures.pNext = DE_NULL;
+	eds2Features.pNext = DE_NULL;
+	eds3Features.pNext = DE_NULL;
+	viFeatures.pNext = DE_NULL;
+
 	vk::VkPhysicalDeviceFeatures2						features2					= vk::initVulkanStructure();
 	void* pNext = &dynamicRenderingFeatures;
 
@@ -1028,13 +1035,13 @@ void ShaderObjectStateInstance::setDynamicStates (const vk::DeviceInterface& vk,
 		vk.cmdSetRasterizationStreamEXT(cmdBuffer, 0u);
 	if (m_params.discardRectangles)
 		vk.cmdSetDiscardRectangleEnableEXT(cmdBuffer, m_params.discardRectanglesEnable ? VK_TRUE : VK_FALSE);
-	if (m_params.discardRectanglesEnable || (m_params.discardRectangles && m_params.pipeline))
+	if ((!m_params.pipeline && m_params.discardRectanglesEnable) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_MODE_EXT))
 		vk.cmdSetDiscardRectangleModeEXT(cmdBuffer, vk::VK_DISCARD_RECTANGLE_MODE_EXCLUSIVE_EXT);
-	if (m_params.discardRectanglesEnable || (m_params.discardRectangles && m_params.pipeline))
+	if ((!m_params.pipeline && m_params.discardRectanglesEnable) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT))
 		vk.cmdSetDiscardRectangleEXT(cmdBuffer, 0u, 1u, &scissor);
-	if (m_params.conservativeRasterization && ((m_params.fragShader && !m_params.rasterizerDiscardEnable) || m_params.pipeline))
+	if ((!m_params.pipeline && m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.conservativeRasterization) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_CONSERVATIVE_RASTERIZATION_MODE_EXT))
 		vk.cmdSetConservativeRasterizationModeEXT(cmdBuffer, m_params.conservativeRasterizationOverestimate ? vk::VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT : vk::VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT);
-	if (m_params.conservativeRasterization && ((m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.conservativeRasterizationOverestimate) || m_params.pipeline))
+	if ((!m_params.pipeline && m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.conservativeRasterization && m_params.conservativeRasterizationOverestimate) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT))
 		vk.cmdSetExtraPrimitiveOverestimationSizeEXT(cmdBuffer, de::min(1.0f, m_context.getConservativeRasterizationPropertiesEXT().maxExtraPrimitiveOverestimationSize));
 	if ((!m_params.pipeline && m_params.depthClip) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_CLIP_ENABLE_EXT))
 		vk.cmdSetDepthClipEnableEXT(cmdBuffer, VK_TRUE);
@@ -1487,6 +1494,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate (void)
 				*meshShader,
 				*fragShader,
 			};
+			vk::bindNullRasterizationShaders(vk, *cmdBuffer, m_context.getDeviceFeatures());
 			vk.cmdBindShadersEXT(*cmdBuffer, 2, stages, shaders);
 		}
 		else
