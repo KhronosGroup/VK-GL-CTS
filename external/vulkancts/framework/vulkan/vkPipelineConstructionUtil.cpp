@@ -2856,39 +2856,80 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 }
 
 #ifndef CTS_USES_VULKANSC
-vk::VkShaderStageFlags getNextStages (vk::VkShaderStageFlagBits shaderStage, bool tessellationShaders, bool geometryShaders)
+vk::VkShaderStageFlags GraphicsPipelineWrapper::getNextStages (vk::VkShaderStageFlagBits shaderStage, bool tessellationShaders, bool geometryShaders, bool link)
 {
-	if (shaderStage == vk::VK_SHADER_STAGE_VERTEX_BIT)
+	if (link)
 	{
-		VkShaderStageFlags flags = vk::VK_SHADER_STAGE_FRAGMENT_BIT;
-		if (tessellationShaders)
-			flags |= vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-		if (geometryShaders)
-			flags |= vk::VK_SHADER_STAGE_GEOMETRY_BIT;
-		return flags;
+		if (shaderStage == vk::VK_SHADER_STAGE_VERTEX_BIT)
+		{
+			if (m_internalData->tessellationControlShader.isSet())
+				return vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+			if (m_internalData->geometryShader.isSet())
+				return vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+			if (m_internalData->fragmentShader.isSet())
+				return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+		if (shaderStage == vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
+			return vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+		if (shaderStage == vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
+		{
+			if (m_internalData->geometryShader.isSet())
+				return vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+			if (m_internalData->fragmentShader.isSet())
+				return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+		if (shaderStage == vk::VK_SHADER_STAGE_GEOMETRY_BIT)
+		{
+			if (m_internalData->fragmentShader.isSet())
+				return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+		if (shaderStage == vk::VK_SHADER_STAGE_TASK_BIT_EXT)
+		{
+			if (m_internalData->meshShader.isSet())
+				return vk::VK_SHADER_STAGE_MESH_BIT_EXT;
+			if (m_internalData->fragmentShader.isSet())
+				return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+		if (shaderStage == vk::VK_SHADER_STAGE_MESH_BIT_EXT)
+		{
+			if (m_internalData->fragmentShader.isSet())
+				return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
 	}
-	else if (shaderStage == vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
+	else
 	{
-		return vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-	}
-	else if (shaderStage == vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
-	{
-		VkShaderStageFlags flags = vk::VK_SHADER_STAGE_FRAGMENT_BIT;
-		if (geometryShaders)
-			flags |= vk::VK_SHADER_STAGE_GEOMETRY_BIT;
-		return flags;
-	}
-	else if (shaderStage == vk::VK_SHADER_STAGE_GEOMETRY_BIT)
-	{
-		return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
-	}
-	else if (shaderStage == vk::VK_SHADER_STAGE_TASK_BIT_EXT)
-	{
-		return vk::VK_SHADER_STAGE_MESH_BIT_EXT;
-	}
-	else if (shaderStage == vk::VK_SHADER_STAGE_MESH_BIT_EXT)
-	{
-		return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		if (shaderStage == vk::VK_SHADER_STAGE_VERTEX_BIT)
+		{
+			VkShaderStageFlags flags = vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+			if (tessellationShaders)
+				flags |= vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+			if (geometryShaders)
+				flags |= vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+			return flags;
+		}
+		else if (shaderStage == vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
+		{
+			return vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+		}
+		else if (shaderStage == vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
+		{
+			VkShaderStageFlags flags = vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+			if (geometryShaders)
+				flags |= vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+			return flags;
+		}
+		else if (shaderStage == vk::VK_SHADER_STAGE_GEOMETRY_BIT)
+		{
+			return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+		else if (shaderStage == vk::VK_SHADER_STAGE_TASK_BIT_EXT)
+		{
+			return vk::VK_SHADER_STAGE_MESH_BIT_EXT;
+		}
+		else if (shaderStage == vk::VK_SHADER_STAGE_MESH_BIT_EXT)
+		{
+			return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
 	}
 	return 0;
 }
@@ -2901,7 +2942,7 @@ vk::VkShaderCreateInfoEXT GraphicsPipelineWrapper::makeShaderCreateInfo (VkShade
 	vk::VkShaderCreateInfoEXT shaderCreateInfo = vk::initVulkanStructure();
 	shaderCreateInfo.flags = link ? (vk::VkShaderCreateFlagsEXT)vk::VK_SHADER_CREATE_LINK_STAGE_BIT_EXT : (vk::VkShaderCreateFlagsEXT)0u;
 	shaderCreateInfo.stage = stage;
-	shaderCreateInfo.nextStage = getNextStages(stage, m_internalData->tessellationShaderFeature, m_internalData->geometryShaderFeature);
+	shaderCreateInfo.nextStage = getNextStages(stage, m_internalData->tessellationShaderFeature, m_internalData->geometryShaderFeature, link);
 	if (binary)
 	{
 		shaderCreateInfo.codeType = vk::VK_SHADER_CODE_TYPE_BINARY_EXT;
