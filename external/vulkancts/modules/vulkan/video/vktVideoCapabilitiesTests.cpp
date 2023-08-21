@@ -30,7 +30,6 @@
 
 #include "vktTestCase.hpp"
 #include "vktCustomInstancesDevices.hpp"
-#include "vktVideoBaseDecodeUtils.hpp"
 
 
 namespace vkt
@@ -219,25 +218,25 @@ VideoFormatPropertiesQueryTestInstance<ProfileOperation>::~VideoFormatProperties
 template<>
 VkVideoDecodeH264ProfileInfoKHR VideoFormatPropertiesQueryTestInstance<VkVideoDecodeH264ProfileInfoKHR>::getProfileOperation (void)
 {
-	return getProfileOperationH264D();
+	return getProfileOperationH264Decode();
 }
 
 template<>
-VkVideoEncodeH264ProfileInfoEXT VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH264ProfileInfoEXT>::getProfileOperation (void)
+VkVideoEncodeH264ProfileInfoEXT VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH264ProfileInfoEXT>::getProfileOperation ()
 {
-	return getProfileOperationH264E();
+	return getProfileOperationH264Encode();
 }
 
 template<>
-VkVideoDecodeH265ProfileInfoKHR VideoFormatPropertiesQueryTestInstance<VkVideoDecodeH265ProfileInfoKHR>::getProfileOperation (void)
+VkVideoDecodeH265ProfileInfoKHR VideoFormatPropertiesQueryTestInstance<VkVideoDecodeH265ProfileInfoKHR>::getProfileOperation ()
 {
-	return getProfileOperationH265D();
+	return getProfileOperationH265Decode();
 }
 
 template<>
-VkVideoEncodeH265ProfileInfoEXT VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH265ProfileInfoEXT>::getProfileOperation (void)
+VkVideoEncodeH265ProfileInfoEXT VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH265ProfileInfoEXT>::getProfileOperation ()
 {
-	return getProfileOperationH265E();
+	return getProfileOperationH265Encode();
 }
 
 template<typename ProfileOperation>

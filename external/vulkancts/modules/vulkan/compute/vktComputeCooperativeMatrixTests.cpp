@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2019 The Khronos Group Inc.
  * Copyright (c) 2018-2019 NVIDIA Corporation
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -128,17 +130,18 @@ const VkFlags allShaderStages = VK_SHADER_STAGE_COMPUTE_BIT;
 
 struct CaseDef
 {
-	TestType			testType;
-	deUint32			subgroupsPerWorkgroupX;
-	deUint32			subgroupsPerWorkgroupY;
-	deUint32			workgroupsX;
-	deUint32			workgroupsY;
-	VkComponentTypeKHR	inputType;
-	VkComponentTypeKHR	outputType;
-	bool				colMajor;
-	StorageClass		storageClass;
-	UseType				useType;
-	SubgroupSizeMode	subgroupSizeMode;
+	TestType							testType;
+	deUint32							subgroupsPerWorkgroupX;
+	deUint32							subgroupsPerWorkgroupY;
+	deUint32							workgroupsX;
+	deUint32							workgroupsY;
+	VkComponentTypeKHR					inputType;
+	VkComponentTypeKHR					outputType;
+	bool								colMajor;
+	StorageClass						storageClass;
+	UseType								useType;
+	SubgroupSizeMode					subgroupSizeMode;
+	vk::ComputePipelineConstructionType	computePipelineConstructionType;
 };
 
 bool isKhr (UseType useType)
@@ -261,7 +264,7 @@ class CooperativeMatrixTestInstance : public TestInstance
 public:
 						CooperativeMatrixTestInstance	(Context& context, const CaseDef& data);
 						~CooperativeMatrixTestInstance	(void);
-	tcu::TestStatus		iterate				(void);
+	tcu::TestStatus		iterate							(void);
 private:
 	CaseDef			m_data;
 };
@@ -411,6 +414,8 @@ void CooperativeMatrixTestCase::checkSupport (Context& context) const
 
 	if (!supported[0] || !supported[1])
 		TCU_THROW(NotSupportedError, "cooperative matrix combination not supported");
+
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_data.computePipelineConstructionType);
 }
 
 struct {
@@ -1197,21 +1202,6 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 
 		setUpdateBuilder.update(vk, device);
 
-		const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,				// sType
-			DE_NULL,													// pNext
-			(VkPipelineLayoutCreateFlags)0,
-			1,															// setLayoutCount
-			&descriptorSetLayout.get(),									// pSetLayouts
-			0u,															// pushConstantRangeCount
-			DE_NULL,													// pPushConstantRanges
-		};
-
-		Move<VkPipelineLayout> pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo, NULL);
-
-		Move<VkPipeline> pipeline;
-
 		VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
 
 		const deUint32 specData[9] =
@@ -1320,36 +1310,10 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 		flushAlloc(vk, device, buffers[2]->getAllocation());
 		flushAlloc(vk, device, buffers[3]->getAllocation());
 
-		const Unique<VkShaderModule>	shader						(createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0));
-
-		const VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT	subgroupSizeCreateInfo =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT,	// VkStructureType    sType;
-			DE_NULL,																		// void*              pNext;
-			getSubgroupSizeFromMode(m_context, m_data.subgroupSizeMode)						// uint32_t           requiredSubgroupSize;
-		};
-		const VkPipelineShaderStageCreateInfo	shaderCreateInfo =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			(m_data.subgroupSizeMode == SUBGROUP_SIZE_NONE) ? DE_NULL : &subgroupSizeCreateInfo,
-			(VkPipelineShaderStageCreateFlags)0,
-			VK_SHADER_STAGE_COMPUTE_BIT,								// stage
-			*shader,													// shader
-			"main",
-			&specInfo,													// pSpecializationInfo
-		};
-
-		const VkComputePipelineCreateInfo		pipelineCreateInfo =
-		{
-			VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-			DE_NULL,
-			0u,															// flags
-			shaderCreateInfo,											// cs
-			*pipelineLayout,											// layout
-			(vk::VkPipeline)0,											// basePipelineHandle
-			0u,															// basePipelineIndex
-		};
-		pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
+		ComputePipelineWrapper			pipeline(vk, device, m_data.computePipelineConstructionType, m_context.getBinaryCollection().get("test"));
+		pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+		pipeline.setSpecializationInfo(specInfo);
+		pipeline.buildPipeline();
 
 		const VkQueue					queue					= m_context.getUniversalQueue();
 		Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, 0, m_context.getUniversalQueueFamilyIndex());
@@ -1357,8 +1321,8 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 
 		beginCommandBuffer(vk, *cmdBuffer, 0u);
 
-		vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, DE_NULL);
-		vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
+		vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, pipeline.getPipelineLayout(), 0u, 1, &*descriptorSet, 0u, DE_NULL);
+		pipeline.bind(*cmdBuffer);
 
 		vk.cmdDispatch(*cmdBuffer, m_data.workgroupsX, m_data.workgroupsY, 1);
 
@@ -1740,7 +1704,7 @@ const char* getUseType (UseType useType)
 	}
 }
 
-tcu::TestCaseGroup*	createCooperativeMatrixTestsInternal (tcu::TestContext& testCtx, UseType useType)
+tcu::TestCaseGroup*	createCooperativeMatrixTestsInternal (tcu::TestContext& testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType, UseType useType)
 {
 	de::MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(testCtx, getUseType(useType), ""));
 
@@ -1897,17 +1861,18 @@ tcu::TestCaseGroup*	createCooperativeMatrixTestsInternal (tcu::TestContext& test
 
 						CaseDef c =
 						{
-							testType,							//  TestType				testtype;
-							2u,									//  deUint32				subgroupsPerWorkgroupX;
-							2u,									//  deUint32				subgroupsPerWorkgroupY;
-							4u,									//  deUint32				workgroupsX;
-							4u,									//  deUint32				workgroupsY;
-							inputType,							//  VkComponentTypeKHR		inputType;
-							outputType,							//  VkComponentTypeKHR		outputType;
-							!!colCases[colNdx].value,			//  bool					colMajor;
-							(StorageClass)scCases[scNdx].value,	//  StorageClass			storageClass;
-							useType,							//  UseType					useType;
-							sgsCases[sgsNdx].value				//  SubgroupSizeMode		subgroupSizeMode;
+							testType,							//  TestType							testtype;
+							2u,									//  deUint32							subgroupsPerWorkgroupX;
+							2u,									//  deUint32							subgroupsPerWorkgroupY;
+							4u,									//  deUint32							workgroupsX;
+							4u,									//  deUint32							workgroupsY;
+							inputType,							//  VkComponentTypeKHR					inputType;
+							outputType,							//  VkComponentTypeKHR					outputType;
+							!!colCases[colNdx].value,			//  bool								colMajor;
+							(StorageClass)scCases[scNdx].value,	//  StorageClass						storageClass;
+							useType,							//  UseType								useType;
+							sgsCases[sgsNdx].value,				//  SubgroupSizeMode					subgroupSizeMode;
+							computePipelineConstructionType,	//  vk::ComputePipelineConstructionType	computePipelineConstructionType;
 						};
 
 						scGroup->addChild(new CooperativeMatrixTestCase(testCtx, colCases[colNdx].name, colCases[colNdx].description, c));
@@ -1941,17 +1906,18 @@ tcu::TestCaseGroup*	createCooperativeMatrixTestsInternal (tcu::TestContext& test
 
 						CaseDef c =
 						{
-							TT_CONVERT,							//  TestType				testtype;
-							2u,									//  deUint32				subgroupsPerWorkgroupX;
-							2u,									//  deUint32				subgroupsPerWorkgroupY;
-							4u,									//  deUint32				workgroupsX;
-							4u,									//  deUint32				workgroupsY;
-							inputType,							//  VkComponentTypeKHR		inputType;
-							outputType,							//  VkComponentTypeKHR		outputType;
-							!!colCases[colNdx].value,			//  bool					colMajor;
-							(StorageClass)scCases[scNdx].value,	//  StorageClass			storageClass;
-							useType,							//  UseType					useType;
-							SUBGROUP_SIZE_NONE					//  SubgroupSizeMode		subgroupSizeMode;
+							TT_CONVERT,							//  TestType							testtype;
+							2u,									//  deUint32							subgroupsPerWorkgroupX;
+							2u,									//  deUint32							subgroupsPerWorkgroupY;
+							4u,									//  deUint32							workgroupsX;
+							4u,									//  deUint32							workgroupsY;
+							inputType,							//  VkComponentTypeKHR					inputType;
+							outputType,							//  VkComponentTypeKHR					outputType;
+							!!colCases[colNdx].value,			//  bool								colMajor;
+							(StorageClass)scCases[scNdx].value,	//  StorageClass						storageClass;
+							useType,							//  UseType								useType;
+							SUBGROUP_SIZE_NONE,					//  SubgroupSizeMode					subgroupSizeMode;
+							computePipelineConstructionType,	//  vk::ComputePipelineConstructionType	computePipelineConstructionType;
 						};
 
 						scGroup->addChild(new CooperativeMatrixTestCase(testCtx, colCases[colNdx].name, colCases[colNdx].description, c));
@@ -1969,14 +1935,14 @@ tcu::TestCaseGroup*	createCooperativeMatrixTestsInternal (tcu::TestContext& test
 
 }	// anonymous
 
-tcu::TestCaseGroup* createCooperativeMatrixTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createCooperativeMatrixTests (tcu::TestContext& testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "cooperative_matrix", "Cooperative matrix tests"));
 
-	group->addChild(createCooperativeMatrixTestsInternal(testCtx, UT_NV));
-	group->addChild(createCooperativeMatrixTestsInternal(testCtx, UT_KHR_A));
-	group->addChild(createCooperativeMatrixTestsInternal(testCtx, UT_KHR_B));
-	group->addChild(createCooperativeMatrixTestsInternal(testCtx, UT_KHR_Result));
+	group->addChild(createCooperativeMatrixTestsInternal(testCtx, computePipelineConstructionType, UT_NV));
+	group->addChild(createCooperativeMatrixTestsInternal(testCtx, computePipelineConstructionType, UT_KHR_A));
+	group->addChild(createCooperativeMatrixTestsInternal(testCtx, computePipelineConstructionType, UT_KHR_B));
+	group->addChild(createCooperativeMatrixTestsInternal(testCtx, computePipelineConstructionType, UT_KHR_Result));
 
 	return group.release();
 }

@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2020 The Khronos Group Inc.
  * Copyright (c) 2020 Google LLC.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +61,7 @@ namespace
 
 tcu::TestStatus runCompute(Context& context, deUint32 bufferSize,
 							deUint32 numWGX, deUint32 numWGY, deUint32 numWGZ,
+							vk::ComputePipelineConstructionType m_computePipelineConstructionType,
 							const std::vector<deUint32> specValues = {},
 							deUint32 increment = 0)
 {
@@ -103,44 +106,13 @@ tcu::TestStatus runCompute(Context& context, deUint32 bufferSize,
 		specValues.size() * sizeof(deUint32),
 		specValues.data(),
 	};
-
-	const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		DE_NULL,
-		(VkPipelineLayoutCreateFlags)0,
-		1,
-		&descriptorSetLayout.get(),
-		0u,
-		DE_NULL,
-	};
-	Move<VkPipelineLayout> pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo, NULL);
 	VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
 	flushAlloc(vk, device, buffer->getAllocation());
 
-	const Unique<VkShaderModule> shader(createShaderModule(vk, device, context.getBinaryCollection().get("comp"), 0));
-	const VkPipelineShaderStageCreateInfo shaderInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-		DE_NULL,
-		0,
-		VK_SHADER_STAGE_COMPUTE_BIT,
-		*shader,
-		"main",
-		specValues.empty() ? DE_NULL : &specInfo,
-	};
-
-	const VkComputePipelineCreateInfo pipelineInfo =
-	{
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-		DE_NULL,
-		0u,
-		shaderInfo,
-		*pipelineLayout,
-		(VkPipeline)0,
-		0u,
-	};
-	Move<VkPipeline> pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineInfo, NULL);
+	ComputePipelineWrapper			pipeline(vk, device, m_computePipelineConstructionType, context.getBinaryCollection().get("comp"));
+	pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+	pipeline.setSpecializationInfo(specInfo);
+	pipeline.buildPipeline();
 
 	const VkQueue queue = context.getUniversalQueue();
 	Move<VkCommandPool> cmdPool = createCommandPool(vk, device,
@@ -155,8 +127,8 @@ tcu::TestStatus runCompute(Context& context, deUint32 bufferSize,
 
 	beginCommandBuffer(vk, *cmdBuffer, 0);
 
-	vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, DE_NULL);
-	vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
+	vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, pipeline.getPipelineLayout(), 0u, 1, &*descriptorSet, 0u, DE_NULL);
+	pipeline.bind(*cmdBuffer);
 
 	vk.cmdDispatch(*cmdBuffer, numWGX, numWGY, numWGZ);
 
@@ -182,15 +154,17 @@ tcu::TestStatus runCompute(Context& context, deUint32 bufferSize,
 class MaxWorkgroupMemoryInstance : public vkt::TestInstance
 {
 public:
-	MaxWorkgroupMemoryInstance(Context& context, deUint32 numWorkgroups)
-		: TestInstance(context),
-		m_numWorkgroups(numWorkgroups)
+	MaxWorkgroupMemoryInstance	(Context& context, deUint32 numWorkgroups, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: TestInstance						(context)
+		, m_numWorkgroups					(numWorkgroups)
+		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
 	}
-	tcu::TestStatus iterate(void);
+	tcu::TestStatus iterate		(void);
 
 private:
-	deUint32 m_numWorkgroups;
+	deUint32							m_numWorkgroups;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class MaxWorkgroupMemoryTest : public vkt::TestCase
@@ -199,26 +173,30 @@ public:
 	MaxWorkgroupMemoryTest(tcu::TestContext& testCtx,
 							const std::string& name,
 							const std::string& description,
-							deUint32 numWorkgroups)
-		: TestCase(testCtx, name, description),
-		m_numWorkgroups(numWorkgroups)
+							deUint32 numWorkgroups,
+							const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: TestCase							(testCtx, name, description),
+		m_numWorkgroups						(numWorkgroups)
+		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
 	}
 
 	void initPrograms(SourceCollections& sourceCollections) const;
 	TestInstance* createInstance(Context& context) const
 	{
-		return new MaxWorkgroupMemoryInstance(context, m_numWorkgroups);
+		return new MaxWorkgroupMemoryInstance(context, m_numWorkgroups, m_computePipelineConstructionType);
 	}
 	virtual void checkSupport(Context& context) const;
 
 private:
-	deUint32 m_numWorkgroups;
+	deUint32							m_numWorkgroups;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 void MaxWorkgroupMemoryTest::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_zero_initialize_workgroup_memory");
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 }
 
 void MaxWorkgroupMemoryTest::initPrograms(SourceCollections& sourceCollections) const
@@ -253,7 +231,7 @@ void MaxWorkgroupMemoryTest::initPrograms(SourceCollections& sourceCollections) 
 	sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
 }
 
-tcu::TestStatus MaxWorkgroupMemoryInstance::iterate(void)
+tcu::TestStatus MaxWorkgroupMemoryInstance::iterate (void)
 {
 	VkPhysicalDeviceProperties properties;
 	m_context.getInstanceInterface().getPhysicalDeviceProperties(m_context.getPhysicalDevice(), &properties);
@@ -274,16 +252,16 @@ tcu::TestStatus MaxWorkgroupMemoryInstance::iterate(void)
 	const deUint32 size = maxMemSize;
 	const deUint32 numElems = maxMemSize / 16;
 
-	return runCompute(m_context, size, m_numWorkgroups, 1, 1, {wgx, wgy, wgz, numElems}, /*increment*/ 1);
+	return runCompute(m_context, size, m_numWorkgroups, 1, 1, m_computePipelineConstructionType, {wgx, wgy, wgz, numElems}, /*increment*/ 1);
 }
 
-void AddMaxWorkgroupMemoryTests(tcu::TestCaseGroup* group)
+void AddMaxWorkgroupMemoryTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
 	std::vector<deUint32> workgroups = {1, 2, 4, 16, 64, 128};
 	for (deUint32 i = 0; i < workgroups.size(); ++i) {
 		deUint32 numWG = workgroups[i];
 		group->addChild(new MaxWorkgroupMemoryTest(group->getTestContext(),
-			de::toString(numWG), de::toString(numWG) + " workgroups", numWG));
+			de::toString(numWG), de::toString(numWG) + " workgroups", numWG, computePipelineConstructionType));
 	}
 }
 
@@ -299,15 +277,17 @@ struct TypeCaseDef
 class TypeTestInstance : public vkt::TestInstance
 {
 public:
-	TypeTestInstance(Context& context, const TypeCaseDef& caseDef)
-		: TestInstance(context),
-		m_caseDef(caseDef)
+	TypeTestInstance(Context& context, const TypeCaseDef& caseDef, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: TestInstance						(context)
+		, m_caseDef							(caseDef)
+		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
 	}
-	tcu::TestStatus iterate(void);
+	tcu::TestStatus iterate (void);
 
 private:
 	TypeCaseDef m_caseDef;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class TypeTest : public vkt::TestCase
@@ -316,26 +296,30 @@ public:
 	TypeTest(tcu::TestContext& testCtx,
 			const std::string& name,
 			const std::string& description,
-			const TypeCaseDef& caseDef)
-		: TestCase(testCtx, name, description),
-		m_caseDef(caseDef)
+			const TypeCaseDef& caseDef,
+			const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: TestCase							(testCtx, name, description)
+		, m_caseDef							(caseDef)
+		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
 	}
 
 	void initPrograms(SourceCollections& sourceCollections) const;
 	TestInstance* createInstance(Context& context) const
 	{
-		return new TypeTestInstance(context, m_caseDef);
+		return new TypeTestInstance(context, m_caseDef, m_computePipelineConstructionType);
 	}
 	virtual void checkSupport(Context& context) const;
 
 private:
-	TypeCaseDef m_caseDef;
+	TypeCaseDef							m_caseDef;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 void TypeTest::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_zero_initialize_workgroup_memory");
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 
 	VkPhysicalDeviceShaderFloat16Int8Features f16_i8_features;
 	deMemset(&f16_i8_features, 0, sizeof(f16_i8_features));
@@ -465,13 +449,13 @@ void TypeTest::initPrograms(SourceCollections& sourceCollections) const
 	sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
 }
 
-tcu::TestStatus TypeTestInstance::iterate(void)
+tcu::TestStatus TypeTestInstance::iterate (void)
 {
 	const deUint32 varBytes = m_caseDef.numElements * m_caseDef.numRows * (deUint32)sizeof(deUint32);
-	return runCompute(m_context, varBytes * m_caseDef.numVariables, 1, 1, 1);
+	return runCompute(m_context, varBytes * m_caseDef.numVariables, 1, 1, 1, m_computePipelineConstructionType);
 }
 
-void AddTypeTests(tcu::TestCaseGroup* group)
+void AddTypeTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
 	deRandom rnd;
 	deRandom_init(&rnd, 0);
@@ -558,7 +542,7 @@ void AddTypeTests(tcu::TestCaseGroup* group)
 	{
 		cases[i].numVariables = (deRandom_getUint32(&rnd) % 16) + 1;
 		group->addChild(
-			new TypeTest(group->getTestContext(), cases[i].typeName.c_str(), cases[i].typeName.c_str(), cases[i]));
+			new TypeTest(group->getTestContext(), cases[i].typeName.c_str(), cases[i].typeName.c_str(), cases[i], computePipelineConstructionType));
 	}
 }
 
@@ -582,14 +566,16 @@ struct CompositeCaseDef
 class CompositeTestInstance : public vkt::TestInstance
 {
 public:
-	CompositeTestInstance(Context& context, const CompositeCaseDef& caseDef)
-		: TestInstance(context),
-		m_caseDef(caseDef)
+	CompositeTestInstance (Context& context, const CompositeCaseDef& caseDef, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: TestInstance						(context)
+		, m_caseDef							(caseDef)
+		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
 	}
-	tcu::TestStatus iterate(void);
+	tcu::TestStatus iterate (void);
 private:
-	CompositeCaseDef m_caseDef;
+	CompositeCaseDef					m_caseDef;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class CompositeTest : public vkt::TestCase
@@ -598,25 +584,29 @@ public:
 	CompositeTest(tcu::TestContext& testCtx,
 				  const std::string& name,
 				  const std::string& description,
-				  const CompositeCaseDef& caseDef)
-		: TestCase(testCtx, name, description),
-		m_caseDef(caseDef)
+				  const CompositeCaseDef& caseDef,
+				  const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: TestCase							(testCtx, name, description)
+		, m_caseDef							(caseDef)
+		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
 	}
 
 	void initPrograms(SourceCollections& sourceCollections) const;
 	TestInstance* createInstance(Context& context) const
 	{
-		return new CompositeTestInstance(context, m_caseDef);
+		return new CompositeTestInstance(context, m_caseDef, m_computePipelineConstructionType);
 	}
 	virtual void checkSupport(Context& context) const;
 private:
-	CompositeCaseDef m_caseDef;
+	CompositeCaseDef					m_caseDef;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 void CompositeTest::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_zero_initialize_workgroup_memory");
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 
 	VkPhysicalDeviceShaderFloat16Int8Features f16_i8_features;
 	deMemset(&f16_i8_features, 0, sizeof(f16_i8_features));
@@ -670,13 +660,13 @@ void CompositeTest::initPrograms(SourceCollections& sourceCollections) const
 	sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
 }
 
-tcu::TestStatus CompositeTestInstance::iterate(void)
+tcu::TestStatus CompositeTestInstance::iterate (void)
 {
 	const deUint32 bufferSize = (deUint32)sizeof(deUint32) * m_caseDef.elements;
-	return runCompute(m_context, bufferSize, 1, 1, 1, m_caseDef.specValues);
+	return runCompute(m_context, bufferSize, 1, 1, 1, m_computePipelineConstructionType, m_caseDef.specValues);
 }
 
-void AddCompositeTests(tcu::TestCaseGroup* group)
+void AddCompositeTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
 	const std::vector<CompositeCaseDef> cases
 	{
@@ -937,7 +927,7 @@ void AddCompositeTests(tcu::TestCaseGroup* group)
 	for (deUint32 i = 0; i < cases.size(); ++i)
 	{
 		group->addChild(
-			new CompositeTest(group->getTestContext(), de::toString(i), de::toString(i), cases[i]));
+			new CompositeTest(group->getTestContext(), de::toString(i), de::toString(i), cases[i], computePipelineConstructionType));
 	}
 }
 
@@ -950,14 +940,16 @@ enum Dim {
 class MaxWorkgroupsInstance : public vkt::TestInstance
 {
 public:
-	MaxWorkgroupsInstance(Context &context, Dim dim)
-		: TestInstance(context),
-		m_dim(dim)
+	MaxWorkgroupsInstance(Context &context, Dim dim, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: TestInstance						(context)
+		, m_dim								(dim)
+		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
 	}
-	tcu::TestStatus iterate(void);
+	tcu::TestStatus iterate (void);
 private:
-	Dim m_dim;
+	Dim									m_dim;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class MaxWorkgroupsTest : public vkt::TestCase
@@ -966,25 +958,29 @@ public:
 	MaxWorkgroupsTest(tcu::TestContext& testCtx,
 					  const std::string& name,
 					  const std::string& description,
-					  Dim dim)
-		: TestCase(testCtx, name, description),
-		m_dim(dim)
+					  Dim dim,
+					  const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: TestCase							(testCtx, name, description)
+		, m_dim								(dim)
+		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
 	}
 
 	void initPrograms(SourceCollections& sourceCollections) const;
 	TestInstance* createInstance(Context& context) const
 	{
-		return new MaxWorkgroupsInstance(context, m_dim);
+		return new MaxWorkgroupsInstance(context, m_dim, m_computePipelineConstructionType);
 	}
 	virtual void checkSupport(Context& context) const;
 private:
-	Dim m_dim;
+	Dim									m_dim;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 void MaxWorkgroupsTest::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_zero_initialize_workgroup_memory");
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 }
 
 void MaxWorkgroupsTest::initPrograms(SourceCollections& sourceCollections) const
@@ -1024,7 +1020,7 @@ void MaxWorkgroupsTest::initPrograms(SourceCollections& sourceCollections) const
 	sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
 }
 
-tcu::TestStatus MaxWorkgroupsInstance::iterate(void)
+tcu::TestStatus MaxWorkgroupsInstance::iterate (void)
 {
 	VkPhysicalDeviceProperties properties;
 	deMemset(&properties, 0, sizeof(properties));
@@ -1048,31 +1044,33 @@ tcu::TestStatus MaxWorkgroupsInstance::iterate(void)
 	deUint32 num_wgy = m_dim == DimY ? 65535 : 1;
 	deUint32 num_wgz = m_dim == DimZ ? 65535 : 1;
 
-	return runCompute(m_context, size, num_wgx, num_wgy, num_wgz, {wgx, wgy, wgz}, /*increment*/ 1);
+	return runCompute(m_context, size, num_wgx, num_wgy, num_wgz, m_computePipelineConstructionType, {wgx, wgy, wgz}, /*increment*/ 1);
 }
 
-void AddMaxWorkgroupsTests(tcu::TestCaseGroup* group)
+void AddMaxWorkgroupsTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
-	group->addChild(new MaxWorkgroupsTest(group->getTestContext(), "x", "max x dim workgroups", DimX));
-	group->addChild(new MaxWorkgroupsTest(group->getTestContext(), "y", "max y dim workgroups", DimY));
-	group->addChild(new MaxWorkgroupsTest(group->getTestContext(), "z", "max z dim workgroups", DimZ));
+	group->addChild(new MaxWorkgroupsTest(group->getTestContext(), "x", "max x dim workgroups", DimX, computePipelineConstructionType));
+	group->addChild(new MaxWorkgroupsTest(group->getTestContext(), "y", "max y dim workgroups", DimY, computePipelineConstructionType));
+	group->addChild(new MaxWorkgroupsTest(group->getTestContext(), "z", "max z dim workgroups", DimZ, computePipelineConstructionType));
 }
 
 class SpecializeWorkgroupInstance : public vkt::TestInstance
 {
 public:
-	SpecializeWorkgroupInstance(Context &context, deUint32 x, deUint32 y, deUint32 z)
-		: TestInstance(context),
-		m_x(x),
-		m_y(y),
-		m_z(z)
+	SpecializeWorkgroupInstance (Context &context, deUint32 x, deUint32 y, deUint32 z, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: TestInstance						(context)
+		, m_x								(x)
+		, m_y								(y)
+		, m_z								(z)
+		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
 	}
-	tcu::TestStatus iterate(void);
+	tcu::TestStatus iterate (void);
 private:
-	deUint32 m_x;
-	deUint32 m_y;
-	deUint32 m_z;
+	deUint32							m_x;
+	deUint32							m_y;
+	deUint32							m_z;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class SpecializeWorkgroupTest : public vkt::TestCase
@@ -1081,29 +1079,33 @@ public:
 	SpecializeWorkgroupTest(tcu::TestContext& testCtx,
 					  const std::string& name,
 					  const std::string& description,
-					  deUint32 x, deUint32 y, deUint32 z)
-		: TestCase(testCtx, name, description),
-		m_x(x),
-		m_y(y),
-		m_z(z)
+					  deUint32 x, deUint32 y, deUint32 z,
+					  const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: TestCase							(testCtx, name, description)
+		, m_x								(x)
+		, m_y								(y)
+		, m_z								(z)
+		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
 	}
 
 	void initPrograms(SourceCollections& sourceCollections) const;
 	TestInstance* createInstance(Context& context) const
 	{
-		return new SpecializeWorkgroupInstance(context, m_x, m_y, m_z);
+		return new SpecializeWorkgroupInstance(context, m_x, m_y, m_z, m_computePipelineConstructionType);
 	}
 	virtual void checkSupport(Context& context) const;
 private:
-	deUint32 m_x;
-	deUint32 m_y;
-	deUint32 m_z;
+	deUint32							m_x;
+	deUint32							m_y;
+	deUint32							m_z;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 void SpecializeWorkgroupTest::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_zero_initialize_workgroup_memory");
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 
 	VkPhysicalDeviceProperties properties;
 	deMemset(&properties, 0, sizeof(properties));
@@ -1132,13 +1134,13 @@ void SpecializeWorkgroupTest::initPrograms(SourceCollections& sourceCollections)
 	sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
 }
 
-tcu::TestStatus SpecializeWorkgroupInstance::iterate(void)
+tcu::TestStatus SpecializeWorkgroupInstance::iterate (void)
 {
 	const deUint32 size = (deUint32)sizeof(deUint32) * m_x * m_y * m_z;
-	return runCompute(m_context, size, 1, 1, 1, {m_x, m_y, m_z});
+	return runCompute(m_context, size, 1, 1, 1, m_computePipelineConstructionType, {m_x, m_y, m_z});
 }
 
-void AddSpecializeWorkgroupTests(tcu::TestCaseGroup* group)
+void AddSpecializeWorkgroupTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
 	for (deUint32 z = 1; z <= 8; ++z)
 	{
@@ -1149,7 +1151,8 @@ void AddSpecializeWorkgroupTests(tcu::TestCaseGroup* group)
 				group->addChild(new SpecializeWorkgroupTest(group->getTestContext(),
 					de::toString(x) + "_" + de::toString(y) + "_" + de::toString(z),
 					de::toString(x) + "_" + de::toString(y) + "_" + de::toString(z),
-					x, y, z));
+					x, y, z,
+					computePipelineConstructionType));
 			}
 		}
 	}
@@ -1158,18 +1161,18 @@ void AddSpecializeWorkgroupTests(tcu::TestCaseGroup* group)
 class RepeatedPipelineInstance : public vkt::TestInstance
 {
 public:
-	RepeatedPipelineInstance(Context& context, deUint32 xSize, deUint32 repeat, deUint32 odd)
-		: TestInstance(context),
-		m_xSize(xSize),
-		m_repeat(repeat),
-		m_odd(odd)
+	RepeatedPipelineInstance (Context& context, deUint32 xSize, deUint32 repeat, deUint32 odd)
+		: TestInstance						(context)
+		, m_xSize							(xSize)
+		, m_repeat							(repeat)
+		, m_odd								(odd)
 	{
 	}
-	tcu::TestStatus iterate(void);
+	tcu::TestStatus iterate (void);
 private:
-	deUint32 m_xSize;
-	deUint32 m_repeat;
-	deUint32 m_odd;
+	deUint32							m_xSize;
+	deUint32							m_repeat;
+	deUint32							m_odd;
 };
 
 class RepeatedPipelineTest : public vkt::TestCase
@@ -1178,11 +1181,13 @@ public:
 	RepeatedPipelineTest(tcu::TestContext& testCtx,
 						const std::string& name,
 						const std::string& description,
-						deUint32 xSize, deUint32 repeat, deUint32 odd)
-		: TestCase(testCtx, name, description),
-		m_xSize(xSize),
-		m_repeat(repeat),
-		m_odd(odd)
+						deUint32 xSize, deUint32 repeat, deUint32 odd,
+						const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: TestCase							(testCtx, name, description)
+		, m_xSize							(xSize)
+		, m_repeat							(repeat)
+		, m_odd								(odd)
+		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
 	}
 
@@ -1193,14 +1198,16 @@ public:
 	}
 	virtual void checkSupport(Context& context) const;
 private:
-	deUint32 m_xSize;
-	deUint32 m_repeat;
-	deUint32 m_odd;
+	deUint32							m_xSize;
+	deUint32							m_repeat;
+	deUint32							m_odd;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 void RepeatedPipelineTest::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_zero_initialize_workgroup_memory");
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 }
 
 void RepeatedPipelineTest::initPrograms(SourceCollections& sourceCollections) const
@@ -1227,7 +1234,7 @@ void RepeatedPipelineTest::initPrograms(SourceCollections& sourceCollections) co
 	sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
 }
 
-tcu::TestStatus RepeatedPipelineInstance::iterate(void)
+tcu::TestStatus RepeatedPipelineInstance::iterate (void)
 {
 	Context& context					= m_context;
 	const deUint32 bufferSize			= m_xSize * 2 * (deUint32)sizeof(deUint32);
@@ -1380,7 +1387,7 @@ tcu::TestStatus RepeatedPipelineInstance::iterate(void)
 	return tcu::TestStatus::pass("compute succeeded");
 }
 
-void AddRepeatedPipelineTests(tcu::TestCaseGroup* group)
+void AddRepeatedPipelineTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
 	std::vector<deUint32> xSizes = {4, 16, 32, 64};
 	std::vector<deUint32> odds = {0, 1};
@@ -1397,13 +1404,13 @@ void AddRepeatedPipelineTests(tcu::TestCaseGroup* group)
 				group->addChild(new RepeatedPipelineTest(group->getTestContext(),
 					std::string("x_") + de::toString(x) + (odd == 1 ? "_odd" : "_even") + "_repeat_" + de::toString(repeat),
 					std::string("x_") + de::toString(x) + (odd == 1 ? "_odd" : "_even") + "_repeat_" + de::toString(repeat),
-					x, odd, repeat));
+					x, odd, repeat, computePipelineConstructionType));
 			}
 		}
 	}
 }
 #ifndef CTS_USES_VULKANSC
-void AddSharedMemoryTests (tcu::TestCaseGroup* group)
+void AddSharedMemoryTests (tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType)
 {
 	tcu::TestContext&			testCtx		= group->getTestContext();
 	std::string					filePath	= "compute/zero_initialize_workgroup_memory";
@@ -1431,38 +1438,38 @@ void AddSharedMemoryTests (tcu::TestCaseGroup* group)
 
 } // anonymous
 
-tcu::TestCaseGroup* createZeroInitializeWorkgroupMemoryTests(tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createZeroInitializeWorkgroupMemoryTests (tcu::TestContext& testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
 	de::MovePtr<tcu::TestCaseGroup> tests(new tcu::TestCaseGroup(testCtx, "zero_initialize_workgroup_memory", "VK_KHR_zero_intialize_workgroup_memory tests"));
 
 	tcu::TestCaseGroup* maxWorkgroupMemoryGroup =
 		new tcu::TestCaseGroup(testCtx, "max_workgroup_memory", "Read initialization of max workgroup memory");
-	AddMaxWorkgroupMemoryTests(maxWorkgroupMemoryGroup);
+	AddMaxWorkgroupMemoryTests(maxWorkgroupMemoryGroup, computePipelineConstructionType);
 	tests->addChild(maxWorkgroupMemoryGroup);
 
 	tcu::TestCaseGroup* typeGroup = new tcu::TestCaseGroup(testCtx, "types", "basic type tests");
-	AddTypeTests(typeGroup);
+	AddTypeTests(typeGroup, computePipelineConstructionType);
 	tests->addChild(typeGroup);
 
 	tcu::TestCaseGroup* compositeGroup = new tcu::TestCaseGroup(testCtx, "composites", "composite type tests");
-	AddCompositeTests(compositeGroup);
+	AddCompositeTests(compositeGroup, computePipelineConstructionType);
 	tests->addChild(compositeGroup);
 
 	tcu::TestCaseGroup* maxWorkgroupsGroup = new tcu::TestCaseGroup(testCtx, "max_workgroups", "max workgroups");
-	AddMaxWorkgroupsTests(maxWorkgroupsGroup);
+	AddMaxWorkgroupsTests(maxWorkgroupsGroup, computePipelineConstructionType);
 	tests->addChild(maxWorkgroupsGroup);
 
 	tcu::TestCaseGroup* specializeWorkgroupGroup = new tcu::TestCaseGroup(testCtx, "specialize_workgroup", "specialize workgroup size");
-	AddSpecializeWorkgroupTests(specializeWorkgroupGroup);
+	AddSpecializeWorkgroupTests(specializeWorkgroupGroup, computePipelineConstructionType);
 	tests->addChild(specializeWorkgroupGroup);
 
 	tcu::TestCaseGroup* repeatPipelineGroup = new tcu::TestCaseGroup(testCtx, "repeat_pipeline", "repeated pipeline run");
-	AddRepeatedPipelineTests(repeatPipelineGroup);
+	AddRepeatedPipelineTests(repeatPipelineGroup, computePipelineConstructionType);
 	tests->addChild(repeatPipelineGroup);
 
 #ifndef CTS_USES_VULKANSC
 	tcu::TestCaseGroup* subgroupInvocationGroup = new tcu::TestCaseGroup(testCtx, "shared_memory_blocks", "shared memory tests");
-	AddSharedMemoryTests(subgroupInvocationGroup);
+	AddSharedMemoryTests(subgroupInvocationGroup, computePipelineConstructionType);
 	tests->addChild(subgroupInvocationGroup);
 #endif // CTS_USES_VULKANSC
 

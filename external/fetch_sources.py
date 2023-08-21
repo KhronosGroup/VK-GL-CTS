@@ -309,9 +309,9 @@ PACKAGES = [
 		"04cdb2d344706052c7a2d359294e830ebac63e74",
 		"spirv-tools"),
 	GitRepo(
-		"https://github.com/archimedus/glslang.git",
-		"git@github.com:archimedus/glslang.git",
-		"86aeea5f8ab40d0d0eb14577cd5bb4669321ff16",
+		"https://github.com/KhronosGroup/glslang.git",
+		"git@github.com:KhronosGroup/glslang.git",
+		"808c7ed17cbc5a5078264bad3e95f2199a42e939",
 		"glslang",
 		removeTags = ["main-tot"]),
 	GitRepo(
@@ -322,7 +322,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/Vulkan-Docs.git",
 		"git@github.com:KhronosGroup/Vulkan-Docs.git",
-		"012db30fd16929f9fd30dfbc2a7c86e048d64015",
+		"7ceac74e8af652d14542d826d576907c3b8f63d0",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",
@@ -334,11 +334,14 @@ PACKAGES = [
 		"git@github.com:open-source-parsers/jsoncpp.git",
 		"9059f5cad030ba11d37818847443a53918c327b1",
 		"jsoncpp"),
+	# NOTE: The samples application is not well suited to external
+	# integration, this fork contains the small fixes needed for use
+	# by the CTS.
 	GitRepo(
-		"https://github.com/nvpro-samples/vk_video_samples.git",
-		None,
-		"7d68747d3524842afaf050c5e00a10f5b8c07904",
-		"video-parser"),
+		"https://github.com/Igalia/vk_video_samples.git",
+		"git@github.com:Igalia/vk_video_samples.git",
+		"cts-integration-0.9.9-1",
+		"nvidia-video-samples"),
 	GitRepo(
 		"https://github.com/Igalia/ESExtractor.git",
 		"git@github.com:Igalia/ESExtractor.git",

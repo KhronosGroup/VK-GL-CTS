@@ -7790,9 +7790,9 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "rasterization", "Rasterization Tests", createRasterizationTests);
+	return createTestGroup(testCtx, name.c_str(), "Rasterization Tests", createRasterizationTests);
 }
 
 } // rasterization

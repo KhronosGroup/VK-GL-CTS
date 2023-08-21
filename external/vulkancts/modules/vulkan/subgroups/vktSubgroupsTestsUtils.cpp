@@ -1758,6 +1758,21 @@ bool vkt::subgroups::isSubgroupFeatureSupportedForDevice (Context& context, VkSu
 	return (bit & (context.getSubgroupProperties().supportedOperations)) ? true : false;
 }
 
+bool vkt::subgroups::areQuadOperationsSupportedForStages (Context& context, const VkShaderStageFlags stages)
+{
+	// Check general quad feature support first.
+	if (!isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_QUAD_BIT))
+		return false;
+
+	if (context.getSubgroupProperties().quadOperationsInAllStages == VK_TRUE)
+		return true; // No problem, any stage works.
+
+	// Only frag and compute are supported.
+	const VkShaderStageFlags fragCompute = (VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT);
+	const VkShaderStageFlags otherStages = ~fragCompute;
+	return ((stages & otherStages) == 0u);
+}
+
 bool vkt::subgroups::isFragmentSSBOSupportedForDevice (Context& context)
 {
 	return context.getDeviceFeatures().fragmentStoresAndAtomics ? true : false;
@@ -4472,9 +4487,6 @@ static inline void checkShaderStageSetValidity (const VkShaderStageFlags shaderS
 void vkt::subgroups::supportedCheckShader (Context& context, const VkShaderStageFlags shaderStages)
 {
 	checkShaderStageSetValidity(shaderStages);
-
-	if ((shaderStages & VK_SHADER_STAGE_GEOMETRY_BIT) != 0)
-		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 
 	if ((context.getSubgroupProperties().supportedStages & shaderStages) == 0)
 	{

@@ -900,10 +900,13 @@ public:
 																											 VkDeviceSize									structureSize,
 																											 VkDeviceAddress								deviceAddress			= 0u,
 																											 const void*									pNext					= DE_NULL,
-																											 const MemoryRequirement&						addMemoryRequirement	= MemoryRequirement::Any) override;
+																											 const MemoryRequirement&						addMemoryRequirement	= MemoryRequirement::Any,
+																											 const VkBuffer									creationBuffer			= VK_NULL_HANDLE,
+																											 const VkDeviceSize								creationBufferSize		= 0u) override;
 	void													build											(const DeviceInterface&							vk,
 																											 const VkDevice									device,
-																											 const VkCommandBuffer							cmdBuffer) override;
+																											 const VkCommandBuffer							cmdBuffer,
+																											 BottomLevelAccelerationStructure*				srcAccelerationStructure = DE_NULL) override;
 	void													copyFrom										(const DeviceInterface&							vk,
 																											 const VkDevice									device,
 																											 const VkCommandBuffer							cmdBuffer,
@@ -920,6 +923,8 @@ public:
 																											 SerialStorage*									storage) override;
 
 	const VkAccelerationStructureKHR*						getPtr											(void) const override;
+	void													updateGeometry									(size_t											geometryIndex,
+																											 de::SharedPtr<RaytracedGeometryBase>&			raytracedGeometry) override;
 
 protected:
 	VkAccelerationStructureBuildTypeKHR						m_buildType;
@@ -1074,7 +1079,9 @@ void BottomLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 												  VkDeviceSize							structureSize,
 												  VkDeviceAddress						deviceAddress,
 												  const void*							pNext,
-												  const MemoryRequirement&				addMemoryRequirement)
+												  const MemoryRequirement&				addMemoryRequirement,
+												  const VkBuffer						creationBuffer,
+												  const VkDeviceSize					creationBufferSize)
 {
 	// AS may be built from geometries using vkCmdBuildAccelerationStructuresKHR / vkBuildAccelerationStructuresKHR
 	// or may be copied/compacted/deserialized from other AS ( in this case AS does not need geometries, but it needs to know its size before creation ).
@@ -1128,6 +1135,15 @@ void BottomLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 		m_buildScratchSize	= 0u;
 	}
 
+	const bool externalCreationBuffer = (creationBuffer != VK_NULL_HANDLE);
+
+	if (externalCreationBuffer)
+	{
+		DE_UNREF(creationBufferSize); // For release builds.
+		DE_ASSERT(creationBufferSize >= m_structureSize);
+	}
+
+	if (!externalCreationBuffer)
 	{
 		const VkBufferCreateInfo		bufferCreateInfo		= makeBufferCreateInfo(m_structureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
 		const MemoryRequirement			memoryRequirement		= addMemoryRequirement | MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress;
@@ -1144,6 +1160,8 @@ void BottomLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 		}
 	}
 
+	const auto createInfoBuffer = (externalCreationBuffer ? creationBuffer : getAccelerationStructureBuffer()->get());
+	const auto createInfoOffset = (externalCreationBuffer ? static_cast<VkDeviceSize>(0) : getAccelerationStructureBufferOffset());
 	{
 		const VkAccelerationStructureTypeKHR		structureType						= (m_createGeneric
 																						   ? VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR
@@ -1153,8 +1171,8 @@ void BottomLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 			VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,						//  VkStructureType											sType;
 			pNext,																			//  const void*												pNext;
 			m_createFlags,																	//  VkAccelerationStructureCreateFlagsKHR					createFlags;
-			getAccelerationStructureBuffer()->get(),										//  VkBuffer												buffer;
-			getAccelerationStructureBufferOffset(),											//  VkDeviceSize											offset;
+			createInfoBuffer,																//  VkBuffer												buffer;
+			createInfoOffset,																//  VkDeviceSize											offset;
 			m_structureSize,																//  VkDeviceSize											size;
 			structureType,																	//  VkAccelerationStructureTypeKHR							type;
 			deviceAddress																	//  VkDeviceAddress											deviceAddress;
@@ -1163,7 +1181,8 @@ void BottomLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 		m_accelerationStructureKHR	= createAccelerationStructureKHR(vk, device, &accelerationStructureCreateInfoKHR, DE_NULL);
 
 		// Make sure buffer memory is always bound after creation.
-		m_accelerationStructureBuffer->bindMemory();
+		if (!externalCreationBuffer)
+			m_accelerationStructureBuffer->bindMemory();
 	}
 
 	if (m_buildScratchSize > 0u)
@@ -1188,7 +1207,8 @@ void BottomLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 
 void BottomLevelAccelerationStructureKHR::build (const DeviceInterface&						vk,
 												 const VkDevice								device,
-												 const VkCommandBuffer						cmdBuffer)
+												 const VkCommandBuffer						cmdBuffer,
+												 BottomLevelAccelerationStructure*          srcAccelerationStructure)
 {
 	DE_ASSERT(!m_geometriesData.empty());
 	DE_ASSERT(m_accelerationStructureKHR.get() != DE_NULL);
@@ -1220,14 +1240,17 @@ void BottomLevelAccelerationStructureKHR::build (const DeviceInterface&						vk,
 																										? 0u
 																										: static_cast<deUint32>(accelerationStructureGeometriesKHR.size()));
 
+		VkAccelerationStructureKHR				srcStructure									= (srcAccelerationStructure != DE_NULL) ? *(srcAccelerationStructure->getPtr()) : DE_NULL;
+		VkBuildAccelerationStructureModeKHR		mode											= (srcAccelerationStructure != DE_NULL) ? VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR : VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+
 		VkAccelerationStructureBuildGeometryInfoKHR	accelerationStructureBuildGeometryInfoKHR	=
 		{
 			VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,			//  VkStructureType										sType;
 			DE_NULL,																	//  const void*											pNext;
 			VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,							//  VkAccelerationStructureTypeKHR						type;
 			m_buildFlags,																//  VkBuildAccelerationStructureFlagsKHR				flags;
-			VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,								//  VkBuildAccelerationStructureModeKHR					mode;
-			DE_NULL,																	//  VkAccelerationStructureKHR							srcAccelerationStructure;
+			mode,								//  VkBuildAccelerationStructureModeKHR					mode;
+			srcStructure,																	//  VkAccelerationStructureKHR							srcAccelerationStructure;
 			m_accelerationStructureKHR.get(),											//  VkAccelerationStructureKHR							dstAccelerationStructure;
 			geometryCount,																//  deUint32											geometryCount;
 			m_useArrayOfPointers ? DE_NULL : accelerationStructureGeometriesKHRPointer,	//  const VkAccelerationStructureGeometryKHR*			pGeometries;
@@ -1556,6 +1579,13 @@ void BottomLevelAccelerationStructure::createAndDeserializeFrom (const DeviceInt
 	deserialize(vk, device, cmdBuffer, storage);
 }
 
+void BottomLevelAccelerationStructureKHR::updateGeometry (size_t									geometryIndex,
+														  de::SharedPtr<RaytracedGeometryBase>&	raytracedGeometry)
+{
+	DE_ASSERT(geometryIndex < m_geometriesData.size());
+	m_geometriesData[geometryIndex] = raytracedGeometry;
+}
+
 de::MovePtr<BottomLevelAccelerationStructure> makeBottomLevelAccelerationStructure ()
 {
 	return de::MovePtr<BottomLevelAccelerationStructure>(new BottomLevelAccelerationStructureKHR);
@@ -1580,7 +1610,9 @@ public:
 																			 VkDeviceSize,
 																			 VkDeviceAddress,
 																			 const void*,
-																			 const MemoryRequirement&) override
+																			 const MemoryRequirement&,
+																			 const VkBuffer,
+																			 const VkDeviceSize) override
 								{
 									DE_ASSERT(0); // Silent this method
 								}
@@ -2459,7 +2491,9 @@ public:
 																												 VkDeviceSize									structureSize,
 																												 VkDeviceAddress								deviceAddress			= 0u,
 																												 const void*									pNext					= DE_NULL,
-																												 const MemoryRequirement&						addMemoryRequirement	= MemoryRequirement::Any) override;
+																												 const MemoryRequirement&						addMemoryRequirement	= MemoryRequirement::Any,
+																												 const VkBuffer									creationBuffer			= VK_NULL_HANDLE,
+																												 const VkDeviceSize								creationBufferSize		= 0u) override;
 	void													build												(const DeviceInterface&							vk,
 																												 const VkDevice									device,
 																												 const VkCommandBuffer							cmdBuffer,
@@ -2720,7 +2754,9 @@ void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 											   VkDeviceSize							structureSize,
 											   VkDeviceAddress						deviceAddress,
 											   const void*							pNext,
-											   const MemoryRequirement&				addMemoryRequirement)
+											   const MemoryRequirement&				addMemoryRequirement,
+											   const VkBuffer						creationBuffer,
+											   const VkDeviceSize					creationBufferSize)
 {
 	// AS may be built from geometries using vkCmdBuildAccelerationStructureKHR / vkBuildAccelerationStructureKHR
 	// or may be copied/compacted/deserialized from other AS ( in this case AS does not need geometries, but it needs to know its size before creation ).
@@ -2770,6 +2806,15 @@ void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 		m_buildScratchSize	= 0u;
 	}
 
+	const bool externalCreationBuffer = (creationBuffer != VK_NULL_HANDLE);
+
+	if (externalCreationBuffer)
+	{
+		DE_UNREF(creationBufferSize); // For release builds.
+		DE_ASSERT(creationBufferSize >= m_structureSize);
+	}
+
+	if (!externalCreationBuffer)
 	{
 		const VkBufferCreateInfo	bufferCreateInfo	= makeBufferCreateInfo(m_structureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
 		const MemoryRequirement		memoryRequirement	= addMemoryRequirement | MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress;
@@ -2786,6 +2831,7 @@ void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 		}
 	}
 
+	const auto createInfoBuffer = (externalCreationBuffer ? creationBuffer : m_accelerationStructureBuffer->get());
 	{
 		const VkAccelerationStructureTypeKHR		structureType						= (m_createGeneric
 																						   ? VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR
@@ -2795,7 +2841,7 @@ void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 			VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,	//  VkStructureType											sType;
 			pNext,														//  const void*												pNext;
 			m_createFlags,												//  VkAccelerationStructureCreateFlagsKHR					createFlags;
-			m_accelerationStructureBuffer->get(),						//  VkBuffer												buffer;
+			createInfoBuffer,											//  VkBuffer												buffer;
 			0u,															//  VkDeviceSize											offset;
 			m_structureSize,											//  VkDeviceSize											size;
 			structureType,												//  VkAccelerationStructureTypeKHR							type;
@@ -2805,7 +2851,8 @@ void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 		m_accelerationStructureKHR	= createAccelerationStructureKHR(vk, device, &accelerationStructureCreateInfoKHR, DE_NULL);
 
 		// Make sure buffer memory is always bound after creation.
-		m_accelerationStructureBuffer->bindMemory();
+		if (!externalCreationBuffer)
+			m_accelerationStructureBuffer->bindMemory();
 	}
 
 	if (m_buildScratchSize > 0u)
@@ -2834,7 +2881,6 @@ void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 
 void TopLevelAccelerationStructureKHR::updateInstanceMatrix (const DeviceInterface& vk, const VkDevice device, size_t instanceIndex, const VkTransformMatrixKHR& matrix)
 {
-	DE_ASSERT(m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR);
 	DE_ASSERT(instanceIndex < m_bottomLevelInstances.size());
 	DE_ASSERT(instanceIndex < m_instanceData.size());
 

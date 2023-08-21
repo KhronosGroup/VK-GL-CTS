@@ -66,6 +66,16 @@
 #include <limits>
 #include <sstream>
 
+#ifdef CTS_USES_VULKANSC
+// VulkanSC has VK_KHR_copy_commands2 entry points, but not core entry points.
+#define cmdCopyImage2 cmdCopyImage2KHR
+#define cmdCopyBuffer2 cmdCopyBuffer2KHR
+#define cmdCopyImageToBuffer2 cmdCopyImageToBuffer2KHR
+#define cmdCopyBufferToImage2 cmdCopyBufferToImage2KHR
+#define cmdBlitImage2 cmdBlitImage2KHR
+#define cmdResolveImage2 cmdResolveImage2KHR
+#endif // CTS_USES_VULKANSC
+
 namespace vkt
 {
 
@@ -351,7 +361,7 @@ struct TestParams
 	deBool					singleCommand;
 	deUint32				barrierCount;
 	deBool					separateDepthStencilLayouts;
-	deBool					clearDestination;
+	deBool					clearDestinationWithRed;		// Used for CopyImageToImage tests to clear dst image with vec4(1.0f, 0.0f, 0.0f, 1.0f)
 	deBool					imageOffset;
 
 	TestParams (void)
@@ -368,7 +378,7 @@ struct TestParams
 		dst.image.createFlags		= VK_IMAGE_CREATE_FLAG_BITS_MAX_ENUM;
 		src.image.fillMode			= FILL_MODE_GRADIENT;
 		dst.image.fillMode			= FILL_MODE_WHITE;
-		clearDestination			= DE_FALSE;
+		clearDestinationWithRed		= DE_FALSE;
 		samples						= VK_SAMPLE_COUNT_1_BIT;
 		imageOffset					= false;
 	}
@@ -1283,12 +1293,12 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 																				(int)m_params.src.image.extent.width,
 																				(int)m_params.src.image.extent.height,
 																				(int)m_params.src.image.extent.depth));
-	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.image.extent.width, m_params.src.image.extent.height, m_params.src.image.extent.depth, FILL_MODE_GRADIENT);
+	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.image.extent.width, m_params.src.image.extent.height, m_params.src.image.extent.depth, m_params.src.image.fillMode);
 	m_destinationTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(dstTcuFormat,
 																				(int)m_params.dst.image.extent.width,
 																				(int)m_params.dst.image.extent.height,
 																				(int)m_params.dst.image.extent.depth));
-	generateBuffer(m_destinationTextureLevel->getAccess(), m_params.dst.image.extent.width, m_params.dst.image.extent.height, m_params.dst.image.extent.depth, m_params.clearDestination ? FILL_MODE_WHITE : FILL_MODE_GRADIENT);
+	generateBuffer(m_destinationTextureLevel->getAccess(), m_params.dst.image.extent.width, m_params.dst.image.extent.height, m_params.dst.image.extent.depth, m_params.clearDestinationWithRed ? FILL_MODE_RED : m_params.dst.image.fillMode);
 	generateExpectedResult();
 
 	uploadImage(m_sourceTextureLevel->getAccess(), m_source.get(), m_params.src.image);
@@ -1312,9 +1322,14 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 			const deUint32	blockHeight	= getBlockHeight(m_params.src.image.format);
 
 			imageCopy.srcOffset.x *= blockWidth;
-			imageCopy.srcOffset.y *= blockHeight;
 			imageCopy.extent.width *= blockWidth;
-			imageCopy.extent.height *= blockHeight;
+
+			// VUID-vkCmdCopyImage-srcImage-00146
+			if (m_params.src.image.imageType != vk::VK_IMAGE_TYPE_1D)
+			{
+				imageCopy.srcOffset.y *= blockHeight;
+				imageCopy.extent.height *= blockHeight;
+			}
 		}
 
 		if (dstCompressed)
@@ -1323,7 +1338,12 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 			const deUint32	blockHeight	= getBlockHeight(m_params.dst.image.format);
 
 			imageCopy.dstOffset.x *= blockWidth;
-			imageCopy.dstOffset.y *= blockHeight;
+
+			// VUID-vkCmdCopyImage-dstImage-00152
+			if (m_params.dst.image.imageType != vk::VK_IMAGE_TYPE_1D)
+			{
+				imageCopy.dstOffset.y *= blockHeight;
+			}
 		}
 
 		if (m_params.extensionUse == EXTENSION_USE_NONE)
@@ -1382,14 +1402,14 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 	beginCommandBuffer(vk, *m_cmdBuffer);
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(imageBarriers), imageBarriers);
 
-	if (m_params.clearDestination)
+	if (m_params.clearDestinationWithRed)
 	{
 		VkImageSubresourceRange	range		= { VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u };
 		VkClearColorValue		clearColor;
 
 		clearColor.float32[0] = 1.0f;
-		clearColor.float32[1] = 1.0f;
-		clearColor.float32[2] = 1.0f;
+		clearColor.float32[1] = 0.0f;
+		clearColor.float32[2] = 0.0f;
 		clearColor.float32[3] = 1.0f;
 		vk.cmdClearColorImage(*m_cmdBuffer, m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1u, &range);
 		imageBarriers[0].oldLayout = imageBarriers[0].newLayout;
@@ -1401,7 +1421,6 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 	{
 		vk.cmdCopyImage(*m_cmdBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
 	}
-#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -1419,7 +1438,6 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 
 		vk.cmdCopyImage2(*m_cmdBuffer, &copyImageInfo2KHR);
 	}
-#endif // CTS_USES_VULKANSC
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 
@@ -1499,15 +1517,22 @@ void CopyImageToImage::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess src
 	VkOffset3D	dstOffset	= region.imageCopy.dstOffset;
 	VkExtent3D	extent		= region.imageCopy.extent;
 
-	if (m_params.src.image.imageType == VK_IMAGE_TYPE_3D && m_params.dst.image.imageType == VK_IMAGE_TYPE_2D)
+	// 2D images require modifying offset.z/extent.depth values if they are layered for correct cpu copy of the images due to test set up
+	if (m_params.src.image.imageType == vk::VK_IMAGE_TYPE_2D)
 	{
-		dstOffset.z = srcOffset.z;
-		extent.depth = std::max(region.imageCopy.extent.depth, region.imageCopy.dstSubresource.layerCount);
+		if (region.imageCopy.srcSubresource.baseArrayLayer != 0u)
+			srcOffset.z = region.imageCopy.srcSubresource.baseArrayLayer;
+
+		if (m_params.dst.image.imageType == vk::VK_IMAGE_TYPE_2D && extent.depth != region.imageCopy.srcSubresource.layerCount)
+		{
+			DE_ASSERT(region.imageCopy.srcSubresource.layerCount == region.imageCopy.dstSubresource.layerCount);
+			extent.depth = region.imageCopy.srcSubresource.layerCount;
+		}
 	}
-	if (m_params.src.image.imageType == VK_IMAGE_TYPE_2D && m_params.dst.image.imageType == VK_IMAGE_TYPE_3D)
+
+	if (m_params.dst.image.imageType == vk::VK_IMAGE_TYPE_2D && region.imageCopy.dstSubresource.baseArrayLayer != 0u)
 	{
-		srcOffset.z = dstOffset.z;
-		extent.depth = std::max(region.imageCopy.extent.depth, region.imageCopy.srcSubresource.layerCount);
+		dstOffset.z = region.imageCopy.dstSubresource.baseArrayLayer;
 	}
 
 	if (tcu::isCombinedDepthStencilType(src.getFormat().type))
@@ -1850,7 +1875,6 @@ tcu::TestStatus CopyImageToImageMipmap::iterate (void)
 	{
 		vk.cmdCopyImage(*m_cmdBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
 	}
-#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -1868,7 +1892,6 @@ tcu::TestStatus CopyImageToImageMipmap::iterate (void)
 
 		vk.cmdCopyImage2(*m_cmdBuffer, &copyImageInfo2KHR);
 	}
-#endif // CTS_USES_VULKANSC
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 
@@ -2261,7 +2284,6 @@ tcu::TestStatus CopyBufferToBuffer::iterate (void)
 	{
 		vk.cmdCopyBuffer(*m_cmdBuffer, m_source.get(), m_destination.get(), (deUint32)m_params.regions.size(), &bufferCopies[0]);
 	}
-#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -2277,7 +2299,6 @@ tcu::TestStatus CopyBufferToBuffer::iterate (void)
 
 		vk.cmdCopyBuffer2(*m_cmdBuffer, &copyBufferInfo2KHR);
 	}
-#endif // CTS_USES_VULKANSC
 
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	endCommandBuffer(vk, *m_cmdBuffer);
@@ -2490,7 +2511,6 @@ tcu::TestStatus CopyImageToBuffer::iterate (void)
 	{
 		vk.cmdCopyImageToBuffer(*m_cmdBuffer, m_source.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination.get(), (deUint32)m_params.regions.size(), &bufferImageCopies[0]);
 	}
-#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -2507,7 +2527,6 @@ tcu::TestStatus CopyImageToBuffer::iterate (void)
 
 		vk.cmdCopyImageToBuffer2(*m_cmdBuffer, &copyImageToBufferInfo2KHR);
 	}
-#endif // CTS_USES_VULKANSC
 
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	endCommandBuffer(vk, *m_cmdBuffer);
@@ -2638,9 +2657,9 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate (void)
 		m_device					= m_customDevice.get();
 
 #ifndef CTS_USES_VULKANSC
-		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), m_device));
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), m_device, m_context.getUsedApiVersion()));
 #else
-		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), m_device, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), m_device));
+		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), m_device, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), m_context.getUsedApiVersion()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), m_device));
 #endif // CTS_USES_VULKANSC
 	}
 	m_queue						= getDeviceQueue(m_context.getDeviceInterface(), m_device, queueFamilyIndex, 0u);
@@ -2739,20 +2758,16 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate (void)
 		copyRegion = makeBufferImageCopy(mipLevelExtents(srcImageParams.extent, mipLevelToCheckIdx), makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, mipLevelToCheckIdx, arrayLayerToCheckIdx, 1));
 
 		VkBufferImageCopy		bufferImageCopy;
-#ifndef CTS_USES_VULKANSC
 		VkBufferImageCopy2KHR	bufferImageCopy2KHR;
-#endif
 		if (m_params.extensionUse == EXTENSION_USE_NONE)
 		{
 			bufferImageCopy = copyRegion;
 		}
-#ifndef CTS_USES_VULKANSC
 		else
 		{
 			DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
 			bufferImageCopy2KHR = convertvkBufferImageCopyTovkBufferImageCopy2KHR(copyRegion);
 		}
-#endif
 
 		beginCommandBuffer(vk, commandBuffer);
 		// Transition the selected miplevel to the right format for the transfer.
@@ -2763,7 +2778,6 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate (void)
 		{
 			vk.cmdCopyImageToBuffer(commandBuffer, m_source->get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination->get(), 1u, &bufferImageCopy);
 		}
-#ifndef CTS_USES_VULKANSC
 		else
 		{
 			DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -2780,7 +2794,6 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate (void)
 
 			vk.cmdCopyImageToBuffer2(commandBuffer, &copyImageToBufferInfo2KHR);
 		}
-#endif // CTS_USES_VULKANSC
 
 		// Prepare to read from the host visible barrier.
 		vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
@@ -3000,7 +3013,6 @@ tcu::TestStatus CopyBufferToImage::iterate (void)
 	{
 		vk.cmdCopyBufferToImage(*m_cmdBuffer, m_source.get(), m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)m_params.regions.size(), bufferImageCopies.data());
 	}
-#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -3017,7 +3029,6 @@ tcu::TestStatus CopyBufferToImage::iterate (void)
 
 		vk.cmdCopyBufferToImage2(*m_cmdBuffer, &copyBufferToImageInfo2KHR);
 	}
-#endif // CTS_USES_VULKANSC
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 
@@ -3382,7 +3393,6 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 			}
 		}
 	}
-#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -3422,7 +3432,6 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 			}
 		}
 	}
-#endif // CTS_USES_VULKANSC
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 
@@ -3820,7 +3829,6 @@ tcu::TestStatus BlittingImages::iterate (void)
 	{
 		vk.cmdBlitImage(*m_cmdBuffer, m_source.get(), srcImageParams.operationLayout, m_destination.get(), dstImageParams.operationLayout, (deUint32)m_params.regions.size(), &regions[0], m_params.filter);
 	}
-#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -3838,7 +3846,6 @@ tcu::TestStatus BlittingImages::iterate (void)
 		};
 		vk.cmdBlitImage2(*m_cmdBuffer, &blitImageInfo2KHR);
 	}
-#endif // CTS_USES_VULKANSC
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
@@ -5312,7 +5319,6 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 			{
 				vk.cmdBlitImage(*m_cmdBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)m_params.regions.size(), &regions[0], m_params.filter);
 			}
-#ifndef CTS_USES_VULKANSC
 			else
 			{
 				DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -5330,7 +5336,6 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 				};
 				vk.cmdBlitImage2(*m_cmdBuffer, &BlitImageInfo2KHR);
 			}
-#endif // CTS_USES_VULKANSC
 		}
 	}
 	// Blit mip levels with multiple blit commands
@@ -5427,7 +5432,6 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 			{
 				vk.cmdBlitImage(*m_cmdBuffer, m_destination.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, 1u, &regions[regionNdx], m_params.filter);
 			}
-#ifndef CTS_USES_VULKANSC
 			else
 			{
 				DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -5445,7 +5449,6 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 				};
 				vk.cmdBlitImage2(*m_cmdBuffer, &BlitImageInfo2KHR);
 			}
-#endif // CTS_USES_VULKANSC
 
 			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 		}
@@ -5978,9 +5981,9 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 		m_device						= m_customDevice.get();
 
 #ifndef CTS_USES_VULKANSC
-		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), m_context.getInstance(), m_device));
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), m_context.getInstance(), m_device, m_context.getUsedApiVersion()));
 #else
-		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), m_context.getInstance(), m_device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), m_device));
+		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), m_context.getInstance(), m_device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), m_context.getUsedApiVersion()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), m_device));
 #endif // CTS_USES_VULKANSC
 
 		m_queue							= getDeviceQueue(m_context.getDeviceInterface(), m_device, context.getUniversalQueueFamilyIndex(), 0u);
@@ -6610,7 +6613,6 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 	{
 		vk.cmdResolveImage(*m_cmdBuffer, sourceImage, m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)m_params.regions.size(), imageResolves.data());
 	}
-#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -6627,7 +6629,6 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 		};
 		vk.cmdResolveImage2(*m_cmdBuffer, &ResolveImageInfo2KHR);
 	}
-#endif // CTS_USES_VULKANSC
 
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 	endCommandBuffer(vk, *m_cmdBuffer);
@@ -7295,7 +7296,6 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 			vk.cmdCopyImage(commandBuffer, m_multisampledImage.get(), m_params.src.image.operationLayout, m_multisampledCopyImage.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
 		}
 	}
-#ifndef CTS_USES_VULKANSC
 	else
 	{
 		if (m_options == COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB)
@@ -7345,7 +7345,6 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 			vk.cmdCopyImage2(commandBuffer, &copyImageInfo2KHR);
 		}
 	}
-#endif // CTS_USES_VULKANSC
 
 	if (useTwoQueues)
 	{
@@ -8189,7 +8188,6 @@ tcu::TestStatus DepthStencilMSAA::iterate (void)
 		{
 			vk.cmdCopyImage(*cmdBuffer, srcImage.get(), m_srcImage.operationLayout, dstImage.get(), m_dstImage.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
 		}
-#ifndef CTS_USES_VULKANSC
 		else
 		{
 			DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -8207,7 +8205,6 @@ tcu::TestStatus DepthStencilMSAA::iterate (void)
 
 			vk.cmdCopyImage2(*cmdBuffer, &copyImageInfo2KHR);
 		}
-#endif // CTS_USES_VULKANSC
 	}
 	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait (vk, vkDevice, queue, *cmdBuffer);
@@ -9038,7 +9035,7 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, TestGroupParamsPtr t
 				params.allocationKind				= testGroupParams->allocationKind;
 				params.extensionUse					= testGroupParams->extensionUse;
 				params.queueSelection				= testGroupParams->queueSelection;
-				params.clearDestination				= clear.clear;
+				params.clearDestinationWithRed		= clear.clear;
 
 				{
 					VkImageCopy	testCopy	=
@@ -9760,6 +9757,8 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 		params.dst.image.extent		= defaultExtent;
 		params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
+		params.src.image.fillMode	= FILL_MODE_WHITE;
+		params.dst.image.fillMode	= FILL_MODE_GRADIENT;
 		params.allocationKind		= testGroupParams->allocationKind;
 		params.extensionUse			= testGroupParams->extensionUse;
 		params.queueSelection		= testGroupParams->queueSelection;
@@ -9772,7 +9771,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 				{0, 0, 0},										// VkOffset3D				srcOffset;
 				defaultSourceLayer,								// VkImageSubresourceLayers	dstSubresource;
 				{i, defaultSize - i - defaultQuarterSize, 0},	// VkOffset3D				dstOffset;
-				{defaultQuarterSize, defaultQuarterSize, 1},		// VkExtent3D				extent;
+				{defaultQuarterSize, defaultQuarterSize, 1},	// VkExtent3D				extent;
 			};
 
 			CopyRegion	imageCopy;
@@ -9815,6 +9814,8 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 		params.dst.image.extent		= default1dExtent;
 		params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
+		params.src.image.fillMode	= FILL_MODE_WHITE;
+		params.dst.image.fillMode	= FILL_MODE_GRADIENT;
 		params.allocationKind		= testGroupParams->allocationKind;
 		params.extensionUse			= testGroupParams->extensionUse;
 		params.queueSelection		= testGroupParams->queueSelection;
@@ -9870,6 +9871,8 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 		params.dst.image.extent		= default3dExtent;
 		params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
+		params.src.image.fillMode	= FILL_MODE_WHITE;
+		params.dst.image.fillMode	= FILL_MODE_GRADIENT;
 		params.allocationKind		= testGroupParams->allocationKind;
 		params.extensionUse			= testGroupParams->extensionUse;
 		params.queueSelection		= testGroupParams->queueSelection;
@@ -10493,7 +10496,7 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, TestGroupParamsPtr
 
 			params3DTo2D.regions.push_back(imageCopy);
 		}
-		group->addChild(new CopyImageToImageTestCase(testCtx, "3d_to_2d_by_slices", "copy 2d layers to 3d slices one by one", params3DTo2D));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "3d_to_2d_by_slices", "copy 3d slices to 2d layers one by one", params3DTo2D));
 	}
 
 	{
@@ -10548,7 +10551,7 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, TestGroupParamsPtr
 			params2DTo3D.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "2d_to_3d_by_layers", "copy 3d slices to 2d layers one by one", params2DTo3D));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "2d_to_3d_by_layers", "copy 2d layers to 3d slices one by one", params2DTo3D));
 	}
 
 	{
@@ -15384,12 +15387,10 @@ void addDedicatedAllocationCopiesAndBlittingTests (tcu::TestCaseGroup* group)
 	addCopiesAndBlittingTests(group, ALLOCATION_KIND_DEDICATED, EXTENSION_USE_NONE);
 }
 
-#ifndef CTS_USES_VULKANSC
 void addExtensionCopiesAndBlittingTests(tcu::TestCaseGroup* group)
 {
 	addCopiesAndBlittingTests(group, ALLOCATION_KIND_DEDICATED, EXTENSION_USE_COPY_COMMANDS2);
 }
-#endif // CTS_USES_VULKANSC
 
 static void cleanupGroup(tcu::TestCaseGroup*)
 {
@@ -15405,9 +15406,7 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 
 	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "core", "Core Copies And Blitting Tests", addCoreCopiesAndBlittingTests, cleanupGroup));
 	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Copies And Blitting Tests For Dedicated Memory Allocation",	addDedicatedAllocationCopiesAndBlittingTests, cleanupGroup));
-#ifndef CTS_USES_VULKANSC
 	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "copy_commands2", "Copies And Blitting Tests using KHR_copy_commands2", addExtensionCopiesAndBlittingTests, cleanupGroup));
-#endif // CTS_USES_VULKANSC
 
 	return copiesAndBlittingTests.release();
 }

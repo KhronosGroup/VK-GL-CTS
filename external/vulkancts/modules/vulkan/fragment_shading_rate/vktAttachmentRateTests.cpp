@@ -1101,8 +1101,11 @@ bool AttachmentRateInstance::verifyUsingAtomicChecks(deUint32 tileWidth, deUint3
 	deUint32 triangleTopEdgeY	= 0;
 
 	// this method assumes that greatest angle in the triangle points to the top-left corner of FB;
-	// this vector will then store fragments on the right edge of triangle; vector index represents y coordinate and value is x
+	// these vectors will then store fragments on the right and bottom edges of triangle respectively;
+	// for the right edge vector, the index represents y coordinate and value is x;
+	// for the bottom edge vector, the index represents x coordinate and value is y
 	std::vector<deUint32> fragmentsOnTheRightTriangleEdgeVect(m_cbHeight, 0);
+	std::vector<deUint32> fragmentsOnTheBottomTriangleEdgeVect(m_cbWidth, 0);
 
 	tcu::clear(errorMaskAccess, tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0));
 
@@ -1125,6 +1128,9 @@ bool AttachmentRateInstance::verifyUsingAtomicChecks(deUint32 tileWidth, deUint3
 
 		// constantly overwrite coordinate on right edge so that we are left with the farthest one
 		fragmentsOnTheRightTriangleEdgeVect[cbFragmentY] = cbFragmentX;
+
+		// constantly overwrite coordinate on bottom edge so that we are left with the farthest one
+		fragmentsOnTheBottomTriangleEdgeVect[cbFragmentX] = cbFragmentY;
 
 		// make sure that fragment g and a components are 0
 		if ((fragmentColor[1] != 0) || (fragmentColor[3] != 0))
@@ -1207,12 +1213,14 @@ bool AttachmentRateInstance::verifyUsingAtomicChecks(deUint32 tileWidth, deUint3
 		{
 			const auto&	topLeftFragment		= fragmentSet[0];
 			deUint32	triangleRightEdgeX	= fragmentsOnTheRightTriangleEdgeVect[topLeftFragment.y()];
+			deUint32	triangleBottomEdgeY	= fragmentsOnTheBottomTriangleEdgeVect[topLeftFragment.x()];
 
 			// we can only count this as an error if set is fully inside of triangle, sets on
 			// edges may not have same number of fragments as sets fully located in the triangle
 			if ((topLeftFragment.y() > (triangleTopEdgeY)) &&
 				(topLeftFragment.x() > (triangleLeftEdgeX)) &&
-				(topLeftFragment.x() < (triangleRightEdgeX - rateWidth)))
+				(topLeftFragment.x() < (triangleRightEdgeX - rateWidth)) &&
+				(topLeftFragment.y() < (triangleBottomEdgeY - rateHeight)))
 			{
 				wrongFragments += (deUint32)fragmentSet.size();
 				fragmentColor	= tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
@@ -1801,7 +1809,7 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
 		};
 
 		vk::Move<VkDevice>			customDevice	= createDevice(vkp, m_context.getInstance(), vki, pd, &deviceInfo);
-		de::MovePtr<DeviceDriver>	customDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, m_context.getInstance(), *customDevice));
+		de::MovePtr<DeviceDriver>	customDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, m_context.getInstance(), *customDevice, m_context.getUsedApiVersion()));
 		de::MovePtr<Allocator>		customAllocator	= de::MovePtr<Allocator>(new SimpleAllocator(*customDriver, *customDevice, getPhysicalDeviceMemoryProperties(vki, pd)));
 
 		device						= *customDevice;

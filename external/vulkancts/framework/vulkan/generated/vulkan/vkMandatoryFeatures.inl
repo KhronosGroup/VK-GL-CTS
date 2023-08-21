@@ -76,6 +76,18 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	}
 
 #if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT;
+	deMemset(&physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT, 0, sizeof(physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_attachment_feedback_loop_dynamic_state") )
+	{
+		physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT.sType = getStructureType<VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT>();
+		*nextPtr = &physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT;
+		nextPtr  = &physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT;
 	deMemset(&physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT, 0, sizeof(physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT));
 
@@ -189,6 +201,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		physicalDeviceDescriptorIndexingFeatures.sType = getStructureType<VkPhysicalDeviceDescriptorIndexingFeatures>();
 		*nextPtr = &physicalDeviceDescriptorIndexingFeatures;
 		nextPtr  = &physicalDeviceDescriptorIndexingFeatures.pNext;
+	}
+
+	vk::VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT;
+	deMemset(&physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT, 0, sizeof(physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_dynamic_rendering_unused_attachments") )
+	{
+		physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT.sType = getStructureType<VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT>();
+		*nextPtr = &physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT;
+		nextPtr  = &physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT.pNext;
 	}
 
 	vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT physicalDeviceExtendedDynamicState2FeaturesEXT;
@@ -593,6 +615,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceRayTracingPipelineFeaturesKHR.pNext;
 	}
 
+	vk::VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR physicalDeviceRayTracingPositionFetchFeaturesKHR;
+	deMemset(&physicalDeviceRayTracingPositionFetchFeaturesKHR, 0, sizeof(physicalDeviceRayTracingPositionFetchFeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_ray_tracing_position_fetch") )
+	{
+		physicalDeviceRayTracingPositionFetchFeaturesKHR.sType = getStructureType<VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR>();
+		*nextPtr = &physicalDeviceRayTracingPositionFetchFeaturesKHR;
+		nextPtr  = &physicalDeviceRayTracingPositionFetchFeaturesKHR.pNext;
+	}
+
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV physicalDeviceRepresentativeFragmentTestFeaturesNV;
 	deMemset(&physicalDeviceRepresentativeFragmentTestFeaturesNV, 0, sizeof(physicalDeviceRepresentativeFragmentTestFeaturesNV));
@@ -737,6 +769,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		physicalDeviceShaderModuleIdentifierFeaturesEXT.sType = getStructureType<VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT>();
 		*nextPtr = &physicalDeviceShaderModuleIdentifierFeaturesEXT;
 		nextPtr  = &physicalDeviceShaderModuleIdentifierFeaturesEXT.pNext;
+	}
+
+	vk::VkPhysicalDeviceShaderObjectFeaturesEXT physicalDeviceShaderObjectFeaturesEXT;
+	deMemset(&physicalDeviceShaderObjectFeaturesEXT, 0, sizeof(physicalDeviceShaderObjectFeaturesEXT));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_object") )
+	{
+		physicalDeviceShaderObjectFeaturesEXT.sType = getStructureType<VkPhysicalDeviceShaderObjectFeaturesEXT>();
+		*nextPtr = &physicalDeviceShaderObjectFeaturesEXT;
+		nextPtr  = &physicalDeviceShaderObjectFeaturesEXT.pNext;
 	}
 
 	vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures physicalDeviceShaderSubgroupExtendedTypesFeatures;
@@ -999,6 +1041,17 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_attachment_feedback_loop_dynamic_state")) )
+	{
+		if ( physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT.attachmentFeedbackLoopDynamicState == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature attachmentFeedbackLoopDynamicState not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
 
 #if defined(CTS_USES_VULKAN)
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_attachment_feedback_loop_layout")) )
@@ -1360,6 +1413,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceFaultFeaturesEXT.deviceFault == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature deviceFault not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_dynamic_rendering_unused_attachments")) )
+	{
+		if ( physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT.dynamicRenderingUnusedAttachments == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature dynamicRenderingUnusedAttachments not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
@@ -1809,6 +1871,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_object")) )
+	{
+		if ( physicalDeviceShaderObjectFeaturesEXT.shaderObject == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderObject not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_subgroup_size_control")) )
 	{
 		if ( physicalDeviceSubgroupSizeControlFeaturesEXT.subgroupSizeControl == VK_FALSE )
@@ -2061,6 +2132,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceRayTracingPipelineFeaturesKHR.rayTraversalPrimitiveCulling == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature rayTraversalPrimitiveCulling not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_ray_tracing_position_fetch")) )
+	{
+		if ( physicalDeviceRayTracingPositionFetchFeaturesKHR.rayTracingPositionFetch == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature rayTracingPositionFetch not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

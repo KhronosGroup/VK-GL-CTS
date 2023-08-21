@@ -1938,7 +1938,7 @@ struct DeviceHelper
 			context.getResourceInterface(),
 #endif // CTS_USES_VULKANSC
 			context.getTestContext().getCommandLine()))
-		, vkd(context.getPlatformInterface(), context.getInstance(), *device)
+		, vkd(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion())
 		, queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
 	{
 	}

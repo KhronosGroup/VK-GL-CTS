@@ -3,6 +3,8 @@
  * ------------------------
  *
  * Copyright (c) 2021 The Khronos Group Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -348,8 +350,7 @@ public:
 	std::vector<MovePtr<GraphicsPipelineWrapper>>		graphicsPipelines;
 	std::vector<Move<VkDescriptorPool>>					descriptorPools;
 	std::vector<Move<VkDescriptorSet>>					descriptorSets;
-	std::vector<Move<VkRenderPass>>						renderPasses;
-	std::vector<Move<VkFramebuffer>>					framebuffers;
+	std::vector<RenderPassWrapper>						renderPassFramebuffers;
 
 private:
 	Context&								context;
@@ -417,14 +418,17 @@ Move<VkImageView> Image::makeView(const DeviceInterface&	vk,
 }
 
 //! Create a test-specific MSAA pipeline
-MovePtr<GraphicsPipelineWrapper> makeGraphicsPipeline (const DeviceInterface&					vk,
+MovePtr<GraphicsPipelineWrapper> makeGraphicsPipeline (const InstanceInterface&					vki,
+													   const DeviceInterface&					vk,
+													   const VkPhysicalDevice					physicalDevice,
 													   const VkDevice							device,
+													   const std::vector<std::string>&			deviceExtensions,
 													   const PipelineConstructionType			pipelineConstructionType,
-													   const VkPipelineLayout					pipelineLayout,
+													   const PipelineLayoutWrapper&				pipelineLayout,
 													   const VkRenderPass						renderPass,
 													   VkPipelineRenderingCreateInfoKHR*		pipelineRenderingCreateInfo,
-													   const VkShaderModule						vertexModule,
-													   const VkShaderModule						fragmentModule,
+													   const ShaderWrapper						vertexModule,
+													   const ShaderWrapper						fragmentModule,
 													   const bool								enableBlend,
 													   const bool								enableDepthStencilWrite,
 													   const bool								enableDepthTest,
@@ -598,7 +602,7 @@ MovePtr<GraphicsPipelineWrapper> makeGraphicsPipeline (const DeviceInterface&			
 		pipelineRenderingCreateInfoWithGarbage.pColorAttachmentFormats  = garbageFormats.data();
 	}
 
-	MovePtr<GraphicsPipelineWrapper> graphicsPipeline = MovePtr<GraphicsPipelineWrapper>(new GraphicsPipelineWrapper(vk, device, pipelineConstructionType, 0u));
+	MovePtr<GraphicsPipelineWrapper> graphicsPipeline = MovePtr<GraphicsPipelineWrapper>(new GraphicsPipelineWrapper(vki, vk, physicalDevice, device, deviceExtensions, pipelineConstructionType, 0u));
 	graphicsPipeline.get()->setMonolithicPipelineLayout(pipelineLayout)
 			.setupVertexInputState(&vertexInputStateInfo,
 								   &pipelineInputAssemblyStateInfo)
@@ -609,9 +613,9 @@ MovePtr<GraphicsPipelineWrapper> makeGraphicsPipeline (const DeviceInterface&			
 											  subpassNdx,
 											  vertexModule,
 											  &pipelineRasterizationStateInfo,
-											  DE_NULL,
-											  DE_NULL,
-											  DE_NULL,
+											  ShaderWrapper(),
+											  ShaderWrapper(),
+											  ShaderWrapper(),
 											  DE_NULL,
 											  nullptr,
 											  garbageAttachment ? &pipelineRenderingCreateInfoWithGarbage : pipelineRenderingCreateInfo)
@@ -865,7 +869,7 @@ void TestObjects::submitCommandsAndWait()
 	vk::submitCommandsAndWait(vk, device, context.getUniversalQueue(), *cmdBuffer);
 }
 
-void initializeAttachments(const TestParams& params, WorkingData& wd, std::vector<VkImageView>& attachments, const size_t passNdx, deInt32 attachmentNdxes[8])
+void initializeAttachments(const TestParams& params, WorkingData& wd, std::vector<VkImage>& images, std::vector<VkImageView>& attachments, const size_t passNdx, deInt32 attachmentNdxes[8])
 {
 	const bool	includeAll	= passNdx >= params.perPass.size();
 	deInt32		currentNdx	= 0;
@@ -873,21 +877,25 @@ void initializeAttachments(const TestParams& params, WorkingData& wd, std::vecto
 	// Output attachments
 	if (includeAll || params.usesColor1InPass(passNdx))
 	{
+		images.push_back(wd.floatColor1.image.get());
 		attachments.push_back(wd.floatColor1.view.get());
 		attachmentNdxes[0] = currentNdx++;
 	}
 	if (includeAll || params.usesColor2InPass(passNdx))
 	{
+		images.push_back(wd.floatColor2.image.get());
 		attachments.push_back(wd.floatColor2.view.get());
 		attachmentNdxes[1] = currentNdx++;
 	}
 	if (includeAll || params.usesColor3InPass(passNdx))
 	{
+		images.push_back(wd.intColor.image.get());
 		attachments.push_back(wd.intColor.view.get());
 		attachmentNdxes[2] = currentNdx++;
 	}
 	if (includeAll || params.usesDepthStencilInPass(passNdx))
 	{
+		images.push_back(wd.depthStencil.image.get());
 		attachments.push_back(wd.depthStencil.view.get());
 		attachmentNdxes[3] = currentNdx++;
 	}
@@ -895,21 +903,25 @@ void initializeAttachments(const TestParams& params, WorkingData& wd, std::vecto
 	// Resolve attachments
 	if (params.numFloatColor1Samples != VK_SAMPLE_COUNT_1_BIT && (includeAll || params.usesColor1InPass(passNdx)))
 	{
+		images.push_back(wd.floatResolve1.image.get());
 		attachments.push_back(wd.floatResolve1.view.get());
 		attachmentNdxes[4] = currentNdx++;
 	}
 	if (params.numFloatColor2Samples != VK_SAMPLE_COUNT_1_BIT && (includeAll || params.usesColor2InPass(passNdx)))
 	{
+		images.push_back(wd.floatResolve2.image.get());
 		attachments.push_back(wd.floatResolve2.view.get());
 		attachmentNdxes[5] = currentNdx++;
 	}
 	if (params.numIntColorSamples != VK_SAMPLE_COUNT_1_BIT && (includeAll || params.usesColor3InPass(passNdx)))
 	{
+		images.push_back(wd.intResolve.image.get());
 		attachments.push_back(wd.intResolve.view.get());
 		attachmentNdxes[6] = currentNdx++;
 	}
 	if (params.numDepthStencilSamples != VK_SAMPLE_COUNT_1_BIT && (includeAll || params.usesDepthStencilInPass(passNdx)))
 	{
+		images.push_back(wd.depthStencilResolve.image.get());
 		attachments.push_back(wd.depthStencilResolve.view.get());
 		attachmentNdxes[7] = currentNdx++;
 	}
@@ -1630,6 +1642,8 @@ void addSubpassDependency(const deUint32 subpassNdx, std::vector<VkSubpassDepend
 void createRenderPassAndFramebuffer(Context&			context,
 		WorkingData&									wd,
 		TestObjects&									testObjects,
+		const PipelineConstructionType					pipelineConstructionType,
+	    const std::vector<VkImage>&						images,
 		const std::vector<VkImageView>&					attachments,
 		const std::vector<VkAttachmentDescription2>&	attachmentDescriptions,
 		const std::vector<VkSubpassDescription2>&		subpasses,
@@ -1653,9 +1667,8 @@ void createRenderPassAndFramebuffer(Context&			context,
 		DE_NULL,												// const uint32_t*                  pCorrelatedViewMasks;
 	};
 
-	testObjects.renderPasses.emplace_back(createRenderPass2(vk, device, &renderPassInfo));
-	testObjects.framebuffers.emplace_back(makeFramebuffer (vk, device, *testObjects.renderPasses.back(),
-				static_cast<deUint32>(attachments.size()), dataOrNullPtr(attachments), wd.framebufferSize.x(), wd.framebufferSize.y()));
+	testObjects.renderPassFramebuffers.emplace_back(RenderPassWrapper(pipelineConstructionType, vk, device, &renderPassInfo));
+	testObjects.renderPassFramebuffers.back().createFramebuffer(vk, device, static_cast<deUint32>(attachments.size()), dataOrNullPtr(images), dataOrNullPtr(attachments), wd.framebufferSize.x(), wd.framebufferSize.y());
 }
 
 void createWorkingData (Context& context, const TestParams& params, WorkingData& wd)
@@ -1747,7 +1760,7 @@ void checkRequirements (Context& context, TestParams params)
 	const VkPhysicalDevice			physicalDevice		= context.getPhysicalDevice();
 	const vk::InstanceInterface&	instanceInterface	= context.getInstanceInterface();
 
-	checkPipelineLibraryRequirements(instanceInterface, physicalDevice, params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(instanceInterface, physicalDevice, params.pipelineConstructionType);
 
 	context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
 	context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
@@ -1960,18 +1973,7 @@ void startRenderPass(Context& context, WorkingData&wd, TestObjects& testObjects,
 		{ wd.renderArea.z(), wd.renderArea.w() }
 	};
 
-	VkRenderPassBeginInfo renderPassBeginInfo =
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,			// VkStructureType         sType;
-		DE_NULL,											// const void*             pNext;
-		*testObjects.renderPasses.back(),					// VkRenderPass            renderPass;
-		*testObjects.framebuffers.back(),					// VkFramebuffer           framebuffer;
-		renderArea,											// VkRect2D                renderArea;
-		clearValueCount,									// uint32_t                clearValueCount;
-		clearValues,										// const VkClearValue*     pClearValues;
-	};
-
-	vk.cmdBeginRenderPass(*testObjects.cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	testObjects.renderPassFramebuffers.back().begin(vk, *testObjects.cmdBuffer, renderArea, clearValueCount, clearValues);
 }
 
 void startRendering (Context&									context,
@@ -2954,12 +2956,14 @@ void dispatchVerifyBasic(Context& context, const TestParams& params, WorkingData
 
 void drawBasic (Context& context, const TestParams& params, WorkingData& wd, TestObjects& testObjects)
 {
-	const DeviceInterface&	vk				= context.getDeviceInterface();
-	const VkDevice			device			= context.getDevice();
-	VkPipelineRenderingCreateInfo			pipelineRenderingCreateInfo;
-	std::vector<VkFormat>					colorAttachmentFormats = { VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED };
-	std::vector<VkRenderingAttachmentInfo>	colorAttachmentInfos(4u);
-	VkRenderingAttachmentInfo				depthStencilAttachmentInfo;
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	const DeviceInterface&		vk				= context.getDeviceInterface();
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const VkDevice				device			= context.getDevice();
+	VkPipelineRenderingCreateInfo				pipelineRenderingCreateInfo;
+	std::vector<VkFormat>						colorAttachmentFormats = { VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED };
+	std::vector<VkRenderingAttachmentInfo>		colorAttachmentInfos(4u);
+	VkRenderingAttachmentInfo					depthStencilAttachmentInfo;
 
 	DE_ASSERT(params.perPass.size() == 1);
 
@@ -2977,6 +2981,7 @@ void drawBasic (Context& context, const TestParams& params, WorkingData& wd, Tes
 	// Create a render pass and a framebuffer
 	{
 		std::vector<VkSubpassDescription2>							subpasses;
+		std::vector<VkImage>										images;
 		std::vector<VkImageView>									attachments;
 		std::vector<VkAttachmentDescription2>						attachmentDescriptions;
 		std::vector<VkAttachmentReference2>							attachmentReferences;
@@ -2987,7 +2992,7 @@ void drawBasic (Context& context, const TestParams& params, WorkingData& wd, Tes
 																						   -1, -1, -1, -1};
 		deUint32													attachmentUseMask	= 0;
 
-		initializeAttachments(params, wd, attachments, 0, attachmentNdxes);
+		initializeAttachments(params, wd, images, attachments, 0, attachmentNdxes);
 
 		if (params.dynamicRendering)
 		{
@@ -3033,7 +3038,7 @@ void drawBasic (Context& context, const TestParams& params, WorkingData& wd, Tes
 								  {},
 								  attachmentNdxes);
 
-			createRenderPassAndFramebuffer(context, wd, testObjects, attachments, attachmentDescriptions, subpasses, {});
+			createRenderPassAndFramebuffer(context, wd, testObjects, params.pipelineConstructionType, images, attachments, attachmentDescriptions, subpasses, {});
 		}
 	}
 
@@ -3045,19 +3050,22 @@ void drawBasic (Context& context, const TestParams& params, WorkingData& wd, Tes
 			static_cast<deUint32>(sizeof(UVec4)),		// uint32_t              size;
 		};
 
-		const Unique<VkShaderModule>	vertexModule	(createShaderModule(vk, device, context.getBinaryCollection().get("vert"), 0u));
-		const Unique<VkShaderModule>	fragmentModule	(createShaderModule(vk, device, context.getBinaryCollection().get("frag"), 0u));
-		const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout(vk, device, 0, DE_NULL, 1, &pushConstantRange));
+		const ShaderWrapper				vertexModule	(ShaderWrapper(vk, device, context.getBinaryCollection().get("vert"), 0u));
+		const ShaderWrapper				fragmentModule	(ShaderWrapper(vk, device, context.getBinaryCollection().get("frag"), 0u));
+		const PipelineLayoutWrapper		pipelineLayout	(params.pipelineConstructionType, vk, device, 0, DE_NULL, 1, &pushConstantRange);
 
 		testObjects.graphicsPipelines.push_back(
-			pipeline::makeGraphicsPipeline(vk,
+			pipeline::makeGraphicsPipeline(vki,
+										   vk,
+										   physicalDevice,
 										   device,
+										   context.getDeviceExtensions(),
 										   params.pipelineConstructionType,
-										   *pipelineLayout,
-										   params.dynamicRendering ? DE_NULL : *testObjects.renderPasses.back(),
+										   pipelineLayout,
+										   params.dynamicRendering ? DE_NULL : *testObjects.renderPassFramebuffers.back(),
 										   params.dynamicRendering ? &pipelineRenderingCreateInfo : DE_NULL,
-										   *vertexModule,
-										   *fragmentModule,
+										   vertexModule,
+										   fragmentModule,
 										   false,
 										   true,
 										   false,
@@ -3082,7 +3090,7 @@ void drawBasic (Context& context, const TestParams& params, WorkingData& wd, Tes
 		vk.cmdBindVertexBuffers(*testObjects.cmdBuffer, 0u, 1u, &wd.vertexBuffer.get(), &vertexBufferOffset);
 
 		vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &wd.renderArea);
-		vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*testObjects.graphicsPipelines.back()).getPipeline());
+		(*testObjects.graphicsPipelines.back()).bind(*testObjects.cmdBuffer);
 		vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
 
 		if (params.dynamicRendering)
@@ -3091,7 +3099,7 @@ void drawBasic (Context& context, const TestParams& params, WorkingData& wd, Tes
 		}
 		else
 		{
-			vk.cmdEndRenderPass(*testObjects.cmdBuffer);
+			testObjects.renderPassFramebuffers.back().end(vk, *testObjects.cmdBuffer);
 		}
 	}
 
@@ -3273,12 +3281,14 @@ void dispatchVerifyClearAttachments(Context& context, const TestParams& params, 
 
 void drawClearAttachments (Context& context, const TestParams& params, WorkingData& wd, TestObjects& testObjects)
 {
-	const DeviceInterface&	vk				= context.getDeviceInterface();
-	const VkDevice			device			= context.getDevice();
-	VkPipelineRenderingCreateInfo			pipelineRenderingCreateInfo;
-	std::vector<VkFormat>					colorAttachmentFormats = { VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED };
-	std::vector<VkRenderingAttachmentInfo>	colorAttachmentInfos(4u);
-	VkRenderingAttachmentInfo				depthStencilAttachmentInfo;
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	const DeviceInterface&		vk				= context.getDeviceInterface();
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const VkDevice				device			= context.getDevice();
+	VkPipelineRenderingCreateInfo				pipelineRenderingCreateInfo;
+	std::vector<VkFormat>						colorAttachmentFormats = { VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED };
+	std::vector<VkRenderingAttachmentInfo>		colorAttachmentInfos(4u);
+	VkRenderingAttachmentInfo					depthStencilAttachmentInfo;
 
 	DE_ASSERT(params.perPass.size() == 1);
 
@@ -3296,6 +3306,7 @@ void drawClearAttachments (Context& context, const TestParams& params, WorkingDa
 	// Create a render pass and a framebuffer
 	{
 		std::vector<VkSubpassDescription2>							subpasses;
+		std::vector<VkImage>										images;
 		std::vector<VkImageView>									attachments;
 		std::vector<VkAttachmentDescription2>						attachmentDescriptions;
 		std::vector<VkAttachmentReference2>							attachmentReferences;
@@ -3306,7 +3317,7 @@ void drawClearAttachments (Context& context, const TestParams& params, WorkingDa
 																						   -1, -1, -1, -1};
 		deUint32													attachmentUseMask	= 0;
 
-		initializeAttachments(params, wd, attachments, 0, attachmentNdxes);
+		initializeAttachments(params, wd, images, attachments, 0, attachmentNdxes);
 
 		if (params.dynamicRendering)
 		{
@@ -3352,7 +3363,7 @@ void drawClearAttachments (Context& context, const TestParams& params, WorkingDa
 								  {},
 								  attachmentNdxes);
 
-			createRenderPassAndFramebuffer(context, wd, testObjects, attachments, attachmentDescriptions, subpasses, {});
+			createRenderPassAndFramebuffer(context, wd, testObjects, params.pipelineConstructionType, images, attachments, attachmentDescriptions, subpasses, {});
 		}
 	}
 
@@ -3372,9 +3383,9 @@ void drawClearAttachments (Context& context, const TestParams& params, WorkingDa
 			static_cast<deUint32>(sizeof(UVec4)),		// uint32_t              size;
 		};
 
-		const Unique<VkShaderModule>	vertexModule	(createShaderModule(vk, device, context.getBinaryCollection().get("vert"), 0u));
-		const Unique<VkShaderModule>	fragmentModule	(createShaderModule(vk, device, context.getBinaryCollection().get("frag"), 0u));
-		const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout(vk, device, 0, DE_NULL, 1, &pushConstantRange));
+		const ShaderWrapper				vertexModule	(ShaderWrapper(vk, device, context.getBinaryCollection().get("vert"), 0u));
+		const ShaderWrapper				fragmentModule	(ShaderWrapper(vk, device, context.getBinaryCollection().get("frag"), 0u));
+		const PipelineLayoutWrapper		pipelineLayout	(params.pipelineConstructionType, vk, device, 0, DE_NULL, 1, &pushConstantRange);
 
 		if (params.dynamicRendering)
 		{
@@ -3387,14 +3398,17 @@ void drawClearAttachments (Context& context, const TestParams& params, WorkingDa
 
 		// Draw to region[0]
 		testObjects.graphicsPipelines.push_back(
-			pipeline::makeGraphicsPipeline(vk,
+			pipeline::makeGraphicsPipeline(vki,
+										   vk,
+										   physicalDevice,
 										   device,
+										   context.getDeviceExtensions(),
 										   params.pipelineConstructionType,
-										   *pipelineLayout,
-										   params.dynamicRendering ? DE_NULL : *testObjects.renderPasses.back(),
+										   pipelineLayout,
+										   params.dynamicRendering ? DE_NULL : *testObjects.renderPassFramebuffers.back(),
 										   params.dynamicRendering ? &pipelineRenderingCreateInfo : DE_NULL,
-										   *vertexModule,
-										   *fragmentModule,
+										   vertexModule,
+										   fragmentModule,
 										   false,
 										   true,
 										   false,
@@ -3410,7 +3424,7 @@ void drawClearAttachments (Context& context, const TestParams& params, WorkingDa
 		vk.cmdBindVertexBuffers(*testObjects.cmdBuffer, 0u, 1u, &wd.vertexBuffer.get(), &vertexBufferOffset);
 
 		vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &regions[0]);
-		vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*testObjects.graphicsPipelines.back()).getPipeline());
+		(*testObjects.graphicsPipelines.back()).bind(*testObjects.cmdBuffer);
 		vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
 
 		// Clear all regions except region 0
@@ -3438,14 +3452,17 @@ void drawClearAttachments (Context& context, const TestParams& params, WorkingDa
 
 		// Draw to region[1], overriding the clear value
 		testObjects.graphicsPipelines.push_back(
-			makeGraphicsPipeline(vk,
+			makeGraphicsPipeline(vki,
+								 vk,
+								 physicalDevice,
 								 device,
+								 context.getDeviceExtensions(),
 								 params.pipelineConstructionType,
-								 *pipelineLayout,
-								 params.dynamicRendering ? DE_NULL : *testObjects.renderPasses.back(),
+								 pipelineLayout,
+								 params.dynamicRendering ? DE_NULL : *testObjects.renderPassFramebuffers.back(),
 								 params.dynamicRendering ? &pipelineRenderingCreateInfo : DE_NULL,
-								 *vertexModule,
-								 *fragmentModule,
+								 vertexModule,
+								 fragmentModule,
 								 false,
 								 true,
 								 false,
@@ -3458,7 +3475,7 @@ void drawClearAttachments (Context& context, const TestParams& params, WorkingDa
 								 params.useGarbageAttachment));
 
 		vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &regions[1]);
-		vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*testObjects.graphicsPipelines.back()).getPipeline());
+		(*testObjects.graphicsPipelines.back()).bind(*testObjects.cmdBuffer);
 		vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
 
 		if (params.dynamicRendering)
@@ -3467,7 +3484,7 @@ void drawClearAttachments (Context& context, const TestParams& params, WorkingDa
 		}
 		else
 		{
-			vk.cmdEndRenderPass(*testObjects.cmdBuffer);
+			testObjects.renderPassFramebuffers.back().end(vk, *testObjects.cmdBuffer);
 		}
 	}
 
@@ -3494,11 +3511,13 @@ tcu::TestStatus testClearAttachments (Context& context, const TestParams params)
 }
 
 void drawOnePass(Context& context, const TestParams& params, WorkingData& wd, TestObjects& testObjects,
-		const Unique<VkShaderModule>& vertexModule, const Unique<VkPipelineLayout>& pipelineLayout, const deUint32 passNdx,
+		const ShaderWrapper& vertexModule, const PipelineLayoutWrapper& pipelineLayout, const deUint32 passNdx,
 		const deUint32 subpassNdx, UVec4 regions[RegionCount], VkPipelineRenderingCreateInfo* pipelineRenderingCreateInfo)
 {
-	const DeviceInterface&	vk				= context.getDeviceInterface();
-	const VkDevice			device			= context.getDevice();
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	const DeviceInterface&		vk				= context.getDeviceInterface();
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const VkDevice				device			= context.getDevice();
 
 	const VkDeviceSize vertexBufferOffset = 0;
 	vk.cmdBindVertexBuffers(*testObjects.cmdBuffer, 0u, 1u, &wd.vertexBuffer.get(), &vertexBufferOffset);
@@ -3524,19 +3543,22 @@ void drawOnePass(Context& context, const TestParams& params, WorkingData& wd, Te
 
 	std::ostringstream fragName;
 	fragName << "frag_" << passNdx;
-	const Unique<VkShaderModule>	fragmentModule	(createShaderModule(vk, device, context.getBinaryCollection().get(fragName.str().c_str()), 0u));
+	const ShaderWrapper			fragmentModule	(ShaderWrapper(vk, device, context.getBinaryCollection().get(fragName.str().c_str()), 0u));
 
 	for (deUint32 regionNdx = 0; regionNdx < RegionCount; ++regionNdx)
 	{
 		testObjects.graphicsPipelines.push_back(
-			pipeline::makeGraphicsPipeline(vk,
+			pipeline::makeGraphicsPipeline(vki,
+										   vk,
+										   physicalDevice,
 										   device,
+										   context.getDeviceExtensions(),
 										   params.pipelineConstructionType,
-										   *pipelineLayout,
-										   params.dynamicRendering ? DE_NULL : *testObjects.renderPasses.back(),
+										   pipelineLayout,
+										   params.dynamicRendering ? DE_NULL : *testObjects.renderPassFramebuffers.back(),
 										   params.dynamicRendering ? pipelineRenderingCreateInfo : DE_NULL,
-										   *vertexModule,
-										   *fragmentModule,
+										   vertexModule,
+										   fragmentModule,
 										   true,
 										   true,
 										   false,
@@ -3550,20 +3572,23 @@ void drawOnePass(Context& context, const TestParams& params, WorkingData& wd, Te
 
 		vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &regions[regionNdx]);
 		vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(UVec4), sizeof(perPass.drawConstantsWithDepthWrite[regionNdx]), &perPass.drawConstantsWithDepthWrite[regionNdx]);
-		vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*testObjects.graphicsPipelines.back()).getPipeline());
+		(*testObjects.graphicsPipelines.back()).bind(*testObjects.cmdBuffer);
 		vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
 
 		if (perPass.hasDepthStencil)
 		{
 			testObjects.graphicsPipelines.push_back(
-				pipeline::makeGraphicsPipeline(vk,
+				pipeline::makeGraphicsPipeline(vki,
+											   vk,
+											   physicalDevice,
 											   device,
+											   context.getDeviceExtensions(),
 											   params.pipelineConstructionType,
-											   *pipelineLayout,
-											   params.dynamicRendering ? DE_NULL : *testObjects.renderPasses.back(),
+											   pipelineLayout,
+											   params.dynamicRendering ? DE_NULL : *testObjects.renderPassFramebuffers.back(),
 											   params.dynamicRendering ? pipelineRenderingCreateInfo : DE_NULL,
-											   *vertexModule,
-											   *fragmentModule,
+											   vertexModule,
+											   fragmentModule,
 											   true,
 											   false,
 											   true,
@@ -3577,7 +3602,7 @@ void drawOnePass(Context& context, const TestParams& params, WorkingData& wd, Te
 
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &regions[regionNdx]);
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(UVec4), sizeof(perPass.drawConstantsWithDepthTest[regionNdx]), &perPass.drawConstantsWithDepthTest[regionNdx]);
-			vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*testObjects.graphicsPipelines.back()).getPipeline());
+			(*testObjects.graphicsPipelines.back()).bind(*testObjects.cmdBuffer);
 			vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
 		}
 	}
@@ -3641,6 +3666,7 @@ void drawSingleRenderPass (Context& context, const TestParams& params, WorkingDa
 	// Create a render pass and a framebuffer
 	{
 		std::vector<VkSubpassDescription2>							subpasses;
+		std::vector<VkImage>										images;
 		std::vector<VkImageView>									attachments;
 		std::vector<VkAttachmentDescription2>						attachmentDescriptions;
 		std::vector<std::vector<VkAttachmentReference2>>			attachmentReferences(numSubpasses);
@@ -3653,7 +3679,7 @@ void drawSingleRenderPass (Context& context, const TestParams& params, WorkingDa
 																						   -1, -1, -1, -1};
 		deUint32													attachmentUseMask	= 0;
 
-		initializeAttachments(params, wd, attachments, params.perPass.size(), attachmentNdxes);
+		initializeAttachments(params, wd, images, attachments, params.perPass.size(), attachmentNdxes);
 		initializeAttachmentDescriptions(params, attachmentDescriptions, params.clearBeforeRenderPass, attachmentNdxes, attachmentUseMask);
 
 		for (deUint32 passNdx = 0; passNdx < numSubpasses; ++passNdx)
@@ -3673,7 +3699,7 @@ void drawSingleRenderPass (Context& context, const TestParams& params, WorkingDa
 				addSubpassDependency(passNdx, subpassDependencies);
 		}
 
-		createRenderPassAndFramebuffer(context, wd, testObjects, attachments, attachmentDescriptions, subpasses, subpassDependencies);
+		createRenderPassAndFramebuffer(context, wd, testObjects, params.pipelineConstructionType, images, attachments, attachmentDescriptions, subpasses, subpassDependencies);
 	}
 
 	const VkPushConstantRange& pushConstantRange =
@@ -3683,8 +3709,8 @@ void drawSingleRenderPass (Context& context, const TestParams& params, WorkingDa
 		static_cast<deUint32>(sizeof(UVec4) + sizeof(DrawPushConstants)),		// uint32_t              size;
 	};
 
-	const Unique<VkShaderModule>	vertexModule	(createShaderModule(vk, device, context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout(vk, device, 0, DE_NULL, 1, &pushConstantRange));
+	const ShaderWrapper				vertexModule	(ShaderWrapper(vk, device, context.getBinaryCollection().get("vert"), 0u));
+	const PipelineLayoutWrapper		pipelineLayout	(params.pipelineConstructionType, vk, device, 0, DE_NULL, 1, &pushConstantRange);
 
 	UVec4	regions[RegionCount];
 	getDrawRegions(wd, regions);
@@ -3694,12 +3720,12 @@ void drawSingleRenderPass (Context& context, const TestParams& params, WorkingDa
 	for (deUint32 passNdx = 0; passNdx < numSubpasses; ++passNdx)
 	{
 		if (passNdx != 0)
-			vk.cmdNextSubpass(*testObjects.cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+			testObjects.renderPassFramebuffers.back().nextSubpass(vk, *testObjects.cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
 		drawOnePass(context, params, wd, testObjects, vertexModule, pipelineLayout, passNdx, passNdx, regions, DE_NULL);
 	}
 
-	vk.cmdEndRenderPass(*testObjects.cmdBuffer);
+	testObjects.renderPassFramebuffers.back().end(vk, *testObjects.cmdBuffer);
 
 	// Verify results
 	dispatchVerifyMultiPassRendering(context, params, wd, testObjects, regions);
@@ -3742,8 +3768,8 @@ void drawMultiRenderPass (Context& context, const TestParams& params, WorkingDat
 		static_cast<deUint32>(sizeof(UVec4) + sizeof(DrawPushConstants)),		// uint32_t              size;
 	};
 
-	const Unique<VkShaderModule>	vertexModule	(createShaderModule(vk, device, context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout(vk, device, 0, DE_NULL, 1, &pushConstantRange));
+	const ShaderWrapper				vertexModule	(ShaderWrapper(vk, device, context.getBinaryCollection().get("vert"), 0u));
+	const PipelineLayoutWrapper		pipelineLayout	(params.pipelineConstructionType, vk, device, 0, DE_NULL, 1, &pushConstantRange);
 
 	UVec4	regions[RegionCount];
 	getDrawRegions(wd, regions);
@@ -3754,6 +3780,7 @@ void drawMultiRenderPass (Context& context, const TestParams& params, WorkingDat
 	{
 		// Create a render pass and a framebuffer
 		std::vector<VkSubpassDescription2>				subpasses;
+		std::vector<VkImage>							images;
 		std::vector<VkImageView>						attachments;
 		std::vector<VkAttachmentDescription2>			attachmentDescriptions;
 		std::vector<VkAttachmentReference2>				attachmentReferences;
@@ -3769,7 +3796,7 @@ void drawMultiRenderPass (Context& context, const TestParams& params, WorkingDat
 
 		std::vector<VkClearValue>						clearValues;
 
-		initializeAttachments(params, wd, attachments, renderPassNdx, attachmentNdxes);
+		initializeAttachments(params, wd, images, attachments, renderPassNdx, attachmentNdxes);
 		if (params.dynamicRendering)
 		{
 			initializeRenderingAttachmentInfos(params,
@@ -3814,7 +3841,7 @@ void drawMultiRenderPass (Context& context, const TestParams& params, WorkingDat
 								  {},
 								  attachmentNdxes);
 
-			createRenderPassAndFramebuffer(context, wd, testObjects, attachments, attachmentDescriptions, subpasses, {});
+			createRenderPassAndFramebuffer(context, wd, testObjects, params.pipelineConstructionType, images, attachments, attachmentDescriptions, subpasses, {});
 
 			// Init clear values
 			if (attachmentNdxes[0] >= 0)
@@ -3864,7 +3891,7 @@ void drawMultiRenderPass (Context& context, const TestParams& params, WorkingDat
 		}
 		else
 		{
-			vk.cmdEndRenderPass(*testObjects.cmdBuffer);
+			testObjects.renderPassFramebuffers.back().end(vk, *testObjects.cmdBuffer);
 		}
 	}
 
@@ -4452,9 +4479,11 @@ void initMultipassPrograms (SourceCollections& programCollection, const TestPara
 
 void drawInputAttachments (Context& context, const TestParams& params, WorkingData& wd, TestObjects& testObjects)
 {
-	const DeviceInterface&	vk				= context.getDeviceInterface();
-	const VkDevice			device			= context.getDevice();
-	const deUint32			numSubpasses	= static_cast<deUint32>(params.perPass.size());
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	const DeviceInterface&		vk				= context.getDeviceInterface();
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const VkDevice				device			= context.getDevice();
+	const deUint32				numSubpasses	= static_cast<deUint32>(params.perPass.size());
 
 	if (params.clearBeforeRenderPass)
 	{
@@ -4464,6 +4493,7 @@ void drawInputAttachments (Context& context, const TestParams& params, WorkingDa
 	// Create a render pass and a framebuffer
 	{
 		std::vector<VkSubpassDescription2>							subpasses;
+		std::vector<VkImage>										images;
 		std::vector<VkImageView>									attachments;
 		std::vector<VkAttachmentDescription2>						attachmentDescriptions;
 		std::vector<std::vector<VkAttachmentReference2>>			attachmentReferences(numSubpasses);
@@ -4477,7 +4507,7 @@ void drawInputAttachments (Context& context, const TestParams& params, WorkingDa
 																						   -1, -1, -1, -1};
 		deUint32													attachmentUseMask	= 0;
 
-		initializeAttachments(params, wd, attachments, params.perPass.size(), attachmentNdxes);
+		initializeAttachments(params, wd, images, attachments, params.perPass.size(), attachmentNdxes);
 		initializeAttachmentDescriptions(params, attachmentDescriptions, params.clearBeforeRenderPass, attachmentNdxes, attachmentUseMask);
 
 		DE_ASSERT(numSubpasses == 2);
@@ -4528,7 +4558,7 @@ void drawInputAttachments (Context& context, const TestParams& params, WorkingDa
 			0,														// int32_t                 viewOffset;
 		});
 
-		createRenderPassAndFramebuffer(context, wd, testObjects, attachments, attachmentDescriptions, subpasses, subpassDependencies);
+		createRenderPassAndFramebuffer(context, wd, testObjects, params.pipelineConstructionType, images, attachments, attachmentDescriptions, subpasses, subpassDependencies);
 	}
 
 	const VkPushConstantRange& pushConstantRange =
@@ -4538,10 +4568,10 @@ void drawInputAttachments (Context& context, const TestParams& params, WorkingDa
 		static_cast<deUint32>(sizeof(UVec4) + sizeof(DrawPushConstants)),		// uint32_t              size;
 	};
 
-	const Unique<VkShaderModule>	vertexModule		(createShaderModule(vk, device, context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkShaderModule>	fragmentModule0		(createShaderModule(vk, device, context.getBinaryCollection().get("frag_0"), 0u));
-	const Unique<VkShaderModule>	fragmentModule1		(createShaderModule(vk, device, context.getBinaryCollection().get("frag_1"), 0u));
-	const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout(vk, device, 0, DE_NULL, 1, &pushConstantRange));
+	const ShaderWrapper	vertexModule					(ShaderWrapper(vk, device, context.getBinaryCollection().get("vert"), 0u));
+	const ShaderWrapper	fragmentModule0					(ShaderWrapper(vk, device, context.getBinaryCollection().get("frag_0"), 0u));
+	const ShaderWrapper	fragmentModule1					(ShaderWrapper(vk, device, context.getBinaryCollection().get("frag_1"), 0u));
+	const PipelineLayoutWrapper pipelineLayout			(params.pipelineConstructionType, vk, device, 0, DE_NULL, 1, &pushConstantRange);
 
 	// Descriptor set and layout for the draw call that uses input attachments
 	const Unique<VkDescriptorSetLayout> descriptorSetLayout(
@@ -4579,8 +4609,8 @@ void drawInputAttachments (Context& context, const TestParams& params, WorkingDa
 		static_cast<deUint32>(sizeof(UVec4)),									// uint32_t              size;
 	};
 
-	const Unique<VkShaderModule>	fragmentModuleIn	(createShaderModule(vk, device, context.getBinaryCollection().get("frag_in"), 0u));
-	const Unique<VkPipelineLayout>	inputPipelineLayout	(makePipelineLayout(vk, device, 1, &*descriptorSetLayout, 1, &inputPushConstantRange));
+	const ShaderWrapper				fragmentModuleIn	(ShaderWrapper(vk, device, context.getBinaryCollection().get("frag_in"), 0u));
+	const PipelineLayoutWrapper		inputPipelineLayout	(params.pipelineConstructionType, vk, device, 1, &*descriptorSetLayout, 1, &inputPushConstantRange);
 
 	UVec4	regions[RegionCount];
 	getDrawRegions(wd, regions);
@@ -4597,26 +4627,26 @@ void drawInputAttachments (Context& context, const TestParams& params, WorkingDa
 		for (deUint32 regionNdx = 0; regionNdx < RegionCount; ++regionNdx)
 		{
 			testObjects.graphicsPipelines.push_back(
-				pipeline::makeGraphicsPipeline(vk, device, params.pipelineConstructionType, *pipelineLayout, *testObjects.renderPasses.back(), DE_NULL, *vertexModule, *fragmentModule0, false, true, false, 0, 0,
+				pipeline::makeGraphicsPipeline(vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType, pipelineLayout, *testObjects.renderPassFramebuffers.back(), DE_NULL, vertexModule, fragmentModule0, false, true, false, 0, 0,
 									 params.perPass[0].intColorLocation, regions[regionNdx], regions[regionNdx], params.perPass[0].numSamples, params.useGarbageAttachment));
 
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &regions[regionNdx]);
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(UVec4), sizeof(params.perPass[0].drawConstantsWithDepthWrite[regionNdx]), &params.perPass[0].drawConstantsWithDepthWrite[regionNdx]);
-			vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*testObjects.graphicsPipelines.back()).getPipeline());
+			(*testObjects.graphicsPipelines.back()).bind(*testObjects.cmdBuffer);
 			vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
 		}
 
 		// Next subpass initializes color attachments 2 and 3 from color attachment 1 and depth/stencil, then issues a draw call that modifies those attachments.
-		vk.cmdNextSubpass(*testObjects.cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+		testObjects.renderPassFramebuffers.back().nextSubpass(vk, *testObjects.cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
 		for (deUint32 regionNdx = 0; regionNdx < RegionCount; ++regionNdx)
 		{
 			testObjects.graphicsPipelines.push_back(
-				pipeline::makeGraphicsPipeline(vk, device, params.pipelineConstructionType, *inputPipelineLayout, *testObjects.renderPasses.back(), DE_NULL, *vertexModule, *fragmentModuleIn, false, false, false, 0, 1,
+				pipeline::makeGraphicsPipeline(vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType, inputPipelineLayout, *testObjects.renderPassFramebuffers.back(), DE_NULL, vertexModule, fragmentModuleIn, false, false, false, 0, 1,
 									 params.perPass[1].intColorLocation, regions[regionNdx], regions[regionNdx], params.perPass[1].numSamples, params.useGarbageAttachment));
 
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *inputPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &regions[regionNdx]);
-			vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*testObjects.graphicsPipelines.back()).getPipeline());
+			(*testObjects.graphicsPipelines.back()).bind(*testObjects.cmdBuffer);
 			vk.cmdBindDescriptorSets(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *inputPipelineLayout, 0u, 1u, &testObjects.descriptorSets.back().get(), 0u, DE_NULL);
 			vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
 		}
@@ -4624,17 +4654,17 @@ void drawInputAttachments (Context& context, const TestParams& params, WorkingDa
 		for (deUint32 regionNdx = 0; regionNdx < RegionCount; ++regionNdx)
 		{
 			testObjects.graphicsPipelines.push_back(
-				pipeline::makeGraphicsPipeline(vk, device, params.pipelineConstructionType, *pipelineLayout, *testObjects.renderPasses.back(), DE_NULL, *vertexModule, *fragmentModule1, true, false, false, 0xC, 1,
+				pipeline::makeGraphicsPipeline(vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType, pipelineLayout, *testObjects.renderPassFramebuffers.back(), DE_NULL, vertexModule, fragmentModule1, true, false, false, 0xC, 1,
 									 params.perPass[1].intColorLocation, regions[regionNdx], regions[regionNdx], params.perPass[1].numSamples, params.useGarbageAttachment));
 
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4), &regions[regionNdx]);
 			vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(UVec4), sizeof(params.perPass[1].drawConstantsWithDepthWrite[regionNdx]), &params.perPass[1].drawConstantsWithDepthWrite[regionNdx]);
-			vk.cmdBindPipeline(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (*testObjects.graphicsPipelines.back()).getPipeline());
+			(*testObjects.graphicsPipelines.back()).bind(*testObjects.cmdBuffer);
 			vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
 		}
 	}
 
-	vk.cmdEndRenderPass(*testObjects.cmdBuffer);
+	testObjects.renderPassFramebuffers.back().end(vk, *testObjects.cmdBuffer);
 
 	// Verify results
 	dispatchVerifyMultiPassRendering(context, params, wd, testObjects, regions);
@@ -5237,7 +5267,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 
 	// Test 5: Tests multisampled rendering followed by use as input attachment.
 	// These tests have two subpasses, so these can't be tested with dynamic rendering.
-	if (!dynamicRendering)
+	if (!dynamicRendering && !vk::isConstructionTypeShaderObject(pipelineConstructionType))
 	{
 		MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "input_attachments", "Tests that input attachment interaction with multisampled rendering works"));
 

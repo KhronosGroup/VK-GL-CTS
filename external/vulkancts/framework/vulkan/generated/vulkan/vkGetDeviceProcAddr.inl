@@ -54,7 +54,7 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		DE_NULL,									//  const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	const Unique<VkDevice>					device			(createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get());
+	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion());
 
 	const std::vector<std::string> loaderExceptions{
 		"vkSetDebugUtilsObjectNameEXT",
@@ -227,6 +227,13 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkSubmitDebugUtilsMessageEXT",
 		"vkGetAndroidHardwareBufferPropertiesANDROID",
 		"vkGetMemoryAndroidHardwareBufferANDROID",
+		"vkCreateExecutionGraphPipelinesAMDX",
+		"vkGetExecutionGraphPipelineScratchSizeAMDX",
+		"vkGetExecutionGraphPipelineNodeIndexAMDX",
+		"vkCmdInitializeGraphScratchMemoryAMDX",
+		"vkCmdDispatchGraphAMDX",
+		"vkCmdDispatchGraphIndirectAMDX",
+		"vkCmdDispatchGraphIndirectCountAMDX",
 		"vkCmdSetSampleLocationsEXT",
 		"vkGetPhysicalDeviceMultisamplePropertiesEXT",
 		"vkGetImageMemoryRequirements2KHR",
@@ -346,6 +353,11 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkGetPipelineExecutablePropertiesKHR",
 		"vkGetPipelineExecutableStatisticsKHR",
 		"vkGetPipelineExecutableInternalRepresentationsKHR",
+		"vkCopyMemoryToImageEXT",
+		"vkCopyImageToMemoryEXT",
+		"vkCopyImageToImageEXT",
+		"vkTransitionImageLayoutEXT",
+		"vkGetImageSubresourceLayout2EXT",
 		"vkMapMemory2KHR",
 		"vkUnmapMemory2KHR",
 		"vkReleaseSwapchainImagesEXT",
@@ -451,6 +463,9 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCmdCopyMemoryToImageIndirectNV",
 		"vkCmdDecompressMemoryNV",
 		"vkCmdDecompressMemoryIndirectCountNV",
+		"vkGetPipelineIndirectMemoryRequirementsNV",
+		"vkCmdUpdatePipelineIndirectBufferNV",
+		"vkGetPipelineIndirectDeviceAddressNV",
 		"vkCmdSetTessellationDomainOriginEXT",
 		"vkCmdSetDepthClampEnableEXT",
 		"vkCmdSetPolygonModeEXT",
@@ -489,6 +504,10 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkDestroyOpticalFlowSessionNV",
 		"vkBindOpticalFlowSessionImageNV",
 		"vkCmdOpticalFlowExecuteNV",
+		"vkCmdBindIndexBuffer2KHR",
+		"vkGetRenderingAreaGranularityKHR",
+		"vkGetDeviceImageSubresourceLayoutKHR",
+		"vkGetImageSubresourceLayout2KHR",
 		"vkCreateShadersEXT",
 		"vkDestroyShaderEXT",
 		"vkGetShaderBinaryDataEXT",

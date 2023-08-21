@@ -187,10 +187,10 @@ public:
 																 const VideoCodecOperationFlags	videoCodecOperationFlags,
 																 const VideoDeviceFlags			videoDeviceFlags = VIDEO_DEVICE_FLAG_NONE);
 	const vk::DeviceDriver&			getDeviceDriver				(void);
-	const deUint32&					getQueueFamilyIndexTransfer	(void);
-	const deUint32&					getQueueFamilyIndexDecode	(void);
-	const deUint32&					getQueueFamilyIndexEncode	(void);
-	const deUint32&					getQueueFamilyVideo			(void);
+	deUint32					getQueueFamilyIndexTransfer	(void) const;
+	deUint32					getQueueFamilyIndexDecode	(void) const;
+	deUint32					getQueueFamilyIndexEncode	(void) const;
+	deUint32					getQueueFamilyVideo			(void) const;
 	vk::Allocator&					getAllocator				(void);
 
 protected:

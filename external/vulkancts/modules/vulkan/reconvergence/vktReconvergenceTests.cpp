@@ -1971,12 +1971,10 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
-}	// anonymous
-
-tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx, bool createExperimental)
+tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx, const std::string& name, bool createExperimental)
 {
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
-			testCtx, "reconvergence", "reconvergence tests"));
+			testCtx, name.c_str(), "reconvergence tests"));
 
 	typedef struct
 	{
@@ -2062,6 +2060,18 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx, bool createExperimen
 		}
 	}
 	return group.release();
+}
+
+}	// anonymous
+
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
+{
+	return createTests(testCtx, name, false);
+}
+
+tcu::TestCaseGroup* createTestsExperimental (tcu::TestContext& testCtx, const std::string& name)
+{
+	return createTests(testCtx, name, true);
 }
 
 }	// Reconvergence
