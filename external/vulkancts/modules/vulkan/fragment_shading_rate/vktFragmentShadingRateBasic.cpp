@@ -582,7 +582,13 @@ void FSRTestCase::initPrograms (SourceCollections& programCollection) const
 
 		mss <<
 			"#version 450 core\n"
-			"#extension GL_EXT_mesh_shader : enable\n"
+			"#extension GL_EXT_mesh_shader : enable\n";
+
+		if (m_data.shaderWritesRate) {
+			mss << "#extension GL_EXT_fragment_shading_rate : enable\n";
+		}
+
+		mss <<
 			"layout(local_size_x=3) in;\n"
 			"layout(triangles) out;\n"
 			"layout(max_vertices=3, max_primitives=1) out;\n"
