@@ -6012,11 +6012,17 @@ void ImageSampleRenderInstance::writeSamplerDescriptorSet (const vk::DeviceInter
 														   DescriptorUpdateMethod			updateMethod)
 {
 	const vk::VkDescriptorImageInfo		imageInfo			= makeDescriptorImageInfo(images.getImageView(setNdx), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	const vk::VkDescriptorImageInfo		samplersInfos[2]	=
+	vk::VkDescriptorImageInfo			samplersInfos[2]	=
 	{
 		makeDescriptorImageInfo(images.getSampler(setNdx * getInterfaceNumResources(shaderInterface))),
 		makeDescriptorImageInfo(images.getSampler(setNdx * getInterfaceNumResources(shaderInterface) + 1)),
 	};
+
+	if (isImmutable)
+	{
+		samplersInfos[0].sampler = VK_NULL_HANDLE;
+		samplersInfos[1].sampler = VK_NULL_HANDLE;
+	}
 
 	const deUint32						samplerLocation		= shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS ? 1u : 0u;
 	deUint32							numDescriptors		= 1u;
