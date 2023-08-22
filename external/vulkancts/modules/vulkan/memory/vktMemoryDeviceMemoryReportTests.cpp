@@ -125,6 +125,7 @@ struct Environment
 	const BinaryCollection&		programBinaries;
 	const tcu::CommandLine&		commandLine;
 	const CallbackRecorder*		recorder;
+	const uint32_t				usedApiVersion;
 
 	Environment (const PlatformInterface&	vkp_,
 				 const InstanceInterface&	vki_,
@@ -135,7 +136,8 @@ struct Environment
 				 deUint32					queueFamilyIndex_,
 				 const BinaryCollection&	programBinaries_,
 				 const tcu::CommandLine&	commandLine_,
-				 const CallbackRecorder*	recorder_)
+				 const CallbackRecorder*	recorder_,
+				 const uint32_t				usedApiVersion_)
 		: vkp				(vkp_)
 		, vki				(vki_)
 		, instance			(instance_)
@@ -146,6 +148,7 @@ struct Environment
 		, programBinaries	(programBinaries_)
 		, commandLine		(commandLine_)
 		, recorder			(recorder_)
+		, usedApiVersion	(usedApiVersion_)
 	{
 	}
 };
@@ -1738,8 +1741,8 @@ struct EnvClone
 
 	EnvClone (const Environment& parent)
 		: device	(Device::create(parent, Device::Resources(parent, Device::Parameters()), Device::Parameters()))
-		, vkd		(parent.vkp, parent.instance, *device)
-		, env		(parent.vkp, parent.vki, parent.instance, parent.physicalDevice, vkd, *device, parent.queueFamilyIndex, parent.programBinaries, parent.commandLine, nullptr)
+		, vkd		(parent.vkp, parent.instance, *device, parent.usedApiVersion)
+		, env		(parent.vkp, parent.vki, parent.instance, parent.physicalDevice, vkd, *device, parent.queueFamilyIndex, parent.programBinaries, parent.commandLine, nullptr, parent.usedApiVersion)
 	{
 	}
 };
@@ -1757,7 +1760,8 @@ tcu::TestStatus createDestroyObjectTest (Context& context, typename Object::Para
 							 context.getUniversalQueueFamilyIndex(),
 							 context.getBinaryCollection(),
 							 context.getTestContext().getCommandLine(),
-							 &recorder);
+							 &recorder,
+							 context.getUsedApiVersion());
 
 	if (std::is_same<Object, Device>::value)
 	{
@@ -1789,7 +1793,7 @@ tcu::TestStatus vkDeviceMemoryAllocateAndFreeTest (Context& context)
 	const deUint32							queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	const deBool							isValidationEnabled	= context.getTestContext().getCommandLine().isValidationEnabled();
 	const Unique<VkDevice>					device				(createDeviceWithMemoryReport(isValidationEnabled, vkp, instance, vki, physicalDevice, queueFamilyIndex, &recorder));
-	const DeviceDriver						vkd					(vkp, instance, *device);
+	const DeviceDriver						vkd					(vkp, instance, *device, context.getUsedApiVersion());
 	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
 	const VkDeviceSize						testSize			= 1024;
 	const deUint32							testTypeIndex		= 0;
@@ -2060,7 +2064,7 @@ tcu::TestStatus testImportAndUnimportExternalMemory (Context& context, VkExterna
 																				queueFamilyIndex,
 																				externalMemoryType,
 																				&recorder));
-	const DeviceDriver			vkd					(vkp, instance, *device);
+	const DeviceDriver			vkd					(vkp, instance, *device, context.getUsedApiVersion());
 	const VkBufferUsageFlags	usage				= VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const VkDeviceSize			bufferSize			= 1024;
 

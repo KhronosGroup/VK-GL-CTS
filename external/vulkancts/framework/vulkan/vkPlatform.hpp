@@ -123,7 +123,8 @@ class DeviceDriver : public DeviceInterface
 public:
 						DeviceDriver		(const PlatformInterface&			platformInterface,
 											 VkInstance							instance,
-											 VkDevice							device);
+											 VkDevice							device,
+											 uint32_t							usedApiVersion);
 	virtual				~DeviceDriver		(void);
 
 #include "vkConcreteDeviceInterface.inl"
@@ -160,7 +161,8 @@ public:
 																			 const tcu::CommandLine&						cmdLine,
 																			 de::SharedPtr<vk::ResourceInterface>			resourceInterface,
 																			 const VkPhysicalDeviceVulkanSC10Properties&	physicalDeviceVulkanSC10Properties,
-																			 const VkPhysicalDeviceProperties&				physicalDeviceProperties);
+																			 const VkPhysicalDeviceProperties&				physicalDeviceProperties,
+																			 const uint32_t									usedApiVersion);
 	virtual								~DeviceDriverSC						(void);
 
 #include "vkConcreteDeviceInterface.inl"

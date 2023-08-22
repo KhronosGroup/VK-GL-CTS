@@ -3,6 +3,8 @@
  * ------------------------
  *
  * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,6 +123,8 @@
 #ifdef CTS_USES_VULKANSC
 #include "vktSafetyCriticalTests.hpp"
 #endif // CTS_USES_VULKANSC
+#include "vktVideoTests.hpp"
+#include "vktShaderObjectTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -1006,6 +1010,11 @@ bool TestCaseExecutor::spirvVersionSupported (vk::SpirvVersion spirvVersion)
 
 void createGlslTests (tcu::TestCaseGroup* glslTests)
 {
+	// Skip tests not in case list
+	const auto caseListFilter = glslTests->getTestContext().getCommandLine().createCaseListFilter(glslTests->getTestContext().getArchive());
+	if (!caseListFilter->checkTestGroupName(glslTests->getName()))
+		return;
+
 	tcu::TestContext&	testCtx		= glslTests->getTestContext();
 
 	// ShaderLibrary-based tests
@@ -1138,62 +1147,63 @@ tcu::TestCaseExecutor* BaseTestPackage::createExecutor (void) const
 
 void TestPackage::init (void)
 {
-	addChild(createTestGroup					(m_testCtx, "info", "Build and Device Info Tests", createInfoTests));
-	addChild(api::createTests					(m_testCtx));
-	addChild(memory::createTests				(m_testCtx));
-	addChild(pipeline::createTests				(m_testCtx));
-	addChild(BindingModel::createTests			(m_testCtx));
-	addChild(SpirVAssembly::createTests			(m_testCtx));
+	addRootChild("info",						info::createTests);
+	addRootChild("api",							api::createTests);
+	addRootChild("memory",						memory::createTests);
+	addRootChild("pipeline",					pipeline::createTests);
+	addRootChild("binding_model",				BindingModel::createTests);
+	addRootChild("spirv_assembly",				SpirVAssembly::createTests);
 	addChild(createTestGroup					(m_testCtx, "glsl", "GLSL shader execution tests", createGlslTests));
-	addChild(createRenderPassTests				(m_testCtx));
-	addChild(createRenderPass2Tests				(m_testCtx));
-	addChild(createDynamicRenderingTests		(m_testCtx));
-	addChild(ubo::createTests					(m_testCtx));
-	addChild(DynamicState::createTests			(m_testCtx));
-	addChild(ssbo::createTests					(m_testCtx));
-	addChild(QueryPool::createTests				(m_testCtx));
-	addChild(Draw::createTests					(m_testCtx));
-	addChild(compute::createTests				(m_testCtx));
-	addChild(image::createTests					(m_testCtx));
-	addChild(wsi::createTests					(m_testCtx));
-	addChild(createSynchronizationTests			(m_testCtx));
-	addChild(createSynchronization2Tests		(m_testCtx));
-	addChild(sparse::createTests				(m_testCtx));
-	addChild(tessellation::createTests			(m_testCtx));
-	addChild(rasterization::createTests			(m_testCtx));
-	addChild(clipping::createTests				(m_testCtx));
-	addChild(FragmentOperations::createTests	(m_testCtx));
-	addChild(texture::createTests				(m_testCtx));
-	addChild(geometry::createTests				(m_testCtx));
-	addChild(robustness::createTests			(m_testCtx));
-	addChild(MultiView::createTests				(m_testCtx));
-	addChild(subgroups::createTests				(m_testCtx));
-	addChild(ycbcr::createTests					(m_testCtx));
-	addChild(ProtectedMem::createTests			(m_testCtx));
-	addChild(DeviceGroup::createTests			(m_testCtx));
-	addChild(MemoryModel::createTests			(m_testCtx));
-	addChild(conditional::createTests			(m_testCtx));
-	addChild(cts_amber::createGraphicsFuzzTests	(m_testCtx));
-	addChild(imageless::createTests				(m_testCtx));
-	addChild(TransformFeedback::createTests		(m_testCtx));
-	addChild(DescriptorIndexing::createTests	(m_testCtx));
-	addChild(FragmentShaderInterlock::createTests(m_testCtx));
-	addChild(modifiers::createTests				(m_testCtx));
-	addChild(RayTracing::createTests			(m_testCtx));
-	addChild(RayQuery::createTests				(m_testCtx));
-	addChild(FragmentShadingRate::createTests	(m_testCtx));
-	addChild(Reconvergence::createTests			(m_testCtx, false));
-	addChild(MeshShader::createTests			(m_testCtx));
-	addChild(FragmentShadingBarycentric::createTests(m_testCtx));
+	addRootChild("renderpass",					createRenderPassTests);
+	addRootChild("renderpass2",					createRenderPass2Tests);
+	addRootChild("dynamic_rendering",			createDynamicRenderingTests);
+	addRootChild("ubo",							ubo::createTests);
+	addRootChild("dynamic_state",				DynamicState::createTests);
+	addRootChild("ssbo",						ssbo::createTests);
+	addRootChild("query_pool",					QueryPool::createTests);
+	addRootChild("draw",						Draw::createTests);
+	addRootChild("compute",						compute::createTests);
+	addRootChild("image",						image::createTests);
+	addRootChild("wsi",							wsi::createTests);
+	addRootChild("synchronization",				createSynchronizationTests);
+	addRootChild("synchronization2",			createSynchronization2Tests);
+	addRootChild("sparse_resources",			sparse::createTests);
+	addRootChild("tessellation",				tessellation::createTests);
+	addRootChild("rasterization",				rasterization::createTests);
+	addRootChild("clipping",					clipping::createTests);
+	addRootChild("fragment_operations",			FragmentOperations::createTests);
+	addRootChild("texture",						texture::createTests);
+	addRootChild("geometry",					geometry::createTests);
+	addRootChild("robustness",					robustness::createTests);
+	addRootChild("multiview",					MultiView::createTests);
+	addRootChild("subgroups",					subgroups::createTests);
+	addRootChild("ycbcr",						ycbcr::createTests);
+	addRootChild("protected_memory",			ProtectedMem::createTests);
+	addRootChild("device_group",				DeviceGroup::createTests);
+	addRootChild("memory_model",				MemoryModel::createTests);
+	addRootChild("conditional_rendering",		conditional::createTests);
+	addRootChild("graphicsfuzz",				cts_amber::createGraphicsFuzzTests);
+	addRootChild("imageless_framebuffer",		imageless::createTests);
+	addRootChild("transform_feedback",			TransformFeedback::createTests);
+	addRootChild("descriptor_indexing",			DescriptorIndexing::createTests);
+	addRootChild("fragment_shader_interlock",	FragmentShaderInterlock::createTests);
+	addRootChild("drm_format_modifiers",		modifiers::createTests);
+	addRootChild("ray_tracing_pipeline",		RayTracing::createTests);
+	addRootChild("ray_query",					RayQuery::createTests);
+	addRootChild("fragment_shading_rate",		FragmentShadingRate::createTests);
+	addRootChild("reconvergence",				Reconvergence::createTests);
+	addRootChild("mesh_shader",					MeshShader::createTests);
+	addRootChild("fragment_shading_barycentric",FragmentShadingBarycentric::createTests);
 	// Amber depth pipeline tests
-	addChild(cts_amber::createAmberDepthGroup	(m_testCtx));
-	addChild(video::createTests					(m_testCtx));
+	addRootChild("depth",						cts_amber::createAmberDepthGroup);
+	addRootChild("video",						video::createTests);
+	addRootChild("shader_object",				ShaderObject::createTests);
 }
 
 void ExperimentalTestPackage::init (void)
 {
-	addChild(postmortem::createTests			(m_testCtx));
-	addChild(Reconvergence::createTests			(m_testCtx, true));
+	addRootChild("postmortem",					postmortem::createTests);
+	addRootChild("reconvergence",				Reconvergence::createTestsExperimental);
 }
 
 #endif
@@ -1202,49 +1212,49 @@ void ExperimentalTestPackage::init (void)
 
 void TestPackageSC::init (void)
 {
-	addChild(createTestGroup					(m_testCtx, "info", "Build and Device Info Tests", createInfoTests));
-	addChild(api::createTests					(m_testCtx));
-	addChild(memory::createTests				(m_testCtx));
-	addChild(pipeline::createTests				(m_testCtx));
-	addChild(BindingModel::createTests			(m_testCtx));
-	addChild(SpirVAssembly::createTests			(m_testCtx));
+	addRootChild("info",						info::createTests);
+	addRootChild("api",							api::createTests);
+	addRootChild("memory",						memory::createTests);
+	addRootChild("pipeline",					pipeline::createTests);
+	addRootChild("binding_model",				BindingModel::createTests);
+	addRootChild("spirv_assembly",				SpirVAssembly::createTests);
 	addChild(createTestGroup					(m_testCtx, "glsl", "GLSL shader execution tests", createGlslTests));
-	addChild(createRenderPassTests				(m_testCtx));
-	addChild(createRenderPass2Tests				(m_testCtx));
-	addChild(ubo::createTests					(m_testCtx));
-	addChild(DynamicState::createTests			(m_testCtx));
-	addChild(ssbo::createTests					(m_testCtx));
-	addChild(QueryPool::createTests				(m_testCtx));
-	addChild(Draw::createTests					(m_testCtx));
-	addChild(compute::createTests				(m_testCtx));
-	addChild(image::createTests					(m_testCtx));
-//	addChild(wsi::createTests					(m_testCtx));
-	addChild(createSynchronizationTests			(m_testCtx));
-	addChild(createSynchronization2Tests		(m_testCtx));
-//	addChild(sparse::createTests				(m_testCtx));
-	addChild(tessellation::createTests			(m_testCtx));
-	addChild(rasterization::createTests			(m_testCtx));
-	addChild(clipping::createTests				(m_testCtx));
-	addChild(FragmentOperations::createTests	(m_testCtx));
-	addChild(texture::createTests				(m_testCtx));
-	addChild(geometry::createTests				(m_testCtx));
-	addChild(robustness::createTests			(m_testCtx));
-	addChild(MultiView::createTests				(m_testCtx));
-	addChild(subgroups::createTests				(m_testCtx));
-	addChild(ycbcr::createTests					(m_testCtx));
-	addChild(ProtectedMem::createTests			(m_testCtx));
-	addChild(DeviceGroup::createTests			(m_testCtx));
-	addChild(MemoryModel::createTests			(m_testCtx));
-//	addChild(conditional::createTests			(m_testCtx));
-//	addChild(cts_amber::createGraphicsFuzzTests	(m_testCtx));
-	addChild(imageless::createTests				(m_testCtx));
-//	addChild(TransformFeedback::createTests		(m_testCtx));
-	addChild(DescriptorIndexing::createTests	(m_testCtx));
-	addChild(FragmentShaderInterlock::createTests(m_testCtx));
-//	addChild(modifiers::createTests				(m_testCtx));
-//	addChild(RayTracing::createTests			(m_testCtx));
-//	addChild(RayQuery::createTests				(m_testCtx));
-	addChild(FragmentShadingRate::createTests(m_testCtx));
+	addRootChild("renderpass",					createRenderPassTests);
+	addRootChild("renderpass2",					createRenderPass2Tests);
+	addRootChild("ubo",							ubo::createTests);
+	addRootChild("dynamic_state",				DynamicState::createTests);
+	addRootChild("ssbo",						ssbo::createTests);
+	addRootChild("query_pool",					QueryPool::createTests);
+	addRootChild("draw",						Draw::createTests);
+	addRootChild("compute",						compute::createTests);
+	addRootChild("image",						image::createTests);
+//	addRootChild("wsi",							wsi::createTests);
+	addRootChild("synchronization",				createSynchronizationTests);
+	addRootChild("synchronization2",			createSynchronization2Tests);
+//	addRootChild("sparse_resources",			sparse::createTests);
+	addRootChild("tessellation",				tessellation::createTests);
+	addRootChild("rasterization",				rasterization::createTests);
+	addRootChild("clipping",					clipping::createTests);
+	addRootChild("fragment_operations",			FragmentOperations::createTests);
+	addRootChild("texture",						texture::createTests);
+	addRootChild("geometry",					geometry::createTests);
+	addRootChild("robustness",					robustness::createTests);
+	addRootChild("multiview",					MultiView::createTests);
+	addRootChild("subgroups",					subgroups::createTests);
+	addRootChild("ycbcr",						ycbcr::createTests);
+	addRootChild("protected_memory",			ProtectedMem::createTests);
+	addRootChild("device_group",				DeviceGroup::createTests);
+	addRootChild("memory_model",				MemoryModel::createTests);
+//	addRootChild("conditional_rendering",		conditional::createTests);
+//	addRootChild("graphicsfuzz",				cts_amber::createGraphicsFuzzTests);
+	addRootChild("imageless_framebuffer",		imageless::createTests);
+//	addRootChild("transform_feedback",			TransformFeedback::createTests);
+	addRootChild("descriptor_indexing",			DescriptorIndexing::createTests);
+	addRootChild("fragment_shader_interlock",	FragmentShaderInterlock::createTests);
+//	addRootChild("drm_format_modifiers",		modifiers::createTests);
+//	addRootChild("ray_tracing_pipeline",		RayTracing::createTests);
+//	addRootChild("ray_query",					RayQuery::createTests);
+	addRootChild("fragment_shading_rate",		FragmentShadingRate::createTests);
 	addChild(sc::createTests(m_testCtx));
 }
 

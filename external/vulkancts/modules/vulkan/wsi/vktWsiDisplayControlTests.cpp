@@ -715,7 +715,7 @@ SwapchainCounterTestInstance::SwapchainCounterTestInstance (Context& context)
 
 	, m_queueFamilyIndex		(chooseQueueFamilyIndex(m_vki, m_physicalDevice, m_surface))
 	, m_device					(createTestDevice(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex))
-	, m_vkd						(m_vkp, m_instance, *m_device)
+	, m_vkd						(m_vkp, m_instance, *m_device, context.getUsedApiVersion())
 	, m_queue					(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 
 	, m_commandPool				(createCommandPool(m_vkd, *m_device, m_queueFamilyIndex))

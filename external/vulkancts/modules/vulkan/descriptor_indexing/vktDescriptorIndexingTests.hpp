@@ -33,7 +33,7 @@ namespace vkt
 namespace DescriptorIndexing
 {
 
-tcu::TestCaseGroup* createTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name);
 
 } // DescriptorIndexing
 } // vkt

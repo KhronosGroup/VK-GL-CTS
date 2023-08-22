@@ -47,9 +47,9 @@ void addFragmentOperationsTests (tcu::TestCaseGroup* fragmentOperationsTestsGrou
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "fragment_operations", "Fragment operations tests", addFragmentOperationsTests);
+	return createTestGroup(testCtx, name.c_str(), "Fragment operations tests", addFragmentOperationsTests);
 }
 
 } // FragmentOperations

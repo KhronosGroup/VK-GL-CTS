@@ -13,3 +13,5 @@ dEQP-VK.pipeline.*.sampler.border_swizzle.x8_d24_unorm_pack32.*1*.*.*.*
 dEQP-VK.pipeline.*.sampler.border_swizzle.x8_d24_unorm_pack32.*a*.*.*.*
 dEQP-VK.pipeline.*.sampler.border_swizzle.d32_sfloat_s8_uint*.*1*.*.*.*
 dEQP-VK.pipeline.*.sampler.border_swizzle.d32_sfloat_s8_uint*.*a*.*.*.*
+
+dEQP-VK.shader_object.performance.*

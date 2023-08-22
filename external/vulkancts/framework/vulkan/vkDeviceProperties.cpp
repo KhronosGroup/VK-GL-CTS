@@ -107,11 +107,18 @@ DeviceProperties::DeviceProperties	(const InstanceInterface&			vki,
 			const char* propertyName = propertyStructCreationData.name;
 
 			// check if this property is available on current device.
-			if (de::contains(allDeviceExtensions.begin(), allDeviceExtensions.end(), propertyName))
+			if (de::contains(allDeviceExtensions.begin(), allDeviceExtensions.end(), propertyName) ||
+				std::string(propertyName) == "core_property")
 			{
 				PropertyStructWrapperBase* p = (*propertyStructCreationData.creatorFunction)();
 				if (p == DE_NULL)
 					continue;
+
+#ifdef CTS_USES_VULKANSC
+				// m_vulkanSC10Properties was already added above
+				if (p->getPropertyDesc().sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_PROPERTIES)
+					continue;
+#endif // CTS_USES_VULKANSC
 
 				// if property struct is part of VkPhysicalDeviceVulkan1{1,2}Properties
 				// we dont add it to the chain but store and fill later from blob data

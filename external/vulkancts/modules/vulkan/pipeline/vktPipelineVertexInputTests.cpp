@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Imagination Technologies Ltd.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -280,13 +282,12 @@ private:
 	de::MovePtr<Allocation>					m_colorImageAlloc;
 	Move<VkImage>							m_depthImage;
 	Move<VkImageView>						m_colorAttachmentView;
-	Move<VkRenderPass>						m_renderPass;
-	Move<VkFramebuffer>						m_framebuffer;
+	RenderPassWrapper						m_renderPass;
 
-	Move<VkShaderModule>					m_vertexShaderModule;
-	Move<VkShaderModule>					m_fragmentShaderModule;
+	ShaderWrapper							m_vertexShaderModule;
+	ShaderWrapper							m_fragmentShaderModule;
 
-	Move<VkPipelineLayout>					m_pipelineLayout;
+	PipelineLayoutWrapper					m_pipelineLayout;
 	GraphicsPipelineWrapper					m_graphicsPipeline;
 
 	Move<VkCommandPool>						m_cmdPool;
@@ -539,7 +540,7 @@ void VertexInputTest::checkSupport (Context& context) const
 			TCU_THROW(NotSupportedError, "storageInputOutput16 not supported");
 	}
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
 TestInstance* VertexInputTest::createInstance (Context& context) const
@@ -1109,7 +1110,7 @@ VertexInputInstance::VertexInputInstance (Context&												context,
 	: vkt::TestInstance			(context)
 	, m_renderSize				(16, 16)
 	, m_colorFormat				(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_graphicsPipeline		(context.getDeviceInterface(), context.getDevice(), pipelineConstructionType)
+	, m_graphicsPipeline		(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType)
 {
 	DE_ASSERT(bindingDescriptions.size() == bindingOffsets.size());
 
@@ -1175,7 +1176,7 @@ VertexInputInstance::VertexInputInstance (Context&												context,
 	}
 
 	// Create render pass
-	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat);
+	m_renderPass = RenderPassWrapper(pipelineConstructionType, vk, vkDevice, m_colorFormat);
 
 	// Create framebuffer
 	{
@@ -1192,7 +1193,7 @@ VertexInputInstance::VertexInputInstance (Context&												context,
 			1u													// deUint32					layers;
 		};
 
-		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
+		m_renderPass.createFramebuffer(vk, vkDevice, &framebufferParams, *m_colorImage);
 	}
 
 	// Create pipeline layout
@@ -1208,11 +1209,11 @@ VertexInputInstance::VertexInputInstance (Context&												context,
 			DE_NULL												// const VkPushConstantRange*		pPushConstantRanges;
 		};
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_pipelineLayout = PipelineLayoutWrapper(pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 	}
 
-	m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("attribute_test_vert"), 0);
-	m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("attribute_test_frag"), 0);
+	m_vertexShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("attribute_test_vert"), 0);
+	m_fragmentShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("attribute_test_frag"), 0);
 
 	// Create specialization constant
 	deUint32 specializationData = static_cast<deUint32>(attributeDescriptions.size());
@@ -1287,21 +1288,21 @@ VertexInputInstance::VertexInputInstance (Context&												context,
 						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewport,
 										scissor,
-										*m_pipelineLayout,
+										m_pipelineLayout,
 										*m_renderPass,
 										0u,
-										*m_vertexShaderModule,
+										m_vertexShaderModule,
 										DE_NULL,
-										DE_NULL,
-										DE_NULL,
-										DE_NULL,
+										ShaderWrapper(),
+										ShaderWrapper(),
+										ShaderWrapper(),
 										&specializationInfo)
-						  .setupFragmentShaderState(*m_pipelineLayout,
+						  .setupFragmentShaderState(m_pipelineLayout,
 										*m_renderPass,
 										0u,
-										*m_fragmentShaderModule)
+										m_fragmentShaderModule)
 						  .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
-						  .setMonolithicPipelineLayout(*m_pipelineLayout)
+						  .setMonolithicPipelineLayout(m_pipelineLayout)
 						  .buildPipeline();
 	}
 
@@ -1368,9 +1369,9 @@ VertexInputInstance::VertexInputInstance (Context&												context,
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0,
 			0u, DE_NULL, 0u, DE_NULL, 1u, &attachmentLayoutBarrier);
 
-		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
+		m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
 
-		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
+		m_graphicsPipeline.bind(*m_cmdBuffer);
 
 		std::vector<VkBuffer> vertexBuffers;
 		for (size_t bufferNdx = 0; bufferNdx < m_vertexBuffers.size(); bufferNdx++)
@@ -1399,7 +1400,7 @@ VertexInputInstance::VertexInputInstance (Context&												context,
 
 		vk.cmdDraw(*m_cmdBuffer, 4, 2, 0, 0);
 
-		endRenderPass(vk, *m_cmdBuffer);
+		m_renderPass.end(vk, *m_cmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }

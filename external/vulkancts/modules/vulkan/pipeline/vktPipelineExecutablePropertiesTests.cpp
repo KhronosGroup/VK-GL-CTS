@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2019 The Khronos Group Inc.
  * Copyright (c) 2019 Intel Corporation.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -775,11 +777,11 @@ public:
 
 protected:
 	void					preparePipelineWrapper						(GraphicsPipelineWrapper&	gpw,
-																		 VkShaderModule				vertShaderModule,
-																		 VkShaderModule				tescShaderModule,
-																		 VkShaderModule				teseShaderModule,
-																		 VkShaderModule				geomShaderModule,
-																	 VkShaderModule				fragShaderModule);
+																		 ShaderWrapper				vertShaderModule,
+																		 ShaderWrapper				tescShaderModule,
+																		 ShaderWrapper				teseShaderModule,
+																		 ShaderWrapper				geomShaderModule,
+																		 ShaderWrapper				fragShaderModule);
 
 	VkPipeline				getPipeline									(deUint32 ndx) override
 	{
@@ -790,7 +792,7 @@ protected:
 	const tcu::UVec2					m_renderSize;
 	const VkFormat						m_colorFormat;
 	const VkFormat						m_depthFormat;
-	Move<VkPipelineLayout>				m_pipelineLayout;
+	PipelineLayoutWrapper				m_pipelineLayout;
 	GraphicsPipelineWrapper				m_pipelineWrapper[PIPELINE_CACHE_NDX_COUNT];
 	Move<VkRenderPass>					m_renderPass;
 };
@@ -906,7 +908,7 @@ void GraphicsExecutablePropertiesTest::checkSupport(Context& context) const
 			TCU_THROW(NotSupportedError, "Tessellation Not Supported");
 	}
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_param.getPipelineConstructionType());
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_param.getPipelineConstructionType());
 }
 
 GraphicsExecutablePropertiesTestInstance::GraphicsExecutablePropertiesTestInstance (Context&					context,
@@ -917,9 +919,9 @@ GraphicsExecutablePropertiesTestInstance::GraphicsExecutablePropertiesTestInstan
 	, m_depthFormat							(VK_FORMAT_D16_UNORM)
 	, m_pipelineWrapper
 	{
-		{ m_context.getDeviceInterface(), m_context.getDevice(), param->getPipelineConstructionType(),
+		{ m_context.getInstanceInterface(), m_context.getDeviceInterface(), m_context.getPhysicalDevice(), m_context.getDevice(), m_context.getDeviceExtensions(), param->getPipelineConstructionType(),
 						(param->getTestStatistics() ? deUint32(VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR) : 0u) },
-		{ m_context.getDeviceInterface(), m_context.getDevice(), param->getPipelineConstructionType(),
+		{ m_context.getInstanceInterface(), m_context.getDeviceInterface(), m_context.getPhysicalDevice(), m_context.getDevice(), m_context.getDeviceExtensions(),param->getPipelineConstructionType(),
 						(param->getTestStatistics() ? deUint32(VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR) : 0u) |
 						// Only check gather internal representations on the second pipeline.
 						// This way, it's more obvious if they failed to capture due to the pipeline being cached.
@@ -942,29 +944,29 @@ GraphicsExecutablePropertiesTestInstance::GraphicsExecutablePropertiesTestInstan
 			DE_NULL												// const VkPushConstantRange*		pPushConstantRanges;
 		};
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_pipelineLayout = PipelineLayoutWrapper(m_param->getPipelineConstructionType(), vk, vkDevice, &pipelineLayoutParams);
 	}
 
 	// Create render pass
 	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat, m_depthFormat);
 
 	// Bind shader stages
-	Move<VkShaderModule> vertShaderModule = createShaderModule(vk, vkDevice, context.getBinaryCollection().get("color_vert"), 0);
-	Move<VkShaderModule> fragShaderModule = createShaderModule(vk, vkDevice, context.getBinaryCollection().get("color_frag"), 0);
-	Move<VkShaderModule> tescShaderModule;
-	Move<VkShaderModule> teseShaderModule;
-	Move<VkShaderModule> geomShaderModule;
+	ShaderWrapper vertShaderModule = ShaderWrapper(vk, vkDevice, context.getBinaryCollection().get("color_vert"), 0);
+	ShaderWrapper fragShaderModule = ShaderWrapper(vk, vkDevice, context.getBinaryCollection().get("color_frag"), 0);
+	ShaderWrapper tescShaderModule;
+	ShaderWrapper teseShaderModule;
+	ShaderWrapper geomShaderModule;
 
 	VkShaderStageFlags shaderFlags = m_param->getShaderFlags();
 	if (shaderFlags & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
-		tescShaderModule = createShaderModule(vk, vkDevice, context.getBinaryCollection().get("basic_tcs"), 0);
+		tescShaderModule = ShaderWrapper(vk, vkDevice, context.getBinaryCollection().get("basic_tcs"), 0);
 	if (shaderFlags & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
-		teseShaderModule = createShaderModule(vk, vkDevice, context.getBinaryCollection().get("basic_tes"), 0);
+		teseShaderModule = ShaderWrapper(vk, vkDevice, context.getBinaryCollection().get("basic_tes"), 0);
 	if (shaderFlags & VK_SHADER_STAGE_GEOMETRY_BIT)
-		geomShaderModule = createShaderModule(vk, vkDevice, context.getBinaryCollection().get("dummy_geo"), 0);
+		geomShaderModule = ShaderWrapper(vk, vkDevice, context.getBinaryCollection().get("dummy_geo"), 0);
 
 	for (deUint32 ndx = 0; ndx < PIPELINE_CACHE_NDX_COUNT; ndx++)
-		preparePipelineWrapper(m_pipelineWrapper[ndx], *vertShaderModule, *tescShaderModule, *teseShaderModule, *geomShaderModule, *fragShaderModule);
+		preparePipelineWrapper(m_pipelineWrapper[ndx], vertShaderModule, tescShaderModule, teseShaderModule, geomShaderModule, fragShaderModule);
 }
 
 GraphicsExecutablePropertiesTestInstance::~GraphicsExecutablePropertiesTestInstance (void)
@@ -972,11 +974,11 @@ GraphicsExecutablePropertiesTestInstance::~GraphicsExecutablePropertiesTestInsta
 }
 
 void GraphicsExecutablePropertiesTestInstance::preparePipelineWrapper(GraphicsPipelineWrapper&		gpw,
-																	  VkShaderModule				vertShaderModule,
-																	  VkShaderModule				tescShaderModule,
-																	  VkShaderModule				teseShaderModule,
-																	  VkShaderModule				geomShaderModule,
-																	  VkShaderModule				fragShaderModule)
+																	  ShaderWrapper					vertShaderModule,
+																	  ShaderWrapper					tescShaderModule,
+																	  ShaderWrapper					teseShaderModule,
+																	  ShaderWrapper					geomShaderModule,
+																	  ShaderWrapper					fragShaderModule)
 {
 	// Create pipeline
 	const VkVertexInputBindingDescription vertexInputBindingDescription =
@@ -1077,13 +1079,13 @@ void GraphicsExecutablePropertiesTestInstance::preparePipelineWrapper(GraphicsPi
 		1.0f,														// float									maxDepthBounds;
 	};
 
-	gpw.setDefaultTopology((tescShaderModule == DE_NULL) ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST : VK_PRIMITIVE_TOPOLOGY_PATCH_LIST)
+	gpw.setDefaultTopology((!tescShaderModule.isSet()) ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST : VK_PRIMITIVE_TOPOLOGY_PATCH_LIST)
 	   .setDefaultRasterizationState()
 	   .setDefaultMultisampleState()
 	   .setupVertexInputState(&vertexInputStateParams)
 	   .setupPreRasterizationShaderState(viewport,
 			scissor,
-			*m_pipelineLayout,
+			m_pipelineLayout,
 			*m_renderPass,
 			0u,
 			vertShaderModule,
@@ -1091,9 +1093,9 @@ void GraphicsExecutablePropertiesTestInstance::preparePipelineWrapper(GraphicsPi
 			tescShaderModule,
 			teseShaderModule,
 			geomShaderModule)
-	   .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, fragShaderModule, &depthStencilStateParams)
+	   .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, fragShaderModule, &depthStencilStateParams)
 	   .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
-	   .setMonolithicPipelineLayout(*m_pipelineLayout)
+	   .setMonolithicPipelineLayout(m_pipelineLayout)
 	   .buildPipeline(*m_cache);
 }
 

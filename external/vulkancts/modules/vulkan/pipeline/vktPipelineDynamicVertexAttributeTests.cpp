@@ -114,9 +114,9 @@ static std::vector <std::string> removeExtensions (const std::vector<std::string
 	return res;
 }
 
-vk::Move<vk::VkDevice> createDynamicVertexStateDevice (Context& context, const deUint32 testQueueFamilyIndex, bool pipelineLibrary)
+vk::Move<vk::VkDevice> createDynamicVertexStateDevice (Context& context, const deUint32 testQueueFamilyIndex, const vk::PipelineConstructionType pipelineConstructionType)
 {
-	DE_UNREF(pipelineLibrary);
+	DE_UNREF(pipelineConstructionType);
 
 	void* pNext = DE_NULL;
 
@@ -124,19 +124,34 @@ vk::Move<vk::VkDevice> createDynamicVertexStateDevice (Context& context, const d
 	vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	graphicsPipelineFeatures
 	{
 		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT,	// VkStructureType	sType;
-		DE_NULL,																		// void*			pNext;
+		pNext,																			// void*			pNext;
 		VK_TRUE,																		// VkBool32			graphicsPipelineLibrary;
 	};
 
-	if (pipelineLibrary)
+	if (vk::isConstructionTypeLibrary(pipelineConstructionType))
 		pNext = &graphicsPipelineFeatures;
+	vk::VkPhysicalDeviceDynamicRenderingFeaturesKHR			dynamicRenderingFeatures
+	{
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,	// VkStructureType	sType;
+		pNext,																	// void* pNext;
+		VK_TRUE,																// VkBool32		dynamicRendering;
+	};
+	vk::VkPhysicalDeviceShaderObjectFeaturesEXT				shaderObjectFeatures
+	{
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT,	// VkStructureType	sType;
+		&dynamicRenderingFeatures,											// void*			pNext;
+		VK_TRUE,															// VkBool32			shaderObject;
+	};
+
+	if (vk::isConstructionTypeShaderObject(pipelineConstructionType))
+		pNext = &shaderObjectFeatures;
 #endif
 
 	vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT	dynamicVertexState
 	{
 		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT,	// VkStructureType	sType;
 		pNext,																			// void*			pNext;
-		true																			// VkBool32			vertexInputDynamicState;
+		VK_TRUE,																		// VkBool32			vertexInputDynamicState;
 	};
 
 	vk::VkPhysicalDeviceFeatures2							physDeviceFeats2	= context.getDeviceFeatures2();
@@ -222,20 +237,23 @@ tcu::TestStatus NonSequentialInstance::iterate (void)
 	const vk::DeviceInterface&										vk						= m_context.getDeviceInterface();
 	const vk::PlatformInterface&									vkp						= m_context.getPlatformInterface();
 	const vk::VkInstance											vki						= m_context.getInstance();
+	const vk::InstanceInterface&									instanceInterface		= m_context.getInstanceInterface();
 	const deUint32													queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
-	const vk::Move<vk::VkDevice>									device					= createDynamicVertexStateDevice(m_context, queueFamilyIndex, m_pipelineConstructionType != vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC);
+	const vk::VkPhysicalDevice										physicalDevice			= m_context.getPhysicalDevice();
+	const vk::Move<vk::VkDevice>									device					= createDynamicVertexStateDevice(m_context, queueFamilyIndex, m_pipelineConstructionType);
 	vk::SimpleAllocator												allocator				(vk, *device, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
-	const vk::DeviceDriver											deviceDriver			(vkp, vki, *device);
+	const vk::DeviceDriver											deviceDriver			(vkp, vki, *device, m_context.getUsedApiVersion());
 	const vk::VkQueue												queue					= getDeviceQueue(deviceDriver, *device, queueFamilyIndex, 0u);
+	const auto&														deviceExtensions		= m_context.getDeviceExtensions();
 
 	// Create shaders
-	const std::array<vk::Move<vk::VkShaderModule>, 2>				vertexShaderModules		=
+	const std::array<vk::ShaderWrapper, 2>							vertexShaderModules		=
 	{
-		createShaderModule(vk, *device, m_context.getBinaryCollection().get("vert_0")),
-		createShaderModule(vk, *device, m_context.getBinaryCollection().get("vert_1"))
+		vk::ShaderWrapper(vk, *device, m_context.getBinaryCollection().get("vert_0")),
+		vk::ShaderWrapper(vk, *device, m_context.getBinaryCollection().get("vert_1"))
 	};
 
-	const vk::Move<vk::VkShaderModule>								fragmentShaderModule	= createShaderModule(vk, *device, m_context.getBinaryCollection().get("frag"));
+	const vk::ShaderWrapper											fragmentShaderModule	= vk::ShaderWrapper(vk, *device, m_context.getBinaryCollection().get("frag"));
 
 	const deUint32													vertexBufferBindIndex	= 0u;
 
@@ -319,7 +337,7 @@ tcu::TestStatus NonSequentialInstance::iterate (void)
 		DE_NULL											// const VkSubpassDependency*		pDependencies
 	};
 
-	vk::Move<vk::VkRenderPass>										renderPass				= createRenderPass(vk,*device, &renderPassInfo);
+	vk::RenderPassWrapper											renderPass				= vk::RenderPassWrapper(m_pipelineConstructionType, vk, *device, &renderPassInfo);
 
 	// Create framebuffer
 	const vk::VkImageView											attachmentBindInfos[]	=
@@ -340,7 +358,7 @@ tcu::TestStatus NonSequentialInstance::iterate (void)
 		1u												// deUint32						layers;
 	};
 
-	vk::Move<vk::VkFramebuffer>										framebuffer				= createFramebuffer(vk,*device, &framebufferCreateInfo);
+	renderPass.createFramebuffer(vk, *device, &framebufferCreateInfo, { *colorImage });
 
 	std::array<vk::VkDynamicState, 1>								dynamicStates
 	{
@@ -368,10 +386,10 @@ tcu::TestStatus NonSequentialInstance::iterate (void)
 		DE_NULL												// const VkPushDescriptorRange*	pPushDescriptorRanges;
 	};
 
-	vk::Move<vk::VkPipelineLayout>									pipelineLayout			= createPipelineLayout(vk,*device, &pipelineLayoutInfo);
+	vk::PipelineLayoutWrapper										pipelineLayout			(m_pipelineConstructionType, vk, *device, &pipelineLayoutInfo);
 
 	// Create graphics pipeline
-	vk::GraphicsPipelineWrapper										graphicsPipelines[2]	{ { vk, *device, m_pipelineConstructionType}, { vk, *device, m_pipelineConstructionType} };
+	vk::GraphicsPipelineWrapper										graphicsPipelines[2]	{ { instanceInterface, vk, physicalDevice, *device, deviceExtensions, m_pipelineConstructionType}, { instanceInterface, vk, physicalDevice, *device, deviceExtensions, m_pipelineConstructionType} };
 
 	const vk::VkExtent2D											extent					= {32, 32};
 	const std::vector<vk::VkViewport>								viewports				(1, vk::makeViewport(extent));
@@ -388,14 +406,14 @@ tcu::TestStatus NonSequentialInstance::iterate (void)
 			.setupVertexInputState(&vertexInputStateCreateInfo)
 			.setupPreRasterizationShaderState(viewports,
 				scissors,
-				*pipelineLayout,
+				pipelineLayout,
 				*renderPass,
 				0u,
-				*vertexShaderModules[i])
-			.setupFragmentShaderState(*pipelineLayout,
+				vertexShaderModules[i])
+			.setupFragmentShaderState(pipelineLayout,
 				*renderPass,
 				0u,
-				*fragmentShaderModule,
+				fragmentShaderModule,
 				DE_NULL,
 				DE_NULL)
 			.setupFragmentOutputState(*renderPass)
@@ -451,19 +469,19 @@ tcu::TestStatus NonSequentialInstance::iterate (void)
 
 	beginCommandBuffer(vk, *cmdBuffer);
 
-	beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, vk::makeRect2D(0, 0, 32u, 32u), clearColorValue);
+	renderPass.begin(vk, *cmdBuffer, vk::makeRect2D(0, 0, 32u, 32u), clearColorValue);
 
-	vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[0].getPipeline());
+	graphicsPipelines[0].bind(*cmdBuffer);
 	vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffers[0].get(), &vertexBufferOffset);
 	vk.cmdSetVertexInputEXT(*cmdBuffer, 1u, &bindingDescription2EXT, static_cast<deUint32>(vertexInputAttributeDesc2EXTGreens.size()), vertexInputAttributeDesc2EXTGreens.data());
 	vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
 
-	vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[1].getPipeline());
+	graphicsPipelines[1].bind(*cmdBuffer);
 	vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffers[1].get(), &vertexBufferOffset);
 	vk.cmdSetVertexInputEXT(*cmdBuffer, 1u, &bindingDescription2EXT, static_cast<deUint32>(vertexInputAttributeDesc2EXT2Reds.size()), vertexInputAttributeDesc2EXT2Reds.data());
 	vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
 
-	endRenderPass(vk, *cmdBuffer);
+	renderPass.end(vk, *cmdBuffer);
 	copyImageToBuffer(vk, *cmdBuffer, *colorImage, *colorBuffer, tcu::IVec2(32, 32), vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
 
 	endCommandBuffer(vk, *cmdBuffer);
@@ -544,7 +562,7 @@ void NonSequentialCase::checkSupport (Context& context) const
 	for (const auto& extension : extensions)
 		context.requireDeviceFunctionality(extension);
 
-	checkPipelineLibraryRequirements(vki, physDevice, m_pipelineConstructionType);
+	vk::checkPipelineConstructionRequirements(vki, physDevice, m_pipelineConstructionType);
 }
 
 void NonSequentialCase::initPrograms (vk::SourceCollections& sourceCollections) const

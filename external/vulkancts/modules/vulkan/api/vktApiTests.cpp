@@ -121,9 +121,9 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "api", "API Tests", createApiTests);
+	return createTestGroup(testCtx, name, "API Tests", createApiTests);
 }
 
 } // api

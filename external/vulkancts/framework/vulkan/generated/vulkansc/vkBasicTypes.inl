@@ -33,6 +33,7 @@
 #define VK_SHADER_UNUSED_KHR						(static_cast<uint32_t>			((~0U)))
 #define VK_MAX_GLOBAL_PRIORITY_SIZE_KHR				(static_cast<uint32_t>			(16))
 #define VK_MAX_SHADER_MODULE_IDENTIFIER_SIZE_EXT	(static_cast<uint32_t>			(32))
+#define VK_SHADER_INDEX_UNUSED_AMDX					(static_cast<uint32_t>			((~0U)))
 #define VKSC_API_MAX_FRAMEWORK_VERSION	VKSC_API_VERSION_1_0
 
 VK_DEFINE_HANDLE					(VkInstance,					HANDLE_TYPE_INSTANCE);
@@ -2641,6 +2642,10 @@ typedef uint32_t VkMicromapCreateFlagsEXT;
 
 typedef uint32_t VkDirectDriverLoadingFlagsLUNARG;
 
+typedef uint64_t VkPipelineCreateFlags2KHR;
+
+typedef uint64_t VkBufferUsageFlags2KHR;
+
 typedef uint32_t VkCompositeAlphaFlagsKHR;
 
 typedef uint32_t VkDisplayPlaneAlphaFlagsKHR;
@@ -2784,6 +2789,8 @@ typedef uint32_t VkSubmitFlags;
 typedef VkSubmitFlags VkSubmitFlagsKHR;
 
 typedef uint32_t VkImageFormatConstraintsFlagsFUCHSIA;
+
+typedef uint32_t VkHostImageCopyFlagsEXT;
 
 typedef uint32_t VkImageConstraintsInfoFlagsFUCHSIA;
 

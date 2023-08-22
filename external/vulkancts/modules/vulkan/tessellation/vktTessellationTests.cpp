@@ -78,9 +78,9 @@ void createChildren (tcu::TestCaseGroup* tessellationTests)
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "tessellation", "Tessellation tests", createChildren);
+	return createTestGroup(testCtx, name.c_str(), "Tessellation tests", createChildren);
 }
 
 } // tessellation
