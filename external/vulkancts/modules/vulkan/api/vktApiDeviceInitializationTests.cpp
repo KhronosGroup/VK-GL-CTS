@@ -1261,7 +1261,7 @@ struct Feature
 
 #define FEATURE_ITEM(STRUCT, MEMBER) {#MEMBER, DE_OFFSET_OF(STRUCT, MEMBER)}
 // This macro is used to avoid the "out of array bounds" compiler warnings/errors in the checkFeatures function.
-#define SAFE_OFFSET(LIMITING_STRUCT, STRUCT, MEMBER) std::min(static_cast<deUint32>(sizeof(LIMITING_STRUCT) - sizeof(VkBool32)), DE_OFFSET_OF(STRUCT, MEMBER))
+#define SAFE_OFFSET(LIMITING_STRUCT, STRUCT, MEMBER) std::min<size_t>(sizeof(LIMITING_STRUCT) - sizeof(VkBool32), DE_OFFSET_OF(STRUCT, MEMBER))
 
 template<typename StructType>
 void checkFeatures (const PlatformInterface& vkp, const VkInstance& instance, const InstanceDriver& instanceDriver, const VkPhysicalDevice physicalDevice, int numFeatures, const Feature features[], const StructType* supportedFeatures, const deUint32 queueFamilyIndex, const deUint32 queueCount, const float queuePriority, int& numErrors, tcu::ResultCollector& resultCollector, const vector<const char*>* extensionNames, const VkPhysicalDeviceFeatures& defaultPhysicalDeviceFeatures)
