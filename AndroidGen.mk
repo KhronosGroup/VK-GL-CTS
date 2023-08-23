@@ -460,6 +460,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderClockTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderCommonFunctionTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderExecutor.cpp \
+	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderExpectAssumeTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderFConvertTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderIntegerFunctionTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderPackingFunctionTests.cpp \

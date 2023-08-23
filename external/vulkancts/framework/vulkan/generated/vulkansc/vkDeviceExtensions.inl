@@ -64,6 +64,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_shader_atomic_int64",
 	"VK_KHR_shader_clock",
 	"VK_KHR_shader_draw_parameters",
+	"VK_KHR_shader_expect_assume",
 	"VK_KHR_shader_float16_int8",
 	"VK_KHR_shader_float_controls",
 	"VK_KHR_shader_integer_dot_product",
