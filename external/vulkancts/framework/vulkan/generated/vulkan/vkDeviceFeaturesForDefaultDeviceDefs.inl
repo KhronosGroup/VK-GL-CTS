@@ -159,5 +159,6 @@ const VkPhysicalDeviceCooperativeMatrixFeaturesKHR&						getCooperativeMatrixFea
 const VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM&			getMultiviewPerViewRenderAreasFeaturesQCOM			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM>();		}
 const VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT&	getAttachmentFeedbackLoopDynamicStateFeaturesEXT	(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT>();	}
 const VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&			getExternalMemoryScreenBufferFeaturesQNX			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX>();			}
+const VkPhysicalDeviceShaderExpectAssumeFeaturesKHR&					getShaderExpectAssumeFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderExpectAssumeFeaturesKHR>();					}
 const VkPhysicalDeviceProtectedMemoryFeatures&							getProtectedMemoryFeatures							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceProtectedMemoryFeatures>();						}
 const VkPhysicalDeviceShaderDrawParametersFeatures&						getShaderDrawParametersFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderDrawParametersFeatures>();					}

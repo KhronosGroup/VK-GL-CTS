@@ -159,5 +159,6 @@ const vk::VkPhysicalDeviceCooperativeMatrixFeaturesKHR&						Context::getCoopera
 const vk::VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM&			Context::getMultiviewPerViewRenderAreasFeaturesQCOM			(void) const { return m_device->getMultiviewPerViewRenderAreasFeaturesQCOM();		}
 const vk::VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT&	Context::getAttachmentFeedbackLoopDynamicStateFeaturesEXT	(void) const { return m_device->getAttachmentFeedbackLoopDynamicStateFeaturesEXT();	}
 const vk::VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&			Context::getExternalMemoryScreenBufferFeaturesQNX			(void) const { return m_device->getExternalMemoryScreenBufferFeaturesQNX();			}
+const vk::VkPhysicalDeviceShaderExpectAssumeFeaturesKHR&					Context::getShaderExpectAssumeFeatures						(void) const { return m_device->getShaderExpectAssumeFeatures();					}
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							Context::getProtectedMemoryFeatures							(void) const { return m_device->getProtectedMemoryFeatures();						}
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						Context::getShaderDrawParametersFeatures					(void) const { return m_device->getShaderDrawParametersFeatures();					}

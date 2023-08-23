@@ -309,9 +309,9 @@ PACKAGES = [
 		"04cdb2d344706052c7a2d359294e830ebac63e74",
 		"spirv-tools"),
 	GitRepo(
-		"https://github.com/KhronosGroup/glslang.git",
-		"git@github.com:KhronosGroup/glslang.git",
-		"808c7ed17cbc5a5078264bad3e95f2199a42e939",
+		"https://gitlab.khronos.org/GLSL/glslang.git",
+		"git@gitlab.khronos.org:GLSL/glslang.git",
+		"KHR_shader_expect_assume",
 		"glslang",
 		removeTags = ["main-tot"]),
 	GitRepo(
@@ -320,9 +320,9 @@ PACKAGES = [
 		"3469b164e25cee24435029a569933cb42578db5d",
 		"spirv-headers"),
 	GitRepo(
-		"https://github.com/KhronosGroup/Vulkan-Docs.git",
-		"git@github.com:KhronosGroup/Vulkan-Docs.git",
-		"7ceac74e8af652d14542d826d576907c3b8f63d0",
+		"https://gitlab.khronos.org/vulkan/vulkan.git",
+		"git@gitlab.khronos.org:vulkan/vulkan.git",
+		"vk-khr-shader-expect-assume",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",

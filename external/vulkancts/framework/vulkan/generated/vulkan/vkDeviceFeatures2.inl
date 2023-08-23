@@ -4713,6 +4713,43 @@ tcu::TestStatus testPhysicalDeviceFeatureCooperativeMatrixFeaturesKHR (Context& 
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureShaderExpectAssumeFeaturesKHR (Context& context)
+{
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver&		vki				(instance.getDriver());
+	const int					count			= 2u;
+	TestLog&					log				= context.getTestContext().getLog();
+	VkPhysicalDeviceFeatures2	extFeatures;
+	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	VkPhysicalDeviceShaderExpectAssumeFeaturesKHR	deviceShaderExpectAssumeFeaturesKHR[count];
+	const bool										isShaderExpectAssumeFeaturesKHR = checkExtension(properties, "VK_KHR_shader_expect_assume");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceShaderExpectAssumeFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceShaderExpectAssumeFeaturesKHR));
+		deviceShaderExpectAssumeFeaturesKHR[ndx].sType = isShaderExpectAssumeFeaturesKHR ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EXPECT_ASSUME_FEATURES_KHR : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceShaderExpectAssumeFeaturesKHR[ndx].pNext = DE_NULL;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceShaderExpectAssumeFeaturesKHR[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isShaderExpectAssumeFeaturesKHR)
+		log << TestLog::Message << deviceShaderExpectAssumeFeaturesKHR[0] << TestLog::EndMessage;
+
+	if (isShaderExpectAssumeFeaturesKHR &&
+		(deviceShaderExpectAssumeFeaturesKHR[0].shaderExpectAssume != deviceShaderExpectAssumeFeaturesKHR[1].shaderExpectAssume))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceShaderExpectAssumeFeaturesKHR");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus createDeviceWithPromoted11Structures (Context& context)
 {
 	if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
@@ -5027,6 +5064,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "shader_object_features_ext", "VkPhysicalDeviceShaderObjectFeaturesEXT", testPhysicalDeviceFeatureShaderObjectFeaturesEXT);
 	addFunctionCase(testGroup, "shader_tile_image_features_ext", "VkPhysicalDeviceShaderTileImageFeaturesEXT", testPhysicalDeviceFeatureShaderTileImageFeaturesEXT);
 	addFunctionCase(testGroup, "cooperative_matrix_features_khr", "VkPhysicalDeviceCooperativeMatrixFeaturesKHR", testPhysicalDeviceFeatureCooperativeMatrixFeaturesKHR);
+	addFunctionCase(testGroup, "shader_expect_assume_features_khr", "VkPhysicalDeviceShaderExpectAssumeFeaturesKHR", testPhysicalDeviceFeatureShaderExpectAssumeFeaturesKHR);
 	addFunctionCase(testGroup, "create_device_with_promoted11_structures", "", createDeviceWithPromoted11Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted12_structures", "", createDeviceWithPromoted12Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted13_structures", "", createDeviceWithPromoted13Structures);

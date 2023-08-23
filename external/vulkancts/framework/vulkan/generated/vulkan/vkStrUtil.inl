@@ -1571,6 +1571,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineShaderStageNodeCreate
 std::ostream&	operator<<	(std::ostream& s, const VkExecutionGraphPipelineScratchSizeAMDX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDispatchGraphInfoAMDX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDispatchGraphCountInfoAMDX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderExpectAssumeFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SpsVuiFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264HrdParameters& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SequenceParameterSetVui& value);

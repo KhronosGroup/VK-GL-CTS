@@ -8802,6 +8802,13 @@ struct VkDispatchGraphCountInfoAMDX
 	uint64_t						stride;
 };
 
+struct VkPhysicalDeviceShaderExpectAssumeFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderExpectAssume;
+};
+
 struct StdVideoH264SpsVuiFlags
 {
 	uint32_t	aspect_ratio_info_present_flag:1;

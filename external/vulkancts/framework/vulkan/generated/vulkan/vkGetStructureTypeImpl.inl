@@ -4073,3 +4073,8 @@ template<> VkStructureType getStructureType<VkExecutionGraphPipelineScratchSizeA
 	return VK_STRUCTURE_TYPE_EXECUTION_GRAPH_PIPELINE_SCRATCH_SIZE_AMDX;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderExpectAssumeFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EXPECT_ASSUME_FEATURES_KHR;
+}
+
