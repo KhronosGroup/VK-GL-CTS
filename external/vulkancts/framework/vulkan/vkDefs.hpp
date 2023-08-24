@@ -204,6 +204,7 @@ typedef VKAPI_ATTR VkBool32	(VKAPI_CALL *PFN_vkDebugUtilsMessengerCallbackEXT)	(
 typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkDeviceMemoryReportCallbackEXT)	(const struct VkDeviceMemoryReportCallbackDataEXT*	pCallbackData,
 																				 void*												pUserData);
 
+
 #ifdef CTS_USES_VULKANSC
 struct VkFaultData;
 typedef VKAPI_ATTR void		(VKAPI_CALL *PFN_vkFaultCallbackFunction)			(VkBool32											incompleteFaultData,

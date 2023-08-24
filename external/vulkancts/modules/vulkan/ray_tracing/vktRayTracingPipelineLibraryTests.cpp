@@ -83,6 +83,8 @@ struct TestParams
 	bool								pipelinesCreatedUsingDHO;
 	TestType							testType;
 	bool								useAABBs;
+	bool								useLinkTimeOptimizations;
+	bool								retainLinkTimeOptimizations;
 	deUint32							width;
 	deUint32							height;
 
@@ -292,6 +294,9 @@ void RayTracingPipelineLibraryTestCase::checkSupport(Context& context) const
 
 	if (m_data.testType != TestType::DEFAULT)
 		context.requireDeviceFunctionality("VK_EXT_pipeline_library_group_handles");
+
+	if (m_data.useLinkTimeOptimizations)
+		context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
 
 	if (m_data.includesCaptureReplay())
 	{
@@ -650,6 +655,14 @@ std::vector<uint32_t> RayTracingPipelineLibraryTestInstance::runTest (bool repla
 		if (m_data.includesCaptureReplay())
 			creationFlags |= VK_PIPELINE_CREATE_RAY_TRACING_SHADER_GROUP_HANDLE_CAPTURE_REPLAY_BIT_KHR;
 
+		if (m_data.useLinkTimeOptimizations)
+		{
+			if (m_data.retainLinkTimeOptimizations)
+				creationFlags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
+			else
+				creationFlags |= VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT;
+		}
+
 		rtPipeline->get()->setCreateFlags(creationFlags);
 
 		rtPipeline->get()->setMaxPayloadSize(16U); // because rayPayloadInEXT is uvec4 ( = 16 bytes ) for all chit shaders
@@ -767,9 +780,21 @@ std::vector<uint32_t> RayTracingPipelineLibraryTestInstance::runTest (bool repla
 				}
 			}
 
-			// Save capture/replay handles for a later replay.
-			if (!normalHandles && !replay)
-				m_captureReplayHandles = allHandles;
+			// Save or check capture/replay handles.
+			if (!normalHandles)
+			{
+				if (replay)
+				{
+					// Check saved handles.
+					if (allHandles != m_captureReplayHandles)
+						TCU_FAIL("Capture Replay Shader Group Handles do not match creation handles for top-level pipeline");
+				}
+				else
+				{
+					// Save handles for the replay phase.
+					m_captureReplayHandles = allHandles;
+				}
+			}
 		}
 	}
 
@@ -983,6 +1008,8 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group)
 						threadData[threadNdx].pipelinesCreatedUsingDHO,
 						testTypeCase.testType,
 						geometryCase.useAABBs,
+						false,
+						false,
 						RTPL_DEFAULT_SIZE,
 						RTPL_DEFAULT_SIZE
 					};
@@ -993,6 +1020,28 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group)
 			}
 		}
 		group->addChild(threadGroup.release());
+	}
+
+	{
+		TestParams testParams
+		{
+			libraryConfigurationData[5].libraryConfiguration,
+			false,
+			false,
+			TestType::DEFAULT,
+			true,
+			true,
+			false,
+			RTPL_DEFAULT_SIZE,
+			RTPL_DEFAULT_SIZE
+		};
+
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(group->getTestContext(), "misc", ""));
+		miscGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), "use_link_time_optimizations", "", testParams));
+		testParams.retainLinkTimeOptimizations = true;
+		miscGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), "retain_link_time_optimizations", "", testParams));
+
+		group->addChild(miscGroup.release());
 	}
 }
 

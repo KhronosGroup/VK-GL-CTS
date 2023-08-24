@@ -138,15 +138,18 @@ private:
 
 tcu::TestStatus BindBuffers2Instance::iterate (void)
 {
-	const vk::VkInstance		instance			= m_context.getInstance();
-	const vk::InstanceDriver	instanceDriver		(m_context.getPlatformInterface(), instance);
-	const vk::DeviceInterface&	vk					= m_context.getDeviceInterface();
-	const vk::VkDevice			device				= m_context.getDevice();
-	const vk::VkQueue			queue				= m_context.getUniversalQueue();
-	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	vk::Allocator&				allocator			= m_context.getDefaultAllocator();
+	const vk::VkInstance			instance			= m_context.getInstance();
+	const vk::InstanceDriver		instanceDriver		(m_context.getPlatformInterface(), instance);
+	const vk::InstanceInterface&	vki					= m_context.getInstanceInterface();
+	const vk::DeviceInterface&		vk					= m_context.getDeviceInterface();
+	const vk::VkPhysicalDevice		physicalDevice		= m_context.getPhysicalDevice();
+	const vk::VkDevice				device				= m_context.getDevice();
+	const vk::VkQueue				queue				= m_context.getUniversalQueue();
+	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	vk::Allocator&					allocator			= m_context.getDefaultAllocator();
+	const auto&						deviceExtensions	= m_context.getDeviceExtensions();
 
-	vk::VkExtent2D				extent				= {	32u, 32u };
+	vk::VkExtent2D					extent				= {	32u, 32u };
 
 	const std::vector<vk::VkViewport>	viewports	{ vk::makeViewport(extent) };
 	const std::vector<vk::VkRect2D>		scissors	{ vk::makeRect2D(extent) };
@@ -167,11 +170,11 @@ tcu::TestStatus BindBuffers2Instance::iterate (void)
 	const de::MovePtr<vk::Allocation>				colorImageAlloc		(bindImage(vk, device, allocator, *colorImage, vk::MemoryRequirement::Any));
 	const vk::Move<vk::VkImageView>					colorImageView		(makeImageView(vk, device, *colorImage, vk::VK_IMAGE_VIEW_TYPE_2D, vk::VK_FORMAT_R32G32B32A32_SFLOAT, colorSubresourceRange));
 
-	const vk::Move<vk::VkPipelineLayout>			pipelineLayout		= vk::createPipelineLayout(vk, device, &pipelineLayoutInfo);
-	const vk::Move<vk::VkRenderPass>				renderPass			(makeRenderPass(vk, device, vk::VK_FORMAT_R32G32B32A32_SFLOAT));
-	const vk::Move<vk::VkFramebuffer>				framebuffer			(makeFramebuffer(vk, device, *renderPass, 1u, &*colorImageView, extent.width, extent.height));
-	const vk::Move<vk::VkShaderModule>				vertShaderModule	= createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"));
-	const vk::Move<vk::VkShaderModule>				fragShaderModule	= createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"));
+	const vk::PipelineLayoutWrapper					pipelineLayout		(m_pipelineConstructionType, vk, device, &pipelineLayoutInfo);
+	vk::RenderPassWrapper							renderPass			(m_pipelineConstructionType, vk, device, vk::VK_FORMAT_R32G32B32A32_SFLOAT);
+	renderPass.createFramebuffer(vk, device, *colorImage, *colorImageView, extent.width, extent.height);
+	const vk::ShaderWrapper							vertShaderModule	= vk::ShaderWrapper(vk, device, m_context.getBinaryCollection().get("vert"));
+	const vk::ShaderWrapper							fragShaderModule	= vk::ShaderWrapper(vk, device, m_context.getBinaryCollection().get("frag"));
 
 	//buffer to read the output image
 	auto											outBuffer			= makeBufferForImage(vk, device, allocator, mapVkFormat(vk::VK_FORMAT_R32G32B32A32_SFLOAT), extent);
@@ -245,7 +248,7 @@ tcu::TestStatus BindBuffers2Instance::iterate (void)
 		&dynamicState,												//	const VkDynamicState*				pDynamicStates;
 	};
 
-	vk::GraphicsPipelineWrapper	graphicsPipelineWrapper	{ vk, device, m_pipelineConstructionType };
+	vk::GraphicsPipelineWrapper	graphicsPipelineWrapper	{ vki, vk, physicalDevice, device, deviceExtensions, m_pipelineConstructionType };
 	graphicsPipelineWrapper.setDefaultDepthStencilState()
 		.setDefaultColorBlendState()
 		.setDefaultRasterizationState()
@@ -254,16 +257,16 @@ tcu::TestStatus BindBuffers2Instance::iterate (void)
 		.setupVertexInputState(&vertexInputState, &inputAssemblyState)
 		.setupPreRasterizationShaderState(viewports,
 			scissors,
-			pipelineLayout.get(),
+			pipelineLayout,
 			renderPass.get(),
 			0u,
-			vertShaderModule.get())
-		.setupFragmentShaderState(pipelineLayout.get(),
+			vertShaderModule)
+		.setupFragmentShaderState(pipelineLayout,
 			renderPass.get(),
 			0u,
-			fragShaderModule.get())
+			fragShaderModule)
 		.setupFragmentOutputState(renderPass.get())
-		.setMonolithicPipelineLayout(pipelineLayout.get())
+		.setMonolithicPipelineLayout(pipelineLayout)
 		.buildPipeline();
 
 	const vk::Move<vk::VkCommandPool>				cmdPool			(createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
@@ -331,8 +334,8 @@ tcu::TestStatus BindBuffers2Instance::iterate (void)
 	copyAndFlush(vk, device, *vertexBuffer, 0, vertexData.data(), vertexData.size() * sizeof(float));
 
 	beginCommandBuffer(vk, *cmdBuffer);
-	vk::beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, vk::makeRect2D(0, 0, extent.width, extent.height), 1u, &clearColorValue);
-	vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineWrapper.getPipeline());
+	renderPass.begin(vk, *cmdBuffer, vk::makeRect2D(0, 0, extent.width, extent.height), clearColorValue);
+	graphicsPipelineWrapper.bind(*cmdBuffer);
 
 	vk::VkBuffer		buffers[]	= { **colorBuffer, **vertexBuffer, **colorBuffer, **vertexBuffer, **colorBuffer, **vertexBuffer, **colorBuffer, **vertexBuffer };
 	std::vector<vk::VkDeviceSize>	offsets	= { colorOffset, vertexOffset };
@@ -385,7 +388,7 @@ tcu::TestStatus BindBuffers2Instance::iterate (void)
 	}
 
 	vk.cmdDraw(*cmdBuffer, 4, instanceCount, 0, 0);
-	vk::endRenderPass(vk, *cmdBuffer);
+	renderPass.end(vk, *cmdBuffer);
 
 	vk::copyImageToBuffer(vk, *cmdBuffer, *colorImage, (*outBuffer).get(), tcu::IVec2(extent.width, extent.height));
 	endCommandBuffer(vk, *cmdBuffer);
@@ -440,7 +443,7 @@ void BindBuffers2Case::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state");
 
-	vk::checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	vk::checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
 void BindBuffers2Case::initPrograms(vk::SourceCollections& programCollection) const

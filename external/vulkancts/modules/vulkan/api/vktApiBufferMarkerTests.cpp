@@ -145,8 +145,9 @@ void createDeviceWithExtension (Context& context, WorkingDevice& wd, VkQueueFlag
 	};
 
 	wd.logicalDevice	= createCustomDevice(useValidation, vkp, instance, instanceDriver, physicalDevice, &deviceInfo);
-	wd.deviceDriver		= MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, *wd.logicalDevice));
-	wd.allocator		= MovePtr<Allocator>(new SimpleAllocator(*wd.deviceDriver, *wd.logicalDevice, getPhysicalDeviceMemoryProperties(instanceDriver, physicalDevice), deAlignSize(offset, static_cast<size_t>(context.getDeviceProperties().limits.nonCoherentAtomSize))));
+	wd.deviceDriver		= MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, *wd.logicalDevice, context.getUsedApiVersion()));
+	const SimpleAllocator::OptionalOffsetParams offsetParams({ context.getDeviceProperties().limits.nonCoherentAtomSize, static_cast<VkDeviceSize>(offset) });
+	wd.allocator		= MovePtr<Allocator>(new SimpleAllocator(*wd.deviceDriver, *wd.logicalDevice, getPhysicalDeviceMemoryProperties(instanceDriver, physicalDevice), offsetParams));
 	wd.queueFamilyIdx	= queueCreateInfo.queueFamilyIndex;
 	wd.queue			= getDeviceQueue(*wd.deviceDriver, *wd.logicalDevice, wd.queueFamilyIdx, 0u);
 	wd.queueProps		= queueFamilyProperties[queueCreateInfo.queueFamilyIndex];

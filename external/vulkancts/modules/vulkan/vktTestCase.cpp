@@ -3,6 +3,8 @@
  * ------------------------
  *
  * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -260,19 +262,6 @@ Move<VkInstance> createInstance (const PlatformInterface& vkp, deUint32 apiVersi
 #endif // CTS_USES_VULKANSC
 }
 
-static deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
-{
-	const vector<VkQueueFamilyProperties>	queueProps	= getPhysicalDeviceQueueFamilyProperties(vkInstance, physicalDevice);
-
-	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
-	{
-		if ((queueProps[queueNdx].queueFlags & requiredCaps) == requiredCaps)
-			return (deUint32)queueNdx;
-	}
-
-	TCU_THROW(NotSupportedError, "No matching queue found");
-}
-
 Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 									VkInstance								instance,
 									const InstanceInterface&				vki,
@@ -405,6 +394,20 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 }
 
 } // anonymous
+
+deUint32 findQueueFamilyIndexWithCaps(const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps, VkQueueFlags excludedCaps)
+{
+	const vector<VkQueueFamilyProperties>	queueProps = getPhysicalDeviceQueueFamilyProperties(vkInstance, physicalDevice);
+
+	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
+	{
+		deUint32 queueFlags = queueProps[queueNdx].queueFlags;
+		if ((queueFlags & requiredCaps) == requiredCaps && !(queueFlags & excludedCaps))
+			return (deUint32)queueNdx;
+	}
+
+	TCU_THROW(NotSupportedError, "No matching queue found");
+}
 
 class DefaultDevice
 {
@@ -594,9 +597,9 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 	, m_creationExtensions				(removeCoreExtensions(m_usedApiVersion, m_deviceExtensions))
 	, m_device							(createDefaultDevice(vkPlatform, *m_instance, m_instanceInterface, m_physicalDevice, m_universalQueueFamilyIndex, m_sparseQueueFamilyIndex, m_deviceFeatures.getCoreFeatures2(), m_creationExtensions, cmdLine, resourceInterface))
 #ifndef CTS_USES_VULKANSC
-	, m_deviceInterface					(de::MovePtr<DeviceDriver>(new DeviceDriver(vkPlatform, *m_instance, *m_device)))
+	, m_deviceInterface					(de::MovePtr<DeviceDriver>(new DeviceDriver(vkPlatform, *m_instance, *m_device, m_usedApiVersion)))
 #else
-	, m_deviceInterface					(de::MovePtr<DeviceDriverSC>(new DeviceDriverSC(vkPlatform, *m_instance, *m_device, cmdLine, resourceInterface, getDeviceVulkanSC10Properties(), getDeviceProperties())))
+	, m_deviceInterface					(de::MovePtr<DeviceDriverSC>(new DeviceDriverSC(vkPlatform, *m_instance, *m_device, cmdLine, resourceInterface, getDeviceVulkanSC10Properties(), getDeviceProperties(), m_usedApiVersion)))
 #endif // CTS_USES_VULKANSC
 {
 #ifndef CTS_USES_VULKANSC
@@ -628,7 +631,9 @@ namespace
 
 vk::Allocator* createAllocator (DefaultDevice* device)
 {
-	const VkPhysicalDeviceMemoryProperties memoryProperties = vk::getPhysicalDeviceMemoryProperties(device->getInstanceInterface(), device->getPhysicalDevice());
+	const auto&	vki					= device->getInstanceInterface();
+	const auto	physicalDevice		= device->getPhysicalDevice();
+	const auto	memoryProperties	= vk::getPhysicalDeviceMemoryProperties(vki, physicalDevice);
 
 	// \todo [2015-07-24 jarkko] support allocator selection/configuration from command line (or compile time)
 	return new SimpleAllocator(device->getDeviceInterface(), device->getDevice(), memoryProperties);

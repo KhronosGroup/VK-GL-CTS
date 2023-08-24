@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2020 The Khronos Group Inc.
  * Copyright (c) 2020 Valve Corporation.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -366,7 +368,7 @@ void NoPositionCase::checkSupport (Context& context) const
 		if (!features.vertexPipelineStoresAndAtomics)
 			TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
 	}
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 NoPositionInstance::NoPositionInstance (Context& context, const TestParams& params)
@@ -376,48 +378,50 @@ NoPositionInstance::NoPositionInstance (Context& context, const TestParams& para
 
 tcu::TestStatus NoPositionInstance::iterate (void)
 {
-	const	auto&				vkd			= m_context.getDeviceInterface();
-	const	auto				device		= m_context.getDevice();
-	const	auto				queue		= m_context.getUniversalQueue();
-	const	auto				qIndex		= m_context.getUniversalQueueFamilyIndex();
-			auto&				alloc		= m_context.getDefaultAllocator();
-	const	auto				format		= NoPositionCase::getImageFormat();
-	const	auto				extent		= NoPositionCase::getImageExtent();
-	const	auto				color		= NoPositionCase::getBackGroundColor();
-	const	VkImageUsageFlags	usage		= (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-	const	auto				viewType	= (m_params.numViews > 1u ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D);
-	const	bool				tess		= m_params.tessellation();
-			VkShaderStageFlags	stageFlags	= 0u;
+	const	auto&				vki				= m_context.getInstanceInterface();
+	const	auto&				vkd				= m_context.getDeviceInterface();
+	const	auto				physicalDevice	= m_context.getPhysicalDevice();
+	const	auto				device			= m_context.getDevice();
+	const	auto				queue			= m_context.getUniversalQueue();
+	const	auto				qIndex			= m_context.getUniversalQueueFamilyIndex();
+			auto&				alloc			= m_context.getDefaultAllocator();
+	const	auto				format			= NoPositionCase::getImageFormat();
+	const	auto				extent			= NoPositionCase::getImageExtent();
+	const	auto				color			= NoPositionCase::getBackGroundColor();
+	const	VkImageUsageFlags	usage			= (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+	const	auto				viewType		= (m_params.numViews > 1u ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D);
+	const	bool				tess			= m_params.tessellation();
+			VkShaderStageFlags	stageFlags		= 0u;
 
 	// Shader modules.
-	Move<VkShaderModule> vert;
-	Move<VkShaderModule> tesc;
-	Move<VkShaderModule> tese;
-	Move<VkShaderModule> geom;
-	Move<VkShaderModule> frag;
+	ShaderWrapper vert;
+	ShaderWrapper tesc;
+	ShaderWrapper tese;
+	ShaderWrapper geom;
+	ShaderWrapper frag;
 
 	if (m_params.selectedStages & STAGE_VERTEX)
 	{
-		vert = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+		vert = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
 		stageFlags |= VK_SHADER_STAGE_VERTEX_BIT;
 	}
 	if (m_params.selectedStages & STAGE_TESS_CONTROL)
 	{
-		tesc = createShaderModule(vkd, device, m_context.getBinaryCollection().get("tesc"), 0u);
+		tesc = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("tesc"), 0u);
 		stageFlags |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
 	}
 	if (m_params.selectedStages & STAGE_TESS_EVALUATION)
 	{
-		tese = createShaderModule(vkd, device, m_context.getBinaryCollection().get("tese"), 0u);
+		tese = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("tese"), 0u);
 		stageFlags |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 	}
 	if (m_params.selectedStages & STAGE_GEOMETRY)
 	{
-		geom = createShaderModule(vkd, device, m_context.getBinaryCollection().get("geom"), 0u);
+		geom = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("geom"), 0u);
 		stageFlags |= VK_SHADER_STAGE_GEOMETRY_BIT;
 	}
 
-	frag = createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+	frag = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
 	stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	// Color attachment.
@@ -534,10 +538,10 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 		nullptr,									//	const VkSubpassDependency*		pDependencies;
 	};
 
-	const auto renderPass = createRenderPass(vkd, device, &renderPassInfo);
+	RenderPassWrapper renderPass (m_params.pipelineConstructionType, vkd, device, &renderPassInfo);
 
 	// Framebuffer.
-	const auto framebuffer = makeFramebuffer(vkd, device, renderPass.get(), colorImageView.get(), extent.width, extent.height);
+	renderPass.createFramebuffer(vkd, device, *colorImage, colorImageView.get(), extent.width, extent.height);
 
 	// Descriptor set layout and pipeline layout.
 	DescriptorSetLayoutBuilder layoutBuilder;
@@ -546,14 +550,14 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 		layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, stageFlags);
 	}
 	const auto descriptorSetLayout	= layoutBuilder.build(vkd, device);
-	const auto pipelineLayout		= makePipelineLayout(vkd, device, descriptorSetLayout.get());
+	const PipelineLayoutWrapper pipelineLayout		(m_params.pipelineConstructionType, vkd, device, descriptorSetLayout.get());
 
 	// Pipeline.
 	const std::vector<VkViewport>	viewports		{ makeViewport(extent) };
 	const std::vector<VkRect2D>		scissors		{ makeRect2D(extent) };
 
 	const auto				primitiveTopology	(tess ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-	GraphicsPipelineWrapper	pipeline			(vkd, device, m_params.pipelineConstructionType);
+	GraphicsPipelineWrapper	pipeline			(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
 	pipeline.setDefaultTopology(primitiveTopology)
 			.setDefaultRasterizationState()
 			.setDefaultMultisampleState()
@@ -562,17 +566,17 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 			.setupVertexInputState()
 			.setupPreRasterizationShaderState(viewports,
 				scissors,
-				*pipelineLayout,
+				pipelineLayout,
 				*renderPass,
 				0u,
-				*vert,
+				vert,
 				DE_NULL,
-				*tesc,
-				*tese,
-				*geom)
-			.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *frag)
+				tesc,
+				tese,
+				geom)
+			.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, frag)
 			.setupFragmentOutputState(*renderPass)
-			.setMonolithicPipelineLayout(*pipelineLayout)
+			.setMonolithicPipelineLayout(pipelineLayout)
 			.buildPipeline();
 
 	// Descriptor set and output SSBO if needed.
@@ -623,13 +627,13 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 
 	// Render triangle.
 	beginCommandBuffer(vkd, cmdBuffer);
-	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.front(), color);
-	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
+	renderPass.begin(vkd, cmdBuffer, scissors.front(), color);
+	pipeline.bind(cmdBuffer);
 	vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 	if (m_params.useSSBO)
 		vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
 	vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);
-	endRenderPass(vkd, cmdBuffer);
+	renderPass.end(vkd, cmdBuffer);
 
 	// Copy output image to verification buffer.
 	const auto preTransferBarrier = makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorImage.get(), subresourceRange);
@@ -760,6 +764,9 @@ tcu::TestCaseGroup*	createNoPositionTests (tcu::TestContext& testCtx, vk::Pipeli
 			for (deUint32 viewCount = 1u; viewCount <= 2u; ++viewCount)
 			{
 				const std::string				viewGroupName	((viewCount == 1u) ? "single_view" : "multiview");
+				// Shader objects do not support multiview
+				if (viewCount != 1 && vk::isConstructionTypeShaderObject(pipelineConstructionType))
+					continue;
 				de::MovePtr<tcu::TestCaseGroup>	viewGroup		(new tcu::TestCaseGroup(testCtx, viewGroupName.c_str(), ""));
 
 				for (ShaderStageFlags stages = 0u; stages < STAGE_MASK_COUNT; ++stages)

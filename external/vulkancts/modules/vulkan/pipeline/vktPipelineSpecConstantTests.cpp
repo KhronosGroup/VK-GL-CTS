@@ -3,6 +3,8 @@
  * ------------------------
  *
  * Copyright (c) 2016 The Khronos Group Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,8 +43,9 @@
 #include "vkBarrierUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
- #include "vkBufferWithMemory.hpp"
- #include "vkImageWithMemory.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
+#include "vkComputePipelineConstructionUtil.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
@@ -487,6 +490,7 @@ class ComputeTestInstance : public TestInstance
 {
 public:
 									ComputeTestInstance	(Context&							context,
+														 PipelineConstructionType			pipelineConstructionType,
 														 const VkDeviceSize					ssboSize,
 														 const std::vector<SpecConstant>&	specConstants,
 														 const std::vector<OffsetValue>&	expectedValues,
@@ -495,6 +499,7 @@ public:
 	tcu::TestStatus					iterate				(void);
 
 private:
+	const PipelineConstructionType	m_pipelineConstructionType;
 	const VkDeviceSize				m_ssboSize;
 	const std::vector<SpecConstant>	m_specConstants;
 	const std::vector<OffsetValue>	m_expectedValues;
@@ -502,15 +507,17 @@ private:
 };
 
 ComputeTestInstance::ComputeTestInstance (Context&							context,
+										  PipelineConstructionType			pipelineConstructionType,
 										  const VkDeviceSize				ssboSize,
 										  const std::vector<SpecConstant>&	specConstants,
 										  const std::vector<OffsetValue>&	expectedValues,
 										  bool								packData)
-	: TestInstance		(context)
-	, m_ssboSize		(ssboSize)
-	, m_specConstants	(specConstants)
-	, m_expectedValues	(expectedValues)
-	, m_packData		(packData)
+	: TestInstance					(context)
+	, m_pipelineConstructionType	(pipelineConstructionType)
+	, m_ssboSize					(ssboSize)
+	, m_specConstants				(specConstants)
+	, m_expectedValues				(expectedValues)
+	, m_packData					(packData)
 {
 }
 
@@ -548,15 +555,18 @@ tcu::TestStatus ComputeTestInstance::iterate (void)
 
 	// Pipeline
 
-	const Unique<VkShaderModule>   shaderModule  (createShaderModule (vk, device, m_context.getBinaryCollection().get("comp"), 0));
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout (vk, device, *descriptorSetLayout));
-	const Unique<VkPipeline>       pipeline      (makeComputePipeline(vk, device, *pipelineLayout, (VkPipelineCreateFlags) 0u, *shaderModule, (VkPipelineShaderStageCreateFlags) 0u, pSpecInfo));
-	const Unique<VkCommandPool>    cmdPool       (createCommandPool  (vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-	const Unique<VkCommandBuffer>  cmdBuffer     (makeCommandBuffer  (vk, device, *cmdPool));
+	const PipelineLayoutWrapper		pipelineLayout	(m_pipelineConstructionType, vk, device, *descriptorSetLayout);
+	ComputePipelineWrapper			pipeline		(vk, device, graphicsToComputeConstructionType(m_pipelineConstructionType), m_context.getBinaryCollection().get("comp"));
+	pipeline.setDescriptorSetLayout(*descriptorSetLayout);
+	if (pSpecInfo)
+		pipeline.setSpecializationInfo(*pSpecInfo);
+	pipeline.buildPipeline();
+	const Unique<VkCommandPool>		cmdPool			(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>	cmdBuffer		(makeCommandBuffer		(vk, device, *cmdPool));
 
 	beginCommandBuffer(vk, *cmdBuffer);
 
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+	pipeline.bind(*cmdBuffer);
 	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
 	vk.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
@@ -624,11 +634,13 @@ GraphicsTestInstance::GraphicsTestInstance (Context&							context,
 
 tcu::TestStatus GraphicsTestInstance::iterate (void)
 {
-	const DeviceInterface&	vk					= m_context.getDeviceInterface();
-	const VkDevice			device				= m_context.getDevice();
-	const VkQueue			queue				= m_context.getUniversalQueue();
-	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	Allocator&				allocator			= m_context.getDefaultAllocator();
+	const InstanceInterface&	vki					= m_context.getInstanceInterface();
+	const DeviceInterface&		vk					= m_context.getDeviceInterface();
+	const VkPhysicalDevice		physicalDevice		= m_context.getPhysicalDevice();
+	const VkDevice				device				= m_context.getDevice();
+	const VkQueue				queue				= m_context.getUniversalQueue();
+	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	Allocator&					allocator			= m_context.getDefaultAllocator();
 
 	// Color attachment
 
@@ -681,9 +693,9 @@ tcu::TestStatus GraphicsTestInstance::iterate (void)
 
 	// Pipeline
 
-	const Unique<VkRenderPass>		renderPass		(makeRenderPass    (vk, device, imageFormat));
-	const Unique<VkFramebuffer>		framebuffer		(makeFramebuffer	(vk, device, *renderPass, colorImageView.get(), static_cast<deUint32>(renderSize.x()), static_cast<deUint32>(renderSize.y())));
-	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout(vk, device, *descriptorSetLayout));
+	RenderPassWrapper				renderPass		(m_pipelineConstructionType, vk, device, imageFormat);
+	renderPass.createFramebuffer(vk, device, colorImage.get(), colorImageView.get(), static_cast<deUint32>(renderSize.x()), static_cast<deUint32>(renderSize.y()));
+	const PipelineLayoutWrapper		pipelineLayout	(m_pipelineConstructionType, vk, device, *descriptorSetLayout);
 	const Unique<VkCommandPool>		cmdPool			(createCommandPool (vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer		(makeCommandBuffer (vk, device, *cmdPool));
 
@@ -692,22 +704,22 @@ tcu::TestStatus GraphicsTestInstance::iterate (void)
 	const std::vector<VkViewport>	viewport		{ makeViewport(renderSize) };
 	const std::vector<VkRect2D>		scissor			{ makeRect2D(renderSize) };
 
-	Move<VkShaderModule> vertShaderModule	= createShaderModule(vk, device, binaryCollection.get("vert"), 0u);
-	Move<VkShaderModule> tescShaderModule;
-	Move<VkShaderModule> teseShaderModule;
-	Move<VkShaderModule> geomShaderModule;
-	Move<VkShaderModule> fragShaderModule	= createShaderModule(vk, device, binaryCollection.get("frag"), 0u);
+	ShaderWrapper vertShaderModule	= ShaderWrapper(vk, device, binaryCollection.get("vert"), 0u);
+	ShaderWrapper tescShaderModule;
+	ShaderWrapper teseShaderModule;
+	ShaderWrapper geomShaderModule;
+	ShaderWrapper fragShaderModule	= ShaderWrapper(vk, device, binaryCollection.get("frag"), 0u);
 
 	if ((m_stage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) || (m_stage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT))
 	{
-		tescShaderModule	= createShaderModule(vk, device, binaryCollection.get("tesc"), 0u);
-		teseShaderModule	= createShaderModule(vk, device, binaryCollection.get("tese"), 0u);
+		tescShaderModule	= ShaderWrapper(vk, device, binaryCollection.get("tesc"), 0u);
+		teseShaderModule	= ShaderWrapper(vk, device, binaryCollection.get("tese"), 0u);
 		topology			= VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
 	}
 	if (m_stage == VK_SHADER_STAGE_GEOMETRY_BIT)
-		geomShaderModule = createShaderModule(vk, device, binaryCollection.get("geom"), 0u);
+		geomShaderModule = ShaderWrapper(vk, device, binaryCollection.get("geom"), 0u);
 
-	GraphicsPipelineWrapper graphicsPipeline(vk, device, m_pipelineConstructionType);
+	GraphicsPipelineWrapper graphicsPipeline(vki, vk, physicalDevice, device, m_context.getDeviceExtensions(), m_pipelineConstructionType);
 	graphicsPipeline.setDefaultRasterizationState()
 					.setDefaultDepthStencilState()
 					.setDefaultMultisampleState()
@@ -716,18 +728,18 @@ tcu::TestStatus GraphicsTestInstance::iterate (void)
 					.setupVertexInputState()
 					.setupPreRasterizationShaderState(viewport,
 													  scissor,
-													  *pipelineLayout,
+													  pipelineLayout,
 													  *renderPass,
 													  0u,
-													  *vertShaderModule,
+													  vertShaderModule,
 													  0u,
-													  *tescShaderModule,
-													  *teseShaderModule,
-													  *geomShaderModule,
+													  tescShaderModule,
+													  teseShaderModule,
+													  geomShaderModule,
 													  pSpecInfo)
-					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragShaderModule, DE_NULL, DE_NULL, pSpecInfo)
+					.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragShaderModule, DE_NULL, DE_NULL, pSpecInfo)
 					.setupFragmentOutputState(*renderPass)
-					.setMonolithicPipelineLayout(*pipelineLayout)
+					.setMonolithicPipelineLayout(pipelineLayout)
 					.buildPipeline();
 
 	// Draw commands
@@ -749,14 +761,14 @@ tcu::TestStatus GraphicsTestInstance::iterate (void)
 			0u, DE_NULL, 0u, DE_NULL, 1u, &barrierColorAttachmentSetInitialLayout);
 	}
 
-	beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor);
+	renderPass.begin(vk, *cmdBuffer, renderArea, clearColor);
 
-	vk.cmdBindPipeline      (*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.getPipeline());
+	graphicsPipeline.bind(*cmdBuffer);
 	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 	vk.cmdBindVertexBuffers (*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 
 	vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
-	endRenderPass(vk, *cmdBuffer);
+	renderPass.end(vk, *cmdBuffer);
 
 	{
 		const VkBufferMemoryBarrier shaderWriteBarrier = makeBufferMemoryBarrier(
@@ -805,13 +817,13 @@ FeatureFlags getShaderStageRequirements (const VkShaderStageFlags stageFlags)
 void SpecConstantTest::checkSupport (Context& context) const
 {
 	requireFeatures(context, m_caseDef.requirements | getShaderStageRequirements(m_stage));
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
 TestInstance* SpecConstantTest::createInstance (Context& context) const
 {
 	if (m_stage & VK_SHADER_STAGE_COMPUTE_BIT)
-		return new ComputeTestInstance(context, m_caseDef.ssboSize, m_caseDef.specConstants, m_caseDef.expectedValues, m_caseDef.packData);
+		return new ComputeTestInstance(context, m_pipelineConstructionType, m_caseDef.ssboSize, m_caseDef.specConstants, m_caseDef.expectedValues, m_caseDef.packData);
 	else
 		return new GraphicsTestInstance(context, m_pipelineConstructionType, m_caseDef.ssboSize, m_caseDef.specConstants, m_caseDef.expectedValues, m_stage, m_caseDef.packData);
 }

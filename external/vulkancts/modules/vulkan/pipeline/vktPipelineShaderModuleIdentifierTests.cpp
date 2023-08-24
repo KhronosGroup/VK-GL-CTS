@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2022 The Khronos Group Inc.
  * Copyright (c) 2022 Valve Corporation.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -213,9 +215,10 @@ ShaderStageIdPtr makeShaderStageModuleIdentifierCreateInfo (const ShaderModuleId
 	return createInfo;
 }
 
-VkShaderModule retUsedModule (VkShaderModule module, UseModuleCase moduleUse)
+ShaderWrapper* retUsedModule (ShaderWrapper* module, UseModuleCase moduleUse)
 {
-	return (isZeroLen(moduleUse) ? module : DE_NULL);
+	static ShaderWrapper emptyWrapper = ShaderWrapper();
+	return (isZeroLen(moduleUse) ? module : &emptyWrapper);
 }
 
 enum class PipelineType
@@ -1541,7 +1544,7 @@ struct DeviceHelper
 
 		// Create custom device and related objects
 		device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &createInfo);
-		vkd.reset(new DeviceDriver(vkp, instance, device.get()));
+		vkd.reset(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion()));
 		queue = getDeviceQueue(*vkd, *device, queueFamilyIndex, 0u);
 		allocator.reset(new SimpleAllocator(*vkd, device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	}
@@ -1676,7 +1679,7 @@ void CreateAndUseIdsCase::checkSupport (Context &context) const
 {
 	SourcesAndSupportFromParamsBase::checkSupport(context);
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_createAndUseIdsParams->constructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_createAndUseIdsParams->constructionType);
 
 	if (m_createAndUseIdsParams->useRTLibraries)
 		context.requireDeviceFunctionality("VK_KHR_pipeline_library");
@@ -1726,24 +1729,24 @@ VkPipelineRasterizationStateCreateInfo makeRasterizationState (bool rasterizatio
 class PipelineStageInfo
 {
 protected:
-	VkShaderModule		m_module;
+	ShaderWrapper		m_shader;
 	ShaderModuleId		m_moduleId;
 	ShaderStageIdPtr	m_moduleIdCreateInfo;
 	SpecInfoPtr			m_specInfo;
 
 public:
 	PipelineStageInfo ()
-		: m_module				(DE_NULL)
+		: m_shader				()
 		, m_moduleId			()
 		, m_moduleIdCreateInfo	()
 		, m_specInfo			()
 		{}
 
-	void setModule (const DeviceInterface &vkd, const VkDevice device, const VkShaderModule module, UseModuleCase moduleUse, de::Random& rnd)
+	void setModule (const DeviceInterface &vkd, const VkDevice device, const ShaderWrapper shader, UseModuleCase moduleUse, de::Random& rnd)
 	{
-		m_module				= module;
+		m_shader				= shader;
 
-		m_moduleId				= getShaderModuleIdentifier(vkd, device, module);
+		m_moduleId				= getShaderModuleIdentifier(vkd, device, shader.getModule());
 		maybeMangleShaderModuleId(m_moduleId, moduleUse, rnd);
 
 		m_moduleIdCreateInfo	= makeShaderStageModuleIdentifierCreateInfo(m_moduleId, moduleUse, &rnd);
@@ -1754,14 +1757,14 @@ public:
 		m_specInfo = std::move(specInfo);
 	}
 
-	VkShaderModule getModule (void) const
+	ShaderWrapper getModule (void) const
 	{
-		return m_module;
+		return m_shader;
 	}
 
-	VkShaderModule getUsedModule (UseModuleCase moduleUse)
+	ShaderWrapper* getUsedModule (UseModuleCase moduleUse)
 	{
-		return retUsedModule(m_module, moduleUse);
+		return retUsedModule(&m_shader, moduleUse);
 	}
 
 	const VkPipelineShaderStageModuleIdentifierCreateInfoEXT* getModuleIdCreateInfo (void) const
@@ -1820,13 +1823,13 @@ SpecInfoPtr makeComputeSpecInfo (const SCMapEntryVec& scEntries, const std::vect
 
 tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 {
+	const auto&			vki				= m_context.getInstanceInterface();
 	const auto&			vkd				= m_context.getDeviceInterface();
+	const auto			physicalDevice	= m_context.getPhysicalDevice();
 	const auto			device			= m_context.getDevice();
 	auto&				alloc			= m_context.getDefaultAllocator();
 	const auto			queue			= m_context.getUniversalQueue();
 	const auto			queueIndex		= m_context.getUniversalQueueFamilyIndex();
-	const auto&			vki				= m_context.getInstanceInterface();
-	const auto			physicalDevice	= m_context.getPhysicalDevice();
 
 	const auto			pipelineStages	= m_params->getPipelineStageFlags();
 	const auto			shaderStages	= m_params->getShaderStageFlags();
@@ -1884,7 +1887,7 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 		setLayouts.push_back(auxSetLayout.get());
 
 	// Pipeline layout.
-	const auto pipelineLayout = makePipelineLayout(vkd, device, de::sizeU32(setLayouts), de::dataOrNull(setLayouts));
+	PipelineLayoutWrapper pipelineLayout (m_params->constructionType, vkd, device, de::sizeU32(setLayouts), de::dataOrNull(setLayouts));
 
 	// Descriptor pool.
 	DescriptorPoolBuilder poolBuilder;
@@ -1966,8 +1969,7 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 	VkImageSubresourceRange				colorSRR;
 	VkImageSubresourceLayers			colorSRL;
 	Move<VkImageView>					colorAttView;
-	Move<VkRenderPass>					renderPass;
-	Move<VkFramebuffer>					framebuffer;
+	RenderPassWrapper					renderPass;
 	std::unique_ptr<BufferWithMemory>	verifBuffer;
 	std::vector<VkViewport>				viewports;
 	std::vector<VkRect2D>				scissors;
@@ -2005,8 +2007,8 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 		colorSRR		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
 		colorSRL		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
 		colorAttView	= makeImageView(vkd, device, colorAtt->get(), VK_IMAGE_VIEW_TYPE_2D, fbFormat, colorSRR);
-		renderPass		= makeRenderPass(vkd, device, fbFormat);
-		framebuffer		= makeFramebuffer(vkd, device, renderPass.get(), colorAttView.get(), fbExtent.width, fbExtent.height);
+		renderPass		= RenderPassWrapper(m_params->constructionType, vkd, device, fbFormat);
+		renderPass.createFramebuffer(vkd, device, **colorAtt, colorAttView.get(), fbExtent.width, fbExtent.height);
 
 		DE_ASSERT(fbExtent.width == 1u && fbExtent.height == 1u && fbExtent.depth == 1u);
 		const auto verifBufferSize = static_cast<VkDeviceSize>(pixelSize);
@@ -2052,7 +2054,7 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 	updateBuilder.update(vkd, device);
 
 	// Make pipelines.
-	using ModuleVec			= std::vector<Move<VkShaderModule>>;
+	using ModuleVec			= std::vector<ShaderWrapper>;
 	using PipelinePtrVec	= std::vector<Move<VkPipeline>>;
 	using PipelineVec		= std::vector<VkPipeline>;
 	using WrapperVec		= std::vector<std::unique_ptr<GraphicsPipelineWrapper>>;
@@ -2144,14 +2146,14 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 			const auto geomName	= "geom" + suffix;
 			const auto fragName	= "frag" + suffix;
 
-			pipelineWrappers.emplace_back(new GraphicsPipelineWrapper(vkd, device, m_params->constructionType, captureFlags));
+			pipelineWrappers.emplace_back(new GraphicsPipelineWrapper(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(), m_params->constructionType, captureFlags));
 			auto& wrapper = *pipelineWrappers.back();
 
-			VkShaderModule	vertModule				= DE_NULL;
-			VkShaderModule	tescModule				= DE_NULL;
-			VkShaderModule	teseModule				= DE_NULL;
-			VkShaderModule	geomModule				= DE_NULL;
-			VkShaderModule	fragModule				= DE_NULL;
+			ShaderWrapper	vertModule;
+			ShaderWrapper	tescModule;
+			ShaderWrapper	teseModule;
+			ShaderWrapper	geomModule;
+			ShaderWrapper	fragModule;
 
 			SpecInfoPtr		vertSpecInfo;
 			SpecInfoPtr		tescSpecInfo;
@@ -2159,46 +2161,46 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 			SpecInfoPtr		geomSpecInfo;
 			SpecInfoPtr		fragSpecInfo;
 
-			vertModules		.push_back(createShaderModule(vkd, device, binaries.get(vertName)));
-			vertModule		= vertModules.back().get();
+			vertModules		.push_back(ShaderWrapper(vkd, device, binaries.get(vertName)));
+			vertModule		= vertModules.back();
 			vertSpecInfo	= maybeMakeSpecializationInfo(useSCs, &scMapEntry, shaderConstIt);
 
 			if (binaries.contains(tescName))
 			{
-				tescModules		.push_back(createShaderModule(vkd, device, binaries.get(tescName)));
-				tescModule		= tescModules.back().get();
+				tescModules		.push_back(ShaderWrapper(vkd, device, binaries.get(tescName)));
+				tescModule		= tescModules.back();
 				tescSpecInfo	= maybeMakeSpecializationInfo(useSCs, &scMapEntry, shaderConstIt);
 			}
 
 			if (binaries.contains(teseName))
 			{
-				teseModules		.push_back(createShaderModule(vkd, device, binaries.get(teseName)));
-				teseModule		= teseModules.back().get();
+				teseModules		.push_back(ShaderWrapper(vkd, device, binaries.get(teseName)));
+				teseModule		= teseModules.back();
 				teseSpecInfo	= maybeMakeSpecializationInfo(useSCs, &scMapEntry, shaderConstIt);
 			}
 
 			if (binaries.contains(geomName))
 			{
-				geomModules		.push_back(createShaderModule(vkd, device, binaries.get(geomName)));
-				geomModule		= geomModules.back().get();
+				geomModules		.push_back(ShaderWrapper(vkd, device, binaries.get(geomName)));
+				geomModule		= geomModules.back();
 				geomSpecInfo	= maybeMakeSpecializationInfo(useSCs, &scMapEntry, shaderConstIt);
 			}
 
 			if (binaries.contains(fragName))
 			{
-				fragModules		.push_back(createShaderModule(vkd, device, binaries.get(fragName)));
-				fragModule		= fragModules.back().get();
+				fragModules		.push_back(ShaderWrapper(vkd, device, binaries.get(fragName)));
+				fragModule		= fragModules.back();
 				fragSpecInfo	= maybeMakeSpecializationInfo(useSCs, &scMapEntry, shaderConstIt);
 			}
 
-			const auto rasterizationState = makeRasterizationState(fragModule == DE_NULL);
+			const auto rasterizationState = makeRasterizationState(!fragModule.isSet());
 
 			wrapper	.setDefaultPatchControlPoints(patchCPs)
 					.setupVertexInputState(&vertexInputState, &inputAssemblyState, pipelineCache.get())
 					.setupPreRasterizationShaderState2(
 						viewports,
 						scissors,
-						pipelineLayout.get(),
+						pipelineLayout,
 						renderPass.get(),
 						0u,
 						vertModule,
@@ -2214,7 +2216,7 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 						PipelineRenderingCreateInfoWrapper(),
 						pipelineCache.get())
 					.setupFragmentShaderState(
-						pipelineLayout.get(),
+						pipelineLayout,
 						renderPass.get(),
 						0u,
 						fragModule,
@@ -2223,7 +2225,7 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 						fragSpecInfo.get(),
 						pipelineCache.get())
 					.setupFragmentOutputState(*renderPass, 0u, &colorBlendState, &multisampleState, pipelineCache.get())
-					.setMonolithicPipelineLayout(pipelineLayout.get())
+					.setMonolithicPipelineLayout(pipelineLayout)
 					.buildPipeline(pipelineCache.get());
 
 			pipelines.push_back(wrapper.getPipeline());
@@ -2237,25 +2239,25 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 				vertToRun.setModule(vkd, device, vertModule, m_params->moduleUseCase, m_params->getRndGen());
 				vertToRun.setSpecInfo(std::move(vertSpecInfo));
 
-				if (tescModule != DE_NULL)
+				if (tescModule.isSet())
 				{
 					tescToRun.setModule(vkd, device, tescModule, m_params->moduleUseCase, m_params->getRndGen());
 					tescToRun.setSpecInfo(std::move(tescSpecInfo));
 				}
 
-				if (teseModule != DE_NULL)
+				if (teseModule.isSet())
 				{
 					teseToRun.setModule(vkd, device, teseModule, m_params->moduleUseCase, m_params->getRndGen());
 					teseToRun.setSpecInfo(std::move(teseSpecInfo));
 				}
 
-				if (geomModule != DE_NULL)
+				if (geomModule.isSet())
 				{
 					geomToRun.setModule(vkd, device, geomModule, m_params->moduleUseCase, m_params->getRndGen());
 					geomToRun.setSpecInfo(std::move(geomSpecInfo));
 				}
 
-				if (fragModule != DE_NULL)
+				if (fragModule.isSet())
 				{
 					fragToRun.setModule(vkd, device, fragModule, m_params->moduleUseCase, m_params->getRndGen());
 					fragToRun.setSpecInfo(std::move(fragSpecInfo));
@@ -2266,11 +2268,11 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 		if (runOnePipeline)
 		{
 			// Append the pipeline to run at the end of the vector.
-			pipelineWrappers.emplace_back(new GraphicsPipelineWrapper(vkd, device, m_params->constructionType, captureFlags));
+			pipelineWrappers.emplace_back(new GraphicsPipelineWrapper(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(), m_params->constructionType, captureFlags));
 			auto& wrapper = *pipelineWrappers.back();
 
 			const auto fragModule			= fragToRun.getModule();
-			const auto rasterizationState	= makeRasterizationState(fragModule == DE_NULL);
+			const auto rasterizationState	= makeRasterizationState(!fragModule.isSet());
 
 			try
 			{
@@ -2279,17 +2281,17 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 						.setupPreRasterizationShaderState3(
 							viewports,
 							scissors,
-							pipelineLayout.get(),
+							pipelineLayout,
 							renderPass.get(),
 							0u,
-							vertToRun.getUsedModule(m_params->moduleUseCase),
+							*vertToRun.getUsedModule(m_params->moduleUseCase),
 							PipelineShaderStageModuleIdentifierCreateInfoWrapper(vertToRun.getModuleIdCreateInfo()),
 							&rasterizationState,
-							tescToRun.getUsedModule(m_params->moduleUseCase),
+							*tescToRun.getUsedModule(m_params->moduleUseCase),
 							PipelineShaderStageModuleIdentifierCreateInfoWrapper(tescToRun.getModuleIdCreateInfo()),
-							teseToRun.getUsedModule(m_params->moduleUseCase),
+							*teseToRun.getUsedModule(m_params->moduleUseCase),
 							PipelineShaderStageModuleIdentifierCreateInfoWrapper(teseToRun.getModuleIdCreateInfo()),
-							geomToRun.getUsedModule(m_params->moduleUseCase),
+							*geomToRun.getUsedModule(m_params->moduleUseCase),
 							PipelineShaderStageModuleIdentifierCreateInfoWrapper(geomToRun.getModuleIdCreateInfo()),
 							vertToRun.getSpecInfo(),
 							tescToRun.getSpecInfo(),
@@ -2299,17 +2301,17 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 							PipelineRenderingCreateInfoWrapper(),
 							pipelineCache.get())
 						.setupFragmentShaderState2(
-							pipelineLayout.get(),
+							pipelineLayout,
 							renderPass.get(),
 							0u,
-							fragToRun.getUsedModule(m_params->moduleUseCase),
+							*fragToRun.getUsedModule(m_params->moduleUseCase),
 							fragToRun.getModuleIdCreateInfo(),
 							&depthStencilState,
 							&multisampleState,
 							fragToRun.getSpecInfo(),
 							pipelineCache.get())
 						.setupFragmentOutputState(*renderPass, 0u, &colorBlendState, &multisampleState, pipelineCache.get())
-						.setMonolithicPipelineLayout(pipelineLayout.get())
+						.setMonolithicPipelineLayout(pipelineLayout)
 						.buildPipeline(pipelineCache.get());
 
 				if (reqCacheMiss)
@@ -2346,8 +2348,8 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 			const auto scEntries	= (useSCs ? makeComputeSpecMapEntries() : std::vector<VkSpecializationMapEntry>());
 			const auto scInfo		= (useSCs ? makeComputeSpecInfo(scEntries, scData) : nullptr);
 
-			compModules.push_back(createShaderModule(vkd, device, binaries.get(compName)));
-			pipelinePtrs.push_back(makeComputePipeline(vkd, device, pipelineLayout.get(), captureFlags, compModules.back().get(), 0u, scInfo.get(), pipelineCache.get()));
+			compModules.push_back(ShaderWrapper(vkd, device, binaries.get(compName)));
+			pipelinePtrs.push_back(makeComputePipeline(vkd, device, pipelineLayout.get(), captureFlags, compModules.back().getModule(), 0u, scInfo.get(), pipelineCache.get()));
 			pipelines.push_back(pipelinePtrs.back().get());
 
 			if (runThis)
@@ -2359,8 +2361,8 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 
 		if (idxToRun != invalidPipelineIdx)
 		{
-			const auto compModule	= compModules.at(idxToRun).get();
-			auto moduleId			= getShaderModuleIdentifier(vkd, device, compModule);
+			auto& compModule		= compModules.at(idxToRun);
+			auto moduleId			= getShaderModuleIdentifier(vkd, device, compModule.getModule());
 
 			maybeMangleShaderModuleId(moduleId, m_params->moduleUseCase, m_params->getRndGen());
 
@@ -2375,13 +2377,13 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 
 				const VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
 				{
-					VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
-					modInfo.get(),											// const void*							pNext;
-					0u,														// VkPipelineShaderStageCreateFlags		flags;
-					VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
-					retUsedModule(compModule, m_params->moduleUseCase),		// VkShaderModule						module;
-					"main",													// const char*							pName;
-					scInfo.get(),											// const VkSpecializationInfo*			pSpecializationInfo;
+					VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,				// VkStructureType						sType;
+					modInfo.get(),														// const void*							pNext;
+					0u,																	// VkPipelineShaderStageCreateFlags		flags;
+					VK_SHADER_STAGE_COMPUTE_BIT,										// VkShaderStageFlagBits				stage;
+					retUsedModule(&compModule, m_params->moduleUseCase)->getModule(),	// VkShaderModule						module;
+					"main",																// const char*							pName;
+					scInfo.get(),														// const VkSpecializationInfo*			pSpecializationInfo;
 				};
 
 				const VkComputePipelineCreateInfo pipelineCreateInfo =
@@ -2453,12 +2455,12 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 			const auto missName	= "miss" + suffix;
 			const auto callName	= "call" + suffix;
 
-			VkShaderModule	rgenModule				= DE_NULL;
-			VkShaderModule	chitModule				= DE_NULL;
-			VkShaderModule	ahitModule				= DE_NULL;
-			VkShaderModule	isecModule				= DE_NULL;
-			VkShaderModule	missModule				= DE_NULL;
-			VkShaderModule	callModule				= DE_NULL;
+			ShaderWrapper	rgenModule;
+			ShaderWrapper	chitModule;
+			ShaderWrapper	ahitModule;
+			ShaderWrapper	isecModule;
+			ShaderWrapper	missModule;
+			ShaderWrapper	callModule;
 
 			SpecInfoPtr		rgenSpecInfo;
 			SpecInfoPtr		chitSpecInfo;
@@ -2473,46 +2475,46 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 			tcu::Maybe<uint32_t>	missGroup;
 			tcu::Maybe<uint32_t>	callGroup;
 
-			rgenModules		.push_back(createShaderModule(vkd, device, binaries.get(rgenName)));
-			rgenModule		= rgenModules.back().get();
+			rgenModules		.push_back(ShaderWrapper(vkd, device, binaries.get(rgenName)));
+			rgenModule		= rgenModules.back();
 			rgenSpecInfo	= maybeMakeSpecializationInfo(useSCs, &scMapEntry, shaderConstIt);
 
 			if (binaries.contains(chitName))
 			{
-				chitModules		.push_back(createShaderModule(vkd, device, binaries.get(chitName)));
-				chitModule		= chitModules.back().get();
+				chitModules		.push_back(ShaderWrapper(vkd, device, binaries.get(chitName)));
+				chitModule		= chitModules.back();
 				chitSpecInfo	= maybeMakeSpecializationInfo(useSCs, &scMapEntry, shaderConstIt);
 				xhitGroup		= (static_cast<bool>(xhitGroup) ? xhitGroup : tcu::just(groupCount++));
 			}
 
 			if (binaries.contains(ahitName))
 			{
-				ahitModules		.push_back(createShaderModule(vkd, device, binaries.get(ahitName)));
-				ahitModule		= ahitModules.back().get();
+				ahitModules		.push_back(ShaderWrapper(vkd, device, binaries.get(ahitName)));
+				ahitModule		= ahitModules.back();
 				ahitSpecInfo	= maybeMakeSpecializationInfo(useSCs, &scMapEntry, shaderConstIt);
 				xhitGroup		= (static_cast<bool>(xhitGroup) ? xhitGroup : tcu::just(groupCount++));
 			}
 
 			if (binaries.contains(isecName))
 			{
-				isecModules		.push_back(createShaderModule(vkd, device, binaries.get(isecName)));
-				isecModule		= isecModules.back().get();
+				isecModules		.push_back(ShaderWrapper(vkd, device, binaries.get(isecName)));
+				isecModule		= isecModules.back();
 				isecSpecInfo	= maybeMakeSpecializationInfo(useSCs, &scMapEntry, shaderConstIt);
 				xhitGroup		= (static_cast<bool>(xhitGroup) ? xhitGroup : tcu::just(groupCount++));
 			}
 
 			if (binaries.contains(missName))
 			{
-				missModules		.push_back(createShaderModule(vkd, device, binaries.get(missName)));
-				missModule		= missModules.back().get();
+				missModules		.push_back(ShaderWrapper(vkd, device, binaries.get(missName)));
+				missModule		= missModules.back();
 				missSpecInfo	= maybeMakeSpecializationInfo(useSCs, &scMapEntry, shaderConstIt);
 				missGroup		= tcu::just(groupCount++);
 			}
 
 			if (binaries.contains(callName))
 			{
-				callModules		.push_back(createShaderModule(vkd, device, binaries.get(callName)));
-				callModule		= callModules.back().get();
+				callModules		.push_back(ShaderWrapper(vkd, device, binaries.get(callName)));
+				callModule		= callModules.back();
 				callSpecInfo	= maybeMakeSpecializationInfo(useSCs, &scMapEntry, shaderConstIt);
 				callGroup		= tcu::just(groupCount++);
 			}
@@ -2527,22 +2529,22 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 				// Make it a library if we are using libraries.
 				rayTracingPipeline->setCreateFlags(captureFlags | (m_params->useRTLibraries ? VK_PIPELINE_CREATE_LIBRARY_BIT_KHR : 0));
 
-				rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, rgenModule, rgenGroup, rgenSpecInfo.get());
+				rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, rgenModule.getModule(), rgenGroup, rgenSpecInfo.get());
 
-				if (chitModule != DE_NULL)
-					rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, chitModule, xhitGroup.get(), chitSpecInfo.get());
+				if (chitModule.isSet())
+					rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, chitModule.getModule(), xhitGroup.get(), chitSpecInfo.get());
 
-				if (ahitModule != DE_NULL)
-					rayTracingPipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR, ahitModule, xhitGroup.get(), ahitSpecInfo.get());
+				if (ahitModule.isSet())
+					rayTracingPipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR, ahitModule.getModule(), xhitGroup.get(), ahitSpecInfo.get());
 
-				if (isecModule != DE_NULL)
-					rayTracingPipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR, isecModule, xhitGroup.get(), isecSpecInfo.get());
+				if (isecModule.isSet())
+					rayTracingPipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR, isecModule.getModule(), xhitGroup.get(), isecSpecInfo.get());
 
-				if (missModule != DE_NULL)
-					rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, missModule, missGroup.get(), missSpecInfo.get());
+				if (missModule.isSet())
+					rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, missModule.getModule(), missGroup.get(), missSpecInfo.get());
 
-				if (callModule != DE_NULL)
-					rayTracingPipeline->addShader(VK_SHADER_STAGE_CALLABLE_BIT_KHR, callModule, callGroup.get(), callSpecInfo.get());
+				if (callModule.isSet())
+					rayTracingPipeline->addShader(VK_SHADER_STAGE_CALLABLE_BIT_KHR, callModule.getModule(), callGroup.get(), callSpecInfo.get());
 
 				pipelinePtrs.emplace_back(rayTracingPipeline->createPipeline(vkd, device, pipelineLayout.get(), emptyPipelinesVec, pipelineCache.get()));
 				pipelines.push_back(pipelinePtrs.back().get());
@@ -2570,31 +2572,31 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 				rgenToRun.setModule(vkd, device, rgenModule, m_params->moduleUseCase, m_params->getRndGen());
 				rgenToRun.setSpecInfo(std::move(rgenSpecInfo));
 
-				if (chitModule != DE_NULL)
+				if (chitModule.isSet())
 				{
 					chitToRun.setModule(vkd, device, chitModule, m_params->moduleUseCase, m_params->getRndGen());
 					chitToRun.setSpecInfo(std::move(chitSpecInfo));
 				}
 
-				if (ahitModule != DE_NULL)
+				if (ahitModule.isSet())
 				{
 					ahitToRun.setModule(vkd, device, ahitModule, m_params->moduleUseCase, m_params->getRndGen());
 					ahitToRun.setSpecInfo(std::move(ahitSpecInfo));
 				}
 
-				if (isecModule != DE_NULL)
+				if (isecModule.isSet())
 				{
 					isecToRun.setModule(vkd, device, isecModule, m_params->moduleUseCase, m_params->getRndGen());
 					isecToRun.setSpecInfo(std::move(isecSpecInfo));
 				}
 
-				if (missModule != DE_NULL)
+				if (missModule.isSet())
 				{
 					missToRun.setModule(vkd, device, missModule, m_params->moduleUseCase, m_params->getRndGen());
 					missToRun.setSpecInfo(std::move(missSpecInfo));
 				}
 
-				if (callModule != DE_NULL)
+				if (callModule.isSet())
 				{
 					callToRun.setModule(vkd, device, callModule, m_params->moduleUseCase, m_params->getRndGen());
 					callToRun.setSpecInfo(std::move(callSpecInfo));
@@ -2617,17 +2619,17 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 			const auto missModule = missToRun.getModule();
 			const auto callModule = callToRun.getModule();
 
-			if (chitModule != DE_NULL)
+			if (chitModule.isSet())
 				xhitGroup = (xhitGroup ? xhitGroup : tcu::just(groupCount++));
-			if (ahitModule != DE_NULL)
+			if (ahitModule.isSet())
 				xhitGroup = (xhitGroup ? xhitGroup : tcu::just(groupCount++));
-			if (isecModule != DE_NULL)
+			if (isecModule.isSet())
 				xhitGroup = (xhitGroup ? xhitGroup : tcu::just(groupCount++));
 
-			if (missModule != DE_NULL)
+			if (missModule.isSet())
 				missGroup = tcu::just(groupCount++);
 
-			if (callModule != DE_NULL)
+			if (callModule.isSet())
 				callGroup = tcu::just(groupCount++);
 
 			const auto shaderOwningPipelinePtr	= makeVkSharedPtr(de::newMovePtr<RayTracingPipeline>());
@@ -2657,56 +2659,56 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 
 			shaderOwningPipeline->addShader(
 				VK_SHADER_STAGE_RAYGEN_BIT_KHR,
-				rgenToRun.getUsedModule(m_params->moduleUseCase),
+				rgenToRun.getUsedModule(m_params->moduleUseCase)->getModule(),
 				rgenGroup,
 				rgenToRun.getSpecInfo(), 0,
 				rgenToRun.getModuleIdCreateInfo());
 
-			if (chitModule != DE_NULL)
+			if (chitModule.isSet())
 			{
 				shaderOwningPipeline->addShader(
 					VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
-					chitToRun.getUsedModule(m_params->moduleUseCase),
+					chitToRun.getUsedModule(m_params->moduleUseCase)->getModule(),
 					xhitGroup.get(),
 					chitToRun.getSpecInfo(), 0,
 					chitToRun.getModuleIdCreateInfo());
 			}
 
-			if (ahitModule != DE_NULL)
+			if (ahitModule.isSet())
 			{
 				shaderOwningPipeline->addShader(
 					VK_SHADER_STAGE_ANY_HIT_BIT_KHR,
-					ahitToRun.getUsedModule(m_params->moduleUseCase),
+					ahitToRun.getUsedModule(m_params->moduleUseCase)->getModule(),
 					xhitGroup.get(),
 					ahitToRun.getSpecInfo(), 0,
 					ahitToRun.getModuleIdCreateInfo());
 			}
 
-			if (isecModule != DE_NULL)
+			if (isecModule.isSet())
 			{
 				shaderOwningPipeline->addShader(
 					VK_SHADER_STAGE_INTERSECTION_BIT_KHR,
-					isecToRun.getUsedModule(m_params->moduleUseCase),
+					isecToRun.getUsedModule(m_params->moduleUseCase)->getModule(),
 					xhitGroup.get(),
 					isecToRun.getSpecInfo(), 0,
 					isecToRun.getModuleIdCreateInfo());
 			}
 
-			if (missModule != DE_NULL)
+			if (missModule.isSet())
 			{
 				shaderOwningPipeline->addShader(
 					VK_SHADER_STAGE_MISS_BIT_KHR,
-					missToRun.getUsedModule(m_params->moduleUseCase),
+					missToRun.getUsedModule(m_params->moduleUseCase)->getModule(),
 					missGroup.get(),
 					missToRun.getSpecInfo(), 0,
 					missToRun.getModuleIdCreateInfo());
 			}
 
-			if (callModule != DE_NULL)
+			if (callModule.isSet())
 			{
 				shaderOwningPipeline->addShader(
 					VK_SHADER_STAGE_CALLABLE_BIT_KHR,
-					callToRun.getUsedModule(m_params->moduleUseCase),
+					callToRun.getUsedModule(m_params->moduleUseCase)->getModule(),
 					callGroup.get(),
 					callToRun.getSpecInfo(), 0,
 					callToRun.getModuleIdCreateInfo());
@@ -2817,11 +2819,11 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 		const auto		bindPoint	= VK_PIPELINE_BIND_POINT_GRAPHICS;
 		const auto		vertexCount	= (m_params->hasTess() ? 3u : 1u);
 
-		beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), clearColor);
+		renderPass.begin(vkd, cmdBuffer, scissors.at(0u), clearColor);
 		vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, pipelineLayout.get(), 0u, de::sizeU32(rawDescriptorSets), de::dataOrNull(rawDescriptorSets), 0u, nullptr);
 		vkd.cmdBindPipeline(cmdBuffer, bindPoint, pipelines.back());
 		vkd.cmdDraw(cmdBuffer, vertexCount, 1u, 0u, 0u);
-		endRenderPass(vkd, cmdBuffer);
+		renderPass.end(vkd, cmdBuffer);
 
 		const auto copyRegion			= makeBufferImageCopy(fbExtent, colorSRL);
 		const auto preHostBarrier		= makeMemoryBarrier((VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_SHADER_WRITE_BIT), VK_ACCESS_HOST_READ_BIT);
@@ -2984,7 +2986,7 @@ void HLSLTessellationCase::checkSupport (Context &context) const
 	const auto&	vki				= context.getInstanceInterface();
 	const auto	physicalDevice	= context.getPhysicalDevice();
 
-	checkPipelineLibraryRequirements(vki, physicalDevice, m_constructionType);
+	checkPipelineConstructionRequirements(vki, physicalDevice, m_constructionType);
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
 	checkShaderModuleIdentifierSupport(context);
 }
@@ -3141,7 +3143,9 @@ void HLSLTessellationCase::initPrograms (vk::SourceCollections &programCollectio
 
 tcu::TestStatus HLSLTessellationInstance::iterate (void)
 {
+	const auto&			vki				= m_context.getInstanceInterface();
 	const auto&			vkd				= m_context.getDeviceInterface();
+	const auto			physicalDevice	= m_context.getPhysicalDevice();
 	const auto			device			= m_context.getDevice();
 	auto&				alloc			= m_context.getDefaultAllocator();
 	const auto			queue			= m_context.getUniversalQueue();
@@ -3180,12 +3184,12 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 		VK_IMAGE_LAYOUT_UNDEFINED,													//	VkImageLayout			initialLayout;
 	};
 
-	ImageWithMemory	colorAtt		(vkd, device, alloc, colorAttCreateInfo, MemoryRequirement::Any);
-	const auto		colorSRR		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-	const auto		colorSRL		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
-	const auto		colorAttView	= makeImageView(vkd, device, colorAtt.get(), VK_IMAGE_VIEW_TYPE_2D, fbFormat, colorSRR);
-	const auto		renderPass		= makeRenderPass(vkd, device, fbFormat);
-	const auto		framebuffer		= makeFramebuffer(vkd, device, renderPass.get(), colorAttView.get(), fbExtent.width, fbExtent.height);
+	ImageWithMemory		colorAtt		(vkd, device, alloc, colorAttCreateInfo, MemoryRequirement::Any);
+	const auto			colorSRR		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const auto			colorSRL		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+	const auto			colorAttView	= makeImageView(vkd, device, colorAtt.get(), VK_IMAGE_VIEW_TYPE_2D, fbFormat, colorSRR);
+	RenderPassWrapper	renderPass		(m_constructionType, vkd, device, fbFormat);
+	renderPass.createFramebuffer(vkd, device, colorAtt.get(), colorAttView.get(), fbExtent.width, fbExtent.height);
 
 	// Verification buffer.
 	DE_ASSERT(fbExtent.depth == 1u);
@@ -3195,11 +3199,11 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 
 	// Create shader modules, obtain IDs and verify all of them differ.
 	const auto&	binaries	= m_context.getBinaryCollection();
-	const auto	vertModule	= createShaderModule(vkd, device, binaries.get("vert"));
-	const auto	fragModule	= createShaderModule(vkd, device, binaries.get("frag"));
-	const auto	teseModule	= createShaderModule(vkd, device, binaries.get("tese"));
+	const auto	vertModule	= ShaderWrapper(vkd, device, binaries.get("vert"));
+	const auto	fragModule	= ShaderWrapper(vkd, device, binaries.get("frag"));
+	const auto	teseModule	= ShaderWrapper(vkd, device, binaries.get("tese"));
 
-	std::vector<Move<VkShaderModule>>	tescModules;
+	std::vector<ShaderWrapper>	tescModules;
 	{
 		size_t tescIdx = 0;
 
@@ -3208,18 +3212,18 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 			const auto shaderName = "tesc" + std::to_string(tescIdx);
 			if (!binaries.contains(shaderName))
 				break;
-			tescModules.emplace_back(createShaderModule(vkd, device, binaries.get(shaderName)));
+			tescModules.emplace_back(ShaderWrapper(vkd, device, binaries.get(shaderName)));
 
 			++tescIdx;
 		}
 	}
 
-	const auto vertId = getShaderModuleIdentifier(vkd, device, vertModule.get());
-	const auto fragId = getShaderModuleIdentifier(vkd, device, fragModule.get());
-	const auto teseId = getShaderModuleIdentifier(vkd, device, teseModule.get());
+	const auto vertId = getShaderModuleIdentifier(vkd, device, vertModule.getModule());
+	const auto fragId = getShaderModuleIdentifier(vkd, device, fragModule.getModule());
+	const auto teseId = getShaderModuleIdentifier(vkd, device, teseModule.getModule());
 	std::vector<ShaderModuleId> tescIds;
 	for (const auto& mod : tescModules)
-		tescIds.emplace_back(getShaderModuleIdentifier(vkd, device, mod.get()));
+		tescIds.emplace_back(getShaderModuleIdentifier(vkd, device, mod.getModule()));
 
 	// Verify all of them are unique.
 	{
@@ -3270,7 +3274,7 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 	const auto pipelineCache = createPipelineCache(vkd, device, &cacheCreateInfo);
 
 	// Empty pipeline layout.
-	const auto pipelineLayout = makePipelineLayout(vkd, device);
+	const PipelineLayoutWrapper pipelineLayout (m_constructionType, vkd, device);
 
 	using GraphicsPipelineWrapperPtr = std::unique_ptr<GraphicsPipelineWrapper>;
 
@@ -3278,7 +3282,7 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 	{
 		for (const auto& tescModule : tescModules)
 		{
-			GraphicsPipelineWrapperPtr wrapper (new GraphicsPipelineWrapper(vkd, device, m_constructionType));
+			GraphicsPipelineWrapperPtr wrapper (new GraphicsPipelineWrapper(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(), m_constructionType));
 
 			try
 			{
@@ -3287,14 +3291,14 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 						.setupPreRasterizationShaderState2(
 							rpViewports,
 							rpScissors,
-							pipelineLayout.get(),
+							pipelineLayout,
 							renderPass.get(),
 							0u,
-							vertModule.get(),
+							vertModule,
 							&rasterizationState,
-							tescModule.get(),
-							teseModule.get(),
-							DE_NULL,
+							tescModule,
+							teseModule,
+							ShaderWrapper(),
 							nullptr,
 							nullptr,
 							nullptr,
@@ -3303,10 +3307,10 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 							PipelineRenderingCreateInfoWrapper(),
 							pipelineCache.get())
 						.setupFragmentShaderState(
-							pipelineLayout.get(),
+							pipelineLayout,
 							renderPass.get(),
 							0u,
-							fragModule.get(),
+							fragModule,
 							&depthStencilState,
 							&multisampleState,
 							nullptr,
@@ -3317,7 +3321,7 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 							&colorBlendState,
 							&multisampleState,
 							pipelineCache.get())
-						.setMonolithicPipelineLayout(pipelineLayout.get())
+						.setMonolithicPipelineLayout(pipelineLayout)
 						.buildPipeline(pipelineCache.get());
 			}
 			catch (const PipelineCompileRequiredError& err)
@@ -3346,7 +3350,7 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 
 		viewports.emplace_back(makeViewport(static_cast<float>(col), static_cast<float>(row), 1.0f, 1.0f, 0.0f, 1.0f));
 		scissors.emplace_back(makeRect2D(static_cast<int32_t>(col), static_cast<int32_t>(row), 1u, 1u));
-		pipelineWrappers.emplace_back(new GraphicsPipelineWrapper(vkd, device, m_constructionType));
+		pipelineWrappers.emplace_back(new GraphicsPipelineWrapper(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(), m_constructionType));
 
 		const auto& wrapper = pipelineWrappers.back();
 
@@ -3357,17 +3361,17 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 					.setupPreRasterizationShaderState3(
 						std::vector<VkViewport>(1u, viewports.back()),
 						std::vector<VkRect2D>(1u, scissors.back()),
-						pipelineLayout.get(),
+						pipelineLayout,
 						renderPass.get(),
 						0u,
-						DE_NULL,
+						ShaderWrapper(),
 						PipelineShaderStageModuleIdentifierCreateInfoWrapper(vertIdInfo.get()),
 						&rasterizationState,
-						DE_NULL,
+						ShaderWrapper(),
 						PipelineShaderStageModuleIdentifierCreateInfoWrapper(tescIdInfos.at(tescIdx).get()),
-						DE_NULL,
+						ShaderWrapper(),
 						PipelineShaderStageModuleIdentifierCreateInfoWrapper(teseIdInfo.get()),
-						DE_NULL,
+						ShaderWrapper(),
 						PipelineShaderStageModuleIdentifierCreateInfoWrapper(),
 						nullptr,
 						nullptr,
@@ -3377,10 +3381,10 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 						PipelineRenderingCreateInfoWrapper(),
 						pipelineCache.get())
 					.setupFragmentShaderState2(
-						pipelineLayout.get(),
+						pipelineLayout,
 						renderPass.get(),
 						0u,
-						DE_NULL,
+						ShaderWrapper(),
 						PipelineShaderStageModuleIdentifierCreateInfoWrapper(fragIdInfo.get()),
 						&depthStencilState,
 						&multisampleState,
@@ -3392,7 +3396,7 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 						&colorBlendState,
 						&multisampleState,
 						pipelineCache.get())
-					.setMonolithicPipelineLayout(pipelineLayout.get())
+					.setMonolithicPipelineLayout(pipelineLayout)
 					.buildPipeline(pipelineCache.get());
 		}
 		catch (const PipelineCompileRequiredError& err)
@@ -3407,13 +3411,13 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 	const auto cmdBuffer = cmdBufferPtr.get();
 
 	beginCommandBuffer(vkd, cmdBuffer);
-	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), rpScissors.at(0u), clearColor);
+	renderPass.begin(vkd, cmdBuffer, rpScissors.at(0u), clearColor);
 	for (const auto& wrapper : pipelineWrappers)
 	{
 		vkd.cmdBindPipeline(cmdBuffer, bindPoint, wrapper->getPipeline());
 		vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
 	}
-	endRenderPass(vkd, cmdBuffer);
+	renderPass.end(vkd, cmdBuffer);
 
 	// Transfer color attachment to verification buffer.
 	const auto copyRegion			= makeBufferImageCopy(fbExtent, colorSRL);

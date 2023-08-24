@@ -1889,6 +1889,14 @@ VKAPI_ATTR void VKAPI_CALL getCommandPoolMemoryConsumption (VkDevice device, VkC
 	DE_UNREF(pConsumption);
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getScreenBufferPropertiesQNX (VkDevice device, const struct _screen_buffer* buffer, VkScreenBufferPropertiesQNX* pProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(buffer);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -2178,5 +2186,6 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdWriteTimestamp2KHR,						cmdWriteTimestamp2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetQueueCheckpointData2NV,					getQueueCheckpointData2NV),
 	VK_NULL_FUNC_ENTRY(vkGetCommandPoolMemoryConsumption,			getCommandPoolMemoryConsumption),
+	VK_NULL_FUNC_ENTRY(vkGetScreenBufferPropertiesQNX,				getScreenBufferPropertiesQNX),
 };
 

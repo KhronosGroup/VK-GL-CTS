@@ -63,7 +63,18 @@
 #include <array>
 #include <algorithm>
 #include <iterator>
+#include <limits>
 #include <sstream>
+
+#ifdef CTS_USES_VULKANSC
+// VulkanSC has VK_KHR_copy_commands2 entry points, but not core entry points.
+#define cmdCopyImage2 cmdCopyImage2KHR
+#define cmdCopyBuffer2 cmdCopyBuffer2KHR
+#define cmdCopyImageToBuffer2 cmdCopyImageToBuffer2KHR
+#define cmdCopyBufferToImage2 cmdCopyBufferToImage2KHR
+#define cmdBlitImage2 cmdBlitImage2KHR
+#define cmdResolveImage2 cmdResolveImage2KHR
+#endif // CTS_USES_VULKANSC
 
 namespace vkt
 {
@@ -296,6 +307,32 @@ struct ImageParms
 	FillMode			fillMode;
 };
 
+enum class QueueSelectionOptions
+{
+	Universal		= 0,
+	ComputeOnly,
+	TransferOnly
+};
+
+struct CustomDeviceData
+{
+	Move<VkDevice>			device;
+	de::MovePtr<Allocator>	allocator;
+	uint32_t				queueFamilyIndex {0};
+};
+
+// many tests operate on transfer only queue; instead of recreating
+// custom device for each test we share single one for whole group
+de::SharedPtr<CustomDeviceData>	g_deviceWithTransferQueue;
+
+void checkGlobalVariableWithTransferOnlyQueue()
+{
+	// if CustomDeviceData was created but there is no device in it
+	// than it means transfer only queue is not available
+	if (g_deviceWithTransferQueue && !*(g_deviceWithTransferQueue->device))
+		TCU_THROW(NotSupportedError, "Transfer only queue is not supported");
+}
+
 struct TestParams
 {
 	union Data
@@ -316,20 +353,22 @@ struct TestParams
 		VkSampleCountFlagBits	samples;
 	};
 
-	AllocationKind	allocationKind;
-	ExtensionUse	extensionUse;
-	deUint32		mipLevels;
-	deUint32		arrayLayers;
-	deBool			singleCommand;
-	deUint32		barrierCount;
-	deBool			separateDepthStencilLayouts;
-	deBool			clearDestination;
-	deBool			imageOffset;
+	AllocationKind			allocationKind;
+	ExtensionUse			extensionUse;
+	QueueSelectionOptions	queueSelection;
+	deUint32				mipLevels;
+	deUint32				arrayLayers;
+	deBool					singleCommand;
+	deUint32				barrierCount;
+	deBool					separateDepthStencilLayouts;
+	deBool					clearDestinationWithRed;		// Used for CopyImageToImage tests to clear dst image with vec4(1.0f, 0.0f, 0.0f, 1.0f)
+	deBool					imageOffset;
 
 	TestParams (void)
 	{
 		allocationKind				= ALLOCATION_KIND_DEDICATED;
 		extensionUse				= EXTENSION_USE_NONE;
+		queueSelection				= QueueSelectionOptions::Universal;
 		mipLevels					= 1u;
 		arrayLayers					= 1u;
 		singleCommand				= DE_TRUE;
@@ -339,7 +378,7 @@ struct TestParams
 		dst.image.createFlags		= VK_IMAGE_CREATE_FLAG_BITS_MAX_ENUM;
 		src.image.fillMode			= FILL_MODE_GRADIENT;
 		dst.image.fillMode			= FILL_MODE_WHITE;
-		clearDestination			= DE_FALSE;
+		clearDestinationWithRed		= DE_FALSE;
 		samples						= VK_SAMPLE_COUNT_1_BIT;
 		imageOffset					= false;
 	}
@@ -506,6 +545,7 @@ protected:
 	de::MovePtr<tcu::TextureLevel>		readImage							(vk::VkImage				image,
 																			 const ImageParms&			imageParms,
 																			 const deUint32				mipLevel = 0u);
+	void								setupDeviceWithTransferQueue		(void);
 
 private:
 	void								uploadImageAspect					(const tcu::ConstPixelBufferAccess&	src,
@@ -529,11 +569,14 @@ CopiesAndBlittingTestInstance::CopiesAndBlittingTestInstance (Context& context, 
 	const DeviceInterface&		vk					= context.getDeviceInterface();
 	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 
-	// Create command pool
-	m_cmdPool = createCommandPool(vk, m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+	if (m_params.queueSelection == QueueSelectionOptions::Universal)
+	{
+		// Create command pool
+		m_cmdPool = createCommandPool(vk, m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 
-	// Create command buffer
-	m_cmdBuffer = allocateCommandBuffer(vk, m_device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		// Create command buffer
+		m_cmdBuffer = allocateCommandBuffer(vk, m_device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	}
 }
 
 void CopiesAndBlittingTestInstance::generateBuffer (tcu::PixelBufferAccess buffer, int width, int height, int depth, FillMode mode)
@@ -1025,6 +1068,133 @@ de::MovePtr<tcu::TextureLevel> CopiesAndBlittingTestInstance::readImage	(vk::VkI
 	return resultLevel;
 }
 
+// Creates a device that has with a queue specific to compute or transfer operations.
+Move<VkDevice> createCustomDevice(Context&						context,
+								  const QueueSelectionOptions	queueOptions,
+								  uint32_t&						queueFamilyIndex)
+{
+	const InstanceInterface&	instanceDriver = context.getInstanceInterface();
+	const VkPhysicalDevice		physicalDevice = context.getPhysicalDevice();
+
+	switch (queueOptions)
+	{
+	case QueueSelectionOptions::Universal:
+		TCU_THROW(NotSupportedError, "Invalid queue selection option, only compute or transfer queues make sense for a custom device");
+		break;
+	case QueueSelectionOptions::ComputeOnly:
+		queueFamilyIndex = findQueueFamilyIndexWithCaps(instanceDriver, physicalDevice, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT);
+		break;
+	case QueueSelectionOptions::TransferOnly:
+		queueFamilyIndex = findQueueFamilyIndexWithCaps(instanceDriver, physicalDevice, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+		break;
+	}
+
+	const std::vector<VkQueueFamilyProperties>	queueFamilies = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+	// This must be found, findQueueFamilyIndexWithCaps would have
+	// thrown a NotSupported exception if the requested queue type did
+	// not exist. Similarly, this was written with the assumption the
+	// "alternative" queue would be different to the universal queue.
+	DE_ASSERT(queueFamilyIndex < queueFamilies.size() && queueFamilyIndex != context.getUniversalQueueFamilyIndex());
+	const float queuePriority = 1.0f;
+	const VkDeviceQueueCreateInfo deviceQueueCreateInfos[] = {
+		{
+			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,		// VkStructureType				sType;
+			nullptr,										// const void*					pNext;
+			(VkDeviceQueueCreateFlags)0u,					// VkDeviceQueueCreateFlags		flags;
+			context.getUniversalQueueFamilyIndex(),			// uint32_t						queueFamilyIndex;
+			1u,												// uint32_t						queueCount;
+			&queuePriority,									// const float*					pQueuePriorities;
+		},
+		{
+			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,		// VkStructureType				sType;
+			nullptr,										// const void*					pNext;
+			(VkDeviceQueueCreateFlags)0u,					// VkDeviceQueueCreateFlags		flags;
+			queueFamilyIndex,								// uint32_t						queueFamilyIndex;
+			1u,												// uint32_t						queueCount;
+			&queuePriority,									// const float*					pQueuePriorities;
+		}
+	};
+
+	// Replicate default device extension list.
+	const auto	extensionNames = context.getDeviceCreationExtensions();
+	const auto& deviceFeatures2 = context.getDeviceFeatures2();
+
+	const void* pNext = &deviceFeatures2;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext = pNext;
+	pNext = &memReservationInfo;
+
+	VkPipelineCacheCreateInfo			pcCI;
+	std::vector<VkPipelinePoolSize>		poolSizes;
+	if (context.getTestContext().getCommandLine().isSubProcess())
+	{
+		if (context.getResourceInterface()->getCacheDataSize() > 0)
+		{
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,			// VkStructureType				sType;
+				DE_NULL,												// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+				context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount = 1;
+			memReservationInfo.pPipelineCacheCreateInfos = &pcCI;
+		}
+		poolSizes = context.getResourceInterface()->getPipelinePoolSizes();
+		if (!poolSizes.empty())
+		{
+			memReservationInfo.pipelinePoolSizeCount = deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes = poolSizes.data();
+		}
+	}
+#endif // CTS_USES_VULKANSC
+
+	const VkDeviceCreateInfo	deviceCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,			// VkStructureType					sType;
+		pNext,											// const void*						pNext;
+		(VkDeviceCreateFlags)0u,						// VkDeviceCreateFlags				flags;
+		DE_LENGTH_OF_ARRAY(deviceQueueCreateInfos),		// uint32_t							queueCreateInfoCount;
+		deviceQueueCreateInfos,							// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+		0u,												// uint32_t							enabledLayerCount;
+		DE_NULL,										// const char* const*				ppEnabledLayerNames;
+		static_cast<uint32_t>(extensionNames.size()),	// uint32_t							enabledExtensionCount;
+		extensionNames.data(),							// const char* const*				ppEnabledExtensionNames;
+		DE_NULL,										// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+	};
+
+	return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), instanceDriver, physicalDevice, &deviceCreateInfo);
+}
+
+void CopiesAndBlittingTestInstance::setupDeviceWithTransferQueue(void)
+{
+	DE_ASSERT(m_params.queueSelection == QueueSelectionOptions::TransferOnly);
+
+	const InstanceInterface&	vki			= m_context.getInstanceInterface();
+	const DeviceInterface&		vk			= m_context.getDeviceInterface();
+	const VkPhysicalDevice		physDevice	= m_context.getPhysicalDevice();
+
+	checkGlobalVariableWithTransferOnlyQueue();
+	if (!g_deviceWithTransferQueue)
+	{
+		// queueFamilyIndex will be updated in createCustomDevice() to match the requested queue type
+		g_deviceWithTransferQueue = de::SharedPtr<CustomDeviceData>(new CustomDeviceData);
+		g_deviceWithTransferQueue->device = createCustomDevice(m_context, QueueSelectionOptions::TransferOnly, g_deviceWithTransferQueue->queueFamilyIndex);
+		g_deviceWithTransferQueue->allocator = de::MovePtr<Allocator>(new SimpleAllocator(vk, *g_deviceWithTransferQueue->device, getPhysicalDeviceMemoryProperties(vki, physDevice)));
+	}
+
+	m_device	= *g_deviceWithTransferQueue->device;
+	m_allocator	= &(*g_deviceWithTransferQueue->allocator);
+	m_queue		= getDeviceQueue(vk, m_device, g_deviceWithTransferQueue->queueFamilyIndex, 0u);
+
+	// Create command pool and command buffer with proper queue family index
+	m_cmdPool	= createCommandPool(vk, m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, g_deviceWithTransferQueue->queueFamilyIndex);
+	m_cmdBuffer	= allocateCommandBuffer(vk, m_device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+}
+
 // Copy from image to image.
 
 class CopyImageToImage : public CopiesAndBlittingTestInstance
@@ -1052,8 +1222,9 @@ CopyImageToImage::CopyImageToImage (Context& context, TestParams params)
 	const InstanceInterface&	vki					= context.getInstanceInterface();
 	const DeviceInterface&		vk					= context.getDeviceInterface();
 	const VkPhysicalDevice		vkPhysDevice		= context.getPhysicalDevice();
-	const VkDevice				vkDevice			= m_device;
-	Allocator&					memAlloc			= context.getDefaultAllocator();
+
+	if (params.queueSelection == QueueSelectionOptions::TransferOnly)
+		setupDeviceWithTransferQueue();
 
 	// Create source image
 	{
@@ -1077,9 +1248,9 @@ CopyImageToImage::CopyImageToImage (Context& context, TestParams params)
 			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
 		};
 
-		m_source				= createImage(vk, vkDevice, &sourceImageParams);
-		m_sourceImageAlloc		= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_source, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
-		VK_CHECK(vk.bindImageMemory(vkDevice, *m_source, m_sourceImageAlloc->getMemory(), m_sourceImageAlloc->getOffset()));
+		m_source				= createImage(vk, m_device, &sourceImageParams);
+		m_sourceImageAlloc		= allocateImage(vki, vk, vkPhysDevice, m_device, *m_source, MemoryRequirement::Any, *m_allocator, m_params.allocationKind, 0u);
+		VK_CHECK(vk.bindImageMemory(m_device, *m_source, m_sourceImageAlloc->getMemory(), m_sourceImageAlloc->getOffset()));
 	}
 
 	// Create destination image
@@ -1104,9 +1275,9 @@ CopyImageToImage::CopyImageToImage (Context& context, TestParams params)
 			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
 		};
 
-		m_destination			= createImage(vk, vkDevice, &destinationImageParams);
-		m_destinationImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
-		VK_CHECK(vk.bindImageMemory(vkDevice, *m_destination, m_destinationImageAlloc->getMemory(), m_destinationImageAlloc->getOffset()));
+		m_destination			= createImage(vk, m_device, &destinationImageParams);
+		m_destinationImageAlloc	= allocateImage(vki, vk, vkPhysDevice, m_device, *m_destination, MemoryRequirement::Any, *m_allocator, m_params.allocationKind, 0u);
+		VK_CHECK(vk.bindImageMemory(m_device, *m_destination, m_destinationImageAlloc->getMemory(), m_destinationImageAlloc->getOffset()));
 	}
 }
 
@@ -1122,12 +1293,12 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 																				(int)m_params.src.image.extent.width,
 																				(int)m_params.src.image.extent.height,
 																				(int)m_params.src.image.extent.depth));
-	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.image.extent.width, m_params.src.image.extent.height, m_params.src.image.extent.depth, FILL_MODE_GRADIENT);
+	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.image.extent.width, m_params.src.image.extent.height, m_params.src.image.extent.depth, m_params.src.image.fillMode);
 	m_destinationTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(dstTcuFormat,
 																				(int)m_params.dst.image.extent.width,
 																				(int)m_params.dst.image.extent.height,
 																				(int)m_params.dst.image.extent.depth));
-	generateBuffer(m_destinationTextureLevel->getAccess(), m_params.dst.image.extent.width, m_params.dst.image.extent.height, m_params.dst.image.extent.depth, m_params.clearDestination ? FILL_MODE_WHITE : FILL_MODE_GRADIENT);
+	generateBuffer(m_destinationTextureLevel->getAccess(), m_params.dst.image.extent.width, m_params.dst.image.extent.height, m_params.dst.image.extent.depth, m_params.clearDestinationWithRed ? FILL_MODE_RED : m_params.dst.image.fillMode);
 	generateExpectedResult();
 
 	uploadImage(m_sourceTextureLevel->getAccess(), m_source.get(), m_params.src.image);
@@ -1151,9 +1322,14 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 			const deUint32	blockHeight	= getBlockHeight(m_params.src.image.format);
 
 			imageCopy.srcOffset.x *= blockWidth;
-			imageCopy.srcOffset.y *= blockHeight;
 			imageCopy.extent.width *= blockWidth;
-			imageCopy.extent.height *= blockHeight;
+
+			// VUID-vkCmdCopyImage-srcImage-00146
+			if (m_params.src.image.imageType != vk::VK_IMAGE_TYPE_1D)
+			{
+				imageCopy.srcOffset.y *= blockHeight;
+				imageCopy.extent.height *= blockHeight;
+			}
 		}
 
 		if (dstCompressed)
@@ -1162,7 +1338,12 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 			const deUint32	blockHeight	= getBlockHeight(m_params.dst.image.format);
 
 			imageCopy.dstOffset.x *= blockWidth;
-			imageCopy.dstOffset.y *= blockHeight;
+
+			// VUID-vkCmdCopyImage-dstImage-00152
+			if (m_params.dst.image.imageType != vk::VK_IMAGE_TYPE_1D)
+			{
+				imageCopy.dstOffset.y *= blockHeight;
+			}
 		}
 
 		if (m_params.extensionUse == EXTENSION_USE_NONE)
@@ -1221,14 +1402,14 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 	beginCommandBuffer(vk, *m_cmdBuffer);
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(imageBarriers), imageBarriers);
 
-	if (m_params.clearDestination)
+	if (m_params.clearDestinationWithRed)
 	{
 		VkImageSubresourceRange	range		= { VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u };
 		VkClearColorValue		clearColor;
 
 		clearColor.float32[0] = 1.0f;
-		clearColor.float32[1] = 1.0f;
-		clearColor.float32[2] = 1.0f;
+		clearColor.float32[1] = 0.0f;
+		clearColor.float32[2] = 0.0f;
 		clearColor.float32[3] = 1.0f;
 		vk.cmdClearColorImage(*m_cmdBuffer, m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1u, &range);
 		imageBarriers[0].oldLayout = imageBarriers[0].newLayout;
@@ -1240,7 +1421,6 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 	{
 		vk.cmdCopyImage(*m_cmdBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
 	}
-#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -1258,7 +1438,6 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 
 		vk.cmdCopyImage2(*m_cmdBuffer, &copyImageInfo2KHR);
 	}
-#endif // CTS_USES_VULKANSC
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 
@@ -1338,17 +1517,23 @@ void CopyImageToImage::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess src
 	VkOffset3D	dstOffset	= region.imageCopy.dstOffset;
 	VkExtent3D	extent		= region.imageCopy.extent;
 
-	if (m_params.src.image.imageType == VK_IMAGE_TYPE_3D && m_params.dst.image.imageType == VK_IMAGE_TYPE_2D)
+	// 2D images require modifying offset.z/extent.depth values if they are layered for correct cpu copy of the images due to test set up
+	if (m_params.src.image.imageType == vk::VK_IMAGE_TYPE_2D)
 	{
-		dstOffset.z = srcOffset.z;
-		extent.depth = std::max(region.imageCopy.extent.depth, region.imageCopy.dstSubresource.layerCount);
-	}
-	if (m_params.src.image.imageType == VK_IMAGE_TYPE_2D && m_params.dst.image.imageType == VK_IMAGE_TYPE_3D)
-	{
-		srcOffset.z = dstOffset.z;
-		extent.depth = std::max(region.imageCopy.extent.depth, region.imageCopy.srcSubresource.layerCount);
+		if (region.imageCopy.srcSubresource.baseArrayLayer != 0u)
+			srcOffset.z = region.imageCopy.srcSubresource.baseArrayLayer;
+
+		if (m_params.dst.image.imageType == vk::VK_IMAGE_TYPE_2D && extent.depth != region.imageCopy.srcSubresource.layerCount)
+		{
+			DE_ASSERT(region.imageCopy.srcSubresource.layerCount == region.imageCopy.dstSubresource.layerCount);
+			extent.depth = region.imageCopy.srcSubresource.layerCount;
+		}
 	}
 
+	if (m_params.dst.image.imageType == vk::VK_IMAGE_TYPE_2D && region.imageCopy.dstSubresource.baseArrayLayer != 0u)
+	{
+		dstOffset.z = region.imageCopy.dstSubresource.baseArrayLayer;
+	}
 
 	if (tcu::isCombinedDepthStencilType(src.getFormat().type))
 	{
@@ -1483,6 +1668,9 @@ public:
 				TCU_THROW(NotSupportedError, "Requested 3D dst image dimensions not supported");
 			}
 		}
+
+		if (m_params.queueSelection == QueueSelectionOptions::TransferOnly)
+			checkGlobalVariableWithTransferOnlyQueue();
 	}
 
 private:
@@ -1506,17 +1694,17 @@ private:
 	de::MovePtr<Allocation>				m_destinationImageAlloc;
 
 	virtual void						copyRegionToTextureLevel	(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region, deUint32 mipLevel = 0u);
-
 };
 
 CopyImageToImageMipmap::CopyImageToImageMipmap (Context& context, TestParams params)
 	: CopiesAndBlittingTestInstance(context, params)
 {
-	const InstanceInterface&	vki					= context.getInstanceInterface();
-	const DeviceInterface&		vk					= context.getDeviceInterface();
-	const VkPhysicalDevice		vkPhysDevice		= context.getPhysicalDevice();
-	const VkDevice				vkDevice			= m_device;
-	Allocator&					memAlloc			= context.getDefaultAllocator();
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	const DeviceInterface&		vk				= context.getDeviceInterface();
+	const VkPhysicalDevice		vkPhysDevice	= context.getPhysicalDevice();
+
+	if (params.queueSelection == QueueSelectionOptions::TransferOnly)
+		setupDeviceWithTransferQueue();
 
 	// Create source image
 	{
@@ -1540,9 +1728,9 @@ CopyImageToImageMipmap::CopyImageToImageMipmap (Context& context, TestParams par
 			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
 		};
 
-		m_source				= createImage(vk, vkDevice, &sourceImageParams);
-		m_sourceImageAlloc		= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_source, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
-		VK_CHECK(vk.bindImageMemory(vkDevice, *m_source, m_sourceImageAlloc->getMemory(), m_sourceImageAlloc->getOffset()));
+		m_source				= createImage(vk, m_device, &sourceImageParams);
+		m_sourceImageAlloc		= allocateImage(vki, vk, vkPhysDevice, m_device, *m_source, MemoryRequirement::Any, *m_allocator, m_params.allocationKind, 0u);
+		VK_CHECK(vk.bindImageMemory(m_device, *m_source, m_sourceImageAlloc->getMemory(), m_sourceImageAlloc->getOffset()));
 	}
 
 	// Create destination image
@@ -1567,9 +1755,9 @@ CopyImageToImageMipmap::CopyImageToImageMipmap (Context& context, TestParams par
 			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
 		};
 
-		m_destination			= createImage(vk, vkDevice, &destinationImageParams);
-		m_destinationImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
-		VK_CHECK(vk.bindImageMemory(vkDevice, *m_destination, m_destinationImageAlloc->getMemory(), m_destinationImageAlloc->getOffset()));
+		m_destination			= createImage(vk, m_device, &destinationImageParams);
+		m_destinationImageAlloc	= allocateImage(vki, vk, vkPhysDevice, m_device, *m_destination, MemoryRequirement::Any, *m_allocator, m_params.allocationKind, 0u);
+		VK_CHECK(vk.bindImageMemory(m_device, *m_destination, m_destinationImageAlloc->getMemory(), m_destinationImageAlloc->getOffset()));
 	}
 }
 
@@ -1687,7 +1875,6 @@ tcu::TestStatus CopyImageToImageMipmap::iterate (void)
 	{
 		vk.cmdCopyImage(*m_cmdBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
 	}
-#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -1705,7 +1892,6 @@ tcu::TestStatus CopyImageToImageMipmap::iterate (void)
 
 		vk.cmdCopyImage2(*m_cmdBuffer, &copyImageInfo2KHR);
 	}
-#endif // CTS_USES_VULKANSC
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 
@@ -1986,11 +2172,12 @@ private:
 CopyBufferToBuffer::CopyBufferToBuffer (Context& context, TestParams params)
 	: CopiesAndBlittingTestInstance	(context, params)
 {
-	const InstanceInterface&	vki					= context.getInstanceInterface();
-	const DeviceInterface&		vk					= context.getDeviceInterface();
-	const VkPhysicalDevice		vkPhysDevice		= context.getPhysicalDevice();
-	const VkDevice				vkDevice			= m_device;
-	Allocator&					memAlloc			= context.getDefaultAllocator();
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	const DeviceInterface&		vk				= context.getDeviceInterface();
+	const VkPhysicalDevice		vkPhysDevice	= context.getPhysicalDevice();
+
+	if (params.queueSelection == QueueSelectionOptions::TransferOnly)
+		setupDeviceWithTransferQueue();
 
 	// Create source buffer
 	{
@@ -2006,9 +2193,9 @@ CopyBufferToBuffer::CopyBufferToBuffer (Context& context, TestParams params)
 			(const deUint32*)DE_NULL,					// const deUint32*		pQueueFamilyIndices;
 		};
 
-		m_source				= createBuffer(vk, vkDevice, &sourceBufferParams);
-		m_sourceBufferAlloc		= allocateBuffer(vki, vk, vkPhysDevice, vkDevice, *m_source, MemoryRequirement::HostVisible, memAlloc, m_params.allocationKind);
-		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_source, m_sourceBufferAlloc->getMemory(), m_sourceBufferAlloc->getOffset()));
+		m_source				= createBuffer(vk, m_device, &sourceBufferParams);
+		m_sourceBufferAlloc		= allocateBuffer(vki, vk, vkPhysDevice, m_device, *m_source, MemoryRequirement::HostVisible, *m_allocator, m_params.allocationKind);
+		VK_CHECK(vk.bindBufferMemory(m_device, *m_source, m_sourceBufferAlloc->getMemory(), m_sourceBufferAlloc->getOffset()));
 	}
 
 	// Create destination buffer
@@ -2025,9 +2212,9 @@ CopyBufferToBuffer::CopyBufferToBuffer (Context& context, TestParams params)
 			(const deUint32*)DE_NULL,					// const deUint32*		pQueueFamilyIndices;
 		};
 
-		m_destination				= createBuffer(vk, vkDevice, &destinationBufferParams);
-		m_destinationBufferAlloc	= allocateBuffer(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::HostVisible, memAlloc, m_params.allocationKind);
-		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_destination, m_destinationBufferAlloc->getMemory(), m_destinationBufferAlloc->getOffset()));
+		m_destination				= createBuffer(vk, m_device, &destinationBufferParams);
+		m_destinationBufferAlloc	= allocateBuffer(vki, vk, vkPhysDevice, m_device, *m_destination, MemoryRequirement::HostVisible, *m_allocator, m_params.allocationKind);
+		VK_CHECK(vk.bindBufferMemory(m_device, *m_destination, m_destinationBufferAlloc->getMemory(), m_destinationBufferAlloc->getOffset()));
 	}
 }
 
@@ -2047,7 +2234,6 @@ tcu::TestStatus CopyBufferToBuffer::iterate (void)
 	uploadBuffer(m_destinationTextureLevel->getAccess(), *m_destinationBufferAlloc);
 
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
-	const VkDevice				vkDevice	= m_device;
 	const VkQueue				queue		= m_queue;
 
 	const VkBufferMemoryBarrier		srcBufferBarrier	=
@@ -2098,7 +2284,6 @@ tcu::TestStatus CopyBufferToBuffer::iterate (void)
 	{
 		vk.cmdCopyBuffer(*m_cmdBuffer, m_source.get(), m_destination.get(), (deUint32)m_params.regions.size(), &bufferCopies[0]);
 	}
-#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -2114,16 +2299,15 @@ tcu::TestStatus CopyBufferToBuffer::iterate (void)
 
 		vk.cmdCopyBuffer2(*m_cmdBuffer, &copyBufferInfo2KHR);
 	}
-#endif // CTS_USES_VULKANSC
 
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	endCommandBuffer(vk, *m_cmdBuffer);
-	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
-	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
+	submitCommandsAndWait(vk, m_device, queue, *m_cmdBuffer);
+	m_context.resetCommandPoolForVKSC(m_device, *m_cmdPool);
 
 	// Read buffer data
 	de::MovePtr<tcu::TextureLevel>	resultLevel		(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), dstLevelWidth, 1));
-	invalidateAlloc(vk, vkDevice, *m_destinationBufferAlloc);
+	invalidateAlloc(vk, m_device, *m_destinationBufferAlloc);
 	tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(resultLevel->getFormat(), resultLevel->getSize(), m_destinationBufferAlloc->getHostPtr()));
 
 	return checkTestResult(resultLevel->getAccess());
@@ -2163,6 +2347,9 @@ public:
 									TCU_THROW(NotSupportedError, "VK_KHR_copy_commands2 is not supported");
 								}
 							}
+
+							if (m_params.queueSelection == QueueSelectionOptions::TransferOnly)
+								checkGlobalVariableWithTransferOnlyQueue();
 	}
 
 	private:
@@ -2194,11 +2381,12 @@ CopyImageToBuffer::CopyImageToBuffer (Context& context, TestParams testParams)
 	, m_textureFormat(mapVkFormat(testParams.src.image.format))
 	, m_bufferSize(m_params.dst.buffer.size * tcu::getPixelSize(m_textureFormat))
 {
-	const InstanceInterface&	vki					= context.getInstanceInterface();
-	const DeviceInterface&		vk					= context.getDeviceInterface();
-	const VkPhysicalDevice		vkPhysDevice		= context.getPhysicalDevice();
-	const VkDevice				vkDevice			= m_device;
-	Allocator&					memAlloc			= context.getDefaultAllocator();
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	const DeviceInterface&		vk				= context.getDeviceInterface();
+	const VkPhysicalDevice		vkPhysDevice	= context.getPhysicalDevice();
+
+	if (m_params.queueSelection == QueueSelectionOptions::TransferOnly)
+		setupDeviceWithTransferQueue();
 
 	// Create source image
 	{
@@ -2222,9 +2410,9 @@ CopyImageToBuffer::CopyImageToBuffer (Context& context, TestParams testParams)
 			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
 		};
 
-		m_source			= createImage(vk, vkDevice, &sourceImageParams);
-		m_sourceImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_source, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
-		VK_CHECK(vk.bindImageMemory(vkDevice, *m_source, m_sourceImageAlloc->getMemory(), m_sourceImageAlloc->getOffset()));
+		m_source			= createImage(vk, m_device, &sourceImageParams);
+		m_sourceImageAlloc	= allocateImage(vki, vk, vkPhysDevice, m_device, *m_source, MemoryRequirement::Any, *m_allocator, m_params.allocationKind, 0u);
+		VK_CHECK(vk.bindImageMemory(m_device, *m_source, m_sourceImageAlloc->getMemory(), m_sourceImageAlloc->getOffset()));
 	}
 
 	// Create destination buffer
@@ -2241,9 +2429,9 @@ CopyImageToBuffer::CopyImageToBuffer (Context& context, TestParams testParams)
 			(const deUint32*)DE_NULL,					// const deUint32*		pQueueFamilyIndices;
 		};
 
-		m_destination				= createBuffer(vk, vkDevice, &destinationBufferParams);
-		m_destinationBufferAlloc	= allocateBuffer(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::HostVisible, memAlloc, m_params.allocationKind);
-		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_destination, m_destinationBufferAlloc->getMemory(), m_destinationBufferAlloc->getOffset()));
+		m_destination				= createBuffer(vk, m_device, &destinationBufferParams);
+		m_destinationBufferAlloc	= allocateBuffer(vki, vk, vkPhysDevice, m_device, *m_destination, MemoryRequirement::HostVisible, *m_allocator, m_params.allocationKind);
+		VK_CHECK(vk.bindBufferMemory(m_device, *m_destination, m_destinationBufferAlloc->getMemory(), m_destinationBufferAlloc->getOffset()));
 	}
 }
 
@@ -2323,7 +2511,6 @@ tcu::TestStatus CopyImageToBuffer::iterate (void)
 	{
 		vk.cmdCopyImageToBuffer(*m_cmdBuffer, m_source.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination.get(), (deUint32)m_params.regions.size(), &bufferImageCopies[0]);
 	}
-#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -2340,7 +2527,6 @@ tcu::TestStatus CopyImageToBuffer::iterate (void)
 
 		vk.cmdCopyImageToBuffer2(*m_cmdBuffer, &copyImageToBufferInfo2KHR);
 	}
-#endif // CTS_USES_VULKANSC
 
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	endCommandBuffer(vk, *m_cmdBuffer);
@@ -2379,6 +2565,9 @@ public:
 								{
 									TCU_THROW(NotSupportedError, "VK_KHR_copy_commands2 is not supported");
 								}
+
+								if (m_params.queueSelection == QueueSelectionOptions::TransferOnly)
+									checkGlobalVariableWithTransferOnlyQueue();
 							}
 
 private:
@@ -2416,129 +2605,11 @@ void CopyImageToBuffer::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess sr
 	}
 }
 
-enum class QueueSelectionOptions { Universal, ComputeOnly, TransferOnly };
-
-// TODO: Potentially move this to vktTestCase.cpp when multi-queue support lands.
-static deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps, VkQueueFlags excludedCaps = 0u)
-{
-	const std::vector<VkQueueFamilyProperties>	queueProps	= getPhysicalDeviceQueueFamilyProperties(vkInstance, physicalDevice);
-
-	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
-	{
-		deUint32 queueFlags = queueProps[queueNdx].queueFlags;
-		if ((queueFlags & requiredCaps) == requiredCaps && !(queueFlags & excludedCaps))
-			return (deUint32)queueNdx;
-	}
-
-	TCU_THROW(NotSupportedError, "No matching queue found");
-}
-
-// Creates a device that has with a queue specific to compute or transfer operations.
-Move<VkDevice> createCustomDevice (Context&								context,
-								   const QueueSelectionOptions			queueOptions,
-								   uint32_t&							queueFamilyIndex)
-{
-	const InstanceInterface&	instanceDriver		= context.getInstanceInterface();
-	const VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
-
-	switch (queueOptions)
-	{
-		case QueueSelectionOptions::Universal:
-			TCU_THROW(NotSupportedError, "Invalid queue selection option, only compute or transfer queues make sense for a custom device");
-			break;
-		case QueueSelectionOptions::ComputeOnly:
-			queueFamilyIndex = findQueueFamilyIndexWithCaps(instanceDriver, physicalDevice, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT);
-			break;
-		case QueueSelectionOptions::TransferOnly:
-			queueFamilyIndex = findQueueFamilyIndexWithCaps(instanceDriver, physicalDevice, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT);
-			break;
-	}
-
-	const std::vector<VkQueueFamilyProperties>	queueFamilies = getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
-	// This must be found, findQueueFamilyIndexWithCaps would have
-	// thrown a NotSupported exception if the requested queue type did
-	// not exist. Similarly, this was written with the assumption the
-	// "alternative" queue would be different to the universal queue.
-	DE_ASSERT(queueFamilyIndex < queueFamilies.size() && queueFamilyIndex != context.getUniversalQueueFamilyIndex());
-	const float queuePriority = 1.0f;
-	const VkDeviceQueueCreateInfo deviceQueueCreateInfos[] = {
-		{
-			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,		// VkStructureType				sType;
-			nullptr,										// const void*					pNext;
-			(VkDeviceQueueCreateFlags)0u,					// VkDeviceQueueCreateFlags		flags;
-			context.getUniversalQueueFamilyIndex(),			// uint32_t						queueFamilyIndex;
-			1u,												// uint32_t						queueCount;
-			&queuePriority,									// const float*					pQueuePriorities;
-		},
-		{
-			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,		// VkStructureType				sType;
-			nullptr,										// const void*					pNext;
-			(VkDeviceQueueCreateFlags)0u,					// VkDeviceQueueCreateFlags		flags;
-			queueFamilyIndex,								// uint32_t						queueFamilyIndex;
-			1u,												// uint32_t						queueCount;
-			&queuePriority,									// const float*					pQueuePriorities;
-		}
-	};
-
-	// Replicate default device extension list.
-	const auto	extensionNames	= context.getDeviceCreationExtensions();
-	const auto&	deviceFeatures2	= context.getDeviceFeatures2();
-
-	const void *pNext = &deviceFeatures2;
-#ifdef CTS_USES_VULKANSC
-	VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
-	memReservationInfo.pNext = pNext;
-	pNext = &memReservationInfo;
-
-	VkPipelineCacheCreateInfo			pcCI;
-	std::vector<VkPipelinePoolSize>		poolSizes;
-	if (context.getTestContext().getCommandLine().isSubProcess())
-	{
-		if (context.getResourceInterface()->getCacheDataSize() > 0)
-		{
-			pcCI =
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,			// VkStructureType				sType;
-				DE_NULL,												// const void*					pNext;
-				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
-				context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
-				context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
-			};
-			memReservationInfo.pipelineCacheCreateInfoCount		= 1;
-			memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
-		}
-		poolSizes							= context.getResourceInterface()->getPipelinePoolSizes();
-		if (!poolSizes.empty())
-		{
-			memReservationInfo.pipelinePoolSizeCount		= deUint32(poolSizes.size());
-			memReservationInfo.pPipelinePoolSizes			= poolSizes.data();
-		}
-	}
-#endif // CTS_USES_VULKANSC
-
-	const VkDeviceCreateInfo	deviceCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,			// VkStructureType					sType;
-		pNext,											// const void*						pNext;
-		(VkDeviceCreateFlags)0u,						// VkDeviceCreateFlags				flags;
-		DE_LENGTH_OF_ARRAY(deviceQueueCreateInfos),		// uint32_t							queueCreateInfoCount;
-		deviceQueueCreateInfos,							// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
-		0u,												// uint32_t							enabledLayerCount;
-		DE_NULL,										// const char* const*				ppEnabledLayerNames;
-		static_cast<uint32_t>(extensionNames.size()),	// uint32_t							enabledExtensionCount;
-		extensionNames.data(),							// const char* const*				ppEnabledExtensionNames;
-		DE_NULL,										// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
-	};
-
-	return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), instanceDriver, physicalDevice, &deviceCreateInfo);
-}
-
 // Copy levels from compressed mipmap images into a buffer.
 class CopyCompressedImageToBuffer final : public CopiesAndBlittingTestInstance
 {
 public:
-	CopyCompressedImageToBuffer			(Context&	context, TestParams	testParams, QueueSelectionOptions options);
+	CopyCompressedImageToBuffer			(Context&	context, TestParams	testParams);
 
 	virtual tcu::TestStatus		iterate						(void) override;
 
@@ -2567,9 +2638,9 @@ private:
 	de::MovePtr<BufferWithMemory>						m_destination;
 };
 
-CopyCompressedImageToBuffer::CopyCompressedImageToBuffer (Context& context, TestParams testParams, QueueSelectionOptions options)
+CopyCompressedImageToBuffer::CopyCompressedImageToBuffer (Context& context, TestParams testParams)
 	: CopiesAndBlittingTestInstance(context, testParams)
-	, m_options(options)
+	, m_options(testParams.queueSelection)
 	, m_texture(TestTexture2DSp(new pipeline::TestTexture2DArray(mapVkCompressedFormat(testParams.src.image.format), testParams.src.image.extent.width, testParams.src.image.extent.height, testParams.arrayLayers)))
 {
 }
@@ -2586,9 +2657,9 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate (void)
 		m_device					= m_customDevice.get();
 
 #ifndef CTS_USES_VULKANSC
-		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), m_device));
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), m_device, m_context.getUsedApiVersion()));
 #else
-		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), m_device, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), m_device));
+		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), m_device, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), m_context.getUsedApiVersion()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), m_device));
 #endif // CTS_USES_VULKANSC
 	}
 	m_queue						= getDeviceQueue(m_context.getDeviceInterface(), m_device, queueFamilyIndex, 0u);
@@ -2687,20 +2758,16 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate (void)
 		copyRegion = makeBufferImageCopy(mipLevelExtents(srcImageParams.extent, mipLevelToCheckIdx), makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, mipLevelToCheckIdx, arrayLayerToCheckIdx, 1));
 
 		VkBufferImageCopy		bufferImageCopy;
-#ifndef CTS_USES_VULKANSC
 		VkBufferImageCopy2KHR	bufferImageCopy2KHR;
-#endif
 		if (m_params.extensionUse == EXTENSION_USE_NONE)
 		{
 			bufferImageCopy = copyRegion;
 		}
-#ifndef CTS_USES_VULKANSC
 		else
 		{
 			DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
 			bufferImageCopy2KHR = convertvkBufferImageCopyTovkBufferImageCopy2KHR(copyRegion);
 		}
-#endif
 
 		beginCommandBuffer(vk, commandBuffer);
 		// Transition the selected miplevel to the right format for the transfer.
@@ -2711,7 +2778,6 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate (void)
 		{
 			vk.cmdCopyImageToBuffer(commandBuffer, m_source->get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination->get(), 1u, &bufferImageCopy);
 		}
-#ifndef CTS_USES_VULKANSC
 		else
 		{
 			DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -2728,7 +2794,6 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate (void)
 
 			vk.cmdCopyImageToBuffer2(commandBuffer, &copyImageToBufferInfo2KHR);
 		}
-#endif // CTS_USES_VULKANSC
 
 		// Prepare to read from the host visible barrier.
 		vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
@@ -2759,21 +2824,18 @@ public:
 	CopyCompressedImageToBufferTestCase	(tcu::TestContext&		testCtx,
 										 const std::string&		name,
 										 const std::string&		description,
-										 const TestParams		params,
-										 QueueSelectionOptions options)
+										 const TestParams		params)
 	: vkt::TestCase	(testCtx, name, description)
-		, m_params		(params)
-		, m_options		(options)
+	, m_params		(params)
 	{ }
 
 	virtual TestInstance*	createInstance				(Context&				context) const
 							{
-								return new CopyCompressedImageToBuffer(context, m_params, m_options);
+								return new CopyCompressedImageToBuffer(context, m_params);
 							}
 	virtual void			checkSupport				(Context&				context) const;
 private:
 	TestParams				m_params;
-	QueueSelectionOptions	m_options;
 };
 
 void CopyCompressedImageToBufferTestCase::checkSupport(Context& context) const
@@ -2813,8 +2875,8 @@ void CopyCompressedImageToBufferTestCase::checkSupport(Context& context) const
 class CopyBufferToImage : public CopiesAndBlittingTestInstance
 {
 public:
-								CopyBufferToImage			(Context&	context,
-															 TestParams	testParams);
+								CopyBufferToImage			(Context&				context,
+															 TestParams				testParams);
 	virtual tcu::TestStatus		iterate						(void);
 
 private:
@@ -2834,11 +2896,12 @@ CopyBufferToImage::CopyBufferToImage (Context& context, TestParams testParams)
 	, m_textureFormat(mapVkFormat(testParams.dst.image.format))
 	, m_bufferSize(m_params.src.buffer.size * tcu::getPixelSize(m_textureFormat))
 {
-	const InstanceInterface&	vki					= context.getInstanceInterface();
-	const DeviceInterface&		vk					= context.getDeviceInterface();
-	const VkPhysicalDevice		vkPhysDevice		= context.getPhysicalDevice();
-	const VkDevice				vkDevice			= m_device;
-	Allocator&					memAlloc			= context.getDefaultAllocator();
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	const DeviceInterface&		vk				= context.getDeviceInterface();
+	const VkPhysicalDevice		vkPhysDevice	= context.getPhysicalDevice();
+
+	if (m_params.queueSelection == QueueSelectionOptions::TransferOnly)
+		setupDeviceWithTransferQueue();
 
 	// Create source buffer
 	{
@@ -2854,9 +2917,9 @@ CopyBufferToImage::CopyBufferToImage (Context& context, TestParams testParams)
 			(const deUint32*)DE_NULL,					// const deUint32*		pQueueFamilyIndices;
 		};
 
-		m_source				= createBuffer(vk, vkDevice, &sourceBufferParams);
-		m_sourceBufferAlloc		= allocateBuffer(vki, vk, vkPhysDevice, vkDevice, *m_source, MemoryRequirement::HostVisible, memAlloc, m_params.allocationKind);
-		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_source, m_sourceBufferAlloc->getMemory(), m_sourceBufferAlloc->getOffset()));
+		m_source				= createBuffer(vk, m_device, &sourceBufferParams);
+		m_sourceBufferAlloc		= allocateBuffer(vki, vk, vkPhysDevice, m_device, *m_source, MemoryRequirement::HostVisible, *m_allocator, m_params.allocationKind);
+		VK_CHECK(vk.bindBufferMemory(m_device, *m_source, m_sourceBufferAlloc->getMemory(), m_sourceBufferAlloc->getOffset()));
 	}
 
 	// Create destination image
@@ -2881,9 +2944,9 @@ CopyBufferToImage::CopyBufferToImage (Context& context, TestParams testParams)
 			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout		initialLayout;
 		};
 
-		m_destination			= createImage(vk, vkDevice, &destinationImageParams);
-		m_destinationImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::Any, memAlloc, m_params.allocationKind, 0u);
-		VK_CHECK(vk.bindImageMemory(vkDevice, *m_destination, m_destinationImageAlloc->getMemory(), m_destinationImageAlloc->getOffset()));
+		m_destination			= createImage(vk, m_device, &destinationImageParams);
+		m_destinationImageAlloc	= allocateImage(vki, vk, vkPhysDevice, m_device, *m_destination, MemoryRequirement::Any, *m_allocator, m_params.allocationKind, 0u);
+		VK_CHECK(vk.bindImageMemory(m_device, *m_destination, m_destinationImageAlloc->getMemory(), m_destinationImageAlloc->getOffset()));
 	}
 }
 
@@ -2950,7 +3013,6 @@ tcu::TestStatus CopyBufferToImage::iterate (void)
 	{
 		vk.cmdCopyBufferToImage(*m_cmdBuffer, m_source.get(), m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)m_params.regions.size(), bufferImageCopies.data());
 	}
-#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -2967,7 +3029,6 @@ tcu::TestStatus CopyBufferToImage::iterate (void)
 
 		vk.cmdCopyBufferToImage2(*m_cmdBuffer, &copyBufferToImageInfo2KHR);
 	}
-#endif // CTS_USES_VULKANSC
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 
@@ -2975,7 +3036,6 @@ tcu::TestStatus CopyBufferToImage::iterate (void)
 	m_context.resetCommandPoolForVKSC(vkDevice, *m_cmdPool);
 
 	de::MovePtr<tcu::TextureLevel>	resultLevel	= readImage(*m_destination, m_params.dst.image);
-
 	return checkTestResult(resultLevel->getAccess());
 }
 
@@ -2986,8 +3046,8 @@ public:
 														 const std::string&		name,
 														 const std::string&		description,
 														 const TestParams		params)
-								: vkt::TestCase	(testCtx, name, description)
-								, m_params		(params)
+								: vkt::TestCase		(testCtx, name, description)
+								, m_params			(params)
 							{}
 
 	virtual					~CopyBufferToImageTestCase	(void) {}
@@ -3004,6 +3064,9 @@ public:
 								{
 									TCU_THROW(NotSupportedError, "VK_KHR_copy_commands2 is not supported");
 								}
+
+								if (m_params.queueSelection == QueueSelectionOptions::TransferOnly)
+									checkGlobalVariableWithTransferOnlyQueue();
 							}
 
 
@@ -3330,7 +3393,6 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 			}
 		}
 	}
-#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -3370,7 +3432,6 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 			}
 		}
 	}
-#endif // CTS_USES_VULKANSC
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 
@@ -3768,7 +3829,6 @@ tcu::TestStatus BlittingImages::iterate (void)
 	{
 		vk.cmdBlitImage(*m_cmdBuffer, m_source.get(), srcImageParams.operationLayout, m_destination.get(), dstImageParams.operationLayout, (deUint32)m_params.regions.size(), &regions[0], m_params.filter);
 	}
-#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -3786,7 +3846,6 @@ tcu::TestStatus BlittingImages::iterate (void)
 		};
 		vk.cmdBlitImage2(*m_cmdBuffer, &blitImageInfo2KHR);
 	}
-#endif // CTS_USES_VULKANSC
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
@@ -4047,7 +4106,13 @@ bool BlittingImages::checkNonNearestFilteredResult (const tcu::ConstPixelBufferA
 		const tcu::IVec4	dstBitDepth	= tcu::getTextureFormatBitDepth(dstFormat);
 		const tcu::IVec4	srcBitDepth = tcu::getTextureFormatBitDepth(srcFormat);
 		for (deUint32 i = 0; i < 4; ++i)
-			threshold[i] = 1 + de::max( ( ( 1 << dstBitDepth[i] ) - 1 ) / de::clamp((1 << srcBitDepth[i]) - 1, 1, 256), 1);
+		{
+			DE_ASSERT(dstBitDepth[i] < std::numeric_limits<uint64_t>::digits);
+			DE_ASSERT(srcBitDepth[i] < std::numeric_limits<uint64_t>::digits);
+			deUint64 threshold64 = 1 + de::max( ( ( UINT64_C(1) << dstBitDepth[i] ) - 1 ) / de::clamp((UINT64_C(1) << srcBitDepth[i]) - 1, UINT64_C(1), UINT64_C(256)), UINT64_C(1));
+			DE_ASSERT(threshold64 <= std::numeric_limits<uint32_t>::max());
+			threshold[i] = static_cast<deUint32>(threshold64);
+		}
 
 		isOk = tcu::intThresholdCompare(log, "Compare", "Result comparsion", clampedExpected, result, threshold, tcu::COMPARE_LOG_RESULT);
 		log << tcu::TestLog::EndSection;
@@ -5254,7 +5319,6 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 			{
 				vk.cmdBlitImage(*m_cmdBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)m_params.regions.size(), &regions[0], m_params.filter);
 			}
-#ifndef CTS_USES_VULKANSC
 			else
 			{
 				DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -5272,7 +5336,6 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 				};
 				vk.cmdBlitImage2(*m_cmdBuffer, &BlitImageInfo2KHR);
 			}
-#endif // CTS_USES_VULKANSC
 		}
 	}
 	// Blit mip levels with multiple blit commands
@@ -5369,7 +5432,6 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 			{
 				vk.cmdBlitImage(*m_cmdBuffer, m_destination.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, 1u, &regions[regionNdx], m_params.filter);
 			}
-#ifndef CTS_USES_VULKANSC
 			else
 			{
 				DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -5387,7 +5449,6 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 				};
 				vk.cmdBlitImage2(*m_cmdBuffer, &BlitImageInfo2KHR);
 			}
-#endif // CTS_USES_VULKANSC
 
 			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 		}
@@ -5508,7 +5569,13 @@ bool BlittingMipmaps::checkNonNearestFilteredResult (void)
 			const tcu::IVec4	dstBitDepth	= tcu::getTextureFormatBitDepth(dstFormat);
 			const tcu::IVec4	srcBitDepth = tcu::getTextureFormatBitDepth(srcFormat);
 			for (deUint32 i = 0; i < 4; ++i)
-				threshold[i] = 1 + de::max(((1 << dstBitDepth[i]) - 1) / de::clamp((1 << srcBitDepth[i]) - 1, 1, 256), 1);
+			{
+				DE_ASSERT(dstBitDepth[i] < std::numeric_limits<uint64_t>::digits);
+				DE_ASSERT(srcBitDepth[i] < std::numeric_limits<uint64_t>::digits);
+				deUint64 threshold64 = 1 + de::max( ( ( UINT64_C(1) << dstBitDepth[i] ) - 1 ) / de::clamp((UINT64_C(1) << srcBitDepth[i]) - 1, UINT64_C(1), UINT64_C(256)), UINT64_C(1));
+				DE_ASSERT(threshold64 <= std::numeric_limits<uint32_t>::max());
+				threshold[i] = static_cast<deUint32>(threshold64);
+			}
 
 			singleLevelOk = tcu::intThresholdCompare(log, "Compare", "Result comparsion", clampedLevel, result, threshold, tcu::COMPARE_LOG_RESULT);
 			log << tcu::TestLog::EndSection;
@@ -5914,9 +5981,9 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 		m_device						= m_customDevice.get();
 
 #ifndef CTS_USES_VULKANSC
-		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), m_context.getInstance(), m_device));
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), m_context.getInstance(), m_device, m_context.getUsedApiVersion()));
 #else
-		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), m_context.getInstance(), m_device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), m_device));
+		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), m_context.getInstance(), m_device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), m_context.getUsedApiVersion()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), m_device));
 #endif // CTS_USES_VULKANSC
 
 		m_queue							= getDeviceQueue(m_context.getDeviceInterface(), m_device, context.getUniversalQueueFamilyIndex(), 0u);
@@ -6546,7 +6613,6 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 	{
 		vk.cmdResolveImage(*m_cmdBuffer, sourceImage, m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)m_params.regions.size(), imageResolves.data());
 	}
-#ifndef CTS_USES_VULKANSC
 	else
 	{
 		DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -6563,7 +6629,6 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 		};
 		vk.cmdResolveImage2(*m_cmdBuffer, &ResolveImageInfo2KHR);
 	}
-#endif // CTS_USES_VULKANSC
 
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 	endCommandBuffer(vk, *m_cmdBuffer);
@@ -7231,7 +7296,6 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 			vk.cmdCopyImage(commandBuffer, m_multisampledImage.get(), m_params.src.image.operationLayout, m_multisampledCopyImage.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
 		}
 	}
-#ifndef CTS_USES_VULKANSC
 	else
 	{
 		if (m_options == COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB)
@@ -7281,7 +7345,6 @@ void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 			vk.cmdCopyImage2(commandBuffer, &copyImageInfo2KHR);
 		}
 	}
-#endif // CTS_USES_VULKANSC
 
 	if (useTwoQueues)
 	{
@@ -8125,7 +8188,6 @@ tcu::TestStatus DepthStencilMSAA::iterate (void)
 		{
 			vk.cmdCopyImage(*cmdBuffer, srcImage.get(), m_srcImage.operationLayout, dstImage.get(), m_dstImage.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
 		}
-#ifndef CTS_USES_VULKANSC
 		else
 		{
 			DE_ASSERT(m_params.extensionUse == EXTENSION_USE_COPY_COMMANDS2);
@@ -8143,7 +8205,6 @@ tcu::TestStatus DepthStencilMSAA::iterate (void)
 
 			vk.cmdCopyImage2(*cmdBuffer, &copyImageInfo2KHR);
 		}
-#endif // CTS_USES_VULKANSC
 	}
 	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait (vk, vkDevice, queue, *cmdBuffer);
@@ -8807,7 +8868,16 @@ std::string getImageLayoutCaseName (VkImageLayout layout)
 	}
 }
 
-void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+struct TestGroupParams
+{
+	AllocationKind			allocationKind;
+	ExtensionUse			extensionUse;
+	QueueSelectionOptions	queueSelection;
+};
+
+using TestGroupParamsPtr = de::SharedPtr<TestGroupParams>;
+
+void addImageToImageSimpleTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
 {
 	tcu::TestContext& testCtx	= group->getTestContext();
 
@@ -8823,8 +8893,9 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 		params.dst.image.extent				= defaultExtent;
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		{
 			const VkImageCopy				testCopy	=
@@ -8856,8 +8927,9 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 		params.dst.image.extent				= defaultExtent;
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		{
 			const VkImageCopy				testCopy	=
@@ -8874,7 +8946,7 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 			params.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "whole_image_diff_fromat", "Whole image with different format", params));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "whole_image_diff_format", "Whole image with different format", params));
 	}
 
 	{
@@ -8889,8 +8961,9 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 		params.dst.image.extent				= defaultExtent;
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		{
 			const VkImageCopy				testCopy	=
@@ -8943,6 +9016,9 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 	{
 		for (const auto& clear : clears)
 		{
+			if (testGroupParams->queueSelection == QueueSelectionOptions::TransferOnly)
+				continue;
+
 			for (const auto& extent : extents)
 			{
 				TestParams	params;
@@ -8956,9 +9032,10 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 				params.dst.image.extent				= extent.extent;
 				params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 				params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-				params.allocationKind				= allocationKind;
-				params.extensionUse					= extensionUse;
-				params.clearDestination				= clear.clear;
+				params.allocationKind				= testGroupParams->allocationKind;
+				params.extensionUse					= testGroupParams->extensionUse;
+				params.queueSelection				= testGroupParams->queueSelection;
+				params.clearDestinationWithRed		= clear.clear;
 
 				{
 					VkImageCopy	testCopy	=
@@ -9001,8 +9078,9 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 		params.dst.image.extent				= defaultExtent;
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		{
 			const VkImageSubresourceLayers  sourceLayer =
@@ -9041,8 +9119,9 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 		params.dst.image.extent				= defaultExtent;
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		{
 			const VkImageSubresourceLayers  sourceLayer =
@@ -9658,9 +9737,9 @@ const VkFormat	dedicatedAllocationImageToImageFormatsToTest[]	=
 	VK_FORMAT_R64G64B64A64_SFLOAT,
 };
 
-void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
 {
-	if (allocationKind == ALLOCATION_KIND_DEDICATED)
+	if (testGroupParams->allocationKind == ALLOCATION_KIND_DEDICATED)
 	{
 		const int numOfDedicatedAllocationImageToImageFormatsToTest = DE_LENGTH_OF_ARRAY(dedicatedAllocationImageToImageFormatsToTest);
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfDedicatedAllocationImageToImageFormatsToTest; ++compatibleFormatsIndex)
@@ -9678,8 +9757,11 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationK
 		params.dst.image.extent		= defaultExtent;
 		params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
-		params.allocationKind		= allocationKind;
-		params.extensionUse			= extensionUse;
+		params.src.image.fillMode	= FILL_MODE_WHITE;
+		params.dst.image.fillMode	= FILL_MODE_GRADIENT;
+		params.allocationKind		= testGroupParams->allocationKind;
+		params.extensionUse			= testGroupParams->extensionUse;
+		params.queueSelection		= testGroupParams->queueSelection;
 
 		for (deInt32 i = 0; i < defaultSize; i += defaultQuarterSize)
 		{
@@ -9689,7 +9771,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationK
 				{0, 0, 0},										// VkOffset3D				srcOffset;
 				defaultSourceLayer,								// VkImageSubresourceLayers	dstSubresource;
 				{i, defaultSize - i - defaultQuarterSize, 0},	// VkOffset3D				dstOffset;
-				{defaultQuarterSize, defaultQuarterSize, 1},		// VkExtent3D				extent;
+				{defaultQuarterSize, defaultQuarterSize, 1},	// VkExtent3D				extent;
 			};
 
 			CopyRegion	imageCopy;
@@ -9732,8 +9814,11 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationK
 		params.dst.image.extent		= default1dExtent;
 		params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
-		params.allocationKind		= allocationKind;
-		params.extensionUse			= extensionUse;
+		params.src.image.fillMode	= FILL_MODE_WHITE;
+		params.dst.image.fillMode	= FILL_MODE_GRADIENT;
+		params.allocationKind		= testGroupParams->allocationKind;
+		params.extensionUse			= testGroupParams->extensionUse;
+		params.queueSelection		= testGroupParams->queueSelection;
 
 		for (deInt32 i = defaultQuarterSize; i < defaultSize; i += defaultSize / 2)
 		{
@@ -9786,8 +9871,11 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationK
 		params.dst.image.extent		= default3dExtent;
 		params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
-		params.allocationKind		= allocationKind;
-		params.extensionUse			= extensionUse;
+		params.src.image.fillMode	= FILL_MODE_WHITE;
+		params.dst.image.fillMode	= FILL_MODE_GRADIENT;
+		params.allocationKind		= testGroupParams->allocationKind;
+		params.extensionUse			= testGroupParams->extensionUse;
+		params.queueSelection		= testGroupParams->queueSelection;
 
 		for (deInt32 i = 0; i < defaultQuarterSize; i += defaultSixteenthSize)
 		{
@@ -9830,7 +9918,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationK
 	}
 }
 
-void addImageToImageDimensionsTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+void addImageToImageDimensionsTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
 {
 	tcu::TestContext&		testCtx				= group->getTestContext();
 
@@ -9927,7 +10015,7 @@ void addImageToImageDimensionsTests (tcu::TestCaseGroup* group, AllocationKind a
 		VK_IMAGE_LAYOUT_GENERAL
 	};
 
-	if (allocationKind == ALLOCATION_KIND_DEDICATED)
+	if (testGroupParams->allocationKind == ALLOCATION_KIND_DEDICATED)
 	{
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(dedicatedAllocationImageToImageFormatsToTest); compatibleFormatsIndex++)
 			dedicatedAllocationImageToImageFormatsToTestSet.insert(dedicatedAllocationImageToImageFormatsToTest[compatibleFormatsIndex]);
@@ -9959,8 +10047,9 @@ void addImageToImageDimensionsTests (tcu::TestCaseGroup* group, AllocationKind a
 		testParams.params.dst.image.extent		= extent;
 
 		copyRegion.imageCopy					= testCopy;
-		testParams.params.allocationKind		= allocationKind;
-		testParams.params.extensionUse			= extensionUse;
+		testParams.params.allocationKind		= testGroupParams->allocationKind;
+		testParams.params.extensionUse			= testGroupParams->extensionUse;
+		testParams.params.queueSelection		= testGroupParams->queueSelection;
 
 		testParams.params.regions.push_back(copyRegion);
 
@@ -10064,7 +10153,7 @@ void addImageToImageAllFormatsDepthStencilFormatsTests (tcu::TestCaseGroup* grou
 	}
 }
 
-void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
 {
 	const VkFormat	depthAndStencilFormats[]	=
 	{
@@ -10092,8 +10181,9 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Allo
 			params.dst.image.format				= params.src.image.format;
 			params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 			params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
-			params.allocationKind				= allocationKind;
-			params.extensionUse					= extensionUse;
+			params.allocationKind				= testGroupParams->allocationKind;
+			params.extensionUse					= testGroupParams->extensionUse;
+			params.queueSelection				= testGroupParams->queueSelection;
 			params.separateDepthStencilLayouts	= DE_FALSE;
 
 			bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
@@ -10202,8 +10292,9 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Allo
 			params.dst.image.format				= params.src.image.format;
 			params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 			params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
-			params.allocationKind				= allocationKind;
-			params.extensionUse					= extensionUse;
+			params.allocationKind				= testGroupParams->allocationKind;
+			params.extensionUse					= testGroupParams->extensionUse;
+			params.queueSelection				= testGroupParams->queueSelection;
 
 			bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
 			bool hasStencil	= tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
@@ -10279,8 +10370,9 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Allo
 			params.dst.image.format				= params.src.image.format;
 			params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 			params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
-			params.allocationKind				= allocationKind;
-			params.extensionUse					= extensionUse;
+			params.allocationKind				= testGroupParams->allocationKind;
+			params.extensionUse					= testGroupParams->extensionUse;
+			params.queueSelection				= testGroupParams->queueSelection;
 
 			bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
 			bool hasStencil	= tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
@@ -10342,13 +10434,14 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Allo
 	}
 }
 
-void addImageToImageAllFormatsTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+void addImageToImageAllFormatsTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
 {
-	addTestGroup(group, "color", "Copy image to image with color formats", addImageToImageAllFormatsColorTests, allocationKind, extensionUse);
-	addTestGroup(group, "depth_stencil", "Copy image to image with depth/stencil formats", addImageToImageAllFormatsDepthStencilTests, allocationKind, extensionUse);
+	addTestGroup(group, "color", "Copy image to image with color formats", addImageToImageAllFormatsColorTests, testGroupParams);
+	if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
+		addTestGroup(group, "depth_stencil", "Copy image to image with depth/stencil formats", addImageToImageAllFormatsDepthStencilTests, testGroupParams);
 }
 
-void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
 {
 	tcu::TestContext& testCtx	= group->getTestContext();
 
@@ -10367,8 +10460,9 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 		params3DTo2D.dst.image.extent.depth		= slicesLayers;
 		params3DTo2D.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params3DTo2D.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params3DTo2D.allocationKind				= allocationKind;
-		params3DTo2D.extensionUse				= extensionUse;
+		params3DTo2D.allocationKind				= testGroupParams->allocationKind;
+		params3DTo2D.extensionUse				= testGroupParams->extensionUse;
+		params3DTo2D.queueSelection				= testGroupParams->queueSelection;
 
 		for (deUint32 slicesLayersNdx = 0; slicesLayersNdx < slicesLayers; ++slicesLayersNdx)
 		{
@@ -10402,7 +10496,7 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 
 			params3DTo2D.regions.push_back(imageCopy);
 		}
-		group->addChild(new CopyImageToImageTestCase(testCtx, "3d_to_2d_by_slices", "copy 2d layers to 3d slices one by one", params3DTo2D));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "3d_to_2d_by_slices", "copy 3d slices to 2d layers one by one", params3DTo2D));
 	}
 
 	{
@@ -10420,8 +10514,9 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 		params2DTo3D.dst.image.extent.depth		= slicesLayers;
 		params2DTo3D.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params2DTo3D.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params2DTo3D.allocationKind				= allocationKind;
-		params2DTo3D.extensionUse				= extensionUse;
+		params2DTo3D.allocationKind				= testGroupParams->allocationKind;
+		params2DTo3D.extensionUse				= testGroupParams->extensionUse;
+		params2DTo3D.queueSelection				= testGroupParams->queueSelection;
 
 		for (deUint32 slicesLayersNdx = 0; slicesLayersNdx < slicesLayers; ++slicesLayersNdx)
 		{
@@ -10456,7 +10551,7 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 			params2DTo3D.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "2d_to_3d_by_layers", "copy 3d slices to 2d layers one by one", params2DTo3D));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "2d_to_3d_by_layers", "copy 2d layers to 3d slices one by one", params2DTo3D));
 	}
 
 	{
@@ -10474,8 +10569,9 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 		params3DTo2D.dst.image.extent.depth		= slicesLayers;
 		params3DTo2D.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params3DTo2D.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params3DTo2D.allocationKind				= allocationKind;
-		params3DTo2D.extensionUse				= extensionUse;
+		params3DTo2D.allocationKind				= testGroupParams->allocationKind;
+		params3DTo2D.extensionUse				= testGroupParams->extensionUse;
+		params3DTo2D.queueSelection				= testGroupParams->queueSelection;
 
 		{
 			const VkImageSubresourceLayers	sourceLayer	=
@@ -10526,8 +10622,9 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 		params2DTo3D.dst.image.extent.depth		= slicesLayers;
 		params2DTo3D.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params2DTo3D.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params2DTo3D.allocationKind				= allocationKind;
-		params2DTo3D.extensionUse				= extensionUse;
+		params2DTo3D.allocationKind				= testGroupParams->allocationKind;
+		params2DTo3D.extensionUse				= testGroupParams->extensionUse;
+		params2DTo3D.queueSelection				= testGroupParams->queueSelection;
 
 		{
 			const VkImageSubresourceLayers	sourceLayer	=
@@ -10579,8 +10676,9 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 		params3DTo2D.dst.image.extent.depth		= slicesLayers;
 		params3DTo2D.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params3DTo2D.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params3DTo2D.allocationKind				= allocationKind;
-		params3DTo2D.extensionUse				= extensionUse;
+		params3DTo2D.allocationKind				= testGroupParams->allocationKind;
+		params3DTo2D.extensionUse				= testGroupParams->extensionUse;
+		params3DTo2D.queueSelection				= testGroupParams->queueSelection;
 
 		const deUint32 regionWidth				= defaultHalfExtent.width / slicesLayers -1;
 		const deUint32 regionHeight				= defaultHalfExtent.height / slicesLayers -1 ;
@@ -10639,8 +10737,9 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 		params2DTo3D.dst.image.extent.depth		= slicesLayers;
 		params2DTo3D.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params2DTo3D.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params2DTo3D.allocationKind				= allocationKind;
-		params2DTo3D.extensionUse				= extensionUse;
+		params2DTo3D.allocationKind				= testGroupParams->allocationKind;
+		params2DTo3D.extensionUse				= testGroupParams->extensionUse;
+		params2DTo3D.queueSelection				= testGroupParams->queueSelection;
 
 		const deUint32 regionWidth				= defaultHalfExtent.width / slicesLayers -1;
 		const deUint32 regionHeight				= defaultHalfExtent.height / slicesLayers -1 ;
@@ -10686,7 +10785,7 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 	}
 }
 
-void addImageToImageCubeTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+void addImageToImageCubeTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
 {
 	tcu::TestContext& testCtx	= group->getTestContext();
 
@@ -10707,8 +10806,9 @@ void addImageToImageCubeTests (tcu::TestCaseGroup* group, AllocationKind allocat
 		paramsCubeToArray.dst.image.extent.depth	= arrayLayers;
 		paramsCubeToArray.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		paramsCubeToArray.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		paramsCubeToArray.allocationKind			= allocationKind;
-		paramsCubeToArray.extensionUse				= extensionUse;
+		paramsCubeToArray.allocationKind			= testGroupParams->allocationKind;
+		paramsCubeToArray.extensionUse				= testGroupParams->extensionUse;
+		paramsCubeToArray.queueSelection			= testGroupParams->queueSelection;
 
 		for (deUint32 arrayLayersNdx = 0; arrayLayersNdx < arrayLayers; ++arrayLayersNdx)
 		{
@@ -10763,8 +10863,9 @@ void addImageToImageCubeTests (tcu::TestCaseGroup* group, AllocationKind allocat
 		paramsCubeToArray.dst.image.extent.depth	= arrayLayers;
 		paramsCubeToArray.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		paramsCubeToArray.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		paramsCubeToArray.allocationKind			= allocationKind;
-		paramsCubeToArray.extensionUse				= extensionUse;
+		paramsCubeToArray.allocationKind			= testGroupParams->allocationKind;
+		paramsCubeToArray.extensionUse				= testGroupParams->extensionUse;
+		paramsCubeToArray.queueSelection			= testGroupParams->queueSelection;
 
 		{
 			const VkImageSubresourceLayers	sourceLayer	=
@@ -10818,8 +10919,9 @@ void addImageToImageCubeTests (tcu::TestCaseGroup* group, AllocationKind allocat
 		paramsArrayToCube.dst.image.extent.depth	= arrayLayers;
 		paramsArrayToCube.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		paramsArrayToCube.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		paramsArrayToCube.allocationKind			= allocationKind;
-		paramsArrayToCube.extensionUse				= extensionUse;
+		paramsArrayToCube.allocationKind			= testGroupParams->allocationKind;
+		paramsArrayToCube.extensionUse				= testGroupParams->extensionUse;
+		paramsArrayToCube.queueSelection			= testGroupParams->queueSelection;
 
 		for (deUint32 arrayLayersNdx = 0; arrayLayersNdx < arrayLayers; ++arrayLayersNdx)
 		{
@@ -10874,8 +10976,9 @@ void addImageToImageCubeTests (tcu::TestCaseGroup* group, AllocationKind allocat
 		paramsArrayToCube.dst.image.extent.depth	= arrayLayers;
 		paramsArrayToCube.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		paramsArrayToCube.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		paramsArrayToCube.allocationKind			= allocationKind;
-		paramsArrayToCube.extensionUse				= extensionUse;
+		paramsArrayToCube.allocationKind			= testGroupParams->allocationKind;
+		paramsArrayToCube.extensionUse				= testGroupParams->extensionUse;
+		paramsArrayToCube.queueSelection			= testGroupParams->queueSelection;
 
 		{
 			const VkImageSubresourceLayers sourceLayer =
@@ -10929,8 +11032,9 @@ void addImageToImageCubeTests (tcu::TestCaseGroup* group, AllocationKind allocat
 		paramsCubeToArray.dst.image.extent.depth	= arrayLayers;
 		paramsCubeToArray.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		paramsCubeToArray.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		paramsCubeToArray.allocationKind			= allocationKind;
-		paramsCubeToArray.extensionUse				= extensionUse;
+		paramsCubeToArray.allocationKind			= testGroupParams->allocationKind;
+		paramsCubeToArray.extensionUse				= testGroupParams->extensionUse;
+		paramsCubeToArray.queueSelection			= testGroupParams->queueSelection;
 
 		for (deUint32 arrayLayersNdx = 0; arrayLayersNdx < arrayLayers; ++arrayLayersNdx)
 		{
@@ -10985,8 +11089,9 @@ void addImageToImageCubeTests (tcu::TestCaseGroup* group, AllocationKind allocat
 		paramsCubeToCube.dst.image.extent.depth		= arrayLayers;
 		paramsCubeToCube.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		paramsCubeToCube.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		paramsCubeToCube.allocationKind				= allocationKind;
-		paramsCubeToCube.extensionUse				= extensionUse;
+		paramsCubeToCube.allocationKind				= testGroupParams->allocationKind;
+		paramsCubeToCube.extensionUse				= testGroupParams->extensionUse;
+		paramsCubeToCube.queueSelection				= testGroupParams->queueSelection;
 
 		{
 			const VkImageSubresourceLayers	sourceLayer	=
@@ -11024,7 +11129,7 @@ void addImageToImageCubeTests (tcu::TestCaseGroup* group, AllocationKind allocat
 	}
 }
 
-void addImageToImageArrayTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+void addImageToImageArrayTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
 {
 	tcu::TestContext& testCtx	= group->getTestContext();
 
@@ -11043,8 +11148,9 @@ void addImageToImageArrayTests (tcu::TestCaseGroup* group, AllocationKind alloca
 		paramsArrayToArray.dst.image.extent.depth	= arrayLayers;
 		paramsArrayToArray.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		paramsArrayToArray.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		paramsArrayToArray.allocationKind			= allocationKind;
-		paramsArrayToArray.extensionUse				= extensionUse;
+		paramsArrayToArray.allocationKind			= testGroupParams->allocationKind;
+		paramsArrayToArray.extensionUse				= testGroupParams->extensionUse;
+		paramsArrayToArray.queueSelection			= testGroupParams->queueSelection;
 
 		for (deUint32 arrayLayersNdx = 0; arrayLayersNdx < arrayLayers; ++arrayLayersNdx)
 		{
@@ -11097,8 +11203,9 @@ void addImageToImageArrayTests (tcu::TestCaseGroup* group, AllocationKind alloca
 		paramsArrayToArray.dst.image.extent.depth		= arrayLayers;
 		paramsArrayToArray.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		paramsArrayToArray.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		paramsArrayToArray.allocationKind				= allocationKind;
-		paramsArrayToArray.extensionUse					= extensionUse;
+		paramsArrayToArray.allocationKind				= testGroupParams->allocationKind;
+		paramsArrayToArray.extensionUse					= testGroupParams->extensionUse;
+		paramsArrayToArray.queueSelection				= testGroupParams->queueSelection;
 
 		{
 			const VkImageSubresourceLayers sourceLayer =
@@ -11135,6 +11242,7 @@ void addImageToImageArrayTests (tcu::TestCaseGroup* group, AllocationKind alloca
 		group->addChild(new CopyImageToImageTestCase(testCtx, "array_to_array_whole", "copy 2d array image to 2d array image all at once", paramsArrayToArray));
 	}
 
+	if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
 	{
 		TestParams	paramsArrayToArray;
 		const deUint32	arrayLayers						= 16u;
@@ -11148,8 +11256,9 @@ void addImageToImageArrayTests (tcu::TestCaseGroup* group, AllocationKind alloca
 		paramsArrayToArray.dst.image.extent.depth		= arrayLayers;
 		paramsArrayToArray.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		paramsArrayToArray.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		paramsArrayToArray.allocationKind				= allocationKind;
-		paramsArrayToArray.extensionUse					= extensionUse;
+		paramsArrayToArray.allocationKind				= testGroupParams->allocationKind;
+		paramsArrayToArray.extensionUse					= testGroupParams->extensionUse;
+		paramsArrayToArray.queueSelection				= testGroupParams->queueSelection;
 		paramsArrayToArray.mipLevels					= deLog2Floor32(deMaxu32(defaultHalfExtent.width, defaultHalfExtent.height)) + 1u;
 
 		for (deUint32 mipLevelNdx = 0u; mipLevelNdx < paramsArrayToArray.mipLevels; mipLevelNdx++)
@@ -11211,17 +11320,17 @@ void addImageToImageArrayTests (tcu::TestCaseGroup* group, AllocationKind alloca
 	}
 }
 
-void addImageToImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+void addImageToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
 {
-	addTestGroup(group, "simple_tests", "Copy from image to image simple tests", addImageToImageSimpleTests, allocationKind, extensionUse);
-	addTestGroup(group, "all_formats", "Copy from image to image with all compatible formats", addImageToImageAllFormatsTests, allocationKind, extensionUse);
-	addTestGroup(group, "3d_images", "Coping operations on 3d images", addImageToImage3dImagesTests, allocationKind, extensionUse);
-	addTestGroup(group, "dimensions", "Copying operations on different image dimensions", addImageToImageDimensionsTests, allocationKind, extensionUse);
-	addTestGroup(group, "cube", "Coping operations on cube compatible images", addImageToImageCubeTests, allocationKind, extensionUse);
-	addTestGroup(group, "array", "Copying operations on array of images", addImageToImageArrayTests, allocationKind, extensionUse);
+	addTestGroup(group, "simple_tests", "Copy from image to image simple tests", addImageToImageSimpleTests, testGroupParams);
+	addTestGroup(group, "all_formats", "Copy from image to image with all compatible formats", addImageToImageAllFormatsTests, testGroupParams);
+	addTestGroup(group, "3d_images", "Coping operations on 3d images", addImageToImage3dImagesTests, testGroupParams);
+	addTestGroup(group, "dimensions", "Copying operations on different image dimensions", addImageToImageDimensionsTests, testGroupParams);
+	addTestGroup(group, "cube", "Coping operations on cube compatible images", addImageToImageCubeTests, testGroupParams);
+	addTestGroup(group, "array", "Copying operations on array of images", addImageToImageArrayTests, testGroupParams);
 }
 
-void add1dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+void add1dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
 {
 	tcu::TestContext& testCtx	= group->getTestContext();
 
@@ -11233,8 +11342,9 @@ void add1dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= defaultSize;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const VkBufferImageCopy	bufferImageCopy =
 		{
@@ -11262,8 +11372,9 @@ void add1dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= bufferImageHeight;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const VkBufferImageCopy	bufferImageCopy =
 		{
@@ -11292,8 +11403,9 @@ void add1dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.src.image.tiling = VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size = defaultSize * arrayLayers;
-		params.allocationKind = allocationKind;
-		params.extensionUse = extensionUse;
+		params.allocationKind = testGroupParams->allocationKind;
+		params.extensionUse = testGroupParams->extensionUse;
+		params.queueSelection = testGroupParams->queueSelection;
 
 		const int pixelSize = tcu::getPixelSize(mapVkFormat(params.src.image.format));
 		for (deUint32 arrayLayerNdx = 0; arrayLayerNdx < arrayLayers; arrayLayerNdx++)
@@ -11333,8 +11445,9 @@ void add1dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= bufferImageHeight * arrayLayers;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const int pixelSize = tcu::getPixelSize(mapVkFormat(params.src.image.format));
 		for (deUint32 arrayLayerNdx = 0; arrayLayerNdx < arrayLayers; arrayLayerNdx++)
@@ -11364,7 +11477,7 @@ void add1dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocati
 	}
 }
 
-void add2dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+void add2dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
 {
 	tcu::TestContext& testCtx = group->getTestContext();
 
@@ -11376,8 +11489,9 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= defaultSize * defaultSize;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -11404,8 +11518,9 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= defaultSize * defaultSize;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -11424,6 +11539,7 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		group->addChild(new CopyImageToBufferTestCase(testCtx, "buffer_offset", "Copy from image to buffer with buffer offset", params));
 	}
 
+	if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
 	{
 		TestParams	params;
 		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
@@ -11432,8 +11548,9 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= defaultSize * defaultSize;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -11460,8 +11577,9 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= defaultSize * defaultSize;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const int			pixelSize	= tcu::getPixelSize(mapVkFormat(params.src.image.format));
 		const VkDeviceSize	bufferSize	= pixelSize * params.dst.buffer.size;
@@ -11501,8 +11619,9 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= (defaultHalfSize - 1u) * defaultSize + defaultHalfSize;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -11530,8 +11649,9 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= bufferImageHeight * defaultSize;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const VkBufferImageCopy	bufferImageCopy =
 		{
@@ -11558,8 +11678,9 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= (defaultHalfSize - 1u) * defaultSize + defaultHalfSize + defaultQuarterSize;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -11588,8 +11709,9 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.dst.buffer.size				= defaultHalfSize * defaultHalfSize * arrayLayers;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const int pixelSize	= tcu::getPixelSize(mapVkFormat(params.src.image.format));
 		for (deUint32 arrayLayerNdx = 0; arrayLayerNdx < arrayLayers; arrayLayerNdx++)
@@ -11628,8 +11750,9 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.dst.buffer.size				= defaultHalfSize * imageBufferHeight * arrayLayers;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const int pixelSize = tcu::getPixelSize(mapVkFormat(params.src.image.format));
 		for (deUint32 arrayLayerNdx = 0; arrayLayerNdx < arrayLayers; arrayLayerNdx++)
@@ -11667,8 +11790,9 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.dst.buffer.size				= defaultHalfSize * defaultHalfSize * arrayLayers;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const int pixelSize	= tcu::getPixelSize(mapVkFormat(params.src.image.format));
 		for (deUint32 arrayLayerNdx = 0; arrayLayerNdx < arrayLayers; arrayLayerNdx++)
@@ -11696,7 +11820,9 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		group->addChild(new CopyImageToBufferTestCase(testCtx, "array_tightly_sized_buffer", "Copy each layer from array to tightly sized buffer", params));
 	}
 
-
+	// those tests are performed for all queues, no need to repeat them
+	// when testGroupParams->queueSelection is set to TransferOnly
+	if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
 	{
 		VkExtent3D extents[] = {
 			// Most miplevels will be multiples of four. All power-of-2 edge sizes. Never a weird mip level with extents smaller than the blockwidth.
@@ -11723,15 +11849,21 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocati
 			params.src.image.extent				= extent;
 			params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 			params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-			params.allocationKind				= allocationKind;
-			params.extensionUse					= extensionUse;
+			params.allocationKind				= testGroupParams->allocationKind;
+			params.extensionUse					= testGroupParams->extensionUse;
 			params.arrayLayers					= numLayers;
 
 			for (const VkFormat *format = compressedFormatsFloats; *format != VK_FORMAT_UNDEFINED; format++)
 			{
 				params.src.image.format				= *format;
-				group->addChild(new CopyCompressedImageToBufferTestCase(testCtx, getCaseName(*format, params.src.image.extent, numLayers, "universal"), "Copy from image to buffer", params, QueueSelectionOptions::Universal));
-				group->addChild(new CopyCompressedImageToBufferTestCase(testCtx, getCaseName(*format, params.src.image.extent, numLayers, "compute"), "Copy from image to buffer", params, QueueSelectionOptions::ComputeOnly));
+				{
+					params.queueSelection = QueueSelectionOptions::Universal;
+					group->addChild(new CopyCompressedImageToBufferTestCase(testCtx, getCaseName(*format, params.src.image.extent, numLayers, "universal"), "Copy from image to buffer", params));
+					params.queueSelection = QueueSelectionOptions::ComputeOnly;
+					group->addChild(new CopyCompressedImageToBufferTestCase(testCtx, getCaseName(*format, params.src.image.extent, numLayers, "compute"), "Copy from image to buffer", params));
+					params.queueSelection = QueueSelectionOptions::TransferOnly;
+					group->addChild(new CopyCompressedImageToBufferTestCase(testCtx, getCaseName(*format, params.src.image.extent, numLayers, "transfer"), "Copy from image to buffer", params));
+				}
 			}
 		}
 	}
@@ -11802,7 +11934,7 @@ void addBufferToDepthStencilTests(tcu::TestCaseGroup* group, AllocationKind allo
 		defaultExtent		// VkExtent3D				imageExtent;
 	};
 
-    const VkBufferImageCopy			bufferStencilCopyOffset	=
+	const VkBufferImageCopy			bufferStencilCopyOffset	=
 	{
 		32,											// VkDeviceSize				bufferOffset;
 		defaultHalfSize + defaultQuarterSize,		// deUint32					bufferRowLength;
@@ -11812,7 +11944,7 @@ void addBufferToDepthStencilTests(tcu::TestCaseGroup* group, AllocationKind allo
 		defaultHalfExtent							// VkExtent3D				imageExtent;
 	};
 
-    const bool						useOffset[]				= {false, true};
+	const bool						useOffset[]				= {false, true};
 
 	// Note: Depth stencil tests I want to do
 	// Formats: D16, D24S8, D32FS8
@@ -11898,7 +12030,7 @@ void addBufferToDepthStencilTests(tcu::TestCaseGroup* group, AllocationKind allo
 		}
 }
 
-void add1dBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+void add1dBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
 {
 	tcu::TestContext& testCtx	= group->getTestContext();
 
@@ -11910,8 +12042,9 @@ void add1dBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.dst.image.extent				= default1dExtent;
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const VkBufferImageCopy	bufferImageCopy =
 		{
@@ -11939,8 +12072,9 @@ void add1dBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.dst.image.extent				= default1dExtent;
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const VkBufferImageCopy	bufferImageCopy =
 		{
@@ -11969,8 +12103,9 @@ void add1dBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.dst.image.extent.depth		= arrayLayers;
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const int pixelSize = tcu::getPixelSize(mapVkFormat(params.dst.image.format));
 		for (deUint32 arrayLayerNdx = 0; arrayLayerNdx < arrayLayers; arrayLayerNdx++)
@@ -12010,8 +12145,9 @@ void add1dBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.dst.image.extent.depth		= arrayLayers;
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const int pixelSize = tcu::getPixelSize(mapVkFormat(params.dst.image.format));
 		for (deUint32 arrayLayerNdx = 0; arrayLayerNdx < arrayLayers; arrayLayerNdx++)
@@ -12041,7 +12177,7 @@ void add1dBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocati
 	}
 }
 
-void add2dBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+void add2dBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
 {
 	tcu::TestContext& testCtx = group->getTestContext();
 
@@ -12053,8 +12189,9 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.dst.image.extent				= defaultExtent;
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -12081,8 +12218,9 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.dst.image.extent				= defaultExtent;
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		CopyRegion	region;
 		deUint32	divisor	= 1;
@@ -12112,8 +12250,9 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.dst.image.extent				= defaultExtent;
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -12132,6 +12271,7 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		group->addChild(new CopyBufferToImageTestCase(testCtx, "buffer_offset", "Copy from buffer to image with buffer offset", params));
 	}
 
+	if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
 	{
 		TestParams	params;
 		params.src.buffer.size				= defaultSize * defaultSize;
@@ -12140,8 +12280,9 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.dst.image.extent				= defaultExtent;
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -12168,8 +12309,9 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.dst.image.extent				= defaultExtent;
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -12197,8 +12339,9 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.dst.image.extent				= defaultExtent;
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -12225,8 +12368,9 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.dst.image.extent				= defaultExtent;
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
@@ -12255,8 +12399,9 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.dst.image.extent.depth		= arrayLayers;
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const int pixelSize	= tcu::getPixelSize(mapVkFormat(params.dst.image.format));
 		for (deUint32 arrayLayerNdx = 0; arrayLayerNdx < arrayLayers; arrayLayerNdx++)
@@ -12295,8 +12440,9 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.dst.image.extent.depth		= arrayLayers;
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const int pixelSize = tcu::getPixelSize(mapVkFormat(params.dst.image.format));
 		for (deUint32 arrayLayerNdx = 0; arrayLayerNdx < arrayLayers; arrayLayerNdx++)
@@ -12334,8 +12480,9 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocati
 		params.dst.image.extent.depth		= arrayLayers;
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.extensionUse					= extensionUse;
+		params.allocationKind				= testGroupParams->allocationKind;
+		params.extensionUse					= testGroupParams->extensionUse;
+		params.queueSelection				= testGroupParams->queueSelection;
 
 		const int pixelSize	= tcu::getPixelSize(mapVkFormat(params.dst.image.format));
 		for (deUint32 arrayLayerNdx = 0; arrayLayerNdx < arrayLayers; arrayLayerNdx++)
@@ -12364,7 +12511,7 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocati
 	}
 }
 
-void addBufferToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+void addBufferToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
 {
 	tcu::TestContext&				testCtx					= group->getTestContext();
 
@@ -12372,8 +12519,9 @@ void addBufferToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocatio
 		TestParams			params;
 		params.src.buffer.size	= defaultSize;
 		params.dst.buffer.size	= defaultSize;
-		params.allocationKind	= allocationKind;
-		params.extensionUse		= extensionUse;
+		params.allocationKind	= testGroupParams->allocationKind;
+		params.extensionUse		= testGroupParams->extensionUse;
+		params.queueSelection	= testGroupParams->queueSelection;
 
 		const VkBufferCopy	bufferCopy	=
 		{
@@ -12394,8 +12542,9 @@ void addBufferToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocatio
 		TestParams			params;
 		params.src.buffer.size	= defaultQuarterSize;
 		params.dst.buffer.size	= defaultQuarterSize;
-		params.allocationKind	= allocationKind;
-		params.extensionUse		= extensionUse;
+		params.allocationKind	= testGroupParams->allocationKind;
+		params.extensionUse		= testGroupParams->extensionUse;
+		params.queueSelection	= testGroupParams->queueSelection;
 
 		const VkBufferCopy	bufferCopy	=
 		{
@@ -12416,8 +12565,9 @@ void addBufferToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocatio
 		TestParams			params;
 		params.src.buffer.size	= size;
 		params.dst.buffer.size	= size * (size + 1);
-		params.allocationKind	= allocationKind;
-		params.extensionUse		= extensionUse;
+		params.allocationKind	= testGroupParams->allocationKind;
+		params.extensionUse		= testGroupParams->extensionUse;
+		params.queueSelection	= testGroupParams->queueSelection;
 
 		// Copy region with size 1..size
 		for (unsigned int i = 1; i <= size; i++)
@@ -12441,8 +12591,9 @@ void addBufferToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocatio
 		TestParams params;
 		params.src.buffer.size	= 32;
 		params.dst.buffer.size	= 32;
-		params.allocationKind	= allocationKind;
-		params.extensionUse		= extensionUse;
+		params.allocationKind	= testGroupParams->allocationKind;
+		params.extensionUse		= testGroupParams->extensionUse;
+		params.queueSelection	= testGroupParams->queueSelection;
 
 		// Copy four unaligned regions
 		for (unsigned int i = 0; i < 4; i++)
@@ -13336,17 +13487,16 @@ std::vector<CopyRegion> create2DCopyRegions(deInt32 srcWidth, deInt32 srcHeight,
 }
 
 
-void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+void addBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
 {
-	addTestGroup(group, "1d_images", "Copying operations on 1d images", add1dBufferToImageTests, allocationKind, extensionUse);
-	addTestGroup(group, "2d_images", "Copying operations on 2d images", add2dBufferToImageTests, allocationKind, extensionUse);
+	addTestGroup(group, "1d_images", "Copying operations on 1d images", add1dBufferToImageTests, testGroupParams);
+	addTestGroup(group, "2d_images", "Copying operations on 2d images", add2dBufferToImageTests, testGroupParams);
 }
 
-void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
+void addImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
 {
-	addTestGroup(group, "1d_images", "Copying operations on 1d images", add1dImageToBufferTests, allocationKind, extensionUse);
-	addTestGroup(group, "2d_images", "Copying operations on 2d images", add2dImageToBufferTests, allocationKind,
- extensionUse);
+	addTestGroup(group, "1d_images", "Copying operations on 1d images", add1dImageToBufferTests, testGroupParams);
+	addTestGroup(group, "2d_images", "Copying operations on 2d images", add2dImageToBufferTests, testGroupParams);
 }
 
 void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
@@ -15194,14 +15344,35 @@ void addResolveImageTests (tcu::TestCaseGroup* group, AllocationKind allocationK
 
 void addCopiesAndBlittingTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, ExtensionUse extensionUse)
 {
-	addTestGroup(group, "image_to_image", "Copy from image to image", addImageToImageTests, allocationKind, extensionUse);
-	addTestGroup(group, "image_to_buffer", "Copy from image to buffer", addImageToBufferTests, allocationKind, extensionUse);
-	addTestGroup(group, "buffer_to_image", "Copy from buffer to image", addBufferToImageTests, allocationKind, extensionUse);
+	TestGroupParamsPtr universalGroupParams(new TestGroupParams
+	{
+		allocationKind,
+		extensionUse,
+		QueueSelectionOptions::Universal
+	});
+
+	addTestGroup(group, "image_to_image", "Copy from image to image", addImageToImageTests, universalGroupParams);
+	addTestGroup(group, "image_to_buffer", "Copy from image to buffer", addImageToBufferTests, universalGroupParams);
+	addTestGroup(group, "buffer_to_image", "Copy from buffer to image", addBufferToImageTests, universalGroupParams);
 	addTestGroup(group, "buffer_to_depthstencil", "Copy from buffer to depth/Stencil", addBufferToDepthStencilTests, allocationKind, extensionUse);
-	addTestGroup(group, "buffer_to_buffer", "Copy from buffer to buffer", addBufferToBufferTests, allocationKind, extensionUse);
+	addTestGroup(group, "buffer_to_buffer", "Copy from buffer to buffer", addBufferToBufferTests, universalGroupParams);
 	addTestGroup(group, "blit_image", "Blitting image", addBlittingImageTests, allocationKind, extensionUse);
 	addTestGroup(group, "resolve_image", "Resolve image", addResolveImageTests, allocationKind, extensionUse);
 	addTestGroup(group, "depth_stencil_msaa_copy", "Copy depth/stencil with MSAA", addDepthStencilCopyMSAATestGroup, allocationKind, extensionUse);
+
+	if (extensionUse == EXTENSION_USE_COPY_COMMANDS2)
+	{
+		TestGroupParamsPtr transferGroupParams(new TestGroupParams
+			{
+				allocationKind,
+				extensionUse,
+				QueueSelectionOptions::TransferOnly
+			});
+		addTestGroup(group, "image_to_image_transfer_queue",	"Copy from image to image on transfer queue",	addImageToImageTests,	transferGroupParams);
+		addTestGroup(group, "image_to_buffer_transfer_queue",	"Copy from image to buffer on transfer queue",	addImageToBufferTests,	transferGroupParams);
+		addTestGroup(group, "buffer_to_image_transfer_queue",	"Copy from buffer to image on transfer queue",	addBufferToImageTests,	transferGroupParams);
+		addTestGroup(group, "buffer_to_buffer_transfer_queue",	"Copy from buffer to buffer on transfer queue",	addBufferToBufferTests,	transferGroupParams);
+	}
 }
 
 void addCoreCopiesAndBlittingTests(tcu::TestCaseGroup* group)
@@ -15216,12 +15387,16 @@ void addDedicatedAllocationCopiesAndBlittingTests (tcu::TestCaseGroup* group)
 	addCopiesAndBlittingTests(group, ALLOCATION_KIND_DEDICATED, EXTENSION_USE_NONE);
 }
 
-#ifndef CTS_USES_VULKANSC
 void addExtensionCopiesAndBlittingTests(tcu::TestCaseGroup* group)
 {
 	addCopiesAndBlittingTests(group, ALLOCATION_KIND_DEDICATED, EXTENSION_USE_COPY_COMMANDS2);
 }
-#endif // CTS_USES_VULKANSC
+
+static void cleanupGroup(tcu::TestCaseGroup*)
+{
+	// Destroy singleton object
+	g_deviceWithTransferQueue.clear();
+}
 
 } // anonymous
 
@@ -15229,11 +15404,9 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	copiesAndBlittingTests(new tcu::TestCaseGroup(testCtx, "copy_and_blit", "Copies And Blitting Tests"));
 
-	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "core", "Core Copies And Blitting Tests", addCoreCopiesAndBlittingTests));
-	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Copies And Blitting Tests For Dedicated Memory Allocation",	addDedicatedAllocationCopiesAndBlittingTests));
-#ifndef CTS_USES_VULKANSC
-	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "copy_commands2", "Copies And Blitting Tests using KHR_copy_commands2", addExtensionCopiesAndBlittingTests));
-#endif // CTS_USES_VULKANSC
+	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "core", "Core Copies And Blitting Tests", addCoreCopiesAndBlittingTests, cleanupGroup));
+	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Copies And Blitting Tests For Dedicated Memory Allocation",	addDedicatedAllocationCopiesAndBlittingTests, cleanupGroup));
+	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "copy_commands2", "Copies And Blitting Tests using KHR_copy_commands2", addExtensionCopiesAndBlittingTests, cleanupGroup));
 
 	return copiesAndBlittingTests.release();
 }

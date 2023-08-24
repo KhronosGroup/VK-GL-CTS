@@ -508,6 +508,7 @@ struct TestParams
 	bool							isCube;
 	SeparateDepthStencilLayoutMode	separateDepthStencilLayoutMode;
 	bool							isColorMultipleSubresourceRangeTest;
+	VkSampleCountFlagBits           imageSampleCount;
 };
 
 class ImageClearingTestInstance : public vkt::TestInstance
@@ -518,11 +519,10 @@ public:
 
 	Move<VkCommandPool>					createCommandPool				(VkCommandPoolCreateFlags commandPoolCreateFlags) const;
 	Move<VkCommandBuffer>				allocatePrimaryCommandBuffer	(VkCommandPool commandPool) const;
-	Move<VkImage>						createImage						(VkImageType imageType, VkFormat format, VkImageTiling tiling, VkExtent3D extent, deUint32 arrayLayerCount, VkImageUsageFlags usage) const;
+	Move<VkImage>						createImage						(VkImageType imageType, VkFormat format, VkImageTiling tiling, VkExtent3D extent, deUint32 arrayLayerCount, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT) const;
 	Move<VkImageView>					createImageView					(VkImage image, VkImageViewType viewType, VkFormat format, VkImageAspectFlags aspectMask, LayerRange layerRange) const;
-	Move<VkRenderPass>					createRenderPass				(VkFormat format) const;
-	Move<VkFramebuffer>					createFrameBuffer				(VkImageView imageView, VkRenderPass renderPass, deUint32 imageWidth, deUint32 imageHeight, deUint32 imageLayersCount) const;
-
+	Move<VkRenderPass>					createRenderPass				(VkFormat format, VkSampleCountFlagBits sampleCount) const;
+	Move<VkFramebuffer>					createFrameBuffer				(VkImageView imageView, VkRenderPass renderPass, deUint32 imageWidth, deUint32 imageHeight, deUint32 imageLayersCount, VkSampleCountFlagBits sampleCount) const;
 	void								beginCommandBuffer				(VkCommandBufferUsageFlags usageFlags) const;
 	void								endCommandBuffer				(void) const;
 	void								submitCommandBuffer				(void) const;
@@ -531,6 +531,8 @@ public:
 	Move<VkBuffer>						createImageClearingBuffer		(const DeviceInterface& vkd, const VkDevice device);
 
 	void								pipelineImageBarrier			(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout, VkImageAspectFlags aspectMask = 0u) const;
+	void								pipelineMultisampleImageBarrier	(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout, VkImageAspectFlags aspectMask = 0u) const;
+
 	de::MovePtr<TextureLevelPyramid>	readImage						(VkImageAspectFlags aspectMask, deUint32 baseLayer) const;
 	tcu::TestStatus						verifyResultImage				(const std::string& successMessage, const UVec4& clearCoords = UVec4()) const;
 
@@ -553,6 +555,7 @@ protected:
 	ViewType							getViewType						(deUint32 imageLayerCount) const;
 	de::MovePtr<Allocation>				allocateAndBindImageMemory		(VkImage image) const;
 	de::MovePtr<Allocation>				allocateAndBindBufferMemory		(VkBuffer buffer) const;
+	void								pipelineImageBarrierGen			(VkImage image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout, VkImageAspectFlags aspectMask = 0u) const;
 
 	const TestParams&					m_params;
 	const VkDevice						m_device;
@@ -578,6 +581,9 @@ protected:
 	de::MovePtr<Allocation>				m_stagingBufferMemory;
 	de::MovePtr<Allocation>				m_imageMemory;
 	Unique<VkImageView>					m_imageView;
+	Unique<VkImage>						m_multisampleImage;
+	de::MovePtr<Allocation>				m_multisampleImageMemory;
+	Unique<VkImageView>					m_multisampleImageView;
 	Move<VkRenderPass>					m_renderPass;
 	Move<VkFramebuffer>					m_frameBuffer;
 };
@@ -606,7 +612,8 @@ ImageClearingTestInstance::ImageClearingTestInstance (Context& context, const Te
 											 params.imageTiling,
 											 params.imageExtent,
 											 params.imageLayerCount,
-											 m_imageUsageFlags))
+											 m_imageUsageFlags,
+											 VK_SAMPLE_COUNT_1_BIT))
 
 	, m_stagingBuffer			(createImageClearingBuffer(m_vkd, m_device))
 	, m_stagingBufferMemory		(allocateAndBindBufferMemory(*m_stagingBuffer))
@@ -617,6 +624,19 @@ ImageClearingTestInstance::ImageClearingTestInstance (Context& context, const Te
 												 params.imageFormat,
 												 m_imageAspectFlags,
 												 params.imageViewLayerRange) : vk::Move<VkImageView>())
+	, m_multisampleImage		((params.imageSampleCount > VK_SAMPLE_COUNT_1_BIT) ? createImage(params.imageType,
+											params.imageFormat,
+											params.imageTiling,
+											params.imageExtent,
+											params.imageLayerCount,
+											m_imageUsageFlags,
+											params.imageSampleCount) : vk::Move<VkImage>())
+	, m_multisampleImageMemory	((params.imageSampleCount > VK_SAMPLE_COUNT_1_BIT) ? allocateAndBindImageMemory(*m_multisampleImage) : de::MovePtr<Allocation>())
+	, m_multisampleImageView	((m_isAttachmentFormat && (params.imageSampleCount > VK_SAMPLE_COUNT_1_BIT)) ? createImageView(*m_multisampleImage,
+											getCorrespondingImageViewType(params.imageType, getViewType(params.imageLayerCount)),
+											params.imageFormat,
+											m_imageAspectFlags,
+											params.imageViewLayerRange) : vk::Move<VkImageView>())
 
 {
 	if (m_params.allocationKind == ALLOCATION_KIND_DEDICATED)
@@ -629,8 +649,9 @@ ImageClearingTestInstance::ImageClearingTestInstance (Context& context, const Te
 	{
 		if (m_isAttachmentFormat)
 		{
-			m_renderPass = createRenderPass(params.imageFormat);
-			m_frameBuffer = createFrameBuffer(*m_imageView, *m_renderPass, params.imageExtent.width, params.imageExtent.height, params.imageViewLayerRange.layerCount);
+			m_renderPass = createRenderPass(params.imageFormat, params.imageSampleCount);
+
+			m_frameBuffer = createFrameBuffer(*m_imageView, *m_renderPass, params.imageExtent.width, params.imageExtent.height, params.imageViewLayerRange.layerCount, m_params.imageSampleCount);
 		}
 	}
 
@@ -776,10 +797,13 @@ Move<VkCommandBuffer> ImageClearingTestInstance::allocatePrimaryCommandBuffer (V
 	return vk::allocateCommandBuffer(m_vkd, m_device, commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 }
 
-Move<VkImage> ImageClearingTestInstance::createImage (VkImageType imageType, VkFormat format, VkImageTiling tiling, VkExtent3D extent, deUint32 arrayLayerCount, VkImageUsageFlags usage) const
+Move<VkImage> ImageClearingTestInstance::createImage (VkImageType imageType, VkFormat format, VkImageTiling tiling, VkExtent3D extent, deUint32 arrayLayerCount, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount) const
 {
 	if (arrayLayerCount > m_imageFormatProperties.maxArrayLayers)
 		TCU_THROW(NotSupportedError, "Device does not support enough image array layers");
+
+	if ((sampleCount & m_imageFormatProperties.sampleCounts) == 0)
+		TCU_THROW(NotSupportedError, "Device does not support sample count under test");
 
 	const VkImageCreateInfo					imageCreateInfo			=
 	{
@@ -791,7 +815,7 @@ Move<VkImage> ImageClearingTestInstance::createImage (VkImageType imageType, VkF
 		extent,										// VkExtent3D				extent;
 		m_imageMipLevels,							// deUint32					mipLevels;
 		arrayLayerCount,							// deUint32					arrayLayers;
-		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits	samples;
+		sampleCount,								// VkSampleCountFlagBits	samples;
 		tiling,										// VkImageTiling			tiling;
 		usage,										// VkImageUsageFlags		usage;
 		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode			sharingMode;
@@ -831,7 +855,7 @@ Move<VkImageView> ImageClearingTestInstance::createImageView (VkImage image, VkI
 	return vk::createImageView(m_vkd, m_device, &imageViewCreateInfo, DE_NULL);
 }
 
-Move<VkRenderPass> ImageClearingTestInstance::createRenderPass (VkFormat format) const
+Move<VkRenderPass> ImageClearingTestInstance::createRenderPass (VkFormat format, VkSampleCountFlagBits sampleCount) const
 {
 	if (m_params.separateDepthStencilLayoutMode == SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE)
 	{
@@ -846,7 +870,7 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass (VkFormat format)
 		{
 			0u,													// VkAttachmentDescriptionFlags		flags;
 			format,												// VkFormat							format;
-			VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits			samples;
+			sampleCount,										// VkSampleCountFlagBits			samples;
 			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp;
 			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp;
 			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				stencilLoadOp;
@@ -855,10 +879,28 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass (VkFormat format)
 			imageLayout,										// VkImageLayout					finalLayout;
 		};
 
-		const VkAttachmentDescription			attachments[1]			=
+		const VkAttachmentDescription			attachmentResolveDesc	=
 		{
-			attachmentDesc
+			0u,													// VkAttachmentDescriptionFlags		flags;
+			format,												// VkFormat							format;
+			VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits			samples;
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp				loadOp;
+			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp;
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp				stencilLoadOp;
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp;
+			imageLayout,										// VkImageLayout					initialLayout;
+			imageLayout,										// VkImageLayout					finalLayout;
 		};
+
+		const VkAttachmentDescription			attachments[2]			=
+		{
+			attachmentDesc,
+			attachmentResolveDesc
+		};
+
+		uint32_t attachmentCount = 1;
+		if (sampleCount > VK_SAMPLE_COUNT_1_BIT)
+			attachmentCount++;
 
 		const VkAttachmentReference				attachmentRef			=
 		{
@@ -866,8 +908,15 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass (VkFormat format)
 			imageLayout,										// VkImageLayout					layout;
 		};
 
+		const VkAttachmentReference				attachmentResolveRef	=
+		{
+			1u,													// deUint32							attachment;
+			imageLayout,										// VkImageLayout					layout;
+		};
+
 		const VkAttachmentReference*			pColorAttachments		= DE_NULL;
 		const VkAttachmentReference*			pDepthStencilAttachment	= DE_NULL;
+		const VkAttachmentReference*			pResolveAttachments		= DE_NULL;
 		deUint32								colorAttachmentCount	= 1;
 
 		if (isDepthStencilFormat(format))
@@ -879,6 +928,8 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass (VkFormat format)
 		{
 			colorAttachmentCount	= 1;
 			pColorAttachments		= &attachmentRef;
+			if (sampleCount > VK_SAMPLE_COUNT_1_BIT)
+				pResolveAttachments = &attachmentResolveRef;
 		}
 
 		const VkSubpassDescription				subpassDesc[1]			=
@@ -890,7 +941,7 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass (VkFormat format)
 				DE_NULL,										// const VkAttachmentReference*		pInputAttachments;
 				colorAttachmentCount,							// deUint32							colorAttachmentCount;
 				pColorAttachments,								// const VkAttachmentReference*		pColorAttachments;
-				DE_NULL,										// const VkAttachmentReference*		pResolveAttachments;
+				pResolveAttachments,							// const VkAttachmentReference*		pResolveAttachments;
 				pDepthStencilAttachment,						// const VkAttachmentReference*		pDepthStencilAttachment;
 				0u,												// deUint32							preserveAttachmentCount;
 				DE_NULL,										// const VkAttachmentReference*		pPreserveAttachments;
@@ -902,7 +953,7 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass (VkFormat format)
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			// VkStructureType					sType;
 			DE_NULL,											// const void*						pNext;
 			0u,													// VkRenderPassCreateFlags			flags;
-			1u,													// deUint32							attachmentCount;
+			attachmentCount,									// deUint32							attachmentCount;
 			attachments,										// const VkAttachmentDescription*	pAttachments;
 			1u,													// deUint32							subpassCount;
 			subpassDesc,										// const VkSubpassDescription*		pSubpasses;
@@ -1015,12 +1066,14 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass (VkFormat format)
 	}
 }
 
-Move<VkFramebuffer> ImageClearingTestInstance::createFrameBuffer (VkImageView imageView, VkRenderPass renderPass, deUint32 imageWidth, deUint32 imageHeight, deUint32 imageLayersCount) const
+Move<VkFramebuffer> ImageClearingTestInstance::createFrameBuffer (VkImageView imageView, VkRenderPass renderPass, deUint32 imageWidth, deUint32 imageHeight, deUint32 imageLayersCount, VkSampleCountFlagBits sampleCount) const
 {
-	const VkImageView						attachmentViews[1]		=
-	{
-		imageView
-	};
+	std::vector<VkImageView> attachmentViews;
+
+	if (sampleCount > VK_SAMPLE_COUNT_1_BIT)
+		attachmentViews.push_back(*m_multisampleImageView);
+
+	attachmentViews.push_back(imageView);
 
 	const VkFramebufferCreateInfo			framebufferCreateInfo	=
 	{
@@ -1028,8 +1081,8 @@ Move<VkFramebuffer> ImageClearingTestInstance::createFrameBuffer (VkImageView im
 		DE_NULL,									// const void*				pNext;
 		0u,											// VkFramebufferCreateFlags	flags;
 		renderPass,									// VkRenderPass				renderPass;
-		1,											// deUint32					attachmentCount;
-		attachmentViews,							// const VkImageView*		pAttachments;
+		de::sizeU32(attachmentViews),				// deUint32					attachmentCount;
+		de::dataOrNull(attachmentViews),			// const VkImageView*		pAttachments;
 		imageWidth,									// deUint32					width;
 		imageHeight,								// deUint32					height;
 		imageLayersCount,							// deUint32					layers;
@@ -1054,7 +1107,7 @@ void ImageClearingTestInstance::submitCommandBuffer (void) const
 	m_context.resetCommandPoolForVKSC(m_device, *m_commandPool);
 }
 
-void ImageClearingTestInstance::pipelineImageBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout, VkImageAspectFlags aspectMask) const
+void ImageClearingTestInstance::pipelineImageBarrierGen(VkImage image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout, VkImageAspectFlags aspectMask) const
 {
 	if (!aspectMask || m_params.separateDepthStencilLayoutMode == SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE)
 		aspectMask = m_imageAspectFlags;
@@ -1069,7 +1122,7 @@ void ImageClearingTestInstance::pipelineImageBarrier(VkPipelineStageFlags srcSta
 		newLayout,									// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
 		VK_QUEUE_FAMILY_IGNORED,					// deUint32					destQueueFamilyIndex;
-		*m_image,									// VkImage					image;
+		image,										// VkImage					image;
 		{
 			aspectMask,									// VkImageAspectFlags	aspectMask;
 			0u,											// deUint32				baseMipLevel;
@@ -1080,6 +1133,30 @@ void ImageClearingTestInstance::pipelineImageBarrier(VkPipelineStageFlags srcSta
 	};
 
 	m_vkd.cmdPipelineBarrier(*m_commandBuffer, srcStageMask, dstStageMask, 0, 0, DE_NULL, 0, DE_NULL, 1, &imageBarrier);
+}
+
+void ImageClearingTestInstance::pipelineImageBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout, VkImageAspectFlags aspectMask) const
+{
+	pipelineImageBarrierGen(*m_image,
+							srcStageMask,
+							dstStageMask,
+							srcAccessMask,
+							dstAccessMask,
+							oldLayout,
+							newLayout,
+							aspectMask);
+}
+
+void ImageClearingTestInstance::pipelineMultisampleImageBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout, VkImageAspectFlags aspectMask) const
+{
+	pipelineImageBarrierGen(*m_multisampleImage,
+							srcStageMask,
+							dstStageMask,
+							srcAccessMask,
+							dstAccessMask,
+							oldLayout,
+							newLayout,
+							aspectMask);
 }
 
 de::MovePtr<TextureLevelPyramid> ImageClearingTestInstance::readImage (VkImageAspectFlags aspectMask, deUint32 arrayLayer) const
@@ -1836,6 +1913,16 @@ public:
 							 attachmentLayout,								// VkImageLayout			newLayout;
 							 aspectMask);									// VkImageAspectFlags		aspectMask;
 
+
+		if (!isDepthStencil && (m_params.imageSampleCount > VK_SAMPLE_COUNT_1_BIT))
+			pipelineMultisampleImageBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, // VkPipelineStageFlags srcStageMask
+										VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,    // VkPipelineStageFlags dstStageMask
+										0,                                     // VkAccessFlags        srcAccessMask
+										accessMask,                            // VkAccessFlags        dstAccessMask
+										VK_IMAGE_LAYOUT_UNDEFINED,             // VkImageLayout        oldLayout;
+										attachmentLayout,                      // VkImageLayout        newLayout;
+										aspectMask);                           // VkImageAspectFlags   aspectMask;
+
 		beginRenderPass(VK_SUBPASS_CONTENTS_INLINE, m_params.initValue);
 		m_vkd.cmdClearAttachments(*m_commandBuffer, 1, &clearAttachment, static_cast<deUint32>(clearRects.size()), &clearRects[0]);
 		endRenderPass(m_vkd, *m_commandBuffer);
@@ -1969,12 +2056,17 @@ const char* getImageTilingCaseName (VkImageTiling tiling)
 	return de::getSizedArrayElement<VK_CORE_IMAGE_TILING_LAST>(s_names, tiling);
 }
 
+std::string getSampleCountName (VkSampleCountFlagBits count)
+{
+    return "sample_count_" + std::to_string(static_cast<int>(count));
+}
+
 TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCaseGroup* imageClearingTests, AllocationKind allocationKind)
 {
 	de::MovePtr<TestCaseGroup>	colorImageClearTests					(new TestCaseGroup(testCtx, "clear_color_image", "Color Image Clear Tests"));
-	de::MovePtr<TestCaseGroup>	depthStencilImageClearTests				(new TestCaseGroup(testCtx, "clear_depth_stencil_image", "Color Depth/Stencil Image Tests"));
-	de::MovePtr<TestCaseGroup>	colorAttachmentClearTests				(new TestCaseGroup(testCtx, "clear_color_attachment", "Color Color Attachment Tests"));
-	de::MovePtr<TestCaseGroup>	depthStencilAttachmentClearTests		(new TestCaseGroup(testCtx, "clear_depth_stencil_attachment", "Color Depth/Stencil Attachment Tests"));
+	de::MovePtr<TestCaseGroup>	depthStencilImageClearTests				(new TestCaseGroup(testCtx, "clear_depth_stencil_image", "Clear Depth/Stencil Image Tests"));
+	de::MovePtr<TestCaseGroup>	colorAttachmentClearTests				(new TestCaseGroup(testCtx, "clear_color_attachment", "Clear Color Attachment Tests"));
+	de::MovePtr<TestCaseGroup>	depthStencilAttachmentClearTests		(new TestCaseGroup(testCtx, "clear_depth_stencil_attachment", "Clear Depth/Stencil Attachment Tests"));
 	de::MovePtr<TestCaseGroup>	partialColorAttachmentClearTests		(new TestCaseGroup(testCtx, "partial_clear_color_attachment", "Clear Partial Color Attachment Tests"));
 	de::MovePtr<TestCaseGroup>	partialDepthStencilAttachmentClearTests	(new TestCaseGroup(testCtx, "partial_clear_depth_stencil_attachment", "Clear Partial Depth/Stencil Attachment Tests"));
 
@@ -2215,6 +2307,16 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 	};
 	const size_t	numOfClearColorsToTest			= DE_LENGTH_OF_ARRAY(clearColorsToTest);
 
+	std::vector<VkSampleCountFlagBits>	sampleCountsToTest =
+	{
+		VK_SAMPLE_COUNT_2_BIT,
+		VK_SAMPLE_COUNT_4_BIT,
+		VK_SAMPLE_COUNT_8_BIT,
+		VK_SAMPLE_COUNT_16_BIT,
+		VK_SAMPLE_COUNT_32_BIT,
+		VK_SAMPLE_COUNT_64_BIT
+	};
+
 	struct ImageLayerParams
 	{
 		deUint32		imageLayerCount;
@@ -2400,6 +2502,7 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 										false,																// bool								isCube;
 										SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE,							// SeparateDepthStencilLayoutMode	separateDepthStencilLayoutMode;
 										false,																// bool								isColorMultipleSubresourceRangeTest;
+										VK_SAMPLE_COUNT_1_BIT												// VkSampleCountFlagBits			imageSampleCount
 									};
 
 									if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
@@ -2471,6 +2574,7 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 										false,																// bool								isCube;
 										SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE,							// SeparateDepthStencilLayoutMode	separateDepthStencilLayoutMode;
 										false,																// bool								isColorMultipleSubresourceRangeTest;
+										VK_SAMPLE_COUNT_1_BIT												// VkSampleCountFlagBits			imageSampleCount
 									};
 
 									if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
@@ -2572,6 +2676,7 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 								false,																// bool								isCube;
 								SeparateDepthStencilLayoutMode(separateDepthStencilLayoutMode),		// SeparateDepthStencilLayoutMode	separateDepthStencilLayoutMode;
 								false,																// bool								isColorMultipleSubresourceRangeTest;
+								VK_SAMPLE_COUNT_1_BIT												// VkSampleCountFlagBits			imageSampleCount
 							};
 
 							if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
@@ -2653,8 +2758,8 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 								expectedColors[1] = clearColors[1];
 							}
 
-							const std::string	testCaseName	= getFormatCaseName(format) + dimensionsString + colorParams.testNameSuffix;
-							const TestParams	testParams		=
+							std::string	testCaseName	= getFormatCaseName(format) + dimensionsString + colorParams.testNameSuffix;
+							TestParams	testParams		=
 							{
 								true,															// bool								useSingleMipLevel;
 								VK_IMAGE_TYPE_2D,												// VkImageType						imageType;
@@ -2678,10 +2783,21 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 								imageLayerParamsToTest[imageLayerParamsIndex].isCube,			// bool								isCube;
 								SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE,						// SeparateDepthStencilLayoutMode	separateDepthStencilLayoutMode;
 								false,															// bool								isColorMultipleSubresourceRangeTest;
+								VK_SAMPLE_COUNT_1_BIT											// VkSampleCountFlagBits            imageSampleCount
 							};
 							colorAttachmentClearLayersGroup->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Attachment", testParams));
 							if (dimensions.width > 1)
 								partialColorAttachmentClearLayersGroup->addChild(new InstanceFactory1<PartialClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Partial Clear Color Attachment", testParams));
+
+							if (!imageLayerParamsToTest[imageLayerParamsIndex].isCube &&  !(imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange.layerCount == VK_REMAINING_ARRAY_LAYERS) && (dimensions.width > dimensions.height))
+							{
+								for (const auto& sampleCount : sampleCountsToTest)
+								{
+									const std::string msaaTestCaseName = testCaseName + "_" + getSampleCountName(sampleCount);
+									testParams.imageSampleCount = sampleCount;
+									colorAttachmentClearLayersGroup->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, msaaTestCaseName, "Clear Multisample Color Attachment", testParams));
+								}
+							}
 						}
 					}
 				}
@@ -2749,6 +2865,7 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 								imageLayerParamsToTest[imageLayerParamsIndex].isCube,			// bool								isCube;
 								SeparateDepthStencilLayoutMode(separateDepthStencilLayoutMode),	// SeparateDepthStencilLayoutMode	separateDepthStencilLayoutMode;
 								false,															// bool								isColorMultipleSubresourceRangeTest;
+								VK_SAMPLE_COUNT_1_BIT											// VkSampleCountFlagBits			imageSampleCount
 							};
 							depthStencilLayersGroup->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Depth/Stencil Attachment", testParams));
 							if (dimensions.width > 1)

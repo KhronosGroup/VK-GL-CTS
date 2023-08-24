@@ -76,9 +76,9 @@ void createWsiTests (tcu::TestCaseGroup* apiTests)
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "wsi", "WSI Tests", createWsiTests);
+	return createTestGroup(testCtx, name.c_str(), "WSI Tests", createWsiTests);
 }
 
 } // wsi

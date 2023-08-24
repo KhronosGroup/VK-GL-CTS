@@ -1573,8 +1573,6 @@ KHR-GLES31.core.texture_border_clamp.Texture3DR32UI
 KHR-GLES31.core.texture_border_clamp.Texture3DRGBA8
 KHR-GLES31.core.texture_border_clamp.Texture2DRGBA32FLinear
 KHR-GLES31.core.texture_border_clamp.Texture2DRGBA8Linear
-KHR-GLES31.core.texture_border_clamp.Texture2DDC32FLinear
-KHR-GLES31.core.texture_border_clamp.Texture2DDC16Linear
 KHR-GLES31.core.texture_border_clamp.Texture2DCompressedLinear
 KHR-GLES31.core.texture_border_clamp.Texture2DArrayRGBA32FLinear
 KHR-GLES31.core.texture_border_clamp.Texture2DArrayRGBA8Linear

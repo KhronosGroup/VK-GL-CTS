@@ -32,6 +32,37 @@ Khronos OpenGL / OpenGL ES Conformance Tests
 This repository includes Khronos OpenGL / OpenGL ES CTS under `external/openglcts` directory.
 For more information see [OpenGL / OpenGL ES CTS README](external/openglcts/README.md).
 
+Selecting a subset of targets to build by default
+--------------------------------
+
+When configuring the source code of VK-GL-CTS for running either Vulkan
+Conformance Tests or OpenGL(ES) Conformance Tests as described above, CMake will
+generate build files that, by default on desktop platforms, will build every
+possible project binary. This may be undesirable due the amount of time and disk
+space needed to perform the build.
+
+One way of selecting only a subset of the targets to be built is using CMake's
+target selection mechanism. For example, the following command will only build
+`deqp-vk`, the main Vulkan Conformance Tests binary:
+
+```
+cmake --build BUILD_DIRECTORY --target deqp-vk
+```
+
+When building only a subset of targets is the preferred default behavior for a
+given working copy or build directory, there's a second target selection
+mechanism that can be used to avoid passing the `--target` option every time:
+the `SELECTED_BUILD_TARGETS` CMake option. If set to a non-empty value, only the
+targets listed in that configuration option, separated by spaces, will be built.
+
+For example, passing `-DSELECTED_BUILD_TARGETS="deqp-vk deqp-vksc"` when
+configuring the project will make `cmake --build BUILD_DIRECTORY` act as if it
+had been passed `--target deqp-vk --target deqp-vksc` as additional arguments.
+
+**IMPORTANT**: Target subset selection may not have been thoroughly tested in
+all enviroments and situations, and it does not replace the instructions given
+for the purposes of creating a conformance submission.
+
 ANGLE for Android
 --------------------------------
 

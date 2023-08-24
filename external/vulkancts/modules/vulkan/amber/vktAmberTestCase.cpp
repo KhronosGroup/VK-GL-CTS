@@ -68,7 +68,7 @@ static amber::EngineConfig* createEngineConfig (Context& ctx, vk::VkDevice custo
 {
 	vk::VkDevice dev = customDevice != nullptr ? customDevice : ctx.getDevice();
 	vk::VkQueue  queue;
-	vk::DeviceDriver vk(ctx.getPlatformInterface(), ctx.getInstance(), dev);
+	vk::DeviceDriver vk(ctx.getPlatformInterface(), ctx.getInstance(), dev, ctx.getUsedApiVersion());
 	vk.getDeviceQueue(dev, ctx.getUniversalQueueFamilyIndex(), 0, &queue);
 
 	amber::EngineConfig* vkConfig = GetVulkanConfig(ctx.getInstance(),

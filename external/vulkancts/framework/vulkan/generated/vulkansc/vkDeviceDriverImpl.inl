@@ -1098,3 +1098,8 @@ void DeviceDriver::getCommandPoolMemoryConsumption (VkDevice device, VkCommandPo
 {
 	m_vk.getCommandPoolMemoryConsumption(device, commandPool, commandBuffer, pConsumption);
 }
+
+VkResult DeviceDriver::getScreenBufferPropertiesQNX (VkDevice device, const struct _screen_buffer* buffer, VkScreenBufferPropertiesQNX* pProperties) const
+{
+	return m_vk.getScreenBufferPropertiesQNX(device, buffer, pProperties);
+}

@@ -107,7 +107,7 @@ void TransferQueueCase::checkSupport (Context& context) const
 	if (result != VK_SUCCESS)
 	{
 		if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
-			TCU_THROW(NotSupportedError, "Error: format " + de::toString(m_params.imageFormat) + " does not support the required features");
+			TCU_THROW(NotSupportedError, "format " + de::toString(m_params.imageFormat) + " does not support the required features");
 		else
 			TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties returned unexpected error");
 	}

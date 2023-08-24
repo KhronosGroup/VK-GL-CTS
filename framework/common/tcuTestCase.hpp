@@ -88,6 +88,8 @@ inline bool isValidTestCaseNameChar (char c)
 		   c == '_' || c == '-';
 }
 
+class TestCaseGroup;
+
 /*--------------------------------------------------------------------*//*!
  * \brief Test case hierarchy node
  *
@@ -120,6 +122,7 @@ public:
 	const char*				getName					(void) const	{ return m_name.c_str();		}
 	const char*				getDescription			(void) const	{ return m_description.c_str(); }
 	void					getChildren				(std::vector<TestNode*>& children) const;
+	void					addRootChild			(const std::string& groupName, TestCaseGroup* (*createTestGroup)(tcu::TestContext& testCtx, const std::string& name));
 	void					addChild				(TestNode* node);
 	bool					empty					() const		{ return m_children.empty();	}
 

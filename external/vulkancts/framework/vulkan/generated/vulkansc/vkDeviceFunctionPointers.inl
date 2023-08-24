@@ -222,3 +222,4 @@ QueueSubmit2KHRFunc							queueSubmit2KHR;
 CmdWriteTimestamp2KHRFunc					cmdWriteTimestamp2KHR;
 GetQueueCheckpointData2NVFunc				getQueueCheckpointData2NV;
 GetCommandPoolMemoryConsumptionFunc			getCommandPoolMemoryConsumption;
+GetScreenBufferPropertiesQNXFunc			getScreenBufferPropertiesQNX;

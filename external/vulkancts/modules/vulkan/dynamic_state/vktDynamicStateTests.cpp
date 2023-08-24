@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Intel Corporation
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,8 +58,8 @@ void createChildren (tcu::TestCaseGroup* group, vk::PipelineConstructionType pip
 	group->addChild(new DynamicStateClearTests			(testCtx, pipelineConstructionType));
 	group->addChild(new DynamicStateDiscardTests		(testCtx, pipelineConstructionType));
 
-	if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
-		group->addChild(createDynamicStateComputeTests	(testCtx));
+	if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC || pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV)
+		group->addChild(createDynamicStateComputeTests	(testCtx, pipelineConstructionType));
 }
 
 static void cleanupGroup(tcu::TestCaseGroup*, vk::PipelineConstructionType)
@@ -68,16 +70,24 @@ static void cleanupGroup(tcu::TestCaseGroup*, vk::PipelineConstructionType)
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> monolithicGroup			(createTestGroup(testCtx, "monolithic",				"Monolithic pipeline tests",					createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC, cleanupGroup));
-	de::MovePtr<tcu::TestCaseGroup> pipelineLibraryGroup	(createTestGroup(testCtx, "pipeline_library",		"Graphics pipeline library tests",				createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY, cleanupGroup));
-	de::MovePtr<tcu::TestCaseGroup> fastLinkedLibraryGroup	(createTestGroup(testCtx, "fast_linked_library",	"Fast linked graphics pipeline library tests",	createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY, cleanupGroup));
+	de::MovePtr<tcu::TestCaseGroup> monolithicGroup					(createTestGroup(testCtx, "monolithic",						"Monolithic pipeline tests",					createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC, cleanupGroup));
+	de::MovePtr<tcu::TestCaseGroup> pipelineLibraryGroup			(createTestGroup(testCtx, "pipeline_library",				"Graphics pipeline library tests",				createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY, cleanupGroup));
+	de::MovePtr<tcu::TestCaseGroup> fastLinkedLibraryGroup			(createTestGroup(testCtx, "fast_linked_library",			"Fast linked graphics pipeline library tests",	createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY, cleanupGroup));
+	de::MovePtr<tcu::TestCaseGroup> shaderObjectUnlinkedSpirvGroup	(createTestGroup(testCtx, "shader_object_unlinked_spirv",	"Unlinked spirv shader object tests",			createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV));
+	de::MovePtr<tcu::TestCaseGroup> shaderObjectUnlinkedBinaryGroup	(createTestGroup(testCtx, "shader_object_unlinked_binary",	"Unlinked binary shader object tests",			createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_BINARY));
+	de::MovePtr<tcu::TestCaseGroup> shaderObjectLinkedSpirvGroup	(createTestGroup(testCtx, "shader_object_linked_spirv",		"Linked spirv shader object tests",				createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_LINKED_SPIRV));
+	de::MovePtr<tcu::TestCaseGroup> shaderObjectLinkedBinaryGroup	(createTestGroup(testCtx, "shader_object_linked_binary",	"Linked binary shader object tests",			createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_LINKED_BINARY));
 
-	de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, "dynamic_state", "Dynamic State Tests"));
+	de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), "Dynamic State Tests"));
 	mainGroup->addChild(monolithicGroup.release());
 	mainGroup->addChild(pipelineLibraryGroup.release());
 	mainGroup->addChild(fastLinkedLibraryGroup.release());
+	mainGroup->addChild(shaderObjectUnlinkedSpirvGroup.release());
+	mainGroup->addChild(shaderObjectUnlinkedBinaryGroup.release());
+	mainGroup->addChild(shaderObjectLinkedSpirvGroup.release());
+	mainGroup->addChild(shaderObjectLinkedBinaryGroup.release());
 	return mainGroup.release();
 }
 

@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Imagination Technologies Ltd.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,7 +133,7 @@ void ImageTest::checkSupport (Context& context) const
 	if (m_imageCount > 1)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_SAMPLED_IMAGE_ARRAY_DYNAMIC_INDEXING);
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 	checkSupportImageSamplingInstance(context, getImageSamplingInstanceParams(m_allocationKind, m_samplingType, m_imageViewType, m_imageFormat, m_imageSize, m_imageCount, m_arraySize));
 
 	if (m_pipelineProtectedAccess) {

@@ -32,10 +32,13 @@
 #include "deDefs.h"
 #include "deStringUtil.hpp"
 #include "vktApiFeatureInfo.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include <iomanip>
 
 namespace vkt
+{
+namespace info
 {
 
 namespace
@@ -191,7 +194,7 @@ const SizeUnit* getBestSizeUnit (deUint64 value)
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_units); ++ndx)
 	{
-		DE_ASSERT(ndx == DE_LENGTH_OF_ARRAY(s_units) ||
+		DE_ASSERT(ndx == (DE_LENGTH_OF_ARRAY(s_units) - 1) ||
 		          s_units[ndx].value > s_units[ndx + 1].value);
 		if (value >= s_units[ndx].value)
 			return &s_units[ndx];
@@ -241,18 +244,24 @@ tcu::TestStatus logPlatformMemoryLimits (Context& context)
 	return tcu::TestStatus::pass("Pass");
 }
 
-} // anonymous
-
 void createInfoTests (tcu::TestCaseGroup* testGroup)
 {
-	addFunctionCase(testGroup, "build",			"Build Info",				logBuildInfo);
-	addFunctionCase(testGroup, "device",		"Device Info",				logDeviceInfo);
-	addFunctionCase(testGroup, "platform",		"Platform Info",			logPlatformInfo);
-	addFunctionCase(testGroup, "memory_limits",	"Platform Memory Limits",	logPlatformMemoryLimits);
+	addFunctionCase(testGroup, "build", "Build Info", logBuildInfo);
+	addFunctionCase(testGroup, "device", "Device Info", logDeviceInfo);
+	addFunctionCase(testGroup, "platform", "Platform Info", logPlatformInfo);
+	addFunctionCase(testGroup, "memory_limits", "Platform Memory Limits", logPlatformMemoryLimits);
 
-	api::createFeatureInfoInstanceTests		(testGroup);
-	api::createFeatureInfoDeviceTests		(testGroup);
-	api::createFeatureInfoDeviceGroupTests	(testGroup);
+	api::createFeatureInfoInstanceTests(testGroup);
+	api::createFeatureInfoDeviceTests(testGroup);
+	api::createFeatureInfoDeviceGroupTests(testGroup);
 }
 
+} // anonymous
+
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
+{
+	return createTestGroup(testCtx, name.c_str(), "Build and Device Info Tests", createInfoTests);
+}
+
+} // info
 } // vkt

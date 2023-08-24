@@ -1867,9 +1867,9 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "clipping", "Clipping tests", addClippingTests);
+	return createTestGroup(testCtx, name.c_str(), "Clipping tests", addClippingTests);
 }
 
 } // clipping

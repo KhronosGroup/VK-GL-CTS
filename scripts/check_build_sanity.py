@@ -294,7 +294,7 @@ if __name__ == "__main__":
 
 		print("Running %s" % name)
 
-		allSteps = (PREREQUISITES if (args.skipPrerequisites == False) else []) + steps + (POST_CHECKS if (args.skipPrerequisites == False) else [])
+		allSteps = (PREREQUISITES if (args.skipPrerequisites == False) else []) + steps + (POST_CHECKS if (args.skipPostCheck == False) else [])
 		runSteps(allSteps)
 
 		print("All steps completed successfully")

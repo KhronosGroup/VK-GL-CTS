@@ -2175,7 +2175,7 @@ void DescriptorBufferTestCase::checkSupport (Context& context) const
 
 	if (m_params.variant == TestVariant::MULTIPLE)
 	{
-		const VkPhysicalDeviceVulkan13Properties& vulkan13properties = *findStructure<VkPhysicalDeviceVulkan13Properties>(&context.getDeviceProperties2());
+		const VkPhysicalDeviceVulkan13Properties& vulkan13properties = *findStructure<VkPhysicalDeviceVulkan13Properties>(&context.getDeviceVulkan13Properties());
 
 		if (m_params.bufferBindingCount > vulkan13properties.maxPerStageDescriptorInlineUniformBlocks)
 			TCU_THROW(NotSupportedError, "Test require more per-stage inline uniform block bindings count. Provided " + de::toString(vulkan13properties.maxPerStageDescriptorInlineUniformBlocks));
@@ -2737,7 +2737,7 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(
 		0,
 		&m_queue);
 
-	m_deviceInterface = newMovePtr<DeviceDriver>(context.getPlatformInterface(), context.getInstance(), *m_device);
+	m_deviceInterface = newMovePtr<DeviceDriver>(context.getPlatformInterface(), context.getInstance(), *m_device, context.getUsedApiVersion());
 
 	m_memoryProperties = vk::getPhysicalDeviceMemoryProperties(inst, physDevice);
 
@@ -5096,10 +5096,10 @@ tcu::TestStatus testLimits(Context& context)
 
 		if (physDeviceFeatures.robustBufferAccess)
 		{
-			CHECK_MAX_LIMIT(props, robustUniformTexelBufferDescriptorSize,	64);
-			CHECK_MAX_LIMIT(props, robustStorageTexelBufferDescriptorSize,	128);
-			CHECK_MAX_LIMIT(props, robustUniformBufferDescriptorSize,		64);
-			CHECK_MAX_LIMIT(props, robustStorageBufferDescriptorSize,		128);
+			CHECK_MAX_LIMIT(props, robustUniformTexelBufferDescriptorSize,	256);
+			CHECK_MAX_LIMIT(props, robustStorageTexelBufferDescriptorSize,	256);
+			CHECK_MAX_LIMIT(props, robustUniformBufferDescriptorSize,		256);
+			CHECK_MAX_LIMIT(props, robustStorageBufferDescriptorSize,		256);
 		}
 
 		if (features.descriptorBufferCaptureReplay)
@@ -5117,7 +5117,7 @@ tcu::TestStatus testLimits(Context& context)
 
 		if (hasRT)
 		{
-			CHECK_MAX_LIMIT_NON_ZERO(props, accelerationStructureDescriptorSize,	64);
+			CHECK_MAX_LIMIT_NON_ZERO(props, accelerationStructureDescriptorSize,	256);
 		}
 
 		CHECK_MAX_LIMIT_NON_ZERO(props, descriptorBufferOffsetAlignment,	256);
@@ -5128,15 +5128,15 @@ tcu::TestStatus testLimits(Context& context)
 		CHECK_MIN_LIMIT(props, maxEmbeddedImmutableSamplerBindings,		1);
 		CHECK_MIN_LIMIT(props, maxEmbeddedImmutableSamplers,			2032);
 
-		CHECK_MAX_LIMIT_NON_ZERO(props, samplerDescriptorSize,				64);
-		CHECK_MAX_LIMIT_NON_ZERO(props, combinedImageSamplerDescriptorSize,	128);
-		CHECK_MAX_LIMIT_NON_ZERO(props, sampledImageDescriptorSize,			64);
-		CHECK_MAX_LIMIT_NON_ZERO(props, storageImageDescriptorSize,			128);
-		CHECK_MAX_LIMIT_NON_ZERO(props, uniformTexelBufferDescriptorSize,	64);
-		CHECK_MAX_LIMIT_NON_ZERO(props, storageTexelBufferDescriptorSize,	128);
-		CHECK_MAX_LIMIT_NON_ZERO(props, uniformBufferDescriptorSize,		64);
-		CHECK_MAX_LIMIT_NON_ZERO(props, storageBufferDescriptorSize,		128);
-		CHECK_MAX_LIMIT(props, inputAttachmentDescriptorSize,				64);
+		CHECK_MAX_LIMIT_NON_ZERO(props, samplerDescriptorSize,				256);
+		CHECK_MAX_LIMIT_NON_ZERO(props, combinedImageSamplerDescriptorSize,	256);
+		CHECK_MAX_LIMIT_NON_ZERO(props, sampledImageDescriptorSize,			256);
+		CHECK_MAX_LIMIT_NON_ZERO(props, storageImageDescriptorSize,			256);
+		CHECK_MAX_LIMIT_NON_ZERO(props, uniformTexelBufferDescriptorSize,	256);
+		CHECK_MAX_LIMIT_NON_ZERO(props, storageTexelBufferDescriptorSize,	256);
+		CHECK_MAX_LIMIT_NON_ZERO(props, uniformBufferDescriptorSize,		256);
+		CHECK_MAX_LIMIT_NON_ZERO(props, storageBufferDescriptorSize,		256);
+		CHECK_MAX_LIMIT(props, inputAttachmentDescriptorSize,				256);
 
 		CHECK_MIN_LIMIT(props, maxSamplerDescriptorBufferRange,				((1u << 11) * props.samplerDescriptorSize));
 		CHECK_MIN_LIMIT(props, maxResourceDescriptorBufferRange,			(((1u << 20) - (1u << 15)) * maxResourceDescriptorSize));

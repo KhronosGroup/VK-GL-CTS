@@ -1815,7 +1815,7 @@ tcu::TestStatus createDestroyObjectTest (Context& context, typename Object::Para
 			physicalDevice,
 			queueFamilyIndex);
 
-		de::MovePtr<DeviceDriver> deviceInterface = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), customInstance, device.get()));
+		de::MovePtr<DeviceDriver> deviceInterface = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), customInstance, device.get(), context.getUsedApiVersion()));
 
 		const Environment	env	(context.getPlatformInterface(),
 								customInstance.getDriver(),

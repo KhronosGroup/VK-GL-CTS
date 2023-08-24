@@ -27,6 +27,7 @@ import glob
 import json
 import argparse
 import datetime
+import collections
 from lxml import etree
 
 scriptPath = os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts")
@@ -232,13 +233,14 @@ class Composite:
 		self.members		= members			# list of CompositeMember objects
 
 class FunctionArgument:
-	def __init__ (self, name, qualifiers, aType, pointer = None, secondPointerIsConst = False, arraySize = None):
+	def __init__ (self, name, qualifiers, aType, pointer = None, secondPointerIsConst = False, arraySize = None, len = None):
 		self.name					= name
 		self.qualifiers				= qualifiers
 		self.type					= aType
 		self.pointer				= pointer			# None, '*' or '**'
 		self.secondPointerIsConst	= secondPointerIsConst
 		self.arraySize				= arraySize
+		self.len					= len
 
 		# check if type should be swaped
 		substituteType(self)
@@ -451,13 +453,15 @@ class API:
 			nameNode	= paramNode.find("name")
 			typeNode	= paramNode.find("type")
 			starCount	= typeNode.tail.count('*')
+			lenAttr		= paramNode.get("len")
 			functionParams.append(FunctionArgument(
 				nameNode.text,
 				paramNode.text,
 				paramNode.find("type").text,
 				'*' * starCount if starCount > 0 else None,
 				'const' in typeNode.tail,
-				nameNode.tail
+				nameNode.tail,
+				lenAttr
 			))
 		# memorize whole function
 		self.functions.append(Function(
@@ -867,7 +871,7 @@ class API:
 						for fun in self.functions:
 							if removeFun == fun.name:
 								functionsToRemove.append(fun)
-								break;
+								break
 			for fun in functionsToRemove:
 				self.functions.remove(fun)
 			# sc is based on vk1.2 so we need to check features of vk1.3+
@@ -1438,22 +1442,46 @@ def writeFunctionPointers (api, filename, functionTypes):
 
 	writeInlFile(filename, INL_HEADER, indentLines(FunctionsYielder()))
 
+def getPromotedFunctions (api):
+	apiNum = 0 if api.apiName == "vulkan" else 1
+	promotedFunctions = collections.defaultdict(lambda: list())
+	for feature in api.features:
+		versionSplit = feature.name.split('_')
+		apiMajor = versionSplit[-2]
+		apiMinor = versionSplit[-1]
+		apituple = (apiNum, apiMajor, apiMinor)
+		for featureRequirement in feature.requirementsList:
+			for promotedFun in featureRequirement.commandList:
+				promotedFunctions[promotedFun].append(apituple)
+	return promotedFunctions
+
 def writeInitFunctionPointers (api, filename, functionTypes, cond = None):
+	promotedFunctions = getPromotedFunctions(api) if Function.TYPE_DEVICE in functionTypes else None
 	def makeInitFunctionPointers ():
 		for function in api.functions:
 			if function.getType() in functionTypes and (cond == None or cond(function)):
+				condition = ''
+				if function.getType() == Function.TYPE_DEVICE:
+					versionCheck = ''
+					if function.name in promotedFunctions:
+						for versionTuple in promotedFunctions[function.name]:
+							if len(versionCheck) > 0:
+								versionCheck += ' || '
+							versionCheck = 'usedApiVersion >= VK_MAKE_API_VERSION(%s, %s, %s, 0)' % versionTuple
+					if len(versionCheck) > 0:
+						condition = f"if ({versionCheck})\n    "
 				interfaceName		= getInterfaceName(function.name)
 				functionTypeName	= getFunctionTypeName(function.name)
-				yield f"m_vk.{interfaceName}\t= ({functionTypeName})\tGET_PROC_ADDR(\"{function.name}\");"
+				yield f"{condition}m_vk.{interfaceName} = ({functionTypeName}) GET_PROC_ADDR(\"{function.name}\");"
 				for alias in function.aliasList:
 					yield f"if (!m_vk.{interfaceName})"
-					yield f"    m_vk.{interfaceName}\t= ({functionTypeName})\tGET_PROC_ADDR(\"{alias}\");"
+					yield f"    m_vk.{interfaceName} = ({functionTypeName}) GET_PROC_ADDR(\"{alias}\");"
 					if function.getType() == Function.TYPE_INSTANCE and function.arguments[0].type == "VkPhysicalDevice":
 						interfaceName		= getInterfaceName(alias)
 						functionTypeName	= getFunctionTypeName(alias)
-						yield f"m_vk.{interfaceName}\t= ({functionTypeName})\tGET_PROC_ADDR(\"{alias}\");"
+						yield f"m_vk.{interfaceName} = ({functionTypeName}) GET_PROC_ADDR(\"{alias}\");"
 
-	lines = [line.replace('    ', '\t') for line in indentLines(makeInitFunctionPointers())]
+	lines = makeInitFunctionPointers()
 	writeInlFile(filename, INL_HEADER, lines)
 
 def writeFuncPtrInterfaceImpl (api, filename, functionTypes, className):
@@ -1874,7 +1902,7 @@ def writeNullDriverImpl (api, filename):
 				"vkGetPhysicalDeviceExternalBufferPropertiesKHR",
 				"vkGetPhysicalDeviceImageFormatProperties2KHR",
 				"vkGetMemoryAndroidHardwareBufferANDROID",
-                "vkCreateShadersEXT",
+				"vkCreateShadersEXT",
 			]
 
 		specialFuncs		= [f for f in api.functions if f.name in specialFuncNames]
@@ -1896,10 +1924,13 @@ def writeNullDriverImpl (api, filename):
 			yield "{"
 			yield "\tDE_UNREF(%s);" % function.arguments[-2].name
 
-			if getHandle(objectType).type == "VK_DEFINE_NON_DISPATCHABLE_HANDLE":
-				yield "\tVK_NULL_RETURN((*%s = allocateNonDispHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
+			if function.arguments[-1].len != None:
+				yield "\tVK_NULL_RETURN((allocateNonDispHandleArray<%s, %s>(%s, %s)));" % (objectType[2:], objectType, argsStr, function.arguments[-1].name)
 			else:
-				yield "\tVK_NULL_RETURN((*%s = allocateHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
+				if getHandle(objectType).type == "VK_DEFINE_NON_DISPATCHABLE_HANDLE":
+					yield "\tVK_NULL_RETURN((*%s = allocateNonDispHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
+				else:
+					yield "\tVK_NULL_RETURN((*%s = allocateHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
 			yield "}"
 			yield ""
 
@@ -2518,7 +2549,7 @@ def writeDeviceFeatures2(api, filename):
 	};
 
 	const Unique<VkDevice>			device			(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver				deviceDriver	(platformInterface, instance, device.get());
+	const DeviceDriver				deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion());
 	const VkQueue					queue			= getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
 
 	VK_CHECK(deviceDriver.queueWaitIdle(queue));
@@ -2578,7 +2609,7 @@ def generateDeviceFeaturesOrPropertiesDefs(api, FeaturesOrProperties):
 						structureTypeName = structureType.name
 						break
 				# use data in structextends to skip structures that should not be passed to vkGetPhysicalDeviceProperties(/Features)2 function
-				if structureType.structextends is None or structureExtendsPattern not in structureType.structextends:
+				if structureType is None or structureType.structextends is None or structureExtendsPattern not in structureType.structextends:
 					continue
 				# meke sure that structure was not added earlier - this handles special
 				# cases like VkPhysicalDeviceIDPropertiesKHR added by 3 extensions
@@ -2676,7 +2707,7 @@ def writeDeviceFeatures(api, dfDefs, filename):
 		extensionNameDefinition = extNameDef
 		if not extensionNameDefinition:
 			extensionNameDefinition = 'DECL{0}_{1}_EXTENSION_NAME'.format((sExtSuffix if sExtSuffix else ''), sType)
-			extensionDefines.append(f'#define {extensionNameDefinition} "not_existent_feature"')
+			extensionDefines.append(f'#define {extensionNameDefinition} "core_feature"')
 		# construct makeFeatureDesc template function definitions
 		sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_FEATURES{1}".format(sType, sVerSuffix + sExtSuffix)
 		makeFeatureDescDefinitions.append("template<> FeatureDesc makeFeatureDesc<{0}>(void) " \
@@ -2784,7 +2815,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest{4} (Context& context)
 {1}
 		}};
 		auto* supportedFeatures = reinterpret_cast<const {0}*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, {2}, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, {3}, emptyDeviceFeatures, {5});
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, {2}, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, {3}, emptyDeviceFeatures, {5}, context.getUsedApiVersion());
 	}}
 
 	if (numErrors > 0)
@@ -2946,6 +2977,8 @@ def genericDeviceFeaturesWriter(dfDefs, pattern, filename):
 	stream = []
 	for _, _, _, extStruct, _, _, _ in dfDefs:
 		nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("NV", "")
+		if extStruct == "VkPhysicalDeviceCooperativeMatrixFeaturesNV":
+			nameSubStr += "NV"
 		stream.append(pattern.format(extStruct, nameSubStr))
 	writeInlFile(filename, INL_HEADER, indentLines(stream))
 
@@ -2966,6 +2999,8 @@ def genericDevicePropertiesWriter(dfDefs, pattern, filename):
 	for _, _, _, extStruct, _, _, _ in dfDefs:
 		nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("NV", "")
 		if extStruct == "VkPhysicalDeviceRayTracingPropertiesNV":
+			nameSubStr += "NV"
+		if extStruct == "VkPhysicalDeviceCooperativeMatrixPropertiesNV":
 			nameSubStr += "NV"
 		stream.append(pattern.format(extStruct, nameSubStr))
 	writeInlFile(filename, INL_HEADER, indentLines(stream))
@@ -3338,6 +3373,13 @@ def writeApiExtensionDependencyInfo(api, filename):
 					depList[idx] = depList[idx].replace('+', ' && ')
 				elif 'VK_' in depPart:
 					if 'VK_VERSION' in depPart:
+						if idx > 0 and ' || ' in depList[idx-1]:
+							# some vk.xml entries include "promoted to" version preceded by logical OR operator in the extension "depends" attribute
+							# script don't rely on this optional information and will find "promoted to" versions for all dependencies of all extensions in the below code
+							# accordingly the one from vk.xml is ignored to avoid redundant isCompatibile() checks
+							depList[idx-1] = depList[idx-1].replace(' || ', '')
+							depList[idx] = ''
+							continue
 						# when dependency is vulkan version then replace it with proper condition
 						depList[idx] = f'isCompatibile({depPart[-3]}, {depPart[-1]}, v)'
 					else:
@@ -3395,6 +3437,41 @@ def writeApiExtensionDependencyInfo(api, filename):
 			yield '\tstd::make_tuple({}, {}, {}, {}),'.format(version, apiVariant, major, minor)
 		yield '};'
 
+	def parseExtensionDependencies(extDeps, ext):
+		major, minor = 1, 0
+		requiredVerFound = False;
+		# return in case nothing more left to be processed
+		if extDeps is None or extDeps == "":
+			return major, minor, requiredVerFound
+		ungrpPartLen = 0
+		versionPattern = "[A-Z]+_VERSION_([0-9]+)_([0-9]+)"
+		ungroupedPattern = r"^.*?\(+|^.*?$"
+		# look for non-grouped part, it may include the required vulkan version
+		ungroupPart = re.search(ungroupedPattern, extDeps)
+		if ungroupPart is not None and ungroupPart[0].replace(r"(", "") != "":
+			ungrpPartLen = len(ungroupPart[0].replace(r"(", ""))
+			# is specific version explicitly requested?
+			match = re.search(versionPattern, ungroupPart[0])
+			if match is not None:
+				if len(match[0]) != len(extDeps):
+					# there is more than just a version; check if it's accompanied by AND operator(s)
+					ext_pattern = ".*\+*"+versionPattern+"\++.*|.*\++"+versionPattern+"\+*.*"
+					match = re.search(ext_pattern, ungroupPart[0])
+				if match is not None:
+					# specific version is explicitly requested
+					major, minor = int(match[1]), int(match[2])
+					return major, minor, True
+			# no explicit version is requested, continue parsing the remaining part
+			extDeps = extDeps[ungrpPartLen:]
+		groupedPattern = r"(.*)\+|(.*)$"
+		match = re.search(groupedPattern, extDeps)
+		if match is not None and match[0] != "":
+			# groups may include the dependency "promoted to" versions accompanied by OR operator
+			# but they don't include the extension explicit required version; continue parsing the remaining part
+			groupLength = len(match[0])
+			major, minor, requiredVerFound = parseExtensionDependencies(extDeps[groupLength:], ext)
+		return major, minor, requiredVerFound
+
 	def genRequiredCoreVersions():
 		yield 'static const std::tuple<deUint32, deUint32, const char*>\textensionRequiredCoreVersion[]\t ='
 		yield '{'
@@ -3405,25 +3482,22 @@ def writeApiExtensionDependencyInfo(api, filename):
 				continue
 			major, minor = 1, 0
 			if ext.depends is not None:
-				match = re.search(versionPattern, ext.depends)
-				if match is None:
+				major, minor, requiredVerFound = parseExtensionDependencies(ext.depends, ext)
+				if not requiredVerFound:
 					# find all extensions that are dependencies of this one
 					matches = re.findall("VK_\w+", ext.depends, re.M)
 					for m in matches:
 						for de in api.extensions:
 							if de.name == m:
 								if de.depends is not None:
-									# check if this dependency has its own dependency from vulkan version
-									match = re.search(versionPattern, de.depends)
-									if match:
-										newMajor, newMinor = int(match[1]), int(match[2])
+									# check if the dependency states explicitly the required vulkan version and pick the higher one
+									newMajor, newMinor, requiredVerFound = parseExtensionDependencies(de.depends, de)
+									if requiredVerFound:
 										if newMajor > major:
 											major, minor = newMajor, newMinor
-										elif newMajor == major:
+										elif newMajor == major and newMinor > minor:
 											minor = newMinor
 								break
-				else:
-					major, minor = int(match[1]), int(match[2])
 			yield '\tstd::make_tuple({}, {}, "{}"),'.format(major, minor, ext.name)
 		yield '};'
 
@@ -3500,7 +3574,7 @@ def writeGetDeviceProcAddr(api, filename):
 		DE_NULL,									//  const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	const Unique<VkDevice>					device			(createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get());
+	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion());
 
 	const std::vector<std::string> loaderExceptions{
 		"vkSetDebugUtilsObjectNameEXT",

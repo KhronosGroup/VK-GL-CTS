@@ -1803,10 +1803,10 @@ tcu::TestCaseGroup* createPermutedIndexTests (tcu::TestContext& testCtx)
 
 }	// anonymous
 
-tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx, const std::string& name)
 {
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
-			testCtx, "memory_model", "Memory model tests"));
+			testCtx, name.c_str(), "Memory model tests"));
 
 	typedef struct
 	{

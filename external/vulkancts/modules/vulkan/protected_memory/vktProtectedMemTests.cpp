@@ -47,9 +47,9 @@ namespace vkt
 namespace ProtectedMem
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> protectedTests (new tcu::TestCaseGroup(testCtx, "protected_memory", "Protected Memory Tests"));
+	de::MovePtr<tcu::TestCaseGroup> protectedTests (new tcu::TestCaseGroup(testCtx, name.c_str(), "Protected Memory Tests"));
 
 	// Attachment test case group
 	{

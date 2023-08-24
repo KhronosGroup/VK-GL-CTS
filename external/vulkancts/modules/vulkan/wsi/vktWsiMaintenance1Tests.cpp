@@ -224,7 +224,7 @@ struct DeviceHelper
 														 requireSwapchainMaintenance1,
 														 requireDeviceGroup,
 														 context.getTestContext().getCommandLine().isValidationEnabled()))
-		, vkd						(context.getPlatformInterface(), instance, *device)
+		, vkd						(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion())
 		, queue						(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
 	{
 	}
@@ -625,17 +625,17 @@ deUint32 getIterations(std::vector<VkPresentModeKHR> presentModes,
 		}
 	}
 
-	// Return an iteration count that is as high as possible while keeping the test time reasonable.
+	// Return an iteration count that is as high as possible while keeping the test time and memory usage reasonable.
 	//
 	// - If FIFO is used, limit to 120 (~2s on 60Hz)
-	// - Else, if immediate/mailbox is used, limit to 3000
-	// - Else, if shared is used, limit to 5000
+	// - Else, limit to 1000
 
 	if (hasFifo)
 		return testResizesWindowsFrequently ? 60 : 120;
 
 	(void)hasShared;
-	deUint32 iterations = hasNoVsync ? 3000 : 5000;
+	(void)hasNoVsync;
+	deUint32 iterations = 1000;
 
 	// If the test resizes windows frequently, reduce the testing time as that's a very slow operation.
 	if (testResizesWindowsFrequently)
@@ -1046,7 +1046,7 @@ tcu::TestStatus presentFenceTest(Context& context, const PresentFenceTestConfig 
 				// Check previous presents; if any is signaled, immediatey destroy its wait semaphore
 				while (nextUnfinishedPresent[j] < i)
 				{
-					if (vkd.getFenceStatus(device, **presentFences[nextUnfinishedPresent[j] * surfaceCount + j]) != VK_NOT_READY)
+					if (vkd.getFenceStatus(device, **presentFences[nextUnfinishedPresent[j] * surfaceCount + j]) == VK_NOT_READY)
 						break;
 
 					presentSems[nextUnfinishedPresent[j]].clear();

@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2022 The Khronos Group Inc.
  * Copyright (c) 2022 Google Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -493,6 +495,29 @@ void GenerateTriangles (deUint32 tilesX, deUint32 tilesY, vector<Vec4> colors, c
 	}
 }
 
+VkImageCreateInfo makeImageCreateInfo (const tcu::IVec2& size, const VkFormat format, const VkImageUsageFlags usage)
+{
+	const VkImageCreateInfo imageInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,		// VkStructureType          sType;
+		DE_NULL,									// const void*              pNext;
+		(VkImageCreateFlags)0,						// VkImageCreateFlags       flags;
+		VK_IMAGE_TYPE_2D,							// VkImageType              imageType;
+		format,										// VkFormat                 format;
+		makeExtent3D(size.x(), size.y(), 1),		// VkExtent3D               extent;
+		1u,											// uint32_t                 mipLevels;
+		1u,											// uint32_t                 arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits    samples;
+		VK_IMAGE_TILING_OPTIMAL,					// VkImageTiling            tiling;
+		usage,										// VkImageUsageFlags        usage;
+		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode            sharingMode;
+		0u,											// uint32_t                 queueFamilyIndexCount;
+		DE_NULL,									// const uint32_t*          pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout            initialLayout;
+	};
+	return imageInfo;
+}
+
 static TestStatus robustness1TestFn (TestContext& testCtx, Context& context, const VkDevice device, DeviceDriverPtr	deviceDriver, const vector<InputInfo>& inputs, const IVec2& renderSize)
 {
 	const auto					colorFormat			= VK_FORMAT_R8G8B8A8_UNORM;
@@ -509,7 +534,7 @@ static TestStatus robustness1TestFn (TestContext& testCtx, Context& context, con
 	vector<VkImageView>			attachmentViews;
 	VkImageCreateInfo			imageCreateInfos[]	=
 	{
-		pipeline::makeImageCreateInfo(renderSize, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT),
+		makeImageCreateInfo(renderSize, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT),
 	};
 	for(const auto& params : imageCreateInfos)
 	{
@@ -866,9 +891,9 @@ TestInstance *Robustness1AccessTest::createInstance (Context &context) const
 {
 	Move<VkDevice>	device = createRobustBufferAccessDevice(context);
 #ifndef CTS_USES_VULKANSC
-	DeviceDriverPtr	deviceDriver = DeviceDriverPtr (new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device));
+	DeviceDriverPtr	deviceDriver = DeviceDriverPtr (new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion()));
 #else
-	DeviceDriverPtr	deviceDriver = DeviceDriverPtr (new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties()), vk::DeinitDeviceDeleter( context.getResourceInterface().get(), *device ));
+	DeviceDriverPtr	deviceDriver = DeviceDriverPtr (new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter( context.getResourceInterface().get(), *device ));
 #endif // CTS_USES_VULKANSC
 
 	return new Robustness1AccessInstance<Move<VkDevice>>(m_testCtx, context, device, deviceDriver, m_testInfo);

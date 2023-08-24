@@ -498,3 +498,8 @@ VkResult InstanceDriver::getPhysicalDeviceOpticalFlowImageFormatsNV (VkPhysicalD
 {
 	return m_vk.getPhysicalDeviceOpticalFlowImageFormatsNV(physicalDevice, pOpticalFlowImageFormatInfo, pFormatCount, pImageFormatProperties);
 }
+
+VkResult InstanceDriver::getPhysicalDeviceCooperativeMatrixPropertiesKHR (VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesKHR* pProperties) const
+{
+	return m_vk.getPhysicalDeviceCooperativeMatrixPropertiesKHR(physicalDevice, pPropertyCount, pProperties);
+}

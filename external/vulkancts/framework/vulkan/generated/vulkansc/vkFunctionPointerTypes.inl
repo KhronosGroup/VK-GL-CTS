@@ -318,3 +318,4 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* QueueSubmit2KHRFunc)												(VkQ
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdWriteTimestamp2KHRFunc)											(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkQueryPool queryPool, uint32_t query);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetQueueCheckpointData2NVFunc)										(VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointData2NV* pCheckpointData);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetCommandPoolMemoryConsumptionFunc)								(VkDevice device, VkCommandPool commandPool, VkCommandBuffer commandBuffer, VkCommandPoolMemoryConsumption* pConsumption);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetScreenBufferPropertiesQNXFunc)									(VkDevice device, const struct _screen_buffer* buffer, VkScreenBufferPropertiesQNX* pProperties);

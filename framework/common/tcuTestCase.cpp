@@ -23,6 +23,7 @@
 
 #include "tcuTestCase.hpp"
 #include "tcuPlatform.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "deString.h"
 
@@ -73,6 +74,16 @@ void TestNode::getChildren (vector<TestNode*>& res) const
 	res.clear();
 	for (int i = 0; i < (int)m_children.size(); i++)
 		res.push_back(m_children[i]);
+}
+
+void TestNode::addRootChild (const std::string& groupName, TestCaseGroup* (*createTestGroup)(tcu::TestContext& testCtx, const std::string& name))
+{
+	// Skip tests not in case list
+	const auto caseListFilter = m_testCtx.getCommandLine().createCaseListFilter(m_testCtx.getArchive());
+	if (!caseListFilter->checkTestGroupName((m_name + "." + groupName).c_str()))
+		return;
+
+	return addChild(createTestGroup(m_testCtx, groupName));
 }
 
 void TestNode::addChild (TestNode* node)
