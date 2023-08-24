@@ -179,6 +179,28 @@ public:
     }
 };
 
+// VK_KHR_display
+
+template <>
+struct TypeTraits<TYPE_DIRECT>
+{
+    typedef VkDisplayKHR NativeDisplayType;
+};
+
+struct DirectDisplayInterface : public DisplayInterface<TYPE_DIRECT>
+{
+public:
+    DirectDisplayInterface(void) : DisplayInterface(VK_NULL_HANDLE)
+    {
+    }
+    virtual void initializeDisplay(const InstanceInterface &vki, VkInstance instance, const tcu::CommandLine &cmdLine)
+    {
+        DE_UNREF(vki);
+        DE_UNREF(instance);
+        DE_UNREF(cmdLine);
+    }
+};
+
 // VK_KHR_mir_surface
 
 // VK_KHR_android_surface

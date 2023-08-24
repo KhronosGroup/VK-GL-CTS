@@ -212,6 +212,7 @@ enum Type
     TYPE_METAL,
     TYPE_HEADLESS,
     TYPE_DIRECT_DRM,
+    TYPE_DIRECT,
 
     TYPE_LAST
 };

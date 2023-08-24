@@ -29,6 +29,7 @@ vk-main-2024-03-01/image/non-uniform-offset-sample.txt
 vk-main-2024-03-01/image/queue-transfer.txt
 vk-main-2024-03-01/image/store.txt
 vk-main-2024-03-01/image/subresource-layout.txt
+vk-main-2024-03-01/image/swapchain-mutable.txt
 vk-main-2024-03-01/image/texel-view-compatible.txt
 vk-main-2024-03-01/image-processing.txt
 vk-main-2024-03-01/memory.txt
