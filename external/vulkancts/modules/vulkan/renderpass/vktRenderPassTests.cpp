@@ -40,6 +40,7 @@
 #ifndef CTS_USES_VULKANSC
 #include "vktRenderPassLoadStoreOpNoneTests.hpp"
 #include "vktDynamicRenderingTests.hpp"
+#include "vktDynamicRenderingDepthStencilResolveTests.hpp"
 #endif // CTS_USES_VULKANSC
 #include "vktRenderPassDepthStencilWriteConditionsTests.hpp"
 #include "vktRenderPassSubpassMergeFeedbackTests.hpp"
@@ -7970,12 +7971,14 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, co
 #endif // CTS_USES_VULKANSC
 
 		renderingTests->addChild(createRenderPass2DepthStencilResolveTests(testCtx));
+
 		break;
 
 #ifndef CTS_USES_VULKANSC
 	case RENDERING_TYPE_DYNAMIC_RENDERING:
 		suballocationTestGroup->addChild(createDynamicRenderingMultisampleResolveTests(testCtx, groupParams));
 		suballocationTestGroup->addChild(createDynamicRenderingSparseRenderTargetTests(testCtx, groupParams));
+		renderingTests->addChild(createDynamicRenderingDepthStencilResolveTests(testCtx, groupParams));
 
 		if (groupParams->useSecondaryCmdBuffer == false)
 		{
