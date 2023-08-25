@@ -32,7 +32,7 @@ namespace vkt
 namespace RayQuery
 {
 
-	tcu::TestCaseGroup* createPositionFetchTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createPositionFetchTests (tcu::TestContext& testCtx);
 
 } // RayQuery
 } // vkt

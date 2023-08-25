@@ -33,7 +33,7 @@ namespace vkt
 namespace cts_amber
 {
 
-tcu::TestCaseGroup*		createGraphicsFuzzTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*		createGraphicsFuzzTests	(tcu::TestContext& testCtx, const std::string& name);
 
 } // cts_amber
 } // vkt

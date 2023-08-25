@@ -346,7 +346,7 @@ void createRandomCaseGroup (tcu::TestCaseGroup* parentGroup, tcu::TestContext& t
 class UniformBlockTests : public tcu::TestCaseGroup
 {
 public:
-							UniformBlockTests		(tcu::TestContext& testCtx);
+							UniformBlockTests		(tcu::TestContext& testCtx, const std::string& name);
 							~UniformBlockTests		(void);
 
 	void					init					(void);
@@ -356,8 +356,8 @@ private:
 	UniformBlockTests&		operator=				(const UniformBlockTests& other);
 };
 
-UniformBlockTests::UniformBlockTests (tcu::TestContext& testCtx)
-	: TestCaseGroup(testCtx, "ubo", "Uniform Block tests")
+UniformBlockTests::UniformBlockTests (tcu::TestContext& testCtx, const std::string& name)
+	: TestCaseGroup(testCtx, name.c_str(), "Uniform Block tests")
 {
 }
 
@@ -935,9 +935,9 @@ void UniformBlockTests::init (void)
 
 } // anonymous
 
-tcu::TestCaseGroup*	createTests	(tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createTests	(tcu::TestContext& testCtx, const std::string& name)
 {
-	return new UniformBlockTests(testCtx);
+	return new UniformBlockTests(testCtx, name);
 }
 
 } // ubo

@@ -452,6 +452,13 @@ inline VkIndirectCommandsStreamNV makeIndirectCommandsStreamNV (VkBuffer buffer,
 	return res;
 }
 
+inline VkBindPipelineIndirectCommandNV makeBindPipelineIndirectCommandNV (VkDeviceAddress pipelineAddress)
+{
+	VkBindPipelineIndirectCommandNV res;
+	res.pipelineAddress	= pipelineAddress;
+	return res;
+}
+
 inline VkConformanceVersion makeConformanceVersion (uint8_t major, uint8_t minor, uint8_t subminor, uint8_t patch)
 {
 	VkConformanceVersion res;

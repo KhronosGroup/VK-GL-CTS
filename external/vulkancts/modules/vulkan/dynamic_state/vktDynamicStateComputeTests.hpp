@@ -6,6 +6,8 @@
  *
  * Copyright (c) 2021 The Khronos Group Inc.
  * Copyright (c) 2021 Valve Corporation.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +34,7 @@ namespace vkt
 namespace DynamicState
 {
 
-tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
 void cleanupDevice();
 
 } // DynamicState

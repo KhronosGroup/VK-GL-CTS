@@ -1809,7 +1809,7 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
 		};
 
 		vk::Move<VkDevice>			customDevice	= createDevice(vkp, m_context.getInstance(), vki, pd, &deviceInfo);
-		de::MovePtr<DeviceDriver>	customDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, m_context.getInstance(), *customDevice));
+		de::MovePtr<DeviceDriver>	customDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, m_context.getInstance(), *customDevice, m_context.getUsedApiVersion()));
 		de::MovePtr<Allocator>		customAllocator	= de::MovePtr<Allocator>(new SimpleAllocator(*customDriver, *customDevice, getPhysicalDeviceMemoryProperties(vki, pd)));
 
 		device						= *customDevice;

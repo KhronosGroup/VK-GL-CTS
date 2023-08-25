@@ -101,12 +101,19 @@ namespace vk
 				const char *featureName = featureStructCreationData.name;
 
 				// check if this feature is available on current device
-				if (de::contains(allDeviceExtensions.begin(), allDeviceExtensions.end(), featureName) &&
+				if ((de::contains(allDeviceExtensions.begin(), allDeviceExtensions.end(), featureName) ||
+					std::string(featureName) == "core_feature") &&
 					verifyFeatureAddCriteria(featureStructCreationData, deviceExtensionProperties))
 				{
 					FeatureStructWrapperBase *p = (*featureStructCreationData.creatorFunction)();
 					if (p == DE_NULL)
 						continue;
+
+#ifdef CTS_USES_VULKANSC
+					// m_vulkanSC10Features was already added above
+					if (p->getFeatureDesc().sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES)
+						continue;
+#endif // CTS_USES_VULKANSC
 
 					// if feature struct is part of VkPhysicalDeviceVulkan1{1,2,3}Features
 					// we dont add it to the chain but store and fill later from blob data

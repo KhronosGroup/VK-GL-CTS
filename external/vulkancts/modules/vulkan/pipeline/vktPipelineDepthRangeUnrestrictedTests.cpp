@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2019 The Khronos Group Inc.
  * Copyright (c) 2019 Valve Corporation.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -369,8 +371,9 @@ Move<VkImage> createImage2DAndBindMemory (Context&							context,
 
 	return image;
 }
-Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
+RenderPassWrapper makeRenderPass (const DeviceInterface&				vk,
 								   const VkDevice						device,
+								   const PipelineConstructionType		pipelineConstructionType,
 								   const VkFormat						colorFormat,
 								   const VkFormat						depthStencilFormat,
 								   const VkAttachmentLoadOp				loadOperationColor,
@@ -453,7 +456,7 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
 		DE_NULL																		// const VkSubpassDependency*        pDependencies
 	};
 
-	return createRenderPass(vk, device, &renderPassInfo, DE_NULL);
+	return RenderPassWrapper(pipelineConstructionType, vk, device, &renderPassInfo);
 }
 
 // Test Classes
@@ -465,19 +468,16 @@ public:
 	virtual						~DepthRangeUnrestrictedTestInstance		(void);
 	virtual tcu::TestStatus		iterate									(void);
 protected:
-			void				prepareRenderPass						(VkRenderPass renderPass, VkFramebuffer framebuffer, VkPipeline pipeline);
+			void				prepareRenderPass						(RenderPassWrapper& renderPass, GraphicsPipelineWrapper& pipeline);
 			void				prepareCommandBuffer					(void);
 			void				preparePipelineWrapper					(GraphicsPipelineWrapper& gpw, VkRenderPass renderpass);
-			void				bindShaderStage							(VkShaderStageFlagBits					stage,
-																		 const char*							sourceName,
-																		 const char*							entryName);
 			tcu::TestStatus		verifyTestResult						(void);
 protected:
 	const DepthRangeUnrestrictedParam	m_param;
 	deBool								m_extensions;
 	const tcu::UVec2					m_renderSize;
 	const VkFormat						m_colorFormat;
-	Move<VkPipelineLayout>				m_pipelineLayout;
+	PipelineLayoutWrapper				m_pipelineLayout;
 
 	Move<VkImage>						m_depthImage;
 	de::MovePtr<Allocation>				m_depthImageAlloc;
@@ -489,16 +489,15 @@ protected:
 	de::MovePtr<Allocation>				m_vertexBufferMemory;
 	std::vector<Vertex4RGBA>			m_vertices;
 
-	Move<VkRenderPass>					m_renderPass;
+	RenderPassWrapper					m_renderPass;
 	Move<VkCommandPool>					m_cmdPool;
 	Move<VkCommandBuffer>				m_cmdBuffer;
 	Move<VkImage>						m_colorImage;
 	Move<VkImageView>					m_colorAttachmentView;
-	Move<VkFramebuffer>					m_framebuffer;
 	GraphicsPipelineWrapper				m_pipeline;
 
-	Move<VkShaderModule>				m_vertModule;
-	Move<VkShaderModule>				m_fragModule;
+	ShaderWrapper						m_vertModule;
+	ShaderWrapper						m_fragModule;
 };
 
 void DepthRangeUnrestrictedTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper& gpw, VkRenderPass renderpass)
@@ -655,18 +654,18 @@ void DepthRangeUnrestrictedTestInstance::preparePipelineWrapper (GraphicsPipelin
 	   .setupVertexInputState(&vertexInputStateParams)
 	   .setupPreRasterizationShaderState(viewport,
 			scissor,
-			*m_pipelineLayout,
+			m_pipelineLayout,
 		   renderpass,
 			0u,
-			*m_vertModule,
+			m_vertModule,
 			&rasterStateParams)
-	   .setupFragmentShaderState(*m_pipelineLayout, renderpass, 0u, *m_fragModule, &depthStencilStateParams)
+	   .setupFragmentShaderState(m_pipelineLayout, renderpass, 0u, m_fragModule, &depthStencilStateParams)
 	   .setupFragmentOutputState(renderpass, 0u, &colorBlendStateParams)
-	   .setMonolithicPipelineLayout(*m_pipelineLayout)
+	   .setMonolithicPipelineLayout(m_pipelineLayout)
 	   .buildPipeline();
 }
 
-void DepthRangeUnrestrictedTestInstance::prepareRenderPass (VkRenderPass renderPass, VkFramebuffer framebuffer, VkPipeline pipeline)
+void DepthRangeUnrestrictedTestInstance::prepareRenderPass (RenderPassWrapper& renderPass, GraphicsPipelineWrapper& pipeline)
 {
 	const DeviceInterface&	vk				 = m_context.getDeviceInterface();
 
@@ -676,9 +675,9 @@ void DepthRangeUnrestrictedTestInstance::prepareRenderPass (VkRenderPass renderP
 		m_param.depthBufferClearValue,
 	};
 
-	beginRenderPass(vk, *m_cmdBuffer, renderPass, framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), 2u, attachmentClearValues);
+	renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), 2u, attachmentClearValues);
 
-	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+	pipeline.bind(*m_cmdBuffer);
 	VkDeviceSize offsets = 0u;
 	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &offsets);
 
@@ -687,7 +686,18 @@ void DepthRangeUnrestrictedTestInstance::prepareRenderPass (VkRenderPass renderP
 		VkViewport	viewport	= makeViewport(m_renderSize);
 		viewport.minDepth		= m_param.viewportMinDepth;
 		viewport.maxDepth		= m_param.viewportMaxDepth;
-		vk.cmdSetViewport(*m_cmdBuffer, 0u, 1u, &viewport);
+		if (vk::isConstructionTypeShaderObject(m_param.pipelineConstructionType))
+		{
+#ifndef CTS_USES_VULKANSC
+			vk.cmdSetViewportWithCount(*m_cmdBuffer, 1u, &viewport);
+#else
+			vk.cmdSetViewportWithCountEXT(*m_cmdBuffer, 1u, &viewport);
+#endif
+		}
+		else
+		{
+			vk.cmdSetViewport(*m_cmdBuffer, 0u, 1u, &viewport);
+		}
 	}
 
 	if (m_param.viewportDepthBoundsMode & TEST_MODE_DEPTH_BOUNDS_DYNAMIC)
@@ -696,7 +706,7 @@ void DepthRangeUnrestrictedTestInstance::prepareRenderPass (VkRenderPass renderP
 	if (!m_vertices.empty() && !m_param.testClearValueOnly)
 		vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1u, 0u, 0u);
 
-	endRenderPass(vk, *m_cmdBuffer);
+	renderPass.end(vk, *m_cmdBuffer);
 }
 
 void DepthRangeUnrestrictedTestInstance::prepareCommandBuffer (void)
@@ -708,7 +718,7 @@ void DepthRangeUnrestrictedTestInstance::prepareCommandBuffer (void)
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
 		0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers), m_imageLayoutBarriers);
 
-	prepareRenderPass(*m_renderPass, *m_framebuffer, m_pipeline.getPipeline());
+	prepareRenderPass(m_renderPass, m_pipeline);
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 }
@@ -720,7 +730,7 @@ DepthRangeUnrestrictedTestInstance::DepthRangeUnrestrictedTestInstance	(Context&
 	, m_extensions			(m_context.requireDeviceFunctionality("VK_EXT_depth_range_unrestricted"))
 	, m_renderSize			(tcu::UVec2(32,32))
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_pipeline			(m_context.getDeviceInterface(), m_context.getDevice(), param.pipelineConstructionType)
+	, m_pipeline			(m_context.getInstanceInterface(), m_context.getDeviceInterface(), m_context.getPhysicalDevice(), m_context.getDevice(), m_context.getDeviceExtensions(), param.pipelineConstructionType)
 {
 	const DeviceInterface&	vk				 = m_context.getDeviceInterface();
 	const VkDevice			vkDevice		 = m_context.getDevice();
@@ -752,7 +762,7 @@ DepthRangeUnrestrictedTestInstance::DepthRangeUnrestrictedTestInstance	(Context&
 	}
 
 	// Create render pass
-	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat, m_param.depthFormat, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_LOAD_OP_CLEAR);
+	m_renderPass = makeRenderPass(vk, vkDevice, m_param.pipelineConstructionType, m_colorFormat, m_param.depthFormat, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_LOAD_OP_CLEAR);
 
 	const VkComponentMapping	ComponentMappingRGBA = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
 	// Create color image
@@ -851,6 +861,10 @@ DepthRangeUnrestrictedTestInstance::DepthRangeUnrestrictedTestInstance	(Context&
 
 	// Create framebuffer
 	{
+		std::vector<VkImage> images = {
+			*m_colorImage,
+			*m_depthImage,
+		};
 		VkImageView attachmentBindInfos[2] =
 		{
 			*m_colorAttachmentView,
@@ -870,12 +884,12 @@ DepthRangeUnrestrictedTestInstance::DepthRangeUnrestrictedTestInstance	(Context&
 			1u,													// deUint32						layers;
 		};
 
-		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
+		m_renderPass.createFramebuffer(vk, vkDevice, &framebufferParams, images);
 	}
 
 	// Create shader modules
-	m_vertModule = createShaderModule(vk, vkDevice, context.getBinaryCollection().get("vert"), 0);
-	m_fragModule = createShaderModule(vk, vkDevice, context.getBinaryCollection().get("frag"), 0);
+	m_vertModule = ShaderWrapper(vk, vkDevice, context.getBinaryCollection().get("vert"), 0);
+	m_fragModule = ShaderWrapper(vk, vkDevice, context.getBinaryCollection().get("frag"), 0);
 
 	// Create pipeline layout
 	{
@@ -890,7 +904,7 @@ DepthRangeUnrestrictedTestInstance::DepthRangeUnrestrictedTestInstance	(Context&
 			DE_NULL												// const VkPushConstantRange*		pPushConstantRanges;
 		};
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_pipelineLayout = PipelineLayoutWrapper(m_param.pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 	}
 
 	// Create pipeline
@@ -1102,8 +1116,7 @@ protected:
 			void				prepareCommandBuffer							(bool firstDraw);
 
 protected:
-			Move<VkRenderPass>					m_renderPassSecondDraw;
-			Move<VkFramebuffer>					m_framebufferSecondDraw;
+			RenderPassWrapper					m_renderPassSecondDraw;
 			GraphicsPipelineWrapper				m_pipelineSecondDraw;
 			std::vector<bool>					m_vertexWasRendered;
 
@@ -1112,16 +1125,20 @@ protected:
 DepthBoundsRangeUnrestrictedTestInstance::DepthBoundsRangeUnrestrictedTestInstance	(Context&							context,
 																					 const DepthRangeUnrestrictedParam	param)
 	: DepthRangeUnrestrictedTestInstance(context, param)
-	, m_pipelineSecondDraw				(m_context.getDeviceInterface(), m_context.getDevice(), param.pipelineConstructionType)
+	, m_pipelineSecondDraw				(m_context.getInstanceInterface(), m_context.getDeviceInterface(), m_context.getPhysicalDevice(), m_context.getDevice(), m_context.getDeviceExtensions(), param.pipelineConstructionType)
 {
 	const DeviceInterface&	vk				 = m_context.getDeviceInterface();
 	const VkDevice			vkDevice		 = m_context.getDevice();
 
 	// Create render pass for second draw, we keep the first draw's contents of the depth buffer.
-	m_renderPassSecondDraw = makeRenderPass(vk, vkDevice, m_colorFormat, m_param.depthFormat, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_LOAD_OP_LOAD);
+	m_renderPassSecondDraw = makeRenderPass(vk, vkDevice, param.pipelineConstructionType, m_colorFormat, m_param.depthFormat, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_LOAD_OP_LOAD);
 
 	// Create framebuffer for second draw.
 	{
+		std::vector<VkImage> images = {
+			*m_colorImage,
+			*m_depthImage,
+		};
 		VkImageView attachmentBindInfos[2] =
 		{
 			*m_colorAttachmentView,
@@ -1141,7 +1158,7 @@ DepthBoundsRangeUnrestrictedTestInstance::DepthBoundsRangeUnrestrictedTestInstan
 			1u,													// deUint32						layers;
 		};
 
-		m_framebufferSecondDraw = createFramebuffer(vk, vkDevice, &framebufferParams);
+		m_renderPassSecondDraw.createFramebuffer(vk, vkDevice, &framebufferParams, images);
 	}
 
 	// Create pipeline
@@ -1203,9 +1220,8 @@ void DepthBoundsRangeUnrestrictedTestInstance::prepareCommandBuffer (bool firstD
 	vk.cmdPipelineBarrier(*m_cmdBuffer, (firstDraw ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
 		0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers), m_imageLayoutBarriers);
 
-	prepareRenderPass((firstDraw ? *m_renderPass : *m_renderPassSecondDraw),
-					  (firstDraw ? *m_framebuffer : *m_framebufferSecondDraw),
-					  (firstDraw ? m_pipeline.getPipeline() : m_pipelineSecondDraw.getPipeline()));
+	prepareRenderPass((firstDraw ? m_renderPass : m_renderPassSecondDraw),
+					  (firstDraw ? m_pipeline : m_pipelineSecondDraw));
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 }
@@ -1409,7 +1425,7 @@ TestInstance* DepthRangeUnrestrictedTest::createInstance (Context& context) cons
 
 void DepthRangeUnrestrictedTest::checkSupport(Context& context) const
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_param.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_param.pipelineConstructionType);
 }
 } // anonymous
 

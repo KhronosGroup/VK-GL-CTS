@@ -5,6 +5,7 @@
  * Copyright (c) 2022 LunarG, Inc.
  * Copyright (c) 2022 The Khronos Group Inc.
  * Copyright (c) 2022 Google LLC
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,7 +121,7 @@ public:
 
 		command(true);
 
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.getPipeline());
+		m_pipeline.bind(*m_cmdBuffer);
 
 		const vk::VkDeviceSize vertexBufferOffset	= 0;
 		const vk::VkBuffer		vertexBuffer		= m_vertexBuffer->object();
@@ -128,7 +129,7 @@ public:
 
 		m_vk.cmdDraw(*m_cmdBuffer, 2, 1, 0, 0);
 
-		endRenderPass(m_vk, *m_cmdBuffer);
+		m_renderPass.end(m_vk, *m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
 
 		submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
