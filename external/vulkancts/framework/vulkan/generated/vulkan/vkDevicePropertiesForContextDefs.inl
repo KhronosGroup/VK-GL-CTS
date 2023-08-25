@@ -8,7 +8,7 @@ const vk::VkPhysicalDeviceMultiviewProperties&						Context::getMultiviewPropert
 const vk::VkPhysicalDevicePipelineRobustnessPropertiesEXT&			Context::getPipelineRobustnessPropertiesEXT			(void) const { return m_device->getPipelineRobustnessPropertiesEXT();			}
 const vk::VkPhysicalDeviceIDProperties&								Context::getIDProperties							(void) const { return m_device->getIDProperties();								}
 const vk::VkPhysicalDevicePushDescriptorPropertiesKHR&				Context::getPushDescriptorProperties				(void) const { return m_device->getPushDescriptorProperties();					}
-const vk::VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX&	Context::getMultiviewPerViewAttributesPropertiesX	(void) const { return m_device->getMultiviewPerViewAttributesPropertiesX();		}
+const vk::VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX&	Context::getMultiviewPerViewAttributesPropertiesNVX	(void) const { return m_device->getMultiviewPerViewAttributesPropertiesNVX();	}
 const vk::VkPhysicalDeviceDiscardRectanglePropertiesEXT&			Context::getDiscardRectanglePropertiesEXT			(void) const { return m_device->getDiscardRectanglePropertiesEXT();				}
 const vk::VkPhysicalDeviceConservativeRasterizationPropertiesEXT&	Context::getConservativeRasterizationPropertiesEXT	(void) const { return m_device->getConservativeRasterizationPropertiesEXT();	}
 const vk::VkPhysicalDevicePerformanceQueryPropertiesKHR&			Context::getPerformanceQueryProperties				(void) const { return m_device->getPerformanceQueryProperties();				}
@@ -24,7 +24,7 @@ const vk::VkPhysicalDeviceShaderSMBuiltinsPropertiesNV&				Context::getShaderSMB
 const vk::VkPhysicalDeviceDescriptorIndexingProperties&				Context::getDescriptorIndexingProperties			(void) const { return m_device->getDescriptorIndexingProperties();				}
 const vk::VkPhysicalDevicePortabilitySubsetPropertiesKHR&			Context::getPortabilitySubsetProperties				(void) const { return m_device->getPortabilitySubsetProperties();				}
 const vk::VkPhysicalDeviceShadingRateImagePropertiesNV&				Context::getShadingRateImageProperties				(void) const { return m_device->getShadingRateImageProperties();				}
-const vk::VkPhysicalDeviceRayTracingPropertiesNV&					Context::getRayTracingPropertiesNV					(void) const { return m_device->getRayTracingPropertiesNV();					}
+const vk::VkPhysicalDeviceRayTracingPropertiesNV&					Context::getRayTracingProperties					(void) const { return m_device->getRayTracingProperties();						}
 const vk::VkPhysicalDeviceMaintenance3Properties&					Context::getMaintenance3Properties					(void) const { return m_device->getMaintenance3Properties();					}
 const vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			Context::getExternalMemoryHostPropertiesEXT			(void) const { return m_device->getExternalMemoryHostPropertiesEXT();			}
 const vk::VkPhysicalDeviceShaderCorePropertiesAMD&					Context::getShaderCorePropertiesAMD					(void) const { return m_device->getShaderCorePropertiesAMD();					}

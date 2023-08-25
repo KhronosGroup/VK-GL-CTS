@@ -2973,12 +2973,54 @@ def writeDeviceProperties(api, dpDefs, filename):
 	stream.append('} // vk\n')
 	writeInlFile(filename, INL_HEADER, stream)
 
+UNSUFFIXED_STRUCTURES = [
+	"CornerSampledImage",
+	"ShaderSMBuiltins",
+	"ShadingRateImage",
+	"RayTracing",
+	"RepresentativeFragmentTest",
+	"ComputeShaderDerivatives",
+	"MeshShader",
+	"ShaderImageFootprint",
+	"ExclusiveScissor",
+	"DedicatedAllocationImageAliasing",
+	"CoverageReductionMode",
+	"DeviceGeneratedCommands",
+	"InheritedViewportScissor",
+	"PresentBarrier",
+	"DiagnosticsConfig",
+	"FragmentShadingRateEnums",
+	"RayTracingMotionBlur",
+	"ExternalMemoryRDMA",
+	"CopyMemoryIndirect",
+	"MemoryDecompression",
+	"LinearColorAttachment",
+	"OpticalFlow",
+	"RayTracingInvocationReorder",
+	"DisplacementMicromap"]
+
+def deviceFeaturesOrPropertiesGetter(name):
+	result = name[16:] # Remove VkPhysicalDevice prefix
+	if result[-3:] == "KHR":
+		result = result[0:-3]
+	elif result[-2:] == "NV":
+		suffix = result[-2:]
+		result = result[0:-2]
+		if result[-8:] == "Features":
+			infix = result[-8:]
+			result = result[0:-8]
+		elif result[-10:] == "Properties":
+			infix = result[-10:]
+			result = result[0:-10]
+		if (result in UNSUFFIXED_STRUCTURES):
+			suffix = ""
+		result = result + infix + suffix
+	return result
+
 def genericDeviceFeaturesWriter(dfDefs, pattern, filename):
 	stream = []
 	for _, _, _, extStruct, _, _, _ in dfDefs:
-		nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("NV", "")
-		if extStruct == "VkPhysicalDeviceCooperativeMatrixFeaturesNV":
-			nameSubStr += "NV"
+		nameSubStr = deviceFeaturesOrPropertiesGetter(extStruct)
 		stream.append(pattern.format(extStruct, nameSubStr))
 	writeInlFile(filename, INL_HEADER, indentLines(stream))
 
@@ -2997,11 +3039,7 @@ def writeDeviceFeaturesContextDefs(dfDefs, filename):
 def genericDevicePropertiesWriter(dfDefs, pattern, filename):
 	stream = []
 	for _, _, _, extStruct, _, _, _ in dfDefs:
-		nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("NV", "")
-		if extStruct == "VkPhysicalDeviceRayTracingPropertiesNV":
-			nameSubStr += "NV"
-		if extStruct == "VkPhysicalDeviceCooperativeMatrixPropertiesNV":
-			nameSubStr += "NV"
+		nameSubStr = deviceFeaturesOrPropertiesGetter(extStruct)
 		stream.append(pattern.format(extStruct, nameSubStr))
 	writeInlFile(filename, INL_HEADER, indentLines(stream))
 
