@@ -849,7 +849,7 @@ std::string glslGlobalDeclarations(const TestParams& params, const std::vector<S
 			"	{\n"
 			"		if (rayQueryGetIntersectionTypeEXT(rayQuery, false) == gl_RayQueryCandidateIntersectionTriangleEXT)\n"
 			"		{\n"
-			"			return uint(rayQueryGetIntersectionTEXT(rayQuery, false));\n"
+			"			return uint(round(rayQueryGetIntersectionTEXT(rayQuery, false)));\n"
 			"		}\n"
 			"	}\n"
 			"\n"
