@@ -492,6 +492,11 @@ struct Image : public BufferOrImage
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindTexture");
 		m_gl.texStorage2D(GL_TEXTURE_2D, 1, format, width, height);
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glTexStorage2D");
+
+		m_gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glTexParameteri");
+		m_gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glTexParameteri");
 	}
 
 	virtual ~Image()
