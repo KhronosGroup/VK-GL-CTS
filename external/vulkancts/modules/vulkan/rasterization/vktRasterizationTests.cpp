@@ -58,6 +58,8 @@
 #include "vkBufferWithMemory.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktRasterizationOrderAttachmentAccessTests.hpp"
+#include "vktRasterizationDepthBiasControlTests.hpp"
+#include "vktShaderTileImageTests.hpp"
 #endif // CTS_USES_VULKANSC
 
 #include <vector>
@@ -796,7 +798,8 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 												DE_NULL,							// const VkShaderModule                          tessellationControlShaderModule
 												DE_NULL,							// const VkShaderModule                          tessellationEvalShaderModule
 												DE_NULL,							// const VkShaderModule                          geometryShaderModule
-												*m_fragmentShaderModule,			// const VkShaderModule                          fragmentShaderModule
+												rasterizationStateInfo.rasterizerDiscardEnable ? DE_NULL : *m_fragmentShaderModule,
+																					// const VkShaderModule                          fragmentShaderModule
 												*m_renderPass,						// const VkRenderPass                            renderPass
 												viewports,							// const std::vector<VkViewport>&                viewports
 												scissors,							// const std::vector<VkRect2D>&                  scissors
@@ -1513,7 +1516,7 @@ bool BaseLineTestInstance::compareAndVerify (std::vector<LineSceneSpec::SceneLin
 		if (scene.isSmooth)
 		{
 			// Smooth lines get the fractional coverage multiplied into the alpha component,
-			// so do a sanity check to validate that there is at least one pixel in the image
+			// so do a quick check to validate that there is at least one pixel in the image
 			// with a fractional opacity.
 			bool hasAlpha = resultHasAlpha(resultImage);
 			if (!hasAlpha)
@@ -5743,6 +5746,8 @@ void DiscardTestInstance::drawPrimitivesDiscard (tcu::Surface& result, const std
 			VK_FALSE													// VkBool32									alphaToOneEnable;
 		};
 
+		const VkPipelineRasterizationStateCreateInfo* rasterizationStateInfo = getRasterizationStateCreateInfo();
+
 		graphicsPipeline = makeGraphicsPipeline(vkd,								// const DeviceInterface&							vk
 												vkDevice,							// const VkDevice									device
 												*m_pipelineLayout,					// const VkPipelineLayout							pipelineLayout
@@ -5750,7 +5755,8 @@ void DiscardTestInstance::drawPrimitivesDiscard (tcu::Surface& result, const std
 												DE_NULL,							// const VkShaderModule								tessellationControlShaderModule
 												DE_NULL,							// const VkShaderModule								tessellationEvalShaderModule
 												DE_NULL,							// const VkShaderModule								geometryShaderModule
-												*m_fragmentShaderModule,			// const VkShaderModule								fragmentShaderModule
+												rasterizationStateInfo->rasterizerDiscardEnable ? DE_NULL : *m_fragmentShaderModule,
+																					// const VkShaderModule								fragmentShaderModule
 												*m_renderPass,						// const VkRenderPass								renderPass
 												viewports,							// const std::vector<VkViewport>&					viewports
 												scissors,							// const std::vector<VkRect2D>&						scissors
@@ -5758,7 +5764,7 @@ void DiscardTestInstance::drawPrimitivesDiscard (tcu::Surface& result, const std
 												0u,									// const deUint32									subpass
 												0u,									// const deUint32									patchControlPoints
 												&vertexInputStateParams,			// const VkPipelineVertexInputStateCreateInfo*		vertexInputStateCreateInfo
-												getRasterizationStateCreateInfo(),	// const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo
+												rasterizationStateInfo,				// const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo
 												&multisampleStateParams,			// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
 												DE_NULL,							// const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo,
 												getColorBlendStateCreateInfo());	// const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo
@@ -7717,9 +7723,19 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			std::string description;
 		} cases [] =
 		{
-			{"d16_unorm",	vk::VK_FORMAT_D16_UNORM,			"Test depth bias with format D16_UNORM"},
-			{"d32_sfloat",	vk::VK_FORMAT_D32_SFLOAT,			"Test depth bias with format D32_SFLOAT"},
-			{"d24_unorm",	vk::VK_FORMAT_D24_UNORM_S8_UINT,	"Test depth bias with format D24_UNORM_S8_UINT"}
+			{"d16_unorm",						vk::VK_FORMAT_D16_UNORM,			"Test depth bias with format D16_UNORM"},
+			{"d32_sfloat",						vk::VK_FORMAT_D32_SFLOAT,			"Test depth bias with format D32_SFLOAT"},
+			{"d24_unorm",						vk::VK_FORMAT_D24_UNORM_S8_UINT,	"Test depth bias with format D24_UNORM_S8_UINT"},
+			{"d16_unorm_constant_one",			vk::VK_FORMAT_D16_UNORM,			"Test depth bias constant 1 and -1 with format D16_UNORM"},
+			{"d32_sfloat_constant_one",			vk::VK_FORMAT_D32_SFLOAT,			"Test depth bias constant 1 and -1 with format D32_SFLOAT"},
+			{"d24_unorm_constant_one",			vk::VK_FORMAT_D24_UNORM_S8_UINT,	"Test depth bias constant 1 and -1 with format D24_UNORM_S8_UINT"},
+			{"d16_unorm_slope",					vk::VK_FORMAT_D16_UNORM,			"Test depth bias slope with format D16_UNORM"},
+			{"d16_unorm_constant_one_less",		vk::VK_FORMAT_D16_UNORM,			"Test depth bias constant 1 and -1 with format D16_UNORM"},
+			{"d16_unorm_constant_one_greater",	vk::VK_FORMAT_D16_UNORM,			"Test depth bias constant 1 and -1 with format D16_UNORM"},
+			{"d24_unorm_constant_one_less",		vk::VK_FORMAT_D24_UNORM_S8_UINT,	"Test depth bias constant 1 and -1 with format D24_UNORM_S8_UINT"},
+			{"d24_unorm_constant_one_greater",	vk::VK_FORMAT_D24_UNORM_S8_UINT,	"Test depth bias constant 1 and -1 with format D24_UNORM_S8_UINT"},
+			{"d32_sfloat_constant_one_less",	vk::VK_FORMAT_D32_SFLOAT,			"Test depth bias constant 1 and -1 with format D32_SFLOAT"},
+			{"d32_sfloat_constant_one_greater",	vk::VK_FORMAT_D32_SFLOAT,			"Test depth bias constant 1 and -1 with format D32_SFLOAT"},
 		};
 
 		for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
@@ -7755,6 +7771,11 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 	}
 #endif // CTS_USES_VULKANSC
 
+#ifndef CTS_USES_VULKANSC
+	// Depth bias control.
+	rasterizationTests->addChild(createDepthBiasControlTests(testCtx));
+#endif // CTS_USES_VULKANSC
+
 	// Fragment shader side effects.
 	{
 		rasterizationTests->addChild(createFragSideEffectsTests(testCtx));
@@ -7765,14 +7786,19 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 	{
 		rasterizationTests->addChild(createRasterizationOrderAttachmentAccessTests(testCtx));
 	}
+
+	// Tile Storage tests
+	{
+		rasterizationTests->addChild(createShaderTileImageTests(testCtx));
+	}
 #endif // CTS_USES_VULKANSC
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "rasterization", "Rasterization Tests", createRasterizationTests);
+	return createTestGroup(testCtx, name.c_str(), "Rasterization Tests", createRasterizationTests);
 }
 
 } // rasterization

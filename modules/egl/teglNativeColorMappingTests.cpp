@@ -345,6 +345,7 @@ bool testNativeWindow (TestLog& log, eglu::NativeDisplay& nativeDisplay, eglu::N
 			EGLU_CHECK_CALL(egl, swapBuffers(display, *surface));
 			EGLU_CHECK_CALL(egl, waitClient());
 			deSleep(waitFrames*16);
+			nativeWindow.processEvents();
 			nativeWindow.readScreenPixels(&result);
 
 			if (!validate(log, egl, display, config, result, colors[colorNdx]))

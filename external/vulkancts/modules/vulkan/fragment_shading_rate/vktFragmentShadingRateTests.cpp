@@ -27,6 +27,7 @@
 #include "vktFragmentShadingRatePixelConsistency.hpp"
 #include "vktFragmentShadingRateGroupParams.hpp"
 #include "vktAttachmentRateTests.hpp"
+#include "vktFragmentShadingRateMiscTests.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vkPipelineConstructionUtil.hpp"
@@ -423,6 +424,8 @@ void createMiscTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGroup)
 	addFunctionCase(group.get(), "limits",			"", checkSupport, testLimits);
 	addFunctionCase(group.get(), "shading_rates",	"", checkSupport, testShadingRates);
 
+	createFragmentShadingRateMiscTests(group.get());
+
 	parentGroup->addChild(group.release());
 }
 
@@ -439,7 +442,7 @@ void createTests (tcu::TestCaseGroup* group, SharedGroupParams groupParams)
 		createAttachmentRateTests(testCtx, group, groupParams);
 
 	// run pixel consistency tests and misc tests only with renderpass2 and monolithic pipeline
-	if (!groupParams->useDynamicRendering && (groupParams->pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC))
+	if (!groupParams->useDynamicRendering && !groupParams->useSecondaryCmdBuffer && (groupParams->pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC))
 	{
 		// there is no point in duplicating those tests for dynamic rendering
 		createMiscTests(testCtx, group);
@@ -512,9 +515,9 @@ void createDynamicRenderingPermutations(tcu::TestCaseGroup* parentGroup)
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> mainGroup			(new tcu::TestCaseGroup(testCtx, "fragment_shading_rate", "Fragment shading rate tests"));
+	de::MovePtr<tcu::TestCaseGroup> mainGroup			(new tcu::TestCaseGroup(testCtx, name.c_str(), "Fragment shading rate tests"));
 	de::MovePtr<tcu::TestCaseGroup> renderpass2Group	(createTestGroup(testCtx, "renderpass2", "Draw using render pass object",
 		createPipelineConstructionTypePermutations,
 		SharedGroupParams(new GroupParams

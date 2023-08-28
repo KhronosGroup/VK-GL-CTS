@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2021 The Khronos Group Inc.
  * Copyright (c) 2021 Valve Corporation.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,10 +87,10 @@ tcu::Vec4 getClearColor ()
 }
 
 void makeMeshGraphicsPipeline (	GraphicsPipelineWrapper&							maker,
-								const VkPipelineLayout								pipelineLayout,
-								const VkShaderModule								taskShader,
-								const VkShaderModule								meshShader,
-								const VkShaderModule								fragShader,
+								const PipelineLayoutWrapper&						pipelineLayout,
+								const ShaderWrapper									taskShader,
+								const ShaderWrapper									meshShader,
+								const ShaderWrapper									fragShader,
 								const VkRenderPass									renderPass,
 								const std::vector<VkViewport>&						viewports,
 								const std::vector<VkRect2D>&						scissors,
@@ -228,19 +230,19 @@ protected:
 void MeshOnlyTriangleCase::checkSupport (Context& context) const
 {
 	checkTaskMeshShaderSupportEXT(context, false, true);
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_constructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_constructionType);
 }
 
 void MeshTaskTriangleCase::checkSupport (Context& context) const
 {
 	checkTaskMeshShaderSupportEXT(context, true, true);
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_constructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_constructionType);
 }
 
 void TaskOnlyTriangleCase::checkSupport (Context& context) const
 {
 	checkTaskMeshShaderSupportEXT(context, true, true);
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_constructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_constructionType);
 }
 
 void MeshOnlyTriangleCase::initPrograms (SourceCollections& dst) const
@@ -483,7 +485,9 @@ TestInstance* TaskOnlyTriangleCase::createInstance (Context& context) const
 
 tcu::TestStatus MeshTriangleRenderer::iterate ()
 {
+	const auto&		vki					= m_context.getInstanceInterface();
 	const auto&		vkd					= m_context.getDeviceInterface();
+	const auto		physicalDevice		= m_context.getPhysicalDevice();
 	const auto		device				= m_context.getDevice();
 	auto&			alloc				= m_context.getDefaultAllocator();
 	const auto		qIndex				= m_context.getUniversalQueueFamilyIndex();
@@ -577,25 +581,25 @@ tcu::TestStatus MeshTriangleRenderer::iterate ()
 	updateBuilder.update(vkd, device);
 
 	// Pipeline layout.
-	const auto pipelineLayout = makePipelineLayout(vkd, device, setLayout.get());
+	const PipelineLayoutWrapper pipelineLayout (m_params.constructionType, vkd, device, setLayout.get());
 
 	// Shader modules.
-	Move<VkShaderModule>	taskModule;
-	Move<VkShaderModule>	fragModule;
+	ShaderWrapper			taskModule;
+	ShaderWrapper			fragModule;
 	const auto&				binaries = m_context.getBinaryCollection();
 
 	if (binaries.contains("task"))
-		taskModule = createShaderModule(vkd, device, binaries.get("task"), 0u);
+		taskModule = ShaderWrapper(vkd, device, binaries.get("task"), 0u);
 	if (!m_params.rasterizationDisabled)
-		fragModule = createShaderModule(vkd, device, binaries.get("frag"), 0u);
-	const auto meshModule = createShaderModule(vkd, device, binaries.get("mesh"), 0u);
+		fragModule = ShaderWrapper(vkd, device, binaries.get("frag"), 0u);
+	const auto meshModule = ShaderWrapper(vkd, device, binaries.get("mesh"), 0u);
 
 	// Graphics pipeline.
 	std::vector<VkViewport>	viewports		(1u, makeViewport(colorBufferExtent));
 	std::vector<VkRect2D>	scissors		(1u, makeRect2D(colorBufferExtent));
-	GraphicsPipelineWrapper pipelineMaker	(vkd, device, m_params.constructionType);
+	GraphicsPipelineWrapper pipelineMaker	(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(), m_params.constructionType);
 
-	makeMeshGraphicsPipeline(pipelineMaker, pipelineLayout.get(), taskModule.get(), meshModule.get(), fragModule.get(), renderPass.get(), viewports, scissors);
+	makeMeshGraphicsPipeline(pipelineMaker, pipelineLayout, taskModule, meshModule, fragModule, renderPass.get(), viewports, scissors);
 	const auto				pipeline		= pipelineMaker.getPipeline();
 
 	// Command pool and buffer.
@@ -668,7 +672,7 @@ void checkMeshSupport (Context& context, GradientParams params)
 			TCU_THROW(NotSupportedError, "Primitive fragment shading rate not supported in mesh shaders");
 	}
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.constructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.constructionType);
 }
 
 void initGradientPrograms (vk::SourceCollections& programCollection, GradientParams params)
@@ -802,7 +806,9 @@ std::string coordColorFormat (int x, int y, const tcu::Vec4& color)
 
 tcu::TestStatus testFullscreenGradient (Context& context, GradientParams params)
 {
+	const auto&		vki					= context.getInstanceInterface();
 	const auto&		vkd					= context.getDeviceInterface();
+	const auto		physicalDevice		= context.getPhysicalDevice();
 	const auto		device				= context.getDevice();
 	auto&			alloc				= context.getDefaultAllocator();
 	const auto		qIndex				= context.getUniversalQueueFamilyIndex();
@@ -850,14 +856,14 @@ tcu::TestStatus testFullscreenGradient (Context& context, GradientParams params)
 	const auto setLayout = layoutBuilder.build(vkd, device);
 
 	// Pipeline layout.
-	const auto pipelineLayout = makePipelineLayout(vkd, device, setLayout.get());
+	const PipelineLayoutWrapper pipelineLayout (params.constructionType, vkd, device, setLayout.get());
 
 	// Shader modules.
-	Move<VkShaderModule>	taskModule;
+	ShaderWrapper			taskModule;
 	const auto&				binaries = context.getBinaryCollection();
 
-	const auto meshModule = createShaderModule(vkd, device, binaries.get("mesh"), 0u);
-	const auto fragModule = createShaderModule(vkd, device, binaries.get("frag"), 0u);
+	const auto meshModule = ShaderWrapper(vkd, device, binaries.get("mesh"), 0u);
+	const auto fragModule = ShaderWrapper(vkd, device, binaries.get("frag"), 0u);
 
 	using ShadingRateInfoPtr = de::MovePtr<VkPipelineFragmentShadingRateStateCreateInfoKHR>;
 	ShadingRateInfoPtr pNext;
@@ -874,10 +880,10 @@ tcu::TestStatus testFullscreenGradient (Context& context, GradientParams params)
 	// Graphics pipeline.
 	std::vector<VkViewport>	viewports		(1u, makeViewport(colorBufferExtent));
 	std::vector<VkRect2D>	scissors		(1u, makeRect2D(colorBufferExtent));
-	GraphicsPipelineWrapper pipelineMaker	(vkd, device, params.constructionType);
+	GraphicsPipelineWrapper pipelineMaker	(vki, vkd, physicalDevice, device, context.getDeviceExtensions(), params.constructionType);
 
-	makeMeshGraphicsPipeline(pipelineMaker, pipelineLayout.get(),
-							 taskModule.get(), meshModule.get(), fragModule.get(),
+	makeMeshGraphicsPipeline(pipelineMaker, pipelineLayout,
+							 taskModule, meshModule, fragModule,
 							 renderPass.get(), viewports, scissors, 0u, nullptr, pNext.get());
 	const auto pipeline = pipelineMaker.getPipeline();
 
@@ -1064,7 +1070,7 @@ protected:
 void PartialUsageCase::checkSupport (Context& context) const
 {
 	checkTaskMeshShaderSupportEXT(context, true, true);
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.constructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.constructionType);
 }
 
 TestInstance* PartialUsageCase::createInstance (Context &context) const
@@ -1204,7 +1210,9 @@ inline float pixelToFBCoords (uint32_t pixelId, uint32_t totalPixels)
 
 tcu::TestStatus PartialUsageInstance::iterate ()
 {
+	const auto&			vki					= m_context.getInstanceInterface();
 	const auto&			vkd					= m_context.getDeviceInterface();
+	const auto			physicalDevice		= m_context.getPhysicalDevice();
 	const auto			device				= m_context.getDevice();
 	const auto			queueIndex			= m_context.getUniversalQueueFamilyIndex();
 	const auto			queue				= m_context.getUniversalQueue();
@@ -1378,13 +1386,13 @@ tcu::TestStatus PartialUsageInstance::iterate ()
 	updateBuilder.update(vkd, device);
 
 	// Pipeline layout.
-	const auto pipelineLayout = makePipelineLayout(vkd, device, setLayout.get(), &pcRange);
+	const PipelineLayoutWrapper pipelineLayout (m_constructionType, vkd, device, setLayout.get(), &pcRange);
 
 	// Shader modules.
 	const auto&	binaries	= m_context.getBinaryCollection();
-	const auto	taskShader	= createShaderModule(vkd, device, binaries.get("task"));
-	const auto	meshShader	= createShaderModule(vkd, device, binaries.get("mesh"));
-	const auto	fragShader	= createShaderModule(vkd, device, binaries.get("frag"));
+	const auto	taskShader	= ShaderWrapper(vkd, device, binaries.get("task"));
+	const auto	meshShader	= ShaderWrapper(vkd, device, binaries.get("mesh"));
+	const auto	fragShader	= ShaderWrapper(vkd, device, binaries.get("frag"));
 
 	// Render pass.
 	const auto renderPass = makeRenderPass(vkd, device, colorFormat, dsFormat);
@@ -1470,9 +1478,9 @@ tcu::TestStatus PartialUsageInstance::iterate ()
 		1.0f,															//	float									maxDepthBounds;
 	};
 
-	GraphicsPipelineWrapper pipelineMaker(vkd, device, m_constructionType);
-	makeMeshGraphicsPipeline(pipelineMaker, pipelineLayout.get(),
-							 taskShader.get(), meshShader.get(), fragShader.get(),
+	GraphicsPipelineWrapper pipelineMaker(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(), m_constructionType);
+	makeMeshGraphicsPipeline(pipelineMaker, pipelineLayout,
+							 taskShader, meshShader, fragShader,
 							 renderPass.get(), viewports, scissors, 0u, &dsInfo);
 	const auto pipeline = pipelineMaker.getPipeline();
 
@@ -1596,7 +1604,7 @@ void SharedFragLibraryCase::checkSupport (Context& context) const
 			TCU_THROW(NotSupportedError, "shaderOutputLayer not supported");
 	}
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_constructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_constructionType);
 }
 
 void SharedFragLibraryCase::initPrograms (vk::SourceCollections &programCollection) const
@@ -1625,6 +1633,7 @@ void SharedFragLibraryCase::initPrograms (vk::SourceCollections &programCollecti
 		<< "}\n"
 		;
 	programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+	programCollection.glslSources.add("vert_1_2") << glu::VertexSource(vert.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_5, 0u, true);
 
 	// The mesh shader emits geometry to layer 2.
 	std::ostringstream mesh;
@@ -1758,7 +1767,7 @@ tcu::TestStatus SharedFragLibraryInstance::iterate (void)
 
 	// Shader modules.
 	const auto&	binaries	= m_context.getBinaryCollection();
-	const auto	vertModule	= createShaderModule(vkd, device, binaries.get("vert"));
+	const auto	vertModule	= createShaderModule(vkd, device, (m_context.contextSupports(VK_API_VERSION_1_2)) ? binaries.get("vert_1_2") : binaries.get("vert"));
 	const auto	meshModule	= createShaderModule(vkd, device, binaries.get("mesh"));
 	const auto	fragModule	= createShaderModule(vkd, device, binaries.get("frag"));
 

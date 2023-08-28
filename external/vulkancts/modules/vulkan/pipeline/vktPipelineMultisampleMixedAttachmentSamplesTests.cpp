@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2019 Advanced Micro Devices, Inc.
  * Copyright (c) 2019 The Khronos Group Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -172,10 +174,10 @@ inline bool isStencilFormat (const VkFormat format)
 
 //! Create a test-specific MSAA pipeline
 void preparePipelineWrapper(GraphicsPipelineWrapper&			gpw,
-							const VkPipelineLayout				pipelineLayout,
+							const PipelineLayoutWrapper&		pipelineLayout,
 							const VkRenderPass					renderPass,
-							const VkShaderModule				vertexModule,
-							const VkShaderModule				fragmentModule,
+							const ShaderWrapper					vertexModule,
+							const ShaderWrapper					fragmentModule,
 							const bool							useVertexInput,
 							const deUint32						subpassNdx,
 							const UVec2&						renderSize,
@@ -305,7 +307,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper&			gpw,
 								renderPass,
 								subpassNdx,
 								vertexModule,
-								nullptr, DE_NULL, DE_NULL, DE_NULL, DE_NULL,
+								nullptr, ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), DE_NULL,
 								(useFragmentShadingRate ? &shadingRateStateCreateInfo : nullptr))
 	   .setupFragmentShaderState(pipelineLayout,
 								renderPass,
@@ -898,12 +900,13 @@ void initPrograms (SourceCollections& programCollection, const TestParams params
 //! A simple color, depth/stencil draw. Subpasses (if more than one) are independent
 void draw (Context& context, const TestParams& params, WorkingData& wd)
 {
-	const DeviceInterface&	vk				= context.getDeviceInterface();
-	const VkDevice			device			= context.getDevice();
-	const deUint32			numSubpasses	= static_cast<deUint32>(wd.perSubpass.size());
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	const DeviceInterface&		vk				= context.getDeviceInterface();
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const VkDevice				device			= context.getDevice();
+	const deUint32				numSubpasses	= static_cast<deUint32>(wd.perSubpass.size());
 
-	Move<VkRenderPass>							renderPass;
-	Move<VkFramebuffer>							framebuffer;
+	RenderPassWrapper							renderPass;
 	std::vector<VkSampleLocationsInfoEXT>		perSubpassSampleLocationsInfo;
 	std::vector<VkAttachmentSampleLocationsEXT>	attachmentSampleLocations;
 	std::vector<VkSubpassSampleLocationsEXT>	subpassSampleLocations;
@@ -917,6 +920,7 @@ void draw (Context& context, const TestParams& params, WorkingData& wd)
 	// Create a render pass and a framebuffer
 	{
 		std::vector<VkSubpassDescription>		subpasses;
+		std::vector<VkImage>					images;
 		std::vector<VkImageView>				attachments;
 		std::vector<VkAttachmentDescription>	attachmentDescriptions;
 		std::vector<VkAttachmentReference>		attachmentReferences;
@@ -926,6 +930,8 @@ void draw (Context& context, const TestParams& params, WorkingData& wd)
 
 		for (deUint32 subpassNdx = 0; subpassNdx < numSubpasses; ++subpassNdx)
 		{
+			images.push_back(wd.perSubpass[subpassNdx]->colorImage.get());
+			images.push_back(wd.perSubpass[subpassNdx]->depthStencilImage.get());
 			attachments.push_back(wd.perSubpass[subpassNdx]->colorImageView.get());
 			attachments.push_back(wd.perSubpass[subpassNdx]->depthStencilImageView.get());
 
@@ -1007,13 +1013,13 @@ void draw (Context& context, const TestParams& params, WorkingData& wd)
 			DE_NULL,												// const VkSubpassDependency*		pDependencies;
 		};
 
-		renderPass  = createRenderPass(vk, device, &renderPassInfo);
-		framebuffer = makeFramebuffer (vk, device, *renderPass, static_cast<deUint32>(attachments.size()), dataOrNullPtr(attachments), wd.renderSize.x(), wd.renderSize.y());
+		renderPass  = RenderPassWrapper(params.pipelineConstructionType, vk, device, &renderPassInfo);
+		renderPass.createFramebuffer(vk, device, static_cast<deUint32>(attachments.size()), dataOrNullPtr(images), dataOrNullPtr(attachments), wd.renderSize.x(), wd.renderSize.y());
 	}
 
-	const Unique<VkShaderModule>	vertexModule	(createShaderModule(vk, device, context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkShaderModule>	fragmentModule	(createShaderModule(vk, device, context.getBinaryCollection().get("frag"), 0u));
-	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout(vk, device));
+	const ShaderWrapper				vertexModule	(ShaderWrapper			(vk, device, context.getBinaryCollection().get("vert"), 0u));
+	const ShaderWrapper				fragmentModule	(ShaderWrapper			(vk, device, context.getBinaryCollection().get("frag"), 0u));
+	const PipelineLayoutWrapper		pipelineLayout	(params.pipelineConstructionType, vk, device);
 
 	std::vector<GraphicsPipelineWrapper> pipelines;
 
@@ -1021,8 +1027,8 @@ void draw (Context& context, const TestParams& params, WorkingData& wd)
 	{
 		const VkSampleLocationsInfoEXT* pSampleLocationsInfo = (params.useProgrammableSampleLocations ? &perSubpassSampleLocationsInfo[subpassNdx] : DE_NULL);
 
-		pipelines.emplace_back(vk, device, params.pipelineConstructionType);
-		preparePipelineWrapper(pipelines.back(), *pipelineLayout, *renderPass, *vertexModule, *fragmentModule, /*use vertex input*/ true, subpassNdx,
+		pipelines.emplace_back(vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType);
+		preparePipelineWrapper(pipelines.back(), pipelineLayout, *renderPass, vertexModule, fragmentModule, /*use vertex input*/ true, subpassNdx,
 								 wd.renderSize, getImageAspectFlags(params.depthStencilFormat), params.perSubpassSamples[subpassNdx].numCoverageSamples,
 								 /*use sample shading*/ true, params.useFragmentShadingRate, pSampleLocationsInfo);
 	}
@@ -1047,17 +1053,6 @@ void draw (Context& context, const TestParams& params, WorkingData& wd)
 			{ wd.renderSize.x(), wd.renderSize.y() }
 		};
 
-		VkRenderPassBeginInfo renderPassBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,			// VkStructureType         sType;
-			DE_NULL,											// const void*             pNext;
-			*renderPass,										// VkRenderPass            renderPass;
-			*framebuffer,										// VkFramebuffer           framebuffer;
-			renderArea,											// VkRect2D                renderArea;
-			static_cast<deUint32>(clearValues.size()),			// uint32_t                clearValueCount;
-			dataOrNullPtr(clearValues),							// const VkClearValue*     pClearValues;
-		};
-
 		if (params.useProgrammableSampleLocations)
 		{
 			const VkRenderPassSampleLocationsBeginInfoEXT renderPassSampleLocationsBeginInfo =
@@ -1070,28 +1065,25 @@ void draw (Context& context, const TestParams& params, WorkingData& wd)
 				dataOrNullPtr(subpassSampleLocations),							// const VkSubpassSampleLocationsEXT*       pPostSubpassSampleLocations;
 			};
 
-			renderPassBeginInfo.pNext = &renderPassSampleLocationsBeginInfo;
-
-			vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-		}
-		else
-			vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			renderPass.begin(vk, *cmdBuffer, renderArea, static_cast<deUint32>(clearValues.size()), dataOrNullPtr(clearValues), VK_SUBPASS_CONTENTS_INLINE, &renderPassSampleLocationsBeginInfo);
+		} else
+			renderPass.begin(vk, *cmdBuffer, renderArea, static_cast<deUint32>(clearValues.size()), dataOrNullPtr(clearValues));
 	}
 
 	for (deUint32 subpassNdx = 0; subpassNdx < numSubpasses; ++subpassNdx)
 	{
 		if (subpassNdx != 0)
-			vk.cmdNextSubpass(*cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+			renderPass.nextSubpass(vk, *cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
 		const VkDeviceSize vertexBufferOffset = 0ull;
 		vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &wd.perSubpass[subpassNdx]->vertexBuffer.get(), &vertexBufferOffset);
 
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[subpassNdx].getPipeline());
+		pipelines[subpassNdx].bind(*cmdBuffer);
 
 		vk.cmdDraw(*cmdBuffer, wd.perSubpass[subpassNdx]->numVertices, 1u, 0u, 0u);
 	}
 
-	vk.cmdEndRenderPass(*cmdBuffer);
+	renderPass.end(vk, *cmdBuffer);
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 	submitCommandsAndWait(vk, device, context.getUniversalQueue(), *cmdBuffer);
@@ -1332,7 +1324,7 @@ void checkRequirements (Context& context, TestParams params)
 			TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
 	}
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
 }
 
 //! Verify the values of all samples in all attachments.
@@ -1540,18 +1532,22 @@ void initPrograms (SourceCollections& programCollection, const TestParams params
 //! A simple color, depth/stencil draw. Single subpass, no vertex input
 void drawResolve (Context& context, const TestParams& params, WorkingData& wd)
 {
-	const DeviceInterface&	vk			= context.getDeviceInterface();
-	const VkDevice			device		= context.getDevice();
-	const bool				needResolve	= (params.numColorSamples != VK_SAMPLE_COUNT_1_BIT);
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	const DeviceInterface&		vk				= context.getDeviceInterface();
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const VkDevice				device			= context.getDevice();
+	const bool					needResolve		= (params.numColorSamples != VK_SAMPLE_COUNT_1_BIT);
 
-	Move<VkRenderPass>		renderPass;
-	Move<VkFramebuffer>		framebuffer;
+	RenderPassWrapper		renderPass;
 
 	// Create a render pass and a framebuffer
 	{
+		std::vector<VkImage>					images;
 		std::vector<VkImageView>				attachments;
 		std::vector<VkAttachmentDescription>	attachmentDescriptions;
 
+		images.push_back(*wd.colorImage);
+		images.push_back(*wd.depthStencilImage);
 		attachments.push_back(*wd.colorImageView);
 		attachments.push_back(*wd.depthStencilImageView);
 
@@ -1581,6 +1577,7 @@ void drawResolve (Context& context, const TestParams& params, WorkingData& wd)
 
 		if (needResolve)
 		{
+			images.push_back(*wd.resolveImage);
 			attachments.push_back(*wd.resolveImageView);
 
 			attachmentDescriptions.push_back(makeAttachmentDescription(
@@ -1628,21 +1625,21 @@ void drawResolve (Context& context, const TestParams& params, WorkingData& wd)
 			DE_NULL,												// const VkSubpassDependency*		pDependencies;
 		};
 
-		renderPass  = createRenderPass(vk, device, &renderPassInfo);
-		framebuffer = makeFramebuffer (vk, device, *renderPass, static_cast<deUint32>(attachments.size()), dataOrNullPtr(attachments), wd.renderSize.x(), wd.renderSize.y());
+		renderPass  = RenderPassWrapper(params.pipelineConstructionType, vk, device, &renderPassInfo);
+		renderPass.createFramebuffer(vk, device, static_cast<deUint32>(attachments.size()), dataOrNullPtr(images), dataOrNullPtr(attachments), wd.renderSize.x(), wd.renderSize.y());
 	}
 
-	const Unique<VkShaderModule>	vertexModule	(createShaderModule(vk, device, context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkShaderModule>	fragmentModule	(createShaderModule(vk, device, context.getBinaryCollection().get("frag"), 0u));
-	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout(vk, device));
+	const ShaderWrapper				vertexModule	(ShaderWrapper			(vk, device, context.getBinaryCollection().get("vert"), 0u));
+	const ShaderWrapper				fragmentModule	(ShaderWrapper			(vk, device, context.getBinaryCollection().get("frag"), 0u));
+	const PipelineLayoutWrapper		pipelineLayout	(params.pipelineConstructionType, vk, device);
 	const bool						useVertexInput	= false;
 	const bool						sampleShading	= (params.numColorSamples != VK_SAMPLE_COUNT_1_BIT);
 	const deUint32					subpassNdx		= 0u;
-	GraphicsPipelineWrapper			pipeline		(vk, device, params.pipelineConstructionType);
+	GraphicsPipelineWrapper			pipeline		(vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType);
 	const Unique<VkCommandPool>		cmdPool			(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex()));
 	const Unique<VkCommandBuffer>	cmdBuffer		(makeCommandBuffer(vk, device, *cmdPool));
 
-	preparePipelineWrapper(pipeline, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule, useVertexInput,
+	preparePipelineWrapper(pipeline, pipelineLayout, *renderPass, vertexModule, fragmentModule, useVertexInput,
 							subpassNdx, wd.renderSize, getImageAspectFlags(params.depthStencilFormat),
 							params.numCoverageSamples, sampleShading, false);
 
@@ -1659,23 +1656,13 @@ void drawResolve (Context& context, const TestParams& params, WorkingData& wd)
 			{ wd.renderSize.x(), wd.renderSize.y() }
 		};
 
-		const VkRenderPassBeginInfo renderPassBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,			// VkStructureType         sType;
-			DE_NULL,											// const void*             pNext;
-			*renderPass,										// VkRenderPass            renderPass;
-			*framebuffer,										// VkFramebuffer           framebuffer;
-			renderArea,											// VkRect2D                renderArea;
-			static_cast<deUint32>(clearValues.size()),			// uint32_t                clearValueCount;
-			dataOrNullPtr(clearValues),							// const VkClearValue*     pClearValues;
-		};
-		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		renderPass.begin(vk, *cmdBuffer, renderArea, static_cast<deUint32>(clearValues.size()), dataOrNullPtr(clearValues));
 	}
 
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
+	pipeline.bind(*cmdBuffer);
 	vk.cmdDraw(*cmdBuffer, 3u, 1u, 0u, 0u);
 
-	vk.cmdEndRenderPass(*cmdBuffer);
+	renderPass.end(vk, *cmdBuffer);
 
 	if (needResolve)
 		recordCopyOutputImageToBuffer(vk, *cmdBuffer, wd.renderSize, *wd.resolveImage, *wd.colorBuffer);
@@ -1691,7 +1678,7 @@ void checkRequirements (Context& context, TestParams params)
 	context.requireDeviceFunctionality("VK_AMD_mixed_attachment_samples");
 
 	checkSampleRequirements(context, params.numColorSamples, params.numDepthStencilSamples, false /* require standard sample locations */);
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
 }
 
 //! Verify the values of shader builtins

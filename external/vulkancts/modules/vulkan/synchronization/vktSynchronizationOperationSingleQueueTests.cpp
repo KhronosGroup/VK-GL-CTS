@@ -379,7 +379,7 @@ public:
 		for (deUint32 copyOpNdx = 0; copyOpNdx < DE_LENGTH_OF_ARRAY(s_copyOps); copyOpNdx++)
 		{
 			if (isResourceSupported(s_copyOps[copyOpNdx], resourceDesc))
-				m_opSupports.push_back(de::SharedPtr<OperationSupport>(makeOperationSupport(s_copyOps[copyOpNdx], resourceDesc).release()));
+				m_opSupports.push_back(de::SharedPtr<OperationSupport>(makeOperationSupport(s_copyOps[copyOpNdx], resourceDesc, false).release()));
 		}
 		m_opSupports.push_back(readOp);
 
@@ -608,12 +608,13 @@ public:
 					 const ResourceDescription	resourceDesc,
 					 const OperationName		writeOp,
 					 const OperationName		readOp,
+					 const bool					specializedAccess,
 					 PipelineCacheData&			pipelineCacheData)
 		: TestCase				(testCtx, name, description)
 		, m_type				(type)
 		, m_resourceDesc		(resourceDesc)
-		, m_writeOp				(makeOperationSupport(writeOp, resourceDesc).release())
-		, m_readOp				(makeOperationSupport(readOp, resourceDesc).release())
+		, m_writeOp				(makeOperationSupport(writeOp, resourceDesc, specializedAccess).release())
+		, m_readOp				(makeOperationSupport(readOp, resourceDesc, specializedAccess).release())
 		, m_syncPrimitive		(syncPrimitive)
 		, m_pipelineCacheData	(pipelineCacheData)
 	{
@@ -629,7 +630,7 @@ public:
 			for (deUint32 copyOpNdx = 0; copyOpNdx < DE_LENGTH_OF_ARRAY(s_copyOps); copyOpNdx++)
 			{
 				if (isResourceSupported(s_copyOps[copyOpNdx], m_resourceDesc))
-					makeOperationSupport(s_copyOps[copyOpNdx], m_resourceDesc)->initPrograms(programCollection);
+					makeOperationSupport(s_copyOps[copyOpNdx], m_resourceDesc, false)->initPrograms(programCollection);
 			}
 		}
 	}
@@ -742,7 +743,17 @@ void createTests (tcu::TestCaseGroup* group, TestData data)
 
 				if (isResourceSupported(writeOp, resource) && isResourceSupported(readOp, resource))
 				{
-					opGroup->addChild(new SyncTestCase(testCtx, name, "", data.type, groups[groupNdx].syncPrimitive, resource, writeOp, readOp, *data.pipelineCacheData));
+					if (data.type == SynchronizationType::SYNCHRONIZATION2)
+					{
+						if ((isSpecializedAccessFlagSupported(writeOp) || isSpecializedAccessFlagSupported(readOp)))
+						{
+							const std::string nameSp = name + "_specialized_access_flag";
+							opGroup->addChild(new SyncTestCase(testCtx, nameSp, "", data.type, groups[groupNdx].syncPrimitive, resource, writeOp, readOp, true, *data.pipelineCacheData));
+						}
+					}
+
+					opGroup->addChild(new SyncTestCase(testCtx, name, "", data.type, groups[groupNdx].syncPrimitive, resource, writeOp, readOp, false, *data.pipelineCacheData));
+
 					empty = false;
 				}
 			}

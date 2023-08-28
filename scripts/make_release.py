@@ -37,9 +37,9 @@ import tempfile
 import posixpath
 import subprocess
 
-from build.common import *
-from build.config import *
-from build.build import *
+from ctsbuild.common import *
+from ctsbuild.config import *
+from ctsbuild.build import *
 
 pythonExecutable = sys.executable or "python"
 

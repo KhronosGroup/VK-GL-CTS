@@ -2077,7 +2077,7 @@ void CullDistance::FunctionalTest::configureVAO(glw::GLuint clipdistances_array_
 		}			  /* for (all horizontal cells) */
 	}				  /* for (all vertical cells) */
 
-	/* Sanity check: make sure we pushed required amount of data */
+	/* Quick check: make sure we pushed required amount of data */
 	DE_ASSERT(m_bo_data.size() == n_vertices_total * n_pervertex_float_attributes);
 
 	/* Save number of primitives to render */
@@ -2522,7 +2522,7 @@ void CullDistance::FunctionalTest::executeRenderTest(glw::GLuint	 clipdistances_
 	/* sub_grid cell size is 3*3 */
 	DE_ASSERT(m_render_primitives % 9 == 0);
 
-	/* Sanity check */
+	/* Quick check */
 	switch (primitive_mode)
 	{
 	case PRIMITIVE_MODE_LINES:

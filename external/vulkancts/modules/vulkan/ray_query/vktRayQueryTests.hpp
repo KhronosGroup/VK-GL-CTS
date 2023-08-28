@@ -31,7 +31,7 @@ namespace vkt
 namespace RayQuery
 {
 
-tcu::TestCaseGroup*	createTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*	createTests	(tcu::TestContext& testCtx, const std::string& name);
 
 } // RayQuery
 } // vkt

@@ -481,15 +481,15 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate (void)
 {
 	const VkPhysicalDeviceMemoryProperties memoryProperties = vk::getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
 
-	const CustomInstance		instance			(createCustomInstanceFromContext(m_context));
-	const InstanceDriver&		instanceDriver		(instance.getDriver());
+	const VkInstance			instance			= m_context.getInstance();
+	const auto&					instanceDriver		= m_context.getInstanceInterface();
 
 	Move<VkDevice>				vkd					= createImageRobustnessDevice(m_context, instance, instanceDriver);
 	const VkDevice				device				= *vkd;
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<vk::DeviceDriver>	deviceDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), device));
+	de::MovePtr<vk::DeviceDriver>	deviceDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), device, m_context.getUsedApiVersion()));
 #else
-	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), device, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), device));
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), device, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), m_context.getUsedApiVersion()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), device));
 #endif // CTS_USES_VULKANSC
 	const DeviceInterface&		vk					= *deviceDriver;
 	const VkQueue				queue				= getDeviceQueue(vk, device, m_context.getUniversalQueueFamilyIndex(), 0);

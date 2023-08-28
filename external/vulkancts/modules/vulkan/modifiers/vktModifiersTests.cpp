@@ -237,6 +237,7 @@ void checkExportImportExtensions (Context& context, VkFormat format)
 		VK_FORMAT_A2B10G10R10_SSCALED_PACK32,
 		VK_FORMAT_A2B10G10R10_UINT_PACK32,
 		VK_FORMAT_A2B10G10R10_SINT_PACK32,
+		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
 	};
 
 	if (std::find(std::begin(skippedFormats), std::end(skippedFormats), format) != std::end(skippedFormats))
@@ -956,9 +957,9 @@ tcu::TestStatus exportImportMemoryExplicitModifiersCase (Context& context, const
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup>	drmFormatModifiersGroup	(new tcu::TestCaseGroup(testCtx, "drm_format_modifiers", "DRM format modifiers tests"));
+	de::MovePtr<tcu::TestCaseGroup>	drmFormatModifiersGroup	(new tcu::TestCaseGroup(testCtx, name.c_str(), "DRM format modifiers tests"));
 	const VkFormat					formats[]				=
 	{
 		VK_FORMAT_R4G4_UNORM_PACK8,

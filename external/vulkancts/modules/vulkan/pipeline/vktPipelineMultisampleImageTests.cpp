@@ -3,6 +3,8 @@
  * ------------------------
  *
  * Copyright (c) 2016 The Khronos Group Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,8 +93,8 @@ std::vector<PipelineSp> makeGraphicsPipelines (const DeviceInterface&		vk,
 											   const deUint32				numSubpasses,
 											   const VkPipelineLayout		pipelineLayout,
 											   const VkRenderPass			renderPass,
-											   const VkShaderModule			vertexModule,
-											   const VkShaderModule			fragmentModule,
+											   const ShaderWrapper			vertexModule,
+											   const ShaderWrapper			fragmentModule,
 											   const IVec2					renderSize,
 											   const VkSampleCountFlagBits	numSamples,
 											   const VkPrimitiveTopology	topology)
@@ -242,7 +244,7 @@ std::vector<PipelineSp> makeGraphicsPipelines (const DeviceInterface&		vk,
 			DE_NULL,													// const void*							pNext;
 			(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags		flags;
 			VK_SHADER_STAGE_VERTEX_BIT,									// VkShaderStageFlagBits				stage;
-			vertexModule,												// VkShaderModule						module;
+			vertexModule.getModule(),									// VkShaderModule						module;
 			"main",														// const char*							pName;
 			DE_NULL,													// const VkSpecializationInfo*			pSpecializationInfo;
 		},
@@ -251,7 +253,7 @@ std::vector<PipelineSp> makeGraphicsPipelines (const DeviceInterface&		vk,
 			DE_NULL,													// const void*							pNext;
 			(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags		flags;
 			VK_SHADER_STAGE_FRAGMENT_BIT,								// VkShaderStageFlagBits				stage;
-			fragmentModule,												// VkShaderModule						module;
+			fragmentModule.getModule(),									// VkShaderModule						module;
 			"main",														// const char*							pName;
 			DE_NULL,													// const VkSpecializationInfo*			pSpecializationInfo;
 		}
@@ -290,7 +292,7 @@ std::vector<PipelineSp> makeGraphicsPipelines (const DeviceInterface&		vk,
 			renderPass,											// VkRenderPass										renderPass;
 			0u,													// deUint32											subpass;
 			DE_NULL,											// VkPipeline										basePipelineHandle;
-			-1,													// deInt32											basePipelineIndex;
+			0u,													// deInt32											basePipelineIndex;
 		};
 
 		graphicsPipelineInfos.push_back					(createInfo);
@@ -320,10 +322,10 @@ std::vector<PipelineSp> makeGraphicsPipelines (const DeviceInterface&		vk,
 //! Create a vector of pipelines, each with an increasing subpass index
 void preparePipelineWrapper (GraphicsPipelineWrapper&		gpw,
 							 const deUint32					subpassNdx,
-							 const VkPipelineLayout			pipelineLayout,
+							 const PipelineLayoutWrapper&	pipelineLayout,
 							 const VkRenderPass				renderPass,
-							 const VkShaderModule			vertexModule,
-							 const VkShaderModule			fragmentModule,
+							 const ShaderWrapper			vertexModule,
+							 const ShaderWrapper			fragmentModule,
 							 const IVec2					renderSize,
 							 const VkSampleCountFlagBits	numSamples,
 							 const VkPrimitiveTopology		topology)
@@ -421,11 +423,12 @@ void preparePipelineWrapper (GraphicsPipelineWrapper&		gpw,
 }
 
 //! Make a render pass with one subpass per color attachment and one attachment per image layer.
-Move<VkRenderPass> makeMultisampleRenderPass (const DeviceInterface&		vk,
-											  const VkDevice				device,
-											  const VkFormat				colorFormat,
-											  const VkSampleCountFlagBits	numSamples,
-											  const deUint32				numLayers)
+RenderPassWrapper makeMultisampleRenderPass (const DeviceInterface&			vk,
+											 const VkDevice					device,
+											 const PipelineConstructionType	pipelineConstructionType,
+											 const VkFormat					colorFormat,
+											 const VkSampleCountFlagBits	numSamples,
+											 const deUint32					numLayers)
 {
 	const VkAttachmentDescription colorAttachmentDescription =
 	{
@@ -484,13 +487,14 @@ Move<VkRenderPass> makeMultisampleRenderPass (const DeviceInterface&		vk,
 		DE_NULL													// const VkSubpassDependency*		pDependencies;
 	};
 
-	return createRenderPass(vk, device, &renderPassInfo);
+	return RenderPassWrapper(pipelineConstructionType, vk, device, &renderPassInfo);
 }
 
 //! A single-attachment, single-subpass render pass.
-Move<VkRenderPass> makeSimpleRenderPass (const DeviceInterface&	vk,
-										 const VkDevice			device,
-										 const VkFormat			colorFormat)
+RenderPassWrapper makeSimpleRenderPass (const DeviceInterface&			vk,
+										const VkDevice					device,
+										const PipelineConstructionType	pipelineConstructionType,
+										const VkFormat					colorFormat)
 {
 	const VkAttachmentDescription colorAttachmentDescription =
 	{
@@ -538,7 +542,7 @@ Move<VkRenderPass> makeSimpleRenderPass (const DeviceInterface&	vk,
 		DE_NULL												// const VkSubpassDependency*		pDependencies;
 	};
 
-	return createRenderPass(vk, device, &renderPassInfo);
+	return RenderPassWrapper(pipelineConstructionType, vk, device, &renderPassInfo);
 }
 
 Move<VkImage> makeImage (const DeviceInterface& vk, const VkDevice device, const VkFormat format, const IVec2& size, const deUint32 numLayers, const VkSampleCountFlagBits samples, const VkImageUsageFlags usage)
@@ -971,7 +975,9 @@ void addSimpleVertexAndFragmentPrograms (SourceCollections& programCollection, c
 //! Synchronously render to a multisampled color image.
 void renderMultisampledImage (Context& context, const CaseDef& caseDef, const VkImage colorImage)
 {
+	const InstanceInterface&		vki					= context.getInstanceInterface();
 	const DeviceInterface&			vk					= context.getDeviceInterface();
+	const VkPhysicalDevice			physicalDevice		= context.getPhysicalDevice();
 	const VkDevice					device				= context.getDevice();
 	const VkQueue					queue				= context.getUniversalQueue();
 	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
@@ -983,11 +989,13 @@ void renderMultisampledImage (Context& context, const CaseDef& caseDef, const Vk
 	{
 		// Create an image view (attachment) for each layer of the image
 		std::vector<ImageViewSp>	colorAttachments;
+		std::vector<VkImage>		images;
 		std::vector<VkImageView>	attachmentHandles;
 		for (int i = 0; i < caseDef.numLayers; ++i)
 		{
 			colorAttachments.push_back(makeSharedPtr(makeImageView(
 				vk, device, colorImage, VK_IMAGE_VIEW_TYPE_2D, caseDef.colorFormat, makeColorSubresourceRange(i, 1))));
+			images.push_back(colorImage);
 			attachmentHandles.push_back(**colorAttachments.back());
 		}
 
@@ -1002,19 +1010,18 @@ void renderMultisampledImage (Context& context, const CaseDef& caseDef, const Vk
 			flushAlloc(vk, device, *vertexBufferAlloc);
 		}
 
-		const Unique<VkShaderModule>			vertexModule	(createShaderModule			(vk, device, context.getBinaryCollection().get("vert"), 0u));
-		const Unique<VkShaderModule>			fragmentModule	(createShaderModule			(vk, device, context.getBinaryCollection().get("frag"), 0u));
-		const Unique<VkRenderPass>				renderPass		(makeMultisampleRenderPass	(vk, device, caseDef.colorFormat, caseDef.numSamples, caseDef.numLayers));
-		const Unique<VkFramebuffer>				framebuffer		(makeFramebuffer			(vk, device, *renderPass, caseDef.numLayers, &attachmentHandles[0],
-																							 static_cast<deUint32>(caseDef.renderSize.x()),  static_cast<deUint32>(caseDef.renderSize.y())));
-		const Unique<VkPipelineLayout>			pipelineLayout	(makePipelineLayout			(vk, device));
+		const ShaderWrapper						vertexModule	(ShaderWrapper				(vk, device, context.getBinaryCollection().get("vert"), 0u));
+		const ShaderWrapper						fragmentModule	(ShaderWrapper				(vk, device, context.getBinaryCollection().get("frag"), 0u));
+		RenderPassWrapper						renderPass		(makeMultisampleRenderPass	(vk, device, caseDef.pipelineConstructionType, caseDef.colorFormat, caseDef.numSamples, caseDef.numLayers));
+		renderPass.createFramebuffer(vk, device, caseDef.numLayers, &images[0], &attachmentHandles[0], static_cast<deUint32>(caseDef.renderSize.x()),  static_cast<deUint32>(caseDef.renderSize.y()));
+		const PipelineLayoutWrapper				pipelineLayout	(caseDef.pipelineConstructionType, vk, device);
 		const bool								isMonolithic	(caseDef.pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC);
 		std::vector<PipelineSp>					pipelinesSp;
 		std::vector<GraphicsPipelineWrapper>	pipelineWrapper;
 
 		if (isMonolithic)
 		{
-			pipelinesSp = makeGraphicsPipelines(vk, device, caseDef.numLayers, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+			pipelinesSp = makeGraphicsPipelines(vk, device, caseDef.numLayers, *pipelineLayout, *renderPass, vertexModule, fragmentModule,
 												caseDef.renderSize, caseDef.numSamples, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 		}
 		else
@@ -1023,8 +1030,8 @@ void renderMultisampledImage (Context& context, const CaseDef& caseDef, const Vk
 			pipelineWrapper.reserve(caseDef.numLayers);
 			for (int subpassNdx = 0; subpassNdx < caseDef.numLayers; ++subpassNdx)
 			{
-				pipelineWrapper.emplace_back(vk, device, caseDef.pipelineConstructionType);
-				preparePipelineWrapper(pipelineWrapper.back(), subpassNdx, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+				pipelineWrapper.emplace_back(vki, vk, physicalDevice, device, context.getDeviceExtensions(), caseDef.pipelineConstructionType);
+				preparePipelineWrapper(pipelineWrapper.back(), subpassNdx, pipelineLayout, *renderPass, vertexModule, fragmentModule,
 									   caseDef.renderSize, caseDef.numSamples, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 			}
 		}
@@ -1033,7 +1040,7 @@ void renderMultisampledImage (Context& context, const CaseDef& caseDef, const Vk
 
 		const std::vector<VkClearValue> clearValues(caseDef.numLayers, getClearValue(caseDef.colorFormat));
 
-		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, caseDef.renderSize.x(), caseDef.renderSize.y()), (deUint32)clearValues.size(), &clearValues[0]);
+		renderPass.begin(vk, *cmdBuffer, makeRect2D(0, 0, caseDef.renderSize.x(), caseDef.renderSize.y()), (deUint32)clearValues.size(), &clearValues[0]);
 		{
 			const VkDeviceSize vertexBufferOffset = 0ull;
 			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
@@ -1042,14 +1049,16 @@ void renderMultisampledImage (Context& context, const CaseDef& caseDef, const Vk
 		for (int layerNdx = 0; layerNdx < caseDef.numLayers; ++layerNdx)
 		{
 			if (layerNdx != 0)
-				vk.cmdNextSubpass(*cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+				renderPass.nextSubpass(vk, *cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-			VkPipeline pipeline = isMonolithic ? **pipelinesSp[layerNdx] : pipelineWrapper[layerNdx].getPipeline();
-			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+			if (isMonolithic)
+				vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelinesSp[layerNdx]);
+			else
+				pipelineWrapper[layerNdx].bind(*cmdBuffer);
 			vk.cmdDraw(*cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);
 		}
 
-		endRenderPass(vk, *cmdBuffer);
+		renderPass.end(vk, *cmdBuffer);
 
 		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -1140,7 +1149,7 @@ void checkSupport (Context& context, const CaseDef caseDef)
 	const VkImageUsageFlags colorImageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
 	checkImageFormatRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.numSamples, caseDef.colorFormat, colorImageUsage);
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
 
 #ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
@@ -1154,7 +1163,9 @@ void checkSupport (Context& context, const CaseDef caseDef)
 
 tcu::TestStatus test (Context& context, const CaseDef caseDef)
 {
+	const InstanceInterface&	vki					= context.getInstanceInterface();
 	const DeviceInterface&		vk					= context.getDeviceInterface();
+	const VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
 	const VkDevice				device				= context.getDevice();
 	const VkQueue				queue				= context.getUniversalQueue();
 	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
@@ -1232,12 +1243,11 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 			.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageDescriptorInfo)
 			.update(vk, device);
 
-		const Unique<VkShaderModule>			vertexModule	(createShaderModule		(vk, device, context.getBinaryCollection().get("sample_vert"), 0u));
-		const Unique<VkShaderModule>			fragmentModule	(createShaderModule		(vk, device, context.getBinaryCollection().get("sample_frag"), 0u));
-		const Unique<VkRenderPass>				renderPass		(makeSimpleRenderPass	(vk, device, checksumFormat));
-		const Unique<VkFramebuffer>				framebuffer		(makeFramebuffer		(vk, device, *renderPass, 1u, &checksumImageView.get(),
-																				 static_cast<deUint32>(caseDef.renderSize.x()),  static_cast<deUint32>(caseDef.renderSize.y())));
-		const Unique<VkPipelineLayout>			pipelineLayout	(makePipelineLayout		(vk, device, *descriptorSetLayout));
+		const ShaderWrapper						vertexModule	(ShaderWrapper			(vk, device, context.getBinaryCollection().get("sample_vert"), 0u));
+		const ShaderWrapper						fragmentModule	(ShaderWrapper			(vk, device, context.getBinaryCollection().get("sample_frag"), 0u));
+		RenderPassWrapper						renderPass		(caseDef.pipelineConstructionType, vk, device, checksumFormat);
+		renderPass.createFramebuffer(vk, device, 1u, &checksumImage.get(), &checksumImageView.get(), static_cast<deUint32>(caseDef.renderSize.x()),  static_cast<deUint32>(caseDef.renderSize.y()));
+		const PipelineLayoutWrapper				pipelineLayout	(caseDef.pipelineConstructionType, vk, device, *descriptorSetLayout);
 
 		const bool								isMonolithic	(caseDef.pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC);
 		std::vector<PipelineSp>					pipelinesSp;
@@ -1245,13 +1255,13 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 
 		if (isMonolithic)
 		{
-			pipelinesSp = makeGraphicsPipelines(vk, device, 1u, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+			pipelinesSp = makeGraphicsPipelines(vk, device, 1u, *pipelineLayout, *renderPass, vertexModule, fragmentModule,
 												caseDef.renderSize, VK_SAMPLE_COUNT_1_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
 		}
 		else
 		{
-			pipelineWrapper.emplace_back(vk, device, caseDef.pipelineConstructionType);
-			preparePipelineWrapper(pipelineWrapper.back(), 0u, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+			pipelineWrapper.emplace_back(vki, vk, physicalDevice, device, context.getDeviceExtensions(), caseDef.pipelineConstructionType);
+			preparePipelineWrapper(pipelineWrapper.back(), 0u, pipelineLayout, *renderPass, vertexModule, fragmentModule,
 								   caseDef.renderSize, VK_SAMPLE_COUNT_1_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
 		}
 
@@ -1279,10 +1289,12 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 				0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers);
 		}
 
-		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, caseDef.renderSize.x(), caseDef.renderSize.y()), tcu::UVec4(0u));
+		renderPass.begin(vk, *cmdBuffer, makeRect2D(0, 0, caseDef.renderSize.x(), caseDef.renderSize.y()), tcu::UVec4(0u));
 
-		VkPipeline pipeline = isMonolithic ? **pipelinesSp.back() : pipelineWrapper.back().getPipeline();
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		if (isMonolithic)
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelinesSp.back());
+		else
+			pipelineWrapper.back().bind(*cmdBuffer);
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 		{
 			const VkDeviceSize vertexBufferOffset = 0ull;
@@ -1290,7 +1302,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 		}
 
 		vk.cmdDraw(*cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);
-		endRenderPass(vk, *cmdBuffer);
+		renderPass.end(vk, *cmdBuffer);
 
 		copyImageToBuffer(vk, *cmdBuffer, *checksumImage, *checksumBuffer, caseDef.renderSize);
 
@@ -1595,7 +1607,7 @@ void checkSupport (Context& context, const CaseDef caseDef)
 	const VkImageUsageFlags colorImageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
 
 	checkImageFormatRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.numSamples, caseDef.colorFormat, colorImageUsage);
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
 }
 
 tcu::TestStatus test (Context& context, const CaseDef caseDef)
@@ -1725,16 +1737,18 @@ void checkSupport (Context& context, const CaseDef caseDef)
 		TCU_THROW(InternalError, "Standard does not define sample positions for 32x or 64x multisample modes");
 	}
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
 }
 
 tcu::TestStatus test (Context& context, const CaseDef caseDef)
 {
-	const DeviceInterface&	vk					= context.getDeviceInterface();
-	const VkDevice			device				= context.getDevice();
-	const VkQueue			queue				= context.getUniversalQueue();
-	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-	Allocator&				allocator			= context.getDefaultAllocator();
+	const InstanceInterface&	vki					= context.getInstanceInterface();
+	const DeviceInterface&		vk					= context.getDeviceInterface();
+	const VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
+	const VkDevice				device				= context.getDevice();
+	const VkQueue				queue				= context.getUniversalQueue();
+	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	Allocator&					allocator			= context.getDefaultAllocator();
 
 	const VkImageUsageFlags		colorImageUsage		= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
@@ -1808,25 +1822,24 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 			.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageDescriptorInfo)
 			.update(vk, device);
 
-		const Unique<VkShaderModule>			vertexModule	(createShaderModule		(vk, device, context.getBinaryCollection().get("sample_vert"), 0u));
-		const Unique<VkShaderModule>			fragmentModule	(createShaderModule		(vk, device, context.getBinaryCollection().get("sample_frag"), 0u));
-		const Unique<VkRenderPass>				renderPass		(makeSimpleRenderPass	(vk, device, checksumFormat));
-		const Unique<VkFramebuffer>				framebuffer		(makeFramebuffer		(vk, device, *renderPass, 1u, &checksumImageView.get(),
-																						 static_cast<deUint32>(caseDef.renderSize.x()),  static_cast<deUint32>(caseDef.renderSize.y())));
-		const Unique<VkPipelineLayout>			pipelineLayout	(makePipelineLayout		(vk, device, *descriptorSetLayout));
+		const ShaderWrapper						vertexModule	(ShaderWrapper			(vk, device, context.getBinaryCollection().get("sample_vert"), 0u));
+		const ShaderWrapper						fragmentModule	(ShaderWrapper			(vk, device, context.getBinaryCollection().get("sample_frag"), 0u));
+		RenderPassWrapper						renderPass		(makeSimpleRenderPass	(vk, device, caseDef.pipelineConstructionType, checksumFormat));
+		renderPass.createFramebuffer(vk, device, 1u, &checksumImage.get(), &checksumImageView.get(), static_cast<deUint32>(caseDef.renderSize.x()),  static_cast<deUint32>(caseDef.renderSize.y()));
+		const PipelineLayoutWrapper				pipelineLayout	(caseDef.pipelineConstructionType, vk, device, *descriptorSetLayout);
 		const bool								isMonolithic	(caseDef.pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC);
 		std::vector<PipelineSp>					pipelinesSp;
 		std::vector<GraphicsPipelineWrapper>	pipelineWrapper;
 
 		if (isMonolithic)
 		{
-			pipelinesSp = makeGraphicsPipelines(vk, device, 1u, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+			pipelinesSp = makeGraphicsPipelines(vk, device, 1u, *pipelineLayout, *renderPass, vertexModule, fragmentModule,
 												caseDef.renderSize, VK_SAMPLE_COUNT_1_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
 		}
 		else
 		{
-			pipelineWrapper.emplace_back(vk, device, caseDef.pipelineConstructionType);
-			preparePipelineWrapper(pipelineWrapper.back(), 0u, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+			pipelineWrapper.emplace_back(vki, vk, physicalDevice, device, context.getDeviceExtensions(), caseDef.pipelineConstructionType);
+			preparePipelineWrapper(pipelineWrapper.back(), 0u, pipelineLayout, *renderPass, vertexModule, fragmentModule,
 								   caseDef.renderSize, VK_SAMPLE_COUNT_1_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
 		}
 
@@ -1854,10 +1867,12 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 				0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers);
 		}
 
-		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, caseDef.renderSize.x(), caseDef.renderSize.y()), tcu::UVec4(0u));
+		renderPass.begin(vk, *cmdBuffer, makeRect2D(0, 0, caseDef.renderSize.x(), caseDef.renderSize.y()), tcu::UVec4(0u));
 
-		VkPipeline pipeline = isMonolithic ? **pipelinesSp.back() : pipelineWrapper.back().getPipeline();
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		if (isMonolithic)
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelinesSp.back());
+		else
+			pipelineWrapper.back().bind(*cmdBuffer);
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 		{
 			const VkDeviceSize vertexBufferOffset = 0ull;
@@ -1865,7 +1880,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 		}
 
 		vk.cmdDraw(*cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);
-		endRenderPass(vk, *cmdBuffer);
+		renderPass.end(vk, *cmdBuffer);
 
 		copyImageToBuffer(vk, *cmdBuffer, *checksumImage, *checksumBuffer, caseDef.renderSize);
 

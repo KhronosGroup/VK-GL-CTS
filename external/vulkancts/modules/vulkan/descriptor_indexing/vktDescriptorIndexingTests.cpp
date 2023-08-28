@@ -31,9 +31,9 @@ namespace DescriptorIndexing
 
 void descriptorIndexingDescriptorSetsCreateTests(tcu::TestCaseGroup* group);
 
-tcu::TestCaseGroup* createTests(tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "descriptor_indexing", "Descriptor Indexing Tests", descriptorIndexingDescriptorSetsCreateTests);
+	return createTestGroup(testCtx, name.c_str(), "Descriptor Indexing Tests", descriptorIndexingDescriptorSetsCreateTests);
 }
 
 } // DescriptorIndexing

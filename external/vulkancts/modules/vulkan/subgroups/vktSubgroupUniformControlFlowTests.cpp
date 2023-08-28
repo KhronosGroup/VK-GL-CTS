@@ -101,6 +101,7 @@ private:
 void SubgroupUniformControlFlowTestCase::checkSupport(Context& ctx) const
 {
 	// Check required extensions.
+	ctx.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 	ctx.requireDeviceFunctionality("VK_KHR_shader_subgroup_uniform_control_flow");
 	if (m_use_subgroup_size_control)
 	{

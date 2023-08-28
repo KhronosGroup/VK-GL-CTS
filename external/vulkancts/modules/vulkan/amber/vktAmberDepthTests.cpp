@@ -61,7 +61,7 @@ public:
 	TestInstance* createInstance (Context& ctx) const
 	{
 		// Create a custom device to ensure that VK_EXT_depth_range_unrestricted is not enabled
-		if (!g_singletonDeviceDepthGroup)
+		if (!g_singletonDeviceDepthGroup && m_useCustomDevice)
 		{
 			const float queuePriority = 1.0f;
 
@@ -89,7 +89,11 @@ public:
 
 			features2.pNext = &clampParams;
 
-			ctx.getInstanceInterface().getPhysicalDeviceFeatures2(ctx.getPhysicalDevice(), &features2);
+			const auto&	vki				= ctx.getInstanceInterface();
+			const auto	physicalDevice	= ctx.getPhysicalDevice();
+
+			ctx.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+			vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 
 			const VkDeviceCreateInfo deviceCreateInfo =
 			{
@@ -105,7 +109,9 @@ public:
 				DE_NULL,									// pEnabledFeatures
 			};
 
-			Move<VkDevice> device = createCustomDevice(ctx.getTestContext().getCommandLine().isValidationEnabled(), ctx.getPlatformInterface(), ctx.getInstance(), ctx.getInstanceInterface(), ctx.getPhysicalDevice(), &deviceCreateInfo);
+			const bool		validation	= ctx.getTestContext().getCommandLine().isValidationEnabled();
+			Move<VkDevice>	device		= createCustomDevice(validation, ctx.getPlatformInterface(), ctx.getInstance(), vki, physicalDevice, &deviceCreateInfo);
+
 			g_singletonDeviceDepthGroup = de::SharedPtr<Move<VkDevice>>(new Move<VkDevice>(device));
 		}
 		return new AmberTestInstance(ctx, m_recipe, m_useCustomDevice ? g_singletonDeviceDepthGroup->get() : nullptr);
@@ -173,9 +179,9 @@ static void cleanupGroup(tcu::TestCaseGroup*)
 	g_singletonDeviceDepthGroup.clear();
 }
 
-tcu::TestCaseGroup*	createAmberDepthGroup (tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createAmberDepthGroup (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "depth", "Depth pipeline test group", createTests, cleanupGroup);
+	return createTestGroup(testCtx, name.c_str(), "Depth pipeline test group", createTests, cleanupGroup);
 }
 
 } // cts_amber

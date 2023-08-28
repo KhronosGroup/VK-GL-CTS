@@ -254,6 +254,13 @@ struct VkCopyDescriptorSet
 	uint32_t		descriptorCount;
 };
 
+struct VkBufferUsageFlags2CreateInfoKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkBufferUsageFlags2KHR	usage;
+};
+
 struct VkBufferCreateInfo
 {
 	VkStructureType		sType;
@@ -579,6 +586,22 @@ struct VkComputePipelineCreateInfo
 	VkPipelineLayout				layout;
 	VkPipeline						basePipelineHandle;
 	int32_t							basePipelineIndex;
+};
+
+struct VkComputePipelineIndirectBufferInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkDeviceAddress	deviceAddress;
+	VkDeviceSize	size;
+	VkDeviceAddress	pipelineDeviceAddressCaptureReplay;
+};
+
+struct VkPipelineCreateFlags2CreateInfoKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkPipelineCreateFlags2KHR	flags;
 };
 
 struct VkVertexInputBindingDescription
@@ -1582,6 +1605,15 @@ struct VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV
 	VkBool32		deviceGeneratedCommands;
 };
 
+struct VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		deviceGeneratedCompute;
+	VkBool32		deviceGeneratedComputePipelines;
+	VkBool32		deviceGeneratedComputeCaptureReplay;
+};
+
 struct VkDevicePrivateDataCreateInfo
 {
 	VkStructureType	sType;
@@ -1733,6 +1765,19 @@ struct VkGeneratedCommandsMemoryRequirementsInfoNV
 	VkPipeline					pipeline;
 	VkIndirectCommandsLayoutNV	indirectCommandsLayout;
 	uint32_t					maxSequencesCount;
+};
+
+struct VkPipelineIndirectDeviceAddressInfoNV
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkPipelineBindPoint	pipelineBindPoint;
+	VkPipeline			pipeline;
+};
+
+struct VkBindPipelineIndirectCommandNV
+{
+	VkDeviceAddress	pipelineAddress;
 };
 
 struct VkPhysicalDeviceFeatures2
@@ -2782,6 +2827,14 @@ struct VkImageViewUsageCreateInfo
 	VkImageUsageFlags	usage;
 };
 
+struct VkImageViewSlicedCreateInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		sliceOffset;
+	uint32_t		sliceCount;
+};
+
 struct VkPipelineTessellationDomainOriginStateCreateInfo
 {
 	VkStructureType				sType;
@@ -3096,6 +3149,36 @@ struct VkPhysicalDeviceMaintenance4Properties
 	VkStructureType	sType;
 	void*			pNext;
 	VkDeviceSize	maxBufferSize;
+};
+
+struct VkPhysicalDeviceMaintenance5FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		maintenance5;
+};
+
+struct VkPhysicalDeviceMaintenance5PropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		earlyFragmentMultisampleCoverageAfterSampleCounting;
+	VkBool32		earlyFragmentSampleMaskTestBeforeSampleCounting;
+	VkBool32		depthStencilSwizzleOneSupport;
+	VkBool32		polygonModePointSize;
+	VkBool32		nonStrictSinglePixelWideLinesUseParallelogram;
+	VkBool32		nonStrictWideLinesUseParallelogram;
+};
+
+struct VkRenderingAreaInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		viewMask;
+	uint32_t		colorAttachmentCount;
+	const VkFormat*	pColorAttachmentFormats;
+	VkFormat		depthAttachmentFormat;
+	VkFormat		stencilAttachmentFormat;
 };
 
 struct VkDescriptorSetLayoutSupport
@@ -5061,6 +5144,16 @@ struct VkPhysicalDeviceSubpassShadingPropertiesHUAWEI
 	uint32_t		maxSubpassShadingWorkgroupSizeAspectRatio;
 };
 
+struct VkPhysicalDeviceClusterCullingShaderPropertiesHUAWEI
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxWorkGroupCount[3];
+	uint32_t		maxWorkGroupSize[3];
+	uint32_t		maxOutputClusterCount;
+	VkDeviceSize	indirectBufferOffsetAlignment;
+};
+
 struct VkMemoryOpaqueCaptureAddressAllocateInfo
 {
 	VkStructureType	sType;
@@ -5404,6 +5497,12 @@ union VkDeviceOrHostAddressKHR
 };
 
 union VkDeviceOrHostAddressConstKHR
+{
+	VkDeviceAddress	deviceAddress;
+	const void*		hostAddress;
+};
+
+union VkDeviceOrHostAddressConstAMDX
 {
 	VkDeviceAddress	deviceAddress;
 	const void*		hostAddress;
@@ -5795,6 +5894,14 @@ struct VkPhysicalDeviceSubpassShadingFeaturesHUAWEI
 	VkBool32		subpassShading;
 };
 
+struct VkPhysicalDeviceClusterCullingShaderFeaturesHUAWEI
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		clustercullingShader;
+	VkBool32		multiviewClusterCullingShader;
+};
+
 struct VkBufferCopy2
 {
 	VkStructureType	sType;
@@ -6030,6 +6137,20 @@ struct VkPhysicalDeviceImage2DViewOf3DFeaturesEXT
 	VkBool32		sampler2DViewOf3D;
 };
 
+struct VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		imageSlicedViewOf3D;
+};
+
+struct VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		attachmentFeedbackLoopDynamicState;
+};
+
 struct VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT
 {
 	VkStructureType	sType;
@@ -6221,6 +6342,109 @@ struct VkPhysicalDeviceSynchronization2Features
 	VkBool32		synchronization2;
 };
 
+struct VkPhysicalDeviceHostImageCopyFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		hostImageCopy;
+};
+
+struct VkPhysicalDeviceHostImageCopyPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		copySrcLayoutCount;
+	VkImageLayout*	pCopySrcLayouts;
+	uint32_t		copyDstLayoutCount;
+	VkImageLayout*	pCopyDstLayouts;
+	uint8_t			optimalTilingLayoutUUID[VK_UUID_SIZE];
+	VkBool32		identicalMemoryTypeRequirements;
+};
+
+struct VkMemoryToImageCopyEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	const void*					pHostPointer;
+	uint32_t					memoryRowLength;
+	uint32_t					memoryImageHeight;
+	VkImageSubresourceLayers	imageSubresource;
+	VkOffset3D					imageOffset;
+	VkExtent3D					imageExtent;
+};
+
+struct VkImageToMemoryCopyEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	void*						pHostPointer;
+	uint32_t					memoryRowLength;
+	uint32_t					memoryImageHeight;
+	VkImageSubresourceLayers	imageSubresource;
+	VkOffset3D					imageOffset;
+	VkExtent3D					imageExtent;
+};
+
+struct VkCopyMemoryToImageInfoEXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkHostImageCopyFlagsEXT			flags;
+	VkImage							dstImage;
+	VkImageLayout					dstImageLayout;
+	uint32_t						regionCount;
+	const VkMemoryToImageCopyEXT*	pRegions;
+};
+
+struct VkCopyImageToMemoryInfoEXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkHostImageCopyFlagsEXT			flags;
+	VkImage							srcImage;
+	VkImageLayout					srcImageLayout;
+	uint32_t						regionCount;
+	const VkImageToMemoryCopyEXT*	pRegions;
+};
+
+struct VkCopyImageToImageInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkHostImageCopyFlagsEXT	flags;
+	VkImage					srcImage;
+	VkImageLayout			srcImageLayout;
+	VkImage					dstImage;
+	VkImageLayout			dstImageLayout;
+	uint32_t				regionCount;
+	const VkImageCopy2*		pRegions;
+};
+
+struct VkHostImageLayoutTransitionInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkImage					image;
+	VkImageLayout			oldLayout;
+	VkImageLayout			newLayout;
+	VkImageSubresourceRange	subresourceRange;
+};
+
+struct VkSubresourceHostMemcpySizeEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	size;
+};
+
+struct VkHostImageCopyDevicePerformanceQueryEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		optimalDeviceAccess;
+	VkBool32		identicalMemoryLayout;
+};
+
 struct VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT
 {
 	VkStructureType	sType;
@@ -6282,7 +6506,7 @@ struct VkQueueFamilyQueryResultStatusPropertiesKHR
 
 struct VkPhysicalDeviceVideoFormatInfoKHR
 {
-	 VkStructureType	sType;
+	VkStructureType		sType;
 	const void*			pNext;
 	VkImageUsageFlags	imageUsage;
 };
@@ -6396,15 +6620,15 @@ struct VkVideoDecodeInfoKHR
 	const VkVideoReferenceSlotInfoKHR*	pReferenceSlots;
 };
 
-struct VkVideoDecodeH264ProfileInfoEXT
+struct VkVideoDecodeH264ProfileInfoKHR
 {
 	VkStructureType								sType;
 	const void*									pNext;
 	StdVideoH264ProfileIdc						stdProfileIdc;
-	VkVideoDecodeH264PictureLayoutFlagBitsEXT	pictureLayout;
+	VkVideoDecodeH264PictureLayoutFlagBitsKHR	pictureLayout;
 };
 
-struct VkVideoDecodeH264CapabilitiesEXT
+struct VkVideoDecodeH264CapabilitiesKHR
 {
 	VkStructureType			sType;
 	void*					pNext;
@@ -6412,14 +6636,14 @@ struct VkVideoDecodeH264CapabilitiesEXT
 	VkOffset2D				fieldOffsetGranularity;
 };
 
-struct VkVideoDecodeH265ProfileInfoEXT
+struct VkVideoDecodeH265ProfileInfoKHR
 {
 	VkStructureType			sType;
 	const void*				pNext;
 	StdVideoH265ProfileIdc	stdProfileIdc;
 };
 
-struct VkVideoDecodeH265CapabilitiesEXT
+struct VkVideoDecodeH265CapabilitiesKHR
 {
 	VkStructureType			sType;
 	void*					pNext;
@@ -6455,6 +6679,20 @@ struct VkVideoSessionParametersUpdateInfoKHR
 	VkStructureType	sType;
 	const void*		pNext;
 	uint32_t		updateSequenceCount;
+};
+
+struct VkVideoEncodeSessionParametersGetInfoKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkVideoSessionParametersKHR	videoSessionParameters;
+};
+
+struct VkVideoEncodeSessionParametersFeedbackInfoKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		hasOverrides;
 };
 
 struct VkVideoBeginCodingInfoKHR
@@ -6496,10 +6734,9 @@ struct VkVideoEncodeInfoKHR
 	VkStructureType						sType;
 	const void*							pNext;
 	VkVideoEncodeFlagsKHR				flags;
-	uint32_t							qualityLevel;
-	VkBuffer							dstBitstreamBuffer;
-	VkDeviceSize						dstBitstreamBufferOffset;
-	VkDeviceSize						dstBitstreamBufferMaxRange;
+	VkBuffer							dstBuffer;
+	VkDeviceSize						dstBufferOffset;
+	VkDeviceSize						dstBufferRange;
 	VkVideoPictureResourceInfoKHR		srcPictureResource;
 	const VkVideoReferenceSlotInfoKHR*	pSetupReferenceSlot;
 	uint32_t							referenceSlotCount;
@@ -6507,16 +6744,44 @@ struct VkVideoEncodeInfoKHR
 	uint32_t							precedingExternallyEncodedBytes;
 };
 
+struct VkQueryPoolVideoEncodeFeedbackCreateInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkVideoEncodeFeedbackFlagsKHR	encodeFeedbackFlags;
+};
+
+struct VkVideoEncodeQualityLevelInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		qualityLevel;
+};
+
+struct VkPhysicalDeviceVideoEncodeQualityLevelInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	const VkVideoProfileInfoKHR*	pVideoProfile;
+	uint32_t						qualityLevel;
+};
+
+struct VkVideoEncodeQualityLevelPropertiesKHR
+{
+	VkStructureType							sType;
+	void*									pNext;
+	VkVideoEncodeRateControlModeFlagBitsKHR	preferredRateControlMode;
+	uint32_t								preferredRateControlLayerCount;
+};
+
 struct VkVideoEncodeRateControlLayerInfoKHR
 {
 	VkStructureType	sType;
 	const void*		pNext;
-	uint32_t		averageBitrate;
-	uint32_t		maxBitrate;
+	uint64_t		averageBitrate;
+	uint64_t		maxBitrate;
 	uint32_t		frameRateNumerator;
 	uint32_t		frameRateDenominator;
-	uint32_t		virtualBufferSizeInMs;
-	uint32_t		initialVirtualBufferSizeInMs;
 };
 
 struct VkVideoEncodeRateControlInfoKHR
@@ -6525,8 +6790,10 @@ struct VkVideoEncodeRateControlInfoKHR
 	const void*									pNext;
 	VkVideoEncodeRateControlFlagsKHR			flags;
 	VkVideoEncodeRateControlModeFlagBitsKHR		rateControlMode;
-	uint8_t										layerCount;
-	const VkVideoEncodeRateControlLayerInfoKHR*	pLayerConfigs;
+	uint32_t									layerCount;
+	const VkVideoEncodeRateControlLayerInfoKHR*	pLayers;
+	uint32_t									virtualBufferSizeInMs;
+	uint32_t									initialVirtualBufferSizeInMs;
 };
 
 struct VkVideoEncodeCapabilitiesKHR
@@ -6535,9 +6802,11 @@ struct VkVideoEncodeCapabilitiesKHR
 	void*									pNext;
 	VkVideoEncodeCapabilityFlagsKHR			flags;
 	VkVideoEncodeRateControlModeFlagsKHR	rateControlModes;
-	uint8_t									rateControlLayerCount;
-	uint8_t									qualityLevelCount;
-	VkExtent2D								inputImageDataFillAlignment;
+	uint32_t								maxRateControlLayers;
+	uint64_t								maxBitrate;
+	uint32_t								maxQualityLevels;
+	VkExtent2D								encodeInputPictureGranularity;
+	VkVideoEncodeFeedbackFlagsKHR			supportedEncodeFeedbackFlags;
 };
 
 struct VkVideoEncodeH264CapabilitiesEXT
@@ -6545,26 +6814,44 @@ struct VkVideoEncodeH264CapabilitiesEXT
 	VkStructureType						sType;
 	void*								pNext;
 	VkVideoEncodeH264CapabilityFlagsEXT	flags;
-	VkVideoEncodeH264InputModeFlagsEXT	inputModeFlags;
-	VkVideoEncodeH264OutputModeFlagsEXT	outputModeFlags;
-	uint8_t								maxPPictureL0ReferenceCount;
-	uint8_t								maxBPictureL0ReferenceCount;
-	uint8_t								maxL1ReferenceCount;
-	VkBool32							motionVectorsOverPicBoundariesFlag;
-	uint32_t							maxBytesPerPicDenom;
-	uint32_t							maxBitsPerMbDenom;
-	uint32_t							log2MaxMvLengthHorizontal;
-	uint32_t							log2MaxMvLengthVertical;
+	StdVideoH264LevelIdc				maxLevelIdc;
+	uint32_t							maxSliceCount;
+	uint32_t							maxPPictureL0ReferenceCount;
+	uint32_t							maxBPictureL0ReferenceCount;
+	uint32_t							maxL1ReferenceCount;
+	uint32_t							maxTemporalLayerCount;
+	VkBool32							expectDyadicTemporalLayerPattern;
+	int32_t								minQp;
+	int32_t								maxQp;
+	VkBool32							prefersGopRemainingFrames;
+	VkBool32							requiresGopRemainingFrames;
+	VkVideoEncodeH264StdFlagsEXT		stdSyntaxFlags;
 };
 
-struct VkVideoEncodeH264EmitPictureParametersInfoEXT
+struct VkVideoEncodeH264SessionCreateInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkBool32				useMaxLevelIdc;
+	StdVideoH264LevelIdc	maxLevelIdc;
+};
+
+struct VkVideoEncodeH264SessionParametersGetInfoEXT
 {
 	VkStructureType	sType;
 	const void*		pNext;
-	uint8_t			spsId;
-	VkBool32		emitSpsEnable;
-	uint32_t		ppsIdEntryCount;
-	const uint8_t*	ppsIdEntries;
+	VkBool32		writeStdSPS;
+	VkBool32		writeStdPPS;
+	uint32_t		stdSPSId;
+	uint32_t		stdPPSId;
+};
+
+struct VkVideoEncodeH264SessionParametersFeedbackInfoEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		hasStdSPSOverrides;
+	VkBool32		hasStdPPSOverrides;
 };
 
 struct VkVideoEncodeH264ProfileInfoEXT
@@ -6576,13 +6863,13 @@ struct VkVideoEncodeH264ProfileInfoEXT
 
 struct VkVideoEncodeH264RateControlInfoEXT
 {
-	VkStructureType								sType;
-	const void*									pNext;
-	uint32_t									gopFrameCount;
-	uint32_t									idrPeriod;
-	uint32_t									consecutiveBFrameCount;
-	VkVideoEncodeH264RateControlStructureEXT	rateControlStructure;
-	uint8_t										temporalLayerCount;
+	VkStructureType							sType;
+	const void*								pNext;
+	VkVideoEncodeH264RateControlFlagsEXT	flags;
+	uint32_t								gopFrameCount;
+	uint32_t								idrPeriod;
+	uint32_t								consecutiveBFrameCount;
+	uint32_t								temporalLayerCount;
 };
 
 struct VkVideoEncodeH264QpEXT
@@ -6592,6 +6879,21 @@ struct VkVideoEncodeH264QpEXT
 	int32_t	qpB;
 };
 
+struct VkVideoEncodeH264QualityLevelPropertiesEXT
+{
+	VkStructureType							sType;
+	void*									pNext;
+	VkVideoEncodeH264RateControlFlagsEXT	preferredRateControlFlags;
+	uint32_t								preferredGopFrameCount;
+	uint32_t								preferredIdrPeriod;
+	uint32_t								preferredConsecutiveBFrameCount;
+	uint32_t								preferredTemporalLayerCount;
+	VkVideoEncodeH264QpEXT					preferredConstantQp;
+	uint32_t								preferredMaxL0ReferenceCount;
+	uint32_t								preferredMaxL1ReferenceCount;
+	VkBool32								preferredStdEntropyCodingModeFlag;
+};
+
 struct VkVideoEncodeH264FrameSizeEXT
 {
 	uint32_t	frameISize;
@@ -6599,13 +6901,20 @@ struct VkVideoEncodeH264FrameSizeEXT
 	uint32_t	frameBSize;
 };
 
+struct VkVideoEncodeH264GopRemainingFrameInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		useGopRemainingFrames;
+	uint32_t		gopRemainingI;
+	uint32_t		gopRemainingP;
+	uint32_t		gopRemainingB;
+};
+
 struct VkVideoEncodeH264RateControlLayerInfoEXT
 {
 	VkStructureType					sType;
 	const void*						pNext;
-	uint8_t							temporalLayerId;
-	VkBool32						useInitialRcQp;
-	VkVideoEncodeH264QpEXT			initialRcQp;
 	VkBool32						useMinQp;
 	VkVideoEncodeH264QpEXT			minQp;
 	VkBool32						useMaxQp;
@@ -6619,48 +6928,61 @@ struct VkVideoEncodeH265CapabilitiesEXT
 	VkStructureType								sType;
 	void*										pNext;
 	VkVideoEncodeH265CapabilityFlagsEXT			flags;
-	VkVideoEncodeH265InputModeFlagsEXT			inputModeFlags;
-	VkVideoEncodeH265OutputModeFlagsEXT			outputModeFlags;
+	StdVideoH265LevelIdc						maxLevelIdc;
+	uint32_t									maxSliceSegmentCount;
+	VkExtent2D									maxTiles;
 	VkVideoEncodeH265CtbSizeFlagsEXT			ctbSizes;
 	VkVideoEncodeH265TransformBlockSizeFlagsEXT	transformBlockSizes;
-	uint8_t										maxPPictureL0ReferenceCount;
-	uint8_t										maxBPictureL0ReferenceCount;
-	uint8_t										maxL1ReferenceCount;
-	uint8_t										maxSubLayersCount;
-	uint8_t										minLog2MinLumaCodingBlockSizeMinus3;
-	uint8_t										maxLog2MinLumaCodingBlockSizeMinus3;
-	uint8_t										minLog2MinLumaTransformBlockSizeMinus2;
-	uint8_t										maxLog2MinLumaTransformBlockSizeMinus2;
-	uint8_t										minMaxTransformHierarchyDepthInter;
-	uint8_t										maxMaxTransformHierarchyDepthInter;
-	uint8_t										minMaxTransformHierarchyDepthIntra;
-	uint8_t										maxMaxTransformHierarchyDepthIntra;
-	uint8_t										maxDiffCuQpDeltaDepth;
-	uint8_t										minMaxNumMergeCand;
-	uint8_t										maxMaxNumMergeCand;
+	uint32_t									maxPPictureL0ReferenceCount;
+	uint32_t									maxBPictureL0ReferenceCount;
+	uint32_t									maxL1ReferenceCount;
+	uint32_t									maxSubLayerCount;
+	VkBool32									expectDyadicTemporalSubLayerPattern;
+	int32_t										minQp;
+	int32_t										maxQp;
+	VkBool32									prefersGopRemainingFrames;
+	VkBool32									requiresGopRemainingFrames;
+	VkVideoEncodeH265StdFlagsEXT				stdSyntaxFlags;
 };
 
-struct VkVideoEncodeH265EmitPictureParametersInfoEXT
+struct VkVideoEncodeH265SessionCreateInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkBool32				useMaxLevelIdc;
+	StdVideoH265LevelIdc	maxLevelIdc;
+};
+
+struct VkVideoEncodeH265SessionParametersGetInfoEXT
 {
 	VkStructureType	sType;
 	const void*		pNext;
-	uint8_t			vpsId;
-	uint8_t			spsId;
-	VkBool32		emitVpsEnable;
-	VkBool32		emitSpsEnable;
-	uint32_t		ppsIdEntryCount;
-	const uint8_t*	ppsIdEntries;
+	VkBool32		writeStdVPS;
+	VkBool32		writeStdSPS;
+	VkBool32		writeStdPPS;
+	uint32_t		stdVPSId;
+	uint32_t		stdSPSId;
+	uint32_t		stdPPSId;
+};
+
+struct VkVideoEncodeH265SessionParametersFeedbackInfoEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		hasStdVPSOverrides;
+	VkBool32		hasStdSPSOverrides;
+	VkBool32		hasStdPPSOverrides;
 };
 
 struct VkVideoEncodeH265RateControlInfoEXT
 {
-	VkStructureType								sType;
-	const void*									pNext;
-	uint32_t									gopFrameCount;
-	uint32_t									idrPeriod;
-	uint32_t									consecutiveBFrameCount;
-	VkVideoEncodeH265RateControlStructureEXT	rateControlStructure;
-	uint8_t										subLayerCount;
+	VkStructureType							sType;
+	const void*								pNext;
+	VkVideoEncodeH265RateControlFlagsEXT	flags;
+	uint32_t								gopFrameCount;
+	uint32_t								idrPeriod;
+	uint32_t								consecutiveBFrameCount;
+	uint32_t								subLayerCount;
 };
 
 struct VkVideoEncodeH265QpEXT
@@ -6670,6 +6992,20 @@ struct VkVideoEncodeH265QpEXT
 	int32_t	qpB;
 };
 
+struct VkVideoEncodeH265QualityLevelPropertiesEXT
+{
+	VkStructureType							sType;
+	void*									pNext;
+	VkVideoEncodeH265RateControlFlagsEXT	preferredRateControlFlags;
+	uint32_t								preferredGopFrameCount;
+	uint32_t								preferredIdrPeriod;
+	uint32_t								preferredConsecutiveBFrameCount;
+	uint32_t								preferredSubLayerCount;
+	VkVideoEncodeH265QpEXT					preferredConstantQp;
+	uint32_t								preferredMaxL0ReferenceCount;
+	uint32_t								preferredMaxL1ReferenceCount;
+};
+
 struct VkVideoEncodeH265FrameSizeEXT
 {
 	uint32_t	frameISize;
@@ -6677,13 +7013,20 @@ struct VkVideoEncodeH265FrameSizeEXT
 	uint32_t	frameBSize;
 };
 
+struct VkVideoEncodeH265GopRemainingFrameInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		useGopRemainingFrames;
+	uint32_t		gopRemainingI;
+	uint32_t		gopRemainingP;
+	uint32_t		gopRemainingB;
+};
+
 struct VkVideoEncodeH265RateControlLayerInfoEXT
 {
 	VkStructureType					sType;
 	const void*						pNext;
-	uint8_t							temporalId;
-	VkBool32						useInitialRcQp;
-	VkVideoEncodeH265QpEXT			initialRcQp;
 	VkBool32						useMinQp;
 	VkVideoEncodeH265QpEXT			minQp;
 	VkBool32						useMaxQp;
@@ -6870,7 +7213,7 @@ union VkDescriptorDataEXT
 	const VkDescriptorAddressInfoEXT*	pStorageTexelBuffer;
 	const VkDescriptorAddressInfoEXT*	pUniformBuffer;
 	const VkDescriptorAddressInfoEXT*	pStorageBuffer;
-	 VkDeviceAddress					accelerationStructure;
+	VkDeviceAddress						accelerationStructure;
 };
 
 struct VkDescriptorGetInfoEXT
@@ -7363,7 +7706,7 @@ struct VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT
 struct VkGraphicsPipelineLibraryCreateInfoEXT
 {
 	VkStructureType						sType;
-	void*								pNext;
+	const void*							pNext;
 	VkGraphicsPipelineLibraryFlagsEXT	flags;
 };
 
@@ -7451,14 +7794,14 @@ struct VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT
 	VkBool32		imageCompressionControlSwapchain;
 };
 
-struct VkImageSubresource2EXT
+struct VkImageSubresource2KHR
 {
 	VkStructureType		sType;
 	void*				pNext;
 	VkImageSubresource	imageSubresource;
 };
 
-struct VkSubresourceLayout2EXT
+struct VkSubresourceLayout2KHR
 {
 	VkStructureType		sType;
 	void*				pNext;
@@ -7622,6 +7965,42 @@ struct VkAccelerationStructureTrianglesOpacityMicromapEXT
 	VkMicromapEXT						micromap;
 };
 
+struct VkPhysicalDeviceDisplacementMicromapFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		displacementMicromap;
+};
+
+struct VkPhysicalDeviceDisplacementMicromapPropertiesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxDisplacementMicromapSubdivisionLevel;
+};
+
+struct VkAccelerationStructureTrianglesDisplacementMicromapNV
+{
+	VkStructureType						sType;
+	void*								pNext;
+	VkFormat							displacementBiasAndScaleFormat;
+	VkFormat							displacementVectorFormat;
+	VkDeviceOrHostAddressConstKHR		displacementBiasAndScaleBuffer;
+	VkDeviceSize						displacementBiasAndScaleStride;
+	VkDeviceOrHostAddressConstKHR		displacementVectorBuffer;
+	VkDeviceSize						displacementVectorStride;
+	VkDeviceOrHostAddressConstKHR		displacedMicromapPrimitiveFlags;
+	VkDeviceSize						displacedMicromapPrimitiveFlagsStride;
+	VkIndexType							indexType;
+	VkDeviceOrHostAddressConstKHR		indexBuffer;
+	VkDeviceSize						indexStride;
+	uint32_t							baseTriangle;
+	uint32_t							usageCountsCount;
+	const VkMicromapUsageEXT*			pUsageCounts;
+	const VkMicromapUsageEXT* const*	ppUsageCounts;
+	VkMicromapEXT						micromap;
+};
+
 struct VkPipelinePropertiesIdentifierEXT
 {
 	VkStructureType	sType;
@@ -7641,6 +8020,13 @@ struct VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		shaderEarlyAndLateFragmentTests;
+};
+
+struct VkExternalMemoryAcquireUnmodifiedEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		acquireUnmodifiedMemory;
 };
 
 struct VkExportMetalObjectCreateInfoEXT
@@ -7983,6 +8369,32 @@ struct VkDeviceFaultVendorBinaryHeaderVersionOneEXT
 	uint32_t									applicationNameOffset;
 	uint32_t									applicationVersion;
 	uint32_t									engineNameOffset;
+	uint32_t									engineVersion;
+	uint32_t									apiVersion;
+};
+
+struct VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		pipelineLibraryGroupHandles;
+};
+
+struct VkDepthBiasInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	float			depthBiasConstantFactor;
+	float			depthBiasClamp;
+	float			depthBiasSlopeFactor;
+};
+
+struct VkDepthBiasRepresentationInfoEXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkDepthBiasRepresentationEXT	depthBiasRepresentation;
+	VkBool32						depthBiasExact;
 };
 
 struct VkDecompressMemoryRegionNV
@@ -8010,6 +8422,98 @@ struct VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM
 	VkBool32		shaderCoreBuiltins;
 };
 
+struct VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		dynamicRenderingUnusedAttachments;
+};
+
+struct VkSurfacePresentModeEXT
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkPresentModeKHR	presentMode;
+};
+
+struct VkSurfacePresentScalingCapabilitiesEXT
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkPresentScalingFlagsEXT	supportedPresentScaling;
+	VkPresentGravityFlagsEXT	supportedPresentGravityX;
+	VkPresentGravityFlagsEXT	supportedPresentGravityY;
+	VkExtent2D					minScaledImageExtent;
+	VkExtent2D					maxScaledImageExtent;
+};
+
+struct VkSurfacePresentModeCompatibilityEXT
+{
+	VkStructureType		sType;
+	void*				pNext;
+	uint32_t			presentModeCount;
+	VkPresentModeKHR*	pPresentModes;
+};
+
+struct VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		swapchainMaintenance1;
+};
+
+struct VkSwapchainPresentFenceInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		swapchainCount;
+	const VkFence*	pFences;
+};
+
+struct VkSwapchainPresentModesCreateInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	uint32_t				presentModeCount;
+	const VkPresentModeKHR*	pPresentModes;
+};
+
+struct VkSwapchainPresentModeInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	uint32_t				swapchainCount;
+	const VkPresentModeKHR*	pPresentModes;
+};
+
+struct VkSwapchainPresentScalingCreateInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkPresentScalingFlagsEXT	scalingBehavior;
+	VkPresentGravityFlagsEXT	presentGravityX;
+	VkPresentGravityFlagsEXT	presentGravityY;
+};
+
+struct VkReleaseSwapchainImagesInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkSwapchainKHR	swapchain;
+	uint32_t		imageIndexCount;
+	const uint32_t*	pImageIndices;
+};
+
+struct VkPhysicalDeviceDepthBiasControlFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		depthBiasControl;
+	VkBool32		leastRepresentableValueForceUnormRepresentation;
+	VkBool32		floatRepresentation;
+	VkBool32		depthBiasExact;
+};
+
 struct VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV
 {
 	VkStructureType	sType;
@@ -8022,6 +8526,280 @@ struct VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV
 	VkStructureType						sType;
 	void*								pNext;
 	VkRayTracingInvocationReorderModeNV	rayTracingInvocationReorderReorderingHint;
+};
+
+struct VkDirectDriverLoadingInfoLUNARG
+{
+	VkStructureType						sType;
+	void*								pNext;
+	VkDirectDriverLoadingFlagsLUNARG	flags;
+	PFN_vkGetInstanceProcAddrLUNARG		pfnGetInstanceProcAddr;
+};
+
+struct VkDirectDriverLoadingListLUNARG
+{
+	VkStructureType							sType;
+	void*									pNext;
+	VkDirectDriverLoadingModeLUNARG			mode;
+	uint32_t								driverCount;
+	const VkDirectDriverLoadingInfoLUNARG*	pDrivers;
+};
+
+struct VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		multiviewPerViewViewports;
+};
+
+struct VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		rayTracingPositionFetch;
+};
+
+struct VkDeviceImageSubresourceInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	const VkImageCreateInfo*		pCreateInfo;
+	const VkImageSubresource2KHR*	pSubresource;
+};
+
+struct VkPhysicalDeviceShaderCorePropertiesARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		pixelRate;
+	uint32_t		texelRate;
+	uint32_t		fmaRate;
+};
+
+struct VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		multiviewPerViewRenderAreas;
+};
+
+struct VkMultiviewPerViewRenderAreasRenderPassBeginInfoQCOM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		perViewRenderAreaCount;
+	const VkRect2D*	pPerViewRenderAreas;
+};
+
+struct VkQueryLowLatencySupportNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	void*			pQueriedLowLatencyData;
+};
+
+struct VkMemoryMapInfoKHR
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkMemoryMapFlags	flags;
+	VkDeviceMemory		memory;
+	VkDeviceSize		offset;
+	VkDeviceSize		size;
+};
+
+struct VkMemoryUnmapInfoKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkMemoryUnmapFlagsKHR	flags;
+	VkDeviceMemory			memory;
+};
+
+struct VkPhysicalDeviceShaderObjectFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderObject;
+};
+
+struct VkPhysicalDeviceShaderObjectPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint8_t			shaderBinaryUUID[VK_UUID_SIZE];
+	uint32_t		shaderBinaryVersion;
+};
+
+struct VkShaderCreateInfoEXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkShaderCreateFlagsEXT			flags;
+	VkShaderStageFlagBits			stage;
+	VkShaderStageFlags				nextStage;
+	VkShaderCodeTypeEXT				codeType;
+	size_t							codeSize;
+	const void*						pCode;
+	const char*						pName;
+	uint32_t						setLayoutCount;
+	const VkDescriptorSetLayout*	pSetLayouts;
+	uint32_t						pushConstantRangeCount;
+	const VkPushConstantRange*		pPushConstantRanges;
+	const VkSpecializationInfo*		pSpecializationInfo;
+};
+
+struct VkPhysicalDeviceShaderTileImageFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderTileImageColorReadAccess;
+	VkBool32		shaderTileImageDepthReadAccess;
+	VkBool32		shaderTileImageStencilReadAccess;
+};
+
+struct VkPhysicalDeviceShaderTileImagePropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderTileImageCoherentReadAccelerated;
+	VkBool32		shaderTileImageReadSampleFromPixelRateInvocation;
+	VkBool32		shaderTileImageReadFromHelperInvocation;
+};
+
+struct VkImportScreenBufferInfoQNX
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	struct _screen_buffer*	buffer;
+};
+
+struct VkScreenBufferPropertiesQNX
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	allocationSize;
+	uint32_t		memoryTypeBits;
+};
+
+struct VkScreenBufferFormatPropertiesQNX
+{
+	VkStructureType					sType;
+	void*							pNext;
+	VkFormat						format;
+	uint64_t						externalFormat;
+	uint64_t						screenUsage;
+	VkFormatFeatureFlags			formatFeatures;
+	VkComponentMapping				samplerYcbcrConversionComponents;
+	VkSamplerYcbcrModelConversion	suggestedYcbcrModel;
+	VkSamplerYcbcrRange				suggestedYcbcrRange;
+	VkChromaLocation				suggestedXChromaOffset;
+	VkChromaLocation				suggestedYChromaOffset;
+};
+
+struct VkExternalFormatQNX
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint64_t		externalFormat;
+};
+
+struct VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		screenBufferImport;
+};
+
+struct VkPhysicalDeviceCooperativeMatrixFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		cooperativeMatrix;
+	VkBool32		cooperativeMatrixRobustBufferAccess;
+};
+
+struct VkCooperativeMatrixPropertiesKHR
+{
+	VkStructureType		sType;
+	void*				pNext;
+	uint32_t			MSize;
+	uint32_t			NSize;
+	uint32_t			KSize;
+	VkComponentTypeKHR	AType;
+	VkComponentTypeKHR	BType;
+	VkComponentTypeKHR	CType;
+	VkComponentTypeKHR	ResultType;
+	VkBool32			saturatingAccumulation;
+	VkScopeKHR			scope;
+};
+
+struct VkPhysicalDeviceCooperativeMatrixPropertiesKHR
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkShaderStageFlags	cooperativeMatrixSupportedStages;
+};
+
+struct VkPhysicalDeviceShaderEnqueuePropertiesAMDX
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxExecutionGraphDepth;
+	uint32_t		maxExecutionGraphShaderOutputNodes;
+	uint32_t		maxExecutionGraphShaderPayloadSize;
+	uint32_t		maxExecutionGraphShaderPayloadCount;
+	uint32_t		executionGraphDispatchAddressAlignment;
+};
+
+struct VkPhysicalDeviceShaderEnqueueFeaturesAMDX
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderEnqueue;
+};
+
+struct VkExecutionGraphPipelineCreateInfoAMDX
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkPipelineCreateFlags					flags;
+	uint32_t								stageCount;
+	const VkPipelineShaderStageCreateInfo*	pStages;
+	const VkPipelineLibraryCreateInfoKHR*	pLibraryInfo;
+	VkPipelineLayout						layout;
+	VkPipeline								basePipelineHandle;
+	int32_t									basePipelineIndex;
+};
+
+struct VkPipelineShaderStageNodeCreateInfoAMDX
+{
+	  VkStructureType	sType;
+	const void*			pNext;
+	const char*			pName;
+	uint32_t			index;
+};
+
+struct VkExecutionGraphPipelineScratchSizeAMDX
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	size;
+};
+
+struct VkDispatchGraphInfoAMDX
+{
+	uint32_t						nodeIndex;
+	uint32_t						payloadCount;
+	VkDeviceOrHostAddressConstAMDX	payloads;
+	uint64_t						payloadStride;
+};
+
+struct VkDispatchGraphCountInfoAMDX
+{
+	uint32_t						count;
+	VkDeviceOrHostAddressConstAMDX	infos;
+	uint64_t						stride;
 };
 
 struct StdVideoH264SpsVuiFlags
@@ -8159,7 +8937,7 @@ struct StdVideoH264PictureParameterSet
 	const StdVideoH264ScalingLists*	pScalingLists;
 };
 
-struct VkVideoDecodeH264SessionParametersAddInfoEXT
+struct VkVideoDecodeH264SessionParametersAddInfoKHR
 {
 	VkStructureType							sType;
 	const void*								pNext;
@@ -8189,13 +8967,13 @@ struct StdVideoDecodeH264PictureInfoFlags
 	uint32_t	complementary_field_pair:1;
 };
 
-struct VkVideoDecodeH264SessionParametersCreateInfoEXT
+struct VkVideoDecodeH264SessionParametersCreateInfoKHR
 {
 	VkStructureType										sType;
 	const void*											pNext;
 	uint32_t											maxStdSPSCount;
 	uint32_t											maxStdPPSCount;
-	const VkVideoDecodeH264SessionParametersAddInfoEXT*	pParametersAddInfo;
+	const VkVideoDecodeH264SessionParametersAddInfoKHR*	pParametersAddInfo;
 };
 
 struct VkVideoEncodeH264SessionParametersCreateInfoEXT
@@ -8219,7 +8997,7 @@ struct StdVideoDecodeH264PictureInfo
 	int32_t								PicOrderCnt[STD_VIDEO_DECODE_H264_FIELD_ORDER_COUNT_LIST_SIZE];
 };
 
-struct VkVideoDecodeH264PictureInfoEXT
+struct VkVideoDecodeH264PictureInfoKHR
 {
 	VkStructureType							sType;
 	const void*								pNext;
@@ -8244,7 +9022,7 @@ struct StdVideoDecodeH264ReferenceInfo
 	int32_t									PicOrderCnt[STD_VIDEO_DECODE_H264_FIELD_ORDER_COUNT_LIST_SIZE];
 };
 
-struct VkVideoDecodeH264DpbSlotInfoEXT
+struct VkVideoDecodeH264DpbSlotInfoKHR
 {
 	VkStructureType							sType;
 	const void*								pNext;
@@ -8278,27 +9056,30 @@ struct StdVideoEncodeH264SliceHeaderFlags
 {
 	uint32_t	direct_spatial_mv_pred_flag:1;
 	uint32_t	num_ref_idx_active_override_flag:1;
-	uint32_t	no_output_of_prior_pics_flag:1;
-	uint32_t	adaptive_ref_pic_marking_mode_flag:1;
-	uint32_t	no_prior_references_available_flag:1;
+	uint32_t	reserved:30;
 };
 
 struct StdVideoEncodeH264PictureInfoFlags
 {
-	uint32_t	idr_flag:1;
-	uint32_t	is_reference_flag:1;
-	uint32_t	used_for_long_term_reference:1;
+	uint32_t	IdrPicFlag:1;
+	uint32_t	is_reference:1;
+	uint32_t	no_output_of_prior_pics_flag:1;
+	uint32_t	long_term_reference_flag:1;
+	uint32_t	adaptive_ref_pic_marking_mode_flag:1;
+	uint32_t	reserved:27;
 };
 
 struct StdVideoEncodeH264ReferenceInfoFlags
 {
 	uint32_t	used_for_long_term_reference:1;
+	uint32_t	reserved:31;
 };
 
-struct StdVideoEncodeH264RefMgmtFlags
+struct StdVideoEncodeH264ReferenceListsInfoFlags
 {
-	uint32_t	ref_pic_list_modification_l0_flag:1;
-	uint32_t	ref_pic_list_modification_l1_flag:1;
+	uint32_t	ref_pic_list_modification_flag_l0:1;
+	uint32_t	ref_pic_list_modification_flag_l1:1;
+	uint32_t	reserved:30;
 };
 
 struct StdVideoEncodeH264RefListModEntry
@@ -8317,41 +9098,51 @@ struct StdVideoEncodeH264RefPicMarkingEntry
 	uint16_t						max_long_term_frame_idx_plus1;
 };
 
-struct StdVideoEncodeH264RefMemMgmtCtrlOperations
+struct StdVideoEncodeH264ReferenceListsInfo
 {
-	StdVideoEncodeH264RefMgmtFlags				flags;
+	StdVideoEncodeH264ReferenceListsInfoFlags	flags;
+	uint8_t										num_ref_idx_l0_active_minus1;
+	uint8_t										num_ref_idx_l1_active_minus1;
+	uint8_t										RefPicList0[STD_VIDEO_H264_MAX_NUM_LIST_REF];
+	uint8_t										RefPicList1[STD_VIDEO_H264_MAX_NUM_LIST_REF];
 	uint8_t										refList0ModOpCount;
-	const StdVideoEncodeH264RefListModEntry*	pRefList0ModOperations;
 	uint8_t										refList1ModOpCount;
-	const StdVideoEncodeH264RefListModEntry*	pRefList1ModOperations;
 	uint8_t										refPicMarkingOpCount;
+	uint8_t										reserved1[7];
+	const StdVideoEncodeH264RefListModEntry*	pRefList0ModOperations;
+	const StdVideoEncodeH264RefListModEntry*	pRefList1ModOperations;
 	const StdVideoEncodeH264RefPicMarkingEntry*	pRefPicMarkingOperations;
 };
 
 struct StdVideoEncodeH264PictureInfo
 {
-	StdVideoEncodeH264PictureInfoFlags	flags;
-	uint8_t								seq_parameter_set_id;
-	uint8_t								pic_parameter_set_id;
-	StdVideoH264PictureType				pictureType;
-	uint32_t							frame_num;
-	int32_t								PicOrderCnt;
+	StdVideoEncodeH264PictureInfoFlags			flags;
+	uint8_t										seq_parameter_set_id;
+	uint8_t										pic_parameter_set_id;
+	uint16_t									idr_pic_id;
+	StdVideoH264PictureType						primary_pic_type;
+	uint32_t									frame_num;
+	int32_t										PicOrderCnt;
+	uint8_t										temporal_id;
+	uint8_t										reserved1[3];
+	const StdVideoEncodeH264ReferenceListsInfo*	pRefLists;
 };
 
 struct StdVideoEncodeH264ReferenceInfo
 {
 	StdVideoEncodeH264ReferenceInfoFlags	flags;
+	StdVideoH264PictureType					primary_pic_type;
 	uint32_t								FrameNum;
 	int32_t									PicOrderCnt;
 	uint16_t								long_term_pic_num;
 	uint16_t								long_term_frame_idx;
+	uint8_t									temporal_id;
 };
 
 struct VkVideoEncodeH264DpbSlotInfoEXT
 {
 	VkStructureType							sType;
 	const void*								pNext;
-	int8_t									slotIndex;
 	const StdVideoEncodeH264ReferenceInfo*	pStdReferenceInfo;
 };
 
@@ -8360,25 +9151,20 @@ struct StdVideoEncodeH264SliceHeader
 	StdVideoEncodeH264SliceHeaderFlags		flags;
 	uint32_t								first_mb_in_slice;
 	StdVideoH264SliceType					slice_type;
-	uint16_t								idr_pic_id;
-	uint8_t									num_ref_idx_l0_active_minus1;
-	uint8_t									num_ref_idx_l1_active_minus1;
-	StdVideoH264CabacInitIdc				cabac_init_idc;
-	StdVideoH264DisableDeblockingFilterIdc	disable_deblocking_filter_idc;
 	int8_t									slice_alpha_c0_offset_div2;
 	int8_t									slice_beta_offset_div2;
+	uint16_t								reserved1;
+	StdVideoH264CabacInitIdc				cabac_init_idc;
+	StdVideoH264DisableDeblockingFilterIdc	disable_deblocking_filter_idc;
 	const StdVideoEncodeH264WeightTable*	pWeightTable;
 };
 
-struct VkVideoEncodeH264ReferenceListsInfoEXT
+struct VkVideoEncodeH264NaluSliceInfoEXT
 {
-	VkStructureType										sType;
-	const void*											pNext;
-	uint8_t												referenceList0EntryCount;
-	const VkVideoEncodeH264DpbSlotInfoEXT*				pReferenceList0Entries;
-	uint8_t												referenceList1EntryCount;
-	const VkVideoEncodeH264DpbSlotInfoEXT*				pReferenceList1Entries;
-	const StdVideoEncodeH264RefMemMgmtCtrlOperations*	pMemMgmtCtrlOperations;
+	VkStructureType							sType;
+	const void*								pNext;
+	int32_t									constantQp;
+	const StdVideoEncodeH264SliceHeader*	pStdSliceHeader;
 };
 
 struct StdVideoH265ProfileTierLevelFlags
@@ -8390,13 +9176,14 @@ struct StdVideoH265ProfileTierLevelFlags
 	uint32_t	general_frame_only_constraint_flag:1;
 };
 
-struct VkVideoEncodeH264NaluSliceInfoEXT
+struct VkVideoEncodeH264PictureInfoEXT
 {
-	VkStructureType									sType;
-	const void*										pNext;
-	uint32_t										mbCount;
-	const VkVideoEncodeH264ReferenceListsInfoEXT*	pReferenceFinalLists;
-	const StdVideoEncodeH264SliceHeader*			pSliceHeaderStd;
+	VkStructureType								sType;
+	const void*									pNext;
+	uint32_t									naluSliceEntryCount;
+	const VkVideoEncodeH264NaluSliceInfoEXT*	pNaluSliceEntries;
+	const StdVideoEncodeH264PictureInfo*		pStdPictureInfo;
+	VkBool32									generatePrefixNalu;
 };
 
 struct StdVideoH265ProfileTierLevel
@@ -8404,16 +9191,6 @@ struct StdVideoH265ProfileTierLevel
 	StdVideoH265ProfileTierLevelFlags	flags;
 	StdVideoH265ProfileIdc				general_profile_idc;
 	StdVideoH265LevelIdc				general_level_idc;
-};
-
-struct VkVideoEncodeH264VclFrameInfoEXT
-{
-	VkStructureType									sType;
-	const void*										pNext;
-	const VkVideoEncodeH264ReferenceListsInfoEXT*	pReferenceFinalLists;
-	uint32_t										naluSliceEntryCount;
-	const VkVideoEncodeH264NaluSliceInfoEXT*		pNaluSliceEntries;
-	const StdVideoEncodeH264PictureInfo*			pCurrentPictureInfo;
 };
 
 struct StdVideoH265DecPicBufMgr
@@ -8735,7 +9512,7 @@ struct StdVideoH265PictureParameterSet
 	const StdVideoH265PredictorPaletteEntries*	pPredictorPaletteEntries;
 };
 
-struct VkVideoDecodeH265SessionParametersAddInfoEXT
+struct VkVideoDecodeH265SessionParametersAddInfoKHR
 {
 	VkStructureType							sType;
 	const void*								pNext;
@@ -8767,14 +9544,14 @@ struct StdVideoDecodeH265PictureInfoFlags
 	uint32_t	short_term_ref_pic_set_sps_flag:1;
 };
 
-struct VkVideoDecodeH265SessionParametersCreateInfoEXT
+struct VkVideoDecodeH265SessionParametersCreateInfoKHR
 {
 	VkStructureType										sType;
 	const void*											pNext;
 	uint32_t											maxStdVPSCount;
 	uint32_t											maxStdSPSCount;
 	uint32_t											maxStdPPSCount;
-	const VkVideoDecodeH265SessionParametersAddInfoEXT*	pParametersAddInfo;
+	const VkVideoDecodeH265SessionParametersAddInfoKHR*	pParametersAddInfo;
 };
 
 struct VkVideoEncodeH265SessionParametersCreateInfoEXT
@@ -8802,13 +9579,13 @@ struct StdVideoDecodeH265PictureInfo
 	uint8_t								RefPicSetLtCurr[STD_VIDEO_DECODE_H265_REF_PIC_SET_LIST_SIZE];
 };
 
-struct VkVideoDecodeH265PictureInfoEXT
+struct VkVideoDecodeH265PictureInfoKHR
 {
-	VkStructureType					sType;
-	const void*						pNext;
-	StdVideoDecodeH265PictureInfo*	pStdPictureInfo;
-	uint32_t						sliceCount;
-	const uint32_t*					pSliceOffsets;
+	VkStructureType							sType;
+	const void*								pNext;
+	const StdVideoDecodeH265PictureInfo*	pStdPictureInfo;
+	uint32_t								sliceSegmentCount;
+	const uint32_t*							pSliceSegmentOffsets;
 };
 
 struct StdVideoDecodeH265ReferenceInfoFlags
@@ -8823,7 +9600,7 @@ struct StdVideoDecodeH265ReferenceInfo
 	int32_t									PicOrderCntVal;
 };
 
-struct VkVideoDecodeH265DpbSlotInfoEXT
+struct VkVideoDecodeH265DpbSlotInfoKHR
 {
 	VkStructureType							sType;
 	const void*								pNext;
@@ -8867,11 +9644,7 @@ struct StdVideoEncodeH265SliceSegmentLongTermRefPics
 struct StdVideoEncodeH265SliceSegmentHeaderFlags
 {
 	uint32_t	first_slice_segment_in_pic_flag:1;
-	uint32_t	no_output_of_prior_pics_flag:1;
 	uint32_t	dependent_slice_segment_flag:1;
-	uint32_t	pic_output_flag:1;
-	uint32_t	short_term_ref_pic_set_sps_flag:1;
-	uint32_t	slice_temporal_mvp_enable_flag:1;
 	uint32_t	slice_sao_luma_flag:1;
 	uint32_t	slice_sao_chroma_flag:1;
 	uint32_t	num_ref_idx_active_override_flag:1;
@@ -8882,74 +9655,103 @@ struct StdVideoEncodeH265SliceSegmentHeaderFlags
 	uint32_t	slice_deblocking_filter_disabled_flag:1;
 	uint32_t	collocated_from_l0_flag:1;
 	uint32_t	slice_loop_filter_across_slices_enabled_flag:1;
+	uint32_t	reserved:20;
 };
 
 struct StdVideoEncodeH265SliceSegmentHeader
 {
-	StdVideoEncodeH265SliceSegmentHeaderFlags				flags;
-	StdVideoH265SliceType									slice_type;
-	uint32_t												slice_segment_address;
-	uint8_t													short_term_ref_pic_set_idx;
-	uint8_t													collocated_ref_idx;
-	uint8_t													num_ref_idx_l0_active_minus1;
-	uint8_t													num_ref_idx_l1_active_minus1;
-	uint8_t													MaxNumMergeCand;
-	int8_t													slice_cb_qp_offset;
-	int8_t													slice_cr_qp_offset;
-	int8_t													slice_beta_offset_div2;
-	int8_t													slice_tc_offset_div2;
-	int8_t													slice_act_y_qp_offset;
-	int8_t													slice_act_cb_qp_offset;
-	int8_t													slice_act_cr_qp_offset;
-	const StdVideoH265ShortTermRefPicSet*					pShortTermRefPicSet;
-	const StdVideoEncodeH265SliceSegmentLongTermRefPics*	pLongTermRefPics;
-	const StdVideoEncodeH265WeightTable*					pWeightTable;
+	StdVideoEncodeH265SliceSegmentHeaderFlags	flags;
+	StdVideoH265SliceType						slice_type;
+	uint32_t									slice_segment_address;
+	uint8_t										collocated_ref_idx;
+	uint8_t										MaxNumMergeCand;
+	int8_t										slice_cb_qp_offset;
+	int8_t										slice_cr_qp_offset;
+	int8_t										slice_beta_offset_div2;
+	int8_t										slice_tc_offset_div2;
+	int8_t										slice_act_y_qp_offset;
+	int8_t										slice_act_cb_qp_offset;
+	int8_t										slice_act_cr_qp_offset;
+	uint8_t										reserved1[3];
+	const StdVideoEncodeH265WeightTable*		pWeightTable;
 };
 
-struct StdVideoEncodeH265ReferenceModificationFlags
+struct VkVideoEncodeH265NaluSliceSegmentInfoEXT
+{
+	VkStructureType								sType;
+	const void*									pNext;
+	int32_t										constantQp;
+	const StdVideoEncodeH265SliceSegmentHeader*	pStdSliceSegmentHeader;
+};
+
+struct StdVideoEncodeH265ReferenceListsInfoFlags
 {
 	uint32_t	ref_pic_list_modification_flag_l0:1;
 	uint32_t	ref_pic_list_modification_flag_l1:1;
+	uint32_t	reserved:30;
 };
 
-struct StdVideoEncodeH265ReferenceModifications
+struct StdVideoEncodeH265ReferenceListsInfo
 {
-	StdVideoEncodeH265ReferenceModificationFlags	flags;
-	uint8_t											referenceList0ModificationsCount;
-	const uint8_t*									pReferenceList0Modifications;
-	uint8_t											referenceList1ModificationsCount;
-	const uint8_t*									pReferenceList1Modifications;
+	StdVideoEncodeH265ReferenceListsInfoFlags	flags;
+	uint8_t										num_ref_idx_l0_active_minus1;
+	uint8_t										num_ref_idx_l1_active_minus1;
+	uint8_t										RefPicList0[STD_VIDEO_H265_MAX_NUM_LIST_REF];
+	uint8_t										RefPicList1[STD_VIDEO_H265_MAX_NUM_LIST_REF];
+	uint8_t										list_entry_l0[STD_VIDEO_H265_MAX_NUM_LIST_REF];
+	uint8_t										list_entry_l1[STD_VIDEO_H265_MAX_NUM_LIST_REF];
 };
 
 struct StdVideoEncodeH265PictureInfoFlags
 {
-	uint32_t	is_reference_flag:1;
+	uint32_t	is_reference:1;
 	uint32_t	IrapPicFlag:1;
-	uint32_t	long_term_flag:1;
+	uint32_t	used_for_long_term_reference:1;
 	uint32_t	discardable_flag:1;
 	uint32_t	cross_layer_bla_flag:1;
+	uint32_t	pic_output_flag:1;
+	uint32_t	no_output_of_prior_pics_flag:1;
+	uint32_t	short_term_ref_pic_set_sps_flag:1;
+	uint32_t	slice_temporal_mvp_enabled_flag:1;
+	uint32_t	reserved:23;
 };
 
 struct StdVideoEncodeH265PictureInfo
 {
-	StdVideoEncodeH265PictureInfoFlags	flags;
-	StdVideoH265PictureType				PictureType;
-	uint8_t								sps_video_parameter_set_id;
-	uint8_t								pps_seq_parameter_set_id;
-	uint8_t								pps_pic_parameter_set_id;
-	int32_t								PicOrderCntVal;
-	uint8_t								TemporalId;
+	StdVideoEncodeH265PictureInfoFlags						flags;
+	StdVideoH265PictureType									pic_type;
+	uint8_t													sps_video_parameter_set_id;
+	uint8_t													pps_seq_parameter_set_id;
+	uint8_t													pps_pic_parameter_set_id;
+	uint8_t													short_term_ref_pic_set_idx;
+	int32_t													PicOrderCntVal;
+	uint8_t													TemporalId;
+	uint8_t													reserved1[7];
+	const StdVideoEncodeH265ReferenceListsInfo*				pRefLists;
+	const StdVideoH265ShortTermRefPicSet*					pShortTermRefPicSet;
+	const StdVideoEncodeH265SliceSegmentLongTermRefPics*	pLongTermRefPics;
+};
+
+struct VkVideoEncodeH265PictureInfoEXT
+{
+	VkStructureType									sType;
+	const void*										pNext;
+	uint32_t										naluSliceSegmentEntryCount;
+	const VkVideoEncodeH265NaluSliceSegmentInfoEXT*	pNaluSliceSegmentEntries;
+	const StdVideoEncodeH265PictureInfo*			pStdPictureInfo;
 };
 
 struct StdVideoEncodeH265ReferenceInfoFlags
 {
 	uint32_t	used_for_long_term_reference:1;
 	uint32_t	unused_for_reference:1;
+	uint32_t	reserved:30;
 };
 
 struct StdVideoEncodeH265ReferenceInfo
 {
 	StdVideoEncodeH265ReferenceInfoFlags	flags;
+	StdVideoH265PictureType					pic_type;
 	int32_t									PicOrderCntVal;
 	uint8_t									TemporalId;
 };
@@ -8958,38 +9760,7 @@ struct VkVideoEncodeH265DpbSlotInfoEXT
 {
 	VkStructureType							sType;
 	const void*								pNext;
-	int8_t									slotIndex;
 	const StdVideoEncodeH265ReferenceInfo*	pStdReferenceInfo;
-};
-
-struct VkVideoEncodeH265ReferenceListsInfoEXT
-{
-	VkStructureType									sType;
-	const void*										pNext;
-	uint8_t											referenceList0EntryCount;
-	const VkVideoEncodeH265DpbSlotInfoEXT*			pReferenceList0Entries;
-	uint8_t											referenceList1EntryCount;
-	const VkVideoEncodeH265DpbSlotInfoEXT*			pReferenceList1Entries;
-	const StdVideoEncodeH265ReferenceModifications*	pReferenceModifications;
-};
-
-struct VkVideoEncodeH265NaluSliceSegmentInfoEXT
-{
-	VkStructureType									sType;
-	const void*										pNext;
-	uint32_t										ctbCount;
-	const VkVideoEncodeH265ReferenceListsInfoEXT*	pReferenceFinalLists;
-	const StdVideoEncodeH265SliceSegmentHeader*		pSliceSegmentHeaderStd;
-};
-
-struct VkVideoEncodeH265VclFrameInfoEXT
-{
-	VkStructureType									sType;
-	const void*										pNext;
-	const VkVideoEncodeH265ReferenceListsInfoEXT*	pReferenceFinalLists;
-	uint32_t										naluSliceSegmentEntryCount;
-	const VkVideoEncodeH265NaluSliceSegmentInfoEXT*	pNaluSliceSegmentEntries;
-	const StdVideoEncodeH265PictureInfo*			pCurrentPictureInfo;
 };
 
 typedef VkDevicePrivateDataCreateInfo VkDevicePrivateDataCreateInfoEXT;
@@ -9266,6 +10037,8 @@ typedef VkPhysicalDeviceSubgroupSizeControlProperties VkPhysicalDeviceSubgroupSi
 
 typedef VkPipelineShaderStageRequiredSubgroupSizeCreateInfo VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT;
 
+typedef VkPipelineShaderStageRequiredSubgroupSizeCreateInfo VkShaderRequiredSubgroupSizeCreateInfoEXT;
+
 typedef VkMemoryOpaqueCaptureAddressAllocateInfo VkMemoryOpaqueCaptureAddressAllocateInfoKHR;
 
 typedef VkDeviceMemoryOpaqueCaptureAddressInfo VkDeviceMemoryOpaqueCaptureAddressInfoKHR;
@@ -9351,4 +10124,8 @@ typedef VkCommandBufferInheritanceRenderingInfo VkCommandBufferInheritanceRender
 typedef VkAttachmentSampleCountInfoAMD VkAttachmentSampleCountInfoNV;
 
 typedef VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM;
+
+typedef VkImageSubresource2KHR VkImageSubresource2EXT;
+
+typedef VkSubresourceLayout2KHR VkSubresourceLayout2EXT;
 

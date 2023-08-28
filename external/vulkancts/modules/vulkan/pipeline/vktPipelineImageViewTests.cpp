@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Imagination Technologies Ltd.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -147,7 +149,7 @@ ImageSamplingInstanceParams ImageViewTest::getImageSamplingInstanceParams (VkIma
 
 void ImageViewTest::checkSupport (Context& context) const
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 	checkSupportImageSamplingInstance(context, getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_samplerLod, m_componentMapping, m_subresourceRange));
 }
 
@@ -837,6 +839,8 @@ tcu::TestCaseGroup* createImageViewTests (tcu::TestContext& testCtx, PipelineCon
 		VK_FORMAT_ASTC_12x10_SRGB_BLOCK,
 		VK_FORMAT_ASTC_12x12_UNORM_BLOCK,
 		VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
+		VK_FORMAT_BC5_UNORM_BLOCK,
+		VK_FORMAT_BC5_SNORM_BLOCK,
 	};
 
 	de::MovePtr<tcu::TestCaseGroup> imageTests			(new tcu::TestCaseGroup(testCtx, "image_view", "Image tests"));

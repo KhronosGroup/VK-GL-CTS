@@ -43,6 +43,7 @@
 #include "tcuTestLog.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuFloat.hpp"
+#include "deModularCounter.hpp"
 
 #include <cmath>
 #include <cstddef>
@@ -68,17 +69,18 @@ static const VkFlags	ALL_RAY_TRACING_STAGES	= VK_SHADER_STAGE_RAYGEN_BIT_KHR
 												| VK_SHADER_STAGE_CALLABLE_BIT_KHR;
 
 
-enum BottomTestType
+enum class BottomTestType
 {
-	BTT_TRIANGLES,
-	BTT_AABBS
+	TRIANGLES = 0,
+	AABBS = 1,
 };
 
-enum TopTestType
+enum class TopTestType
 {
-	TTT_IDENTICAL_INSTANCES,
-	TTT_DIFFERENT_INSTANCES,
-	TTT_MIX_INSTANCES,
+	IDENTICAL_INSTANCES,
+	DIFFERENT_INSTANCES,
+	UPDATED_INSTANCES,
+	MIX_INSTANCES,
 };
 
 enum OperationTarget
@@ -93,7 +95,9 @@ enum OperationType
 	OP_NONE,
 	OP_COPY,
 	OP_COMPACT,
-	OP_SERIALIZE
+	OP_SERIALIZE,
+	OP_UPDATE,
+	OP_UPDATE_IN_PLACE
 };
 
 enum class InstanceCullFlags
@@ -120,6 +124,14 @@ enum class InstanceCustomIndexCase
 	CLOSEST_HIT		= 1,
 	ANY_HIT			= 2,
 	INTERSECTION	= 3,
+};
+
+enum class UpdateCase
+{
+	NONE,
+	VERTICES,
+	INDICES,
+	TRANSFORM
 };
 
 static const deUint32 RTAS_DEFAULT_SIZE = 8u;
@@ -168,9 +180,11 @@ struct TestParams
 	InstanceCullFlags						cullFlags;		// Flags for instances, if needed.
 	bool									bottomUsesAOP;	// does bottom AS use arrays, or arrays of pointers
 	bool									bottomGeneric;	// Bottom created as generic AS type.
+	bool									bottomUnboundedCreation; // Bottom created with unbounded buffer memory.
 	TopTestType								topTestType;	// If instances are identical then bottom geometries must have different vertices/aabbs
 	bool									topUsesAOP;		// does top AS use arrays, or arrays of pointers
 	bool									topGeneric;		// Top created as generic AS type.
+	bool									topUnboundedCreation; // Top created with unbounded buffer memory.
 	VkBuildAccelerationStructureFlagsKHR	buildFlags;
 	OperationTarget							operationTarget;
 	OperationType							operationType;
@@ -182,6 +196,7 @@ struct TestParams
 	InstanceCustomIndexCase					instanceCustomIndexCase;
 	bool									useCullMask;
 	uint32_t								cullMask;
+	UpdateCase								updateCase;
 };
 
 deUint32 getShaderGroupSize (const InstanceInterface&	vki,
@@ -290,7 +305,7 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > CheckerboardConfig
 	DE_UNREF(context);
 
 	// Cull flags can only be used with triangles.
-	DE_ASSERT(testParams.cullFlags == InstanceCullFlags::NONE || testParams.bottomTestType == BTT_TRIANGLES);
+	DE_ASSERT(testParams.cullFlags == InstanceCullFlags::NONE || testParams.bottomTestType == BottomTestType::TRIANGLES);
 
 	// Checkerboard configuration does not support empty geometry tests.
 	DE_ASSERT(testParams.emptyASCase == EmptyAccelerationStructureCase::NOT_EMPTY);
@@ -304,12 +319,12 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > CheckerboardConfig
 	tcu::Vec3 v2(1.0, 1.0, 0.0);
 	tcu::Vec3 v3(1.0, 0.0, 0.0);
 
-	if (testParams.topTestType == TTT_DIFFERENT_INSTANCES)
+	if (testParams.topTestType == TopTestType::DIFFERENT_INSTANCES)
 	{
 		de::MovePtr<BottomLevelAccelerationStructure>	bottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
 		bottomLevelAccelerationStructure->setGeometryCount(1u);
 		de::SharedPtr<RaytracedGeometryBase> geometry;
-		if (testParams.bottomTestType == BTT_TRIANGLES)
+		if (testParams.bottomTestType == BottomTestType::TRIANGLES)
 		{
 			geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType, testParams.padVertices);
 			if (testParams.indexType == VK_INDEX_TYPE_NONE_KHR)
@@ -409,7 +424,7 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > CheckerboardConfig
 			bottomLevelAccelerationStructure->setGeometryCount(1u);
 
 			de::SharedPtr<RaytracedGeometryBase> geometry;
-			if (testParams.bottomTestType == BTT_TRIANGLES)
+			if (testParams.bottomTestType == BottomTestType::TRIANGLES)
 			{
 				geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType, testParams.padVertices);
 				if (testParams.indexType == VK_INDEX_TYPE_NONE_KHR)
@@ -514,7 +529,7 @@ de::MovePtr<TopLevelAccelerationStructure> CheckerboardConfiguration::initTopAcc
 	de::MovePtr<TopLevelAccelerationStructure>	result = makeTopLevelAccelerationStructure();
 	result->setInstanceCount(instanceCount);
 
-	if (testParams.topTestType == TTT_DIFFERENT_INSTANCES)
+	if (testParams.topTestType == TopTestType::DIFFERENT_INSTANCES)
 	{
 
 		for (deUint32 y = 0; y < testParams.height; ++y)
@@ -574,7 +589,7 @@ void CheckerboardConfiguration::initRayTracingShaders(de::MovePtr<RayTracingPipe
 	rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,		createShaderModule(vkd, device, context.getBinaryCollection().get("rgen"),  0), 0);
 	rayTracingPipeline->addShader(hitShaderStage,						createShaderModule(vkd, device, context.getBinaryCollection().get(hitShaderName),  0), 1);
 	rayTracingPipeline->addShader(hitShaderStage,						createShaderModule(vkd, device, context.getBinaryCollection().get(hitShaderName),  0), 2);
-	if (testParams.bottomTestType == BTT_AABBS)
+	if (testParams.bottomTestType == BottomTestType::AABBS)
 		rayTracingPipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR,	createShaderModule(vkd, device, context.getBinaryCollection().get("isect"), 0), 2);
 	rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR,			createShaderModule(vkd, device, context.getBinaryCollection().get("miss"),  0), 3);
 }
@@ -594,7 +609,7 @@ void CheckerboardConfiguration::initShaderBindingTables(de::MovePtr<RayTracingPi
 	Allocator&									allocator				= context.getDefaultAllocator();
 
 	raygenShaderBindingTable											= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1 );
-	if(testParams.bottomTestType == BTT_AABBS)
+	if(testParams.bottomTestType == BottomTestType::AABBS)
 		hitShaderBindingTable											= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 2, 1 );
 	else // testParams.bottomTestType == BTT_TRIANGLES
 		hitShaderBindingTable											= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1 );
@@ -904,6 +919,191 @@ size_t SingleTriangleConfiguration::getResultImageFormatSize()
 }
 
 VkClearValue SingleTriangleConfiguration::getClearValue()
+{
+	return makeClearValueColorF32(32.0f, 0.0f, 0.0f, 0.0f);
+}
+
+class UpdateableASConfiguration : public TestConfiguration
+{
+public:
+	std::vector<de::SharedPtr<BottomLevelAccelerationStructure>>	initBottomAccelerationStructures	(Context&							context,
+																										 TestParams&						testParams) override;
+	de::MovePtr<TopLevelAccelerationStructure>						initTopAccelerationStructure		(Context&							context,
+																										 TestParams&						testParams,
+																										 std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >&	bottomLevelAccelerationStructures) override;
+	void															initRayTracingShaders				(de::MovePtr<RayTracingPipeline>&	rayTracingPipeline,
+																										 Context&							context,
+																										 TestParams&						testParams) override;
+	void															initShaderBindingTables				(de::MovePtr<RayTracingPipeline>&	rayTracingPipeline,
+																										 Context&							context,
+																										 TestParams&						testParams,
+																										 VkPipeline							pipeline,
+																										 deUint32							shaderGroupHandleSize,
+																										 deUint32							shaderGroupBaseAlignment,
+																										 de::MovePtr<BufferWithMemory>&		raygenShaderBindingTable,
+																										 de::MovePtr<BufferWithMemory>&		hitShaderBindingTable,
+																										 de::MovePtr<BufferWithMemory>&		missShaderBindingTable) override;
+	bool															verifyImage							(BufferWithMemory*					resultBuffer,
+																										 Context&							context,
+																										 TestParams&						testParams) override;
+	VkFormat														getResultImageFormat				() override;
+	size_t															getResultImageFormatSize			() override;
+	VkClearValue													getClearValue						() override;
+
+	// two triangles: one in the front we will replace with one in the back after updating
+	// update vertex: build with vertices[0], update vertices with vertices[1]
+	// update index: build with vertices[0], updade indices with indices[1]
+	const std::vector<tcu::Vec3> vertices =
+	{
+		tcu::Vec3(0.0f, 0.0f, 0.0f),
+		tcu::Vec3(0.5f, 0.0f, 0.0f),
+		tcu::Vec3(0.0f, 0.5f, 0.0f),
+		tcu::Vec3(0.0f, 0.0f, -0.5f),
+		tcu::Vec3(0.5f, 0.0f, -0.5f),
+		tcu::Vec3(0.0f, 0.5f, -0.5f),
+	};
+
+	const std::vector<deUint32> indices =
+	{
+		0,
+		1,
+		2
+	};
+};
+
+std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > UpdateableASConfiguration::initBottomAccelerationStructures (Context&			context,
+																														 TestParams&		testParams)
+{
+	DE_UNREF(context);
+
+	// No other cases supported for the single triangle configuration.
+	DE_ASSERT(testParams.instanceCustomIndexCase == InstanceCustomIndexCase::NONE);
+
+	std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >	result;
+
+	{
+		de::MovePtr<BottomLevelAccelerationStructure>	bottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
+
+		unsigned int geometryCount = 1U;
+
+		bottomLevelAccelerationStructure->setGeometryCount(geometryCount);
+
+		de::SharedPtr<RaytracedGeometryBase> geometry;
+		geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType);
+
+		for (auto it = begin(vertices), eit = end(vertices); it != eit; ++it)
+			geometry->addVertex(*it);
+
+		if (testParams.indexType != VK_INDEX_TYPE_NONE_KHR)
+		{
+			for (auto it = begin(indices), eit = end(indices); it != eit; ++it)
+				geometry->addIndex(*it);
+		}
+		bottomLevelAccelerationStructure->addGeometry(geometry);
+
+		result.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
+	}
+	return result;
+}
+
+de::MovePtr<TopLevelAccelerationStructure> UpdateableASConfiguration::initTopAccelerationStructure (Context&			context,
+																									  TestParams&		testParams,
+																									  std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >& bottomLevelAccelerationStructures)
+{
+	DE_UNREF(context);
+	DE_UNREF(testParams);
+
+	// Unsupported in this configuration.
+	DE_ASSERT(testParams.instanceCustomIndexCase == InstanceCustomIndexCase::NONE);
+
+	de::MovePtr<TopLevelAccelerationStructure>	result = makeTopLevelAccelerationStructure();
+	result->setInstanceCount(1u);
+
+	result->addInstance(bottomLevelAccelerationStructures[0]);
+
+	return result;
+}
+
+void UpdateableASConfiguration::initRayTracingShaders(de::MovePtr<RayTracingPipeline>&		rayTracingPipeline,
+														Context&								context,
+														TestParams&								testParams)
+{
+	DE_UNREF(testParams);
+	const DeviceInterface&						vkd						= context.getDeviceInterface();
+	const VkDevice								device					= context.getDevice();
+
+	rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,		createShaderModule(vkd, device, context.getBinaryCollection().get("rgen_depth"),  0), 0);
+	rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,	createShaderModule(vkd, device, context.getBinaryCollection().get("chit_depth"),  0), 1);
+	rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR,			createShaderModule(vkd, device, context.getBinaryCollection().get("miss_depth"),  0), 2);
+}
+
+void UpdateableASConfiguration::initShaderBindingTables(de::MovePtr<RayTracingPipeline>&	rayTracingPipeline,
+														  Context&							context,
+														  TestParams&						testParams,
+														  VkPipeline						pipeline,
+														  deUint32							shaderGroupHandleSize,
+														  deUint32							shaderGroupBaseAlignment,
+														  de::MovePtr<BufferWithMemory>&	raygenShaderBindingTable,
+														  de::MovePtr<BufferWithMemory>&	hitShaderBindingTable,
+														  de::MovePtr<BufferWithMemory>&	missShaderBindingTable)
+{
+	DE_UNREF(testParams);
+	const DeviceInterface&						vkd						= context.getDeviceInterface();
+	const VkDevice								device					= context.getDevice();
+	Allocator&									allocator				= context.getDefaultAllocator();
+
+	raygenShaderBindingTable											= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1 );
+	hitShaderBindingTable												= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1 );
+	missShaderBindingTable												= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 2, 1 );
+}
+
+bool UpdateableASConfiguration::verifyImage(BufferWithMemory* resultBuffer, Context& context, TestParams& testParams)
+{
+	tcu::TextureFormat			imageFormat		= vk::mapVkFormat(getResultImageFormat());
+	tcu::TextureFormat			vertexFormat	= vk::mapVkFormat(testParams.vertexFormat);
+	tcu::ConstPixelBufferAccess	resultAccess	(imageFormat, testParams.width, testParams.height, 1, resultBuffer->getAllocation().getHostPtr());
+
+	std::vector<float>			reference		(testParams.width * testParams.height);
+	tcu::PixelBufferAccess		referenceAccess	(imageFormat, testParams.width, testParams.height, 1, reference.data());
+
+	// verify results
+	tcu::Vec3					v0				= vertices[3];
+	tcu::Vec3					v1				= vertices[4];
+	tcu::Vec3					v2				= vertices[5];
+	const int					numChannels		= tcu::getNumUsedChannels(vertexFormat.order);
+	if (numChannels < 3)
+	{
+		v0.z() = 0.0f;
+		v1.z() = 0.0f;
+		v2.z() = 0.0f;
+	}
+
+	for (deUint32 j = 0; j < testParams.height; ++j)
+	{
+		float y = 0.1f + 0.2f * float(j) / float(testParams.height - 1);
+		for (deUint32 i = 0; i < testParams.width; ++i)
+		{
+			float	x			= 0.1f + 0.2f * float(i) / float(testParams.width - 1);
+			float	z			= v0.z();
+			bool	inTriangle	= pointInTriangle2D(tcu::Vec3(x, y, z), v0, v1, v2);
+			float	refValue	= ((inTriangle && testParams.emptyASCase == EmptyAccelerationStructureCase::NOT_EMPTY) ? 1.0f-z : 0.0f);
+			referenceAccess.setPixel(tcu::Vec4(refValue, 0.0f, 0.0f, 1.0f), i, j);
+		}
+	}
+	return tcu::floatThresholdCompare(context.getTestContext().getLog(), "Result comparison", "", referenceAccess, resultAccess, tcu::Vec4(0.01f), tcu::COMPARE_LOG_EVERYTHING);
+}
+
+VkFormat UpdateableASConfiguration::getResultImageFormat()
+{
+	return VK_FORMAT_R32_SFLOAT;
+}
+
+size_t UpdateableASConfiguration::getResultImageFormatSize()
+{
+	return sizeof(float);
+}
+
+VkClearValue UpdateableASConfiguration::getClearValue()
 {
 	return makeClearValueColorF32(32.0f, 0.0f, 0.0f, 0.0f);
 }
@@ -1677,6 +1877,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 			blas->setBuildFlags						(bottomBuildFlags);
 			blas->setUseArrayOfPointers				(m_data.bottomUsesAOP);
 			blas->setCreateGeneric					(m_data.bottomGeneric);
+			blas->setCreationBufferUnbounded		(m_data.bottomUnboundedCreation);
 			blas->setBuildWithoutGeometries			(buildWithoutGeom);
 			blas->setBuildWithoutPrimitives			(bottomNoPrimitives);
 			blas->createAndBuild					(vkd, device, *cmdBuffer, allocator);
@@ -1731,6 +1932,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					asCopy->setBuildFlags(m_data.buildFlags);
 					asCopy->setUseArrayOfPointers(m_data.bottomUsesAOP);
 					asCopy->setCreateGeneric(m_data.bottomGeneric);
+					asCopy->setCreationBufferUnbounded(m_data.bottomUnboundedCreation);
 					asCopy->setBuildWithoutGeometries(buildWithoutGeom);
 					asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
 					asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bottomLevelAccelerationStructures[i].get(), 0u, 0u);
@@ -1747,6 +1949,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					asCopy->setBuildFlags(m_data.buildFlags);
 					asCopy->setUseArrayOfPointers(m_data.bottomUsesAOP);
 					asCopy->setCreateGeneric(m_data.bottomGeneric);
+					asCopy->setCreationBufferUnbounded(m_data.bottomUnboundedCreation);
 					asCopy->setBuildWithoutGeometries(buildWithoutGeom);
 					asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
 					asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bottomLevelAccelerationStructures[i].get(), bottomBlasCompactSize[i], 0u);
@@ -1780,6 +1983,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					asCopy->setBuildFlags(m_data.buildFlags);
 					asCopy->setUseArrayOfPointers(m_data.bottomUsesAOP);
 					asCopy->setCreateGeneric(m_data.bottomGeneric);
+					asCopy->setCreationBufferUnbounded(m_data.bottomUnboundedCreation);
 					asCopy->setBuildWithoutGeometries(buildWithoutGeom);
 					asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
 					asCopy->setDeferredOperation(htSerialize, workerThreadsCount);
@@ -1809,6 +2013,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 		topLevelAccelerationStructure->setBuildWithoutPrimitives	(topNoPrimitives);
 		topLevelAccelerationStructure->setUseArrayOfPointers		(m_data.topUsesAOP);
 		topLevelAccelerationStructure->setCreateGeneric				(m_data.topGeneric);
+		topLevelAccelerationStructure->setCreationBufferUnbounded	(m_data.topUnboundedCreation);
 		topLevelAccelerationStructure->setInactiveInstances			(inactiveInstances);
 		topLevelAccelerationStructure->createAndBuild				(vkd, device, *cmdBuffer, allocator);
 		topLevelStructureHandles.push_back							(*(topLevelAccelerationStructure->getPtr()));
@@ -1849,6 +2054,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					topLevelAccelerationStructureCopy->setInactiveInstances(inactiveInstances);
 					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
 					topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
+					topLevelAccelerationStructureCopy->setCreationBufferUnbounded(m_data.topUnboundedCreation);
 					topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, topLevelAccelerationStructure.get(), 0u, 0u);
 					break;
 				}
@@ -1861,6 +2067,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					topLevelAccelerationStructureCopy->setInactiveInstances(inactiveInstances);
 					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
 					topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
+					topLevelAccelerationStructureCopy->setCreationBufferUnbounded(m_data.topUnboundedCreation);
 					topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, topLevelAccelerationStructure.get(), topBlasCompactSize[0], 0u);
 					break;
 				}
@@ -1889,8 +2096,34 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					topLevelAccelerationStructureCopy->setInactiveInstances(inactiveInstances);
 					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
 					topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
+					topLevelAccelerationStructureCopy->setCreationBufferUnbounded(m_data.topUnboundedCreation);
 					topLevelAccelerationStructureCopy->setDeferredOperation(htSerialize, workerThreadsCount);
 					topLevelAccelerationStructureCopy->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, storage.get(), 0u);
+					break;
+				}
+				case OP_UPDATE:
+				{
+					topLevelAccelerationStructureCopy = m_data.testConfiguration->initTopAccelerationStructure(m_context, m_data, *bottomLevelAccelerationStructuresPtr);
+					topLevelAccelerationStructureCopy->setBuildFlags(m_data.buildFlags);
+					topLevelAccelerationStructureCopy->create(vkd, device, allocator, 0u, 0u);
+					// Update AS based on topLevelAccelerationStructure
+					topLevelAccelerationStructureCopy->build(vkd, device, *cmdBuffer, topLevelAccelerationStructure.get());
+					break;
+				}
+				case OP_UPDATE_IN_PLACE:
+				{
+					// Update in place
+					topLevelAccelerationStructure->build(vkd, device, *cmdBuffer, topLevelAccelerationStructure.get());
+					// Make a coppy
+					topLevelAccelerationStructureCopy = makeTopLevelAccelerationStructure();
+					topLevelAccelerationStructureCopy->setDeferredOperation(htCopy, workerThreadsCount);
+					topLevelAccelerationStructureCopy->setBuildType(m_data.buildType);
+					topLevelAccelerationStructureCopy->setBuildFlags(m_data.buildFlags);
+					topLevelAccelerationStructureCopy->setBuildWithoutPrimitives(topNoPrimitives);
+					topLevelAccelerationStructureCopy->setInactiveInstances(inactiveInstances);
+					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
+					topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
+					topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, topLevelAccelerationStructure.get(), 0u, 0u);
 					break;
 				}
 				default:
@@ -2807,7 +3040,7 @@ RayTracingHeaderBottomAddressTestInstance::prepareTopAccelerationStructure (cons
 
 	std::vector<de::SharedPtr<BottomLevelAccelerationStructure>>	bottoms;
 
-	if (TTT_IDENTICAL_INSTANCES == m_params->topTestType)
+	if (TopTestType::IDENTICAL_INSTANCES == m_params->topTestType)
 	{
 		auto blas = de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
 		blas->setBuildType(m_params->buildType);
@@ -2818,7 +3051,7 @@ RayTracingHeaderBottomAddressTestInstance::prepareTopAccelerationStructure (cons
 			bottoms.emplace_back(blas);
 		}
 	}
-	else if (TTT_DIFFERENT_INSTANCES == m_params->topTestType)
+	else if (TopTestType::DIFFERENT_INSTANCES == m_params->topTestType)
 	{
 		for (deUint32 i = 0; i < m_params->width; ++i)
 		{
@@ -4279,6 +4512,304 @@ TestStatus CopySBTInstance::iterate (void)
 	return (deMemCmp(referenceImageDataPtr, resultImageDataPtr, bufferSize) == 0) ? TestStatus::pass("") : TestStatus::fail("");
 }
 
+class ASUpdateCase : public RayTracingASBasicTestCase
+{
+public:
+					ASUpdateCase	(tcu::TestContext& context, const char* name, const char* desc, const TestParams& data);
+					~ASUpdateCase	(void);
+
+	TestInstance*	createInstance	(Context& context) const override;
+};
+
+class ASUpdateInstance : public RayTracingASBasicTestInstance
+{
+public:
+									ASUpdateInstance	(Context& context, const TestParams& data);
+									~ASUpdateInstance	(void) = default;
+	tcu::TestStatus					iterate				(void) override;
+
+private:
+	TestParams						m_data;
+};
+
+ASUpdateCase::ASUpdateCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams& data)
+	: RayTracingASBasicTestCase	(context, name, desc, data)
+{
+}
+
+ASUpdateCase::~ASUpdateCase	(void)
+{
+}
+
+TestInstance* ASUpdateCase::createInstance (Context& context) const
+{
+	return new ASUpdateInstance(context, m_data);
+}
+
+
+ASUpdateInstance::ASUpdateInstance (Context& context, const TestParams& data)
+	: RayTracingASBasicTestInstance		(context, data)
+	, m_data				(data)
+{
+}
+
+TestStatus ASUpdateInstance::iterate (void)
+{
+	const InstanceInterface&			vki									= m_context.getInstanceInterface();
+	const DeviceInterface&				vkd									= m_context.getDeviceInterface();
+	const VkDevice						device								= m_context.getDevice();
+	const VkPhysicalDevice				physicalDevice						= m_context.getPhysicalDevice();
+	const deUint32						queueFamilyIndex					= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue						queue								= m_context.getUniversalQueue();
+	Allocator&							allocator							= m_context.getDefaultAllocator();
+	const deUint32						pixelCount							= m_data.width * m_data.height;
+	const deUint32						shaderGroupHandleSize				= getShaderGroupSize(vki, physicalDevice);
+	const deUint32						shaderGroupBaseAlignment			= getShaderGroupBaseAlignment(vki, physicalDevice);
+
+	const Move<VkDescriptorSetLayout>	descriptorSetLayout					= DescriptorSetLayoutBuilder()
+																					.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, ALL_RAY_TRACING_STAGES)
+																					.addSingleBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, ALL_RAY_TRACING_STAGES)
+																					.build(vkd, device);
+	const Move<VkDescriptorPool>		descriptorPool						= DescriptorPoolBuilder()
+																					.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+																					.addType(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+																					.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+	const Move<VkDescriptorSet>			descriptorSet						= makeDescriptorSet(vkd, device, *descriptorPool, *descriptorSetLayout);
+	const Move<VkPipelineLayout>		pipelineLayout						= makePipelineLayout(vkd, device, descriptorSetLayout.get());
+
+	de::MovePtr<RayTracingPipeline>		rayTracingPipeline					= de::newMovePtr<RayTracingPipeline>();
+	m_data.testConfiguration->initRayTracingShaders(rayTracingPipeline, m_context, m_data);
+	Move<VkPipeline>					pipeline							= rayTracingPipeline->createPipeline(vkd, device, *pipelineLayout);
+
+	de::MovePtr<BufferWithMemory>		raygenShaderBindingTable;
+	de::MovePtr<BufferWithMemory>		hitShaderBindingTable;
+	de::MovePtr<BufferWithMemory>		missShaderBindingTable;
+	m_data.testConfiguration->initShaderBindingTables(rayTracingPipeline, m_context, m_data, *pipeline, shaderGroupHandleSize, shaderGroupBaseAlignment, raygenShaderBindingTable, hitShaderBindingTable, missShaderBindingTable);
+
+	const VkStridedDeviceAddressRegionKHR	raygenShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(),	0),	shaderGroupHandleSize,	shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	missShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(),		0),	shaderGroupHandleSize,	shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(),		0),	shaderGroupHandleSize,	shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	callableShaderBindingTableRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL,																	0,						0);
+
+	const VkFormat						imageFormat							= m_data.testConfiguration->getResultImageFormat();
+	const VkImageCreateInfo				imageCreateInfo						= makeImageCreateInfo(m_data.width, m_data.height, imageFormat);
+	const VkImageSubresourceRange		imageSubresourceRange				= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0, 1u);
+	const de::MovePtr<ImageWithMemory>	image								= de::MovePtr<ImageWithMemory>(new ImageWithMemory(vkd, device, allocator, imageCreateInfo, MemoryRequirement::Any));
+	const Move<VkImageView>				imageView							= makeImageView(vkd, device, **image, VK_IMAGE_VIEW_TYPE_2D, imageFormat, imageSubresourceRange);
+
+	const VkBufferCreateInfo			resultBufferCreateInfo				= makeBufferCreateInfo(pixelCount*m_data.testConfiguration->getResultImageFormatSize(), VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	const VkImageSubresourceLayers		resultBufferImageSubresourceLayers	= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+	const VkBufferImageCopy				resultBufferImageRegion				= makeBufferImageCopy(makeExtent3D(m_data.width, m_data.height, 1u), resultBufferImageSubresourceLayers);
+	de::MovePtr<BufferWithMemory>		resultBuffer						= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vkd, device, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
+
+	const VkDescriptorImageInfo			descriptorImageInfo					= makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+
+	const Move<VkCommandPool>			cmdPool								= createCommandPool(vkd, device, 0, queueFamilyIndex);
+	const Move<VkCommandBuffer>			cmdBuffer							= allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	std::vector<de::SharedPtr<BottomLevelAccelerationStructure>>	bottomLevelAccelerationStructures;
+	de::MovePtr<TopLevelAccelerationStructure>						topLevelAccelerationStructure;
+	std::vector<de::SharedPtr<BottomLevelAccelerationStructure>>	bottomLevelAccelerationStructureCopies;
+	de::MovePtr<TopLevelAccelerationStructure>						topLevelAccelerationStructureCopy;
+	std::vector<de::SharedPtr<SerialStorage>>						bottomSerialized;
+	std::vector<de::SharedPtr<SerialStorage>>						topSerialized;
+	std::vector<VkDeviceSize>			accelerationCompactedSizes;
+	std::vector<VkDeviceSize>			accelerationSerialSizes;
+	Move<VkQueryPool>					m_queryPoolCompact;
+	Move<VkQueryPool>					m_queryPoolSerial;
+
+	beginCommandBuffer(vkd, *cmdBuffer, 0u);
+	{
+		const VkImageMemoryBarrier				preImageBarrier = makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			**image, imageSubresourceRange);
+		cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &preImageBarrier);
+		const VkClearValue						clearValue = m_data.testConfiguration->getClearValue();
+		vkd.cmdClearColorImage(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.color, 1, &imageSubresourceRange);
+		const VkImageMemoryBarrier				postImageBarrier = makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+			**image, imageSubresourceRange);
+		cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, &postImageBarrier);
+
+		// build bottom level acceleration structures and their copies ( only when we are testing copying bottom level acceleration structures )
+		bool									bottomCompact		= m_data.operationType == OP_COMPACT && m_data.operationTarget == OT_BOTTOM_ACCELERATION;
+		const bool								buildWithoutGeom	= (m_data.emptyASCase == EmptyAccelerationStructureCase::NO_GEOMETRIES_BOTTOM);
+		const bool								bottomNoPrimitives	= (m_data.emptyASCase == EmptyAccelerationStructureCase::NO_PRIMITIVES_BOTTOM);
+		const bool								topNoPrimitives		= (m_data.emptyASCase == EmptyAccelerationStructureCase::NO_PRIMITIVES_TOP);
+		const bool								inactiveInstances	= (m_data.emptyASCase == EmptyAccelerationStructureCase::INACTIVE_INSTANCES);
+		bottomLevelAccelerationStructures							= m_data.testConfiguration->initBottomAccelerationStructures(m_context, m_data);
+		VkBuildAccelerationStructureFlagsKHR	allowCompactionFlag	= VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR;
+		VkBuildAccelerationStructureFlagsKHR	emptyCompactionFlag	= VkBuildAccelerationStructureFlagsKHR(0);
+		VkBuildAccelerationStructureFlagsKHR	bottomCompactFlags	= (bottomCompact ? allowCompactionFlag : emptyCompactionFlag);
+		VkBuildAccelerationStructureFlagsKHR	bottomBuildFlags	= m_data.buildFlags | bottomCompactFlags;
+		std::vector<VkAccelerationStructureKHR>	accelerationStructureHandles;
+		std::vector<VkDeviceSize>				bottomBlasCompactSize;
+		std::vector<VkDeviceSize>				bottomBlasSerialSize;
+
+		for (auto& blas : bottomLevelAccelerationStructures)
+		{
+			blas->setBuildType						(m_data.buildType);
+			blas->setBuildFlags						(bottomBuildFlags);
+			blas->setUseArrayOfPointers				(m_data.bottomUsesAOP);
+			blas->setCreateGeneric					(m_data.bottomGeneric);
+			blas->setCreationBufferUnbounded		(m_data.bottomUnboundedCreation);
+			blas->setBuildWithoutGeometries			(buildWithoutGeom);
+			blas->setBuildWithoutPrimitives			(bottomNoPrimitives);
+			blas->createAndBuild					(vkd, device, *cmdBuffer, allocator);
+			accelerationStructureHandles.push_back	(*(blas->getPtr()));
+		}
+
+		auto bottomLevelAccelerationStructuresPtr								= &bottomLevelAccelerationStructures;
+		// build top level acceleration structures and their copies ( only when we are testing copying top level acceleration structures )
+		bool									topCompact			= m_data.operationType == OP_COMPACT && m_data.operationTarget == OT_TOP_ACCELERATION;
+		VkBuildAccelerationStructureFlagsKHR	topCompactFlags		= (topCompact ? allowCompactionFlag : emptyCompactionFlag);
+		VkBuildAccelerationStructureFlagsKHR	topBuildFlags		= m_data.buildFlags | topCompactFlags;
+		std::vector<VkAccelerationStructureKHR> topLevelStructureHandles;
+		std::vector<VkDeviceSize>				topBlasCompactSize;
+		std::vector<VkDeviceSize>				topBlasSerialSize;
+
+		topLevelAccelerationStructure								= m_data.testConfiguration->initTopAccelerationStructure(m_context, m_data, *bottomLevelAccelerationStructuresPtr);
+		topLevelAccelerationStructure->setBuildType					(m_data.buildType);
+		topLevelAccelerationStructure->setBuildFlags				(topBuildFlags);
+		topLevelAccelerationStructure->setBuildWithoutPrimitives	(topNoPrimitives);
+		topLevelAccelerationStructure->setUseArrayOfPointers		(m_data.topUsesAOP);
+		topLevelAccelerationStructure->setCreateGeneric				(m_data.topGeneric);
+		topLevelAccelerationStructure->setCreationBufferUnbounded	(m_data.topUnboundedCreation);
+		topLevelAccelerationStructure->setInactiveInstances			(inactiveInstances);
+		topLevelAccelerationStructure->createAndBuild				(vkd, device, *cmdBuffer, allocator);
+		topLevelStructureHandles.push_back							(*(topLevelAccelerationStructure->getPtr()));
+
+		const VkMemoryBarrier postBuildBarrier = makeMemoryBarrier(VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR, VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR);
+		cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, &postBuildBarrier);
+
+		if (m_data.updateCase == UpdateCase::VERTICES)
+		{
+			for (auto& blas : bottomLevelAccelerationStructures)
+			{
+				const std::vector<tcu::Vec3> vertices =
+				{
+					tcu::Vec3(0.0f, 0.0f, -0.5f),
+					tcu::Vec3(0.5f, 0.0f, -0.5f),
+					tcu::Vec3(0.0f, 0.5f, -0.5f),
+				};
+				const std::vector<deUint32> indices =
+				{
+					0,
+					1,
+					2
+				};
+				de::SharedPtr<RaytracedGeometryBase> geometry;
+				geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, m_data.vertexFormat, m_data.indexType);
+
+				for (auto it = begin(vertices), eit = end(vertices); it != eit; ++it)
+					geometry->addVertex(*it);
+
+				if (m_data.indexType != VK_INDEX_TYPE_NONE_KHR)
+				{
+					for (auto it = begin(indices), eit = end(indices); it != eit; ++it)
+						geometry->addIndex(*it);
+				}
+				blas->updateGeometry(0, geometry);
+				blas->build(vkd, device, *cmdBuffer, blas.get());
+			}
+		}
+		else if (m_data.updateCase == UpdateCase::INDICES)
+		{
+			for (auto& blas : bottomLevelAccelerationStructures)
+			{
+				const std::vector<tcu::Vec3> vertices =
+				{
+					tcu::Vec3(0.0f, 0.0f, 0.0f),
+					tcu::Vec3(0.5f, 0.0f, 0.0f),
+					tcu::Vec3(0.0f, 0.5f, 0.0f),
+					tcu::Vec3(0.0f, 0.0f, -0.5f),
+					tcu::Vec3(0.5f, 0.0f, -0.5f),
+					tcu::Vec3(0.0f, 0.5f, -0.5f),
+				};
+
+				const std::vector<deUint32> indices =
+				{
+					3,
+					4,
+					5
+				};
+				de::SharedPtr<RaytracedGeometryBase> geometry;
+				geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, m_data.vertexFormat, m_data.indexType);
+
+				for (auto it = begin(vertices), eit = end(vertices); it != eit; ++it)
+					geometry->addVertex(*it);
+
+				if (m_data.indexType != VK_INDEX_TYPE_NONE_KHR)
+				{
+					for (auto it = begin(indices), eit = end(indices); it != eit; ++it)
+						geometry->addIndex(*it);
+				}
+				blas->updateGeometry(0, geometry);
+				blas->build(vkd, device, *cmdBuffer, blas.get());
+			}
+		}
+		else if (m_data.updateCase == UpdateCase::TRANSFORM)
+		{
+			const VkTransformMatrixKHR translatedMatrix = { {
+				{ 1.0f, 0.0f, 0.0f, 0.0f },
+				{ 0.0f, 1.0f, 0.0f, 0.0f },
+				{ 0.0f, 0.0f, 1.0f, -0.5f }
+			} };
+			topLevelAccelerationStructure->updateInstanceMatrix(vkd, device, 0, translatedMatrix);
+			topLevelAccelerationStructure->build(vkd, device, *cmdBuffer, topLevelAccelerationStructure.get());
+		}
+
+		const TopLevelAccelerationStructure*			topLevelRayTracedPtr	= topLevelAccelerationStructure.get();
+		const VkMemoryBarrier preTraceMemoryBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
+		cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, &preTraceMemoryBarrier);
+
+		VkWriteDescriptorSetAccelerationStructureKHR	accelerationStructureWriteDescriptorSet	=
+		{
+			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,	//  VkStructureType						sType;
+			DE_NULL,															//  const void*							pNext;
+			1u,																	//  deUint32							accelerationStructureCount;
+			topLevelRayTracedPtr->getPtr(),										//  const VkAccelerationStructureKHR*	pAccelerationStructures;
+		};
+
+		DescriptorSetUpdateBuilder()
+			.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfo)
+			.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &accelerationStructureWriteDescriptorSet)
+			.update(vkd, device);
+
+		vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1, &descriptorSet.get(), 0, DE_NULL);
+
+		vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
+
+		cmdTraceRays(vkd,
+			*cmdBuffer,
+			&raygenShaderBindingTableRegion,
+			&missShaderBindingTableRegion,
+			&hitShaderBindingTableRegion,
+			&callableShaderBindingTableRegion,
+			m_data.width, m_data.height, 1);
+
+		const VkMemoryBarrier				postTraceMemoryBarrier	= makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
+		const VkMemoryBarrier				postCopyMemoryBarrier	= makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+		cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_TRANSFER_BIT, &postTraceMemoryBarrier);
+
+		vkd.cmdCopyImageToBuffer(*cmdBuffer, **image, VK_IMAGE_LAYOUT_GENERAL, **resultBuffer, 1u, &resultBufferImageRegion);
+
+		cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, &postCopyMemoryBarrier);
+	}
+	endCommandBuffer(vkd, *cmdBuffer);
+
+	submitCommandsAndWait(vkd, device, queue, cmdBuffer.get());
+
+	invalidateMappedMemoryRange(vkd, device, resultBuffer->getAllocation().getMemory(), resultBuffer->getAllocation().getOffset(), pixelCount * sizeof(deUint32));
+
+	bool result = m_data.testConfiguration->verifyImage(resultBuffer.get(), m_context, m_data);
+
+	if (result)
+		return tcu::TestStatus::pass("Pass");
+	else
+		return tcu::TestStatus::fail("Fail");
+}
+
 }	// anonymous
 
 void addBasicBuildingTests(tcu::TestCaseGroup* group)
@@ -4300,10 +4831,10 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 		const char*								name;
 	} bottomTestTypes[] =
 	{
-		{ BTT_TRIANGLES,	false,										"triangles" },
-		{ BTT_TRIANGLES,	true,										"triangles_aop" },
-		{ BTT_AABBS,		false,										"aabbs" },
-		{ BTT_AABBS,		true,										"aabbs_aop" },
+		{ BottomTestType::TRIANGLES,	false,							"triangles" },
+		{ BottomTestType::TRIANGLES,	true,							"triangles_aop" },
+		{ BottomTestType::AABBS,		false,							"aabbs" },
+		{ BottomTestType::AABBS,		true,							"aabbs_aop" },
 	};
 
 	struct
@@ -4313,10 +4844,10 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 		const char*								name;
 	} topTestTypes[] =
 	{
-		{ TTT_IDENTICAL_INSTANCES,	false,								"identical_instances" },
-		{ TTT_IDENTICAL_INSTANCES,	true,								"identical_instances_aop" },
-		{ TTT_DIFFERENT_INSTANCES,	false,								"different_instances" },
-		{ TTT_DIFFERENT_INSTANCES,	true,								"different_instances_aop" },
+		{ TopTestType::IDENTICAL_INSTANCES,	false,						"identical_instances" },
+		{ TopTestType::IDENTICAL_INSTANCES,	true,						"identical_instances_aop" },
+		{ TopTestType::DIFFERENT_INSTANCES,	false,						"different_instances" },
+		{ TopTestType::DIFFERENT_INSTANCES,	true,						"different_instances_aop" },
 	};
 
 	struct BuildFlagsData
@@ -4373,6 +4904,11 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 		{	true,	true,	"_bothgeneric"		},
 	};
 
+	// In order not to create thousands of new test variants for unbound buffer memory on acceleration structure creation, we will
+	// set these options on some of the tests.
+	de::ModCounter32 unboundedCreationBottomCounter	(3u);
+	de::ModCounter32 unboundedCreationTopCounter	(7u);
+
 	for (size_t buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name, ""));
@@ -4406,6 +4942,9 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 											std::string(lowMemoryTypes[lowMemoryNdx].name) +
 											std::string(createGenericParams[createGenericIdx].suffix);
 
+										const bool unboundedCreationBottom	= (static_cast<uint32_t>(unboundedCreationBottomCounter++) == 0u);
+										const bool unboundedCreationTop		= (static_cast<uint32_t>(unboundedCreationTopCounter++) == 0u);
+
 										TestParams testParams
 										{
 											buildTypes[buildTypeNdx].buildType,
@@ -4416,9 +4955,11 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 											InstanceCullFlags::NONE,
 											bottomTestTypes[bottomNdx].usesAOP,
 											createGenericParams[createGenericIdx].bottomGeneric,
+											unboundedCreationBottom,
 											topTestTypes[topNdx].testType,
 											topTestTypes[topNdx].usesAOP,
 											createGenericParams[createGenericIdx].topGeneric,
+											unboundedCreationTop,
 											optimizationTypes[optimizationNdx].flags | updateTypes[updateNdx].flags | compactionTypes[compactionNdx].flags | lowMemoryTypes[lowMemoryNdx].flags,
 											OT_NONE,
 											OP_NONE,
@@ -4430,6 +4971,7 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 											InstanceCustomIndexCase::NONE,
 											false,
 											0xFFu,
+											UpdateCase::NONE,
 										};
 										paddingGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), testName.c_str(), "", testParams));
 									}
@@ -4525,11 +5067,13 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 						format,
 						paddingType[paddingIdx].padVertices,
 						indexFormats[indexFormatNdx].indexType,
-						BTT_TRIANGLES,
+						BottomTestType::TRIANGLES,
 						InstanceCullFlags::NONE,
 						false,
 						false,
-						TTT_IDENTICAL_INSTANCES,
+						false,
+						TopTestType::IDENTICAL_INSTANCES,
+						false,
 						false,
 						false,
 						VkBuildAccelerationStructureFlagsKHR(0u),
@@ -4543,6 +5087,7 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 						InstanceCustomIndexCase::NONE,
 						false,
 						0xFFu,
+						UpdateCase::NONE,
 					};
 					paddingGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), indexFormats[indexFormatNdx].name, "", testParams));
 				}
@@ -4593,8 +5138,8 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 		const char*											name;
 	} bottomTestTypes[] =
 	{
-		{ BTT_TRIANGLES,									"triangles" },
-		{ BTT_AABBS,										"aabbs" },
+		{ BottomTestType::TRIANGLES,						"triangles" },
+		{ BottomTestType::AABBS,							"aabbs" },
 	};
 
 	for (size_t operationTypeNdx = 0; operationTypeNdx < DE_LENGTH_OF_ARRAY(operationTypes); ++operationTypeNdx)
@@ -4618,7 +5163,7 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 
 				for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(bottomTestTypes); ++testTypeNdx)
 				{
-					TopTestType topTest = (operationTargets[operationTargetNdx].operationTarget == OT_TOP_ACCELERATION) ? TTT_DIFFERENT_INSTANCES : TTT_IDENTICAL_INSTANCES;
+					TopTestType topTest = (operationTargets[operationTargetNdx].operationTarget == OT_TOP_ACCELERATION) ? TopTestType::DIFFERENT_INSTANCES : TopTestType::IDENTICAL_INSTANCES;
 
 					TestParams testParams
 					{
@@ -4630,7 +5175,9 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 						InstanceCullFlags::NONE,
 						false,
 						false,
+						false,
 						topTest,
+						false,
 						false,
 						false,
 						VkBuildAccelerationStructureFlagsKHR(0u),
@@ -4644,6 +5191,7 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 						InstanceCustomIndexCase::NONE,
 						false,
 						0xFFu,
+						UpdateCase::NONE,
 					};
 					operationTargetGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), bottomTestTypes[testTypeNdx].name, "", testParams));
 				}
@@ -4700,11 +5248,13 @@ void addFuncArgTests (tcu::TestCaseGroup* group)
 			VK_FORMAT_R32G32B32_SFLOAT,
 			false,
 			VK_INDEX_TYPE_NONE_KHR,
-			BTT_TRIANGLES,
+			BottomTestType::TRIANGLES,
 			InstanceCullFlags::NONE,
 			false,
 			false,
-			TTT_IDENTICAL_INSTANCES,
+			false,
+			TopTestType::IDENTICAL_INSTANCES,
+			false,
 			false,
 			false,
 			VkBuildAccelerationStructureFlagsKHR(0u),
@@ -4718,6 +5268,7 @@ void addFuncArgTests (tcu::TestCaseGroup* group)
 			InstanceCustomIndexCase::NONE,
 			false,
 			0xFFu,
+			UpdateCase::NONE,
 		};
 
 		group->addChild(new RayTracingASFuncArgTestCase(ctx, buildTypes[buildTypeNdx].name, "", testParams));
@@ -4744,8 +5295,8 @@ void addInstanceTriangleCullingTests (tcu::TestCaseGroup* group)
 		std::string	name;
 	} topType[] =
 	{
-		{ TTT_DIFFERENT_INSTANCES, "transformed"	},	// Each instance has its own transformation matrix.
-		{ TTT_IDENTICAL_INSTANCES, "notransform"	},	// "Identical" instances, different geometries.
+		{ TopTestType::DIFFERENT_INSTANCES, "transformed"	},	// Each instance has its own transformation matrix.
+		{ TopTestType::IDENTICAL_INSTANCES, "notransform"	},	// "Identical" instances, different geometries.
 	};
 
 	const struct
@@ -4791,11 +5342,13 @@ void addInstanceTriangleCullingTests (tcu::TestCaseGroup* group)
 						VK_FORMAT_R32G32B32_SFLOAT,
 						false,
 						indexFormats[indexFormatIdx].indexType,
-						BTT_TRIANGLES,
+						BottomTestType::TRIANGLES,
 						cullFlags[cullFlagsIdx].cullFlags,
 						false,
 						false,
+						false,
 						topType[topTypeIdx].topType,
+						false,
 						false,
 						false,
 						VkBuildAccelerationStructureFlagsKHR(0u),
@@ -4809,6 +5362,7 @@ void addInstanceTriangleCullingTests (tcu::TestCaseGroup* group)
 						InstanceCustomIndexCase::NONE,
 						false,
 						0xFFu,
+						UpdateCase::NONE,
 					};
 					indexTypeGroup->addChild(new RayTracingASBasicTestCase(ctx, testName.c_str(), "", testParams));
 				}
@@ -4880,11 +5434,13 @@ void addEmptyAccelerationStructureTests (tcu::TestCaseGroup* group)
 					VK_FORMAT_R32G32B32_SFLOAT,
 					false,
 					indexFormats[indexFormatIdx].indexType,
-					BTT_TRIANGLES,
+					BottomTestType::TRIANGLES,
 					InstanceCullFlags::NONE,
 					false,
 					false,
-					TTT_IDENTICAL_INSTANCES,
+					false,
+					TopTestType::IDENTICAL_INSTANCES,
+					false,
 					false,
 					false,
 					VkBuildAccelerationStructureFlagsKHR(0u),
@@ -4898,6 +5454,7 @@ void addEmptyAccelerationStructureTests (tcu::TestCaseGroup* group)
 					InstanceCustomIndexCase::NONE,
 					false,
 					0xFFu,
+					UpdateCase::NONE,
 				};
 				indexTypeGroup->addChild(new RayTracingASBasicTestCase(ctx, emptyCases[emptyCaseIdx].name.c_str(), "", testParams));
 			}
@@ -4940,7 +5497,7 @@ void addInstanceIndexTests (tcu::TestCaseGroup* group)
 		for (int customIndexCaseIdx = 0; customIndexCaseIdx < DE_LENGTH_OF_ARRAY(customIndexCases); ++customIndexCaseIdx)
 		{
 			const auto&	idxCase				= customIndexCases[customIndexCaseIdx].customIndexCase;
-			const auto	bottomGeometryType	= ((idxCase == InstanceCustomIndexCase::INTERSECTION) ? BTT_AABBS : BTT_TRIANGLES);
+			const auto	bottomGeometryType	= ((idxCase == InstanceCustomIndexCase::INTERSECTION) ? BottomTestType::AABBS : BottomTestType::TRIANGLES);
 
 			TestParams testParams
 			{
@@ -4952,7 +5509,9 @@ void addInstanceIndexTests (tcu::TestCaseGroup* group)
 				InstanceCullFlags::NONE,
 				false,
 				false,
-				TTT_IDENTICAL_INSTANCES,
+				false,
+				TopTestType::IDENTICAL_INSTANCES,
+				false,
 				false,
 				false,
 				VkBuildAccelerationStructureFlagsKHR(0u),
@@ -4966,6 +5525,7 @@ void addInstanceIndexTests (tcu::TestCaseGroup* group)
 				customIndexCases[customIndexCaseIdx].customIndexCase,
 				false,
 				0xFFu,
+				UpdateCase::NONE,
 			};
 			buildTypeGroup->addChild(new RayTracingASBasicTestCase(ctx, customIndexCases[customIndexCaseIdx].name.c_str(), "", testParams));
 		}
@@ -4973,6 +5533,70 @@ void addInstanceIndexTests (tcu::TestCaseGroup* group)
 	}
 }
 
+void addInstanceUpdateTests (tcu::TestCaseGroup* group)
+{
+	const struct
+	{
+		vk::VkAccelerationStructureBuildTypeKHR				buildType;
+		std::string											name;
+	} buildTypes[] =
+	{
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,	"cpu_built"	},
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,	"gpu_built"	},
+	};
+
+	struct
+	{
+		OperationType										operationType;
+		const char*											name;
+	} operationTypes[] =
+	{
+		{ OP_UPDATE,											"update"			},
+		{ OP_UPDATE_IN_PLACE,									"update_in_place"	},
+	};
+
+
+	auto& ctx = group->getTestContext();
+
+	for (int buildTypeIdx = 0; buildTypeIdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeIdx)
+	{
+		de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str(), ""));
+
+		for (int operationTypesIdx = 0; operationTypesIdx < DE_LENGTH_OF_ARRAY(operationTypes); ++operationTypesIdx)
+		{
+			TestParams testParams
+			{
+				buildTypes[buildTypeIdx].buildType,
+				VK_FORMAT_R32G32B32_SFLOAT,
+				false,
+				VK_INDEX_TYPE_NONE_KHR,
+				BottomTestType::TRIANGLES,
+				InstanceCullFlags::NONE,
+				false,
+				false,
+				false,
+				TopTestType::IDENTICAL_INSTANCES,
+				false,
+				false,
+				false,
+				VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR,
+				OT_TOP_ACCELERATION,
+				operationTypes[operationTypesIdx].operationType,
+				RTAS_DEFAULT_SIZE,
+				RTAS_DEFAULT_SIZE,
+				de::SharedPtr<TestConfiguration>(new SingleTriangleConfiguration()),
+				0u,
+				EmptyAccelerationStructureCase::NOT_EMPTY,
+				InstanceCustomIndexCase::NONE,
+				false,
+				0xFFu,
+				UpdateCase::NONE,
+			};
+			buildTypeGroup->addChild(new RayTracingASBasicTestCase(ctx, operationTypes[operationTypesIdx].name, "", testParams));
+		}
+		group->addChild(buildTypeGroup.release());
+	}
+}
 
 void addInstanceRayCullMaskTests(tcu::TestCaseGroup* group)
 {
@@ -5022,7 +5646,7 @@ void addInstanceRayCullMaskTests(tcu::TestCaseGroup* group)
 			for (int cullMaskIdx = 0; cullMaskIdx < DE_LENGTH_OF_ARRAY(cullMask); ++cullMaskIdx)
 			{
 				const auto& idxCase = customIndexCases[customIndexCaseIdx].customIndexCase;
-				const auto	bottomGeometryType = ((idxCase == InstanceCustomIndexCase::INTERSECTION) ? BTT_AABBS : BTT_TRIANGLES);
+				const auto	bottomGeometryType = ((idxCase == InstanceCustomIndexCase::INTERSECTION) ? BottomTestType::AABBS : BottomTestType::TRIANGLES);
 
 				TestParams testParams
 				{
@@ -5034,7 +5658,9 @@ void addInstanceRayCullMaskTests(tcu::TestCaseGroup* group)
 					InstanceCullFlags::NONE,
 					false,
 					false,
-					TTT_IDENTICAL_INSTANCES,
+					false,
+					TopTestType::IDENTICAL_INSTANCES,
+					false,
 					false,
 					false,
 					VkBuildAccelerationStructureFlagsKHR(0u),
@@ -5048,6 +5674,7 @@ void addInstanceRayCullMaskTests(tcu::TestCaseGroup* group)
 					customIndexCases[customIndexCaseIdx].customIndexCase,
 					true,
 					cullMask[cullMaskIdx].cullMask,
+					UpdateCase::NONE,
 				};
 				customIndexCaseGroup->addChild(new RayTracingASBasicTestCase(ctx,  cullMask[cullMaskIdx].name.c_str(), "", testParams));
 			}
@@ -5096,13 +5723,15 @@ void addGetDeviceAccelerationStructureCompabilityTests (tcu::TestCaseGroup* grou
 				VK_FORMAT_R32G32B32_SFLOAT,											// vertexFormat
 				false,																// padVertices
 				VK_INDEX_TYPE_NONE_KHR,												// indexType
-				BTT_TRIANGLES,														// bottomTestType	- what kind of geometry is stored in bottom AS
+				BottomTestType::TRIANGLES,											// bottomTestType	- what kind of geometry is stored in bottom AS
 				InstanceCullFlags::NONE,											// cullFlags		- Flags for instances, if needed.
 				false,																// bottomUsesAOP	- does bottom AS use arrays, or arrays of pointers
 				false,																// bottomGeneric	- Bottom created as generic AS type.
-				TTT_IDENTICAL_INSTANCES,											// topTestType		- If instances are identical then bottom geometries must have different vertices/aabbs
+				false,																// bottomUnboundedCreation - Create BLAS using buffers with unbounded memory.
+				TopTestType::IDENTICAL_INSTANCES,									// topTestType		- If instances are identical then bottom geometries must have different vertices/aabbs
 				false,																// topUsesAOP		- does top AS use arrays, or arrays of pointers
 				false,																// topGeneric		- Top created as generic AS type.
+				false,																// topUnboundedCreation - Create TLAS using buffers with unbounded memory.
 				VkBuildAccelerationStructureFlagsKHR(0u),							// buildFlags
 				targets[targetIdx].target,											// operationTarget
 				OP_NONE,															// operationType
@@ -5114,6 +5743,7 @@ void addGetDeviceAccelerationStructureCompabilityTests (tcu::TestCaseGroup* grou
 				InstanceCustomIndexCase::NONE,										// instanceCustomIndexCase
 				false,																// useCullMask
 				0xFFu,																// cullMask
+				UpdateCase::NONE,													// updateCase
 			};
 			buildTypeGroup->addChild(new RayTracingDeviceASCompabilityKHRTestCase(ctx, targets[targetIdx].name.c_str(), de::SharedPtr<TestParams>(new TestParams(testParams))));
 		}
@@ -5141,9 +5771,9 @@ void addUpdateHeaderBottomAddressTests (tcu::TestCaseGroup* group)
 	}
 	const instTypes[] =
 	{
-		{ TTT_IDENTICAL_INSTANCES,	"the_same_instances"		},
-		{ TTT_DIFFERENT_INSTANCES,	"different_instances"		},
-		{ TTT_MIX_INSTANCES,		"mix_same_diff_instances"	},
+		{ TopTestType::IDENTICAL_INSTANCES,	"the_same_instances"		},
+		{ TopTestType::DIFFERENT_INSTANCES,	"different_instances"		},
+		{ TopTestType::MIX_INSTANCES,		"mix_same_diff_instances"	},
 	};
 
 	auto& ctx = group->getTestContext();
@@ -5160,13 +5790,15 @@ void addUpdateHeaderBottomAddressTests (tcu::TestCaseGroup* group)
 				VK_FORMAT_R32G32B32_SFLOAT,											// vertexFormat
 				false,																// padVertices
 				VK_INDEX_TYPE_NONE_KHR,												// indexType
-				BTT_TRIANGLES,														// bottomTestType
+				BottomTestType::TRIANGLES,											// bottomTestType
 				InstanceCullFlags::NONE,											// cullFlags
 				false,																// bottomUsesAOP
 				false,																// bottomGeneric
+				false,																// bottomUnboundedCreation
 				instTypes[instTypeIdx].type,										// topTestType
 				false,																// topUsesAOP
 				false,																// topGeneric
+				false,																// topUnboundedCreation
 				VkBuildAccelerationStructureFlagsKHR(0u),							// buildFlags
 				OT_TOP_ACCELERATION,												// operationTarget
 				OP_NONE,															// operationType
@@ -5178,6 +5810,7 @@ void addUpdateHeaderBottomAddressTests (tcu::TestCaseGroup* group)
 				InstanceCustomIndexCase::NONE,										// instanceCustomIndexCase
 				false,																// useCullMask
 				0xFFu,																// cullMask
+				UpdateCase::NONE,													// updateCase
 			};
 			buildTypeGroup->addChild(new RayTracingHeaderBottomAddressTestCase(ctx, instTypes[instTypeIdx].name.c_str(), de::SharedPtr<TestParams>(new TestParams(testParams))));
 		}
@@ -5278,6 +5911,72 @@ void addCopyWithinPipelineTests (TestCaseGroup* group)
 	}
 }
 
+void addUpdateTests(TestCaseGroup* group)
+{
+	const struct
+	{
+		vk::VkAccelerationStructureBuildTypeKHR				buildType;
+		std::string											name;
+	} buildTypes[] =
+	{
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,	"cpu"},
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,	"gpu"},
+	};
+
+	struct
+	{
+		UpdateCase				updateType;
+		const char*				name;
+	} updateTypes[] =
+	{
+		{ UpdateCase::VERTICES,		"vertices"	},
+		{ UpdateCase::INDICES,		"indices"	},
+		{ UpdateCase::TRANSFORM,	"transform"	},
+	};
+
+	auto& ctx = group->getTestContext();
+
+	for (int buildTypeIdx = 0; buildTypeIdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeIdx)
+	{
+		de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str(), ""));
+
+		for (int updateTypesIdx = 0; updateTypesIdx < DE_LENGTH_OF_ARRAY(updateTypes); ++updateTypesIdx)
+		{
+			TestParams testParams
+			{
+				buildTypes[buildTypeIdx].buildType,
+				VK_FORMAT_R32G32B32_SFLOAT,
+				false,
+				VK_INDEX_TYPE_UINT16,
+				BottomTestType::TRIANGLES,
+				InstanceCullFlags::NONE,
+				false,
+				false,
+				false,
+				TopTestType::IDENTICAL_INSTANCES,
+				false,
+				false,
+				false,
+				VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR,
+				OT_TOP_ACCELERATION,
+				OP_NONE,
+				RTAS_DEFAULT_SIZE,
+				RTAS_DEFAULT_SIZE,
+				de::SharedPtr<TestConfiguration>(new UpdateableASConfiguration()),
+				0u,
+				EmptyAccelerationStructureCase::NOT_EMPTY,
+				InstanceCustomIndexCase::NONE,
+				false,
+				0xFFu,
+				updateTypes[updateTypesIdx].updateType,
+			};
+			buildTypeGroup->addChild(new ASUpdateCase(ctx, updateTypes[updateTypesIdx].name, "", testParams));
+		}
+		group->addChild(buildTypeGroup.release());
+	}
+}
+
+
 tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "acceleration_structures", "Acceleration structure tests"));
@@ -5292,10 +5991,12 @@ tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "dynamic_indexing", "Exercise dynamic indexing of acceleration structures", addDynamicIndexingTests);
 	addTestGroup(group.get(), "empty", "Test building empty acceleration structures using different methods", addEmptyAccelerationStructureTests);
 	addTestGroup(group.get(), "instance_index", "Test using different values for the instance index and checking them in shaders", addInstanceIndexTests);
+	addTestGroup(group.get(), "instance_update", "Test updating instance index using both in-place and separate src/dst acceleration structures", addInstanceUpdateTests);
 	addTestGroup(group.get(), "device_compability_khr", "", addGetDeviceAccelerationStructureCompabilityTests);
 	addTestGroup(group.get(), "header_bottom_address", "", addUpdateHeaderBottomAddressTests);
 	addTestGroup(group.get(), "query_pool_results", "Test for a new VkQueryPool queries for VK_KHR_ray_tracing_maintenance1", addQueryPoolResultsTests);
 	addTestGroup(group.get(), "copy_within_pipeline", "Tests ACCELLERATION_STRUCTURE_COPY and ACCESS_2_SBT_READ with VK_KHR_ray_tracing_maintenance1", addCopyWithinPipelineTests);
+	addTestGroup(group.get(), "update", "Tests updating AS via replacing vertex/index/transform buffers", addUpdateTests);
 
 	return group.release();
 }

@@ -26,6 +26,7 @@
 #include "vktRobustnessExtsTests.hpp"
 #include "vktRobustnessBufferAccessTests.hpp"
 #include "vktRobustnessVertexAccessTests.hpp"
+#include "vktRobustnessIndexAccessTests.hpp"
 #include "vktRobustBufferAccessWithVariablePointersTests.hpp"
 #include "vktNonRobustBufferAccessTests.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -55,12 +56,13 @@ private:
 
 }
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> robustnessTests(new tcu::TestCaseGroup(testCtx, "robustness", ""));
+	de::MovePtr<tcu::TestCaseGroup> robustnessTests(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
 
 	robustnessTests->addChild(createBufferAccessTests(testCtx));
 	robustnessTests->addChild(createVertexAccessTests(testCtx));
+	robustnessTests->addChild(createIndexAccessTests(testCtx));
 
 	std::vector<tcu::TestNode*> children;
 	robustnessTests->getChildren(children);

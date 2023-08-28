@@ -17,7 +17,13 @@ vksc-default/info.txt
 vksc-default/memory-model.txt
 vksc-default/memory.txt
 vksc-default/multiview.txt
-vksc-default/pipeline.txt
+vksc-default/pipeline/fast-linked-library.txt
+vksc-default/pipeline/monolithic.txt
+vksc-default/pipeline/pipeline-library.txt
+vksc-default/pipeline/shader-object-linked-binary.txt
+vksc-default/pipeline/shader-object-linked-spirv.txt
+vksc-default/pipeline/shader-object-unlinked-binary.txt
+vksc-default/pipeline/shader-object-unlinked-spirv.txt
 vksc-default/protected-memory.txt
 vksc-default/query-pool.txt
 vksc-default/rasterization.txt

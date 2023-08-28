@@ -605,7 +605,7 @@ void PipelineFlagsCase::initPrograms (SourceCollections& programCollection) cons
 		str << "#version 460 core"																			<< endl
 			<< "#extension GL_EXT_ray_tracing : require"													<< endl
 			<< "layout(location = 0) rayPayloadEXT ivec4 payload;"											<< endl
-			<< "layout(r32i, set = 0, binding = 0) uniform iimage2D result;"								<< endl
+			<< "layout(rgba32i, set = 0, binding = 0) uniform iimage2D result;"								<< endl
 			<< "layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;"					<< endl
 			<< "void main()"																				<< endl
 			<< "{"																							<< endl

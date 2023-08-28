@@ -154,7 +154,7 @@ public:
 protected:
 	virtual void			addShadersInternal(SourceCollections& programCollection, const std::map<std::string, std::string> &params) const = 0;
 	void					addSimpleVertexShader(SourceCollections& programCollection, const std::string &dest) const;
-	virtual void			checkAdditionalRasterizationFlags(VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM &rasterizationAccess) const
+	virtual void			checkAdditionalRasterizationFlags(VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT &rasterizationAccess) const
 	{
 		// unused parameter
 		DE_UNREF(rasterizationAccess);
@@ -233,7 +233,7 @@ public:
 	}
 protected:
 	virtual void			addShadersInternal(SourceCollections& programCollection, const std::map<std::string, std::string> &params) const;
-	virtual void			checkAdditionalRasterizationFlags(VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM &rasterizationAccess) const
+	virtual void			checkAdditionalRasterizationFlags(VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT &rasterizationAccess) const
 	{
 		if (!m_explicitSync && !rasterizationAccess.rasterizationOrderDepthAttachmentAccess)
 		{
@@ -280,7 +280,7 @@ public:
 	}
 protected:
 	virtual void			addShadersInternal(SourceCollections& programCollection, const std::map<std::string, std::string> &params) const;
-	virtual void			checkAdditionalRasterizationFlags(VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM &rasterizationAccess) const
+	virtual void			checkAdditionalRasterizationFlags(VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT &rasterizationAccess) const
 	{
 		if (!m_explicitSync && !rasterizationAccess.rasterizationOrderStencilAttachmentAccess)
 		{
@@ -818,7 +818,7 @@ void AttachmentAccessOrderTestCase::checkSupport (Context& context) const
 	const auto&	vki				= context.getInstanceInterface();
 	const auto	physicalDevice	= context.getPhysicalDevice();
 
-	VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM	rasterizationAccess	= initVulkanStructure();
+	VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT	rasterizationAccess	= initVulkanStructure();
 	VkPhysicalDeviceFeatures2										features2			= initVulkanStructure(m_explicitSync ? nullptr : &rasterizationAccess);
 
 	vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
@@ -840,7 +840,7 @@ void AttachmentAccessOrderTestCase::checkSupport (Context& context) const
 		if (result != VK_SUCCESS)
 		{
 			if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
-				TCU_THROW(NotSupportedError, "Error: format " + de::toString(format) + " does not support the required features");
+				TCU_THROW(NotSupportedError, "format " + de::toString(format) + " does not support the required features");
 			else
 				TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties returned unexpected error");
 		}
@@ -1298,13 +1298,16 @@ Move<VkRenderPass> AttachmentAccessOrderTestInstance::createRenderPass(VkFormat 
 	else
 	{
 		subpasses[0].flags = VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_BIT_ARM;
+		subpasses[1].flags = VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_BIT_ARM;
 		if (m_testCase->hasDepth())
 		{
 			subpasses[0].flags |= VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_ARM;
+			subpasses[1].flags |= VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_ARM;
 		}
 		else if (m_testCase->hasStencil())
 		{
 			subpasses[0].flags |= VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_ARM;
+			subpasses[1].flags |= VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_ARM;
 		}
 	}
 

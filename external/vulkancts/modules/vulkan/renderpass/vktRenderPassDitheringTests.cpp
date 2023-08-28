@@ -446,7 +446,7 @@ void DitheringTestInstance::render (const VkViewport& vp, bool useDithering)
 					VK_RESOLVE_MODE_NONE,																	// VkResolveModeFlagBits				resolveMode;
 					DE_NULL,																				// VkImageView							resolveImageView;
 					VK_IMAGE_LAYOUT_UNDEFINED,																// VkImageLayout						resolveImageLayout;
-					m_testParams.blending ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE,	// VkAttachmentLoadOp					loadOp;
+					VK_ATTACHMENT_LOAD_OP_LOAD,																// VkAttachmentLoadOp					loadOp;
 					VK_ATTACHMENT_STORE_OP_STORE,															// VkAttachmentStoreOp					storeOp;
 					makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f))									// VkClearValue							clearValue;
 				};
@@ -902,7 +902,7 @@ void DitheringTestInstance::createRenderPassFramebuffer (bool useDithering)
 			(VkAttachmentDescriptionFlags) 0,														// VkAttachmentDescriptionFlags		flags
 			colorFormats[i],																		// VkFormat							format
 			VK_SAMPLE_COUNT_1_BIT,																	// VkSampleCountFlagBits			samples
-			m_testParams.blending ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE,	// VkAttachmentLoadOp				loadOp
+			VK_ATTACHMENT_LOAD_OP_LOAD,																// VkAttachmentLoadOp				loadOp
 			VK_ATTACHMENT_STORE_OP_STORE,															// VkAttachmentStoreOp				storeOp
 			VK_ATTACHMENT_LOAD_OP_DONT_CARE,														// VkAttachmentLoadOp				stencilLoadOp
 			VK_ATTACHMENT_STORE_OP_DONT_CARE,														// VkAttachmentStoreOp				stencilStoreOp

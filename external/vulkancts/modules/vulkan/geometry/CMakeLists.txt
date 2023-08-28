@@ -30,5 +30,4 @@ add_library(deqp-vk-geometry STATIC ${DEQP_VK_GEOMETRY_SRCS})
 target_link_libraries(deqp-vk-geometry tcutil vkutil)
 
 add_library(deqp-vksc-geometry STATIC ${DEQP_VK_GEOMETRY_SRCS})
-target_include_directories(deqp-vksc-geometry BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-geometry PUBLIC deqp-vksc-util tcutil vkscutil)

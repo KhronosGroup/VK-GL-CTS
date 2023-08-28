@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2019 Advanced Micro Devices, Inc.
  * Copyright (c) 2019 The Khronos Group Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +29,8 @@
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
@@ -51,6 +55,7 @@
 
 #include <string>
 #include <vector>
+#include <set>
 
 namespace vkt
 {
@@ -59,7 +64,6 @@ namespace pipeline
 namespace
 {
 using namespace vk;
-using de::UniquePtr;
 using de::MovePtr;
 using de::SharedPtr;
 using tcu::UVec2;
@@ -195,6 +199,118 @@ enum SampleSource
 	SAMPLE_SOURCE_SUBPASS_INPUT,	//!< texel fetch from an input attachment
 };
 
+// Class to wrap a singleton device for use in fragment mask tests,
+// which require the VK_AMD_shader_fragment extension.
+class SingletonDevice
+{
+	SingletonDevice(Context& context)
+		: m_context(context)
+		, m_logicalDevice()
+	{
+		const float	queuePriority					= 1.0;
+		const VkDeviceQueueCreateInfo	queues[]	=
+		{
+			{
+				VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+				DE_NULL,
+				(VkDeviceQueueCreateFlags)0,
+				m_context.getUniversalQueueFamilyIndex(),
+				1u,									// queueCount
+				&queuePriority,						// pQueuePriorities
+			}
+		};
+
+		const auto&					vkp					= m_context.getPlatformInterface();
+		const auto&					vki					= m_context.getInstanceInterface();
+		const auto					instance			= m_context.getInstance();
+		const auto					physicalDevice		= m_context.getPhysicalDevice();
+		std::vector<const char*>	creationExtensions	= m_context.getDeviceCreationExtensions();
+
+		VkPhysicalDeviceFeatures2							features2						= initVulkanStructure();
+		VkPhysicalDeviceDescriptorBufferFeaturesEXT			descriptorBufferFeatures		= initVulkanStructure();
+		VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	graphicsPipelineLibraryFeatures	= initVulkanStructure();
+		VkPhysicalDeviceDynamicRenderingFeaturesKHR			dynamicRenderingFeatures		= initVulkanStructure();
+		VkPhysicalDeviceShaderObjectFeaturesEXT				shaderObjectFeatures			= initVulkanStructure(&dynamicRenderingFeatures);
+
+		m_context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+		const auto addFeatures = makeStructChainAdder(&features2);
+
+		if (m_context.isDeviceFunctionalitySupported("VK_EXT_descriptor_buffer"))
+			addFeatures(&descriptorBufferFeatures);
+
+		if (m_context.isDeviceFunctionalitySupported("VK_EXT_graphics_pipeline_library"))
+			addFeatures(&graphicsPipelineLibraryFeatures);
+
+		if (m_context.isDeviceFunctionalitySupported("VK_EXT_shader_object"))
+			addFeatures(&shaderObjectFeatures);
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+		descriptorBufferFeatures.descriptorBuffer	= VK_FALSE;
+		features2.features.robustBufferAccess		= VK_FALSE; // Disable robustness features.
+		creationExtensions.push_back("VK_AMD_shader_fragment_mask");
+
+		VkDeviceCreateInfo createInfo		= initVulkanStructure(&features2);
+		createInfo.flags					= 0u;
+		createInfo.queueCreateInfoCount		= de::arrayLength(queues);
+		createInfo.pQueueCreateInfos		= queues;
+		createInfo.enabledLayerCount		= 0u;
+		createInfo.ppEnabledLayerNames		= nullptr;
+		createInfo.enabledExtensionCount	= de::sizeU32(creationExtensions);
+		createInfo.ppEnabledExtensionNames	= de::dataOrNull(creationExtensions);
+		createInfo.pEnabledFeatures			= nullptr;
+
+		m_logicalDevice = createCustomDevice(
+			m_context.getTestContext().getCommandLine().isValidationEnabled(),
+			vkp,
+			instance,
+			vki,
+			physicalDevice,
+			&createInfo,
+			nullptr);
+
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, *m_logicalDevice, m_context.getUsedApiVersion()));
+	}
+
+public:
+	~SingletonDevice()
+	{
+	}
+
+	static VkDevice getDevice(Context& context)
+	{
+		if (!m_singletonDevice)
+			m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
+		DE_ASSERT(m_singletonDevice);
+		return m_singletonDevice->m_logicalDevice.get();
+	}
+
+	static VkQueue getUniversalQueue(Context& context)
+	{
+		return getDeviceQueue(getDeviceInterface(context), getDevice(context), context.getUniversalQueueFamilyIndex(), 0);
+	}
+
+	static const DeviceInterface& getDeviceInterface(Context& context)
+	{
+		if (!m_singletonDevice)
+			m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
+		DE_ASSERT(m_singletonDevice);
+		return *(m_singletonDevice->m_deviceDriver.get());
+	}
+
+	static void destroy()
+	{
+		m_singletonDevice.clear();
+	}
+
+private:
+	const Context&						m_context;
+	Move<vk::VkDevice>					m_logicalDevice;
+	de::MovePtr<vk::DeviceDriver>		m_deviceDriver;
+	static SharedPtr<SingletonDevice>	m_singletonDevice;
+};
+
+SharedPtr<SingletonDevice>		SingletonDevice::m_singletonDevice;
+
 //! The parameters that define a test case
 struct TestParams
 {
@@ -216,12 +332,14 @@ struct TestParams
 
 void checkRequirements (Context& context, TestParams params)
 {
-	context.requireDeviceFunctionality("VK_AMD_shader_fragment_mask");
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
 
-	// In the subpass input case we have to store fetch results into a buffer for subsequent verification in a compute shader.
-	const bool requireFragmentStores = (params.sampleSource == SAMPLE_SOURCE_SUBPASS_INPUT);
+	const auto supportedExtensions = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+	if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_AMD_shader_fragment_mask")))
+		TCU_THROW(NotSupportedError, "VK_AMD_shader_fragment_mask not supported");
 
-	const VkPhysicalDeviceLimits& limits = context.getDeviceProperties().limits;
+	const auto& limits = context.getDeviceProperties().limits;
 
 	if ((limits.framebufferColorSampleCounts & params.numColorSamples) == 0u)
 		TCU_THROW(NotSupportedError, "framebufferColorSampleCounts: sample count not supported");
@@ -237,13 +355,16 @@ void checkRequirements (Context& context, TestParams params)
 			TCU_THROW(NotSupportedError, "sampledImageColorSampleCounts: sample count not supported");
 	}
 
+	// In the subpass input case we have to store fetch results into a buffer for subsequent verification in a compute shader.
+	const bool requireFragmentStores = (params.sampleSource == SAMPLE_SOURCE_SUBPASS_INPUT);
+
 	if (requireFragmentStores)
 	{
 		if (!context.getDeviceFeatures().fragmentStoresAndAtomics)
 			TCU_THROW(NotSupportedError, "fragmentStoresAndAtomics: feature not supported");
 	}
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(vki, physicalDevice, params.pipelineConstructionType);
 }
 
 //! Common data used by the test
@@ -389,7 +510,7 @@ void initPrograms (SourceCollections& programCollection, const TestParams params
 			<< "layout(set = 0, binding = 1, std430) writeonly buffer ColorOutput {\n"
 			<< "    " << colorBufferType << " color[];\n"
 			<< "} sb_out;\n"
-			<< "layout(input_attachment_index = " << params.numLayers << ", set = 0, binding = 2) uniform " << samplerPrefix << "subpassInputMS" << " input_attach;\n"
+			<< "layout(input_attachment_index = 0, set = 0, binding = 2) uniform " << samplerPrefix << "subpassInputMS" << " input_attach;\n"
 			<< "\n"
 			<< "void main(void)\n"
 			<< "{\n"
@@ -496,11 +617,12 @@ void drawAndSampleInputAttachment (Context& context, const TestParams& params, W
 {
 	DE_ASSERT(params.numLayers == 1u);	// subpass load with single-layer image
 
-	const DeviceInterface&	vk		= context.getDeviceInterface();
-	const VkDevice			device	= context.getDevice();
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	const DeviceInterface&		vk				= SingletonDevice::getDeviceInterface(context);
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const VkDevice				device			= SingletonDevice::getDevice(context);
 
-	Move<VkRenderPass>		renderPass;
-	Move<VkFramebuffer>		framebuffer;
+	RenderPassWrapper		renderPass;
 
 	// Create descriptor set
 	const Unique<VkDescriptorSetLayout> descriptorSetLayout (DescriptorSetLayoutBuilder()
@@ -536,6 +658,7 @@ void drawAndSampleInputAttachment (Context& context, const TestParams& params, W
 	{
 		std::vector<VkSubpassDescription>		subpasses;
 		std::vector<VkSubpassDependency>		subpassDependencies;
+		std::vector<VkImage>					images;
 		std::vector<VkImageView>				attachments;
 		std::vector<VkAttachmentDescription>	attachmentDescriptions;
 		std::vector<VkAttachmentReference>		attachmentReferences;
@@ -545,6 +668,7 @@ void drawAndSampleInputAttachment (Context& context, const TestParams& params, W
 
 		// Create a MS draw subpass
 		{
+			images.push_back(*wd.colorImage);
 			attachments.push_back(*wd.colorImageView);
 
 			attachmentDescriptions.push_back(makeAttachmentDescription(
@@ -612,7 +736,7 @@ void drawAndSampleInputAttachment (Context& context, const TestParams& params, W
 				0u,																							// uint32_t                srcSubpass;
 				1u,																							// uint32_t                dstSubpass;
 				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,		// VkPipelineStageFlags    srcStageMask;
-				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,														// VkPipelineStageFlags    dstStageMask;
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,		// VkPipelineStageFlags    dstStageMask;
 				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,														// VkAccessFlags           srcAccessMask;
 				dstAccessMask,																				// VkAccessFlags           dstAccessMask;
 				VK_DEPENDENCY_BY_REGION_BIT,																// VkDependencyFlags       dependencyFlags;
@@ -633,8 +757,8 @@ void drawAndSampleInputAttachment (Context& context, const TestParams& params, W
 			dataOrNullPtr(subpassDependencies),						// const VkSubpassDependency*		pDependencies;
 		};
 
-		renderPass  = createRenderPass(vk, device, &renderPassInfo);
-		framebuffer = makeFramebuffer (vk, device, *renderPass, static_cast<deUint32>(attachments.size()), dataOrNullPtr(attachments), params.renderSize.x(), params.renderSize.y());
+		renderPass  = RenderPassWrapper(params.pipelineConstructionType, vk, device, &renderPassInfo);
+		renderPass.createFramebuffer(vk, device, static_cast<deUint32>(attachments.size()), dataOrNullPtr(images), dataOrNullPtr(attachments), params.renderSize.x(), params.renderSize.y());
 	}
 
 	const std::vector<VkViewport>	viewports	{ makeViewport(params.renderSize) };
@@ -677,12 +801,12 @@ void drawAndSampleInputAttachment (Context& context, const TestParams& params, W
 		{ 0.0f, 0.0f, 0.0f, 0.0f },										// float										blendConstants[4];
 	};
 
-	const Unique<VkShaderModule>	vertexModuleDraw	(createShaderModule(vk, device, context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkShaderModule>	fragmentModuleDraw	(createShaderModule(vk, device, context.getBinaryCollection().get("frag"), 0u));
+	const ShaderWrapper				vertexModuleDraw	(ShaderWrapper(vk, device, context.getBinaryCollection().get("vert"), 0u));
+	const ShaderWrapper				fragmentModuleDraw	(ShaderWrapper(vk, device, context.getBinaryCollection().get("frag"), 0u));
 
 	// Create pipelines for MS draw
-	const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout(vk, device, *descriptorSetLayout));
-	GraphicsPipelineWrapper			pipelineDraw		(vk, device, params.pipelineConstructionType);
+	const PipelineLayoutWrapper		pipelineLayout		(params.pipelineConstructionType, vk, device, *descriptorSetLayout);
+	GraphicsPipelineWrapper			pipelineDraw		(vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType);
 	{
 		// Vertex attributes: position and color
 		VkVertexInputBindingDescription					vertexInputBindingDescriptions = makeVertexInputBindingDescription(0u, sizeof(PositionColor), VK_VERTEX_INPUT_RATE_VERTEX);
@@ -708,22 +832,22 @@ void drawAndSampleInputAttachment (Context& context, const TestParams& params, W
 					.setupVertexInputState(&vertexInputStateInfo)
 					.setupPreRasterizationShaderState(viewports,
 									scissors,
-									*pipelineLayout,
+									pipelineLayout,
 									*renderPass,
 									0u,
-									*vertexModuleDraw)
-					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragmentModuleDraw, DE_NULL, &multisampleStateInfo)
+									vertexModuleDraw)
+					.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragmentModuleDraw, DE_NULL, &multisampleStateInfo)
 					.setupFragmentOutputState(*renderPass, 0u, &colorBlendStateInfo, &multisampleStateInfo)
-					.setMonolithicPipelineLayout(*pipelineLayout)
+					.setMonolithicPipelineLayout(pipelineLayout)
 					.buildPipeline();
 	}
 
 	// Sampling pass is single-sampled, output to storage buffer
-	const Unique<VkShaderModule>	vertexModuleSample		(createShaderModule(vk, device, context.getBinaryCollection().get("vert_full"), 0u));
-	const Unique<VkShaderModule>	fragmentModuleSample	(createShaderModule(vk, device, context.getBinaryCollection().get("frag_fmask_fetch"), 0u));
+	const ShaderWrapper		vertexModuleSample		(ShaderWrapper(vk, device, context.getBinaryCollection().get("vert_full"), 0u));
+	const ShaderWrapper		fragmentModuleSample	(ShaderWrapper(vk, device, context.getBinaryCollection().get("frag_fmask_fetch"), 0u));
 
 	// Sampling pipeline
-	GraphicsPipelineWrapper pipelineSample(vk, device, params.pipelineConstructionType);
+	GraphicsPipelineWrapper pipelineSample(vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType);
 	{
 		VkPipelineVertexInputStateCreateInfo vertexInputStateInfo;
 		deMemset(&vertexInputStateInfo, 0, sizeof(vertexInputStateInfo));
@@ -737,13 +861,13 @@ void drawAndSampleInputAttachment (Context& context, const TestParams& params, W
 					  .setupVertexInputState(&vertexInputStateInfo)
 					  .setupPreRasterizationShaderState(viewports,
 									scissors,
-									*pipelineLayout,
+									pipelineLayout,
 									*renderPass,
 									1u,
-									*vertexModuleSample)
-					  .setupFragmentShaderState(*pipelineLayout, *renderPass, 1u, *fragmentModuleSample, DE_NULL, &multisampleStateInfo)
+									vertexModuleSample)
+					  .setupFragmentShaderState(pipelineLayout, *renderPass, 1u, fragmentModuleSample, DE_NULL, &multisampleStateInfo)
 					  .setupFragmentOutputState(*renderPass, 1u, &colorBlendStateInfo, &multisampleStateInfo)
-					  .setMonolithicPipelineLayout(*pipelineLayout)
+					  .setMonolithicPipelineLayout(pipelineLayout)
 					  .buildPipeline();
 	}
 
@@ -761,18 +885,7 @@ void drawAndSampleInputAttachment (Context& context, const TestParams& params, W
 			{ 0u, 0u },
 			{ params.renderSize.x(), params.renderSize.y() }
 		};
-
-		const VkRenderPassBeginInfo renderPassBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,			// VkStructureType         sType;
-			DE_NULL,											// const void*             pNext;
-			*renderPass,										// VkRenderPass            renderPass;
-			*framebuffer,										// VkFramebuffer           framebuffer;
-			renderArea,											// VkRect2D                renderArea;
-			static_cast<deUint32>(clearValues.size()),			// uint32_t                clearValueCount;
-			dataOrNullPtr(clearValues),							// const VkClearValue*     pClearValues;
-		};
-		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		renderPass.begin(vk, *cmdBuffer, renderArea, static_cast<deUint32>(clearValues.size()), dataOrNullPtr(clearValues));
 	}
 
 	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
@@ -782,15 +895,15 @@ void drawAndSampleInputAttachment (Context& context, const TestParams& params, W
 		vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &wd.vertexBuffer.get(), &vertexBufferOffset);
 	}
 
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineDraw.getPipeline());
+	pipelineDraw.bind(*cmdBuffer);
 	vk.cmdDraw(*cmdBuffer, wd.numVertices, 1u, 0u, 0u);
 
-	vk.cmdNextSubpass(*cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+	renderPass.nextSubpass(vk, *cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineSample.getPipeline());
+	pipelineSample.bind(*cmdBuffer);
 	vk.cmdDraw(*cmdBuffer, 3u, 1u, 0u, 0u);	// fill the framebuffer, geometry defined in the VS
 
-	vk.cmdEndRenderPass(*cmdBuffer);
+	renderPass.end(vk, *cmdBuffer);
 
 	// Buffer write barrier
 	{
@@ -811,7 +924,7 @@ void drawAndSampleInputAttachment (Context& context, const TestParams& params, W
 	}
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
-	submitCommandsAndWait(vk, device, context.getUniversalQueue(), *cmdBuffer);
+	submitCommandsAndWait(vk, device, SingletonDevice::getUniversalQueue(context), *cmdBuffer);
 
 	invalidateMappedMemoryRange(vk, device, wd.colorBufferAlloc->getMemory(), wd.colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
 }
@@ -819,12 +932,13 @@ void drawAndSampleInputAttachment (Context& context, const TestParams& params, W
 //! Only draw a multisampled image
 void draw (Context& context, const TestParams& params, WorkingData& wd)
 {
-	const DeviceInterface&	vk		= context.getDeviceInterface();
-	const VkDevice			device	= context.getDevice();
+	const InstanceInterface & vki = context.getInstanceInterface();
+	const DeviceInterface&		vk				= SingletonDevice::getDeviceInterface(context);
+	const VkPhysicalDevice		physicalDevice = context.getPhysicalDevice();
+	const VkDevice				device			= SingletonDevice::getDevice(context);
 
 	std::vector<ImageViewSp>	imageViews;
-	Move<VkRenderPass>			renderPass;
-	Move<VkFramebuffer>			framebuffer;
+	RenderPassWrapper			renderPass;
 
 	// Create color attachments
 	for (deUint32 layerNdx = 0u; layerNdx < params.numLayers; ++layerNdx)
@@ -836,6 +950,7 @@ void draw (Context& context, const TestParams& params, WorkingData& wd)
 	// Create a render pass and a framebuffer
 	{
 		std::vector<VkSubpassDescription>		subpasses;
+		std::vector<VkImage>					images;
 		std::vector<VkImageView>				attachments;
 		std::vector<VkAttachmentDescription>	attachmentDescriptions;
 		std::vector<VkAttachmentReference>		attachmentReferences;
@@ -846,6 +961,7 @@ void draw (Context& context, const TestParams& params, WorkingData& wd)
 		// Create MS draw subpasses
 		for (deUint32 layerNdx = 0u; layerNdx < params.numLayers; ++layerNdx)
 		{
+			images.push_back(*wd.colorImage);
 			attachments.push_back(**imageViews[layerNdx]);
 
 			attachmentDescriptions.push_back(makeAttachmentDescription(
@@ -894,13 +1010,13 @@ void draw (Context& context, const TestParams& params, WorkingData& wd)
 			DE_NULL,												// const VkSubpassDependency*		pDependencies;
 		};
 
-		renderPass  = createRenderPass(vk, device, &renderPassInfo);
-		framebuffer = makeFramebuffer (vk, device, *renderPass, static_cast<deUint32>(attachments.size()), dataOrNullPtr(attachments), params.renderSize.x(), params.renderSize.y());
+		renderPass  = RenderPassWrapper(params.pipelineConstructionType, vk, device, &renderPassInfo);
+		renderPass.createFramebuffer(vk, device, static_cast<deUint32>(attachments.size()), dataOrNullPtr(images), dataOrNullPtr(attachments), params.renderSize.x(), params.renderSize.y());
 	}
 
-	const Unique<VkPipelineLayout>			pipelineLayout		(makePipelineLayout(vk, device));
-	const Unique<VkShaderModule>			vertexModuleDraw	(createShaderModule(vk, device, context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkShaderModule>			fragmentModuleDraw	(createShaderModule(vk, device, context.getBinaryCollection().get("frag"), 0u));
+	const PipelineLayoutWrapper				pipelineLayout		(params.pipelineConstructionType, vk, device);
+	const ShaderWrapper						vertexModuleDraw	(ShaderWrapper(vk, device, context.getBinaryCollection().get("vert"), 0u));
+	const ShaderWrapper						fragmentModuleDraw	(ShaderWrapper(vk, device, context.getBinaryCollection().get("frag"), 0u));
 
 	// Vertex attributes: position and color
 	VkVertexInputBindingDescription					vertexInputBindingDescriptions = makeVertexInputBindingDescription(0u, sizeof(PositionColor), VK_VERTEX_INPUT_RATE_VERTEX);
@@ -966,20 +1082,20 @@ void draw (Context& context, const TestParams& params, WorkingData& wd)
 	pipelines.reserve(params.numLayers);
 	for (deUint32 layerNdx = 0u; layerNdx < params.numLayers; ++layerNdx)
 	{
-		pipelines.emplace_back(vk, device, params.pipelineConstructionType);
+		pipelines.emplace_back(vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType);
 		pipelines.back().setDefaultRasterizationState()
 						.setDefaultColorBlendState()
 						.setDefaultDepthStencilState()
 						.setupVertexInputState(&vertexInputStateInfo)
 						.setupPreRasterizationShaderState(viewports,
 												scissors,
-												*pipelineLayout,
+												pipelineLayout,
 												*renderPass,
 												layerNdx,
-												*vertexModuleDraw)
-						.setupFragmentShaderState(*pipelineLayout, *renderPass, layerNdx, *fragmentModuleDraw, DE_NULL, &multisampleStateInfo)
+												vertexModuleDraw)
+						.setupFragmentShaderState(pipelineLayout, *renderPass, layerNdx, fragmentModuleDraw, DE_NULL, &multisampleStateInfo)
 						.setupFragmentOutputState(*renderPass, layerNdx, &colorBlendStateInfo, &multisampleStateInfo)
-						.setMonolithicPipelineLayout(*pipelineLayout)
+						.setMonolithicPipelineLayout(pipelineLayout)
 						.buildPipeline();
 	}
 
@@ -998,17 +1114,7 @@ void draw (Context& context, const TestParams& params, WorkingData& wd)
 			{ params.renderSize.x(), params.renderSize.y() }
 		};
 
-		const VkRenderPassBeginInfo renderPassBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,			// VkStructureType         sType;
-			DE_NULL,											// const void*             pNext;
-			*renderPass,										// VkRenderPass            renderPass;
-			*framebuffer,										// VkFramebuffer           framebuffer;
-			renderArea,											// VkRect2D                renderArea;
-			static_cast<deUint32>(clearValues.size()),			// uint32_t                clearValueCount;
-			dataOrNullPtr(clearValues),							// const VkClearValue*     pClearValues;
-		};
-		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		renderPass.begin(vk, *cmdBuffer, renderArea, static_cast<deUint32>(clearValues.size()), dataOrNullPtr(clearValues));
 	}
 
 	{
@@ -1019,23 +1125,23 @@ void draw (Context& context, const TestParams& params, WorkingData& wd)
 	for (deUint32 layerNdx = 0u; layerNdx < params.numLayers; ++layerNdx)
 	{
 		if (layerNdx != 0u)
-			vk.cmdNextSubpass(*cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+			renderPass.nextSubpass(vk, *cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[layerNdx].getPipeline());
+		pipelines[layerNdx].bind(*cmdBuffer);
 		vk.cmdDraw(*cmdBuffer, wd.numVertices, 1u, 0u, layerNdx);	// pass instance index to slightly change geometry per layer
 	}
 
-	vk.cmdEndRenderPass(*cmdBuffer);
+	renderPass.end(vk, *cmdBuffer);
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
-	submitCommandsAndWait(vk, device, context.getUniversalQueue(), *cmdBuffer);
+	submitCommandsAndWait(vk, device, SingletonDevice::getUniversalQueue(context), *cmdBuffer);
 }
 
 //! Sample from an image in a compute shader, storing the result in a color buffer
 void dispatchSampleImage (Context& context, const TestParams& params, WorkingData& wd, const std::string& shaderName)
 {
-	const DeviceInterface&	vk		= context.getDeviceInterface();
-	const VkDevice			device	= context.getDevice();
+	const DeviceInterface&	vk		= SingletonDevice::getDeviceInterface(context);
+	const VkDevice			device	= SingletonDevice::getDevice(context);
 
 	// Create descriptor set
 
@@ -1100,7 +1206,7 @@ void dispatchSampleImage (Context& context, const TestParams& params, WorkingDat
 	}
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
-	submitCommandsAndWait(vk, device, context.getUniversalQueue(), *cmdBuffer);
+	submitCommandsAndWait(vk, device, SingletonDevice::getUniversalQueue(context), *cmdBuffer);
 
 	invalidateMappedMemoryRange(vk, device, wd.colorBufferAlloc->getMemory(), wd.colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
 }
@@ -1125,8 +1231,9 @@ tcu::ConstPixelBufferAccess getSingleSampledAccess (const void* const imageData,
 tcu::TestStatus test (Context& context, const TestParams params)
 {
 	WorkingData				wd;
-	const DeviceInterface&	vk		  = context.getDeviceInterface();
-	const VkDevice			device	  = context.getDevice();
+	const DeviceInterface&	vk		  = SingletonDevice::getDeviceInterface(context);
+	const VkDevice			device	  = SingletonDevice::getDevice(context);
+
 	MovePtr<Allocator>		allocator = MovePtr<Allocator>(new SimpleAllocator(vk, device, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice())));
 
 	// Initialize resources
@@ -1257,6 +1364,10 @@ void createShaderFragmentMaskTestsInGroup (tcu::TestCaseGroup* rootGroup, Pipeli
 			MovePtr<tcu::TestCaseGroup> sampleCountGroup (new tcu::TestCaseGroup(rootGroup->getTestContext(), ("samples_" + de::toString(*pSampleCount)).c_str(), ""));
 			for (const SourceCase* pSourceCase = sourceCases; pSourceCase != DE_ARRAY_END(sourceCases); ++pSourceCase)
 			{
+				// Input attachments cannot be used with dynamic rendering.
+				if (pSourceCase->sampleSource == SAMPLE_SOURCE_SUBPASS_INPUT && isConstructionTypeShaderObject(pipelineConstructionType))
+					continue;
+
 				MovePtr<tcu::TestCaseGroup> sourceGroup (new tcu::TestCaseGroup(rootGroup->getTestContext(), pSourceCase->name, ""));
 				for (const VkFormat* pColorFormat = colorFormats; pColorFormat != DE_ARRAY_END(colorFormats); ++pColorFormat)
 				{
@@ -1281,7 +1392,11 @@ void createShaderFragmentMaskTestsInGroup (tcu::TestCaseGroup* rootGroup, Pipeli
 
 tcu::TestCaseGroup* createMultisampleShaderFragmentMaskTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "shader_fragment_mask", "Access raw texel values in a compressed MSAA surface", createShaderFragmentMaskTestsInGroup, pipelineConstructionType);
+	const auto	cleanGroup	= [](tcu::TestCaseGroup*, PipelineConstructionType) { SingletonDevice::destroy(); };
+	const char*	groupName	= "shader_fragment_mask";
+	const char*	groupDesc	= "Access raw texel values in a compressed MSAA surface";
+
+	return createTestGroup(testCtx, groupName, groupDesc, createShaderFragmentMaskTestsInGroup, pipelineConstructionType, cleanGroup);
 }
 
 } // pipeline

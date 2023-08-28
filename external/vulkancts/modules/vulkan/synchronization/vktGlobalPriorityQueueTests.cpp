@@ -51,6 +51,7 @@
 #include <string>
 #include <sstream>
 #include <map>
+#include <iostream>
 
 using namespace vk;
 
@@ -108,87 +109,6 @@ bool TestConfig::selectFormat (const InstanceInterface& vk, VkPhysicalDevice dev
 	return false;
 }
 
-struct CheckerboardBuilder
-{
-	CheckerboardBuilder (uint32_t width, uint32_t height)
-		: m_width(width), m_height(height) {}
-
-	static uint32_t blackFieldCount (uint32_t w, uint32_t h)
-	{
-		return ((w+1)/2)*((h+1)/2)+(w/2)*(h/2);
-	}
-
-	uint32_t blackFieldCount () const
-	{
-		return blackFieldCount(m_width, m_height);
-	}
-
-	uint32_t fieldIndex (uint32_t x, uint32_t y) const
-	{
-		return blackFieldCount(m_width, y) + (x / 2);
-	}
-
-	void buildVerticesAndIndices (std::vector<float>& vertices, std::vector<uint32_t>& indices) const
-	{
-		const uint32_t	vertPerQuad		= 4;
-		const uint32_t	indexPerQuad	= 6;
-		const uint32_t	quadCount		= blackFieldCount();
-		const uint32_t	compPerQuad		= vertPerQuad * 2;
-		const uint32_t	vertCount		= quadCount * vertPerQuad;
-		const uint32_t	indexCount		= quadCount * indexPerQuad;
-
-		vertices.resize(vertCount * 2);
-		indices.resize(indexCount);
-
-		for (uint32_t z = 0; z < 2; ++z)
-		for (uint32_t y = 0; y < m_height; ++y)
-		for (uint32_t x = 0; x < m_width; ++x)
-		{
-			if (((x + y) % 2) == 1)
-				continue;
-
-			const float x1 = float(x) / float(m_width);
-			const float y1 = float(y) / float(m_height);
-			const float x2 = (float(x) + 1.0f) / float(m_width);
-			const float y2 = (float(y) + 1.0f) / float(m_height);
-
-			const float xx1 = x1 * 2.0f - 1.0f;
-			const float yy1 = y1 * 2.0f - 1.0f;
-			const float xx2 = x2 * 2.0f - 1.0f;
-			const float yy2 = y2 * 2.0f - 1.0f;
-
-			const uint32_t quad = fieldIndex(x, y);
-
-			if (z == 0)
-			{
-				vertices[ quad * compPerQuad  + 0 ] = xx1;
-				vertices[ quad * compPerQuad  + 1 ] = yy1;
-				vertices[ quad * compPerQuad  + 2 ] = xx2;
-				vertices[ quad * compPerQuad  + 3 ] = yy1;
-
-				indices[ quad * indexPerQuad + 0 ] = quad * vertPerQuad + 0;
-				indices[ quad * indexPerQuad + 1 ] = quad * vertPerQuad + 1;
-				indices[ quad * indexPerQuad + 2 ] = quad * vertPerQuad + 2;
-			}
-			else
-			{
-				vertices[ quad * compPerQuad  + 4 ] = xx2;
-				vertices[ quad * compPerQuad  + 5 ] = yy2;
-				vertices[ quad * compPerQuad  + 6 ] = xx1;
-				vertices[ quad * compPerQuad  + 7 ] = yy2;
-
-				indices[ quad * indexPerQuad + 3 ] = quad * vertPerQuad + 2;
-				indices[ quad * indexPerQuad + 4 ] = quad * vertPerQuad + 3;
-				indices[ quad * indexPerQuad + 5 ] = quad * vertPerQuad + 0;
-			}
-		}
-	}
-
-private:
-	uint32_t	m_width;
-	uint32_t	m_height;
-};
-
 template<class T, class P = T(*)[1]>
 auto begin (void* p) -> decltype(std::begin(*std::declval<P>()))
 {
@@ -204,10 +124,12 @@ public:
 					GPQInstanceBase			(Context&					ctx,
 											 const TestConfig&			cfg);
 	template<class PushConstant = void>
-		auto		createPipelineLayout	(DSLayouts					setLayouts)		const -> Move<VkPipelineLayout>;
+	auto			createPipelineLayout	(DSLayouts					setLayouts)		const -> Move<VkPipelineLayout>;
+	auto			makeCommandPool			(deUint32					qFamilyIndex)	const -> Move<VkCommandPool>;
 	auto			createGraphicsPipeline	(VkPipelineLayout			pipelineLayout,
 											 VkRenderPass				renderPass)			  -> Move<VkPipeline>;
-	auto			createComputePipeline	(VkPipelineLayout			pipelineLayout)		  -> Move<VkPipeline>;
+	auto			createComputePipeline	(VkPipelineLayout			pipelineLayout,
+											 bool						producer)			  -> Move<VkPipeline>;
 	auto			createImage				(VkImageUsageFlags			usage,
 											 deUint32					queueFamilyIdx,
 											 VkQueue					queue)			const -> de::MovePtr<ImageWithMemory>;
@@ -215,17 +137,15 @@ public:
 											 VkImageSubresourceRange&	range)			const -> Move<VkImageView>;
 	void			submitCommands			(VkCommandBuffer			producerCmd,
 											 VkCommandBuffer			consumerCmd)	const;
-	bool			verify					(const BufferAccess&		result,
-											 deUint32					blackColor,
-											 deUint32					whiteColor)		const;
 protected:
 	auto createPipelineLayout			(const VkPushConstantRange*		pRange,
 										 DSLayouts						setLayouts)		const -> Move<VkPipelineLayout>;
-	const TestConfig		m_config;
-	const SpecialDevice		m_device;
-	Move<VkShaderModule>	m_vertex;
-	Move<VkShaderModule>	m_fragment;
-	Move<VkShaderModule>	m_compute;
+	const TestConfig			m_config;
+	const SpecialDevice			m_device;
+	struct NamedShader {
+		std::string				name;
+		Move<VkShaderModule>	handle;
+	}							m_shaders[4];
 };
 GPQInstanceBase::GPQInstanceBase (Context& ctx, const TestConfig& cfg)
 	: TestInstance	(ctx)
@@ -234,10 +154,12 @@ GPQInstanceBase::GPQInstanceBase (Context& ctx, const TestConfig& cfg)
 					 cfg.transitionFrom,	cfg.transitionTo,
 					 cfg.priorityFrom,		cfg.priorityTo,
 					 cfg.enableProtected,	cfg.enableSparseBinding)
-	, m_vertex		()
-	, m_fragment	()
-	, m_compute		()
+	, m_shaders		()
 {
+	m_shaders[0].name = "vert";	// vertex
+	m_shaders[1].name = "frag";	// fragment
+	m_shaders[2].name = "cpyb";	// compute
+	m_shaders[3].name = "cpyi";	// compute
 }
 
 de::MovePtr<ImageWithMemory> GPQInstanceBase::createImage (VkImageUsageFlags usage, deUint32 queueFamilyIdx, VkQueue queue) const
@@ -245,12 +167,13 @@ de::MovePtr<ImageWithMemory> GPQInstanceBase::createImage (VkImageUsageFlags usa
 	const InstanceInterface&	vki		= m_context.getInstanceInterface();
 	const DeviceInterface&		vkd		= m_context.getDeviceInterface();
 	const VkPhysicalDevice		phys	= m_context.getPhysicalDevice();
-	const VkDevice				dev		= m_device.device;
+	const VkDevice				dev		= m_device.handle;
 	Allocator&					alloc	= m_device.getAllocator();
 	VkImageCreateFlags			flags	= 0;
 
-	if (m_config.enableProtected)		flags |= VK_IMAGE_CREATE_PROTECTED_BIT;
-	if (m_config.enableSparseBinding)	flags |= (VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
+	if (m_config.enableProtected)		flags	|= VK_IMAGE_CREATE_PROTECTED_BIT;
+	if (m_config.enableSparseBinding)	flags	|= (VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
+	const MemoryRequirement				memReqs	= m_config.enableProtected ? MemoryRequirement::Protected : MemoryRequirement::Any;
 
 	VkImageCreateInfo imageInfo{};
 	imageInfo.sType					= VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -271,13 +194,13 @@ de::MovePtr<ImageWithMemory> GPQInstanceBase::createImage (VkImageUsageFlags usa
 	imageInfo.pQueueFamilyIndices	= &queueFamilyIdx;
 	imageInfo.initialLayout			= VK_IMAGE_LAYOUT_UNDEFINED;
 
-	return de::MovePtr<ImageWithMemory>(new ImageWithMemory(vki, vkd, phys, dev, alloc, imageInfo, queue));
+	return de::MovePtr<ImageWithMemory>(new ImageWithMemory(vki, vkd, phys, dev, alloc, imageInfo, queue, memReqs));
 }
 
-Move<VkImageView> GPQInstanceBase::createView	(VkImage image, VkImageSubresourceRange& range) const
+Move<VkImageView> GPQInstanceBase::createView (VkImage image, VkImageSubresourceRange& range) const
 {
 	const DeviceInterface&	vkd		= m_context.getDeviceInterface();
-	const VkDevice			dev		= m_device.device;
+	const VkDevice			dev		= m_device.handle;
 
 	range = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1);
 	return makeImageView(vkd, dev, image, VK_IMAGE_VIEW_TYPE_2D, m_config.format, range);
@@ -296,10 +219,10 @@ Move<VkPipelineLayout>	GPQInstanceBase::createPipelineLayout (const VkPushConsta
 	info.flags					= VkPipelineLayoutCreateFlags(0);
 	info.setLayoutCount			= static_cast<uint32_t>(layouts.size());
 	info.pSetLayouts			= layouts.size() ? layouts.data() : nullptr;
-	info.pushConstantRangeCount	= pRange ? 1 : 0;
-	info.pPushConstantRanges	= pRange;
+	info.pushConstantRangeCount	= (pRange != nullptr && pRange->size > 0) ? 1 : 0;
+	info.pPushConstantRanges	= (pRange != nullptr && pRange->size > 0) ? pRange : nullptr;
 
-	return ::vk::createPipelineLayout(m_context.getDeviceInterface(), m_device.device, &info);
+	return ::vk::createPipelineLayout(m_context.getDeviceInterface(), m_device.handle, &info);
 }
 
 template<> Move<VkPipelineLayout> DE_UNUSED_FUNCTION GPQInstanceBase::createPipelineLayout<void> (DSLayouts setLayouts) const
@@ -316,13 +239,33 @@ template<class PushConstant> Move<VkPipelineLayout>	GPQInstanceBase::createPipel
 	return createPipelineLayout(&range, setLayouts);
 }
 
+Move<VkCommandPool> GPQInstanceBase::makeCommandPool (deUint32 qFamilyIndex) const
+{
+	const VkCommandPoolCreateFlags flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT
+			| (m_config.enableProtected ? VK_COMMAND_POOL_CREATE_PROTECTED_BIT : 0);
+	const VkCommandPoolCreateInfo commandPoolParams =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,		// VkStructureType			sType;
+		DE_NULL,										// const void*				pNext;
+		flags,											// VkCommandPoolCreateFlags	flags;
+		qFamilyIndex,									// deUint32					queueFamilyIndex;
+	};
+
+	return createCommandPool(m_context.getDeviceInterface(), m_device.handle, &commandPoolParams);
+}
+
 Move<VkPipeline> GPQInstanceBase::createGraphicsPipeline (VkPipelineLayout pipelineLayout, VkRenderPass renderPass)
 {
 	const DeviceInterface&	vkd	= m_context.getDeviceInterface();
-	const VkDevice			dev	= m_device.device;
+	const VkDevice			dev	= m_device.handle;
 
-	m_vertex	= createShaderModule(vkd, dev, m_context.getBinaryCollection().get("vert"));
-	m_fragment	= createShaderModule(vkd, dev, m_context.getBinaryCollection().get("frag"));
+	auto sh = std::find_if(std::begin(m_shaders), std::end(m_shaders), [](const NamedShader& ns){ return ns.name == "vert"; });
+	if (*sh->handle == DE_NULL) sh->handle = createShaderModule(vkd, dev, m_context.getBinaryCollection().get("vert"));
+	VkShaderModule vertex = *sh->handle;
+
+	sh = std::find_if(std::begin(m_shaders), std::end(m_shaders), [](const NamedShader& ns){ return ns.name == "frag"; });
+	if (*sh->handle == DE_NULL) sh->handle = createShaderModule(vkd, dev, m_context.getBinaryCollection().get("frag"));
+	VkShaderModule fragment = *sh->handle;
 
 	const std::vector<VkViewport>	viewports		{ makeViewport(m_config.width, m_config.height) };
 	const std::vector<VkRect2D>		scissors		{ makeRect2D(m_config.width, m_config.height) };
@@ -339,26 +282,27 @@ Move<VkPipeline> GPQInstanceBase::createGraphicsPipeline (VkPipelineLayout pipel
 		&vertexAttrib													//	const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 	};
 
-	return makeGraphicsPipeline(vkd, dev, pipelineLayout,*m_vertex,VkShaderModule(0),
-						 VkShaderModule(0),VkShaderModule(0),*m_fragment,renderPass,viewports, scissors,
+	return makeGraphicsPipeline(vkd, dev, pipelineLayout,vertex,VkShaderModule(0),
+						 VkShaderModule(0),VkShaderModule(0),fragment,renderPass,viewports, scissors,
 						 VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,0,0,&vertexInputStateCreateInfo);
-
-
 }
 
-Move<VkPipeline> GPQInstanceBase::createComputePipeline	(VkPipelineLayout	pipelineLayout)
+Move<VkPipeline> GPQInstanceBase::createComputePipeline	(VkPipelineLayout pipelineLayout, bool producer)
 {
 	const DeviceInterface&	vk	= m_context.getDeviceInterface();
-	const VkDevice			dev	= m_device.device;
+	const VkDevice			dev	= m_device.handle;
 
-	m_compute = createShaderModule(vk, dev, m_context.getBinaryCollection().get("comp"));
+	const std::string		compName = producer ? "cpyb" : "cpyi";
+	auto comp = std::find_if(std::begin(m_shaders), std::end(m_shaders), [&](const NamedShader& ns){ return ns.name == compName; });
+	if (*comp->handle == DE_NULL) comp->handle = createShaderModule(vk, dev, m_context.getBinaryCollection().get(compName));
+	VkShaderModule compute = *comp->handle;
 
 	VkPipelineShaderStageCreateInfo	sci{};
 	sci.sType				= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	sci.pNext				= nullptr;
 	sci.flags				= VkPipelineShaderStageCreateFlags(0);
 	sci.stage				= VK_SHADER_STAGE_COMPUTE_BIT;
-	sci.module				= *m_compute;
+	sci.module				= compute;
 	sci.pName				= "main";
 	sci.pSpecializationInfo	= nullptr;
 
@@ -378,37 +322,46 @@ VkPipelineStageFlags queueFlagBitToPipelineStage (VkQueueFlagBits bit);
 void GPQInstanceBase::submitCommands (VkCommandBuffer producerCmd, VkCommandBuffer consumerCmd) const
 {
 	const DeviceInterface&	vkd		= m_context.getDeviceInterface();
-	const VkDevice			dev		= m_device.device;
+	const VkDevice			dev		= m_device.handle;
 
 	Move<VkSemaphore>		sem		= createSemaphore(vkd, dev);
 	Move<VkFence>			fence	= createFence(vkd, dev);
 
-	const VkSubmitInfo		semSubmitProducer
+	VkProtectedSubmitInfo protectedSubmitInfo
 	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType				sType;
-		nullptr,						// const void*					pNext;
-		0,								// deUint32						waitSemaphoreCount;
-		nullptr,						// const VkSemaphore*			pWaitSemaphores;
-		nullptr,						// const VkPipelineStageFlags*	pWaitDstStageMask;
-		1u,								// deUint32						commandBufferCount;
-		&producerCmd,					// const VkCommandBuffer*		pCommandBuffers;
-		1u,								// deUint32						signalSemaphoreCount;
-		&sem.get(),						// const VkSemaphore*			pSignalSemaphores;
+		VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO,	// VkStructureType	sType;
+		nullptr,									// void*			pNext;
+		VK_TRUE										// VkBool32			protectedSubmit;
+	};
+
+	const VkSubmitInfo		producerSubmitInfo
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,				// VkStructureType				sType;
+		m_config.enableProtected
+				? &protectedSubmitInfo : nullptr,	// const void*					pNext;
+		0,											// deUint32						waitSemaphoreCount;
+		nullptr,									// const VkSemaphore*			pWaitSemaphores;
+		nullptr,									// const VkPipelineStageFlags*	pWaitDstStageMask;
+		1u,											// deUint32						commandBufferCount;
+		&producerCmd,								// const VkCommandBuffer*		pCommandBuffers;
+		1u,											// deUint32						signalSemaphoreCount;
+		&sem.get(),									// const VkSemaphore*			pSignalSemaphores;
 	};
 
 	const VkPipelineStageFlags	dstWaitStages = VK_PIPELINE_STAGE_TRANSFER_BIT |
-											    queueFlagBitToPipelineStage(m_config.transitionTo);
-	const VkSubmitInfo		semSubmitConsumer
+												queueFlagBitToPipelineStage(m_config.transitionTo);
+	const VkSubmitInfo		consumerSubmitInfo
 	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType				sType;
-		nullptr,						// const void*					pNext;
-		1u,								// deUint32						waitSemaphoreCount;
-		&(*sem),						// const VkSemaphore*			pWaitSemaphores;
-		&dstWaitStages,					// const VkPipelineStageFlags*	pWaitDstStageMask;
-		1u,								// deUint32						commandBufferCount;
-		&consumerCmd,					// const VkCommandBuffer*		pCommandBuffers;
-		0,								// deUint32						signalSemaphoreCount;
-		nullptr,						// const VkSemaphore*			pSignalSemaphores;
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,				// VkStructureType				sType;
+		m_config.enableProtected
+				? &protectedSubmitInfo : nullptr,	// const void*					pNext;
+		1u,											// deUint32						waitSemaphoreCount;
+		&sem.get(),									// const VkSemaphore*			pWaitSemaphores;
+		&dstWaitStages,								// const VkPipelineStageFlags*	pWaitDstStageMask;
+		1u,											// deUint32						commandBufferCount;
+		&consumerCmd,								// const VkCommandBuffer*		pCommandBuffers;
+		0,											// deUint32						signalSemaphoreCount;
+		nullptr,									// const VkSemaphore*			pSignalSemaphores;
 	};
 
 	switch (m_config.syncType)
@@ -418,8 +371,8 @@ void GPQInstanceBase::submitCommands (VkCommandBuffer producerCmd, VkCommandBuff
 		submitCommandsAndWait(vkd, dev, m_device.queueTo, consumerCmd);
 		break;
 	case SyncType::Semaphore:
-		VK_CHECK(vkd.queueSubmit(m_device.queueFrom, 1u, &semSubmitProducer, VkFence(0)));
-		VK_CHECK(vkd.queueSubmit(m_device.queueTo, 1u, &semSubmitConsumer, *fence));
+		VK_CHECK(vkd.queueSubmit(m_device.queueFrom, 1u, &producerSubmitInfo, VkFence(0)));
+		VK_CHECK(vkd.queueSubmit(m_device.queueTo, 1u, &consumerSubmitInfo, *fence));
 		VK_CHECK(vkd.waitForFences(dev, 1u, &fence.get(), DE_TRUE, ~0ull));
 		break;
 	}
@@ -519,6 +472,8 @@ void GPQCase::checkSupport (Context& context) const
 	const InstanceInterface&	vki = context.getInstanceInterface();
 	const VkPhysicalDevice		dev = context.getPhysicalDevice();
 
+	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+	context.requireDeviceFunctionality("VK_EXT_global_priority_query");
 	context.requireDeviceFunctionality("VK_EXT_global_priority");
 
 	if (!m_config.selectFormat(vki, dev, { VK_FORMAT_R32_SINT, VK_FORMAT_R32_UINT, VK_FORMAT_R8_SINT, VK_FORMAT_R8_UINT }))
@@ -555,37 +510,33 @@ void GPQCase::checkSupport (Context& context) const
 	{
 		if (qIdx == INVALID_UINT32) {
 			std::ostringstream buf;
-			buf << "Unable to create a queue " << qfb << " with a priority " << qgp;
+			buf << "Unable to find queue " << qfb << " with priority " << qgp;
 			buf.flush();
 			TCU_THROW(NotSupportedError, buf.str());
 		}
 	};
 
-	const bool priorityQueryEnabled = context.isDeviceFunctionalitySupported("VK_EXT_global_priority_query");
-
-	VkQueueFlags	flagFrom	= m_config.transitionFrom;
-	VkQueueFlags	flagTo		= m_config.transitionTo;
+	VkQueueFlags	flagsFrom	= m_config.transitionFrom;
+	VkQueueFlags	flagsTo		= m_config.transitionTo;
 	if (m_config.enableProtected)
 	{
-		flagFrom |= VK_QUEUE_PROTECTED_BIT;
-		flagTo	|= VK_QUEUE_PROTECTED_BIT;
+		flagsFrom |= VK_QUEUE_PROTECTED_BIT;
+		flagsTo	|= VK_QUEUE_PROTECTED_BIT;
 	}
 	if (m_config.enableSparseBinding)
 	{
-		flagFrom |= VK_QUEUE_SPARSE_BINDING_BIT;
-		flagTo	|= VK_QUEUE_SPARSE_BINDING_BIT;
+		flagsFrom |= VK_QUEUE_SPARSE_BINDING_BIT;
+		flagsTo	|= VK_QUEUE_SPARSE_BINDING_BIT;
 	}
 
-	const deUint32 queueFromIndex	= findQueueFamilyIndex(vki, dev, flagFrom,
-														   SpecialDevice::getColissionFlags(m_config.transitionFrom),
-														   priorityQueryEnabled,
-														   QueueGlobalPriorities({m_config.priorityFrom}));
+	const deUint32 queueFromIndex	= findQueueFamilyIndex(vki, dev, m_config.priorityFrom,
+														   flagsFrom, SpecialDevice::getColissionFlags(flagsFrom),
+														   INVALID_UINT32);
 	assertUnavailableQueue(queueFromIndex, m_config.transitionFrom, m_config.priorityFrom);
 
-	const deUint32 queueToIndex		= findQueueFamilyIndex(vki, dev, flagTo,
-														   SpecialDevice::getColissionFlags(m_config.transitionTo),
-														   priorityQueryEnabled,
-														   QueueGlobalPriorities({m_config.priorityTo}));
+	const deUint32 queueToIndex		= findQueueFamilyIndex(vki, dev, m_config.priorityTo,
+														   flagsTo, SpecialDevice::getColissionFlags(flagsTo),
+														   queueFromIndex);
 	assertUnavailableQueue(queueToIndex, m_config.transitionTo, m_config.priorityTo);
 
 	if (queueFromIndex == queueToIndex)
@@ -597,76 +548,29 @@ void GPQCase::checkSupport (Context& context) const
 	}
 }
 
-std::string getShaderImageBufferType (const tcu::TextureFormat& format)
-{
-	return image::getFormatPrefix(format) + "imageBuffer";
-}
-
 void GPQCase::initPrograms (SourceCollections& programs) const
 {
 	const std::string producerComp(R"glsl(
 	#version 450
-	layout(std430, push_constant) uniform PC
-		{ uint width, height; } pc;
-	struct Index { uint k; };
-	struct Quad { vec2 c[4]; };
-	layout(set=0, binding=0) buffer Quads
-		{ Quad data[]; } quads;
-	layout(set=0, binding=1) buffer Indices
-		{ Index data[]; } indices;
-	uint fieldCount (uint w, uint h) {
-		return ((w+1)/2)*((h+1)/2)+(w/2)*(h/2);
-	}
-	uint fieldIndex () {
-		return	fieldCount(pc.width, gl_GlobalInvocationID.y) + (gl_GlobalInvocationID.x / 2);
-	}
+	layout(binding=0) buffer S { float src[]; };
+	layout(binding=1) buffer D { float dst[]; };
+	layout(local_size_x=1,local_size_y=1) in;
 	void main() {
-		float x1 = float(gl_GlobalInvocationID.x) / float(pc.width);
-		float y1 = float(gl_GlobalInvocationID.y) / float(pc.height);
-		float x2 = (float(gl_GlobalInvocationID.x) + 1.0) / float(pc.width);
-		float y2 = (float(gl_GlobalInvocationID.y) + 1.0) / float(pc.height);
-
-		float xx1 = x1 * 2.0 - 1.0;
-		float yy1 = y1 * 2.0 - 1.0;
-		float xx2 = x2 * 2.0 - 1.0;
-		float yy2 = y2 * 2.0 - 1.0;
-
-		if (((gl_GlobalInvocationID.x + gl_GlobalInvocationID.y) % 2) == 0)
-		{
-			uint at = fieldIndex();
-
-			if (gl_GlobalInvocationID.z == 0)
-			{
-				quads.data[at].c[0] = vec2(xx1, yy1);
-				quads.data[at].c[1] = vec2(xx2, yy1);
-				indices.data[at*6+0].k = at * 4 + 0;
-				indices.data[at*6+1].k = at * 4 + 1;
-				indices.data[at*6+2].k = at * 4 + 2;
-			}
-			else
-			{
-				quads.data[at].c[2] = vec2(xx2, yy2);
-				quads.data[at].c[3] = vec2(xx1, yy2);
-				indices.data[at*6+3].k = at * 4 + 2;
-				indices.data[at*6+4].k = at * 4 + 3;
-				indices.data[at*6+5].k = at * 4 + 0;
-			}
-		}
+		dst[gl_GlobalInvocationID.x] = src[gl_GlobalInvocationID.x];
 	}
 	)glsl");
 
 	const tcu::StringTemplate consumerComp(R"glsl(
 	#version 450
-	layout(std430, push_constant) uniform PC
-		{ uint width, height; } pc;
-	struct Pixel { uint k; };
-	layout(${IMAGE_FORMAT}, set=0, binding=0) readonly uniform ${IMAGE_TYPE} srcImage;
-	layout(binding=1) writeonly coherent buffer Pixels { Pixel data[]; } pixels;
+	layout(local_size_x=1,local_size_y=1) in;
+	layout(${IMAGE_FORMAT}, binding=0) readonly uniform ${IMAGE_TYPE} srcImage;
+	layout(binding=1) writeonly coherent buffer Pixels { uint data[]; } dstBuffer;
 	void main()
 	{
-		ivec2 pos2 = ivec2(gl_GlobalInvocationID.xy);
-		int   pos1 = int(gl_GlobalInvocationID.y * pc.width + gl_GlobalInvocationID.x);
-		pixels.data[pos1].k = uint(imageLoad(srcImage, pos2).r) + 1;
+		ivec2 srcIdx = ivec2(gl_GlobalInvocationID.xy);
+		int   width  = imageSize(srcImage).x;
+		int   dstIdx = int(gl_GlobalInvocationID.y * width + gl_GlobalInvocationID.x);
+		dstBuffer.data[dstIdx] = uint(imageLoad(srcImage, srcIdx).r) == ${TEST_VALUE} ? 1 : 0;
 	}
 	)glsl");
 
@@ -675,7 +579,7 @@ void GPQCase::initPrograms (SourceCollections& programs) const
 	layout(location = 0) in vec2 pos;
 	void main()
 	{
-	   gl_Position = vec4(pos, 0, 1);
+	   gl_Position = vec4(pos, 0.0, 1.01);
 	}
 	)glsl");
 
@@ -691,7 +595,6 @@ void GPQCase::initPrograms (SourceCollections& programs) const
 	const auto format		= mapVkFormat(m_config.format);
 	const auto imageFormat	= image::getShaderImageFormatQualifier(format);
 	const auto imageType	= image::getShaderImageType(format, image::ImageType::IMAGE_TYPE_2D, false);
-	const auto imageBuffer	= getShaderImageBufferType(format);
 	const auto colorType	= image::getGlslAttachmentType(m_config.format); // ivec4
 
 	const std::map<std::string, std::string>	abbreviations
@@ -699,304 +602,302 @@ void GPQCase::initPrograms (SourceCollections& programs) const
 		{ std::string("TEST_VALUE"),	std::to_string(testValue)	},
 		{ std::string("IMAGE_FORMAT"),	std::string(imageFormat)	},
 		{ std::string("IMAGE_TYPE"),	std::string(imageType)		},
-		{ std::string("IMAGE_BUFFER"),	std::string(imageBuffer)	},
 		{ std::string("COLOR_TYPE"),	std::string(colorType)		},
 	};
 
-	programs.glslSources.add("comp") << glu::ComputeSource(
-											m_config.transitionFrom == VK_QUEUE_COMPUTE_BIT
-												? producerComp
-												: consumerComp.specialize(abbreviations));
+	programs.glslSources.add("cpyb") << glu::ComputeSource(producerComp);
+	programs.glslSources.add("cpyi") << glu::ComputeSource(consumerComp.specialize(abbreviations));
 	programs.glslSources.add("vert") << glu::VertexSource(vert);
 	programs.glslSources.add("frag") << glu::FragmentSource(frag.specialize(abbreviations));
 }
 
-
 tcu::TestStatus	GPQInstance<VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT>::iterate (void)
 {
-	VkResult						deviceStatus		= VK_SUCCESS;
-	if (!m_device.isValid(deviceStatus))
+	if (VK_SUCCESS != m_device.createResult)
 	{
-		if (VK_ERROR_NOT_PERMITTED_KHR == deviceStatus)
-			return tcu::TestStatus::pass(getResultName(deviceStatus));
-		TCU_CHECK(deviceStatus);
+		if (VK_ERROR_NOT_PERMITTED_KHR == m_device.createResult)
+			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Custom device creation returned " + std::string(getResultName(m_device.createResult)));
+		throw NotSupportedError(m_device.createResult, getResultName(m_device.createResult), m_device.createExpression, m_device.createFileName, m_device.createFileLine);
 	}
 
 	const InstanceInterface&		vki					= m_context.getInstanceInterface();
 	const DeviceInterface&			vkd					= m_context.getDeviceInterface();
 	const VkPhysicalDevice			phys				= m_context.getPhysicalDevice();
-	const VkDevice					device				= m_device.device;
+	const VkDevice					device				= m_device.handle;
 	Allocator&						allocator			= m_device.getAllocator();
 	const deUint32					producerIndex		= m_device.queueFamilyIndexFrom;
 	const deUint32					consumerIndex		= m_device.queueFamilyIndexTo;
-	const VkQueue					producerQueue		= m_device.queueFrom;	DE_UNREF(producerQueue);
-	const VkQueue					consumerQueue		= m_device.queueTo;		DE_UNREF(consumerQueue);
+	const std::vector<deUint32>		producerIndices		{ producerIndex };
+	const std::vector<deUint32>		consumerIndices		{ consumerIndex };
+	const VkQueue					producerQueue		= m_device.queueFrom;
+	const VkQueue					consumerQueue		= m_device.queueTo;
 
-	const uint32_t					width				= m_config.width;
-	const uint32_t					height				= m_config.height;
-	const uint32_t					clearComp			= 97;
-	const VkClearValue				clearColor			= makeClearValueColorU32(clearComp, clearComp, clearComp, clearComp);
-	const uint32_t					quadCount			= CheckerboardBuilder::blackFieldCount(width, height);
-	const uint32_t					vertexCount			= 4 * quadCount;
-	const uint32_t					indexCount			= 6 * quadCount;
-	const MemoryRequirement			memReqs				= (m_config.enableProtected ? MemoryRequirement::Protected : MemoryRequirement::Any);
+	// stagging buffer for vertices
+	const std::vector<float>		positions			{ +1.f, -1.f, -1.f, -1.f, 0.f, +1.f };
+	const VkBufferCreateInfo		posBuffInfo			= makeBufferCreateInfo(positions.size() * sizeof(float), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, producerIndices);
+	BufferWithMemory				positionsBuffer		(vki, vkd, phys, device, allocator, posBuffInfo, MemoryRequirement::HostVisible);
+	std::copy_n(positions.data(), positions.size(), begin<float>(positionsBuffer.getHostPtr()));
+	const VkDescriptorBufferInfo	posDsBuffInfo		= makeDescriptorBufferInfo(positionsBuffer.get(), 0, positionsBuffer.getSize());
 
-	VkBufferCreateFlags				buffsCreateFlags	= 0;
-	if (m_config.enableProtected)	buffsCreateFlags	|= VK_BUFFER_CREATE_PROTECTED_BIT;
-	if (m_config.enableSparseBinding) buffsCreateFlags	|= VK_BUFFER_CREATE_SPARSE_BINDING_BIT;
+	// vertex buffer
+	VkBufferCreateFlags				vertCreateFlags		= 0;
+	if (m_config.enableProtected)	vertCreateFlags		|= VK_BUFFER_CREATE_PROTECTED_BIT;
+	if (m_config.enableSparseBinding) vertCreateFlags	|= VK_BUFFER_CREATE_SPARSE_BINDING_BIT;
 	const VkBufferUsageFlags		vertBuffUsage		= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-	const VkBufferUsageFlags		indexBuffUsage		= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-	const VkDeviceSize				vertBuffSize		= vertexCount * mapVkFormat(VK_FORMAT_R32G32_SFLOAT).getPixelSize();
-	const VkDeviceSize				indexBuffSize		= indexCount * sizeof(uint32_t);
-	const VkDeviceSize				resultBuffSize		= (width * height * mapVkFormat(m_config.format).getPixelSize());
-	const VkBufferCreateInfo		vertBuffInfo		= makeBufferCreateInfo(vertBuffSize, vertBuffUsage, {producerIndex}, buffsCreateFlags);
-	const VkBufferCreateInfo		indexBuffInfo		= makeBufferCreateInfo(indexBuffSize, indexBuffUsage, {producerIndex}, buffsCreateFlags);
-	const VkBufferCreateInfo		resultBuffInfo		= makeBufferCreateInfo(resultBuffSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-	BufferWithMemory				vertexBuffer		(vki, vkd, phys, device, allocator, vertBuffInfo, memReqs, producerQueue);
-	BufferWithMemory				indexBuffer			(vki, vkd, phys, device, allocator, indexBuffInfo, memReqs, producerQueue);
-	BufferWithMemory				resultBuffer		(vki, vkd, phys, device, allocator, resultBuffInfo, MemoryRequirement::HostVisible);
+	const MemoryRequirement			vertMemReqs			= (m_config.enableProtected ? MemoryRequirement::Protected : MemoryRequirement::Any);
+	const VkBufferCreateInfo		vertBuffInfo		= makeBufferCreateInfo(positionsBuffer.getSize(), vertBuffUsage, producerIndices, vertCreateFlags);
+	const BufferWithMemory			vertexBuffer		(vki, vkd, phys, device, allocator, vertBuffInfo, vertMemReqs, producerQueue);
+	const VkDescriptorBufferInfo	vertDsBuffInfo		= makeDescriptorBufferInfo(vertexBuffer.get(), 0ull, vertexBuffer.getSize());
 
-	const VkDescriptorBufferInfo	dsVertInfo			= makeDescriptorBufferInfo(vertexBuffer.get(), 0ull, vertBuffSize);
-	const VkDescriptorBufferInfo	dsIndexInfo			= makeDescriptorBufferInfo(indexBuffer.get(), 0ull, indexBuffSize);
-	Move<VkDescriptorPool>			dsPool				= DescriptorPoolBuilder()
+	// descriptor set for stagging and vertex buffers
+	Move<VkDescriptorPool>			producerDsPool		= DescriptorPoolBuilder()
 															.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 															.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 															.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
-	Move<VkDescriptorSetLayout>		dsLayout			= DescriptorSetLayoutBuilder()
+	Move<VkDescriptorSetLayout>		producerDsLayout	= DescriptorSetLayoutBuilder()
 															.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL)
 															.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL)
 															.build(vkd, device);
-	Move<VkDescriptorSet>			descriptorSet		= makeDescriptorSet(vkd, device, *dsPool, *dsLayout);
+	Move<VkDescriptorSet>			producerDs			= makeDescriptorSet(vkd, device, *producerDsPool, *producerDsLayout);
 	DescriptorSetUpdateBuilder()
-		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &dsVertInfo)
-		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &dsIndexInfo)
+		.writeSingle(*producerDs, DescriptorSetUpdateBuilder::Location::binding(0), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &posDsBuffInfo)
+		.writeSingle(*producerDs, DescriptorSetUpdateBuilder::Location::binding(1), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &vertDsBuffInfo)
 		.update(vkd, device);
 
-	VkImageSubresourceRange			colorResourceRange	{};
-	const VkImageUsageFlags			imageUsage			= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
-	de::MovePtr<ImageWithMemory>	image				= this->createImage(imageUsage, consumerIndex, consumerQueue);
-	Move<VkImageView>				view				= createView(**image, colorResourceRange);
+	// consumer image
+	const uint32_t					clearComp			= 97;
+	const VkClearValue				clearColor			= makeClearValueColorU32(clearComp, clearComp, clearComp, clearComp);
+	VkImageSubresourceRange			imageResourceRange	{};
+	const VkImageUsageFlags			imageUsage			= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT);
+	de::MovePtr<ImageWithMemory>	image				= createImage(imageUsage, consumerIndex, consumerQueue);
+	Move<VkImageView>				view				= createView(**image, imageResourceRange);
 	Move<VkRenderPass>				renderPass			= makeRenderPass(vkd, device, m_config.format);
-	Move<VkFramebuffer>				framebuffer			= makeFramebuffer(vkd, device, *renderPass, *view, width, height);
-	const VkImageMemoryBarrier		colorReadyBarrier	= makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-															VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-															**image, colorResourceRange);
-	const VkBufferImageCopy			colorCopyRegion		= makeBufferImageCopy(makeExtent3D(width, height, 1),
-																			  makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u));
-	const VkMemoryBarrier			resultReadyBarrier	= makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
-	struct PushConstant
-	{ uint32_t width, height; }		pc					{ width, height };
-	Move<VkPipelineLayout>			pipelineLayout		= createPipelineLayout<PushConstant>({ *dsLayout });
-	Move<VkPipeline>				producerPipeline	= createComputePipeline(*pipelineLayout);
-	Move<VkPipeline>				consumerPipeline	= createGraphicsPipeline(*pipelineLayout, *renderPass);
+	Move<VkFramebuffer>				framebuffer			= makeFramebuffer(vkd, device, *renderPass, *view, m_config.width, m_config.height);
+	const VkDescriptorImageInfo		imageDsInfo			= makeDescriptorImageInfo(VkSampler(0), *view, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	const VkImageMemoryBarrier		imageReadyBarrier	= makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+															VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+															**image, imageResourceRange, consumerIndex, consumerIndex);
+	// stagging buffer for result
+	const VkDeviceSize				resultBuffSize		= (m_config.width * m_config.height * mapVkFormat(m_config.format).getPixelSize());
+	const VkBufferCreateInfo		resultBuffInfo		= makeBufferCreateInfo(resultBuffSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, consumerIndices);
+	BufferWithMemory				resultBuffer		(vki, vkd, phys, device, allocator, resultBuffInfo, MemoryRequirement::HostVisible);
+	const VkDescriptorBufferInfo	resultDsBuffInfo	= makeDescriptorBufferInfo(resultBuffer.get(), 0ull, resultBuffSize);
+	const VkMemoryBarrier			resultReadyBarrier	= makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
 
-	Move<VkCommandPool>				producerPool		= makeCommandPool(vkd, device, producerIndex);
-	Move<VkCommandPool>				consumerPool		= makeCommandPool(vkd, device, consumerIndex);
+	// descriptor set for consumer image and result buffer
+	Move<VkDescriptorPool>			consumerDsPool		= DescriptorPoolBuilder()
+															.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+															.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+															.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+	Move<VkDescriptorSetLayout>		consumerDsLayout	= DescriptorSetLayoutBuilder()
+															.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_ALL)
+															.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL)
+															.build(vkd, device);
+	Move<VkDescriptorSet>			consumerDs			= makeDescriptorSet(vkd, device, *consumerDsPool, *consumerDsLayout);
+
+	DescriptorSetUpdateBuilder()
+		.writeSingle(*consumerDs, DescriptorSetUpdateBuilder::Location::binding(0), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageDsInfo)
+		.writeSingle(*consumerDs, DescriptorSetUpdateBuilder::Location::binding(1), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultDsBuffInfo)
+		.update(vkd, device);
+
+	Move<VkPipelineLayout>			producerLayout		= createPipelineLayout<>({ *producerDsLayout });
+	Move<VkPipeline>				producerPipeline	= createComputePipeline(*producerLayout, true);
+
+	Move<VkPipelineLayout>			consumerLayout		= createPipelineLayout<>({ *consumerDsLayout });
+	Move<VkPipeline>				consumerPipeline	= createGraphicsPipeline(*consumerLayout, *renderPass);
+
+	Move<VkPipelineLayout>			resultLayout		= createPipelineLayout<>({ *consumerDsLayout });
+	Move<VkCommandPool>				resultPool			= makeCommandPool(consumerIndex);
+	Move<VkPipeline>				resultPipeline		= createComputePipeline(*resultLayout, false);
+
+	Move<VkCommandPool>				producerPool		= makeCommandPool(producerIndex);
+	Move<VkCommandPool>				consumerPool		= makeCommandPool(consumerIndex);
 	Move<VkCommandBuffer>			producerCmd			= allocateCommandBuffer(vkd, device, *producerPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	Move<VkCommandBuffer>			consumerCmd			= allocateCommandBuffer(vkd, device, *consumerPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	beginCommandBuffer(vkd, *producerCmd);
-		vkd.cmdBindDescriptorSets(*producerCmd, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1, &(*descriptorSet), 0, nullptr);
 		vkd.cmdBindPipeline(*producerCmd, VK_PIPELINE_BIND_POINT_COMPUTE, *producerPipeline);
-		vkd.cmdPushConstants(*producerCmd, *pipelineLayout, VK_SHADER_STAGE_ALL, 0, static_cast<uint32_t>(sizeof(PushConstant)), &pc);
-		vkd.cmdDispatch(*producerCmd, width, height, 2);
+		vkd.cmdBindDescriptorSets(*producerCmd, VK_PIPELINE_BIND_POINT_COMPUTE, *producerLayout, 0, 1, &(*producerDs), 0, nullptr);
+		vkd.cmdDispatch(*producerCmd, deUint32(positions.size()), 1, 1);
 	endCommandBuffer(vkd, *producerCmd);
 
 	beginCommandBuffer(vkd, *consumerCmd);
 		vkd.cmdBindPipeline(*consumerCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, *consumerPipeline);
-		vkd.cmdBindIndexBuffer(*consumerCmd, *indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-		vkd.cmdBindVertexBuffers(*consumerCmd, 0, 1, &static_cast<const VkBuffer&>(*vertexBuffer), &static_cast<const VkDeviceSize&>(0));
-		beginRenderPass(vkd, *consumerCmd, *renderPass, *framebuffer, makeRect2D(width, height), clearColor);
-			vkd.cmdDrawIndexed(*consumerCmd, indexCount, 1, 0, 0, 0);
+		vkd.cmdBindPipeline(*consumerCmd, VK_PIPELINE_BIND_POINT_COMPUTE, *resultPipeline);
+		vkd.cmdBindDescriptorSets(*consumerCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, *consumerLayout, 0, 1, &(*consumerDs), 0, nullptr);
+		vkd.cmdBindDescriptorSets(*consumerCmd, VK_PIPELINE_BIND_POINT_COMPUTE, *resultLayout, 0, 1, &(*consumerDs), 0, nullptr);
+		vkd.cmdBindVertexBuffers(*consumerCmd, 0, 1, vertexBuffer.getPtr(), &static_cast<const VkDeviceSize&>(0));
+
+		beginRenderPass(vkd, *consumerCmd, *renderPass, *framebuffer, makeRect2D(m_config.width, m_config.height), clearColor);
+			vkd.cmdDraw(*consumerCmd, deUint32(positions.size()), 1, 0, 0);
 		endRenderPass(vkd, *consumerCmd);
-		vkd.cmdPipelineBarrier(*consumerCmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &colorReadyBarrier);
-		vkd.cmdCopyImageToBuffer(*consumerCmd, **image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *resultBuffer, 1u, &colorCopyRegion);
-		vkd.cmdPipelineBarrier(*consumerCmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &resultReadyBarrier, 0u, nullptr, 0u, nullptr);
+		vkd.cmdPipelineBarrier(*consumerCmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u,
+							   0u, nullptr, 0u, nullptr, 1u, &imageReadyBarrier);
+
+		vkd.cmdDispatch(*consumerCmd, m_config.width, m_config.height, 1);
+		vkd.cmdPipelineBarrier(*consumerCmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0u,
+							   1u, &resultReadyBarrier, 0u, nullptr, 0u, nullptr);
 	endCommandBuffer(vkd, *consumerCmd);
 
 	submitCommands(*producerCmd, *consumerCmd);
 
 	resultBuffer.invalidateAlloc(vkd, device);
-	const tcu::ConstPixelBufferAccess	resultBufferAccess(mapVkFormat(m_config.format), width, height, 1, resultBuffer.getHostPtr());
+	const tcu::ConstPixelBufferAccess	resultBufferAccess(mapVkFormat(m_config.format), m_config.width, m_config.height, 1, resultBuffer.getHostPtr());
+	const deUint32 resultValue = resultBufferAccess.getPixelUint(0, 0).x();
+	const deUint32 expectedValue = 1;
+	const bool ok = (resultValue == expectedValue);
+	if (!ok)
+	{
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message << "Expected value: " << expectedValue << ", got " << resultValue << tcu::TestLog::EndMessage;
+	}
 
-	return verify(resultBufferAccess, GPQCase::testValue, clearComp) ? tcu::TestStatus::pass("") : tcu::TestStatus::fail("");
+	return ok ? tcu::TestStatus::pass("") : tcu::TestStatus::fail("");
 }
 
 tcu::TestStatus	GPQInstance<VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT>::iterate (void)
 {
-	VkResult						deviceStatus		= VK_SUCCESS;
-	if (!m_device.isValid(deviceStatus))
+	if (VK_SUCCESS != m_device.createResult)
 	{
-		if (VK_ERROR_NOT_PERMITTED_KHR == deviceStatus)
-			return tcu::TestStatus::pass(getResultName(deviceStatus));
-		TCU_CHECK(deviceStatus);
+		if (VK_ERROR_NOT_PERMITTED_KHR == m_device.createResult)
+			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Custom device creation returned " + std::string(getResultName(m_device.createResult)));
+		throw NotSupportedError(m_device.createResult, getResultName(m_device.createResult), m_device.createExpression, m_device.createFileName, m_device.createFileLine);
 	}
 
 	const InstanceInterface&		vki					= m_context.getInstanceInterface();
 	const DeviceInterface&			vkd					= m_context.getDeviceInterface();
 	const VkPhysicalDevice			phys				= m_context.getPhysicalDevice();
-	const VkDevice					device				= m_device.device;
+	const VkDevice					device				= m_device.handle;
 	Allocator&						allocator			= m_device.getAllocator();
 	const deUint32					producerIndex		= m_device.queueFamilyIndexFrom;
 	const deUint32					consumerIndex		= m_device.queueFamilyIndexTo;
-	const VkQueue					producerQueue		= m_device.queueFrom;	DE_UNREF(producerQueue);
-	const VkQueue					consumerQueue		= m_device.queueTo;		DE_UNREF(consumerQueue);
+	const std::vector<deUint32>		producerIndices		{ producerIndex };
+	const std::vector<deUint32>		consumerIndices		{ consumerIndex };
+	const VkQueue					producerQueue		= m_device.queueFrom;
 
-	const uint32_t					width				= m_config.width;
-	const uint32_t					height				= m_config.height;
-	const uint32_t					clearComp			= GPQCase::testValue - 11;
+	// stagging buffer for vertices
+	const std::vector<float>		positions			{ +1.f, -1.f, -1.f, -1.f, 0.f, +1.f };
+	const VkBufferCreateInfo		positionBuffInfo	= makeBufferCreateInfo(positions.size() * sizeof(float), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, producerIndices);
+	BufferWithMemory				positionsBuffer		(vki, vkd, phys, device, allocator, positionBuffInfo, MemoryRequirement::HostVisible);
+	std::copy_n(positions.data(), positions.size(), begin<float>(positionsBuffer.getHostPtr()));
+	const VkDescriptorBufferInfo	posDsBuffInfo		= makeDescriptorBufferInfo(positionsBuffer.get(), 0, positionsBuffer.getSize());
+
+	// vertex buffer
+	VkBufferCreateFlags				vertCreateFlags		= 0;
+	if (m_config.enableProtected)	vertCreateFlags		|= VK_BUFFER_CREATE_PROTECTED_BIT;
+	if (m_config.enableSparseBinding) vertCreateFlags	|= VK_BUFFER_CREATE_SPARSE_BINDING_BIT;
+	const VkBufferUsageFlags		vertBuffUsage		= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	const MemoryRequirement			vertMemReqs			= (m_config.enableProtected ? MemoryRequirement::Protected : MemoryRequirement::Any);
+	const VkBufferCreateInfo		vertBuffInfo		= makeBufferCreateInfo(positionsBuffer.getSize(), vertBuffUsage, producerIndices, vertCreateFlags);
+	const BufferWithMemory			vertexBuffer		(vki, vkd, phys, device, allocator, vertBuffInfo, vertMemReqs, producerQueue);
+	const VkDescriptorBufferInfo	vertDsBuffInfo		= makeDescriptorBufferInfo(vertexBuffer.get(), 0ull, vertexBuffer.getSize());
+	const VkBufferMemoryBarrier		producerReadyBarrier= makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+																				  vertexBuffer.get(), 0, vertexBuffer.getSize(), producerIndex, producerIndex);
+
+	// descriptor set for stagging and vertex buffers
+	Move<VkDescriptorPool>			producerDsPool		= DescriptorPoolBuilder()
+															.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+															.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+															.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+	Move<VkDescriptorSetLayout>		producerDsLayout	= DescriptorSetLayoutBuilder()
+															.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL)
+															.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL)
+															.build(vkd, device);
+	Move<VkDescriptorSet>			producerDs			= makeDescriptorSet(vkd, device, *producerDsPool, *producerDsLayout);
+	DescriptorSetUpdateBuilder()
+		.writeSingle(*producerDs, DescriptorSetUpdateBuilder::Location::binding(0), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &posDsBuffInfo)
+		.writeSingle(*producerDs, DescriptorSetUpdateBuilder::Location::binding(1), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &vertDsBuffInfo)
+		.update(vkd, device);
+
+	// producer image
+	const uint32_t					clearComp			= 97;
 	const VkClearValue				clearColor			= makeClearValueColorU32(clearComp, clearComp, clearComp, clearComp);
-	const uint32_t					quadCount			= CheckerboardBuilder::blackFieldCount(width, height);
-	const uint32_t					vertexCount			= 4 * quadCount;
-	const uint32_t					indexCount			= 6 * quadCount;
+	VkImageSubresourceRange			imageResourceRange	{};
+	const VkImageUsageFlags			imageUsage			= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT);
+	de::MovePtr<ImageWithMemory>	image				= createImage(imageUsage, producerIndex, producerQueue);
+	Move<VkImageView>				view				= createView(**image, imageResourceRange);
+	Move<VkRenderPass>				renderPass			= makeRenderPass(vkd, device, m_config.format);
+	Move<VkFramebuffer>				framebuffer			= makeFramebuffer(vkd, device, *renderPass, *view, m_config.width, m_config.height);
+	const VkDescriptorImageInfo		imageDsInfo			= makeDescriptorImageInfo(VkSampler(0), *view, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	const VkImageMemoryBarrier		imageReadyBarrier	= makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+															VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+															**image, imageResourceRange, producerIndex, producerIndex);
 
-	const VkBufferCreateFlags		graphCreateFlags	= 0;
-	const MemoryRequirement			graphBuffsMemReqs	= (MemoryRequirement::HostVisible);
+	// stagging buffer for result
+	const VkDeviceSize				resultBufferSize	= (m_config.width * m_config.height * mapVkFormat(m_config.format).getPixelSize());
+	const VkBufferCreateInfo		resultBufferInfo	= makeBufferCreateInfo(resultBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, consumerIndices);
+	BufferWithMemory				resultBuffer		(vki, vkd, phys, device, allocator, resultBufferInfo, MemoryRequirement::HostVisible);
+	const VkDescriptorBufferInfo	resultDsBuffInfo	= makeDescriptorBufferInfo(resultBuffer.get(), 0ull, resultBufferSize);
+	const VkBufferMemoryBarrier		resultReadyBarrier	= makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
+																				  resultBuffer.get(), 0, resultBufferSize, consumerIndex, consumerIndex);
 
-	const VkBufferUsageFlags		vertBuffUsage		= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-	const VkDeviceSize				vertBuffSize		= vertexCount * mapVkFormat(VK_FORMAT_R32G32_SFLOAT).getPixelSize();
-	const VkBufferCreateInfo		vertBuffInfo		= makeBufferCreateInfo(vertBuffSize, vertBuffUsage, {producerIndex}, graphCreateFlags);
-	BufferWithMemory				vertexBuffer		(vki, vkd, phys, device, allocator, vertBuffInfo, graphBuffsMemReqs, producerQueue);
-
-	const VkBufferUsageFlags		indexBuffUsage		= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-	const VkDeviceSize				indexBuffSize		= indexCount * sizeof(uint32_t);
-	const VkBufferCreateInfo		indexBuffInfo		= makeBufferCreateInfo(indexBuffSize, indexBuffUsage, {producerIndex}, graphCreateFlags);
-	BufferWithMemory				indexBuffer			(vki, vkd, phys, device, allocator, indexBuffInfo, graphBuffsMemReqs, producerQueue);
-
-	VkImageSubresourceRange			producerResRange	{};
-	const VkImageUsageFlags			producerUsage		= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
-	de::MovePtr<ImageWithMemory>	producerImage		= this->createImage(producerUsage, producerIndex, producerQueue);
-	Move<VkImageView>				producerView		= createView(**producerImage, producerResRange);
-	const VkDescriptorImageInfo		producerImageInfo	= makeDescriptorImageInfo(VkSampler(0), *producerView, VK_IMAGE_LAYOUT_GENERAL);
-
-	const VkBufferCreateFlags		consumerCreateFlags	= graphCreateFlags;
-	const MemoryRequirement			consumerMemReqs		= MemoryRequirement::HostVisible | MemoryRequirement::Coherent;
-	const VkBufferUsageFlags		consumerUsage		= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-	const VkDeviceSize				consumerBuffSize	= (width * height * sizeof(uint32_t));
-	const VkBufferCreateInfo		consumerBuffInfo	= makeBufferCreateInfo(consumerBuffSize, consumerUsage, {consumerIndex}, consumerCreateFlags);
-	BufferWithMemory				consumerBuffer		(vki, vkd, phys, device, allocator, consumerBuffInfo, consumerMemReqs, consumerQueue);
-	const VkDescriptorBufferInfo	consumerInfo		= makeDescriptorBufferInfo(*consumerBuffer, 0, consumerBuffSize);
-
-	const VkBufferCreateFlags		tmpCreateFlags		= graphCreateFlags;
-	const MemoryRequirement			tmpMemReqs			= MemoryRequirement::HostVisible | MemoryRequirement::Coherent;
-	const VkBufferUsageFlags		tmpUsage			= (VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-	const VkDeviceSize				tmpBuffSize			= (width * height * sizeof(uint32_t));
-	const VkBufferCreateInfo		tmpBuffInfo			= makeBufferCreateInfo(tmpBuffSize, tmpUsage, {consumerIndex}, tmpCreateFlags);
-	BufferWithMemory				tmpBuffer			(vki, vkd, phys, device, allocator, tmpBuffInfo, tmpMemReqs, consumerQueue);
-	const VkBufferImageCopy			tmpCopyRegion		= makeBufferImageCopy(makeExtent3D(width, height, 1),
-																			  makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u));
-
-	Move<VkDescriptorPool>			dsPool				= DescriptorPoolBuilder()
+	// descriptor set for consumer image and result buffer
+	Move<VkDescriptorPool>			consumerDsPool		= DescriptorPoolBuilder()
 															.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 															.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 															.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
-	Move<VkDescriptorSetLayout>		dsLayout			= DescriptorSetLayoutBuilder()
+	Move<VkDescriptorSetLayout>		consumerDsLayout	= DescriptorSetLayoutBuilder()
 															.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_ALL)
 															.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL)
 															.build(vkd, device);
-	Move<VkDescriptorSet>			descriptorSet		= makeDescriptorSet(vkd, device, *dsPool, *dsLayout);
+	Move<VkDescriptorSet>			consumerDs			= makeDescriptorSet(vkd, device, *consumerDsPool, *consumerDsLayout);
 
 	DescriptorSetUpdateBuilder()
-		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &producerImageInfo)
-		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &consumerInfo)
+		.writeSingle(*consumerDs, DescriptorSetUpdateBuilder::Location::binding(0), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageDsInfo)
+		.writeSingle(*consumerDs, DescriptorSetUpdateBuilder::Location::binding(1), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultDsBuffInfo)
 		.update(vkd, device);
 
-	Move<VkRenderPass>				renderPass			= makeRenderPass(vkd, device, m_config.format);
-	Move<VkFramebuffer>				framebuffer			= makeFramebuffer(vkd, device, *renderPass, *producerView, width, height);
+	Move<VkPipelineLayout>			producer1Layout		= createPipelineLayout<>({ *producerDsLayout });
+	Move<VkPipeline>				producer1Pipeline	= createComputePipeline(*producer1Layout, true);
+	Move<VkPipelineLayout>			producer2Layout		= createPipelineLayout<>({});
+	Move<VkPipeline>				producer2Pipeline	= createGraphicsPipeline(*producer2Layout, *renderPass);
 
-	const VkImageMemoryBarrier		producerReadyBarrier= makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_NONE,
-															VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
-															**producerImage, producerResRange);
-//	const VkBufferMemoryBarrier		consumerReadyBarrier= makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_NONE,
-//																				  *consumerBuffer, 0, consumerBuffSize,
-//																				  consumerIndex, consumerIndex);
-	//const VkMemoryBarrier			tmpReadyBarrier		= makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
-//	const VkBufferMemoryBarrier		tmpReadyBarrier		= makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_NONE,
-//																				  *tmpBuffer, 0, tmpBuffSize,
-//																				  consumerIndex, consumerIndex);
-	const VkBufferMemoryBarrier		consumerBarriers[]	{	makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_NONE,
-																					*consumerBuffer, 0, consumerBuffSize,
-																					consumerIndex, consumerIndex),
-															makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_NONE,
-																					*tmpBuffer, 0, tmpBuffSize,
-																					consumerIndex, consumerIndex) };
-	struct PushConstant
-	{ uint32_t width, height; }		pc					{ width, height };
-	Move<VkPipelineLayout>			pipelineLayout		= createPipelineLayout<PushConstant>({ *dsLayout });
-	Move<VkPipeline>				producerPipeline	= createGraphicsPipeline(*pipelineLayout, *renderPass);
-	Move<VkPipeline>				consumerPipeline	= createComputePipeline(*pipelineLayout);
+	Move<VkPipelineLayout>			consumerLayout		= createPipelineLayout<>({ *consumerDsLayout });
+	Move<VkPipeline>				consumerPipeline	= createComputePipeline(*consumerLayout, false);
 
-	Move<VkCommandPool>				producerPool		= makeCommandPool(vkd, device, producerIndex);
-	Move<VkCommandPool>				consumerPool		= makeCommandPool(vkd, device, consumerIndex);
+	Move<VkCommandPool>				producerPool		= makeCommandPool(producerIndex);
+	Move<VkCommandPool>				consumerPool		= makeCommandPool(consumerIndex);
 	Move<VkCommandBuffer>			producerCmd			= allocateCommandBuffer(vkd, device, *producerPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	Move<VkCommandBuffer>			consumerCmd			= allocateCommandBuffer(vkd, device, *consumerPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-	{
-		std::vector<float>		vertices;
-		std::vector<uint32_t>	indices;
-		CheckerboardBuilder	builder(width, height);
-		builder.buildVerticesAndIndices(vertices, indices);
-		DE_ASSERT(vertices.size() == (vertexCount * 2));
-		DE_ASSERT(indices.size() == indexCount);
-		std::copy(vertices.begin(), vertices.end(), begin<float>(vertexBuffer.getHostPtr()));
-		std::copy(indices.begin(), indices.end(), begin<uint32_t>(indexBuffer.getHostPtr()));
-		vertexBuffer.flushAlloc(vkd, device);
-		indexBuffer.flushAlloc(vkd, device);
-	}
 
 	beginCommandBuffer(vkd, *producerCmd);
-		vkd.cmdBindPipeline(*producerCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, *producerPipeline);
-		vkd.cmdBindVertexBuffers(*producerCmd, 0, 1, &static_cast<const VkBuffer&>(*vertexBuffer), &static_cast<const VkDeviceSize&>(0));
-		vkd.cmdBindIndexBuffer(*producerCmd, *indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-		beginRenderPass(vkd, *producerCmd, *renderPass, *framebuffer, makeRect2D(width, height), clearColor);
-			vkd.cmdDrawIndexed(*producerCmd, indexCount, 1, 0, 0, 0);
+		vkd.cmdBindPipeline(*producerCmd, VK_PIPELINE_BIND_POINT_COMPUTE, *producer1Pipeline);
+		vkd.cmdBindPipeline(*producerCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, *producer2Pipeline);
+		vkd.cmdBindVertexBuffers(*producerCmd, 0, 1, vertexBuffer.getPtr(), &static_cast<const VkDeviceSize&>(0));
+		vkd.cmdBindDescriptorSets(*producerCmd, VK_PIPELINE_BIND_POINT_COMPUTE, *producer1Layout, 0, 1, &producerDs.get(), 0, nullptr);
+		vkd.cmdDispatch(*producerCmd, deUint32(positions.size()), 1, 1);
+		vkd.cmdPipelineBarrier(*producerCmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0,
+							   0, nullptr, 1, &producerReadyBarrier, 0, nullptr);
+		beginRenderPass(vkd, *producerCmd, *renderPass, *framebuffer, makeRect2D(m_config.width, m_config.height), clearColor);
+			vkd.cmdDraw(*producerCmd, deUint32(positions.size()), 1, 0, 0);
 		endRenderPass(vkd, *producerCmd);
-		vkd.cmdPipelineBarrier(*producerCmd, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VkDependencyFlags(0),
-							   0u, nullptr, 0u, nullptr, 1u, &producerReadyBarrier);
+		vkd.cmdPipelineBarrier(*producerCmd, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0,
+							   0u, nullptr, 0u, nullptr, 1u, &imageReadyBarrier);
 	endCommandBuffer(vkd, *producerCmd);
 
 	beginCommandBuffer(vkd, *consumerCmd);
 		vkd.cmdBindPipeline(*consumerCmd, VK_PIPELINE_BIND_POINT_COMPUTE, *consumerPipeline);
-		vkd.cmdBindDescriptorSets(*consumerCmd, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1, &descriptorSet.get(), 0, nullptr);
-		vkd.cmdCopyImageToBuffer(*consumerCmd, **producerImage, VK_IMAGE_LAYOUT_GENERAL, *tmpBuffer, 1u, &tmpCopyRegion);
-		vkd.cmdPushConstants(*consumerCmd, *pipelineLayout, VK_SHADER_STAGE_ALL, 0, static_cast<uint32_t>(sizeof(PushConstant)), &pc);
-		vkd.cmdDispatch(*consumerCmd, width, height, 1);
-		vkd.cmdPipelineBarrier(*consumerCmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VkDependencyFlags(0),
-							   0, nullptr, DE_LENGTH_OF_ARRAY(consumerBarriers), consumerBarriers, 0, nullptr);
+		vkd.cmdBindDescriptorSets(*consumerCmd, VK_PIPELINE_BIND_POINT_COMPUTE, *consumerLayout, 0, 1, &consumerDs.get(), 0, nullptr);
+		vkd.cmdDispatch(*consumerCmd, m_config.width, m_config.height, 1);
+		vkd.cmdPipelineBarrier(*consumerCmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0,
+							   0, nullptr, 1, &resultReadyBarrier, 0, nullptr);
 	endCommandBuffer(vkd, *consumerCmd);
 
 	submitCommands(*producerCmd, *consumerCmd);
 
-	tmpBuffer.invalidateAlloc(vkd, device);
-	const tcu::ConstPixelBufferAccess	tmpBufferAccess(mapVkFormat(m_config.format), width, height, 1, tmpBuffer.getHostPtr());
-	const bool tmpRes = verify(tmpBufferAccess, GPQCase::testValue, clearComp);
-
-	consumerBuffer.invalidateAlloc(vkd, device);
-	const tcu::ConstPixelBufferAccess	resultBufferAccess(mapVkFormat(m_config.format), width, height, 1, consumerBuffer.getHostPtr());
-
-	return (tmpRes && verify(resultBufferAccess, (GPQCase::testValue + 1), (clearComp + 1))) ? tcu::TestStatus::pass("") : tcu::TestStatus::fail("");
-}
-
-bool GPQInstanceBase::verify (const BufferAccess& result, deUint32 blackColor, deUint32 whiteColor) const
-{
-	bool ok = true;
-
-	for (deUint32 y = 0; ok && y < m_config.height; ++y)
+	resultBuffer.invalidateAlloc(vkd, device);
+	const tcu::ConstPixelBufferAccess	resultBufferAccess(mapVkFormat(m_config.format), m_config.width, m_config.height, 1, resultBuffer.getHostPtr());
+	const deUint32 resultValue = resultBufferAccess.getPixelUint(0, 0).x();
+	const deUint32 expectedValue = 1;
+	const bool ok = (resultValue == expectedValue);
+	if (!ok)
 	{
-		for (deUint32 x = 0; ok && x < m_config.width; ++x)
-		{
-			const deUint32 color = result.getPixelT<deUint32>(x, y).x();
-			if (((x + y) % 2) == 0)
-			{
-				ok = color == blackColor;
-			}
-			else
-			{
-				ok = color == whiteColor;
-			}
-		}
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message << "Expected value: " << expectedValue << ", got " << resultValue << tcu::TestLog::EndMessage;
 	}
-	return ok;
+
+	return ok ? tcu::TestStatus::pass("") : tcu::TestStatus::fail("");
 }
 
 } // anonymous
@@ -1020,8 +921,7 @@ tcu::TestCaseGroup* createGlobalPriorityQueueTests (tcu::TestContext& testCtx)
 	{
 		{ 0,													"no_modifiers"		},
 		{ VK_QUEUE_SPARSE_BINDING_BIT,							"sparse"			},
-		{ VK_QUEUE_PROTECTED_BIT,								"protected"			},
-		{ VK_QUEUE_SPARSE_BINDING_BIT|VK_QUEUE_PROTECTED_BIT,	"sparse_protected"	},
+		{ VK_QUEUE_PROTECTED_BIT,								"protected"			}
 	};
 
 	std::pair<VkQueueGlobalPriorityKHR, const char*>

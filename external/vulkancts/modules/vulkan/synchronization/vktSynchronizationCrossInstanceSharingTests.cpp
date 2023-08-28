@@ -114,9 +114,6 @@ public:
 		if (config.semaphoreType == vk::VK_SEMAPHORE_TYPE_TIMELINE)
 			m_context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
 
-		if (config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT
-			|| config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT
-			|| config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT)
 		if (config.type == SynchronizationType::SYNCHRONIZATION2)
 			m_context.requireDeviceFunctionality("VK_KHR_synchronization2");
 
@@ -1021,7 +1018,7 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_queueFamiliesA			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiA, m_physicalDeviceA))
 	, m_queueFamilyIndicesA		(getFamilyIndices(m_queueFamiliesA))
 	, m_deviceA					(InstanceAndDevice::getDeviceA())
-	, m_vkdA					(context.getPlatformInterface(), m_instanceA, *m_deviceA)
+	, m_vkdA					(context.getPlatformInterface(), m_instanceA, *m_deviceA, context.getUsedApiVersion())
 
 	, m_instanceB				(InstanceAndDevice::getInstanceB(context))
 	, m_vkiB					(InstanceAndDevice::getDriverB())
@@ -1029,7 +1026,7 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_queueFamiliesB			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiB, m_physicalDeviceB))
 	, m_queueFamilyIndicesB		(getFamilyIndices(m_queueFamiliesB))
 	, m_deviceB					(InstanceAndDevice::getDeviceB())
-	, m_vkdB					(context.getPlatformInterface(), m_instanceB, *m_deviceB)
+	, m_vkdB					(context.getPlatformInterface(), m_instanceB, *m_deviceB, context.getUsedApiVersion())
 
 	, m_semaphoreHandleType		(m_config.semaphoreHandleType)
 	, m_memoryHandleType		(m_config.memoryHandleType)

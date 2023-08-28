@@ -28,11 +28,12 @@ import tempfile
 import shutil
 import fnmatch
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
+scriptPath = os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts")
+sys.path.insert(0, scriptPath)
 
-from build.common import *
-from build.config import *
-from build.build import *
+from ctsbuild.common import *
+from ctsbuild.config import *
+from ctsbuild.build import *
 
 class Module:
 	def __init__ (self, name, dirName, binName):

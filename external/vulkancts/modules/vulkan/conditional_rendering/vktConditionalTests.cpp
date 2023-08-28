@@ -28,6 +28,7 @@
 #include "vktConditionalDispatchTests.hpp"
 #include "vktConditionalClearAttachmentTests.hpp"
 #include "vktConditionalDrawAndClearTests.hpp"
+#include "vktConditionalIgnoreTests.hpp"
 
 namespace vkt
 {
@@ -45,13 +46,14 @@ void createChildren (tcu::TestCaseGroup* group)
 	group->addChild(new ConditionalDispatchTests(testCtx));
 	group->addChild(new ConditionalClearAttachmentTests(testCtx));
 	group->addChild(new ConditionalRenderingDrawAndClearTests(testCtx));
+	group->addChild(new ConditionalIgnoreTests(testCtx));
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "conditional_rendering", "Conditional Rendering Tests", createChildren);
+	return createTestGroup(testCtx, name.c_str(), "Conditional Rendering Tests", createChildren);
 }
 
 } // conditional

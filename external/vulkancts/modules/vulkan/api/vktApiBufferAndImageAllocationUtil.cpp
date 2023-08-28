@@ -38,7 +38,10 @@ namespace vkt
 namespace api
 {
 
-void BufferSuballocation::createTestBuffer								(VkDeviceSize				size,
+void BufferSuballocation::createTestBuffer								(const DeviceInterface&		vk,
+																		 VkDevice					vkDevice,
+																		 deUint32					queueFamilyIndex,
+																		 VkDeviceSize				size,
 																		 VkBufferUsageFlags			usage,
 																		 Context&					context,
 																		 Allocator&					allocator,
@@ -46,10 +49,9 @@ void BufferSuballocation::createTestBuffer								(VkDeviceSize				size,
 																		 const MemoryRequirement&	requirement,
 																		 de::MovePtr<Allocation>&	memory) const
 {
-	const VkDevice						vkDevice						= context.getDevice();
-	const DeviceInterface&				vk								= context.getDeviceInterface();
-	const deUint32						queueFamilyIndex				= context.getUniversalQueueFamilyIndex();
-	const VkBufferCreateInfo			bufferParams					=
+	DE_UNREF(context);
+
+	const VkBufferCreateInfo			bufferParams
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,							//	VkStructureType			sType;
 		DE_NULL,														//	const void*				pNext;
@@ -66,7 +68,10 @@ void BufferSuballocation::createTestBuffer								(VkDeviceSize				size,
 	VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, memory->getMemory(), 0));
 }
 
-void BufferDedicatedAllocation::createTestBuffer						(VkDeviceSize				size,
+void BufferDedicatedAllocation::createTestBuffer						(const DeviceInterface&		vk,
+																		 VkDevice					vkDevice,
+																		 deUint32					queueFamilyIndex,
+																		 VkDeviceSize				size,
 																		 VkBufferUsageFlags			usage,
 																		 Context&					context,
 																		 Allocator&					allocator,
@@ -79,12 +84,9 @@ void BufferDedicatedAllocation::createTestBuffer						(VkDeviceSize				size,
 		TCU_THROW(NotSupportedError, "Not supported");
 
 	const InstanceInterface&			vkInstance						= context.getInstanceInterface();
-	const VkDevice						vkDevice						= context.getDevice();
 	const VkPhysicalDevice				vkPhysicalDevice				= context.getPhysicalDevice();
-	const DeviceInterface&				vk								= context.getDeviceInterface();
-	const deUint32						queueFamilyIndex				= context.getUniversalQueueFamilyIndex();
 
-	const VkBufferCreateInfo			bufferParams					=
+	const VkBufferCreateInfo			bufferParams
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,							//	VkStructureType			sType;
 		DE_NULL,														//	const void*				pNext;

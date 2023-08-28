@@ -123,7 +123,8 @@ class DeviceDriver : public DeviceInterface
 public:
 						DeviceDriver		(const PlatformInterface&			platformInterface,
 											 VkInstance							instance,
-											 VkDevice							device);
+											 VkDevice							device,
+											 uint32_t							usedApiVersion);
 	virtual				~DeviceDriver		(void);
 
 #include "vkConcreteDeviceInterface.inl"
@@ -160,7 +161,8 @@ public:
 																			 const tcu::CommandLine&						cmdLine,
 																			 de::SharedPtr<vk::ResourceInterface>			resourceInterface,
 																			 const VkPhysicalDeviceVulkanSC10Properties&	physicalDeviceVulkanSC10Properties,
-																			 const VkPhysicalDeviceProperties&				physicalDeviceProperties);
+																			 const VkPhysicalDeviceProperties&				physicalDeviceProperties,
+																			 const uint32_t									usedApiVersion);
 	virtual								~DeviceDriverSC						(void);
 
 #include "vkConcreteDeviceInterface.inl"
@@ -389,10 +391,20 @@ class Display;
 class Platform
 {
 public:
+	enum LibraryType
+	{
+		LIBRARY_TYPE_VULKAN						= 0,
+		LIBRARY_TYPE_LAST
+	};
+
 							Platform			(void) {}
 							~Platform			(void) {}
+#ifdef DE_PLATFORM_USE_LIBRARY_TYPE
+	virtual Library*		createLibrary		(LibraryType libraryType = LIBRARY_TYPE_VULKAN, const char* libraryPath = DE_NULL) const = 0;
+#else
+	virtual Library*		createLibrary		(const char* libraryPath = DE_NULL) const = 0;
+#endif
 
-	virtual Library*		createLibrary		(const char* libraryPath) const = 0;
 	virtual wsi::Display*	createWsiDisplay	(wsi::Type wsiType) const;
 	virtual bool			hasDisplay			(wsi::Type wsiType) const;
 	virtual void			describePlatform	(std::ostream& dst) const;

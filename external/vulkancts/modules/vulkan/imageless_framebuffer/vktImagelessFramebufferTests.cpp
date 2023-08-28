@@ -2896,9 +2896,9 @@ tcu::TestNode* imagelessDifferentAttachments(tcu::TestContext& testCtx)
 
 }	// anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> imagelessFramebufferGroup (new tcu::TestCaseGroup(testCtx, "imageless_framebuffer", "Imageless Framebuffer tests"));
+	de::MovePtr<tcu::TestCaseGroup> imagelessFramebufferGroup (new tcu::TestCaseGroup(testCtx, name.c_str(), "Imageless Framebuffer tests"));
 
 	imagelessFramebufferGroup->addChild(imagelessColorTests(testCtx));						// Color only test
 	imagelessFramebufferGroup->addChild(imagelessDepthStencilTests(testCtx));				// Color and depth/stencil test

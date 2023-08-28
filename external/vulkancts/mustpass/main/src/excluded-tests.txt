@@ -6,3 +6,12 @@ dEQP-VK.glsl.texture_functions.texturegrad.sparse_samplercubeshadow_vertex
 dEQP-VK.ray_tracing_pipeline.build.cpuht*1048576_1_1
 dEQP-VK.ray_tracing_pipeline.build.cpuht*65536_4_4
 
+# VK-GL-CTS 4478
+dEQP-VK.pipeline.*.sampler.border_swizzle.d24_unorm_s8_uint*.*1*.*.*.*
+dEQP-VK.pipeline.*.sampler.border_swizzle.d24_unorm_s8_uint*.*a*.*.*.*
+dEQP-VK.pipeline.*.sampler.border_swizzle.x8_d24_unorm_pack32.*1*.*.*.*
+dEQP-VK.pipeline.*.sampler.border_swizzle.x8_d24_unorm_pack32.*a*.*.*.*
+dEQP-VK.pipeline.*.sampler.border_swizzle.d32_sfloat_s8_uint*.*1*.*.*.*
+dEQP-VK.pipeline.*.sampler.border_swizzle.d32_sfloat_s8_uint*.*a*.*.*.*
+
+dEQP-VK.shader_object.performance.*

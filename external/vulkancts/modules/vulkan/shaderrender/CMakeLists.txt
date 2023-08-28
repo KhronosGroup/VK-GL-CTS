@@ -43,6 +43,4 @@ add_library(deqp-vk-shaderrender STATIC ${DEQP_VK_SHADERRENDER_SRCS})
 target_link_libraries(deqp-vk-shaderrender tcutil vkutil)
 
 add_library(deqp-vksc-shaderrender STATIC ${DEQP_VK_SHADERRENDER_SRCS})
-target_include_directories(deqp-vksc-shaderrender BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-shaderrender PUBLIC deqp-vksc-util tcutil vkscutil)
-

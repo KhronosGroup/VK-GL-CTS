@@ -269,6 +269,13 @@ void Deleter<VkSwapchainKHR>::operator() (VkSwapchainKHR obj) const
 	DE_UNREF(obj);
 }
 
+template<>
+void Deleter<VkSemaphoreSciSyncPoolNV>::operator() (VkSemaphoreSciSyncPoolNV obj) const
+{
+	DE_UNREF(obj);
+}
+
+
 } // refdetails
 
 #endif // CTS_USES_VULKANSC

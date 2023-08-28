@@ -130,13 +130,17 @@ public:
 
 	virtual tcu::TestStatus		iterate						(void)
 	{
-		tcu::TestLog&						log				= m_context.getTestContext().getLog();
-		const deUint32						apiVersion		= m_context.getUsedApiVersion();
-		const vk::Platform&					platform		= m_context.getTestContext().getPlatform().getVulkanPlatform();
-		de::MovePtr<vk::Library>			vkLibrary		= de::MovePtr<vk::Library>(platform.createLibrary(m_context.getTestContext().getCommandLine().getVkLibraryPath()));
-		const tcu::FunctionLibrary&			funcLibrary		= vkLibrary->getFunctionLibrary();
-
-		deUint32							failsQuantity	= 0u;
+		tcu::TestLog&						log					= m_context.getTestContext().getLog();
+		const deUint32						instanceApiVersion	= m_context.getAvailableInstanceVersion();
+		const deUint32						deviceApiVersion	= m_context.getUsedApiVersion();
+		const vk::Platform&					platform			= m_context.getTestContext().getPlatform().getVulkanPlatform();
+#ifdef DE_PLATFORM_USE_LIBRARY_TYPE
+		de::MovePtr<vk::Library>			vkLibrary			= de::MovePtr<vk::Library>(platform.createLibrary(vk::Platform::LibraryType::LIBRARY_TYPE_VULKAN, m_context.getTestContext().getCommandLine().getVkLibraryPath()));
+#else
+		de::MovePtr<vk::Library>			vkLibrary			= de::MovePtr<vk::Library>(platform.createLibrary(m_context.getTestContext().getCommandLine().getVkLibraryPath()));
+#endif
+		const tcu::FunctionLibrary&			funcLibrary			= vkLibrary->getFunctionLibrary();
+		deUint32							failsQuantity		= 0u;
 
 		// Tests with default instance and device without extensions
 		{
@@ -167,7 +171,7 @@ public:
 				log << tcu::TestLog::Message << mixupResult << tcu::TestLog::EndMessage;
 			}
 
-			// Check function entry points of disabled extesions
+			// Check function entry points of disabled extensions
 			{
 				FunctionInfosList				extFunctions		= FunctionInfosList();
 				extFunctions.push_back(FunctionInfo("vkTrimCommandPoolKHR", FUNCTIONORIGIN_DEVICE));
@@ -205,8 +209,8 @@ public:
 
 		// Tests with instance and device with extensions
 		{
-			CustomInstance			instance			= createCustomInstanceWithExtensions(m_context, getSupportedInstanceExtensions(apiVersion), DE_NULL, false);
-			Move<VkDevice>			device				= createTestDevice(m_context, instance, getSupportedDeviceExtensions(apiVersion), false);
+			CustomInstance			instance			= createCustomInstanceWithExtensions(m_context, getSupportedInstanceExtensions(instanceApiVersion), DE_NULL, false);
+			Move<VkDevice>			device				= createTestDevice(m_context, instance, getSupportedDeviceExtensions(deviceApiVersion), false);
 			GetInstanceProcAddrFunc	getInstanceProcAddr	= reinterpret_cast<GetInstanceProcAddrFunc>(funcLibrary.getFunction("vkGetInstanceProcAddr"));
 			GetDeviceProcAddrFunc	getDeviceProcAddr	= reinterpret_cast<GetDeviceProcAddrFunc>(getInstanceProcAddr(instance, "vkGetDeviceProcAddr"));
 			APIContext				ctx					= { instance, *device, getInstanceProcAddr, getDeviceProcAddr };
@@ -221,10 +225,13 @@ public:
 					vector<const char*> instanceExtFunctions;
 					vector<const char*> deviceExtFunctions;
 
-					if (isSupportedInstanceExt(instanceExtensionNames[instanceExtNdx], apiVersion))
+					if (isSupportedInstanceExt(instanceExtensionNames[instanceExtNdx], instanceApiVersion))
 					{
-						getInstanceExtensionFunctions(apiVersion, instanceExtensionNames[instanceExtNdx], instanceExtFunctions);
-						getDeviceExtensionFunctions(apiVersion, instanceExtensionNames[instanceExtNdx], deviceExtFunctions);
+						getInstanceExtensionFunctions(instanceApiVersion, instanceExtensionNames[instanceExtNdx], instanceExtFunctions);
+					}
+					if (isSupportedInstanceExt(instanceExtensionNames[instanceExtNdx], deviceApiVersion))
+					{
+						getDeviceExtensionFunctions(deviceApiVersion, instanceExtensionNames[instanceExtNdx], deviceExtFunctions);
 					}
 
 					for (size_t instanceFuncNdx = 0; instanceFuncNdx < instanceExtFunctions.size(); instanceFuncNdx++)
@@ -239,8 +246,8 @@ public:
 				{
 					vector<const char*> deviceExtFunctions;
 
-					if (isSupportedDeviceExt(deviceExtensionNames[deviceExtNdx], apiVersion))
-						getDeviceExtensionFunctions(apiVersion, deviceExtensionNames[deviceExtNdx], deviceExtFunctions);
+					if (isSupportedDeviceExt(deviceExtensionNames[deviceExtNdx], deviceApiVersion))
+						getDeviceExtensionFunctions(deviceApiVersion, deviceExtensionNames[deviceExtNdx], deviceExtFunctions);
 
 					for (size_t deviceFuncNdx = 0; deviceFuncNdx < deviceExtFunctions.size(); deviceFuncNdx++)
 						extFunctions.push_back(FunctionInfo(deviceExtFunctions[deviceFuncNdx], FUNCTIONORIGIN_DEVICE));

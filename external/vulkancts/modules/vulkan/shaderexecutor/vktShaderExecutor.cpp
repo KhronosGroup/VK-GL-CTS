@@ -3771,7 +3771,6 @@ bool executorSupported(glu::ShaderType shaderType)
 
 void checkSupportShader(Context& context, const glu::ShaderType shaderType)
 {
-#ifndef CTS_USES_VULKANSC
 	// Stage support.
 	switch (shaderType)
 	{
@@ -3791,9 +3790,13 @@ void checkSupportShader(Context& context, const glu::ShaderType shaderType)
 
 			if (shaderType == glu::SHADERTYPE_TASK)
 			{
+#ifndef CTS_USES_VULKANSC
 				const auto& features = context.getMeshShaderFeaturesEXT();
 				if (!features.taskShader)
 					TCU_THROW(NotSupportedError, "taskShader not supported");
+#else // CTS_USES_VULKANSC
+				TCU_THROW(NotSupportedError, "taskShader not supported");
+#endif // CTS_USES_VULKANSC
 			}
 		}
 		break;
@@ -3823,15 +3826,13 @@ void checkSupportShader(Context& context, const glu::ShaderType shaderType)
 		break;
 	}
 
+#ifndef CTS_USES_VULKANSC
 	if (shaderType == glu::SHADERTYPE_TESSELLATION_EVALUATION &&
 		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().tessellationIsolines)
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Tessellation iso lines are not supported by this implementation");
 	}
-#else
-	DE_UNREF(context);
-	DE_UNREF(shaderType);
 #endif // CTS_USES_VULKANSC
 }
 

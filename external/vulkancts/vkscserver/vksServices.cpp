@@ -163,7 +163,11 @@ VkscServer* createServerVKSC(const std::string& logFile)
 	tcu::DirArchive					archive		{""};
 	tcu::TestLog					log			{ logFile.c_str() }; log.supressLogging(true);
 	tcu::Platform*					platform	{createPlatform()};
+#ifdef DE_PLATFORM_USE_LIBRARY_TYPE
+	vk::Library*					library		{platform->getVulkanPlatform().createLibrary(vk::Platform::LIBRARY_TYPE_VULKAN, DE_NULL)};
+#else
 	vk::Library*					library		{platform->getVulkanPlatform().createLibrary(DE_NULL)};
+#endif
 	tcu::TestContext*				tcx			= new tcu::TestContext{*platform, archive, log, cmdLine, nullptr};
 	vk::ResourceInterface*			resource	= new vk::ResourceInterfaceStandard{*tcx};
 	vk::BinaryCollection*			collection  = new vk::BinaryCollection{};

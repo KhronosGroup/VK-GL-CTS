@@ -189,7 +189,7 @@ VkDeviceAddress getAccelerationStructureDeviceAddress (DeviceDriver&				deviceDr
 // Used to distinguish different test implementations.
 enum class TestVariant : deUint32
 {
-	SINGLE,								// basic sanity check for descriptor/shader combinations
+	SINGLE,								// basic quick check for descriptor/shader combinations
 	MULTIPLE,							// multiple buffer bindings with various descriptor types
 	MAX,								// verify max(Sampler/Resource)DescriptorBufferBindings
 	EMBEDDED_IMMUTABLE_SAMPLERS,		// various usages of embedded immutable samplers
@@ -849,7 +849,7 @@ std::string glslGlobalDeclarations(const TestParams& params, const std::vector<S
 			"	{\n"
 			"		if (rayQueryGetIntersectionTypeEXT(rayQuery, false) == gl_RayQueryCandidateIntersectionTriangleEXT)\n"
 			"		{\n"
-			"			return uint(rayQueryGetIntersectionTEXT(rayQuery, false));\n"
+			"			return uint(round(rayQueryGetIntersectionTEXT(rayQuery, false)));\n"
 			"		}\n"
 			"	}\n"
 			"\n"
@@ -2175,7 +2175,7 @@ void DescriptorBufferTestCase::checkSupport (Context& context) const
 
 	if (m_params.variant == TestVariant::MULTIPLE)
 	{
-		const VkPhysicalDeviceVulkan13Properties& vulkan13properties = *findStructure<VkPhysicalDeviceVulkan13Properties>(&context.getDeviceProperties2());
+		const VkPhysicalDeviceVulkan13Properties& vulkan13properties = *findStructure<VkPhysicalDeviceVulkan13Properties>(&context.getDeviceVulkan13Properties());
 
 		if (m_params.bufferBindingCount > vulkan13properties.maxPerStageDescriptorInlineUniformBlocks)
 			TCU_THROW(NotSupportedError, "Test require more per-stage inline uniform block bindings count. Provided " + de::toString(vulkan13properties.maxPerStageDescriptorInlineUniformBlocks));
@@ -2523,6 +2523,8 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(
 
 	m_queueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
+	deUint32 graphicsComputeQueue	= VK_QUEUE_FAMILY_IGNORED;
+
 	for (deUint32 i = 0; i < queueProps.size(); ++i)
 	{
 		if (m_params.queue == VK_QUEUE_GRAPHICS_BIT)
@@ -2541,7 +2543,20 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(
 			{
 				m_queueFamilyIndex = i;
 			}
+			else if (((queueProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) &&
+					 ((queueProps[i].queueFlags & VK_QUEUE_COMPUTE_BIT) != 0))
+			{
+				graphicsComputeQueue = i;
+			}
 		}
+	}
+
+	// If a compute only queue could not be found, fall back to a
+	// graphics & compute one.
+	if (m_params.queue == VK_QUEUE_COMPUTE_BIT &&
+		m_queueFamilyIndex == VK_QUEUE_FAMILY_IGNORED)
+	{
+		m_queueFamilyIndex = graphicsComputeQueue;
 	}
 
 	if (m_queueFamilyIndex == VK_QUEUE_FAMILY_IGNORED)
@@ -2592,10 +2607,14 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(
 		if (m_params.isPushDescriptorTest())
 			extensions.push_back("VK_KHR_push_descriptor");
 	}
-	else if (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR)
+	else if (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR ||
+			 m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS)
 	{
-		extensions.push_back("VK_EXT_robustness2");
-		addToChainVulkanStructure(&nextPtr, robustness2Features);
+		if (context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+		{
+			extensions.push_back("VK_EXT_robustness2");
+			addToChainVulkanStructure(&nextPtr, robustness2Features);
+		}
 	}
 	else if (m_params.subcase == SubCase::CAPTURE_REPLAY_CUSTOM_BORDER_COLOR)
 	{
@@ -2718,7 +2737,7 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(
 		0,
 		&m_queue);
 
-	m_deviceInterface = newMovePtr<DeviceDriver>(context.getPlatformInterface(), context.getInstance(), *m_device);
+	m_deviceInterface = newMovePtr<DeviceDriver>(context.getPlatformInterface(), context.getInstance(), *m_device, context.getUsedApiVersion());
 
 	m_memoryProperties = vk::getPhysicalDeviceMemoryProperties(inst, physDevice);
 
@@ -5077,10 +5096,10 @@ tcu::TestStatus testLimits(Context& context)
 
 		if (physDeviceFeatures.robustBufferAccess)
 		{
-			CHECK_MAX_LIMIT(props, robustUniformTexelBufferDescriptorSize,	64);
-			CHECK_MAX_LIMIT(props, robustStorageTexelBufferDescriptorSize,	128);
-			CHECK_MAX_LIMIT(props, robustUniformBufferDescriptorSize,		64);
-			CHECK_MAX_LIMIT(props, robustStorageBufferDescriptorSize,		128);
+			CHECK_MAX_LIMIT(props, robustUniformTexelBufferDescriptorSize,	256);
+			CHECK_MAX_LIMIT(props, robustStorageTexelBufferDescriptorSize,	256);
+			CHECK_MAX_LIMIT(props, robustUniformBufferDescriptorSize,		256);
+			CHECK_MAX_LIMIT(props, robustStorageBufferDescriptorSize,		256);
 		}
 
 		if (features.descriptorBufferCaptureReplay)
@@ -5098,7 +5117,7 @@ tcu::TestStatus testLimits(Context& context)
 
 		if (hasRT)
 		{
-			CHECK_MAX_LIMIT_NON_ZERO(props, accelerationStructureDescriptorSize,	64);
+			CHECK_MAX_LIMIT_NON_ZERO(props, accelerationStructureDescriptorSize,	256);
 		}
 
 		CHECK_MAX_LIMIT_NON_ZERO(props, descriptorBufferOffsetAlignment,	256);
@@ -5109,15 +5128,15 @@ tcu::TestStatus testLimits(Context& context)
 		CHECK_MIN_LIMIT(props, maxEmbeddedImmutableSamplerBindings,		1);
 		CHECK_MIN_LIMIT(props, maxEmbeddedImmutableSamplers,			2032);
 
-		CHECK_MAX_LIMIT_NON_ZERO(props, samplerDescriptorSize,				64);
-		CHECK_MAX_LIMIT_NON_ZERO(props, combinedImageSamplerDescriptorSize,	128);
-		CHECK_MAX_LIMIT_NON_ZERO(props, sampledImageDescriptorSize,			64);
-		CHECK_MAX_LIMIT_NON_ZERO(props, storageImageDescriptorSize,			128);
-		CHECK_MAX_LIMIT_NON_ZERO(props, uniformTexelBufferDescriptorSize,	64);
-		CHECK_MAX_LIMIT_NON_ZERO(props, storageTexelBufferDescriptorSize,	128);
-		CHECK_MAX_LIMIT_NON_ZERO(props, uniformBufferDescriptorSize,		64);
-		CHECK_MAX_LIMIT_NON_ZERO(props, storageBufferDescriptorSize,		128);
-		CHECK_MAX_LIMIT(props, inputAttachmentDescriptorSize,				64);
+		CHECK_MAX_LIMIT_NON_ZERO(props, samplerDescriptorSize,				256);
+		CHECK_MAX_LIMIT_NON_ZERO(props, combinedImageSamplerDescriptorSize,	256);
+		CHECK_MAX_LIMIT_NON_ZERO(props, sampledImageDescriptorSize,			256);
+		CHECK_MAX_LIMIT_NON_ZERO(props, storageImageDescriptorSize,			256);
+		CHECK_MAX_LIMIT_NON_ZERO(props, uniformTexelBufferDescriptorSize,	256);
+		CHECK_MAX_LIMIT_NON_ZERO(props, storageTexelBufferDescriptorSize,	256);
+		CHECK_MAX_LIMIT_NON_ZERO(props, uniformBufferDescriptorSize,		256);
+		CHECK_MAX_LIMIT_NON_ZERO(props, storageBufferDescriptorSize,		256);
+		CHECK_MAX_LIMIT(props, inputAttachmentDescriptorSize,				256);
 
 		CHECK_MIN_LIMIT(props, maxSamplerDescriptorBufferRange,				((1u << 11) * props.samplerDescriptorSize));
 		CHECK_MIN_LIMIT(props, maxResourceDescriptorBufferRange,			(((1u << 20) - (1u << 15)) * maxResourceDescriptorSize));
@@ -5184,7 +5203,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 
 	{
 		//
-		// Basic single descriptor cases -- a sanity check.
+		// Basic single descriptor cases -- a quick check.
 		//
 		MovePtr<tcu::TestCaseGroup>	subGroup		(new tcu::TestCaseGroup(testCtx, "single", "Single binding tests"));
 		const uint32_t				subGroupHash	= baseSeed ^ deStringHash(subGroup->getName());

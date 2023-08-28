@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2020 The Khronos Group Inc.
  * Copyright (c) 2020 Intel Corporation
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,6 +67,7 @@ struct CheckSupportParams
 	bool needsInt64;
 	bool needsFloat16;
 	bool needsFloat64;
+	vk::ComputePipelineConstructionType computePipelineConstructionType;
 
 	void useType(glu::DataType dt)
 	{
@@ -81,6 +84,7 @@ void checkSupportWithParams(Context& context, const CheckSupportParams& params)
 {
 	context.requireDeviceFunctionality("VK_KHR_workgroup_memory_explicit_layout");
 	context.requireDeviceFunctionality("VK_KHR_spirv_1_4");
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.computePipelineConstructionType);
 
 	VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR layout_features;
 	deMemset(&layout_features, 0, sizeof(layout_features));
@@ -141,7 +145,7 @@ void checkSupportWithParams(Context& context, const CheckSupportParams& params)
 	}
 }
 
-tcu::TestStatus runCompute(Context& context, deUint32 workgroupSize)
+tcu::TestStatus runCompute(Context& context, deUint32 workgroupSize, const vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
 	const DeviceInterface&	vk			= context.getDeviceInterface();
 	const VkDevice			device		= context.getDevice();
@@ -171,43 +175,12 @@ tcu::TestStatus runCompute(Context& context, deUint32 workgroupSize)
 		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 	Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
-	const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		DE_NULL,
-		(VkPipelineLayoutCreateFlags)0,
-		1,
-		&descriptorSetLayout.get(),
-		0u,
-		DE_NULL,
-	};
-	Move<VkPipelineLayout> pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo, NULL);
 	VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
 	flushAlloc(vk, device, buffer->getAllocation());
 
-	const Unique<VkShaderModule> shader(createShaderModule(vk, device, context.getBinaryCollection().get("comp"), 0));
-	const VkPipelineShaderStageCreateInfo shaderInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-		DE_NULL,
-		0,
-		VK_SHADER_STAGE_COMPUTE_BIT,
-		*shader,
-		"main",
-		DE_NULL,
-	};
-
-	const VkComputePipelineCreateInfo pipelineInfo =
-	{
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-		DE_NULL,
-		0u,
-		shaderInfo,
-		*pipelineLayout,
-		(VkPipeline)0,
-		0u,
-	};
-	Move<VkPipeline> pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineInfo, NULL);
+	ComputePipelineWrapper			pipeline(vk, device, computePipelineConstructionType, context.getBinaryCollection().get("comp"));
+	pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+	pipeline.buildPipeline();
 
 	const VkQueue queue = context.getUniversalQueue();
 	Move<VkCommandPool> cmdPool = createCommandPool(vk, device,
@@ -222,8 +195,8 @@ tcu::TestStatus runCompute(Context& context, deUint32 workgroupSize)
 
 	beginCommandBuffer(vk, *cmdBuffer, 0);
 
-	vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, DE_NULL);
-	vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
+	vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, pipeline.getPipelineLayout(), 0u, 1, &*descriptorSet, 0u, DE_NULL);
+	pipeline.bind(*cmdBuffer);
 
 	vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
 
@@ -396,9 +369,10 @@ public:
 		}
 	};
 
-	AliasTest(tcu::TestContext& testCtx, const CaseDef& caseDef)
-		: TestCase(testCtx, caseDef.testName(), caseDef.testName()),
-		m_caseDef(caseDef)
+	AliasTest(tcu::TestContext& testCtx, const CaseDef& caseDef, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: TestCase							(testCtx, caseDef.testName(), caseDef.testName())
+		, m_caseDef							(caseDef)
+		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
 	}
 
@@ -408,28 +382,31 @@ public:
 	class Instance : public vkt::TestInstance
 	{
 	public:
-		Instance(Context& context, const CaseDef& caseDef)
-			: TestInstance(context),
-			  m_caseDef(caseDef)
+		Instance(Context& context, const CaseDef& caseDef, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+			: TestInstance						(context)
+			, m_caseDef							(caseDef)
+			, m_computePipelineConstructionType	(computePipelineConstructionType)
 		{
 		}
 
 		tcu::TestStatus iterate(void)
 		{
-			return runCompute(m_context, 1u);
+			return runCompute(m_context, 1u, m_computePipelineConstructionType);
 		}
 
 	private:
-		CaseDef m_caseDef;
+		CaseDef								m_caseDef;
+		vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 	};
 
 	TestInstance* createInstance(Context& context) const
 	{
-		return new Instance(context, m_caseDef);
+		return new Instance(context, m_caseDef, m_computePipelineConstructionType);
 	}
 
 private:
-	CaseDef m_caseDef;
+	CaseDef								m_caseDef;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 void AliasTest::checkSupport(Context& context) const
@@ -437,12 +414,13 @@ void AliasTest::checkSupport(Context& context) const
 	CheckSupportParams p;
 	deMemset(&p, 0, sizeof(p));
 
-	p.needsScalar	= m_caseDef.layout == LayoutScalar;
-	p.needsInt8		= m_caseDef.requirements & RequirementInt8;
-	p.needsInt16	= m_caseDef.requirements & RequirementInt16;
-	p.needsInt64	= m_caseDef.requirements & RequirementInt64;
-	p.needsFloat16	= m_caseDef.requirements & RequirementFloat16;
-	p.needsFloat64	= m_caseDef.requirements & RequirementFloat64;
+	p.needsScalar						= m_caseDef.layout == LayoutScalar;
+	p.needsInt8							= m_caseDef.requirements & RequirementInt8;
+	p.needsInt16						= m_caseDef.requirements & RequirementInt16;
+	p.needsInt64						= m_caseDef.requirements & RequirementInt64;
+	p.needsFloat16						= m_caseDef.requirements & RequirementFloat16;
+	p.needsFloat64						= m_caseDef.requirements & RequirementFloat64;
+	p.computePipelineConstructionType	= m_computePipelineConstructionType;
 
 	checkSupportWithParams(context, p);
 }
@@ -563,7 +541,7 @@ std::string makeU32Array(const std::vector<deUint64>& values)
 	return makeArray("uint32_t", values);
 }
 
-void AddAliasTests(tcu::TestCaseGroup* group)
+void AddAliasTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
 	const int DEFAULT = AliasTest::LayoutDefault;
 	const int STD140 = AliasTest::LayoutStd140;
@@ -807,7 +785,7 @@ void AddAliasTests(tcu::TestCaseGroup* group)
 					c.func = func;
 					c.sync = sync;
 
-					group->addChild(new AliasTest(group->getTestContext(), c));
+					group->addChild(new AliasTest(group->getTestContext(), c, computePipelineConstructionType));
 				}
 			}
 		}
@@ -840,9 +818,10 @@ public:
 		}
 	};
 
-	ZeroTest(tcu::TestContext& testCtx, const CaseDef& caseDef)
-		: TestCase(testCtx, caseDef.testName(), caseDef.testName()),
-		m_caseDef(caseDef)
+	ZeroTest(tcu::TestContext& testCtx, const CaseDef& caseDef, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: TestCase							(testCtx, caseDef.testName(), caseDef.testName())
+		, m_caseDef							(caseDef)
+		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
 	}
 
@@ -852,24 +831,28 @@ public:
 	class Instance : public vkt::TestInstance
 	{
 	public:
-		Instance(Context& context)
-			: TestInstance(context)
+		Instance(Context& context, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+			: TestInstance						(context)
+			, m_computePipelineConstructionType	(computePipelineConstructionType)
 		{
 		}
 
 		tcu::TestStatus iterate(void)
 		{
-			return runCompute(m_context, 1u);
+			return runCompute(m_context, 1u, m_computePipelineConstructionType);
 		}
+	private:
+		vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 	};
 
 	TestInstance* createInstance(Context& context) const
 	{
-		return new Instance(context);
+		return new Instance(context, m_computePipelineConstructionType);
 	}
 
 private:
-	CaseDef m_caseDef;
+	CaseDef								m_caseDef;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 void ZeroTest::checkSupport(Context& context) const
@@ -882,6 +865,7 @@ void ZeroTest::checkSupport(Context& context) const
 	p.useType(m_caseDef.zeroElementType);
 	p.useType(m_caseDef.fieldType[0]);
 	p.useType(m_caseDef.fieldType[1]);
+	p.computePipelineConstructionType = m_computePipelineConstructionType;
 
 	checkSupportWithParams(context, p);
 }
@@ -1010,7 +994,7 @@ bool isTestedFieldType(glu::DataType dt)
 	}
 }
 
-void AddZeroTests(tcu::TestCaseGroup* group)
+void AddZeroTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
 	using namespace glu;
 
@@ -1035,7 +1019,7 @@ void AddZeroTests(tcu::TestCaseGroup* group)
 					for (deUint32 elements = 1; elements <= 4; ++elements)
 					{
 						c.elements = elements;
-						group->addChild(new ZeroTest(group->getTestContext(), c));
+						group->addChild(new ZeroTest(group->getTestContext(), c, computePipelineConstructionType));
 					}
 				}
 
@@ -1095,9 +1079,10 @@ public:
 		}
 	};
 
-	PaddingTest(tcu::TestContext& testCtx, const CaseDef& caseDef)
-		: TestCase(testCtx, caseDef.testName(), caseDef.testName()),
-		m_caseDef(caseDef)
+	PaddingTest(tcu::TestContext& testCtx, const CaseDef& caseDef, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: TestCase							(testCtx, caseDef.testName(), caseDef.testName())
+		, m_caseDef							(caseDef)
+		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
 	}
 
@@ -1107,28 +1092,31 @@ public:
 	class Instance : public vkt::TestInstance
 	{
 	public:
-		Instance(Context& context, const CaseDef& caseDef)
-			: TestInstance(context),
-			  m_caseDef(caseDef)
+		Instance(Context& context, const CaseDef& caseDef, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+			: TestInstance						(context)
+			, m_caseDef							(caseDef)
+			, m_computePipelineConstructionType	(computePipelineConstructionType)
 		{
 		}
 
 		tcu::TestStatus iterate(void)
 		{
-			return runCompute(m_context, 1u);
+			return runCompute(m_context, 1u, m_computePipelineConstructionType);
 		}
 
 	private:
-		CaseDef m_caseDef;
+		CaseDef								m_caseDef;
+		vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 	};
 
 	TestInstance* createInstance(Context& context) const
 	{
-		return new Instance(context, m_caseDef);
+		return new Instance(context, m_caseDef, m_computePipelineConstructionType);
 	}
 
 private:
-	CaseDef m_caseDef;
+	CaseDef								m_caseDef;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 void PaddingTest::checkSupport(Context& context) const
@@ -1140,6 +1128,7 @@ void PaddingTest::checkSupport(Context& context) const
 		p.useType(m_caseDef.types[i]);
 
 	p.needsScalar = m_caseDef.needsScalar();
+	p.computePipelineConstructionType = m_computePipelineConstructionType;
 
 	checkSupportWithParams(context, p);
 }
@@ -1196,7 +1185,7 @@ void PaddingTest::initPrograms(SourceCollections& sourceCollections) const
 								  vk::ShaderBuildOptions::Flags(0u), true);
 }
 
-void AddPaddingTests(tcu::TestCaseGroup* group)
+void AddPaddingTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
 	using namespace glu;
 
@@ -1213,7 +1202,7 @@ void AddPaddingTests(tcu::TestCaseGroup* group)
 			c.add(TYPE_UINT, 4 * j, "0x5678");
 			c.expected[j] = 0x5678;
 
-			group->addChild(new PaddingTest(group->getTestContext(), c));
+			group->addChild(new PaddingTest(group->getTestContext(), c, computePipelineConstructionType));
 		}
 	}
 
@@ -1232,7 +1221,7 @@ void AddPaddingTests(tcu::TestCaseGroup* group)
 			c.add(TYPE_UINT8, j, "uint8_t(0xBB)");
 			expected[j] = 0xBB;
 
-			group->addChild(new PaddingTest(group->getTestContext(), c));
+			group->addChild(new PaddingTest(group->getTestContext(), c, computePipelineConstructionType));
 		}
 	}
 }
@@ -1240,9 +1229,10 @@ void AddPaddingTests(tcu::TestCaseGroup* group)
 class SizeTest : public vkt::TestCase
 {
 public:
-	SizeTest(tcu::TestContext& testCtx, deUint32 size)
-		: TestCase(testCtx, de::toString(size), de::toString(size))
-		, m_size(size)
+	SizeTest(tcu::TestContext& testCtx, deUint32 size, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: TestCase							(testCtx, de::toString(size), de::toString(size))
+		, m_size							(size)
+		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
 		DE_ASSERT(size % 8 == 0);
 	}
@@ -1253,24 +1243,28 @@ public:
 	class Instance : public vkt::TestInstance
 	{
 	public:
-		Instance(Context& context)
-			: TestInstance(context)
+		Instance(Context& context, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+			: TestInstance						(context)
+			, m_computePipelineConstructionType	(computePipelineConstructionType)
 		{
 		}
 
 		tcu::TestStatus iterate(void)
 		{
-			return runCompute(m_context, 1u);
+			return runCompute(m_context, 1u, m_computePipelineConstructionType);
 		}
+	private:
+		vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 	};
 
 	TestInstance* createInstance(Context& context) const
 	{
-		return new Instance(context);
+		return new Instance(context, m_computePipelineConstructionType);
 	}
 
 private:
-	deUint32 m_size;
+	deUint32							m_size;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 void SizeTest::checkSupport(Context& context) const
@@ -1280,6 +1274,8 @@ void SizeTest::checkSupport(Context& context) const
 
 	if (context.getDeviceProperties().limits.maxComputeSharedMemorySize < m_size)
 		TCU_THROW(NotSupportedError, "Not enough shared memory supported.");
+
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 }
 
 void SizeTest::initPrograms(SourceCollections& sourceCollections) const
@@ -1328,7 +1324,7 @@ void SizeTest::initPrograms(SourceCollections& sourceCollections) const
 								  vk::ShaderBuildOptions::Flags(0u), true);
 }
 
-void AddSizeTests(tcu::TestCaseGroup* group)
+void AddSizeTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
 	deUint32 sizes[] =
 	{
@@ -1346,7 +1342,7 @@ void AddSizeTests(tcu::TestCaseGroup* group)
 	};
 
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(sizes); ++i)
-		group->addChild(new SizeTest(group->getTestContext(), sizes[i]));
+		group->addChild(new SizeTest(group->getTestContext(), sizes[i], computePipelineConstructionType));
 }
 
 cts_amber::AmberTestCase* CreateAmberTestCase(tcu::TestContext& testCtx,
@@ -1354,12 +1350,15 @@ cts_amber::AmberTestCase* CreateAmberTestCase(tcu::TestContext& testCtx,
 											  const char* description,
 											  const std::string& filename,
 											  const std::vector<std::string>& requirements = std::vector<std::string>(),
-											  bool zeroinit = false)
+											  bool zeroinit = false,
+											  bool shaderObjects = false)
 {
 	vk::SpirVAsmBuildOptions asm_options(VK_MAKE_API_VERSION(0, 1, 1, 0), vk::SPIRV_VERSION_1_4);
 	asm_options.supports_VK_KHR_spirv_1_4 = true;
 
-	cts_amber::AmberTestCase *t = cts_amber::createAmberTestCase(testCtx, name, description, "compute/workgroup_memory_explicit_layout", filename, requirements);
+	const std::string test_filename = shaderObjects ? "shader_object_" + std::string(filename) : filename;
+
+	cts_amber::AmberTestCase *t = cts_amber::createAmberTestCase(testCtx, name, description, "compute/workgroup_memory_explicit_layout", test_filename.c_str(), requirements);
 	t->setSpirVAsmBuildOptions(asm_options);
 	t->addRequirement("VK_KHR_workgroup_memory_explicit_layout");
 	t->addRequirement("VK_KHR_spirv_1_4");
@@ -1367,56 +1366,64 @@ cts_amber::AmberTestCase* CreateAmberTestCase(tcu::TestContext& testCtx,
 	{
 		t->addRequirement("VK_KHR_zero_initialize_workgroup_memory");
 	}
+	if (shaderObjects)
+	{
+		t->addRequirement("VK_EXT_shader_object");
+	}
 	return t;
 }
 
-void AddCopyMemoryTests(tcu::TestCaseGroup* group)
+void AddCopyMemoryTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType pipelineConstructionType)
 {
 	tcu::TestContext& testCtx = group->getTestContext();
 
-	group->addChild(CreateAmberTestCase(testCtx, "basic", "", "copy_memory_basic.amber"));
-	group->addChild(CreateAmberTestCase(testCtx, "two_invocations", "", "copy_memory_two_invocations.amber"));
+	bool shaderObject = (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV) || (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY);
+
+	group->addChild(CreateAmberTestCase(testCtx, "basic", "", "copy_memory_basic.amber", {}, false, shaderObject));
+	group->addChild(CreateAmberTestCase(testCtx, "two_invocations", "", "copy_memory_two_invocations.amber", {}, false, shaderObject));
 	group->addChild(CreateAmberTestCase(testCtx, "variable_pointers", "", "copy_memory_variable_pointers.amber",
-										{ "VariablePointerFeatures.variablePointers" }));
+										{ "VariablePointerFeatures.variablePointers" }, false, shaderObject));
 }
 
-void AddZeroInitializeExtensionTests(tcu::TestCaseGroup* group)
+void AddZeroInitializeExtensionTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType pipelineConstructionType)
 {
 	tcu::TestContext& testCtx = group->getTestContext();
 
-	group->addChild(CreateAmberTestCase(testCtx, "block", "", "zero_ext_block.amber", std::vector<std::string>(), true));
-	group->addChild(CreateAmberTestCase(testCtx, "other_block", "", "zero_ext_other_block.amber", std::vector<std::string>(), true));
-	group->addChild(CreateAmberTestCase(testCtx, "block_with_offset", "", "zero_ext_block_with_offset.amber", std::vector<std::string>(), true));
+	bool shaderObject = (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV) || (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY);
+
+	group->addChild(CreateAmberTestCase(testCtx, "block", "", "zero_ext_block.amber", std::vector<std::string>(), true, shaderObject));
+	group->addChild(CreateAmberTestCase(testCtx, "other_block", "", "zero_ext_other_block.amber", std::vector<std::string>(), true, shaderObject));
+	group->addChild(CreateAmberTestCase(testCtx, "block_with_offset", "", "zero_ext_block_with_offset.amber", std::vector<std::string>(), true, shaderObject));
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createWorkgroupMemoryExplicitLayoutTests(tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createWorkgroupMemoryExplicitLayoutTests(tcu::TestContext& testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
 	de::MovePtr<tcu::TestCaseGroup> tests(new tcu::TestCaseGroup(testCtx, "workgroup_memory_explicit_layout", "VK_KHR_workgroup_memory_explicit_layout tests"));
 
 	tcu::TestCaseGroup* alias = new tcu::TestCaseGroup(testCtx, "alias", "Aliasing between different blocks and types");
-	AddAliasTests(alias);
+	AddAliasTests(alias, computePipelineConstructionType);
 	tests->addChild(alias);
 
 	tcu::TestCaseGroup* zero = new tcu::TestCaseGroup(testCtx, "zero", "Manually zero initialize a block and read from another");
-	AddZeroTests(zero);
+	AddZeroTests(zero, computePipelineConstructionType);
 	tests->addChild(zero);
 
 	tcu::TestCaseGroup* padding = new tcu::TestCaseGroup(testCtx, "padding", "Padding as part of the explicit layout");
-	AddPaddingTests(padding);
+	AddPaddingTests(padding, computePipelineConstructionType);
 	tests->addChild(padding);
 
 	tcu::TestCaseGroup* size = new tcu::TestCaseGroup(testCtx, "size", "Test blocks of various sizes");
-	AddSizeTests(size);
+	AddSizeTests(size, computePipelineConstructionType);
 	tests->addChild(size);
 
 	tcu::TestCaseGroup* copy_memory = new tcu::TestCaseGroup(testCtx, "copy_memory", "Test OpCopyMemory with Workgroup memory");
-	AddCopyMemoryTests(copy_memory);
+	AddCopyMemoryTests(copy_memory, computePipelineConstructionType);
 	tests->addChild(copy_memory);
 
 	tcu::TestCaseGroup* zero_ext = new tcu::TestCaseGroup(testCtx, "zero_ext", "Test interaction with VK_KHR_zero_initialize_workgroup_memory");
-	AddZeroInitializeExtensionTests(zero_ext);
+	AddZeroInitializeExtensionTests(zero_ext, computePipelineConstructionType);
 	tests->addChild(zero_ext);
 
 	return tests.release();

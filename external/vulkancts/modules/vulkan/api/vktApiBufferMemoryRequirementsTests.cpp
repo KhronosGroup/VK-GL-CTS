@@ -24,6 +24,7 @@
 
 #include "vktApiBufferMemoryRequirementsTests.hpp"
 #include "vktApiBufferMemoryRequirementsTestsUtils.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "vkMemUtil.hpp"
 #include "vkQueryUtil.hpp"
@@ -32,6 +33,7 @@
 #include "vkObjUtil.hpp"
 #include "deFilePath.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuCommandLine.hpp"
 
 #include <algorithm>
 #include <array>
@@ -373,6 +375,8 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 	const VkPhysicalDevice							physDevice			= context.getPhysicalDevice();
 	auto&											log					= context.getTestContext().getLog();
 
+	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+
 	if (m_testConfig.useMethod2)
 		context.requireDeviceFunctionality("VK_KHR_get_memory_requirements2");
 
@@ -521,22 +525,22 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 					}
 					if (i->any({VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR, VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR}))
 					{
-						if (!context.isDeviceFunctionalitySupported(VK_EXT_VIDEO_DECODE_H264_EXTENSION_NAME))
+						if (!context.isDeviceFunctionalitySupported(VK_KHR_VIDEO_DECODE_H264_EXTENSION_NAME))
 						{
 							if (!msgs[5])
 							{
 								if (entryCount++) str << std::endl;
-								str << INFOUSAGE("VK_EXT_video_decode_h264 not supported by device");
+								str << INFOUSAGE("VK_KHR_video_decode_h264 not supported by device");
 								msgs[5] = true;
 							}
 							notSupported = true;
 						}
-						if (!(videoFlags & VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT))
+						if (!(videoFlags & VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR))
 						{
 							if (!msgs[6])
 							{
 								if (entryCount++) str << std::endl;
-								str << INFOUSAGE("Could not find a queue that supports VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT on device");
+								str << INFOUSAGE("Could not find a queue that supports VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR on device");
 								msgs[6] = true;
 							}
 							notSupported = true;
@@ -721,12 +725,12 @@ template<> void* BufferMemoryRequirementsInstance::chainVkStructure<VkVideoProfi
 		STD_VIDEO_H264_PROFILE_IDC_BASELINE						// StdVideoH264ProfileIdc				stdProfileIdc;
 	};
 
-	static VkVideoDecodeH264ProfileInfoEXT	decodeProfile
+	static VkVideoDecodeH264ProfileInfoKHR	decodeProfile
 	{
-		VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_EXT,	// VkStructureType						sType;
+		VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_KHR,	// VkStructureType						sType;
 		nullptr,												// const void*							pNext;
 		STD_VIDEO_H264_PROFILE_IDC_BASELINE,					// StdVideoH264ProfileIdc				stdProfileIdc;
-		VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_EXT		// VkVideoDecodeH264FieldLayoutFlagsEXT	fieldLayout;
+		VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_KHR		// VkVideoDecodeH264FieldLayoutFlagsEXT	fieldLayout;
 	};
 
 	static const VkVideoProfileInfoKHR	videoProfiles[]
@@ -744,7 +748,7 @@ template<> void* BufferMemoryRequirementsInstance::chainVkStructure<VkVideoProfi
 		{
 			VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR,			// VkStructureType						sType;
 			&decodeProfile,										// void*								pNext;
-			VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_EXT,		// VkVideoCodecOperationFlagBitsKHR		videoCodecOperation;
+			VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR,		// VkVideoCodecOperationFlagBitsKHR		videoCodecOperation;
 			VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR,		// VkVideoChromaSubsamplingFlagsKHR		chromaSubsampling;
 			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,				// VkVideoComponentBitDepthFlagsKHR		lumaBitDepth;
 			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR				// VkVideoComponentBitDepthFlagsKHR		chromaBitDepth;
@@ -772,10 +776,44 @@ template<> void* BufferMemoryRequirementsInstance::chainVkStructure<VkVideoProfi
 }
 #endif // CTS_USES_VULKANSC
 
+static Move<VkDevice> createProtectedDevice(const Context &context)
+{
+	auto &cmdLine = context.getTestContext().getCommandLine();
+	const float queuePriority = 1.0f;
+
+	VkPhysicalDeviceProtectedMemoryFeatures protectedMemoryFeatures;
+	protectedMemoryFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES;
+	protectedMemoryFeatures.pNext = DE_NULL;
+	protectedMemoryFeatures.protectedMemory = VK_TRUE;
+
+	VkDeviceQueueCreateInfo queueInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	// VkStructureType			sType;
+		DE_NULL,									// const void*				pNext;
+		vk::VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT,	// VkDeviceQueueCreateFlags	flags;
+		context.getUniversalQueueFamilyIndex(),		// deUint32					queueFamilyIndex;
+		1u,											// deUint32					queueCount;
+		&queuePriority								// const float*				pQueuePriorities;
+	};
+	const VkDeviceCreateInfo deviceInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	// VkStructureType					sType;
+		&protectedMemoryFeatures,				// const void*						pNext;
+		(VkDeviceCreateFlags)0,					// VkDeviceCreateFlags				flags;
+		1u,										// uint32_t							queueCreateInfoCount;
+		&queueInfo,								// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+		0u,										// uint32_t							enabledLayerCount;
+		DE_NULL,								// const char* const*				ppEnabledLayerNames;
+		0u,										// uint32_t							enabledExtensionCount;
+		DE_NULL,								// const char* const*				ppEnabledExtensionNames;
+		DE_NULL									// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+	};
+	return createCustomDevice(cmdLine.isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceInfo);
+}
+
 TestStatus	BufferMemoryRequirementsInstance::iterate (void)
 {
 	const DeviceInterface&							vkd					= m_context.getDeviceInterface();
-	const VkDevice									device				= m_context.getDevice();
 	const deUint32									queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 	const Method									method				= m_config.useMethod2
 																			? &BufferMemoryRequirementsInstance::getBufferMemoryRequirements2
@@ -786,6 +824,18 @@ TestStatus	BufferMemoryRequirementsInstance::iterate (void)
 	std::vector<BufferCreateBitsPtr>				failCreateBits;
 	std::vector<BufferUsageBitsPtr>					failUsageBits;
 	std::vector<ExternalMemoryHandleBitsPtr>		failExtMemHandleBits;
+
+	Move<VkDevice> protectedDevice;
+	VkDevice device;
+	if (m_config.createBits->contains(VK_BUFFER_CREATE_PROTECTED_BIT))
+	{
+		protectedDevice = createProtectedDevice(m_context);
+		device = *protectedDevice;
+	}
+	else
+	{
+		device = m_context.getDevice();
+	}
 
 	DE_ASSERT(!m_config.createBits->empty());
 	const VkBufferCreateFlags infoCreateFlags = *m_config.createBits;

@@ -5,6 +5,8 @@
  * ------------------------
  *
  * Copyright (c) 2016 The Khronos Group Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,10 +67,24 @@ struct ComponentData
 
 struct ImageMSParams
 {
+	ImageMSParams (
+		const vk::PipelineConstructionType	pipelineConstructionType_,
+		const vk::VkSampleCountFlagBits		numSamples_,
+		const tcu::UVec3					imageSize_,
+		const ComponentData					componentData_,
+		const float							shadingRate_)
+		: pipelineConstructionType	(pipelineConstructionType_)
+		, numSamples				(numSamples_)
+		, imageSize					(imageSize_)
+		, componentData				(componentData_)
+		, shadingRate				(shadingRate_)
+		{}
+
 	vk::PipelineConstructionType	pipelineConstructionType;
 	vk::VkSampleCountFlagBits		numSamples;
 	tcu::UVec3						imageSize;
 	ComponentData					componentData;
+	const float						shadingRate;
 };
 
 class MultisampleCaseBase : public TestCase
@@ -89,7 +105,7 @@ protected:
 
 	void checkGraphicsPipelineLibrarySupport(Context& context) const
 	{
-		checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_imageMSParams.pipelineConstructionType);
+		checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_imageMSParams.pipelineConstructionType);
 	}
 
 protected:
@@ -156,7 +172,8 @@ tcu::TestCaseGroup* makeMSGroup	(tcu::TestContext&							testCtx,
 								 const deUint32								imageSizesElemCount,
 								 const vk::VkSampleCountFlagBits			imageSamples[],
 								 const deUint32								imageSamplesElemCount,
-								 const multisample::ComponentData&			componentData = multisample::ComponentData{})
+								 const multisample::ComponentData&			componentData = multisample::ComponentData{},
+								 const float								shadingRate = 1.0f)
 {
 	de::MovePtr<tcu::TestCaseGroup> caseGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str(), ""));
 
@@ -177,7 +194,8 @@ tcu::TestCaseGroup* makeMSGroup	(tcu::TestContext&							testCtx,
 				pipelineConstructionType,
 				samples,
 				imageSize,
-				componentData
+				componentData,
+				shadingRate,
 			};
 
 			sizeGroup->addChild(CaseClass::createCase(testCtx, "samples_" + de::toString(samples), imageMSParams));

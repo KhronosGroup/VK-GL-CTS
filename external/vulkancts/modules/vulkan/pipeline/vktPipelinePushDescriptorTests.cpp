@@ -5,6 +5,8 @@
  * Copyright (c) 2018 The Khronos Group Inc.
  * Copyright (c) 2018 Google Inc.
  * Copyright (c) 2018 ARM Limited.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,8 +65,7 @@ typedef de::SharedPtr<Unique<VkImage> >			VkImageSp;
 typedef de::SharedPtr<Unique<VkImageView> >		VkImageViewSp;
 typedef de::SharedPtr<Unique<VkBufferView> >	VkBufferViewSp;
 typedef de::SharedPtr<Allocation>				AllocationSp;
-typedef de::SharedPtr<Unique<VkRenderPass> >	VkRenderPassSp;
-typedef de::SharedPtr<Unique<VkFramebuffer> >	VkFramebufferSp;
+typedef de::SharedPtr<RenderPassWrapper>		VkRenderPassSp;
 
 constexpr VkDeviceSize kSizeofVec4 = static_cast<VkDeviceSize>(sizeof(tcu::Vec4));
 
@@ -113,7 +114,8 @@ Move<VkDevice> createDeviceWithPushDescriptor (const Context&				context,
 											   VkPhysicalDevice				physicalDevice,
 											   const Extensions&			supportedExtensions,
 											   const deUint32				queueFamilyIndex,
-											   const TestParams&			params)
+											   const TestParams&			params,
+											   std::vector<std::string>&	enabledExtensions)
 {
 
 	const float						queuePriority			= 1.0f;
@@ -130,16 +132,25 @@ Move<VkDevice> createDeviceWithPushDescriptor (const Context&				context,
 	VkPhysicalDeviceFeatures		features;
 	deMemset(&features, 0, sizeof(features));
 
-	vector<string>					requiredExtensionsStr	= { "VK_KHR_push_descriptor" };
-	VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT graphicsPipelineLibraryFeaturesEXT = initVulkanStructure();
-	VkPhysicalDeviceFeatures2 features2 = initVulkanStructure(&graphicsPipelineLibraryFeaturesEXT);
-	if (params.pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+	vector<string>										requiredExtensionsStr				= { "VK_KHR_push_descriptor" };
+	VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	graphicsPipelineLibraryFeaturesEXT	= initVulkanStructure();
+	VkPhysicalDeviceDynamicRenderingFeaturesKHR			dynamicRenderingFeaturesKHR			= initVulkanStructure(&graphicsPipelineLibraryFeaturesEXT);
+	VkPhysicalDeviceShaderObjectFeaturesEXT				shaderObjectFeaturesEXT				= initVulkanStructure(&dynamicRenderingFeaturesKHR);
+	VkPhysicalDeviceFeatures2							features2							= initVulkanStructure(&shaderObjectFeaturesEXT);
+	if (isConstructionTypeLibrary(params.pipelineConstructionType))
 	{
 		requiredExtensionsStr.push_back("VK_KHR_pipeline_library");
 		requiredExtensionsStr.push_back("VK_EXT_graphics_pipeline_library");
 		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 		if (!graphicsPipelineLibraryFeaturesEXT.graphicsPipelineLibrary)
 			TCU_THROW(NotSupportedError, "graphicsPipelineLibraryFeaturesEXT.graphicsPipelineLibrary required");
+	}
+	else if (isConstructionTypeShaderObject(params.pipelineConstructionType))
+	{
+		requiredExtensionsStr.push_back("VK_EXT_shader_object");
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+		if (!shaderObjectFeaturesEXT.shaderObject)
+			TCU_THROW(NotSupportedError, "shaderObjectFeaturesEXT.shaderObject required");
 	}
 	vector<const char *>			requiredExtensions;
 	checkAllSupported(supportedExtensions, requiredExtensionsStr);
@@ -161,20 +172,10 @@ Move<VkDevice> createDeviceWithPushDescriptor (const Context&				context,
 		params.pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC ? DE_NULL : &features
 	};
 
+	for (const auto& enabledExt : requiredExtensions)
+		enabledExtensions.push_back(enabledExt);
+
 	return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &deviceParams, DE_NULL);
-}
-
-deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
-{
-	const vector<VkQueueFamilyProperties>	queueProps	= getPhysicalDeviceQueueFamilyProperties(vkInstance, physicalDevice);
-
-	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
-	{
-		if ((queueProps[queueNdx].queueFlags & requiredCaps) == requiredCaps)
-			return (deUint32)queueNdx;
-	}
-
-	TCU_THROW(NotSupportedError, "No matching queue found");
 }
 
 vector<Vertex4RGBA> createQuads (deUint32 numQuads, float size)
@@ -241,58 +242,59 @@ public:
 	tcu::TestStatus				verifyImage									(void);
 
 private:
-	const TestParams			m_params;
-	const PlatformInterface&	m_vkp;
-	const Extensions			m_instanceExtensions;
-	const CustomInstance		m_instance;
-	const InstanceDriver&		m_vki;
-	const VkPhysicalDevice		m_physicalDevice;
-	const deUint32				m_queueFamilyIndex;
-	const Extensions			m_deviceExtensions;
-	const Unique<VkDevice>		m_device;
-	const DeviceDriver			m_vkd;
-	const VkQueue				m_queue;
-	SimpleAllocator				m_allocator;
-	const tcu::UVec2			m_renderSize;
-	const VkFormat				m_colorFormat;
-	Move<VkImage>				m_colorImage;
-	de::MovePtr<Allocation>		m_colorImageAlloc;
-	Move<VkImageView>			m_colorAttachmentView;
-	Move<VkRenderPass>			m_renderPass;
-	Move<VkFramebuffer>			m_framebuffer;
-	Move<VkShaderModule>		m_vertexShaderModule;
-	Move<VkShaderModule>		m_fragmentShaderModule;
-	Move<VkBuffer>				m_vertexBuffer;
-	de::MovePtr<Allocation>		m_vertexBufferAlloc;
-	vector<VkBufferSp>			m_buffers;
-	vector<AllocationSp>		m_bufferAllocs;
-	Move<VkDescriptorSetLayout>	m_descriptorSetLayout;
-	Move<VkPipelineLayout>		m_preRasterizationStatePipelineLayout;
-	Move<VkPipelineLayout>		m_fragmentStatePipelineLayout;
-	GraphicsPipelineWrapper		m_graphicsPipeline;
-	Move<VkCommandPool>			m_cmdPool;
-	Move<VkCommandBuffer>		m_cmdBuffer;
-	vector<Vertex4RGBA>			m_vertices;
+	const TestParams				m_params;
+	const PlatformInterface&		m_vkp;
+	const Extensions				m_instanceExtensions;
+	const CustomInstance			m_instance;
+	const InstanceDriver&			m_vki;
+	const VkPhysicalDevice			m_physicalDevice;
+	const deUint32					m_queueFamilyIndex;
+	const Extensions				m_deviceExtensions;
+	std::vector<std::string>		m_deviceEnabledExtensions;
+	const Unique<VkDevice>			m_device;
+	const DeviceDriver				m_vkd;
+	const VkQueue					m_queue;
+	SimpleAllocator					m_allocator;
+	const tcu::UVec2				m_renderSize;
+	const VkFormat					m_colorFormat;
+	Move<VkImage>					m_colorImage;
+	de::MovePtr<Allocation>			m_colorImageAlloc;
+	Move<VkImageView>				m_colorAttachmentView;
+	RenderPassWrapper				m_renderPass;
+	Move<VkFramebuffer>				m_framebuffer;
+	ShaderWrapper					m_vertexShaderModule;
+	ShaderWrapper					m_fragmentShaderModule;
+	Move<VkBuffer>					m_vertexBuffer;
+	de::MovePtr<Allocation>			m_vertexBufferAlloc;
+	vector<VkBufferSp>				m_buffers;
+	vector<AllocationSp>			m_bufferAllocs;
+	Move<VkDescriptorSetLayout>		m_descriptorSetLayout;
+	PipelineLayoutWrapper			m_preRasterizationStatePipelineLayout;
+	PipelineLayoutWrapper			m_fragmentStatePipelineLayout;
+	GraphicsPipelineWrapper			m_graphicsPipeline;
+	Move<VkCommandPool>				m_cmdPool;
+	Move<VkCommandBuffer>			m_cmdBuffer;
+	vector<Vertex4RGBA>				m_vertices;
 };
 
 PushDescriptorBufferGraphicsTestInstance::PushDescriptorBufferGraphicsTestInstance (Context& context, const TestParams& params)
-	: vkt::TestInstance		(context)
-	, m_params				(params)
-	, m_vkp					(context.getPlatformInterface())
-	, m_instanceExtensions	(enumerateInstanceExtensionProperties(m_vkp, DE_NULL))
-	, m_instance			(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
-	, m_vki					(m_instance.getDriver())
-	, m_physicalDevice		(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
-	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
-	, m_deviceExtensions	(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
-	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params))
-	, m_vkd					(m_vkp, m_instance, *m_device)
-	, m_queue				(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
-	, m_allocator			(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
-	, m_renderSize			(32, 32)
-	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_graphicsPipeline	(m_vkd, *m_device, params.pipelineConstructionType)
-	, m_vertices			(createQuads(params.numCalls, 0.25f))
+	: vkt::TestInstance			(context)
+	, m_params					(params)
+	, m_vkp						(context.getPlatformInterface())
+	, m_instanceExtensions		(enumerateInstanceExtensionProperties(m_vkp, DE_NULL))
+	, m_instance				(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
+	, m_vki						(m_instance.getDriver())
+	, m_physicalDevice			(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+	, m_queueFamilyIndex		(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
+	, m_deviceExtensions		(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
+	, m_device					(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+	, m_vkd					(m_vkp, m_instance, *m_device, context.getUsedApiVersion())
+	, m_queue					(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
+	, m_allocator				(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
+	, m_renderSize				(32, 32)
+	, m_colorFormat				(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_graphicsPipeline		(m_vki, m_vkd, m_physicalDevice, *m_device, m_deviceEnabledExtensions, params.pipelineConstructionType)
+	, m_vertices				(createQuads(params.numCalls, 0.25f))
 {
 }
 
@@ -347,7 +349,7 @@ void PushDescriptorBufferGraphicsTestInstance::init (void)
 	}
 
 	// Create render pass
-	m_renderPass = makeRenderPass(m_vkd, *m_device, m_colorFormat);
+	m_renderPass = RenderPassWrapper(m_params.pipelineConstructionType, m_vkd, *m_device, m_colorFormat);
 
 	// Create framebuffer
 	{
@@ -369,7 +371,7 @@ void PushDescriptorBufferGraphicsTestInstance::init (void)
 			1u											// deUint32					layers;
 		};
 
-		m_framebuffer = createFramebuffer(m_vkd, *m_device, &framebufferParams);
+		m_renderPass.createFramebuffer(m_vkd, *m_device, &framebufferParams, *m_colorImage);
 	}
 
 	// Create pipeline layout
@@ -408,10 +410,10 @@ void PushDescriptorBufferGraphicsTestInstance::init (void)
 			DE_NULL											// const VkPushDescriptorRange*	pPushDescriptorRanges;
 		};
 
-		m_preRasterizationStatePipelineLayout	= createPipelineLayout(m_vkd, *m_device, &pipelineLayoutParams);
+		m_preRasterizationStatePipelineLayout	= PipelineLayoutWrapper(m_params.pipelineConstructionType, m_vkd, *m_device, &pipelineLayoutParams);
 		pipelineLayoutParams.setLayoutCount		= 0u;
 		pipelineLayoutParams.pSetLayouts		= DE_NULL;
-		m_fragmentStatePipelineLayout			= createPipelineLayout(m_vkd, *m_device, &pipelineLayoutParams);
+		m_fragmentStatePipelineLayout			= PipelineLayoutWrapper(m_params.pipelineConstructionType, m_vkd, *m_device, &pipelineLayoutParams);
 	}
 
 	// Create buffers. One color value in each buffer.
@@ -443,8 +445,8 @@ void PushDescriptorBufferGraphicsTestInstance::init (void)
 
 	// Create shaders
 	{
-		m_vertexShaderModule	= createShaderModule(m_vkd, *m_device, m_context.getBinaryCollection().get("vert"), 0u);
-		m_fragmentShaderModule	= createShaderModule(m_vkd, *m_device, m_context.getBinaryCollection().get("frag"), 0u);
+		m_vertexShaderModule	= ShaderWrapper(m_vkd, *m_device, m_context.getBinaryCollection().get("vert"), 0u);
+		m_fragmentShaderModule	= ShaderWrapper(m_vkd, *m_device, m_context.getBinaryCollection().get("frag"), 0u);
 	}
 
 	// Create pipeline
@@ -496,13 +498,13 @@ void PushDescriptorBufferGraphicsTestInstance::init (void)
 						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 															scissors,
-															*m_preRasterizationStatePipelineLayout,
+															m_preRasterizationStatePipelineLayout,
 															*m_renderPass,
 															0u,
-															*m_vertexShaderModule)
-						  .setupFragmentShaderState(*m_fragmentStatePipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule)
+															m_vertexShaderModule)
+						  .setupFragmentShaderState(m_fragmentStatePipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule)
 						  .setupFragmentOutputState(*m_renderPass)
-						  .setMonolithicPipelineLayout(*m_preRasterizationStatePipelineLayout)
+						  .setMonolithicPipelineLayout(m_preRasterizationStatePipelineLayout)
 						  .buildPipeline();
 	}
 
@@ -540,8 +542,8 @@ void PushDescriptorBufferGraphicsTestInstance::init (void)
 
 		m_cmdBuffer = allocateCommandBuffer(m_vkd, *m_device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 		beginCommandBuffer(m_vkd, *m_cmdBuffer, 0u);
-		beginRenderPass(m_vkd, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
-		m_vkd.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
+		m_renderPass.begin(m_vkd, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
+		m_graphicsPipeline.bind(*m_cmdBuffer);
 		m_vkd.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 
 		// Draw quads. Switch input buffer which contains the quad color for each draw call.
@@ -572,7 +574,7 @@ void PushDescriptorBufferGraphicsTestInstance::init (void)
 			m_vkd.cmdDraw(*m_cmdBuffer, 6, 1, 6 * quadNdx, 0);
 		}
 
-		endRenderPass(m_vkd, *m_cmdBuffer);
+		m_renderPass.end(m_vkd, *m_cmdBuffer);
 		endCommandBuffer(m_vkd, *m_cmdBuffer);
 	}
 }
@@ -667,7 +669,7 @@ TestInstance* PushDescriptorBufferGraphicsTest::createInstance (Context& context
 
 void PushDescriptorBufferGraphicsTest::checkSupport(Context& context) const
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void PushDescriptorBufferGraphicsTest::initPrograms (SourceCollections& sourceCollections) const
@@ -723,6 +725,7 @@ private:
 	const VkPhysicalDevice		m_physicalDevice;
 	const deUint32				m_queueFamilyIndex;
 	const Extensions			m_deviceExtensions;
+	std::vector<std::string>	m_deviceEnabledExtensions;
 	const Unique<VkDevice>		m_device;
 	const DeviceDriver			m_vkd;
 	const VkQueue				m_queue;
@@ -751,8 +754,8 @@ PushDescriptorBufferComputeTestInstance::PushDescriptorBufferComputeTestInstance
 	, m_physicalDevice		(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
 	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_COMPUTE_BIT))
 	, m_deviceExtensions	(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
-	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params))
-	, m_vkd					(m_vkp, m_instance, *m_device)
+	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+	, m_vkd					(m_vkp, m_instance, *m_device, context.getUsedApiVersion())
 	, m_queue				(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 	, m_itemSize			(calcItemSize(m_vki, m_physicalDevice))
 	, m_allocator			(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
@@ -1067,6 +1070,7 @@ private:
 	const VkPhysicalDevice			m_physicalDevice;
 	const deUint32					m_queueFamilyIndex;
 	const Extensions				m_deviceExtensions;
+	std::vector<std::string>		m_deviceEnabledExtensions;
 	const Unique<VkDevice>			m_device;
 	const DeviceDriver				m_vkd;
 	const VkQueue					m_queue;
@@ -1082,15 +1086,15 @@ private:
 	vector<VkImageViewSp>			m_textureViews;
 	Move<VkSampler>					m_whiteBorderSampler;
 	Move<VkSampler>					m_blackBorderSampler;
-	Move<VkRenderPass>				m_renderPass;
+	RenderPassWrapper				m_renderPass;
 	Move<VkFramebuffer>				m_framebuffer;
-	Move<VkShaderModule>			m_vertexShaderModule;
-	Move<VkShaderModule>			m_fragmentShaderModule;
+	ShaderWrapper					m_vertexShaderModule;
+	ShaderWrapper					m_fragmentShaderModule;
 	Move<VkBuffer>					m_vertexBuffer;
 	de::MovePtr<Allocation>			m_vertexBufferAlloc;
 	Move<VkDescriptorSetLayout>		m_descriptorSetLayout;
-	Move<VkPipelineLayout>			m_preRasterizationStatePipelineLayout;
-	Move<VkPipelineLayout>			m_fragmentStatePipelineLayout;
+	PipelineLayoutWrapper			m_preRasterizationStatePipelineLayout;
+	PipelineLayoutWrapper			m_fragmentStatePipelineLayout;
 	GraphicsPipelineWrapper			m_graphicsPipeline;
 	Move<VkCommandPool>				m_cmdPool;
 	Move<VkCommandBuffer>			m_cmdBuffer;
@@ -1098,24 +1102,24 @@ private:
 };
 
 PushDescriptorImageGraphicsTestInstance::PushDescriptorImageGraphicsTestInstance (Context& context, const TestParams& params)
-	: vkt::TestInstance		(context)
-	, m_params				(params)
-	, m_vkp					(context.getPlatformInterface())
-	, m_instanceExtensions	(enumerateInstanceExtensionProperties(m_vkp, DE_NULL))
-	, m_instance			(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
-	, m_vki					(m_instance.getDriver())
-	, m_physicalDevice		(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
-	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
-	, m_deviceExtensions	(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
-	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params))
-	, m_vkd					(m_vkp, m_instance, *m_device)
-	, m_queue				(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
-	, m_allocator			(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
-	, m_renderSize			(32, 32)
-	, m_textureSize			(32, 32)
-	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_graphicsPipeline	(m_vkd, *m_device, params.pipelineConstructionType)
-	, m_vertices			(createTexQuads(params.numCalls, 0.25f))
+	: vkt::TestInstance			(context)
+	, m_params					(params)
+	, m_vkp						(context.getPlatformInterface())
+	, m_instanceExtensions		(enumerateInstanceExtensionProperties(m_vkp, DE_NULL))
+	, m_instance				(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
+	, m_vki						(m_instance.getDriver())
+	, m_physicalDevice			(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+	, m_queueFamilyIndex		(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
+	, m_deviceExtensions		(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
+	, m_device					(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+	, m_vkd					(m_vkp, m_instance, *m_device, context.getUsedApiVersion())
+	, m_queue					(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
+	, m_allocator				(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
+	, m_renderSize				(32, 32)
+	, m_textureSize				(32, 32)
+	, m_colorFormat				(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_graphicsPipeline		(m_vki, m_vkd, m_physicalDevice, *m_device, m_deviceEnabledExtensions, params.pipelineConstructionType)
+	, m_vertices				(createTexQuads(params.numCalls, 0.25f))
 {
 }
 
@@ -1380,7 +1384,7 @@ void PushDescriptorImageGraphicsTestInstance::init (void)
 			DE_NULL										// const VkSubpassDependency*		pDependencies
 		};
 
-		m_renderPass = createRenderPass(m_vkd, *m_device, &renderPassInfo);
+		m_renderPass = RenderPassWrapper(m_params.pipelineConstructionType, m_vkd, *m_device, &renderPassInfo);
 	}
 
 	// Create framebuffer
@@ -1403,7 +1407,7 @@ void PushDescriptorImageGraphicsTestInstance::init (void)
 			1u											// deUint32					layers;
 		};
 
-		m_framebuffer = createFramebuffer(m_vkd, *m_device, &framebufferParams);
+		m_renderPass.createFramebuffer(m_vkd, *m_device, &framebufferParams, *m_colorImage);
 	}
 
 	// Create pipeline layout
@@ -1516,16 +1520,16 @@ void PushDescriptorImageGraphicsTestInstance::init (void)
 			DE_NULL											// const VkPushDescriptorRange*	pPushDescriptorRanges;
 		};
 
-		m_preRasterizationStatePipelineLayout	= createPipelineLayout(m_vkd, *m_device, &pipelineLayoutParams);
+		m_preRasterizationStatePipelineLayout	= PipelineLayoutWrapper(m_params.pipelineConstructionType, m_vkd, *m_device, &pipelineLayoutParams);
 		pipelineLayoutParams.setLayoutCount		= 1u;
 		pipelineLayoutParams.pSetLayouts		= &(*m_descriptorSetLayout);
-		m_fragmentStatePipelineLayout			= createPipelineLayout(m_vkd, *m_device, &pipelineLayoutParams);
+		m_fragmentStatePipelineLayout			= PipelineLayoutWrapper(m_params.pipelineConstructionType, m_vkd, *m_device, &pipelineLayoutParams);
 	}
 
 	// Create shaders
 	{
-		m_vertexShaderModule	= createShaderModule(m_vkd, *m_device, m_context.getBinaryCollection().get("vert"), 0u);
-		m_fragmentShaderModule	= createShaderModule(m_vkd, *m_device, m_context.getBinaryCollection().get("frag"), 0u);
+		m_vertexShaderModule	= ShaderWrapper(m_vkd, *m_device, m_context.getBinaryCollection().get("vert"), 0u);
+		m_fragmentShaderModule	= ShaderWrapper(m_vkd, *m_device, m_context.getBinaryCollection().get("frag"), 0u);
 	}
 
 	// Create pipeline
@@ -1567,7 +1571,7 @@ void PushDescriptorImageGraphicsTestInstance::init (void)
 		const vector<VkViewport>					viewports		{ makeViewport(m_renderSize) };
 		const vector<VkRect2D>						scissors		{ makeRect2D(m_renderSize) };
 
-		m_graphicsPipeline.setMonolithicPipelineLayout(*m_fragmentStatePipelineLayout)
+		m_graphicsPipeline.setMonolithicPipelineLayout(m_fragmentStatePipelineLayout)
 						  .setDefaultRasterizationState()
 						  .setDefaultDepthStencilState()
 						  .setDefaultMultisampleState()
@@ -1575,11 +1579,11 @@ void PushDescriptorImageGraphicsTestInstance::init (void)
 						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 															scissors,
-															*m_preRasterizationStatePipelineLayout,
+															m_preRasterizationStatePipelineLayout,
 															*m_renderPass,
 															0u,
-															*m_vertexShaderModule)
-						  .setupFragmentShaderState(*m_fragmentStatePipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule)
+															m_vertexShaderModule)
+						  .setupFragmentShaderState(m_fragmentStatePipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule)
 						  .setupFragmentOutputState(*m_renderPass)
 						  .buildPipeline();
 	}
@@ -1618,8 +1622,8 @@ void PushDescriptorImageGraphicsTestInstance::init (void)
 
 		m_cmdBuffer = allocateCommandBuffer(m_vkd, *m_device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 		beginCommandBuffer(m_vkd, *m_cmdBuffer, 0u);
-		beginRenderPass(m_vkd, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
-		m_vkd.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
+		m_renderPass.begin(m_vkd, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
+		m_graphicsPipeline.bind(*m_cmdBuffer);
 		m_vkd.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 
 		// Draw quads. Switch sampler or image view depending on the test.
@@ -1695,7 +1699,7 @@ void PushDescriptorImageGraphicsTestInstance::init (void)
 			m_vkd.cmdDraw(*m_cmdBuffer, 6, 1, 6 * quadNdx, 0);
 		}
 
-		endRenderPass(m_vkd, *m_cmdBuffer);
+		m_renderPass.end(m_vkd, *m_cmdBuffer);
 		endCommandBuffer(m_vkd, *m_cmdBuffer);
 	}
 }
@@ -1823,7 +1827,7 @@ TestInstance* PushDescriptorImageGraphicsTest::createInstance (Context& context)
 
 void PushDescriptorImageGraphicsTest::checkSupport(Context& context) const
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void PushDescriptorImageGraphicsTest::initPrograms (SourceCollections& sourceCollections) const
@@ -1930,6 +1934,7 @@ private:
 	const VkPhysicalDevice		m_physicalDevice;
 	const deUint32				m_queueFamilyIndex;
 	const Extensions			m_deviceExtensions;
+	std::vector<std::string>	m_deviceEnabledExtensions;
 	const Unique<VkDevice>		m_device;
 	const DeviceDriver			m_vkd;
 	const VkQueue				m_queue;
@@ -1964,8 +1969,8 @@ PushDescriptorImageComputeTestInstance::PushDescriptorImageComputeTestInstance (
 	, m_physicalDevice		(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
 	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT))
 	, m_deviceExtensions	(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
-	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params))
-	, m_vkd					(m_vkp, m_instance, *m_device)
+	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+	, m_vkd					(m_vkp, m_instance, *m_device, context.getUsedApiVersion())
 	, m_queue				(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 	, m_itemSize			(calcItemSize(m_vki, m_physicalDevice, 2u))
 	, m_blockSize			(kSizeofVec4 * 2u)
@@ -2718,6 +2723,7 @@ private:
 	const VkPhysicalDevice			m_physicalDevice;
 	const deUint32					m_queueFamilyIndex;
 	const Extensions				m_deviceExtensions;
+	std::vector<std::string>		m_deviceEnabledExtensions;
 	const Unique<VkDevice>			m_device;
 	const DeviceDriver				m_vkd;
 	const VkQueue					m_queue;
@@ -2731,15 +2737,15 @@ private:
 	vector<AllocationSp>			m_bufferAllocs;
 	vector<VkBufferViewSp>			m_bufferViews;
 	const VkFormat					m_bufferFormat;
-	Move<VkRenderPass>				m_renderPass;
+	RenderPassWrapper				m_renderPass;
 	Move<VkFramebuffer>				m_framebuffer;
-	Move<VkShaderModule>			m_vertexShaderModule;
-	Move<VkShaderModule>			m_fragmentShaderModule;
+	ShaderWrapper					m_vertexShaderModule;
+	ShaderWrapper					m_fragmentShaderModule;
 	Move<VkBuffer>					m_vertexBuffer;
 	de::MovePtr<Allocation>			m_vertexBufferAlloc;
 	Move<VkDescriptorSetLayout>		m_descriptorSetLayout;
-	Move<VkPipelineLayout>			m_preRasterizationStatePipelineLayout;
-	Move<VkPipelineLayout>			m_fragmentStatePipelineLayout;
+	PipelineLayoutWrapper			m_preRasterizationStatePipelineLayout;
+	PipelineLayoutWrapper			m_fragmentStatePipelineLayout;
 	GraphicsPipelineWrapper			m_graphicsPipeline;
 	Move<VkCommandPool>				m_cmdPool;
 	Move<VkCommandBuffer>			m_cmdBuffer;
@@ -2747,24 +2753,24 @@ private:
 };
 
 PushDescriptorTexelBufferGraphicsTestInstance::PushDescriptorTexelBufferGraphicsTestInstance (Context& context, const TestParams& params)
-	: vkt::TestInstance		(context)
-	, m_params				(params)
-	, m_vkp					(context.getPlatformInterface())
-	, m_instanceExtensions	(enumerateInstanceExtensionProperties(m_vkp, DE_NULL))
-	, m_instance			(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
-	, m_vki					(m_instance.getDriver())
-	, m_physicalDevice		(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
-	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
-	, m_deviceExtensions	(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
-	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params))
-	, m_vkd					(m_vkp, m_instance, *m_device)
-	, m_queue				(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
-	, m_allocator			(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
-	, m_renderSize			(32, 32)
-	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_bufferFormat		(VK_FORMAT_R32G32B32A32_SFLOAT)
-	, m_graphicsPipeline	(m_vkd, *m_device, params.pipelineConstructionType)
-	, m_vertices			(createQuads(params.numCalls, 0.25f))
+	: vkt::TestInstance			(context)
+	, m_params					(params)
+	, m_vkp						(context.getPlatformInterface())
+	, m_instanceExtensions		(enumerateInstanceExtensionProperties(m_vkp, DE_NULL))
+	, m_instance				(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
+	, m_vki						(m_instance.getDriver())
+	, m_physicalDevice			(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+	, m_queueFamilyIndex		(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
+	, m_deviceExtensions		(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
+	, m_device					(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+	, m_vkd					(m_vkp, m_instance, *m_device, context.getUsedApiVersion())
+	, m_queue					(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
+	, m_allocator				(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
+	, m_renderSize				(32, 32)
+	, m_colorFormat				(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_bufferFormat			(VK_FORMAT_R32G32B32A32_SFLOAT)
+	, m_graphicsPipeline		(m_vki, m_vkd, m_physicalDevice, *m_device, m_deviceEnabledExtensions, params.pipelineConstructionType)
+	, m_vertices				(createQuads(params.numCalls, 0.25f))
 {
 }
 
@@ -2861,7 +2867,7 @@ void PushDescriptorTexelBufferGraphicsTestInstance::init (void)
 	}
 
 	// Create render pass
-	m_renderPass = makeRenderPass(m_vkd, *m_device, m_colorFormat);
+	m_renderPass = RenderPassWrapper(m_params.pipelineConstructionType, m_vkd, *m_device, m_colorFormat);
 
 	// Create framebuffer
 	{
@@ -2883,7 +2889,7 @@ void PushDescriptorTexelBufferGraphicsTestInstance::init (void)
 			1u											// deUint32					layers;
 		};
 
-		m_framebuffer = createFramebuffer(m_vkd, *m_device, &framebufferParams);
+		m_renderPass.createFramebuffer(m_vkd, *m_device, &framebufferParams, *m_colorImage);
 	}
 
 	// Create pipeline layout
@@ -2920,16 +2926,16 @@ void PushDescriptorTexelBufferGraphicsTestInstance::init (void)
 			DE_NULL											// const VkPushDescriptorRange*	pPushDescriptorRanges;
 		};
 
-		m_preRasterizationStatePipelineLayout	= createPipelineLayout(m_vkd, *m_device, &pipelineLayoutParams);
+		m_preRasterizationStatePipelineLayout	= PipelineLayoutWrapper(m_params.pipelineConstructionType, m_vkd, *m_device, &pipelineLayoutParams);
 		pipelineLayoutParams.setLayoutCount		= 1u;
 		pipelineLayoutParams.pSetLayouts		= &(*m_descriptorSetLayout);
-		m_fragmentStatePipelineLayout			= createPipelineLayout(m_vkd, *m_device, &pipelineLayoutParams);
+		m_fragmentStatePipelineLayout			= PipelineLayoutWrapper(m_params.pipelineConstructionType, m_vkd, *m_device, &pipelineLayoutParams);
 	}
 
 	// Create shaders
 	{
-		m_vertexShaderModule	= createShaderModule(m_vkd, *m_device, m_context.getBinaryCollection().get("vert"), 0u);
-		m_fragmentShaderModule	= createShaderModule(m_vkd, *m_device, m_context.getBinaryCollection().get("frag"), 0u);
+		m_vertexShaderModule	= ShaderWrapper(m_vkd, *m_device, m_context.getBinaryCollection().get("vert"), 0u);
+		m_fragmentShaderModule	= ShaderWrapper(m_vkd, *m_device, m_context.getBinaryCollection().get("frag"), 0u);
 	}
 
 	// Create pipeline
@@ -2971,7 +2977,7 @@ void PushDescriptorTexelBufferGraphicsTestInstance::init (void)
 		const vector<VkViewport>					viewports			{ makeViewport(m_renderSize) };
 		const vector<VkRect2D>						scissors			{ makeRect2D(m_renderSize) };
 
-		m_graphicsPipeline.setMonolithicPipelineLayout(*m_fragmentStatePipelineLayout)
+		m_graphicsPipeline.setMonolithicPipelineLayout(m_fragmentStatePipelineLayout)
 						  .setDefaultRasterizationState()
 						  .setDefaultDepthStencilState()
 						  .setDefaultMultisampleState()
@@ -2979,11 +2985,11 @@ void PushDescriptorTexelBufferGraphicsTestInstance::init (void)
 						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 															scissors,
-															*m_preRasterizationStatePipelineLayout,
+															m_preRasterizationStatePipelineLayout,
 															*m_renderPass,
 															0u,
-															*m_vertexShaderModule)
-						  .setupFragmentShaderState(*m_fragmentStatePipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule)
+															m_vertexShaderModule)
+						  .setupFragmentShaderState(m_fragmentStatePipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule)
 						  .setupFragmentOutputState(*m_renderPass)
 						  .buildPipeline();
 	}
@@ -3022,8 +3028,8 @@ void PushDescriptorTexelBufferGraphicsTestInstance::init (void)
 
 		m_cmdBuffer = allocateCommandBuffer(m_vkd, *m_device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 		beginCommandBuffer(m_vkd, *m_cmdBuffer, 0u);
-		beginRenderPass(m_vkd, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
-		m_vkd.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
+		m_renderPass.begin(m_vkd, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
+		m_graphicsPipeline.bind(*m_cmdBuffer);
 		m_vkd.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 
 		// Draw quads. Switch buffer view between draws.
@@ -3047,7 +3053,7 @@ void PushDescriptorTexelBufferGraphicsTestInstance::init (void)
 			m_vkd.cmdDraw(*m_cmdBuffer, 6, 1, 6 * quadNdx, 0);
 		}
 
-		endRenderPass(m_vkd, *m_cmdBuffer);
+		m_renderPass.end(m_vkd, *m_cmdBuffer);
 		endCommandBuffer(m_vkd, *m_cmdBuffer);
 	}
 }
@@ -3143,7 +3149,7 @@ TestInstance* PushDescriptorTexelBufferGraphicsTest::createInstance (Context& co
 
 void PushDescriptorTexelBufferGraphicsTest::checkSupport(Context& context) const
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void PushDescriptorTexelBufferGraphicsTest::initPrograms (SourceCollections& sourceCollections) const
@@ -3215,6 +3221,7 @@ private:
 	const VkPhysicalDevice		m_physicalDevice;
 	const deUint32				m_queueFamilyIndex;
 	const Extensions			m_deviceExtensions;
+	std::vector<std::string>	m_deviceEnabledExtensions;
 	const Unique<VkDevice>		m_device;
 	const DeviceDriver			m_vkd;
 	const VkQueue				m_queue;
@@ -3244,8 +3251,8 @@ PushDescriptorTexelBufferComputeTestInstance::PushDescriptorTexelBufferComputeTe
 	, m_physicalDevice		(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
 	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_COMPUTE_BIT))
 	, m_deviceExtensions	(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
-	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params))
-	, m_vkd					(m_vkp, m_instance, *m_device)
+	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+	, m_vkd					(m_vkp, m_instance, *m_device, context.getUsedApiVersion())
 	, m_queue				(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 	, m_itemSize			(calcItemSize(m_vki, m_physicalDevice))
 	, m_allocator			(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
@@ -3588,6 +3595,7 @@ private:
 	const VkPhysicalDevice			m_physicalDevice;
 	const deUint32					m_queueFamilyIndex;
 	const Extensions				m_deviceExtensions;
+	std::vector<std::string>		m_deviceEnabledExtensions;
 	const Unique<VkDevice>			m_device;
 	const DeviceDriver				m_vkd;
 	const VkQueue					m_queue;
@@ -3602,14 +3610,13 @@ private:
 	vector<AllocationSp>			m_inputImageAllocs;
 	vector<VkImageViewSp>			m_inputImageViews;
 	vector<VkRenderPassSp>			m_renderPasses;
-	vector<VkFramebufferSp>			m_framebuffers;
-	Move<VkShaderModule>			m_vertexShaderModule;
-	Move<VkShaderModule>			m_fragmentShaderModule;
+	ShaderWrapper					m_vertexShaderModule;
+	ShaderWrapper					m_fragmentShaderModule;
 	Move<VkBuffer>					m_vertexBuffer;
 	de::MovePtr<Allocation>			m_vertexBufferAlloc;
 	Move<VkDescriptorSetLayout>		m_descriptorSetLayout;
-	Move<VkPipelineLayout>			m_preRasterizationStatePipelineLayout;
-	Move<VkPipelineLayout>			m_fragmentStatePipelineLayout;
+	PipelineLayoutWrapper			m_preRasterizationStatePipelineLayout;
+	PipelineLayoutWrapper			m_fragmentStatePipelineLayout;
 	vector<GraphicsPipelineWrapper>	m_graphicsPipelines;
 	Move<VkCommandPool>				m_cmdPool;
 	Move<VkCommandBuffer>			m_cmdBuffer;
@@ -3617,23 +3624,23 @@ private:
 };
 
 PushDescriptorInputAttachmentGraphicsTestInstance::PushDescriptorInputAttachmentGraphicsTestInstance (Context& context, const TestParams& params)
-	: vkt::TestInstance		(context)
-	, m_params				(params)
-	, m_vkp					(context.getPlatformInterface())
-	, m_instanceExtensions	(enumerateInstanceExtensionProperties(m_vkp, DE_NULL))
-	, m_instance			(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
-	, m_vki					(m_instance.getDriver())
-	, m_physicalDevice		(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
-	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
-	, m_deviceExtensions	(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
-	, m_device				(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params))
-	, m_vkd					(m_vkp, m_instance, *m_device)
-	, m_queue				(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
-	, m_allocator			(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
-	, m_renderSize			(32, 32)
-	, m_textureSize			(32, 32)
-	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_vertices			(createTexQuads(params.numCalls, 0.25f))
+	: vkt::TestInstance			(context)
+	, m_params					(params)
+	, m_vkp						(context.getPlatformInterface())
+	, m_instanceExtensions		(enumerateInstanceExtensionProperties(m_vkp, DE_NULL))
+	, m_instance				(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
+	, m_vki						(m_instance.getDriver())
+	, m_physicalDevice			(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+	, m_queueFamilyIndex		(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
+	, m_deviceExtensions		(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
+	, m_device					(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+	, m_vkd					(m_vkp, m_instance, *m_device, context.getUsedApiVersion())
+	, m_queue					(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
+	, m_allocator				(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
+	, m_renderSize				(32, 32)
+	, m_textureSize				(32, 32)
+	, m_colorFormat				(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_vertices				(createTexQuads(params.numCalls, 0.25f))
 {
 }
 
@@ -3909,16 +3916,18 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init (void)
 			&subpassDependency							// const VkSubpassDependency*		pDependencies
 		};
 
-		m_renderPasses.push_back(VkRenderPassSp(new Unique<VkRenderPass>(createRenderPass(m_vkd, *m_device, &renderPassInfo))));
-	}
+		m_renderPasses.push_back(VkRenderPassSp(new RenderPassWrapper(m_params.pipelineConstructionType, m_vkd, *m_device, &renderPassInfo)));
 
-	// Create framebuffers
-	for (deUint32 framebufferIdx = 0; framebufferIdx < 2; framebufferIdx++)
-	{
+		std::vector<VkImage>			images					=
+		{
+			*m_colorImage,
+			**m_inputImages[renderPassIdx],
+		};
+
 		const VkImageView				attachmentBindInfos[]	=
 		{
 			*m_colorAttachmentView,
-			**m_inputImageViews[framebufferIdx],
+			**m_inputImageViews[renderPassIdx],
 		};
 
 		const VkFramebufferCreateInfo	framebufferParams		=
@@ -3926,7 +3935,7 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init (void)
 			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// VkStructureType			sType;
 			DE_NULL,									// const void*				pNext;
 			0u,											// VkFramebufferCreateFlags	flags;
-			**m_renderPasses[framebufferIdx],			// VkRenderPass				renderPass;
+			**m_renderPasses[renderPassIdx],			// VkRenderPass				renderPass;
 			2u,											// deUint32					attachmentCount;
 			attachmentBindInfos,						// const VkImageView*		pAttachments;
 			(deUint32)m_renderSize.x(),					// deUint32					width;
@@ -3934,7 +3943,7 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init (void)
 			1u											// deUint32					layers;
 		};
 
-		m_framebuffers.push_back(VkFramebufferSp(new Unique<VkFramebuffer>(createFramebuffer(m_vkd, *m_device, &framebufferParams))));
+		m_renderPasses[renderPassIdx]->createFramebuffer(m_vkd, *m_device, &framebufferParams, images);
 	}
 
 	// Create pipeline layout
@@ -3973,16 +3982,16 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init (void)
 			DE_NULL											// const VkPushDescriptorRange*	pPushDescriptorRanges;
 		};
 
-		m_preRasterizationStatePipelineLayout	= createPipelineLayout(m_vkd, *m_device, &pipelineLayoutParams);
+		m_preRasterizationStatePipelineLayout	= PipelineLayoutWrapper(m_params.pipelineConstructionType, m_vkd, *m_device, &pipelineLayoutParams);
 		pipelineLayoutParams.setLayoutCount		= 1u;
 		pipelineLayoutParams.pSetLayouts		= &(*m_descriptorSetLayout);
-		m_fragmentStatePipelineLayout			= createPipelineLayout(m_vkd, *m_device, &pipelineLayoutParams);
+		m_fragmentStatePipelineLayout			= PipelineLayoutWrapper(m_params.pipelineConstructionType, m_vkd, *m_device, &pipelineLayoutParams);
 	}
 
 	// Create shaders
 	{
-		m_vertexShaderModule	= createShaderModule(m_vkd, *m_device, m_context.getBinaryCollection().get("vert"), 0u);
-		m_fragmentShaderModule	= createShaderModule(m_vkd, *m_device, m_context.getBinaryCollection().get("frag"), 0u);
+		m_vertexShaderModule	= ShaderWrapper(m_vkd, *m_device, m_context.getBinaryCollection().get("vert"), 0u);
+		m_fragmentShaderModule	= ShaderWrapper(m_vkd, *m_device, m_context.getBinaryCollection().get("frag"), 0u);
 	}
 
 	m_graphicsPipelines.reserve(2);
@@ -4027,8 +4036,8 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init (void)
 		const vector<VkViewport>	viewports	{ makeViewport(m_renderSize) };
 		const vector<VkRect2D>		scissors	{ makeRect2D(m_renderSize) };
 
-		m_graphicsPipelines.emplace_back(m_vkd, *m_device, m_params.pipelineConstructionType);
-		m_graphicsPipelines.back().setMonolithicPipelineLayout(*m_fragmentStatePipelineLayout)
+		m_graphicsPipelines.emplace_back(m_vki, m_vkd, m_physicalDevice, *m_device, m_deviceEnabledExtensions, m_params.pipelineConstructionType);
+		m_graphicsPipelines.back().setMonolithicPipelineLayout(m_fragmentStatePipelineLayout)
 								  .setDefaultRasterizationState()
 								  .setDefaultDepthStencilState()
 								  .setDefaultMultisampleState()
@@ -4036,11 +4045,11 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init (void)
 								  .setupVertexInputState(&vertexInputStateParams)
 								  .setupPreRasterizationShaderState(viewports,
 																	scissors,
-																	*m_preRasterizationStatePipelineLayout,
+																	m_preRasterizationStatePipelineLayout,
 																	**m_renderPasses[pipelineIdx],
 																	0u,
-																	*m_vertexShaderModule)
-								  .setupFragmentShaderState(*m_fragmentStatePipelineLayout, **m_renderPasses[pipelineIdx], 0u, *m_fragmentShaderModule)
+																	m_vertexShaderModule)
+								  .setupFragmentShaderState(m_fragmentStatePipelineLayout, **m_renderPasses[pipelineIdx], 0u, m_fragmentShaderModule)
 								  .setupFragmentOutputState(**m_renderPasses[pipelineIdx])
 								  .buildPipeline();
 	}
@@ -4081,8 +4090,8 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init (void)
 		beginCommandBuffer(m_vkd, *m_cmdBuffer, 0u);
 		for (deUint32 quadNdx = 0; quadNdx < m_params.numCalls; quadNdx++)
 		{
-			beginRenderPass(m_vkd, *m_cmdBuffer, **m_renderPasses[quadNdx], **m_framebuffers[quadNdx], makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
-			m_vkd.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipelines[quadNdx].getPipeline());
+			(*m_renderPasses[quadNdx]).begin(m_vkd, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
+			m_graphicsPipelines[quadNdx].bind(*m_cmdBuffer);
 			m_vkd.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 
 			VkDescriptorImageInfo	descriptorImageInfo	=
@@ -4109,7 +4118,7 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init (void)
 			m_vkd.cmdPushDescriptorSetKHR(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_fragmentStatePipelineLayout, 0, 1, &writeDescriptorSet);
 			m_vkd.cmdDraw(*m_cmdBuffer, 6, 1, 6 * quadNdx, 0);
 
-			endRenderPass(m_vkd, *m_cmdBuffer);
+			(*m_renderPasses[quadNdx]).end(m_vkd, *m_cmdBuffer);
 		}
 
 		endCommandBuffer(m_vkd, *m_cmdBuffer);
@@ -4216,7 +4225,7 @@ TestInstance* PushDescriptorInputAttachmentGraphicsTest::createInstance (Context
 
 void PushDescriptorInputAttachmentGraphicsTest::checkSupport(Context& context) const
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void PushDescriptorInputAttachmentGraphicsTest::initPrograms (SourceCollections& sourceCollections) const
@@ -4366,8 +4375,12 @@ tcu::TestCaseGroup* createPushDescriptorTests (tcu::TestContext& testCtx, Pipeli
 				break;
 
 			case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
-				testName += "_input_attachment";
-				graphicsTests->addChild(new PushDescriptorInputAttachmentGraphicsTest(testCtx, testName.c_str(), "", params[testIdx]));
+				// Input attachments are not supported with dynamic rendering
+				if (!vk::isConstructionTypeShaderObject(pipelineType))
+				{
+					testName += "_input_attachment";
+					graphicsTests->addChild(new PushDescriptorInputAttachmentGraphicsTest(testCtx, testName.c_str(), "", params[testIdx]));
+				}
 				break;
 
 			default:

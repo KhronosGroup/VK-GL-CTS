@@ -215,7 +215,7 @@ bool DeviceGroupTestInstance::isPeerFetchAllowed (deUint32 memoryTypeIndex, deUi
 {
 	VkPeerMemoryFeatureFlags				peerMemFeatures1;
 	VkPeerMemoryFeatureFlags				peerMemFeatures2;
-	const DeviceDriver						vk						(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup);
+	const DeviceDriver						vk						(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup, m_context.getUsedApiVersion());
 	const VkPhysicalDeviceMemoryProperties	deviceMemProps1			= getPhysicalDeviceMemoryProperties(m_instanceWrapper->instance.getDriver(), m_physicalDevices[firstdeviceID]);
 	const VkPhysicalDeviceMemoryProperties	deviceMemProps2			= getPhysicalDeviceMemoryProperties(m_instanceWrapper->instance.getDriver(), m_physicalDevices[seconddeviceID]);
 	vk.getDeviceGroupPeerMemoryFeatures(*m_deviceGroup, deviceMemProps2.memoryTypes[memoryTypeIndex].heapIndex, firstdeviceID, seconddeviceID, &peerMemFeatures1);
@@ -375,9 +375,9 @@ void DeviceGroupTestInstance::init (void)
 		};
 		m_deviceGroup = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_instanceWrapper->instance, instanceDriver, physicalDevice, &deviceCreateInfo);
 #ifndef CTS_USES_VULKANSC
-		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup));
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup, m_context.getUsedApiVersion()));
 #else
-		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_deviceGroup));
+		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), m_context.getUsedApiVersion()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_deviceGroup));
 #endif // CTS_USES_VULKANSC
 	}
 
@@ -1857,7 +1857,7 @@ private:
 class DeviceGroupTestRendering : public tcu::TestCaseGroup
 {
 public:
-								DeviceGroupTestRendering	(tcu::TestContext& testCtx);
+								DeviceGroupTestRendering	(tcu::TestContext& testCtx, const std::string& name);
 								~DeviceGroupTestRendering	(void) {}
 	void						init(void);
 
@@ -1866,8 +1866,8 @@ private:
 	DeviceGroupTestRendering&	operator=					(const DeviceGroupTestRendering& other);
 };
 
-DeviceGroupTestRendering::DeviceGroupTestRendering (tcu::TestContext& testCtx)
-	: TestCaseGroup (testCtx, "device_group", "Testing device group test cases")
+DeviceGroupTestRendering::DeviceGroupTestRendering (tcu::TestContext& testCtx, const std::string& name)
+	: TestCaseGroup (testCtx, name.c_str(), "Testing device group test cases")
 {
 	// Left blank on purpose
 }
@@ -1894,9 +1894,9 @@ void DeviceGroupTestRendering::init (void)
 	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "afr_tessellated_linefill",	"Test alternate frame rendering with tesselated sphere with line segments",			TEST_MODE_AFR | TEST_MODE_TESSELLATION | TEST_MODE_LINEFILL  | TEST_MODE_DEDICATED | TEST_MODE_PEER_FETCH));
 }
 
-tcu::TestCaseGroup* createTests(tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return new DeviceGroupTestRendering(testCtx);
+	return new DeviceGroupTestRendering(testCtx, name);
 }
 }	// DeviceGroup
 }	// vkt

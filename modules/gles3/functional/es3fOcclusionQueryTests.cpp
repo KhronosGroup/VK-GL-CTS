@@ -158,7 +158,7 @@ void OcclusionQueryCase::init (void)
 				"\n"
 				"void main (void)\n"
 				"{\n"
-				"	mediump float depth_gradient = gl_FragCoord.z;\n"
+				"	mediump float depth_gradient = max(gl_FragCoord.z, 0.0);\n"
 				"	mediump float bias = 0.1;\n"
 				"	dEQP_FragColor = vec4(u_color.xyz * (depth_gradient + bias), 1.0);\n"
 				"}\n";

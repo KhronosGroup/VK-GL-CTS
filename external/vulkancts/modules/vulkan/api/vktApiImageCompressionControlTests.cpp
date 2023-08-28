@@ -102,14 +102,15 @@ static void checkImageCompressionControlSupport(Context& context, bool swapchain
 static void validate(const InstanceInterface& vki, const DeviceInterface& vkd, tcu::ResultCollector& results,
 					 VkPhysicalDevice physicalDevice, VkDevice device, TestParams& testParams, VkImage image)
 {
-
-	for (unsigned planeIndex = 0; planeIndex < testParams.control.compressionControlPlaneCount; planeIndex++)
+	constexpr VkImageAspectFlags planeAspects[]{ VK_IMAGE_ASPECT_PLANE_0_BIT, VK_IMAGE_ASPECT_PLANE_1_BIT,
+												 VK_IMAGE_ASPECT_PLANE_2_BIT };
+	const bool isYCbCr   = isYCbCrFormat(testParams.format);
+	const int  numPlanes = isYCbCr ? getPlaneCount(testParams.format) : 1;
+	for (int planeIndex = 0; planeIndex < numPlanes; planeIndex++)
 	{
 		VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-		if (isYCbCrFormat(testParams.format))
+		if (isYCbCr)
 		{
-			VkImageAspectFlags planeAspects[]{ VK_IMAGE_ASPECT_PLANE_0_BIT, VK_IMAGE_ASPECT_PLANE_1_BIT,
-											   VK_IMAGE_ASPECT_PLANE_2_BIT };
 			aspect = planeAspects[planeIndex];
 		}
 
@@ -117,7 +118,7 @@ static void validate(const InstanceInterface& vki, const DeviceInterface& vkd, t
 		VkImageSubresource2EXT			subresource			  = initVulkanStructure();
 		subresource.imageSubresource.aspectMask				  = aspect;
 		VkSubresourceLayout2EXT subresourceLayout			  = initVulkanStructure(&compressionProperties);
-		vkd.getImageSubresourceLayout2EXT(device, image, &subresource, &subresourceLayout);
+		vkd.getImageSubresourceLayout2KHR(device, image, &subresource, &subresourceLayout);
 
 		VkImageCompressionControlEXT compressionEnabled		  = initVulkanStructure();
 		compressionEnabled.compressionControlPlaneCount		  = testParams.control.compressionControlPlaneCount;
@@ -127,7 +128,11 @@ static void validate(const InstanceInterface& vki, const DeviceInterface& vkd, t
 			VK_IMAGE_COMPRESSION_FIXED_RATE_FLAG_BITS_MAX_ENUM_EXT,
 			VK_IMAGE_COMPRESSION_FIXED_RATE_FLAG_BITS_MAX_ENUM_EXT
 		};
-		compressionEnabled.pFixedRateFlags = fixedRateFlags;
+
+		if (compressionEnabled.compressionControlPlaneCount > 0)
+		{
+			compressionEnabled.pFixedRateFlags = fixedRateFlags;
+		}
 
 		VkPhysicalDeviceImageFormatInfo2 formatInfo = initVulkanStructure(&compressionEnabled);
 		formatInfo.format							= testParams.format;
@@ -142,7 +147,6 @@ static void validate(const InstanceInterface& vki, const DeviceInterface& vkd, t
 
 		if (testParams.useExtension)
 		{
-
 			if ((compressionPropertiesSupported.imageCompressionFixedRateFlags &
 				 compressionProperties.imageCompressionFixedRateFlags) !=
 				compressionProperties.imageCompressionFixedRateFlags)
@@ -323,19 +327,25 @@ static tcu::TestStatus ahbImageCreateTest(Context& context, TestParams testParam
 	tcu::TestLog&			   log				= context.getTestContext().getLog();
 	tcu::ResultCollector	   results(log);
 	const VkImageUsageFlagBits vkUsage			= VK_IMAGE_USAGE_SAMPLED_BIT;
+	const bool				   is_fixed_rate_ex = testParams.control.flags == VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT;
+	const uint32_t			   numPlanes		= isYCbCrFormat(testParams.format) ? getPlaneCount(testParams.format) : 1;
+
+	testParams.control.compressionControlPlaneCount = is_fixed_rate_ex ? numPlanes : 0;
 
 	VkImageCompressionFixedRateFlagsEXT planeFlags[3]{};
 
-	for (unsigned i{}; i < (testParams.control.flags == VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT ? 24 : 1); i++)
+	for (unsigned i{}; i < (is_fixed_rate_ex ? 24 : 1); i++)
 	{
-
 		planeFlags[0] ^= 3 << i;
 		planeFlags[1] ^= 5 << i;
 		planeFlags[2] ^= 7 << i;
-		if (testParams.control.flags == VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT)
+
+		if (is_fixed_rate_ex)
 		{
+			testParams.control.compressionControlPlaneCount = numPlanes;
 			testParams.control.pFixedRateFlags = planeFlags;
 		}
+
 		const vk::VkExternalMemoryImageCreateInfo externalCreateInfo = {
 			vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO, &testParams.control,
 			VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID
@@ -359,7 +369,6 @@ static tcu::TestStatus ahbImageCreateTest(Context& context, TestParams testParam
 												   1,
 												   &queueFamilyIndex,
 												   vk::VK_IMAGE_LAYOUT_UNDEFINED };
-
 
 		checkAhbImageSupport(context, testParams, width, height, vkUsage);
 
@@ -386,16 +395,17 @@ static tcu::TestStatus imageCreateTest(Context& context, TestParams testParams)
 	VkExtent3D			 extent			  = { 16, 16, 1 };
 	tcu::TestLog&		 log			  = context.getTestContext().getLog();
 	tcu::ResultCollector results(log);
+	const bool			 is_fixed_rate_ex = testParams.control.flags == VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT;
 
 	VkImageCompressionFixedRateFlagsEXT planeFlags[3]{};
 
-	for (unsigned i{}; i < (testParams.control.flags == VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT ? 24 : 1); i++)
+	for (unsigned i{}; i < (is_fixed_rate_ex ? 24 : 1); i++)
 	{
-
 		planeFlags[0] ^= 3 << i;
 		planeFlags[1] ^= 5 << i;
 		planeFlags[2] ^= 7 << i;
-		if (testParams.control.flags == VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT)
+
+		if (is_fixed_rate_ex)
 		{
 			testParams.control.pFixedRateFlags = planeFlags;
 		}
@@ -435,6 +445,8 @@ static tcu::TestStatus imageCreateTest(Context& context, TestParams testParams)
 
 void addImageCompressionControlTests(tcu::TestCaseGroup* group, TestParams testParams)
 {
+	const bool is_fixed_rate_ex = testParams.control.flags == VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT;
+
 	static const struct
 	{
 		VkFormat begin;
@@ -460,8 +472,10 @@ void addImageCompressionControlTests(tcu::TestCaseGroup* group, TestParams testP
 		{
 			if (isCompressedFormat(testParams.format))
 				continue;
-			testParams.control.compressionControlPlaneCount =
-				isYCbCrFormat(testParams.format) ? getPlaneCount(testParams.format) : 1;
+
+			const uint32_t numPlanes = isYCbCrFormat(testParams.format) ? getPlaneCount(testParams.format) : 1;
+			testParams.control.compressionControlPlaneCount = is_fixed_rate_ex ? numPlanes : 0;
+
 			const char* const enumName = getFormatName(testParams.format);
 			const string	  caseName = de::toLower(string(enumName).substr(10));
 			addFunctionCase(group, caseName, enumName, imageCreateTest, testParams);
@@ -477,6 +491,7 @@ CustomInstance createInstanceWithWsi(Context& context, Type wsiType, const vecto
 
 	extensions.push_back("VK_KHR_surface");
 	extensions.push_back(getExtensionName(wsiType));
+	extensions.push_back("VK_KHR_get_surface_capabilities2");
 
 	vector<string> instanceExtensions;
 	for (const auto& ext : extensions)
@@ -541,7 +556,9 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface& vkp, deUint32 apiVer
 			TCU_THROW(NotSupportedError, extName + " is not supported");
 	}
 
-	const void*					   pNext	= nullptr;
+	vk::VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT imageCompressionSwapchain = initVulkanStructure();
+	imageCompressionSwapchain.imageCompressionControlSwapchain = VK_TRUE;
+
 	const VkPhysicalDeviceFeatures features = {};
 
 	// Convert from std::vector<std::string> to std::vector<const char*>.
@@ -551,7 +568,7 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface& vkp, deUint32 apiVer
 				   [](const std::string& s) { return s.c_str(); });
 
 	const VkDeviceCreateInfo deviceParams = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-											  pNext,
+											  &imageCompressionSwapchain,
 											  (VkDeviceCreateFlags)0,
 											  1u,
 											  &queueInfo,
@@ -581,7 +598,7 @@ struct DeviceHelper
 									 physicalDevice, enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL),
 									 additionalExtensions, queueFamilyIndex,
 									 context.getTestContext().getCommandLine().isValidationEnabled(), pAllocator))
-		, vkd(context.getPlatformInterface(), instance, *device)
+		, vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion())
 		, queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
 	{
 	}
@@ -603,14 +620,16 @@ static tcu::TestStatus swapchainCreateTest(Context& context, TestParams testPara
 
 	const InstanceHelper	 instHelper(context, testParams.wsiType);
 	const wsi::NativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType);
+	const bool				 is_fixed_rate_ex = testParams.control.flags == VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT;
 
 	VkExtent2D							extent2d = { 16, 16 };
 	VkImageCompressionFixedRateFlagsEXT planeFlags[3]{};
 
-	for (unsigned i{}; i < (testParams.control.flags == VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT ? 24 : 1); i++)
+	for (unsigned i{}; i < (is_fixed_rate_ex ? 24 : 1); i++)
 	{
 		planeFlags[0] ^= 3 << i;
-		if (testParams.control.flags == VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT)
+
+		if (is_fixed_rate_ex)
 		{
 			testParams.control.pFixedRateFlags = planeFlags;
 		}
@@ -645,6 +664,9 @@ static tcu::TestStatus swapchainCreateTest(Context& context, TestParams testPara
 		for (auto& format : formats)
 		{
 			testParams.format = format.surfaceFormat.format;
+
+			const uint32_t numPlanes = isYCbCrFormat(testParams.format) ? getPlaneCount(testParams.format) : 1;
+			testParams.control.compressionControlPlaneCount = is_fixed_rate_ex ? numPlanes : 0;
 
 			VkSwapchainCreateInfoKHR swapchainInfo = initVulkanStructure();
 			swapchainInfo.surface				   = surface.get();
@@ -726,7 +748,7 @@ tcu::TestCaseGroup* createImageCompressionControlTests(tcu::TestContext& testCtx
 	{
 		const char*				   name;
 		VkImageCompressionFlagsEXT flag;
-	} compression_flags[] = {
+	} constexpr compression_flags[] = {
 		{ "default", VK_IMAGE_COMPRESSION_DEFAULT_EXT },
 		{ "fixed_rate_default", VK_IMAGE_COMPRESSION_FIXED_RATE_DEFAULT_EXT },
 		{ "disabled", VK_IMAGE_COMPRESSION_DISABLED_EXT },
@@ -741,8 +763,6 @@ tcu::TestCaseGroup* createImageCompressionControlTests(tcu::TestContext& testCtx
 										   addImageCompressionControlTests, testParams));
 	}
 	group->addChild(subgroup);
-
-	testParams.control.compressionControlPlaneCount = 1;
 
 	subgroup = new tcu::TestCaseGroup(testCtx, "android_hardware_buffer",
 									  "Test creating Android Hardware buffer with compression control struct");
@@ -772,6 +792,7 @@ tcu::TestCaseGroup* createImageCompressionControlTests(tcu::TestContext& testCtx
 		}
 		subgroup->addChild(wsi_subgroup);
 	}
+
 	group->addChild(subgroup);
 
 	return group.release();

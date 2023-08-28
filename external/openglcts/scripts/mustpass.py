@@ -27,11 +27,12 @@ import xml.dom.minidom as minidom
 
 from build_caselists import Module, getModuleByName, getBuildConfig, genCaseList, getCaseListPath, DEFAULT_BUILD_DIR, DEFAULT_TARGET, GLCTS_BIN_NAME
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
+scriptPath = os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts")
+sys.path.insert(0, scriptPath)
 
-from build.common import *
-from build.config import ANY_GENERATOR
-from build.build import build
+from ctsbuild.common import *
+from ctsbuild.config import ANY_GENERATOR
+from ctsbuild.build import build
 from fnmatch import fnmatch
 from copy import copy
 

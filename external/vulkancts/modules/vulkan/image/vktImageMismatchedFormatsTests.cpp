@@ -443,7 +443,13 @@ tcu::TestStatus MismatchedFormatTestInstance::iterate (void)
 		vk.cmdDispatch(*cmdBuffer, 8, 8, 1);
 	endCommandBuffer(vk, *cmdBuffer);
 
-	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+	if (m_type == TestType::SPARSE_READ)
+	{
+		const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer, false, 1u, 1u, &bindSemaphore.get(), stageBits);
+	}
+	else
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	return tcu::TestStatus::pass("Passed");
 }
@@ -466,6 +472,9 @@ tcu::TestCaseGroup* createImageMismatchedFormatsTests (tcu::TestContext& testCtx
 
 	for (VkFormat format = VK_FORMAT_R4G4_UNORM_PACK8; format < VK_CORE_FORMAT_LAST; format = static_cast<VkFormat>(format+1))
 	{
+		if (isCompressedFormat(format))
+			continue;
+
 		for (auto& pair : SpirvFormats)
 		{
 			const std::string&	spirvFormat = pair.first;

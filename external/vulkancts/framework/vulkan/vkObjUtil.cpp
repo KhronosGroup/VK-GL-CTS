@@ -570,7 +570,8 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
 								   const VkImageLayout					finalLayoutDepthStencil,
 								   const VkImageLayout					subpassLayoutColor,
 								   const VkImageLayout					subpassLayoutDepthStencil,
-								   const VkAllocationCallbacks* const	allocationCallbacks)
+								   const VkAllocationCallbacks* const	allocationCallbacks,
+								   const void*							pNext)
 {
 	const bool								hasColor							= colorFormat != VK_FORMAT_UNDEFINED;
 	const bool								hasDepthStencil						= depthStencilFormat != VK_FORMAT_UNDEFINED;
@@ -639,7 +640,7 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
 	const VkRenderPassCreateInfo			renderPassInfo						=
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,									// VkStructureType                   sType
-		DE_NULL,																	// const void*                       pNext
+		pNext,																		// const void*                       pNext
 		(VkRenderPassCreateFlags)0,													// VkRenderPassCreateFlags           flags
 		(deUint32)attachmentDescriptions.size(),									// deUint32                          attachmentCount
 		attachmentDescriptions.size() > 0 ? &attachmentDescriptions[0] : DE_NULL,	// const VkAttachmentDescription*    pAttachments
@@ -890,6 +891,14 @@ VkBufferImageCopy makeBufferImageCopy (const VkExtent3D					extent,
 		extent,					//	VkExtent3D					imageExtent;
 	};
 	return copyParams;
+}
+
+CommandPoolWithBuffer::CommandPoolWithBuffer (
+										const DeviceInterface& vkd,
+										const VkDevice         device,
+										const deUint32         queueFamilyIndex) {
+	cmdPool		= makeCommandPool(vkd, device, queueFamilyIndex);
+	cmdBuffer	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 }
 
 } // vk

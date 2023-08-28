@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2021 The Khronos Group Inc.
  * Copyright (c) 2021 Valve Corporation.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +74,7 @@ struct TestParams
 	PipelineConstructionType		pipelineConstructionType;
 	VkFormat						textureFormat;
 	VkClearColorValue				textureColor;
+	VkClearDepthStencilValue		textureDepthStencilValue;
 	VkComponentMapping				componentMapping;
 	VkBorderColor					borderColor;
 	tcu::Maybe<int>					componentGather;
@@ -80,6 +83,7 @@ struct TestParams
 	// Pseudorandom elements.
 	tcu::Vec2						textureCoordinates;
 	tcu::Maybe<VkClearColorValue>	customBorderColor;
+	bool							useStencilAspect;
 
 	bool isCustom (void) const
 	{
@@ -161,7 +165,7 @@ void BorderSwizzleCase::checkSupport (Context& context) const
 	if (m_params.useSamplerSwizzleHint)
 		context.requireDeviceFunctionality("VK_EXT_border_color_swizzle");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 
 	if (m_params.isCustom())
 	{
@@ -197,21 +201,21 @@ enum class FormatType
 	FLOAT,
 };
 
-FormatType getFormatType (VkFormat format)
+FormatType getFormatType (VkFormat format, bool useStencil)
 {
 	if (isIntFormat(format))
 		return FormatType::SIGNED_INT;
 
-	if (isUintFormat(format))
+	if (isUintFormat(format) || useStencil)
 		return FormatType::UNSIGNED_INT;
 
 	return FormatType::FLOAT;
 }
 
 // Output color attachment format will vary slightly with the chosen texture format to accomodate different clear colors.
-VkFormat getColorAttachmentFormat (VkFormat textureFormat)
+VkFormat getColorAttachmentFormat (VkFormat textureFormat, bool useStencil)
 {
-	const auto formatType = getFormatType(textureFormat);
+	const auto formatType = getFormatType(textureFormat, useStencil);
 
 	if (formatType == FormatType::SIGNED_INT)
 		return VK_FORMAT_R32G32B32A32_SINT;
@@ -237,7 +241,7 @@ void BorderSwizzleCase::initPrograms (vk::SourceCollections& programCollection) 
 		<< "}\n"
 		;
 
-	const auto formatType = getFormatType(m_params.textureFormat);
+	const auto formatType = getFormatType(m_params.textureFormat, m_params.useStencilAspect);
 
 	std::string	prefix;
 	if (formatType == FormatType::SIGNED_INT)
@@ -378,13 +382,35 @@ tcu::Vector<T, 4> getExpectedColor (const tcu::Vector<T, 4>& color, const TestPa
 // Uses the proper union member depending on the test parameters and takes into account "Conversion to RGBA" from the spec.
 VkClearColorValue getExpectedColor (const VkClearColorValue& color, const TestParams& params)
 {
-	const auto			numComp		= tcu::getNumUsedChannels(mapVkFormat(params.textureFormat).order);
-	const auto			formatType	= getFormatType(params.textureFormat);
+	const auto			tcuFormat	= mapVkFormat(params.textureFormat);
+	const auto			numComp		= tcu::getNumUsedChannels(tcuFormat.order);
+	const auto			formatType	= getFormatType(params.textureFormat, params.useStencilAspect);
 	VkClearColorValue	result;
 
 	DE_ASSERT(numComp >= 0 && numComp <= 4);
 
-	if (formatType == FormatType::UNSIGNED_INT)
+	if (tcu::hasDepthComponent(tcuFormat.order) || tcu::hasStencilComponent(tcuFormat.order))
+	{
+		if (params.useStencilAspect)
+		{
+			tcu::UVec4 borderColor (0u, 0u, 0u, 1u);
+			borderColor[0] = color.uint32[0];
+			const auto expected = getExpectedColor(borderColor, params);
+
+			for (int i = 0; i < decltype(expected)::SIZE; ++i)
+				result.uint32[i] = expected[i];
+		}
+		else
+		{
+			tcu::Vec4 borderColor (0.0f, 0.0f, 0.0f, 1.0f);
+			borderColor[0] = color.float32[0];
+
+			const auto expected = getExpectedColor(borderColor, params);
+			for (int i = 0; i < decltype(expected)::SIZE; ++i)
+				result.float32[i] = expected[i];
+		}
+	}
+	else if (formatType == FormatType::UNSIGNED_INT)
 	{
 		tcu::UVec4 borderColor (0u, 0u, 0u, 0u);
 
@@ -447,14 +473,68 @@ VkClearColorValue getExpectedColor (const VkClearColorValue& color, const TestPa
 // The color buffer format is supposed to be at least as precise as the texture format.
 bool comparePixelToColorClearValue (const TestParams&					params,
 									const tcu::ConstPixelBufferAccess&	access,
-									const tcu::TextureFormat&			textureFormat,
+									const tcu::TextureFormat&			textureFormat_,
 									const VkClearColorValue&			ref,
 									std::string&						stringResult)
 {
 	const auto	bufferFormat	= access.getFormat();
+	tcu::TextureFormat	textureFormat;
+
+	if (isCombinedDepthStencilType(textureFormat_.type))
+	{
+		// Verification loop does not support reading from combined depth stencil texture levels.
+		// Get rid of stencil component.
+
+		tcu::TextureFormat::ChannelOrder	channelOrder	= tcu::TextureFormat::CHANNELORDER_LAST;
+		tcu::TextureFormat::ChannelType		channelType		= tcu::TextureFormat::CHANNELTYPE_LAST;
+
+		const auto	hasStencil	= params.useStencilAspect;
+
+		if (hasStencil)
+		{
+			channelOrder	= tcu::TextureFormat::S;
+			channelType		= tcu::TextureFormat::UNSIGNED_INT8;
+		}
+		else
+		{
+			channelOrder = tcu::TextureFormat::D;
+
+			switch (textureFormat_.type)
+			{
+			case tcu::TextureFormat::UNSIGNED_INT_16_8_8:
+				channelType = tcu::TextureFormat::UNORM_INT16;
+				break;
+			case tcu::TextureFormat::UNSIGNED_INT_24_8:
+			case tcu::TextureFormat::UNSIGNED_INT_24_8_REV:
+				channelType = tcu::TextureFormat::UNORM_INT24;
+				break;
+			case tcu::TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
+				channelType = tcu::TextureFormat::FLOAT;
+				break;
+			default:
+				DE_FATAL("Unhandled texture format type in switch");
+			}
+		}
+
+		textureFormat = tcu::TextureFormat(channelOrder, channelType);
+	}
+	else
+	{
+		textureFormat = textureFormat_;
+	}
+
 	const auto	channelClass	= getTextureChannelClass(textureFormat.type);
 	// We must compare all available channels in the color buffer to check RGBA conversion.
 	const auto	channelMask		= getTextureFormatChannelMask(bufferFormat);
+	// If the component mapping contains a SWIZZLE_ONE, overwrite this with a SWIZZLE_ZERO to ensure
+	// a strict tolerance when applying a swizzle of SWIZZLE_ONE to the threshold.
+	const VkComponentMapping thresholdComponentMapping =
+	{
+		(params.componentMapping.r == VK_COMPONENT_SWIZZLE_ONE ? VK_COMPONENT_SWIZZLE_ZERO : params.componentMapping.r),
+		(params.componentMapping.g == VK_COMPONENT_SWIZZLE_ONE ? VK_COMPONENT_SWIZZLE_ZERO : params.componentMapping.g),
+		(params.componentMapping.b == VK_COMPONENT_SWIZZLE_ONE ? VK_COMPONENT_SWIZZLE_ZERO : params.componentMapping.b),
+		(params.componentMapping.a == VK_COMPONENT_SWIZZLE_ONE ? VK_COMPONENT_SWIZZLE_ZERO : params.componentMapping.a),
+	};
 
 	switch (channelClass)
 	{
@@ -487,7 +567,7 @@ bool comparePixelToColorClearValue (const TestParams&					params,
 			}
 
 			// Apply swizzle and gather to thresholds.
-			threshold = applySwizzle(threshold, params.componentMapping);
+			threshold = applySwizzle(threshold, thresholdComponentMapping);
 
 			if (params.componentGather)
 				threshold = applyGather(threshold, *params.componentGather);
@@ -533,7 +613,7 @@ bool comparePixelToColorClearValue (const TestParams&					params,
 			}
 
 			// Apply swizzle and gather to thresholds.
-			threshold = applySwizzle(threshold, params.componentMapping);
+			threshold = applySwizzle(threshold, thresholdComponentMapping);
 
 			if (params.componentGather)
 				threshold = applyGather(threshold, *params.componentGather);
@@ -579,7 +659,7 @@ bool comparePixelToColorClearValue (const TestParams&					params,
 			}
 
 			// Apply swizzle and gather to thresholds.
-			threshold = applySwizzle(threshold, params.componentMapping);
+			threshold = applySwizzle(threshold, thresholdComponentMapping);
 
 			if (params.componentGather)
 				threshold = applyGather(threshold, *params.componentGather);
@@ -628,7 +708,7 @@ bool comparePixelToColorClearValue (const TestParams&					params,
 			}
 
 			// Apply swizzle and gather to thresholds.
-			threshold = applySwizzle(threshold, params.componentMapping);
+			threshold = applySwizzle(threshold, thresholdComponentMapping);
 
 			if (params.componentGather)
 				threshold = applyGather(threshold, *params.componentGather);
@@ -696,14 +776,20 @@ VkClearColorValue getBorderClearColorValue (const TestParams& params)
 
 tcu::TestStatus BorderSwizzleInstance::iterate (void)
 {
+	const auto&	vki						= m_context.getInstanceInterface();
 	const auto&	vkd						= m_context.getDeviceInterface();
+	const auto	physicalDevice			= m_context.getPhysicalDevice();
 	const auto	device					= m_context.getDevice();
 	auto&		alloc					= m_context.getDefaultAllocator();
 	const auto	queue					= m_context.getUniversalQueue();
 	const auto	qIndex					= m_context.getUniversalQueueFamilyIndex();
 	const auto	extent					= getImageExtent();
 	const auto	custom					= m_params.isCustom();
-	const auto	colorAttachmentFormat	= getColorAttachmentFormat(m_params.textureFormat);
+	const auto	isDSFormat				= isDepthStencilFormat(m_params.textureFormat);
+	const auto	hasStencil				= m_params.useStencilAspect;
+	const auto	imageAspect				= (isDSFormat ? (hasStencil ? VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_DEPTH_BIT) : VK_IMAGE_ASPECT_COLOR_BIT);
+	const auto	imageSubresourceRange	= makeImageSubresourceRange(imageAspect, 0u, 1u, 0u, 1u);
+	const auto	colorAttachmentFormat	= getColorAttachmentFormat(m_params.textureFormat, hasStencil);
 	const auto	colorSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
 
 	// Texture.
@@ -738,7 +824,7 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 		VK_IMAGE_VIEW_TYPE_2D,						//	VkImageViewType			viewType;
 		m_params.textureFormat,						//	VkFormat				format;
 		m_params.componentMapping,					//	VkComponentMapping		components;
-		colorSubresourceRange,						//	VkImageSubresourceRange	subresourceRange;
+		imageSubresourceRange,						//	VkImageSubresourceRange	subresourceRange;
 	};
 
 	const auto textureView = createImageView(vkd, device, &textureViewCreateInfo);
@@ -834,7 +920,7 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 	const auto dsLayout = dsLayoutBuilder.build(vkd, device);
 
 	// Pipeline layout.
-	const auto pipelineLayout = makePipelineLayout(vkd, device, dsLayout.get());
+	const PipelineLayoutWrapper pipelineLayout (m_params.pipelineConstructionType, vkd, device, dsLayout.get());
 
 	// Descriptor pool.
 	DescriptorPoolBuilder poolBuilder;
@@ -853,11 +939,11 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 	}
 
 	// Render pass.
-	const auto renderPass = makeRenderPass(vkd, device, colorAttachmentFormat);
+	RenderPassWrapper renderPass (m_params.pipelineConstructionType, vkd, device, colorAttachmentFormat);
 
 	// Shader modules.
-	const auto vertShader = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
-	const auto fragShader = createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+	const auto vertShader = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+	const auto fragShader = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
 
 	const SpecConstants specConstantData =
 	{
@@ -904,7 +990,7 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 		{ .0f, .0f, .0f, .0f },										//	float										blendConstants[4];
 	};
 
-	GraphicsPipelineWrapper graphicsPipeline(vkd, device, m_params.pipelineConstructionType);
+	GraphicsPipelineWrapper graphicsPipeline(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
 	graphicsPipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
 					.setDefaultDepthStencilState()
 					.setDefaultRasterizationState()
@@ -912,23 +998,23 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 					.setupVertexInputState(&vertexInputInfo)
 					.setupPreRasterizationShaderState(viewport,
 									scissor,
-									*pipelineLayout,
+									pipelineLayout,
 									*renderPass,
 									0u,
-									*vertShader)
-					.setupFragmentShaderState(*pipelineLayout,
+									vertShader)
+					.setupFragmentShaderState(pipelineLayout,
 									*renderPass,
 									0u,
-									*fragShader,
+									fragShader,
 									DE_NULL,
 									DE_NULL,
 									&specializationInfo)
 					.setupFragmentOutputState(*renderPass, 0u, &colorBlendInfo)
-					.setMonolithicPipelineLayout(*pipelineLayout)
+					.setMonolithicPipelineLayout(pipelineLayout)
 					.buildPipeline();
 
 	// Framebuffer.
-	const auto framebuffer = makeFramebuffer(vkd, device, renderPass.get(), colorAttachmentView.get(), extent.width, extent.height);
+	renderPass.createFramebuffer(vkd, device, colorAttachment.get(), colorAttachmentView.get(), extent.width, extent.height);
 
 	// Command pool and buffer.
 	const auto cmdPool		= makeCommandPool(vkd, device, qIndex);
@@ -946,7 +1032,7 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		texture.get(),
-		colorSubresourceRange);
+		imageSubresourceRange);
 
 	const auto postClearBarrier = makeImageMemoryBarrier(
 		VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -954,22 +1040,25 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		texture.get(),
-		colorSubresourceRange);
+		imageSubresourceRange);
 
 	// Record and submit.
 	beginCommandBuffer(vkd, cmdBuffer);
 
 	// Prepare texture.
 	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &preClearBarrier);
-	vkd.cmdClearColorImage(cmdBuffer, texture.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_params.textureColor, 1u, &colorSubresourceRange);
+	if (isDSFormat)
+		vkd.cmdClearDepthStencilImage(cmdBuffer, texture.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_params.textureDepthStencilValue, 1u, &imageSubresourceRange);
+	else
+		vkd.cmdClearColorImage(cmdBuffer, texture.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_params.textureColor, 1u, &imageSubresourceRange);
 	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &postClearBarrier);
 
 	// Read from the texture to render a full-screen quad to the color buffer.
-	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissor[0], zeroClearColor);
-	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.getPipeline());
+	renderPass.begin(vkd, cmdBuffer, scissor[0], zeroClearColor);
+	graphicsPipeline.bind(cmdBuffer);
 	vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
 	vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
-	endRenderPass(vkd, cmdBuffer);
+	renderPass.end(vkd, cmdBuffer);
 
 	endCommandBuffer(vkd, cmdBuffer);
 	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
@@ -1108,20 +1197,20 @@ tcu::Vec2 getRandomBorderCoordinates (de::Random& rnd)
 }
 
 // Generate a random clear color usable for the given format.
-VkClearColorValue getRandomClearColor (VkFormat format, de::Random& rnd)
+VkClearColorValue getRandomClearColor (VkFormat format, de::Random& rnd, bool useStencil)
 {
 	VkClearColorValue color;
 	deMemset(&color, 0, sizeof(color));
 
 	const auto		tcuFormat		= mapVkFormat(format);
-	const auto		numComponents	= tcu::getNumUsedChannels(tcuFormat.order);
-	const auto		formatType		= getFormatType(format);
+	const auto		numComponents	= !useStencil ? tcu::getNumUsedChannels(tcuFormat.order) : 1;
+	const auto		formatType		= getFormatType(format, useStencil);
 
 	for (int i = 0; i < numComponents; ++i)
 	{
 		if (formatType == FormatType::SIGNED_INT || formatType == FormatType::UNSIGNED_INT)
 		{
-			const auto		componentSize	= tcu::getChannelSize(tcuFormat.type);
+			const auto		componentSize	= !useStencil ? tcu::getChannelSize(tcuFormat.type) : 1;
 
 			DE_ASSERT(componentSize > 0);
 
@@ -1266,7 +1355,18 @@ tcu::TestCaseGroup* createSamplerBorderSwizzleTests (tcu::TestContext& testCtx, 
 		VK_FORMAT_R32G32B32A32_UINT,
 		VK_FORMAT_R32G32B32A32_SINT,
 		VK_FORMAT_R32G32B32A32_SFLOAT,
+
+		// Depth/Stencil formats.
+		VK_FORMAT_D16_UNORM,
+		VK_FORMAT_X8_D24_UNORM_PACK32,
+		VK_FORMAT_D32_SFLOAT,
+		VK_FORMAT_S8_UINT,
+		VK_FORMAT_D16_UNORM_S8_UINT,
+		VK_FORMAT_D24_UNORM_S8_UINT,
+		VK_FORMAT_D32_SFLOAT_S8_UINT,
 	};
+
+	const std::array<bool, 2> sampleStencilFlag = {{ false, true }};
 
 	const auto mappingPermutations = genMappingPermutations();
 
@@ -1303,68 +1403,96 @@ tcu::TestCaseGroup* createSamplerBorderSwizzleTests (tcu::TestContext& testCtx, 
 	{
 		const auto						skip		= std::strlen("VK_FORMAT_");
 		const std::string				formatName	= de::toLower(std::string(getFormatName(format)).substr(skip));
-		de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatName.c_str(), ""));
 
-		for (size_t mappingIdx = 0u; mappingIdx < mappingPermutations.size(); ++mappingIdx)
+		for (const auto sampleStencil : sampleStencilFlag)
 		{
-			const auto&						mapping			= mappingPermutations[mappingIdx];
-			de::MovePtr<tcu::TestCaseGroup>	mappingGroup	(new tcu::TestCaseGroup(testCtx, swizzleArrayToString(mapping).c_str(), ""));
+			const auto isDSFormat = isDepthStencilFormat(format);
 
-			for (int borderColorIdx = 0; borderColorIdx < DE_LENGTH_OF_ARRAY(borderColors); ++borderColorIdx)
+			if (!isDSFormat && sampleStencil)
+				continue;
+
+			std::ostringstream formatGroupName;
+			formatGroupName << formatName;
+
+			if (isDSFormat)
 			{
-				const auto&						borderColor		= borderColors[borderColorIdx];
-				de::MovePtr<tcu::TestCaseGroup>	borderTypeGroup	(new tcu::TestCaseGroup(testCtx, borderColor.borderTypeName, ""));
+				const auto tcuFormat = mapVkFormat(format);
 
-				const auto formatType	= getFormatType(format);
-				const auto isIntBorder	= isIntegerBorder(borderColor.borderType);
-
-				// Skip cases that do not make sense for the format and border type combination.
-				if (isIntBorder && formatType == FormatType::FLOAT)
+				if (!sampleStencil && !tcu::hasDepthComponent(tcuFormat.order))
 					continue;
-				else if (!isIntBorder && formatType != FormatType::FLOAT)
+				if (sampleStencil && !tcu::hasStencilComponent(tcuFormat.order))
 					continue;
 
-				for (int gatherIdx = -1; gatherIdx <= 3; ++gatherIdx)
-				{
-					const auto						componentGather	= gatherIndexToString(gatherIdx);
-					de::MovePtr<tcu::TestCaseGroup>	gatherGroup		(new tcu::TestCaseGroup(testCtx, componentGather.c_str(), ""));
-
-					for (const auto& swizzleHint : swizzleHintCases)
-					{
-						TestParams params;
-
-						const deUint32	seed	= baseSeed + static_cast<deUint32>(format) + static_cast<deUint32>(mappingIdx) + static_cast<deUint32>(borderColorIdx) + static_cast<deUint32>(gatherIdx);
-						de::Random		rnd		(seed);
-
-						params.pipelineConstructionType	= pipelineConstructionType;
-						params.textureFormat			= format;
-						params.textureColor				= getRandomClearColor(format, rnd);
-
-						makeComponentMapping(params.componentMapping, mapping);
-						params.borderColor			= borderColor.borderType;
-						params.componentGather		= ((gatherIdx < 0) ? tcu::nothing<int>() : tcu::just(gatherIdx));
-						params.textureCoordinates	= getRandomBorderCoordinates(rnd);
-
-						if (params.isCustom())
-							params.customBorderColor = tcu::just(getRandomClearColor(format, rnd));
-						else
-							params.customBorderColor = tcu::nothing<VkClearColorValue>();
-
-						params.useSamplerSwizzleHint = swizzleHint.useSwizzleHint;
-
-						gatherGroup->addChild(new BorderSwizzleCase(testCtx, swizzleHint.name, "", params));
-					}
-
-					borderTypeGroup->addChild(gatherGroup.release());
-				}
-
-				mappingGroup->addChild(borderTypeGroup.release());
+				if (sampleStencil)
+					formatGroupName << "_stencil";
 			}
 
-			formatGroup->addChild(mappingGroup.release());
-		}
+			de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatGroupName.str().c_str(), ""));
 
-		mainGroup->addChild(formatGroup.release());
+			for (size_t mappingIdx = 0u; mappingIdx < mappingPermutations.size(); ++mappingIdx)
+			{
+				const auto&						mapping			= mappingPermutations[mappingIdx];
+				de::MovePtr<tcu::TestCaseGroup>	mappingGroup	(new tcu::TestCaseGroup(testCtx, swizzleArrayToString(mapping).c_str(), ""));
+
+				for (int borderColorIdx = 0; borderColorIdx < DE_LENGTH_OF_ARRAY(borderColors); ++borderColorIdx)
+				{
+					const auto&						borderColor		= borderColors[borderColorIdx];
+					de::MovePtr<tcu::TestCaseGroup>	borderTypeGroup	(new tcu::TestCaseGroup(testCtx, borderColor.borderTypeName, ""));
+
+					const auto formatType	= getFormatType(format, sampleStencil);
+					const auto isIntBorder	= isIntegerBorder(borderColor.borderType);
+
+					// Skip cases that do not make sense for the format and border type combination.
+					if (isIntBorder && formatType == FormatType::FLOAT)
+						continue;
+					else if (!isIntBorder && formatType != FormatType::FLOAT)
+						continue;
+
+					for (int gatherIdx = -1; gatherIdx <= 3; ++gatherIdx)
+					{
+						const auto						componentGather	= gatherIndexToString(gatherIdx);
+						de::MovePtr<tcu::TestCaseGroup>	gatherGroup		(new tcu::TestCaseGroup(testCtx, componentGather.c_str(), ""));
+
+						for (const auto& swizzleHint : swizzleHintCases)
+						{
+							TestParams params;
+							deMemset(&params, 0, sizeof(TestParams));
+
+							const deUint32	seed	= baseSeed + static_cast<deUint32>(format) + static_cast<deUint32>(mappingIdx) + static_cast<deUint32>(borderColorIdx) + static_cast<deUint32>(gatherIdx);
+							de::Random		rnd		(seed);
+
+							params.pipelineConstructionType	= pipelineConstructionType;
+							params.textureFormat			= format;
+							params.textureColor				= getRandomClearColor(format, rnd, false);
+							params.textureDepthStencilValue = vk::makeClearDepthStencilValue(0.0f, 0u);
+
+							makeComponentMapping(params.componentMapping, mapping);
+							params.borderColor			= borderColor.borderType;
+							params.componentGather		= ((gatherIdx < 0) ? tcu::nothing<int>() : tcu::just(gatherIdx));
+							params.textureCoordinates	= getRandomBorderCoordinates(rnd);
+
+							if (params.isCustom())
+								params.customBorderColor = tcu::just(getRandomClearColor(format, rnd, sampleStencil));
+							else
+								params.customBorderColor = tcu::nothing<VkClearColorValue>();
+
+							params.useSamplerSwizzleHint = swizzleHint.useSwizzleHint;
+							params.useStencilAspect		 = sampleStencil;
+
+							gatherGroup->addChild(new BorderSwizzleCase(testCtx, swizzleHint.name, "", params));
+						}
+
+						borderTypeGroup->addChild(gatherGroup.release());
+					}
+
+					mappingGroup->addChild(borderTypeGroup.release());
+				}
+
+				formatGroup->addChild(mappingGroup.release());
+			}
+
+			mainGroup->addChild(formatGroup.release());
+		}
 	}
 
 	return mainGroup.release();

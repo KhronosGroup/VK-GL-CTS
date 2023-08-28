@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 ARM Limited.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -214,7 +216,7 @@ public:
 																					 VkDevice					device,
 																					 const BinaryCollection&	programCollection,
 																					 const char*				name,
-																					 Move<VkShaderModule>*		module);
+																					 ShaderWrapper*				module);
 	tcu::TestStatus								verifyImage							(void);
 
 protected:
@@ -233,14 +235,14 @@ private:
 	Move<VkImage>									m_colorImage;
 	de::MovePtr<Allocation>							m_colorImageAlloc;
 	Move<VkImageView>								m_colorAttachmentView;
-	Move<VkRenderPass>								m_renderPass;
+	RenderPassWrapper								m_renderPass;
 	Move<VkFramebuffer>								m_framebuffer;
 
-	Move<VkShaderModule>							m_vertexShaderModule;
-	Move<VkShaderModule>							m_fragmentShaderModule;
-	Move<VkShaderModule>							m_geometryShaderModule;
-	Move<VkShaderModule>							m_tessControlShaderModule;
-	Move<VkShaderModule>							m_tessEvaluationShaderModule;
+	ShaderWrapper									m_vertexShaderModule;
+	ShaderWrapper									m_fragmentShaderModule;
+	ShaderWrapper									m_geometryShaderModule;
+	ShaderWrapper									m_tessControlShaderModule;
+	ShaderWrapper									m_tessEvaluationShaderModule;
 
 	VkShaderStageFlags								m_shaderFlags;
 	std::vector<VkPipelineShaderStageCreateInfo>	m_shaderStage;
@@ -254,8 +256,8 @@ private:
 	Move<VkDescriptorSetLayout>						m_descriptorSetLayout;
 	Move<VkDescriptorSet>							m_descriptorSet;
 
-	Move<VkPipelineLayout>							m_preRasterizationStatePipelineLayout;
-	Move<VkPipelineLayout>							m_fragmentStatePipelineLayout;
+	PipelineLayoutWrapper							m_preRasterizationStatePipelineLayout;
+	PipelineLayoutWrapper							m_fragmentStatePipelineLayout;
 	GraphicsPipelineWrapper							m_graphicsPipeline;
 
 	Move<VkCommandPool>								m_cmdPool;
@@ -266,9 +268,9 @@ void PushConstantGraphicsTestInstance::createShaderModule (const DeviceInterface
 														   VkDevice					device,
 														   const BinaryCollection&	programCollection,
 														   const char*				name,
-														   Move<VkShaderModule>*	module)
+														   ShaderWrapper*	module)
 {
-	*module = vk::createShaderModule(vk, device, programCollection.get(name), 0);
+	*module = ShaderWrapper(vk, device, programCollection.get(name), 0);
 }
 
 PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&						context,
@@ -285,7 +287,7 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 	, m_colorFormat					(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_multipleUpdate				(multipleUpdate)
 	, m_shaderFlags					(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
-	, m_graphicsPipeline			(m_context.getDeviceInterface(), m_context.getDevice(), pipelineConstructionType)
+	, m_graphicsPipeline			(m_context.getInstanceInterface(), m_context.getDeviceInterface(), m_context.getPhysicalDevice(), m_context.getDevice(), m_context.getDeviceExtensions(), pipelineConstructionType)
 {
 	deMemcpy(m_pushConstantRange, pushConstantRange, sizeof(PushConstantData) * MAX_RANGE_COUNT);
 }
@@ -348,7 +350,7 @@ void PushConstantGraphicsTestInstance::init (void)
 	}
 
 	// Create render pass
-	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat);
+	m_renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, m_colorFormat);
 
 	// Create framebuffer
 	{
@@ -370,7 +372,7 @@ void PushConstantGraphicsTestInstance::init (void)
 			1u											// deUint32						layers;
 		};
 
-		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
+		m_renderPass.createFramebuffer(vk, vkDevice, &framebufferParams, *m_colorImage);
 	}
 
 	// Create pipeline layout
@@ -421,7 +423,7 @@ void PushConstantGraphicsTestInstance::init (void)
 
 		// create pipeline layout
 #ifndef CTS_USES_VULKANSC
-		VkPipelineLayoutCreateFlags	pipelineLayoutFlags = (m_pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) ? 0u : deUint32(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+		VkPipelineLayoutCreateFlags	pipelineLayoutFlags = (vk::isConstructionTypeLibrary(m_pipelineConstructionType)) ? deUint32(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT) : 0u;
 #else
 		VkPipelineLayoutCreateFlags	pipelineLayoutFlags = 0u;
 #endif // CTS_USES_VULKANSC
@@ -436,10 +438,10 @@ void PushConstantGraphicsTestInstance::init (void)
 			&pushConstantRanges.front()						// const VkPushConstantRange*	pPushConstantRanges;
 		};
 
-		m_preRasterizationStatePipelineLayout		= createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_preRasterizationStatePipelineLayout		= PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 		pipelineLayoutParams.setLayoutCount			= 0u;
 		pipelineLayoutParams.pSetLayouts			= DE_NULL;
-		m_fragmentStatePipelineLayout				= createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_fragmentStatePipelineLayout				= PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 	}
 
 	// Create shaders
@@ -526,7 +528,7 @@ void PushConstantGraphicsTestInstance::init (void)
 		const std::vector<VkViewport>	viewports	{ makeViewport(m_renderSize) };
 		const std::vector<VkRect2D>		scissors	{ makeRect2D(m_renderSize) };
 
-		m_graphicsPipeline.setMonolithicPipelineLayout(*m_preRasterizationStatePipelineLayout)
+		m_graphicsPipeline.setMonolithicPipelineLayout(m_preRasterizationStatePipelineLayout)
 						  .setDefaultRasterizationState()
 						  .setDefaultDepthStencilState()
 						  .setDefaultMultisampleState()
@@ -535,15 +537,15 @@ void PushConstantGraphicsTestInstance::init (void)
 						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 															scissors,
-															*m_preRasterizationStatePipelineLayout,
+															m_preRasterizationStatePipelineLayout,
 															*m_renderPass,
 															0u,
-															*m_vertexShaderModule,
+															m_vertexShaderModule,
 															DE_NULL,
-															useTessellation ? *m_tessControlShaderModule : DE_NULL,
-															useTessellation ? *m_tessEvaluationShaderModule : DE_NULL,
-															useGeometry ? *m_geometryShaderModule : DE_NULL)
-						  .setupFragmentShaderState(*m_fragmentStatePipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule)
+															useTessellation ? m_tessControlShaderModule : ShaderWrapper(),
+															useTessellation ? m_tessEvaluationShaderModule : ShaderWrapper(),
+															useGeometry ? m_geometryShaderModule : ShaderWrapper())
+						  .setupFragmentShaderState(m_fragmentStatePipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule)
 						  .setupFragmentOutputState(*m_renderPass)
 						  .buildPipeline();
 	}
@@ -585,7 +587,7 @@ void PushConstantGraphicsTestInstance::init (void)
 
 		beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
-		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
+		m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
 
 		// Update push constant values
 		updatePushConstants(*m_cmdBuffer, *m_preRasterizationStatePipelineLayout);
@@ -600,14 +602,14 @@ void PushConstantGraphicsTestInstance::init (void)
 			if (m_multipleUpdate)
 				vk.cmdPushConstants(*m_cmdBuffer, *m_preRasterizationStatePipelineLayout, m_pushConstantRange[0].range.shaderStage, m_pushConstantRange[0].range.offset, m_pushConstantRange[0].range.size, &triangleNdx);
 
-			vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
+			m_graphicsPipeline.bind(*m_cmdBuffer);
 			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 			vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_preRasterizationStatePipelineLayout, 0, 1, &(*m_descriptorSet), 0, DE_NULL);
 
 			vk.cmdDraw(*m_cmdBuffer, (deUint32)(m_vertices.size() / TRIANGLE_COUNT), 1, 0, 0);
 		}
 
-		endRenderPass(vk, *m_cmdBuffer);
+		m_renderPass.end(vk, *m_cmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }
@@ -1087,7 +1089,7 @@ PushConstantGraphicsTest::~PushConstantGraphicsTest (void)
 
 void PushConstantGraphicsTest::checkSupport(Context &context) const
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
 RangeSizeCase PushConstantGraphicsTest::getRangeSizeCase (deUint32 rangeSize) const
@@ -2014,6 +2016,7 @@ public:
 
 private:
 	PushConstantData m_pushConstantRange[MAX_RANGE_COUNT];
+	PipelineConstructionType m_pipelineConstructionType;
 	std::vector<CommandData> m_cmdList;
 
 	std::vector<Vertex4RGBA> m_vertices;
@@ -2025,12 +2028,12 @@ private:
 	Move<VkImage> m_colorImage;
 	de::MovePtr<Allocation> m_colorImageAlloc;
 	Move<VkImageView> m_colorAttachmentView;
-	Move<VkRenderPass> m_renderPass;
+	RenderPassWrapper m_renderPass;
 	Move<VkFramebuffer> m_framebuffer;
 
-	Move<VkShaderModule> m_vertexShaderModule;
-	Move<VkShaderModule> m_fragmentShaderModule;
-	Move<VkShaderModule> m_computeShaderModule;
+	ShaderWrapper m_vertexShaderModule;
+	ShaderWrapper m_fragmentShaderModule;
+	ShaderWrapper m_computeShaderModule;
 
 	std::vector<VkPipelineShaderStageCreateInfo> m_shaderStage;
 
@@ -2043,7 +2046,7 @@ private:
 	Move<VkDescriptorSetLayout> m_descriptorSetLayout;
 	Move<VkDescriptorSet> m_descriptorSet;
 
-	Move<VkPipelineLayout> m_pipelineLayout[3];
+	PipelineLayoutWrapper m_pipelineLayout[3];
 	GraphicsPipelineWrapper m_graphicsPipeline[3];
 	Move<VkPipeline> m_computePipeline[3];
 
@@ -2070,7 +2073,7 @@ PushConstantLifetimeTest::~PushConstantLifetimeTest(void)
 
 void PushConstantLifetimeTest::checkSupport(Context &context) const
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
 void PushConstantLifetimeTest::initPrograms(SourceCollections &sourceCollections) const
@@ -2138,15 +2141,16 @@ PushConstantLifetimeTestInstance::PushConstantLifetimeTestInstance (Context&				
 																	const PipelineConstructionType	pipelineConstructionType,
 																	const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
 																	const std::vector<CommandData>&	cmdList)
-	: vkt::TestInstance		(context)
-	, m_cmdList				(cmdList)
-	, m_renderSize			(32, 32)
-	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
+	: vkt::TestInstance				(context)
+	, m_pipelineConstructionType	(pipelineConstructionType)
+	, m_cmdList						(cmdList)
+	, m_renderSize					(32, 32)
+	, m_colorFormat					(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_graphicsPipeline
 	{
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType }
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType }
 	}
 {
 	deMemcpy(m_pushConstantRange, pushConstantRange, sizeof(PushConstantData) * MAX_RANGE_COUNT);
@@ -2207,7 +2211,7 @@ void PushConstantLifetimeTestInstance::init (void)
 	}
 
 	// Create render pass
-	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat);
+	m_renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, m_colorFormat);
 
 	// Create framebuffer
 	{
@@ -2229,7 +2233,7 @@ void PushConstantLifetimeTestInstance::init (void)
 				1u											// deUint32						layers;
 			};
 
-		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
+		m_renderPass.createFramebuffer(vk, vkDevice, &framebufferParams, *m_colorImage);
 	}
 
 	// Create data for pipeline layout
@@ -2312,12 +2316,12 @@ void PushConstantLifetimeTestInstance::init (void)
 			}
 		};
 
-		m_pipelineLayout[0] = createPipelineLayout(vk, vkDevice, &(pipelineLayoutParams[0]));
-		m_pipelineLayout[1] = createPipelineLayout(vk, vkDevice, &(pipelineLayoutParams[1]));
+		m_pipelineLayout[0] = PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &(pipelineLayoutParams[0]));
+		m_pipelineLayout[1] = PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &(pipelineLayoutParams[1]));
 	}
 
-	m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_vert_lt"), 0);
-	m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag_lt"), 0);
+	m_vertexShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_vert_lt"), 0);
+	m_fragmentShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_frag_lt"), 0);
 
 	// Create graphics pipelines
 	{
@@ -2368,13 +2372,13 @@ void PushConstantLifetimeTestInstance::init (void)
 							 .setupVertexInputState(&vertexInputStateParams)
 							 .setupPreRasterizationShaderState(viewports,
 															   scissors,
-															   *(m_pipelineLayout[0]),
+															   (m_pipelineLayout[0]),
 															   *m_renderPass,
 															   0u,
-															   *m_vertexShaderModule)
-							 .setupFragmentShaderState(*(m_pipelineLayout[0]), *m_renderPass, 0u, *m_fragmentShaderModule)
+															   m_vertexShaderModule)
+							 .setupFragmentShaderState((m_pipelineLayout[0]), *m_renderPass, 0u, m_fragmentShaderModule)
 							 .setupFragmentOutputState(*m_renderPass)
-							 .setMonolithicPipelineLayout(*(m_pipelineLayout[0]))
+							 .setMonolithicPipelineLayout((m_pipelineLayout[0]))
 							 .buildPipeline();
 
 		m_graphicsPipeline[1].setDefaultRasterizationState()
@@ -2385,13 +2389,13 @@ void PushConstantLifetimeTestInstance::init (void)
 							 .setupVertexInputState(&vertexInputStateParams)
 							 .setupPreRasterizationShaderState(viewports,
 															   scissors,
-															   *(m_pipelineLayout[1]),
+															   (m_pipelineLayout[1]),
 															   *m_renderPass,
 															   0u,
-															   *m_vertexShaderModule)
-							 .setupFragmentShaderState(*(m_pipelineLayout[1]), *m_renderPass, 0u, *m_fragmentShaderModule)
+															   m_vertexShaderModule)
+							 .setupFragmentShaderState((m_pipelineLayout[1]), *m_renderPass, 0u, m_fragmentShaderModule)
 							 .setupFragmentOutputState(*m_renderPass)
-							 .setMonolithicPipelineLayout(*(m_pipelineLayout[1]))
+							 .setMonolithicPipelineLayout((m_pipelineLayout[1]))
 							 .buildPipeline();
 	}
 
@@ -2423,7 +2427,7 @@ void PushConstantLifetimeTestInstance::init (void)
 
 	// Create compute pipelines
 	{
-		m_computeShaderModule = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("compute_lt"), 0);
+		m_computeShaderModule = ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("compute_lt"), 0);
 
 		const VkPipelineShaderStageCreateInfo	stageCreateInfo	=
 			{
@@ -2431,7 +2435,7 @@ void PushConstantLifetimeTestInstance::init (void)
 				DE_NULL,												// const void*							pNext;
 				0u,														// VkPipelineShaderStageCreateFlags		flags;
 				VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
-				*m_computeShaderModule,									// VkShaderModule						module;
+				m_computeShaderModule.getModule(),						// VkShaderModule						module;
 				"main",													// const char*							pName;
 				DE_NULL													// const VkSpecializationInfo*			pSpecializationInfo;
 			};
@@ -2543,9 +2547,7 @@ tcu::TestStatus PushConstantLifetimeTestInstance::iterate (void)
 				}
 				case CMD_BIND_PIPELINE_GRAPHICS:
 				{
-					vk.cmdBindPipeline(*m_cmdBuffer,
-									   VK_PIPELINE_BIND_POINT_GRAPHICS,
-									   m_graphicsPipeline[m_cmdList[ndx].rangeNdx].getPipeline());
+					m_graphicsPipeline[m_cmdList[ndx].rangeNdx].bind(*m_cmdBuffer);
 					break;
 				}
 				case CMD_DRAW:
@@ -2568,12 +2570,12 @@ tcu::TestStatus PushConstantLifetimeTestInstance::iterate (void)
 
 					vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &prePassBarrier);
 
-					beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
+					m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
 
 					vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &bufferOffset);
 					vk.cmdDraw(*m_cmdBuffer, (deUint32) m_vertices.size(), 1, 0, 0);
 
-					endRenderPass(vk, *m_cmdBuffer);
+					m_renderPass.end(vk, *m_cmdBuffer);
 
 					const VkImageMemoryBarrier postPassBarrier =
 						{
@@ -2748,7 +2750,7 @@ OverwriteTestCase::OverwriteTestCase (tcu::TestContext& testCtx, const std::stri
 
 void OverwriteTestCase::checkSupport(Context &context) const
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void OverwriteTestCase::initPrograms (vk::SourceCollections& programCollection) const
@@ -2810,12 +2812,14 @@ OverwriteTestInstance::OverwriteTestInstance (Context& context, const OverwriteT
 
 tcu::TestStatus OverwriteTestInstance::iterate (void)
 {
-	const auto&	vkd		= m_context.getDeviceInterface();
-	const auto	device	= m_context.getDevice();
-	auto&		alloc	= m_context.getDefaultAllocator();
-	const auto	queue	= m_context.getUniversalQueue();
-	const auto	qIndex	= m_context.getUniversalQueueFamilyIndex();
-	const bool	isComp	= (m_params.bindPoint == VK_PIPELINE_BIND_POINT_COMPUTE);
+	const auto& vki			= m_context.getInstanceInterface();
+	const auto&	vkd			= m_context.getDeviceInterface();
+	const auto	physDevice	= m_context.getPhysicalDevice();
+	const auto	device		= m_context.getDevice();
+	auto&		alloc		= m_context.getDefaultAllocator();
+	const auto	queue		= m_context.getUniversalQueue();
+	const auto	qIndex		= m_context.getUniversalQueueFamilyIndex();
+	const bool	isComp		= (m_params.bindPoint == VK_PIPELINE_BIND_POINT_COMPUTE);
 
 	const VkShaderStageFlags	stageFlags	= (isComp ? VK_SHADER_STAGE_COMPUTE_BIT : VK_SHADER_STAGE_FRAGMENT_BIT);
 	const VkPipelineStageFlags	writeStages	= (isComp ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
@@ -2864,7 +2868,7 @@ tcu::TestStatus OverwriteTestInstance::iterate (void)
 		0u,														//	deUint32			offset;
 		static_cast<deUint32>(sizeof(OverwritePushConstants)),	//	deUint32			size;
 	};
-	const auto pipelineLayout = makePipelineLayout(vkd, device, 1u, &descriptorSetLayout.get(), 1u, &pcRange);
+	const PipelineLayoutWrapper pipelineLayout (m_params.pipelineConstructionType, vkd, device, 1u, &descriptorSetLayout.get(), 1u, &pcRange);
 
 	// Descriptor pool and set.
 	DescriptorPoolBuilder poolBuilder;
@@ -2886,24 +2890,24 @@ tcu::TestStatus OverwriteTestInstance::iterate (void)
 	const std::vector<VkViewport>	viewports	(1, makeViewport(imageExtent));
 	const std::vector<VkRect2D>		scissors	(1, makeRect2D(imageExtent));
 
-	Move<VkShaderModule>	vertModule;
-	Move<VkShaderModule>	fragModule;
-	Move<VkShaderModule>	compModule;
+	ShaderWrapper			vertModule;
+	ShaderWrapper			fragModule;
+	ShaderWrapper			compModule;
 
-	Move<VkRenderPass>		renderPass;
+	RenderPassWrapper		renderPass;
 	Move<VkFramebuffer>		framebuffer;
 	Move<VkPipeline>		pipeline;
-	GraphicsPipelineWrapper	pipelineWrapper(vkd, device, m_params.pipelineConstructionType);
+	GraphicsPipelineWrapper	pipelineWrapper(vki, vkd, physDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
 
 	if (isComp)
 	{
-		compModule	= createShaderModule(vkd, device, m_context.getBinaryCollection().get("comp"), 0u);
-		pipeline	= makeComputePipeline(vkd, device, pipelineLayout.get(), 0u, compModule.get(), 0u, nullptr);
+		compModule	= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("comp"), 0u);
+		pipeline	= makeComputePipeline(vkd, device, pipelineLayout.get(), 0u, compModule.getModule(), 0u, nullptr);
 	}
 	else
 	{
-		vertModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
-		fragModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+		vertModule = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+		fragModule = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
 
 		const VkPipelineVertexInputStateCreateInfo inputState =
 		{
@@ -2915,24 +2919,35 @@ tcu::TestStatus OverwriteTestInstance::iterate (void)
 			0u,															// deUint32                                    vertexAttributeDescriptionCount
 			nullptr,													// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
 		};
-		renderPass	= makeRenderPass(vkd, device);
-		framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), 0u, nullptr, imageExtent.width, imageExtent.height);
+		renderPass	= RenderPassWrapper(m_params.pipelineConstructionType, vkd, device);
+		renderPass.createFramebuffer(vkd, device, 0u, DE_NULL, DE_NULL, imageExtent.width, imageExtent.height);
+
+		const VkPipelineColorBlendStateCreateInfo colorBlendState
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType
+			DE_NULL,													// const void*									pNext
+			0u,															// VkPipelineColorBlendStateCreateFlags			flags
+			VK_FALSE,													// VkBool32										logicOpEnable
+			VK_LOGIC_OP_CLEAR,											// VkLogicOp									logicOp
+			0u,															// deUint32										attachmentCount
+			DE_NULL,													// const VkPipelineColorBlendAttachmentState*	pAttachments
+			{ 0.0f, 0.0f, 0.0f, 0.0f }									// float										blendConstants[4]
+		};
 
 		pipelineWrapper.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
 					   .setDefaultRasterizationState()
-					   .setDefaultColorBlendState()
 					   .setDefaultDepthStencilState()
 					   .setDefaultMultisampleState()
 					   .setupVertexInputState(&inputState)
 					   .setupPreRasterizationShaderState(viewports,
 														 scissors,
-														 *pipelineLayout,
+														 pipelineLayout,
 														 *renderPass,
 														 0u,
-														 *vertModule)
-					   .setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragModule)
-					   .setupFragmentOutputState(*renderPass)
-					   .setMonolithicPipelineLayout(*pipelineLayout)
+														 vertModule)
+					   .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragModule)
+					   .setupFragmentOutputState(*renderPass, 0u, &colorBlendState)
+					   .setMonolithicPipelineLayout(pipelineLayout)
 					   .buildPipeline();
 	}
 
@@ -2961,8 +2976,8 @@ tcu::TestStatus OverwriteTestInstance::iterate (void)
 
 	if (!isComp)
 	{
-		vkd.cmdBindPipeline(cmdBuffer, m_params.bindPoint, pipelineWrapper.getPipeline());
-		beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors[0]);
+		pipelineWrapper.bind(cmdBuffer);
+		renderPass.begin(vkd, cmdBuffer, scissors[0]);
 	}
 	else
 		vkd.cmdBindPipeline(cmdBuffer, m_params.bindPoint, pipeline.get());
@@ -2987,7 +3002,7 @@ tcu::TestStatus OverwriteTestInstance::iterate (void)
 	}
 
 	if (!isComp)
-		endRenderPass(vkd, cmdBuffer);
+		renderPass.end(vkd, cmdBuffer);
 
 	// Copy storage image to output buffer.
 	const auto postImageBarrier = makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, storageImage.get(), subresourceRange);

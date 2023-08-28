@@ -723,6 +723,7 @@ tcu::TestStatus validateLimits12 (Context& context)
 																						limits.maxPerStageDescriptorStorageImages		+
 																						limits.maxPerStageDescriptorInputAttachments	+
 																						limits.maxColorAttachments);
+	deUint32 maxFramebufferLayers = 256;
 
 	if (features.tessellationShader)
 	{
@@ -733,6 +734,14 @@ tcu::TestStatus validateLimits12 (Context& context)
 	{
 		shaderStages++;
 	}
+
+	// Vulkan SC
+#ifdef CTS_USES_VULKANSC
+	if (features.geometryShader == VK_FALSE && features12.shaderOutputLayer == VK_FALSE)
+	{
+		maxFramebufferLayers = 1;
+	}
+#endif // CTS_USES_VULKANSC
 
 	FeatureLimitTableItem featureLimitTable[] =
 	{
@@ -825,7 +834,7 @@ tcu::TestStatus validateLimits12 (Context& context)
 		{ PN(features.sampleRateShading),				PN(limits.subPixelInterpolationOffsetBits),														LIM_MIN_UINT32(4) },
 		{ PN(checkAlways),								PN(limits.maxFramebufferWidth),																	LIM_MIN_UINT32(4096) },
 		{ PN(checkAlways),								PN(limits.maxFramebufferHeight),																LIM_MIN_UINT32(4096) },
-		{ PN(checkAlways),								PN(limits.maxFramebufferLayers),																LIM_MIN_UINT32(256) },
+		{ PN(checkAlways),								PN(limits.maxFramebufferLayers),																LIM_MIN_UINT32(maxFramebufferLayers) },
 		{ PN(checkAlways),								PN(limits.framebufferColorSampleCounts),														LIM_MIN_BITI32(VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT) },
 		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.framebufferIntegerColorSampleCounts),										LIM_MIN_BITI32(VK_SAMPLE_COUNT_1_BIT) },
 		{ PN(checkAlways),								PN(limits.framebufferDepthSampleCounts),														LIM_MIN_BITI32(VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT) },
@@ -1859,7 +1868,7 @@ void createTestDevice (Context& context, void* pNext, const char* const* ppEnabl
 		DE_NULL,									//  const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	const Unique<VkDevice>					device					(createCustomDevice(validationEnabled, platformInterface, *instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver						deviceDriver			(platformInterface, instance.get(), device.get());
+	const DeviceDriver						deviceDriver			(platformInterface, instance.get(), device.get(), context.getUsedApiVersion());
 	const VkQueue							queue					= getDeviceQueue(deviceDriver, *device,  queueFamilyIndex, queueIndex);
 
 	VK_CHECK(deviceDriver.queueWaitIdle(queue));
@@ -2346,52 +2355,20 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 
 #ifndef CTS_USES_VULKANSC
 
-void checkInstanceExtensionDependencies(tcu::ResultCollector&														results,
-										int																			dependencyLength,
-										const std::tuple<deUint32, deUint32, deUint32, const char*, const char*>*	dependencies,
-										deUint32																	apiVariant,
-										deUint32																	versionMajor,
-										deUint32																	versionMinor,
-										const vector<VkExtensionProperties>&										extensionProperties)
+void checkExtensionDependencies(tcu::ResultCollector&		results,
+								const DependencyCheckVect&	dependencies,
+								deUint32					versionMajor,
+								deUint32					versionMinor,
+								const ExtPropVect&			instanceExtensionProperties,
+								const ExtPropVect&			deviceExtensionProperties)
 {
-	for (int ndx = 0; ndx < dependencyLength; ndx++)
+	tcu::UVec2 v(versionMajor, versionMinor);
+	for (const auto& dependency : dependencies)
 	{
-		deUint32 currentApiVariant, currentVersionMajor, currentVersionMinor;
-		const char* extensionFirst;
-		const char* extensionSecond;
-		std::tie(currentApiVariant, currentVersionMajor, currentVersionMinor, extensionFirst, extensionSecond) = dependencies[ndx];
-		if (currentApiVariant != apiVariant || currentVersionMajor != versionMajor || currentVersionMinor != versionMinor)
-			continue;
-		if (isExtensionStructSupported(extensionProperties, RequiredExtension(extensionFirst)) &&
-			!isExtensionStructSupported(extensionProperties, RequiredExtension(extensionSecond)))
+		// call function that will check all extension dependencies
+		if (!dependency.second(v, instanceExtensionProperties, deviceExtensionProperties))
 		{
-			results.fail("Extension " + string(extensionFirst) + " is missing dependency: " + string(extensionSecond));
-		}
-	}
-}
-
-void checkDeviceExtensionDependencies(tcu::ResultCollector&														results,
-									  int																		dependencyLength,
-									  const std::tuple<deUint32, deUint32, deUint32, const char*, const char*>*	dependencies,
-									  deUint32																	apiVariant,
-									  deUint32																	versionMajor,
-									  deUint32																	versionMinor,
-									  const vector<VkExtensionProperties>&										instanceExtensionProperties,
-									  const vector<VkExtensionProperties>&										deviceExtensionProperties)
-{
-	for (int ndx = 0; ndx < dependencyLength; ndx++)
-	{
-		deUint32 currentApiVariant, currentVersionMajor, currentVersionMinor;
-		const char* extensionFirst;
-		const char* extensionSecond;
-		std::tie(currentApiVariant, currentVersionMajor, currentVersionMinor, extensionFirst, extensionSecond) = dependencies[ndx];
-		if (currentApiVariant != apiVariant || currentVersionMajor != versionMajor || currentVersionMinor != versionMinor)
-			continue;
-		if (isExtensionStructSupported(deviceExtensionProperties, RequiredExtension(extensionFirst)) &&
-			!isExtensionStructSupported(deviceExtensionProperties, RequiredExtension(extensionSecond)) &&
-			!isExtensionStructSupported(instanceExtensionProperties, RequiredExtension(extensionSecond)))
-		{
-			results.fail("Extension " + string(extensionFirst) + " is missing dependency: " + string(extensionSecond));
+			results.fail("Extension " + string(dependency.first) + " is missing dependency");
 		}
 	}
 }
@@ -2426,6 +2403,7 @@ tcu::TestStatus enumerateInstanceExtensions (Context& context)
 	{
 		const ScopedLogSection				section		(log, "Global", "Global Extensions");
 		const vector<VkExtensionProperties>	properties	= enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL);
+		const vector<VkExtensionProperties>	unused;
 		vector<string>						extensionNames;
 
 		for (size_t ndx = 0; ndx < properties.size(); ndx++)
@@ -2445,13 +2423,12 @@ tcu::TestStatus enumerateInstanceExtensions (Context& context)
 			std::tie(std::ignore, apiVariant, versionMajor, versionMinor) = version;
 			if (context.contextSupports(vk::ApiVersion(apiVariant, versionMajor, versionMinor, 0)))
 			{
-				checkInstanceExtensionDependencies(results,
-					DE_LENGTH_OF_ARRAY(instanceExtensionDependencies),
+				checkExtensionDependencies(results,
 					instanceExtensionDependencies,
-					apiVariant,
 					versionMajor,
 					versionMinor,
-					properties);
+					properties,
+					unused);
 				break;
 			}
 		}
@@ -2477,6 +2454,32 @@ tcu::TestStatus enumerateInstanceExtensions (Context& context)
 
 			checkInstanceExtensions(results, extensionNames);
 			CheckEnumerateInstanceExtensionPropertiesIncompleteResult(layer->layerName)(context, results, properties.size());
+		}
+	}
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
+tcu::TestStatus validateDeviceLevelEntryPointsFromInstanceExtensions(Context& context)
+{
+
+#include "vkEntryPointValidation.inl"
+
+	TestLog&				log		(context.getTestContext().getLog());
+	tcu::ResultCollector	results	(log);
+	const DeviceInterface&	vk		(context.getDeviceInterface());
+	const VkDevice			device	(context.getDevice());
+
+	for (const auto& keyValue : instExtDeviceFun)
+	{
+		const std::string& extensionName = keyValue.first;
+		if (!context.isInstanceFunctionalitySupported(extensionName))
+			continue;
+
+		for (const auto& deviceEntryPoint : keyValue.second)
+		{
+			if (!vk.getDeviceProcAddr(device, deviceEntryPoint.c_str()))
+				results.fail("Missing " + deviceEntryPoint);
 		}
 	}
 
@@ -2573,10 +2576,8 @@ tcu::TestStatus enumerateDeviceExtensions (Context& context)
 			std::tie(std::ignore, apiVariant, versionMajor, versionMinor) = version;
 			if (context.contextSupports(vk::ApiVersion(apiVariant, versionMajor, versionMinor, 0)))
 			{
-				checkDeviceExtensionDependencies(results,
-					DE_LENGTH_OF_ARRAY(deviceExtensionDependencies),
+				checkExtensionDependencies(results,
 					deviceExtensionDependencies,
-					apiVariant,
 					versionMajor,
 					versionMinor,
 					instanceExtensionProperties,
@@ -3181,7 +3182,7 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 	};
 
 	Move<VkDevice>		deviceGroup = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
-	const DeviceDriver	vk	(vkp, instance, *deviceGroup);
+	const DeviceDriver	vk	(vkp, instance, *deviceGroup, context.getUsedApiVersion());
 	context.getInstanceInterface().getPhysicalDeviceMemoryProperties(deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &memProps);
 
 	peerMemFeatures = reinterpret_cast<VkPeerMemoryFeatureFlags*>(buffer);
@@ -3488,13 +3489,8 @@ VkFormatFeatureFlags getRequiredOptimalExtendedTilingFeatures (Context& context,
 		if ( de::contains(DE_ARRAY_BEGIN(s_requiredSampledImageFilterCubicFormats), DE_ARRAY_END(s_requiredSampledImageFilterCubicFormats), format) )
 			flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT;
 
-		VkPhysicalDeviceFeatures2						coreFeatures;
-		deMemset(&coreFeatures, 0, sizeof(coreFeatures));
-
-		coreFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-		coreFeatures.pNext = DE_NULL;
-		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &coreFeatures);
-		if ( coreFeatures.features.textureCompressionETC2 && de::contains(DE_ARRAY_BEGIN(s_requiredSampledImageFilterCubicFormatsETC2), DE_ARRAY_END(s_requiredSampledImageFilterCubicFormatsETC2), format) )
+		const auto& coreFeatures = context.getDeviceFeatures();
+		if ( coreFeatures.textureCompressionETC2 && de::contains(DE_ARRAY_BEGIN(s_requiredSampledImageFilterCubicFormatsETC2), DE_ARRAY_END(s_requiredSampledImageFilterCubicFormatsETC2), format) )
 			flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT;
 	}
 
@@ -3749,11 +3745,22 @@ bool requiresYCbCrConversion(Context& context, VkFormat format)
 
 VkFormatFeatureFlags getAllowedOptimalTilingFeatures (Context &context, VkFormat format)
 {
+
+	VkFormatFeatureFlags vulkanOnlyFeatureFlags = 0;
+#ifndef CTS_USES_VULKANSC
+	if (context.isDeviceFunctionalitySupported(VK_KHR_VIDEO_DECODE_QUEUE_EXTENSION_NAME))
+		vulkanOnlyFeatureFlags |= VK_FORMAT_FEATURE_VIDEO_DECODE_DPB_BIT_KHR |
+								  VK_FORMAT_FEATURE_VIDEO_DECODE_OUTPUT_BIT_KHR;
+	if (context.isDeviceFunctionalitySupported(VK_KHR_VIDEO_ENCODE_QUEUE_EXTENSION_NAME))
+		vulkanOnlyFeatureFlags |= VK_FORMAT_FEATURE_VIDEO_ENCODE_INPUT_BIT_KHR |
+							      VK_FORMAT_FEATURE_VIDEO_ENCODE_DPB_BIT_KHR;
+#endif
+
 	// YCbCr formats only support a subset of format feature flags
 	const VkFormatFeatureFlags ycbcrAllows =
 		VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
 		VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT |
-		VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG |
+		VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT |
 		VK_FORMAT_FEATURE_TRANSFER_SRC_BIT |
 		VK_FORMAT_FEATURE_TRANSFER_DST_BIT |
 		VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT |
@@ -3763,7 +3770,8 @@ VkFormatFeatureFlags getAllowedOptimalTilingFeatures (Context &context, VkFormat
 		VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT |
 		VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT |
 		VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT |
-		VK_FORMAT_FEATURE_DISJOINT_BIT;
+		VK_FORMAT_FEATURE_DISJOINT_BIT |
+		vulkanOnlyFeatureFlags;
 
 	// By default everything is allowed.
 	VkFormatFeatureFlags allow = (VkFormatFeatureFlags)~0u;
@@ -3791,12 +3799,13 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 
 	TestLog&					log			= context.getTestContext().getLog();
 	const VkFormatProperties	properties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
-	bool						allOk		= true;
+	const bool					apiVersion10WithoutKhrMaintenance1 = isApiVersionEqual(context.getUsedApiVersion(), VK_API_VERSION_1_0) && !context.isDeviceFunctionalitySupported("VK_KHR_maintenance1");
 
 	const VkFormatFeatureFlags reqImg	= getRequiredOptimalTilingFeatures(context, format);
 	const VkFormatFeatureFlags reqBuf	= getRequiredBufferFeatures(format);
 	const VkFormatFeatureFlags allowImg	= getAllowedOptimalTilingFeatures(context, format);
 	const VkFormatFeatureFlags allowBuf	= getAllowedBufferFeatures(context, format);
+	tcu::ResultCollector results (log, "ERROR: ");
 
 	const struct feature_req
 	{
@@ -3816,49 +3825,49 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 	for (int fieldNdx = 0; fieldNdx < DE_LENGTH_OF_ARRAY(fields); fieldNdx++)
 	{
 		const char* const			fieldName	= fields[fieldNdx].fieldName;
-		const VkFormatFeatureFlags	supported	= fields[fieldNdx].supportedFeatures;
+		VkFormatFeatureFlags		supported	= fields[fieldNdx].supportedFeatures;
 		const VkFormatFeatureFlags	required	= fields[fieldNdx].requiredFeatures;
 		const VkFormatFeatureFlags	allowed		= fields[fieldNdx].allowedFeatures;
 
-		if ((supported & required) != required)
+		if (apiVersion10WithoutKhrMaintenance1 && supported)
 		{
-			log << TestLog::Message << "ERROR in " << fieldName << ":\n"
-									<< "  required: " << getFormatFeatureFlagsStr(required) << "\n  "
-									<< "  missing: " << getFormatFeatureFlagsStr(~supported & required)
-				<< TestLog::EndMessage;
-			allOk = false;
+			supported |= VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
 		}
 
-		if ((supported & ~allowed) != 0)
-		{
-			log << TestLog::Message << "ERROR in " << fieldName << ":\n"
-									<< "  has: " << getFormatFeatureFlagsStr(supported & ~allowed)
-				<< TestLog::EndMessage;
-			allOk = false;
-		}
+		results.check((supported & required) == required, de::toString(fieldName) + ": required: " + de::toString(getFormatFeatureFlagsStr(required)) + "  missing: " + de::toString(getFormatFeatureFlagsStr(~supported & required)));
+
+		results.check((supported & ~allowed) == 0, de::toString(fieldName) + ": has: " + de::toString(getFormatFeatureFlagsStr(supported & ~allowed)));
 
 		if (((supported & VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT) != 0) &&
 			((supported & VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT) == 0))
 		{
-			log << TestLog::Message << "ERROR in " << fieldName << ":\n"
-									<< " supports VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT"
-									<< " but not VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT"
-				<< TestLog::EndMessage;
-			allOk = false;
+			results.addResult(QP_TEST_RESULT_FAIL, de::toString(fieldName) + " supports VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT but not VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT");
+		}
+
+		if (!isYCbCrFormat(format) && !isCompressedFormat(format)) {
+			const tcu::TextureFormat tcuFormat = mapVkFormat(format);
+			if (tcu::getNumUsedChannels(tcuFormat.order) != 1 && (supported & (VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT|VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT)) != 0)
+			{
+				results.addResult(QP_TEST_RESULT_QUALITY_WARNING, "VK_FORMAT_FEATURE_STORAGE_*_ATOMIC_BIT is only defined for single-component images");
+			}
 		}
 	}
 
-	if (allOk)
-		return tcu::TestStatus::pass("Query and validation passed");
-	else
-		return tcu::TestStatus::fail("Required features not supported");
+	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
 bool optimalTilingFeaturesSupported (Context& context, VkFormat format, VkFormatFeatureFlags features)
 {
-	const VkFormatProperties	properties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
+	const VkFormatProperties	properties							= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
+	const bool					apiVersion10WithoutKhrMaintenance1	= isApiVersionEqual(context.getUsedApiVersion(), VK_API_VERSION_1_0) && !context.isDeviceFunctionalitySupported("VK_KHR_maintenance1");
+	VkFormatFeatureFlags		supported							= properties.optimalTilingFeatures;
 
-	return (properties.optimalTilingFeatures & features) == features;
+	if (apiVersion10WithoutKhrMaintenance1 && supported)
+	{
+		supported |= VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
+	}
+
+	return (supported & features) == features;
 }
 
 bool optimalTilingFeaturesSupportedForAll (Context& context, const VkFormat* begin, const VkFormat* end, VkFormatFeatureFlags features)
@@ -4455,7 +4464,6 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 			}
 		}
 	}
-
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
@@ -6704,6 +6712,13 @@ void createImageFormatTests (tcu::TestCaseGroup* testGroup, ImageFormatPropertyC
 namespace android
 {
 
+void checkSupportAndroid (Context&)
+{
+#if (DE_OS != DE_OS_ANDROID)
+	TCU_THROW(NotSupportedError, "Test is only for Android");
+#endif
+}
+
 void checkExtensions (tcu::ResultCollector& results, const set<string>& allowedExtensions, const vector<VkExtensionProperties>& reportedExtensions)
 {
 	for (vector<VkExtensionProperties>::const_iterator extension = reportedExtensions.begin(); extension != reportedExtensions.end(); ++extension)
@@ -6963,9 +6978,9 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 	{
 		de::MovePtr<tcu::TestCaseGroup>	androidTests	(new tcu::TestCaseGroup(testCtx, "android", "Android CTS Tests"));
 
-		addFunctionCase(androidTests.get(),	"mandatory_extensions",		"Test that all mandatory extensions are supported",	android::testMandatoryExtensions);
-		addFunctionCase(androidTests.get(), "no_unknown_extensions",	"Test for unknown device or instance extensions",	android::testNoUnknownExtensions);
-		addFunctionCase(androidTests.get(), "no_layers",				"Test that no layers are enumerated",				android::testNoLayers);
+		addFunctionCase(androidTests.get(),	"mandatory_extensions",		"Test that all mandatory extensions are supported",	android::checkSupportAndroid,	android::testMandatoryExtensions);
+		addFunctionCase(androidTests.get(), "no_unknown_extensions",	"Test for unknown device or instance extensions",	android::checkSupportAndroid,	android::testNoUnknownExtensions);
+		addFunctionCase(androidTests.get(), "no_layers",				"Test that no layers are enumerated",				android::checkSupportAndroid,	android::testNoLayers);
 
 		infoTests->addChild(androidTests.release());
 	}
@@ -6975,10 +6990,11 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 
 void createFeatureInfoInstanceTests(tcu::TestCaseGroup* testGroup)
 {
-	addFunctionCase(testGroup, "physical_devices",					"Physical devices",						enumeratePhysicalDevices);
-	addFunctionCase(testGroup, "physical_device_groups",			"Physical devices Groups",				enumeratePhysicalDeviceGroups);
-	addFunctionCase(testGroup, "instance_layers",					"Layers",								enumerateInstanceLayers);
-	addFunctionCase(testGroup, "instance_extensions",				"Extensions",							enumerateInstanceExtensions);
+	addFunctionCase(testGroup, "physical_devices",						"Physical devices",						enumeratePhysicalDevices);
+	addFunctionCase(testGroup, "physical_device_groups",				"Physical devices Groups",				enumeratePhysicalDeviceGroups);
+	addFunctionCase(testGroup, "instance_layers",						"Layers",								enumerateInstanceLayers);
+	addFunctionCase(testGroup, "instance_extensions",					"Extensions",							enumerateInstanceExtensions);
+	addFunctionCase(testGroup, "instance_extension_device_functions",	"Validates device-level entry-points",	validateDeviceLevelEntryPointsFromInstanceExtensions);
 }
 
 void createFeatureInfoDeviceTests(tcu::TestCaseGroup* testGroup)

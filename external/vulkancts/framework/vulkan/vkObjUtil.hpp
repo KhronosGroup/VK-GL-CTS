@@ -24,11 +24,20 @@
  *//*--------------------------------------------------------------------*/
 
 #include <vector>
+#include <memory>
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 
 namespace vk
 {
+
+struct CommandPoolWithBuffer {
+	Move<VkCommandPool>		cmdPool;
+	Move<VkCommandBuffer>	cmdBuffer;
+
+	CommandPoolWithBuffer(const DeviceInterface& vkd, const VkDevice device, const deUint32 queueFamilyIndex);
+};
+
 Move<VkPipeline> makeComputePipeline (const DeviceInterface&					vk,
 									  const VkDevice							device,
 									  const VkPipelineLayout					pipelineLayout,
@@ -134,7 +143,8 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
 								   const VkImageLayout					finalLayoutDepthStencil		= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 								   const VkImageLayout					subpassLayoutColor			= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 								   const VkImageLayout					subpassLayoutDepthStencil	= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-								   const VkAllocationCallbacks* const	allocationCallbacks			= DE_NULL);
+								   const VkAllocationCallbacks* const	allocationCallbacks			= nullptr,
+								   const void*							pNext						= nullptr);
 
 Move<VkImageView> makeImageView (const DeviceInterface&					vk,
 								 const VkDevice							vkDevice,

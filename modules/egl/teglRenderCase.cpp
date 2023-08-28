@@ -121,6 +121,7 @@ void RenderCase::executeForConfig (EGLDisplay display, EGLConfig config)
 	const int							width			= 128;
 	const int							height			= 128;
 	const EGLint						configId		= eglu::getConfigID(egl, display, config);
+	const EGLint						surfaceTypes	= eglu::getConfigAttribInt(egl, display, config, EGL_SURFACE_TYPE);
 
 	const eglu::NativeDisplayFactory&	displayFactory	= m_eglTestCtx.getNativeDisplayFactory();
 	eglu::NativeDisplay&				nativeDisplay	= m_eglTestCtx.getNativeDisplay();
@@ -128,7 +129,7 @@ void RenderCase::executeForConfig (EGLDisplay display, EGLConfig config)
 	bool								isOk			= true;
 	string								failReason		= "";
 
-	if (m_surfaceTypeMask & EGL_WINDOW_BIT)
+	if (surfaceTypes & m_surfaceTypeMask & EGL_WINDOW_BIT)
 	{
 		tcu::ScopedLogSection(log,
 							  string("Config") + de::toString(configId) + "-Window",
@@ -153,7 +154,7 @@ void RenderCase::executeForConfig (EGLDisplay display, EGLConfig config)
 		}
 	}
 
-	if (m_surfaceTypeMask & EGL_PIXMAP_BIT)
+	if (surfaceTypes & m_surfaceTypeMask & EGL_PIXMAP_BIT)
 	{
 		tcu::ScopedLogSection(log,
 							  string("Config") + de::toString(configId) + "-Pixmap",
@@ -177,7 +178,7 @@ void RenderCase::executeForConfig (EGLDisplay display, EGLConfig config)
 		}
 	}
 
-	if (m_surfaceTypeMask & EGL_PBUFFER_BIT)
+	if (surfaceTypes & m_surfaceTypeMask & EGL_PBUFFER_BIT)
 	{
 		tcu::ScopedLogSection(log,
 							  string("Config") + de::toString(configId) + "-Pbuffer",

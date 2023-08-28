@@ -16,6 +16,8 @@ set(DEQP_VK_ROBUSTNESS_SRCS
 	vktRobustnessUtil.hpp
 	vktRobustnessVertexAccessTests.cpp
 	vktRobustnessVertexAccessTests.hpp
+	vktRobustnessIndexAccessTests.cpp
+	vktRobustnessIndexAccessTests.hpp
 	vktNonRobustBufferAccessTests.hpp
 	vktNonRobustBufferAccessTests.cpp
 	vktRobustnessExtsTests.cpp
@@ -30,5 +32,4 @@ add_library(deqp-vk-robustness STATIC ${DEQP_VK_ROBUSTNESS_SRCS})
 target_link_libraries(deqp-vk-robustness tcutil vkutil)
 
 add_library(deqp-vksc-robustness STATIC ${DEQP_VK_ROBUSTNESS_SRCS})
-target_include_directories(deqp-vksc-robustness BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-robustness PUBLIC deqp-vksc-util tcutil vkscutil)

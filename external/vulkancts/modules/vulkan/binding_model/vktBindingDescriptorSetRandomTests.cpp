@@ -674,6 +674,13 @@ void generateRandomLayout(RandomLayout& randomLayout, const CaseDef &caseDef, de
 						binding.descriptorCount = (arraySizes[b] ? arraySizes[b] : 1) * 16 + 16; // add 16 for "ivec4 unused"
 						numInlineUniformBlocks++;
 					}
+					else
+					{
+						// The meaning of descriptorCount for inline uniform blocks is diferrent from usual, which means
+						// (descriptorCount == 0) doesn't mean it will be discarded.
+						// So we use a similar trick to the below by replacing with a different type of descriptor.
+						binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+					}
 				}
 				else
 				{
@@ -3066,7 +3073,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	if (failures == 0)
 		return tcu::TestStatus::pass("Pass");
 	else
-		return tcu::TestStatus::fail("Fail (failures=" + de::toString(failures) + ")");
+		return tcu::TestStatus::fail("failures=" + de::toString(failures));
 }
 
 }	// anonymous

@@ -87,6 +87,8 @@ virtual VkResult	getPhysicalDeviceToolProperties									(VkPhysicalDevice physi
 virtual VkResult	getPhysicalDeviceFragmentShadingRatesKHR						(VkPhysicalDevice physicalDevice, uint32_t* pFragmentShadingRateCount, VkPhysicalDeviceFragmentShadingRateKHR* pFragmentShadingRates) const = 0;
 virtual VkResult	getPhysicalDeviceVideoCapabilitiesKHR							(VkPhysicalDevice physicalDevice, const VkVideoProfileInfoKHR* pVideoProfile, VkVideoCapabilitiesKHR* pCapabilities) const = 0;
 virtual VkResult	getPhysicalDeviceVideoFormatPropertiesKHR						(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceVideoFormatInfoKHR* pVideoFormatInfo, uint32_t* pVideoFormatPropertyCount, VkVideoFormatPropertiesKHR* pVideoFormatProperties) const = 0;
+virtual VkResult	getPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR			(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceVideoEncodeQualityLevelInfoKHR* pQualityLevelInfo, VkVideoEncodeQualityLevelPropertiesKHR* pQualityLevelProperties) const = 0;
 virtual VkResult	acquireDrmDisplayEXT											(VkPhysicalDevice physicalDevice, int32_t drmFd, VkDisplayKHR display) const = 0;
 virtual VkResult	getDrmDisplayEXT												(VkPhysicalDevice physicalDevice, int32_t drmFd, uint32_t connectorId, VkDisplayKHR* display) const = 0;
 virtual VkResult	getPhysicalDeviceOpticalFlowImageFormatsNV						(VkPhysicalDevice physicalDevice, const VkOpticalFlowImageFormatInfoNV* pOpticalFlowImageFormatInfo, uint32_t* pFormatCount, VkOpticalFlowImageFormatPropertiesNV* pImageFormatProperties) const = 0;
+virtual VkResult	getPhysicalDeviceCooperativeMatrixPropertiesKHR					(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesKHR* pProperties) const = 0;
