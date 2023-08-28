@@ -58,6 +58,7 @@
 #include "vkBufferWithMemory.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktRasterizationOrderAttachmentAccessTests.hpp"
+#include "vktRasterizationDepthBiasControlTests.hpp"
 #include "vktShaderTileImageTests.hpp"
 #endif // CTS_USES_VULKANSC
 
@@ -7770,6 +7771,11 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 	}
 #endif // CTS_USES_VULKANSC
 
+#ifndef CTS_USES_VULKANSC
+	// Depth bias control.
+	rasterizationTests->addChild(createDepthBiasControlTests(testCtx));
+#endif // CTS_USES_VULKANSC
+
 	// Fragment shader side effects.
 	{
 		rasterizationTests->addChild(createFragSideEffectsTests(testCtx));
@@ -7790,9 +7796,9 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "rasterization", "Rasterization Tests", createRasterizationTests);
+	return createTestGroup(testCtx, name.c_str(), "Rasterization Tests", createRasterizationTests);
 }
 
 } // rasterization

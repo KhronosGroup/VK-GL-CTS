@@ -232,21 +232,25 @@ void TextureBorderClampTests::init(void)
 	addChild(new TextureBorderClampSamplingTexture<glw::GLubyte, glw::GLubyte>(
 		m_context, m_extParams, "Texture2DRGBA8Linear", "Test 7", configurationTexture2DRGBA8Linear));
 
-	/* GL_DEPTH_COMPONENT32F */
-	TestConfiguration<glw::GLfloat, glw::GLubyte> configurationTexture2DDC32FLinear(
-		1, 1, GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, GL_R8, GL_LINEAR, GL_DEPTH_COMPONENT, GL_RED, 256, 256, 1, 0, 255,
-		0, 255, GL_FLOAT, GL_UNSIGNED_BYTE);
+	/* Linear filtering of non-shadow-compare depth textures is texture incomplete on GLES. */
+	if (!glu::isContextTypeES(m_context.getRenderContext().getType()))
+	{
+		/* GL_DEPTH_COMPONENT32F */
+		TestConfiguration<glw::GLfloat, glw::GLubyte> configurationTexture2DDC32FLinear(
+			1, 1, GL_TEXTURE_2D, GL_DEPTH_COMPONENT32F, GL_R8, GL_LINEAR, GL_DEPTH_COMPONENT, GL_RED, 256, 256, 1, 0,
+			255, 0, 255, GL_FLOAT, GL_UNSIGNED_BYTE);
 
-	addChild(new TextureBorderClampSamplingTexture<glw::GLfloat, glw::GLubyte>(
-		m_context, m_extParams, "Texture2DDC32FLinear", "Test 7", configurationTexture2DDC32FLinear));
+		addChild(new TextureBorderClampSamplingTexture<glw::GLfloat, glw::GLubyte>(
+			m_context, m_extParams, "Texture2DDC32FLinear", "Test 7", configurationTexture2DDC32FLinear));
 
-	/* GL_DEPTH_COMPONENT16 */
-	TestConfiguration<glw::GLushort, glw::GLubyte> configurationTexture2DDC16Linear(
-		1, 1, GL_TEXTURE_2D, GL_DEPTH_COMPONENT16, GL_R8, GL_LINEAR, GL_DEPTH_COMPONENT, GL_RED, 256, 256, 1, 0, 255, 0,
-		255, GL_UNSIGNED_SHORT, GL_UNSIGNED_BYTE);
+		/* GL_DEPTH_COMPONENT16 */
+		TestConfiguration<glw::GLushort, glw::GLubyte> configurationTexture2DDC16Linear(
+			1, 1, GL_TEXTURE_2D, GL_DEPTH_COMPONENT16, GL_R8, GL_LINEAR, GL_DEPTH_COMPONENT, GL_RED, 256, 256, 1, 0,
+			255, 0, 255, GL_UNSIGNED_SHORT, GL_UNSIGNED_BYTE);
 
-	addChild(new TextureBorderClampSamplingTexture<glw::GLushort, glw::GLubyte>(
-		m_context, m_extParams, "Texture2DDC16Linear", "Test 7", configurationTexture2DDC16Linear));
+		addChild(new TextureBorderClampSamplingTexture<glw::GLushort, glw::GLubyte>(
+			m_context, m_extParams, "Texture2DDC16Linear", "Test 7", configurationTexture2DDC16Linear));
+	}
 
 	/* GL_COMPRESSED_RGBA8_ETC2_EAC */
 	TestConfiguration<glw::GLfloat, glw::GLubyte> configurationTexture2DCompressedLinear(

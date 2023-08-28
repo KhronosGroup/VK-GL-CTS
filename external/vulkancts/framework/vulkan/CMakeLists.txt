@@ -159,6 +159,12 @@ set(VKUTILNOSHADER_SRCS
 	vkSafetyCriticalUtil.cpp
 	vkResourceInterface.hpp
 	vkResourceInterface.cpp
+	vkMd5Sum.hpp
+	vkMd5Sum.cpp
+	vkComputePipelineConstructionUtil.hpp
+	vkComputePipelineConstructionUtil.cpp
+	vkShaderObjectUtil.hpp
+	vkShaderObjectUtil.cpp
 	)
 
 set(VKUTILNOSHADER_INLS

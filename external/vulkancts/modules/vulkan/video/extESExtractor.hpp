@@ -50,7 +50,7 @@ public:
         return eVideoCodec;
     }
 
-    bool Demux(uint8_t **ppVideo, deInt64 *pnVideoBytes) {
+    bool Demux(deUint8 **ppVideo, deInt64 *pnVideoBytes) {
         if (!extractor) {
             return false;
         }

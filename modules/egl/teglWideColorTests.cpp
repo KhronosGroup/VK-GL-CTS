@@ -582,7 +582,7 @@ protected:
 	void				readPixels					(const glw::Functions& gl, deUint32* dataPtr);
 	void				readPixels					(const glw::Functions& gl, deUint8* dataPtr);
 	deUint32			expectedUint10					(float reference);
-	deUint32			expectedUint2					(float reference);
+	deUint32			expectedAlpha2					(float reference);
 	deUint8				expectedUint8					(float reference);
 	deUint8				expectedAlpha8					(float reference);
 	bool				checkWithThreshold8				(deUint8 value, deUint8 reference, deUint8 threshold = 1);
@@ -831,6 +831,11 @@ void WideColorSurfaceTest::writeEglConfig (EGLConfig config)
 
 	info.transparentBlueValue = eglu::getConfigAttribInt(egl, m_eglDisplay, config, EGL_TRANSPARENT_BLUE_VALUE);
 
+	val = EGL_FALSE;
+	if (eglu::hasExtension(m_eglTestCtx.getLibrary(), m_eglDisplay, "EGL_ANDROID_recordable"))
+		val = eglu::getConfigAttribInt(egl, m_eglDisplay, config, EGL_RECORDABLE_ANDROID);
+	info.recordableAndroid = val == EGL_TRUE ? true : false;
+
 	log.writeEglConfig(&info);
 }
 
@@ -854,11 +859,16 @@ deUint32 WideColorSurfaceTest::expectedUint10 (float reference)
 	return expected;
 }
 
-deUint32 WideColorSurfaceTest::expectedUint2 (float reference)
+deUint32 WideColorSurfaceTest::expectedAlpha2 (float reference)
 {
 	deUint32 expected;
 
-	if (reference < 0.0)
+	if (m_alphaSize == 0)
+	{
+		// Surfaces without alpha are read back as opaque.
+		expected = 3;
+	}
+	else if (reference < 0.0)
 	{
 		expected = 0;
 	}
@@ -1029,7 +1039,7 @@ void WideColorSurfaceTest::testPixels (float reference, float increment)
 		expected[0] = expectedUint10(reference);
 		expected[1] = expectedUint10(reference + increment);
 		expected[2] = expectedUint10(reference - increment);
-		expected[3] = expectedUint2(reference + 2 * increment);
+		expected[3] = expectedAlpha2(reference + 2 * increment);
 		if (checkWithThreshold10(pixels[0], expected[0]) || checkWithThreshold10(pixels[1], expected[1])
 				|| checkWithThreshold10(pixels[2], expected[2]) || checkWithThreshold10(pixels[3], expected[3]))
 		{

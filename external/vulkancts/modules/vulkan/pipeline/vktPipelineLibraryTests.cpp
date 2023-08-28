@@ -3,6 +3,8 @@
  * ------------------------
  *
  * Copyright (c) 2021 The Khronos Group Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1226,6 +1228,8 @@ PipelineLibraryTestCase::~PipelineLibraryTestCase (void)
 
 void PipelineLibraryTestCase::checkSupport (Context& context) const
 {
+	context.requireDeviceFunctionality("VK_KHR_pipeline_library");
+
 	if (m_data.delayedShaderCreate || (m_data.pipelineTreeConfiguration.size() > 1))
 	{
 		context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
@@ -3077,7 +3081,7 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group, bool opti
 
 }	// anonymous
 
-tcu::TestCaseGroup*	createPipelineLibraryTests(tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createPipelineLibraryTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "graphics_library", "Tests verifying graphics pipeline libraries"));
 

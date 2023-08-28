@@ -2885,6 +2885,16 @@ tcu::Format::Bitfield<32> getDirectDriverLoadingFlagsLUNARGStr (VkDirectDriverLo
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
+tcu::Format::Bitfield<64> getPipelineCreateFlags2KHRStr (VkPipelineCreateFlags2KHR value)
+{
+	return tcu::Format::Bitfield<64>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<64> getBufferUsageFlags2KHRStr (VkBufferUsageFlags2KHR value)
+{
+	return tcu::Format::Bitfield<64>(value, DE_NULL, DE_NULL);
+}
+
 tcu::Format::Bitfield<32> getDisplayModeCreateFlagsKHRStr (VkDisplayModeCreateFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
@@ -3056,6 +3066,11 @@ tcu::Format::Bitfield<32> getSwapchainImageUsageFlagsANDROIDStr (VkSwapchainImag
 }
 
 tcu::Format::Bitfield<32> getImageFormatConstraintsFlagsFUCHSIAStr (VkImageFormatConstraintsFlagsFUCHSIA value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getHostImageCopyFlagsEXTStr (VkHostImageCopyFlagsEXT value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }

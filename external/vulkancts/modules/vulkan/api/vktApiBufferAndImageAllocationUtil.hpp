@@ -47,10 +47,13 @@ using namespace vk;
 class IBufferAllocator
 {
 public:
-	virtual void						createTestBuffer				(VkDeviceSize				size,
+	virtual void						createTestBuffer				(const DeviceInterface&		vk,
+																		 VkDevice					vkDevice,
+																		 deUint32					queueFamilyIndex,
+																		 VkDeviceSize				size,
 																		 VkBufferUsageFlags			usage,
 																		 Context&					context,
-																		 Allocator&			allocator,
+																		 Allocator&					allocator,
 																		 Move<VkBuffer>&			buffer,
 																		 const MemoryRequirement&	requirement,
 																		 de::MovePtr<Allocation>&	memory) const = 0;
@@ -59,7 +62,10 @@ public:
 class BufferSuballocation : public IBufferAllocator
 {
 public:
-	virtual void						createTestBuffer				(VkDeviceSize				size,
+	virtual void						createTestBuffer				(const DeviceInterface&		vk,
+																		 VkDevice					vkDevice,
+																		 deUint32					queueFamilyIndex,
+																		 VkDeviceSize				size,
 																		 VkBufferUsageFlags			usage,
 																		 Context&					context,
 																		 Allocator&					allocator,
@@ -71,7 +77,10 @@ public:
 class BufferDedicatedAllocation	: public IBufferAllocator
 {
 public:
-	virtual void						createTestBuffer				(VkDeviceSize				size,
+	virtual void						createTestBuffer				(const DeviceInterface&		vk,
+																		 VkDevice					vkDevice,
+																		 deUint32					queueFamilyIndex,
+																		 VkDeviceSize				size,
 																		 VkBufferUsageFlags			usage,
 																		 Context&					context,
 																		 Allocator&					allocator,

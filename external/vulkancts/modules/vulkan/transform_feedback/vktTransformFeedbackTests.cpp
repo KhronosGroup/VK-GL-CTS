@@ -34,9 +34,9 @@ namespace vkt
 namespace TransformFeedback
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> transformFeedbackGroup (new tcu::TestCaseGroup(testCtx, "transform_feedback", "Transform Feedback tests"));
+	de::MovePtr<tcu::TestCaseGroup> transformFeedbackGroup (new tcu::TestCaseGroup(testCtx, name.c_str(), "Transform Feedback tests"));
 
 	transformFeedbackGroup->addChild(createTransformFeedbackSimpleTests(testCtx));
 	transformFeedbackGroup->addChild(createTransformFeedbackFuzzLayoutTests(testCtx));

@@ -26,7 +26,10 @@
 #include "vkDefs.hpp"
 #include "vkRef.hpp"
 #include "vkMemUtil.hpp"
+#include "vkObjUtil.hpp"
 #include "vkBufferWithMemory.hpp"
+#include "vkBuilderUtil.hpp"
+#include "vkPrograms.hpp"
 
 #include "deFloat16.h"
 
@@ -600,10 +603,13 @@ public:
 																								 VkDeviceSize									structureSize,
 																								 VkDeviceAddress								deviceAddress			= 0u,
 																								 const void*									pNext					= DE_NULL,
-																								 const MemoryRequirement&						addMemoryRequirement	= MemoryRequirement::Any) = DE_NULL;
+																								 const MemoryRequirement&						addMemoryRequirement	= MemoryRequirement::Any,
+																								 const VkBuffer									creationBuffer			= VK_NULL_HANDLE,
+																								 const VkDeviceSize								creationBufferSize		= 0u) = DE_NULL;
 	virtual void										build									(const DeviceInterface&							vk,
 																								 const VkDevice									device,
-																								 const VkCommandBuffer							cmdBuffer) = DE_NULL;
+																								 const VkCommandBuffer							cmdBuffer,
+																								 BottomLevelAccelerationStructure*				srcAccelerationStructure = DE_NULL) = DE_NULL;
 	virtual void										copyFrom								(const DeviceInterface&							vk,
 																								 const VkDevice									device,
 																								 const VkCommandBuffer							cmdBuffer,
@@ -638,8 +644,10 @@ public:
 																								 Allocator&										allocator,
 																								 SerialStorage*									storage,
 																								 VkDeviceAddress								deviceAddress			= 0u);
-
 	virtual const VkAccelerationStructureKHR*			getPtr									(void) const = DE_NULL;
+	virtual void										updateGeometry							(size_t											geometryIndex,
+																								 de::SharedPtr<RaytracedGeometryBase>&			raytracedGeometry) = DE_NULL;
+
 protected:
 	std::vector<de::SharedPtr<RaytracedGeometryBase>>	m_geometriesData;
 	VkDeviceSize										m_structureSize;
@@ -797,7 +805,9 @@ public:
 																										 VkDeviceSize								structureSize			= 0u,
 																										 VkDeviceAddress							deviceAddress			= 0u,
 																										 const void*								pNext					= DE_NULL,
-																										 const MemoryRequirement&					addMemoryRequirement	= MemoryRequirement::Any) = DE_NULL;
+																										 const MemoryRequirement&					addMemoryRequirement	= MemoryRequirement::Any,
+																										 const VkBuffer								creationBuffer			= VK_NULL_HANDLE,
+																										 const VkDeviceSize							creationBufferSize		= 0u) = DE_NULL;
 	virtual void													build								(const DeviceInterface&						vk,
 																										 const VkDevice								device,
 																										 const VkCommandBuffer						cmdBuffer,

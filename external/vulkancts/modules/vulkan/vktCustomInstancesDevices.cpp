@@ -910,7 +910,7 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 	};
 
 	m_logicalDevice			= createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceCreateInfo);
-	m_deviceDriver			= de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(vkp, instance, *m_logicalDevice));
+	m_deviceDriver			= de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(vkp, instance, *m_logicalDevice, apiVersion));
 	m_allocator				= de::MovePtr<vk::Allocator>(new vk::SimpleAllocator(*m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	m_queueFamilyTransfer	= queueFamilyTransfer;
 	m_queueFamilyDecode		= queueFamilyDecode;
@@ -938,7 +938,7 @@ const vk::DeviceDriver& VideoDevice::getDeviceDriver (void)
 #endif
 }
 
-const deUint32& VideoDevice::getQueueFamilyIndexTransfer (void)
+deUint32 VideoDevice::getQueueFamilyIndexTransfer (void) const
 {
 #ifndef CTS_USES_VULKANSC
 	DE_ASSERT(m_queueFamilyTransfer != VK_QUEUE_FAMILY_IGNORED);
@@ -949,7 +949,7 @@ const deUint32& VideoDevice::getQueueFamilyIndexTransfer (void)
 #endif
 }
 
-const deUint32& VideoDevice::getQueueFamilyIndexDecode (void)
+deUint32 VideoDevice::getQueueFamilyIndexDecode (void) const
 {
 #ifndef CTS_USES_VULKANSC
 	DE_ASSERT(m_queueFamilyDecode != VK_QUEUE_FAMILY_IGNORED);
@@ -960,7 +960,7 @@ const deUint32& VideoDevice::getQueueFamilyIndexDecode (void)
 #endif
 }
 
-const deUint32& VideoDevice::getQueueFamilyIndexEncode (void)
+deUint32 VideoDevice::getQueueFamilyIndexEncode (void) const
 {
 #ifndef CTS_USES_VULKANSC
 	DE_ASSERT(m_queueFamilyEncode != VK_QUEUE_FAMILY_IGNORED);
@@ -971,7 +971,7 @@ const deUint32& VideoDevice::getQueueFamilyIndexEncode (void)
 #endif
 }
 
-const deUint32& VideoDevice::getQueueFamilyVideo (void)
+deUint32 VideoDevice::getQueueFamilyVideo (void) const
 {
 #ifndef CTS_USES_VULKANSC
 	const bool encode = isVideoEncodeOperation(m_videoCodecOperation);

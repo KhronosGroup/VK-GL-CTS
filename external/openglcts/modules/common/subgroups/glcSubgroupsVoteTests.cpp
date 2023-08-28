@@ -245,7 +245,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		std::ostringstream evaluationSource;
 		evaluationSource << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_vote: enable\n"
-			<< "#extension GL_EXT_tessellation_shader : require\n"
+			<< "${TESS_EXTENSION}\n"
 			<< "layout(isolines, equal_spacing, ccw ) in;\n"
 			<< "layout(location = 0) out float out_color;\n"
 			<< "layout(binding = 0, std140) uniform Buffer1\n"

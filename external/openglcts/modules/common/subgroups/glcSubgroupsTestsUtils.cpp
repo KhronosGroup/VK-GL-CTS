@@ -179,9 +179,14 @@ de::MovePtr<glu::ShaderProgram> makeGraphicsPipeline(glc::Context&				context,
 	const bool		doShaderLog	= log.isShaderLoggingEnabled();
 	DE_UNREF(stages);			// only used for asserts
 
-	map<string, string>		templateArgs;
-	string					versionDecl(getGLSLVersionDeclaration(context.getGLSLVersion()));
+	map<string, string> templateArgs;
+	string				versionDecl(getGLSLVersionDeclaration(context.getGLSLVersion()));
+	string				tessExtension =
+		 context.getDeqpContext().getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ?
+						   "#extension GL_EXT_tessellation_shader : require" :
+						   "";
 	templateArgs.insert(pair<string, string>("VERSION_DECL", versionDecl));
+	templateArgs.insert(pair<string, string>("TESS_EXTENSION", tessExtension));
 
 	string vertSource, tescSource, teseSource, geomSource, fragSource;
 	if (vshader)
@@ -487,6 +492,11 @@ struct Image : public BufferOrImage
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindTexture");
 		m_gl.texStorage2D(GL_TEXTURE_2D, 1, format, width, height);
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glTexStorage2D");
+
+		m_gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glTexParameteri");
+		m_gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glTexParameteri");
 	}
 
 	virtual ~Image()
@@ -916,7 +926,7 @@ void glc::subgroups::setTesCtrlShaderFrameBuffer (SourceCollections& programColl
 	programCollection.add("tesc") << glu::TessellationControlSource(
 		"${VERSION_DECL}\n"
 		"#extension GL_KHR_shader_subgroup_basic: enable\n"
-		"#extension GL_EXT_tessellation_shader : require\n"
+		"${TESS_EXTENSION}\n"
 		"layout(vertices = 2) out;\n"
 		"void main (void)\n"
 		"{\n"
@@ -934,7 +944,7 @@ void glc::subgroups::setTesEvalShaderFrameBuffer (SourceCollections& programColl
 	programCollection.add("tese") << glu::TessellationEvaluationSource(
 		"${VERSION_DECL}\n"
 		"#extension GL_KHR_shader_subgroup_ballot: enable\n"
-		"#extension GL_EXT_tessellation_shader : require\n"
+		"${TESS_EXTENSION}\n"
 		"layout(isolines, equal_spacing, ccw ) in;\n"
 		"layout(location = 0) in float in_color[];\n"
 		"layout(location = 0) out float out_color;\n"

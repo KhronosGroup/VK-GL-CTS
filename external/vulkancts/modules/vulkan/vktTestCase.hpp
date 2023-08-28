@@ -5,6 +5,8 @@
  * ------------------------
  *
  * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -155,7 +157,7 @@ public:
 	vk::DebugReportRecorder&					getDebugReportRecorder			() const;
 #endif // CTS_USES_VULKANSC
 
-	void checkPipelineLibraryRequirements (const vk::PipelineConstructionType		pipelineConstructionType);
+	void checkPipelineConstructionRequirements (const vk::PipelineConstructionType		pipelineConstructionType);
 	void resetCommandPoolForVKSC													(const vk::VkDevice			device,
 																					 const vk::VkCommandPool	commandPool);
 	ContextCommonData getContextCommonData											();
@@ -232,6 +234,8 @@ inline TestCase::TestCase (tcu::TestContext& testCtx, tcu::TestNodeType type, co
 void collectAndReportDebugMessages(vk::DebugReportRecorder &debugReportRecorder, Context& context);
 
 #endif // CTS_USES_VULKANSC
+
+deUint32 findQueueFamilyIndexWithCaps(const vk::InstanceInterface& vkInstance, vk::VkPhysicalDevice physicalDevice, vk::VkQueueFlags requiredCaps, vk::VkQueueFlags excludedCaps = 0u);
 
 } // vkt
 

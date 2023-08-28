@@ -2967,10 +2967,10 @@ struct EnvClone
 		: deviceRes	(parent, deviceParams)
 		, device	(Device::create(parent, deviceRes, deviceParams))
 #ifndef CTS_USES_VULKANSC
-		, vkd(de::MovePtr<DeviceDriver>(new DeviceDriver(parent.vkp, parent.instance, *device)))
+		, vkd(de::MovePtr<DeviceDriver>(new DeviceDriver(parent.vkp, parent.instance, *device, parent.apiVersion)))
 		, env(parent.vkp, parent.apiVersion, parent.instanceInterface, parent.instance, *vkd, *device, deviceRes.queueFamilyIndex, parent.programBinaries, parent.allocationCallbacks, maxResourceConsumers, parent.commandLine)
 #else
-		, vkd(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(parent.vkp, parent.instance, *device, parent.commandLine, parent.resourceInterface, parent.vulkanSC10Properties, parent.properties), vk::DeinitDeviceDeleter(parent.resourceInterface.get(), *device)))
+		, vkd(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(parent.vkp, parent.instance, *device, parent.commandLine, parent.resourceInterface, parent.vulkanSC10Properties, parent.properties, parent.apiVersion), vk::DeinitDeviceDeleter(parent.resourceInterface.get(), *device)))
 		, env(parent.vkp, parent.apiVersion, parent.instanceInterface, parent.instance, *vkd, *device, deviceRes.queueFamilyIndex, parent.programBinaries, parent.allocationCallbacks, maxResourceConsumers, parent.resourceInterface, parent.vulkanSC10Properties, parent.commandLine)
 #endif // CTS_USES_VULKANSC
 	{

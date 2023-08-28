@@ -3399,6 +3399,7 @@ dEQP-EGL.functional.choose_config.simple.selection_only.transparent_type
 dEQP-EGL.functional.choose_config.simple.selection_only.transparent_red_value
 dEQP-EGL.functional.choose_config.simple.selection_only.transparent_green_value
 dEQP-EGL.functional.choose_config.simple.selection_only.transparent_blue_value
+dEQP-EGL.functional.choose_config.simple.selection_only.recordable_android
 dEQP-EGL.functional.choose_config.simple.selection_and_sort.buffer_size
 dEQP-EGL.functional.choose_config.simple.selection_and_sort.red_size
 dEQP-EGL.functional.choose_config.simple.selection_and_sort.green_size
@@ -3427,6 +3428,7 @@ dEQP-EGL.functional.choose_config.simple.selection_and_sort.transparent_type
 dEQP-EGL.functional.choose_config.simple.selection_and_sort.transparent_red_value
 dEQP-EGL.functional.choose_config.simple.selection_and_sort.transparent_green_value
 dEQP-EGL.functional.choose_config.simple.selection_and_sort.transparent_blue_value
+dEQP-EGL.functional.choose_config.simple.selection_and_sort.recordable_android
 dEQP-EGL.functional.choose_config.random.color_sizes
 dEQP-EGL.functional.choose_config.random.color_depth_stencil_sizes
 dEQP-EGL.functional.choose_config.random.buffer_sizes
@@ -3465,6 +3467,7 @@ dEQP-EGL.functional.query_config.get_config_attrib.transparent_type
 dEQP-EGL.functional.query_config.get_config_attrib.transparent_red_value
 dEQP-EGL.functional.query_config.get_config_attrib.transparent_green_value
 dEQP-EGL.functional.query_config.get_config_attrib.transparent_blue_value
+dEQP-EGL.functional.query_config.get_config_attrib.recordable_android
 dEQP-EGL.functional.query_config.constraints.color_buffer_size
 dEQP-EGL.functional.query_config.constraints.transparent_value
 dEQP-EGL.functional.query_surface.simple.window.rgb565_no_depth_no_stencil

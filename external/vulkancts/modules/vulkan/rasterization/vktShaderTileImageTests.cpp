@@ -1358,14 +1358,17 @@ Move<VkPipeline> ShaderTileImageTestInstance::generateGraphicsPipeline(bool disa
 
 	std::vector<VkFormat>				   colorsAttachmentFormats(getColorAttachmentCount(m_testParam->testType),
 																   m_testParam->colorFormat);
+	const tcu::TextureFormat depthStencilTexFormat = mapVkFormat(m_testParam->depthStencilFormat);
+	VkFormat depthFormat = tcu::hasDepthComponent(depthStencilTexFormat.order) ? m_testParam->depthStencilFormat : VK_FORMAT_UNDEFINED;
+	VkFormat stencilFormat = tcu::hasStencilComponent(depthStencilTexFormat.order) ? m_testParam->depthStencilFormat : VK_FORMAT_UNDEFINED;
 	const VkPipelineRenderingCreateInfoKHR renderingCreateInfo{
-		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,  // VkStructureType sType;
-		DE_NULL,											   // const void* pNext;
-		0u,													   // deUint32 viewMask;
-		static_cast<deUint32>(colorsAttachmentFormats.size()), // deUint32 colorAttachmentCount;
-		colorsAttachmentFormats.data(),						   // const VkFormat* pColorAttachmentFormats;
-		m_testParam->depthStencilFormat,					   // VkFormat depthAttachmentFormat;
-		m_testParam->depthStencilFormat,					   // VkFormat stencilAttachmentFormat;
+		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,	// VkStructureType sType;
+		DE_NULL,												// const void* pNext;
+		0u,														// deUint32 viewMask;
+		static_cast<deUint32>(colorsAttachmentFormats.size()),	// deUint32 colorAttachmentCount;
+		colorsAttachmentFormats.data(),							// const VkFormat* pColorAttachmentFormats;
+		depthFormat,											// VkFormat depthAttachmentFormat;
+		stencilFormat,											// VkFormat stencilAttachmentFormat;
 	};
 
 	const VkPipelineShaderStageCreateInfo pShaderStages[] = {
@@ -1846,25 +1849,23 @@ void ShaderTileImageTestInstance::rendering()
 		if (!m_testParam->coherent)
 		{
 			VkMemoryBarrier2KHR memoryBarrierForColor = {
-				VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR,				 // sType
-				DE_NULL,											 // pNext
-				VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, // srcStageMask
-				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR,			 // srcAccessMask
-				VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT_KHR,		 // dstStageMask
-				VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT_KHR |
-					VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT_KHR // dstAccessMask
+				VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR,				// sType
+				DE_NULL,											// pNext
+				VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR,// srcStageMask
+				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR,			// srcAccessMask
+				VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR,// dstStageMask
+				VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT_KHR			// dstAccessMask
 			};
 
 			VkMemoryBarrier2KHR memoryBarrierForDepthStencil = {
-				VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR, // sType
-				DE_NULL,								// pNext
+				VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR,				// sType
+				DE_NULL,											// pNext
 				VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT |
-					VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT, // srcStageMask
-				VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT_KHR |
-					VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR, // srcAccessMask
-				VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT_KHR,	// dstStageMask
-				VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT_KHR |
-					VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT_KHR // dstAccessMask
+					VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,	// srcStageMask
+				VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT_KHR, // srcAccessMask
+				VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT |
+					VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT ,	// dstStageMask
+				VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT_KHR	// dstAccessMask
 			};
 
 			VkMemoryBarrier2KHR* memoryBarrier =

@@ -36,12 +36,14 @@ namespace tcu
 
 SessionInfo::SessionInfo(deUint32				vendorId,
 						 deUint32				deviceId,
+						 const std::string&		deviceName,
 						 const std::string&		cmdLine)
 	: m_cmdLine	(cmdLine)
 {
 	m_info << std::hex
 		   << "#sessionInfo vendorID 0x" << vendorId << "\n"
-		   << "#sessionInfo deviceID 0x" << deviceId << "\n";
+		   << "#sessionInfo deviceID 0x" << deviceId << "\n"
+		   << "#sessionInfo deviceName " << deviceName << "\n";
 }
 
 SessionInfo::SessionInfo(std::string			vendor,

@@ -27,6 +27,10 @@ vk-master/multiview.txt
 vk-master/pipeline/fast-linked-library.txt
 vk-master/pipeline/monolithic.txt
 vk-master/pipeline/pipeline-library.txt
+vk-master/pipeline/shader-object-linked-binary.txt
+vk-master/pipeline/shader-object-linked-spirv.txt
+vk-master/pipeline/shader-object-unlinked-binary.txt
+vk-master/pipeline/shader-object-unlinked-spirv.txt
 vk-master/protected-memory.txt
 vk-master/query-pool.txt
 vk-master/rasterization.txt
@@ -36,6 +40,7 @@ vk-master/reconvergence.txt
 vk-master/renderpass.txt
 vk-master/renderpass2.txt
 vk-master/robustness.txt
+vk-master/shader-object.txt
 vk-master/sparse-resources.txt
 vk-master/spirv-assembly.txt
 vk-master/ssbo.txt
