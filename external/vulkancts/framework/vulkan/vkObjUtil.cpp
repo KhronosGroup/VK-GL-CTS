@@ -44,12 +44,19 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&					vk,
 									  const VkShaderModule						shaderModule,
 									  const VkPipelineShaderStageCreateFlags	shaderFlags,
 									  const VkSpecializationInfo*				specializationInfo,
-									  const VkPipelineCache						pipelineCache)
+									  const VkPipelineCache						pipelineCache,
+									  const uint32_t							subgroupSize)
 {
+	const VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT subgroupSizeCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT,	// VkStructureType	sType;
+		DE_NULL,																		// void*			pNext;
+		subgroupSize																	// uint32_t			requiredSubgroupSize;
+	};
 	const VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
-		nullptr,												// const void*							pNext;
+		subgroupSize != 0 ? &subgroupSizeCreateInfo : nullptr,	// const void*							pNext;
 		shaderFlags,											// VkPipelineShaderStageCreateFlags		flags;
 		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
 		shaderModule,											// VkShaderModule						module;

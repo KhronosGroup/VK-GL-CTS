@@ -1313,6 +1313,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 		ComputePipelineWrapper			pipeline(vk, device, m_data.computePipelineConstructionType, m_context.getBinaryCollection().get("test"));
 		pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
 		pipeline.setSpecializationInfo(specInfo);
+		pipeline.setSubgroupSize(m_data.subgroupSizeMode == SUBGROUP_SIZE_NONE ? 0 : getSubgroupSizeFromMode(m_context, m_data.subgroupSizeMode));
 		pipeline.buildPipeline();
 
 		const VkQueue					queue					= m_context.getUniversalQueue();
