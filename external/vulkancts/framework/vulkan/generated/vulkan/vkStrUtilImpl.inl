@@ -12827,7 +12827,9 @@ std::ostream& operator<< (std::ostream& s, const VkAabbPositionsKHR& value)
 std::ostream& operator<< (std::ostream& s, const VkTransformMatrixKHR& value)
 {
 	s << "VkTransformMatrixKHR = {\n";
-	s << "\tmatrix = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.matrix), DE_ARRAY_END(value.matrix)) << '\n';
+	s << "\tmatrix = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < 3 ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.matrix[i0]), DE_ARRAY_END(value.matrix[i0])) << '\n';
 	s << '}';
 	return s;
 }
@@ -17353,8 +17355,12 @@ std::ostream& operator<< (std::ostream& s, const StdVideoH264ScalingLists& value
 	s << "StdVideoH264ScalingLists = {\n";
 	s << "\tscaling_list_present_mask = " << value.scaling_list_present_mask << '\n';
 	s << "\tuse_default_scaling_matrix_mask = " << value.use_default_scaling_matrix_mask << '\n';
-	s << "\tScalingList4x4 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList4x4), DE_ARRAY_END(value.ScalingList4x4)) << '\n';
-	s << "\tScalingList8x8 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList8x8), DE_ARRAY_END(value.ScalingList8x8)) << '\n';
+	s << "\tScalingList4x4 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H264_SCALING_LIST_4X4_NUM_LISTS ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList4x4[i0]), DE_ARRAY_END(value.ScalingList4x4[i0])) << '\n';
+	s << "\tScalingList8x8 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H264_SCALING_LIST_8X8_NUM_LISTS ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList8x8[i0]), DE_ARRAY_END(value.ScalingList8x8[i0])) << '\n';
 	s << '}';
 	return s;
 }
@@ -17493,12 +17499,20 @@ std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264WeightTable& 
 	s << "\tchroma_log2_weight_denom = " << value.chroma_log2_weight_denom << '\n';
 	s << "\tluma_weight_l0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.luma_weight_l0), DE_ARRAY_END(value.luma_weight_l0)) << '\n';
 	s << "\tluma_offset_l0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.luma_offset_l0), DE_ARRAY_END(value.luma_offset_l0)) << '\n';
-	s << "\tchroma_weight_l0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.chroma_weight_l0), DE_ARRAY_END(value.chroma_weight_l0)) << '\n';
-	s << "\tchroma_offset_l0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.chroma_offset_l0), DE_ARRAY_END(value.chroma_offset_l0)) << '\n';
+	s << "\tchroma_weight_l0 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H264_MAX_NUM_LIST_REF ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.chroma_weight_l0[i0]), DE_ARRAY_END(value.chroma_weight_l0[i0])) << '\n';
+	s << "\tchroma_offset_l0 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H264_MAX_NUM_LIST_REF ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.chroma_offset_l0[i0]), DE_ARRAY_END(value.chroma_offset_l0[i0])) << '\n';
 	s << "\tluma_weight_l1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.luma_weight_l1), DE_ARRAY_END(value.luma_weight_l1)) << '\n';
 	s << "\tluma_offset_l1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.luma_offset_l1), DE_ARRAY_END(value.luma_offset_l1)) << '\n';
-	s << "\tchroma_weight_l1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.chroma_weight_l1), DE_ARRAY_END(value.chroma_weight_l1)) << '\n';
-	s << "\tchroma_offset_l1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.chroma_offset_l1), DE_ARRAY_END(value.chroma_offset_l1)) << '\n';
+	s << "\tchroma_weight_l1 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H264_MAX_NUM_LIST_REF ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.chroma_weight_l1[i0]), DE_ARRAY_END(value.chroma_weight_l1[i0])) << '\n';
+	s << "\tchroma_offset_l1 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H264_MAX_NUM_LIST_REF ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.chroma_offset_l1[i0]), DE_ARRAY_END(value.chroma_offset_l1[i0])) << '\n';
 	s << '}';
 	return s;
 }
@@ -17746,10 +17760,18 @@ std::ostream& operator<< (std::ostream& s, const StdVideoH265VideoParameterSet& 
 std::ostream& operator<< (std::ostream& s, const StdVideoH265ScalingLists& value)
 {
 	s << "StdVideoH265ScalingLists = {\n";
-	s << "\tScalingList4x4 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList4x4), DE_ARRAY_END(value.ScalingList4x4)) << '\n';
-	s << "\tScalingList8x8 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList8x8), DE_ARRAY_END(value.ScalingList8x8)) << '\n';
-	s << "\tScalingList16x16 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList16x16), DE_ARRAY_END(value.ScalingList16x16)) << '\n';
-	s << "\tScalingList32x32 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList32x32), DE_ARRAY_END(value.ScalingList32x32)) << '\n';
+	s << "\tScalingList4x4 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H265_SCALING_LIST_4X4_NUM_LISTS ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList4x4[i0]), DE_ARRAY_END(value.ScalingList4x4[i0])) << '\n';
+	s << "\tScalingList8x8 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H265_SCALING_LIST_8X8_NUM_LISTS ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList8x8[i0]), DE_ARRAY_END(value.ScalingList8x8[i0])) << '\n';
+	s << "\tScalingList16x16 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H265_SCALING_LIST_16X16_NUM_LISTS ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList16x16[i0]), DE_ARRAY_END(value.ScalingList16x16[i0])) << '\n';
+	s << "\tScalingList32x32 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H265_SCALING_LIST_32X32_NUM_LISTS ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList32x32[i0]), DE_ARRAY_END(value.ScalingList32x32[i0])) << '\n';
 	s << "\tScalingListDCCoef16x16 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.ScalingListDCCoef16x16)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.ScalingListDCCoef16x16))) << '\n';
 	s << "\tScalingListDCCoef32x32 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.ScalingListDCCoef32x32)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.ScalingListDCCoef32x32))) << '\n';
 	s << '}';
@@ -17856,7 +17878,9 @@ std::ostream& operator<< (std::ostream& s, const StdVideoH265SequenceParameterSe
 std::ostream& operator<< (std::ostream& s, const StdVideoH265PredictorPaletteEntries& value)
 {
 	s << "StdVideoH265PredictorPaletteEntries = {\n";
-	s << "\tPredictorPaletteEntries = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.PredictorPaletteEntries), DE_ARRAY_END(value.PredictorPaletteEntries)) << '\n';
+	s << "\tPredictorPaletteEntries = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H265_PREDICTOR_PALETTE_COMPONENTS_LIST_SIZE ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.PredictorPaletteEntries[i0]), DE_ARRAY_END(value.PredictorPaletteEntries[i0])) << '\n';
 	s << '}';
 	return s;
 }
@@ -18091,12 +18115,20 @@ std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH265WeightTable& 
 	s << "\tdelta_chroma_log2_weight_denom = " << value.delta_chroma_log2_weight_denom << '\n';
 	s << "\tdelta_luma_weight_l0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_luma_weight_l0), DE_ARRAY_END(value.delta_luma_weight_l0)) << '\n';
 	s << "\tluma_offset_l0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.luma_offset_l0), DE_ARRAY_END(value.luma_offset_l0)) << '\n';
-	s << "\tdelta_chroma_weight_l0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_chroma_weight_l0), DE_ARRAY_END(value.delta_chroma_weight_l0)) << '\n';
-	s << "\tdelta_chroma_offset_l0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_chroma_offset_l0), DE_ARRAY_END(value.delta_chroma_offset_l0)) << '\n';
+	s << "\tdelta_chroma_weight_l0 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H265_MAX_NUM_LIST_REF ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_chroma_weight_l0[i0]), DE_ARRAY_END(value.delta_chroma_weight_l0[i0])) << '\n';
+	s << "\tdelta_chroma_offset_l0 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H265_MAX_NUM_LIST_REF ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_chroma_offset_l0[i0]), DE_ARRAY_END(value.delta_chroma_offset_l0[i0])) << '\n';
 	s << "\tdelta_luma_weight_l1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_luma_weight_l1), DE_ARRAY_END(value.delta_luma_weight_l1)) << '\n';
 	s << "\tluma_offset_l1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.luma_offset_l1), DE_ARRAY_END(value.luma_offset_l1)) << '\n';
-	s << "\tdelta_chroma_weight_l1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_chroma_weight_l1), DE_ARRAY_END(value.delta_chroma_weight_l1)) << '\n';
-	s << "\tdelta_chroma_offset_l1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_chroma_offset_l1), DE_ARRAY_END(value.delta_chroma_offset_l1)) << '\n';
+	s << "\tdelta_chroma_weight_l1 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H265_MAX_NUM_LIST_REF ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_chroma_weight_l1[i0]), DE_ARRAY_END(value.delta_chroma_weight_l1[i0])) << '\n';
+	s << "\tdelta_chroma_offset_l1 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H265_MAX_NUM_LIST_REF ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_chroma_offset_l1[i0]), DE_ARRAY_END(value.delta_chroma_offset_l1[i0])) << '\n';
 	s << '}';
 	return s;
 }
