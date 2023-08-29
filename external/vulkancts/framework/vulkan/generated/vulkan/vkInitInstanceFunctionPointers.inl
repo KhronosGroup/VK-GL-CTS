@@ -105,6 +105,9 @@ m_vk.getPhysicalDeviceDisplayProperties2KHR = (GetPhysicalDeviceDisplayPropertie
 m_vk.getPhysicalDeviceDisplayPlaneProperties2KHR = (GetPhysicalDeviceDisplayPlaneProperties2KHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceDisplayPlaneProperties2KHR");
 m_vk.getDisplayModeProperties2KHR = (GetDisplayModeProperties2KHRFunc) GET_PROC_ADDR("vkGetDisplayModeProperties2KHR");
 m_vk.getDisplayPlaneCapabilities2KHR = (GetDisplayPlaneCapabilities2KHRFunc) GET_PROC_ADDR("vkGetDisplayPlaneCapabilities2KHR");
+m_vk.getPhysicalDeviceCalibrateableTimeDomainsKHR = (GetPhysicalDeviceCalibrateableTimeDomainsKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceCalibrateableTimeDomainsKHR");
+if (!m_vk.getPhysicalDeviceCalibrateableTimeDomainsKHR)
+    m_vk.getPhysicalDeviceCalibrateableTimeDomainsKHR = (GetPhysicalDeviceCalibrateableTimeDomainsKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
 m_vk.getPhysicalDeviceCalibrateableTimeDomainsEXT = (GetPhysicalDeviceCalibrateableTimeDomainsEXTFunc) GET_PROC_ADDR("vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
 m_vk.createDebugUtilsMessengerEXT = (CreateDebugUtilsMessengerEXTFunc) GET_PROC_ADDR("vkCreateDebugUtilsMessengerEXT");
 m_vk.destroyDebugUtilsMessengerEXT = (DestroyDebugUtilsMessengerEXTFunc) GET_PROC_ADDR("vkDestroyDebugUtilsMessengerEXT");

@@ -325,6 +325,11 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_calibrated_timestamps")
+	{
+		functions.push_back("vkGetPhysicalDeviceCalibrateableTimeDomainsKHR");
+		return;
+	}
 	if (extName == "VK_NV_device_diagnostic_checkpoints")
 	{
 		return;
@@ -706,6 +711,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetScreenBufferPropertiesQNX");
 		return;
 	}
+	if (extName == "VK_KHR_calibrated_timestamps")
+	{
+		functions.push_back("vkGetCalibratedTimestampsKHR");
+		return;
+	}
 	if (extName == "VK_NV_device_diagnostic_checkpoints")
 	{
 		functions.push_back("vkCmdSetCheckpointNV");
@@ -796,6 +806,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_color_write_enable",
 	"VK_NV_external_sci_sync2",
 	"VK_QNX_external_memory_screen_buffer",
+	"VK_KHR_calibrated_timestamps",
 	"VK_NV_device_diagnostic_checkpoints",
 	"VK_KHR_format_feature_flags2",
 };

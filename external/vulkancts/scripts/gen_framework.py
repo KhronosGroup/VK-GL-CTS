@@ -1506,7 +1506,7 @@ def writeFuncPtrInterfaceImpl (api, filename, functionTypes, className):
 					yield ""
 					yield "	*pApiVersion = VK_API_VERSION_1_0;"
 					yield "	return VK_SUCCESS;"
-				elif function.getType() == Function.TYPE_INSTANCE and function.arguments[0].type == "VkPhysicalDevice" and len(function.aliasList) > 0:
+				elif function.getType() == Function.TYPE_INSTANCE and function.arguments[0].type == "VkPhysicalDevice" and len(function.aliasList) > 0 and getInterfaceName(function.name) in getInterfaceName(function.aliasList[0]):
 					yield "	vk::VkPhysicalDeviceProperties props;"
 					yield "	m_vk.getPhysicalDeviceProperties(physicalDevice, &props);"
 					yield "	if (props.apiVersion >= VK_API_VERSION_1_1)"

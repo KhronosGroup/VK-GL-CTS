@@ -321,8 +321,10 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* GetDescriptorSetLayoutSupportFunc)					
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetDescriptorSetLayoutSupportKHRFunc)									(VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, VkDescriptorSetLayoutSupport* pSupport);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetShaderInfoAMDFunc)													(VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, size_t* pInfoSize, void* pInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* SetLocalDimmingAMDFunc)												(VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCalibrateableTimeDomainsEXTFunc)						(VkPhysicalDevice physicalDevice, uint32_t* pTimeDomainCount, VkTimeDomainEXT* pTimeDomains);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetCalibratedTimestampsEXTFunc)										(VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCalibrateableTimeDomainsKHRFunc)						(VkPhysicalDevice physicalDevice, uint32_t* pTimeDomainCount, VkTimeDomainKHR* pTimeDomains);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCalibrateableTimeDomainsEXTFunc)						(VkPhysicalDevice physicalDevice, uint32_t* pTimeDomainCount, VkTimeDomainKHR* pTimeDomains);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetCalibratedTimestampsKHRFunc)										(VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoKHR* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetCalibratedTimestampsEXTFunc)										(VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoKHR* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetDebugUtilsObjectNameEXTFunc)										(VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetDebugUtilsObjectTagEXTFunc)											(VkDevice device, const VkDebugUtilsObjectTagInfoEXT* pTagInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* QueueBeginDebugUtilsLabelEXTFunc)										(VkQueue queue, const VkDebugUtilsLabelEXT* pLabelInfo);

@@ -158,7 +158,7 @@ virtual VkResult			createSamplerYcbcrConversion			(VkDevice device, const VkSamp
 virtual void				destroySamplerYcbcrConversion			(VkDevice device, VkSamplerYcbcrConversion ycbcrConversion, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual void				getDeviceQueue2							(VkDevice device, const VkDeviceQueueInfo2* pQueueInfo, VkQueue* pQueue) const = 0;
 virtual void				getDescriptorSetLayoutSupport			(VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, VkDescriptorSetLayoutSupport* pSupport) const = 0;
-virtual VkResult			getCalibratedTimestampsEXT				(VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation) const = 0;
+virtual VkResult			getCalibratedTimestampsKHR				(VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoKHR* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation) const = 0;
 virtual VkResult			setDebugUtilsObjectNameEXT				(VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo) const = 0;
 virtual VkResult			setDebugUtilsObjectTagEXT				(VkDevice device, const VkDebugUtilsObjectTagInfoEXT* pTagInfo) const = 0;
 virtual void				queueBeginDebugUtilsLabelEXT			(VkQueue queue, const VkDebugUtilsLabelEXT* pLabelInfo) const = 0;

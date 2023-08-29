@@ -59,6 +59,16 @@
 #include <time.h>
 #include <algorithm>
 
+#ifdef CTS_USES_VULKANSC
+// VulkanSC supports VK_EXT_calibrated_timestamps but not VK_KHR_calibrated_timestamps
+#define VkCalibratedTimestampInfoKHR VkCalibratedTimestampInfoEXT
+#define VkTimeDomainKHR VkTimeDomainEXT
+#define VK_TIME_DOMAIN_DEVICE_KHR VK_TIME_DOMAIN_DEVICE_EXT
+#define VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT
+#define VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_KHR VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT
+#define VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT
+#endif // CTS_USES_VULKANSC
+
 #if (DE_OS == DE_OS_WIN32)
 #	define VC_EXTRALEAN
 #	define WIN32_LEAN_AND_MEAN
@@ -967,13 +977,13 @@ protected:
 		deUint64 deviation;
 	};
 
-	std::vector<VkTimeDomainEXT>		getDomainSubset(const std::vector<VkTimeDomainEXT>& available, const std::vector<VkTimeDomainEXT>& interesting) const;
-	std::string							domainName(VkTimeDomainEXT domain) const;
-	deUint64							getHostNativeTimestamp(VkTimeDomainEXT hostDomain) const;
+	std::vector<VkTimeDomainKHR>		getDomainSubset(const std::vector<VkTimeDomainKHR>& available, const std::vector<VkTimeDomainKHR>& interesting) const;
+	std::string							domainName(VkTimeDomainKHR domain) const;
+	deUint64							getHostNativeTimestamp(VkTimeDomainKHR hostDomain) const;
 	deUint64							getHostNanoseconds(deUint64 hostTimestamp) const;
 	deUint64							getDeviceNanoseconds(deUint64 devTicksDelta) const;
-	std::vector<CalibratedTimestamp>	getCalibratedTimestamps(const std::vector<VkTimeDomainEXT>& domains);
-	CalibratedTimestamp					getCalibratedTimestamp(VkTimeDomainEXT domain);
+	std::vector<CalibratedTimestamp>	getCalibratedTimestamps(const std::vector<VkTimeDomainKHR>& domains);
+	CalibratedTimestamp					getCalibratedTimestamp(VkTimeDomainKHR domain);
 	void								appendQualityMessage(const std::string& message);
 
 	void								verifyDevTimestampMask(deUint64 value) const;
@@ -994,8 +1004,8 @@ protected:
 
 	std::string						m_qualityMessage;
 	float							m_timestampPeriod;
-	std::vector<VkTimeDomainEXT>	m_devDomains;
-	std::vector<VkTimeDomainEXT>	m_hostDomains;
+	std::vector<VkTimeDomainKHR>	m_devDomains;
+	std::vector<VkTimeDomainKHR>	m_hostDomains;
 #if (DE_OS == DE_OS_WIN32)
 	deUint64						m_frequency;
 #endif
@@ -1054,7 +1064,12 @@ vkt::TestInstance* CalibratedTimestampTest<T>::createInstance (Context& context)
 template <class T>
 void CalibratedTimestampTest<T>::checkSupport (Context& context) const
 {
+#ifdef CTS_USES_VULKANSC
 	context.requireDeviceFunctionality("VK_EXT_calibrated_timestamps");
+#else
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_calibrated_timestamps") && !context.isDeviceFunctionalitySupported("VK_EXT_calibrated_timestamps"))
+		TCU_THROW(NotSupportedError, "VK_KHR_calibrated_timestamps and VK_EXT_calibrated_timestamps are not supported");
+#endif
 }
 
 CalibratedTimestampTestInstance::CalibratedTimestampTestInstance (Context& context)
@@ -1084,28 +1099,28 @@ CalibratedTimestampTestInstance::CalibratedTimestampTestInstance (Context& conte
 	m_timestampPeriod = getPhysicalDeviceProperties(vki, physDevice).limits.timestampPeriod;
 
 	deUint32 domainCount;
-	VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsEXT(physDevice, &domainCount, DE_NULL));
+	VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsKHR(physDevice, &domainCount, DE_NULL));
 	if (domainCount == 0)
 	{
 		throw tcu::NotSupportedError("No calibrateable time domains found");
 	}
 
-	std::vector<VkTimeDomainEXT> domains;
+	std::vector<VkTimeDomainKHR> domains;
 	domains.resize(domainCount);
-	VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsEXT(physDevice, &domainCount, domains.data()));
+	VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsKHR(physDevice, &domainCount, domains.data()));
 
 	// Find the dev domain.
-	std::vector<VkTimeDomainEXT> preferredDevDomains;
-	preferredDevDomains.push_back(VK_TIME_DOMAIN_DEVICE_EXT);
+	std::vector<VkTimeDomainKHR> preferredDevDomains;
+	preferredDevDomains.push_back(VK_TIME_DOMAIN_DEVICE_KHR);
 	m_devDomains = getDomainSubset(domains, preferredDevDomains);
 
 	// Find the host domain.
-	std::vector<VkTimeDomainEXT> preferredHostDomains;
+	std::vector<VkTimeDomainKHR> preferredHostDomains;
 #if (DE_OS == DE_OS_WIN32)
-	preferredHostDomains.push_back(VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT);
+	preferredHostDomains.push_back(VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR);
 #else
-	preferredHostDomains.push_back(VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT);
-	preferredHostDomains.push_back(VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT);
+	preferredHostDomains.push_back(VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_KHR);
+	preferredHostDomains.push_back(VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR);
 #endif
 	m_hostDomains = getDomainSubset(domains, preferredHostDomains);
 
@@ -1133,32 +1148,32 @@ CalibratedTimestampTestInstance::CalibratedTimestampTestInstance (Context& conte
 	endCommandBuffer(vk, *m_cmdBuffer);
 }
 
-std::vector<VkTimeDomainEXT> CalibratedTimestampTestInstance::getDomainSubset (const std::vector<VkTimeDomainEXT>& available, const std::vector<VkTimeDomainEXT>& interesting) const
+std::vector<VkTimeDomainKHR> CalibratedTimestampTestInstance::getDomainSubset (const std::vector<VkTimeDomainKHR>& available, const std::vector<VkTimeDomainKHR>& interesting) const
 {
-	const std::set<VkTimeDomainEXT> availableSet	(begin(available),		end(available));
-	const std::set<VkTimeDomainEXT> interestingSet	(begin(interesting),	end(interesting));
+	const std::set<VkTimeDomainKHR> availableSet	(begin(available),		end(available));
+	const std::set<VkTimeDomainKHR> interestingSet	(begin(interesting),	end(interesting));
 
-	std::vector<VkTimeDomainEXT> subset;
+	std::vector<VkTimeDomainKHR> subset;
 	std::set_intersection(begin(availableSet), end(availableSet), begin(interestingSet), end(interestingSet), std::back_inserter(subset));
 	return subset;
 }
 
-std::string CalibratedTimestampTestInstance::domainName(VkTimeDomainEXT domain) const
+std::string CalibratedTimestampTestInstance::domainName(VkTimeDomainKHR domain) const
 {
 	switch (domain)
 	{
-	case VK_TIME_DOMAIN_DEVICE_EXT:						return "Device Domain";
-	case VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT:			return "Monotonic Clock";
-	case VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT:		return "Raw Monotonic Clock";
-	case VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT:	return "Query Performance Counter";
+	case VK_TIME_DOMAIN_DEVICE_KHR:						return "Device Domain";
+	case VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR:			return "Monotonic Clock";
+	case VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_KHR:		return "Raw Monotonic Clock";
+	case VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR:	return "Query Performance Counter";
 	default:											DE_ASSERT(DE_FALSE); return "Unknown Time Domain";
 	}
 }
 
-deUint64 CalibratedTimestampTestInstance::getHostNativeTimestamp (VkTimeDomainEXT hostDomain) const
+deUint64 CalibratedTimestampTestInstance::getHostNativeTimestamp (VkTimeDomainKHR hostDomain) const
 {
 #if (DE_OS == DE_OS_WIN32)
-	DE_ASSERT(hostDomain == VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT);
+	DE_ASSERT(hostDomain == VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR);
 	LARGE_INTEGER result;
 	if (!QueryPerformanceCounter(&result))
 	{
@@ -1170,11 +1185,11 @@ deUint64 CalibratedTimestampTestInstance::getHostNativeTimestamp (VkTimeDomainEX
 	}
 	return static_cast<deUint64>(result.QuadPart);
 #else
-	DE_ASSERT(hostDomain == VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT ||
-			  hostDomain == VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT);
+	DE_ASSERT(hostDomain == VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR ||
+			  hostDomain == VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_KHR);
 
 #if defined(CLOCK_MONOTONIC_RAW)
-	clockid_t id = ((hostDomain == VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT) ? CLOCK_MONOTONIC : CLOCK_MONOTONIC_RAW);
+	clockid_t id = ((hostDomain == VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR) ? CLOCK_MONOTONIC : CLOCK_MONOTONIC_RAW);
 #else
 	clockid_t id = CLOCK_MONOTONIC;
 #endif
@@ -1281,14 +1296,14 @@ bool CalibratedTimestampTestInstance::outOfRange (deUint64 begin, deUint64 middl
 			((begin >  end) && (middle > end   && middle < begin)));
 }
 
-std::vector<CalibratedTimestampTestInstance::CalibratedTimestamp> CalibratedTimestampTestInstance::getCalibratedTimestamps (const std::vector<VkTimeDomainEXT>& domains)
+std::vector<CalibratedTimestampTestInstance::CalibratedTimestamp> CalibratedTimestampTestInstance::getCalibratedTimestamps (const std::vector<VkTimeDomainKHR>& domains)
 {
-	std::vector<VkCalibratedTimestampInfoEXT> infos;
+	std::vector<VkCalibratedTimestampInfoKHR> infos;
 
 	for (auto domain : domains)
 	{
-		VkCalibratedTimestampInfoEXT info;
-		info.sType = getStructureType<VkCalibratedTimestampInfoEXT>();
+		VkCalibratedTimestampInfoKHR info;
+		info.sType = getStructureType<VkCalibratedTimestampInfoKHR>();
 		info.pNext = DE_NULL;
 		info.timeDomain = domain;
 		infos.push_back(info);
@@ -1300,7 +1315,7 @@ std::vector<CalibratedTimestampTestInstance::CalibratedTimestamp> CalibratedTime
 	const DeviceInterface&      vk          = m_context.getDeviceInterface();
 	const VkDevice              vkDevice    = m_context.getDevice();
 
-	VK_CHECK(vk.getCalibratedTimestampsEXT(vkDevice, static_cast<deUint32>(domains.size()), infos.data(), timestamps.data(), &deviation));
+	VK_CHECK(vk.getCalibratedTimestampsKHR(vkDevice, static_cast<deUint32>(domains.size()), infos.data(), timestamps.data(), &deviation));
 
 	if (deviation > kDeviationErrorLimitNanos)
 	{
@@ -1320,7 +1335,7 @@ std::vector<CalibratedTimestampTestInstance::CalibratedTimestamp> CalibratedTime
 
 	for (size_t i = 0; i < domains.size(); ++i)
 	{
-		if (domains[i] == VK_TIME_DOMAIN_DEVICE_EXT)
+		if (domains[i] == VK_TIME_DOMAIN_DEVICE_KHR)
 			verifyDevTimestampMask(timestamps[i]);
 		results.emplace_back(timestamps[i], deviation);
 	}
@@ -1328,10 +1343,10 @@ std::vector<CalibratedTimestampTestInstance::CalibratedTimestamp> CalibratedTime
 	return results;
 }
 
-CalibratedTimestampTestInstance::CalibratedTimestamp CalibratedTimestampTestInstance::getCalibratedTimestamp (VkTimeDomainEXT domain)
+CalibratedTimestampTestInstance::CalibratedTimestamp CalibratedTimestampTestInstance::getCalibratedTimestamp (VkTimeDomainKHR domain)
 {
 	// Single domain, single result.
-	return getCalibratedTimestamps(std::vector<VkTimeDomainEXT>(1, domain))[0];
+	return getCalibratedTimestamps(std::vector<VkTimeDomainKHR>(1, domain))[0];
 }
 
 void CalibratedTimestampTestInstance::appendQualityMessage (const std::string& message)
@@ -1369,7 +1384,7 @@ tcu::TestStatus CalibratedTimestampDevDomainTestInstance::runTest (void)
 
 		if (outOfRange(before.timestamp, written, after.timestamp))
 		{
-			return tcu::TestStatus::fail(domainName(devDomain) + ": vkCmdWriteTimestamp() inconsistent with vkGetCalibratedTimestampsEXT()");
+			return tcu::TestStatus::fail(domainName(devDomain) + ": vkCmdWriteTimestamp() inconsistent with vkGetCalibratedTimestampsKHR()");
 		}
 	}
 
@@ -1396,7 +1411,7 @@ tcu::TestStatus CalibratedTimestampHostDomainTestInstance::runTest (void)
 
 		if (outOfRange(before, vkTS.timestamp, after))
 		{
-			return tcu::TestStatus::fail(domainName(hostDomain) + ": vkGetCalibratedTimestampsEXT() inconsistent with native host API");
+			return tcu::TestStatus::fail(domainName(hostDomain) + ": vkGetCalibratedTimestampsKHR() inconsistent with native host API");
 		}
 	}
 
@@ -1418,7 +1433,7 @@ tcu::TestStatus CalibratedTimestampCalibrationTestInstance::runTest (void)
 	for (const auto devDomain	: m_devDomains)
 	for (const auto hostDomain	: m_hostDomains)
 	{
-		std::vector<VkTimeDomainEXT>	domains;
+		std::vector<VkTimeDomainKHR>	domains;
 		domains.push_back(devDomain);	// Device results at index 0.
 		domains.push_back(hostDomain);	// Host results at index 1.
 

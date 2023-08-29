@@ -777,6 +777,18 @@ bool check_VK_QNX_external_memory_screen_buffer(const tcu::UVec2& v, const ExtPr
 	return ((true && true && true)) && isSupported(vDEP, "VK_EXT_queue_family_foreign");
 }
 
+bool check_VK_KHR_calibrated_timestamps(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_calibrated_timestamps"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return true;
+}
+
 bool check_VK_NV_device_diagnostic_checkpoints(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -858,6 +870,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_color_write_enable",					&check_VK_EXT_color_write_enable),
 	std::make_pair("VK_NV_external_sci_sync2",						&check_VK_NV_external_sci_sync2),
 	std::make_pair("VK_QNX_external_memory_screen_buffer",			&check_VK_QNX_external_memory_screen_buffer),
+	std::make_pair("VK_KHR_calibrated_timestamps",					&check_VK_KHR_calibrated_timestamps),
 	std::make_pair("VK_NV_device_diagnostic_checkpoints",			&check_VK_NV_device_diagnostic_checkpoints),
 	std::make_pair("VK_KHR_format_feature_flags2",					&check_VK_KHR_format_feature_flags2),
 };
@@ -943,6 +956,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_application_parameters"),
 	std::make_tuple(1, 1, "VK_NV_external_sci_sync2"),
 	std::make_tuple(1, 0, "VK_QNX_external_memory_screen_buffer"),
+	std::make_tuple(1, 0, "VK_KHR_calibrated_timestamps"),
 	std::make_tuple(1, 0, "VK_NV_device_diagnostic_checkpoints"),
 	std::make_tuple(1, 0, "VK_KHR_format_feature_flags2"),
 };

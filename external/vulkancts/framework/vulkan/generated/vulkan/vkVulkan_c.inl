@@ -1822,7 +1822,6 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT = 1000178002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR = 1000181000,
     VK_STRUCTURE_TYPE_PIPELINE_COMPILER_CONTROL_CREATE_INFO_AMD = 1000183000,
-    VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT = 1000184000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_AMD = 1000185000,
     VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_CAPABILITIES_KHR = 1000187000,
     VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_CREATE_INFO_KHR = 1000187001,
@@ -2216,6 +2215,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_QNX = 1000529003,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX = 1000529004,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_DRIVER_PROPERTIES_MSFT = 1000530000,
+    VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_KHR = 1000184000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV = 1000546000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
@@ -2317,6 +2317,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES,
+    VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT = VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_KHR,
     VK_STRUCTURE_TYPE_PIPELINE_CREATION_FEEDBACK_CREATE_INFO_EXT = VK_STRUCTURE_TYPE_PIPELINE_CREATION_FEEDBACK_CREATE_INFO,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES,
@@ -11793,6 +11794,46 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR
 #endif
 
 
+// VK_KHR_calibrated_timestamps is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_calibrated_timestamps 1
+#define VK_KHR_CALIBRATED_TIMESTAMPS_SPEC_VERSION 1
+#define VK_KHR_CALIBRATED_TIMESTAMPS_EXTENSION_NAME "VK_KHR_calibrated_timestamps"
+
+typedef enum VkTimeDomainKHR {
+    VK_TIME_DOMAIN_DEVICE_KHR = 0,
+    VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR = 1,
+    VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_KHR = 2,
+    VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR = 3,
+    VK_TIME_DOMAIN_DEVICE_EXT = VK_TIME_DOMAIN_DEVICE_KHR,
+    VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT = VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR,
+    VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT = VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_KHR,
+    VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT = VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR,
+    VK_TIME_DOMAIN_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkTimeDomainKHR;
+typedef struct VkCalibratedTimestampInfoKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkTimeDomainKHR    timeDomain;
+} VkCalibratedTimestampInfoKHR;
+
+typedef VkResult (VKAPI_PTR *PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsKHR)(VkPhysicalDevice physicalDevice, deUint32* pTimeDomainCount, VkTimeDomainKHR* pTimeDomains);
+typedef VkResult (VKAPI_PTR *PFN_vkGetCalibratedTimestampsKHR)(VkDevice device, deUint32 timestampCount, const VkCalibratedTimestampInfoKHR* pTimestampInfos, deUint64* pTimestamps, deUint64* pMaxDeviation);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceCalibrateableTimeDomainsKHR(
+    VkPhysicalDevice                            physicalDevice,
+    deUint32*                                   pTimeDomainCount,
+    VkTimeDomainKHR*                            pTimeDomains);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkGetCalibratedTimestampsKHR(
+    VkDevice                                    device,
+    deUint32                                    timestampCount,
+    const VkCalibratedTimestampInfoKHR*         pTimestampInfos,
+    deUint64*                                   pTimestamps,
+    deUint64*                                   pMaxDeviation);
+#endif
+
+
 // VK_EXT_debug_report is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_debug_report 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDebugReportCallbackEXT)
@@ -14117,33 +14158,23 @@ typedef struct VkPipelineCompilerControlCreateInfoAMD {
 #define VK_EXT_calibrated_timestamps 1
 #define VK_EXT_CALIBRATED_TIMESTAMPS_SPEC_VERSION 2
 #define VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME "VK_EXT_calibrated_timestamps"
+typedef VkTimeDomainKHR VkTimeDomainEXT;
 
-typedef enum VkTimeDomainEXT {
-    VK_TIME_DOMAIN_DEVICE_EXT = 0,
-    VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT = 1,
-    VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT = 2,
-    VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT = 3,
-    VK_TIME_DOMAIN_MAX_ENUM_EXT = 0x7FFFFFFF
-} VkTimeDomainEXT;
-typedef struct VkCalibratedTimestampInfoEXT {
-    VkStructureType    sType;
-    const void*        pNext;
-    VkTimeDomainEXT    timeDomain;
-} VkCalibratedTimestampInfoEXT;
+typedef VkCalibratedTimestampInfoKHR VkCalibratedTimestampInfoEXT;
 
-typedef VkResult (VKAPI_PTR *PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT)(VkPhysicalDevice physicalDevice, deUint32* pTimeDomainCount, VkTimeDomainEXT* pTimeDomains);
-typedef VkResult (VKAPI_PTR *PFN_vkGetCalibratedTimestampsEXT)(VkDevice device, deUint32 timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, deUint64* pTimestamps, deUint64* pMaxDeviation);
+typedef VkResult (VKAPI_PTR *PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT)(VkPhysicalDevice physicalDevice, deUint32* pTimeDomainCount, VkTimeDomainKHR* pTimeDomains);
+typedef VkResult (VKAPI_PTR *PFN_vkGetCalibratedTimestampsEXT)(VkDevice device, deUint32 timestampCount, const VkCalibratedTimestampInfoKHR* pTimestampInfos, deUint64* pTimestamps, deUint64* pMaxDeviation);
 
 #ifndef VK_NO_PROTOTYPES
 VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceCalibrateableTimeDomainsEXT(
     VkPhysicalDevice                            physicalDevice,
     deUint32*                                   pTimeDomainCount,
-    VkTimeDomainEXT*                            pTimeDomains);
+    VkTimeDomainKHR*                            pTimeDomains);
 
 VKAPI_ATTR VkResult VKAPI_CALL vkGetCalibratedTimestampsEXT(
     VkDevice                                    device,
     deUint32                                    timestampCount,
-    const VkCalibratedTimestampInfoEXT*         pTimestampInfos,
+    const VkCalibratedTimestampInfoKHR*         pTimestampInfos,
     deUint64*                                   pTimestamps,
     deUint64*                                   pMaxDeviation);
 #endif

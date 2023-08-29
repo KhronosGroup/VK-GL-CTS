@@ -395,7 +395,9 @@ if (!m_vk.getDescriptorSetLayoutSupport)
     m_vk.getDescriptorSetLayoutSupport = (GetDescriptorSetLayoutSupportFunc) GET_PROC_ADDR("vkGetDescriptorSetLayoutSupportKHR");
 m_vk.getShaderInfoAMD = (GetShaderInfoAMDFunc) GET_PROC_ADDR("vkGetShaderInfoAMD");
 m_vk.setLocalDimmingAMD = (SetLocalDimmingAMDFunc) GET_PROC_ADDR("vkSetLocalDimmingAMD");
-m_vk.getCalibratedTimestampsEXT = (GetCalibratedTimestampsEXTFunc) GET_PROC_ADDR("vkGetCalibratedTimestampsEXT");
+m_vk.getCalibratedTimestampsKHR = (GetCalibratedTimestampsKHRFunc) GET_PROC_ADDR("vkGetCalibratedTimestampsKHR");
+if (!m_vk.getCalibratedTimestampsKHR)
+    m_vk.getCalibratedTimestampsKHR = (GetCalibratedTimestampsKHRFunc) GET_PROC_ADDR("vkGetCalibratedTimestampsEXT");
 m_vk.setDebugUtilsObjectNameEXT = (SetDebugUtilsObjectNameEXTFunc) GET_PROC_ADDR("vkSetDebugUtilsObjectNameEXT");
 m_vk.setDebugUtilsObjectTagEXT = (SetDebugUtilsObjectTagEXTFunc) GET_PROC_ADDR("vkSetDebugUtilsObjectTagEXT");
 m_vk.queueBeginDebugUtilsLabelEXT = (QueueBeginDebugUtilsLabelEXTFunc) GET_PROC_ADDR("vkQueueBeginDebugUtilsLabelEXT");

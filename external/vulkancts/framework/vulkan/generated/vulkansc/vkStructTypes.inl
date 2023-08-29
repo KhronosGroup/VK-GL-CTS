@@ -2621,11 +2621,11 @@ struct VkPhysicalDeviceConservativeRasterizationPropertiesEXT
 	VkBool32		conservativeRasterizationPostDepthCoverage;
 };
 
-struct VkCalibratedTimestampInfoEXT
+struct VkCalibratedTimestampInfoKHR
 {
 	VkStructureType	sType;
 	const void*		pNext;
-	VkTimeDomainEXT	timeDomain;
+	VkTimeDomainKHR	timeDomain;
 };
 
 struct VkPipelineRasterizationConservativeStateCreateInfoEXT
@@ -4388,6 +4388,8 @@ typedef VkPhysicalDeviceFloatControlsProperties VkPhysicalDeviceFloatControlsPro
 typedef VkPhysicalDeviceHostQueryResetFeatures VkPhysicalDeviceHostQueryResetFeaturesEXT;
 
 typedef VkDeviceQueueGlobalPriorityCreateInfoKHR VkDeviceQueueGlobalPriorityCreateInfoEXT;
+
+typedef VkCalibratedTimestampInfoKHR VkCalibratedTimestampInfoEXT;
 
 typedef VkPhysicalDeviceDescriptorIndexingFeatures VkPhysicalDeviceDescriptorIndexingFeaturesEXT;
 

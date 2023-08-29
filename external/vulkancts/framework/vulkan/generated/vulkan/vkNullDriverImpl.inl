@@ -2154,7 +2154,7 @@ VKAPI_ATTR void VKAPI_CALL setLocalDimmingAMD (VkDevice device, VkSwapchainKHR s
 	DE_UNREF(localDimmingEnable);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCalibrateableTimeDomainsEXT (VkPhysicalDevice physicalDevice, uint32_t* pTimeDomainCount, VkTimeDomainEXT* pTimeDomains)
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCalibrateableTimeDomainsKHR (VkPhysicalDevice physicalDevice, uint32_t* pTimeDomainCount, VkTimeDomainKHR* pTimeDomains)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pTimeDomainCount);
@@ -2162,7 +2162,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCalibrateableTimeDomainsEXT (VkP
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getCalibratedTimestampsEXT (VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation)
+VKAPI_ATTR VkResult VKAPI_CALL getCalibratedTimestampsKHR (VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoKHR* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation)
 {
 	DE_UNREF(device);
 	DE_UNREF(timestampCount);
@@ -4172,7 +4172,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPlaneProperties2KHR,						getPhysicalDeviceDisplayPlaneProperties2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetDisplayModeProperties2KHR,										getDisplayModeProperties2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneCapabilities2KHR,									getDisplayPlaneCapabilities2KHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCalibrateableTimeDomainsEXT,						getPhysicalDeviceCalibrateableTimeDomainsEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCalibrateableTimeDomainsKHR,						getPhysicalDeviceCalibrateableTimeDomainsKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateDebugUtilsMessengerEXT,										createDebugUtilsMessengerEXT),
 	VK_NULL_FUNC_ENTRY(vkDestroyDebugUtilsMessengerEXT,										destroyDebugUtilsMessengerEXT),
 	VK_NULL_FUNC_ENTRY(vkSubmitDebugUtilsMessageEXT,										submitDebugUtilsMessageEXT),
@@ -4408,7 +4408,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetLayoutSupport,								getDescriptorSetLayoutSupport),
 	VK_NULL_FUNC_ENTRY(vkGetShaderInfoAMD,											getShaderInfoAMD),
 	VK_NULL_FUNC_ENTRY(vkSetLocalDimmingAMD,										setLocalDimmingAMD),
-	VK_NULL_FUNC_ENTRY(vkGetCalibratedTimestampsEXT,								getCalibratedTimestampsEXT),
+	VK_NULL_FUNC_ENTRY(vkGetCalibratedTimestampsKHR,								getCalibratedTimestampsKHR),
 	VK_NULL_FUNC_ENTRY(vkSetDebugUtilsObjectNameEXT,								setDebugUtilsObjectNameEXT),
 	VK_NULL_FUNC_ENTRY(vkSetDebugUtilsObjectTagEXT,									setDebugUtilsObjectTagEXT),
 	VK_NULL_FUNC_ENTRY(vkQueueBeginDebugUtilsLabelEXT,								queueBeginDebugUtilsLabelEXT),

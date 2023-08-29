@@ -50,7 +50,7 @@ const char*	getCoverageReductionModeNVName							(VkCoverageReductionModeNV valu
 const char*	getValidationCacheHeaderVersionEXTName					(VkValidationCacheHeaderVersionEXT value);
 const char*	getShaderInfoTypeAMDName								(VkShaderInfoTypeAMD value);
 const char*	getQueueGlobalPriorityKHRName							(VkQueueGlobalPriorityKHR value);
-const char*	getTimeDomainEXTName									(VkTimeDomainEXT value);
+const char*	getTimeDomainKHRName									(VkTimeDomainKHR value);
 const char*	getConservativeRasterizationModeEXTName					(VkConservativeRasterizationModeEXT value);
 const char*	getSemaphoreTypeName									(VkSemaphoreType value);
 const char*	getBuildAccelerationStructureModeKHRName				(VkBuildAccelerationStructureModeKHR value);
@@ -193,7 +193,7 @@ inline tcu::Format::Enum<VkCoverageReductionModeNV>							getCoverageReductionMo
 inline tcu::Format::Enum<VkValidationCacheHeaderVersionEXT>					getValidationCacheHeaderVersionEXTStr				(VkValidationCacheHeaderVersionEXT value)				{ return tcu::Format::Enum<VkValidationCacheHeaderVersionEXT>(getValidationCacheHeaderVersionEXTName, value);								}
 inline tcu::Format::Enum<VkShaderInfoTypeAMD>								getShaderInfoTypeAMDStr								(VkShaderInfoTypeAMD value)								{ return tcu::Format::Enum<VkShaderInfoTypeAMD>(getShaderInfoTypeAMDName, value);															}
 inline tcu::Format::Enum<VkQueueGlobalPriorityKHR>							getQueueGlobalPriorityKHRStr						(VkQueueGlobalPriorityKHR value)						{ return tcu::Format::Enum<VkQueueGlobalPriorityKHR>(getQueueGlobalPriorityKHRName, value);													}
-inline tcu::Format::Enum<VkTimeDomainEXT>									getTimeDomainEXTStr									(VkTimeDomainEXT value)									{ return tcu::Format::Enum<VkTimeDomainEXT>(getTimeDomainEXTName, value);																	}
+inline tcu::Format::Enum<VkTimeDomainKHR>									getTimeDomainKHRStr									(VkTimeDomainKHR value)									{ return tcu::Format::Enum<VkTimeDomainKHR>(getTimeDomainKHRName, value);																	}
 inline tcu::Format::Enum<VkConservativeRasterizationModeEXT>				getConservativeRasterizationModeEXTStr				(VkConservativeRasterizationModeEXT value)				{ return tcu::Format::Enum<VkConservativeRasterizationModeEXT>(getConservativeRasterizationModeEXTName, value);								}
 inline tcu::Format::Enum<VkSemaphoreType>									getSemaphoreTypeStr									(VkSemaphoreType value)									{ return tcu::Format::Enum<VkSemaphoreType>(getSemaphoreTypeName, value);																	}
 inline tcu::Format::Enum<VkBuildAccelerationStructureModeKHR>				getBuildAccelerationStructureModeKHRStr				(VkBuildAccelerationStructureModeKHR value)				{ return tcu::Format::Enum<VkBuildAccelerationStructureModeKHR>(getBuildAccelerationStructureModeKHRName, value);							}
@@ -336,7 +336,7 @@ inline std::ostream&	operator<<	(std::ostream& s, VkCoverageReductionModeNV valu
 inline std::ostream&	operator<<	(std::ostream& s, VkValidationCacheHeaderVersionEXT value)					{ return s << getValidationCacheHeaderVersionEXTStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkShaderInfoTypeAMD value)								{ return s << getShaderInfoTypeAMDStr(value);								}
 inline std::ostream&	operator<<	(std::ostream& s, VkQueueGlobalPriorityKHR value)							{ return s << getQueueGlobalPriorityKHRStr(value);							}
-inline std::ostream&	operator<<	(std::ostream& s, VkTimeDomainEXT value)									{ return s << getTimeDomainEXTStr(value);									}
+inline std::ostream&	operator<<	(std::ostream& s, VkTimeDomainKHR value)									{ return s << getTimeDomainKHRStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, VkConservativeRasterizationModeEXT value)					{ return s << getConservativeRasterizationModeEXTStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkSemaphoreType value)									{ return s << getSemaphoreTypeStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, VkBuildAccelerationStructureModeKHR value)				{ return s << getBuildAccelerationStructureModeKHRStr(value);				}
@@ -988,7 +988,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkImportMemoryHostPointerInfoEX
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryHostPointerPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalMemoryHostPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceConservativeRasterizationPropertiesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkCalibratedTimestampInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCalibratedTimestampInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCorePropertiesAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCoreProperties2AMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationConservativeStateCreateInfoEXT& value);

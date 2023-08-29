@@ -968,9 +968,9 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceConservativeRasteriz
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT;
 }
 
-template<> VkStructureType getStructureType<VkCalibratedTimestampInfoEXT> (void)
+template<> VkStructureType getStructureType<VkCalibratedTimestampInfoKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT;
+	return VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPipelineRasterizationConservativeStateCreateInfoEXT> (void)

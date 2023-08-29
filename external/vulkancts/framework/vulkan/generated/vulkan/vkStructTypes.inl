@@ -3396,11 +3396,11 @@ struct VkPhysicalDeviceConservativeRasterizationPropertiesEXT
 	VkBool32		conservativeRasterizationPostDepthCoverage;
 };
 
-struct VkCalibratedTimestampInfoEXT
+struct VkCalibratedTimestampInfoKHR
 {
 	VkStructureType	sType;
 	const void*		pNext;
-	VkTimeDomainEXT	timeDomain;
+	VkTimeDomainKHR	timeDomain;
 };
 
 struct VkPhysicalDeviceShaderCorePropertiesAMD
@@ -10043,6 +10043,8 @@ typedef VkDeviceQueueGlobalPriorityCreateInfoKHR VkDeviceQueueGlobalPriorityCrea
 typedef VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT;
 
 typedef VkQueueFamilyGlobalPriorityPropertiesKHR VkQueueFamilyGlobalPriorityPropertiesEXT;
+
+typedef VkCalibratedTimestampInfoKHR VkCalibratedTimestampInfoEXT;
 
 typedef VkPhysicalDeviceDescriptorIndexingFeatures VkPhysicalDeviceDescriptorIndexingFeaturesEXT;
 

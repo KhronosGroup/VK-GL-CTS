@@ -3289,6 +3289,18 @@ bool check_VK_MSFT_layered_driver(const tcu::UVec2& v, const ExtPropVect& vIEP, 
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
+bool check_VK_KHR_calibrated_timestamps(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_calibrated_timestamps"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+}
+
 bool check_VK_NV_descriptor_pool_overallocation(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3537,6 +3549,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_attachment_feedback_loop_dynamic_state",			&check_VK_EXT_attachment_feedback_loop_dynamic_state),
 	std::make_pair("VK_QNX_external_memory_screen_buffer",					&check_VK_QNX_external_memory_screen_buffer),
 	std::make_pair("VK_MSFT_layered_driver",								&check_VK_MSFT_layered_driver),
+	std::make_pair("VK_KHR_calibrated_timestamps",							&check_VK_KHR_calibrated_timestamps),
 	std::make_pair("VK_NV_descriptor_pool_overallocation",					&check_VK_NV_descriptor_pool_overallocation),
 };
 
@@ -3889,5 +3902,6 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_attachment_feedback_loop_dynamic_state"),
 	std::make_tuple(1, 0, "VK_QNX_external_memory_screen_buffer"),
 	std::make_tuple(1, 0, "VK_MSFT_layered_driver"),
+	std::make_tuple(1, 0, "VK_KHR_calibrated_timestamps"),
 	std::make_tuple(1, 1, "VK_NV_descriptor_pool_overallocation"),
 };

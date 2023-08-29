@@ -216,7 +216,7 @@ virtual VkResult			mergeValidationCachesEXT								(VkDevice device, VkValidatio
 virtual void				getDescriptorSetLayoutSupport							(VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, VkDescriptorSetLayoutSupport* pSupport) const;
 virtual VkResult			getShaderInfoAMD										(VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, size_t* pInfoSize, void* pInfo) const;
 virtual void				setLocalDimmingAMD										(VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable) const;
-virtual VkResult			getCalibratedTimestampsEXT								(VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation) const;
+virtual VkResult			getCalibratedTimestampsKHR								(VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoKHR* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation) const;
 virtual VkResult			setDebugUtilsObjectNameEXT								(VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo) const;
 virtual VkResult			setDebugUtilsObjectTagEXT								(VkDevice device, const VkDebugUtilsObjectTagInfoEXT* pTagInfo) const;
 virtual void				queueBeginDebugUtilsLabelEXT							(VkQueue queue, const VkDebugUtilsLabelEXT* pLabelInfo) const;

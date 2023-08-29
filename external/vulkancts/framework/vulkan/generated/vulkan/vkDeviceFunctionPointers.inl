@@ -216,7 +216,7 @@ MergeValidationCachesEXTFunc								mergeValidationCachesEXT;
 GetDescriptorSetLayoutSupportFunc							getDescriptorSetLayoutSupport;
 GetShaderInfoAMDFunc										getShaderInfoAMD;
 SetLocalDimmingAMDFunc										setLocalDimmingAMD;
-GetCalibratedTimestampsEXTFunc								getCalibratedTimestampsEXT;
+GetCalibratedTimestampsKHRFunc								getCalibratedTimestampsKHR;
 SetDebugUtilsObjectNameEXTFunc								setDebugUtilsObjectNameEXT;
 SetDebugUtilsObjectTagEXTFunc								setDebugUtilsObjectTagEXT;
 QueueBeginDebugUtilsLabelEXTFunc							queueBeginDebugUtilsLabelEXT;
