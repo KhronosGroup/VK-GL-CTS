@@ -148,6 +148,7 @@ tcu::TestStatus BindBuffers2Instance::iterate (void)
 	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 	vk::Allocator&					allocator			= m_context.getDefaultAllocator();
 	const auto&						deviceExtensions	= m_context.getDeviceExtensions();
+	tcu::TestLog&					log					= m_context.getTestContext().getLog();
 
 	vk::VkExtent2D					extent				= {	32u, 32u };
 
@@ -221,12 +222,22 @@ tcu::TestStatus BindBuffers2Instance::iterate (void)
 			makeAttributeDescription(1, 1, vk::VK_FORMAT_R32G32B32A32_SFLOAT, 0),
 		};
 	}
+
+	log << tcu::TestLog::Message << "VkVertexInputAttributeDescription:" << tcu::TestLog::EndMessage;
+	for (const auto& attrib : attributes) {
+		log << tcu::TestLog::Message << "location " << attrib.location << ", binding " << attrib.binding << ", format " << attrib.format << tcu::TestLog::EndMessage;
+	}
+
 	std::vector<vk::VkVertexInputBindingDescription>		bindings;
 	for (deUint32 i = 0; i < m_count; ++i)
 	{
 		bindings.push_back(makeBindingDescription(i * 2, 99 /*ignored*/, vk::VK_VERTEX_INPUT_RATE_INSTANCE));
 		bindings.push_back(makeBindingDescription(i * 2 + 1, 99 /*ignored*/, vk::VK_VERTEX_INPUT_RATE_VERTEX));
 	};
+	log << tcu::TestLog::Message << "VkVertexInputBindingDescription:\n" << tcu::TestLog::EndMessage;
+	for (const auto& binding : bindings) {
+		log << tcu::TestLog::Message << "binding " << binding.binding << ", stride " << binding.stride << ", inputRate " << binding.inputRate << tcu::TestLog::EndMessage;
+	}
 
 	vk::VkPipelineVertexInputStateCreateInfo		vertexInputState	= vk::initVulkanStructure();
 	vertexInputState.vertexBindingDescriptionCount = (deUint32)bindings.size();
@@ -386,6 +397,11 @@ tcu::TestStatus BindBuffers2Instance::iterate (void)
 #endif
 		}
 	}
+	log << tcu::TestLog::Message << "vkCmdBindVertexBuffers2" << tcu::TestLog::EndMessage;
+	for (deUint32 i = 0; i < m_count * 2; ++i)
+	{
+		log << tcu::TestLog::Message << "binding " << i << ", buffer " << buffers[i] << ", offset " << offsets[i] << ", size " << sizes[i] << ", stride " << strides[i] << tcu::TestLog::EndMessage;
+	}
 
 	vk.cmdDraw(*cmdBuffer, 4, instanceCount, 0, 0);
 	renderPass.end(vk, *cmdBuffer);
@@ -406,10 +422,26 @@ tcu::TestStatus BindBuffers2Instance::iterate (void)
 		{
 			tcu::Vec4	pix = result.getPixel(x, y);
 
-			if (x >= w / 2 && y >= h / 2 && pix != colors[0]) return tcu::TestStatus::fail("Fail");
-			if (x < w / 2 && y >= h / 2 && pix != colors[colorStride == 0 ? 0 : 1]) return tcu::TestStatus::fail("Fail");
-			if (x >= w / 2 && y < h / 2 && pix != colors[colorStride == 0 ? 0 : 2]) return tcu::TestStatus::fail("Fail");
-			if (x < w / 2 && y < h / 2 && pix != colors[colorStride == 0 ? 0 : 3]) return tcu::TestStatus::fail("Fail");
+			if (x >= w / 2 && y >= h / 2 && pix != colors[0])
+			{
+				log << tcu::TestLog::Message << "Color at (" << x << ", " << y << ") was " << pix << ", but expected color was " << colors[0] << tcu::TestLog::EndMessage;
+				return tcu::TestStatus::fail("Fail");
+			}
+			if (x < w / 2 && y >= h / 2 && pix != colors[colorStride == 0 ? 0 : 1])
+			{
+				log << tcu::TestLog::Message << "Color at (" << x << ", " << y << ") was " << pix << ", but expected color was " << colors[colorStride == 0 ? 0 : 1] << tcu::TestLog::EndMessage;
+				return tcu::TestStatus::fail("Fail");
+			}
+			if (x >= w / 2 && y < h / 2 && pix != colors[colorStride == 0 ? 0 : 2])
+			{
+				log << tcu::TestLog::Message << "Color at (" << x << ", " << y << ") was " << pix << ", but expected color was " << colors[colorStride == 0 ? 0 : 2] << tcu::TestLog::EndMessage;
+				return tcu::TestStatus::fail("Fail");
+			}
+			if (x < w / 2 && y < h / 2 && pix != colors[colorStride == 0 ? 0 : 3])
+			{
+				log << tcu::TestLog::Message << "Color at (" << x << ", " << y << ") was " << pix << ", but expected color was " << colors[colorStride == 0 ? 0 : 3] << tcu::TestLog::EndMessage;
+				return tcu::TestStatus::fail("Fail");
+			}
 		}
 	}
 
