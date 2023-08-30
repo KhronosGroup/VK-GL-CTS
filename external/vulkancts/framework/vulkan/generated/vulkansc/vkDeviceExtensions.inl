@@ -39,6 +39,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_image_format_list",
 	"VK_KHR_imageless_framebuffer",
 	"VK_KHR_incremental_present",
+	"VK_KHR_index_type_uint8",
 	"VK_KHR_maintenance1",
 	"VK_KHR_maintenance2",
 	"VK_KHR_maintenance3",

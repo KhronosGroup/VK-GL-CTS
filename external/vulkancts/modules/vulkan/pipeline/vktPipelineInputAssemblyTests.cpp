@@ -261,8 +261,11 @@ InputAssemblyTest::InputAssemblyTest (tcu::TestContext&					testContext,
 
 void InputAssemblyTest::checkSupport (Context& context) const
 {
-	if (m_indexType == VK_INDEX_TYPE_UINT8_EXT)
-		context.requireDeviceFunctionality("VK_EXT_index_type_uint8");
+	if (m_indexType == VK_INDEX_TYPE_UINT8_EXT) {
+		if (!context.isDeviceFunctionalitySupported("VK_KHR_index_type_uint8") && !context.isDeviceFunctionalitySupported("VK_EXT_index_type_uint8")) {
+			TCU_THROW(NotSupportedError, "VK_KHR_index_type_uint8 and VK_EXT_index_type_uint8 is not supported");
+		}
+	}
 
 	switch (m_primitiveTopology)
 	{
@@ -1797,7 +1800,7 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests (tcu::TestContext& t
 		{
 			std::string testName = "restart_disabled_" + test.name;
 			indexUint16Tests->addChild(cts_amber::createAmberTestCase(testCtx, testName.c_str(), "", dataDir.c_str(), testName + "_uint16.amber", test.requirements));
-			test.requirements.push_back("VK_EXT_index_type_uint8");
+			test.requirements.push_back("IndexTypeUint8Features.indexTypeUint8");
 			indexUint8Tests->addChild(cts_amber::createAmberTestCase(testCtx, testName.c_str(), "", dataDir.c_str(), testName + "_uint8.amber", test.requirements));
 		}
 	}
