@@ -1,4 +1,9 @@
 {
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
 	"mandatory_features":
 	{
 		"VkPhysicalDeviceLineRasterizationFeaturesKHR":

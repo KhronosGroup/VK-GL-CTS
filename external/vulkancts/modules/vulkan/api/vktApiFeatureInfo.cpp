@@ -1571,7 +1571,12 @@ void checkSupportExtLineRasterization (Context& context)
 	context.requireDeviceFunctionality("VK_EXT_line_rasterization");
 }
 
-tcu::TestStatus validateLimitsExtLineRasterization (Context& context)
+void checkSupportKhrLineRasterization (Context& context)
+{
+	context.requireDeviceFunctionality("VK_KHR_line_rasterization");
+}
+
+tcu::TestStatus validateLimitsLineRasterization (Context& context)
 {
 	const VkBool32											checkAlways						= VK_TRUE;
 	const VkPhysicalDeviceLineRasterizationPropertiesKHR&	lineRasterizationProperties		= context.getLineRasterizationProperties();
@@ -6945,7 +6950,8 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		addFunctionCase(limitsValidationTests.get(), "nv_ray_tracing",					"VK_NV_ray_tracing limit validation",					checkSupportNvRayTracing,					validateLimitsNvRayTracing);
 #endif
 		addFunctionCase(limitsValidationTests.get(), "timeline_semaphore",				"VK_KHR_timeline_semaphore limit validation",			checkSupportKhrTimelineSemaphore,			validateLimitsKhrTimelineSemaphore);
-		addFunctionCase(limitsValidationTests.get(), "ext_line_rasterization",			"VK_EXT_line_rasterization limit validation",			checkSupportExtLineRasterization,			validateLimitsExtLineRasterization);
+		addFunctionCase(limitsValidationTests.get(), "ext_line_rasterization",			"VK_EXT_line_rasterization limit validation",			checkSupportExtLineRasterization,			validateLimitsLineRasterization);
+		addFunctionCase(limitsValidationTests.get(), "khr_line_rasterization",			"VK_KHR_line_rasterization limit validation",			checkSupportKhrLineRasterization,			validateLimitsLineRasterization);
 		addFunctionCase(limitsValidationTests.get(), "robustness2",						"VK_EXT_robustness2 limit validation",					checkSupportRobustness2,					validateLimitsRobustness2);
 
 		infoTests->addChild(limitsValidationTests.release());

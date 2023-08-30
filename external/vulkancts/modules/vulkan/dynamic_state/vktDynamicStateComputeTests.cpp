@@ -541,7 +541,7 @@ const StateInfo& getDynamicStateInfo (VkDynamicState state)
 		{	VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR,	{	{ "VK_KHR_ray_tracing_pipeline" },		setRTPipelineStatckSize			}	},
 #endif // CTS_USES_VULKANSC
 		{	VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR,				{	{ "VK_KHR_fragment_shading_rate" },		setFragmentShadingRage			}	},
-		{	VK_DYNAMIC_STATE_LINE_STIPPLE_EXT,						{	{ "VK_EXT_line_rasterization" },		setLineStipple					}	},
+		{	VK_DYNAMIC_STATE_LINE_STIPPLE_EXT,						{	{ "VK_KHR_or_EXT_line_rasterization" },	setLineStipple					}	},
 		{	VK_DYNAMIC_STATE_CULL_MODE_EXT,							{	{ "VK_EXT_extended_dynamic_state" },	setCullMode						}	},
 		{	VK_DYNAMIC_STATE_FRONT_FACE_EXT,						{	{ "VK_EXT_extended_dynamic_state" },	setFrontFace					}	},
 		{	VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY_EXT,				{	{ "VK_EXT_extended_dynamic_state" },	setPrimitiveTopology			}	},
@@ -784,8 +784,15 @@ void DynamicStateComputeCase::checkSupport (Context& context) const
 	for (const auto& state : m_params.states)
 	{
 		const auto stateInfo = getDynamicStateInfo(state);
-		for (const auto& functionality : stateInfo.requirements)
-			context.requireDeviceFunctionality(functionality);
+		for (const auto& functionality : stateInfo.requirements) {
+			if (functionality == "VK_KHR_or_EXT_line_rasterization") {
+				if (!context.isDeviceFunctionalitySupported("VK_KHR_line_rasterization") && !context.isDeviceFunctionalitySupported("VK_EXT_line_rasterization")) {
+					TCU_THROW(NotSupportedError, "VK_KHR_line_rasterization and VK_EXT_line_rasterization are not supported");
+				}
+			} else {
+				context.requireDeviceFunctionality(functionality);
+			}
+		}
 	}
 }
 

@@ -738,7 +738,12 @@ void ShaderObjectStateInstance::createDevice (void)
 		lineRasterizationFeatures.pNext = pNext;
 		pNext = &lineRasterizationFeatures;
 		lineRasterizationFeatures.rectangularLines = VK_TRUE;
-		deviceExtensions.push_back("VK_EXT_line_rasterization");
+		const auto& deviceExts = m_context.getDeviceExtensions();
+		if (std::find(deviceExts.begin(), deviceExts.end(), "VK_KHR_line_rasterization") != deviceExts.end()) {
+			deviceExtensions.push_back("VK_KHR_line_rasterization");
+		} else {
+			deviceExtensions.push_back("VK_EXT_line_rasterization");
+		}
 	}
 	if (m_params.meshShader)
 	{

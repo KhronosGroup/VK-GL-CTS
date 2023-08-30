@@ -3068,12 +3068,12 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT);
 		if (m_internalData->extensionEnabled("VK_EXT_conservative_rasterization"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT);
-		if (m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
+		if (m_internalData->extensionEnabled("VK_KHR_line_rasterization") || m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_RASTERIZATION_MODE_EXT);
-		if (m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
+		if (m_internalData->extensionEnabled("VK_KHR_line_rasterization") ||m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_STIPPLE_ENABLE_EXT);
-		if (m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
-			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_STIPPLE_EXT);
+		if (m_internalData->extensionEnabled("VK_KHR_line_rasterization") ||m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
+			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_STIPPLE_KHR);
 		if (m_internalData->extensionEnabled("VK_EXT_provoking_vertex"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_PROVOKING_VERTEX_MODE_EXT);
 		if (m_internalData->extensionEnabled("VK_KHR_fragment_shading_rate"))
