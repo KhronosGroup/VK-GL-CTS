@@ -3343,7 +3343,7 @@ tcu::TestStatus testMemoryImportTwice (Context& context, MemoryTestConfig config
 		};
 		vkd.getAndroidHardwareBufferPropertiesANDROID(device.get(), handleA.getAndroidHardwareBuffer(), &ahbProperties);
 
-		exportedMemoryTypeIndex	= chooseMemoryType(ahbProperties.memoryTypeBits);
+		exportedMemoryTypeIndex	= getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, ahbProperties.memoryTypeBits);
 	}
 
 	{
@@ -3413,7 +3413,7 @@ tcu::TestStatus testMemoryMultipleImports (Context& context, MemoryTestConfig co
 		};
 		vkd.getAndroidHardwareBufferPropertiesANDROID(device.get(), handleA.getAndroidHardwareBuffer(), &ahbProperties);
 
-		exportedMemoryTypeIndex	= chooseMemoryType(ahbProperties.memoryTypeBits);
+		exportedMemoryTypeIndex	= getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, ahbProperties.memoryTypeBits);
 	}
 
 	for (size_t ndx = 0; ndx < count; ndx++)
