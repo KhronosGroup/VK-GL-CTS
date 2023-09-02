@@ -1008,13 +1008,8 @@ bool TestCaseExecutor::spirvVersionSupported (vk::SpirvVersion spirvVersion)
 
 // GLSL shader tests
 
-void createGlslTests (tcu::TestCaseGroup* glslTests)
+void createGlslChildren (tcu::TestCaseGroup* glslTests)
 {
-	// Skip tests not in case list
-	const auto caseListFilter = glslTests->getTestContext().getCommandLine().createCaseListFilter(glslTests->getTestContext().getArchive());
-	if (!caseListFilter->checkTestGroupName(glslTests->getName()))
-		return;
-
 	tcu::TestContext&	testCtx		= glslTests->getTestContext();
 
 	// ShaderLibrary-based tests
@@ -1092,6 +1087,11 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 #endif // CTS_USES_VULKANSC
 }
 
+tcu::TestCaseGroup* createGlslTests (tcu::TestContext& testCtx, const std::string& name)
+{
+	return createTestGroup(testCtx, name, "GLSL shader execution tests", createGlslChildren);
+}
+
 // TestPackage
 
 BaseTestPackage::BaseTestPackage (tcu::TestContext& testCtx, const char* name, const char* desc)
@@ -1153,7 +1153,7 @@ void TestPackage::init (void)
 	addRootChild("pipeline",					pipeline::createTests);
 	addRootChild("binding_model",				BindingModel::createTests);
 	addRootChild("spirv_assembly",				SpirVAssembly::createTests);
-	addChild(createTestGroup					(m_testCtx, "glsl", "GLSL shader execution tests", createGlslTests));
+	addRootChild("glsl",				        createGlslTests);
 	addRootChild("renderpass",					createRenderPassTests);
 	addRootChild("renderpass2",					createRenderPass2Tests);
 	addRootChild("dynamic_rendering",			createDynamicRenderingTests);
@@ -1218,7 +1218,7 @@ void TestPackageSC::init (void)
 	addRootChild("pipeline",					pipeline::createTests);
 	addRootChild("binding_model",				BindingModel::createTests);
 	addRootChild("spirv_assembly",				SpirVAssembly::createTests);
-	addChild(createTestGroup					(m_testCtx, "glsl", "GLSL shader execution tests", createGlslTests));
+	addRootChild("glsl",				        createGlslTests);
 	addRootChild("renderpass",					createRenderPassTests);
 	addRootChild("renderpass2",					createRenderPass2Tests);
 	addRootChild("ubo",							ubo::createTests);
