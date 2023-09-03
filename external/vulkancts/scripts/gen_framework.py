@@ -233,13 +233,14 @@ class Composite:
 		self.members		= members			# list of CompositeMember objects
 
 class FunctionArgument:
-	def __init__ (self, name, qualifiers, aType, pointer = None, secondPointerIsConst = False, arraySize = None):
+	def __init__ (self, name, qualifiers, aType, pointer = None, secondPointerIsConst = False, arraySize = None, len = None):
 		self.name					= name
 		self.qualifiers				= qualifiers
 		self.type					= aType
 		self.pointer				= pointer			# None, '*' or '**'
 		self.secondPointerIsConst	= secondPointerIsConst
 		self.arraySize				= arraySize
+		self.len					= len
 
 		# check if type should be swaped
 		substituteType(self)
@@ -452,13 +453,15 @@ class API:
 			nameNode	= paramNode.find("name")
 			typeNode	= paramNode.find("type")
 			starCount	= typeNode.tail.count('*')
+			lenAttr		= paramNode.get("len")
 			functionParams.append(FunctionArgument(
 				nameNode.text,
 				paramNode.text,
 				paramNode.find("type").text,
 				'*' * starCount if starCount > 0 else None,
 				'const' in typeNode.tail,
-				nameNode.tail
+				nameNode.tail,
+				lenAttr
 			))
 		# memorize whole function
 		self.functions.append(Function(
@@ -737,6 +740,12 @@ class API:
 				typesNode = rootChild
 				for typeItem in typesNode:
 					self.readType(typeItem)
+
+		# Verify that promotedto extensions are supported by the api
+		for ext in self.extensions:
+			if ext.promotedto is not None and "VK_VERSION" not in ext.promotedto:
+				if not any(x.name == ext.promotedto for x in self.extensions):
+					ext.promotedto = None
 
 	def postProcess (self):
 
@@ -1899,7 +1908,7 @@ def writeNullDriverImpl (api, filename):
 				"vkGetPhysicalDeviceExternalBufferPropertiesKHR",
 				"vkGetPhysicalDeviceImageFormatProperties2KHR",
 				"vkGetMemoryAndroidHardwareBufferANDROID",
-                "vkCreateShadersEXT",
+				"vkCreateShadersEXT",
 			]
 
 		specialFuncs		= [f for f in api.functions if f.name in specialFuncNames]
@@ -1921,10 +1930,13 @@ def writeNullDriverImpl (api, filename):
 			yield "{"
 			yield "\tDE_UNREF(%s);" % function.arguments[-2].name
 
-			if getHandle(objectType).type == "VK_DEFINE_NON_DISPATCHABLE_HANDLE":
-				yield "\tVK_NULL_RETURN((*%s = allocateNonDispHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
+			if function.arguments[-1].len != None:
+				yield "\tVK_NULL_RETURN((allocateNonDispHandleArray<%s, %s>(%s, %s)));" % (objectType[2:], objectType, argsStr, function.arguments[-1].name)
 			else:
-				yield "\tVK_NULL_RETURN((*%s = allocateHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
+				if getHandle(objectType).type == "VK_DEFINE_NON_DISPATCHABLE_HANDLE":
+					yield "\tVK_NULL_RETURN((*%s = allocateNonDispHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
+				else:
+					yield "\tVK_NULL_RETURN((*%s = allocateHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
 			yield "}"
 			yield ""
 
@@ -2603,7 +2615,7 @@ def generateDeviceFeaturesOrPropertiesDefs(api, FeaturesOrProperties):
 						structureTypeName = structureType.name
 						break
 				# use data in structextends to skip structures that should not be passed to vkGetPhysicalDeviceProperties(/Features)2 function
-				if structureType.structextends is None or structureExtendsPattern not in structureType.structextends:
+				if structureType is None or structureType.structextends is None or structureExtendsPattern not in structureType.structextends:
 					continue
 				# meke sure that structure was not added earlier - this handles special
 				# cases like VkPhysicalDeviceIDPropertiesKHR added by 3 extensions
@@ -2701,7 +2713,7 @@ def writeDeviceFeatures(api, dfDefs, filename):
 		extensionNameDefinition = extNameDef
 		if not extensionNameDefinition:
 			extensionNameDefinition = 'DECL{0}_{1}_EXTENSION_NAME'.format((sExtSuffix if sExtSuffix else ''), sType)
-			extensionDefines.append(f'#define {extensionNameDefinition} "not_existent_feature"')
+			extensionDefines.append(f'#define {extensionNameDefinition} "core_feature"')
 		# construct makeFeatureDesc template function definitions
 		sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_FEATURES{1}".format(sType, sVerSuffix + sExtSuffix)
 		makeFeatureDescDefinitions.append("template<> FeatureDesc makeFeatureDesc<{0}>(void) " \
@@ -2967,12 +2979,54 @@ def writeDeviceProperties(api, dpDefs, filename):
 	stream.append('} // vk\n')
 	writeInlFile(filename, INL_HEADER, stream)
 
+UNSUFFIXED_STRUCTURES = [
+	"CornerSampledImage",
+	"ShaderSMBuiltins",
+	"ShadingRateImage",
+	"RayTracing",
+	"RepresentativeFragmentTest",
+	"ComputeShaderDerivatives",
+	"MeshShader",
+	"ShaderImageFootprint",
+	"ExclusiveScissor",
+	"DedicatedAllocationImageAliasing",
+	"CoverageReductionMode",
+	"DeviceGeneratedCommands",
+	"InheritedViewportScissor",
+	"PresentBarrier",
+	"DiagnosticsConfig",
+	"FragmentShadingRateEnums",
+	"RayTracingMotionBlur",
+	"ExternalMemoryRDMA",
+	"CopyMemoryIndirect",
+	"MemoryDecompression",
+	"LinearColorAttachment",
+	"OpticalFlow",
+	"RayTracingInvocationReorder",
+	"DisplacementMicromap"]
+
+def deviceFeaturesOrPropertiesGetter(name):
+	result = name[16:] # Remove VkPhysicalDevice prefix
+	if result[-3:] == "KHR":
+		result = result[0:-3]
+	elif result[-2:] == "NV":
+		suffix = result[-2:]
+		result = result[0:-2]
+		if result[-8:] == "Features":
+			infix = result[-8:]
+			result = result[0:-8]
+		elif result[-10:] == "Properties":
+			infix = result[-10:]
+			result = result[0:-10]
+		if (result in UNSUFFIXED_STRUCTURES):
+			suffix = ""
+		result = result + infix + suffix
+	return result
+
 def genericDeviceFeaturesWriter(dfDefs, pattern, filename):
 	stream = []
 	for _, _, _, extStruct, _, _, _ in dfDefs:
-		nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("NV", "")
-		if extStruct == "VkPhysicalDeviceCooperativeMatrixFeaturesNV":
-			nameSubStr += "NV"
+		nameSubStr = deviceFeaturesOrPropertiesGetter(extStruct)
 		stream.append(pattern.format(extStruct, nameSubStr))
 	writeInlFile(filename, INL_HEADER, indentLines(stream))
 
@@ -2991,11 +3045,7 @@ def writeDeviceFeaturesContextDefs(dfDefs, filename):
 def genericDevicePropertiesWriter(dfDefs, pattern, filename):
 	stream = []
 	for _, _, _, extStruct, _, _, _ in dfDefs:
-		nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("NV", "")
-		if extStruct == "VkPhysicalDeviceRayTracingPropertiesNV":
-			nameSubStr += "NV"
-		if extStruct == "VkPhysicalDeviceCooperativeMatrixPropertiesNV":
-			nameSubStr += "NV"
+		nameSubStr = deviceFeaturesOrPropertiesGetter(extStruct)
 		stream.append(pattern.format(extStruct, nameSubStr))
 	writeInlFile(filename, INL_HEADER, indentLines(stream))
 

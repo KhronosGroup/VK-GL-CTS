@@ -1589,11 +1589,18 @@ bool RectangleTest::isFormatValid(const PixelFormat& format, const PixelType& ty
 				return true;
 			}
 
-			if ((sampler == SAMPLER_NORM) && (type.type == GL_UNSIGNED_BYTE) && (format.format == GL_RGBA) &&
-				((internalformat.sizedFormat == GL_R8_SNORM) || (internalformat.sizedFormat == GL_RG8_SNORM) ||
-				 (internalformat.sizedFormat == GL_RGBA8_SNORM) || (internalformat.sizedFormat == GL_R16_SNORM) ||
-				 (internalformat.sizedFormat == GL_RG16_SNORM) || (internalformat.sizedFormat == GL_RGBA16_SNORM)) &&
-				contextInfo.isExtensionSupported("GL_EXT_render_snorm"))
+			if ((sampler == SAMPLER_UNORM) && (type.type == GL_UNSIGNED_SHORT) && (format.format == GL_RGBA) &&
+				((internalformat.sizedFormat == GL_R16) || (internalformat.sizedFormat == GL_RG16) ||
+				 (internalformat.sizedFormat == GL_RGBA16)) &&
+				contextInfo.isExtensionSupported("GL_EXT_texture_norm16"))
+			{
+				return true;
+			}
+
+			if ((sampler == SAMPLER_NORM) && (type.type == GL_SHORT) && (format.format == GL_RGBA) &&
+				((internalformat.sizedFormat == GL_R16_SNORM) || (internalformat.sizedFormat == GL_RG16_SNORM) ||
+				 (internalformat.sizedFormat == GL_RGBA16_SNORM)) &&
+				(contextInfo.isExtensionSupported("GL_EXT_texture_norm16") && contextInfo.isExtensionSupported("GL_EXT_render_snorm")))
 			{
 				return true;
 			}

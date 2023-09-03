@@ -5,6 +5,8 @@
  * ------------------------
  *
  * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -155,7 +157,7 @@ public:
 	vk::DebugReportRecorder&					getDebugReportRecorder			() const;
 #endif // CTS_USES_VULKANSC
 
-	void checkPipelineLibraryRequirements (const vk::PipelineConstructionType		pipelineConstructionType);
+	void checkPipelineConstructionRequirements (const vk::PipelineConstructionType		pipelineConstructionType);
 	void resetCommandPoolForVKSC													(const vk::VkDevice			device,
 																					 const vk::VkCommandPool	commandPool);
 	ContextCommonData getContextCommonData											();

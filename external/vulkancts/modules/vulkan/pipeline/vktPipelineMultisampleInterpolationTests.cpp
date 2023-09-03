@@ -3,6 +3,8 @@
 * ------------------------
 *
 * Copyright (c) 2016 The Khronos Group Inc.
+* Copyright (c) 2023 LunarG, Inc.
+* Copyright (c) 2023 Nintendo
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -245,7 +247,7 @@ template<> void MSCase<MSCaseSampleQualifierDistinctValues>::initPrograms (vk::S
 
 template<> void MSCase<MSCaseSampleQualifierDistinctValues>::checkSupport (Context& context) const
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_imageMSParams.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_imageMSParams.pipelineConstructionType);
 
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
@@ -1010,7 +1012,7 @@ template<> void MSCase<MSCaseCentroidQualifierInsidePrimitive>::initPrograms (vk
 
 template<> void MSCase<MSCaseCentroidQualifierInsidePrimitive>::checkSupport (Context& context) const
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_imageMSParams.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_imageMSParams.pipelineConstructionType);
 }
 
 template<> TestInstance* MSCase<MSCaseCentroidQualifierInsidePrimitive>::createInstance (Context& context) const

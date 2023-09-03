@@ -347,7 +347,7 @@ void WaiverTreeBuilder::buildTreeFromPathList(void)
 	deUint32 parentIndex = 0;
 
 	// construct root node
-	m_buildTree.emplace_back("root", DE_NULL);
+	m_buildTree.emplace_back("root", 0);
 
 	for (const auto& path : m_testList)
 	{

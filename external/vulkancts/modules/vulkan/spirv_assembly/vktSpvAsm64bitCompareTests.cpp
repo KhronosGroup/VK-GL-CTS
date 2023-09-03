@@ -150,43 +150,43 @@ private:
 	const Implementation& m_impl;
 };
 
-#define GEN_INT_IMPL(INTTYPE, TYPECHAR, OPNAME, OPERATOR)															\
-	struct INTTYPE##OPNAME##IntImplClass : public IntCompareOperation<INTTYPE>::Implementation						\
+#define GEN_INT_IMPL(INTTYPE, PREFIX, TYPECHAR, OPNAME, OPERATOR)													\
+	struct PREFIX##OPNAME##IntImplClass : public IntCompareOperation<INTTYPE>::Implementation						\
 	{																												\
 		virtual std::string	typeChar	()								const	{ return #TYPECHAR;	}				\
 		virtual std::string	opName		()								const	{ return #OPNAME;	}				\
 		virtual bool		run			(INTTYPE left, INTTYPE right)	const	{ return left OPERATOR right; }		\
 	};																												\
-	INTTYPE##OPNAME##IntImplClass INTTYPE##OPNAME##IntImplInstance;
+	PREFIX##OPNAME##IntImplClass PREFIX##OPNAME##IntImplInstance;
 
-#define GEN_ALL_INT_TYPE_IMPL(INTTYPE, TYPECHAR)				\
-	GEN_INT_IMPL(INTTYPE, I,		Equal,				==	)	\
-	GEN_INT_IMPL(INTTYPE, I,		NotEqual,			!=	)	\
-	GEN_INT_IMPL(INTTYPE, TYPECHAR,	GreaterThan,		>	)	\
-	GEN_INT_IMPL(INTTYPE, TYPECHAR,	GreaterThanEqual,	>=	)	\
-	GEN_INT_IMPL(INTTYPE, TYPECHAR,	LessThan,			<	)	\
-	GEN_INT_IMPL(INTTYPE, TYPECHAR,	LessThanEqual,		<=	)
+#define GEN_ALL_INT_TYPE_IMPL(INTTYPE, PREFIX, TYPECHAR)				\
+	GEN_INT_IMPL(INTTYPE, PREFIX, I,		Equal,				==	)	\
+	GEN_INT_IMPL(INTTYPE, PREFIX, I,		NotEqual,			!=	)	\
+	GEN_INT_IMPL(INTTYPE, PREFIX, TYPECHAR,	GreaterThan,		>	)	\
+	GEN_INT_IMPL(INTTYPE, PREFIX, TYPECHAR,	GreaterThanEqual,	>=	)	\
+	GEN_INT_IMPL(INTTYPE, PREFIX, TYPECHAR,	LessThan,			<	)	\
+	GEN_INT_IMPL(INTTYPE, PREFIX, TYPECHAR,	LessThanEqual,		<=	)
 
-GEN_ALL_INT_TYPE_IMPL(deInt64,	S)
-GEN_ALL_INT_TYPE_IMPL(deUint64,	U)
+GEN_ALL_INT_TYPE_IMPL(deInt64,	int64, S)
+GEN_ALL_INT_TYPE_IMPL(deUint64,	uint64, U)
 
-#define GEN_INT_OP(INTTYPE, OPNAME)																			\
-	struct INTTYPE##OPNAME##OpClass: public IntCompareOperation<INTTYPE>									\
-	{																										\
-		INTTYPE##OPNAME##OpClass () : IntCompareOperation<INTTYPE>(INTTYPE##OPNAME##IntImplInstance) {}		\
-	};																										\
-	INTTYPE##OPNAME##OpClass INTTYPE##OPNAME##Op;
+#define GEN_INT_OP(INTTYPE, PREFIX, OPNAME)																\
+	struct PREFIX##OPNAME##OpClass: public IntCompareOperation<INTTYPE>									\
+	{																									\
+		PREFIX##OPNAME##OpClass () : IntCompareOperation<INTTYPE>(PREFIX##OPNAME##IntImplInstance) {}	\
+	};																									\
+	PREFIX##OPNAME##OpClass PREFIX##OPNAME##Op;
 
-#define GEN_ALL_INT_OPS(INTTYPE)				\
-	GEN_INT_OP(INTTYPE, Equal				)	\
-	GEN_INT_OP(INTTYPE, NotEqual			)	\
-	GEN_INT_OP(INTTYPE, GreaterThan			)	\
-	GEN_INT_OP(INTTYPE, GreaterThanEqual	)	\
-	GEN_INT_OP(INTTYPE, LessThan			)	\
-	GEN_INT_OP(INTTYPE, LessThanEqual		)
+#define GEN_ALL_INT_OPS(INTTYPE, PREFIX)				\
+	GEN_INT_OP(INTTYPE, PREFIX, Equal				)	\
+	GEN_INT_OP(INTTYPE, PREFIX, NotEqual			)	\
+	GEN_INT_OP(INTTYPE, PREFIX, GreaterThan			)	\
+	GEN_INT_OP(INTTYPE, PREFIX, GreaterThanEqual	)	\
+	GEN_INT_OP(INTTYPE, PREFIX, LessThan			)	\
+	GEN_INT_OP(INTTYPE, PREFIX, LessThanEqual		)
 
-GEN_ALL_INT_OPS(deInt64)
-GEN_ALL_INT_OPS(deUint64)
+GEN_ALL_INT_OPS(deInt64, int64)
+GEN_ALL_INT_OPS(deUint64, uint64)
 
 enum DataType {
 	DATA_TYPE_SINGLE = 0,
@@ -1798,12 +1798,12 @@ void createInt64CompareTestsInGroup (tcu::TestCaseGroup* tests, const StageName*
 {
 	static const std::vector<const CompareOperation<deInt64>*> operationList =
 	{
-		&deInt64EqualOp,
-		&deInt64NotEqualOp,
-		&deInt64LessThanOp,
-		&deInt64LessThanEqualOp,
-		&deInt64GreaterThanOp,
-		&deInt64GreaterThanEqualOp,
+		&int64EqualOp,
+		&int64NotEqualOp,
+		&int64LessThanOp,
+		&int64LessThanEqualOp,
+		&int64GreaterThanOp,
+		&int64GreaterThanEqualOp,
 	};
 
 	for (const auto&	stageNamePair	: *stageNames)
@@ -1820,12 +1820,12 @@ void createUint64CompareTestsInGroup (tcu::TestCaseGroup* tests, const StageName
 {
 	static const std::vector<const CompareOperation<deUint64>*> operationList =
 	{
-		&deUint64EqualOp,
-		&deUint64NotEqualOp,
-		&deUint64LessThanOp,
-		&deUint64LessThanEqualOp,
-		&deUint64GreaterThanOp,
-		&deUint64GreaterThanEqualOp,
+		&uint64EqualOp,
+		&uint64NotEqualOp,
+		&uint64LessThanOp,
+		&uint64LessThanEqualOp,
+		&uint64GreaterThanOp,
+		&uint64GreaterThanEqualOp,
 	};
 
 	for (const auto&	stageNamePair	: *stageNames)

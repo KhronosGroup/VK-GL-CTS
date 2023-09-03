@@ -972,6 +972,12 @@ tcu::TestNode::IterateResult TestCaseBase<API>::execute_positive_test(const std:
 #endif /* IS_DEBUG_DUMP_ALL_SHADERS */
 #endif /* IS_DEBUG */
 
+			if (delete_generated_objects)
+			{
+				/* Deallocate any resources used. */
+				this->delete_objects();
+			}
+
 			TCU_FAIL("Linking was expected to succeed, but the process was unsuccessful.");
 
 			test_result = false;
@@ -1265,6 +1271,12 @@ tcu::TestNode::IterateResult TestCaseBase<API>::execute_positive_test(
 			}
 #endif /* IS_DEBUG_DUMP_ALL_SHADERS */
 #endif /* IS_DEBUG */
+
+			if (delete_generated_objects)
+			{
+				/* Deallocate any resources used. */
+				this->delete_objects();
+			}
 
 			TCU_FAIL("Linking was expected to succeed, but the process was unsuccessful.");
 

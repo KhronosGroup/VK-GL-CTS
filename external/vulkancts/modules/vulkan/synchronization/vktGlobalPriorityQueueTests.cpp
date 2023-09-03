@@ -568,7 +568,7 @@ void GPQCase::initPrograms (SourceCollections& programs) const
 	void main()
 	{
 		ivec2 srcIdx = ivec2(gl_GlobalInvocationID.xy);
-		int   width  = imageSize(srcImage).y;
+		int   width  = imageSize(srcImage).x;
 		int   dstIdx = int(gl_GlobalInvocationID.y * width + gl_GlobalInvocationID.x);
 		dstBuffer.data[dstIdx] = uint(imageLoad(srcImage, srcIdx).r) == ${TEST_VALUE} ? 1 : 0;
 	}

@@ -515,9 +515,9 @@ void createDynamicRenderingPermutations(tcu::TestCaseGroup* parentGroup)
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> mainGroup			(new tcu::TestCaseGroup(testCtx, "fragment_shading_rate", "Fragment shading rate tests"));
+	de::MovePtr<tcu::TestCaseGroup> mainGroup			(new tcu::TestCaseGroup(testCtx, name.c_str(), "Fragment shading rate tests"));
 	de::MovePtr<tcu::TestCaseGroup> renderpass2Group	(createTestGroup(testCtx, "renderpass2", "Draw using render pass object",
 		createPipelineConstructionTypePermutations,
 		SharedGroupParams(new GroupParams

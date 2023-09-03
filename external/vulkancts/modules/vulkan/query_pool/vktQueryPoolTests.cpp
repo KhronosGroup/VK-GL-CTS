@@ -54,9 +54,9 @@ void createChildren (tcu::TestCaseGroup* queryPoolTests)
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "query_pool", "query pool tests", createChildren);
+	return createTestGroup(testCtx, name, "query pool tests", createChildren);
 }
 
 } // QueryPool

@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2019 The Khronos Group Inc.
  * Copyright (c) 2019 The Android Open Source Project
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,14 +125,17 @@ public:
 										 const std::string&		name,
 										 const std::string&		description,
 										 const tcu::IVec3&		localSize,
-										 const tcu::IVec3&		workSize);
+										 const tcu::IVec3&		workSize,
+										 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
+	virtual void		checkSupport	(Context& context) const;
 	void				initPrograms	(SourceCollections&		sourceCollections) const;
 	TestInstance*		createInstance	(Context&				context) const;
 
 private:
-	const tcu::IVec3	m_localSize;
-	const tcu::IVec3	m_workSize;
+	const tcu::IVec3					m_localSize;
+	const tcu::IVec3					m_workSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class SharedVarTestInstance : public vkt::TestInstance
@@ -138,24 +143,33 @@ class SharedVarTestInstance : public vkt::TestInstance
 public:
 									SharedVarTestInstance	(Context&			context,
 															 const tcu::IVec3&	localSize,
-															 const tcu::IVec3&	workSize);
+															 const tcu::IVec3&	workSize,
+															 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 	tcu::TestStatus					iterate					(void);
 
 private:
-	const tcu::IVec3				m_localSize;
-	const tcu::IVec3				m_workSize;
+	const tcu::IVec3					m_localSize;
+	const tcu::IVec3					m_workSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 SharedVarTest::SharedVarTest (tcu::TestContext&		testCtx,
 							  const std::string&	name,
 							  const std::string&	description,
 							  const tcu::IVec3&		localSize,
-							  const tcu::IVec3&		workSize)
+							  const tcu::IVec3&		workSize,
+							  const vk::ComputePipelineConstructionType computePipelineConstructionType)
 	: TestCase		(testCtx, name, description)
 	, m_localSize	(localSize)
 	, m_workSize	(workSize)
+	, m_computePipelineConstructionType(computePipelineConstructionType)
 {
+}
+
+void SharedVarTest::checkSupport (Context& context) const
+{
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 }
 
 void SharedVarTest::initPrograms (SourceCollections& sourceCollections) const
@@ -188,13 +202,14 @@ void SharedVarTest::initPrograms (SourceCollections& sourceCollections) const
 
 TestInstance* SharedVarTest::createInstance (Context& context) const
 {
-	return new SharedVarTestInstance(context, m_localSize, m_workSize);
+	return new SharedVarTestInstance(context, m_localSize, m_workSize, m_computePipelineConstructionType);
 }
 
-SharedVarTestInstance::SharedVarTestInstance (Context& context, const tcu::IVec3& localSize, const tcu::IVec3& workSize)
-	: TestInstance	(context)
-	, m_localSize	(localSize)
-	, m_workSize	(workSize)
+SharedVarTestInstance::SharedVarTestInstance (Context& context, const tcu::IVec3& localSize, const tcu::IVec3& workSize, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestInstance						(context)
+	, m_localSize						(localSize)
+	, m_workSize						(workSize)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 }
 
@@ -235,9 +250,9 @@ tcu::TestStatus SharedVarTestInstance::iterate (void)
 
 	// Perform the computation
 
-	const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u));
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
+	ComputePipelineWrapper			pipeline(vk, device, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp"));
+	pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+	pipeline.buildPipeline();
 
 	const VkBufferMemoryBarrier computeFinishBarrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer, 0ull, bufferSizeBytes);
 
@@ -248,8 +263,8 @@ tcu::TestStatus SharedVarTestInstance::iterate (void)
 
 	beginCommandBuffer(vk, *cmdBuffer);
 
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
-	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+	pipeline.bind(*cmdBuffer);
+	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
 	vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
 
@@ -294,14 +309,17 @@ public:
 												 const std::string&	name,
 												 const std::string&	description,
 												 const tcu::IVec3&	localSize,
-												 const tcu::IVec3&	workSize);
+												 const tcu::IVec3&	workSize,
+												 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
+	virtual void		checkSupport			(Context& context) const;
 	void				initPrograms			(SourceCollections& sourceCollections) const;
 	TestInstance*		createInstance			(Context&			context) const;
 
 private:
-	const tcu::IVec3	m_localSize;
-	const tcu::IVec3	m_workSize;
+	const tcu::IVec3					m_localSize;
+	const tcu::IVec3					m_workSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class SharedVarAtomicOpTestInstance : public vkt::TestInstance
@@ -309,24 +327,33 @@ class SharedVarAtomicOpTestInstance : public vkt::TestInstance
 public:
 									SharedVarAtomicOpTestInstance	(Context&			context,
 																	 const tcu::IVec3&	localSize,
-																	 const tcu::IVec3&	workSize);
+																	 const tcu::IVec3&	workSize,
+																	 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 	tcu::TestStatus					iterate							(void);
 
 private:
-	const tcu::IVec3				m_localSize;
-	const tcu::IVec3				m_workSize;
+	const tcu::IVec3					m_localSize;
+	const tcu::IVec3					m_workSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 SharedVarAtomicOpTest::SharedVarAtomicOpTest (tcu::TestContext&		testCtx,
 											  const std::string&	name,
 											  const std::string&	description,
 											  const tcu::IVec3&		localSize,
-											  const tcu::IVec3&		workSize)
-	: TestCase		(testCtx, name, description)
-	, m_localSize	(localSize)
-	, m_workSize	(workSize)
+											  const tcu::IVec3&		workSize,
+											  const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestCase							(testCtx, name, description)
+	, m_localSize						(localSize)
+	, m_workSize						(workSize)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
+}
+
+void SharedVarAtomicOpTest::checkSupport (Context& context) const
+{
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 }
 
 void SharedVarAtomicOpTest::initPrograms (SourceCollections& sourceCollections) const
@@ -359,13 +386,14 @@ void SharedVarAtomicOpTest::initPrograms (SourceCollections& sourceCollections) 
 
 TestInstance* SharedVarAtomicOpTest::createInstance (Context& context) const
 {
-	return new SharedVarAtomicOpTestInstance(context, m_localSize, m_workSize);
+	return new SharedVarAtomicOpTestInstance(context, m_localSize, m_workSize, m_computePipelineConstructionType);
 }
 
-SharedVarAtomicOpTestInstance::SharedVarAtomicOpTestInstance (Context& context, const tcu::IVec3& localSize, const tcu::IVec3& workSize)
-	: TestInstance	(context)
-	, m_localSize	(localSize)
-	, m_workSize	(workSize)
+SharedVarAtomicOpTestInstance::SharedVarAtomicOpTestInstance (Context& context, const tcu::IVec3& localSize, const tcu::IVec3& workSize, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestInstance						(context)
+	, m_localSize						(localSize)
+	, m_workSize						(workSize)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 }
 
@@ -406,9 +434,9 @@ tcu::TestStatus SharedVarAtomicOpTestInstance::iterate (void)
 
 	// Perform the computation
 
-	const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u));
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
+	ComputePipelineWrapper			pipeline(vk, device, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp"));
+	pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+	pipeline.buildPipeline();
 
 	const VkBufferMemoryBarrier computeFinishBarrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer, 0ull, bufferSizeBytes);
 
@@ -419,8 +447,8 @@ tcu::TestStatus SharedVarAtomicOpTestInstance::iterate (void)
 
 	beginCommandBuffer(vk, *cmdBuffer);
 
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
-	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+	pipeline.bind(*cmdBuffer);
+	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
 	vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
 
@@ -465,14 +493,18 @@ public:
 												 const std::string& name,
 												 const std::string&	description,
 												 const tcu::IVec3&	localSize,
-												 const tcu::IVec3&	workSize);
+												 const tcu::IVec3&	workSize,
+												 const vk::ComputePipelineConstructionType computePipelineConstructionType
+						);
 
+	virtual void		checkSupport			(Context& context) const;
 	void				initPrograms			(SourceCollections& sourceCollections) const;
 	TestInstance*		createInstance			(Context&			context) const;
 
 private:
 	const tcu::IVec3	m_localSize;
 	const tcu::IVec3	m_workSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class SSBOLocalBarrierTestInstance : public vkt::TestInstance
@@ -480,24 +512,33 @@ class SSBOLocalBarrierTestInstance : public vkt::TestInstance
 public:
 									SSBOLocalBarrierTestInstance	(Context&			context,
 																	 const tcu::IVec3&	localSize,
-																	 const tcu::IVec3&	workSize);
+																	 const tcu::IVec3&	workSize,
+																	 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 	tcu::TestStatus					iterate							(void);
 
 private:
-	const tcu::IVec3				m_localSize;
-	const tcu::IVec3				m_workSize;
+	const tcu::IVec3					m_localSize;
+	const tcu::IVec3					m_workSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 SSBOLocalBarrierTest::SSBOLocalBarrierTest (tcu::TestContext&	testCtx,
 											const std::string&	name,
 											const std::string&	description,
 											const tcu::IVec3&	localSize,
-											const tcu::IVec3&	workSize)
+											const tcu::IVec3&	workSize,
+											const vk::ComputePipelineConstructionType computePipelineConstructionType)
 	: TestCase		(testCtx, name, description)
 	, m_localSize	(localSize)
 	, m_workSize	(workSize)
+	, m_computePipelineConstructionType(computePipelineConstructionType)
 {
+}
+
+void SSBOLocalBarrierTest::checkSupport (Context& context) const
+{
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 }
 
 void SSBOLocalBarrierTest::initPrograms (SourceCollections& sourceCollections) const
@@ -532,13 +573,14 @@ void SSBOLocalBarrierTest::initPrograms (SourceCollections& sourceCollections) c
 
 TestInstance* SSBOLocalBarrierTest::createInstance (Context& context) const
 {
-	return new SSBOLocalBarrierTestInstance(context, m_localSize, m_workSize);
+	return new SSBOLocalBarrierTestInstance(context, m_localSize, m_workSize, m_computePipelineConstructionType);
 }
 
-SSBOLocalBarrierTestInstance::SSBOLocalBarrierTestInstance (Context& context, const tcu::IVec3& localSize, const tcu::IVec3& workSize)
+SSBOLocalBarrierTestInstance::SSBOLocalBarrierTestInstance (Context& context, const tcu::IVec3& localSize, const tcu::IVec3& workSize, const vk::ComputePipelineConstructionType computePipelineConstructionType)
 	: TestInstance	(context)
 	, m_localSize	(localSize)
 	, m_workSize	(workSize)
+	, m_computePipelineConstructionType(computePipelineConstructionType)
 {
 }
 
@@ -579,9 +621,9 @@ tcu::TestStatus SSBOLocalBarrierTestInstance::iterate (void)
 
 	// Perform the computation
 
-	const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u));
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
+	ComputePipelineWrapper			pipeline(vk, device, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp"));
+	pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+	pipeline.buildPipeline();
 
 	const VkBufferMemoryBarrier computeFinishBarrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer, 0ull, bufferSizeBytes);
 
@@ -592,8 +634,8 @@ tcu::TestStatus SSBOLocalBarrierTestInstance::iterate (void)
 
 	beginCommandBuffer(vk, *cmdBuffer);
 
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
-	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+	pipeline.bind(*cmdBuffer);
+	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
 	vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
 
@@ -640,14 +682,17 @@ public:
 												 const std::string&	name,
 												 const std::string&	description,
 												 const tcu::IVec2&	localSize,
-												 const tcu::IVec2&	imageSize);
+												 const tcu::IVec2&	imageSize,
+												 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
+	virtual void		checkSupport			(Context& context) const;
 	void				initPrograms			(SourceCollections& sourceCollections) const;
 	TestInstance*		createInstance			(Context&			context) const;
 
 private:
-	const tcu::IVec2	m_localSize;
-	const tcu::IVec2	m_imageSize;
+	const tcu::IVec2					m_localSize;
+	const tcu::IVec2					m_imageSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class CopyImageToSSBOTestInstance : public vkt::TestInstance
@@ -655,26 +700,35 @@ class CopyImageToSSBOTestInstance : public vkt::TestInstance
 public:
 									CopyImageToSSBOTestInstance		(Context&			context,
 																	 const tcu::IVec2&	localSize,
-																	 const tcu::IVec2&	imageSize);
+																	 const tcu::IVec2&	imageSize,
+																	 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 	tcu::TestStatus					iterate							(void);
 
 private:
-	const tcu::IVec2				m_localSize;
-	const tcu::IVec2				m_imageSize;
+	const tcu::IVec2					m_localSize;
+	const tcu::IVec2					m_imageSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 CopyImageToSSBOTest::CopyImageToSSBOTest (tcu::TestContext&		testCtx,
 										  const std::string&	name,
 										  const std::string&	description,
 										  const tcu::IVec2&		localSize,
-										  const tcu::IVec2&		imageSize)
-	: TestCase		(testCtx, name, description)
-	, m_localSize	(localSize)
-	, m_imageSize	(imageSize)
+										  const tcu::IVec2&		imageSize,
+										  const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestCase							(testCtx, name, description)
+	, m_localSize						(localSize)
+	, m_imageSize						(imageSize)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 	DE_ASSERT(m_imageSize.x() % m_localSize.x() == 0);
 	DE_ASSERT(m_imageSize.y() % m_localSize.y() == 0);
+}
+
+void CopyImageToSSBOTest::checkSupport (Context& context) const
+{
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 }
 
 void CopyImageToSSBOTest::initPrograms (SourceCollections& sourceCollections) const
@@ -697,13 +751,14 @@ void CopyImageToSSBOTest::initPrograms (SourceCollections& sourceCollections) co
 
 TestInstance* CopyImageToSSBOTest::createInstance (Context& context) const
 {
-	return new CopyImageToSSBOTestInstance(context, m_localSize, m_imageSize);
+	return new CopyImageToSSBOTestInstance(context, m_localSize, m_imageSize, m_computePipelineConstructionType);
 }
 
-CopyImageToSSBOTestInstance::CopyImageToSSBOTestInstance (Context& context, const tcu::IVec2& localSize, const tcu::IVec2& imageSize)
-	: TestInstance	(context)
-	, m_localSize	(localSize)
-	, m_imageSize	(imageSize)
+CopyImageToSSBOTestInstance::CopyImageToSSBOTestInstance (Context& context, const tcu::IVec2& localSize, const tcu::IVec2& imageSize, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestInstance						(context)
+	, m_localSize						(localSize)
+	, m_imageSize						(imageSize)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 }
 
@@ -773,9 +828,9 @@ tcu::TestStatus CopyImageToSSBOTestInstance::iterate (void)
 
 	// Perform the computation
 	{
-		const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u));
-		const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
-		const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
+		ComputePipelineWrapper			pipeline(vk, device, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp"));
+		pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+		pipeline.buildPipeline();
 
 		const VkBufferMemoryBarrier computeFinishBarrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0ull, bufferSizeBytes);
 		const tcu::IVec2 workSize = m_imageSize / m_localSize;
@@ -789,8 +844,8 @@ tcu::TestStatus CopyImageToSSBOTestInstance::iterate (void)
 
 		beginCommandBuffer(vk, *cmdBuffer);
 
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
-		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+		pipeline.bind(*cmdBuffer);
+		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
 		const std::vector<VkBufferImageCopy> bufferImageCopy(1, makeBufferImageCopy(m_imageSize));
 		copyBufferToImage(vk, *cmdBuffer, *stagingBuffer, bufferSizeBytes, bufferImageCopy, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, *image, VK_IMAGE_LAYOUT_GENERAL, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
@@ -835,14 +890,17 @@ public:
 											 const std::string&	name,
 											 const std::string&	description,
 											 const tcu::IVec2&	localSize,
-											 const tcu::IVec2&	imageSize);
+											 const tcu::IVec2&	imageSize,
+											 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
+	virtual void		checkSupport		(Context& context) const;
 	void				initPrograms		(SourceCollections& sourceCollections) const;
 	TestInstance*		createInstance		(Context&			context) const;
 
 private:
-	const tcu::IVec2	m_localSize;
-	const tcu::IVec2	m_imageSize;
+	const tcu::IVec2					m_localSize;
+	const tcu::IVec2					m_imageSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class CopySSBOToImageTestInstance : public vkt::TestInstance
@@ -850,26 +908,35 @@ class CopySSBOToImageTestInstance : public vkt::TestInstance
 public:
 									CopySSBOToImageTestInstance	(Context&			context,
 																 const tcu::IVec2&	localSize,
-																 const tcu::IVec2&	imageSize);
+																 const tcu::IVec2&	imageSize,
+																 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 	tcu::TestStatus					iterate						(void);
 
 private:
-	const tcu::IVec2				m_localSize;
-	const tcu::IVec2				m_imageSize;
+	const tcu::IVec2					m_localSize;
+	const tcu::IVec2					m_imageSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 CopySSBOToImageTest::CopySSBOToImageTest (tcu::TestContext&		testCtx,
 										  const std::string&	name,
 										  const std::string&	description,
 										  const tcu::IVec2&		localSize,
-										  const tcu::IVec2&		imageSize)
-	: TestCase		(testCtx, name, description)
-	, m_localSize	(localSize)
-	, m_imageSize	(imageSize)
+										  const tcu::IVec2&		imageSize,
+										  const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestCase							(testCtx, name, description)
+	, m_localSize						(localSize)
+	, m_imageSize						(imageSize)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 	DE_ASSERT(m_imageSize.x() % m_localSize.x() == 0);
 	DE_ASSERT(m_imageSize.y() % m_localSize.y() == 0);
+}
+
+void CopySSBOToImageTest::checkSupport (Context& context) const
+{
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 }
 
 void CopySSBOToImageTest::initPrograms (SourceCollections& sourceCollections) const
@@ -892,13 +959,14 @@ void CopySSBOToImageTest::initPrograms (SourceCollections& sourceCollections) co
 
 TestInstance* CopySSBOToImageTest::createInstance (Context& context) const
 {
-	return new CopySSBOToImageTestInstance(context, m_localSize, m_imageSize);
+	return new CopySSBOToImageTestInstance(context, m_localSize, m_imageSize, m_computePipelineConstructionType);
 }
 
-CopySSBOToImageTestInstance::CopySSBOToImageTestInstance (Context& context, const tcu::IVec2& localSize, const tcu::IVec2& imageSize)
-	: TestInstance	(context)
-	, m_localSize	(localSize)
-	, m_imageSize	(imageSize)
+CopySSBOToImageTestInstance::CopySSBOToImageTestInstance (Context& context, const tcu::IVec2& localSize, const tcu::IVec2& imageSize, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestInstance						(context)
+	, m_localSize						(localSize)
+	, m_imageSize						(imageSize)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 }
 
@@ -956,9 +1024,9 @@ tcu::TestStatus CopySSBOToImageTestInstance::iterate (void)
 
 	// Perform the computation
 	{
-		const Unique<VkShaderModule> shaderModule(createShaderModule(vkd, data.device, m_context.getBinaryCollection().get("comp"), 0u));
-		const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vkd, data.device, *descriptorSetLayout));
-		const Unique<VkPipeline> pipeline(makeComputePipeline(vkd, data.device, *pipelineLayout, *shaderModule));
+		ComputePipelineWrapper			pipeline(vkd, data.device, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp"));
+		pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+		pipeline.buildPipeline();
 
 		const VkBufferMemoryBarrier inputBufferPostHostWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *inputBuffer, 0ull, bufferSizeBytes);
 
@@ -978,8 +1046,8 @@ tcu::TestStatus CopySSBOToImageTestInstance::iterate (void)
 
 		beginCommandBuffer(vkd, *cmdBuffer);
 
-		vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
-		vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+		pipeline.bind(*cmdBuffer);
+		vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
 		vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &inputBufferPostHostWriteBarrier, 1, &imageLayoutBarrier);
 		vkd.cmdDispatch(*cmdBuffer, workSize.x(), workSize.y(), 1u);
@@ -1019,6 +1087,7 @@ tcu::TestStatus CopySSBOToImageTestInstance::iterate (void)
 class BufferToBufferInvertTest : public vkt::TestCase
 {
 public:
+	virtual void						checkSupport				(Context& context) const;
 	void								initPrograms				(SourceCollections&	sourceCollections) const;
 	TestInstance*						createInstance				(Context&			context) const;
 
@@ -1027,14 +1096,16 @@ public:
 																	 const std::string& description,
 																	 const deUint32		numValues,
 																	 const tcu::IVec3&	localSize,
-																	 const tcu::IVec3&	workSize);
+																	 const tcu::IVec3&	workSize,
+																	 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 	static BufferToBufferInvertTest*	CopyInvertSSBOCase			(tcu::TestContext&	testCtx,
 																	 const std::string& name,
 																	 const std::string& description,
 																	 const deUint32		numValues,
 																	 const tcu::IVec3&	localSize,
-																	 const tcu::IVec3&	workSize);
+																	 const tcu::IVec3&	workSize,
+																	 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 private:
 										BufferToBufferInvertTest	(tcu::TestContext&	testCtx,
@@ -1043,12 +1114,14 @@ private:
 																	 const deUint32		numValues,
 																	 const tcu::IVec3&	localSize,
 																	 const tcu::IVec3&	workSize,
-																	 const BufferType	bufferType);
+																	 const BufferType	bufferType,
+																	 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 	const BufferType					m_bufferType;
 	const deUint32						m_numValues;
 	const tcu::IVec3					m_localSize;
 	const tcu::IVec3					m_workSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class BufferToBufferInvertTestInstance : public vkt::TestInstance
@@ -1058,15 +1131,17 @@ public:
 																		 const deUint32		numValues,
 																		 const tcu::IVec3&	localSize,
 																		 const tcu::IVec3&	workSize,
-																		 const BufferType	bufferType);
+																		 const BufferType	bufferType,
+																		 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 	tcu::TestStatus					iterate								(void);
 
 private:
-	const BufferType				m_bufferType;
-	const deUint32					m_numValues;
-	const tcu::IVec3				m_localSize;
-	const tcu::IVec3				m_workSize;
+	const BufferType					m_bufferType;
+	const deUint32						m_numValues;
+	const tcu::IVec3					m_localSize;
+	const tcu::IVec3					m_workSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 BufferToBufferInvertTest::BufferToBufferInvertTest (tcu::TestContext&	testCtx,
@@ -1075,12 +1150,14 @@ BufferToBufferInvertTest::BufferToBufferInvertTest (tcu::TestContext&	testCtx,
 													const deUint32		numValues,
 													const tcu::IVec3&	localSize,
 													const tcu::IVec3&	workSize,
-													const BufferType	bufferType)
-	: TestCase		(testCtx, name, description)
-	, m_bufferType	(bufferType)
-	, m_numValues	(numValues)
-	, m_localSize	(localSize)
-	, m_workSize	(workSize)
+													const BufferType	bufferType,
+													const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestCase							(testCtx, name, description)
+	, m_bufferType						(bufferType)
+	, m_numValues						(numValues)
+	, m_localSize						(localSize)
+	, m_workSize						(workSize)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 	DE_ASSERT(m_numValues % (multiplyComponents(m_workSize) * multiplyComponents(m_localSize)) == 0);
 	DE_ASSERT(m_bufferType == BUFFER_TYPE_UNIFORM || m_bufferType == BUFFER_TYPE_SSBO);
@@ -1091,9 +1168,10 @@ BufferToBufferInvertTest* BufferToBufferInvertTest::UBOToSSBOInvertCase (tcu::Te
 																		 const std::string&	description,
 																		 const deUint32		numValues,
 																		 const tcu::IVec3&	localSize,
-																		 const tcu::IVec3&	workSize)
+																		 const tcu::IVec3&	workSize,
+																		 const vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
-	return new BufferToBufferInvertTest(testCtx, name, description, numValues, localSize, workSize, BUFFER_TYPE_UNIFORM);
+	return new BufferToBufferInvertTest(testCtx, name, description, numValues, localSize, workSize, BUFFER_TYPE_UNIFORM, computePipelineConstructionType);
 }
 
 BufferToBufferInvertTest* BufferToBufferInvertTest::CopyInvertSSBOCase (tcu::TestContext&	testCtx,
@@ -1101,9 +1179,15 @@ BufferToBufferInvertTest* BufferToBufferInvertTest::CopyInvertSSBOCase (tcu::Tes
 																		const std::string&	description,
 																		const deUint32		numValues,
 																		const tcu::IVec3&	localSize,
-																		const tcu::IVec3&	workSize)
+																		const tcu::IVec3&	workSize,
+																		const vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
-	return new BufferToBufferInvertTest(testCtx, name, description, numValues, localSize, workSize, BUFFER_TYPE_SSBO);
+	return new BufferToBufferInvertTest(testCtx, name, description, numValues, localSize, workSize, BUFFER_TYPE_SSBO, computePipelineConstructionType);
+}
+
+void BufferToBufferInvertTest::checkSupport (Context& context) const
+{
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 }
 
 void BufferToBufferInvertTest::initPrograms (SourceCollections& sourceCollections) const
@@ -1155,19 +1239,21 @@ void BufferToBufferInvertTest::initPrograms (SourceCollections& sourceCollection
 
 TestInstance* BufferToBufferInvertTest::createInstance (Context& context) const
 {
-	return new BufferToBufferInvertTestInstance(context, m_numValues, m_localSize, m_workSize, m_bufferType);
+	return new BufferToBufferInvertTestInstance(context, m_numValues, m_localSize, m_workSize, m_bufferType, m_computePipelineConstructionType);
 }
 
 BufferToBufferInvertTestInstance::BufferToBufferInvertTestInstance (Context&			context,
 																	const deUint32		numValues,
 																	const tcu::IVec3&	localSize,
 																	const tcu::IVec3&	workSize,
-																	const BufferType	bufferType)
-	: TestInstance	(context)
-	, m_bufferType	(bufferType)
-	, m_numValues	(numValues)
-	, m_localSize	(localSize)
-	, m_workSize	(workSize)
+																	const BufferType	bufferType,
+																	const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestInstance						(context)
+	, m_bufferType						(bufferType)
+	, m_numValues						(numValues)
+	, m_localSize						(localSize)
+	, m_workSize						(workSize)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 }
 
@@ -1181,14 +1267,14 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate (void)
 
 	// Customize the test based on buffer type
 
-	const VkBufferUsageFlags inputBufferUsageFlags		= (m_bufferType == BUFFER_TYPE_UNIFORM ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-	const VkDescriptorType inputBufferDescriptorType	= (m_bufferType == BUFFER_TYPE_UNIFORM ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-	const deUint32 randomSeed							= (m_bufferType == BUFFER_TYPE_UNIFORM ? 0x111223f : 0x124fef);
+	const VkBufferUsageFlags	inputBufferUsageFlags		= (m_bufferType == BUFFER_TYPE_UNIFORM ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	const VkDescriptorType		inputBufferDescriptorType	= (m_bufferType == BUFFER_TYPE_UNIFORM ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	const deUint32				randomSeed					= (m_bufferType == BUFFER_TYPE_UNIFORM ? 0x111223f : 0x124fef);
 
 	// Create an input buffer
 
-	const VkDeviceSize bufferSizeBytes = sizeof(tcu::UVec4) * m_numValues;
-	const BufferWithMemory inputBuffer(vk, device, allocator, makeBufferCreateInfo(bufferSizeBytes, inputBufferUsageFlags), MemoryRequirement::HostVisible);
+	const VkDeviceSize		bufferSizeBytes = sizeof(tcu::UVec4) * m_numValues;
+	const BufferWithMemory	inputBuffer(vk, device, allocator, makeBufferCreateInfo(bufferSizeBytes, inputBufferUsageFlags), MemoryRequirement::HostVisible);
 
 	// Fill the input buffer with data
 	{
@@ -1230,9 +1316,9 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate (void)
 
 	// Perform the computation
 
-	const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u));
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
+	ComputePipelineWrapper			pipeline(vk, device, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp"));
+	pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+	pipeline.buildPipeline();
 
 	const VkBufferMemoryBarrier hostWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *inputBuffer, 0ull, bufferSizeBytes);
 
@@ -1245,8 +1331,8 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate (void)
 
 	beginCommandBuffer(vk, *cmdBuffer);
 
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
-	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+	pipeline.bind(*cmdBuffer);
+	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &hostWriteBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
@@ -1290,17 +1376,19 @@ public:
 												 const deUint32		numValues,
 												 const bool			sized,
 												 const tcu::IVec3&	localSize,
-												 const tcu::IVec3&	workSize);
+												 const tcu::IVec3&	workSize,
+												 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
-
+	virtual void		checkSupport			(Context& context) const;
 	void				initPrograms			(SourceCollections& sourceCollections) const;
 	TestInstance*		createInstance			(Context&			context) const;
 
 private:
-	const deUint32		m_numValues;
-	const bool			m_sized;
-	const tcu::IVec3	m_localSize;
-	const tcu::IVec3	m_workSize;
+	const deUint32						m_numValues;
+	const bool							m_sized;
+	const tcu::IVec3					m_localSize;
+	const tcu::IVec3					m_workSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class InvertSSBOInPlaceTestInstance : public vkt::TestInstance
@@ -1309,7 +1397,8 @@ public:
 									InvertSSBOInPlaceTestInstance	(Context&			context,
 																	 const deUint32		numValues,
 																	 const tcu::IVec3&	localSize,
-																	 const tcu::IVec3&	workSize);
+																	 const tcu::IVec3&	workSize,
+																	 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 	tcu::TestStatus					iterate							(void);
 
@@ -1317,6 +1406,7 @@ private:
 	const deUint32					m_numValues;
 	const tcu::IVec3				m_localSize;
 	const tcu::IVec3				m_workSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 InvertSSBOInPlaceTest::InvertSSBOInPlaceTest (tcu::TestContext&		testCtx,
@@ -1325,14 +1415,21 @@ InvertSSBOInPlaceTest::InvertSSBOInPlaceTest (tcu::TestContext&		testCtx,
 											  const deUint32		numValues,
 											  const bool			sized,
 											  const tcu::IVec3&		localSize,
-											  const tcu::IVec3&		workSize)
-	: TestCase		(testCtx, name, description)
-	, m_numValues	(numValues)
-	, m_sized		(sized)
-	, m_localSize	(localSize)
-	, m_workSize	(workSize)
+											  const tcu::IVec3&		workSize,
+											  const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestCase							(testCtx, name, description)
+	, m_numValues						(numValues)
+	, m_sized							(sized)
+	, m_localSize						(localSize)
+	, m_workSize						(workSize)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 	DE_ASSERT(m_numValues % (multiplyComponents(m_workSize) * multiplyComponents(m_localSize)) == 0);
+}
+
+void InvertSSBOInPlaceTest::checkSupport (Context& context) const
+{
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 }
 
 void InvertSSBOInPlaceTest::initPrograms (SourceCollections& sourceCollections) const
@@ -1358,17 +1455,19 @@ void InvertSSBOInPlaceTest::initPrograms (SourceCollections& sourceCollections) 
 
 TestInstance* InvertSSBOInPlaceTest::createInstance (Context& context) const
 {
-	return new InvertSSBOInPlaceTestInstance(context, m_numValues, m_localSize, m_workSize);
+	return new InvertSSBOInPlaceTestInstance(context, m_numValues, m_localSize, m_workSize, m_computePipelineConstructionType);
 }
 
 InvertSSBOInPlaceTestInstance::InvertSSBOInPlaceTestInstance (Context&			context,
 															  const deUint32	numValues,
 															  const tcu::IVec3&	localSize,
-															  const tcu::IVec3&	workSize)
-	: TestInstance	(context)
-	, m_numValues	(numValues)
-	, m_localSize	(localSize)
-	, m_workSize	(workSize)
+															  const tcu::IVec3&	workSize,
+															  const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestInstance						(context)
+	, m_numValues						(numValues)
+	, m_localSize						(localSize)
+	, m_workSize						(workSize)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 }
 
@@ -1421,9 +1520,9 @@ tcu::TestStatus InvertSSBOInPlaceTestInstance::iterate (void)
 
 	// Perform the computation
 
-	const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u));
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
+	ComputePipelineWrapper			pipeline	(vk, device, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp"));
+	pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+	pipeline.buildPipeline();
 
 	const VkBufferMemoryBarrier hostWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *buffer, 0ull, bufferSizeBytes);
 
@@ -1436,8 +1535,8 @@ tcu::TestStatus InvertSSBOInPlaceTestInstance::iterate (void)
 
 	beginCommandBuffer(vk, *cmdBuffer);
 
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
-	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+	pipeline.bind(*cmdBuffer);
+	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &hostWriteBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
@@ -1480,16 +1579,19 @@ public:
 												 const deUint32		numValues,
 												 const bool			sized,
 												 const tcu::IVec3&	localSize,
-												 const tcu::IVec3&	workSize);
+												 const tcu::IVec3&	workSize,
+												 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
+	virtual void		checkSupport			(Context& context) const;
 	void				initPrograms			(SourceCollections& sourceCollections) const;
 	TestInstance*		createInstance			(Context&			context) const;
 
 private:
-	const deUint32		m_numValues;
-	const bool			m_sized;
-	const tcu::IVec3	m_localSize;
-	const tcu::IVec3	m_workSize;
+	const deUint32						m_numValues;
+	const bool							m_sized;
+	const tcu::IVec3					m_localSize;
+	const tcu::IVec3					m_workSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class WriteToMultipleSSBOTestInstance : public vkt::TestInstance
@@ -1498,14 +1600,16 @@ public:
 									WriteToMultipleSSBOTestInstance	(Context&			context,
 																	 const deUint32		numValues,
 																	 const tcu::IVec3&	localSize,
-																	 const tcu::IVec3&	workSize);
+																	 const tcu::IVec3&	workSize,
+																	 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 	tcu::TestStatus					iterate							(void);
 
 private:
-	const deUint32					m_numValues;
-	const tcu::IVec3				m_localSize;
-	const tcu::IVec3				m_workSize;
+	const deUint32						m_numValues;
+	const tcu::IVec3					m_localSize;
+	const tcu::IVec3					m_workSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 WriteToMultipleSSBOTest::WriteToMultipleSSBOTest (tcu::TestContext&		testCtx,
@@ -1514,14 +1618,21 @@ WriteToMultipleSSBOTest::WriteToMultipleSSBOTest (tcu::TestContext&		testCtx,
 												  const deUint32		numValues,
 												  const bool			sized,
 												  const tcu::IVec3&		localSize,
-												  const tcu::IVec3&		workSize)
-	: TestCase		(testCtx, name, description)
-	, m_numValues	(numValues)
-	, m_sized		(sized)
-	, m_localSize	(localSize)
-	, m_workSize	(workSize)
+												  const tcu::IVec3&		workSize,
+												  const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestCase							(testCtx, name, description)
+	, m_numValues						(numValues)
+	, m_sized							(sized)
+	, m_localSize						(localSize)
+	, m_workSize						(workSize)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 	DE_ASSERT(m_numValues % (multiplyComponents(m_workSize) * multiplyComponents(m_localSize)) == 0);
+}
+
+void WriteToMultipleSSBOTest::checkSupport (Context& context) const
+{
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 }
 
 void WriteToMultipleSSBOTest::initPrograms (SourceCollections& sourceCollections) const
@@ -1560,17 +1671,19 @@ void WriteToMultipleSSBOTest::initPrograms (SourceCollections& sourceCollections
 
 TestInstance* WriteToMultipleSSBOTest::createInstance (Context& context) const
 {
-	return new WriteToMultipleSSBOTestInstance(context, m_numValues, m_localSize, m_workSize);
+	return new WriteToMultipleSSBOTestInstance(context, m_numValues, m_localSize, m_workSize, m_computePipelineConstructionType);
 }
 
 WriteToMultipleSSBOTestInstance::WriteToMultipleSSBOTestInstance (Context&			context,
 																  const deUint32	numValues,
 																  const tcu::IVec3&	localSize,
-																  const tcu::IVec3&	workSize)
-	: TestInstance	(context)
-	, m_numValues	(numValues)
-	, m_localSize	(localSize)
-	, m_workSize	(workSize)
+																  const tcu::IVec3&	workSize,
+																  const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestInstance						(context)
+	, m_numValues						(numValues)
+	, m_localSize						(localSize)
+	, m_workSize						(workSize)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 }
 
@@ -1612,9 +1725,9 @@ tcu::TestStatus WriteToMultipleSSBOTestInstance::iterate (void)
 
 	// Perform the computation
 
-	const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u));
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
+	ComputePipelineWrapper		pipeline(vk, device, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp"));
+	pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+	pipeline.buildPipeline();
 
 	const VkBufferMemoryBarrier shaderWriteBarriers[] =
 	{
@@ -1629,8 +1742,8 @@ tcu::TestStatus WriteToMultipleSSBOTestInstance::iterate (void)
 
 	beginCommandBuffer(vk, *cmdBuffer);
 
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
-	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+	pipeline.bind(*cmdBuffer);
+	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
 	vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(shaderWriteBarriers), shaderWriteBarriers, 0, (const VkImageMemoryBarrier*)DE_NULL);
@@ -1687,34 +1800,46 @@ public:
 						SSBOBarrierTest		(tcu::TestContext&	testCtx,
 											 const std::string&	name,
 											 const std::string&	description,
-											 const tcu::IVec3&	workSize);
+											 const tcu::IVec3&	workSize,
+											 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
+	virtual void		checkSupport		(Context& context) const;
 	void				initPrograms		(SourceCollections& sourceCollections) const;
 	TestInstance*		createInstance		(Context&			context) const;
 
 private:
-	const tcu::IVec3	m_workSize;
+	const tcu::IVec3					m_workSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class SSBOBarrierTestInstance : public vkt::TestInstance
 {
 public:
 									SSBOBarrierTestInstance		(Context&			context,
-																 const tcu::IVec3&	workSize);
+																 const tcu::IVec3&	workSize,
+																 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 	tcu::TestStatus					iterate						(void);
 
 private:
-	const tcu::IVec3				m_workSize;
+	const tcu::IVec3					m_workSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 SSBOBarrierTest::SSBOBarrierTest (tcu::TestContext&		testCtx,
 								  const std::string&	name,
 								  const std::string&	description,
-								  const tcu::IVec3&		workSize)
+								  const tcu::IVec3&		workSize,
+								  const vk::ComputePipelineConstructionType computePipelineConstructionType)
 	: TestCase		(testCtx, name, description)
 	, m_workSize	(workSize)
+	, m_computePipelineConstructionType(computePipelineConstructionType)
 {
+}
+
+void SSBOBarrierTest::checkSupport (Context& context) const
+{
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 }
 
 void SSBOBarrierTest::initPrograms (SourceCollections& sourceCollections) const
@@ -1751,12 +1876,13 @@ void SSBOBarrierTest::initPrograms (SourceCollections& sourceCollections) const
 
 TestInstance* SSBOBarrierTest::createInstance (Context& context) const
 {
-	return new SSBOBarrierTestInstance(context, m_workSize);
+	return new SSBOBarrierTestInstance(context, m_workSize, m_computePipelineConstructionType);
 }
 
-SSBOBarrierTestInstance::SSBOBarrierTestInstance (Context& context, const tcu::IVec3& workSize)
+SSBOBarrierTestInstance::SSBOBarrierTestInstance (Context& context, const tcu::IVec3& workSize, const vk::ComputePipelineConstructionType computePipelineConstructionType)
 	: TestInstance	(context)
 	, m_workSize	(workSize)
+	, m_computePipelineConstructionType(computePipelineConstructionType)
 {
 }
 
@@ -1831,12 +1957,13 @@ tcu::TestStatus SSBOBarrierTestInstance::iterate (void)
 
 	// Perform the computation
 
-	const Unique<VkShaderModule> shaderModule0(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp0"), 0));
-	const Unique<VkShaderModule> shaderModule1(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp1"), 0));
+	ComputePipelineWrapper			pipeline0(vk, device, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp0"));
+	pipeline0.setDescriptorSetLayout(descriptorSetLayout.get());
+	pipeline0.buildPipeline();
 
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkPipeline> pipeline0(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule0));
-	const Unique<VkPipeline> pipeline1(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule1));
+	ComputePipelineWrapper			pipeline1(vk, device, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp1"));
+	pipeline1.setDescriptorSetLayout(descriptorSetLayout.get());
+	pipeline1.buildPipeline();
 
 	const VkBufferMemoryBarrier writeUniformConstantsBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_UNIFORM_READ_BIT, *uniformBuffer, 0ull, uniformBufferSizeBytes);
 
@@ -1851,8 +1978,8 @@ tcu::TestStatus SSBOBarrierTestInstance::iterate (void)
 
 	beginCommandBuffer(vk, *cmdBuffer);
 
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline0);
-	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+	pipeline0.bind(*cmdBuffer);
+	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline0.getPipelineLayout(), 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &writeUniformConstantsBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 
@@ -1860,7 +1987,7 @@ tcu::TestStatus SSBOBarrierTestInstance::iterate (void)
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &betweenShadersBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 
 	// Switch to the second shader program
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline1);
+	pipeline1.bind(*cmdBuffer);
 
 	vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &afterComputeBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
@@ -1899,14 +2026,17 @@ public:
 												 const std::string& name,
 												 const std::string& description,
 												 const deUint32		localSize,
-												 const tcu::IVec2&	imageSize);
+												 const tcu::IVec2&	imageSize,
+												 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
+	virtual void		checkSupport			(Context& context) const;
 	void				initPrograms			(SourceCollections& sourceCollections) const;
 	TestInstance*		createInstance			(Context&			context) const;
 
 private:
-	const deUint32		m_localSize;
-	const tcu::IVec2	m_imageSize;
+	const deUint32						m_localSize;
+	const tcu::IVec2					m_imageSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class ImageAtomicOpTestInstance : public vkt::TestInstance
@@ -1914,24 +2044,33 @@ class ImageAtomicOpTestInstance : public vkt::TestInstance
 public:
 									ImageAtomicOpTestInstance		(Context&			context,
 																	 const deUint32		localSize,
-																	 const tcu::IVec2&	imageSize);
+																	 const tcu::IVec2&	imageSize,
+																	 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 	tcu::TestStatus					iterate							(void);
 
 private:
-	const deUint32					m_localSize;
-	const tcu::IVec2				m_imageSize;
+	const deUint32						m_localSize;
+	const tcu::IVec2					m_imageSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 ImageAtomicOpTest::ImageAtomicOpTest (tcu::TestContext&		testCtx,
 									  const std::string&	name,
 									  const std::string&	description,
 									  const deUint32		localSize,
-									  const tcu::IVec2&		imageSize)
-	: TestCase		(testCtx, name, description)
-	, m_localSize	(localSize)
-	, m_imageSize	(imageSize)
+									  const tcu::IVec2&		imageSize,
+	const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestCase							(testCtx, name, description)
+	, m_localSize						(localSize)
+	, m_imageSize						(imageSize)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
+}
+
+void ImageAtomicOpTest::checkSupport (Context& context) const
+{
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 }
 
 void ImageAtomicOpTest::initPrograms (SourceCollections& sourceCollections) const
@@ -1960,13 +2099,14 @@ void ImageAtomicOpTest::initPrograms (SourceCollections& sourceCollections) cons
 
 TestInstance* ImageAtomicOpTest::createInstance (Context& context) const
 {
-	return new ImageAtomicOpTestInstance(context, m_localSize, m_imageSize);
+	return new ImageAtomicOpTestInstance(context, m_localSize, m_imageSize, m_computePipelineConstructionType);
 }
 
-ImageAtomicOpTestInstance::ImageAtomicOpTestInstance (Context& context, const deUint32 localSize, const tcu::IVec2& imageSize)
+ImageAtomicOpTestInstance::ImageAtomicOpTestInstance (Context& context, const deUint32 localSize, const tcu::IVec2& imageSize, const vk::ComputePipelineConstructionType computePipelineConstructionType)
 	: TestInstance	(context)
 	, m_localSize	(localSize)
 	, m_imageSize	(imageSize)
+	, m_computePipelineConstructionType(computePipelineConstructionType)
 {
 }
 
@@ -2038,9 +2178,9 @@ tcu::TestStatus ImageAtomicOpTestInstance::iterate (void)
 
 	// Perform the computation
 	{
-		const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u));
-		const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
-		const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
+		ComputePipelineWrapper			pipeline(vk, device, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp"));
+		pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+		pipeline.buildPipeline();
 
 		const VkBufferMemoryBarrier inputBufferPostHostWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *inputBuffer, 0ull, inputBufferSizeBytes);
 
@@ -2058,8 +2198,8 @@ tcu::TestStatus ImageAtomicOpTestInstance::iterate (void)
 
 		beginCommandBuffer(vk, *cmdBuffer);
 
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
-		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+		pipeline.bind(*cmdBuffer);
+		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
 		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &inputBufferPostHostWriteBarrier, 1, &imageLayoutBarrier);
 		vk.cmdDispatch(*cmdBuffer, m_imageSize.x(), m_imageSize.y(), 1u);
@@ -2105,34 +2245,46 @@ public:
 						ImageBarrierTest	(tcu::TestContext&	testCtx,
 											const std::string&	name,
 											const std::string&	description,
-											const tcu::IVec2&	imageSize);
+											const tcu::IVec2&	imageSize,
+											const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
+	virtual void		checkSupport		(Context& context) const;
 	void				initPrograms		(SourceCollections& sourceCollections) const;
 	TestInstance*		createInstance		(Context&			context) const;
 
 private:
-	const tcu::IVec2	m_imageSize;
+	const tcu::IVec2					m_imageSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class ImageBarrierTestInstance : public vkt::TestInstance
 {
 public:
 									ImageBarrierTestInstance	(Context&			context,
-																 const tcu::IVec2&	imageSize);
+																 const tcu::IVec2&	imageSize,
+																 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 	tcu::TestStatus					iterate						(void);
 
 private:
-	const tcu::IVec2				m_imageSize;
+	const tcu::IVec2					m_imageSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 ImageBarrierTest::ImageBarrierTest (tcu::TestContext&	testCtx,
 									const std::string&	name,
 									const std::string&	description,
-									const tcu::IVec2&	imageSize)
-	: TestCase		(testCtx, name, description)
-	, m_imageSize	(imageSize)
+									const tcu::IVec2&	imageSize,
+									const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestCase							(testCtx, name, description)
+	, m_imageSize						(imageSize)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
+}
+
+void ImageBarrierTest::checkSupport (Context& context) const
+{
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 }
 
 void ImageBarrierTest::initPrograms (SourceCollections& sourceCollections) const
@@ -2164,12 +2316,13 @@ void ImageBarrierTest::initPrograms (SourceCollections& sourceCollections) const
 
 TestInstance* ImageBarrierTest::createInstance (Context& context) const
 {
-	return new ImageBarrierTestInstance(context, m_imageSize);
+	return new ImageBarrierTestInstance(context, m_imageSize, m_computePipelineConstructionType);
 }
 
-ImageBarrierTestInstance::ImageBarrierTestInstance (Context& context, const tcu::IVec2& imageSize)
-	: TestInstance	(context)
-	, m_imageSize	(imageSize)
+ImageBarrierTestInstance::ImageBarrierTestInstance (Context& context, const tcu::IVec2& imageSize, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestInstance						(context)
+	, m_imageSize						(imageSize)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 }
 
@@ -2247,12 +2400,12 @@ tcu::TestStatus ImageBarrierTestInstance::iterate (void)
 
 	// Perform the computation
 
-	const Unique<VkShaderModule>	shaderModule0(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp0"), 0));
-	const Unique<VkShaderModule>	shaderModule1(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp1"), 0));
-
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkPipeline> pipeline0(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule0));
-	const Unique<VkPipeline> pipeline1(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule1));
+	ComputePipelineWrapper			pipeline0(vk, device, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp0"));
+	pipeline0.setDescriptorSetLayout(descriptorSetLayout.get());
+	pipeline0.buildPipeline();
+	ComputePipelineWrapper			pipeline1(vk, device, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp1"));
+	pipeline1.setDescriptorSetLayout(descriptorSetLayout.get());
+	pipeline1.buildPipeline();
 
 	const VkBufferMemoryBarrier writeUniformConstantsBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_UNIFORM_READ_BIT, *uniformBuffer, 0ull, uniformBufferSizeBytes);
 
@@ -2275,8 +2428,8 @@ tcu::TestStatus ImageBarrierTestInstance::iterate (void)
 
 	beginCommandBuffer(vk, *cmdBuffer);
 
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline0);
-	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+	pipeline0.bind(*cmdBuffer);
+	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline0.getPipelineLayout(), 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &writeUniformConstantsBarrier, 1, &imageLayoutBarrier);
 
@@ -2284,7 +2437,7 @@ tcu::TestStatus ImageBarrierTestInstance::iterate (void)
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrierBetweenShaders);
 
 	// Switch to the second shader program
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline1);
+	pipeline1.bind(*cmdBuffer);
 
 	vk.cmdDispatch(*cmdBuffer, m_imageSize.x(), m_imageSize.y(), 1u);
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &afterComputeBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
@@ -2320,10 +2473,11 @@ tcu::TestStatus ImageBarrierTestInstance::iterate (void)
 class ComputeTestInstance : public vkt::TestInstance
 {
 public:
-		ComputeTestInstance		(Context& context)
-		: TestInstance			(context)
-		, m_numPhysDevices		(1)
-		, m_queueFamilyIndex	(0)
+		ComputeTestInstance		(Context& context, vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: TestInstance						(context)
+		, m_numPhysDevices					(1)
+		, m_queueFamilyIndex				(0)
+		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
 		createDeviceGroup();
 	}
@@ -2341,6 +2495,7 @@ public:
 protected:
 	deUint32							m_numPhysDevices;
 	deUint32							m_queueFamilyIndex;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 
 private:
 	CustomInstance						m_deviceGroupInstance;
@@ -2376,8 +2531,23 @@ void ComputeTestInstance::createDeviceGroup (void)
 		devGroupProperties[devGroupIdx].physicalDevices										//physicalDevices
 	};
 	const InstanceDriver&							instance				(m_deviceGroupInstance.getDriver());
+	VkPhysicalDeviceFeatures2						deviceFeatures2			= initVulkanStructure();
 	const VkPhysicalDeviceFeatures					deviceFeatures			= getPhysicalDeviceFeatures(instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx]);
 	const std::vector<VkQueueFamilyProperties>		queueProps				= getPhysicalDeviceQueueFamilyProperties(instance, devGroupProperties[devGroupIdx].physicalDevices[physDeviceIdx]);
+
+	deviceFeatures2.features = deviceFeatures;
+
+#ifndef CTS_USES_VULKANSC
+	VkPhysicalDeviceDynamicRenderingFeaturesKHR		dynamicRenderingFeatures	= initVulkanStructure();
+	dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
+	VkPhysicalDeviceShaderObjectFeaturesEXT			shaderObjectFeatures		= initVulkanStructure(&dynamicRenderingFeatures);
+	shaderObjectFeatures.shaderObject = VK_TRUE;
+	if (m_computePipelineConstructionType)
+	{
+		deviceExtensions.push_back("VK_EXT_shader_object");
+		deviceFeatures2.pNext = &shaderObjectFeatures;
+	}
+#endif
 
 	m_physicalDevices.resize(m_numPhysDevices);
 	for (deUint32 physDevIdx = 0; physDevIdx < m_numPhysDevices; physDevIdx++)
@@ -2400,6 +2570,9 @@ void ComputeTestInstance::createDeviceGroup (void)
 	};
 
 	void* pNext												= &deviceGroupInfo;
+	if (deviceFeatures2.pNext != DE_NULL)
+		deviceGroupInfo.pNext = &deviceFeatures2;
+
 #ifdef CTS_USES_VULKANSC
 	VkDeviceObjectReservationCreateInfo memReservationInfo	= cmdLine.isSubProcess() ? m_context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
 	memReservationInfo.pNext								= pNext;
@@ -2448,7 +2621,7 @@ void ComputeTestInstance::createDeviceGroup (void)
 		DE_NULL,														// const char* const*				ppEnabledLayerNames;
 		deUint32(deviceExtensions.size()),								// uint32_t							enabledExtensionCount;
 		(deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0]),	// const char* const*				ppEnabledExtensionNames;
-		&deviceFeatures,												// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+		deviceFeatures2.pNext == DE_NULL ? &deviceFeatures : DE_NULL,	// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
 	m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_deviceGroupInstance, instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
@@ -2468,16 +2641,19 @@ public:
 											const deUint32		numValues,
 											const tcu::IVec3&	localsize,
 											const tcu::IVec3&	worksize,
-											const tcu::IVec3&	splitsize);
+											const tcu::IVec3&	splitsize,
+											const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
+	virtual void		checkSupport		(Context& context) const;
 	void				initPrograms		(SourceCollections& sourceCollections) const;
 	TestInstance*		createInstance		(Context&			context) const;
 
 private:
-	const deUint32					m_numValues;
-	const tcu::IVec3				m_localSize;
-	const tcu::IVec3				m_workSize;
-	const tcu::IVec3				m_splitSize;
+	const deUint32						m_numValues;
+	const tcu::IVec3					m_localSize;
+	const tcu::IVec3					m_workSize;
+	const tcu::IVec3					m_splitSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class DispatchBaseTestInstance : public ComputeTestInstance
@@ -2487,16 +2663,17 @@ public:
 																const deUint32		numValues,
 																const tcu::IVec3&	localsize,
 																const tcu::IVec3&	worksize,
-																const tcu::IVec3&	splitsize);
+																const tcu::IVec3&	splitsize,
+																const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 	bool							isInputVectorValid			(const tcu::IVec3& small, const tcu::IVec3& big);
 	tcu::TestStatus					iterate						(void);
 
 private:
-	const deUint32					m_numValues;
-	const tcu::IVec3				m_localSize;
-	const tcu::IVec3				m_workSize;
-	const tcu::IVec3				m_splitWorkSize;
+	const deUint32						m_numValues;
+	const tcu::IVec3					m_localSize;
+	const tcu::IVec3					m_workSize;
+	const tcu::IVec3					m_splitWorkSize;
 };
 
 DispatchBaseTest::DispatchBaseTest (tcu::TestContext&	testCtx,
@@ -2505,13 +2682,20 @@ DispatchBaseTest::DispatchBaseTest (tcu::TestContext&	testCtx,
 									const deUint32		numValues,
 									const tcu::IVec3&	localsize,
 									const tcu::IVec3&	worksize,
-									const tcu::IVec3&	splitsize)
+									const tcu::IVec3&	splitsize,
+									const vk::ComputePipelineConstructionType computePipelineConstructionType)
 	: TestCase		(testCtx, name, description)
 	, m_numValues	(numValues)
 	, m_localSize	(localsize)
 	, m_workSize	(worksize)
 	, m_splitSize	(splitsize)
+	, m_computePipelineConstructionType(computePipelineConstructionType)
 {
+}
+
+void DispatchBaseTest::checkSupport (Context& context) const
+{
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 }
 
 void DispatchBaseTest::initPrograms (SourceCollections& sourceCollections) const
@@ -2542,20 +2726,21 @@ void DispatchBaseTest::initPrograms (SourceCollections& sourceCollections) const
 
 TestInstance* DispatchBaseTest::createInstance (Context& context) const
 {
-	return new DispatchBaseTestInstance(context, m_numValues, m_localSize, m_workSize, m_splitSize);
+	return new DispatchBaseTestInstance(context, m_numValues, m_localSize, m_workSize, m_splitSize, m_computePipelineConstructionType);
 }
 
 DispatchBaseTestInstance::DispatchBaseTestInstance (Context& context,
 													const deUint32		numValues,
 													const tcu::IVec3&	localsize,
 													const tcu::IVec3&	worksize,
-													const tcu::IVec3&	splitsize)
+													const tcu::IVec3&	splitsize,
+													const vk::ComputePipelineConstructionType computePipelineConstructionType)
 
-	: ComputeTestInstance	(context)
-	, m_numValues			(numValues)
-	, m_localSize			(localsize)
-	, m_workSize			(worksize)
-	, m_splitWorkSize		(splitsize)
+	: ComputeTestInstance				(context, computePipelineConstructionType)
+	, m_numValues						(numValues)
+	, m_localSize						(localsize)
+	, m_workSize						(worksize)
+	, m_splitWorkSize					(splitsize)
 {
 	// For easy work distribution across physical devices:
 	// WorkSize should be a multiple of SplitWorkSize only in the X component
@@ -2652,9 +2837,10 @@ tcu::TestStatus DispatchBaseTestInstance::iterate (void)
 		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &uniformBufferDescriptorInfo)
 		.update(vk, device);
 
-	const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u));
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, static_cast<VkPipelineCreateFlags>(VK_PIPELINE_CREATE_DISPATCH_BASE), *shaderModule, static_cast<VkPipelineShaderStageCreateFlags>(0u)));
+	ComputePipelineWrapper			pipeline(vk, device, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp"));
+	pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+	pipeline.setPipelineCreateFlags(VK_PIPELINE_CREATE_DISPATCH_BASE);
+	pipeline.buildPipeline();
 
 	const VkBufferMemoryBarrier hostWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *buffer, 0ull, bufferSizeBytes);
 	const VkBufferMemoryBarrier hostUniformWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_UNIFORM_READ_BIT, *uniformBuffer, 0ull, uniformBufferSizeBytes);
@@ -2667,8 +2853,8 @@ tcu::TestStatus DispatchBaseTestInstance::iterate (void)
 	// Start recording commands
 	beginCommandBuffer(vk, *cmdBuffer);
 
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
-	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+	pipeline.bind(*cmdBuffer);
+	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &hostUniformWriteBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 
@@ -2736,30 +2922,34 @@ public:
 											const std::string&	description,
 											const deUint32		numValues,
 											const tcu::IVec3&	localsize,
-											const tcu::IVec3&	splitsize);
+											const tcu::IVec3&	splitsize,
+											const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
+	virtual void		checkSupport		(Context& context) const;
 	void				initPrograms		(SourceCollections& sourceCollections) const;
 	TestInstance*		createInstance		(Context&			context) const;
 
 private:
-	const deUint32					m_numValues;
-	const tcu::IVec3				m_localSize;
-	const tcu::IVec3				m_workSize;
-	const tcu::IVec3				m_splitSize;
+	const deUint32						m_numValues;
+	const tcu::IVec3					m_localSize;
+	const tcu::IVec3					m_workSize;
+	const tcu::IVec3					m_splitSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class DeviceIndexTestInstance : public ComputeTestInstance
 {
 public:
 									DeviceIndexTestInstance	(Context&			context,
-																const deUint32		numValues,
-																const tcu::IVec3&	localsize,
-																const tcu::IVec3&	worksize);
-	tcu::TestStatus					iterate						(void);
+															 const deUint32		numValues,
+															 const tcu::IVec3&	localsize,
+															 const tcu::IVec3&	worksize,
+															 const vk::ComputePipelineConstructionType computePipelineConstructionType);
+	tcu::TestStatus					iterate					(void);
 private:
-	const deUint32					m_numValues;
-	const tcu::IVec3				m_localSize;
-	tcu::IVec3						m_workSize;
+	const deUint32						m_numValues;
+	const tcu::IVec3					m_localSize;
+	tcu::IVec3							m_workSize;
 };
 
 DeviceIndexTest::DeviceIndexTest (tcu::TestContext&	testCtx,
@@ -2767,12 +2957,19 @@ DeviceIndexTest::DeviceIndexTest (tcu::TestContext&	testCtx,
 									const std::string&	description,
 									const deUint32		numValues,
 									const tcu::IVec3&	localsize,
-									const tcu::IVec3&	worksize)
-	: TestCase		(testCtx, name, description)
-	, m_numValues	(numValues)
-	, m_localSize	(localsize)
-	, m_workSize	(worksize)
+									const tcu::IVec3&	worksize,
+									const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestCase							(testCtx, name, description)
+	, m_numValues						(numValues)
+	, m_localSize						(localsize)
+	, m_workSize						(worksize)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
+}
+
+void DeviceIndexTest::checkSupport (Context& context) const
+{
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 }
 
 void DeviceIndexTest::initPrograms (SourceCollections& sourceCollections) const
@@ -2804,18 +3001,19 @@ void DeviceIndexTest::initPrograms (SourceCollections& sourceCollections) const
 
 TestInstance* DeviceIndexTest::createInstance (Context& context) const
 {
-	return new DeviceIndexTestInstance(context, m_numValues, m_localSize, m_workSize);
+	return new DeviceIndexTestInstance(context, m_numValues, m_localSize, m_workSize, m_computePipelineConstructionType);
 }
 
 DeviceIndexTestInstance::DeviceIndexTestInstance (Context& context,
 													const deUint32		numValues,
 													const tcu::IVec3&	localsize,
-													const tcu::IVec3&	worksize)
+													const tcu::IVec3&	worksize,
+													const vk::ComputePipelineConstructionType computePipelineConstructionType)
 
-	: ComputeTestInstance	(context)
-	, m_numValues			(numValues)
-	, m_localSize			(localsize)
-	, m_workSize			(worksize)
+	: ComputeTestInstance				(context, computePipelineConstructionType)
+	, m_numValues						(numValues)
+	, m_localSize						(localsize)
+	, m_workSize						(worksize)
 {}
 
 tcu::TestStatus DeviceIndexTestInstance::iterate (void)
@@ -2920,9 +3118,9 @@ tcu::TestStatus DeviceIndexTestInstance::iterate (void)
 		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &uniformBufferDescriptorInfo)
 		.update(vk, device);
 
-	const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u));
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
+	ComputePipelineWrapper			pipeline(vk, device, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp"));
+	pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+	pipeline.buildPipeline();
 
 	const VkBufferMemoryBarrier hostUniformWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_UNIFORM_READ_BIT, *uniformBuffer, 0ull, uniformBufferSizeBytes);
 	const VkBufferMemoryBarrier shaderWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT , *sboBuffer, 0ull, bufferSizeBytes);
@@ -2942,8 +3140,8 @@ tcu::TestStatus DeviceIndexTestInstance::iterate (void)
 		}
 		beginCommandBuffer(vk, *cmdBuffer);
 
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
-		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+		pipeline.bind(*cmdBuffer);
+		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &hostUniformWriteBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 
 		vk.cmdSetDeviceMask(*cmdBuffer, physDevMask);
@@ -3008,26 +3206,39 @@ class ConcurrentCompute : public vkt::TestCase
 public:
 						ConcurrentCompute	(tcu::TestContext&	testCtx,
 											 const std::string&	name,
-											 const std::string&	description);
+											 const std::string&	description,
+											 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 
+	virtual void		checkSupport		(Context& context) const;
 	void				initPrograms		(SourceCollections& sourceCollections) const;
 	TestInstance*		createInstance		(Context&			context) const;
+
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class ConcurrentComputeInstance : public vkt::TestInstance
 {
 public:
-									ConcurrentComputeInstance	(Context& context);
+									ConcurrentComputeInstance	(Context& context, const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 	tcu::TestStatus					iterate						(void);
+private:
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 ConcurrentCompute::ConcurrentCompute (tcu::TestContext&	testCtx,
 									  const std::string&	name,
-									  const std::string&	description)
-	: TestCase		(testCtx, name, description)
+									  const std::string&	description,
+									  const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestCase							(testCtx, name, description)
+	, m_computePipelineConstructionType (computePipelineConstructionType)
 {
+}
+
+void ConcurrentCompute::checkSupport (Context& context) const
+{
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
 }
 
 void ConcurrentCompute::initPrograms (SourceCollections& sourceCollections) const
@@ -3053,11 +3264,12 @@ void ConcurrentCompute::initPrograms (SourceCollections& sourceCollections) cons
 
 TestInstance* ConcurrentCompute::createInstance (Context& context) const
 {
-	return new ConcurrentComputeInstance(context);
+	return new ConcurrentComputeInstance(context, m_computePipelineConstructionType);
 }
 
-ConcurrentComputeInstance::ConcurrentComputeInstance (Context& context)
-	: TestInstance	(context)
+ConcurrentComputeInstance::ConcurrentComputeInstance (Context& context, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestInstance						(context)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 }
 
@@ -3085,6 +3297,7 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 	vk::Move<vk::VkDevice>					logicalDevice;
 	std::vector<VkQueueFamilyProperties>	queueFamilyProperties;
 	VkDeviceCreateInfo						deviceInfo;
+	VkPhysicalDeviceFeatures2				deviceFeatures2				= initVulkanStructure();
 	VkPhysicalDeviceFeatures				deviceFeatures;
 	const float								queuePriorities[2]			= {1.0f, 0.0f};
 	VkDeviceQueueCreateInfo					queueInfos[2];
@@ -3132,7 +3345,29 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 			break;
 	}
 
-	void* pNext												= DE_NULL;
+	void* pNext = DE_NULL;
+
+	deMemset(&deviceInfo, 0, sizeof(deviceInfo));
+	instanceDriver.getPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
+
+	deviceFeatures2.features = deviceFeatures;
+
+	std::vector<const char*> deviceExtensions;
+
+#ifndef CTS_USES_VULKANSC
+	VkPhysicalDeviceDynamicRenderingFeaturesKHR		dynamicRenderingFeatures = initVulkanStructure();
+	dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
+	VkPhysicalDeviceShaderObjectFeaturesEXT			shaderObjectFeatures = initVulkanStructure(&dynamicRenderingFeatures);
+	shaderObjectFeatures.shaderObject = VK_TRUE;
+
+	if (m_computePipelineConstructionType != COMPUTE_PIPELINE_CONSTRUCTION_TYPE_PIPELINE)
+	{
+		deviceExtensions.push_back("VK_EXT_shader_object");
+		deviceFeatures2.pNext = &shaderObjectFeatures;
+		pNext = &deviceFeatures2;
+	}
+#endif
+
 #ifdef CTS_USES_VULKANSC
 	VkDeviceObjectReservationCreateInfo memReservationInfo	= m_context.getTestContext().getCommandLine().isSubProcess() ? m_context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
 	memReservationInfo.pNext								= pNext;
@@ -3170,16 +3405,13 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 	}
 #endif // CTS_USES_VULKANSC
 
-	deMemset(&deviceInfo, 0, sizeof(deviceInfo));
-	instanceDriver.getPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
-
 	deviceInfo.sType					= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceInfo.pNext					= pNext;
-	deviceInfo.enabledExtensionCount	= 0u;
-	deviceInfo.ppEnabledExtensionNames	= DE_NULL;
+	deviceInfo.enabledExtensionCount	= (deUint32)deviceExtensions.size();
+	deviceInfo.ppEnabledExtensionNames	= deviceExtensions.data();
 	deviceInfo.enabledLayerCount		= 0u;
 	deviceInfo.ppEnabledLayerNames		= DE_NULL;
-	deviceInfo.pEnabledFeatures			= &deviceFeatures;
+	deviceInfo.pEnabledFeatures			= (deviceFeatures2.pNext == DE_NULL) ? &deviceFeatures : DE_NULL;
 	deviceInfo.queueCreateInfoCount		= (queues[0].queueFamilyIndex == queues[1].queueFamilyIndex) ? 1 : 2;
 	deviceInfo.pQueueCreateInfos		= queueInfos;
 
@@ -3272,15 +3504,17 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 
 	const Unique<VkShaderModule>		shaderModule(createShaderModule(vk, *logicalDevice, m_context.getBinaryCollection().get("comp"), 0u));
 
-	const Unique<VkPipelineLayout>		pipelineLayout1(makePipelineLayout(vk, *logicalDevice, *descriptorSetLayout1));
-	const Unique<VkPipeline>			pipeline1(makeComputePipeline(vk, *logicalDevice, *pipelineLayout1, *shaderModule));
+	ComputePipelineWrapper				pipeline1(vk, *logicalDevice, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp"));
+	pipeline1.setDescriptorSetLayout(*descriptorSetLayout1);
+	pipeline1.buildPipeline();
 	const VkBufferMemoryBarrier			hostWriteBarrier1		= makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *buffer1, 0ull, bufferSizeBytes);
 	const VkBufferMemoryBarrier			shaderWriteBarrier1		= makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer1, 0ull, bufferSizeBytes);
 	const Unique<VkCommandPool>			cmdPool1(makeCommandPool(vk, *logicalDevice, queues[0].queueFamilyIndex));
 	const Unique<VkCommandBuffer>		cmdBuffer1(allocateCommandBuffer(vk, *logicalDevice, *cmdPool1, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-	const Unique<VkPipelineLayout>		pipelineLayout2(makePipelineLayout(vk, *logicalDevice, *descriptorSetLayout2));
-	const Unique<VkPipeline>			pipeline2(makeComputePipeline(vk, *logicalDevice, *pipelineLayout2, *shaderModule));
+	ComputePipelineWrapper				pipeline2(vk, *logicalDevice, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp"));
+	pipeline2.setDescriptorSetLayout(*descriptorSetLayout2);
+	pipeline2.buildPipeline();
 	const VkBufferMemoryBarrier			hostWriteBarrier2		= makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *buffer2, 0ull, bufferSizeBytes);
 	const VkBufferMemoryBarrier			shaderWriteBarrier2		= makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer2, 0ull, bufferSizeBytes);
 	const Unique<VkCommandPool>			cmdPool2(makeCommandPool(vk, *logicalDevice, queues[1].queueFamilyIndex));
@@ -3289,8 +3523,8 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 	// Command buffer 1
 
 	beginCommandBuffer(vk, *cmdBuffer1);
-	vk.cmdBindPipeline(*cmdBuffer1, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline1);
-	vk.cmdBindDescriptorSets(*cmdBuffer1, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout1, 0u, 1u, &descriptorSet1.get(), 0u, DE_NULL);
+	pipeline1.bind(*cmdBuffer1);
+	vk.cmdBindDescriptorSets(*cmdBuffer1, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline1.getPipelineLayout(), 0u, 1u, &descriptorSet1.get(), 0u, DE_NULL);
 	vk.cmdPipelineBarrier(*cmdBuffer1, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &hostWriteBarrier1, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	vk.cmdDispatch(*cmdBuffer1, 1, 1, 1);
 	vk.cmdPipelineBarrier(*cmdBuffer1, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &shaderWriteBarrier1, 0, (const VkImageMemoryBarrier*)DE_NULL);
@@ -3299,8 +3533,8 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 	// Command buffer 2
 
 	beginCommandBuffer(vk, *cmdBuffer2);
-	vk.cmdBindPipeline(*cmdBuffer2, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline2);
-	vk.cmdBindDescriptorSets(*cmdBuffer2, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout2, 0u, 1u, &descriptorSet2.get(), 0u, DE_NULL);
+	pipeline2.bind(*cmdBuffer2);
+	vk.cmdBindDescriptorSets(*cmdBuffer2, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline2.getPipelineLayout(), 0u, 1u, &descriptorSet2.get(), 0u, DE_NULL);
 	vk.cmdPipelineBarrier(*cmdBuffer2, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &hostWriteBarrier2, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	vk.cmdDispatch(*cmdBuffer2, 1, 1, 1);
 	vk.cmdPipelineBarrier(*cmdBuffer2, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &shaderWriteBarrier2, 0, (const VkImageMemoryBarrier*)DE_NULL);
@@ -3395,22 +3629,25 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 class EmptyWorkGroupCase : public vkt::TestCase
 {
 public:
-					EmptyWorkGroupCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const tcu::UVec3& dispatchSize);
+					EmptyWorkGroupCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const tcu::UVec3& dispatchSize, const vk::ComputePipelineConstructionType computePipelineConstructionType);
 	virtual			~EmptyWorkGroupCase		(void) {}
 
+	virtual void	checkSupport			(Context& context) const override;
 	TestInstance*	createInstance			(Context& context) const override;
 	void			initPrograms			(vk::SourceCollections& programCollection) const override;
 
 protected:
 	const tcu::UVec3 m_dispatchSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class EmptyWorkGroupInstance : public vkt::TestInstance
 {
 public:
-						EmptyWorkGroupInstance	(Context& context, const tcu::UVec3& dispatchSize)
-							: vkt::TestInstance	(context)
-							, m_dispatchSize	(dispatchSize)
+						EmptyWorkGroupInstance	(Context& context, const tcu::UVec3& dispatchSize, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+							: vkt::TestInstance					(context)
+							, m_dispatchSize					(dispatchSize)
+							, m_computePipelineConstructionType	(computePipelineConstructionType)
 							{}
 	virtual				~EmptyWorkGroupInstance	(void) {}
 
@@ -3418,18 +3655,25 @@ public:
 
 protected:
 	const tcu::UVec3 m_dispatchSize;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-EmptyWorkGroupCase::EmptyWorkGroupCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const tcu::UVec3& dispatchSize)
-	: vkt::TestCase		(testCtx, name, description)
-	, m_dispatchSize	(dispatchSize)
+EmptyWorkGroupCase::EmptyWorkGroupCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const tcu::UVec3& dispatchSize, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: vkt::TestCase						(testCtx, name, description)
+	, m_dispatchSize					(dispatchSize)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 	DE_ASSERT(m_dispatchSize.x() == 0u || m_dispatchSize.y() == 0u || m_dispatchSize.z() == 0u);
 }
 
+void EmptyWorkGroupCase::checkSupport (Context& context) const
+{
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
+}
+
 TestInstance* EmptyWorkGroupCase::createInstance (Context& context) const
 {
-	return new EmptyWorkGroupInstance(context, m_dispatchSize);
+	return new EmptyWorkGroupInstance(context, m_dispatchSize, m_computePipelineConstructionType);
 }
 
 void EmptyWorkGroupCase::initPrograms (vk::SourceCollections& programCollection) const
@@ -3465,9 +3709,9 @@ tcu::TestStatus EmptyWorkGroupInstance::iterate (void)
 	layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
 	const auto descriptorSetLayout = layoutBuilder.build(vkd, device);
 
-	const auto pipelineLayout	= makePipelineLayout(vkd, device, descriptorSetLayout.get());
-	const auto shaderModule		= createShaderModule(vkd, device, m_context.getBinaryCollection().get("comp"), 0u);
-	const auto pipeline			= makeComputePipeline(vkd, device, pipelineLayout.get(), shaderModule.get());
+	ComputePipelineWrapper			pipeline(vkd, device, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp"));
+	pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+	pipeline.buildPipeline();
 
 	DescriptorPoolBuilder poolBuilder;
 	poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -3484,8 +3728,8 @@ tcu::TestStatus EmptyWorkGroupInstance::iterate (void)
 	const auto cmdBuffer = cmdBufferPtr.get();
 
 	beginCommandBuffer(vkd, cmdBuffer);
-	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.get());
-	vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+	pipeline.bind(cmdBuffer);
+	vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
 	vkd.cmdDispatch(cmdBuffer, m_dispatchSize.x(), m_dispatchSize.y(), m_dispatchSize.z());
 
 	const auto readWriteAccess	= (VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT);
@@ -3525,7 +3769,7 @@ public:
 		Axis axis;
 	};
 
-							MaxWorkGroupSizeTest	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Params& params);
+							MaxWorkGroupSizeTest	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Params& params, const vk::ComputePipelineConstructionType computePipelineConstructionType);
 	virtual					~MaxWorkGroupSizeTest	(void) {}
 
 	virtual void			initPrograms			(vk::SourceCollections& programCollection) const;
@@ -3543,18 +3787,20 @@ public:
 
 private:
 	Params m_params;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class MaxWorkGroupSizeInstance : public vkt::TestInstance
 {
 public:
-								MaxWorkGroupSizeInstance	(Context& context, const MaxWorkGroupSizeTest::Params& params);
+								MaxWorkGroupSizeInstance	(Context& context, const MaxWorkGroupSizeTest::Params& params, const vk::ComputePipelineConstructionType computePipelineConstructionType);
 	virtual						~MaxWorkGroupSizeInstance	(void) {}
 
 	virtual tcu::TestStatus		iterate			(void);
 
 private:
-	MaxWorkGroupSizeTest::Params m_params;
+	MaxWorkGroupSizeTest::Params		m_params;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 int MaxWorkGroupSizeTest::getIndex (Axis axis)
@@ -3578,9 +3824,10 @@ deUint32 MaxWorkGroupSizeTest::getSSBOSize (deUint32 invocations)
 	return invocations * static_cast<deUint32>(sizeof(deUint32));
 }
 
-MaxWorkGroupSizeTest::MaxWorkGroupSizeTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Params& params)
-	: vkt::TestCase	(testCtx, name, description)
-	, m_params		(params)
+MaxWorkGroupSizeTest::MaxWorkGroupSizeTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Params& params, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: vkt::TestCase						(testCtx, name, description)
+	, m_params							(params)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {}
 
 void MaxWorkGroupSizeTest::initPrograms (vk::SourceCollections& programCollection) const
@@ -3611,7 +3858,7 @@ void MaxWorkGroupSizeTest::initPrograms (vk::SourceCollections& programCollectio
 
 TestInstance* MaxWorkGroupSizeTest::createInstance (Context& context) const
 {
-	return new MaxWorkGroupSizeInstance(context, m_params);
+	return new MaxWorkGroupSizeInstance(context, m_params, m_computePipelineConstructionType);
 }
 
 void MaxWorkGroupSizeTest::checkSupport (Context& context) const
@@ -3627,11 +3874,14 @@ void MaxWorkGroupSizeTest::checkSupport (Context& context) const
 
 	if (properties.limits.maxStorageBufferRange / static_cast<deUint32>(sizeof(deUint32)) < invocations)
 		TCU_THROW(NotSupportedError, "Maximum supported storage buffer range too small");
+
+	checkShaderObjectRequirements(vki, physicalDevice, m_computePipelineConstructionType);
 }
 
-MaxWorkGroupSizeInstance::MaxWorkGroupSizeInstance (Context& context, const MaxWorkGroupSizeTest::Params& params)
-	: vkt::TestInstance	(context)
-	, m_params			(params)
+MaxWorkGroupSizeInstance::MaxWorkGroupSizeInstance (Context& context, const MaxWorkGroupSizeTest::Params& params, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: vkt::TestInstance					(context)
+	, m_params							(params)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {}
 
 tcu::TestStatus MaxWorkGroupSizeInstance::iterate (void)
@@ -3658,9 +3908,6 @@ tcu::TestStatus MaxWorkGroupSizeInstance::iterate (void)
 	// Main SSBO buffer.
 	const auto				ssboInfo	= vk::makeBufferCreateInfo(ssboSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 	vk::BufferWithMemory	ssbo		(vkd, device, alloc, ssboInfo, vk::MemoryRequirement::HostVisible);
-
-	// Shader module.
-	const auto shaderModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("comp"), 0u);
 
 	// Descriptor set layouts.
 	vk::DescriptorSetLayoutBuilder layoutBuilder;
@@ -3699,38 +3946,10 @@ tcu::TestStatus MaxWorkGroupSizeInstance::iterate (void)
 		specializationData,									//	const void*						pData;
 	};
 
-	// Test pipeline.
-	const vk::VkPipelineLayoutCreateInfo testPipelineLayoutInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	//	VkStructureType					sType;
-		nullptr,											//	const void*						pNext;
-		0u,													//	VkPipelineLayoutCreateFlags		flags;
-		1u,													//	deUint32						setLayoutCount;
-		&descriptorSetLayout.get(),							//	const VkDescriptorSetLayout*	pSetLayouts;
-		0u,													//	deUint32						pushConstantRangeCount;
-		nullptr,											//	const VkPushConstantRange*		pPushConstantRanges;
-	};
-	const auto testPipelineLayout = vk::createPipelineLayout(vkd, device, &testPipelineLayoutInfo);
-
-	const vk::VkComputePipelineCreateInfo testPipelineInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,	//	VkStructureType					sType;
-		nullptr,											//	const void*						pNext;
-		0u,													//	VkPipelineCreateFlags			flags;
-		{													//	VkPipelineShaderStageCreateInfo	stage;
-			vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,//	VkStructureType						sType;
-			nullptr,												//	const void*							pNext;
-			0u,														//	VkPipelineShaderStageCreateFlags	flags;
-			vk::VK_SHADER_STAGE_COMPUTE_BIT,						//	VkShaderStageFlagBits				stage;
-			shaderModule.get(),										//	VkShaderModule						module;
-			"main",													//	const char*							pName;
-			&specializationInfo,									//	const VkSpecializationInfo*			pSpecializationInfo;
-		},
-		testPipelineLayout.get(),							//	VkPipelineLayout				layout;
-		DE_NULL,											//	VkPipeline						basePipelineHandle;
-		0u,													//	deInt32							basePipelineIndex;
-	};
-	const auto testPipeline = vk::createComputePipeline(vkd, device, DE_NULL, &testPipelineInfo);
+	ComputePipelineWrapper			testPipeline	(vkd, device, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp"));
+	testPipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+	testPipeline.setSpecializationInfo(specializationInfo);
+	testPipeline.buildPipeline();
 
 	// Create descriptor pool and set.
 	vk::DescriptorPoolBuilder poolBuilder;
@@ -3767,8 +3986,8 @@ tcu::TestStatus MaxWorkGroupSizeInstance::iterate (void)
 	const auto hostToComputeBarrier = vk::makeBufferMemoryBarrier(vk::VK_ACCESS_HOST_WRITE_BIT, vk::VK_ACCESS_SHADER_WRITE_BIT, ssbo.get(), 0ull, VK_WHOLE_SIZE);
 	vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 1u, &hostToComputeBarrier, 0u, nullptr);
 
-	vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, testPipeline.get());
-	vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, testPipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+	testPipeline.bind(cmdBuffer);
+	vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, testPipeline.getPipelineLayout(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
 	vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
 
 	const auto computeToHostBarrier = vk::makeBufferMemoryBarrier(vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, ssbo.get(), 0ull, VK_WHOLE_SIZE);
@@ -3804,7 +4023,12 @@ tcu::TestStatus MaxWorkGroupSizeInstance::iterate (void)
 namespace EmptyShaderTest
 {
 
-void createProgram (SourceCollections& dst)
+void checkSupport (Context& context, vk::ComputePipelineConstructionType computePipelineConstructionType)
+{
+	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), computePipelineConstructionType);
+}
+
+void createProgram (SourceCollections& dst, vk::ComputePipelineConstructionType)
 {
 	dst.glslSources.add("comp") << glu::ComputeSource(
 		"#version 310 es\n"
@@ -3813,26 +4037,24 @@ void createProgram (SourceCollections& dst)
 	);
 }
 
-tcu::TestStatus createTest (Context& context)
+tcu::TestStatus createTest (Context& context, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
 	const DeviceInterface&	vk					= context.getDeviceInterface();
 	const VkDevice			device				= context.getDevice();
 	const VkQueue			queue				= context.getUniversalQueue();
 	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 
-	const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, context.getBinaryCollection().get("comp"), 0u));
+	ComputePipelineWrapper			pipeline		(vk, device, computePipelineConstructionType, context.getBinaryCollection().get("comp"));
+	pipeline.buildPipeline();
 
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device));
-	const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
-
-	const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandPool>		cmdPool			(makeCommandPool(vk, device, queueFamilyIndex));
+	const Unique<VkCommandBuffer>	cmdBuffer		(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// Start recording commands
 
 	beginCommandBuffer(vk, *cmdBuffer);
 
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+	pipeline.bind(*cmdBuffer);
 
 	const tcu::IVec3 workGroups(1, 1, 1);
 	vk.cmdDispatch(*cmdBuffer, workGroups.x(), workGroups.y(), workGroups.z());
@@ -4101,70 +4323,81 @@ tcu::TestStatus SecondaryCommandBufferComputeOnlyTestInstance::iterate()
 
 } // anonymous
 
-tcu::TestCaseGroup* createBasicComputeShaderTests (tcu::TestContext& testCtx)
+inline TestCase* createFunctionCaseWithPrograms2 (tcu::TestContext&				testCtx,
+												 tcu::TestNodeType				type,
+												 const std::string&				name,
+												 const std::string&				desc,
+												 FunctionSupport0::Function		checkSupport,
+												 FunctionPrograms0::Function	initPrograms,
+												 FunctionInstance0::Function	testFunction)
+{
+	return new InstanceFactory1WithSupport<FunctionInstance0, FunctionInstance0::Function, FunctionSupport0, FunctionPrograms0>(
+		testCtx, type, name, desc, FunctionPrograms0(initPrograms), testFunction, checkSupport);
+}
+tcu::TestCaseGroup* createBasicComputeShaderTests (tcu::TestContext& testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
 	de::MovePtr<tcu::TestCaseGroup> basicComputeTests(new tcu::TestCaseGroup(testCtx, "basic", "Basic compute tests"));
 
-	addFunctionCaseWithPrograms(basicComputeTests.get(), "empty_shader", "Shader that does nothing", EmptyShaderTest::createProgram, EmptyShaderTest::createTest);
+	addFunctionCaseWithPrograms(basicComputeTests.get(), "empty_shader", "Shader that does nothing", EmptyShaderTest::checkSupport, EmptyShaderTest::createProgram, EmptyShaderTest::createTest, computePipelineConstructionType);
 
-	basicComputeTests->addChild(new ConcurrentCompute(testCtx, "concurrent_compute", "Concurrent compute test"));
+	basicComputeTests->addChild(new ConcurrentCompute(testCtx, "concurrent_compute", "Concurrent compute test", computePipelineConstructionType));
 
-	basicComputeTests->addChild(new EmptyWorkGroupCase(testCtx, "empty_workgroup_x", "Use an empty workgroup with size 0 on the X axis", tcu::UVec3(0u, 2u, 3u)));
-	basicComputeTests->addChild(new EmptyWorkGroupCase(testCtx, "empty_workgroup_y", "Use an empty workgroup with size 0 on the Y axis", tcu::UVec3(2u, 0u, 3u)));
-	basicComputeTests->addChild(new EmptyWorkGroupCase(testCtx, "empty_workgroup_z", "Use an empty workgroup with size 0 on the Z axis", tcu::UVec3(2u, 3u, 0u)));
-	basicComputeTests->addChild(new EmptyWorkGroupCase(testCtx, "empty_workgroup_all", "Use an empty workgroup with size 0 on the X, Y and Z axes", tcu::UVec3(0u, 0u, 0u)));
+	basicComputeTests->addChild(new EmptyWorkGroupCase(testCtx, "empty_workgroup_x", "Use an empty workgroup with size 0 on the X axis", tcu::UVec3(0u, 2u, 3u), computePipelineConstructionType));
+	basicComputeTests->addChild(new EmptyWorkGroupCase(testCtx, "empty_workgroup_y", "Use an empty workgroup with size 0 on the Y axis", tcu::UVec3(2u, 0u, 3u), computePipelineConstructionType));
+	basicComputeTests->addChild(new EmptyWorkGroupCase(testCtx, "empty_workgroup_z", "Use an empty workgroup with size 0 on the Z axis", tcu::UVec3(2u, 3u, 0u), computePipelineConstructionType));
+	basicComputeTests->addChild(new EmptyWorkGroupCase(testCtx, "empty_workgroup_all", "Use an empty workgroup with size 0 on the X, Y and Z axes", tcu::UVec3(0u, 0u, 0u), computePipelineConstructionType));
 
-	basicComputeTests->addChild(new MaxWorkGroupSizeTest(testCtx, "max_local_size_x", "Use the maximum work group size on the X axis", MaxWorkGroupSizeTest::Params{MaxWorkGroupSizeTest::Axis::X}));
-	basicComputeTests->addChild(new MaxWorkGroupSizeTest(testCtx, "max_local_size_y", "Use the maximum work group size on the Y axis", MaxWorkGroupSizeTest::Params{MaxWorkGroupSizeTest::Axis::Y}));
-	basicComputeTests->addChild(new MaxWorkGroupSizeTest(testCtx, "max_local_size_z", "Use the maximum work group size on the Z axis", MaxWorkGroupSizeTest::Params{MaxWorkGroupSizeTest::Axis::Z}));
+	basicComputeTests->addChild(new MaxWorkGroupSizeTest(testCtx, "max_local_size_x", "Use the maximum work group size on the X axis", MaxWorkGroupSizeTest::Params{MaxWorkGroupSizeTest::Axis::X}, computePipelineConstructionType));
+	basicComputeTests->addChild(new MaxWorkGroupSizeTest(testCtx, "max_local_size_y", "Use the maximum work group size on the Y axis", MaxWorkGroupSizeTest::Params{MaxWorkGroupSizeTest::Axis::Y}, computePipelineConstructionType));
+	basicComputeTests->addChild(new MaxWorkGroupSizeTest(testCtx, "max_local_size_z", "Use the maximum work group size on the Z axis", MaxWorkGroupSizeTest::Params{MaxWorkGroupSizeTest::Axis::Z}, computePipelineConstructionType));
 
-	basicComputeTests->addChild(BufferToBufferInvertTest::UBOToSSBOInvertCase(testCtx,	"ubo_to_ssbo_single_invocation",	"Copy from UBO to SSBO, inverting bits",	256,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1)));
-	basicComputeTests->addChild(BufferToBufferInvertTest::UBOToSSBOInvertCase(testCtx,	"ubo_to_ssbo_single_group",			"Copy from UBO to SSBO, inverting bits",	1024,	tcu::IVec3(2,1,4),	tcu::IVec3(1,1,1)));
-	basicComputeTests->addChild(BufferToBufferInvertTest::UBOToSSBOInvertCase(testCtx,	"ubo_to_ssbo_multiple_invocations",	"Copy from UBO to SSBO, inverting bits",	1024,	tcu::IVec3(1,1,1),	tcu::IVec3(2,4,1)));
-	basicComputeTests->addChild(BufferToBufferInvertTest::UBOToSSBOInvertCase(testCtx,	"ubo_to_ssbo_multiple_groups",		"Copy from UBO to SSBO, inverting bits",	1024,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4)));
+	basicComputeTests->addChild(BufferToBufferInvertTest::UBOToSSBOInvertCase(testCtx,	"ubo_to_ssbo_single_invocation",	"Copy from UBO to SSBO, inverting bits",	256,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(BufferToBufferInvertTest::UBOToSSBOInvertCase(testCtx,	"ubo_to_ssbo_single_group",			"Copy from UBO to SSBO, inverting bits",	1024,	tcu::IVec3(2,1,4),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(BufferToBufferInvertTest::UBOToSSBOInvertCase(testCtx,	"ubo_to_ssbo_multiple_invocations",	"Copy from UBO to SSBO, inverting bits",	1024,	tcu::IVec3(1,1,1),	tcu::IVec3(2,4,1), computePipelineConstructionType));
+	basicComputeTests->addChild(BufferToBufferInvertTest::UBOToSSBOInvertCase(testCtx,	"ubo_to_ssbo_multiple_groups",		"Copy from UBO to SSBO, inverting bits",	1024,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4), computePipelineConstructionType));
 
-	basicComputeTests->addChild(BufferToBufferInvertTest::CopyInvertSSBOCase(testCtx,	"copy_ssbo_single_invocation",		"Copy between SSBOs, inverting bits",	256,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1)));
-	basicComputeTests->addChild(BufferToBufferInvertTest::CopyInvertSSBOCase(testCtx,	"copy_ssbo_multiple_invocations",	"Copy between SSBOs, inverting bits",	1024,	tcu::IVec3(1,1,1),	tcu::IVec3(2,4,1)));
-	basicComputeTests->addChild(BufferToBufferInvertTest::CopyInvertSSBOCase(testCtx,	"copy_ssbo_multiple_groups",		"Copy between SSBOs, inverting bits",	1024,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4)));
+	basicComputeTests->addChild(BufferToBufferInvertTest::CopyInvertSSBOCase(testCtx,	"copy_ssbo_single_invocation",		"Copy between SSBOs, inverting bits",	256,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(BufferToBufferInvertTest::CopyInvertSSBOCase(testCtx,	"copy_ssbo_multiple_invocations",	"Copy between SSBOs, inverting bits",	1024,	tcu::IVec3(1,1,1),	tcu::IVec3(2,4,1), computePipelineConstructionType));
+	basicComputeTests->addChild(BufferToBufferInvertTest::CopyInvertSSBOCase(testCtx,	"copy_ssbo_multiple_groups",		"Copy between SSBOs, inverting bits",	1024,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4), computePipelineConstructionType));
 
-	basicComputeTests->addChild(new InvertSSBOInPlaceTest(testCtx,	"ssbo_rw_single_invocation",			"Read and write same SSBO",		256,	true,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1)));
-	basicComputeTests->addChild(new InvertSSBOInPlaceTest(testCtx,	"ssbo_rw_multiple_groups",				"Read and write same SSBO",		1024,	true,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4)));
-	basicComputeTests->addChild(new InvertSSBOInPlaceTest(testCtx,	"ssbo_unsized_arr_single_invocation",	"Read and write same SSBO",		256,	false,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1)));
-	basicComputeTests->addChild(new InvertSSBOInPlaceTest(testCtx,	"ssbo_unsized_arr_multiple_groups",		"Read and write same SSBO",		1024,	false,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4)));
+	basicComputeTests->addChild(new InvertSSBOInPlaceTest(testCtx,	"ssbo_rw_single_invocation",			"Read and write same SSBO",		256,	true,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(new InvertSSBOInPlaceTest(testCtx,	"ssbo_rw_multiple_groups",				"Read and write same SSBO",		1024,	true,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4), computePipelineConstructionType));
+	basicComputeTests->addChild(new InvertSSBOInPlaceTest(testCtx,	"ssbo_unsized_arr_single_invocation",	"Read and write same SSBO",		256,	false,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(new InvertSSBOInPlaceTest(testCtx,	"ssbo_unsized_arr_multiple_groups",		"Read and write same SSBO",		1024,	false,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4), computePipelineConstructionType));
 
-	basicComputeTests->addChild(new WriteToMultipleSSBOTest(testCtx,	"write_multiple_arr_single_invocation",			"Write to multiple SSBOs",	256,	true,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1)));
-	basicComputeTests->addChild(new WriteToMultipleSSBOTest(testCtx,	"write_multiple_arr_multiple_groups",			"Write to multiple SSBOs",	1024,	true,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4)));
-	basicComputeTests->addChild(new WriteToMultipleSSBOTest(testCtx,	"write_multiple_unsized_arr_single_invocation",	"Write to multiple SSBOs",	256,	false,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1)));
-	basicComputeTests->addChild(new WriteToMultipleSSBOTest(testCtx,	"write_multiple_unsized_arr_multiple_groups",	"Write to multiple SSBOs",	1024,	false,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4)));
+	basicComputeTests->addChild(new WriteToMultipleSSBOTest(testCtx,	"write_multiple_arr_single_invocation",			"Write to multiple SSBOs",	256,	true,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(new WriteToMultipleSSBOTest(testCtx,	"write_multiple_arr_multiple_groups",			"Write to multiple SSBOs",	1024,	true,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4), computePipelineConstructionType));
+	basicComputeTests->addChild(new WriteToMultipleSSBOTest(testCtx,	"write_multiple_unsized_arr_single_invocation",	"Write to multiple SSBOs",	256,	false,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(new WriteToMultipleSSBOTest(testCtx,	"write_multiple_unsized_arr_multiple_groups",	"Write to multiple SSBOs",	1024,	false,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4), computePipelineConstructionType));
 
-	basicComputeTests->addChild(new SSBOLocalBarrierTest(testCtx,	"ssbo_local_barrier_single_invocation",	"SSBO local barrier usage",	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1)));
-	basicComputeTests->addChild(new SSBOLocalBarrierTest(testCtx,	"ssbo_local_barrier_single_group",		"SSBO local barrier usage",	tcu::IVec3(3,2,5),	tcu::IVec3(1,1,1)));
-	basicComputeTests->addChild(new SSBOLocalBarrierTest(testCtx,	"ssbo_local_barrier_multiple_groups",	"SSBO local barrier usage",	tcu::IVec3(3,4,1),	tcu::IVec3(2,7,3)));
+	basicComputeTests->addChild(new SSBOLocalBarrierTest(testCtx,	"ssbo_local_barrier_single_invocation",	"SSBO local barrier usage",	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(new SSBOLocalBarrierTest(testCtx,	"ssbo_local_barrier_single_group",		"SSBO local barrier usage",	tcu::IVec3(3,2,5),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(new SSBOLocalBarrierTest(testCtx,	"ssbo_local_barrier_multiple_groups",	"SSBO local barrier usage",	tcu::IVec3(3,4,1),	tcu::IVec3(2,7,3), computePipelineConstructionType));
 
-	basicComputeTests->addChild(new SSBOBarrierTest(testCtx,	"ssbo_cmd_barrier_single",		"SSBO memory barrier usage",	tcu::IVec3(1,1,1)));
-	basicComputeTests->addChild(new SSBOBarrierTest(testCtx,	"ssbo_cmd_barrier_multiple",	"SSBO memory barrier usage",	tcu::IVec3(11,5,7)));
+	basicComputeTests->addChild(new SSBOBarrierTest(testCtx,	"ssbo_cmd_barrier_single",		"SSBO memory barrier usage",	tcu::IVec3(1,1,1),	computePipelineConstructionType));
+	basicComputeTests->addChild(new SSBOBarrierTest(testCtx,	"ssbo_cmd_barrier_multiple",	"SSBO memory barrier usage",	tcu::IVec3(11,5,7), computePipelineConstructionType));
 
-	basicComputeTests->addChild(new SharedVarTest(testCtx,	"shared_var_single_invocation",		"Basic shared variable usage",	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1)));
-	basicComputeTests->addChild(new SharedVarTest(testCtx,	"shared_var_single_group",			"Basic shared variable usage",	tcu::IVec3(3,2,5),	tcu::IVec3(1,1,1)));
-	basicComputeTests->addChild(new SharedVarTest(testCtx,	"shared_var_multiple_invocations",	"Basic shared variable usage",	tcu::IVec3(1,1,1),	tcu::IVec3(2,5,4)));
-	basicComputeTests->addChild(new SharedVarTest(testCtx,	"shared_var_multiple_groups",		"Basic shared variable usage",	tcu::IVec3(3,4,1),	tcu::IVec3(2,7,3)));
+	basicComputeTests->addChild(new SharedVarTest(testCtx,	"shared_var_single_invocation",		"Basic shared variable usage",	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(new SharedVarTest(testCtx,	"shared_var_single_group",			"Basic shared variable usage",	tcu::IVec3(3,2,5),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(new SharedVarTest(testCtx,	"shared_var_multiple_invocations",	"Basic shared variable usage",	tcu::IVec3(1,1,1),	tcu::IVec3(2,5,4), computePipelineConstructionType));
+	basicComputeTests->addChild(new SharedVarTest(testCtx,	"shared_var_multiple_groups",		"Basic shared variable usage",	tcu::IVec3(3,4,1),	tcu::IVec3(2,7,3), computePipelineConstructionType));
 
-	basicComputeTests->addChild(new SharedVarAtomicOpTest(testCtx,	"shared_atomic_op_single_invocation",		"Atomic operation with shared var",		tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1)));
-	basicComputeTests->addChild(new SharedVarAtomicOpTest(testCtx,	"shared_atomic_op_single_group",			"Atomic operation with shared var",		tcu::IVec3(3,2,5),	tcu::IVec3(1,1,1)));
-	basicComputeTests->addChild(new SharedVarAtomicOpTest(testCtx,	"shared_atomic_op_multiple_invocations",	"Atomic operation with shared var",		tcu::IVec3(1,1,1),	tcu::IVec3(2,5,4)));
-	basicComputeTests->addChild(new SharedVarAtomicOpTest(testCtx,	"shared_atomic_op_multiple_groups",			"Atomic operation with shared var",		tcu::IVec3(3,4,1),	tcu::IVec3(2,7,3)));
+	basicComputeTests->addChild(new SharedVarAtomicOpTest(testCtx,	"shared_atomic_op_single_invocation",		"Atomic operation with shared var",		tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(new SharedVarAtomicOpTest(testCtx,	"shared_atomic_op_single_group",			"Atomic operation with shared var",		tcu::IVec3(3,2,5),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(new SharedVarAtomicOpTest(testCtx,	"shared_atomic_op_multiple_invocations",	"Atomic operation with shared var",		tcu::IVec3(1,1,1),	tcu::IVec3(2,5,4), computePipelineConstructionType));
+	basicComputeTests->addChild(new SharedVarAtomicOpTest(testCtx,	"shared_atomic_op_multiple_groups",			"Atomic operation with shared var",		tcu::IVec3(3,4,1),	tcu::IVec3(2,7,3), computePipelineConstructionType));
 
-	basicComputeTests->addChild(new CopyImageToSSBOTest(testCtx,	"copy_image_to_ssbo_small",	"Image to SSBO copy",	tcu::IVec2(1,1),	tcu::IVec2(64,64)));
-	basicComputeTests->addChild(new CopyImageToSSBOTest(testCtx,	"copy_image_to_ssbo_large",	"Image to SSBO copy",	tcu::IVec2(2,4),	tcu::IVec2(512,512)));
+	basicComputeTests->addChild(new CopyImageToSSBOTest(testCtx,	"copy_image_to_ssbo_small",	"Image to SSBO copy",	tcu::IVec2(1,1),	tcu::IVec2(64,64),		computePipelineConstructionType));
+	basicComputeTests->addChild(new CopyImageToSSBOTest(testCtx,	"copy_image_to_ssbo_large",	"Image to SSBO copy",	tcu::IVec2(2,4),	tcu::IVec2(512,512),	computePipelineConstructionType));
 
-	basicComputeTests->addChild(new CopySSBOToImageTest(testCtx,	"copy_ssbo_to_image_small",	"SSBO to image copy",	tcu::IVec2(1, 1),	tcu::IVec2(64, 64)));
-	basicComputeTests->addChild(new CopySSBOToImageTest(testCtx,	"copy_ssbo_to_image_large",	"SSBO to image copy",	tcu::IVec2(2, 4),	tcu::IVec2(512, 512)));
+	basicComputeTests->addChild(new CopySSBOToImageTest(testCtx,	"copy_ssbo_to_image_small",	"SSBO to image copy",	tcu::IVec2(1, 1),	tcu::IVec2(64, 64),		computePipelineConstructionType));
+	basicComputeTests->addChild(new CopySSBOToImageTest(testCtx,	"copy_ssbo_to_image_large",	"SSBO to image copy",	tcu::IVec2(2, 4),	tcu::IVec2(512, 512),	computePipelineConstructionType));
 
-	basicComputeTests->addChild(new ImageAtomicOpTest(testCtx,	"image_atomic_op_local_size_1",	"Atomic operation with image",	1,	tcu::IVec2(64,64)));
-	basicComputeTests->addChild(new ImageAtomicOpTest(testCtx,	"image_atomic_op_local_size_8",	"Atomic operation with image",	8,	tcu::IVec2(64,64)));
+	basicComputeTests->addChild(new ImageAtomicOpTest(testCtx,	"image_atomic_op_local_size_1",	"Atomic operation with image",	1,	tcu::IVec2(64,64),	computePipelineConstructionType));
+	basicComputeTests->addChild(new ImageAtomicOpTest(testCtx,	"image_atomic_op_local_size_8",	"Atomic operation with image",	8,	tcu::IVec2(64,64),	computePipelineConstructionType));
 
-	basicComputeTests->addChild(new ImageBarrierTest(testCtx,	"image_barrier_single",		"Image barrier",	tcu::IVec2(1,1)));
-	basicComputeTests->addChild(new ImageBarrierTest(testCtx,	"image_barrier_multiple",	"Image barrier",	tcu::IVec2(64,64)));
+	basicComputeTests->addChild(new ImageBarrierTest(testCtx,	"image_barrier_single",		"Image barrier",	tcu::IVec2(1,1),	computePipelineConstructionType));
+	basicComputeTests->addChild(new ImageBarrierTest(testCtx,	"image_barrier_multiple",	"Image barrier",	tcu::IVec2(64,64),	computePipelineConstructionType));
 
 	basicComputeTests->addChild(new ComputeOnlyQueueTests::SecondaryCommandBufferComputeOnlyTest(testCtx, "secondary_compute_only_queue", "Test secondary command buffers in compute only queues"));
 
@@ -4177,12 +4410,12 @@ tcu::TestCaseGroup* createBasicComputeShaderTests (tcu::TestContext& testCtx)
 	return basicComputeTests.release();
 }
 
-tcu::TestCaseGroup* createBasicDeviceGroupComputeShaderTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createBasicDeviceGroupComputeShaderTests (tcu::TestContext& testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
 	de::MovePtr<tcu::TestCaseGroup> deviceGroupComputeTests(new tcu::TestCaseGroup(testCtx, "device_group", "Basic device group compute tests"));
 
-	deviceGroupComputeTests->addChild(new DispatchBaseTest(testCtx,	"dispatch_base",	"Compute shader with base groups",				32768,	tcu::IVec3(4,2,4),	tcu::IVec3(16,8,8),	tcu::IVec3(4,8,8)));
-	deviceGroupComputeTests->addChild(new DeviceIndexTest(testCtx,	"device_index",		"Compute shader using deviceIndex in SPIRV",	96,		tcu::IVec3(3,2,1),	tcu::IVec3(2,4,1)));
+	deviceGroupComputeTests->addChild(new DispatchBaseTest(testCtx,	"dispatch_base",	"Compute shader with base groups",				32768,	tcu::IVec3(4,2,4),	tcu::IVec3(16,8,8),	tcu::IVec3(4,8,8), computePipelineConstructionType));
+	deviceGroupComputeTests->addChild(new DeviceIndexTest(testCtx,	"device_index",		"Compute shader using deviceIndex in SPIRV",	96,		tcu::IVec3(3,2,1),	tcu::IVec3(2,4,1), computePipelineConstructionType));
 
 	return deviceGroupComputeTests.release();
 

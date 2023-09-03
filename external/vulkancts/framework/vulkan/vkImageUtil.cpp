@@ -5152,9 +5152,8 @@ ImageWithBuffer::ImageWithBuffer(
 			vk::VkSharingMode			sharingMode)
 {
 
-	if (imageType == VK_IMAGE_TYPE_3D) {
+	if (imageType == VK_IMAGE_TYPE_3D)
 		DE_ASSERT(arrayLayers == 1);
-	}
 	DE_ASSERT(extent.width > 0 && extent.height > 0 && extent.depth > 0);
 	DE_ASSERT(mipLevels > 0 && arrayLayers > 0);
 
@@ -5179,31 +5178,21 @@ ImageWithBuffer::ImageWithBuffer(
 	};
 	image = std::unique_ptr<ImageWithMemory>(new ImageWithMemory (vkd, device, alloc, colorAttachmentCreateInfo, MemoryRequirement::Any));
 
-	VkMemoryRequirements reqs;
-	vkd.getImageMemoryRequirements(device, (*image).get(), &reqs);
-
 	VkImageViewType viewType;
-	switch (imageType) {
-		case VK_IMAGE_TYPE_1D:
-			if (arrayLayers == 1) {
-				viewType = VK_IMAGE_VIEW_TYPE_1D;
-			} else {
-				viewType = VK_IMAGE_VIEW_TYPE_1D_ARRAY;
-			}
-			break;
-		case VK_IMAGE_TYPE_2D:
-			if (arrayLayers == 1) {
-				viewType = VK_IMAGE_VIEW_TYPE_2D;
-			} else {
-				viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-			}
-			break;
-		case VK_IMAGE_TYPE_3D:
-			viewType = VK_IMAGE_VIEW_TYPE_3D;
-			break;
-		default:
-			viewType = VK_IMAGE_VIEW_TYPE_LAST;
-			DE_ASSERT(imageType <= VK_IMAGE_TYPE_3D);
+	switch (imageType)
+	{
+	case VK_IMAGE_TYPE_1D:
+		viewType = ((arrayLayers == 1) ? VK_IMAGE_VIEW_TYPE_1D : VK_IMAGE_VIEW_TYPE_1D_ARRAY);
+		break;
+	case VK_IMAGE_TYPE_2D:
+		viewType = ((arrayLayers == 1) ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY);
+		break;
+	case VK_IMAGE_TYPE_3D:
+		viewType = VK_IMAGE_VIEW_TYPE_3D;
+		break;
+	default:
+		viewType = VK_IMAGE_VIEW_TYPE_LAST;
+		DE_ASSERT(imageType <= VK_IMAGE_TYPE_3D);
 	}
 
 	// Color attachment view.
