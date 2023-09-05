@@ -302,8 +302,8 @@ tcu::TestStatus DynamicControlPointsTestInstance::iterate(void)
 
 	const std::vector<vk::VkViewport>	viewport_left	{ vk::makeViewport(0.0f, 0.0f, (float)imageExtent.width / 2, (float)imageExtent.height, 0.0f, 1.0f) };
 	const std::vector<vk::VkViewport>	viewport_right  { vk::makeViewport((float)imageExtent.width / 2, 0.0f, (float)imageExtent.width / 2, (float)imageExtent.height, 0.0f, 1.0f) };
-	const std::vector<vk::VkRect2D>		scissors_left	{ vk::makeRect2D(0.0f, 0.0f, imageExtent.width / 2, imageExtent.height) };
-	const std::vector<vk::VkRect2D>		scissors_right	{ vk::makeRect2D(imageExtent.width / 2, 0.0, imageExtent.width / 2, imageExtent.height) };
+	const std::vector<vk::VkRect2D>		scissors_left	{ vk::makeRect2D(0, 0, imageExtent.width / 2, imageExtent.height) };
+	const std::vector<vk::VkRect2D>		scissors_right	{ vk::makeRect2D(imageExtent.width / 2, 0, imageExtent.width / 2, imageExtent.height) };
 	const vk::PipelineLayoutWrapper		graphicsPipelineLayout (m_config.constructionType, vkd, device);
 
 	auto vtxshader  = vk::ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert"));

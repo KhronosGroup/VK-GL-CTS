@@ -7910,7 +7910,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, co
 	de::MovePtr<tcu::TestCaseGroup>	renderingTests					(new tcu::TestCaseGroup(testCtx, groupName, ""));
 	de::MovePtr<tcu::TestCaseGroup>	suballocationTestGroup			= createSuballocationTests(testCtx, groupParams);
 	de::MovePtr<tcu::TestCaseGroup>	dedicatedAllocationTestGroup	= createDedicatedAllocationTests(testCtx, groupParams);
-	de::MovePtr<tcu::TestCaseGroup> noDrawGroup {new tcu::TestCaseGroup{testCtx, "no_draws", ""}};
+	de::MovePtr<tcu::TestCaseGroup> noDrawGroup						{new tcu::TestCaseGroup{testCtx, "no_draws", ""}};
 
 	const RenderingType renderingType = groupParams->renderingType;
 
@@ -7919,7 +7919,6 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, co
 	case RENDERING_TYPE_RENDERPASS_LEGACY:
 		suballocationTestGroup->addChild(createRenderPassMultisampleTests(testCtx));
 		suballocationTestGroup->addChild(createRenderPassMultisampleResolveTests(testCtx, groupParams));
-		suballocationTestGroup->addChild(createRenderPassSubpassDependencyTests(testCtx));
 		suballocationTestGroup->addChild(createRenderPassSampleReadTests(testCtx));
 		noDrawGroup->addChild(new RenderPassNoDrawLoadStoreTestCase(testCtx, "render_pass_no_draw_clear_load_store", "Test clears in a renderpass with no drawing commands", false));
 
@@ -7935,7 +7934,6 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, co
 	case RENDERING_TYPE_RENDERPASS2:
 		suballocationTestGroup->addChild(createRenderPass2MultisampleTests(testCtx));
 		suballocationTestGroup->addChild(createRenderPass2MultisampleResolveTests(testCtx, groupParams));
-		suballocationTestGroup->addChild(createRenderPass2SubpassDependencyTests(testCtx));
 		suballocationTestGroup->addChild(createRenderPass2SampleReadTests(testCtx));
 		noDrawGroup->addChild(new RenderPassNoDrawLoadStoreTestCase(testCtx, "render_pass2_no_draw_clear_load_store", "Test clears in a renderpass with no drawing commands", true));
 
@@ -7974,6 +7972,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, co
 		suballocationTestGroup->addChild(createRenderPassUnusedAttachmentSparseFillingTests(testCtx, renderingType));
 	}
 
+	suballocationTestGroup->addChild(createRenderPassSubpassDependencyTests(testCtx, groupParams));
 	suballocationTestGroup->addChild(createRenderPassUnusedClearAttachmentTests(testCtx, groupParams));
 
 #ifndef CTS_USES_VULKANSC
