@@ -1028,13 +1028,13 @@ void ShaderObjectStateInstance::setDynamicStates (const vk::DeviceInterface& vk,
 		vk.cmdSetRasterizationStreamEXT(cmdBuffer, 0u);
 	if (m_params.discardRectangles)
 		vk.cmdSetDiscardRectangleEnableEXT(cmdBuffer, m_params.discardRectanglesEnable ? VK_TRUE : VK_FALSE);
-	if (m_params.discardRectanglesEnable)
+	if (m_params.discardRectanglesEnable || (m_params.discardRectangles && m_params.pipeline))
 		vk.cmdSetDiscardRectangleModeEXT(cmdBuffer, vk::VK_DISCARD_RECTANGLE_MODE_EXCLUSIVE_EXT);
-	if (m_params.discardRectanglesEnable)
+	if (m_params.discardRectanglesEnable || (m_params.discardRectangles && m_params.pipeline))
 		vk.cmdSetDiscardRectangleEXT(cmdBuffer, 0u, 1u, &scissor);
-	if (m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.conservativeRasterization)
+	if (m_params.conservativeRasterization && ((m_params.fragShader && !m_params.rasterizerDiscardEnable) || m_params.pipeline))
 		vk.cmdSetConservativeRasterizationModeEXT(cmdBuffer, m_params.conservativeRasterizationOverestimate ? vk::VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT : vk::VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT);
-	if (m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.conservativeRasterization && m_params.conservativeRasterizationOverestimate)
+	if (m_params.conservativeRasterization && ((m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.conservativeRasterizationOverestimate) || m_params.pipeline))
 		vk.cmdSetExtraPrimitiveOverestimationSizeEXT(cmdBuffer, de::min(1.0f, m_context.getConservativeRasterizationPropertiesEXT().maxExtraPrimitiveOverestimationSize));
 	if ((!m_params.pipeline && m_params.depthClip) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_CLIP_ENABLE_EXT))
 		vk.cmdSetDepthClipEnableEXT(cmdBuffer, VK_TRUE);
@@ -1252,12 +1252,18 @@ tcu::TestStatus ShaderObjectStateInstance::iterate (void)
 			DE_NULL															// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 		};
 
+		vk::VkPrimitiveTopology topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+		if (m_params.tessShader)
+			topology = vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+		else if (m_params.lines)
+			topology = vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+
 		const vk::VkPipelineInputAssemblyStateCreateInfo	inputAssemblyState =
 		{
 			vk::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType							sType;
 			DE_NULL,															// const void*								pNext;
 			(vk::VkPipelineInputAssemblyStateCreateFlags)0,						// VkPipelineInputAssemblyStateCreateFlags	flags;
-			m_params.tessShader ? vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	// VkPrimitiveTopology						topology;
+			topology,															// VkPrimitiveTopology						topology;
 			VK_FALSE															// VkBool32									primitiveRestartEnable;
 		};
 
