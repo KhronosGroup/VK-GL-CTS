@@ -80,6 +80,12 @@ struct TestImageParameters
 	ImageType				imageType;
 	std::vector<tcu::UVec3>	imageSizes;
 	std::vector<TestFormat>	formats;
+
+	TestImageParameters (ImageType imageType_, const std::vector<tcu::UVec3>& imageSizes_, const std::vector<TestFormat>& formats_)
+		: imageType		(imageType_)
+		, imageSizes	(imageSizes_)
+		, formats		(formats_)
+		{}
 };
 
 bool							formatIsR64							(const vk::VkFormat& format);

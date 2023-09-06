@@ -330,7 +330,7 @@ NoneStageTestInstance::NoneStageTestInstance(Context& context, const TestParams&
 	m_srcStageToNoneStageMask		= VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR;
 	m_srcAccessToNoneAccessMask		= getAccessFlag(VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR);
 	m_dstStageFromNoneStageMask		= VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR;
-	m_dstAccessFromNoneAccessMask	= getAccessFlag(VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR);
+	m_dstAccessFromNoneAccessMask	= getAccessFlag(VK_ACCESS_2_TRANSFER_READ_BIT_KHR);
 
 	// when graphics pipelines are not created only image with gradient is used for test
 	if (!m_usePipelineToWrite && !m_usePipelineToRead)

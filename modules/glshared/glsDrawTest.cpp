@@ -432,8 +432,38 @@ public:
 	typedef WrappedType<float>		Float;
 	typedef WrappedType<double>		Double;
 
-	typedef WrappedType<deInt32>	Int;
 	typedef WrappedType<deUint32>	Uint;
+
+	// All operations are calculated using 64bit values to avoid signed integer overflow which is undefined.
+	class Int
+	{
+	public:
+		static Int		create				(deInt32 value)				{ Int v; v.m_value = value; return v; }
+		inline deInt32	getValue			(void) const				{ return m_value; }
+
+		inline Int		operator+			(const Int& other) const	{ return Int::create((deInt32)((deInt64)m_value + (deInt64)other.getValue())); }
+		inline Int		operator*			(const Int& other) const	{ return Int::create((deInt32)((deInt64)m_value * (deInt64)other.getValue())); }
+		inline Int		operator/			(const Int& other) const	{ return Int::create((deInt32)((deInt64)m_value / (deInt64)other.getValue())); }
+		inline Int		operator-			(const Int& other) const	{ return Int::create((deInt32)((deInt64)m_value - (deInt64)other.getValue())); }
+
+		inline Int&		operator+=			(const Int& other)			{ m_value = (deInt32)((deInt64)m_value + (deInt64)other.getValue()); return *this; }
+		inline Int&		operator*=			(const Int& other)			{ m_value = (deInt32)((deInt64)m_value * (deInt64)other.getValue()); return *this; }
+		inline Int&		operator/=			(const Int& other)			{ m_value = (deInt32)((deInt64)m_value / (deInt64)other.getValue()); return *this; }
+		inline Int&		operator-=			(const Int& other)			{ m_value = (deInt32)((deInt64)m_value - (deInt64)other.getValue()); return *this; }
+
+		inline bool		operator==			(const Int& other) const	{ return m_value == other.m_value; }
+		inline bool		operator!=			(const Int& other) const	{ return m_value != other.m_value; }
+		inline bool		operator<			(const Int& other) const	{ return m_value < other.m_value; }
+		inline bool		operator>			(const Int& other) const	{ return m_value > other.m_value; }
+		inline bool		operator<=			(const Int& other) const	{ return m_value <= other.m_value; }
+		inline bool		operator>=			(const Int& other) const	{ return m_value >= other.m_value; }
+
+		inline			operator deInt32	(void) const				{ return m_value; }
+		template<class T>
+		inline T		to					(void) const				{ return (T)m_value; }
+	private:
+		deInt32	m_value;
+	};
 
 	class Half
 	{

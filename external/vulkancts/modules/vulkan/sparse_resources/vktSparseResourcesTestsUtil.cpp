@@ -363,7 +363,7 @@ void submitCommandsAndWait (const DeviceInterface&		vk,
 	std::vector<deUint32>	deviceIndices			(waitSemaphoreCount, physicalDeviceID);
 	VkDeviceGroupSubmitInfo deviceGroupSubmitInfo	=
 	{
-		VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO_KHR,		//VkStructureType		sType
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO,			//VkStructureType		sType
 		DE_NULL,											// const void*			pNext
 		waitSemaphoreCount,									// uint32_t				waitSemaphoreCount
 		deviceIndices.size() ? &deviceIndices[0] : DE_NULL,	// const uint32_t*		pWaitSemaphoreDeviceIndices
@@ -997,14 +997,14 @@ vk::VkFormat getPlaneCompatibleFormatForWriting(const vk::PlanarFormatDescriptio
 	// redirect result for some of the YCbCr image formats
 	static const std::pair<vk::VkFormat, vk::VkFormat> ycbcrFormats[] =
 	{
-		{ VK_FORMAT_G8B8G8R8_422_UNORM_KHR,						VK_FORMAT_R8G8B8A8_UNORM		},
-		{ VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16_KHR,	VK_FORMAT_R16G16B16A16_UNORM	},
-		{ VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16_KHR,	VK_FORMAT_R16G16B16A16_UNORM	},
-		{ VK_FORMAT_G16B16G16R16_422_UNORM_KHR,					VK_FORMAT_R16G16B16A16_UNORM	},
-		{ VK_FORMAT_B8G8R8G8_422_UNORM_KHR,						VK_FORMAT_R8G8B8A8_UNORM		},
-		{ VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16_KHR,	VK_FORMAT_R16G16B16A16_UNORM	},
-		{ VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16_KHR,	VK_FORMAT_R16G16B16A16_UNORM	},
-		{ VK_FORMAT_B16G16R16G16_422_UNORM_KHR,					VK_FORMAT_R16G16B16A16_UNORM	}
+		{ VK_FORMAT_G8B8G8R8_422_UNORM,						VK_FORMAT_R8G8B8A8_UNORM		},
+		{ VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16,	VK_FORMAT_R16G16B16A16_UNORM	},
+		{ VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16,	VK_FORMAT_R16G16B16A16_UNORM	},
+		{ VK_FORMAT_G16B16G16R16_422_UNORM,					VK_FORMAT_R16G16B16A16_UNORM	},
+		{ VK_FORMAT_B8G8R8G8_422_UNORM,						VK_FORMAT_R8G8B8A8_UNORM		},
+		{ VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16,	VK_FORMAT_R16G16B16A16_UNORM	},
+		{ VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16,	VK_FORMAT_R16G16B16A16_UNORM	},
+		{ VK_FORMAT_B16G16R16G16_422_UNORM,					VK_FORMAT_R16G16B16A16_UNORM	}
 	};
 	auto it = std::find_if(std::begin(ycbcrFormats), std::end(ycbcrFormats), [result](const std::pair<vk::VkFormat, vk::VkFormat>& p) { return p.first == result; });
 	if (it != std::end(ycbcrFormats))

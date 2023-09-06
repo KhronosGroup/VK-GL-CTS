@@ -164,19 +164,30 @@ void TestSessionExecutor::enterTestPackage (TestPackage* testPackage)
 void TestSessionExecutor::leaveTestPackage (TestPackage* testPackage)
 {
 	DE_UNREF(testPackage);
+	m_caseExecutor->deinitTestPackage(m_testCtx);
+	// If m_caseExecutor uses local status then it may perform some tests in deinitTestPackage(). We have to update TestSessionExecutor::m_status
+	if (m_caseExecutor->usesLocalStatus())
+		m_caseExecutor->updateGlobalStatus(m_status);
+
+	const deInt64 duration	= deGetMicroseconds() - m_packageStartTime;
+	m_packageStartTime		= 0;
+
+	if (!std::string(m_testCtx.getCommandLine().getServerAddress()).empty())
+		m_caseExecutor->reportDurations(m_testCtx, std::string(testPackage->getName()), duration, m_groupsDurationTime);
+
 	m_caseExecutor.clear();
-	m_testCtx.getLog().startTestsCasesTime();
 
+	if (!std::string(m_testCtx.getCommandLine().getServerAddress()).empty())
 	{
-		const deInt64 duration = deGetMicroseconds() - m_packageStartTime;
-		m_packageStartTime = 0;
+		m_testCtx.getLog().startTestsCasesTime();
+
 		m_testCtx.getLog() << TestLog::Integer(testPackage->getName(), "Total tests case duration in microseconds", "us", QP_KEY_TAG_TIME, duration);
+
+		for (std::map<std::string, deUint64>::iterator it = m_groupsDurationTime.begin(); it != m_groupsDurationTime.end(); ++it)
+			m_testCtx.getLog() << TestLog::Integer(it->first, "The test group case duration in microseconds", "us", QP_KEY_TAG_TIME, it->second);
+
+		m_testCtx.getLog().endTestsCasesTime();
 	}
-
-	for(std::map<std::string, deUint64>::iterator it=m_groupsDurationTime.begin(); it != m_groupsDurationTime.end(); ++it)
-		m_testCtx.getLog() << TestLog::Integer(it->first, "The test group case duration in microseconds", "us", QP_KEY_TAG_TIME, it->second);
-
-	m_testCtx.getLog().endTestsCasesTime();
 }
 
 void TestSessionExecutor::enterTestGroup (const std::string& casePath)
@@ -196,6 +207,10 @@ bool TestSessionExecutor::enterTestCase (TestCase* testCase, const std::string& 
 	bool					initOk		= false;
 
 	print("\nTest case '%s'..\n", casePath.c_str());
+
+#if (DE_OS == DE_OS_WIN32)
+	fflush(stdout);
+#endif
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_LAST, "");
 	m_testCtx.setTerminateAfter(false);
@@ -246,8 +261,15 @@ void TestSessionExecutor::leaveTestCase (TestCase* testCase)
 	}
 	catch (const tcu::Exception& e)
 	{
+		const bool suppressLogging = m_testCtx.getLog().isSupressLogging();
+
+		if (suppressLogging)
+			m_testCtx.getLog().supressLogging(false);
+
 		log << e << TestLog::Message << "Error in test case deinit, test program will terminate." << TestLog::EndMessage;
 		m_testCtx.setTerminateAfter(true);
+
+		m_testCtx.getLog().supressLogging(suppressLogging);
 	}
 
 	{
@@ -268,15 +290,25 @@ void TestSessionExecutor::leaveTestCase (TestCase* testCase)
 		// Update statistics.
 		print("  %s (%s)\n", qpGetTestResultName(testResult), testResultDesc);
 
-		m_status.numExecuted += 1;
-		switch (testResult)
+#if (DE_OS == DE_OS_WIN32)
+		fflush(stdout);
+#endif
+		if(!m_caseExecutor->usesLocalStatus())
 		{
-			case QP_TEST_RESULT_PASS:					m_status.numPassed			+= 1;	break;
-			case QP_TEST_RESULT_NOT_SUPPORTED:			m_status.numNotSupported	+= 1;	break;
-			case QP_TEST_RESULT_QUALITY_WARNING:		m_status.numWarnings		+= 1;	break;
-			case QP_TEST_RESULT_COMPATIBILITY_WARNING:	m_status.numWarnings		+= 1;	break;
-			case QP_TEST_RESULT_WAIVER:					m_status.numWaived			+= 1;	break;
-			default:									m_status.numFailed			+= 1;	break;
+			m_status.numExecuted += 1;
+			switch (testResult)
+			{
+				case QP_TEST_RESULT_PASS:					m_status.numPassed			+= 1;	break;
+				case QP_TEST_RESULT_NOT_SUPPORTED:			m_status.numNotSupported	+= 1;	break;
+				case QP_TEST_RESULT_QUALITY_WARNING:		m_status.numWarnings		+= 1;	break;
+				case QP_TEST_RESULT_COMPATIBILITY_WARNING:	m_status.numWarnings		+= 1;	break;
+				case QP_TEST_RESULT_WAIVER:					m_status.numWaived			+= 1;	break;
+				default:									m_status.numFailed			+= 1;	break;
+			}
+		}
+		else
+		{
+			m_caseExecutor->updateGlobalStatus(m_status);
 		}
 
 		// terminateAfter, Resource error or any error in deinit means that execution should end

@@ -985,6 +985,478 @@ tcu::TestStatus ShaderBindingTableIndexingTestInstance::iterate (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
+/*
+
+Test the advertised shader group handle alignment requirements work as expected. The tests will prepare shader binding tables using
+shader record buffers for padding and achieving the desired alignments.
+
++-------------------------------------------
+| Shader | Shader    | Aligned |
+| Group  | Record    | Shader  | ...
+| Handle | Buffer    | Group   |
+|        | (padding) | Handle  |
++-------------------------------------------
+
+The number of geometries to try (hence the number of alignments and shader record buffers to try) is 32/align + 1, so 33 in the case
+of align=1, and 2 in the case of align=32. This allows us to test all possible alignment values.
+
+Geometries are triangles put alongside the X axis. The base triangle is:
+
+0,1|      x
+   |     x x
+   |    x  0.5,0.5
+   |   x  x  x
+   |  x       x
+   | xxxxxxxxxxx
+   +-------------
+ 0,0             1,0
+
+A triangle surrounding point (0.5, 0.5), in the [0, 1] range of both the X and Y axis.
+
+As more than one triangle is needed, each triangle is translated one more unit in the X axis, so each triangle is in the [i, i+1]
+range. The Y axis doesn't change, triangles are always in the [0,1] range.
+
+Triangles have Z=5, and one ray is traced per triangle, origin (i+0.5, 0.5, 0) direction (0, 0, 1), where i is gl_LaunchIDEXT.x.
+
+For each geometry, the shader record buffer contents vary depending on the geometry index and the desired alignment (padding).
+
+Alignment	Element Type	Element Count			Data
+1			uint8_t			1						0x80 | geometryID
+2			uint16_t		1						0xABC0 | geometryID
+4+			uint32_t		alignment/4				For each element: 0xABCDE0F0 | (element << 8) | geometryID
+
+The test will try to verify everything works properly and all shader record buffers can be read with the right values.
+
+ */
+struct ShaderGroupHandleAlignmentParams
+{
+	const uint32_t alignment;
+
+	ShaderGroupHandleAlignmentParams (uint32_t alignment_)
+		: alignment (alignment_)
+	{
+		DE_ASSERT(alignment >= 1u && alignment <= 32u);
+		DE_ASSERT(deIsPowerOfTwo32(static_cast<int>(alignment)));
+	}
+
+	uint32_t geometryCount () const
+	{
+		return (32u / alignment + 1u);
+	}
+
+	uint32_t shaderRecordElementCount () const
+	{
+		return ((alignment <= 4u) ? 1u : (alignment / 4u));
+	}
+
+	std::string glslElementType () const
+	{
+		if (alignment == 1u)
+			return "uint8_t";
+		if (alignment == 2u)
+			return "uint16_t";
+		return "uint32_t";
+	}
+
+	std::string glslExtension () const
+	{
+		if (alignment == 1u)
+			return "GL_EXT_shader_explicit_arithmetic_types_int8";
+		if (alignment == 2u)
+			return "GL_EXT_shader_explicit_arithmetic_types_int16";
+		return "GL_EXT_shader_explicit_arithmetic_types_int32";
+	}
+
+	std::vector<uint8_t> getRecordData (uint32_t geometryID) const
+	{
+		std::vector<uint8_t> recordData;
+		switch (alignment)
+		{
+		case 1u:
+			recordData.push_back(static_cast<uint8_t>(0x80u | geometryID));
+			break;
+		case 2u:
+			recordData.push_back(uint8_t{0xABu});
+			recordData.push_back(static_cast<uint8_t>(0xC0u | geometryID));
+			break;
+		default:
+			{
+				const auto elemCount = shaderRecordElementCount();
+				for (uint32_t i = 0u; i < elemCount; ++i)
+				{
+					recordData.push_back(uint8_t{0xABu});
+					recordData.push_back(uint8_t{0xCDu});
+					recordData.push_back(static_cast<uint8_t>(0xE0u | i));
+					recordData.push_back(static_cast<uint8_t>(0xF0u | geometryID));
+				}
+			}
+			break;
+		}
+		return recordData;
+	}
+};
+
+class ShaderGroupHandleAlignmentCase : public TestCase
+{
+public:
+					ShaderGroupHandleAlignmentCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const ShaderGroupHandleAlignmentParams& params)
+						: TestCase	(testCtx, name, description)
+						, m_params	(params)
+						{
+						}
+	virtual			~ShaderGroupHandleAlignmentCase		(void) {}
+
+	void			checkSupport						(Context& context) const override;
+	void			initPrograms						(vk::SourceCollections& programCollection) const override;
+	TestInstance*	createInstance						(Context& context) const override;
+
+protected:
+	ShaderGroupHandleAlignmentParams					m_params;
+};
+
+class ShaderGroupHandleAlignmentInstance : public TestInstance
+{
+public:
+						ShaderGroupHandleAlignmentInstance	(Context& context, const ShaderGroupHandleAlignmentParams& params)
+							: TestInstance	(context)
+							, m_params		(params)
+							{}
+	virtual				~ShaderGroupHandleAlignmentInstance	(void) {}
+
+	tcu::TestStatus		iterate								(void) override;
+
+protected:
+	ShaderGroupHandleAlignmentParams							m_params;
+};
+
+void ShaderGroupHandleAlignmentCase::checkSupport (Context& context) const
+{
+	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
+	const auto	rtProperties	= makeRayTracingProperties(vki, physicalDevice);
+
+	if (m_params.alignment < rtProperties->getShaderGroupHandleAlignment())
+		TCU_THROW(NotSupportedError, "Required shader group handle alignment not supported");
+
+	switch (m_params.alignment)
+	{
+	case 1u:
+		{
+			const auto& int8Features = context.getShaderFloat16Int8Features();
+			if (!int8Features.shaderInt8)
+				TCU_THROW(NotSupportedError, "shaderInt8 not supported");
+
+			const auto& int8StorageFeatures = context.get8BitStorageFeatures();
+			if (!int8StorageFeatures.storageBuffer8BitAccess)
+				TCU_THROW(NotSupportedError, "storageBuffer8BitAccess not supported");
+		}
+		break;
+
+	case 2u:
+		{
+			context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_INT16);
+
+			const auto& int16StorageFeatures = context.get16BitStorageFeatures();
+			if (!int16StorageFeatures.storageBuffer16BitAccess)
+				TCU_THROW(NotSupportedError, "storageBuffer16BitAccess not supported");
+		}
+		break;
+
+	default:
+		break;
+	}
+}
+
+void ShaderGroupHandleAlignmentCase::initPrograms (vk::SourceCollections& programCollection) const
+{
+	const ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
+	const auto elemType			= m_params.glslElementType();
+	const auto geometryCount	= m_params.geometryCount();
+	const auto elementCount		= m_params.shaderRecordElementCount();
+	const auto extension		= m_params.glslExtension();
+
+	std::ostringstream descriptors;
+	descriptors
+		<< "layout(set=0, binding=0) uniform accelerationStructureEXT topLevelAS;\n"
+		<< "layout(set=0, binding=1, std430) buffer SSBOBlock {\n"
+		<< "  " << elemType << " data[" << geometryCount << "][" << elementCount << "];\n"
+		<< "} ssbo;\n"
+		;
+	const auto descriptorsStr = descriptors.str();
+
+	std::ostringstream commonHeader;
+	commonHeader
+		<< "#version 460 core\n"
+		<< "#extension GL_EXT_ray_tracing : require\n"
+		<< "#extension " << extension << " : require\n"
+		;
+	const auto commontHeaderStr = commonHeader.str();
+
+	std::ostringstream rgen;
+	rgen
+		<< commontHeaderStr
+		<< "\n"
+		<< descriptorsStr
+		<< "layout(location=0) rayPayloadEXT vec4 unused;\n"
+		<< "\n"
+		<< "void main()\n"
+		<< "{\n"
+		<< "  const uint  rayFlags  = 0;\n"
+		<< "  const uint  cullMask  = 0xFF;\n"
+		<< "  const float tMin      = 0.0;\n"
+		<< "  const float tMax      = 10.0;\n"
+		<< "  const vec3  origin    = vec3(float(gl_LaunchIDEXT.x) + 0.5, 0.5, 0.0);\n"
+		<< "  const vec3  direction = vec3(0.0, 0.0, 1.0);\n"
+		<< "  const uint  sbtOffset = 0;\n"
+		<< "  const uint  sbtStride = 1;\n"
+		<< "  const uint  missIndex = 0;\n"
+		<< "  traceRayEXT(topLevelAS, rayFlags, cullMask, sbtOffset, sbtStride, missIndex, origin, tMin, direction, tMax, 0);\n"
+		<< "}\n"
+		;
+
+	std::ostringstream chit;
+	chit
+		<< commontHeaderStr
+		<< "\n"
+		<< descriptorsStr
+		<< "layout(location=0) rayPayloadInEXT vec4 unused;\n"
+		<< "layout(shaderRecordEXT, std430) buffer srbBlock {\n"
+		<< "  " << elemType << " data[" << elementCount << "];\n"
+		<< "} srb;\n"
+		<< "\n"
+		<< "void main()\n"
+		<< "{\n"
+		<< "  for (uint i = 0; i < " << elementCount << "; ++i) {\n"
+		<< "    ssbo.data[gl_LaunchIDEXT.x][i] = srb.data[i];\n"
+		<< "  }\n"
+		<< "}\n"
+		;
+
+	std::ostringstream miss;
+	miss
+		<< commontHeaderStr
+		<< "\n"
+		<< descriptorsStr
+		<< "layout(location=0) rayPayloadInEXT vec4 unused;\n"
+		<< "\n"
+		<< "void main()\n"
+		<< "{\n"
+		<< "}\n"
+		;
+
+	programCollection.glslSources.add("rgen") << glu::RaygenSource(rgen.str()) << buildOptions;
+	programCollection.glslSources.add("chit") << glu::ClosestHitSource(chit.str()) << buildOptions;
+	programCollection.glslSources.add("miss") << glu::MissSource(miss.str()) << buildOptions;
+}
+
+TestInstance* ShaderGroupHandleAlignmentCase::createInstance (Context& context) const
+{
+	return new ShaderGroupHandleAlignmentInstance(context, m_params);
+}
+
+tcu::TestStatus ShaderGroupHandleAlignmentInstance::iterate (void)
+{
+	const auto&	vki			= m_context.getInstanceInterface();
+	const auto	physDev		= m_context.getPhysicalDevice();
+	const auto&	vkd			= m_context.getDeviceInterface();
+	const auto	device		= m_context.getDevice();
+	auto&		alloc		= m_context.getDefaultAllocator();
+	const auto	qIndex		= m_context.getUniversalQueueFamilyIndex();
+	const auto	queue		= m_context.getUniversalQueue();
+	const auto	stages		= (VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR);
+	const auto	geoCount	= m_params.geometryCount();
+	const auto	triangleZ	= 5.0f;
+
+	// Command pool and buffer.
+	const auto cmdPool		= makeCommandPool(vkd, device, qIndex);
+	const auto cmdBufferPtr	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto cmdBuffer	= cmdBufferPtr.get();
+
+	beginCommandBuffer(vkd, cmdBuffer);
+
+	// Build acceleration structures.
+	auto topLevelAS		= makeTopLevelAccelerationStructure();
+	auto bottomLevelAS	= makeBottomLevelAccelerationStructure();
+
+	// Create the needed amount of geometries (triangles) with the right coordinates.
+	const tcu::Vec3	baseLocation	(0.5f, 0.5f, triangleZ);
+	const float		vertexOffset	= 0.25f; // From base location, to build a triangle around it.
+
+	for (uint32_t i = 0; i < geoCount; ++i)
+	{
+		// Triangle "center" or base location.
+		const tcu::Vec3					triangleLocation (baseLocation.x() + static_cast<float>(i), baseLocation.y(), baseLocation.z());
+
+		// Actual triangle.
+		const std::vector<tcu::Vec3>	triangle
+		{
+			tcu::Vec3(triangleLocation.x() - vertexOffset, triangleLocation.y() - vertexOffset, triangleLocation.z()),
+			tcu::Vec3(triangleLocation.x() + vertexOffset, triangleLocation.y() - vertexOffset, triangleLocation.z()),
+			tcu::Vec3(triangleLocation.x(),                triangleLocation.y() + vertexOffset, triangleLocation.z()),
+		};
+
+		bottomLevelAS->addGeometry(triangle, true/*triangles*/);
+	}
+
+	bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+
+	de::SharedPtr<BottomLevelAccelerationStructure> blasSharedPtr (bottomLevelAS.release());
+	topLevelAS->setInstanceCount(1);
+	topLevelAS->addInstance(blasSharedPtr, identityMatrix3x4, 0u, 0xFF, 0u, VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR);
+	topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+
+	// Get some ray tracing properties.
+	uint32_t shaderGroupHandleSize		= 0u;
+	uint32_t shaderGroupBaseAlignment	= 1u;
+	{
+		const auto rayTracingPropertiesKHR	= makeRayTracingProperties(vki, physDev);
+		shaderGroupHandleSize				= rayTracingPropertiesKHR->getShaderGroupHandleSize();
+		shaderGroupBaseAlignment			= rayTracingPropertiesKHR->getShaderGroupBaseAlignment();
+	}
+
+	// SSBO to copy results over from the shaders.
+	const auto			shaderRecordSize	= m_params.alignment;
+	const auto			hitSBTStride		= shaderGroupHandleSize + shaderRecordSize;
+	const auto			ssboSize			= static_cast<VkDeviceSize>(geoCount * hitSBTStride);
+	const auto			ssboInfo			= makeBufferCreateInfo(ssboSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	BufferWithMemory	ssbo				(vkd, device, alloc, ssboInfo, MemoryRequirement::HostVisible);
+	auto&				ssboAlloc			= ssbo.getAllocation();
+	void*				ssboData			= ssboAlloc.getHostPtr();
+
+	deMemset(ssboData, 0, static_cast<size_t>(ssboSize));
+
+	// Descriptor set layout and pipeline layout.
+	DescriptorSetLayoutBuilder setLayoutBuilder;
+	setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, stages);
+	setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, stages);
+	const auto setLayout		= setLayoutBuilder.build(vkd, device);
+	const auto pipelineLayout	= makePipelineLayout(vkd, device, setLayout.get());
+
+	// Descriptor pool and set.
+	DescriptorPoolBuilder poolBuilder;
+	poolBuilder.addType(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
+	poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u);
+	const auto descriptorPool	= poolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+	const auto descriptorSet	= makeDescriptorSet(vkd, device, descriptorPool.get(), setLayout.get());
+
+	// Update descriptor set.
+	{
+		const VkWriteDescriptorSetAccelerationStructureKHR accelDescInfo =
+		{
+			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+			nullptr,
+			1u,
+			topLevelAS.get()->getPtr(),
+		};
+
+		const auto ssboDescInfo = makeDescriptorBufferInfo(ssbo.get(), 0ull, ssboSize);
+
+		DescriptorSetUpdateBuilder updateBuilder;
+		updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &accelDescInfo);
+		updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &ssboDescInfo);
+		updateBuilder.update(vkd, device);
+	}
+
+	// Shader modules.
+	auto rgenModule = makeVkSharedPtr(createShaderModule(vkd, device, m_context.getBinaryCollection().get("rgen"), 0));
+	auto missModule = makeVkSharedPtr(createShaderModule(vkd, device, m_context.getBinaryCollection().get("miss"), 0));
+	auto chitModule = makeVkSharedPtr(createShaderModule(vkd, device, m_context.getBinaryCollection().get("chit"), 0));
+
+	// Create raytracing pipeline and shader binding tables.
+	Move<VkPipeline>				pipeline;
+
+	de::MovePtr<BufferWithMemory>	raygenSBT;
+	de::MovePtr<BufferWithMemory>	missSBT;
+	de::MovePtr<BufferWithMemory>	hitSBT;
+	de::MovePtr<BufferWithMemory>	callableSBT;
+
+	VkStridedDeviceAddressRegionKHR	raygenSBTRegion		= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	VkStridedDeviceAddressRegionKHR	missSBTRegion		= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	VkStridedDeviceAddressRegionKHR	hitSBTRegion		= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	VkStridedDeviceAddressRegionKHR	callableSBTRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+
+	// Create shader record buffer data.
+	using DataVec = std::vector<uint8_t>;
+
+	std::vector<DataVec> srbData;
+	for (uint32_t i = 0; i < geoCount; ++i)
+	{
+		srbData.emplace_back(m_params.getRecordData(i));
+	}
+
+	std::vector<const void*> srbDataPtrs;
+	srbDataPtrs.reserve(srbData.size());
+	std::transform(begin(srbData), end(srbData), std::back_inserter(srbDataPtrs), [](const DataVec& data) { return data.data(); });
+
+	// Generate ids for the closest hit and miss shaders according to the test parameters.
+	{
+		const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
+
+		rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, rgenModule, 0u);
+		rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, missModule, 1u);
+
+		for (uint32_t i = 0; i < geoCount; ++i)
+			rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, chitModule, 2u + i);
+
+		pipeline = rayTracingPipeline->createPipeline(vkd, device, pipelineLayout.get());
+
+		raygenSBT		= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline.get(), alloc, shaderGroupHandleSize, shaderGroupBaseAlignment, 0u, 1u);
+		raygenSBTRegion	= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenSBT->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+
+		missSBT			= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline.get(), alloc, shaderGroupHandleSize, shaderGroupBaseAlignment, 1u, 1u);
+		missSBTRegion	= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missSBT->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+
+		hitSBT			= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline.get(), alloc, shaderGroupHandleSize, shaderGroupBaseAlignment, 2u, geoCount,
+																	   0u, 0u, MemoryRequirement::Any, 0u, 0u, shaderRecordSize, srbDataPtrs.data(), false/*autoalign*/);
+		hitSBTRegion	= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitSBT->get(), 0), hitSBTStride, hitSBTStride*geoCount);
+	}
+
+	// Trace rays and verify ssbo contents.
+	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.get());
+	vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+	vkd.cmdTraceRaysKHR(cmdBuffer, &raygenSBTRegion, &missSBTRegion, &hitSBTRegion, &callableSBTRegion, geoCount, 1u, 1u);
+	const auto shaderToHostBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+	cmdPipelineMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_HOST_BIT, &shaderToHostBarrier);
+
+	endCommandBuffer(vkd, cmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	invalidateAlloc(vkd, device, ssboAlloc);
+
+	// Verify SSBO.
+	const auto	ssboDataAsBytes	= reinterpret_cast<const uint8_t*>(ssboData);
+	size_t		ssboDataIdx		= 0u;
+	bool		fail			= false;
+	auto&		log				= m_context.getTestContext().getLog();
+
+	for (const auto& dataVec : srbData)
+		for (const uint8_t byte : dataVec)
+		{
+			const uint8_t outputByte = ssboDataAsBytes[ssboDataIdx++];
+			if (byte != outputByte)
+			{
+				std::ostringstream msg;
+				msg
+					<< std::hex << std::setfill('0')
+					<< "Unexpectd output data: "
+					<< "0x" << std::setw(2) << static_cast<int>(outputByte)
+					<< " vs "
+					<< "0x" << std::setw(2) << static_cast<int>(byte)
+					;
+				log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+				fail = true;
+			}
+		}
+
+	if (fail)
+		return tcu::TestStatus::fail("Unexpected output data found; check log for details");
+	return tcu::TestStatus::pass("Pass");
+}
+
 }	// anonymous
 
 tcu::TestCaseGroup*	createShaderBindingTableTests (tcu::TestContext& testCtx)
@@ -1042,46 +1514,46 @@ tcu::TestCaseGroup*	createShaderBindingTableTests (tcu::TestContext& testCtx)
 																																: MAX_SBT_RECORD_OFFSET | (~((1u << 4)  - 1)); //< Only 4 least significant bits matter for SBT record offsets
 
 				for (deUint32 sbtRecordOffset = 0; sbtRecordOffset <= maxSbtRecordOffset; ++sbtRecordOffset)
-				for (deUint32 sbtRecordStride = 0; sbtRecordStride <= maxSbtRecordStride; ++sbtRecordStride)
-				{
-					if ((shaderTestTypes[shaderTestNdx].shaderTestType	!= STT_HIT)				&&
-						(sbtRecordStride								== maxSbtRecordStride))
+					for (deUint32 sbtRecordStride = 0; sbtRecordStride <= maxSbtRecordStride; ++sbtRecordStride)
 					{
-						continue;
+						if ((shaderTestTypes[shaderTestNdx].shaderTestType	!= STT_HIT)				&&
+							(sbtRecordStride								== maxSbtRecordStride))
+						{
+							continue;
+						}
+
+						TestParams testParams
+						{
+							CHECKERBOARD_WIDTH,
+							CHECKERBOARD_HEIGHT,
+							shaderTestTypes[shaderTestNdx].shaderTestType,
+							shaderBufferOffsets[sbtOffsetNdx].sbtOffset,
+							shaderRecords[shaderRecordNdx].present,
+							sbtRecordOffset,
+							(sbtRecordOffset == maxSbtRecordOffset)	? maxSbtRecordOffsetWithExtraBits
+																	: sbtRecordOffset,
+							//< Only first 4 least significant bits matter for SBT record stride
+							sbtRecordStride,
+							(sbtRecordStride == maxSbtRecordStride)	? maxSbtRecordStride | (~((1u << 4) - 1))
+																	: sbtRecordStride,
+							de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration())
+						};
+
+						std::stringstream str;
+						str << sbtRecordOffset << "_" << sbtRecordStride;
+
+						if (testParams.sbtRecordStride != testParams.sbtRecordStridePassedToTraceRay)
+						{
+							str << "_extraSBTRecordStrideBits";
+						}
+
+						if (testParams.sbtRecordOffset != testParams.sbtRecordOffsetPassedToTraceRay)
+						{
+							str << "_extrabits";
+						}
+
+						shaderRecordGroup->addChild(new ShaderBindingTableIndexingTestCase(group->getTestContext(), str.str().c_str(), "", testParams));
 					}
-
-					TestParams testParams
-					{
-						CHECKERBOARD_WIDTH,
-						CHECKERBOARD_HEIGHT,
-						shaderTestTypes[shaderTestNdx].shaderTestType,
-						shaderBufferOffsets[sbtOffsetNdx].sbtOffset,
-						shaderRecords[shaderRecordNdx].present,
-						sbtRecordOffset,
-						(sbtRecordOffset == maxSbtRecordOffset)	? maxSbtRecordOffsetWithExtraBits
-																: sbtRecordOffset,
-						//< Only first 4 least significant bits matter for SBT record stride
-						sbtRecordStride,
-						(sbtRecordStride == maxSbtRecordStride)	? maxSbtRecordStride | (~((1u << 4) - 1))
-																: sbtRecordStride,
-						de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration())
-					};
-
-					std::stringstream str;
-					str << sbtRecordOffset << "_" << sbtRecordStride;
-
-					if (testParams.sbtRecordStride != testParams.sbtRecordStridePassedToTraceRay)
-					{
-						str << "_extraSBTRecordStrideBits";
-					}
-
-					if (testParams.sbtRecordOffset != testParams.sbtRecordOffsetPassedToTraceRay)
-					{
-						str << "_extrabits";
-					}
-
-					shaderRecordGroup->addChild(new ShaderBindingTableIndexingTestCase(group->getTestContext(), str.str().c_str(), "", testParams));
-				}
 
 				sbtOffsetGroup->addChild(shaderRecordGroup.release());
 			}
@@ -1090,6 +1562,22 @@ tcu::TestCaseGroup*	createShaderBindingTableTests (tcu::TestContext& testCtx)
 		}
 
 		group->addChild(shaderTestGroup.release());
+	}
+
+	{
+		const uint32_t					kAlignments[]			= { 1u, 2u, 4u, 8u, 16u, 32u };
+		de::MovePtr<tcu::TestCaseGroup>	handleAlignmentGroup	(new tcu::TestCaseGroup(testCtx, "handle_alignment", "Test allowed handle alignments"));
+
+		for (const auto alignment : kAlignments)
+		{
+			const auto alignStr = std::to_string(alignment);
+			const auto testName = "alignment_" + alignStr;
+			const auto testDesc = "Check aligning shader group handles to " + alignStr + " bytes";
+
+			handleAlignmentGroup->addChild(new ShaderGroupHandleAlignmentCase(testCtx, testName, testDesc, ShaderGroupHandleAlignmentParams{alignment}));
+		}
+
+		group->addChild(handleAlignmentGroup.release());
 	}
 
 	return group.release();

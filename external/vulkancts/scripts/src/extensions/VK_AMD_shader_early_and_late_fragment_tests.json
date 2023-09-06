@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD":
+		[
+			{ "features": ["shaderEarlyAndLateFragmentTests"],	"requirements": ["VK_AMD_shader_early_and_late_fragment_tests"] }
+		]
+	}
+}

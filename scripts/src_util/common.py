@@ -55,6 +55,10 @@ BINARY_FILE_EXTENSION = [
     ".pkm",
     ".xcf",
     ".nspv",
+    ".h264",
+    ".h265",
+    ".mp4",
+	".diff"
     ]
 
 def isTextFile (filePath):

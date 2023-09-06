@@ -104,6 +104,24 @@ namespace vkt
 				return result;
 			}
 
+			static inline double doCrossProduct(tcu::DVec2 a, tcu::DVec2 b)
+			{
+				return a.x() * b.y() - a.y() * b.x();
+			}
+
+			static bool pointInTriangle2D(tcu::Vec3 p, tcu::Vec3 a, tcu::Vec3 b, tcu::Vec3 c)
+			{
+				tcu::DVec2 pa = { a.x() - p.x(), a.y() - p.y()} ;
+				tcu::DVec2 pb = { b.x() - p.x(), b.y() - p.y()};
+				tcu::DVec2 pc = { c.x() - p.x(), c.y() - p.y()};
+				double v1 = doCrossProduct(pa, pb);
+				double v2 = doCrossProduct(pb, pc);
+				double v3 = doCrossProduct(pc, pa);
+
+				// The winding of all the triangles in the test on XY plane is the same, so a negative value can be assumed
+				return v1 < 0 && v2 < 0 && v3 < 0;
+			}
+
 			deUint32 getShaderGroupSize(const InstanceInterface& vki,
 				const VkPhysicalDevice		physicalDevice)
 			{
@@ -445,6 +463,11 @@ namespace vkt
 					const tcu::Vec3		mixed = mixVec3(mixVec3(a, b, alfa), c, beta);
 					const float			z = -rng.getFloat(0.01f, 0.99f);
 					const tcu::Vec3		d = tcu::Vec3(mixed.x(), mixed.y(), z);
+
+					// A check to avoid vertices that are outside the triangle in the XY plane due to floating-point precision,
+					// resulting in inconsistent winding order
+					if(!pointInTriangle2D(d, a, b, c)) continue;
+
 					const deUint32& p = t.x();
 					const deUint32& q = t.y();
 					deUint32& r = t.z();
@@ -453,7 +476,7 @@ namespace vkt
 					vertices.push_back(d);
 
 					triangles.push_back(tcu::UVec3(q, r, R));
-					triangles.push_back(tcu::UVec3(p, r, R));
+					triangles.push_back(tcu::UVec3(p, R, r));
 					r = R;
 				}
 

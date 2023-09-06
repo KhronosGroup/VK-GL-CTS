@@ -28,17 +28,7 @@
 #include "deFilePath.hpp"
 #include "deDirectoryIterator.hpp"
 #include "deDynamicLibrary.hpp"
-#if DEQP_SUPPORT_DRM
-#if !defined(__FreeBSD__)
-// major() and minor() are defined in sys/types.h on FreeBSD, and in
-// sys/sysmacros.h on Linux and Solaris.
-#include <sys/sysmacros.h>
-#endif // !defined(__FreeBSD__)
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <xf86drm.h>
-#endif // DEQP_SUPPORT_DRM
+#include "tcuLibDrm.hpp"
 
 using namespace vk;
 
@@ -60,125 +50,31 @@ void checkSupport (Context& context, const TestType config)
 	context.requireDeviceFunctionality("VK_EXT_physical_device_drm");
 }
 
-#if DEQP_SUPPORT_DRM
-class LibDrm : protected de::DynamicLibrary
-{
-	static const char* libDrmFiles[];
-
-	typedef int (*PFNDRMGETDEVICES2PROC)(deUint32, drmDevicePtr[], int);
-	typedef int (*PFNDRMGETDEVICESPROC)(drmDevicePtr[], int);
-	typedef void (*PFNDRMFREEDEVICESPROC)(drmDevicePtr[], int);
-	PFNDRMGETDEVICES2PROC pGetDevices2;
-	PFNDRMGETDEVICESPROC pGetDevices;
-	PFNDRMFREEDEVICESPROC pFreeDevices;
-
-	int intGetDevices(drmDevicePtr devices[], int maxDevices) const
-    {
-		if (pGetDevices2)
-			return pGetDevices2(0, devices, maxDevices);
-		else
-			return pGetDevices(devices, maxDevices);
-	}
-
-public:
-	LibDrm() : DynamicLibrary(libDrmFiles) {
-		pGetDevices2 = (PFNDRMGETDEVICES2PROC)getFunction("drmGetDevices2");
-		pGetDevices = (PFNDRMGETDEVICESPROC)getFunction("drmGetDevices");
-		pFreeDevices = (PFNDRMFREEDEVICESPROC)getFunction("drmFreeDevices");
-
-		if (!pGetDevices2 && !pGetDevices)
-			TCU_FAIL("Could not load a valid drmGetDevices() variant from libdrm");
-
-		if (!pFreeDevices)
-			TCU_FAIL("Could not load drmFreeDevices() from libdrm");
-	}
-
-	drmDevicePtr *getDevices(int *pNumDevices) const
-	{
-		*pNumDevices = intGetDevices(DE_NULL, 0);
-
-		if (*pNumDevices < 0)
-			TCU_THROW(NotSupportedError, "Failed to query number of DRM devices in system");
-
-		if (*pNumDevices == 0)
-			return DE_NULL;
-
-		drmDevicePtr *devs = new drmDevicePtr[*pNumDevices];
-
-		*pNumDevices = intGetDevices(devs, *pNumDevices);
-
-		if (*pNumDevices < 0)
-        {
-			delete[] devs;
-			TCU_FAIL("Failed to query list of DRM devices in system");
-		}
-
-		return devs;
-	}
-
-	void freeDevices(drmDevicePtr *devices, int count) const
-    {
-		pFreeDevices(devices, count);
-		delete[] devices;
-	}
-
-	~LibDrm() { }
-};
-
-const char* LibDrm::libDrmFiles[] =
-{
-	"libdrm.so.2",
-	"libdrm.so",
-	DE_NULL
-};
-#endif // DEQP_SUPPORT_DRM
-
 void testFilesExist (const VkPhysicalDeviceDrmPropertiesEXT& deviceDrmProperties)
 {
 	bool primaryFound = !deviceDrmProperties.hasPrimary;
 	bool renderFound = !deviceDrmProperties.hasRender;
 
-#if DEQP_SUPPORT_DRM
-	static const LibDrm libDrm;
+#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
+	static const tcu::LibDrm libDrm;
 
 	int numDrmDevices;
 	drmDevicePtr* drmDevices = libDrm.getDevices(&numDrmDevices);
 
-	for (int i = 0; i < numDrmDevices; i++)
-    {
-		for (int j = 0; j < DRM_NODE_MAX; j++)
-        {
-			if (!(drmDevices[i]->available_nodes & (1 << j)))
-				continue;
-
-			struct stat statBuf;
-			deMemset(&statBuf, 0, sizeof(statBuf));
-			int res = stat(drmDevices[i]->nodes[j], &statBuf);
-
-			if (res || !(statBuf.st_mode & S_IFCHR))
-                continue;
-
-			if (deviceDrmProperties.primaryMajor == major(statBuf.st_rdev) &&
-				deviceDrmProperties.primaryMinor == minor(statBuf.st_rdev))
-            {
-				primaryFound = true;
-				continue;
-			}
-
-			if (deviceDrmProperties.renderMajor == major(statBuf.st_rdev) &&
-				deviceDrmProperties.renderMinor == minor(statBuf.st_rdev))
-            {
-				renderFound = true;
-				continue;
-			}
-		}
-	}
+	if (libDrm.findDeviceNode(drmDevices, numDrmDevices,
+							  deviceDrmProperties.primaryMajor,
+							  deviceDrmProperties.primaryMinor))
+		primaryFound = true;
+	if (libDrm.findDeviceNode(drmDevices, numDrmDevices,
+							  deviceDrmProperties.renderMajor,
+							  deviceDrmProperties.renderMinor))
+		renderFound = true;
 
 	libDrm.freeDevices(drmDevices, numDrmDevices);
-#endif // DEQP_SUPPORT_DRM
+#endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 
 	if (!primaryFound && !renderFound) {
-		TCU_THROW(NotSupportedError, "Nether DRM primary nor render device files were found");
+		TCU_THROW(NotSupportedError, "Neither DRM primary nor render device files were found");
 	}
 }
 

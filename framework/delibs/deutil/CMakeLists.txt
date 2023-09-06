@@ -8,7 +8,6 @@ set(DEUTIL_SRCS
 	deDynamicLibrary.h
 	deFile.c
 	deFile.h
-	deProcess.c
 	deProcess.h
 	deSocket.c
 	deSocket.h
@@ -19,6 +18,13 @@ set(DEUTIL_SRCS
 	)
 
 set(DEUTIL_LIBS debase dethread depool)
+
+if (DE_OS_IS_FUCHSIA)
+ # Process launching isn't currently supported on Fuchsia in this library.
+ # Building executor and execserver will fail.
+else ()
+	set(DEUTIL_SRCS ${DEUTIL_SRCS} deProcess.c)
+endif ()
 
 include_directories(
 	../debase

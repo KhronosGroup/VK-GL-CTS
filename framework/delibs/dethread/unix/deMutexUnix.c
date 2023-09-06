@@ -23,7 +23,7 @@
 
 #include "deMutex.h"
 
-#if (DE_OS == DE_OS_UNIX || DE_OS == DE_OS_ANDROID || DE_OS == DE_OS_SYMBIAN || DE_OS == DE_OS_QNX || DE_OS == DE_OS_OSX || DE_OS == DE_OS_IOS)
+#if (DE_OS == DE_OS_UNIX || DE_OS == DE_OS_ANDROID || DE_OS == DE_OS_SYMBIAN || DE_OS == DE_OS_QNX || DE_OS == DE_OS_OSX || DE_OS == DE_OS_IOS) || (DE_OS == DE_OS_FUCHSIA)
 
 #include "deMemory.h"
 

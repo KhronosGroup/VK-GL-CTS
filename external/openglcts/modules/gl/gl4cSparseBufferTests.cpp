@@ -885,8 +885,8 @@ void AtomicCounterBufferStorageTestCase::deinitTestCaseIteration()
 		m_gl.bindBuffer(GL_ARRAY_BUFFER, m_sparse_bo);
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
-		m_gl.bufferPageCommitmentARB(GL_ARRAY_BUFFER, 0,				  /* offset */
-									 m_helper_bo_size_rounded, GL_FALSE); /* commit */
+		m_gl.bufferPageCommitmentARB(GL_ARRAY_BUFFER, m_sparse_bo_data_start_offset_rounded,		/* offset */
+									 m_sparse_bo_data_size_rounded, GL_FALSE); /* commit */
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call failed.");
 
 		m_sparse_bo = 0;
@@ -4157,7 +4157,7 @@ void QuadsBufferStorageTestCase::initSparseBO(bool decommit_data_pages_after_upl
 	}
 	else
 	{
-		/* Sanity checks */
+		/* Quick checks */
 		if (m_ibo_usage != IBO_USAGE_NONE)
 		{
 			DE_ASSERT(m_vbo_data_offset != m_ibo_data_offset);
@@ -5969,7 +5969,7 @@ bool TransformFeedbackBufferStorageTestCase::initTestCaseIteration(glw::GLuint s
 	/* Initialize buffer objects used by the test case */
 	m_result_bo = sparse_bo;
 
-	/* Sanity check */
+	/* Quick check */
 	DE_ASSERT(m_data_bo != 0);
 
 	return result;
@@ -6131,7 +6131,7 @@ void TransformFeedbackBufferStorageTestCase::initTestData()
 								 (m_multidrawcall_count[0] + m_multidrawcall_count[1]) * m_multidrawcall_primcount);
 	m_result_bo_size_rounded = SparseBufferTestUtilities::alignOffset(m_result_bo_size, m_page_size);
 
-	/* Sanity checks */
+	/* Quick checks */
 	DE_ASSERT(m_min_memory_page_span > 0);
 	DE_ASSERT(m_page_size > 0);
 	DE_ASSERT(m_result_bo_size >= (m_min_memory_page_span * m_page_size));

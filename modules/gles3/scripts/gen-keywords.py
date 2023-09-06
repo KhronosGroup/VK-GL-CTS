@@ -29,7 +29,7 @@ from genutil import *
 
 identifierCaseTemplate = """
 case ${{NAME}}
-	expect compile_fail
+	${{EXPECT}}
 	values {}
 	version 300 es
 
@@ -51,13 +51,15 @@ end
 # Classes
 
 class IdentifierCase(ShaderCase):
-	def __init__(self, name, identifier):
+	def __init__(self, name, identifier, expectToCompile = True):
 		self.name		= name
-		self.identifier = identifier
+		self.identifier	= identifier
+		self.expect		= '' if expectToCompile else 'expect compile_fail'
 
 	def __str__(self):
 		params = {	"NAME"			: self.name,
-					"IDENTIFIER"	: self.identifier }
+					"IDENTIFIER"	: self.identifier,
+					"EXPECT"		: self.expect }
 		return fillTemplate(identifierCaseTemplate, params)
 
 # Declarations
@@ -92,6 +94,10 @@ RESERVED_KEYWORDS = [
 	"usampler2DMSArray", "sizeof", "cast", "namespace", "using"
 ]
 
+ALLOWED_KEYWORDS = [
+	"image1DShadow", "image2DShadow", "image1DArrayShadow", "image2DArrayShadow"
+]
+
 INVALID_IDENTIFIERS = [
 	("gl_begin",				"gl_Invalid"),
 	("digit",					"0123"),
@@ -103,20 +109,25 @@ INVALID_IDENTIFIERS = [
 
 keywords			= []
 reservedKeywords	= []
+allowedKeywords		= []
 invalidIdentifiers	= []
 
 for keyword in KEYWORDS:
-	keywords.append(IdentifierCase(keyword, keyword))			# Keywords
+	keywords.append(IdentifierCase(keyword, keyword, False))			# Keywords
 
 for keyword in RESERVED_KEYWORDS:
-	reservedKeywords.append(IdentifierCase(keyword, keyword))	# Reserved keywords
+	reservedKeywords.append(IdentifierCase(keyword, keyword, False))	# Reserved keywords
+
+for keyword in ALLOWED_KEYWORDS:
+	allowedKeywords.append(IdentifierCase(keyword, keyword, True))		# Allowed keywords
 
 for (name, identifier) in INVALID_IDENTIFIERS:
-	invalidIdentifiers.append(IdentifierCase(name, identifier)) # Invalid identifiers
+	invalidIdentifiers.append(IdentifierCase(name, identifier, False))	# Invalid identifiers
 
 keywordCases = [
 	CaseGroup("keywords",				"Usage of keywords as identifiers.",			keywords),
 	CaseGroup("reserved_keywords",		"Usage of reserved keywords as identifiers.",	reservedKeywords),
+	CaseGroup("allowed_keywords",		"Usage of allowed keywords as identifiers.",	allowedKeywords),
 	CaseGroup("invalid_identifiers",	"Usage of invalid identifiers.",				invalidIdentifiers)
 ]
 

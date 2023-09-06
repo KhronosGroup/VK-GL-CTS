@@ -32,24 +32,32 @@ namespace vk
 
 struct ApiVersion
 {
+	deUint32	variantNum;
 	deUint32	majorNum;
 	deUint32	minorNum;
 	deUint32	patchNum;
 
-	ApiVersion (deUint32	majorNum_,
+	ApiVersion (deUint32	variantNum_,
+				deUint32	majorNum_,
 				deUint32	minorNum_,
 				deUint32	patchNum_)
-		: majorNum	(majorNum_)
-		, minorNum	(minorNum_)
-		, patchNum	(patchNum_)
+		: variantNum	(variantNum_)
+		, majorNum		(majorNum_)
+		, minorNum		(minorNum_)
+		, patchNum		(patchNum_)
 	{
 	}
 };
 
-ApiVersion		unpackVersion		(deUint32 version);
-deUint32		pack				(const ApiVersion& version);
+ApiVersion		unpackVersion			(deUint32 version);
+deUint32		pack					(const ApiVersion& version);
 
-inline std::ostream& operator<< (std::ostream& s, const ApiVersion& version)
+bool			isApiVersionEqual		(deUint32 lhs, deUint32 rhs);
+bool			isApiVersionPredecessor	(deUint32 version, deUint32 predVersion);
+bool			isApiVersionSupported	(deUint32 yourVersion, deUint32 versionInQuestion);
+deUint32		minVulkanAPIVersion		(deUint32 lhs, deUint32 rhs);
+
+inline std::ostream& operator<<			(std::ostream& s, const ApiVersion& version)
 {
 	return s << version.majorNum << "." << version.minorNum << "." << version.patchNum;
 }

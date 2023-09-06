@@ -49,10 +49,11 @@ void					logValue							(std::ostringstream& logMsg, const void* valuePtr, vk::V
 class TestEnvironment
 {
 public:
-									TestEnvironment		(Context&					context,
-														 vk::VkDevice				device,
-														 vk::VkDescriptorSetLayout	descriptorSetLayout,
-														 vk::VkDescriptorSet		descriptorSet);
+									TestEnvironment		(Context&						context,
+														 const vk::DeviceInterface&		vk,
+														 vk::VkDevice					device,
+														 vk::VkDescriptorSetLayout		descriptorSetLayout,
+														 vk::VkDescriptorSet			descriptorSet);
 
 	virtual							~TestEnvironment	(void) {}
 
@@ -84,13 +85,15 @@ public:
 		deUint32					indexCount;
 	};
 
-									GraphicsEnvironment		(Context&					context,
-															 vk::VkDevice				device,
-															 vk::VkDescriptorSetLayout	descriptorSetLayout,
-															 vk::VkDescriptorSet		descriptorSet,
-															 const VertexBindings&		vertexBindings,
-															 const VertexAttributes&	vertexAttributes,
-															 const DrawConfig&			drawConfig);
+									GraphicsEnvironment		(Context&						context,
+															 const vk::DeviceInterface&		vk,
+															 vk::VkDevice					device,
+															 vk::VkDescriptorSetLayout		descriptorSetLayout,
+															 vk::VkDescriptorSet			descriptorSet,
+															 const VertexBindings&			vertexBindings,
+															 const VertexAttributes&		vertexAttributes,
+															 const DrawConfig&				drawConfig,
+															 bool							testPipelineRobustness = false);
 
 	virtual							~GraphicsEnvironment	(void) {}
 
@@ -117,10 +120,12 @@ private:
 class ComputeEnvironment: public TestEnvironment
 {
 public:
-									ComputeEnvironment		(Context&					context,
-															 vk::VkDevice				device,
-															 vk::VkDescriptorSetLayout	descriptorSetLayout,
-															 vk::VkDescriptorSet		descriptorSet);
+									ComputeEnvironment		(Context&						context,
+															 const vk::DeviceInterface&		vk,
+															 vk::VkDevice					device,
+															 vk::VkDescriptorSetLayout		descriptorSetLayout,
+															 vk::VkDescriptorSet			descriptorSet,
+															 bool							testPipelineRobustness = false);
 
 	virtual							~ComputeEnvironment		(void) {}
 

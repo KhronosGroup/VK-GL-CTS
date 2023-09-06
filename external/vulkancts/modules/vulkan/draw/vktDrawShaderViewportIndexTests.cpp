@@ -75,10 +75,10 @@ enum Constants
 
 struct TestParams
 {
-	int		numViewports;
-	bool	writeFromVertex;
-	bool	useDynamicRendering;
-	bool	useTessellationShader;
+	int						numViewports;
+	bool					writeFromVertex;
+	const SharedGroupParams	groupParams;
+	bool					useTessellationShader;
 };
 
 template<typename T>
@@ -344,6 +344,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		0,																	// deInt32											basePipelineIndex;
 	};
 
+#ifndef CTS_USES_VULKANSC
 	VkFormat colorAttachmentFormat = VK_FORMAT_R8G8B8A8_UNORM;
 	VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
@@ -359,6 +360,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 	// when pipeline is created without render pass we are using dynamic rendering
 	if (renderPass == DE_NULL)
 		graphicsPipelineInfo.pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
 
 	return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
 }
@@ -463,6 +465,7 @@ void initVertexTestPrograms (SourceCollections& programCollection, const TestPar
 			<< "}\n";
 
 		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+		programCollection.glslSources.add("vert_1_2") << glu::VertexSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_5, 0u, true);
 	}
 
 	// Fragment shader
@@ -502,6 +505,7 @@ void initFragmentTestPrograms (SourceCollections& programCollection, const TestP
 			<< "}\n";
 
 		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+		programCollection.glslSources.add("vert_1_2") << glu::VertexSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_5, 0u, true);
 	}
 
 	// Fragment shader
@@ -543,6 +547,7 @@ void initTessellationTestPrograms (SourceCollections& programCollection, const T
 			<< "}\n";
 
 		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+		programCollection.glslSources.add("vert_1_2") << glu::VertexSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_5, 0u, true);
 	}
 
 	// Tessellation control shader
@@ -596,6 +601,7 @@ void initTessellationTestPrograms (SourceCollections& programCollection, const T
 			<< "}\n";
 
 		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+		programCollection.glslSources.add("tese_1_2") << glu::TessellationEvaluationSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_5, 0u, true);
 	}
 
 	// Fragment shader
@@ -663,7 +669,7 @@ public:
 			  const Vec4&					clearColor,
 			  const std::vector<Vec4>&		colors,
 			  const Shader					shader)
-		: m_useDynamicRendering		(testParams.useDynamicRendering)
+		: m_groupParams				(testParams.groupParams)
 		, m_renderSize				(renderSize)
 		, m_colorFormat				(colorFormat)
 		, m_colorSubresourceRange	(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u))
@@ -693,13 +699,13 @@ public:
 		if (shader == TESSELLATION)
 		{
 			m_tessellationControlModule		= createShaderModule	(vk, device, context.getBinaryCollection().get("tesc"), 0u);
-			m_tessellationEvaluationModule	= createShaderModule	(vk, device, context.getBinaryCollection().get("tese"), 0u);
+			m_tessellationEvaluationModule	= createShaderModule	(vk, device, context.getBinaryCollection().get(context.contextSupports(VK_API_VERSION_1_2) ? "tese_1_2" : "tese"), 0u);
 		}
 
-		m_vertexModule		= createShaderModule	(vk, device, context.getBinaryCollection().get("vert"), 0u);
+		m_vertexModule		= createShaderModule	(vk, device, context.getBinaryCollection().get(context.contextSupports(VK_API_VERSION_1_2) ? "vert_1_2" : "vert"), 0u);
 		m_fragmentModule	= createShaderModule	(vk, device, context.getBinaryCollection().get("frag"), 0u);
 
-		if (!m_useDynamicRendering)
+		if (!m_groupParams->useDynamicRendering)
 		{
 			m_renderPass	= makeRenderPass		(vk, device, m_colorFormat);
 
@@ -719,83 +725,186 @@ public:
 													 *m_tessellationEvaluationModule, *m_fragmentModule, m_renderSize, m_numViewports, cells);
 		m_cmdPool			= createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 		m_cmdBuffer			= allocateCommandBuffer	(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		m_secCmdBuffer		= allocateCommandBuffer	(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 	}
 
-	void draw (Context& context, const VkBuffer colorBuffer) const
+	void draw (Context& context, const VkBuffer colorBuffer)
 	{
-		const DeviceInterface&		vk			= context.getDeviceInterface();
-		const VkDevice				device		= context.getDevice();
-		const VkQueue				queue		= context.getUniversalQueue();
-		Allocator&					allocator	= context.getDefaultAllocator();
-
-		beginCommandBuffer(vk, *m_cmdBuffer);
-
-		const VkRect2D renderArea = makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y());
-		if (m_useDynamicRendering)
+		const DeviceInterface&	vk			= context.getDeviceInterface();
+		const VkDevice			device		= context.getDevice();
+		const VkQueue			queue		= context.getUniversalQueue();
+		const VkRect2D			renderArea
 		{
-			initialTransitionColor2DImage(vk, *m_cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-										  VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-			beginRendering(vk, *m_cmdBuffer, *m_colorAttachment, renderArea, m_clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+			makeOffset2D(0, 0),
+			makeExtent2D(m_renderSize.x(), m_renderSize.y()),
+		};
+
+#ifndef CTS_USES_VULKANSC
+		if (m_groupParams->useSecondaryCmdBuffer)
+		{
+			// record secondary command buffer
+			if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			{
+				beginSecondaryCmdBuffer(context, *m_secCmdBuffer, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+				beginRendering(vk, *m_secCmdBuffer, *m_colorAttachment, renderArea, m_clearValue,
+							   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+			}
+			else
+				beginSecondaryCmdBuffer(context, *m_secCmdBuffer);
+
+			drawCommands(context, *m_secCmdBuffer);
+
+			if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+				endRendering(vk, *m_secCmdBuffer);
+
+			endCommandBuffer(vk, *m_secCmdBuffer);
+
+			// record primary command buffer
+			beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+
+			preRenderCommands(context, *m_cmdBuffer);
+
+			if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+				beginRendering(vk, *m_cmdBuffer, *m_colorAttachment, renderArea, m_clearValue,
+							   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR);
+
+			vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_secCmdBuffer);
+
+			if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+				endRendering(vk, *m_cmdBuffer);
+
+			postRenderCommands(context, colorBuffer);
+			endCommandBuffer(vk, *m_cmdBuffer);
 		}
-		else
+		else if (m_groupParams->useDynamicRendering)
+		{
+			beginCommandBuffer(vk, *m_cmdBuffer);
+
+			preRenderCommands(context, *m_cmdBuffer);
+			beginRendering(vk, *m_cmdBuffer, *m_colorAttachment, renderArea, m_clearValue,
+						   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+			drawCommands(context, *m_cmdBuffer);
+			endRendering(vk, *m_cmdBuffer);
+			postRenderCommands(context, colorBuffer);
+
+			endCommandBuffer(vk, *m_cmdBuffer);
+		}
+#endif // CTS_USES_VULKANSC
+
+		if (!m_groupParams->useDynamicRendering)
+		{
+			beginCommandBuffer(vk, *m_cmdBuffer);
+
+			preRenderCommands(context, *m_cmdBuffer);
 			beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea, m_clearValue);
+			drawCommands(context, *m_cmdBuffer);
+			endRenderPass(vk, *m_cmdBuffer);
+			postRenderCommands(context, colorBuffer);
 
-		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-		{
-			const VkBuffer vertexBuffer = m_vertexBuffer->object();
-			const VkDeviceSize vertexBufferOffset = 0ull;
-			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
+			endCommandBuffer(vk, *m_cmdBuffer);
 		}
+
+		submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+	}
+
+protected:
+
+#ifndef CTS_USES_VULKANSC
+	void beginSecondaryCmdBuffer(Context& context, VkCommandBuffer cmdBuffer, VkRenderingFlagsKHR renderingFlags = 0u) const
+	{
+		VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
+			DE_NULL,																// const void*						pNext;
+			renderingFlags,															// VkRenderingFlagsKHR				flags;
+			0u,																		// uint32_t							viewMask;
+			1u,																		// uint32_t							colorAttachmentCount;
+			&m_colorFormat,															// const VkFormat*					pColorAttachmentFormats;
+			VK_FORMAT_UNDEFINED,													// VkFormat							depthAttachmentFormat;
+			VK_FORMAT_UNDEFINED,													// VkFormat							stencilAttachmentFormat;
+			VK_SAMPLE_COUNT_1_BIT,													// VkSampleCountFlagBits			rasterizationSamples;
+		};
+		const VkCommandBufferInheritanceInfo bufferInheritanceInfo = initVulkanStructure(&inheritanceRenderingInfo);
+
+		VkCommandBufferUsageFlags usageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			usageFlags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+		const VkCommandBufferBeginInfo commandBufBeginParams
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType					sType;
+			DE_NULL,																// const void*						pNext;
+			usageFlags,																// VkCommandBufferUsageFlags		flags;
+			&bufferInheritanceInfo
+		};
+
+		const DeviceInterface& vk = context.getDeviceInterface();
+		VK_CHECK(vk.beginCommandBuffer(cmdBuffer, &commandBufBeginParams));
+	}
+#endif // CTS_USES_VULKANSC
+
+	void preRenderCommands(Context& context, VkCommandBuffer cmdBuffer) const
+	{
+		if (m_groupParams->useDynamicRendering)
+		{
+			const DeviceInterface& vk = context.getDeviceInterface();
+			initialTransitionColor2DImage(vk, cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+		}
+	}
+
+	void postRenderCommands(Context& context, VkBuffer colorBuffer) const
+	{
+		const DeviceInterface& vk = context.getDeviceInterface();
+		copyImageToBuffer(vk, *m_cmdBuffer, *m_colorImage, colorBuffer, tcu::IVec2(m_renderSize.x(), m_renderSize.y()));
+	}
+
+	void drawCommands(Context& context, VkCommandBuffer cmdBuffer)
+	{
+		const DeviceInterface&	vk					= context.getDeviceInterface();
+		const VkDevice			device				= context.getDevice();
+		Allocator&				allocator			= context.getDefaultAllocator();
+		const VkBuffer			vertexBuffer		= m_vertexBuffer->object();
+		const VkDeviceSize		vertexBufferOffset	= 0ull;
+
+		vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		vk.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
 
 		// Prepare colors buffer if needed.
-		std::unique_ptr<vk::BufferWithMemory>	colorsBuffer;
-		vk::Move<vk::VkDescriptorPool>			descriptorPool;
-		vk::Move<vk::VkDescriptorSet>			descriptorSet;
-
 		if (m_shader == FRAGMENT)
 		{
 			// Create buffer.
-			const auto	colorsBufferSize		= m_colors.size() * sizeof(decltype(m_colors)::value_type);
-			const auto	colorsBufferCreateInfo	= vk::makeBufferCreateInfo(static_cast<VkDeviceSize>(colorsBufferSize), vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-			colorsBuffer.reset(new vk::BufferWithMemory{vk, device, allocator, colorsBufferCreateInfo, MemoryRequirement::HostVisible});
+			const auto	colorsBufferSize = m_colors.size() * sizeof(decltype(m_colors)::value_type);
+			const auto	colorsBufferCreateInfo = vk::makeBufferCreateInfo(static_cast<VkDeviceSize>(colorsBufferSize), vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+			m_colorsBuffer = SharedPtr<BufferWithMemory>(new vk::BufferWithMemory{ vk, device, allocator, colorsBufferCreateInfo, MemoryRequirement::HostVisible });
 
 			// Copy colors and flush allocation.
-			auto& colorsBufferAlloc = colorsBuffer->getAllocation();
+			auto& colorsBufferAlloc = m_colorsBuffer->getAllocation();
 			deMemcpy(colorsBufferAlloc.getHostPtr(), m_colors.data(), colorsBufferSize);
 			vk::flushAlloc(vk, device, colorsBufferAlloc);
 
 			// Descriptor pool.
-			vk::DescriptorPoolBuilder poolBuilder;
+			DescriptorPoolBuilder poolBuilder;
 			poolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u);
-			descriptorPool = poolBuilder.build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+			m_descriptorPool = poolBuilder.build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
 			// Descriptor set.
-			descriptorSet = vk::makeDescriptorSet(vk, device, descriptorPool.get(), m_descriptorSetLayout.get());
+			m_descriptorSet = vk::makeDescriptorSet(vk, device, m_descriptorPool.get(), m_descriptorSetLayout.get());
 
 			// Update and bind descriptor set.
-			const auto						colorsBufferDescriptorInfo = vk::makeDescriptorBufferInfo(colorsBuffer->get(), 0ull, VK_WHOLE_SIZE);
+			const auto						colorsBufferDescriptorInfo = vk::makeDescriptorBufferInfo(m_colorsBuffer->get(), 0ull, VK_WHOLE_SIZE);
 			vk::DescriptorSetUpdateBuilder	updateBuilder;
-			updateBuilder.writeSingle(descriptorSet.get(), vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &colorsBufferDescriptorInfo);
+			updateBuilder.writeSingle(m_descriptorSet.get(), vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &colorsBufferDescriptorInfo);
 			updateBuilder.update(vk, device);
 
-			vk.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+			vk.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout.get(), 0u, 1u, &m_descriptorSet.get(), 0u, nullptr);
 		}
 
-		vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_numViewports * 6), 1u, 0u, 0u);	// two triangles per viewport
-
-		if (m_useDynamicRendering)
-			endRendering(vk, *m_cmdBuffer);
-		else
-			endRenderPass(vk, *m_cmdBuffer);
-
-		copyImageToBuffer(vk, *m_cmdBuffer, *m_colorImage, colorBuffer, tcu::IVec2(m_renderSize.x(), m_renderSize.y()));
-
-		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
-		submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+		vk.cmdDraw(cmdBuffer, static_cast<deUint32>(m_numViewports * 6), 1u, 0u, 0u);	// two triangles per viewport
 	}
 
 private:
-	const bool								m_useDynamicRendering;
+	const SharedGroupParams					m_groupParams;
 	const UVec2								m_renderSize;
 	const VkFormat							m_colorFormat;
 	const VkImageSubresourceRange			m_colorSubresourceRange;
@@ -808,6 +917,7 @@ private:
 	Move<VkImage>							m_colorImage;
 	MovePtr<Allocation>						m_colorImageAlloc;
 	Move<VkImageView>						m_colorAttachment;
+	SharedPtr<BufferWithMemory>				m_colorsBuffer;
 	SharedPtr<Buffer>						m_vertexBuffer;
 	Move<VkShaderModule>					m_vertexModule;
 	Move<VkShaderModule>					m_tessellationControlModule;
@@ -815,11 +925,14 @@ private:
 	Move<VkShaderModule>					m_fragmentModule;
 	Move<VkRenderPass>						m_renderPass;
 	Move<VkFramebuffer>						m_framebuffer;
+	Move<VkDescriptorPool>					m_descriptorPool;
+	Move<VkDescriptorSet>					m_descriptorSet;
 	Move<VkDescriptorSetLayout>				m_descriptorSetLayout;
 	Move<VkPipelineLayout>					m_pipelineLayout;
 	Move<VkPipeline>						m_pipeline;
 	Move<VkCommandPool>						m_cmdPool;
 	Move<VkCommandBuffer>					m_cmdBuffer;
+	Move<VkCommandBuffer>					m_secCmdBuffer;
 
 	// "deleted"
 				Renderer	(const Renderer&);
@@ -857,7 +970,7 @@ tcu::TestStatus testVertexFragmentShader (Context& context, const TestParams& te
 
 	// Draw
 	{
-		const Renderer renderer (context, renderSize, testParams, cells, colorFormat, clearColor, colors, shader);
+		Renderer renderer (context, renderSize, testParams, cells, colorFormat, clearColor, colors, shader);
 		renderer.draw(context, colorBuffer->object());
 	}
 
@@ -918,7 +1031,7 @@ tcu::TestStatus testTessellationShader (Context& context, const TestParams testP
 
 	// Draw
 	{
-		const Renderer renderer (context, renderSize, testParams, cells, colorFormat, clearColor, colors, Renderer::TESSELLATION);
+		Renderer renderer (context, renderSize, testParams, cells, colorFormat, clearColor, colors, Renderer::TESSELLATION);
 		renderer.draw(context, colorBuffer->object());
 	}
 
@@ -949,22 +1062,22 @@ void checkSupport (Context& context, TestParams params)
 	if (params.useTessellationShader)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
 
-	if (params.useDynamicRendering)
+	if (params.groupParams->useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createShaderViewportIndexTests	(tcu::TestContext& testCtx, bool useDynamicRendering)
+tcu::TestCaseGroup* createShaderViewportIndexTests	(tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
 	MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "shader_viewport_index", ""));
 
 	TestParams testParams
 	{
-		1,						// int		numViewports;
-		false,					// bool		writeFromVertex;
-		useDynamicRendering,	// bool		useDynamicRendering;
-		false					// bool		useTessellationShader;
+		1,						// int					numViewports;
+		false,					// bool					writeFromVertex;
+		groupParams,			// SharedGroupParams	groupParams;
+		false					// bool					useTessellationShader;
 	};
 
 	for (testParams.numViewports = 1; testParams.numViewports <= MIN_MAX_VIEWPORTS; ++testParams.numViewports)

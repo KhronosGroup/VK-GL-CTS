@@ -50,6 +50,8 @@ Move<VkPipeline> createComputePipeline (const DeviceInterface&				vk,
 	return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, pAllocator));
 }
 
+#ifndef CTS_USES_VULKANSC
+
 Move<VkPipeline> createRayTracingPipelineNV (const DeviceInterface&						vk,
 											 VkDevice									device,
 											 VkPipelineCache							pipelineCache,
@@ -73,12 +75,25 @@ Move<VkPipeline> createRayTracingPipelineKHR (const DeviceInterface&					vk,
 	return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, pAllocator));
 }
 
+#endif // CTS_USES_VULKANSC
+
 Move<VkCommandBuffer> allocateCommandBuffer (const DeviceInterface& vk, VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo)
 {
 	VkCommandBuffer object = 0;
 	DE_ASSERT(pAllocateInfo->commandBufferCount == 1u);
 	VK_CHECK(vk.allocateCommandBuffers(device, pAllocateInfo, &object));
 	return Move<VkCommandBuffer>(check<VkCommandBuffer>(object), Deleter<VkCommandBuffer>(vk, device, pAllocateInfo->commandPool));
+}
+
+void allocateCommandBuffers (const DeviceInterface& vk, VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo, Move<VkCommandBuffer> *pCommandBuffers)
+{
+	VkCommandBufferAllocateInfo allocateInfoCopy = *pAllocateInfo;
+	allocateInfoCopy.commandBufferCount = 1;
+	for (uint32_t i = 0; i < pAllocateInfo->commandBufferCount; ++i) {
+		VkCommandBuffer object = 0;
+		VK_CHECK(vk.allocateCommandBuffers(device, &allocateInfoCopy, &object));
+		pCommandBuffers[i] = Move<VkCommandBuffer>(check<VkCommandBuffer>(object), Deleter<VkCommandBuffer>(vk, device, pAllocateInfo->commandPool));
+	}
 }
 
 Move<VkDescriptorSet> allocateDescriptorSet (const DeviceInterface& vk, VkDevice device, const VkDescriptorSetAllocateInfo* pAllocateInfo)
@@ -198,5 +213,71 @@ Move<VkEvent> createEvent (const DeviceInterface&		vk,
 
 	return createEvent(vk, device, &createInfo, pAllocateInfo);
 }
+
+#ifdef CTS_USES_VULKANSC
+
+// add missing function in Vulkan SC, so that we are able to hack into shader module creation
+
+Move<VkShaderModule> createShaderModule(const DeviceInterface& vk, VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkShaderModule object = 0;
+	VK_CHECK(vk.createShaderModule(device, pCreateInfo, pAllocator, &object));
+	return Move<VkShaderModule>(check<VkShaderModule>(object), Deleter<VkShaderModule>(vk, device, pAllocator));
+}
+
+// stubs for functions removed in Vulkan SC
+
+namespace refdetails
+{
+
+template<>
+void Deleter<VkDeviceMemory>::operator() (VkDeviceMemory obj) const
+{
+	DE_UNREF(obj);
+}
+
+template<>
+void Deleter<VkShaderModule>::operator() (VkShaderModule obj) const
+{
+	DE_UNREF(obj);
+}
+
+template<>
+void Deleter<VkQueryPool>::operator() (VkQueryPool obj) const
+{
+	DE_UNREF(obj);
+}
+
+template<>
+void Deleter<VkDescriptorPool>::operator() (VkDescriptorPool obj) const
+{
+	// vkDestroyDescriptorPool is unsupported in VulkanSC. Instead, reset the descriptor pool
+    // so that any sets allocated from it will be implicitly freed (similar to if it were being
+    // destroyed). Lots of tests rely on sets being implicitly freed.
+	m_deviceIface->resetDescriptorPool(m_device, obj, 0);
+}
+
+template<>
+void Deleter<VkCommandPool>::operator() (VkCommandPool obj) const
+{
+	DE_UNREF(obj);
+}
+
+template<>
+void Deleter<VkSwapchainKHR>::operator() (VkSwapchainKHR obj) const
+{
+	DE_UNREF(obj);
+}
+
+template<>
+void Deleter<VkSemaphoreSciSyncPoolNV>::operator() (VkSemaphoreSciSyncPoolNV obj) const
+{
+	DE_UNREF(obj);
+}
+
+
+} // refdetails
+
+#endif // CTS_USES_VULKANSC
 
 } // vk

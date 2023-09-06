@@ -453,7 +453,19 @@ Vec4 getFixedPointFormatThreshold (const tcu::TextureFormat& sourceFormat, const
 	const tcu::IVec4	srcBits		= tcu::getTextureFormatBitDepth(sourceFormat);
 	const tcu::IVec4	readBits	= tcu::getTextureFormatBitDepth(readPixelsFormat);
 
-	return Vec4(3.0f) / ((tcu::Vector<deUint64, 4>(1) << (tcu::min(srcBits, readBits).cast<deUint64>())) - tcu::Vector<deUint64, 4>(1)).cast<float>();
+	Vec4				threshold	= Vec4(0.0f);
+
+	for (int i = 0; i < 4; i++)
+	{
+		const int bits = de::min(srcBits[i], readBits[i]);
+
+		if (bits > 0)
+		{
+			threshold[i] = 3.0f / static_cast<float>(((1ul << bits) - 1ul));
+		}
+	}
+
+	return threshold;
 }
 
 UVec4 getFloatULPThreshold (const tcu::TextureFormat& sourceFormat, const tcu::TextureFormat& readPixelsFormat)

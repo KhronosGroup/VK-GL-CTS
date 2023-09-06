@@ -26,9 +26,10 @@ import hashlib
 
 from . import registry
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+scriptPath = os.path.join(os.path.dirname(__file__), "..")
+sys.path.insert(0, scriptPath)
 
-from build.common import *
+from ctsbuild.common import *
 
 BASE_URL = ""
 

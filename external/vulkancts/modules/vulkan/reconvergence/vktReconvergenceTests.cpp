@@ -163,7 +163,7 @@ ReconvergenceTestCase::~ReconvergenceTestCase	(void)
 
 void ReconvergenceTestCase::checkSupport(Context& context) const
 {
-	if (!context.contextSupports(vk::ApiVersion(1, 1, 0)))
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
 		TCU_THROW(NotSupportedError, "Vulkan 1.1 not supported");
 
 	vk::VkPhysicalDeviceSubgroupProperties subgroupProperties;
@@ -1665,7 +1665,7 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 				vk, device, allocator, makeBufferCreateInfo(sizes[i], VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
 				MemoryRequirement::HostVisible | MemoryRequirement::Cached));
 		}
-		catch(tcu::ResourceError&)
+		catch(const tcu::TestError&)
 		{
 			// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
 			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed device memory allocation " + de::toString(sizes[i]) + " bytes");
@@ -1740,8 +1740,9 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 	flushAlloc(vk, device, buffers[1]->getAllocation());
 	flushAlloc(vk, device, buffers[2]->getAllocation());
 
-	const VkBool32 computeFullSubgroups = subgroupProperties.subgroupSize <= 64 &&
-										  m_context.getSubgroupSizeControlFeatures().computeFullSubgroups;
+	const VkBool32 computeFullSubgroups	=	(subgroupProperties.subgroupSize <= 64) &&
+											(m_context.getSubgroupSizeControlFeatures().computeFullSubgroups) &&
+											(m_context.getSubgroupSizeControlProperties().requiredSubgroupSizeStages & VK_SHADER_STAGE_COMPUTE_BIT);
 
 	const VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT subgroupSizeCreateInfo =
 	{
@@ -1836,7 +1837,7 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 				vk, device, allocator, makeBufferCreateInfo(sizes[1], VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
 				MemoryRequirement::HostVisible | MemoryRequirement::Cached));
 		}
-		catch(tcu::ResourceError&)
+		catch(const tcu::TestError&)
 		{
 			// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
 			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed device memory allocation " + de::toString(sizes[1]) + " bytes");

@@ -4166,7 +4166,6 @@ class NegativeArithmetic : public SACSubcaseBase
 
 	virtual long Run()
 	{
-
 		// create program
 		const char* glsl_vs = "#version 420 core" NL "layout(location = 0) in vec4 i_vertex;" NL "void main() {" NL
 							  "  gl_Position = i_vertex;" NL "}";
@@ -4215,6 +4214,55 @@ class NegativeArithmetic : public SACSubcaseBase
 	virtual long Cleanup()
 	{
 		glDeleteProgram(prog_);
+		return NO_ERROR;
+	}
+};
+
+class NegativeLargeOffset : public SACSubcaseBase
+{
+	virtual std::string Title()
+	{
+		return NL "GLSL errors";
+	}
+
+	virtual std::string Purpose()
+	{
+		return NL "Verify that it is compile-time error to declare an atomic counter whose offset \n"
+				  "is such that the buffer containing it would be larger than MaxAtomicCounterBufferSiz.";
+	}
+
+	virtual long Run()
+	{
+		GLint maxSize;
+		glGetIntegerv(GL_MAX_ATOMIC_COUNTER_BUFFER_SIZE, &maxSize);
+
+		std::ostringstream os;
+		os << "#version 420 core" NL "layout(location = 0) out uvec4 o_color;" NL
+			"layout(binding = 0, offset = " << maxSize << ") uniform atomic_uint ac_counter_fs;" NL
+			"void main() {" NL "  o_color = uvec4(atomicCounterIncrement(ac_counter_fs)); " NL " }";
+		std::string source = os.str();
+		const char* glsl_fs = source.c_str();
+
+		GLuint sh = glCreateShader(GL_FRAGMENT_SHADER);
+		glShaderSource(sh, 1, &glsl_fs, NULL);
+		glCompileShader(sh);
+		GLint status_comp;
+		glGetShaderiv(sh, GL_COMPILE_STATUS, &status_comp);
+		glDeleteShader(sh);
+
+		if (status_comp == GL_TRUE)
+		{
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Expected error during fragment shader compilation."
+				<< tcu::TestLog::EndMessage;
+			return ERROR;
+		}
+
+		return NO_ERROR;
+	}
+
+	virtual long Cleanup()
+	{
 		return NO_ERROR;
 	}
 };
@@ -4606,6 +4654,7 @@ void ShaderAtomicCountersTests::init()
 	addChild(new TestSubcase(m_context, "negative-uniform", TestSubcase::Create<NegativeUniform>));
 	addChild(new TestSubcase(m_context, "negative-array", TestSubcase::Create<NegativeArray>));
 	addChild(new TestSubcase(m_context, "negative-arithmetic", TestSubcase::Create<NegativeArithmetic>));
+	addChild(new TestSubcase(m_context, "negative-large-offset", TestSubcase::Create<NegativeLargeOffset>));
 
 	if(contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)))
 		addChild(new TestSubcase(m_context, "negative-unsized-array", TestSubcase::Create<NegativeUnsizedArray>));

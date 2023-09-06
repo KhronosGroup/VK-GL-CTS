@@ -61,16 +61,21 @@ AmberTestCase::~AmberTestCase (void)
 
 TestInstance* AmberTestCase::createInstance (Context& ctx) const
 {
-	return new AmberTestInstance(ctx, m_recipe);
+	return new AmberTestInstance(ctx, m_recipe, nullptr);
 }
 
-static amber::EngineConfig* createEngineConfig (Context& ctx)
+static amber::EngineConfig* createEngineConfig (Context& ctx, vk::VkDevice customDevice)
 {
+	vk::VkDevice dev = customDevice != nullptr ? customDevice : ctx.getDevice();
+	vk::VkQueue  queue;
+	vk::DeviceDriver vk(ctx.getPlatformInterface(), ctx.getInstance(), dev);
+	vk.getDeviceQueue(dev, ctx.getUniversalQueueFamilyIndex(), 0, &queue);
+
 	amber::EngineConfig* vkConfig = GetVulkanConfig(ctx.getInstance(),
-			ctx.getPhysicalDevice(), ctx.getDevice(), &ctx.getDeviceFeatures(),
+			ctx.getPhysicalDevice(), dev, &ctx.getDeviceFeatures(),
 			&ctx.getDeviceFeatures2(), ctx.getInstanceExtensions(),
 			ctx.getDeviceExtensions(), ctx.getUniversalQueueFamilyIndex(),
-			ctx.getUniversalQueue(), ctx.getInstanceProcAddr());
+			queue, ctx.getInstanceProcAddr());
 
 	return vkConfig;
 }
@@ -83,14 +88,20 @@ static bool isFeatureSupported(const vkt::Context& ctx, const std::string& featu
 		return ctx.get16BitStorageFeatures().storageBuffer16BitAccess;
 	if (feature == "Float16Int8Features.shaderFloat16")
 		return ctx.getShaderFloat16Int8Features().shaderFloat16;
+	if (feature == "Float16Int8Features.shaderInt8")
+		return ctx.getShaderFloat16Int8Features().shaderInt8;
 	if (feature == "Features.shaderFloat64")
 		return ctx.getDeviceFeatures().shaderFloat64;
 	if (feature == "Features.shaderInt16")
 		return ctx.getDeviceFeatures().shaderInt16;
 	if (feature == "Features.shaderInt64")
 		return ctx.getDeviceFeatures().shaderInt64;
+	if (feature == "Features.depthClamp")
+		return ctx.getDeviceFeatures().depthClamp;
 	if (feature == "Features.tessellationShader")
 		return ctx.getDeviceFeatures().tessellationShader;
+	if (feature == "Features.shaderTessellationAndGeometryPointSize")
+		return ctx.getDeviceFeatures().shaderTessellationAndGeometryPointSize;
 	if (feature == "Features.geometryShader")
 		return ctx.getDeviceFeatures().geometryShader;
 	if (feature == "Features.fragmentStoresAndAtomics")
@@ -117,6 +128,8 @@ static bool isFeatureSupported(const vkt::Context& ctx, const std::string& featu
 		return (ctx.getSubgroupProperties().supportedOperations & vk::VK_SUBGROUP_FEATURE_BALLOT_BIT) != 0;
 	if (feature == "Storage16BitFeatures.storageBuffer16BitAccess")
 		return ctx.get16BitStorageFeatures().storageBuffer16BitAccess;
+	if (feature == "Storage8BitFeatures.storageBuffer8BitAccess")
+		return ctx.get8BitStorageFeatures().storageBuffer8BitAccess;
 
 	std::string message = std::string("Unexpected feature name: ") + feature;
 	TCU_THROW(InternalError, message.c_str());
@@ -195,33 +208,6 @@ void AmberTestCase::checkSupport(Context& ctx) const
 		if ((req.m_featureFlags & prop.bufferFeatures) != req.m_featureFlags)
 		{
 			TCU_THROW(NotSupportedError, "Buffer format doesn't support required feature flags");
-		}
-	}
-
-	// when checkSupport is called script is not yet parsed so we need to determine
-	// unsupported tests by name ; in AmberTestCase we do not have access to actual
-	// m_recipe implementation - we can't scan it to see if test can be executed;
-	// alternatively portability extension and its features could be checked in amber.cc
-	if (ctx.isDeviceFunctionalitySupported("VK_KHR_portability_subset"))
-	{
-		if (m_name == "triangle_fan" && !ctx.getPortabilitySubsetFeatures().triangleFans)
-			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
-
-		if (ctx.getPortabilitySubsetProperties().minVertexInputBindingStrideAlignment == 4)
-		{
-			const std::set<std::string> casesToSkip
-			{
-				"line-strip",
-				"polygon-mode-lines",
-				"r8g8-uint-highp",
-				"r8g8-uint-highp-output-uint",
-				"r8g8-uint-mediump",
-				"r8g8-uint-mediump-output-uint",
-				"inputs-outputs-mod",
-			};
-
-			if (casesToSkip.count(m_name))
-				TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Stride is not multiply of minVertexInputBindingStrideAlignment");
 		}
 	}
 
@@ -415,7 +401,7 @@ tcu::TestStatus AmberTestInstance::iterate (void)
 	amber::Result		r;
 
 	amber_options.engine			= amber::kEngineTypeVulkan;
-	amber_options.config			= createEngineConfig(m_context);
+	amber_options.config			= createEngineConfig(m_context, m_customDevice);
 	amber_options.execution_type	= amber::ExecutionType::kExecute;
 
 	// Check for extensions as declared by the Amber script itself.  Throw an internal
@@ -529,6 +515,17 @@ bool AmberTestCase::validateRequirements()
 		log << tcu::TestLog::Message << "Amber requirements:" << tcu::TestLog::EndMessage;
 		for (const auto& amberReq : allRequirements)
 			log << tcu::TestLog::Message << "    " << amberReq << tcu::TestLog::EndMessage;
+
+		// Repeat message for cerr so it's visible in console log.
+		std::cerr << "ERROR: CTS and Amber test requirement mismatch.\n";
+		std::cerr << "Amber filename: " << m_readFilename << "\n";
+		std::cerr << "CTS requirements:\n";
+		for (const auto& ctsReq : ctsRequirements)
+			std::cerr << "    " << ctsReq << "\n";
+
+		std::cerr << "Amber requirements:\n";
+		for (const auto& amberReq : allRequirements)
+			std::cerr << "    " << amberReq << "\n";
 
 		return false;
 	}

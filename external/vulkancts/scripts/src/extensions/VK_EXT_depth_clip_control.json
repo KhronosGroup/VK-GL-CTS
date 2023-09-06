@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceDepthClipControlFeaturesEXT":
+		[
+			{ "features": ["depthClipControl"],	"requirements": ["VK_EXT_depth_clip_control"] }
+		]
+	}
+}

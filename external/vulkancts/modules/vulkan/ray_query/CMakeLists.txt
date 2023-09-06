@@ -26,6 +26,10 @@ set(DEQP_VK_RAY_QUERY_SRCS
 	vktRayQueryDirectionTests.hpp
 	vktRayQueryNonUniformArgsTests.cpp
 	vktRayQueryNonUniformArgsTests.hpp
+	vktRayQueryOpacityMicromapTests.cpp
+	vktRayQueryOpacityMicromapTests.hpp
+	vktRayQueryPositionFetchTests.cpp
+	vktRayQueryPositionFetchTests.hpp
 	)
 
 set(DEQP_VK_RAY_QUERY_LIBS

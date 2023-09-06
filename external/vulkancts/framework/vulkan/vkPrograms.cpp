@@ -39,6 +39,11 @@
 #include "tcuCommandLine.hpp"
 
 #include <map>
+#include <mutex>
+
+#if DE_OS == DE_OS_ANDROID
+#define DISABLE_SHADERCACHE_IPC
+#endif
 
 namespace vk
 {
@@ -177,48 +182,262 @@ void validateCompiledBinary(const vector<deUint32>& binary, SpirVProgramInfo* bu
 	}
 }
 
-de::Mutex							cacheFileMutex;
-map<deUint32, vector<deUint32> >	cacheFileIndex;
-bool								cacheFileFirstRun = true;
+// IPC functions
+#ifndef DISABLE_SHADERCACHE_IPC
+#include "vkIPC.inl"
+#endif
 
-void shaderCacheFirstRunCheck (const char* shaderCacheFile, bool truncate)
+// Overridable wrapper for de::Mutex
+class cacheMutex
 {
-	cacheFileMutex.lock();
-	if (cacheFileFirstRun)
+public:
+	cacheMutex () {}
+	virtual ~cacheMutex () {}
+	virtual void lock () { localMutex.lock(); }
+	virtual void unlock () { localMutex.unlock(); }
+private:
+	de::Mutex localMutex;
+};
+
+#ifndef DISABLE_SHADERCACHE_IPC
+// Overriden cacheMutex that uses IPC instead
+class cacheMutexIPC : public cacheMutex
+{
+public:
+	cacheMutexIPC ()
 	{
-		cacheFileFirstRun = false;
-		if (truncate)
+		ipc_sem_init(&guard, "cts_shadercache_ipc_guard");
+		ipc_sem_create(&guard, 1);
+	}
+	virtual ~cacheMutexIPC ()
+	{
+		ipc_sem_close(&guard);
+	}
+	virtual void lock () { ipc_sem_decrement(&guard); }
+	virtual void unlock () { ipc_sem_increment(&guard); }
+private:
+	ipc_sharedsemaphore guard;
+};
+#endif
+
+// Each cache node takes 4 * 4 = 16 bytes; 1M items takes 16M memory.
+const deUint32						cacheMaxItems		= 1024 * 1024;
+cacheMutex*							cacheFileMutex		= nullptr;
+deUint32*							cacheMempool		= nullptr;
+#ifndef DISABLE_SHADERCACHE_IPC
+ipc_sharedmemory					cacheIPCMemory;
+#endif
+
+struct cacheNode
+{
+	deUint32 key;
+	deUint32 data;
+	deUint32 right_child;
+	deUint32 left_child;
+};
+
+cacheNode* cacheSearch (deUint32 key)
+{
+	cacheNode*		r		= (cacheNode*)(cacheMempool + 1);
+	int*			tail	= (int*)cacheMempool;
+	unsigned int	p		= 0;
+
+	if (!*tail) {
+		// Cache is empty.
+		return 0;
+	}
+
+	while (1)
+	{
+		if (r[p].key == key)
+			return &r[p];
+
+		if (key > r[p].key)
+			p = r[p].right_child;
+		else
+			p = r[p].left_child;
+
+		if (p == 0)
+			return 0;
+	}
+}
+
+void cacheInsert (deUint32 key, deUint32 data)
+{
+	cacheNode*	r		= (cacheNode*)(cacheMempool + 1);
+	int*		tail	= (int*)cacheMempool;
+	int			newnode	= *tail;
+
+	DE_ASSERT(newnode < cacheMaxItems);
+
+	// If we run out of cache space, reset the cache index.
+	if (newnode >= cacheMaxItems)
+	{
+		*tail = 0;
+		newnode = 0;
+	}
+
+	r[*tail].data = data;
+	r[*tail].key = key;
+	r[*tail].left_child = 0;
+	r[*tail].right_child = 0;
+
+	(*tail)++;
+
+	if (newnode == 0)
+	{
+		// first
+		return;
+	}
+
+	int p = 0;
+	while (1)
+	{
+		if (r[p].key == key)
 		{
-			// Open file with "w" access to truncate it
-			FILE* f = fopen(shaderCacheFile, "wb");
-			if (f)
-				fclose(f);
+			// collision; use the latest data
+			r[p].data = data;
+			(*tail)--;
+			return;
+		}
+
+		if (key > r[p].key)
+		{
+			if (r[p].right_child != 0)
+			{
+				p = r[p].right_child;
+			}
+			else
+			{
+				r[p].right_child = newnode;
+				return;
+			}
 		}
 		else
 		{
-			// Parse chunked shader cache file for hashes and offsets
-			FILE* file = fopen(shaderCacheFile, "rb");
-			int count = 0;
-			if (file)
+			if (r[p].left_child != 0)
 			{
-				deUint32 chunksize	= 0;
-				deUint32 hash		= 0;
-				deUint32 offset		= 0;
-				bool ok				= true;
-				while (ok)
-				{
-					offset = (deUint32)ftell(file);
-					if (ok) ok = fread(&chunksize, 1, 4, file)				== 4;
-					if (ok) ok = fread(&hash, 1, 4, file)					== 4;
-					if (ok) cacheFileIndex[hash].push_back(offset);
-					if (ok) ok = fseek(file, offset + chunksize, SEEK_SET)	== 0;
-					count++;
-				}
-				fclose(file);
+				p = r[p].left_child;
+			}
+			else
+			{
+				r[p].left_child = newnode;
+				return;
 			}
 		}
 	}
-	cacheFileMutex.unlock();
+}
+
+// Called via atexit()
+void shaderCacheClean ()
+{
+	delete cacheFileMutex;
+	delete[] cacheMempool;
+}
+
+#ifndef DISABLE_SHADERCACHE_IPC
+// Called via atexit()
+void shaderCacheCleanIPC ()
+{
+	delete cacheFileMutex;
+	ipc_mem_close(&cacheIPCMemory);
+}
+#endif
+
+void shaderCacheFirstRunCheck (const tcu::CommandLine& commandLine)
+{
+	bool first = true;
+
+	// We need to solve two problems here:
+	// 1) The cache and cache mutex only have to be initialized once by the first thread that arrives here.
+	// 2) We must prevent other threads from exiting early from this function thinking they don't have to initialize the cache and
+	//    cache mutex, only to try to lock the cache mutex while the first thread is still initializing it. To prevent this, we must
+	//    hold an initialization mutex (declared below) while initializing the cache and cache mutex, making other threads wait.
+
+	// Used to check and set cacheFileFirstRun. We make it static, and C++11 guarantees it will only be initialized once.
+	static std::mutex cacheFileFirstRunMutex;
+	static bool cacheFileFirstRun = true;
+
+	// Is cacheFileFirstRun true for this thread?
+	bool needInit = false;
+
+	// Check cacheFileFirstRun only while holding the mutex, and hold it while initializing the cache.
+	const std::lock_guard<std::mutex> lock(cacheFileFirstRunMutex);
+	if (cacheFileFirstRun)
+	{
+		needInit = true;
+		cacheFileFirstRun = false;
+	}
+
+	if (needInit)
+	{
+#ifndef DISABLE_SHADERCACHE_IPC
+		if (commandLine.isShaderCacheIPCEnabled())
+		{
+			// IPC path, allocate shared mutex and shared memory
+			cacheFileMutex = new cacheMutexIPC;
+			cacheFileMutex->lock();
+			ipc_mem_init(&cacheIPCMemory, "cts_shadercache_memory", sizeof(deUint32) * (cacheMaxItems * 4 + 1));
+			if (ipc_mem_open_existing(&cacheIPCMemory) != 0)
+			{
+				ipc_mem_create(&cacheIPCMemory);
+				cacheMempool = (deUint32*)ipc_mem_access(&cacheIPCMemory);
+				cacheMempool[0] = 0;
+			}
+			else
+			{
+				cacheMempool = (deUint32*)ipc_mem_access(&cacheIPCMemory);
+				first = false;
+			}
+			atexit(shaderCacheCleanIPC);
+		}
+		else
+#endif
+		{
+			// Non-IPC path, allocate local mutex and memory
+			cacheFileMutex = new cacheMutex;
+			cacheFileMutex->lock();
+			cacheMempool = new deUint32[cacheMaxItems * 4 + 1];
+			cacheMempool[0] = 0;
+
+			atexit(shaderCacheClean);
+		}
+
+		if (first)
+		{
+			if (commandLine.isShaderCacheTruncateEnabled())
+			{
+				// Open file with "w" access to truncate it
+				FILE* f = fopen(commandLine.getShaderCacheFilename(), "wb");
+				if (f)
+					fclose(f);
+			}
+			else
+			{
+				// Parse chunked shader cache file for hashes and offsets
+				FILE* file	= fopen(commandLine.getShaderCacheFilename(), "rb");
+				int count	= 0;
+				if (file)
+				{
+					deUint32 chunksize	= 0;
+					deUint32 hash		= 0;
+					deUint32 offset		= 0;
+					bool ok				= true;
+					while (ok)
+					{
+						offset = (deUint32)ftell(file);
+						if (ok) ok = fread(&chunksize, 1, 4, file)				== 4;
+						if (ok) ok = fread(&hash, 1, 4, file)					== 4;
+						if (ok) cacheInsert(hash, offset);
+						if (ok) ok = fseek(file, offset + chunksize, SEEK_SET)	== 0;
+						count++;
+					}
+					fclose(file);
+				}
+			}
+		}
+		cacheFileMutex->unlock();
+	}
 }
 
 std::string intToString (deUint32 integer)
@@ -243,122 +462,117 @@ deUint32 shadercacheHash (const char* str)
 	return hash;
 }
 
-vk::ProgramBinary* shadercacheLoad (const std::string& shaderstring, const char* shaderCacheFilename)
+vk::ProgramBinary* shadercacheLoad (const std::string& shaderstring, const char* shaderCacheFilename, deUint32 hash)
 {
-	deUint32		hash		= shadercacheHash(shaderstring.c_str());
 	deInt32			format;
 	deInt32			length;
 	deInt32			sourcelength;
-	deUint32		i;
 	deUint32		temp;
 	deUint8*		bin			= 0;
 	char*			source		= 0;
 	deBool			ok			= true;
 	deBool			diff		= true;
-	cacheFileMutex.lock();
+	cacheNode*		node		= 0;
+	cacheFileMutex->lock();
 
-	if (cacheFileIndex.count(hash) == 0)
+	node = cacheSearch(hash);
+	if (node == 0)
 	{
-		cacheFileMutex.unlock();
+		cacheFileMutex->unlock();
 		return 0;
 	}
 	FILE*			file		= fopen(shaderCacheFilename, "rb");
-	ok				= file											!= 0;
+	ok				= file										!= 0;
 
-	for (i = 0; i < cacheFileIndex[hash].size(); i++)
+	if (ok) ok = fseek(file, node->data, SEEK_SET)				== 0;
+	if (ok) ok = fread(&temp, 1, 4, file)						== 4; // Chunk size (skip)
+	if (ok) ok = fread(&temp, 1, 4, file)						== 4; // Stored hash
+	if (ok) ok = temp											== hash; // Double check
+	if (ok) ok = fread(&format, 1, 4, file)						== 4;
+	if (ok) ok = fread(&length, 1, 4, file)						== 4;
+	if (ok) ok = length											> 0; // Quick check
+	if (ok) bin = new deUint8[length];
+	if (ok) ok = fread(bin, 1, length, file)					== (size_t)length;
+	if (ok) ok = fread(&sourcelength, 1, 4, file)				== 4;
+	if (ok && sourcelength > 0)
 	{
-		if (ok) ok = fseek(file, cacheFileIndex[hash][i], SEEK_SET)	== 0;
-		if (ok) ok = fread(&temp, 1, 4, file)						== 4; // Chunk size (skip)
-		if (ok) ok = fread(&temp, 1, 4, file)						== 4; // Stored hash
-		if (ok) ok = temp											== hash; // Double check
-		if (ok) ok = fread(&format, 1, 4, file)						== 4;
-		if (ok) ok = fread(&length, 1, 4, file)						== 4;
-		if (ok) ok = length											> 0; // sanity check
-		if (ok) bin = new deUint8[length];
-		if (ok) ok = fread(bin, 1, length, file)					== (size_t)length;
-		if (ok) ok = fread(&sourcelength, 1, 4, file)				== 4;
-		if (ok && sourcelength > 0)
-		{
-			source = new char[sourcelength + 1];
-			ok = fread(source, 1, sourcelength, file)				== (size_t)sourcelength;
-			source[sourcelength] = 0;
-			diff = shaderstring != std::string(source);
-		}
-		if (!ok || diff)
-		{
-			// Mismatch, but may still exist in cache if there were hash collisions
-			delete[] source;
-			delete[] bin;
-		}
-		else
-		{
-			delete[] source;
-			if (file) fclose(file);
-			cacheFileMutex.unlock();
-			vk::ProgramBinary* res = new vk::ProgramBinary((vk::ProgramFormat)format, length, bin);
-			delete[] bin;
-			return res;
-		}
+		source = new char[sourcelength + 1];
+		ok = fread(source, 1, sourcelength, file)				== (size_t)sourcelength;
+		source[sourcelength] = 0;
+		diff = shaderstring != std::string(source);
+	}
+	if (!ok || diff)
+	{
+		// Mismatch
+		delete[] source;
+		delete[] bin;
+	}
+	else
+	{
+		delete[] source;
+		if (file) fclose(file);
+		cacheFileMutex->unlock();
+		vk::ProgramBinary* res = new vk::ProgramBinary((vk::ProgramFormat)format, length, bin);
+		delete[] bin;
+		return res;
 	}
 	if (file) fclose(file);
-	cacheFileMutex.unlock();
+	cacheFileMutex->unlock();
 	return 0;
 }
 
-void shadercacheSave (const vk::ProgramBinary* binary, const std::string& shaderstring, const char* shaderCacheFilename)
+void shadercacheSave (const vk::ProgramBinary* binary, const std::string& shaderstring, const char* shaderCacheFilename, deUint32 hash)
 {
 	if (binary == 0)
 		return;
-	deUint32			hash		= shadercacheHash(shaderstring.c_str());
 	deInt32				format		= binary->getFormat();
 	deUint32			length		= (deUint32)binary->getSize();
 	deUint32			chunksize;
 	deUint32			offset;
 	const deUint8*		bin			= binary->getBinary();
 	const de::FilePath	filePath	(shaderCacheFilename);
+	cacheNode*			node		= 0;
 
-	cacheFileMutex.lock();
+	cacheFileMutex->lock();
 
-	if (cacheFileIndex[hash].size())
+	node = cacheSearch(hash);
+
+	if (node)
 	{
 		FILE*			file		= fopen(shaderCacheFilename, "rb");
 		deBool			ok			= (file != 0);
 		deBool			diff		= DE_TRUE;
 		deInt32			sourcelength;
-		deUint32		i;
 		deUint32		temp;
 
-		for (i = 0; i < cacheFileIndex[hash].size(); i++)
+		deUint32	cachedLength	= 0;
+
+		if (ok) ok = fseek(file, node->data, SEEK_SET)				== 0;
+		if (ok) ok = fread(&temp, 1, 4, file)						== 4; // Chunk size (skip)
+		if (ok) ok = fread(&temp, 1, 4, file)						== 4; // Stored hash
+		if (ok) ok = temp											== hash; // Double check
+		if (ok) ok = fread(&temp, 1, 4, file)						== 4;
+		if (ok) ok = fread(&cachedLength, 1, 4, file)				== 4;
+		if (ok) ok = cachedLength									> 0; // Quick check
+		if (ok) fseek(file, cachedLength, SEEK_CUR); // skip binary
+		if (ok) ok = fread(&sourcelength, 1, 4, file)				== 4;
+
+		if (ok && sourcelength > 0)
 		{
-			deUint32	cachedLength	= 0;
+			char* source;
+			source	= new char[sourcelength + 1];
+			ok		= fread(source, 1, sourcelength, file)			== (size_t)sourcelength;
+			source[sourcelength] = 0;
+			diff	= shaderstring != std::string(source);
+			delete[] source;
+		}
 
-			if (ok) ok = fseek(file, cacheFileIndex[hash][i], SEEK_SET)	== 0;
-			if (ok) ok = fread(&temp, 1, 4, file)						== 4; // Chunk size (skip)
-			if (ok) ok = fread(&temp, 1, 4, file)						== 4; // Stored hash
-			if (ok) ok = temp											== hash; // Double check
-			if (ok) ok = fread(&temp, 1, 4, file)						== 4;
-			if (ok) ok = fread(&cachedLength, 1, 4, file)				== 4;
-			if (ok) ok = cachedLength									> 0; // sanity check
-			if (ok) fseek(file, cachedLength, SEEK_CUR); // skip binary
-			if (ok) ok = fread(&sourcelength, 1, 4, file)				== 4;
-
-			if (ok && sourcelength > 0)
-			{
-				char* source;
-				source	= new char[sourcelength + 1];
-				ok		= fread(source, 1, sourcelength, file)			== (size_t)sourcelength;
-				source[sourcelength] = 0;
-				diff	= shaderstring != std::string(source);
-				delete[] source;
-			}
-
-			if (ok && !diff)
-			{
-				// Already in cache (written by another thread, probably)
-				fclose(file);
-				cacheFileMutex.unlock();
-				return;
-			}
+		if (ok && !diff)
+		{
+			// Already in cache (written by another thread, probably)
+			fclose(file);
+			cacheFileMutex->unlock();
+			return;
 		}
 		fclose(file);
 	}
@@ -369,7 +583,7 @@ void shadercacheSave (const vk::ProgramBinary* binary, const std::string& shader
 	FILE*				file		= fopen(shaderCacheFilename, "ab");
 	if (!file)
 	{
-		cacheFileMutex.unlock();
+		cacheFileMutex->unlock();
 		return;
 	}
 	// Append mode starts writing from the end of the file,
@@ -386,9 +600,9 @@ void shadercacheSave (const vk::ProgramBinary* binary, const std::string& shader
 	fwrite(&length, 1, 4, file);
 	fwrite(shaderstring.c_str(), 1, length, file);
 	fclose(file);
-	cacheFileIndex[hash].push_back(offset);
+	cacheInsert(hash, offset);
 
-	cacheFileMutex.unlock();
+	cacheFileMutex->unlock();
 }
 
 // Insert any information that may affect compilation into the shader string.
@@ -430,10 +644,11 @@ ProgramBinary* buildProgram (const GlslSource& program, glu::ShaderProgramInfo* 
 	std::string			shaderstring;
 	vk::ProgramBinary*	res					= 0;
 	const int			optimizationRecipe	= commandLine.getOptimizationRecipe();
+	deUint32			hash				= 0;
 
 	if (commandLine.isShadercacheEnabled())
 	{
-		shaderCacheFirstRunCheck(commandLine.getShaderCacheFilename(), commandLine.isShaderCacheTruncateEnabled());
+		shaderCacheFirstRunCheck(commandLine);
 		getCompileEnvironment(cachekey);
 		getBuildOptions(cachekey, program.buildOptions, optimizationRecipe);
 
@@ -450,7 +665,9 @@ ProgramBinary* buildProgram (const GlslSource& program, glu::ShaderProgramInfo* 
 
 		cachekey = cachekey + shaderstring;
 
-		res = shadercacheLoad(cachekey, commandLine.getShaderCacheFilename());
+		hash = shadercacheHash(cachekey.c_str());
+
+		res = shadercacheLoad(cachekey, commandLine.getShaderCacheFilename(), hash);
 
 		if (res)
 		{
@@ -501,7 +718,7 @@ ProgramBinary* buildProgram (const GlslSource& program, glu::ShaderProgramInfo* 
 
 		res = createProgramBinaryFromSpirV(binary);
 		if (commandLine.isShadercacheEnabled())
-			shadercacheSave(res, cachekey, commandLine.getShaderCacheFilename());
+			shadercacheSave(res, cachekey, commandLine.getShaderCacheFilename(), hash);
 	}
 	return res;
 }
@@ -515,10 +732,11 @@ ProgramBinary* buildProgram (const HlslSource& program, glu::ShaderProgramInfo* 
 	std::string			shaderstring;
 	vk::ProgramBinary*	res					= 0;
 	const int			optimizationRecipe	= commandLine.getOptimizationRecipe();
+	deInt32				hash				= 0;
 
 	if (commandLine.isShadercacheEnabled())
 	{
-		shaderCacheFirstRunCheck(commandLine.getShaderCacheFilename(), commandLine.isShaderCacheTruncateEnabled());
+		shaderCacheFirstRunCheck(commandLine);
 		getCompileEnvironment(cachekey);
 		getBuildOptions(cachekey, program.buildOptions, optimizationRecipe);
 
@@ -535,7 +753,9 @@ ProgramBinary* buildProgram (const HlslSource& program, glu::ShaderProgramInfo* 
 
 		cachekey = cachekey + shaderstring;
 
-		res = shadercacheLoad(cachekey, commandLine.getShaderCacheFilename());
+		hash = shadercacheHash(cachekey.c_str());
+
+		res = shadercacheLoad(cachekey, commandLine.getShaderCacheFilename(), hash);
 
 		if (res)
 		{
@@ -586,7 +806,9 @@ ProgramBinary* buildProgram (const HlslSource& program, glu::ShaderProgramInfo* 
 
 		res = createProgramBinaryFromSpirV(binary);
 		if (commandLine.isShadercacheEnabled())
-			shadercacheSave(res, cachekey, commandLine.getShaderCacheFilename());
+		{
+			shadercacheSave(res, cachekey, commandLine.getShaderCacheFilename(), hash);
+		}
 	}
 	return res;
 }
@@ -599,10 +821,11 @@ ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo*
 	vk::ProgramBinary*	res					= 0;
 	std::string			cachekey;
 	const int			optimizationRecipe	= commandLine.isSpirvOptimizationEnabled() ? commandLine.getOptimizationRecipe() : 0;
+	deUint32			hash				= 0;
 
 	if (commandLine.isShadercacheEnabled())
 	{
-		shaderCacheFirstRunCheck(commandLine.getShaderCacheFilename(), commandLine.isShaderCacheTruncateEnabled());
+		shaderCacheFirstRunCheck(commandLine);
 		getCompileEnvironment(cachekey);
 		cachekey += "Target Spir-V ";
 		cachekey += getSpirvVersionName(spirvVersion);
@@ -616,7 +839,9 @@ ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo*
 
 		cachekey += program.source;
 
-		res = shadercacheLoad(cachekey, commandLine.getShaderCacheFilename());
+		hash = shadercacheHash(cachekey.c_str());
+
+		res = shadercacheLoad(cachekey, commandLine.getShaderCacheFilename(), hash);
 
 		if (res)
 		{
@@ -646,7 +871,9 @@ ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo*
 
 		res = createProgramBinaryFromSpirV(binary);
 		if (commandLine.isShadercacheEnabled())
-			shadercacheSave(res, cachekey, commandLine.getShaderCacheFilename());
+		{
+			shadercacheSave(res, cachekey, commandLine.getShaderCacheFilename(), hash);
+		}
 	}
 	return res;
 }
@@ -733,6 +960,7 @@ VkShaderStageFlagBits getVkShaderStage (glu::ShaderType shaderType)
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
 		VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
 		VK_SHADER_STAGE_COMPUTE_BIT,
+#ifndef CTS_USES_VULKANSC
 		VK_SHADER_STAGE_RAYGEN_BIT_NV,
 		VK_SHADER_STAGE_ANY_HIT_BIT_NV,
 		VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV,
@@ -741,6 +969,16 @@ VkShaderStageFlagBits getVkShaderStage (glu::ShaderType shaderType)
 		VK_SHADER_STAGE_CALLABLE_BIT_NV,
 		VK_SHADER_STAGE_TASK_BIT_NV,
 		VK_SHADER_STAGE_MESH_BIT_NV,
+#else // CTS_USES_VULKANSC
+		(VkShaderStageFlagBits)64u,
+		(VkShaderStageFlagBits)128u,
+		(VkShaderStageFlagBits)256u,
+		(VkShaderStageFlagBits)512u,
+		(VkShaderStageFlagBits)1024u,
+		(VkShaderStageFlagBits)2048u,
+		(VkShaderStageFlagBits)4096u,
+		(VkShaderStageFlagBits)8192u
+#endif // CTS_USES_VULKANSC
 	};
 
 	return de::getSizedArrayElement<glu::SHADERTYPE_LAST>(s_shaderStages, shaderType);
@@ -757,15 +995,20 @@ vk::SpirvVersion getMaxSpirvVersionForVulkan (const deUint32 vulkanVersion)
 {
 	vk::SpirvVersion	result			= vk::SPIRV_VERSION_LAST;
 
-	deUint32 vulkanVersionMajorMinor = VK_MAKE_VERSION(VK_API_VERSION_MAJOR(vulkanVersion), VK_API_VERSION_MINOR(vulkanVersion), 0);
-	if (vulkanVersionMajorMinor == VK_API_VERSION_1_0)
+	deUint32 vulkanVersionVariantMajorMinor = VK_MAKE_API_VERSION(VK_API_VERSION_VARIANT(vulkanVersion), VK_API_VERSION_MAJOR(vulkanVersion), VK_API_VERSION_MINOR(vulkanVersion), 0);
+	if (vulkanVersionVariantMajorMinor == VK_API_VERSION_1_0)
 		result = vk::SPIRV_VERSION_1_0;
-	else if (vulkanVersionMajorMinor == VK_API_VERSION_1_1)
+	else if (vulkanVersionVariantMajorMinor == VK_API_VERSION_1_1)
 		result = vk::SPIRV_VERSION_1_3;
-	else if (vulkanVersionMajorMinor == VK_API_VERSION_1_2)
+#ifndef CTS_USES_VULKANSC
+	else if (vulkanVersionVariantMajorMinor == VK_API_VERSION_1_2)
 		result = vk::SPIRV_VERSION_1_5;
-	else if (vulkanVersionMajorMinor >= VK_API_VERSION_1_3)
+	else if (vulkanVersionVariantMajorMinor >= VK_API_VERSION_1_3)
 		result = vk::SPIRV_VERSION_1_6;
+#else
+	else if (vulkanVersionVariantMajorMinor >= VK_API_VERSION_1_2)
+		result = vk::SPIRV_VERSION_1_5;
+#endif // CTS_USES_VULKANSC
 
 	DE_ASSERT(result < vk::SPIRV_VERSION_LAST);
 

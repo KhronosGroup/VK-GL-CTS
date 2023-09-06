@@ -30,6 +30,8 @@
 
 #include "vktDrawBaseClass.hpp"
 
+#include "vkTypeUtil.hpp"
+
 #include "tcuTestLog.hpp"
 #include "tcuResource.hpp"
 #include "tcuImageCompare.hpp"
@@ -95,6 +97,8 @@ public:
 				void			recordDraw					(vk::VkCommandBuffer cmdBuffer);
 
 protected:
+				void			createRenderPassWithClear	(void);
+
 	const DrawCommandType		    m_command;
 	const deUint32					m_drawCalls;
 
@@ -108,15 +112,30 @@ protected:
 
 	de::SharedPtr<Draw::Buffer>		m_indirectBuffer;
 	de::SharedPtr<Draw::Buffer>		m_indirectCountBuffer;
+
+	// For cases where we want to clear the attachment in the render pass begin operation.
+	vk::Move<vk::VkRenderPass>		m_rpWithClear;
+	vk::Move<vk::VkFramebuffer>		m_fbWithClear;
 };
 
+void checkSupport(Context& context, DrawCommandType command)
+{
+	if (command == DRAW_COMMAND_TYPE_DRAW_INDIRECT_COUNT || command == DRAW_COMMAND_TYPE_DRAW_INDEXED_INDIRECT_COUNT)
+		context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
+}
+
 ConditionalDraw::ConditionalDraw (Context &context, ConditionalTestSpec testSpec)
-	: Draw::DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], false, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+	: Draw::DrawTestsBaseClass(context,
+							   testSpec.shaders[glu::SHADERTYPE_VERTEX],
+							   testSpec.shaders[glu::SHADERTYPE_FRAGMENT],
+							   Draw::SharedGroupParams(new Draw::GroupParams{ false, false, false }),
+							   vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 	, m_command(testSpec.command)
 	, m_drawCalls(testSpec.drawCalls)
 	, m_conditionalData(testSpec.conditionalData)
 {
 	checkConditionalRenderingCapabilities(context, m_conditionalData);
+	checkSupport(context, m_command);
 
 	const float minX = -0.3f;
 	const float maxX = 0.3f;
@@ -151,7 +170,52 @@ ConditionalDraw::ConditionalDraw (Context &context, ConditionalTestSpec testSpec
 
 	initialize();
 
+	DE_ASSERT(!(m_conditionalData.clearInRenderPass && m_conditionalData.conditionInSecondaryCommandBuffer));
+
+	if (m_conditionalData.clearInRenderPass)
+		createRenderPassWithClear();
+
 	m_secondaryCmdBuffer = vk::allocateCommandBuffer(m_vk, m_context.getDevice(), *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+}
+
+void ConditionalDraw::createRenderPassWithClear (void)
+{
+	const auto					device					= m_context.getDevice();
+	Draw::RenderPassCreateInfo	renderPassCreateInfo;
+
+	renderPassCreateInfo.addAttachment(Draw::AttachmentDescription(m_colorAttachmentFormat,
+																   vk::VK_SAMPLE_COUNT_1_BIT,
+																   vk::VK_ATTACHMENT_LOAD_OP_CLEAR,	// Clear with the render pass.
+																   vk::VK_ATTACHMENT_STORE_OP_STORE,
+																   vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+																   vk::VK_ATTACHMENT_STORE_OP_STORE,
+																   vk::VK_IMAGE_LAYOUT_UNDEFINED,
+																   vk::VK_IMAGE_LAYOUT_GENERAL));
+
+	const vk::VkAttachmentReference colorAttachmentReference
+	{
+		0,
+		vk::VK_IMAGE_LAYOUT_GENERAL
+	};
+
+	renderPassCreateInfo.addSubpass(Draw::SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
+															 0,
+															 0,
+															 DE_NULL,
+															 1,
+															 &colorAttachmentReference,
+															 DE_NULL,
+															 Draw::AttachmentReference(),
+															 0,
+															 DE_NULL));
+
+	m_rpWithClear = vk::createRenderPass(m_vk, device, &renderPassCreateInfo);
+
+	// Framebuffer.
+	std::vector<vk::VkImageView>			colorAttachments		{ *m_colorTargetView };
+	const Draw::FramebufferCreateInfo		framebufferCreateInfo	(*m_rpWithClear, colorAttachments, WIDTH, HEIGHT, 1);
+
+	m_fbWithClear = vk::createFramebuffer(m_vk, device, &framebufferCreateInfo);
 }
 
 void ConditionalDraw::createAndBindIndexBuffer (vk::VkCommandBuffer cmdBuffer)
@@ -327,13 +391,31 @@ void ConditionalDraw::recordDraw(vk::VkCommandBuffer cmdBuffer)
 
 tcu::TestStatus ConditionalDraw::iterate (void)
 {
-	tcu::TestLog&		log		= m_context.getTestContext().getLog();
-	const vk::VkQueue	queue	= m_context.getUniversalQueue();
-	const vk::VkDevice	device	= m_context.getDevice();
+	tcu::TestLog&		log			= m_context.getTestContext().getLog();
+	const vk::VkQueue	queue		= m_context.getUniversalQueue();
+	const vk::VkDevice	device		= m_context.getDevice();
+
+	// We will clear to a different color to be sure.
+	const auto			clearColor	= (m_conditionalData.clearInRenderPass ? tcu::RGBA::white().toVec() : tcu::RGBA::black().toVec());
+
+	m_conditionalBuffer = createConditionalRenderingBuffer(m_context, m_conditionalData);
 
 	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
-	const bool useSecondaryCmdBuffer = m_conditionalData.conditionInherited || m_conditionalData.conditionInSecondaryCommandBuffer;
-	beginRender(useSecondaryCmdBuffer ? vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS : vk::VK_SUBPASS_CONTENTS_INLINE);
+	preRenderBarriers();
+
+	const bool useSecondaryCmdBuffer	= m_conditionalData.conditionInherited || m_conditionalData.conditionInSecondaryCommandBuffer;
+	const auto subpassContents			= (useSecondaryCmdBuffer ? vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS : vk::VK_SUBPASS_CONTENTS_INLINE);
+
+	if (m_conditionalData.clearInRenderPass)
+	{
+		// When clearing in the render pass we want to check the render pass clear is executed properly.
+		beginConditionalRendering(m_vk, *m_cmdBuffer, *m_conditionalBuffer, m_conditionalData);
+		vk::beginRenderPass(m_vk, *m_cmdBuffer, *m_rpWithClear, *m_fbWithClear, vk::makeRect2D(WIDTH, HEIGHT), clearColor, subpassContents);
+	}
+	else
+	{
+		beginLegacyRender(*m_cmdBuffer, subpassContents);
+	}
 
 	vk::VkCommandBuffer targetCmdBuffer = *m_cmdBuffer;
 
@@ -366,7 +448,7 @@ tcu::TestStatus ConditionalDraw::iterate (void)
 			&inheritanceInfo
 		};
 
-		m_vk.beginCommandBuffer(*m_secondaryCmdBuffer, &commandBufferBeginInfo);
+		VK_CHECK(m_vk.beginCommandBuffer(*m_secondaryCmdBuffer, &commandBufferBeginInfo));
 
 		targetCmdBuffer = *m_secondaryCmdBuffer;
 	}
@@ -416,8 +498,6 @@ tcu::TestStatus ConditionalDraw::iterate (void)
 
 	m_vk.cmdBindPipeline(targetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 
-	m_conditionalBuffer = createConditionalRenderingBuffer(m_context, m_conditionalData);
-
 	if (m_conditionalData.conditionInSecondaryCommandBuffer)
 	{
 		beginConditionalRendering(m_vk, *m_secondaryCmdBuffer, *m_conditionalBuffer, m_conditionalData);
@@ -433,7 +513,8 @@ tcu::TestStatus ConditionalDraw::iterate (void)
 
 	if (m_conditionalData.conditionInPrimaryCommandBuffer)
 	{
-		beginConditionalRendering(m_vk, *m_cmdBuffer, *m_conditionalBuffer, m_conditionalData);
+		if (!m_conditionalData.clearInRenderPass)
+			beginConditionalRendering(m_vk, *m_cmdBuffer, *m_conditionalBuffer, m_conditionalData);
 
 		if (m_conditionalData.conditionInherited)
 		{
@@ -444,14 +525,25 @@ tcu::TestStatus ConditionalDraw::iterate (void)
 			recordDraw(*m_cmdBuffer);
 		}
 
-		m_vk.cmdEndConditionalRenderingEXT(*m_cmdBuffer);
+		if (!m_conditionalData.clearInRenderPass)
+			m_vk.cmdEndConditionalRenderingEXT(*m_cmdBuffer);
 	}
 	else if (useSecondaryCmdBuffer)
 	{
 		m_vk.cmdExecuteCommands(*m_cmdBuffer, 1, &m_secondaryCmdBuffer.get());
 	}
 
-	endRender();
+	if (m_conditionalData.clearInRenderPass)
+	{
+		// Finish conditional rendering outside the render pass.
+		vk::endRenderPass(m_vk, *m_cmdBuffer);
+		m_vk.cmdEndConditionalRenderingEXT(*m_cmdBuffer);
+	}
+	else
+	{
+		endLegacyRender(*m_cmdBuffer);
+	}
+
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
@@ -463,13 +555,10 @@ tcu::TestStatus ConditionalDraw::iterate (void)
 	const deInt32 frameWidth	= referenceFrame.getWidth();
 	const deInt32 frameHeight	= referenceFrame.getHeight();
 
-	const tcu::Vec4 clearColor = tcu::RGBA::black().toVec();
-	const tcu::Vec4 drawColor  = tcu::RGBA::blue().toVec();
-
 	tcu::clear(referenceFrame.getLevel(0), clearColor);
 
-	const tcu::Vec4 referenceColor = m_conditionalData.expectCommandExecution ?
-										drawColor : clearColor;
+	const tcu::Vec4 drawColor		= tcu::RGBA::blue().toVec();
+	const tcu::Vec4 referenceColor	= m_conditionalData.expectCommandExecution ? drawColor : clearColor;
 
 	Draw::ReferenceImageCoordinates refCoords;
 

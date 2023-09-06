@@ -52,7 +52,7 @@ public:
 	WindowRegistry&					getWindowRegistry	(void) { return m_windowRegistry; }
 
 	// Vulkan Platform API
-	vk::Library*					createLibrary		(void) const;
+	vk::Library*					createLibrary		(const char* libraryPath) const;
 	void							describePlatform	(std::ostream& dst) const;
 	vk::wsi::Display*				createWsiDisplay	(vk::wsi::Type wsiType) const;
 	bool							hasDisplay			(vk::wsi::Type wsiType) const;

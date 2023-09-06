@@ -75,7 +75,7 @@ void checkAllSupported (const Extensions& supportedExtensions, const vector<stri
 		 requiredExtName != requiredExtensions.end();
 		 ++requiredExtName)
 	{
-		if (!isExtensionSupported(supportedExtensions, vk::RequiredExtension(*requiredExtName)))
+		if (!isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(*requiredExtName)))
 			TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
 	}
 }
@@ -88,6 +88,8 @@ CustomInstance createInstanceWithWsi (Context&							context,
 
 	extensions.push_back("VK_KHR_surface");
 	extensions.push_back(getExtensionName(wsiType));
+	if (isDisplaySurface(wsiType))
+		extensions.push_back("VK_KHR_display");
 
 	checkAllSupported(supportedExtensions, extensions);
 
@@ -146,7 +148,7 @@ vk::Move<vk::VkDevice> createDeviceWithWsi (const vk::PlatformInterface&		vkp,
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(extensions); ++ndx)
 	{
-		if (!isExtensionSupported(supportedExtensions, vk::RequiredExtension(extensions[ndx])))
+		if (!isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(extensions[ndx])))
 			TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
 	}
 
@@ -163,7 +165,7 @@ de::MovePtr<vk::wsi::Display> createDisplay (const vk::Platform&	platform,
 	}
 	catch (const tcu::NotSupportedError& e)
 	{
-		if (isExtensionSupported(supportedExtensions, vk::RequiredExtension(getExtensionName(wsiType))) &&
+		if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(getExtensionName(wsiType))) &&
 		    platform.hasDisplay(wsiType))
 		{
 			// If VK_KHR_{platform}_surface was supported, vk::Platform implementation
@@ -247,10 +249,10 @@ vk::VkRect2D getRenderFrameRect (size_t		frameNdx,
 								: de::min(((deUint32)frameNdx) % imageHeight, imageHeight - 1u);
 	const deUint32		width	= frameNdx == 0
 								? imageWidth
-								: 1 + de::min((deUint32)(frameNdx) % de::min<deUint32>(100, imageWidth / 3), imageWidth - x);
+								: 1 + de::min((deUint32)(frameNdx) % de::min<deUint32>(100, imageWidth / 3), imageWidth - x - 1);
 	const deUint32		height	= frameNdx == 0
 								? imageHeight
-								: 1 + de::min((deUint32)(frameNdx) % de::min<deUint32>(100, imageHeight / 3), imageHeight - y);
+								: 1 + de::min((deUint32)(frameNdx) % de::min<deUint32>(100, imageHeight / 3), imageHeight - y - 1);
 	const vk::VkRect2D	rect	=
 	{
 		{ (deInt32)x, (deInt32)y },
@@ -375,7 +377,7 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer (const vk::DeviceInterface&	vk
 			image,
 			subRange
 		};
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_ACCESS_TRANSFER_WRITE_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
 	}
 
 	beginRenderPass(vkd, *commandBuffer, renderPass, framebuffer, vk::makeRect2D(imageWidth, imageHeight), tcu::Vec4(0.25f, 0.5f, 0.75f, 1.0f));
@@ -804,7 +806,7 @@ IncrementalPresentTestInstance::IncrementalPresentTestInstance (Context& context
 	, m_physicalDevice			(vk::chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
 	, m_nativeDisplay			(createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(), m_instanceExtensions, testConfig.wsiType))
 	, m_nativeWindow			(createWindow(*m_nativeDisplay, tcu::Nothing))
-	, m_surface					(vk::wsi::createSurface(m_vki, m_instance, testConfig.wsiType, *m_nativeDisplay, *m_nativeWindow))
+	, m_surface					(vk::wsi::createSurface(m_vki, m_instance, testConfig.wsiType, *m_nativeDisplay, *m_nativeWindow, context.getTestContext().getCommandLine()))
 
 	, m_queueFamilyIndex		(vk::wsi::chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
 	, m_deviceExtensions		(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))

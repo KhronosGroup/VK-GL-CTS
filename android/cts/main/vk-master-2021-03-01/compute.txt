@@ -1,11 +1,3 @@
-dEQP-VK.compute.basic.empty_workgroup_x
-dEQP-VK.compute.basic.empty_workgroup_y
-dEQP-VK.compute.basic.empty_workgroup_z
-dEQP-VK.compute.basic.empty_workgroup_all
-dEQP-VK.compute.basic.max_local_size_x
-dEQP-VK.compute.basic.max_local_size_y
-dEQP-VK.compute.basic.max_local_size_z
-dEQP-VK.compute.basic.write_ssbo_array
 dEQP-VK.compute.zero_initialize_workgroup_memory.max_workgroup_memory.1
 dEQP-VK.compute.zero_initialize_workgroup_memory.max_workgroup_memory.2
 dEQP-VK.compute.zero_initialize_workgroup_memory.max_workgroup_memory.4
@@ -645,13 +637,6 @@ dEQP-VK.compute.zero_initialize_workgroup_memory.repeat_pipeline.x_64_odd_repeat
 dEQP-VK.compute.zero_initialize_workgroup_memory.repeat_pipeline.x_64_odd_repeat_4
 dEQP-VK.compute.zero_initialize_workgroup_memory.repeat_pipeline.x_64_odd_repeat_8
 dEQP-VK.compute.zero_initialize_workgroup_memory.repeat_pipeline.x_64_odd_repeat_16
-dEQP-VK.compute.zero_initialize_workgroup_memory.shared_memory_blocks.workgroup_size_128
-dEQP-VK.compute.zero_initialize_workgroup_memory.shared_memory_blocks.workgroup_size_8x8x2
-dEQP-VK.compute.zero_initialize_workgroup_memory.shared_memory_blocks.workgroup_size_8x2x8
-dEQP-VK.compute.zero_initialize_workgroup_memory.shared_memory_blocks.workgroup_size_2x8x8
-dEQP-VK.compute.zero_initialize_workgroup_memory.shared_memory_blocks.workgroup_size_8x4x4
-dEQP-VK.compute.zero_initialize_workgroup_memory.shared_memory_blocks.workgroup_size_4x8x4
-dEQP-VK.compute.zero_initialize_workgroup_memory.shared_memory_blocks.workgroup_size_4x4x8
 dEQP-VK.compute.workgroup_memory_explicit_layout.alias.i8_to_u8_default
 dEQP-VK.compute.workgroup_memory_explicit_layout.alias.i8_to_u8_std140
 dEQP-VK.compute.workgroup_memory_explicit_layout.alias.i8_to_u8_std430
@@ -4476,6 +4461,7 @@ dEQP-VK.compute.workgroup_memory_explicit_layout.size.65536
 dEQP-VK.compute.workgroup_memory_explicit_layout.copy_memory.basic
 dEQP-VK.compute.workgroup_memory_explicit_layout.copy_memory.two_invocations
 dEQP-VK.compute.workgroup_memory_explicit_layout.copy_memory.variable_pointers
-dEQP-VK.compute.workgroup_memory_explicit_layout.zero_ext.block
-dEQP-VK.compute.workgroup_memory_explicit_layout.zero_ext.other_block
-dEQP-VK.compute.workgroup_memory_explicit_layout.zero_ext.block_with_offset
+dEQP-VK.compute.basic.max_local_size_x
+dEQP-VK.compute.basic.max_local_size_y
+dEQP-VK.compute.basic.max_local_size_z
+dEQP-VK.compute.basic.write_ssbo_array

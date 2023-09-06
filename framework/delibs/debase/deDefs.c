@@ -38,8 +38,8 @@ DE_STATIC_ASSERT(sizeof(deIntptr)	== sizeof(void*));
 DE_STATIC_ASSERT(DE_PTR_SIZE		== sizeof(void*));
 
 /* Sanity checks for DE_PTR_SIZE & DE_CPU */
-#if !((DE_CPU == DE_CPU_X86_64 || DE_CPU == DE_CPU_ARM_64 || DE_CPU == DE_CPU_MIPS_64) && (DE_PTR_SIZE == 8)) && \
-	!((DE_CPU == DE_CPU_X86    || DE_CPU == DE_CPU_ARM    || DE_CPU == DE_CPU_MIPS)    && (DE_PTR_SIZE == 4))
+#if !((DE_CPU == DE_CPU_X86_64 || DE_CPU == DE_CPU_ARM_64 || DE_CPU == DE_CPU_MIPS_64 || DE_CPU == DE_CPU_RISCV_64) && (DE_PTR_SIZE == 8)) && \
+	!((DE_CPU == DE_CPU_X86    || DE_CPU == DE_CPU_ARM    || DE_CPU == DE_CPU_MIPS    || DE_CPU == DE_CPU_RISCV_32) && (DE_PTR_SIZE == 4))
 #	error "DE_CPU and DE_PTR_SIZE mismatch"
 #endif
 
@@ -126,7 +126,7 @@ void deAssertFail (const char* reason, const char* file, int line)
 	fprintf(stderr, "Assertion '%s' failed at %s:%d\n", reason, file, line);
 	raise(SIGTRAP);
 	abort();
-#elif (DE_OS == DE_OS_UNIX)
+#elif (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_FUCHSIA)
 	__assert_fail(reason, file, (unsigned int)line, "Unknown function");
 #elif (DE_OS == DE_OS_QNX)
     __assert(reason, file, (unsigned int)line, "Unknown function");

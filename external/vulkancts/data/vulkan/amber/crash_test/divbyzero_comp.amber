@@ -19,126 +19,69 @@ layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 layout(binding = 0) buffer block0
 {
-    int data;
-} ssbo_array[20];
+    int data[20];
+} ssbo;
 
 void main()
 {
   // Zero constants
-  int ival = ssbo_array[0].data;
+  int ival = ssbo.data[0];
   float val = float(ival);
 
   // int div
-  ssbo_array[1].data = 7 / ival;
+  ssbo.data[1] = 7 / ival;
   // float div
-  ssbo_array[2].data = int(7.0 / val);
+  ssbo.data[2] = int(7.0 / val);
   // normalize float
-  ssbo_array[3].data = int(normalize(val));
+  ssbo.data[3] = int(normalize(val));
   // normalize vec2
-  ssbo_array[4].data = int(normalize(vec2(val))[ival]);
+  ssbo.data[4] = int(normalize(vec2(val))[ival]);
   // normalize vec3
-  ssbo_array[5].data = int(normalize(vec3(val))[ival]);
+  ssbo.data[5] = int(normalize(vec3(val))[ival]);
   // normalize vec4
-  ssbo_array[6].data = int(normalize(vec4(val))[ival]);
+  ssbo.data[6] = int(normalize(vec4(val))[ival]);
   // integer mod
-  ssbo_array[7].data = 7 % ival;
+  ssbo.data[7] = 7 % ival;
   // float mod
-  ssbo_array[8].data = int(mod(7.0, val));
+  ssbo.data[8] = int(mod(7.0, val));
   // vec2 mod
-  ssbo_array[9].data = int(mod(vec2(7.0), vec2(val))[ival]);
+  ssbo.data[9] = int(mod(vec2(7.0), vec2(val))[ival]);
   // vec3 mod
-  ssbo_array[10].data = int(mod(vec3(7.0), vec3(val))[ival]);
+  ssbo.data[10] = int(mod(vec3(7.0), vec3(val))[ival]);
   // vec4 mod
-  ssbo_array[11].data = int(mod(vec4(7.0), vec4(val))[ival]);
+  ssbo.data[11] = int(mod(vec4(7.0), vec4(val))[ival]);
   // float smoothstep
-  ssbo_array[12].data = int(smoothstep(val, val, 0.3));
+  ssbo.data[12] = int(smoothstep(val, val, 0.3));
   // vec2 smoothstep
-  ssbo_array[13].data = int(smoothstep(vec2(val), vec2(val), vec2(0.3))[ival]);
+  ssbo.data[13] = int(smoothstep(vec2(val), vec2(val), vec2(0.3))[ival]);
   // vec3 smoothstep
-  ssbo_array[14].data = int(smoothstep(vec3(val), vec3(val), vec3(0.3))[ival]);
+  ssbo.data[14] = int(smoothstep(vec3(val), vec3(val), vec3(0.3))[ival]);
   // vec4 smoothstep
-  ssbo_array[15].data = int(smoothstep(vec4(val), vec4(val), vec4(0.3))[ival]);
+  ssbo.data[15] = int(smoothstep(vec4(val), vec4(val), vec4(0.3))[ival]);
   // float atan2
-  ssbo_array[16].data = int(atan(7.0, val));
+  ssbo.data[16] = int(atan(7.0, val));
   // vec2 atan2
-  ssbo_array[17].data = int(atan(vec2(7.0), vec2(val))[ival]);
+  ssbo.data[17] = int(atan(vec2(7.0), vec2(val))[ival]);
   // vec3 atan2
-  ssbo_array[18].data = int(atan(vec3(7.0), vec3(val))[ival]);
+  ssbo.data[18] = int(atan(vec3(7.0), vec3(val))[ival]);
   // vec4 atan2
-  ssbo_array[19].data = int(atan(vec4(7.0), vec4(val))[ival]);
+  ssbo.data[19] = int(atan(vec4(7.0), vec4(val))[ival]);
 
   // Known good value
-  ssbo_array[0].data = 42;
+  ssbo.data[0] = 42;
 }
 END
 
-BUFFER buf0 DATA_TYPE int32 DATA
-0
-END
-BUFFER buf1 DATA_TYPE int32 DATA
-0
-END
-BUFFER buf2 DATA_TYPE int32 DATA
-0
-END
-BUFFER buf3 DATA_TYPE int32 DATA
-0
-END
-BUFFER buf4 DATA_TYPE int32 DATA
-0
-END
-BUFFER buf5 DATA_TYPE int32 DATA
-0
-END
-BUFFER buf6 DATA_TYPE int32 DATA
-0
-END
-BUFFER buf7 DATA_TYPE int32 DATA
-0
-END
-BUFFER buf8 DATA_TYPE int32 DATA
-0
-END
-BUFFER buf9 DATA_TYPE int32 DATA
-0
-END
-BUFFER buf10 DATA_TYPE int32 DATA
-0
-END
-BUFFER buf11 DATA_TYPE int32 DATA
-0
-END
-BUFFER buf12 DATA_TYPE int32 DATA
-0
-END
-BUFFER buf13 DATA_TYPE int32 DATA
-0
-END
-BUFFER buf14 DATA_TYPE int32 DATA
-0
-END
-BUFFER buf15 DATA_TYPE int32 DATA
-0
-END
-BUFFER buf16 DATA_TYPE int32 DATA
-0
-END
-BUFFER buf17 DATA_TYPE int32 DATA
-0
-END
-BUFFER buf18 DATA_TYPE int32 DATA
-0
-END
-BUFFER buf19 DATA_TYPE int32 DATA
-0
+BUFFER ssbo_buffer DATA_TYPE int32 DATA
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 END
 
 PIPELINE compute pipeline
   ATTACH compute_shader
 
-  BIND BUFFER_ARRAY buf0 buf1 buf2 buf3 buf4 buf5 buf6 buf7 buf8 buf9 buf10 buf11 buf12 buf13 buf14 buf15 buf16 buf17 buf18 buf19 AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER ssbo_buffer AS storage DESCRIPTOR_SET 0 BINDING 0
 END
 
 RUN pipeline 1 1 1
 
-EXPECT buf0 IDX 0 EQ 42
+EXPECT ssbo_buffer IDX 0 EQ 42

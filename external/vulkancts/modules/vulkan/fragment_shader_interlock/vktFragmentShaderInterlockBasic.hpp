@@ -33,7 +33,6 @@ namespace FragmentShaderInterlock
 {
 
 tcu::TestCaseGroup* createBasicTests(tcu::TestContext& testCtx);
-void cleanupDevice();
 
 } // FragmentShaderInterlock
 } // vkt

@@ -56,7 +56,7 @@ set(GLCTS_LIBS
 	)
 
 # \note This module contains multiple packages (ES2-CTS, ES3-CTS, ..)
-add_deqp_module(glcts "${GLCTS_SRCS}" "${GLCTS_LIBS}" glcTestPackageEntry.cpp)
+add_deqp_module(glcts "${GLCTS_SRCS}" "${GLCTS_LIBS}" "tcutil-platform" glcTestPackageEntry.cpp)
 
 # Data directories
 add_data_dir(glcts ../data gl_cts/data)

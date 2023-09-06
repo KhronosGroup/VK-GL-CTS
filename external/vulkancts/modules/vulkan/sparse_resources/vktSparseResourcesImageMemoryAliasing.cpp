@@ -205,7 +205,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 		queueRequirements.push_back(QueueRequirements(VK_QUEUE_SPARSE_BINDING_BIT, 1u));
 		queueRequirements.push_back(QueueRequirements(VK_QUEUE_COMPUTE_BIT, 1u));
 
-		createDeviceSupportingQueues(queueRequirements);
+		createDeviceSupportingQueues(queueRequirements, formatIsR64(m_format));
 	}
 
 	const VkPhysicalDevice		physicalDevice			= getPhysicalDevice();
@@ -392,7 +392,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 
 			const VkDeviceGroupBindSparseInfo devGroupBindSparseInfo =
 			{
-				VK_STRUCTURE_TYPE_DEVICE_GROUP_BIND_SPARSE_INFO_KHR,	//VkStructureType							sType;
+				VK_STRUCTURE_TYPE_DEVICE_GROUP_BIND_SPARSE_INFO,		//VkStructureType							sType;
 				DE_NULL,												//const void*								pNext;
 				firstDeviceID,											//deUint32									resourceDeviceIndex;
 				secondDeviceID,											//deUint32									memoryDeviceIndex;
@@ -598,7 +598,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 				));
 			}
 
-			deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, static_cast<deUint32>(imageSparseShaderStorageBarriers.size()), imageSparseShaderStorageBarriers.data());
+			deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, static_cast<deUint32>(imageSparseShaderStorageBarriers.size()), imageSparseShaderStorageBarriers.data());
 		}
 
 		// Create descriptor set layout
@@ -899,7 +899,7 @@ TestInstance* ImageSparseMemoryAliasingCase::createInstance (Context& context) c
 tcu::TestCaseGroup* createImageSparseMemoryAliasingTestsCommon(tcu::TestContext& testCtx, de::MovePtr<tcu::TestCaseGroup> testGroup, const bool useDeviceGroup = false)
 {
 
-	const std::vector<TestImageParameters> imageParameters =
+	const std::vector<TestImageParameters> imageParameters
 	{
 		{ IMAGE_TYPE_2D,		{ tcu::UVec3(512u, 256u, 1u),	tcu::UVec3(128u, 128u, 1u),	tcu::UVec3(503u, 137u, 1u),	tcu::UVec3(11u, 37u, 1u) },	getTestFormats(IMAGE_TYPE_2D) },
 		{ IMAGE_TYPE_2D_ARRAY,	{ tcu::UVec3(512u, 256u, 6u),	tcu::UVec3(128u, 128u, 8u),	tcu::UVec3(503u, 137u, 3u),	tcu::UVec3(11u, 37u, 3u) },	getTestFormats(IMAGE_TYPE_2D_ARRAY) },

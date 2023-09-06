@@ -32,6 +32,7 @@
 #include "tcuImageCompare.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuVectorUtil.hpp"
+#include "tcuCommandLine.hpp"
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
 #include "deRandom.hpp"
@@ -279,14 +280,14 @@ bool checkFragColors (const tcu::ConstPixelBufferAccess pixels, IVec2 clipRegion
 		if (x < clipRegion.x() && y < clipRegion.y())
 			continue;
 
-		const tcu::Vec4	color					= pixels.getPixel(x, y);
-		const int		barWidth				= pixels.getWidth() / 8;
-		const bool		insideBar				= x >= barWidth * barIdx && x < barWidth * (barIdx + 1);
-		const float		expectedClipDistance	= insideBar ? (((((float)y + 0.5f) / (float)pixels.getHeight()) - 0.5f) * 2.0f) : 0.0f;
-		float			expectedCullDistance	= 0.5f;
-		const float		clipDistance			= color.y();
-		const float		cullDistance			= color.z();
-		const float		height					= (float)pixels.getHeight();
+		const tcu::Vec4	color = pixels.getPixel(x, y);
+		const int		barWidth = pixels.getWidth() / 8;
+		const bool		insideBar = x >= barWidth * barIdx && x < barWidth* (barIdx + 1);
+		const float		expectedClipDistance = insideBar ? (((((float)y + 0.5f) / (float)pixels.getHeight()) - 0.5f) * 2.0f) : 0.0f;
+		float			expectedCullDistance = 0.5f;
+		const float		clipDistance = color.y();
+		const float		cullDistance = color.z();
+		const float		height = (float)pixels.getHeight();
 
 		if (hasCullDistance)
 		{
@@ -728,8 +729,13 @@ tcu::TestStatus testPrimitivesDepthClip (Context& context, const VkPrimitiveTopo
 			++numPassed;
 	}
 
-	if (numPassed < numCases)
-		return tcu::TestStatus::fail("Rendered image(s) are incorrect (depth clip with depth clamp disabled)");
+#ifdef CTS_USES_VULKANSC
+	if (context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+	{
+		if (numPassed < numCases)
+			return tcu::TestStatus::fail("Rendered image(s) are incorrect (depth clip with depth clamp disabled)");
+	}
 
 	// Test depth clip with depth clamp enabled.
 	numPassed = 0;
@@ -1086,10 +1092,17 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 			if (caseDef.numCullDistances > 0)
 			{
 				src << "    for (int i = 0; i < " << caseDef.numCullDistances << "; ++i)\n";
-				if (caseDef.enableTessellation || caseDef.enableGeometry)
-					src	<< "        gl_CullDistance[i] = 0.1f;\n";
+				if (!caseDef.readInFragmentShader)
+				{
+					src << "		gl_CullDistance[i] = (gl_Position.x >= 0.75f) ? -0.5f : 0.5f;\n";
+				}
 				else
-					src	<< "        gl_CullDistance[i] = (gl_Position.y < 0) ? -0.5f : 0.5f;\n";
+				{
+					if (caseDef.enableTessellation || caseDef.enableGeometry)
+						src << "        gl_CullDistance[i] = 0.1f;\n";
+					else
+						src << "        gl_CullDistance[i] = (gl_Position.y < 0) ? -0.5f : 0.5f;\n";
+				}
 			}
 		}
 		else
@@ -1099,10 +1112,17 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 
 			for (int i = 0; i < caseDef.numCullDistances; ++i)
 			{
-				if (caseDef.enableTessellation || caseDef.enableGeometry)
-					src	<< "    gl_CullDistance[" << i << "] = 0.1f;\n";
+				if (!caseDef.readInFragmentShader)
+				{
+					src << "    gl_CullDistance[" << i << "] = (gl_Position.x >= 0.75f) ? -0.5f : 0.5f;\n";
+				}
 				else
-					src << "    gl_CullDistance[" << i << "] = (gl_Position.y < 0) ? -0.5f : 0.5f;\n";
+				{
+					if (caseDef.enableTessellation || caseDef.enableGeometry)
+						src << "    gl_CullDistance[" << i << "] = 0.1f;\n";
+					else
+						src << "    gl_CullDistance[" << i << "] = (gl_Position.y < 0) ? -0.5f : 0.5f;\n";
+				}
 			}
 		}
 		src	<< "}\n";
@@ -1146,12 +1166,19 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 			{
 				src << "    for (int i = 0; i < " << caseDef.numCullDistances << "; ++i)\n";
 				src << "    {\n";
-				src	<< "        gl_out[gl_InvocationID].gl_CullDistance[i] = (gl_in[gl_InvocationID].gl_CullDistance[i] == 0.1f) ? ";
-				if (caseDef.enableGeometry)
-					src << "0.3f";
+				if (!caseDef.readInFragmentShader)
+				{
+					src << "    gl_out[gl_InvocationID].gl_CullDistance[i] = (gl_in[gl_InvocationID].gl_Position.x >= 0.75f) ? -0.5f : 0.5f;\n";
+				}
 				else
-					src << "((gl_in[gl_InvocationID].gl_Position.y < 0) ? -0.5f : 0.5f)";
-				src << " : 0.2f;\n";
+				{
+					src << "        gl_out[gl_InvocationID].gl_CullDistance[i] = (gl_in[gl_InvocationID].gl_CullDistance[i] == 0.1f) ? ";
+					if (caseDef.enableGeometry)
+						src << "0.3f";
+					else
+						src << "((gl_in[gl_InvocationID].gl_Position.y < 0) ? -0.5f : 0.5f)";
+					src << " : 0.2f;\n";
+				}
 				src << "    }\n";
 			}
 		}
@@ -1161,12 +1188,19 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 				src << "    gl_out[gl_InvocationID].gl_ClipDistance[" << i << "] = gl_in[gl_InvocationID].gl_ClipDistance[" << i << "];\n";
 			for (int i = 0; i < caseDef.numCullDistances; ++i)
 			{
-				src	<< "    gl_out[gl_InvocationID].gl_CullDistance[" << i << "] = (gl_in[gl_InvocationID].gl_CullDistance[" << i << "] == 0.1f) ? ";
-				if (caseDef.enableGeometry)
-					src << "0.3f";
+				if (!caseDef.readInFragmentShader)
+				{
+					src << "    gl_out[gl_InvocationID].gl_CullDistance[" << i << "] = (gl_in[gl_InvocationID].gl_Position.x >= 0.75f) ? -0.5f : 0.5f;\n";
+				}
 				else
-					src << "((gl_in[gl_InvocationID].gl_Position.y < 0) ? -0.5f : 0.5f)";
-				src << " : 0.2f;\n";
+				{
+					src << "    gl_out[gl_InvocationID].gl_CullDistance[" << i << "] = (gl_in[gl_InvocationID].gl_CullDistance[" << i << "] == 0.1f) ? ";
+					if (caseDef.enableGeometry)
+						src << "0.3f";
+					else
+						src << "((gl_in[gl_InvocationID].gl_Position.y < 0) ? -0.5f : 0.5f)";
+					src << " : 0.2f;\n";
+				}
 			}
 		}
 		src << "}\n";
@@ -1259,12 +1293,19 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 				{
 					src << "    for (int i = 0; i < " << caseDef.numCullDistances << "; ++i)\n";
 					src << "    {\n";
-					src	<< "        gl_CullDistance[i] = (gl_in[" << vertNdx << "].gl_CullDistance[i] == ";
-					if (caseDef.enableTessellation)
-						src << "0.3f";
+					if (!caseDef.readInFragmentShader)
+					{
+						src << "    gl_CullDistance[i] = (gl_in[" << vertNdx << "].gl_Position.x >= 0.75f) ? -0.5f : 0.5f;\n";
+					}
 					else
-						src << "0.1f";
-					src << ") ? ((gl_in[" << vertNdx << "].gl_Position.y < 0) ? -0.5f : 0.5f) : 0.4f;\n";
+					{
+						src << "        gl_CullDistance[i] = (gl_in[" << vertNdx << "].gl_CullDistance[i] == ";
+						if (caseDef.enableTessellation)
+							src << "0.3f";
+						else
+							src << "0.1f";
+						src << ") ? ((gl_in[" << vertNdx << "].gl_Position.y < 0) ? -0.5f : 0.5f) : 0.4f;\n";
+					}
 					src << "    }\n";
 				}
 			}
@@ -1275,12 +1316,19 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 
 				for (int i = 0; i < caseDef.numCullDistances; ++i)
 				{
-					src	<< "        gl_CullDistance[" << i << "] = (gl_in[" << vertNdx << "].gl_CullDistance[" << i << "] == ";
-					if (caseDef.enableTessellation)
-						src << "0.3f";
+					if (!caseDef.readInFragmentShader)
+					{
+						src << "    gl_CullDistance[" << i << "] = (gl_in[" << vertNdx << "].gl_Position.x >= 0.75f) ? -0.5f : 0.5f;\n";
+					}
 					else
-						src << "0.1f";
-					src << ") ? ((gl_in[" << vertNdx << "].gl_Position.y < 0) ? -0.5f : 0.5f) : 0.4f;\n";
+					{
+						src << "        gl_CullDistance[" << i << "] = (gl_in[" << vertNdx << "].gl_CullDistance[" << i << "] == ";
+						if (caseDef.enableTessellation)
+							src << "0.3f";
+						else
+							src << "0.1f";
+						src << ") ? ((gl_in[" << vertNdx << "].gl_Position.y < 0) ? -0.5f : 0.5f) : 0.4f;\n";
+					}
 				}
 			}
 			src << "    EmitVertex();\n";
@@ -1407,7 +1455,10 @@ tcu::TestStatus testClipDistance (Context& context, const CaseDefinition caseDef
 	// Count black pixels in the whole image.
 	const int	numBlackPixels			= countPixels(drawContext.getColorPixels(), Vec4(0.0f, 0.0f, 0.0f, 1.0f), Vec4());
 	const IVec2	clipRegion				= IVec2(caseDef.numClipDistances * RENDER_SIZE / numBars, RENDER_SIZE / 2);
-	const int	expectedClippedPixels	= clipRegion.x() * clipRegion.y();
+	// Cull is set to > 0.75 in the shader if caseDef.readInFragmentShader is false
+	const int	barsCulled				= (int)deFloor((0.25f) / (1.0f / numBars));
+	const IVec2	cullRegion				= (caseDef.readInFragmentShader || caseDef.numCullDistances == 0) ? IVec2(0.0f, 0.0f) : IVec2(barsCulled, RENDER_SIZE);
+	const int	expectedClippedPixels	= clipRegion.x() * clipRegion.y() + cullRegion.x() * cullRegion.y();
 	// Make sure the bottom half has no black pixels (possible if image became corrupted).
 	const int	guardPixels				= countPixels(drawContext.getColorPixels(), IVec2(0, RENDER_SIZE/2), clipRegion, Vec4(0.0f, 0.0f, 0.0f, 1.0f), Vec4());
 	const bool	fragColorsOk			= caseDef.readInFragmentShader ? checkFragColors(drawContext.getColorPixels(), clipRegion, caseDef.numClipDistances / 2, caseDef.numCullDistances > 0) : true;
@@ -1541,14 +1592,98 @@ tcu::TestStatus testComplementarity (Context& context, const int numClipDistance
 
 } // ClipDistanceComplementarity ns
 
+namespace CullDistance
+{
+	void checkSupport(Context& context)
+	{
+		const InstanceInterface&	vki			= context.getInstanceInterface();
+		const VkPhysicalDevice		physDevice	= context.getPhysicalDevice();
+
+		requireFeatures(vki, physDevice, FEATURE_SHADER_CULL_DISTANCE);
+	}
+
+	void initPrograms(SourceCollections& programCollection)
+	{
+		// setup triangle with three per-vertex cull distance values:
+		// v0: gl_CullDistance = {  0.0,  0.0, -1.0 };
+		// v1: gl_CullDistance = {  0.0, -1.0,  0.0 };
+		// v2: gl_CullDistance = { -1.0,  0.0,  0.0 };
+		// each vertex has a negative cull distance value but the triangle must not
+		// be culled because none of the three half-spaces is negative for all vertices
+
+		programCollection.glslSources.add("vert") << glu::VertexSource(
+			"#version 450\n"
+			"layout(location = 0) in vec4 v_position;\n"
+			"out gl_PerVertex {\n"
+			"  vec4  gl_Position;\n"
+			"  float gl_CullDistance[3];\n"
+			"};\n"
+			"void main (void)\n"
+			"{\n"
+			"  gl_Position = v_position;\n"
+			"  gl_CullDistance[0] = 0.0 - float(gl_VertexIndex == 2);\n"
+			"  gl_CullDistance[1] = 0.0 - float(gl_VertexIndex == 1);\n"
+			"  gl_CullDistance[2] = 0.0 - float(gl_VertexIndex == 0);\n"
+			"}\n");
+
+		programCollection.glslSources.add("frag") << glu::FragmentSource(
+			"#version 450\n"
+			"layout(location = 0) out vec4 o_color;\n"
+			"void main (void)\n"
+			"{\n"
+			"  o_color = vec4(1.0, 0.0, 0.0, 1.0);\n"
+			"}\n");
+	}
+
+	tcu::TestStatus testCullDistance(Context& context)
+	{
+		std::vector<VulkanShader> shaders
+		{
+			VulkanShader(VK_SHADER_STAGE_VERTEX_BIT,	context.getBinaryCollection().get("vert")),
+			VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("frag"))
+		};
+
+		std::vector<Vec4> vertices
+		{
+			{ -3.0f,  0.0f, 0.0f, 1.0f },
+			{  0.0f,  3.0f, 0.0f, 1.0f },
+			{  0.0f, -3.0f, 0.0f, 1.0f },
+		};
+
+		VulkanProgram		vulkanProgram		(shaders);
+		FrameBufferState	framebufferState	(RENDER_SIZE, RENDER_SIZE);
+		PipelineState		pipelineState		(context.getDeviceProperties().limits.subPixelPrecisionBits);
+		DrawCallData		drawCallData		(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, vertices);
+		VulkanDrawContext	drawContext			(context, framebufferState);
+
+		drawContext.registerDrawObject(pipelineState, vulkanProgram, drawCallData);
+		drawContext.draw();
+
+		const int numDrawnPixels = countPixels(drawContext.getColorPixels(), Vec4(1.0f, 0.0f, 0.0f, 1.0f), Vec4(0.02f, 0.02f, 0.02f, 0.0f));
+		const int numExpectedPixels = RENDER_SIZE * RENDER_SIZE / 2;
+
+		// triangle should be drawn and half of framebuffer should be filled with red color
+		if (numDrawnPixels == numExpectedPixels)
+			return tcu::TestStatus::pass("OK");
+
+		return tcu::TestStatus::fail("Triangle was not drawn");
+	}
+
+} // CullDistance
+
 void checkTopologySupport(Context& context, const VkPrimitiveTopology topology)
 {
+#ifndef CTS_USES_VULKANSC
 	if (topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
 		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().triangleFans)
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
 	}
+#else
+	DE_UNREF(context);
+	DE_UNREF(topology);
+#endif // CTS_USES_VULKANSC
 }
 
 void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
@@ -1704,6 +1839,7 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 				clipDistanceGroup->addChild(mainGroup.release());
 			}
 		}
+		clippingTestsGroup->addChild(clipDistanceGroup.release());
 
 		// Complementarity criterion (i.e. clipped and not clipped areas must add up to a complete primitive with no holes nor overlap)
 		{
@@ -1717,7 +1853,15 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 			clippingTestsGroup->addChild(group.release());
 		}
 
-		clippingTestsGroup->addChild(clipDistanceGroup.release());
+		{
+			using namespace CullDistance;
+
+			MovePtr<tcu::TestCaseGroup>	group(new tcu::TestCaseGroup(testCtx, "misc", ""));
+
+			addFunctionCaseWithPrograms(group.get(), "negative_and_non_negative_cull_distance", "", checkSupport, initPrograms, testCullDistance);
+
+			clippingTestsGroup->addChild(group.release());
+		}
 	}
 }
 

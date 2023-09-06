@@ -35,6 +35,7 @@
 #include "vkMemUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vktPipelineSpecConstantUtil.hpp"
+#include "vkImageWithMemory.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuTextureUtil.hpp"
@@ -53,19 +54,10 @@ using de::MovePtr;
 
 struct MaxVaryingsParam
 {
-	VkShaderStageFlags	outputStage;
-	VkShaderStageFlags	inputStage;
-	VkShaderStageFlags  stageToStressIO;
-	MaxVaryingsParam(VkShaderStageFlags out, VkShaderStageFlags in, VkShaderStageFlags stageToTest)
-		: outputStage(out), inputStage(in), stageToStressIO(stageToTest) {}
-};
-
-struct SelectedShaders
-{
-	VkShaderStageFlagBits	stage;
-	std::string				shaderName;
-	SelectedShaders(VkShaderStageFlagBits shaderStage, std::string name)
-		: stage(shaderStage), shaderName(name) {}
+	PipelineConstructionType	pipelineConstructionType;
+	VkShaderStageFlags			outputStage;
+	VkShaderStageFlags			inputStage;
+	VkShaderStageFlags			stageToStressIO;
 };
 
 // Helper functions
@@ -795,6 +787,8 @@ void supportedCheck (Context& context, MaxVaryingsParam param)
 			TCU_THROW(NotSupportedError, error.str().c_str());
 		}
 	}
+
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), param.pipelineConstructionType);
 }
 
 VkImageCreateInfo makeImageCreateInfo (const tcu::IVec2& size, const VkFormat format, const VkImageUsageFlags usage)
@@ -970,7 +964,7 @@ tcu::TestStatus test(Context& context, const MaxVaryingsParam param)
 	// Color attachment
 	const tcu::IVec2			renderSize		= tcu::IVec2(32, 32);
 	const VkFormat				imageFormat	= VK_FORMAT_R8G8B8A8_UNORM;
-	const Image				colorImage		(vk, device, allocator, makeImageCreateInfo(renderSize, imageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT), MemoryRequirement::Any);
+	const ImageWithMemory		colorImage		(vk, device, allocator, makeImageCreateInfo(renderSize, imageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT), MemoryRequirement::Any);
 	const Unique<VkImageView> colorImageView	(makeImageView(vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, imageFormat, makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u)));
 	const VkDeviceSize	colorBufferSize		= renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(imageFormat));
 	Move<VkBuffer>		colorBuffer			= vkt::pipeline::makeBuffer(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
@@ -1001,6 +995,7 @@ tcu::TestStatus test(Context& context, const MaxVaryingsParam param)
 
 	deInt32		data		= 0u;
 	size_t		dataSize	= sizeof(data);
+
 	deInt32		maxOutput	= getMaxIOComponents(false, param.outputStage, properties);
 	deInt32		maxInput	= getMaxIOComponents(true, param.inputStage, properties);
 
@@ -1028,37 +1023,54 @@ tcu::TestStatus test(Context& context, const MaxVaryingsParam param)
 	// Pipeline
 
 	const Unique<VkRenderPass>		renderPass		(makeRenderPass	(vk, device, imageFormat));
-	const Unique<VkFramebuffer>	framebuffer	(makeFramebuffer	(vk, device, *renderPass, 1u, &colorImageView.get(), static_cast<deUint32>(renderSize.x()), static_cast<deUint32>(renderSize.y())));
+	const Unique<VkFramebuffer>		framebuffer		(makeFramebuffer	(vk, device, *renderPass, 1u, &colorImageView.get(), static_cast<deUint32>(renderSize.x()), static_cast<deUint32>(renderSize.y())));
 	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout(vk, device));
-	const Unique<VkCommandPool>	cmdPool		(createCommandPool (vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandPool>		cmdPool			(createCommandPool (vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer		(makeCommandBuffer (vk, device, *cmdPool));
 
-	GraphicsPipelineBuilder pipelineBuilder;
-	pipelineBuilder
-		.setRenderSize(renderSize);
+	vk::BinaryCollection&			binaryCollection(context.getBinaryCollection());
+	VkPrimitiveTopology				topology		(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	const std::vector<VkViewport>	viewport		{ makeViewport(renderSize) };
+	const std::vector<VkRect2D>		scissor			{ makeRect2D(renderSize) };
 
-	// Get the shaders to run
-	std::vector<SelectedShaders>	shaders;
-	shaders.push_back(SelectedShaders(VK_SHADER_STAGE_VERTEX_BIT, "vert"));
-	shaders.push_back(SelectedShaders(VK_SHADER_STAGE_FRAGMENT_BIT, "frag"));
+	Move<VkShaderModule> vertShaderModule	= createShaderModule(vk, device, binaryCollection.get("vert"), 0u);
+	Move<VkShaderModule> tescShaderModule;
+	Move<VkShaderModule> teseShaderModule;
+	Move<VkShaderModule> geomShaderModule;
+	Move<VkShaderModule> fragShaderModule	= createShaderModule(vk, device, binaryCollection.get("frag"), 0u);
 
 	if (param.inputStage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT || param.outputStage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ||
 		param.inputStage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT || param.outputStage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
 	{
-		shaders.push_back(SelectedShaders(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "tcs"));
-		shaders.push_back(SelectedShaders(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "tes"));
+		tescShaderModule	= createShaderModule(vk, device, binaryCollection.get("tcs"), 0u);
+		teseShaderModule	= createShaderModule(vk, device, binaryCollection.get("tes"), 0u);
+		topology			= VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
 	}
 	if (param.inputStage == VK_SHADER_STAGE_GEOMETRY_BIT || param.outputStage == VK_SHADER_STAGE_GEOMETRY_BIT)
-	{
-		shaders.push_back(SelectedShaders(VK_SHADER_STAGE_GEOMETRY_BIT, "geom"));
-	}
+		geomShaderModule = createShaderModule(vk, device, binaryCollection.get("geom"), 0u);
 
-	for (deUint32 i = 0; i < (deUint32)shaders.size(); i++)
-	{
-		pipelineBuilder.setShader(vk, device, shaders[i].stage, context.getBinaryCollection().get(shaders[i].shaderName.c_str()), &pSpecInfo);
-	}
-
-	const Unique<VkPipeline> pipeline (pipelineBuilder.build(vk, device, *pipelineLayout, *renderPass));
+	GraphicsPipelineWrapper graphicsPipeline(vk, device, param.pipelineConstructionType);
+	graphicsPipeline.setDefaultTopology(topology)
+					.setDefaultRasterizationState()
+					.setDefaultDepthStencilState()
+					.setDefaultMultisampleState()
+					.setDefaultColorBlendState()
+					.setupVertexInputState()
+					.setupPreRasterizationShaderState(viewport,
+													scissor,
+													*pipelineLayout,
+													*renderPass,
+													0u,
+													*vertShaderModule,
+													0u,
+													*tescShaderModule,
+													*teseShaderModule,
+													*geomShaderModule,
+													&pSpecInfo)
+					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragShaderModule, DE_NULL, DE_NULL, &pSpecInfo)
+					.setupFragmentOutputState(*renderPass)
+					.setMonolithicPipelineLayout(*pipelineLayout)
+					.buildPipeline();
 
 	// Draw commands
 
@@ -1080,7 +1092,7 @@ tcu::TestStatus test(Context& context, const MaxVaryingsParam param)
 
 	beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor);
 
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.getPipeline());
 	const VkDeviceSize vertexBufferOffset = 0ull;
 	vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 
@@ -1116,22 +1128,22 @@ tcu::TestStatus test(Context& context, const MaxVaryingsParam param)
 }
 } // anonymous
 
-tcu::TestCaseGroup* createMaxVaryingsTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createMaxVaryingsTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	std::vector<MaxVaryingsParam> tests;
-
-	tests.push_back(MaxVaryingsParam(VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_VERTEX_BIT)); // Test max vertex outputs: VS-FS
-	tests.push_back(MaxVaryingsParam(VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_FRAGMENT_BIT)); // Test max FS inputs: VS-FS
-	tests.push_back(MaxVaryingsParam(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)); // Test max tess evaluation outputs: VS-TCS-TES-FS
-	tests.push_back(MaxVaryingsParam(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_FRAGMENT_BIT)); // Test fragment inputs: VS-TCS-TES-FS
-	tests.push_back(MaxVaryingsParam(VK_SHADER_STAGE_GEOMETRY_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_GEOMETRY_BIT)); // Test geometry outputs: VS-GS-FS
-	tests.push_back(MaxVaryingsParam(VK_SHADER_STAGE_GEOMETRY_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_FRAGMENT_BIT)); // Test fragment inputs: VS-GS-FS
+	std::vector<MaxVaryingsParam> tests
+	{
+		{ pipelineConstructionType, VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_VERTEX_BIT },										// Test max vertex outputs: VS-FS
+		{ pipelineConstructionType, VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_FRAGMENT_BIT },									// Test max FS inputs: VS-FS
+		{ pipelineConstructionType, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT },	// Test max tess evaluation outputs: VS-TCS-TES-FS
+		{ pipelineConstructionType, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_FRAGMENT_BIT },					// Test fragment inputs: VS-TCS-TES-FS
+		{ pipelineConstructionType, VK_SHADER_STAGE_GEOMETRY_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_GEOMETRY_BIT },									// Test geometry outputs: VS-GS-FS
+		{ pipelineConstructionType, VK_SHADER_STAGE_GEOMETRY_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_FRAGMENT_BIT },									// Test fragment inputs: VS-GS-FS
+	};
 
 	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "max_varyings", "Max Varyings tests"));
 
-	for (deUint32 testIndex = 0; testIndex < (deUint32)tests.size(); ++testIndex)
+	for (const auto& testParams : tests)
 	{
-		MaxVaryingsParam testParams = tests[testIndex];
 		addFunctionCaseWithPrograms(group.get(), generateTestName(testParams), generateTestDescription(),
 									supportedCheck, initPrograms, test, testParams);
 	}

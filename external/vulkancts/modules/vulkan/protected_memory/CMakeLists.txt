@@ -4,7 +4,7 @@ include_directories(
 	${DEQP_INL_DIR}
 	)
 
-set(DEQP_VK_PROTECTED_MEMORY_SRCS
+set(DEQP_VK_VKSC_PROTECTED_MEMORY_SRCS
 	vktProtectedMemContext.hpp
 	vktProtectedMemContext.cpp
 	vktProtectedMemUtils.cpp
@@ -35,24 +35,25 @@ set(DEQP_VK_PROTECTED_MEMORY_SRCS
 	vktProtectedMemStorageBufferTests.hpp
 	vktProtectedMemShaderImageAccessTests.cpp
 	vktProtectedMemShaderImageAccessTests.hpp
-	vktProtectedMemWsiSwapchainTests.cpp
-	vktProtectedMemWsiSwapchainTests.hpp
-	vktProtectedMemYCbCrConversionTests.cpp
-	vktProtectedMemYCbCrConversionTests.hpp
 	vktProtectedMemWorkgroupStorageTests.cpp
 	vktProtectedMemWorkgroupStorageTests.hpp
 	vktProtectedMemTests.cpp
 	vktProtectedMemTests.hpp
 	vktProtectedMemStackTests.cpp
 	vktProtectedMemStackTests.hpp
+	vktProtectedMemYCbCrConversionTests.cpp
+	vktProtectedMemYCbCrConversionTests.hpp
 	)
 
-set(DEQP_VK_PROTECTED_MEMORY_LIBS
-	tcutil
-	vkutil
+set(DEQP_VK_PROTECTED_MEMORY_SRCS
+	vktProtectedMemWsiSwapchainTests.cpp
+	vktProtectedMemWsiSwapchainTests.hpp
 	)
 
 PCH(DEQP_VK_PROTECTED_MEMORY_SRCS ../pch.cpp)
 
-add_library(deqp-vk-protected-memory STATIC ${DEQP_VK_PROTECTED_MEMORY_SRCS})
-target_link_libraries(deqp-vk-protected-memory ${DEQP_VK_PROTECTED_MEMORY_LIBS})
+add_library(deqp-vk-protected-memory STATIC ${DEQP_VK_VKSC_PROTECTED_MEMORY_SRCS} ${DEQP_VK_PROTECTED_MEMORY_SRCS})
+target_link_libraries(deqp-vk-protected-memory tcutil vkutil)
+
+add_library(deqp-vksc-protected-memory STATIC ${DEQP_VK_VKSC_PROTECTED_MEMORY_SRCS})
+target_link_libraries(deqp-vksc-protected-memory PUBLIC deqp-vksc-util tcutil vkscutil)

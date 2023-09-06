@@ -45,7 +45,7 @@ de::MovePtr<vk::wsi::Display> NativeObjects::createDisplay	(const vk::Platform&	
 	}
 	catch (const tcu::NotSupportedError& e)
 	{
-		if (vk::isExtensionSupported(supportedExtensions, vk::RequiredExtension(vk::wsi::getExtensionName(wsiType))) &&
+		if (vk::isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(vk::wsi::getExtensionName(wsiType))) &&
 			platform.hasDisplay(wsiType))
 		{
 			// If VK_KHR_{platform}_surface was supported, vk::Platform implementation

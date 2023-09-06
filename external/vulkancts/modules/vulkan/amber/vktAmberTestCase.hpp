@@ -49,15 +49,17 @@ class AmberTestInstance : public TestInstance
 {
 public:
 	AmberTestInstance	(Context&		context,
-						 amber::Recipe*	recipe)
-		: TestInstance(context), m_recipe(recipe)
+						 amber::Recipe*	recipe,
+						 vk::VkDevice	customDevice)
+		: TestInstance(context), m_recipe(recipe), m_customDevice(customDevice)
 	{
 	}
 
 	virtual tcu::TestStatus iterate (void);
 
 private:
-	amber::Recipe* m_recipe;
+	amber::Recipe*	m_recipe;
+	vk::VkDevice	m_customDevice;
 };
 
 class AmberTestCase : public TestCase
@@ -77,7 +79,7 @@ public:
 	// determine if the test should be supported:
 	//  - If any of the extensions registered via |addRequirement| is not
 	//    supported then throw a NotSupported exception.
-	//  - Otherwise, we do a secondary sanity check depending on code inside
+	//  - Otherwise, we do a secondary quick check depending on code inside
 	//    Amber itself: if the Amber test says it is not supported, then
 	//    throw an internal error exception.
 	// A function pointer for a custom checkSupport function can also be
@@ -105,7 +107,7 @@ public:
 
 	tcu::TestRunnerType getRunnerType (void) const override { return tcu::RUNNERTYPE_AMBER; }
 
-private:
+protected:
 	bool parse (const std::string& readFilename);
 
 	amber::Recipe*								m_recipe;

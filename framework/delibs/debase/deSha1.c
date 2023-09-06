@@ -169,10 +169,21 @@ void deSha1Stream_finalize (deSha1Stream* stream, deSha1* hash)
 	{
 		const deUint64 spaceLeftInChunk = CHUNK_BYTE_SIZE - (stream->size % CHUNK_BYTE_SIZE);
 
+		/* The stream must be a multiple of 512 bits (CHUNK_BYTE_SIZE) and is terminated by a single bit set to 1,
+		 * then 7 or more 0 bits, then finally the last 64 bits are the message length. */
+
 		if (spaceLeftInChunk >= 1 + sizeof(lengthData))
+		{
+			/* There's room for a 0x80 byte and zero or more 0x0 padding bytes. */
 			deSha1Stream_process(stream, (size_t)(spaceLeftInChunk - sizeof(lengthData)), padding);
+		}
 		else
-			deSha1Stream_process(stream, (size_t)(CHUNK_BYTE_SIZE - (sizeof(lengthData)) - spaceLeftInChunk), padding);
+		{
+			/* 0x80 and the message length won't fit in this chunk, we need to add a whole new chunk of zero padding,
+			 * which will include the message length at the end. */
+			deSha1Stream_process(stream, (size_t)(spaceLeftInChunk), padding);
+			deSha1Stream_process(stream, (size_t)(CHUNK_BYTE_SIZE - sizeof(lengthData)), padding + spaceLeftInChunk);
+		}
 	}
 
 	deSha1Stream_process(stream, sizeof(lengthData), lengthData);
@@ -273,6 +284,9 @@ void deSha1_selfTest (void)
 		{ "aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d", "hello" },
 		{ "ec1919e856540f42bd0e6f6c1ffe2fbd73419975",
 			"Cherry is a browser-based GUI for controlling deqp test runs and analysing the test results."
+		},
+		{ "27a4485e4fe6dff5bcc1cc3093639e27c65c55c0",
+			"This message has exactly 56 characters and that's tricky"
 		}
 	};
 

@@ -477,11 +477,23 @@ private:
 /*--------------------------------------------------------------------*//*!
  * \brief VK_EXT_image_view_min_lod
  *//*--------------------------------------------------------------------*/
+enum ImageViewMinLodMode
+{
+	IMAGEVIEWMINLODMODE_PREFERRED,		//!< use image view min lod as-is
+	IMAGEVIEWMINLODMODE_ALTERNATIVE,	//!< use floor of image view min lod, as in 'Image Level(s) Selection' in VK spec (v 1.3.206)
+};
+
+struct ImageViewMinLod
+{
+	float				value;
+	ImageViewMinLodMode	mode;
+};
+
 struct ImageViewMinLodParams
 {
-	int		baseLevel;
-	float	minLod;
-	bool	intTexCoord;
+	int				baseLevel;
+	ImageViewMinLod	minLod;
+	bool			intTexCoord;
 };
 
 Vec4	sampleLevelArray1D				(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, int level, float lod);

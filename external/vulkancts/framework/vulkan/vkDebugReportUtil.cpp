@@ -30,6 +30,8 @@
 namespace vk
 {
 
+#ifndef CTS_USES_VULKANSC
+
 namespace
 {
 
@@ -172,10 +174,17 @@ Move<VkDebugReportCallbackEXT> DebugReportRecorder::createCallback (const Instan
 	return createDebugReportCallbackEXT(vki, instance, &createInfo);
 }
 
+#endif // CTS_USES_VULKANSC
+
 bool isDebugReportSupported (const PlatformInterface& vkp)
 {
-	return isExtensionSupported(enumerateInstanceExtensionProperties(vkp, DE_NULL),
+#ifndef CTS_USES_VULKANSC
+	return isExtensionStructSupported(enumerateInstanceExtensionProperties(vkp, DE_NULL),
 								RequiredExtension("VK_EXT_debug_report"));
+#else // CTS_USES_VULKANSC
+	DE_UNREF(vkp);
+	return false;
+#endif // CTS_USES_VULKANSC
 }
 
 } // vk

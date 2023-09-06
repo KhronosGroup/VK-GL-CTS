@@ -36,7 +36,7 @@ from build_apk import parsePackageName
 # Import from <root>/scripts
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from build.common import *
+from ctsbuild.common import *
 
 class Device:
 	def __init__(self, serial, product, model, device):

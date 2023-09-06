@@ -593,6 +593,13 @@ TestStatus TextureFilteringTestInstance::runTest (void)
 										<< TestLog::EndMessage;
 
     startTime = deGetMicroseconds();
+
+#ifdef CTS_USES_VULKANSC
+	// skip costly verification in main process
+	if (!m_context.getTestContext().getCommandLine().isSubProcess())
+		return TestStatus::pass("Success");
+#endif // CTS_USES_VULKANSC
+
 	TestStatus result = verify();
     endTime = deGetMicroseconds();
 

@@ -25,6 +25,7 @@
 #include "es3fFboTestCase.hpp"
 #include "es3fFboTestUtil.hpp"
 #include "gluTextureUtil.hpp"
+#include "gluContextInfo.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuVectorUtil.hpp"
 #include "tcuTestLog.hpp"
@@ -458,9 +459,10 @@ private:
 class BlitDepthStencilCase : public FboTestCase
 {
 public:
-	BlitDepthStencilCase (Context& context, const char* name, const char* desc, deUint32 format, deUint32 srcBuffers, const IVec2& srcSize, const IVec4& srcRect, deUint32 dstBuffers, const IVec2& dstSize, const IVec4& dstRect, deUint32 copyBuffers)
+	BlitDepthStencilCase (Context& context, const char* name, const char* desc, deUint32 depthFormat, deUint32 stencilFormat, deUint32 srcBuffers, const IVec2& srcSize, const IVec4& srcRect, deUint32 dstBuffers, const IVec2& dstSize, const IVec4& dstRect, deUint32 copyBuffers)
 		: FboTestCase	(context, name, desc)
-		, m_format		(format)
+		, m_depthFormat	(depthFormat)
+		, m_stencilFormat(stencilFormat)
 		, m_srcBuffers	(srcBuffers)
 		, m_srcSize		(srcSize)
 		, m_srcRect		(srcRect)
@@ -474,7 +476,13 @@ public:
 protected:
 	void preCheck (void)
 	{
-		checkFormatSupport(m_format);
+		if (m_depthFormat != GL_NONE)
+			checkFormatSupport(m_depthFormat);
+		if (m_stencilFormat != GL_NONE)
+			checkFormatSupport(m_stencilFormat);
+		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_separate_depth_stencil")
+				&& m_depthFormat != GL_NONE && m_stencilFormat != GL_NONE)
+			throw tcu::NotSupportedError("Separate depth and stencil buffers not supported");
 	}
 
 	void render (tcu::Surface& dst)
@@ -493,8 +501,10 @@ protected:
 		deUint32				dstFbo				= 0;
 		deUint32				srcColorRbo			= 0;
 		deUint32				dstColorRbo			= 0;
-		deUint32				srcDepthStencilRbo	= 0;
-		deUint32				dstDepthStencilRbo	= 0;
+		deUint32				srcDepthRbo			= 0;
+		deUint32				srcStencilRbo		= 0;
+		deUint32				dstDepthRbo			= 0;
+		deUint32				dstStencilRbo		= 0;
 
 		// setup shaders
 		gradShader.setGradient(*getCurrentContext(), gradShaderID, Vec4(0.0f), Vec4(1.0f));
@@ -505,27 +515,37 @@ protected:
 		{
 			deUint32&		fbo				= ndx ? dstFbo : srcFbo;
 			deUint32&		colorRbo		= ndx ? dstColorRbo : srcColorRbo;
-			deUint32&		depthStencilRbo	= ndx ? dstDepthStencilRbo : srcDepthStencilRbo;
+			deUint32&		depthRbo		= ndx ? dstDepthRbo : srcDepthRbo;
+			deUint32&		stencilRbo		= ndx ? dstStencilRbo : srcStencilRbo;
 			deUint32		bufs			= ndx ? m_dstBuffers : m_srcBuffers;
 			const IVec2&	size			= ndx ? m_dstSize : m_srcSize;
 
 			glGenFramebuffers(1, &fbo);
 			glGenRenderbuffers(1, &colorRbo);
-			glGenRenderbuffers(1, &depthStencilRbo);
 
 			glBindRenderbuffer(GL_RENDERBUFFER, colorRbo);
 			glRenderbufferStorage(GL_RENDERBUFFER, colorFormat, size.x(), size.y());
 
-			glBindRenderbuffer(GL_RENDERBUFFER, depthStencilRbo);
-			glRenderbufferStorage(GL_RENDERBUFFER, m_format, size.x(), size.y());
+			if (m_depthFormat != GL_NONE) {
+				glGenRenderbuffers(1, &depthRbo);
+				glBindRenderbuffer(GL_RENDERBUFFER, depthRbo);
+				glRenderbufferStorage(GL_RENDERBUFFER, m_depthFormat, size.x(), size.y());
+			}
+
+			if (m_stencilFormat != GL_NONE) {
+				glGenRenderbuffers(1, &stencilRbo);
+				glBindRenderbuffer(GL_RENDERBUFFER, stencilRbo);
+				glRenderbufferStorage(GL_RENDERBUFFER, m_stencilFormat, size.x(), size.y());
+			}
 
 			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, colorRbo);
 
 			if (bufs & GL_DEPTH_BUFFER_BIT)
-				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthStencilRbo);
+				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRbo);
 			if (bufs & GL_STENCIL_BUFFER_BIT)
-				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthStencilRbo);
+				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER,
+					m_stencilFormat == GL_NONE? depthRbo : stencilRbo);
 
 			checkError();
 			checkFramebufferStatus(GL_FRAMEBUFFER);
@@ -598,7 +618,8 @@ protected:
 	}
 
 private:
-	deUint32	m_format;
+	deUint32	m_depthFormat;
+	deUint32	m_stencilFormat;
 	deUint32	m_srcBuffers;
 	IVec2		m_srcSize;
 	IVec4		m_srcRect;
@@ -922,11 +943,17 @@ void FramebufferBlitTests::init (void)
 
 	static const deUint32 depthStencilFormats[] =
 	{
+		GL_NONE,
 		GL_DEPTH_COMPONENT32F,
 		GL_DEPTH_COMPONENT24,
 		GL_DEPTH_COMPONENT16,
 		GL_DEPTH32F_STENCIL8,
-		GL_DEPTH24_STENCIL8,
+		GL_DEPTH24_STENCIL8
+	};
+
+	static const deUint32 stencilFormats[] =
+	{
+		GL_NONE,
 		GL_STENCIL_INDEX8
 	};
 
@@ -1044,22 +1071,52 @@ void FramebufferBlitTests::init (void)
 		tcu::TestCaseGroup* depthStencilGroup = new tcu::TestCaseGroup(m_testCtx, "depth_stencil", "Depth and stencil blits");
 		addChild(depthStencilGroup);
 
-		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(depthStencilFormats); fmtNdx++)
+		for (int dFmtNdx = 0; dFmtNdx < DE_LENGTH_OF_ARRAY(depthStencilFormats); dFmtNdx++)
 		{
-			deUint32			format		= depthStencilFormats[fmtNdx];
-			tcu::TextureFormat	texFmt		= glu::mapGLInternalFormat(format);
-			string				fmtName		= getFormatName(format);
-			bool				depth		= texFmt.order == tcu::TextureFormat::D || texFmt.order == tcu::TextureFormat::DS;
-			bool				stencil		= texFmt.order == tcu::TextureFormat::S || texFmt.order == tcu::TextureFormat::DS;
-			deUint32			buffers		= (depth ? GL_DEPTH_BUFFER_BIT : 0) | (stencil ? GL_STENCIL_BUFFER_BIT : 0);
-
-			depthStencilGroup->addChild(new BlitDepthStencilCase(m_context, (fmtName + "_basic").c_str(), "", format, buffers, IVec2(128, 128), IVec4(0, 0, 128, 128), buffers, IVec2(128, 128), IVec4(0, 0, 128, 128), buffers));
-			depthStencilGroup->addChild(new BlitDepthStencilCase(m_context, (fmtName + "_scale").c_str(), "", format, buffers, IVec2(127, 119), IVec4(10, 30, 100, 70), buffers, IVec2(111, 130), IVec4(20, 5, 80, 130), buffers));
-
-			if (depth && stencil)
+			for (int sFmtNdx = 0; sFmtNdx < DE_LENGTH_OF_ARRAY(stencilFormats); sFmtNdx++)
 			{
-				depthStencilGroup->addChild(new BlitDepthStencilCase(m_context, (fmtName + "_depth_only").c_str(),		"", format, buffers, IVec2(128, 128), IVec4(0, 0, 128, 128), buffers, IVec2(128, 128), IVec4(0, 0, 128, 128), GL_DEPTH_BUFFER_BIT));
-				depthStencilGroup->addChild(new BlitDepthStencilCase(m_context, (fmtName + "_stencil_only").c_str(),	"", format, buffers, IVec2(128, 128), IVec4(0, 0, 128, 128), buffers, IVec2(128, 128), IVec4(0, 0, 128, 128), GL_STENCIL_BUFFER_BIT));
+				deUint32	depthFormat		= depthStencilFormats[dFmtNdx];
+				deUint32	stencilFormat	= stencilFormats[sFmtNdx];
+				bool		depth			= false;
+				bool		stencil			= false;
+				string		fmtName;
+
+				if (depthFormat != GL_NONE)
+				{
+					tcu::TextureFormat info = glu::mapGLInternalFormat(depthFormat);
+
+					fmtName += getFormatName(depthFormat);
+					if (info.order == tcu::TextureFormat::D || info.order == tcu::TextureFormat::DS)
+						depth = true;
+					if (info.order == tcu::TextureFormat::DS)
+						stencil = true;
+				}
+
+				if (stencilFormat != GL_NONE)
+				{
+					// Do not try separate stencil along with a combined depth/stencil
+					if (stencil)
+						continue;
+
+					if (depthFormat != GL_NONE)
+						fmtName += "_";
+					fmtName += getFormatName(stencilFormat);
+					stencil = true;
+				}
+
+				if (!stencil && !depth)
+					continue;
+
+				deUint32 buffers = (depth ? GL_DEPTH_BUFFER_BIT : 0) | (stencil ? GL_STENCIL_BUFFER_BIT : 0);
+
+				depthStencilGroup->addChild(new BlitDepthStencilCase(m_context, (fmtName + "_basic").c_str(), "", depthFormat, stencilFormat, buffers, IVec2(128, 128), IVec4(0, 0, 128, 128), buffers, IVec2(128, 128), IVec4(0, 0, 128, 128), buffers));
+				depthStencilGroup->addChild(new BlitDepthStencilCase(m_context, (fmtName + "_scale").c_str(), "", depthFormat, stencilFormat, buffers, IVec2(127, 119), IVec4(10, 30, 100, 70), buffers, IVec2(111, 130), IVec4(20, 5, 80, 130), buffers));
+
+				if (depth && stencil)
+				{
+					depthStencilGroup->addChild(new BlitDepthStencilCase(m_context, (fmtName + "_depth_only").c_str(),		"", depthFormat, stencilFormat, buffers, IVec2(128, 128), IVec4(0, 0, 128, 128), buffers, IVec2(128, 128), IVec4(0, 0, 128, 128), GL_DEPTH_BUFFER_BIT));
+					depthStencilGroup->addChild(new BlitDepthStencilCase(m_context, (fmtName + "_stencil_only").c_str(),	"", depthFormat, stencilFormat, buffers, IVec2(128, 128), IVec4(0, 0, 128, 128), buffers, IVec2(128, 128), IVec4(0, 0, 128, 128), GL_STENCIL_BUFFER_BIT));
+				}
 			}
 		}
 	}

@@ -191,7 +191,7 @@ void SpvAsmFloatControlsExtensionlessCase::checkSupport (Context& context) const
 	}
 	else
 	{
-		if (!context.contextSupports(vk::ApiVersion(1, 2, 0)))
+		if (!context.contextSupports(vk::ApiVersion(0, 1, 2, 0)))
 			TCU_THROW(NotSupportedError, "Test requires Vulkan 1.2");
 	}
 

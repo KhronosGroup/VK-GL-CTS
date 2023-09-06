@@ -27,13 +27,14 @@
 
 #include "vkDefs.hpp"
 #include "vktTestCase.hpp"
+#include "vktDrawGroupParams.hpp"
 
 namespace vkt
 {
 namespace Draw
 {
 
-tcu::TestCaseGroup*	createDifferingInterpolationTests (tcu::TestContext& testCtx, bool useDynamicRendering);
+tcu::TestCaseGroup*	createDifferingInterpolationTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams);
 
 } // Draw
 } // vkt

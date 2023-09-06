@@ -690,7 +690,7 @@ void TrinaryMinMaxCase::initPrograms (vk::SourceCollections& programCollection) 
 		;
 
 	const tcu::StringTemplate		shaderTemplate	{shaderStr.str()};
-	const vk::SpirVAsmBuildOptions	buildOptions	{VK_MAKE_VERSION(1, 2, 0), vk::SPIRV_VERSION_1_5};
+	const vk::SpirVAsmBuildOptions	buildOptions	{ VK_MAKE_API_VERSION(0, 1, 2, 0), vk::SPIRV_VERSION_1_5};
 
 	programCollection.spirvAsmSources.add("comp", &buildOptions) << shaderTemplate.specialize(getSpirVReplacements());
 }
@@ -719,7 +719,7 @@ tcu::TestStatus TrinaryMinMaxInstance::iterate (void)
 
 	vk::BufferWithMemory	inputBuffer		{vkd, device, allocator, inputBufferInfo,	vk::MemoryRequirement::HostVisible};
 	vk::BufferWithMemory	outputBuffer	{vkd, device, allocator, outputBufferInfo,	vk::MemoryRequirement::HostVisible};
-	std::unique_ptr<char[]>	referenceBuffer	{new char[kOutputBufferSize]};
+	std::unique_ptr<char[]>	referenceBuffer	{new char[static_cast<size_t>(kOutputBufferSize)]};
 
 	// Fill buffers with initial contents.
 	auto& inputAlloc	= inputBuffer.getAllocation();

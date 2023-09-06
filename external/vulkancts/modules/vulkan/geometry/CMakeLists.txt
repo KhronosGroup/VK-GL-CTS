@@ -24,12 +24,10 @@ set(DEQP_VK_GEOMETRY_SRCS
 	vktGeometryTestsUtil.hpp
 	)
 
-set(DEQP_VK_GEOMETRY_LIBS
-	tcutil
-	vkutil
-	)
-
 PCH(DEQP_VK_GEOMETRY_SRCS ../pch.cpp)
 
 add_library(deqp-vk-geometry STATIC ${DEQP_VK_GEOMETRY_SRCS})
-target_link_libraries(deqp-vk-geometry ${DEQP_VK_GEOMETRY_LIBS})
+target_link_libraries(deqp-vk-geometry tcutil vkutil)
+
+add_library(deqp-vksc-geometry STATIC ${DEQP_VK_GEOMETRY_SRCS})
+target_link_libraries(deqp-vksc-geometry PUBLIC deqp-vksc-util tcutil vkscutil)

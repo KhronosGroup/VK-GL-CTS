@@ -57,6 +57,12 @@ public:
 		m_view->setSize(newSize.x(), newSize.y());
 	}
 
+	void setMinimized(bool minimized)
+	{
+		DE_UNREF(minimized);
+		TCU_THROW(NotSupportedError, "Minimized on osx is not implemented");
+	}
+
 private:
 	UniquePtr<osx::MetalView> m_view;
 };
@@ -79,8 +85,8 @@ public:
 class VulkanLibrary : public vk::Library
 {
 public:
-	VulkanLibrary (void)
-		: m_library	("libvulkan.dylib")
+	VulkanLibrary (const char* libraryPath)
+		: m_library	(libraryPath != DE_NULL ? libraryPath : "libvulkan.dylib")
 		, m_driver	(m_library)
 	{
 	}
@@ -119,9 +125,9 @@ bool VulkanPlatform::hasDisplay (vk::wsi::Type wsiType)  const
 
 	return true;
 }
-vk::Library* VulkanPlatform::createLibrary (void) const
+vk::Library* VulkanPlatform::createLibrary (const char* libraryPath) const
 {
-	return new VulkanLibrary();
+	return new VulkanLibrary(libraryPath);
 }
 
 void VulkanPlatform::describePlatform (std::ostream& dst) const

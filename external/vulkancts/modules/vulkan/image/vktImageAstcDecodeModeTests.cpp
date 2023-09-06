@@ -30,6 +30,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 #include "tcuAstcUtil.hpp"
 #include "tcuTextureUtil.hpp"
@@ -201,8 +202,8 @@ TestStatus BasicComputeTestInstance::iterate (void)
 	const VkDeviceSize				bufferSizeUncompressed	= getImageSizeBytes(IVec3((int)extentUnCompressed.width, (int)extentUnCompressed.height, (int)extentUnCompressed.depth), m_parameters.resultFormat);
 	VkBufferCreateInfo				compressedBufferCI		= makeBufferCreateInfo(bufferSizeCompresed, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 	VkBufferCreateInfo				uncompressedBufferCI	= makeBufferCreateInfo(bufferSizeUncompressed, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-	Buffer							inBuffer				(vk, device, allocator, compressedBufferCI, MemoryRequirement::HostVisible);
-	Buffer							resultBuffer			(vk, device, allocator, uncompressedBufferCI, MemoryRequirement::HostVisible);
+	BufferWithMemory				inBuffer				(vk, device, allocator, compressedBufferCI, MemoryRequirement::HostVisible);
+	BufferWithMemory				resultBuffer			(vk, device, allocator, uncompressedBufferCI, MemoryRequirement::HostVisible);
 	Move<VkSampler>					sampler;
 
 	// generate data for compressed image and copy it to in buffer

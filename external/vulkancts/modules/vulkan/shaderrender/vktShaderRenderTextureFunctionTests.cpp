@@ -29,10 +29,14 @@
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuCommandLine.hpp"
 #include "glwEnums.hpp"
 #include "deMath.h"
+#include "vkBarrierUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkObjUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include <limits>
 
 namespace vkt
@@ -721,12 +725,17 @@ static void checkMutableComparisonSamplersSupport(Context& context, const Textur
 	// when compare mode is not none then ShaderRenderCaseInstance::createSamplerUniform
 	// uses mapSampler utill from vkImageUtil that sets compareEnable to true
 	// for portability this needs to be under feature flag
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 	   !context.getPortabilitySubsetFeatures().mutableComparisonSamplers &&
 	   (textureSpec.sampler.compare != tcu::Sampler::COMPAREMODE_NONE))
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: mutableComparisonSamplers are not supported by this implementation");
 	}
+#else
+	DE_UNREF(context);
+	DE_UNREF(textureSpec);
+#endif // CTS_USES_VULKANSC
 }
 
 class ShaderTextureFunctionInstance : public ShaderRenderCaseInstance
@@ -1472,7 +1481,7 @@ using TestMode = deUint32;
 enum QueryLodTestModes
 {
 	QLODTM_DEFAULT			= 0,		// uv coords have different values
-	QLODTM_ZERO_UV_WIDTH				// all uv coords are 0; there were implementations that incorrectly returned 0 in that case instead of -22 or less
+	QLODTM_ZERO_UV_WIDTH				// all uv coords are 0; there were implementations that incorrectly returned 0 in that case instead of -maxSamplerLodBias or less
 };
 
 class TextureQueryInstance : public ShaderRenderCaseInstance
@@ -1784,6 +1793,13 @@ TextureSizeInstance::TextureSizeInstance (Context&					context,
 {
 	deMemset(&m_testSize, 0, sizeof(TestSize));
 
+#ifdef CTS_USES_VULKANSC
+	const VkDevice			vkDevice			= getDevice();
+	const DeviceInterface&	vk					= getDeviceInterface();
+	const deUint32			queueFamilyIndex	= getUniversalQueueFamilyIndex();
+	m_externalCommandPool						= de::SharedPtr<Unique<VkCommandPool>>(new vk::Unique<VkCommandPool>(createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex)));
+#endif // CTS_USES_VULKANSC
+
 	m_renderSize = tcu::UVec2(1, 1);
 }
 
@@ -1930,9 +1946,14 @@ tcu::TestStatus TextureSizeInstance::iterate (void)
 		// set current test size
 		m_testSize = testSizes[m_iterationCounter - 1];
 
-		if (!testTextureSize())
-			return tcu::TestStatus::fail("Got unexpected result");
-
+		bool result = testTextureSize();
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+		{
+			if (!result)
+				return tcu::TestStatus::fail("Got unexpected result");
+		}
 		return tcu::TestStatus::incomplete();
 	}
 }
@@ -2156,9 +2177,14 @@ tcu::TestStatus TextureSizeMSInstance::iterate (void)
 
 	if (m_iterationCounter++ <  m_iterations.size() * DE_LENGTH_OF_ARRAY(testSizes))
 	{
-		if (!testSize(m_iterations[sampleIdx], testSizes[dimIdx]))
-			return tcu::TestStatus::fail("Got unexpected result");
-
+		bool result = testSize(m_iterations[sampleIdx], testSizes[dimIdx]);
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+		{
+			if (!result)
+				return tcu::TestStatus::fail("Got unexpected result");
+		}
 		return tcu::TestStatus::incomplete();
 	}
 	else
@@ -2369,17 +2395,22 @@ tcu::TestStatus TextureSamplesInstance::iterate (void)
 		const tcu::TextureLevel&	result				= getResultImage();
 		tcu::IVec4					output				= result.getAccess().getPixelInt(0, 0);
 
-		if (output.x() == (int)m_iterations[m_iterationCounter])
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 		{
-			// success
-			log << tcu::TestLog::Message << "Passed" << tcu::TestLog::EndMessage;
-		}
-		else
-		{
-			// failure
-			log << tcu::TestLog::Message << "Result: " << output.x() << tcu::TestLog::EndMessage;
-			log << tcu::TestLog::Message << "Failed" << tcu::TestLog::EndMessage;
-			return tcu::TestStatus::fail("Got unexpected result");
+			if (output.x() == (int)m_iterations[m_iterationCounter])
+			{
+				// success
+				log << tcu::TestLog::Message << "Passed" << tcu::TestLog::EndMessage;
+			}
+			else
+			{
+				// failure
+				log << tcu::TestLog::Message << "Result: " << output.x() << tcu::TestLog::EndMessage;
+				log << tcu::TestLog::Message << "Failed" << tcu::TestLog::EndMessage;
+				return tcu::TestStatus::fail("Got unexpected result");
+			}
 		}
 
 		m_iterationCounter++;
@@ -2441,7 +2472,14 @@ TextureQueryLevelsInstance::TextureQueryLevelsInstance (Context&				context,
 {
 	deMemset(&m_testSize, 0, sizeof(TestSize));
 
-	m_renderSize = tcu::UVec2(1, 1);
+	m_renderSize								= tcu::UVec2(1, 1);
+
+#ifdef CTS_USES_VULKANSC
+	const VkDevice			vkDevice			= getDevice();
+	const DeviceInterface&	vk					= getDeviceInterface();
+	const deUint32			queueFamilyIndex	= getUniversalQueueFamilyIndex();
+	m_externalCommandPool						= de::SharedPtr<Unique<VkCommandPool>>(new vk::Unique<VkCommandPool>(createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex)));
+#endif // CTS_USES_VULKANSC
 }
 
 TextureQueryLevelsInstance::~TextureQueryLevelsInstance (void)
@@ -2515,9 +2553,14 @@ tcu::TestStatus TextureQueryLevelsInstance::iterate (void)
 		// set current test size
 		m_testSize = testSizes[m_iterationCounter - 1];
 
-		if (!testTextureLevels())
-			return tcu::TestStatus::fail("Got unexpected result");
-
+		bool result = testTextureLevels();
+#ifdef CTS_USES_VULKANSC
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+		{
+			if (!result)
+				return tcu::TestStatus::fail("Got unexpected result");
+		}
 		return tcu::TestStatus::incomplete();
 	}
 }
@@ -2737,14 +2780,14 @@ TextureQueryLodInstance::TextureQueryLodInstance (Context&					context,
 		// setup same texture coordinates that will result in pmax
 		// beeing 0 and as a result lambda being -inf; on most
 		// implementations lambda is computed as fixed-point, so
-		// infinities can't be returned, instead -22 or less
+		// infinities can't be returned, instead -maxSamplerLodBias or less
 		// should be returned
 
 		m_minCoord = Vec4(0.0f, 0.0f, 1.0f, 0.0f);
 		m_maxCoord = Vec4(0.0f, 0.0f, 1.0f, 0.0f);
 
 		m_lodBounds[0]		= -std::numeric_limits<float>::infinity();
-		m_lodBounds[1]		= -22.0f;
+		m_lodBounds[1]		= -context.getDeviceProperties().limits.maxSamplerLodBias;
 		m_levelBounds[0]	= 0.0f;
 		m_levelBounds[1]	= 0.0f;
 
@@ -3067,6 +3110,164 @@ void TextureQueryCase::initShaderSources (void)
 	m_fragShaderSource = frag.str();
 }
 
+namespace SpecialCases
+{
+using namespace vk;
+
+void textureSizeOOBPrograms(vk::SourceCollections& programCollection)
+{
+	programCollection.glslSources.add("comp") << glu::ComputeSource("#version 450\n"
+		"layout(local_size_x = 1) in;\n"
+		"layout(binding = 0) buffer InBuffer\n"
+		"{\n"
+		"  highp int lods[];\n"
+		"};\n"
+		"layout(binding = 1) buffer OutBuffer\n"
+		"{\n"
+		"  highp ivec2 results[];\n"
+		"};\n"
+		"layout(binding = 2) uniform sampler2D u_image;\n"
+		"void main(void)\n"
+		"{\n"
+		"  uint invocationNdx = gl_WorkGroupID.x;\n"
+		"  int lod = lods[invocationNdx];\n"
+		"  results[invocationNdx] = textureSize(u_image, lod);\n"
+		"}\n");
+}
+
+tcu::TestStatus textureSizeOOBTest(Context& context)
+{
+	// run few shader invocations, some invocations have in-bounds lod values, some out of bounds
+
+	const int		testedLods[]	= { 0, 10, 0, 1, 50, 0, 1, 2, -1, 0 };
+	const IVec2		imageSize		= { 16, 8 };
+
+	const DeviceInterface&	vk					= context.getDeviceInterface();
+	const VkDevice			device				= context.getDevice();
+	const VkQueue			queue				= context.getUniversalQueue();
+	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	Allocator&				allocator			= context.getDefaultAllocator();
+
+	// create input and output buffers
+	const VkDeviceSize		bufferSizeBytes		= sizeof(int) * DE_LENGTH_OF_ARRAY(testedLods) * 2;
+	VkBufferCreateInfo		bufferCreateInfo	= makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	BufferWithMemory		inBuffer			(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible);
+	BufferWithMemory		outBuffer			(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible);
+
+	// write data to input buffer
+	auto& inAlloc = inBuffer.getAllocation();
+	deMemcpy(inAlloc.getHostPtr(), testedLods, sizeof(int) * DE_LENGTH_OF_ARRAY(testedLods));
+	flushAlloc(vk, device, inAlloc);
+
+	// create image, we do not need to fill it with data for this test
+	const VkImageCreateInfo imageCreateInfo
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,							// VkStructureType			sType;
+		DE_NULL,														// const void*				pNext;
+		0u,																// VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,												// VkImageType				imageType;
+		VK_FORMAT_R8G8B8A8_UNORM,										// VkFormat					format;
+		vk::makeExtent3D(imageSize.x(), imageSize.y(), 1),				// VkExtent3D				extent;
+		3u,																// deUint32					mipLevels;
+		1u,																// deUint32					arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,											// VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,										// VkImageTiling			tiling;
+		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,	// VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,										// VkSharingMode			sharingMode;
+		0u,																// deUint32					queueFamilyIndexCount;
+		DE_NULL,														// const deUint32*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,										// VkImageLayout			initialLayout;
+	};
+	const ImageWithMemory			image				(vk, device, allocator, imageCreateInfo, MemoryRequirement::Any);
+	const VkImageSubresourceRange	subresourceRange	(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 3u, 0u, 1u));
+	const Unique<VkImageView>		imageView			(makeImageView(vk, device, *image, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, subresourceRange));
+
+	// create sampler with everything set to 0 as we wont use it in test
+	const VkSamplerCreateInfo		samplerCreateInfo	= initVulkanStructure();
+	const Unique<VkSampler>			sampler				(createSampler(vk, device, &samplerCreateInfo));
+
+	// create descriptors
+	const Unique<VkDescriptorPool> descriptorPool(DescriptorPoolBuilder()
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2u)
+		.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+	const Unique<VkDescriptorSetLayout> descriptorSetLayout(DescriptorSetLayoutBuilder()
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
+		.build(vk, device));
+
+	const Unique<VkDescriptorSet>	descriptorSet		(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+	const VkDescriptorBufferInfo	inDescriptorInfo	= makeDescriptorBufferInfo(*inBuffer, 0ull, bufferSizeBytes);
+	const VkDescriptorBufferInfo	outDescriptorInfo	= makeDescriptorBufferInfo(*outBuffer, 0ull, bufferSizeBytes);
+	const VkDescriptorImageInfo		imageDescriptorInfo	= makeDescriptorImageInfo(*sampler, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+	DescriptorSetUpdateBuilder()
+		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inDescriptorInfo)
+		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outDescriptorInfo)
+		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(2u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageDescriptorInfo)
+		.update(vk, device);
+
+	// perform the computation
+	const Unique<VkShaderModule>	shaderModule	(createShaderModule(vk, device, context.getBinaryCollection().get("comp"), 0u));
+	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout(vk, device, *descriptorSetLayout));
+	const Unique<VkPipeline>		pipeline		(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
+	const VkImageMemoryBarrier		layoutBarrier	(makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, *image, subresourceRange));
+	const VkBufferMemoryBarrier		outBarrier		(makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *outBuffer, 0ull, bufferSizeBytes));
+	const Unique<VkCommandPool>		cmdPool			(makeCommandPool(vk, device, queueFamilyIndex));
+	const Unique<VkCommandBuffer>	cmdBuffer		(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+	// start recording commands
+	beginCommandBuffer(vk, *cmdBuffer);
+
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, DE_NULL, 0, DE_NULL, 1, &layoutBarrier);
+	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+	vk.cmdDispatch(*cmdBuffer, DE_LENGTH_OF_ARRAY(testedLods), 1, 1);
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, DE_NULL, 1, &outBarrier, 0, DE_NULL);
+
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	// validate the results
+	const Allocation& bufferAllocation = outBuffer.getAllocation();
+	invalidateAlloc(vk, device, bufferAllocation);
+
+	std::map<int, IVec2> expectedLodSize
+	{
+		{ 0, { 16, 8 } },
+		{ 1, {  8, 4 } },
+		{ 2, {  4, 2 } },
+	};
+	bool			testFailed	= false;
+	tcu::TestLog&	log			= context.getTestContext().getLog();
+	const int*		bufferPtr	= static_cast<int*>(bufferAllocation.getHostPtr());
+
+	for (deUint32 lodNdx = 0; lodNdx < DE_LENGTH_OF_ARRAY(testedLods); ++lodNdx)
+	{
+		const int returnedWidth		= bufferPtr[2 * lodNdx + 0];
+		const int returnedHeight	= bufferPtr[2 * lodNdx + 1];
+		const int usedLod			= testedLods[lodNdx];
+
+		if ((usedLod >= 0) && (usedLod < 3))
+		{
+			const auto& expectedSize = expectedLodSize[usedLod];
+			if ((returnedWidth != expectedSize.x()) || (returnedHeight != expectedSize.y()))
+			{
+				log << tcu::TestLog::Message << "Wrong size for invocation " << lodNdx << ", expected " << expectedSize
+					<< " got (" << returnedWidth << ", " << returnedHeight << ")" << tcu::TestLog::EndMessage;
+				testFailed = true;
+			}
+		}
+	}
+
+	if (testFailed)
+		return tcu::TestStatus::fail("Fail");
+	return tcu::TestStatus::pass("Pass");
+}
+
+} // SpecialCases
+
 class ShaderTextureFunctionTests : public tcu::TestCaseGroup
 {
 public:
@@ -3112,6 +3313,8 @@ struct TexFuncCaseSpec
 	{ #NAME, TextureLookupSpec(FUNC, MINCOORD, MAXCOORD, USEBIAS, MINLOD, MAXLOD, tcu::Vec3(0.0f), tcu::Vec3(0.0f), tcu::Vec3(0.0f), tcu::Vec3(0.0f), USEOFFSET, OFFSET, true, LODCLAMP), TEXSPEC, EVALFUNC, FLAGS }
 #define GRADCLAMP_CASE_SPEC(NAME, FUNC, MINCOORD, MAXCOORD, MINDX, MAXDX, MINDY, MAXDY, USEOFFSET, OFFSET, LODCLAMP, TEXSPEC, EVALFUNC, FLAGS) \
 	{ #NAME, TextureLookupSpec(FUNC, MINCOORD, MAXCOORD, false, 0.0f, 0.0f, MINDX, MAXDX, MINDY, MAXDY, USEOFFSET, OFFSET, true, LODCLAMP), TEXSPEC, EVALFUNC, FLAGS }
+
+#ifndef CTS_USES_VULKANSC
 
 class SparseShaderTextureFunctionInstance : public ShaderTextureFunctionInstance
 {
@@ -3413,6 +3616,8 @@ void SparseShaderTextureFunctionCase::checkSupport(Context& context) const
 	checkMutableComparisonSamplersSupport(context, m_textureSpec);
 }
 
+#endif // CTS_USES_VULKANSC
+
 static void createCaseGroup (tcu::TestCaseGroup* parent, const char* groupName, const char* groupDesc, const TexFuncCaseSpec* cases, int numCases)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(parent->getTestContext(), groupName, groupDesc));
@@ -3420,23 +3625,29 @@ static void createCaseGroup (tcu::TestCaseGroup* parent, const char* groupName, 
 	for (int ndx = 0; ndx < numCases; ndx++)
 	{
 		std::string	name			= cases[ndx].name;
+#ifndef CTS_USES_VULKANSC
 		bool		sparseSupported	= !functionHasProj(cases[ndx].lookupSpec.function)		&&
 									  TEXTURETYPE_1D			!= cases[ndx].texSpec.type	&&
 									  TEXTURETYPE_1D_ARRAY		!= cases[ndx].texSpec.type	&&
 									  TEXTURETYPE_CUBE_ARRAY	!= cases[ndx].texSpec.type;
+#endif // CTS_USES_VULKANSC
 
 		if (cases[ndx].flags & VERTEX)
 		{
+#ifndef CTS_USES_VULKANSC
 			if (sparseSupported)
 				group->addChild(new SparseShaderTextureFunctionCase(parent->getTestContext(), ("sparse_" + name + "_vertex"),   "", cases[ndx].lookupSpec, cases[ndx].texSpec, cases[ndx].evalFunc, true ));
+#endif // CTS_USES_VULKANSC
 
 			group->addChild(new ShaderTextureFunctionCase(parent->getTestContext(), (name + "_vertex"),   "", cases[ndx].lookupSpec, cases[ndx].texSpec, cases[ndx].evalFunc, true ));
 		}
 
 		if (cases[ndx].flags & FRAGMENT)
 		{
+#ifndef CTS_USES_VULKANSC
 			if (sparseSupported)
 				group->addChild(new SparseShaderTextureFunctionCase(parent->getTestContext(), ("sparse_" + name + "_fragment"), "", cases[ndx].lookupSpec, cases[ndx].texSpec, cases[ndx].evalFunc, false));
+#endif // CTS_USES_VULKANSC
 
 			group->addChild(new ShaderTextureFunctionCase(parent->getTestContext(), (name + "_fragment"), "", cases[ndx].lookupSpec, cases[ndx].texSpec, cases[ndx].evalFunc, false));
 		}
@@ -4575,6 +4786,9 @@ void ShaderTextureFunctionTests::init (void)
 				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_vertex"),   "", caseSpec.samplerName, caseSpec.textureSpec, true,  QUERYFUNCTION_TEXTURESIZE));
 				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"), "", caseSpec.samplerName, caseSpec.textureSpec, false, QUERYFUNCTION_TEXTURESIZE));
 			}
+
+			// additional coverage for textureSize special cases
+			addFunctionCaseWithPrograms(group.get(), "oob_lod", "", SpecialCases::textureSizeOOBPrograms, SpecialCases::textureSizeOOBTest);
 
 			queryGroup->addChild(group.release());
 		}

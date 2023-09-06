@@ -11,10 +11,8 @@ set(DEQP_VK_DESCRIPTOR_INDEXING_SRCS
 	vktDescriptorSetsIndexingTestsUtils.cpp
 )
 
-set(DEQP_VK_DESCRIPTOR_INDEXING_LIBS
-	tcutil
-	vkutil
-)
-
 add_library(deqp-vk-descriptor-indexing STATIC ${DEQP_VK_DESCRIPTOR_INDEXING_SRCS})
-target_link_libraries(deqp-vk-descriptor-indexing ${DEQP_VK_DESCRIPTOR_INDEXING_LIBS})
+target_link_libraries(deqp-vk-descriptor-indexing tcutil vkutil)
+
+add_library(deqp-vksc-descriptor-indexing STATIC ${DEQP_VK_DESCRIPTOR_INDEXING_SRCS})
+target_link_libraries(deqp-vksc-descriptor-indexing PUBLIC deqp-vksc-util tcutil vkscutil)

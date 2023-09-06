@@ -36,49 +36,6 @@ namespace vkt
 {
 namespace compute
 {
-
-class Buffer
-{
-public:
-									Buffer			(const vk::DeviceInterface&		vk,
-													 const vk::VkDevice				device,
-													 vk::Allocator&					allocator,
-													 const vk::VkBufferCreateInfo&	bufferCreateInfo,
-													 const vk::MemoryRequirement	memoryRequirement);
-
-	const vk::VkBuffer&				get				(void) const { return *m_buffer; }
-	const vk::VkBuffer&				operator*		(void) const { return get(); }
-	vk::Allocation&					getAllocation	(void) const { return *m_allocation; }
-
-private:
-	de::MovePtr<vk::Allocation>		m_allocation;
-	vk::Move<vk::VkBuffer>			m_buffer;
-
-									Buffer			(const Buffer&);  // "deleted"
-	Buffer&							operator=		(const Buffer&);
-};
-
-class Image
-{
-public:
-									Image			(const vk::DeviceInterface&		vk,
-													 const vk::VkDevice				device,
-													 vk::Allocator&					allocator,
-													 const vk::VkImageCreateInfo&	imageCreateInfo,
-													 const vk::MemoryRequirement	memoryRequirement);
-
-	const vk::VkImage&				get				(void) const { return *m_image; }
-	const vk::VkImage&				operator*		(void) const { return get(); }
-	vk::Allocation&					getAllocation	(void) const { return *m_allocation; }
-
-private:
-	de::MovePtr<vk::Allocation>		m_allocation;
-	vk::Move<vk::VkImage>			m_image;
-
-									Image			(const Image&);  // "deleted"
-	Image&							operator=		(const Image&);
-};
-
 vk::VkBufferImageCopy			makeBufferImageCopy				(const vk::VkExtent3D						extent,
 																 const deUint32								arraySize);
 

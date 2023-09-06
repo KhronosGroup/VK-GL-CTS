@@ -669,6 +669,16 @@ IterateResult TestBase::iterate (void)
 				// An incomplete status is allowed, but not _this_ incomplete status.
 				fail("Framebuffer checked as incomplete, but with wrong status");
 		}
+		else if (fboStatus == GL_FRAMEBUFFER_UNSUPPORTED)
+		{
+			// The spec requires
+			//     "when both depth and stencil attachments are present,implementations are only required
+			//      to support framebuffer objects where both attachments refer to the same image."
+			//
+			// Thus, it is acceptable for an implementation returning GL_FRAMEBUFFER_UNSUPPORTED,
+			// and the test cannot be marked as failed.
+			pass();
+		}
 		else if (fboStatus != GL_FRAMEBUFFER_COMPLETE && reference.isFBOStatusValid(GL_FRAMEBUFFER_COMPLETE))
 			qualityWarning("Framebuffer object could have checked as complete but did not.");
 		else

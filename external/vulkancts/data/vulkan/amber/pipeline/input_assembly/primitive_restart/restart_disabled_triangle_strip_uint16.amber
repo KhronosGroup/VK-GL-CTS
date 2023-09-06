@@ -1,0 +1,92 @@
+#!amber
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+SHADER compute compute_shader GLSL
+#version 430
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) buffer block0
+{
+    vec4 pos[65536];
+};
+
+void main()
+{
+    pos[0] = vec4(-0.5, -0.5, 0.0, 1.0);
+    pos[1] = vec4(-0.5, 0.5, 0.0, 1.0);
+    pos[2] = vec4(0.5, 0.5, 0.0, 1.0);
+    pos[3] = pos[65535] = vec4(0.5, -0.5, 0.0, 1.0);
+}
+END
+
+SHADER vertex vert_shader PASSTHROUGH
+
+SHADER fragment frag_shader GLSL
+#version 430
+layout(location = 0) out vec4 color_out;
+void main()
+{
+  color_out = vec4(0.0, 1.0, 0.0, 1.0);
+}
+END
+
+BUFFER position DATA_TYPE vec4<float> SIZE 65536 FILL 0.0
+
+BUFFER indices DATA_TYPE uint16 DATA
+1 0 2 65535
+END
+
+BUFFER indices_ref DATA_TYPE uint16 DATA
+1 0 2 3
+END
+
+PIPELINE compute compute_pipeline
+  ATTACH compute_shader
+  FRAMEBUFFER_SIZE 64 64
+
+  BIND BUFFER position AS storage DESCRIPTOR_SET 0 BINDING 0
+END
+
+RUN compute_pipeline 1 1 1
+
+IMAGE framebuffer FORMAT B8G8R8A8_UNORM DIM_2D WIDTH 64 HEIGHT 64
+IMAGE framebuffer_ref FORMAT B8G8R8A8_UNORM DIM_2D WIDTH 64 HEIGHT 64
+
+PIPELINE graphics graphics_pipeline
+  ATTACH vert_shader
+  ATTACH frag_shader
+  VERTEX_DATA position LOCATION 0
+  INDEX_DATA indices
+  FRAMEBUFFER_SIZE 64 64
+  BIND BUFFER framebuffer AS color LOCATION 0
+END
+
+PIPELINE graphics graphics_pipeline_ref
+  ATTACH vert_shader
+  ATTACH frag_shader
+  VERTEX_DATA position LOCATION 0
+  INDEX_DATA indices_ref
+  FRAMEBUFFER_SIZE 64 64
+  BIND BUFFER framebuffer_ref AS color LOCATION 0
+END
+
+CLEAR_COLOR graphics_pipeline 0 0 0 0
+CLEAR graphics_pipeline
+RUN graphics_pipeline DRAW_ARRAY AS TRIANGLE_STRIP INDEXED START_IDX 0 COUNT 4
+CLEAR_COLOR graphics_pipeline_ref 0 0 0 0
+CLEAR graphics_pipeline_ref
+RUN graphics_pipeline_ref DRAW_ARRAY AS TRIANGLE_STRIP INDEXED START_IDX 0 COUNT 4
+EXPECT framebuffer EQ_BUFFER framebuffer_ref

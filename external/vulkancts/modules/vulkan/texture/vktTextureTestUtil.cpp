@@ -59,19 +59,6 @@ namespace texture
 namespace util
 {
 
-deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
-{
-	const std::vector<VkQueueFamilyProperties>	queueProps	= getPhysicalDeviceQueueFamilyProperties(vkInstance, physicalDevice);
-
-	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
-	{
-		if ((queueProps[queueNdx].queueFlags & requiredCaps) == requiredCaps)
-			return (deUint32)queueNdx;
-	}
-
-	TCU_THROW(NotSupportedError, "No matching queue found");
-}
-
 struct ShaderParameters {
 	float		bias;				//!< User-supplied bias.
 	float		ref;				//!< Reference value for shadow lookups.
@@ -168,7 +155,7 @@ VkImageType imageViewTypeToImageType (VkImageViewType type)
 	}
 }
 
-void initializePrograms (vk::SourceCollections& programCollection, glu::Precision texCoordPrecision, const std::vector<Program>& programs, const char* texCoordSwizzle, glu::Precision fragOutputPrecision)
+void initializePrograms (vk::SourceCollections& programCollection, glu::Precision texCoordPrecision, const std::vector<Program>& programs, const char* texCoordSwizzle, glu::Precision fragOutputPrecision, bool unnormal)
 {
 	static const char* vertShaderTemplate =
 		"${VTX_HEADER}"
@@ -250,56 +237,59 @@ void initializePrograms (vk::SourceCollections& programCollection, glu::Precisio
 			params["TEXCOORD_SWZ"]	= std::string(".") + texCoordSwizzle;
 
 		const char*	sampler	= DE_NULL;
-		const char*	lookup	= DE_NULL;
+		std::string	lookup;
+
+		std::string texture = unnormal ? "textureLod" : "texture";
+		std::string lod		= unnormal ? ", 0" : "";
 
 		switch (program)
 		{
-			case PROGRAM_2D_FLOAT:			sampler = "sampler2D";				lookup = "texture(u_sampler, texCoord)";												break;
-			case PROGRAM_2D_INT:			sampler = "isampler2D";				lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_2D_UINT:			sampler = "usampler2D";				lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_2D_FETCH_LOD:		sampler = "sampler2D";				lookup = "texelFetch(u_sampler, ivec2(texCoord * vec2(64.f), 3)";							break;
-			case PROGRAM_2D_SHADOW:			sampler = "sampler2DShadow";		lookup = "vec4(texture(u_sampler, vec3(texCoord, u_ref)), 0.0, 0.0, 1.0)";				break;
-			case PROGRAM_2D_FLOAT_BIAS:		sampler = "sampler2D";				lookup = "texture(u_sampler, texCoord, u_bias)";										break;
-			case PROGRAM_2D_INT_BIAS:		sampler = "isampler2D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
-			case PROGRAM_2D_UINT_BIAS:		sampler = "usampler2D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
-			case PROGRAM_2D_SHADOW_BIAS:	sampler = "sampler2DShadow";		lookup = "vec4(texture(u_sampler, vec3(texCoord, u_ref), u_bias), 0.0, 0.0, 1.0)";		break;
-			case PROGRAM_1D_FLOAT:			sampler = "sampler1D";				lookup = "texture(u_sampler, texCoord)";												break;
-			case PROGRAM_1D_INT:			sampler = "isampler1D";				lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_1D_UINT:			sampler = "usampler1D";				lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_1D_SHADOW:			sampler = "sampler1DShadow";		lookup = "vec4(texture(u_sampler, vec3(texCoord, 0.0, u_ref)), 0.0, 0.0, 1.0)";			break;
-			case PROGRAM_1D_FLOAT_BIAS:		sampler = "sampler1D";				lookup = "texture(u_sampler, texCoord, u_bias)";										break;
-			case PROGRAM_1D_INT_BIAS:		sampler = "isampler1D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
-			case PROGRAM_1D_UINT_BIAS:		sampler = "usampler1D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
-			case PROGRAM_1D_SHADOW_BIAS:	sampler = "sampler1DShadow";		lookup = "vec4(texture(u_sampler, vec3(texCoord, 0.0, u_ref), u_bias), 0.0, 0.0, 1.0)";	break;
-			case PROGRAM_CUBE_FLOAT:		sampler = "samplerCube";			lookup = "texture(u_sampler, texCoord)";												break;
-			case PROGRAM_CUBE_INT:			sampler = "isamplerCube";			lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_CUBE_UINT:			sampler = "usamplerCube";			lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_CUBE_SHADOW:		sampler = "samplerCubeShadow";		lookup = "vec4(texture(u_sampler, vec4(texCoord, u_ref)), 0.0, 0.0, 1.0)";				break;
-			case PROGRAM_CUBE_FLOAT_BIAS:	sampler = "samplerCube";			lookup = "texture(u_sampler, texCoord, u_bias)";										break;
-			case PROGRAM_CUBE_INT_BIAS:		sampler = "isamplerCube";			lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
-			case PROGRAM_CUBE_UINT_BIAS:	sampler = "usamplerCube";			lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
-			case PROGRAM_CUBE_SHADOW_BIAS:	sampler = "samplerCubeShadow";		lookup = "vec4(texture(u_sampler, vec4(texCoord, u_ref), u_bias), 0.0, 0.0, 1.0)";		break;
-			case PROGRAM_2D_ARRAY_FLOAT:	sampler = "sampler2DArray";			lookup = "texture(u_sampler, texCoord)";												break;
-			case PROGRAM_2D_ARRAY_INT:		sampler = "isampler2DArray";		lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_2D_ARRAY_UINT:		sampler = "usampler2DArray";		lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_2D_ARRAY_SHADOW:	sampler = "sampler2DArrayShadow";	lookup = "vec4(texture(u_sampler, vec4(texCoord, u_ref)), 0.0, 0.0, 1.0)";				break;
-			case PROGRAM_3D_FLOAT:			sampler = "sampler3D";				lookup = "texture(u_sampler, texCoord)";												break;
-			case PROGRAM_3D_INT:			sampler = "isampler3D";				lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_3D_UINT:			sampler = "usampler3D";				lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_3D_FLOAT_BIAS:		sampler = "sampler3D";				lookup = "texture(u_sampler, texCoord, u_bias)";										break;
-			case PROGRAM_3D_INT_BIAS:		sampler = "isampler3D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
-			case PROGRAM_3D_UINT_BIAS:		sampler = "usampler3D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
-			case PROGRAM_CUBE_ARRAY_FLOAT:	sampler = "samplerCubeArray";		lookup = "texture(u_sampler, texCoord)";												break;
-			case PROGRAM_CUBE_ARRAY_INT:	sampler = "isamplerCubeArray";		lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_CUBE_ARRAY_UINT:	sampler = "usamplerCubeArray";		lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_CUBE_ARRAY_SHADOW:	sampler = "samplerCubeArrayShadow";	lookup = "vec4(texture(u_sampler, texCoord, u_ref), 0.0, 0.0, 1.0)";					break;
-			case PROGRAM_1D_ARRAY_FLOAT:	sampler = "sampler1DArray";			lookup = "texture(u_sampler, texCoord)";												break;
-			case PROGRAM_1D_ARRAY_INT:		sampler = "isampler1DArray";		lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_1D_ARRAY_UINT:		sampler = "usampler1DArray";		lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_1D_ARRAY_SHADOW:	sampler = "sampler1DArrayShadow";	lookup = "vec4(texture(u_sampler, vec3(texCoord, u_ref)), 0.0, 0.0, 1.0)";				break;
-			case PROGRAM_BUFFER_FLOAT:		sampler = "samplerBuffer";			lookup = "texelFetch(u_sampler, int(texCoord))";										break;
-			case PROGRAM_BUFFER_INT:		sampler = "isamplerBuffer";			lookup = "vec4(texelFetch(u_sampler, int(texCoord)))";									break;
-			case PROGRAM_BUFFER_UINT:		sampler = "usamplerBuffer";			lookup = "vec4(texelFetch(u_sampler, int(texCoord)))";									break;
+			case PROGRAM_2D_FLOAT:			sampler = "sampler2D";				lookup = texture + "(u_sampler, texCoord" + lod + ")";												break;
+			case PROGRAM_2D_INT:			sampler = "isampler2D";				lookup = "vec4(" + texture + "(u_sampler, texCoord" + lod + "))";									break;
+			case PROGRAM_2D_UINT:			sampler = "usampler2D";				lookup = "vec4(" + texture + "(u_sampler, texCoord" + lod + "))";									break;
+			case PROGRAM_2D_FETCH_LOD:		sampler = "sampler2D";				lookup = "texelFetch(u_sampler, ivec2(texCoord * vec2(64.f), 3)";									break;
+			case PROGRAM_2D_SHADOW:			sampler = "sampler2DShadow";		lookup = "vec4(" + texture + "(u_sampler, vec3(texCoord, u_ref)" + lod + "), 0.0, 0.0, 1.0)";		break;
+			case PROGRAM_2D_FLOAT_BIAS:		sampler = "sampler2D";				lookup = "texture(u_sampler, texCoord, u_bias)";													break;
+			case PROGRAM_2D_INT_BIAS:		sampler = "isampler2D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";												break;
+			case PROGRAM_2D_UINT_BIAS:		sampler = "usampler2D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";												break;
+			case PROGRAM_2D_SHADOW_BIAS:	sampler = "sampler2DShadow";		lookup = "vec4(texture(u_sampler, vec3(texCoord, u_ref), u_bias), 0.0, 0.0, 1.0)";					break;
+			case PROGRAM_1D_FLOAT:			sampler = "sampler1D";				lookup = texture + "(u_sampler, texCoord" + lod + ")";												break;
+			case PROGRAM_1D_INT:			sampler = "isampler1D";				lookup = "vec4(" + texture + "(u_sampler, texCoord" + lod + "))";									break;
+			case PROGRAM_1D_UINT:			sampler = "usampler1D";				lookup = "vec4(" + texture + "(u_sampler, texCoord" + lod + "))";									break;
+			case PROGRAM_1D_SHADOW:			sampler = "sampler1DShadow";		lookup = "vec4(" + texture + "(u_sampler, vec3(texCoord, 0.0, u_ref)" + lod + "), 0.0, 0.0, 1.0)";	break;
+			case PROGRAM_1D_FLOAT_BIAS:		sampler = "sampler1D";				lookup = "texture(u_sampler, texCoord, u_bias)";													break;
+			case PROGRAM_1D_INT_BIAS:		sampler = "isampler1D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";												break;
+			case PROGRAM_1D_UINT_BIAS:		sampler = "usampler1D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";												break;
+			case PROGRAM_1D_SHADOW_BIAS:	sampler = "sampler1DShadow";		lookup = "vec4(texture(u_sampler, vec3(texCoord, 0.0, u_ref), u_bias), 0.0, 0.0, 1.0)";				break;
+			case PROGRAM_CUBE_FLOAT:		sampler = "samplerCube";			lookup = "texture(u_sampler, texCoord)";															break;
+			case PROGRAM_CUBE_INT:			sampler = "isamplerCube";			lookup = "vec4(texture(u_sampler, texCoord))";														break;
+			case PROGRAM_CUBE_UINT:			sampler = "usamplerCube";			lookup = "vec4(texture(u_sampler, texCoord))";														break;
+			case PROGRAM_CUBE_SHADOW:		sampler = "samplerCubeShadow";		lookup = "vec4(texture(u_sampler, vec4(texCoord, u_ref)), 0.0, 0.0, 1.0)";							break;
+			case PROGRAM_CUBE_FLOAT_BIAS:	sampler = "samplerCube";			lookup = "texture(u_sampler, texCoord, u_bias)";													break;
+			case PROGRAM_CUBE_INT_BIAS:		sampler = "isamplerCube";			lookup = "vec4(texture(u_sampler, texCoord, u_bias))";												break;
+			case PROGRAM_CUBE_UINT_BIAS:	sampler = "usamplerCube";			lookup = "vec4(texture(u_sampler, texCoord, u_bias))";												break;
+			case PROGRAM_CUBE_SHADOW_BIAS:	sampler = "samplerCubeShadow";		lookup = "vec4(texture(u_sampler, vec4(texCoord, u_ref), u_bias), 0.0, 0.0, 1.0)";					break;
+			case PROGRAM_2D_ARRAY_FLOAT:	sampler = "sampler2DArray";			lookup = "texture(u_sampler, texCoord)";															break;
+			case PROGRAM_2D_ARRAY_INT:		sampler = "isampler2DArray";		lookup = "vec4(texture(u_sampler, texCoord))";														break;
+			case PROGRAM_2D_ARRAY_UINT:		sampler = "usampler2DArray";		lookup = "vec4(texture(u_sampler, texCoord))";														break;
+			case PROGRAM_2D_ARRAY_SHADOW:	sampler = "sampler2DArrayShadow";	lookup = "vec4(texture(u_sampler, vec4(texCoord, u_ref)), 0.0, 0.0, 1.0)";							break;
+			case PROGRAM_3D_FLOAT:			sampler = "sampler3D";				lookup = "texture(u_sampler, texCoord)";															break;
+			case PROGRAM_3D_INT:			sampler = "isampler3D";				lookup = "vec4(texture(u_sampler, texCoord))";														break;
+			case PROGRAM_3D_UINT:			sampler = "usampler3D";				lookup = "vec4(texture(u_sampler, texCoord))";														break;
+			case PROGRAM_3D_FLOAT_BIAS:		sampler = "sampler3D";				lookup = "texture(u_sampler, texCoord, u_bias)";													break;
+			case PROGRAM_3D_INT_BIAS:		sampler = "isampler3D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";												break;
+			case PROGRAM_3D_UINT_BIAS:		sampler = "usampler3D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";												break;
+			case PROGRAM_CUBE_ARRAY_FLOAT:	sampler = "samplerCubeArray";		lookup = "texture(u_sampler, texCoord)";															break;
+			case PROGRAM_CUBE_ARRAY_INT:	sampler = "isamplerCubeArray";		lookup = "vec4(texture(u_sampler, texCoord))";														break;
+			case PROGRAM_CUBE_ARRAY_UINT:	sampler = "usamplerCubeArray";		lookup = "vec4(texture(u_sampler, texCoord))";														break;
+			case PROGRAM_CUBE_ARRAY_SHADOW:	sampler = "samplerCubeArrayShadow";	lookup = "vec4(texture(u_sampler, texCoord, u_ref), 0.0, 0.0, 1.0)";								break;
+			case PROGRAM_1D_ARRAY_FLOAT:	sampler = "sampler1DArray";			lookup = "texture(u_sampler, texCoord)";															break;
+			case PROGRAM_1D_ARRAY_INT:		sampler = "isampler1DArray";		lookup = "vec4(texture(u_sampler, texCoord))";														break;
+			case PROGRAM_1D_ARRAY_UINT:		sampler = "usampler1DArray";		lookup = "vec4(texture(u_sampler, texCoord))";														break;
+			case PROGRAM_1D_ARRAY_SHADOW:	sampler = "sampler1DArrayShadow";	lookup = "vec4(texture(u_sampler, vec3(texCoord, u_ref)), 0.0, 0.0, 1.0)";							break;
+			case PROGRAM_BUFFER_FLOAT:		sampler = "samplerBuffer";			lookup = "texelFetch(u_sampler, int(texCoord))";													break;
+			case PROGRAM_BUFFER_INT:		sampler = "isamplerBuffer";			lookup = "vec4(texelFetch(u_sampler, int(texCoord)))";												break;
+			case PROGRAM_BUFFER_UINT:		sampler = "usamplerBuffer";			lookup = "vec4(texelFetch(u_sampler, int(texCoord)))";												break;
 			default:
 				DE_ASSERT(false);
 		}
@@ -374,7 +364,9 @@ void TextureBinding::updateTextureData (const TestTextureSp& textureData, const 
 	if (sparse)
 	{
 		deUint32 numSparseImageProperties = 0;
+#ifndef CTS_USES_VULKANSC
 		m_context.getInstanceInterface().getPhysicalDeviceSparseImageFormatProperties(m_context.getPhysicalDevice(), format, imageType, VK_SAMPLE_COUNT_1_BIT, imageUsageFlags, imageTiling, &numSparseImageProperties, DE_NULL);
+#endif // CTS_USES_VULKANSC
 		if (numSparseImageProperties == 0)
 			TCU_THROW(NotSupportedError, (std::string("Sparse format not supported: ") + vk::getFormatName(format)).c_str());
 	}
@@ -458,17 +450,25 @@ void TextureBinding::updateTextureViewMipLevels (deUint32 baseLevel, deUint32 ma
 	const VkImageAspectFlags					aspectMask				= ( m_aspectMask != VK_IMAGE_ASPECT_FLAG_BITS_MAX_ENUM ) ? m_aspectMask : guessAspectMask(format);
 	const deUint32								layerCount				= m_textureData->getArraySize();
 
+#ifndef CTS_USES_VULKANSC
 	vk::VkImageViewMinLodCreateInfoEXT imageViewMinLodCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_MIN_LOD_CREATE_INFO_EXT,	// VkStructureType	sType
 		DE_NULL,												// const void*		pNext
 		imageViewMinLod,										// float			minLod
 	};
+#else
+	DE_UNREF(imageViewMinLod);
+#endif // CTS_USES_VULKANSC
 
 	const vk::VkImageViewCreateInfo				viewParams				=
 	{
 		vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,						// VkStructureType			sType;
-		imageViewMinLod > 0.0f ? &imageViewMinLodCreateInfo : DE_NULL,		// const void*				pNext;
+#ifndef CTS_USES_VULKANSC
+		imageViewMinLod >= 0.0f ? &imageViewMinLodCreateInfo : DE_NULL,		// const void*				pNext;
+#else
+		DE_NULL,															// const void*				pNext;
+#endif // CTS_USES_VULKANSC
 		0u,																	// VkImageViewCreateFlags	flags;
 		*m_textureImage,													// VkImage					image;
 		imageViewType,														// VkImageViewType			viewType;
@@ -486,21 +486,6 @@ void TextureBinding::updateTextureViewMipLevels (deUint32 baseLevel, deUint32 ma
 	m_textureImageView		= createImageView(vkd, m_device, &viewParams);
 }
 
-static
-std::vector<std::string> removeExtensions (const std::vector<std::string>& a, const std::vector<const char*>& b)
-{
-	std::vector<std::string>	res;
-	std::set<std::string>		removeExts	(b.begin(), b.end());
-
-	for (std::vector<std::string>::const_iterator aIter = a.begin(); aIter != a.end(); ++aIter)
-	{
-		if (!de::contains(removeExts, *aIter))
-			res.push_back(*aIter);
-	}
-
-	return res;
-}
-
 Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysicalDeviceFeatures2* enabledFeatures2)
 {
 	const float queuePriority = 1.0f;
@@ -516,20 +501,9 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysica
 		&queuePriority								// const float*					pQueuePriorities;
 	};
 
-	VkPhysicalDeviceFeatures enabledFeatures = context.getDeviceFeatures();
-	enabledFeatures.robustBufferAccess = true;
-
 	// \note Extensions in core are not explicitly enabled even though
 	//		 they are in the extension list advertised to tests.
-    std::vector<const char*>	extensionPtrs;
-	std::vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-    std::vector<std::string>	nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	extensionPtrs.resize(nonCoreExtensions.size());
-
-	for (size_t ndx = 0; ndx < nonCoreExtensions.size(); ++ndx)
-		extensionPtrs[ndx] = nonCoreExtensions[ndx].c_str();
+	const auto& extensionPtrs = context.getDeviceCreationExtensions();
 
 	const VkDeviceCreateInfo		deviceParams =
 	{
@@ -539,10 +513,10 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysica
 		1u,										// deUint32							queueCreateInfoCount;
 		&queueParams,							// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
 		0u,										// deUint32							enabledLayerCount;
-		DE_NULL,								// const char* const*				ppEnabledLayerNames;
-		(deUint32)extensionPtrs.size(),			// deUint32							enabledExtensionCount;
-		(extensionPtrs.empty() ? DE_NULL : &extensionPtrs[0]),	// const char* const*				ppEnabledExtensionNames;
-        enabledFeatures2 ? NULL : &enabledFeatures	// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+		nullptr,								// const char* const*				ppEnabledLayerNames;
+		de::sizeU32(extensionPtrs),				// deUint32							enabledExtensionCount;
+		de::dataOrNull(extensionPtrs),			// const char* const*				ppEnabledExtensionNames;
+		nullptr									// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
 	return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(),
@@ -551,18 +525,18 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysica
 
 VkDevice TextureRenderer::getDevice (void) const
 {
-	return m_requireRobustness2 ? *m_customDevice : m_context.getDevice();
+	return (m_requireRobustness2 || m_requireImageViewMinLod) ? *m_customDevice : m_context.getDevice();
 }
 
 const deUint16		TextureRenderer::s_vertexIndices[6] = { 0, 1, 2, 2, 1, 3 };
 const VkDeviceSize	TextureRenderer::s_vertexIndexBufferSize = sizeof(TextureRenderer::s_vertexIndices);
 
-TextureRenderer::TextureRenderer(Context& context, vk::VkSampleCountFlagBits sampleCount, deUint32 renderWidth, deUint32 renderHeight, vk::VkComponentMapping componentMapping, bool requireRobustness2)
-	: TextureRenderer(context, sampleCount, renderWidth, renderHeight, 1u, componentMapping, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, requireRobustness2)
+TextureRenderer::TextureRenderer(Context& context, vk::VkSampleCountFlagBits sampleCount, deUint32 renderWidth, deUint32 renderHeight, vk::VkComponentMapping componentMapping, bool requireRobustness2,	bool requireImageViewMinLod)
+	: TextureRenderer(context, sampleCount, renderWidth, renderHeight, 1u, componentMapping, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, requireRobustness2, requireImageViewMinLod)
 {
 }
 
-TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sampleCount, deUint32 renderWidth, deUint32 renderHeight, deUint32 renderDepth, VkComponentMapping componentMapping, VkImageType imageType, VkImageViewType imageViewType, vk::VkFormat imageFormat, bool requireRobustness2)
+TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sampleCount, deUint32 renderWidth, deUint32 renderHeight, deUint32 renderDepth, VkComponentMapping componentMapping, VkImageType imageType, VkImageViewType imageViewType, vk::VkFormat imageFormat, bool requireRobustness2, bool requireImageViewMinLod)
 	: m_context					(context)
 	, m_log						(context.getTestContext().getLog())
 	, m_renderWidth				(renderWidth)
@@ -580,18 +554,36 @@ TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sample
 	, m_viewportHeight			((float)renderHeight)
 	, m_componentMapping		(componentMapping)
 	, m_requireRobustness2		(requireRobustness2)
+	, m_requireImageViewMinLod	(requireImageViewMinLod)
 {
 	const DeviceInterface&						vkd						= m_context.getDeviceInterface();
 	const deUint32								queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 
-	if (m_requireRobustness2)
+	if (m_requireRobustness2 || m_requireImageViewMinLod)
 	{
 		// Note we are already checking the needed features are available in checkSupport().
-		VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features				= initVulkanStructure();
-		VkPhysicalDeviceFeatures2							features2						= initVulkanStructure(&robustness2Features);
-
-		DE_ASSERT(context.isDeviceFunctionalitySupported("VK_EXT_robustness2"));
-		robustness2Features.robustImageAccess2 = true;
+		VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features			= initVulkanStructure();
+		VkPhysicalDeviceFeatures2							features2					= initVulkanStructure(&robustness2Features);
+#ifndef CTS_USES_VULKANSC
+		VkPhysicalDeviceImageViewMinLodFeaturesEXT			imageViewMinLodFeatures		= initVulkanStructure();
+		if (m_requireImageViewMinLod)
+		{
+			DE_ASSERT(context.isDeviceFunctionalitySupported("VK_EXT_image_view_min_lod"));
+			imageViewMinLodFeatures.minLod = true;
+			if (m_requireRobustness2)
+			{
+				robustness2Features.pNext = &imageViewMinLodFeatures;
+			}
+			else {
+				features2.pNext = &imageViewMinLodFeatures;
+			}
+		}
+#endif
+		if (m_requireRobustness2)
+		{
+			DE_ASSERT(context.isDeviceFunctionalitySupported("VK_EXT_robustness2"));
+			robustness2Features.robustImageAccess2 = true;
+		}
 
 		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
 		m_customDevice = createRobustBufferAccessDevice(context, &features2);
@@ -884,6 +876,42 @@ TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sample
 		descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 		descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		m_descriptorPool = descriptorPoolBuilder.build(vkd, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2u);
+	}
+
+	// Descriptor Sets
+	{
+		m_descriptorSetLayout[0] = DescriptorSetLayoutBuilder()
+											.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+												.build(vkd, vkDevice);
+
+		m_descriptorSetLayout[1] = DescriptorSetLayoutBuilder()
+											.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+											.build(vkd, vkDevice);
+
+		m_descriptorSet[0] = makeDescriptorSet(*m_descriptorPool, *m_descriptorSetLayout[0]);
+		m_descriptorSet[1] = makeDescriptorSet(*m_descriptorPool, *m_descriptorSetLayout[1]);
+	}
+
+	// Pipeline Layout
+	{
+		VkDescriptorSetLayout					descriptorSetLayouts[2]		=
+		{
+			*m_descriptorSetLayout[0],
+			*m_descriptorSetLayout[1]
+		};
+
+		const VkPipelineLayoutCreateInfo		pipelineLayoutCreateInfo	=
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
+			DE_NULL,											// const void*					pNext;
+			0u,													// VkPipelineLayoutCreateFlags	flags;
+			2u,													// deUint32						descriptorSetCount;
+			descriptorSetLayouts,								// const VkDescriptorSetLayout*	pSetLayouts;
+			0u,													// deUint32						pushConstantRangeCount;
+			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
+		};
+
+		m_pipelineLayout = createPipelineLayout(vkd, vkDevice, &pipelineLayoutCreateInfo);
 	}
 
 	// Result Buffer
@@ -1299,9 +1327,6 @@ void TextureRenderer::renderQuad (const tcu::PixelBufferAccess&					result,
 	Unique<VkShaderModule>					fragmentShaderModule		(createShaderModule(vkd, vkDevice, m_context.getBinaryCollection().get("fragment_" + std::string(getProgramName(progSpec))), 0));
 
 	Move<VkSampler>							sampler;
-	Move<VkDescriptorSet>					descriptorSet[2];
-	Move<VkDescriptorSetLayout>				descriptorSetLayout[2];
-	Move<VkPipelineLayout>					pipelineLayout;
 
 	Move<VkCommandBuffer>					commandBuffer;
 	Move<VkPipeline>						graphicsPipeline;
@@ -1424,17 +1449,6 @@ void TextureRenderer::renderQuad (const tcu::PixelBufferAccess&					result,
 
 		sampler = createSampler(vkd, vkDevice, &samplerCreateInfo);
 
-		descriptorSetLayout[0] = DescriptorSetLayoutBuilder()
-											.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-												.build(vkd, vkDevice);
-
-		descriptorSetLayout[1] = DescriptorSetLayoutBuilder()
-											.addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, &sampler.get())
-											.build(vkd, vkDevice);
-
-		descriptorSet[0] = makeDescriptorSet(*m_descriptorPool, *descriptorSetLayout[0]);
-		descriptorSet[1] = makeDescriptorSet(*m_descriptorPool, *descriptorSetLayout[1]);
-
 		{
 			const VkDescriptorBufferInfo			descriptorBufferInfo	=
 			{
@@ -1444,7 +1458,7 @@ void TextureRenderer::renderQuad (const tcu::PixelBufferAccess&					result,
 			};
 
 			DescriptorSetUpdateBuilder()
-				.writeSingle(*descriptorSet[0], DescriptorSetUpdateBuilder::Location::binding(0), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &descriptorBufferInfo)
+				.writeSingle(*m_descriptorSet[0], DescriptorSetUpdateBuilder::Location::binding(0), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &descriptorBufferInfo)
 				.update(vkd, vkDevice);
 		}
 
@@ -1457,35 +1471,13 @@ void TextureRenderer::renderQuad (const tcu::PixelBufferAccess&					result,
 			};
 
 			DescriptorSetUpdateBuilder()
-				.writeSingle(*descriptorSet[1], DescriptorSetUpdateBuilder::Location::binding(0), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &descriptorImageInfo)
+				.writeSingle(*m_descriptorSet[1], DescriptorSetUpdateBuilder::Location::binding(0), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &descriptorImageInfo)
 				.update(vkd, vkDevice);
-		}
-
-		// Pipeline Layout
-		{
-			VkDescriptorSetLayout					descriptorSetLayouts[2]		=
-			{
-				*descriptorSetLayout[0],
-				*descriptorSetLayout[1]
-			};
-
-			const VkPipelineLayoutCreateInfo		pipelineLayoutCreateInfo	=
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
-				DE_NULL,											// const void*					pNext;
-				0u,													// VkPipelineLayoutCreateFlags	flags;
-				2u,													// deUint32						descriptorSetCount;
-				descriptorSetLayouts,								// const VkDescriptorSetLayout*	pSetLayouts;
-				0u,													// deUint32						pushConstantRangeCount;
-				DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
-			};
-
-			pipelineLayout = createPipelineLayout(vkd, vkDevice, &pipelineLayoutCreateInfo);
 		}
 
 		graphicsPipeline = makeGraphicsPipeline(vkd,									// const DeviceInterface&                        vk
 												vkDevice,								// const VkDevice                                device
-												*pipelineLayout,						// const VkPipelineLayout                        pipelineLayout
+												*m_pipelineLayout,						// const VkPipelineLayout                        pipelineLayout
 												*vertexShaderModule,					// const VkShaderModule                          vertexShaderModule
 												DE_NULL,								// const VkShaderModule                          tessellationControlShaderModule
 												DE_NULL,								// const VkShaderModule                          tessellationEvalShaderModule
@@ -1542,8 +1534,8 @@ void TextureRenderer::renderQuad (const tcu::PixelBufferAccess&					result,
 	beginRenderPass(vkd, *commandBuffer, *m_renderPass, *m_frameBuffer, makeRect2D(0, 0, m_renderWidth, m_renderHeight));
 
 	vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
-	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1, &descriptorSet[0].get(), 0u, DE_NULL);
-	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 1u, 1, &descriptorSet[1].get(), 0u, DE_NULL);
+	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1, &m_descriptorSet[0].get(), 0u, DE_NULL);
+	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 1u, 1, &m_descriptorSet[1].get(), 0u, DE_NULL);
 	vkd.cmdBindVertexBuffers(*commandBuffer, 0, 1, &vertexBuffer.get(), &vertexBufferOffset);
 	vkd.cmdBindVertexBuffers(*commandBuffer, 1, 1, &vertexBuffer.get(), &vertexBufferOffset);
 	vkd.cmdBindIndexBuffer(*commandBuffer, *m_vertexIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
@@ -1638,7 +1630,8 @@ tcu::Sampler createSampler (tcu::Sampler::WrapMode wrapU, tcu::Sampler::WrapMode
 						normalizedCoords /* normalized coords */,
 						tcu::Sampler::COMPAREMODE_NONE /* no compare */,
 						0 /* compare channel */,
-						tcu::Vec4(0.0f) /* border color, not used */);
+						tcu::Vec4(0.0f) /* border color, not used */,
+						true /* seamless cube map */);
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -1818,6 +1811,7 @@ Texture2DTestCaseParameters::Texture2DTestCaseParameters (void)
 TextureCubeTestCaseParameters::TextureCubeTestCaseParameters (void)
 	: wrapT					(tcu::Sampler::REPEAT_GL)
 	, size					(64)
+	, seamless				(true)
 {
 }
 
@@ -1845,6 +1839,11 @@ Texture1DArrayTestCaseParameters::Texture1DArrayTestCaseParameters (void)
 
 TextureCubeArrayTestCaseParameters::TextureCubeArrayTestCaseParameters (void)
 	: numLayers				(8)
+{
+}
+
+TextureCubeFilteringTestCaseParameters::TextureCubeFilteringTestCaseParameters (void)
+	: onlySampleFaceInterior	(false)
 {
 }
 

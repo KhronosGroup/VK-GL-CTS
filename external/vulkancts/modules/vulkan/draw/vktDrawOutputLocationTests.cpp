@@ -37,8 +37,19 @@ namespace Draw
 namespace
 {
 
+void checkSupport (Context& context, std::string testName)
+{
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset")
+		&& context.getPortabilitySubsetProperties().minVertexInputBindingStrideAlignment == 4
+		&& (testName.find("r8g8") != std::string::npos || testName.find("inputs-outputs-mod") != std::string::npos))
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Stride is not a multiple of minVertexInputBindingStrideAlignment");
+	}
+}
+
 void createTests (tcu::TestCaseGroup* testGroup)
 {
+#ifndef CTS_USES_VULKANSC
 	tcu::TestContext& testCtx = testGroup->getTestContext();
 
 	// .array
@@ -85,6 +96,7 @@ void createTests (tcu::TestCaseGroup* testGroup)
 			const std::string			fileName	= cases[i] + ".amber";
 			cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].c_str(), "", dataDir, fileName);
 
+			testCase->setCheckSupportCallback(checkSupport);
 			array->addChild(testCase);
 		}
 	}
@@ -101,7 +113,6 @@ void createTests (tcu::TestCaseGroup* testGroup)
 		};
 
 		testGroup->addChild(shuffle);
-
 		for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
 		{
 			const std::string			fileName	= cases[i] + ".amber";
@@ -110,6 +121,9 @@ void createTests (tcu::TestCaseGroup* testGroup)
 			shuffle->addChild(testCase);
 		}
 	}
+#else
+	DE_UNREF(testGroup);
+#endif
 }
 
 } // anonymous

@@ -1,0 +1,15 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": "0.1.3.0"
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceInlineUniformBlockFeaturesEXT":
+		[
+			{ "features": ["inlineUniformBlock"],										"requirements": ["VK_EXT_inline_uniform_block"] },
+			{ "features": ["descriptorBindingInlineUniformBlockUpdateAfterBind"],		"requirements": ["VK_EXT_inline_uniform_block", "VK_EXT_descriptor_indexing"] }
+		]
+	}
+}

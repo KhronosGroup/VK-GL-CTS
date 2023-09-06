@@ -233,6 +233,7 @@ void NegativeBufferApiTests::init (void)
 			std::vector<float>		floatData(4);
 			deUint32				fbo;
 			deUint32				texture;
+			bool					isES = glu::isContextTypeES(m_context.getRenderContext().getType());
 
 			glGenTextures			(1, &texture);
 			glBindTexture			(GL_TEXTURE_2D, texture);
@@ -249,7 +250,7 @@ void NegativeBufferApiTests::init (void)
 			glCheckFramebufferStatus(GL_FRAMEBUFFER);
 			expectError				(GL_NO_ERROR);
 			glReadPixels			(0, 0, 1, 1, GL_RGBA, GL_FLOAT, &floatData[0]);
-			expectError				(GL_INVALID_OPERATION);
+			expectError				(isES ? GL_INVALID_OPERATION : GL_NO_ERROR);
 
 			glTexImage2D			(GL_TEXTURE_2D, 0, GL_RGBA32I, 32, 32, 0, GL_RGBA_INTEGER, GL_INT, NULL);
 			glFramebufferTexture2D	(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
@@ -645,6 +646,7 @@ void NegativeBufferApiTests::init (void)
 			values[2]				= GL_COLOR_ATTACHMENT0;
 			values[3]				= GL_DEPTH_ATTACHMENT;
 			std::vector<GLfloat>	data(32*32);
+			bool					isES = glu::isContextTypeES(m_context.getRenderContext().getType());
 
 			glGenTextures			(1, &texture);
 			glBindTexture			(GL_TEXTURE_2D, texture);
@@ -675,7 +677,7 @@ void NegativeBufferApiTests::init (void)
 			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if the GL is bound to a framebuffer object and the ith buffer listed in bufs is anything other than GL_NONE or GL_COLOR_ATTACHMENTSi.");
 			glBindFramebuffer		(GL_FRAMEBUFFER, fbo);
 			glDrawBuffers			(1, &values[1]);
-			expectError				(GL_INVALID_OPERATION);
+			expectError				(isES ? GL_INVALID_OPERATION : GL_INVALID_ENUM);
 			m_log << TestLog::EndSection;
 
 			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if n is less than 0 or greater than GL_MAX_DRAW_BUFFERS.");
@@ -809,6 +811,7 @@ void NegativeBufferApiTests::init (void)
 			deUint32				fbo;
 			deUint32				texture;
 			int						maxColorAttachments;
+			bool					isES = glu::isContextTypeES(m_context.getRenderContext().getType());
 
 			glGetIntegerv			(GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachments);
 			glGenTextures			(1, &texture);
@@ -830,7 +833,7 @@ void NegativeBufferApiTests::init (void)
 			glReadBuffer			(GL_COLOR_ATTACHMENT0 - 1);
 			expectError				(GL_INVALID_ENUM);
 			glReadBuffer			(GL_FRONT);
-			expectError				(GL_INVALID_ENUM);
+			expectError				(isES ? GL_INVALID_ENUM : GL_INVALID_OPERATION);
 
 			// \ note Spec isn't actually clear here, but it is safe to assume that
 			//		  GL_DEPTH_ATTACHMENT can't be interpreted as GL_COLOR_ATTACHMENTm
@@ -1043,6 +1046,8 @@ void NegativeBufferApiTests::init (void)
 	ES3F_ADD_API_CASE(renderbuffer_storage, "Invalid glRenderbufferStorage() usage",
 		{
 			deUint32				rbo;
+			bool					isES = glu::isContextTypeES(m_context.getRenderContext().getType());
+
 			glGenRenderbuffers		(1, &rbo);
 			glBindRenderbuffer		(GL_RENDERBUFFER, rbo);
 
@@ -1060,13 +1065,13 @@ void NegativeBufferApiTests::init (void)
 			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_color_buffer_half_float")) // GL_EXT_color_buffer_half_float disables error
 			{
 				glRenderbufferStorage	(GL_RENDERBUFFER, GL_RGB16F, 1, 1);
-				expectError				(GL_INVALID_ENUM);
+				expectError				(isES ? GL_INVALID_ENUM : GL_NO_ERROR);
 			}
 
 			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_render_snorm")) // GL_EXT_render_snorm disables error
 			{
 				glRenderbufferStorage	(GL_RENDERBUFFER, GL_RGBA8_SNORM, 1, 1);
-				expectError				(GL_INVALID_ENUM);
+				expectError				(isES ? GL_INVALID_ENUM : GL_NO_ERROR);
 			}
 
 			m_log << TestLog::EndSection;
@@ -1207,25 +1212,27 @@ void NegativeBufferApiTests::init (void)
 
 			if (!m_context.getContextInfo().isExtensionSupported("GL_NV_framebuffer_multisample"))
 			{
+				bool isES = glu::isContextTypeES(m_context.getRenderContext().getType());
+
 				m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if the value of GL_SAMPLE_BUFFERS for the draw buffer is greater than zero.");
 				glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_RGBA8, 32, 32);
 				glFramebufferRenderbuffer		(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo[1]);
 				glBlitFramebuffer				(0, 0, 16, 16, 0, 0, 16, 16, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-				expectError						(GL_INVALID_OPERATION);
+				expectError						(isES ? GL_INVALID_OPERATION : GL_NO_ERROR);
 				m_log << TestLog::EndSection;
 
 				m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if GL_SAMPLE_BUFFERS for the read buffer is greater than zero and the formats of draw and read buffers are not identical.");
 				glRenderbufferStorage			(GL_RENDERBUFFER, GL_RGBA4, 32, 32);
 				glFramebufferRenderbuffer		(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo[1]);
 				glBlitFramebuffer				(0, 0, 16, 16, 0, 0, 16, 16, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-				expectError						(GL_INVALID_OPERATION);
+				expectError						(isES ? GL_INVALID_OPERATION : GL_NO_ERROR);
 				m_log << TestLog::EndSection;
 
 				m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if GL_SAMPLE_BUFFERS for the read buffer is greater than zero and the source and destination rectangles are not defined with the same (X0, Y0) and (X1, Y1) bounds.");
 				glRenderbufferStorage			(GL_RENDERBUFFER, GL_RGBA8, 32, 32);
 				glFramebufferRenderbuffer		(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo[1]);
 				glBlitFramebuffer				(0, 0, 16, 16, 2, 2, 18, 18, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-				expectError						(GL_INVALID_OPERATION);
+				expectError						(isES ? GL_INVALID_OPERATION : GL_NO_ERROR);
 				m_log << TestLog::EndSection;
 			}
 
@@ -1378,6 +1385,7 @@ void NegativeBufferApiTests::init (void)
 		{
 			deUint32							rbo;
 			int									maxSamplesSupportedRGBA4 = -1;
+			bool								isES = glu::isContextTypeES(m_context.getRenderContext().getType());
 
 			glGetInternalformativ				(GL_RENDERBUFFER, GL_RGBA4, GL_SAMPLES, 1, &maxSamplesSupportedRGBA4);
 			glGenRenderbuffers					(1, &rbo);
@@ -1402,13 +1410,13 @@ void NegativeBufferApiTests::init (void)
 			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_color_buffer_half_float")) // GL_EXT_color_buffer_half_float disables error
 			{
 				glRenderbufferStorageMultisample	(GL_RENDERBUFFER, 2, GL_RGB16F, 1, 1);
-				expectError							(GL_INVALID_ENUM);
+				expectError							(isES ? GL_INVALID_ENUM : GL_NO_ERROR);
 			}
 
 			if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_render_snorm")) // GL_EXT_render_snorm disables error
 			{
 				glRenderbufferStorageMultisample	(GL_RENDERBUFFER, 2, GL_RGBA8_SNORM, 1, 1);
-				expectError							(GL_INVALID_ENUM);
+				expectError							(isES ? GL_INVALID_ENUM : GL_NO_ERROR);
 			}
 
 			m_log << TestLog::EndSection;

@@ -43,9 +43,13 @@
 #include "tcuTestLog.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuFloat.hpp"
+#include "deModularCounter.hpp"
 
+#include <cmath>
+#include <cstddef>
 #include <set>
 #include <limits>
+#include <iostream>
 
 namespace vkt
 {
@@ -55,6 +59,7 @@ namespace
 {
 using namespace vk;
 using namespace vkt;
+using namespace tcu;
 
 static const VkFlags	ALL_RAY_TRACING_STAGES	= VK_SHADER_STAGE_RAYGEN_BIT_KHR
 												| VK_SHADER_STAGE_ANY_HIT_BIT_KHR
@@ -64,17 +69,18 @@ static const VkFlags	ALL_RAY_TRACING_STAGES	= VK_SHADER_STAGE_RAYGEN_BIT_KHR
 												| VK_SHADER_STAGE_CALLABLE_BIT_KHR;
 
 
-enum BottomTestType
+enum class BottomTestType
 {
-	BTT_TRIANGLES,
-	BTT_AABBS
+	TRIANGLES = 0,
+	AABBS = 1,
 };
 
-enum TopTestType
+enum class TopTestType
 {
-	TTT_IDENTICAL_INSTANCES,
-	TTT_DIFFERENT_INSTANCES,
-	TTT_MIX_INSTANCES,
+	IDENTICAL_INSTANCES,
+	DIFFERENT_INSTANCES,
+	UPDATED_INSTANCES,
+	MIX_INSTANCES,
 };
 
 enum OperationTarget
@@ -89,7 +95,9 @@ enum OperationType
 	OP_NONE,
 	OP_COPY,
 	OP_COMPACT,
-	OP_SERIALIZE
+	OP_SERIALIZE,
+	OP_UPDATE,
+	OP_UPDATE_IN_PLACE
 };
 
 enum class InstanceCullFlags
@@ -164,9 +172,11 @@ struct TestParams
 	InstanceCullFlags						cullFlags;		// Flags for instances, if needed.
 	bool									bottomUsesAOP;	// does bottom AS use arrays, or arrays of pointers
 	bool									bottomGeneric;	// Bottom created as generic AS type.
+	bool									bottomUnboundedCreation; // Bottom created with unbounded buffer memory.
 	TopTestType								topTestType;	// If instances are identical then bottom geometries must have different vertices/aabbs
 	bool									topUsesAOP;		// does top AS use arrays, or arrays of pointers
 	bool									topGeneric;		// Top created as generic AS type.
+	bool									topUnboundedCreation; // Top created with unbounded buffer memory.
 	VkBuildAccelerationStructureFlagsKHR	buildFlags;
 	OperationTarget							operationTarget;
 	OperationType							operationType;
@@ -176,6 +186,8 @@ struct TestParams
 	deUint32								workerThreadsCount;
 	EmptyAccelerationStructureCase			emptyASCase;
 	InstanceCustomIndexCase					instanceCustomIndexCase;
+	bool									useCullMask;
+	uint32_t								cullMask;
 };
 
 deUint32 getShaderGroupSize (const InstanceInterface&	vki,
@@ -284,7 +296,7 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > CheckerboardConfig
 	DE_UNREF(context);
 
 	// Cull flags can only be used with triangles.
-	DE_ASSERT(testParams.cullFlags == InstanceCullFlags::NONE || testParams.bottomTestType == BTT_TRIANGLES);
+	DE_ASSERT(testParams.cullFlags == InstanceCullFlags::NONE || testParams.bottomTestType == BottomTestType::TRIANGLES);
 
 	// Checkerboard configuration does not support empty geometry tests.
 	DE_ASSERT(testParams.emptyASCase == EmptyAccelerationStructureCase::NOT_EMPTY);
@@ -298,12 +310,12 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > CheckerboardConfig
 	tcu::Vec3 v2(1.0, 1.0, 0.0);
 	tcu::Vec3 v3(1.0, 0.0, 0.0);
 
-	if (testParams.topTestType == TTT_DIFFERENT_INSTANCES)
+	if (testParams.topTestType == TopTestType::DIFFERENT_INSTANCES)
 	{
 		de::MovePtr<BottomLevelAccelerationStructure>	bottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
 		bottomLevelAccelerationStructure->setGeometryCount(1u);
 		de::SharedPtr<RaytracedGeometryBase> geometry;
-		if (testParams.bottomTestType == BTT_TRIANGLES)
+		if (testParams.bottomTestType == BottomTestType::TRIANGLES)
 		{
 			geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType, testParams.padVertices);
 			if (testParams.indexType == VK_INDEX_TYPE_NONE_KHR)
@@ -403,7 +415,7 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > CheckerboardConfig
 			bottomLevelAccelerationStructure->setGeometryCount(1u);
 
 			de::SharedPtr<RaytracedGeometryBase> geometry;
-			if (testParams.bottomTestType == BTT_TRIANGLES)
+			if (testParams.bottomTestType == BottomTestType::TRIANGLES)
 			{
 				geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType, testParams.padVertices);
 				if (testParams.indexType == VK_INDEX_TYPE_NONE_KHR)
@@ -508,7 +520,7 @@ de::MovePtr<TopLevelAccelerationStructure> CheckerboardConfiguration::initTopAcc
 	de::MovePtr<TopLevelAccelerationStructure>	result = makeTopLevelAccelerationStructure();
 	result->setInstanceCount(instanceCount);
 
-	if (testParams.topTestType == TTT_DIFFERENT_INSTANCES)
+	if (testParams.topTestType == TopTestType::DIFFERENT_INSTANCES)
 	{
 
 		for (deUint32 y = 0; y < testParams.height; ++y)
@@ -538,7 +550,15 @@ de::MovePtr<TopLevelAccelerationStructure> CheckerboardConfiguration::initTopAcc
 			if (((x + y) % 2) == 0)
 				continue;
 			const deUint32 instanceCustomIndex = ((testParams.instanceCustomIndexCase != InstanceCustomIndexCase::NONE) ? (INSTANCE_CUSTOM_INDEX_BASE + x + y) : 0u);
-			result->addInstance(bottomLevelAccelerationStructures[currentInstanceIndex++], identityMatrix3x4, instanceCustomIndex, 0xFFu, 0u, instanceFlags);
+
+			if (testParams.useCullMask)
+			{
+				result->addInstance(bottomLevelAccelerationStructures[currentInstanceIndex++], identityMatrix3x4, instanceCustomIndex, testParams.cullMask, 0u, instanceFlags);
+			}
+			else
+			{
+				result->addInstance(bottomLevelAccelerationStructures[currentInstanceIndex++], identityMatrix3x4, instanceCustomIndex, 0xFFu, 0u, instanceFlags);
+			}
 		}
 	}
 
@@ -560,7 +580,7 @@ void CheckerboardConfiguration::initRayTracingShaders(de::MovePtr<RayTracingPipe
 	rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,		createShaderModule(vkd, device, context.getBinaryCollection().get("rgen"),  0), 0);
 	rayTracingPipeline->addShader(hitShaderStage,						createShaderModule(vkd, device, context.getBinaryCollection().get(hitShaderName),  0), 1);
 	rayTracingPipeline->addShader(hitShaderStage,						createShaderModule(vkd, device, context.getBinaryCollection().get(hitShaderName),  0), 2);
-	if (testParams.bottomTestType == BTT_AABBS)
+	if (testParams.bottomTestType == BottomTestType::AABBS)
 		rayTracingPipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR,	createShaderModule(vkd, device, context.getBinaryCollection().get("isect"), 0), 2);
 	rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR,			createShaderModule(vkd, device, context.getBinaryCollection().get("miss"),  0), 3);
 }
@@ -580,11 +600,23 @@ void CheckerboardConfiguration::initShaderBindingTables(de::MovePtr<RayTracingPi
 	Allocator&									allocator				= context.getDefaultAllocator();
 
 	raygenShaderBindingTable											= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1 );
-	if(testParams.bottomTestType == BTT_AABBS)
+	if(testParams.bottomTestType == BottomTestType::AABBS)
 		hitShaderBindingTable											= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 2, 1 );
 	else // testParams.bottomTestType == BTT_TRIANGLES
 		hitShaderBindingTable											= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1 );
 	missShaderBindingTable												= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 3, 1 );
+}
+
+deUint32 bitfieldReverse(deUint32 num)
+{
+	deUint32 reverse_num = 0;
+	deUint32 i;
+	for (i = 0; i < 32; i++)
+	{
+		if((num & (1 << i)))
+	reverse_num |= 1 << ((32 - 1) - i);
+	}
+	return reverse_num;
 }
 
 bool CheckerboardConfiguration::verifyImage(BufferWithMemory* resultBuffer, Context& context, TestParams& testParams)
@@ -593,20 +625,31 @@ bool CheckerboardConfiguration::verifyImage(BufferWithMemory* resultBuffer, Cont
 	DE_ASSERT(testParams.emptyASCase == EmptyAccelerationStructureCase::NOT_EMPTY);
 
 	DE_UNREF(context);
-	const auto*						bufferPtr	= (deInt32*)resultBuffer->getAllocation().getHostPtr();
-	deUint32						pos			= 0;
-	deUint32						failures	= 0;
+	const auto*						bufferPtr		= (deInt32*)resultBuffer->getAllocation().getHostPtr();
+	deUint32						pos				= 0;
+	deUint32						failures		= 0;
 
 	// verify results - each test case should generate checkerboard pattern
 	for (deUint32 y = 0; y < testParams.height; ++y)
 	for (deUint32 x = 0; x < testParams.width; ++x)
 	{
 		// The hit value should match the shader code.
-		const deInt32 hitValue			= ((testParams.instanceCustomIndexCase != InstanceCustomIndexCase::NONE) ? static_cast<deInt32>(INSTANCE_CUSTOM_INDEX_BASE + x + y) : 2);
-		const deInt32 expectedResult	= ((x + y) % 2) ? hitValue : 1;
+		if (testParams.useCullMask)
+		{
+			const deInt32 hitValue			= testParams.cullMask & 0x000000FFu; // only 8 last bits are used by the cullMask
+			const deInt32 expectedResult	= ((x + y) % 2) ? hitValue : bitfieldReverse(testParams.cullMask &  0x000000FFu);
 
-		if (bufferPtr[pos] != expectedResult)
-			failures++;
+			if (bufferPtr[pos] != expectedResult)
+				failures++;
+		}
+		else
+		{
+			const deInt32 hitValue			= ((testParams.instanceCustomIndexCase != InstanceCustomIndexCase::NONE) ? static_cast<deInt32>(INSTANCE_CUSTOM_INDEX_BASE + x + y) : 2);
+			const deInt32 expectedResult	= ((x + y) % 2) ? hitValue : 1;
+
+			if (bufferPtr[pos] != expectedResult)
+				failures++;
+		}
 
 		++pos;
 	}
@@ -672,6 +715,17 @@ public:
 		4,
 		5
 	};
+	// Different vertex configurations of a triangle whose parameter x is set to NaN during inactive_triangles tests
+	const bool nanConfig[7][3] =
+	{
+		{ true,		true,		true	},
+		{ true,		false,		false	},
+		{ false,	true,		false	},
+		{ false,	false,		true	},
+		{ true,		true,		false	},
+		{ false,	true,		true	},
+		{ true,		false,		true	},
+	};
 };
 
 std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > SingleTriangleConfiguration::initBottomAccelerationStructures (Context&			context,
@@ -685,29 +739,58 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > SingleTriangleConf
 	std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >	result;
 
 	de::MovePtr<BottomLevelAccelerationStructure>	bottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
-	bottomLevelAccelerationStructure->setGeometryCount(1u);
 
-	de::SharedPtr<RaytracedGeometryBase> geometry;
-	geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType);
-
-	auto customVertices(vertices);
+	unsigned int geometryCount = testParams.emptyASCase == EmptyAccelerationStructureCase::INACTIVE_TRIANGLES ? 4U : 1U;
 
 	if (testParams.emptyASCase == EmptyAccelerationStructureCase::INACTIVE_TRIANGLES)
 	{
-		const auto nanValue = tcu::Float32::nan().asFloat();
-		for (auto& vtx : customVertices)
-			vtx.x() = nanValue;
+		bottomLevelAccelerationStructure->setGeometryCount(geometryCount);
+
+		de::SharedPtr<RaytracedGeometryBase> geometry;
+		geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType);
+
+		for (unsigned int i = 0; i < geometryCount; i++)
+		{
+			auto customVertices(vertices);
+
+			const auto nanValue = tcu::Float32::nan().asFloat();
+
+			if (nanConfig[i][0])
+				customVertices[3].x() = nanValue;
+			if (nanConfig[i][1])
+				customVertices[4].x() = nanValue;
+			if (nanConfig[i][2])
+				customVertices[5].x() = nanValue;
+
+			for (auto it = begin(customVertices), eit = end(customVertices); it != eit; ++it)
+				geometry->addVertex(*it);
+
+			if (testParams.indexType != VK_INDEX_TYPE_NONE_KHR)
+			{
+				for (auto it = begin(indices), eit = end(indices); it != eit; ++it)
+					geometry->addIndex(*it);
+			}
+			bottomLevelAccelerationStructure->addGeometry(geometry);
+		}
 	}
-
-	for (auto it = begin(customVertices), eit = end(customVertices); it != eit; ++it)
-		geometry->addVertex(*it);
-
-	if (testParams.indexType != VK_INDEX_TYPE_NONE_KHR)
+	else
 	{
-		for (auto it = begin(indices), eit = end(indices); it != eit; ++it)
-			geometry->addIndex(*it);
+		bottomLevelAccelerationStructure->setGeometryCount(geometryCount);
+
+		de::SharedPtr<RaytracedGeometryBase> geometry;
+		geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType);
+
+		for (auto it = begin(vertices), eit = end(vertices); it != eit; ++it)
+			geometry->addVertex(*it);
+
+		if (testParams.indexType != VK_INDEX_TYPE_NONE_KHR)
+		{
+			for (auto it = begin(indices), eit = end(indices); it != eit; ++it)
+				geometry->addIndex(*it);
+		}
+		bottomLevelAccelerationStructure->addGeometry(geometry);
 	}
-	bottomLevelAccelerationStructure->addGeometry(geometry);
+
 	result.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
 
 	return result;
@@ -762,6 +845,21 @@ void SingleTriangleConfiguration::initShaderBindingTables(de::MovePtr<RayTracing
 	raygenShaderBindingTable											= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1 );
 	hitShaderBindingTable												= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1 );
 	missShaderBindingTable												= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 2, 1 );
+}
+
+bool pointInTriangle2D(const tcu::Vec3& p, const tcu::Vec3& p0, const tcu::Vec3& p1, const tcu::Vec3& p2)
+{
+	float s = p0.y() * p2.x() - p0.x() * p2.y() + (p2.y() - p0.y()) * p.x() + (p0.x() - p2.x()) * p.y();
+	float t = p0.x() * p1.y() - p0.y() * p1.x() + (p0.y() - p1.y()) * p.x() + (p1.x() - p0.x()) * p.y();
+
+	if ((s < 0) != (t < 0))
+		return false;
+
+	float a = -p1.y() * p2.x() + p0.y() * (p2.x() - p1.x()) + p0.x() * (p1.y() - p2.y()) + p1.x() * p2.y();
+
+	return a < 0 ?
+		(s <= 0 && s + t >= a) :
+		(s >= 0 && s + t <= a);
 }
 
 bool SingleTriangleConfiguration::verifyImage(BufferWithMemory* resultBuffer, Context& context, TestParams& testParams)
@@ -888,6 +986,9 @@ void RayTracingASBasicTestCase::checkSupport(Context& context) const
 	if (m_data.buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR && accelerationStructureFeaturesKHR.accelerationStructureHostCommands == DE_FALSE)
 		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructureHostCommands");
 
+	if (m_data.useCullMask)
+		context.requireDeviceFunctionality("VK_KHR_ray_tracing_maintenance1");
+
 	// Check supported vertex format.
 	checkAccelerationStructureVertexBufferFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_data.vertexFormat);
 }
@@ -908,8 +1009,10 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 	default: DE_ASSERT(false); break;
 	}
 
+
 	const std::string				imageDeclaration	= "layout(r32i, set = 0, binding = 0) uniform iimage2D result;\n";
 	const std::string				storeCustomIndex	= "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), ivec4(gl_InstanceCustomIndexEXT, 0, 0, 1));\n";
+	const std::string				storeCullMask		= "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), ivec4(gl_CullMaskEXT, 0, 0, 1));\n";
 	const vk::ShaderBuildOptions	buildOptions		(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
 
 	{
@@ -932,7 +1035,7 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 			<< "  vec3  origin    = vec3(float(gl_LaunchIDEXT.x) + 0.5f, float(gl_LaunchIDEXT.y) + 0.5f, 0.5);\n"
 			<< "  vec3  direction = vec3(0.0,0.0,-1.0);\n"
 			<< "  hitValue        = ivec4(0,0,0,0);\n"
-			<< "  traceRayEXT(topLevelAS, " << ((m_data.cullFlags == InstanceCullFlags::NONE) ? "0" : "gl_RayFlagsCullBackFacingTrianglesEXT") << ", 0xFF, 0, 0, 0, origin, tmin, direction, tmax, 0);\n";
+			<< "  traceRayEXT(topLevelAS, " << ((m_data.cullFlags == InstanceCullFlags::NONE) ? "0, " : "gl_RayFlagsCullBackFacingTrianglesEXT, ") << m_data.cullMask << ", 0, 0, 0, origin, tmin, direction, tmax, 0);\n";
 
 		if (storeInRGen)
 			css << "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), hitValue);\n";
@@ -947,6 +1050,7 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 		css
 			<< "#version 460 core\n"
 			<< "#extension GL_EXT_ray_tracing : require\n"
+			<< ((m_data.useCullMask) ? "#extension GL_EXT_ray_cull_mask : require\n" : "\n")
 			<< "layout(location = 0) rayPayloadInEXT ivec4 hitValue;\n";
 
 		if (storeInCHit)
@@ -958,7 +1062,16 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 			<< "  hitValue = ivec4(2,0,0,1);\n";
 
 		if (storeInCHit)
-			css << storeCustomIndex;
+		{
+			if (m_data.useCullMask)
+			{
+				css << storeCullMask;
+			}
+			else
+			{
+				css << storeCustomIndex;
+			}
+		}
 
 		css << "}\n";
 
@@ -971,10 +1084,11 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 		css
 			<< "#version 460 core\n"
 			<< "#extension GL_EXT_ray_tracing : require\n"
+			<< ((m_data.useCullMask) ? "#extension GL_EXT_ray_cull_mask : require\n" : "\n")
 			<< imageDeclaration
 			<< "void main()\n"
 			<< "{\n"
-			<< storeCustomIndex
+			<< ((m_data.useCullMask) ? storeCullMask : storeCustomIndex)
 			<< "}\n";
 
 		programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
@@ -985,6 +1099,7 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 		css
 			<< "#version 460 core\n"
 			<< "#extension GL_EXT_ray_tracing : require\n"
+			<< ((m_data.useCullMask) ? "#extension GL_EXT_ray_cull_mask : require\n" : "\n")
 			<< "hitAttributeEXT ivec4 hitAttribute;\n";
 
 		if (storeInISec)
@@ -995,9 +1110,17 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 			<< "{\n"
 			<< "  hitAttribute = ivec4(0,0,0,0);\n"
 			<< "  reportIntersectionEXT(0.5f, 0);\n";
-
 		if (storeInISec)
-			css << storeCustomIndex;
+		{
+			if (m_data.useCullMask)
+			{
+				css << storeCullMask;
+			}
+			else
+			{
+				css << storeCustomIndex;
+			}
+		}
 
 		css << "}\n";
 
@@ -1009,6 +1132,7 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 		css
 			<< "#version 460 core\n"
 			<< "#extension GL_EXT_ray_tracing : require\n"
+			<< ((m_data.useCullMask) ? "#extension GL_EXT_ray_cull_mask : require\n" : "\n")
 			<< "layout(location = 0) rayPayloadInEXT ivec4 hitValue;\n";
 
 		if (!storeInRGen)
@@ -1018,9 +1142,17 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 			<< "void main()\n"
 			<< "{\n"
 			<< "  hitValue = ivec4(1,0,0,1);\n";
-
 		if (!storeInRGen)
-			css << "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), hitValue);\n";
+		{
+			if (m_data.useCullMask)
+			{
+				css << "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), ivec4(bitfieldReverse(uint(gl_CullMaskEXT)), 0, 0, 1)); \n";
+			}
+			else
+			{
+				css << "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), hitValue);\n";
+			}
+		}
 
 		css << "}\n";
 
@@ -1551,6 +1683,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 			blas->setBuildFlags						(bottomBuildFlags);
 			blas->setUseArrayOfPointers				(m_data.bottomUsesAOP);
 			blas->setCreateGeneric					(m_data.bottomGeneric);
+			blas->setCreationBufferUnbounded		(m_data.bottomUnboundedCreation);
 			blas->setBuildWithoutGeometries			(buildWithoutGeom);
 			blas->setBuildWithoutPrimitives			(bottomNoPrimitives);
 			blas->createAndBuild					(vkd, device, *cmdBuffer, allocator);
@@ -1605,6 +1738,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					asCopy->setBuildFlags(m_data.buildFlags);
 					asCopy->setUseArrayOfPointers(m_data.bottomUsesAOP);
 					asCopy->setCreateGeneric(m_data.bottomGeneric);
+					asCopy->setCreationBufferUnbounded(m_data.bottomUnboundedCreation);
 					asCopy->setBuildWithoutGeometries(buildWithoutGeom);
 					asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
 					asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bottomLevelAccelerationStructures[i].get(), 0u, 0u);
@@ -1621,6 +1755,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					asCopy->setBuildFlags(m_data.buildFlags);
 					asCopy->setUseArrayOfPointers(m_data.bottomUsesAOP);
 					asCopy->setCreateGeneric(m_data.bottomGeneric);
+					asCopy->setCreationBufferUnbounded(m_data.bottomUnboundedCreation);
 					asCopy->setBuildWithoutGeometries(buildWithoutGeom);
 					asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
 					asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bottomLevelAccelerationStructures[i].get(), bottomBlasCompactSize[i], 0u);
@@ -1654,6 +1789,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					asCopy->setBuildFlags(m_data.buildFlags);
 					asCopy->setUseArrayOfPointers(m_data.bottomUsesAOP);
 					asCopy->setCreateGeneric(m_data.bottomGeneric);
+					asCopy->setCreationBufferUnbounded(m_data.bottomUnboundedCreation);
 					asCopy->setBuildWithoutGeometries(buildWithoutGeom);
 					asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
 					asCopy->setDeferredOperation(htSerialize, workerThreadsCount);
@@ -1683,6 +1819,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 		topLevelAccelerationStructure->setBuildWithoutPrimitives	(topNoPrimitives);
 		topLevelAccelerationStructure->setUseArrayOfPointers		(m_data.topUsesAOP);
 		topLevelAccelerationStructure->setCreateGeneric				(m_data.topGeneric);
+		topLevelAccelerationStructure->setCreationBufferUnbounded	(m_data.topUnboundedCreation);
 		topLevelAccelerationStructure->setInactiveInstances			(inactiveInstances);
 		topLevelAccelerationStructure->createAndBuild				(vkd, device, *cmdBuffer, allocator);
 		topLevelStructureHandles.push_back							(*(topLevelAccelerationStructure->getPtr()));
@@ -1723,6 +1860,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					topLevelAccelerationStructureCopy->setInactiveInstances(inactiveInstances);
 					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
 					topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
+					topLevelAccelerationStructureCopy->setCreationBufferUnbounded(m_data.topUnboundedCreation);
 					topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, topLevelAccelerationStructure.get(), 0u, 0u);
 					break;
 				}
@@ -1735,6 +1873,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					topLevelAccelerationStructureCopy->setInactiveInstances(inactiveInstances);
 					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
 					topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
+					topLevelAccelerationStructureCopy->setCreationBufferUnbounded(m_data.topUnboundedCreation);
 					topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, topLevelAccelerationStructure.get(), topBlasCompactSize[0], 0u);
 					break;
 				}
@@ -1763,8 +1902,34 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					topLevelAccelerationStructureCopy->setInactiveInstances(inactiveInstances);
 					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
 					topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
+					topLevelAccelerationStructureCopy->setCreationBufferUnbounded(m_data.topUnboundedCreation);
 					topLevelAccelerationStructureCopy->setDeferredOperation(htSerialize, workerThreadsCount);
 					topLevelAccelerationStructureCopy->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, storage.get(), 0u);
+					break;
+				}
+				case OP_UPDATE:
+				{
+					topLevelAccelerationStructureCopy = m_data.testConfiguration->initTopAccelerationStructure(m_context, m_data, *bottomLevelAccelerationStructuresPtr);
+					topLevelAccelerationStructureCopy->setBuildFlags(m_data.buildFlags);
+					topLevelAccelerationStructureCopy->create(vkd, device, allocator, 0u, 0u);
+					// Update AS based on topLevelAccelerationStructure
+					topLevelAccelerationStructureCopy->build(vkd, device, *cmdBuffer, topLevelAccelerationStructure.get());
+					break;
+				}
+				case OP_UPDATE_IN_PLACE:
+				{
+					// Update in place
+					topLevelAccelerationStructure->build(vkd, device, *cmdBuffer, topLevelAccelerationStructure.get());
+					// Make a coppy
+					topLevelAccelerationStructureCopy = makeTopLevelAccelerationStructure();
+					topLevelAccelerationStructureCopy->setDeferredOperation(htCopy, workerThreadsCount);
+					topLevelAccelerationStructureCopy->setBuildType(m_data.buildType);
+					topLevelAccelerationStructureCopy->setBuildFlags(m_data.buildFlags);
+					topLevelAccelerationStructureCopy->setBuildWithoutPrimitives(topNoPrimitives);
+					topLevelAccelerationStructureCopy->setInactiveInstances(inactiveInstances);
+					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
+					topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
+					topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, topLevelAccelerationStructure.get(), 0u, 0u);
 					break;
 				}
 				default:
@@ -1772,6 +1937,9 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 			}
 			topLevelRayTracedPtr = topLevelAccelerationStructureCopy.get();
 		}
+
+		const VkMemoryBarrier preTraceMemoryBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
+		cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, &preTraceMemoryBarrier);
 
 		VkWriteDescriptorSetAccelerationStructureKHR	accelerationStructureWriteDescriptorSet	=
 		{
@@ -2678,7 +2846,7 @@ RayTracingHeaderBottomAddressTestInstance::prepareTopAccelerationStructure (cons
 
 	std::vector<de::SharedPtr<BottomLevelAccelerationStructure>>	bottoms;
 
-	if (TTT_IDENTICAL_INSTANCES == m_params->topTestType)
+	if (TopTestType::IDENTICAL_INSTANCES == m_params->topTestType)
 	{
 		auto blas = de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
 		blas->setBuildType(m_params->buildType);
@@ -2689,7 +2857,7 @@ RayTracingHeaderBottomAddressTestInstance::prepareTopAccelerationStructure (cons
 			bottoms.emplace_back(blas);
 		}
 	}
-	else if (TTT_DIFFERENT_INSTANCES == m_params->topTestType)
+	else if (TopTestType::DIFFERENT_INSTANCES == m_params->topTestType)
 	{
 		for (deUint32 i = 0; i < m_params->width; ++i)
 		{
@@ -2739,7 +2907,7 @@ RayTracingHeaderBottomAddressTestInstance::prepareTopAccelerationStructure (cons
 				{ 0.0f, 0.0f, 1.0f, 0.0f },
 			}
 		};
-		tlas->addInstance(bottoms[i], transformMatrixKHR, 0, 0xFFu, 0u, getCullFlags((m_params->cullFlags)));
+		tlas->addInstance(bottoms[i], transformMatrixKHR, 0, m_params->cullMask, 0u, getCullFlags((m_params->cullFlags)));
 	}
 
 	tlas->createAndBuild(vk, device, cmdBuffer, allocator);
@@ -2755,7 +2923,7 @@ tcu::TestStatus RayTracingHeaderBottomAddressTestInstance::iterate (void)
 	const VkQueue										queue			= m_context.getUniversalQueue();
 	Allocator&											allocator		= m_context.getDefaultAllocator();
 
-	const Move<VkCommandPool>							cmdPool			= createCommandPool(vkd, device, 0, familyIndex);
+	const Move<VkCommandPool>							cmdPool			= createCommandPool(vkd, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, familyIndex);
 	const Move<VkCommandBuffer>							cmdBuffer		= allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	beginCommandBuffer(vkd, *cmdBuffer, 0);
@@ -2772,6 +2940,7 @@ tcu::TestStatus RayTracingHeaderBottomAddressTestInstance::iterate (void)
 	SerialStorage										deepStorage		(vkd, device, allocator, m_params->buildType, serialInfo);
 
 	// make deep serialization - top-level AS width bottom-level structures that it owns
+	vkd.resetCommandBuffer(*cmdBuffer, 0);
 	beginCommandBuffer(vkd, *cmdBuffer, 0);
 	src->serialize(vkd, device, *cmdBuffer, &deepStorage);
 	endCommandBuffer(vkd, *cmdBuffer);
@@ -2779,6 +2948,7 @@ tcu::TestStatus RayTracingHeaderBottomAddressTestInstance::iterate (void)
 
 	// deserialize all from the previous step to a new top-level AS
 	// bottom-level structure addresses should be updated when deep data is deserialized
+	vkd.resetCommandBuffer(*cmdBuffer, 0);
 	beginCommandBuffer(vkd, *cmdBuffer, 0);
 	dst->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, &deepStorage);
 	endCommandBuffer(vkd, *cmdBuffer);
@@ -2787,6 +2957,7 @@ tcu::TestStatus RayTracingHeaderBottomAddressTestInstance::iterate (void)
 	SerialStorage										shallowStorage	(vkd, device, allocator, m_params->buildType, inSizes[0]);
 
 	// make shallow serialization - only top-level AS without bottom-level structures
+	vkd.resetCommandBuffer(*cmdBuffer, 0);
 	beginCommandBuffer(vkd, *cmdBuffer, 0);
 	dst->serialize(vkd, device, *cmdBuffer, &shallowStorage);
 	endCommandBuffer(vkd, *cmdBuffer);
@@ -2850,6 +3021,1303 @@ bool RayTracingHeaderBottomAddressTestInstance::areAddressesDifferent (const std
 	return (matches == 0);
 }
 
+template<class X, class... Y>
+inline de::SharedPtr<X> makeShared(Y&&... ctorArgs) {
+	return de::SharedPtr<X>(new X(std::forward<Y>(ctorArgs)...));
+}
+template<class X, class... Y>
+inline de::MovePtr<X> makeMovePtr(Y&&... ctorArgs) {
+	return de::MovePtr<X>(new X(std::forward<Y>(ctorArgs)...));
+}
+template<class X>
+inline de::SharedPtr<X> makeSharedFrom(const X& x) {
+	return makeShared<X>(x);
+}
+
+struct QueryPoolResultsParams
+{
+	enum class Type
+	{
+		StructureSize,
+		PointerCount
+	}									queryType;
+	VkAccelerationStructureBuildTypeKHR	buildType;
+	deUint32							blasCount;
+	bool								inVkBuffer;
+	bool								compacted;
+};
+
+typedef de::SharedPtr<const QueryPoolResultsParams> QueryPoolResultsParamsPtr;
+
+struct ASInterface;
+typedef de::SharedPtr<ASInterface> ASInterfacePtr;
+
+class QueryPoolResultsInstance : public TestInstance
+{
+public:
+	using TlasPtr = de::SharedPtr<TopLevelAccelerationStructure>;
+	using BlasPtr = de::SharedPtr<BottomLevelAccelerationStructure>;
+
+				QueryPoolResultsInstance	(Context&						context,
+											 QueryPoolResultsParamsPtr		params)
+					: TestInstance	(context)
+					, m_params		(params) {}
+	auto		prepareBottomAccStructures	(const DeviceInterface&			vk,
+											 VkDevice						device,
+											 Allocator&						allocator,
+											 VkCommandBuffer				cmdBuffer) ->std::vector<BlasPtr>;
+	TlasPtr		prepareTopAccStructure		(const DeviceInterface&			vk,
+											 VkDevice						device,
+											 Allocator&						allocator,
+											 VkCommandBuffer				cmdBuffer,
+											 const std::vector<BlasPtr>&	bottoms);
+protected:
+	const QueryPoolResultsParamsPtr	m_params;
+};
+
+struct ASInterface
+{
+	virtual VkAccelerationStructureKHR getPtr() const = 0;
+	virtual VkAccelerationStructureBuildSizesInfoKHR getStructureBuildSizes() const = 0;
+	virtual ASInterfacePtr clone (Context& ctx, VkAccelerationStructureBuildTypeKHR buildType, const VkCommandBuffer cmd, VkDeviceSize size) = 0;
+};
+
+template<class> struct ASAllocator;
+template<> struct ASAllocator<QueryPoolResultsInstance::TlasPtr>
+{
+	typedef QueryPoolResultsInstance::TlasPtr TlasPtr;
+	static TlasPtr alloc() { return TlasPtr(makeTopLevelAccelerationStructure().release()); }
+};
+template<> struct ASAllocator<QueryPoolResultsInstance::BlasPtr>
+{
+	typedef QueryPoolResultsInstance::BlasPtr BlasPtr;
+	static BlasPtr alloc() { return BlasPtr(makeBottomLevelAccelerationStructure().release()); }
+};
+
+template<class SharedPtrType> struct ASInterfaceImpl : ASInterface
+{
+	SharedPtrType	m_source;
+	ASInterfaceImpl (SharedPtrType src) : m_source(src) {}
+	virtual VkAccelerationStructureKHR getPtr() const override
+	{
+		return *m_source->getPtr();
+	}
+	virtual VkAccelerationStructureBuildSizesInfoKHR getStructureBuildSizes() const override
+	{
+		return m_source->getStructureBuildSizes();
+	}
+	virtual ASInterfacePtr clone (Context& ctx, VkAccelerationStructureBuildTypeKHR buildType, const VkCommandBuffer cmd, VkDeviceSize size) override
+	{
+		const DeviceInterface&	vk				= ctx.getDeviceInterface();
+		const VkDevice			device			= ctx.getDevice();
+		Allocator&				allocator		= ctx.getDefaultAllocator();
+
+		auto ptr = ASAllocator<SharedPtrType>::alloc();
+		ptr->setBuildType(buildType);
+		ptr->setBuildFlags(m_source->getBuildFlags());
+		ptr->create(vk, device, allocator, size);
+		ptr->copyFrom(vk, device, cmd, m_source.get(), false);
+		return de::SharedPtr<ASInterface>(new ASInterfaceImpl(ptr));
+	}
+};
+
+template<class SharedPtrType> ASInterfacePtr makeASInterfacePtr (SharedPtrType asPtr)
+{
+	return ASInterfacePtr(new ASInterfaceImpl<SharedPtrType>(asPtr));
+}
+
+class QueryPoolResultsSizeInstance : public QueryPoolResultsInstance
+{
+public:
+				QueryPoolResultsSizeInstance	(Context&										context,
+												 QueryPoolResultsParamsPtr						params)
+					: QueryPoolResultsInstance	(context, params) {}
+	TestStatus	iterate							(void) override;
+	auto		makeCopyOfStructures			(const std::vector<ASInterfacePtr>&				structs,
+												 const std::vector<VkDeviceSize>				sizes) -> std::vector<ASInterfacePtr>;
+	auto		getStructureSizes				(const std::vector<VkAccelerationStructureKHR>&	handles) -> std::vector<VkDeviceSize>;
+};
+
+class QueryPoolResultsPointersInstance : public QueryPoolResultsInstance
+{
+public:
+				QueryPoolResultsPointersInstance (Context& context, QueryPoolResultsParamsPtr params)
+					: QueryPoolResultsInstance(context, params) {}
+
+	TestStatus	iterate							  (void) override;
+};
+
+class QueryPoolResultsCase : public TestCase
+{
+public:
+					QueryPoolResultsCase	(TestContext&				ctx,
+											 const char*				name,
+											 QueryPoolResultsParamsPtr	params)
+						: TestCase(ctx, name, std::string())
+						, m_params(params) {}
+	void			checkSupport			(Context&					context) const override;
+	TestInstance*	createInstance			(Context&					context) const override;
+
+	template<class T, class P = T(*)[1], class R = decltype(std::begin(*std::declval<P>()))>
+	static auto makeStdBeginEnd(void* p, deUint32 n) -> std::pair<R, R>
+	{
+		auto tmp = std::begin(*P(p));
+		auto begin = tmp;
+		std::advance(tmp, n);
+		return { begin, tmp };
+	}
+
+private:
+	const QueryPoolResultsParamsPtr	m_params;
+};
+
+TestInstance* QueryPoolResultsCase::createInstance (Context& context) const
+{
+	switch (m_params->queryType)
+	{
+		case QueryPoolResultsParams::Type::StructureSize:	return new QueryPoolResultsSizeInstance(context, m_params);
+		case QueryPoolResultsParams::Type::PointerCount:	return new QueryPoolResultsPointersInstance(context, m_params);
+	}
+	TCU_THROW(InternalError, "Unknown test type");
+	return nullptr;
+}
+
+void QueryPoolResultsCase::checkSupport (Context& context) const
+{
+	context.requireDeviceFunctionality(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+	context.requireDeviceFunctionality(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME);
+
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR = context.getAccelerationStructureFeatures();
+	if (m_params->buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR && accelerationStructureFeaturesKHR.accelerationStructureHostCommands == DE_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructureHostCommands");
+
+	const VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR& maintenance1FeaturesKHR = context.getRayTracingMaintenance1Features();
+	if (maintenance1FeaturesKHR.rayTracingMaintenance1 == VK_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR::rayTracingMaintenance1");
+}
+
+auto QueryPoolResultsInstance::prepareBottomAccStructures (const DeviceInterface&	vk,
+														   VkDevice					device,
+														   Allocator&				allocator,
+														   VkCommandBuffer			cmdBuffer) -> std::vector<BlasPtr>
+{
+	std::vector<Vec3>		triangle		=
+	{
+		{ 0.0, 0.0, 0.0 },
+		{ 0.5, 0.0, 0.0 },
+		{ 0.0, 0.5, 0.0 },
+	};
+
+	const deUint32			triangleCount	= ((1 + m_params->blasCount) * m_params->blasCount) / 2;
+	const float				angle			= (4.0f * std::acos(0.0f)) / float(triangleCount);
+	auto					rotateCcwZ		= [&](const Vec3& p, const Vec3& center) -> tcu::Vec3
+	{
+		const float s = std::sin(angle);
+		const float c = std::cos(angle);
+		const auto  t = p - center;
+		return tcu::Vec3(c * t.x() - s * t.y(), s * t.x() + c * t.y(), t.z()) + center;
+	};
+	auto					nextGeometry	= [&]() -> void
+	{
+		for (auto& vertex : triangle)
+			vertex = rotateCcwZ(vertex, Vec3(0.0f, 0.0f, 0.0f));
+	};
+
+	std::vector<BlasPtr>	bottoms			(m_params->blasCount);
+
+	for (deUint32 b = 0; b < m_params->blasCount; ++b)
+	{
+		BlasPtr blas(makeBottomLevelAccelerationStructure().release());
+
+		blas->setBuildType(m_params->buildType);
+		if (m_params->compacted)
+		{
+			blas->setBuildFlags(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR);
+		}
+		blas->addGeometry(triangle, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
+		for (deUint32 geom = b; geom < m_params->blasCount; ++geom)
+		{
+			nextGeometry();
+			blas->addGeometry(triangle, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
+		}
+
+		blas->createAndBuild(vk, device, cmdBuffer, allocator);
+
+		bottoms[b] = blas;
+	}
+
+	return bottoms;
+}
+
+auto QueryPoolResultsInstance::prepareTopAccStructure (const DeviceInterface&		vk,
+													   VkDevice						device,
+													   Allocator&					allocator,
+													   VkCommandBuffer				cmdBuffer,
+													   const std::vector<BlasPtr>&	bottoms) -> TlasPtr
+{
+	const std::size_t	instanceCount = bottoms.size();
+
+	de::MovePtr<TopLevelAccelerationStructure>	tlas = makeTopLevelAccelerationStructure();
+	tlas->setBuildType(m_params->buildType);
+	if (m_params->compacted)
+	{
+		tlas->setBuildFlags(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR);
+	}
+	tlas->setInstanceCount(instanceCount);
+
+	for (std::size_t i = 0; i < instanceCount; ++i)
+	{
+		tlas->addInstance(bottoms[i], identityMatrix3x4, 0, 0xFFu, 0u, VkGeometryInstanceFlagsKHR(0));
+	}
+
+	tlas->createAndBuild(vk, device, cmdBuffer, allocator);
+
+	return TlasPtr(tlas.release());
+}
+
+auto QueryPoolResultsSizeInstance::getStructureSizes (const std::vector<VkAccelerationStructureKHR>&	handles) -> std::vector<VkDeviceSize>
+{
+	const DeviceInterface&				vk				= m_context.getDeviceInterface();
+	const VkDevice						device			= m_context.getDevice();
+	const deUint32						familyIndex		= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue						queue			= m_context.getUniversalQueue();
+	Allocator&							allocator		= m_context.getDefaultAllocator();
+
+	const Move<VkCommandPool>			cmdPool			= createCommandPool(vk, device, 0, familyIndex);
+	const Move<VkCommandBuffer>			cmdBuffer		= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	const deUint32						queryCount		= static_cast<deUint32>(handles.size());
+
+	Move<VkQueryPool>					queryPoolSize	= makeQueryPool(vk, device, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SIZE_KHR, queryCount);
+	Move<VkQueryPool>					queryPoolSerial	= makeQueryPool(vk, device, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR, queryCount);
+	Move<VkQueryPool>					queryPoolCompact= m_params->compacted
+											? makeQueryPool(vk, device, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR, queryCount)
+											: Move<VkQueryPool>();
+
+	de::MovePtr<BufferWithMemory>		buffer;
+	std::vector<VkDeviceSize>			sizeSizes		(queryCount, 0);
+	std::vector<VkDeviceSize>			serialSizes		(queryCount, 0);
+	std::vector<VkDeviceSize>			compactSizes	(queryCount, 0);
+
+	if (m_params->inVkBuffer)
+	{
+		const auto vci = makeBufferCreateInfo((m_params->compacted ? 3 : 2) * queryCount * sizeof(VkDeviceSize), VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+		buffer = makeMovePtr<BufferWithMemory>(vk, device, allocator, vci, MemoryRequirement::Coherent | MemoryRequirement::HostVisible);
+	}
+
+	if (m_params->buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+	{
+		beginCommandBuffer(vk, *cmdBuffer, 0);
+
+		vk.cmdResetQueryPool(*cmdBuffer, *queryPoolSize, 0, queryCount);
+		vk.cmdResetQueryPool(*cmdBuffer, *queryPoolSerial, 0, queryCount);
+		if (m_params->compacted)
+		{
+			vk.cmdResetQueryPool(*cmdBuffer, *queryPoolCompact, 0, queryCount);
+		}
+
+		vk.cmdWriteAccelerationStructuresPropertiesKHR(*cmdBuffer, queryCount, handles.data(), VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SIZE_KHR, *queryPoolSize, 0);
+		vk.cmdWriteAccelerationStructuresPropertiesKHR(*cmdBuffer, queryCount, handles.data(), VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR, *queryPoolSerial, 0);
+
+		if (m_params->compacted)
+		{
+			vk.cmdWriteAccelerationStructuresPropertiesKHR(*cmdBuffer, queryCount, handles.data(), VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR, *queryPoolCompact, 0);
+		}
+
+		if (m_params->inVkBuffer)
+		{
+			vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPoolSize, 0, queryCount, **buffer, (0 * queryCount * sizeof(VkDeviceSize)),
+									   sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+			vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPoolSerial, 0, queryCount, **buffer, (1 * queryCount * sizeof(VkDeviceSize)),
+									   sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+			if (m_params->compacted)
+			{
+				vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPoolCompact, 0, queryCount, **buffer, (2 * queryCount * sizeof(VkDeviceSize)),
+											sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+			}
+		}
+		endCommandBuffer(vk, *cmdBuffer);
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+		if (m_params->inVkBuffer)
+		{
+			Allocation&	alloc		= buffer->getAllocation();
+			invalidateMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), VK_WHOLE_SIZE);
+
+			deUint8*	ptrSize		= reinterpret_cast<deUint8*>(alloc.getHostPtr());
+			deUint8*	ptrSerial	= ptrSize + queryCount * sizeof(VkDeviceSize);
+
+			auto		rangeSize	= QueryPoolResultsCase::makeStdBeginEnd<VkDeviceSize>(ptrSize, queryCount);
+			auto		rangeSerial	= QueryPoolResultsCase::makeStdBeginEnd<VkDeviceSize>(ptrSerial, queryCount);
+
+			std::copy_n(rangeSize.first, queryCount, sizeSizes.begin());
+			std::copy_n(rangeSerial.first, queryCount, serialSizes.begin());
+
+			if (m_params->compacted)
+			{
+				auto	ptrCompact	= ptrSize + 2 * queryCount * sizeof(VkDeviceSize);
+				auto	rangeCompact= QueryPoolResultsCase::makeStdBeginEnd<VkDeviceSize>(ptrCompact, queryCount);
+				std::copy_n(rangeCompact.first, queryCount, compactSizes.begin());
+			}
+		}
+		else
+		{
+			VK_CHECK(vk.getQueryPoolResults(device, *queryPoolSize, 0u, queryCount, queryCount * sizeof(VkDeviceSize),
+											sizeSizes.data(), sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+			VK_CHECK(vk.getQueryPoolResults(device, *queryPoolSerial, 0u, queryCount, queryCount * sizeof(VkDeviceSize),
+											serialSizes.data(), sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+			if (m_params->compacted)
+			{
+				VK_CHECK(vk.getQueryPoolResults(device, *queryPoolCompact, 0u, queryCount, queryCount * sizeof(VkDeviceSize),
+												compactSizes.data(), sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+			}
+		}
+	}
+	else
+	{
+		vk.writeAccelerationStructuresPropertiesKHR(device, queryCount, handles.data(), VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SIZE_KHR,
+													queryCount * sizeof(VkDeviceSize), sizeSizes.data(), sizeof(VkDeviceSize));
+		vk.writeAccelerationStructuresPropertiesKHR(device, queryCount, handles.data(), VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR,
+													queryCount * sizeof(VkDeviceSize), serialSizes.data(), sizeof(VkDeviceSize));
+		if (m_params->compacted)
+		{
+			vk.writeAccelerationStructuresPropertiesKHR(device, queryCount, handles.data(), VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR,
+													queryCount * sizeof(VkDeviceSize), compactSizes.data(), sizeof(VkDeviceSize));
+		}
+	}
+
+	sizeSizes.insert(sizeSizes.end(), serialSizes.begin(), serialSizes.end());
+	sizeSizes.insert(sizeSizes.end(), compactSizes.begin(), compactSizes.end());
+
+	return sizeSizes;
+}
+
+auto QueryPoolResultsSizeInstance::makeCopyOfStructures (const std::vector<ASInterfacePtr>&	structs,
+														 const std::vector<VkDeviceSize>	sizes) -> std::vector<ASInterfacePtr>
+{
+	const DeviceInterface&				vk				= m_context.getDeviceInterface();
+	const VkDevice						device			= m_context.getDevice();
+	const VkQueue						queue			= m_context.getUniversalQueue();
+
+	Move<VkCommandPool>					cmdPool;
+	Move<VkCommandBuffer>				cmdBuffer;
+
+	std::vector<ASInterfacePtr>			copies;
+
+	if (m_params->buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+	{
+		const deUint32	familyIndex	= m_context.getUniversalQueueFamilyIndex();
+						cmdPool		= createCommandPool(vk, device, 0, familyIndex);
+						cmdBuffer	= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		beginCommandBuffer(vk, *cmdBuffer, 0u);
+	}
+
+	for (auto begin = structs.begin(), i = begin; i != structs.end(); ++i)
+	{
+		copies.push_back((*i)->clone(m_context, m_params->buildType, *cmdBuffer, sizes.at(std::distance(begin, i))));
+	}
+
+	if (m_params->buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+	{
+		endCommandBuffer(vk, *cmdBuffer);
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+	}
+
+	return copies;
+}
+
+TestStatus QueryPoolResultsSizeInstance::iterate (void)
+{
+	const DeviceInterface&								vk				= m_context.getDeviceInterface();
+	const VkDevice										device			= m_context.getDevice();
+	const deUint32										familyIndex		= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue										queue			= m_context.getUniversalQueue();
+	Allocator&											allocator		= m_context.getDefaultAllocator();
+
+	const Move<VkCommandPool>							cmdPool			= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, familyIndex);
+	const Move<VkCommandBuffer>							cmdBuffer		= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	beginCommandBuffer(vk, *cmdBuffer, 0);
+	const std::vector<BlasPtr>							bottoms			= prepareBottomAccStructures(vk, device, allocator, *cmdBuffer);
+	TlasPtr												tlas			= prepareTopAccStructure(vk, device, allocator, *cmdBuffer, bottoms);
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	const deUint32										queryCount		= m_params->blasCount + 1;
+	std::vector<VkAccelerationStructureKHR>				handles			(queryCount);
+	handles[0] = *tlas->getPtr();
+	std::transform(bottoms.begin(), bottoms.end(), std::next(handles.begin()), [](const BlasPtr& blas){ return *blas->getPtr(); });
+
+	// only the first queryCount elements are results from ACCELERATION_STRUCTURE_SIZE queries.
+	const std::vector<VkDeviceSize>						sourceSizes		= getStructureSizes(handles);
+
+	std::vector<ASInterfacePtr>							sourceStructures;
+	sourceStructures.push_back(makeASInterfacePtr(tlas));
+	for (BlasPtr blas : bottoms) sourceStructures.push_back(makeASInterfacePtr(blas));
+
+	std::vector<ASInterfacePtr>							copies = makeCopyOfStructures(sourceStructures, sourceSizes);
+	std::transform(copies.begin(), copies.end(), handles.begin(), [](const ASInterfacePtr& intf) { return intf->getPtr(); });
+
+	const std::vector<VkDeviceSize>						copySizes = getStructureSizes(handles);
+
+	// verification
+	bool pass = true;
+	for (deUint32 i = 0; pass && i < queryCount; ++i)
+	{
+		pass = sourceSizes.at(i) == copySizes.at(i);
+	}
+
+	return pass ? TestStatus::pass("") : TestStatus::fail("");
+}
+
+TestStatus QueryPoolResultsPointersInstance::iterate (void)
+{
+	const DeviceInterface&								vk				= m_context.getDeviceInterface();
+	const VkDevice										device			= m_context.getDevice();
+	const deUint32										familyIndex		= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue										queue			= m_context.getUniversalQueue();
+	Allocator&											allocator		= m_context.getDefaultAllocator();
+
+	const Move<VkCommandPool>							cmdPool			= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, familyIndex);
+	const Move<VkCommandBuffer>							cmdBuffer		= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	beginCommandBuffer(vk, *cmdBuffer, 0);
+	const std::vector<BlasPtr>							bottoms			= prepareBottomAccStructures(vk, device, allocator, *cmdBuffer);
+	TlasPtr												tlas			= prepareTopAccStructure(vk, device, allocator, *cmdBuffer, bottoms);
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	const deUint32										queryCount		= m_params->blasCount + 1;
+	std::vector<VkAccelerationStructureKHR>				handles			(queryCount);
+	handles[0] = *tlas.get()->getPtr();
+	std::transform(bottoms.begin(), bottoms.end(), std::next(handles.begin()), [](const BlasPtr& blas){ return *blas.get()->getPtr(); });
+
+	const VkQueryType									queryType		= VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_BOTTOM_LEVEL_POINTERS_KHR;
+	Move<VkQueryPool>									queryPoolCounts	= makeQueryPool(vk, device, queryType, queryCount);
+
+	de::MovePtr<BufferWithMemory>						buffer;
+	std::vector<VkDeviceSize>							pointerCounts	(queryCount, 123u);
+
+	if (m_params->inVkBuffer)
+	{
+		const auto vci = makeBufferCreateInfo(queryCount * sizeof(VkDeviceSize), VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+		buffer = makeMovePtr<BufferWithMemory>(vk, device, allocator, vci, MemoryRequirement::Coherent | MemoryRequirement::HostVisible);
+	}
+
+	if (m_params->buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+	{
+		beginCommandBuffer(vk, *cmdBuffer, 0);
+		vk.cmdResetQueryPool(*cmdBuffer, *queryPoolCounts, 0, queryCount);
+		vk.cmdWriteAccelerationStructuresPropertiesKHR(*cmdBuffer, queryCount, handles.data(), queryType, *queryPoolCounts, 0);
+		if (m_params->inVkBuffer)
+		{
+			vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPoolCounts, 0, queryCount, **buffer, 0 /*offset*/,
+									   sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+		}
+		endCommandBuffer(vk, *cmdBuffer);
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+		if (m_params->inVkBuffer)
+		{
+			Allocation&	alloc		= buffer->getAllocation();
+			invalidateMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), VK_WHOLE_SIZE);
+			auto		rangeCounts	= QueryPoolResultsCase::makeStdBeginEnd<VkDeviceSize>(alloc.getHostPtr(), queryCount);
+			std::copy_n(rangeCounts.first, queryCount, pointerCounts.begin());
+		}
+		else
+		{
+			VK_CHECK(vk.getQueryPoolResults(device, *queryPoolCounts, 0u, queryCount, queryCount * sizeof(VkDeviceSize),
+											pointerCounts.data(), sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+		}
+	}
+	else
+	{
+		vk.writeAccelerationStructuresPropertiesKHR(device, queryCount, handles.data(), queryType,
+													queryCount * sizeof(VkDeviceSize), pointerCounts.data(), sizeof(VkDeviceSize));
+	}
+
+	// verification
+	const std::vector<VkDeviceSize>						inSizes			= tlas->getSerializingSizes(vk, device, queue, familyIndex);
+	SerialStorage										storage			(vk, device, allocator, m_params->buildType, inSizes[0]);
+
+	beginCommandBuffer(vk, *cmdBuffer, 0);
+	tlas->serialize(vk, device, *cmdBuffer, &storage);
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	const SerialStorage::AccelerationStructureHeader*	header			= storage.getASHeader();
+
+	bool pass = (header->handleCount == pointerCounts[0]); // must be the same as bottoms.size()
+	for (deUint32 i = 1; pass && i < queryCount; ++i)
+	{
+		pass = (0 == pointerCounts[i]); // bottoms have no chidren
+	}
+
+	return pass ? TestStatus::pass("") : TestStatus::fail("");
+}
+
+
+struct CopyWithinPipelineParams
+{
+	enum class Type
+	{
+		StageASCopyBit,
+		StageAllTransferBit,
+		AccessSBTReadBit
+	}									type;
+	deUint32							width;
+	deUint32							height;
+	VkAccelerationStructureBuildTypeKHR	build;
+};
+typedef de::SharedPtr<const CopyWithinPipelineParams> CopyWithinPipelineParamsPtr;
+
+class CopyWithinPipelineInstance : public TestInstance
+{
+public:
+	using TlasPtr = de::SharedPtr<TopLevelAccelerationStructure>;
+	using BlasPtr = de::SharedPtr<BottomLevelAccelerationStructure>;
+
+				CopyWithinPipelineInstance (Context& context, CopyWithinPipelineParamsPtr params)
+					: TestInstance	(context)
+					, vk			(context.getDeviceInterface())
+					, device		(context.getDevice())
+					, allocator		(context.getDefaultAllocator())
+					, rgenShader	(createShaderModule(vk, device, context.getBinaryCollection().get("rgen")))
+					, chitShader	(createShaderModule(vk, device, context.getBinaryCollection().get("chit")))
+					, missShader	(createShaderModule(vk, device, context.getBinaryCollection().get("miss")))
+					, m_params		(params)
+					, m_format		(VK_FORMAT_R32G32B32A32_SFLOAT) {}
+protected:
+	const DeviceInterface&		vk;
+	const VkDevice				device;
+	Allocator&					allocator;
+	Move<VkShaderModule>		rgenShader;
+	Move<VkShaderModule>		chitShader;
+	Move<VkShaderModule>		missShader;
+	CopyWithinPipelineParamsPtr	m_params;
+	VkFormat					m_format;
+};
+
+class CopyBlasInstance : public CopyWithinPipelineInstance
+{
+public:
+				CopyBlasInstance	(Context& context, CopyWithinPipelineParamsPtr params)
+					: CopyWithinPipelineInstance(context, params) {}
+	TestStatus	iterate				(void) override;
+	auto		getRefImage			(BlasPtr blas) const -> de::MovePtr<BufferWithMemory>;
+
+};
+
+class CopySBTInstance : public CopyWithinPipelineInstance
+{
+public:
+				CopySBTInstance		(Context&			context,
+									 CopyWithinPipelineParamsPtr params)
+					: CopyWithinPipelineInstance(context, params) {}
+	TestStatus	iterate			(void) override;
+	auto		getBufferSizeForSBT	(const deUint32&	groupCount,
+									 const deUint32&	shaderGroupHandleSize,
+									 const deUint32&	shaderGroupBaseAlignment) const -> VkDeviceSize;
+	auto		getBufferForSBT		(const deUint32&	groupCount,
+									 const deUint32&	shaderGroupHandleSize,
+									 const deUint32&	shaderGroupBaseAlignment) const -> de::MovePtr<BufferWithMemory>;
+};
+
+class PipelineStageASCase : public TestCase
+{
+public:
+					PipelineStageASCase	(TestContext&			ctx,
+										 const char*			name,
+										 CopyWithinPipelineParamsPtr	params)
+						: TestCase	(ctx, name, std::string())
+						, m_params	(params) {}
+	void			initPrograms	(SourceCollections&		programs) const override;
+	void			checkSupport	(Context&				context) const override;
+	TestInstance*	createInstance	(Context&				context) const override;
+
+private:
+	CopyWithinPipelineParamsPtr	m_params;
+};
+
+namespace u
+{
+namespace details
+{
+template<class X, class Y> struct BarrierMaker {
+	const X& m_x;
+	BarrierMaker (const X& x) : m_x(x) {}
+	uint32_t count () const { return 1; }
+	const X* pointer () const { return &m_x; }
+};
+template<class Y> struct BarrierMaker<std::false_type, Y> {
+	BarrierMaker (const std::false_type&) {}
+	uint32_t count () const { return 0; }
+	Y* pointer () const { return nullptr; }
+};
+template<class Z, uint32_t N> struct BarrierMaker<const Z[N], Z> {
+	const Z (&m_a)[N];
+	BarrierMaker (const Z (&a)[N]) : m_a(a) {}
+	uint32_t count () const { return N; }
+	const Z* pointer () const { return m_a; }
+};
+template<class Mem, class Buf, class Img, class Exp>
+struct Sel {
+	typedef typename std::remove_cv<Mem>::type	t_Mem;
+	typedef typename std::remove_cv<Buf>::type	t_Buf;
+	typedef typename std::remove_cv<Img>::type	t_Img;
+	typedef std::integral_constant<uint32_t, 0> index0;
+	typedef std::integral_constant<uint32_t, 1> index1;
+	typedef std::integral_constant<uint32_t, 2> index2;
+	typedef std::integral_constant<uint32_t, 3> index3;
+	using isMem = std::is_same<t_Mem, Exp>;
+	using isBuf = std::is_same<t_Buf, Exp>;
+	using isImg = std::is_same<t_Img, Exp>;
+	template<bool B, class T, class F> using choose = typename std::conditional<B,T,F>::type;
+	typedef choose<isMem::value, BarrierMaker<Mem, Exp>,
+			choose<isBuf::value, BarrierMaker<Buf, Exp>,
+			choose<isImg::value, BarrierMaker<Img, Exp>,
+								 BarrierMaker<std::false_type, Exp>>>> type;
+	typedef choose<isMem::value, index0,
+			choose<isBuf::value, index1,
+			choose<isImg::value, index2,
+								 index3>>> index;
+};
+} // details
+constexpr std::false_type NoneBarriers{};
+/**
+ * @brief	Helper function that makes and populates VkDependencyInfoKHR structure.
+ * @param	barriers1 - any of VkMemoryBarrier2KHR, VkBufferMemoryBarrier2KHR or VkImageMemoryBarrier2KHR (mandatory param)
+ * @param	barriers2 - any of VkMemoryBarrier2KHR, VkBufferMemoryBarrier2KHR or VkImageMemoryBarrier2KHR (optional param)
+ * @param	barriers2 - any of VkMemoryBarrier2KHR, VkBufferMemoryBarrier2KHR or VkImageMemoryBarrier2KHR (optional param)
+ * @note	The order of the parameters does not matter.
+ */
+template<class Barriers1, class Barriers2 = std::false_type, class Barriers3 = std::false_type>
+VkDependencyInfoKHR makeDependency (const Barriers1& barriers1, const Barriers2& barriers2 = NoneBarriers, const Barriers3& barriers3 = NoneBarriers)
+{
+	auto args = std::forward_as_tuple(barriers1, barriers2, barriers3, std::false_type());
+	const uint32_t memIndex = details::Sel<Barriers1, Barriers2, Barriers3, VkMemoryBarrier2KHR>::index::value;
+	const uint32_t bufIndex = details::Sel<Barriers1, Barriers2, Barriers3, VkBufferMemoryBarrier2KHR>::index::value;
+	const uint32_t imgIndex = details::Sel<Barriers1, Barriers2, Barriers3, VkImageMemoryBarrier2KHR>::index::value;
+	typedef typename details::Sel<Barriers1, Barriers2, Barriers3, VkMemoryBarrier2KHR>::type		memType;
+	typedef typename details::Sel<Barriers1, Barriers2, Barriers3, VkBufferMemoryBarrier2KHR>::type	bufType;
+	typedef typename details::Sel<Barriers1, Barriers2, Barriers3, VkImageMemoryBarrier2KHR>::type	imgType;
+	return
+	{
+		VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,			// VkStructureType					sType;
+		nullptr,										// const void*						pNext;
+		VK_DEPENDENCY_BY_REGION_BIT,					// VkDependencyFlags				dependencyFlags;
+		memType(std::get<memIndex>(args)).count(),		// uint32_t							memoryBarrierCount;
+		memType(std::get<memIndex>(args)).pointer(),	// const VkMemoryBarrier2KHR*		pMemoryBarriers;
+		bufType(std::get<bufIndex>(args)).count(),		// uint32_t							bufferMemoryBarrierCount;
+		bufType(std::get<bufIndex>(args)).pointer(),	// const VkBufferMemoryBarrier2KHR*	pBufferMemoryBarriers;
+		imgType(std::get<imgIndex>(args)).count(),		// uint32_t							imageMemoryBarrierCount;
+		imgType(std::get<imgIndex>(args)).pointer()		// const VkImageMemoryBarrier2KHR*	pImageMemoryBarriers;
+	};
+}
+} // u
+
+TestInstance* PipelineStageASCase::createInstance (Context& context) const
+{
+	de::MovePtr<TestInstance> instance;
+	switch (m_params->type)
+	{
+	case CopyWithinPipelineParams::Type::StageASCopyBit:
+	case CopyWithinPipelineParams::Type::StageAllTransferBit:
+		instance = makeMovePtr<CopyBlasInstance>(context, m_params);
+		break;
+	case CopyWithinPipelineParams::Type::AccessSBTReadBit:
+		instance = makeMovePtr<CopySBTInstance>(context, m_params);
+		break;
+	}
+	return instance.release();
+}
+
+void PipelineStageASCase::initPrograms (SourceCollections& programs) const
+{
+	const vk::ShaderBuildOptions	buildOptions	(programs.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+	const char						endl			= '\n';
+
+	{
+		std::stringstream str;
+		str << "#version 460 core"																		<< endl
+			<< "#extension GL_EXT_ray_tracing : require"												<< endl
+			<< "layout(location = 0) rayPayloadEXT vec4 payload;"										<< endl
+			<< "layout(rgba32f, set = 0, binding = 0) uniform image2D result;"							<< endl
+			<< "layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;"				<< endl
+			<< "void main()"																			<< endl
+			<< "{"																						<< endl
+			<< "  float rx           = (float(gl_LaunchIDEXT.x) + 0.5) / float(gl_LaunchSizeEXT.x);"	<< endl
+			<< "  float ry           = (float(gl_LaunchIDEXT.y) + 0.5) / float(gl_LaunchSizeEXT.y);"	<< endl
+			<< "  payload            = vec4(0.5, 0.5, 0.5, 1.0);"										<< endl
+			<< "  vec3  orig         = vec3(rx, ry, 1.0);"												<< endl
+			<< "  vec3  dir          = vec3(0.0, 0.0, -1.0);"											<< endl
+			<< "  traceRayEXT(topLevelAS, gl_RayFlagsNoneEXT, 0xFFu, 0, 0, 0, orig, 0.0, dir, 2.0, 0);"	<< endl
+			<< "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), payload);"								<< endl
+			<< "}";
+		str.flush();
+		programs.glslSources.add("rgen") << glu::RaygenSource(str.str()) << buildOptions;
+	}
+
+	{
+		std::stringstream str;
+		str << "#version 460 core"									<< endl
+			<< "#extension GL_EXT_ray_tracing : require"			<< endl
+			<< "layout(location = 0) rayPayloadInEXT vec4 payload;"	<< endl
+			<< "void main()"										<< endl
+			<< "{"													<< endl
+			<< "  payload = vec4(0.0, 1.0, 0.0, 1.0);"				<< endl
+			<< "}";
+		str.flush();
+		programs.glslSources.add("chit") << glu::ClosestHitSource(str.str()) << buildOptions;
+	}
+
+	{
+		std::stringstream str;
+		str	<< "#version 460 core"									<< endl
+			<< "#extension GL_EXT_ray_tracing : require"			<< endl
+			<< "layout(location = 0) rayPayloadInEXT vec4 payload;"	<< endl
+			<< "void main()"										<< endl
+			<< "{"													<< endl
+			<< "  payload = vec4(1.0, 0.0, 0.0, 1.0);"				<< endl
+			<< "}";
+		str.flush();
+		programs.glslSources.add("miss") << glu::MissSource(str.str()) << buildOptions;
+	}
+}
+
+void PipelineStageASCase::checkSupport (Context& context) const
+{
+	context.requireInstanceFunctionality(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+	context.requireDeviceFunctionality(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+	context.requireDeviceFunctionality(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME);
+	context.requireDeviceFunctionality(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+	context.requireDeviceFunctionality(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR = context.getAccelerationStructureFeatures();
+	if (m_params->build == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR && accelerationStructureFeaturesKHR.accelerationStructureHostCommands == DE_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceAccelerationStructureFeaturesKHR::accelerationStructureHostCommands");
+
+	const VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR& maintenance1FeaturesKHR = context.getRayTracingMaintenance1Features();
+	if (maintenance1FeaturesKHR.rayTracingMaintenance1 == VK_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR::rayTracingMaintenance1");
+
+	const VkPhysicalDeviceSynchronization2FeaturesKHR& synchronization2Features = context.getSynchronization2Features();
+	if (synchronization2Features.synchronization2 == VK_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceSynchronization2FeaturesKHR::synchronization2");
+
+	if (m_params->type != CopyWithinPipelineParams::Type::AccessSBTReadBit)
+	{
+		context.requireDeviceFunctionality(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
+		const VkPhysicalDevicePushDescriptorPropertiesKHR&		pushDescriptorProperties = context.getPushDescriptorProperties();
+		if (pushDescriptorProperties.maxPushDescriptors < 32)
+			TCU_THROW(NotSupportedError, "Requires VK_KHR_push_descriptor extension");
+	}
+}
+
+auto CopyBlasInstance::getRefImage (BlasPtr blas) const -> de::MovePtr<BufferWithMemory>
+{
+	const deUint32							queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue							queue						= m_context.getUniversalQueue();
+
+	const de::MovePtr<RayTracingProperties>	rtProps						= makeRayTracingProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
+	const deUint32							shaderGroupHandleSize		= rtProps->getShaderGroupHandleSize();
+	const deUint32							shaderGroupBaseAlignment	= rtProps->getShaderGroupBaseAlignment();
+
+	const VkImageCreateInfo					imageCreateInfo				= makeImageCreateInfo(m_params->width, m_params->height, m_format);
+	const VkImageSubresourceRange			imageSubresourceRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0, 1u);
+	const de::MovePtr<ImageWithMemory>		image						= makeMovePtr<ImageWithMemory>(vk, device, allocator, imageCreateInfo, MemoryRequirement::Any);
+	const Move<VkImageView>					view						= makeImageView(vk, device, **image, VK_IMAGE_VIEW_TYPE_2D, m_format, imageSubresourceRange);
+
+	const deUint32							bufferSize					= (m_params->width * m_params->height * mapVkFormat(m_format).getPixelSize());
+	const VkBufferCreateInfo				bufferCreateInfo			= makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	de::MovePtr<BufferWithMemory>			buffer						= makeMovePtr<BufferWithMemory>(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible);
+
+	const VkImageSubresourceLayers			imageSubresourceLayers		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+	const VkBufferImageCopy					bufferCopyImageRegion		= makeBufferImageCopy(makeExtent3D(m_params->width, m_params->height, 1u), imageSubresourceLayers);
+
+	de::MovePtr<RayTracingPipeline>			rtPipeline					= makeMovePtr<RayTracingPipeline>();
+	rtPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,		*rgenShader, 0);
+	rtPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,	*chitShader, 1);
+	rtPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR,			*missShader, 2);
+
+	const Move<VkDescriptorPool>			descriptorPool				= DescriptorPoolBuilder()
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2)
+		.addType(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 2)
+		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+	const Move<VkDescriptorSetLayout>		descriptorSetLayout			= DescriptorSetLayoutBuilder()
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, ALL_RAY_TRACING_STAGES)
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, ALL_RAY_TRACING_STAGES)
+		.build(vk, device);
+	const Move<VkDescriptorSet>				descriptorSet			= makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+
+	const Move<VkPipelineLayout>			pipelineLayout				= makePipelineLayout(vk, device, *descriptorSetLayout);
+	Move<VkPipeline>						pipeline					= rtPipeline->createPipeline(vk, device, *pipelineLayout);
+
+	de::MovePtr<BufferWithMemory>			rgenSbt						= rtPipeline->createShaderBindingTable(vk, device, *pipeline, allocator,
+																											   shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
+	VkStridedDeviceAddressRegionKHR			rgenRegion					= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, **rgenSbt, 0),
+																											shaderGroupHandleSize, shaderGroupHandleSize);
+	de::MovePtr<BufferWithMemory>			chitSbt						= rtPipeline->createShaderBindingTable(vk, device, *pipeline, allocator,
+																											   shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
+	VkStridedDeviceAddressRegionKHR			chitRegion					= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, **chitSbt, 0),
+																											shaderGroupHandleSize, shaderGroupHandleSize);
+	de::MovePtr<BufferWithMemory>			missSbt						= rtPipeline->createShaderBindingTable(vk, device, *pipeline, allocator,
+																											   shaderGroupHandleSize, shaderGroupBaseAlignment, 2, 1);
+	VkStridedDeviceAddressRegionKHR			missRegion					= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, **missSbt, 0),
+																											shaderGroupHandleSize, shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	callRegion					= makeStridedDeviceAddressRegionKHR(VkDeviceAddress(0), 0, 0);
+
+	const VkClearValue						clearValue					= { { { 0.1f, 0.2f, 0.3f, 0.4f } } };
+
+	const VkImageMemoryBarrier2KHR			preClearImageImageBarrier	= makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR, 0,
+																								  VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR, VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,
+																								  VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+																								  **image, imageSubresourceRange, queueFamilyIndex, queueFamilyIndex);
+	const VkImageMemoryBarrier2KHR			postClearImageImageBarrier	= makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR, VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,
+																								  VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_2_SHADER_READ_BIT_KHR,
+																								  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+																								  **image, imageSubresourceRange, queueFamilyIndex, queueFamilyIndex);
+	const VkDependencyInfoKHR				preClearImageDependency		= u::makeDependency(preClearImageImageBarrier);
+	const VkDependencyInfoKHR				postClearImageDependency	= u::makeDependency(postClearImageImageBarrier);
+
+
+	const VkImageMemoryBarrier2KHR			postTraceRaysImageBarrier	= makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_2_SHADER_WRITE_BIT_KHR,
+																								  VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR, VK_ACCESS_2_TRANSFER_READ_BIT_KHR,
+																								  VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+																								  **image, imageSubresourceRange, queueFamilyIndex, queueFamilyIndex);
+	const VkImageMemoryBarrier2KHR			postCopyImageImageBarrier	= makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,	VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,
+																								  VK_PIPELINE_STAGE_2_HOST_BIT_KHR, VK_ACCESS_2_HOST_READ_BIT_KHR,
+																								  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+																								  **image, imageSubresourceRange, queueFamilyIndex, queueFamilyIndex);
+	const VkDependencyInfoKHR				postTraceRaysDependency		= u::makeDependency(postTraceRaysImageBarrier);
+	const VkDependencyInfoKHR				postCopyImageDependency		= u::makeDependency(postCopyImageImageBarrier);
+
+	const Move<VkCommandPool>				cmdPool						= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+	const Move<VkCommandBuffer>				cmdBuffer					= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	auto									tlas						= makeTopLevelAccelerationStructure();
+	tlas->setBuildType(m_params->build);
+	tlas->setInstanceCount(1);
+	tlas->addInstance(blas, identityMatrix3x4, 0, (~0u), 0, VkGeometryInstanceFlagsKHR(0));
+	beginCommandBuffer(vk, *cmdBuffer);
+		tlas->createAndBuild(vk, device, *cmdBuffer, allocator);
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	const VkDescriptorImageInfo				descriptorImageInfo			= makeDescriptorImageInfo(VkSampler(), *view, VK_IMAGE_LAYOUT_GENERAL);
+	const VkWriteDescriptorSetAccelerationStructureKHR writeDescriptorTlas
+	{
+		VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,	//  VkStructureType						sType;
+		nullptr,															//  const void*							pNext;
+		1,																	//  deUint32							accelerationStructureCount;
+		tlas->getPtr()														//  const VkAccelerationStructureKHR*	pAccelerationStructures;
+	};
+
+	DescriptorSetUpdateBuilder()
+		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfo)
+		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &writeDescriptorTlas)
+		.update(vk, device);
+
+	beginCommandBuffer(vk, *cmdBuffer);
+		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
+		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1, &descriptorSet.get(), 0, nullptr);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &preClearImageDependency);
+		vk.cmdClearColorImage(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.color, 1, &imageSubresourceRange);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postClearImageDependency);
+		cmdTraceRays(vk,
+			*cmdBuffer,
+			&rgenRegion,	// rgen
+			&missRegion,	// miss
+			&chitRegion,	// hit
+			&callRegion,	// call
+			m_params->width, m_params->height, 1);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postTraceRaysDependency);
+		vk.cmdCopyImageToBuffer(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **buffer, 1u, &bufferCopyImageRegion);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postCopyImageDependency);
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	invalidateMappedMemoryRange(vk, device, buffer->getAllocation().getMemory(), buffer->getAllocation().getOffset(), bufferSize);
+
+	return buffer;
+}
+
+TestStatus CopyBlasInstance::iterate (void)
+{
+	const deUint32							queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue							queue						= m_context.getUniversalQueue();
+
+	const de::MovePtr<RayTracingProperties>	rtProps						= makeRayTracingProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
+	const deUint32							shaderGroupHandleSize		= rtProps->getShaderGroupHandleSize();
+	const deUint32							shaderGroupBaseAlignment	= rtProps->getShaderGroupBaseAlignment();
+
+	const VkImageCreateInfo					imageCreateInfo				= makeImageCreateInfo(m_params->width, m_params->height, m_format);
+	const VkImageSubresourceRange			imageSubresourceRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0, 1u);
+	const de::MovePtr<ImageWithMemory>		image						= makeMovePtr<ImageWithMemory>(vk, device, allocator, imageCreateInfo, MemoryRequirement::Any);
+	const Move<VkImageView>					view						= makeImageView(vk, device, **image, VK_IMAGE_VIEW_TYPE_2D, m_format, imageSubresourceRange);
+
+	const deUint32							bufferSize					= (m_params->width * m_params->height * mapVkFormat(m_format).getPixelSize());
+	const VkBufferCreateInfo				bufferCreateInfo			= makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	de::MovePtr<BufferWithMemory>			resultImageBuffer			= makeMovePtr<BufferWithMemory>(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible);
+
+	const VkImageSubresourceLayers			imageSubresourceLayers		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+	const VkBufferImageCopy					bufferCopyImageRegion		= makeBufferImageCopy(makeExtent3D(m_params->width, m_params->height, 1u), imageSubresourceLayers);
+
+	de::MovePtr<RayTracingPipeline>			rtPipeline					= makeMovePtr<RayTracingPipeline>();
+	rtPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,		*rgenShader, 0);
+	rtPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,	*chitShader, 1);
+	rtPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR,			*missShader, 2);
+
+	const Move<VkDescriptorSetLayout>		descriptorSetLayout			= DescriptorSetLayoutBuilder()
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, ALL_RAY_TRACING_STAGES)
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, ALL_RAY_TRACING_STAGES)
+		.build(vk, device, VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR);
+
+	const Move<VkPipelineLayout>			pipelineLayout				= makePipelineLayout(vk, device, *descriptorSetLayout);
+	Move<VkPipeline>						pipeline					= rtPipeline->createPipeline(vk, device, *pipelineLayout);
+
+	de::MovePtr<BufferWithMemory>			rgenSbt						= rtPipeline->createShaderBindingTable(vk, device, *pipeline, allocator,
+																											   shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
+	VkStridedDeviceAddressRegionKHR			rgenRegion					= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, **rgenSbt, 0),
+																											shaderGroupHandleSize, shaderGroupHandleSize);
+	de::MovePtr<BufferWithMemory>			chitSbt						= rtPipeline->createShaderBindingTable(vk, device, *pipeline, allocator,
+																											   shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
+	VkStridedDeviceAddressRegionKHR			chitRegion					= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, **chitSbt, 0),
+																											shaderGroupHandleSize, shaderGroupHandleSize);
+	de::MovePtr<BufferWithMemory>			missSbt						= rtPipeline->createShaderBindingTable(vk, device, *pipeline, allocator,
+																											   shaderGroupHandleSize, shaderGroupBaseAlignment, 2, 1);
+	VkStridedDeviceAddressRegionKHR			missRegion					= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, **missSbt, 0),
+																											shaderGroupHandleSize, shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	callRegion					= makeStridedDeviceAddressRegionKHR(VkDeviceAddress(0), 0, 0);
+
+	const VkClearValue						clearValue					= { { { 0.1f, 0.2f, 0.3f, 0.4f } } };
+
+	const VkImageMemoryBarrier2KHR			preClearImageImageBarrier	= makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR, 0,
+																								  VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR, VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,
+																								  VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+																								  **image, imageSubresourceRange, queueFamilyIndex, queueFamilyIndex);
+	const VkImageMemoryBarrier2KHR			postClearImageImageBarrier	= makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR, VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,
+																								  VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_2_SHADER_READ_BIT_KHR,
+																								  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+																								  **image, imageSubresourceRange, queueFamilyIndex, queueFamilyIndex);
+	const VkDependencyInfoKHR				preClearImageDependency		= u::makeDependency(preClearImageImageBarrier);
+	const VkDependencyInfoKHR				postClearImageDependency	= u::makeDependency(postClearImageImageBarrier);
+
+
+	const VkImageMemoryBarrier2KHR			postTraceRaysImageBarrier	= makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_2_SHADER_WRITE_BIT_KHR,
+																								  VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR, VK_ACCESS_2_TRANSFER_READ_BIT_KHR,
+																								  VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+																								  **image, imageSubresourceRange, queueFamilyIndex, queueFamilyIndex);
+	const VkImageMemoryBarrier2KHR			postCopyImageImageBarrier	= makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,	VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,
+																								  VK_PIPELINE_STAGE_2_HOST_BIT_KHR, VK_ACCESS_2_HOST_READ_BIT_KHR,
+																								  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+																								  **image, imageSubresourceRange, queueFamilyIndex, queueFamilyIndex);
+	const VkDependencyInfoKHR				postTraceRaysDependency		= u::makeDependency(postTraceRaysImageBarrier);
+	const VkDependencyInfoKHR				postCopyImageDependency		= u::makeDependency(postCopyImageImageBarrier);
+	const VkPipelineStageFlags2KHR			srcStageMask				= m_params->type == CopyWithinPipelineParams::Type::StageASCopyBit
+																			? VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_COPY_BIT_KHR
+																			: VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT_KHR;
+	const VkMemoryBarrier2KHR				copyBlasMemoryBarrier		= makeMemoryBarrier2(srcStageMask, VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,
+																							 VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+																							 VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR);
+	const VkDependencyInfoKHR				copyBlasDependency			= u::makeDependency(copyBlasMemoryBarrier);
+
+
+	const Move<VkCommandPool>				cmdPool						= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+	const Move<VkCommandBuffer>				cmdBuffer					= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	std::vector<VkDeviceSize>				blasSize					(1);
+	BlasPtr									blas1						(makeBottomLevelAccelerationStructure().release());
+
+	// After this block the blas1 stays on device or host respectively to its build type.
+	// Once it is created it is asked for the serialization size that will be used for a
+	// creation of an empty blas2. Probably this size will be bigger than it is needed but
+	// one thing that is important is it must not be less.
+	{
+		const VkQueryType query = VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR;
+		Move<VkQueryPool> queryPoolSize = makeQueryPool(vk, device, query, 1);
+		beginCommandBuffer(vk, *cmdBuffer);
+			blas1->setBuildType(m_params->build);
+			blas1->setGeometryData(	{
+					{ 0.0, 0.0, 0.0 },
+					{ 1.0, 0.0, 0.0 },
+					{ 0.0, 1.0, 0.0 }}, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
+			blas1->createAndBuild(vk, device, *cmdBuffer, allocator);
+			queryAccelerationStructureSize(vk, device, *cmdBuffer, { *blas1->getPtr() }, m_params->build, *queryPoolSize, query, 0u, blasSize);
+		endCommandBuffer(vk, *cmdBuffer);
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+		if (m_params->build == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+		{
+			VK_CHECK(vk.getQueryPoolResults(device, *queryPoolSize, 0u, 1, sizeof(VkDeviceSize), blasSize.data(),
+											sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+		}
+	}
+
+	de::MovePtr<BufferWithMemory>			referenceImageBuffer	= getRefImage(blas1);
+
+	// Create blas2 as empty struct
+	BlasPtr									blas2					(makeBottomLevelAccelerationStructure().release());
+	blas2->create(vk, device, allocator, blasSize[0]);
+
+	auto									tlas					= makeTopLevelAccelerationStructure();
+	tlas->setBuildType(m_params->build);
+	tlas->setInstanceCount(1);
+	tlas->addInstance(blas2, identityMatrix3x4, 0, (~0u), 0, VkGeometryInstanceFlagsKHR(0));
+
+	const VkCopyAccelerationStructureInfoKHR copyBlasInfo
+	{
+		VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR,		// VkStructureType						sType;
+		nullptr,													// const void*							pNext;
+		*blas1->getPtr(),											// VkAccelerationStructureKHR			src;
+		*blas2->getPtr(),											// VkAccelerationStructureKHR			dst;
+		VK_COPY_ACCELERATION_STRUCTURE_MODE_CLONE_KHR				// VkCopyAccelerationStructureModeKHR	mode;
+	};
+
+	beginCommandBuffer(vk, *cmdBuffer);
+		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
+
+		if (m_params->build == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+		{
+			vk.cmdCopyAccelerationStructureKHR(*cmdBuffer, &copyBlasInfo);
+			vk.cmdPipelineBarrier2(*cmdBuffer, &copyBlasDependency);
+		}
+		else VK_CHECK(vk.copyAccelerationStructureKHR(device, VkDeferredOperationKHR(0), &copyBlasInfo));
+
+		tlas->createAndBuild(vk, device, *cmdBuffer, allocator);
+
+		const VkDescriptorImageInfo				descriptorImageInfo			= makeDescriptorImageInfo(VkSampler(), *view, VK_IMAGE_LAYOUT_GENERAL);
+		const VkWriteDescriptorSetAccelerationStructureKHR writeDescriptorTlas
+		{
+			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,	//  VkStructureType						sType;
+			nullptr,															//  const void*							pNext;
+			1,																	//  deUint32							accelerationStructureCount;
+			tlas->getPtr()														//  const VkAccelerationStructureKHR*	pAccelerationStructures;
+		};
+
+		DescriptorSetUpdateBuilder()
+			.writeSingle(VkDescriptorSet(), DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfo)
+			.writeSingle(VkDescriptorSet(), DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &writeDescriptorTlas)
+			.updateWithPush(vk, *cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 0, 2);
+
+		vk.cmdPipelineBarrier2(*cmdBuffer, &preClearImageDependency);
+		vk.cmdClearColorImage(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.color, 1, &imageSubresourceRange);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postClearImageDependency);
+
+		cmdTraceRays(vk,
+			*cmdBuffer,
+			&rgenRegion,	// rgen
+			&missRegion,	// miss
+			&chitRegion,	// hit
+			&callRegion,	// call
+			m_params->width, m_params->height, 1);
+
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postTraceRaysDependency);
+		vk.cmdCopyImageToBuffer(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **resultImageBuffer, 1u, &bufferCopyImageRegion);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postCopyImageDependency);
+
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	invalidateMappedMemoryRange(vk, device, resultImageBuffer->getAllocation().getMemory(), resultImageBuffer->getAllocation().getOffset(), bufferSize);
+
+	const void*	referenceImageData	= referenceImageBuffer->getAllocation().getHostPtr();
+	const void*	resultImageData		= resultImageBuffer->getAllocation().getHostPtr();
+
+	return (deMemCmp(referenceImageData, resultImageData, bufferSize) == 0) ? TestStatus::pass("") : TestStatus::fail("Reference and result images differ");
+}
+
+VkDeviceSize CopySBTInstance::getBufferSizeForSBT (const deUint32& groupCount, const deUint32&	shaderGroupHandleSize, const deUint32& shaderGroupBaseAlignment) const
+{
+	DE_UNREF(shaderGroupBaseAlignment);
+	return (groupCount * deAlign32(shaderGroupHandleSize, shaderGroupHandleSize));
+}
+
+de::MovePtr<BufferWithMemory> CopySBTInstance::getBufferForSBT (const deUint32& groupCount, const deUint32&	shaderGroupHandleSize, const deUint32& shaderGroupBaseAlignment) const
+{
+	const VkDeviceSize			sbtSize				= getBufferSizeForSBT(groupCount, shaderGroupHandleSize, shaderGroupBaseAlignment);
+	const VkBufferUsageFlags	sbtFlags			= VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+	const VkBufferCreateInfo	sbtCreateInfo		= makeBufferCreateInfo(sbtSize, sbtFlags);
+	const MemoryRequirement		sbtMemRequirements	= MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress;
+
+	return makeMovePtr<BufferWithMemory>(vk, device, allocator, sbtCreateInfo, sbtMemRequirements);
+}
+
+TestStatus CopySBTInstance::iterate (void)
+{
+	const deUint32							queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue							queue						= m_context.getUniversalQueue();
+
+	const de::MovePtr<RayTracingProperties>	rtProps						= makeRayTracingProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
+	const deUint32							shaderGroupHandleSize		= rtProps->getShaderGroupHandleSize();
+	const deUint32							shaderGroupBaseAlignment	= rtProps->getShaderGroupBaseAlignment();
+
+	const VkImageCreateInfo					imageCreateInfo				= makeImageCreateInfo(m_params->width, m_params->height, m_format);
+	const VkImageSubresourceRange			imageSubresourceRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0, 1u);
+	const de::MovePtr<ImageWithMemory>		image						= makeMovePtr<ImageWithMemory>(vk, device, allocator, imageCreateInfo, MemoryRequirement::Any);
+	const Move<VkImageView>					view						= makeImageView(vk, device, **image, VK_IMAGE_VIEW_TYPE_2D, m_format, imageSubresourceRange);
+
+	const deUint32							bufferSize					= (m_params->width * m_params->height * mapVkFormat(m_format).getPixelSize());
+	const VkBufferCreateInfo				bufferCreateInfo			= makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	de::MovePtr<BufferWithMemory>			referenceImageBuffer		= makeMovePtr<BufferWithMemory>(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible);
+	de::MovePtr<BufferWithMemory>			resultImageBuffer			= makeMovePtr<BufferWithMemory>(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible);
+
+	const VkImageSubresourceLayers			imageSubresourceLayers		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+	const VkBufferImageCopy					bufferCopyImageRegion		= makeBufferImageCopy(makeExtent3D(m_params->width, m_params->height, 1u), imageSubresourceLayers);
+
+	de::MovePtr<RayTracingPipeline>			rtPipeline					= makeMovePtr<RayTracingPipeline>();
+	rtPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,		*rgenShader, 0);
+	rtPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,	*chitShader, 1);
+	rtPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR,			*missShader, 2);
+
+	const Move<VkDescriptorPool>			descriptorPool				= DescriptorPoolBuilder()
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+		.addType(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+	const Move<VkDescriptorSetLayout>		descriptorSetLayout			= DescriptorSetLayoutBuilder()
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, ALL_RAY_TRACING_STAGES)
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, ALL_RAY_TRACING_STAGES)
+		.build(vk, device);
+	const Move<VkDescriptorSet>				descriptorSet				= makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+
+	const Move<VkPipelineLayout>			pipelineLayout				= makePipelineLayout(vk, device, *descriptorSetLayout);
+	Move<VkPipeline>						pipeline					= rtPipeline->createPipeline(vk, device, *pipelineLayout);
+
+	de::MovePtr<BufferWithMemory>			sourceRgenSbt				= rtPipeline->createShaderBindingTable(vk, device, *pipeline, allocator,
+																											   shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1,
+																											   VkBufferCreateFlags(0), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+	VkStridedDeviceAddressRegionKHR			sourceRgenRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, **sourceRgenSbt, 0),
+																											shaderGroupHandleSize, shaderGroupHandleSize);
+	de::MovePtr<BufferWithMemory>			copyRgenSbt					= getBufferForSBT(1, shaderGroupHandleSize, shaderGroupBaseAlignment);
+	VkStridedDeviceAddressRegionKHR			copyRgenRegion				= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, **copyRgenSbt, 0),
+																											shaderGroupHandleSize, shaderGroupHandleSize);
+	de::MovePtr<BufferWithMemory>			chitSbt						= rtPipeline->createShaderBindingTable(vk, device, *pipeline, allocator,
+																											   shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
+	VkStridedDeviceAddressRegionKHR			chitRegion					= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, **chitSbt, 0),
+																											shaderGroupHandleSize, shaderGroupHandleSize);
+	de::MovePtr<BufferWithMemory>			missSbt						= rtPipeline->createShaderBindingTable(vk, device, *pipeline, allocator,
+																											   shaderGroupHandleSize, shaderGroupBaseAlignment, 2, 1);
+	VkStridedDeviceAddressRegionKHR			missRegion					= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, **missSbt, 0),
+																											shaderGroupHandleSize, shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	callRegion					= makeStridedDeviceAddressRegionKHR(VkDeviceAddress(0), 0, 0);
+
+	const VkClearValue						clearValue					= { { { 0.1f, 0.2f, 0.3f, 0.4f } } };
+
+	const VkImageMemoryBarrier2KHR			preClearImageImageBarrier	= makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR, 0,
+																								  VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR, VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,
+																								  VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+																								  **image, imageSubresourceRange, queueFamilyIndex, queueFamilyIndex);
+	const VkImageMemoryBarrier2KHR			postClearImageImageBarrier	= makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR, VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,
+																								  VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_2_SHADER_READ_BIT_KHR,
+																								  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+																								  **image, imageSubresourceRange, queueFamilyIndex, queueFamilyIndex);
+	const VkDependencyInfoKHR				preClearImageDependency		= u::makeDependency(preClearImageImageBarrier);
+	const VkDependencyInfoKHR				postClearImageDependency	= u::makeDependency(postClearImageImageBarrier);
+
+
+	const VkImageMemoryBarrier2KHR			postTraceRaysImageBarrier	= makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_2_SHADER_WRITE_BIT_KHR,
+																								  VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR, VK_ACCESS_2_TRANSFER_READ_BIT_KHR,
+																								  VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+																								  **image, imageSubresourceRange, queueFamilyIndex, queueFamilyIndex);
+	const VkImageMemoryBarrier2KHR			postCopyImageImageBarrier	= makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,	VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,
+																								  VK_PIPELINE_STAGE_2_HOST_BIT_KHR, VK_ACCESS_2_HOST_READ_BIT_KHR,
+																								  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+																								  **image, imageSubresourceRange, queueFamilyIndex, queueFamilyIndex);
+	const VkDependencyInfoKHR				postTraceRaysDependency		= u::makeDependency(postTraceRaysImageBarrier);
+	const VkDependencyInfoKHR				postCopyImageDependency		= u::makeDependency(postCopyImageImageBarrier);
+
+	const Move<VkCommandPool>				cmdPool						= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+	const Move<VkCommandBuffer>				cmdBuffer					= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	auto									tlas						= makeTopLevelAccelerationStructure();
+	BlasPtr									blas						(makeBottomLevelAccelerationStructure().release());
+	blas->setBuildType(m_params->build);
+	blas->setGeometryData(	{
+			{ 0.0, 0.0, 0.0 },
+			{ 1.0, 0.0, 0.0 },
+			{ 0.0, 1.0, 0.0 }}, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
+	tlas->setBuildType(m_params->build);
+	tlas->setInstanceCount(1);
+	tlas->addInstance(blas, identityMatrix3x4, 0, (~0u), 0, VkGeometryInstanceFlagsKHR(0));
+	beginCommandBuffer(vk, *cmdBuffer);
+		blas->createAndBuild(vk, device, *cmdBuffer, allocator);
+		tlas->createAndBuild(vk, device, *cmdBuffer, allocator);
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	const VkDescriptorImageInfo				descriptorImageInfo			= makeDescriptorImageInfo(VkSampler(), *view, VK_IMAGE_LAYOUT_GENERAL);
+	const VkWriteDescriptorSetAccelerationStructureKHR writeDescriptorTlas
+	{
+		VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,	//  VkStructureType						sType;
+		nullptr,															//  const void*							pNext;
+		1,																	//  deUint32							accelerationStructureCount;
+		tlas->getPtr()														//  const VkAccelerationStructureKHR*	pAccelerationStructures;
+	};
+
+	DescriptorSetUpdateBuilder()
+		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfo)
+		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &writeDescriptorTlas)
+		.update(vk, device);
+
+	beginCommandBuffer(vk, *cmdBuffer);
+		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
+		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1, &descriptorSet.get(), 0, nullptr);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &preClearImageDependency);
+		vk.cmdClearColorImage(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.color, 1, &imageSubresourceRange);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postClearImageDependency);
+		cmdTraceRays(vk,
+			*cmdBuffer,
+			&sourceRgenRegion,	// rgen
+			&missRegion,		// miss
+			&chitRegion,		// hit
+			&callRegion,		// call
+			m_params->width, m_params->height, 1);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postTraceRaysDependency);
+		vk.cmdCopyImageToBuffer(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **referenceImageBuffer, 1u, &bufferCopyImageRegion);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postCopyImageDependency);
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+
+	const VkBufferCopy bufferCopy
+	{
+		0,	// VkDeviceSize srcOffset;
+		0,	// VkDeviceSize srcOffset;
+		getBufferSizeForSBT(1, shaderGroupHandleSize, shaderGroupBaseAlignment)
+	};
+	const VkMemoryBarrier2KHR				postCopySBTMemoryBarrier	= makeMemoryBarrier2(VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,
+																							 VkAccessFlags2KHR(0),
+																							 VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
+																							 VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR);
+	const VkDependencyInfoKHR				postClearImgCopySBTDependency	= u::makeDependency(postCopySBTMemoryBarrier, postClearImageImageBarrier);
+
+	beginCommandBuffer(vk, *cmdBuffer);
+		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
+		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1, &descriptorSet.get(), 0, nullptr);
+		vk.cmdClearColorImage(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.color, 1, &imageSubresourceRange);
+		vk.cmdCopyBuffer(*cmdBuffer, **sourceRgenSbt, **copyRgenSbt, 1, &bufferCopy);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postClearImgCopySBTDependency);
+		cmdTraceRays(vk,
+			*cmdBuffer,
+			&copyRgenRegion,	// rgen
+			&missRegion,		// miss
+			&chitRegion,		// hit
+			&callRegion,		// call
+			m_params->width, m_params->height, 1);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postTraceRaysDependency);
+		vk.cmdCopyImageToBuffer(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **resultImageBuffer, 1u, &bufferCopyImageRegion);
+		vk.cmdPipelineBarrier2(*cmdBuffer, &postCopyImageDependency);
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	invalidateMappedMemoryRange(vk, device, referenceImageBuffer->getAllocation().getMemory(), referenceImageBuffer->getAllocation().getOffset(), bufferSize);
+	invalidateMappedMemoryRange(vk, device, resultImageBuffer->getAllocation().getMemory(), resultImageBuffer->getAllocation().getOffset(), bufferSize);
+
+	const void* referenceImageDataPtr	= referenceImageBuffer->getAllocation().getHostPtr();
+	const void* resultImageDataPtr		= resultImageBuffer->getAllocation().getHostPtr();
+
+	return (deMemCmp(referenceImageDataPtr, resultImageDataPtr, bufferSize) == 0) ? TestStatus::pass("") : TestStatus::fail("");
+}
+
 }	// anonymous
 
 void addBasicBuildingTests(tcu::TestCaseGroup* group)
@@ -2871,10 +4339,10 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 		const char*								name;
 	} bottomTestTypes[] =
 	{
-		{ BTT_TRIANGLES,	false,										"triangles" },
-		{ BTT_TRIANGLES,	true,										"triangles_aop" },
-		{ BTT_AABBS,		false,										"aabbs" },
-		{ BTT_AABBS,		true,										"aabbs_aop" },
+		{ BottomTestType::TRIANGLES,	false,							"triangles" },
+		{ BottomTestType::TRIANGLES,	true,							"triangles_aop" },
+		{ BottomTestType::AABBS,		false,							"aabbs" },
+		{ BottomTestType::AABBS,		true,							"aabbs_aop" },
 	};
 
 	struct
@@ -2884,10 +4352,10 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 		const char*								name;
 	} topTestTypes[] =
 	{
-		{ TTT_IDENTICAL_INSTANCES,	false,								"identical_instances" },
-		{ TTT_IDENTICAL_INSTANCES,	true,								"identical_instances_aop" },
-		{ TTT_DIFFERENT_INSTANCES,	false,								"different_instances" },
-		{ TTT_DIFFERENT_INSTANCES,	true,								"different_instances_aop" },
+		{ TopTestType::IDENTICAL_INSTANCES,	false,						"identical_instances" },
+		{ TopTestType::IDENTICAL_INSTANCES,	true,						"identical_instances_aop" },
+		{ TopTestType::DIFFERENT_INSTANCES,	false,						"different_instances" },
+		{ TopTestType::DIFFERENT_INSTANCES,	true,						"different_instances_aop" },
 	};
 
 	struct BuildFlagsData
@@ -2944,6 +4412,11 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 		{	true,	true,	"_bothgeneric"		},
 	};
 
+	// In order not to create thousands of new test variants for unbound buffer memory on acceleration structure creation, we will
+	// set these options on some of the tests.
+	de::ModCounter32 unboundedCreationBottomCounter	(3u);
+	de::ModCounter32 unboundedCreationTopCounter	(7u);
+
 	for (size_t buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name, ""));
@@ -2977,6 +4450,9 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 											std::string(lowMemoryTypes[lowMemoryNdx].name) +
 											std::string(createGenericParams[createGenericIdx].suffix);
 
+										const bool unboundedCreationBottom	= (static_cast<uint32_t>(unboundedCreationBottomCounter++) == 0u);
+										const bool unboundedCreationTop		= (static_cast<uint32_t>(unboundedCreationTopCounter++) == 0u);
+
 										TestParams testParams
 										{
 											buildTypes[buildTypeNdx].buildType,
@@ -2987,9 +4463,11 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 											InstanceCullFlags::NONE,
 											bottomTestTypes[bottomNdx].usesAOP,
 											createGenericParams[createGenericIdx].bottomGeneric,
+											unboundedCreationBottom,
 											topTestTypes[topNdx].testType,
 											topTestTypes[topNdx].usesAOP,
 											createGenericParams[createGenericIdx].topGeneric,
+											unboundedCreationTop,
 											optimizationTypes[optimizationNdx].flags | updateTypes[updateNdx].flags | compactionTypes[compactionNdx].flags | lowMemoryTypes[lowMemoryNdx].flags,
 											OT_NONE,
 											OP_NONE,
@@ -2999,6 +4477,8 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 											0u,
 											EmptyAccelerationStructureCase::NOT_EMPTY,
 											InstanceCustomIndexCase::NONE,
+											false,
+											0xFFu,
 										};
 										paddingGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), testName.c_str(), "", testParams));
 									}
@@ -3094,11 +4574,13 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 						format,
 						paddingType[paddingIdx].padVertices,
 						indexFormats[indexFormatNdx].indexType,
-						BTT_TRIANGLES,
+						BottomTestType::TRIANGLES,
 						InstanceCullFlags::NONE,
 						false,
 						false,
-						TTT_IDENTICAL_INSTANCES,
+						false,
+						TopTestType::IDENTICAL_INSTANCES,
+						false,
 						false,
 						false,
 						VkBuildAccelerationStructureFlagsKHR(0u),
@@ -3110,6 +4592,8 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 						0u,
 						EmptyAccelerationStructureCase::NOT_EMPTY,
 						InstanceCustomIndexCase::NONE,
+						false,
+						0xFFu,
 					};
 					paddingGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), indexFormats[indexFormatNdx].name, "", testParams));
 				}
@@ -3160,8 +4644,8 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 		const char*											name;
 	} bottomTestTypes[] =
 	{
-		{ BTT_TRIANGLES,									"triangles" },
-		{ BTT_AABBS,										"aabbs" },
+		{ BottomTestType::TRIANGLES,						"triangles" },
+		{ BottomTestType::AABBS,							"aabbs" },
 	};
 
 	for (size_t operationTypeNdx = 0; operationTypeNdx < DE_LENGTH_OF_ARRAY(operationTypes); ++operationTypeNdx)
@@ -3185,7 +4669,7 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 
 				for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(bottomTestTypes); ++testTypeNdx)
 				{
-					TopTestType topTest = (operationTargets[operationTargetNdx].operationTarget == OT_TOP_ACCELERATION) ? TTT_DIFFERENT_INSTANCES : TTT_IDENTICAL_INSTANCES;
+					TopTestType topTest = (operationTargets[operationTargetNdx].operationTarget == OT_TOP_ACCELERATION) ? TopTestType::DIFFERENT_INSTANCES : TopTestType::IDENTICAL_INSTANCES;
 
 					TestParams testParams
 					{
@@ -3197,7 +4681,9 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 						InstanceCullFlags::NONE,
 						false,
 						false,
+						false,
 						topTest,
+						false,
 						false,
 						false,
 						VkBuildAccelerationStructureFlagsKHR(0u),
@@ -3209,6 +4695,8 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 						workerThreads,
 						EmptyAccelerationStructureCase::NOT_EMPTY,
 						InstanceCustomIndexCase::NONE,
+						false,
+						0xFFu,
 					};
 					operationTargetGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), bottomTestTypes[testTypeNdx].name, "", testParams));
 				}
@@ -3265,11 +4753,13 @@ void addFuncArgTests (tcu::TestCaseGroup* group)
 			VK_FORMAT_R32G32B32_SFLOAT,
 			false,
 			VK_INDEX_TYPE_NONE_KHR,
-			BTT_TRIANGLES,
+			BottomTestType::TRIANGLES,
 			InstanceCullFlags::NONE,
 			false,
 			false,
-			TTT_IDENTICAL_INSTANCES,
+			false,
+			TopTestType::IDENTICAL_INSTANCES,
+			false,
 			false,
 			false,
 			VkBuildAccelerationStructureFlagsKHR(0u),
@@ -3281,6 +4771,8 @@ void addFuncArgTests (tcu::TestCaseGroup* group)
 			0u,
 			EmptyAccelerationStructureCase::NOT_EMPTY,
 			InstanceCustomIndexCase::NONE,
+			false,
+			0xFFu,
 		};
 
 		group->addChild(new RayTracingASFuncArgTestCase(ctx, buildTypes[buildTypeNdx].name, "", testParams));
@@ -3307,8 +4799,8 @@ void addInstanceTriangleCullingTests (tcu::TestCaseGroup* group)
 		std::string	name;
 	} topType[] =
 	{
-		{ TTT_DIFFERENT_INSTANCES, "transformed"	},	// Each instance has its own transformation matrix.
-		{ TTT_IDENTICAL_INSTANCES, "notransform"	},	// "Identical" instances, different geometries.
+		{ TopTestType::DIFFERENT_INSTANCES, "transformed"	},	// Each instance has its own transformation matrix.
+		{ TopTestType::IDENTICAL_INSTANCES, "notransform"	},	// "Identical" instances, different geometries.
 	};
 
 	const struct
@@ -3354,11 +4846,13 @@ void addInstanceTriangleCullingTests (tcu::TestCaseGroup* group)
 						VK_FORMAT_R32G32B32_SFLOAT,
 						false,
 						indexFormats[indexFormatIdx].indexType,
-						BTT_TRIANGLES,
+						BottomTestType::TRIANGLES,
 						cullFlags[cullFlagsIdx].cullFlags,
 						false,
 						false,
+						false,
 						topType[topTypeIdx].topType,
+						false,
 						false,
 						false,
 						VkBuildAccelerationStructureFlagsKHR(0u),
@@ -3370,6 +4864,8 @@ void addInstanceTriangleCullingTests (tcu::TestCaseGroup* group)
 						0u,
 						EmptyAccelerationStructureCase::NOT_EMPTY,
 						InstanceCustomIndexCase::NONE,
+						false,
+						0xFFu,
 					};
 					indexTypeGroup->addChild(new RayTracingASBasicTestCase(ctx, testName.c_str(), "", testParams));
 				}
@@ -3434,17 +4930,20 @@ void addEmptyAccelerationStructureTests (tcu::TestCaseGroup* group)
 
 			for (int emptyCaseIdx = 0; emptyCaseIdx < DE_LENGTH_OF_ARRAY(emptyCases); ++emptyCaseIdx)
 			{
+
 				TestParams testParams
 				{
 					buildTypes[buildTypeIdx].buildType,
 					VK_FORMAT_R32G32B32_SFLOAT,
 					false,
 					indexFormats[indexFormatIdx].indexType,
-					BTT_TRIANGLES,
+					BottomTestType::TRIANGLES,
 					InstanceCullFlags::NONE,
 					false,
 					false,
-					TTT_IDENTICAL_INSTANCES,
+					false,
+					TopTestType::IDENTICAL_INSTANCES,
+					false,
 					false,
 					false,
 					VkBuildAccelerationStructureFlagsKHR(0u),
@@ -3456,6 +4955,8 @@ void addEmptyAccelerationStructureTests (tcu::TestCaseGroup* group)
 					0u,
 					emptyCases[emptyCaseIdx].emptyASCase,
 					InstanceCustomIndexCase::NONE,
+					false,
+					0xFFu,
 				};
 				indexTypeGroup->addChild(new RayTracingASBasicTestCase(ctx, emptyCases[emptyCaseIdx].name.c_str(), "", testParams));
 			}
@@ -3498,7 +4999,7 @@ void addInstanceIndexTests (tcu::TestCaseGroup* group)
 		for (int customIndexCaseIdx = 0; customIndexCaseIdx < DE_LENGTH_OF_ARRAY(customIndexCases); ++customIndexCaseIdx)
 		{
 			const auto&	idxCase				= customIndexCases[customIndexCaseIdx].customIndexCase;
-			const auto	bottomGeometryType	= ((idxCase == InstanceCustomIndexCase::INTERSECTION) ? BTT_AABBS : BTT_TRIANGLES);
+			const auto	bottomGeometryType	= ((idxCase == InstanceCustomIndexCase::INTERSECTION) ? BottomTestType::AABBS : BottomTestType::TRIANGLES);
 
 			TestParams testParams
 			{
@@ -3510,7 +5011,9 @@ void addInstanceIndexTests (tcu::TestCaseGroup* group)
 				InstanceCullFlags::NONE,
 				false,
 				false,
-				TTT_IDENTICAL_INSTANCES,
+				false,
+				TopTestType::IDENTICAL_INSTANCES,
+				false,
 				false,
 				false,
 				VkBuildAccelerationStructureFlagsKHR(0u),
@@ -3522,12 +5025,164 @@ void addInstanceIndexTests (tcu::TestCaseGroup* group)
 				0u,
 				EmptyAccelerationStructureCase::NOT_EMPTY,
 				customIndexCases[customIndexCaseIdx].customIndexCase,
+				false,
+				0xFFu,
 			};
 			buildTypeGroup->addChild(new RayTracingASBasicTestCase(ctx, customIndexCases[customIndexCaseIdx].name.c_str(), "", testParams));
 		}
 		group->addChild(buildTypeGroup.release());
 	}
 }
+
+void addInstanceUpdateTests (tcu::TestCaseGroup* group)
+{
+	const struct
+	{
+		vk::VkAccelerationStructureBuildTypeKHR				buildType;
+		std::string											name;
+	} buildTypes[] =
+	{
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,	"cpu_built"	},
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,	"gpu_built"	},
+	};
+
+	struct
+	{
+		OperationType										operationType;
+		const char*											name;
+	} operationTypes[] =
+	{
+		{ OP_UPDATE,											"update"			},
+		{ OP_UPDATE_IN_PLACE,									"update_in_place"	},
+	};
+
+
+	auto& ctx = group->getTestContext();
+
+	for (int buildTypeIdx = 0; buildTypeIdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeIdx)
+	{
+		de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str(), ""));
+
+		for (int operationTypesIdx = 0; operationTypesIdx < DE_LENGTH_OF_ARRAY(operationTypes); ++operationTypesIdx)
+		{
+			TestParams testParams
+			{
+				buildTypes[buildTypeIdx].buildType,
+				VK_FORMAT_R32G32B32_SFLOAT,
+				false,
+				VK_INDEX_TYPE_NONE_KHR,
+				BottomTestType::TRIANGLES,
+				InstanceCullFlags::NONE,
+				false,
+				false,
+				false,
+				TopTestType::IDENTICAL_INSTANCES,
+				false,
+				false,
+				false,
+				VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR,
+				OT_TOP_ACCELERATION,
+				operationTypes[operationTypesIdx].operationType,
+				RTAS_DEFAULT_SIZE,
+				RTAS_DEFAULT_SIZE,
+				de::SharedPtr<TestConfiguration>(new SingleTriangleConfiguration()),
+				0u,
+				EmptyAccelerationStructureCase::NOT_EMPTY,
+				InstanceCustomIndexCase::NONE,
+				false,
+				0xFFu,
+			};
+			buildTypeGroup->addChild(new RayTracingASBasicTestCase(ctx, operationTypes[operationTypesIdx].name, "", testParams));
+		}
+		group->addChild(buildTypeGroup.release());
+	}
+}
+
+void addInstanceRayCullMaskTests(tcu::TestCaseGroup* group)
+{
+	const struct
+	{
+		vk::VkAccelerationStructureBuildTypeKHR				buildType;
+		std::string											name;
+	} buildTypes[] =
+	{
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,	"cpu_built"	},
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,	"gpu_built"	},
+	};
+
+	const struct
+	{
+		InstanceCustomIndexCase						customIndexCase;
+		std::string									name;
+	} customIndexCases[] =
+	{
+		{ InstanceCustomIndexCase::ANY_HIT,			"ahit"				},
+		{ InstanceCustomIndexCase::CLOSEST_HIT,		"chit"				},
+		{ InstanceCustomIndexCase::INTERSECTION,	"isec"				},
+	};
+
+	const struct
+	{
+		uint32_t		cullMask;
+		std::string		name;
+	} cullMask[] =
+	{
+		{ 0x000000AAu,	"4_bits"},
+		{ 0x00000055u,	"4_bits_reverse"},
+		{ 0xAAAAAAAAu,	"16_bits"},
+		{ 0x55555555u,	"16_bits_reverse"},
+	};
+
+	auto& ctx = group->getTestContext();
+
+	for (int buildTypeIdx = 0; buildTypeIdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeIdx)
+	{
+		de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str(), ""));
+
+		for (int customIndexCaseIdx = 0; customIndexCaseIdx < DE_LENGTH_OF_ARRAY(customIndexCases); ++customIndexCaseIdx)
+		{
+			de::MovePtr<tcu::TestCaseGroup> customIndexCaseGroup(new tcu::TestCaseGroup(ctx, customIndexCases[customIndexCaseIdx].name.c_str(), ""));
+
+			for (int cullMaskIdx = 0; cullMaskIdx < DE_LENGTH_OF_ARRAY(cullMask); ++cullMaskIdx)
+			{
+				const auto& idxCase = customIndexCases[customIndexCaseIdx].customIndexCase;
+				const auto	bottomGeometryType = ((idxCase == InstanceCustomIndexCase::INTERSECTION) ? BottomTestType::AABBS : BottomTestType::TRIANGLES);
+
+				TestParams testParams
+				{
+					buildTypes[buildTypeIdx].buildType,
+					VK_FORMAT_R32G32B32_SFLOAT,
+					false,
+					VK_INDEX_TYPE_NONE_KHR,
+					bottomGeometryType,
+					InstanceCullFlags::NONE,
+					false,
+					false,
+					false,
+					TopTestType::IDENTICAL_INSTANCES,
+					false,
+					false,
+					false,
+					VkBuildAccelerationStructureFlagsKHR(0u),
+					OT_NONE,
+					OP_NONE,
+					RTAS_DEFAULT_SIZE,
+					RTAS_DEFAULT_SIZE,
+					de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration()),
+					0u,
+					EmptyAccelerationStructureCase::NOT_EMPTY,
+					customIndexCases[customIndexCaseIdx].customIndexCase,
+					true,
+					cullMask[cullMaskIdx].cullMask,
+				};
+				customIndexCaseGroup->addChild(new RayTracingASBasicTestCase(ctx,  cullMask[cullMaskIdx].name.c_str(), "", testParams));
+			}
+			buildTypeGroup->addChild(customIndexCaseGroup.release());
+		}
+		group->addChild(buildTypeGroup.release());
+	}
+}
+
 
 void addGetDeviceAccelerationStructureCompabilityTests (tcu::TestCaseGroup* group)
 {
@@ -3567,13 +5222,15 @@ void addGetDeviceAccelerationStructureCompabilityTests (tcu::TestCaseGroup* grou
 				VK_FORMAT_R32G32B32_SFLOAT,											// vertexFormat
 				false,																// padVertices
 				VK_INDEX_TYPE_NONE_KHR,												// indexType
-				BTT_TRIANGLES,														// bottomTestType	- what kind of geometry is stored in bottom AS
+				BottomTestType::TRIANGLES,											// bottomTestType	- what kind of geometry is stored in bottom AS
 				InstanceCullFlags::NONE,											// cullFlags		- Flags for instances, if needed.
 				false,																// bottomUsesAOP	- does bottom AS use arrays, or arrays of pointers
 				false,																// bottomGeneric	- Bottom created as generic AS type.
-				TTT_IDENTICAL_INSTANCES,											// topTestType		- If instances are identical then bottom geometries must have different vertices/aabbs
+				false,																// bottomUnboundedCreation - Create BLAS using buffers with unbounded memory.
+				TopTestType::IDENTICAL_INSTANCES,									// topTestType		- If instances are identical then bottom geometries must have different vertices/aabbs
 				false,																// topUsesAOP		- does top AS use arrays, or arrays of pointers
 				false,																// topGeneric		- Top created as generic AS type.
+				false,																// topUnboundedCreation - Create TLAS using buffers with unbounded memory.
 				VkBuildAccelerationStructureFlagsKHR(0u),							// buildFlags
 				targets[targetIdx].target,											// operationTarget
 				OP_NONE,															// operationType
@@ -3583,6 +5240,8 @@ void addGetDeviceAccelerationStructureCompabilityTests (tcu::TestCaseGroup* grou
 				0u,																	// workerThreadsCount
 				EmptyAccelerationStructureCase::NOT_EMPTY,							// emptyASCase
 				InstanceCustomIndexCase::NONE,										// instanceCustomIndexCase
+				false,																// useCullMask
+				0xFFu,																// cullMask
 			};
 			buildTypeGroup->addChild(new RayTracingDeviceASCompabilityKHRTestCase(ctx, targets[targetIdx].name.c_str(), de::SharedPtr<TestParams>(new TestParams(testParams))));
 		}
@@ -3610,9 +5269,9 @@ void addUpdateHeaderBottomAddressTests (tcu::TestCaseGroup* group)
 	}
 	const instTypes[] =
 	{
-		{ TTT_IDENTICAL_INSTANCES,	"the_same_instances"		},
-		{ TTT_DIFFERENT_INSTANCES,	"different_instances"		},
-		{ TTT_MIX_INSTANCES,		"mix_same_diff_instances"	},
+		{ TopTestType::IDENTICAL_INSTANCES,	"the_same_instances"		},
+		{ TopTestType::DIFFERENT_INSTANCES,	"different_instances"		},
+		{ TopTestType::MIX_INSTANCES,		"mix_same_diff_instances"	},
 	};
 
 	auto& ctx = group->getTestContext();
@@ -3629,13 +5288,15 @@ void addUpdateHeaderBottomAddressTests (tcu::TestCaseGroup* group)
 				VK_FORMAT_R32G32B32_SFLOAT,											// vertexFormat
 				false,																// padVertices
 				VK_INDEX_TYPE_NONE_KHR,												// indexType
-				BTT_TRIANGLES,														// bottomTestType
+				BottomTestType::TRIANGLES,											// bottomTestType
 				InstanceCullFlags::NONE,											// cullFlags
 				false,																// bottomUsesAOP
 				false,																// bottomGeneric
+				false,																// bottomUnboundedCreation
 				instTypes[instTypeIdx].type,										// topTestType
 				false,																// topUsesAOP
 				false,																// topGeneric
+				false,																// topUnboundedCreation
 				VkBuildAccelerationStructureFlagsKHR(0u),							// buildFlags
 				OT_TOP_ACCELERATION,												// operationTarget
 				OP_NONE,															// operationType
@@ -3645,8 +5306,103 @@ void addUpdateHeaderBottomAddressTests (tcu::TestCaseGroup* group)
 				0u,																	// workerThreadsCount
 				EmptyAccelerationStructureCase::NOT_EMPTY,							// emptyASCase
 				InstanceCustomIndexCase::NONE,										// instanceCustomIndexCase
+				false,																// useCullMask
+				0xFFu,																// cullMask
 			};
 			buildTypeGroup->addChild(new RayTracingHeaderBottomAddressTestCase(ctx, instTypes[instTypeIdx].name.c_str(), de::SharedPtr<TestParams>(new TestParams(testParams))));
+		}
+		group->addChild(buildTypeGroup.release());
+	}
+}
+
+void addQueryPoolResultsTests (TestCaseGroup* group)
+{
+	std::pair<VkAccelerationStructureBuildTypeKHR, const char*>
+	const buildTypes[]
+	{
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,	"cpu"	},
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,	"gpu"	},
+	};
+
+	std::pair<bool, const char*>
+	const storeTypes[]
+	{
+		{ false,	"memory"	},
+		{ true,		"buffer"	}
+	};
+
+	std::pair<QueryPoolResultsParams::Type, const char*>
+	const queryTypes[]
+	{
+		{ QueryPoolResultsParams::Type::StructureSize,	"structure_size"	},
+		{ QueryPoolResultsParams::Type::PointerCount,	"pointer_count"		}
+	};
+
+	std::pair<bool, const char*>
+		const buildWithCompacted[]
+	{
+		{ false,	"no_compacted"		},
+		{ true,		"enable_compacted"	}
+	};
+
+	auto& testContext = group->getTestContext();
+	for (const auto& buildType : buildTypes)
+	{
+		auto buildTypeGroup = makeMovePtr<TestCaseGroup>(testContext, buildType.second, "");
+		for (const auto& compacted : buildWithCompacted)
+		{
+			auto buildCompactedGroup = makeMovePtr<TestCaseGroup>(testContext, compacted.second, "");
+			for (const auto& storeType : storeTypes)
+			{
+				auto storeTypeGroup = makeMovePtr<TestCaseGroup>(testContext, storeType.second, "");
+				for (const auto& queryType : queryTypes)
+				{
+					QueryPoolResultsParams	p;
+					p.buildType = buildType.first;
+					p.inVkBuffer = storeType.first;
+					p.queryType = queryType.first;
+					p.blasCount = 5;
+					p.compacted = compacted.first;
+
+					storeTypeGroup->addChild(new QueryPoolResultsCase(testContext, queryType.second, makeSharedFrom(p)));
+				}
+				buildCompactedGroup->addChild(storeTypeGroup.release());
+			}
+			buildTypeGroup->addChild(buildCompactedGroup.release());
+		}
+		group->addChild(buildTypeGroup.release());
+	}
+}
+
+void addCopyWithinPipelineTests (TestCaseGroup* group)
+{
+	std::pair<VkAccelerationStructureBuildTypeKHR, const char*>
+	const buildTypes[]
+	{
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,	"cpu"	},
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,	"gpu"	},
+	};
+	std::pair<CopyWithinPipelineParams::Type, const char*>
+	const testTypes[]
+	{
+		{ CopyWithinPipelineParams::Type::StageASCopyBit,		"stage_as_copy_bit"  },
+		{ CopyWithinPipelineParams::Type::StageAllTransferBit,	"stage_all_transfer" },
+		{ CopyWithinPipelineParams::Type::AccessSBTReadBit,		"access_sbt_read"	 }
+	};
+
+	auto& testContext = group->getTestContext();
+	for (const auto& buildType : buildTypes)
+	{
+		auto buildTypeGroup	= makeMovePtr<TestCaseGroup>(testContext, buildType.second, "");
+		for (const auto& testType : testTypes)
+		{
+			CopyWithinPipelineParams	p;
+			p.width		= 16;
+			p.height	= 16;
+			p.build		= buildType.first;
+			p.type		= testType.first;
+
+			buildTypeGroup->addChild(new PipelineStageASCase(testContext, testType.second, makeSharedFrom(p)));
 		}
 		group->addChild(buildTypeGroup.release());
 	}
@@ -3662,11 +5418,15 @@ tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "host_threading", "Test host threading operations", addHostThreadingOperationTests);
 	addTestGroup(group.get(), "function_argument", "Test using AS as function argument using both pointers and bare values", addFuncArgTests);
 	addTestGroup(group.get(), "instance_triangle_culling", "Test building AS with counterclockwise triangles and/or disabling face culling", addInstanceTriangleCullingTests);
+	addTestGroup(group.get(), "ray_cull_mask", "Test for CullMaskKHR builtin as a part of VK_KHR_ray_tracing_maintenance1", addInstanceRayCullMaskTests);
 	addTestGroup(group.get(), "dynamic_indexing", "Exercise dynamic indexing of acceleration structures", addDynamicIndexingTests);
 	addTestGroup(group.get(), "empty", "Test building empty acceleration structures using different methods", addEmptyAccelerationStructureTests);
 	addTestGroup(group.get(), "instance_index", "Test using different values for the instance index and checking them in shaders", addInstanceIndexTests);
+	addTestGroup(group.get(), "instance_update", "Test updating instance index using both in-place and separate src/dst acceleration structures", addInstanceUpdateTests);
 	addTestGroup(group.get(), "device_compability_khr", "", addGetDeviceAccelerationStructureCompabilityTests);
 	addTestGroup(group.get(), "header_bottom_address", "", addUpdateHeaderBottomAddressTests);
+	addTestGroup(group.get(), "query_pool_results", "Test for a new VkQueryPool queries for VK_KHR_ray_tracing_maintenance1", addQueryPoolResultsTests);
+	addTestGroup(group.get(), "copy_within_pipeline", "Tests ACCELLERATION_STRUCTURE_COPY and ACCESS_2_SBT_READ with VK_KHR_ray_tracing_maintenance1", addCopyWithinPipelineTests);
 
 	return group.release();
 }
@@ -3674,4 +5434,3 @@ tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 }	// RayTracing
 
 }	// vkt
-

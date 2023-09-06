@@ -30,6 +30,7 @@
 #include "vkBuilderUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkPlatform.hpp"
@@ -48,6 +49,11 @@
 #include "deRandom.hpp"
 #include "deMath.h"
 #include "deSharedPtr.hpp"
+#ifdef CTS_USES_VULKANSC
+#include "vkSafetyCriticalUtil.hpp"
+#endif
+
+#include <algorithm>
 
 namespace vkt
 {
@@ -84,6 +90,7 @@ enum TestType
 	TEST_TYPE_MULTISAMPLE,
 	TEST_TYPE_QUERIES,
 	TEST_TYPE_NON_PRECISE_QUERIES,
+	TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY,
 	TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR,
 	TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR,
 	TEST_TYPE_DEPTH,
@@ -107,6 +114,13 @@ struct TestParameters
 	VkSampleCountFlagBits	samples;
 	VkFormat				colorFormat;
 	RenderingType			renderingType;
+
+	bool geometryShaderNeeded (void) const
+	{
+		return ((TEST_TYPE_VIEW_INDEX_IN_GEOMETRY == viewIndex) ||
+				(TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY == viewIndex) ||
+				(TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY == viewIndex));
+	}
 };
 
 const int	TEST_POINT_SIZE_SMALL	= 2;
@@ -259,13 +273,15 @@ class MultiViewRenderTestInstance : public TestInstance
 {
 public:
 									MultiViewRenderTestInstance	(Context& context, const TestParameters& parameters);
+									~MultiViewRenderTestInstance();
 protected:
 	typedef de::SharedPtr<Unique<VkPipeline> >		PipelineSp;
 	typedef de::SharedPtr<Unique<VkShaderModule> >	ShaderModuleSP;
 
 	virtual tcu::TestStatus					iterate					(void);
-	virtual void							beforeDraw				(void);
-	virtual void							afterDraw				(void);
+	virtual void							beforeRenderPass		(void);
+	virtual void							afterRenderPass			(void);
+	virtual void							bindResources			(void) {}
 	virtual void							draw					(const deUint32			subpassCount,
 																	 VkRenderPass			renderPass,
 																	 VkFramebuffer			frameBuffer,
@@ -276,6 +292,7 @@ protected:
 	void									createVertexBuffer		(void);
 	void									createMultiViewDevices	(void);
 	void									createCommandBuffer		(void);
+	void									createSecondaryCommandPool	(void);
 	void									madeShaderModule		(map<VkShaderStageFlagBits,ShaderModuleSP>& shaderModule, vector<VkPipelineShaderStageCreateInfo>& shaderStageParams);
 	Move<VkPipeline>						makeGraphicsPipeline	(const VkRenderPass							renderPass,
 																	 const VkPipelineLayout						pipelineLayout,
@@ -296,14 +313,21 @@ protected:
 	void									fillTriangle			(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx, const deUint32 quarter) const;
 	void									fillLayer				(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx) const;
 	void									fillQuarter				(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx, const deUint32 quarter, const deUint32 subpassNdx) const;
-	void                                    addRenderingSubpassDependencyIfRequired (deUint32 currentSubpassNdx);
+#ifndef CTS_USES_VULKANSC
+	void									addRenderingSubpassDependencyIfRequired (deUint32 currentSubpassNdx);
+#endif // CTS_USES_VULKANSC
 
 	const TestParameters			m_parameters;
 	const bool						m_useDynamicRendering;
 	const int						m_seed;
 	const deUint32					m_squareCount;
+
 	Move<VkDevice>					m_logicalDevice;
-	MovePtr<DeviceInterface>		m_device;
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<vk::DeviceDriver>	m_device;
+#else
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> m_device;
+#endif // CTS_USES_VULKANSC
 	MovePtr<Allocator>				m_allocator;
 	deUint32						m_queueFamilyIndex;
 	VkQueue							m_queue;
@@ -318,6 +342,7 @@ protected:
 	MovePtr<Allocation>				m_vertexIndicesAllocation;
 	Move<VkCommandPool>				m_cmdPool;
 	Move<VkCommandBuffer>			m_cmdBuffer;
+	Move<VkCommandPool>				m_cmdPoolSecondary;
 	de::SharedPtr<ImageAttachment>	m_colorAttachment;
 	VkBool32						m_hasMultiDrawIndirect;
 	vector<tcu::Vec4>				m_colorTable;
@@ -347,6 +372,10 @@ MultiViewRenderTestInstance::MultiViewRenderTestInstance (Context& context, cons
 
 	// Color attachment
 	m_colorAttachment = de::SharedPtr<ImageAttachment>(new ImageAttachment(*m_logicalDevice, *m_device, *m_allocator, m_parameters.extent, m_parameters.colorFormat, m_parameters.samples));
+}
+
+MultiViewRenderTestInstance::~MultiViewRenderTestInstance()
+{
 }
 
 tcu::TestStatus MultiViewRenderTestInstance::iterate (void)
@@ -396,7 +425,7 @@ tcu::TestStatus MultiViewRenderTestInstance::iterate (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
-void MultiViewRenderTestInstance::beforeDraw (void)
+void MultiViewRenderTestInstance::beforeRenderPass (void)
 {
 	const VkImageSubresourceRange	subresourceRange		=
 	{
@@ -420,7 +449,7 @@ void MultiViewRenderTestInstance::beforeDraw (void)
 		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 }
 
-void MultiViewRenderTestInstance::afterDraw (void)
+void MultiViewRenderTestInstance::afterRenderPass (void)
 {
 	const VkImageSubresourceRange	subresourceRange		=
 	{
@@ -437,6 +466,7 @@ void MultiViewRenderTestInstance::afterDraw (void)
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 }
 
+#ifndef CTS_USES_VULKANSC
 void MultiViewRenderTestInstance::addRenderingSubpassDependencyIfRequired (deUint32 currentSubpassNdx)
 {
 	// Get the combined view mask since the last pipeline barrier.
@@ -471,6 +501,7 @@ void MultiViewRenderTestInstance::addRenderingSubpassDependencyIfRequired (deUin
 			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 	}
 }
+#endif // CTS_USES_VULKANSC
 
 void MultiViewRenderTestInstance::draw (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
 {
@@ -482,7 +513,7 @@ void MultiViewRenderTestInstance::draw (const deUint32 subpassCount, VkRenderPas
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
-	beforeDraw();
+	beforeRenderPass();
 
 	if (!m_useDynamicRendering)
 	{
@@ -499,13 +530,16 @@ void MultiViewRenderTestInstance::draw (const deUint32 subpassCount, VkRenderPas
 		cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderingType);
 	}
 
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
-
-	if (m_parameters.viewIndex == TEST_TYPE_DRAW_INDEXED)
-		m_device->cmdBindIndexBuffer(*m_cmdBuffer, *m_vertexIndicesBuffer, 0u, VK_INDEX_TYPE_UINT32);
-
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
+		m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
+
+		if (m_parameters.viewIndex == TEST_TYPE_DRAW_INDEXED)
+			m_device->cmdBindIndexBuffer(*m_cmdBuffer, *m_vertexIndicesBuffer, 0u, VK_INDEX_TYPE_UINT32);
+
+		bindResources();
+
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 		{
 			addRenderingSubpassDependencyIfRequired(subpassNdx);
@@ -522,6 +556,7 @@ void MultiViewRenderTestInstance::draw (const deUint32 subpassCount, VkRenderPas
 				m_parameters.extent.depth,
 				m_parameters.viewMasks[subpassNdx]);
 		}
+#endif // CTS_USES_VULKANSC
 
 		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
@@ -531,16 +566,19 @@ void MultiViewRenderTestInstance::draw (const deUint32 subpassCount, VkRenderPas
 			else
 				m_device->cmdDraw(*m_cmdBuffer, 4u, 1u, (drawNdx + subpassNdx % m_squareCount) * 4u, 0u);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 			endRendering(*m_device, *m_cmdBuffer);
-		else if (subpassNdx < subpassCount - 1u)
+		else
+#endif // CTS_USES_VULKANSC
+			if (subpassNdx < subpassCount - 1u)
 			cmdNextSubpass(*m_device, *m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderingType);
 	}
 
 	if (!m_useDynamicRendering)
 		cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderingType);
 
-	afterDraw();
+	afterRenderPass();
 
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
@@ -602,12 +640,12 @@ TestParameters MultiViewRenderTestInstance::fillMissingParameters (const TestPar
 		return parameters;
 	else
 	{
-		const InstanceInterface&			instance			= m_context.getInstanceInterface();
-		const VkPhysicalDevice				physicalDevice		= m_context.getPhysicalDevice();
+		const auto& instanceDriver	= m_context.getInstanceInterface();
+		const auto physicalDevice	= m_context.getPhysicalDevice();
 
 		VkPhysicalDeviceMultiviewProperties multiviewProperties =
 		{
-			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES_KHR,	// VkStructureType	sType;
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES,		// VkStructureType	sType;
 			DE_NULL,													// void*			pNext;
 			0u,															// deUint32			maxMultiviewViewCount;
 			0u															// deUint32			maxMultiviewInstanceIndex;
@@ -617,7 +655,7 @@ TestParameters MultiViewRenderTestInstance::fillMissingParameters (const TestPar
 		deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 		deviceProperties2.pNext = &multiviewProperties;
 
-		instance.getPhysicalDeviceProperties2(physicalDevice, &deviceProperties2);
+		instanceDriver.getPhysicalDeviceProperties2(physicalDevice, &deviceProperties2);
 
 		TestParameters newParameters = parameters;
 		newParameters.extent.depth = multiviewProperties.maxMultiviewViewCount;
@@ -689,9 +727,9 @@ void MultiViewRenderTestInstance::createVertexBuffer (void)
 
 void MultiViewRenderTestInstance::createMultiViewDevices (void)
 {
-	const InstanceInterface&				instance				= m_context.getInstanceInterface();
+	const auto&								instanceDriver			= m_context.getInstanceInterface();
 	const VkPhysicalDevice					physicalDevice			= m_context.getPhysicalDevice();
-	const vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instance, physicalDevice);
+	const vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
 	for (; m_queueFamilyIndex < queueFamilyProperties.size(); ++m_queueFamilyIndex)
 	{
@@ -710,17 +748,23 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 		&queuePriorities											//const float*				pQueuePriorities;
 	};
 
+#ifndef CTS_USES_VULKANSC
 	VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures	=
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,	// VkStructureType			sType;
 		DE_NULL,														// void*					pNext;
 		DE_FALSE,														// VkBool32					dynamicRendering
 	};
+#endif // CTS_USES_VULKANSC
 
 	VkPhysicalDeviceMultiviewFeatures		multiviewFeatures		=
 	{
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES_KHR,	// VkStructureType			sType;
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES,		// VkStructureType			sType;
+#ifndef CTS_USES_VULKANSC
 		&dynamicRenderingFeatures,									// void*					pNext;
+#else
+		DE_NULL,													// void*					pNext;
+#endif // CTS_USES_VULKANSC
 		DE_FALSE,													// VkBool32					multiview;
 		DE_FALSE,													// VkBool32					multiviewGeometryShader;
 		DE_FALSE,													// VkBool32					multiviewTessellationShader;
@@ -730,16 +774,12 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 	enabledFeatures.sType					= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	enabledFeatures.pNext					= &multiviewFeatures;
 
-	instance.getPhysicalDeviceFeatures2(physicalDevice, &enabledFeatures);
+	instanceDriver.getPhysicalDeviceFeatures2(physicalDevice, &enabledFeatures);
 
 	if (!multiviewFeatures.multiview)
 		TCU_THROW(NotSupportedError, "MultiView not supported");
 
-	bool requiresGeomShader = (TEST_TYPE_VIEW_INDEX_IN_GEOMETRY == m_parameters.viewIndex) ||
-								(TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY == m_parameters.viewIndex) ||
-								(TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY == m_parameters.viewIndex);
-
-	if (requiresGeomShader && !multiviewFeatures.multiviewGeometryShader)
+	if (m_parameters.geometryShaderNeeded() && !multiviewFeatures.multiviewGeometryShader)
 		TCU_THROW(NotSupportedError, "Geometry shader is not supported");
 
 	if (TEST_TYPE_VIEW_INDEX_IN_TESELLATION == m_parameters.viewIndex && !multiviewFeatures.multiviewTessellationShader)
@@ -747,7 +787,7 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 
 	VkPhysicalDeviceMultiviewProperties	multiviewProperties			=
 	{
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES_KHR,	//VkStructureType	sType;
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES,		//VkStructureType	sType;
 		DE_NULL,													//void*				pNext;
 		0u,															//deUint32			maxMultiviewViewCount;
 		0u															//deUint32			maxMultiviewInstanceIndex;
@@ -757,10 +797,12 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 	propertiesDeviceProperties2.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 	propertiesDeviceProperties2.pNext	= &multiviewProperties;
 
-	instance.getPhysicalDeviceProperties2(physicalDevice, &propertiesDeviceProperties2);
+	instanceDriver.getPhysicalDeviceProperties2(physicalDevice, &propertiesDeviceProperties2);
 
+#ifndef CTS_USES_VULKANSC
 	if (multiviewProperties.maxMultiviewViewCount < 6u)
 		TCU_FAIL("maxMultiviewViewCount below min value");
+#endif // CTS_USES_VULKANSC
 
 	if (multiviewProperties.maxMultiviewInstanceIndex < 134217727u) //134217727u = 2^27 -1
 		TCU_FAIL("maxMultiviewInstanceIndex below min value");
@@ -786,10 +828,48 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 		if (m_parameters.viewIndex == TEST_TYPE_DEPTH_DIFFERENT_RANGES)
 			deviceExtensions.push_back("VK_EXT_depth_range_unrestricted");
 
+		void* pNext												= &enabledFeatures;
+#ifdef CTS_USES_VULKANSC
+		VkDeviceObjectReservationCreateInfo memReservationInfo	= m_context.getTestContext().getCommandLine().isSubProcess() ? m_context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
+		memReservationInfo.pNext								= pNext;
+		pNext													= &memReservationInfo;
+
+		VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+		sc10Features.pNext										= pNext;
+		pNext													= &sc10Features;
+
+		VkPipelineCacheCreateInfo			pcCI;
+		std::vector<VkPipelinePoolSize>		poolSizes;
+		if (m_context.getTestContext().getCommandLine().isSubProcess())
+		{
+			if (m_context.getResourceInterface()->getCacheDataSize() > 0)
+			{
+				pcCI =
+				{
+					VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,			// VkStructureType				sType;
+					DE_NULL,												// const void*					pNext;
+					VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+						VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+					m_context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+					m_context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+				};
+				memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+				memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+			}
+
+			poolSizes							= m_context.getResourceInterface()->getPipelinePoolSizes();
+			if (!poolSizes.empty())
+			{
+				memReservationInfo.pipelinePoolSizeCount		= deUint32(poolSizes.size());
+				memReservationInfo.pPipelinePoolSizes			= poolSizes.data();
+			}
+		}
+#endif // CTS_USES_VULKANSC
+
 		const VkDeviceCreateInfo		deviceInfo			=
 		{
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//VkStructureType					sType;
-			&enabledFeatures,												//const void*						pNext;
+			pNext,															//const void*						pNext;
 			0u,																//VkDeviceCreateFlags				flags;
 			1u,																//deUint32							queueCreateInfoCount;
 			&queueInfo,														//const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
@@ -800,9 +880,15 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 			DE_NULL															//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 		};
 
-		m_logicalDevice					= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_context.getInstance(), instance, physicalDevice, &deviceInfo);
-		m_device						= MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *m_logicalDevice));
-		m_allocator						= MovePtr<Allocator>(new SimpleAllocator(*m_device, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
+		const auto instance = m_context.getInstance();
+
+		m_logicalDevice					= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
+#ifndef CTS_USES_VULKANSC
+		m_device						= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance, *m_logicalDevice));
+#else
+		m_device						= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), instance, *m_logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
+#endif // CTS_USES_VULKANSC
+		m_allocator						= MovePtr<Allocator>(new SimpleAllocator(*m_device, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instanceDriver, physicalDevice)));
 		m_device->getDeviceQueue		(*m_logicalDevice, m_queueFamilyIndex, 0u, &m_queue);
 	}
 }
@@ -835,6 +921,21 @@ void MultiViewRenderTestInstance::createCommandBuffer (void)
 	}
 }
 
+void MultiViewRenderTestInstance::createSecondaryCommandPool(void)
+{
+	// cmdPool
+	{
+		const VkCommandPoolCreateInfo cmdPoolParams =
+		{
+			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,			// VkStructureType		sType;
+			DE_NULL,											// const void*			pNext;
+			VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,	// VkCmdPoolCreateFlags	flags;
+			m_queueFamilyIndex,									// deUint32				queueFamilyIndex;
+		};
+		m_cmdPoolSecondary = createCommandPool(*m_device, *m_logicalDevice, &cmdPoolParams);
+	}
+}
+
 void MultiViewRenderTestInstance::madeShaderModule (map<VkShaderStageFlagBits, ShaderModuleSP>& shaderModule, vector<VkPipelineShaderStageCreateInfo>& shaderStageParams)
 {
 	// create shaders modules
@@ -855,6 +956,7 @@ void MultiViewRenderTestInstance::madeShaderModule (map<VkShaderStageFlagBits, S
 		case TEST_TYPE_MULTISAMPLE:
 		case TEST_TYPE_QUERIES:
 		case TEST_TYPE_NON_PRECISE_QUERIES:
+		case TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY:
 		case TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR:
 		case TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR:
 		case TEST_TYPE_DEPTH:
@@ -1081,6 +1183,7 @@ Move<VkPipeline> MultiViewRenderTestInstance::makeGraphicsPipeline (const VkRend
 		4u															// deUint32									patchControlPoints;
 	};
 
+#ifndef CTS_USES_VULKANSC
 	VkPipelineRenderingCreateInfoKHR				renderingCreateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -1091,11 +1194,18 @@ Move<VkPipeline> MultiViewRenderTestInstance::makeGraphicsPipeline (const VkRend
 		dsFormat,
 		dsFormat
 	};
+#else
+	DE_UNREF(dsFormat);
+#endif // CTS_USES_VULKANSC
 
 	const VkGraphicsPipelineCreateInfo				graphicsPipelineParams
 	{
 		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,												// VkStructureType									sType;
+#ifndef CTS_USES_VULKANSC
 		(renderPass == 0) ? &renderingCreateInfo : DE_NULL,												// const void*										pNext;
+#else
+		DE_NULL,																						// const void*										pNext;
+#endif // CTS_USES_VULKANSC
 		(VkPipelineCreateFlags)0u,																		// VkPipelineCreateFlags							flags;
 		pipelineShaderStageCount,																		// deUint32											stageCount;
 		pipelineShaderStageCreate,																		// const VkPipelineShaderStageCreateInfo*			pStages;
@@ -1564,8 +1674,9 @@ class MultiViewAttachmentsTestInstance : public MultiViewRenderTestInstance
 public:
 						MultiViewAttachmentsTestInstance	(Context& context, const TestParameters& parameters);
 protected:
-	tcu::TestStatus		iterate								(void);
-	void				beforeDraw							(void);
+	tcu::TestStatus		iterate								(void) override;
+	void				beforeRenderPass					(void) override;
+	void				bindResources						(void) override;
 	void				setImageData						(VkImage image);
 	de::SharedPtr<ImageAttachment>	m_inputAttachment;
 	Move<VkDescriptorPool>			m_descriptorPool;
@@ -1636,7 +1747,7 @@ tcu::TestStatus MultiViewAttachmentsTestInstance::iterate (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
-void MultiViewAttachmentsTestInstance::beforeDraw (void)
+void MultiViewAttachmentsTestInstance::beforeRenderPass (void)
 {
 	const VkDescriptorPoolSize poolSize =
 	{
@@ -1698,7 +1809,6 @@ void MultiViewAttachmentsTestInstance::beforeDraw (void)
 		0u,							//deUint32				baseArrayLayer;
 		m_parameters.extent.depth,	//deUint32				layerCount;
 	};
-	m_device->cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &(*m_descriptorSet), 0u, NULL);
 
 	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange,
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -1712,6 +1822,11 @@ void MultiViewAttachmentsTestInstance::beforeDraw (void)
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+}
+
+void MultiViewAttachmentsTestInstance::bindResources (void)
+{
+	m_device->cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &(*m_descriptorSet), 0u, NULL);
 }
 
 void MultiViewAttachmentsTestInstance::setImageData (VkImage image)
@@ -1837,7 +1952,7 @@ void MultiViewInstancedTestInstance::draw (const deUint32 subpassCount, VkRender
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
-	beforeDraw();
+	beforeRenderPass();
 
 	if (!m_useDynamicRendering)
 	{
@@ -1854,10 +1969,11 @@ void MultiViewInstancedTestInstance::draw (const deUint32 subpassCount, VkRender
 		cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderingType);
 	}
 
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
-
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
+		m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
+
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 		{
 			addRenderingSubpassDependencyIfRequired(subpassNdx);
@@ -1874,21 +1990,25 @@ void MultiViewInstancedTestInstance::draw (const deUint32 subpassCount, VkRender
 				m_parameters.extent.depth,
 				m_parameters.viewMasks[subpassNdx]);
 		}
+#endif // CTS_USES_VULKANSC
 
 		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
 		m_device->cmdDraw(*m_cmdBuffer, 4u, drawCountPerSubpass, 0u, subpassNdx % m_squareCount);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 			endRendering(*m_device, *m_cmdBuffer);
-		else if (subpassNdx < subpassCount - 1u)
+		else
+#endif // CTS_USES_VULKANSC
+			if (subpassNdx < subpassCount - 1u)
 			cmdNextSubpass(*m_device, *m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderingType);
 	}
 
 	if (!m_useDynamicRendering)
 		cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderingType);
 
-	afterDraw();
+	afterRenderPass();
 
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
@@ -1930,7 +2050,7 @@ void MultiViewInputRateInstanceTestInstance::draw (const deUint32 subpassCount, 
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
-	beforeDraw();
+	beforeRenderPass();
 
 	if (!m_useDynamicRendering)
 	{
@@ -1947,10 +2067,11 @@ void MultiViewInputRateInstanceTestInstance::draw (const deUint32 subpassCount, 
 		cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderingType);
 	}
 
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
-
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
+		m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
+
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 		{
 			addRenderingSubpassDependencyIfRequired(subpassNdx);
@@ -1967,22 +2088,26 @@ void MultiViewInputRateInstanceTestInstance::draw (const deUint32 subpassCount, 
 				m_parameters.extent.depth,
 				m_parameters.viewMasks[subpassNdx]);
 		}
+#endif // CTS_USES_VULKANSC
 
 		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
 		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
 			m_device->cmdDraw(*m_cmdBuffer, 4u, 4u, 0u, 0u);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 			endRendering(*m_device, *m_cmdBuffer);
-		else if (subpassNdx < subpassCount - 1u)
+		else
+#endif // CTS_USES_VULKANSC
+			if (subpassNdx < subpassCount - 1u)
 			cmdNextSubpass(*m_device, *m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderingType);
 	}
 
 	if (!m_useDynamicRendering)
 		cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderingType);
 
-	afterDraw();
+	afterRenderPass();
 
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
@@ -2081,7 +2206,7 @@ void MultiViewDrawIndirectTestInstance::draw (const deUint32 subpassCount, VkRen
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
-	beforeDraw();
+	beforeRenderPass();
 
 	if (!m_useDynamicRendering)
 	{
@@ -2098,13 +2223,14 @@ void MultiViewDrawIndirectTestInstance::draw (const deUint32 subpassCount, VkRen
 		cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderingType);
 	}
 
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
-
-	if (m_parameters.viewIndex == TEST_TYPE_DRAW_INDIRECT_INDEXED)
-		m_device->cmdBindIndexBuffer(*m_cmdBuffer, *m_vertexIndicesBuffer, 0u, VK_INDEX_TYPE_UINT32);
-
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
+		m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
+
+		if (m_parameters.viewIndex == TEST_TYPE_DRAW_INDIRECT_INDEXED)
+			m_device->cmdBindIndexBuffer(*m_cmdBuffer, *m_vertexIndicesBuffer, 0u, VK_INDEX_TYPE_UINT32);
+
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 		{
 			addRenderingSubpassDependencyIfRequired(subpassNdx);
@@ -2121,6 +2247,7 @@ void MultiViewDrawIndirectTestInstance::draw (const deUint32 subpassCount, VkRen
 				m_parameters.extent.depth,
 				m_parameters.viewMasks[subpassNdx]);
 		}
+#endif // CTS_USES_VULKANSC
 
 		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
@@ -2142,16 +2269,19 @@ void MultiViewDrawIndirectTestInstance::draw (const deUint32 subpassCount, VkRen
 			}
 		}
 
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 			endRendering(*m_device, *m_cmdBuffer);
-		else if (subpassNdx < subpassCount - 1u)
+		else
+#endif // CTS_USES_VULKANSC
+			if (subpassNdx < subpassCount - 1u)
 			cmdNextSubpass(*m_device, *m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderingType);
 	}
 
 	if (!m_useDynamicRendering)
 		cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderingType);
 
-	afterDraw();
+	afterRenderPass();
 
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
@@ -2183,7 +2313,7 @@ void MultiViewClearAttachmentsTestInstance::draw (const deUint32 subpassCount, V
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
-	beforeDraw();
+	beforeRenderPass();
 
 	if (!m_useDynamicRendering)
 	{
@@ -2199,8 +2329,6 @@ void MultiViewClearAttachmentsTestInstance::draw (const deUint32 subpassCount, V
 		};
 		cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderingType);
 	}
-
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
@@ -2236,6 +2364,7 @@ void MultiViewClearAttachmentsTestInstance::draw (const deUint32 subpassCount, V
 			1u,			// deUint32	layerCount
 		};
 
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 		{
 			addRenderingSubpassDependencyIfRequired(subpassNdx);
@@ -2252,8 +2381,10 @@ void MultiViewClearAttachmentsTestInstance::draw (const deUint32 subpassCount, V
 				m_parameters.extent.depth,
 				m_parameters.viewMasks[subpassNdx]);
 		}
+#endif // CTS_USES_VULKANSC
 
 		m_device->cmdClearAttachments(*m_cmdBuffer, 1u, &clearAttachment, 1u, &clearRect);
+		m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
 		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
@@ -2263,16 +2394,19 @@ void MultiViewClearAttachmentsTestInstance::draw (const deUint32 subpassCount, V
 		clearAttachment.clearValue = makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
 		m_device->cmdClearAttachments(*m_cmdBuffer, 1u, &clearAttachment, 1u, &clearRect);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 			endRendering(*m_device, *m_cmdBuffer);
-		else if (subpassNdx < subpassCount - 1u)
+		else
+#endif // CTS_USES_VULKANSC
+			if (subpassNdx < subpassCount - 1u)
 			cmdNextSubpass(*m_device, *m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderingType);
 	}
 
 	if (!m_useDynamicRendering)
 		cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderingType);
 
-	afterDraw();
+	afterRenderPass();
 
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
@@ -2298,6 +2432,8 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 {
 	typedef de::SharedPtr<Unique<VkCommandBuffer> >	VkCommandBufferSp;
 
+	createSecondaryCommandPool();
+
 	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
 	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
 	const VkBuffer					vertexBuffers[]			= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
@@ -2306,29 +2442,27 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
-	beforeDraw();
+	beforeRenderPass();
 
-	if (!m_useDynamicRendering)
+	const VkRenderPassBeginInfo renderPassBeginInfo
 	{
-		const VkRenderPassBeginInfo renderPassBeginInfo
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
-			DE_NULL,									// const void*			pNext;
-			renderPass,									// VkRenderPass			renderPass;
-			frameBuffer,								// VkFramebuffer		framebuffer;
-			renderArea,									// VkRect2D				renderArea;
-			1u,											// uint32_t				clearValueCount;
-			&renderPassClearValue,						// const VkClearValue*	pClearValues;
-		};
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
+		DE_NULL,									// const void*			pNext;
+		renderPass,									// VkRenderPass			renderPass;
+		frameBuffer,								// VkFramebuffer		framebuffer;
+		renderArea,									// VkRect2D				renderArea;
+		1u,											// uint32_t				clearValueCount;
+		&renderPassClearValue,						// const VkClearValue*	pClearValues;
+	};
+	if (!m_useDynamicRendering)
 		cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS, m_parameters.renderingType);
-	}
 
 	//Create secondary buffer
 	const VkCommandBufferAllocateInfo	cmdBufferAllocateInfo	=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
 		DE_NULL,										// const void*				pNext;
-		*m_cmdPool,										// VkCommandPool			commandPool;
+		*m_cmdPoolSecondary,							// VkCommandPool			commandPool;
 		VK_COMMAND_BUFFER_LEVEL_SECONDARY,				// VkCommandBufferLevel		level;
 		1u,												// deUint32					bufferCount;
 	};
@@ -2338,11 +2472,12 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 	{
 		cmdBufferSecondary.push_back(VkCommandBufferSp(new Unique<VkCommandBuffer>(allocateCommandBuffer(*m_device, *m_logicalDevice, &cmdBufferAllocateInfo))));
 
+#ifndef CTS_USES_VULKANSC
 		const VkCommandBufferInheritanceRenderingInfoKHR secCmdBufInheritRenderingInfo
 		{
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,	// VkStructureType							sType;
 			DE_NULL,															// const void*								pNext;
-			VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR,			// VkRenderingFlagsKHR						flags;
+			0u,																	// VkRenderingFlagsKHR						flags;
 			m_parameters.viewMasks[subpassNdx],									// uint32_t									viewMask;
 			1u,																	// uint32_t									colorAttachmentCount;
 			&m_parameters.colorFormat,											// const VkFormat*							pColorAttachmentFormats;
@@ -2350,11 +2485,16 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 			VK_FORMAT_UNDEFINED,												// VkFormat									stencilAttachmentFormat;
 			m_parameters.samples												// VkSampleCountFlagBits					rasterizationSamples;
 		};
+#endif // CTS_USES_VULKANSC
 
 		const VkCommandBufferInheritanceInfo secCmdBufInheritInfo
 		{
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,					// VkStructureType							sType;
+#ifndef CTS_USES_VULKANSC
 			m_useDynamicRendering ? &secCmdBufInheritRenderingInfo : DE_NULL,	// const void*								pNext;
+#else
+			DE_NULL,															// const void*								pNext;
+#endif // CTS_USES_VULKANSC
 			renderPass,															// VkRenderPass								renderPass;
 			subpassNdx,															// deUint32									subpass;
 			frameBuffer,														// VkFramebuffer							framebuffer;
@@ -2376,6 +2516,7 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 		m_device->cmdBindVertexBuffers(cmdBufferSecondary.back().get()->get(), 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 		m_device->cmdBindPipeline(cmdBufferSecondary.back().get()->get(), VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 		{
 			addRenderingSubpassDependencyIfRequired(subpassNdx);
@@ -2392,6 +2533,7 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 				m_parameters.extent.depth,
 				m_parameters.viewMasks[subpassNdx]);
 		}
+#endif // CTS_USES_VULKANSC
 
 		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
 			m_device->cmdDraw(cmdBufferSecondary.back().get()->get(), 4u, 1u, (drawNdx + subpassNdx % m_squareCount) * 4u, 0u);
@@ -2399,16 +2541,19 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 		VK_CHECK(m_device->endCommandBuffer(cmdBufferSecondary.back().get()->get()));
 
 		m_device->cmdExecuteCommands(*m_cmdBuffer, 1u, &cmdBufferSecondary.back().get()->get());
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 			endRendering(*m_device, *m_cmdBuffer);
-		else if (subpassNdx < subpassCount - 1u)
+		else
+#endif // CTS_USES_VULKANSC
+			if (subpassNdx < subpassCount - 1u)
 			cmdNextSubpass(*m_device, *m_cmdBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS, m_parameters.renderingType);
 	}
 
 	if (!m_useDynamicRendering)
 		cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderingType);
 
-	afterDraw();
+	afterRenderPass();
 
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
@@ -2430,8 +2575,8 @@ protected:
 MultiViewPointSizeTestInstance::MultiViewPointSizeTestInstance (Context& context, const TestParameters& parameters)
 	: MultiViewRenderTestInstance	(context, parameters)
 {
-	const InstanceInterface&		vki					= m_context.getInstanceInterface();
-	const VkPhysicalDevice			physDevice			= m_context.getPhysicalDevice();
+	const auto&						vki					= m_context.getInstanceInterface();
+	const auto						physDevice			= m_context.getPhysicalDevice();
 	const VkPhysicalDeviceLimits	limits				= getPhysicalDeviceProperties(vki, physDevice).limits;
 
 	validatePointSize(limits, static_cast<deUint32>(TEST_POINT_SIZE_WIDE));
@@ -2477,7 +2622,7 @@ void MultiViewPointSizeTestInstance::draw (const deUint32 subpassCount, VkRender
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
-	beforeDraw();
+	beforeRenderPass();
 
 	if (!m_useDynamicRendering)
 	{
@@ -2494,12 +2639,13 @@ void MultiViewPointSizeTestInstance::draw (const deUint32 subpassCount, VkRender
 		cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderingType);
 	}
 
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
-
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
+		m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
+
 		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 		{
 			addRenderingSubpassDependencyIfRequired(subpassNdx);
@@ -2516,20 +2662,24 @@ void MultiViewPointSizeTestInstance::draw (const deUint32 subpassCount, VkRender
 				m_parameters.extent.depth,
 				m_parameters.viewMasks[subpassNdx]);
 		}
+#endif // CTS_USES_VULKANSC
 
 		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
 			m_device->cmdDraw(*m_cmdBuffer, 1u, 1u, drawNdx + subpassNdx % m_squareCount, 0u);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 			endRendering(*m_device, *m_cmdBuffer);
-		else if (subpassNdx < subpassCount - 1u)
+		else
+#endif // CTS_USES_VULKANSC
+			if (subpassNdx < subpassCount - 1u)
 			cmdNextSubpass(*m_device, *m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderingType);
 	}
 
 	if (!m_useDynamicRendering)
 		cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderingType);
 
-	afterDraw();
+	afterRenderPass();
 
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
@@ -2547,7 +2697,7 @@ protected:
 													 VkRenderPass			renderPass,
 													 VkFramebuffer			frameBuffer,
 													 vector<PipelineSp>&	pipelines);
-	void			afterDraw						(void);
+	void			afterRenderPass					(void);
 private:
 	de::SharedPtr<ImageAttachment>	m_resolveAttachment;
 };
@@ -2657,7 +2807,7 @@ void MultiViewMultsampleTestInstance::draw (const deUint32 subpassCount, VkRende
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
-	beforeDraw();
+	beforeRenderPass();
 
 	if (!m_useDynamicRendering)
 	{
@@ -2674,12 +2824,13 @@ void MultiViewMultsampleTestInstance::draw (const deUint32 subpassCount, VkRende
 		cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderingType);
 	}
 
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
-
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
+		m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
+
 		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 		{
 			addRenderingSubpassDependencyIfRequired(subpassNdx);
@@ -2696,20 +2847,24 @@ void MultiViewMultsampleTestInstance::draw (const deUint32 subpassCount, VkRende
 				m_parameters.extent.depth,
 				m_parameters.viewMasks[subpassNdx]);
 		}
+#endif // CTS_USES_VULKANSC
 
 		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
 			m_device->cmdDraw(*m_cmdBuffer, vertexPerPrimitive, 1u, (drawNdx + subpassNdx % m_squareCount) * vertexPerPrimitive, 0u);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 			endRendering(*m_device, *m_cmdBuffer);
-		else if (subpassNdx < subpassCount - 1u)
+		else
+#endif // CTS_USES_VULKANSC
+			if (subpassNdx < subpassCount - 1u)
 			cmdNextSubpass(*m_device, *m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderingType);
 	}
 
 	if (!m_useDynamicRendering)
 		cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderingType);
 
-	afterDraw();
+	afterRenderPass();
 
 	m_device->cmdResolveImage(*m_cmdBuffer, m_colorAttachment->getImage(), VK_IMAGE_LAYOUT_GENERAL, m_resolveAttachment->getImage(), VK_IMAGE_LAYOUT_GENERAL, 1u, &imageResolveRegion);
 
@@ -2717,7 +2872,7 @@ void MultiViewMultsampleTestInstance::draw (const deUint32 subpassCount, VkRende
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
 }
 
-void MultiViewMultsampleTestInstance::afterDraw (void)
+void MultiViewMultsampleTestInstance::afterRenderPass (void)
 {
 	const VkImageSubresourceRange	subresourceRange		=
 	{
@@ -2759,10 +2914,13 @@ private:
 	deUint64					m_timestampMask;
 	vector<deUint64>			m_timestampStartValues;
 	vector<deUint64>			m_timestampEndValues;
+	vector<uint64_t>			m_timestampStartAvailabilityValues;
+	vector<uint64_t>			m_timestampEndAvailabilityValues;
 	vector<deBool>				m_counterSeriesStart;
 	vector<deBool>				m_counterSeriesEnd;
 	vector<deUint64>			m_occlusionValues;
 	vector<deUint64>			m_occlusionExpectedValues;
+	vector<uint64_t>			m_occlusionAvailabilityValues;
 	deUint32					m_occlusionObjectsOffset;
 	vector<deUint64>			m_occlusionObjectPixelsCount;
 };
@@ -2774,12 +2932,25 @@ MultiViewQueriesTestInstance::MultiViewQueriesTestInstance (Context& context, co
 	, m_occlusionObjectsOffset		(0)
 {
 	// Generate the timestamp mask
-	const std::vector<VkQueueFamilyProperties>	queueProperties = vk::getPhysicalDeviceQueueFamilyProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
+	const auto&	vki				= m_context.getInstanceInterface();
+	const auto	physicalDevice	= m_context.getPhysicalDevice();
+
+	const std::vector<VkQueueFamilyProperties>	queueProperties	= vk::getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
 
 	if(queueProperties[0].timestampValidBits == 0)
 		TCU_THROW(NotSupportedError, "Device does not support timestamp.");
 
 	m_timestampMask = 0xFFFFFFFFFFFFFFFFull >> (64 - queueProperties[0].timestampValidBits);
+}
+
+void verifyAvailabilityBits (const std::vector<uint64_t>& bits, const char* setName)
+{
+	constexpr auto expectedValue = uint64_t{1};
+	for (size_t i = 0u; i < bits.size(); ++i)
+	{
+		if (bits[i] != expectedValue)
+			TCU_FAIL(setName + std::string(" availability bit ") + de::toString(i) + " not " + de::toString(expectedValue));
+	}
 }
 
 tcu::TestStatus MultiViewQueriesTestInstance::iterate (void)
@@ -2835,6 +3006,7 @@ tcu::TestStatus MultiViewQueriesTestInstance::iterate (void)
 			}
 		}
 	}
+	verifyAvailabilityBits(m_occlusionAvailabilityValues, "occlusion");
 
 	DE_ASSERT(!m_timestampStartValues.empty());
 	DE_ASSERT(m_timestampStartValues.size() == m_timestampEndValues.size());
@@ -2857,6 +3029,8 @@ tcu::TestStatus MultiViewQueriesTestInstance::iterate (void)
 
 		return tcu::TestStatus::fail("timestamp");
 	}
+	verifyAvailabilityBits(m_timestampStartAvailabilityValues, "timestamp start");
+	verifyAvailabilityBits(m_timestampEndAvailabilityValues, "timestamp end");
 
 	return tcu::TestStatus::pass("Pass");
 }
@@ -2924,6 +3098,32 @@ void MultiViewQueriesTestInstance::createVertexData (void)
 	m_occlusionObjectsOffset = mainObjectsVerticesCount;
 }
 
+// Extract single values or pairs of consecutive values from src and store them in dst1 and dst2.
+// If ds2 is not null, src is processed as containing pairs of values.
+// The first value will be stored in ds1 and the second one in dst2.
+void unpackValues (const std::vector<uint64_t>& src, std::vector<uint64_t>* dst1, std::vector<uint64_t>* dst2)
+{
+	if (!dst2)
+	{
+		std::copy(begin(src), end(src), begin(*dst1));
+		return;
+	}
+
+	constexpr size_t sz0 = 0;
+	constexpr size_t sz1 = 1;
+	constexpr size_t sz2 = 2;
+
+	DE_UNREF(sz0); // For release builds.
+	DE_ASSERT(src.size() % sz2 == sz0);
+
+	for (size_t i = 0; i < src.size(); i += sz2)
+	{
+		const auto j = i / sz2;
+		dst1->at(j) = src.at(i);
+		dst2->at(j) = src.at(i + sz1);
+	}
+}
+
 void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
 {
 	const VkRect2D				renderArea						= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
@@ -2958,7 +3158,7 @@ void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPa
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
-	beforeDraw();
+	beforeRenderPass();
 
 	// Query pools must be reset before use
 	m_device->cmdResetQueryPool(*m_cmdBuffer, *occlusionQueryPool, queryStartIndex, queryCountersNumber);
@@ -2980,8 +3180,6 @@ void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPa
 		cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderingType);
 	}
 
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
-
 	m_occlusionExpectedValues.reserve(queryCountersNumber);
 	m_counterSeriesStart.reserve(queryCountersNumber);
 	m_counterSeriesEnd.reserve(queryCountersNumber);
@@ -2990,8 +3188,10 @@ void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPa
 	{
 		deUint32	queryCountersToUse	= getUsedViewsCount(subpassNdx);
 
+		m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 		{
 			addRenderingSubpassDependencyIfRequired(subpassNdx);
@@ -3008,6 +3208,7 @@ void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPa
 				m_parameters.extent.depth,
 				m_parameters.viewMasks[subpassNdx]);
 		}
+#endif // CTS_USES_VULKANSC
 
 		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
 		{
@@ -3035,9 +3236,12 @@ void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPa
 			queryStartIndex += queryCountersToUse;
 		}
 
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 			endRendering(*m_device, *m_cmdBuffer);
-		else if (subpassNdx < subpassCount - 1u)
+		else
+#endif // CTS_USES_VULKANSC
+			if (subpassNdx < subpassCount - 1u)
 			cmdNextSubpass(*m_device, *m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderingType);
 	}
 
@@ -3046,21 +3250,46 @@ void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPa
 	if (!m_useDynamicRendering)
 		cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderingType);
 
-	afterDraw();
+	afterRenderPass();
 
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
 
-	m_occlusionValues.resize(queryCountersNumber, 0ull);
-	m_device->getQueryPoolResults(*m_logicalDevice, *occlusionQueryPool, 0u, queryCountersNumber, sizeof(deUint64) * queryCountersNumber, (void*)&m_occlusionValues[0], sizeof(deUint64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+	const bool		withAvailability		= (m_parameters.viewIndex == TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY);
+	const uint32_t	valuesPerQuery			= (withAvailability ? 2u : 1u);
+	const uint32_t	valuesNumber			= queryCountersNumber * valuesPerQuery;
+	const auto		queryStride				= static_cast<VkDeviceSize>(sizeof(uint64_t) * valuesPerQuery);
+	const auto		extraFlag				= (withAvailability ? VK_QUERY_RESULT_WITH_AVAILABILITY_BIT : static_cast<VkQueryResultFlagBits>(0));
+	const auto		queryFlags				= (VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT | extraFlag);
 
-	m_timestampStartValues.resize(queryCountersNumber, 0ull);
-	m_device->getQueryPoolResults(*m_logicalDevice, *timestampStartQueryPool, 0u, queryCountersNumber, sizeof(deUint64) * queryCountersNumber, (void*)&m_timestampStartValues[0], sizeof(deUint64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+	// These vectors will temporarily hold results.
+	std::vector<uint64_t>	occlusionQueryResultsBuffer			(valuesNumber, 0u);
+	std::vector<uint64_t>	timestampStartQueryResultsBuffer	(valuesNumber, 0u);
+	std::vector<uint64_t>	timestampEndQueryResultsBuffer		(valuesNumber, 0u);
+
+	m_occlusionValues.resize(queryCountersNumber);
+	m_timestampStartValues.resize(queryCountersNumber);
+	m_timestampEndValues.resize(queryCountersNumber);
+
+	if (withAvailability)
+	{
+		m_occlusionAvailabilityValues.resize(queryCountersNumber);
+		m_timestampStartAvailabilityValues.resize(queryCountersNumber);
+		m_timestampEndAvailabilityValues.resize(queryCountersNumber);
+	}
+
+	m_device->getQueryPoolResults(*m_logicalDevice, *occlusionQueryPool, 0u, queryCountersNumber, de::dataSize(occlusionQueryResultsBuffer), de::dataOrNull(occlusionQueryResultsBuffer), queryStride, queryFlags);
+	unpackValues(occlusionQueryResultsBuffer, &m_occlusionValues, (withAvailability ? &m_occlusionAvailabilityValues : nullptr));
+
+	m_device->getQueryPoolResults(*m_logicalDevice, *timestampStartQueryPool, 0u, queryCountersNumber, de::dataSize(timestampStartQueryResultsBuffer), de::dataOrNull(timestampStartQueryResultsBuffer), queryStride, queryFlags);
+	unpackValues(timestampStartQueryResultsBuffer, &m_timestampStartValues, (withAvailability ? &m_timestampStartAvailabilityValues : nullptr));
+
+	m_device->getQueryPoolResults(*m_logicalDevice, *timestampEndQueryPool, 0u, queryCountersNumber, de::dataSize(timestampEndQueryResultsBuffer), de::dataOrNull(timestampEndQueryResultsBuffer), queryStride, queryFlags);
+	unpackValues(timestampEndQueryResultsBuffer, &m_timestampEndValues, (withAvailability ? &m_timestampEndAvailabilityValues : nullptr));
+
 	for (deUint32 ndx = 0; ndx < m_timestampStartValues.size(); ++ndx)
 		m_timestampStartValues[ndx] &= m_timestampMask;
 
-	m_timestampEndValues.resize(queryCountersNumber, 0ull);
-	m_device->getQueryPoolResults(*m_logicalDevice, *timestampEndQueryPool, 0u, queryCountersNumber, sizeof(deUint64) * queryCountersNumber, (void*)&m_timestampEndValues[0], sizeof(deUint64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
 	for (deUint32 ndx = 0; ndx < m_timestampEndValues.size(); ++ndx)
 		m_timestampEndValues[ndx] &= m_timestampMask;
 }
@@ -3179,7 +3408,7 @@ void MultiViewReadbackTestInstance::drawClears (const deUint32 subpassCount, VkR
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
 	if (clearPass)
-		beforeDraw();
+		beforeRenderPass();
 
 	if (!m_useDynamicRendering)
 	{
@@ -3200,6 +3429,7 @@ void MultiViewReadbackTestInstance::drawClears (const deUint32 subpassCount, VkR
 	{
 		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 		{
 			addRenderingSubpassDependencyIfRequired(subpassNdx);
@@ -3227,6 +3457,7 @@ void MultiViewReadbackTestInstance::drawClears (const deUint32 subpassCount, VkR
 				m_parameters.extent.depth,
 				m_parameters.viewMasks[subpassNdx]);
 		}
+#endif // CTS_USES_VULKANSC
 
 		if (clearPass)
 		{
@@ -3243,9 +3474,12 @@ void MultiViewReadbackTestInstance::drawClears (const deUint32 subpassCount, VkR
 			}
 		}
 
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 			endRendering(*m_device, *m_cmdBuffer);
-		else if (subpassNdx < subpassCount - 1u)
+		else
+#endif // CTS_USES_VULKANSC
+			if (subpassNdx < subpassCount - 1u)
 			cmdNextSubpass(*m_device, *m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderingType);
 	}
 
@@ -3253,7 +3487,7 @@ void MultiViewReadbackTestInstance::drawClears (const deUint32 subpassCount, VkR
 		cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderingType);
 
 	if (!clearPass)
-		afterDraw();
+		afterRenderPass();
 
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
@@ -3289,8 +3523,8 @@ protected:
 																		 VkRenderPass					renderPass,
 																		 VkFramebuffer					frameBuffer,
 																		 vector<PipelineSp>&			pipelines) override;
-	void							beforeDraw							(void) override;
-	void							afterDraw							(void) override;
+	void							beforeRenderPass							(void) override;
+	void							afterRenderPass							(void) override;
 	vector<VkImageView>				makeAttachmentsVector				(void);
 	MovePtr<tcu::Texture2DArray>	imageData							(void) const override;
 	void							readImage							(VkImage						image,
@@ -3316,7 +3550,9 @@ MultiViewDepthStencilTestInstance::MultiViewDepthStencilTestInstance (Context& c
 	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(formats); ++ndx)
 	{
 		const VkFormat				format				= formats[ndx];
-		const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
+		const auto&					vki					= m_context.getInstanceInterface();
+		const auto					physicalDevice		= m_context.getPhysicalDevice();
+		const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(vki, physicalDevice, format);
 
 		if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0)
 		{
@@ -3717,7 +3953,7 @@ void MultiViewDepthStencilTestInstance::draw (const deUint32 subpassCount, VkRen
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
-	beforeDraw();
+	beforeRenderPass();
 
 	if (!m_useDynamicRendering)
 	{
@@ -3734,14 +3970,14 @@ void MultiViewDepthStencilTestInstance::draw (const deUint32 subpassCount, VkRen
 		cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderingType);
 	}
 
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
-
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
 		deUint32 firstVertexOffset = (subpassNdx < 4) ? 0u : m_squareCount * vertexPerPrimitive;
 
+		m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 		{
 			addRenderingSubpassDependencyIfRequired(subpassNdx);
@@ -3790,28 +4026,32 @@ void MultiViewDepthStencilTestInstance::draw (const deUint32 subpassCount, VkRen
 
 			m_device->cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
 		}
+#endif // CTS_USES_VULKANSC
 
 		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
 			m_device->cmdDraw(*m_cmdBuffer, vertexPerPrimitive, 1u, firstVertexOffset + (drawNdx + subpassNdx % m_squareCount) * vertexPerPrimitive, 0u);
 
+#ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 			endRendering(*m_device, *m_cmdBuffer);
-		else if (subpassNdx < subpassCount - 1u)
+		else
+#endif // CTS_USES_VULKANSC
+			if (subpassNdx < subpassCount - 1u)
 			cmdNextSubpass(*m_device, *m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderingType);
 	}
 
 	if (!m_useDynamicRendering)
 		cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderingType);
 
-	afterDraw();
+	afterRenderPass();
 
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
 }
 
-void MultiViewDepthStencilTestInstance::beforeDraw (void)
+void MultiViewDepthStencilTestInstance::beforeRenderPass (void)
 {
-	MultiViewRenderTestInstance::beforeDraw();
+	MultiViewRenderTestInstance::beforeRenderPass();
 
 	const VkImageSubresourceRange	subresourceRange		=
 	{
@@ -3838,9 +4078,9 @@ void MultiViewDepthStencilTestInstance::beforeDraw (void)
 		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT);
 }
 
-void MultiViewDepthStencilTestInstance::afterDraw (void)
+void MultiViewDepthStencilTestInstance::afterRenderPass (void)
 {
-	MultiViewRenderTestInstance::afterDraw();
+	MultiViewRenderTestInstance::afterRenderPass();
 
 	const VkImageSubresourceRange	dsSubresourceRange		=
 	{
@@ -3899,7 +4139,8 @@ private:
 			return new MultiViewMultsampleTestInstance(context, m_parameters);
 
 		if (TEST_TYPE_QUERIES == m_parameters.viewIndex ||
-			TEST_TYPE_NON_PRECISE_QUERIES == m_parameters.viewIndex)
+			TEST_TYPE_NON_PRECISE_QUERIES == m_parameters.viewIndex ||
+			TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY == m_parameters.viewIndex)
 			return new MultiViewQueriesTestInstance(context, m_parameters);
 
 		if (TEST_TYPE_VIEW_MASK == m_parameters.viewIndex ||
@@ -3924,6 +4165,9 @@ private:
 
 	virtual void		checkSupport		(Context& context) const
 	{
+		if (m_parameters.geometryShaderNeeded())
+			context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
 		if (m_parameters.renderingType == RENDERING_TYPE_RENDERPASS2)
 			context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
@@ -3931,8 +4175,32 @@ private:
 			context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
 		context.requireDeviceFunctionality("VK_KHR_multiview");
+
 		if (m_parameters.viewIndex == TEST_TYPE_DEPTH_DIFFERENT_RANGES)
 			context.requireDeviceFunctionality("VK_EXT_depth_range_unrestricted");
+		if (m_parameters.viewIndex == TEST_TYPE_QUERIES)
+			context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_OCCLUSION_QUERY_PRECISE);
+
+#ifdef CTS_USES_VULKANSC
+		const InstanceInterface&			instance			= context.getInstanceInterface();
+		const VkPhysicalDevice				physicalDevice		= context.getPhysicalDevice();
+		VkPhysicalDeviceMultiviewProperties	multiviewProperties =
+		{
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES,		//VkStructureType	sType;
+			DE_NULL,													//void*				pNext;
+			0u,															//deUint32			maxMultiviewViewCount;
+			0u															//deUint32			maxMultiviewInstanceIndex;
+		};
+
+		VkPhysicalDeviceProperties2			propertiesDeviceProperties2;
+		propertiesDeviceProperties2.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+		propertiesDeviceProperties2.pNext						= &multiviewProperties;
+
+		instance.getPhysicalDeviceProperties2(physicalDevice, &propertiesDeviceProperties2);
+
+		if (multiviewProperties.maxMultiviewViewCount < m_parameters.viewMasks.size())
+			TCU_THROW(NotSupportedError, "maxMultiviewViewCount is less than required by test");
+#endif // CTS_USES_VULKANSC
 	}
 
 	void				initPrograms		(SourceCollections& programCollection) const
@@ -4072,9 +4340,7 @@ private:
 			programCollection.glslSources.add("tessellation_evaluation") << glu::TessellationEvaluationSource(source_te.str());
 		}
 
-		if (TEST_TYPE_VIEW_INDEX_IN_GEOMETRY		== m_parameters.viewIndex ||
-			TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY	== m_parameters.viewIndex ||
-			TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY	== m_parameters.viewIndex)
+		if (m_parameters.geometryShaderNeeded())
 		{// Geometry Shader
 			std::ostringstream	source;
 			source	<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
@@ -4190,6 +4456,7 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 		"multisample",
 		"queries",
 		"non_precise_queries",
+		"non_precise_queries_with_availability",
 		"readback_implicit_clear",
 		"readback_explicit_clear",
 		"depth",
@@ -4245,7 +4512,13 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 	depthStencilMasks.push_back(12u);	// 1100
 	depthStencilMasks.push_back(9u);	// 1001
 
-	for (int renderPassTypeNdx = 0; renderPassTypeNdx < 3; ++renderPassTypeNdx)
+#ifndef CTS_USES_VULKANSC
+	int numberOfRenderingTypes = 3;
+#else
+	int numberOfRenderingTypes = 2;
+#endif // CTS_USES_VULKANSC
+
+	for (int renderPassTypeNdx = 0; renderPassTypeNdx < numberOfRenderingTypes; ++renderPassTypeNdx)
 	{
 		RenderingType				renderPassType	(RENDERING_TYPE_RENDERPASS_LEGACY);
 		MovePtr<tcu::TestCaseGroup>	targetGroup		(DE_NULL);
@@ -4279,8 +4552,8 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 				continue;
 
 			if (testTypeNdx == TEST_TYPE_DEPTH ||
-                                  testTypeNdx == TEST_TYPE_DEPTH_DIFFERENT_RANGES ||
-                                  testTypeNdx == TEST_TYPE_STENCIL)
+				testTypeNdx == TEST_TYPE_DEPTH_DIFFERENT_RANGES ||
+				testTypeNdx == TEST_TYPE_STENCIL)
 			{
 				const VkExtent3D		dsTestExtent3D	= { 64u, 64u, 4u };
 				const TestParameters	parameters		= { dsTestExtent3D, tripleDepthStencilMasks(depthStencilMasks), testType, sampleCountFlags, colorFormat, renderPassType };
@@ -4325,6 +4598,7 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 				case TEST_TYPE_MULTISAMPLE:
 				case TEST_TYPE_QUERIES:
 				case TEST_TYPE_NON_PRECISE_QUERIES:
+				case TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY:
 				case TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR:
 				case TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR:
 				case TEST_TYPE_DEPTH:

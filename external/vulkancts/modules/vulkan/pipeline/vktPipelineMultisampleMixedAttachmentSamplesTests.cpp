@@ -171,20 +171,19 @@ inline bool isStencilFormat (const VkFormat format)
 }
 
 //! Create a test-specific MSAA pipeline
-Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&					vk,
-									   const VkDevice							device,
-									   const VkPipelineLayout					pipelineLayout,
-									   const VkRenderPass						renderPass,
-									   const VkShaderModule						vertexModule,
-									   const VkShaderModule						fragmentModule,
-									   const bool								useVertexInput,
-									   const deUint32							subpassNdx,
-									   const UVec2&								renderSize,
-									   const VkImageAspectFlags					depthStencilAspect,	//!< Used to determine which D/S tests to turn on
-									   const VkSampleCountFlagBits				numSamples,
-									   const bool								sampleShadingEnable,
-									   const bool								useFragmentShadingRate,
-									   const VkSampleLocationsInfoEXT*			pSampleLocationsInfo = DE_NULL)
+void preparePipelineWrapper(GraphicsPipelineWrapper&			gpw,
+							const VkPipelineLayout				pipelineLayout,
+							const VkRenderPass					renderPass,
+							const VkShaderModule				vertexModule,
+							const VkShaderModule				fragmentModule,
+							const bool							useVertexInput,
+							const deUint32						subpassNdx,
+							const UVec2&						renderSize,
+							const VkImageAspectFlags			depthStencilAspect,	//!< Used to determine which D/S tests to turn on
+							const VkSampleCountFlagBits			numSamples,
+							const bool							sampleShadingEnable,
+							const bool							useFragmentShadingRate,
+							const VkSampleLocationsInfoEXT*		pSampleLocationsInfo = DE_NULL)
 {
 	std::vector<VkVertexInputBindingDescription>	vertexInputBindingDescriptions;
 	std::vector<VkVertexInputAttributeDescription>	vertexInputAttributeDescriptions;
@@ -208,55 +207,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&					vk,
 		dataOrNullPtr(vertexInputAttributeDescriptions),				// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 	};
 
-	const VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType							sType;
-		DE_NULL,														// const void*								pNext;
-		(VkPipelineInputAssemblyStateCreateFlags)0,						// VkPipelineInputAssemblyStateCreateFlags	flags;
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// VkPrimitiveTopology						topology;
-		VK_FALSE,														// VkBool32									primitiveRestartEnable;
-	};
-
-	const VkViewport viewport =
-	{
-		0.0f, 0.0f,																	// x, y
-		static_cast<float>(renderSize.x()), static_cast<float>(renderSize.y()),		// widht, height
-		0.0f, 1.0f																	// minDepth, maxDepth
-	};
-
-	const VkRect2D scissor =
-	{
-		makeOffset2D(0, 0),
-		makeExtent2D(renderSize.x(), renderSize.y()),
-	};
-
-	const VkPipelineViewportStateCreateInfo pipelineViewportStateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType						sType;
-		DE_NULL,														// const void*							pNext;
-		(VkPipelineViewportStateCreateFlags)0,							// VkPipelineViewportStateCreateFlags	flags;
-		1u,																// uint32_t								viewportCount;
-		&viewport,														// const VkViewport*					pViewports;
-		1u,																// uint32_t								scissorCount;
-		&scissor,														// const VkRect2D*						pScissors;
-	};
-
-	const VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	// VkStructureType							sType;
-		DE_NULL,													// const void*								pNext;
-		(VkPipelineRasterizationStateCreateFlags)0,					// VkPipelineRasterizationStateCreateFlags	flags;
-		VK_FALSE,													// VkBool32									depthClampEnable;
-		VK_FALSE,													// VkBool32									rasterizerDiscardEnable;
-		VK_POLYGON_MODE_FILL,										// VkPolygonMode							polygonMode;
-		VK_CULL_MODE_NONE,											// VkCullModeFlags							cullMode;
-		VK_FRONT_FACE_COUNTER_CLOCKWISE,							// VkFrontFace								frontFace;
-		VK_FALSE,													// VkBool32									depthBiasEnable;
-		0.0f,														// float									depthBiasConstantFactor;
-		0.0f,														// float									depthBiasClamp;
-		0.0f,														// float									depthBiasSlopeFactor;
-		1.0f,														// float									lineWidth;
-	};
+	const std::vector<VkViewport>	viewport	{ makeViewport(renderSize.x(), renderSize.y()) };
+	const std::vector<VkRect2D>		scissor		{ makeRect2D(renderSize.x(), renderSize.y()) };
 
 	VkPipelineSampleLocationsStateCreateInfoEXT pipelineSampleLocationsCreateInfo =
 	{
@@ -337,28 +289,6 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&					vk,
 		{ 0.0f, 0.0f, 0.0f, 0.0f },									// float										blendConstants[4];
 	};
 
-	const VkPipelineShaderStageCreateInfo pShaderStages[] =
-	{
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
-			DE_NULL,												// const void*							pNext;
-			(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags		flags;
-			VK_SHADER_STAGE_VERTEX_BIT,								// VkShaderStageFlagBits				stage;
-			vertexModule,											// VkShaderModule						module;
-			"main",													// const char*							pName;
-			DE_NULL,												// const VkSpecializationInfo*			pSpecializationInfo;
-		},
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
-			DE_NULL,												// const void*							pNext;
-			(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags		flags;
-			VK_SHADER_STAGE_FRAGMENT_BIT,							// VkShaderStageFlagBits				stage;
-			fragmentModule,											// VkShaderModule						module;
-			"main",													// const char*							pName;
-			DE_NULL,												// const VkSpecializationInfo*			pSpecializationInfo;
-		}
-	};
-
 	VkPipelineFragmentShadingRateStateCreateInfoKHR shadingRateStateCreateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR,								// VkStructureType						sType;
@@ -367,30 +297,25 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&					vk,
 		{ VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR, VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR },	// VkFragmentShadingRateCombinerOpKHR	combinerOps[2];
 	};
 
-	const VkGraphicsPipelineCreateInfo graphicsPipelineInfo =
-	{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,					// VkStructureType									sType;
-		useFragmentShadingRate ? &shadingRateStateCreateInfo : DE_NULL,		// const void*										pNext;
-		(VkPipelineCreateFlags)0,											// VkPipelineCreateFlags							flags;
-		DE_LENGTH_OF_ARRAY(pShaderStages),									// deUint32											stageCount;
-		pShaderStages,														// const VkPipelineShaderStageCreateInfo*			pStages;
-		&vertexInputStateInfo,												// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
-		&pipelineInputAssemblyStateInfo,									// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
-		DE_NULL,															// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
-		&pipelineViewportStateInfo,											// const VkPipelineViewportStateCreateInfo*			pViewportState;
-		&pipelineRasterizationStateInfo,									// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
-		&pipelineMultisampleStateInfo,										// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
-		&pipelineDepthStencilStateInfo,										// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
-		&pipelineColorBlendStateInfo,										// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-		DE_NULL,															// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
-		pipelineLayout,														// VkPipelineLayout									layout;
-		renderPass,															// VkRenderPass										renderPass;
-		subpassNdx,															// deUint32											subpass;
-		DE_NULL,															// VkPipeline										basePipelineHandle;
-		-1,																	// deInt32											basePipelineIndex;
-	};
-
-	return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
+	gpw.setDefaultRasterizationState()
+	   .setupVertexInputState(&vertexInputStateInfo)
+	   .setupPreRasterizationShaderState(viewport,
+								scissor,
+								pipelineLayout,
+								renderPass,
+								subpassNdx,
+								vertexModule,
+								nullptr, DE_NULL, DE_NULL, DE_NULL, DE_NULL,
+								(useFragmentShadingRate ? &shadingRateStateCreateInfo : nullptr))
+	   .setupFragmentShaderState(pipelineLayout,
+								renderPass,
+								subpassNdx,
+								fragmentModule,
+								&pipelineDepthStencilStateInfo,
+								&pipelineMultisampleStateInfo)
+	   .setupFragmentOutputState(renderPass, subpassNdx, &pipelineColorBlendStateInfo, &pipelineMultisampleStateInfo)
+	   .setMonolithicPipelineLayout(pipelineLayout)
+	   .buildPipeline();
 }
 
 //! Wrap float after an increment
@@ -747,6 +672,7 @@ struct TestParams
 		VkSampleCountFlagBits	numDepthStencilSamples;			//!< VkAttachmentDescription::samples and VkImageCreateInfo::samples
 	};
 
+	PipelineConstructionType	pipelineConstructionType;		//!< The wya pipeline is constructed
 	VkFormat					colorFormat;					//!< Color attachment format
 	VkFormat					depthStencilFormat;				//!< D/S attachment format. Will test both aspects if it's a mixed format
 	bool						useProgrammableSampleLocations;	//!< Try to use VK_EXT_sample_locations if available
@@ -1089,17 +1015,16 @@ void draw (Context& context, const TestParams& params, WorkingData& wd)
 	const Unique<VkShaderModule>	fragmentModule	(createShaderModule(vk, device, context.getBinaryCollection().get("frag"), 0u));
 	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout(vk, device));
 
-	typedef SharedPtr<Unique<VkPipeline> > PipelineSp;
-	std::vector<PipelineSp> pipelines;
+	std::vector<GraphicsPipelineWrapper> pipelines;
 
 	for (deUint32 subpassNdx = 0; subpassNdx < numSubpasses; ++subpassNdx)
 	{
 		const VkSampleLocationsInfoEXT* pSampleLocationsInfo = (params.useProgrammableSampleLocations ? &perSubpassSampleLocationsInfo[subpassNdx] : DE_NULL);
 
-		pipelines.push_back(PipelineSp(new Unique<VkPipeline>(
-			makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule, /*use vertex input*/ true, subpassNdx,
+		pipelines.emplace_back(vk, device, params.pipelineConstructionType);
+		preparePipelineWrapper(pipelines.back(), *pipelineLayout, *renderPass, *vertexModule, *fragmentModule, /*use vertex input*/ true, subpassNdx,
 								 wd.renderSize, getImageAspectFlags(params.depthStencilFormat), params.perSubpassSamples[subpassNdx].numCoverageSamples,
-								 /*use sample shading*/ true, params.useFragmentShadingRate, pSampleLocationsInfo))));
+								 /*use sample shading*/ true, params.useFragmentShadingRate, pSampleLocationsInfo);
 	}
 
 	const Unique<VkCommandPool>		cmdPool		(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex()));
@@ -1161,7 +1086,7 @@ void draw (Context& context, const TestParams& params, WorkingData& wd)
 		const VkDeviceSize vertexBufferOffset = 0ull;
 		vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &wd.perSubpass[subpassNdx]->vertexBuffer.get(), &vertexBufferOffset);
 
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
+		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[subpassNdx].getPipeline());
 
 		vk.cmdDraw(*cmdBuffer, wd.perSubpass[subpassNdx]->numVertices, 1u, 0u, 0u);
 	}
@@ -1364,11 +1289,11 @@ void checkRequirements (Context& context, TestParams params)
 		checkSampleRequirements(context, samples.numColorSamples, samples.numDepthStencilSamples, !params.useProgrammableSampleLocations);
 	}
 
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
+
 	if (params.useFragmentShadingRate)
 	{
-		const auto&	vki				= context.getInstanceInterface();
-		const auto	physicalDevice	= context.getPhysicalDevice();
-
 		context.requireDeviceFunctionality("VK_KHR_fragment_shading_rate");
 
 		if (!context.getFragmentShadingRateFeatures().pipelineFragmentShadingRate)
@@ -1406,6 +1331,8 @@ void checkRequirements (Context& context, TestParams params)
 		if (!requiredRateFound)
 			TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
 	}
+
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
 }
 
 //! Verify the values of all samples in all attachments.
@@ -1425,7 +1352,7 @@ tcu::TestStatus test (Context& context, const TestParams params)
 
 		VkPhysicalDeviceProperties2 properties =
 		{
-			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR,	    // VkStructureType               sType;
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,			// VkStructureType               sType;
 			&wd.sampleLocationsProperties,							// void*                         pNext;
 			VkPhysicalDeviceProperties(),							// VkPhysicalDeviceProperties    properties;
 		};
@@ -1501,6 +1428,7 @@ namespace ShaderBuiltins
 
 struct TestParams
 {
+	PipelineConstructionType	pipelineConstructionType;	//!< The way pipeline is constructed
 	VkSampleCountFlagBits		numCoverageSamples;			//!< VkPipelineMultisampleStateCreateInfo::rasterizationSamples
 	VkSampleCountFlagBits		numColorSamples;			//!< VkAttachmentDescription::samples and VkImageCreateInfo::samples
 	VkSampleCountFlagBits		numDepthStencilSamples;		//!< VkAttachmentDescription::samples and VkImageCreateInfo::samples
@@ -1710,12 +1638,13 @@ void drawResolve (Context& context, const TestParams& params, WorkingData& wd)
 	const bool						useVertexInput	= false;
 	const bool						sampleShading	= (params.numColorSamples != VK_SAMPLE_COUNT_1_BIT);
 	const deUint32					subpassNdx		= 0u;
-	const Unique<VkPipeline>		pipeline		(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule, useVertexInput,
-																		  subpassNdx, wd.renderSize, getImageAspectFlags(params.depthStencilFormat),
-																		  params.numCoverageSamples, sampleShading, false));
+	GraphicsPipelineWrapper			pipeline		(vk, device, params.pipelineConstructionType);
+	const Unique<VkCommandPool>		cmdPool			(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex()));
+	const Unique<VkCommandBuffer>	cmdBuffer		(makeCommandBuffer(vk, device, *cmdPool));
 
-	const Unique<VkCommandPool>		cmdPool		(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex()));
-	const Unique<VkCommandBuffer>	cmdBuffer	(makeCommandBuffer(vk, device, *cmdPool));
+	preparePipelineWrapper(pipeline, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule, useVertexInput,
+							subpassNdx, wd.renderSize, getImageAspectFlags(params.depthStencilFormat),
+							params.numCoverageSamples, sampleShading, false);
 
 	beginCommandBuffer(vk, *cmdBuffer);
 
@@ -1743,7 +1672,7 @@ void drawResolve (Context& context, const TestParams& params, WorkingData& wd)
 		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 	}
 
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
 	vk.cmdDraw(*cmdBuffer, 3u, 1u, 0u, 0u);
 
 	vk.cmdEndRenderPass(*cmdBuffer);
@@ -1762,6 +1691,7 @@ void checkRequirements (Context& context, TestParams params)
 	context.requireDeviceFunctionality("VK_AMD_mixed_attachment_samples");
 
 	checkSampleRequirements(context, params.numColorSamples, params.numDepthStencilSamples, false /* require standard sample locations */);
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
 }
 
 //! Verify the values of shader builtins
@@ -1863,7 +1793,7 @@ std::string getFormatCaseName (const VkFormat colorFormat,
 	return str.str();
 }
 
-void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup, bool useFragmentShadingRate)
+void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup, PipelineConstructionType pipelineConstructionType, bool useFragmentShadingRate)
 {
 	const VkFormat colorFormatRange[] =
 	{
@@ -1998,6 +1928,7 @@ void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup, bo
 				samples.numCoverageSamples				= de::max(samples.numColorSamples, samples.numDepthStencilSamples);
 
 				VerifySamples::TestParams params;
+				params.pipelineConstructionType = pipelineConstructionType;
 				params.perSubpassSamples.push_back(samples);
 				params.useProgrammableSampleLocations	= (locationsGroups[groupNdx] == programmableLocationsGroup.get());
 				params.useFragmentShadingRate = useFragmentShadingRate;
@@ -2027,6 +1958,7 @@ void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup, bo
 			for (deUint32 caseNdx = 0u; caseNdx < DE_LENGTH_OF_ARRAY(subpassCases); ++caseNdx)
 			{
 				VerifySamples::TestParams params;
+				params.pipelineConstructionType = pipelineConstructionType;
 				params.useProgrammableSampleLocations = (locationsGroups[groupNdx] == programmableLocationsGroup.get());
 				params.useFragmentShadingRate = useFragmentShadingRate;
 
@@ -2072,6 +2004,7 @@ void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup, bo
 		for (deUint32 caseNdx = 0u; caseNdx < DE_LENGTH_OF_ARRAY(singlePassCases); ++caseNdx)
 		{
 			ShaderBuiltins::TestParams params;
+			params.pipelineConstructionType	= pipelineConstructionType;
 			params.numColorSamples			= singlePassCases[caseNdx].colorSamples;
 			params.numDepthStencilSamples	= singlePassCases[caseNdx].depthStencilSamples;
 			params.numCoverageSamples		= de::max(params.numColorSamples, params.numDepthStencilSamples);
@@ -2104,9 +2037,9 @@ void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup, bo
 
 } // anonymous ns
 
-tcu::TestCaseGroup* createMultisampleMixedAttachmentSamplesTests (tcu::TestContext& testCtx, bool useFragmentShadingRate)
+tcu::TestCaseGroup* createMultisampleMixedAttachmentSamplesTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType, bool useFragmentShadingRate)
 {
-	return createTestGroup(testCtx, "mixed_attachment_samples", "Test a graphics pipeline with varying sample count per color and depth/stencil attachments", createMixedAttachmentSamplesTestsInGroup, useFragmentShadingRate);
+	return createTestGroup(testCtx, "mixed_attachment_samples", "Test a graphics pipeline with varying sample count per color and depth/stencil attachments", createMixedAttachmentSamplesTestsInGroup, pipelineConstructionType, useFragmentShadingRate);
 }
 
 } // pipeline

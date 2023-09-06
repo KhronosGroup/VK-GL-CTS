@@ -404,6 +404,7 @@ public:
 
 		endCommandBuffer(vk, *m_cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+		context.resetCommandPoolForVKSC(device, *m_cmdPool);
 	}
 
 private:

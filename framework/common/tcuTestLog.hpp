@@ -176,12 +176,18 @@ public:
 	void				endSample				(void);
 	void				endSampleList			(void);
 
+	void				writeRaw				(const char* rawContents);
+
 	bool				isShaderLoggingEnabled	(void);
+
+	void				supressLogging			(bool value);
+	bool				isSupressLogging		(void);
 private:
 						TestLog					(const TestLog& other); // Not allowed!
 	TestLog&			operator=				(const TestLog& other); // Not allowed!
 
 	qpTestLog*			m_log;
+	bool				m_logSupressed;
 };
 
 class MessageBuilder

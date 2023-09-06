@@ -1,0 +1,119 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties":
+	{
+		"register_extension":
+		{
+			"type": "object",
+			"description": "This section must be present for all KHR extensions, for all extensions that were promoted to the core and for all extensions for which aliases should be populated.",
+			"properties":
+			{
+				"type":
+				{
+					"type": "string",
+					"enum": ["device", "instance"],
+					"description": "This property specifies if this is device or instance extension."
+				},
+				"core":
+				{
+					"type": "string",
+					"description": "This property specifies vulkan version to which this extension was fully promoted. Empty string is also accepted and must be used for partialy promoted extensions.",
+					"pattern": "^$|^[1-9]\\.[0-9]\\.[0-9]\\.[0-9]$"
+				}
+			},
+			"required": ["type", "core"],
+			"additionalProperties": false
+		},
+		"mandatory_features":
+		{
+			"type": "object",
+			"description": "When this section is present it specifies mandatory features for extension or vulkan version.",
+			"patternProperties":
+			{
+				"^VkPhysicalDevice[1-9A-Za-z]*Features(EXT|KHR|VALVE)?$":
+				{
+					"type": "array",
+					"description": "List of mandatory features in given feature structure.",
+					"minItems": 1,
+					"items":
+					{
+						"type": "object",
+						"properties":
+						{
+							"features":
+							{
+								"type": "array",
+								"description": "List of structure attributes - at least one of them must be supported when requirements are meat.",
+								"minItems": 1,
+								"items":
+								{
+									"type": "string"
+								}
+							},
+							"requirements":
+							{
+								"type": "array",
+								"description": "List of requirements (other features, extensions, vulkan version). This list can be empty.",
+								"items":
+								{
+									"type": "string"
+								}
+							},
+							"mandatory_variant":
+							{
+								"type": "array",
+								"description": "When this section is present it specifies mandatory features variant.",
+								"items": {
+									"type": "string",
+									"enum": ["vulkan", "vulkansc"]
+								}
+							}
+						},
+						"required": ["features", "requirements"],
+						"additionalProperties": false
+					}
+				},
+				"additionalProperties": { "type": "string" }
+			},
+			"additionalProperties": false
+		},
+		"mandatory_extensions":
+		{
+			"type": "array",
+			"description": "When this section is present it specifies mandatory extensions for the given features",
+			"items":
+			{
+				"type": "object",
+				"properties":
+				{
+					"extension":
+					{
+						"type": "string"
+					},
+					"requirements":
+					{
+						"type": "array",
+						"description": "List of requirements (other features, extensions, vulkan version). This list can be empty.",
+						"minItems": 1,
+						"items":
+						{
+							"type": "string"
+						}
+					},
+					"mandatory_variant":
+					{
+						"type": "array",
+						"description": "When this section is present it specifies mandatory features variant.",
+						"items": {
+							"type": "string",
+							"enum": ["vulkan", "vulkansc"]
+						}
+					}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"additionalProperties": false
+}

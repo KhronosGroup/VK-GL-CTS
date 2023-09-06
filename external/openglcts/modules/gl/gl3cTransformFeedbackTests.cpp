@@ -3423,7 +3423,9 @@ tcu::TestNode::IterateResult gl3cts::TransformFeedback::CheckGetXFBVarying::iter
 
 	/* Initializations. */
 	bool is_at_least_gl_30 = (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(3, 0)));
+	bool is_at_least_gl_32 = (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(3, 2)));
 	bool is_ext_tf_1	   = m_context.getContextInfo().isExtensionSupported("GL_EXT_transform_feedback");
+	bool is_arb_gs_4	   = m_context.getContextInfo().isExtensionSupported("GL_ARB_geometry_shader4");
 
 	bool is_ok		= true;
 	bool test_error = false;
@@ -3433,7 +3435,7 @@ tcu::TestNode::IterateResult gl3cts::TransformFeedback::CheckGetXFBVarying::iter
 	/* Tests. */
 	try
 	{
-		if (is_at_least_gl_30 || is_ext_tf_1)
+		if ((is_at_least_gl_30 || is_ext_tf_1) && (is_at_least_gl_32 || is_arb_gs_4))
 		{
 			fetchLimits();
 

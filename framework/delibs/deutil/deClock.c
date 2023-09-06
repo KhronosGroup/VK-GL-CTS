@@ -55,7 +55,7 @@ deUint64 deGetMicroseconds (void)
 		return count.QuadPart / (freq.QuadPart / 1000000);
 	}
 
-#elif (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_QNX)
+#elif (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_QNX) || (DE_OS == DE_OS_FUCHSIA)
 	struct timespec currTime;
 	clock_gettime(CLOCK_MONOTONIC, &currTime);
 	return (deUint64)currTime.tv_sec*1000000 + ((deUint64)currTime.tv_nsec/1000);

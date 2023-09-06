@@ -1237,12 +1237,12 @@ void GeometryShaderAdjacencyTests::setTriangleStripPointsNonindiced(AdjacencyTes
 		static_cast<glw::GLuint>(test_data.m_n_vertices * m_n_components_input * sizeof(float));
 
 	/* Allocate memory for input and expected data */
-	test_data.m_expected_adjacency_geometry = new float[test_data.m_geometry_bo_size / sizeof(float)];
-	test_data.m_expected_geometry			= new float[test_data.m_geometry_bo_size / sizeof(float)];
-	test_data.m_vertex_data					= new float[test_data.m_vertex_data_bo_size / sizeof(float)];
+	test_data.m_expected_adjacency_geometry           = new float[test_data.m_geometry_bo_size / sizeof(float)];
+	test_data.m_expected_geometry			          = new float[test_data.m_geometry_bo_size / sizeof(float)];
+	test_data.m_alternate_expected_adjacency_geometry = new float[test_data.m_geometry_bo_size / sizeof(float)];
+	test_data.m_alternate_expected_geometry			  = new float[test_data.m_geometry_bo_size / sizeof(float)];
+	test_data.m_vertex_data					          = new float[test_data.m_vertex_data_bo_size / sizeof(float)];
 
-	travellerExpectedAdjacencyGeometryPtr = test_data.m_expected_adjacency_geometry;
-	travellerExpectedGeometryPtr		  = test_data.m_expected_geometry;
 	travellerPtr						  = test_data.m_vertex_data;
 
 	/* Set input and expected values */
@@ -1254,127 +1254,165 @@ void GeometryShaderAdjacencyTests::setTriangleStripPointsNonindiced(AdjacencyTes
 		++travellerPtr;
 	}
 
-	for (unsigned int n = 0; n < nTriangles; ++n)
+	for (unsigned int j = 0; j < 2; ++j)
 	{
-		/* Derived from per table 2.X1 from the spec */
-		int vertexIndex[3]	= { -1, -1, -1 };
-		int adjVertexIndex[3] = { -1, -1, -1 };
-
-		if (n == 0)
+		if (j == 0)
 		{
-			/* first (i==0) */
-			adjVertexIndex[0] = 2;
-			adjVertexIndex[1] = 7;
-			adjVertexIndex[2] = 4;
-			vertexIndex[0]	= 1;
-			vertexIndex[1]	= 3;
-			vertexIndex[2]	= 5;
-		}
-		else if (n == nTriangles - 1)
-		{
-			if (n % 2 == 0)
-			{
-				/* last (i==n-1, i even) */
-				adjVertexIndex[0] = 2 * n - 1;
-				adjVertexIndex[1] = 2 * n + 6;
-				adjVertexIndex[2] = 2 * n + 4;
-				vertexIndex[0]	= 2 * n + 1;
-				vertexIndex[1]	= 2 * n + 3;
-				vertexIndex[2]	= 2 * n + 5;
-			}
-			else
-			{
-				/* last (i==n-1, i odd) */
-				adjVertexIndex[0] = 2 * n - 1;
-				adjVertexIndex[1] = 2 * n + 4;
-				adjVertexIndex[2] = 2 * n + 6;
-				vertexIndex[0]	= 2 * n + 3;
-				vertexIndex[1]	= 2 * n + 1;
-				vertexIndex[2]	= 2 * n + 5;
-			}
+			travellerExpectedAdjacencyGeometryPtr = test_data.m_expected_adjacency_geometry;
+			travellerExpectedGeometryPtr		  = test_data.m_expected_geometry;
 		}
 		else
 		{
-			if (n % 2 == 0)
+			travellerExpectedAdjacencyGeometryPtr = test_data.m_alternate_expected_adjacency_geometry;
+			travellerExpectedGeometryPtr		  = test_data.m_alternate_expected_geometry;
+		}
+		for (unsigned int n = 0; n < nTriangles; ++n)
+		{
+			/* Derived from per table 2.X1 from the spec */
+			int vertexIndex[3]				= { -1, -1, -1 };
+			int adjVertexIndex[3]			= { -1, -1, -1 };
+
+			if (n == 0)
 			{
-				/* middle (i even) */
-				adjVertexIndex[0] = 2 * n - 1;
-				adjVertexIndex[1] = 2 * n + 7;
-				adjVertexIndex[2] = 2 * n + 4;
-				vertexIndex[0]	= 2 * n + 1;
-				vertexIndex[1]	= 2 * n + 3;
-				vertexIndex[2]	= 2 * n + 5;
+				/* first (i==0) */
+				adjVertexIndex[0] = 2;
+				adjVertexIndex[1] = 7;
+				adjVertexIndex[2] = 4;
+				vertexIndex[0]	= 1;
+				vertexIndex[1]	= 3;
+				vertexIndex[2]	= 5;
+			}
+			else if (n == nTriangles - 1)
+			{
+				if (n % 2 == 0)
+				{
+					/* last (i==n-1, i even) */
+					adjVertexIndex[0] = 2 * n - 1;
+					adjVertexIndex[1] = 2 * n + 6;
+					adjVertexIndex[2] = 2 * n + 4;
+					vertexIndex[0]	= 2 * n + 1;
+					vertexIndex[1]	= 2 * n + 3;
+					vertexIndex[2]	= 2 * n + 5;
+				}
+				else
+				{
+					/* last (i==n-1, i odd) */
+					if (j == 0)
+					{
+						adjVertexIndex[0] = 2 * n - 1;
+						adjVertexIndex[1] = 2 * n + 4;
+						adjVertexIndex[2] = 2 * n + 6;
+						vertexIndex[0]	  = 2 * n + 3;
+						vertexIndex[1]	  = 2 * n + 1;
+						vertexIndex[2]	  = 2 * n + 5;
+					}
+					else
+					{
+						adjVertexIndex[0] = 2 * n + 4;
+						adjVertexIndex[1] = 2 * n + 6;
+						adjVertexIndex[2] = 2 * n - 1;
+						vertexIndex[0]	  = 2 * n + 1;
+						vertexIndex[1]	  = 2 * n + 5;
+						vertexIndex[2]	  = 2 * n + 3;
+					}
+				}
 			}
 			else
 			{
-				/* middle (i odd) */
-				adjVertexIndex[0] = 2 * n - 1;
-				adjVertexIndex[1] = 2 * n + 4;
-				adjVertexIndex[2] = 2 * n + 7;
-				vertexIndex[0]	= 2 * n + 3;
-				vertexIndex[1]	= 2 * n + 1;
-				vertexIndex[2]	= 2 * n + 5;
+				if (n % 2 == 0)
+				{
+					/* middle (i even) */
+					adjVertexIndex[0] = 2 * n - 1;
+					adjVertexIndex[1] = 2 * n + 7;
+					adjVertexIndex[2] = 2 * n + 4;
+					vertexIndex[0]	= 2 * n + 1;
+					vertexIndex[1]	= 2 * n + 3;
+					vertexIndex[2]	= 2 * n + 5;
+				}
+				else
+				{
+					/* middle (i odd) */
+					if (j == 0)
+					{
+
+						adjVertexIndex[0] = 2 * n - 1;
+						adjVertexIndex[1] = 2 * n + 4;
+						adjVertexIndex[2] = 2 * n + 7;
+						vertexIndex[0]	  = 2 * n + 3;
+						vertexIndex[1]	  = 2 * n + 1;
+						vertexIndex[2]	  = 2 * n + 5;
+					}
+					else
+					{
+						adjVertexIndex[0] = 2 * n + 4;
+						adjVertexIndex[1] = 2 * n + 7;
+						adjVertexIndex[2] = 2 * n - 1;
+						vertexIndex[0]    = 2 * n + 1;
+						vertexIndex[1]    = 2 * n + 5;
+						vertexIndex[2]    = 2 * n + 3;
+					}
+				}
 			}
-		}
 
-		/* Spec assumes vertices are indexed from 1 */
-		vertexIndex[0]--;
-		vertexIndex[1]--;
-		vertexIndex[2]--;
-		adjVertexIndex[0]--;
-		adjVertexIndex[1]--;
-		adjVertexIndex[2]--;
+			/* Spec assumes vertices are indexed from 1 */
+			vertexIndex[0]--;
+			vertexIndex[1]--;
+			vertexIndex[2]--;
+			adjVertexIndex[0]--;
+			adjVertexIndex[1]--;
+			adjVertexIndex[2]--;
 
-		*travellerExpectedAdjacencyGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[adjVertexIndex[0]].x;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[adjVertexIndex[0]].y;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr = 0;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr = 1;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[adjVertexIndex[1]].x;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[adjVertexIndex[1]].y;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr = 0;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr = 1;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[adjVertexIndex[2]].x;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[adjVertexIndex[2]].y;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr = 0;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr = 1;
-		++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[adjVertexIndex[0]].x;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[adjVertexIndex[0]].y;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr = 0;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr = 1;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[adjVertexIndex[1]].x;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[adjVertexIndex[1]].y;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr = 0;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr = 1;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[adjVertexIndex[2]].x;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[adjVertexIndex[2]].y;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr = 0;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr = 1;
+			++travellerExpectedAdjacencyGeometryPtr;
 
-		*travellerExpectedGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[vertexIndex[0]].x;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[vertexIndex[0]].y;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr = 0;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr = 1;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[vertexIndex[1]].x;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[vertexIndex[1]].y;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr = 0;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr = 1;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[vertexIndex[2]].x;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[vertexIndex[2]].y;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr = 0;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr = 1;
-		++travellerExpectedGeometryPtr;
-	} /* for (all triangles) */
+			*travellerExpectedGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[vertexIndex[0]].x;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[vertexIndex[0]].y;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr = 0;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr = 1;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[vertexIndex[1]].x;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[vertexIndex[1]].y;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr = 0;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr = 1;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[vertexIndex[2]].x;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr = test_data.m_grid->m_triangle_strip.m_points[vertexIndex[2]].y;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr = 0;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr = 1;
+			++travellerExpectedGeometryPtr;
+		} /* for (all triangles) */
+	}
 }
 
 /** Set triangle strip vertex data used to be used by indiced draw calls.
@@ -1399,13 +1437,13 @@ void GeometryShaderAdjacencyTests::setTriangleStripPointsIndiced(AdjacencyTestDa
 	test_data.m_index_data_bo_size = static_cast<glw::GLuint>(test_data.m_n_vertices * sizeof(unsigned int));
 
 	/* Allocate memory for input and expected data */
-	test_data.m_expected_adjacency_geometry = new float[test_data.m_geometry_bo_size / sizeof(float)];
-	test_data.m_expected_geometry			= new float[test_data.m_geometry_bo_size / sizeof(float)];
-	test_data.m_index_data					= new unsigned int[test_data.m_index_data_bo_size / sizeof(unsigned int)];
-	test_data.m_vertex_data					= new float[test_data.m_vertex_data_bo_size / sizeof(float)];
+	test_data.m_expected_adjacency_geometry           = new float[test_data.m_geometry_bo_size / sizeof(float)];
+	test_data.m_expected_geometry			          = new float[test_data.m_geometry_bo_size / sizeof(float)];
+	test_data.m_alternate_expected_adjacency_geometry = new float[test_data.m_geometry_bo_size / sizeof(float)];
+	test_data.m_alternate_expected_geometry			  = new float[test_data.m_geometry_bo_size / sizeof(float)];
+	test_data.m_index_data					          = new unsigned int[test_data.m_index_data_bo_size / sizeof(unsigned int)];
+	test_data.m_vertex_data					          = new float[test_data.m_vertex_data_bo_size / sizeof(float)];
 
-	travellerExpectedAdjacencyGeometryPtr = test_data.m_expected_adjacency_geometry;
-	travellerExpectedGeometryPtr		  = test_data.m_expected_geometry;
 	travellerIndicesPtr					  = test_data.m_index_data;
 	travellerPtr						  = test_data.m_vertex_data;
 
@@ -1424,138 +1462,176 @@ void GeometryShaderAdjacencyTests::setTriangleStripPointsIndiced(AdjacencyTestDa
 		++travellerPtr;
 	}
 
-	for (unsigned int n = 0; n < nTriangles; ++n)
+	for (unsigned int j = 0; j < 2; ++j)
 	{
-		/* Derived from per table 2.X1 from the spec */
-		int vertexIndex[3]	= { -1, -1, -1 };
-		int adjVertexIndex[3] = { -1, -1, -1 };
-
-		if (n == 0)
+		if (j == 0)
 		{
-			/* first (i==0) */
-			adjVertexIndex[0] = 2;
-			adjVertexIndex[1] = 7;
-			adjVertexIndex[2] = 4;
-			vertexIndex[0]	= 1;
-			vertexIndex[1]	= 3;
-			vertexIndex[2]	= 5;
-		}
-		else if (n == nTriangles - 1)
-		{
-			if (n % 2 == 0)
-			{
-				/* last (i==n-1, i even) */
-				adjVertexIndex[0] = 2 * n - 1;
-				adjVertexIndex[1] = 2 * n + 6;
-				adjVertexIndex[2] = 2 * n + 4;
-				vertexIndex[0]	= 2 * n + 1;
-				vertexIndex[1]	= 2 * n + 3;
-				vertexIndex[2]	= 2 * n + 5;
-			}
-			else
-			{
-				/* last (i==n-1, i odd) */
-				adjVertexIndex[0] = 2 * n - 1;
-				adjVertexIndex[1] = 2 * n + 4;
-				adjVertexIndex[2] = 2 * n + 6;
-				vertexIndex[0]	= 2 * n + 3;
-				vertexIndex[1]	= 2 * n + 1;
-				vertexIndex[2]	= 2 * n + 5;
-			}
+			travellerExpectedAdjacencyGeometryPtr = test_data.m_expected_adjacency_geometry;
+			travellerExpectedGeometryPtr		  = test_data.m_expected_geometry;
 		}
 		else
 		{
-			if (n % 2 == 0)
+			travellerExpectedAdjacencyGeometryPtr = test_data.m_alternate_expected_adjacency_geometry;
+			travellerExpectedGeometryPtr		  = test_data.m_alternate_expected_geometry;
+		}
+
+		for (unsigned int n = 0; n < nTriangles; ++n)
+		{
+			/* Derived from per table 2.X1 from the spec */
+			int vertexIndex[3]	= { -1, -1, -1 };
+			int adjVertexIndex[3] = { -1, -1, -1 };
+
+			if (n == 0)
 			{
-				/* middle (i even) */
-				adjVertexIndex[0] = 2 * n - 1;
-				adjVertexIndex[1] = 2 * n + 7;
-				adjVertexIndex[2] = 2 * n + 4;
-				vertexIndex[0]	= 2 * n + 1;
-				vertexIndex[1]	= 2 * n + 3;
-				vertexIndex[2]	= 2 * n + 5;
+				/* first (i==0) */
+				adjVertexIndex[0] = 2;
+				adjVertexIndex[1] = 7;
+				adjVertexIndex[2] = 4;
+				vertexIndex[0]	= 1;
+				vertexIndex[1]	= 3;
+				vertexIndex[2]	= 5;
+			}
+			else if (n == nTriangles - 1)
+			{
+				if (n % 2 == 0)
+				{
+					/* last (i==n-1, i even) */
+					adjVertexIndex[0] = 2 * n - 1;
+					adjVertexIndex[1] = 2 * n + 6;
+					adjVertexIndex[2] = 2 * n + 4;
+					vertexIndex[0]	= 2 * n + 1;
+					vertexIndex[1]	= 2 * n + 3;
+					vertexIndex[2]	= 2 * n + 5;
+				}
+				else
+				{
+					/* last (i==n-1, i odd) */
+					if (j == 0)
+					{
+						adjVertexIndex[0] = 2 * n - 1;
+						adjVertexIndex[1] = 2 * n + 4;
+						adjVertexIndex[2] = 2 * n + 6;
+						vertexIndex[0]	  = 2 * n + 3;
+						vertexIndex[1]	  = 2 * n + 1;
+						vertexIndex[2]	  = 2 * n + 5;
+					}
+					else
+					{
+						adjVertexIndex[0] = 2 * n + 4;
+						adjVertexIndex[1] = 2 * n + 6;
+						adjVertexIndex[2] = 2 * n - 1;
+						vertexIndex[0]	  = 2 * n + 1;
+						vertexIndex[1]	  = 2 * n + 5;
+						vertexIndex[2]	  = 2 * n + 3;
+					}
+				}
 			}
 			else
 			{
-				/* middle (i odd) */
-				adjVertexIndex[0] = 2 * n - 1;
-				adjVertexIndex[1] = 2 * n + 4;
-				adjVertexIndex[2] = 2 * n + 7;
-				vertexIndex[0]	= 2 * n + 3;
-				vertexIndex[1]	= 2 * n + 1;
-				vertexIndex[2]	= 2 * n + 5;
+				if (n % 2 == 0)
+				{
+					/* middle (i even) */
+					adjVertexIndex[0] = 2 * n - 1;
+					adjVertexIndex[1] = 2 * n + 7;
+					adjVertexIndex[2] = 2 * n + 4;
+					vertexIndex[0]	= 2 * n + 1;
+					vertexIndex[1]	= 2 * n + 3;
+					vertexIndex[2]	= 2 * n + 5;
+				}
+				else
+				{
+					/* middle (i odd) */
+					if (j == 0)
+					{
+						adjVertexIndex[0] = 2 * n - 1;
+						adjVertexIndex[1] = 2 * n + 4;
+						adjVertexIndex[2] = 2 * n + 7;
+						vertexIndex[0]	  = 2 * n + 3;
+						vertexIndex[1]	  = 2 * n + 1;
+						vertexIndex[2]	  = 2 * n + 5;
+					}
+					else
+					{
+						adjVertexIndex[0] = 2 * n + 4;
+						adjVertexIndex[1] = 2 * n + 7;
+						adjVertexIndex[2] = 2 * n - 1;
+						vertexIndex[0]	  = 2 * n + 1;
+						vertexIndex[1]	  = 2 * n + 5;
+						vertexIndex[2]	  = 2 * n + 3;
+					}
+				}
 			}
-		}
 
-		/* Spec assumes vertices are indexed from 1 */
-		vertexIndex[0]--;
-		vertexIndex[1]--;
-		vertexIndex[2]--;
-		adjVertexIndex[0]--;
-		adjVertexIndex[1]--;
-		adjVertexIndex[2]--;
+			/* Spec assumes vertices are indexed from 1 */
+			vertexIndex[0]--;
+			vertexIndex[1]--;
+			vertexIndex[2]--;
+			adjVertexIndex[0]--;
+			adjVertexIndex[1]--;
+			adjVertexIndex[2]--;
 
-		*travellerExpectedAdjacencyGeometryPtr =
-			test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[adjVertexIndex[0]]].x;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr =
-			test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[adjVertexIndex[0]]].y;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr = 0;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr = 1;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr =
-			test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[adjVertexIndex[1]]].x;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr =
-			test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[adjVertexIndex[1]]].y;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr = 0;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr = 1;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr =
-			test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[adjVertexIndex[2]]].x;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr =
-			test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[adjVertexIndex[2]]].y;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr = 0;
-		++travellerExpectedAdjacencyGeometryPtr;
-		*travellerExpectedAdjacencyGeometryPtr = 1;
-		++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr =
+				test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[adjVertexIndex[0]]].x;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr =
+				test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[adjVertexIndex[0]]].y;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr = 0;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr = 1;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr =
+				test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[adjVertexIndex[1]]].x;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr =
+				test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[adjVertexIndex[1]]].y;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr = 0;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr = 1;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr =
+				test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[adjVertexIndex[2]]].x;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr =
+				test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[adjVertexIndex[2]]].y;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr = 0;
+			++travellerExpectedAdjacencyGeometryPtr;
+			*travellerExpectedAdjacencyGeometryPtr = 1;
+			++travellerExpectedAdjacencyGeometryPtr;
 
-		*travellerExpectedGeometryPtr =
-			test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[vertexIndex[0]]].x;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr =
-			test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[vertexIndex[0]]].y;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr = 0;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr = 1;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr =
-			test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[vertexIndex[1]]].x;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr =
-			test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[vertexIndex[1]]].y;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr = 0;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr = 1;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr =
-			test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[vertexIndex[2]]].x;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr =
-			test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[vertexIndex[2]]].y;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr = 0;
-		++travellerExpectedGeometryPtr;
-		*travellerExpectedGeometryPtr = 1;
-		++travellerExpectedGeometryPtr;
-	} /* for (all triangles) */
+			*travellerExpectedGeometryPtr =
+				test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[vertexIndex[0]]].x;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr =
+				test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[vertexIndex[0]]].y;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr = 0;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr = 1;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr =
+				test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[vertexIndex[1]]].x;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr =
+				test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[vertexIndex[1]]].y;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr = 0;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr = 1;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr =
+				test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[vertexIndex[2]]].x;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr =
+				test_data.m_grid->m_triangle_strip.m_points[test_data.m_index_data[vertexIndex[2]]].y;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr = 0;
+			++travellerExpectedGeometryPtr;
+			*travellerExpectedGeometryPtr = 1;
+			++travellerExpectedGeometryPtr;
+		} /* for (all triangles) */
+	}
 }
 }

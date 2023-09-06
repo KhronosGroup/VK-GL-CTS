@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceTransformFeedbackFeaturesEXT":
+		[
+			{ "features": ["transformFeedback"],	"requirements": ["VK_EXT_transform_feedback"] }
+		]
+	}
+}

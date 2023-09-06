@@ -107,7 +107,7 @@ OpStore %out_gep5 %var1_mat_1_eq_var1_mat_2_sel
 %var1_mat_1_0_eq_var1_mat_1_1_sel = OpSelect %int %var1_mat_1_0_eq_var1_mat_1_1 %int_1 %int_0
 %out_gep6 = OpAccessChain %ptr_buffer_int %out_var %int_0 %out_idx5
 %out_idx6 = OpIAdd %int %out_idx5 %int_1
-OpStore %out_gep6 %var1_mat_1_eq_var1_mat_2_sel
+OpStore %out_gep6 %var1_mat_1_0_eq_var1_mat_1_1_sel
 OpReturn
 OpFunctionEnd
 [test]

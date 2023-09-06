@@ -67,6 +67,7 @@ struct CaseGroup
 	std::vector<Case> cases;
 };
 
+#ifndef CTS_USES_VULKANSC
 
 void addTestsForAmberFiles (tcu::TestCaseGroup* tests, CaseGroup group)
 {
@@ -77,7 +78,7 @@ void addTestsForAmberFiles (tcu::TestCaseGroup* tests, CaseGroup group)
 
 	for (unsigned i = 0; i < cases.size() ; ++i)
 	{
-		deUint32 vulkan_version = cases[i].spv1p3 ? VK_MAKE_VERSION(1, 1, 0) : VK_MAKE_VERSION(1, 0, 0);
+		deUint32 vulkan_version = cases[i].spv1p3 ? VK_MAKE_API_VERSION(0, 1, 1, 0) : VK_MAKE_API_VERSION(0, 1, 0, 0);
 		vk::SpirvVersion spirv_version = cases[i].spv1p3 ? vk::SPIRV_VERSION_1_3 : vk::SPIRV_VERSION_1_0;
 		vk::SpirVAsmBuildOptions asm_options(vulkan_version, spirv_version);
 
@@ -99,6 +100,8 @@ void addTestsForAmberFiles (tcu::TestCaseGroup* tests, CaseGroup group)
 		tests->addChild(testCase);
 	}
 }
+
+#endif // CTS_USES_VULKANSC
 
 } // anonymous
 
@@ -139,7 +142,9 @@ tcu::TestCaseGroup* createTerminateInvocationGroup(tcu::TestContext& testCtx)
 	group.add("terminate_loop", "\"inifinite\" loop that calls terminate invocation", false);
 	group.add("subgroup_ballot", "checks that terminated invocations don't participate in the ballot", true, Ballot);
 	group.add("subgroup_vote", "checks that a subgroup all does not include any terminated invocations", true, Vote);
+#ifndef CTS_USES_VULKANSC
 	terminateTests->addChild(createTestGroup(testCtx, "terminate", "Terminate Invocation", addTestsForAmberFiles, group));
+#endif // CTS_USES_VULKANSC
 
 	return terminateTests.release();
 }

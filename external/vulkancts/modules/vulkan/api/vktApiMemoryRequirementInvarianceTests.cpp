@@ -37,7 +37,11 @@ namespace api
 using namespace vk;
 
 // Number of items to allocate
+#ifndef CTS_USES_VULKANSC
 const unsigned int		testCycles								= 1000u;
+#else
+const unsigned int		testCycles								= 100u;
+#endif // CTS_USES_VULKANSC
 
 // All legal memory combinations (spec chapter 10.2: Device Memory)
 const unsigned int		legalMemoryTypeCount					= 11u;
@@ -101,9 +105,12 @@ BufferAllocator::~BufferAllocator ()
 
 void BufferAllocator::allocate (Context& context)
 {
-	Allocator&						memAlloc	= context.getDefaultAllocator();
+	const DeviceInterface&			vk					= context.getDeviceInterface();
+	VkDevice						vkDevice			= context.getDevice();
+	deUint32						queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	Allocator&						memAlloc			= context.getDefaultAllocator();
 	de::MovePtr<IBufferAllocator>	allocator;
-	MemoryRequirement				requirement	= legalMemoryTypes[m_memoryType];
+	MemoryRequirement				requirement			= legalMemoryTypes[m_memoryType];
 
 	if (m_dedicated)
 		allocator = de::MovePtr<IBufferAllocator>(new BufferDedicatedAllocation);
@@ -111,6 +118,9 @@ void BufferAllocator::allocate (Context& context)
 		allocator = de::MovePtr<IBufferAllocator>(new BufferSuballocation);
 
 	allocator->createTestBuffer(
+		vk,
+		vkDevice,
+		queueFamilyIndex,
 		m_size,
 		m_usage,
 		context,
@@ -258,6 +268,8 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 	bool									success							= true;
 	const deBool							isDedicatedAllocationSupported	= m_context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation");
 	const deBool							isYcbcrSupported				= m_context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion");
+	const deBool							isYcbcrExtensionSupported		= m_context.isDeviceFunctionalitySupported("VK_EXT_ycbcr_2plane_444_formats");
+	const deBool							isPvrtcSupported				= m_context.isDeviceFunctionalitySupported("VK_IMG_format_pvrtc");
 	std::vector<int>						optimalFormats;
 	std::vector<int>						linearFormats;
 	std::vector<int>						memoryTypes;
@@ -484,6 +496,8 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 		VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM,
 		VK_FORMAT_G16_B16R16_2PLANE_422_UNORM,
 		VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM,
+#ifndef CTS_USES_VULKANSC
+		// Removed from Vulkan SC test set: VK_IMG_format_pvrtc extension does not exist in Vulkan SC
 		VK_FORMAT_PVRTC1_2BPP_UNORM_BLOCK_IMG,
 		VK_FORMAT_PVRTC1_4BPP_UNORM_BLOCK_IMG,
 		VK_FORMAT_PVRTC2_2BPP_UNORM_BLOCK_IMG,
@@ -498,6 +512,7 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 		VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT,
 		VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT,
 		VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT,
+#endif
 	};
 	int										formatCount						= (int)(sizeof(formatlist) / sizeof(unsigned int));
 
@@ -505,6 +520,12 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 	for (int i = 0; i < formatCount; i++)
 	{
 		if (isYCbCrFormat((VkFormat)formatlist[i]) && !isYcbcrSupported)
+			continue;
+
+		if (isYCbCrExtensionFormat((VkFormat)formatlist[i]) && !isYcbcrExtensionSupported)
+			continue;
+
+		if (isPvrtcFormat((VkFormat)formatlist[i]) && !isPvrtcSupported)
 			continue;
 
 		vk::VkImageFormatProperties imageformatprops;
@@ -745,21 +766,22 @@ tcu::TestStatus AlignmentMatchingInstance::iterate(void)
 
 	if (m_context.isDeviceFunctionalitySupported("VK_KHR_get_memory_requirements2"))
 	{
+#ifndef CTS_USES_VULKANSC
 		VkBufferMemoryRequirementsInfo2 bufferMemoryRequirementsInfo
 		{
-			VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR,	// VkStructureType	sType
+			VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,		// VkStructureType	sType
 			DE_NULL,													// const void*		pNext
 			*baseBuffer													// VkBuffer			buffer
 		};
 		VkImageMemoryRequirementsInfo2 imageMemoryRequirementsInfo
 		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR,		// VkStructureType	sType
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,			// VkStructureType	sType
 			DE_NULL,													// const void*		pNext
 			*baseImage													// VkImage			image
 		};
 		std::vector<VkMemoryRequirements2> requirements2(2,
 			{
-				VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,			// VkStructureType		sType
+				VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,				// VkStructureType		sType
 				DE_NULL,												// void*				pNext
 				{0, 0, 0}												// VkMemoryRequirements	memoryRequirements
 			});
@@ -812,6 +834,7 @@ tcu::TestStatus AlignmentMatchingInstance::iterate(void)
 				   "report diferent memory requirements\n"
 				<< tcu::TestLog::EndMessage;
 		}
+#endif // CTS_USES_VULKANSC
 	}
 
 	// For a VkImage, the size memory requirement is never greater than that of another VkImage created with

@@ -193,7 +193,7 @@ tcu::TestStatus testExtendedUsageBitCompatiblity (Context& context, TestParams p
 		throw tcu::NotSupportedError(error.str().c_str());
 	}
 
-	VkResult res = func.getPhysicalDeviceImageFormatProperties(vki, context.getPhysicalDevice(), params.imageFormat, params.tiling, params.usage, VK_IMAGE_CREATE_EXTENDED_USAGE_BIT);
+	VkResult res = func.getPhysicalDeviceImageFormatProperties(vki, context.getPhysicalDevice(), params.imageFormat, params.tiling, params.usage, VK_IMAGE_CREATE_EXTENDED_USAGE_BIT | VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT);
 
 	if (res != expected)
 	{
@@ -217,6 +217,27 @@ void checkSupport (Context& context, TestParams params)
 
 	if (params.tiling == vk::VK_IMAGE_TILING_LINEAR && formatProperties.linearTilingFeatures == 0)
 		throw tcu::NotSupportedError("Format not supported");
+
+#ifndef CTS_USES_VULKANSC
+	if (params.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR ||
+		params.usage & VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR ||
+		params.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR)
+		context.requireDeviceFunctionality("VK_KHR_video_decode_queue");
+
+	if (params.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_DST_BIT_KHR ||
+		params.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR ||
+		params.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR)
+		context.requireDeviceFunctionality("VK_KHR_video_encode_queue");
+
+	if (params.usage & VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT)
+		context.requireDeviceFunctionality("VK_EXT_fragment_density_map");
+
+	if (params.usage & VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR)
+		context.requireDeviceFunctionality("VK_KHR_fragment_shading_rate");
+
+	if (params.usage & VK_IMAGE_USAGE_INVOCATION_MASK_BIT_HUAWEI)
+		context.requireDeviceFunctionality("VK_HUAWEI_invocation_mask");
+#endif // CTS_USES_VULKANSC
 
 }
 
@@ -244,6 +265,7 @@ tcu::TestCaseGroup* createImageExtendedUsageBitTests (tcu::TestContext& testCtx)
 		{ VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,				"VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT" },
 		{ VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,					"VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT" },
 		{ VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,						"VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT" },
+#ifndef CTS_USES_VULKANSC
 		{ VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR,					"VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR" },
 		{ VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR,					"VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR" },
 		{ VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR,					"VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR" },
@@ -254,6 +276,7 @@ tcu::TestCaseGroup* createImageExtendedUsageBitTests (tcu::TestContext& testCtx)
 		{ VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR,					"VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR" },
 		{ VK_IMAGE_USAGE_INVOCATION_MASK_BIT_HUAWEI,				"VK_IMAGE_USAGE_INVOCATION_MASK_BIT_HUAWEI" },
 		{ VK_IMAGE_USAGE_SHADING_RATE_IMAGE_BIT_NV,					"VK_IMAGE_USAGE_SHADING_RATE_IMAGE_BIT_NV" },
+#endif // CTS_USES_VULKANSC
 	};
 
 	struct TilingParams

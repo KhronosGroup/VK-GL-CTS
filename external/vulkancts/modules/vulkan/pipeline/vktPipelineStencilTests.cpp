@@ -86,7 +86,6 @@ private:
 	const static deUint32		s_totalStencilOpStates;
 };
 
-
 class StencilTest : public vkt::TestCase
 {
 public:
@@ -113,17 +112,19 @@ public:
 											StencilTest				(tcu::TestContext&			testContext,
 																	 const std::string&			name,
 																	 const std::string&			description,
+																	 PipelineConstructionType	pipelineConstructionType,
 																	 VkFormat					stencilFormat,
 																	 const VkStencilOpState&	stencilOpStateFront,
 																	 const VkStencilOpState&	stencilOpStateBack,
 																	 const bool					colorAttachmentEnable,
 																	 const bool					separateDepthStencilLayouts);
-	virtual									~StencilTest			(void);
+	virtual									~StencilTest			(void) = default;
 	virtual void							initPrograms			(SourceCollections& sourceCollections) const;
 	virtual void							checkSupport			(Context& context) const;
 	virtual TestInstance*					createInstance			(Context& context) const;
 
 private:
+	PipelineConstructionType				m_pipelineConstructionType;
 	VkFormat								m_stencilFormat;
 	const VkStencilOpState					m_stencilOpStateFront;
 	const VkStencilOpState					m_stencilOpStateBack;
@@ -135,12 +136,13 @@ class StencilTestInstance : public vkt::TestInstance
 {
 public:
 										StencilTestInstance		(Context&					context,
+																 PipelineConstructionType	pipelineConstructionType,
 																 VkFormat					stencilFormat,
 																 const VkStencilOpState&	stencilOpStatesFront,
 																 const VkStencilOpState&	stencilOpStatesBack,
 																 const bool					colorAttachmentEnable,
 																 const bool					separateDepthStencilLayouts);
-	virtual								~StencilTestInstance	(void);
+	virtual								~StencilTestInstance	(void) = default;
 	virtual tcu::TestStatus				iterate					(void);
 
 private:
@@ -173,7 +175,7 @@ private:
 	de::MovePtr<Allocation>				m_vertexBufferAlloc;
 
 	Move<VkPipelineLayout>				m_pipelineLayout;
-	Move<VkPipeline>					m_graphicsPipelines[StencilTest::QUAD_COUNT];
+	GraphicsPipelineWrapper				m_graphicsPipelines[StencilTest::QUAD_COUNT];
 
 	Move<VkCommandPool>					m_cmdPool;
 	Move<VkCommandBuffer>				m_cmdBuffer;
@@ -266,21 +268,19 @@ const float StencilTest::s_quadDepths[QUAD_COUNT] =
 StencilTest::StencilTest (tcu::TestContext&			testContext,
 						  const std::string&		name,
 						  const std::string&		description,
+						  PipelineConstructionType	pipelineConstructionType,
 						  VkFormat					stencilFormat,
 						  const VkStencilOpState&	stencilOpStateFront,
 						  const VkStencilOpState&	stencilOpStateBack,
 						  const bool				colorAttachmentEnable,
 						  const bool				separateDepthStencilLayouts)
 	: vkt::TestCase					(testContext, name, description)
+	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_stencilFormat				(stencilFormat)
 	, m_stencilOpStateFront			(stencilOpStateFront)
 	, m_stencilOpStateBack			(stencilOpStateBack)
 	, m_colorAttachmentEnable		(colorAttachmentEnable)
 	, m_separateDepthStencilLayouts	(separateDepthStencilLayouts)
-{
-}
-
-StencilTest::~StencilTest (void)
 {
 }
 
@@ -292,13 +292,17 @@ void StencilTest::checkSupport (Context& context) const
 	if (m_separateDepthStencilLayouts && !context.isDeviceFunctionalitySupported("VK_KHR_separate_depth_stencil_layouts"))
 		TCU_THROW(NotSupportedError, "VK_KHR_separate_depth_stencil_layouts is not supported");
 
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().separateStencilMaskRef)
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Separate stencil mask references are not supported by this implementation");
+#endif // CTS_USES_VULKANSC
 }
 
 TestInstance* StencilTest::createInstance (Context& context) const
 {
-	return new StencilTestInstance(context, m_stencilFormat, m_stencilOpStateFront, m_stencilOpStateBack, m_colorAttachmentEnable, m_separateDepthStencilLayouts);
+	return new StencilTestInstance(context, m_pipelineConstructionType, m_stencilFormat, m_stencilOpStateFront, m_stencilOpStateBack, m_colorAttachmentEnable, m_separateDepthStencilLayouts);
 }
 
 void StencilTest::initPrograms (SourceCollections& sourceCollections) const
@@ -342,6 +346,7 @@ void StencilTest::initPrograms (SourceCollections& sourceCollections) const
 // StencilTestInstance
 
 StencilTestInstance::StencilTestInstance (Context&					context,
+										  PipelineConstructionType	pipelineConstructionType,
 										  VkFormat					stencilFormat,
 										  const VkStencilOpState&	stencilOpStateFront,
 										  const VkStencilOpState&	stencilOpStateBack,
@@ -355,6 +360,13 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 	, m_renderSize					(32, 32)
 	, m_colorFormat					(colorAttachmentEnable ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_UNDEFINED)
 	, m_stencilFormat				(stencilFormat)
+	, m_graphicsPipelines
+	{
+		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
+		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
+		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
+		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType }
+	}
 {
 	const DeviceInterface&		vk						= context.getDeviceInterface();
 	const VkDevice				vkDevice				= context.getDevice();
@@ -511,14 +523,14 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 
 	// Create pipeline
 	{
-		const VkVertexInputBindingDescription vertexInputBindingDescription =
+		const VkVertexInputBindingDescription vertexInputBindingDescription
 		{
 			0u,										// deUint32					binding;
 			sizeof(Vertex4RGBA),					// deUint32					strideInBytes;
 			VK_VERTEX_INPUT_RATE_VERTEX				// VkVertexInputStepRate	inputRate;
 		};
 
-		const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2] =
+		const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2]
 		{
 			{
 				0u,									// deUint32	location;
@@ -534,7 +546,7 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 			}
 		};
 
-		const VkPipelineVertexInputStateCreateInfo vertexInputStateParams =
+		const VkPipelineVertexInputStateCreateInfo vertexInputStateParams
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType							sType;
 			DE_NULL,														// const void*								pNext;
@@ -545,12 +557,12 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 			vertexInputAttributeDescriptions								// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 		};
 
-		const std::vector<VkViewport>	viewports	(1, makeViewport(m_renderSize));
-		const std::vector<VkRect2D>		scissors	(1, makeRect2D(m_renderSize));
+		const std::vector<VkViewport>	viewports	{ makeViewport(m_renderSize) };
+		const std::vector<VkRect2D>		scissors	{ makeRect2D(m_renderSize) };
 
 		const bool isDepthEnabled = (vk::mapVkFormat(m_stencilFormat).order != tcu::TextureFormat::S);
 
-		VkPipelineDepthStencilStateCreateInfo depthStencilStateParams =
+		VkPipelineDepthStencilStateCreateInfo depthStencilStateParams
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType							sType;
 			DE_NULL,													// const void*								pNext;
@@ -567,7 +579,7 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 		};
 
 		// Make sure rasterization is not disabled when the fragment shader is missing.
-		const vk::VkPipelineRasterizationStateCreateInfo rasterizationStateParams =
+		const vk::VkPipelineRasterizationStateCreateInfo rasterizationStateParams
 		{
 			vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	//	VkStructureType							sType;
 			nullptr,														//	const void*								pNext;
@@ -582,6 +594,33 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 			0.0f,															//	float									depthBiasClamp;
 			0.0f,															//	float									depthBiasSlopeFactor;
 			1.0f,															//	float									lineWidth;
+		};
+
+		const vk::VkPipelineColorBlendAttachmentState blendState
+		{
+			VK_FALSE,
+			VK_BLEND_FACTOR_ONE,
+			VK_BLEND_FACTOR_ONE,
+			VK_BLEND_OP_ADD,
+			VK_BLEND_FACTOR_ONE,
+			VK_BLEND_FACTOR_ONE,
+			VK_BLEND_OP_ADD,
+			VK_COLOR_COMPONENT_R_BIT |
+			VK_COLOR_COMPONENT_G_BIT |
+			VK_COLOR_COMPONENT_B_BIT |
+			VK_COLOR_COMPONENT_A_BIT,
+
+		};
+		const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateParams
+		{
+			vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType
+			DE_NULL,														// const void*									pNext
+			0u,																// VkPipelineColorBlendStateCreateFlags			flags
+			VK_FALSE,														// VkBool32										logicOpEnable
+			vk::VK_LOGIC_OP_CLEAR,											// VkLogicOp									logicOp
+			m_colorAttachmentEnable ? 1u : 0u,								// deUint32										attachmentCount
+			&blendState,													// const VkPipelineColorBlendAttachmentState*	pAttachments
+			{ 1.0f, 1.0f, 1.0f, 1.0f }										// float										blendConstants[4]
 		};
 
 		// Setup different stencil masks and refs in each quad
@@ -599,27 +638,22 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 			back.writeMask		= config.backWriteMask;
 			back.reference		= config.backRef;
 
-			m_graphicsPipelines[quadNdx] = makeGraphicsPipeline(vk,										// const DeviceInterface&                        vk
-																vkDevice,								// const VkDevice                                device
-																*m_pipelineLayout,						// const VkPipelineLayout                        pipelineLayout
-																*m_vertexShaderModule,					// const VkShaderModule                          vertexShaderModule
-																DE_NULL,								// const VkShaderModule                          tessellationControlModule
-																DE_NULL,								// const VkShaderModule                          tessellationEvalModule
-																DE_NULL,								// const VkShaderModule                          geometryShaderModule
-																*m_fragmentShaderModule,				// const VkShaderModule                          fragmentShaderModule
-																*m_renderPass,							// const VkRenderPass                            renderPass
-																viewports,								// const std::vector<VkViewport>&                viewports
-																scissors,								// const std::vector<VkRect2D>&                  scissors
-																VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology                     topology
-																0u,										// const deUint32                                subpass
-																0u,										// const deUint32                                patchControlPoints
-																&vertexInputStateParams,				// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-																&rasterizationStateParams,				// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-																DE_NULL,								// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-																&depthStencilStateParams);				// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+			m_graphicsPipelines[quadNdx].setDefaultRasterizerDiscardEnable(!m_colorAttachmentEnable)
+										.setDefaultMultisampleState()
+										.setupVertexInputState(&vertexInputStateParams)
+										.setupPreRasterizationShaderState(viewports,
+																		  scissors,
+																		  *m_pipelineLayout,
+																		  *m_renderPass,
+																		  0u,
+																		  *m_vertexShaderModule,
+																		  &rasterizationStateParams)
+										.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule, &depthStencilStateParams)
+										.setupFragmentOutputState(*m_renderPass, 0, &colorBlendStateParams)
+										.setMonolithicPipelineLayout(*m_pipelineLayout)
+										.buildPipeline();
 		}
 	}
-
 
 	// Create vertex buffer
 	{
@@ -675,7 +709,7 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 		if (m_separateDepthStencilLayouts)
 		{
 			stencilImageBarrierSubresourceRange.aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
-			newLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR;
+			newLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
 		}
 
 		const VkImageMemoryBarrier	stencilImageBarrier					=
@@ -719,7 +753,7 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 		{
 			VkDeviceSize vertexBufferOffset = quadOffset * quadNdx;
 
-			vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelines[quadNdx]);
+			vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipelines[quadNdx].getPipeline());
 			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 			vk.cmdDraw(*m_cmdBuffer, (deUint32)(m_vertices.size() / StencilTest::QUAD_COUNT), 1, 0, 0);
 		}
@@ -727,10 +761,6 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 		endRenderPass(vk, *m_cmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
-}
-
-StencilTestInstance::~StencilTestInstance (void)
-{
 }
 
 tcu::TestStatus StencilTestInstance::iterate (void)
@@ -902,7 +932,7 @@ std::string getFormatCaseName (VkFormat format)
 
 } // anonymous
 
-tcu::TestCaseGroup* createStencilTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createStencilTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
 	const VkFormat stencilFormats[] =
 	{
@@ -1010,7 +1040,7 @@ tcu::TestCaseGroup* createStencilTests (tcu::TestContext& testCtx)
 								const std::string		caseName			= compareOpNames[compareOpNdx];
 								const std::string		caseDesc			= getStencilStateSetDescription(stencilStateFront, stencilStateBack);
 
-								dFailOpTest->addChild(new StencilTest(testCtx, caseName, caseDesc, stencilFormat, stencilStateFront, stencilStateBack, colorEnabled, useSeparateDepthStencilLayouts));
+								dFailOpTest->addChild(new StencilTest(testCtx, caseName, caseDesc, pipelineConstructionType, stencilFormat, stencilStateFront, stencilStateBack, colorEnabled, useSeparateDepthStencilLayouts));
 							}
 							passOpTest->addChild(dFailOpTest.release());
 						}

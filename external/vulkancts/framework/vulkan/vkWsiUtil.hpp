@@ -23,6 +23,7 @@
  * \brief Windowing System Integration (WSI) Utilities.
  *//*--------------------------------------------------------------------*/
 
+#include "tcuCommandLine.hpp"
 #include "vkDefs.hpp"
 #include "vkWsiPlatform.hpp"
 #include "vkRef.hpp"
@@ -69,6 +70,7 @@ VkResult						createSurface							(const InstanceInterface&		vki,
 																		 Type							wsiType,
 																		 const Display&					nativeDisplay,
 																		 const Window&					nativeWindow,
+																		 const tcu::CommandLine&		cmdLine,
 																		 const VkAllocationCallbacks*	pAllocator,
 																		 VkSurfaceKHR*					pSurface);
 
@@ -77,6 +79,7 @@ Move<VkSurfaceKHR>				createSurface							(const InstanceInterface&		vki,
 																		 Type							wsiType,
 																		 const Display&					nativeDisplay,
 																		 const Window&					nativeWindow,
+																		 const tcu::CommandLine&		cmdLine,
 																		 const VkAllocationCallbacks*	pAllocator = DE_NULL);
 
 VkBool32						getPhysicalDeviceSurfaceSupport			(const InstanceInterface&		vki,
@@ -128,6 +131,9 @@ std::vector<deUint32>			getCompatibleQueueFamilyIndices			(const InstanceInterfa
 tcu::UVec2						getFullScreenSize						(const vk::wsi::Type			wsiType,
 																		 const vk::wsi::Display&		display,
 																		 const tcu::UVec2&				fallbackSize);
+
+
+VkBool32						isDisplaySurface						(Type							wsiType);
 
 class WsiTriangleRenderer
 {

@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR":
+		[
+			{ "features": ["shaderSubgroupUniformControlFlow"],	"requirements": ["VK_KHR_shader_subgroup_uniform_control_flow"] }
+		]
+	}
+}

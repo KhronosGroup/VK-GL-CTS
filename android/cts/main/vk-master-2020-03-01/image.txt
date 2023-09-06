@@ -596,6 +596,11 @@ dEQP-VK.image.store.without_format.buffer.r8g8_snorm
 dEQP-VK.image.store.without_format.buffer.r8g8_snorm_minalign
 dEQP-VK.image.store.without_format.buffer.r8_snorm
 dEQP-VK.image.store.without_format.buffer.r8_snorm_minalign
+dEQP-VK.image.misaligned_cube.7
+dEQP-VK.image.misaligned_cube.8
+dEQP-VK.image.misaligned_cube.9
+dEQP-VK.image.misaligned_cube.10
+dEQP-VK.image.misaligned_cube.11
 dEQP-VK.image.load_store.with_format.1d.b10g11r11_ufloat_pack32
 dEQP-VK.image.load_store.with_format.1d.r32g32_sfloat
 dEQP-VK.image.load_store.with_format.1d.r16g16_sfloat
@@ -3796,8 +3801,3 @@ dEQP-VK.image.astc_decode_mode.12x12_unorm_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.12x12_srgb_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.12x12_srgb_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.12x12_srgb_to_e5b9g9r9_ufloat_pack32
-dEQP-VK.image.misaligned_cube.7
-dEQP-VK.image.misaligned_cube.8
-dEQP-VK.image.misaligned_cube.9
-dEQP-VK.image.misaligned_cube.10
-dEQP-VK.image.misaligned_cube.11

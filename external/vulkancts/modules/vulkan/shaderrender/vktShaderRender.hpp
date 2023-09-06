@@ -551,6 +551,7 @@ protected:
 	tcu::UVec2											m_renderSize;
 	vk::VkFormat										m_colorFormat;
 
+	de::SharedPtr<vk::Unique<vk::VkCommandPool>	>		m_externalCommandPool;
 private:
 	typedef std::vector<tcu::ConstPixelBufferAccess>	TextureLayerData;
 	typedef std::vector<TextureLayerData>				TextureData;
@@ -568,7 +569,7 @@ private:
 																					 vk::VkImage					destImage);
 
 	void												checkSparseSupport			(const vk::VkImageCreateInfo&	imageInfo) const;
-
+#ifndef CTS_USES_VULKANSC
 	void												uploadSparseImage			(const tcu::TextureFormat&		texFormat,
 																					 const TextureData&				textureData,
 																					 const tcu::Sampler&			refSampler,
@@ -577,7 +578,7 @@ private:
 																					 const vk::VkImage				sparseImage,
 																					 const vk::VkImageCreateInfo&	imageCreateInfo,
 																					 const tcu::UVec3				texSize);
-
+#endif // CTS_USES_VULKANSC
 	void												createSamplerUniform		(deUint32						bindingLocation,
 																					 TextureBinding::Type			textureType,
 																					 TextureBinding::Init			textureInit,
@@ -670,7 +671,7 @@ private:
 	std::vector<vk::VkPushConstantRange>				m_pushConstantRanges;
 
 	bool												m_fuzzyCompare;
-
+protected:
 	vk::VkDevice										getDevice						(void) const;
 	deUint32											getUniversalQueueFamilyIndex	(void) const;
 	deUint32											getSparseQueueFamilyIndex		(void) const;

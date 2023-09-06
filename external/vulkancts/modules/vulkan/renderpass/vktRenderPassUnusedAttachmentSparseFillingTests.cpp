@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktRenderPassUnusedAttachmentSparseFillingTests.hpp"
+#include "vktRenderPassTestsUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vkImageUtil.hpp"
 #include "vkBuilderUtil.hpp"

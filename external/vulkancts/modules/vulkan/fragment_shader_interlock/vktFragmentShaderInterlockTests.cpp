@@ -44,8 +44,6 @@ static void createChildren (tcu::TestCaseGroup* group)
 static void cleanupGroup (tcu::TestCaseGroup* group)
 {
 	DE_UNREF(group);
-	// Destroy singleton objects.
-	cleanupDevice();
 }
 
 } // anonymous

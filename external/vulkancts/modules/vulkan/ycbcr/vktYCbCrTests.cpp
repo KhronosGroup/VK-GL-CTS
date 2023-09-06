@@ -30,6 +30,7 @@
 #include "vktYCbCrConversionTests.hpp"
 #include "vktYCbCrCopyTests.hpp"
 #include "vktYCbCrStorageImageWriteTests.hpp"
+#include "vktYCbCrImageOffsetTests.hpp"
 
 namespace vkt
 {
@@ -51,6 +52,7 @@ void populateTestGroup (tcu::TestCaseGroup* ycbcrTests)
 	ycbcrTests->addChild(createCopyTests(testCtx));
 	ycbcrTests->addChild(createDimensionsCopyTests(testCtx));
 	ycbcrTests->addChild(createStorageImageWriteTests(testCtx));
+	ycbcrTests->addChild(createImageOffsetTests(testCtx));
 }
 
 } // anonymous

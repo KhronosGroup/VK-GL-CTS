@@ -32,6 +32,7 @@
 #include "tcuVectorUtil.hpp"
 #include "deSharedPtr.hpp"
 
+#include <cmath>
 #include <memory>
 
 namespace vkt
@@ -62,6 +63,7 @@ public:
 	virtual tcu::TestStatus	iterate						(void) override;
 
 protected:
+	tcu::IVec4				computeColorDistance		() const;
 	bool					verifyPixels				(const tcu::PixelBufferAccess&	rendered,
 														 const tcu::PixelBufferAccess&	reference,
 														 const ReferenceParams&			samplerParams,
@@ -78,6 +80,7 @@ private:
 	tcu::Texture2D				m_swTexture;
 	TextureRenderer				m_renderer;
 
+	const tcu::IVec4			m_cd;
 	const tcu::IVec4			m_a;
 	const tcu::IVec4			m_b;
 	const tcu::IVec4			m_c;
@@ -96,10 +99,11 @@ SnormLinearClampInstance::SnormLinearClampInstance (vkt::Context& context, de::S
 	, m_hwTexture	(TestTexture2DSp(new pipeline::TestTexture2D(m_inFormat, textureWidth, textureHeight)))
 	, m_swTexture	(m_inFormat, textureWidth, textureHeight, 1)
 	, m_renderer	(context, VK_SAMPLE_COUNT_1_BIT, m_params->width, m_params->height, 1u, makeComponentMappingRGBA(), VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, m_outFormat)
-	, m_a			(lim(m_inFormat, 0),	lim(m_inFormat, 1)+2,	lim(m_inFormat, 2),		lim(m_inFormat, 3)+2)
-	, m_b			(lim(m_inFormat, 0)+2,	lim(m_inFormat, 1),		lim(m_inFormat, 2)+2,	lim(m_inFormat, 3)	)
-	, m_c			(lim(m_inFormat, 0)+1,	lim(m_inFormat, 1)+1,	lim(m_inFormat, 2)+1,	lim(m_inFormat, 3)+1)
-	, m_d			(lim(m_inFormat, 0),	lim(m_inFormat, 1),		lim(m_inFormat, 2),		lim(m_inFormat, 3)	)
+	, m_cd			(computeColorDistance())
+	, m_a			(lim(m_inFormat, 0),			lim(m_inFormat, 1)+m_cd[1]*2,	lim(m_inFormat, 2),				lim(m_inFormat, 3)+m_cd[3]*2)
+	, m_b			(lim(m_inFormat, 0)+m_cd[0]*2,	lim(m_inFormat, 1),				lim(m_inFormat, 2)+m_cd[2]*2,	lim(m_inFormat, 3)			)
+	, m_c			(lim(m_inFormat, 0)+m_cd[0]*1,	lim(m_inFormat, 1)+m_cd[1]*1,	lim(m_inFormat, 2)+m_cd[2]*1,	lim(m_inFormat, 3)+m_cd[3]*1)
+	, m_d			(lim(m_inFormat, 0),			lim(m_inFormat, 1),				lim(m_inFormat, 2),				lim(m_inFormat, 3)			)
 {
 	tcu::IVec4 data[textureWidth * textureHeight] =
 	{
@@ -135,6 +139,17 @@ int SnormLinearClampInstance::lim (const tcu::TextureFormat& format, int channel
 	return channelBits[channelIdx] ? (-deIntMaxValue32(channelBits[channelIdx])) : (-1);
 }
 
+tcu::IVec4 SnormLinearClampInstance::computeColorDistance () const
+{
+	return tcu::IVec4
+	(
+		static_cast<int>(std::floor(static_cast<float>(-lim(m_inFormat, 0)) / 127.0f)),
+		static_cast<int>(std::floor(static_cast<float>(-lim(m_inFormat, 0)) / 127.0f)),
+		static_cast<int>(std::floor(static_cast<float>(-lim(m_inFormat, 0)) / 127.0f)),
+		static_cast<int>(std::floor(static_cast<float>(-lim(m_inFormat, 0)) / 127.0f))
+	);
+}
+
 bool SnormLinearClampInstance::verifyPixels	(const tcu::PixelBufferAccess& rendered, const tcu::PixelBufferAccess& reference, const ReferenceParams& samplerParams, const std::vector<float>& texCoords) const
 {
 	tcu::LodPrecision				lodPrec;
@@ -144,6 +159,7 @@ bool SnormLinearClampInstance::verifyPixels	(const tcu::PixelBufferAccess& rende
 	const int						width			(m_renderer.getRenderWidth());
 	const int						height			(m_renderer.getRenderHeight());
 
+	const tcu::IVec4				colorDistance	(computeColorDistance());
 	std::unique_ptr<deUint8[]>		errorMaskData	(new deUint8[width * height * 4 * 4]);
 	tcu::PixelBufferAccess			errorMask		(mapVkFormat(m_outFormat), width, height, 1, errorMaskData.get());
 
@@ -154,10 +170,10 @@ bool SnormLinearClampInstance::verifyPixels	(const tcu::PixelBufferAccess& rende
 	lookupPrec.uvwBits				= tcu::IVec3(5,5,0);
 	lookupPrec.coordBits			= tcu::IVec3(20,20,0);
 	lookupPrec.colorMask			= tcu::BVec4(nuc >= 1, nuc >= 2, nuc >=3, nuc >= 4);
-	lookupPrec.colorThreshold		= tcu::Vec4(0.9f/float(-lim(m_inFormat, 0)),
-												0.9f/float(-lim(m_inFormat, 1)),
-												0.9f/float(-lim(m_inFormat, 2)),
-												0.9f/float(-lim(m_inFormat, 3)));
+	lookupPrec.colorThreshold		= tcu::Vec4(0.9f/float(colorDistance[0]),
+												0.9f/float(colorDistance[1]),
+												0.9f/float(colorDistance[2]),
+												0.9f/float(colorDistance[3]));
 
 	const int numFailedPixels		= glu::TextureTestUtil::computeTextureLookupDiff(rendered, reference, errorMask,
 																					 m_swTexture, texCoords.data(), samplerParams,
@@ -280,6 +296,7 @@ private:
 
 void populateUfloatNegativeValuesTests (tcu::TestCaseGroup* group)
 {
+#ifndef CTS_USES_VULKANSC
 	tcu::TestContext&	testCtx = group->getTestContext();
 	VkImageUsageFlags	usage	= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
 
@@ -304,10 +321,14 @@ void populateUfloatNegativeValuesTests (tcu::TestCaseGroup* group)
 
 	group->addChild(cts_amber::createAmberTestCase(testCtx, "b10g11r11", "", "texture/conversion/ufloat_negative_values", "b10g11r11-ufloat-pack32.amber",
 					std::vector<std::string>(), std::vector<VkImageCreateInfo>(1, info)));
+#else
+	DE_UNREF(group);
+#endif
 }
 
 void populateSnormClampTests (tcu::TestCaseGroup* group)
 {
+#ifndef CTS_USES_VULKANSC
 	tcu::TestContext&	testCtx	= group->getTestContext();
 	VkImageUsageFlags	usage	= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
@@ -358,6 +379,9 @@ void populateSnormClampTests (tcu::TestCaseGroup* group)
 		group->addChild(cts_amber::createAmberTestCase(testCtx, param.testName.c_str(), "", "texture/conversion/snorm_clamp", param.amberFile.c_str(),
 						std::vector<std::string>(), std::vector<VkImageCreateInfo>(1, info)));
 	}
+#else
+	DE_UNREF(group);
+#endif
 }
 
 void populateSnormLinearClampTests (tcu::TestCaseGroup* group)

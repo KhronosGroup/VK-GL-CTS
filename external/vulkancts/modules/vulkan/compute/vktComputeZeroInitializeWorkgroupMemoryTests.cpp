@@ -569,6 +569,14 @@ struct CompositeCaseDef
 	std::string				assignment;
 	deUint32				elements;
 	std::vector<deUint32>	specValues;
+
+	CompositeCaseDef (uint32_t index_, const std::string& typeDefinition_, const std::string& assignment_, uint32_t elements_, const std::vector<uint32_t>& specValues_)
+		: index				(index_)
+		, typeDefinition	(typeDefinition_)
+		, assignment		(assignment_)
+		, elements			(elements_)
+		, specValues		(specValues_)
+		{}
 };
 
 class CompositeTestInstance : public vkt::TestInstance
@@ -670,7 +678,7 @@ tcu::TestStatus CompositeTestInstance::iterate(void)
 
 void AddCompositeTests(tcu::TestCaseGroup* group)
 {
-	std::vector<CompositeCaseDef> cases =
+	const std::vector<CompositeCaseDef> cases
 	{
 		{0,
 		"shared uint wg_mem[specId0] = {};\n",
@@ -1394,7 +1402,7 @@ void AddRepeatedPipelineTests(tcu::TestCaseGroup* group)
 		}
 	}
 }
-
+#ifndef CTS_USES_VULKANSC
 void AddSharedMemoryTests (tcu::TestCaseGroup* group)
 {
 	tcu::TestContext&			testCtx		= group->getTestContext();
@@ -1419,6 +1427,7 @@ void AddSharedMemoryTests (tcu::TestCaseGroup* group)
 		group->addChild(cts_amber::createAmberTestCase(testCtx, testName.c_str(), "", filePath.c_str(), testName + ".amber", requirements));
 	}
 }
+#endif // CTS_USES_VULKANSC
 
 } // anonymous
 
@@ -1451,9 +1460,11 @@ tcu::TestCaseGroup* createZeroInitializeWorkgroupMemoryTests(tcu::TestContext& t
 	AddRepeatedPipelineTests(repeatPipelineGroup);
 	tests->addChild(repeatPipelineGroup);
 
+#ifndef CTS_USES_VULKANSC
 	tcu::TestCaseGroup* subgroupInvocationGroup = new tcu::TestCaseGroup(testCtx, "shared_memory_blocks", "shared memory tests");
 	AddSharedMemoryTests(subgroupInvocationGroup);
 	tests->addChild(subgroupInvocationGroup);
+#endif // CTS_USES_VULKANSC
 
 	return tests.release();
 }

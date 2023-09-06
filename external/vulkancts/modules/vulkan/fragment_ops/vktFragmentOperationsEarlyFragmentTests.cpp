@@ -207,10 +207,11 @@ VkFormat pickSupportedDepthStencilFormat (const InstanceInterface&	instanceInter
 
 enum Flags
 {
-	FLAG_TEST_DEPTH							= 1u << 0,
-	FLAG_TEST_STENCIL						= 1u << 1,
-	FLAG_DONT_USE_TEST_ATTACHMENT			= 1u << 2,
-	FLAG_DONT_USE_EARLY_FRAGMENT_TESTS		= 1u << 3,
+	FLAG_TEST_DEPTH								= 1u << 0,
+	FLAG_TEST_STENCIL							= 1u << 1,
+	FLAG_DONT_USE_TEST_ATTACHMENT				= 1u << 2,
+	FLAG_DONT_USE_EARLY_FRAGMENT_TESTS			= 1u << 3,
+	FLAG_EARLY_AND_LATE_FRAGMENT_TESTS			= 1u << 4,
 };
 
 class EarlyFragmentTest : public TestCase
@@ -256,6 +257,7 @@ void EarlyFragmentTest::initPrograms (SourceCollections& programCollection) cons
 	}
 
 	// Fragment
+	if ((m_flags & FLAG_EARLY_AND_LATE_FRAGMENT_TESTS) == 0)
 	{
 		const bool useEarlyTests = (m_flags & FLAG_DONT_USE_EARLY_FRAGMENT_TESTS) == 0;
 		std::ostringstream src;
@@ -275,6 +277,54 @@ void EarlyFragmentTest::initPrograms (SourceCollections& programCollection) cons
 			<< "}\n";
 
 		programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
+	}
+	else
+	{
+		const SpirVAsmBuildOptions	buildOptionsSpr	(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3);
+		const std::string			src				=
+			"; SPIR-V\n"
+			"; Version: 1.0\n"
+			"; Bound: 24\n"
+			"; Schema: 0\n"
+			"OpCapability Shader\n"
+			"OpExtension \"SPV_AMD_shader_early_and_late_fragment_tests\"\n"
+			"%1 = OpExtInstImport \"GLSL.std.450\"\n"
+			"OpMemoryModel Logical GLSL450\n"
+			"OpEntryPoint Fragment %4 \"main\" %20\n"
+			"OpExecutionMode %4 OriginUpperLeft\n"
+			"OpExecutionMode %4 EarlyAndLateFragmentTestsAMD\n"
+			"OpMemberDecorate %7 0 Coherent\n"
+			"OpMemberDecorate %7 0 Offset 0\n"
+			"OpDecorate %7 BufferBlock\n"
+			"OpDecorate %9 DescriptorSet 0\n"
+			"OpDecorate %9 Binding 0\n"
+			"OpDecorate %20 Location 0\n"
+			"%2 = OpTypeVoid\n"
+			"%3 = OpTypeFunction %2\n"
+			"%6 = OpTypeInt 32 0\n"
+			"%7 = OpTypeStruct %6\n"
+			"%8 = OpTypePointer Uniform %7\n"
+			"%9 = OpVariable %8 Uniform\n"
+			"%10 = OpTypeInt 32 1\n"
+			"%11 = OpConstant %10 0\n"
+			"%12 = OpTypePointer Uniform %6\n"
+			"%14 = OpConstant %6 1\n"
+			"%15 = OpConstant %6 0\n"
+			"%17 = OpTypeFloat 32\n"
+			"%18 = OpTypeVector %17 4\n"
+			"%19 = OpTypePointer Output %18\n"
+			"%20 = OpVariable %19 Output\n"
+			"%21 = OpConstant %17 1\n"
+			"%22 = OpConstant %17 0\n"
+			"%23 = OpConstantComposite %18 %21 %21 %22 %21\n"
+			"%4 = OpFunction %2 None %3\n"
+			"%5 = OpLabel\n"
+			"%13 = OpAccessChain %12 %9 %11\n"
+			"%16 = OpAtomicIAdd %6 %13 %14 %15 %14\n"
+			"OpStore %20 %23\n"
+			"OpReturn\n"
+			"OpFunctionEnd\n";
+		programCollection.spirvAsmSources.add("frag") << src << buildOptionsSpr;
 	}
 }
 
@@ -296,6 +346,7 @@ private:
 	const TestMode			m_testMode;
 	const bool				m_useTestAttachment;
 	const bool				m_useEarlyTests;
+	const bool				m_useEarlyLateTests;
 };
 
 EarlyFragmentTestInstance::EarlyFragmentTestInstance (Context& context, const deUint32 flags)
@@ -304,6 +355,7 @@ EarlyFragmentTestInstance::EarlyFragmentTestInstance (Context& context, const de
 							 flags & FLAG_TEST_STENCIL ? MODE_STENCIL : MODE_INVALID)
 	, m_useTestAttachment	((flags & FLAG_DONT_USE_TEST_ATTACHMENT) == 0)
 	, m_useEarlyTests		((flags & FLAG_DONT_USE_EARLY_FRAGMENT_TESTS) == 0)
+	, m_useEarlyLateTests	((flags & FLAG_EARLY_AND_LATE_FRAGMENT_TESTS) == FLAG_EARLY_AND_LATE_FRAGMENT_TESTS)
 {
 	DE_ASSERT(m_testMode != MODE_INVALID);
 }
@@ -362,13 +414,14 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 	{
 		tcu::Vec4* const pVertices = reinterpret_cast<tcu::Vec4*>(vertexBufferAlloc->getHostPtr());
 
-		pVertices[0] = tcu::Vec4( 1.0f, -1.0f,  0.5f,  1.0f);
-		pVertices[1] = tcu::Vec4(-1.0f, -1.0f,  0.0f,  1.0f);
-		pVertices[2] = tcu::Vec4(-1.0f,  1.0f,  0.5f,  1.0f);
+		// A small +0.00001f adjustment for the z-coordinate to get the expected rounded value for depth.
+		pVertices[0] = tcu::Vec4( 1.0f, -1.0f,  0.50001f,  1.0f);
+		pVertices[1] = tcu::Vec4(-1.0f, -1.0f,  0.0f,      1.0f);
+		pVertices[2] = tcu::Vec4(-1.0f,  1.0f,  0.50001f,  1.0f);
 
-		pVertices[3] = tcu::Vec4(-1.0f,  1.0f,  0.5f,  1.0f);
-		pVertices[4] = tcu::Vec4( 1.0f,  1.0f,  1.0f,  1.0f);
-		pVertices[5] = tcu::Vec4( 1.0f, -1.0f,  0.5f,  1.0f);
+		pVertices[3] = tcu::Vec4(-1.0f,  1.0f,  0.50001f,  1.0f);
+		pVertices[4] = tcu::Vec4( 1.0f,  1.0f,  1.0f,      1.0f);
+		pVertices[5] = tcu::Vec4( 1.0f, -1.0f,  0.50001f,  1.0f);
 
 		flushAlloc(vk, device, *vertexBufferAlloc);
 		// No barrier needed, flushed memory is automatically visible
@@ -530,7 +583,7 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 		const int  expectedCounter	   = expectPartialResult ? renderSize.x() * renderSize.y() / 2 : renderSize.x() * renderSize.y();
 		const int  tolerance		   = expectPartialResult ? de::max(renderSize.x(), renderSize.y()) * 3	: 0;
 		const int  expectedMin         = de::max(0, expectedCounter - tolerance);
-		const int  expectedMax		   = expectedCounter + tolerance;
+		const int  expectedMax		   = (m_useEarlyLateTests ? (renderSize.x() * renderSize.y()) : (expectedCounter + tolerance));
 
 		tcu::TestLog& log = m_context.getTestContext().getLog();
 		log << tcu::TestLog::Message << "Expected value"
@@ -553,6 +606,14 @@ TestInstance* EarlyFragmentTest::createInstance (Context& context) const
 void EarlyFragmentTest::checkSupport (Context& context) const
 {
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
+#ifndef CTS_USES_VULKANSC
+	if ((m_flags & FLAG_EARLY_AND_LATE_FRAGMENT_TESTS) == FLAG_EARLY_AND_LATE_FRAGMENT_TESTS)
+	{
+		context.requireDeviceFunctionality("VK_AMD_shader_early_and_late_fragment_tests");
+		if (context.getShaderEarlyAndLateFragmentTestsFeaturesAMD().shaderEarlyAndLateFragmentTests == VK_FALSE)
+			TCU_THROW(NotSupportedError, "shaderEarlyAndLateFragmentTests is not supported");
+	}
+#endif
 }
 
 class EarlyFragmentDiscardTestInstance : public EarlyFragmentTestInstance
@@ -574,6 +635,7 @@ private:
 	const TestMode			m_testMode;
 	const bool				m_useTestAttachment;
 	const bool				m_useEarlyTests;
+	const bool				m_useEarlyLateTests;
 };
 
 EarlyFragmentDiscardTestInstance::EarlyFragmentDiscardTestInstance (Context& context, const deUint32 flags)
@@ -582,6 +644,7 @@ EarlyFragmentDiscardTestInstance::EarlyFragmentDiscardTestInstance (Context& con
 							 flags & FLAG_TEST_STENCIL ? MODE_STENCIL : MODE_INVALID)
 	, m_useTestAttachment	((flags & FLAG_DONT_USE_TEST_ATTACHMENT) == 0)
 	, m_useEarlyTests		((flags & FLAG_DONT_USE_EARLY_FRAGMENT_TESTS) == 0)
+	, m_useEarlyLateTests	((flags& FLAG_EARLY_AND_LATE_FRAGMENT_TESTS) != 0)
 {
 	DE_ASSERT(m_testMode != MODE_INVALID);
 }
@@ -846,7 +909,7 @@ tcu::TestStatus EarlyFragmentDiscardTestInstance::iterate (void)
 		const int  expectedCounter	   = expectPartialResult ? renderSize.x() * renderSize.y() / 2 : renderSize.x() * renderSize.y();
 		const int  tolerance		   = expectPartialResult ? de::max(renderSize.x(), renderSize.y()) * 3	: 0;
 		const int  expectedMin         = de::max(0, expectedCounter - tolerance);
-		const int  expectedMax		   = expectedCounter + tolerance;
+		const int  expectedMax		   = (m_useEarlyLateTests ? (renderSize.x() * renderSize.y()) : (expectedCounter + tolerance));
 
 		tcu::TestLog& log = m_context.getTestContext().getLog();
 		log << tcu::TestLog::Message << "Expected value"
@@ -909,26 +972,84 @@ void EarlyFragmentDiscardTest::initPrograms(SourceCollections &programCollection
 
 	// Fragment
 	{
-		const bool useEarlyTests = (m_flags & FLAG_DONT_USE_EARLY_FRAGMENT_TESTS) == 0;
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
-			<< "\n"
-			<< (useEarlyTests ? "layout(early_fragment_tests) in;\n" : "")
-			<< "layout(location = 0) out highp vec4 fragColor;\n"
-			<< "\n"
-			<< "layout(binding = 0) coherent buffer Output {\n"
-			<< "    uint result;\n"
-			<< "} sb_out;\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "    atomicAdd(sb_out.result, 1u);\n"
-			<< "    gl_FragDepth = 0.75f;\n"
-			<< "    fragColor = vec4(1.0, 1.0, 0.0, 1.0);\n"
-			<< "    discard;\n"
-			<< "}\n";
-
-		programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
+		if ((m_flags & FLAG_EARLY_AND_LATE_FRAGMENT_TESTS) == 0)
+		{
+			const bool useEarlyTests = (m_flags & FLAG_DONT_USE_EARLY_FRAGMENT_TESTS) == 0;
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
+				<< "\n"
+				<< (useEarlyTests ? "layout(early_fragment_tests) in;\n" : "")
+				<< "layout(location = 0) out highp vec4 fragColor;\n"
+				<< "\n"
+				<< "layout(binding = 0) coherent buffer Output {\n"
+				<< "    uint result;\n"
+				<< "} sb_out;\n"
+				<< "\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "    atomicAdd(sb_out.result, 1u);\n"
+				<< "    gl_FragDepth = 0.75f;\n"
+				<< "    fragColor = vec4(1.0, 1.0, 0.0, 1.0);\n"
+				<< "    discard;\n"
+				<< "}\n";
+			programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
+		}
+		else
+		{
+			const SpirVAsmBuildOptions	buildOptionsSpr(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3);
+			const std::string			src =
+				"; SPIR - V\n"
+				"; Version: 1.0\n"
+				"; Generator: Khronos Glslang Reference Front End; 10\n"
+				"; Bound: 28\n"
+				"; Schema: 0\n"
+				"OpCapability Shader\n"
+				"OpExtension \"SPV_AMD_shader_early_and_late_fragment_tests\"\n"
+				"%1 = OpExtInstImport \"GLSL.std.450\"\n"
+				"OpMemoryModel Logical GLSL450\n"
+				"OpEntryPoint Fragment %4 \"main\" %19 %23\n"
+				"OpExecutionMode %4 OriginUpperLeft\n"
+				"OpExecutionMode %4 EarlyAndLateFragmentTestsAMD\n"
+				"OpExecutionMode %4 DepthReplacing\n"
+				"OpExecutionMode %4 DepthGreater\n"
+				"OpMemberDecorate %7 0 Coherent\n"
+				"OpMemberDecorate %7 0 Offset 0\n"
+				"OpDecorate %7 BufferBlock\n"
+				"OpDecorate %9 DescriptorSet 0\n"
+				"OpDecorate %9 Binding 0\n"
+				"OpDecorate %19 BuiltIn FragDepth\n"
+				"OpDecorate %23 Location 0\n"
+				"%2 = OpTypeVoid\n"
+				"%3 = OpTypeFunction %2\n"
+				"%6 = OpTypeInt 32 0\n"
+				"%7 = OpTypeStruct %6\n"
+				"%8 = OpTypePointer Uniform %7\n"
+				"%9 = OpVariable %8 Uniform\n"
+				"%10 = OpTypeInt 32 1\n"
+				"%11 = OpConstant %10 0\n"
+				"%12 = OpTypePointer Uniform %6\n"
+				"%14 = OpConstant %6 1\n"
+				"%15 = OpConstant %6 0\n"
+				"%17 = OpTypeFloat 32\n"
+				"%18 = OpTypePointer Output %17\n"
+				"%19 = OpVariable %18 Output\n"
+				"%20 = OpConstant %17 0.75\n"
+				"%21 = OpTypeVector %17 4\n"
+				"%22 = OpTypePointer Output %21\n"
+				"%23 = OpVariable %22 Output\n"
+				"%24 = OpConstant %17 1\n"
+				"%25 = OpConstant %17 0\n"
+				"%26 = OpConstantComposite %21 %24 %24 %25 %24\n"
+				"%4 = OpFunction %2 None %3\n"
+				"%5 = OpLabel\n"
+				"%13 = OpAccessChain %12 %9 %11\n"
+				"%16 = OpAtomicIAdd %6 %13 %14 %15 %14\n"
+				"OpStore %19 %20\n"
+				"OpStore %23 %26\n"
+				"OpKill\n"
+				"OpFunctionEnd\n";
+			programCollection.spirvAsmSources.add("frag") << src << buildOptionsSpr;
+		}
 	}
 }
 
@@ -1625,26 +1746,89 @@ void EarlyFragmentSampleMaskTest::initPrograms(SourceCollections &programCollect
 
 	// Fragment
 	{
-		const bool useEarlyTests = (m_flags & FLAG_DONT_USE_EARLY_FRAGMENT_TESTS) == 0;
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
-			<< "\n"
-			<< (useEarlyTests ? "layout(early_fragment_tests) in;\n" : "")
-			<< "layout(location = 0) out highp vec4 fragColor;\n"
-			<< "\n"
-			<< "layout(binding = 0) coherent buffer Output {\n"
-			<< "    uint result;\n"
-			<< "} sb_out;\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "    atomicAdd(sb_out.result, 1u);\n"
-			<< "    gl_SampleMask[0] = 0x0;\n"
-			<< "    fragColor = vec4(1.0, 1.0, 0.0, 1.0);\n"
-			<< "    discard;\n"
-			<< "}\n";
+		if ((m_flags & FLAG_EARLY_AND_LATE_FRAGMENT_TESTS) == 0)
+		{
+			const bool useEarlyTests = (m_flags & FLAG_DONT_USE_EARLY_FRAGMENT_TESTS) == 0;
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
+				<< "\n"
+				<< (useEarlyTests ? "layout(early_fragment_tests) in;\n" : "")
+				<< "layout(location = 0) out highp vec4 fragColor;\n"
+				<< "\n"
+				<< "layout(binding = 0) coherent buffer Output {\n"
+				<< "    uint result;\n"
+				<< "} sb_out;\n"
+				<< "\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "    atomicAdd(sb_out.result, 1u);\n"
+				<< "    gl_SampleMask[0] = 0x0;\n"
+				<< "    fragColor = vec4(1.0, 1.0, 0.0, 1.0);\n"
+				<< "    discard;\n"
+				<< "}\n";
 
-		programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
+			programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
+		}
+		else
+		{
+			const SpirVAsmBuildOptions	buildOptionsSpr(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3);
+			const std::string			option	= (((m_flags & FLAG_DONT_USE_EARLY_FRAGMENT_TESTS) != 0)					?
+													"OpExecutionMode %4 DepthReplacing\nOpExecutionMode %4 DepthGreater\n"	:
+													"");
+			const std::string			src		=
+				"; SPIR - V\n"
+				"; Version: 1.0\n"
+				"; Generator: Khronos Glslang Reference Front End; 10\n"
+				"; Bound: 30\n"
+				"; Schema: 0\n"
+				"OpCapability Shader\n"
+				"OpExtension \"SPV_AMD_shader_early_and_late_fragment_tests\"\n"
+				"%1 = OpExtInstImport \"GLSL.std.450\"\n"
+				"OpMemoryModel Logical GLSL450\n"
+				"OpEntryPoint Fragment %4 \"main\" %19 %25\n"
+				"OpExecutionMode %4 OriginUpperLeft\n"
+				"OpExecutionMode %4 EarlyAndLateFragmentTestsAMD\n"
+				+ option +
+				"OpMemberDecorate %7 0 Coherent\n"
+				"OpMemberDecorate %7 0 Offset 0\n"
+				"OpDecorate %7 BufferBlock\n"
+				"OpDecorate %9 DescriptorSet 0\n"
+				"OpDecorate %9 Binding 0\n"
+				"OpDecorate %19 BuiltIn SampleMask\n"
+				"OpDecorate %25 Location 0\n"
+				"%2 = OpTypeVoid\n"
+				"%3 = OpTypeFunction %2\n"
+				"%6 = OpTypeInt 32 0\n"
+				"%7 = OpTypeStruct %6\n"
+				"%8 = OpTypePointer Uniform %7\n"
+				"%9 = OpVariable %8 Uniform\n"
+				"%10 = OpTypeInt 32 1\n"
+				"%11 = OpConstant %10 0\n"
+				"%12 = OpTypePointer Uniform %6\n"
+				"%14 = OpConstant %6 1\n"
+				"%15 = OpConstant %6 0\n"
+				"%17 = OpTypeArray %10 %14\n"
+				"%18 = OpTypePointer Output %17\n"
+				"%19 = OpVariable %18 Output\n"
+				"%20 = OpTypePointer Output %10\n"
+				"%22 = OpTypeFloat 32\n"
+				"%23 = OpTypeVector %22 4\n"
+				"%24 = OpTypePointer Output %23\n"
+				"%25 = OpVariable %24 Output\n"
+				"%26 = OpConstant %22 1\n"
+				"%27 = OpConstant %22 0\n"
+				"%28 = OpConstantComposite %23 %26 %26 %27 %26\n"
+				"%4 = OpFunction %2 None %3\n"
+				"%5 = OpLabel\n"
+				"%13 = OpAccessChain %12 %9 %11\n"
+				"%16 = OpAtomicIAdd %6 %13 %14 %15 %14\n"
+				"%21 = OpAccessChain %20 %19 %11\n"
+				"OpStore %21 %11\n"
+				"OpStore %25 %28\n"
+				"OpKill\n"
+				"OpFunctionEnd\n";
+			programCollection.spirvAsmSources.add("frag") << src << buildOptionsSpr;
+		}
 	}
 }
 
@@ -2001,6 +2185,12 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate (void)
 	const Unique<VkCommandPool>			cmdPool						(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>		cmdBuffer					(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
+	enum QueryIndex
+	{
+		QUERY_INDEX_NO_EARLY_FRAG = 0,
+		QUERY_INDEX_EARLY_FRAG = 1
+	};
+
 	{
 		const VkRect2D					renderArea					=
 		{
@@ -2042,9 +2232,9 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate (void)
 		// Run without early fragment test.
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineNoEarlyFrag);
 
-		vk.cmdBeginQuery(cmdBuffer.get(), queryPool, 0, VK_QUERY_CONTROL_PRECISE_BIT);
+		vk.cmdBeginQuery(cmdBuffer.get(), queryPool, QUERY_INDEX_NO_EARLY_FRAG, VK_QUERY_CONTROL_PRECISE_BIT);
 		vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
-		vk.cmdEndQuery(cmdBuffer.get(), queryPool, 0);
+		vk.cmdEndQuery(cmdBuffer.get(), queryPool, QUERY_INDEX_NO_EARLY_FRAG);
 
 		endRenderPass(vk, *cmdBuffer);
 
@@ -2057,9 +2247,9 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate (void)
 		// Run with early fragment test.
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineEarlyFrag);
 
-		vk.cmdBeginQuery(cmdBuffer.get(), queryPool, 1, VK_QUERY_CONTROL_PRECISE_BIT);
+		vk.cmdBeginQuery(cmdBuffer.get(), queryPool, QUERY_INDEX_EARLY_FRAG, VK_QUERY_CONTROL_PRECISE_BIT);
 		vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
-		vk.cmdEndQuery(cmdBuffer.get(), queryPool, 1);
+		vk.cmdEndQuery(cmdBuffer.get(), queryPool, QUERY_INDEX_EARLY_FRAG);
 
 		endRenderPass(vk, *cmdBuffer);
 
@@ -2099,12 +2289,34 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate (void)
 			log << tcu::TestLog::Message << "Passed Samples (with early fragment test)    : " << de::toString(sampleCounts[1]) << tcu::TestLog::EndMessage;
 		}
 
+#ifndef CTS_USES_VULKANSC
 		vk.destroyQueryPool(device, queryPool, nullptr);
+#endif // CTS_USES_VULKANSC
 
 		// Check that number of the all passed samples are within an acceptable range.
-		if (sampleCounts[0] >= minValue && sampleCounts[0] <= maxValue && sampleCounts[1] >= minValue && sampleCounts[1] <= maxValue)
+		if (sampleCounts[QUERY_INDEX_NO_EARLY_FRAG] >= minValue && sampleCounts[QUERY_INDEX_NO_EARLY_FRAG] <= maxValue && sampleCounts[QUERY_INDEX_EARLY_FRAG] >= minValue && sampleCounts[QUERY_INDEX_EARLY_FRAG] <= maxValue)
 		{
 			return tcu::TestStatus::pass("Success");
+		}
+		else if (sampleCounts[QUERY_INDEX_NO_EARLY_FRAG] >= minValue && sampleCounts[QUERY_INDEX_NO_EARLY_FRAG] <= maxValue && sampleCounts[QUERY_INDEX_EARLY_FRAG] == 0)
+		{
+			// Spec says: "If the fragment shader declares the EarlyFragmentTests execution mode, fragment shading and
+			// multisample coverage operations should instead be performed after sample counting.
+
+			// since the specification says 'should', the opposite behavior is allowed, but not preferred
+			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Sample count is 0 - sample counting performed after multisample coverage and fragment shading");
+		}
+		else if (sampleCounts[QUERY_INDEX_NO_EARLY_FRAG] >= minValue && sampleCounts[QUERY_INDEX_NO_EARLY_FRAG] <= maxValue &&
+					sampleCounts[QUERY_INDEX_EARLY_FRAG] >= (minValue * 2) && sampleCounts[QUERY_INDEX_EARLY_FRAG] <= (maxValue * 2))
+		{
+			// If the sample count returned is double the expected value, the sample mask test has been executed after
+			// sample counting.
+
+			// Spec says: "If there is a fragment shader and it declares the EarlyFragmentTests execution mode, ...
+			// sample mask test may: instead be performed after sample counting"
+
+			// since the specification says 'may', the opposite behavior is allowed, but not preferred
+			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Sample count is greater than expected - sample mask test performed after sample counting");
 		}
 		else
 		{
@@ -2144,7 +2356,8 @@ class EarlyFragmentSampleCountTest : public EarlyFragmentTest
 public:
 	EarlyFragmentSampleCountTest		(tcu::TestContext&	testCtx,
 										 const std::string	name,
-										 const deUint32		sampleCount);
+										 const deUint32		sampleCount,
+										 const bool			earlyAndLate);
 
 	void				initPrograms	(SourceCollections& programCollection) const override;
 	TestInstance*		createInstance	(Context& context) const override;
@@ -2152,11 +2365,13 @@ public:
 
 private:
 	const deUint32		m_sampleCount;
+	const bool			m_earlyAndLate;
 };
 
-EarlyFragmentSampleCountTest::EarlyFragmentSampleCountTest(tcu::TestContext& testCtx, const std::string name, const deUint32 sampleCount)
+EarlyFragmentSampleCountTest::EarlyFragmentSampleCountTest(tcu::TestContext& testCtx, const std::string name, const deUint32 sampleCount, const bool earlyAndLate)
 	: EarlyFragmentTest	(testCtx, name, FLAG_TEST_DEPTH)
 	, m_sampleCount		(sampleCount)
+	, m_earlyAndLate	(earlyAndLate)
 {
 }
 
@@ -2188,6 +2403,7 @@ void EarlyFragmentSampleCountTest::initPrograms(SourceCollections& programCollec
 	}
 
 	// Fragment shader for runs without early fragment test
+	if (m_earlyAndLate == false)
 	{
 		std::ostringstream frg;
 
@@ -2204,8 +2420,56 @@ void EarlyFragmentSampleCountTest::initPrograms(SourceCollections& programCollec
 
 		programCollection.glslSources.add("frag") << glu::FragmentSource(frg.str());
 	}
+	else
+	{
+		const SpirVAsmBuildOptions	buildOptionsSpr(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3);
+		const std::string			src =
+			"; SPIR - V\n"
+			"; Version: 1.0\n"
+			"; Generator: Khronos Glslang Reference Front End; 10\n"
+			"; Bound: 23\n"
+			"; Schema: 0\n"
+			"OpCapability Shader\n"
+			"OpExtension \"SPV_AMD_shader_early_and_late_fragment_tests\"\n"
+			"%1 = OpExtInstImport \"GLSL.std.450\"\n"
+			"OpMemoryModel Logical GLSL450\n"
+			"OpEntryPoint Fragment %4 \"main\" %11 %19\n"
+			"OpExecutionMode %4 OriginUpperLeft\n"
+			"OpExecutionMode %4 EarlyAndLateFragmentTestsAMD\n"
+			"OpExecutionMode %4 DepthReplacing\n"
+			"OpExecutionMode %4 DepthLess\n"
+			"OpDecorate %11 BuiltIn SampleMask\n"
+			"OpDecorate %19 Location 0\n"
+			"%2 = OpTypeVoid\n"
+			"%3 = OpTypeFunction %2\n"
+			"%6 = OpTypeInt 32 1\n"
+			"%7 = OpTypeInt 32 0\n"
+			"%8 = OpConstant %7 1\n"
+			"%9 = OpTypeArray %6 %8\n"
+			"%10 = OpTypePointer Output %9\n"
+			"%11 = OpVariable %10 Output\n"
+			"%12 = OpConstant %6 0\n"
+			"%13 = OpConstant %6 -1431655766\n"
+			"%14 = OpTypePointer Output %6\n"
+			"%16 = OpTypeFloat 32\n"
+			"%17 = OpTypeVector %16 4\n"
+			"%18 = OpTypePointer Output %17\n"
+			"%19 = OpVariable %18 Output\n"
+			"%20 = OpConstant %16 1\n"
+			"%21 = OpConstant %16 0\n"
+			"%22 = OpConstantComposite %17 %20 %20 %21 %20\n"
+			"%4 = OpFunction %2 None %3\n"
+			"%5 = OpLabel\n"
+			"%15 = OpAccessChain %14 %11 %12\n"
+			"OpStore %15 %13\n"
+			"OpStore %19 %22\n"
+			"OpReturn\n"
+			"OpFunctionEnd\n";
+		programCollection.spirvAsmSources.add("frag") << src << buildOptionsSpr;
+	}
 
 	// Fragment shader for early fragment tests
+	if (m_earlyAndLate == false)
 	{
 		std::ostringstream frg;
 
@@ -2223,6 +2487,50 @@ void EarlyFragmentSampleCountTest::initPrograms(SourceCollections& programCollec
 			<< "}\n";
 
 		programCollection.glslSources.add("frag_early") << glu::FragmentSource(frg.str());
+	}
+	else
+	{
+		const SpirVAsmBuildOptions	buildOptionsSpr(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3);
+		const std::string			src	=
+			"; SPIR - V\n"
+			"; Version: 1.0\n"
+			"; Generator: Khronos Glslang Reference Front End; 10\n"
+			"; Bound: 22\n"
+			"; Schema: 0\n"
+			"OpCapability Shader\n"
+			"OpExtension \"SPV_AMD_shader_early_and_late_fragment_tests\"\n"
+			"%1 = OpExtInstImport \"GLSL.std.450\"\n"
+			"OpMemoryModel Logical GLSL450\n"
+			"OpEntryPoint Fragment %4 \"main\" %11 %18\n"
+			"OpExecutionMode %4 OriginUpperLeft\n"
+			"OpExecutionMode %4 EarlyAndLateFragmentTestsAMD\n"
+			"OpDecorate %11 BuiltIn SampleMask\n"
+			"OpDecorate %18 Location 0\n"
+			"%2 = OpTypeVoid\n"
+			"%3 = OpTypeFunction %2\n"
+			"%6 = OpTypeInt 32 1\n"
+			"%7 = OpTypeInt 32 0\n"
+			"%8 = OpConstant %7 1\n"
+			"%9 = OpTypeArray %6 %8\n"
+			"%10 = OpTypePointer Output %9\n"
+			"%11 = OpVariable %10 Output\n"
+			"%12 = OpConstant %6 0\n"
+			"%13 = OpTypePointer Output %6\n"
+			"%15 = OpTypeFloat 32\n"
+			"%16 = OpTypeVector %15 4\n"
+			"%17 = OpTypePointer Output %16\n"
+			"%18 = OpVariable %17 Output\n"
+			"%19 = OpConstant %15 1\n"
+			"%20 = OpConstant %15 0\n"
+			"%21 = OpConstantComposite %16 %19 %19 %20 %19\n"
+			"%4 = OpFunction %2 None %3\n"
+			"%5 = OpLabel\n"
+			"%14 = OpAccessChain %13 %11 %12\n"
+			"OpStore %14 %12\n"
+			"OpStore %18 %21\n"
+			"OpReturn\n"
+			"OpFunctionEnd\n";
+		programCollection.spirvAsmSources.add("frag_early") << src << buildOptionsSpr;
 	}
 }
 
@@ -2245,33 +2553,59 @@ void EarlyFragmentSampleCountTest::checkSupport(Context& context) const
 	vki.getPhysicalDeviceImageFormatProperties(physDevice, depthFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u, &formatProperties);
 	if ((formatProperties.sampleCounts & m_sampleCount) == 0)
 		TCU_THROW(NotSupportedError, "Format does not support this number of samples for depth format");
+
+#ifndef CTS_USES_VULKANSC
+	if (m_earlyAndLate)
+	{
+		context.requireDeviceFunctionality("VK_AMD_shader_early_and_late_fragment_tests");
+		if (context.getShaderEarlyAndLateFragmentTestsFeaturesAMD().shaderEarlyAndLateFragmentTests == VK_FALSE)
+			TCU_THROW(NotSupportedError, "shaderEarlyAndLateFragmentTests is not supported");
+	}
+#endif
 }
 
 } // anonymous ns
 
 tcu::TestCaseGroup* createEarlyFragmentTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "early_fragment", "early fragment test cases"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup			(new tcu::TestCaseGroup(testCtx, "early_fragment", "early fragment test cases"));
 
 	{
-		static const struct
+		struct TestCaseEarly
 		{
 			std::string caseName;
 			deUint32	flags;
-		} cases[] =
+		};
+
+		static const TestCaseEarly cases[] =
 		{
+
 			{ "no_early_fragment_tests_depth",					FLAG_TEST_DEPTH   | FLAG_DONT_USE_EARLY_FRAGMENT_TESTS									},
 			{ "no_early_fragment_tests_stencil",				FLAG_TEST_STENCIL | FLAG_DONT_USE_EARLY_FRAGMENT_TESTS									},
 			{ "early_fragment_tests_depth",						FLAG_TEST_DEPTH																			},
 			{ "early_fragment_tests_stencil",					FLAG_TEST_STENCIL																		},
 			{ "no_early_fragment_tests_depth_no_attachment",	FLAG_TEST_DEPTH   | FLAG_DONT_USE_EARLY_FRAGMENT_TESTS | FLAG_DONT_USE_TEST_ATTACHMENT	},
 			{ "no_early_fragment_tests_stencil_no_attachment",	FLAG_TEST_STENCIL | FLAG_DONT_USE_EARLY_FRAGMENT_TESTS | FLAG_DONT_USE_TEST_ATTACHMENT	},
-			{ "early_fragment_tests_depth_no_attachment",		FLAG_TEST_DEPTH   |										 FLAG_DONT_USE_TEST_ATTACHMENT	},
-			{ "early_fragment_tests_stencil_no_attachment",		FLAG_TEST_STENCIL |										 FLAG_DONT_USE_TEST_ATTACHMENT	},
+			{ "early_fragment_tests_depth_no_attachment",		FLAG_TEST_DEPTH   | FLAG_DONT_USE_TEST_ATTACHMENT										},
+			{ "early_fragment_tests_stencil_no_attachment",		FLAG_TEST_STENCIL | FLAG_DONT_USE_TEST_ATTACHMENT										},
 		};
+
+#ifndef CTS_USES_VULKANSC
+		static const TestCaseEarly casesEarlyAndLate[] =
+		{
+			{ "early_and_late_fragment_tests_depth",				FLAG_TEST_DEPTH   | FLAG_EARLY_AND_LATE_FRAGMENT_TESTS									},
+			{ "early_and_late_fragment_tests_stencil",				FLAG_TEST_STENCIL | FLAG_EARLY_AND_LATE_FRAGMENT_TESTS									},
+			{ "early_and_late_fragment_tests_depth_no_attachment",	FLAG_TEST_DEPTH   | FLAG_DONT_USE_TEST_ATTACHMENT | FLAG_EARLY_AND_LATE_FRAGMENT_TESTS	},
+			{ "early_and_late_fragment_tests_stencil_no_attachment",FLAG_TEST_STENCIL | FLAG_DONT_USE_TEST_ATTACHMENT | FLAG_EARLY_AND_LATE_FRAGMENT_TESTS	},
+		};
+#endif
 
 		for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
 			testGroup->addChild(new EarlyFragmentTest(testCtx, cases[i].caseName, cases[i].flags));
+#ifndef CTS_USES_VULKANSC
+		for (int i = 0; i < DE_LENGTH_OF_ARRAY(casesEarlyAndLate); ++i)
+			testGroup->addChild(new EarlyFragmentTest(testCtx, casesEarlyAndLate[i].caseName, casesEarlyAndLate[i].flags));
+#endif
 	}
 
 	// Check that discard does not affect depth test writes.
@@ -2282,10 +2616,14 @@ tcu::TestCaseGroup* createEarlyFragmentTests (tcu::TestContext& testCtx)
 			deUint32	flags;
 		} cases[] =
 		{
-			{ "discard_no_early_fragment_tests_depth",					FLAG_TEST_DEPTH   | FLAG_DONT_USE_EARLY_FRAGMENT_TESTS									},
-			{ "discard_no_early_fragment_tests_stencil",				FLAG_TEST_STENCIL | FLAG_DONT_USE_EARLY_FRAGMENT_TESTS									},
-			{ "discard_early_fragment_tests_depth",						FLAG_TEST_DEPTH																			},
-			{ "discard_early_fragment_tests_stencil",					FLAG_TEST_STENCIL																		},
+			{ "discard_no_early_fragment_tests_depth",			FLAG_TEST_DEPTH   | FLAG_DONT_USE_EARLY_FRAGMENT_TESTS										},
+			{ "discard_no_early_fragment_tests_stencil",		FLAG_TEST_STENCIL | FLAG_DONT_USE_EARLY_FRAGMENT_TESTS										},
+			{ "discard_early_fragment_tests_depth",				FLAG_TEST_DEPTH																				},
+			{ "discard_early_fragment_tests_stencil",			FLAG_TEST_STENCIL																			},
+#ifndef CTS_USES_VULKANSC
+			{ "discard_early_and_late_fragment_tests_depth",	FLAG_TEST_DEPTH   | FLAG_DONT_USE_EARLY_FRAGMENT_TESTS | FLAG_EARLY_AND_LATE_FRAGMENT_TESTS	},
+			{ "discard_early_and_late_fragment_tests_stencil",	FLAG_TEST_STENCIL | FLAG_DONT_USE_EARLY_FRAGMENT_TESTS | FLAG_EARLY_AND_LATE_FRAGMENT_TESTS	},
+#endif
 		};
 
 		for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
@@ -2300,8 +2638,12 @@ tcu::TestCaseGroup* createEarlyFragmentTests (tcu::TestContext& testCtx)
 			deUint32	flags;
 		} cases[] =
 		{
-			{ "samplemask_no_early_fragment_tests_depth",				FLAG_TEST_DEPTH   | FLAG_DONT_USE_EARLY_FRAGMENT_TESTS,									},
-			{ "samplemask_early_fragment_tests_depth",					FLAG_TEST_DEPTH,																		},
+			{ "samplemask_no_early_fragment_tests_depth",						FLAG_TEST_DEPTH | FLAG_DONT_USE_EARLY_FRAGMENT_TESTS										},
+			{ "samplemask_early_fragment_tests_depth",							FLAG_TEST_DEPTH																				},
+#ifndef CTS_USES_VULKANSC
+			{ "samplemask_early_and_late_fragment_tests_depth_replacing_mode",	FLAG_TEST_DEPTH | FLAG_EARLY_AND_LATE_FRAGMENT_TESTS | FLAG_DONT_USE_EARLY_FRAGMENT_TESTS	},
+			{ "samplemask_early_and_late_fragment_tests_depth",					FLAG_TEST_DEPTH | FLAG_EARLY_AND_LATE_FRAGMENT_TESTS										},
+#endif
 		};
 
 		const VkSampleCountFlags sampleCounts[] = { VK_SAMPLE_COUNT_2_BIT, VK_SAMPLE_COUNT_4_BIT, VK_SAMPLE_COUNT_8_BIT, VK_SAMPLE_COUNT_16_BIT };
@@ -2311,7 +2653,7 @@ tcu::TestCaseGroup* createEarlyFragmentTests (tcu::TestContext& testCtx)
 		{
 			for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
 				testGroup->addChild(new EarlyFragmentSampleMaskTest(testCtx, cases[i].caseName + "_" + sampleCountsStr[sampleCountsNdx], cases[i].flags, sampleCounts[sampleCountsNdx]));
-        }
+		}
 	}
 
 	// We kill half of the samples at different points in the pipeline depending on early frag test, and then we verify the sample counting works as expected.
@@ -2321,7 +2663,10 @@ tcu::TestCaseGroup* createEarlyFragmentTests (tcu::TestContext& testCtx)
 
 		for (deUint32 sampleCountsNdx = 0; sampleCountsNdx < DE_LENGTH_OF_ARRAY(sampleCounts); sampleCountsNdx++)
 		{
-			testGroup->addChild(new EarlyFragmentSampleCountTest(testCtx, "sample_count_early_fragment_tests_depth_" + sampleCountsStr[sampleCountsNdx], sampleCounts[sampleCountsNdx]));
+			testGroup->addChild(new EarlyFragmentSampleCountTest(testCtx, "sample_count_early_fragment_tests_depth_" + sampleCountsStr[sampleCountsNdx], sampleCounts[sampleCountsNdx], false));
+#ifndef CTS_USES_VULKANSC
+			testGroup->addChild(new EarlyFragmentSampleCountTest(testCtx, "sample_count_early_and_late_fragment_tests_depth_" + sampleCountsStr[sampleCountsNdx], sampleCounts[sampleCountsNdx], true));
+#endif
 		}
 	}
 

@@ -23,8 +23,12 @@
 
 #include "tcuLnxVulkanPlatform.hpp"
 #include "tcuLnxPlatform.hpp"
+#include "vkDefs.hpp"
+#include "vkDeviceUtil.hpp"
+#include "vkQueryUtil.hpp"
 #include "vkWsiPlatform.hpp"
 #include "gluPlatform.hpp"
+#include "tcuLibDrm.hpp"
 #include "tcuLnx.hpp"
 #include "tcuFunctionLibrary.hpp"
 #include "deUniquePtr.hpp"
@@ -34,6 +38,9 @@
 
 using de::MovePtr;
 using de::UniquePtr;
+#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
+using tcu::LibDrm;
+#endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 
 #if defined (DEQP_SUPPORT_X11)
 #	include "tcuLnxX11.hpp"
@@ -47,6 +54,10 @@ using de::UniquePtr;
 #	include "tcuLnxWayland.hpp"
 #	define WAYLAND_DISPLAY DE_NULL
 #endif // DEQP_SUPPORT_WAYLAND
+
+#if !defined(DEQP_VULKAN_LIBRARY_PATH)
+#   define DEQP_VULKAN_LIBRARY_PATH "libvulkan.so.1"
+#endif
 
 namespace tcu
 {
@@ -72,6 +83,12 @@ public:
 	void resize (const UVec2& newSize)
 	{
 		m_window->setDimensions((int)newSize.x(), (int)newSize.y());
+	}
+
+	void setMinimized(bool minimized)
+	{
+		DE_UNREF(minimized);
+		TCU_THROW(NotSupportedError, "Minimized on X11 is not implemented");
 	}
 
 private:
@@ -122,6 +139,12 @@ public:
 		m_window->setDimensions((int)newSize.x(), (int)newSize.y());
 	}
 
+	void setMinimized(bool minimized)
+	{
+		DE_UNREF(minimized);
+		TCU_THROW(NotSupportedError, "Minimized on xcb is not implemented");
+	}
+
 private:
 	UniquePtr<x11::XcbWindow>	m_window;
 };
@@ -166,6 +189,12 @@ public:
 	void resize (const UVec2& newSize)
 	{
 		m_window->setDimensions((int)newSize.x(), (int)newSize.y());
+	}
+
+	void setMinimized(bool minimized)
+	{
+		DE_UNREF(minimized);
+		TCU_THROW(NotSupportedError, "Minimized on wayland is not implemented");
 	}
 
 private:
@@ -218,11 +247,107 @@ public:
 
 #endif // DEQP_SUPPORT_HEADLESS
 
+#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
+
+struct VulkanWindowDirectDrm : public vk::wsi::Window
+{
+public:
+	void resize (const UVec2&)
+	{
+	}
+};
+
+class VulkanDisplayDirectDrm : public vk::wsi::DirectDrmDisplayInterface
+{
+public:
+	VulkanDisplayDirectDrm (void)
+	{
+	}
+
+	vk::wsi::Window* createWindow (const Maybe<UVec2>&) const override
+	{
+		return new VulkanWindowDirectDrm();
+	}
+
+	void initializeDisplay (const vk::InstanceInterface& vki, vk::VkInstance instance, const tcu::CommandLine& cmdLine) override
+	{
+		if (m_initialized)
+			return;
+
+		vk::VkPhysicalDevice physDevice = vk::chooseDevice(vki, instance, cmdLine);
+
+		/* Get a Drm fd that matches the device. */
+
+		vk::VkPhysicalDeviceProperties2			deviceProperties2;
+		vk::VkPhysicalDeviceDrmPropertiesEXT	deviceDrmProperties;
+
+		deMemset(&deviceDrmProperties, 0, sizeof(deviceDrmProperties));
+		deviceDrmProperties.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT;
+		deviceDrmProperties.pNext = DE_NULL;
+
+		deMemset(&deviceProperties2, 0, sizeof(deviceProperties2));
+		deviceProperties2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+		deviceProperties2.pNext = &deviceDrmProperties;
+
+		vki.getPhysicalDeviceProperties2(physDevice, &deviceProperties2);
+
+		if (!deviceDrmProperties.hasPrimary)
+			TCU_THROW(NotSupportedError, "No DRM primary device.");
+
+		LibDrm libDrm;
+		int numDrmDevices;
+		drmDevicePtr* drmDevices = libDrm.getDevices(&numDrmDevices);
+		const char* drmNode = libDrm.findDeviceNode(drmDevices, numDrmDevices, deviceDrmProperties.primaryMajor, deviceDrmProperties.primaryMinor);
+
+		if (!drmNode)
+			TCU_THROW(NotSupportedError, "No DRM node.");
+
+		m_fdPtr = libDrm.openFd(drmNode).move();
+		if (!m_fdPtr)
+			TCU_THROW(NotSupportedError, "Could not open DRM.");
+		int fd = *m_fdPtr;
+
+		/* Get a connector to the display. */
+
+		LibDrm::ResPtr res = libDrm.getResources(fd);
+		if (!res)
+			TCU_THROW(NotSupportedError, "Could not get DRM resources.");
+
+		deUint32 connectorId = 0;
+		for (int i = 0; i < res->count_connectors; ++i) {
+			LibDrm::ConnectorPtr conn = libDrm.getConnector(fd, res->connectors[i]);
+
+			if (conn && conn->connection == DRM_MODE_CONNECTED) {
+				connectorId = res->connectors[i];
+				break;
+			}
+		}
+		if (!connectorId)
+			TCU_THROW(NotSupportedError, "Could not find a DRM connector.");
+
+		/* Get and acquire the display for the connector. */
+
+		vk::VkDisplayKHR* display = const_cast<vk::VkDisplayKHR*>(&m_native);
+		VK_CHECK_SUPPORTED(vki.getDrmDisplayEXT(physDevice, fd, connectorId, display));
+
+		if (m_native == DE_NULL)
+			TCU_THROW(NotSupportedError, "vkGetDrmDisplayEXT did not set display.");
+
+		VK_CHECK_SUPPORTED(vki.acquireDrmDisplayEXT(physDevice, fd, m_native));
+		m_initialized = true;
+	}
+
+	MovePtr<LibDrm::FdPtr::element_type, LibDrm::FdPtr::deleter_type> m_fdPtr;
+	bool m_initialized = false;
+};
+
+#endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
+
 class VulkanLibrary : public vk::Library
 {
 public:
-	VulkanLibrary (void)
-		: m_library	("libvulkan.so.1")
+	VulkanLibrary (const char* libraryPath)
+		: m_library	(libraryPath != DE_NULL ? libraryPath : DEQP_VULKAN_LIBRARY_PATH)
 		, m_driver	(m_library)
 	{
 	}
@@ -272,6 +397,10 @@ vk::wsi::Display* VulkanPlatform::createWsiDisplay (vk::wsi::Type wsiType) const
 	case vk::wsi::TYPE_HEADLESS:
 		return new VulkanDisplayHeadless();
 #endif // DEQP_SUPPORT_HEADLESS
+#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
+	case vk::wsi::TYPE_DIRECT_DRM:
+		return new VulkanDisplayDirectDrm();
+#endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 
 	default:
 		TCU_THROW(NotSupportedError, "WSI type not supported");
@@ -298,14 +427,24 @@ bool VulkanPlatform::hasDisplay (vk::wsi::Type wsiType) const
        case vk::wsi::TYPE_HEADLESS:
                return true;
 #endif // DEQP_SUPPORT_HEADLESS
+#if DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
+	case vk::wsi::TYPE_DIRECT_DRM:
+		return true;
+#endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
 	default:
 		return false;
 
 	}
 }
-vk::Library* VulkanPlatform::createLibrary (void) const
+
+vk::Library* VulkanPlatform::createLibrary (LibraryType libraryType, const char* libraryPath) const
 {
-	return new VulkanLibrary();
+	switch(libraryType)
+	{
+		case LIBRARY_TYPE_VULKAN:						return new VulkanLibrary(libraryPath);
+
+		default: TCU_THROW(InternalError, "Unknown library type requested");
+	}
 }
 
 void VulkanPlatform::describePlatform (std::ostream& dst) const

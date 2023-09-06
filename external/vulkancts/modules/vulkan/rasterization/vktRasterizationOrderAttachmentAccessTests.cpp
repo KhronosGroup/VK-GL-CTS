@@ -23,7 +23,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "deDefs.hpp"
-#include "deSharedPtr.hpp"
 #include "deUniquePtr.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuImageCompare.hpp"
@@ -52,9 +51,7 @@
 using namespace vk;
 using namespace std;
 using namespace vkt;
-using de::UniquePtr;
 using de::MovePtr;
-using de::SharedPtr;
 
 namespace vkt
 {
@@ -104,9 +101,37 @@ public:
 	{
 		return m_integerFormat ? VK_FORMAT_R32G32_UINT : VK_FORMAT_R32G32_SFLOAT;
 	}
-	VkFormat getDSFormat() const
+
+	VkFormat checkAndGetDSFormat (Context& context) const;
+
+	static VkImageType getColorImageType ()
 	{
-		return VK_FORMAT_D32_SFLOAT_S8_UINT;
+		return VK_IMAGE_TYPE_2D;
+	}
+
+	static VkImageTiling getColorImageTiling ()
+	{
+		return VK_IMAGE_TILING_OPTIMAL;
+	}
+
+	static VkImageUsageFlags getColorImageUsageFlags ()
+	{
+		return
+			(	VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
+			|	VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+			|	VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+			|	VK_IMAGE_USAGE_TRANSFER_DST_BIT
+			);
+	}
+
+	static VkImageUsageFlags getDSImageUsageFlags ()
+	{
+		return
+			(	VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
+			|	VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+			|	VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+			|	VK_IMAGE_USAGE_TRANSFER_DST_BIT
+			);
 	}
 
 	VkPipelineColorBlendStateCreateFlags getBlendStateFlags() const
@@ -129,7 +154,7 @@ public:
 protected:
 	virtual void			addShadersInternal(SourceCollections& programCollection, const std::map<std::string, std::string> &params) const = 0;
 	void					addSimpleVertexShader(SourceCollections& programCollection, const std::string &dest) const;
-	virtual void			checkAdditionalRasterizationFlags(VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM &rasterizationAccess) const
+	virtual void			checkAdditionalRasterizationFlags(VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT &rasterizationAccess) const
 	{
 		// unused parameter
 		DE_UNREF(rasterizationAccess);
@@ -208,7 +233,7 @@ public:
 	}
 protected:
 	virtual void			addShadersInternal(SourceCollections& programCollection, const std::map<std::string, std::string> &params) const;
-	virtual void			checkAdditionalRasterizationFlags(VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM &rasterizationAccess) const
+	virtual void			checkAdditionalRasterizationFlags(VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT &rasterizationAccess) const
 	{
 		if (!m_explicitSync && !rasterizationAccess.rasterizationOrderDepthAttachmentAccess)
 		{
@@ -255,7 +280,7 @@ public:
 	}
 protected:
 	virtual void			addShadersInternal(SourceCollections& programCollection, const std::map<std::string, std::string> &params) const;
-	virtual void			checkAdditionalRasterizationFlags(VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM &rasterizationAccess) const
+	virtual void			checkAdditionalRasterizationFlags(VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT &rasterizationAccess) const
 	{
 		if (!m_explicitSync && !rasterizationAccess.rasterizationOrderStencilAttachmentAccess)
 		{
@@ -371,13 +396,22 @@ AttachmentAccessOrderTestCase::~AttachmentAccessOrderTestCase (void)
 }
 void AttachmentAccessOrderTestCase::addSimpleVertexShader(SourceCollections& programCollection, const std::string &dest) const
 {
+	/*
+	 * The "prim_id" variable here (and in other tests below) is emulating gl_PrimitiveID.
+	 * This is done to avoid having this test dependon the geometry shader feature.
+	 * Note that this emulation only works because the draw calls used in the tests are
+	 * non-indexed independent triangles.
+	 */
 	std::stringstream vertShader;
 	vertShader	<< "#version 310 es\n"
 				<< "layout(location = 0) in highp vec2 v_position;\n"
+	                        << "layout(location = 1) flat out int prim_id;\n"
 				<< "void main ()\n"
 				<< "{\n"
+	                        << "    prim_id = gl_VertexIndex / 3;\n"
 				<< "	gl_Position = vec4(v_position, float(gl_InstanceIndex)/256.0, 1);\n"
 				<< "}\n";
+
 	programCollection.glslSources.add(dest) << glu::VertexSource(vertShader.str());
 }
 
@@ -396,15 +430,15 @@ void AttachmentAccessOrderColorTestCase::addShadersInternal(SourceCollections& p
 					<< "layout( location = " << i << " ) out ${VEC_NAME}2 out" << i << ";\n";
 	}
 
-
 	fragShader	<< "layout( push_constant ) uniform ConstBlock\n"
 				<< "{\n"
 				<< "	uint drawCur;\n"
 				<< "};\n"
+				<< "layout(location = 1) flat in int prim_id;\n"
 				<< "void main()\n"
 				<< "{\n"
 				<< "	uint instanceCur = uint(round(gl_FragCoord.z * 256.0));\n"
-				<< "	uint primitiveCur = uint(gl_PrimitiveID) / 2u;\n"
+				<< "	uint primitiveCur = uint(prim_id) / 2u;\n"
 				<< "	uint primitiveNum = ${PRIMITIVE_NUM}u;\n"
 				<< "	uint instanceNum = ${INSTANCE_NUM}u;\n"
 				<< "	uint drawNum = ${DRAW_NUM}u;\n"
@@ -464,7 +498,8 @@ void AttachmentAccessOrderDepthTestCase::addShadersInternal(SourceCollections& p
 	std::stringstream vertShader;
 	vertShader	<< "#version 460\n"
 				<< "layout(location = 0) in highp vec2 v_position;\n"
-				<< "layout(location = 1) flat out uint instance_index;"
+				<< "layout(location = 1) flat out uint instance_index;\n"
+	                        << "layout(location = 2) flat out int prim_id;\n"
 				<< "layout( push_constant ) uniform ConstBlock\n"
 				<< "{\n"
 				<< "	uint drawCur;\n"
@@ -472,6 +507,7 @@ void AttachmentAccessOrderDepthTestCase::addShadersInternal(SourceCollections& p
 				<< "void main ()\n"
 				<< "{\n"
 				<< "	uint primitiveCur = uint(gl_VertexIndex) / 6u;\n"
+	                        << "    prim_id = gl_VertexIndex / 3;\n"
 				<< "	uint instanceNum = ${INSTANCE_NUM};\n"
 				<< "	uint primitiveNum = ${PRIMITIVE_NUM};\n"
 				<< "	uint drawNum = ${DRAW_NUM};\n"
@@ -493,6 +529,7 @@ void AttachmentAccessOrderDepthTestCase::addShadersInternal(SourceCollections& p
 				<< "layout( set = 0, binding = 1, input_attachment_index = 1 ) uniform ${SUBPASS_INPUT} in_ds;\n"
 				<< "layout( location = 0 ) out ${VEC_NAME}2 out0;\n"
 				<< "layout( location = 1 ) flat in uint instance_index;\n"
+	                        << "layout( location = 2 ) flat in int prim_id;\n"
 				<< "layout( push_constant ) uniform ConstBlock\n"
 				<< "{\n"
 				<< "	uint drawCur;\n"
@@ -500,7 +537,7 @@ void AttachmentAccessOrderDepthTestCase::addShadersInternal(SourceCollections& p
 				<< "void main()\n"
 				<< "{\n"
 				<< "	uint instanceCur = instance_index;\n"
-				<< "	uint primitiveCur = uint(gl_PrimitiveID) / 2u;\n"
+				<< "	uint primitiveCur = uint(prim_id) / 2u;\n"
 				<< "	uint primitiveNum = ${PRIMITIVE_NUM}u;\n"
 				<< "	uint instanceNum = ${INSTANCE_NUM}u;\n"
 				<< "	uint drawNum = ${DRAW_NUM}u;\n"
@@ -534,22 +571,27 @@ void AttachmentAccessOrderDepthTestCase::addShadersInternal(SourceCollections& p
 				<< "		out0.y = curIndex + 1 + gl_SampleID + zero;\n";
 	if (m_sampleCount != VK_SAMPLE_COUNT_1_BIT)
 	{
-		fragShader	<< "	gl_FragDepth = 0.125 * (float(curIndex) / float(total)) + gl_SampleID / 128.0;\n";
-	}
-	fragShader	<< "	}\n"
-				<< "	else if (ds.x == 0.125 * float(curIndex - 1) / float(total) + gl_SampleID / 128.0)\n"
-				<< "	{\n"
-				<< "		out0.x = color.x;\n"
-				<< "		out0.y = curIndex + 1 + gl_SampleID + zero;\n";
-	if (m_sampleCount != VK_SAMPLE_COUNT_1_BIT)
-	{
-		fragShader	<< "	gl_FragDepth = 0.125 * (float(curIndex) / float(total)) + gl_SampleID / 128.0;\n";
+		fragShader	<< "		gl_FragDepth = 0.125 * (float(curIndex) / float(total)) + gl_SampleID / 128.0;\n";
 	}
 	fragShader	<< "	}\n"
 				<< "	else\n"
 				<< "	{\n"
-				<< "		out0.y = 0;\n"
-				<< "		out0.x = 1u;\n"
+				<< "		const float expected = 0.125 * float(curIndex - 1) / float(total) + gl_SampleID / 128.0;\n"
+				<< "		const float threshold = 0.0000001;\n"
+				<< "		if (ds.x >= expected - threshold && ds.x <= expected + threshold)\n"
+				<< "		{\n"
+				<< "			out0.x = color.x;\n"
+				<< "			out0.y = curIndex + 1 + gl_SampleID + zero;\n";
+	if (m_sampleCount != VK_SAMPLE_COUNT_1_BIT)
+	{
+		fragShader	<< "			gl_FragDepth = 0.125 * (float(curIndex) / float(total)) + gl_SampleID / 128.0;\n";
+	}
+	fragShader	<< "		}\n"
+				<< "		else\n"
+				<< "		{\n"
+				<< "			out0.y = 0;\n"
+				<< "			out0.x = 1u;\n"
+				<< "		}\n"
 				<< "	}\n"
 				<< "}\n";
 
@@ -563,6 +605,7 @@ void AttachmentAccessOrderStencilTestCase::addShadersInternal(SourceCollections&
 	vertShader	<< "#version 460\n"
 				<< "layout(location = 0) in highp vec2 v_position;\n"
 				<< "layout(location = 1) flat out uint instance_index;"
+	                        << "layout(location = 2) flat out int prim_id;\n"
 				<< "layout( push_constant ) uniform ConstBlock\n"
 				<< "{\n"
 				<< "	uint drawCur;\n"
@@ -570,6 +613,7 @@ void AttachmentAccessOrderStencilTestCase::addShadersInternal(SourceCollections&
 				<< "void main ()\n"
 				<< "{\n"
 				<< "	uint primitiveCur = uint(gl_VertexIndex) / 6u;\n"
+	                        << "    prim_id = gl_VertexIndex / 3;\n"
 				<< "	uint instanceNum = ${INSTANCE_NUM};\n"
 				<< "	uint primitiveNum = ${PRIMITIVE_NUM};\n"
 				<< "	uint drawNum = ${DRAW_NUM};\n"
@@ -591,6 +635,7 @@ void AttachmentAccessOrderStencilTestCase::addShadersInternal(SourceCollections&
 				<< "layout( set = 0, binding = 1, input_attachment_index = 1 ) uniform ${SUBPASS_INPUT} in_ds;\n"
 				<< "layout( location = 0 ) out ${VEC_NAME}2 out0;\n"
 				<< "layout( location = 1 ) flat in uint instance_index;\n"
+	                        << "layout( location = 2 ) flat in int prim_id;\n"
 				<< "layout( push_constant ) uniform ConstBlock\n"
 				<< "{\n"
 				<< "	uint drawCur;\n"
@@ -598,7 +643,7 @@ void AttachmentAccessOrderStencilTestCase::addShadersInternal(SourceCollections&
 				<< "void main()\n"
 				<< "{\n"
 				<< "	uint instanceCur = instance_index;\n"
-				<< "	uint primitiveCur = uint(gl_PrimitiveID) / 2u;\n"
+				<< "	uint primitiveCur = uint(prim_id) / 2u;\n"
 				<< "	uint primitiveNum = ${PRIMITIVE_NUM}u;\n"
 				<< "	uint instanceNum = ${INSTANCE_NUM}u;\n"
 				<< "	uint drawNum = ${DRAW_NUM}u;\n"
@@ -730,57 +775,107 @@ TestInstance* AttachmentAccessOrderTestCase::createInstance (Context& context) c
 	return new AttachmentAccessOrderTestInstance(context, this);
 }
 
+VkFormat AttachmentAccessOrderTestCase::checkAndGetDSFormat (Context& context) const
+{
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
+	const auto	imageType		= getColorImageType();
+	const auto	imageTiling		= getColorImageTiling();
+	const auto	imageUsage		= getDSImageUsageFlags();
+
+	const std::vector<VkFormat>	dsFormats		{ VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT };
+	VkFormat					supportedFormat	= VK_FORMAT_UNDEFINED;
+	VkImageFormatProperties		formatProperties;
+
+	for (const auto& dsFormat : dsFormats)
+	{
+		const auto result = vki.getPhysicalDeviceImageFormatProperties(physicalDevice, dsFormat, imageType, imageTiling, imageUsage, 0u, &formatProperties);
+
+		if (result == VK_SUCCESS)
+		{
+			if ((formatProperties.sampleCounts & m_sampleCount) != 0)
+			{
+				supportedFormat = dsFormat;
+				break;
+			}
+		}
+		else if (result != VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties returned unexpected error");
+	}
+
+	return supportedFormat;
+}
+
 void AttachmentAccessOrderTestCase::checkSupport (Context& context) const
 {
-	context.requireDeviceFunctionality("VK_ARM_rasterization_order_attachment_access");
+	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 
-	VkPhysicalDeviceVulkan12Properties vulkan12Properties = {};
-	vulkan12Properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES;
+	// When explicit synchronization is used, there's no need for the extension.
+	if (!m_explicitSync)
+		if (!context.isDeviceFunctionalitySupported("VK_ARM_rasterization_order_attachment_access") && !context.isDeviceFunctionalitySupported("VK_EXT_rasterization_order_attachment_access"))
+			TCU_THROW(NotSupportedError, "Neither VK_ARM_rasterization_order_attachment_access nor VK_EXT_rasterization_order_attachment_access is supported");
 
-	VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM rasterizationAccess = {};
-	rasterizationAccess.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_ARM;
-	rasterizationAccess.pNext = &vulkan12Properties;
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
 
-	VkPhysicalDeviceProperties2 properties = {};
-	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-	properties.pNext = &rasterizationAccess;
+	VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT	rasterizationAccess	= initVulkanStructure();
+	VkPhysicalDeviceFeatures2										features2			= initVulkanStructure(m_explicitSync ? nullptr : &rasterizationAccess);
 
-	VkPhysicalDeviceFeatures features = {};
+	vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 
-	context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties);
-	context.getInstanceInterface().getPhysicalDeviceFeatures(context.getPhysicalDevice(), &features);
+	VkPhysicalDeviceProperties2 properties2 = initVulkanStructure();
 
-	if ( m_integerFormat )
+	vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
+
+	if (m_integerFormat)
 	{
-		if ((vulkan12Properties.framebufferIntegerColorSampleCounts & m_sampleCount) == 0 ||
-			(properties.properties.limits.sampledImageIntegerSampleCounts & m_sampleCount) == 0)
+		const auto format		= getColorFormat();
+		const auto imageType	= getColorImageType();
+		const auto imageTiling	= getColorImageTiling();
+		const auto imageUsage	= getColorImageUsageFlags();
+
+		VkImageFormatProperties formatProperties;
+
+		const auto result = vki.getPhysicalDeviceImageFormatProperties(physicalDevice, format, imageType, imageTiling, imageUsage, 0u, &formatProperties);
+		if (result != VK_SUCCESS)
+		{
+			if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+				TCU_THROW(NotSupportedError, "format " + de::toString(format) + " does not support the required features");
+			else
+				TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties returned unexpected error");
+		}
+
+		if ((formatProperties.sampleCounts & m_sampleCount) == 0 ||
+			(properties2.properties.limits.sampledImageIntegerSampleCounts & m_sampleCount) == 0)
 		{
 			TCU_THROW(NotSupportedError, "Sample count not supported");
 		}
 	}
 	else
 	{
-		if ((properties.properties.limits.framebufferColorSampleCounts & m_sampleCount) == 0 ||
-			(properties.properties.limits.sampledImageColorSampleCounts & m_sampleCount) == 0)
+		if ((properties2.properties.limits.framebufferColorSampleCounts & m_sampleCount) == 0 ||
+			(properties2.properties.limits.sampledImageColorSampleCounts & m_sampleCount) == 0)
 		{
 			TCU_THROW(NotSupportedError , "Sample count not supported");
 		}
 	}
 
+	// Check depth/stencil format support if needed.
+	if (getInputAttachmentNum() > getColorAttachmentNum())
+	{
+		const auto format = checkAndGetDSFormat(context);
+		if (format == VK_FORMAT_UNDEFINED)
+			TCU_THROW(NotSupportedError, "No support for any of the required depth/stencil formats");
+	}
+
 	/* sampleRateShading must be enabled to call fragment shader for all the samples in multisampling */
-	if ( (m_sampleCount != VK_SAMPLE_COUNT_1_BIT && !features.sampleRateShading) )
+	if (m_sampleCount != VK_SAMPLE_COUNT_1_BIT && !features2.features.sampleRateShading)
 	{
 		TCU_THROW(NotSupportedError , "sampleRateShading feature not supported");
 	}
 
-	/* Needed for gl_PrimitiveID */
-	if ( !features.geometryShader )
-	{
-		TCU_THROW(NotSupportedError , "geometryShader feature not supported");
-	}
-
-	if (properties.properties.limits.maxFragmentOutputAttachments < m_inputAttachmentNum ||
-		properties.properties.limits.maxPerStageDescriptorInputAttachments < m_inputAttachmentNum)
+	if (properties2.properties.limits.maxFragmentOutputAttachments < m_inputAttachmentNum ||
+		properties2.properties.limits.maxPerStageDescriptorInputAttachments < m_inputAttachmentNum)
 	{
 		TCU_THROW(NotSupportedError , "Feedback attachment number not supported");
 	}
@@ -851,22 +946,23 @@ void AttachmentAccessOrderTestInstance::RenderSubpass::createAttachments(	int su
 	VkFormat attFormat = m_testCase->getColorFormat();
 
 	/* Same create info for all the color attachments */
+	const auto imageType	= AttachmentAccessOrderTestCase::getColorImageType();
+	const auto imageTiling	= AttachmentAccessOrderTestCase::getColorImageTiling();
+	const auto imageUsage	= AttachmentAccessOrderTestCase::getColorImageUsageFlags();
+
 	VkImageCreateInfo colorImageCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,			// VkStructureType			sType;
 		DE_NULL,										// const void*				pNext;
 		0u,												// VkImageCreateFlags		flags;
-		VK_IMAGE_TYPE_2D,								// VkImageType				imageType;
+		imageType,										// VkImageType				imageType;
 		attFormat,										// VkFormat					format;
 		{ WIDTH,	HEIGHT, 1u },						// VkExtent3D				extent;
 		1u,												// deUint32					mipLevels;
 		1u,												// deUint32					arrayLayers;
 		sampleCount,									// VkSampleCountFlagBits	samples;
-		VK_IMAGE_TILING_OPTIMAL,						// VkImageTiling			tiling;
-		VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-			VK_IMAGE_USAGE_TRANSFER_DST_BIT,			// VkImageUsageFlags		usage;
+		imageTiling,									// VkImageTiling			tiling;
+		imageUsage,										// VkImageUsageFlags		usage;
 		VK_SHARING_MODE_EXCLUSIVE,						// VkSharingMode			sharingMode;
 		1u,												// deUint32					queueFamilyIndexCount;
 		&queueFamilyIndex,								// const deUint32*			pQueueFamilyIndices;
@@ -880,10 +976,10 @@ void AttachmentAccessOrderTestInstance::RenderSubpass::createAttachments(	int su
 		/* Image for the DS attachment */
 		if (i >= colorAttachmentNum)
 		{
-			attFormat = m_testCase->getDSFormat();
+			attFormat = m_testCase->checkAndGetDSFormat(context);
+			DE_ASSERT(attFormat != VK_FORMAT_UNDEFINED);
 			colorImageCreateInfo.format = attFormat;
-			colorImageCreateInfo.usage &= ~VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-			colorImageCreateInfo.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+			colorImageCreateInfo.usage = AttachmentAccessOrderTestCase::getDSImageUsageFlags();
 			aspect = m_testCase->getDSAspect();
 		}
 
@@ -1141,7 +1237,7 @@ void AttachmentAccessOrderTestInstance::addDependency(	vector<VkSubpassDependenc
 		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			//VkPipelineStageFlags		dstStageMask;
 		accessFlags,									//VkAccessFlags				srcAccessMask;
 		VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			//VkAccessFlags				dstAccessMask;
-		0,												//VkDependencyFlags			dependencyFlags;
+		VK_DEPENDENCY_BY_REGION_BIT,					//VkDependencyFlags			dependencyFlags;
 	});
 }
 Move<VkRenderPass> AttachmentAccessOrderTestInstance::createRenderPass(VkFormat attFormat)
@@ -1155,7 +1251,8 @@ Move<VkRenderPass> AttachmentAccessOrderTestInstance::createRenderPass(VkFormat 
 			VkFormat format = attFormat;
 			if (i >= m_subpasses[subpass].getColorAttachmentNum())
 			{
-				format = m_testCase->getDSFormat();
+				format = m_testCase->checkAndGetDSFormat(m_context);
+				DE_ASSERT(format != VK_FORMAT_UNDEFINED);
 			}
 			attachmentDescs.push_back({
 				0,											// VkAttachmentDescriptionFlags		flags;
@@ -1194,19 +1291,23 @@ Move<VkRenderPass> AttachmentAccessOrderTestInstance::createRenderPass(VkFormat 
 		addDependency(dependencies, 0, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
 		if (m_testCase->hasDepthStencil())
 		{
-			addDependency(dependencies, 0, 0, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+			const auto fragTests = (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+			addDependency(dependencies, 0, 0, fragTests, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
 		}
 	}
 	else
 	{
 		subpasses[0].flags = VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_BIT_ARM;
+		subpasses[1].flags = VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_BIT_ARM;
 		if (m_testCase->hasDepth())
 		{
 			subpasses[0].flags |= VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_ARM;
+			subpasses[1].flags |= VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_DEPTH_ACCESS_BIT_ARM;
 		}
 		else if (m_testCase->hasStencil())
 		{
 			subpasses[0].flags |= VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_ARM;
+			subpasses[1].flags |= VK_SUBPASS_DESCRIPTION_RASTERIZATION_ORDER_ATTACHMENT_STENCIL_ACCESS_BIT_ARM;
 		}
 	}
 
@@ -1365,8 +1466,8 @@ void AttachmentAccessOrderTestInstance::addPipelineBarrier(	VkCommandBuffer			cm
 		},											// VkImageSubresourceRange	subresourceRange;
 	};
 
-	m_vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL,
-							0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &barrier);
+	m_vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT,
+							0, nullptr, 0, nullptr, 1, &barrier);
 }
 void AttachmentAccessOrderTestInstance::addClearColor(VkCommandBuffer cmdBuffer, VkImage image)
 {
@@ -1473,10 +1574,11 @@ tcu::TestStatus AttachmentAccessOrderTestInstance::iterate (void)
 		}
 		for (deUint32 j = m_subpasses[0].getColorAttachmentNum(); m_testCase->m_explicitSync && i != 0 && j < m_subpasses[0].getInputAttachmentNum(); j++)
 		{
+			const auto fragTests = (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
 			addPipelineBarrier(	*m_cmdBuffer, *m_subpasses[0].m_inputAtt[j], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
 								VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 								VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
-								VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+								fragTests, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 								VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT);
 		}
 		m_vk.cmdDraw(*m_cmdBuffer, numPrimitives * 3, numInstances, 0, 0);

@@ -394,6 +394,7 @@ void drawQuadrantReferenceResult (const tcu::PixelBufferAccess& dst, const tcu::
 	tcu::clear(tcu::getSubregion(dst, dst.getWidth() / 2,	dst.getHeight() / 2,	dst.getWidth() - dst.getWidth() / 2,	dst.getHeight() - dst.getHeight() / 2),	c4);
 }
 
+#ifndef CTS_USES_VULKANSC
 static const vk::VkDescriptorUpdateTemplateEntry createTemplateBinding (deUint32 binding, deUint32 arrayElement, deUint32 descriptorCount, vk::VkDescriptorType descriptorType, size_t offset, size_t stride)
 {
 	const vk::VkDescriptorUpdateTemplateEntry updateBinding =
@@ -454,6 +455,7 @@ const deUint8* RawUpdateRegistry::getRawPointer () const
 {
 	return m_updateEntries.data();
 }
+#endif
 
 class SingleTargetRenderInstance : public vkt::TestInstance
 {
@@ -704,6 +706,11 @@ tcu::TestStatus SingleTargetRenderInstance::iterate (void)
 
 	// read and verify
 	readRenderTarget(resultImage);
+#ifdef CTS_USES_VULKANSC
+	// skip costly verification in main process
+	if (!m_context.getTestContext().getCommandLine().isSubProcess())
+		return tcu::TestStatus::pass("Success");
+#endif // CTS_USES_VULKANSC
 	return verifyResultImage(resultImage.getAccess());
 }
 
@@ -989,6 +996,14 @@ void SingleCmdRenderInstance::renderToTarget (void)
 	const vk::Unique<vk::VkFence>						fence						(vk::createFence(m_vki, m_device));
 	const vk::VkSubpassContents							passContents				= (m_isPrimaryCmdBuf) ? (vk::VK_SUBPASS_CONTENTS_INLINE) : (vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
+	if (!m_isPrimaryCmdBuf)
+	{
+		VK_CHECK(m_vki.beginCommandBuffer(*passCmd, &passCmdBufBeginInfo));
+		m_vki.cmdBindPipeline(*passCmd, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+		writeDrawCmdBuffer(*passCmd);
+		endCommandBuffer(m_vki, *passCmd);
+	}
+
 	beginCommandBuffer(m_vki, *mainCmd);
 	beginRenderPass(m_vki, *mainCmd, *m_renderPass, *m_framebuffer, renderArea, tcu::Vec4(0.0f), passContents);
 
@@ -999,11 +1014,6 @@ void SingleCmdRenderInstance::renderToTarget (void)
 	}
 	else
 	{
-		VK_CHECK(m_vki.beginCommandBuffer(*passCmd, &passCmdBufBeginInfo));
-		m_vki.cmdBindPipeline(*passCmd, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
-		writeDrawCmdBuffer(*passCmd);
-		endCommandBuffer(m_vki, *passCmd);
-
 		m_vki.cmdExecuteCommands(*mainCmd, 1, &passCmd.get());
 	}
 
@@ -1095,8 +1105,14 @@ deUint32 getArbitraryBindingIndex (deUint32 ndx)
 
 	const deUint32	bufferIndices[] =
 	{
+#ifndef CTS_USES_VULKANSC
 		0x7FFEu,
 		0xFFFEu
+#else
+		// Use smaller values for VulkanSC since these can produce huge static memory allocations
+		0x1FFu,
+		0x3FFu
+#endif
 	};
 
 	return bufferIndices[ndx];
@@ -1118,8 +1134,10 @@ typedef vk::Unique<vk::VkDescriptorSet>					DescriptorSetHandleUp;
 typedef de::SharedPtr<DescriptorSetHandleUp>			DescriptorSetHandleSp;
 typedef vk::Unique<vk::VkDescriptorSetLayout>			DescriptorSetLayoutHandleUp;
 typedef de::SharedPtr<DescriptorSetLayoutHandleUp>		DescriptorSetLayoutHandleSp;
+#ifndef CTS_USES_VULKANSC
 typedef vk::Unique<vk::VkDescriptorUpdateTemplate>		UpdateTemplateHandleUp;
 typedef de::SharedPtr<UpdateTemplateHandleUp>			UpdateTemplateHandleSp;
+#endif
 
 class BufferRenderInstance : public SingleCmdRenderInstance
 {
@@ -1192,8 +1210,10 @@ public:
 																					 const std::vector<deUint32>&						offsets,
 																					 vk::DescriptorSetUpdateBuilder&					updateBuilder,
 																					 std::vector<deUint32>&								descriptorsPerSet,
+#ifndef CTS_USES_VULKANSC
 																					 std::vector<UpdateTemplateHandleSp>&				updateTemplates,
 																					 std::vector<RawUpdateRegistry>&					updateRegistry,
+#endif
 																					 vk::VkPipelineLayout								pipelineLayout = DE_NULL);
 
 	static void										writeDescriptorSet				(const vk::DeviceInterface&							vki,
@@ -1209,6 +1229,7 @@ public:
 																					 std::vector<deUint32>&								descriptorsPerSet,
 																					 DescriptorUpdateMethod								updateMethod = DESCRIPTOR_UPDATE_METHOD_NORMAL);
 
+#ifndef CTS_USES_VULKANSC
 	static void										writeDescriptorSetWithTemplate	(const vk::DeviceInterface&							vki,
 																					 vk::VkDevice										device,
 																					 vk::VkDescriptorSetLayout							descriptorSetLayout,
@@ -1225,6 +1246,7 @@ public:
 																					 std::vector<RawUpdateRegistry>&					registry,
 																					 bool												withPush = false,
 																					 vk::VkPipelineLayout								pipelineLayout = 0);
+#endif
 
 	void											logTestPlan						(void) const;
 	vk::VkPipelineLayout							getPipelineLayout				(void) const;
@@ -1265,8 +1287,10 @@ public:
 	std::vector<AllocationSp>						m_bufferMemory;
 	const std::vector<BufferHandleSp>				m_sourceBuffer;
 	const vk::Unique<vk::VkDescriptorPool>			m_descriptorPool;
+#ifndef CTS_USES_VULKANSC
 	std::vector<UpdateTemplateHandleSp>				m_updateTemplates;
 	std::vector<RawUpdateRegistry>					m_updateRegistry;
+#endif
 	vk::DescriptorSetUpdateBuilder					m_updateBuilder;
 	const std::vector<DescriptorSetLayoutHandleSp>	m_descriptorSetLayouts;
 	const vk::Unique<vk::VkPipelineLayout>			m_pipelineLayout;
@@ -1298,13 +1322,20 @@ BufferRenderInstance::BufferRenderInstance	(Context&						context,
 	, m_bufferMemory				()
 	, m_sourceBuffer				(createSourceBuffers(m_vki, m_device, m_allocator, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_viewOffset, m_dynamicOffset, m_bufferMemory))
 	, m_descriptorPool				(createDescriptorPool(m_vki, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface))
+#ifndef CTS_USES_VULKANSC
 	, m_updateTemplates				()
 	, m_updateRegistry				()
+#endif
 	, m_updateBuilder				()
 	, m_descriptorSetLayouts		(createDescriptorSetLayouts(m_vki, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_stageFlags, m_updateMethod))
 	, m_pipelineLayout				(createPipelineLayout(m_vki, m_device, m_descriptorSetLayouts))
 	, m_descriptorsPerSet			()
-	, m_descriptorSets				(createDescriptorSets(m_vki, m_updateMethod, m_device, m_descriptorSetLayouts, *m_descriptorPool, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_sourceBuffer, m_viewOffset, m_updateBuilder, m_descriptorsPerSet, m_updateTemplates, m_updateRegistry, *m_pipelineLayout))
+	, m_descriptorSets				(createDescriptorSets(m_vki, m_updateMethod, m_device, m_descriptorSetLayouts, *m_descriptorPool, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_sourceBuffer, m_viewOffset, m_updateBuilder, m_descriptorsPerSet,
+#ifndef CTS_USES_VULKANSC
+														  m_updateTemplates,
+														  m_updateRegistry,
+#endif
+														  *m_pipelineLayout))
 {
 	if (m_setDynamicOffset)
 		DE_ASSERT(isDynamicDescriptorType(m_descriptorType));
@@ -1480,13 +1511,18 @@ std::vector<DescriptorSetLayoutHandleSp> BufferRenderInstance::createDescriptorS
 																						   vk::VkShaderStageFlags		stageFlags,
 																						   DescriptorUpdateMethod		updateMethod)
 {
+#ifdef CTS_USES_VULKANSC
+	DE_UNREF(updateMethod);
+#endif
 	vk::VkDescriptorSetLayoutCreateFlags	extraFlags			= 0;
 
+#ifndef CTS_USES_VULKANSC
 	if (updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE ||
 		updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
 	{
 		extraFlags |= vk::VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR;
 	}
+#endif
 
 	std::vector<DescriptorSetLayoutHandleSp> descriptorSetLayouts;
 
@@ -1569,10 +1605,15 @@ std::vector<DescriptorSetHandleSp> BufferRenderInstance::createDescriptorSets (c
 																			   const std::vector<deUint32>&						offsets,
 																			   vk::DescriptorSetUpdateBuilder&					updateBuilder,
 																			   std::vector<deUint32>&							descriptorsPerSet,
+#ifndef CTS_USES_VULKANSC
 																			   std::vector<UpdateTemplateHandleSp>&				updateTemplates,
 																			   std::vector<RawUpdateRegistry>&					updateRegistry,
+#endif
 																			   vk::VkPipelineLayout								pipelineLayout)
 {
+#ifdef CTS_USES_VULKANSC
+	DE_UNREF(pipelineLayout);
+#endif
 	std::vector<DescriptorSetHandleSp> descriptorSets;
 
 	for (deUint32 setNdx = 0; setNdx < getDescriptorSetCount(descriptorSetCount); setNdx++)
@@ -1603,6 +1644,7 @@ std::vector<DescriptorSetHandleSp> BufferRenderInstance::createDescriptorSets (c
 			descriptorSet = vk::Move<vk::VkDescriptorSet>();
 		}
 
+#ifndef CTS_USES_VULKANSC
 		if (updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_TEMPLATE)
 		{
 			writeDescriptorSetWithTemplate(vki, device, layout, setNdx, descriptorPool, descriptorType, shaderInterface, bufferA, offsetA, bufferB, offsetB, *descriptorSet, updateTemplates, updateRegistry);
@@ -1616,6 +1658,7 @@ std::vector<DescriptorSetHandleSp> BufferRenderInstance::createDescriptorSets (c
 			writeDescriptorSet(vki, device, descriptorType, shaderInterface, bufferA, offsetA, bufferB, offsetB, *descriptorSet, updateBuilder, descriptorsPerSet, updateMethod);
 		}
 		else if (updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
+#endif
 		{
 			writeDescriptorSet(vki, device, descriptorType, shaderInterface, bufferA, offsetA, bufferB, offsetB, *descriptorSet, updateBuilder, descriptorsPerSet);
 		}
@@ -1688,6 +1731,7 @@ void BufferRenderInstance::writeDescriptorSet (const vk::DeviceInterface&			vki,
 	}
 }
 
+#ifndef CTS_USES_VULKANSC
 void BufferRenderInstance::writeDescriptorSetWithTemplate (const vk::DeviceInterface&						vki,
 														   vk::VkDevice										device,
 														   vk::VkDescriptorSetLayout						layout,
@@ -1772,6 +1816,7 @@ void BufferRenderInstance::writeDescriptorSetWithTemplate (const vk::DeviceInter
 		vki.updateDescriptorSetWithTemplate(device, descriptorSet, **updateTemplates.back(), registry.back().getRawPointer());
 	}
 }
+#endif
 
 void BufferRenderInstance::logTestPlan (void) const
 {
@@ -1781,11 +1826,11 @@ void BufferRenderInstance::logTestPlan (void) const
 		<< ((m_descriptorSetCount == DESCRIPTOR_SET_COUNT_SINGLE) ? "Single descriptor set. " : "Multiple descriptor sets. ")
 		<< "Each descriptor set contains "
 		<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
-			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
-			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
-			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
-			    (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
-			    (const char*)DE_NULL)
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
+				(const char*)DE_NULL)
 		<< " descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType) << "\n"
 		<< "Buffer view(s) have " << ((m_setViewOffset) ? ("non-") : ("")) << "zero offset.\n";
 
@@ -1869,6 +1914,7 @@ void BufferRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) const
 				DE_FATAL("Impossible");
 		}
 	}
+#ifndef CTS_USES_VULKANSC
 	else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE)
 	{
 		for (deUint32 setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
@@ -1884,6 +1930,7 @@ void BufferRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) const
 			descriptorNdx += numDescriptors;
 		}
 	}
+#endif
 
 	m_vki.cmdDraw(cmd, 6 * 4, 1, 0, 0); // render four quads (two separate triangles)
 }
@@ -2134,8 +2181,15 @@ public:
 															 int								numPostBarriers,
 															 const vk::VkBufferMemoryBarrier*	postBarriers);
 
-	void									submitAndWait	(deUint32 queueFamilyIndex, vk::VkQueue queue, std::vector<UpdateTemplateHandleSp>* updateTemplates = DE_NULL, std::vector<RawUpdateRegistry>* updateRegistry = DE_NULL) const;
+	void									submitAndWait	(deUint32 queueFamilyIndex, vk::VkQueue queue
+#ifndef CTS_USES_VULKANSC
+															 , std::vector<UpdateTemplateHandleSp>* updateTemplates = DE_NULL
+															 , std::vector<RawUpdateRegistry>* updateRegistry = DE_NULL
+#endif
+															 ) const;
+#ifndef CTS_USES_VULKANSC
 	void									submitAndWait	(deUint32 queueFamilyIndex, vk::VkQueue queue, vk::DescriptorSetUpdateBuilder& updateBuilder, std::vector<deUint32>& descriptorsPerSet) const;
+#endif
 
 private:
 	const vk::DeviceInterface&				m_vki;
@@ -2185,7 +2239,12 @@ ComputeCommand::ComputeCommand (const vk::DeviceInterface&			vki,
 {
 }
 
-void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue, std::vector<UpdateTemplateHandleSp>* updateTemplates, std::vector<RawUpdateRegistry>* updateRegistry) const
+void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
+#ifndef CTS_USES_VULKANSC
+									, std::vector<UpdateTemplateHandleSp>* updateTemplates
+									, std::vector<RawUpdateRegistry>* updateRegistry
+#endif
+									) const
 {
 	const vk::VkCommandPoolCreateInfo				cmdPoolCreateInfo	=
 	{
@@ -2212,7 +2271,9 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 	m_vki.cmdBindPipeline(*cmd, vk::VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline);
 
 	// normal update
+#ifndef CTS_USES_VULKANSC
 	if (updateTemplates == DE_NULL)
+#endif
 	{
 		switch (m_descriptorSetCount)
 		{
@@ -2243,12 +2304,14 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 				DE_FATAL("Impossible");
 		}
 	}
+#ifndef CTS_USES_VULKANSC
 	// update with push template
 	else
 	{
 		for (deUint32 setNdx = 0; setNdx < (deUint32)(*updateTemplates).size(); setNdx++)
 			m_vki.cmdPushDescriptorSetWithTemplateKHR(*cmd, **(*updateTemplates)[setNdx], m_pipelineLayout, getDescriptorSetNdx(m_descriptorSetCount, setNdx), (const void*)(*updateRegistry)[setNdx].getRawPointer());
 	}
+#endif
 
 	if (m_numPreBarriers)
 		m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (vk::VkDependencyFlags)0,
@@ -2266,6 +2329,7 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 	submitCommandsAndWait(m_vki, m_device, queue, cmd.get());
 }
 
+#ifndef CTS_USES_VULKANSC
 //cmdPushDescriptorSet variant
 void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue, vk::DescriptorSetUpdateBuilder& updateBuilder, std::vector<deUint32>& descriptorsPerSet) const
 {
@@ -2309,6 +2373,7 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 
 	submitCommandsAndWait(m_vki, m_device, queue, cmd.get());
 }
+#endif
 
 class BufferComputeInstance : public vkt::TestInstance
 {
@@ -2328,7 +2393,9 @@ private:
 	vk::Move<vk::VkDescriptorPool>			createDescriptorPool				(void) const;
 	vk::Move<vk::VkDescriptorSet>			createDescriptorSet					(vk::VkDescriptorPool pool, vk::VkDescriptorSetLayout layout, deUint32 setNdx, vk::VkBuffer viewA, deUint32 offsetA, vk::VkBuffer viewB, deUint32 offsetB, vk::VkBuffer resBuf);
 	void									writeDescriptorSet					(vk::VkDescriptorSet descriptorSet, deUint32 setNdx, vk::VkBuffer viewA, deUint32 offsetA, vk::VkBuffer viewB, deUint32 offsetB, vk::VkBuffer resBuf);
+#ifndef CTS_USES_VULKANSC
 	void									writeDescriptorSetWithTemplate		(vk::VkDescriptorSet descriptorSet, vk::VkDescriptorSetLayout layout, deUint32 setNdx, vk::VkBuffer viewA, deUint32 offsetA, vk::VkBuffer viewB, deUint32 offsetB, vk::VkBuffer resBuf, bool withPush = false, vk::VkPipelineLayout pipelineLayout = DE_NULL);
+#endif
 
 	tcu::TestStatus							iterate								(void);
 	void									logTestPlan							(void) const;
@@ -2350,7 +2417,9 @@ private:
 	const bool										m_setDynamicOffset;
 	const bool										m_dynamicOffsetNonZero;
 
+#ifndef CTS_USES_VULKANSC
 	std::vector<UpdateTemplateHandleSp>				m_updateTemplates;
+#endif
 	const vk::DeviceInterface&						m_vki;
 	const vk::VkDevice								m_device;
 	const vk::VkQueue								m_queue;
@@ -2359,7 +2428,9 @@ private:
 
 	const ComputeInstanceResultBuffer				m_result;
 
+#ifndef CTS_USES_VULKANSC
 	std::vector<RawUpdateRegistry>					m_updateRegistry;
+#endif
 	vk::DescriptorSetUpdateBuilder					m_updateBuilder;
 	std::vector<deUint32>							m_descriptorsPerSet;
 };
@@ -2380,14 +2451,18 @@ BufferComputeInstance::BufferComputeInstance (Context&						context,
 	, m_setViewOffset			(viewOffset)
 	, m_setDynamicOffset		(dynamicOffset)
 	, m_dynamicOffsetNonZero	(dynamicOffsetNonZero)
+#ifndef CTS_USES_VULKANSC
 	, m_updateTemplates			()
+#endif
 	, m_vki						(context.getDeviceInterface())
 	, m_device					(context.getDevice())
 	, m_queue					(context.getUniversalQueue())
 	, m_queueFamilyIndex		(context.getUniversalQueueFamilyIndex())
 	, m_allocator				(context.getDefaultAllocator())
 	, m_result					(m_vki, m_device, m_allocator)
+#ifndef CTS_USES_VULKANSC
 	, m_updateRegistry			()
+#endif
 	, m_updateBuilder			()
 	, m_descriptorsPerSet		()
 {
@@ -2434,11 +2509,13 @@ vk::Move<vk::VkDescriptorSetLayout> BufferComputeInstance::createDescriptorSetLa
 	vk::VkDescriptorSetLayoutCreateFlags	extraFlags	= 0;
 	deUint32								binding		= 0;
 
+#ifndef CTS_USES_VULKANSC
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE ||
 			m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
 	{
 		extraFlags |= vk::VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR;
 	}
+#endif
 
 	if (setNdx == 0)
 		builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding++);
@@ -2504,11 +2581,14 @@ vk::Move<vk::VkDescriptorSet> BufferComputeInstance::createDescriptorSet (vk::Vk
 		descriptorSet = vk::Move<vk::VkDescriptorSet>();
 	}
 
+#ifndef CTS_USES_VULKANSC
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_TEMPLATE)
 	{
 		writeDescriptorSetWithTemplate(*descriptorSet, layout, setNdx, viewA, offsetA, viewB, offsetB, resBuf);
 	}
-	else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
+	else
+#endif
+	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
 	{
 		writeDescriptorSet(*descriptorSet, setNdx, viewA, offsetA, viewB, offsetB, resBuf);
 	}
@@ -2579,6 +2659,7 @@ void BufferComputeInstance::writeDescriptorSet (vk::VkDescriptorSet descriptorSe
 	}
 }
 
+#ifndef CTS_USES_VULKANSC
 void BufferComputeInstance::writeDescriptorSetWithTemplate (vk::VkDescriptorSet descriptorSet, vk::VkDescriptorSetLayout layout, deUint32 setNdx, vk::VkBuffer viewA, deUint32 offsetA, vk::VkBuffer viewB, deUint32 offsetB, vk::VkBuffer resBuf, bool withPush, vk::VkPipelineLayout pipelineLayout)
 {
 	const vk::VkDescriptorBufferInfo						resultInfo			= vk::makeDescriptorBufferInfo(resBuf, 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
@@ -2657,6 +2738,7 @@ void BufferComputeInstance::writeDescriptorSetWithTemplate (vk::VkDescriptorSet 
 		m_vki.updateDescriptorSetWithTemplate(m_device, descriptorSet, **m_updateTemplates.back(), m_updateRegistry.back().getRawPointer());
 	}
 }
+#endif
 
 tcu::TestStatus BufferComputeInstance::iterate (void)
 {
@@ -2856,6 +2938,7 @@ tcu::TestStatus BufferComputeInstance::testResourceAccess (void)
 	};
 	tcu::Vec4										results[4];
 
+#ifndef CTS_USES_VULKANSC
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE)
 	{
 		for (deUint32 setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
@@ -2880,6 +2963,7 @@ tcu::TestStatus BufferComputeInstance::testResourceAccess (void)
 		compute.submitAndWait(m_queueFamilyIndex, m_queue, m_updateBuilder, m_descriptorsPerSet);
 	}
 	else
+#endif
 	{
 		compute.submitAndWait(m_queueFamilyIndex, m_queue);
 	}
@@ -4075,8 +4159,10 @@ private:
 																					 vk::VkDescriptorPool								pool,
 																					 const ImageFetchInstanceImages&					images,
 																					 vk::DescriptorSetUpdateBuilder&					updateBuilder,
-																				     std::vector<UpdateTemplateHandleSp>&				updateTemplates,
-																				     std::vector<RawUpdateRegistry>&					updateRegistry,
+#ifndef CTS_USES_VULKANSC
+																					 std::vector<UpdateTemplateHandleSp>&				updateTemplates,
+																					 std::vector<RawUpdateRegistry>&					updateRegistry,
+#endif
 																					 std::vector<deUint32>&								descriptorsPerSet,
 																					 vk::VkPipelineLayout								pipelineLayout = DE_NULL);
 
@@ -4093,6 +4179,7 @@ private:
 																					 std::vector<deUint32>&								descriptorsPerSet,
 																					 DescriptorUpdateMethod								updateMethod = DESCRIPTOR_UPDATE_METHOD_NORMAL);
 
+#ifndef CTS_USES_VULKANSC
 	static void										writeDescriptorSetWithTemplate	(const vk::DeviceInterface&							vki,
 																					 vk::VkDevice										device,
 																					 vk::VkDescriptorType								descriptorType,
@@ -4102,10 +4189,11 @@ private:
 																					 vk::VkImageView									viewA,
 																					 vk::VkImageView									viewB,
 																					 vk::VkDescriptorSet								descriptorSet,
-																				     std::vector<UpdateTemplateHandleSp>&				updateTemplates,
-																				     std::vector<RawUpdateRegistry>&					registry,
+																					 std::vector<UpdateTemplateHandleSp>&				updateTemplates,
+																					 std::vector<RawUpdateRegistry>&					registry,
 																					 bool												withPush = false,
 																					 vk::VkPipelineLayout								pipelineLayout = 0);
+#endif
 
 	void											logTestPlan						(void) const;
 	vk::VkPipelineLayout							getPipelineLayout				(void) const;
@@ -4126,8 +4214,10 @@ private:
 	const deUint32									m_baseMipLevel;
 	const deUint32									m_baseArraySlice;
 
+#ifndef CTS_USES_VULKANSC
 	std::vector<UpdateTemplateHandleSp>				m_updateTemplates;
 	std::vector<RawUpdateRegistry>					m_updateRegistry;
+#endif
 	vk::DescriptorSetUpdateBuilder					m_updateBuilder;
 	const std::vector<DescriptorSetLayoutHandleSp>	m_descriptorSetLayouts;
 	const vk::Unique<vk::VkPipelineLayout>			m_pipelineLayout;
@@ -4156,15 +4246,22 @@ ImageFetchRenderInstance::ImageFetchRenderInstance	(vkt::Context&			context,
 	, m_viewType				(viewType)
 	, m_baseMipLevel			(baseMipLevel)
 	, m_baseArraySlice			(baseArraySlice)
+#ifndef CTS_USES_VULKANSC
 	, m_updateTemplates			()
 	, m_updateRegistry			()
+#endif
 	, m_updateBuilder			()
 	, m_descriptorSetLayouts	(createDescriptorSetLayouts(m_vki, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_stageFlags, m_updateMethod))
 	, m_pipelineLayout			(createPipelineLayout(m_vki, m_device, m_descriptorSetLayouts))
 	, m_images					(m_vki, m_device, m_queueFamilyIndex, m_queue, m_allocator, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_viewType, m_baseMipLevel, m_baseArraySlice)
 	, m_descriptorPool			(createDescriptorPool(m_vki, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface))
 	, m_descriptorsPerSet		()
-	, m_descriptorSets			(createDescriptorSets(m_vki, m_updateMethod, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_descriptorSetLayouts, *m_descriptorPool, m_images, m_updateBuilder, m_updateTemplates, m_updateRegistry, m_descriptorsPerSet, *m_pipelineLayout))
+	, m_descriptorSets			(createDescriptorSets(m_vki, m_updateMethod, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_descriptorSetLayouts, *m_descriptorPool, m_images, m_updateBuilder,
+#ifndef CTS_USES_VULKANSC
+								 m_updateTemplates,
+								 m_updateRegistry,
+#endif
+								 m_descriptorsPerSet, *m_pipelineLayout))
 {
 }
 
@@ -4176,14 +4273,19 @@ std::vector<DescriptorSetLayoutHandleSp> ImageFetchRenderInstance::createDescrip
 																							   vk::VkShaderStageFlags		stageFlags,
 																							   DescriptorUpdateMethod		updateMethod)
 {
+#ifdef CTS_USES_VULKANSC
+	DE_UNREF(updateMethod);
+#endif
 	std::vector<DescriptorSetLayoutHandleSp>	descriptorSetLayouts;
 	vk::VkDescriptorSetLayoutCreateFlags		extraFlags = 0;
 
+#ifndef CTS_USES_VULKANSC
 	if (updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE ||
 		updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
 	{
 		extraFlags |= vk::VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR;
 	}
+#endif
 
 	for (deUint32 setNdx = 0; setNdx < getDescriptorSetCount(descriptorSetCount); setNdx++)
 	{
@@ -4274,11 +4376,16 @@ std::vector<DescriptorSetHandleSp> ImageFetchRenderInstance::createDescriptorSet
 																				   vk::VkDescriptorPool								pool,
 																				   const ImageFetchInstanceImages&					images,
 																				   vk::DescriptorSetUpdateBuilder&					updateBuilder,
+#ifndef CTS_USES_VULKANSC
 																				   std::vector<UpdateTemplateHandleSp>&				updateTemplates,
 																				   std::vector<RawUpdateRegistry>&					updateRegistry,
+#endif
 																				   std::vector<deUint32>&							descriptorsPerSet,
 																				   vk::VkPipelineLayout								pipelineLayout)
 {
+#ifdef CTS_USES_VULKANSC
+	DE_UNREF(pipelineLayout);
+#endif
 	std::vector<DescriptorSetHandleSp> descriptorSets;
 
 	for (deUint32 setNdx = 0; setNdx < getDescriptorSetCount(descriptorSetCount); setNdx++)
@@ -4307,6 +4414,7 @@ std::vector<DescriptorSetHandleSp> ImageFetchRenderInstance::createDescriptorSet
 			descriptorSet = vk::Move<vk::VkDescriptorSet>();
 		}
 
+#ifndef CTS_USES_VULKANSC
 		if (updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_TEMPLATE)
 		{
 			writeDescriptorSetWithTemplate(vki, device, descriptorType, shaderInterface, layout, pool, viewA, viewB, *descriptorSet, updateTemplates, updateRegistry);
@@ -4320,6 +4428,7 @@ std::vector<DescriptorSetHandleSp> ImageFetchRenderInstance::createDescriptorSet
 			writeDescriptorSet(vki, device, descriptorType, shaderInterface, layout, pool, viewA, viewB, *descriptorSet, updateBuilder, descriptorsPerSet, updateMethod);
 		}
 		else if (updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
+#endif
 		{
 			writeDescriptorSet(vki, device, descriptorType, shaderInterface, layout, pool, viewA, viewB, *descriptorSet, updateBuilder, descriptorsPerSet);
 		}
@@ -4395,6 +4504,7 @@ void ImageFetchRenderInstance::writeDescriptorSet (const vk::DeviceInterface&		v
 	}
 }
 
+#ifndef CTS_USES_VULKANSC
 void ImageFetchRenderInstance::writeDescriptorSetWithTemplate (const vk::DeviceInterface&					vki,
 															   vk::VkDevice									device,
 															   vk::VkDescriptorType							descriptorType,
@@ -4477,6 +4587,7 @@ void ImageFetchRenderInstance::writeDescriptorSetWithTemplate (const vk::DeviceI
 		vki.updateDescriptorSetWithTemplate(device, descriptorSet, **updateTemplates.back(), registry.back().getRawPointer());
 	}
 }
+#endif
 
 void ImageFetchRenderInstance::logTestPlan (void) const
 {
@@ -4486,11 +4597,11 @@ void ImageFetchRenderInstance::logTestPlan (void) const
 		<< ((m_descriptorSetCount == DESCRIPTOR_SET_COUNT_SINGLE) ? "Single descriptor set. " : "Multiple descriptor sets. ")
 		<< "Each descriptor set contains "
 			<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
-			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
-			    (const char*)DE_NULL)
+				(const char*)DE_NULL)
 		<< " descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType) << "\n"
 		<< "Image view type is " << vk::getImageViewTypeName(m_viewType) << "\n";
 
@@ -4569,6 +4680,7 @@ void ImageFetchRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) cons
 				DE_FATAL("Impossible");
 		}
 	}
+#ifndef CTS_USES_VULKANSC
 	else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE)
 	{
 		for (deUint32 setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
@@ -4584,6 +4696,7 @@ void ImageFetchRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) cons
 			descriptorNdx += numDescriptors;
 		}
 	}
+#endif
 
 	m_vki.cmdDraw(cmd, 6 * 4, 1, 0, 0); // render four quads (two separate triangles)
 }
@@ -4643,8 +4756,9 @@ private:
 	vk::Move<vk::VkDescriptorPool>					createDescriptorPool					(void) const;
 	vk::Move<vk::VkDescriptorSet>					createDescriptorSet						(vk::VkDescriptorPool pool, vk::VkDescriptorSetLayout layout, deUint32 setNdx);
 	void											writeDescriptorSet						(vk::VkDescriptorSet descriptorSet, deUint32 setNdx);
+#ifndef CTS_USES_VULKANSC
 	void											writeDescriptorSetWithTemplate			(vk::VkDescriptorSet descriptorSet, vk::VkDescriptorSetLayout layout, deUint32 setNdx, bool withPush = false, vk::VkPipelineLayout pipelineLayout = DE_NULL);
-
+#endif
 
 	tcu::TestStatus									iterate									(void);
 	void											logTestPlan								(void) const;
@@ -4657,7 +4771,9 @@ private:
 	const vk::VkImageViewType						m_viewType;
 	const deUint32									m_baseMipLevel;
 	const deUint32									m_baseArraySlice;
+#ifndef CTS_USES_VULKANSC
 	std::vector<UpdateTemplateHandleSp>				m_updateTemplates;
+#endif
 	const vk::DeviceInterface&						m_vki;
 	const vk::VkDevice								m_device;
 	const vk::VkQueue								m_queue;
@@ -4665,7 +4781,9 @@ private:
 	vk::Allocator&									m_allocator;
 	const ComputeInstanceResultBuffer				m_result;
 	const ImageFetchInstanceImages					m_images;
+#ifndef CTS_USES_VULKANSC
 	std::vector<RawUpdateRegistry>					m_updateRegistry;
+#endif
 	vk::DescriptorSetUpdateBuilder					m_updateBuilder;
 	std::vector<deUint32>							m_descriptorsPerSet;
 };
@@ -4686,7 +4804,9 @@ ImageFetchComputeInstance::ImageFetchComputeInstance (Context&					context,
 	, m_viewType			(viewType)
 	, m_baseMipLevel		(baseMipLevel)
 	, m_baseArraySlice		(baseArraySlice)
+#ifndef CTS_USES_VULKANSC
 	, m_updateTemplates		()
+#endif
 	, m_vki					(context.getDeviceInterface())
 	, m_device				(context.getDevice())
 	, m_queue				(context.getUniversalQueue())
@@ -4694,7 +4814,9 @@ ImageFetchComputeInstance::ImageFetchComputeInstance (Context&					context,
 	, m_allocator			(context.getDefaultAllocator())
 	, m_result				(m_vki, m_device, m_allocator)
 	, m_images				(m_vki, m_device, m_queueFamilyIndex, m_queue, m_allocator, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_viewType, m_baseMipLevel, m_baseArraySlice)
+#ifndef CTS_USES_VULKANSC
 	, m_updateRegistry		()
+#endif
 	, m_updateBuilder		()
 	, m_descriptorsPerSet	()
 {
@@ -4706,11 +4828,13 @@ vk::Move<vk::VkDescriptorSetLayout> ImageFetchComputeInstance::createDescriptorS
 	vk::VkDescriptorSetLayoutCreateFlags	extraFlags	= 0;
 	deUint32								binding		= 0;
 
+#ifndef CTS_USES_VULKANSC
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE ||
 			m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
 	{
 		extraFlags |= vk::VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR;
 	}
+#endif
 
 	if (setNdx == 0)
 		builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding++);
@@ -4776,11 +4900,14 @@ vk::Move<vk::VkDescriptorSet> ImageFetchComputeInstance::createDescriptorSet (vk
 		descriptorSet = vk::Move<vk::VkDescriptorSet>();
 	}
 
+#ifndef CTS_USES_VULKANSC
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_TEMPLATE)
 	{
 		writeDescriptorSetWithTemplate(*descriptorSet, layout, setNdx);
 	}
-	else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
+	else
+#endif
+	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
 	{
 		writeDescriptorSet(*descriptorSet, setNdx);
 	}
@@ -4852,6 +4979,7 @@ void ImageFetchComputeInstance::writeDescriptorSet (vk::VkDescriptorSet descript
 	}
 }
 
+#ifndef CTS_USES_VULKANSC
 void ImageFetchComputeInstance::writeDescriptorSetWithTemplate (vk::VkDescriptorSet descriptorSet, vk::VkDescriptorSetLayout layout, deUint32 setNdx, bool withPush, vk::VkPipelineLayout pipelineLayout)
 {
 	const vk::VkDescriptorBufferInfo						resultInfo			= vk::makeDescriptorBufferInfo(m_result.getBuffer(), 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
@@ -4932,6 +5060,7 @@ void ImageFetchComputeInstance::writeDescriptorSetWithTemplate (vk::VkDescriptor
 		m_vki.updateDescriptorSetWithTemplate(m_device, descriptorSet, **m_updateTemplates.back(), m_updateRegistry.back().getRawPointer());
 	}
 }
+#endif
 
 tcu::TestStatus ImageFetchComputeInstance::iterate (void)
 {
@@ -4947,11 +5076,11 @@ void ImageFetchComputeInstance::logTestPlan (void) const
 		<< ((m_descriptorSetCount == DESCRIPTOR_SET_COUNT_SINGLE) ? "Single descriptor set. " : "Multiple descriptor sets. ")
 		<< "Each descriptor set contains "
 			<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
-			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
-			    (const char*)DE_NULL)
+				(const char*)DE_NULL)
 		<< " descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType) << "\n"
 		<< "Image view type is " << vk::getImageViewTypeName(m_viewType) << "\n";
 
@@ -5032,6 +5161,7 @@ tcu::TestStatus ImageFetchComputeInstance::testResourceAccess (void)
 	bool											anyResultSet		= false;
 	bool											allResultsOk		= true;
 
+#ifndef CTS_USES_VULKANSC
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE)
 	{
 		for (deUint32 setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
@@ -5047,6 +5177,7 @@ tcu::TestStatus ImageFetchComputeInstance::testResourceAccess (void)
 		compute.submitAndWait(m_queueFamilyIndex, m_queue, m_updateBuilder, m_descriptorsPerSet);
 	}
 	else
+#endif
 	{
 		compute.submitAndWait(m_queueFamilyIndex, m_queue);
 	}
@@ -5187,9 +5318,9 @@ std::vector<tcu::Sampler> ImageSampleInstanceImages::getRefSamplers (DescriptorS
 }
 
 std::vector<SamplerHandleSp> ImageSampleInstanceImages::getSamplers (const vk::DeviceInterface&	vki,
-																     vk::VkDevice				device,
-																     std::vector<tcu::Sampler>&	refSamplers,
-																     const tcu::TextureFormat	imageFormat)
+																	 vk::VkDevice				device,
+																	 std::vector<tcu::Sampler>&	refSamplers,
+																	 const tcu::TextureFormat	imageFormat)
 {
 	std::vector<SamplerHandleSp> samplers;
 	for (deUint32 samplerNdx = 0; samplerNdx < (deUint32)refSamplers.size(); samplerNdx++)
@@ -5375,12 +5506,14 @@ tcu::Sampler ImageSampleInstanceImages::createRefSampler (int ndx)
 	if (ndx % 2 == 0)
 	{
 		// linear, wrapping
-		return tcu::Sampler(tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::LINEAR, tcu::Sampler::LINEAR);
+		return tcu::Sampler(tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::LINEAR, tcu::Sampler::LINEAR,
+							0.0f, true, tcu::Sampler::COMPAREMODE_NONE, 0, tcu::Vec4(0.0f), true);
 	}
 	else
 	{
 		// nearest, clamping
-		return tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST);
+		return tcu::Sampler(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST,
+							0.0f, true, tcu::Sampler::COMPAREMODE_NONE, 0, tcu::Vec4(0.0f), true);
 	}
 }
 
@@ -5509,8 +5642,10 @@ private:
 																								 bool												isImmutable,
 																								 const ImageSampleInstanceImages&					images,
 																								 vk::DescriptorSetUpdateBuilder&					updateBuilder,
+#ifndef CTS_USES_VULKANSC
 																								 std::vector<UpdateTemplateHandleSp>&				updateTemplates,
 																								 std::vector<RawUpdateRegistry>&					updateRegistry,
+#endif
 																								 std::vector<deUint32>&								descriptorsPerSet,
 																								 vk::VkPipelineLayout								pipelineLayout = DE_NULL);
 
@@ -5545,8 +5680,10 @@ private:
 																								 vk::VkDescriptorSet								descriptorSet,
 																								 deUint32											setNdx,
 																								 vk::VkDescriptorSetLayout							layout,
+#ifndef CTS_USES_VULKANSC
 																								 std::vector<UpdateTemplateHandleSp>&				updateTemplates,
 																								 std::vector<RawUpdateRegistry>&					registry,
+#endif
 																								 bool												withPush = false,
 																								 vk::VkPipelineLayout								pipelineLayout = 0);
 
@@ -5559,8 +5696,10 @@ private:
 																								 vk::VkDescriptorSet								descriptorSet,
 																								 deUint32											setNdx,
 																								 vk::VkDescriptorSetLayout							layout,
+#ifndef CTS_USES_VULKANSC
 																								 std::vector<UpdateTemplateHandleSp>&				updateTemplates,
 																								 std::vector<RawUpdateRegistry>&					registry,
+#endif
 																								 bool												withPush = false,
 																								 vk::VkPipelineLayout								pipelineLayout = 0);
 
@@ -5583,8 +5722,10 @@ private:
 	const deUint32									m_baseMipLevel;
 	const deUint32									m_baseArraySlice;
 
+#ifndef CTS_USES_VULKANSC
 	std::vector<UpdateTemplateHandleSp>				m_updateTemplates;
 	std::vector<RawUpdateRegistry>					m_updateRegistry;
+#endif
 	vk::DescriptorSetUpdateBuilder					m_updateBuilder;
 	const ImageSampleInstanceImages					m_images;
 	std::vector<deUint32>							m_descriptorsPerSet;
@@ -5614,14 +5755,21 @@ ImageSampleRenderInstance::ImageSampleRenderInstance (vkt::Context&				context,
 	, m_viewType				(viewType)
 	, m_baseMipLevel			(baseMipLevel)
 	, m_baseArraySlice			(baseArraySlice)
+#ifndef CTS_USES_VULKANSC
 	, m_updateTemplates			()
 	, m_updateRegistry			()
+#endif
 	, m_updateBuilder			()
 	, m_images					(m_vki, m_device, m_queueFamilyIndex, m_queue, m_allocator, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_viewType, m_baseMipLevel, m_baseArraySlice, isImmutable)
 	, m_descriptorSetLayouts	(createDescriptorSetLayouts(m_vki, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_stageFlags, m_images, m_updateMethod))
 	, m_pipelineLayout			(createPipelineLayout(m_vki, m_device, m_descriptorSetLayouts))
 	, m_descriptorPool			(createDescriptorPool(m_vki, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface))
-	, m_descriptorSets			(createDescriptorSets(m_vki, m_updateMethod, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_descriptorSetLayouts, *m_descriptorPool, isImmutable, m_images, m_updateBuilder, m_updateTemplates, m_updateRegistry, m_descriptorsPerSet, *m_pipelineLayout))
+	, m_descriptorSets			(createDescriptorSets(m_vki, m_updateMethod, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_descriptorSetLayouts, *m_descriptorPool, isImmutable, m_images, m_updateBuilder,
+#ifndef CTS_USES_VULKANSC
+													  m_updateTemplates,
+													  m_updateRegistry,
+#endif
+													  m_descriptorsPerSet, *m_pipelineLayout))
 {
 }
 
@@ -5634,6 +5782,9 @@ std::vector<DescriptorSetLayoutHandleSp> ImageSampleRenderInstance::createDescri
 																								const ImageSampleInstanceImages&	images,
 																								DescriptorUpdateMethod				updateMethod)
 {
+#ifdef CTS_USES_VULKANSC
+	DE_UNREF(updateMethod);
+#endif
 	std::vector<DescriptorSetLayoutHandleSp> descriptorSetLayouts;
 
 	for (deUint32 setNdx = 0; setNdx < getDescriptorSetCount(descriptorSetCount); setNdx++)
@@ -5648,11 +5799,13 @@ std::vector<DescriptorSetLayoutHandleSp> ImageSampleRenderInstance::createDescri
 		const bool								addSeparateImage	= descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER;
 		vk::VkDescriptorSetLayoutCreateFlags	extraFlags			= 0;
 
+#ifndef CTS_USES_VULKANSC
 		if (updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE ||
 			updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
 		{
 			extraFlags |= vk::VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR;
 		}
+#endif
 
 		// (combined)samplers follow
 		switch (shaderInterface)
@@ -5768,11 +5921,16 @@ std::vector<DescriptorSetHandleSp> ImageSampleRenderInstance::createDescriptorSe
 																					bool											isImmutable,
 																					const ImageSampleInstanceImages&				images,
 																					vk::DescriptorSetUpdateBuilder&					updateBuilder,
+#ifndef CTS_USES_VULKANSC
 																					std::vector<UpdateTemplateHandleSp>&			updateTemplates,
 																					std::vector<RawUpdateRegistry>&					updateRegistry,
+#endif
 																					std::vector<deUint32>&							descriptorsPerSet,
 																					vk::VkPipelineLayout							pipelineLayout)
 {
+#ifdef CTS_USES_VULKANSC
+	DE_UNREF(pipelineLayout);
+#endif
 	std::vector<DescriptorSetHandleSp> descriptorSets;
 
 	for (deUint32 setNdx = 0; setNdx < getDescriptorSetCount(descriptorSetCount); setNdx++)
@@ -5798,6 +5956,7 @@ std::vector<DescriptorSetHandleSp> ImageSampleRenderInstance::createDescriptorSe
 			descriptorSet = vk::Move<vk::VkDescriptorSet>();
 		}
 
+#ifndef CTS_USES_VULKANSC
 		if (updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_TEMPLATE)
 		{
 			if (descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER)
@@ -5826,6 +5985,7 @@ std::vector<DescriptorSetHandleSp> ImageSampleRenderInstance::createDescriptorSe
 				DE_FATAL("Impossible");
 		}
 		else if (updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
+#endif
 		{
 			if (descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER)
 				writeSamplerDescriptorSet(vki, device, shaderInterface, isImmutable, images, *descriptorSet, setNdx, updateBuilder, descriptorsPerSet);
@@ -5978,6 +6138,7 @@ void ImageSampleRenderInstance::writeImageSamplerDescriptorSet (const vk::Device
 	}
 }
 
+#ifndef CTS_USES_VULKANSC
 void ImageSampleRenderInstance::writeSamplerDescriptorSetWithTemplate (const vk::DeviceInterface&					vki,
 																	   vk::VkDevice									device,
 																	   DescriptorSetCount							descriptorSetCount,
@@ -6159,6 +6320,7 @@ void ImageSampleRenderInstance::writeImageSamplerDescriptorSetWithTemplate (cons
 		vki.updateDescriptorSetWithTemplate(device, descriptorSet, **updateTemplates.back(), registry.back().getRawPointer());
 	}
 }
+#endif
 
 void ImageSampleRenderInstance::logTestPlan (void) const
 {
@@ -6171,11 +6333,11 @@ void ImageSampleRenderInstance::logTestPlan (void) const
 		msg << ((m_descriptorSetCount == DESCRIPTOR_SET_COUNT_SINGLE) ? "Single descriptor set. " : "Multiple descriptor sets. ")
 			<< "Each descriptor set contains "
 			<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
-			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
-			    (const char*)DE_NULL)
+				(const char*)DE_NULL)
 			<< " VK_DESCRIPTOR_TYPE_SAMPLER descriptor(s) and a single texture.\n";
 	}
 	else if (m_descriptorType == vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
@@ -6183,11 +6345,11 @@ void ImageSampleRenderInstance::logTestPlan (void) const
 		msg << ((m_descriptorSetCount == DESCRIPTOR_SET_COUNT_SINGLE) ? "Single descriptor set. " : "Multiple descriptor sets. ")
 			<< "Each descriptor set contains "
 			<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
-			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
-			    (const char*)DE_NULL)
+				(const char*)DE_NULL)
 			<< " VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER descriptor(s).\n";
 	}
 	else
@@ -6280,6 +6442,7 @@ void ImageSampleRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) con
 				DE_FATAL("Impossible");
 		}
 	}
+#ifndef CTS_USES_VULKANSC
 	else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE)
 	{
 		for (deUint32 setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
@@ -6299,6 +6462,7 @@ void ImageSampleRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) con
 			descriptorNdx += numDescriptors;
 		}
 	}
+#endif
 
 	m_vki.cmdDraw(cmd, 6u * 4u, 1u, 0u, 0u); // render four quads (two separate triangles)
 }
@@ -6361,9 +6525,13 @@ private:
 	vk::Move<vk::VkDescriptorSet>				createDescriptorSet							(vk::VkDescriptorPool pool, vk::VkDescriptorSetLayout layout, deUint32 setNdx);
 	void										writeDescriptorSet							(vk::VkDescriptorSet descriptorSet, vk::VkDescriptorSetLayout layout, deUint32 setNdx, vk::VkPipelineLayout pipelineLayout = DE_NULL);
 	void										writeImageSamplerDescriptorSet				(vk::VkDescriptorSet descriptorSet, deUint32 setNdx);
+#ifndef CTS_USES_VULKANSC
 	void										writeImageSamplerDescriptorSetWithTemplate	(vk::VkDescriptorSet descriptorSet, vk::VkDescriptorSetLayout layout, deUint32 setNdx, bool withPush = false, vk::VkPipelineLayout pipelineLayout = DE_NULL);
+#endif
 	void										writeSamplerDescriptorSet					(vk::VkDescriptorSet descriptorSet, deUint32 setNdx);
+#ifndef CTS_USES_VULKANSC
 	void										writeSamplerDescriptorSetWithTemplate		(vk::VkDescriptorSet descriptorSet, vk::VkDescriptorSetLayout layout, deUint32 setNdx, bool withPush = false, vk::VkPipelineLayout pipelineLayout = DE_NULL);
+#endif
 
 	tcu::TestStatus								iterate										(void);
 	void										logTestPlan									(void) const;
@@ -6377,7 +6545,9 @@ private:
 	const deUint32								m_baseMipLevel;
 	const deUint32								m_baseArraySlice;
 	const bool									m_isImmutableSampler;
+#ifndef CTS_USES_VULKANSC
 	std::vector<UpdateTemplateHandleSp>			m_updateTemplates;
+#endif
 
 	const vk::DeviceInterface&					m_vki;
 	const vk::VkDevice							m_device;
@@ -6386,7 +6556,9 @@ private:
 	vk::Allocator&								m_allocator;
 	const ComputeInstanceResultBuffer			m_result;
 	const ImageSampleInstanceImages				m_images;
+#ifndef CTS_USES_VULKANSC
 	std::vector<RawUpdateRegistry>				m_updateRegistry;
+#endif
 	vk::DescriptorSetUpdateBuilder				m_updateBuilder;
 	std::vector<deUint32>						m_descriptorsPerSet;
 };
@@ -6409,7 +6581,9 @@ ImageSampleComputeInstance::ImageSampleComputeInstance (Context&				context,
 	, m_baseMipLevel		(baseMipLevel)
 	, m_baseArraySlice		(baseArraySlice)
 	, m_isImmutableSampler	(isImmutableSampler)
+#ifndef CTS_USES_VULKANSC
 	, m_updateTemplates		()
+#endif
 	, m_vki					(context.getDeviceInterface())
 	, m_device				(context.getDevice())
 	, m_queue				(context.getUniversalQueue())
@@ -6417,7 +6591,9 @@ ImageSampleComputeInstance::ImageSampleComputeInstance (Context&				context,
 	, m_allocator			(context.getDefaultAllocator())
 	, m_result				(m_vki, m_device, m_allocator)
 	, m_images				(m_vki, m_device, m_queueFamilyIndex, m_queue, m_allocator, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_viewType, m_baseMipLevel, m_baseArraySlice, isImmutableSampler)
+#ifndef CTS_USES_VULKANSC
 	, m_updateRegistry		()
+#endif
 	, m_updateBuilder		()
 	, m_descriptorsPerSet	()
 {
@@ -6435,11 +6611,13 @@ vk::Move<vk::VkDescriptorSetLayout> ImageSampleComputeInstance::createDescriptor
 	vk::VkDescriptorSetLayoutCreateFlags	extraFlags	= 0;
 	deUint32								binding		= 0;
 
+#ifndef CTS_USES_VULKANSC
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE ||
-			m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
+		m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
 	{
 		extraFlags |= vk::VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR;
 	}
+#endif
 
 	// result buffer
 	if (setNdx == 0)
@@ -6525,6 +6703,10 @@ vk::Move<vk::VkDescriptorSet> ImageSampleComputeInstance::createDescriptorSet (v
 
 void ImageSampleComputeInstance::writeDescriptorSet (vk::VkDescriptorSet descriptorSet, vk::VkDescriptorSetLayout layout, deUint32 setNdx, vk::VkPipelineLayout pipelineLayout)
 {
+#ifdef CTS_USES_VULKANSC
+	DE_UNREF(layout);
+	DE_UNREF(pipelineLayout);
+#else
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_TEMPLATE)
 	{
 		if (m_descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER)
@@ -6553,6 +6735,7 @@ void ImageSampleComputeInstance::writeDescriptorSet (vk::VkDescriptorSet descrip
 			DE_FATAL("Impossible");
 	}
 	else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
+#endif
 	{
 		if (m_descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER)
 			writeSamplerDescriptorSet(descriptorSet, setNdx);
@@ -6636,6 +6819,7 @@ void ImageSampleComputeInstance::writeSamplerDescriptorSet (vk::VkDescriptorSet 
 	}
 }
 
+#ifndef CTS_USES_VULKANSC
 void ImageSampleComputeInstance::writeSamplerDescriptorSetWithTemplate (vk::VkDescriptorSet descriptorSet, vk::VkDescriptorSetLayout layout, deUint32 setNdx, bool withPush, vk::VkPipelineLayout pipelineLayout)
 {
 	std::vector<vk::VkDescriptorUpdateTemplateEntry>		updateEntries;
@@ -6725,6 +6909,7 @@ void ImageSampleComputeInstance::writeSamplerDescriptorSetWithTemplate (vk::VkDe
 		m_vki.updateDescriptorSetWithTemplate(m_device, descriptorSet, **m_updateTemplates.back(), m_updateRegistry.back().getRawPointer());
 	}
 }
+#endif
 
 void ImageSampleComputeInstance::writeImageSamplerDescriptorSet (vk::VkDescriptorSet descriptorSet, deUint32 setNdx)
 {
@@ -6793,6 +6978,7 @@ void ImageSampleComputeInstance::writeImageSamplerDescriptorSet (vk::VkDescripto
 	}
 }
 
+#ifndef CTS_USES_VULKANSC
 void ImageSampleComputeInstance::writeImageSamplerDescriptorSetWithTemplate (vk::VkDescriptorSet descriptorSet, vk::VkDescriptorSetLayout layout, deUint32 setNdx, bool withPush, vk::VkPipelineLayout pipelineLayout)
 {
 	std::vector<vk::VkDescriptorUpdateTemplateEntry>		updateEntries;
@@ -6877,6 +7063,7 @@ void ImageSampleComputeInstance::writeImageSamplerDescriptorSetWithTemplate (vk:
 		m_vki.updateDescriptorSetWithTemplate(m_device, descriptorSet, **m_updateTemplates.back(), m_updateRegistry.back().getRawPointer());
 	}
 }
+#endif
 
 tcu::TestStatus ImageSampleComputeInstance::iterate (void)
 {
@@ -6895,11 +7082,11 @@ void ImageSampleComputeInstance::logTestPlan (void) const
 		msg << ((m_descriptorSetCount == DESCRIPTOR_SET_COUNT_SINGLE) ? "Single descriptor set. " : "Multiple descriptor sets. ")
 			<< "Each descriptor set contains "
 			<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
-			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
-			    (const char*)DE_NULL)
+				(const char*)DE_NULL)
 			<< " VK_DESCRIPTOR_TYPE_SAMPLER descriptor(s) and a single texture.\n";
 	}
 	else if (m_descriptorType == vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
@@ -6907,11 +7094,11 @@ void ImageSampleComputeInstance::logTestPlan (void) const
 		msg << ((m_descriptorSetCount == DESCRIPTOR_SET_COUNT_SINGLE) ? "Single descriptor set. " : "Multiple descriptor sets. ")
 			<< "Each descriptor set contains "
 			<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
-			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
-			    (const char*)DE_NULL)
+				(const char*)DE_NULL)
 			<< " VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER descriptor(s).\n";
 	}
 	else
@@ -7006,6 +7193,7 @@ tcu::TestStatus ImageSampleComputeInstance::testResourceAccess (void)
 	bool											anyResultSet		= false;
 	bool											allResultsOk		= true;
 
+#ifndef CTS_USES_VULKANSC
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE)
 	{
 		for (deUint32 setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
@@ -7021,6 +7209,7 @@ tcu::TestStatus ImageSampleComputeInstance::testResourceAccess (void)
 		compute.submitAndWait(m_queueFamilyIndex, m_queue, m_updateBuilder, m_descriptorsPerSet);
 	}
 	else
+#endif
 	{
 		compute.submitAndWait(m_queueFamilyIndex, m_queue);
 	}
@@ -7653,7 +7842,7 @@ deUint32 TexelBufferInstanceBuffers::getViewOffset(vkt::Context&		context,
 
 	// format is rgba8
 	if (singleTexelAlignment)
-        return de::min(4u, (deUint32)align);
+		return de::min(4u, (deUint32)align);
 	else
 		return (deUint32)align;
 }
@@ -7918,8 +8107,10 @@ private:
 																					 vk::VkDescriptorPool								pool,
 																					 const TexelBufferInstanceBuffers&					buffers,
 																					 vk::DescriptorSetUpdateBuilder&					updateBuilder,
+#ifndef CTS_USES_VULKANSC
 																					 std::vector<UpdateTemplateHandleSp>&				updateTemplates,
 																					 std::vector<RawUpdateRegistry>&					updateRegistry,
+#endif
 																					 std::vector<deUint32>&								descriptorsPerSet,
 																					 vk::VkPipelineLayout								pipelineLayout = DE_NULL);
 
@@ -7936,6 +8127,7 @@ private:
 																					 std::vector<deUint32>&							descriptorsPerSet,
 																					 DescriptorUpdateMethod							updateMethod = DESCRIPTOR_UPDATE_METHOD_NORMAL);
 
+#ifndef CTS_USES_VULKANSC
 	static void										writeDescriptorSetWithTemplate	(const vk::DeviceInterface&						vki,
 																					 vk::VkDevice									device,
 																					 vk::VkDescriptorType							descriptorType,
@@ -7950,6 +8142,7 @@ private:
 																					 std::vector<RawUpdateRegistry>&				registry,
 																					 bool											withPush = false,
 																					 vk::VkPipelineLayout							pipelineLayout = 0);
+#endif
 
 	void											logTestPlan						(void) const;
 	vk::VkPipelineLayout							getPipelineLayout				(void) const;
@@ -7968,8 +8161,10 @@ private:
 	const ShaderInputInterface						m_shaderInterface;
 	const bool										m_nonzeroViewOffset;
 
+#ifndef CTS_USES_VULKANSC
 	std::vector<UpdateTemplateHandleSp>				m_updateTemplates;
 	std::vector<RawUpdateRegistry>					m_updateRegistry;
+#endif
 	vk::DescriptorSetUpdateBuilder					m_updateBuilder;
 	const std::vector<DescriptorSetLayoutHandleSp>	m_descriptorSetLayouts;
 	const vk::Move<vk::VkPipelineLayout>			m_pipelineLayout;
@@ -7994,15 +8189,22 @@ TexelBufferRenderInstance::TexelBufferRenderInstance (vkt::Context&					context,
 	, m_stageFlags				(stageFlags)
 	, m_shaderInterface			(shaderInterface)
 	, m_nonzeroViewOffset		(nonzeroViewOffset)
+#ifndef CTS_USES_VULKANSC
 	, m_updateTemplates			()
 	, m_updateRegistry			()
+#endif
 	, m_updateBuilder			()
 	, m_descriptorSetLayouts	(createDescriptorSetLayouts(m_vki, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_stageFlags, m_updateMethod))
 	, m_pipelineLayout			(createPipelineLayout(m_vki, m_device, m_descriptorSetLayouts))
 	, m_texelBuffers			(context, m_vki, m_device, m_allocator, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_nonzeroViewOffset)
 	, m_descriptorPool			(createDescriptorPool(m_vki, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface))
 	, m_descriptorsPerSet		()
-	, m_descriptorSets			(createDescriptorSets(m_vki, m_updateMethod, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_descriptorSetLayouts, *m_descriptorPool, m_texelBuffers, m_updateBuilder, m_updateTemplates, m_updateRegistry, m_descriptorsPerSet, *m_pipelineLayout))
+	, m_descriptorSets			(createDescriptorSets(m_vki, m_updateMethod, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_descriptorSetLayouts, *m_descriptorPool, m_texelBuffers, m_updateBuilder,
+#ifndef CTS_USES_VULKANSC
+													  m_updateTemplates,
+													  m_updateRegistry,
+#endif
+													  m_descriptorsPerSet, *m_pipelineLayout))
 {
 }
 
@@ -8014,6 +8216,9 @@ std::vector<DescriptorSetLayoutHandleSp> TexelBufferRenderInstance::createDescri
 																								vk::VkShaderStageFlags		stageFlags,
 																								DescriptorUpdateMethod		updateMethod)
 {
+#ifdef CTS_USES_VULKANSC
+	DE_UNREF(updateMethod);
+#endif
 	std::vector<DescriptorSetLayoutHandleSp> descriptorSetLayouts;
 
 	for (deUint32 setNdx = 0; setNdx < getDescriptorSetCount(descriptorSetCount); setNdx++)
@@ -8021,11 +8226,13 @@ std::vector<DescriptorSetLayoutHandleSp> TexelBufferRenderInstance::createDescri
 		vk::DescriptorSetLayoutBuilder			builder;
 		vk::VkDescriptorSetLayoutCreateFlags	extraFlags = 0;
 
+#ifndef CTS_USES_VULKANSC
 		if (updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE ||
 			updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
 		{
 			extraFlags |= vk::VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR;
 		}
+#endif
 
 		switch (shaderInterface)
 		{
@@ -8112,11 +8319,16 @@ std::vector<DescriptorSetHandleSp> TexelBufferRenderInstance::createDescriptorSe
 																					 vk::VkDescriptorPool								pool,
 																					 const TexelBufferInstanceBuffers&					buffers,
 																					 vk::DescriptorSetUpdateBuilder&					updateBuilder,
+#ifndef CTS_USES_VULKANSC
 																					 std::vector<UpdateTemplateHandleSp>&				updateTemplates,
 																					 std::vector<RawUpdateRegistry>&					updateRegistry,
+#endif
 																					 std::vector<deUint32>&								descriptorsPerSet,
 																					 vk::VkPipelineLayout								pipelineLayout)
 {
+#ifdef CTS_USES_VULKANSC
+	DE_UNREF(pipelineLayout);
+#endif
 	std::vector<DescriptorSetHandleSp> descriptorSets;
 
 	for (deUint32 setNdx = 0; setNdx < getDescriptorSetCount(descriptorSetCount); setNdx++)
@@ -8146,6 +8358,7 @@ std::vector<DescriptorSetHandleSp> TexelBufferRenderInstance::createDescriptorSe
 			descriptorSet = vk::Move<vk::VkDescriptorSet>();
 		}
 
+#ifndef CTS_USES_VULKANSC
 		if (updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_TEMPLATE)
 		{
 			writeDescriptorSetWithTemplate(vki, device, descriptorType, shaderInterface, layout, setNdx, pool, viewA, viewB, *descriptorSet, updateTemplates, updateRegistry);
@@ -8159,6 +8372,7 @@ std::vector<DescriptorSetHandleSp> TexelBufferRenderInstance::createDescriptorSe
 			writeDescriptorSet(vki, device, descriptorType, shaderInterface, layout, pool, viewA, viewB, *descriptorSet, updateBuilder, descriptorsPerSet, updateMethod);
 		}
 		else if (updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
+#endif
 		{
 			writeDescriptorSet(vki, device, descriptorType, shaderInterface, layout, pool, viewA, viewB, *descriptorSet, updateBuilder, descriptorsPerSet);
 		}
@@ -8177,10 +8391,10 @@ void TexelBufferRenderInstance::writeDescriptorSet (const vk::DeviceInterface&		
 													vk::VkDescriptorPool							pool,
 													vk::VkBufferView								viewA,
 													vk::VkBufferView								viewB,
-												    vk::VkDescriptorSet								descriptorSet,
-												    vk::DescriptorSetUpdateBuilder&					updateBuilder,
+													vk::VkDescriptorSet								descriptorSet,
+													vk::DescriptorSetUpdateBuilder&					updateBuilder,
 													std::vector<deUint32>&							descriptorsPerSet,
-												    DescriptorUpdateMethod							updateMethod)
+													DescriptorUpdateMethod							updateMethod)
 {
 	DE_UNREF(layout);
 	DE_UNREF(pool);
@@ -8234,6 +8448,7 @@ void TexelBufferRenderInstance::writeDescriptorSet (const vk::DeviceInterface&		
 	}
 }
 
+#ifndef CTS_USES_VULKANSC
 void TexelBufferRenderInstance::writeDescriptorSetWithTemplate (const vk::DeviceInterface&						vki,
 																vk::VkDevice									device,
 																vk::VkDescriptorType							descriptorType,
@@ -8316,6 +8531,7 @@ void TexelBufferRenderInstance::writeDescriptorSetWithTemplate (const vk::Device
 		vki.updateDescriptorSetWithTemplate(device, descriptorSet, **updateTemplates.back(), registry.back().getRawPointer());
 	}
 }
+#endif
 
 void TexelBufferRenderInstance::logTestPlan (void) const
 {
@@ -8325,11 +8541,11 @@ void TexelBufferRenderInstance::logTestPlan (void) const
 		<< ((m_descriptorSetCount == DESCRIPTOR_SET_COUNT_SINGLE) ? "Single descriptor set. " : "Multiple descriptor sets. ")
 		<< "Each descriptor set contains "
 		<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
-			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
-			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
-			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
-			    (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
-			    (const char*)DE_NULL)
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
+				(const char*)DE_NULL)
 		<< " descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType) << "\n"
 		<< "Buffer view is created with a " << ((m_nonzeroViewOffset) ? ("non-zero") : ("zero")) << " offset.\n"
 		<< "Buffer format is " << vk::getFormatName(vk::mapTextureFormat(m_texelBuffers.getTextureFormat())) << ".\n";
@@ -8404,6 +8620,7 @@ void TexelBufferRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) con
 				DE_FATAL("Impossible");
 		}
 	}
+#ifndef CTS_USES_VULKANSC
 	else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE)
 	{
 		for (deUint32 setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
@@ -8423,6 +8640,7 @@ void TexelBufferRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) con
 			descriptorNdx += numDescriptors;
 		}
 	}
+#endif
 
 	m_vki.cmdDraw(cmd, 6 * 4, 1, 0, 0); // render four quads (two separate triangles)
 }
@@ -8490,7 +8708,9 @@ private:
 	vk::Move<vk::VkDescriptorPool>					createDescriptorPool				(void) const;
 	vk::Move<vk::VkDescriptorSet>					createDescriptorSet					(vk::VkDescriptorPool pool, vk::VkDescriptorSetLayout layout, deUint32 setNdx);
 	void											writeDescriptorSet					(vk::VkDescriptorSet descriptorSet, deUint32 setNdx);
+#ifndef CTS_USES_VULKANSC
 	void											writeDescriptorSetWithTemplate		(vk::VkDescriptorSet descriptorSet, vk::VkDescriptorSetLayout layout, deUint32 setNdx, bool withPush = false, vk::VkPipelineLayout pipelineLayout = DE_NULL);
+#endif
 
 	tcu::TestStatus									iterate								(void);
 	void											logTestPlan							(void) const;
@@ -8507,12 +8727,16 @@ private:
 	const vk::VkQueue								m_queue;
 	const deUint32									m_queueFamilyIndex;
 	vk::Allocator&									m_allocator;
+#ifndef CTS_USES_VULKANSC
 	std::vector<UpdateTemplateHandleSp>				m_updateTemplates;
+#endif
 
 	const ComputeInstanceResultBuffer				m_result;
 	const TexelBufferInstanceBuffers				m_texelBuffers;
 
+#ifndef CTS_USES_VULKANSC
 	std::vector<RawUpdateRegistry>					m_updateRegistry;
+#endif
 	vk::DescriptorSetUpdateBuilder					m_updateBuilder;
 	std::vector<deUint32>							m_descriptorsPerSet;
 };
@@ -8534,10 +8758,14 @@ TexelBufferComputeInstance::TexelBufferComputeInstance (Context&					context,
 	, m_queue				(context.getUniversalQueue())
 	, m_queueFamilyIndex	(context.getUniversalQueueFamilyIndex())
 	, m_allocator			(context.getDefaultAllocator())
+#ifndef CTS_USES_VULKANSC
 	, m_updateTemplates		()
+#endif
 	, m_result				(m_vki, m_device, m_allocator)
 	, m_texelBuffers		(context, m_vki, m_device, m_allocator, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_nonzeroViewOffset)
+#ifndef CTS_USES_VULKANSC
 	, m_updateRegistry		()
+#endif
 	, m_updateBuilder		()
 	, m_descriptorsPerSet	()
 {
@@ -8549,11 +8777,13 @@ vk::Move<vk::VkDescriptorSetLayout> TexelBufferComputeInstance::createDescriptor
 	vk::VkDescriptorSetLayoutCreateFlags	extraFlags	= 0;
 	deUint32								binding		= 0;
 
+#ifndef CTS_USES_VULKANSC
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE ||
 			m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
 	{
 		extraFlags |= vk::VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR;
 	}
+#endif
 
 	if (setNdx == 0)
 		builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding++);
@@ -8620,11 +8850,14 @@ vk::Move<vk::VkDescriptorSet> TexelBufferComputeInstance::createDescriptorSet (v
 	}
 
 
+#ifndef CTS_USES_VULKANSC
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_TEMPLATE)
 	{
 		writeDescriptorSetWithTemplate(*descriptorSet, layout, setNdx);
 	}
-	else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
+	else
+#endif
+	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
 	{
 		writeDescriptorSet(*descriptorSet, setNdx);
 	}
@@ -8694,6 +8927,7 @@ void TexelBufferComputeInstance::writeDescriptorSet (vk::VkDescriptorSet descrip
 	}
 }
 
+#ifndef CTS_USES_VULKANSC
 void TexelBufferComputeInstance::writeDescriptorSetWithTemplate (vk::VkDescriptorSet descriptorSet, vk::VkDescriptorSetLayout layout, deUint32 setNdx, bool withPush, vk::VkPipelineLayout pipelineLayout)
 {
 	const vk::VkDescriptorBufferInfo						resultInfo			= vk::makeDescriptorBufferInfo(m_result.getBuffer(), 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
@@ -8772,6 +9006,7 @@ void TexelBufferComputeInstance::writeDescriptorSetWithTemplate (vk::VkDescripto
 		m_vki.updateDescriptorSetWithTemplate(m_device, descriptorSet, **m_updateTemplates[setNdx], m_updateRegistry.back().getRawPointer());
 	}
 }
+#endif
 
 tcu::TestStatus TexelBufferComputeInstance::iterate (void)
 {
@@ -8787,11 +9022,11 @@ void TexelBufferComputeInstance::logTestPlan (void) const
 		<< ((m_descriptorSetCount == DESCRIPTOR_SET_COUNT_SINGLE) ? "Single descriptor set. " : "Multiple descriptor sets. ")
 		<< "Each descriptor set contains "
 		<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
-			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
-			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
-			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
-			    (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
-			    (const char*)DE_NULL)
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
+				(const char*)DE_NULL)
 		<< " descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType) << "\n"
 		<< "Buffer view is created with a " << ((m_nonzeroViewOffset) ? ("non-zero") : ("zero")) << " offset.\n"
 		<< "Buffer format is " << vk::getFormatName(vk::mapTextureFormat(m_texelBuffers.getTextureFormat())) << ".\n";
@@ -8868,6 +9103,7 @@ tcu::TestStatus TexelBufferComputeInstance::testResourceAccess (void)
 	bool											anyResultSet		= false;
 	bool											allResultsOk		= true;
 
+#ifndef CTS_USES_VULKANSC
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE)
 	{
 		for (deUint32 setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
@@ -8883,6 +9119,7 @@ tcu::TestStatus TexelBufferComputeInstance::testResourceAccess (void)
 		compute.submitAndWait(m_queueFamilyIndex, m_queue, m_updateBuilder, m_descriptorsPerSet);
 	}
 	else
+#endif
 	{
 		compute.submitAndWait(m_queueFamilyIndex, m_queue);
 	}
@@ -9304,9 +9541,11 @@ tcu::TestCaseGroup* createShaderAccessTests (tcu::TestContext& testCtx)
 	} s_updateMethods[] =
 	{
 		{  DESCRIPTOR_UPDATE_METHOD_NORMAL,				"",						"Use regular descriptor updates" },
+#ifndef CTS_USES_VULKANSC
 		{  DESCRIPTOR_UPDATE_METHOD_WITH_TEMPLATE,		"with_template",		"Use descriptor update templates" },
 		{  DESCRIPTOR_UPDATE_METHOD_WITH_PUSH,			"with_push",			"Use push descriptor updates" },
 		{  DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE, "with_push_template",	"Use push descriptor update templates" },
+#endif
 	};
 	static const struct
 	{

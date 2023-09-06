@@ -741,7 +741,7 @@ void Program::Use() const
  **/
 void Program::Attach(const glw::Functions& gl, glw::GLuint program_id, glw::GLuint shader_id)
 {
-	/* Sanity checks */
+	/* Quick checks */
 	if ((m_invalid_id == program_id) || (Shader::m_invalid_id == shader_id))
 	{
 		return;
@@ -3719,6 +3719,8 @@ tcu::TestNode::IterateResult DispatchBindTexturesTest::iterate()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "DebugMessageCallback");
 #endif /* DEBUG_ENBALE_MESSAGE_CALLBACK */
 
+	bool cs_filled_textures	= false;
+
 	GLint  max_textures		 = 0;
 	GLint  max_image_samples = 0;
 	GLuint sum				 = 0;
@@ -3767,6 +3769,7 @@ tcu::TestNode::IterateResult DispatchBindTexturesTest::iterate()
 		case GL_TEXTURE_2D_MULTISAMPLE:
 			texture[i].InitStorage(m_context, target, 1, GL_R32UI, width, height, depth);
 			fillMSTexture(m_context, texture[i].m_id, i, is_array);
+			cs_filled_textures = true;
 			break;
 
 		case GL_TEXTURE_BUFFER:
@@ -3789,6 +3792,10 @@ tcu::TestNode::IterateResult DispatchBindTexturesTest::iterate()
 
 		texture_ids[i] = texture[i].m_id;
 	}
+
+	/* Make sure fillMSTexture affects are seen in next compute dispatch */
+	if (cs_filled_textures)
+		gl.memoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 	gl.bindTextures(0 /* first */, max_textures /* count */, &texture_ids[0]);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "BindTextures");
@@ -3970,6 +3977,8 @@ tcu::TestNode::IterateResult DispatchBindImageTexturesTest::iterate()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "DebugMessageCallback");
 #endif /* DEBUG_ENBALE_MESSAGE_CALLBACK */
 
+	bool cs_filled_textures = false;
+
 	GLint  max_textures		 = 0;
 	GLint  max_image_samples = 0;
 	GLuint sum				 = 0;
@@ -4018,6 +4027,7 @@ tcu::TestNode::IterateResult DispatchBindImageTexturesTest::iterate()
 		case GL_TEXTURE_2D_MULTISAMPLE:
 			texture[i].InitStorage(m_context, target, 1, GL_R32UI, width, height, depth);
 			fillMSTexture(m_context, texture[i].m_id, i, is_array);
+			cs_filled_textures = true;
 			break;
 
 		case GL_TEXTURE_BUFFER:
@@ -4038,6 +4048,10 @@ tcu::TestNode::IterateResult DispatchBindImageTexturesTest::iterate()
 
 		texture_ids[i] = texture[i].m_id;
 	}
+
+	/* Make sure fillMSTexture affects are seen in next compute dispatch */
+	if (cs_filled_textures)
+		gl.memoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 	gl.bindImageTextures(0 /* first */, max_textures /* count */, &texture_ids[0]);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "BindImageTextures");

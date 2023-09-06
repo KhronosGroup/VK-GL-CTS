@@ -8,8 +8,6 @@ include_directories(
 set(DEQP_VK_ROBUSTNESS_SRCS
 	vktRobustnessTests.cpp
 	vktRobustnessTests.hpp
-	vktRobustnessExtsTests.cpp
-	vktRobustnessExtsTests.hpp
 	vktRobustnessBufferAccessTests.cpp
 	vktRobustnessBufferAccessTests.hpp
 	vktRobustBufferAccessWithVariablePointersTests.cpp
@@ -18,16 +16,20 @@ set(DEQP_VK_ROBUSTNESS_SRCS
 	vktRobustnessUtil.hpp
 	vktRobustnessVertexAccessTests.cpp
 	vktRobustnessVertexAccessTests.hpp
+	vktRobustnessIndexAccessTests.cpp
+	vktRobustnessIndexAccessTests.hpp
 	vktNonRobustBufferAccessTests.hpp
 	vktNonRobustBufferAccessTests.cpp
-	)
-
-set(DEQP_VK_ROBUSTNESS_LIBS
-	tcutil
-	vkutil
+	vktRobustnessExtsTests.cpp
+	vktRobustnessExtsTests.hpp
+	vktRobustness1VertexAccessTests.cpp
+	vktRobustness1VertexAccessTests.hpp
 	)
 
 PCH(DEQP_VK_ROBUSTNESS_SRCS ../pch.cpp)
 
 add_library(deqp-vk-robustness STATIC ${DEQP_VK_ROBUSTNESS_SRCS})
-target_link_libraries(deqp-vk-robustness ${DEQP_VK_ROBUSTNESS_LIBS})
+target_link_libraries(deqp-vk-robustness tcutil vkutil)
+
+add_library(deqp-vksc-robustness STATIC ${DEQP_VK_ROBUSTNESS_SRCS})
+target_link_libraries(deqp-vksc-robustness PUBLIC deqp-vksc-util tcutil vkscutil)

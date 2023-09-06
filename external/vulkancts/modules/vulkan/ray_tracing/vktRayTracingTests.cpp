@@ -45,6 +45,8 @@
 #include "vktRayTracingBarycentricCoordinatesTests.hpp"
 #include "vktRayTracingNonUniformArgsTests.hpp"
 #include "vktRayTracingPipelineFlagsTests.hpp"
+#include "vktRayTracingOpacityMicromapTests.hpp"
+#include "vktRayTracingPositionFetchTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -65,6 +67,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createBuildTests(testCtx));
 	group->addChild(createCallableShadersTests(testCtx));
 	group->addChild(createTraceRaysTests(testCtx));
+	group->addChild(createTraceRaysMaintenance1Tests(testCtx));
 	group->addChild(createShaderBindingTableTests(testCtx));
 	group->addChild(createTraversalControlTests(testCtx));
 	group->addChild(createAccelerationStructuresTests(testCtx));
@@ -84,6 +87,9 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createBarycentricCoordinatesTests(testCtx));
 	group->addChild(createNonUniformArgsTests(testCtx));
 	group->addChild(createPipelineFlagsTests(testCtx));
+	group->addChild(createTraceRays2Tests(testCtx));
+	group->addChild(createOpacityMicromapTests(testCtx));
+	group->addChild(createPositionFetchTests(testCtx));
 
 	return group.release();
 }

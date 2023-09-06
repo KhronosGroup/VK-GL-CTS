@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceFaultFeaturesEXT":
+		[
+			{ "features": ["deviceFault"],	"requirements": ["VK_EXT_device_fault"] }
+		]
+	}
+}

@@ -126,6 +126,12 @@ void Window::setSize (int width, int height)
 		TCU_THROW(TestError, "SetWindowPos() failed");
 }
 
+void Window::setMinimized(bool minimize)
+{
+	ShowWindow(m_window, minimize ? SW_MINIMIZE : SW_RESTORE);
+	processEvents();
+}
+
 IVec2 Window::getSize (void) const
 {
 	RECT rc;

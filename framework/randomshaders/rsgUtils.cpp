@@ -321,9 +321,9 @@ static float computeRangeLengthSum (ConstValueRangeAccess valueRange)
 		case VariableType::TYPE_SAMPLER_CUBE:
 			for (int ndx = 0; ndx < type.getNumElements(); ndx++)
 			{
-				int	minVal = valueRange.component(ndx).getMin().asInt();
-				int maxVal = valueRange.component(ndx).getMax().asInt();
-				rangeLength += (float)(maxVal - minVal);
+				deInt64	minVal	= valueRange.component(ndx).getMin().asInt();
+				deInt64	maxVal	= valueRange.component(ndx).getMax().asInt();
+				rangeLength += (float)((int)(maxVal - minVal));
 			}
 			break;
 

@@ -32,6 +32,7 @@
 #include "vkPrograms.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
 
 #include "tcuVector.hpp"
@@ -59,12 +60,12 @@ using de::MovePtr;
 
 struct TestParams
 {
-	float		minDepth;
-	float		maxDepth;
-	VkBool32	depthClampEnable;
-	VkBool32	depthBiasEnable;
-	float		depthBiasClamp;
-	VkBool32	useDynamicRendering;
+	float					minDepth;
+	float					maxDepth;
+	VkBool32				depthClampEnable;
+	VkBool32				depthBiasEnable;
+	float					depthBiasClamp;
+	const SharedGroupParams	groupParams;
 };
 
 constexpr deUint32			kImageDim		= 256u;
@@ -103,8 +104,18 @@ public:
 
 												InvertedDepthRangesTestInstance	(Context& context, const TestParams& params);
 	tcu::TestStatus								iterate							(void);
-	ColorAndDepth								draw							(const VkViewport viewport);
+
+	void										preRenderCommands				(VkCommandBuffer cmdBuffer,
+																				 const VkClearValue& clearColor, const VkClearValue& clearDepth);
+	void										draw							(VkCommandBuffer cmdBuffer, const VkViewport& viewport);
+
 	MovePtr<tcu::TextureLevel>					generateReferenceImage			(ReferenceImageType refType) const;
+
+#ifndef CTS_USES_VULKANSC
+	void										beginSecondaryCmdBuffer			(VkCommandBuffer cmdBuffer, VkRenderingFlagsKHR renderingFlags = 0u);
+	void										beginRender						(VkCommandBuffer cmdBuffer, const VkClearValue& clearColor,
+																				 const VkClearValue& clearDepth, VkRenderingFlagsKHR renderingFlags = 0);
+#endif // CTS_USES_VULKANSC
 
 private:
 	const TestParams				m_params;
@@ -176,7 +187,7 @@ InvertedDepthRangesTestInstance::InvertedDepthRangesTestInstance (Context& conte
 	m_depthTargetView = createImageView(vk, device, &depthTargetViewInfo);
 
 	// Render pass and framebuffer
-	if (!m_params.useDynamicRendering)
+	if (!m_params.groupParams->useDynamicRendering)
 	{
 		RenderPassCreateInfo	renderPassCreateInfo;
 		renderPassCreateInfo.addAttachment(AttachmentDescription(
@@ -292,6 +303,7 @@ InvertedDepthRangesTestInstance::InvertedDepthRangesTestInstance (Context& conte
 	pipelineCreateInfo.addState (PipelineCreateInfo::MultiSampleState	());
 	pipelineCreateInfo.addState (PipelineCreateInfo::DynamicState		(dynamicStates));
 
+#ifndef CTS_USES_VULKANSC
 	VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -300,102 +312,57 @@ InvertedDepthRangesTestInstance::InvertedDepthRangesTestInstance (Context& conte
 		1u,
 		&m_colorAttachmentFormat,
 		m_depthAttachmentFormat,
-		m_depthAttachmentFormat
+		VK_FORMAT_UNDEFINED
 	};
 
-	if (m_params.useDynamicRendering)
+	if (m_params.groupParams->useDynamicRendering)
 		pipelineCreateInfo.pNext = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
 
 	m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
 
-InvertedDepthRangesTestInstance::ColorAndDepth InvertedDepthRangesTestInstance::draw (const VkViewport viewport)
+void InvertedDepthRangesTestInstance::preRenderCommands (VkCommandBuffer cmdBuffer, const VkClearValue& clearColor, const VkClearValue& clearDepth)
 {
-	const DeviceInterface&		vk					= m_context.getDeviceInterface();
-	const VkDevice				device				= m_context.getDevice();
-	const VkQueue				queue				= m_context.getUniversalQueue();
-	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	auto&						alloc				= m_context.getDefaultAllocator();
-	const VkClearValue			clearColor			= makeClearValueColor(kClearColor);
-	const VkClearValue			clearDepth			= makeClearValueDepthStencil(kClearDepth, 0u);
+	const DeviceInterface&			vk						= m_context.getDeviceInterface();
+	const ImageSubresourceRange		subresourceRange		(VK_IMAGE_ASPECT_COLOR_BIT);
+	const ImageSubresourceRange		depthSubresourceRange	(VK_IMAGE_ASPECT_DEPTH_BIT);
 
-	// Command buffer
+	initialTransitionColor2DImage(vk, cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+	initialTransitionDepth2DImage(vk, cmdBuffer, m_depthTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+	vk.cmdClearColorImage(cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &subresourceRange);
+	vk.cmdClearDepthStencilImage(cmdBuffer, m_depthTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, &clearDepth.depthStencil, 1u, &depthSubresourceRange);
 
-	const CmdPoolCreateInfo			cmdPoolCreateInfo	(queueFamilyIndex);
-	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, &cmdPoolCreateInfo));
-	const Unique<VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-
-	// Draw
-
-	beginCommandBuffer(vk, *cmdBuffer);
-
-	vk.cmdSetViewport(*cmdBuffer, 0u, 1u, &viewport);
-
+	const VkMemoryBarrier memBarrier
 	{
-		const ImageSubresourceRange		subresourceRange		(VK_IMAGE_ASPECT_COLOR_BIT);
-		const ImageSubresourceRange		depthSubresourceRange	(VK_IMAGE_ASPECT_DEPTH_BIT);
+		VK_STRUCTURE_TYPE_MEMORY_BARRIER,																// VkStructureType		sType;
+		DE_NULL,																						// const void*			pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,																	// VkAccessFlags		srcAccessMask;
+		VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT						// VkAccessFlags		dstAccessMask;
+	};
 
-		initialTransitionColor2DImage(vk, *cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-		initialTransitionDepth2DImage(vk, *cmdBuffer, m_depthTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-		vk.cmdClearColorImage(*cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &subresourceRange);
-		vk.cmdClearDepthStencilImage(*cmdBuffer, m_depthTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, &clearDepth.depthStencil, 1u, &depthSubresourceRange);
-	}
+	const VkMemoryBarrier depthBarrier
 	{
-		const VkMemoryBarrier memBarrier =
-		{
-			VK_STRUCTURE_TYPE_MEMORY_BARRIER,												// VkStructureType    sType;
-			DE_NULL,																		// const void*        pNext;
-			VK_ACCESS_TRANSFER_WRITE_BIT,													// VkAccessFlags      srcAccessMask;
-			VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT		// VkAccessFlags      dstAccessMask;
-		};
+		VK_STRUCTURE_TYPE_MEMORY_BARRIER,																// VkStructureType		sType;
+		DE_NULL,																						// const void*			pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,																	// VkAccessFlags		srcAccessMask;
+		VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT		// VkAccessFlags		dstAccessMask;
+	};
 
-		const VkMemoryBarrier depthBarrier =
-		{
-			VK_STRUCTURE_TYPE_MEMORY_BARRIER,												// VkStructureType    sType;
-			DE_NULL,																		// const void*        pNext;
-			VK_ACCESS_TRANSFER_WRITE_BIT,													// VkAccessFlags      srcAccessMask;
-			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT		// VkAccessFlags      dstAccessMask;
-		};
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT), 0, 1, &depthBarrier, 0, DE_NULL, 0, DE_NULL);
+}
 
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT), 0, 1, &depthBarrier, 0, DE_NULL, 0, DE_NULL);
-	}
+void InvertedDepthRangesTestInstance::draw (VkCommandBuffer cmdBuffer, const VkViewport& viewport)
+{
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkBuffer			buffer	= m_vertexBuffer->object();
+	const VkDeviceSize		offset	= 0;
 
-	if (m_params.useDynamicRendering)
-		beginRendering(vk, *cmdBuffer, *m_colorTargetView, *m_depthTargetView, false, makeRect2D(kImageExtent), clearColor, clearDepth);
-	else
-		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(kImageExtent));
-
-	{
-		const VkDeviceSize	offset	= 0;
-		const VkBuffer		buffer	= m_vertexBuffer->object();
-
-		vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &buffer, &offset);
-	}
-
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-	vk.cmdDraw(*cmdBuffer, 3, 1, 0, 0);
-
-	if (m_params.useDynamicRendering)
-		endRendering(vk, *cmdBuffer);
-	else
-		endRenderPass(vk, *cmdBuffer);
-
-	endCommandBuffer(vk, *cmdBuffer);
-
-	// Submit
-	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
-
-	// Get result
-	{
-		const auto zeroOffset	= makeOffset3D(0, 0, 0);
-		const auto iWidth		= static_cast<int>(kImageExtent.width);
-		const auto iHeight		= static_cast<int>(kImageExtent.height);
-		const auto colorPixels	= m_colorTargetImage->readSurface(queue, alloc, VK_IMAGE_LAYOUT_GENERAL, zeroOffset, iWidth, iHeight, VK_IMAGE_ASPECT_COLOR_BIT);
-		const auto depthPixels	= m_depthTargetImage->readSurface(queue, alloc, VK_IMAGE_LAYOUT_GENERAL, zeroOffset, iWidth, iHeight, VK_IMAGE_ASPECT_DEPTH_BIT);
-
-		return ColorAndDepth(colorPixels, depthPixels);
-	}
+	vk.cmdSetViewport(cmdBuffer, 0u, 1u, &viewport);
+	vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &buffer, &offset);
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+	vk.cmdDraw(cmdBuffer, 3, 1, 0, 0);
 }
 
 MovePtr<tcu::TextureLevel> InvertedDepthRangesTestInstance::generateReferenceImage (ReferenceImageType refType) const
@@ -494,11 +461,54 @@ MovePtr<tcu::TextureLevel> InvertedDepthRangesTestInstance::generateReferenceIma
 	return image;
 }
 
+#ifndef CTS_USES_VULKANSC
+void InvertedDepthRangesTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkRenderingFlagsKHR renderingFlags)
+{
+	VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		renderingFlags,															// VkRenderingFlagsKHR				flags;
+		0u,																		// uint32_t							viewMask;
+		1u,																		// uint32_t							colorAttachmentCount;
+		&m_colorAttachmentFormat,												// const VkFormat*					pColorAttachmentFormats;
+		m_depthAttachmentFormat,												// VkFormat							depthAttachmentFormat;
+		VK_FORMAT_UNDEFINED,													// VkFormat							stencilAttachmentFormat;
+		VK_SAMPLE_COUNT_1_BIT,													// VkSampleCountFlagBits			rasterizationSamples;
+	};
+	const VkCommandBufferInheritanceInfo bufferInheritanceInfo = initVulkanStructure(&inheritanceRenderingInfo);
+
+	VkCommandBufferUsageFlags usageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	if (!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		usageFlags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+	const VkCommandBufferBeginInfo commandBufBeginParams
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		usageFlags,																// VkCommandBufferUsageFlags		flags;
+		&bufferInheritanceInfo
+	};
+
+	const DeviceInterface& vk = m_context.getDeviceInterface();
+	VK_CHECK(vk.beginCommandBuffer(cmdBuffer, &commandBufBeginParams));
+}
+
+void InvertedDepthRangesTestInstance::beginRender(VkCommandBuffer cmdBuffer, const VkClearValue& clearColor, const VkClearValue& clearDepth, VkRenderingFlagsKHR renderingFlags)
+{
+	const DeviceInterface& vk = m_context.getDeviceInterface();
+
+	beginRendering(vk, cmdBuffer, *m_colorTargetView, *m_depthTargetView, false, makeRect2D(kImageExtent), clearColor, clearDepth,
+				   VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_ATTACHMENT_LOAD_OP_LOAD, renderingFlags);
+}
+#endif // CTS_USES_VULKANSC
+
+
 tcu::TestStatus InvertedDepthRangesTestInstance::iterate (void)
 {
 	// Set up the viewport and draw
 
-	const VkViewport viewport =
+	const VkViewport viewport
 	{
 		0.0f,										// float    x;
 		0.0f,										// float    y;
@@ -508,7 +518,93 @@ tcu::TestStatus InvertedDepthRangesTestInstance::iterate (void)
 		m_params.maxDepth,							// float    maxDepth;
 	};
 
-	ColorAndDepth	results		= draw(viewport);
+	const DeviceInterface&			vk					= m_context.getDeviceInterface();
+	const VkDevice					device				= m_context.getDevice();
+	const VkQueue					queue				= m_context.getUniversalQueue();
+	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	auto&							alloc				= m_context.getDefaultAllocator();
+	const VkClearValue				clearColor			= makeClearValueColor(kClearColor);
+	const VkClearValue				clearDepth			= makeClearValueDepthStencil(kClearDepth, 0u);
+
+	// Command buffer
+
+	const CmdPoolCreateInfo			cmdPoolCreateInfo	(queueFamilyIndex);
+	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, &cmdPoolCreateInfo));
+	const Unique<VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	Move<VkCommandBuffer>			secCmdBuffer;
+
+#ifndef CTS_USES_VULKANSC
+	if (m_params.groupParams->useSecondaryCmdBuffer)
+	{
+		secCmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+
+		// record secondary command buffer
+		if (m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		{
+			beginSecondaryCmdBuffer(*secCmdBuffer, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+			beginRender(*secCmdBuffer, clearColor, clearDepth);
+		}
+		else
+			beginSecondaryCmdBuffer(*secCmdBuffer);
+
+		draw(*secCmdBuffer, viewport);
+
+		if (m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endRendering(vk, *secCmdBuffer);
+
+		endCommandBuffer(vk, *secCmdBuffer);
+
+		// record primary command buffer
+		beginCommandBuffer(vk, *cmdBuffer, 0u);
+
+		preRenderCommands(*cmdBuffer, clearColor, clearDepth);
+
+		if (!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			beginRender(*cmdBuffer, clearColor, clearDepth, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+
+		vk.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffer);
+
+		if (!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endRendering(vk, *cmdBuffer);
+
+		endCommandBuffer(vk, *cmdBuffer);
+	}
+	else if (m_params.groupParams->useDynamicRendering)
+	{
+		beginCommandBuffer(vk, *cmdBuffer);
+
+		preRenderCommands(*cmdBuffer, clearColor, clearDepth);
+		beginRender(*cmdBuffer, clearColor, clearDepth);
+		draw(*cmdBuffer, viewport);
+		endRendering(vk, *cmdBuffer);
+
+		endCommandBuffer(vk, *cmdBuffer);
+	}
+#endif // CTS_USES_VULKANSC
+
+	if (!m_params.groupParams->useDynamicRendering)
+	{
+		beginCommandBuffer(vk, *cmdBuffer);
+
+		preRenderCommands(*cmdBuffer, clearColor, clearDepth);
+		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(kImageExtent));
+		draw(*cmdBuffer, viewport);
+		endRenderPass(vk, *cmdBuffer);
+
+		endCommandBuffer(vk, *cmdBuffer);
+	}
+
+	// Submit
+	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
+
+	// Get result
+	const auto		zeroOffset	= makeOffset3D(0, 0, 0);
+	const auto		iWidth		= static_cast<int>(kImageExtent.width);
+	const auto		iHeight		= static_cast<int>(kImageExtent.height);
+	const auto		colorPixels	= m_colorTargetImage->readSurface(queue, alloc, VK_IMAGE_LAYOUT_GENERAL, zeroOffset, iWidth, iHeight, VK_IMAGE_ASPECT_COLOR_BIT);
+	const auto		depthPixels	= m_depthTargetImage->readSurface(queue, alloc, VK_IMAGE_LAYOUT_GENERAL, zeroOffset, iWidth, iHeight, VK_IMAGE_ASPECT_DEPTH_BIT);
+	ColorAndDepth	results		(colorPixels, depthPixels);
+
 	auto&			resultImage	= results.first;
 	auto&			resultDepth	= results.second;
 
@@ -625,7 +721,7 @@ public:
 		if (m_params.minDepth > 1.0f || m_params.minDepth < 0.0f || m_params.maxDepth > 1.0f || m_params.maxDepth < 0.0f)
 			context.requireDeviceFunctionality("VK_EXT_depth_range_unrestricted");
 
-		if (m_params.useDynamicRendering)
+		if (m_params.groupParams->useDynamicRendering)
 			context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 	}
 
@@ -638,7 +734,7 @@ private:
 	const TestParams	m_params;
 };
 
-void populateTestGroup (tcu::TestCaseGroup* testGroup, bool useDynamicRendering)
+void populateTestGroup (tcu::TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 {
 	const struct
 	{
@@ -679,14 +775,14 @@ void populateTestGroup (tcu::TestCaseGroup* testGroup, bool useDynamicRendering)
 		const float maxDepth		 = minDepth - cDepthParams.delta;
 		DE_ASSERT(minDepth >= maxDepth);
 
-		const TestParams params =
+		const TestParams params
 		{
 			minDepth,
 			maxDepth,
 			cDepthClamp.depthClamp,
 			cDepthParams.depthBiasEnable,
 			cDepthParams.depthBiasClamp,
-			useDynamicRendering
+			groupParams
 		};
 
 		std::string name = cDepthClamp.name + "_" + cDepthParams.name;
@@ -696,9 +792,9 @@ void populateTestGroup (tcu::TestCaseGroup* testGroup, bool useDynamicRendering)
 
 }	// anonymous
 
-tcu::TestCaseGroup*	createInvertedDepthRangesTests (tcu::TestContext& testCtx, bool useDynamicRendering)
+tcu::TestCaseGroup*	createInvertedDepthRangesTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "inverted_depth_ranges", "Inverted depth ranges", populateTestGroup, useDynamicRendering);
+	return createTestGroup(testCtx, "inverted_depth_ranges", "Inverted depth ranges", populateTestGroup, groupParams);
 }
 
 }	// Draw

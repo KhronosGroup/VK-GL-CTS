@@ -50,11 +50,11 @@ struct SpirvValidatorOptions
 		FLAG_SPIRV_VALIDATOR_ALLOW_LOCALSIZEID					= (1u<<1)
 	};
 
-	SpirvValidatorOptions(deUint32 the_vulkan_version = VK_MAKE_VERSION(1, 0, 0), BlockLayoutRules the_layout = kDefaultBlockLayout, bool allowSpirv14 = false, deUint32 the_flags = 0)
+	SpirvValidatorOptions(deUint32 the_vulkan_version = VK_MAKE_API_VERSION(0, 1, 0, 0), BlockLayoutRules the_layout = kDefaultBlockLayout, bool allowSpirv14 = false, deUint32 the_flags = 0)
 	: vulkanVersion(the_vulkan_version), blockLayout(the_layout), supports_VK_KHR_spirv_1_4(allowSpirv14), flags(the_flags) {}
 
 	// The target Vulkan version.  This determines the SPIR-V environment rules to
-	// be checked. The bit pattern is as produced by VK_MAKE_VERSION.
+	// be checked. The bit pattern is as produced by VK_MAKE_API_VERSION.
 	deUint32 vulkanVersion;
 
 	// The block layout rules to enforce.

@@ -20,9 +20,9 @@
 #
 #-------------------------------------------------------------------------
 
-from build.common import *
-from build.config import ANY_GENERATOR
-from build.build import build
+from ctsbuild.common import *
+from ctsbuild.config import ANY_GENERATOR
+from ctsbuild.build import build
 from build_caselists import Module, getModuleByName, getBuildConfig, genCaseList, getCaseListPath, DEFAULT_BUILD_DIR, DEFAULT_TARGET
 from fnmatch import fnmatch
 from copy import copy
@@ -44,7 +44,7 @@ class Project:
 		self.copyright	= copyright
 
 class Configuration:
-	def __init__ (self, name, filters, glconfig = None, rotation = None, surfacetype = None, required = False, runtime = None, runByDefault = True, splitToMultipleFiles = False):
+	def __init__ (self, name, filters, glconfig = None, rotation = None, surfacetype = None, required = False, runtime = None, runByDefault = True, listOfGroupsToSplit = []):
 		self.name					= name
 		self.glconfig				= glconfig
 		self.rotation				= rotation
@@ -53,7 +53,7 @@ class Configuration:
 		self.filters				= filters
 		self.expectedRuntime		= runtime
 		self.runByDefault			= runByDefault
-		self.splitToMultipleFiles	= splitToMultipleFiles
+		self.listOfGroupsToSplit	= listOfGroupsToSplit
 
 class Package:
 	def __init__ (self, module, configurations):
@@ -141,21 +141,58 @@ def getCommandLine (config):
 	return cmdLine
 
 def readCaseDict (filename):
-	# cases are grouped per high-level test group
-	# this is needed for chunked mustpass
-	casesPerHighLevelGroup = {}
-	currentHighLevelGroup = ""
+	# read all cases and organize them in a tree; this is needed for chunked mustpass
+	# groups are stored as dictionaries and cases as list of strings with full case paths
+	groupTree = {}
+	# limit how deep constructed tree should be - this later simplifies applying filters;
+	# if in future we will need to split to separate .txt files deeper groups thet this value should be increased
+	limitGroupTreeDepth = 3
+	# create helper stack that will contain references to currently filled groups, from top to bottom
+	groupStack = None
+	# cretae variable that will hold currentlt processed line from the file
+	processedLine = None
 	with open(filename, 'rt') as f:
-		for line in f:
-			entryType = line[:6]
-			if entryType == "TEST: ":
-				assert currentHighLevelGroup != ""
-				casesPerHighLevelGroup[currentHighLevelGroup].append(line[6:].strip())
-			# detect high-level group by number of dots in path
-			elif entryType == "GROUP:" and line.count('.') == 1:
-				currentHighLevelGroup = line[line.find('.')+1:].rstrip().replace('_', '-')
-				casesPerHighLevelGroup[currentHighLevelGroup] = []
-	return casesPerHighLevelGroup
+		for nextLine in f:
+			# to be able to build tree structure we need to know what is the next line in the file this is
+			# why the first line read from the file will be actually processed during the second iteration
+			if processedLine is None:
+				processedLine		= nextLine
+				# to simplify code use this section to also extract root node name
+				rootName			= processedLine[7:processedLine.rfind('.')]
+				groupTree[rootName]	= {}
+				groupStack			= [groupTree[rootName]]
+				continue
+			# check if currently processed line is a test case or a group
+			processedEntryType = processedLine[:6]
+			if processedEntryType == "TEST: ":
+				# append this test case to the last group on the stack
+				groupStack[-1].append(processedLine[6:].strip())
+			elif processedEntryType == "GROUP:":
+				# count number of dots in path to determine what is the depth of current group in the tree
+				processedGroupDepth = processedLine.count('.')
+				# limit tree construction just to specified level
+				availableLimit = limitGroupTreeDepth - processedGroupDepth
+				if availableLimit > 0:
+					# check how deep is stack currently
+					groupStackDepth = len(groupStack)
+					# if stack is deeper then depth of current group then we need to pop number of items
+					if processedGroupDepth < groupStackDepth:
+						groupStack = groupStack[:groupStackDepth-(groupStackDepth-processedGroupDepth)]
+					# get group that will have new child - this is the last group on the stack
+					parentGroup = groupStack[-1]
+					# add new dict that will contain other groups or list of cases depending on the next line
+					# and available depth limit (if are about to reach limit we won't add group dictionaries
+					# but just add all cases from deeper groups to the group at this depth)
+					processedGroupName = processedLine[7:-1]
+					parentGroup[processedGroupName] = {} if (nextLine[:6] == "GROUP:") and (availableLimit > 1) else []
+					# add new group to the stack (items in groupStack can be either list or dict)
+					groupStack.append(parentGroup[processedGroupName])
+			# before going to the next line set procesedLine for the next iteration
+			processedLine = nextLine
+	# handle last test case - we need to do it after the loop as in the loop we needed to know what is the next line
+	assert(processedLine[:6] == "TEST: ")
+	groupStack[-1].append(processedLine[6:].strip())
+	return groupTree
 
 def getCaseDict (buildCfg, generator, module):
 	build(buildCfg, generator, [module.binName])
@@ -174,12 +211,60 @@ def readPatternList (filename):
 
 def constructNewDict(oldDict, listOfCases, op = lambda a: not a):
 	# Helper function used to construct case dictionary without specific cases
-	newDict = defaultdict(list)
-	for topGroup in oldDict:
-		for c in oldDict[topGroup]:
-			if op(c in listOfCases):
-				newDict[topGroup].append(c)
+	rootName		= list(oldDict.keys())[0]
+	newDict			= {rootName : {}}
+	newDictStack	= [newDict]
+	oldDictStack	= [oldDict]
+	while True:
+		# mak sure that both stacks have same number of items
+		assert(len(oldDictStack) == len(newDictStack))
+		# when all items from stack were processed then we can exit the loop
+		if len(oldDictStack) == 0:
+			break
+		# grab last item from both stacks
+		itemOnOldStack = oldDictStack.pop()
+		itemOnNewStack = newDictStack.pop()
+		# if item on stack is dictionary then it represents groups and
+		# we need to reconstruct them in new dictionary
+		if type(itemOnOldStack) is dict:
+			assert(type(itemOnNewStack) is dict)
+			listOfGroups = list(itemOnOldStack.keys())
+			for groupName in listOfGroups:
+				# create list or dictionary depending on contnent of child group
+				doesGroupsContainCases = type(itemOnOldStack[groupName]) is list
+				itemOnNewStack[groupName] = [] if doesGroupsContainCases else {}
+				# append groups on stacks
+				assert(type(itemOnNewStack[groupName]) == type(itemOnOldStack[groupName]))
+				newDictStack.append(itemOnNewStack[groupName])
+				oldDictStack.append(itemOnOldStack[groupName])
+		else:
+			# if item on stack is list then it represents group that contain cases we need
+			# to apply filter on each of them to make sure only proper cases are appended
+			assert(type(itemOnOldStack) is list)
+			assert(type(itemOnNewStack) is list)
+			for caseName in itemOnOldStack:
+				if op(caseName in listOfCases):
+					itemOnNewStack.append(caseName)
 	return newDict
+
+def constructSet(caseDict, perGroupOperation):
+	casesSet		= set()
+	dictStack		= [caseDict]
+	while True:
+		# when all items from stack were processed then we can exit the loop
+		if len(dictStack) == 0:
+			break
+		# grab last item from stack
+		itemOnStack = dictStack.pop()
+		# if item on stack is dictionary then it represents groups and we need to add them to stack
+		if type(itemOnStack) is dict:
+			for groupName in itemOnStack.keys():
+				dictStack.append(itemOnStack[groupName])
+		else:
+			# if item on stack is a list of cases we can add them to set containing all cases
+			assert(type(itemOnStack) is list)
+			casesSet = perGroupOperation(casesSet, itemOnStack)
+	return casesSet
 
 def applyPatterns (caseDict, patterns, filename, op):
 	matched			= set()
@@ -188,9 +273,8 @@ def applyPatterns (caseDict, patterns, filename, op):
 	regularPtrns	= [p for p in patterns if p.find('*') >= 0]
 
 	# Construct helper set that contains cases from all groups
-	allCasesSet = set()
-	for topGroup in caseDict:
-		allCasesSet = allCasesSet.union(set(caseDict[topGroup]))
+	unionOperation	= lambda resultCasesSet, groupCaseList: resultCasesSet.union(set(groupCaseList))
+	allCasesSet		= constructSet(caseDict, unionOperation)
 
 	# Apply trivial patterns - plain case paths without wildcard
 	for path in trivialPtrns:
@@ -206,12 +290,15 @@ def applyPatterns (caseDict, patterns, filename, op):
 
 	# Apply regular patterns - paths with wildcard
 	for pattern in regularPtrns:
-		matchedThisPtrn = set()
 
-		for topGroup in curDict:
-			for c in curDict[topGroup]:
-				if fnmatch(c, pattern):
-					matchedThisPtrn.add(c)
+		# Helper function that checks if cases from case group match pattern
+		def matchOperation(resultCasesSet, groupCaseList):
+			for caseName in groupCaseList:
+				if fnmatch(caseName, pattern):
+					resultCasesSet.add(caseName)
+			return resultCasesSet
+
+		matchedThisPtrn = constructSet(curDict, matchOperation)
 
 		if len(matchedThisPtrn) == 0:
 			errors.append((pattern, "Pattern didn't match any cases"))
@@ -342,12 +429,18 @@ def genAndroidTestXml (mustpass):
 	addOptionElement(preparerElement, "cleanup-apks", "true")
 	addOptionElement(preparerElement, "test-file-name", "com.drawelements.deqp.apk")
 
+	# Target preparer for incremental dEQP
+	preparerElement = ElementTree.SubElement(configElement, "target_preparer")
+	preparerElement.set("class", "com.android.compatibility.common.tradefed.targetprep.IncrementalDeqpPreparer")
+	addOptionElement(preparerElement, "disable", "true")
+
 	# add in metadata option for component name
 	ElementTree.SubElement(configElement, "option", name="test-suite-tag", value="cts")
 	ElementTree.SubElement(configElement, "option", key="component", name="config-descriptor:metadata", value="deqp")
 	ElementTree.SubElement(configElement, "option", key="parameter", name="config-descriptor:metadata", value="not_instant_app")
 	ElementTree.SubElement(configElement, "option", key="parameter", name="config-descriptor:metadata", value="multi_abi")
 	ElementTree.SubElement(configElement, "option", key="parameter", name="config-descriptor:metadata", value="secondary_user")
+	ElementTree.SubElement(configElement, "option", key="parameter", name="config-descriptor:metadata", value="no_foldable_states")
 	controllerElement = ElementTree.SubElement(configElement, "object")
 	controllerElement.set("class", "com.android.tradefed.testtype.suite.module.TestFailureModuleController")
 	controllerElement.set("type", "module_controller")
@@ -361,7 +454,12 @@ def genAndroidTestXml (mustpass):
 			testElement = ElementTree.SubElement(configElement, "test")
 			testElement.set("class", RUNNER_CLASS)
 			addOptionElement(testElement, "deqp-package", package.module.name)
-			addOptionElement(testElement, "deqp-caselist-file", getCaseListFileName(package,config))
+			caseListFile = getCaseListFileName(package,config)
+			addOptionElement(testElement, "deqp-caselist-file", caseListFile)
+			if caseListFile.startswith("gles3"):
+				addOptionElement(testElement, "incremental-deqp-include-file", "gles3-incremental-deqp.txt")
+			elif caseListFile.startswith("vk"):
+				addOptionElement(testElement, "incremental-deqp-include-file", "vk-incremental-deqp.txt")
 			# \todo [2015-10-16 kalle]: Replace with just command line? - requires simplifications in the runner/tests as well.
 			if config.glconfig != None:
 				addOptionElement(testElement, "deqp-gl-config-name", config.glconfig)
@@ -392,49 +490,119 @@ def genMustpass (mustpass, moduleCaseDicts):
 
 		for config in package.configurations:
 
-			# construct dictionary with all filters applyed,
-			# key is top-level group name, value is list of all cases in that group
+			# construct dictionary with all filters applyed
 			filteredCaseDict	= applyFilters(allCasesInPkgDict, patternLists, config.filters)
 
 			# construct components of path to main destination file
 			mainDstFilePath		= getDstCaseListPath(mustpass)
 			mainDstFileName		= getCaseListFileName(package, config)
 			mainDstFile			= os.path.join(mainDstFilePath, mainDstFileName)
-			gruopSubDir			= mainDstFileName[:-4]
+			mainGruopSubDir		= mainDstFileName[:-4]
 
 			# if case paths should be split to multiple files then main
 			# destination file will contain paths to individual files containing cases
-			if config.splitToMultipleFiles:
-				groupPathsList = []
-
+			if len(config.listOfGroupsToSplit) > 0:
 				# make sure directory for group files exists
-				groupPath = os.path.join(mainDstFilePath, gruopSubDir)
-				if not os.path.exists(groupPath):
-					os.makedirs(groupPath)
+				rootGroupPath = os.path.join(mainDstFilePath, mainGruopSubDir)
+				if not os.path.exists(rootGroupPath):
+					os.makedirs(rootGroupPath)
 
-				# iterate over all top-level groups and write files containing their cases
-				print("  Writing top-level group caselists:")
-				for tlGroup in filteredCaseDict:
-					groupDstFileName    = tlGroup + ".txt"
-					groupDstFileFullDir = os.path.join(groupPath, groupDstFileName)
-					groupPathsList.append(gruopSubDir + "/" + groupDstFileName)
+				# iterate over case dictionary and split it to .txt files acording to
+				# groups that were specified in config.listOfGroupsToSplit
+				splitedGroupsDict	= {}
+				dictStack			= [filteredCaseDict]
+				helperListStack		= [ [] ]
+				while True:
+					# when all items from stack were processed then we can exit the loop
+					if len(dictStack) == 0:
+						break
+					assert(len(dictStack) == len(helperListStack))
+					# grab last item from stack
+					itemOnStack = dictStack.pop()
+					caseListFromHelperStack = helperListStack.pop()
+					# if item on stack is dictionary then it represents groups and we need to add them to stack
+					if type(itemOnStack) is dict:
+						for groupName in sorted(itemOnStack):
 
+							# check if this group should be split to multiple .txt files
+							if groupName in config.listOfGroupsToSplit:
+								# we can split only groups that contain other groups,
+								# listOfGroupsToSplit should not contain groups that contain test cases
+								assert(type(itemOnStack[groupName]) is dict)
+								# add child groups of this group to splitedGroupsDict
+								for childGroupName in itemOnStack[groupName]:
+									# make sure that child group should not be splited
+									# (if it should then this will be handle in one of the next iterations)
+									if childGroupName not in config.listOfGroupsToSplit:
+										splitedGroupsDict[childGroupName] = []
+
+							# add this group to stack used for iteration over casses tree
+							dictStack.append(itemOnStack[groupName])
+
+							# decide what list we should append to helperListStack;
+							# if this group represents one of individual .txt files then grab
+							# propper array of cases from splitedGroupsDict and add it to helper stack;
+							# if groupName is not in splitedGroupsDict then use the same list as was used
+							# by parent group (we are merging casses from those groups to single .txt file)
+							helperListStack.append(splitedGroupsDict.get(groupName, caseListFromHelperStack))
+					else:
+						# if item on stack is a list of cases we can add them to proper list
+						assert(type(itemOnStack) is list)
+						caseListFromHelperStack.extend(itemOnStack)
+
+				print("  Writing separated caselists:")
+				groupPathsList = []
+				for groupPath in splitedGroupsDict:
+					# skip groups that after filtering have no casses left
+					if len(splitedGroupsDict[groupPath]) == 0:
+						continue
+					# remove root node name from the beginning of group and replace all '_' with '-'
+					processedGroupPath = groupPath[groupPath.find('.')+1:].replace('_', '-')
+					# split group paths
+					groupList = processedGroupPath.split('.')
+					groupSubDir = '/'
+					# create subdirectories if there is more then one group name in groupList
+					path = rootGroupPath
+					if len(groupList) > 1:
+						for groupName in groupList[:-1]:
+							# make sure directory for group files exists
+							groupSubDir	= groupSubDir + groupName + '/'
+							path		= os.path.join(path, groupName)
+							if not os.path.exists(path):
+								os.makedirs(path)
+					# construct path to .txt file and save all cases
+					groupDstFileName	= groupList[-1] + ".txt"
+					groupDstFileFullDir	= os.path.join(path, groupDstFileName)
+					groupPathsList.append(mainGruopSubDir + groupSubDir + groupDstFileName)
 					print("    " + groupDstFileFullDir)
-					writeFile(groupDstFileFullDir, "\n".join(filteredCaseDict[tlGroup]) + "\n")
+					writeFile(groupDstFileFullDir, "\n".join(splitedGroupsDict[groupPath]) + "\n")
 
 				# write file containing names of all group files
-				print("  Writing deqp top-level groups file list: " + mainDstFile)
+				print("  Writing file containing list of separated case files: " + mainDstFile)
 				groupPathsList.sort()
 				writeFile(mainDstFile, "\n".join(groupPathsList) + "\n")
 			else:
-				# merge cases from all top level groups in to single case list
-				filteredCaseList = []
-				for tlGroup in filteredCaseDict:
-					filteredCaseList.extend(filteredCaseDict[tlGroup])
-
+				# merge all cases to single case list
+				filteredCaseList	= []
+				dictStack			= [filteredCaseDict]
+				while True:
+					# when all items from stack were processed then we can exit the loop
+					if len(dictStack) == 0:
+						break
+					# grab last item from stack
+					itemOnStack = dictStack.pop()
+					# if item on stack is dictionary then it represents groups and we need to add them to stack
+					if type(itemOnStack) is dict:
+						for groupName in itemOnStack.keys():
+							dictStack.append(itemOnStack[groupName])
+					else:
+						# if item on stack is a list of cases we can add them to filteredCaseList
+						assert(type(itemOnStack) is list)
+						filteredCaseList.extend(itemOnStack)
 				# write file containing all cases
-				print("  Writing deqp caselist: " + mainDstFile)
-				writeFile(mainDstFile, "\n".join(filteredCaseList) + "\n")
+				if len(filteredCaseList) > 0:
+					print("  Writing deqp caselist: " + mainDstFile)
+					writeFile(mainDstFile, "\n".join(filteredCaseList) + "\n")
 
 	specXML = genSpecXML(mustpass)
 	specFilename = os.path.join(mustpass.project.path, mustpass.version, "mustpass.xml")

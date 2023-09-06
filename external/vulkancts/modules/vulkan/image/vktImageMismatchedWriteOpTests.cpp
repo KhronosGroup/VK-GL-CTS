@@ -290,9 +290,11 @@ StorageImage2D::StorageImage2D (Context& context, VkFormat vkFormat, const int w
 		{
 			m_semaphore = createSemaphore(vki, dev);
 
+#ifndef CTS_USES_VULKANSC
 			allocateAndBindSparseImage(	vki, dev, m_context.getPhysicalDevice(), m_context.getInstanceInterface(),
 										imageCreateInfo, *m_semaphore, m_context.getSparseQueue(),
 										allocator, m_allocations, mapVkFormat(m_vkFormat), *m_image	);
+#endif // CTS_USES_VULKANSC
 		}
 		else
 		{

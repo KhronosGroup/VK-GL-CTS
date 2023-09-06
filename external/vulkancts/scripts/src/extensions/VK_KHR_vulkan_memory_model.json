@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": "0.1.2.0"
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceVulkanMemoryModelFeatures":
+		[
+			{ "features": ["vulkanMemoryModel"],		"requirements": ["VK_KHR_vulkan_memory_model"] }
+		]
+	}
+}

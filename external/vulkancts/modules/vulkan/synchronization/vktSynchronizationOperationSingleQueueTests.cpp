@@ -379,7 +379,7 @@ public:
 		for (deUint32 copyOpNdx = 0; copyOpNdx < DE_LENGTH_OF_ARRAY(s_copyOps); copyOpNdx++)
 		{
 			if (isResourceSupported(s_copyOps[copyOpNdx], resourceDesc))
-				m_opSupports.push_back(de::SharedPtr<OperationSupport>(makeOperationSupport(s_copyOps[copyOpNdx], resourceDesc).release()));
+				m_opSupports.push_back(de::SharedPtr<OperationSupport>(makeOperationSupport(s_copyOps[copyOpNdx], resourceDesc, false).release()));
 		}
 		m_opSupports.push_back(readOp);
 
@@ -398,13 +398,13 @@ public:
 
 	tcu::TestStatus	iterate (void)
 	{
-		const DeviceInterface&									vk							= m_context.getDeviceInterface();
-		const VkDevice											device						= m_context.getDevice();
-		const VkQueue											queue						= m_context.getUniversalQueue();
-		const deUint32											queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
-		de::Random												rng							(1234);
-		const Unique<VkSemaphore>								semaphore					(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR));
-		const Unique<VkCommandPool>								cmdPool						(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+		const DeviceInterface&									vk						= m_context.getDeviceInterface();
+		const VkDevice											device					= m_context.getDevice();
+		const VkQueue											queue					= m_context.getUniversalQueue();
+		const deUint32											queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
+		de::Random												rng						(1234);
+		const Unique<VkSemaphore>								semaphore				(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE));
+		const Unique<VkCommandPool>								cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 		std::vector<de::SharedPtr<Move<VkCommandBuffer> > >		ptrCmdBuffers;
 		std::vector<VkCommandBufferSubmitInfoKHR>				cmdBuffersInfo				(m_ops.size(), makeCommonCommandBufferSubmitInfo(0u));
 		std::vector<VkSemaphoreSubmitInfoKHR>					waitSemaphoreSubmitInfos	(m_ops.size(), makeCommonSemaphoreSubmitInfo(*semaphore, 0u, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR));
@@ -608,12 +608,13 @@ public:
 					 const ResourceDescription	resourceDesc,
 					 const OperationName		writeOp,
 					 const OperationName		readOp,
+					 const bool					specializedAccess,
 					 PipelineCacheData&			pipelineCacheData)
 		: TestCase				(testCtx, name, description)
 		, m_type				(type)
 		, m_resourceDesc		(resourceDesc)
-		, m_writeOp				(makeOperationSupport(writeOp, resourceDesc).release())
-		, m_readOp				(makeOperationSupport(readOp, resourceDesc).release())
+		, m_writeOp				(makeOperationSupport(writeOp, resourceDesc, specializedAccess).release())
+		, m_readOp				(makeOperationSupport(readOp, resourceDesc, specializedAccess).release())
 		, m_syncPrimitive		(syncPrimitive)
 		, m_pipelineCacheData	(pipelineCacheData)
 	{
@@ -629,7 +630,7 @@ public:
 			for (deUint32 copyOpNdx = 0; copyOpNdx < DE_LENGTH_OF_ARRAY(s_copyOps); copyOpNdx++)
 			{
 				if (isResourceSupported(s_copyOps[copyOpNdx], m_resourceDesc))
-					makeOperationSupport(s_copyOps[copyOpNdx], m_resourceDesc)->initPrograms(programCollection);
+					makeOperationSupport(s_copyOps[copyOpNdx], m_resourceDesc, false)->initPrograms(programCollection);
 			}
 		}
 	}
@@ -639,14 +640,17 @@ public:
 		if (m_type == SynchronizationType::SYNCHRONIZATION2)
 			context.requireDeviceFunctionality("VK_KHR_synchronization2");
 
+#ifndef CTS_USES_VULKANSC
 		if (SYNC_PRIMITIVE_EVENT == m_syncPrimitive &&
 			context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 			!context.getPortabilitySubsetFeatures().events)
 		{
 			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Events are not supported by this implementation");
 		}
+#endif // CTS_USES_VULKANSC
 
-		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
+		if (m_syncPrimitive == SYNC_PRIMITIVE_TIMELINE_SEMAPHORE &&
+			!context.getTimelineSemaphoreFeatures().timelineSemaphore)
 			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
 
 		if (m_resourceDesc.type == RESOURCE_TYPE_IMAGE)
@@ -739,7 +743,17 @@ void createTests (tcu::TestCaseGroup* group, TestData data)
 
 				if (isResourceSupported(writeOp, resource) && isResourceSupported(readOp, resource))
 				{
-					opGroup->addChild(new SyncTestCase(testCtx, name, "", data.type, groups[groupNdx].syncPrimitive, resource, writeOp, readOp, *data.pipelineCacheData));
+					if (data.type == SynchronizationType::SYNCHRONIZATION2)
+					{
+						if ((isSpecializedAccessFlagSupported(writeOp) || isSpecializedAccessFlagSupported(readOp)))
+						{
+							const std::string nameSp = name + "_specialized_access_flag";
+							opGroup->addChild(new SyncTestCase(testCtx, nameSp, "", data.type, groups[groupNdx].syncPrimitive, resource, writeOp, readOp, true, *data.pipelineCacheData));
+						}
+					}
+
+					opGroup->addChild(new SyncTestCase(testCtx, name, "", data.type, groups[groupNdx].syncPrimitive, resource, writeOp, readOp, false, *data.pipelineCacheData));
+
 					empty = false;
 				}
 			}

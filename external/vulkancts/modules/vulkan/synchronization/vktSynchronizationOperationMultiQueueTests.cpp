@@ -31,9 +31,11 @@
 #include "vkMemUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkPlatform.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 #include "deRandom.hpp"
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
@@ -109,12 +111,24 @@ class MultiQueues
 		std::vector<VkQueue>	queue;
 	};
 
-	MultiQueues	(const Context& context, SynchronizationType type, bool timelineSemaphore)
-		: m_queueCount	(0)
+	MultiQueues	(Context& context, SynchronizationType type, bool timelineSemaphore)
+#ifdef CTS_USES_VULKANSC
+		: m_instance	(createCustomInstanceFromContext(context)),
+#else
+		:
+#endif // CTS_USES_VULKANSC
+		m_queueCount	(0)
 	{
-		const InstanceInterface&					instance				= context.getInstanceInterface();
+#ifdef CTS_USES_VULKANSC
+		const InstanceInterface&					instanceDriver			= m_instance.getDriver();
+		const VkPhysicalDevice						physicalDevice			= chooseDevice(instanceDriver, m_instance, context.getTestContext().getCommandLine());
+		const VkInstance							instance				= m_instance;
+#else
+		const InstanceInterface&					instanceDriver			= context.getInstanceInterface();
 		const VkPhysicalDevice						physicalDevice			= context.getPhysicalDevice();
-		const std::vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instance, physicalDevice);
+		const VkInstance							instance				= context.getInstance();
+#endif // CTS_USES_VULKANSC
+		const std::vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
 		for (deUint32 queuePropertiesNdx = 0; queuePropertiesNdx < queueFamilyProperties.size(); ++queuePropertiesNdx)
 		{
@@ -149,7 +163,8 @@ class MultiQueues
 			std::vector<const char*> deviceExtensions;
 			if (timelineSemaphore)
 			{
-				deviceExtensions.push_back("VK_KHR_timeline_semaphore");
+				if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_timeline_semaphore"))
+					deviceExtensions.push_back("VK_KHR_timeline_semaphore");
 				addToChainVulkanStructure(&nextPtr, timelineSemaphoreFeatures);
 			}
 			if (type == SynchronizationType::SYNCHRONIZATION2)
@@ -158,10 +173,48 @@ class MultiQueues
 				addToChainVulkanStructure(&nextPtr, synchronization2Features);
 			}
 
+			void* pNext												= &createPhysicalFeature;
+#ifdef CTS_USES_VULKANSC
+			VkDeviceObjectReservationCreateInfo memReservationInfo	= context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
+			memReservationInfo.pNext								= pNext;
+			pNext													= &memReservationInfo;
+
+			VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+			sc10Features.pNext										= pNext;
+			pNext													= &sc10Features;
+
+			VkPipelineCacheCreateInfo			pcCI;
+			std::vector<VkPipelinePoolSize>		poolSizes;
+			if (context.getTestContext().getCommandLine().isSubProcess())
+			{
+				if (context.getResourceInterface()->getCacheDataSize() > 0)
+				{
+					pcCI =
+					{
+						VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,		// VkStructureType				sType;
+						DE_NULL,											// const void*					pNext;
+						VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+							VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+						context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+						context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+					};
+					memReservationInfo.pipelineCacheCreateInfoCount		= 1;
+					memReservationInfo.pPipelineCacheCreateInfos		= &pcCI;
+				}
+
+				poolSizes							= context.getResourceInterface()->getPipelinePoolSizes();
+				if (!poolSizes.empty())
+				{
+					memReservationInfo.pipelinePoolSizeCount			= deUint32(poolSizes.size());
+					memReservationInfo.pPipelinePoolSizes				= poolSizes.data();
+				}
+			}
+#endif // CTS_USES_VULKANSC
+
 			const VkDeviceCreateInfo deviceInfo =
 			{
 				VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//VkStructureType					sType;
-				&createPhysicalFeature,											//const void*						pNext;
+				pNext,															//const void*						pNext;
 				0u,																//VkDeviceCreateFlags				flags;
 				static_cast<deUint32>(queueInfos.size()),						//deUint32							queueCreateInfoCount;
 				&queueInfos[0],													//const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
@@ -172,9 +225,13 @@ class MultiQueues
 				DE_NULL															//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 			};
 
-			m_logicalDevice	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), instance, physicalDevice, &deviceInfo);
-			m_deviceDriver	= MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice));
-			m_allocator		= MovePtr<Allocator>(new SimpleAllocator(*m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
+			m_logicalDevice	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
+#ifndef CTS_USES_VULKANSC
+			m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance, *m_logicalDevice));
+#else
+			m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), instance, *m_logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
+#endif // CTS_USES_VULKANSC
+			m_allocator		= MovePtr<Allocator>(new SimpleAllocator(*m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instanceDriver, physicalDevice)));
 
 			for (std::map<deUint32, QueueData>::iterator it = m_queues.begin(); it != m_queues.end(); ++it)
 			for (int queueNdx = 0; queueNdx < static_cast<int>(it->second.queue.size()); ++queueNdx)
@@ -193,6 +250,10 @@ class MultiQueues
 	}
 
 public:
+	~MultiQueues()
+	{
+	}
+
 	std::vector<QueuePair> getQueuesPairs (const VkQueueFlags flagsWrite, const VkQueueFlags flagsRead) const
 	{
 		std::map<deUint32, QueueData>	queuesWrite;
@@ -299,7 +360,7 @@ public:
 		return *m_allocator;
 	}
 
-	static SharedPtr<MultiQueues> getInstance(const Context& context, SynchronizationType type, bool timelineSemaphore)
+	static SharedPtr<MultiQueues> getInstance(Context& context, SynchronizationType type, bool timelineSemaphore)
 	{
 		if (!m_multiQueues)
 			m_multiQueues = SharedPtr<MultiQueues>(new MultiQueues(context, type, timelineSemaphore));
@@ -312,8 +373,15 @@ public:
 	}
 
 private:
+#ifdef CTS_USES_VULKANSC
+	CustomInstance					m_instance;
+#endif // CTS_USES_VULKANSC
 	Move<VkDevice>					m_logicalDevice;
-	MovePtr<DeviceDriver>			m_deviceDriver;
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<vk::DeviceDriver>	m_deviceDriver;
+#else
+	de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>	m_deviceDriver;
+#endif // CTS_USES_VULKANSC
 	MovePtr<Allocator>				m_allocator;
 	std::map<deUint32, QueueData>	m_queues;
 	deUint32						m_queueCount;
@@ -493,18 +561,23 @@ public:
 				const Data	expected	= writeOp->getData();
 				const Data	actual		= readOp->getData();
 
-				if (isIndirectBuffer(m_resourceDesc.type))
+#ifdef CTS_USES_VULKANSC
+				if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 				{
-					const deUint32 expectedValue = reinterpret_cast<const deUint32*>(expected.data)[0];
-					const deUint32 actualValue   = reinterpret_cast<const deUint32*>(actual.data)[0];
+					if (isIndirectBuffer(m_resourceDesc.type))
+					{
+						const deUint32 expectedValue = reinterpret_cast<const deUint32*>(expected.data)[0];
+						const deUint32 actualValue   = reinterpret_cast<const deUint32*>(actual.data)[0];
 
-					if (actualValue < expectedValue)
-						return tcu::TestStatus::fail("Counter value is smaller than expected");
-				}
-				else
-				{
-					if (0 != deMemCmp(expected.data, actual.data, expected.size))
-						return tcu::TestStatus::fail("Memory contents don't match");
+						if (actualValue < expectedValue)
+							return tcu::TestStatus::fail("Counter value is smaller than expected");
+					}
+					else
+					{
+						if (0 != deMemCmp(expected.data, actual.data, expected.size))
+							return tcu::TestStatus::fail("Memory contents don't match");
+					}
 				}
 			}
 		}
@@ -592,7 +665,7 @@ public:
 		const DeviceInterface&							vk				= m_opContext->getDeviceInterface();
 		const VkDevice									device			= m_opContext->getDevice();
 		de::Random										rng				(1234);
-		const Unique<VkSemaphore>						semaphore		(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR));
+		const Unique<VkSemaphore>						semaphore		(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE));
 		std::vector<SharedPtr<Move<VkCommandPool> > >	cmdPools;
 		std::vector<SharedPtr<Move<VkCommandBuffer> > >	ptrCmdBuffers;
 		std::vector<VkCommandBufferSubmitInfoKHR>		cmdBufferInfos;
@@ -761,18 +834,23 @@ public:
 				const Data	expected = writeOp->getData();
 				const Data	actual	 = readOp->getData();
 
-				if (isIndirectBuffer(m_resourceDesc.type))
+#ifdef CTS_USES_VULKANSC
+				if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 				{
-					const deUint32 expectedValue = reinterpret_cast<const deUint32*>(expected.data)[0];
-					const deUint32 actualValue   = reinterpret_cast<const deUint32*>(actual.data)[0];
+					if (isIndirectBuffer(m_resourceDesc.type))
+					{
+						const deUint32 expectedValue = reinterpret_cast<const deUint32*>(expected.data)[0];
+						const deUint32 actualValue   = reinterpret_cast<const deUint32*>(actual.data)[0];
 
-					if (actualValue < expectedValue)
-						return tcu::TestStatus::fail("Counter value is smaller than expected");
-				}
-				else
-				{
-					if (0 != deMemCmp(expected.data, actual.data, expected.size))
-						return tcu::TestStatus::fail("Memory contents don't match");
+						if (actualValue < expectedValue)
+							return tcu::TestStatus::fail("Counter value is smaller than expected");
+					}
+					else
+					{
+						if (0 != deMemCmp(expected.data, actual.data, expected.size))
+							return tcu::TestStatus::fail("Memory contents don't match");
+					}
 				}
 			}
 		}
@@ -835,7 +913,8 @@ public:
 		if (m_sharingMode == VK_SHARING_MODE_CONCURRENT && queueFamilyProperties.size() < 2)
 			TCU_THROW(NotSupportedError, "Concurrent requires more than 1 queue family");
 
-		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
+		if (m_syncPrimitive == SYNC_PRIMITIVE_TIMELINE_SEMAPHORE &&
+			!context.getTimelineSemaphoreFeatures().timelineSemaphore)
 			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
 
 		if (m_resourceDesc.type == RESOURCE_TYPE_IMAGE)

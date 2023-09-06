@@ -125,14 +125,6 @@ struct TestResults
 };
 
 
-// TODO probably tcu has a clamp already.
-template <typename T>
-inline T clamp(T x, T minVal, T maxVal)
-{
-	return std::min(std::max(x, minVal), maxVal);
-}
-
-
 class InheritanceTestInstance : public TestInstance
 {
 	const vk::InstanceInterface& m_in;
@@ -160,33 +152,30 @@ class InheritanceTestInstance : public TestInstance
 	// Shader modules for graphics pipelines.
 	Move<VkShaderModule> m_vertModule, m_geomModule, m_fragModule;
 
-	// Vertex, geometry, fragment stages for creating the pipeline.
-	VkPipelineShaderStageCreateInfo m_stages[3];
-
 	// Geometry shader pipeline, converts points into rasterized
 	// struct Rectangles using geometry shader, which also selects the
 	// viewport to use. Pipeline array maps viewport/scissor count to
 	// the pipeline to use (special value 0 indicates that
 	// viewport/scissor count is dynamic state).
-	Move<VkPipelineLayout> m_rectanglePipelineLayout;
-	Move<VkPipeline>         m_rectanglePipelines[kMaxViewports + 1];
+	Move<VkPipelineLayout>					m_rectanglePipelineLayout;
+	std::vector<GraphicsPipelineWrapper>	m_rectanglePipelines;
 
 	// Command pool
 	Move<VkCommandPool> m_cmdPool;
 
 	// Primary command buffer, re-used for every test
-	VkCommandBuffer m_primaryCmdBuffer;
+	Move<VkCommandBuffer> m_primaryCmdBuffer;
 
 	// Secondary command buffers, first for specifying
 	// viewport/scissor state, second for subpass contents.
 	// Both re-used to check for stale state.
-	VkCommandBuffer m_setStateCmdBuffer, m_subpassCmdBuffer;
+	Move<VkCommandBuffer> m_setStateCmdBuffer, m_subpassCmdBuffer;
 
 	// "depth buffer" used for CPU rasterization of expected image.
 	float m_cpuDepthBuffer[kHeight][kWidth];
 
 public:
-	InheritanceTestInstance(Context& context, InheritanceMode inheritanceMode);
+	InheritanceTestInstance(Context& context, PipelineConstructionType pipelineConstructionType, InheritanceMode inheritanceMode);
 	tcu::TestStatus iterate(void);
 
 private:
@@ -287,14 +276,6 @@ static const VkPipelineVertexInputStateCreateInfo vertexInput = {
 	VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, NULL,
 	0, 1, &binding, 4, attributes };
 
-static const VkPipelineInputAssemblyStateCreateInfo assembly {
-	VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, NULL,
-	0, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, VK_FALSE };
-
-static const VkPipelineViewportStateCreateInfo viewportTemplate = {
-	VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, NULL,
-	0, 0, NULL, 0, NULL };
-
 static const VkPipelineRasterizationStateCreateInfo rasterization = {
 	VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, NULL,
 	0,
@@ -304,10 +285,6 @@ static const VkPipelineRasterizationStateCreateInfo rasterization = {
 	VK_CULL_MODE_BACK_BIT,
 	VK_FRONT_FACE_COUNTER_CLOCKWISE,
 	VK_FALSE, 0.0f, 0.0f, 0.0f, 1.0f };
-
-static const VkPipelineMultisampleStateCreateInfo multisample = {
-	VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, NULL,
-	0, VK_SAMPLE_COUNT_1_BIT, VK_FALSE, 0.0f, NULL, VK_FALSE, VK_FALSE };
 
 static const VkPipelineDepthStencilStateCreateInfo depthStencil = {
 	VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, NULL,
@@ -336,45 +313,6 @@ static const VkPipelineDynamicStateCreateInfo dynamicState = {
 static const VkPipelineDynamicStateCreateInfo dynamicStateWithCount = {
 	VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, NULL,
 	0, 2, dynamicStateWithCountData };
-
-// Fill in the given graphics pipeline state. The caller needs to
-// provide space to store the generated
-// VkPipelineViewportStateCreateInfo, and provide the render pass,
-// pipeline layout, shader modules, and the viewport/scissor count (0
-// to use VK_DYNAMIC_STATE_VIEWPORT/SCISSOR_WITH_COUNT_EXT)
-static void fill(VkRenderPass                       renderPass,
-				 VkPipelineLayout                   layout,
-				 deUint32                           staticViewportScissorCount,
-				 deUint32                           stageCount,
-				 const VkPipelineShaderStageCreateInfo* pStages,
-				 VkGraphicsPipelineCreateInfo*      outCreateInfo,
-				 VkPipelineViewportStateCreateInfo* outViewportState)
-{
-	outCreateInfo->sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	outCreateInfo->pNext = NULL;
-	outCreateInfo->flags = 0;
-	outCreateInfo->stageCount = stageCount;
-	outCreateInfo->pStages = pStages;
-	outCreateInfo->pVertexInputState = &vertexInput;
-	outCreateInfo->pInputAssemblyState = &assembly;
-	outCreateInfo->pTessellationState = NULL;
-	outCreateInfo->pViewportState = outViewportState;
-	outCreateInfo->pRasterizationState = &rasterization;
-	outCreateInfo->pMultisampleState = &multisample;
-	outCreateInfo->pDepthStencilState = &depthStencil;
-	outCreateInfo->pColorBlendState = &blend;
-	outCreateInfo->pDynamicState = staticViewportScissorCount == 0 ? &dynamicStateWithCount : &dynamicState;
-	outCreateInfo->layout = layout;
-	outCreateInfo->renderPass = renderPass;
-	outCreateInfo->subpass = 0;
-	outCreateInfo->basePipelineHandle = 0;
-	outCreateInfo->basePipelineIndex = 0;
-
-	VkPipelineViewportStateCreateInfo viewportState = viewportTemplate;
-	viewportState.viewportCount = staticViewportScissorCount;
-	viewportState.scissorCount  = staticViewportScissorCount;
-	*outViewportState = viewportState;
-}
 
 } // end namespace pipelinestate
 
@@ -432,9 +370,8 @@ VkImageCreateInfo makeDepthImageInfo(Context& context)
 }
 
 
-
 // Initialize the Vulkan state for the tests.
-InheritanceTestInstance::InheritanceTestInstance(Context& context, InheritanceMode inheritanceMode)
+InheritanceTestInstance::InheritanceTestInstance(Context& context, PipelineConstructionType pipelineConstructionType, InheritanceMode inheritanceMode)
 	: TestInstance(context)
 	, m_in(context.getInstanceInterface())
 	, m_vk(context.getDeviceInterface())
@@ -524,37 +461,19 @@ InheritanceTestInstance::InheritanceTestInstance(Context& context, InheritanceMo
 
 	// Compile graphics pipeline stages.
 	m_vertModule = vk::createShaderModule(m_vk, dev, m_context.getBinaryCollection().get("vert"), 0u);
-	m_stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	m_stages[0].pNext = NULL;
-	m_stages[0].flags = 0;
-	m_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-	m_stages[0].module = m_vertModule.get();
-	m_stages[0].pName = "main";
-	m_stages[0].pSpecializationInfo = NULL;
-
 	m_geomModule = vk::createShaderModule(m_vk, dev, m_context.getBinaryCollection().get("geom"), 0u);
-	m_stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	m_stages[1].pNext = NULL;
-	m_stages[1].flags = 0;
-	m_stages[1].stage = VK_SHADER_STAGE_GEOMETRY_BIT;
-	m_stages[1].module = m_geomModule.get();
-	m_stages[1].pName = "main";
-	m_stages[1].pSpecializationInfo = NULL;
-
 	m_fragModule = vk::createShaderModule(m_vk, dev, m_context.getBinaryCollection().get("frag"), 0u);
-	m_stages[2].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	m_stages[2].pNext = NULL;
-	m_stages[2].flags = 0;
-	m_stages[2].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	m_stages[2].module = m_fragModule.get();
-	m_stages[2].pName = "main";
-	m_stages[2].pSpecializationInfo = NULL;
 
 	// Set up pipeline layout (empty)
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{ };
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	m_rectanglePipelineLayout = createPipelineLayout(m_vk, dev, &pipelineLayoutInfo, NULL);
+
 	// Graphics pipelines are created on-the-fly later.
+	deUint32 size = kMaxViewports + 1;
+	m_rectanglePipelines.reserve(size);
+	for (deUint32 i = 0; i < size; ++i)
+		m_rectanglePipelines.emplace_back(m_vk, m_context.getDevice(), pipelineConstructionType);
 
 	// Command pool and command buffers.
 	VkCommandPoolCreateInfo poolInfo {
@@ -568,16 +487,16 @@ InheritanceTestInstance::InheritanceTestInstance(Context& context, InheritanceMo
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, NULL,
 		m_cmdPool.get(),
 		VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1 };
-	VK_CHECK(m_vk.allocateCommandBuffers(dev, &cmdBufferInfo, &m_primaryCmdBuffer));
+	m_primaryCmdBuffer = allocateCommandBuffer(m_vk, dev, &cmdBufferInfo);
 	cmdBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-	VK_CHECK(m_vk.allocateCommandBuffers(dev, &cmdBufferInfo, &m_setStateCmdBuffer));
-	VK_CHECK(m_vk.allocateCommandBuffers(dev, &cmdBufferInfo, &m_subpassCmdBuffer));
+	m_setStateCmdBuffer = allocateCommandBuffer(m_vk, dev, &cmdBufferInfo);
+	m_subpassCmdBuffer = allocateCommandBuffer(m_vk, dev, &cmdBufferInfo);
 }
 
 
 static deUint8 u8_from_unorm(float x)
 {
-	return deUint8(roundf(clamp(x, 0.0f, 1.0f) * 255.0f));
+	return deUint8(roundf(de::clamp(x, 0.0f, 1.0f) * 255.0f));
 }
 
 
@@ -615,7 +534,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 	// ************************************************************************
 	// Record state-setting secondary command buffer.
 	// ************************************************************************
-	VK_CHECK(m_vk.beginCommandBuffer(m_setStateCmdBuffer, &cmdBeginInfo));
+	VK_CHECK(m_vk.beginCommandBuffer(m_setStateCmdBuffer.get(), &cmdBeginInfo));
 	switch (m_inheritanceMode)
 	{
 	case kInheritanceDisabled:
@@ -624,26 +543,35 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		break;
 	case kInheritFromSecondary:
 		// Set all viewport/scissor state.
-		m_vk.cmdSetViewport(m_setStateCmdBuffer, 0, deUint32(geometry.viewports.size()), &geometry.viewports[0]);
-		m_vk.cmdSetScissor(m_setStateCmdBuffer, 0, deUint32(geometry.scissors.size()), &geometry.scissors[0]);
+		m_vk.cmdSetViewport(m_setStateCmdBuffer.get(), 0, deUint32(geometry.viewports.size()), &geometry.viewports[0]);
+		m_vk.cmdSetScissor(m_setStateCmdBuffer.get(), 0, deUint32(geometry.scissors.size()), &geometry.scissors[0]);
 		break;
 	case kSplitInheritance:
 		// Set just the first viewport / scissor, rest are set in
 		// primary command buffer. Checks that extension properly
 		// muxes state from different sources.
-		m_vk.cmdSetViewport(m_setStateCmdBuffer, 0, 1, &geometry.viewports[0]);
-		m_vk.cmdSetScissor(m_setStateCmdBuffer, 0, 1, &geometry.scissors[0]);
+		m_vk.cmdSetViewport(m_setStateCmdBuffer.get(), 0, 1, &geometry.viewports[0]);
+		m_vk.cmdSetScissor(m_setStateCmdBuffer.get(), 0, 1, &geometry.scissors[0]);
 		break;
 	case kInheritFromSecondaryWithCount:
-		m_vk.cmdSetViewportWithCount(m_setStateCmdBuffer,
+#ifndef CTS_USES_VULKANSC
+		m_vk.cmdSetViewportWithCount(m_setStateCmdBuffer.get(),
 									 deUint32(geometry.viewports.size()),
 									 &geometry.viewports[0]);
-		m_vk.cmdSetScissorWithCount(m_setStateCmdBuffer,
+		m_vk.cmdSetScissorWithCount(m_setStateCmdBuffer.get(),
 									deUint32(geometry.scissors.size()),
 									&geometry.scissors[0]);
+#else
+		m_vk.cmdSetViewportWithCountEXT(m_setStateCmdBuffer.get(),
+									 deUint32(geometry.viewports.size()),
+									 &geometry.viewports[0]);
+		m_vk.cmdSetScissorWithCountEXT(m_setStateCmdBuffer.get(),
+									deUint32(geometry.scissors.size()),
+									&geometry.scissors[0]);
+#endif // CTS_USES_VULKANSC
 		break;
 	}
-	VK_CHECK(m_vk.endCommandBuffer(m_setStateCmdBuffer));
+	VK_CHECK(m_vk.endCommandBuffer(m_setStateCmdBuffer.get()));
 
 	// ************************************************************************
 	// Record subpass command buffer, bind vertex buffer and pipeline,
@@ -651,6 +579,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 	// ************************************************************************
 	if (m_inheritanceMode != kInheritanceDisabled)
 	{
+#ifndef CTS_USES_VULKANSC
 		// Enable viewport/scissor inheritance struct.
 		VkCommandBufferInheritanceViewportScissorInfoNV inheritViewportInfo {
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_VIEWPORT_SCISSOR_INFO_NV,
@@ -658,18 +587,19 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 			VK_TRUE,
 			deUint32(geometry.viewports.size()), &geometry.viewports[0] };
 		inheritanceInfo.pNext = &inheritViewportInfo;
-		VK_CHECK(m_vk.beginCommandBuffer(m_subpassCmdBuffer, &cmdBeginInfo));
+		VK_CHECK(m_vk.beginCommandBuffer(m_subpassCmdBuffer.get(), &cmdBeginInfo));
 		inheritanceInfo.pNext = NULL;
+#endif // CTS_USES_VULKANSC
 	}
 	else
 	{
-		VK_CHECK(m_vk.beginCommandBuffer(m_subpassCmdBuffer, &cmdBeginInfo));
+		VK_CHECK(m_vk.beginCommandBuffer(m_subpassCmdBuffer.get(), &cmdBeginInfo));
 	}
 	// Set viewport/scissor state only when not inherited.
 	if (m_inheritanceMode == kInheritanceDisabled)
 	{
-		m_vk.cmdSetViewport(m_subpassCmdBuffer, 0, deUint32(geometry.viewports.size()), &geometry.viewports[0]);
-		m_vk.cmdSetScissor(m_subpassCmdBuffer, 0, deUint32(geometry.scissors.size()), &geometry.scissors[0]);
+		m_vk.cmdSetViewport(m_subpassCmdBuffer.get(), 0, deUint32(geometry.viewports.size()), &geometry.viewports[0]);
+		m_vk.cmdSetScissor(m_subpassCmdBuffer.get(), 0, deUint32(geometry.scissors.size()), &geometry.scissors[0]);
 	}
 	// Get the graphics pipeline, creating it if needed (encountered
 	// new static viewport/scissor count). 0 = dynamic count.
@@ -687,26 +617,48 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		staticViewportCount = 0;
 		break;
 	}
-	VkPipeline graphicsPipeline = m_rectanglePipelines[staticViewportCount].get();
-	if (!graphicsPipeline)
+	DE_ASSERT(staticViewportCount < m_rectanglePipelines.size());
+	if (!m_rectanglePipelines[staticViewportCount].wasBuild())
 	{
-		VkGraphicsPipelineCreateInfo pipelineInfo;
-		VkPipelineViewportStateCreateInfo viewportInfo;
-		pipelinestate::fill(
-			m_renderPass.get(), m_rectanglePipelineLayout.get(), staticViewportCount,
-			3, m_stages,
-			&pipelineInfo, &viewportInfo);
-		m_rectanglePipelines[staticViewportCount] = createGraphicsPipeline(m_vk, m_context.getDevice(), 0, &pipelineInfo, NULL);
-		graphicsPipeline = m_rectanglePipelines[staticViewportCount].get();
+		const std::vector<VkViewport>	viewports;
+		const std::vector<VkRect2D>		scissors;
+
+		m_rectanglePipelines[staticViewportCount]
+			.setDynamicState((staticViewportCount == 0) ? &pipelinestate::dynamicStateWithCount : &pipelinestate::dynamicState)
+			.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
+			.setDefaultViewportsCount(staticViewportCount)
+			.setDefaultScissorsCount(staticViewportCount)
+			.setDefaultMultisampleState()
+			.setDefaultColorBlendState()
+			.setupVertexInputState(&pipelinestate::vertexInput)
+			.setupPreRasterizationShaderState(viewports,
+											  scissors,
+											  *m_rectanglePipelineLayout,
+											  *m_renderPass,
+											  0u,
+											  *m_vertModule,
+											  &pipelinestate::rasterization,
+											  DE_NULL,
+											  DE_NULL,
+											  *m_geomModule)
+			.setupFragmentShaderState(*m_rectanglePipelineLayout,
+									  *m_renderPass,
+									  0u,
+									  *m_fragModule,
+									  &pipelinestate::depthStencil)
+			.setupFragmentOutputState(*m_renderPass, 0u, &pipelinestate::blend)
+			.setMonolithicPipelineLayout(*m_rectanglePipelineLayout)
+			.buildPipeline();
 	}
-	m_vk.cmdBindPipeline(m_subpassCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+	const VkPipeline graphicsPipeline = m_rectanglePipelines[staticViewportCount].getPipeline();
+	m_vk.cmdBindPipeline(m_subpassCmdBuffer.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
 	// Bind vertex buffer and draw.
 	VkDeviceSize offset = 0;
 	VkBuffer     vertexBuffer = m_rectangleBuffer.get();
-	m_vk.cmdBindVertexBuffers(m_subpassCmdBuffer, 0, 1, &vertexBuffer, &offset);
-	m_vk.cmdDraw(m_subpassCmdBuffer, deUint32(geometry.rectangles.size()), 1, 0, 0);
-	VK_CHECK(m_vk.endCommandBuffer(m_subpassCmdBuffer));
+	m_vk.cmdBindVertexBuffers(m_subpassCmdBuffer.get(), 0, 1, &vertexBuffer, &offset);
+	m_vk.cmdDraw(m_subpassCmdBuffer.get(), deUint32(geometry.rectangles.size()), 1, 0, 0);
+	VK_CHECK(m_vk.endCommandBuffer(m_subpassCmdBuffer.get()));
 
 	// ************************************************************************
 	// Primary command buffer commands, start render pass and execute
@@ -717,7 +669,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		NULL,
 		0, NULL };
-	VK_CHECK(m_vk.beginCommandBuffer(m_primaryCmdBuffer, &beginInfo));
+	VK_CHECK(m_vk.beginCommandBuffer(m_primaryCmdBuffer.get(), &beginInfo));
 
 	VkClearValue clearValues[2];
 	clearValues[0].color.float32[0] = geometry.clearColor.x();
@@ -739,25 +691,34 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 	case kInheritFromPrimary:
 		// Specify all viewport/scissor state only when we expect to.
 		// inherit ALL viewport/scissor state from primary command buffer.
-		m_vk.cmdSetViewport(m_primaryCmdBuffer, 0, deUint32(geometry.viewports.size()), &geometry.viewports[0]);
-		m_vk.cmdSetScissor(m_primaryCmdBuffer, 0, deUint32(geometry.scissors.size()), &geometry.scissors[0]);
+		m_vk.cmdSetViewport(m_primaryCmdBuffer.get(), 0, deUint32(geometry.viewports.size()), &geometry.viewports[0]);
+		m_vk.cmdSetScissor(m_primaryCmdBuffer.get(), 0, deUint32(geometry.scissors.size()), &geometry.scissors[0]);
 		break;
 	case kInheritFromPrimaryWithCount:
 		// Same but with count inherited.
-		m_vk.cmdSetViewportWithCount(m_primaryCmdBuffer,
+#ifndef CTS_USES_VULKANSC
+		m_vk.cmdSetViewportWithCount(m_primaryCmdBuffer.get(),
 									 deUint32(geometry.viewports.size()),
 									 &geometry.viewports[0]);
-		m_vk.cmdSetScissorWithCount(m_primaryCmdBuffer,
+		m_vk.cmdSetScissorWithCount(m_primaryCmdBuffer.get(),
 									deUint32(geometry.scissors.size()),
 									&geometry.scissors[0]);
+#else
+		m_vk.cmdSetViewportWithCountEXT(m_primaryCmdBuffer.get(),
+									 deUint32(geometry.viewports.size()),
+									 &geometry.viewports[0]);
+		m_vk.cmdSetScissorWithCountEXT(m_primaryCmdBuffer.get(),
+									deUint32(geometry.scissors.size()),
+									&geometry.scissors[0]);
+#endif // CTS_USES_VULKANSC
 		break;
 	case kSplitInheritance:
 		// Specify the remaining viewport, scissors not set by the
 		// setStateCmdBuffer in this test mode.
 		if (geometry.viewports.size() > 1)
 		{
-			m_vk.cmdSetViewport(m_primaryCmdBuffer, 1, deUint32(geometry.viewports.size() - 1), &geometry.viewports[1]);
-			m_vk.cmdSetScissor(m_primaryCmdBuffer, 1, deUint32(geometry.scissors.size() - 1), &geometry.scissors[1]);
+			m_vk.cmdSetViewport(m_primaryCmdBuffer.get(), 1, deUint32(geometry.viewports.size() - 1), &geometry.viewports[1]);
+			m_vk.cmdSetScissor(m_primaryCmdBuffer.get(), 1, deUint32(geometry.scissors.size() - 1), &geometry.scissors[1]);
 		}
 		/* FALLTHROUGH */
 	case kInheritanceDisabled:
@@ -766,17 +727,17 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		// Specify some bogus state, ensure correctly overwritten later.
 		VkViewport bogusViewport { 0.f, 0.f, 8.f, 8.f, 0.f, 0.1f };
 		VkRect2D   bogusScissors { { 2, 0 }, { 100, 100 }};
-		m_vk.cmdSetViewport(m_primaryCmdBuffer, 0, 1, &bogusViewport);
-		m_vk.cmdSetScissor(m_primaryCmdBuffer, 0, 1, &bogusScissors);
+		m_vk.cmdSetViewport(m_primaryCmdBuffer.get(), 0, 1, &bogusViewport);
+		m_vk.cmdSetScissor(m_primaryCmdBuffer.get(), 0, 1, &bogusScissors);
 		break;
 	}
 
-	m_vk.cmdBeginRenderPass(m_primaryCmdBuffer, &renderPassBeginInfo,
+	m_vk.cmdBeginRenderPass(m_primaryCmdBuffer.get(), &renderPassBeginInfo,
 		VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-	VkCommandBuffer secondaryCmdBuffers[2] = {m_setStateCmdBuffer,
-											  m_subpassCmdBuffer};
-	m_vk.cmdExecuteCommands(m_primaryCmdBuffer, 2, secondaryCmdBuffers);
-	m_vk.cmdEndRenderPass(m_primaryCmdBuffer);
+	VkCommandBuffer secondaryCmdBuffers[2] = {m_setStateCmdBuffer.get(),
+											  m_subpassCmdBuffer.get()};
+	m_vk.cmdExecuteCommands(m_primaryCmdBuffer.get(), 2, secondaryCmdBuffers);
+	m_vk.cmdEndRenderPass(m_primaryCmdBuffer.get());
 
 	// Barrier, then copy rendered image to download buffer.
 	VkImageMemoryBarrier imageBarrier {
@@ -790,7 +751,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		m_colorImage.get(),
 		{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }};
 	m_vk.cmdPipelineBarrier(
-		m_primaryCmdBuffer,
+		m_primaryCmdBuffer.get(),
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
 		0, 0, NULL, 0, NULL, 1, &imageBarrier );
@@ -800,7 +761,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		{ 0, 0, 0 },
 		{ kWidth, kHeight, 1 } };
 	m_vk.cmdCopyImageToBuffer(
-		m_primaryCmdBuffer,
+		m_primaryCmdBuffer.get(),
 		m_colorImage.get(),
 		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 		m_downloadBuffer.get(),
@@ -816,18 +777,19 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		m_downloadBuffer.get(),
 		0, VK_WHOLE_SIZE };
 	m_vk.cmdPipelineBarrier(
-		m_primaryCmdBuffer,
+		m_primaryCmdBuffer.get(),
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
 		VK_PIPELINE_STAGE_HOST_BIT,
 		0, 0, NULL, 1, &bufferBarrier, 0, NULL);
 
 	// End and submit primary command buffer.
-	VK_CHECK(m_vk.endCommandBuffer(m_primaryCmdBuffer));
+	VK_CHECK(m_vk.endCommandBuffer(m_primaryCmdBuffer.get()));
+	VkCommandBuffer primaryCmd = m_primaryCmdBuffer.get();
 	VkSubmitInfo submitInfo {
 		VK_STRUCTURE_TYPE_SUBMIT_INFO,
 		NULL,
 		0, NULL, NULL,
-		1, &m_primaryCmdBuffer,
+		1, &primaryCmd,
 		0, NULL };
 	m_vk.queueSubmit(m_context.getUniversalQueue(), 1, &submitInfo, 0);
 }
@@ -865,10 +827,10 @@ void InheritanceTestInstance::rasterizeExpectedResults(const TestGeometry& geome
 		float py = viewport.height;
 		float pz = viewport.maxDepth - viewport.minDepth;
 
-		float xLow  = clamp(r.xyz.x(), -1.0f, 1.0f);
-		float xHigh = clamp(r.xyz.x() + r.widthHeight.x(), -1.0f, 1.0f);
-		float yLow  = clamp(r.xyz.y(), -1.0f, 1.0f);
-		float yHigh = clamp(r.xyz.y() + r.widthHeight.y(), -1.0f, 1.0f);
+		float xLow  = de::clamp(r.xyz.x(), -1.0f, 1.0f);
+		float xHigh = de::clamp(r.xyz.x() + r.widthHeight.x(), -1.0f, 1.0f);
+		float yLow  = de::clamp(r.xyz.y(), -1.0f, 1.0f);
+		float yHigh = de::clamp(r.xyz.y() + r.widthHeight.y(), -1.0f, 1.0f);
 
 		float xf[2];
 		xf[0]    = px * 0.5f * xLow  + ox;
@@ -887,18 +849,18 @@ void InheritanceTestInstance::rasterizeExpectedResults(const TestGeometry& geome
 		// positive width/height.
 		deInt32 xsLow  = scissor.offset.x;
 		deInt32 xsHigh = xsLow + deInt32(scissor.extent.width);
-		xBegin         = clamp(xBegin, xsLow, xsHigh);
-		xEnd           = clamp(xEnd,   xsLow, xsHigh);
+		xBegin         = de::clamp(xBegin, xsLow, xsHigh);
+		xEnd           = de::clamp(xEnd,   xsLow, xsHigh);
 		deInt32 ysLow  = scissor.offset.y;
 		deInt32 ysHigh = ysLow + deInt32(scissor.extent.height);
-		yBegin         = clamp(yBegin, ysLow, ysHigh);
-		yEnd           = clamp(yEnd,   ysLow, ysHigh);
+		yBegin         = de::clamp(yBegin, ysLow, ysHigh);
+		yEnd           = de::clamp(yEnd,   ysLow, ysHigh);
 
 		// Clamp to framebuffer size
-		xBegin = clamp(xBegin, 0, kWidth);
-		xEnd   = clamp(xEnd,   0, kWidth);
-		yBegin = clamp(yBegin, 0, kHeight);
-		yEnd   = clamp(yEnd,   0, kHeight);
+		xBegin = de::clamp(xBegin, 0, kWidth);
+		xEnd   = de::clamp(xEnd,   0, kWidth);
+		yBegin = de::clamp(yBegin, 0, kHeight);
+		yEnd   = de::clamp(yEnd,   0, kHeight);
 
 		// Rasterize.
 		Texel rectTexel = texelFrom_r8g8b8(r.r8g8b8);
@@ -1073,16 +1035,19 @@ tcu::TestStatus InheritanceTestInstance::iterate(void)
 class InheritanceTestCase : public TestCase
 {
 public:
-	InheritanceTestCase (tcu::TestContext& testCtx, InheritanceMode inheritanceMode,
+	InheritanceTestCase (tcu::TestContext& testCtx,
+						 vk::PipelineConstructionType pipelineConstructionType, InheritanceMode inheritanceMode,
 						 const char* name, const char* description)
-		: TestCase(testCtx, name, description), m_inheritanceMode(inheritanceMode)
+		: TestCase(testCtx, name, description)
+		, m_pipelineConstructionType	(pipelineConstructionType)
+		, m_inheritanceMode				(inheritanceMode)
 	{
 
 	}
 
 	TestInstance* createInstance (Context& context) const
 	{
-		return new InheritanceTestInstance(context, m_inheritanceMode);
+		return new InheritanceTestInstance(context, m_pipelineConstructionType, m_inheritanceMode);
 	}
 
 	virtual void checkSupport (Context& context) const
@@ -1092,6 +1057,7 @@ public:
 		{
 			context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state");
 		}
+		checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 	}
 
 	virtual void initPrograms (vk::SourceCollections& programCollection) const
@@ -1101,32 +1067,36 @@ public:
 		programCollection.glslSources.add("frag") << glu::FragmentSource(pipelinestate::frag_glsl);
 	}
 private:
-	InheritanceMode        m_inheritanceMode;
+	vk::PipelineConstructionType	m_pipelineConstructionType;
+	InheritanceMode					m_inheritanceMode;
 };
 
 } // anonymous namespace
 
 
-DynamicStateInheritanceTests::DynamicStateInheritanceTests (tcu::TestContext& testCtx)
-	: TestCaseGroup(testCtx, "inheritance", "Tests for inherited viewport/scissor state")
+DynamicStateInheritanceTests::DynamicStateInheritanceTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
+	: TestCaseGroup					(testCtx, "inheritance", "Tests for inherited viewport/scissor state")
+	, m_pipelineConstructionType	(pipelineConstructionType)
 {
 
 }
 
 void DynamicStateInheritanceTests::init (void)
 {
-	addChild(new InheritanceTestCase(m_testCtx, kInheritanceDisabled, "baseline",
-			 "Baseline, no viewport/scissor inheritance"));
-	addChild(new InheritanceTestCase(m_testCtx, kInheritFromPrimary, "primary",
-			 "Inherit viewport/scissor from calling primary command buffer"));
-	addChild(new InheritanceTestCase(m_testCtx, kInheritFromSecondary, "secondary",
-			 "Inherit viewport/scissor from another secondary command buffer"));
-	addChild(new InheritanceTestCase(m_testCtx, kSplitInheritance, "split",
-			 "Inherit some viewports/scissors from primary, some from secondary"));
-	addChild(new InheritanceTestCase(m_testCtx, kInheritFromPrimaryWithCount, "primary_with_count",
-			 "Inherit viewport/scissor with count from calling primary command buffer"));
-	addChild(new InheritanceTestCase(m_testCtx, kInheritFromSecondaryWithCount, "secondary_with_count",
-			 "Inherit viewport/scissor with count from another secondary command buffer"));
+	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritanceDisabled,
+			 "baseline", "Baseline, no viewport/scissor inheritance"));
+#ifndef CTS_USES_VULKANSC
+	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromPrimary,
+			 "primary", "Inherit viewport/scissor from calling primary command buffer"));
+	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromSecondary,
+			 "secondary", "Inherit viewport/scissor from another secondary command buffer"));
+	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kSplitInheritance,
+			 "split", "Inherit some viewports/scissors from primary, some from secondary"));
+	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromPrimaryWithCount,
+			 "primary_with_count", "Inherit viewport/scissor with count from calling primary command buffer"));
+	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromSecondaryWithCount,
+			 "secondary_with_count", "Inherit viewport/scissor with count from another secondary command buffer"));
+#endif // CTS_USES_VULKANSC
 }
 
 } // DynamicState

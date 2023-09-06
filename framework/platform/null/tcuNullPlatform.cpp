@@ -81,8 +81,9 @@ Platform::~Platform (void)
 {
 }
 
-vk::Library* Platform::createLibrary (void) const
+vk::Library* Platform::createLibrary (vk::Platform::LibraryType, const char* libraryPath) const
 {
+	DE_UNREF(libraryPath);
 	return vk::createNullDriver();
 }
 

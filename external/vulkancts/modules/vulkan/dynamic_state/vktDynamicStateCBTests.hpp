@@ -26,6 +26,7 @@
 
 #include "tcuDefs.hpp"
 #include "vktTestCase.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 namespace vkt
 {
@@ -35,13 +36,15 @@ namespace DynamicState
 class DynamicStateCBTests : public tcu::TestCaseGroup
 {
 public:
-							DynamicStateCBTests			(tcu::TestContext& testCtx);
+							DynamicStateCBTests			(tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
 							~DynamicStateCBTests		(void);
 	void					init						(void);
 
 private:
 	DynamicStateCBTests									(const DynamicStateCBTests &other);
 	DynamicStateCBTests&	operator=					(const DynamicStateCBTests &other);
+
+	vk::PipelineConstructionType	m_pipelineConstructionType;
 };
 
 } // DynamicState

@@ -27,6 +27,7 @@
 
 #include "vktApiMaintenance3Check.hpp"
 #include "vktTestCase.hpp"
+#include "vktTestCaseUtil.hpp"
 
 #include <sstream>
 #include <limits>
@@ -56,14 +57,19 @@ typedef vk::VkPhysicalDeviceProperties						DevProp1;
 typedef vk::VkPhysicalDeviceProperties2						DevProp2;
 typedef vk::VkPhysicalDeviceMaintenance3Properties			MaintDevProp3;
 typedef vk::VkPhysicalDeviceFeatures2						DevFeat2;
+#ifndef CTS_USES_VULKANSC
 typedef vk::VkPhysicalDeviceInlineUniformBlockFeaturesEXT	DevIubFeat;
 typedef vk::VkPhysicalDeviceInlineUniformBlockPropertiesEXT	DevIubProp;
+#endif // CTS_USES_VULKANSC
 
 // These variables are equal to minimal values for maxMemoryAllocationSize and maxPerSetDescriptors
 constexpr deUint32 maxMemoryAllocationSize			= 1073741824u;
 constexpr deUint32 maxDescriptorsInSet				= 1024u;
+#ifndef CTS_USES_VULKANSC
 constexpr deUint32 maxReasonableInlineUniformBlocks	= 64u;
-
+#else
+constexpr deUint32 maxReasonableBindingCounts		= 1024u;
+#endif // CTS_USES_VULKANSC
 using TypeSet		= set<vk::VkDescriptorType>;
 
 // Structure representing an implementation limit, like maxPerStageDescriptorSamplers. It has a maximum value
@@ -217,7 +223,11 @@ void distributeCounts (LimitsVector& limits, TypeCounts& typeCounts)
 }
 
 // Create a limits vector based on runtime limit information for the device.
-LimitsVector buildLimitsVector (const DevProp1& prop1, const DevIubProp& iubProp, const MaintDevProp3& maintProp3)
+LimitsVector buildLimitsVector ( const DevProp1&		prop1,
+#ifndef CTS_USES_VULKANSC
+								 const DevIubProp&		iubProp,
+#endif // CTS_USES_VULKANSC
+								 const MaintDevProp3&	maintProp3)
 {
 	static const TypeSet samplerTypes				= { vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vk::VK_DESCRIPTOR_TYPE_SAMPLER };
 	static const TypeSet sampledImageTypes			= { vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, vk::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER };
@@ -225,7 +235,9 @@ LimitsVector buildLimitsVector (const DevProp1& prop1, const DevIubProp& iubProp
 	static const TypeSet storageBufferTypes			= { vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC };
 	static const TypeSet storageImageTypes			= { vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER };
 	static const TypeSet inputAttachmentTypes		= { vk::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT };
+#ifndef CTS_USES_VULKANSC
 	static const TypeSet inlineUniformBlockTypes	= { vk::VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT };
+#endif // CTS_USES_VULKANSC
 	static const TypeSet dynamicUniformBuffer		= { vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC };
 	static const TypeSet dynamicStorageBuffer		= { vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC };
 	static const TypeSet allTypesButIUB				= {
@@ -252,8 +264,10 @@ LimitsVector buildLimitsVector (const DevProp1& prop1, const DevIubProp& iubProp
 														vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
 														vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
 														vk::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+#ifndef CTS_USES_VULKANSC
 														vk::VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT,
-													};
+#endif // CTS_USES_VULKANSC
+	};
 
 	LimitsVector limits = {
 		{
@@ -326,6 +340,8 @@ LimitsVector buildLimitsVector (const DevProp1& prop1, const DevIubProp& iubProp
 			prop1.limits.maxDescriptorSetStorageBuffersDynamic,
 			dynamicStorageBuffer
 		},
+#ifndef CTS_USES_VULKANSC
+		// Removed from Vulkan SC test set: VK_EXT_inline_uniform_block extension removed from Vulkan SC
 		{
 			"maxPerStageDescriptorInlineUniformBlocks",
 			iubProp.maxPerStageDescriptorInlineUniformBlocks,
@@ -336,6 +352,7 @@ LimitsVector buildLimitsVector (const DevProp1& prop1, const DevIubProp& iubProp
 			iubProp.maxDescriptorSetInlineUniformBlocks,
 			inlineUniformBlockTypes
 		},
+#endif // CTS_USES_VULKANSC
 		{
 			"maxPerStageResources",
 			prop1.limits.maxPerStageResources,
@@ -352,9 +369,19 @@ LimitsVector buildLimitsVector (const DevProp1& prop1, const DevIubProp& iubProp
 }
 
 // Create a vector of bindings by constructing the system limits and distributing descriptor counts.
-vector<vk::VkDescriptorSetLayoutBinding> calculateBindings(const DevProp1& prop1, const DevIubProp& iubProp, const MaintDevProp3& maintProp3, const vector<vk::VkDescriptorType> &types)
+vector<vk::VkDescriptorSetLayoutBinding> calculateBindings( const DevProp1&						prop1,
+#ifndef CTS_USES_VULKANSC
+															const DevIubProp&					iubProp,
+#endif // CTS_USES_VULKANSC
+															const MaintDevProp3&				maintProp3,
+															const vector<vk::VkDescriptorType>	&types)
 {
-	LimitsVector limits = buildLimitsVector(prop1, iubProp, maintProp3);
+	LimitsVector limits = buildLimitsVector(prop1,
+#ifndef CTS_USES_VULKANSC
+		iubProp,
+#endif // CTS_USES_VULKANSC
+		maintProp3);
+
 	TypeCounts typeCounts;
 
 	for (const auto& type : types)
@@ -362,11 +389,21 @@ vector<vk::VkDescriptorSetLayoutBinding> calculateBindings(const DevProp1& prop1
 
 	distributeCounts(limits, typeCounts);
 
+#ifdef CTS_USES_VULKANSC
+	// limit the number of binding counts, so that descriptorSetLayoutBindingRequestCount and descriptorSetLayoutBindingLimit won't be too big
+	for (auto& tc : typeCounts)
+		tc.second.count = de::min(tc.second.count, maxReasonableBindingCounts);
+#endif // CTS_USES_VULKANSC
+
 	deUint32 bindingNumber = 0u;
 	vector<vk::VkDescriptorSetLayoutBinding> bindings;
 	for (const auto& tc : typeCounts)
 	{
+#ifndef CTS_USES_VULKANSC
 		if (tc.first != VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
+#else
+		if (true)
+#endif // CTS_USES_VULKANSC
 		{
 			vk::VkDescriptorSetLayoutBinding b;
 			b.binding = bindingNumber;
@@ -410,7 +447,11 @@ string getBindingsDescription (const vector<VkDescriptorSetLayoutBinding>& bindi
 		auto iter = typeCount.find(b.descriptorType);
 		if (iter == typeCount.end())
 			iter = typeCount.insert(make_pair(b.descriptorType, (deUint32)0)).first;
+#ifndef CTS_USES_VULKANSC
 		count = ((b.descriptorType == vk::VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT) ? 1u : b.descriptorCount);
+#else
+		count = b.descriptorCount;
+#endif // CTS_USES_VULKANSC
 		iter->second += count;
 		totalCount += count;
 	}
@@ -498,7 +539,9 @@ public:
 		const auto& physicalDevice	= m_context.getPhysicalDevice();
 		const auto&	device			= m_context.getDevice();
 		auto&		log				= m_context.getTestContext().getLog();
-		bool		iubSupported	= false;
+
+#ifndef CTS_USES_VULKANSC
+		bool		iubSupported = false;
 
 		if (m_context.isDeviceFunctionalitySupported("VK_EXT_inline_uniform_block"))
 		{
@@ -531,11 +574,16 @@ public:
 			0u,																		// deUint32			maxDescriptorSetInlineUniformBlocks;
 			0u																		// deUint32			maxDescriptorSetUpdateAfterBindInlineUniformBlocks;
 		};
+#endif // CTS_USES_VULKANSC
 
 		MaintDevProp3						maintProp3								=
 		{
 			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES,				//VkStructureType						sType;
+#ifndef CTS_USES_VULKANSC
 			(iubSupported ? &devIubProp : DE_NULL),									//void*									pNext;
+#else
+			DE_NULL,																//void*									pNext;
+#endif // CTS_USES_VULKANSC
 			maxDescriptorsInSet,													//deUint32								maxPerSetDescriptors;
 			maxMemoryAllocationSize													//VkDeviceSize							maxMemoryAllocationSize;
 		};
@@ -562,8 +610,10 @@ public:
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
 			VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
 		};
+#ifndef CTS_USES_VULKANSC
 		if (iubSupported)
 			descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT);
+#endif // CTS_USES_VULKANSC
 
 		// VkDescriptorSetLayoutCreateInfo setup
 		vk::VkDescriptorSetLayoutCreateInfo	pCreateInfo								=
@@ -600,6 +650,7 @@ public:
 						types.push_back(descriptorTypes[i]);
 				}
 
+#ifndef CTS_USES_VULKANSC
 				// Due to inline uniform blocks being unable to form arrays and each one of them needing its own
 				// VkDescriptorSetLayoutBinding structure, we will limit when to test them.
 				if (std::find(begin(types), end(types), VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT) != types.end() &&
@@ -608,9 +659,13 @@ public:
 				{
 					continue;
 				}
+#endif // CTS_USES_VULKANSC
 
-				vector<vk::VkDescriptorSetLayoutBinding> bindings = calculateBindings(prop2.properties, devIubProp, maintProp3, types);
-
+				vector<vk::VkDescriptorSetLayoutBinding> bindings = calculateBindings(prop2.properties,
+#ifndef CTS_USES_VULKANSC
+					devIubProp,
+#endif
+					maintProp3, types);
 				string description = getBindingsDescription(bindings);
 				log << tcu::TestLog::Message << "Testing combination: " << description << tcu::TestLog::EndMessage;
 
@@ -651,6 +706,177 @@ public:
 	}
 };
 
+struct CountLayoutSupportParams
+{
+	const VkDescriptorType	descriptorType;
+	const bool				extraBindings;
+	const bool				useVariableSize;
+};
+
+void checkSupportCountLayoutSupport (Context& context, CountLayoutSupportParams params)
+{
+	context.requireDeviceFunctionality("VK_KHR_maintenance3");
+	context.requireDeviceFunctionality("VK_EXT_descriptor_indexing");
+
+	if (params.useVariableSize)
+	{
+		const auto& indexingFeatures = context.getDescriptorIndexingFeatures();
+		if (!indexingFeatures.descriptorBindingVariableDescriptorCount)
+			TCU_THROW(NotSupportedError, "descriptorBindingVariableDescriptorCount not supported");
+	}
+
+	if (params.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
+		context.requireDeviceFunctionality("VK_EXT_inline_uniform_block");
+}
+
+struct SetLayoutSupportAndCount
+{
+	const bool		supported;
+	const uint32_t	maxVariableDescriptorCount;
+};
+
+SetLayoutSupportAndCount getSetLayoutSupportAndCount (Context& context, const VkDescriptorSetLayoutCreateInfo* setLayoutCreateInfo)
+{
+	VkDescriptorSetVariableDescriptorCountLayoutSupport	countLayoutSupport	= initVulkanStructure();
+	VkDescriptorSetLayoutSupport						setLayoutSupport	= initVulkanStructure(&countLayoutSupport);
+
+	// Set a garbage value in the maxVariableDescriptorCount member, to verify it's not simply left untouched by the implementation.
+	countLayoutSupport.maxVariableDescriptorCount = std::numeric_limits<uint32_t>::max();
+	context.getDeviceInterface().getDescriptorSetLayoutSupport(context.getDevice(), setLayoutCreateInfo, &setLayoutSupport);
+	return SetLayoutSupportAndCount{ (setLayoutSupport.supported == VK_TRUE), countLayoutSupport.maxVariableDescriptorCount };
+}
+
+tcu::TestStatus testCountLayoutSupport (Context& context, CountLayoutSupportParams params)
+{
+	VkShaderStageFlags stages = 0u;
+
+	// The shader stages are probably not very relevant. This is an attempt at setting some varied but plausible stages anyway.
+	switch (params.descriptorType)
+	{
+	case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+	case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+	case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+	case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+		stages = VK_SHADER_STAGE_COMPUTE_BIT;
+		break;
+
+	case VK_DESCRIPTOR_TYPE_SAMPLER:
+	case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+	case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+	case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+		stages = VK_SHADER_STAGE_FRAGMENT_BIT;
+		break;
+
+	case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+	case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+	case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+	case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK:
+		stages = (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+		break;
+
+	default:
+		DE_ASSERT(false);
+		break;
+	};
+
+	std::vector<VkDescriptorSetLayoutBinding>	bindings;
+	std::vector<VkDescriptorBindingFlags>		bindingFlags;
+
+	if (params.extraBindings)
+	{
+		// Add a few uniform buffers to the mix.
+		const auto extraBindingCount = 3u;
+
+		for (uint32_t i = 0u; i < extraBindingCount; ++i)
+		{
+			bindings.emplace_back(
+				VkDescriptorSetLayoutBinding {
+					de::sizeU32(bindings),				//	uint32_t			binding;
+					VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,	//	VkDescriptorType	descriptorType;
+					1u,									//	uint32_t			descriptorCount;
+					stages,								//	VkShaderStageFlags	stageFlags;
+					nullptr,							//	const VkSampler*	pImmutableSamplers;
+				});
+			bindingFlags.push_back(0u);
+		}
+	}
+
+	// VUID-VkDescriptorSetLayoutBinding-descriptorType-02209 mandates descriptorCount to be a multiple of 4 when using inline
+	// uniform blocks.
+	const auto descriptorCount = ((params.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK) ? 4u : 1u);
+
+	bindings.emplace_back(
+		VkDescriptorSetLayoutBinding {
+			de::sizeU32(bindings),		//	uint32_t			binding;
+			params.descriptorType,		//	VkDescriptorType	descriptorType;
+			descriptorCount,			//	uint32_t			descriptorCount;
+			stages,						//	VkShaderStageFlags	stageFlags;
+			nullptr,					//	const VkSampler*	pImmutableSamplers;
+		});
+	bindingFlags.push_back(params.useVariableSize ? static_cast<VkDescriptorBindingFlags>(VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT) : 0u);
+
+	const VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo =
+	{
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,	//	VkStructureType					sType;
+		nullptr,															//	const void*						pNext;
+		de::sizeU32(bindingFlags),											//	uint32_t						bindingCount;
+		de::dataOrNull(bindingFlags),										//	const VkDescriptorBindingFlags*	pBindingFlags;
+	};
+
+	const VkDescriptorSetLayoutCreateInfo layoutCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType                        sType;
+		&bindingFlagsInfo,										// const void*                            pNext;
+		0u,														// VkDescriptorSetLayoutCreateFlags       flags;
+		de::sizeU32(bindings),									// uint32_t                               bindingCount;
+		de::dataOrNull(bindings),								// const VkDescriptorSetLayoutBinding*    pBindings;
+	};
+
+	// Check the layout is supported.
+	const auto normalValues = getSetLayoutSupportAndCount(context, &layoutCreateInfo);
+	if (!normalValues.supported)
+		TCU_THROW(NotSupportedError, "Set layout not supported");
+
+	if (!params.useVariableSize)
+	{
+		if (normalValues.maxVariableDescriptorCount != 0u)
+			TCU_FAIL("Nonzero maxVariableDescriptorCount when using no variable descriptor counts");
+	}
+	else
+	{
+		// Verify if we switch from one to zero descriptors we get the same reply back.
+		bindings.back().descriptorCount = 0u;
+		const auto zeroDescriptorValues = getSetLayoutSupportAndCount(context, &layoutCreateInfo);
+
+		if (!zeroDescriptorValues.supported)
+			TCU_FAIL("Implementation reports support with one descriptor and no support with zero descriptors");
+
+		if (zeroDescriptorValues.maxVariableDescriptorCount != normalValues.maxVariableDescriptorCount)
+			TCU_FAIL("Mismatch in maxVariableDescriptorCount when using zero and one as descriptor counts");
+
+		// Verify we can create a descriptor set with the promised amount of descriptors.
+		bindings.back().descriptorCount = normalValues.maxVariableDescriptorCount;
+		const auto maxDescriptorValues = getSetLayoutSupportAndCount(context, &layoutCreateInfo);
+
+		if (!maxDescriptorValues.supported)
+			TCU_FAIL("Implementation reports no support when using the maximum allowed size");
+
+		if (maxDescriptorValues.maxVariableDescriptorCount != normalValues.maxVariableDescriptorCount)
+			TCU_FAIL("Mismatch in maxVariableDescriptorCount when using one and the maximum descriptor counts");
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+std::string getDescriptorTypeShortName (const VkDescriptorType descType)
+{
+	static const auto	prefixLen	= strlen("VK_DESCRIPTOR_TYPE_");
+	std::string			name		= getDescriptorTypeName(descType);
+
+	name = name.substr(prefixLen);
+	return de::toLower(name);
+}
+
 } // anonymous
 
 tcu::TestCaseGroup*							createMaintenance3Tests					(tcu::TestContext&	testCtx)
@@ -658,6 +884,36 @@ tcu::TestCaseGroup*							createMaintenance3Tests					(tcu::TestContext&	testCtx
 	de::MovePtr<tcu::TestCaseGroup>	main3Tests(new tcu::TestCaseGroup(testCtx, "maintenance3_check", "Maintenance3 Tests"));
 	main3Tests->addChild(new Maintenance3StructTestCase(testCtx));
 	main3Tests->addChild(new Maintenance3DescriptorTestCase(testCtx));
+
+	{
+		const VkDescriptorType descriptorTypes[] =
+		{
+			VK_DESCRIPTOR_TYPE_SAMPLER,
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+			VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+			VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
+			VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
+			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
+			VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+			VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK,
+		};
+
+		for (const auto& descriptorType : descriptorTypes)
+			for (const auto& extraBindings : { false, true })
+				for (const auto& useVariableSize : { false, true })
+				{
+					const auto						extraBindingsSuffix	= (extraBindings ? "_extra_bindings" : "");
+					const auto						variableSizeSuffix	= (useVariableSize ? "" : "_no_variable_size");
+					const auto						caseName			= "support_count_" + getDescriptorTypeShortName(descriptorType) + extraBindingsSuffix + variableSizeSuffix;
+					const CountLayoutSupportParams	params				{ descriptorType, extraBindings, useVariableSize };
+
+					addFunctionCase(main3Tests.get(), caseName.c_str(), "", checkSupportCountLayoutSupport, testCountLayoutSupport, params);
+				}
+	}
 
 	return main3Tests.release();
 }

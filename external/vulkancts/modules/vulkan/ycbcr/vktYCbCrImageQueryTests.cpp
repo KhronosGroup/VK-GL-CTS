@@ -100,7 +100,7 @@ struct TestParameters
 	}
 };
 
-ShaderSpec getShaderSpec (const TestParameters& params)
+ShaderSpec getShaderSpec (const TestParameters& params, const SourceCollections* programCollection = nullptr)
 {
 	ShaderSpec		spec;
 	const char*		expr		= DE_NULL;
@@ -132,6 +132,14 @@ ShaderSpec getShaderSpec (const TestParameters& params)
 
 	spec.source =
 		string("result = ") + expr + ";\n";
+
+	const bool isMeshShadingStage = (params.shaderType == glu::SHADERTYPE_MESH || params.shaderType == glu::SHADERTYPE_TASK);
+
+	if (isMeshShadingStage && programCollection)
+	{
+		const ShaderBuildOptions buildOptions (programCollection->usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+		spec.buildOptions = buildOptions;
+	}
 
 	return spec;
 }
@@ -758,7 +766,7 @@ tcu::TestStatus testImageQueryLod (Context& context, TestParameters params)
 
 void initImageQueryPrograms (SourceCollections& dst, TestParameters params)
 {
-	const ShaderSpec	spec	= getShaderSpec(params);
+	const ShaderSpec	spec	= getShaderSpec(params, &dst);
 
 	generateSources(params.shaderType, spec, dst);
 }

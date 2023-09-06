@@ -200,7 +200,7 @@ public:
 
 private:
 	struct HitGroup;
-	using ShaderRecordEntry	= std::tuple<VkShaderStageFlags, HitGroup, ShaderRecordEXT>;
+	using ShaderRecordEntry	= std::tuple<VkShaderStageFlags, HitGroup, ShaderRecordEXT, bool /* initalized */>;
 
 	VkImageCreateInfo				makeImageCreateInfo						() const;
 	std::vector<TriGeometry>		prepareTriGeometries					(const float						zCoord)			const;
@@ -310,8 +310,8 @@ public:
 		// miss shader is loaded into each test regardless m_params.miss() is set
 		m_missModule = createShaderModule(m_vkd, m_device, m_context.getBinaryCollection().get("miss"), 0);
 
-		if (m_params.chit())
-			m_chitModule = createShaderModule(m_vkd, m_device, m_context.getBinaryCollection().get("chit"), 0);
+		// cloest hit shader is loaded into each test regardless m_params.chit() is set
+		m_chitModule = createShaderModule(m_vkd, m_device, m_context.getBinaryCollection().get("chit"), 0);
 
 		if (m_params.ahit())
 			m_ahitModule = createShaderModule(m_vkd, m_device, m_context.getBinaryCollection().get("ahit"), 0);
@@ -413,7 +413,7 @@ public:
 		DE_ASSERT(						(VkShaderModule(0) != *m_rgenModule));
 		DE_ASSERT(						(VkShaderModule(0) != *m_missModule));
 		DE_ASSERT(m_params.ahit()	==	(VkShaderModule(0) != *m_ahitModule));
-		DE_ASSERT(m_params.chit()	==	(VkShaderModule(0) != *m_chitModule));
+		DE_ASSERT(						(VkShaderModule(0) != *m_chitModule));
 		DE_ASSERT(checkIsect		==	(VkShaderModule(0) != *m_isectModule));
 
 		// rgen in the main pipeline only
@@ -421,12 +421,11 @@ public:
 
 		createLibraryPipeline(appendPipelineLibrary)->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, *m_missModule, (m_params.useLibs ? 0 : groupIndex++));
 
-		if (m_params.ahit() || m_params.chit() || m_params.isect() || checkIsect)
 		{
 			const deUint32 hitGroupIndex = m_params.useLibs ? 0 : groupIndex;
 			auto pipeline = createLibraryPipeline(appendPipelineLibrary);
 			if (m_params.ahit())	pipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR,		*m_ahitModule, hitGroupIndex);
-			if (m_params.chit())	pipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,	*m_chitModule, hitGroupIndex);
+			pipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,	*m_chitModule, hitGroupIndex);
 			if (checkIsect)			pipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR,	*m_isectModule, hitGroupIndex);
 		}
 
@@ -445,7 +444,7 @@ public:
 																	   m_testInstance.shaderGroupHandleSize,
 																	   m_testInstance.shaderGroupBaseAlignment, 0, 1);
 		VkStridedDeviceAddressRegionKHR	rgn	= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(m_vkd, m_device, **sbt, 0),
-																				m_testInstance.shaderGroupBaseAlignment,
+																				m_testInstance.shaderGroupHandleSize,
 																				m_testInstance.shaderGroupHandleSize);
 		return { de::SharedPtr<BufferWithMemory>(sbt.release()), rgn };
 	}
@@ -481,36 +480,29 @@ public:
 		de::MovePtr<BufferWithMemory>	buf;
 		VkStridedDeviceAddressRegionKHR	rgn;
 
-		if ((m_params.geomTypes == GeometryTypes::Box) || (m_params.geomTypes == GeometryTypes::TriangleAndBox) || m_params.ahit() || m_params.chit())
+		std::vector<deUint8>	handles			(m_testInstance.shaderGroupHandleSize);
+		auto					records			= m_testInstance.prepareShaderBindingTable();
+		const deUint32			hitGroupCount	= deUint32(records.size() - 2);
+
+		SBT<PipelineFlagsInstance::ShaderRecordEXT> sbt(m_vkd, m_device, m_allocator, pipeline, hitGroupCount,
+														m_testInstance.shaderGroupHandleSize, m_testInstance.shaderGroupBaseAlignment);
+
+		VK_CHECK(m_vkd.getRayTracingShaderGroupHandlesKHR(m_device, pipeline, 2, 1, handles.size(), handles.data()));
+
+		for (deUint32 i = 0; i < hitGroupCount; ++i)
 		{
-			std::vector<deUint8>	handles			(m_testInstance.shaderGroupHandleSize);
-			auto					records			= m_testInstance.prepareShaderBindingTable();
-			const deUint32			hitGroupCount	= deUint32(records.size() - 2);
-
-			SBT<PipelineFlagsInstance::ShaderRecordEXT> sbt(m_vkd, m_device, m_allocator, pipeline, hitGroupCount,
-															m_testInstance.shaderGroupHandleSize, m_testInstance.shaderGroupBaseAlignment);
-
-			VK_CHECK(m_vkd.getRayTracingShaderGroupHandlesKHR(m_device, pipeline, 2, 1, handles.size(), handles.data()));
-
-			for (deUint32 i = 0; i < hitGroupCount; ++i)
+			// copy the SBT record if it was initialized in prepareShaderBindingTable()
+			if (std::get<3>(records[i + 2]))
 			{
-				const VkShaderStageFlags	flags = std::get<0>(records[i + 2]);
-				if (flags)
-				{
-					const PipelineFlagsInstance::ShaderRecordEXT& rec = std::get<2>(records[i + 2]);
-					sbt.updateAt(i, handles.data(), rec);
-				}
+				const PipelineFlagsInstance::ShaderRecordEXT& rec = std::get<2>(records[i + 2]);
+				sbt.updateAt(i, handles.data(), rec);
 			}
+		}
 
-			sbt.flush();
-			buf	= sbt.get();
-			rgn = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(m_vkd, m_device, **buf, 0),
-																		   sbt.getAlignment(),	m_testInstance.shaderGroupHandleSize);
-		}
-		else
-		{
-			rgn = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-		}
+		sbt.flush();
+		buf	= sbt.get();
+		rgn = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(m_vkd, m_device, **buf, 0),
+																		sbt.getAlignment(),	m_testInstance.shaderGroupHandleSize);
 
 		return { de::SharedPtr<BufferWithMemory>(buf.release()), rgn };
 	}
@@ -554,28 +546,24 @@ PipelineFlagsCase::PipelineFlagsCase (tcu::TestContext& testCtx, const std::stri
 
 void PipelineFlagsCase::checkSupport (Context& context) const
 {
-	const auto& vki = context.getInstanceInterface();
-	const auto	physicalDevice = context.getPhysicalDevice();
-	const auto	supportedExtensions = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
-
 	if ((VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_INTERSECTION_SHADERS_BIT_KHR & m_params.flags)
 		&& (GeometryTypes::Triangle == m_params.geomTypes))
 	{
 		TCU_THROW(InternalError, "Illegal params combination: VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_INTERSECTION_SHADERS_BIT_KHR and Triangles");
 	}
 
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_ray_tracing_pipeline")))
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_ray_tracing_pipeline"))
 		TCU_THROW(NotSupportedError, "VK_KHR_ray_tracing_pipeline not supported");
 
 	// VK_KHR_acceleration_structure is required by VK_KHR_ray_tracing_pipeline.
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_acceleration_structure")))
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_acceleration_structure"))
 		TCU_FAIL("VK_KHR_acceleration_structure not supported but VK_KHR_ray_tracing_pipeline supported");
 
 	// The same for VK_KHR_buffer_device_address.
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_buffer_device_address")))
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
 		TCU_FAIL("VK_KHR_buffer_device_address not supported but VK_KHR_acceleration_structure supported");
 
-	if (m_params.useLibs && !isExtensionSupported(supportedExtensions, RequiredExtension("VK_KHR_pipeline_library")))
+	if (m_params.useLibs && !context.isDeviceFunctionalitySupported("VK_KHR_pipeline_library"))
 		TCU_FAIL("VK_KHR_pipeline_library not supported but VK_KHR_ray_tracing_pipeline supported");
 
 	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR& rayTracingPipelineFeaturesKHR = context.getRayTracingPipelineFeatures();
@@ -617,7 +605,7 @@ void PipelineFlagsCase::initPrograms (SourceCollections& programCollection) cons
 		str << "#version 460 core"																			<< endl
 			<< "#extension GL_EXT_ray_tracing : require"													<< endl
 			<< "layout(location = 0) rayPayloadEXT ivec4 payload;"											<< endl
-			<< "layout(r32i, set = 0, binding = 0) uniform iimage2D result;"								<< endl
+			<< "layout(rgba32i, set = 0, binding = 0) uniform iimage2D result;"								<< endl
 			<< "layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;"					<< endl
 			<< "void main()"																				<< endl
 			<< "{"																							<< endl
@@ -653,7 +641,7 @@ void PipelineFlagsCase::initPrograms (SourceCollections& programCollection) cons
 		programCollection.glslSources.add("miss") << glu::MissSource(str.str()) << buildOptions;
 	}
 
-	if (m_params.chit())
+	// closest hit shader is created in each test regardless the m_params.chit() is set
 	{
 		std::stringstream str;
 		str << "#version 460 core"														<< endl
@@ -806,7 +794,7 @@ PipelineFlagsInstance::prepareBoxGeometries (const float zFront, const float zBa
 		{
 			const float x = float(boxX) * boxWidth;
 			const float y = float(boxY) * boxHeight;
-			BoxGeometry box = { tcu::Vec3(x, y, zFront), tcu::Vec3((x + boxWidth), (y + boxHeight), zBack) };
+			BoxGeometry box = { { tcu::Vec3(x, y, zFront), tcu::Vec3((x + boxWidth), (y + boxHeight), zBack) } };
 			boxes[boxIdx].swap(box);
 		}
 	}
@@ -901,8 +889,8 @@ std::vector<PipelineFlagsInstance::ShaderRecordEntry> PipelineFlagsInstance::pre
 
 	std::vector<ShaderRecordEntry>	shaderRecords(totalGroupCount);
 
-	shaderRecords[0] = { VK_SHADER_STAGE_RAYGEN_BIT_KHR, {}, {} };
-	shaderRecords[1] = { VK_SHADER_STAGE_MISS_BIT_KHR, {}, { GeometryTypes::Box, (~0u), tcu::IVec4(0, defMissRetGreenComp, 0, 0) } };
+	shaderRecords[0] = std::tuple<VkShaderStageFlags, HitGroup, ShaderRecordEXT, bool>( VK_SHADER_STAGE_RAYGEN_BIT_KHR, {}, {}, true );
+	shaderRecords[1] = std::tuple<VkShaderStageFlags, HitGroup, ShaderRecordEXT, bool>( VK_SHADER_STAGE_MISS_BIT_KHR, {}, { GeometryTypes::Box, (~0u), tcu::IVec4(0, defMissRetGreenComp, 0, 0) }, true );
 
 	de::SharedPtr<AnyHitShader>			ahit(new AnyHitShader);
 	de::SharedPtr<ClosestHitShader>		chit(new ClosestHitShader);
@@ -929,11 +917,9 @@ std::vector<PipelineFlagsInstance::ShaderRecordEntry> PipelineFlagsInstance::pre
 						flags |= VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
 						hitGroup.ahit = ahit;
 					}
-					if (m_params.chit()) {
-						flags |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
-						hitGroup.chit = chit;
-					}
-					shaderRecords[shaderGroupIndex] = { flags, hitGroup, { GeometryTypes::Triangle, geometryIndex, tcu::IVec4(0, greenComp++, 0, 0) } };
+					flags |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+					hitGroup.chit = chit;
+					shaderRecords[shaderGroupIndex] = std::tuple<VkShaderStageFlags, HitGroup, ShaderRecordEXT, bool>( flags, hitGroup, { GeometryTypes::Triangle, geometryIndex, tcu::IVec4(0, greenComp++, 0, 0) }, true );
 					usedIndexes.insert(shaderGroupIndex);
 				}
 			}
@@ -961,15 +947,13 @@ std::vector<PipelineFlagsInstance::ShaderRecordEntry> PipelineFlagsInstance::pre
 						flags |= VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
 						hitGroup.ahit = ahit;
 					}
-					if (m_params.chit()) {
-						flags |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
-						hitGroup.chit = chit;
-					}
+					flags |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+					hitGroup.chit = chit;
 					{ //In the case of AABB isect must be provided, otherwise we will process AABB with TRIANGLES_HIT_GROUP
 						flags |= VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
 						hitGroup.isect = isect;
 					}
-					shaderRecords[shaderGroupIndex] = { flags, hitGroup, { GeometryTypes::Box, geometryIndex, tcu::IVec4(0, greenComp++, 0, 0) } };
+					shaderRecords[shaderGroupIndex] = std::tuple<VkShaderStageFlags, HitGroup, ShaderRecordEXT, bool>( flags, hitGroup, { GeometryTypes::Box, geometryIndex, tcu::IVec4(0, greenComp++, 0, 0) }, true );
 					usedIndexes.insert(shaderGroupIndex);
 				}
 			}
@@ -1106,6 +1090,9 @@ void PipelineFlagsInstance::travelRay (std::vector<tcu::IVec4>&					outImage,
 		const VkShaderStageFlags	flags			= std::get<0>(shaderBindingTable[shaderGroupIndex]);
 		auto						hitAttribute	= rgenPayload;
 		bool						ignoreIsect		= false;
+
+		// check if the SBT entry was was initialized
+		DE_ASSERT(std::get<3>(shaderBindingTable[shaderGroupIndex]));
 
 		if (flags & VK_SHADER_STAGE_INTERSECTION_BIT_KHR)
 		{
@@ -1320,6 +1307,10 @@ tcu::TestStatus PipelineFlagsInstance::iterate(void)
 	vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1, &descriptorSet.get(), 0, DE_NULL);
 
 	vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
+
+	const VkImageSubresourceRange	subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const VkImageMemoryBarrier				imageMemoryBarrier = makeImageMemoryBarrier(VK_ACCESS_NONE, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, image->get(), subresourceRange);
+	cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, &imageMemoryBarrier);
 
 	cmdTraceRays(vkd,
 		*cmdBuffer,

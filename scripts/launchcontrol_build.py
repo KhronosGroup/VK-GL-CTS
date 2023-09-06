@@ -21,8 +21,8 @@
 #-------------------------------------------------------------------------
 
 import os
-from build.common import *
-from build.build import *
+from ctsbuild.common import *
+from ctsbuild.build import *
 from argparse import ArgumentParser
 import multiprocessing
 from build_android_mustpass import *

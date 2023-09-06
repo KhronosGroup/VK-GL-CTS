@@ -10,14 +10,16 @@ set(DEQP_VK_FRAGMENT_SHADING_RATE_SRCS
 	vktFragmentShadingRateTests.hpp
 	vktFragmentShadingRateBasic.cpp
 	vktFragmentShadingRateBasic.hpp
-	vktFragmentShadingRatePixelConsistency.hpp
 	vktFragmentShadingRatePixelConsistency.cpp
+	vktFragmentShadingRatePixelConsistency.hpp
+	vktFragmentShadingRateMiscTests.cpp
+	vktFragmentShadingRateMiscTests.hpp
 )
 
-set(DEQP_VK_FRAGMENT_SHADING_RATE_LIBS
-	tcutil
-	vkutil
-)
+PCH(DEQP_VK_FRAGMENT_SHADING_RATE_SRCS ../pch.cpp)
 
 add_library(deqp-vk-fragment-shading-rate STATIC ${DEQP_VK_FRAGMENT_SHADING_RATE_SRCS})
-target_link_libraries(deqp-vk-fragment-shading-rate ${DEQP_VK_FRAGMENT_SHADING_RATE_LIBS})
+target_link_libraries(deqp-vk-fragment-shading-rate tcutil vkutil)
+
+add_library(deqp-vksc-fragment-shading-rate STATIC ${DEQP_VK_FRAGMENT_SHADING_RATE_SRCS})
+target_link_libraries(deqp-vksc-fragment-shading-rate PUBLIC tcutil vkscutil)

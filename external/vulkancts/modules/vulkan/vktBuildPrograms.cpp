@@ -398,8 +398,10 @@ BuildStats buildPrograms (tcu::TestContext&			testCtx,
 						  const bool				allowSpirV14)
 {
 	const deUint32						numThreads			= deGetNumAvailableLogicalCores();
+	// Limit dictated by the memory limitations of the CI system
+	const deUint32						numThreadsUsed			= numThreads > 16 ? 16 : numThreads;
 
-	TaskExecutor						executor			(numThreads);
+	TaskExecutor						executor			(numThreadsUsed);
 
 	// de::PoolArray<> is faster to build than std::vector
 	de::MemPool							programPool;
@@ -581,10 +583,10 @@ void registerOptions (de::cmdline::Parser& parser)
 
 	static const NamedValue<deUint32> s_vulkanVersion[] =
 	{
-		{ "1.0",	VK_MAKE_VERSION(1, 0, 0)	},
-		{ "1.1",	VK_MAKE_VERSION(1, 1, 0)	},
-		{ "1.2",	VK_MAKE_VERSION(1, 2, 0)	},
-		{ "1.3",	VK_MAKE_VERSION(1, 3, 0)	},
+		{ "1.0",	VK_MAKE_API_VERSION(0, 1, 0, 0)	},
+		{ "1.1",	VK_MAKE_API_VERSION(0, 1, 1, 0)	},
+		{ "1.2",	VK_MAKE_API_VERSION(0, 1, 2, 0)	},
+		{ "1.3",	VK_MAKE_API_VERSION(0, 1, 3, 0)	},
 	};
 
 	DE_STATIC_ASSERT(vk::SPIRV_VERSION_1_6 + 1 == vk::SPIRV_VERSION_LAST);

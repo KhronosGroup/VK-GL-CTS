@@ -29,8 +29,9 @@
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
-#include "vkTypeUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
 #include "tcuTestLog.hpp"
 #include <vector>
 
@@ -93,7 +94,7 @@ VkPipelineMultisampleStateCreateInfo MSInstanceBaseResolveAndPerSampleFetch::get
 		(VkPipelineMultisampleStateCreateFlags)0u,						// VkPipelineMultisampleStateCreateFlags	flags;
 		imageMSParams.numSamples,										// VkSampleCountFlagBits					rasterizationSamples;
 		VK_TRUE,														// VkBool32									sampleShadingEnable;
-		1.0f,															// float									minSampleShading;
+		imageMSParams.shadingRate,										// float									minSampleShading;
 		DE_NULL,														// const VkSampleMask*						pSampleMask;
 		VK_FALSE,														// VkBool32									alphaToCoverageEnable;
 		VK_FALSE,														// VkBool32									alphaToOneEnable;
@@ -160,7 +161,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 
 	validateImageInfo(instance, physicalDevice, imageMSInfo);
 
-	const de::UniquePtr<Image> imageMS(new Image(deviceInterface, device, allocator, imageMSInfo, MemoryRequirement::Any));
+	const de::UniquePtr<ImageWithMemory> imageMS(new ImageWithMemory(deviceInterface, device, allocator, imageMSInfo, MemoryRequirement::Any));
 
 	imageRSInfo			= imageMSInfo;
 	imageRSInfo.samples	= VK_SAMPLE_COUNT_1_BIT;
@@ -168,15 +169,15 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 
 	validateImageInfo(instance, physicalDevice, imageRSInfo);
 
-	const de::UniquePtr<Image> imageRS(new Image(deviceInterface, device, allocator, imageRSInfo, MemoryRequirement::Any));
+	const de::UniquePtr<ImageWithMemory> imageRS(new ImageWithMemory(deviceInterface, device, allocator, imageRSInfo, MemoryRequirement::Any));
 
 	const deUint32 numSamples = static_cast<deUint32>(imageMSInfo.samples);
 
-	std::vector<de::SharedPtr<Image> > imagesPerSampleVec(numSamples);
+	std::vector<de::SharedPtr<ImageWithMemory> > imagesPerSampleVec(numSamples);
 
 	for (deUint32 sampleNdx = 0u; sampleNdx < numSamples; ++sampleNdx)
 	{
-		imagesPerSampleVec[sampleNdx] = de::SharedPtr<Image>(new Image(deviceInterface, device, allocator, imageRSInfo, MemoryRequirement::Any));
+		imagesPerSampleVec[sampleNdx] = de::SharedPtr<ImageWithMemory>(new ImageWithMemory(deviceInterface, device, allocator, imageRSInfo, MemoryRequirement::Any));
 	}
 
 	// Create render pass
@@ -294,34 +295,41 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 
 		subpasses[1u + sampleNdx] = subpassDesc;
 
-		const VkSubpassDependency subpassDependency =
+		if (sampleNdx == 0u)
 		{
-			0u,												// uint32_t                srcSubpass;
-			1u + sampleNdx,									// uint32_t                dstSubpass;
-			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,  // VkPipelineStageFlags    srcStageMask;
-			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags    dstStageMask;
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags           srcAccessMask;
-			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags           dstAccessMask;
-			0u,												// VkDependencyFlags       dependencyFlags;
-		};
+			// The second subpass will be in charge of transitioning the multisample attachment from
+			// VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+			const VkSubpassDependency subpassDependency =
+			{
+				0u,												// uint32_t                srcSubpass;
+				1u + sampleNdx,									// uint32_t                dstSubpass;
+				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	// VkPipelineStageFlags    srcStageMask;
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags    dstStageMask;
+				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags           srcAccessMask;
+				VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags           dstAccessMask;
+				0u,												// VkDependencyFlags       dependencyFlags;
+			};
 
-		subpassDependencies.push_back(subpassDependency);
-	}
-	// now handle the very last sample pass, which must synchronize with all prior subpasses
-	for (deUint32 sampleNdx = 0u; sampleNdx < (numSamples - 1); ++sampleNdx)
-	{
-		const VkSubpassDependency subpassDependency =
+			subpassDependencies.push_back(subpassDependency);
+		}
+		else
 		{
-			1u + sampleNdx,									// uint32_t					srcSubpass;
-			numSamples,										// uint32_t					dstSubpass;
-			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	// VkPipelineStageFlags		srcStageMask;
-			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags		dstStageMask;
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags			dstAccessMask;
-			0u,												// VkDependencyFlags		dependencyFlags;
-		};
+			// Make sure subpass reads are in order. This serializes subpasses to make sure there are no layout transition hazards
+			// in the multisample image, from VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			// caused by parallel execution of several subpasses.
+			const VkSubpassDependency readDependency =
+			{
+				sampleNdx,										// uint32_t                srcSubpass;
+				1u + sampleNdx,									// uint32_t                dstSubpass;
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags    srcStageMask;
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags    dstStageMask;
+				VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags           srcAccessMask;
+				VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags           dstAccessMask;
+				0u,												// VkDependencyFlags       dependencyFlags;
+			};
 
-		subpassDependencies.push_back(subpassDependency);
+			subpassDependencies.push_back(readDependency);
+		}
 	}
 
 	const VkRenderPassCreateInfo renderPassInfo =
@@ -393,7 +401,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 	// Create vertex attributes data
 	const VertexDataDesc vertexDataDesc = getVertexDataDescripton();
 
-	de::SharedPtr<Buffer> vertexBuffer = de::SharedPtr<Buffer>(new Buffer(deviceInterface, device, allocator, makeBufferCreateInfo(vertexDataDesc.dataSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
+	de::SharedPtr<BufferWithMemory> vertexBuffer = de::SharedPtr<BufferWithMemory>(new BufferWithMemory(deviceInterface, device, allocator, makeBufferCreateInfo(vertexDataDesc.dataSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
 	const Allocation& vertexBufferAllocation = vertexBuffer->getAllocation();
 
 	uploadVertexData(vertexBufferAllocation, vertexDataDesc);
@@ -418,8 +426,8 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 		dataPointer(vertexDataDesc.vertexAttribDescVec),					// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
 	};
 
-	const std::vector<VkViewport>	viewports	(1, makeViewport(imageMSInfo.extent));
-	const std::vector<VkRect2D>		scissors	(1, makeRect2D(imageMSInfo.extent));
+	const std::vector<VkViewport>	viewports	{ makeViewport(imageMSInfo.extent) };
+	const std::vector<VkRect2D>		scissors	{ makeRect2D(imageMSInfo.extent) };
 
 	const VkPipelineMultisampleStateCreateInfo multisampleStateInfo = getMSStateCreateInfo(m_imageMSParams);
 
@@ -427,26 +435,20 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 	const Unique<VkShaderModule> vsMSPassModule(createShaderModule(deviceInterface, device, m_context.getBinaryCollection().get("vertex_shader"), (VkShaderModuleCreateFlags)0u));
 	const Unique<VkShaderModule> fsMSPassModule(createShaderModule(deviceInterface, device, m_context.getBinaryCollection().get("fragment_shader"), (VkShaderModuleCreateFlags)0u));
 
-	const Unique<VkPipeline> graphicsPipelineMSPass(makeGraphicsPipeline(deviceInterface,					// const DeviceInterface&                        vk
-																		 device,							// const VkDevice                                device
-																		 *pipelineLayoutMSPass,				// const VkPipelineLayout                        pipelineLayout
-																		 *vsMSPassModule,					// const VkShaderModule                          vertexShaderModule
-																		 DE_NULL,							// const VkShaderModule                          tessellationControlModule
-																		 DE_NULL,							// const VkShaderModule                          tessellationEvalModule
-																		 DE_NULL,							// const VkShaderModule                          geometryShaderModule
-																		 *fsMSPassModule,					// const VkShaderModule                          fragmentShaderModule
-																		 *renderPass,						// const VkRenderPass                            renderPass
-																		 viewports,							// const std::vector<VkViewport>&                viewports
-																		 scissors,							// const std::vector<VkRect2D>&                  scissors
-																		 vertexDataDesc.primitiveTopology,	// const VkPrimitiveTopology                     topology
-																		 0u,								// const deUint32                                subpass
-																		 0u,								// const deUint32                                patchControlPoints
-																		 &vertexInputStateInfo,				// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-																		 DE_NULL,							// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-																		 &multisampleStateInfo));			// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+	GraphicsPipelineWrapper graphicsPipelineMSPass(deviceInterface, device, m_imageMSParams.pipelineConstructionType);
+	graphicsPipelineMSPass.setDefaultColorBlendState()
+						  .setDefaultDepthStencilState()
+						  .setDefaultRasterizationState()
+						  .setDefaultTopology(vertexDataDesc.primitiveTopology)
+						  .setupVertexInputState(&vertexInputStateInfo)
+						  .setupPreRasterizationShaderState(viewports, scissors, *pipelineLayoutMSPass, *renderPass, 0u, *vsMSPassModule)
+						  .setupFragmentShaderState(*pipelineLayoutMSPass, *renderPass, 0u, *fsMSPassModule, DE_NULL, &multisampleStateInfo)
+						  .setupFragmentOutputState(*renderPass, 0u, DE_NULL, &multisampleStateInfo)
+						  .setMonolithicPipelineLayout(*pipelineLayoutMSPass)
+						  .buildPipeline();
 
-	typedef de::SharedPtr<Unique<VkPipeline> > VkPipelineSp;
-	std::vector<VkPipelineSp> graphicsPipelinesPerSampleFetch(numSamples);
+	std::vector<GraphicsPipelineWrapper> graphicsPipelinesPerSampleFetch;
+	graphicsPipelinesPerSampleFetch.reserve(numSamples);
 
 	// Create descriptor set layout
 	const Unique<VkDescriptorSetLayout> descriptorSetLayout(
@@ -459,7 +461,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 
 	const deUint32 bufferPerSampleFetchPassSize = 4u * (deUint32)sizeof(tcu::Vec4);
 
-	de::SharedPtr<Buffer> vertexBufferPerSampleFetchPass = de::SharedPtr<Buffer>(new Buffer(deviceInterface, device, allocator, makeBufferCreateInfo(bufferPerSampleFetchPassSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
+	de::SharedPtr<BufferWithMemory> vertexBufferPerSampleFetchPass = de::SharedPtr<BufferWithMemory>(new BufferWithMemory(deviceInterface, device, allocator, makeBufferCreateInfo(bufferPerSampleFetchPassSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible));
 
 	// Create graphics pipelines for per sample texel fetch passes
 	{
@@ -481,20 +483,20 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 
 		for (deUint32 sampleNdx = 0u; sampleNdx < numSamples; ++sampleNdx)
 		{
-			graphicsPipelinesPerSampleFetch[sampleNdx] = makeVkSharedPtr((makeGraphicsPipeline(deviceInterface,							// const DeviceInterface&                        vk
-																							   device,									// const VkDevice                                device
-																							   *pipelineLayoutPerSampleFetchPass,		// const VkPipelineLayout                        pipelineLayout
-																							   *vsPerSampleFetchPassModule,				// const VkShaderModule                          vertexShaderModule
-																							   DE_NULL,									// const VkShaderModule                          tessellationControlModule
-																							   DE_NULL,									// const VkShaderModule                          tessellationEvalModule
-																							   DE_NULL,									// const VkShaderModule                          geometryShaderModule
-																							   *fsPerSampleFetchPassModule,				// const VkShaderModule                          fragmentShaderModule
-																							   *renderPass,								// const VkRenderPass                            renderPass
-																							   viewports,								// const std::vector<VkViewport>&                viewports
-																							   scissors,								// const std::vector<VkRect2D>&                  scissors
-																							   VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	// const VkPrimitiveTopology                     topology
-																							   1u + sampleNdx)));						// const deUint32                                subpass
-
+			const deUint32 subpass = 1u + sampleNdx;
+			graphicsPipelinesPerSampleFetch.emplace_back(deviceInterface, device, m_imageMSParams.pipelineConstructionType);
+			graphicsPipelinesPerSampleFetch.back()
+				.setDefaultMultisampleState()
+				.setDefaultColorBlendState()
+				.setDefaultDepthStencilState()
+				.setDefaultRasterizationState()
+				.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+				.setupVertexInputState()
+				.setupPreRasterizationShaderState(viewports, scissors, *pipelineLayoutPerSampleFetchPass, *renderPass, subpass, *vsPerSampleFetchPassModule)
+				.setupFragmentShaderState(*pipelineLayoutPerSampleFetchPass, *renderPass, subpass, *fsPerSampleFetchPassModule)
+				.setupFragmentOutputState(*renderPass, subpass)
+				.setMonolithicPipelineLayout(*pipelineLayoutPerSampleFetchPass)
+				.buildPipeline();
 		}
 	}
 
@@ -515,7 +517,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 	uboOffsetAlignment += (deviceLimits.minUniformBufferOffsetAlignment - uboOffsetAlignment % deviceLimits.minUniformBufferOffsetAlignment) % deviceLimits.minUniformBufferOffsetAlignment;
 
 	const VkBufferCreateInfo	bufferSampleIDInfo = makeBufferCreateInfo(uboOffsetAlignment * numSamples, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-	const de::UniquePtr<Buffer>	bufferSampleID(new Buffer(deviceInterface, device, allocator, bufferSampleIDInfo, MemoryRequirement::HostVisible));
+	const de::UniquePtr<BufferWithMemory>	bufferSampleID(new BufferWithMemory(deviceInterface, device, allocator, bufferSampleIDInfo, MemoryRequirement::HostVisible));
 
 	std::vector<deUint32> sampleIDsOffsets(numSamples);
 
@@ -606,7 +608,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 		beginRenderPass(deviceInterface, *commandBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, imageMSInfo.extent.width, imageMSInfo.extent.height), (deUint32)clearValues.size(), dataPointer(clearValues));
 
 		// Bind graphics pipeline
-		deviceInterface.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipelineMSPass);
+		deviceInterface.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineMSPass.getPipeline());
 
 		const VkDescriptorSet* descriptorSetMSPass = createMSPassDescSet(m_imageMSParams, descriptorSetLayoutMSPass);
 
@@ -627,7 +629,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 			deviceInterface.cmdNextSubpass(*commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
 			// Bind graphics pipeline
-			deviceInterface.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **graphicsPipelinesPerSampleFetch[sampleNdx]);
+			deviceInterface.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelinesPerSampleFetch[sampleNdx].getPipeline());
 
 			// Bind descriptor set
 			deviceInterface.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayoutPerSampleFetchPass, 0u, 1u, &descriptorSet.get(), 1u, &sampleIDsOffsets[sampleNdx]);
@@ -660,8 +662,8 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 	// Copy data from imageRS to buffer
 	const deUint32				imageRSSizeInBytes = getImageSizeInBytes(imageRSInfo.extent, imageRSInfo.arrayLayers, m_imageFormat, imageRSInfo.mipLevels, 1u);
 
-	const VkBufferCreateInfo	bufferRSInfo = makeBufferCreateInfo(imageRSSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-	const de::UniquePtr<Buffer>	bufferRS(new Buffer(deviceInterface, device, allocator, bufferRSInfo, MemoryRequirement::HostVisible));
+	const VkBufferCreateInfo				bufferRSInfo = makeBufferCreateInfo(imageRSSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	const de::UniquePtr<BufferWithMemory>	bufferRS(new BufferWithMemory(deviceInterface, device, allocator, bufferRSInfo, MemoryRequirement::HostVisible));
 
 	{
 		const VkBufferImageCopy bufferImageCopy =
@@ -709,11 +711,11 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 	deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL,
 		static_cast<deUint32>(imagesPerSampleTransferBarriers.size()), dataPointer(imagesPerSampleTransferBarriers));
 
-	std::vector<de::SharedPtr<Buffer> > buffersPerSample(numSamples);
+	std::vector<de::SharedPtr<BufferWithMemory> > buffersPerSample(numSamples);
 
 	for (deUint32 sampleNdx = 0u; sampleNdx < numSamples; ++sampleNdx)
 	{
-		buffersPerSample[sampleNdx] = de::SharedPtr<Buffer>(new Buffer(deviceInterface, device, allocator, bufferRSInfo, MemoryRequirement::HostVisible));
+		buffersPerSample[sampleNdx] = de::SharedPtr<BufferWithMemory>(new BufferWithMemory(deviceInterface, device, allocator, bufferRSInfo, MemoryRequirement::HostVisible));
 
 		const VkBufferImageCopy bufferImageCopy =
 		{

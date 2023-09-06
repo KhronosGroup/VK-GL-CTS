@@ -1,0 +1,28 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceVulkan12Features":
+		[
+			{ "features": ["bufferDeviceAddress"],									"requirements": ["ApiVersion(0, 1, 3, 0)"],																"mandatory_variant": ["vulkan"] },
+			{ "features": ["vulkanMemoryModel"],									"requirements": ["ApiVersion(0, 1, 3, 0)"],																"mandatory_variant": ["vulkansc"] },
+			{ "features": ["vulkanMemoryModelDeviceScope"],							"requirements": ["ApiVersion(0, 1, 3, 0)"],																"mandatory_variant": ["vulkan"] }
+		],
+		"VkPhysicalDeviceVulkan13Features":
+		[
+			{ "features": ["robustImageAccess"],									"requirements": ["ApiVersion(0, 1, 3, 0)"],																"mandatory_variant": ["vulkan"] },
+			{ "features": ["inlineUniformBlock"],									"requirements": ["ApiVersion(0, 1, 3, 0)"],																"mandatory_variant": ["vulkan"] },
+			{ "features": ["descriptorBindingInlineUniformBlockUpdateAfterBind"],	"requirements": ["ApiVersion(0, 1, 3, 0)", "physicalDeviceVulkan12Features.descriptorIndexing"],		"mandatory_variant": ["vulkan"] },
+			{ "features": ["pipelineCreationCacheControl"],							"requirements": ["ApiVersion(0, 1, 3, 0)"],																"mandatory_variant": ["vulkan"] },
+			{ "features": ["privateData"],											"requirements": ["ApiVersion(0, 1, 3, 0)"],																"mandatory_variant": ["vulkan"] },
+			{ "features": ["shaderDemoteToHelperInvocation"],						"requirements": ["ApiVersion(0, 1, 3, 0)"],																"mandatory_variant": ["vulkan"] },
+			{ "features": ["shaderTerminateInvocation"],							"requirements": ["ApiVersion(0, 1, 3, 0)"],																"mandatory_variant": ["vulkan"] },
+			{ "features": ["subgroupSizeControl"],									"requirements": ["ApiVersion(0, 1, 3, 0)"],																"mandatory_variant": ["vulkan"] },
+			{ "features": ["computeFullSubgroups"],									"requirements": ["ApiVersion(0, 1, 3, 0)"],																"mandatory_variant": ["vulkan"] },
+			{ "features": ["synchronization2"],										"requirements": ["ApiVersion(0, 1, 3, 0)"],																"mandatory_variant": ["vulkan"] },
+			{ "features": ["shaderZeroInitializeWorkgroupMemory"],					"requirements": ["ApiVersion(0, 1, 3, 0)"],																"mandatory_variant": ["vulkan"] },
+			{ "features": ["dynamicRendering"],										"requirements": ["ApiVersion(0, 1, 3, 0)"],																"mandatory_variant": ["vulkan"] },
+			{ "features": ["shaderIntegerDotProduct"],								"requirements": ["ApiVersion(0, 1, 3, 0)"],																"mandatory_variant": ["vulkan"] },
+			{ "features": ["maintenance4"],											"requirements": ["ApiVersion(0, 1, 3, 0)"],																"mandatory_variant": ["vulkan"] }
+		]
+	}
+}

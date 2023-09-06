@@ -25,13 +25,14 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktTestCase.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 namespace vkt
 {
 namespace pipeline
 {
 
-void createVertexInputTests (tcu::TestCaseGroup* vertexInputTests);
+void createVertexInputTests (tcu::TestCaseGroup* vertexInputTests, vk::PipelineConstructionType pipelineConstructionType);
 
 } // pipeline
 } // vkt

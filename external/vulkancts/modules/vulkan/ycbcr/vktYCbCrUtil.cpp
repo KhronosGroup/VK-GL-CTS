@@ -191,25 +191,14 @@ void checkImageSupport (Context& context, VkFormat format, VkImageCreateFlags cr
 {
 	const bool													disjoint	= (createFlags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0;
 	const VkPhysicalDeviceSamplerYcbcrConversionFeatures		features	= context.getSamplerYcbcrConversionFeatures();
-	vector<string>												reqExts;
 
-	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_sampler_ycbcr_conversion"))
-		reqExts.push_back("VK_KHR_sampler_ycbcr_conversion");
+	if (features.samplerYcbcrConversion == VK_FALSE)
+		TCU_THROW(NotSupportedError, "samplerYcbcrConversion is not supported");
 
 	if (disjoint)
 	{
-		if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_bind_memory2"))
-			reqExts.push_back("VK_KHR_bind_memory2");
-		if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_get_memory_requirements2"))
-			reqExts.push_back("VK_KHR_get_memory_requirements2");
-	}
-
-	for (const string& ext : reqExts)
-		context.requireDeviceFunctionality(ext);
-
-	if (features.samplerYcbcrConversion == VK_FALSE)
-	{
-		TCU_THROW(NotSupportedError, "samplerYcbcrConversion is not supported");
+		context.requireDeviceFunctionality("VK_KHR_bind_memory2");
+		context.requireDeviceFunctionality("VK_KHR_get_memory_requirements2");
 	}
 
 	{
@@ -228,58 +217,99 @@ void checkImageSupport (Context& context, VkFormat format, VkImageCreateFlags cr
 	}
 }
 
-// When noNan is true, fillRandom does not generate NaNs in float formats.
-// But as a side effect, it also takes out infinities as well as almost half of the largest-magnitude values.
-void fillRandom (de::Random* randomGen, MultiPlaneImageData* imageData, const vk::VkFormat format, const bool noNan)
+void fillRandomNoNaN(de::Random* randomGen, deUint8* const data, deUint32 size, const vk::VkFormat format)
 {
-	// \todo [pyry] Optimize, take into account bits that must be 0
-
-	deUint8 mask, maskStride;
-	const deUint8 noMask = 0xffu;
+	bool isFloat = false;
+	deUint32 stride = 1;
 
 	switch (format)
 	{
-		case vk::VK_FORMAT_B10G11R11_UFLOAT_PACK32:
-			mask		= 0xbb;
-			maskStride	= 1;
-			break;
-		case vk::VK_FORMAT_R16_SFLOAT:
-		case vk::VK_FORMAT_R16G16_SFLOAT:
-		case vk::VK_FORMAT_R16G16B16_SFLOAT:
-		case vk::VK_FORMAT_R16G16B16A16_SFLOAT:
-			mask		= 0xbf;
-			maskStride	= 2;
-			break;
-		case vk::VK_FORMAT_R32_SFLOAT:
-		case vk::VK_FORMAT_R32G32_SFLOAT:
-		case vk::VK_FORMAT_R32G32B32_SFLOAT:
-		case vk::VK_FORMAT_R32G32B32A32_SFLOAT:
-			mask		= 0xbf;
-			maskStride	= 4;
-			break;
-		case vk::VK_FORMAT_R64_SFLOAT:
-		case vk::VK_FORMAT_R64G64_SFLOAT:
-		case vk::VK_FORMAT_R64G64B64_SFLOAT:
-		case vk::VK_FORMAT_R64G64B64A64_SFLOAT:
-			mask		= 0xbf;
-			maskStride	= 8;
-			break;
-		default:
-			mask		= 0xff;
-			maskStride	= 1;
-			break;
+	case vk::VK_FORMAT_B10G11R11_UFLOAT_PACK32:
+		isFloat = true;
+		stride = 1;
+		break;
+	case vk::VK_FORMAT_R16_SFLOAT:
+	case vk::VK_FORMAT_R16G16_SFLOAT:
+	case vk::VK_FORMAT_R16G16B16_SFLOAT:
+	case vk::VK_FORMAT_R16G16B16A16_SFLOAT:
+		isFloat = true;
+		stride = 2;
+		break;
+	case vk::VK_FORMAT_R32_SFLOAT:
+	case vk::VK_FORMAT_R32G32_SFLOAT:
+	case vk::VK_FORMAT_R32G32B32_SFLOAT:
+	case vk::VK_FORMAT_R32G32B32A32_SFLOAT:
+		isFloat = true;
+		stride = 4;
+		break;
+	case vk::VK_FORMAT_R64_SFLOAT:
+	case vk::VK_FORMAT_R64G64_SFLOAT:
+	case vk::VK_FORMAT_R64G64B64_SFLOAT:
+	case vk::VK_FORMAT_R64G64B64A64_SFLOAT:
+		isFloat = true;
+		stride = 8;
+		break;
+	default:
+		stride = 1;
+		break;
 	}
 
+	if (isFloat) {
+		deUint32 ndx = 0;
+		for (; ndx < size - stride + 1; ndx += stride)
+		{
+			if (stride == 1) {
+				// Set first bit of each channel to 0 to avoid NaNs, only format is B10G11R11
+				const deUint8 mask[] = { 0x7F, 0xDF, 0xFB, 0xFF };
+				// Apply mask for both endians
+				data[ndx] = (randomGen->getUint8() & mask[ndx % 4]) & mask[3 - ndx % 4];
+			}
+			else if (stride == 2)
+			{
+				deFloat16* ptr = reinterpret_cast<deFloat16*>(&data[ndx]);
+				*ptr = deFloat32To16(randomGen->getFloat());
+			}
+			else if (stride == 4)
+			{
+				float* ptr = reinterpret_cast<float*>(&data[ndx]);
+				*ptr = randomGen->getFloat();
+			}
+			else if (stride == 8)
+			{
+				double* ptr = reinterpret_cast<double*>(&data[ndx]);
+				*ptr = randomGen->getDouble();
+			}
+		}
+		while (ndx < size) {
+			data[ndx] = 0;
+		}
+	}
+	else
+	{
+		for (deUint32 ndx = 0; ndx < size; ++ndx)
+		{
+			data[ndx] = randomGen->getUint8();
+		}
+	}
+}
+
+// When noNan is true, fillRandom does not generate NaNs in float formats.
+void fillRandom (de::Random* randomGen, MultiPlaneImageData* imageData, const vk::VkFormat format, const bool noNan)
+{
 	for (deUint32 planeNdx = 0; planeNdx < imageData->getDescription().numPlanes; ++planeNdx)
 	{
 		const size_t	planeSize	= imageData->getPlaneSize(planeNdx);
 		deUint8* const	planePtr	= (deUint8*)imageData->getPlanePtr(planeNdx);
 
-		for (size_t ndx = 0; ndx < planeSize; ++ndx)
+		if (noNan) {
+			fillRandomNoNaN(randomGen, planePtr, (deUint32)planeSize, format);
+		}
+		else
 		{
-			const deUint8 finalMask = (noNan && ((ndx % static_cast<size_t>(maskStride)) == 0u)) ? mask : noMask;
-
-			planePtr[ndx] = randomGen->getUint8() & finalMask;
+			for (size_t ndx = 0; ndx < planeSize; ++ndx)
+			{
+				planePtr[ndx] = randomGen->getUint8();
+			}
 		}
 	}
 }

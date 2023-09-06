@@ -84,6 +84,9 @@ public:
 	// EGL_EXT_pixel_format_float
 	deUint32		colorComponentType;
 
+	// EGL_ANDROID_recordable
+	deUint32		recordableAndroid;
+
 	ConfigInfo (void)
 		: bufferSize			(0)
 		, redSize				(0)
@@ -123,6 +126,7 @@ public:
 		, yuvCscStandard		(EGL_NONE)
 		, yuvPlaneBpp			(EGL_YUV_PLANE_BPP_0_EXT)
 		, colorComponentType	(EGL_NONE)
+		, recordableAndroid		(0)
 	{
 	}
 

@@ -22,7 +22,9 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktBindingDescriptorUpdateTests.hpp"
+#ifndef CTS_USES_VULKANSC
 #include "vktBindingDescriptorUpdateASTests.hpp"
+#endif // CTS_USES_VULKANSC
 
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
@@ -653,6 +655,7 @@ tcu::TestStatus SamplerlessDescriptorWriteTestInstance::iterate (void)
 
 	vk::endCommandBuffer(vkd, cmdBuffer);
 	vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 	// Check results.
 	const auto& resultsBufferAlloc = resultsBuffer.getAllocation();
@@ -1087,6 +1090,7 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
 						   0u, DE_NULL, 0u, DE_NULL, 1u, &fbBarrier);
 	vk::endCommandBuffer(vkd, cmdBuffer);
 	vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 	struct DescriptorWrite
 	{
@@ -1164,7 +1168,7 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
 					val0[c] = bufferContents[lastWrite.bufferId][lastWrite.offset / 4 + c];
 					val1[c] = bufferContents[lastWrite.bufferId][lastWrite.offset / 4 + 4 + c];
 
-					// Sanity check we are reading expected values.
+					// Quick check we are reading expected values.
 					DE_ASSERT(val0[c] >= -counter && val0[c] <= counter);
 					DE_ASSERT(val1[c] >= -counter && val1[c] <= counter);
 				}
@@ -1246,6 +1250,7 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
 		vk::endRenderPass(vkd, cmdBuffer);
 		vk::endCommandBuffer(vkd, cmdBuffer);
 		vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+		m_context.resetCommandPoolForVKSC(device, *cmdPool);
 	}
 
 	vk::beginCommandBuffer(vkd, cmdBuffer);
@@ -1254,6 +1259,7 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
 	vk::copyImageToBuffer(vkd, cmdBuffer, fbImage.get(), resultsBuffer.get(), copySize);
 	vk::endCommandBuffer(vkd, cmdBuffer);
 	vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+	m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
 	// Check results.
 	const auto& resultsBufferAlloc = resultsBuffer.getAllocation();
@@ -1303,7 +1309,9 @@ tcu::TestCaseGroup* createDescriptorUpdateTests (tcu::TestContext& testCtx)
 	group->addChild(createEmptyDescriptorUpdateTests(testCtx));
 	group->addChild(createSamplerlessWriteTests(testCtx));
 	group->addChild(createRandomDescriptorUpdateTests(testCtx));
+#ifndef CTS_USES_VULKANSC
 	group->addChild(createDescriptorUpdateASTests(testCtx));
+#endif // CTS_USES_VULKANSC
 
 	return group.release();
 }

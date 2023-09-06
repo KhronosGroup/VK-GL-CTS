@@ -14,12 +14,10 @@ set(DEQP_VK_MULTI_VIEW_SRCS
 	vktMultiViewRenderUtil.cpp
 )
 
-set(DEQP_VK_MULTI_VIEW_LIBS
-	tcutil
-	vkutil
-)
-
 PCH(DEQP_VK_MULTI_VIEW_SRCS ../pch.cpp)
 
 add_library(deqp-vk-multiview STATIC ${DEQP_VK_MULTI_VIEW_SRCS})
-target_link_libraries(deqp-vk-multiview ${DEQP_VK_MULTI_VIEW_LIBS})
+target_link_libraries(deqp-vk-multiview tcutil vkutil)
+
+add_library(deqp-vksc-multiview STATIC ${DEQP_VK_MULTI_VIEW_SRCS})
+target_link_libraries(deqp-vksc-multiview PUBLIC deqp-vksc-util tcutil vkscutil)

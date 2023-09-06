@@ -99,12 +99,30 @@ DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheFilename,		std::string);
 DE_DECLARE_COMMAND_LINE_OPT(Optimization,				int);
 DE_DECLARE_COMMAND_LINE_OPT(OptimizeSpirv,				bool);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheTruncate,		bool);
+DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheIPC,				bool);
 DE_DECLARE_COMMAND_LINE_OPT(RenderDoc,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(CaseFraction,				std::vector<int>);
 DE_DECLARE_COMMAND_LINE_OPT(CaseFractionMandatoryTests,	std::string);
 DE_DECLARE_COMMAND_LINE_OPT(WaiverFile,					std::string);
 DE_DECLARE_COMMAND_LINE_OPT(RunnerType,					tcu::TestRunnerType);
 DE_DECLARE_COMMAND_LINE_OPT(TerminateOnFail,			bool);
+DE_DECLARE_COMMAND_LINE_OPT(SubProcess,					bool);
+DE_DECLARE_COMMAND_LINE_OPT(SubprocessTestCount,		int);
+DE_DECLARE_COMMAND_LINE_OPT(SubprocessConfigFile,		std::string);
+DE_DECLARE_COMMAND_LINE_OPT(ServerAddress,				std::string);
+DE_DECLARE_COMMAND_LINE_OPT(CommandPoolMinSize,			int);
+DE_DECLARE_COMMAND_LINE_OPT(CommandBufferMinSize,		int);
+DE_DECLARE_COMMAND_LINE_OPT(CommandDefaultSize,			int);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineDefaultSize,		int);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerPath,		std::string);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerDataDir,	std::string);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerArgs,		std::string);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerOutputFile,	std::string);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerLogFile,	std::string);
+DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerFilePrefix,	std::string);
+DE_DECLARE_COMMAND_LINE_OPT(VkLibraryPath,				std::string);
+DE_DECLARE_COMMAND_LINE_OPT(ApplicationParametersInputFile,	std::string);
+
 
 static void parseIntList (const char* src, std::vector<int>* dst)
 {
@@ -210,12 +228,29 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<ShaderCache>					(DE_NULL,	"deqp-shadercache",							"Enable or disable shader cache",					s_enableNames,		"enable")
 		<< Option<ShaderCacheFilename>			(DE_NULL,	"deqp-shadercache-filename",				"Write shader cache to given file",										"shadercache.bin")
 		<< Option<ShaderCacheTruncate>			(DE_NULL,	"deqp-shadercache-truncate",				"Truncate shader cache before running tests",		s_enableNames,		"enable")
+		<< Option<ShaderCacheIPC>				(DE_NULL,	"deqp-shadercache-ipc",						"Should shader cache use inter process comms",		s_enableNames,		"disable")
 		<< Option<RenderDoc>					(DE_NULL,	"deqp-renderdoc",							"Enable RenderDoc frame markers",					s_enableNames,		"disable")
 		<< Option<CaseFraction>					(DE_NULL,	"deqp-fraction",							"Run a fraction of the test cases (e.g. N,M means run group%M==N)",	parseIntList,	"")
 		<< Option<CaseFractionMandatoryTests>	(DE_NULL,	"deqp-fraction-mandatory-caselist-file",	"Case list file that must be run for each fraction",					"")
 		<< Option<WaiverFile>					(DE_NULL,	"deqp-waiver-file",							"Read waived tests from given file",									"")
 		<< Option<RunnerType>					(DE_NULL,	"deqp-runner-type",							"Filter test cases based on runner",				s_runnerTypes,		"any")
-		<< Option<TerminateOnFail>				(DE_NULL,	"deqp-terminate-on-fail",					"Terminate the run on first failure",				s_enableNames,		"disable");
+		<< Option<TerminateOnFail>				(DE_NULL,	"deqp-terminate-on-fail",					"Terminate the run on first failure",				s_enableNames,		"disable")
+		<< Option<SubProcess>					(DE_NULL,	"deqp-subprocess",							"Inform app that it works as subprocess (Vulkan SC only, do not use manually)", s_enableNames, "disable")
+		<< Option<SubprocessTestCount>			(DE_NULL,	"deqp-subprocess-test-count",				"Define default number of tests performed in subprocess for specific test cases(Vulkan SC only)",	"65536")
+		<< Option<SubprocessConfigFile>			(DE_NULL,	"deqp-subprocess-cfg-file",					"Config file defining number of tests performed in subprocess for specific test branches (Vulkan SC only)", "")
+		<< Option<ServerAddress>				(DE_NULL,	"deqp-server-address",						"Server address (host:port) responsible for shader compilation (Vulkan SC only)", "")
+		<< Option<CommandPoolMinSize>			(DE_NULL,	"deqp-command-pool-min-size",				"Define minimum size of the command pool (in bytes) to use (Vulkan SC only)","0")
+		<< Option<CommandBufferMinSize>			(DE_NULL,	"deqp-command-buffer-min-size",				"Define minimum size of the command buffer (in bytes) to use (Vulkan SC only)", "0")
+		<< Option<CommandDefaultSize>			(DE_NULL,	"deqp-command-default-size",				"Define default single command size (in bytes) to use (Vulkan SC only)",	"256")
+		<< Option<PipelineDefaultSize>			(DE_NULL,	"deqp-pipeline-default-size",				"Define default pipeline size (in bytes) to use (Vulkan SC only)",		"16384")
+		<< Option<PipelineCompilerPath>			(DE_NULL,	"deqp-pipeline-compiler",					"Path to offline pipeline compiler (Vulkan SC only)", "")
+		<< Option<PipelineCompilerDataDir>		(DE_NULL,	"deqp-pipeline-dir",						"Offline pipeline data directory (Vulkan SC only)", "")
+		<< Option<PipelineCompilerArgs>			(DE_NULL,	"deqp-pipeline-args",						"Additional compiler parameters (Vulkan SC only)", "")
+		<< Option<PipelineCompilerOutputFile>	(DE_NULL,	"deqp-pipeline-file",						"Output file with pipeline cache (Vulkan SC only, do not use manually)", "")
+		<< Option<PipelineCompilerLogFile>		(DE_NULL,	"deqp-pipeline-logfile",					"Log file for pipeline compiler (Vulkan SC only, do not use manually)", "")
+		<< Option<PipelineCompilerFilePrefix>	(DE_NULL,	"deqp-pipeline-prefix",						"Prefix for input pipeline compiler files (Vulkan SC only, do not use manually)", "")
+		<< Option<VkLibraryPath>				(DE_NULL,	"deqp-vk-library-path",						"Path to Vulkan library (e.g. loader library vulkan-1.dll)", "")
+		<< Option<ApplicationParametersInputFile>    (DE_NULL,       "deqp-app-params-input-file",				"File that provides a default set of application parameters");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
@@ -662,10 +697,14 @@ bool matchWildcards(string::const_iterator	patternStart,
 		return (path == pathEnd);
 	else if (*pattern == '*')
 	{
-		for (; path != pathEnd; ++path)
-		{
-			if (matchWildcards(pattern + 1, patternEnd, path, pathEnd, allowPrefix))
-				return true;
+		string::const_iterator patternNext = pattern + 1;
+		if (patternNext != patternEnd) {
+			for (; path != pathEnd; ++path)
+			{
+				if (*patternNext == *path)
+					if (matchWildcards(patternNext, patternEnd, path, pathEnd, allowPrefix))
+						return true;
+			}
 		}
 
 		if (matchWildcards(pattern + 1, patternEnd, pathEnd, pathEnd, allowPrefix))
@@ -715,7 +754,9 @@ static bool patternMatches(vector<string>::const_iterator	patternStart,
 
 bool CasePaths::matches (const string& caseName, bool allowPrefix) const
 {
+#if defined(TCU_HIERARCHICAL_CASEPATHS)
 	const vector<string> components = de::splitString(caseName, '.');
+#endif
 
 	for (size_t ndx = 0; ndx < m_casePatterns.size(); ++ndx)
 	{
@@ -740,7 +781,7 @@ bool CasePaths::matches (const string& caseName, bool allowPrefix) const
  * \note CommandLine is not fully initialized until parse() has been called.
  *//*--------------------------------------------------------------------*/
 CommandLine::CommandLine (void)
-	: m_logFlags	(0)
+	: m_appName(), m_logFlags(0), m_hadHelpSpecified(false)
 {
 }
 
@@ -753,7 +794,7 @@ CommandLine::CommandLine (void)
  * \param argv Command line arguments
  *//*--------------------------------------------------------------------*/
 CommandLine::CommandLine (int argc, const char* const* argv)
-	: m_logFlags	(0)
+	: m_appName(argv[0]), m_logFlags (0), m_hadHelpSpecified(false)
 {
 	if (argc > 1)
 	{
@@ -768,7 +809,12 @@ CommandLine::CommandLine (int argc, const char* const* argv)
 	}
 
 	if (!parse(argc, argv))
-		throw Exception("Failed to parse command line");
+	{
+		if (m_hadHelpSpecified)
+			exit(EXIT_SUCCESS);
+		else
+			throw Exception("Failed to parse command line");
+	}
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -779,7 +825,7 @@ CommandLine::CommandLine (int argc, const char* const* argv)
  * \param cmdLine Full command line string.
  *//*--------------------------------------------------------------------*/
 CommandLine::CommandLine (const std::string& cmdLine)
-	: m_initialCmdLine	(cmdLine)
+	: m_appName(), m_initialCmdLine	(cmdLine), m_hadHelpSpecified(false)
 {
 	if (!parse(cmdLine))
 		throw Exception("Failed to parse command line");
@@ -798,6 +844,11 @@ void CommandLine::clear (void)
 const de::cmdline::CommandLine& CommandLine::getCommandLine (void) const
 {
 	return m_cmdLine;
+}
+
+const std::string& CommandLine::getApplicationName(void) const
+{
+	return m_appName;
 }
 
 const std::string& CommandLine::getInitialCmdLine(void) const
@@ -833,6 +884,9 @@ bool CommandLine::parse (int argc, const char* const* argv)
 		debugOut << "\n" << de::FilePath(argv[0]).getBaseName() << " [options]\n\n";
 		parser.help(debugOut);
 
+		// We need to save this to avoid exiting with error later, and before the clear() call that wipes its value.
+		m_hadHelpSpecified = m_cmdLine.helpSpecified();
+
 		clear();
 		return false;
 	}
@@ -848,6 +902,9 @@ bool CommandLine::parse (int argc, const char* const* argv)
 
 	if (!m_cmdLine.getOption<opt::LogEmptyLoginfo>())
 		m_logFlags |= QP_TEST_LOG_EXCLUDE_EMPTY_LOGINFO;
+
+	if (m_cmdLine.getOption<opt::SubProcess>())
+		m_logFlags |= QP_TEST_LOG_NO_INITIAL_OUTPUT;
 
 	if ((m_cmdLine.hasOption<opt::CasePath>()?1:0) +
 		(m_cmdLine.hasOption<opt::CaseList>()?1:0) +
@@ -925,6 +982,7 @@ bool					CommandLine::isOutOfMemoryTestEnabled		(void) const	{ return m_cmdLine.
 bool					CommandLine::isShadercacheEnabled			(void) const	{ return m_cmdLine.getOption<opt::ShaderCache>();							}
 const char*				CommandLine::getShaderCacheFilename			(void) const	{ return m_cmdLine.getOption<opt::ShaderCacheFilename>().c_str();			}
 bool					CommandLine::isShaderCacheTruncateEnabled	(void) const	{ return m_cmdLine.getOption<opt::ShaderCacheTruncate>();					}
+bool					CommandLine::isShaderCacheIPCEnabled		(void) const	{ return m_cmdLine.getOption<opt::ShaderCacheIPC>();						}
 int						CommandLine::getOptimizationRecipe			(void) const	{ return m_cmdLine.getOption<opt::Optimization>();							}
 bool					CommandLine::isSpirvOptimizationEnabled		(void) const	{ return m_cmdLine.getOption<opt::OptimizeSpirv>();							}
 bool					CommandLine::isRenderDocEnabled				(void) const	{ return m_cmdLine.getOption<opt::RenderDoc>();								}
@@ -934,6 +992,12 @@ const char*				CommandLine::getCaseFractionMandatoryTests	(void) const	{ return 
 const char*				CommandLine::getArchiveDir					(void) const	{ return m_cmdLine.getOption<opt::ArchiveDir>().c_str();					}
 tcu::TestRunnerType		CommandLine::getRunnerType					(void) const	{ return m_cmdLine.getOption<opt::RunnerType>();							}
 bool					CommandLine::isTerminateOnFailEnabled		(void) const	{ return m_cmdLine.getOption<opt::TerminateOnFail>();						}
+bool					CommandLine::isSubProcess					(void) const	{ return m_cmdLine.getOption<opt::SubProcess>();							}
+int						CommandLine::getSubprocessTestCount			(void) const	{ return m_cmdLine.getOption<opt::SubprocessTestCount>();					}
+int						CommandLine::getCommandPoolMinSize			(void) const	{ return m_cmdLine.getOption<opt::CommandPoolMinSize>();					}
+int						CommandLine::getCommandBufferMinSize		(void) const	{ return m_cmdLine.getOption<opt::CommandBufferMinSize>();					}
+int						CommandLine::getCommandDefaultSize			(void) const	{ return m_cmdLine.getOption<opt::CommandDefaultSize>();					}
+int						CommandLine::getPipelineDefaultSize			(void) const	{ return m_cmdLine.getOption<opt::PipelineDefaultSize>();					}
 
 const char* CommandLine::getGLContextType (void) const
 {
@@ -986,6 +1050,87 @@ const char* CommandLine::getEGLPixmapType (void) const
 {
 	if (m_cmdLine.hasOption<opt::EGLPixmapType>())
 		return m_cmdLine.getOption<opt::EGLPixmapType>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getSubprocessConfigFile (void) const
+{
+	if (m_cmdLine.hasOption<opt::SubprocessConfigFile>())
+		return m_cmdLine.getOption<opt::SubprocessConfigFile>().c_str();
+	else
+		return DE_NULL;
+}
+
+
+const char* CommandLine::getServerAddress (void) const
+{
+	if (m_cmdLine.hasOption<opt::ServerAddress>())
+		return m_cmdLine.getOption<opt::ServerAddress>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getPipelineCompilerPath(void) const
+{
+	if (m_cmdLine.hasOption<opt::PipelineCompilerPath>())
+		return m_cmdLine.getOption<opt::PipelineCompilerPath>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getPipelineCompilerDataDir(void) const
+{
+	if (m_cmdLine.hasOption<opt::PipelineCompilerDataDir>())
+		return m_cmdLine.getOption<opt::PipelineCompilerDataDir>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getPipelineCompilerArgs(void) const
+{
+	if (m_cmdLine.hasOption<opt::PipelineCompilerArgs>())
+		return m_cmdLine.getOption<opt::PipelineCompilerArgs>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getPipelineCompilerOutputFile(void) const
+{
+	if (m_cmdLine.hasOption<opt::PipelineCompilerOutputFile>())
+		return m_cmdLine.getOption<opt::PipelineCompilerOutputFile>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getPipelineCompilerLogFile(void) const
+{
+	if (m_cmdLine.hasOption<opt::PipelineCompilerLogFile>())
+		return m_cmdLine.getOption<opt::PipelineCompilerLogFile>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getPipelineCompilerFilePrefix(void) const
+{
+	if (m_cmdLine.hasOption<opt::PipelineCompilerFilePrefix>())
+		return m_cmdLine.getOption<opt::PipelineCompilerFilePrefix>().c_str();
+	else
+		return DE_NULL;
+}
+
+const char* CommandLine::getVkLibraryPath(void) const
+{
+	if (m_cmdLine.hasOption<opt::VkLibraryPath>())
+		return (m_cmdLine.getOption<opt::VkLibraryPath>() != "") ? m_cmdLine.getOption<opt::VkLibraryPath>().c_str() : DE_NULL;
+    else
+		return DE_NULL;
+}
+
+const char* CommandLine::getAppParamsInputFilePath(void) const
+{
+	if (m_cmdLine.hasOption<opt::ApplicationParametersInputFile>())
+		return m_cmdLine.getOption<opt::ApplicationParametersInputFile>().c_str();
 	else
 		return DE_NULL;
 }
@@ -1102,7 +1247,8 @@ CaseListFilter::CaseListFilter (const de::cmdline::CommandLine& cmdLine, const t
 	else if (cmdLine.hasOption<opt::CasePath>())
 		m_casePaths = de::MovePtr<const CasePaths>(new CasePaths(cmdLine.getOption<opt::CasePath>()));
 
-	m_caseFraction = cmdLine.getOption<opt::CaseFraction>();
+	if (!cmdLine.getOption<opt::SubProcess>())
+		m_caseFraction = cmdLine.getOption<opt::CaseFraction>();
 
 	if (m_caseFraction.size() == 2 &&
 		(m_caseFraction[0] < 0 || m_caseFraction[1] <= 0 || m_caseFraction[0] >= m_caseFraction[1] ))

@@ -20,8 +20,8 @@
 #
 #-------------------------------------------------------------------------
 
-from build.common import DEQP_DIR
-from build.config import ANY_GENERATOR
+from ctsbuild.common import DEQP_DIR
+from ctsbuild.config import ANY_GENERATOR
 from build_caselists import Module, getModuleByName, getBuildConfig, DEFAULT_BUILD_DIR, DEFAULT_TARGET
 from mustpass import Project, Package, Mustpass, Configuration, include, exclude, genMustpassLists, parseBuildConfigFromCmdLineArgs
 
@@ -52,6 +52,7 @@ GLES2_MODULE					= getModuleByName("dEQP-GLES2")
 GLES3_MODULE					= getModuleByName("dEQP-GLES3")
 GLES31_MODULE					= getModuleByName("dEQP-GLES31")
 VULKAN_MODULE					= getModuleByName("dEQP-VK")
+VULKANSC_MODULE					= getModuleByName("dEQP-VKSC")
 
 # Main
 
@@ -68,7 +69,22 @@ MAIN_EGL_PKG					= Package(module = EGL_MODULE, configurations = [
 					  surfacetype	= "window",
 					  required		= True,
 					  filters		= MAIN_EGL_COMMON_FILTERS,
-				      runtime		= "23m"),
+					  runtime		= "23m",
+					  runByDefault	= False),
+		Configuration(name			= "master-2020-03-01",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  required		= True,
+					  filters		= [include("egl-master-2020-03-01.txt")],
+					  runtime		= "23m"),
+		Configuration(name			= "master-2022-03-01",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  required		= True,
+					  filters		= MAIN_EGL_COMMON_FILTERS + [exclude("egl-master-2021-03-01.txt")],
+					  runtime		= "5m"),
 		# Risky subset
 		Configuration(name			= "master-risky",
 					  glconfig		= "rgba8888d24s8ms0",
@@ -76,7 +92,7 @@ MAIN_EGL_PKG					= Package(module = EGL_MODULE, configurations = [
 					  surfacetype	= "window",
 					  required		= True,
 					  filters		= [include("egl-temp-excluded.txt")],
-				      runtime		= "2m"),
+					  runtime		= "2m"),
 	])
 
 MAIN_GLES2_COMMON_FILTERS		= [
@@ -107,7 +123,14 @@ MAIN_GLES2_PKG				= Package(module = GLES2_MODULE, configurations = [
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  required		= True,
-					  filters		= MAIN_GLES2_COMMON_FILTERS + [exclude("gles2-master-2020-03-01.txt")],
+					  filters		= [include("gles2-master-2021-03-01.txt")],
+					  runtime		= "10m"),
+		Configuration(name			= "master-2022-03-01",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  required		= True,
+					  filters		= MAIN_GLES2_COMMON_FILTERS + [exclude("gles2-master-2020-03-01.txt"), exclude("gles2-master-2021-03-01.txt")],
 					  runtime		= "10m"),
 	])
 
@@ -142,7 +165,14 @@ MAIN_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  required		= True,
-					  filters		= MAIN_GLES3_COMMON_FILTERS + [exclude("gles3-master-2020-03-01.txt")],
+					  filters		= [include("gles3-master-2021-03-01.txt")],
+					  runtime		= "10m"),
+		Configuration(name			= "master-2022-03-01",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  required		= True,
+					  filters		= MAIN_GLES3_COMMON_FILTERS + [exclude("gles3-master-2020-03-01.txt"), exclude("gles3-master-2021-03-01.txt")],
 					  runtime		= "10m"),
 		# Rotations
 		Configuration(name			= "rotate-portrait",
@@ -225,7 +255,14 @@ MAIN_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 					  rotation		= "unspecified",
 					  surfacetype	= "window",
 					  required		= True,
-					  filters		= MAIN_GLES31_COMMON_FILTERS + [exclude("gles31-master-2020-03-01.txt")],
+					  filters		= [include("gles31-master-2021-03-01.txt")],
+					  runtime		= "10m"),
+		Configuration(name			= "master-2022-03-01",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  required		= True,
+					  filters		= MAIN_GLES31_COMMON_FILTERS + [exclude("gles31-master-2020-03-01.txt"), exclude("gles31-master-2021-03-01.txt")],
 					  runtime		= "10m"),
 
 		# Rotations
@@ -284,28 +321,43 @@ MAIN_VULKAN_PKG				= Package(module = VULKAN_MODULE, configurations = [
 					  filters				= MAIN_VULKAN_FILTERS,
 					  runtime				= "2h39m",
 					  runByDefault			= False,
-					  splitToMultipleFiles	= True),
+					  listOfGroupsToSplit	= ["dEQP-VK", "dEQP-VK.pipeline"]),
 		Configuration(name					= "master-2019-03-01",
 					  filters				= [include("vk-master-2019-03-01.txt")],
 					  runtime				= "2h29m",
-					  splitToMultipleFiles	= True),
+					  listOfGroupsToSplit	= ["dEQP-VK"]),
 		Configuration(name					= "master-2020-03-01",
 					  filters				= [include("vk-master-2020-03-01.txt")],
 					  runtime				= "2h29m",
-					  splitToMultipleFiles	= True),
+					  listOfGroupsToSplit	= ["dEQP-VK"]),
 		Configuration(name					= "master-2021-03-01",
-					  filters				= MAIN_VULKAN_FILTERS + [exclude("vk-master-2019-03-01.txt"), exclude("vk-master-2020-03-01.txt")],
+					  filters				= [include("vk-master-2021-03-01.txt")],
+					  runtime				= "2h29m",
+					  listOfGroupsToSplit	= ["dEQP-VK"]),
+		Configuration(name					= "master-2022-03-01",
+					  filters				= MAIN_VULKAN_FILTERS + [exclude("vk-master-2019-03-01.txt"), exclude("vk-master-2020-03-01.txt"), exclude("vk-master-2021-03-01.txt")],
 					  runtime				= "10m",
-					  splitToMultipleFiles	= True),
+					  listOfGroupsToSplit	= ["dEQP-VK", "dEQP-VK.pipeline"]),
 		Configuration(name					= "incremental-deqp",
 					  filters				= [include("vk-incremental-deqp.txt")],
 					  runtime				= "5m",
 					  runByDefault			= False,
-					  splitToMultipleFiles	= True),
+					  listOfGroupsToSplit	= ["dEQP-VK"]),
+	])
+
+MAIN_VULKANSC_FILTERS			= [
+		include("vksc-master.txt"),
+	]
+MAIN_VULKANSC_PKG				= Package(module = VULKANSC_MODULE, configurations = [
+		Configuration(name					= "main",
+					  filters				= MAIN_VULKANSC_FILTERS,
+					  runtime				= "2h39m",
+					  runByDefault			= False,
+					  listOfGroupsToSplit	= ["dEQP-VKSC", "dEQP-VKSC.pipeline"]),
 	])
 
 MUSTPASS_LISTS				= [
-		Mustpass(project = CTS_PROJECT, version = "main",		packages = [MAIN_EGL_PKG, MAIN_GLES2_PKG, MAIN_GLES3_PKG, MAIN_GLES31_PKG, MAIN_VULKAN_PKG])
+		Mustpass(project = CTS_PROJECT, version = "main",		packages = [MAIN_EGL_PKG, MAIN_GLES2_PKG, MAIN_GLES3_PKG, MAIN_GLES31_PKG, MAIN_VULKAN_PKG, MAIN_VULKANSC_PKG])
 	]
 
 if __name__ == "__main__":

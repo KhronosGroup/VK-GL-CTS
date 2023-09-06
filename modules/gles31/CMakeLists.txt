@@ -35,7 +35,7 @@ set(DEQP_GLES31_LIBS
 	${DEQP_GLES3_LIBRARIES}
 	)
 
-add_deqp_module(deqp-gles31 "${DEQP_GLES31_SRCS}" "${DEQP_GLES31_LIBS}" tes31TestPackageEntry.cpp)
+add_deqp_module(deqp-gles31 "${DEQP_GLES31_SRCS}" "${DEQP_GLES31_LIBS}" "tcutil-platform" tes31TestPackageEntry.cpp)
 
 # Data directories
 add_data_dir(deqp-gles31 ../../data/gles31/data		gles31/data)

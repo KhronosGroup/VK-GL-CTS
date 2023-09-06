@@ -160,7 +160,7 @@ void SparseTextureUtils::getTextureLevelSize(GLint target, TextureState& state, 
 
 	if (target == GL_TEXTURE_3D)
 		depth = state.depth / (int)pow(2, level);
-	else if (target == GL_TEXTURE_1D_ARRAY || target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY)
+	else if (target == GL_TEXTURE_1D_ARRAY || target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY || target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
 		depth = state.depth;
 	else
 		depth = 1;

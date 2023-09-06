@@ -43,10 +43,11 @@ static spv_target_env getSpirvToolsEnvForValidatorOptions(SpirvValidatorOptions 
 	const bool allow_1_4 = opts.supports_VK_KHR_spirv_1_4;
 	switch (opts.vulkanVersion)
 	{
-		case VK_MAKE_VERSION(1, 0, 0): return SPV_ENV_VULKAN_1_0;
-		case VK_MAKE_VERSION(1, 1, 0): return allow_1_4 ? SPV_ENV_VULKAN_1_1_SPIRV_1_4 : SPV_ENV_VULKAN_1_1;
-		case VK_MAKE_VERSION(1, 2, 0): return SPV_ENV_VULKAN_1_2;
-		case VK_MAKE_VERSION(1, 3, 0): return SPV_ENV_VULKAN_1_3;
+		case VK_MAKE_API_VERSION(0, 1, 0, 0): return SPV_ENV_VULKAN_1_0;
+		case VK_MAKE_API_VERSION(0, 1, 1, 0): return allow_1_4 ? SPV_ENV_VULKAN_1_1_SPIRV_1_4 : SPV_ENV_VULKAN_1_1;
+		case VK_MAKE_API_VERSION(0, 1, 2, 0): return SPV_ENV_VULKAN_1_2;
+		case VK_MAKE_API_VERSION(1, 1, 0, 0): return SPV_ENV_VULKAN_1_2;
+		case VK_MAKE_API_VERSION(0, 1, 3, 0): return SPV_ENV_VULKAN_1_3;
 		default:
 			break;
 	}

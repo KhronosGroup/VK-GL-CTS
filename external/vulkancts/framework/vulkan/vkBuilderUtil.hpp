@@ -204,6 +204,7 @@ public:
 		return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, 1u, descriptorType, DE_NULL, DE_NULL, pTexelBufferView);
 	}
 
+#ifndef CTS_USES_VULKANSC
 	inline DescriptorSetUpdateBuilder&	writeSingle					(VkDescriptorSet										destSet,
 																	 const Location&										destLocation,
 																	 VkDescriptorType										descriptorType,
@@ -211,6 +212,7 @@ public:
 	{
 		return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, 1u, descriptorType, DE_NULL, DE_NULL, DE_NULL, pAccelerationStructure);
 	}
+#endif // CTS_USES_VULKANSC
 
 	inline DescriptorSetUpdateBuilder&	writeArray					(VkDescriptorSet				destSet,
 																	 const Location&				destLocation,
@@ -239,6 +241,7 @@ public:
 		return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, numDescriptors, descriptorType, DE_NULL, DE_NULL, pTexelBufferView);
 	}
 
+#ifndef CTS_USES_VULKANSC
 	inline DescriptorSetUpdateBuilder&	writeArray					(VkDescriptorSet										destSet,
 																	 const Location&										destLocation,
 																	 VkDescriptorType										descriptorType,
@@ -247,6 +250,7 @@ public:
 	{
 		return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, numDescriptors, descriptorType, DE_NULL, DE_NULL, DE_NULL, pAccelerationStructure);
 	}
+#endif // CTS_USES_VULKANSC
 
 	inline DescriptorSetUpdateBuilder&	copySingle					(VkDescriptorSet	srcSet,
 																	 const Location&	srcLocation,

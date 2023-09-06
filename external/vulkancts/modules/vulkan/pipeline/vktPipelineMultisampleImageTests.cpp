@@ -65,11 +65,12 @@ typedef SharedPtr<Unique<VkPipeline> >	PipelineSp;
 //! Test case parameters
 struct CaseDef
 {
-	IVec2					renderSize;
-	int						numLayers;
-	VkFormat				colorFormat;
-	VkSampleCountFlagBits	numSamples;
-	bool					colorSamples;
+	PipelineConstructionType	pipelineConstructionType;
+	IVec2						renderSize;
+	int							numLayers;
+	VkFormat					colorFormat;
+	VkSampleCountFlagBits		numSamples;
+	bool						colorSamples;
 };
 
 template<typename T>
@@ -262,10 +263,14 @@ std::vector<PipelineSp> makeGraphicsPipelines (const DeviceInterface&		vk,
 	std::vector<VkPipeline>						rawPipelines			(numSubpasses, DE_NULL);
 
 	{
-		const VkPipelineCreateFlags firstPipelineFlags = (numSubpasses > 1u ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT
-																			: (VkPipelineCreateFlagBits)0);
+#ifndef CTS_USES_VULKANSC
+		const VkPipelineCreateFlags firstPipelineFlags	= (numSubpasses > 1u ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT
+																			: VkPipelineCreateFlagBits(0));
+#else
+		const VkPipelineCreateFlags firstPipelineFlags	= VkPipelineCreateFlagBits(0);
+#endif // CTS_USES_VULKANSC
 
-		VkGraphicsPipelineCreateInfo createInfo =
+		VkGraphicsPipelineCreateInfo createInfo			=
 		{
 			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
 			DE_NULL,											// const void*										pNext;
@@ -285,13 +290,15 @@ std::vector<PipelineSp> makeGraphicsPipelines (const DeviceInterface&		vk,
 			renderPass,											// VkRenderPass										renderPass;
 			0u,													// deUint32											subpass;
 			DE_NULL,											// VkPipeline										basePipelineHandle;
-			-1,													// deInt32											basePipelineIndex;
+			0u,													// deInt32											basePipelineIndex;
 		};
 
-		graphicsPipelineInfos.push_back(createInfo);
+		graphicsPipelineInfos.push_back					(createInfo);
 
-		createInfo.flags				= VK_PIPELINE_CREATE_DERIVATIVE_BIT;
-		createInfo.basePipelineIndex	= 0;
+#ifndef CTS_USES_VULKANSC
+		createInfo.flags								= VK_PIPELINE_CREATE_DERIVATIVE_BIT;
+		createInfo.basePipelineIndex					= 0;
+#endif // CTS_USES_VULKANSC
 
 		for (deUint32 subpassNdx = 1u; subpassNdx < numSubpasses; ++subpassNdx)
 		{
@@ -308,6 +315,109 @@ std::vector<PipelineSp> makeGraphicsPipelines (const DeviceInterface&		vk,
 		pipelines.push_back(makeSharedPtr(Move<VkPipeline>(check<VkPipeline>(*it), Deleter<VkPipeline>(vk, device, DE_NULL))));
 
 	return pipelines;
+}
+
+//! Create a vector of pipelines, each with an increasing subpass index
+void preparePipelineWrapper (GraphicsPipelineWrapper&		gpw,
+							 const deUint32					subpassNdx,
+							 const VkPipelineLayout			pipelineLayout,
+							 const VkRenderPass				renderPass,
+							 const VkShaderModule			vertexModule,
+							 const VkShaderModule			fragmentModule,
+							 const IVec2					renderSize,
+							 const VkSampleCountFlagBits	numSamples,
+							 const VkPrimitiveTopology		topology)
+{
+	const VkVertexInputBindingDescription vertexInputBindingDescription =
+	{
+		0u,								// uint32_t				binding;
+		sizeof(Vertex4RGBA),			// uint32_t				stride;
+		VK_VERTEX_INPUT_RATE_VERTEX,	// VkVertexInputRate	inputRate;
+	};
+
+	const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[] =
+	{
+		{
+			0u,									// uint32_t			location;
+			0u,									// uint32_t			binding;
+			VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat			format;
+			0u,									// uint32_t			offset;
+		},
+		{
+			1u,									// uint32_t			location;
+			0u,									// uint32_t			binding;
+			VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat			format;
+			sizeof(Vec4),						// uint32_t			offset;
+		},
+	};
+
+	const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType                             sType;
+		DE_NULL,														// const void*                                 pNext;
+		(VkPipelineVertexInputStateCreateFlags)0,						// VkPipelineVertexInputStateCreateFlags       flags;
+		1u,																// uint32_t                                    vertexBindingDescriptionCount;
+		&vertexInputBindingDescription,									// const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
+		DE_LENGTH_OF_ARRAY(vertexInputAttributeDescriptions),			// uint32_t                                    vertexAttributeDescriptionCount;
+		vertexInputAttributeDescriptions,								// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
+	};
+
+	const std::vector<VkViewport>	viewport	{ makeViewport(renderSize) };
+	const std::vector<VkRect2D>		scissor		{ makeRect2D(renderSize) };
+
+	const VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,		// VkStructureType							sType;
+		DE_NULL,														// const void*								pNext;
+		(VkPipelineMultisampleStateCreateFlags)0,						// VkPipelineMultisampleStateCreateFlags	flags;
+		numSamples,														// VkSampleCountFlagBits					rasterizationSamples;
+		VK_FALSE,														// VkBool32									sampleShadingEnable;
+		0.0f,															// float									minSampleShading;
+		DE_NULL,														// const VkSampleMask*						pSampleMask;
+		VK_FALSE,														// VkBool32									alphaToCoverageEnable;
+		VK_FALSE														// VkBool32									alphaToOneEnable;
+	};
+
+	const VkColorComponentFlags colorComponentsAll = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	// Number of blend attachments must equal the number of color attachments during any subpass.
+	const VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState =
+	{
+		VK_FALSE,						// VkBool32					blendEnable;
+		VK_BLEND_FACTOR_ONE,			// VkBlendFactor			srcColorBlendFactor;
+		VK_BLEND_FACTOR_ZERO,			// VkBlendFactor			dstColorBlendFactor;
+		VK_BLEND_OP_ADD,				// VkBlendOp				colorBlendOp;
+		VK_BLEND_FACTOR_ONE,			// VkBlendFactor			srcAlphaBlendFactor;
+		VK_BLEND_FACTOR_ZERO,			// VkBlendFactor			dstAlphaBlendFactor;
+		VK_BLEND_OP_ADD,				// VkBlendOp				alphaBlendOp;
+		colorComponentsAll,				// VkColorComponentFlags	colorWriteMask;
+	};
+
+	const VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,		// VkStructureType								sType;
+		DE_NULL,														// const void*									pNext;
+		(VkPipelineColorBlendStateCreateFlags)0,						// VkPipelineColorBlendStateCreateFlags			flags;
+		VK_FALSE,														// VkBool32										logicOpEnable;
+		VK_LOGIC_OP_COPY,												// VkLogicOp									logicOp;
+		1u,																// deUint32										attachmentCount;
+		&pipelineColorBlendAttachmentState,								// const VkPipelineColorBlendAttachmentState*	pAttachments;
+		{ 0.0f, 0.0f, 0.0f, 0.0f },										// float										blendConstants[4];
+	};
+
+	gpw.setDefaultTopology(topology)
+	   .setDefaultRasterizationState()
+	   .setDefaultDepthStencilState()
+	   .setupVertexInputState(&vertexInputStateInfo)
+	   .setupPreRasterizationShaderState(viewport,
+			scissor,
+			pipelineLayout,
+			renderPass,
+			subpassNdx,
+			vertexModule)
+	   .setupFragmentShaderState(pipelineLayout, renderPass, subpassNdx, fragmentModule, DE_NULL, &pipelineMultisampleStateInfo)
+	   .setupFragmentOutputState(renderPass, subpassNdx, &pipelineColorBlendStateInfo, &pipelineMultisampleStateInfo)
+	   .setMonolithicPipelineLayout(pipelineLayout)
+	   .buildPipeline();
 }
 
 //! Make a render pass with one subpass per color attachment and one attachment per image layer.
@@ -379,7 +489,7 @@ Move<VkRenderPass> makeMultisampleRenderPass (const DeviceInterface&		vk,
 
 //! A single-attachment, single-subpass render pass.
 Move<VkRenderPass> makeSimpleRenderPass (const DeviceInterface&	vk,
-									     const VkDevice			device,
+										 const VkDevice			device,
 										 const VkFormat			colorFormat)
 {
 	const VkAttachmentDescription colorAttachmentDescription =
@@ -459,24 +569,24 @@ Move<VkSampler> makeSampler (const DeviceInterface& vk, const VkDevice device)
 {
 	const VkSamplerCreateInfo samplerParams =
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,			// VkStructureType         sType;
-		DE_NULL,										// const void*             pNext;
-		(VkSamplerCreateFlags)0,						// VkSamplerCreateFlags    flags;
-		VK_FILTER_NEAREST,								// VkFilter                magFilter;
-		VK_FILTER_NEAREST,								// VkFilter                minFilter;
-		VK_SAMPLER_MIPMAP_MODE_NEAREST,					// VkSamplerMipmapMode     mipmapMode;
-		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,			// VkSamplerAddressMode    addressModeU;
-		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,			// VkSamplerAddressMode    addressModeV;
-		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,			// VkSamplerAddressMode    addressModeW;
-		0.0f,											// float                   mipLodBias;
-		VK_FALSE,										// VkBool32                anisotropyEnable;
-		1.0f,											// float                   maxAnisotropy;
-		VK_FALSE,										// VkBool32                compareEnable;
-		VK_COMPARE_OP_ALWAYS,							// VkCompareOp             compareOp;
-		0.0f,											// float                   minLod;
-		0.0f,											// float                   maxLod;
-		VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,		// VkBorderColor           borderColor;
-		VK_FALSE,										// VkBool32                unnormalizedCoordinates;
+		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,			// VkStructureType			sType;
+		DE_NULL,										// const void*				pNext;
+		(VkSamplerCreateFlags)0,						// VkSamplerCreateFlags		flags;
+		VK_FILTER_NEAREST,								// VkFilter					magFilter;
+		VK_FILTER_NEAREST,								// VkFilter					minFilter;
+		VK_SAMPLER_MIPMAP_MODE_NEAREST,					// VkSamplerMipmapMode		mipmapMode;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,			// VkSamplerAddressMode		addressModeU;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,			// VkSamplerAddressMode		addressModeV;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,			// VkSamplerAddressMode		addressModeW;
+		0.0f,											// float					mipLodBias;
+		VK_FALSE,										// VkBool32					anisotropyEnable;
+		1.0f,											// float					maxAnisotropy;
+		VK_FALSE,										// VkBool32					compareEnable;
+		VK_COMPARE_OP_ALWAYS,							// VkCompareOp				compareOp;
+		0.0f,											// float					minLod;
+		0.0f,											// float					maxLod;
+		VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,		// VkBorderColor			borderColor;
+		VK_FALSE,										// VkBool32					unnormalizedCoordinates;
 	};
 	return createSampler(vk, device, &samplerParams);
 }
@@ -892,14 +1002,32 @@ void renderMultisampledImage (Context& context, const CaseDef& caseDef, const Vk
 			flushAlloc(vk, device, *vertexBufferAlloc);
 		}
 
-		const Unique<VkShaderModule>	vertexModule	(createShaderModule			(vk, device, context.getBinaryCollection().get("vert"), 0u));
-		const Unique<VkShaderModule>	fragmentModule	(createShaderModule			(vk, device, context.getBinaryCollection().get("frag"), 0u));
-		const Unique<VkRenderPass>		renderPass		(makeMultisampleRenderPass	(vk, device, caseDef.colorFormat, caseDef.numSamples, caseDef.numLayers));
-		const Unique<VkFramebuffer>		framebuffer		(makeFramebuffer			(vk, device, *renderPass, caseDef.numLayers, &attachmentHandles[0],
-																					 static_cast<deUint32>(caseDef.renderSize.x()),  static_cast<deUint32>(caseDef.renderSize.y())));
-		const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout			(vk, device));
-		const std::vector<PipelineSp>	pipelines		(makeGraphicsPipelines		(vk, device, caseDef.numLayers, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
-																					 caseDef.renderSize, caseDef.numSamples, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST));
+		const Unique<VkShaderModule>			vertexModule	(createShaderModule			(vk, device, context.getBinaryCollection().get("vert"), 0u));
+		const Unique<VkShaderModule>			fragmentModule	(createShaderModule			(vk, device, context.getBinaryCollection().get("frag"), 0u));
+		const Unique<VkRenderPass>				renderPass		(makeMultisampleRenderPass	(vk, device, caseDef.colorFormat, caseDef.numSamples, caseDef.numLayers));
+		const Unique<VkFramebuffer>				framebuffer		(makeFramebuffer			(vk, device, *renderPass, caseDef.numLayers, &attachmentHandles[0],
+																							 static_cast<deUint32>(caseDef.renderSize.x()),  static_cast<deUint32>(caseDef.renderSize.y())));
+		const Unique<VkPipelineLayout>			pipelineLayout	(makePipelineLayout			(vk, device));
+		const bool								isMonolithic	(caseDef.pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC);
+		std::vector<PipelineSp>					pipelinesSp;
+		std::vector<GraphicsPipelineWrapper>	pipelineWrapper;
+
+		if (isMonolithic)
+		{
+			pipelinesSp = makeGraphicsPipelines(vk, device, caseDef.numLayers, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+												caseDef.renderSize, caseDef.numSamples, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+		}
+		else
+		{
+			// we can't create a vector of derived pipelines with GraphicsPipelineWrapper
+			pipelineWrapper.reserve(caseDef.numLayers);
+			for (int subpassNdx = 0; subpassNdx < caseDef.numLayers; ++subpassNdx)
+			{
+				pipelineWrapper.emplace_back(vk, device, caseDef.pipelineConstructionType);
+				preparePipelineWrapper(pipelineWrapper.back(), subpassNdx, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+									   caseDef.renderSize, caseDef.numSamples, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+			}
+		}
 
 		beginCommandBuffer(vk, *cmdBuffer);
 
@@ -916,7 +1044,8 @@ void renderMultisampledImage (Context& context, const CaseDef& caseDef, const Vk
 			if (layerNdx != 0)
 				vk.cmdNextSubpass(*cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[layerNdx]);
+			VkPipeline pipeline = isMonolithic ? **pipelinesSp[layerNdx] : pipelineWrapper[layerNdx].getPipeline();
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 			vk.cmdDraw(*cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);
 		}
 
@@ -1011,13 +1140,16 @@ void checkSupport (Context& context, const CaseDef caseDef)
 	const VkImageUsageFlags colorImageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
 	checkImageFormatRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.numSamples, caseDef.colorFormat, colorImageUsage);
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
 
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().multisampleArrayImage &&
 		(caseDef.numSamples != VK_SAMPLE_COUNT_1_BIT) && (caseDef.numLayers != 1))
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support image array with multiple samples per texel");
 	}
+#endif // CTS_USES_VULKANSC
 }
 
 tcu::TestStatus test (Context& context, const CaseDef caseDef)
@@ -1100,14 +1232,28 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 			.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageDescriptorInfo)
 			.update(vk, device);
 
-		const Unique<VkShaderModule>	vertexModule	(createShaderModule		(vk, device, context.getBinaryCollection().get("sample_vert"), 0u));
-		const Unique<VkShaderModule>	fragmentModule	(createShaderModule		(vk, device, context.getBinaryCollection().get("sample_frag"), 0u));
-		const Unique<VkRenderPass>		renderPass		(makeSimpleRenderPass	(vk, device, checksumFormat));
-		const Unique<VkFramebuffer>		framebuffer		(makeFramebuffer		(vk, device, *renderPass, 1u, &checksumImageView.get(),
+		const Unique<VkShaderModule>			vertexModule	(createShaderModule		(vk, device, context.getBinaryCollection().get("sample_vert"), 0u));
+		const Unique<VkShaderModule>			fragmentModule	(createShaderModule		(vk, device, context.getBinaryCollection().get("sample_frag"), 0u));
+		const Unique<VkRenderPass>				renderPass		(makeSimpleRenderPass	(vk, device, checksumFormat));
+		const Unique<VkFramebuffer>				framebuffer		(makeFramebuffer		(vk, device, *renderPass, 1u, &checksumImageView.get(),
 																				 static_cast<deUint32>(caseDef.renderSize.x()),  static_cast<deUint32>(caseDef.renderSize.y())));
-		const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout		(vk, device, *descriptorSetLayout));
-		const std::vector<PipelineSp>	pipelines		(makeGraphicsPipelines	(vk, device, 1u, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
-																				 caseDef.renderSize, VK_SAMPLE_COUNT_1_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
+		const Unique<VkPipelineLayout>			pipelineLayout	(makePipelineLayout		(vk, device, *descriptorSetLayout));
+
+		const bool								isMonolithic	(caseDef.pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC);
+		std::vector<PipelineSp>					pipelinesSp;
+		std::vector<GraphicsPipelineWrapper>	pipelineWrapper;
+
+		if (isMonolithic)
+		{
+			pipelinesSp = makeGraphicsPipelines(vk, device, 1u, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+												caseDef.renderSize, VK_SAMPLE_COUNT_1_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+		}
+		else
+		{
+			pipelineWrapper.emplace_back(vk, device, caseDef.pipelineConstructionType);
+			preparePipelineWrapper(pipelineWrapper.back(), 0u, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+								   caseDef.renderSize, VK_SAMPLE_COUNT_1_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+		}
 
 		beginCommandBuffer(vk, *cmdBuffer);
 
@@ -1135,7 +1281,8 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 
 		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, caseDef.renderSize.x(), caseDef.renderSize.y()), tcu::UVec4(0u));
 
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines.back());
+		VkPipeline pipeline = isMonolithic ? **pipelinesSp.back() : pipelineWrapper.back().getPipeline();
+		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 		{
 			const VkDeviceSize vertexBufferOffset = 0ull;
@@ -1448,6 +1595,7 @@ void checkSupport (Context& context, const CaseDef caseDef)
 	const VkImageUsageFlags colorImageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
 
 	checkImageFormatRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.numSamples, caseDef.colorFormat, colorImageUsage);
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
 }
 
 tcu::TestStatus test (Context& context, const CaseDef caseDef)
@@ -1577,6 +1725,7 @@ void checkSupport (Context& context, const CaseDef caseDef)
 		TCU_THROW(InternalError, "Standard does not define sample positions for 32x or 64x multisample modes");
 	}
 
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
 }
 
 tcu::TestStatus test (Context& context, const CaseDef caseDef)
@@ -1659,14 +1808,27 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 			.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageDescriptorInfo)
 			.update(vk, device);
 
-		const Unique<VkShaderModule>	vertexModule	(createShaderModule		(vk, device, context.getBinaryCollection().get("sample_vert"), 0u));
-		const Unique<VkShaderModule>	fragmentModule	(createShaderModule		(vk, device, context.getBinaryCollection().get("sample_frag"), 0u));
-		const Unique<VkRenderPass>		renderPass		(makeSimpleRenderPass	(vk, device, checksumFormat));
-		const Unique<VkFramebuffer>		framebuffer		(makeFramebuffer		(vk, device, *renderPass, 1u, &checksumImageView.get(),
-																				 static_cast<deUint32>(caseDef.renderSize.x()),  static_cast<deUint32>(caseDef.renderSize.y())));
-		const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout		(vk, device, *descriptorSetLayout));
-		const std::vector<PipelineSp>	pipelines		(makeGraphicsPipelines	(vk, device, 1u, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
-																				 caseDef.renderSize, VK_SAMPLE_COUNT_1_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP));
+		const Unique<VkShaderModule>			vertexModule	(createShaderModule		(vk, device, context.getBinaryCollection().get("sample_vert"), 0u));
+		const Unique<VkShaderModule>			fragmentModule	(createShaderModule		(vk, device, context.getBinaryCollection().get("sample_frag"), 0u));
+		const Unique<VkRenderPass>				renderPass		(makeSimpleRenderPass	(vk, device, checksumFormat));
+		const Unique<VkFramebuffer>				framebuffer		(makeFramebuffer		(vk, device, *renderPass, 1u, &checksumImageView.get(),
+																						 static_cast<deUint32>(caseDef.renderSize.x()),  static_cast<deUint32>(caseDef.renderSize.y())));
+		const Unique<VkPipelineLayout>			pipelineLayout	(makePipelineLayout		(vk, device, *descriptorSetLayout));
+		const bool								isMonolithic	(caseDef.pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC);
+		std::vector<PipelineSp>					pipelinesSp;
+		std::vector<GraphicsPipelineWrapper>	pipelineWrapper;
+
+		if (isMonolithic)
+		{
+			pipelinesSp = makeGraphicsPipelines(vk, device, 1u, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+												caseDef.renderSize, VK_SAMPLE_COUNT_1_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+		}
+		else
+		{
+			pipelineWrapper.emplace_back(vk, device, caseDef.pipelineConstructionType);
+			preparePipelineWrapper(pipelineWrapper.back(), 0u, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+								   caseDef.renderSize, VK_SAMPLE_COUNT_1_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+		}
 
 		beginCommandBuffer(vk, *cmdBuffer);
 
@@ -1694,7 +1856,8 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 
 		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, caseDef.renderSize.x(), caseDef.renderSize.y()), tcu::UVec4(0u));
 
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines.back());
+		VkPipeline pipeline = isMonolithic ? **pipelinesSp.back() : pipelineWrapper.back().getPipeline();
+		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 		{
 			const VkDeviceSize vertexBufferOffset = 0ull;
@@ -1745,7 +1908,8 @@ std::string getFormatString (const VkFormat format)
 void addTestCasesWithFunctions (tcu::TestCaseGroup*						group,
 								FunctionSupport1<CaseDef>::Function		checkSupport,
 								FunctionPrograms1<CaseDef>::Function	initPrograms,
-								FunctionInstance1<CaseDef>::Function	testFunc)
+								FunctionInstance1<CaseDef>::Function	testFunc,
+								PipelineConstructionType				pipelineConstructionType)
 {
 	const IVec2 size[] =
 	{
@@ -1785,13 +1949,14 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup*						group,
 				std::ostringstream caseName;
 				caseName << "samples_" << getNumSamples(samples[samplesNdx]);
 
-				const CaseDef caseDef =
+				const CaseDef caseDef
 				{
-					size[sizeNdx],			// IVec2					renderSize;
-					numLayers[layerNdx],	// int						numLayers;
-					format[formatNdx],		// VkFormat					colorFormat;
-					samples[samplesNdx],	// VkSampleCountFlagBits	numSamples;
-					false,					// bool						colorQuad;
+					pipelineConstructionType,	// PipelineConstructionType	pipelineConstructionType;
+					size[sizeNdx],				// IVec2					renderSize;
+					numLayers[layerNdx],		// int						numLayers;
+					format[formatNdx],			// VkFormat					colorFormat;
+					samples[samplesNdx],		// VkSampleCountFlagBits	numSamples;
+					false,						// bool						colorQuad;
 				};
 
 				addFunctionCaseWithPrograms(formatGroup.get(), caseName.str(), "", checkSupport, initPrograms, testFunc, caseDef);
@@ -1805,7 +1970,8 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup*						group,
 void addStandardSamplePositionTestCasesWithFunctions (tcu::TestCaseGroup*					group,
 													  FunctionSupport1<CaseDef>::Function	checkSupport,
 													  FunctionPrograms1<CaseDef>::Function	initPrograms,
-													  FunctionInstance1<CaseDef>::Function	testFunc)
+													  FunctionInstance1<CaseDef>::Function	testFunc,
+													  PipelineConstructionType				pipelineConstructionType)
 {
 	const VkSampleCountFlagBits samples[] =
 	{
@@ -1830,13 +1996,14 @@ void addStandardSamplePositionTestCasesWithFunctions (tcu::TestCaseGroup*					gr
 			std::ostringstream caseName;
 			caseName << "samples_" << getNumSamples(samples[samplesNdx]);
 
-			const CaseDef caseDef =
+			const CaseDef caseDef
 			{
-				IVec2(1,1),				// IVec2					renderSize;
-				1,						// int						numLayers;
-				format[formatNdx],		// VkFormat					colorFormat;
-				samples[samplesNdx],	// VkSampleCountFlagBits	numSamples;
-				true,					// bool						colorQuad;
+				pipelineConstructionType,	// PipelineConstructionType	pipelineConstructionType;
+				IVec2(1,1),					// IVec2					renderSize;
+				1,							// int						numLayers;
+				format[formatNdx],			// VkFormat					colorFormat;
+				samples[samplesNdx],		// VkSampleCountFlagBits	numSamples;
+				true,						// bool						colorQuad;
 			};
 
 			addFunctionCaseWithPrograms(formatGroup.get(), caseName.str(), "", checkSupport, initPrograms, testFunc, caseDef);
@@ -1845,39 +2012,39 @@ void addStandardSamplePositionTestCasesWithFunctions (tcu::TestCaseGroup*					gr
 	}
 }
 
-void createSampledImageTestsInGroup (tcu::TestCaseGroup* group)
+void createSampledImageTestsInGroup (tcu::TestCaseGroup* group, PipelineConstructionType pipelineConstructionType)
 {
-	addTestCasesWithFunctions(group, SampledImage::checkSupport, SampledImage::initPrograms, SampledImage::test);
+	addTestCasesWithFunctions(group, SampledImage::checkSupport, SampledImage::initPrograms, SampledImage::test, pipelineConstructionType);
 }
 
-void createStorageImageTestsInGroup (tcu::TestCaseGroup* group)
+void createStorageImageTestsInGroup (tcu::TestCaseGroup* group, PipelineConstructionType pipelineConstructionType)
 {
-	addTestCasesWithFunctions(group, StorageImage::checkSupport, StorageImage::initPrograms, StorageImage::test);
+	addTestCasesWithFunctions(group, StorageImage::checkSupport, StorageImage::initPrograms, StorageImage::test, pipelineConstructionType);
 }
 
-void createStandardSamplePositionTestsInGroup (tcu::TestCaseGroup* group)
+void createStandardSamplePositionTestsInGroup (tcu::TestCaseGroup* group, PipelineConstructionType pipelineConstructionType)
 {
-	addStandardSamplePositionTestCasesWithFunctions(group, StandardSamplePosition::checkSupport, StandardSamplePosition::initPrograms, StandardSamplePosition::test);
+	addStandardSamplePositionTestCasesWithFunctions(group, StandardSamplePosition::checkSupport, StandardSamplePosition::initPrograms, StandardSamplePosition::test, pipelineConstructionType);
 }
 
 } // anonymous ns
 
 //! Render to a multisampled image and sample from it in a fragment shader.
-tcu::TestCaseGroup* createMultisampleSampledImageTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createMultisampleSampledImageTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "sampled_image", "Multisampled image direct sample access", createSampledImageTestsInGroup);
+	return createTestGroup(testCtx, "sampled_image", "Multisampled image direct sample access", createSampledImageTestsInGroup, pipelineConstructionType);
 }
 
 //! Render to a multisampled image and access it with load/stores in a compute shader.
-tcu::TestCaseGroup* createMultisampleStorageImageTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createMultisampleStorageImageTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "storage_image", "Multisampled image draw and read/write in compute shader", createStorageImageTestsInGroup);
+	return createTestGroup(testCtx, "storage_image", "Multisampled image draw and read/write in compute shader", createStorageImageTestsInGroup, pipelineConstructionType);
 }
 
 //! Render to a multisampled image and verify standard multisample positions.
-tcu::TestCaseGroup* createMultisampleStandardSamplePositionTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createMultisampleStandardSamplePositionTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "standardsampleposition", "Multisampled image standard sample position tests", createStandardSamplePositionTestsInGroup);
+	return createTestGroup(testCtx, "standardsampleposition", "Multisampled image standard sample position tests", createStandardSamplePositionTestsInGroup, pipelineConstructionType);
 }
 
 } // pipeline

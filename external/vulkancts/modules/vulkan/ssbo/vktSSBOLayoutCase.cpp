@@ -2266,7 +2266,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	// Query the buffer device addresses and push them via push constants
 	if (m_usePhysStorageBuffer)
 	{
-		const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
+		//const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 
 		vk::VkBufferDeviceAddressInfo info =
 		{
@@ -2279,10 +2279,10 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 		{
 			info.buffer = descriptors[i].buffer;
 			vk::VkDeviceAddress addr;
-			if (useKHR)
+			//if (useKHR)
 				addr = vk.getBufferDeviceAddress(device, &info);
-			else
-				addr = vk.getBufferDeviceAddressEXT(device, &info);
+			//else
+			//	addr = vk.getBufferDeviceAddressEXT(device, &info);
 			addr += descriptors[i].offset;
 			gpuAddrs.push_back(addr);
 		}

@@ -32,6 +32,8 @@
 #include "tcuVector.hpp"
 #include "deMutex.hpp"
 #include <memory>
+#include "vkResourceInterface.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 namespace vkt
 {
@@ -43,6 +45,18 @@ enum class SynchronizationType
 	LEGACY				= 0,
 	SYNCHRONIZATION2,
 };
+
+#ifdef CTS_USES_VULKANSC
+	#define VkSemaphoreSubmitInfo		VkSemaphoreSubmitInfoKHR
+	#define VkCommandBufferSubmitInfo	VkCommandBufferSubmitInfoKHR
+	#define VkDependencyInfo			VkDependencyInfoKHR
+	#define VkPipelineStageFlags2		VkPipelineStageFlags2KHR
+	#define VkAccessFlags2				VkAccessFlags2KHR
+	#define VkMemoryBarrier2			VkMemoryBarrier2KHR
+	#define VkImageMemoryBarrier2		VkImageMemoryBarrier2KHR
+	#define VkBufferMemoryBarrier2		VkBufferMemoryBarrier2KHR
+	#define VkSubmitInfo2				VkSubmitInfo2KHR
+#endif // CTS_USES_VULKANSC
 
 class Buffer
 {
@@ -117,7 +131,7 @@ public:
 									PipelineCacheData		(void);
 									~PipelineCacheData		(void);
 
-	vk::Move<vk::VkPipelineCache>	createPipelineCache		(const vk::DeviceInterface& vk, const vk::VkDevice device) const;
+	vk::Move<vk::VkPipelineCache>	createPipelineCache		(const vk::DeviceInterface& vk, const vk::VkDevice device, de::SharedPtr<vk::ResourceInterface> resourceInterface) const;
 	void							setFromPipelineCache	(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineCache pipelineCache);
 
 private:
@@ -152,7 +166,7 @@ public:
 	//! Basic vertex input configuration (uses biding 0, location 0, etc.)
 	GraphicsPipelineBuilder&	setVertexInputSingleAttribute	(const vk::VkFormat vertexFormat, const deUint32 stride);
 
-	vk::Move<vk::VkPipeline>	build							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkRenderPass renderPass, PipelineCacheData& pipelineCacheData);
+	vk::Move<vk::VkPipeline>	build(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkRenderPass renderPass, PipelineCacheData& pipelineCacheData, de::SharedPtr<vk::ResourceInterface> resourceInterface);
 
 private:
 	tcu::IVec2											m_renderSize;
@@ -260,6 +274,10 @@ struct ResourceDescription
 
 struct BufferResource
 {
+	BufferResource (vk::VkBuffer handle_, vk::VkDeviceSize offset_, vk::VkDeviceSize size_)
+		: handle(handle_), offset(offset_), size(size_)
+		{}
+
 	vk::VkBuffer					handle;
 	vk::VkDeviceSize				offset;
 	vk::VkDeviceSize				size;
@@ -267,12 +285,30 @@ struct BufferResource
 
 struct ImageResource
 {
+	ImageResource (
+		vk::VkImage handle_,
+		vk::VkExtent3D extent_,
+		vk::VkImageType imageType_,
+		vk::VkFormat format_,
+		vk::VkImageSubresourceRange subresourceRange_,
+		vk::VkImageSubresourceLayers subresourceLayers_,
+		vk::VkImageTiling tiling_)
+		: handle(handle_)
+		, extent(extent_)
+		, imageType(imageType_)
+		, format(format_)
+		, subresourceRange(subresourceRange_)
+		, subresourceLayers(subresourceLayers_)
+		, tiling(tiling_)
+		{}
+
 	vk::VkImage						handle;
 	vk::VkExtent3D					extent;
 	vk::VkImageType					imageType;
 	vk::VkFormat					format;
 	vk::VkImageSubresourceRange		subresourceRange;
 	vk::VkImageSubresourceLayers	subresourceLayers;
+	vk::VkImageTiling				tiling;
 };
 
 typedef std::shared_ptr<SynchronizationWrapperBase> SynchronizationWrapperPtr;
@@ -289,18 +325,23 @@ vk::VkImageCreateInfo				makeImageCreateInfo							(const vk::VkImageType				ima
 																				 const vk::VkExtent3D&				extent,
 																				 const vk::VkFormat					format,
 																				 const vk::VkImageUsageFlags		usage,
-																				 const vk::VkSampleCountFlagBits	samples = vk::VK_SAMPLE_COUNT_1_BIT);
+																				 const vk::VkSampleCountFlagBits	samples,
+																				 const vk::VkImageTiling			tiling);
 vk::Move<vk::VkCommandBuffer>		makeCommandBuffer							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkCommandPool commandPool);
-vk::Move<vk::VkPipeline>			makeComputePipeline							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkShaderModule shaderModule, const vk::VkSpecializationInfo* specInfo, PipelineCacheData& pipelineCacheData);
+vk::Move<vk::VkPipeline>			makeComputePipeline							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkShaderModule shaderModule, const vk::VkSpecializationInfo* specInfo, PipelineCacheData& pipelineCacheData, de::SharedPtr<vk::ResourceInterface> resourceInterface);
 void								beginRenderPassWithRasterizationDisabled	(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const vk::VkFramebuffer framebuffer);
 void								requireFeatures								(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const FeatureFlags flags);
-void								requireStorageImageSupport					(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const vk::VkFormat fmt);
+void								requireStorageImageSupport					(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const vk::VkFormat fmt, const vk::VkImageTiling tiling);
 std::string							getResourceName								(const ResourceDescription& resource);
 bool								isIndirectBuffer							(const ResourceType type);
 vk::VkCommandBufferSubmitInfoKHR	makeCommonCommandBufferSubmitInfo			(const vk::VkCommandBuffer cmdBuf);
 vk::VkSemaphoreSubmitInfoKHR		makeCommonSemaphoreSubmitInfo				(vk::VkSemaphore semaphore, deUint64 value, vk::VkPipelineStageFlags2KHR stageMask);
 vk::VkDependencyInfoKHR				makeCommonDependencyInfo					(const vk::VkMemoryBarrier2KHR* pMemoryBarrier = DE_NULL, const vk::VkBufferMemoryBarrier2KHR* pBufferMemoryBarrier = DE_NULL, const vk::VkImageMemoryBarrier2KHR* pImageMemoryBarrier = DE_NULL, bool eventDependency = DE_FALSE);
 
+vk::VkDevice						getSyncDevice								(de::MovePtr<VideoDevice>& device, Context& context);
+const vk::DeviceInterface&			getSyncDeviceInterface						(de::MovePtr<VideoDevice>& device, Context& context);
+deUint32							getSyncQueueFamilyIndex						(de::MovePtr<VideoDevice>& device, Context& context);
+vk::VkQueue							getSyncQueue								(de::MovePtr<VideoDevice>& device, Context& context);
 } // synchronization
 } // vkt
 

@@ -157,9 +157,15 @@ private:
 
 // \note VarType must be live during iterator usage.
 template <class IsExpanded>
-class SubTypeIterator : public std::iterator<std::forward_iterator_tag, VarType>
+class SubTypeIterator
 {
 public:
+	using iterator_category = std::forward_iterator_tag;
+	using value_type = VarType;
+	using difference_type = std::ptrdiff_t;
+	using pointer = VarType*;
+	using reference = VarType&;
+
 	static SubTypeIterator<IsExpanded>	begin				(const VarType* type) { return SubTypeIterator(type);						}
 	static SubTypeIterator<IsExpanded>	end					(const VarType* type) { DE_UNREF(type); return SubTypeIterator(DE_NULL);	}
 

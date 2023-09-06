@@ -646,7 +646,7 @@ tcu::TestStatus framebufferCompatibleRenderPassTest (Context& context)
 	const Unique<VkFramebuffer>		frameBuffer				(createFramebuffer(vk, device, &framebufferCreateInfo));
 
 	const Unique<VkRenderPass>		renderPassB				(createSimpleRenderPass(vk, device, format,
-																					VK_ATTACHMENT_LOAD_OP_LOAD,
+																					VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 																					VK_ATTACHMENT_LOAD_OP_LOAD,
 																					VK_ATTACHMENT_STORE_OP_STORE,
 																					VK_IMAGE_LAYOUT_GENERAL));
@@ -723,8 +723,11 @@ Move<VkPipelineLayout> getPipelineLayout (const DeviceInterface& vk, const VkDev
 	return createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
 }
 
-Move<VkPipeline> createSimpleGraphicsPipeline (const DeviceInterface& vk, const VkDevice& device, deUint32 numShaderStages, const VkPipelineShaderStageCreateInfo* shaderStageCreateInfos, VkPipelineLayout pipelineLayout, VkRenderPass renderPass)
+Move<VkPipeline> createSimpleGraphicsPipeline (const DeviceInterface& vk, const VkDevice& device, deUint32 numShaderStages, const VkPipelineShaderStageCreateInfo* shaderStageCreateInfos, VkPipelineLayout pipelineLayout, VkRenderPass renderPass, de::SharedPtr<vk::ResourceInterface> resourceInterface)
 {
+#ifndef CTS_USES_VULKANSC
+	DE_UNREF(resourceInterface);
+#endif // CTS_USES_VULKANSC
 	const VkPipelineVertexInputStateCreateInfo		vertexInputStateCreateInfo		=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType                             sType;
@@ -850,11 +853,18 @@ Move<VkPipeline> createSimpleGraphicsPipeline (const DeviceInterface& vk, const 
 
 	const VkPipelineCacheCreateInfo					pipelineCacheCreateInfo			=
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,	// VkStructureType               sType;
-		DE_NULL,										// const void*                   pNext;
-		(VkPipelineCacheCreateFlags)0u,					// VkPipelineCacheCreateFlags    flags;
-		0,												// size_t                        initialDataSize;
-		DE_NULL											// const void*                   pInitialData;
+		VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,					// VkStructureType               sType;
+		DE_NULL,														// const void*                   pNext;
+#ifndef CTS_USES_VULKANSC
+		(VkPipelineCacheCreateFlags)0u,									// VkPipelineCacheCreateFlags    flags;
+		0,																// size_t                        initialDataSize;
+		DE_NULL															// const void*                   pInitialData;
+#else
+		VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+			VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,		// VkPipelineCacheCreateFlags    flags;
+		resourceInterface->getCacheDataSize(),							// deUintptr                     initialDataSize;
+		resourceInterface->getCacheData()								// const void*                   pInitialData;
+#endif // CTS_USES_VULKANSC
 	};
 
 	const Unique<VkPipelineCache>					pipelineCache					(createPipelineCache(vk, device, &pipelineCacheCreateInfo));
@@ -1003,20 +1013,17 @@ tcu::TestStatus pipelineLayoutLifetimeTest (Context& context, VkPipelineBindPoin
 		}
 	};
 
-	VkDescriptorPool descriptorPool;
+	const VkDescriptorPoolCreateInfo descriptorPoolCreateInfo =
 	{
-		const VkDescriptorPoolCreateInfo descriptorPoolCreateInfo =
-		{
-			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,	// VkStructureType                sType;
-			DE_NULL,										// const void*                    pNext;
-			(VkDescriptorPoolCreateFlags)0u,				// VkDescriptorPoolCreateFlags    flags;
-			(isGraphics ? 3u : 5u),							// deUint32                       maxSets;
-			DE_LENGTH_OF_ARRAY(descriptorPoolSizes),		// deUint32                       poolSizeCount;
-			descriptorPoolSizes								// const VkDescriptorPoolSize*    pPoolSizes;
-		};
+		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,	// VkStructureType                sType;
+		DE_NULL,										// const void*                    pNext;
+		(VkDescriptorPoolCreateFlags)0u,				// VkDescriptorPoolCreateFlags    flags;
+		(isGraphics ? 3u : 5u),							// deUint32                       maxSets;
+		DE_LENGTH_OF_ARRAY(descriptorPoolSizes),		// deUint32                       poolSizeCount;
+		descriptorPoolSizes								// const VkDescriptorPoolSize*    pPoolSizes;
+	};
 
-		VK_CHECK(vk.createDescriptorPool(device, &descriptorPoolCreateInfo, DE_NULL, &descriptorPool));
-	}
+	Move<VkDescriptorPool> descriptorPool = createDescriptorPool(vk, device, &descriptorPoolCreateInfo, DE_NULL);
 
 	const VkDescriptorSetLayoutBinding setLayoutBindingA[] =
 	{
@@ -1029,7 +1036,7 @@ tcu::TestStatus pipelineLayoutLifetimeTest (Context& context, VkPipelineBindPoin
 		}
 	};
 
-	const auto shaderStage = (isGraphics ? VK_SHADER_STAGE_FRAGMENT_BIT : VK_SHADER_STAGE_COMPUTE_BIT);
+	const VkShaderStageFlags shaderStage = (isGraphics ? VK_SHADER_STAGE_FRAGMENT_BIT : VK_SHADER_STAGE_COMPUTE_BIT);
 
 	const VkDescriptorSetLayoutBinding setLayoutBindingB[] =
 	{
@@ -1086,9 +1093,9 @@ tcu::TestStatus pipelineLayoutLifetimeTest (Context& context, VkPipelineBindPoin
 
 	const VkDescriptorSet					descriptorSets[]			=
 	{
-		getDescriptorSet(vk, device, descriptorPool, descriptorSetLayouts[0].get()),
-		getDescriptorSet(vk, device, descriptorPool, descriptorSetLayouts[1].get()),
-		getDescriptorSet(vk, device, descriptorPool, descriptorSetLayouts[2].get())
+		getDescriptorSet(vk, device, descriptorPool.get(), descriptorSetLayouts[0].get()),
+		getDescriptorSet(vk, device, descriptorPool.get(), descriptorSetLayouts[1].get()),
+		getDescriptorSet(vk, device, descriptorPool.get(), descriptorSetLayouts[2].get())
 	};
 
 	const VkDescriptorSet					setHandlesAC[]				=
@@ -1151,7 +1158,7 @@ tcu::TestStatus pipelineLayoutLifetimeTest (Context& context, VkPipelineBindPoin
 			}
 		};
 
-		pipeline = createSimpleGraphicsPipeline(vk, device, DE_LENGTH_OF_ARRAY(shaderStageCreateInfos), shaderStageCreateInfos, pipelineLayoutB, renderPass.get());
+		pipeline = createSimpleGraphicsPipeline(vk, device, DE_LENGTH_OF_ARRAY(shaderStageCreateInfos), shaderStageCreateInfos, pipelineLayoutB, renderPass.get(), context.getResourceInterface());
 	}
 	else
 	{
@@ -1217,8 +1224,6 @@ tcu::TestStatus pipelineLayoutLifetimeTest (Context& context, VkPipelineBindPoin
 	}
 
 	vk.cmdBindDescriptorSets(commandBuffer.get(), bindPoint, pipelineLayoutAC.get(), 0u, DE_LENGTH_OF_ARRAY(setHandlesAC), setHandlesAC, 0u, DE_NULL);
-
-	vk.destroyDescriptorPool(device, descriptorPool, DE_NULL);
 
 	// Test should always pass
 	return tcu::TestStatus::pass("Pass");
@@ -1478,8 +1483,14 @@ tcu::TestStatus destroyAfterCreateGraphicsPipelineTest(Context& context)
 	return drawTriangleTest(context, DTM_DESTROY_PIPELINE_LAYOUT_AFTER_CREATING_PIPELINE);
 }
 
-Move<VkPipeline> createSimpleGraphicsPipelineInvalidPointers (const DeviceInterface& vk, const VkDevice& device, deUint32 numShaderStages, const VkPipelineShaderStageCreateInfo* shaderStageCreateInfos, VkPipelineLayout pipelineLayout, VkRenderPass renderPass)
+#ifndef CTS_USES_VULKANSC
+
+Move<VkPipeline> createSimpleGraphicsPipelineInvalidPointers (const DeviceInterface& vk, const VkDevice& device, deUint32 numShaderStages, const VkPipelineShaderStageCreateInfo* shaderStageCreateInfos, VkPipelineLayout pipelineLayout, VkRenderPass renderPass, de::SharedPtr<vk::ResourceInterface> resourceInterface)
 {
+#ifndef CTS_USES_VULKANSC
+	DE_UNREF(resourceInterface);
+#endif // CTS_USES_VULKANSC
+
 	const void *invalidPointer = reinterpret_cast<void*>(~(0));
 
 	const VkPipelineVertexInputStateCreateInfo		vertexInputStateCreateInfo		=
@@ -1547,9 +1558,16 @@ Move<VkPipeline> createSimpleGraphicsPipelineInvalidPointers (const DeviceInterf
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,	// VkStructureType               sType;
 		DE_NULL,										// const void*                   pNext;
-		(VkPipelineCacheCreateFlags)0u,					// VkPipelineCacheCreateFlags    flags;
-		0,												// size_t                        initialDataSize;
-		invalidPointer									// const void*                   pInitialData;
+#ifndef CTS_USES_VULKANSC
+		(VkPipelineCacheCreateFlags)0u,									// VkPipelineCacheCreateFlags    flags;
+		0,																// size_t                        initialDataSize;
+		DE_NULL															// const void*                   pInitialData;
+#else
+		VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+			VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,		// VkPipelineCacheCreateFlags    flags;
+		resourceInterface->getCacheDataSize(),							// deUintptr                     initialDataSize;
+		invalidPointer													// const void*                   pInitialData;
+#endif // CTS_USES_VULKANSC
 	};
 
 	const Unique<VkPipelineCache>					pipelineCache					(createPipelineCache(vk, device, &pipelineCacheCreateInfo));
@@ -1661,7 +1679,6 @@ tcu::TestStatus pipelineInvalidPointersUnusedStructsTest (Context& context, VkPi
 	if (isGraphics)
 	{
 		shaderModules.push_back(createShaderModule(vk, device, context.getBinaryCollection().get("vertex"), 0));
-		shaderModules.push_back(createShaderModule(vk, device, context.getBinaryCollection().get("fragment"), 0));
 
 		const VkPipelineShaderStageCreateInfo	shaderStageCreateInfos[]	=
 		{
@@ -1673,19 +1690,10 @@ tcu::TestStatus pipelineInvalidPointersUnusedStructsTest (Context& context, VkPi
 				shaderModules[0].get(),									// VkShaderModule                      shader;
 				"main",													// const char*                         pName;
 				DE_NULL,												// const VkSpecializationInfo*         pSpecializationInfo;
-			},
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType                     sType;
-				DE_NULL,												// const void*                         pNext;
-				(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags    flags;
-				VK_SHADER_STAGE_FRAGMENT_BIT,							// VkShaderStageFlagBits               stage;
-				shaderModules[1].get(),									// VkShaderModule                      shader;
-				"main",													// const char*                         pName;
-				DE_NULL,												// const VkSpecializationInfo*         pSpecializationInfo;
 			}
 		};
 
-		pipeline = createSimpleGraphicsPipelineInvalidPointers(vk, device, DE_LENGTH_OF_ARRAY(shaderStageCreateInfos), shaderStageCreateInfos, *pipelineLayout, renderPass.get());
+		pipeline = createSimpleGraphicsPipelineInvalidPointers(vk, device, DE_LENGTH_OF_ARRAY(shaderStageCreateInfos), shaderStageCreateInfos, *pipelineLayout, renderPass.get(), context.getResourceInterface());
 	}
 	else
 	{
@@ -1791,6 +1799,8 @@ tcu::TestStatus pipelineInvalidPointersUnusedStructsComputeTest (Context& contex
 	return pipelineInvalidPointersUnusedStructsTest(context, VK_PIPELINE_BIND_POINT_COMPUTE);
 }
 
+#endif // CTS_USES_VULKANSC
+
 tcu::TestCaseGroup* createrenderpassTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> renderPassTests(new tcu::TestCaseGroup(testCtx, "renderpass", "Renderpass tests"));
@@ -1823,6 +1833,7 @@ tcu::TestCaseGroup* createPipelineLayoutTests (tcu::TestContext& testCtx)
 	return pipelineLayoutTests.release();
 }
 
+#ifndef CTS_USES_VULKANSC
 tcu::TestCaseGroup* createPipelineInvalidPointersUnusedStructsTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> pipelineInvalidPointersUnusedStructsTests(new tcu::TestCaseGroup(testCtx, "pipeline_invalid_pointers_unused_structs", "Create pipelines with invalid pointers for unused structs"));
@@ -1832,16 +1843,19 @@ tcu::TestCaseGroup* createPipelineInvalidPointersUnusedStructsTests (tcu::TestCo
 
 	return pipelineInvalidPointersUnusedStructsTests.release();
 }
+#endif // CTS_USES_VULKANSC
 
 } // anonymous
 
 tcu::TestCaseGroup* createPipelineTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> pipelineTests(new tcu::TestCaseGroup(testCtx, "pipeline", "Descriptor set tests"));
+	de::MovePtr<tcu::TestCaseGroup> pipelineTests(new tcu::TestCaseGroup(testCtx, "pipeline", "Pipeline tests"));
 
 	pipelineTests->addChild(createrenderpassTests(testCtx));
 	pipelineTests->addChild(createPipelineLayoutTests(testCtx));
+#ifndef CTS_USES_VULKANSC
 	pipelineTests->addChild(createPipelineInvalidPointersUnusedStructsTests(testCtx));
+#endif // CTS_USES_VULKANSC
 
 	return pipelineTests.release();
 }

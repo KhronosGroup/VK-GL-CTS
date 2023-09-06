@@ -24,19 +24,20 @@
 
 #include "esextcTestPackage.hpp"
 
+#include "disjoint_timer_query/esextcDisjointTimerQueryTests.hpp"
 #include "draw_elements_base_vertex/esextcDrawElementsBaseVertexTests.hpp"
+#include "fragment_shading_rate/esextcFragmentShadingRateTests.hpp"
 #include "geometry_shader/esextcGeometryShaderTests.hpp"
+#include "glcViewportArrayTests.hpp"
+#include "gluStateReset.hpp"
 #include "gpu_shader5/esextcGPUShader5Tests.hpp"
+#include "tcuTestLog.hpp"
+#include "tcuWaiverUtil.hpp"
 #include "tessellation_shader/esextcTessellationShaderTests.hpp"
 #include "texture_border_clamp/esextcTextureBorderClampTests.hpp"
 #include "texture_buffer/esextcTextureBufferTests.hpp"
 #include "texture_cube_map_array/esextcTextureCubeMapArrayTests.hpp"
 #include "texture_shadow_lod/esextcTextureShadowLodFunctionsTest.hpp"
-#include "disjoint_timer_query/esextcDisjointTimerQueryTests.hpp"
-#include "glcViewportArrayTests.hpp"
-#include "gluStateReset.hpp"
-#include "tcuTestLog.hpp"
-#include "tcuWaiverUtil.hpp"
 
 namespace esextcts
 {
@@ -146,6 +147,7 @@ void ESEXTTestPackage::init(void)
 		addChild(new deqp::Functional::TextureShadowLodTest(getContext()));
 		glcts::ExtParameters viewportParams2(glu::GLSL_VERSION_100_ES, glcts::EXTENSIONTYPE_OES);
 		addChild(new glcts::DisjointTimerQueryTests(getContext(), viewportParams2));
+		addChild(new glcts::FragmentShadingRateTests(getContext(), extParams));
 	}
 	catch (...)
 	{

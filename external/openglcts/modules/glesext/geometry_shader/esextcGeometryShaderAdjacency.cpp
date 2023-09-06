@@ -96,6 +96,8 @@ AdjacencyTestData::AdjacencyTestData()
 	, m_vertex_data_bo_size(0)
 	, m_expected_adjacency_geometry(0)
 	, m_expected_geometry(0)
+	, m_alternate_expected_adjacency_geometry(0)
+	, m_alternate_expected_geometry(0)
 	, m_index_data(0)
 	, m_tf_mode(0)
 	, m_vertex_data(0)
@@ -118,6 +120,18 @@ AdjacencyTestData::~AdjacencyTestData()
 	{
 		delete[] m_expected_geometry;
 		m_expected_geometry = 0;
+	}
+
+	if (m_alternate_expected_adjacency_geometry)
+	{
+		delete[] m_alternate_expected_adjacency_geometry;
+		m_alternate_expected_adjacency_geometry = 0;
+	}
+
+	if (m_alternate_expected_geometry)
+	{
+		delete[] m_alternate_expected_geometry;
+		m_alternate_expected_geometry = 0;
 	}
 
 	if (m_vertex_data)
@@ -409,6 +423,11 @@ tcu::TestNode::IterateResult GeometryShaderAdjacency::iterate(void)
 	float* result_adjacency_geometry_ptr = 0;
 	float* result_geometry_ptr			 = 0;
 
+	bool hasAlternateData = m_test_data.m_alternate_expected_geometry != nullptr &&
+							m_test_data.m_alternate_expected_adjacency_geometry != nullptr;
+	bool adjacentMatchesExpected		  = true;
+	bool adjacentMatchesAlternateExpected = hasAlternateData;
+
 	/* If gs is available read adjacency data using TF and compare with expected data*/
 	if (m_test_data.m_gs_code)
 	{
@@ -418,25 +437,61 @@ tcu::TestNode::IterateResult GeometryShaderAdjacency::iterate(void)
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Error when mapping data to client space");
 
 		std::stringstream sstreamExpected;
+		std::stringstream sstreamAlternateExpected;
 		std::stringstream sstreamResult;
 		sstreamExpected << "[";
+		if (hasAlternateData)
+			sstreamAlternateExpected << "[";
 		sstreamResult << "[";
 
+		unsigned int differentExpectedIndex			 = 0;
+		unsigned int differentAlternateExpectedIndex = 0;
 		for (unsigned int n = 0; n < m_test_data.m_geometry_bo_size / sizeof(float); ++n)
 		{
 			sstreamExpected << m_test_data.m_expected_adjacency_geometry[n] << ", ";
+			if (hasAlternateData)
+				sstreamAlternateExpected << m_test_data.m_alternate_expected_adjacency_geometry[n] << ", ";
 			sstreamResult << result_adjacency_geometry_ptr[n] << ", ";
 
-			if (de::abs(result_adjacency_geometry_ptr[n] - m_test_data.m_expected_adjacency_geometry[n]) >= m_epsilon)
+			if (adjacentMatchesExpected &&
+				de::abs(result_adjacency_geometry_ptr[n] -
+									   m_test_data.m_expected_adjacency_geometry[n]) >= m_epsilon)
+			{
+				adjacentMatchesExpected = false;
+				differentExpectedIndex = n;
+			}
+			if (adjacentMatchesAlternateExpected &&
+				de::abs(result_adjacency_geometry_ptr[n] - m_test_data.m_alternate_expected_adjacency_geometry[n]) >=
+					m_epsilon)
+			{
+				adjacentMatchesAlternateExpected = false;
+				differentAlternateExpectedIndex = n;
+			}
+			if (!adjacentMatchesExpected && !adjacentMatchesAlternateExpected)
 			{
 				gl.unmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER);
 
-				m_testCtx.getLog() << tcu::TestLog::Message << "At [" << n
+				m_testCtx.getLog() << tcu::TestLog::Message << "At [" << differentExpectedIndex
 								   << "] position adjacency buffer position Reference value is different than the "
 									  "rendered data (epsilon "
 								   << m_epsilon << " )"
-								   << " (" << m_test_data.m_expected_adjacency_geometry[n] << ") vs "
-								   << "(" << result_adjacency_geometry_ptr[n] << ")" << tcu::TestLog::EndMessage;
+								   << " (" << m_test_data.m_expected_adjacency_geometry[differentExpectedIndex]
+								   << ") vs "
+								   << "(" << result_adjacency_geometry_ptr[differentExpectedIndex] << ")"
+								   << tcu::TestLog::EndMessage;
+
+				if (hasAlternateData)
+				{
+					m_testCtx.getLog()
+						<< tcu::TestLog::Message << "At [" << differentAlternateExpectedIndex
+						<< "] alternate position adjacency buffer position Reference value is different than the "
+						   "rendered data (epsilon "
+						<< m_epsilon << " )"
+						<< " (" << m_test_data.m_alternate_expected_adjacency_geometry[differentAlternateExpectedIndex]
+						<< ") vs "
+						<< "(" << result_adjacency_geometry_ptr[differentAlternateExpectedIndex] << ")"
+						<< tcu::TestLog::EndMessage;
+				}
 
 				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 				return STOP;
@@ -444,9 +499,15 @@ tcu::TestNode::IterateResult GeometryShaderAdjacency::iterate(void)
 		}
 
 		sstreamExpected << "]";
+		if (hasAlternateData)
+			sstreamAlternateExpected << "]";
 		sstreamResult << "]";
 		m_testCtx.getLog() << tcu::TestLog::Message << "Adjacency Expected: " << sstreamExpected.str().c_str()
 						   << tcu::TestLog::EndMessage;
+		if (hasAlternateData)
+			m_testCtx.getLog() << tcu::TestLog::Message
+							   << "Alternate adjacency Expected: " << sstreamAlternateExpected.str().c_str()
+							   << tcu::TestLog::EndMessage;
 		m_testCtx.getLog() << tcu::TestLog::Message << "Adjacency Result:  " << sstreamResult.str().c_str()
 						   << tcu::TestLog::EndMessage;
 
@@ -460,33 +521,93 @@ tcu::TestNode::IterateResult GeometryShaderAdjacency::iterate(void)
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Error when mapping data to client space");
 
 	std::stringstream sstreamExpected;
+	std::stringstream sstreamAlternateExpected;
 	std::stringstream sstreamResult;
 	sstreamExpected << "[";
+	if (hasAlternateData)
+	{
+		sstreamAlternateExpected << "[";
+	}
 	sstreamResult << "[";
+
+	bool		 matchesExpected		  = true;
+	bool		 matchesAlternateExpected = hasAlternateData;
+	unsigned int differentIndex			  = 0;
+	unsigned int differentAlternateIndex  = 0;
 
 	for (unsigned int n = 0; n < m_test_data.m_geometry_bo_size / sizeof(float); ++n)
 	{
 		sstreamExpected << m_test_data.m_expected_geometry[n] << ", ";
+		if (hasAlternateData)
+		{
+			sstreamAlternateExpected << m_test_data.m_alternate_expected_geometry[n] << ", ";
+		}
 		sstreamResult << result_geometry_ptr[n] << ", ";
 
-		if (de::abs(result_geometry_ptr[n] - m_test_data.m_expected_geometry[n]) >= m_epsilon)
+		if (matchesExpected && de::abs(result_geometry_ptr[n] - m_test_data.m_expected_geometry[n]) >= m_epsilon)
+		{
+			matchesExpected = false;
+			differentIndex	= n;
+		}
+		if (matchesAlternateExpected &&
+			de::abs(result_geometry_ptr[n] - m_test_data.m_alternate_expected_geometry[n]) >= m_epsilon)
+		{
+			matchesAlternateExpected = false;
+			differentAlternateIndex	 = n;
+		}
+		if (!matchesExpected && !matchesAlternateExpected)
 		{
 			gl.unmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER);
 
 			m_testCtx.getLog()
-				<< tcu::TestLog::Message << "At [" << n
+				<< tcu::TestLog::Message << "At [" << differentIndex
 				<< "] position geometry buffer position Reference value is different than the rendered data (epsilon "
 				<< m_epsilon << " )"
-				<< " (" << m_test_data.m_expected_geometry[n] << ") vs "
-				<< "(" << result_geometry_ptr[n] << ")" << tcu::TestLog::EndMessage;
+				<< " (" << m_test_data.m_expected_geometry[differentIndex] << ") vs "
+				<< "(" << result_geometry_ptr[differentIndex] << ")" << tcu::TestLog::EndMessage;
+
+			if (hasAlternateData)
+			{
+				m_testCtx.getLog()
+					<< tcu::TestLog::Message << "At [" << differentAlternateIndex
+					<< "] alternate position geometry buffer position Reference value is different than the rendered data (epsilon "
+					<< m_epsilon << " )"
+					<< " (" << m_test_data.m_alternate_expected_geometry[differentAlternateIndex] << ") vs "
+					<< "(" << result_geometry_ptr[differentAlternateIndex] << ")" << tcu::TestLog::EndMessage;
+			}
 
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 			return STOP;
 		}
 	}
 
+	if (matchesExpected && !adjacentMatchesExpected)
+	{
+		m_testCtx.getLog() << tcu::TestLog::Message
+						   << "Geometry matches OpenGL ordering but adjacent geometry matches Vulkan ordering"
+						   << tcu::TestLog::EndMessage;
+
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+		return STOP;
+	}
+	if (matchesAlternateExpected && !adjacentMatchesAlternateExpected)
+	{
+		m_testCtx.getLog() << tcu::TestLog::Message
+						   << "Geometry matches Vulkan ordering but adjacent geometry matches OpenGL ordering"
+						   << tcu::TestLog::EndMessage;
+
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+		return STOP;
+	}
+
 	sstreamExpected << "]";
 	sstreamResult << "]";
+	if (hasAlternateData)
+	{
+		sstreamAlternateExpected << "]";
+
+		sstreamExpected << "\nor\n" << sstreamAlternateExpected.str();
+	}
 	m_testCtx.getLog() << tcu::TestLog::Message << "Expected: " << sstreamExpected.str().c_str()
 					   << tcu::TestLog::EndMessage;
 	m_testCtx.getLog() << tcu::TestLog::Message << "Result:  " << sstreamResult.str().c_str()

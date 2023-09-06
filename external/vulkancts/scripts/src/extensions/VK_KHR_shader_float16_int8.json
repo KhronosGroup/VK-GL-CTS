@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": "0.1.2.0"
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceShaderFloat16Int8Features":
+		[
+			{ "features": ["shaderFloat16", "shaderInt8"],	"requirements": ["VK_KHR_shader_float16_int8"] }
+		]
+	}
+}

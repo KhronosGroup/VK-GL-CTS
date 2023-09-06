@@ -86,6 +86,7 @@ KHR-GLES31.core.shader_atomic_counters.negative-ubo
 KHR-GLES31.core.shader_atomic_counters.negative-uniform
 KHR-GLES31.core.shader_atomic_counters.negative-array
 KHR-GLES31.core.shader_atomic_counters.negative-arithmetic
+KHR-GLES31.core.shader_atomic_counters.negative-large-offset
 KHR-GLES31.core.shader_atomic_counters.negative-unsized-array
 KHR-GLES31.core.texture_gather.api-enums
 KHR-GLES31.core.texture_gather.gather-glsl-compile
@@ -1963,6 +1964,8 @@ KHR-GLES31.core.shader_storage_buffer_object.negative-api-bind
 KHR-GLES31.core.shader_storage_buffer_object.negative-glsl-compileTime
 KHR-GLES31.core.shader_storage_buffer_object.negative-glsl-linkTime
 KHR-GLES31.core.compute_shader.simple-compute
+KHR-GLES31.core.compute_shader.simple-compute-shared_context
+KHR-GLES31.core.compute_shader.simple-compute-shared_context-persistent-buffer
 KHR-GLES31.core.compute_shader.one-work-group
 KHR-GLES31.core.compute_shader.resource-ubo
 KHR-GLES31.core.compute_shader.resource-texture
@@ -2670,8 +2673,6 @@ KHR-GLES31.core.texture_border_clamp.Texture3DR32UI
 KHR-GLES31.core.texture_border_clamp.Texture3DRGBA8
 KHR-GLES31.core.texture_border_clamp.Texture2DRGBA32FLinear
 KHR-GLES31.core.texture_border_clamp.Texture2DRGBA8Linear
-KHR-GLES31.core.texture_border_clamp.Texture2DDC32FLinear
-KHR-GLES31.core.texture_border_clamp.Texture2DDC16Linear
 KHR-GLES31.core.texture_border_clamp.Texture2DCompressedLinear
 KHR-GLES31.core.texture_border_clamp.Texture2DArrayRGBA32FLinear
 KHR-GLES31.core.texture_border_clamp.Texture2DArrayRGBA8Linear
@@ -3455,6 +3456,7 @@ KHR-GLES31.core.pixelstoragemodes.teximage3d.rgba32ui.16_16_1
 KHR-GLES31.core.pixelstoragemodes.teximage3d.rgba32ui.16_16_4
 KHR-GLES31.shaders.negative.initialize
 KHR-GLES31.shaders.negative.constant_sequence
+KHR-GLES31.shaders.negative.non_precision_qualifiers_in_struct_members
 KHR-GLES31.shaders.aggressive_optimizations.sin_float_vert
 KHR-GLES31.shaders.aggressive_optimizations.sin_float_frag
 KHR-GLES31.shaders.aggressive_optimizations.sin_vec2_vert

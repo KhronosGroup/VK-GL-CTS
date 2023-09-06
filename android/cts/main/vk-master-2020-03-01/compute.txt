@@ -1,4 +1,3 @@
-dEQP-VK.compute.basic.concurrent_compute
 dEQP-VK.compute.cooperative_matrix.length.float32_float32.buffer.rowmajor
 dEQP-VK.compute.cooperative_matrix.length.float32_float32.buffer.colmajor
 dEQP-VK.compute.cooperative_matrix.length.float32_float32.workgroup.rowmajor
@@ -899,3 +898,4 @@ dEQP-VK.compute.cooperative_matrix.matrixmuladd_array.sint32_sint32.workgroup_va
 dEQP-VK.compute.cooperative_matrix.matrixmuladd_array.sint32_sint32.workgroup_varptr.colmajor
 dEQP-VK.compute.cooperative_matrix.matrixmuladd_array.sint32_sint32.physical_buffer.rowmajor
 dEQP-VK.compute.cooperative_matrix.matrixmuladd_array.sint32_sint32.physical_buffer.colmajor
+dEQP-VK.compute.basic.concurrent_compute

@@ -24,6 +24,7 @@
 
 #include "vktRenderPassLoadStoreOpNoneTests.hpp"
 #include "pipeline/vktPipelineImageUtil.hpp"
+#include "vktRenderPassTestsUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
@@ -67,24 +68,36 @@ enum AttachmentUsage
 	ATTACHMENT_USAGE_COLOR = 1,
 	ATTACHMENT_USAGE_DEPTH = 2,
 	ATTACHMENT_USAGE_STENCIL = 4,
-	ATTACHMENT_USAGE_INPUT = 8,
-	ATTACHMENT_USAGE_WRITE_OFF = 16,
 	ATTACHMENT_USAGE_DEPTH_STENCIL = ATTACHMENT_USAGE_DEPTH | ATTACHMENT_USAGE_STENCIL,
-	ATTACHMENT_USAGE_MULTISAMPLE = 32,
-	ATTACHMENT_USAGE_RESOLVE_TARGET = 64,
-	ATTACHMENT_USAGE_INTEGER = 128
+	ATTACHMENT_USAGE_INPUT = 8,
+	ATTACHMENT_USAGE_COLOR_WRITE_OFF = 16,
+	ATTACHMENT_USAGE_DEPTH_WRITE_OFF = 32,
+	ATTACHMENT_USAGE_STENCIL_WRITE_OFF = 64,
+	ATTACHMENT_USAGE_DEPTH_TEST_OFF = 128,
+	ATTACHMENT_USAGE_STENCIL_TEST_OFF = 256,
+	ATTACHMENT_USAGE_MULTISAMPLE = 512,
+	ATTACHMENT_USAGE_RESOLVE_TARGET = 1024,
+	ATTACHMENT_USAGE_INTEGER = 2048
+};
+
+struct VerifyAspect
+{
+	VkImageAspectFlagBits	aspect;
+	bool					verifyInner;
+	tcu::Vec4				innerRef;
+	bool					verifyOuter;
+	tcu::Vec4				outerRef;
 };
 
 struct AttachmentParams
 {
-	deUint32			usage;
-	VkAttachmentLoadOp	loadOp;
-	VkAttachmentStoreOp	storeOp;
-	deUint32			init;
-	bool				verifyInner;
-	tcu::Vec4			innerRef;
-	bool				verifyOuter;
-	tcu::Vec4			outerRef;
+	deUint32					usage;
+	VkAttachmentLoadOp			loadOp;
+	VkAttachmentStoreOp			storeOp;
+	VkAttachmentLoadOp			stencilLoadOp;
+	VkAttachmentStoreOp			stencilStoreOp;
+	deUint32					init;
+	std::vector<VerifyAspect>	verifyAspects;
 };
 
 struct AttachmentRef
@@ -103,7 +116,7 @@ struct TestParams
 {
 	std::vector<AttachmentParams>	attachments;
 	std::vector<SubpassParams>		subpasses;
-	RenderingType					renderingType;
+	const SharedGroupParams			groupParams;
 	VkFormat						depthStencilFormat;
 	bool							alphaBlend;
 };
@@ -190,7 +203,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 									 VkDevice				vkDevice,
 									 const TestParams		testParams)
 {
-	const VkImageAspectFlags	aspectMask						= testParams.renderingType == RENDERING_TYPE_RENDERPASS_LEGACY ? 0 : VK_IMAGE_ASPECT_COLOR_BIT;
+	const VkImageAspectFlags	aspectMask						= testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY ? 0 : VK_IMAGE_ASPECT_COLOR_BIT;
 	std::vector<AttachmentDesc>	attachmentDescriptions;
 	std::vector<SubpassDesc>	subpassDescriptions;
 
@@ -231,7 +244,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 		// Set final layout to transfer src if it's being verified. Otherwise
 		// just use the initial layout as it's known to be supported by
 		// the usage flags.
-		if (testParams.attachments[i].verifyInner || testParams.attachments[i].verifyOuter)
+		if (!testParams.attachments[i].verifyAspects.empty())
 			finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		else
 			finalLayout = initialLayout;
@@ -240,16 +253,16 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 
 		const AttachmentDesc		attachmentDesc	=
 		{
-			DE_NULL,							// const void*						pNext
-			(VkAttachmentDescriptionFlags) 0,	// VkAttachmentDescriptionFlags		flags
-			format,								// VkFormat							format
-			sampleCount,						// VkSampleCountFlagBits			samples
-			testParams.attachments[i].loadOp,	// VkAttachmentLoadOp				loadOp
-			testParams.attachments[i].storeOp,	// VkAttachmentStoreOp				storeOp
-			testParams.attachments[i].loadOp,	// VkAttachmentLoadOp				stencilLoadOp
-			testParams.attachments[i].storeOp,	// VkAttachmentStoreOp				stencilStoreOp
-			initialLayout,						// VkImageLayout					initialLayout
-			finalLayout							// VkImageLayout					finalLayout
+			DE_NULL,									// const void*						pNext
+			(VkAttachmentDescriptionFlags) 0,			// VkAttachmentDescriptionFlags		flags
+			format,										// VkFormat							format
+			sampleCount,								// VkSampleCountFlagBits			samples
+			testParams.attachments[i].loadOp,			// VkAttachmentLoadOp				loadOp
+			testParams.attachments[i].storeOp,			// VkAttachmentStoreOp				storeOp
+			testParams.attachments[i].stencilLoadOp,	// VkAttachmentLoadOp				stencilLoadOp
+			testParams.attachments[i].stencilStoreOp,	// VkAttachmentStoreOp				stencilStoreOp
+			initialLayout,								// VkImageLayout					initialLayout
+			finalLayout									// VkImageLayout					finalLayout
 		};
 
 		attachmentDescriptions.push_back(attachmentDesc);
@@ -277,7 +290,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 			else if (ref.usage & ATTACHMENT_USAGE_DEPTH_STENCIL)
 			{
 				layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-				const auto depthStencilAspectMask = testParams.renderingType == RENDERING_TYPE_RENDERPASS_LEGACY ? 0 : getImageAspectFlags(mapVkFormat(testParams.depthStencilFormat));
+				const auto depthStencilAspectMask = testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY ? 0 : getImageAspectFlags(mapVkFormat(testParams.depthStencilFormat));
 				refs.depthStencilAttachmentRefs.push_back({DE_NULL, ref.idx, layout, depthStencilAspectMask});
 			}
 			else
@@ -362,13 +375,24 @@ public:
 																 const TestParams&	testParams);
 	virtual						~LoadStoreOpNoneTestInstance	(void);
 	virtual tcu::TestStatus		iterate							(void);
+
 	template<typename RenderpassSubpass>
+	void						createCommandBuffer				(const DeviceInterface&					vk,
+																 VkDevice								vkDevice,
+																 std::vector<Move<VkDescriptorSet>>&	descriptorSets,
+																 std::vector<Move<VkPipelineLayout>>&	pipelineLayouts,
+																 std::vector<Move<VkPipeline>>&			pipelines);
 	void						createCommandBuffer				(const DeviceInterface&					vk,
 																 VkDevice								vkDevice,
 																 std::vector<Move<VkImageView>>&		imageViews,
 																 std::vector<Move<VkDescriptorSet>>&	descriptorSets,
 																 std::vector<Move<VkPipelineLayout>>&	pipelineLayouts,
 																 std::vector<Move<VkPipeline>>&			pipelines);
+	void						drawCommands					(VkCommandBuffer						cmdBuffer,
+																 std::vector<Move<VkDescriptorSet>>&	descriptorSets,
+																 std::vector<Move<VkPipelineLayout>>&	pipelineLayouts,
+																 std::vector<Move<VkPipeline>>&			pipelines) const;
+
 private:
 	TestParams					m_testParams;
 
@@ -385,6 +409,7 @@ private:
 
 	Move<VkCommandPool>			m_cmdPool;
 	Move<VkCommandBuffer>		m_cmdBuffer;
+	Move<VkCommandBuffer>		m_secCmdBuffer;
 };
 
 LoadStoreOpNoneTest::LoadStoreOpNoneTest (tcu::TestContext&		testContext,
@@ -408,11 +433,11 @@ TestInstance* LoadStoreOpNoneTest::createInstance (Context& context) const
 void LoadStoreOpNoneTest::checkSupport (Context& ctx) const
 {
 	// Check for renderpass2 extension if used.
-	if (m_testParams.renderingType == RENDERING_TYPE_RENDERPASS2)
+	if (m_testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
 		ctx.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
 	// Check for dynamic_rendering extension if used
-	if (m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+	if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 		ctx.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
 	ctx.requireDeviceFunctionality("VK_EXT_load_store_op_none");
@@ -434,7 +459,7 @@ void LoadStoreOpNoneTest::checkSupport (Context& ctx) const
 
 			DE_UNREF(aspectFlags); // For release builds.
 
-			if (att.verifyInner || att.verifyOuter)
+			if (!att.verifyAspects.empty())
 				usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
 			if (att.init & ATTACHMENT_INIT_PRE)
@@ -527,7 +552,6 @@ LoadStoreOpNoneTestInstance::~LoadStoreOpNoneTestInstance (void)
 template<typename RenderpassSubpass>
 void LoadStoreOpNoneTestInstance::createCommandBuffer	(const DeviceInterface&					vk,
 														 VkDevice								vkDevice,
-														 std::vector<Move<VkImageView>>&		imageViews,
 														 std::vector<Move<VkDescriptorSet>>&	descriptorSets,
 														 std::vector<Move<VkPipelineLayout>>&	pipelineLayouts,
 														 std::vector<Move<VkPipeline>>&			pipelines)
@@ -535,108 +559,216 @@ void LoadStoreOpNoneTestInstance::createCommandBuffer	(const DeviceInterface&			
 	const typename RenderpassSubpass::SubpassBeginInfo	subpassBeginInfo	(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
 	const typename RenderpassSubpass::SubpassEndInfo	subpassEndInfo		(DE_NULL);
 
-	const VkDeviceSize vertexBufferOffset = 0;
-
 	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
-
-	if (m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+	const VkRenderPassBeginInfo renderPassBeginInfo
 	{
-		std::vector<VkRenderingAttachmentInfoKHR>	colorAttachments;
-		VkRenderingAttachmentInfoKHR				dsAttachment
-		{
-			VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,				// VkStructureType						sType;
-			DE_NULL,														// const void*							pNext;
-			DE_NULL,														// VkImageView							imageView;
-			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,				// VkImageLayout						imageLayout;
-			VK_RESOLVE_MODE_NONE,											// VkResolveModeFlagBits				resolveMode;
-			DE_NULL,														// VkImageView							resolveImageView;
-			VK_IMAGE_LAYOUT_UNDEFINED,										// VkImageLayout						resolveImageLayout;
-			VK_ATTACHMENT_LOAD_OP_LOAD,										// VkAttachmentLoadOp					loadOp;
-			VK_ATTACHMENT_STORE_OP_STORE,									// VkAttachmentStoreOp					storeOp;
-			makeClearValueDepthStencil(0.0f, 0u)							// VkClearValue							clearValue;
-		};
-		bool useDepth		= false;
-		bool useStencil		= false;
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType
+		DE_NULL,									// const void*			pNext
+		*m_renderPass,								// VkRenderPass			renderPass
+		*m_framebuffer,								// VkFramebuffer		framebuffer
+		makeRect2D(m_renderSize),					// VkRect2D				renderArea
+		0u,											// uint32_t				clearValueCount
+		DE_NULL										// const VkClearValue*	pClearValues
+	};
+	RenderpassSubpass::cmdBeginRenderPass(vk, *m_cmdBuffer, &renderPassBeginInfo, &subpassBeginInfo);
 
-		for (size_t i = 0; i < imageViews.size(); i++)
-		{
-			if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_MULTISAMPLE)
-			{
-				DE_ASSERT(m_testParams.attachments[i+1].usage & ATTACHMENT_USAGE_RESOLVE_TARGET);
-				const auto resolveMode = ((m_testParams.attachments[i].usage & ATTACHMENT_USAGE_INTEGER) ? VK_RESOLVE_MODE_SAMPLE_ZERO_BIT : VK_RESOLVE_MODE_AVERAGE_BIT);
-				colorAttachments.push_back({
-					VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,		// VkStructureType						sType;
-					DE_NULL,												// const void*							pNext;
-					*imageViews[i],											// VkImageView							imageView;
-					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout						imageLayout;
-					resolveMode,											// VkResolveModeFlagBits				resolveMode;
-					*imageViews[i+1],										// VkImageView							resolveImageView;
-					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout						resolveImageLayout;
-					m_testParams.attachments[i].loadOp,						// VkAttachmentLoadOp					loadOp;
-					m_testParams.attachments[i].storeOp,					// VkAttachmentStoreOp					storeOp;
-					makeClearValueColor(tcu::Vec4(0.0f))					// VkClearValue							clearValue;
-					});
-				i += 1;
-			}
-			else if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_COLOR)
-			{
-				colorAttachments.push_back({
-					VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,		// VkStructureType						sType;
-					DE_NULL,												// const void*							pNext;
-					*imageViews[i],											// VkImageView							imageView;
-					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout						imageLayout;
-					VK_RESOLVE_MODE_NONE,									// VkResolveModeFlagBits				resolveMode;
-					DE_NULL,												// VkImageView							resolveImageView;
-					VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout						resolveImageLayout;
-					m_testParams.attachments[i].loadOp,						// VkAttachmentLoadOp					loadOp;
-					m_testParams.attachments[i].storeOp,					// VkAttachmentStoreOp					storeOp;
-					makeClearValueColor(tcu::Vec4(0.0f))					// VkClearValue							clearValue;
-					});
-			}
-			else
-			{
-				deUint32	  usage = m_testParams.attachments[i].usage;
-				useDepth	= usage & ATTACHMENT_USAGE_DEPTH;
-				useStencil	= usage & ATTACHMENT_USAGE_STENCIL;
+	drawCommands(*m_cmdBuffer, descriptorSets, pipelineLayouts, pipelines);
 
-				dsAttachment.imageView	= *imageViews[i];
-				dsAttachment.loadOp		= m_testParams.attachments[i].loadOp;
-				dsAttachment.storeOp	= m_testParams.attachments[i].storeOp;
-			}
+	RenderpassSubpass::cmdEndRenderPass(vk, *m_cmdBuffer, &subpassEndInfo);
+	endCommandBuffer(vk, *m_cmdBuffer);
+}
+
+void LoadStoreOpNoneTestInstance::createCommandBuffer(const DeviceInterface&				vk,
+													  VkDevice								vkDevice,
+													  std::vector<Move<VkImageView>>&		imageViews,
+													  std::vector<Move<VkDescriptorSet>>&	descriptorSets,
+													  std::vector<Move<VkPipelineLayout>>&	pipelineLayouts,
+													  std::vector<Move<VkPipeline>>&		pipelines)
+{
+	std::vector<VkRenderingAttachmentInfoKHR>	colorAttachments;
+
+	VkRenderingAttachmentInfoKHR				depthAttachment
+	{
+		VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,				// VkStructureType						sType;
+		DE_NULL,														// const void*							pNext;
+		DE_NULL,														// VkImageView							imageView;
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,				// VkImageLayout						imageLayout;
+		VK_RESOLVE_MODE_NONE,											// VkResolveModeFlagBits				resolveMode;
+		DE_NULL,														// VkImageView							resolveImageView;
+		VK_IMAGE_LAYOUT_UNDEFINED,										// VkImageLayout						resolveImageLayout;
+		VK_ATTACHMENT_LOAD_OP_LOAD,										// VkAttachmentLoadOp					loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,									// VkAttachmentStoreOp					storeOp;
+		makeClearValueDepthStencil(0.0f, 0u)							// VkClearValue							clearValue;
+	};
+
+	VkRenderingAttachmentInfoKHR				stencilAttachment
+	{
+		VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,				// VkStructureType						sType;
+		DE_NULL,														// const void*							pNext;
+		DE_NULL,														// VkImageView							imageView;
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,				// VkImageLayout						imageLayout;
+		VK_RESOLVE_MODE_NONE,											// VkResolveModeFlagBits				resolveMode;
+		DE_NULL,														// VkImageView							resolveImageView;
+		VK_IMAGE_LAYOUT_UNDEFINED,										// VkImageLayout						resolveImageLayout;
+		VK_ATTACHMENT_LOAD_OP_LOAD,										// VkAttachmentLoadOp					loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,									// VkAttachmentStoreOp					storeOp;
+		makeClearValueDepthStencil(0.0f, 0u)							// VkClearValue							clearValue;
+	};
+
+	bool useDepth		= false;
+	bool useStencil		= false;
+
+	VkSampleCountFlagBits	sampleCount = VK_SAMPLE_COUNT_1_BIT;
+	std::vector<VkFormat>	colorAttachmentFormats;
+
+	for (size_t i = 0; i < imageViews.size(); i++)
+	{
+		if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_MULTISAMPLE)
+		{
+			DE_ASSERT(m_testParams.attachments[i + 1].usage & ATTACHMENT_USAGE_RESOLVE_TARGET);
+			const auto resolveMode = ((m_testParams.attachments[i].usage & ATTACHMENT_USAGE_INTEGER) ? VK_RESOLVE_MODE_SAMPLE_ZERO_BIT : VK_RESOLVE_MODE_AVERAGE_BIT);
+			colorAttachments.push_back({
+				VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,		// VkStructureType						sType;
+				DE_NULL,												// const void*							pNext;
+				*imageViews[i],											// VkImageView							imageView;
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout						imageLayout;
+				resolveMode,											// VkResolveModeFlagBits				resolveMode;
+				*imageViews[i + 1],										// VkImageView							resolveImageView;
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout						resolveImageLayout;
+				m_testParams.attachments[i].loadOp,						// VkAttachmentLoadOp					loadOp;
+				m_testParams.attachments[i].storeOp,					// VkAttachmentStoreOp					storeOp;
+				makeClearValueColor(tcu::Vec4(0.0f))					// VkClearValue							clearValue;
+				});
+			colorAttachmentFormats.push_back(getFormat(m_testParams.attachments[i].usage, m_testParams.depthStencilFormat));
+			sampleCount = VK_SAMPLE_COUNT_4_BIT;
+			i += 1;
+		}
+		else if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_COLOR)
+		{
+			colorAttachments.push_back({
+				VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,		// VkStructureType						sType;
+				DE_NULL,												// const void*							pNext;
+				*imageViews[i],											// VkImageView							imageView;
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout						imageLayout;
+				VK_RESOLVE_MODE_NONE,									// VkResolveModeFlagBits				resolveMode;
+				DE_NULL,												// VkImageView							resolveImageView;
+				VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout						resolveImageLayout;
+				m_testParams.attachments[i].loadOp,						// VkAttachmentLoadOp					loadOp;
+				m_testParams.attachments[i].storeOp,					// VkAttachmentStoreOp					storeOp;
+				makeClearValueColor(tcu::Vec4(0.0f))					// VkClearValue							clearValue;
+				});
+			colorAttachmentFormats.push_back(getFormat(m_testParams.attachments[i].usage, m_testParams.depthStencilFormat));
+		}
+		else
+		{
+			deUint32	  usage = m_testParams.attachments[i].usage;
+			useDepth	= usage & ATTACHMENT_USAGE_DEPTH;
+			useStencil	= usage & ATTACHMENT_USAGE_STENCIL;
+
+			depthAttachment.imageView	= *imageViews[i];
+			depthAttachment.loadOp		= m_testParams.attachments[i].loadOp;
+			depthAttachment.storeOp		= m_testParams.attachments[i].storeOp;
+			stencilAttachment.imageView	= *imageViews[i];
+			stencilAttachment.loadOp	= m_testParams.attachments[i].stencilLoadOp;
+			stencilAttachment.storeOp	= m_testParams.attachments[i].stencilStoreOp;
+		}
+	}
+
+	VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		0u,																		// VkRenderingFlagsKHR				flags;
+		0u,																		// uint32_t							viewMask;
+		static_cast<deUint32>(colorAttachmentFormats.size()),					// uint32_t							colorAttachmentCount;
+		colorAttachmentFormats.data(),											// const VkFormat*					pColorAttachmentFormats;
+		useDepth ? m_testParams.depthStencilFormat : VK_FORMAT_UNDEFINED,		// VkFormat							depthAttachmentFormat;
+		useStencil ? m_testParams.depthStencilFormat : VK_FORMAT_UNDEFINED,		// VkFormat							stencilAttachmentFormat;
+		sampleCount																// VkSampleCountFlagBits			rasterizationSamples;
+	};
+
+	const VkCommandBufferInheritanceInfo	bufferInheritanceInfo = initVulkanStructure(&inheritanceRenderingInfo);
+	VkCommandBufferBeginInfo				commandBufBeginParams
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,							// VkCommandBufferUsageFlags		flags;
+		&bufferInheritanceInfo
+	};
+
+	VkRenderingInfoKHR renderingInfo
+	{
+		VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+		DE_NULL,
+		0u,																// VkRenderingFlagsKHR					flags;
+		makeRect2D(m_renderSize),										// VkRect2D								renderArea;
+		1u,																// deUint32								layerCount;
+		0u,																// deUint32								viewMask;
+		(deUint32)colorAttachments.size(),								// deUint32								colorAttachmentCount;
+		de::dataOrNull(colorAttachments),								// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+		useDepth ? &depthAttachment : DE_NULL,							// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+		useStencil ? &stencilAttachment : DE_NULL						// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+	};
+
+	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	if (m_testParams.groupParams->useSecondaryCmdBuffer)
+	{
+		m_secCmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+
+		// record secondary command buffer
+		if (m_testParams.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		{
+			inheritanceRenderingInfo.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT;
+			vk.beginCommandBuffer(*m_secCmdBuffer, &commandBufBeginParams);
+			vk.cmdBeginRendering(*m_secCmdBuffer, &renderingInfo);
+		}
+		else
+		{
+			commandBufBeginParams.flags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+			vk.beginCommandBuffer(*m_secCmdBuffer, &commandBufBeginParams);
 		}
 
-		VkRenderingInfoKHR renderingInfo
-		{
-			VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-			DE_NULL,
-			0u,																// VkRenderingFlagsKHR					flags;
-			makeRect2D(m_renderSize),										// VkRect2D								renderArea;
-			1u,																// deUint32								layerCount;
-			0u,																// deUint32								viewMask;
-			(deUint32)colorAttachments.size(),								// deUint32								colorAttachmentCount;
-			de::dataOrNull(colorAttachments),								// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
-			useDepth ? &dsAttachment : DE_NULL,								// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
-			useStencil ? &dsAttachment : DE_NULL							// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
-		};
+		drawCommands(*m_secCmdBuffer, descriptorSets, pipelineLayouts, pipelines);
 
-		vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
+		if (m_testParams.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			vk.cmdEndRendering(*m_secCmdBuffer);
+		endCommandBuffer(vk, *m_secCmdBuffer);
+
+		// record primary command buffer
+		beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+		if (!m_testParams.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		{
+			renderingInfo.flags = vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS;
+			vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
+		}
+		vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_secCmdBuffer);
+		if (!m_testParams.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			vk.cmdEndRendering(*m_cmdBuffer);
+		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 	else
 	{
-		const VkRenderPassBeginInfo renderPassBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType
-			DE_NULL,									// const void*			pNext
-			*m_renderPass,								// VkRenderPass			renderPass
-			*m_framebuffer,								// VkFramebuffer		framebuffer
-			makeRect2D(m_renderSize),					// VkRect2D				renderArea
-			0u,											// uint32_t				clearValueCount
-			DE_NULL										// const VkClearValue*	pClearValues
-		};
-		RenderpassSubpass::cmdBeginRenderPass(vk, *m_cmdBuffer, &renderPassBeginInfo, &subpassBeginInfo);
+		beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+		vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
+
+		drawCommands(*m_cmdBuffer, descriptorSets, pipelineLayouts, pipelines);
+
+		vk.cmdEndRendering(*m_cmdBuffer);
+		endCommandBuffer(vk, *m_cmdBuffer);
 	}
+}
+
+void LoadStoreOpNoneTestInstance::drawCommands(VkCommandBuffer						cmdBuffer,
+											   std::vector<Move<VkDescriptorSet>>&	descriptorSets,
+											   std::vector<Move<VkPipelineLayout>>&	pipelineLayouts,
+											   std::vector<Move<VkPipeline>>&		pipelines) const
+{
+	const DeviceInterface&	vk					= m_context.getDeviceInterface();
+	const VkClearRect		rect				= { makeRect2D(m_renderSize), 0u, 1u };
+	const VkDeviceSize		vertexBufferOffset	= 0;
 
 	// Add clear commands for selected attachments
 	std::vector<VkClearAttachment> clearAttachments;
@@ -647,23 +779,22 @@ void LoadStoreOpNoneTestInstance::createCommandBuffer	(const DeviceInterface&			
 		{
 			if (att.usage & ATTACHMENT_USAGE_DEPTH_STENCIL)
 			{
-				clearAttachments.push_back({getImageAspectFlags(mapVkFormat(m_testParams.depthStencilFormat)), 0u,
-											makeClearValueDepthStencil(0.25, 64)});
+				VkImageAspectFlags	aspectMask = 0;
+				if (att.usage & ATTACHMENT_USAGE_DEPTH) aspectMask |= VK_IMAGE_ASPECT_DEPTH_BIT;
+				if (att.usage & ATTACHMENT_USAGE_STENCIL) aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+				clearAttachments.push_back({ aspectMask, 0u, makeClearValueDepthStencil(0.25, 64) });
 			}
 			else
 			{
-				clearAttachments.push_back({VK_IMAGE_ASPECT_COLOR_BIT, colorAttIdx++,
-											makeClearValueColorF32(0.0f, 0.0f, 0.5f, 1.0f)});
+				clearAttachments.push_back({ VK_IMAGE_ASPECT_COLOR_BIT, colorAttIdx++,
+											makeClearValueColorF32(0.0f, 0.0f, 0.5f, 1.0f) });
 			}
 		}
 	}
 	if (!clearAttachments.empty())
-	{
-		VkClearRect rect = { makeRect2D(m_renderSize), 0u, 1u };
-		vk.cmdClearAttachments(*m_cmdBuffer, (deUint32) clearAttachments.size(), clearAttachments.data(), 1u, &rect);
-	}
+		vk.cmdClearAttachments(cmdBuffer, (deUint32)clearAttachments.size(), clearAttachments.data(), 1u, &rect);
 
-	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
+	vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 
 	deUint32	descriptorSetIdx	= 0u;
 	deUint32	vertexOffset		= 0u;
@@ -671,32 +802,28 @@ void LoadStoreOpNoneTestInstance::createCommandBuffer	(const DeviceInterface&			
 	{
 		if (i != 0)
 		{
-			vk.cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
-			DE_ASSERT(m_testParams.renderingType != RENDERING_TYPE_DYNAMIC_RENDERING);		// multi subpass tests should not be executed for dynamic rendering
+			// multi subpass tests should not be executed for dynamic rendering
+			DE_ASSERT(m_testParams.groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING);
+			vk.cmdNextSubpass(cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 		}
 
-		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelines[i]);
+		vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelines[i]);
 
 		bool hasInput = false;
-		for (const auto &ref : m_testParams.subpasses[i].attachmentRefs)
+		for (const auto& ref : m_testParams.subpasses[i].attachmentRefs)
 			if (ref.usage & ATTACHMENT_USAGE_INPUT)
 				hasInput = true;
 
 		if (hasInput)
-			vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayouts[i], 0, 1,
+			vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayouts[i], 0, 1,
 									 &descriptorSets[descriptorSetIdx++].get(), 0, DE_NULL);
 
 		for (deUint32 d = 0; d < m_testParams.subpasses[i].numDraws; d++)
 		{
-			vk.cmdDraw(*m_cmdBuffer, 6u, 1, vertexOffset, 0);
+			vk.cmdDraw(cmdBuffer, 6u, 1, vertexOffset, 0);
 			vertexOffset += 6u;
 		}
 	}
-	if (m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
-		vk.cmdEndRendering(*m_cmdBuffer);
-	else
-		RenderpassSubpass::cmdEndRenderPass(vk, *m_cmdBuffer, &subpassEndInfo);
-	endCommandBuffer(vk, *m_cmdBuffer);
 }
 
 tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
@@ -707,6 +834,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 	const deUint32							queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	SimpleAllocator							memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 	const VkComponentMapping				componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+	bool									depthIsUndefined		= false;
 
 	std::vector<Move<VkImage>>				attachmentImages;
 	std::vector<de::MovePtr<Allocation>>	attachmentImageAllocs;
@@ -719,13 +847,19 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 		VkImageUsageFlags		usage				= 0;
 		VkImageAspectFlags		aspectFlags;
 
-		if (att.verifyInner || att.verifyOuter) usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		if (!att.verifyAspects.empty()) usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 		if (att.init & ATTACHMENT_INIT_PRE) usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 		if (att.usage & ATTACHMENT_USAGE_DEPTH_STENCIL)
 		{
 			aspectFlags = getImageAspectFlags(mapVkFormat(format));
 			usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+			// If depth load op is NONE and the depth buffer is not initialized in the render pass
+			// then its contents during the render pass are undefined and we need to be careful
+			// when programming the depth test.
+			if (att.loadOp == VK_ATTACHMENT_LOAD_OP_NONE_EXT && !(att.init & ATTACHMENT_INIT_CMD_CLEAR))
+				depthIsUndefined = true;
 		}
 		else
 		{
@@ -809,10 +943,10 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 		}
 	}
 
-	if (m_testParams.renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
+	if (m_testParams.groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
 	{
 		// Create render pass.
-		if (m_testParams.renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
+		if (m_testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
 			m_renderPass = createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vk, vkDevice, m_testParams);
 		else
 			m_renderPass = createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vk, vkDevice, m_testParams);
@@ -876,8 +1010,11 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 		bool		noColorWrite		= false;
 		bool		depthTest			= false;
 		bool		stencilTest			= false;
+		bool		depthWrite			= true;
+		bool		stencilWrite		= true;
 		bool		multisample			= false;
 		bool		uintColorBuffer		= false;
+		VkCompareOp	depthCompareOp		= VK_COMPARE_OP_GREATER;
 
 		// Create pipeline layout.
 		{
@@ -901,18 +1038,27 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 				}
 				if (ref.usage & ATTACHMENT_USAGE_COLOR)
 				{
-					if (ref.usage & ATTACHMENT_USAGE_WRITE_OFF)
+					if (ref.usage & ATTACHMENT_USAGE_COLOR_WRITE_OFF)
 						noColorWrite = true;
 				}
 				if (ref.usage & ATTACHMENT_USAGE_DEPTH)
 				{
-					if (!(ref.usage & ATTACHMENT_USAGE_WRITE_OFF))
+					if (!(ref.usage & ATTACHMENT_USAGE_DEPTH_TEST_OFF))
 						depthTest = true;
+					if (ref.usage & ATTACHMENT_USAGE_DEPTH_WRITE_OFF)
+						depthWrite = false;
+
+					// Enabling depth testing with undefined depth buffer contents. Let's make sure
+					// all samples pass the depth test.
+					if (depthIsUndefined && depthTest)
+						depthCompareOp = VK_COMPARE_OP_ALWAYS;
 				}
 				if (ref.usage & ATTACHMENT_USAGE_STENCIL)
 				{
-					if (!(ref.usage & ATTACHMENT_USAGE_WRITE_OFF))
+					if (!(ref.usage & ATTACHMENT_USAGE_STENCIL_TEST_OFF))
 						stencilTest = true;
+					if (ref.usage & ATTACHMENT_USAGE_STENCIL_WRITE_OFF)
+						stencilWrite = false;
 				}
 				if (ref.usage & ATTACHMENT_USAGE_MULTISAMPLE)
 				{
@@ -999,7 +1145,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 			const VkVertexInputBindingDescription		vertexInputBindingDescription		=
 			{
 				0u,								// deUint32					binding
-				(deUint32)sizeof(Vertex4RGBA),			// deUint32					strideInBytes
+				(deUint32)sizeof(Vertex4RGBA),	// deUint32					strideInBytes
 				VK_VERTEX_INPUT_RATE_VERTEX		// VkVertexInputStepRate	inputRate
 			};
 
@@ -1061,13 +1207,13 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 
 			const VkStencilOpState							stencilOpState					=
 			{
-				VK_STENCIL_OP_KEEP,		// VkStencilOp	failOp
-				VK_STENCIL_OP_REPLACE,	// VkStencilOp	passOp
-				VK_STENCIL_OP_KEEP,		// VkStencilOp	depthFailOp
-				VK_COMPARE_OP_GREATER,	// VkCompareOp	compareOp
-				0xff,					// deUint32		compareMask
-				0xff,					// deUint32		writeMask
-				0xff					// deUint32		reference
+				VK_STENCIL_OP_KEEP,											// VkStencilOp	failOp
+				stencilWrite ? VK_STENCIL_OP_REPLACE : VK_STENCIL_OP_KEEP,	// VkStencilOp	passOp
+				VK_STENCIL_OP_KEEP,											// VkStencilOp	depthFailOp
+				VK_COMPARE_OP_GREATER,										// VkCompareOp	compareOp
+				0xff,														// deUint32		compareMask
+				0xff,														// deUint32		writeMask
+				0xff														// deUint32		reference
 			};
 
 			const VkPipelineDepthStencilStateCreateInfo		depthStencilStateParams			=
@@ -1076,8 +1222,8 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 				DE_NULL,													// const void*								pNext
 				0u,															// VkPipelineDepthStencilStateCreateFlags	flags
 				depthTest,													// VkBool32									depthTestEnable
-				VK_TRUE,													// VkBool32									depthWriteEnable
-				VK_COMPARE_OP_GREATER,										// VkCompareOp								depthCompareOp
+				depthWrite ? VK_TRUE : VK_FALSE,							// VkBool32									depthWriteEnable
+				depthCompareOp,												// VkCompareOp								depthCompareOp
 				VK_FALSE,													// VkBool32									depthBoundsTestEnable
 				stencilTest,												// VkBool32									stencilTestEnable
 				stencilOpState,												// VkStencilOpState							front
@@ -1141,7 +1287,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 			}
 
 			vk::VkPipelineRenderingCreateInfoKHR* nextPtr = DE_NULL;
-			if (m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+			if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 			{
 				renderingCreateInfo.colorAttachmentCount	= static_cast<deUint32>(colorVector.size());
 				renderingCreateInfo.pColorAttachmentFormats = colorVector.data();
@@ -1202,10 +1348,12 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
 	// Create command buffer.
-	if (m_testParams.renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
-		createCommandBuffer<RenderpassSubpass1>(vk, vkDevice, imageViews, descriptorSets, pipelineLayouts, pipelines);
+	if (m_testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
+		createCommandBuffer<RenderpassSubpass1>(vk, vkDevice, descriptorSets, pipelineLayouts, pipelines);
+	else if (m_testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
+		createCommandBuffer<RenderpassSubpass2>(vk, vkDevice, descriptorSets, pipelineLayouts, pipelines);
 	else
-		createCommandBuffer<RenderpassSubpass2>(vk, vkDevice, imageViews, descriptorSets, pipelineLayouts, pipelines);
+		createCommandBuffer(vk, vkDevice, imageViews, descriptorSets, pipelineLayouts, pipelines);
 
 	// Submit commands.
 	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
@@ -1215,27 +1363,32 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 	// Verify selected attachments.
 	for (size_t i = 0; i < m_testParams.attachments.size(); i++)
 	{
-		if (m_testParams.attachments[i].verifyInner || m_testParams.attachments[i].verifyOuter)
+		bool transitioned = false;
+		for (const auto& verify : m_testParams.attachments[i].verifyAspects)
 		{
 			de::MovePtr<tcu::TextureLevel>		textureLevelResult;
 
 			SimpleAllocator						allocator			(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 			VkFormat							format				= getFormat(m_testParams.attachments[i].usage, m_testParams.depthStencilFormat);
 
-			if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_DEPTH)
+			if (verify.aspect == VK_IMAGE_ASPECT_DEPTH_BIT)
 			{
-				VkImageLayout layout = (m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+				VkImageLayout layout = (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING && !transitioned) ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 				textureLevelResult = pipeline::readDepthAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *attachmentImages[i], m_testParams.depthStencilFormat, m_imageSize, layout);
+				transitioned = true;
 			}
-			else if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_STENCIL)
+			else if (verify.aspect == VK_IMAGE_ASPECT_STENCIL_BIT)
 			{
-				VkImageLayout layout = (m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+				VkImageLayout layout = (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING && !transitioned) ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 				textureLevelResult = pipeline::readStencilAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *attachmentImages[i], m_testParams.depthStencilFormat, m_imageSize, layout);
+				transitioned = true;
 			}
 			else
 			{
-				VkImageLayout layout = ((m_testParams.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+				DE_ASSERT(verify.aspect == VK_IMAGE_ASPECT_COLOR_BIT);
+				VkImageLayout layout = ((m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING && !transitioned) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 				textureLevelResult = pipeline::readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *attachmentImages[i], format, m_imageSize, layout);
+				transitioned = true;
 			}
 
 			const tcu::ConstPixelBufferAccess&	access				= textureLevelResult->getAccess();
@@ -1250,12 +1403,12 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 				{
 					const bool		inner	= x < (int)m_renderSize.x() && y < (int)m_renderSize.y();
 
-					if (inner && !m_testParams.attachments[i].verifyInner)
+					if (inner && !verify.verifyInner)
 						continue;
-					if (!inner && !m_testParams.attachments[i].verifyOuter)
+					if (!inner && !verify.verifyOuter)
 						continue;
 
-					const tcu::Vec4	ref		= inner ? m_testParams.attachments[i].innerRef : m_testParams.attachments[i].outerRef;
+					const tcu::Vec4	ref		= inner ? verify.innerRef : verify.outerRef;
 					const tcu::Vec4	p		= access.getPixel(x, y);
 
 					for (int c = 0; c < 4; c++)
@@ -1274,7 +1427,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 
 } // anonymous
 
-tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& testCtx, const RenderingType renderingType)
+tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
 	de::MovePtr<tcu::TestCaseGroup>		opNoneTests		(new tcu::TestCaseGroup(testCtx, "load_store_op_none", ""));
 
@@ -1297,25 +1450,38 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 	// After the render pass attachment 0 has undefined values inside the render area because of the shader writes with
 	// store op 'none', but outside should still have the preinitialized value of green. Attachment 1 should have the
 	// preinitialized green outside the render area and magenta inside.
-	if (renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
+	if (groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
 	{
-		TestParams params;
-		params.alphaBlend = false;
-		params.renderingType = renderingType;
-		params.attachments.push_back({ATTACHMENT_USAGE_COLOR | ATTACHMENT_USAGE_INPUT,
-									  VK_ATTACHMENT_LOAD_OP_LOAD,
-									  VK_ATTACHMENT_STORE_OP_NONE_EXT,
-									  ATTACHMENT_INIT_PRE,
-									  false, green,
-									  true, green});
-		params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
-									  VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-									  VK_ATTACHMENT_STORE_OP_STORE,
-									  ATTACHMENT_INIT_PRE,
-									  true, magenta,
-									  true, green});
-		params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}}, 1u});
-		params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_INPUT}, {1u, ATTACHMENT_USAGE_COLOR}}, 1u});
+		TestParams params
+		{
+			{									// std::vector<AttachmentParams>	attachments;
+				{
+					ATTACHMENT_USAGE_COLOR | ATTACHMENT_USAGE_INPUT,
+					VK_ATTACHMENT_LOAD_OP_LOAD,
+					VK_ATTACHMENT_STORE_OP_NONE_EXT,
+					VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+					VK_ATTACHMENT_STORE_OP_DONT_CARE,
+					ATTACHMENT_INIT_PRE,
+					{{VK_IMAGE_ASPECT_COLOR_BIT, false, green, true, green}}
+				},
+				{
+					ATTACHMENT_USAGE_COLOR,
+					VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+					VK_ATTACHMENT_STORE_OP_STORE,
+					VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+					VK_ATTACHMENT_STORE_OP_DONT_CARE,
+					ATTACHMENT_INIT_PRE,
+					{{VK_IMAGE_ASPECT_COLOR_BIT, true, magenta, true, green}}
+				}
+			},
+			{									// std::vector<SubpassParams>		subpasses;
+				{{{0u, ATTACHMENT_USAGE_COLOR}}, 1u},
+				{{{0u, ATTACHMENT_USAGE_INPUT}, {1u, ATTACHMENT_USAGE_COLOR}}, 1u}
+			},
+			groupParams,						// const SharedGroupParams			groupParams;
+			VK_FORMAT_UNDEFINED,				// VkFormat							depthStencilFormat;
+			false								// bool								alphaBlend;
+		};
 
 		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_load_store_op_none", "", params));
 	}
@@ -1324,34 +1490,54 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 	// disable color writes using an empty color mask. The color attachment image should have the original
 	// preinitialized value after the render pass.
 	{
-		TestParams params;
-		params.alphaBlend = false;
-		params.renderingType = renderingType;
-		params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
-									  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
-									  VK_ATTACHMENT_STORE_OP_NONE_EXT,
-									  ATTACHMENT_INIT_PRE,
-									  true, green,
-									  true, green});
-		params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR | ATTACHMENT_USAGE_WRITE_OFF}}, 1u});
+		TestParams params
+		{
+			{									// std::vector<AttachmentParams>	attachments;
+				{
+					ATTACHMENT_USAGE_COLOR,
+					VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+					VK_ATTACHMENT_STORE_OP_NONE_EXT,
+					VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+					VK_ATTACHMENT_STORE_OP_DONT_CARE,
+					ATTACHMENT_INIT_PRE,
+					{{VK_IMAGE_ASPECT_COLOR_BIT, true, green, true, green}}
+				}
+			},
+			{									// std::vector<SubpassParams>		subpasses;
+				{{{0u, ATTACHMENT_USAGE_COLOR | ATTACHMENT_USAGE_COLOR_WRITE_OFF}}, 1u}
+			},
+			groupParams,						// const SharedGroupParams			groupParams;
+			VK_FORMAT_UNDEFINED,				// VkFormat							depthStencilFormat;
+			false								// bool								alphaBlend;
+		};
 
 		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_none_write_off", "", params));
 	}
 
 	// Preinitialize color attachment to green. Use a render pass with load and store ops none, and
-	// write a rectange to the color buffer. The render area is undefined, but the outside area should
+	// write a rectangle to the color buffer. The render area is undefined, but the outside area should
 	// still have the preinitialized color.
 	{
-		TestParams params;
-		params.alphaBlend = false;
-		params.renderingType = renderingType;
-		params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
-									  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
-									  VK_ATTACHMENT_STORE_OP_NONE_EXT,
-									  ATTACHMENT_INIT_PRE,
-									  false, green,
-									  true, green});
-		params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}}, 1u});
+		TestParams params
+		{
+			{									// std::vector<AttachmentParams>	attachments;
+				{
+					ATTACHMENT_USAGE_COLOR,
+					VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+					VK_ATTACHMENT_STORE_OP_NONE_EXT,
+					VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+					VK_ATTACHMENT_STORE_OP_DONT_CARE,
+					ATTACHMENT_INIT_PRE,
+					{{VK_IMAGE_ASPECT_COLOR_BIT, false, green, true, green}}
+				}
+			},
+			{									// std::vector<SubpassParams>		subpasses;
+				{{{0u, ATTACHMENT_USAGE_COLOR}}, 1u}
+			},
+			groupParams,						// const SharedGroupParams			groupParams;
+			VK_FORMAT_UNDEFINED,				// VkFormat							depthStencilFormat;
+			false								// bool								alphaBlend;
+		};
 
 		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_none", "", params));
 	}
@@ -1360,34 +1546,54 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 	// do an attachment clear command using dark blue color. Using load op none preserves the preinitialized
 	// data and store op store causes the cleared blue render area to be present after the render pass.
 	{
-		TestParams params;
-		params.alphaBlend = false;
-		params.renderingType = renderingType;
-		params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
-									  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
-									  VK_ATTACHMENT_STORE_OP_STORE,
-									  ATTACHMENT_INIT_PRE | ATTACHMENT_INIT_CMD_CLEAR,
-									  true, darkBlue,
-									  true, green});
-		params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}}, 0u});
+		TestParams params
+		{
+			{									// std::vector<AttachmentParams>	attachments;
+				{
+					ATTACHMENT_USAGE_COLOR,
+					VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+					VK_ATTACHMENT_STORE_OP_STORE,
+					VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+					VK_ATTACHMENT_STORE_OP_DONT_CARE,
+					ATTACHMENT_INIT_PRE | ATTACHMENT_INIT_CMD_CLEAR,
+					{{VK_IMAGE_ASPECT_COLOR_BIT, true, darkBlue, true, green}}
+				}
+			},
+			{									// std::vector<SubpassParams>		subpasses;
+				{{{0u, ATTACHMENT_USAGE_COLOR}}, 0u}
+			},
+			groupParams,						// const SharedGroupParams			groupParams;
+			VK_FORMAT_UNDEFINED,				// VkFormat							depthStencilFormat;
+			false								// bool								alphaBlend;
+		};
 
 		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_store", "", params));
 	}
 
 	// Preinitialize color attachment to green. Use a subpass with a dark blue attachment clear followed
-	// by an alpha blender draw. Load op is none preserves the preinitialized data and store op store
+	// by an alpha blender draw. Load op none preserves the preinitialized data and store op store
 	// keeps the blended color inside the render area after the render pass.
 	{
-		TestParams params;
-		params.alphaBlend = true;
-		params.renderingType = renderingType;
-		params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
-									  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
-									  VK_ATTACHMENT_STORE_OP_STORE,
-									  ATTACHMENT_INIT_PRE | ATTACHMENT_INIT_CMD_CLEAR,
-									  true, blend,
-									  true, green});
-		params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}}, 1u});
+		TestParams params
+		{
+			{									// std::vector<AttachmentParams>	attachments;
+				{
+					ATTACHMENT_USAGE_COLOR,
+					VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+					VK_ATTACHMENT_STORE_OP_STORE,
+					VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+					VK_ATTACHMENT_STORE_OP_DONT_CARE,
+					ATTACHMENT_INIT_PRE | ATTACHMENT_INIT_CMD_CLEAR,
+					{{VK_IMAGE_ASPECT_COLOR_BIT, true, blend, true, green}}
+				}
+			},
+			{									// std::vector<SubpassParams>		subpasses;
+				{{{0u, ATTACHMENT_USAGE_COLOR}}, 1u}
+			},
+			groupParams,						// const SharedGroupParams			groupParams;
+			VK_FORMAT_UNDEFINED,				// VkFormat							depthStencilFormat;
+			true								// bool								alphaBlend;
+		};
 
 		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_store_alphablend", "", params));
 	}
@@ -1398,25 +1604,38 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 	// After the render pass attachment 0 contents inside the render area are undefined because of store op 'don't care',
 	// but the outside area should still have the preinitialized content.
 	// Attachment 1 should have the preinitialized green outside render area and magenta inside.
-	if (renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
+	if (groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
 	{
-		TestParams params;
-		params.alphaBlend = false;
-		params.renderingType = renderingType;
-		params.attachments.push_back({ATTACHMENT_USAGE_COLOR | ATTACHMENT_USAGE_INPUT,
-									  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
-									  VK_ATTACHMENT_STORE_OP_DONT_CARE,
-									  ATTACHMENT_INIT_PRE,
-									  false, green,
-									  true, green});
-		params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
-									  VK_ATTACHMENT_LOAD_OP_LOAD,
-									  VK_ATTACHMENT_STORE_OP_STORE,
-									  ATTACHMENT_INIT_PRE,
-									  true, magenta,
-									  true, green});
-		params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}}, 1u});
-		params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_INPUT}, {1u, ATTACHMENT_USAGE_COLOR}}, 1u});
+		TestParams params
+		{
+			{									// std::vector<AttachmentParams>	attachments;
+				{
+					ATTACHMENT_USAGE_COLOR | ATTACHMENT_USAGE_INPUT,
+					VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+					VK_ATTACHMENT_STORE_OP_DONT_CARE,
+					VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+					VK_ATTACHMENT_STORE_OP_DONT_CARE,
+					ATTACHMENT_INIT_PRE,
+					{{VK_IMAGE_ASPECT_COLOR_BIT, false, green, true, green}}
+				},
+				{
+					ATTACHMENT_USAGE_COLOR,
+					VK_ATTACHMENT_LOAD_OP_LOAD,
+					VK_ATTACHMENT_STORE_OP_STORE,
+					VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+					VK_ATTACHMENT_STORE_OP_DONT_CARE,
+					ATTACHMENT_INIT_PRE,
+					{{VK_IMAGE_ASPECT_COLOR_BIT, true, magenta, true, green}}
+				}
+		},
+		{									// std::vector<SubpassParams>		subpasses;
+			{{{0u, ATTACHMENT_USAGE_COLOR}}, 1u},
+			{{{0u, ATTACHMENT_USAGE_INPUT}, {1u, ATTACHMENT_USAGE_COLOR}}, 1u}
+		},
+		groupParams,						// const SharedGroupParams			groupParams;
+		VK_FORMAT_UNDEFINED,				// VkFormat							depthStencilFormat;
+		false								// bool								alphaBlend;
+		};
 
 		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_dontcare", "", params));
 	}
@@ -1425,22 +1644,35 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 	// target. Write a red rectangle and check it ends up in the resolved buffer even though the multisample attachment
 	// doesn't store the results.
 	{
-		TestParams params;
-		params.alphaBlend = false;
-		params.renderingType = renderingType;
-		params.attachments.push_back({ATTACHMENT_USAGE_COLOR | ATTACHMENT_USAGE_MULTISAMPLE | ATTACHMENT_USAGE_INTEGER,
-									  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
-									  VK_ATTACHMENT_STORE_OP_NONE_EXT,
-									  ATTACHMENT_INIT_PRE,
-									  false, green,
-									  false, green});
-		params.attachments.push_back({ATTACHMENT_USAGE_COLOR | ATTACHMENT_USAGE_RESOLVE_TARGET | ATTACHMENT_USAGE_INTEGER,
-									  VK_ATTACHMENT_LOAD_OP_LOAD,
-									  VK_ATTACHMENT_STORE_OP_STORE,
-									  ATTACHMENT_INIT_PRE,
-									  true, redUint,
-									  true, greenUint});
-		params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR | ATTACHMENT_USAGE_MULTISAMPLE | ATTACHMENT_USAGE_INTEGER}, {1u, ATTACHMENT_USAGE_COLOR | ATTACHMENT_USAGE_RESOLVE_TARGET}}, 1u});
+		TestParams params
+		{
+			{									// std::vector<AttachmentParams>	attachments;
+				{
+					ATTACHMENT_USAGE_COLOR | ATTACHMENT_USAGE_MULTISAMPLE | ATTACHMENT_USAGE_INTEGER,
+					VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+					VK_ATTACHMENT_STORE_OP_NONE_EXT,
+					VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+					VK_ATTACHMENT_STORE_OP_DONT_CARE,
+					ATTACHMENT_INIT_PRE,
+					{}
+				},
+				{
+					ATTACHMENT_USAGE_COLOR | ATTACHMENT_USAGE_RESOLVE_TARGET | ATTACHMENT_USAGE_INTEGER,
+					VK_ATTACHMENT_LOAD_OP_LOAD,
+					VK_ATTACHMENT_STORE_OP_STORE,
+					VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+					VK_ATTACHMENT_STORE_OP_DONT_CARE,
+					ATTACHMENT_INIT_PRE,
+					{{VK_IMAGE_ASPECT_COLOR_BIT, true, redUint, true, greenUint}}
+				}
+			},
+			{									// std::vector<SubpassParams>		subpasses;
+				{{{0u, ATTACHMENT_USAGE_COLOR | ATTACHMENT_USAGE_MULTISAMPLE | ATTACHMENT_USAGE_INTEGER}, {1u, ATTACHMENT_USAGE_COLOR | ATTACHMENT_USAGE_RESOLVE_TARGET}}, 1u}
+			},
+			groupParams,						// const SharedGroupParams			groupParams;
+			VK_FORMAT_UNDEFINED,				// VkFormat							depthStencilFormat;
+			false								// bool								alphaBlend;
+		};
 
 		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_none_resolve", "", params));
 	}
@@ -1460,27 +1692,39 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		// This is followed by another draw with a blue rectangle using the same depth of 1.0. This time
 		// the depth test fails and nothing is written.
 		// After the renderpass the red color should remain inside the render area of the color buffer.
-		// Store op 'store' for depth buffer makes the written values undefined, but the pixels outside
+		// Store op 'none' for depth buffer makes the written values undefined, but the pixels outside
 		// render area should still contain the original value of 0.5.
 		if (hasDepth)
 		{
-			TestParams params;
-			params.alphaBlend = false;
-			params.depthStencilFormat = formats[f];
-			params.renderingType = renderingType;
-			params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
-										  VK_ATTACHMENT_LOAD_OP_LOAD,
-										  VK_ATTACHMENT_STORE_OP_STORE,
-										  ATTACHMENT_INIT_PRE,
-										  true, red,
-										  true, green});
-			params.attachments.push_back({ATTACHMENT_USAGE_DEPTH,
-										  VK_ATTACHMENT_LOAD_OP_LOAD,
-										  VK_ATTACHMENT_STORE_OP_NONE_EXT,
-										  ATTACHMENT_INIT_PRE,
-										  false, depthInit,
-										  true, depthInit});
-			params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_DEPTH}}, 2u});
+			TestParams params
+			{
+				{									// std::vector<AttachmentParams>	attachments;
+					{
+						ATTACHMENT_USAGE_COLOR,
+						VK_ATTACHMENT_LOAD_OP_LOAD,
+						VK_ATTACHMENT_STORE_OP_STORE,
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						ATTACHMENT_INIT_PRE,
+						{{VK_IMAGE_ASPECT_COLOR_BIT, true, red, true, green}}
+					},
+					{
+						ATTACHMENT_USAGE_DEPTH,
+						VK_ATTACHMENT_LOAD_OP_LOAD,
+						VK_ATTACHMENT_STORE_OP_NONE_EXT,
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						ATTACHMENT_INIT_PRE,
+						{{VK_IMAGE_ASPECT_DEPTH_BIT, false, depthInit, true, depthInit}}
+					}
+				},
+				{									// std::vector<SubpassParams>		subpasses;
+					{{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_DEPTH}}, 2u}
+				},
+				groupParams,						// const SharedGroupParams			groupParams;
+				formats[f],							// VkFormat							depthStencilFormat;
+				false								// bool								alphaBlend;
+			};
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_"+formatName+"_load_op_load_store_op_none", "", params));
 		}
@@ -1490,23 +1734,35 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		// preinitialized value after the render pass.
 		if (hasDepth)
 		{
-			TestParams params;
-			params.alphaBlend = false;
-			params.depthStencilFormat = formats[f];
-			params.renderingType = renderingType;
-			params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
-										  VK_ATTACHMENT_LOAD_OP_LOAD,
-										  VK_ATTACHMENT_STORE_OP_STORE,
-										  ATTACHMENT_INIT_PRE,
-										  true, red,
-										  true, green});
-			params.attachments.push_back({ATTACHMENT_USAGE_DEPTH,
-										  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
-										  VK_ATTACHMENT_STORE_OP_NONE_EXT,
-										  ATTACHMENT_INIT_PRE,
-										  true, depthInit,
-										  true, depthInit});
-			params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_DEPTH | ATTACHMENT_USAGE_WRITE_OFF}}, 1u});
+			TestParams params
+			{
+				{									// std::vector<AttachmentParams>	attachments;
+					{
+						ATTACHMENT_USAGE_COLOR,
+						VK_ATTACHMENT_LOAD_OP_LOAD,
+						VK_ATTACHMENT_STORE_OP_STORE,
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						ATTACHMENT_INIT_PRE,
+						{{VK_IMAGE_ASPECT_COLOR_BIT, true, red, true, green}}
+					},
+					{
+						ATTACHMENT_USAGE_DEPTH,
+						VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+						VK_ATTACHMENT_STORE_OP_NONE_EXT,
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						ATTACHMENT_INIT_PRE,
+						{{VK_IMAGE_ASPECT_DEPTH_BIT, true, depthInit, true, depthInit}}
+					}
+				},
+				{									// std::vector<SubpassParams>		subpasses;
+					{{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_DEPTH | ATTACHMENT_USAGE_DEPTH_TEST_OFF}}, 1u}
+				},
+				groupParams,						// const SharedGroupParams			groupParams;
+				formats[f],							// VkFormat							depthStencilFormat;
+				false								// bool								alphaBlend;
+			};
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_" + formatName + "_load_op_none_store_op_none_write_off", "", params));
 		}
@@ -1517,23 +1773,34 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		// shader updated value of 1.0.
 		if (hasDepth)
 		{
-			TestParams params;
-			params.alphaBlend = false;
-			params.depthStencilFormat = formats[f];
-			params.renderingType = renderingType;
-			params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
-										  VK_ATTACHMENT_LOAD_OP_LOAD,
-										  VK_ATTACHMENT_STORE_OP_STORE,
-										  ATTACHMENT_INIT_PRE,
-										  true, red,
-										  true, green});
-			params.attachments.push_back({ATTACHMENT_USAGE_DEPTH,
-										  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
-										  VK_ATTACHMENT_STORE_OP_STORE,
-										  ATTACHMENT_INIT_PRE | ATTACHMENT_INIT_CMD_CLEAR,
-										  true, depthFull,
-										  true, depthInit});
-			params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_DEPTH}}, 1u});
+			TestParams params
+			{
+				{									// std::vector<AttachmentParams>	attachments;
+					{
+						ATTACHMENT_USAGE_COLOR,
+						VK_ATTACHMENT_LOAD_OP_LOAD,
+						VK_ATTACHMENT_STORE_OP_STORE,
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						ATTACHMENT_INIT_PRE,
+						{{VK_IMAGE_ASPECT_COLOR_BIT, true, red, true, green}}
+					},
+					{
+						ATTACHMENT_USAGE_DEPTH,
+						VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+						VK_ATTACHMENT_STORE_OP_STORE,
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						ATTACHMENT_INIT_PRE | ATTACHMENT_INIT_CMD_CLEAR,
+						{{VK_IMAGE_ASPECT_DEPTH_BIT, true, depthFull, true, depthInit}}}
+				},
+				{									// std::vector<SubpassParams>		subpasses;
+					{{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_DEPTH}}, 1u}
+				},
+				groupParams,						// const SharedGroupParams			groupParams;
+				formats[f],							// VkFormat							depthStencilFormat;
+				false								// bool								alphaBlend;
+			};
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_" + formatName + "_load_op_none_store_op_store", "", params));
 		}
@@ -1541,26 +1808,38 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		// Preinitialize attachment 0 (color) to green and depth buffer to 0.5. During the render pass initialize attachment 1 (depth) to 0.25
 		// using cmdClearAttachments. Draw a red rectangle using depth 1.0 and depth op 'greater' which will pass.
 		// After the renderpass the color buffer should have red inside the render area. Depth buffer contents inside render
-		// are is undefined because of store op 'don't care', but the outside should have the original value of 0.5.
+		// area is undefined because of store op 'don't care', but the outside should have the original value of 0.5.
 		if (hasDepth)
 		{
-			TestParams params;
-			params.alphaBlend = false;
-			params.depthStencilFormat = formats[f];
-			params.renderingType = renderingType;
-			params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
-										  VK_ATTACHMENT_LOAD_OP_LOAD,
-										  VK_ATTACHMENT_STORE_OP_STORE,
-										  ATTACHMENT_INIT_PRE,
-										  true, red,
-										  true, green});
-			params.attachments.push_back({ATTACHMENT_USAGE_DEPTH,
-										  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
-										  VK_ATTACHMENT_STORE_OP_DONT_CARE,
-										  ATTACHMENT_INIT_PRE | ATTACHMENT_INIT_CMD_CLEAR,
-										  false, depthFull,
-										  true, depthInit});
-			params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_DEPTH}}, 1u});
+			TestParams params
+			{
+				{									// std::vector<AttachmentParams>	attachments;
+					{
+						ATTACHMENT_USAGE_COLOR,
+						VK_ATTACHMENT_LOAD_OP_LOAD,
+						VK_ATTACHMENT_STORE_OP_STORE,
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						ATTACHMENT_INIT_PRE,
+						{{VK_IMAGE_ASPECT_COLOR_BIT, true, red, true, green}}
+					},
+					{
+						ATTACHMENT_USAGE_DEPTH,
+						VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						ATTACHMENT_INIT_PRE | ATTACHMENT_INIT_CMD_CLEAR,
+						{{VK_IMAGE_ASPECT_DEPTH_BIT, false, depthFull, true, depthInit}}
+					}
+				},
+				{									// std::vector<SubpassParams>		subpasses;
+					{{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_DEPTH}}, 1u}
+				},
+				groupParams,						// const SharedGroupParams			groupParams;
+				formats[f],							// VkFormat							depthStencilFormat;
+				false								// bool								alphaBlend;
+			};
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_" + formatName + "_load_op_none_store_op_dontcare", "", params));
 		}
@@ -1570,27 +1849,39 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		// will pass. This is followed by another draw with a blue rectangle using the same stencil settings. This time
 		// the stencil test fails and nothing is written.
 		// After the renderpass the red color should remain inside the render area of the color buffer.
-		// Store op 'store' for stencil buffer makes the written values undefined, but the pixels outside
+		// Store op 'none' for stencil buffer makes the written values undefined, but the pixels outside
 		// render area should still contain the original value of 128.
 		if (hasStencil)
 		{
-			TestParams params;
-			params.alphaBlend = false;
-			params.depthStencilFormat = formats[f];
-			params.renderingType = renderingType;
-			params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
-										  VK_ATTACHMENT_LOAD_OP_LOAD,
-										  VK_ATTACHMENT_STORE_OP_STORE,
-										  ATTACHMENT_INIT_PRE,
-										  true, red,
-										  true, green});
-			params.attachments.push_back({ATTACHMENT_USAGE_STENCIL,
-										  VK_ATTACHMENT_LOAD_OP_LOAD,
-										  VK_ATTACHMENT_STORE_OP_NONE_EXT,
-										  ATTACHMENT_INIT_PRE,
-										  false, stencilInit,
-										  true, stencilInit});
-			params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_STENCIL}}, 2u});
+			TestParams params
+			{
+				{									// std::vector<AttachmentParams>	attachments;
+					{
+						ATTACHMENT_USAGE_COLOR,
+						VK_ATTACHMENT_LOAD_OP_LOAD,
+						VK_ATTACHMENT_STORE_OP_STORE,
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						ATTACHMENT_INIT_PRE,
+						{{VK_IMAGE_ASPECT_COLOR_BIT, true, red, true, green}}
+					},
+					{
+						ATTACHMENT_USAGE_STENCIL,
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						VK_ATTACHMENT_LOAD_OP_LOAD,
+						VK_ATTACHMENT_STORE_OP_NONE_EXT,
+						ATTACHMENT_INIT_PRE,
+						{{VK_IMAGE_ASPECT_STENCIL_BIT, false, stencilInit, true, stencilInit}}
+					}
+				},
+				{									// std::vector<SubpassParams>		subpasses;
+					{{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_STENCIL}}, 2u}
+				},
+				groupParams,						// const SharedGroupParams			groupParams;
+				formats[f],							// VkFormat							depthStencilFormat;
+				false								// bool								alphaBlend;
+			};
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_load_store_op_none", "", params));
 		}
@@ -1600,23 +1891,35 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		// preinitialized value after the render pass.
 		if (hasStencil)
 		{
-			TestParams params;
-			params.alphaBlend = false;
-			params.depthStencilFormat = formats[f];
-			params.renderingType = renderingType;
-			params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
-										  VK_ATTACHMENT_LOAD_OP_LOAD,
-										  VK_ATTACHMENT_STORE_OP_STORE,
-										  ATTACHMENT_INIT_PRE,
-										  true, red,
-										  true, green});
-			params.attachments.push_back({ATTACHMENT_USAGE_STENCIL,
-										  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
-										  VK_ATTACHMENT_STORE_OP_NONE_EXT,
-										  ATTACHMENT_INIT_PRE,
-										  true, stencilInit,
-										  true, stencilInit});
-			params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_STENCIL | ATTACHMENT_USAGE_WRITE_OFF}}, 1u});
+			TestParams params
+			{
+				{									// std::vector<AttachmentParams>	attachments;
+					{
+						ATTACHMENT_USAGE_COLOR,
+						VK_ATTACHMENT_LOAD_OP_LOAD,
+						VK_ATTACHMENT_STORE_OP_STORE,
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						ATTACHMENT_INIT_PRE,
+						{{VK_IMAGE_ASPECT_COLOR_BIT, true, red, true, green}}
+					},
+					{
+						ATTACHMENT_USAGE_STENCIL,
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+						VK_ATTACHMENT_STORE_OP_NONE_EXT,
+						ATTACHMENT_INIT_PRE,
+						{{VK_IMAGE_ASPECT_STENCIL_BIT, true, stencilInit, true, stencilInit}}
+					}
+				},
+				{									// std::vector<SubpassParams>		subpasses;
+					{{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_STENCIL | ATTACHMENT_USAGE_STENCIL_TEST_OFF | ATTACHMENT_USAGE_DEPTH_TEST_OFF}}, 1u}
+				},
+				groupParams,						// const SharedGroupParams			groupParams;
+				formats[f],							// VkFormat							depthStencilFormat;
+				false								// bool								alphaBlend;
+			};
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_none_store_op_none_write_off", "", params));
 		}
@@ -1627,23 +1930,35 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		// shader updated value of 255.
 		if (hasStencil)
 		{
-			TestParams params;
-			params.alphaBlend = false;
-			params.depthStencilFormat = formats[f];
-			params.renderingType = renderingType;
-			params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
-										  VK_ATTACHMENT_LOAD_OP_LOAD,
-										  VK_ATTACHMENT_STORE_OP_STORE,
-										  ATTACHMENT_INIT_PRE,
-										  true, red,
-										  true, green});
-			params.attachments.push_back({ATTACHMENT_USAGE_STENCIL,
-										  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
-										  VK_ATTACHMENT_STORE_OP_STORE,
-										  ATTACHMENT_INIT_PRE | ATTACHMENT_INIT_CMD_CLEAR,
-										  true, stencilFull,
-										  true, stencilInit});
-			params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_STENCIL}}, 1u});
+			TestParams params
+			{
+				{									// std::vector<AttachmentParams>	attachments;
+					{
+						ATTACHMENT_USAGE_COLOR,
+						VK_ATTACHMENT_LOAD_OP_LOAD,
+						VK_ATTACHMENT_STORE_OP_STORE,
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						ATTACHMENT_INIT_PRE,
+						{{VK_IMAGE_ASPECT_COLOR_BIT, true, red, true, green}}
+					},
+					{
+						ATTACHMENT_USAGE_STENCIL,
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+						VK_ATTACHMENT_STORE_OP_STORE,
+						ATTACHMENT_INIT_PRE | ATTACHMENT_INIT_CMD_CLEAR,
+						{{VK_IMAGE_ASPECT_STENCIL_BIT, true, stencilFull, true, stencilInit}}
+					}
+				},
+				{									// std::vector<SubpassParams>		subpasses;
+					{{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_STENCIL}}, 1u}
+				},
+				groupParams,						// const SharedGroupParams			groupParams;
+				formats[f],							// VkFormat							depthStencilFormat;
+				false								// bool								alphaBlend;
+			};
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_none_store_op_store", "", params));
 		}
@@ -1654,25 +1969,208 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		// are is undefined because of store op 'don't care', but the outside should have the original value of 128.
 		if (hasStencil)
 		{
-			TestParams params;
-			params.alphaBlend = false;
-			params.depthStencilFormat = formats[f];
-			params.renderingType = renderingType;
-			params.attachments.push_back({ATTACHMENT_USAGE_COLOR,
-										  VK_ATTACHMENT_LOAD_OP_LOAD,
-										  VK_ATTACHMENT_STORE_OP_STORE,
-										  ATTACHMENT_INIT_PRE,
-										  true, red,
-										  true, green});
-			params.attachments.push_back({ATTACHMENT_USAGE_STENCIL,
-										  VK_ATTACHMENT_LOAD_OP_NONE_EXT,
-										  VK_ATTACHMENT_STORE_OP_DONT_CARE,
-										  ATTACHMENT_INIT_PRE | ATTACHMENT_INIT_CMD_CLEAR,
-										  false, stencilFull,
-										  true, stencilInit});
-			params.subpasses.push_back({{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_STENCIL}}, 1u});
+			TestParams params
+			{
+				{									// std::vector<AttachmentParams>	attachments;
+					{
+						ATTACHMENT_USAGE_COLOR,
+						VK_ATTACHMENT_LOAD_OP_LOAD,
+						VK_ATTACHMENT_STORE_OP_STORE,
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						ATTACHMENT_INIT_PRE,
+						{{VK_IMAGE_ASPECT_COLOR_BIT, true, red, true, green}}
+					},
+					{
+						ATTACHMENT_USAGE_STENCIL,
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						ATTACHMENT_INIT_PRE | ATTACHMENT_INIT_CMD_CLEAR,
+						{{VK_IMAGE_ASPECT_STENCIL_BIT, false, stencilFull, true, stencilInit}}
+					}
+				},
+				{									// std::vector<SubpassParams>		subpasses;
+					{{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_STENCIL}}, 1u}
+				},
+				groupParams,						// const SharedGroupParams			groupParams;
+				formats[f],							// VkFormat							depthStencilFormat;
+				false								// bool								alphaBlend;
+			};
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_none_store_op_dontcare", "", params));
+		}
+
+		// Preinitialize attachment 0 (color) to green and depth stencil buffer depth aspect to 0.5 and stencil aspect to 128. Draw a red
+		// rectangle using depth 1.0 and depth op 'greater'. Depth test will pass and update depth buffer to 1.0. After the renderpass the
+		// color buffer should have red inside the render area and depth should have the shader updated value of 1.0. Stencil has load and
+		// store ops none, and stencil writes are disabled by disabling stencil test. Therefore, stencil should not be modified even when
+		// the depth aspect is written.
+		if (hasDepth && hasStencil)
+		{
+			TestParams params
+			{
+				{									// std::vector<AttachmentParams>	attachments;
+					{
+						ATTACHMENT_USAGE_COLOR,
+						VK_ATTACHMENT_LOAD_OP_LOAD,
+						VK_ATTACHMENT_STORE_OP_STORE,
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						ATTACHMENT_INIT_PRE,
+						{{VK_IMAGE_ASPECT_COLOR_BIT, true, red, true, green}}
+					},
+					{
+						ATTACHMENT_USAGE_DEPTH_STENCIL,
+						VK_ATTACHMENT_LOAD_OP_LOAD,
+						VK_ATTACHMENT_STORE_OP_STORE,
+						VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+						VK_ATTACHMENT_STORE_OP_NONE_EXT,
+						ATTACHMENT_INIT_PRE,
+						{
+							{VK_IMAGE_ASPECT_DEPTH_BIT, true, depthFull, true, depthInit},
+							{VK_IMAGE_ASPECT_STENCIL_BIT, true, stencilInit, true, stencilInit},
+						}
+					}
+				},
+				{									// std::vector<SubpassParams>		subpasses;
+					{{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_DEPTH_STENCIL | ATTACHMENT_USAGE_STENCIL_TEST_OFF}}, 1u}
+				},
+				groupParams,						// const SharedGroupParams			groupParams;
+				formats[f],							// VkFormat							depthStencilFormat;
+				false								// bool								alphaBlend;
+			};
+
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depthstencil_" + formatName + "_load_op_depth_load_stencil_none_store_op_depth_store_stencil_none_stencil_test_off", "", params));
+		}
+
+		// Preinitialize attachment 0 (color) to green and depth stencil buffer stencil aspect to 128 and depth aspect to 0.5. Draw a red rectangle
+		// using stencil reference of 255 and stencil op 'greater'. Stencil test will pass and update stencil buffer to 255. After the renderpass
+		// the color buffer should have red inside the render area and stencil should have the shader updated value of 255. Depth has load and store
+		// ops none, and depth writes are disabled by having depth test off. Therefore, depth should not be modified even when the stencil aspect is
+		// written.
+		if (hasDepth && hasStencil)
+		{
+			TestParams params
+			{
+				{									// std::vector<AttachmentParams>	attachments;
+					{
+						ATTACHMENT_USAGE_COLOR,
+						VK_ATTACHMENT_LOAD_OP_LOAD,
+						VK_ATTACHMENT_STORE_OP_STORE,
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						ATTACHMENT_INIT_PRE,
+						{{VK_IMAGE_ASPECT_COLOR_BIT, true, red, true, green}}
+					},
+					{
+						ATTACHMENT_USAGE_DEPTH_STENCIL,
+						VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+						VK_ATTACHMENT_STORE_OP_NONE_EXT,
+						VK_ATTACHMENT_LOAD_OP_LOAD,
+						VK_ATTACHMENT_STORE_OP_STORE,
+						ATTACHMENT_INIT_PRE,
+						{
+							{VK_IMAGE_ASPECT_DEPTH_BIT, true, depthInit, true, depthInit},
+							{VK_IMAGE_ASPECT_STENCIL_BIT, true, stencilFull, true, stencilInit}
+						}
+					}
+				},
+				{									// std::vector<SubpassParams>		subpasses;
+					{{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_DEPTH_STENCIL | ATTACHMENT_USAGE_DEPTH_TEST_OFF}}, 1u}
+				},
+				groupParams,						// const SharedGroupParams			groupParams;
+				formats[f],							// VkFormat							depthStencilFormat;
+				false								// bool								alphaBlend;
+			};
+
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depthstencil_" + formatName + "_load_op_depth_none_stencil_load_store_op_depth_none_stencil_store_depth_test_off", "", params));
+		}
+
+		// Preinitialize attachment 0 (color) to green and depth stencil buffer depth aspect to 0.5 and stencil aspect to 128. Draw a red
+		// rectangle using depth 1.0 and depth op 'greater'. Depth test will pass and update depth buffer to 1.0. After the renderpass the
+		// color buffer should have red inside the render area and depth should have the shader updated value of 1.0. Stencil has load and
+		// store ops none, and stencil writes are disabled. Therefore, stencil should not be modified even when the depth aspect is written.
+		if (hasDepth && hasStencil)
+		{
+			TestParams params
+			{
+				{									// std::vector<AttachmentParams>	attachments;
+					{
+						ATTACHMENT_USAGE_COLOR,
+						VK_ATTACHMENT_LOAD_OP_LOAD,
+						VK_ATTACHMENT_STORE_OP_STORE,
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						ATTACHMENT_INIT_PRE,
+						{{VK_IMAGE_ASPECT_COLOR_BIT, true, red, true, green}}
+					},
+					{
+						ATTACHMENT_USAGE_DEPTH_STENCIL,
+						VK_ATTACHMENT_LOAD_OP_LOAD,
+						VK_ATTACHMENT_STORE_OP_STORE,
+						VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+						VK_ATTACHMENT_STORE_OP_NONE_EXT,
+						ATTACHMENT_INIT_PRE,
+						{
+							{VK_IMAGE_ASPECT_DEPTH_BIT, true, depthFull, true, depthInit},
+							{VK_IMAGE_ASPECT_STENCIL_BIT, true, stencilInit, true, stencilInit},
+						}
+					}
+				},
+				{									// std::vector<SubpassParams>		subpasses;
+					{{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_DEPTH_STENCIL | ATTACHMENT_USAGE_STENCIL_WRITE_OFF}}, 1u}
+				},
+				groupParams,						// const SharedGroupParams			groupParams;
+				formats[f],							// VkFormat							depthStencilFormat;
+				false								// bool								alphaBlend;
+			};
+
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depthstencil_" + formatName + "_load_op_depth_load_stencil_none_store_op_depth_store_stencil_none_stencil_write_off", "", params));
+		}
+
+		// Preinitialize attachment 0 (color) to green and depth stencil buffer stencil aspect to 128 and depth aspect to 0.5. Draw a red rectangle
+		// using stencil reference of 255 and stencil op 'greater'. Stencil test will pass and update stencil buffer to 255. After the renderpass
+		// the color buffer should have red inside the render area and stencil should have the shader updated value of 255. Depth has load and store
+		// ops none, the depth buffer contents will be undefined and depth test is enabled but op will be 'always' so depth testing will pass. Depth
+		// writes are disabled, so depth should not be modified even when the stencil aspect is written.
+		if (hasDepth && hasStencil)
+		{
+			TestParams params
+			{
+				{									// std::vector<AttachmentParams>	attachments;
+					{
+						ATTACHMENT_USAGE_COLOR,
+						VK_ATTACHMENT_LOAD_OP_LOAD,
+						VK_ATTACHMENT_STORE_OP_STORE,
+						VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						VK_ATTACHMENT_STORE_OP_DONT_CARE,
+						ATTACHMENT_INIT_PRE,
+						{{VK_IMAGE_ASPECT_COLOR_BIT, true, red, true, green}}
+					},
+					{
+						ATTACHMENT_USAGE_DEPTH_STENCIL,
+						VK_ATTACHMENT_LOAD_OP_NONE_EXT,
+						VK_ATTACHMENT_STORE_OP_NONE_EXT,
+						VK_ATTACHMENT_LOAD_OP_LOAD,
+						VK_ATTACHMENT_STORE_OP_STORE,
+						ATTACHMENT_INIT_PRE,
+						{
+							{VK_IMAGE_ASPECT_DEPTH_BIT, true, depthInit, true, depthInit},
+							{VK_IMAGE_ASPECT_STENCIL_BIT, true, stencilFull, true, stencilInit}
+						}
+					}
+				},
+				{									// std::vector<SubpassParams>		subpasses;
+					{{{0u, ATTACHMENT_USAGE_COLOR}, {1u, ATTACHMENT_USAGE_DEPTH_STENCIL | ATTACHMENT_USAGE_DEPTH_WRITE_OFF}}, 1u}
+				},
+				groupParams,						// const SharedGroupParams			groupParams;
+				formats[f],							// VkFormat							depthStencilFormat;
+				false								// bool								alphaBlend;
+			};
+
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depthstencil_" + formatName + "_load_op_depth_none_stencil_load_store_op_depth_none_stencil_store_depth_write_off", "", params));
 		}
 	}
 

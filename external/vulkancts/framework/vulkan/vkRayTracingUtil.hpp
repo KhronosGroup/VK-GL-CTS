@@ -35,9 +35,13 @@
 
 #include <vector>
 #include <limits>
+#include <stdexcept>
 
 namespace vk
 {
+
+#ifndef CTS_USES_VULKANSC
+
 constexpr VkShaderStageFlags	SHADER_STAGE_ALL_RAY_TRACING	= VK_SHADER_STAGE_RAYGEN_BIT_KHR
 																| VK_SHADER_STAGE_ANY_HIT_BIT_KHR
 																| VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
@@ -57,18 +61,6 @@ template<typename T>
 inline de::SharedPtr<de::MovePtr<T> > makeVkSharedPtr(de::MovePtr<T> movePtr)
 {
 	return de::SharedPtr<de::MovePtr<T> >(new de::MovePtr<T>(movePtr));
-}
-
-template<typename T>
-inline const T* dataOrNullPtr(const std::vector<T>& v)
-{
-	return (v.empty() ? DE_NULL : v.data());
-}
-
-template<typename T>
-inline T* dataOrNullPtr(std::vector<T>& v)
-{
-	return (v.empty() ? DE_NULL : v.data());
 }
 
 inline std::string updateRayTracingGLSL (const std::string& str)
@@ -103,6 +95,9 @@ public:
 	inline bool					usesIndices						(void) const								{ return m_indexType != VK_INDEX_TYPE_NONE_KHR; }
 	inline VkGeometryFlagsKHR	getGeometryFlags				(void) const								{ return m_geometryFlags; }
 	inline void					setGeometryFlags				(const VkGeometryFlagsKHR geometryFlags)	{ m_geometryFlags = geometryFlags; }
+	inline VkAccelerationStructureTrianglesOpacityMicromapEXT&	getOpacityMicromap(void)					{ return m_opacityGeometryMicromap; }
+	inline bool					getHasOpacityMicromap			(void) const								{ return m_hasOpacityMicromap; }
+	inline void					setOpacityMicromap				(const VkAccelerationStructureTrianglesOpacityMicromapEXT* opacityGeometryMicromap) { m_hasOpacityMicromap = true; m_opacityGeometryMicromap = *opacityGeometryMicromap; }
 	virtual deUint32			getVertexCount					(void) const								= 0;
 	virtual const deUint8*		getVertexPointer				(void) const								= 0;
 	virtual VkDeviceSize		getVertexStride					(void) const								= 0;
@@ -120,6 +115,8 @@ private:
 	VkFormat					m_vertexFormat;
 	VkIndexType					m_indexType;
 	VkGeometryFlagsKHR			m_geometryFlags;
+	bool						m_hasOpacityMicromap;
+	VkAccelerationStructureTrianglesOpacityMicromapEXT	m_opacityGeometryMicromap;
 };
 
 template <typename T>
@@ -576,11 +573,14 @@ public:
 	virtual void										addGeometry								(de::SharedPtr<RaytracedGeometryBase>&			raytracedGeometry);
 	virtual void										addGeometry								(const std::vector<tcu::Vec3>&					geometryData,
 																								 const bool										triangles,
-																								 const VkGeometryFlagsKHR						geometryFlags			= 0u );
+																								 const VkGeometryFlagsKHR						geometryFlags			= 0u,
+																								 const VkAccelerationStructureTrianglesOpacityMicromapEXT *opacityGeometryMicromap = DE_NULL );
 
 	virtual void										setBuildType							(const VkAccelerationStructureBuildTypeKHR		buildType) = DE_NULL;
+	virtual VkAccelerationStructureBuildTypeKHR			getBuildType							() const = 0;
 	virtual void										setCreateFlags							(const VkAccelerationStructureCreateFlagsKHR	createFlags) = DE_NULL;
 	virtual void										setCreateGeneric						(bool											createGeneric) = 0;
+	virtual void										setCreationBufferUnbounded				(bool											creationBufferUnbounded) = 0;
 	virtual void										setBuildFlags							(const VkBuildAccelerationStructureFlagsKHR		buildFlags) = DE_NULL;
 	virtual void										setBuildWithoutGeometries				(bool											buildWithoutGeometries) = 0;
 	virtual void										setBuildWithoutPrimitives				(bool											buildWithoutPrimitives) = 0;
@@ -591,14 +591,18 @@ public:
 																								 const VkDeviceSize								indirectBufferOffset,
 																								 const deUint32									indirectBufferStride) = DE_NULL;
 	virtual VkBuildAccelerationStructureFlagsKHR		getBuildFlags							() const = DE_NULL;
-	VkDeviceSize										getStructureSize						() const;
+	VkAccelerationStructureBuildSizesInfoKHR			getStructureBuildSizes					() const;
 
 	// methods specific for each acceleration structure
 	virtual void										create									(const DeviceInterface&							vk,
 																								 const VkDevice									device,
 																								 Allocator&										allocator,
 																								 VkDeviceSize									structureSize,
-																								 VkDeviceAddress								deviceAddress			= 0u) = DE_NULL;
+																								 VkDeviceAddress								deviceAddress			= 0u,
+																								 const void*									pNext					= DE_NULL,
+																								 const MemoryRequirement&						addMemoryRequirement	= MemoryRequirement::Any,
+																								 const VkBuffer									creationBuffer			= VK_NULL_HANDLE,
+																								 const VkDeviceSize								creationBufferSize		= 0u) = DE_NULL;
 	virtual void										build									(const DeviceInterface&							vk,
 																								 const VkDevice									device,
 																								 const VkCommandBuffer							cmdBuffer) = DE_NULL;
@@ -662,37 +666,60 @@ public:
 	BottomLevelAccelerationStructurePool();
 	virtual ~BottomLevelAccelerationStructurePool();
 
-	BlasPtr	at					(deUint32 index) const	{ return m_structs[index]; }
-	BlasPtr	operator[]			(deUint32 index) const	{ return m_structs[index]; }
-	auto	structures			() const -> const std::vector<BlasPtr>& { return m_structs; }
-	size_t	structCount			() const { return m_structs.size(); }
+	BlasPtr		at					(deUint32 index) const	{ return m_structs[index]; }
+	BlasPtr		operator[]			(deUint32 index) const	{ return m_structs[index]; }
+	auto		structures			() const -> const std::vector<BlasPtr>& { return m_structs; }
+	deUint32	structCount			() const { return static_cast<deUint32>(m_structs.size()); }
 
-	size_t	batchStructCount	() const {return m_batchStructCount; }
-	void	batchStructCount	(const	size_t& value);
+	// defines how many structures will be packet in single buffer
+	deUint32	batchStructCount	() const {return m_batchStructCount; }
+	void		batchStructCount	(const	deUint32& value);
 
-	size_t	batchGeomCount		() const {return m_batchGeomCount; }
-	void	batchGeomCount		(const	size_t& value) { m_batchGeomCount = value; }
+	// defines how many geometries (vertices and/or indices) will be packet in single buffer
+	deUint32	batchGeomCount		() const {return m_batchGeomCount; }
+	void		batchGeomCount		(const	deUint32& value) { m_batchGeomCount = value; }
 
-	BlasPtr	add					(VkDeviceSize			structureSize = 0,
-								 VkDeviceAddress		deviceAddress = 0);
+	bool		tryCachedMemory		() const { return m_tryCachedMemory; }
+	void		tryCachedMemory		(const bool	cachedMemory) { m_tryCachedMemory = cachedMemory; }
+
+	BlasPtr		add					(VkDeviceSize			structureSize = 0,
+									 VkDeviceAddress		deviceAddress = 0);
 	/**
 	 * @brief Creates previously added bottoms at a time.
 	 * @note  All geometries must be known before call this method.
 	 */
-	void	batchCreate			(const DeviceInterface& vk,
-								 const VkDevice			device,
-								 Allocator&				allocator);
-	void	batchBuild			(const DeviceInterface& vk,
-								 const VkDevice			device,
-								 VkCommandBuffer		cmdBuffer);
-	size_t	getAllocationCount	() const;
-
+	void		batchCreate			(const DeviceInterface&		vkd,
+									 const VkDevice				device,
+									 Allocator&					allocator);
+	void		batchCreateAdjust	(const DeviceInterface&		vkd,
+									 const VkDevice				device,
+									 Allocator&					allocator,
+									 const VkDeviceSize			maxBufferSize);
+	void		batchBuild			(const DeviceInterface&		vk,
+									 const VkDevice				device,
+									 VkCommandBuffer			cmdBuffer);
+	void		batchBuild			(const DeviceInterface&		vk,
+									 const VkDevice				device,
+									 VkCommandPool				cmdPool,
+									 VkQueue					queue);
+	size_t		getAllocationCount	() const;
+	size_t		getAllocationCount	(const DeviceInterface&		vk,
+									 const VkDevice				device,
+									 const VkDeviceSize			maxBufferSize) const;
+	auto		getAllocationSizes	(const DeviceInterface&		vk,	// (strBuff, scratchBuff, vertBuff, indexBuff)
+									 const VkDevice				device) const -> tcu::Vector<VkDeviceSize, 4>;
 protected:
-	size_t					m_batchStructCount; // default is 4
-	size_t					m_batchGeomCount; // default is 0, if zero then batchStructCount is used
+	deUint32				m_batchStructCount; // default is 4
+	deUint32				m_batchGeomCount; // default is 0, if zero then batchStructCount is used
 	std::vector<BlasInfo>	m_infos;
 	std::vector<BlasPtr>	m_structs;
 	bool					m_createOnce;
+	bool					m_tryCachedMemory;
+	VkDeviceSize			m_structsBuffSize;
+	VkDeviceSize			m_updatesScratchSize;
+	VkDeviceSize			m_buildsScratchSize;
+	VkDeviceSize			m_verticesSize;
+	VkDeviceSize			m_indicesSize;
 
 protected:
 	struct Impl;
@@ -719,6 +746,16 @@ struct InstanceData
 class TopLevelAccelerationStructure
 {
 public:
+	struct CreationSizes
+	{
+		VkDeviceSize	structure;
+		VkDeviceSize	updateScratch;
+		VkDeviceSize	buildScratch;
+		VkDeviceSize	instancePointers;
+		VkDeviceSize	instancesBuffer;
+		VkDeviceSize	sum () const;
+	};
+
 	static deUint32													getRequiredAllocationCount			(void);
 
 																	TopLevelAccelerationStructure		();
@@ -736,6 +773,7 @@ public:
 	virtual void													setBuildType						(const VkAccelerationStructureBuildTypeKHR			buildType) = DE_NULL;
 	virtual void													setCreateFlags						(const VkAccelerationStructureCreateFlagsKHR		createFlags) = DE_NULL;
 	virtual void													setCreateGeneric					(bool												createGeneric) = 0;
+	virtual void													setCreationBufferUnbounded			(bool												creationBufferUnbounded) = 0;
 	virtual void													setBuildFlags						(const VkBuildAccelerationStructureFlagsKHR			buildFlags) = DE_NULL;
 	virtual void													setBuildWithoutPrimitives			(bool												buildWithoutPrimitives) = 0;
 	virtual void													setInactiveInstances				(bool												inactiveInstances) = 0;
@@ -746,18 +784,28 @@ public:
 																										 const VkDeviceSize									indirectBufferOffset,
 																										 const deUint32										indirectBufferStride) = DE_NULL;
 	virtual void													setUsePPGeometries					(const bool											usePPGeometries) = 0;
+	virtual void													setTryCachedMemory					(const bool											tryCachedMemory) = 0;
 	virtual VkBuildAccelerationStructureFlagsKHR					getBuildFlags						() const = DE_NULL;
-	VkDeviceSize													getStructureSize					() const;
+	VkAccelerationStructureBuildSizesInfoKHR						getStructureBuildSizes				() const;
 
 	// methods specific for each acceleration structure
+	virtual void													getCreationSizes					(const DeviceInterface&						vk,
+																										 const VkDevice								device,
+																										 const VkDeviceSize							structureSize,
+																										 CreationSizes&								sizes) = 0;
 	virtual void													create								(const DeviceInterface&						vk,
 																										 const VkDevice								device,
 																										 Allocator&									allocator,
 																										 VkDeviceSize								structureSize			= 0u,
-																										 VkDeviceAddress							deviceAddress			= 0u ) = DE_NULL;
+																										 VkDeviceAddress							deviceAddress			= 0u,
+																										 const void*								pNext					= DE_NULL,
+																										 const MemoryRequirement&					addMemoryRequirement	= MemoryRequirement::Any,
+																										 const VkBuffer								creationBuffer			= VK_NULL_HANDLE,
+																										 const VkDeviceSize							creationBufferSize		= 0u) = DE_NULL;
 	virtual void													build								(const DeviceInterface&						vk,
 																										 const VkDevice								device,
-																										 const VkCommandBuffer						cmdBuffer) = DE_NULL;
+																										 const VkCommandBuffer						cmdBuffer,
+																										 TopLevelAccelerationStructure*				srcAccelerationStructure = DE_NULL) = DE_NULL;
 	virtual void													copyFrom							(const DeviceInterface&						vk,
 																										 const VkDevice								device,
 																										 const VkCommandBuffer						cmdBuffer,
@@ -841,6 +889,14 @@ bool queryAccelerationStructureSize (const DeviceInterface&							vk,
 class RayTracingPipeline
 {
 public:
+	class CompileRequiredError : public std::runtime_error
+	{
+	public:
+		CompileRequiredError (const std::string& error)
+			: std::runtime_error(error)
+			{}
+	};
+
 																RayTracingPipeline			();
 																~RayTracingPipeline			();
 
@@ -857,19 +913,40 @@ public:
 																							 const VkPipelineShaderStageCreateFlags					pipelineShaderStageCreateFlags = static_cast<VkPipelineShaderStageCreateFlags>(0),
 																							 const void*											pipelineShaderStageCreateInfopNext = nullptr);
 	void														addShader					(VkShaderStageFlagBits									shaderStage,
-																							 VkShaderModule									        shaderModule,
+																							 VkShaderModule											shaderModule,
 																							 deUint32												group,
 																							 const VkSpecializationInfo*							specializationInfo = nullptr,
 																							 const VkPipelineShaderStageCreateFlags					pipelineShaderStageCreateFlags = static_cast<VkPipelineShaderStageCreateFlags>(0),
 																							 const void*											pipelineShaderStageCreateInfopNext = nullptr);
+	void														setGroupCaptureReplayHandle	(uint32_t												group,
+																							 const void*pShaderGroupCaptureReplayHandle);
 	void														addLibrary					(de::SharedPtr<de::MovePtr<RayTracingPipeline>>			pipelineLibrary);
+	uint32_t													getShaderGroupCount			(void); // This pipeline only.
+	uint32_t													getFullShaderGroupCount		(void); // This pipeline and its included pipeline libraries, recursively.
 	Move<VkPipeline>											createPipeline				(const DeviceInterface&									vk,
 																							 const VkDevice											device,
 																							 const VkPipelineLayout									pipelineLayout,
 																							 const std::vector<de::SharedPtr<Move<VkPipeline>>>&	pipelineLibraries			= std::vector<de::SharedPtr<Move<VkPipeline>>>());
+	Move<VkPipeline>											createPipeline				(const DeviceInterface&									vk,
+																							 const VkDevice											device,
+																							 const VkPipelineLayout									pipelineLayout,
+																							 const std::vector<VkPipeline>&							pipelineLibraries,
+																							 const VkPipelineCache									pipelineCache);
 	std::vector<de::SharedPtr<Move<VkPipeline>>>				createPipelineWithLibraries	(const DeviceInterface&									vk,
 																							 const VkDevice											device,
 																							 const VkPipelineLayout									pipelineLayout);
+	std::vector<uint8_t>										getShaderGroupHandles		(const DeviceInterface&									vk,
+																							 const VkDevice											device,
+																							 const VkPipeline										pipeline,
+																							 const deUint32											shaderGroupHandleSize,
+																							 const deUint32											firstGroup,
+																							 const deUint32											groupCount) const;
+	std::vector<uint8_t>										getShaderGroupReplayHandles	(const DeviceInterface&									vk,
+																							 const VkDevice											device,
+																							 const VkPipeline										pipeline,
+																							 const deUint32											shaderGroupHandleReplaySize,
+																							 const deUint32											firstGroup,
+																							 const deUint32											groupCount) const;
 	de::MovePtr<BufferWithMemory>								createShaderBindingTable	(const DeviceInterface&									vk,
 																							 const VkDevice											device,
 																							 const VkPipeline										pipeline,
@@ -884,7 +961,22 @@ public:
 																							 const VkDeviceAddress&									opaqueCaptureAddress		= 0u,
 																							 const deUint32											shaderBindingTableOffset	= 0u,
 																							 const deUint32											shaderRecordSize			= 0u,
-																							 const void**											shaderGroupDataPtrPerGroup	= nullptr);
+																							 const void**											shaderGroupDataPtrPerGroup	= nullptr,
+																							 const bool												autoAlignRecords			= true);
+	de::MovePtr<BufferWithMemory>								createShaderBindingTable	(const DeviceInterface&									vk,
+																							 const VkDevice											device,
+																							 Allocator&												allocator,
+																							 const deUint32											shaderGroupHandleSize,
+																							 const deUint32											shaderGroupBaseAlignment,
+																							 const std::vector<uint8_t>&							shaderHandles,
+																							 const VkBufferCreateFlags								additionalBufferCreateFlags	= VkBufferCreateFlags(0u),
+																							 const VkBufferUsageFlags								additionalBufferUsageFlags	= VkBufferUsageFlags(0u),
+																							 const MemoryRequirement&								additionalMemoryRequirement	= MemoryRequirement::Any,
+																							 const VkDeviceAddress									opaqueCaptureAddress		= 0u,
+																							 const deUint32											shaderBindingTableOffset	= 0u,
+																							 const deUint32											shaderRecordSize			= 0u,
+																							 const void**											shaderGroupDataPtrPerGroup	= nullptr,
+																							 const bool												autoAlignRecords			= true);
 	void														setCreateFlags				(const VkPipelineCreateFlags&							pipelineCreateFlags);
 	void														setMaxRecursionDepth		(const deUint32&										maxRecursionDepth);
 	void														setMaxPayloadSize			(const deUint32&										maxPayloadSize);
@@ -895,10 +987,11 @@ public:
 
 
 protected:
-	Move<VkPipeline>											createPipelineKHR			(const DeviceInterface&									vk,
-																							 const VkDevice											device,
-																							 const VkPipelineLayout									pipelineLayout,
-																							 const std::vector<de::SharedPtr<Move<VkPipeline>>>&	pipelineLibraries);
+	Move<VkPipeline>											createPipelineKHR			(const DeviceInterface&			vk,
+																							 const VkDevice					device,
+																							 const VkPipelineLayout			pipelineLayout,
+																							 const std::vector<VkPipeline>&	pipelineLibraries,
+																							 const VkPipelineCache			pipelineCache = DE_NULL);
 
 	std::vector<de::SharedPtr<Move<VkShaderModule> > >			m_shadersModules;
 	std::vector<de::SharedPtr<de::MovePtr<RayTracingPipeline>>>	m_pipelineLibraries;
@@ -923,16 +1016,19 @@ public:
 																				 const VkPhysicalDevice		physicalDevice) { DE_UNREF(vki); DE_UNREF(physicalDevice); }
 	virtual							~RayTracingProperties						() {}
 
-	virtual deUint32				getShaderGroupHandleSize					(void)	= DE_NULL;
-	virtual deUint32				getMaxRecursionDepth						(void)	= DE_NULL;
-	virtual deUint32				getMaxShaderGroupStride						(void)	= DE_NULL;
-	virtual deUint32				getShaderGroupBaseAlignment					(void)	= DE_NULL;
-	virtual deUint64				getMaxGeometryCount							(void)	= DE_NULL;
-	virtual deUint64				getMaxInstanceCount							(void)	= DE_NULL;
-	virtual deUint64				getMaxPrimitiveCount						(void)	= DE_NULL;
-	virtual deUint32				getMaxDescriptorSetAccelerationStructures	(void)	= DE_NULL;
-	virtual deUint32				getMaxRayDispatchInvocationCount			(void)	= DE_NULL;
-	virtual deUint32				getMaxRayHitAttributeSize					(void)	= DE_NULL;
+	virtual uint32_t				getShaderGroupHandleSize					(void)	= 0;
+	virtual uint32_t				getShaderGroupHandleAlignment				(void)	= 0;
+	virtual uint32_t				getShaderGroupHandleCaptureReplaySize		(void)	= 0;
+	virtual uint32_t				getMaxRecursionDepth						(void)	= 0;
+	virtual uint32_t				getMaxShaderGroupStride						(void)	= 0;
+	virtual uint32_t				getShaderGroupBaseAlignment					(void)	= 0;
+	virtual uint64_t				getMaxGeometryCount							(void)	= 0;
+	virtual uint64_t				getMaxInstanceCount							(void)	= 0;
+	virtual uint64_t				getMaxPrimitiveCount						(void)	= 0;
+	virtual uint32_t				getMaxDescriptorSetAccelerationStructures	(void)	= 0;
+	virtual uint32_t				getMaxRayDispatchInvocationCount			(void)	= 0;
+	virtual uint32_t				getMaxRayHitAttributeSize					(void)	= 0;
+	virtual uint32_t				getMaxMemoryAllocationCount					(void)	= 0;
 };
 
 de::MovePtr<RayTracingProperties> makeRayTracingProperties (const InstanceInterface&	vki,
@@ -955,6 +1051,83 @@ void cmdTraceRaysIndirect	(const DeviceInterface&					vk,
 							 const VkStridedDeviceAddressRegionKHR*	hitShaderBindingTableRegion,
 							 const VkStridedDeviceAddressRegionKHR*	callableShaderBindingTableRegion,
 							 VkDeviceAddress						indirectDeviceAddress);
+
+void cmdTraceRaysIndirect2	(const DeviceInterface&					vk,
+							 VkCommandBuffer						commandBuffer,
+							 VkDeviceAddress						indirectDeviceAddress);
+
+
+static inline VkDeviceOrHostAddressConstKHR makeDeviceOrHostAddressConstKHR(const void* hostAddress)
+{
+	// VS2015: Cannot create as a const due to cannot assign hostAddress due to it is a second field. Only assigning of first field supported.
+	VkDeviceOrHostAddressConstKHR result;
+
+	deMemset(&result, 0, sizeof(result));
+
+	result.hostAddress = hostAddress;
+
+	return result;
+}
+
+static inline VkDeviceOrHostAddressKHR makeDeviceOrHostAddressKHR(void* hostAddress)
+{
+	// VS2015: Cannot create as a const due to cannot assign hostAddress due to it is a second field. Only assigning of first field supported.
+	VkDeviceOrHostAddressKHR result;
+
+	deMemset(&result, 0, sizeof(result));
+
+	result.hostAddress = hostAddress;
+
+	return result;
+}
+
+static inline VkDeviceOrHostAddressConstKHR makeDeviceOrHostAddressConstKHR(const DeviceInterface& vk,
+	const VkDevice			device,
+	VkBuffer					buffer,
+	VkDeviceSize				offset)
+{
+	// VS2015: Cannot create as a const due to cannot assign hostAddress due to it is a second field. Only assigning of first field supported.
+	VkDeviceOrHostAddressConstKHR result;
+
+	deMemset(&result, 0, sizeof(result));
+
+	VkBufferDeviceAddressInfo bufferDeviceAddressInfo =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR,	// VkStructureType	 sType;
+		DE_NULL,											// const void*		 pNext;
+		buffer,												// VkBuffer			buffer
+	};
+	result.deviceAddress = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo) + offset;
+
+	return result;
+}
+
+static inline VkDeviceOrHostAddressKHR makeDeviceOrHostAddressKHR(const DeviceInterface& vk,
+	const VkDevice			device,
+	VkBuffer					buffer,
+	VkDeviceSize				offset)
+{
+	// VS2015: Cannot create as a const due to cannot assign hostAddress due to it is a second field. Only assigning of first field supported.
+	VkDeviceOrHostAddressKHR result;
+
+	deMemset(&result, 0, sizeof(result));
+
+	VkBufferDeviceAddressInfo bufferDeviceAddressInfo =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR,	// VkStructureType	 sType;
+		DE_NULL,											// const void*		 pNext;
+		buffer,												// VkBuffer			buffer
+	};
+	result.deviceAddress = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo) + offset;
+
+	return result;
+}
+
+#else
+
+deUint32 rayTracingDefineAnything();
+
+#endif // CTS_USES_VULKANSC
 
 } // vk
 

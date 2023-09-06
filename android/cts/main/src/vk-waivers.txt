@@ -57,7 +57,7 @@ dEQP-VK.glsl.texture_gather.basic.cube.depth32f.base_level.sparse_level_2
 # is incorrectly disabled when the viewport minDepth is equal to maxDepth.
 #
 dEQP-VK.draw.renderpass.inverted_depth_ranges.nodepthclamp_deltazero
-dEQP-VK.draw.dynamic_rendering.inverted_depth_ranges.nodepthclamp_deltazero
+dEQP-VK.draw.dynamic_rendering.*.inverted_depth_ranges.nodepthclamp_deltazero
 
 
 #
@@ -76,36 +76,36 @@ dEQP-VK.memory_model.*core11*.device.*
 #
 # IMG Rogue SNORM Waiver.
 #
-dEQP-VK.pipeline.sampler.exact_sampling.b8g8r8_snorm.solid_color.normalized_coords.centered
-dEQP-VK.pipeline.sampler.exact_sampling.b8g8r8_snorm.solid_color.normalized_coords.edge_left
-dEQP-VK.pipeline.sampler.exact_sampling.b8g8r8_snorm.solid_color.normalized_coords.edge_right
-dEQP-VK.pipeline.sampler.exact_sampling.b8g8r8_snorm.solid_color.unnormalized_coords.centered
-dEQP-VK.pipeline.sampler.exact_sampling.b8g8r8_snorm.solid_color.unnormalized_coords.edge_left
-dEQP-VK.pipeline.sampler.exact_sampling.b8g8r8_snorm.solid_color.unnormalized_coords.edge_right
-dEQP-VK.pipeline.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.normalized_coords.centered
-dEQP-VK.pipeline.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.normalized_coords.edge_left
-dEQP-VK.pipeline.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.normalized_coords.edge_right
-dEQP-VK.pipeline.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.unnormalized_coords.centered
-dEQP-VK.pipeline.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.unnormalized_coords.edge_left
-dEQP-VK.pipeline.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.unnormalized_coords.edge_right
-dEQP-VK.pipeline.sampler.exact_sampling.r8_snorm.solid_color.normalized_coords.centered
-dEQP-VK.pipeline.sampler.exact_sampling.r8_snorm.solid_color.normalized_coords.edge_left
-dEQP-VK.pipeline.sampler.exact_sampling.r8_snorm.solid_color.normalized_coords.edge_right
-dEQP-VK.pipeline.sampler.exact_sampling.r8_snorm.solid_color.unnormalized_coords.centered
-dEQP-VK.pipeline.sampler.exact_sampling.r8_snorm.solid_color.unnormalized_coords.edge_left
-dEQP-VK.pipeline.sampler.exact_sampling.r8_snorm.solid_color.unnormalized_coords.edge_right
-dEQP-VK.pipeline.sampler.exact_sampling.r8g8_snorm.solid_color.normalized_coords.centered
-dEQP-VK.pipeline.sampler.exact_sampling.r8g8_snorm.solid_color.normalized_coords.edge_left
-dEQP-VK.pipeline.sampler.exact_sampling.r8g8_snorm.solid_color.normalized_coords.edge_right
-dEQP-VK.pipeline.sampler.exact_sampling.r8g8_snorm.solid_color.unnormalized_coords.centered
-dEQP-VK.pipeline.sampler.exact_sampling.r8g8_snorm.solid_color.unnormalized_coords.edge_left
-dEQP-VK.pipeline.sampler.exact_sampling.r8g8_snorm.solid_color.unnormalized_coords.edge_right
-dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.normalized_coords.centered
-dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.normalized_coords.edge_left
-dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.normalized_coords.edge_right
-dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.unnormalized_coords.centered
-dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.unnormalized_coords.edge_left
-dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.unnormalized_coords.edge_right
+dEQP-VK.pipeline.*.sampler.exact_sampling.b8g8r8_snorm.solid_color.normalized_coords.centered
+dEQP-VK.pipeline.*.sampler.exact_sampling.b8g8r8_snorm.solid_color.normalized_coords.edge_left
+dEQP-VK.pipeline.*.sampler.exact_sampling.b8g8r8_snorm.solid_color.normalized_coords.edge_right
+dEQP-VK.pipeline.*.sampler.exact_sampling.b8g8r8_snorm.solid_color.unnormalized_coords.centered
+dEQP-VK.pipeline.*.sampler.exact_sampling.b8g8r8_snorm.solid_color.unnormalized_coords.edge_left
+dEQP-VK.pipeline.*.sampler.exact_sampling.b8g8r8_snorm.solid_color.unnormalized_coords.edge_right
+dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.normalized_coords.centered
+dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.normalized_coords.edge_left
+dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.normalized_coords.edge_right
+dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.unnormalized_coords.centered
+dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.unnormalized_coords.edge_left
+dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.unnormalized_coords.edge_right
+dEQP-VK.pipeline.*.sampler.exact_sampling.r8_snorm.solid_color.normalized_coords.centered
+dEQP-VK.pipeline.*.sampler.exact_sampling.r8_snorm.solid_color.normalized_coords.edge_left
+dEQP-VK.pipeline.*.sampler.exact_sampling.r8_snorm.solid_color.normalized_coords.edge_right
+dEQP-VK.pipeline.*.sampler.exact_sampling.r8_snorm.solid_color.unnormalized_coords.centered
+dEQP-VK.pipeline.*.sampler.exact_sampling.r8_snorm.solid_color.unnormalized_coords.edge_left
+dEQP-VK.pipeline.*.sampler.exact_sampling.r8_snorm.solid_color.unnormalized_coords.edge_right
+dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8_snorm.solid_color.normalized_coords.centered
+dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8_snorm.solid_color.normalized_coords.edge_left
+dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8_snorm.solid_color.normalized_coords.edge_right
+dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8_snorm.solid_color.unnormalized_coords.centered
+dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8_snorm.solid_color.unnormalized_coords.edge_left
+dEQP-VK.pipeline.*.sampler.exact_sampling.r8g8_snorm.solid_color.unnormalized_coords.edge_right
+dEQP-VK.pipeline.*.sampler.exact_sampling.r16_snorm.solid_color.normalized_coords.centered
+dEQP-VK.pipeline.*.sampler.exact_sampling.r16_snorm.solid_color.normalized_coords.edge_left
+dEQP-VK.pipeline.*.sampler.exact_sampling.r16_snorm.solid_color.normalized_coords.edge_right
+dEQP-VK.pipeline.*.sampler.exact_sampling.r16_snorm.solid_color.unnormalized_coords.centered
+dEQP-VK.pipeline.*.sampler.exact_sampling.r16_snorm.solid_color.unnormalized_coords.edge_left
+dEQP-VK.pipeline.*.sampler.exact_sampling.r16_snorm.solid_color.unnormalized_coords.edge_right
 
 #
 # VK-GL-CTS CL: 7061

@@ -57,40 +57,42 @@ enum class TestShape
 class MultisampleRenderAreaTestInstance : public TestInstance
 {
 public:
-					MultisampleRenderAreaTestInstance	(Context&			context,
-														 const deUint32		sampleCount,
-														 const tcu::IVec2	framebufferSize,
-														 const TestShape	testShape,
-														 const VkFormat		colorFormat)
-														: TestInstance		(context)
-														, m_sampleCount		(sampleCount)
-														, m_framebufferSize	(framebufferSize)
-														, m_testShape(testShape)
-														, m_colorFormat		(colorFormat)
+					MultisampleRenderAreaTestInstance	(Context&							context,
+														 const PipelineConstructionType		pipelineConstructionType,
+														 const deUint32						sampleCount,
+														 const tcu::IVec2					framebufferSize,
+														 const TestShape					testShape,
+														 const VkFormat						colorFormat)
+														: TestInstance					(context)
+														, m_pipelineConstructionType	(pipelineConstructionType)
+														, m_sampleCount					(sampleCount)
+														, m_framebufferSize				(framebufferSize)
+														, m_testShape					(testShape)
+														, m_colorFormat					(colorFormat)
 														{}
 
 	tcu::TestStatus	iterate								(void);
 
 private:
-	VkImageCreateInfo	makeImageCreateInfo	(const tcu::IVec2& imageSize, const deUint32 sampleCount);
+	VkImageCreateInfo	makeImageCreateInfo		(const tcu::IVec2& imageSize, const deUint32 sampleCount);
 
-	Move<VkRenderPass>	makeRenderPass		(const DeviceInterface&	vk,
-											 const VkDevice			device,
-											 const VkFormat			colorFormat,
-											 const VkImageLayout	initialLayout);
+	Move<VkRenderPass>	makeRenderPass			(const DeviceInterface&		vk,
+												 const VkDevice				device,
+												 const VkFormat				colorFormat,
+												 const VkImageLayout		initialLayout);
 
-	Move<VkPipeline> makeGraphicsPipeline	(const DeviceInterface&	vk,
-											 const VkDevice			device,
-											 const VkPipelineLayout	pipelineLayout,
-											 const VkRenderPass		renderPass,
-											 const VkShaderModule	vertexModule,
-											 const VkShaderModule	fragmentModule,
-											 const tcu::IVec2&		framebufferSize);
+	void				preparePipelineWrapper	(GraphicsPipelineWrapper&	gpw,
+												 const VkPipelineLayout		pipelineLayout,
+												 const VkRenderPass			renderPass,
+												 const VkShaderModule		vertexModule,
+												 const VkShaderModule		fragmentModule,
+												 const tcu::IVec2&			framebufferSize);
 
-	const deUint32		m_sampleCount;
-	const tcu::IVec2	m_framebufferSize;
-	const TestShape		m_testShape;
-	const VkFormat		m_colorFormat;
+	const PipelineConstructionType		m_pipelineConstructionType;
+	const deUint32						m_sampleCount;
+	const tcu::IVec2					m_framebufferSize;
+	const TestShape						m_testShape;
+	const VkFormat						m_colorFormat;
 };
 
 VkImageCreateInfo MultisampleRenderAreaTestInstance::makeImageCreateInfo(const tcu::IVec2& imageSize, const deUint32 sampleCount)
@@ -195,19 +197,18 @@ Move<VkRenderPass> MultisampleRenderAreaTestInstance::makeRenderPass (const Devi
 	return createRenderPass(vk, device, &renderPassInfo);
 }
 
-Move<VkPipeline> MultisampleRenderAreaTestInstance::makeGraphicsPipeline (const DeviceInterface&	vk,
-																		  const VkDevice			device,
-																		  const VkPipelineLayout	pipelineLayout,
-																		  const VkRenderPass		renderPass,
-																		  const VkShaderModule		vertexModule,
-																		  const VkShaderModule		fragmentModule,
-																		  const tcu::IVec2&			framebufferSize)
+void MultisampleRenderAreaTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&	gpw,
+																const VkPipelineLayout		pipelineLayout,
+																const VkRenderPass			renderPass,
+																const VkShaderModule		vertexModule,
+																const VkShaderModule		fragmentModule,
+																const tcu::IVec2&			framebufferSize)
 {
-	const std::vector<VkViewport>			viewports					(1, makeViewport(framebufferSize));
-	const std::vector<VkRect2D>				scissors					(1, makeRect2D(framebufferSize));
-	VkSampleMask							sampleMask					= 0xffff;
+	const std::vector<VkViewport>	viewports		{ makeViewport(framebufferSize) };
+	const std::vector<VkRect2D>		scissors		{ makeRect2D(framebufferSize) };
+	VkSampleMask					sampleMask		= 0xffff;
 
-	const VkPipelineMultisampleStateCreateInfo	multisampleStateCreateInfo	=
+	const VkPipelineMultisampleStateCreateInfo	multisampleStateCreateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType							sType
 		DE_NULL,													// const void*								pNext
@@ -220,24 +221,25 @@ Move<VkPipeline> MultisampleRenderAreaTestInstance::makeGraphicsPipeline (const 
 		DE_FALSE,													// VkBool32									alphaToOneEnable
 	};
 
-	return vk::makeGraphicsPipeline(vk,										// const DeviceInterface&                        vk
-									device,									// const VkDevice                                device
-									pipelineLayout,							// const VkPipelineLayout                        pipelineLayout
-									vertexModule,							// const VkShaderModule                          vertexShaderModule
-									DE_NULL,								// const VkShaderModule                          tessellationControlModule
-									DE_NULL,								// const VkShaderModule                          tessellationEvalModule
-									DE_NULL,								// const VkShaderModule                          geometryShaderModule
-									fragmentModule,							// const VkShaderModule                          fragmentShaderModule
-									renderPass,								// const VkRenderPass                            renderPass
-									viewports,								// const std::vector<VkViewport>&                viewports
-									scissors,								// const std::vector<VkRect2D>&                  scissors
-									VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology                     topology
-									0u,										// const deUint32                                subpass
-									0u,										// const deUint32                                patchControlPoints
-									DE_NULL,								// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-									DE_NULL,								// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-									&multisampleStateCreateInfo,			// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-									DE_NULL);								// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+	gpw.setDefaultDepthStencilState()
+	   .setDefaultColorBlendState()
+	   .setDefaultRasterizationState()
+	   .setupVertexInputState()
+	   .setupPreRasterizationShaderState(viewports,
+			scissors,
+			pipelineLayout,
+			renderPass,
+			0u,
+			vertexModule)
+	   .setupFragmentShaderState(pipelineLayout,
+			renderPass,
+			0u,
+			fragmentModule,
+			DE_NULL,
+			&multisampleStateCreateInfo)
+	   .setupFragmentOutputState(renderPass, 0u, DE_NULL, &multisampleStateCreateInfo)
+	   .setMonolithicPipelineLayout(pipelineLayout)
+	   .buildPipeline();
 }
 
 tcu::TestStatus	MultisampleRenderAreaTestInstance::iterate (void)
@@ -272,7 +274,7 @@ tcu::TestStatus	MultisampleRenderAreaTestInstance::iterate (void)
 	const Unique<VkFramebuffer>		framebuffer				(makeFramebuffer(vk, device, *renderPassOne, numUsedAttachmentImages, attachmentImages, m_framebufferSize.x(), m_framebufferSize.y()));
 
 	const Unique<VkPipelineLayout>	pipelineLayout			(makePipelineLayout(vk, device, DE_NULL));
-	const Unique<VkPipeline>		pipeline				(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPassOne, *vertexModule, *fragmentModule, m_framebufferSize));
+	GraphicsPipelineWrapper			graphicsPipeline		{vk, device, m_pipelineConstructionType};
 
 	const Unique<VkCommandPool>		cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	commandBuffer			(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -282,6 +284,8 @@ tcu::TestStatus	MultisampleRenderAreaTestInstance::iterate (void)
 	const VkDeviceSize				vertexBufferSizeBytes	= 256;
 	const Unique<VkBuffer>			vertexBuffer			(makeBuffer(vk, device, vertexBufferSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
 	const UniquePtr<Allocation>		vertexBufferAlloc		(bindBuffer(vk, device, allocator, *vertexBuffer, MemoryRequirement::HostVisible));
+
+	preparePipelineWrapper(graphicsPipeline, *pipelineLayout, *renderPassOne, *vertexModule, *fragmentModule, m_framebufferSize);
 
 	{
 		tcu::Vec4* const pVertices = reinterpret_cast<tcu::Vec4*>(vertexBufferAlloc->getHostPtr());
@@ -355,7 +359,7 @@ tcu::TestStatus	MultisampleRenderAreaTestInstance::iterate (void)
 	// Draw shape when render area size is halved.
 	beginRenderPass(vk, *commandBuffer, *renderPassTwo, *framebuffer, testRenderArea, static_cast<deUint32>(clearValuesTestArea.size()), clearValuesTestArea.data());
 	vk.cmdBindVertexBuffers(*commandBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-	vk.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+	vk.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.getPipeline());
 	vk.cmdDraw(*commandBuffer, numVertices, 1u, 0u, 0u);
 	endRenderPass(vk, *commandBuffer);
 
@@ -417,17 +421,19 @@ tcu::TestStatus	MultisampleRenderAreaTestInstance::iterate (void)
 class MultisampleRenderAreaTest : public TestCase
 {
 public:
-						MultisampleRenderAreaTest	(tcu::TestContext&	testCtx,
-													 const std::string	name,
-													 const deUint32		sampleCount,
-													 const tcu::IVec2	framebufferSize,
-													 const TestShape	testShape,
-													 const VkFormat		colorFormat	= VK_FORMAT_R8G8B8A8_UNORM)
+						MultisampleRenderAreaTest	(tcu::TestContext&					testCtx,
+													 const std::string					name,
+													 const PipelineConstructionType		pipelineConstructionType,
+													 const deUint32						sampleCount,
+													 const tcu::IVec2					framebufferSize,
+													 const TestShape					testShape,
+													 const VkFormat						colorFormat	= VK_FORMAT_R8G8B8A8_UNORM)
 													: TestCase(testCtx,	name, "")
-													, m_sampleCount		(sampleCount)
-													, m_framebufferSize	(framebufferSize)
-													, m_testShape		(testShape)
-													, m_colorFormat		(colorFormat)
+													, m_pipelineConstructionType	(pipelineConstructionType)
+													, m_sampleCount					(sampleCount)
+													, m_framebufferSize				(framebufferSize)
+													, m_testShape					(testShape)
+													, m_colorFormat					(colorFormat)
 													{}
 
 	void				initPrograms				(SourceCollections&	programCollection) const;
@@ -435,10 +441,12 @@ public:
 	virtual void		checkSupport				(Context&			context) const;
 
 private:
-	const deUint32		m_sampleCount;
-	const tcu::IVec2	m_framebufferSize;
-	const TestShape		m_testShape;
-	const VkFormat		m_colorFormat;
+
+	const PipelineConstructionType	m_pipelineConstructionType;
+	const deUint32					m_sampleCount;
+	const tcu::IVec2				m_framebufferSize;
+	const TestShape					m_testShape;
+	const VkFormat					m_colorFormat;
 };
 
 void MultisampleRenderAreaTest::initPrograms(SourceCollections& programCollection) const
@@ -476,7 +484,7 @@ void MultisampleRenderAreaTest::initPrograms(SourceCollections& programCollectio
 
 TestInstance* MultisampleRenderAreaTest::createInstance(Context& context) const
 {
-	return new MultisampleRenderAreaTestInstance(context, m_sampleCount, m_framebufferSize, m_testShape, m_colorFormat);
+	return new MultisampleRenderAreaTestInstance(context, m_pipelineConstructionType, m_sampleCount, m_framebufferSize, m_testShape, m_colorFormat);
 }
 
 void MultisampleRenderAreaTest::checkSupport(Context& context) const
@@ -494,11 +502,13 @@ void MultisampleRenderAreaTest::checkSupport(Context& context) const
 
 	if ((formatProperties.sampleCounts & m_sampleCount) == 0)
 		TCU_THROW(NotSupportedError, "Format does not support this number of samples");
+
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createMultisampleResolveRenderpassRenderAreaTests(tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createMultisampleResolveRenderpassRenderAreaTests(tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroupResolve(new tcu::TestCaseGroup(testCtx, "resolve", "resolving multisample image tests"));
 
@@ -531,7 +541,7 @@ tcu::TestCaseGroup* createMultisampleResolveRenderpassRenderAreaTests(tcu::TestC
 	{
 		for (const auto& testCase : cases)
 		{
-			testGroupRenderArea->addChild(new MultisampleRenderAreaTest(testCtx, testShape.shapeName + "_" + testCase.caseName, testCase.sampleCount, tcu::IVec2(32, 32), testShape.testShape));
+			testGroupRenderArea->addChild(new MultisampleRenderAreaTest(testCtx, testShape.shapeName + "_" + testCase.caseName, pipelineConstructionType, testCase.sampleCount, tcu::IVec2(32, 32), testShape.testShape));
 		}
 	}
 

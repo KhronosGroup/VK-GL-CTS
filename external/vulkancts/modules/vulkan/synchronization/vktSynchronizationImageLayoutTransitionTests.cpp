@@ -287,7 +287,11 @@ tcu::TestStatus SynchronizationImageLayoutTransitionTestInstance::iterate (void)
 		targetSubresourceRange							// VkImageSubresourceRange     subresourceRange
 	);
 	VkDependencyInfoKHR							dependencyInfo			= makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+#ifndef CTS_USES_VULKANSC
 	vk.cmdPipelineBarrier2(cmdBuffer.get(), &dependencyInfo);
+#else
+	vk.cmdPipelineBarrier2KHR(cmdBuffer.get(), &dependencyInfo);
+#endif // CTS_USES_VULKANSC
 
 	beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), 0, DE_NULL);
 	vk.cmdDraw(*cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);

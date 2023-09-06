@@ -39,8 +39,8 @@ namespace nullws
 class VulkanLibrary : public vk::Library
 {
 public:
-	VulkanLibrary (void)
-		: m_library	("libvulkan.so.1")
+	VulkanLibrary (const char* libraryPath)
+		: m_library	(libraryPath != DE_NULL ? libraryPath : "libvulkan.so.1")
 		, m_driver	(m_library)
 	{
 	}
@@ -69,9 +69,9 @@ public:
 	virtual const eglu::Platform&	getEGLPlatform	()	const { return static_cast<const eglu::Platform&>(*this); }
   virtual const vk::Platform&   getVulkanPlatform() const { return static_cast<const vk::Platform&>(*this); }
 
-	vk::Library* createLibrary (void) const
+	vk::Library* createLibrary (const char* libraryPath) const
 	{
-		return new VulkanLibrary();
+		return new VulkanLibrary(libraryPath);
 	}
 };
 

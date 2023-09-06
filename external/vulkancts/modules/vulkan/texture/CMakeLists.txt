@@ -42,13 +42,10 @@ set(DEQP_VK_TEXTURE_SRCS
 	vktTextureTexelOffsetTests.hpp
 	)
 
-set(DEQP_VK_TEXTURE_LIBS
-	deqp-vk-shaderexecutor
-	tcutil
-	vkutil
-	)
-
 PCH(DEQP_VK_TEXTURE_SRCS ../pch.cpp)
 
 add_library(deqp-vk-texture STATIC ${DEQP_VK_TEXTURE_SRCS})
-target_link_libraries(deqp-vk-texture ${DEQP_VK_TEXTURE_LIBS})
+target_link_libraries(deqp-vk-texture deqp-vk-shaderexecutor tcutil vkutil)
+
+add_library(deqp-vksc-texture STATIC ${DEQP_VK_TEXTURE_SRCS})
+target_link_libraries(deqp-vksc-texture PUBLIC deqp-vksc-shaderexecutor deqp-vksc-util tcutil vkscutil)

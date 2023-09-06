@@ -1261,7 +1261,7 @@ tcu::TestNode::IterateResult InitialStateTest::iterate(void)
 
 		GLfloat fp;
 		gl.getTexLevelParameterfv(target, 0, GL_TEXTURE_STENCIL_SIZE, &fp);
-		if (deFloatCmpNE(fp, 0.0f))
+		if (fp != 0.0f)
 		{
 			m_testCtx.getLog() << tcu::TestLog::Message << "gl.getTexLevelParameterfv: Parameter is not 0"
 							   << tcu::TestLog::EndMessage;
@@ -1270,7 +1270,7 @@ tcu::TestNode::IterateResult InitialStateTest::iterate(void)
 
 		GLint ip;
 		gl.getTexLevelParameteriv(target, 0, GL_TEXTURE_STENCIL_SIZE, &ip);
-		if (deFloatCmpNE((float)ip, 0.0f))
+		if ((float)ip != 0.0f)
 		{
 			m_testCtx.getLog() << tcu::TestLog::Message << "gl.getTexLevelParameteriv: Parameter is not 0"
 							   << tcu::TestLog::EndMessage;

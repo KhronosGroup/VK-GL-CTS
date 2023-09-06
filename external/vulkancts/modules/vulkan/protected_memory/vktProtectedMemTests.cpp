@@ -91,7 +91,9 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 
 	{
 		de::MovePtr<tcu::TestCaseGroup> interactionTestGroup (new tcu::TestCaseGroup(testCtx, "interaction", "Various tests which interacts with other extensions"));
+#ifndef CTS_USES_VULKANSC
 		interactionTestGroup->addChild(createSwapchainTests(testCtx));
+#endif
 		interactionTestGroup->addChild(createYCbCrConversionTests(testCtx));
 		protectedTests->addChild(interactionTestGroup.release());
 	}

@@ -198,11 +198,12 @@ std::vector<Vertex4RGBA> createQuad(const float size, const tcu::Vec4 &color)
 
 class PushConstantGraphicsTestInstance : public vkt::TestInstance {
 public:
-												PushConstantGraphicsTestInstance	(Context&					context,
-																					 const deUint32				rangeCount,
-																					 const PushConstantData		pushConstantRange[MAX_RANGE_COUNT],
-																					 const deBool				multipleUpdate,
-																					 const IndexType			indexType);
+												PushConstantGraphicsTestInstance	(Context&							context,
+																					 const PipelineConstructionType		pipelineConstructionType,
+																					 const deUint32						rangeCount,
+																					 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
+																					 const deBool						multipleUpdate,
+																					 const IndexType					indexType);
 	virtual										~PushConstantGraphicsTestInstance	(void);
 	void										init								(void);
 	virtual tcu::TestStatus						iterate								(void);
@@ -217,6 +218,7 @@ public:
 	tcu::TestStatus								verifyImage							(void);
 
 protected:
+	const PipelineConstructionType					m_pipelineConstructionType;
 	std::vector<Vertex4RGBA>						m_vertices;
 	const deUint32									m_rangeCount;
 	PushConstantData								m_pushConstantRange[MAX_RANGE_COUNT];
@@ -252,8 +254,9 @@ private:
 	Move<VkDescriptorSetLayout>						m_descriptorSetLayout;
 	Move<VkDescriptorSet>							m_descriptorSet;
 
-	Move<VkPipelineLayout>							m_pipelineLayout;
-	Move<VkPipeline>								m_graphicsPipelines;
+	Move<VkPipelineLayout>							m_preRasterizationStatePipelineLayout;
+	Move<VkPipelineLayout>							m_fragmentStatePipelineLayout;
+	GraphicsPipelineWrapper							m_graphicsPipeline;
 
 	Move<VkCommandPool>								m_cmdPool;
 	Move<VkCommandBuffer>							m_cmdBuffer;
@@ -268,18 +271,21 @@ void PushConstantGraphicsTestInstance::createShaderModule (const DeviceInterface
 	*module = vk::createShaderModule(vk, device, programCollection.get(name), 0);
 }
 
-PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				context,
-																	const deUint32			rangeCount,
-																	const PushConstantData	pushConstantRange[MAX_RANGE_COUNT],
-																	deBool					multipleUpdate,
-																	IndexType				indexType)
-	: vkt::TestInstance	(context)
-	, m_rangeCount		(rangeCount)
-	, m_indexType		(indexType)
-	, m_renderSize		(32, 32)
-	, m_colorFormat		(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_multipleUpdate	(multipleUpdate)
-	, m_shaderFlags		(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&						context,
+																	const PipelineConstructionType	pipelineConstructionType,
+																	const deUint32					rangeCount,
+																	const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
+																	deBool							multipleUpdate,
+																	IndexType						indexType)
+	: vkt::TestInstance				(context)
+	, m_pipelineConstructionType	(pipelineConstructionType)
+	, m_rangeCount					(rangeCount)
+	, m_indexType					(indexType)
+	, m_renderSize					(32, 32)
+	, m_colorFormat					(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_multipleUpdate				(multipleUpdate)
+	, m_shaderFlags					(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+	, m_graphicsPipeline			(m_context.getDeviceInterface(), m_context.getDevice(), pipelineConstructionType)
 {
 	deMemcpy(m_pushConstantRange, pushConstantRange, sizeof(PushConstantData) * MAX_RANGE_COUNT);
 }
@@ -414,18 +420,26 @@ void PushConstantGraphicsTestInstance::init (void)
 			.update(vk, vkDevice);
 
 		// create pipeline layout
-		const VkPipelineLayoutCreateInfo	pipelineLayoutParams	=
+#ifndef CTS_USES_VULKANSC
+		VkPipelineLayoutCreateFlags	pipelineLayoutFlags = (m_pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) ? 0u : deUint32(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+#else
+		VkPipelineLayoutCreateFlags	pipelineLayoutFlags = 0u;
+#endif // CTS_USES_VULKANSC
+		VkPipelineLayoutCreateInfo	pipelineLayoutParams
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType				sType;
 			DE_NULL,										// const void*					pNext;
-			0u,												// VkPipelineLayoutCreateFlags	flags;
-			1u,												// deUint32						descriptorSetCount;
+			pipelineLayoutFlags,							// VkPipelineLayoutCreateFlags	flags;
+			1u,												// deUint32						setLayoutCount;
 			&(*m_descriptorSetLayout),						// const VkDescriptorSetLayout*	pSetLayouts;
 			(deUint32)pushConstantRanges.size(),			// deUint32						pushConstantRangeCount;
 			&pushConstantRanges.front()						// const VkPushConstantRange*	pPushConstantRanges;
 		};
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_preRasterizationStatePipelineLayout		= createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		pipelineLayoutParams.setLayoutCount			= 0u;
+		pipelineLayoutParams.pSetLayouts			= DE_NULL;
+		m_fragmentStatePipelineLayout				= createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
 	}
 
 	// Create shaders
@@ -496,7 +510,7 @@ void PushConstantGraphicsTestInstance::init (void)
 			}
 		};
 
-		const VkPipelineVertexInputStateCreateInfo		vertexInputStateParams				=
+		const VkPipelineVertexInputStateCreateInfo vertexInputStateParams
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType;
 			DE_NULL,													// const void*								pNext;
@@ -507,26 +521,31 @@ void PushConstantGraphicsTestInstance::init (void)
 			vertexInputAttributeDescriptions							// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 		};
 
-		const VkPrimitiveTopology						topology							= (m_shaderFlags & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		const VkPrimitiveTopology		topology	= (m_shaderFlags & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
-		const std::vector<VkViewport>					viewports							(1, makeViewport(m_renderSize));
-		const std::vector<VkRect2D>						scissors							(1, makeRect2D(m_renderSize));
+		const std::vector<VkViewport>	viewports	{ makeViewport(m_renderSize) };
+		const std::vector<VkRect2D>		scissors	{ makeRect2D(m_renderSize) };
 
-		m_graphicsPipelines = makeGraphicsPipeline(vk,															// const DeviceInterface&                        vk
-												   vkDevice,													// const VkDevice                                device
-												   *m_pipelineLayout,											// const VkPipelineLayout                        pipelineLayout
-												   *m_vertexShaderModule,										// const VkShaderModule                          vertexShaderModule
-												   useTessellation ? *m_tessControlShaderModule : DE_NULL,		// const VkShaderModule                          tessellationControlShaderModule
-												   useTessellation ? *m_tessEvaluationShaderModule : DE_NULL,	// const VkShaderModule                          tessellationEvalShaderModule
-												   useGeometry ? *m_geometryShaderModule : DE_NULL,				// const VkShaderModule                          geometryShaderModule
-												   *m_fragmentShaderModule,										// const VkShaderModule                          fragmentShaderModule
-												   *m_renderPass,												// const VkRenderPass                            renderPass
-												   viewports,													// const std::vector<VkViewport>&                viewports
-												   scissors,													// const std::vector<VkRect2D>&                  scissors
-												   topology,													// const VkPrimitiveTopology                     topology
-												   0u,															// const deUint32                                subpass
-												   3u,															// const deUint32                                patchControlPoints
-												   &vertexInputStateParams);									// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+		m_graphicsPipeline.setMonolithicPipelineLayout(*m_preRasterizationStatePipelineLayout)
+						  .setDefaultRasterizationState()
+						  .setDefaultDepthStencilState()
+						  .setDefaultMultisampleState()
+						  .setDefaultColorBlendState()
+						  .setDefaultTopology(topology)
+						  .setupVertexInputState(&vertexInputStateParams)
+						  .setupPreRasterizationShaderState(viewports,
+															scissors,
+															*m_preRasterizationStatePipelineLayout,
+															*m_renderPass,
+															0u,
+															*m_vertexShaderModule,
+															DE_NULL,
+															useTessellation ? *m_tessControlShaderModule : DE_NULL,
+															useTessellation ? *m_tessEvaluationShaderModule : DE_NULL,
+															useGeometry ? *m_geometryShaderModule : DE_NULL)
+						  .setupFragmentShaderState(*m_fragmentStatePipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule)
+						  .setupFragmentOutputState(*m_renderPass)
+						  .buildPipeline();
 	}
 
 	// Create vertex buffer
@@ -569,7 +588,7 @@ void PushConstantGraphicsTestInstance::init (void)
 		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
 
 		// Update push constant values
-		updatePushConstants(*m_cmdBuffer, *m_pipelineLayout);
+		updatePushConstants(*m_cmdBuffer, *m_preRasterizationStatePipelineLayout);
 
 		// draw quad
 		const VkDeviceSize				triangleOffset			= (m_vertices.size() / TRIANGLE_COUNT) * sizeof(Vertex4RGBA);
@@ -579,11 +598,11 @@ void PushConstantGraphicsTestInstance::init (void)
 			VkDeviceSize vertexBufferOffset = triangleOffset * triangleNdx;
 
 			if (m_multipleUpdate)
-				vk.cmdPushConstants(*m_cmdBuffer, *m_pipelineLayout, m_pushConstantRange[0].range.shaderStage, m_pushConstantRange[0].range.offset, m_pushConstantRange[0].range.size, &triangleNdx);
+				vk.cmdPushConstants(*m_cmdBuffer, *m_preRasterizationStatePipelineLayout, m_pushConstantRange[0].range.shaderStage, m_pushConstantRange[0].range.offset, m_pushConstantRange[0].range.size, &triangleNdx);
 
-			vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelines);
+			vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
 			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
-			vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0, 1, &(*m_descriptorSet), 0, DE_NULL);
+			vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_preRasterizationStatePipelineLayout, 0, 1, &(*m_descriptorSet), 0, DE_NULL);
 
 			vk.cmdDraw(*m_cmdBuffer, (deUint32)(m_vertices.size() / TRIANGLE_COUNT), 1, 0, 0);
 		}
@@ -681,24 +700,25 @@ tcu::TestStatus PushConstantGraphicsTestInstance::verifyImage (void)
 class PushConstantGraphicsDisjointInstance : public PushConstantGraphicsTestInstance
 {
 public:
-										PushConstantGraphicsDisjointInstance	(Context&					context,
-																				 const deUint32				rangeCount,
-																				 const PushConstantData		pushConstantRange[MAX_RANGE_COUNT],
-																				 const deBool				multipleUpdate,
-																				 const IndexType			indexType);
+										PushConstantGraphicsDisjointInstance	(Context&							context,
+																				 const PipelineConstructionType		pipelineConstructionType,
+																				 const deUint32						rangeCount,
+																				 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
+																				 const deBool						multipleUpdate,
+																				 const IndexType					indexType);
 	virtual								~PushConstantGraphicsDisjointInstance	(void);
 	std::vector<VkPushConstantRange>	getPushConstantRanges					(void);
 	void								updatePushConstants						(VkCommandBuffer cmdBuffer, VkPipelineLayout pipelineLayout);
 	void								setReferenceColor						(tcu::Vec4 initColor);
 };
 
-
-PushConstantGraphicsDisjointInstance::PushConstantGraphicsDisjointInstance (Context&					context,
-																			const deUint32				rangeCount,
-																			const PushConstantData		pushConstantRange[MAX_RANGE_COUNT],
-																			deBool						multipleUpdate,
-																			IndexType					indexType)
-	: PushConstantGraphicsTestInstance (context, rangeCount, pushConstantRange, multipleUpdate, indexType)
+PushConstantGraphicsDisjointInstance::PushConstantGraphicsDisjointInstance (Context&						context,
+																			const PipelineConstructionType	pipelineConstructionType,
+																			const deUint32					rangeCount,
+																			const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
+																			deBool							multipleUpdate,
+																			IndexType						indexType)
+	: PushConstantGraphicsTestInstance (context, pipelineConstructionType, rangeCount, pushConstantRange, multipleUpdate, indexType)
 {
 	deMemcpy(m_pushConstantRange, pushConstantRange, sizeof(PushConstantData) * MAX_RANGE_COUNT);
 }
@@ -804,11 +824,12 @@ void PushConstantGraphicsDisjointInstance::setReferenceColor (tcu::Vec4 initColo
 class PushConstantGraphicsOverlapTestInstance : public PushConstantGraphicsTestInstance
 {
 public:
-										PushConstantGraphicsOverlapTestInstance		(Context&					context,
-																				const deUint32				rangeCount,
-																				const PushConstantData		pushConstantRange[MAX_RANGE_COUNT],
-																				const deBool				multipleUpdate,
-																				const IndexType			indexType);
+										PushConstantGraphicsOverlapTestInstance		(Context&							context,
+																					 const PipelineConstructionType		pipelineConstructionType,
+																					 const deUint32						rangeCount,
+																					 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
+																					 const deBool						multipleUpdate,
+																					 const IndexType					indexType);
 	virtual								~PushConstantGraphicsOverlapTestInstance	(void);
 	std::vector<VkPushConstantRange>	getPushConstantRanges					(void);
 	std::vector<VkPushConstantRange>	getPushConstantUpdates					(void);
@@ -835,12 +856,13 @@ std::vector<float> generateColorData (deUint32 numBytes)
 	return colorData;
 }
 
-PushConstantGraphicsOverlapTestInstance::PushConstantGraphicsOverlapTestInstance (Context&					context,
-																				  const deUint32			rangeCount,
-																				  const PushConstantData	pushConstantRange[MAX_RANGE_COUNT],
-																				  deBool					multipleUpdate,
-																				  IndexType					indexType)
-	: PushConstantGraphicsTestInstance	(context, rangeCount, pushConstantRange, multipleUpdate, indexType)
+PushConstantGraphicsOverlapTestInstance::PushConstantGraphicsOverlapTestInstance (Context&							context,
+																				  const PipelineConstructionType	pipelineConstructionType,
+																				  const deUint32					rangeCount,
+																				  const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
+																				  deBool							multipleUpdate,
+																				  IndexType							indexType)
+	: PushConstantGraphicsTestInstance	(context, pipelineConstructionType, rangeCount, pushConstantRange, multipleUpdate, indexType)
 	, m_colorData						(generateColorData(256u))
 {
 	deMemcpy(m_pushConstantRange, pushConstantRange, sizeof(PushConstantData) * MAX_RANGE_COUNT);
@@ -1018,42 +1040,54 @@ void PushConstantGraphicsOverlapTestInstance::setReferenceColor (tcu::Vec4 initC
 class PushConstantGraphicsTest : public vkt::TestCase
 {
 public:
-							PushConstantGraphicsTest	(tcu::TestContext&			testContext,
-														 const std::string&			name,
-														 const std::string&			description,
-														 const deUint32				rangeCount,
-														 const PushConstantData		pushConstantRange[MAX_RANGE_COUNT],
-														 const deBool				multipleUpdate,
-														 const IndexType			indexType);
+							PushConstantGraphicsTest	(tcu::TestContext&					testContext,
+														 const std::string&					name,
+														 const std::string&					description,
+														 const PipelineConstructionType		pipelineConstructionType,
+														 const deUint32						rangeCount,
+														 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
+														 const deBool						multipleUpdate,
+														 const IndexType					indexType);
 	virtual					~PushConstantGraphicsTest	(void);
+
+
+	virtual void			checkSupport				(Context &context) const;
 	virtual void			initPrograms				(SourceCollections& sourceCollections) const = 0;
 	virtual TestInstance*	createInstance				(Context& context) const = 0;
 	RangeSizeCase			getRangeSizeCase			(deUint32 rangeSize) const;
 
 protected:
-	const deUint32			m_rangeCount;
-	PushConstantData		m_pushConstantRange[MAX_RANGE_COUNT];
-	const deBool			m_multipleUpdate;
-	const IndexType			m_indexType;
+	const PipelineConstructionType	m_pipelineConstructionType;
+	const deUint32					m_rangeCount;
+	PushConstantData				m_pushConstantRange[MAX_RANGE_COUNT];
+	const deBool					m_multipleUpdate;
+	const IndexType					m_indexType;
 };
 
-PushConstantGraphicsTest::PushConstantGraphicsTest (tcu::TestContext&			testContext,
-													const std::string&			name,
-													const std::string&			description,
-													const deUint32				rangeCount,
-													const PushConstantData		pushConstantRange[MAX_RANGE_COUNT],
-													const deBool				multipleUpdate,
-													const IndexType				indexType)
-	: vkt::TestCase		(testContext, name, description)
-	, m_rangeCount		(rangeCount)
-	, m_multipleUpdate	(multipleUpdate)
-	, m_indexType		(indexType)
+PushConstantGraphicsTest::PushConstantGraphicsTest (tcu::TestContext&					testContext,
+													const std::string&					name,
+													const std::string&					description,
+													const PipelineConstructionType		pipelineConstructionType,
+													const deUint32						rangeCount,
+													const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
+													const deBool						multipleUpdate,
+													const IndexType						indexType)
+	: vkt::TestCase					(testContext, name, description)
+	, m_pipelineConstructionType	(pipelineConstructionType)
+	, m_rangeCount					(rangeCount)
+	, m_multipleUpdate				(multipleUpdate)
+	, m_indexType					(indexType)
 {
 	deMemcpy(m_pushConstantRange, pushConstantRange, sizeof(PushConstantData) * MAX_RANGE_COUNT);
 }
 
 PushConstantGraphicsTest::~PushConstantGraphicsTest (void)
 {
+}
+
+void PushConstantGraphicsTest::checkSupport(Context &context) const
+{
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
 RangeSizeCase PushConstantGraphicsTest::getRangeSizeCase (deUint32 rangeSize) const
@@ -1085,26 +1119,29 @@ RangeSizeCase PushConstantGraphicsTest::getRangeSizeCase (deUint32 rangeSize) co
 class PushConstantGraphicsDisjointTest : public PushConstantGraphicsTest
 {
 public:
-							PushConstantGraphicsDisjointTest	(tcu::TestContext&			testContext,
-																 const std::string&			name,
-																 const std::string&			description,
-																 const deUint32				rangeCount,
-																 const PushConstantData		pushConstantRange[MAX_RANGE_COUNT],
-																 const deBool				multipleUpdate,
-																 const IndexType			indexType);
+							PushConstantGraphicsDisjointTest	(tcu::TestContext&					testContext,
+																 const std::string&					name,
+																 const std::string&					description,
+																 const PipelineConstructionType		pipelineConstructionType,
+																 const deUint32						rangeCount,
+																 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
+																 const deBool						multipleUpdate,
+																 const IndexType					indexType);
 	virtual					~PushConstantGraphicsDisjointTest	(void);
+
 	virtual void			initPrograms						(SourceCollections& sourceCollections) const;
 	virtual TestInstance*	createInstance						(Context& context) const;
 };
 
-PushConstantGraphicsDisjointTest::PushConstantGraphicsDisjointTest (tcu::TestContext&		testContext,
-																	const std::string&		name,
-																	const std::string&		description,
-																	const deUint32			rangeCount,
-																	const PushConstantData	pushConstantRange[MAX_RANGE_COUNT],
-																	const deBool			multipleUpdate,
-																	const IndexType			indexType)
-	: PushConstantGraphicsTest (testContext, name, description, rangeCount, pushConstantRange, multipleUpdate, indexType)
+PushConstantGraphicsDisjointTest::PushConstantGraphicsDisjointTest (tcu::TestContext&				testContext,
+																	const std::string&				name,
+																	const std::string&				description,
+																	const PipelineConstructionType	pipelineConstructionType,
+																	const deUint32					rangeCount,
+																	const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
+																	const deBool					multipleUpdate,
+																	const IndexType					indexType)
+	: PushConstantGraphicsTest (testContext, name, description, pipelineConstructionType, rangeCount, pushConstantRange, multipleUpdate, indexType)
 {
 }
 
@@ -1423,29 +1460,31 @@ void PushConstantGraphicsDisjointTest::initPrograms (SourceCollections& sourceCo
 
 TestInstance* PushConstantGraphicsDisjointTest::createInstance (Context& context) const
 {
-	return new PushConstantGraphicsDisjointInstance(context, m_rangeCount, m_pushConstantRange, m_multipleUpdate, m_indexType);
+	return new PushConstantGraphicsDisjointInstance(context, m_pipelineConstructionType, m_rangeCount, m_pushConstantRange, m_multipleUpdate, m_indexType);
 }
 
 class PushConstantGraphicsOverlapTest : public PushConstantGraphicsTest
 {
 public:
-							PushConstantGraphicsOverlapTest		(tcu::TestContext&			testContext,
-																 const std::string&			name,
-																 const std::string&			description,
-																 const deUint32				rangeCount,
-																 const PushConstantData		pushConstantRange[MAX_RANGE_COUNT]);
+							PushConstantGraphicsOverlapTest		(tcu::TestContext&					testContext,
+																 const std::string&					name,
+																 const std::string&					description,
+																 const PipelineConstructionType		pipelineConstructionType,
+																 const deUint32						rangeCount,
+																 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT]);
 	virtual					~PushConstantGraphicsOverlapTest	(void);
 	std::string				getPushConstantDeclarationStr		(VkShaderStageFlags shaderStage) const;
 	virtual void			initPrograms						(SourceCollections& sourceCollections) const;
 	virtual TestInstance*	createInstance						(Context& context) const;
 };
 
-PushConstantGraphicsOverlapTest::PushConstantGraphicsOverlapTest (tcu::TestContext&			testContext,
-																  const std::string&		name,
-																  const std::string&		description,
-																  const deUint32			rangeCount,
-																  const PushConstantData	pushConstantRange[MAX_RANGE_COUNT])
-	: PushConstantGraphicsTest (testContext, name, description, rangeCount, pushConstantRange, false, INDEX_TYPE_CONST_LITERAL)
+PushConstantGraphicsOverlapTest::PushConstantGraphicsOverlapTest (tcu::TestContext&					testContext,
+																  const std::string&				name,
+																  const std::string&				description,
+																  const PipelineConstructionType	pipelineConstructionType,
+																  const deUint32					rangeCount,
+																  const PushConstantData			pushConstantRange[MAX_RANGE_COUNT])
+	: PushConstantGraphicsTest (testContext, name, description, pipelineConstructionType, rangeCount, pushConstantRange, false, INDEX_TYPE_CONST_LITERAL)
 {
 }
 
@@ -1666,7 +1705,7 @@ void PushConstantGraphicsOverlapTest::initPrograms (SourceCollections& sourceCol
 
 TestInstance* PushConstantGraphicsOverlapTest::createInstance (Context& context) const
 {
-	return new PushConstantGraphicsOverlapTestInstance(context, m_rangeCount, m_pushConstantRange, false, INDEX_TYPE_CONST_LITERAL);
+	return new PushConstantGraphicsOverlapTestInstance(context, m_pipelineConstructionType, m_rangeCount, m_pushConstantRange, false, INDEX_TYPE_CONST_LITERAL);
 }
 
 class PushConstantComputeTest : public vkt::TestCase
@@ -1934,33 +1973,38 @@ tcu::TestStatus PushConstantComputeTestInstance::iterate (void)
 	return tcu::TestStatus::pass("result image matches with reference");
 }
 
-class PushConstantLifetimeTest : public vkt::TestCase {
+class PushConstantLifetimeTest : public vkt::TestCase
+{
 public:
-	PushConstantLifetimeTest(tcu::TestContext &testContext,
-			const std::string &name,
-			const std::string &description,
-			const PushConstantData pushConstantRange[MAX_RANGE_COUNT],
-			const std::vector<CommandData> &cmdList);
+	PushConstantLifetimeTest(tcu::TestContext&					testContext,
+							 const std::string&					name,
+							 const std::string&					description,
+							 const PipelineConstructionType		pipelineConstructionType,
+							 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
+							 const std::vector<CommandData>&	cmdList);
 
-	virtual                    ~PushConstantLifetimeTest(void);
+	virtual ~PushConstantLifetimeTest(void);
+
+	virtual void checkSupport(Context &context) const;
 
 	virtual void initPrograms(SourceCollections &sourceCollections) const;
 
 	virtual TestInstance *createInstance(Context &context) const;
 
 private:
-	PushConstantData m_pushConstantRange[MAX_RANGE_COUNT];
-	std::vector<CommandData> m_cmdList;
-
+	const PipelineConstructionType	m_pipelineConstructionType;
+	PushConstantData				m_pushConstantRange[MAX_RANGE_COUNT];
+	std::vector<CommandData>		m_cmdList;
 };
 
 class PushConstantLifetimeTestInstance : public vkt::TestInstance {
 public:
 	PushConstantLifetimeTestInstance(Context &context,
+			const PipelineConstructionType pipelineConstructionType,
 			const PushConstantData pushConstantRange[MAX_RANGE_COUNT],
 			const std::vector<CommandData> &cmdList);
 
-	virtual                                        ~PushConstantLifetimeTestInstance(void);
+	virtual ~PushConstantLifetimeTestInstance(void);
 
 	virtual tcu::TestStatus iterate(void);
 
@@ -2000,24 +2044,33 @@ private:
 	Move<VkDescriptorSet> m_descriptorSet;
 
 	Move<VkPipelineLayout> m_pipelineLayout[3];
-	Move<VkPipeline> m_graphicsPipeline[3];
+	GraphicsPipelineWrapper m_graphicsPipeline[3];
 	Move<VkPipeline> m_computePipeline[3];
 
 	Move<VkCommandPool> m_cmdPool;
 	Move<VkCommandBuffer> m_cmdBuffer;
 };
 
-PushConstantLifetimeTest::PushConstantLifetimeTest(tcu::TestContext &testContext,
-		const std::string &name,
-		const std::string &description,
-		const PushConstantData pushConstantRange[MAX_RANGE_COUNT],
-		const std::vector<CommandData> &cmdList)
-		: vkt::TestCase(testContext, name, description), m_cmdList(cmdList) {
+PushConstantLifetimeTest::PushConstantLifetimeTest(tcu::TestContext&				testContext,
+												   const std::string&				name,
+												   const std::string&				description,
+												   const PipelineConstructionType	pipelineConstructionType,
+												   const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
+												   const std::vector<CommandData>&	cmdList)
+	: vkt::TestCase					(testContext, name, description)
+	, m_pipelineConstructionType	(pipelineConstructionType)
+	, m_cmdList						(cmdList)
+{
 	deMemcpy(m_pushConstantRange, pushConstantRange, sizeof(PushConstantData) * MAX_RANGE_COUNT);
 }
 
-PushConstantLifetimeTest::~PushConstantLifetimeTest(void) {
+PushConstantLifetimeTest::~PushConstantLifetimeTest(void)
+{
+}
 
+void PushConstantLifetimeTest::checkSupport(Context &context) const
+{
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
 void PushConstantLifetimeTest::initPrograms(SourceCollections &sourceCollections) const
@@ -2078,16 +2131,23 @@ void PushConstantLifetimeTest::initPrograms(SourceCollections &sourceCollections
 
 TestInstance* PushConstantLifetimeTest::createInstance (Context& context) const
 {
-	return new PushConstantLifetimeTestInstance(context, m_pushConstantRange, m_cmdList);
+	return new PushConstantLifetimeTestInstance(context, m_pipelineConstructionType, m_pushConstantRange, m_cmdList);
 }
 
 PushConstantLifetimeTestInstance::PushConstantLifetimeTestInstance (Context&						context,
+																	const PipelineConstructionType	pipelineConstructionType,
 																	const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
 																	const std::vector<CommandData>&	cmdList)
-		: vkt::TestInstance		(context)
-		, m_cmdList				(cmdList)
-		, m_renderSize			(32, 32)
-		, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
+	: vkt::TestInstance		(context)
+	, m_cmdList				(cmdList)
+	, m_renderSize			(32, 32)
+	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_graphicsPipeline
+	{
+		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
+		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
+		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType }
+	}
 {
 	deMemcpy(m_pushConstantRange, pushConstantRange, sizeof(PushConstantData) * MAX_RANGE_COUNT);
 }
@@ -2183,16 +2243,16 @@ void PushConstantLifetimeTestInstance::init (void)
 		// create storage buffer
 		const VkDeviceSize			bufferSize			= sizeof(tcu::Vec4) * 8;
 		const VkBufferCreateInfo	bufferCreateInfo	=
-			{
-				VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,						// VkStructureType		sType;
-				DE_NULL,													// const void*			pNext;
-				0u,															// VkBufferCreateFlags	flags
-				bufferSize,													// VkDeviceSize			size;
-				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,							// VkBufferUsageFlags	usage;
-				VK_SHARING_MODE_EXCLUSIVE,									// VkSharingMode		sharingMode;
-				1u,															// deUint32				queueFamilyCount;
-				&queueFamilyIndex											// const deUint32*		pQueueFamilyIndices;
-			};
+		{
+			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,						// VkStructureType					sType;
+			DE_NULL,													// const void*						pNext;
+			0u,															// VkBufferCreateFlags				flags
+			bufferSize,													// VkDeviceSize						size;
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,							// VkBufferUsageFlags				usage;
+			VK_SHARING_MODE_EXCLUSIVE,									// VkSharingMode					sharingMode;
+			1u,															// deUint32							queueFamilyCount;
+			&queueFamilyIndex											// const deUint32*					pQueueFamilyIndices;
+		};
 
 		m_outBuffer			= createBuffer(vk, vkDevice, &bufferCreateInfo);
 		m_outBufferAlloc	= memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_outBuffer), MemoryRequirement::HostVisible);
@@ -2201,11 +2261,11 @@ void PushConstantLifetimeTestInstance::init (void)
 		// create and update descriptor set
 		const VkDescriptorSetAllocateInfo	allocInfo				=
 			{
-				VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,	// VkStructureType                             sType;
-				DE_NULL,										// const void*                                 pNext;
-				*m_descriptorPool,								// VkDescriptorPool                            descriptorPool;
-				1u,												// deUint32                                    setLayoutCount;
-				&(*m_descriptorSetLayout),						// const VkDescriptorSetLayout*                pSetLayouts;
+				VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,			// VkStructureType					sType;
+				DE_NULL,												// const void*						pNext;
+				*m_descriptorPool,										// VkDescriptorPool					descriptorPool;
+				1u,														// deUint32							setLayoutCount;
+				&(*m_descriptorSetLayout),								// const VkDescriptorSetLayout*		pSetLayouts;
 			};
 		m_descriptorSet	= allocateDescriptorSet(vk, vkDevice, &allocInfo);
 
@@ -2217,40 +2277,40 @@ void PushConstantLifetimeTestInstance::init (void)
 
 		// create push constant ranges
 		const VkPushConstantRange	pushConstantRanges[]
+		{
 			{
-				{
-						m_pushConstantRange[0].range.shaderStage,
-						m_pushConstantRange[0].range.offset,
-						m_pushConstantRange[0].range.size
-				},
-				{
-						m_pushConstantRange[1].range.shaderStage,
-						m_pushConstantRange[1].range.offset,
-						m_pushConstantRange[1].range.size
-				}
-			};
+					m_pushConstantRange[0].range.shaderStage,
+					m_pushConstantRange[0].range.offset,
+					m_pushConstantRange[0].range.size
+			},
+			{
+					m_pushConstantRange[1].range.shaderStage,
+					m_pushConstantRange[1].range.offset,
+					m_pushConstantRange[1].range.size
+			}
+		};
 
-		const VkPipelineLayoutCreateInfo pipelineLayoutParams[] =
+		const VkPipelineLayoutCreateInfo pipelineLayoutParams[]
+		{
 			{
-				{
-					VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType				sType;
-					DE_NULL,										// const void*					pNext;
-					0u,												// VkPipelineLayoutCreateFlags	flags;
-					1u,												// deUint32						descriptorSetCount;
-					&(*m_descriptorSetLayout),						// const VkDescriptorSetLayout*	pSetLayouts;
-					1u,												// deUint32						pushConstantRangeCount;
-					&(pushConstantRanges[0])
-				},
-				{
-					VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType				sType;
-					DE_NULL,										// const void*					pNext;
-					0u,												// VkPipelineLayoutCreateFlags	flags;
-					1u,												// deUint32						descriptorSetCount;
-					&(*m_descriptorSetLayout),						// const VkDescriptorSetLayout*	pSetLayouts;
-					1u,												// deUint32						pushConstantRangeCount;
-					&(pushConstantRanges[1])
-				}
-			};
+				VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType				sType;
+				DE_NULL,										// const void*					pNext;
+				0u,												// VkPipelineLayoutCreateFlags	flags;
+				1u,												// deUint32						descriptorSetCount;
+				&(*m_descriptorSetLayout),						// const VkDescriptorSetLayout*	pSetLayouts;
+				1u,												// deUint32						pushConstantRangeCount;
+				&(pushConstantRanges[0])
+			},
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType				sType;
+				DE_NULL,										// const void*					pNext;
+				0u,												// VkPipelineLayoutCreateFlags	flags;
+				1u,												// deUint32						descriptorSetCount;
+				&(*m_descriptorSetLayout),						// const VkDescriptorSetLayout*	pSetLayouts;
+				1u,												// deUint32						pushConstantRangeCount;
+				&(pushConstantRanges[1])
+			}
+		};
 
 		m_pipelineLayout[0] = createPipelineLayout(vk, vkDevice, &(pipelineLayoutParams[0]));
 		m_pipelineLayout[1] = createPipelineLayout(vk, vkDevice, &(pipelineLayoutParams[1]));
@@ -2261,76 +2321,78 @@ void PushConstantLifetimeTestInstance::init (void)
 
 	// Create graphics pipelines
 	{
-		const VkVertexInputBindingDescription vertexInputBindingDescription =
-			{
-				0u,								// deUint32					binding;
-				sizeof(Vertex4RGBA),			// deUint32					strideInBytes;
-				VK_VERTEX_INPUT_RATE_VERTEX		// VkVertexInputStepRate	stepRate;
-			};
+		const VkVertexInputBindingDescription vertexInputBindingDescription
+		{
+			0u,								// deUint32					binding;
+			sizeof(Vertex4RGBA),			// deUint32					strideInBytes;
+			VK_VERTEX_INPUT_RATE_VERTEX		// VkVertexInputStepRate	stepRate;
+		};
 
-		const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[] =
+		const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[]
+		{
 			{
-				{
-					0u,									// deUint32	location;
-					0u,									// deUint32	binding;
-					VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat	format;
-					0u									// deUint32	offsetInBytes;
-				},
-				{
-					1u,									// deUint32	location;
-					0u,									// deUint32	binding;
-					VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat	format;
-					DE_OFFSET_OF(Vertex4RGBA, color),	// deUint32	offset;
-				}
-			};
+				0u,									// deUint32	location;
+				0u,									// deUint32	binding;
+				VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat	format;
+				0u									// deUint32	offsetInBytes;
+			},
+			{
+				1u,									// deUint32	location;
+				0u,									// deUint32	binding;
+				VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat	format;
+				DE_OFFSET_OF(Vertex4RGBA, color),	// deUint32	offset;
+			}
+		};
 
-		const VkPipelineVertexInputStateCreateInfo vertexInputStateParams =
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType							sType;
-				DE_NULL,														// const void*								pNext;
-				0u,																// vkPipelineVertexInputStateCreateFlags	flags;
-				1u,																// deUint32									bindingCount;
-				&vertexInputBindingDescription,									// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
-				2u,																// deUint32									attributeCount;
-				vertexInputAttributeDescriptions								// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
-			};
+		const VkPipelineVertexInputStateCreateInfo vertexInputStateParams
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType							sType;
+			DE_NULL,														// const void*								pNext;
+			0u,																// vkPipelineVertexInputStateCreateFlags	flags;
+			1u,																// deUint32									bindingCount;
+			&vertexInputBindingDescription,									// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
+			2u,																// deUint32									attributeCount;
+			vertexInputAttributeDescriptions								// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+		};
 
 		const VkPrimitiveTopology		topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
-		const std::vector<VkViewport>	viewports(1, makeViewport(m_renderSize));
-		const std::vector<VkRect2D>		scissors(1, makeRect2D(m_renderSize));
+		const std::vector<VkViewport>	viewports	{ makeViewport(m_renderSize) };
+		const std::vector<VkRect2D>		scissors	{ makeRect2D(m_renderSize) };
 
-		m_graphicsPipeline[0] = makeGraphicsPipeline(vk,														// const DeviceInterface&                        vk
-													 vkDevice,													// const VkDevice                                device
-													 *(m_pipelineLayout[0]),									// const VkPipelineLayout                        pipelineLayout
-													 *m_vertexShaderModule,										// const VkShaderModule                          vertexShaderModule
-													 DE_NULL,													// const VkShaderModule                          tessellationControlShaderModule
-													 DE_NULL,													// const VkShaderModule                          tessellationEvalShaderModule
-													 DE_NULL,													// const VkShaderModule                          geometryShaderModule
-													 *m_fragmentShaderModule,									// const VkShaderModule                          fragmentShaderModule
-													 *m_renderPass,												// const VkRenderPass                            renderPass
-													 viewports,													// const std::vector<VkViewport>&                viewports
-													 scissors,													// const std::vector<VkRect2D>&                  scissors
-													 topology,													// const VkPrimitiveTopology                     topology
-													 0u,														// const deUint32                                subpass
-													 0u,														// const deUint32                                patchControlPoints
-													 &vertexInputStateParams);									// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+		m_graphicsPipeline[0].setDefaultRasterizationState()
+							 .setDefaultDepthStencilState()
+							 .setDefaultMultisampleState()
+							 .setDefaultColorBlendState()
+							 .setDefaultTopology(topology)
+							 .setupVertexInputState(&vertexInputStateParams)
+							 .setupPreRasterizationShaderState(viewports,
+															   scissors,
+															   *(m_pipelineLayout[0]),
+															   *m_renderPass,
+															   0u,
+															   *m_vertexShaderModule)
+							 .setupFragmentShaderState(*(m_pipelineLayout[0]), *m_renderPass, 0u, *m_fragmentShaderModule)
+							 .setupFragmentOutputState(*m_renderPass)
+							 .setMonolithicPipelineLayout(*(m_pipelineLayout[0]))
+							 .buildPipeline();
 
-		m_graphicsPipeline[1] = makeGraphicsPipeline(vk,														// const DeviceInterface&                        vk
-													 vkDevice,													// const VkDevice                                device
-													 *(m_pipelineLayout[1]),									// const VkPipelineLayout                        pipelineLayout
-													 *m_vertexShaderModule,										// const VkShaderModule                          vertexShaderModule
-													 DE_NULL,													// const VkShaderModule                          tessellationControlShaderModule
-													 DE_NULL,													// const VkShaderModule                          tessellationEvalShaderModule
-													 DE_NULL,													// const VkShaderModule                          geometryShaderModule
-													 *m_fragmentShaderModule,									// const VkShaderModule                          fragmentShaderModule
-													 *m_renderPass,												// const VkRenderPass                            renderPass
-													 viewports,													// const std::vector<VkViewport>&                viewports
-													 scissors,													// const std::vector<VkRect2D>&                  scissors
-													 topology,													// const VkPrimitiveTopology                     topology
-													 0u,														// const deUint32                                subpass
-													 0u,														// const deUint32                                patchControlPoints
-													 &vertexInputStateParams);									// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+		m_graphicsPipeline[1].setDefaultRasterizationState()
+							 .setDefaultDepthStencilState()
+							 .setDefaultMultisampleState()
+							 .setDefaultColorBlendState()
+							 .setDefaultTopology(topology)
+							 .setupVertexInputState(&vertexInputStateParams)
+							 .setupPreRasterizationShaderState(viewports,
+															   scissors,
+															   *(m_pipelineLayout[1]),
+															   *m_renderPass,
+															   0u,
+															   *m_vertexShaderModule)
+							 .setupFragmentShaderState(*(m_pipelineLayout[1]), *m_renderPass, 0u, *m_fragmentShaderModule)
+							 .setupFragmentOutputState(*m_renderPass)
+							 .setMonolithicPipelineLayout(*(m_pipelineLayout[1]))
+							 .buildPipeline();
 	}
 
 	// Create vertex buffer
@@ -2338,16 +2400,16 @@ void PushConstantLifetimeTestInstance::init (void)
 		m_vertices			= createQuad(1.0f, tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f));
 
 		const VkBufferCreateInfo vertexBufferParams =
-			{
-				VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,						// VkStructureType		sType;
-				DE_NULL,													// const void*			pNext;
-				0u,															// VkBufferCreateFlags	flags;
-				(VkDeviceSize) (sizeof(Vertex4RGBA) * m_vertices.size()),	// VkDeviceSize			size;
-				VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,							// VkBufferUsageFlags	usage;
-				VK_SHARING_MODE_EXCLUSIVE,									// VkSharingMode		sharingMode;
-				1u,															// deUint32				queueFamilyCount;
-				&queueFamilyIndex											// const deUint32*		pQueueFamilyIndices;
-			};
+		{
+			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,						// VkStructureType		sType;
+			DE_NULL,													// const void*			pNext;
+			0u,															// VkBufferCreateFlags	flags;
+			(VkDeviceSize) (sizeof(Vertex4RGBA) * m_vertices.size()),	// VkDeviceSize			size;
+			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,							// VkBufferUsageFlags	usage;
+			VK_SHARING_MODE_EXCLUSIVE,									// VkSharingMode		sharingMode;
+			1u,															// deUint32				queueFamilyCount;
+			&queueFamilyIndex											// const deUint32*		pQueueFamilyIndices;
+		};
 
 		m_vertexBuffer		= createBuffer(vk, vkDevice, &vertexBufferParams);
 		m_vertexBufferAlloc = memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_vertexBuffer),	MemoryRequirement::HostVisible);
@@ -2483,7 +2545,7 @@ tcu::TestStatus PushConstantLifetimeTestInstance::iterate (void)
 				{
 					vk.cmdBindPipeline(*m_cmdBuffer,
 									   VK_PIPELINE_BIND_POINT_GRAPHICS,
-									   *m_graphicsPipeline[m_cmdList[ndx].rangeNdx]);
+									   m_graphicsPipeline[m_cmdList[ndx].rangeNdx].getPipeline());
 					break;
 				}
 				case CMD_DRAW:
@@ -2648,8 +2710,9 @@ struct OverwritePushConstants
 
 struct OverwriteTestParams
 {
-	OverwritePushConstants	pushConstantValues[4];
-	VkPipelineBindPoint		bindPoint;
+	PipelineConstructionType	pipelineConstructionType;
+	OverwritePushConstants		pushConstantValues[4];
+	VkPipelineBindPoint			bindPoint;
 };
 
 class OverwriteTestCase : public vkt::TestCase
@@ -2658,6 +2721,7 @@ public:
 							OverwriteTestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const OverwriteTestParams& params);
 	virtual					~OverwriteTestCase		(void) {}
 
+	virtual void			checkSupport			(Context &context) const;
 	virtual void			initPrograms			(vk::SourceCollections& programCollection) const;
 	virtual TestInstance*	createInstance			(Context& context) const;
 
@@ -2681,6 +2745,11 @@ OverwriteTestCase::OverwriteTestCase (tcu::TestContext& testCtx, const std::stri
 	: vkt::TestCase	(testCtx, name, description)
 	, m_params		(params)
 {}
+
+void OverwriteTestCase::checkSupport(Context &context) const
+{
+	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+}
 
 void OverwriteTestCase::initPrograms (vk::SourceCollections& programCollection) const
 {
@@ -2824,6 +2893,7 @@ tcu::TestStatus OverwriteTestInstance::iterate (void)
 	Move<VkRenderPass>		renderPass;
 	Move<VkFramebuffer>		framebuffer;
 	Move<VkPipeline>		pipeline;
+	GraphicsPipelineWrapper	pipelineWrapper(vkd, device, m_params.pipelineConstructionType);
 
 	if (isComp)
 	{
@@ -2847,9 +2917,34 @@ tcu::TestStatus OverwriteTestInstance::iterate (void)
 		};
 		renderPass	= makeRenderPass(vkd, device);
 		framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), 0u, nullptr, imageExtent.width, imageExtent.height);
-		pipeline	= makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
-			vertModule.get(), DE_NULL, DE_NULL, DE_NULL, fragModule.get(), renderPass.get(),
-			viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u, &inputState);
+
+		const VkPipelineColorBlendStateCreateInfo colorBlendState
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType
+			DE_NULL,													// const void*									pNext
+			0u,															// VkPipelineColorBlendStateCreateFlags			flags
+			VK_FALSE,													// VkBool32										logicOpEnable
+			VK_LOGIC_OP_CLEAR,											// VkLogicOp									logicOp
+			0u,															// deUint32										attachmentCount
+			DE_NULL,													// const VkPipelineColorBlendAttachmentState*	pAttachments
+			{ 0.0f, 0.0f, 0.0f, 0.0f }									// float										blendConstants[4]
+		};
+
+		pipelineWrapper.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+					   .setDefaultRasterizationState()
+					   .setDefaultDepthStencilState()
+					   .setDefaultMultisampleState()
+					   .setupVertexInputState(&inputState)
+					   .setupPreRasterizationShaderState(viewports,
+														 scissors,
+														 *pipelineLayout,
+														 *renderPass,
+														 0u,
+														 *vertModule)
+					   .setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragModule)
+					   .setupFragmentOutputState(*renderPass, 0u, &colorBlendState)
+					   .setMonolithicPipelineLayout(*pipelineLayout)
+					   .buildPipeline();
 	}
 
 	// Offsets and sizes.
@@ -2874,10 +2969,14 @@ tcu::TestStatus OverwriteTestInstance::iterate (void)
 	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, writeStages, 0u, 0u, nullptr, 0u, nullptr, 1u, &preImageBarrier);
 
 	vkd.cmdBindDescriptorSets(cmdBuffer, m_params.bindPoint, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
-	vkd.cmdBindPipeline(cmdBuffer, m_params.bindPoint, pipeline.get());
 
 	if (!isComp)
+	{
+		vkd.cmdBindPipeline(cmdBuffer, m_params.bindPoint, pipelineWrapper.getPipeline());
 		beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors[0]);
+	}
+	else
+		vkd.cmdBindPipeline(cmdBuffer, m_params.bindPoint, pipeline.get());
 
 	for (int pcIndex = 0; pcIndex < DE_LENGTH_OF_ARRAY(m_params.pushConstantValues); ++pcIndex)
 	{
@@ -2942,7 +3041,7 @@ tcu::TestStatus OverwriteTestInstance::iterate (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
-void addOverwriteCase (tcu::TestCaseGroup* group, tcu::TestContext& testCtx, VkPipelineBindPoint bindPoint)
+void addOverwriteCase (tcu::TestCaseGroup* group, tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType, VkPipelineBindPoint bindPoint)
 {
 	const OverwritePushConstants pushConstants[4] =
 	{
@@ -2959,14 +3058,15 @@ void addOverwriteCase (tcu::TestCaseGroup* group, tcu::TestContext& testCtx, VkP
 	for (int pixelIdx = 0; pixelIdx < DE_LENGTH_OF_ARRAY(pushConstants); ++pixelIdx)
 		testParams.pushConstantValues[pixelIdx] = pushConstants[pixelIdx];
 
-	testParams.bindPoint = bindPoint;
+	testParams.pipelineConstructionType = pipelineConstructionType;
+	testParams.bindPoint				= bindPoint;
 
 	group->addChild(new OverwriteTestCase(testCtx, "overwrite", "Test push constant range overwrites", testParams));
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
 	static const struct
 	{
@@ -3314,28 +3414,31 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	graphicsTests	(new tcu::TestCaseGroup(testCtx, "graphics_pipeline", "graphics pipeline"));
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(graphicsParams); ndx++)
 	{
-		graphicsTests->addChild(new PushConstantGraphicsDisjointTest(testCtx, graphicsParams[ndx].name, graphicsParams[ndx].description, graphicsParams[ndx].count, graphicsParams[ndx].range, graphicsParams[ndx].hasMultipleUpdates, graphicsParams[ndx].indexType));
+		graphicsTests->addChild(new PushConstantGraphicsDisjointTest(testCtx, graphicsParams[ndx].name, graphicsParams[ndx].description, pipelineConstructionType, graphicsParams[ndx].count, graphicsParams[ndx].range, graphicsParams[ndx].hasMultipleUpdates, graphicsParams[ndx].indexType));
 	}
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(overlapGraphicsParams); ndx++)
 	{
-		graphicsTests->addChild(new PushConstantGraphicsOverlapTest(testCtx, overlapGraphicsParams[ndx].name, overlapGraphicsParams[ndx].description, overlapGraphicsParams[ndx].count, overlapGraphicsParams[ndx].range));
+		graphicsTests->addChild(new PushConstantGraphicsOverlapTest(testCtx, overlapGraphicsParams[ndx].name, overlapGraphicsParams[ndx].description, pipelineConstructionType, overlapGraphicsParams[ndx].count, overlapGraphicsParams[ndx].range));
 	}
-	addOverwriteCase(graphicsTests.get(), testCtx, VK_PIPELINE_BIND_POINT_GRAPHICS);
+	addOverwriteCase(graphicsTests.get(), testCtx, pipelineConstructionType, VK_PIPELINE_BIND_POINT_GRAPHICS);
 	pushConstantTests->addChild(graphicsTests.release());
 
-	de::MovePtr<tcu::TestCaseGroup>	computeTests	(new tcu::TestCaseGroup(testCtx, "compute_pipeline", "compute pipeline"));
-	for (const auto& params : computeParams)
+	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		computeTests->addChild(new PushConstantComputeTest(testCtx, params.name, params.description, params.type, params.range));
+		de::MovePtr<tcu::TestCaseGroup>	computeTests	(new tcu::TestCaseGroup(testCtx, "compute_pipeline", "compute pipeline"));
+		for (const auto& params : computeParams)
+		{
+			computeTests->addChild(new PushConstantComputeTest(testCtx, params.name, params.description, params.type, params.range));
+		}
+		addOverwriteCase(computeTests.get(), testCtx, pipelineConstructionType, VK_PIPELINE_BIND_POINT_COMPUTE);
+		pushConstantTests->addChild(computeTests.release());
 	}
-	addOverwriteCase(computeTests.get(), testCtx, VK_PIPELINE_BIND_POINT_COMPUTE);
-	pushConstantTests->addChild(computeTests.release());
 
 	de::MovePtr<tcu::TestCaseGroup>	lifetimeTests	(new tcu::TestCaseGroup(testCtx, "lifetime", "lifetime tests"));
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(lifetimeParams); ndx++)
 	{
-		lifetimeTests->addChild(new PushConstantLifetimeTest(testCtx, lifetimeParams[ndx].name, lifetimeParams[ndx].description, lifetimeParams[ndx].range, lifetimeParams[ndx].cmdList));
+		lifetimeTests->addChild(new PushConstantLifetimeTest(testCtx, lifetimeParams[ndx].name, lifetimeParams[ndx].description, pipelineConstructionType, lifetimeParams[ndx].range, lifetimeParams[ndx].cmdList));
 	}
 	pushConstantTests->addChild(lifetimeTests.release());
 

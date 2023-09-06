@@ -260,7 +260,7 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 		const VkStructureType nextType = *reinterpret_cast<const VkStructureType*>(pNext);
 		switch (nextType)
 		{
-			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT:
+			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO:
 			{
 				context.requireDeviceFunctionality("VK_EXT_sampler_filter_minmax");
 
@@ -326,6 +326,7 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 	if (params.allocationKind == ALLOCATION_KIND_DEDICATED)
 		context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
 
+#ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset"))
 	{
 		const auto portabilitySubsetFeatures	= context.getPortabilitySubsetFeatures();
@@ -339,34 +340,51 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support remapping format components");
 		}
 	}
+
+	bool formatRgba10x6WithoutYCbCrSampler = context.getRGBA10X6FormatsFeaturesEXT().formatRgba10x6WithoutYCbCrSampler;
+#else
+	bool formatRgba10x6WithoutYCbCrSampler = VK_FALSE;
+#endif // CTS_USES_VULKANSC
+
+	if ((params.imageFormat == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16) && (params.subresourceRange.levelCount > 1) && (formatRgba10x6WithoutYCbCrSampler == VK_FALSE))
+	{
+		TCU_THROW(NotSupportedError, "formatRgba10x6WithoutYCbCrSampler not supported");
+	}
 }
 
 ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 											  ImageSamplingInstanceParams	params)
-	: vkt::TestInstance		(context)
-	, m_allocationKind		(params.allocationKind)
-	, m_samplingType		(params.samplingType)
-	, m_imageViewType		(params.imageViewType)
-	, m_imageFormat			(params.imageFormat)
-	, m_imageSize			(params.imageSize)
-	, m_layerCount			(params.layerCount)
-	, m_imageCount			(params.imageCount)
-	, m_componentMapping	(params.componentMapping)
-	, m_componentMask		(true)
-	, m_subresourceRange	(params.subresourceRange)
-	, m_samplerParams		(params.samplerParams)
-	, m_samplerLod			(params.samplerLod)
-	, m_renderSize			(params.renderSize)
-	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_vertices			(params.vertices)
+	: vkt::TestInstance				(context)
+	, m_allocationKind				(params.allocationKind)
+	, m_samplingType				(params.samplingType)
+	, m_imageViewType				(params.imageViewType)
+	, m_imageFormat					(params.imageFormat)
+	, m_imageSize					(params.imageSize)
+	, m_layerCount					(params.layerCount)
+	, m_imageCount					(params.imageCount)
+	, m_componentMapping			(params.componentMapping)
+	, m_componentMask				(true)
+	, m_subresourceRange			(params.subresourceRange)
+	, m_samplerParams				(params.samplerParams)
+	, m_samplerLod					(params.samplerLod)
+	, m_renderSize					(params.renderSize)
+	, m_colorFormat					(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_vertices					(params.vertices)
+	, m_graphicsPipeline			(context.getDeviceInterface(), context.getDevice(), params.pipelineConstructionType, params.pipelineCreateFlags)
+	, m_pipelineConstructionType	(params.pipelineConstructionType)
+	, m_imageLayout					(params.imageLayout)
 {
-	const InstanceInterface&				vki						= context.getInstanceInterface();
-	const DeviceInterface&					vk						= context.getDeviceInterface();
-	const VkPhysicalDevice					physDevice				= context.getPhysicalDevice();
-	const VkDevice							vkDevice				= context.getDevice();
-	const VkQueue							queue					= context.getUniversalQueue();
-	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
-	SimpleAllocator							memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
+}
+
+void ImageSamplingInstance::setup ()
+{
+	const InstanceInterface&				vki						= m_context.getInstanceInterface();
+	const DeviceInterface&					vk						= m_context.getDeviceInterface();
+	const VkPhysicalDevice					physDevice				= m_context.getPhysicalDevice();
+	const VkDevice							vkDevice				= m_context.getDevice();
+	const VkQueue							queue					= m_context.getUniversalQueue();
+	const deUint32							queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
+	SimpleAllocator							memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 	const VkComponentMapping				componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 
 	void const* pNext = m_samplerParams.pNext;
@@ -375,11 +393,11 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 		const VkStructureType nextType = *reinterpret_cast<const VkStructureType*>(pNext);
 		switch (nextType)
 		{
-			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT:
+			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO:
 			{
 				VkPhysicalDeviceSamplerFilterMinmaxProperties	physicalDeviceSamplerMinMaxProperties =
 				{
-					VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES_EXT,
+					VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES,
 					DE_NULL,
 					DE_FALSE,
 					DE_FALSE
@@ -388,7 +406,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 				physicalDeviceProperties.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 				physicalDeviceProperties.pNext	= &physicalDeviceSamplerMinMaxProperties;
 
-				vki.getPhysicalDeviceProperties2(context.getPhysicalDevice(), &physicalDeviceProperties);
+				vki.getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &physicalDeviceProperties);
 
 				if (physicalDeviceSamplerMinMaxProperties.filterMinmaxImageComponentMapping != VK_TRUE)
 				{
@@ -425,7 +443,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 				physicalDeviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 				physicalDeviceFeatures.pNext = &physicalDeviceCustomBorderColorFeatures;
 
-				vki.getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &physicalDeviceFeatures);
+				vki.getPhysicalDeviceFeatures2(m_context.getPhysicalDevice(), &physicalDeviceFeatures);
 
 				if (physicalDeviceCustomBorderColorFeatures.customBorderColors != VK_TRUE)
 				{
@@ -688,18 +706,26 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 
 	// Create pipeline layout
 	{
-		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
+#ifndef CTS_USES_VULKANSC
+		VkPipelineLayoutCreateFlags pipelineLayoutFlags = (m_pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) ? 0u : deUint32(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+#else
+		VkPipelineLayoutCreateFlags pipelineLayoutFlags = 0u;
+#endif // CTS_USES_VULKANSC
+		VkPipelineLayoutCreateInfo	pipelineLayoutParams
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			0u,													// VkPipelineLayoutCreateFlags	flags;
-			1u,													// deUint32						setLayoutCount;
-			&m_descriptorSetLayout.get(),						// const VkDescriptorSetLayout*	pSetLayouts;
+			pipelineLayoutFlags,								// VkPipelineLayoutCreateFlags	flags;
+			0u,													// deUint32						setLayoutCount;
+			DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
 			0u,													// deUint32						pushConstantRangeCount;
 			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
 		};
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_preRasterizationStatePipelineLayout	= createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		pipelineLayoutParams.setLayoutCount		= 1u;
+		pipelineLayoutParams.pSetLayouts		= &m_descriptorSetLayout.get();
+		m_fragmentStatePipelineLayout			= createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
 	}
 
 	m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("tex_vert"), 0);
@@ -741,8 +767,8 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 			vertexInputAttributeDescriptions								// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 		};
 
-		const std::vector<VkViewport>	viewports	(1, makeViewport(m_renderSize));
-		const std::vector<VkRect2D>		scissors	(1, makeRect2D(m_renderSize));
+		const std::vector<VkViewport>	viewports	{ makeViewport(m_renderSize) };
+		const std::vector<VkRect2D>		scissors	{ makeRect2D(m_renderSize) };
 
 		std::vector<VkPipelineColorBlendAttachmentState>	colorBlendAttachmentStates(m_imageCount);
 
@@ -771,25 +797,20 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 			{ 0.0f, 0.0f, 0.0f, 0.0f }									// float										blendConstants[4];
 		};
 
-		m_graphicsPipeline = makeGraphicsPipeline(vk,									// const DeviceInterface&                        vk
-												  vkDevice,								// const VkDevice                                device
-												  *m_pipelineLayout,					// const VkPipelineLayout                        pipelineLayout
-												  *m_vertexShaderModule,				// const VkShaderModule                          vertexShaderModule
-												  DE_NULL,								// const VkShaderModule                          tessellationControlModule
-												  DE_NULL,								// const VkShaderModule                          tessellationEvalModule
-												  DE_NULL,								// const VkShaderModule                          geometryShaderModule
-												  *m_fragmentShaderModule,				// const VkShaderModule                          fragmentShaderModule
-												  *m_renderPass,						// const VkRenderPass                            renderPass
-												  viewports,							// const std::vector<VkViewport>&                viewports
-												  scissors,								// const std::vector<VkRect2D>&                  scissors
-												  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology                     topology
-												  0u,									// const deUint32                                subpass
-												  0u,									// const deUint32                                patchControlPoints
-												  &vertexInputStateParams,				// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-												  DE_NULL,								// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-												  DE_NULL,								// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-												  DE_NULL,								// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
-												  &colorBlendStateParams);				// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
+		m_graphicsPipeline.setMonolithicPipelineLayout(*m_fragmentStatePipelineLayout)
+						  .setDefaultDepthStencilState()
+						  .setDefaultRasterizationState()
+						  .setDefaultMultisampleState()
+						  .setupVertexInputState(&vertexInputStateParams)
+						  .setupPreRasterizationShaderState(viewports,
+														scissors,
+														*m_preRasterizationStatePipelineLayout,
+														*m_renderPass,
+														0u,
+														*m_vertexShaderModule)
+						  .setupFragmentShaderState(*m_fragmentStatePipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule)
+						  .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
+						  .buildPipeline();
 	}
 
 	// Create vertex buffer
@@ -854,9 +875,9 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 
 		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), (deUint32)attachmentClearValues.size(), &attachmentClearValues[0]);
 
-		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
+		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
 
-		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0, 1, &m_descriptorSet.get(), 0, DE_NULL);
+		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_fragmentStatePipelineLayout, 0, 1, &m_descriptorSet.get(), 0, DE_NULL);
 
 		const VkDeviceSize vertexBufferOffset = 0;
 		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
@@ -876,6 +897,8 @@ tcu::TestStatus ImageSamplingInstance::iterate (void)
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
 	const VkDevice				vkDevice	= m_context.getDevice();
 	const VkQueue				queue		= m_context.getUniversalQueue();
+
+	setup();
 
 	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
@@ -1457,13 +1480,14 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 	const CoordinateCaptureProgram		coordCaptureProgram;
 	const rr::Program					rrProgram				= coordCaptureProgram.getReferenceProgram();
 	ReferenceRenderer					refRenderer				(m_renderSize.x(), m_renderSize.y(), 1, colorFormat, depthStencilFormat, &rrProgram);
+	const bool							useStencilAspect		= (m_subresourceRange.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT);
 
 	bool								compareOkAll			= true;
 
 	tcu::Vec4							lookupScale				(1.0f);
 	tcu::Vec4							lookupBias				(0.0f);
 
-	getLookupScaleBias(m_imageFormat, lookupScale, lookupBias);
+	getLookupScaleBias(m_imageFormat, lookupScale, lookupBias, useStencilAspect);
 
 	// Render out coordinates
 	{
@@ -1494,6 +1518,8 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 		lookupPrecision.colorMask		= m_componentMask;
 		lookupPrecision.colorThreshold	= tcu::computeFixedPointThreshold(max((tcu::IVec4(8, 8, 8, 8) - (isNearestOnly ? 1 : 2)), tcu::IVec4(0))) / swizzleScaleBias(lookupScale, m_componentMapping, 1.0f);
 
+		if (m_imageFormat == VK_FORMAT_BC5_UNORM_BLOCK || m_imageFormat == VK_FORMAT_BC5_SNORM_BLOCK)
+			lookupPrecision.colorThreshold = tcu::Vec4(0.06f, 0.06f, 0.06f, 0.06f);
 		if (tcu::isSRGB(m_texture->getTextureFormat()))
 			lookupPrecision.colorThreshold += tcu::Vec4(4.f / 255.f);
 
@@ -1505,24 +1531,36 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 			// Verification loop does not support reading from combined depth stencil texture levels.
 			// Get rid of stencil component.
 
-			tcu::TextureFormat::ChannelType depthChannelType = tcu::TextureFormat::CHANNELTYPE_LAST;
+			tcu::TextureFormat::ChannelOrder	channelOrder	= tcu::TextureFormat::CHANNELORDER_LAST;
+			tcu::TextureFormat::ChannelType		channelType		= tcu::TextureFormat::CHANNELTYPE_LAST;
 
-			switch (m_texture->getTextureFormat().type)
+			if (subresource.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
 			{
-			case tcu::TextureFormat::UNSIGNED_INT_16_8_8:
-				depthChannelType = tcu::TextureFormat::UNORM_INT16;
-				break;
-			case tcu::TextureFormat::UNSIGNED_INT_24_8:
-			case tcu::TextureFormat::UNSIGNED_INT_24_8_REV:
-				depthChannelType = tcu::TextureFormat::UNORM_INT24;
-				break;
-			case tcu::TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
-				depthChannelType = tcu::TextureFormat::FLOAT;
-				break;
-			default:
-				DE_FATAL("Unhandled texture format type in switch");
+				channelOrder	= tcu::TextureFormat::S;
+				channelType		= tcu::TextureFormat::UNSIGNED_INT8;
 			}
-			textureCopy	= m_texture->copy(tcu::TextureFormat(tcu::TextureFormat::D, depthChannelType));
+			else
+			{
+				channelOrder = tcu::TextureFormat::D;
+
+				switch (m_texture->getTextureFormat().type)
+				{
+				case tcu::TextureFormat::UNSIGNED_INT_16_8_8:
+					channelType = tcu::TextureFormat::UNORM_INT16;
+					break;
+				case tcu::TextureFormat::UNSIGNED_INT_24_8:
+				case tcu::TextureFormat::UNSIGNED_INT_24_8_REV:
+					channelType = tcu::TextureFormat::UNORM_INT24;
+					break;
+				case tcu::TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
+					channelType = tcu::TextureFormat::FLOAT;
+					break;
+				default:
+					DE_FATAL("Unhandled texture format type in switch");
+				}
+			}
+
+			textureCopy	= m_texture->copy(tcu::TextureFormat(channelOrder, channelType));
 			texture		= textureCopy.get();
 		}
 		else

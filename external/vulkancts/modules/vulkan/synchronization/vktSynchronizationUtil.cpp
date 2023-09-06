@@ -53,7 +53,9 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&		vk,
 									  const VkPipelineLayout		pipelineLayout,
 									  const VkShaderModule			shaderModule,
 									  const VkSpecializationInfo*	specInfo,
-									  PipelineCacheData&			pipelineCacheData)
+									  PipelineCacheData&			pipelineCacheData,
+									  de::SharedPtr<vk::ResourceInterface> resourceInterface
+									  )
 {
 	const VkPipelineShaderStageCreateInfo shaderStageInfo =
 	{
@@ -77,7 +79,8 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&		vk,
 	};
 
 	{
-		const vk::Unique<vk::VkPipelineCache>	pipelineCache	(pipelineCacheData.createPipelineCache(vk, device));
+		const vk::Unique<vk::VkPipelineCache>	pipelineCache	(pipelineCacheData.createPipelineCache(vk, device, resourceInterface));
+
 		vk::Move<vk::VkPipeline>				pipeline		(createComputePipeline(vk, device, *pipelineCache, &pipelineInfo));
 
 		// Refresh data from cache
@@ -91,7 +94,8 @@ VkImageCreateInfo makeImageCreateInfo (const VkImageType			imageType,
 									   const VkExtent3D&			extent,
 									   const VkFormat				format,
 									   const VkImageUsageFlags		usage,
-									   const VkSampleCountFlagBits	samples)
+									   const VkSampleCountFlagBits	samples,
+									   const VkImageTiling			tiling)
 {
 	return
 	{
@@ -104,7 +108,7 @@ VkImageCreateInfo makeImageCreateInfo (const VkImageType			imageType,
 		1u,											// uint32_t                 mipLevels;
 		1u,											// uint32_t                 arrayLayers;
 		samples,									// VkSampleCountFlagBits    samples;
-		VK_IMAGE_TILING_OPTIMAL,					// VkImageTiling            tiling;
+		tiling,										// VkImageTiling            tiling;
 		usage,										// VkImageUsageFlags        usage;
 		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode            sharingMode;
 		0u,											// uint32_t                 queueFamilyIndexCount;
@@ -219,7 +223,8 @@ Move<VkPipeline> GraphicsPipelineBuilder::build (const DeviceInterface&	vk,
 												 const VkDevice			device,
 												 const VkPipelineLayout	pipelineLayout,
 												 const VkRenderPass		renderPass,
-												 PipelineCacheData&		pipelineCacheData)
+												 PipelineCacheData&		pipelineCacheData,
+												 de::SharedPtr<vk::ResourceInterface> resourceInterface)
 {
 	const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo =
 	{
@@ -370,7 +375,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build (const DeviceInterface&	vk,
 	};
 
 	{
-		const vk::Unique<vk::VkPipelineCache>	pipelineCache	(pipelineCacheData.createPipelineCache(vk, device));
+		const vk::Unique<vk::VkPipelineCache>	pipelineCache(pipelineCacheData.createPipelineCache(vk, device, resourceInterface));
 		vk::Move<vk::VkPipeline>				pipeline		(createGraphicsPipeline(vk, device, *pipelineCache, &graphicsPipelineInfo));
 
 		// Refresh data from cache
@@ -426,16 +431,20 @@ protected:
 			VK_PIPELINE_STAGE_HOST_BIT,
 			VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
 			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+#ifndef CTS_USES_VULKANSC
 			VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,
 			VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT,
 			VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
 			VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-			VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV,
+#endif // CTS_USES_VULKANSC
+			VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,
+#ifndef CTS_USES_VULKANSC
 			VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV,
 			VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV,
 			VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT,
 			VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV,
-			VK_PIPELINE_STAGE_NONE,
+#endif // CTS_USES_VULKANSC
+			VK_PIPELINE_STAGE_NONE_KHR,
 		};
 
 		if (stage > static_cast<deUint64>(std::numeric_limits<deUint32>::max()))
@@ -471,18 +480,24 @@ protected:
 			VK_ACCESS_HOST_WRITE_BIT,
 			VK_ACCESS_MEMORY_READ_BIT,
 			VK_ACCESS_MEMORY_WRITE_BIT,
+#ifndef CTS_USES_VULKANSC
 			VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT,
 			VK_ACCESS_TRANSFORM_FEEDBACK_COUNTER_READ_BIT_EXT,
 			VK_ACCESS_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT,
 			VK_ACCESS_CONDITIONAL_RENDERING_READ_BIT_EXT,
+#endif // CTS_USES_VULKANSC
 			VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT,
+#ifndef CTS_USES_VULKANSC
 			VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR,
 			VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
-			VK_ACCESS_SHADING_RATE_IMAGE_READ_BIT_NV ,
+#endif // CTS_USES_VULKANSC
+			VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR ,
+#ifndef CTS_USES_VULKANSC
 			VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT,
 			VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_NV,
 			VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_NV,
-			VK_ACCESS_NONE,
+#endif // CTS_USES_VULKANSC
+			VK_ACCESS_NONE_KHR,
 		};
 
 		if (access > static_cast<deUint64>(std::numeric_limits<deUint32>::max()))
@@ -571,8 +586,13 @@ public:
 	{
 		DE_ASSERT(pDependencyInfo);
 
+#ifndef CTS_USES_VULKANSC
 		VkPipelineStageFlags	srcStageMask				= VK_PIPELINE_STAGE_NONE;
 		VkPipelineStageFlags	dstStageMask				= VK_PIPELINE_STAGE_NONE;
+#else
+		VkPipelineStageFlags	srcStageMask				= VK_PIPELINE_STAGE_NONE_KHR;
+		VkPipelineStageFlags	dstStageMask				= VK_PIPELINE_STAGE_NONE_KHR;
+#endif // CTS_USES_VULKANSC
 		deUint32				memoryBarrierCount			= pDependencyInfo->memoryBarrierCount;
 		VkMemoryBarrier*		pMemoryBarriers				= DE_NULL;
 		deUint32				bufferMemoryBarrierCount	= pDependencyInfo->bufferMemoryBarrierCount;
@@ -681,7 +701,11 @@ public:
 	{
 		DE_ASSERT(pDependencyInfo);
 
+#ifndef CTS_USES_VULKANSC
 		VkPipelineStageFlags2 srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+#else
+		VkPipelineStageFlags2 srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR;
+#endif // CTS_USES_VULKANSC
 		if (pDependencyInfo->pMemoryBarriers)
 			srcStageMask = pDependencyInfo->pMemoryBarriers[0].srcStageMask;
 		if (pDependencyInfo->pBufferMemoryBarriers)
@@ -704,8 +728,13 @@ public:
 	{
 		DE_ASSERT(pDependencyInfo);
 
+#ifndef CTS_USES_VULKANSC
 		VkPipelineStageFlags2				srcStageMask				= VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
 		VkPipelineStageFlags2				dstStageMask				= VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+#else
+		VkPipelineStageFlags2				srcStageMask				= VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR;
+		VkPipelineStageFlags2				dstStageMask				= VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR;
+#endif // CTS_USES_VULKANSC
 		deUint32							memoryBarrierCount			= pDependencyInfo->memoryBarrierCount;
 		deUint32							bufferMemoryBarrierCount	= pDependencyInfo->bufferMemoryBarrierCount;
 		deUint32							imageMemoryBarrierCount		= pDependencyInfo->imageMemoryBarrierCount;
@@ -891,7 +920,11 @@ public:
 		DE_UNREF(usingSignalTimelineSemaphore);
 
 		m_submitInfo.push_back(VkSubmitInfo2{
+#ifndef CTS_USES_VULKANSC
 			VK_STRUCTURE_TYPE_SUBMIT_INFO_2,			// VkStructureType						sType
+#else
+			VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR,		// VkStructureType						sType
+#endif // CTS_USES_VULKANSC
 			DE_NULL,									// const void*							pNext
 			0u,											// VkSubmitFlags						flags
 			waitSemaphoreInfoCount,						// deUint32								waitSemaphoreInfoCount
@@ -905,27 +938,47 @@ public:
 
 	void cmdPipelineBarrier(VkCommandBuffer commandBuffer, const VkDependencyInfo* pDependencyInfo) const override
 	{
+#ifndef CTS_USES_VULKANSC
 		m_vk.cmdPipelineBarrier2(commandBuffer, pDependencyInfo);
+#else
+		m_vk.cmdPipelineBarrier2KHR(commandBuffer, pDependencyInfo);
+#endif // CTS_USES_VULKANSC
 	}
 
 	void cmdSetEvent(VkCommandBuffer commandBuffer, VkEvent event, const VkDependencyInfo* pDependencyInfo) const override
 	{
+#ifndef CTS_USES_VULKANSC
 		m_vk.cmdSetEvent2(commandBuffer, event, pDependencyInfo);
+#else
+		m_vk.cmdSetEvent2KHR(commandBuffer, event, pDependencyInfo);
+#endif // CTS_USES_VULKANSC
 	}
 
 	void cmdWaitEvents(VkCommandBuffer commandBuffer, deUint32 eventCount, const VkEvent* pEvents, const VkDependencyInfo* pDependencyInfo) const override
 	{
+#ifndef CTS_USES_VULKANSC
 		m_vk.cmdWaitEvents2(commandBuffer, eventCount, pEvents, pDependencyInfo);
+#else
+		m_vk.cmdWaitEvents2KHR(commandBuffer, eventCount, pEvents, pDependencyInfo);
+#endif // CTS_USES_VULKANSC
 	}
 
 	void cmdResetEvent(VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags2 flag) const override
 	{
+#ifndef CTS_USES_VULKANSC
 		m_vk.cmdResetEvent2(commandBuffer, event, flag);
+#else
+		m_vk.cmdResetEvent2KHR(commandBuffer, event, flag);
+#endif // CTS_USES_VULKANSC
 	}
 
 	VkResult queueSubmit(VkQueue queue, VkFence fence) override
 	{
+#ifndef CTS_USES_VULKANSC
 		return m_vk.queueSubmit2(queue, static_cast<deUint32>(m_submitInfo.size()), &m_submitInfo[0], fence);
+#else
+		return m_vk.queueSubmit2KHR(queue, static_cast<deUint32>(m_submitInfo.size()), &m_submitInfo[0], fence);
+#endif // CTS_USES_VULKANSC
 	}
 
 protected:
@@ -988,10 +1041,12 @@ void requireFeatures (const InstanceInterface& vki, const VkPhysicalDevice physD
 		throw tcu::NotSupportedError("Tessellation and geometry shaders don't support PointSize built-in");
 }
 
-void requireStorageImageSupport(const InstanceInterface& vki, const VkPhysicalDevice physDevice, const VkFormat fmt)
+void requireStorageImageSupport(const InstanceInterface& vki, const VkPhysicalDevice physDevice, const VkFormat fmt, const VkImageTiling tiling)
 {
-	const VkFormatProperties p = getPhysicalDeviceFormatProperties(vki, physDevice, fmt);
-	if ((p.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
+	const VkFormatProperties	p			= getPhysicalDeviceFormatProperties(vki, physDevice, fmt);
+	const auto&					features	= ((tiling == VK_IMAGE_TILING_LINEAR) ? p.linearTilingFeatures : p.optimalTilingFeatures);
+
+	if ((features & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
 		throw tcu::NotSupportedError("Storage image format not supported");
 }
 
@@ -1037,7 +1092,11 @@ VkCommandBufferSubmitInfo makeCommonCommandBufferSubmitInfo (const VkCommandBuff
 {
 	return
 	{
+#ifndef CTS_USES_VULKANSC
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,		// VkStructureType		sType
+#else
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR,	// VkStructureType		sType
+#endif // CTS_USES_VULKANSC
 		DE_NULL,											// const void*			pNext
 		cmdBuf,												// VkCommandBuffer		commandBuffer
 		0u													// uint32_t				deviceMask
@@ -1048,7 +1107,11 @@ VkSemaphoreSubmitInfo makeCommonSemaphoreSubmitInfo(VkSemaphore semaphore, deUin
 {
 	return
 	{
+#ifndef CTS_USES_VULKANSC
 		VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,		// VkStructureType				sType
+#else
+		VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR,	// VkStructureType				sType
+#endif // CTS_USES_VULKANSC
 		DE_NULL,										// const void*					pNext
 		semaphore,										// VkSemaphore					semaphore
 		value,											// deUint64						value
@@ -1062,7 +1125,11 @@ VkDependencyInfo makeCommonDependencyInfo(const VkMemoryBarrier2* pMemoryBarrier
 {
 	return
 	{
-		VK_STRUCTURE_TYPE_DEPENDENCY_INFO,				// VkStructureType					sType
+#ifndef CTS_USES_VULKANSC
+		VK_STRUCTURE_TYPE_DEPENDENCY_INFO,					// VkStructureType					sType
+#else
+		VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,				// VkStructureType					sType
+#endif // CTS_USES_VULKANSC
 		DE_NULL,											// const void*						pNext
 		eventDependency ? (VkDependencyFlags)0u : (VkDependencyFlags)VK_DEPENDENCY_BY_REGION_BIT,	// VkDependencyFlags				dependencyFlags
 		!!pMemoryBarrier,									// deUint32							memoryBarrierCount
@@ -1082,16 +1149,26 @@ PipelineCacheData::~PipelineCacheData (void)
 {
 }
 
-vk::Move<VkPipelineCache> PipelineCacheData::createPipelineCache (const vk::DeviceInterface& vk, const vk::VkDevice device) const
+vk::Move<VkPipelineCache> PipelineCacheData::createPipelineCache (const vk::DeviceInterface& vk, const vk::VkDevice device, de::SharedPtr<vk::ResourceInterface> resourceInterface) const
 {
+#ifndef CTS_USES_VULKANSC
+	DE_UNREF(resourceInterface);
+#endif
 	const de::ScopedLock						dataLock	(m_lock);
 	const struct vk::VkPipelineCacheCreateInfo	params	=
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
 		DE_NULL,
+#ifndef CTS_USES_VULKANSC
 		(vk::VkPipelineCacheCreateFlags)0,
 		(deUintptr)m_data.size(),
 		(m_data.empty() ? DE_NULL : &m_data[0])
+#else
+		VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+			VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,
+		resourceInterface->getCacheDataSize(),	// deUintptr					initialDataSize;
+		resourceInterface->getCacheData()		// const void*					pInitialData;
+#endif // CTS_USES_VULKANSC
 	};
 
 	return vk::createPipelineCache(vk, device, &params);
@@ -1100,14 +1177,52 @@ vk::Move<VkPipelineCache> PipelineCacheData::createPipelineCache (const vk::Devi
 void PipelineCacheData::setFromPipelineCache (const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineCache pipelineCache)
 {
 	const de::ScopedLock		dataLock		(m_lock);
-	deUintptr					dataSize		= 0;
 
+#ifndef CTS_USES_VULKANSC
+	deUintptr					dataSize = 0;
 	VK_CHECK(vk.getPipelineCacheData(device, pipelineCache, &dataSize, DE_NULL));
 
 	m_data.resize(dataSize);
 
 	if (dataSize > 0)
 		VK_CHECK(vk.getPipelineCacheData(device, pipelineCache, &dataSize, &m_data[0]));
+#else
+	DE_UNREF(vk);
+	DE_UNREF(device);
+	DE_UNREF(pipelineCache);
+#endif
+}
+
+vk::VkDevice getSyncDevice (de::MovePtr<VideoDevice>& device, Context& context)
+{
+	if (device == DE_NULL)
+		return context.getDevice();
+	else
+		return device->getDeviceSupportingQueue();
+}
+
+const vk::DeviceInterface& getSyncDeviceInterface (de::MovePtr<VideoDevice>& device, Context& context)
+{
+	if (device == DE_NULL)
+		return context.getDeviceInterface();
+	else
+		return device->getDeviceDriver();
+}
+
+deUint32 getSyncQueueFamilyIndex (de::MovePtr<VideoDevice>& device, Context& context)
+{
+	if (device == DE_NULL)
+		return context.getUniversalQueueFamilyIndex();
+	else
+		return device->getQueueFamilyVideo();
+}
+
+vk::VkQueue getSyncQueue (de::MovePtr<VideoDevice>& device, Context& context)
+{
+	if (device == DE_NULL)
+		return context.getUniversalQueue();
+	else
+		return getDeviceQueue(device->getDeviceDriver(), device->getDeviceSupportingQueue(), device->getQueueFamilyVideo(), 0u);
 }
 
 } // synchronization

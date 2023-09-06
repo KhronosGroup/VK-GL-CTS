@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 9d534f9312e56c72df763207e449c6719576fd54.
+ * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
  */
 
 void glwActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -1716,6 +1716,14 @@ void glwFramebufferRenderbuffer (GLenum target, GLenum attachment, GLenum render
 	gl->framebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
 }
 
+void glwFramebufferShadingRateEXT (GLenum target, GLenum attachment, GLuint texture, GLint baseLayer, GLsizei numLayers, GLsizei texelWidth, GLsizei texelHeight)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->framebufferShadingRateEXT(target, attachment, texture, baseLayer, numLayers, texelWidth, texelHeight);
+}
+
 void glwFramebufferTexture (GLenum target, GLenum attachment, GLuint texture, GLint level)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -1916,20 +1924,20 @@ void glwGetActiveAttrib (GLuint program, GLuint index, GLsizei bufSize, GLsizei 
 	gl->getActiveAttrib(program, index, bufSize, length, size, type, name);
 }
 
-void glwGetActiveSubroutineName (GLuint program, GLenum shadertype, GLuint index, GLsizei bufsize, GLsizei *length, GLchar *name)
+void glwGetActiveSubroutineName (GLuint program, GLenum shadertype, GLuint index, GLsizei bufSize, GLsizei *length, GLchar *name)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
-	gl->getActiveSubroutineName(program, shadertype, index, bufsize, length, name);
+	gl->getActiveSubroutineName(program, shadertype, index, bufSize, length, name);
 }
 
-void glwGetActiveSubroutineUniformName (GLuint program, GLenum shadertype, GLuint index, GLsizei bufsize, GLsizei *length, GLchar *name)
+void glwGetActiveSubroutineUniformName (GLuint program, GLenum shadertype, GLuint index, GLsizei bufSize, GLsizei *length, GLchar *name)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
-	gl->getActiveSubroutineUniformName(program, shadertype, index, bufsize, length, name);
+	gl->getActiveSubroutineUniformName(program, shadertype, index, bufSize, length, name);
 }
 
 void glwGetActiveSubroutineUniformiv (GLuint program, GLenum shadertype, GLuint index, GLenum pname, GLint *values)
@@ -2148,6 +2156,14 @@ GLint glwGetFragDataLocation (GLuint program, const GLchar *name)
 	return gl->getFragDataLocation(program, name);
 }
 
+void glwGetFragmentShadingRatesEXT (GLsizei samples, GLsizei maxCount, GLsizei *count, GLenum *shadingRates)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getFragmentShadingRatesEXT(samples, maxCount, count, shadingRates);
+}
+
 void glwGetFramebufferAttachmentParameteriv (GLenum target, GLenum attachment, GLenum pname, GLint *params)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -2212,28 +2228,28 @@ void glwGetIntegerv (GLenum pname, GLint *data)
 	gl->getIntegerv(pname, data);
 }
 
-void glwGetInternalformatSampleivNV (GLenum target, GLenum internalformat, GLsizei samples, GLenum pname, GLsizei bufSize, GLint *params)
+void glwGetInternalformatSampleivNV (GLenum target, GLenum internalformat, GLsizei samples, GLenum pname, GLsizei count, GLint *params)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
-	gl->getInternalformatSampleivNV(target, internalformat, samples, pname, bufSize, params);
+	gl->getInternalformatSampleivNV(target, internalformat, samples, pname, count, params);
 }
 
-void glwGetInternalformati64v (GLenum target, GLenum internalformat, GLenum pname, GLsizei bufSize, GLint64 *params)
+void glwGetInternalformati64v (GLenum target, GLenum internalformat, GLenum pname, GLsizei count, GLint64 *params)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
-	gl->getInternalformati64v(target, internalformat, pname, bufSize, params);
+	gl->getInternalformati64v(target, internalformat, pname, count, params);
 }
 
-void glwGetInternalformativ (GLenum target, GLenum internalformat, GLenum pname, GLsizei bufSize, GLint *params)
+void glwGetInternalformativ (GLenum target, GLenum internalformat, GLenum pname, GLsizei count, GLint *params)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
-	gl->getInternalformativ(target, internalformat, pname, bufSize, params);
+	gl->getInternalformativ(target, internalformat, pname, count, params);
 }
 
 void glwGetMultiTexEnvfvEXT (GLenum texunit, GLenum target, GLenum pname, GLfloat *params)
@@ -2604,12 +2620,12 @@ void glwGetProgramResourceName (GLuint program, GLenum programInterface, GLuint 
 	gl->getProgramResourceName(program, programInterface, index, bufSize, length, name);
 }
 
-void glwGetProgramResourceiv (GLuint program, GLenum programInterface, GLuint index, GLsizei propCount, const GLenum *props, GLsizei bufSize, GLsizei *length, GLint *params)
+void glwGetProgramResourceiv (GLuint program, GLenum programInterface, GLuint index, GLsizei propCount, const GLenum *props, GLsizei count, GLsizei *length, GLint *params)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
-	gl->getProgramResourceiv(program, programInterface, index, propCount, props, bufSize, length, params);
+	gl->getProgramResourceiv(program, programInterface, index, propCount, props, count, length, params);
 }
 
 void glwGetProgramStageiv (GLuint program, GLenum shadertype, GLenum pname, GLint *values)
@@ -2812,12 +2828,12 @@ GLint glwGetSubroutineUniformLocation (GLuint program, GLenum shadertype, const 
 	return gl->getSubroutineUniformLocation(program, shadertype, name);
 }
 
-void glwGetSynciv (GLsync sync, GLenum pname, GLsizei bufSize, GLsizei *length, GLint *values)
+void glwGetSynciv (GLsync sync, GLenum pname, GLsizei count, GLsizei *length, GLint *values)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
-	gl->getSynciv(sync, pname, bufSize, length, values);
+	gl->getSynciv(sync, pname, count, length, values);
 }
 
 void glwGetTexImage (GLenum target, GLint level, GLenum format, GLenum type, void *pixels)
@@ -5268,12 +5284,12 @@ void glwScissorIndexedv (GLuint index, const GLint *v)
 	gl->scissorIndexedv(index, v);
 }
 
-void glwShaderBinary (GLsizei count, const GLuint *shaders, GLenum binaryformat, const void *binary, GLsizei length)
+void glwShaderBinary (GLsizei count, const GLuint *shaders, GLenum binaryFormat, const void *binary, GLsizei length)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
-	gl->shaderBinary(count, shaders, binaryformat, binary, length);
+	gl->shaderBinary(count, shaders, binaryFormat, binary, length);
 }
 
 void glwShaderSource (GLuint shader, GLsizei count, const GLchar *const*string, const GLint *length)
@@ -5290,6 +5306,22 @@ void glwShaderStorageBlockBinding (GLuint program, GLuint storageBlockIndex, GLu
 	if (!gl)
 		return;
 	gl->shaderStorageBlockBinding(program, storageBlockIndex, storageBlockBinding);
+}
+
+void glwShadingRateEXT (GLenum rate)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->shadingRateEXT(rate);
+}
+
+void glwShadingRateCombinerOpsEXT (GLenum combinerOp0, GLenum combinerOp1)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->shadingRateCombinerOpsEXT(combinerOp0, combinerOp1);
 }
 
 void glwSpecializeShader (GLuint shader, const GLchar *pEntryPoint, GLuint numSpecializationConstants, const GLuint *pConstantIndex, const GLuint *pConstantValue)

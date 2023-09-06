@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT":
+		[
+			{ "features": ["attachmentFeedbackLoopLayout"], "requirements": ["VK_EXT_attachment_feedback_loop_layout"], "mandatory_variant": ["vulkan"]}
+		]
+	}
+}

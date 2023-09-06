@@ -62,8 +62,6 @@ using ::std::vector;
  *//*--------------------------------------------------------------------*/
 namespace test_common
 {
-static constexpr auto VK_NULL_HANDLE = DE_NULL;
-
 using ::std::chrono::high_resolution_clock;
 using ::std::chrono::microseconds;
 

@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": "0.1.2.0"
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceTimelineSemaphoreFeatures":
+		[
+			{ "features": ["timelineSemaphore"],		"requirements": ["VK_KHR_timeline_semaphore"],		"mandatory_variant": ["vulkan"] }
+		]
+	}
+}

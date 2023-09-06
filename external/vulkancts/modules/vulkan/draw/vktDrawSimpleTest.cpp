@@ -50,6 +50,7 @@ public:
 	typedef TestSpecBase	TestSpec;
 							SimpleDraw				(Context &context, TestSpec testSpec);
 	virtual tcu::TestStatus iterate					(void);
+	void					draw					(vk::VkCommandBuffer cmdBuffer, deUint32 instanceCount = 1u, deUint32 firstInstance = 0u);
 };
 
 class SimpleDrawInstanced : public SimpleDraw
@@ -61,7 +62,7 @@ public:
 };
 
 SimpleDraw::SimpleDraw (Context &context, TestSpec testSpec)
-	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.useDynamicRendering, testSpec.topology)
+	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.groupParams, testSpec.topology)
 {
 	m_data.push_back(VertexElementData(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), -1));
 	m_data.push_back(VertexElementData(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), -1));
@@ -112,43 +113,72 @@ tcu::TestStatus SimpleDraw::iterate (void)
 	tcu::TestLog&			log					= m_context.getTestContext().getLog();
 	const vk::VkQueue		queue				= m_context.getUniversalQueue();
 	const vk::VkDevice		device				= m_context.getDevice();
-
-	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
-	beginRender();
-
 	const vk::VkDeviceSize	vertexBufferOffset	= 0;
 	const vk::VkBuffer		vertexBuffer		= m_vertexBuffer->object();
 
-	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
-	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-
-	switch (m_topology)
+#ifndef CTS_USES_VULKANSC
+	if (m_groupParams->useSecondaryCmdBuffer)
 	{
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
-			m_vk.cmdDraw(*m_cmdBuffer, 6, 1, 2, 0);
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
-			m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 2, 0);
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
-		case vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LAST:
-			DE_FATAL("Topology not implemented");
-			break;
-		default:
-			DE_FATAL("Unknown topology");
-			break;
-	}
+		// record secondary command buffer
+		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		{
+			beginSecondaryCmdBuffer(m_vk, vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+			beginDynamicRender(*m_secCmdBuffer);
+		}
+		else
+			beginSecondaryCmdBuffer(m_vk);
 
-	endRender();
-	endCommandBuffer(m_vk, *m_cmdBuffer);
+		m_vk.cmdBindVertexBuffers(*m_secCmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+		m_vk.cmdBindPipeline(*m_secCmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		draw(*m_secCmdBuffer);
+
+		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endDynamicRender(*m_secCmdBuffer);
+
+		endCommandBuffer(m_vk, *m_secCmdBuffer);
+
+		// record primary command buffer
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+		preRenderBarriers();
+
+		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			beginDynamicRender(*m_cmdBuffer, vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
+		m_vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_secCmdBuffer);
+
+		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endDynamicRender(*m_cmdBuffer);
+
+		endCommandBuffer(m_vk, *m_cmdBuffer);
+	}
+	else if (m_groupParams->useDynamicRendering)
+	{
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+		preRenderBarriers();
+		beginDynamicRender(*m_cmdBuffer);
+
+		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		draw(*m_cmdBuffer);
+
+		endDynamicRender(*m_cmdBuffer);
+		endCommandBuffer(m_vk, *m_cmdBuffer);
+	}
+#endif // CTS_USES_VULKANSC
+
+	if (!m_groupParams->useDynamicRendering)
+	{
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+		preRenderBarriers();
+		beginLegacyRender(*m_cmdBuffer);
+
+		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		draw(*m_cmdBuffer);
+
+		endLegacyRender(*m_cmdBuffer);
+		endCommandBuffer(m_vk, *m_cmdBuffer);
+	}
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
@@ -196,52 +226,108 @@ tcu::TestStatus SimpleDraw::iterate (void)
 
 }
 
+void SimpleDraw::draw(vk::VkCommandBuffer cmdBuffer, deUint32 instanceCount, deUint32 firstInstance)
+{
+	switch (m_topology)
+	{
+	case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+		m_vk.cmdDraw(cmdBuffer, 6, instanceCount, 2, firstInstance);
+		break;
+	case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
+		m_vk.cmdDraw(cmdBuffer, 4, instanceCount, 2, firstInstance);
+		break;
+	case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+	case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+	case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
+	case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
+	case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+	case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+	case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+	case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+	case vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
+	case vk::VK_PRIMITIVE_TOPOLOGY_LAST:
+		DE_FATAL("Topology not implemented");
+		break;
+	default:
+		DE_FATAL("Unknown topology");
+		break;
+	}
+}
+
 SimpleDrawInstanced::SimpleDrawInstanced (Context &context, TestSpec testSpec)
 	: SimpleDraw	(context, testSpec) {}
 
 tcu::TestStatus SimpleDrawInstanced::iterate (void)
 {
-	tcu::TestLog&		log						= m_context.getTestContext().getLog();
-	const vk::VkQueue	queue					= m_context.getUniversalQueue();
-	const vk::VkDevice	device					= m_context.getDevice();
+	tcu::TestLog&			log						= m_context.getTestContext().getLog();
+	const vk::VkQueue		queue					= m_context.getUniversalQueue();
+	const vk::VkDevice		device					= m_context.getDevice();
+	const vk::VkDeviceSize	vertexBufferOffset		= 0;
+	const vk::VkBuffer		vertexBuffer			= m_vertexBuffer->object();
 
-	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
-	beginRender();
-
-	const vk::VkDeviceSize	vertexBufferOffset	= 0;
-	const vk::VkBuffer		vertexBuffer		= m_vertexBuffer->object();
-
-	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
-
-	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-
-	switch (m_topology)
+#ifndef CTS_USES_VULKANSC
+	if (m_groupParams->useSecondaryCmdBuffer)
 	{
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
-			m_vk.cmdDraw(*m_cmdBuffer, 6, 4, 2, 2);
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
-			m_vk.cmdDraw(*m_cmdBuffer, 4, 4, 2, 2);
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
-		case vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LAST:
-			DE_FATAL("Topology not implemented");
-			break;
-		default:
-			DE_FATAL("Unknown topology");
-			break;
-	}
+		// record secondary command buffer
+		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		{
+			beginSecondaryCmdBuffer(m_vk, vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+			beginDynamicRender(*m_secCmdBuffer);
+		}
+		else
+			beginSecondaryCmdBuffer(m_vk);
 
-	endRender();
-	endCommandBuffer(m_vk, *m_cmdBuffer);
+		m_vk.cmdBindVertexBuffers(*m_secCmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+		m_vk.cmdBindPipeline(*m_secCmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		draw(*m_secCmdBuffer, 4u, 2u);
+
+		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endDynamicRender(*m_secCmdBuffer);
+
+		endCommandBuffer(m_vk, *m_secCmdBuffer);
+
+		// record primary command buffer
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+		preRenderBarriers();
+
+		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			beginDynamicRender(*m_cmdBuffer, vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
+		m_vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_secCmdBuffer);
+
+		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			endDynamicRender(*m_cmdBuffer);
+
+		endCommandBuffer(m_vk, *m_cmdBuffer);
+	}
+	else if (m_groupParams->useDynamicRendering)
+	{
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+		preRenderBarriers();
+
+		beginDynamicRender(*m_cmdBuffer);
+		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		draw(*m_cmdBuffer, 4u, 2u);
+		endDynamicRender(*m_cmdBuffer);
+
+		endCommandBuffer(m_vk, *m_cmdBuffer);
+	}
+#endif // CTS_USES_VULKANSC
+
+	if (!m_groupParams->useDynamicRendering)
+	{
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+		preRenderBarriers();
+
+		beginLegacyRender(*m_cmdBuffer);
+		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		draw(*m_cmdBuffer, 4u, 2u);
+		endLegacyRender(*m_cmdBuffer);
+
+		endCommandBuffer(m_vk, *m_cmdBuffer);
+	}
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
@@ -292,15 +378,15 @@ tcu::TestStatus SimpleDrawInstanced::iterate (void)
 
 void checkSupport(Context& context, SimpleDraw::TestSpec testSpec)
 {
-	if (testSpec.useDynamicRendering)
+	if (testSpec.groupParams->useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 }
 
 }	// anonymous
 
-SimpleDrawTests::SimpleDrawTests (tcu::TestContext &testCtx, bool useDynamicRendering)
+SimpleDrawTests::SimpleDrawTests (tcu::TestContext &testCtx, const SharedGroupParams groupParams)
 	: TestCaseGroup			(testCtx, "simple_draw", "drawing simple geometry")
-	, m_useDynamicRendering	(useDynamicRendering)
+	, m_groupParams			(groupParams)
 {
 	/* Left blank on purpose */
 }
@@ -310,12 +396,16 @@ SimpleDrawTests::~SimpleDrawTests (void) {}
 void SimpleDrawTests::init (void)
 {
 	{
-		SimpleDraw::TestSpec testSpec;
-		testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetch.vert";
-		testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
-		testSpec.useDynamicRendering = m_useDynamicRendering;
+		SimpleDraw::TestSpec testSpec
+		{
+			{													// ShaderMap					shaders;
+				{ glu::SHADERTYPE_VERTEX, "vulkan/draw/VertexFetch.vert" },
+				{ glu::SHADERTYPE_FRAGMENT, "vulkan/draw/VertexFetch.frag" }
+			},
+			vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,			// vk::VkPrimitiveTopology		topology;
+			m_groupParams										// const SharedGroupParams		groupParams;
+		};
 
-		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		addChild(new InstanceFactory<SimpleDraw, FunctionSupport1<SimpleDraw::TestSpec> >
 			(m_testCtx, "simple_draw_triangle_list", "Draws triangle list", testSpec, FunctionSupport1<SimpleDraw::TestSpec>::Args(checkSupport, testSpec)));
 		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
@@ -323,12 +413,16 @@ void SimpleDrawTests::init (void)
 			(m_testCtx, "simple_draw_triangle_strip", "Draws triangle strip", testSpec, FunctionSupport1<SimpleDraw::TestSpec>::Args(checkSupport, testSpec)));
 	}
 	{
-		SimpleDrawInstanced::TestSpec testSpec;
-		testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchInstancedFirstInstance.vert";
-		testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
-		testSpec.useDynamicRendering = m_useDynamicRendering;
+		SimpleDrawInstanced::TestSpec testSpec
+		{
+			{
+				{ glu::SHADERTYPE_VERTEX, "vulkan/draw/VertexFetchInstancedFirstInstance.vert" },
+				{ glu::SHADERTYPE_FRAGMENT, "vulkan/draw/VertexFetch.frag" }
+			},
+			vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+			m_groupParams
+		};
 
-		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		addChild(new InstanceFactory<SimpleDrawInstanced, FunctionSupport1<SimpleDrawInstanced::TestSpec> >
 			(m_testCtx, "simple_draw_instanced_triangle_list", "Draws an instanced triangle list", testSpec, FunctionSupport1<SimpleDrawInstanced::TestSpec>::Args(checkSupport, testSpec)));
 		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;

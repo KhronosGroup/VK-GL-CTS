@@ -39,13 +39,17 @@ namespace vk
 {
 
 Move<VkInstance>	createDefaultInstance	(const PlatformInterface&			vkPlatform,
-											 deUint32							apiVersion);
+											 deUint32							apiVersion,
+											 const tcu::CommandLine&				cmdLine);
 
 Move<VkInstance>	createDefaultInstance	(const PlatformInterface&			vkPlatform,
 											 deUint32							apiVersion,
 											 const std::vector<std::string>&	enabledLayers,
 											 const std::vector<std::string>&	enabledExtensions,
+											 const tcu::CommandLine&			cmdLine,
+#ifndef CTS_USES_VULKANSC
 											 DebugReportRecorder*				recorder = nullptr,
+#endif // CTS_USES_VULKANSC
 											 const VkAllocationCallbacks*		pAllocator = nullptr);
 
 deUint32			chooseDeviceIndex		(const InstanceInterface&			vkInstance,

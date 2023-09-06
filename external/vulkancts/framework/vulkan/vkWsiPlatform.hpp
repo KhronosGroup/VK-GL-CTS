@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
+#include "tcuCommandLine.hpp"
 #include "tcuVector.hpp"
 #include "tcuMaybe.hpp"
 
@@ -40,6 +41,7 @@ public:
 	virtual	void		setVisible		(bool visible);
 	virtual void		setForeground	(void);
 	virtual void		resize			(const tcu::UVec2& newSize);
+	virtual	void		setMinimized	(bool minized);
 
 protected:
 						Window			(void) {}
@@ -140,6 +142,28 @@ struct TypeTraits<TYPE_WAYLAND>
 
 typedef DisplayInterface<TYPE_WAYLAND>	WaylandDisplayInterface;
 typedef WindowInterface<TYPE_WAYLAND>	WaylandWindowInterface;
+
+// VK_EXT_acquire_drm_display
+
+template<>
+struct TypeTraits<TYPE_DIRECT_DRM>
+{
+	typedef VkDisplayKHR NativeDisplayType;
+};
+
+struct DirectDrmDisplayInterface : public DisplayInterface<TYPE_DIRECT_DRM>
+{
+public:
+					DirectDrmDisplayInterface	(void)
+						: DisplayInterface(DE_NULL)
+					{}
+	virtual void	initializeDisplay			(const InstanceInterface& vki, VkInstance instance, const tcu::CommandLine& cmdLine)
+	{
+		DE_UNREF(vki);
+		DE_UNREF(instance);
+		DE_UNREF(cmdLine);
+	}
+};
 
 // VK_KHR_mir_surface
 

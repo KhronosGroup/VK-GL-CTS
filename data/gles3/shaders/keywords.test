@@ -3069,6 +3069,82 @@ group reserved_keywords "Usage of reserved keywords as identifiers."
 	end
 
 end # reserved_keywords
+group allowed_keywords "Usage of allowed keywords as identifiers."
+
+	case image1DShadow
+
+		values {}
+		version 300 es
+
+		both ""
+			#version 300 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main()
+			{
+				${SETUP}
+				float image1DShadow = 1.0;
+				${OUTPUT}
+			}
+		""
+	end
+	case image2DShadow
+
+		values {}
+		version 300 es
+
+		both ""
+			#version 300 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main()
+			{
+				${SETUP}
+				float image2DShadow = 1.0;
+				${OUTPUT}
+			}
+		""
+	end
+	case image1DArrayShadow
+
+		values {}
+		version 300 es
+
+		both ""
+			#version 300 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main()
+			{
+				${SETUP}
+				float image1DArrayShadow = 1.0;
+				${OUTPUT}
+			}
+		""
+	end
+	case image2DArrayShadow
+
+		values {}
+		version 300 es
+
+		both ""
+			#version 300 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			void main()
+			{
+				${SETUP}
+				float image2DArrayShadow = 1.0;
+				${OUTPUT}
+			}
+		""
+	end
+
+end # allowed_keywords
 group invalid_identifiers "Usage of invalid identifiers."
 
 	case gl_begin

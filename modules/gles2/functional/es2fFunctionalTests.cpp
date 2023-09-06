@@ -77,6 +77,7 @@
 #include "es2fShaderBuiltinVarTests.hpp"
 #include "es2fShaderConstExprTests.hpp"
 #include "es2fShaderDiscardTests.hpp"
+#include "es2fShaderFunctionTests.hpp"
 #include "es2fShaderIndexingTests.hpp"
 #include "es2fShaderLoopTests.hpp"
 #include "es2fShaderOperatorTests.hpp"
@@ -154,6 +155,7 @@ public:
 		addChild(new ShaderFragDataTests		(m_context));
 		addChild(new ShaderAlgorithmTests		(m_context));
 		addChild(new ShaderConstExprTests		(m_context));
+		addChild(new ShaderFunctionTests		(m_context));
 
 		addChild(new RandomShaderTests(m_context));
 	}

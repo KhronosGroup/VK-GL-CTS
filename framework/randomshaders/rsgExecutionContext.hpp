@@ -34,10 +34,7 @@
 namespace rsg
 {
 
-enum
-{
-	EXEC_VEC_WIDTH	= 64
-};
+constexpr int EXEC_VEC_WIDTH = 64;
 
 typedef ConstStridedValueAccess<EXEC_VEC_WIDTH>			ExecConstValueAccess;
 typedef StridedValueAccess<EXEC_VEC_WIDTH>				ExecValueAccess;

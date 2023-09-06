@@ -277,11 +277,16 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest			(VkDeviceSize				
 
 			vk.getBufferMemoryRequirements(vkDevice, *buffer, &memReqs);	// get the proper size requirement
 
-			if (size > memReqs.size)
+#ifdef CTS_USES_VULKANSC
+			if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
 			{
-				std::ostringstream		errorMsg;
-				errorMsg << "Requied memory size (" << memReqs.size << " bytes) smaller than the buffer's size (" << size << " bytes)!";
-				return tcu::TestStatus::fail(errorMsg.str());
+				if (size > memReqs.size)
+				{
+					std::ostringstream		errorMsg;
+					errorMsg << "Required memory size (" << memReqs.size << " bytes) smaller than the buffer's size (" << size << " bytes)!";
+					return tcu::TestStatus::fail(errorMsg.str());
+				}
 			}
 
 			// Allocate the memory
@@ -318,6 +323,7 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest			(VkDeviceSize				
 	}
 
 	// Bind the memory
+#ifndef CTS_USES_VULKANSC
 	if ((m_testCase.flags & (VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT | VK_BUFFER_CREATE_SPARSE_ALIASED_BIT)) != 0)
 	{
 		const VkQueue					queue							= m_context.getSparseQueue();
@@ -364,6 +370,10 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest			(VkDeviceSize				
 	}
 	else if (vk.bindBufferMemory(vkDevice, *buffer, *memory, 0) != VK_SUCCESS)
 		return tcu::TestStatus::fail("Bind buffer memory failed! (requested memory size: " + de::toString(size) + ")");
+#else
+	if (vk.bindBufferMemory(vkDevice, *buffer, *memory, 0) != VK_SUCCESS)
+		return tcu::TestStatus::fail("Bind buffer memory failed! (requested memory size: " + de::toString(size) + ")");
+#endif // CTS_USES_VULKANSC
 
 	return tcu::TestStatus::pass("Pass");
 }
@@ -376,7 +386,9 @@ tcu::TestStatus							BufferTestInstance::iterate		(void)
 		1181,
 		15991,
 		16384,
+#ifndef CTS_USES_VULKANSC
 		~0ull,		// try to exercise a very large buffer too (will be clamped to a sensible size later)
+#endif // CTS_USES_VULKANSC
 	};
 
 	for (int i = 0; i < DE_LENGTH_OF_ARRAY(testSizes); ++i)
@@ -449,6 +461,9 @@ tcu::TestStatus							DedicatedAllocationBufferTestInstance::bufferCreateAndAllo
 		errorMsg << "Nonexternal objects cannot require dedicated allocation.";
 		return tcu::TestStatus::fail(errorMsg.str());
 	}
+
+	if(memReqs.memoryRequirements.memoryTypeBits == 0)
+		return tcu::TestStatus::fail("memoryTypeBits is 0");
 
 	const deUint32						heapTypeIndex					= static_cast<deUint32>(deCtz32(memReqs.memoryRequirements.memoryTypeBits));
 	const VkMemoryType					memoryType						= memoryProperties.memoryTypes[heapTypeIndex];
@@ -618,10 +633,12 @@ void createBufferUsageCases (tcu::TestCaseGroup& testGroup, const deUint32 first
 		const VkBufferCreateFlags		bufferCreateFlags[]		=
 		{
 			0,
+#ifndef CTS_USES_VULKANSC
 			VK_BUFFER_CREATE_SPARSE_BINDING_BIT,
 			VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT,
 			VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,
 			VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT | VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,
+#endif // CTS_USES_VULKANSC
 		};
 
 		// Dedicated allocation does not support sparse feature
@@ -679,15 +696,23 @@ struct LargeBufferParameters
 	VkBufferCreateFlags		flags;
 };
 
+#ifndef CTS_USES_VULKANSC
 tcu::TestStatus testLargeBuffer(Context& context, LargeBufferParameters params)
 {
-	const DeviceInterface&	vk					= context.getDeviceInterface();
-	const VkDevice			vkDevice			= context.getDevice();
-	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-	VkBuffer				rawBuffer			= DE_NULL;
+	const DeviceInterface&			vk					= context.getDeviceInterface();
+	const VkDevice					vkDevice			= context.getDevice();
+	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const VkPhysicalDeviceLimits	limits				= getPhysicalDeviceProperties(context.getInstanceInterface(),
+				                                                                      context.getPhysicalDevice()).limits;
+	VkBuffer						rawBuffer			= DE_NULL;
 
+#ifndef CTS_USES_VULKANSC
 	if (params.useMaxBufferSize)
 		params.bufferSize = context.getMaintenance4Properties().maxBufferSize;
+#endif // CTS_USES_VULKANSC
+
+	if ((params.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) != 0)
+		params.bufferSize = std::min(params.bufferSize, limits.sparseAddressSpaceSize);
 
 	VkBufferCreateInfo bufferParams =
 	{
@@ -722,7 +747,9 @@ tcu::TestStatus testLargeBuffer(Context& context, LargeBufferParameters params)
 
 	return tcu::TestStatus::fail("Fail");
 }
+#endif // CTS_USES_VULKANSC
 
+#ifndef CTS_USES_VULKANSC
 void checkMaintenance4Support(Context& context, LargeBufferParameters params)
 {
 	if (params.useMaxBufferSize)
@@ -735,6 +762,7 @@ void checkMaintenance4Support(Context& context, LargeBufferParameters params)
 	if ((params.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) && !physicalDeviceFeatures.sparseBinding)
 		TCU_THROW(NotSupportedError, "Sparse bindings feature is not supported");
 }
+#endif // CTS_USES_VULKANSC
 
 } // anonymous
 
@@ -756,6 +784,7 @@ void checkMaintenance4Support(Context& context, LargeBufferParameters params)
 
 	{
 		de::MovePtr<tcu::TestCaseGroup> basicTests(new tcu::TestCaseGroup(testCtx, "basic", "Basic buffer tests."));
+#ifndef CTS_USES_VULKANSC
 		addFunctionCase(basicTests.get(), "max_size", "Creating buffer using maxBufferSize limit.",
 						checkMaintenance4Support, testLargeBuffer, LargeBufferParameters
 						{
@@ -777,6 +806,7 @@ void checkMaintenance4Support(Context& context, LargeBufferParameters params)
 							false,
 							0u
 						});
+#endif // CTS_USES_VULKANSC
 		buffersTests->addChild(basicTests.release());
 	}
 
