@@ -191,9 +191,9 @@ CTS execution may be split into N fractions ( for the purpose of running it in p
 
 	--deqp-fraction=I,N
 
-where I denotes index of current CTS execution ( I=[0..N-1], N=[1..8] )
+where I denotes index of current CTS execution ( I=[0..N-1], N=[1..16] )
 
-When collecting results for a Conformance Submission Package the number of fractions must not exceed 8,
+When collecting results for a Conformance Submission Package the number of fractions must not exceed 16,
 and a list of mandatory information tests for each fraction must be supplied:
 
 	--deqp-fraction-mandatory-caselist-file=<vulkancts>external/vulkancts/mustpass/main/vk-fraction-mandatory-tests.txt
