@@ -27,6 +27,8 @@ if (EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp)
 	# Do not build glslang binaries.
 	set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "" FORCE)
 
+	set(ALLOW_EXTERNAL_SPIRV_TOOLS "../spirv-tools")
+
 	# Overwrite the CMake flags for glslang with the our 3rd party ones.
 	set(CMAKE_C_FLAGS	${DE_3RD_PARTY_C_FLAGS})
 	set(CMAKE_CXX_FLAGS	${DE_3RD_PARTY_CXX_FLAGS})
