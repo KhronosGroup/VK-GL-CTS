@@ -637,7 +637,7 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderAtomicFloatFeaturesEXT (Context& 
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
-tcu::TestStatus testPhysicalDeviceFeatureVertexAttributeDivisorFeaturesEXT (Context& context)
+tcu::TestStatus testPhysicalDeviceFeatureVertexAttributeDivisorFeaturesKHR (Context& context)
 {
 	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
 	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
@@ -647,30 +647,30 @@ tcu::TestStatus testPhysicalDeviceFeatureVertexAttributeDivisorFeaturesEXT (Cont
 	VkPhysicalDeviceFeatures2	extFeatures;
 	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
-	VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT	deviceVertexAttributeDivisorFeaturesEXT[count];
-	const bool											isVertexAttributeDivisorFeaturesEXT = checkExtension(properties, "VK_EXT_vertex_attribute_divisor");
+	VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR	deviceVertexAttributeDivisorFeaturesKHR[count];
+	const bool											isVertexAttributeDivisorFeaturesKHR = checkExtension(properties, "VK_EXT_vertex_attribute_divisor");
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
-		deMemset(&deviceVertexAttributeDivisorFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT));
-		deviceVertexAttributeDivisorFeaturesEXT[ndx].sType = isVertexAttributeDivisorFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT : VK_STRUCTURE_TYPE_MAX_ENUM;
-		deviceVertexAttributeDivisorFeaturesEXT[ndx].pNext = DE_NULL;
+		deMemset(&deviceVertexAttributeDivisorFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR));
+		deviceVertexAttributeDivisorFeaturesKHR[ndx].sType = isVertexAttributeDivisorFeaturesKHR ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceVertexAttributeDivisorFeaturesKHR[ndx].pNext = DE_NULL;
 
 		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
 		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-		extFeatures.pNext = &deviceVertexAttributeDivisorFeaturesEXT[ndx];
+		extFeatures.pNext = &deviceVertexAttributeDivisorFeaturesKHR[ndx];
 
 		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
 	}
 
-	if (isVertexAttributeDivisorFeaturesEXT)
-		log << TestLog::Message << deviceVertexAttributeDivisorFeaturesEXT[0] << TestLog::EndMessage;
+	if (isVertexAttributeDivisorFeaturesKHR)
+		log << TestLog::Message << deviceVertexAttributeDivisorFeaturesKHR[0] << TestLog::EndMessage;
 
-	if (isVertexAttributeDivisorFeaturesEXT &&
-		(deviceVertexAttributeDivisorFeaturesEXT[0].vertexAttributeInstanceRateDivisor != deviceVertexAttributeDivisorFeaturesEXT[1].vertexAttributeInstanceRateDivisor ||
-		 deviceVertexAttributeDivisorFeaturesEXT[0].vertexAttributeInstanceRateZeroDivisor != deviceVertexAttributeDivisorFeaturesEXT[1].vertexAttributeInstanceRateZeroDivisor))
+	if (isVertexAttributeDivisorFeaturesKHR &&
+		(deviceVertexAttributeDivisorFeaturesKHR[0].vertexAttributeInstanceRateDivisor != deviceVertexAttributeDivisorFeaturesKHR[1].vertexAttributeInstanceRateDivisor ||
+		 deviceVertexAttributeDivisorFeaturesKHR[0].vertexAttributeInstanceRateZeroDivisor != deviceVertexAttributeDivisorFeaturesKHR[1].vertexAttributeInstanceRateZeroDivisor))
 	{
-		TCU_FAIL("Mismatch between VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT");
+		TCU_FAIL("Mismatch between VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR");
 	}
 	return tcu::TestStatus::pass("Querying succeeded");
 }
@@ -1992,7 +1992,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "vulkan_memory_model_features", "VkPhysicalDeviceVulkanMemoryModelFeatures", testPhysicalDeviceFeatureVulkanMemoryModelFeatures);
 	addFunctionCase(testGroup, "shader_atomic_int64_features", "VkPhysicalDeviceShaderAtomicInt64Features", testPhysicalDeviceFeatureShaderAtomicInt64Features);
 	addFunctionCase(testGroup, "shader_atomic_float_features_ext", "VkPhysicalDeviceShaderAtomicFloatFeaturesEXT", testPhysicalDeviceFeatureShaderAtomicFloatFeaturesEXT);
-	addFunctionCase(testGroup, "vertex_attribute_divisor_features_ext", "VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT", testPhysicalDeviceFeatureVertexAttributeDivisorFeaturesEXT);
+	addFunctionCase(testGroup, "vertex_attribute_divisor_features_khr", "VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR", testPhysicalDeviceFeatureVertexAttributeDivisorFeaturesKHR);
 	addFunctionCase(testGroup, "astc_decode_features_ext", "VkPhysicalDeviceASTCDecodeFeaturesEXT", testPhysicalDeviceFeatureASTCDecodeFeaturesEXT);
 	addFunctionCase(testGroup, "scalar_block_layout_features", "VkPhysicalDeviceScalarBlockLayoutFeatures", testPhysicalDeviceFeatureScalarBlockLayoutFeatures);
 	addFunctionCase(testGroup, "uniform_buffer_standard_layout_features", "VkPhysicalDeviceUniformBufferStandardLayoutFeatures", testPhysicalDeviceFeatureUniformBufferStandardLayoutFeatures);

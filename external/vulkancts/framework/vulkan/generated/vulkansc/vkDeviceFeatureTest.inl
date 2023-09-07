@@ -833,7 +833,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeatures
 }
 
 
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeaturesEXT (Context& context)
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeaturesKHR (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();
 	tcu::TestLog&							log						= context.getTestContext().getLog();
@@ -857,14 +857,14 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFea
 	const auto& extensionNames = context.getDeviceCreationExtensions();
 	DE_UNREF(extensionNames); // In some cases this is not used.
 
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT>()))
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR>()))
 	{
 		static const Feature features[] =
 		{
-		FEATURE_ITEM (VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT, vertexAttributeInstanceRateDivisor),
-		FEATURE_ITEM (VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT, vertexAttributeInstanceRateZeroDivisor),
+		FEATURE_ITEM (VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR, vertexAttributeInstanceRateDivisor),
+		FEATURE_ITEM (VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR, vertexAttributeInstanceRateZeroDivisor),
 		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT*>(featuresStruct);
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR*>(featuresStruct);
 		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
@@ -2424,7 +2424,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "vulkan_memory_model_features", "createDeviceWithUnsupportedFeaturesTestVulkanMemoryModelFeatures", createDeviceWithUnsupportedFeaturesTestVulkanMemoryModelFeatures);
 	addFunctionCase(testGroup, "shader_atomic_int64_features", "createDeviceWithUnsupportedFeaturesTestShaderAtomicInt64Features", createDeviceWithUnsupportedFeaturesTestShaderAtomicInt64Features);
 	addFunctionCase(testGroup, "shader_atomic_float_features_ext", "createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeaturesEXT", createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeaturesEXT);
-	addFunctionCase(testGroup, "vertex_attribute_divisor_features_ext", "createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeaturesEXT", createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeaturesEXT);
+	addFunctionCase(testGroup, "vertex_attribute_divisor_features_khr", "createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeaturesKHR", createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeaturesKHR);
 	addFunctionCase(testGroup, "astc_decode_features_ext", "createDeviceWithUnsupportedFeaturesTestASTCDecodeFeaturesEXT", createDeviceWithUnsupportedFeaturesTestASTCDecodeFeaturesEXT);
 	addFunctionCase(testGroup, "scalar_block_layout_features", "createDeviceWithUnsupportedFeaturesTestScalarBlockLayoutFeatures", createDeviceWithUnsupportedFeaturesTestScalarBlockLayoutFeatures);
 	addFunctionCase(testGroup, "uniform_buffer_standard_layout_features", "createDeviceWithUnsupportedFeaturesTestUniformBufferStandardLayoutFeatures", createDeviceWithUnsupportedFeaturesTestUniformBufferStandardLayoutFeatures);

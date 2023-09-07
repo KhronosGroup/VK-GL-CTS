@@ -375,8 +375,9 @@ void setDefaultShaderObjectDynamicStates (const vk::DeviceInterface& vk, vk::VkC
 		vk.cmdSetCoverageReductionModeNV(cmdBuffer, vk::VK_COVERAGE_REDUCTION_MODE_MERGE_NV);
 	if (extensionEnabled(deviceExtensions, "VK_NV_representative_fragment_test"))
 		vk.cmdSetRepresentativeFragmentTestEnableNV(cmdBuffer, VK_FALSE);
+	VkBool32 scissorEnable = VK_FALSE;
 	if (extensionEnabled(deviceExtensions, "VK_NV_scissor_exclusive"))
-		vk.cmdSetExclusiveScissorNV(cmdBuffer, 0u, 1u, &scissor);
+		vk.cmdSetExclusiveScissorEnableNV(cmdBuffer, 0u, 1u, &scissorEnable);
 	if (extensionEnabled(deviceExtensions, "VK_NV_fragment_shading_rate_enums"))
 		vk.cmdSetFragmentShadingRateEnumNV(cmdBuffer, vk::VK_FRAGMENT_SHADING_RATE_1_INVOCATION_PER_2X2_PIXELS_NV, combinerOps);
 	if (extensionEnabled(deviceExtensions, "VK_EXT_discard_rectangles"))
@@ -418,10 +419,20 @@ void bindGraphicsShaders (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmd
 	}
 }
 
-void bindComputeShader(const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkShaderEXT compShader)
+void bindComputeShader (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkShaderEXT compShader)
 {
 	vk::VkShaderStageFlagBits stage = vk::VK_SHADER_STAGE_COMPUTE_BIT;
 	vk.cmdBindShadersEXT(cmdBuffer, 1, &stage, &compShader);
+}
+
+void bindNullMeshShaders (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, const VkPhysicalDeviceMeshShaderFeaturesEXT& meshShaderFeatures)
+{
+	vk::VkShaderEXT				nullShader = VK_NULL_HANDLE;
+	vk::VkShaderStageFlagBits	meshStages[] = { vk::VK_SHADER_STAGE_TASK_BIT_EXT, vk::VK_SHADER_STAGE_MESH_BIT_EXT };
+	if (meshShaderFeatures.taskShader)
+		vk.cmdBindShadersEXT(cmdBuffer, 1u, &meshStages[0], &nullShader);
+	if (meshShaderFeatures.meshShader)
+		vk.cmdBindShadersEXT(cmdBuffer, 1u, &meshStages[1], &nullShader);
 }
 
 } // vk

@@ -375,6 +375,7 @@ tcu::Format::Bitfield<32>	getOpticalFlowGridSizeFlagsNVStr							(VkOpticalFlowG
 tcu::Format::Bitfield<32>	getOpticalFlowUsageFlagsNVStr								(VkOpticalFlowUsageFlagsNV value);
 tcu::Format::Bitfield<32>	getOpticalFlowSessionCreateFlagsNVStr						(VkOpticalFlowSessionCreateFlagsNV value);
 tcu::Format::Bitfield<32>	getOpticalFlowExecuteFlagsNVStr								(VkOpticalFlowExecuteFlagsNV value);
+tcu::Format::Bitfield<32>	getFrameBoundaryFlagsEXTStr									(VkFrameBoundaryFlagsEXT value);
 tcu::Format::Bitfield<32>	getPresentScalingFlagsEXTStr								(VkPresentScalingFlagsEXT value);
 tcu::Format::Bitfield<32>	getPresentGravityFlagsEXTStr								(VkPresentGravityFlagsEXT value);
 tcu::Format::Bitfield<32>	getShaderCreateFlagsEXTStr									(VkShaderCreateFlagsEXT value);
@@ -703,15 +704,15 @@ std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreTypeCreateInfo& valu
 std::ostream&	operator<<	(std::ostream& s, const VkTimelineSemaphoreSubmitInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreWaitInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreSignalInfo& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVertexInputBindingDivisorDescriptionEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPipelineVertexInputDivisorStateCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVertexInputBindingDivisorDescriptionKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineVertexInputDivisorStateCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePCIBusInfoPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice8BitStorageFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVulkanMemoryModelFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderAtomicInt64Features& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderAtomicFloatFeaturesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyCheckpointPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCheckpointDataNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDepthStencilResolveProperties& value);

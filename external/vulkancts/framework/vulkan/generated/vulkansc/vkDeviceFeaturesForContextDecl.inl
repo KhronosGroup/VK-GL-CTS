@@ -9,7 +9,7 @@ const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&					getDepthClipEnableFeat
 const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&					getPerformanceQueryFeatures						(void) const;
 const vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&			getBlendOperationAdvancedFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceShaderClockFeaturesKHR&						getShaderClockFeatures							(void) const;
-const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&			getVertexAttributeDivisorFeaturesEXT			(void) const;
+const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR&			getVertexAttributeDivisorFeatures				(void) const;
 const vk::VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR&			getShaderTerminateInvocationFeatures			(void) const;
 const vk::VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&				getSubgroupSizeControlFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&				getFragmentShadingRateFeatures					(void) const;

@@ -1319,7 +1319,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO:									return "VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES";
 		case VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO:						return "VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO";
-		case VK_STRUCTURE_TYPE_PRIVATE_VENDOR_INFO_RESERVED_OFFSET_0_NV:						return "VK_STRUCTURE_TYPE_PRIVATE_VENDOR_INFO_RESERVED_OFFSET_0_NV";
+		case VK_STRUCTURE_TYPE_PRIVATE_VENDOR_INFO_PLACEHOLDER_OFFSET_0_NV:						return "VK_STRUCTURE_TYPE_PRIVATE_VENDOR_INFO_PLACEHOLDER_OFFSET_0_NV";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO:								return "VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES";
@@ -3121,6 +3121,11 @@ tcu::Format::Bitfield<32> getOpticalFlowSessionCreateFlagsNVStr (VkOpticalFlowSe
 }
 
 tcu::Format::Bitfield<32> getOpticalFlowExecuteFlagsNVStr (VkOpticalFlowExecuteFlagsNV value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getFrameBoundaryFlagsEXTStr (VkFrameBoundaryFlagsEXT value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -7013,18 +7018,18 @@ std::ostream& operator<< (std::ostream& s, const VkSemaphoreSignalInfo& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVertexInputBindingDivisorDescriptionEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVertexInputBindingDivisorDescriptionKHR& value)
 {
-	s << "VkVertexInputBindingDivisorDescriptionEXT = {\n";
+	s << "VkVertexInputBindingDivisorDescriptionKHR = {\n";
 	s << "\tbinding = " << value.binding << '\n';
 	s << "\tdivisor = " << value.divisor << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPipelineVertexInputDivisorStateCreateInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPipelineVertexInputDivisorStateCreateInfoKHR& value)
 {
-	s << "VkPipelineVertexInputDivisorStateCreateInfoEXT = {\n";
+	s << "VkPipelineVertexInputDivisorStateCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tvertexBindingDivisorCount = " << value.vertexBindingDivisorCount << '\n';
@@ -7112,9 +7117,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderAtomicFlo
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR& value)
 {
-	s << "VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT = {\n";
+	s << "VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tvertexAttributeInstanceRateDivisor = " << value.vertexAttributeInstanceRateDivisor << '\n';

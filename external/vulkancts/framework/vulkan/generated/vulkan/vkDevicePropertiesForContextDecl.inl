@@ -28,7 +28,6 @@ const vk::VkPhysicalDeviceRayTracingPropertiesNV&					getRayTracingProperties			
 const vk::VkPhysicalDeviceMaintenance3Properties&					getMaintenance3Properties					(void) const;
 const vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			getExternalMemoryHostPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceShaderCorePropertiesAMD&					getShaderCorePropertiesAMD					(void) const;
-const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT&		getVertexAttributeDivisorPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceDriverProperties&							getDriverProperties							(void) const;
 const vk::VkPhysicalDeviceFloatControlsProperties&					getFloatControlsProperties					(void) const;
 const vk::VkPhysicalDeviceDepthStencilResolveProperties&			getDepthStencilResolveProperties			(void) const;
@@ -75,5 +74,8 @@ const vk::VkPhysicalDeviceShaderObjectPropertiesEXT&				getShaderObjectPropertie
 const vk::VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV&	getRayTracingInvocationReorderProperties	(void) const;
 const vk::VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM&			getShaderCoreBuiltinsPropertiesARM			(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesKHR&			getCooperativeMatrixProperties				(void) const;
+const vk::VkPhysicalDeviceImageProcessing2PropertiesQCOM&			getImageProcessing2PropertiesQCOM			(void) const;
+const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR&		getVertexAttributeDivisorProperties			(void) const;
+const vk::VkPhysicalDeviceLayeredDriverPropertiesMSFT&				getLayeredDriverPropertiesMSFT				(void) const;
 const vk::VkPhysicalDeviceSubgroupProperties&						getSubgroupProperties						(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				getProtectedMemoryProperties				(void) const;

@@ -1068,9 +1068,9 @@ template<> VkStructureType getStructureType<VkSemaphoreSignalInfo> (void)
 	return VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO;
 }
 
-template<> VkStructureType getStructureType<VkPipelineVertexInputDivisorStateCreateInfoEXT> (void)
+template<> VkStructureType getStructureType<VkPipelineVertexInputDivisorStateCreateInfoKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT;
+	return VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT> (void)
@@ -1103,9 +1103,9 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderAtomicFloatFea
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkQueueFamilyCheckpointPropertiesNV> (void)

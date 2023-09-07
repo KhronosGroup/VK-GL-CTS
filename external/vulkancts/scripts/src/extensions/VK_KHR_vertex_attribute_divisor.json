@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR":
+		[
+			{ "features": ["vertexAttributeInstanceRateDivisor"],	"requirements": ["VK_KHR_vertex_attribute_divisor"] }
+		]
+	}
+}

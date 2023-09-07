@@ -622,7 +622,7 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate (void)
 	auto f8BitStorageFeatures						= m_context.get8BitStorageFeatures();
 	auto shaderAtomicInt64Features					= m_context.getShaderAtomicInt64Features();
 	auto shaderClockFeatures						= m_context.getShaderClockFeatures();
-	auto vertexAttributeDivisorFeatures				= m_context.getVertexAttributeDivisorFeaturesEXT();
+	auto vertexAttributeDivisorFeatures				= m_context.getVertexAttributeDivisorFeatures();
 	auto computeShaderDerivativesFeatures			= m_context.getComputeShaderDerivativesFeatures();
 	auto meshShaderFeatures							= m_context.getMeshShaderFeaturesEXT();
 	auto fragmentShaderBarycentricFeatures			= m_context.getFragmentShaderBarycentricFeatures();

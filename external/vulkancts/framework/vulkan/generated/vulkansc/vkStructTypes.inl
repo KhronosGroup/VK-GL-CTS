@@ -2848,18 +2848,18 @@ struct VkSemaphoreSignalInfo
 	uint64_t		value;
 };
 
-struct VkVertexInputBindingDivisorDescriptionEXT
+struct VkVertexInputBindingDivisorDescriptionKHR
 {
 	uint32_t	binding;
 	uint32_t	divisor;
 };
 
-struct VkPipelineVertexInputDivisorStateCreateInfoEXT
+struct VkPipelineVertexInputDivisorStateCreateInfoKHR
 {
 	VkStructureType										sType;
 	const void*											pNext;
 	uint32_t											vertexBindingDivisorCount;
-	const VkVertexInputBindingDivisorDescriptionEXT*	pVertexBindingDivisors;
+	const VkVertexInputBindingDivisorDescriptionKHR*	pVertexBindingDivisors;
 };
 
 struct VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT
@@ -2923,7 +2923,7 @@ struct VkPhysicalDeviceShaderAtomicFloatFeaturesEXT
 	VkBool32		sparseImageFloat32AtomicAdd;
 };
 
-struct VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT
+struct VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -4425,11 +4425,17 @@ typedef VkSemaphoreWaitInfo VkSemaphoreWaitInfoKHR;
 
 typedef VkSemaphoreSignalInfo VkSemaphoreSignalInfoKHR;
 
+typedef VkVertexInputBindingDivisorDescriptionKHR VkVertexInputBindingDivisorDescriptionEXT;
+
+typedef VkPipelineVertexInputDivisorStateCreateInfoKHR VkPipelineVertexInputDivisorStateCreateInfoEXT;
+
 typedef VkPhysicalDevice8BitStorageFeatures VkPhysicalDevice8BitStorageFeaturesKHR;
 
 typedef VkPhysicalDeviceVulkanMemoryModelFeatures VkPhysicalDeviceVulkanMemoryModelFeaturesKHR;
 
 typedef VkPhysicalDeviceShaderAtomicInt64Features VkPhysicalDeviceShaderAtomicInt64FeaturesKHR;
+
+typedef VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT;
 
 typedef VkPhysicalDeviceDepthStencilResolveProperties VkPhysicalDeviceDepthStencilResolvePropertiesKHR;
 

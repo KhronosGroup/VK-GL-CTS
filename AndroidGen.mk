@@ -164,6 +164,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/draw/vktDrawShaderViewportIndexTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawSimpleTest.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawTests.cpp \
+	external/vulkancts/modules/vulkan/draw/vktDrawVertexAttribDivisorTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateBaseClass.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateCBTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateClearTests.cpp \
