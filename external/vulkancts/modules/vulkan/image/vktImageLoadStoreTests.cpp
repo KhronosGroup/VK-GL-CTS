@@ -526,10 +526,10 @@ void StoreTest::checkSupport (Context& context) const
 
 	const auto tilingFeatures = (m_tiling == vk::VK_IMAGE_TILING_OPTIMAL) ? formatProperties.optimalTilingFeatures : formatProperties.linearTilingFeatures;
 
-	if (!m_declareImageFormatInShader && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
+	if ((m_texture.type() == IMAGE_TYPE_BUFFER) && !m_declareImageFormatInShader && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
 		TCU_THROW(NotSupportedError, "Format not supported for unformatted stores via storage buffer");
 
-	if (!m_declareImageFormatInShader && !(tilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !m_declareImageFormatInShader && !(tilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
 		TCU_THROW(NotSupportedError, "Format not supported for unformatted stores via storage images");
 
 	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY)
