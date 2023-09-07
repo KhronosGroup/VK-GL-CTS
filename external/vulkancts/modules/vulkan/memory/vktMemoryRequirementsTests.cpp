@@ -1965,13 +1965,24 @@ tcu::TestStatus testMultiplaneImages (Context& context, ImageTestParams params)
 		nonSparseCreateFlags.emplace_back(VK_IMAGE_CREATE_PROTECTED_BIT);
 	}
 #ifndef CTS_USES_VULKANSC
-	std::vector<VkImageCreateFlags> nonSparseCreateFlagsNoSC
+	std::vector<VkImageCreateFlags> nonSparseCreateFlagsNoSC;
+	if (context.isDeviceFunctionalitySupported(VK_NV_CORNER_SAMPLED_IMAGE_EXTENSION_NAME))
 	{
-		  VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV
-		, VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT
-		, VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT
-		, VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_QCOM
-	};
+		nonSparseCreateFlagsNoSC.push_back(VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV);
+	}
+	if (context.isDeviceFunctionalitySupported(VK_EXT_FRAGMENT_DENSITY_MAP_EXTENSION_NAME))
+	{
+		nonSparseCreateFlagsNoSC.push_back(VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT);
+	}
+	if (context.isDeviceFunctionalitySupported(VK_EXT_IMAGE_2D_VIEW_OF_3D_EXTENSION_NAME))
+	{
+		nonSparseCreateFlagsNoSC.push_back(VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT);
+	}
+	if (context.isDeviceFunctionalitySupported(VK_QCOM_FRAGMENT_DENSITY_MAP_OFFSET_EXTENSION_NAME))
+	{
+		nonSparseCreateFlagsNoSC.push_back(VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_QCOM);
+	}
+
 	auto isMultisampledRenderToSingleSampledEnabled = [&]() -> bool
 	{
 		bool enabled = false;
