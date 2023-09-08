@@ -121,6 +121,7 @@ struct CaseDef
 	bool dsClearOp;
 	uint32_t dsBaseMipLevel;
 	bool multiSubpasses;
+	bool maintenance6;
 
 	bool useAttachment () const
 	{
@@ -153,6 +154,9 @@ private:
 	deUint32			m_supportedFragmentShadingRateCount;
 	vector<VkPhysicalDeviceFragmentShadingRateKHR>	m_supportedFragmentShadingRates;
 	VkPhysicalDeviceFragmentShadingRatePropertiesKHR	m_shadingRateProperties;
+#ifndef CTS_USES_VULKANSC
+	VkPhysicalDeviceMaintenance6PropertiesKHR			m_maintenance6Properties;
+#endif
 
 protected:
 
@@ -270,6 +274,9 @@ FSRTestInstance::FSRTestInstance (Context& context, const CaseDef& data)
 	m_context.getInstanceInterface().getPhysicalDeviceFragmentShadingRatesKHR(m_context.getPhysicalDevice(), &m_supportedFragmentShadingRateCount, &m_supportedFragmentShadingRates[0]);
 
 	m_shadingRateProperties = m_context.getFragmentShadingRateProperties();
+#ifndef CTS_USES_VULKANSC
+	m_maintenance6Properties = m_context.getMaintenance6Properties();
+#endif
 }
 
 FSRTestInstance::~FSRTestInstance (void)
@@ -446,6 +453,9 @@ void FSRTestCase::checkSupport(Context& context) const
 		if (context.getShaderEarlyAndLateFragmentTestsFeaturesAMD().shaderEarlyAndLateFragmentTests == VK_FALSE)
 			TCU_THROW(NotSupportedError, "shaderEarlyAndLateFragmentTests is not supported");
 	}
+
+	if (m_data.maintenance6)
+		context.requireDeviceFunctionality("VK_KHR_maintenance6");
 #endif
 }
 
@@ -912,6 +922,15 @@ deInt32 FSRTestInstance::CombineMasks(deInt32 rateMask0, deInt32 rateMask1, VkFr
 
 deInt32 FSRTestInstance::Simulate(deInt32 rate0, deInt32 rate1, deInt32 rate2)
 {
+	bool	allowUnclampedInputs	= true;
+
+#ifndef CTS_USES_VULKANSC
+	if (m_data.maintenance6)
+	{
+		allowUnclampedInputs = !m_maintenance6Properties.fragmentShadingRateClampCombinerInputs;
+	}
+#endif
+
 	deInt32 &cachedRate = m_simulateCache[(rate2*m_simulateValueCount + rate1)*m_simulateValueCount + rate0];
 	if (cachedRate != ~0)
 		return cachedRate;
@@ -928,7 +947,7 @@ deInt32 FSRTestInstance::Simulate(deInt32 rate0, deInt32 rate1, deInt32 rate2)
 	const deInt32 extentMask2 = ShadingRateExtentToClampedMask(extent2) | (1 << rate2);
 
 	// Combine rate 0 and 1, get a mask of possible clamped rates
-	deInt32 intermedMask = CombineMasks(extentMask0, extentMask1, m_data.combinerOp[0], true /* allowUnclampedResult */);
+	deInt32 intermedMask = CombineMasks(extentMask0, extentMask1, m_data.combinerOp[0], allowUnclampedInputs /* allowUnclampedResult */);
 
 	// For each clamped rate, combine that with rate 2 and accumulate the possible clamped rates
 	for (int i = 0; i < 16; ++i)
@@ -3566,6 +3585,9 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 		{ 23,	"multipass",				"multipass"												},
 		{ 24,	"multipass_fragdepth",		"multipass with depth attachment"						},
 		{ 25,	"multipass_fragstencil",	"multipass with stencil attachment"						},
+#ifndef CTS_USES_VULKANSC
+		{ 26,	"maintenance6",				"test maintenance 6 fsr rate clamping behaviour"		},
+#endif
 	};
 
 	TestGroupCase dynCases[] =
@@ -3628,7 +3650,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 
 	for (int groupNdx = 0; groupNdx < DE_LENGTH_OF_ARRAY(groupCases); groupNdx++)
 	{
-		if (groupParams->useDynamicRendering && groupNdx == 12)
+		if (groupParams->useDynamicRendering && (groupNdx == 12 || groupNdx == 26))
 			continue;
 
 		if (groupParams->pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
@@ -3710,6 +3732,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 										bool opClear = groupNdx == 19 || groupNdx == 20;
 										uint32_t baseMipLevel = (groupNdx == 21 || groupNdx == 22) ? 1 : 0;
 										bool multiPass = (groupNdx == 23 || groupNdx == 24 || groupNdx == 25);
+										bool maintenance6 = (groupNdx == 26);
 
 										VkConservativeRasterizationModeEXT conservativeMode = (groupNdx == 3) ? VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT : VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT;
 										deUint32 numColorLayers = (colorLayered || multiView) ? 2u : 1u;
@@ -3726,7 +3749,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 											continue;
 
 										// Don't bother with geometry shader if we're testing conservative raster, sample mask, depth/stencil
-										if (useGeometryShader && (useApiSampleMask || useSampleMaskIn || consRast || fragDepth || fragStencil))
+										if (useGeometryShader && (useApiSampleMask || useSampleMaskIn || consRast || fragDepth || fragStencil || maintenance6))
 											continue;
 
 										// Don't bother with geometry shader if we're testing non-dynamic state
@@ -3751,6 +3774,10 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 
 										// Test multipass for DS cases with only attachment, single sample, and renderpass.
 										if (multiPass && (attCases[attNdx].usage != AttachmentUsage::WITH_ATTACHMENT || groupParams->useDynamicRendering || sampCases[sampNdx].count > VK_SAMPLE_COUNT_1_BIT))
+											continue;
+
+										// Skip maintenance6 tests if there is no FSR attachment
+										if (maintenance6 && attCases[attNdx].usage != AttachmentUsage::WITH_ATTACHMENT)
 											continue;
 
 										CaseDef c
@@ -3791,6 +3818,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 											opClear,												// bool dsClearOp;
 											baseMipLevel,											// uint32_t dsBaseMipLevel;
 											multiPass,												// bool multiSubpasses;
+											maintenance6,											// bool maintenance6;
 										};
 
 										sampGroup->addChild(new FSRTestCase(testCtx, shaderCases[shaderNdx].name, shaderCases[shaderNdx].description, c));
@@ -3854,6 +3882,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 				false,													// bool dsClearOp;
 				0,														// uint32_t dsBaseMipLevel;
 				false,													// bool multiSubpasses;
+				false,													// bool maintenance6;
 			}));
 		}
 
@@ -3897,6 +3926,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 				false,													// bool dsClearOp;
 				0,														// uint32_t dsBaseMipLevel;
 				false,													// bool multiSubpasses;
+				false,													// bool maintenance6;
 			}));
 		}
 #endif // CTS_USES_VULKANSC
