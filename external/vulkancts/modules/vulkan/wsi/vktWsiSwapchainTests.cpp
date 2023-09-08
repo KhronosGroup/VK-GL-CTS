@@ -60,6 +60,11 @@
 #include <algorithm>
 #include <iterator>
 
+#if (DE_OS == DE_OS_ANDROID)
+#include <thread>
+#include <chrono>
+#endif
+
 namespace vkt
 {
 namespace wsi
@@ -913,6 +918,17 @@ tcu::TestStatus createSwapchainSimulateOOMTest (Context& context, TestParameters
 					// With concurrent sharing mode, at least two queues are needed.
 					if (curParams.imageSharingMode == VK_SHARING_MODE_CONCURRENT)
 						continue;
+
+#if (DE_OS == DE_OS_ANDROID)
+					// Give some extra time to deallocate memory from previous createSwapchainKHR calls with large dimensions on Android.
+					// 15ms was decided to be the safest amount of time, otherwise test may crash with an OOM issue.
+					constexpr deUint32 sleepInMs = 15;
+
+					if (params.dimension == TEST_DIMENSION_MIN_IMAGE_COUNT)
+					{
+						std::this_thread::sleep_for(std::chrono::milliseconds(sleepInMs));
+					}
+#endif
 
 					const Unique<VkSwapchainKHR>	swapchain	(createSwapchainKHR(devHelper.vkd, *devHelper.device, &curParams, failingAllocator.getCallbacks()));
 				}
