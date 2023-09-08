@@ -401,6 +401,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceLineRasterizationFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceMaintenance6FeaturesKHR physicalDeviceMaintenance6FeaturesKHR;
+	deMemset(&physicalDeviceMaintenance6FeaturesKHR, 0, sizeof(physicalDeviceMaintenance6FeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_maintenance6") )
+	{
+		physicalDeviceMaintenance6FeaturesKHR.sType = getStructureType<VkPhysicalDeviceMaintenance6FeaturesKHR>();
+		*nextPtr = &physicalDeviceMaintenance6FeaturesKHR;
+		nextPtr  = &physicalDeviceMaintenance6FeaturesKHR.pNext;
+	}
+
 	vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT physicalDeviceMemoryPriorityFeaturesEXT;
 	deMemset(&physicalDeviceMemoryPriorityFeaturesEXT, 0, sizeof(physicalDeviceMemoryPriorityFeaturesEXT));
 
@@ -2070,6 +2080,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceImagelessFramebufferFeatures.imagelessFramebuffer == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature imagelessFramebuffer not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_maintenance6")) )
+	{
+		if ( physicalDeviceMaintenance6FeaturesKHR.maintenance6 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature maintenance6 not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
