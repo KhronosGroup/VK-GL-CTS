@@ -2118,7 +2118,7 @@ void ModifyTests::addModifyActions (void)
 	m_modifyActions.add("tex_subimage_rgb5_a1",			MovePtr<Action>(new GLESImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_SHORT_5_5_5_1)));
 	m_modifyActions.add("tex_subimage_rgba4",			MovePtr<Action>(new GLESImageApi::ModifyTexSubImage(GL_RGBA,	GL_UNSIGNED_SHORT_4_4_4_4)));
 
-	m_modifyActions.add("renderbuffer_clear_color",		MovePtr<Action>(new GLESImageApi::ModifyRenderbufferClearColor(tcu::Vec4(0.3f, 0.5f, 0.3f, 1.0f))));
+	m_modifyActions.add("renderbuffer_clear_color",		MovePtr<Action>(new GLESImageApi::ModifyRenderbufferClearColor(tcu::Vec4(0.4f, 0.5f, 0.6f, 1.0f))));
 	m_modifyActions.add("renderbuffer_clear_depth",		MovePtr<Action>(new GLESImageApi::ModifyRenderbufferClearDepth(0.7f)));
 	m_modifyActions.add("renderbuffer_clear_stencil",	MovePtr<Action>(new GLESImageApi::ModifyRenderbufferClearStencil(78)));
 }
