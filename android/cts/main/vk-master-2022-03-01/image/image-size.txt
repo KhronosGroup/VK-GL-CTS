@@ -1,0 +1,12 @@
+dEQP-VK.image.image_size.3d.readonly_2d_view_32x32x32
+dEQP-VK.image.image_size.3d.readonly_2d_view_12x34x56
+dEQP-VK.image.image_size.3d.readonly_2d_view_1x1x1
+dEQP-VK.image.image_size.3d.readonly_2d_view_7x1x1
+dEQP-VK.image.image_size.3d.writeonly_2d_view_32x32x32
+dEQP-VK.image.image_size.3d.writeonly_2d_view_12x34x56
+dEQP-VK.image.image_size.3d.writeonly_2d_view_1x1x1
+dEQP-VK.image.image_size.3d.writeonly_2d_view_7x1x1
+dEQP-VK.image.image_size.3d.readonly_writeonly_2d_view_32x32x32
+dEQP-VK.image.image_size.3d.readonly_writeonly_2d_view_12x34x56
+dEQP-VK.image.image_size.3d.readonly_writeonly_2d_view_1x1x1
+dEQP-VK.image.image_size.3d.readonly_writeonly_2d_view_7x1x1
