@@ -158,6 +158,7 @@ void TestSessionExecutor::enterTestPackage (TestPackage* testPackage)
 	// Create test case wrapper
 	DE_ASSERT(!m_caseExecutor);
 	m_caseExecutor = de::MovePtr<TestCaseExecutor>(testPackage->createExecutor());
+	testPackage->setCaseListFilter(m_caseListFilter.get());
 	m_packageStartTime	= deGetMicroseconds();
 }
 
