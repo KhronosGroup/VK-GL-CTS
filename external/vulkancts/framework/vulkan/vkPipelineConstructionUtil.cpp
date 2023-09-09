@@ -1591,6 +1591,8 @@ struct GraphicsPipelineWrapper::InternalData
 		std::vector<VkViewport>								viewports;
 		std::vector<VkRect2D>								scissors;
 		float												lineWidth = 1.0f;
+		VkDepthBiasRepresentationEXT						depthBiasRepresentation = vk::VK_DEPTH_BIAS_REPRESENTATION_LEAST_REPRESENTABLE_VALUE_FORMAT_EXT;
+		VkBool32											depthBiasExact = VK_FALSE;
 		float												depthBiasConstantFactor = 0.0f;
 		float												depthBiasClamp = 0.0f;
 		float												depthBiasSlopeFactor = 1.0f;
@@ -3139,6 +3141,8 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 		if (m_internalData->extensionEnabled("VK_NV_clip_space_w_scaling"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV);
 		if (m_internalData->extensionEnabled("VK_NV_scissor_exclusive"))
+			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_ENABLE_NV);
+		if (m_internalData->extensionEnabled("VK_NV_scissor_exclusive"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV);
 		if (m_internalData->extensionEnabled("VK_EXT_discard_rectangles"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_ENABLE_EXT);
@@ -3290,6 +3294,12 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 			VkPipelineRasterizationProvokingVertexStateCreateInfoEXT* provokingVertex = (VkPipelineRasterizationProvokingVertexStateCreateInfoEXT*)findPNext(pointerToCreateInfo->pRasterizationState->pNext, VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_PROVOKING_VERTEX_STATE_CREATE_INFO_EXT);
 			 if (provokingVertex)
 				 state->provokingVertexMode = provokingVertex->provokingVertexMode;
+			 VkDepthBiasRepresentationInfoEXT* depthBiasRepresentationInfo = (VkDepthBiasRepresentationInfoEXT*)findPNext(pointerToCreateInfo->pRasterizationState->pNext, VK_STRUCTURE_TYPE_DEPTH_BIAS_REPRESENTATION_INFO_EXT);
+			 if (depthBiasRepresentationInfo)
+			 {
+				 state->depthBiasRepresentation = depthBiasRepresentationInfo->depthBiasRepresentation;
+				 state->depthBiasExact = depthBiasRepresentationInfo->depthBiasExact;
+			 }
 		}
 		if (pointerToCreateInfo->pColorBlendState)
 		{
@@ -3604,7 +3614,23 @@ void GraphicsPipelineWrapper::setShaderObjectDynamicStates (vk::VkCommandBuffer 
 			break;
 		case vk::VK_DYNAMIC_STATE_DEPTH_BIAS:
 			if (rasterizerDiscardDisabled && depthBiasEnabled)
-				vk.cmdSetDepthBias(cmdBuffer, state->depthBiasConstantFactor, state->depthBiasClamp, state->depthBiasSlopeFactor);
+			{
+				if (m_internalData->extensionEnabled("VK_EXT_depth_bias_control")) {
+					VkDepthBiasRepresentationInfoEXT depthBiasRepresentationInfo = vk::initVulkanStructure();
+					depthBiasRepresentationInfo.depthBiasRepresentation = state->depthBiasRepresentation;
+					depthBiasRepresentationInfo.depthBiasExact = state->depthBiasExact;
+
+					vk::VkDepthBiasInfoEXT depthBiasInfo = vk::initVulkanStructure(&depthBiasRepresentationInfo);
+					depthBiasInfo.depthBiasConstantFactor = state->depthBiasConstantFactor;
+					depthBiasInfo.depthBiasClamp = state->depthBiasClamp;
+					depthBiasInfo.depthBiasSlopeFactor = state->depthBiasSlopeFactor;
+					vk.cmdSetDepthBias2EXT(cmdBuffer, &depthBiasInfo);
+				}
+				else
+				{
+					vk.cmdSetDepthBias(cmdBuffer, state->depthBiasConstantFactor, state->depthBiasClamp, state->depthBiasSlopeFactor);
+				}
+			}
 			break;
 		case vk::VK_DYNAMIC_STATE_BLEND_CONSTANTS:
 			if (rasterizerDiscardDisabled && blendFactorConstant)
@@ -3753,6 +3779,11 @@ void GraphicsPipelineWrapper::setShaderObjectDynamicStates (vk::VkCommandBuffer 
 		case vk::VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT:
 			if (state->colorWriteEnableAttachmentCount > 0)
 				vk.cmdSetColorWriteEnableEXT(cmdBuffer, state->colorWriteEnableAttachmentCount, state->colorWriteEnables.data());
+			else
+			{
+				std::vector<VkBool32> enable(state->colorBlendEnables.empty() ? 1u : state->colorBlendEnables.size(), VK_TRUE);
+				vk.cmdSetColorWriteEnableEXT(cmdBuffer, (deUint32)enable.size(), enable.data());
+			}
 			break;
 		case vk::VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT:
 			vk.cmdSetExtraPrimitiveOverestimationSizeEXT(cmdBuffer, state->extraPrimitiveOverestimationSize);
@@ -3809,7 +3840,20 @@ void GraphicsPipelineWrapper::setShaderObjectDynamicStates (vk::VkCommandBuffer 
 			break;
 		case vk::VK_DYNAMIC_STATE_VIEWPORT_SWIZZLE_NV:
 			if (!state->viewportSwizzles.empty())
+			{
 				vk.cmdSetViewportSwizzleNV(cmdBuffer, 0, (deUint32)state->viewportSwizzles.size(), state->viewportSwizzles.data());
+			}
+			else
+			{
+				const vk::VkViewportSwizzleNV idSwizzle
+				{
+					vk::VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_X_NV,
+					vk::VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_Y_NV,
+					vk::VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_Z_NV,
+					vk::VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_W_NV,
+				};
+				vk.cmdSetViewportSwizzleNV(cmdBuffer, 0u, 1u, &idSwizzle);
+			}
 			break;
 		case vk::VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_ENABLE_NV:
 			vk.cmdSetViewportWScalingEnableNV(cmdBuffer, state->viewportWScalingEnable);
@@ -3829,6 +3873,20 @@ void GraphicsPipelineWrapper::setShaderObjectDynamicStates (vk::VkCommandBuffer 
 			if (state->shadingRatePaletteCount > 0)
 				vk.cmdSetViewportShadingRatePaletteNV(cmdBuffer, 0, state->shadingRatePaletteCount, state->shadingRatePalettes.data());
 			break;
+		case vk::VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_ENABLE_NV:
+		{
+			if (state->exclusiveScissorCount > 0)
+			{
+				std::vector<VkBool32> exclusiveScissorEnable(state->exclusiveScissorCount, VK_TRUE);
+				vk.cmdSetExclusiveScissorEnableNV(cmdBuffer, 0u, state->exclusiveScissorCount, exclusiveScissorEnable.data());
+			}
+			else
+			{
+				VkBool32 enable = VK_FALSE;
+				vk.cmdSetExclusiveScissorEnableNV(cmdBuffer, 0u, 1u, &enable);
+			}
+			break;
+		}
 		case vk::VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV:
 			if (state->exclusiveScissorCount > 0)
 				vk.cmdSetExclusiveScissorNV(cmdBuffer, 0u, state->exclusiveScissorCount, state->exclussiveScissors.data());
