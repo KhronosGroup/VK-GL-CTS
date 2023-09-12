@@ -58,6 +58,8 @@ set(DEQP_VK_VKSC_API_SRCS
 	vktApiBufferMemoryRequirementsTests.cpp
 	vktApiBufferMemoryRequirementsTests.hpp
 	vktApiBufferMemoryRequirementsTestsUtils.hpp
+	vktApiMaintenance6Check.hpp
+	vktApiMaintenance6Check.cpp
 	)
 
 set(DEQP_VK_API_SRCS

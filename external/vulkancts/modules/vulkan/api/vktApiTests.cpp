@@ -46,6 +46,7 @@
 #include "vktApiMemoryRequirementInvarianceTests.hpp"
 #include "vktApiBufferMemoryRequirementsTests.hpp"
 #include "vktApiGetDeviceProcAddrTests.hpp"
+#include "vktApiMaintenance6Check.hpp"
 
 #ifndef CTS_USES_VULKANSC
 #include "vktApiSmokeTests.hpp"
@@ -116,6 +117,7 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 #ifndef CTS_USES_VULKANSC
 	apiTests->addChild(createImageCompressionControlTests		(testCtx));
 	apiTests->addChild(createGetDeviceProcAddrTests				(testCtx));
+	apiTests->addChild(createMaintenance6Tests					(testCtx));
 #endif
 }
 

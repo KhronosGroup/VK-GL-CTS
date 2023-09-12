@@ -96,6 +96,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/api/vktApiImageClearingTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiImageCompressionControlTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiMaintenance3Check.cpp \
+	external/vulkancts/modules/vulkan/api/vktApiMaintenance6Check.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiMemoryRequirementInvarianceTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiNullHandleTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiObjectManagementTests.cpp \
