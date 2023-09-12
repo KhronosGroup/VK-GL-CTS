@@ -262,7 +262,7 @@ enum OperationId
 	OID_MODF_ST,
 	OID_FREXP,
 	OID_FREXP_ST,
-	OID_LENGHT,
+	OID_LENGTH,
 	OID_NORMALIZE,
 	OID_REFLECT,
 	OID_REFRACT,
@@ -1136,7 +1136,7 @@ TypeTestResults<deFloat16>::TypeTestResults()
 		{ OID_NORMALIZE,	V_ZERO },
 		{ OID_REFLECT,		V_ZERO },
 		{ OID_REFRACT,		V_ZERO },
-		{ OID_LENGHT,		V_ZERO },
+		{ OID_LENGTH,		V_ZERO },
 	};
 
 	const BinaryCase binaryOpDenormPreserveArr[] = {
@@ -1264,7 +1264,7 @@ TypeTestResults<float>::TypeTestResults()
 		{ OID_NORMALIZE,	V_ZERO },
 		{ OID_REFLECT,		V_ZERO },
 		{ OID_REFRACT,		V_ZERO },
-		{ OID_LENGHT,		V_ZERO },
+		{ OID_LENGTH,		V_ZERO },
 	};
 
 	const BinaryCase binaryOpDenormPreserveArr[] = {
@@ -1373,7 +1373,7 @@ TypeTestResults<double>::TypeTestResults()
 		{ OID_MODF_ST,		V_ZERO },
 		{ OID_NORMALIZE,	V_ZERO },
 		{ OID_REFLECT,		V_ZERO },
-		{ OID_LENGHT,		V_ZERO },
+		{ OID_LENGTH,		V_ZERO },
 	};
 
 	const BinaryCase binaryOpDenormPreserveArr[] = {
@@ -2015,7 +2015,7 @@ void TestCasesBuilder::init()
 											"%tmpLoc             = OpAccessChain %type_float_fptr %tmpStructPtr %c_i32_0\n"
 											"%result             = OpLoad %type_float %tmpLoc\n",
 											B_STATEMENT_USAGE_TYPES_TYPE_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[OID_LENGHT]		= Op("length",		FLOAT_ARITHMETIC,
+	mo[OID_LENGTH]		= Op("length",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Length %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_NORMALIZE]	= Op("normalize",	FLOAT_ARITHMETIC,
