@@ -244,7 +244,12 @@ void SingleThreadColorClearCase::executeForContexts (EGLDisplay display, EGLSurf
 
 	// Compare images
 	{
-		tcu::RGBA eps = pixelFmt.alphaBits == 1 ? RGBA(1,1,1,127) : RGBA(1,1,1,1);
+		tcu::RGBA eps = RGBA(1,1,1,1);
+		if (pixelFmt.alphaBits == 1)
+			eps = RGBA(1,1,1,127);
+		else if (pixelFmt.alphaBits == 2)
+			eps = RGBA(1,1,1,63);
+
 		bool imagesOk = tcu::pixelThresholdCompare(log, "ComparisonResult", "Image comparison result", refFrame, frame, eps + pixelFmt.getColorThreshold(), tcu::COMPARE_LOG_RESULT);
 
 		if (!imagesOk)
@@ -432,7 +437,12 @@ void MultiThreadColorClearCase::executeForContexts (EGLDisplay display, EGLSurfa
 
 	// Compare images
 	{
-		tcu::RGBA eps = pixelFmt.alphaBits == 1 ? RGBA(1,1,1,127) : RGBA(1,1,1,1);
+		tcu::RGBA eps = RGBA(1,1,1,1);
+		if (pixelFmt.alphaBits == 1)
+			eps = RGBA(1,1,1,127);
+		else if (pixelFmt.alphaBits == 2)
+			eps = RGBA(1,1,1,63);
+
 		bool imagesOk = tcu::pixelThresholdCompare(log, "ComparisonResult", "Image comparison result", refFrame, frame, eps + pixelFmt.getColorThreshold(), tcu::COMPARE_LOG_RESULT);
 
 		if (!imagesOk)
