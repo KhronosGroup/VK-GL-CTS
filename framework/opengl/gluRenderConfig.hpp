@@ -67,6 +67,15 @@ struct RenderConfig
 		VISIBILITY_LAST
 	};
 
+	enum ComponentType
+	{
+		COMPONENT_TYPE_DONT_CARE = 0,
+		COMPONENT_TYPE_FIXED,
+		COMPONENT_TYPE_FLOAT,
+
+		COMPONENT_TYPE_LAST
+	};
+
 	enum
 	{
 		DONT_CARE = -1
@@ -78,6 +87,7 @@ struct RenderConfig
 	int							height;
 	SurfaceType					surfaceType;
 	Visibility					windowVisibility;
+	ComponentType				componentType;
 
 	int							id;
 
@@ -97,6 +107,7 @@ struct RenderConfig
 		, height					(DONT_CARE)
 		, surfaceType				(SURFACETYPE_DONT_CARE)
 		, windowVisibility			(VISIBILITY_VISIBLE)
+		, componentType				(COMPONENT_TYPE_DONT_CARE)
 		, id						(DONT_CARE)
 		, redBits					(DONT_CARE)
 		, greenBits					(DONT_CARE)
@@ -121,6 +132,9 @@ T getValueOrDefault (const RenderConfig& config, const T RenderConfig::*field, T
 	T value = config.*field;
 	return value == (T)RenderConfig::DONT_CARE ? defaultValue : value;
 }
+
+RenderConfig::ComponentType	fromEGLComponentType	(int eglComponentType);
+int							toEGLComponentType		(RenderConfig::ComponentType gluComponentType);
 
 } // glu
 
