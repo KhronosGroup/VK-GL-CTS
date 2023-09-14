@@ -90,6 +90,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/api/vktApiFeatureInfo.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiFillBufferTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiFormatPropertiesExtendedKHRtests.cpp \
+	external/vulkancts/modules/vulkan/api/vktApiFrameBoundaryTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiGetDeviceProcAddrTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiGetMemoryCommitment.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiGranularityTests.cpp \

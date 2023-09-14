@@ -287,6 +287,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	vk::VkPhysicalDeviceFrameBoundaryFeaturesEXT physicalDeviceFrameBoundaryFeaturesEXT;
+	deMemset(&physicalDeviceFrameBoundaryFeaturesEXT, 0, sizeof(physicalDeviceFrameBoundaryFeaturesEXT));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_frame_boundary") )
+	{
+		physicalDeviceFrameBoundaryFeaturesEXT.sType = getStructureType<VkPhysicalDeviceFrameBoundaryFeaturesEXT>();
+		*nextPtr = &physicalDeviceFrameBoundaryFeaturesEXT;
+		nextPtr  = &physicalDeviceFrameBoundaryFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR physicalDeviceGlobalPriorityQueryFeaturesKHR;
 	deMemset(&physicalDeviceGlobalPriorityQueryFeaturesKHR, 0, sizeof(physicalDeviceGlobalPriorityQueryFeaturesKHR));
 
@@ -1593,6 +1603,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( ( physicalDeviceFragmentShaderInterlockFeaturesEXT.fragmentShaderSampleInterlock == VK_FALSE ) && ( physicalDeviceFragmentShaderInterlockFeaturesEXT.fragmentShaderPixelInterlock == VK_FALSE ) && ( physicalDeviceFragmentShaderInterlockFeaturesEXT.fragmentShaderShadingRateInterlock == VK_FALSE ) )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature fragmentShaderSampleInterlock or fragmentShaderPixelInterlock or fragmentShaderShadingRateInterlock not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_frame_boundary")) )
+	{
+		if ( physicalDeviceFrameBoundaryFeaturesEXT.frameBoundary == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature frameBoundary not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
