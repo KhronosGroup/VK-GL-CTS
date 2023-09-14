@@ -853,26 +853,36 @@ struct CaseParameter
 //   output_data.elements[x] = -input_data.elements[x];
 // }
 
-static string getAsmForLocalSizeTest(bool useLiteralLocalSize, bool useLiteralLocalSizeId, bool useSpecConstantWorkgroupSize, IVec3 workGroupSize, deUint32 ndx)
+enum LocalSizeValueType
+{
+	LSV_NONE,
+	LSV_LITERAL,
+	LSV_SPEC_CONST
+};
+
+static string getAsmForLocalSizeTest(bool useLocalSizeId, LocalSizeValueType execModeType, LocalSizeValueType workgroupSizeType, IVec3 workGroupSize, deUint32 ndx)
 {
 	std::ostringstream out;
 	out << "OpCapability Shader\n"
 		   "OpMemoryModel Logical GLSL450\n";
 
-	if (useLiteralLocalSizeId)
-	{
-		out << "OpEntryPoint GLCompute %main \"main\" %id %indata %outdata\n"
-			   "OpExecutionModeId %main LocalSizeId %const_0 %const_1 %const_2\n";
-	}
+	// LocalsizeId tests require SPIR-V 1.5, so the interface specification is different
+	if (useLocalSizeId)
+		out << "OpEntryPoint GLCompute %main \"main\" %id %indata %outdata\n";
 	else
-	{
 		out << "OpEntryPoint GLCompute %main \"main\" %id\n";
 
-		if (useLiteralLocalSize)
-		{
+	// If using workgroup size then this overrides the execution mode, so use nonsense values.
+	IVec3 nonsense(9, 13, 106);
+	IVec3 execModeValue = (workgroupSizeType != LSV_NONE) ? nonsense : workGroupSize;
+
+	if (execModeType != LSV_NONE)
+	{
+		if (useLocalSizeId)
+			out << "OpExecutionModeId %main LocalSizeId %emv_0 %emv_1 %emv_2\n";
+		else
 			out << "OpExecutionMode %main LocalSize "
-				<< workGroupSize.x() << " " << workGroupSize.y() << " " << workGroupSize.z() << "\n";
-		}
+				<< execModeValue.x() << " " << execModeValue.y() << " " << execModeValue.z() << "\n";
 	}
 
 	out << "OpSource GLSL 430\n"
@@ -880,39 +890,66 @@ static string getAsmForLocalSizeTest(bool useLiteralLocalSize, bool useLiteralLo
 		   "OpName %id             \"gl_GlobalInvocationID\"\n"
 		   "OpDecorate %id BuiltIn GlobalInvocationId\n";
 
-	if (useSpecConstantWorkgroupSize)
+	if (execModeType == LSV_SPEC_CONST)
 	{
-		out << "OpDecorate %spec_0 SpecId 100\n"
-			   "OpDecorate %spec_1 SpecId 101\n"
-			   "OpDecorate %spec_2 SpecId 102\n"
-			   "OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize\n";
+		out << "OpDecorate %emv_0 SpecId 100\n"
+			   "OpDecorate %emv_1 SpecId 101\n"
+			   "OpDecorate %emv_2 SpecId 102\n";
+	}
+	if (workgroupSizeType == LSV_SPEC_CONST)
+	{
+		out << "OpDecorate %wgs_0 SpecId 200\n"
+			   "OpDecorate %wgs_1 SpecId 201\n"
+			   "OpDecorate %wgs_2 SpecId 202\n";
 	}
 
-	if (useLiteralLocalSizeId)
+	if (workgroupSizeType != LSV_NONE)
+		out << "OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize\n";
+
+	// SPIR-V 1.0 uses Uniform/BufferBlock, 1.5 uses StorageBuffer/Block
+	string blockDec	= useLocalSizeId ? "Block"			: "BufferBlock";
+	string blockSC	= useLocalSizeId ? "StorageBuffer"	: "Uniform";
+	out << getComputeAsmInputOutputBufferTraits(blockDec)
+		<< getComputeAsmCommonTypes(blockSC)
+		<< getComputeAsmInputOutputBuffer(blockSC);
+
+	assert(useLocalSizeId || execModeType != LSV_SPEC_CONST);
+	if (useLocalSizeId)
 	{
-		out << getComputeAsmInputOutputBufferTraits("Block")
-			<< getComputeAsmCommonTypes("StorageBuffer")
-			<< getComputeAsmInputOutputBuffer("StorageBuffer")
-			<< "%const_0  = OpConstant %u32 " << workGroupSize.x() << "\n"
-			   "%const_1  = OpConstant %u32 " << workGroupSize.y() << "\n"
-			   "%const_2  = OpConstant %u32 " << workGroupSize.z() << "\n";
-	}
-	else
-	{
-		out << getComputeAsmInputOutputBufferTraits()
-			<< getComputeAsmCommonTypes()
-			<< getComputeAsmInputOutputBuffer();
+		switch (execModeType)
+		{
+		case LSV_NONE: /* Do nothing */ break;
+		case LSV_LITERAL:
+			out << "%emv_0  = OpConstant %u32 " << execModeValue.x() << "\n"
+				   "%emv_1  = OpConstant %u32 " << execModeValue.y() << "\n"
+				   "%emv_2  = OpConstant %u32 " << execModeValue.z() << "\n";
+			break;
+		case LSV_SPEC_CONST:
+			out << "%emv_0  = OpSpecConstant %u32 " << execModeValue.x() << "\n"
+				   "%emv_1  = OpSpecConstant %u32 " << execModeValue.y() << "\n"
+				   "%emv_2  = OpSpecConstant %u32 " << execModeValue.z() << "\n";
+			break;
+		}
 	}
 
 	out << "%id        = OpVariable %uvec3ptr Input\n"
 		   "%zero      = OpConstant %i32 0 \n";
 
-	if (useSpecConstantWorkgroupSize)
+	switch (workgroupSizeType)
 	{
-		out << "%spec_0   = OpSpecConstant %u32 "<< workGroupSize.x() << "\n"
-			   "%spec_1   = OpSpecConstant %u32 "<< workGroupSize.y() << "\n"
-			   "%spec_2   = OpSpecConstant %u32 "<< workGroupSize.z() << "\n"
-			   "%gl_WorkGroupSize = OpSpecConstantComposite %uvec3 %spec_0 %spec_1 %spec_2\n";
+	case LSV_NONE: /* Do nothing */ break;
+	case LSV_LITERAL:
+		out << "%wgs_0  = OpConstant %u32 " << workGroupSize.x() << "\n"
+			   "%wgs_1  = OpConstant %u32 " << workGroupSize.y() << "\n"
+			   "%wgs_2  = OpConstant %u32 " << workGroupSize.z() << "\n"
+			   "%gl_WorkGroupSize = OpConstantComposite %uvec3 %wgs_0 %wgs_1 %wgs_2\n";
+		break;
+	case LSV_SPEC_CONST:
+		out << "%wgs_0  = OpSpecConstant %u32 " << workGroupSize.x() << "\n"
+			   "%wgs_1  = OpSpecConstant %u32 " << workGroupSize.y() << "\n"
+			   "%wgs_2  = OpSpecConstant %u32 " << workGroupSize.z() << "\n"
+			   "%gl_WorkGroupSize = OpSpecConstantComposite %uvec3 %wgs_0 %wgs_1 %wgs_2\n";
+		break;
 	}
 
 	out << "%main      = OpFunction %void None %voidf\n"
@@ -929,6 +966,16 @@ static string getAsmForLocalSizeTest(bool useLiteralLocalSize, bool useLiteralLo
 		   "             OpFunctionEnd\n";
 
 	return out.str();
+}
+
+static string localSizeModeToString(LocalSizeValueType t)
+{
+	switch (t) {
+	case LSV_NONE:			return "none";
+	case LSV_LITERAL:		return "literal";
+	case LSV_SPEC_CONST:	return "specid";
+	default:				assert(0); return "INVALID";
+	}
 }
 
 tcu::TestCaseGroup* createLocalSizeGroup(tcu::TestContext& testCtx, bool useLocalSizeId)
@@ -968,18 +1015,23 @@ tcu::TestCaseGroup* createLocalSizeGroup(tcu::TestContext& testCtx, bool useLoca
 
 	for (int i=0; i<DE_LENGTH_OF_ARRAY(cases); i++)
 	{
-		spec.numWorkGroups = cases[i].numWorkGroups;
+		for (int j=0; j<3; j++) {
+			for (int k=0; k<3; k++) {
+				LocalSizeValueType execModeType	= (LocalSizeValueType)j;
+				LocalSizeValueType wgSizeType	= (LocalSizeValueType)k;
 
-		spec.assembly = getAsmForLocalSizeTest(true, useLocalSizeId, false, cases[i].localSize, cases[i].ndx);
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, ("literal_localsize" + cases[i].nameSuffix).c_str(), "", spec));
+				// Something has to specify the local size.
+				if (execModeType == LSV_NONE && wgSizeType == LSV_NONE) continue;
+				// Spec constants not allowed for LocalSize (must use the Id variant)
+				if (execModeType == LSV_SPEC_CONST && !useLocalSizeId) continue;
 
-		spec.assembly = getAsmForLocalSizeTest(true, useLocalSizeId, true, cases[i].localSize, cases[i].ndx);
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, ("literal_and_specid_localsize" + cases[i].nameSuffix).c_str(), "", spec));
+				string testName = localSizeModeToString(execModeType) + "_wgsize_" + localSizeModeToString(wgSizeType) + cases[i].nameSuffix;
 
-		if (!useLocalSizeId)	// dont repeat this test when useLocalSizeId is true
-		{
-			spec.assembly = getAsmForLocalSizeTest(false, false, true, cases[i].localSize, cases[i].ndx);
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, ("specid_localsize" + cases[i].nameSuffix).c_str(), "", spec));
+				spec.numWorkGroups = cases[i].numWorkGroups;
+
+				spec.assembly = getAsmForLocalSizeTest(useLocalSizeId, execModeType, wgSizeType, cases[i].localSize, cases[i].ndx);
+				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), "", spec));
+			}
 		}
 	}
 
