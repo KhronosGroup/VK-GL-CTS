@@ -956,56 +956,31 @@ tcu::TestCaseGroup* createLocalSizeGroup(tcu::TestContext& testCtx, bool useLoca
 		spec.extensions.push_back("VK_KHR_maintenance4");
 	}
 
-	spec.numWorkGroups = IVec3(numElements, 1, 1);
+	struct testCase {
+		std::string nameSuffix;
+		IVec3 numWorkGroups;
+		IVec3 localSize;
+		uint32_t ndx;
+	} cases[] = { { "",		IVec3(numElements, 1, 1),	IVec3(1, 1, 1),				0u },
+	              { "_x",	IVec3(1, 1, 1),				IVec3(numElements, 1, 1),	0u },
+	              { "_y",	IVec3(1, 1, 1),				IVec3(1, numElements, 1),	1u },
+	              { "_z",	IVec3(1, 1, 1),				IVec3(1, 1, numElements),	2u } };
 
-	spec.assembly = getAsmForLocalSizeTest(true, useLocalSizeId, false, IVec3(1, 1, 1), 0u);
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_localsize", "", spec));
-
-	spec.assembly = getAsmForLocalSizeTest(true, useLocalSizeId, true, IVec3(1, 1, 1), 0u);
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_and_specid_localsize", "", spec));
-
-	if (!useLocalSizeId)	// dont repeat this test when useLocalSizeId is true
+	for (int i=0; i<DE_LENGTH_OF_ARRAY(cases); i++)
 	{
-		spec.assembly = getAsmForLocalSizeTest(false, false, true, IVec3(1, 1, 1), 0u);
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize", "", spec));
-	}
+		spec.numWorkGroups = cases[i].numWorkGroups;
 
-	spec.numWorkGroups = IVec3(1, 1, 1);
+		spec.assembly = getAsmForLocalSizeTest(true, useLocalSizeId, false, cases[i].localSize, cases[i].ndx);
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, ("literal_localsize" + cases[i].nameSuffix).c_str(), "", spec));
 
-	spec.assembly = getAsmForLocalSizeTest(true, useLocalSizeId, false, IVec3(numElements, 1, 1), 0u);
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_localsize_x", "", spec));
+		spec.assembly = getAsmForLocalSizeTest(true, useLocalSizeId, true, cases[i].localSize, cases[i].ndx);
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, ("literal_and_specid_localsize" + cases[i].nameSuffix).c_str(), "", spec));
 
-	spec.assembly = getAsmForLocalSizeTest(true, useLocalSizeId, true, IVec3(numElements, 1, 1), 0u);
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_and_specid_localsize_x", "", spec));
-
-	if (!useLocalSizeId)	// dont repeat this test when useLocalSizeId is true
-	{
-		spec.assembly = getAsmForLocalSizeTest(false, false, true, IVec3(numElements, 1, 1), 0u);
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize_x", "", spec));
-	}
-
-	spec.assembly = getAsmForLocalSizeTest(true, useLocalSizeId, false, IVec3(1, numElements, 1), 1u);
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_localsize_y", "", spec));
-
-	spec.assembly = getAsmForLocalSizeTest(true, useLocalSizeId, true, IVec3(1, numElements, 1), 1u);
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_and_specid_localsize_y", "", spec));
-
-	if (!useLocalSizeId)	// dont repeat this test when useLocalSizeId is true
-	{
-		spec.assembly = getAsmForLocalSizeTest(false, false, true, IVec3(1, numElements, 1), 1u);
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize_y", "", spec));
-	}
-
-	spec.assembly = getAsmForLocalSizeTest(true, useLocalSizeId, false, IVec3(1, 1, numElements), 2u);
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_localsize_z", "", spec));
-
-	spec.assembly = getAsmForLocalSizeTest(true, useLocalSizeId, true, IVec3(1, 1, numElements), 2u);
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_and_specid_localsize_z", "", spec));
-
-	if (!useLocalSizeId)	// dont repeat this test when useLocalSizeId is true
-	{
-		spec.assembly = getAsmForLocalSizeTest(false, false, true, IVec3(1, 1, numElements), 2u);
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize_z", "", spec));
+		if (!useLocalSizeId)	// dont repeat this test when useLocalSizeId is true
+		{
+			spec.assembly = getAsmForLocalSizeTest(false, false, true, cases[i].localSize, cases[i].ndx);
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, ("specid_localsize" + cases[i].nameSuffix).c_str(), "", spec));
+		}
 	}
 
 	return group.release();
