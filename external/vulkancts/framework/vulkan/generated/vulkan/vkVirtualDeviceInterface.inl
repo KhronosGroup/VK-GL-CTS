@@ -484,3 +484,8 @@ virtual void				cmdInitializeGraphScratchMemoryAMDX						(VkCommandBuffer comman
 virtual void				cmdDispatchGraphAMDX									(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo) const = 0;
 virtual void				cmdDispatchGraphIndirectAMDX							(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo) const = 0;
 virtual void				cmdDispatchGraphIndirectCountAMDX						(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceAddress countInfo) const = 0;
+virtual VkResult			setLatencySleepModeNV									(VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepModeInfoNV* pSleepModeInfo) const = 0;
+virtual VkResult			latencySleepNV											(VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepInfoNV* pSleepInfo) const = 0;
+virtual void				setLatencyMarkerNV										(VkDevice device, VkSwapchainKHR swapchain, const VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo) const = 0;
+virtual void				getLatencyTimingsNV										(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pTimingCount, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo) const = 0;
+virtual void				queueNotifyOutOfBandNV									(VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo) const = 0;

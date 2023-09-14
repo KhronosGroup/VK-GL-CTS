@@ -65,23 +65,26 @@ protected:
 	de::SharedPtr<Draw::Buffer>		m_conditionalBuffer;
 
 	vk::Move<vk::VkCommandBuffer>	m_secondaryCmdBuffer;
+	vk::Move<vk::VkCommandBuffer>	m_nestedCmdBuffer;
 };
 
 ConditionalClearAttachmentTest::ConditionalClearAttachmentTest (Context &context, ConditionalTestSpec testSpec)
 	: Draw::DrawTestsBaseClass(context,
 							   testSpec.shaders[glu::SHADERTYPE_VERTEX],
 							   testSpec.shaders[glu::SHADERTYPE_FRAGMENT],
-							   Draw::SharedGroupParams(new Draw::GroupParams{ false, false, false }),
+							   Draw::SharedGroupParams(new Draw::GroupParams{ false, false, false, false }),
 							   vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 	, m_conditionalData(testSpec.conditionalData)
 {
 	checkConditionalRenderingCapabilities(context, m_conditionalData);
+	checkNestedRenderPassCapabilities(context);
 
 	m_data.push_back(Draw::VertexElementData(tcu::Vec4(0.0f), tcu::Vec4(0.0f), 0));
 
 	initialize();
 
 	m_secondaryCmdBuffer = vk::allocateCommandBuffer(m_vk, m_context.getDevice(), *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+	m_nestedCmdBuffer = vk::allocateCommandBuffer(m_vk, m_context.getDevice(), *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 }
 
 tcu::TestStatus ConditionalClearAttachmentTest::iterate (void)
@@ -129,6 +132,10 @@ tcu::TestStatus ConditionalClearAttachmentTest::iterate (void)
 			&inheritanceInfo
 		};
 
+		if (m_conditionalData.secondaryCommandBufferNested) {
+			VK_CHECK(m_vk.beginCommandBuffer(*m_nestedCmdBuffer, &commandBufferBeginInfo));
+		}
+
 		VK_CHECK(m_vk.beginCommandBuffer(*m_secondaryCmdBuffer, &commandBufferBeginInfo));
 
 		targetCmdBuffer = *m_secondaryCmdBuffer;
@@ -165,13 +172,22 @@ tcu::TestStatus ConditionalClearAttachmentTest::iterate (void)
 		m_vk.endCommandBuffer(*m_secondaryCmdBuffer);
 	}
 
+	if (useSecondaryCmdBuffer && m_conditionalData.secondaryCommandBufferNested) {
+		m_vk.cmdExecuteCommands(*m_nestedCmdBuffer, 1, &m_secondaryCmdBuffer.get());
+		m_vk.endCommandBuffer(*m_nestedCmdBuffer);
+	}
+
 	if (m_conditionalData.conditionInPrimaryCommandBuffer)
 	{
 		beginConditionalRendering(m_vk, *m_cmdBuffer, *m_conditionalBuffer, m_conditionalData);
 
 		if (m_conditionalData.conditionInherited)
 		{
-			m_vk.cmdExecuteCommands(*m_cmdBuffer, 1, &m_secondaryCmdBuffer.get());
+			if (m_conditionalData.secondaryCommandBufferNested) {
+				m_vk.cmdExecuteCommands(*m_cmdBuffer, 1, &m_nestedCmdBuffer.get());
+			} else {
+				m_vk.cmdExecuteCommands(*m_cmdBuffer, 1, &m_secondaryCmdBuffer.get());
+			}
 		}
 		else
 		{
@@ -182,7 +198,11 @@ tcu::TestStatus ConditionalClearAttachmentTest::iterate (void)
 	}
 	else if (useSecondaryCmdBuffer)
 	{
-		m_vk.cmdExecuteCommands(*m_cmdBuffer, 1, &m_secondaryCmdBuffer.get());
+		if (m_conditionalData.secondaryCommandBufferNested) {
+			m_vk.cmdExecuteCommands(*m_cmdBuffer, 1, &m_nestedCmdBuffer.get());
+		} else {
+			m_vk.cmdExecuteCommands(*m_cmdBuffer, 1, &m_secondaryCmdBuffer.get());
+		}
 	}
 
 	endLegacyRender(*m_cmdBuffer);
