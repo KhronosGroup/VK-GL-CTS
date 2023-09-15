@@ -24,6 +24,7 @@ vk-master/image/extend-operands-spirv1p4.txt
 vk-master/image/extended-usage-bit-compatibility.txt
 vk-master/image/extended-usage-bit.txt
 vk-master/image/format-reinterpret.txt
+vk-master/image/host-image-copy.txt
 vk-master/image/image-size.txt
 vk-master/image/load-store-lod.txt
 vk-master/image/load-store-multisample.txt
