@@ -68,6 +68,7 @@ using de::SharedPtr;
 const deUint32				INVOCATION_COUNT	= 8u;
 const std::vector<deUint32>	LINES_LIST			{ 2, 6, 3 };
 const std::vector<deUint32>	TRIANGLES_LIST		{ 3, 8, 6, 5, 4 };
+constexpr auto				kVec4Components		= 4u;
 
 enum TestType
 {
@@ -100,6 +101,7 @@ enum TestType
 	TEST_TYPE_DRAW_OUTSIDE,
 	TEST_TYPE_HOLES_VERTEX,
 	TEST_TYPE_HOLES_GEOMETRY,
+	TEST_TYPE_MAX_OUTPUT_COMPONENTS,
 	TEST_TYPE_LAST
 };
 
@@ -3474,6 +3476,144 @@ tcu::TestStatus TransformFeedbackHolesInstance::iterate (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
+class TransformFeedbackMaxOutputComponentsInstance : public vkt::TestInstance
+{
+public:
+						TransformFeedbackMaxOutputComponentsInstance	(Context& context, const TestParameters& parameters);
+	tcu::TestStatus		iterate											(void) override;
+
+protected:
+	const TestParameters m_parameters;
+};
+
+TransformFeedbackMaxOutputComponentsInstance::TransformFeedbackMaxOutputComponentsInstance(Context& context, const TestParameters& parameters)
+	: vkt::TestInstance	(context)
+	, m_parameters		(parameters)
+{
+}
+
+tcu::TestStatus TransformFeedbackMaxOutputComponentsInstance::iterate (void)
+{
+	const auto&			ctx			= m_context.getContextCommonData();
+	const tcu::IVec3	fbExtent	(1, 1, 1);
+	const auto			vkExtent	= makeExtent3D(fbExtent);
+	const auto			bindPoint	= VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+	// Vertices for a full-screen triangle.
+	const std::vector<tcu::Vec4> vertices
+	{
+		tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f),
+		tcu::Vec4(-1.0f,  3.0f, 0.0f, 1.0f),
+		tcu::Vec4( 3.0f, -1.0f, 0.0f, 1.0f),
+	};
+	const auto			totalParts		= m_parameters.partCount + 1u/*gl_Position*/;
+	const auto			totalComps		= totalParts * kVec4Components;
+	const auto			vertexCount		= de::sizeU32(vertices);
+
+	// Transform feedback buffer.
+	const auto			xfbBufferSize	= static_cast<VkDeviceSize>(vertexCount * totalComps * sizeof(float));
+	const auto			xfbBufferInfo	= makeBufferCreateInfo(xfbBufferSize, VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT);
+	BufferWithMemory	xfbBuffer		(ctx.vkd, ctx.device, ctx.allocator, xfbBufferInfo, MemoryRequirement::HostVisible);
+	const auto			xfbBufferAlloc	= xfbBuffer.getAllocation();
+	void*				xfbBufferData	= xfbBufferAlloc.getHostPtr();
+	const auto			xfbBufferOffset	= static_cast<VkDeviceSize>(0);
+
+	deMemset(xfbBufferData, 0, static_cast<size_t>(xfbBufferSize));
+	flushAlloc(ctx.vkd, ctx.device, xfbBufferAlloc);
+
+	// Vertex buffer
+	const auto			vbSize			= static_cast<VkDeviceSize>(de::dataSize(vertices));
+	const auto			vbInfo			= makeBufferCreateInfo(vbSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	BufferWithMemory	vertexBuffer	(ctx.vkd, ctx.device, ctx.allocator, vbInfo, MemoryRequirement::HostVisible);
+	const auto			vbAlloc			= vertexBuffer.getAllocation();
+	void*				vbData			= vbAlloc.getHostPtr();
+	const auto			vbOffset		= static_cast<VkDeviceSize>(0);
+
+	deMemcpy(vbData, de::dataOrNull(vertices), de::dataSize(vertices));
+	flushAlloc(ctx.vkd, ctx.device, vbAlloc); // strictly speaking, not needed.
+
+	const auto pipelineLayout	= vk::makePipelineLayout(ctx.vkd, ctx.device);
+	const auto renderPass		= vk::makeRenderPass(ctx.vkd, ctx.device);
+	const auto framebuffer		= makeFramebuffer(ctx.vkd, ctx.device, *renderPass, 0u, nullptr, vkExtent.width, vkExtent.height);
+
+	// Modules.
+	const auto&	binaries		= m_context.getBinaryCollection();
+	const auto	vertModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(vkExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(vkExtent));
+
+	const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		//	VkStructureType							sType;
+		nullptr,														//	const void*								pNext;
+		0u,																//	VkPipelineRasterizationStateCreateFlags	flags;
+		VK_FALSE,														//	VkBool32								depthClampEnable;
+		VK_FALSE,														//	VkBool32								rasterizerDiscardEnable;
+		VK_POLYGON_MODE_FILL,											//	VkPolygonMode							polygonMode;
+		VK_CULL_MODE_NONE,												//	VkCullModeFlags							cullMode;
+		VK_FRONT_FACE_COUNTER_CLOCKWISE,								//	VkFrontFace								frontFace;
+		VK_FALSE,														//	VkBool32								depthBiasEnable;
+		0.0f,															//	float									depthBiasConstantFactor;
+		0.0f,															//	float									depthBiasClamp;
+		0.0f,															//	float									depthBiasSlopeFactor;
+		1.0f,															//	float									lineWidth;
+	};
+
+	const auto pipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout,
+		*vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+		*renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, nullptr, &rasterizationStateCreateInfo);
+
+	CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, ctx.qfIndex);
+	const auto cmdBuffer = *cmd.cmdBuffer;
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+	beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.at(0u));
+	ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vbOffset);
+	ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
+	ctx.vkd.cmdBindTransformFeedbackBuffersEXT(cmdBuffer, 0u, 1u, &xfbBuffer.get(), &xfbBufferOffset, &xfbBufferSize);
+	ctx.vkd.cmdBeginTransformFeedbackEXT(cmdBuffer, 0u, 0u, nullptr, nullptr);
+	ctx.vkd.cmdDraw(cmdBuffer, vertexCount, 1u, 0u, 0u);
+	ctx.vkd.cmdEndTransformFeedbackEXT(cmdBuffer, 0u, 0u, nullptr, nullptr);
+	endRenderPass(ctx.vkd, cmdBuffer);
+	const auto preHostBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT, VK_ACCESS_HOST_READ_BIT);
+	ctx.vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &preHostBarrier, 0u, nullptr, 0u, nullptr);
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+	// Verify transform feedback buffer.
+	invalidateAlloc(ctx.vkd, ctx.device, xfbBufferAlloc);
+
+	uint32_t valIdx = 0u;
+	const auto xfbValues = reinterpret_cast<const char*>(xfbBufferData);
+	for (uint32_t vertIdx = 0u; vertIdx < vertexCount; ++vertIdx)
+		for (uint32_t partIdx = 0u; partIdx < totalParts; ++partIdx)
+			for (uint32_t compIdx = 0u; compIdx < kVec4Components; ++compIdx)
+			{
+				// Must match vertex shader.
+				// Note for outputs other than gl_Position, the component order is reversed due to the xfb offsets in the shader.
+				const auto	expectedVal		= ((partIdx == 0u) // gl_Position?
+											? (vertices.at(vertIdx)[compIdx])
+											: (static_cast<float>(vertIdx + 1u) * 10000.0f + static_cast<float>(partIdx) * 10.0f + static_cast<float>(kVec4Components - 1u - compIdx)));
+				const auto	bufferOffset	= sizeof(float) * valIdx;
+
+				float		result			= 0.0f;
+				deMemcpy(&result, xfbValues + bufferOffset, sizeof(float));
+
+				if (result != expectedVal)
+				{
+					std::ostringstream msg;
+					msg << "XFB Buffer value at position " << valIdx << " (" << result << ") does not match expected value ("
+					    << expectedVal << "); vertex=" << vertIdx << " vector=" << partIdx << " component=" << compIdx;
+					TCU_FAIL(msg.str());
+				}
+
+				++valIdx;
+			}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 class TransformFeedbackTestCase : public vkt::TestCase
 {
 public:
@@ -3582,6 +3722,9 @@ vkt::TestInstance*	TransformFeedbackTestCase::createInstance (vkt::Context& cont
 		return new TransformFeedbackHolesInstance (context, extraDraw);
 	}
 
+	if (m_parameters.testType == TEST_TYPE_MAX_OUTPUT_COMPONENTS)
+		return new TransformFeedbackMaxOutputComponentsInstance(context, m_parameters);
+
 	TCU_THROW(InternalError, "Specified test type not found");
 }
 
@@ -3599,8 +3742,10 @@ void TransformFeedbackTestCase::checkSupport (Context& context) const
 	if (m_parameters.useMaintenance5)
 		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
+	const auto& xfbProperties = context.getTransformFeedbackPropertiesEXT();
+
 	// transformFeedbackRasterizationStreamSelect is required when vertex streams other than zero are rasterized
-	if (m_parameters.requireRastStreamSelect && (context.getTransformFeedbackPropertiesEXT().transformFeedbackRasterizationStreamSelect == VK_FALSE) && (m_parameters.streamId > 0))
+	if (m_parameters.requireRastStreamSelect && (xfbProperties.transformFeedbackRasterizationStreamSelect == VK_FALSE) && (m_parameters.streamId > 0))
 		TCU_THROW(NotSupportedError, "transformFeedbackRasterizationStreamSelect property is not supported");
 
 	if (m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_MULTIVIEW)
@@ -3632,6 +3777,28 @@ void TransformFeedbackTestCase::checkSupport (Context& context) const
 
 	if (m_parameters.testType == TEST_TYPE_QUERY_RESET)
 		context.requireDeviceFunctionality("VK_EXT_host_query_reset");
+
+	if (m_parameters.testType == TEST_TYPE_MAX_OUTPUT_COMPONENTS)
+	{
+		const auto&		maxComps		= context.getDeviceProperties().limits.maxVertexOutputComponents;
+		const auto		totalComps		= (m_parameters.partCount + 1u/*gl_Position*/) * kVec4Components;
+
+		if (totalComps > maxComps)
+			TCU_THROW(NotSupportedError, "Required number of output components not supported");
+
+		const auto		compSize		= static_cast<uint32_t>(sizeof(float));
+		const auto		perVertexSize	= totalComps * compSize;
+		const auto		messagePrefix	= "Required vertex data size (" + std::to_string(perVertexSize) + ") greater than ";
+
+		if (perVertexSize > xfbProperties.maxTransformFeedbackBufferDataSize)
+			TCU_THROW(NotSupportedError, messagePrefix + "maxTransformFeedbackBufferDataSize");
+
+		if (perVertexSize > xfbProperties.maxTransformFeedbackStreamDataSize)
+			TCU_THROW(NotSupportedError, messagePrefix + "maxTransformFeedbackStreamDataSize");
+
+		if (perVertexSize > xfbProperties.maxTransformFeedbackBufferDataStride)
+			TCU_THROW(NotSupportedError, messagePrefix + "maxTransformFeedbackBufferDataStride");
+	}
 }
 
 void TransformFeedbackTestCase::initPrograms (SourceCollections& programCollection) const
@@ -4842,6 +5009,54 @@ void TransformFeedbackTestCase::initPrograms (SourceCollections& programCollecti
 		return;
 	}
 
+	if (m_parameters.testType == TEST_TYPE_MAX_OUTPUT_COMPONENTS)
+	{
+		// For these tests, we reuse the partCount parameter to specify the number of custom outputs to use in the vertex shader.
+		std::ostringstream vert;
+		vert
+			<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_460) << "\n"
+			<< "\n"
+			<< "layout(xfb_buffer = 0, xfb_offset = 0) out gl_PerVertex\n"
+			<< "{\n"
+			<< "    vec4 gl_Position;\n"
+			<< "};\n"
+			<< "layout (location=0) in vec4 inPos;\n"
+			;
+
+		const auto partSize = static_cast<uint32_t>(sizeof(tcu::Vec4));
+		const auto compSize = static_cast<uint32_t>(sizeof(float));
+
+		for (uint32_t partIdx = 0u; partIdx < m_parameters.partCount; ++partIdx)
+			for (uint32_t compIdx = 0u; compIdx < kVec4Components; ++compIdx)
+			{
+				const auto partOffset = (partIdx + 1u) * partSize;				// +1 to take into account gl_Position at the buffer start.
+				const auto compOffset = partOffset + (kVec4Components - 1u - compIdx) * compSize;	// Reverse component order to prevent vectorization.
+				vert << "layout (location=" << partIdx << ", component=" << compIdx << ", xfb_buffer=0, xfb_offset=" << compOffset << ") out float part" << partIdx << "_" << compIdx << ";\n";
+			}
+
+		const auto getPartValue = [](uint32_t partIdx, uint32_t component) -> std::string {
+			return "baseValue + " + std::to_string(partIdx) + " * 10.0 + " + std::to_string(component) + ".0";
+		};
+
+		vert
+			<< "\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "    const float baseValue = (gl_VertexIndex + 1) * 10000.0;\n"
+			<< "    gl_Position = inPos;\n"
+			;
+
+		for (uint32_t partIdx = 0u; partIdx < m_parameters.partCount; ++partIdx)
+			for (uint32_t compIdx = 0u; compIdx < kVec4Components; ++compIdx)
+				vert << "    part" << partIdx << "_" << compIdx << " = " << getPartValue(partIdx + 1u, compIdx) << ";\n";
+
+		vert << "}\n";
+
+		programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+		return;
+	}
+
 	DE_ASSERT(0 && "Unknown test");
 }
 
@@ -5280,6 +5495,21 @@ void createTransformFeedbackStreamsSimpleTests (tcu::TestCaseGroup* group, vk::P
 				// Test skipping components in the XFB buffer
 				group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + holeCase.suffix).c_str(), parameters));
 			}
+	}
+
+	{
+		const TestType		testType	= TEST_TYPE_MAX_OUTPUT_COMPONENTS;
+		const std::string	testName	= "max_output_components";
+
+		// For these tests, we reuse the partCount parameter to specify the number of custom outputs to use in the vertex shader.
+		for (const auto& compCount : { 64u, 128u })
+		{
+			const auto				partCount	= compCount / kVec4Components - 1u/*gl_Position*/;
+			const TestParameters	parameters	{ constructionType, testType, 0u,partCount, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false, false, false, false, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false };
+
+			// Save a large number of components to the transform feedback buffer
+			group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + std::to_string(compCount)).c_str(), parameters));
+		}
 	}
 }
 
