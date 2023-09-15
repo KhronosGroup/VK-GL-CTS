@@ -214,13 +214,6 @@ typedef void (*deFunctionPtr) (void);
 #	endif
 #endif
 
-/* Debug code macro. */
-#if defined(DE_DEBUG)
-#	define DE_DEBUG_CODE(X) X
-#else
-#	define DE_DEBUG_CODE(X)
-#endif
-
 /* Inline. */
 #if (DE_COMPILER == DE_COMPILER_MSC)
 #	define DE_INLINE __forceinline
@@ -267,14 +260,14 @@ DE_INLINE deBool deGetTrue (void) { return DE_TRUE; }
 
 /* Assertion macro. */
 #if defined(DE_DEBUG) && !defined(DE_COVERAGE_BUILD)
-#	define DE_ASSERT(X) do { if ((!deGetFalse() && (X)) ? DE_FALSE : DE_TRUE) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
+#	define DE_ASSERT(X) do { if (!(X)) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
 #else
 #	define DE_ASSERT(X) /*@ -noeffect*/ ((void)0)	/*!< Assertion macro. */
 #endif
 
 /* Verify macro. Behaves like assert in debug build, but executes statement in release build. */
 #if defined(DE_DEBUG)
-#	define DE_VERIFY(X) do { if ((!deGetFalse() && (X)) ? DE_FALSE : DE_TRUE) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
+#	define DE_VERIFY(X) do { if (!(X)) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
 #else
 #	define DE_VERIFY(X) X
 #endif
@@ -287,7 +280,7 @@ DE_INLINE deBool deGetTrue (void) { return DE_TRUE; }
 #endif
 
 /** Test assert macro for use in testers (same as DE_ASSERT, but always enabled). */
-#define DE_TEST_ASSERT(X) do { if ((!deGetFalse() && (X)) ? DE_FALSE : DE_TRUE) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
+#define DE_TEST_ASSERT(X) do { if (!(X)) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
 
 #if (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
 	/* GCC 4.8 and newer warns about unused typedefs. */
@@ -298,10 +291,8 @@ DE_INLINE deBool deGetTrue (void) { return DE_TRUE; }
 
 /** Compile-time assertion macro. */
 #define DE_STATIC_ASSERT(X)						typedef char DE_UNIQUE_NAME[(X) ? 1 : -1] DE_UNUSED_ATTR
-#define DE_HEADER_STATIC_ASSERT(HEADERTOKEN, X)	typedef char DE_HEADER_UNIQUE_NAME(HEADERTOKEN)[(X) ? 1 : -1] DE_UNUSED_ATTR
 
 #define DE_UNIQUE_NAME						DE_MAKE_NAME(__LINE__, hoax)
-#define DE_HEADER_UNIQUE_NAME(HEADERTOKEN)	DE_MAKE_NAME(__LINE__, HEADERTOKEN)
 #define DE_MAKE_NAME(line, token) DE_MAKE_NAME2(line, token)
 #define DE_MAKE_NAME2(line, token) _static_assert_##line##_##token
 
