@@ -1878,15 +1878,6 @@ void testGenerator(tcu::TestCaseGroup* group)
 		{ true,		"memcpy",	"Copy with VK_HOST_IMAGE_COPY_MEMCPY_EXT flag"	},
 	};
 
-	const struct DynamicRendering {
-		bool		dynamicRendering;
-		const char* name;
-		const char* desc;
-	} dynamicRendering[] = {
-		{ false,	"render_pass",			"render pass"		},
-		{ true,		"dynamic_rendering",	"dynamic rendering"	},
-	};
-
 	const struct Tiling {
 		vk::VkImageTiling	tiling;
 		const char*			name;
@@ -1954,17 +1945,6 @@ void testGenerator(tcu::TestCaseGroup* group)
 		{ vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,				"transfer_dst_optimal",				"intermediate layout"	},
 	};
 
-	constexpr struct SparseTest
-	{
-		bool		sparse;
-		const char* name;
-		const char* desc;
-	} sparseTests[] =
-	{
-		{	false,	"regular",	"non-sparse image"	},
-		{	true,	"sparse",	"sparse image"		},
-	};
-
 	constexpr struct MipLevelRegionCountPaddingTest
 	{
 		deUint32	mipLevel;
@@ -1992,8 +1972,15 @@ void testGenerator(tcu::TestCaseGroup* group)
 		bool colorFormat = isCompressedFormat(formatAndCommand.sampled) ||
 			!(tcu::hasDepthComponent(mapVkFormat(formatAndCommand.sampled).order) || tcu::hasDepthComponent(mapVkFormat(formatAndCommand.sampled).order));
 
+		bool dynamicRenderingBase = true;
+		bool sparseImageBase = true;
+
 		for (const auto& copy : copyTests)
 		{
+			// Anitalias the config stride!
+			dynamicRenderingBase = !dynamicRenderingBase;
+			bool dynamicRendering = dynamicRenderingBase;
+
 			tcu::TestCaseGroup* const copyTestGroup = new tcu::TestCaseGroup(testCtx, copy.name, copy.desc);
 			for (const auto& imageToMemory : copyImageToMemoryTests)
 			{
@@ -2020,48 +2007,44 @@ void testGenerator(tcu::TestCaseGroup* group)
 									tcu::TestCaseGroup* const tilingGroup = new tcu::TestCaseGroup(testCtx, tiling.name, tiling.desc);
 									for (const auto& mipLevelRegionCountPaddingTest : mipLevelRegionCountPaddingTests)
 									{
+										// We are alternating the sparseImage flag here, make sure that count is not even, otherwise this has to be moved to a different loop
+										static_assert(DE_LENGTH_OF_ARRAY(mipLevelRegionCountPaddingTests) % 2 != 0, "Variation count is not odd");
+										sparseImageBase = !sparseImageBase;
+										bool sparseImage = sparseImageBase;
+
 										tcu::TestCaseGroup* const mipLevelRegionCountPaddingGroup = new tcu::TestCaseGroup(testCtx, mipLevelRegionCountPaddingTest.name, mipLevelRegionCountPaddingTest.desc);
 										for (const auto& size : imageSizes)
 										{
-											tcu::TestCaseGroup* const sizeGroup = new tcu::TestCaseGroup(testCtx, size.name, size.desc);
-											for (const auto& sparse : sparseTests)
+											// Alternate every test
+											dynamicRendering = !dynamicRendering;
+											sparseImage = !sparseImage;
+
+											if (sparseImage && isCompressedFormat(formatAndCommand.sampled))
+												continue;
+
+											const TestParameters parameters =
 											{
-												if (sparse.sparse && isCompressedFormat(formatAndCommand.sampled))
-													continue;
+												copy.copyMemoryToImage,							// bool				copyMemoryToImage
+												imageToMemory.hostCopyImageToMemory,			// bool				hostCopyImageToMemory
+												copy.hostTransferLayout,						// bool				hostTransferLayout
+												transition.host,								// bool				outputImageHostTransition
+												flags.memcpy,									// bool				memcpyFlag
+												dynamicRendering,								// bool				dynamicRendering
+												formatAndCommand.command,						// Command			command
+												formatAndCommand.sampled,						// VkFormat			imageSampledFormat
+												layouts.srcLayout,								// VkImageLayout	srcLayout
+												layouts.dstLayout,								// VkImageLayout	dstLayout
+												intermediateLayout.layout,						// VkImageLayout	intermediateLayout
+												tiling.tiling,									// VkImageTiling	sampledTiling;
+												formatAndCommand.output,						// VkFormat			imageOutputFormat
+												size.size,										// VkExtent3D		imageSize
+												sparseImage,										// bool				sparse
+												mipLevelRegionCountPaddingTest.mipLevel,		// deUint32			mipLevel
+												mipLevelRegionCountPaddingTest.regionsCount,	// deUint32			regionsCount
+												mipLevelRegionCountPaddingTest.padding			// deUint32			padding
+											};
 
-												tcu::TestCaseGroup* const sparseGroup = new tcu::TestCaseGroup(testCtx, sparse.name, sparse.desc);
-												for (const auto& renderingType : dynamicRendering)
-												{
-													if (renderingType.dynamicRendering && formatAndCommand.command == DISPATCH)
-														continue;
-
-													const TestParameters parameters =
-													{
-														copy.copyMemoryToImage,							// bool				copyMemoryToImage
-														imageToMemory.hostCopyImageToMemory,			// bool				hostCopyImageToMemory
-														copy.hostTransferLayout,						// bool				hostTransferLayout
-														transition.host,								// bool				outputImageHostTransition
-														flags.memcpy,									// bool				memcpyFlag
-														renderingType.dynamicRendering,					// bool				dynamicRendering
-														formatAndCommand.command,						// Command			command
-														formatAndCommand.sampled,						// VkFormat			imageSampledFormat
-														layouts.srcLayout,								// VkImageLayout	srcLayout
-														layouts.dstLayout,								// VkImageLayout	dstLayout
-														intermediateLayout.layout,						// VkImageLayout	intermediateLayout
-														tiling.tiling,									// VkImageTiling	sampledTiling;
-														formatAndCommand.output,						// VkFormat			imageOutputFormat
-														size.size,										// VkExtent3D		imageSize
-														sparse.sparse,									// bool				sparse
-														mipLevelRegionCountPaddingTest.mipLevel,		// deUint32			mipLevel
-														mipLevelRegionCountPaddingTest.regionsCount,	// deUint32			regionsCount
-														mipLevelRegionCountPaddingTest.padding			// deUint32			padding
-													};
-
-													sparseGroup->addChild(new HostImageCopyTestCase(testCtx, renderingType.name, renderingType.desc, parameters));
-												}
-												sizeGroup->addChild(sparseGroup);
-											}
-											mipLevelRegionCountPaddingGroup->addChild(sizeGroup);
+											mipLevelRegionCountPaddingGroup->addChild(new HostImageCopyTestCase(testCtx, size.name, size.desc, parameters));
 										}
 										tilingGroup->addChild(mipLevelRegionCountPaddingGroup);
 									}
