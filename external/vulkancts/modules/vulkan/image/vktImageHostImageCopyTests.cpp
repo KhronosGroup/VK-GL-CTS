@@ -1226,7 +1226,7 @@ void HostImageCopyTestCase::initPrograms (vk::SourceCollections& programCollecti
 class PreinitializedTestInstance : public vkt::TestInstance
 {
 public:
-	PreinitializedTestInstance	(vkt::Context& context, const vk::VkFormat format, vk::VkImageLayout srcLayout, vk::VkImageLayout dstLayout, vk::VkExtent3D size, deUint32 arrayLayers, bool imageToImageCopy, bool memcpy, vk::VkImageTiling tiling)
+	PreinitializedTestInstance	(vkt::Context& context, const vk::VkFormat format, vk::VkImageLayout srcLayout, vk::VkImageLayout dstLayout, vk::VkExtent3D size, deUint32 arrayLayers, bool imageToImageCopy, bool memcpy, vk::VkImageTiling tiling, deUint32 offset)
 								: vkt::TestInstance		(context)
 								, m_format				(format)
 								, m_srcLayout			(srcLayout)
@@ -1236,6 +1236,7 @@ public:
 								, m_imageToImageCopy	(imageToImageCopy)
 								, m_memcpy				(memcpy)
 								, m_tiling				(tiling)
+								, m_offset				(offset)
 								{
 								}
 
@@ -1250,6 +1251,7 @@ private:
 	const bool					m_imageToImageCopy;
 	const bool					m_memcpy;
 	const vk::VkImageTiling		m_tiling;
+	const deUint32				m_offset;
 };
 
 tcu::TestStatus PreinitializedTestInstance::iterate (void)
@@ -1279,10 +1281,13 @@ tcu::TestStatus PreinitializedTestInstance::iterate (void)
 		vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,	// flags
 		queueFamilyIndex,										// queuefamilyindex
 	};
-	const Move	<vk::VkCommandPool>		cmdPool				(createCommandPool(vk, device, &cmdPoolInfo));
-	const Move	<vk::VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Move	<vk::VkCommandPool>					cmdPool				(createCommandPool(vk, device, &cmdPoolInfo));
+	const Move	<vk::VkCommandBuffer>				cmdBuffer			(allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-	const vk::VkImageType				imageType			= m_size.depth > 1 ? vk::VK_IMAGE_TYPE_3D : vk::VK_IMAGE_TYPE_2D;
+	const vk::SimpleAllocator::OptionalOffsetParams	offsetParams		({ m_context.getDeviceProperties().limits.nonCoherentAtomSize, m_offset });
+	de::MovePtr<Allocator>							allocatorWithOffset = de::MovePtr<Allocator>(new SimpleAllocator(vk, device, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()), offsetParams));
+
+	const vk::VkImageType							imageType			= m_size.depth > 1 ? vk::VK_IMAGE_TYPE_3D : vk::VK_IMAGE_TYPE_2D;
 
 	deUint64										modifier = 0;
 	checkSupportedFormatFeatures(instanceDriver, physicalDevice, m_format, m_tiling, &modifier);
@@ -1312,8 +1317,8 @@ tcu::TestStatus PreinitializedTestInstance::iterate (void)
 		vk::VK_IMAGE_LAYOUT_PREINITIALIZED			// VkImageLayout			initialLayout
 	};
 
-	de::MovePtr<ImageWithMemory>	image				= de::MovePtr<ImageWithMemory>(new ImageWithMemory(vk, device, alloc, createInfo, vk::MemoryRequirement::HostVisible));
-	de::MovePtr<ImageWithMemory>	copyImage			= de::MovePtr<ImageWithMemory>(new ImageWithMemory(vk, device, alloc, createInfo, vk::MemoryRequirement::Any));
+	de::MovePtr<ImageWithMemory>	image				= de::MovePtr<ImageWithMemory>(new ImageWithMemory(vk, device, *allocatorWithOffset, createInfo, vk::MemoryRequirement::HostVisible));
+	de::MovePtr<ImageWithMemory>	copyImage			= de::MovePtr<ImageWithMemory>(new ImageWithMemory(vk, device, *allocatorWithOffset, createInfo, vk::MemoryRequirement::Any));
 	const vk::VkImage				endImage			= m_imageToImageCopy ? **copyImage : **image;
 	de::MovePtr<BufferWithMemory>	outputBuffer		= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, alloc, makeBufferCreateInfo(bufferSize, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible));
 
@@ -1486,7 +1491,7 @@ tcu::TestStatus PreinitializedTestInstance::iterate (void)
 class PreinitializedTestCase : public vkt::TestCase
 {
 public:
-	PreinitializedTestCase						(tcu::TestContext& context, const char* name, const char* description, const vk::VkFormat format, vk::VkImageLayout srcLayout, vk::VkImageLayout dstLayout, vk::VkExtent3D size, deUint32 arrayLayers, bool imageToImageCopy, bool memcpy, vk::VkImageTiling tiling)
+	PreinitializedTestCase						(tcu::TestContext& context, const char* name, const char* description, const vk::VkFormat format, vk::VkImageLayout srcLayout, vk::VkImageLayout dstLayout, vk::VkExtent3D size, deUint32 arrayLayers, bool imageToImageCopy, bool memcpy, vk::VkImageTiling tiling, deUint32 offset)
 												: TestCase				(context, name, description)
 												, m_format				(format)
 												, m_srcLayout			(srcLayout)
@@ -1496,11 +1501,12 @@ public:
 												, m_imageToImageCopy	(imageToImageCopy)
 												, m_memcpy				(memcpy)
 												, m_tiling				(tiling)
+												, m_offset				(offset)
 												{
 												}
 private:
 	void						checkSupport	(vkt::Context& context) const;
-	vkt::TestInstance*			createInstance	(vkt::Context& context) const { return new PreinitializedTestInstance(context, m_format, m_srcLayout, m_dstLayout, m_size, m_arrayLayers, m_imageToImageCopy, m_memcpy, m_tiling); }
+	vkt::TestInstance*			createInstance	(vkt::Context& context) const { return new PreinitializedTestInstance(context, m_format, m_srcLayout, m_dstLayout, m_size, m_arrayLayers, m_imageToImageCopy, m_memcpy, m_tiling, m_offset); }
 
 	const vk::VkFormat			m_format;
 	const vk::VkImageLayout		m_srcLayout;
@@ -1510,6 +1516,7 @@ private:
 	const bool					m_imageToImageCopy;
 	const bool					m_memcpy;
 	const vk::VkImageTiling		m_tiling;
+	const deUint32				m_offset;
 };
 
 void PreinitializedTestCase::checkSupport (vkt::Context& context) const
@@ -2139,6 +2146,17 @@ void testGenerator(tcu::TestCaseGroup* group)
 		{ {24, 24, 4},		1,	"24x24x4_4",	"Image size"	},
 	};
 
+	constexpr struct OffsetTest
+	{
+		deUint32	offset;
+		const char* name;
+		const char* desc;
+	} offsetTests[] =
+	{
+		{ 0u,	"0",	"No offset"	},
+		{ 64u,	"64",	"Offset 64"	},
+	};
+
 	for (const auto& tiling : preinitializedTilingTests)
 	{
 		tcu::TestCaseGroup* const tilingGroup = new tcu::TestCaseGroup(testCtx, tiling.name, tiling.desc);
@@ -2154,10 +2172,14 @@ void testGenerator(tcu::TestCaseGroup* group)
 					for (const auto& size : imageSizeTests)
 					{
 						tcu::TestCaseGroup* const sizeGroup = new tcu::TestCaseGroup(testCtx, size.name, size.desc);
-						for (const auto& format : preinitializedFormats)
-						{
-							const auto formatName = getFormatShortString(format.format);
-							sizeGroup->addChild(new PreinitializedTestCase(testCtx, formatName.c_str(), "", format.format, srcLayout.layout, dstLayout.layout, size.size, size.layerCount, imageToImage.imageToImageCopy, imageToImage.memcpy, tiling.tiling));
+						for (const auto& offset : offsetTests) {
+							tcu::TestCaseGroup* const offsetGroup = new tcu::TestCaseGroup(testCtx, offset.name, offset.desc);
+							for (const auto& format : preinitializedFormats)
+							{
+								const auto formatName = getFormatShortString(format.format);
+								offsetGroup->addChild(new PreinitializedTestCase(testCtx, formatName.c_str(), "", format.format, srcLayout.layout, dstLayout.layout, size.size, size.layerCount, imageToImage.imageToImageCopy, imageToImage.memcpy, tiling.tiling, offset.offset));
+							}
+							sizeGroup->addChild(offsetGroup);
 						}
 						dstLayoutGroup->addChild(sizeGroup);
 					}
