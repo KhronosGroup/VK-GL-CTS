@@ -520,13 +520,13 @@ void DrawWithQuadScopeTestCase::initPrograms(SourceCollections& sourceCollection
 			"OpCapability Shader\n"
 			"OpCapability GroupNonUniform\n"
 			"OpCapability GroupNonUniformVote\n"
-			"OpCapability QuadScope\n"							// this was added to code generated from glsl above
-			"OpExtension \"SPV_KHR_shader_quad_scope\"\n"		// this was added
+			"OpCapability QuadScopeKHR\n"				// this was added to code generated from glsl above
+			"OpExtension \"SPV_KHR_quad_scope\"\n"			// this was added
 			"%1 = OpExtInstImport \"GLSL.std.450\"\n"
 			"OpMemoryModel Logical GLSL450\n"
 			"OpEntryPoint Fragment %4 \"main\" %12 %41 %49\n"
 			"OpExecutionMode %4 OriginUpperLeft\n"
-			"OpExecutionMode %4 QuadDerivatives\n"				// this was added too
+			"OpExecutionMode %4 QuadDerivativesKHR\n"		// this was added too
 			"OpDecorate %12 BuiltIn FragCoord\n"
 			"OpDecorate %41 Location 0\n"
 			"OpDecorate %45 DescriptorSet 0\n"
@@ -602,7 +602,7 @@ void DrawWithQuadScopeTestCase::initPrograms(SourceCollections& sourceCollection
 	else // TestMode::REQUIRE_FULL_QUADS
 	{
 		// we are drawing few connected triangles at odd angles
-		// RequireFullQuads ensure lots of helper lanes
+		// RequireFullQuadsKHR ensures lots of helper lanes
 
 		//fragmentSource =
 		//"#version 450\n"
@@ -629,14 +629,14 @@ void DrawWithQuadScopeTestCase::initPrograms(SourceCollections& sourceCollection
 			"OpCapability GroupNonUniform\n"
 			"OpCapability GroupNonUniformVote\n"
 			"OpCapability GroupNonUniformBallot\n"
-			"OpCapability QuadScope\n"							// this was added to code generated from glsl above
-			"OpExtension \"SPV_KHR_shader_quad_scope\"\n"		// this was added
+			"OpCapability QuadScopeKHR\n"				// this was added to code generated from glsl above
+			"OpExtension \"SPV_KHR_quad_scope\"\n"			// this was added
 			"%1 = OpExtInstImport \"GLSL.std.450\"\n"
 			"OpMemoryModel Logical GLSL450\n"
 			"OpEntryPoint Fragment %4 \"main\" %17 %31 %40\n"
 			"OpExecutionMode %4 OriginUpperLeft\n"
 			//"OpExecutionMode %4 MaximallyReconvergesKHR\n"	// this was added		// TODO this should be uncommented when VK_KHR_shader_maximal_reconvergence is available
-			"OpExecutionMode %4 RequireFullQuads\n"				// this was added too
+			"OpExecutionMode %4 RequireFullQuadsKHR\n"		// this was added too
 			"OpDecorate %17 Location 0\n"
 			"OpDecorate %31 BuiltIn HelperInvocation\n"
 			"OpDecorate %40 Location 0\n"
