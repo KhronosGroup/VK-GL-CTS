@@ -40,7 +40,7 @@ void					addBasicShaderObjectShaders	(vk::SourceCollections& programCollection);
 
 vk::VkShaderCreateInfoEXT makeShaderCreateInfo		(vk::VkShaderStageFlagBits stage, const vk::ProgramBinary& programBinary, bool tessellationShaderFeature, bool geometryShaderFeature, const vk::VkDescriptorSetLayout* descriptorSetLayout = DE_NULL);
 void					setDefaultShaderObjectDynamicStates	(const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, const std::vector<std::string>& deviceExtensions, vk::VkPrimitiveTopology topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, bool meshShader = false, bool setViewport = false);
-void					bindGraphicsShaders			(const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkShaderEXT vertShader, vk::VkShaderEXT tescShader, vk::VkShaderEXT teseShader, vk::VkShaderEXT geomShader, vk::VkShaderEXT fragShader);
+void					bindGraphicsShaders			(const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkShaderEXT vertShader, vk::VkShaderEXT tescShader, vk::VkShaderEXT teseShader, vk::VkShaderEXT geomShader, vk::VkShaderEXT fragShader, bool taskShaderSupported, bool meshShaderSupported);
 void					bindComputeShader			(const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkShaderEXT compShader);
 
 } // vkt

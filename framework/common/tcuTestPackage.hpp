@@ -110,6 +110,10 @@ public:
 	virtual Archive*				getArchive			(void) { return DE_NULL; }
 
 	virtual IterateResult			iterate				(void);
+
+	void							setCaseListFilter	(const CaseListFilter* caseListFilter);
+protected:
+	const CaseListFilter*			m_caseListFilter;
 };
 
 // TestPackageRegistry

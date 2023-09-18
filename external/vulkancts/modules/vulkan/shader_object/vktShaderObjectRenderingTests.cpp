@@ -559,6 +559,8 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate (void)
 	const auto							deviceExtensions			= vk::removeUnsupportedShaderObjectExtensions(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
 	const bool							tessellationSupported		= m_context.getDeviceFeatures().tessellationShader;
 	const bool							geometrySupported			= m_context.getDeviceFeatures().geometryShader;
+	const bool							taskSupported				= m_context.getMeshShaderFeatures().taskShader;
+	const bool							meshSupported				= m_context.getMeshShaderFeatures().meshShader;
 
 	const auto							colorSubresourceRange		= vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
 	auto								depthSubresourceRange		= vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u);
@@ -656,7 +658,7 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate (void)
 	}
 
 	if (m_params.bindShadersBeforeBeginRendering)
-		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragShader);
+		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragShader, taskSupported, meshSupported);
 
 	if (m_params.dummyRenderPass == DUMMY_DYNAMIC)
 	{
@@ -702,7 +704,7 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate (void)
 	vk.cmdSetDepthTestEnable(*cmdBuffer, VK_TRUE);
 	vk.cmdSetDepthCompareOp(*cmdBuffer, vk::VK_COMPARE_OP_LESS);
 	if (!m_params.bindShadersBeforeBeginRendering)
-		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragShader);
+		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragShader, taskSupported, meshSupported);
 	vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 	vk::endRendering(vk, *cmdBuffer);
 

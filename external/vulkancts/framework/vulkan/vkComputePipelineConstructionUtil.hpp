@@ -76,6 +76,7 @@ public:
 	void								setDescriptorSetLayouts	(deUint32 setLayoutCount, const VkDescriptorSetLayout* descriptorSetLayouts);
 	void								setSpecializationInfo	(VkSpecializationInfo specializationInfo);
 	void								setPipelineCreateFlags	(VkPipelineCreateFlags pipelineCreateFlags);
+	void								setSubgroupSize			(uint32_t subgroupSize);
 	void								buildPipeline			(void);
 	void								bind					(VkCommandBuffer commandBuffer);
 
@@ -92,6 +93,7 @@ private:
 	std::vector<VkDescriptorSetLayout>	m_descriptorSetLayouts;
 	VkSpecializationInfo				m_specializationInfo;
 	VkPipelineCreateFlags				m_pipelineCreateFlags;
+	uint32_t							m_subgroupSize;
 
 	Move<VkPipeline>					m_pipeline;
 	Move<VkPipelineLayout>				m_pipelineLayout;

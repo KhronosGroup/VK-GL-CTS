@@ -35,11 +35,17 @@ namespace tcu
 
 TestPackage::TestPackage (TestContext& testCtx, const char* name, const char* description)
 	: TestNode(testCtx, NODETYPE_PACKAGE, name, description)
+	, m_caseListFilter(nullptr)
 {
 }
 
 TestPackage::~TestPackage (void)
 {
+}
+
+void TestPackage::setCaseListFilter (const CaseListFilter* caseListFilter)
+{
+	m_caseListFilter = caseListFilter;
 }
 
 TestNode::IterateResult TestPackage::iterate (void)

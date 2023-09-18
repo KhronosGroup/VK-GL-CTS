@@ -95,6 +95,8 @@ enum TestType
 	TEST_TYPE_DEPTH_CLIP_CONTROL_TESE,
 	TEST_TYPE_LINES_TRIANGLES,
 	TEST_TYPE_DRAW_OUTSIDE,
+	TEST_TYPE_HOLES_VERTEX,
+	TEST_TYPE_HOLES_GEOMETRY,
 	TEST_TYPE_LAST
 };
 
@@ -2973,6 +2975,163 @@ tcu::TestStatus TransformFeedbackDrawOutsideTestInstance::iterate (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
+class TransformFeedbackHolesInstance : public vkt::TestInstance
+{
+public:
+						TransformFeedbackHolesInstance	(Context& context, const bool extraDraw)
+							: vkt::TestInstance	(context)
+							, m_extraDraw		(extraDraw)
+							{}
+						~TransformFeedbackHolesInstance	(void) {}
+
+	tcu::TestStatus		iterate							(void) override;
+
+protected:
+	const bool m_extraDraw;
+};
+
+tcu::TestStatus TransformFeedbackHolesInstance::iterate (void)
+{
+	const auto&			ctx				= m_context.getContextCommonData();
+	const tcu::IVec3	fbExtent		(1, 1, 1);
+	const auto			vkExtent		= makeExtent3D(fbExtent);
+	const auto			fbFormat		= VK_FORMAT_R8G8B8A8_UNORM;
+	const auto			tcuFormat		= mapVkFormat(fbFormat);
+	const auto			fbUsage			= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const tcu::Vec4		clearColor		(0.0f, 0.0f, 0.0f, 1.0f);
+	const tcu::Vec4		geomColor		(0.0f, 0.0f, 1.0f, 1.0f); // Must match frag shader values.
+	const tcu::Vec4		threshold		(0.0f, 0.0f, 0.0f, 0.0f); // When using 0 and 1 only, we expect exact results.
+	const auto			bindPoint		= VK_PIPELINE_BIND_POINT_GRAPHICS;
+	const auto&			binaries		= m_context.getBinaryCollection();
+	const bool			hasGeom			= binaries.contains("geom");
+	const auto			dataStages		= (hasGeom ? VK_SHADER_STAGE_GEOMETRY_BIT : VK_SHADER_STAGE_VERTEX_BIT);
+	const auto			xfbCompCount	= 3u; // Per vertex.
+	const auto			xfbChunkSize	= xfbCompCount * sizeof(float); // Per vertex, in bytes.
+	const auto			totalDraws		= (m_extraDraw ? 2u : 1u);
+
+	// Color buffer with verification buffer.
+	ImageWithBuffer colorBuffer (
+		ctx.vkd,
+		ctx.device,
+		ctx.allocator,
+		vkExtent,
+		fbFormat,
+		fbUsage,
+		VK_IMAGE_TYPE_2D);
+
+	// Vertices.
+	const std::vector<tcu::Vec4> vertices { tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f) };
+
+	// Vertex buffer.
+	const auto			vbSize			= static_cast<VkDeviceSize>(de::dataSize(vertices));
+	const auto			vbInfo			= makeBufferCreateInfo(vbSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	BufferWithMemory	vertexBuffer	(ctx.vkd, ctx.device, ctx.allocator, vbInfo, MemoryRequirement::HostVisible);
+	const auto			vbAlloc			= vertexBuffer.getAllocation();
+	void*				vbData			= vbAlloc.getHostPtr();
+	const auto			vbOffset		= static_cast<VkDeviceSize>(0);
+
+	deMemcpy(vbData, de::dataOrNull(vertices), de::dataSize(vertices));
+	flushAlloc(ctx.vkd, ctx.device, vbAlloc);
+
+	// XFB buffer. When using an extra draw, leave space for a possible second draw (NB: but it should not be recorded, see below).
+	const auto			xfbSizeFactor	= static_cast<VkDeviceSize>(totalDraws);
+	const auto			xfbBufferSize	= static_cast<VkDeviceSize>(xfbChunkSize * vertices.size()) * xfbSizeFactor;
+	const auto			xfbBufferInfo	= makeBufferCreateInfo(xfbBufferSize, VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT);
+	BufferWithMemory	xfbBuffer		(ctx.vkd, ctx.device, ctx.allocator, xfbBufferInfo, MemoryRequirement::HostVisible);
+	const auto			xfbBufferAlloc	= xfbBuffer.getAllocation();
+	void*				xfbBufferData	= xfbBufferAlloc.getHostPtr();
+	const auto			xfbBufferOffset	= static_cast<VkDeviceSize>(0);
+
+	deMemset(xfbBufferData, 0, static_cast<size_t>(xfbBufferSize));
+	flushAlloc(ctx.vkd, ctx.device, xfbBufferAlloc);
+
+	// Push constants.
+	const tcu::Vec3				pcData	{ 10.0, 20.0, 30.0 }; // Must match the expected values in the frag shader.
+	const auto					pcSize	= static_cast<uint32_t>(sizeof(pcData));
+	const auto					pcRange	= makePushConstantRange(dataStages, 0u, pcSize);
+
+	const auto pipelineLayout	= makePipelineLayout(ctx.vkd, ctx.device, VK_NULL_HANDLE, &pcRange);
+	const auto renderPass		= makeRenderPass(ctx.vkd, ctx.device, fbFormat);
+	const auto framebuffer		= makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(), vkExtent.width, vkExtent.height);
+
+	// Modules.
+	const auto	vertModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+	const auto	geomModule		= (hasGeom ? createShaderModule(ctx.vkd, ctx.device, binaries.get("geom")) : Move<VkShaderModule>());
+	const auto	fragModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(vkExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(vkExtent));
+
+	const auto pipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout,
+		*vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, *geomModule, *fragModule,
+		*renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
+
+	CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, ctx.qfIndex);
+	const auto cmdBuffer = *cmd.cmdBuffer;
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+	beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.at(0u), clearColor);
+	ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vbOffset);
+	ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
+	ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, dataStages, 0u, pcSize, &pcData);
+	ctx.vkd.cmdBindTransformFeedbackBuffersEXT(cmdBuffer, 0u, 1u, &xfbBuffer.get(), &xfbBufferOffset, &xfbBufferSize);
+	ctx.vkd.cmdBeginTransformFeedbackEXT(cmdBuffer, 0u, 0u, nullptr, nullptr);
+	ctx.vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
+	ctx.vkd.cmdEndTransformFeedbackEXT(cmdBuffer, 0u, 0u, nullptr, nullptr);
+	if (m_extraDraw)
+	{
+		// When m_extraDraw is true, record a new draw outside the transform feedback section. The XFB buffer will have enough space
+		// to record this draw, but it should not be recorded, obviously, so the values in the buffer should stay zero. We are also
+		// avoiding any state changes between both draws.
+		ctx.vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
+	}
+	endRenderPass(ctx.vkd, cmdBuffer);
+	const auto xfbBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT, VK_ACCESS_HOST_READ_BIT);
+	ctx.vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &xfbBarrier, 0u, nullptr, 0u, nullptr);
+	copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(),
+		fbExtent.swizzle(0, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
+		VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+	// Verify color output.
+	invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+	tcu::PixelBufferAccess resultAccess (tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+
+	tcu::TextureLevel	referenceLevel	(tcuFormat, fbExtent.x(), fbExtent.y());
+	auto				referenceAccess	= referenceLevel.getAccess();
+	tcu::clear(referenceAccess, geomColor);
+
+	auto& log = m_context.getTestContext().getLog();
+	if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Unexpected color in result buffer; check log for details");
+
+	// Verify XFB buffer.
+	const tcu::Vec3	refRecordedValues	{ pcData.x(), 0.0f, pcData.z() };	// Per-vertex, must match vert/geom shader, note Y is not saved.
+	const tcu::Vec3	refEmptyValues		{ 0.0f, 0.0f, 0.0f };				// For empty areas of the XFB buffer.
+	const auto		dataPtr				= reinterpret_cast<const char*>(xfbBufferData);
+
+	for (uint32_t drawIdx = 0u; drawIdx < totalDraws; ++drawIdx)
+	{
+		const auto& refValues = ((drawIdx > 0u) ? refEmptyValues : refRecordedValues);
+		for (size_t vertIdx = 0u; vertIdx < vertices.size(); ++vertIdx)
+		{
+			const auto	vertexDataPtr	= dataPtr + (vertIdx * xfbChunkSize) + (drawIdx * vertices.size() * xfbChunkSize);
+			tcu::Vec3	vertValues		(0.0f, 0.0f, 0.0f);
+			deMemcpy(&vertValues, vertexDataPtr, sizeof(vertValues));
+
+			if (vertValues != refValues)
+			{
+				std::ostringstream msg;
+				msg << "Invalid data found for vertex " << vertIdx << ": expected " << refRecordedValues << " and found " << vertValues;
+				TCU_FAIL(msg.str());
+			}
+		}
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 class TransformFeedbackTestCase : public vkt::TestCase
 {
 public:
@@ -3074,6 +3233,13 @@ vkt::TestInstance*	TransformFeedbackTestCase::createInstance (vkt::Context& cont
 	if (m_parameters.testType == TEST_TYPE_DRAW_OUTSIDE)
 		return new TransformFeedbackDrawOutsideTestInstance(context, m_parameters);
 
+	if (m_parameters.testType == TEST_TYPE_HOLES_VERTEX || m_parameters.testType == TEST_TYPE_HOLES_GEOMETRY)
+	{
+		// We repurpose partCount to indicate somehow the number of draws.
+		const bool extraDraw = (m_parameters.partCount > 1u);
+		return new TransformFeedbackHolesInstance (context, extraDraw);
+	}
+
 	TCU_THROW(InternalError, "Specified test type not found");
 }
 
@@ -3097,6 +3263,9 @@ void TransformFeedbackTestCase::checkSupport (Context& context) const
 
 	if (m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY_INDIRECT)
 		context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
+
+	if (m_parameters.testType == TEST_TYPE_HOLES_GEOMETRY)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 }
 
 void TransformFeedbackTestCase::initPrograms (SourceCollections& programCollection) const
@@ -4096,6 +4265,95 @@ void TransformFeedbackTestCase::initPrograms (SourceCollections& programCollecti
 		return;
 	}
 
+	if (m_parameters.testType == TEST_TYPE_HOLES_VERTEX || m_parameters.testType == TEST_TYPE_HOLES_GEOMETRY)
+	{
+		// The fragment shader is the same in both variants.
+		{
+			std::ostringstream frag;
+			frag
+				<< "#version 460\n"
+				<< "layout (location=0) out vec4 outColor;\n"
+				<< "\n"
+				<< "layout (location = 0) in float goku;\n"
+				<< "layout (location = 0, component = 1) in float trunks;\n"
+				<< "layout (location = 0, component = 2) in float vegeta;\n"
+				<< "\n"
+				<< "void main ()\n"
+				<< "{\n"
+				<< "    outColor = ((goku == 10.0 && trunks == 20.0 && vegeta == 30.0)\n"
+				<< "             ? vec4(0.0, 0.0, 1.0, 1.0)\n"
+				<< "             : vec4(0.0, 0.0, 0.0, 1.0));\n"
+				<< "}\n"
+				;
+			programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+		}
+
+		const std::string pcDecl =
+			"layout (push_constant, std430) uniform PushConstantBlock {\n"
+			"    vec3 values;\n"
+			"} pc;\n"
+			;
+
+		const std::string dbChars =
+			"layout (location = 0, xfb_buffer = 0, xfb_stride = 12, xfb_offset = 0) flat out float goku;\n"
+			"layout (location = 0, component = 1) flat out float trunks;\n"
+			"layout (location = 0, xfb_buffer = 0, xfb_stride = 12, xfb_offset = 8, component = 2) flat out float vegeta;\n"
+			;
+
+		const std::string assignments =
+			"    goku   = pc.values.x;\n"
+			"    trunks = pc.values.y;\n"
+			"    vegeta = pc.values.z;\n"
+			;
+
+		if (m_parameters.testType == TEST_TYPE_HOLES_GEOMETRY)
+		{
+			std::ostringstream geom;
+			geom
+				<< "#version 460\n"
+				<< "layout (points) in;\n"
+				<< "layout (max_vertices=1, points) out;\n"
+				<< "\n"
+				<< dbChars
+				<< "\n"
+				<< pcDecl
+				<< "\n"
+				<< "void main ()\n"
+				<< "{\n"
+				<< "    gl_Position  = gl_in[0].gl_Position;\n"
+				<< "    gl_PointSize = gl_in[0].gl_PointSize;\n"
+				<< "\n"
+				<< assignments
+				<< "\n"
+				<< "    EmitVertex();\n"
+				<< "}\n"
+				;
+			programCollection.glslSources.add("geom") << glu::GeometrySource(geom.str());
+		}
+
+		const bool vertOnly = (m_parameters.testType == TEST_TYPE_HOLES_VERTEX);
+		std::ostringstream vert;
+		vert
+			<< "#version 460\n"
+			<< "layout (location = 0) in vec4 inPos;\n"
+			<< "\n"
+			<< (vertOnly ? dbChars : "")
+			<< "\n"
+			<< (vertOnly ? pcDecl : "")
+			<< "\n"
+			<< "void main ()\n"
+			<< "{\n"
+			<< "    gl_Position  = inPos;\n"
+			<< "    gl_PointSize = 1.0;\n"
+			<< "\n"
+			<< (vertOnly ? assignments : "")
+			<< "}\n"
+			;
+		programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+		return;
+	}
+
 	DE_ASSERT(0 && "Unknown test");
 }
 
@@ -4406,6 +4664,29 @@ void createTransformFeedbackStreamsSimpleTests (tcu::TestCaseGroup* group)
 			group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(streamId)).c_str(), "Simultaneous multiple queries usage test", parameters));
 			group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_omit_write_" + de::toString(streamId)).c_str(), "Simultaneous multiple queries usage test", writeOmitParameters));
 		}
+	}
+
+	{
+		struct
+		{
+			TestType		testType;
+			const char*		suffix;
+		} holeCases[] =
+		{
+			{ TEST_TYPE_HOLES_VERTEX,	"_vert" },
+			{ TEST_TYPE_HOLES_GEOMETRY,	"_geom" },
+		};
+		const std::string testNameBase = "holes";
+
+		for (const auto& holeCase : holeCases)
+			for (const auto& extraDraw : { false, true})
+			{
+				const auto				partCount	= (extraDraw ? 2u : 1u);
+				const auto				testName	= testNameBase + (extraDraw ? "_extra_draw" : "");
+				const TestParameters	parameters	{ holeCase.testType, 0u, partCount, 0u, 1u, 0u, STREAM_ID_0_NORMAL, false, false, false, false, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false };;
+
+				group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + holeCase.suffix).c_str(), "Test skipping components in the XFB buffer", parameters));
+			}
 	}
 }
 
