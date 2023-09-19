@@ -1326,16 +1326,8 @@ tcu::TestStatus CopyImageToImage::checkTestResult (tcu::ConstPixelBufferAccess r
 	}
 	else
 	{
-		if (isFloatFormat(result.getFormat()))
-		{
-			if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison", m_expectedTextureLevel[0]->getAccess(), result, fThreshold, tcu::COMPARE_LOG_RESULT))
-				return tcu::TestStatus::fail("CopiesAndBlitting test");
-		}
-		else
-		{
-			if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison", m_expectedTextureLevel[0]->getAccess(), result, uThreshold, tcu::COMPARE_LOG_RESULT))
-				return tcu::TestStatus::fail("CopiesAndBlitting test");
-		}
+		if (!tcu::bitwiseCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison", m_expectedTextureLevel[0]->getAccess(), result, tcu::COMPARE_LOG_RESULT))
+			return tcu::TestStatus::fail("CopiesAndBlitting test");
 	}
 
 	return tcu::TestStatus::pass("CopiesAndBlitting test");
