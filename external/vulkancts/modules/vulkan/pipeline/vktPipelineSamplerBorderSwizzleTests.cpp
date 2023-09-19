@@ -73,8 +73,7 @@ struct TestParams
 {
 	PipelineConstructionType		pipelineConstructionType;
 	VkFormat						textureFormat;
-	VkClearColorValue				textureColor;
-	VkClearDepthStencilValue		textureDepthStencilValue;
+	VkClearValue					textureClear;
 	VkComponentMapping				componentMapping;
 	VkBorderColor					borderColor;
 	tcu::Maybe<int>					componentGather;
@@ -1078,9 +1077,9 @@ tcu::TestStatus BorderSwizzleInstance::iterate (void)
 	// Prepare texture.
 	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &preClearBarrier);
 	if (isDSFormat)
-		vkd.cmdClearDepthStencilImage(cmdBuffer, texture.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_params.textureDepthStencilValue, 1u, &imageSubresourceRange);
+		vkd.cmdClearDepthStencilImage(cmdBuffer, texture.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_params.textureClear.depthStencil, 1u, &imageSubresourceRange);
 	else
-		vkd.cmdClearColorImage(cmdBuffer, texture.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_params.textureColor, 1u, &imageSubresourceRange);
+		vkd.cmdClearColorImage(cmdBuffer, texture.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_params.textureClear.color, 1u, &imageSubresourceRange);
 	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &postClearBarrier);
 
 	// Read from the texture to render a full-screen quad to the color buffer.
@@ -1499,8 +1498,10 @@ tcu::TestCaseGroup* createSamplerBorderSwizzleTests (tcu::TestContext& testCtx, 
 
 							params.pipelineConstructionType	= pipelineConstructionType;
 							params.textureFormat			= format;
-							params.textureColor				= getRandomClearColor(format, rnd, false);
-							params.textureDepthStencilValue = vk::makeClearDepthStencilValue(0.0f, 0u);
+							if (isDSFormat)
+								params.textureClear.depthStencil	= vk::makeClearDepthStencilValue(0.0f, 0u);
+							else
+								params.textureClear.color			= getRandomClearColor(format, rnd, false);
 
 							makeComponentMapping(params.componentMapping, mapping);
 							params.borderColor			= borderColor.borderType;
