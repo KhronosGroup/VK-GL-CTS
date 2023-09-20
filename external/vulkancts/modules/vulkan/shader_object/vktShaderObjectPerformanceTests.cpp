@@ -818,7 +818,7 @@ tcu::TestStatus ShaderObjectDispatchPerformanceInstance::iterate (void)
 
 	const auto							compShader		= vk::createShader(vk, device, vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_COMPUTE_BIT, binaries.get("comp"), tessellationSupported, geometrySupported, &*descriptorSetLayout));
 	const vk::VkPipelineCreateFlags		pipelineFlags	= (m_dispatchType == DISPATCH) ? (vk::VkPipelineCreateFlags)0u : (vk::VkPipelineCreateFlags)vk::VK_PIPELINE_CREATE_DISPATCH_BASE_BIT;
-	const auto							computePipeline	= vk::makeComputePipeline(vk, device, pipelineLayout.get(), pipelineFlags, compShaderModule.get(), (vk::VkPipelineShaderStageCreateFlags)0u);
+	const auto							computePipeline	= vk::makeComputePipeline(vk, device, pipelineLayout.get(), pipelineFlags, nullptr, compShaderModule.get(), (vk::VkPipelineShaderStageCreateFlags)0u);
 
 	const vk::Move<vk::VkCommandPool>	cmdPool			(createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const vk::Move<vk::VkCommandBuffer>	cmdBuffer		(allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));

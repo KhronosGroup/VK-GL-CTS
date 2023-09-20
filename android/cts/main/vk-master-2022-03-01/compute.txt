@@ -48,6 +48,7 @@ dEQP-VK.compute.shader_object_spirv.basic.write_ssbo_array
 dEQP-VK.compute.shader_object_spirv.basic.branch_past_barrier
 dEQP-VK.compute.shader_object_spirv.basic.webgl_spirv_loop
 dEQP-VK.compute.shader_object_spirv.device_group.dispatch_base
+dEQP-VK.compute.shader_object_spirv.device_group.dispatch_base_maintenance5
 dEQP-VK.compute.shader_object_spirv.device_group.device_index
 dEQP-VK.compute.shader_object_spirv.cooperative_matrix.nv.length.float32_float32.buffer.rowmajor
 dEQP-VK.compute.shader_object_spirv.cooperative_matrix.nv.length.float32_float32.buffer.colmajor
@@ -10759,6 +10760,7 @@ dEQP-VK.compute.shader_object_binary.basic.write_ssbo_array
 dEQP-VK.compute.shader_object_binary.basic.branch_past_barrier
 dEQP-VK.compute.shader_object_binary.basic.webgl_spirv_loop
 dEQP-VK.compute.shader_object_binary.device_group.dispatch_base
+dEQP-VK.compute.shader_object_binary.device_group.dispatch_base_maintenance5
 dEQP-VK.compute.shader_object_binary.device_group.device_index
 dEQP-VK.compute.shader_object_binary.cooperative_matrix.nv.length.float32_float32.buffer.rowmajor
 dEQP-VK.compute.shader_object_binary.cooperative_matrix.nv.length.float32_float32.buffer.colmajor
@@ -21427,6 +21429,7 @@ dEQP-VK.compute.pipeline.basic.empty_workgroup_all
 dEQP-VK.compute.pipeline.basic.secondary_compute_only_queue
 dEQP-VK.compute.pipeline.basic.branch_past_barrier
 dEQP-VK.compute.pipeline.basic.webgl_spirv_loop
+dEQP-VK.compute.pipeline.device_group.dispatch_base_maintenance5
 dEQP-VK.compute.pipeline.cooperative_matrix.nv.convert.input_float16_t_output_float16_t.buffer.rowmajor
 dEQP-VK.compute.pipeline.cooperative_matrix.nv.convert.input_float16_t_output_float16_t.buffer.colmajor
 dEQP-VK.compute.pipeline.cooperative_matrix.nv.convert.input_float16_t_output_float16_t.workgroup.rowmajor

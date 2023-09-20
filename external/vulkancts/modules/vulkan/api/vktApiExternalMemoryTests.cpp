@@ -3194,6 +3194,53 @@ tcu::TestStatus testBufferQueries (Context& context, vk::VkExternalMemoryHandleT
 	return tcu::TestStatus::pass("Pass");
 }
 
+tcu::TestStatus testBufferQueriesMaintenance5(Context& context, vk::VkExternalMemoryHandleTypeFlagBits externalType)
+{
+	const vk::VkBufferUsageFlags usageFlags[]
+	{
+		vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		vk::VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,
+		vk::VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT,
+		vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+		vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+		vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+		vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
+	};
+
+	const CustomInstance				instance			(createTestInstance(context, 0u, externalType, 0u));
+	const vk::InstanceDriver&			vki					(instance.getDriver());
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
+
+	for (auto usageFlag : usageFlags)
+	{
+		vk::VkPhysicalDeviceExternalBufferInfo info
+		{
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO,
+			DE_NULL,
+			0u,
+			usageFlag,
+			externalType
+		};
+
+		vk::VkExternalBufferProperties properties1 = vk::initVulkanStructure();
+		vki.getPhysicalDeviceExternalBufferProperties(physicalDevice, &info, &properties1);
+
+		vk::VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = vk::initVulkanStructure();
+		pipelineFlags2CreateInfo.flags = (vk::VkPipelineCreateFlagBits2KHR)usageFlag;
+		vk::VkExternalBufferProperties properties2 = vk::initVulkanStructure();
+		info.pNext = &pipelineFlags2CreateInfo;
+		info.usage = 0;
+		vki.getPhysicalDeviceExternalBufferProperties(physicalDevice, &info, &properties2);
+
+		if (deMemCmp(&properties1, &properties2, sizeof(vk::VkExternalBufferProperties)) != 0)
+			return tcu::TestStatus::pass(std::string("Fail (") + de::toString(usageFlag) + ")");
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 struct MemoryTestConfig
 {
 												MemoryTestConfig	(vk::VkExternalMemoryHandleTypeFlagBits	externalType_,
@@ -4805,6 +4852,11 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat (Context& context, vk::VkFo
 		return tcu::TestStatus::pass("Pass");
 }
 
+void checkMaintenance5(Context& context, vk::VkExternalMemoryHandleTypeFlagBits)
+{
+	context.requireDeviceFunctionality("VK_KHR_maintenance5");
+}
+
 de::MovePtr<tcu::TestCaseGroup> createFenceTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> fenceGroup (new tcu::TestCaseGroup(testCtx, "fence", "Tests for external fences."));
@@ -4958,10 +5010,11 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx, vk
 			de::MovePtr<tcu::TestCaseGroup>	bufferGroup		(new tcu::TestCaseGroup(testCtx, "buffer", ""));
 			const BufferTestConfig			bufferConfig	(externalType, dedicated);
 
-			addFunctionCase(bufferGroup.get(), "info",						"External buffer memory info query.",						testBufferQueries,				externalType);
-			addFunctionCase(bufferGroup.get(), "bind_export_import_bind",	"Test binding, exporting, importing and binding buffer.",	testBufferBindExportImportBind,	bufferConfig);
-			addFunctionCase(bufferGroup.get(), "export_bind_import_bind",	"Test exporting, binding, importing and binding buffer.",	testBufferExportBindImportBind,	bufferConfig);
-			addFunctionCase(bufferGroup.get(), "export_import_bind_bind",	"Test exporting, importing and binding buffer.",			testBufferExportImportBindBind,	bufferConfig);
+			addFunctionCase(bufferGroup.get(), "info",						"External buffer memory info query.",															testBufferQueries,				externalType);
+			addFunctionCase(bufferGroup.get(), "maintenance5",				"External buffer memory info query using BufferUsageFlags2CreateInfoKHR.",	checkMaintenance5,	testBufferQueriesMaintenance5,	externalType);
+			addFunctionCase(bufferGroup.get(), "bind_export_import_bind",	"Test binding, exporting, importing and binding buffer.",										testBufferBindExportImportBind,	bufferConfig);
+			addFunctionCase(bufferGroup.get(), "export_bind_import_bind",	"Test exporting, binding, importing and binding buffer.",										testBufferExportBindImportBind,	bufferConfig);
+			addFunctionCase(bufferGroup.get(), "export_import_bind_bind",	"Test exporting, importing and binding buffer.",												testBufferExportImportBindBind,	bufferConfig);
 
 			dedicatedGroup->addChild(bufferGroup.release());
 		}

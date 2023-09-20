@@ -657,7 +657,7 @@ tcu::TestStatus StorageBufferTestInstance<T>::executeComputeTest(void)
 	{
 		const vk::Unique<vk::VkFence>		fence				(vk::createFence(vk, device));
 		vk::Unique<vk::VkPipelineLayout>	pipelineLayout		(makePipelineLayout(vk, device, *descriptorSetLayout));
-		vk::Unique<vk::VkPipeline>			SSBOPipeline		(makeComputePipeline(vk, device, *pipelineLayout, m_pipelineFlags, *testShader, (vk::VkPipelineShaderStageCreateFlags)0u));
+		vk::Unique<vk::VkPipeline>			SSBOPipeline		(makeComputePipeline(vk, device, *pipelineLayout, m_pipelineFlags, nullptr, *testShader, (vk::VkPipelineShaderStageCreateFlags)0u));
 		vk::Unique<vk::VkCommandPool>		cmdPool				(makeCommandPool(vk, device, m_protectionMode, queueFamilyIndex));
 		vk::Unique<vk::VkCommandBuffer>		cmdBuffer			(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 		deUint32							dispatchCount		= (m_testType == SSBO_ATOMIC) ? 4u : 1u;

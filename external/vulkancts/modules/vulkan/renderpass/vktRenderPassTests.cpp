@@ -86,6 +86,8 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <algorithm>
+#include <iterator>
 
 using namespace vk;
 
@@ -121,6 +123,13 @@ using namespace renderpass;
 typedef vector<deUint8>	DepthValuesArray;
 
 static const deUint8	DEPTH_VALUES[]	= { 0u, 255u, 1u };
+
+int getShaderNumChannels (tcu::TextureFormat::ChannelOrder order)
+{
+	if (order == tcu::TextureFormat::A)
+		return 4;
+	return tcu::getNumUsedChannels(order);
+}
 
 enum AllocationKind
 {
@@ -984,7 +993,8 @@ std::string clearColorToString (VkFormat vkFormat, VkClearColorValue value, deBo
 	const tcu::TextureFormat		format			= mapVkFormat(vkFormat);
 	const tcu::TextureChannelClass	channelClass	= tcu::getTextureChannelClass(format.type);
 	const tcu::BVec4				channelMask		= tcu::getTextureFormatChannelMask(format);
-	const deUint32					componentCount	= (useFormatCompCount ? (deUint32)tcu::getNumUsedChannels(format.order) : 4);
+	const auto						numUsedChannels	= static_cast<uint32_t>(getShaderNumChannels(format.order));
+	const deUint32					componentCount	= (useFormatCompCount ? numUsedChannels : 4u);
 
 	std::ostringstream				stream;
 
@@ -1075,7 +1085,8 @@ VkClearColorValue randomColorClearValue (const Attachment& attachment, de::Rando
 	const tcu::TextureFormat		format			= mapVkFormat(attachment.getFormat());
 	const tcu::TextureChannelClass	channelClass	= tcu::getTextureChannelClass(format.type);
 	const tcu::BVec4				channelMask		= tcu::getTextureFormatChannelMask(format);
-	const deUint32					componentCount	= (useFormatCompCount ? (deUint32)tcu::getNumUsedChannels(format.order) : 4);
+	const auto						numUsedChannels	= static_cast<uint32_t>(getShaderNumChannels(format.order));
+	const deUint32					componentCount	= (useFormatCompCount ? numUsedChannels : 4u);
 	VkClearColorValue				clearColor;
 
 	switch (channelClass)
@@ -3761,7 +3772,7 @@ void renderReferenceValues (vector<vector<PixelValue> >&		referenceAttachments,
 					const deUint32				attachmentIndex	= subpass.getColorAttachments()[attachmentRefNdx].getAttachment();
 					const Attachment&			attachment		= renderPassInfo.getAttachments()[attachmentIndex];
 					const tcu::TextureFormat	format			= mapVkFormat(attachment.getFormat());
-					const int					componentCount	= tcu::getNumUsedChannels(format.order);
+					const int					componentCount	= getShaderNumChannels(format.order);
 
 					outputComponentCount += (size_t)componentCount;
 				}
@@ -3788,7 +3799,7 @@ void renderReferenceValues (vector<vector<PixelValue> >&		referenceAttachments,
 							const VkImageLayout			layout			= subpass.getInputAttachments()[inputAttachmentNdx].getImageLayout();
 							const Attachment&			attachment		= renderPassInfo.getAttachments()[attachmentIndex];
 							const tcu::TextureFormat	format			= mapVkFormat(attachment.getFormat());
-							const int					componentCount	= tcu::getNumUsedChannels(format.order);
+							const int					componentCount	= getShaderNumChannels(format.order);
 
 							for (int compNdx = 0; compNdx < componentCount; compNdx++)
 							{
@@ -3813,7 +3824,7 @@ void renderReferenceValues (vector<vector<PixelValue> >&		referenceAttachments,
 							const Attachment&			attachment		= renderPassInfo.getAttachments()[attachmentIndex];
 							const tcu::TextureFormat	format			= mapVkFormat(attachment.getFormat());
 							vector<PixelValue>&			reference		= referenceAttachments[attachmentIndex];
-							const int					componentCount	= tcu::getNumUsedChannels(format.order);
+							const int					componentCount	= getShaderNumChannels(format.order);
 
 							for (int compNdx = 0; compNdx < componentCount; compNdx++)
 							{
@@ -4024,7 +4035,7 @@ bool verifyColorAttachment (const vector<PixelValue>&		reference,
 		const Vec4			resultColor		= result.getPixel(x, y);
 		const PixelValue&	referenceValue	= reference[x + y * result.getWidth()];
 		bool				pixelOk			= true;
-		const deUint32		componentCount	= useFormatCompCount ? (deUint32)tcu::getNumUsedChannels(result.getFormat().order) : 4;
+		const deUint32		componentCount	= useFormatCompCount ? static_cast<uint32_t>(getShaderNumChannels(result.getFormat().order)) : 4;
 
 		for (deUint32 compNdx = 0; compNdx < componentCount; compNdx++)
 		{
@@ -4336,7 +4347,7 @@ bool logAndVerifyImages (TestLog&											log,
 					else
 					{
 						// Convert color images to better reflect test status and output in any format.
-						const auto numChannels		= tcu::getNumUsedChannels(access.getFormat().order);
+						const auto numChannels		= getShaderNumChannels(access.getFormat().order);
 						const auto attachmentForLog	= renderColorImageForLog(access, numChannels);
 						const auto referenceForLog	= renderColorImageForLog(referenceValues[attachmentNdx], targetSize, numChannels);
 
@@ -4390,7 +4401,7 @@ std::string getAttachmentType (VkFormat vkFormat, deBool useFormatCompCount)
 {
 	const tcu::TextureFormat		format			= mapVkFormat(vkFormat);
 	const tcu::TextureChannelClass	channelClass	= tcu::getTextureChannelClass(format.type);
-	const size_t					componentCount	= (size_t)tcu::getNumUsedChannels(format.order);
+	const size_t					componentCount	= (size_t)getShaderNumChannels(format.order);
 
 	switch (channelClass)
 	{
@@ -4500,7 +4511,7 @@ void createTestShaders (SourceCollections& dst, TestConfig config)
 
 					const Attachment			attachment		= config.renderPass.getAttachments()[attachmentIndex];
 					const tcu::TextureFormat	format			= mapVkFormat(attachment.getFormat());
-					const size_t				componentCount	= config.useFormatCompCount ? (size_t)tcu::getNumUsedChannels(format.order) : 4;
+					const size_t				componentCount	= config.useFormatCompCount ? (size_t)getShaderNumChannels(format.order) : 4;
 					const std::string			attachmentType	= getAttachmentType(attachment.getFormat(), config.useFormatCompCount);
 
 					fragmentShader << "\to_color" << attachmentNdx << " = " << attachmentType << "(" << attachmentType + "(";
@@ -4546,7 +4557,7 @@ void createTestShaders (SourceCollections& dst, TestConfig config)
 					const VkImageLayout			layout			= subpass.getInputAttachments()[attachmentNdx].getImageLayout();
 					const Attachment			attachment		= config.renderPass.getAttachments()[attachmentIndex];
 					const tcu::TextureFormat	format			= mapVkFormat(attachment.getFormat());
-					const size_t				componentCount	= (size_t)tcu::getNumUsedChannels(format.order);
+					const size_t				componentCount	= (size_t)getShaderNumChannels(format.order);
 
 					if (layout == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
 						inputComponentCount += 1;
@@ -4561,7 +4572,7 @@ void createTestShaders (SourceCollections& dst, TestConfig config)
 					const deUint32				attachmentIndex	= subpass.getColorAttachments()[attachmentNdx].getAttachment();
 					const Attachment			attachment		= config.renderPass.getAttachments()[attachmentIndex];
 					const tcu::TextureFormat	format			= mapVkFormat(attachment.getFormat());
-					const size_t				componentCount	= (size_t)tcu::getNumUsedChannels(format.order);
+					const size_t				componentCount	= (size_t)getShaderNumChannels(format.order);
 
 					outputComponentCount += componentCount;
 				}
@@ -4597,7 +4608,7 @@ void createTestShaders (SourceCollections& dst, TestConfig config)
 						const VkImageLayout			layout			= subpass.getInputAttachments()[attachmentNdx].getImageLayout();
 						const Attachment			attachment		= config.renderPass.getAttachments()[attachmentIndex];
 						const tcu::TextureFormat	format			= mapVkFormat(attachment.getFormat());
-						const size_t				componentCount	= (size_t)tcu::getNumUsedChannels(format.order);
+						const size_t				componentCount	= (size_t)getShaderNumChannels(format.order);
 						const bool					isDepthFormat	= tcu::hasDepthComponent(format.order);
 						const bool					isStencilFormat	= tcu::hasStencilComponent(format.order);
 
@@ -4635,7 +4646,7 @@ void createTestShaders (SourceCollections& dst, TestConfig config)
 						const Attachment			attachment		= config.renderPass.getAttachments()[attachmentIndex];
 						const std::string			attachmentType	= getAttachmentType(config.renderPass.getAttachments()[attachmentIndex].getFormat(), config.useFormatCompCount);
 						const tcu::TextureFormat	format			= mapVkFormat(attachment.getFormat());
-						const size_t				componentCount	= (size_t)tcu::getNumUsedChannels(format.order);
+						const size_t				componentCount	= (size_t)getShaderNumChannels(format.order);
 
 						for (size_t compNdx = 0; compNdx < componentCount; compNdx++)
 						{
@@ -5106,6 +5117,17 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 
 	vector<bool>						subpassIsSecondary;
 	vector<SubpassRenderInfo>			subpassRenderInfo;
+
+#ifndef CTS_USES_VULKANSC
+	for (const auto& att : renderPassInfo.getAttachments())
+	{
+		if (att.getFormat() == VK_FORMAT_A8_UNORM_KHR)
+		{
+			context.requireDeviceFunctionality("VK_KHR_maintenance5");
+			break;
+		}
+	}
+#endif // CTS_USES_VULKANSC
 
 	if (config.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
 		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
@@ -6964,10 +6986,14 @@ void addFormatTests (tcu::TestCaseGroup* group, const TestConfigExternal testCon
 		{ "clear_draw",	TestConfig::RENDERTYPES_CLEAR|TestConfig::RENDERTYPES_DRAW	}
 	};
 
+	std::vector<VkFormat> colorFormatsToTest (s_coreColorFormats, s_coreColorFormats + de::arrayLength(s_coreColorFormats));
+#ifndef CTS_USES_VULKANSC
+	colorFormatsToTest.push_back(VK_FORMAT_A8_UNORM_KHR);
+#endif // CTS_USES_VULKANSC
+
 	// Color formats
-	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_coreColorFormats); formatNdx++)
+	for (const auto& format : colorFormatsToTest)
 	{
-		const VkFormat					format		= s_coreColorFormats[formatNdx];
 		de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatToName(format).c_str(), de::toString(format).c_str()));
 
 		for (size_t loadOpNdx = 0; loadOpNdx < DE_LENGTH_OF_ARRAY(loadOps); loadOpNdx++)

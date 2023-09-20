@@ -150,6 +150,12 @@ ImageSamplingInstanceParams ImageViewTest::getImageSamplingInstanceParams (VkIma
 void ImageViewTest::checkSupport (Context& context) const
 {
 	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+
+#ifndef CTS_USES_VULKANSC
+	if (m_imageFormat == VK_FORMAT_A8_UNORM_KHR || m_imageFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
 	checkSupportImageSamplingInstance(context, getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_samplerLod, m_componentMapping, m_subresourceRange));
 }
 
@@ -707,6 +713,9 @@ tcu::TestCaseGroup* createImageViewTests (tcu::TestContext& testCtx, PipelineCon
 		VK_FORMAT_R4G4B4A4_UNORM_PACK16,
 		VK_FORMAT_R5G6B5_UNORM_PACK16,
 		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_USCALED,
@@ -714,6 +723,9 @@ tcu::TestCaseGroup* createImageViewTests (tcu::TestContext& testCtx, PipelineCon
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
 		VK_FORMAT_R8_SRGB,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_USCALED,

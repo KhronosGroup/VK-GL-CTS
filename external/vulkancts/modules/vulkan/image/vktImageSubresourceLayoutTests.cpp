@@ -171,18 +171,18 @@ VkExtent3D getDefaultDimensions (VkImageType type, bool array)
 	return kDefault2D;
 }
 
+struct TestParams
+{
+	VkImageType	imageType;
+	VkFormat	imageFormat;
+	VkExtent3D	dimensions;		// .depth will be the number of layers for 2D images and the depth for 3D images.
+	deUint32	mipLevels;
+	bool		imageOffset;	// Add an offset when a region of memory is bound to an image.
+};
+
 class ImageSubresourceLayoutCase : public vkt::TestCase
 {
 public:
-	struct TestParams
-	{
-		VkImageType	imageType;
-		VkFormat	imageFormat;
-		VkExtent3D	dimensions;		// .depth will be the number of layers for 2D images and the depth for 3D images.
-		deUint32	mipLevels;
-		bool		imageOffset;	// Add an offset when a region of memory is bound to an image.
-	};
-
 							ImageSubresourceLayoutCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
 	virtual					~ImageSubresourceLayoutCase		(void) {}
 
@@ -193,20 +193,20 @@ public:
 	static constexpr VkFormatFeatureFlags	kRequiredFeatures	= (VK_FORMAT_FEATURE_TRANSFER_DST_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT);
 	static constexpr VkImageUsageFlags		kImageUsageFlags	= (VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 	static constexpr VkImageTiling			kImageTiling		= VK_IMAGE_TILING_LINEAR;
-private:
+protected:
 	TestParams m_params;
 };
 
 class ImageSubresourceLayoutInstance : public vkt::TestInstance
 {
 public:
-								ImageSubresourceLayoutInstance	(Context& context, const ImageSubresourceLayoutCase::TestParams& params);
+								ImageSubresourceLayoutInstance	(Context& context, const TestParams& params);
 	virtual						~ImageSubresourceLayoutInstance	(void) {}
 
 	virtual tcu::TestStatus		iterate							(void);
 	tcu::TestStatus				iterateAspect					(VkImageAspectFlagBits aspect);
 private:
-	ImageSubresourceLayoutCase::TestParams m_params;
+	TestParams m_params;
 };
 
 ImageSubresourceLayoutCase::ImageSubresourceLayoutCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
@@ -224,6 +224,11 @@ void ImageSubresourceLayoutCase::checkSupport (Context& context) const
 {
 	const auto&	vki				= context.getInstanceInterface();
 	const auto	physicalDevice	= context.getPhysicalDevice();
+
+#ifndef CTS_USES_VULKANSC
+	if (m_params.imageFormat == VK_FORMAT_A8_UNORM_KHR || m_params.imageFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
 
 	const auto formatProperties = getPhysicalDeviceFormatProperties(vki, physicalDevice, m_params.imageFormat);
 	if ((formatProperties.linearTilingFeatures & kRequiredFeatures) != kRequiredFeatures)
@@ -245,7 +250,7 @@ void ImageSubresourceLayoutCase::checkSupport (Context& context) const
 		TCU_THROW(NotSupportedError, "Required number of layers not supported for format");
 }
 
-ImageSubresourceLayoutInstance::ImageSubresourceLayoutInstance (Context& context, const ImageSubresourceLayoutCase::TestParams& params)
+ImageSubresourceLayoutInstance::ImageSubresourceLayoutInstance (Context& context, const TestParams& params)
 	: vkt::TestInstance	(context)
 	, m_params			(params)
 {
@@ -645,6 +650,131 @@ tcu::TestStatus ImageSubresourceLayoutInstance::iterateAspect (VkImageAspectFlag
 	return tcu::TestStatus::pass("Pass");
 }
 
+class ImageSubresourceLayoutInvarianceInstance: public vkt::TestInstance
+{
+public:
+								ImageSubresourceLayoutInvarianceInstance	(Context& context, const TestParams& params);
+	virtual						~ImageSubresourceLayoutInvarianceInstance	(void) = default;
+
+	virtual tcu::TestStatus		iterate										(void);
+
+private:
+	TestParams m_params;
+};
+
+ImageSubresourceLayoutInvarianceInstance::ImageSubresourceLayoutInvarianceInstance(Context& context, const TestParams& params)
+	: vkt::TestInstance	(context)
+	, m_params			(params)
+{
+}
+
+tcu::TestStatus ImageSubresourceLayoutInvarianceInstance::iterate(void)
+{
+#ifndef CTS_USES_VULKANSC
+	const VkDevice			device	= m_context.getDevice();
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+
+	// Reinterpret the depth dimension parameter as the number of layers if needed
+	const auto	numLayers = ((m_params.imageType == VK_IMAGE_TYPE_3D) ? 1u : m_params.dimensions.depth);
+	VkExtent3D	imageExtent = m_params.dimensions;
+	if (m_params.imageType == VK_IMAGE_TYPE_2D)
+		imageExtent.depth = 1u;
+
+	// Create image
+	const VkImageCreateInfo imageCreateInfo
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,			//	VkStructureType			sType;
+		nullptr,										//	const void*				pNext;
+		0u,												//	VkImageCreateFlags		flags;
+		m_params.imageType,								//	VkImageType				imageType;
+		m_params.imageFormat,							//	VkFormat				format;
+		imageExtent,									//	VkExtent3D				extent;
+		m_params.mipLevels,								//	deUint32				mipLevels;
+		numLayers,										//	deUint32				arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,							//	VkSampleCountFlagBits	samples;
+		ImageSubresourceLayoutCase::kImageTiling,		//	VkImageTiling			tiling;
+		ImageSubresourceLayoutCase::kImageUsageFlags,	//	VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,						//	VkSharingMode			sharingMode;
+		0u,												//	deUint32				queueFamilyIndexCount;
+		nullptr,										//	const deUint32*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,						//	VkImageLayout			initialLayout;
+	};
+
+	Move<VkImage> image				= createImage(vk, device, &imageCreateInfo);
+	const auto tcuFormat			= mapVkFormat(m_params.imageFormat);
+	const auto supportedAspectFlags	= getImageAspectFlags(tcuFormat);
+
+	const std::vector<VkImageAspectFlagBits> testedAspectBits
+	{
+		VK_IMAGE_ASPECT_COLOR_BIT,
+		VK_IMAGE_ASPECT_DEPTH_BIT,
+		VK_IMAGE_ASPECT_STENCIL_BIT,
+	};
+	// test every aspect supported by the image format
+	for (const auto aspectBit : testedAspectBits)
+	{
+		if ((supportedAspectFlags & aspectBit) == 0)
+			continue;
+
+		// get base level subresource using image handle
+		VkSubresourceLayout	subresourceLayout1	= {};
+		VkImageSubresource	imageSubresource1	= makeImageSubresource(aspectBit, 0u, 0u);
+		vk.getImageSubresourceLayout(device, *image, &imageSubresource1, &subresourceLayout1);
+
+		// get level subresource without using image handle
+		VkImageSubresource2KHR				imageSubresource2		= initVulkanStructure();
+		imageSubresource2.imageSubresource	= imageSubresource1;
+		VkSubresourceLayout2KHR				subresourceLayout2      = initVulkanStructure();
+		VkDeviceImageSubresourceInfoKHR		imageSubresourceInfo	= initVulkanStructure();
+		imageSubresourceInfo.pCreateInfo	= &imageCreateInfo;
+		imageSubresourceInfo.pSubresource	= &imageSubresource2;
+		vk.getDeviceImageSubresourceLayoutKHR(device, &imageSubresourceInfo, &subresourceLayout2);
+
+		const auto size = sizeof(VkSubresourceLayout);
+		if (deMemCmp(&subresourceLayout1, &(subresourceLayout2.subresourceLayout), size))
+			return tcu::TestStatus::fail("Fail (vkGetDeviceImageSubresourceLayoutKHR)");
+
+		if (m_context.isDeviceFunctionalitySupported("VK_EXT_image_compression_control"))
+		{
+			VkSubresourceLayout2EXT subresourceLayout3 = initVulkanStructure();
+			vk.getImageSubresourceLayout2KHR(device, *image, &imageSubresource2, &subresourceLayout3);
+
+			if (deMemCmp(&subresourceLayout1, &(subresourceLayout3.subresourceLayout), size))
+				return tcu::TestStatus::fail("Fail (vkGetImageSubresourceLayout2KHR)");
+		}
+	}
+#else
+	DE_UNREF(m_params);
+#endif // CTS_USES_VULKANSC
+	return tcu::TestStatus::pass("Pass");
+}
+
+class ImageSubresourceLayoutInvarianceCase: public ImageSubresourceLayoutCase
+{
+public:
+							ImageSubresourceLayoutInvarianceCase	(tcu::TestContext& testCtx, const std::string& name, const TestParams& params);
+	virtual					~ImageSubresourceLayoutInvarianceCase	(void) = default;
+
+	virtual TestInstance*	createInstance							(Context& context) const;
+	virtual void			checkSupport							(Context& context) const;
+};
+
+ImageSubresourceLayoutInvarianceCase::ImageSubresourceLayoutInvarianceCase(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+	: ImageSubresourceLayoutCase(testCtx, name, "", params)
+{
+}
+
+TestInstance* ImageSubresourceLayoutInvarianceCase::createInstance(Context& context) const
+{
+	return new ImageSubresourceLayoutInvarianceInstance(context, m_params);
+}
+
+void ImageSubresourceLayoutInvarianceCase::checkSupport(Context& context) const
+{
+	ImageSubresourceLayoutCase::checkSupport(context);
+	context.requireDeviceFunctionality("VK_KHR_maintenance5");
+}
+
 } // anonymous namespace
 
 tcu::TestCaseGroup* createImageSubresourceLayoutTests (tcu::TestContext& testCtx)
@@ -687,6 +817,9 @@ tcu::TestCaseGroup* createImageSubresourceLayoutTests (tcu::TestContext& testCtx
 		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
 		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_USCALED,
@@ -694,6 +827,9 @@ tcu::TestCaseGroup* createImageSubresourceLayoutTests (tcu::TestContext& testCtx
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
 		VK_FORMAT_R8_SRGB,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_USCALED,
@@ -819,6 +955,7 @@ tcu::TestCaseGroup* createImageSubresourceLayoutTests (tcu::TestContext& testCtx
 #endif
 	};
 
+	static const auto prefixLen = std::string("VK_FORMAT_").size();
 	for (int classIdx = 0; classIdx < DE_LENGTH_OF_ARRAY(imageClass); ++classIdx)
 	{
 		const auto& imgClass = imageClass[classIdx];
@@ -831,13 +968,12 @@ tcu::TestCaseGroup* createImageSubresourceLayoutTests (tcu::TestContext& testCtx
 
 			for (int formatIdx = 0; formatIdx < DE_LENGTH_OF_ARRAY(testFormats); ++formatIdx)
 			{
-				static const auto	prefixLen	= std::string("VK_FORMAT_").size();
 				const auto			format		= testFormats[formatIdx];
 				const auto			fmtName		= std::string(getFormatName(format));
 				const auto			name		= de::toLower(fmtName.substr(prefixLen)); // Remove VK_FORMAT_ prefix.
 				const auto			desc		= "Using format " + fmtName;
 
-				ImageSubresourceLayoutCase::TestParams params;
+				TestParams params;
 				params.imageFormat	= format;
 				params.imageType	= imgClass.type;
 				params.mipLevels	= mipLevel.maxLevels;
@@ -856,6 +992,31 @@ tcu::TestCaseGroup* createImageSubresourceLayoutTests (tcu::TestContext& testCtx
 
 		layoutTestGroup->addChild(classGroup.release());
 	}
+
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<tcu::TestCaseGroup> invarianceGroup(new tcu::TestCaseGroup(testCtx, "invariance", "Tests for vkGetDeviceImageSubresourceLayoutKHR"));
+
+	TestParams params;
+	params.imageOffset = false;
+	params.mipLevels = 1;
+
+	for (int formatIdx = 0 ; formatIdx < DE_LENGTH_OF_ARRAY(testFormats); ++formatIdx)
+	for (int classIdx = 0 ; classIdx < DE_LENGTH_OF_ARRAY(imageClass); ++classIdx)
+	{
+		const auto& imgClass = imageClass[classIdx];
+
+		params.imageFormat	= testFormats[formatIdx];
+		params.imageType	= imgClass.type;
+		params.dimensions	= getDefaultDimensions(imgClass.type, imgClass.array);
+		params.dimensions.width += formatIdx;
+
+		std::string name = getFormatName(params.imageFormat);
+		name = de::toLower(name.substr(prefixLen)) + "_" + imgClass.name;
+
+		invarianceGroup->addChild(new ImageSubresourceLayoutInvarianceCase(testCtx, name, params));
+	}
+	layoutTestGroup->addChild(invarianceGroup.release());
+#endif // CTS_USES_VULKANSC
 
 	return layoutTestGroup.release();
 }

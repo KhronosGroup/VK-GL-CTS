@@ -133,10 +133,16 @@ void ImageTest::checkSupport (Context& context) const
 	if (m_imageCount > 1)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_SAMPLED_IMAGE_ARRAY_DYNAMIC_INDEXING);
 
+#ifndef CTS_USES_VULKANSC
+	if (m_imageFormat == VK_FORMAT_A8_UNORM_KHR || m_imageFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
 	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 	checkSupportImageSamplingInstance(context, getImageSamplingInstanceParams(m_allocationKind, m_samplingType, m_imageViewType, m_imageFormat, m_imageSize, m_imageCount, m_arraySize));
 
-	if (m_pipelineProtectedAccess) {
+	if (m_pipelineProtectedAccess)
+	{
 #ifndef CTS_USES_VULKANSC
 		context.requireDeviceFunctionality("VK_EXT_pipeline_protected_access");
 
@@ -708,6 +714,9 @@ de::MovePtr<tcu::TestCaseGroup> createImageFormatTests (tcu::TestContext& testCt
 		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
 		VK_FORMAT_A2B10G10R10_UINT_PACK32,
 		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R16_UNORM,
 		VK_FORMAT_R16_SNORM,
 		VK_FORMAT_R16_USCALED,
@@ -754,6 +763,9 @@ de::MovePtr<tcu::TestCaseGroup> createImageFormatTests (tcu::TestContext& testCt
 		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 		VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
 		VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 
 		// Compressed formats
 		VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK,

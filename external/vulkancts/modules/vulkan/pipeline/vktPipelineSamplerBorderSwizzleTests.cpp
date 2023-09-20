@@ -148,6 +148,11 @@ void BorderSwizzleCase::checkSupport (Context& context) const
 	const auto				physicalDevice		= context.getPhysicalDevice();
 	VkImageFormatProperties	formatProperties;
 
+#ifndef CTS_USES_VULKANSC
+	if (m_params.textureFormat == VK_FORMAT_A8_UNORM_KHR || m_params.textureFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
 	const auto result = vki.getPhysicalDeviceImageFormatProperties(
 		physicalDevice, m_params.textureFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, (VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT), 0u, &formatProperties);
 
@@ -164,6 +169,21 @@ void BorderSwizzleCase::checkSupport (Context& context) const
 
 	if (m_params.useSamplerSwizzleHint)
 		context.requireDeviceFunctionality("VK_EXT_border_color_swizzle");
+
+	// VK_COMPONENT_SWIZZLE_ONE is undefined when used with combined depth stencil formats, unless the maintenance5 property 'depthStencilSwizzleOneSupport' is supported
+	// For depth/stencil formats, VK_COMPONENT_SWIZZLE_A is aliased to VK_COMPONENT_SWIZZLE_ONE within this test group.
+	if (isCombinedDepthStencilType(mapVkFormat(m_params.textureFormat).type) && (
+			(m_params.componentMapping.r == VK_COMPONENT_SWIZZLE_ONE) || (m_params.componentMapping.r == VK_COMPONENT_SWIZZLE_A) ||
+			(m_params.componentMapping.g == VK_COMPONENT_SWIZZLE_ONE) || (m_params.componentMapping.g == VK_COMPONENT_SWIZZLE_A) ||
+			(m_params.componentMapping.b == VK_COMPONENT_SWIZZLE_ONE) || (m_params.componentMapping.b == VK_COMPONENT_SWIZZLE_A) ||
+			(m_params.componentMapping.a == VK_COMPONENT_SWIZZLE_ONE) || (m_params.componentMapping.a == VK_COMPONENT_SWIZZLE_A)
+		))
+	{
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+
+		if (!context.getMaintenance5Properties().depthStencilSwizzleOneSupport)
+			TCU_THROW(NotSupportedError, "Swizzle results are undefined without depthStencilSwizzleOneSupport");
+	}
 
 	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 
@@ -444,13 +464,23 @@ VkClearColorValue getExpectedColor (const VkClearColorValue& color, const TestPa
 	{
 		DE_ASSERT(formatType == FormatType::FLOAT);
 
-		tcu::Vec4 borderColor (.0f, .0f, .0f, .0f);
+		tcu::Vec4 borderColor (.0f, .0f, .0f, 1.f);
 
-		for (int i = 0; i < numComp; ++i)
-			borderColor[i] = color.float32[i];
-
-		if (numComp < 4)
-			borderColor[3] = 1.0f;
+#ifndef CTS_USES_VULKANSC
+		if (params.textureFormat == VK_FORMAT_A8_UNORM_KHR)
+		{
+			// This one is a bit special compared to others we test. Single component alpha format borders use [0,0,0,Ba] as the
+			// border texel components after replacing (Ba being the border alpha component).
+			borderColor[3] = color.float32[3];
+		}
+		else
+#endif // CTS_USES_VULKANSC
+		{
+			// Other formats use the first color components from the border, and are expanded to 4 components by filling missing
+			// components with zero and the alpha component with 1.
+			for (int i = 0; i < numComp; ++i)
+				borderColor[i] = color.float32[i];
+		}
 
 		const auto expected = getExpectedColor(borderColor, params);
 
@@ -1254,6 +1284,9 @@ tcu::TestCaseGroup* createSamplerBorderSwizzleTests (tcu::TestContext& testCtx, 
 		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
 		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R8_SNORM,
 		//VK_FORMAT_R8_USCALED,
@@ -1261,6 +1294,9 @@ tcu::TestCaseGroup* createSamplerBorderSwizzleTests (tcu::TestContext& testCtx, 
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
 		VK_FORMAT_R8_SRGB,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		//VK_FORMAT_R8G8_USCALED,

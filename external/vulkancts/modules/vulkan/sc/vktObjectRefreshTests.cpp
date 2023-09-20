@@ -219,7 +219,7 @@ tcu::TestStatus refreshObjects(Context& context, bool individualRefresh)
 	};
 	vk::Move<vk::VkPipelineCache>			pipelineCache		= createPipelineCache(vkd, device, &pipelineCacheCreateInfo);
 	vk::Move<vk::VkPipelineLayout>			pipelineLayout		= makePipelineLayout(vkd, device);
-	vk::Move<vk::VkPipeline>				pipeline			= makeComputePipeline(vkd, device, *pipelineLayout, 0u, *shaderModule, 0u, DE_NULL);
+	vk::Move<vk::VkPipeline>				pipeline			= makeComputePipeline(vkd, device, *pipelineLayout, *shaderModule);
 	const vk::VkDescriptorPoolSize			descriptorPoolSize
 	{
 		vk::VK_DESCRIPTOR_TYPE_SAMPLER,										// VkDescriptorType						type;

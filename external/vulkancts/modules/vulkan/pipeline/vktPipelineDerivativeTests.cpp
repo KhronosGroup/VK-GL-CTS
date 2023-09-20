@@ -57,9 +57,13 @@ using namespace vk;
 namespace
 {
 
-// Helper functions
+void checkSupport (Context& context, bool useMaintenance5)
+{
+	if (useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+}
 
-void initComputeDerivativePrograms (SourceCollections& sources)
+void initComputeDerivativePrograms (SourceCollections& sources, bool)
 {
 	std::ostringstream computeSource;
 
@@ -74,7 +78,7 @@ void initComputeDerivativePrograms (SourceCollections& sources)
 	sources.glslSources.add("comp") << glu::ComputeSource(computeSource.str());
 }
 
-tcu::TestStatus testComputeDerivativeByHandle (Context& context)
+tcu::TestStatus testComputeDerivativeByHandle (Context& context, bool useMaintenance5)
 {
 	const DeviceInterface&		vk				= context.getDeviceInterface();
 	const VkDevice				vkDevice		= context.getDevice();
@@ -100,11 +104,31 @@ tcu::TestStatus testComputeDerivativeByHandle (Context& context)
 		-1
 	};
 
+#ifndef CTS_USES_VULKANSC
+	VkPipelineCreateFlags2CreateInfoKHR flags2CreateInfo = initVulkanStructure();
+	if (useMaintenance5)
+	{
+		flags2CreateInfo.flags	= VK_PIPELINE_CREATE_2_ALLOW_DERIVATIVES_BIT_KHR;
+		cpci.flags				= 0;
+		cpci.pNext				= &flags2CreateInfo;
+	}
+#else
+	DE_UNREF(useMaintenance5);
+#endif // CTS_USES_VULKANSC
+
 	Move<VkPipeline>			basePipeline	= createComputePipeline(vk, vkDevice, DE_NULL, &cpci);
 
 	// Create second (identical) pipeline based on first
 	cpci.flags = VK_PIPELINE_CREATE_DERIVATIVE_BIT;
 	cpci.basePipelineHandle = basePipeline.get();
+
+#ifndef CTS_USES_VULKANSC
+	if (useMaintenance5)
+	{
+		flags2CreateInfo.flags	= VK_PIPELINE_CREATE_2_DERIVATIVE_BIT_KHR;
+		cpci.flags				= 0;
+	}
+#endif // CTS_USES_VULKANSC
 
 	Move<VkPipeline>			derivedPipeline	= createComputePipeline(vk, vkDevice, DE_NULL, &cpci);
 
@@ -112,7 +136,7 @@ tcu::TestStatus testComputeDerivativeByHandle (Context& context)
 	return tcu::TestStatus::pass("OK");
 }
 
-tcu::TestStatus testComputeDerivativeByIndex (Context& context)
+tcu::TestStatus testComputeDerivativeByIndex (Context& context, bool)
 {
 	const DeviceInterface&		vk				= context.getDeviceInterface();
 	const VkDevice				vkDevice		= context.getDevice();
@@ -176,12 +200,23 @@ tcu::TestCaseGroup* createDerivativeTests (tcu::TestContext& testCtx)
 								"derivative_by_handle",
 								"",
 								initComputeDerivativePrograms,
-								testComputeDerivativeByHandle);
+								testComputeDerivativeByHandle,
+								false);
+#ifndef CTS_USES_VULKANSC
+	addFunctionCaseWithPrograms(computeTests.get(),
+								"derivative_by_handle_maintenance5",
+								"",
+								checkSupport,
+								initComputeDerivativePrograms,
+								testComputeDerivativeByHandle,
+								true);
+#endif // CTS_USES_VULKANSC
 	addFunctionCaseWithPrograms(computeTests.get(),
 								"derivative_by_index",
 								"",
 								initComputeDerivativePrograms,
-								testComputeDerivativeByIndex);
+								testComputeDerivativeByIndex,
+								false);
 
 	derivativeTests->addChild(computeTests.release());
 	return derivativeTests.release();

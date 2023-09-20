@@ -19440,6 +19440,7 @@ dEQP-VK.binding_model.descriptor_buffer.single.compute_comp_uniform_buffer
 dEQP-VK.binding_model.descriptor_buffer.single.compute_comp_storage_buffer
 dEQP-VK.binding_model.descriptor_buffer.single.compute_comp_inline_uniform_block
 dEQP-VK.binding_model.descriptor_buffer.single.compute_comp_acceleration_structure
+dEQP-VK.binding_model.descriptor_buffer.single.compute_maintenance5
 dEQP-VK.binding_model.descriptor_buffer.multiple.graphics_vert_buffers1_sets1
 dEQP-VK.binding_model.descriptor_buffer.multiple.graphics_vert_buffers1_sets3
 dEQP-VK.binding_model.descriptor_buffer.multiple.graphics_vert_buffers1_sets3_imm_samplers
