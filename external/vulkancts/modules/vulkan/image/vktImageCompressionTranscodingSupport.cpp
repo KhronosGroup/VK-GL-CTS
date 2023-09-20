@@ -117,7 +117,17 @@ struct TestParameters
 	VkImageUsageFlags	uncompressedImageUsage;
 	bool				useMipmaps;
 	VkFormat			formatForVerify;
-	bool				formatIsASTC;
+	const bool			multiLayerView;
+
+	bool formatIsASTC (void) const
+	{
+		return deInRange32(formatCompressed, VK_FORMAT_ASTC_4x4_UNORM_BLOCK, VK_FORMAT_ASTC_12x12_SRGB_BLOCK);
+	}
+
+	bool useMultiLayerViews (void) const
+	{
+		return (multiLayerView && layers > 1u);
+	}
 };
 
 template<typename T>
@@ -210,11 +220,6 @@ static BinaryCompareResult BinaryCompare(const void				*reference,
 	}
 
 	return COMPARE_RESULT_FAILED;
-}
-
-static bool FormatIsASTC(VkFormat format)
-{
-	return deInRange32(format, VK_FORMAT_ASTC_4x4_UNORM_BLOCK, VK_FORMAT_ASTC_12x12_SRGB_BLOCK);
 }
 
 static TestStatus TestStatusASTCQualityWarning()
@@ -568,20 +573,47 @@ TestStatus BasicComputeTestInstance::iterate (void)
 					DE_NULL,														//const void*			pNext;
 					m_parameters.compressedImageUsage,								//VkImageUsageFlags		usage;
 				};
-				for (deUint32 mipNdx = 0u; mipNdx < mipMapSizes.size(); ++mipNdx)
-				for (deUint32 layerNdx = 0u; layerNdx < getLayerCount(); ++layerNdx)
+				if (m_parameters.useMultiLayerViews())
 				{
+					// Single image with all layers.
+					DE_ASSERT(!m_parameters.useMipmaps);
+					DE_ASSERT(m_parameters.imageType == IMAGE_TYPE_2D);
+
 					imageData[imageNdx].addImageView(makeImageView(vk, device, imageData[imageNdx].getImage(infoNdx),
-														mapImageViewType(m_parameters.imageType), m_parameters.formatUncompressed,
-														makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, mipNdx, 1u, layerNdx, 1u),
+														VK_IMAGE_VIEW_TYPE_2D_ARRAY, m_parameters.formatUncompressed,
+														makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, getLayerCount()),
 														&imageViewUsageKHR));
+				}
+				else
+				{
+					for (deUint32 mipNdx = 0u; mipNdx < mipMapSizes.size(); ++mipNdx)
+					for (deUint32 layerNdx = 0u; layerNdx < getLayerCount(); ++layerNdx)
+					{
+						imageData[imageNdx].addImageView(makeImageView(vk, device, imageData[imageNdx].getImage(infoNdx),
+															mapImageViewType(m_parameters.imageType), m_parameters.formatUncompressed,
+															makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, mipNdx, 1u, layerNdx, 1u),
+															&imageViewUsageKHR));
+					}
 				}
 			}
 			else
 			{
-				imageData[imageNdx].addImageView(makeImageView(vk, device, imageData[imageNdx].getImage(infoNdx),
-													mapImageViewType(m_parameters.imageType), m_parameters.formatUncompressed,
-													makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u)));
+				if (m_parameters.useMultiLayerViews())
+				{
+					// Single image with all layers.
+					DE_ASSERT(!m_parameters.useMipmaps);
+					DE_ASSERT(m_parameters.imageType == IMAGE_TYPE_2D);
+
+					imageData[imageNdx].addImageView(makeImageView(vk, device, imageData[imageNdx].getImage(infoNdx),
+														VK_IMAGE_VIEW_TYPE_2D_ARRAY, m_parameters.formatUncompressed,
+														makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, getLayerCount())));
+				}
+				else
+				{
+					imageData[imageNdx].addImageView(makeImageView(vk, device, imageData[imageNdx].getImage(infoNdx),
+														mapImageViewType(m_parameters.imageType), m_parameters.formatUncompressed,
+														makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u)));
+				}
 			}
 		}
 	}
@@ -643,9 +675,12 @@ TestStatus BasicComputeTestInstance::iterate (void)
 		executeShader(*cmdPool, *cmdBuffer, *descriptorSetLayout, *descriptorPool, imageData);
 
 		{
-			VkDeviceSize offset = 0ull;
+			// For multilayer views we'll do everything in a single iteration.
+			const auto		layerIterations	= (m_parameters.useMultiLayerViews() ? 1u : getLayerCount());
+			VkDeviceSize	offset			= 0ull;
+
 			for (deUint32 mipNdx = 0u; mipNdx < mipMapSizes.size(); ++mipNdx)
-			for (deUint32 layerNdx = 0u; layerNdx < getLayerCount(); ++layerNdx)
+			for (deUint32 layerNdx = 0u; layerNdx < layerIterations; ++layerNdx)
 			{
 				const deUint32	imageNdx	= layerNdx + mipNdx * getLayerCount();
 				const UVec3		size		= UVec3(imageData[resultImageNdx].getImageInfo(imageNdx).extent.width,
@@ -671,7 +706,7 @@ TestStatus BasicComputeTestInstance::iterate (void)
 
 	if (m_bASTCErrorColourMismatch)
 	{
-		DE_ASSERT(m_parameters.formatIsASTC);
+		DE_ASSERT(m_parameters.formatIsASTC());
 		return TestStatusASTCQualityWarning();
 	}
 
@@ -812,13 +847,18 @@ void BasicComputeTestInstance::executeShader (const VkCommandPool&			cmdPool,
 			0u,											//deUint32				baseArrayLayer
 			imageData[0].getImageInfo(0u).arrayLayers	//deUint32				layerCount
 		};
+
+		if (m_parameters.useMultiLayerViews())
+			DE_ASSERT(!m_parameters.useMipmaps);
+
+		const auto						layerCount					= (m_parameters.useMultiLayerViews() ? getLayerCount() : 1u);
 		const VkImageSubresourceRange	uncompressedRange			=
 		{
 			VK_IMAGE_ASPECT_COLOR_BIT,					//VkImageAspectFlags	aspectMask
 			0u,											//deUint32				baseMipLevel
 			1u,											//deUint32				levelCount
 			0u,											//deUint32				baseArrayLayer
-			1u											//deUint32				layerCount
+			layerCount,									//deUint32				layerCount
 		};
 
 		vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
@@ -846,9 +886,11 @@ void BasicComputeTestInstance::executeShader (const VkCommandPool&			cmdPool,
 		{
 			descriptorSetUpdate (**descriptorSets[ndx], &descriptorImageInfos[ndx* m_parameters.imagesCount]);
 			vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &(**descriptorSets[ndx]), 0u, DE_NULL);
-			vk.cmdDispatch(cmdBuffer,	imageData[1].getImageInfo(ndx).extent.width,
-										imageData[1].getImageInfo(ndx).extent.height,
-										imageData[1].getImageInfo(ndx).extent.depth);
+
+			// For multilayer views, we'll use the Z dimension to handle layers. The extent depth is only 1 in that case.
+			const auto& extent = imageData[1].getImageInfo(ndx).extent;
+			vk.cmdDispatch(cmdBuffer, extent.width, extent.height,
+						   (m_parameters.useMultiLayerViews() ? getLayerCount() : extent.depth));
 		}
 	}
 	endCommandBuffer(vk, cmdBuffer);
@@ -866,8 +908,10 @@ bool BasicComputeTestInstance::copyResultAndCompare (const VkCommandPool&	cmdPoo
 	const VkQueue			queue				= m_context.getUniversalQueue();
 	const VkDevice			device				= m_context.getDevice();
 	Allocator&				allocator			= m_context.getDefaultAllocator();
-
-	VkDeviceSize			imageResultSize		= getImageSizeBytes (tcu::IVec3(size.x(), size.y(), size.z()), m_parameters.formatUncompressed);
+	const auto				layerCount			= (m_parameters.useMultiLayerViews() ? getLayerCount() : 1u);
+	const tcu::IVec3		imageDim			(size.x(), size.y(), (m_parameters.useMultiLayerViews() ? layerCount : size.z()));
+	// For multilayer views, the buffer will hold the full image, including all layers, instead of a single layer.
+	VkDeviceSize			imageResultSize		= getImageSizeBytes (imageDim, m_parameters.formatUncompressed);
 	BufferWithMemory		imageBufferResult	(vk, device, allocator,
 													makeBufferCreateInfo(imageResultSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
 													MemoryRequirement::HostVisible);
@@ -880,17 +924,17 @@ bool BasicComputeTestInstance::copyResultAndCompare (const VkCommandPool&	cmdPoo
 			0u,																	//deUint32				baseMipLevel
 			1u,																	//deUint32				levelCount
 			0u,																	//deUint32				baseArrayLayer
-			1u																	//deUint32				layerCount
+			layerCount,															//deUint32				layerCount
 		};
 
 		const VkBufferImageCopy			copyRegion			=
 		{
-			0ull,																//	VkDeviceSize				bufferOffset;
-			0u,																	//	deUint32					bufferRowLength;
-			0u,																	//	deUint32					bufferImageHeight;
-			makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u),	//	VkImageSubresourceLayers	imageSubresource;
-			makeOffset3D(0, 0, 0),												//	VkOffset3D					imageOffset;
-			makeExtent3D(size),													//	VkExtent3D					imageExtent;
+			0ull,																		//	VkDeviceSize				bufferOffset;
+			0u,																			//	deUint32					bufferRowLength;
+			0u,																			//	deUint32					bufferImageHeight;
+			makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, layerCount),	//	VkImageSubresourceLayers	imageSubresource;
+			makeOffset3D(0, 0, 0),														//	VkOffset3D					imageOffset;
+			makeExtent3D(size),															//	VkExtent3D					imageExtent;
 		};
 
 		const VkImageMemoryBarrier prepareForTransferBarrier = makeImageMemoryBarrier(
@@ -996,10 +1040,15 @@ void BasicComputeTestInstance::createImageInfos (ImageData& imageData, const vec
 			size.y() = 1;
 		}
 		size.z() = 1;
-		const VkExtent3D originalResolutionInBlocks = makeExtent3D(getCompressedImageResolutionInBlocks(m_parameters.formatCompressed, size));
+
+		const VkExtent3D	originalResolutionInBlocks	= makeExtent3D(getCompressedImageResolutionInBlocks(m_parameters.formatCompressed, size));
+
+		// For multilayer views, a single iteration will take care of all layers.
+		const auto			arrayLayers					= (m_parameters.useMultiLayerViews() ? getLayerCount() : 1u);
+		const auto			layerIterations				= (m_parameters.useMultiLayerViews() ? 1u : getLayerCount());
 
 		for (size_t mipNdx = 0ull; mipNdx < mipMapSizes.size(); ++mipNdx)
-		for (size_t layerNdx = 0ull; layerNdx < getLayerCount(); ++layerNdx)
+		for (size_t layerNdx = 0ull; layerNdx < layerIterations; ++layerNdx)
 		{
 			const VkExtent3D		extentUncompressed	= m_parameters.useMipmaps ?
 															makeExtent3D(getCompressedImageResolutionInBlocks(m_parameters.formatCompressed, mipMapSizes[mipNdx])) :
@@ -1013,7 +1062,7 @@ void BasicComputeTestInstance::createImageInfos (ImageData& imageData, const vec
 				m_parameters.formatUncompressed,					// VkFormat					format;
 				extentUncompressed,									// VkExtent3D				extent;
 				1u,													// deUint32					mipLevels;
-				1u,													// deUint32					arrayLayers;
+				arrayLayers,										// deUint32					arrayLayers;
 				VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits	samples;
 				VK_IMAGE_TILING_OPTIMAL,							// VkImageTiling			tiling;
 				m_parameters.uncompressedImageUsage |
@@ -1044,15 +1093,27 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandPool&	cmdPool,
 	for (deUint32 ndx = 0u; ndx < imageData.size(); ndx++)
 		imageData[ndx].resetViews();
 
+	if (m_parameters.useMultiLayerViews())
+	{
+		DE_ASSERT(!m_parameters.useMipmaps);
+		DE_ASSERT(m_parameters.imageType == IMAGE_TYPE_2D);
+	}
+
+	// For multilayer views we'll create a single view with all layers.
+	const auto layerIterations = (m_parameters.useMultiLayerViews() ? 1u : getLayerCount());
+
 	for (deUint32 mipNdx = 0u; mipNdx < mipMapSizes.size(); ++mipNdx)
-	for (deUint32 layerNdx = 0u; layerNdx < getLayerCount(); ++layerNdx)
+	for (deUint32 layerNdx = 0u; layerNdx < layerIterations; ++layerNdx)
 	{
 		const bool						layoutShaderReadOnly	= (layerNdx % 2u) == 1;
 		const deUint32					imageNdx				= layerNdx + mipNdx * getLayerCount();
-		const VkExtent3D				extentCompressed		= makeExtent3D(mipMapSizes[mipNdx]);
+		const auto&						mipMapSize				= mipMapSizes[mipNdx];
+		const VkExtent3D				extentCompressed		= makeExtent3D(mipMapSize);
 		const VkImage&					uncompressed			= imageData[m_parameters.imagesCount -1].getImage(imageNdx);
 		const VkExtent3D				extentUncompressed		= imageData[m_parameters.imagesCount -1].getImageInfo(imageNdx).extent;
-		const VkDeviceSize				bufferSizeComp			= getCompressedImageSizeInBytes(m_parameters.formatCompressed, mipMapSizes[mipNdx]);
+		const auto						bufferSizeExtent		= (m_parameters.useMultiLayerViews() ? UVec3(mipMapSize.x(), mipMapSize.y(), getLayerCount()) : mipMapSize);
+		const VkDeviceSize				bufferSizeComp			= getCompressedImageSizeInBytes(m_parameters.formatCompressed, bufferSizeExtent);
+		const auto						arrayLayers				= (m_parameters.useMultiLayerViews() ? getLayerCount() : 1u);
 
 		VkFormatProperties properties;
 		m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(m_context.getPhysicalDevice(), m_parameters.formatForVerify, &properties);
@@ -1068,7 +1129,7 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandPool&	cmdPool,
 			m_parameters.formatForVerify,										// VkFormat					format;
 			extentCompressed,													// VkExtent3D				extent;
 			1u,																	// deUint32					mipLevels;
-			1u,																	// deUint32					arrayLayers;
+			arrayLayers,														// deUint32					arrayLayers;
 			VK_SAMPLE_COUNT_1_BIT,												// VkSampleCountFlagBits	samples;
 			VK_IMAGE_TILING_OPTIMAL,											// VkImageTiling			tiling;
 			VK_IMAGE_USAGE_SAMPLED_BIT |
@@ -1090,7 +1151,7 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandPool&	cmdPool,
 			m_parameters.formatCompressed,										// VkFormat					format;
 			extentCompressed,													// VkExtent3D				extent;
 			1u,																	// deUint32					mipLevels;
-			1u,																	// deUint32					arrayLayers;
+			arrayLayers,														// deUint32					arrayLayers;
 			VK_SAMPLE_COUNT_1_BIT,												// VkSampleCountFlagBits	samples;
 			VK_IMAGE_TILING_OPTIMAL,											// VkImageTiling			tiling;
 			VK_IMAGE_USAGE_SAMPLED_BIT |
@@ -1107,7 +1168,7 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandPool&	cmdPool,
 			DE_NULL,															//const void*			pNext;
 			compressedViewUsageFlags,											//VkImageUsageFlags		usage;
 		};
-		const VkImageViewType			imageViewType			(mapImageViewType(m_parameters.imageType));
+		const VkImageViewType			imageViewType			(m_parameters.useMultiLayerViews() ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : mapImageViewType(m_parameters.imageType));
 		Image							resultImage				(vk, device, allocator, decompressedImageInfo, MemoryRequirement::Any);
 		Image							referenceImage			(vk, device, allocator, decompressedImageInfo, MemoryRequirement::Any);
 		Image							uncompressedImage		(vk, device, allocator, compressedImageInfo, MemoryRequirement::Any);
@@ -1118,10 +1179,10 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandPool&	cmdPool,
 		Move<VkImageView>				uncompressedView		= makeImageView(vk, device, uncompressedImage.get(), imageViewType, m_parameters.formatCompressed,
 																	makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, compressedImageInfo.extent.depth, 0u, compressedImageInfo.arrayLayers));
 		bool const						useMultiLayer			= m_parameters.imageType == IMAGE_TYPE_2D && m_parameters.layers > 1u;
-		Move<VkImageView>				compressedView			= (useMultiLayer) ?
-																	makeImageView(vk, device, compressed, VK_IMAGE_VIEW_TYPE_2D_ARRAY, m_parameters.formatCompressed,
-																		makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, static_cast<uint32_t>(mipMapSizes.size()), 0u, m_parameters.layers), &compressedViewUsageCI) :
-																	makeImageView(vk, device, compressed, imageViewType, m_parameters.formatCompressed,
+		Move<VkImageView>				compressedView			= (useMultiLayer)
+																	? makeImageView(vk, device, compressed, VK_IMAGE_VIEW_TYPE_2D_ARRAY, m_parameters.formatCompressed,
+																		makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, static_cast<uint32_t>(mipMapSizes.size()), 0u, m_parameters.layers), &compressedViewUsageCI)
+																	: makeImageView(vk, device, compressed, imageViewType, m_parameters.formatCompressed,
 																		makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, mipNdx, 1u, layerNdx, 1u), &compressedViewUsageCI);
 		Move<VkDescriptorSetLayout>		descriptorSetLayout		= DescriptorSetLayoutBuilder()
 																	.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
@@ -1142,7 +1203,10 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandPool&	cmdPool,
 		const VkPushConstantRange		pushConstantRange		= { VK_SHADER_STAGE_COMPUTE_BIT, 0u, static_cast<uint32_t>(sizeof pushData) };
 		const Unique<VkPipelineLayout>	pipelineLayout			(makePipelineLayout(vk, device, 1u, &descriptorSetLayout.get(), 1u, &pushConstantRange));
 		const Unique<VkPipeline>		pipeline				(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
-		const VkDeviceSize				bufferSize				= getImageSizeBytes(IVec3((int)extentCompressed.width, (int)extentCompressed.height, (int)extentCompressed.depth), m_parameters.formatForVerify);
+		// For multilayer views, the buffer will contain the full image with all layers instead of a single layer.
+		const auto						bufferSizeExtentVerif	= IVec3((int)extentCompressed.width, (int)extentCompressed.height,
+																		(m_parameters.useMultiLayerViews() ? (int)getLayerCount() : (int)extentCompressed.depth));
+		const VkDeviceSize				bufferSize				= getImageSizeBytes(bufferSizeExtentVerif, m_parameters.formatForVerify);
 		BufferWithMemory				resultBuffer			(vk, device, allocator,
 																	makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
 		BufferWithMemory				referenceBuffer			(vk, device, allocator,
@@ -1198,7 +1262,7 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandPool&	cmdPool,
 				0u,																	//deUint32						baseMipLevel
 				1u,																	//deUint32						levelCount
 				0u,																	//deUint32						baseArrayLayer
-				1u																	//deUint32						layerCount
+				arrayLayers,														//deUint32						layerCount
 			};
 
 			const VkImageSubresourceRange	subresourceRangeComp	=
@@ -1212,22 +1276,22 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandPool&	cmdPool,
 
 			const VkBufferImageCopy			copyRegion				=
 			{
-				0ull,																//	VkDeviceSize				bufferOffset;
-				0u,																	//	deUint32					bufferRowLength;
-				0u,																	//	deUint32					bufferImageHeight;
-				makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u),	//	VkImageSubresourceLayers	imageSubresource;
-				makeOffset3D(0, 0, 0),												//	VkOffset3D					imageOffset;
-				decompressedImageInfo.extent,										//	VkExtent3D					imageExtent;
+				0ull,																		//	VkDeviceSize				bufferOffset;
+				0u,																			//	deUint32					bufferRowLength;
+				0u,																			//	deUint32					bufferImageHeight;
+				makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, arrayLayers),	//	VkImageSubresourceLayers	imageSubresource;
+				makeOffset3D(0, 0, 0),														//	VkOffset3D					imageOffset;
+				decompressedImageInfo.extent,												//	VkExtent3D					imageExtent;
 			};
 
 			const VkBufferImageCopy			compressedCopyRegion	=
 			{
-				0ull,																//	VkDeviceSize				bufferOffset;
-				0u,																	//	deUint32					bufferRowLength;
-				0u,																	//	deUint32					bufferImageHeight;
-				makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u),	//	VkImageSubresourceLayers	imageSubresource;
-				makeOffset3D(0, 0, 0),												//	VkOffset3D					imageOffset;
-				extentUncompressed,													//	VkExtent3D					imageExtent;
+				0ull,																		//	VkDeviceSize				bufferOffset;
+				0u,																			//	deUint32					bufferRowLength;
+				0u,																			//	deUint32					bufferImageHeight;
+				makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, arrayLayers),	//	VkImageSubresourceLayers	imageSubresource;
+				makeOffset3D(0, 0, 0),														//	VkOffset3D					imageOffset;
+				extentUncompressed,															//	VkExtent3D					imageExtent;
 			};
 
 			{
@@ -1284,7 +1348,10 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandPool&	cmdPool,
 			}
 
 			vk.cmdPushConstants(cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0u, sizeof pushData, &pushData);
-			vk.cmdDispatch(cmdBuffer, extentCompressed.width, extentCompressed.height, extentCompressed.depth);
+
+			// For multilayer views, we'll use the Z dimension to iterate over the layers. The extent depth would be 1 in that case.
+			vk.cmdDispatch(cmdBuffer, extentCompressed.width, extentCompressed.height,
+						   (m_parameters.useMultiLayerViews() ? getLayerCount() : extentCompressed.depth));
 
 			{
 				const VkImageMemoryBarrier		postShaderImageBarriers[]	=
@@ -1331,7 +1398,7 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandPool&	cmdPool,
 		invalidateAlloc(vk, device, referenceAlloc);
 
 		BinaryCompareMode compareMode =
-			(m_parameters.formatIsASTC)
+			(m_parameters.formatIsASTC())
 				?(COMPARE_MODE_ALLOW_ASTC_ERROR_COLOUR_WARNING)
 				:(COMPARE_MODE_NORMAL);
 
@@ -1343,11 +1410,29 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandPool&	cmdPool,
 
 		if (res == COMPARE_RESULT_FAILED)
 		{
-			ConstPixelBufferAccess	resultPixels		(mapVkFormat(decompressedImageInfo.format), decompressedImageInfo.extent.width, decompressedImageInfo.extent.height, decompressedImageInfo.extent.depth, resultAlloc.getHostPtr());
-			ConstPixelBufferAccess	referencePixels		(mapVkFormat(decompressedImageInfo.format), decompressedImageInfo.extent.width, decompressedImageInfo.extent.height, decompressedImageInfo.extent.depth, referenceAlloc.getHostPtr());
+			// For multilayer views we'll iterate only once (see above) creating views that contain all layers. However, it's easier
+			// to compare images layer by layer, and that also lets us log images which are easier to analyze, so in the multilayer
+			// view case we have to run this comparison loop multiple times instead of once. In the single-layer views case, the
+			// outer loop will iterate over the layers, and this inner loop only has to be run once.
+			const auto innerIterations = (m_parameters.useMultiLayerViews() ? getLayerCount() : 1u);
 
-			if(!fuzzyCompare(m_context.getTestContext().getLog(), "Image Comparison", "Image Comparison", resultPixels, referencePixels, 0.001f, tcu::COMPARE_LOG_EVERYTHING))
-				return false;
+			for (uint32_t i = 0u; i < innerIterations; ++i)
+			{
+				const auto	tcuFormat	= mapVkFormat(decompressedImageInfo.format);
+				const auto&	extent		= decompressedImageInfo.extent;
+				const auto	pixelSize	= tcu::getPixelSize(tcuFormat);
+				const auto	layerSize	= extent.width * extent.height * extent.depth * static_cast<uint32_t>(pixelSize);
+				const auto	imageName	= "Image Comparison Layer " + std::to_string(m_parameters.useMultiLayerViews() ? i : layerNdx);
+
+				const auto	resLayerPtr	= reinterpret_cast<const char*>(resultAlloc.getHostPtr()) + layerSize * i;
+				const auto	refLayerPtr = reinterpret_cast<const char*>(referenceAlloc.getHostPtr()) + layerSize * i;
+
+				ConstPixelBufferAccess	resultPixels		(tcuFormat, extent.width, extent.height, extent.depth, resLayerPtr);
+				ConstPixelBufferAccess	referencePixels		(tcuFormat, extent.width, extent.height, extent.depth, refLayerPtr);
+
+				if (!fuzzyCompare(m_context.getTestContext().getLog(), imageName.c_str(), "", resultPixels, referencePixels, 0.001f, tcu::COMPARE_LOG_EVERYTHING))
+					return false;
+			}
 		}
 		else if (res == COMPARE_RESULT_ASTC_QUALITY_WARNING)
 		{
@@ -1390,6 +1475,7 @@ void ImageStoreComputeTestInstance::executeShader (const VkCommandPool&			cmdPoo
 	vector<SharedVkDescriptorSet>	descriptorSets			(imageData[0].getImageViewCount());
 	const Unique<VkPipelineLayout>	pipelineLayout			(makePipelineLayout(vk, device, descriptorSetLayout));
 	const Unique<VkPipeline>		pipeline				(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
+	const auto						layerCount				= (m_parameters.useMultiLayerViews() ? getLayerCount() : 1u);
 	Move<VkSampler>					sampler;
 	{
 		const VkSamplerCreateInfo createInfo =
@@ -1447,7 +1533,7 @@ void ImageStoreComputeTestInstance::executeShader (const VkCommandPool&			cmdPoo
 			0u,											//deUint32				baseMipLevel
 			1u,											//deUint32				levelCount
 			0u,											//deUint32				baseArrayLayer
-			1u											//deUint32				layerCount
+			layerCount,									//deUint32				layerCount
 		};
 
 		vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
@@ -1479,9 +1565,11 @@ void ImageStoreComputeTestInstance::executeShader (const VkCommandPool&			cmdPoo
 		{
 			descriptorSetUpdate (**descriptorSets[ndx], &descriptorImageInfos[ndx* m_parameters.imagesCount]);
 			vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &(**descriptorSets[ndx]), 0u, DE_NULL);
-			vk.cmdDispatch(cmdBuffer,	imageData[1].getImageInfo(ndx).extent.width,
-										imageData[1].getImageInfo(ndx).extent.height,
-										imageData[1].getImageInfo(ndx).extent.depth);
+
+			// For multilayer views, we'll use the Z dimension to iterate over the layers, while the extent depth is only 1.
+			const auto& extent = imageData[1].getImageInfo(ndx).extent;
+			vk.cmdDispatch(cmdBuffer, extent.width, extent.height,
+						   (m_parameters.useMultiLayerViews() ? getLayerCount() : extent.depth));
 		}
 	}
 	endCommandBuffer(vk, cmdBuffer);
@@ -1618,7 +1706,7 @@ TestStatus GraphicsAttachmentsTestInstance::iterate (void)
 
 	if (m_bASTCErrorColourMismatch)
 	{
-		DE_ASSERT(m_parameters.formatIsASTC);
+		DE_ASSERT(m_parameters.formatIsASTC());
 		return TestStatusASTCQualityWarning();
 	}
 
@@ -2218,7 +2306,7 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const VkCommandPool&	
 		invalidateAlloc(vk, device, resDstBufferAlloc);
 
 		BinaryCompareMode compareMode =
-			(m_parameters.formatIsASTC)
+			(m_parameters.formatIsASTC())
 				?(COMPARE_MODE_ALLOW_ASTC_ERROR_COLOUR_WARNING)
 				:(COMPARE_MODE_NORMAL);
 
@@ -2588,7 +2676,11 @@ void TexelViewCompatibleCase::initPrograms (vk::SourceCollections&	programCollec
 	{
 		case SHADER_TYPE_COMPUTE:
 		{
-			const std::string	imageTypeStr		= getShaderImageType(mapVkFormat(m_parameters.formatUncompressed), m_parameters.imageType);
+			// The Array suffix is normally handled by the getShader* and getGlsl* functions below, but in these tests we never use
+			// IMAGE_TYPE_*_ARRAY, so we add the Array suffix manually for the multilayer view case only.
+			const std::string	imageTypeSuffix		= (m_parameters.useMultiLayerViews() ? "Array" : "");
+			const std::string	imageTypeStr		= getShaderImageType(mapVkFormat(m_parameters.formatUncompressed), m_parameters.imageType) + imageTypeSuffix;
+			const std::string	samplerTypeStr		= getGlslSamplerType(mapVkFormat(m_parameters.formatUncompressed), mapImageViewType(m_parameters.imageType)) + imageTypeSuffix;
 			const std::string	formatQualifierStr	= getShaderImageFormatQualifier(mapVkFormat(m_parameters.formatUncompressed));
 			std::ostringstream	src;
 			std::ostringstream	src_decompress;
@@ -2606,7 +2698,9 @@ void TexelViewCompatibleCase::initPrograms (vk::SourceCollections&	programCollec
 						// IMAGE_TYPE_1D
 						"    highp int pos = int(gl_GlobalInvocationID.x);\n",
 						// IMAGE_TYPE_2D
-						"    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);\n",
+						(m_parameters.useMultiLayerViews()
+							? "    ivec3 pos = ivec3(gl_GlobalInvocationID);\n" // Z dimension handles layers.
+							: "    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);\n"),
 						// IMAGE_TYPE_3D
 						"    ivec3 pos = ivec3(gl_GlobalInvocationID);\n",
 					};
@@ -2629,12 +2723,14 @@ void TexelViewCompatibleCase::initPrograms (vk::SourceCollections&	programCollec
 						// IMAGE_TYPE_1D
 						"    imageStore(u_image1, pos.x, texelFetch(u_image0, pos.x, pos.z));\n",
 						// IMAGE_TYPE_2D
-						"    imageStore(u_image1, pos.xy, texelFetch(u_image0, pos.xy, pos.z));\n",
+						(m_parameters.useMultiLayerViews()
+							? "    imageStore(u_image1, pos, texelFetch(u_image0, pos, 0));\n" // Z dimension handles layers
+							: "    imageStore(u_image1, pos.xy, texelFetch(u_image0, pos.xy, pos.z));\n"),
 						// IMAGE_TYPE_3D
 						"    imageStore(u_image1, pos, texelFetch(u_image0, pos, pos.z));\n",
 					};
 
-					src << "layout (binding = 0) uniform "<<getGlslSamplerType(mapVkFormat(m_parameters.formatUncompressed), mapImageViewType(m_parameters.imageType))<<" u_image0;\n"
+					src << "layout (binding = 0) uniform "<< samplerTypeStr <<" u_image0;\n"
 						<< "layout (binding = 1, "<<formatQualifierStr<<") writeonly uniform "<<imageTypeStr<<" u_image1;\n\n"
 						<< "void main (void)\n"
 						<< "{\n"
@@ -2653,15 +2749,19 @@ void TexelViewCompatibleCase::initPrograms (vk::SourceCollections&	programCollec
 						"    const int     pos = int(gl_GlobalInvocationID.x);\n"
 						"    const float coord = (float(gl_GlobalInvocationID.x) + 0.5) / pixels_resolution.x;\n",
 						// IMAGE_TYPE_2D
-						"    const ivec2  pos = ivec2(gl_GlobalInvocationID.xy);\n"
-						"    const vec2 coord = (vec2(gl_GlobalInvocationID.xy) + 0.5) / vec2(pixels_resolution);\n",
+						(m_parameters.useMultiLayerViews() // Z dimension handles layers in the multilayer view case.
+							? "    const ivec3  pos = ivec3(gl_GlobalInvocationID.xyz);\n"
+							  "    const vec2    v2 = (vec2(gl_GlobalInvocationID.xy) + 0.5) / vec2(pixels_resolution);\n"
+							  "    const vec3 coord = vec3(v2, pos.z);\n"
+							: "    const ivec2  pos = ivec2(gl_GlobalInvocationID.xy);\n"
+							  "    const vec2 coord = (vec2(gl_GlobalInvocationID.xy) + 0.5) / vec2(pixels_resolution);\n"),
 						// IMAGE_TYPE_3D
 						"    const ivec3  pos = ivec3(gl_GlobalInvocationID.xy, 0);\n"
 						"    const vec2    v2 = (vec2(gl_GlobalInvocationID.xy) + 0.5) / vec2(pixels_resolution);\n"
 						"    const vec3 coord = vec3(v2, 0.0);\n",
 					};
 
-					src << "layout (binding = 0) uniform "<<getGlslSamplerType(mapVkFormat(m_parameters.formatUncompressed), mapImageViewType(m_parameters.imageType))<<" u_image0;\n"
+					src << "layout (binding = 0) uniform "<< samplerTypeStr <<" u_image0;\n"
 						<< "layout (binding = 1, "<<formatQualifierStr<<") writeonly uniform "<<imageTypeStr<<" u_image1;\n\n"
 						<< "void main (void)\n"
 						<< "{\n"
@@ -2680,7 +2780,9 @@ void TexelViewCompatibleCase::initPrograms (vk::SourceCollections&	programCollec
 						// IMAGE_TYPE_1D
 						"    highp int pos = int(gl_GlobalInvocationID.x);\n",
 						// IMAGE_TYPE_2D
-						"    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);\n",
+						(m_parameters.useMultiLayerViews()
+							? "    ivec3 pos = ivec3(gl_GlobalInvocationID);\n" // Z dimension handles layers.
+							: "    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);\n"),
 						// IMAGE_TYPE_3D
 						"    ivec3 pos = ivec3(gl_GlobalInvocationID);\n",
 					};
@@ -2703,34 +2805,44 @@ void TexelViewCompatibleCase::initPrograms (vk::SourceCollections&	programCollec
 			}
 
 			const ImageType compressedReferenceImageType = (m_parameters.imageType == IMAGE_TYPE_2D && m_parameters.layers > 1u) ? IMAGE_TYPE_2D_ARRAY : m_parameters.imageType;
-			const char* cordDefinitions[3] =
+			const char* coordDefinitions[3] =
 			{
 				// IMAGE_TYPE_1D
-				"    const highp float cord = float(gl_GlobalInvocationID.x) / pixels_resolution.x;\n"
-				"    const highp int    pos = int(gl_GlobalInvocationID.x); \n",
+				"    const highp float coord = float(gl_GlobalInvocationID.x) / pixels_resolution.x;\n"
+				"    const highp int     pos = int(gl_GlobalInvocationID.x); \n",
 				// IMAGE_TYPE_2D
-				"    const vec2 cord = vec2(gl_GlobalInvocationID.xy) / vec2(pixels_resolution);\n"
-				"    const ivec2 pos = ivec2(gl_GlobalInvocationID.xy); \n",
+				(m_parameters.useMultiLayerViews() // Z dimension handles layers in the multilayer view case.
+					? "    const vec2    v2 = vec2(gl_GlobalInvocationID.xy) / vec2(pixels_resolution);\n"
+					  "    const vec3 coord = vec3(v2, gl_GlobalInvocationID.z);\n"
+					  "    const ivec3  pos = ivec3(gl_GlobalInvocationID); \n"
+					: "    const vec2 coord = vec2(gl_GlobalInvocationID.xy) / vec2(pixels_resolution);\n"
+					  "    const ivec2  pos = ivec2(gl_GlobalInvocationID.xy); \n"),
 				// IMAGE_TYPE_3D
-				"    const vec2 v2 = vec2(gl_GlobalInvocationID.xy) / vec2(pixels_resolution);\n"
-				"    const vec3 cord = vec3(v2, 0.0);\n"
-				"    const ivec3 pos = ivec3(gl_GlobalInvocationID); \n",
+				"    const vec2    v2 = vec2(gl_GlobalInvocationID.xy) / vec2(pixels_resolution);\n"
+				"    const vec3 coord = vec3(v2, 0.0);\n"
+				"    const ivec3  pos = ivec3(gl_GlobalInvocationID); \n",
 			};
-			src_decompress	<< "layout (binding = 0) uniform "<<getGlslSamplerType(mapVkFormat(m_parameters.formatForVerify), mapImageViewType(m_parameters.imageType))<<" compressed_result;\n"
-							<< "layout (binding = 1) uniform "<<getGlslSamplerType(mapVkFormat(m_parameters.formatForVerify), mapImageViewType(compressedReferenceImageType))<<" compressed_reference;\n"
-							<< "layout (binding = 2, "<<getShaderImageFormatQualifier(mapVkFormat(m_parameters.formatForVerify))<<") writeonly uniform "<<getShaderImageType(mapVkFormat(m_parameters.formatForVerify), m_parameters.imageType)<<" decompressed_result;\n"
-							<< "layout (binding = 3, "<<getShaderImageFormatQualifier(mapVkFormat(m_parameters.formatForVerify))<<") writeonly uniform "<<getShaderImageType(mapVkFormat(m_parameters.formatForVerify), m_parameters.imageType)<<" decompressed_reference;\n"
+
+			const auto compressedResSamplerType	= getGlslSamplerType(mapVkFormat(m_parameters.formatForVerify), mapImageViewType(m_parameters.imageType)) + imageTypeSuffix;
+			const auto compressedRefSamplerType	= getGlslSamplerType(mapVkFormat(m_parameters.formatForVerify), mapImageViewType(compressedReferenceImageType));
+			const auto decompressedImageType	= getShaderImageType(mapVkFormat(m_parameters.formatForVerify), m_parameters.imageType) + imageTypeSuffix;
+
+			src_decompress	<< "layout (binding = 0) uniform "<<compressedResSamplerType<<" compressed_result;\n"
+							<< "layout (binding = 1) uniform "<<compressedRefSamplerType<<" compressed_reference;\n"
+							<< "layout (binding = 2, "<<getShaderImageFormatQualifier(mapVkFormat(m_parameters.formatForVerify))<<") writeonly uniform "<<decompressedImageType<<" decompressed_result;\n"
+							<< "layout (binding = 3, "<<getShaderImageFormatQualifier(mapVkFormat(m_parameters.formatForVerify))<<") writeonly uniform "<<decompressedImageType<<" decompressed_reference;\n"
 							<< "layout (push_constant, std430) uniform PushConstants { uint layer; uint level; };\n\n"
 							<< "void main (void)\n"
 							<< "{\n"
 							<< "    const vec2 pixels_resolution = vec2(gl_NumWorkGroups.xy);\n"
-							<< cordDefinitions[imageTypeIndex]
-							<< "    imageStore(decompressed_result, pos, texture(compressed_result, cord));\n";
-			if (compressedReferenceImageType == IMAGE_TYPE_2D_ARRAY)
-				src_decompress	<< "    imageStore(decompressed_reference, pos, textureLod(compressed_reference, vec3(cord, layer), level));\n";
+							<< coordDefinitions[imageTypeIndex]
+							<< "    imageStore(decompressed_result, pos, texture(compressed_result, coord));\n";
+			if (compressedReferenceImageType == IMAGE_TYPE_2D_ARRAY && !m_parameters.useMultiLayerViews())
+				src_decompress	<< "    imageStore(decompressed_reference, pos, textureLod(compressed_reference, vec3(coord, layer), level));\n";
 			else
-				src_decompress	<< "    imageStore(decompressed_reference, pos, texture(compressed_reference, cord));\n";
+				src_decompress	<< "    imageStore(decompressed_reference, pos, texture(compressed_reference, coord));\n";
 			src_decompress	<< "}\n";
+
 			programCollection.glslSources.add("comp") << glu::ComputeSource(src.str());
 			programCollection.glslSources.add("decompress") << glu::ComputeSource(src_decompress.str());
 
@@ -2925,7 +3037,7 @@ void TexelViewCompatibleCase::checkSupport (Context& context) const
 			!physicalDeviceFeatures.textureCompressionETC2)
 			TCU_THROW(NotSupportedError, "textureCompressionETC2 not supported");
 
-		if (m_parameters.formatIsASTC &&
+		if (m_parameters.formatIsASTC() &&
 			!physicalDeviceFeatures.textureCompressionASTC_LDR)
 			TCU_THROW(NotSupportedError, "textureCompressionASTC_LDR not supported");
 
@@ -2936,6 +3048,15 @@ void TexelViewCompatibleCase::checkSupport (Context& context) const
 				TCU_THROW(NotSupportedError, "Storage view format not supported");
 		}
 	}
+
+#ifndef CTS_USES_VULKANSC
+	if (m_parameters.useMultiLayerViews())
+	{
+		const auto& maint6Features = context.getMaintenance6Features();
+		if (!maint6Features.blockTexelViewCompatibleMultipleLayers)
+			TCU_THROW(NotSupportedError, "blockTexelViewCompatibleMultipleLayers not supported");
+	}
+#endif // CTS_USES_VULKANSC
 }
 
 TestInstance* TexelViewCompatibleCase::createInstance (Context& context) const
@@ -3274,7 +3395,7 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 									uncompressedImageUsageFlags[operationNdx],
 									mipmapTest,
 									VK_FORMAT_R8G8B8A8_UNORM,
-									FormatIsASTC(formatCompressed)
+									false,
 								};
 
 								compressedFormatGroup->addChild(new TexelViewCompatibleCase(testCtx, uncompressedFormatGroupName, "", parameters));
@@ -3295,6 +3416,66 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 
 		texelViewCompatibleTests->addChild(pipelineTypeGroup.release());
 	}
+
+#ifndef CTS_USES_VULKANSC
+	{
+		MovePtr<tcu::TestCaseGroup> multiLayerGroup (new tcu::TestCaseGroup(testCtx, "multi_layer_views", "Texel view compatible cases using multi-layer image views"));
+
+		const int		shaderType	= SHADER_TYPE_COMPUTE;
+		const bool		mipmapTest	= false;
+		const ImageType	imageType	= IMAGE_TYPE_2D;
+
+		for (int operationNdx = OPERATION_IMAGE_LOAD; operationNdx <= OPERATION_IMAGE_STORE; ++operationNdx)
+		{
+			MovePtr<tcu::TestCaseGroup>	imageOperationGroup	(new tcu::TestCaseGroup(testCtx, operationName[operationNdx].c_str(), ""));
+
+			const deUint32 imageCount = 2u + (operationNdx == OPERATION_IMAGE_STORE);
+
+			// Iterate through bitness groups (64 bit, 128 bit, etc)
+			for (deUint32 formatBitnessGroup = 0; formatBitnessGroup < DE_LENGTH_OF_ARRAY(formatsCompressedSets); ++formatBitnessGroup)
+			{
+				for (deUint32 formatCompressedNdx = 0; formatCompressedNdx < formatsCompressedSets[formatBitnessGroup].count; ++formatCompressedNdx)
+				{
+					const VkFormat				formatCompressed			= formatsCompressedSets[formatBitnessGroup].formats[formatCompressedNdx];
+					const std::string			compressedFormatGroupName	= getFormatShortString(formatCompressed);
+					MovePtr<tcu::TestCaseGroup>	compressedFormatGroup		(new tcu::TestCaseGroup(testCtx, compressedFormatGroupName.c_str(), ""));
+
+					for (deUint32 formatUncompressedNdx = 0; formatUncompressedNdx < formatsUncompressedSets[formatBitnessGroup].count; ++formatUncompressedNdx)
+					{
+						const VkFormat			formatUncompressed			= formatsUncompressedSets[formatBitnessGroup].formats[formatUncompressedNdx];
+						const std::string		uncompressedFormatGroupName	= getFormatShortString(formatUncompressed);
+
+						const TestParameters	parameters					=
+						{
+							static_cast<Operation>(operationNdx),
+							static_cast<ShaderType>(shaderType),
+							UVec3(64u, 64u, 1u),
+							3u,
+							imageType,
+							formatCompressed,
+							formatUncompressed,
+							imageCount,
+							compressedImageUsageFlags[operationNdx],
+							compressedImageViewUsageFlags[operationNdx],
+							uncompressedImageUsageFlags[operationNdx],
+							mipmapTest,
+							VK_FORMAT_R8G8B8A8_UNORM,
+							true,
+						};
+
+						compressedFormatGroup->addChild(new TexelViewCompatibleCase(testCtx, uncompressedFormatGroupName, "", parameters));
+					}
+
+					imageOperationGroup->addChild(compressedFormatGroup.release());
+				}
+			}
+
+			multiLayerGroup->addChild(imageOperationGroup.release());
+		}
+
+		texelViewCompatibleTests->addChild(multiLayerGroup.release());
+	}
+#endif // CTS_USES_VULKANSC
 
 	return texelViewCompatibleTests.release();
 }
