@@ -130,6 +130,7 @@ set(GLCTS_COMMON_SRCS
 set(GLCTS_COMMON_LIBS
 	glutil
 	tcutil
+	tcutil-platform
 	eglutil
 	deqp-gl-subgroups
 	)

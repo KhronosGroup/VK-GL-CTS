@@ -220,9 +220,9 @@ if (DE_OS_IS_WIN32)
 	target_link_libraries(tcutil-platform "version")
 endif()
 
-# Add similar library for Vulkan SC ( uses same code as vkutil, but with different INL files )
+# Add similar library for Vulkan SC ( uses same code as vkutil, but with different INL files. These
+# are picked up via the version of vkutil that is linked against )
 add_library(tcutil-sc-platform STATIC ${TCUTIL_PLATFORM_SRCS})
-target_include_directories(tcutil-sc-platform BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 
 # Add vkscutil to the deps before tcutil so that it picks up the c++11 dependencies
 target_link_libraries(tcutil-sc-platform vkscutil)

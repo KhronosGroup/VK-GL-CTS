@@ -196,7 +196,7 @@ typedef VKAPI_ATTR PFN_vkVoidFunction (VKAPI_CALL* PFN_vkGetInstanceProcAddrLUNA
 
 #endif // CTS_USES_VULKANSC
 
-typedef VKAPI_ATTR VkBool32 (VKAPI_CALL *PFN_vkDebugUtilsMessengerCallbackEXT)	(VkDebugUtilsMessageSeverityFlagBitsEXT				messageSeverity,
+typedef VKAPI_ATTR VkBool32	(VKAPI_CALL *PFN_vkDebugUtilsMessengerCallbackEXT)	(VkDebugUtilsMessageSeverityFlagBitsEXT				messageSeverity,
 																				 VkDebugUtilsMessageTypeFlagsEXT					messageTypes,
 																				 const struct VkDebugUtilsMessengerCallbackDataEXT*	pCallbackData,
 																				 void*												pUserData);
@@ -204,37 +204,15 @@ typedef VKAPI_ATTR VkBool32 (VKAPI_CALL *PFN_vkDebugUtilsMessengerCallbackEXT)	(
 typedef VKAPI_ATTR void		(VKAPI_CALL* PFN_vkDeviceMemoryReportCallbackEXT)	(const struct VkDeviceMemoryReportCallbackDataEXT*	pCallbackData,
 																				 void*												pUserData);
 
+
 #ifdef CTS_USES_VULKANSC
 struct VkFaultData;
 typedef VKAPI_ATTR void		(VKAPI_CALL *PFN_vkFaultCallbackFunction)			(VkBool32											incompleteFaultData,
 																				 deUint32											faultCount,
-																				 VkFaultData*										pFaultData);
+																				 const VkFaultData*									pFaultData);
 #endif // CTS_USES_VULKANSC
 
 #include "vkStructTypes.inl"
-
-#ifdef CTS_USES_VULKANSC
-
-// substitute required enums and structs removed from VulkanSC specification
-
-enum VkShaderModuleCreateFlagBits
-{
-	VK_SHADER_MODULE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF,
-};
-typedef deUint32 VkShaderModuleCreateFlags;
-
-#define VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO VkStructureType(16)
-
-struct VkShaderModuleCreateInfo
-{
-	VkStructureType				sType;
-	const void*					pNext;
-	VkShaderModuleCreateFlags	flags;
-	deUintptr					codeSize;
-	const deUint32*				pCode;
-};
-
-#endif // CTS_USES_VULKANSC
 
 typedef void* VkRemoteAddressNV;
 

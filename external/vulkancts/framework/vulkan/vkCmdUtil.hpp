@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
+#include "vkRef.hpp"
 #include "tcuVector.hpp"
 
 namespace vk
@@ -158,6 +159,18 @@ void submitCommandsAndWait	(const DeviceInterface&			vk,
 							 const deUint32					waitSemaphoreCount = 0u,
 							 const VkSemaphore*				waitSemaphores = nullptr,
 							 const VkPipelineStageFlags*	waitStages = nullptr);
+
+vk::Move<VkFence> submitCommands (const DeviceInterface&		vk,
+								  const VkDevice				device,
+								  const VkQueue					queue,
+								  const VkCommandBuffer			commandBuffer,
+								  const bool					useDeviceGroups = false,
+								  const deUint32				deviceMask = 1u,
+								  const deUint32				waitSemaphoreCount = 0u,
+								  const VkSemaphore*			waitSemaphores = nullptr,
+								  const VkPipelineStageFlags*	waitStages = nullptr);
+
+void waitForFence (const DeviceInterface& vk, const VkDevice device, const VkFence fence, uint64_t timeoutNanos = (~0ull));
 
 } // vk
 

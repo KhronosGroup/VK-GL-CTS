@@ -112,7 +112,7 @@ void TransferQueueCase::checkSupport (Context& context) const
 	if (result != VK_SUCCESS)
 	{
 		if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
-			TCU_THROW(NotSupportedError, "Error: format " + de::toString(m_params.imageFormat) + " does not support the required features");
+			TCU_THROW(NotSupportedError, "format " + de::toString(m_params.imageFormat) + " does not support the required features");
 		else
 			TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties returned unexpected error");
 	}
@@ -197,6 +197,7 @@ tcu::TestStatus TransferQueueInstance::iterate (void)
 		fillRandomNoNaN(&randomGen, generatedData.data(), (deUint32)generatedData.size(), m_params.imageFormat);
 		const Allocation& alloc = srcBuffer.getAllocation();
 		deMemcpy(alloc.getHostPtr(), generatedData.data(), generatedData.size());
+		flushAlloc(vk, device, alloc);
 	}
 
 	beginCommandBuffer(vk, *m_cmdBuffer);
@@ -257,6 +258,7 @@ tcu::TestStatus TransferQueueInstance::iterate (void)
 	{
 		std::vector<deUint8> resultData(pixelDataSize);
 		const Allocation& alloc = dstBuffer.getAllocation();
+		invalidateAlloc(vk, device, alloc);
 		deMemcpy(resultData.data(), alloc.getHostPtr(), resultData.size());
 
 		for (uint32_t i = 0; i < pixelDataSize; ++i) {

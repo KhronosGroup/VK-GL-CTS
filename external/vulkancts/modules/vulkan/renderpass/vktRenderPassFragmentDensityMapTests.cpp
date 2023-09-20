@@ -94,6 +94,7 @@ struct TestParams
 	bool					useMaintenance5;
 	deUint32				samplersCount;
 	deUint32				viewCount;
+	bool					multiViewport;
 	bool					makeCopy;
 	float					renderMultiplier;
 	VkSampleCountFlagBits	colorSamples;
@@ -900,8 +901,8 @@ Move<VkPipeline> buildGraphicsPipeline(const DeviceInterface&						vk,
 										const VkShaderModule						vertexShaderModule,
 										const VkShaderModule						fragmentShaderModule,
 										const VkRenderPass							renderPass,
-										const VkViewport&							viewport,
-										const VkRect2D&								scissor,
+										const std::vector<VkViewport>&				viewportVect,
+										const std::vector<VkRect2D>&				scissorVect,
 										const deUint32								subpass,
 										const VkPipelineMultisampleStateCreateInfo*	multisampleStateCreateInfo,
 										const void*									pNext,
@@ -960,10 +961,10 @@ Move<VkPipeline> buildGraphicsPipeline(const DeviceInterface&						vk,
 		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType							sType
 		DE_NULL,														// const void*								pNext
 		(VkPipelineViewportStateCreateFlags)0,							// VkPipelineViewportStateCreateFlags		flags
-		1u,																// deUint32									viewportCount
-		&viewport,														// const VkViewport*						pViewports
-		1u,																// deUint32									scissorCount
-		&scissor														// const VkRect2D*							pScissors
+		(deUint32)viewportVect.size(),									// deUint32									viewportCount
+		viewportVect.data(),											// const VkViewport*						pViewports
+		(deUint32)scissorVect.size(),									// deUint32									scissorCount
+		scissorVect.data()												// const VkRect2D*							pScissors
 	};
 
 	const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfoDefault
@@ -1229,21 +1230,38 @@ FragmentDensityMapTest::FragmentDensityMapTest (tcu::TestContext&	testContext,
 
 void FragmentDensityMapTest::initPrograms(SourceCollections& sourceCollections) const
 {
-	sourceCollections.glslSources.add("vert") << glu::VertexSource(
+	const std::string vertSourceTemplate(
 		"#version 450\n"
 		"#extension GL_EXT_multiview : enable\n"
+		"${EXTENSIONS}"
 		"layout(location = 0) in  vec4 inPosition;\n"
 		"layout(location = 1) in  vec4 inUV;\n"
 		"layout(location = 2) in  vec4 inColor;\n"
 		"layout(location = 0) out vec4 outUV;\n"
 		"layout(location = 1) out vec4 outColor;\n"
+		"out gl_PerVertex\n"
+		"{\n"
+		"  vec4 gl_Position;\n"
+		"};\n"
 		"void main(void)\n"
 		"{\n"
 		"	gl_Position = inPosition;\n"
 		"	outUV = inUV;\n"
 		"	outColor = inColor;\n"
-		"}\n"
-	);
+		"	${OPERATION}"
+		"}\n");
+
+	std::map<std::string, std::string> parameters
+	{
+		{"EXTENSIONS", ""},
+		{"OPERATION", ""}
+	};
+	if (m_testParams.multiViewport)
+	{
+		parameters["EXTENSIONS"] = "#extension GL_ARB_shader_viewport_layer_array : enable\n";
+		parameters["OPERATION"] = "gl_ViewportIndex = gl_ViewIndex;\n";
+	}
+	sourceCollections.glslSources.add("vert") << glu::VertexSource(tcu::StringTemplate(vertSourceTemplate).specialize(parameters));
 
 	sourceCollections.glslSources.add("frag_produce_subsampled") << glu::FragmentSource(
 		"#version 450\n"
@@ -1319,7 +1337,7 @@ void FragmentDensityMapTest::initPrograms(SourceCollections& sourceCollections) 
 		"	fragColor /= float(${COUNT});\n"
 		"}\n";
 
-	std::map<std::string, std::string> parameters
+	parameters =
 	{
 		{ "SAMPLER",		"" },
 		{ "BINDING",		"" },
@@ -1426,6 +1444,13 @@ void FragmentDensityMapTest::checkSupport(Context& context) const
 			if (m_testParams.viewCount > fragmentDensityMap2Properties.maxSubsampledArrayLayers)
 				TCU_THROW(NotSupportedError, "Maximum number of VkImageView array layers for usages supporting subsampled samplers is to small");
 		}
+	}
+
+	if (m_testParams.multiViewport)
+	{
+		context.requireDeviceFunctionality("VK_EXT_shader_viewport_index_layer");
+		if (!context.getDeviceFeatures().multiViewport)
+			TCU_THROW(NotSupportedError, "multiViewport not supported");
 	}
 
 	if (!m_testParams.nonSubsampledImages && (m_testParams.samplersCount > 1))
@@ -1868,9 +1893,10 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 	const char* moduleName = (m_testParams.viewCount > 1) ? "frag_output_2darray" : "frag_output_2d";
 	m_fragmentShaderModuleOutputSubsampledImage = createShaderModule(vk, vkDevice, bc.get(moduleName), 0);
 
-	const VkRect2D dynamicDensityMapRenderArea	= makeRect2D(densityMapImageSize.width, densityMapImageSize.height);
-	const VkRect2D colorImageRenderArea			= makeRect2D(colorImageSize.width, colorImageSize.height);
-	const VkRect2D outputRenderArea				= makeRect2D(outputImageSize.width, outputImageSize.height);
+	const std::vector<VkRect2D>	dynamicDensityMapRenderArea	{ makeRect2D(densityMapImageSize.width, densityMapImageSize.height) };
+	const std::vector<VkRect2D>	outputRenderArea			{ makeRect2D(outputImageSize.width, outputImageSize.height) };
+	const VkRect2D				colorImageRect				= makeRect2D(colorImageSize.width, colorImageSize.height);
+	std::vector<VkRect2D>		colorImageRenderArea		((m_testParams.multiViewport ? m_testParams.viewCount : 1u), colorImageRect);
 
 	// Create pipelines
 	{
@@ -1887,9 +1913,32 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 			VK_FALSE													// VkBool32									alphaToOneEnable
 		};
 
-		const VkViewport	viewportsProduceDynamicDensityMap	= makeViewport(densityMapImageSize.width, densityMapImageSize.height);
-		const VkViewport	viewportsSubsampledImage			= makeViewport(colorImageSize.width, colorImageSize.height);
-		const VkViewport	viewportsOutputSubsampledImage		= makeViewport(outputImageSize.width, outputImageSize.height);
+		const std::vector<VkViewport>	viewportsProduceDynamicDensityMap	{ makeViewport(densityMapImageSize.width, densityMapImageSize.height) };
+		const std::vector<VkViewport>	viewportsOutputSubsampledImage		{ makeViewport(outputImageSize.width, outputImageSize.height) };
+		std::vector<VkViewport>			viewportsSubsampledImage			(colorImageRenderArea.size(), makeViewport(colorImageSize.width, colorImageSize.height));
+
+		// test multiview in conjunction with multiViewport which specifies a different viewport per view
+		if (m_testParams.multiViewport)
+		{
+			const deUint32 halfWidth	= colorImageSize.width / 2u;
+			const float halfWidthFloat	= static_cast<float>(halfWidth);
+			const float halfHeightFloat	= static_cast<float>(colorImageSize.height / 2u);
+			for (deUint32 viewIndex = 0; viewIndex < m_testParams.viewCount; ++viewIndex)
+			{
+				// modify scissors/viewport for every other view
+				bool isOdd = viewIndex % 2;
+
+				auto& rect			= colorImageRenderArea[viewIndex];
+				rect.extent.width	= halfWidth;
+				rect.offset.x		= isOdd * halfWidth;
+
+				auto& viewport		= viewportsSubsampledImage[viewIndex];
+				viewport.width		= halfWidthFloat;
+				viewport.height		= halfHeightFloat;
+				viewport.y			= !isOdd * halfHeightFloat;
+				viewport.x			= isOdd * halfWidthFloat;
+			}
+		}
 
 		std::vector<vk::VkPipelineRenderingCreateInfoKHR> renderingCreateInfo(3,
 		{
@@ -1917,8 +1966,8 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 															*m_vertexCommonShaderModule,					// const VkShaderModule								vertexShaderModule
 															*m_fragmentShaderModuleProduceSubsampledImage,	// const VkShaderModule								fragmentShaderModule
 															*m_renderPassProduceDynamicDensityMap,			// const VkRenderPass								renderPass
-															viewportsProduceDynamicDensityMap,				// const VkViewport									viewport
-															dynamicDensityMapRenderArea,					// const VkRect2D									scissor
+															viewportsProduceDynamicDensityMap,				// const std::vector<VkViewport>&					viewport
+															dynamicDensityMapRenderArea,					// const std::vector<VkRect2D>&						scissor
 															0u,												// const deUint32									subpass
 															DE_NULL,										// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
 															pNextForProduceDynamicDensityMap,				// const void*										pNext
@@ -1931,8 +1980,8 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 															*m_vertexCommonShaderModule,					// const VkShaderModule								vertexShaderModule
 															*m_fragmentShaderModuleProduceSubsampledImage,	// const VkShaderModule								fragmentShaderModule
 															*m_renderPassProduceSubsampledImage,			// const VkRenderPass								renderPass
-															viewportsSubsampledImage,						// const VkViewport									viewport
-															colorImageRenderArea,							// const VkRect2D									scissor
+															viewportsSubsampledImage,						// const std::vector<VkViewport>&					viewport
+															colorImageRenderArea,							// const std::vector<VkRect2D>&						scissor
 															0u,												// const deUint32									subpass
 															&multisampleStateCreateInfo,					// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
 															pNextForeProduceSubsampledImage,				// const void*										pNext
@@ -1946,8 +1995,8 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 															*m_vertexCommonShaderModule,					// const VkShaderModule								vertexShaderModule
 															*m_fragmentShaderModuleCopySubsampledImage,		// const VkShaderModule								fragmentShaderModule
 															*m_renderPassProduceSubsampledImage,			// const VkRenderPass								renderPass
-															viewportsSubsampledImage,						// const VkViewport									viewport
-															colorImageRenderArea,							// const VkRect2D									scissor
+															viewportsSubsampledImage,						// const std::vector<VkViewport>&					viewport
+															colorImageRenderArea,							// const std::vector<VkRect2D>&						scissor
 															1u,												// const deUint32									subpass
 															&multisampleStateCreateInfo,					// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
 															DE_NULL,										// const void*										pNext
@@ -1959,8 +2008,8 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 															*m_vertexCommonShaderModule,					// const VkShaderModule								vertexShaderModule
 															*m_fragmentShaderModuleUpdateSubsampledImage,	// const VkShaderModule								fragmentShaderModule
 															*m_renderPassUpdateSubsampledImage,				// const VkRenderPass								renderPass
-															viewportsSubsampledImage,						// const VkViewport									viewport
-															colorImageRenderArea,							// const VkRect2D									scissor
+															viewportsSubsampledImage,						// const std::vector<VkViewport>&					viewport
+															colorImageRenderArea,							// const std::vector<VkRect2D>&						scissor
 															0u,												// const deUint32									subpass
 															&multisampleStateCreateInfo,					// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
 															pNextForeUpdateSubsampledImage,					// const void*										pNext
@@ -1974,8 +2023,8 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 															*m_vertexCommonShaderModule,					// const VkShaderModule								vertexShaderModule
 															*m_fragmentShaderModuleOutputSubsampledImage,	// const VkShaderModule								fragmentShaderModule
 															*m_renderPassOutputSubsampledImage,				// const VkRenderPass								renderPass
-															viewportsOutputSubsampledImage,					// const VkViewport									viewport
-															outputRenderArea,								// const VkRect2D									scissor
+															viewportsOutputSubsampledImage,					// const std::vector<VkViewport>&					viewport
+															outputRenderArea,								// const std::vector<VkRect2D>&						scissor
 															0u,												// const deUint32									subpass
 															DE_NULL,										// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
 															pNextForOutputSubsampledImage,					// const void*										pNext
@@ -2000,9 +2049,9 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	if (isDynamicRendering)
-		createCommandBufferForDynamicRendering(dynamicDensityMapRenderArea, colorImageRenderArea, outputRenderArea, vkDevice);
+		createCommandBufferForDynamicRendering(dynamicDensityMapRenderArea[0], colorImageRect, outputRenderArea[0], vkDevice);
 	else
-		createCommandBufferForRenderpass(renderPassWrapper, colorImageSize, dynamicDensityMapRenderArea, colorImageRenderArea, outputRenderArea);
+		createCommandBufferForRenderpass(renderPassWrapper, colorImageSize, dynamicDensityMapRenderArea[0], colorImageRect, outputRenderArea[0]);
 }
 
 void FragmentDensityMapTestInstance::drawDynamicDensityMap(VkCommandBuffer cmdBuffer)
@@ -2628,7 +2677,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
 
 		// barrier that ensures writing to colour image has completed.
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                                          0, 0, DE_NULL, 0, DE_NULL, 1u, &subsampledImageBarrier);
+							  0, 0, DE_NULL, 0, DE_NULL, 1u, &subsampledImageBarrier);
 
 		// barrier that will change layout of output image
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_NONE_KHR, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -2686,7 +2735,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
 
 		// barrier that ensures writing to colour image has completed.
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                                          0, 0, DE_NULL, 0, DE_NULL, 1u, &subsampledImageBarrier);
+							  0, 0, DE_NULL, 0, DE_NULL, 1u, &subsampledImageBarrier);
 
 		// barrier that will change layout of output image
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_NONE_KHR, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -2746,6 +2795,7 @@ tcu::TestStatus FragmentDensityMapTestInstance::verifyImage (void)
 		<< tcu::TestLog::Image("Rendered", "Rendered output image", outputAccess)
 		<< tcu::TestLog::EndImageSet;
 
+	deInt32		noColorCount		= 0;
 	deUint32	estimatedColorCount	= m_testParams.viewCount * m_testParams.fragmentArea.x() * m_testParams.fragmentArea.y();
 	float		densityMult			= m_densityValue.x() * m_densityValue.y();
 
@@ -2757,6 +2807,13 @@ tcu::TestStatus FragmentDensityMapTestInstance::verifyImage (void)
 		{
 			tcu::Vec4	outputColor		= outputAccess.getPixel(x, y);
 			float		densityClamped	= outputColor.z() * outputColor.w();
+
+			// for multiviewport cases we check only pixels to which we render
+			if (m_testParams.multiViewport && outputColor.x() < 0.01f)
+			{
+				++noColorCount;
+				continue;
+			}
 
 			if ((densityClamped + 0.01) < densityMult)
 				return tcu::TestStatus::fail("Wrong value of FragSizeEXT variable");
@@ -2774,6 +2831,14 @@ tcu::TestStatus FragmentDensityMapTestInstance::verifyImage (void)
 		if (color.second > estimatedColorCount)
 			return tcu::TestStatus::fail("Wrong color count");
 	}
+
+	// For multiviewport cases ~75% of fragments should be black;
+	// The margin of 100 fragments is used to compensate cases where
+	// we can't fit all views in a same way to final 64x64 image
+	// (64 can't be evenly divide for 6 views)
+	deInt32 estimatedNoColorCount = m_renderSize.x() * m_renderSize.y() * 3 / 4;
+	if (m_testParams.multiViewport && std::abs(noColorCount - estimatedNoColorCount) > 100)
+		return tcu::TestStatus::fail("Wrong number of fragments with black color");
 
 	return tcu::TestStatus::pass("Pass");
 }
@@ -2874,6 +2939,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 							false,							// bool						useMaintenance5;
 							1,								// deUint32					samplersCount;
 							view.viewCount,					// deUint32					viewCount;
+							false,							// bool						multiViewport;
 							render.makeCopy,				// bool						makeCopy;
 							size.renderSizeToDensitySize,	// float					renderMultiplier;
 							sample.samples,					// VkSampleCountFlagBits	colorSamples;
@@ -2901,6 +2967,17 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 							params.deferredDensityMap	= false;
 							params.dynamicDensityMap	= true;
 							sampleGroup->addChild(new FragmentDensityMapTest(testCtx, std::string("dynamic_nonsubsampled") + str.str(), "", params));
+						}
+
+						// test multiviewport - each of views uses different viewport; limit number of cases to 2 samples
+						if ((groupParams->renderingType == RENDERING_TYPE_RENDERPASS2) && (!render.makeCopy) &&
+							(view.viewCount > 1) && (sample.samples == VK_SAMPLE_COUNT_2_BIT))
+						{
+							params.nonSubsampledImages	= false;
+							params.dynamicDensityMap	= false;
+							params.deferredDensityMap	= false;
+							params.multiViewport		= true;
+							sampleGroup->addChild(new FragmentDensityMapTest(testCtx, std::string("static_subsampled") + str.str() + "_multiviewport", "", params));
 						}
 					}
 					sizeGroup->addChild(sampleGroup.release());
@@ -2939,6 +3016,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 			false,							// bool						useMaintenance5;
 			sampler.count,					// deUint32					samplersCount;
 			1,								// deUint32					viewCount;
+			false,							// bool						multiViewport;
 			false,							// bool						makeCopy;
 			4.0f,							// float					renderMultiplier;
 			VK_SAMPLE_COUNT_1_BIT,			// VkSampleCountFlagBits	colorSamples;
@@ -2968,6 +3046,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 			true,							// bool						useMaintenance5;
 			1,								// deUint32					samplersCount;
 			1,								// deUint32					viewCount;
+			false,							// bool						multiViewport;
 			false,							// bool						makeCopy;
 			4.0f,							// float					renderMultiplier;
 			VK_SAMPLE_COUNT_1_BIT,			// VkSampleCountFlagBits	colorSamples;
@@ -3007,6 +3086,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 				false,									// bool						useMaintenance5;
 				1,										// deUint32					samplersCount;
 				1,										// deUint32					viewCount;
+				false,									// bool						multiViewport;
 				false,									// bool						makeCopy;
 				4.0f,									// float					renderMultiplier;
 				VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits	colorSamples;
@@ -3047,6 +3127,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 			false,							// bool						useMaintenance5;
 			1,								// deUint32					samplersCount;
 			2,								// deUint32					viewCount;
+			false,							// bool						multiViewport;
 			false,							// bool						makeCopy;
 			4.0f,							// float					renderMultiplier;
 			VK_SAMPLE_COUNT_1_BIT,			// VkSampleCountFlagBits	colorSamples;

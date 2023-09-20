@@ -1912,7 +1912,10 @@ bool isMultiplaneImageSupported (const InstanceInterface&	vki,
 	}
 
 	const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(vki, physicalDevice, info.format);
-	const VkFormatFeatureFlags	formatFeatures		= (info.tiling == VK_IMAGE_TILING_LINEAR ? formatProperties.linearTilingFeatures																						 : formatProperties.optimalTilingFeatures);
+	const VkFormatFeatureFlags	formatFeatures		= (info.tiling == VK_IMAGE_TILING_LINEAR ? formatProperties.linearTilingFeatures
+																							 : formatProperties.optimalTilingFeatures);
+	if ((info.flags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0 && (formatFeatures & VK_FORMAT_FEATURE_DISJOINT_BIT) == 0)
+		return false;
 
 	if (!doesUsageSatisfyFeatures(info.usage, formatFeatures))
 		return false;

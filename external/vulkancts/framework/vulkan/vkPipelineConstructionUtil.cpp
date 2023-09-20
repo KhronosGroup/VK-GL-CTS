@@ -270,6 +270,7 @@ struct GraphicsPipelineWrapper::InternalData
 	deBool												useDefaultDepthStencilState;
 	deBool												useDefaultColorBlendState;
 	deBool												useDefaultMultisampleState;
+	deBool												useDefaultVertexInputState;
 	bool												failOnCompileWhenLinking;
 
 	VkGraphicsPipelineCreateInfo						monolithicPipelineCreateInfo;
@@ -332,6 +333,7 @@ struct GraphicsPipelineWrapper::InternalData
 		, useDefaultDepthStencilState	(DE_FALSE)
 		, useDefaultColorBlendState		(DE_FALSE)
 		, useDefaultMultisampleState	(DE_FALSE)
+		, useDefaultVertexInputState	(DE_TRUE)
 		, failOnCompileWhenLinking		(false)
 	{
 		monolithicPipelineCreateInfo = initVulkanStructure();
@@ -612,6 +614,16 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDefaultMultisampleState()
 	return *this;
 }
 
+GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDefaultVertexInputState(const deBool useDefaultVertexInputState)
+{
+	// Make sure vertex input state was not setup yet.
+	DE_ASSERT(m_internalData && (m_internalData->setupState == PSS_NONE));
+
+	m_internalData->useDefaultVertexInputState = useDefaultVertexInputState;
+
+	return *this;
+}
+
 GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDefaultViewportsCount(deUint32 viewportCount)
 {
 	// ViewportState is used in pre-rasterization shader state, make sure pre-rasterization state was not setup yet
@@ -662,12 +674,12 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setRenderingColorAttachmentsIn
 }
 #endif
 
-GraphicsPipelineWrapper& GraphicsPipelineWrapper::disableViewportState()
+GraphicsPipelineWrapper& GraphicsPipelineWrapper::disableViewportState(const bool disable)
 {
 	// ViewportState is used in pre-rasterization shader state, make sure pre-rasterization state was not setup yet
 	DE_ASSERT(m_internalData && (m_internalData->setupState < PSS_PRE_RASTERIZATION_SHADERS));
 
-	m_internalData->useViewportState = DE_FALSE;
+	m_internalData->useViewportState = !disable;
 
 	return *this;
 }
@@ -675,7 +687,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::disableViewportState()
 GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupVertexInputState(const VkPipelineVertexInputStateCreateInfo*		vertexInputState,
 																		const VkPipelineInputAssemblyStateCreateInfo*	inputAssemblyState,
 																		const VkPipelineCache							partPipelineCache,
-																		PipelineCreationFeedbackCreateInfoWrapper		partCreationFeedback)
+																		PipelineCreationFeedbackCreateInfoWrapper		partCreationFeedback,
+																		const bool										useNullPtrs)
 {
 	// make sure pipeline was not already build
 	DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
@@ -689,8 +702,10 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupVertexInputState(const Vk
 
 	m_internalData->setupState = PSS_VERTEX_INPUT_INTERFACE;
 
-	const auto pVertexInputState = vertexInputState ? vertexInputState : &defaultVertexInputState;
-	const auto pInputAssemblyState = inputAssemblyState ? inputAssemblyState : &m_internalData->inputAssemblyState;
+	const auto pVertexInputState	= ((vertexInputState || useNullPtrs || !m_internalData->useDefaultVertexInputState)
+									? vertexInputState
+									: &defaultVertexInputState);
+	const auto pInputAssemblyState	= ((inputAssemblyState || useNullPtrs) ? inputAssemblyState : &m_internalData->inputAssemblyState);
 
 	if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
@@ -870,7 +885,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 
 	const auto pRasterizationState = rasterizationState ? rasterizationState
 														: (m_internalData->useDefaultRasterizationState ? &m_internalData->defaultRasterizationState : DE_NULL);
-	const auto pTessellationState	= (hasTesc || hasTese) ? &m_internalData->tessellationState : DE_NULL;
+	const bool forceNullTessState	= (m_internalData->tessellationState.patchControlPoints == std::numeric_limits<uint32_t>::max());
+	const auto pTessellationState	= ((hasTesc || hasTese) && !forceNullTessState) ? &m_internalData->tessellationState : nullptr;
 	const auto pViewportState		= m_internalData->useViewportState ? &m_internalData->viewportState : DE_NULL;
 
 	VkPipelineCreateFlags shaderModuleIdFlags = 0u;
@@ -1433,7 +1449,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineCache,
 											const VkPipeline							basePipelineHandle,
 											const deInt32								basePipelineIndex,
-											PipelineCreationFeedbackCreateInfoWrapper	creationFeedback)
+											PipelineCreationFeedbackCreateInfoWrapper	creationFeedback,
+											void*										pNext)
 {
 	// make sure we are not trying to build pipeline second time
 	DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
@@ -1444,6 +1461,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 
 	// Unreference variables that are not used in Vulkan SC. No need to put this in ifdef.
 	DE_UNREF(creationFeedback);
+	DE_UNREF(pNext);
 
 	VkGraphicsPipelineCreateInfo*	pointerToCreateInfo	= &m_internalData->monolithicPipelineCreateInfo;
 
@@ -1488,6 +1506,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 		void* firstStructInChain = static_cast<void*>(pointerToCreateInfo);
 		addToChain(&firstStructInChain, creationFeedback.ptr);
 		addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
+		addToChain(&firstStructInChain, pNext);
 	}
 
 	VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();

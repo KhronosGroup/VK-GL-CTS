@@ -321,6 +321,7 @@ TestCaseExecutor::TestCaseExecutor (tcu::TestContext& testCtx)
 
 	tcu::SessionInfo sessionInfo(m_deviceProperties.vendorID,
 								 m_deviceProperties.deviceID,
+								 m_deviceProperties.deviceName,
 								 testCtx.getCommandLine().getInitialCmdLine());
 	m_waiverMechanism.setup(testCtx.getCommandLine().getWaiverFileName(),
 							"dEQP-VK",
@@ -525,6 +526,55 @@ void TestCaseExecutor::deinit (tcu::TestCase* testCase)
 			suppressStandardOutput();
 			m_context->getTestContext().getLog().supressLogging(true);
 		}
+	}
+	else
+	{
+		bool faultFail = false;
+		std::lock_guard<std::mutex> lock(Context::m_faultDataMutex);
+
+		if (Context::m_faultData.size() != 0)
+		{
+			for (uint32_t i = 0; i < Context::m_faultData.size(); ++i)
+			{
+				m_context->getTestContext().getLog() << TestLog::Message << "Fault recorded via fault callback: " << Context::m_faultData[i] << TestLog::EndMessage;
+				if (Context::m_faultData[i].faultLevel != VK_FAULT_LEVEL_WARNING)
+					faultFail = true;
+			}
+			Context::m_faultData.clear();
+		}
+
+		const vk::DeviceInterface&				vkd						= m_context->getDeviceInterface();
+		VkBool32 unrecordedFaults = VK_FALSE;
+		uint32_t faultCount = 0;
+		VkResult result = vkd.getFaultData(m_context->getDevice(), VK_FAULT_QUERY_BEHAVIOR_GET_AND_CLEAR_ALL_FAULTS, &unrecordedFaults, &faultCount, DE_NULL);
+		if (result != VK_SUCCESS)
+		{
+			m_context->getTestContext().getLog() << TestLog::Message << "vkGetFaultData returned error: " << getResultName(result) << TestLog::EndMessage;
+			faultFail = true;
+		}
+		if (faultCount != 0)
+		{
+			std::vector<VkFaultData> faultData(faultCount);
+			for (uint32_t i = 0; i < faultCount; ++i)
+			{
+				faultData[i] = {};
+				faultData[i].sType = VK_STRUCTURE_TYPE_FAULT_DATA;
+			}
+			result = vkd.getFaultData(m_context->getDevice(), VK_FAULT_QUERY_BEHAVIOR_GET_AND_CLEAR_ALL_FAULTS, &unrecordedFaults, &faultCount, faultData.data());
+			if (result != VK_SUCCESS)
+			{
+				m_context->getTestContext().getLog() << TestLog::Message << "vkGetFaultData returned error: " << getResultName(result) << TestLog::EndMessage;
+				faultFail = true;
+			}
+			for (uint32_t i = 0; i < faultCount; ++i)
+			{
+				m_context->getTestContext().getLog() << TestLog::Message << "Fault recorded via vkGetFaultData: " << faultData[i] << TestLog::EndMessage;
+				if (Context::m_faultData[i].faultLevel != VK_FAULT_LEVEL_WARNING)
+					faultFail = true;
+			}
+		}
+		if (faultFail)
+			m_context->getTestContext().setTestResult(QP_TEST_RESULT_FAIL, "Fault occurred");
 	}
 #endif // CTS_USES_VULKANSC
 }

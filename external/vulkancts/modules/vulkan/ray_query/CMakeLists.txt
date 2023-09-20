@@ -28,6 +28,8 @@ set(DEQP_VK_RAY_QUERY_SRCS
 	vktRayQueryNonUniformArgsTests.hpp
 	vktRayQueryOpacityMicromapTests.cpp
 	vktRayQueryOpacityMicromapTests.hpp
+	vktRayQueryPositionFetchTests.cpp
+	vktRayQueryPositionFetchTests.hpp
 	)
 
 set(DEQP_VK_RAY_QUERY_LIBS

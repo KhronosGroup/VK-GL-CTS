@@ -666,7 +666,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup (void)
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			0u,													// VkPipelineLayoutCreateFlags	flags;
+			VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT,	// VkPipelineLayoutCreateFlags	flags;
 			0u,													// deUint32						setLayoutCount;
 			DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
 			0u,													// deUint32						pushConstantRangeCount;
@@ -680,7 +680,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup (void)
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			0u,													// VkPipelineLayoutCreateFlags	flags;
+			VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT,	// VkPipelineLayoutCreateFlags	flags;
 			1u,													// deUint32						setLayoutCount;
 			&m_descriptorSetLayout.get(),						// const VkDescriptorSetLayout*	pSetLayouts;
 			0u,													// deUint32						pushConstantRangeCount;
@@ -1173,7 +1173,7 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup (void)
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			0u,													// VkPipelineLayoutCreateFlags	flags;
+			VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT,	// VkPipelineLayoutCreateFlags	flags;
 			0u,													// deUint32						setLayoutCount;
 			DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
 			0u,													// deUint32						pushConstantRangeCount;
@@ -1187,7 +1187,7 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup (void)
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
 			DE_NULL,											// const void*					pNext;
-			0u,													// VkPipelineLayoutCreateFlags	flags;
+			VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT,	// VkPipelineLayoutCreateFlags	flags;
 			1u,													// deUint32						setLayoutCount;
 			&m_descriptorSetLayout.get(),						// const VkDescriptorSetLayout*	pSetLayouts;
 			0u,													// deUint32						pushConstantRangeCount;
@@ -1986,12 +1986,15 @@ void AttachmentFeedbackLoopLayoutSamplerTest::initPrograms (SourceCollections& s
 		fragmentSrc << "	read_data.x = ";
 		if (m_samplerLod > 0.0f)
 		{
-				DE_ASSERT(m_imageViewType.isNormalized());
-				fragmentSrc << "textureLod(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ", " << std::fixed <<  m_samplerLod << ").x";
+			DE_ASSERT(m_imageViewType.isNormalized());
+			fragmentSrc << "textureLod(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ", " << std::fixed <<  m_samplerLod << ").x";
 		}
 		else
 		{
+			if (m_imageViewType.isNormalized())
 				fragmentSrc << "texture(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ").x" << std::fixed;
+			else
+				fragmentSrc << "textureLod(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ", 0).x" << std::fixed;
 		}
 
 		fragmentSrc << " + 0.1f;\n";
@@ -2000,12 +2003,15 @@ void AttachmentFeedbackLoopLayoutSamplerTest::initPrograms (SourceCollections& s
 	{
 		if (m_samplerLod > 0.0f)
 		{
-				DE_ASSERT(m_imageViewType.isNormalized());
-				fragmentSrc << "vec4(textureLod(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ", " << std::fixed <<  m_samplerLod << ").x / 255.0f, 0.0f, 0.0f, 1.0f)";
+			DE_ASSERT(m_imageViewType.isNormalized());
+			fragmentSrc << "vec4(textureLod(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ", " << std::fixed <<  m_samplerLod << ").x / 255.0f, 0.0f, 0.0f, 1.0f)";
 		}
 		else
 		{
+			if (m_imageViewType.isNormalized())
 				fragmentSrc << "vec4(texture(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ").x / 255.0f, 0.0f, 0.0f, 1.0f)" << std::fixed;
+			else
+				fragmentSrc << "vec4(textureLod(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ", 0).x / 255.0f, 0.0f, 0.0f, 1.0f)" << std::fixed;
 		}
 
 		fragmentSrc << ";\n";
@@ -2014,12 +2020,15 @@ void AttachmentFeedbackLoopLayoutSamplerTest::initPrograms (SourceCollections& s
 	{
 		if (m_samplerLod > 0.0f)
 		{
-				DE_ASSERT(m_imageViewType.isNormalized());
-				fragmentSrc << "textureLod(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ", " << std::fixed <<  m_samplerLod << ")";
+			DE_ASSERT(m_imageViewType.isNormalized());
+			fragmentSrc << "textureLod(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ", " << std::fixed <<  m_samplerLod << ")";
 		}
 		else
 		{
+			if (m_imageViewType.isNormalized())
 				fragmentSrc << "texture(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ")" << std::fixed;
+			else
+				fragmentSrc << "textureLod(" << getGlslSampler(format, m_imageViewType, m_imageDescriptorType, 1u) << ", vtxTexCoords." << texCoordSwizzle << ", 0)" << std::fixed;
 		}
 
 		if (m_testMode >= TEST_MODE_READ_WRITE_SAME_PIXEL)

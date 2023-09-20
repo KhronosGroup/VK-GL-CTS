@@ -38,11 +38,6 @@
 #include "vkDefs.hpp"
 #include "vkCmdUtil.hpp"
 
-enum
-{
-	VERTEX_OFFSET = 13
-};
-
 namespace vkt
 {
 namespace Draw
@@ -50,12 +45,46 @@ namespace Draw
 namespace
 {
 
+enum
+{
+	VERTEX_OFFSET_DEFAULT	= 13,
+	VERTEX_OFFSET_MINUS_ONE	= -1,
+	VERTEX_OFFSET_NEGATIVE	= -13,
+};
+
+enum class IndexBindOffset
+{
+	DEFAULT		= 0,
+	POSITIVE	= 16,	// Must be aligned to the index data type size.
+};
+
+enum class MemoryBindOffset
+{
+	DEFAULT		= 0,
+	POSITIVE	= 16,	// Will be rounded up to the alignment requirement.
+};
+
 struct TestSpec2 : TestSpecBase
 {
+	const int32_t			vertexOffset;
+	const vk::VkDeviceSize	bindIndexBufferOffset;
+	const vk::VkDeviceSize	memoryBindOffset;
 	bool	useMaintenance5Ext;
-	TestSpec2	(const TestSpecBase& src, bool useMaintenance5Ext_)
-		: TestSpecBase		(src)
-		, useMaintenance5Ext(useMaintenance5Ext_) {}
+
+	TestSpec2 (const ShaderMap& shaders_,
+			  vk::VkPrimitiveTopology topology_,
+			  SharedGroupParams groupParams_,
+			  int32_t vertexOffset_,
+			  vk::VkDeviceSize bindIndexBufferOffset_,
+			  vk::VkDeviceSize memoryBindOffset_,
+			  bool useMaintenance5Ext_)
+		: TestSpecBase			{shaders_, topology_, groupParams_}
+		, vertexOffset			(vertexOffset_)
+		, bindIndexBufferOffset	(bindIndexBufferOffset_)
+		, memoryBindOffset		(memoryBindOffset_)
+		, useMaintenance5Ext(useMaintenance5Ext_)
+	{
+	}
 };
 
 class DrawIndexed : public DrawTestsBaseClass
@@ -88,27 +117,36 @@ DrawIndexed::DrawIndexed (Context &context, TestSpec testSpec)
 	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.groupParams, testSpec.topology)
 	, m_testSpec(testSpec)
 {
+	// When using a positive vertex offset, the strategy is:
+	// - Storing vertices with that offset in the vertex buffer.
+	// - Using indices normally as if they were stored at the start of the buffer.
+	//
+	// When using a negative vertex offset, the strategy is:
+	// - Store vertices at the start of the vertex buffer.
+	// - Increase indices by abs(offset) so when substracting it, it results in the regular positions.
+
+	const uint32_t indexOffset = (testSpec.vertexOffset < 0 ? static_cast<uint32_t>(-testSpec.vertexOffset) : 0u);
 	switch (m_topology)
 	{
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
-			m_indexes.push_back(0);
-			m_indexes.push_back(0);
-			m_indexes.push_back(2);
-			m_indexes.push_back(0);
-			m_indexes.push_back(6);
-			m_indexes.push_back(6);
-			m_indexes.push_back(0);
-			m_indexes.push_back(7);
+			m_indexes.push_back(0 + indexOffset);
+			m_indexes.push_back(0 + indexOffset);
+			m_indexes.push_back(2 + indexOffset);
+			m_indexes.push_back(0 + indexOffset);
+			m_indexes.push_back(6 + indexOffset);
+			m_indexes.push_back(6 + indexOffset);
+			m_indexes.push_back(0 + indexOffset);
+			m_indexes.push_back(7 + indexOffset);
 			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
-			m_indexes.push_back(0);
-			m_indexes.push_back(0);
-			m_indexes.push_back(2);
-			m_indexes.push_back(0);
-			m_indexes.push_back(6);
-			m_indexes.push_back(5);
-			m_indexes.push_back(0);
-			m_indexes.push_back(7);
+			m_indexes.push_back(0 + indexOffset);
+			m_indexes.push_back(0 + indexOffset);
+			m_indexes.push_back(2 + indexOffset);
+			m_indexes.push_back(0 + indexOffset);
+			m_indexes.push_back(6 + indexOffset);
+			m_indexes.push_back(5 + indexOffset);
+			m_indexes.push_back(0 + indexOffset);
+			m_indexes.push_back(7 + indexOffset);
 			break;
 
 		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
@@ -128,12 +166,13 @@ DrawIndexed::DrawIndexed (Context &context, TestSpec testSpec)
 			break;
 	}
 
-	for (int unusedIdx = 0; unusedIdx < VERTEX_OFFSET; unusedIdx++)
+	// This works for both positive and negative vertex offsets.
+	for (int unusedIdx = 0; unusedIdx < testSpec.vertexOffset; unusedIdx++)
 	{
 		m_data.push_back(VertexElementData(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), -1));
 	}
 
-	int vertexIndex = VERTEX_OFFSET;
+	int vertexIndex = (testSpec.vertexOffset >= 0 ? testSpec.vertexOffset : 0);
 
 	m_data.push_back(VertexElementData(tcu::Vec4(	-0.3f,	 0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec(), vertexIndex++));
 	m_data.push_back(VertexElementData(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec(), vertexIndex++));
@@ -168,20 +207,27 @@ void DrawIndexed::cmdBindIndexBufferImpl(vk::VkCommandBuffer	commandBuffer,
 
 tcu::TestStatus DrawIndexed::iterate (void)
 {
-	tcu::TestLog&		log		= m_context.getTestContext().getLog();
-	const vk::VkQueue	queue	= m_context.getUniversalQueue();
-	const vk::VkDevice	device	= m_context.getDevice();
+	tcu::TestLog&			log			= m_context.getTestContext().getLog();
+	const auto&				vki			= m_context.getInstanceInterface();
+	const auto				physDev		= m_context.getPhysicalDevice();
+	const vk::VkQueue		queue		= m_context.getUniversalQueue();
+	const vk::VkDevice		device		= m_context.getDevice();
+	const auto				memProps	= vk::getPhysicalDeviceMemoryProperties(vki, physDev);
+	const auto				atomSize	= m_context.getDeviceProperties().limits.nonCoherentAtomSize;
+	const vk::VkDeviceSize	bufferSize	= de::dataSize(m_indexes) + m_testSpec.bindIndexBufferOffset;
+	vk::SimpleAllocator		allocator	(m_vk, device, memProps, vk::SimpleAllocator::OptionalOffsetParams({ atomSize, m_testSpec.memoryBindOffset }));
 
-	const vk::VkDeviceSize dataSize = m_indexes.size() * sizeof(deUint32);
-	m_indexBuffer = Buffer::createAndAlloc(	m_vk, m_context.getDevice(),
-											BufferCreateInfo(dataSize,
+	m_indexBuffer = Buffer::createAndAlloc(	m_vk, device,
+											BufferCreateInfo(bufferSize,
 															 vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT),
-											m_context.getDefaultAllocator(),
+											allocator,
 											vk::MemoryRequirement::HostVisible);
 
-	deUint8* ptr = reinterpret_cast<deUint8*>(m_indexBuffer->getBoundMemory().getHostPtr());
-	deMemcpy(ptr, &m_indexes[0], static_cast<size_t>(dataSize));
-	vk::flushAlloc(m_vk, m_context.getDevice(), m_indexBuffer->getBoundMemory());
+	uint8_t* ptr = reinterpret_cast<uint8_t*>(m_indexBuffer->getBoundMemory().getHostPtr());
+
+	deMemset(ptr, 0xFF, static_cast<size_t>(m_testSpec.bindIndexBufferOffset));
+	deMemcpy(ptr + m_testSpec.bindIndexBufferOffset, de::dataOrNull(m_indexes), de::dataSize(m_indexes));
+	vk::flushAlloc(m_vk, device, m_indexBuffer->getBoundMemory());
 
 	const vk::VkDeviceSize	vertexBufferOffset	= 0;
 	const vk::VkBuffer		vertexBuffer		= m_vertexBuffer->object();
@@ -200,9 +246,9 @@ tcu::TestStatus DrawIndexed::iterate (void)
 			beginSecondaryCmdBuffer(m_vk);
 
 		m_vk.cmdBindVertexBuffers(*m_secCmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
-		cmdBindIndexBufferImpl(*m_secCmdBuffer, indexBuffer, 0, dataSize, vk::VK_INDEX_TYPE_UINT32);
+		cmdBindIndexBufferImpl(*m_secCmdBuffer, indexBuffer, m_testSpec.bindIndexBufferOffset, bufferSize, vk::VK_INDEX_TYPE_UINT32);
 		m_vk.cmdBindPipeline(*m_secCmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-		m_vk.cmdDrawIndexed(*m_secCmdBuffer, 6, 1, 2, VERTEX_OFFSET, 0);
+		m_vk.cmdDrawIndexed(*m_secCmdBuffer, 6, 1, 2, m_testSpec.vertexOffset, 0);
 
 		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 			endDynamicRender(*m_secCmdBuffer);
@@ -230,9 +276,9 @@ tcu::TestStatus DrawIndexed::iterate (void)
 		beginDynamicRender(*m_cmdBuffer);
 
 		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
-		cmdBindIndexBufferImpl(*m_cmdBuffer, indexBuffer, 0, dataSize, vk::VK_INDEX_TYPE_UINT32);
+		cmdBindIndexBufferImpl(*m_cmdBuffer, indexBuffer, m_testSpec.bindIndexBufferOffset, bufferSize, vk::VK_INDEX_TYPE_UINT32);
 		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-		m_vk.cmdDrawIndexed(*m_cmdBuffer, 6, 1, 2, VERTEX_OFFSET, 0);
+		m_vk.cmdDrawIndexed(*m_cmdBuffer, 6, 1, 2, m_testSpec.vertexOffset, 0);
 
 		endDynamicRender(*m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
@@ -246,9 +292,9 @@ tcu::TestStatus DrawIndexed::iterate (void)
 		beginLegacyRender(*m_cmdBuffer);
 
 		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
-		cmdBindIndexBufferImpl(*m_cmdBuffer, indexBuffer, 0, dataSize, vk::VK_INDEX_TYPE_UINT32);
+		cmdBindIndexBufferImpl(*m_cmdBuffer, indexBuffer, m_testSpec.bindIndexBufferOffset, bufferSize, vk::VK_INDEX_TYPE_UINT32);
 		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-		m_vk.cmdDrawIndexed(*m_cmdBuffer, 6, 1, 2, VERTEX_OFFSET, 0);
+		m_vk.cmdDrawIndexed(*m_cmdBuffer, 6, 1, 2, m_testSpec.vertexOffset, 0);
 
 		endLegacyRender(*m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
@@ -305,9 +351,15 @@ DrawInstancedIndexed::DrawInstancedIndexed (Context &context, TestSpec testSpec)
 
 tcu::TestStatus DrawInstancedIndexed::iterate (void)
 {
-	tcu::TestLog&		log		= m_context.getTestContext().getLog();
-	const vk::VkQueue	queue	= m_context.getUniversalQueue();
-	const vk::VkDevice	device	= m_context.getDevice();
+	tcu::TestLog&			log			= m_context.getTestContext().getLog();
+	const auto&				vki			= m_context.getInstanceInterface();
+	const auto				physDev		= m_context.getPhysicalDevice();
+	const vk::VkQueue		queue		= m_context.getUniversalQueue();
+	const vk::VkDevice		device		= m_context.getDevice();
+	const auto				memProps	= vk::getPhysicalDeviceMemoryProperties(vki, physDev);
+	const vk::VkDeviceSize	bufferSize	= de::dataSize(m_indexes) + m_testSpec.bindIndexBufferOffset;
+	const auto				atomSize	= m_context.getDeviceProperties().limits.nonCoherentAtomSize;
+	vk::SimpleAllocator		allocator	(m_vk, device, memProps, vk::SimpleAllocator::OptionalOffsetParams({ atomSize, m_testSpec.memoryBindOffset }));
 
 	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 	preRenderBarriers();
@@ -321,33 +373,33 @@ tcu::TestStatus DrawInstancedIndexed::iterate (void)
 	beginLegacyRender(*m_cmdBuffer);
 #endif // CTS_USES_VULKANSC
 
-	const vk::VkDeviceSize dataSize = m_indexes.size() * sizeof(deUint32);
-	m_indexBuffer = Buffer::createAndAlloc(	m_vk, m_context.getDevice(),
-											BufferCreateInfo(dataSize,
+	m_indexBuffer = Buffer::createAndAlloc(	m_vk, device,
+											BufferCreateInfo(bufferSize,
 															 vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT),
-											m_context.getDefaultAllocator(),
+											allocator,
 											vk::MemoryRequirement::HostVisible);
 
-	deUint8* ptr = reinterpret_cast<deUint8*>(m_indexBuffer->getBoundMemory().getHostPtr());
+	uint8_t* ptr = reinterpret_cast<uint8_t*>(m_indexBuffer->getBoundMemory().getHostPtr());
 
-	deMemcpy(ptr, &m_indexes[0], static_cast<size_t>(dataSize));
-	vk::flushAlloc(m_vk, m_context.getDevice(), m_indexBuffer->getBoundMemory());
+	deMemset(ptr, 0xFF, static_cast<size_t>(m_testSpec.bindIndexBufferOffset));
+	deMemcpy(ptr + m_testSpec.bindIndexBufferOffset, de::dataOrNull(m_indexes), de::dataSize(m_indexes));
+	vk::flushAlloc(m_vk, device, m_indexBuffer->getBoundMemory());
 
-	const vk::VkDeviceSize vertexBufferOffset = 0;
-	const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
-	const vk::VkBuffer indexBuffer = m_indexBuffer->object();
+	const vk::VkDeviceSize	vertexBufferOffset	= 0;
+	const vk::VkBuffer		vertexBuffer		= m_vertexBuffer->object();
+	const vk::VkBuffer		indexBuffer			= m_indexBuffer->object();
 
 	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
-	cmdBindIndexBufferImpl(*m_cmdBuffer, indexBuffer, 0, dataSize, vk::VK_INDEX_TYPE_UINT32);
+	cmdBindIndexBufferImpl(*m_cmdBuffer, indexBuffer, m_testSpec.bindIndexBufferOffset, bufferSize, vk::VK_INDEX_TYPE_UINT32);
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 
 	switch (m_topology)
 	{
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
-			m_vk.cmdDrawIndexed(*m_cmdBuffer, 6, 4, 2, VERTEX_OFFSET, 2);
+			m_vk.cmdDrawIndexed(*m_cmdBuffer, 6, 4, 2, m_testSpec.vertexOffset, 2);
 			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
-			m_vk.cmdDrawIndexed(*m_cmdBuffer, 4, 4, 2, VERTEX_OFFSET, 2);
+			m_vk.cmdDrawIndexed(*m_cmdBuffer, 4, 4, 2, m_testSpec.vertexOffset, 2);
 			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
 		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
@@ -445,6 +497,7 @@ DrawIndexedTests::DrawIndexedTests (tcu::TestContext &testCtx, const SharedGroup
 
 DrawIndexedTests::~DrawIndexedTests (void) {}
 
+
 void DrawIndexedTests::init	(void)
 {
 	init(false);
@@ -455,61 +508,114 @@ void DrawIndexedTests::init	(void)
 
 void DrawIndexedTests::init (bool useMaintenance5Ext)
 {
-	const std::string	nameSuffix("_maintenance_5");
-	const std::string	descSuffix(" using vkCmdBindIndexBuffer2KHR() introduced in VK_KHR_maintenance5");
-	{
-		DrawIndexed::TestSpec testSpec
-		{
-			{
-				{
-					{ glu::SHADERTYPE_VERTEX, "vulkan/draw/VertexFetch.vert" },
-					{ glu::SHADERTYPE_FRAGMENT, "vulkan/draw/VertexFetch.frag" }
-				},
-				vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-				m_groupParams
-			},
-			useMaintenance5Ext
-		};
-
-		addChild(new InstanceFactory<DrawIndexed, FunctionSupport1<DrawIndexed::TestSpec> >(
-			m_testCtx,
-			"draw_indexed_triangle_list" + (useMaintenance5Ext ? nameSuffix : std::string()),
-			"Draws indexed triangle list" + (useMaintenance5Ext ? descSuffix : std::string()),
-			testSpec, FunctionSupport1<DrawIndexed::TestSpec>::Args(checkSupport, testSpec)));
-
-		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-		addChild(new InstanceFactory<DrawIndexed, FunctionSupport1<DrawIndexed::TestSpec> >(
-			m_testCtx,
-			"draw_indexed_triangle_strip" + (useMaintenance5Ext ? nameSuffix : std::string()),
-			"Draws indexed triangle strip" + (useMaintenance5Ext ? descSuffix : std::string()),
-			testSpec, FunctionSupport1<DrawIndexed::TestSpec>::Args(checkSupport, testSpec)));
+	std::string	maintenance5ExtNameSuffix;
+	std::string	maintenance5ExtDescSuffix;
+	if(useMaintenance5Ext) {
+		maintenance5ExtNameSuffix = "_maintenance_5";
+		maintenance5ExtDescSuffix = " using vkCmdBindIndexBuffer2KHR() introduced in VK_KHR_maintenance5";
 	}
+
+	const struct {
+		const vk::VkPrimitiveTopology		topology;
+		const char*							nameSuffix;
+		const char*							descSuffix;
+	} TopologyCases[] =
 	{
-		DrawInstancedIndexed::TestSpec testSpec
+		{ vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	"triangle_list",	"triangle list" },
+		{ vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	"triangle_strip",	"triangle strip" },
+	};
+
+	const struct
+	{
+		const int		offset;
+		const char*		nameSuffix;
+		const char*		descSuffix;
+	} OffsetCases[] =
+	{
+		{ VERTEX_OFFSET_DEFAULT,	"",							""														},
+		{ VERTEX_OFFSET_MINUS_ONE,	"_offset_minus_one",		" using -1 as the vertex offset"						},
+		{ VERTEX_OFFSET_NEGATIVE,	"_offset_negative_large",	" using a large negative number as the vertex offset"	},
+	};
+
+	const struct
+	{
+		IndexBindOffset	bindOffset;
+		const char*		nameSuffix;
+		const char*		descSuffix;
+	} IndexBindOffsetCases[] =
+	{
+		{ IndexBindOffset::DEFAULT,		"",						""											},
+		{ IndexBindOffset::POSITIVE,	"_with_bind_offset",	" and applying an index buffer bind offset"	},
+	};
+
+	const struct
+	{
+		MemoryBindOffset	memoryBindOffset;
+		const char*			nameSuffix;
+		const char*			descSuffix;
+	} MemoryBindOffsetCases[] =
+	{
+		{ MemoryBindOffset::DEFAULT,	"",						""													},
+		{ MemoryBindOffset::POSITIVE,	"_with_alloc_offset",	" and applying an extra memory allocation offset"	},
+	};
+
+	for (const auto& offsetCase : OffsetCases)
+	{
+		for (const auto& indexBindOffsetCase : IndexBindOffsetCases)
 		{
+			const auto indexBindOffset = static_cast<vk::VkDeviceSize>(indexBindOffsetCase.bindOffset);
+
+			for (const auto& memoryBindOffsetCase : MemoryBindOffsetCases)
 			{
+				const auto memoryBindOffset = static_cast<vk::VkDeviceSize>(memoryBindOffsetCase.memoryBindOffset);
+
+				for (const auto& topologyCase : TopologyCases)
 				{
-					{ glu::SHADERTYPE_VERTEX, "vulkan/draw/VertexFetchInstancedFirstInstance.vert" },
-					{ glu::SHADERTYPE_FRAGMENT, "vulkan/draw/VertexFetch.frag" }
-				},
-				vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-				m_groupParams
-			},
-			useMaintenance5Ext
-		};
+					{
+						DrawIndexed::TestSpec testSpec
+						(
+							{
+								{ glu::SHADERTYPE_VERTEX, "vulkan/draw/VertexFetch.vert" },
+								{ glu::SHADERTYPE_FRAGMENT, "vulkan/draw/VertexFetch.frag" }
+							},
+							topologyCase.topology,
+							m_groupParams,
+							offsetCase.offset,
+							indexBindOffset,
+							memoryBindOffset,
+							useMaintenance5Ext
+						);
 
-		addChild(new InstanceFactory<DrawInstancedIndexed, FunctionSupport1<DrawInstancedIndexed::TestSpec> >(
-			m_testCtx,
-			"draw_instanced_indexed_triangle_list" + (useMaintenance5Ext ? nameSuffix : std::string()),
-			"Draws indexed triangle list" + (useMaintenance5Ext ? descSuffix : std::string()),
-			testSpec, FunctionSupport1<DrawInstancedIndexed::TestSpec>::Args(checkSupport, testSpec)));
+						const auto testName = std::string("draw_indexed_") + topologyCase.nameSuffix + offsetCase.nameSuffix + indexBindOffsetCase.nameSuffix + memoryBindOffsetCase.nameSuffix + maintenance5ExtNameSuffix;
+						const auto testDesc = std::string("Draws indexed ") + topologyCase.descSuffix + offsetCase.descSuffix + indexBindOffsetCase.descSuffix + memoryBindOffsetCase.descSuffix + maintenance5ExtDescSuffix;
 
-		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-		addChild(new InstanceFactory<DrawInstancedIndexed, FunctionSupport1<DrawInstancedIndexed::TestSpec> >(
-			m_testCtx,
-			"draw_instanced_indexed_triangle_strip" + (useMaintenance5Ext ? nameSuffix : std::string()),
-			"Draws indexed triangle strip" + (useMaintenance5Ext ? descSuffix : std::string()),
-			testSpec, FunctionSupport1<DrawInstancedIndexed::TestSpec>::Args(checkSupport, testSpec)));
+						addChild(new InstanceFactory<DrawIndexed, FunctionSupport1<DrawIndexed::TestSpec> >
+							(m_testCtx, testName, testDesc, testSpec, FunctionSupport1<DrawIndexed::TestSpec>::Args(checkSupport, testSpec)));
+					}
+					{
+						DrawInstancedIndexed::TestSpec testSpec
+						(
+							{
+								{ glu::SHADERTYPE_VERTEX, "vulkan/draw/VertexFetchInstancedFirstInstance.vert" },
+								{ glu::SHADERTYPE_FRAGMENT, "vulkan/draw/VertexFetch.frag" }
+							},
+							topologyCase.topology,
+							m_groupParams,
+							offsetCase.offset,
+							indexBindOffset,
+							memoryBindOffset,
+							useMaintenance5Ext
+						);
+
+						const auto testName = std::string("draw_instanced_indexed_") + topologyCase.nameSuffix + offsetCase.nameSuffix + indexBindOffsetCase.nameSuffix + memoryBindOffsetCase.nameSuffix + maintenance5ExtNameSuffix;
+						const auto testDesc = std::string("Draws instanced indexed ") + topologyCase.descSuffix + offsetCase.descSuffix + indexBindOffsetCase.descSuffix + memoryBindOffsetCase.descSuffix + maintenance5ExtDescSuffix;
+
+						addChild(new InstanceFactory<DrawInstancedIndexed, FunctionSupport1<DrawInstancedIndexed::TestSpec> >
+							(m_testCtx, testName, testDesc, testSpec, FunctionSupport1<DrawInstancedIndexed::TestSpec>::Args(checkSupport, testSpec)));
+					}
+				}
+			}
+		}
 	}
 }
 

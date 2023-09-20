@@ -648,21 +648,6 @@ void UnusedShaderStagesCase::checkSupport (Context &context) const
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 }
 
-VkPipelineShaderStageCreateInfo makePipelineShaderStageCreateInfo (VkShaderStageFlagBits stage, VkShaderModule module)
-{
-	const VkPipelineShaderStageCreateInfo stageInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	//	VkStructureType						sType;
-		nullptr,												//	const void*							pNext;
-		0u,														//	VkPipelineShaderStageCreateFlags	flags;
-		stage,													//	VkShaderStageFlagBits				stage;
-		module,													//	VkShaderModule						module;
-		"main",													//	const char*							pName;
-		nullptr,												//	const VkSpecializationInfo*			pSpecializationInfo;
-	};
-	return stageInfo;
-}
-
 tcu::TestStatus UnusedShaderStagesInstance::iterate ()
 {
 	const auto&			vkd				= m_context.getDeviceInterface();
@@ -1279,7 +1264,6 @@ void PipelineLibraryInterpolateAtSampleTestInstance::runTest(BufferWithMemory& i
 	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayout.get(), 0u, 1, &descriptorSetBuffer.get(), 0u, nullptr);
 
 	vkd.cmdBeginRendering(*commandBuffer, &render_info);
-	vkd.cmdSetPatchControlPointsEXT(commandBuffer.get(), 3);
 	vkd.cmdBindPipeline(commandBuffer.get(), vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline1.getPipeline());
 	vkd.cmdDraw(commandBuffer.get(), 6, 1, 0, 0);
 	vkd.cmdEndRendering(*commandBuffer);

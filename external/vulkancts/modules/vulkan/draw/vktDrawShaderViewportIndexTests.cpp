@@ -465,6 +465,7 @@ void initVertexTestPrograms (SourceCollections& programCollection, const TestPar
 			<< "}\n";
 
 		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+		programCollection.glslSources.add("vert_1_2") << glu::VertexSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_5, 0u, true);
 	}
 
 	// Fragment shader
@@ -504,6 +505,7 @@ void initFragmentTestPrograms (SourceCollections& programCollection, const TestP
 			<< "}\n";
 
 		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+		programCollection.glslSources.add("vert_1_2") << glu::VertexSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_5, 0u, true);
 	}
 
 	// Fragment shader
@@ -545,6 +547,7 @@ void initTessellationTestPrograms (SourceCollections& programCollection, const T
 			<< "}\n";
 
 		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+		programCollection.glslSources.add("vert_1_2") << glu::VertexSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_5, 0u, true);
 	}
 
 	// Tessellation control shader
@@ -598,6 +601,7 @@ void initTessellationTestPrograms (SourceCollections& programCollection, const T
 			<< "}\n";
 
 		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+		programCollection.glslSources.add("tese_1_2") << glu::TessellationEvaluationSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_5, 0u, true);
 	}
 
 	// Fragment shader
@@ -695,10 +699,10 @@ public:
 		if (shader == TESSELLATION)
 		{
 			m_tessellationControlModule		= createShaderModule	(vk, device, context.getBinaryCollection().get("tesc"), 0u);
-			m_tessellationEvaluationModule	= createShaderModule	(vk, device, context.getBinaryCollection().get("tese"), 0u);
+			m_tessellationEvaluationModule	= createShaderModule	(vk, device, context.getBinaryCollection().get(context.contextSupports(VK_API_VERSION_1_2) ? "tese_1_2" : "tese"), 0u);
 		}
 
-		m_vertexModule		= createShaderModule	(vk, device, context.getBinaryCollection().get("vert"), 0u);
+		m_vertexModule		= createShaderModule	(vk, device, context.getBinaryCollection().get(context.contextSupports(VK_API_VERSION_1_2) ? "vert_1_2" : "vert"), 0u);
 		m_fragmentModule	= createShaderModule	(vk, device, context.getBinaryCollection().get("frag"), 0u);
 
 		if (!m_groupParams->useDynamicRendering)

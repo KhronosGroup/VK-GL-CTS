@@ -794,8 +794,8 @@ void submitAtomicCalculationsAndGetSemaphoreNative (const Context&									conte
 
 	getSemaphoreNative(vk, device, semaphore, externalType, nativeHandle);
 
-	// Allow -1, that is valid if signalled properly.
-	if (nativeHandle.getFd() == -1)
+	// Allow -1, that is valid if signaled properly.
+	if (nativeHandle.hasValidFd() && nativeHandle.getFd() == -1)
 		TCU_CHECK(vk.getEventStatus(device, *event) == vk::VK_EVENT_SET);
 
 	VK_CHECK(vk.queueWaitIdle(queue));
@@ -929,8 +929,9 @@ void submitAtomicCalculationsAndGetFenceNative (const Context&								context,
 	VK_CHECK(vk.queueSubmit(queue, 1, &submit, fence));
 
 	getFenceNative(vk, device, fence, externalType, nativeHandle, expectFenceUnsignaled);
-	// Allow -1, that is valid if signalled properly.
-	if (nativeHandle.getFd() == -1)
+
+	// Allow -1, that is valid if signaled properly.
+	if (nativeHandle.hasValidFd() && nativeHandle.getFd() == -1)
 		TCU_CHECK(vk.getEventStatus(device, *event) == vk::VK_EVENT_SET);
 
 	VK_CHECK(vk.queueWaitIdle(queue));
@@ -1126,7 +1127,7 @@ tcu::TestStatus testSemaphoreImportTwice (Context&					context,
 		if (transference == TRANSFERENCE_COPY)
 		{
 			submitAtomicCalculationsAndGetSemaphoreNative(context, vkd, *device, alloc, queue, queueFamilyIndex, *semaphore, config.externalType, handleA);
-			if (handleA.getFd() == -1)
+			if (handleA.hasValidFd() && handleA.getFd() == -1)
 				return tcu::TestStatus::pass("Pass: got -1 as a file descriptor, which is valid with a handle type of copy transference");
 		}
 		else
@@ -1179,7 +1180,7 @@ tcu::TestStatus testSemaphoreImportReimport (Context&					context,
 		if (transference == TRANSFERENCE_COPY)
 		{
 			submitAtomicCalculationsAndGetSemaphoreNative(context, vkd, *device, alloc, queue, queueFamilyIndex, *semaphoreA, config.externalType, handleA);
-			if (handleA.getFd() == -1)
+			if (handleA.hasValidFd() && handleA.getFd() == -1)
 				return tcu::TestStatus::pass("Pass: got -1 as a file descriptor, which is valid with a handle type of copy transference");
 		}
 		else
@@ -1229,7 +1230,7 @@ tcu::TestStatus testSemaphoreSignalExportImportWait (Context&					context,
 			NativeHandle	handle;
 
 			submitAtomicCalculationsAndGetSemaphoreNative(context, vkd, *device, alloc, queue, queueFamilyIndex, *semaphoreA, config.externalType, handle);
-			if (transference == TRANSFERENCE_COPY && handle.getFd() == -1)
+			if (transference == TRANSFERENCE_COPY && handle.hasValidFd() && handle.getFd() == -1)
 				return tcu::TestStatus::pass("Pass: got -1 as a file descriptor, which is valid with a handle type of copy transference");
 
 			{
@@ -1345,7 +1346,7 @@ tcu::TestStatus testSemaphoreSignalImport (Context&						context,
 		if (transference == TRANSFERENCE_COPY)
 		{
 			submitAtomicCalculationsAndGetSemaphoreNative(context, vkd, *device, alloc, queue, queueFamilyIndex, *semaphoreA, config.externalType, handle);
-			if (handle.getFd() == -1)
+			if (handle.hasValidFd() && handle.getFd() == -1)
 				return tcu::TestStatus::pass("Pass: got -1 as a file descriptor, which is valid with a handle type of copy transference");
 		}
 		else
@@ -1464,7 +1465,7 @@ tcu::TestStatus testSemaphoreMultipleExports (Context&					context,
 			if (transference == TRANSFERENCE_COPY)
 			{
 				submitAtomicCalculationsAndGetSemaphoreNative(context, vkd, *device, alloc, queue, queueFamilyIndex, *semaphore, config.externalType, handle);
-				if (handle.getFd() == -1)
+				if (handle.hasValidFd() && handle.getFd() == -1)
 					return tcu::TestStatus::pass("Pass: got -1 as a file descriptor, which is valid with a handle type of copy transference");
 			}
 			else
@@ -1505,7 +1506,7 @@ tcu::TestStatus testSemaphoreMultipleImports (Context&					context,
 		if (transference == TRANSFERENCE_COPY)
 		{
 			submitAtomicCalculationsAndGetSemaphoreNative(context, vkd, *device, alloc, queue, queueFamilyIndex, *semaphoreA, config.externalType, handleA);
-			if (handleA.getFd() == -1)
+			if (handleA.hasValidFd() && handleA.getFd() == -1)
 				return tcu::TestStatus::pass("Pass: got -1 as a file descriptor, which is valid with a handle type of copy transference");
 		}
 		else
@@ -1559,7 +1560,7 @@ tcu::TestStatus testSemaphoreTransference (Context&						context,
 		NativeHandle						handle;
 
 		submitAtomicCalculationsAndGetSemaphoreNative(context, vkd, *device, alloc, queue, queueFamilyIndex, *semaphoreA, config.externalType, handle);
-		if (transference == TRANSFERENCE_COPY && handle.getFd() == -1)
+		if (transference == TRANSFERENCE_COPY && handle.hasValidFd() && handle.getFd() == -1)
 			return tcu::TestStatus::pass("Pass: got -1 as a file descriptor, which is valid with a handle type of copy transference");
 
 		{
@@ -2130,7 +2131,7 @@ tcu::TestStatus testFenceImportTwice (Context&				context,
 		if (transference == TRANSFERENCE_COPY)
 		{
 			submitAtomicCalculationsAndGetFenceNative(context, vkd, *device, alloc, queue, queueFamilyIndex, *fence, config.externalType, handleA);
-			if (handleA.getFd() == -1)
+			if (handleA.hasValidFd() && handleA.getFd() == -1)
 				return tcu::TestStatus::pass("Pass: got -1 as a file descriptor, which is valid with a handle type of copy transference");
 		}
 		else
@@ -2183,7 +2184,7 @@ tcu::TestStatus testFenceImportReimport (Context&				context,
 		if (transference == TRANSFERENCE_COPY)
 		{
 			submitAtomicCalculationsAndGetFenceNative(context, vkd, *device, alloc, queue, queueFamilyIndex, *fenceA, config.externalType, handleA);
-			if (handleA.getFd() == -1)
+			if (handleA.hasValidFd() && handleA.getFd() == -1)
 				return tcu::TestStatus::pass("Pass: got -1 as a file descriptor, which is valid with a handle type of copy transference");
 		}
 		else
@@ -2233,7 +2234,7 @@ tcu::TestStatus testFenceSignalExportImportWait (Context&				context,
 			NativeHandle	handle;
 
 			submitAtomicCalculationsAndGetFenceNative(context, vkd, *device, alloc, queue, queueFamilyIndex, *fenceA, config.externalType, handle);
-			if (handle.getFd() == -1)
+			if (handle.hasValidFd() && handle.getFd() == -1)
 				return tcu::TestStatus::pass("Pass: got -1 as a file descriptor, which is valid with a handle type of copy transference");
 
 			{
@@ -2374,7 +2375,7 @@ tcu::TestStatus testFenceSignalImport (Context&					context,
 		if (transference == TRANSFERENCE_COPY)
 		{
 			submitAtomicCalculationsAndGetFenceNative(context, vkd, *device, alloc, queue, queueFamilyIndex, *fenceA, config.externalType, handle);
-			if (handle.getFd() == -1)
+			if (handle.hasValidFd() && handle.getFd() == -1)
 				return tcu::TestStatus::pass("Pass: got -1 as a file descriptor, which is valid with a handle type of copy transference");
 		}
 		else
@@ -2426,7 +2427,7 @@ tcu::TestStatus testFenceReset (Context&				context,
 		VK_CHECK(vkd.queueWaitIdle(queue));
 
 		submitAtomicCalculationsAndGetFenceNative(context, vkd, *device, alloc, queue, queueFamilyIndex, *fenceA, config.externalType, handle);
-		if (handle.getFd() == -1)
+		if (handle.hasValidFd() && handle.getFd() == -1)
 			return tcu::TestStatus::pass("Pass: got -1 as a file descriptor, which is valid with a handle type of copy transference");
 
 		NativeHandle					handleB	(handle);
@@ -2536,7 +2537,7 @@ tcu::TestStatus testFenceMultipleExports (Context&				context,
 			if (transference == TRANSFERENCE_COPY)
 			{
 				submitAtomicCalculationsAndGetFenceNative(context, vkd, *device, alloc, queue, queueFamilyIndex, *fence, config.externalType, handle, exportNdx == 0 /* expect fence to be signaled after first pass */);
-				if (handle.getFd() == -1)
+				if (handle.hasValidFd() && handle.getFd() == -1)
 					return tcu::TestStatus::pass("Pass: got -1 as a file descriptor, which is valid with a handle type of copy transference");
 			}
 			else
@@ -2577,7 +2578,7 @@ tcu::TestStatus testFenceMultipleImports (Context&				context,
 		if (transference == TRANSFERENCE_COPY)
 		{
 			submitAtomicCalculationsAndGetFenceNative(context, vkd, *device, alloc, queue, queueFamilyIndex, *fenceA, config.externalType, handleA);
-			if (handleA.getFd() == -1)
+			if (handleA.hasValidFd() && handleA.getFd() == -1)
 				return tcu::TestStatus::pass("Pass: got -1 as a file descriptor, which is valid with a handle type of copy transference");
 		}
 		else
@@ -2631,7 +2632,7 @@ tcu::TestStatus testFenceTransference (Context&					context,
 		NativeHandle					handle;
 
 		submitAtomicCalculationsAndGetFenceNative(context, vkd, *device, alloc, queue, queueFamilyIndex, *fenceA, config.externalType, handle);
-		if (handle.getFd() == -1)
+		if (handle.hasValidFd() && handle.getFd() == -1)
 			return tcu::TestStatus::pass("Pass: got -1 as a file descriptor, which is valid with a handle type of copy transference");
 
 		{
@@ -4971,6 +4972,9 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx, vk
 			vk::VK_FORMAT_D32_SFLOAT_S8_UINT,
 			vk::VK_FORMAT_S8_UINT,
 			vk::VK_FORMAT_R8_UNORM,
+			vk::VK_FORMAT_R16_UINT,
+			vk::VK_FORMAT_R16G16_UINT,
+			vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
 		};
 		const size_t		numOfAhbFormats	= DE_LENGTH_OF_ARRAY(ahbFormats);
 

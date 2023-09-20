@@ -44,6 +44,9 @@
 #include "vkTypeUtil.hpp"
 #include "vkBarrierUtil.hpp"
 
+#include <numeric>
+#include <vector>
+
 namespace vkt
 {
 namespace Draw
@@ -56,15 +59,21 @@ enum
 	VERTEX_OFFSET = 13
 };
 
+enum
+{
+	//INDEX_BUFFER_ALLOCATION_OFFSET = static_cast<int>(sizeof(tcu::Vec4)),
+	INDEX_BUFFER_ALLOCATION_OFFSET = 0,
+};
+
 struct JunkData
 {
 	JunkData()
-		: varA	(0xcd)
-		, varB	(0xcd)
 	{
+		for (auto& val : junk)
+			val = 0xEFBEADDEu;
 	}
-	const deUint16	varA;
-	const deUint32	varB;
+
+	uint32_t junk[1024];
 };
 
 enum DrawType
@@ -93,6 +102,9 @@ struct DrawTypedTestSpec : public TestSpecBase
 		, testIndirectCountExt(IndirectCountType::NONE)
 		, dataFromCompute(false)
 		, useMemoryAccess(false)
+		, layerCount(1u)
+		, bindIndexBufferOffset(0ull)
+		, indexBufferAllocOffset(0ull)
 	{}
 
 	DrawType			drawType;
@@ -100,6 +112,9 @@ struct DrawTypedTestSpec : public TestSpecBase
 	IndirectCountType	testIndirectCountExt;
 	bool				dataFromCompute;
 	bool				useMemoryAccess;
+	uint32_t			layerCount;
+	vk::VkDeviceSize	bindIndexBufferOffset;
+	vk::VkDeviceSize	indexBufferAllocOffset;
 };
 
 class IndirectDraw : public DrawTestsBaseClass
@@ -140,6 +155,8 @@ protected:
 	deBool								m_useMemoryAccess;
 
 	de::SharedPtr<Buffer>				m_indexBuffer;
+	const vk::VkDeviceSize				m_bindIndexBufferOffset;
+	const vk::VkDeviceSize				m_indexBufferAllocOffset;
 
 	vk::Move<vk::VkDescriptorSetLayout>	m_descriptorSetLayout;
 	vk::Move<vk::VkDescriptorPool>		m_descriptorPool;
@@ -327,14 +344,21 @@ void IndirectDraw::negateDataUsingCompute(vk::VkDeviceSize indirectBufferSize, v
 }
 
 IndirectDraw::IndirectDraw (Context &context, TestSpec testSpec)
-	: DrawTestsBaseClass				(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.groupParams, testSpec.topology)
+	: DrawTestsBaseClass				(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.groupParams, testSpec.topology, testSpec.layerCount)
 	, m_testIndirectCountExt			(testSpec.testIndirectCountExt)
 	, m_indirectCountExtDrawPadding		(1u)
 	, m_drawType						(testSpec.drawType)
 	, m_testFirstInstanceNdx			(testSpec.testFirstInstanceNdx)
 	, m_dataFromComputeShader			(testSpec.dataFromCompute)
 	, m_useMemoryAccess					(testSpec.useMemoryAccess)
+	, m_bindIndexBufferOffset			(testSpec.bindIndexBufferOffset)
+	, m_indexBufferAllocOffset			(testSpec.indexBufferAllocOffset)
 {
+	const auto& vki		= m_context.getInstanceInterface();
+	const auto	physDev	= m_context.getPhysicalDevice();
+	const auto	device	= m_context.getDevice();
+	const auto&	devProp	= m_context.getDeviceProperties();
+
 	if (m_testFirstInstanceNdx)
 		setFirstInstanceVertexBuffer();
 	else
@@ -344,15 +368,27 @@ IndirectDraw::IndirectDraw (Context &context, TestSpec testSpec)
 
 	if (testSpec.drawType == DRAW_TYPE_INDEXED)
 	{
-		const size_t indexBufferLength = m_data.size() - VERTEX_OFFSET;
+		const auto indexCount = m_data.size() - VERTEX_OFFSET;
 
-		m_indexBuffer = Buffer::createAndAlloc(m_vk, m_context.getDevice(), BufferCreateInfo(sizeof(deUint32) * indexBufferLength, vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT), m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
-		deUint32* indices = reinterpret_cast<deUint32*>(m_indexBuffer->getBoundMemory().getHostPtr());
-		for (size_t i = 0; i < indexBufferLength; i++)
-		{
-			indices[i] = static_cast<deUint32>(i);
-		}
-		vk::flushAlloc(m_vk, m_context.getDevice(), m_indexBuffer->getBoundMemory());
+		std::vector<uint32_t> indexVec (indexCount);
+		std::iota(indexVec.begin(), indexVec.end(), 0u);
+
+		const auto bufferSize = de::dataSize(indexVec) + m_bindIndexBufferOffset;
+
+		const vk::SimpleAllocator::OptionalOffsetParams	offsetParams	({ devProp.limits.nonCoherentAtomSize, m_indexBufferAllocOffset });
+		vk::SimpleAllocator								allocator		(m_vk, device, vk::getPhysicalDeviceMemoryProperties(vki, physDev), offsetParams);
+
+		m_indexBuffer = Buffer::createAndAlloc(m_vk,
+											   device,
+											   BufferCreateInfo(bufferSize, vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT),
+											   allocator,
+											   vk::MemoryRequirement::HostVisible);
+
+		const auto bufferStart = reinterpret_cast<char*>(m_indexBuffer->getBoundMemory().getHostPtr());
+		deMemset(bufferStart, 0xFF, static_cast<size_t>(m_bindIndexBufferOffset));
+		deMemcpy(bufferStart + m_bindIndexBufferOffset, de::dataOrNull(indexVec), de::dataSize(indexVec));
+
+		vk::flushAlloc(m_vk, device, m_indexBuffer->getBoundMemory());
 	}
 
 	// Check device for multidraw support:
@@ -361,7 +397,7 @@ IndirectDraw::IndirectDraw (Context &context, TestSpec testSpec)
 	else
 		m_isMultiDrawEnabled = true;
 
-	m_drawIndirectMaxCount = m_context.getDeviceProperties().limits.maxDrawIndirectCount;
+	m_drawIndirectMaxCount = devProp.limits.maxDrawIndirectCount;
 }
 
 template<>
@@ -396,7 +432,7 @@ void IndirectDraw::draw (vk::VkCommandBuffer cmdBuffer)
 	m_vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 	m_vk.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 	if (m_drawType == DRAW_TYPE_INDEXED)
-		m_vk.cmdBindIndexBuffer(cmdBuffer, m_indexBuffer->object(), DE_NULL, vk::VK_INDEX_TYPE_UINT32);
+		m_vk.cmdBindIndexBuffer(cmdBuffer, m_indexBuffer->object(), m_bindIndexBufferOffset, vk::VK_INDEX_TYPE_UINT32);
 
 	if (m_isMultiDrawEnabled && m_drawCount <= m_drawIndirectMaxCount)
 	{
@@ -641,6 +677,7 @@ tcu::TestStatus IndirectDraw::iterate (void)
 	const vk::VkDeviceSize	dataSize			= m_indirectBufferContents.size();
 	const vk::VkDeviceSize	indirectBufferSize	= dataSize + m_offsetInBuffer;
 	vk::VkBufferUsageFlags	usageFlags			= vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+
 	if (m_dataFromComputeShader)
 		usageFlags |= vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
@@ -648,9 +685,10 @@ tcu::TestStatus IndirectDraw::iterate (void)
 												m_context.getDevice(),
 												BufferCreateInfo(indirectBufferSize, usageFlags),
 												m_context.getDefaultAllocator(),
-												vk::MemoryRequirement::HostVisible);
+												vk::MemoryRequirement::HostVisible,
+												static_cast<vk::VkDeviceSize>(INDEX_BUFFER_ALLOCATION_OFFSET));
 
-	deUint8* ptr = reinterpret_cast<deUint8*>(m_indirectBuffer->getBoundMemory().getHostPtr());
+	deUint8* ptr = reinterpret_cast<deUint8*>(m_indirectBuffer->getBoundMemory().getHostPtr()) + INDEX_BUFFER_ALLOCATION_OFFSET;
 
 	deMemcpy(ptr, &m_junkData, static_cast<size_t>(m_offsetInBuffer));
 	deMemcpy(ptr + m_offsetInBuffer, &m_indirectBufferContents[0], static_cast<size_t>(dataSize));
@@ -1004,9 +1042,10 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 		m_strideInBuffer = 2 * (deUint32)sizeof(vk::VkDrawIndexedIndirectCommand);
 	}
 
-	const vk::VkDeviceSize dataSize				= m_indirectBufferContents.size();
-	const vk::VkDeviceSize indirectBufferSize	= dataSize + m_offsetInBuffer;
+	const vk::VkDeviceSize	dataSize			= m_indirectBufferContents.size();
+	const vk::VkDeviceSize	indirectBufferSize	= dataSize + m_offsetInBuffer;
 	vk::VkBufferUsageFlags	usageFlags			= vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+
 	if (m_dataFromComputeShader)
 		usageFlags |= vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
@@ -1014,9 +1053,10 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 												m_context.getDevice(),
 												BufferCreateInfo(indirectBufferSize, usageFlags),
 												m_context.getDefaultAllocator(),
-												vk::MemoryRequirement::HostVisible);
+												vk::MemoryRequirement::HostVisible,
+												static_cast<vk::VkDeviceSize>(INDEX_BUFFER_ALLOCATION_OFFSET));
 
-	deUint8* ptr = reinterpret_cast<deUint8*>(m_indirectBuffer->getBoundMemory().getHostPtr());
+	deUint8* ptr = reinterpret_cast<deUint8*>(m_indirectBuffer->getBoundMemory().getHostPtr()) + INDEX_BUFFER_ALLOCATION_OFFSET;
 
 	deMemcpy(ptr, &m_junkData, static_cast<size_t>(m_offsetInBuffer));
 	deMemcpy((ptr + m_offsetInBuffer), &m_indirectBufferContents[0], static_cast<size_t>(dataSize));
@@ -1193,6 +1233,13 @@ void checkSupport(Context& context, IndirectDraw::TestSpec testSpec)
 
 	if (testSpec.groupParams->useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
+	if (testSpec.layerCount > 1u)
+	{
+		const auto& features = context.getMultiviewFeatures();
+		if (!features.multiview)
+			TCU_THROW(NotSupportedError, "multiview not supported");
+	}
 }
 
 }	// anonymous
@@ -1209,15 +1256,20 @@ IndirectDrawTests::~IndirectDrawTests (void) {}
 
 void IndirectDrawTests::init (void)
 {
-	struct ParamCombinations
-	{
-		bool dataFromCompute;
-		bool useMemoryAccess;
-	};
-
 	for (auto dataFromCompute : { false, true })
 	for (int drawTypeIdx = 0; drawTypeIdx < DRAWTYPE_LAST; drawTypeIdx++)
+	for (const auto bindIndexBufferOffset : { vk::VkDeviceSize{0}, static_cast<vk::VkDeviceSize>(sizeof(uint32_t) * 4u) })
+	for (const auto indexBufferAllocOffset : { vk::VkDeviceSize{0}, static_cast<vk::VkDeviceSize>(sizeof(tcu::Vec4)) })
 	{
+		const bool nonZeroBindIndexBufferOffset = (bindIndexBufferOffset > 0);
+		const bool nonZeroAllocOffset = (indexBufferAllocOffset > 0);
+
+		if (nonZeroBindIndexBufferOffset && drawTypeIdx != DRAW_TYPE_INDEXED)
+			continue;
+
+		if (nonZeroAllocOffset && drawTypeIdx != DRAW_TYPE_INDEXED)
+			continue;
+
 		// reduce number of tests for dynamic rendering cases where secondary command buffer is used
 		if (m_groupParams->useSecondaryCmdBuffer && (dataFromCompute == m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass))
 			continue;
@@ -1238,15 +1290,24 @@ void IndirectDrawTests::init (void)
 		if (dataFromCompute)
 			drawTypeStr += "_data_from_compute";
 
+		if (nonZeroBindIndexBufferOffset)
+			drawTypeStr += "_bind_offset_" + std::to_string(bindIndexBufferOffset);
+
+		if (nonZeroAllocOffset)
+			drawTypeStr += "_alloc_offset_" + std::to_string(indexBufferAllocOffset);
+
 		tcu::TestCaseGroup* drawTypeGroup = new tcu::TestCaseGroup(m_testCtx, drawTypeStr.c_str(), ("Draws geometry using " + drawTypeStr + "draw call").c_str());
 		{
 			tcu::TestCaseGroup* indirectDrawGroup			= new tcu::TestCaseGroup(m_testCtx, "indirect_draw", "Draws geometry");
 			tcu::TestCaseGroup* indirectDrawCountGroup		= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_count", "Draws geometry with VK_KHR_draw_indirect_count extension");
 			tcu::TestCaseGroup* indirectDrawParamCountGroup	= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_param_count", "Draws geometry with VK_KHR_draw_indirect_count extension and limit draws count with call parameter");
+			tcu::TestCaseGroup* indirectDrawMultiviewGroup	= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_multiview", "Draws geometry with indirect draws and multiview");
 			{
 				IndirectDraw::TestSpec testSpec(m_groupParams);
 				testSpec.drawType = static_cast<DrawType>(drawTypeIdx);
 				testSpec.dataFromCompute = dataFromCompute;
+				testSpec.bindIndexBufferOffset = bindIndexBufferOffset;
+				testSpec.indexBufferAllocOffset = indexBufferAllocOffset;
 				testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetch.vert";
 				testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
 				if (dataFromCompute)
@@ -1259,7 +1320,7 @@ void IndirectDrawTests::init (void)
 				indirectDrawGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
 					(m_testCtx, "triangle_strip", "Draws triangle strip", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
 
-				// test using V_ACCESSK_MEMORY_WRITE/READ_BIT - there is no need to repeat this case for different drawing options
+				// test using V_ACCESS_MEMORY_WRITE/READ_BIT - there is no need to repeat this case for different drawing options
 				if (dataFromCompute && drawTypeIdx && !m_groupParams->useDynamicRendering && !m_groupParams->useSecondaryCmdBuffer)
 				{
 					testSpec.useMemoryAccess = true;
@@ -1276,7 +1337,7 @@ void IndirectDrawTests::init (void)
 				indirectDrawCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
 					(m_testCtx, "triangle_strip", "Draws triangle strip", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
 
-				// test using V_ACCESSK_MEMORY_WRITE/READ_BIT - there is no need to repeat this case for different drawing options
+				// test using V_ACCESS_MEMORY_WRITE/READ_BIT - there is no need to repeat this case for different drawing options
 				if (dataFromCompute && drawTypeIdx && !m_groupParams->useDynamicRendering && !m_groupParams->useSecondaryCmdBuffer)
 				{
 					testSpec.useMemoryAccess = true;
@@ -1292,10 +1353,17 @@ void IndirectDrawTests::init (void)
 				testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 				indirectDrawParamCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
 					(m_testCtx, "triangle_strip", "Draws triangle strip", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
+
+				testSpec.testIndirectCountExt = IndirectCountType::BUFFER_LIMIT;
+				testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+				testSpec.layerCount = 2u;
+				indirectDrawMultiviewGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
+					(m_testCtx, "triangle_list", "Draws triangle list", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
 			}
 			drawTypeGroup->addChild(indirectDrawGroup);
 			drawTypeGroup->addChild(indirectDrawCountGroup);
 			drawTypeGroup->addChild(indirectDrawParamCountGroup);
+			drawTypeGroup->addChild(indirectDrawMultiviewGroup);
 
 			{
 				tcu::TestCaseGroup* indirectDrawFirstInstanceGroup				= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_first_instance", "Draws geometry with different first instance in one commandbuffer");
@@ -1306,6 +1374,8 @@ void IndirectDrawTests::init (void)
 					testSpec.testFirstInstanceNdx = true;
 					testSpec.drawType = static_cast<DrawType>(drawTypeIdx);
 					testSpec.dataFromCompute = dataFromCompute;
+					testSpec.bindIndexBufferOffset = bindIndexBufferOffset;
+					testSpec.indexBufferAllocOffset = indexBufferAllocOffset;
 					testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchInstanceIndex.vert";
 					testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
 					if (dataFromCompute)
@@ -1352,6 +1422,8 @@ void IndirectDrawTests::init (void)
 					IDFirstInstanceNotSupported::TestSpec testSpec(m_groupParams);
 					testSpec.drawType = static_cast<DrawType>(drawTypeIdx);
 					testSpec.dataFromCompute = dataFromCompute;
+					testSpec.bindIndexBufferOffset = bindIndexBufferOffset;
+					testSpec.indexBufferAllocOffset = indexBufferAllocOffset;
 
 					testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchInstanced.vert";
 					testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
@@ -1394,6 +1466,8 @@ void IndirectDrawTests::init (void)
 					IDFirstInstanceSupported::TestSpec testSpec(m_groupParams);
 					testSpec.drawType = static_cast<DrawType>(drawTypeIdx);
 					testSpec.dataFromCompute = dataFromCompute;
+					testSpec.bindIndexBufferOffset = bindIndexBufferOffset;
+					testSpec.indexBufferAllocOffset = indexBufferAllocOffset;
 
 					testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchInstancedFirstInstance.vert";
 					testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";

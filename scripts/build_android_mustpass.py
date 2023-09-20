@@ -353,7 +353,7 @@ MAIN_VULKANSC_PKG				= Package(module = VULKANSC_MODULE, configurations = [
 					  filters				= MAIN_VULKANSC_FILTERS,
 					  runtime				= "2h39m",
 					  runByDefault			= False,
-					  listOfGroupsToSplit	= ["dEQP-VKSC", "dEQP-VK.pipeline"]),
+					  listOfGroupsToSplit	= ["dEQP-VKSC", "dEQP-VKSC.pipeline"]),
 	])
 
 MUSTPASS_LISTS				= [

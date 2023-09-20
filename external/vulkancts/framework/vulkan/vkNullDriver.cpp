@@ -797,26 +797,25 @@ VKAPI_ATTR VkResult VKAPI_CALL createRayTracingPipelinesKHR (VkDevice device, Vk
 	}
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL createShadersEXT (VkDevice device, uint32_t createInfoCount, const VkShaderCreateInfoEXT* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkShaderEXT* pShaders)
+VKAPI_ATTR VkResult VKAPI_CALL createShadersEXT(VkDevice device, uint32_t createInfoCount, const VkShaderCreateInfoEXT* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkShaderEXT* pShaders)
 {
 	deUint32 allocNdx;
 	try
 	{
 		for (allocNdx = 0; allocNdx < createInfoCount; allocNdx++)
 			pShaders[allocNdx] = allocateNonDispHandle<ShaderEXT, VkShaderEXT>(device, pCreateInfos + allocNdx, pAllocator);
-
 		return VK_SUCCESS;
-	} catch (const std::bad_alloc&)
+	}
+	catch (const std::bad_alloc&)
 	{
 		for (deUint32 freeNdx = 0; freeNdx < allocNdx; freeNdx++)
 			freeNonDispHandle<ShaderEXT, VkShaderEXT>(pShaders[freeNdx], pAllocator);
-
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
-	} catch (VkResult err)
+	}
+	catch (VkResult err)
 	{
 		for (deUint32 freeNdx = 0; freeNdx < allocNdx; freeNdx++)
 			freeNonDispHandle<ShaderEXT, VkShaderEXT>(pShaders[freeNdx], pAllocator);
-
 		return err;
 	}
 }

@@ -1060,7 +1060,8 @@ tcu::TestCaseGroup* createMultisampleInterpolationTests (tcu::TestContext& testC
 			pipelineConstructionType,
 			vk::VK_SAMPLE_COUNT_1_BIT,
 			imageSize,
-			multisample::ComponentData{}
+			multisample::ComponentData{},
+			1.0f,
 		};
 		sizeGroup->addChild(multisample::MSCase<multisample::MSCaseInterpolateAtSampleSingleSample>::createCase(testCtx, "samples_" + de::toString(1), imageParams));
 

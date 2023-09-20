@@ -60,14 +60,41 @@ float		deFloat16To32		(deFloat16 val16);
  *//*--------------------------------------------------------------------*/
 double		deFloat16To64		(deFloat16 val16);
 
+DE_INLINE deUint16 deHalfExponent(deFloat16 x)
+{
+	return (deUint16)((x & 0x7c00u) >> 10);
+}
+
+DE_INLINE deUint16 deHalfMantissa(deFloat16 x)
+{
+	return (deUint16)(x & 0x03ffu);
+}
+
+DE_INLINE deUint16 deHalfHighestMantissaBit(deFloat16 x)
+{
+	return (deUint16)(x & (1u << 9));
+}
+
+DE_INLINE deUint16 deHalfSign(deFloat16 x)
+{
+	return (deUint16)(x >> 15);
+}
+
+static const deUint16 deHalfMaxExponent = 0x1f;
+
+DE_INLINE deBool deHalfIsZero(deFloat16 x)
+{
+	return deHalfExponent(x) == 0 && deHalfMantissa(x) == 0;
+}
+
 DE_INLINE deBool deHalfIsPositiveZero(deFloat16 x)
 {
-	return deFloat16To32(x) == 0 && (x >> 15) == 0;
+	return deHalfIsZero(x) && (deHalfSign(x) == 0);
 }
 
 DE_INLINE deBool deHalfIsNegativeZero(deFloat16 x)
 {
-	return deFloat16To32(x) == 0 && (x >> 15) != 0;
+	return deHalfIsZero(x) && (deHalfSign(x) != 0);
 }
 
 static const deFloat16 deFloat16SignalingNaN = 0x7c01;
@@ -75,19 +102,37 @@ static const deFloat16 deFloat16QuietNaN = 0x7e01;
 
 DE_INLINE deBool deHalfIsIEEENaN(deFloat16 x)
 {
-	deUint16 e = (deUint16)((x & 0x7c00u) >> 10);
-	deUint16 m = (x & 0x03ffu);
-	return e == 0x1f && m != 0;
+	return deHalfExponent(x) == deHalfMaxExponent && deHalfMantissa(x) != 0;
 }
 
 DE_INLINE deBool deHalfIsSignalingNaN(deFloat16 x)
 {
-	return deHalfIsIEEENaN(x) && (x & (1u << 9)) == 0;
+	return deHalfIsIEEENaN(x) && deHalfHighestMantissaBit(x) == 0;
 }
 
 DE_INLINE deBool deHalfIsQuietNaN(deFloat16 x)
 {
-	return deHalfIsIEEENaN(x) && (x & (1u << 9)) != 0;
+	return deHalfIsIEEENaN(x) && deHalfHighestMantissaBit(x) != 0;
+}
+
+DE_INLINE deBool deHalfIsInf(deFloat16 x)
+{
+	return deHalfExponent(x) == deHalfMaxExponent && deHalfMantissa(x) == 0;
+}
+
+DE_INLINE deBool deHalfIsPositiveInf(deFloat16 x)
+{
+	return deHalfIsInf(x) && (deHalfSign(x) == 0);
+}
+
+DE_INLINE deBool deHalfIsNegativeInf(deFloat16 x)
+{
+	return deHalfIsInf(x) && (deHalfSign(x) != 0);
+}
+
+DE_INLINE deBool deHalfIsDenormal(deFloat16 x)
+{
+	return deHalfExponent(x) == 0 && deHalfMantissa(x) != 0;
 }
 
 DE_END_EXTERN_C

@@ -84,6 +84,8 @@ struct TestParams
 	TestType							testType;
 	bool								useAABBs;
 	bool								useMaintenance5;
+	bool								useLinkTimeOptimizations;
+	bool								retainLinkTimeOptimizations;
 	deUint32							width;
 	deUint32							height;
 
@@ -293,6 +295,9 @@ void RayTracingPipelineLibraryTestCase::checkSupport(Context& context) const
 
 	if (m_data.testType != TestType::DEFAULT)
 		context.requireDeviceFunctionality("VK_EXT_pipeline_library_group_handles");
+
+	if (m_data.useLinkTimeOptimizations)
+		context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
 
 	if (m_data.useMaintenance5)
 		context.requireDeviceFunctionality("VK_KHR_maintenance5");
@@ -654,6 +659,14 @@ std::vector<uint32_t> RayTracingPipelineLibraryTestInstance::runTest (bool repla
 		if (m_data.includesCaptureReplay())
 			creationFlags |= VK_PIPELINE_CREATE_RAY_TRACING_SHADER_GROUP_HANDLE_CAPTURE_REPLAY_BIT_KHR;
 
+		if (m_data.useLinkTimeOptimizations)
+		{
+			if (m_data.retainLinkTimeOptimizations)
+				creationFlags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
+			else
+				creationFlags |= VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT;
+		}
+
 		rtPipeline->get()->setCreateFlags(creationFlags);
 		if (m_data.useMaintenance5)
 			rtPipeline->get()->setCreateFlags2(translateCreateFlag(creationFlags));
@@ -990,6 +1003,8 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group)
 						testTypeCase.testType,
 						geometryCase.useAABBs,
 						false,
+						false,
+						false,
 						RTPL_DEFAULT_SIZE,
 						RTPL_DEFAULT_SIZE
 					};
@@ -1005,7 +1020,7 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group)
 	{
 		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(group->getTestContext(), "misc", ""));
 
-		TestParams testParams
+		TestParams testParamsMaintenance5
 		{
 			libraryConfigurationData[1].libraryConfiguration,
 			false,
@@ -1013,10 +1028,42 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group)
 			TestType::CHECK_CAPTURE_REPLAY_HANDLES,
 			false,
 			true,
+			false,
+			true,
 			RTPL_DEFAULT_SIZE,
 			RTPL_DEFAULT_SIZE
 		};
-		miscGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), "maintenance5", "", testParams));
+		miscGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), "maintenance5", "", testParamsMaintenance5));
+
+		TestParams testParamsUseLinkTimeOpt
+		{
+			libraryConfigurationData[5].libraryConfiguration,
+			false,
+			false,
+			TestType::DEFAULT,
+			true,
+			true,
+			false,
+			false,
+			RTPL_DEFAULT_SIZE,
+			RTPL_DEFAULT_SIZE
+		};
+		miscGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), "use_link_time_optimizations", "", testParamsUseLinkTimeOpt));
+
+		TestParams testParamsRetainLinkTimeOpt
+		{
+			libraryConfigurationData[5].libraryConfiguration,
+			false,
+			false,
+			TestType::DEFAULT,
+			true,
+			true,
+			true,
+			false,
+			RTPL_DEFAULT_SIZE,
+			RTPL_DEFAULT_SIZE
+		};
+		miscGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), "retain_link_time_optimizations", "", testParamsRetainLinkTimeOpt));
 
 		group->addChild(miscGroup.release());
 	}

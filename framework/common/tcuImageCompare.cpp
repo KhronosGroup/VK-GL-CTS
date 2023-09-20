@@ -776,7 +776,10 @@ bool floatThresholdCompare (TestLog& log, const char* imageSetName, const char* 
 
 				maxDiff = max(maxDiff, diff);
 
-				errorMask.setPixel(isOk ? Vec4(0.0f, 1.0f, 0.0f, 1.0f) : Vec4(1.0f, 0.0f, 0.0f, 1.0f), x, y, z);
+				if (isOk)
+					errorMask.setPixel(Vec4(0.0f, 1.0f, 0.0f, 1.0f), x, y, z);
+				else
+					errorMask.setPixel(Vec4(1.0f, 0.0f, 0.0f, 1.0f), x, y, z);
 			}
 		}
 	}

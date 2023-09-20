@@ -58,5 +58,4 @@ add_library(deqp-vk-image STATIC ${DEQP_VK_IMAGE_SRCS})
 target_link_libraries(deqp-vk-image tcutil vkutil)
 
 add_library(deqp-vksc-image STATIC ${DEQP_VK_IMAGE_SRCS})
-target_include_directories(deqp-vksc-image BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-image PUBLIC deqp-vksc-util tcutil vkscutil)

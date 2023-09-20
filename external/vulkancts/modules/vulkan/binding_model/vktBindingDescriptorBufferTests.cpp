@@ -2526,6 +2526,8 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(
 
 	m_queueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
+	deUint32 graphicsComputeQueue	= VK_QUEUE_FAMILY_IGNORED;
+
 	for (deUint32 i = 0; i < queueProps.size(); ++i)
 	{
 		if (m_params.queue == VK_QUEUE_GRAPHICS_BIT)
@@ -2544,7 +2546,20 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(
 			{
 				m_queueFamilyIndex = i;
 			}
+			else if (((queueProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) &&
+					 ((queueProps[i].queueFlags & VK_QUEUE_COMPUTE_BIT) != 0))
+			{
+				graphicsComputeQueue = i;
+			}
 		}
+	}
+
+	// If a compute only queue could not be found, fall back to a
+	// graphics & compute one.
+	if (m_params.queue == VK_QUEUE_COMPUTE_BIT &&
+		m_queueFamilyIndex == VK_QUEUE_FAMILY_IGNORED)
+	{
+		m_queueFamilyIndex = graphicsComputeQueue;
 	}
 
 	if (m_queueFamilyIndex == VK_QUEUE_FAMILY_IGNORED)
@@ -2598,8 +2613,11 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(
 	else if (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR ||
 			 m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS)
 	{
-		extensions.push_back("VK_EXT_robustness2");
-		addToChainVulkanStructure(&nextPtr, robustness2Features);
+		if (context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+		{
+			extensions.push_back("VK_EXT_robustness2");
+			addToChainVulkanStructure(&nextPtr, robustness2Features);
+		}
 	}
 	else if (m_params.subcase == SubCase::CAPTURE_REPLAY_CUSTOM_BORDER_COLOR)
 	{

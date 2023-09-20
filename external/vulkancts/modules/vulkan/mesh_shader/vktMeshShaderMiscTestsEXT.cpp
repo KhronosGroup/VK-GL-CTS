@@ -3965,21 +3965,6 @@ void LocalSizeIdCase::initPrograms (vk::SourceCollections& programCollection) co
 	}
 }
 
-VkPipelineShaderStageCreateInfo makePipelineShaderStageCreateInfo (VkShaderStageFlagBits stage, VkShaderModule module, const VkSpecializationInfo* pSpecializationInfo = nullptr)
-{
-	const VkPipelineShaderStageCreateInfo stageInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	//	VkStructureType						sType;
-		nullptr,												//	const void*							pNext;
-		0u,														//	VkPipelineShaderStageCreateFlags	flags;
-		stage,													//	VkShaderStageFlagBits				stage;
-		module,													//	VkShaderModule						module;
-		"main",													//	const char*							pName;
-		pSpecializationInfo,									//	const VkSpecializationInfo*			pSpecializationInfo;
-	};
-	return stageInfo;
-}
-
 tcu::TestStatus LocalSizeIdInstance::iterate ()
 {
 	const auto&		vkd			= m_context.getDeviceInterface();

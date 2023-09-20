@@ -32,11 +32,17 @@ namespace vkt
 namespace Draw
 {
 
-DrawTestsBaseClass::DrawTestsBaseClass (Context& context, const char* vertexShaderName, const char* fragmentShaderName, const SharedGroupParams groupParams, vk::VkPrimitiveTopology topology)
+DrawTestsBaseClass::DrawTestsBaseClass (Context& context,
+										const char* vertexShaderName,
+										const char* fragmentShaderName,
+										const SharedGroupParams groupParams,
+										vk::VkPrimitiveTopology topology,
+										const uint32_t layers)
 	: TestInstance				(context)
 	, m_colorAttachmentFormat	(vk::VK_FORMAT_R8G8B8A8_UNORM)
 	, m_groupParams				(groupParams)
 	, m_topology				(topology)
+	, m_layers					(layers)
 	, m_vk						(context.getDeviceInterface())
 	, m_vertexShaderName		(vertexShaderName)
 	, m_fragmentShaderName		(fragmentShaderName)
@@ -47,17 +53,21 @@ void DrawTestsBaseClass::initialize (void)
 {
 	const vk::VkDevice device				= m_context.getDevice();
 	const deUint32 queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
+	const auto viewMask						= getDefaultViewMask();
+	const auto multiview					= (viewMask != 0u);
 
 	const PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
 	m_pipelineLayout						= vk::createPipelineLayout(m_vk, device, &pipelineLayoutCreateInfo);
 
 	const vk::VkExtent3D targetImageExtent	= { WIDTH, HEIGHT, 1 };
-	const ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, targetImageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT,
+	const ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, targetImageExtent, 1, m_layers, vk::VK_SAMPLE_COUNT_1_BIT,
 		vk::VK_IMAGE_TILING_OPTIMAL, vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 	m_colorTargetImage						= Image::createAndAlloc(m_vk, device, targetImageCreateInfo, m_context.getDefaultAllocator(), m_context.getUniversalQueueFamilyIndex());
 
-	const ImageViewCreateInfo colorTargetViewInfo(m_colorTargetImage->object(), vk::VK_IMAGE_VIEW_TYPE_2D, m_colorAttachmentFormat);
+	const ImageSubresourceRange colorSRR (vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_layers);
+	const auto imageViewType = (multiview ? vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY : vk::VK_IMAGE_VIEW_TYPE_2D);
+	const ImageViewCreateInfo colorTargetViewInfo(m_colorTargetImage->object(), imageViewType, m_colorAttachmentFormat, colorSRR);
 	m_colorTargetView						= vk::createImageView(m_vk, device, &colorTargetViewInfo);
 
 	// create renderpass and framebuffer only when we are not using dynamic rendering
@@ -89,6 +99,23 @@ void DrawTestsBaseClass::initialize (void)
 														   AttachmentReference(),
 														   0,
 														   DE_NULL));
+
+		const std::vector<uint32_t> viewMasks (1u, viewMask);
+
+		const vk::VkRenderPassMultiviewCreateInfo multiviewCreateInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO,	// VkStructureType	sType;
+			nullptr,													// const void*		pNext;
+			de::sizeU32(viewMasks),										// uint32_t		subpassCount;
+			de::dataOrNull(viewMasks),									// const uint32_t*	pViewMasks;
+			0u,															// uint32_t		dependencyCount;
+			nullptr,													// const int32_t*	pViewOffsets;
+			de::sizeU32(viewMasks),										// uint32_t		correlationMaskCount;
+			de::dataOrNull(viewMasks),									// const uint32_t*	pCorrelationMasks;
+		};
+
+		if (multiview)
+			renderPassCreateInfo.pNext = &multiviewCreateInfo;
 
 		m_renderPass = vk::createRenderPass(m_vk, device, &renderPassCreateInfo);
 
@@ -173,11 +200,13 @@ void DrawTestsBaseClass::initPipeline (const vk::VkDevice device)
 	pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
 
 #ifndef CTS_USES_VULKANSC
+	const auto viewMask = getDefaultViewMask();
+
 	vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
 		DE_NULL,
-		0u,
+		viewMask,
 		1u,
 		&m_colorAttachmentFormat,
 		vk::VK_FORMAT_UNDEFINED,
@@ -196,7 +225,7 @@ void DrawTestsBaseClass::preRenderBarriers(void)
 	const vk::VkClearValue clearColor { { { 0.0f, 0.0f, 0.0f, 1.0f } } };
 
 	initialTransitionColor2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
-		vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
+		vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, m_layers);
 
 	const ImageSubresourceRange subresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT);
 	m_vk.cmdClearColorImage(*m_cmdBuffer, m_colorTargetImage->object(),
@@ -235,7 +264,7 @@ void DrawTestsBaseClass::beginSecondaryCmdBuffer(const vk::DeviceInterface& vk, 
 		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,	// VkStructureType					sType;
 		DE_NULL,																// const void*						pNext;
 		renderingFlags,															// VkRenderingFlagsKHR				flags;
-		0u,																		// uint32_t							viewMask;
+		getDefaultViewMask(),													// uint32_t							viewMask;
 		1u,																		// uint32_t							colorAttachmentCount;
 		&m_colorAttachmentFormat,												// const VkFormat*					pColorAttachmentFormats;
 		vk::VK_FORMAT_UNDEFINED,												// VkFormat							depthAttachmentFormat;
@@ -264,7 +293,7 @@ void DrawTestsBaseClass::beginDynamicRender(vk::VkCommandBuffer cmdBuffer, const
 	const vk::VkClearValue	clearColor{ { { 0.0f, 0.0f, 0.0f, 1.0f } } };
 	const vk::VkRect2D		renderArea = vk::makeRect2D(WIDTH, HEIGHT);
 
-	vk::beginRendering(m_vk, cmdBuffer, *m_colorTargetView, renderArea, clearColor, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_LOAD, renderingFlags);
+	vk::beginRendering(m_vk, cmdBuffer, *m_colorTargetView, renderArea, clearColor, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_LOAD, renderingFlags, m_layers, getDefaultViewMask());
 }
 
 void DrawTestsBaseClass::endDynamicRender(vk::VkCommandBuffer cmdBuffer)
@@ -272,6 +301,13 @@ void DrawTestsBaseClass::endDynamicRender(vk::VkCommandBuffer cmdBuffer)
 	vk::endRendering(m_vk, cmdBuffer);
 }
 #endif // CTS_USES_VULKANSC
+
+uint32_t DrawTestsBaseClass::getDefaultViewMask (void) const
+{
+	const bool		multiview	= (m_layers > 1u);
+	const uint32_t	viewMask	= (multiview ? ((1u << m_layers) - 1u) : 0u);
+	return viewMask;
+}
 
 }	// Draw
 }	// vkt

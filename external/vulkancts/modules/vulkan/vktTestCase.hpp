@@ -36,6 +36,9 @@
 #include "vkPipelineConstructionUtil.hpp"
 #include <vector>
 #include <string>
+#ifdef CTS_USES_VULKANSC
+#include <mutex>
+#endif // CTS_USES_VULKANSC
 
 namespace glu
 {
@@ -157,6 +160,14 @@ public:
 																					 const vk::VkCommandPool	commandPool);
 	ContextCommonData getContextCommonData											();
 
+#ifdef CTS_USES_VULKANSC
+	static std::vector<VkFaultData>					m_faultData;
+	static std::mutex								m_faultDataMutex;
+	static VKAPI_ATTR void VKAPI_CALL				faultCallbackFunction(VkBool32 unrecordedFaults,
+																		  deUint32 faultCount,
+																		  const VkFaultData* pFaults);
+#endif // CTS_USES_VULKANSC
+
 protected:
 	tcu::TestContext&								m_testCtx;
 	const vk::PlatformInterface&					m_platformInterface;
@@ -221,6 +232,8 @@ inline TestCase::TestCase (tcu::TestContext& testCtx, tcu::TestNodeType type, co
 void collectAndReportDebugMessages(vk::DebugReportRecorder &debugReportRecorder, Context& context);
 
 #endif // CTS_USES_VULKANSC
+
+deUint32 findQueueFamilyIndexWithCaps(const vk::InstanceInterface& vkInstance, vk::VkPhysicalDevice physicalDevice, vk::VkQueueFlags requiredCaps, vk::VkQueueFlags excludedCaps = 0u);
 
 } // vkt
 

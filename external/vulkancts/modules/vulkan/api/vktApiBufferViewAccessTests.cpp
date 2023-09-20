@@ -210,11 +210,11 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 	// Create destination buffer
 	if (m_testCase.bufferAllocationKind == ALLOCATION_KIND_DEDICATED)
 	{
-		BufferDedicatedAllocation().createTestBuffer(m_pixelDataSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, m_context, memAlloc, m_resultBuffer, MemoryRequirement::HostVisible, m_resultBufferAlloc);
+		BufferDedicatedAllocation().createTestBuffer(vk, vkDevice, queueFamilyIndex, m_pixelDataSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, m_context, memAlloc, m_resultBuffer, MemoryRequirement::HostVisible, m_resultBufferAlloc);
 	}
 	else
 	{
-		BufferSuballocation().createTestBuffer(m_pixelDataSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, m_context, memAlloc, m_resultBuffer, MemoryRequirement::HostVisible, m_resultBufferAlloc);
+		BufferSuballocation().createTestBuffer(vk, vkDevice, queueFamilyIndex, m_pixelDataSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, m_context, memAlloc, m_resultBuffer, MemoryRequirement::HostVisible, m_resultBufferAlloc);
 	}
 
 	// Create color attachment view
@@ -292,7 +292,7 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 
 		const VkDeviceSize				uniformSize						= testCase.bufferSize * sizeof(deUint32);
 
-		BufferSuballocation().createTestBuffer(uniformSize, testCase.createUsage, m_context, memAlloc, m_uniformBuffer, MemoryRequirement::HostVisible, m_uniformBufferAlloc);
+		BufferSuballocation().createTestBuffer(vk, vkDevice, queueFamilyIndex, uniformSize, testCase.createUsage, m_context, memAlloc, m_uniformBuffer, MemoryRequirement::HostVisible, m_uniformBufferAlloc);
 		deMemcpy(m_uniformBufferAlloc->getHostPtr(), uniformData.data(), (size_t)uniformSize);
 		flushAlloc(vk, vkDevice, *m_uniformBufferAlloc);
 
@@ -406,7 +406,7 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 		createQuad();
 		const VkDeviceSize				vertexDataSize					= m_vertices.size() * sizeof(tcu::Vec4);
 
-		BufferSuballocation().createTestBuffer(vertexDataSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, m_context, memAlloc, m_vertexBuffer, MemoryRequirement::HostVisible, m_vertexBufferAlloc);
+		BufferSuballocation().createTestBuffer(vk, vkDevice, queueFamilyIndex, vertexDataSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, m_context, memAlloc, m_vertexBuffer, MemoryRequirement::HostVisible, m_vertexBufferAlloc);
 
 		// Load vertices into vertex buffer
 		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), (size_t)vertexDataSize);
@@ -671,7 +671,7 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance		(Context&			
 	checkTexelBufferSupport(context, m_bufferFormat, testCase);
 
 	// Create a result buffer
-	BufferSuballocation().createTestBuffer(sizeof(tcu::Vec4[4]), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, m_context, memAlloc, m_resultBuffer, MemoryRequirement::HostVisible, m_resultBufferAlloc);
+	BufferSuballocation().createTestBuffer(vk, vkDevice, queueFamilyIndex, sizeof(tcu::Vec4[4]), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, m_context, memAlloc, m_resultBuffer, MemoryRequirement::HostVisible, m_resultBufferAlloc);
 
 	// Create descriptors
 	{
@@ -714,7 +714,7 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance		(Context&			
 		m_sourceBuffer = sourceBuffer;
 		m_sourceView = tcu::ConstPixelBufferAccess(tcuFormat, tcu::IVec3(64, 1, 1), m_sourceBuffer.getPtr());
 
-		BufferSuballocation().createTestBuffer(sourceBuffer.size(), testCase.createUsage, m_context, memAlloc, m_uniformBuffer, MemoryRequirement::HostVisible, m_uniformBufferAlloc);
+		BufferSuballocation().createTestBuffer(vk, vkDevice, queueFamilyIndex, sourceBuffer.size(), testCase.createUsage, m_context, memAlloc, m_uniformBuffer, MemoryRequirement::HostVisible, m_uniformBufferAlloc);
 		deMemcpy(m_uniformBufferAlloc->getHostPtr(), sourceBuffer.getPtr(), sourceBuffer.size());
 		flushAlloc(vk, vkDevice, *m_uniformBufferAlloc);
 

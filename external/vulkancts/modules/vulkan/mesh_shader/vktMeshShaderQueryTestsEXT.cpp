@@ -589,8 +589,9 @@ void MeshQueryInstance::recordDraws (const VkCommandBuffer cmdBuffer, const VkPi
 
 		// Copy the array to a host-visible buffer.
 		// Note: We make sure all indirect buffers are allocated with a non-zero size by adding cmdSize to the expected size.
+		// Size of buffer must be greater than stride * (maxDrawCount - 1) + offset + sizeof(VkDrawMeshTasksIndirectCommandEXT) so we multiply by 2
 		const auto indirectBufferSize		= de::dataSize(indirectCommands);
-		const auto indirectBufferCreateInfo	= makeBufferCreateInfo(static_cast<VkDeviceSize>(indirectBufferSize + cmdSize), VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+		const auto indirectBufferCreateInfo	= makeBufferCreateInfo(static_cast<VkDeviceSize>((indirectBufferSize + cmdSize) * 2), VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
 
 		m_indirectBuffer			= BufferWithMemoryPtr(new BufferWithMemory(vkd, device, alloc, indirectBufferCreateInfo, MemoryRequirement::HostVisible));
 		auto& indirectBufferAlloc	= m_indirectBuffer->getAllocation();

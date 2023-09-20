@@ -24,6 +24,7 @@
 
 #include "vktApiFillBufferTests.hpp"
 #include "vktApiBufferAndImageAllocationUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
@@ -35,7 +36,9 @@
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 #include "tcuImageCompare.hpp"
+#include "tcuCommandLine.hpp"
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuVectorType.hpp"
@@ -65,8 +68,95 @@ struct TestParams
 	VkDeviceSize					size;
 	deUint32						testData[TEST_DATA_SIZE];
 	de::SharedPtr<IBufferAllocator>	bufferAllocator;
+	bool							useTransferOnlyQueue;
 };
 
+// Creates a device that has transfer only operations
+Move<VkDevice> createCustomDevice(Context& context, uint32_t& queueFamilyIndex)
+{
+	const InstanceInterface&	instanceDriver = context.getInstanceInterface();
+	const VkPhysicalDevice		physicalDevice = context.getPhysicalDevice();
+
+	queueFamilyIndex = findQueueFamilyIndexWithCaps(instanceDriver, physicalDevice, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+
+	const std::vector<VkQueueFamilyProperties>	queueFamilies = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+
+	// This must be found, findQueueFamilyIndexWithCaps would have
+	// thrown a NotSupported exception if the requested queue type did
+	// not exist. Similarly, this was written with the assumption the
+	// "alternative" queue would be different to the universal queue.
+	DE_ASSERT(queueFamilyIndex < queueFamilies.size() && queueFamilyIndex != context.getUniversalQueueFamilyIndex());
+	const float queuePriority = 1.0f;
+	const VkDeviceQueueCreateInfo deviceQueueCreateInfos
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,		// VkStructureType				sType;
+		nullptr,										// const void*					pNext;
+		(VkDeviceQueueCreateFlags)0u,					// VkDeviceQueueCreateFlags		flags;
+		queueFamilyIndex,								// uint32_t						queueFamilyIndex;
+		1u,												// uint32_t						queueCount;
+		&queuePriority,									// const float*					pQueuePriorities;
+	};
+
+	// Replicate default device extension list.
+	const auto	extensionNames				= context.getDeviceCreationExtensions();
+	auto		synchronization2Features	= context.getSynchronization2Features();
+	auto		deviceFeatures2				= context.getDeviceFeatures2();
+	const void*	pNext						= &deviceFeatures2;
+
+	if (context.isDeviceFunctionalitySupported("VK_KHR_synchronization2"))
+	{
+		synchronization2Features.pNext = &deviceFeatures2;
+		pNext = &synchronization2Features;
+	}
+
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext = pNext;
+	pNext = &memReservationInfo;
+
+	VkPipelineCacheCreateInfo			pcCI;
+	std::vector<VkPipelinePoolSize>		poolSizes;
+	if (context.getTestContext().getCommandLine().isSubProcess())
+	{
+		if (context.getResourceInterface()->getCacheDataSize() > 0)
+		{
+			pcCI =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,			// VkStructureType				sType;
+				DE_NULL,												// const void*					pNext;
+				VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+					VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,	// VkPipelineCacheCreateFlags	flags;
+				context.getResourceInterface()->getCacheDataSize(),	// deUintptr					initialDataSize;
+				context.getResourceInterface()->getCacheData()		// const void*					pInitialData;
+			};
+			memReservationInfo.pipelineCacheCreateInfoCount = 1;
+			memReservationInfo.pPipelineCacheCreateInfos = &pcCI;
+		}
+		poolSizes = context.getResourceInterface()->getPipelinePoolSizes();
+		if (!poolSizes.empty())
+		{
+			memReservationInfo.pipelinePoolSizeCount = deUint32(poolSizes.size());
+			memReservationInfo.pPipelinePoolSizes = poolSizes.data();
+		}
+	}
+#endif // CTS_USES_VULKANSC
+
+	const VkDeviceCreateInfo deviceCreateInfo
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,			// VkStructureType					sType;
+		pNext,											// const void*						pNext;
+		(VkDeviceCreateFlags)0u,						// VkDeviceCreateFlags				flags;
+		1u,												// uint32_t							queueCreateInfoCount;
+		&deviceQueueCreateInfos,						// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+		0u,												// uint32_t							enabledLayerCount;
+		DE_NULL,										// const char* const*				ppEnabledLayerNames;
+		static_cast<uint32_t>(extensionNames.size()),	// uint32_t							enabledExtensionCount;
+		extensionNames.data(),							// const char* const*				ppEnabledExtensionNames;
+		DE_NULL,										// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+	};
+
+	return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), instanceDriver, physicalDevice, &deviceCreateInfo);
+}
 
 class FillWholeBufferTestInstance : public vkt::TestInstance
 {
@@ -79,6 +169,13 @@ protected:
 	// size in vkCmdFillBuffer will always be VK_WHOLE_SIZE.
 	const TestParams		m_params;
 
+	Move<VkDevice>			m_customDevice;
+	de::MovePtr<Allocator>	m_customAllocator;
+
+	VkDevice				m_device;
+	Allocator*				m_allocator;
+	uint32_t				m_queueFamilyIndex;
+
 	Move<VkCommandPool>		m_cmdPool;
 	Move<VkCommandBuffer>	m_cmdBuffer;
 
@@ -89,21 +186,37 @@ protected:
 FillWholeBufferTestInstance::FillWholeBufferTestInstance(Context& context, const TestParams& testParams)
 	: vkt::TestInstance(context), m_params(testParams)
 {
-	const DeviceInterface&	vk					= context.getDeviceInterface();
-	const VkDevice			vkDevice			= context.getDevice();
-	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-	Allocator&				memAlloc			= context.getDefaultAllocator();
+	const InstanceInterface&	vki			= m_context.getInstanceInterface();
+	const DeviceInterface&		vk			= m_context.getDeviceInterface();
+	const VkPhysicalDevice		physDevice	= m_context.getPhysicalDevice();
 
-	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
-	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-	testParams.bufferAllocator->createTestBuffer(m_params.dstSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, context, memAlloc, m_destination, MemoryRequirement::HostVisible, m_destinationBufferAlloc);
+	if (testParams.useTransferOnlyQueue)
+	{
+		m_customDevice		= createCustomDevice(context, m_queueFamilyIndex);
+		m_customAllocator	= de::MovePtr<Allocator>(new SimpleAllocator(vk, *m_customDevice, getPhysicalDeviceMemoryProperties(vki, physDevice)));
+
+		m_device			= *m_customDevice;
+		m_allocator			= &(*m_customAllocator);
+	}
+	else
+	{
+		m_device			= context.getDevice();
+		m_allocator			= &context.getDefaultAllocator();
+		m_queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	}
+
+	m_cmdPool = createCommandPool(vk, m_device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, m_queueFamilyIndex);
+	m_cmdBuffer = allocateCommandBuffer(vk, m_device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	testParams.bufferAllocator->createTestBuffer(vk, m_device, m_queueFamilyIndex, m_params.dstSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, context, *m_allocator, m_destination, MemoryRequirement::HostVisible, m_destinationBufferAlloc);
 }
 
 tcu::TestStatus FillWholeBufferTestInstance::iterate(void)
 {
-	const DeviceInterface&		vk					= m_context.getDeviceInterface();
-	const VkDevice				vkDevice			= m_context.getDevice();
-	const VkQueue				queue				= m_context.getUniversalQueue();
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkQueue			queue	= getDeviceQueue(vk, m_device, m_queueFamilyIndex, 0);
+
+	// if posible use synchronization2 when testing transfer only queue
+	const bool useSynchronization2 = m_context.isDeviceFunctionalitySupported("VK_KHR_synchronization2") && m_params.useTransferOnlyQueue;
 
 	// Make sure some stuff below will work.
 	DE_ASSERT(m_params.dstSize >= sizeof(deUint32));
@@ -113,9 +226,9 @@ tcu::TestStatus FillWholeBufferTestInstance::iterate(void)
 	// Fill buffer from the host and flush buffer memory.
 	deUint8* bytes = reinterpret_cast<deUint8*>(m_destinationBufferAlloc->getHostPtr());
 	deMemset(bytes, 0xff, static_cast<size_t>(m_params.dstSize));
-	flushAlloc(vk, vkDevice, *m_destinationBufferAlloc);
+	flushAlloc(vk, m_device, *m_destinationBufferAlloc);
 
-	const VkBufferMemoryBarrier	gpuToHostBarrier	=
+	const VkBufferMemoryBarrier	gpuToHostBarrier
 	{
 		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType			sType;
 		DE_NULL,									// const void*				pNext;
@@ -128,15 +241,71 @@ tcu::TestStatus FillWholeBufferTestInstance::iterate(void)
 		VK_WHOLE_SIZE								// VkDeviceSize				size;
 	};
 
+#ifndef CTS_USES_VULKANSC
+	using BufferMemoryBarrier2		= VkBufferMemoryBarrier2;
+	using DependencyInfo			= VkDependencyInfo;
+	using CommandBufferSubmitInfo	= VkCommandBufferSubmitInfo;
+	using SubmitInfo2				= VkSubmitInfo2;
+	auto cmdPipelineBarrier2Fun		= &DeviceInterface::cmdPipelineBarrier2;
+	auto queueSubmit2Fun			= &DeviceInterface::queueSubmit2;
+#else
+	using BufferMemoryBarrier2		= VkBufferMemoryBarrier2KHR;
+	using DependencyInfo			= VkDependencyInfoKHR;
+	using CommandBufferSubmitInfo	= VkCommandBufferSubmitInfoKHR;
+	using SubmitInfo2				= VkSubmitInfo2KHR;
+	auto cmdPipelineBarrier2Fun		= &DeviceInterface::cmdPipelineBarrier2KHR;
+	auto queueSubmit2Fun			= &DeviceInterface::queueSubmit2KHR;
+#endif // CTS_USES_VULKANSC
+
+	BufferMemoryBarrier2 gpuToHostBarrier2	= initVulkanStructure();
+	gpuToHostBarrier2.srcStageMask			= VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR;
+	gpuToHostBarrier2.srcAccessMask			= VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR;
+	gpuToHostBarrier2.dstStageMask			= VK_PIPELINE_STAGE_2_HOST_BIT_KHR;
+	gpuToHostBarrier2.dstAccessMask			= VK_ACCESS_2_HOST_READ_BIT_KHR;
+	gpuToHostBarrier2.srcQueueFamilyIndex	= VK_QUEUE_FAMILY_IGNORED;
+	gpuToHostBarrier2.dstQueueFamilyIndex	= VK_QUEUE_FAMILY_IGNORED;
+	gpuToHostBarrier2.buffer				= *m_destination;
+	gpuToHostBarrier2.size					= VK_WHOLE_SIZE;
+
+	DependencyInfo depInfo = initVulkanStructure();
+	depInfo.bufferMemoryBarrierCount	= 1;
+	depInfo.pBufferMemoryBarriers		= &gpuToHostBarrier2;
+
 	// Fill buffer using VK_WHOLE_SIZE.
 	beginCommandBuffer(vk, *m_cmdBuffer);
 	vk.cmdFillBuffer(*m_cmdBuffer, *m_destination, m_params.dstOffset, VK_WHOLE_SIZE, deUint32{0x01010101});
-	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0, DE_NULL, 1, &gpuToHostBarrier, 0, DE_NULL);
+
+	if (useSynchronization2)
+		(vk.*(cmdPipelineBarrier2Fun))(*m_cmdBuffer, &depInfo);
+	else
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0, DE_NULL, 1, &gpuToHostBarrier, 0, DE_NULL);
+
 	endCommandBuffer(vk, *m_cmdBuffer);
-	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+
+	Move<VkFence> fence(createFence(vk, m_device));
+	if (useSynchronization2)
+	{
+		CommandBufferSubmitInfo commandBufferInfos	= initVulkanStructure();
+		commandBufferInfos.commandBuffer			= *m_cmdBuffer;
+
+		SubmitInfo2 submitInfo2						= initVulkanStructure();
+		submitInfo2.commandBufferInfoCount			= 1u;
+		submitInfo2.pCommandBufferInfos				= &commandBufferInfos;
+
+		(vk.*(queueSubmit2Fun))(queue, 1u, &submitInfo2, *fence);
+	}
+	else
+	{
+		VkSubmitInfo submitInfo			= initVulkanStructure();
+		submitInfo.commandBufferCount	= 1u;
+		submitInfo.pCommandBuffers		= &m_cmdBuffer.get();
+
+		VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
+	}
+	waitForFence(vk, m_device, *fence);
 
 	// Invalidate buffer memory and check the buffer contains the expected results.
-	invalidateAlloc(vk, vkDevice, *m_destinationBufferAlloc);
+	invalidateAlloc(vk, m_device, *m_destinationBufferAlloc);
 
 	const VkDeviceSize startOfExtra = (m_params.dstSize / sizeof(deUint32)) * sizeof(deUint32);
 	for (VkDeviceSize i = 0; i < m_params.dstSize; ++i)
@@ -182,6 +351,13 @@ public:
 protected:
 	const TestParams				m_params;
 
+	Move<VkDevice>					m_customDevice;
+	de::MovePtr<Allocator>			m_customAllocator;
+
+	VkDevice						m_device;
+	Allocator*						m_allocator;
+	uint32_t						m_queueFamilyIndex;
+
 	Move<VkCommandPool>				m_cmdPool;
 	Move<VkCommandBuffer>			m_cmdBuffer;
 	de::MovePtr<tcu::TextureLevel>	m_destinationTextureLevel;
@@ -215,18 +391,32 @@ protected:
 									: vkt::TestInstance					(context)
 									, m_params							(testParams)
 {
-	const DeviceInterface&			vk									= context.getDeviceInterface();
-	const VkDevice					vkDevice							= context.getDevice();
-	const deUint32					queueFamilyIndex					= context.getUniversalQueueFamilyIndex();
-	Allocator&						memAlloc							= context.getDefaultAllocator();
+	const InstanceInterface&	vki			= m_context.getInstanceInterface();
+	const DeviceInterface&		vk			= m_context.getDeviceInterface();
+	const VkPhysicalDevice		physDevice	= m_context.getPhysicalDevice();
+
+	if (testParams.useTransferOnlyQueue)
+	{
+		m_customDevice		= createCustomDevice(context, m_queueFamilyIndex);
+		m_customAllocator	= de::MovePtr<Allocator>(new SimpleAllocator(vk, *m_customDevice, getPhysicalDeviceMemoryProperties(vki, physDevice)));
+
+		m_device			= *m_customDevice;
+		m_allocator			= &(*m_customAllocator);
+	}
+	else
+	{
+		m_device			= context.getDevice();
+		m_allocator			= &context.getDefaultAllocator();
+		m_queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	}
 
 	// Create command pool
-	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+	m_cmdPool = createCommandPool(vk, m_device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, m_queueFamilyIndex);
 
 	// Create command buffer
-	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	m_cmdBuffer = allocateCommandBuffer(vk, m_device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-	testParams.bufferAllocator->createTestBuffer(m_params.dstSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, context, memAlloc, m_destination, MemoryRequirement::HostVisible, m_destinationBufferAlloc);
+	testParams.bufferAllocator->createTestBuffer(vk, m_device, m_queueFamilyIndex, m_params.dstSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, context, *m_allocator, m_destination, MemoryRequirement::HostVisible, m_destinationBufferAlloc);
 }
 
 tcu::TestStatus						FillBufferTestInstance::iterate		(void)
@@ -240,9 +430,8 @@ tcu::TestStatus						FillBufferTestInstance::iterate		(void)
 
 	uploadBuffer(m_destinationTextureLevel->getAccess(), *m_destinationBufferAlloc);
 
-	const DeviceInterface&			vk									= m_context.getDeviceInterface();
-	const VkDevice					vkDevice							= m_context.getDevice();
-	const VkQueue					queue								= m_context.getUniversalQueue();
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkQueue			queue	= getDeviceQueue(vk, m_device, m_queueFamilyIndex, 0);
 
 	const VkBufferMemoryBarrier		dstBufferBarrier					=
 	{
@@ -254,7 +443,7 @@ tcu::TestStatus						FillBufferTestInstance::iterate		(void)
 		VK_QUEUE_FAMILY_IGNORED,										// deUint32					dstQueueFamilyIndex;
 		*m_destination,													// VkBuffer					buffer;
 		m_params.dstOffset,												// VkDeviceSize				offset;
-		VK_WHOLE_SIZE												// VkDeviceSize				size;
+		VK_WHOLE_SIZE													// VkDeviceSize				size;
 	};
 
 	beginCommandBuffer(vk, *m_cmdBuffer);
@@ -262,11 +451,11 @@ tcu::TestStatus						FillBufferTestInstance::iterate		(void)
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	endCommandBuffer(vk, *m_cmdBuffer);
 
-	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+	submitCommandsAndWait(vk, m_device, queue, m_cmdBuffer.get());
 
 	// Read buffer data
 	de::MovePtr<tcu::TextureLevel>	resultLevel	(new tcu::TextureLevel(m_destinationTextureLevel->getAccess().getFormat(), dstLevelWidth, 1));
-	invalidateAlloc(vk, vkDevice, *m_destinationBufferAlloc);
+	invalidateAlloc(vk, m_device, *m_destinationBufferAlloc);
 	tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(resultLevel->getFormat(), resultLevel->getSize(), m_destinationBufferAlloc->getHostPtr()));
 
 	return checkTestResult(resultLevel->getAccess());
@@ -294,12 +483,11 @@ void								FillBufferTestInstance::uploadBuffer
 																		 const Allocation&			bufferAlloc)
 {
 	const DeviceInterface&			vk									= m_context.getDeviceInterface();
-	const VkDevice					vkDevice							= m_context.getDevice();
 	const deUint32					bufferSize							= calculateSize(bufferAccess);
 
 	// Write buffer data
 	deMemcpy(bufferAlloc.getHostPtr(), bufferAccess.getDataPtr(), bufferSize);
-	flushAlloc(vk, vkDevice, bufferAlloc);
+	flushAlloc(vk, m_device, bufferAlloc);
 }
 
 tcu::TestStatus						FillBufferTestInstance::checkTestResult
@@ -382,9 +570,8 @@ tcu::TestStatus						UpdateBufferTestInstance::iterate	(void)
 
 	uploadBuffer(m_destinationTextureLevel->getAccess(), *m_destinationBufferAlloc);
 
-	const DeviceInterface&			vk									= m_context.getDeviceInterface();
-	const VkDevice					vkDevice							= m_context.getDevice();
-	const VkQueue					queue								= m_context.getUniversalQueue();
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkQueue			queue	= getDeviceQueue(vk, m_device, m_queueFamilyIndex, 0);
 
 	const VkBufferMemoryBarrier		dstBufferBarrier					=
 	{
@@ -396,7 +583,7 @@ tcu::TestStatus						UpdateBufferTestInstance::iterate	(void)
 		VK_QUEUE_FAMILY_IGNORED,										// deUint32					dstQueueFamilyIndex;
 		*m_destination,													// VkBuffer					buffer;
 		m_params.dstOffset,												// VkDeviceSize				offset;
-		VK_WHOLE_SIZE												// VkDeviceSize				size;
+		VK_WHOLE_SIZE													// VkDeviceSize				size;
 	};
 
 	beginCommandBuffer(vk, *m_cmdBuffer);
@@ -404,11 +591,11 @@ tcu::TestStatus						UpdateBufferTestInstance::iterate	(void)
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	endCommandBuffer(vk, *m_cmdBuffer);
 
-	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+	submitCommandsAndWait(vk, m_device, queue, m_cmdBuffer.get());
 
 	// Read buffer data
 	de::MovePtr<tcu::TextureLevel>	resultLevel	(new tcu::TextureLevel(m_destinationTextureLevel->getAccess().getFormat(), dstLevelWidth, 1));
-	invalidateAlloc(vk, vkDevice, *m_destinationBufferAlloc);
+	invalidateAlloc(vk, m_device, *m_destinationBufferAlloc);
 	tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(resultLevel->getFormat(), resultLevel->getSize(), m_destinationBufferAlloc->getHostPtr()));
 
 	return checkTestResult(resultLevel->getAccess());
@@ -451,41 +638,40 @@ private:
 
 tcu::TestCaseGroup*					createFillAndUpdateBufferTests	(tcu::TestContext&			testCtx)
 {
-	const de::SharedPtr<IBufferAllocator>
-									bufferAllocators[]					=
+	const de::SharedPtr<IBufferAllocator> bufferAllocators[]
 	{
 		de::SharedPtr<BufferSuballocation>(new BufferSuballocation()),
 		de::SharedPtr<BufferDedicatedAllocation>(new BufferDedicatedAllocation())
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	fillAndUpdateBufferTests			(new tcu::TestCaseGroup(testCtx, "fill_and_update_buffer", "Fill and Update Buffer Tests"));
-	tcu::TestCaseGroup*				bufferViewAllocationGroupTests[]
-																		=
+	de::MovePtr<tcu::TestCaseGroup> fillAndUpdateBufferTests(new tcu::TestCaseGroup(testCtx, "fill_and_update_buffer", "Fill and Update Buffer Tests"));
+
+	struct TestGroupData
 	{
-		new tcu::TestCaseGroup(testCtx, "suballocation", "BufferView Fill and Update Tests for Suballocated Objects"),
-		new tcu::TestCaseGroup(testCtx, "dedicated_alloc", "BufferView Fill and Update Tests for Dedicatedly Allocated Objects")
+		const char*		name;
+		const char*		description;
+		bool			useDedicatedAllocation;
+		bool			useTransferOnlyQueue;
 	};
-	for (deUint32 subgroupNdx = 0u; subgroupNdx < DE_LENGTH_OF_ARRAY(bufferViewAllocationGroupTests); ++subgroupNdx)
+	const TestGroupData testGroupData[]
 	{
-		if (bufferViewAllocationGroupTests[subgroupNdx] == DE_NULL)
-		{
-			TCU_THROW(InternalError, "Could not create test subgroup.");
-		}
-		fillAndUpdateBufferTests->addChild(bufferViewAllocationGroupTests[subgroupNdx]);
-	}
+		{ "suballocation",					"BufferView Fill and Update Tests for Suballocated Objects",						false,	false },
+		{ "suballocation_transfer_queue",	"BufferView Fill and Update Tests for Suballocated Objects on transfer only queue",	false,	true },
+		{ "dedicated_alloc",				"BufferView Fill and Update Tests for Dedicatedly Allocated Objects",				true,	false },
+	};
 
-	TestParams						params;
-
-	for (deUint32 buffersAllocationNdx = 0u; buffersAllocationNdx < DE_LENGTH_OF_ARRAY(bufferAllocators); ++buffersAllocationNdx)
+	TestParams params;
+	for (const auto& groupData : testGroupData)
 	{
-		params.dstSize			= TestParams::TEST_DATA_SIZE;
-		params.bufferAllocator	= bufferAllocators[buffersAllocationNdx];
+		de::MovePtr<tcu::TestCaseGroup> currentTestsGroup(new tcu::TestCaseGroup(testCtx, groupData.name, groupData.description));
+
+		params.dstSize				= TestParams::TEST_DATA_SIZE;
+		params.bufferAllocator		= bufferAllocators[groupData.useDedicatedAllocation];
+		params.useTransferOnlyQueue	= groupData.useTransferOnlyQueue;
 
 		deUint8* data = (deUint8*) params.testData;
 		for (deUint32 b = 0u; b < (params.dstSize * sizeof(params.testData[0])); b++)
 			data[b] = (deUint8) (b % 255);
-		const deUint32				testCaseGroupNdx					= buffersAllocationNdx;
-		tcu::TestCaseGroup*			currentTestsGroup					= bufferViewAllocationGroupTests[testCaseGroupNdx];
 
 		{
 			const std::string		description							("whole buffer");
@@ -549,6 +735,8 @@ tcu::TestCaseGroup*					createFillAndUpdateBufferTests	(tcu::TestContext&			test
 				}
 			}
 		}
+
+		fillAndUpdateBufferTests->addChild(currentTestsGroup.release());
 	}
 
 	return fillAndUpdateBufferTests.release();

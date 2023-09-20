@@ -87,5 +87,9 @@ add_library(deqp-vk-api STATIC ${DEQP_VK_VKSC_API_SRCS} ${DEQP_VK_API_SRCS})
 target_link_libraries(deqp-vk-api PUBLIC deqp-vk-util tcutil vkutil)
 
 add_library(deqp-vksc-api STATIC ${DEQP_VK_VKSC_API_SRCS})
-target_include_directories(deqp-vksc-api BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
+# HACK: For some reason vkApiExtensionDependencyInfo.inl is only included in the Vulkan generated files, but it used for the SC
+# version of the test. That means we need to add generated/vulkan but have it appear after generated/vulkansc (so that files that
+# do exist still come from the right place). Bodge that in here.
+target_include_directories(deqp-vksc-api BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
+target_include_directories(deqp-vksc-api AFTER PRIVATE ${PROJECT_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkan)
 target_link_libraries(deqp-vksc-api PUBLIC deqp-vksc-util tcutil vkscutil)

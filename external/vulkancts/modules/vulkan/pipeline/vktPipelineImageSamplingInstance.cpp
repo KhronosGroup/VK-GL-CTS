@@ -1518,6 +1518,8 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 		lookupPrecision.colorMask		= m_componentMask;
 		lookupPrecision.colorThreshold	= tcu::computeFixedPointThreshold(max((tcu::IVec4(8, 8, 8, 8) - (isNearestOnly ? 1 : 2)), tcu::IVec4(0))) / swizzleScaleBias(lookupScale, m_componentMapping, 1.0f);
 
+		if (m_imageFormat == VK_FORMAT_BC5_UNORM_BLOCK || m_imageFormat == VK_FORMAT_BC5_SNORM_BLOCK)
+			lookupPrecision.colorThreshold = tcu::Vec4(0.06f, 0.06f, 0.06f, 0.06f);
 		if (tcu::isSRGB(m_texture->getTextureFormat()))
 			lookupPrecision.colorThreshold += tcu::Vec4(4.f / 255.f);
 

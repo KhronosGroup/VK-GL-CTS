@@ -46,6 +46,7 @@
 #include "vktDrawExplicitVertexParameterTests.hpp"
 #include "vktDrawDepthClampTests.hpp"
 #include "vktDrawMultipleClearsWithinRenderPass.hpp"
+#include "vktDrawSampleAttributeTests.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktDrawOutputLocationTests.hpp"
 #include "vktDrawDepthBiasTests.hpp"
@@ -84,6 +85,7 @@ void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, const
 	group->addChild(createExplicitVertexParameterTests			(testCtx, groupParams));
 	group->addChild(createDepthClampTests						(testCtx, groupParams));
 	group->addChild(new MultipleClearsWithinRenderPassTests		(testCtx, groupParams));
+	group->addChild(createSampleAttributeTests					(testCtx, groupParams));
 	// NOTE: all new draw tests should handle SharedGroupParams
 
 #ifndef CTS_USES_VULKANSC

@@ -33,3 +33,4 @@ dEQP-VK.compute.basic.empty_workgroup_z
 dEQP-VK.compute.basic.empty_workgroup_all
 dEQP-VK.compute.basic.secondary_compute_only_queue
 dEQP-VK.compute.basic.branch_past_barrier
+dEQP-VK.compute.basic.webgl_spirv_loop

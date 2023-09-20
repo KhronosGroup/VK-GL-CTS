@@ -47,66 +47,6 @@ enum TestType
 	TEST_TYPE_VERSION,
 };
 
-static const VkConformanceVersion knownConformanceVersions[] =
-{
-#ifndef CTS_USES_VULKANSC
-	makeConformanceVersion(1, 3, 5, 1),
-	makeConformanceVersion(1, 3, 5, 0),
-	makeConformanceVersion(1, 3, 4, 1),
-	makeConformanceVersion(1, 3, 4, 0),
-	makeConformanceVersion(1, 3, 3, 1),
-	makeConformanceVersion(1, 3, 3, 0),
-	makeConformanceVersion(1, 3, 2, 0),
-	makeConformanceVersion(1, 3, 1, 1),
-	makeConformanceVersion(1, 3, 1, 0),
-	makeConformanceVersion(1, 3, 0, 0),
-	makeConformanceVersion(1, 2, 8, 0),
-	makeConformanceVersion(1, 2, 7, 2),
-	makeConformanceVersion(1, 2, 7, 1),
-	makeConformanceVersion(1, 2, 7, 0),
-	makeConformanceVersion(1, 2, 6, 2),
-	makeConformanceVersion(1, 2, 6, 1),
-	makeConformanceVersion(1, 2, 6, 0),
-	makeConformanceVersion(1, 2, 5, 2),
-	makeConformanceVersion(1, 2, 5, 1),
-	makeConformanceVersion(1, 2, 5, 0),
-	makeConformanceVersion(1, 2, 4, 1),
-	makeConformanceVersion(1, 2, 4, 0),
-	makeConformanceVersion(1, 2, 3, 3),
-	makeConformanceVersion(1, 2, 3, 2),
-	makeConformanceVersion(1, 2, 3, 1),
-	makeConformanceVersion(1, 2, 3, 0),
-	makeConformanceVersion(1, 2, 2, 2),
-	makeConformanceVersion(1, 2, 2, 1),
-	makeConformanceVersion(1, 2, 2, 0),
-	makeConformanceVersion(1, 2, 1, 2),
-	makeConformanceVersion(1, 2, 1, 1),
-	makeConformanceVersion(1, 2, 1, 0),
-	makeConformanceVersion(1, 2, 0, 2),
-	makeConformanceVersion(1, 2, 0, 1),
-	makeConformanceVersion(1, 2, 0, 0),
-	makeConformanceVersion(1, 1, 6, 3),
-	makeConformanceVersion(1, 1, 6, 2),
-	makeConformanceVersion(1, 1, 6, 1),
-	makeConformanceVersion(1, 1, 6, 0),
-	makeConformanceVersion(1, 1, 5, 2),
-	makeConformanceVersion(1, 1, 5, 1),
-	makeConformanceVersion(1, 1, 5, 0),
-	makeConformanceVersion(1, 1, 4, 3),
-	makeConformanceVersion(1, 1, 4, 2),
-	makeConformanceVersion(1, 1, 4, 1),
-	makeConformanceVersion(1, 1, 4, 0),
-	makeConformanceVersion(1, 1, 3, 3),
-	makeConformanceVersion(1, 1, 3, 2),
-	makeConformanceVersion(1, 1, 3, 1),
-	makeConformanceVersion(1, 1, 3, 0),
-#else
-	makeConformanceVersion(1, 0, 1, 1),
-	makeConformanceVersion(1, 0, 1, 0),
-	makeConformanceVersion(1, 0, 0, 0),
-#endif // CTS_USES_VULKANSC
-};
-
 DE_INLINE bool isNullTerminated(const char* str, const deUint32 maxSize)
 {
 	return deStrnlen(str, maxSize) < maxSize;
@@ -157,6 +97,9 @@ void testInfoZeroTerminated (const VkPhysicalDeviceDriverProperties& deviceDrive
 
 void testVersion (const VkPhysicalDeviceDriverProperties& deviceDriverProperties, deUint32 usedApiVersion)
 {
+
+#include "vkKnownConformanceVersions.inl"
+
 	const deUint32 apiMajorVersion = VK_API_VERSION_MAJOR(usedApiVersion);
 	const deUint32 apiMinorVersion = VK_API_VERSION_MINOR(usedApiVersion);
 

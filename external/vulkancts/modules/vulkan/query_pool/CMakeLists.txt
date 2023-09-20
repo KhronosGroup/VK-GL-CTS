@@ -13,6 +13,8 @@ set(DEQP_VK_VKSC_QUERY_POOL_SRCS
 	vktQueryPoolStatisticsTests.cpp
 	vktQueryPoolConcurrentTests.hpp
 	vktQueryPoolConcurrentTests.cpp
+	vktQueryPoolFragInvocationTests.hpp
+	vktQueryPoolFragInvocationTests.cpp
 )
 
 set(DEQP_VK_QUERY_POOL_SRCS
@@ -26,5 +28,4 @@ add_library(deqp-vk-query-pool STATIC ${DEQP_VK_VKSC_QUERY_POOL_SRCS} ${DEQP_VK_
 target_link_libraries(deqp-vk-query-pool deqp-vk-draw tcutil vkutil)
 
 add_library(deqp-vksc-query-pool STATIC ${DEQP_VK_VKSC_QUERY_POOL_SRCS})
-target_include_directories(deqp-vksc-query-pool BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-query-pool PUBLIC deqp-vksc-draw deqp-vksc-util tcutil vkscutil)

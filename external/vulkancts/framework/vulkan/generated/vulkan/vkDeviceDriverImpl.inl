@@ -1969,6 +1969,11 @@ VkResult DeviceDriver::updateVideoSessionParametersKHR (VkDevice device, VkVideo
 	return m_vk.updateVideoSessionParametersKHR(device, videoSessionParameters, pUpdateInfo);
 }
 
+VkResult DeviceDriver::getEncodedVideoSessionParametersKHR (VkDevice device, const VkVideoEncodeSessionParametersGetInfoKHR* pVideoSessionParametersInfo, VkVideoEncodeSessionParametersFeedbackInfoKHR* pFeedbackInfo, size_t* pDataSize, void* pData) const
+{
+	return m_vk.getEncodedVideoSessionParametersKHR(device, pVideoSessionParametersInfo, pFeedbackInfo, pDataSize, pData);
+}
+
 void DeviceDriver::destroyVideoSessionParametersKHR (VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkAllocationCallbacks* pAllocator) const
 {
 	m_vk.destroyVideoSessionParametersKHR(device, videoSessionParameters, pAllocator);
@@ -2284,6 +2289,11 @@ VkResult DeviceDriver::getDeviceFaultInfoEXT (VkDevice device, VkDeviceFaultCoun
 	return m_vk.getDeviceFaultInfoEXT(device, pFaultCounts, pFaultInfo);
 }
 
+void DeviceDriver::cmdSetDepthBias2EXT (VkCommandBuffer commandBuffer, const VkDepthBiasInfoEXT* pDepthBiasInfo) const
+{
+	m_vk.cmdSetDepthBias2EXT(commandBuffer, pDepthBiasInfo);
+}
+
 VkResult DeviceDriver::releaseSwapchainImagesEXT (VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo) const
 {
 	return m_vk.releaseSwapchainImagesEXT(device, pReleaseInfo);
@@ -2322,4 +2332,9 @@ VkResult DeviceDriver::getShaderBinaryDataEXT (VkDevice device, VkShaderEXT shad
 void DeviceDriver::cmdBindShadersEXT (VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders) const
 {
 	m_vk.cmdBindShadersEXT(commandBuffer, stageCount, pStages, pShaders);
+}
+
+VkResult DeviceDriver::getScreenBufferPropertiesQNX (VkDevice device, const struct _screen_buffer* buffer, VkScreenBufferPropertiesQNX* pProperties) const
+{
+	return m_vk.getScreenBufferPropertiesQNX(device, buffer, pProperties);
 }
