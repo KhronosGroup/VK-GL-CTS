@@ -580,6 +580,15 @@ public:
 			VkInstanceCreateInfo instanceCreateInfo	= initVulkanStructure();
 			instanceCreateInfo.pApplicationInfo		= &appInfo;
 
+#ifndef CTS_USES_VULKANSC
+			char const * requiredExtensionForVk10 = "VK_KHR_get_physical_device_properties2";
+			if (appInfo.apiVersion == VK_API_VERSION_1_0)
+			{
+				instanceCreateInfo.enabledExtensionCount = 1U;
+				instanceCreateInfo.ppEnabledExtensionNames = &requiredExtensionForVk10;
+			}
+#endif // CTS_USES_VULKANSC
+
 			// create instance for currentluy tested vulkan version
 			Move<VkInstance>					customInstance			(vk::createInstance(vkp, &instanceCreateInfo, DE_NULL));
 			std::unique_ptr<vk::InstanceDriver>	instanceDriver			(new InstanceDriver(vkp, *customInstance));
