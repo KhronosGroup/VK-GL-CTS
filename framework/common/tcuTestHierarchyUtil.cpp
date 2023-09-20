@@ -66,10 +66,9 @@ static void writeXmlCaselist (TestHierarchyIterator& iter, qpXmlWriter* writer)
 
 	{
 		const TestNode* node		= iter.getNode();
-		qpXmlAttribute	attribs[2];
+		qpXmlAttribute	attribs[1];
 		int				numAttribs	= 0;
 		attribs[numAttribs++] = qpSetStringAttrib("PackageName", node->getName());
-		attribs[numAttribs++] = qpSetStringAttrib("Description", node->getDescription());
 		DE_ASSERT(numAttribs <= DE_LENGTH_OF_ARRAY(attribs));
 
 		if (!qpXmlWriter_startDocument(writer) ||
@@ -91,13 +90,11 @@ static void writeXmlCaselist (TestHierarchyIterator& iter, qpXmlWriter* writer)
 			if (isEnter)
 			{
 				const string	caseName	= node->getName();
-				const string	description	= node->getDescription();
-				qpXmlAttribute	attribs[3];
+				qpXmlAttribute	attribs[2];
 				int				numAttribs = 0;
 
 				attribs[numAttribs++] = qpSetStringAttrib("Name",			caseName.c_str());
 				attribs[numAttribs++] = qpSetStringAttrib("CaseType",		getNodeTypeName(nodeType));
-				attribs[numAttribs++] = qpSetStringAttrib("Description",	description.c_str());
 				DE_ASSERT(numAttribs <= DE_LENGTH_OF_ARRAY(attribs));
 
 				if (!qpXmlWriter_startElement(writer, "TestCase", numAttribs, attribs))
