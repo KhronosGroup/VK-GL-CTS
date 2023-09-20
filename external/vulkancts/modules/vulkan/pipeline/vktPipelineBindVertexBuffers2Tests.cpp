@@ -573,11 +573,11 @@ public:
 													 DevicePtr						device,
 													 vk::PipelineConstructionType	pipelineConstructionType,
 													 const TestParamsMaint5&		params,
-													 deUint32						robustnessVersion)
+													 bool							robustness2)
 							: vkt::TestInstance(context)
 							, m_pipelineConstructionType(pipelineConstructionType)
 							, m_params(params)
-							, m_robustnessVersion(robustnessVersion)
+							, m_robustness2(robustness2)
 							, m_deviceDriver(driver)
 							, m_device(device)
 							, m_physicalDevice(chooseDevice(context.getInstanceInterface(), context.getInstance(), context.getTestContext().getCommandLine()))
@@ -605,7 +605,7 @@ protected:
 private:
 	const vk::PipelineConstructionType	m_pipelineConstructionType;
 	const TestParamsMaint5				m_params;
-	const deUint32						m_robustnessVersion;
+	const bool							m_robustness2;
 	DeviceDriverPtr						m_deviceDriver;
 	DevicePtr							m_device;
 	const vk::VkPhysicalDevice			m_physicalDevice;
@@ -617,18 +617,18 @@ private:
 
 const vk::DeviceInterface& BindVertexBuffers2Instance::getDeviceInterface () const
 {
-	return (m_robustnessVersion != 0) ? *m_deviceDriver : m_context.getDeviceInterface();
+	return m_robustness2 ? *m_deviceDriver : m_context.getDeviceInterface();
 }
 
 vk::VkDevice BindVertexBuffers2Instance::getDevice () const
 {
-	return (m_robustnessVersion != 0) ? *m_device : m_context.getDevice();
+	return m_robustness2 ? *m_device : m_context.getDevice();
 }
 
 vk::VkQueue BindVertexBuffers2Instance::getQueue () const
 {
 	vk::VkQueue queue = DE_NULL;
-	if (m_robustnessVersion != 0)
+	if (m_robustness2)
 	{
 		const deUint32 queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
 		m_deviceDriver->getDeviceQueue(getDevice(), queueFamilyIndex, 0, &queue);
@@ -759,7 +759,7 @@ BindVertexBuffers2Instance::Buffers BindVertexBuffers2Instance::createBuffers (S
 		pointTemplate.push_back		(-p);
 		pointTemplate.push_back			(-p);
 		pointTemplate.push_back			(0.0f);
-		if (m_robustnessVersion == 0)
+		if (!m_robustness2)
 		{
 			pointTemplate.push_back(0.0f);
 			pointTemplate.push_back(0.0f);
@@ -802,7 +802,7 @@ BindVertexBuffers2Instance::Buffers BindVertexBuffers2Instance::createBuffers (S
 		pointTemplate.push_back	(0.0f);
 		pointTemplate.push_back		(0.0f);
 		pointTemplate.push_back		(-p);
-		if (m_robustnessVersion == 0)
+		if (!m_robustness2)
 		{
 			pointTemplate.push_back(0.0f);
 			pointTemplate.push_back(0.0f);
@@ -1028,7 +1028,7 @@ tcu::TestStatus BindVertexBuffers2Instance::iterate (void)
 	const tcu::Vec3		rgb				= rgba.swizzle(0, 1, 2);
 	const bool			belowThreshold	= tcu::boolAll(tcu::lessThan(rgb, threshold));
 
-	if (m_robustnessVersion == 0)
+	if (!m_robustness2)
 	{
 		const auto expectedMismatch = 0.0;
 		testPasses = (belowThreshold == false) && (mismatch == expectedMismatch);
@@ -1047,7 +1047,7 @@ tcu::TestStatus BindVertexBuffers2Instance::iterate (void)
 		if (!testPasses)
 		{
 			std::ostringstream msg;
-			msg << "FAILURE: robusness version " << m_robustnessVersion << "; pixel at " << middle << " is " << rgb
+			msg << "FAILURE: robustness2; pixel at " << middle << " is " << rgb
 			    << " (should be < " << threshold << "); mismatch in upper left quarter " << mismatch
 				<< " (should be below " << mismatchLimit << ")";
 			log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
@@ -1078,7 +1078,7 @@ tcu::TestStatus BindVertexBuffers2Instance::iterate (void)
 		os << (m_params.topology == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP ? "list" : "strip");
 		os << ".buffs" << m_params.bufferCount;
 		os << (m_params.wholeSize ? ".whole_size" : ".true_size");
-		if (m_robustnessVersion != 0)
+		if (m_robustness2)
 		{
 			os << ".robust";
 			os << (m_params.beyondType == BeyondType::BUFFER ? ".over_buff" : ".over_size");
@@ -1211,11 +1211,11 @@ public:
 											 const std::string&				name,
 											 vk::PipelineConstructionType	pipelineConstructionType,
 											 const TestParamsMaint5&		params,
-											 deUint32						robustnessVersion)
+											 bool							robustness2)
 						: vkt::TestCase(testCtx, name, std::string())
 						, m_pipelineConstructionType(pipelineConstructionType)
 						, m_params(params)
-						, m_robustnessVersion(robustnessVersion) { }
+						, m_robustness2(robustness2) { }
 	virtual			~BindVertexBuffers2Case	(void) = default;
 
 	void			checkSupport			(vkt::Context&					context) const override;
@@ -1225,7 +1225,7 @@ public:
 private:
 	const vk::PipelineConstructionType	m_pipelineConstructionType;
 	const TestParamsMaint5				m_params;
-	const deUint32						m_robustnessVersion;
+	const bool							m_robustness2;
 };
 
 void BindVertexBuffers2Case::checkSupport (Context& context) const
@@ -1236,14 +1236,13 @@ void BindVertexBuffers2Case::checkSupport (Context& context) const
 	context.requireDeviceFunctionality(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
 #endif // CTS_USES_VULKANSC
 
-	if (m_robustnessVersion != 0)
+	if (m_robustness2)
 	{
 		vk::VkPhysicalDeviceFeatures2 features2 = vk::initVulkanStructure();
 		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
 		if (!features2.features.robustBufferAccess)
 			TCU_THROW(NotSupportedError, "robustBufferAccess not supported by this implementation");
-		if (m_robustnessVersion > 1)
-			context.requireDeviceFunctionality("VK_EXT_robustness2");
+		context.requireDeviceFunctionality("VK_EXT_robustness2");
 	}
 
 	vk::checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
@@ -1287,7 +1286,7 @@ TestInstance* BindVertexBuffers2Case::createInstance (Context& context) const
 	DevicePtr		device;
 	DeviceDriverPtr	driver;
 
-	if (m_robustnessVersion != 0)
+	if (m_robustness2)
 	{
 		vk::VkPhysicalDeviceFeatures2							features2			= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features	= vk::initVulkanStructure();
@@ -1302,9 +1301,7 @@ TestInstance* BindVertexBuffers2Case::createInstance (Context& context) const
 #endif // CTS_USES_VULKANSC
 
 		const auto addFeatures = vk::makeStructChainAdder(&features2);
-
-		if (m_robustnessVersion > 1u)
-			addFeatures(&robustness2Features);
+		addFeatures(&robustness2Features);
 
 #ifndef CTS_USES_VULKANSC
 		if (m_pipelineConstructionType != vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
@@ -1324,7 +1321,7 @@ TestInstance* BindVertexBuffers2Case::createInstance (Context& context) const
 #endif // CTS_USES_VULKANSC
 	}
 
-	return (new BindVertexBuffers2Instance(context, driver, device, m_pipelineConstructionType, m_params, m_robustnessVersion));
+	return (new BindVertexBuffers2Instance(context, driver, device, m_pipelineConstructionType, m_params, m_robustness2));
 }
 
 tcu::TestCaseGroup* createCmdBindVertexBuffers2Tests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
@@ -1442,7 +1439,7 @@ tcu::TestCaseGroup* createCmdBindVertexBuffers2Tests (tcu::TestContext& testCtx,
 					p.bufferCount	= count;
 					p.beyondType	= BeyondType::BUFFER;
 
-					randomGroup->addChild(new BindVertexBuffers2Case(testCtx, size.second, pipelineConstructionType, p, 0));
+					randomGroup->addChild(new BindVertexBuffers2Case(testCtx, size.second, pipelineConstructionType, p, false));
 				}
 				countGroup->addChild(randomGroup.release());
 			}
@@ -1451,62 +1448,55 @@ tcu::TestCaseGroup* createCmdBindVertexBuffers2Tests (tcu::TestContext& testCtx,
 		rootGroup->addChild(topoGroup.release());
 	}
 
-	de::MovePtr<tcu::TestCaseGroup> robustGroup(new tcu::TestCaseGroup(testCtx, "robust", ""));
-	for (deUint32 robustVersion = 1; robustVersion < 3; ++robustVersion)
+	de::MovePtr<tcu::TestCaseGroup> robustGroup(new tcu::TestCaseGroup(testCtx, "robustness2", ""));
+	for (const auto& topo : topos)
 	{
-		name = "ver" + std::to_string(robustVersion);
-		de::MovePtr<tcu::TestCaseGroup> versionGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> topoGroup(new tcu::TestCaseGroup(testCtx, topo.second, ""));
 
-		for (const auto& topo : topos)
+		for (deUint32 count : counts)
 		{
-			de::MovePtr<tcu::TestCaseGroup> topoGroup(new tcu::TestCaseGroup(testCtx, topo.second, ""));
+			name = "buffers" + std::to_string(count);
+			de::MovePtr<tcu::TestCaseGroup> countGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
 
-			for (deUint32 count : counts)
+			for (deUint32 random : robustRandoms)
 			{
-				name = "buffers" + std::to_string(count);
-				de::MovePtr<tcu::TestCaseGroup> countGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+				name = "stride_offset_rnd" + std::to_string(random);
+				de::MovePtr<tcu::TestCaseGroup> randomGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
 
-				for (deUint32 random : robustRandoms)
+				for (const auto& size : sizes)
 				{
-					name = "stride_offset_rnd" + std::to_string(random);
-					de::MovePtr<tcu::TestCaseGroup> randomGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+					de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, size.second, ""));
 
-					for (const auto& size : sizes)
+					TestParamsMaint5 p;
+					p.width			= defaultWidth;
+					p.height		= defaultHeight;
+					p.topology		= topo.first;
+					p.wholeSize		= size.first;
+					p.rndSeed		= random;
+					p.bufferCount	= count;
+
+					if (p.wholeSize)
 					{
-						de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, size.second, ""));
-
-						TestParamsMaint5 p;
-						p.width			= defaultWidth;
-						p.height		= defaultHeight;
-						p.topology		= topo.first;
-						p.wholeSize		= size.first;
-						p.rndSeed		= random;
-						p.bufferCount	= count;
-
-						if (p.wholeSize)
-						{
-							p.beyondType = BeyondType::BUFFER;
-							auto beyondType = std::find_if(std::begin(beyondTypes), std::end(beyondTypes),
-								[&](const std::pair<BeyondType, const char*>& b) { return b.first == p.beyondType; });
-							sizeGroup->addChild(new BindVertexBuffers2Case(testCtx, beyondType->second, pipelineConstructionType, p, robustVersion));
-						}
-						else
-						{
-							for (const auto& beyondType : beyondTypes)
-							{
-								p.beyondType = beyondType.first;
-								sizeGroup->addChild(new BindVertexBuffers2Case(testCtx, beyondType.second, pipelineConstructionType, p, robustVersion));
-							}
-						}
-						randomGroup->addChild(sizeGroup.release());
+						p.beyondType = BeyondType::BUFFER;
+						auto beyondType = std::find_if(std::begin(beyondTypes), std::end(beyondTypes),
+							[&](const std::pair<BeyondType, const char*>& b) { return b.first == p.beyondType; });
+						sizeGroup->addChild(new BindVertexBuffers2Case(testCtx, beyondType->second, pipelineConstructionType, p, true));
 					}
-					countGroup->addChild(randomGroup.release());
+					else
+					{
+						for (const auto& beyondType : beyondTypes)
+						{
+							p.beyondType = beyondType.first;
+							sizeGroup->addChild(new BindVertexBuffers2Case(testCtx, beyondType.second, pipelineConstructionType, p, true));
+						}
+					}
+					randomGroup->addChild(sizeGroup.release());
 				}
-				topoGroup->addChild(countGroup.release());
+				countGroup->addChild(randomGroup.release());
 			}
-			versionGroup->addChild(topoGroup.release());
+			topoGroup->addChild(countGroup.release());
 		}
-		robustGroup->addChild(versionGroup.release());
+		robustGroup->addChild(topoGroup.release());
 	}
 	rootGroup->addChild(robustGroup.release());
 
