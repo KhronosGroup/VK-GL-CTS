@@ -780,6 +780,8 @@ DynamicStateComputeInstance::DynamicStateComputeInstance (Context& context, cons
 
 void DynamicStateComputeCase::checkSupport (Context& context) const
 {
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+
 	// Check required functionalities.
 	for (const auto& state : m_params.states)
 	{
