@@ -77,6 +77,8 @@ set(DEQP_VK_API_SRCS
 	vktApiImageCompressionControlTests.hpp
 	vktApiGetDeviceProcAddrTests.hpp
 	vktApiGetDeviceProcAddrTests.cpp
+	vktApiFrameBoundaryTests.cpp
+	vktApiFrameBoundaryTests.hpp
 	)
 
 PCH(DEQP_VK_API_SRCS ../pch.cpp)
