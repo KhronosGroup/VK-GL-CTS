@@ -2837,6 +2837,9 @@ void checkSupport(Context& context, TestConfigType config)
 
 	if (config.attachmentCount > properties.limits.maxColorAttachments)
 		TCU_THROW(NotSupportedError, "Required number of color attachments not supported.");
+
+	if (config.testType == MAX_ATTACHMENTS && config.attachmentCount > properties.limits.maxPerStageDescriptorInputAttachments)
+		TCU_THROW(NotSupportedError, "Required number of per stage descriptor input attachments not supported.");
 }
 
 std::string formatToName (VkFormat format)

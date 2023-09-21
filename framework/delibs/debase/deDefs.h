@@ -328,6 +328,21 @@ DE_INLINE deBool deGetTrue (void) { return DE_TRUE; }
 #	define DE_PTR_SIZE 4	/* default to 32-bit */
 #endif
 
+/* Floating-point environment flag. */
+#if defined(DE_FENV_ACCESS_ON)
+	/* Already defined */
+#elif (DE_COMPILER == DE_COMPILER_CLANG) && (DE_CPU == DE_CPU_ARM)
+// FENV_ACCESS is not supported, disable all optimizations to avoid incorrect fp operation ordering
+// Google Bug: b/298204279
+#	define DE_FENV_ACCESS_ON _Pragma("clang optimize off")
+#elif (DE_COMPILER == DE_COMPILER_CLANG) && (DE_CPU != DE_CPU_ARM)
+#	define DE_FENV_ACCESS_ON _Pragma("STDC FENV_ACCESS ON")
+#elif (DE_COMPILER == DE_COMPILER_MSC)
+#	define DE_FENV_ACCESS_ON __pragma(fenv_access (on))
+#else
+#	define DE_FENV_ACCESS_ON	/* not supported */
+#endif
+
 /** Unreferenced variable silencing. */
 #define DE_UNREF(VAR) ((void)(VAR))
 
