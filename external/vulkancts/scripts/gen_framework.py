@@ -1456,8 +1456,22 @@ def getPromotedFunctions (api):
 	promotedFunctions = collections.defaultdict(lambda: list())
 	for feature in api.features:
 		versionSplit = feature.name.split('_')
-		apiMajor = versionSplit[-2]
-		apiMinor = versionSplit[-1]
+		apiMajor = int(versionSplit[-2])
+		apiMinor = int(versionSplit[-1])
+		apiPrefix = '_'.join(versionSplit[:-2])
+		if apiNum == 0 and apiPrefix != 'VK_VERSION':
+			continue
+		if apiNum == 1 and apiPrefix == 'VK_VERSION':
+			# Map of "standard" Vulkan versions to VulkanSC version.
+			stdToSCMap = {
+				(1, 0):	(1, 0),
+				(1, 1): (1, 0),
+				(1, 2): (1, 0),
+			}
+			mapKey = (apiMajor, apiMinor)
+			if mapKey not in stdToSCMap:
+				continue
+			(apiMajor, apiMinor) = stdToSCMap[mapKey]
 		apituple = (apiNum, apiMajor, apiMinor)
 		for featureRequirement in feature.requirementsList:
 			for promotedFun in featureRequirement.commandList:
