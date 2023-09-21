@@ -3190,6 +3190,7 @@ class MAXRTInvocationsSupportedTest :	public TestBase,
 	bool init(	vkt::Context&			context,
 				RayTracingProperties*	rtPropertiesPtr) final
 	{
+		m_context = &context;
 		/* NOTE: In order to avoid running into a situation where the test attempts to create a buffer of size larger than permitted by Vulkan,
 		 *       we limit the maximum number of testable invocations to 2^29 on 64bit CTS build and driver or to 2^27 on 32bit */
 		const auto		maxComputeWorkGroupCount		= context.getDeviceProperties().limits.maxComputeWorkGroupCount;
@@ -3389,6 +3390,8 @@ class MAXRTInvocationsSupportedTest :	public TestBase,
 
 		for (deUint32 nRay = 0; nRay < nHitsReported; ++nRay)
 		{
+			// Touch watch dog every 100000 loops to avoid timeout issue.
+			if(nRay > 0 && (nRay % 100000 == 0)) m_context->getTestContext().touchWatchdog();
 			const HitProperties* hitPropsPtr = reinterpret_cast<const HitProperties*>(resultU32Ptr + 2 /* preamble ints */) + nRay;
 
 			if (m_nRayToInstanceIndexExpected.at(nRay % m_nMaxCells) != hitPropsPtr->instanceCustomIndex)
@@ -3418,6 +3421,7 @@ private:
 		m_nRayToInstanceIndexExpected[cellLocation[0] ] = customIndexAssigned;
 	}
 
+	vkt::Context* m_context;
 	const AccelerationStructureLayout	m_asStructureLayout;
 	const GeometryType					m_geometryType;
 
