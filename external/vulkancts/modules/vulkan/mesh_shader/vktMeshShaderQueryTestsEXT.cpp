@@ -1236,7 +1236,7 @@ tcu::TestStatus MeshQueryInstance::iterate (void)
 			}
 
 			if (hasTaskInvStat)
-				verifyQueryCounter(totalTaskInvs, expectedTaskInv, expectedTaskInv, *m_params, "Task invocations");
+				verifyQueryCounter(totalTaskInvs, expectedTaskInv, expectedTaskInv * viewCount, *m_params, "Task invocations");
 
 			if (hasMeshInvStat)
 				verifyQueryCounter(totalMeshInvs, expectedMeshInv, expectedMeshInv * viewCount, *m_params, "Mesh invocations");
