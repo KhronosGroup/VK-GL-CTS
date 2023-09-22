@@ -2408,3 +2408,33 @@ void DeviceDriver::cmdDispatchGraphIndirectCountAMDX (VkCommandBuffer commandBuf
 {
 	m_vk.cmdDispatchGraphIndirectCountAMDX(commandBuffer, scratch, countInfo);
 }
+
+void DeviceDriver::cmdBindDescriptorSets2KHR (VkCommandBuffer commandBuffer, const VkBindDescriptorSetsInfoKHR* pBindDescriptorSetsInfo) const
+{
+	m_vk.cmdBindDescriptorSets2KHR(commandBuffer, pBindDescriptorSetsInfo);
+}
+
+void DeviceDriver::cmdPushConstants2KHR (VkCommandBuffer commandBuffer, const VkPushConstantsInfoKHR* pPushConstantsInfo) const
+{
+	m_vk.cmdPushConstants2KHR(commandBuffer, pPushConstantsInfo);
+}
+
+void DeviceDriver::cmdPushDescriptorSet2KHR (VkCommandBuffer commandBuffer, const VkPushDescriptorSetInfoKHR* pPushDescriptorSetInfo) const
+{
+	m_vk.cmdPushDescriptorSet2KHR(commandBuffer, pPushDescriptorSetInfo);
+}
+
+void DeviceDriver::cmdPushDescriptorSetWithTemplate2KHR (VkCommandBuffer commandBuffer, const VkPushDescriptorSetWithTemplateInfoKHR* pPushDescriptorSetWithTemplateInfo) const
+{
+	m_vk.cmdPushDescriptorSetWithTemplate2KHR(commandBuffer, pPushDescriptorSetWithTemplateInfo);
+}
+
+void DeviceDriver::cmdSetDescriptorBufferOffsets2EXT (VkCommandBuffer commandBuffer, const VkSetDescriptorBufferOffsetsInfoEXT* pSetDescriptorBufferOffsetsInfo) const
+{
+	m_vk.cmdSetDescriptorBufferOffsets2EXT(commandBuffer, pSetDescriptorBufferOffsetsInfo);
+}
+
+void DeviceDriver::cmdBindDescriptorBufferEmbeddedSamplers2EXT (VkCommandBuffer commandBuffer, const VkBindDescriptorBufferEmbeddedSamplersInfoEXT* pBindDescriptorBufferEmbeddedSamplersInfo) const
+{
+	m_vk.cmdBindDescriptorBufferEmbeddedSamplers2EXT(commandBuffer, pBindDescriptorBufferEmbeddedSamplersInfo);
+}

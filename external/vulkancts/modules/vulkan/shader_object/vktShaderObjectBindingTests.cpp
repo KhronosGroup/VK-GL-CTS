@@ -200,6 +200,8 @@ tcu::TestStatus ShaderObjectBindingDrawInstance::iterate (void)
 
 	const bool							tessellationSupported		= m_context.getDeviceFeatures().tessellationShader;
 	const bool							geometrySupported			= m_context.getDeviceFeatures().geometryShader;
+	const bool							taskSupported				= m_context.getMeshShaderFeatures().taskShader;
+	const bool							meshSupported				= m_context.getMeshShaderFeatures().meshShader;
 
 	vk::VkFormat						colorAttachmentFormat		= vk::VK_FORMAT_R8G8B8A8_UNORM;
 	const auto							subresourceRange			= makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -296,14 +298,14 @@ tcu::TestStatus ShaderObjectBindingDrawInstance::iterate (void)
 		vertShader = createShader(vk, device, vk::VK_SHADER_STAGE_VERTEX_BIT, "vertNoTessGeom");
 		vertAltShader = createShader(vk, device, vk::VK_SHADER_STAGE_VERTEX_BIT, "vertAltNoTessGeom");
 	}
-	if (tessellationSupported)
+	if (tessellationSupported && (m_params.stage != vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT || m_params.testType != DISABLED))
 	{
 		tescShader = createShader(vk, device, vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "tesc");
 		teseShader = createShader(vk, device, vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "tese");
 		tescAltShader = createShader(vk, device, vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "tescAlt");
 		teseAltShader = createShader(vk, device, vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "teseAlt");
 	}
-	if (geometrySupported)
+	if (geometrySupported && (m_params.stage != vk::VK_SHADER_STAGE_GEOMETRY_BIT || m_params.testType != DISABLED))
 	{
 		geomShader = createShader(vk, device, vk::VK_SHADER_STAGE_GEOMETRY_BIT, "geom");
 		geomAltShader = createShader(vk, device, vk::VK_SHADER_STAGE_GEOMETRY_BIT, "geomAlt");
@@ -341,7 +343,7 @@ tcu::TestStatus ShaderObjectBindingDrawInstance::iterate (void)
 
 	if (m_params.testType == PASSTHROUGH_GEOM)
 	{
-		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, *passThroughGeomShader, *fragShader);
+		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, *passThroughGeomShader, *fragShader, taskSupported, meshSupported);
 		if (m_params.setStateAfter)
 			setDynamicStates(*cmdBuffer, tessellationSupported);
 		vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
@@ -351,7 +353,7 @@ tcu::TestStatus ShaderObjectBindingDrawInstance::iterate (void)
 	}
 	else if (m_params.testType == SWAP)
 	{
-		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, *geomShader, *fragShader);
+		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, *geomShader, *fragShader, taskSupported, meshSupported);
 		if (m_params.setStateAfter)
 			setDynamicStates(*cmdBuffer, tessellationSupported);
 		vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
@@ -371,6 +373,16 @@ tcu::TestStatus ShaderObjectBindingDrawInstance::iterate (void)
 	}
 	else if (m_params.testType == DISABLED)
 	{
+		if (taskSupported) {
+			vk::VkShaderStageFlagBits stage = vk::VK_SHADER_STAGE_TASK_BIT_EXT;
+			vk::VkShaderEXT shader = VK_NULL_HANDLE;
+			vk.cmdBindShadersEXT(*cmdBuffer, 1u, &stage, &shader);
+		}
+		if (meshSupported) {
+			vk::VkShaderStageFlagBits stage = vk::VK_SHADER_STAGE_MESH_BIT_EXT;
+			vk::VkShaderEXT shader = VK_NULL_HANDLE;
+			vk.cmdBindShadersEXT(*cmdBuffer, 1u, &stage, &shader);
+		}
 		if (m_params.stage == vk::VK_SHADER_STAGE_GEOMETRY_BIT)
 		{
 			vk::VkShaderStageFlagBits stages[] = { vk::VK_SHADER_STAGE_VERTEX_BIT, vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, vk::VK_SHADER_STAGE_FRAGMENT_BIT };
@@ -397,7 +409,7 @@ tcu::TestStatus ShaderObjectBindingDrawInstance::iterate (void)
 	}
 	else if (m_params.testType == UNBIND)
 	{
-		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, *geomShader, *fragShader);
+		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, *geomShader, *fragShader, taskSupported, meshSupported);
 		vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 		if (m_params.stage == vk::VK_SHADER_STAGE_GEOMETRY_BIT)
 		{
@@ -420,7 +432,7 @@ tcu::TestStatus ShaderObjectBindingDrawInstance::iterate (void)
 	}
 	else if (m_params.testType == DRAW_DISPATCH_DRAW)
 	{
-		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, *geomShader, *fragShader);
+		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, *geomShader, *fragShader, taskSupported, meshSupported);
 		if (m_params.setStateAfter)
 			setDynamicStates(*cmdBuffer, tessellationSupported);
 		vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
@@ -434,7 +446,7 @@ tcu::TestStatus ShaderObjectBindingDrawInstance::iterate (void)
 		vk::VkShaderStageFlagBits computeStage = vk::VK_SHADER_STAGE_COMPUTE_BIT;
 		vk.cmdBindShadersEXT(*cmdBuffer, 1u, &computeStage, &*compShader);
 		vk.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
-		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, *geomShader, *fragShader);
+		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, *geomShader, *fragShader, taskSupported, meshSupported);
 		vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout.get(), 0, 1, &descriptorSet2.get(), 0, DE_NULL);
 		vk.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
 	}
@@ -911,8 +923,12 @@ tcu::TestStatus ShaderObjectBindingInstance::iterate (void)
 						{
 							for (const auto bindTask : bind)
 							{
+								if (bindVert && bindTask)
+									continue;
 								for (const auto bindMesh : bind)
 								{
+									if (bindVert && bindMesh)
+										continue;
 									std::vector<vk::VkShaderStageFlagBits> stages = {
 										vk::VK_SHADER_STAGE_VERTEX_BIT,
 										vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
@@ -1066,6 +1082,21 @@ tcu::TestStatus MeshShaderObjectBindingInstance::iterate (void)
 	vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
 	vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, true);
 	vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0, 1, &descriptorSet.get(), 0, DE_NULL);
+
+	std::vector<vk::VkShaderStageFlagBits> nullStages = {
+		vk::VK_SHADER_STAGE_VERTEX_BIT,
+	};
+	if (m_context.getDeviceFeatures().tessellationShader) {
+		nullStages.push_back(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
+		nullStages.push_back(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
+	}
+	if (m_context.getDeviceFeatures().geometryShader) {
+		nullStages.push_back(vk::VK_SHADER_STAGE_GEOMETRY_BIT);
+	}
+	for (const auto& stage : nullStages) {
+		vk::VkShaderEXT shader = VK_NULL_HANDLE;
+		vk.cmdBindShadersEXT(*cmdBuffer, 1u, &stage, &shader);
+	}
 
 	const vk::VkShaderStageFlagBits stages[] = {
 			vk::VK_SHADER_STAGE_TASK_BIT_EXT,

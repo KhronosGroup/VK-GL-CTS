@@ -484,3 +484,9 @@ CmdInitializeGraphScratchMemoryAMDXFunc						cmdInitializeGraphScratchMemoryAMDX
 CmdDispatchGraphAMDXFunc									cmdDispatchGraphAMDX;
 CmdDispatchGraphIndirectAMDXFunc							cmdDispatchGraphIndirectAMDX;
 CmdDispatchGraphIndirectCountAMDXFunc						cmdDispatchGraphIndirectCountAMDX;
+CmdBindDescriptorSets2KHRFunc								cmdBindDescriptorSets2KHR;
+CmdPushConstants2KHRFunc									cmdPushConstants2KHR;
+CmdPushDescriptorSet2KHRFunc								cmdPushDescriptorSet2KHR;
+CmdPushDescriptorSetWithTemplate2KHRFunc					cmdPushDescriptorSetWithTemplate2KHR;
+CmdSetDescriptorBufferOffsets2EXTFunc						cmdSetDescriptorBufferOffsets2EXT;
+CmdBindDescriptorBufferEmbeddedSamplers2EXTFunc				cmdBindDescriptorBufferEmbeddedSamplers2EXT;

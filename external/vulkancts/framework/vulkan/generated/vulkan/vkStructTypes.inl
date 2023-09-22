@@ -3183,6 +3183,7 @@ struct VkPhysicalDeviceMaintenance6PropertiesKHR
 	VkStructureType	sType;
 	void*			pNext;
 	uint32_t		maxCombinedImageSamplerDescriptorCount;
+	VkBool32		fragmentShadingRateClampCombinerInputs;
 };
 
 struct VkRenderingAreaInfoKHR
@@ -8844,6 +8845,72 @@ struct VkBindMemoryStatusKHR
 	VkStructureType	sType;
 	const void*		pNext;
 	VkResult*		pResult;
+};
+
+struct VkBindDescriptorSetsInfoKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkShaderStageFlags		stageFlags;
+	VkPipelineLayout		layout;
+	uint32_t				firstSet;
+	uint32_t				descriptorSetCount;
+	const VkDescriptorSet*	pDescriptorSets;
+	uint32_t				dynamicOffsetCount;
+	const uint32_t*			pDynamicOffsets;
+};
+
+struct VkPushConstantsInfoKHR
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkPipelineLayout	layout;
+	VkShaderStageFlags	stageFlags;
+	uint32_t			offset;
+	uint32_t			size;
+	const void*			pValues;
+};
+
+struct VkPushDescriptorSetInfoKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkShaderStageFlags			stageFlags;
+	VkPipelineLayout			layout;
+	uint32_t					set;
+	uint32_t					descriptorWriteCount;
+	const VkWriteDescriptorSet*	pDescriptorWrites;
+};
+
+struct VkPushDescriptorSetWithTemplateInfoKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkDescriptorUpdateTemplate	descriptorUpdateTemplate;
+	VkPipelineLayout			layout;
+	uint32_t					set;
+	const void*					pData;
+};
+
+struct VkSetDescriptorBufferOffsetsInfoEXT
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkShaderStageFlags	stageFlags;
+	VkPipelineLayout	layout;
+	uint32_t			firstSet;
+	uint32_t			setCount;
+	const uint32_t*		pBufferIndices;
+	const VkDeviceSize*	pOffsets;
+};
+
+struct VkBindDescriptorBufferEmbeddedSamplersInfoEXT
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkShaderStageFlags	stageFlags;
+	VkPipelineLayout	layout;
+	uint32_t			set;
 };
 
 struct VkPhysicalDeviceCubicClampFeaturesQCOM

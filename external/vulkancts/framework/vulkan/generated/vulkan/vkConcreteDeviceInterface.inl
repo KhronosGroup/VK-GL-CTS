@@ -484,3 +484,9 @@ virtual void				cmdInitializeGraphScratchMemoryAMDX						(VkCommandBuffer comman
 virtual void				cmdDispatchGraphAMDX									(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo) const;
 virtual void				cmdDispatchGraphIndirectAMDX							(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo) const;
 virtual void				cmdDispatchGraphIndirectCountAMDX						(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceAddress countInfo) const;
+virtual void				cmdBindDescriptorSets2KHR								(VkCommandBuffer commandBuffer, const VkBindDescriptorSetsInfoKHR* pBindDescriptorSetsInfo) const;
+virtual void				cmdPushConstants2KHR									(VkCommandBuffer commandBuffer, const VkPushConstantsInfoKHR* pPushConstantsInfo) const;
+virtual void				cmdPushDescriptorSet2KHR								(VkCommandBuffer commandBuffer, const VkPushDescriptorSetInfoKHR* pPushDescriptorSetInfo) const;
+virtual void				cmdPushDescriptorSetWithTemplate2KHR					(VkCommandBuffer commandBuffer, const VkPushDescriptorSetWithTemplateInfoKHR* pPushDescriptorSetWithTemplateInfo) const;
+virtual void				cmdSetDescriptorBufferOffsets2EXT						(VkCommandBuffer commandBuffer, const VkSetDescriptorBufferOffsetsInfoEXT* pSetDescriptorBufferOffsetsInfo) const;
+virtual void				cmdBindDescriptorBufferEmbeddedSamplers2EXT				(VkCommandBuffer commandBuffer, const VkBindDescriptorBufferEmbeddedSamplersInfoEXT* pBindDescriptorBufferEmbeddedSamplersInfo) const;

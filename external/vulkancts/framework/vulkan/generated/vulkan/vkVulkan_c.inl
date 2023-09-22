@@ -2219,6 +2219,12 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_FEATURES_KHR = 1000545000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_PROPERTIES_KHR = 1000545001,
     VK_STRUCTURE_TYPE_BIND_MEMORY_STATUS_KHR = 1000545002,
+    VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO_KHR = 1000545003,
+    VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO_KHR = 1000545004,
+    VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO_KHR = 1000545005,
+    VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO_KHR = 1000545006,
+    VK_STRUCTURE_TYPE_SET_DESCRIPTOR_BUFFER_OFFSETS_INFO_EXT = 1000545007,
+    VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT = 1000545008,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV = 1000546000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
@@ -11811,6 +11817,7 @@ typedef struct VkPhysicalDeviceMaintenance6PropertiesKHR {
     VkStructureType    sType;
     void*              pNext;
     deUint32           maxCombinedImageSamplerDescriptorCount;
+    VkBool32           fragmentShadingRateClampCombinerInputs;
 } VkPhysicalDeviceMaintenance6PropertiesKHR;
 
 typedef struct VkBindMemoryStatusKHR {
@@ -11819,6 +11826,98 @@ typedef struct VkBindMemoryStatusKHR {
     VkResult*          pResult;
 } VkBindMemoryStatusKHR;
 
+typedef struct VkBindDescriptorSetsInfoKHR {
+    VkStructureType           sType;
+    const void*               pNext;
+    VkShaderStageFlags        stageFlags;
+    VkPipelineLayout          layout;
+    deUint32                  firstSet;
+    deUint32                  descriptorSetCount;
+    const VkDescriptorSet*    pDescriptorSets;
+    deUint32                  dynamicOffsetCount;
+    const deUint32*           pDynamicOffsets;
+} VkBindDescriptorSetsInfoKHR;
+
+typedef struct VkPushConstantsInfoKHR {
+    VkStructureType       sType;
+    const void*           pNext;
+    VkPipelineLayout      layout;
+    VkShaderStageFlags    stageFlags;
+    deUint32              offset;
+    deUint32              size;
+    const void*           pValues;
+} VkPushConstantsInfoKHR;
+
+typedef struct VkPushDescriptorSetInfoKHR {
+    VkStructureType                sType;
+    const void*                    pNext;
+    VkShaderStageFlags             stageFlags;
+    VkPipelineLayout               layout;
+    deUint32                       set;
+    deUint32                       descriptorWriteCount;
+    const VkWriteDescriptorSet*    pDescriptorWrites;
+} VkPushDescriptorSetInfoKHR;
+
+typedef struct VkPushDescriptorSetWithTemplateInfoKHR {
+    VkStructureType               sType;
+    const void*                   pNext;
+    VkDescriptorUpdateTemplate    descriptorUpdateTemplate;
+    VkPipelineLayout              layout;
+    deUint32                      set;
+    const void*                   pData;
+} VkPushDescriptorSetWithTemplateInfoKHR;
+
+typedef struct VkSetDescriptorBufferOffsetsInfoEXT {
+    VkStructureType        sType;
+    const void*            pNext;
+    VkShaderStageFlags     stageFlags;
+    VkPipelineLayout       layout;
+    deUint32               firstSet;
+    deUint32               setCount;
+    const deUint32*        pBufferIndices;
+    const VkDeviceSize*    pOffsets;
+} VkSetDescriptorBufferOffsetsInfoEXT;
+
+typedef struct VkBindDescriptorBufferEmbeddedSamplersInfoEXT {
+    VkStructureType       sType;
+    const void*           pNext;
+    VkShaderStageFlags    stageFlags;
+    VkPipelineLayout      layout;
+    deUint32              set;
+} VkBindDescriptorBufferEmbeddedSamplersInfoEXT;
+
+typedef void (VKAPI_PTR *PFN_vkCmdBindDescriptorSets2KHR)(VkCommandBuffer commandBuffer, const VkBindDescriptorSetsInfoKHR* pBindDescriptorSetsInfo);
+typedef void (VKAPI_PTR *PFN_vkCmdPushConstants2KHR)(VkCommandBuffer commandBuffer, const VkPushConstantsInfoKHR* pPushConstantsInfo);
+typedef void (VKAPI_PTR *PFN_vkCmdPushDescriptorSet2KHR)(VkCommandBuffer commandBuffer, const VkPushDescriptorSetInfoKHR* pPushDescriptorSetInfo);
+typedef void (VKAPI_PTR *PFN_vkCmdPushDescriptorSetWithTemplate2KHR)(VkCommandBuffer commandBuffer, const VkPushDescriptorSetWithTemplateInfoKHR* pPushDescriptorSetWithTemplateInfo);
+typedef void (VKAPI_PTR *PFN_vkCmdSetDescriptorBufferOffsets2EXT)(VkCommandBuffer commandBuffer, const VkSetDescriptorBufferOffsetsInfoEXT* pSetDescriptorBufferOffsetsInfo);
+typedef void (VKAPI_PTR *PFN_vkCmdBindDescriptorBufferEmbeddedSamplers2EXT)(VkCommandBuffer commandBuffer, const VkBindDescriptorBufferEmbeddedSamplersInfoEXT* pBindDescriptorBufferEmbeddedSamplersInfo);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR void VKAPI_CALL vkCmdBindDescriptorSets2KHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkBindDescriptorSetsInfoKHR*          pBindDescriptorSetsInfo);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdPushConstants2KHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkPushConstantsInfoKHR*               pPushConstantsInfo);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdPushDescriptorSet2KHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkPushDescriptorSetInfoKHR*           pPushDescriptorSetInfo);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdPushDescriptorSetWithTemplate2KHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkPushDescriptorSetWithTemplateInfoKHR* pPushDescriptorSetWithTemplateInfo);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdSetDescriptorBufferOffsets2EXT(
+    VkCommandBuffer                             commandBuffer,
+    const VkSetDescriptorBufferOffsetsInfoEXT*  pSetDescriptorBufferOffsetsInfo);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdBindDescriptorBufferEmbeddedSamplers2EXT(
+    VkCommandBuffer                             commandBuffer,
+    const VkBindDescriptorBufferEmbeddedSamplersInfoEXT* pBindDescriptorBufferEmbeddedSamplersInfo);
+#endif
 
 
 // VK_EXT_debug_report is a preprocessor guard. Do not pass it to API calls.

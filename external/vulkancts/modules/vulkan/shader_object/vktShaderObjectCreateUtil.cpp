@@ -369,6 +369,8 @@ void setDefaultShaderObjectDynamicStates (const vk::DeviceInterface& vk, vk::VkC
 	float coverageModulationTable = 1.0f;
 	if (extensionEnabled(deviceExtensions, "VK_NV_framebuffer_mixed_samples"))
 		vk.cmdSetCoverageModulationTableNV(cmdBuffer, 1, &coverageModulationTable);
+	if (extensionEnabled(deviceExtensions, "VK_NV_shading_rate_image"))
+		vk.cmdSetShadingRateImageEnableNV(cmdBuffer, VK_FALSE);
 	if (extensionEnabled(deviceExtensions, "VK_NV_coverage_reduction_mode"))
 		vk.cmdSetCoverageReductionModeNV(cmdBuffer, vk::VK_COVERAGE_REDUCTION_MODE_MERGE_NV);
 	if (extensionEnabled(deviceExtensions, "VK_NV_representative_fragment_test"))
@@ -383,9 +385,11 @@ void setDefaultShaderObjectDynamicStates (const vk::DeviceInterface& vk, vk::VkC
 		vk.cmdSetDiscardRectangleEXT(cmdBuffer, 0u, 1u, &scissor);
 	if (extensionEnabled(deviceExtensions, "VK_EXT_discard_rectangles"))
 		vk.cmdSetDiscardRectangleModeEXT(cmdBuffer, vk::VK_DISCARD_RECTANGLE_MODE_INCLUSIVE_EXT);
+	if (extensionEnabled(deviceExtensions, "VK_EXT_attachment_feedback_loop_dynamic_state"))
+		vk.cmdSetAttachmentFeedbackLoopEnableEXT(cmdBuffer, 0u);
 }
 
-void bindGraphicsShaders (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkShaderEXT vertShader, vk::VkShaderEXT tescShader, vk::VkShaderEXT teseShader, vk::VkShaderEXT geomShader, vk::VkShaderEXT fragShader)
+void bindGraphicsShaders (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkShaderEXT vertShader, vk::VkShaderEXT tescShader, vk::VkShaderEXT teseShader, vk::VkShaderEXT geomShader, vk::VkShaderEXT fragShader, bool taskShaderSupported, bool meshShaderSupported)
 {
 	vk::VkShaderStageFlagBits stages[] = {
 			vk::VK_SHADER_STAGE_VERTEX_BIT,
@@ -401,7 +405,17 @@ void bindGraphicsShaders (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmd
 		geomShader,
 		fragShader,
 	};
-	vk.cmdBindShadersEXT(cmdBuffer, 5, stages, shaders);
+	vk.cmdBindShadersEXT(cmdBuffer, 5u, stages, shaders);
+	if (taskShaderSupported) {
+		vk::VkShaderStageFlagBits stage = vk::VK_SHADER_STAGE_TASK_BIT_EXT;
+		vk::VkShaderEXT shader = VK_NULL_HANDLE;
+		vk.cmdBindShadersEXT(cmdBuffer, 1u, &stage, &shader);
+	}
+	if (meshShaderSupported) {
+		vk::VkShaderStageFlagBits stage = vk::VK_SHADER_STAGE_MESH_BIT_EXT;
+		vk::VkShaderEXT shader = VK_NULL_HANDLE;
+		vk.cmdBindShadersEXT(cmdBuffer, 1u, &stage, &shader);
+	}
 }
 
 void bindComputeShader(const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkShaderEXT compShader)

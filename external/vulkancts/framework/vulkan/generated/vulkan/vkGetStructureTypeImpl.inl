@@ -4098,6 +4098,36 @@ template<> VkStructureType getStructureType<VkBindMemoryStatusKHR> (void)
 	return VK_STRUCTURE_TYPE_BIND_MEMORY_STATUS_KHR;
 }
 
+template<> VkStructureType getStructureType<VkBindDescriptorSetsInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPushConstantsInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPushDescriptorSetInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPushDescriptorSetWithTemplateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkSetDescriptorBufferOffsetsInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SET_DESCRIPTOR_BUFFER_OFFSETS_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkBindDescriptorBufferEmbeddedSamplersInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceCubicClampFeaturesQCOM> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUBIC_CLAMP_FEATURES_QCOM;

@@ -3249,6 +3249,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_KHR_maintenance6")
 	{
+		functions.push_back("vkCmdBindDescriptorSets2KHR");
+		functions.push_back("vkCmdPushConstants2KHR");
+		functions.push_back("vkCmdPushDescriptorSet2KHR");
+		functions.push_back("vkCmdPushDescriptorSetWithTemplate2KHR");
+		functions.push_back("vkCmdPushDescriptorSetWithTemplate2KHR");
 		return;
 	}
 	if (extName == "VK_NV_descriptor_pool_overallocation")

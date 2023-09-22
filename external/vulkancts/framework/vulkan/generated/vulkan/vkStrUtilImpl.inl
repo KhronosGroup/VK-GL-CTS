@@ -2296,6 +2296,12 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_FEATURES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_BIND_MEMORY_STATUS_KHR:												return "VK_STRUCTURE_TYPE_BIND_MEMORY_STATUS_KHR";
+		case VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO_KHR:										return "VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO_KHR:												return "VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO_KHR:										return "VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO_KHR:							return "VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_SET_DESCRIPTOR_BUFFER_OFFSETS_INFO_EXT:								return "VK_STRUCTURE_TYPE_SET_DESCRIPTOR_BUFFER_OFFSETS_INFO_EXT";
+		case VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT:					return "VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV";
 		default:																					return DE_NULL;
 	}
@@ -9705,6 +9711,7 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance6Pro
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmaxCombinedImageSamplerDescriptorCount = " << value.maxCombinedImageSamplerDescriptorCount << '\n';
+	s << "\tfragmentShadingRateClampCombinerInputs = " << value.fragmentShadingRateClampCombinerInputs << '\n';
 	s << '}';
 	return s;
 }
@@ -17386,6 +17393,90 @@ std::ostream& operator<< (std::ostream& s, const VkBindMemoryStatusKHR& value)
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpResult = " << value.pResult << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBindDescriptorSetsInfoKHR& value)
+{
+	s << "VkBindDescriptorSetsInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstageFlags = " << getShaderStageFlagsStr(value.stageFlags) << '\n';
+	s << "\tlayout = " << value.layout << '\n';
+	s << "\tfirstSet = " << value.firstSet << '\n';
+	s << "\tdescriptorSetCount = " << value.descriptorSetCount << '\n';
+	s << "\tpDescriptorSets = " << value.pDescriptorSets << '\n';
+	s << "\tdynamicOffsetCount = " << value.dynamicOffsetCount << '\n';
+	s << "\tpDynamicOffsets = " << value.pDynamicOffsets << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPushConstantsInfoKHR& value)
+{
+	s << "VkPushConstantsInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tlayout = " << value.layout << '\n';
+	s << "\tstageFlags = " << getShaderStageFlagsStr(value.stageFlags) << '\n';
+	s << "\toffset = " << value.offset << '\n';
+	s << "\tsize = " << value.size << '\n';
+	s << "\tpValues = " << value.pValues << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPushDescriptorSetInfoKHR& value)
+{
+	s << "VkPushDescriptorSetInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstageFlags = " << getShaderStageFlagsStr(value.stageFlags) << '\n';
+	s << "\tlayout = " << value.layout << '\n';
+	s << "\tset = " << value.set << '\n';
+	s << "\tdescriptorWriteCount = " << value.descriptorWriteCount << '\n';
+	s << "\tpDescriptorWrites = " << value.pDescriptorWrites << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPushDescriptorSetWithTemplateInfoKHR& value)
+{
+	s << "VkPushDescriptorSetWithTemplateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdescriptorUpdateTemplate = " << value.descriptorUpdateTemplate << '\n';
+	s << "\tlayout = " << value.layout << '\n';
+	s << "\tset = " << value.set << '\n';
+	s << "\tpData = " << value.pData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSetDescriptorBufferOffsetsInfoEXT& value)
+{
+	s << "VkSetDescriptorBufferOffsetsInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstageFlags = " << getShaderStageFlagsStr(value.stageFlags) << '\n';
+	s << "\tlayout = " << value.layout << '\n';
+	s << "\tfirstSet = " << value.firstSet << '\n';
+	s << "\tsetCount = " << value.setCount << '\n';
+	s << "\tpBufferIndices = " << value.pBufferIndices << '\n';
+	s << "\tpOffsets = " << value.pOffsets << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBindDescriptorBufferEmbeddedSamplersInfoEXT& value)
+{
+	s << "VkBindDescriptorBufferEmbeddedSamplersInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstageFlags = " << getShaderStageFlagsStr(value.stageFlags) << '\n';
+	s << "\tlayout = " << value.layout << '\n';
+	s << "\tset = " << value.set << '\n';
 	s << '}';
 	return s;
 }

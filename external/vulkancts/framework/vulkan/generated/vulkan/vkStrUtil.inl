@@ -1586,6 +1586,12 @@ std::ostream&	operator<<	(std::ostream& s, const VkExecutionGraphPipelineScratch
 std::ostream&	operator<<	(std::ostream& s, const VkDispatchGraphInfoAMDX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDispatchGraphCountInfoAMDX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBindMemoryStatusKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBindDescriptorSetsInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPushConstantsInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPushDescriptorSetInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPushDescriptorSetWithTemplateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSetDescriptorBufferOffsetsInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBindDescriptorBufferEmbeddedSamplersInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCubicClampFeaturesQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceYcbcrDegammaFeaturesQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSamplerYcbcrConversionYcbcrDegammaCreateInfoQCOM& value);
