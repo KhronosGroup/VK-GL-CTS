@@ -4997,6 +4997,8 @@ dEQP-VKSC.spirv_assembly.instruction.compute.memory_access.null
 dEQP-VKSC.spirv_assembly.instruction.compute.memory_access.volatile
 dEQP-VKSC.spirv_assembly.instruction.compute.multiple_shaders.shader1
 dEQP-VKSC.spirv_assembly.instruction.compute.multiple_shaders.shader2
+dEQP-VKSC.spirv_assembly.instruction.compute.multiple_shaders_extended.two_entry_points_different_interfaces
+dEQP-VKSC.spirv_assembly.instruction.compute.multiple_shaders_extended.two_entry_points_execution_mode_id
 dEQP-VKSC.spirv_assembly.instruction.compute.nocontraction.addition
 dEQP-VKSC.spirv_assembly.instruction.compute.nocontraction.both
 dEQP-VKSC.spirv_assembly.instruction.compute.nocontraction.multiplication

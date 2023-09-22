@@ -1,8 +1,10 @@
+#ifndef _VKTSPVASMMULTIPLESHADERSTESTS_HPP
+#define _VKTSPVASMMULTIPLESHADERSTESTS_HPP
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2023 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,39 +20,21 @@
  *
  *//*!
  * \file
- * \brief SPIR-V Assembly Tests
+ * \brief Test multiple entry points.
  *//*--------------------------------------------------------------------*/
 
-#include "vktSpvAsmTests.hpp"
-
-#include "vktSpvAsmInstructionTests.hpp"
-#include "vktSpvAsmTypeTests.hpp"
-#include "vktTestGroupUtil.hpp"
+#include "vkDefs.hpp"
+#include "vkMemUtil.hpp"
+#include "tcuTestCase.hpp"
 
 namespace vkt
 {
 namespace SpirVAssembly
 {
 
-namespace
-{
-
-void createChildren (tcu::TestCaseGroup* spirVAssemblyTests)
-{
-	tcu::TestContext&	testCtx		= spirVAssemblyTests->getTestContext();
-
-	spirVAssemblyTests->addChild(createInstructionTests(testCtx));
-	spirVAssemblyTests->addChild(createTypeTests(testCtx));
-	// \todo [2015-09-28 antiagainst] control flow
-	// \todo [2015-09-28 antiagainst] multiple shaders in the same module
-}
-
-} // anonymous
-
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
-{
-	return createTestGroup(testCtx, name, createChildren);
-}
+tcu::TestCaseGroup* createMultipleShaderExtendedGroup(tcu::TestContext& testCtx);
 
 } // SpirVAssembly
 } // vkt
+
+#endif // _VKTSPVASMMULTIPLESHADERSTESTS_HPP

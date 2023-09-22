@@ -85,6 +85,7 @@
 #include "vktSpvAsm64bitCompareTests.hpp"
 #include "vktSpvAsmTrinaryMinMaxTests.hpp"
 #include "vktSpvAsmTerminateInvocationTests.hpp"
+#include "vktSpvAsmMultipleShadersTests.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktSpvAsmIntegerDotProductTests.hpp"
 #endif // CTS_USES_VULKANSC
@@ -20852,6 +20853,7 @@ do { \
 			computeTests->addChild(createSelectionControlGroup(testCtx));
 			computeTests->addChild(createBlockOrderGroup(testCtx));
 			computeTests->addChild(createMultipleShaderGroup(testCtx));
+			computeTests->addChild(createMultipleShaderExtendedGroup(testCtx));
 			computeTests->addChild(createMemoryAccessGroup(testCtx));
 			computeTests->addChild(createOpCopyMemoryGroup(testCtx));
 			computeTests->addChild(createOpCopyObjectGroup(testCtx));
