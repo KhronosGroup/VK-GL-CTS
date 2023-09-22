@@ -1312,6 +1312,7 @@ public:
 						~DynamicOffsetComputeTest	(void);
 	void				initPrograms				(SourceCollections& sourceCollections) const;
 	TestInstance*		createInstance				(Context& context) const;
+	void				checkSupport				(Context& context) const;
 
 protected:
 	const TestParams	m_params;
@@ -1333,6 +1334,11 @@ DynamicOffsetComputeTest::~DynamicOffsetComputeTest (void)
 TestInstance* DynamicOffsetComputeTest::createInstance (Context& context) const
 {
 	return new DynamicOffsetComputeTestInstance(context, m_params);
+}
+
+void DynamicOffsetComputeTest::checkSupport(Context& context) const
+{
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void DynamicOffsetComputeTest::initPrograms (SourceCollections& sourceCollections) const

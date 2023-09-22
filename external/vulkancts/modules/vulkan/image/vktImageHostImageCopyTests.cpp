@@ -1777,12 +1777,21 @@ tcu::TestStatus QueryTestInstance::iterate (void)
 		vk::VkFormatProperties3	formatProperties3 = vk::initVulkanStructure();
 		vk::VkFormatProperties2 formatProperties2 = vk::initVulkanStructure(&formatProperties3);
 		vki.getPhysicalDeviceFormatProperties2(physicalDevice, m_format, &formatProperties2);
-		if ((formatProperties3.optimalTilingFeatures & vk::VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT) != 0)
+
+		if (m_tiling == VK_IMAGE_TILING_OPTIMAL)
 		{
-			if ((formatProperties3.optimalTilingFeatures & vk::VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT) == 0)
+			if ((formatProperties3.optimalTilingFeatures & VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT) == 0)
 			{
 				log << tcu::TestLog::Message << "VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT is supported in optimalTilingFeatures for format " << vk::getFormatStr(m_format).toString() << ", but VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT is not" << tcu::TestLog::EndMessage;
-				return tcu::TestStatus::fail("Fail");
+				return tcu::TestStatus::fail("VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT not supported");
+			}
+		}
+		else if (m_tiling == VK_IMAGE_TILING_LINEAR)
+		{
+			if ((formatProperties3.linearTilingFeatures & VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT) == 0)
+			{
+				log << tcu::TestLog::Message << "VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT is supported in linearTilingFeatures for format " << vk::getFormatStr(m_format).toString() << ", but VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT is not" << tcu::TestLog::EndMessage;
+				return tcu::TestStatus::fail("VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT not supported");
 			}
 		}
 	}
@@ -1815,8 +1824,10 @@ void QueryTestCase::checkSupport (vkt::Context& context) const {
 	vk::VkFormatProperties3 formatProperties3 = vk::initVulkanStructure();
 	vk::VkFormatProperties2 formatProperties2 = vk::initVulkanStructure(&formatProperties3);
 	vki.getPhysicalDeviceFormatProperties2(context.getPhysicalDevice(), m_format, &formatProperties2);
-	if ((formatProperties3.optimalTilingFeatures & vk::VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT) == 0)
-		TCU_THROW(NotSupportedError, "Format feature host image transfer not supported for optimal tiling.");
+	if (m_tiling == VK_IMAGE_TILING_OPTIMAL && (formatProperties3.optimalTilingFeatures & vk::VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT) == 0)
+		TCU_THROW(NotSupportedError, "Format feature sampled image bit not supported for optimal tiling.");
+	if (m_tiling == VK_IMAGE_TILING_LINEAR && (formatProperties3.linearTilingFeatures & vk::VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT) == 0)
+		TCU_THROW(NotSupportedError, "Format feature sampled image bit not supported for linear tiling.");
 }
 
 void testGenerator(tcu::TestCaseGroup* group)

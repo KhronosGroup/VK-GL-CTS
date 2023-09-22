@@ -112,6 +112,9 @@ void ImageBlockShapesCase::checkSupport (Context& context) const
 			TCU_THROW(NotSupportedError, "sparseImageInt64Atomics is not supported for device");
 		}
 	}
+
+	if (m_numSamples != vk::VK_SAMPLE_COUNT_1_BIT && context.getDeviceFeatures().shaderStorageImageMultisample == VK_FALSE)
+		TCU_THROW(NotSupportedError, "required samples are not supported for device");
 }
 
 class ImageBlockShapesInstance : public SparseResourcesBaseInstance

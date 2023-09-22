@@ -6876,39 +6876,6 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			}
 		}
 
-		// Null color blend pipeline pAttachments pointer with all structure contents as dynamic states.
-		{
-			TestConfig config (pipelineConstructionType, kOrdering, kUseMeshShaders);
-
-			// The equation picks the old color instead of the new one if blending is enabled.
-			config.colorBlendEquationConfig.staticValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ZERO,
-																		vk::VK_BLEND_FACTOR_ONE,
-																		vk::VK_BLEND_OP_ADD,
-																		vk::VK_BLEND_FACTOR_ZERO,
-																		vk::VK_BLEND_FACTOR_ONE,
-																		vk::VK_BLEND_OP_ADD);
-
-			// The dynamic value picks the new color.
-			config.colorBlendEquationConfig.dynamicValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ONE,
-																		vk::VK_BLEND_FACTOR_ZERO,
-																		vk::VK_BLEND_OP_ADD,
-																		vk::VK_BLEND_FACTOR_ONE,
-																		vk::VK_BLEND_FACTOR_ZERO,
-																		vk::VK_BLEND_OP_ADD);
-
-			config.colorBlendEnableConfig.staticValue	= false;
-			config.colorBlendEnableConfig.dynamicValue	= true;
-
-			config.colorWriteMaskConfig.staticValue		= ( 0 |  0 |  0 |  0);
-			config.colorWriteMaskConfig.dynamicValue	= (CR | CG | CB | CA);
-
-			config.nullStaticColorBlendAttPtr			= true; // What this test is about.
-
-			const char* testName = "null_color_blend_att_ptr";
-			const char* testDesc = "Set all VkPipelineColorBlendAttachmentState substates as dynamic and pass a null pointer in VkPipelineColorBlendStateCreateInfo::pAttachments";
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
-		}
-
 		// Dynamic color blend equation with dual blending.
 		{
 			// Two equations: one picks index 0 and the other one picks index 1.
@@ -6958,6 +6925,39 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				const auto indexStr = std::to_string(dynamicPick);
 				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_dual_index_" + indexStr, "Dynamically change dual source blending equation to pick color index " + indexStr, config));
 			}
+		}
+
+		// Null color blend pipeline pAttachments pointer with all structure contents as dynamic states.
+		{
+			TestConfig config (pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+			// The equation picks the old color instead of the new one if blending is enabled.
+			config.colorBlendEquationConfig.staticValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ZERO,
+																		vk::VK_BLEND_FACTOR_ONE,
+																		vk::VK_BLEND_OP_ADD,
+																		vk::VK_BLEND_FACTOR_ZERO,
+																		vk::VK_BLEND_FACTOR_ONE,
+																		vk::VK_BLEND_OP_ADD);
+
+			// The dynamic value picks the new color.
+			config.colorBlendEquationConfig.dynamicValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ONE,
+																		vk::VK_BLEND_FACTOR_ZERO,
+																		vk::VK_BLEND_OP_ADD,
+																		vk::VK_BLEND_FACTOR_ONE,
+																		vk::VK_BLEND_FACTOR_ZERO,
+																		vk::VK_BLEND_OP_ADD);
+
+			config.colorBlendEnableConfig.staticValue	= false;
+			config.colorBlendEnableConfig.dynamicValue	= true;
+
+			config.colorWriteMaskConfig.staticValue		= ( 0 |  0 |  0 |  0);
+			config.colorWriteMaskConfig.dynamicValue	= (CR | CG | CB | CA);
+
+			config.nullStaticColorBlendAttPtr			= true; // What this test is about.
+
+			const char* testName = "null_color_blend_att_ptr";
+			const char* testDesc = "Set all VkPipelineColorBlendAttachmentState substates as dynamic and pass a null pointer in VkPipelineColorBlendStateCreateInfo::pAttachments";
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
 		}
 
 		// Dynamically enable primitive restart

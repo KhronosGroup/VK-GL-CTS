@@ -459,6 +459,10 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate (void)
 	const vk::VkClearValue		clearValue				= vk::makeClearValueColor({ 0.0f, 0.0f, 0.0f, 1.0f });
 	vk::VkImageMemoryBarrier	initialBarrier			= vk::makeImageMemoryBarrier(0, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_GENERAL, **image, subresourceRange);
 
+	const vk::VkDeviceSize				bufferSize		= 64;
+	de::MovePtr<vk::BufferWithMemory>	buffer			= de::MovePtr<vk::BufferWithMemory>(new vk::BufferWithMemory(
+		vk, device, alloc, vk::makeBufferCreateInfo(bufferSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), vk::MemoryRequirement::HostVisible));
+
 	vk::beginCommandBuffer(vk, *cmdBuffer, 0u);
 
 	vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0, DE_NULL,
@@ -470,11 +474,14 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate (void)
 	}
 
 	if (m_params.testType != COMPUTE_SHADER_OBJECT_MIN_PIPELINE && m_params.testType != SHADER_OBJECT_COMPUTE_PIPELINE)
-	{
 		vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
-	}
 
 	vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, false, !m_context.getExtendedDynamicStateFeaturesEXT().extendedDynamicState);
+	vk::bindNullTaskMeshShaders(vk, *cmdBuffer, m_context.getMeshShaderFeaturesEXT());
+
+	vk::VkDeviceSize offset = 0u;
+	vk::VkDeviceSize stride = 16u;
+	vk.cmdBindVertexBuffers2(*cmdBuffer, 0u, 1u, &**buffer, &offset, &bufferSize, &stride);
 
 	if (m_params.testType == SHADER_OBJECT)
 	{

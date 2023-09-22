@@ -266,7 +266,8 @@ ConstPixelBufferAccess getSubregion (const ConstPixelBufferAccess& access, int x
 	DE_ASSERT(de::inRange(y+height, y+1, access.getHeight()));
 
 	DE_ASSERT(de::inBounds(z, 0, access.getDepth()));
-	DE_ASSERT(de::inRange(z+depth, z+1, access.getDepth()));
+	if (depth != -1)	// Handles case of VK_REMAINING_ARRAY_LAYERS
+		DE_ASSERT(de::inRange(z + depth, z + 1, access.getDepth()));
 
 	return ConstPixelBufferAccess(access.getFormat(), tcu::IVec3(width, height, depth), access.getPitch(),
 								  (const deUint8*)access.getDataPtr() + access.getPixelPitch()*x + access.getRowPitch()*y + access.getSlicePitch()*z);
@@ -292,7 +293,8 @@ PixelBufferAccess getSubregion (const PixelBufferAccess& access, int x, int y, i
 	DE_ASSERT(de::inRange(y+height, y+1, access.getHeight()));
 
 	DE_ASSERT(de::inBounds(z, 0, access.getDepth()));
-	DE_ASSERT(de::inRange(z+depth, z+1, access.getDepth()));
+	if (depth != -1)	// Handles case of VK_REMAINING_ARRAY_LAYERS
+		DE_ASSERT(de::inRange(z + depth, z + 1, access.getDepth()));
 
 	return PixelBufferAccess(access.getFormat(), tcu::IVec3(width, height, depth), access.getPitch(),
 							 (deUint8*)access.getDataPtr() + access.getPixelPitch()*x + access.getRowPitch()*y + access.getSlicePitch()*z);

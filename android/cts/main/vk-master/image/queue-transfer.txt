@@ -6,6 +6,7 @@ dEQP-VK.image.queue_transfer.2d.4x3x1.b5g6r5_unorm_pack16
 dEQP-VK.image.queue_transfer.2d.4x3x1.r5g5b5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.2d.4x3x1.b5g5r5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.2d.4x3x1.a1r5g5b5_unorm_pack16
+dEQP-VK.image.queue_transfer.2d.4x3x1.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.image.queue_transfer.2d.4x3x1.r8_unorm
 dEQP-VK.image.queue_transfer.2d.4x3x1.r8_snorm
 dEQP-VK.image.queue_transfer.2d.4x3x1.r8_uscaled
@@ -13,6 +14,7 @@ dEQP-VK.image.queue_transfer.2d.4x3x1.r8_sscaled
 dEQP-VK.image.queue_transfer.2d.4x3x1.r8_uint
 dEQP-VK.image.queue_transfer.2d.4x3x1.r8_sint
 dEQP-VK.image.queue_transfer.2d.4x3x1.r8_srgb
+dEQP-VK.image.queue_transfer.2d.4x3x1.a8_unorm_khr
 dEQP-VK.image.queue_transfer.2d.4x3x1.r8g8_unorm
 dEQP-VK.image.queue_transfer.2d.4x3x1.r8g8_snorm
 dEQP-VK.image.queue_transfer.2d.4x3x1.r8g8_uscaled
@@ -127,6 +129,7 @@ dEQP-VK.image.queue_transfer.2d.16x15x1.b5g6r5_unorm_pack16
 dEQP-VK.image.queue_transfer.2d.16x15x1.r5g5b5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.2d.16x15x1.b5g5r5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.2d.16x15x1.a1r5g5b5_unorm_pack16
+dEQP-VK.image.queue_transfer.2d.16x15x1.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.image.queue_transfer.2d.16x15x1.r8_unorm
 dEQP-VK.image.queue_transfer.2d.16x15x1.r8_snorm
 dEQP-VK.image.queue_transfer.2d.16x15x1.r8_uscaled
@@ -134,6 +137,7 @@ dEQP-VK.image.queue_transfer.2d.16x15x1.r8_sscaled
 dEQP-VK.image.queue_transfer.2d.16x15x1.r8_uint
 dEQP-VK.image.queue_transfer.2d.16x15x1.r8_sint
 dEQP-VK.image.queue_transfer.2d.16x15x1.r8_srgb
+dEQP-VK.image.queue_transfer.2d.16x15x1.a8_unorm_khr
 dEQP-VK.image.queue_transfer.2d.16x15x1.r8g8_unorm
 dEQP-VK.image.queue_transfer.2d.16x15x1.r8g8_snorm
 dEQP-VK.image.queue_transfer.2d.16x15x1.r8g8_uscaled
@@ -248,6 +252,7 @@ dEQP-VK.image.queue_transfer.2d.64x31x1.b5g6r5_unorm_pack16
 dEQP-VK.image.queue_transfer.2d.64x31x1.r5g5b5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.2d.64x31x1.b5g5r5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.2d.64x31x1.a1r5g5b5_unorm_pack16
+dEQP-VK.image.queue_transfer.2d.64x31x1.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.image.queue_transfer.2d.64x31x1.r8_unorm
 dEQP-VK.image.queue_transfer.2d.64x31x1.r8_snorm
 dEQP-VK.image.queue_transfer.2d.64x31x1.r8_uscaled
@@ -255,6 +260,7 @@ dEQP-VK.image.queue_transfer.2d.64x31x1.r8_sscaled
 dEQP-VK.image.queue_transfer.2d.64x31x1.r8_uint
 dEQP-VK.image.queue_transfer.2d.64x31x1.r8_sint
 dEQP-VK.image.queue_transfer.2d.64x31x1.r8_srgb
+dEQP-VK.image.queue_transfer.2d.64x31x1.a8_unorm_khr
 dEQP-VK.image.queue_transfer.2d.64x31x1.r8g8_unorm
 dEQP-VK.image.queue_transfer.2d.64x31x1.r8g8_snorm
 dEQP-VK.image.queue_transfer.2d.64x31x1.r8g8_uscaled
@@ -369,6 +375,7 @@ dEQP-VK.image.queue_transfer.2d.4x3x2.b5g6r5_unorm_pack16
 dEQP-VK.image.queue_transfer.2d.4x3x2.r5g5b5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.2d.4x3x2.b5g5r5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.2d.4x3x2.a1r5g5b5_unorm_pack16
+dEQP-VK.image.queue_transfer.2d.4x3x2.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.image.queue_transfer.2d.4x3x2.r8_unorm
 dEQP-VK.image.queue_transfer.2d.4x3x2.r8_snorm
 dEQP-VK.image.queue_transfer.2d.4x3x2.r8_uscaled
@@ -376,6 +383,7 @@ dEQP-VK.image.queue_transfer.2d.4x3x2.r8_sscaled
 dEQP-VK.image.queue_transfer.2d.4x3x2.r8_uint
 dEQP-VK.image.queue_transfer.2d.4x3x2.r8_sint
 dEQP-VK.image.queue_transfer.2d.4x3x2.r8_srgb
+dEQP-VK.image.queue_transfer.2d.4x3x2.a8_unorm_khr
 dEQP-VK.image.queue_transfer.2d.4x3x2.r8g8_unorm
 dEQP-VK.image.queue_transfer.2d.4x3x2.r8g8_snorm
 dEQP-VK.image.queue_transfer.2d.4x3x2.r8g8_uscaled
@@ -490,6 +498,7 @@ dEQP-VK.image.queue_transfer.2d.16x15x16.b5g6r5_unorm_pack16
 dEQP-VK.image.queue_transfer.2d.16x15x16.r5g5b5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.2d.16x15x16.b5g5r5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.2d.16x15x16.a1r5g5b5_unorm_pack16
+dEQP-VK.image.queue_transfer.2d.16x15x16.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.image.queue_transfer.2d.16x15x16.r8_unorm
 dEQP-VK.image.queue_transfer.2d.16x15x16.r8_snorm
 dEQP-VK.image.queue_transfer.2d.16x15x16.r8_uscaled
@@ -497,6 +506,7 @@ dEQP-VK.image.queue_transfer.2d.16x15x16.r8_sscaled
 dEQP-VK.image.queue_transfer.2d.16x15x16.r8_uint
 dEQP-VK.image.queue_transfer.2d.16x15x16.r8_sint
 dEQP-VK.image.queue_transfer.2d.16x15x16.r8_srgb
+dEQP-VK.image.queue_transfer.2d.16x15x16.a8_unorm_khr
 dEQP-VK.image.queue_transfer.2d.16x15x16.r8g8_unorm
 dEQP-VK.image.queue_transfer.2d.16x15x16.r8g8_snorm
 dEQP-VK.image.queue_transfer.2d.16x15x16.r8g8_uscaled
@@ -611,6 +621,7 @@ dEQP-VK.image.queue_transfer.2d_array.4x3x1.b5g6r5_unorm_pack16
 dEQP-VK.image.queue_transfer.2d_array.4x3x1.r5g5b5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.2d_array.4x3x1.b5g5r5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.2d_array.4x3x1.a1r5g5b5_unorm_pack16
+dEQP-VK.image.queue_transfer.2d_array.4x3x1.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.image.queue_transfer.2d_array.4x3x1.r8_unorm
 dEQP-VK.image.queue_transfer.2d_array.4x3x1.r8_snorm
 dEQP-VK.image.queue_transfer.2d_array.4x3x1.r8_uscaled
@@ -618,6 +629,7 @@ dEQP-VK.image.queue_transfer.2d_array.4x3x1.r8_sscaled
 dEQP-VK.image.queue_transfer.2d_array.4x3x1.r8_uint
 dEQP-VK.image.queue_transfer.2d_array.4x3x1.r8_sint
 dEQP-VK.image.queue_transfer.2d_array.4x3x1.r8_srgb
+dEQP-VK.image.queue_transfer.2d_array.4x3x1.a8_unorm_khr
 dEQP-VK.image.queue_transfer.2d_array.4x3x1.r8g8_unorm
 dEQP-VK.image.queue_transfer.2d_array.4x3x1.r8g8_snorm
 dEQP-VK.image.queue_transfer.2d_array.4x3x1.r8g8_uscaled
@@ -732,6 +744,7 @@ dEQP-VK.image.queue_transfer.2d_array.16x15x1.b5g6r5_unorm_pack16
 dEQP-VK.image.queue_transfer.2d_array.16x15x1.r5g5b5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.2d_array.16x15x1.b5g5r5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.2d_array.16x15x1.a1r5g5b5_unorm_pack16
+dEQP-VK.image.queue_transfer.2d_array.16x15x1.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.image.queue_transfer.2d_array.16x15x1.r8_unorm
 dEQP-VK.image.queue_transfer.2d_array.16x15x1.r8_snorm
 dEQP-VK.image.queue_transfer.2d_array.16x15x1.r8_uscaled
@@ -739,6 +752,7 @@ dEQP-VK.image.queue_transfer.2d_array.16x15x1.r8_sscaled
 dEQP-VK.image.queue_transfer.2d_array.16x15x1.r8_uint
 dEQP-VK.image.queue_transfer.2d_array.16x15x1.r8_sint
 dEQP-VK.image.queue_transfer.2d_array.16x15x1.r8_srgb
+dEQP-VK.image.queue_transfer.2d_array.16x15x1.a8_unorm_khr
 dEQP-VK.image.queue_transfer.2d_array.16x15x1.r8g8_unorm
 dEQP-VK.image.queue_transfer.2d_array.16x15x1.r8g8_snorm
 dEQP-VK.image.queue_transfer.2d_array.16x15x1.r8g8_uscaled
@@ -853,6 +867,7 @@ dEQP-VK.image.queue_transfer.2d_array.64x31x1.b5g6r5_unorm_pack16
 dEQP-VK.image.queue_transfer.2d_array.64x31x1.r5g5b5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.2d_array.64x31x1.b5g5r5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.2d_array.64x31x1.a1r5g5b5_unorm_pack16
+dEQP-VK.image.queue_transfer.2d_array.64x31x1.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.image.queue_transfer.2d_array.64x31x1.r8_unorm
 dEQP-VK.image.queue_transfer.2d_array.64x31x1.r8_snorm
 dEQP-VK.image.queue_transfer.2d_array.64x31x1.r8_uscaled
@@ -860,6 +875,7 @@ dEQP-VK.image.queue_transfer.2d_array.64x31x1.r8_sscaled
 dEQP-VK.image.queue_transfer.2d_array.64x31x1.r8_uint
 dEQP-VK.image.queue_transfer.2d_array.64x31x1.r8_sint
 dEQP-VK.image.queue_transfer.2d_array.64x31x1.r8_srgb
+dEQP-VK.image.queue_transfer.2d_array.64x31x1.a8_unorm_khr
 dEQP-VK.image.queue_transfer.2d_array.64x31x1.r8g8_unorm
 dEQP-VK.image.queue_transfer.2d_array.64x31x1.r8g8_snorm
 dEQP-VK.image.queue_transfer.2d_array.64x31x1.r8g8_uscaled
@@ -974,6 +990,7 @@ dEQP-VK.image.queue_transfer.2d_array.4x3x2.b5g6r5_unorm_pack16
 dEQP-VK.image.queue_transfer.2d_array.4x3x2.r5g5b5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.2d_array.4x3x2.b5g5r5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.2d_array.4x3x2.a1r5g5b5_unorm_pack16
+dEQP-VK.image.queue_transfer.2d_array.4x3x2.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.image.queue_transfer.2d_array.4x3x2.r8_unorm
 dEQP-VK.image.queue_transfer.2d_array.4x3x2.r8_snorm
 dEQP-VK.image.queue_transfer.2d_array.4x3x2.r8_uscaled
@@ -981,6 +998,7 @@ dEQP-VK.image.queue_transfer.2d_array.4x3x2.r8_sscaled
 dEQP-VK.image.queue_transfer.2d_array.4x3x2.r8_uint
 dEQP-VK.image.queue_transfer.2d_array.4x3x2.r8_sint
 dEQP-VK.image.queue_transfer.2d_array.4x3x2.r8_srgb
+dEQP-VK.image.queue_transfer.2d_array.4x3x2.a8_unorm_khr
 dEQP-VK.image.queue_transfer.2d_array.4x3x2.r8g8_unorm
 dEQP-VK.image.queue_transfer.2d_array.4x3x2.r8g8_snorm
 dEQP-VK.image.queue_transfer.2d_array.4x3x2.r8g8_uscaled
@@ -1095,6 +1113,7 @@ dEQP-VK.image.queue_transfer.2d_array.16x15x16.b5g6r5_unorm_pack16
 dEQP-VK.image.queue_transfer.2d_array.16x15x16.r5g5b5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.2d_array.16x15x16.b5g5r5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.2d_array.16x15x16.a1r5g5b5_unorm_pack16
+dEQP-VK.image.queue_transfer.2d_array.16x15x16.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.image.queue_transfer.2d_array.16x15x16.r8_unorm
 dEQP-VK.image.queue_transfer.2d_array.16x15x16.r8_snorm
 dEQP-VK.image.queue_transfer.2d_array.16x15x16.r8_uscaled
@@ -1102,6 +1121,7 @@ dEQP-VK.image.queue_transfer.2d_array.16x15x16.r8_sscaled
 dEQP-VK.image.queue_transfer.2d_array.16x15x16.r8_uint
 dEQP-VK.image.queue_transfer.2d_array.16x15x16.r8_sint
 dEQP-VK.image.queue_transfer.2d_array.16x15x16.r8_srgb
+dEQP-VK.image.queue_transfer.2d_array.16x15x16.a8_unorm_khr
 dEQP-VK.image.queue_transfer.2d_array.16x15x16.r8g8_unorm
 dEQP-VK.image.queue_transfer.2d_array.16x15x16.r8g8_snorm
 dEQP-VK.image.queue_transfer.2d_array.16x15x16.r8g8_uscaled
@@ -1216,6 +1236,7 @@ dEQP-VK.image.queue_transfer.3d.4x3x1.b5g6r5_unorm_pack16
 dEQP-VK.image.queue_transfer.3d.4x3x1.r5g5b5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.3d.4x3x1.b5g5r5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.3d.4x3x1.a1r5g5b5_unorm_pack16
+dEQP-VK.image.queue_transfer.3d.4x3x1.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.image.queue_transfer.3d.4x3x1.r8_unorm
 dEQP-VK.image.queue_transfer.3d.4x3x1.r8_snorm
 dEQP-VK.image.queue_transfer.3d.4x3x1.r8_uscaled
@@ -1223,6 +1244,7 @@ dEQP-VK.image.queue_transfer.3d.4x3x1.r8_sscaled
 dEQP-VK.image.queue_transfer.3d.4x3x1.r8_uint
 dEQP-VK.image.queue_transfer.3d.4x3x1.r8_sint
 dEQP-VK.image.queue_transfer.3d.4x3x1.r8_srgb
+dEQP-VK.image.queue_transfer.3d.4x3x1.a8_unorm_khr
 dEQP-VK.image.queue_transfer.3d.4x3x1.r8g8_unorm
 dEQP-VK.image.queue_transfer.3d.4x3x1.r8g8_snorm
 dEQP-VK.image.queue_transfer.3d.4x3x1.r8g8_uscaled
@@ -1337,6 +1359,7 @@ dEQP-VK.image.queue_transfer.3d.16x15x1.b5g6r5_unorm_pack16
 dEQP-VK.image.queue_transfer.3d.16x15x1.r5g5b5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.3d.16x15x1.b5g5r5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.3d.16x15x1.a1r5g5b5_unorm_pack16
+dEQP-VK.image.queue_transfer.3d.16x15x1.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.image.queue_transfer.3d.16x15x1.r8_unorm
 dEQP-VK.image.queue_transfer.3d.16x15x1.r8_snorm
 dEQP-VK.image.queue_transfer.3d.16x15x1.r8_uscaled
@@ -1344,6 +1367,7 @@ dEQP-VK.image.queue_transfer.3d.16x15x1.r8_sscaled
 dEQP-VK.image.queue_transfer.3d.16x15x1.r8_uint
 dEQP-VK.image.queue_transfer.3d.16x15x1.r8_sint
 dEQP-VK.image.queue_transfer.3d.16x15x1.r8_srgb
+dEQP-VK.image.queue_transfer.3d.16x15x1.a8_unorm_khr
 dEQP-VK.image.queue_transfer.3d.16x15x1.r8g8_unorm
 dEQP-VK.image.queue_transfer.3d.16x15x1.r8g8_snorm
 dEQP-VK.image.queue_transfer.3d.16x15x1.r8g8_uscaled
@@ -1458,6 +1482,7 @@ dEQP-VK.image.queue_transfer.3d.64x31x1.b5g6r5_unorm_pack16
 dEQP-VK.image.queue_transfer.3d.64x31x1.r5g5b5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.3d.64x31x1.b5g5r5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.3d.64x31x1.a1r5g5b5_unorm_pack16
+dEQP-VK.image.queue_transfer.3d.64x31x1.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.image.queue_transfer.3d.64x31x1.r8_unorm
 dEQP-VK.image.queue_transfer.3d.64x31x1.r8_snorm
 dEQP-VK.image.queue_transfer.3d.64x31x1.r8_uscaled
@@ -1465,6 +1490,7 @@ dEQP-VK.image.queue_transfer.3d.64x31x1.r8_sscaled
 dEQP-VK.image.queue_transfer.3d.64x31x1.r8_uint
 dEQP-VK.image.queue_transfer.3d.64x31x1.r8_sint
 dEQP-VK.image.queue_transfer.3d.64x31x1.r8_srgb
+dEQP-VK.image.queue_transfer.3d.64x31x1.a8_unorm_khr
 dEQP-VK.image.queue_transfer.3d.64x31x1.r8g8_unorm
 dEQP-VK.image.queue_transfer.3d.64x31x1.r8g8_snorm
 dEQP-VK.image.queue_transfer.3d.64x31x1.r8g8_uscaled
@@ -1579,6 +1605,7 @@ dEQP-VK.image.queue_transfer.3d.4x3x2.b5g6r5_unorm_pack16
 dEQP-VK.image.queue_transfer.3d.4x3x2.r5g5b5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.3d.4x3x2.b5g5r5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.3d.4x3x2.a1r5g5b5_unorm_pack16
+dEQP-VK.image.queue_transfer.3d.4x3x2.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.image.queue_transfer.3d.4x3x2.r8_unorm
 dEQP-VK.image.queue_transfer.3d.4x3x2.r8_snorm
 dEQP-VK.image.queue_transfer.3d.4x3x2.r8_uscaled
@@ -1586,6 +1613,7 @@ dEQP-VK.image.queue_transfer.3d.4x3x2.r8_sscaled
 dEQP-VK.image.queue_transfer.3d.4x3x2.r8_uint
 dEQP-VK.image.queue_transfer.3d.4x3x2.r8_sint
 dEQP-VK.image.queue_transfer.3d.4x3x2.r8_srgb
+dEQP-VK.image.queue_transfer.3d.4x3x2.a8_unorm_khr
 dEQP-VK.image.queue_transfer.3d.4x3x2.r8g8_unorm
 dEQP-VK.image.queue_transfer.3d.4x3x2.r8g8_snorm
 dEQP-VK.image.queue_transfer.3d.4x3x2.r8g8_uscaled
@@ -1700,6 +1728,7 @@ dEQP-VK.image.queue_transfer.3d.16x15x16.b5g6r5_unorm_pack16
 dEQP-VK.image.queue_transfer.3d.16x15x16.r5g5b5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.3d.16x15x16.b5g5r5a1_unorm_pack16
 dEQP-VK.image.queue_transfer.3d.16x15x16.a1r5g5b5_unorm_pack16
+dEQP-VK.image.queue_transfer.3d.16x15x16.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.image.queue_transfer.3d.16x15x16.r8_unorm
 dEQP-VK.image.queue_transfer.3d.16x15x16.r8_snorm
 dEQP-VK.image.queue_transfer.3d.16x15x16.r8_uscaled
@@ -1707,6 +1736,7 @@ dEQP-VK.image.queue_transfer.3d.16x15x16.r8_sscaled
 dEQP-VK.image.queue_transfer.3d.16x15x16.r8_uint
 dEQP-VK.image.queue_transfer.3d.16x15x16.r8_sint
 dEQP-VK.image.queue_transfer.3d.16x15x16.r8_srgb
+dEQP-VK.image.queue_transfer.3d.16x15x16.a8_unorm_khr
 dEQP-VK.image.queue_transfer.3d.16x15x16.r8g8_unorm
 dEQP-VK.image.queue_transfer.3d.16x15x16.r8g8_snorm
 dEQP-VK.image.queue_transfer.3d.16x15x16.r8g8_uscaled

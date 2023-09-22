@@ -39,6 +39,7 @@ public:
 	void					init					(void);
 
 private:
+	void					init					(bool useMaintenance5Ext);
 	DrawIndexedTests								(const DrawIndexedTests &other);
 	DrawIndexedTests&		operator=				(const DrawIndexedTests &other);
 

@@ -93,6 +93,7 @@ struct Params
 	vk::VkFormat				imageFormat;
 	AtomicOperation				atomicOperation;
 	bool						pipelineProtectedAccess;
+	bool						useMaintenance5;
 	vk::VkPipelineCreateFlags	flags;
 	ProtectionMode				protectionMode;
 
@@ -102,6 +103,7 @@ struct Params
 		, imageFormat				(vk::VK_FORMAT_UNDEFINED)
 		, atomicOperation			(ATOMIC_OPERATION_LAST)
 		, pipelineProtectedAccess	(false)
+		, useMaintenance5			(false)
 		, flags						((vk::VkPipelineCreateFlags)0u)
 		, protectionMode			(PROTECTION_ENABLED)
 	{}
@@ -282,6 +284,8 @@ public:
 	virtual void				checkSupport			(Context& context) const
 								{
 									checkProtectedQueueSupport(context);
+									if (m_params.useMaintenance5)
+										context.requireDeviceFunctionality("VK_KHR_maintenance5");
 								}
 
 private:
@@ -697,8 +701,41 @@ tcu::TestStatus ImageAccessTestInstance::executeComputeTest (void)
 
 	// Create validation compute commands & submit
 	{
+		const vk::VkPipelineShaderStageCreateInfo pipelineShaderStageParams
+		{
+			vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
+			nullptr,													// const void*							pNext;
+			0u,															// VkPipelineShaderStageCreateFlags		flags;
+			vk::VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
+			*computeShader,												// VkShaderModule						module;
+			"main",														// const char*							pName;
+			DE_NULL,													// const VkSpecializationInfo*			pSpecializationInfo;
+		};
+
+		vk::VkComputePipelineCreateInfo pipelineCreateInfo
+		{
+			vk::VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,			// VkStructureType					sType;
+			nullptr,													// const void*						pNext;
+			m_params.flags,												// VkPipelineCreateFlags			flags;
+			pipelineShaderStageParams,									// VkPipelineShaderStageCreateInfo	stage;
+			*pipelineLayout,											// VkPipelineLayout					layout;
+			DE_NULL,													// VkPipeline						basePipelineHandle;
+			0,															// deInt32							basePipelineIndex;
+		};
+
+#ifndef CTS_USES_VULKANSC
+		vk::VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = vk::initVulkanStructure();
+		if (m_params.useMaintenance5)
+		{
+			pipelineFlags2CreateInfo.flags = (vk::VkPipelineCreateFlagBits2KHR)m_params.flags;
+			pipelineCreateInfo.pNext = &pipelineFlags2CreateInfo;
+			pipelineCreateInfo.flags = 0;
+		}
+#endif // CTS_USES_VULKANSC
+
+		vk::Unique<vk::VkPipeline>			pipeline(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo));
+
 		const vk::Unique<vk::VkFence>		fence		(vk::createFence(vk, device));
-		vk::Unique<vk::VkPipeline>			pipeline	(makeComputePipeline(vk, device, *pipelineLayout, m_params.flags, *computeShader, (vk::VkPipelineShaderStageCreateFlags)0u));
 		vk::Unique<vk::VkCommandBuffer>		cmdBuffer	(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		beginCommandBuffer(vk, *cmdBuffer);
@@ -1289,6 +1326,17 @@ tcu::TestCaseGroup*	createShaderImageAccessTests (tcu::TestContext& testCtx)
 		accessGroup->addChild(shaderGroup.release());
 	}
 
+#ifndef CTS_USES_VULKANSC
+	{
+		Params params(glu::SHADERTYPE_COMPUTE, ACCESS_TYPE_IMAGE_LOAD, vk::VK_FORMAT_R8G8B8A8_UNORM, ATOMIC_OPERATION_LAST, false, vk::VK_PIPELINE_CREATE_PROTECTED_ACCESS_ONLY_BIT_EXT);
+		params.useMaintenance5 = true;
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
+		miscGroup->addChild(new ImageAccessTestCase(testCtx, "maintenance5_protected_access", "", params));
+		params.flags = vk::VK_PIPELINE_CREATE_NO_PROTECTED_ACCESS_BIT_EXT;
+		miscGroup->addChild(new ImageAccessTestCase(testCtx, "maintenance5_no_protected_access", "", params));
+		accessGroup->addChild(miscGroup.release());
+	}
+#endif // CTS_USES_VULKANSC
 
 	return accessGroup.release();
 }

@@ -77,6 +77,8 @@ set(DEQP_VK_API_SRCS
 	vktApiImageCompressionControlTests.hpp
 	vktApiGetDeviceProcAddrTests.hpp
 	vktApiGetDeviceProcAddrTests.cpp
+	vktApiPhysicalDeviceFormatPropertiesMaint5Tests.cpp
+	vktApiPhysicalDeviceFormatPropertiesMaint5Tests.hpp
 	vktApiFrameBoundaryTests.cpp
 	vktApiFrameBoundaryTests.hpp
 	)

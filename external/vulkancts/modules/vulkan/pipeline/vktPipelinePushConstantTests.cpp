@@ -2902,7 +2902,7 @@ tcu::TestStatus OverwriteTestInstance::iterate (void)
 	if (isComp)
 	{
 		compModule	= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("comp"), 0u);
-		pipeline	= makeComputePipeline(vkd, device, pipelineLayout.get(), 0u, compModule.getModule(), 0u, nullptr);
+		pipeline	= makeComputePipeline(vkd, device, pipelineLayout.get(), compModule.getModule());
 	}
 	else
 	{

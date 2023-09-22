@@ -501,7 +501,7 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands (const VkCommandBuffe
 		};
 
 		// Create and bind compute pipeline
-		pipelines[mipLevelNdx] = makeVkSharedPtr(makeComputePipeline(deviceInterface, getDevice(), *pipelineLayout, (VkPipelineCreateFlags) 0u, *shaderModule, (VkPipelineShaderStageCreateFlags) 0u,  &specializationInfo));
+		pipelines[mipLevelNdx] = makeVkSharedPtr(makeComputePipeline(deviceInterface, getDevice(), *pipelineLayout, (VkPipelineCreateFlags) 0u, nullptr, *shaderModule, (VkPipelineShaderStageCreateFlags) 0u,  &specializationInfo));
 		const VkPipeline computePipeline = **pipelines[mipLevelNdx];
 
 		deviceInterface.cmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline);

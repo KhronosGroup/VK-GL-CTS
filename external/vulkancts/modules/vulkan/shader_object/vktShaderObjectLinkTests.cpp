@@ -112,6 +112,50 @@ private:
 
 vk::VkShaderStageFlags ShaderObjectLinkInstance::getNextStage (vk::VkShaderStageFlagBits currentStage)
 {
+	if (currentStage == vk::VK_SHADER_STAGE_VERTEX_BIT && m_params.shaders.vertex == LINKED)
+	{
+		if (m_params.shaders.tesellation_control != UNUSED)
+		{
+			if (m_params.shaders.tesellation_control == LINKED)
+				return vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+		}
+		else if (m_params.shaders.geometry != UNUSED)
+		{
+			if (m_params.shaders.geometry == LINKED)
+				return vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+		}
+		else if (m_params.shaders.fragment != UNUSED)
+		{
+			if (m_params.shaders.fragment == LINKED)
+				return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+	}
+	else if (currentStage == vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT && m_params.shaders.tesellation_control == LINKED && m_params.shaders.tesellation_evaluation == LINKED)
+	{
+		return vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+	}
+	else if (currentStage == vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT && m_params.shaders.tesellation_evaluation == LINKED)
+	{
+		if (m_params.shaders.geometry != UNUSED)
+		{
+			if (m_params.shaders.geometry == LINKED)
+				return vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+		}
+		else if (m_params.shaders.fragment != UNUSED)
+		{
+			if (m_params.shaders.fragment == LINKED)
+				return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+	}
+	else if (currentStage == vk::VK_SHADER_STAGE_GEOMETRY_BIT && m_params.shaders.geometry == LINKED)
+	{
+		if (m_params.shaders.fragment != UNUSED)
+		{
+			if (m_params.shaders.fragment == LINKED)
+				return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+	}
+
 	if (currentStage == vk::VK_SHADER_STAGE_VERTEX_BIT)
 		return m_params.nextStages.vertNextStage;
 
@@ -202,7 +246,7 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate (void)
 	}
 
 	vk::VkShaderCreateInfoEXT tescShaderCreateInfo = vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, tesc, tessellationSupported, geometrySupported);
-	vertShaderCreateInfo.nextStage = getNextStage(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
+	tescShaderCreateInfo.nextStage = getNextStage(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
 
 	if (m_params.shaders.tesellation_control == LINKED)
 	{
@@ -215,7 +259,7 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate (void)
 	}
 
 	vk::VkShaderCreateInfoEXT teseShaderCreateInfo = vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, tese, tessellationSupported, geometrySupported);
-	vertShaderCreateInfo.nextStage = getNextStage(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
+	teseShaderCreateInfo.nextStage = getNextStage(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
 
 	if (m_params.shaders.tesellation_evaluation == LINKED)
 	{
@@ -228,7 +272,7 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate (void)
 	}
 
 	vk::VkShaderCreateInfoEXT geomShaderCreateInfo = vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_GEOMETRY_BIT, geom, tessellationSupported, geometrySupported);
-	vertShaderCreateInfo.nextStage = getNextStage(vk::VK_SHADER_STAGE_GEOMETRY_BIT);
+	geomShaderCreateInfo.nextStage = getNextStage(vk::VK_SHADER_STAGE_GEOMETRY_BIT);
 
 	if (m_params.shaders.geometry == LINKED)
 	{
@@ -241,7 +285,7 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate (void)
 	}
 
 	vk::VkShaderCreateInfoEXT fragShaderCreateInfo = vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_FRAGMENT_BIT, frag, tessellationSupported, geometrySupported);
-	vertShaderCreateInfo.nextStage = getNextStage(vk::VK_SHADER_STAGE_FRAGMENT_BIT);
+	fragShaderCreateInfo.nextStage = getNextStage(vk::VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	if (m_params.shaders.fragment == LINKED)
 	{
@@ -429,6 +473,8 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate (void)
 	}
 	vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, primitiveTopology, false);
 
+	bindNullTaskMeshShaders(vk, *cmdBuffer, m_context.getMeshShaderFeaturesEXT());
+
 	const vk::VkClearValue				clearValue = vk::makeClearValueColor({ 0.0f, 0.0f, 0.0f, 1.0f });
 	vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
 	vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
@@ -564,10 +610,18 @@ private:
 vk::VkShaderStageFlags MeshShaderObjectLinkInstance::getNextStage (vk::VkShaderStageFlagBits currentStage)
 {
 	if (currentStage == vk::VK_SHADER_STAGE_TASK_BIT_EXT)
+	{
+		if (m_params.shaders.task == LINKED)
+			return vk::VK_SHADER_STAGE_MESH_BIT_EXT;
 		return m_params.nextStages.taskNextStage;
+	}
 
 	if (currentStage == vk::VK_SHADER_STAGE_MESH_BIT_EXT)
+	{
+		if (m_params.shaders.mesh == LINKED)
+			return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
 		return m_params.nextStages.meshNextStage;
+	}
 
 	return 0;
 }
@@ -657,8 +711,8 @@ tcu::TestStatus MeshShaderObjectLinkInstance::iterate (void)
 		task.getSize(),									// size_t						codeSize;
 		task.getBinary(),								// const void*					pCode;
 		"main",											// const char*					pName;
-		0u,												// uint32_t						setLayoutCount;
-		DE_NULL,										// VkDescriptorSetLayout*		pSetLayouts;
+		1u,												// uint32_t						setLayoutCount;
+		&*descriptorSetLayout,							// VkDescriptorSetLayout*		pSetLayouts;
 		0u,												// uint32_t						pushConstantRangeCount;
 		DE_NULL,										// const VkPushConstantRange*	pPushConstantRanges;
 		DE_NULL,										// const VkSpecializationInfo*	pSpecializationInfo;
@@ -714,8 +768,8 @@ tcu::TestStatus MeshShaderObjectLinkInstance::iterate (void)
 		frag.getSize(),									// size_t						codeSize;
 		frag.getBinary(),								// const void*					pCode;
 		"main",											// const char*					pName;
-		0u,												// uint32_t						setLayoutCount;
-		DE_NULL,										// VkDescriptorSetLayout*		pSetLayouts;
+		1u,												// uint32_t						setLayoutCount;
+		&*descriptorSetLayout,							// VkDescriptorSetLayout*		pSetLayouts;
 		0u,												// uint32_t						pushConstantRangeCount;
 		DE_NULL,										// const VkPushConstantRange*	pPushConstantRanges;
 		DE_NULL,										// const VkSpecializationInfo*	pSpecializationInfo;
@@ -806,6 +860,7 @@ tcu::TestStatus MeshShaderObjectLinkInstance::iterate (void)
 	vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, true);
 	vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0, 1, &descriptorSet.get(), 0, DE_NULL);
 
+	bindNullRasterizationShaders(vk, *cmdBuffer, m_context.getDeviceFeatures());
 	vk::VkShaderStageFlagBits stages[] = {
 			vk::VK_SHADER_STAGE_TASK_BIT_EXT,
 			vk::VK_SHADER_STAGE_MESH_BIT_EXT,

@@ -533,6 +533,7 @@ struct BaseParams
 	const tcu::Maybe<uint8_t>	pipelineToRun;
 	const bool					useSpecializationConstants;
 	const bool					useCache;
+	const bool					useMaintenance5;
 
 	BaseParams (PipelineType				pipelineType_,
 				GraphicsShaderVec			graphicsShaders_,
@@ -540,7 +541,8 @@ struct BaseParams
 				uint8_t						pipelineCount_,
 				const tcu::Maybe<uint8_t>&	pipelineToRun_,
 				bool						useSCs_,
-				bool						useCache_)
+				bool						useCache_,
+				bool						useMaintenance5_)
 		: pipelineType					(pipelineType_)
 		, graphicsShaders				(std::move(graphicsShaders_))
 		, rtShaders						(std::move(rtShaders_))
@@ -548,6 +550,7 @@ struct BaseParams
 		, pipelineToRun					(pipelineToRun_)
 		, useSpecializationConstants	(useSCs_)
 		, useCache						(useCache_)
+		, useMaintenance5				(useMaintenance5_)
 	{
 		if (pipelineType != PipelineType::GRAPHICS)
 			DE_ASSERT(graphicsShaders.empty());
@@ -1387,7 +1390,7 @@ public:
 				bool						useCache_,
 				APICall						apiCall_,
 				bool						differentDevices_)
-			: BaseParams		(pipelineType_, graphicsShaders_, rtShaders_, pipelineCount_, pipelineToRun_, useSCs_, useCache_)
+			: BaseParams		(pipelineType_, graphicsShaders_, rtShaders_, pipelineCount_, pipelineToRun_, useSCs_, useCache_, false)
 			, apiCall			(apiCall_)
 			, differentDevices	(differentDevices_)
 			{}
@@ -1597,6 +1600,7 @@ public:
 	{
 		PipelineConstructionType	constructionType;
 		bool						useRTLibraries;		// Use ray tracing libraries? For monolithic builds only.
+		bool						useMaintenance5;
 		UseModuleCase				moduleUseCase;
 		CapturedPropertiesFlags		capturedProperties;	// For UseModuleCase::ID only.
 		RndGenPtr					rnd;
@@ -1608,13 +1612,15 @@ public:
 				const tcu::Maybe<uint8_t>&	pipelineToRun_,
 				bool						useSCs_,
 				bool						useCache_,
+				bool						useMaintenance5_,
 				PipelineConstructionType	constructionType_,
 				bool						useRTLibraries_,
 				UseModuleCase				moduleUseCase_,
 				CapturedPropertiesFlags		capturedProperties_)
-			: BaseParams		(pipelineType_, graphicsShaders_, rtShaders_, pipelineCount_, pipelineToRun_, useSCs_, useCache_)
+			: BaseParams		(pipelineType_, graphicsShaders_, rtShaders_, pipelineCount_, pipelineToRun_, useSCs_, useCache_, useMaintenance5_)
 			, constructionType	(constructionType_)
 			, useRTLibraries	(useRTLibraries_)
+			, useMaintenance5	(false)
 			, moduleUseCase		(moduleUseCase_)
 			, capturedProperties(capturedProperties_)
 			, rnd				()
@@ -1692,6 +1698,9 @@ void CreateAndUseIdsCase::checkSupport (Context &context) const
 		if (features.pipelineCreationCacheControl == DE_FALSE)
 			TCU_THROW(NotSupportedError, "Feature 'pipelineCreationCacheControl' is not enabled");
 	}
+
+	if (m_params->useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 }
 
 TestInstance* CreateAndUseIdsCase::createInstance (Context &context) const
@@ -2195,6 +2204,9 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 
 			const auto rasterizationState = makeRasterizationState(!fragModule.isSet());
 
+			if (m_params->useMaintenance5)
+				wrapper.setPipelineCreateFlags2(translateCreateFlag(captureFlags));
+
 			wrapper	.setDefaultPatchControlPoints(patchCPs)
 					.setupVertexInputState(&vertexInputState, &inputAssemblyState, pipelineCache.get())
 					.setupPreRasterizationShaderState2(
@@ -2349,7 +2361,7 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 			const auto scInfo		= (useSCs ? makeComputeSpecInfo(scEntries, scData) : nullptr);
 
 			compModules.push_back(ShaderWrapper(vkd, device, binaries.get(compName)));
-			pipelinePtrs.push_back(makeComputePipeline(vkd, device, pipelineLayout.get(), captureFlags, compModules.back().getModule(), 0u, scInfo.get(), pipelineCache.get()));
+			pipelinePtrs.push_back(makeComputePipeline(vkd, device, pipelineLayout.get(), captureFlags, nullptr, compModules.back().getModule(), 0u, scInfo.get(), pipelineCache.get()));
 			pipelines.push_back(pipelinePtrs.back().get());
 
 			if (runThis)
@@ -3703,7 +3715,7 @@ tcu::TestCaseGroup* createShaderModuleIdentifierTests (tcu::TestContext& testCtx
 								CreateAndUseIdsInstance::Params baseParams(
 									pipelineTypeCase.pipelineType,
 									{}, {}, pipelineCountCase, tcu::just(pipelineToRun),
-									useSCCase.useSCs, pipelineCacheCase.useVkPipelineCache,
+									useSCCase.useSCs, pipelineCacheCase.useVkPipelineCache, false,
 									constructionType, pipelineTypeCase.useRTLibraries,
 									moduleUsageCase.moduleUse,
 									static_cast<CapturedPropertiesFlags>(capturingCase.capturedProperties));
@@ -3758,6 +3770,31 @@ tcu::TestCaseGroup* createShaderModuleIdentifierTests (tcu::TestContext& testCtx
 		GroupPtr hlslTessGroup (new tcu::TestCaseGroup(testCtx, "hlsl_tessellation", "Tests checking HLSL tessellation shaders with module identifiers"));
 		hlslTessGroup->addChild(new HLSLTessellationCase(testCtx, "test", "", constructionType));
 		mainGroup->addChild(hlslTessGroup.release());
+	}
+
+	// misc tests
+	if (constructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+	{
+		const uint8_t pipelineToRun = 0u;
+		CreateAndUseIdsInstance::Params baseParams(
+			PipelineType::GRAPHICS,
+			{}, {}, uint8_t{1u}, tcu::just(uint8_t{pipelineToRun}),
+			false, false, true,
+			constructionType, false,
+			UseModuleCase::ID,
+			static_cast<CapturedPropertiesFlags>(CapturedPropertiesBits::STATS));
+		baseParams.graphicsShaders = graphicsShadersCases[1];
+
+		GroupPtr miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
+
+		BaseParamsPtr params = baseParams.copy(1);
+		miscGroup->addChild(new CreateAndUseIdsCase(testCtx, "capture_statistics_maintenance5", "", std::move(params)));
+
+		baseParams.capturedProperties = static_cast<CapturedPropertiesFlags>(CapturedPropertiesBits::IRS);
+		params = baseParams.copy(2);
+		miscGroup->addChild(new CreateAndUseIdsCase(testCtx, "capture_internal_representations_maintenance5", "", std::move(params)));
+
+		mainGroup->addChild(miscGroup.release());
 	}
 
 	return mainGroup.release();

@@ -255,14 +255,13 @@ Move<VkImage> MultisampleRenderPassTestBase::createImage (VkSampleCountFlagBits	
 
 	try
 	{
-		const VkImageFormatProperties	imageFormatProperties(getPhysicalDeviceImageFormatProperties(vki, physicalDevice, m_format, imageType, imageTiling, usage, 0u));
+		const VkImageFormatProperties	imageFormatProperties	(getPhysicalDeviceImageFormatProperties(vki, physicalDevice, m_format, imageType, imageTiling, usage, 0u));
+		const auto						isDSFormat				= (tcu::hasDepthComponent(format.order) || tcu::hasStencilComponent(format.order));
 
-		if ((tcu::hasDepthComponent(format.order) || tcu::hasStencilComponent(format.order))
-			&& (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0)
+		if (isDSFormat && (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0)
 			TCU_THROW(NotSupportedError, "Format can't be used as depth stencil attachment");
 
-		if (!(tcu::hasDepthComponent(format.order) || tcu::hasStencilComponent(format.order))
-			&& (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) == 0)
+		if (!isDSFormat && (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) == 0)
 			TCU_THROW(NotSupportedError, "Format can't be used as color attachment");
 
 		if (imageFormatProperties.maxExtent.width < imageExtent.width
@@ -539,7 +538,8 @@ VkDeviceSize MultisampleRenderPassTestBase::getPixelSize () const
 tcu::Vec4 MultisampleRenderPassTestBase::getFormatThreshold () const
 {
 	const tcu::TextureFormat	tcuFormat		(mapVkFormat(m_format));
-	const deUint32				componentCount	(tcu::getNumUsedChannels(tcuFormat.order));
+	const bool					isAlphaOnly		= isAlphaOnlyFormat(m_format);
+	const deUint32				componentCount	(isAlphaOnly ? 4u : tcu::getNumUsedChannels(tcuFormat.order));
 
 	if (isSnormFormat(m_format))
 	{
@@ -550,10 +550,10 @@ tcu::Vec4 MultisampleRenderPassTestBase::getFormatThreshold () const
 	}
 	else if (isUnormFormat(m_format))
 	{
-		return Vec4((componentCount >= 1) ? 1.5f * getRepresentableDiffUnorm(m_format, 0) : 0.0f,
-					(componentCount >= 2) ? 1.5f * getRepresentableDiffUnorm(m_format, 1) : 0.0f,
-					(componentCount >= 3) ? 1.5f * getRepresentableDiffUnorm(m_format, 2) : 0.0f,
-					(componentCount == 4) ? 1.5f * getRepresentableDiffUnorm(m_format, 3) : 0.0f);
+		return Vec4((componentCount >= 1 && !isAlphaOnly)	? 1.5f * getRepresentableDiffUnorm(m_format, 0) : 0.0f,
+					(componentCount >= 2 && !isAlphaOnly)	? 1.5f * getRepresentableDiffUnorm(m_format, 1) : 0.0f,
+					(componentCount >= 3 && !isAlphaOnly)	? 1.5f * getRepresentableDiffUnorm(m_format, 2) : 0.0f,
+					(componentCount == 4)					? 1.5f * getRepresentableDiffUnorm(m_format, 3) : 0.0f);
 	}
 	else if (isFloatFormat(m_format))
 	{
@@ -1055,7 +1055,8 @@ void MultisampleRenderPassTestInstance::verify (void)
 		case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
 		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 		{
-			const int	componentCount	(tcu::getNumUsedChannels(format.order));
+			const bool	isAlphaOnly		= isAlphaOnlyFormat(m_format);
+			const int	componentCount	(isAlphaOnly ? 4 : tcu::getNumUsedChannels(format.order));
 			bool		isOk			= true;
 			float		clearValue;
 			float		renderValue;
@@ -1086,14 +1087,14 @@ void MultisampleRenderPassTestInstance::verify (void)
 				// Color has to be black if no samples were covered, white if all samples were covered or same in every attachment
 				const Vec4	firstColor	(accesses[0].getPixel(x, y, z));
 				const Vec4	refColor	(m_sampleMask == 0x0u
-										? Vec4(clearValue,
-												componentCount > 1 ? clearValue : 0.0f,
-												componentCount > 2 ? clearValue : 0.0f,
+										? Vec4((isAlphaOnly ? 0.0f : clearValue),
+												componentCount > 1 && !isAlphaOnly ? clearValue : 0.0f,
+												componentCount > 2 && !isAlphaOnly ? clearValue : 0.0f,
 												componentCount > 3 ? clearValue : 1.0f)
 										: m_sampleMask == ((0x1u << m_sampleCount) - 1u)
-										? Vec4(renderValue,
-												componentCount > 1 ? renderValue : 0.0f,
-												componentCount > 2 ? renderValue : 0.0f,
+										? Vec4((isAlphaOnly ? 0.0f : renderValue),
+												componentCount > 1 && !isAlphaOnly ? renderValue : 0.0f,
+												componentCount > 2 && !isAlphaOnly ? renderValue : 0.0f,
 												componentCount > 3 ? renderValue : 1.0f)
 										: firstColor);
 
@@ -1399,7 +1400,8 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 				|| channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT
 				|| channelClass == tcu::TEXTURECHANNELCLASS_FLOATING_POINT)
 		{
-			const int			componentCount	(tcu::getNumUsedChannels(format.order));
+			const bool			isAlphaOnly		= isAlphaOnlyFormat(m_format);
+			const int			componentCount	(isAlphaOnly ? 4 : tcu::getNumUsedChannels(format.order));
 			const Vec4			errorColor		(1.0f, 0.0f, 0.0f, 1.0f);
 			const Vec4			okColor			(0.0f, 1.0f, 0.0f, 1.0f);
 			tcu::TextureLevel	errorMask		(tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::UNORM_INT8), m_width, m_height, totalLayers());
@@ -1411,7 +1413,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 			{
 				case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
 				{
-					expectedAverage = Vec4(0.5f, componentCount > 1 ? 0.5f : 0.0f, componentCount > 2 ? 0.5f : 0.0f, componentCount > 3 ? 0.5f : 1.0f);
+					expectedAverage = Vec4((isAlphaOnly ? 0.0f : 0.5f), componentCount > 1 && !isAlphaOnly ? 0.5f : 0.0f, componentCount > 2 && !isAlphaOnly ? 0.5f : 0.0f, componentCount > 3 ? 0.5f : 1.0f);
 					break;
 				}
 
@@ -2950,6 +2952,11 @@ struct Programs
 template<class TestConfigType>
 void checkSupport(Context& context, TestConfigType config)
 {
+#ifndef CTS_USES_VULKANSC
+	if (config.format == VK_FORMAT_A8_UNORM_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
 	if (config.layerCount > 1)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 
@@ -2974,6 +2981,9 @@ void checkSupport(Context& context, TestConfigType config)
 
 	if (config.attachmentCount > properties.limits.maxColorAttachments)
 		TCU_THROW(NotSupportedError, "Required number of color attachments not supported.");
+
+	if (config.testType == MAX_ATTACHMENTS && config.attachmentCount > properties.limits.maxPerStageDescriptorInputAttachments)
+		TCU_THROW(NotSupportedError, "Required number of per stage descriptor input attachments not supported.");
 }
 
 std::string formatToName (VkFormat format)
@@ -2995,6 +3005,9 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_UINT,

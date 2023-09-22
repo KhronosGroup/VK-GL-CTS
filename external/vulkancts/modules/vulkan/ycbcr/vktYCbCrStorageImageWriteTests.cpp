@@ -284,7 +284,7 @@ tcu::TestStatus testStorageImageWrite (Context& context, TestParameters params)
 			shaderName << "comp" << planeNdx;
 			auto							shaderModule			= makeVkSharedPtr(createShaderModule(vkd, device, context.getBinaryCollection().get(shaderName.str()), DE_NULL));
 			shaderModules.push_back(shaderModule);
-			auto							computePipeline			= makeVkSharedPtr(makeComputePipeline(vkd, device, *pipelineLayout, (VkPipelineCreateFlags) 0u, shaderModule->get(), (VkPipelineShaderStageCreateFlags) 0u, DE_NULL));
+			auto							computePipeline			= makeVkSharedPtr(makeComputePipeline(vkd, device, *pipelineLayout, (VkPipelineCreateFlags) 0u, nullptr, shaderModule->get(), (VkPipelineShaderStageCreateFlags) 0u, DE_NULL));
 			computePipelines.push_back(computePipeline);
 			vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline->get());
 
