@@ -1114,10 +1114,25 @@ tcu::TestCaseGroup* createShaderObjectLinkTests (tcu::TestContext& testCtx)
 			de::MovePtr<tcu::TestCaseGroup> bindGroup(new tcu::TestCaseGroup(testCtx, bindType.name, ""));
 			for (const auto& randomOrder : randomOrderTests)
 			{
+				NextStages nextStages = {};
+				if (shaders.tesellation_control != UNUSED) {
+					nextStages.vertNextStage |= vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+					nextStages.tescNextStage |= vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+				}
+				if (shaders.geometry != UNUSED) {
+					nextStages.vertNextStage |= vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+					nextStages.teseNextStage |= vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+				}
+				if (shaders.fragment != UNUSED) {
+					nextStages.vertNextStage |= vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+					nextStages.teseNextStage |= vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+					nextStages.geomNextStage |= vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+				}
+
 				TestParams params = {
 					shaders,				// Shaders		shaders;
 					randomOrder,			// bool			randomOrder;
-					{ 0u, 0u, 0u, 0u, },	// NextStages	nextStages;
+					nextStages,				// NextStages	nextStages;
 					false,					// bool			separateLinked;
 					bindType.bindType,		// bool			separateBind;
 				};
@@ -1137,8 +1152,8 @@ tcu::TestCaseGroup* createShaderObjectLinkTests (tcu::TestContext& testCtx)
 						vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
 						vk::VK_SHADER_STAGE_GEOMETRY_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
 						vk::VK_SHADER_STAGE_FRAGMENT_BIT, },																				// NextStages	nextStages;
-					true,																													// bool		separateLinked;
-					ALL,																													// BindType	separateBind
+					true,																													// bool         separateLinked;
+					ALL,																													// BindType		separateBind
 				};
 
 				bindGroup->addChild(new ShaderObjectLinkCase(testCtx, "separate_link", "", params));
