@@ -502,6 +502,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesShaderIntrinsicsStorage.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesTests.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesTestsUtil.cpp \
+	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesTransferQueueTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsm16bitStorageTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsm64bitCompareTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsm8bitStorageTests.cpp \
