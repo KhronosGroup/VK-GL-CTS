@@ -1284,7 +1284,7 @@ tcu::TestStatus PreinitializedTestInstance::iterate (void)
 
 	const vk::VkImageType				imageType			= m_size.depth > 1 ? vk::VK_IMAGE_TYPE_3D : vk::VK_IMAGE_TYPE_2D;
 
-	deUint64										modifier;
+	deUint64										modifier = 0;
 	checkSupportedFormatFeatures(instanceDriver, physicalDevice, m_format, m_tiling, &modifier);
 
 	vk::VkImageDrmFormatModifierListCreateInfoEXT	drmCreateInfo	= vk::initVulkanStructure();
@@ -1294,7 +1294,8 @@ tcu::TestStatus PreinitializedTestInstance::iterate (void)
 	vk::VkImageCreateInfo				createInfo			=
 	{
 		vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType
-		&drmCreateInfo,								// const void*				pNext
+		m_tiling == vk::VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT ? &drmCreateInfo : DE_NULL,
+													// const void*				pNext
 		0u,											// VkImageCreateFlags		flags
 		imageType,									// VkImageType				imageType
 		m_format,									// VkFormat					format
