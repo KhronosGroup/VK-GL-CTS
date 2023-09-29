@@ -1288,24 +1288,28 @@ TestInstance* BindVertexBuffers2Case::createInstance (Context& context) const
 
 	if (m_robustness2)
 	{
-		vk::VkPhysicalDeviceFeatures2							features2			= vk::initVulkanStructure();
-		vk::VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features	= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceFeatures2							features2				= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features		= vk::initVulkanStructure();
 #ifndef CTS_USES_VULKANSC
-		vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	gplFeatures			= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	gplFeatures				= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceShaderObjectFeaturesEXT				shaderObjectFeatures = vk::initVulkanStructure();
 #endif // CTS_USES_VULKANSC
 
 		features2.features.robustBufferAccess		= VK_TRUE;
 		robustness2Features.robustBufferAccess2		= VK_TRUE;
 #ifndef CTS_USES_VULKANSC
 		gplFeatures.graphicsPipelineLibrary			= VK_TRUE;
+		shaderObjectFeatures.shaderObject			= VK_TRUE;
 #endif // CTS_USES_VULKANSC
 
 		const auto addFeatures = vk::makeStructChainAdder(&features2);
 		addFeatures(&robustness2Features);
 
 #ifndef CTS_USES_VULKANSC
-		if (m_pipelineConstructionType != vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+		if (vk::isConstructionTypeLibrary(m_pipelineConstructionType))
 			addFeatures(&gplFeatures);
+		else if (vk::isConstructionTypeShaderObject(m_pipelineConstructionType))
+			addFeatures(&shaderObjectFeatures);
 #else
 		TCU_THROW(NotSupportedError, "VulkanSC does not support VK_EXT_graphics_pipeline_library");
 #endif // CTS_USES_VULKANSC
