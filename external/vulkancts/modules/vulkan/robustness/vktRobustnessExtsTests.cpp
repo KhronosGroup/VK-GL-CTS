@@ -526,13 +526,20 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 		TCU_THROW(NotSupportedError, "Vulkan 1.1 not supported");
 
 #ifndef CTS_USES_VULKANSC
-	if ((m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER || m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) &&
-		!m_data.formatQualifier)
+	if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE && !m_data.formatQualifier)
 	{
 		const VkFormatProperties3 formatProperties = context.getFormatProperties(m_data.format);
 		if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
 			TCU_THROW(NotSupportedError, "Format does not support reading without format");
 		if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
+			TCU_THROW(NotSupportedError, "Format does not support writing without format");
+	}
+	else if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER && !m_data.formatQualifier)
+	{
+		const VkFormatProperties3 formatProperties = context.getFormatProperties(m_data.format);
+		if (!(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
+			TCU_THROW(NotSupportedError, "Format does not support reading without format");
+		if (!(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
 			TCU_THROW(NotSupportedError, "Format does not support writing without format");
 	}
 #else
