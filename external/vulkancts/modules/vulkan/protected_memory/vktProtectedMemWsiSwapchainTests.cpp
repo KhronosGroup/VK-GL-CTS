@@ -54,6 +54,7 @@
 #include "deSharedPtr.hpp"
 
 #include <limits>
+#include <cstring>
 
 #include "vktProtectedMemContext.hpp"
 #include "vktProtectedMemUtils.hpp"
@@ -231,17 +232,31 @@ static vk::VkCompositeAlphaFlagBitsKHR firstSupportedCompositeAlpha(const vk::Vk
 	return (vk::VkCompositeAlphaFlagBitsKHR)alphaMode;
 }
 
-std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::wsi::Type								wsiType,
-																		   TestDimension								dimension,
-																		   const ProtectedContext&						context,
-																		   const vk::VkSurfaceCapabilitiesKHR&			capabilities,
-																		   const std::vector<vk::VkSurfaceFormatKHR>&	formats,
-																		   const std::vector<vk::VkPresentModeKHR>&		presentModes)
+using SwapchainCreationExecutor = void (*)(const vk::DeviceDriver&, vk::VkDevice, const vk::VkSwapchainCreateInfoKHR&, tcu::TestLog&, uint32_t, uint32_t);
+void swapchainCreateExecutor(const vk::DeviceDriver& vk, vk::VkDevice device, const vk::VkSwapchainCreateInfoKHR& createInfo, tcu::TestLog& log, uint32_t caseIndex, uint32_t caseCount)
 {
-	std::vector<vk::VkSwapchainCreateInfoKHR>	cases;
+	log << tcu::TestLog::Message << "Sub-case " << caseIndex << " / " << caseCount << ": " << createInfo << tcu::TestLog::EndMessage;
+	const vk::Unique<vk::VkSwapchainKHR>	swapchain	(createSwapchainKHR(vk, device, &createInfo));
+}
+
+tcu::TestStatus executeSwapchainParameterCases (vk::wsi::Type								wsiType,
+												TestDimension								dimension,
+												const ProtectedContext&						context,
+												const vk::VkSurfaceCapabilitiesKHR&			capabilities,
+												const std::vector<vk::VkSurfaceFormatKHR>&	formats,
+												const std::vector<vk::VkPresentModeKHR>&	presentModes,
+												bool										isExtensionForPresentModeEnabled,
+												SwapchainCreationExecutor					testExecutor)
+{
+	tcu::TestLog&								log					= context.getTestContext().getLog();
+	const vk::DeviceInterface&					vki					= context.getDeviceInterface();
+	const vk::DeviceDriver&						vkd					= context.getDeviceDriver();
+	vk::VkDevice								device				= context.getDevice();
 	const vk::wsi::PlatformProperties&			platformProperties	= getPlatformProperties(wsiType);
 	const vk::VkSurfaceTransformFlagBitsKHR		defaultTransform	= (capabilities.supportedTransforms & vk::VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
 																		? vk::VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR : capabilities.currentTransform;
+	deUint32									queueIdx			= context.getQueueFamilyIndex();
+	const vk::VkSurfaceKHR						surface				= context.getSurface();
 	const vk::VkSwapchainCreateInfoKHR			baseParameters		=
 	{
 		vk::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
@@ -251,7 +266,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 #else
 		(vk::VkSwapchainCreateFlagsKHR)0,
 #endif
-		(vk::VkSurfaceKHR)0,
+		surface,
 		capabilities.minImageCount,
 		formats[0].format,
 		formats[0].colorSpace,
@@ -260,8 +275,8 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 		1u,									// imageArrayLayers
 		vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 		vk::VK_SHARING_MODE_EXCLUSIVE,
-		0u,
-		(const deUint32*)DE_NULL,
+		1u,
+		&queueIdx,
 		defaultTransform,
 		firstSupportedCompositeAlpha(capabilities),
 		vk::VK_PRESENT_MODE_FIFO_KHR,
@@ -283,8 +298,6 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 			// Estimate how much memory each swapchain image consumes. This isn't perfect, since
 			// swapchain images may have additional constraints that equivalent non-swapchain
 			// images don't have. But it's the best we can do.
-			const vk::DeviceInterface&				vkd					= context.getDeviceInterface();
-			vk::VkDevice							device				= context.getDevice();
 			vk::VkMemoryRequirements				memoryRequirements;
 			{
 				const vk::VkImageCreateInfo			imageInfo			=
@@ -309,9 +322,9 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 					baseParameters.pQueueFamilyIndices,
 					vk::VK_IMAGE_LAYOUT_UNDEFINED
 				};
-				vk::Move<vk::VkImage>				image				= vk::createImage(vkd, device, &imageInfo);
+				vk::Move<vk::VkImage>				image				= vk::createImage(vki, device, &imageInfo);
 
-				memoryRequirements	= vk::getImageMemoryRequirements(vkd, device, *image);
+				memoryRequirements	= vk::getImageMemoryRequirements(vki, device, *image);
 			}
 
 			// Determine the maximum memory heap space available for protected images
@@ -333,27 +346,57 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 				}
 			}
 
-			// If the implementation doesn't have a max image count, min+16 means we won't clamp.
-			// Limit it to how many protected images we estimate can be allocated
-			const deUint32	maxImageCount		= de::min((capabilities.maxImageCount > 0) ? capabilities.maxImageCount : capabilities.minImageCount + 16u,
-														  deUint32(protectedHeapSize / memoryRequirements.size));
-			if (maxImageCount < capabilities.minImageCount)
-				TCU_THROW(NotSupportedError, "Memory heap doesn't have enough memory!.");
-
-			const deUint32	maxImageCountToTest	= de::clamp(16u, capabilities.minImageCount, maxImageCount);
-			for (deUint32 imageCount = capabilities.minImageCount; imageCount <= maxImageCountToTest; ++imageCount)
+			vk::VkDeviceSize	minProtectedHeapSize	= 0u;
+			vk::VkDeviceSize	maxProtectedHeapSize	= protectedHeapSize;
+			bool				passed					= false;
+			// Apply binary search to see if we have suitable memory amount for test
+			while (minProtectedHeapSize <= maxProtectedHeapSize)
 			{
-				cases.push_back(baseParameters);
-				cases.back().minImageCount = imageCount;
+				// If the implementation doesn't have a max image count, min+16 means we won't clamp.
+				// Limit it to how many protected images we estimate can be allocated
+				const deUint32	maxImageCount		= de::min((capabilities.maxImageCount > 0u) ? capabilities.maxImageCount : capabilities.minImageCount + 16u,
+																deUint32(protectedHeapSize / memoryRequirements.size));
+				if (maxImageCount < capabilities.minImageCount)
+				{
+					minProtectedHeapSize = protectedHeapSize + 1u;
+					protectedHeapSize = minProtectedHeapSize + (maxProtectedHeapSize - minProtectedHeapSize) / 2u;
+					continue;
+				}
+
+				try
+				{
+					log << tcu::TestLog::Message << "Starting test cases with protectedHeapSize of " << protectedHeapSize << tcu::TestLog::EndMessage;
+					const deUint32	maxImageCountToTest	= de::clamp(16u, capabilities.minImageCount, maxImageCount);
+					uint32_t		testCount			= maxImageCount - capabilities.minImageCount + 1u;
+					uint32_t		testIndex			= 0u;
+					// Loop downwards since we want to catch OOM errors as fast as possible
+					for (uint32_t imageCount = maxImageCountToTest; capabilities.minImageCount <= imageCount; --imageCount)
+					{
+						vk::VkSwapchainCreateInfoKHR	createInfo = baseParameters;
+						createInfo.minImageCount	= imageCount;
+						testExecutor(vkd, device, createInfo, log, ++testIndex, testCount);
+					}
+					passed	= true;
+				}
+				catch (vk::OutOfMemoryError&)
+				{
+					log << tcu::TestLog::Message << "Test cases failed with OOM error. Checking if smaller heap size is possible." << tcu::TestLog::EndMessage;
+					maxProtectedHeapSize = protectedHeapSize - 1u;
+					protectedHeapSize = minProtectedHeapSize + (maxProtectedHeapSize - minProtectedHeapSize) / 2u;
+					continue;
+				}
+
+				break;
 			}
+
+			if (!passed)
+				TCU_THROW(NotSupportedError, "Memory heap doesn't have enough memory!");
 
 			break;
 		}
 
 		case TEST_DIMENSION_IMAGE_FORMAT:
 		{
-			const vk::DeviceInterface&				vkd					= context.getDeviceInterface();
-			vk::VkDevice							device				= context.getDevice();
 			vk::VkPhysicalDeviceMemoryProperties	memoryProperties	= vk::getPhysicalDeviceMemoryProperties(context.getInstanceDriver(), context.getPhysicalDevice());
 			vk::VkDeviceSize						protectedHeapSize	= 0;
 
@@ -368,10 +411,13 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 				}
 			}
 
+			bool		atLeastOnePassed	= false;
+			uint32_t	testIndex			= 0u;
+			uint32_t	testCount			= static_cast<uint32_t>(formats.size());
 			for (std::vector<vk::VkSurfaceFormatKHR>::const_iterator curFmt = formats.begin(); curFmt != formats.end(); ++curFmt)
 			{
-			    vk::VkMemoryRequirements memoryRequirements;
-			    {
+				vk::VkMemoryRequirements memoryRequirements;
+				{
 					const vk::VkImageCreateInfo imageInfo =
 					{
 						vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -397,19 +443,34 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 						vk::VK_IMAGE_LAYOUT_UNDEFINED
 					};
 
-						vk::Move<vk::VkImage> image = vk::createImage(vkd, device, &imageInfo);
+						vk::Move<vk::VkImage> image = vk::createImage(vki, device, &imageInfo);
 
-						memoryRequirements = vk::getImageMemoryRequirements(vkd, device, *image);
-					}
+						memoryRequirements = vk::getImageMemoryRequirements(vki, device, *image);
+				}
 
 					// Check for the image size requirement based on double/triple buffering
 					if (memoryRequirements.size  * capabilities.minImageCount < protectedHeapSize)
 					{
-						cases.push_back(baseParameters);
-						cases.back().imageFormat		= curFmt->format;
-						cases.back().imageColorSpace	= curFmt->colorSpace;
+						vk::VkSwapchainCreateInfoKHR	createInfo = baseParameters;
+						createInfo.imageFormat		= curFmt->format;
+						createInfo.imageColorSpace	= curFmt->colorSpace;
+						try
+						{
+							testExecutor(vkd, device, createInfo, log, ++testIndex, testCount);
+							atLeastOnePassed	|= true;
+						}
+						catch (vk::OutOfMemoryError&)
+						{
+							log << tcu::TestLog::Message << "Previous test case failed with OOM error." << tcu::TestLog::EndMessage;
+							continue;
+						}
 					}
+					else
+						log << tcu::TestLog::Message << "Skipping test case " << ++testIndex << "/" << testCount << tcu::TestLog::EndMessage;
 			}
+
+			if (!atLeastOnePassed)
+				TCU_THROW(NotSupportedError, "Memory heap doesn't have enough memory!");
 
 			break;
 		}
@@ -425,8 +486,6 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 				{ 117, 998 },
 			};
 
-			const vk::DeviceInterface&				vkd					= context.getDeviceInterface();
-			vk::VkDevice							device				= context.getDevice();
 			vk::VkPhysicalDeviceMemoryProperties	memoryProperties	= vk::getPhysicalDeviceMemoryProperties(context.getInstanceDriver(), context.getPhysicalDevice());
 			vk::VkDeviceSize						protectedHeapSize	= 0;
 
@@ -441,10 +500,12 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 				}
 			}
 
+			bool	atLeastOnePassed	= false;
 			if (platformProperties.swapchainExtent == vk::wsi::PlatformProperties::SWAPCHAIN_EXTENT_SETS_WINDOW_SIZE ||
 				platformProperties.swapchainExtent == vk::wsi::PlatformProperties::SWAPCHAIN_EXTENT_SCALED_TO_WINDOW_SIZE)
 			{
-				for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_testSizes); ++ndx)
+				uint32_t	testCount	= DE_LENGTH_OF_ARRAY(s_testSizes);
+				for (uint32_t ndx = 0; ndx < testCount; ++ndx)
 				{
 					vk::VkMemoryRequirements memoryRequirements;
 					{
@@ -471,18 +532,30 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 							vk::VK_IMAGE_LAYOUT_UNDEFINED
 						};
 
-						vk::Move<vk::VkImage> image = vk::createImage(vkd, device, &imageInfo);
+						vk::Move<vk::VkImage> image = vk::createImage(vki, device, &imageInfo);
 
-						memoryRequirements = vk::getImageMemoryRequirements(vkd, device, *image);
+						memoryRequirements = vk::getImageMemoryRequirements(vki, device, *image);
 					}
 
 					// Check for the image size requirement based on double/triple buffering
 					if (memoryRequirements.size  * capabilities.minImageCount < protectedHeapSize)
 					{
-						cases.push_back(baseParameters);
-						cases.back().imageExtent.width	= de::clamp(s_testSizes[ndx].width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-						cases.back().imageExtent.height	= de::clamp(s_testSizes[ndx].height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+						vk::VkSwapchainCreateInfoKHR	createInfo = baseParameters;
+						createInfo.imageExtent.width	= de::clamp(s_testSizes[ndx].width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+						createInfo.imageExtent.height	= de::clamp(s_testSizes[ndx].height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+						try
+						{
+							testExecutor(vkd, device, createInfo, log, ndx + 1u, testCount);
+							atLeastOnePassed	|= true;
+						}
+						catch (vk::OutOfMemoryError&)
+						{
+							log << tcu::TestLog::Message << "Previous test case failed with OOM error." << tcu::TestLog::EndMessage;
+							continue;
+						}
 					}
+					else
+						log << tcu::TestLog::Message << "Skipping test case " << ndx + 1u << "/" << testCount << tcu::TestLog::EndMessage;
 				}
 			}
 
@@ -513,17 +586,28 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 						vk::VK_IMAGE_LAYOUT_UNDEFINED
 					};
 
-					vk::Move<vk::VkImage> image = vk::createImage(vkd, device, &imageInfo);
+					vk::Move<vk::VkImage> image = vk::createImage(vki, device, &imageInfo);
 
-					memoryRequirements = vk::getImageMemoryRequirements(vkd, device, *image);
+					memoryRequirements = vk::getImageMemoryRequirements(vki, device, *image);
 				}
 
 				// Check for the image size requirement based on double/triple buffering
 				if (memoryRequirements.size  * capabilities.minImageCount < protectedHeapSize)
 				{
-					cases.push_back(baseParameters);
-					cases.back().imageExtent = capabilities.currentExtent;
+					vk::VkSwapchainCreateInfoKHR	createInfo = baseParameters;
+					createInfo.imageExtent	= capabilities.currentExtent;
+					try
+					{
+						testExecutor(vkd, device, createInfo, log, 1u, 1u);
+						atLeastOnePassed	|= true;
+					}
+					catch (vk::OutOfMemoryError&)
+					{
+						log << tcu::TestLog::Message << "Previous test case failed with OOM error." << tcu::TestLog::EndMessage;
+					}
 				}
+				else
+					log << tcu::TestLog::Message << "Skipping test case " << 1u << "/" << 1u << tcu::TestLog::EndMessage;
 			}
 
 			if (platformProperties.swapchainExtent != vk::wsi::PlatformProperties::SWAPCHAIN_EXTENT_MUST_MATCH_WINDOW_SIZE)
@@ -534,7 +618,8 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 					{ capabilities.maxImageExtent.width, capabilities.maxImageExtent.height },
 				};
 
-				for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_testExtentSizes); ++ndx)
+				uint32_t	testCount	= DE_LENGTH_OF_ARRAY(s_testExtentSizes);
+				for (uint32_t ndx = 0; ndx < testCount; ++ndx)
 				{
 					vk::VkMemoryRequirements memoryRequirements;
 					{
@@ -561,19 +646,34 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 							vk::VK_IMAGE_LAYOUT_UNDEFINED
 						};
 
-						vk::Move<vk::VkImage> image = vk::createImage(vkd, device, &imageInfo);
+						vk::Move<vk::VkImage> image = vk::createImage(vki, device, &imageInfo);
 
-						memoryRequirements = vk::getImageMemoryRequirements(vkd, device, *image);
+						memoryRequirements = vk::getImageMemoryRequirements(vki, device, *image);
 					}
 
 					// Check for the image size requirement based on double/triple buffering
 					if (memoryRequirements.size  * capabilities.minImageCount < protectedHeapSize)
 					{
-						cases.push_back(baseParameters);
-						cases.back().imageExtent =s_testExtentSizes[ndx];
+						vk::VkSwapchainCreateInfoKHR	createInfo = baseParameters;
+						createInfo.imageExtent	= s_testExtentSizes[ndx];
+						try
+						{
+							testExecutor(vkd, device, createInfo, log, ndx + 1u, testCount);
+							atLeastOnePassed	|= true;
+						}
+						catch (vk::OutOfMemoryError&)
+						{
+							log << tcu::TestLog::Message << "Previous test case failed with OOM error." << tcu::TestLog::EndMessage;
+							continue;
+						}
 					}
+					else
+						log << tcu::TestLog::Message << "Skipping test case " << ndx + 1u << "/" << testCount << tcu::TestLog::EndMessage;
 				}
 			}
+
+			if (!atLeastOnePassed)
+				TCU_THROW(NotSupportedError, "Memory heap doesn't have enough memory!");
 
 			break;
 		}
@@ -584,8 +684,9 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 
 			for (deUint32 numLayers = 1; numLayers <= maxLayers; ++numLayers)
 			{
-				cases.push_back(baseParameters);
-				cases.back().imageArrayLayers = numLayers;
+				vk::VkSwapchainCreateInfoKHR	createInfo = baseParameters;
+				createInfo.imageArrayLayers	= numLayers;
+				testExecutor(vkd, device, createInfo, log, numLayers, maxLayers + 1u);
 			}
 
 			break;
@@ -593,12 +694,21 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 
 		case TEST_DIMENSION_IMAGE_USAGE:
 		{
+			uint32_t	testIndex	= 0u;
+			uint32_t	testCount	= 0u;
+			for (deUint32 flags = 1u; flags <= capabilities.supportedUsageFlags; ++flags)
+			{
+				if ((flags & ~capabilities.supportedUsageFlags) == 0)
+					testCount++;
+			}
+
 			for (deUint32 flags = 1u; flags <= capabilities.supportedUsageFlags; ++flags)
 			{
 				if ((flags & ~capabilities.supportedUsageFlags) == 0)
 				{
-					cases.push_back(baseParameters);
-					cases.back().imageUsage = flags;
+					vk::VkSwapchainCreateInfoKHR	createInfo = baseParameters;
+					createInfo.imageUsage	= flags;
+					testExecutor(vkd, device, createInfo, log, ++testIndex, testCount);
 				}
 			}
 
@@ -607,25 +717,72 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 
 		case TEST_DIMENSION_IMAGE_SHARING_MODE:
 		{
-			cases.push_back(baseParameters);
-			cases.back().imageSharingMode = vk::VK_SHARING_MODE_EXCLUSIVE;
+			vk::VkSwapchainCreateInfoKHR	createInfo = baseParameters;
+			createInfo.imageSharingMode	= vk::VK_SHARING_MODE_EXCLUSIVE;
+			testExecutor(vkd, device, createInfo, log, 1u, 2u);
 
-			cases.push_back(baseParameters);
-			cases.back().imageSharingMode = vk::VK_SHARING_MODE_CONCURRENT;
+			uint32_t	additionalQueueIndex	= std::numeric_limits<uint32_t>::max();
+			{
+				const vk::InstanceDriver&					instanceDriver	= context.getInstanceDriver();
+				const vk::VkPhysicalDevice					physicalDevice	= context.getPhysicalDevice();
+				std::vector<vk::VkQueueFamilyProperties>	properties;
+				deUint32									numFamilies		= 0;
+
+				instanceDriver.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numFamilies, DE_NULL);
+				DE_ASSERT(numFamilies > 0);
+				properties.resize(numFamilies);
+
+				instanceDriver.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numFamilies, properties.data());
+
+				vk::VkQueueFlags	requiredFlags = vk::VK_QUEUE_PROTECTED_BIT;
+				for (size_t idx = 0; idx < properties.size(); ++idx)
+				{
+					vk::VkQueueFlags	flags = properties[idx].queueFlags;
+
+					if ((flags & requiredFlags) == requiredFlags && idx != queueIdx)
+					{
+						additionalQueueIndex	= static_cast<uint32_t>(idx);
+						break;
+					}
+				}
+			}
+
+			// Can only test if we have multiple queues with required flags
+			if (additionalQueueIndex != std::numeric_limits<uint32_t>::max())
+			{
+				uint32_t	queueIndices[2]	= { queueIdx, additionalQueueIndex };
+				createInfo.imageSharingMode			= vk::VK_SHARING_MODE_CONCURRENT;
+				createInfo.queueFamilyIndexCount	= 2u;
+				createInfo.pQueueFamilyIndices		= queueIndices;
+				testExecutor(vkd, device, createInfo, log, 2u, 2u);
+			}
+			else
+				log << tcu::TestLog::Message << "No 2 queues with required flags (VK_QUEUE_PROTECTED_BIT) found. Skipping test case " << 2u << "/" << 2u << tcu::TestLog::EndMessage;
 
 			break;
 		}
 
 		case TEST_DIMENSION_PRE_TRANSFORM:
 		{
+			uint32_t	testIndex	= 0u;
+			uint32_t	testCount	= 0u;
+			for (deUint32 transform = 1u;
+				 transform <= capabilities.supportedTransforms;
+				 transform = transform<<1u)
+			{
+				if ((transform & capabilities.supportedTransforms) != 0)
+					testCount++;
+			}
+
 			for (deUint32 transform = 1u;
 				 transform <= capabilities.supportedTransforms;
 				 transform = transform<<1u)
 			{
 				if ((transform & capabilities.supportedTransforms) != 0)
 				{
-					cases.push_back(baseParameters);
-					cases.back().preTransform = (vk::VkSurfaceTransformFlagBitsKHR)transform;
+					vk::VkSwapchainCreateInfoKHR	createInfo = baseParameters;
+					createInfo.preTransform	= (vk::VkSurfaceTransformFlagBitsKHR)transform;
+					testExecutor(vkd, device, createInfo, log, ++testIndex, testCount);
 				}
 			}
 
@@ -634,14 +791,25 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 
 		case TEST_DIMENSION_COMPOSITE_ALPHA:
 		{
+			uint32_t	testIndex	= 0u;
+			uint32_t	testCount	= 0u;
+			for (deUint32 alphaMode = 1u;
+				 alphaMode <= capabilities.supportedCompositeAlpha;
+				 alphaMode = alphaMode<<1u)
+			{
+				if ((alphaMode & capabilities.supportedCompositeAlpha) != 0)
+					testCount++;
+			}
+
 			for (deUint32 alphaMode = 1u;
 				 alphaMode <= capabilities.supportedCompositeAlpha;
 				 alphaMode = alphaMode<<1u)
 			{
 				if ((alphaMode & capabilities.supportedCompositeAlpha) != 0)
 				{
-					cases.push_back(baseParameters);
-					cases.back().compositeAlpha = (vk::VkCompositeAlphaFlagBitsKHR)alphaMode;
+					vk::VkSwapchainCreateInfoKHR	createInfo = baseParameters;
+					createInfo.compositeAlpha	= (vk::VkCompositeAlphaFlagBitsKHR)alphaMode;
+					testExecutor(vkd, device, createInfo, log, ++testIndex, testCount);
 				}
 			}
 
@@ -650,10 +818,23 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 
 		case TEST_DIMENSION_PRESENT_MODE:
 		{
+			uint32_t	testIndex	= 0u;
+			uint32_t	testCount	= static_cast<uint32_t>(presentModes.size());
 			for (std::vector<vk::VkPresentModeKHR>::const_iterator curMode = presentModes.begin(); curMode != presentModes.end(); ++curMode)
 			{
-				cases.push_back(baseParameters);
-				cases.back().presentMode = *curMode;
+				vk::VkSwapchainCreateInfoKHR	createInfo = baseParameters;
+				if (*curMode == vk::VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR || *curMode == vk::VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR)
+				{
+					if (isExtensionForPresentModeEnabled)
+						createInfo.minImageCount = 1u; // Required by VUID-VkSwapchainCreateInfoKHR-minImageCount-01383
+					else
+					{
+						log << tcu::TestLog::Message << "Present mode (" << *curMode <<") not supported. Skipping test case " << ++testIndex << "/" << testCount << tcu::TestLog::EndMessage;
+						continue;
+					}
+				}
+				createInfo.presentMode	= *curMode;
+				testExecutor(vkd, device, createInfo, log, ++testIndex, testCount);
 			}
 
 			break;
@@ -661,11 +842,12 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 
 		case TEST_DIMENSION_CLIPPED:
 		{
-			cases.push_back(baseParameters);
-			cases.back().clipped = VK_FALSE;
+			vk::VkSwapchainCreateInfoKHR	createInfo = baseParameters;
+			createInfo.clipped	= VK_FALSE;
+			testExecutor(vkd, device, createInfo, log, 1u, 2u);
 
-			cases.push_back(baseParameters);
-			cases.back().clipped = VK_TRUE;
+			createInfo.clipped	= VK_TRUE;
+			testExecutor(vkd, device, createInfo, log, 2u, 2u);
 
 			break;
 		}
@@ -674,14 +856,15 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 			DE_FATAL("Impossible");
 	}
 
-	DE_ASSERT(!cases.empty());
-	return cases;
+	return tcu::TestStatus::pass("Creating swapchain succeeded");
 }
 
-std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::wsi::Type					wsiType,
-																		   TestDimension					dimension,
-																		   const ProtectedContext&			context,
-																		   vk::VkSurfaceKHR					surface)
+tcu::TestStatus executeSwapchainParameterCases (vk::wsi::Type				wsiType,
+												TestDimension				dimension,
+												const ProtectedContext&		context,
+												vk::VkSurfaceKHR			surface,
+												bool						isExtensionForPresentModeEnabled,
+												SwapchainCreationExecutor	testExecutor)
 {
 	const vk::InstanceInterface&				vki				= context.getInstanceDriver();
 	vk::VkPhysicalDevice						physicalDevice	= context.getPhysicalDevice();
@@ -695,41 +878,37 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 																											    physicalDevice,
 																											    surface);
 
-	return generateSwapchainParameterCases(wsiType, dimension, context, capabilities, formats, presentModes);
+	return executeSwapchainParameterCases(wsiType, dimension, context, capabilities, formats, presentModes, isExtensionForPresentModeEnabled, testExecutor);
 }
 
 tcu::TestStatus createSwapchainTest (Context& baseCtx, TestParameters params)
 {
+	bool											isExtensionForPresentModeEnabled	= false;
 	std::vector<vk::VkExtensionProperties>			supportedExtensions (enumerateInstanceExtensionProperties(baseCtx.getPlatformInterface(), DE_NULL));
 	std::vector<std::string>						instExts	= getRequiredWsiExtensions(supportedExtensions, params.wsiType);
 	std::vector<std::string>						devExts;
 	devExts.push_back("VK_KHR_swapchain");
 
-	const NativeObjects								native		(baseCtx, supportedExtensions, params.wsiType);
-	ProtectedContext								context		(baseCtx, params.wsiType, *native.display, *native.window, instExts, devExts);
-	vk::VkSurfaceKHR								surface		= context.getSurface();
-	const std::vector<vk::VkSwapchainCreateInfoKHR>	cases		(generateSwapchainParameterCases(params.wsiType,
-																								 params.dimension,
-																								 context,
-																								 surface));
-	deUint32										queueIdx	= context.getQueueFamilyIndex();
-	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
+	// Try to enable VK_KHR_shared_presentable_image for its respective present mode testing
+	if (params.dimension == TEST_DIMENSION_PRESENT_MODE)
 	{
-		vk::VkSwapchainCreateInfoKHR	curParams	= cases[caseNdx];
-
-		curParams.surface				= surface;
-		curParams.queueFamilyIndexCount	= 1u;
-		curParams.pQueueFamilyIndices	= &queueIdx;
-
-		context.getTestContext().getLog()
-			<< tcu::TestLog::Message << "Sub-case " << (caseNdx+1) << " / " << cases.size() << ": " << curParams << tcu::TestLog::EndMessage;
-
+		Extensions	deviceExtensions	= vk::enumerateDeviceExtensionProperties(baseCtx.getInstanceInterface(), baseCtx.getPhysicalDevice(), DE_NULL);
+		for (size_t i = 0u; i < deviceExtensions.size(); ++i)
 		{
-			const vk::Unique<vk::VkSwapchainKHR>	swapchain	(createSwapchainKHR(context.getDeviceDriver(), context.getDevice(), &curParams));
+			if (std::strcmp(deviceExtensions[i].extensionName, "VK_KHR_shared_presentable_image") == 0)
+			{
+				devExts.emplace_back("VK_KHR_shared_presentable_image");
+				isExtensionForPresentModeEnabled	= true;
+				break;
+			}
 		}
 	}
 
-	return tcu::TestStatus::pass("Creating swapchain succeeded");
+	const NativeObjects								native		(baseCtx, supportedExtensions, params.wsiType);
+	ProtectedContext								context		(baseCtx, params.wsiType, *native.display, *native.window, instExts, devExts);
+	vk::VkSurfaceKHR								surface		= context.getSurface();
+
+	return executeSwapchainParameterCases(params.wsiType, params.dimension, context, surface, isExtensionForPresentModeEnabled, swapchainCreateExecutor);
 }
 
 struct GroupParameters
