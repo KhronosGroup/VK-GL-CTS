@@ -113,6 +113,11 @@ void addMonolithicAmberTests (tcu::TestCaseGroup* tests)
 			"Read primitive id from tessellation shaders without a geometry shader",
 			(AMBER_FEATURE_TESSELATION_SHADER | AMBER_FEATURE_GEOMETRY_SHADER),
 		},
+		{
+			"layer_read_from_frag",
+			"Read gl_layer from fragment shaders without previous writes",
+			(AMBER_FEATURE_GEOMETRY_SHADER),
+		},
 	};
 	for (unsigned i = 0; i < DE_LENGTH_OF_ARRAY(cases) ; ++i)
 	{
