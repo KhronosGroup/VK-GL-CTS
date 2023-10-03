@@ -222,7 +222,7 @@ tcu::TestStatus ShaderObjectExtensionVersionInstance::iterate (void)
 
 	instanceDriver.getPhysicalDeviceProperties2(physicalDevice, &properties2);
 
-	const std::vector<vk::VkExtensionProperties>				deviceExtensionProperties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+	const std::vector<vk::VkExtensionProperties>&				deviceExtensionProperties = enumerateCachedDeviceExtensionProperties(vki, physicalDevice);
 
 	if (m_test == SHADER_BINARY_UUID)
 	{

@@ -335,7 +335,7 @@ void checkRequirements (Context& context, TestParams params)
 	const auto&	vki				= context.getInstanceInterface();
 	const auto	physicalDevice	= context.getPhysicalDevice();
 
-	const auto supportedExtensions = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+	const auto& supportedExtensions = enumerateCachedDeviceExtensionProperties(vki, physicalDevice);
 	if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_AMD_shader_fragment_mask")))
 		TCU_THROW(NotSupportedError, "VK_AMD_shader_fragment_mask not supported");
 

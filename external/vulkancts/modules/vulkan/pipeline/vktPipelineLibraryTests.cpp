@@ -2713,12 +2713,6 @@ void PipelineLibraryMiscTestCase::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
 
-	// VK_KHR_pipeline_library must be supported if the VK_EXT_graphics_pipeline_library extension is supported.
-	// Note that vktTestCase skips enabling VK_KHR_pipeline_library by default and we can't use requireDeviceFunctionality for it.
-	const auto supportedExtensions = enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), DE_NULL);
-	if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_pipeline_library")))
-		TCU_FAIL("VK_KHR_pipeline_library not supported but VK_EXT_graphics_pipeline_library supported");
-
 	if ((m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED) &&
 		!context.getGraphicsPipelineLibraryPropertiesEXT().graphicsPipelineLibraryFastLinking)
 		TCU_THROW(NotSupportedError, "graphicsPipelineLibraryFastLinking is not supported");

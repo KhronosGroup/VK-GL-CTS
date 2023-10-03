@@ -286,10 +286,6 @@ RayTracingPipelineLibraryTestCase::~RayTracingPipelineLibraryTestCase	(void)
 
 void RayTracingPipelineLibraryTestCase::checkSupport(Context& context) const
 {
-	const auto&	vki					= context.getInstanceInterface();
-	const auto	physicalDevice		= context.getPhysicalDevice();
-	const auto	supportedExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
-
 	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
 	context.requireDeviceFunctionality("VK_KHR_pipeline_library");
 

@@ -209,15 +209,15 @@ void checkPipelineConstructionRequirements (const InstanceInterface&		vki,
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 		return;
 
+	const auto& supportedExtensions = enumerateCachedDeviceExtensionProperties(vki, physicalDevice);
+
 	if (isConstructionTypeShaderObject(pipelineConstructionType))
 	{
-		const auto supportedExtensions = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 		if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_shader_object")))
 			TCU_THROW(NotSupportedError, "VK_EXT_shader_object not supported");
 		return;
 	}
 
-	const auto supportedExtensions = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 	if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_graphics_pipeline_library")))
 		TCU_THROW(NotSupportedError, "VK_EXT_graphics_pipeline_library not supported");
 }

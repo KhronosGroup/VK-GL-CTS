@@ -135,7 +135,7 @@ tcu::TestStatus forbiddenCoreExtensions (Context& context)
 
 	vk::VkPhysicalDevice							physicalDevice		= context.getPhysicalDevice();
 	const vk::InstanceInterface&					vki					= context.getInstanceInterface();
-	const std::vector<vk::VkExtensionProperties>	deviceExtensions	= vk::enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+	const std::vector<vk::VkExtensionProperties>&	deviceExtensions	= vk::enumerateCachedDeviceExtensionProperties(vki, physicalDevice);
 
 	for (const auto& extension : deviceExtensions)
 	{
@@ -322,7 +322,7 @@ tcu::TestStatus allowedExtensions (Context& context)
 
 	vk::VkPhysicalDevice							physicalDevice		= context.getPhysicalDevice();
 	const vk::InstanceInterface&					vki					= context.getInstanceInterface();
-	const std::vector<vk::VkExtensionProperties>	deviceExtensions	= vk::enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+	const std::vector<vk::VkExtensionProperties>&	deviceExtensions	= vk::enumerateCachedDeviceExtensionProperties(vki, physicalDevice);
 
 	for (const auto& extension : deviceExtensions)
 	{

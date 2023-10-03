@@ -110,7 +110,7 @@ static deBool writeEscaped (qpXmlWriter* writer, const char* str)
 		if (isEOS || ((d - &buf[0]) >= 4))
 		{
 			*d = 0;
-			fprintf(writer->outputFile, "%s", buf);
+			fputs(buf, writer->outputFile);
 			d = &buf[0];
 		}
 	} while (!isEOS);
