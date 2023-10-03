@@ -1936,6 +1936,12 @@ struct TestConfig
 	// Used in some tests to verify color blend pAttachments can be null if all its state is dynamic.
 	bool							nullStaticColorBlendAttPtr;
 
+	// Verify color blend attachment count can be 0 if all its state is dynamic.
+	bool							colorBlendAttCnt0;
+
+	// Disable advanced blending coherent operations or not.
+	bool							disableAdvBlendingCoherentOps;
+
 	// Use dual source blending.
 	bool							dualSrcBlend;
 
@@ -2059,7 +2065,9 @@ struct TestConfig
 		, colorBlendBoth				(false)
 		, useColorWriteEnable			(false)
 		, forceUnormColorFormat			(false)
-		, nullStaticColorBlendAttPtr	(false)
+		, nullStaticColorBlendAttPtr    (false)
+		, colorBlendAttCnt0             (false)
+		, disableAdvBlendingCoherentOps (false)
 		, dualSrcBlend					(false)
 		, favorStaticNullPointers		(false)
 		, forceAtomicCounters			(false)
@@ -2173,7 +2181,9 @@ struct TestConfig
 		, colorBlendBoth				(other.colorBlendBoth)
 		, useColorWriteEnable			(other.useColorWriteEnable)
 		, forceUnormColorFormat			(other.forceUnormColorFormat)
-		, nullStaticColorBlendAttPtr	(other.nullStaticColorBlendAttPtr)
+		, nullStaticColorBlendAttPtr    (other.nullStaticColorBlendAttPtr)
+		, colorBlendAttCnt0             (other.colorBlendAttCnt0)
+		, disableAdvBlendingCoherentOps (other.disableAdvBlendingCoherentOps)
 		, dualSrcBlend					(other.dualSrcBlend)
 		, favorStaticNullPointers		(other.favorStaticNullPointers)
 		, forceAtomicCounters			(other.forceAtomicCounters)
@@ -4506,7 +4516,122 @@ protected:
 	std::vector<std::string>				m_extensions;
 };
 
+class CoherentBlendingDeviceHelper : public DeviceHelper
+{
+public:
+	CoherentBlendingDeviceHelper (Context& context)
+	{
+		const auto&	vkp             = context.getPlatformInterface();
+		const auto&	vki             = context.getInstanceInterface();
+		const auto	instance        = context.getInstance();
+		const auto	physicalDevice  = context.getPhysicalDevice();
+		const auto	queuePriority   = 1.0f;
+
+		// Queue index first.
+		m_queueFamilyIndex          = context.getUniversalQueueFamilyIndex();
+
+		// Create a universal queue that supports graphics and compute.
+		const vk::VkDeviceQueueCreateInfo queueParams =
+		{
+			vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType              sType;
+			DE_NULL,                                        // const void*                  pNext;
+			0u,												// VkDeviceQueueCreateFlags     flags;
+			m_queueFamilyIndex,								// deUint32                     queueFamilyIndex;
+			1u,												// deUint32                     queueCount;
+			&queuePriority									// const float*                 pQueuePriorities;
+		};
+
+#ifndef CTS_USES_VULKANSC
+		const auto& contextMeshFeatures     = context.getMeshShaderFeaturesEXT();
+		const auto& contextGPLFeatures      = context.getGraphicsPipelineLibraryFeaturesEXT();
+		const auto& contextSOFeatures       = context.getShaderObjectFeaturesEXT();
+		const auto& contextBlendFeatures    = context.getBlendOperationAdvancedFeaturesEXT();
+
+		const bool meshShaderSupport       = contextMeshFeatures.meshShader;
+		const bool gplSupport              = contextGPLFeatures.graphicsPipelineLibrary;
+		const bool shaderObjectSupport     = contextSOFeatures.shaderObject;
+		const bool blendFeaturesSupport    = contextBlendFeatures.advancedBlendCoherentOperations;
+
+		vk::VkPhysicalDeviceExtendedDynamicState3FeaturesEXT    eds3Features                = vk::initVulkanStructure();
+		vk::VkPhysicalDeviceFeatures2                           features2                   = vk::initVulkanStructure(&eds3Features);
+
+		vk::VkPhysicalDeviceMeshShaderFeaturesEXT               meshFeatures                = vk::initVulkanStructure();
+		vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT  gplFeatures                 = vk::initVulkanStructure();
+		vk::VkPhysicalDeviceShaderObjectFeaturesEXT             shaderObjectFeatures        = vk::initVulkanStructure();
+		vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT   blendOperationAdvFeatures   = vk::initVulkanStructure();
+
+		const auto addFeatures = vk::makeStructChainAdder(&features2);
+
+		if (meshShaderSupport)
+			addFeatures(&meshFeatures);
+
+		if (gplSupport)
+			addFeatures(&gplFeatures);
+
+		if (shaderObjectSupport)
+			addFeatures(&shaderObjectFeatures);
+
+		if (blendFeaturesSupport)
+			addFeatures(&blendOperationAdvFeatures);
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+
+		// Disable robust buffer access and advanced color blend operations explicitly.
+		features2.features.robustBufferAccess                       = VK_FALSE;
+		blendOperationAdvFeatures.advancedBlendCoherentOperations   = VK_FALSE;
+
+#endif // CTS_USES_VULKANSC
+
+		const auto& creationExtensions = context.getDeviceCreationExtensions();
+
+		m_extensions.reserve(creationExtensions.size());
+		for (const auto& ext : creationExtensions)
+			m_extensions.push_back(ext);
+
+		const vk::VkDeviceCreateInfo deviceCreateInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,               //sType;
+#ifndef CTS_USES_VULKANSC
+			&features2,                                             //pNext;
+#else
+			nullptr,
+#endif // CTS_USES_VULKANSC
+			0u,                                                     //flags
+			1u,                                                     //queueRecordCount;
+			&queueParams,                                           //pRequestedQueues;
+			0u,                                                     //layerCount;
+			nullptr,                                                //ppEnabledLayerNames;
+			de::sizeU32(creationExtensions),                        // deUint32 enabledExtensionCount;
+			de::dataOrNull(creationExtensions),                     // const char* const* ppEnabledExtensionNames;
+			nullptr,                                                //pEnabledFeatures;
+		};
+
+		m_device    = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &deviceCreateInfo);
+		m_vkd.reset(new vk::DeviceDriver(vkp, instance, m_device.get(), context.getUsedApiVersion()));
+		m_queue     = getDeviceQueue(*m_vkd, *m_device, m_queueFamilyIndex, 0u);
+		m_allocator.reset(new vk::SimpleAllocator(*m_vkd, m_device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
+	}
+
+	virtual ~CoherentBlendingDeviceHelper () {}
+
+	const vk::DeviceInterface&		getDeviceInterface	(void) const override	{ return *m_vkd;				}
+	vk::VkDevice					getDevice			(void) const override	{ return m_device.get();		}
+	uint32_t						getQueueFamilyIndex	(void) const override	{ return m_queueFamilyIndex;	}
+	vk::VkQueue						getQueue			(void) const override	{ return m_queue;				}
+	vk::Allocator&					getAllocator		(void) const override	{ return *m_allocator;			}
+	const std::vector<std::string>&	getDeviceExtensions	(void) const override	{ return m_extensions;			}
+
+protected:
+	vk::Move<vk::VkDevice>					m_device;
+	std::unique_ptr<vk::DeviceDriver>		m_vkd;
+	deUint32								m_queueFamilyIndex;
+	vk::VkQueue								m_queue;
+	std::unique_ptr<vk::SimpleAllocator>	m_allocator;
+	std::vector<std::string>				m_extensions;
+};
+
 std::unique_ptr<DeviceHelper> g_shadingRateDeviceHelper;
+std::unique_ptr<DeviceHelper> g_coherentBlendingDeviceHelper;
 std::unique_ptr<DeviceHelper> g_contextDeviceHelper;
 
 DeviceHelper& getDeviceHelper(Context& context, const TestConfig& testConfig)
@@ -4518,6 +4643,13 @@ DeviceHelper& getDeviceHelper(Context& context, const TestConfig& testConfig)
 		return *g_shadingRateDeviceHelper;
 	}
 
+	if (testConfig.disableAdvBlendingCoherentOps)
+	{
+		if (!g_coherentBlendingDeviceHelper)
+			g_coherentBlendingDeviceHelper.reset(new CoherentBlendingDeviceHelper(context));
+		return *g_coherentBlendingDeviceHelper;
+	}
+
 	if (!g_contextDeviceHelper)
 		g_contextDeviceHelper.reset(new ContextDeviceHelper(context));
 	return *g_contextDeviceHelper;
@@ -4526,6 +4658,7 @@ DeviceHelper& getDeviceHelper(Context& context, const TestConfig& testConfig)
 void cleanupDevices()
 {
 	g_shadingRateDeviceHelper.reset(nullptr);
+	g_coherentBlendingDeviceHelper.reset(nullptr);
 	g_contextDeviceHelper.reset(nullptr);
 }
 
@@ -5556,12 +5689,15 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		colorBlendPnext							= pColorWriteEnable.get();
 	}
 
-	if (m_testConfig.nullStaticColorBlendAttPtr)
+	if (m_testConfig.nullStaticColorBlendAttPtr || m_testConfig.colorBlendAttCnt0)
 	{
 		DE_ASSERT(static_cast<bool>(m_testConfig.colorBlendEnableConfig.dynamicValue));
 		DE_ASSERT(static_cast<bool>(m_testConfig.colorBlendEquationConfig.dynamicValue));
 		DE_ASSERT(static_cast<bool>(m_testConfig.colorWriteMaskConfig.dynamicValue));
 	}
+
+	const auto attachmentCount	= m_testConfig.colorBlendAttCnt0 ? 0u : de::sizeU32(colorBlendAttachmentStateVec);
+	const auto attachments		= m_testConfig.nullStaticColorBlendAttPtr ? nullptr : de::dataOrNull(colorBlendAttachmentStateVec);
 
 	const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo =
 	{
@@ -5570,11 +5706,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		0u,																// VkPipelineColorBlendStateCreateFlags          flags
 		m_testConfig.logicOpEnableConfig.staticValue,					// VkBool32                                      logicOpEnable
 		m_testConfig.logicOpConfig.staticValue,							// VkLogicOp                                     logicOp
-		static_cast<uint32_t>(colorBlendAttachmentStateVec.size()),		// deUint32                                      attachmentCount
-		(m_testConfig.nullStaticColorBlendAttPtr						// const VkPipelineColorBlendAttachmentState*    pAttachments
-			? nullptr
-			: de::dataOrNull(colorBlendAttachmentStateVec)),
-
+		attachmentCount,                                                // deUint32                                      attachmentCount
+		attachments,                                                    // const VkPipelineColorBlendAttachmentState*    pAttachments
 		{																// float                                         blendConstants[4]
 			m_testConfig.blendConstantsConfig.staticValue[0],
 			m_testConfig.blendConstantsConfig.staticValue[1],
@@ -5651,6 +5784,10 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		vk::VkPipelineColorBlendStateCreateInfo staticCBStateInfo = colorBlendStateCreateInfo;
 		if (m_testConfig.nullStaticColorBlendAttPtr)
 			staticCBStateInfo.pAttachments = de::dataOrNull(colorBlendAttachmentStateVec);
+
+		// The attachment count must never be 0 for the static pipeline.
+		if (m_testConfig.colorBlendAttCnt0)
+			staticCBStateInfo.attachmentCount = de::sizeU32(colorBlendAttachmentStateVec);
 
 #ifndef CTS_USES_VULKANSC
 		if (m_testConfig.useMeshShaders)
@@ -6998,6 +7135,72 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			const char* testName = "null_color_blend_att_ptr";
 			// Set all VkPipelineColorBlendAttachmentState substates as dynamic and pass a null pointer in VkPipelineColorBlendStateCreateInfo::pAttachments
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, config));
+		}
+
+		// Full dynamic blending with attachment count set to 0 and/or pAttachments set to null
+		{
+			TestConfig baseConfig (pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+			// The equation picks the old color instead of the new one if blending is enabled.
+			baseConfig.colorBlendEquationConfig.staticValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ZERO,
+																		vk::VK_BLEND_FACTOR_ONE,
+																		vk::VK_BLEND_OP_ADD,
+																		vk::VK_BLEND_FACTOR_ZERO,
+																		vk::VK_BLEND_FACTOR_ONE,
+																		vk::VK_BLEND_OP_ADD);
+
+			// The dynamic value picks the new color.
+			baseConfig.colorBlendEquationConfig.dynamicValue = ColorBlendEq(vk::VK_BLEND_FACTOR_ONE,
+																		vk::VK_BLEND_FACTOR_ZERO,
+																		vk::VK_BLEND_OP_ADD,
+																		vk::VK_BLEND_FACTOR_ONE,
+																		vk::VK_BLEND_FACTOR_ZERO,
+																		vk::VK_BLEND_OP_ADD);
+
+			baseConfig.colorBlendEnableConfig.staticValue	= false;
+			baseConfig.colorBlendEnableConfig.dynamicValue	= true;
+
+			baseConfig.colorWriteMaskConfig.staticValue		= ( 0 |  0 |  0 |  0);
+			baseConfig.colorWriteMaskConfig.dynamicValue	= (CR | CG | CB | CA);
+
+			baseConfig.colorBlendAttCnt0					= true;
+
+			// VkPipelineColorBlendStateCreateInfo::attachmentCount = 0 and VkPipelineColorBlendStateCreateInfo::pAttachments may not be null
+			// DS3 advanced blending required
+			{
+				TestConfig config (baseConfig);
+				config.disableAdvBlendingCoherentOps = false;
+				config.colorBlendBoth                = true;
+
+				const char* testName = "color_blend_att_count_0_adv";
+				const char* testDesc = "Set all VkPipelineColorBlendAttachmentState substates as dynamic and set VkPipelineColorBlendStateCreateInfo::attachmentCount to 0 when DS3 advanced blending is supported";
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
+			}
+
+			// VkPipelineColorBlendStateCreateInfo::attachmentCount = 0 and VkPipelineColorBlendStateCreateInfo::pAttachments may not be null
+			// DS3 advanced blending not required
+			// Advanced blending extension disabled if enabled/supported by default
+			{
+				TestConfig config (baseConfig);
+				config.disableAdvBlendingCoherentOps = true;
+				config.colorBlendBoth                = false;
+
+				const char* testName = "color_blend_att_count_0";
+				const char* testDesc = "Set all VkPipelineColorBlendAttachmentState substates as dynamic and set VkPipelineColorBlendStateCreateInfo::attachmentCount to 0";
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
+			}
+
+			// VkPipelineColorBlendStateCreateInfo::attachmentCount = 0 and VkPipelineColorBlendStateCreateInfo::pAttachments = nullptr
+			// DS3 advanced blending required
+			{
+				TestConfig config (baseConfig);
+				config.disableAdvBlendingCoherentOps = false;
+				config.nullStaticColorBlendAttPtr    = true;
+
+				const char* testName = "color_blend_no_attachments";
+				const char* testDesc = "Set all VkPipelineColorBlendAttachmentState substates as dynamic and set VkPipelineColorBlendStateCreateInfo::attachmentCount to 0 and VkPipelineColorBlendStateCreateInfo::pAttachments to null";
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
+			}
 		}
 
 		// Dynamically enable primitive restart
