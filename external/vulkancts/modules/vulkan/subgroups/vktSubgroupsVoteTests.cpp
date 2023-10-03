@@ -564,8 +564,8 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 						format,							//  VkFormat			format;
 						de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 						DE_FALSE,						//  deBool				requiredSubgroupSize;
-						deBool(false),					//  deBool				requires8BitUniformBuffer;
-						deBool(false)					//  deBool				requires16BitUniformBuffer;
+						deBool(needs8BitUBOStorage),	//  deBool				requires8BitUniformBuffer;
+						deBool(needs16BitUBOStorage)	//  deBool				requires16BitUniformBuffer;
 					};
 					const string			testName	= name + "_" + getShaderStageName(caseDef.shaderStage);
 
