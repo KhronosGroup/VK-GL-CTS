@@ -875,10 +875,10 @@ tcu::TestStatus ShaderObjectBindingInstance::iterate (void)
 	const bool							geometrySupported			= m_context.getDeviceFeatures().geometryShader;
 	const auto&							binaries					= m_context.getBinaryCollection();
 
-	const vk::Unique<vk::VkDescriptorSetLayout> descriptorSetLayout(
-		vk::DescriptorSetLayoutBuilder()
-		.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT)
-		.build(vk, device));
+    const vk::Unique<vk::VkDescriptorSetLayout> descriptorSetLayout(
+        vk::DescriptorSetLayoutBuilder()
+        .addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT | ((m_params.useMeshShaders && meshShaderFeatures.meshShader) ? vk::VkShaderStageFlags{ vk::VK_SHADER_STAGE_MESH_BIT_EXT } : vk::VkShaderStageFlags{ 0 }))
+        .build(vk, device));
 
 	vk::Move<vk::VkShaderEXT>			vertShader					= vk::createShader(vk, device, vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_VERTEX_BIT, binaries.get("vert"), tessellationSupported, geometrySupported));
 	vk::Move<vk::VkShaderEXT>			tescShader;
