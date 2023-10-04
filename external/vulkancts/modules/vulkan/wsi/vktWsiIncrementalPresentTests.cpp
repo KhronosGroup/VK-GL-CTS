@@ -1231,7 +1231,7 @@ void createIncrementalPresentTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type
 							config.transform				= transforms[transformNdx].transform;
 							config.alpha					= alphas[alphaNdx].alpha;
 
-							alphaGroup->addChild(new vkt::InstanceFactory1<IncrementalPresentTestInstance, TestConfig, Programs>(testGroup->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, name, Programs(), config));
+							alphaGroup->addChild(new vkt::InstanceFactory1<IncrementalPresentTestInstance, TestConfig, Programs>(testGroup->getTestContext(), name, name, Programs(), config));
 						}
 
 						transformGroup->addChild(alphaGroup.release());

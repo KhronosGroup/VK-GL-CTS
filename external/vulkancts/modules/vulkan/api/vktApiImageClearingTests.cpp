@@ -2518,19 +2518,19 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 
 									if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
 									{
-										imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image", testParams));
+										imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageTestInstance, TestParams>(testCtx, testCaseName, "Clear Color Image", testParams));
 
 										// Removing linear images as the miplevels may be 1
 										if (imageTilingsToTest[imageTilingIndex] == VK_IMAGE_TILING_OPTIMAL)
 										{
 											testParams.isColorMultipleSubresourceRangeTest = true;
 											testCaseName += "_multiple_subresourcerange";
-											imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageMultipleSubresourceRangeTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image with two ranges", testParams));
+											imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageMultipleSubresourceRangeTestInstance, TestParams>(testCtx, testCaseName, "Clear Color Image with two ranges", testParams));
 										}
 									}
 									else
 									{
-										imageLayersGroup->addChild(new InstanceFactory1<TwoStepClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image", testParams));
+										imageLayersGroup->addChild(new InstanceFactory1<TwoStepClearColorImageTestInstance, TestParams>(testCtx, testCaseName, "Clear Color Image", testParams));
 									}
 								}
 							}
@@ -2590,19 +2590,19 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 
 									if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
 									{
-										imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image", testParams));
+										imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageTestInstance, TestParams>(testCtx, testCaseName, "Clear Color Image", testParams));
 
 										// Removing linear images as the miplevels may be 1
 										if (imageTilingsToTest[imageTilingIndex] == VK_IMAGE_TILING_OPTIMAL)
 										{
 											testParams.isColorMultipleSubresourceRangeTest = true;
 											testCaseName += "_multiple_subresourcerange";
-											imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageMultipleSubresourceRangeTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image with two ranges", testParams));
+											imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageMultipleSubresourceRangeTestInstance, TestParams>(testCtx, testCaseName, "Clear Color Image with two ranges", testParams));
 										}
 									}
 									else
 									{
-										imageLayersGroup->addChild(new InstanceFactory1<TwoStepClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image", testParams));
+										imageLayersGroup->addChild(new InstanceFactory1<TwoStepClearColorImageTestInstance, TestParams>(testCtx, testCaseName, "Clear Color Image", testParams));
 									}
 								}
 							}
@@ -2692,17 +2692,17 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 
 							if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
 							{
-								imageLayersGroup->addChild(new InstanceFactory1<ClearDepthStencilImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Depth/Stencil Image", testParams));
+								imageLayersGroup->addChild(new InstanceFactory1<ClearDepthStencilImageTestInstance, TestParams>(testCtx, testCaseName, "Clear Depth/Stencil Image", testParams));
 
 								if (separateDepthStencilLayoutMode == SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE && hasDepth && hasStencil)
 								{
 									const std::string	testCaseNameRanges = getFormatCaseName(format) + dimensionsString + "_multiple_subresourcerange";
-									imageLayersGroup->addChild(new InstanceFactory1<ClearDepthStencilImageMultipleSubresourceRangeTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseNameRanges, "Clear Depth/Stencil Image with ranges", testParams));
+									imageLayersGroup->addChild(new InstanceFactory1<ClearDepthStencilImageMultipleSubresourceRangeTestInstance, TestParams>(testCtx, testCaseNameRanges, "Clear Depth/Stencil Image with ranges", testParams));
 								}
 							}
 							else
 							{
-								imageLayersGroup->addChild(new InstanceFactory1<TwoStepClearDepthStencilImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Depth/Stencil Image", testParams));
+								imageLayersGroup->addChild(new InstanceFactory1<TwoStepClearDepthStencilImageTestInstance, TestParams>(testCtx, testCaseName, "Clear Depth/Stencil Image", testParams));
 							}
 						}
 					}
@@ -2796,9 +2796,9 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 								false,															// bool								isColorMultipleSubresourceRangeTest;
 								VK_SAMPLE_COUNT_1_BIT											// VkSampleCountFlagBits            imageSampleCount
 							};
-							colorAttachmentClearLayersGroup->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Attachment", testParams));
+							colorAttachmentClearLayersGroup->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, testCaseName, "Clear Color Attachment", testParams));
 							if (dimensions.width > 1)
-								partialColorAttachmentClearLayersGroup->addChild(new InstanceFactory1<PartialClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Partial Clear Color Attachment", testParams));
+								partialColorAttachmentClearLayersGroup->addChild(new InstanceFactory1<PartialClearAttachmentTestInstance, TestParams>(testCtx, testCaseName, "Partial Clear Color Attachment", testParams));
 
 							if (!imageLayerParamsToTest[imageLayerParamsIndex].isCube &&  !(imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange.layerCount == VK_REMAINING_ARRAY_LAYERS) && (dimensions.width > dimensions.height))
 							{
@@ -2806,7 +2806,7 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 								{
 									const std::string msaaTestCaseName = testCaseName + "_" + getSampleCountName(sampleCount);
 									testParams.imageSampleCount = sampleCount;
-									colorAttachmentClearLayersGroup->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, msaaTestCaseName, "Clear Multisample Color Attachment", testParams));
+									colorAttachmentClearLayersGroup->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, msaaTestCaseName, "Clear Multisample Color Attachment", testParams));
 								}
 							}
 						}
@@ -2878,9 +2878,9 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 								false,															// bool								isColorMultipleSubresourceRangeTest;
 								VK_SAMPLE_COUNT_1_BIT											// VkSampleCountFlagBits			imageSampleCount
 							};
-							depthStencilLayersGroup->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Depth/Stencil Attachment", testParams));
+							depthStencilLayersGroup->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, testCaseName, "Clear Depth/Stencil Attachment", testParams));
 							if (dimensions.width > 1)
-								partialDepthStencilLayersGroup->addChild(new InstanceFactory1<PartialClearAttachmentTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Partial Clear Depth/Stencil Attachment", testParams));
+								partialDepthStencilLayersGroup->addChild(new InstanceFactory1<PartialClearAttachmentTestInstance, TestParams>(testCtx, testCaseName, "Partial Clear Depth/Stencil Attachment", testParams));
 						}
 					}
 				}

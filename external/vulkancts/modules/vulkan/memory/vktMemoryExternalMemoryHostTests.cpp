@@ -1111,9 +1111,9 @@ tcu::TestCaseGroup* createMemoryExternalMemoryHostTests (tcu::TestContext& testC
 	de::MovePtr<tcu::TestCaseGroup>	synchronization(new tcu::TestCaseGroup(testCtx, "synchronization", "synchronization tests."));
 
 	//test cases:
-	simpleAllocation->addChild(new InstanceFactory1WithSupport<ExternalMemoryHostBaseTestInstance, VkDeviceSize, FunctionSupport0> (testCtx, tcu::NODETYPE_SELF_VALIDATE, "minImportedHostPointerAlignment_x1",
+	simpleAllocation->addChild(new InstanceFactory1WithSupport<ExternalMemoryHostBaseTestInstance, VkDeviceSize, FunctionSupport0> (testCtx, "minImportedHostPointerAlignment_x1",
 																																	"allocate minImportedHostPointerAlignment multiplied by 1", 1, checkSupport));
-	simpleAllocation->addChild(new InstanceFactory1WithSupport<ExternalMemoryHostBaseTestInstance, VkDeviceSize, FunctionSupport0> (testCtx, tcu::NODETYPE_SELF_VALIDATE, "minImportedHostPointerAlignment_x3",
+	simpleAllocation->addChild(new InstanceFactory1WithSupport<ExternalMemoryHostBaseTestInstance, VkDeviceSize, FunctionSupport0> (testCtx, "minImportedHostPointerAlignment_x3",
 																																	"allocate minImportedHostPointerAlignment multiplied by 3", 3, checkSupport));
 	group ->addChild(simpleAllocation.release());
 
@@ -1126,7 +1126,7 @@ tcu::TestCaseGroup* createMemoryExternalMemoryHostTests (tcu::TestContext& testC
 
 	for (const auto& formatName : testFormats)
 	{
-		with_zero_offset->addChild(new InstanceFactory1WithSupport<ExternalMemoryHostRenderImageTestInstance, TestParams, FunctionSupport0, AddPrograms>	(testCtx, tcu::NODETYPE_SELF_VALIDATE,
+		with_zero_offset->addChild(new InstanceFactory1WithSupport<ExternalMemoryHostRenderImageTestInstance, TestParams, FunctionSupport0, AddPrograms>	(testCtx,
 																																							 formatName.name, formatName.name, AddPrograms(),
 																																							 TestParams(formatName.format), checkSupport));
 	}
@@ -1134,7 +1134,7 @@ tcu::TestCaseGroup* createMemoryExternalMemoryHostTests (tcu::TestContext& testC
 
 	for (const auto& formatName : testFormats)
 	{
-		with_non_zero_offset->addChild(new InstanceFactory1WithSupport<ExternalMemoryHostRenderImageTestInstance, TestParams, FunctionSupport0, AddPrograms>	(testCtx, tcu::NODETYPE_SELF_VALIDATE,
+		with_non_zero_offset->addChild(new InstanceFactory1WithSupport<ExternalMemoryHostRenderImageTestInstance, TestParams, FunctionSupport0, AddPrograms>	(testCtx,
 																																								 formatName.name, formatName.name, AddPrograms(),
 																																								 TestParams(formatName.format, true), checkSupport));
 	}
@@ -1142,7 +1142,7 @@ tcu::TestCaseGroup* createMemoryExternalMemoryHostTests (tcu::TestContext& testC
 
 	group->addChild(bind_image_memory_and_render.release());
 
-	synchronization->addChild(new InstanceFactory1WithSupport<ExternalMemoryHostSynchronizationTestInstance, TestParams, FunctionSupport0, AddPrograms>	(testCtx, tcu::NODETYPE_SELF_VALIDATE,
+	synchronization->addChild(new InstanceFactory1WithSupport<ExternalMemoryHostSynchronizationTestInstance, TestParams, FunctionSupport0, AddPrograms>	(testCtx,
 																																						 "synchronization", "synchronization", AddPrograms(),
 																																						 TestParams(testFormats[0].format, true), checkTimelineSemaphore));
 	group->addChild(synchronization.release());

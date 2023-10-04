@@ -3105,7 +3105,7 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 					groupParams
 				};
 
-				formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfig)));
+				formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, testName.c_str(), testName.c_str(), testConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfig)));
 
 				const TestConfig	testConfigBaseLayer
 				{
@@ -3121,7 +3121,7 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 				};
 				std::string			testNameBaseLayer	("samples_" + de::toString(sampleCount) + "_baseLayer1");
 
-				formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testNameBaseLayer.c_str(), testNameBaseLayer.c_str(), testConfigBaseLayer, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfigBaseLayer)));
+				formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, testNameBaseLayer.c_str(), testNameBaseLayer.c_str(), testConfigBaseLayer, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfigBaseLayer)));
 
 				for (deUint32 resolveLevel : resolveLevels)
 				{
@@ -3129,7 +3129,7 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 					std::string resolveLevelTestNameStr(testName + "_resolve_level_" + de::toString(resolveLevel));
 					const char* resolveLevelTestName = resolveLevelTestNameStr.c_str();
 
-					formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassResolveLevelTestInstance, TestConfig2, FunctionSupport1<TestConfig2>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, resolveLevelTestName, resolveLevelTestName, testConfig2, typename FunctionSupport1<TestConfig2>::Args(checkSupport, testConfig2)));
+					formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassResolveLevelTestInstance, TestConfig2, FunctionSupport1<TestConfig2>, Programs>(testCtx, resolveLevelTestName, resolveLevelTestName, testConfig2, typename FunctionSupport1<TestConfig2>::Args(checkSupport, testConfig2)));
 
 					// Reduce number of tests for dynamic rendering cases where secondary command buffer is used
 					if (groupParams->useSecondaryCmdBuffer)
@@ -3153,7 +3153,7 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 						maxAttachmentsTestConfig.testType			= MAX_ATTACHMENTS;
 						maxAttachmentsTestConfig.attachmentCount	= attachmentCount;
 
-						formatGroup->addChild(new InstanceFactory1WithSupport<MaxAttachmenstsRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, maxAttName.c_str(), maxAttName.c_str(), maxAttachmentsTestConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, maxAttachmentsTestConfig)));
+						formatGroup->addChild(new InstanceFactory1WithSupport<MaxAttachmenstsRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, maxAttName.c_str(), maxAttName.c_str(), maxAttachmentsTestConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, maxAttachmentsTestConfig)));
 					}
 
 					{
@@ -3163,7 +3163,7 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 						compatibilityTestConfig.testType			= COMPATIBILITY;
 						compatibilityTestConfig.attachmentCount		= 1;
 
-						formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, compatibilityTestName.c_str(), compatibilityTestName.c_str(), compatibilityTestConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, compatibilityTestConfig)));
+						formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, compatibilityTestName.c_str(), compatibilityTestName.c_str(), compatibilityTestConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, compatibilityTestConfig)));
 					}
 				}
 			}

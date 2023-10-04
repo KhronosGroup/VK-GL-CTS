@@ -2202,7 +2202,7 @@ void initTests (tcu::TestCaseGroup* group, RenderingType renderingType)
 			const TestConfig	testConfig	(format, sampleCount, renderingType);
 			const std::string	testName	("samples_" + de::toString(sampleCount));
 
-			formatGroup->addChild(new InstanceFactory1<MultisampleRenderPassTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
+			formatGroup->addChild(new InstanceFactory1<MultisampleRenderPassTestInstance, TestConfig, Programs>(testCtx, testName.c_str(), testName.c_str(), testConfig));
 
 			// create tests for VK_EXT_separate_stencil_usage
 			if (tcu::hasDepthComponent(mapVkFormat(format).order) && tcu::hasStencilComponent(mapVkFormat(format).order))
@@ -2210,10 +2210,10 @@ void initTests (tcu::TestCaseGroup* group, RenderingType renderingType)
 				de::MovePtr<tcu::TestCaseGroup>	sampleGroup	(new tcu::TestCaseGroup(testCtx, testName.c_str(), testName.c_str()));
 				{
 					const TestConfig	separateUsageDepthTestConfig	(format, sampleCount, renderingType, TEST_DEPTH);
-					sampleGroup->addChild(new InstanceFactory1<MultisampleRenderPassTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "test_depth", "depth with input attachment bit", separateUsageDepthTestConfig));
+					sampleGroup->addChild(new InstanceFactory1<MultisampleRenderPassTestInstance, TestConfig, Programs>(testCtx, "test_depth", "depth with input attachment bit", separateUsageDepthTestConfig));
 
 					const TestConfig	separateUsageStencilTestConfig	(format, sampleCount, renderingType, TEST_STENCIL);
-					sampleGroup->addChild(new InstanceFactory1<MultisampleRenderPassTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "test_stencil", "stencil with input attachment bit", separateUsageStencilTestConfig));
+					sampleGroup->addChild(new InstanceFactory1<MultisampleRenderPassTestInstance, TestConfig, Programs>(testCtx, "test_stencil", "stencil with input attachment bit", separateUsageStencilTestConfig));
 				}
 
 				extFormatGroup->addChild(sampleGroup.release());

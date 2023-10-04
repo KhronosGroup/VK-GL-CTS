@@ -138,7 +138,7 @@ void addInstanceTestCaseWithPrograms (tcu::TestCaseGroup*								group,
 									  Arg0												arg0)
 {
 	group->addChild(new InstanceFactory1WithSupport<Instance, Arg0, FunctionSupport1<Arg0>, FunctionProgramsSimple1<Arg0> >(
-		group->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, desc, FunctionProgramsSimple1<Arg0>(initPrograms), arg0, typename FunctionSupport1<Arg0>::Args(checkSupport, arg0)));
+		group->getTestContext(), name, desc, FunctionProgramsSimple1<Arg0>(initPrograms), arg0, typename FunctionSupport1<Arg0>::Args(checkSupport, arg0)));
 }
 
 void checkSupportSampleLocations (Context& context)

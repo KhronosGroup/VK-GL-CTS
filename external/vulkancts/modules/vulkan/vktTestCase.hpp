@@ -192,7 +192,6 @@ class TestCase : public tcu::TestCase
 {
 public:
 							TestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description);
-							TestCase		(tcu::TestContext& testCtx, tcu::TestNodeType type, const std::string& name, const std::string& description);
 	virtual					~TestCase		(void) {}
 
 	virtual void			delayedInit		(void); // non-const init called after checkSupport but before initPrograms
@@ -221,11 +220,6 @@ private:
 
 inline TestCase::TestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description)
 	: tcu::TestCase(testCtx, name.c_str(), description.c_str())
-{
-}
-
-inline TestCase::TestCase (tcu::TestContext& testCtx, tcu::TestNodeType type, const std::string& name, const std::string& description)
-	: tcu::TestCase(testCtx, type, name.c_str(), description.c_str())
 {
 }
 

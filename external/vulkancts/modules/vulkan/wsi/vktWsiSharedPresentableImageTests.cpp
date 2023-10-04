@@ -1157,7 +1157,7 @@ void createSharedPresentableImageTests (tcu::TestCaseGroup* testGroup, vk::wsi::
 						config.alpha						= alphas[alphaNdx].alpha;
 						config.presentMode					= presentModes[presentModeNdx].mode;
 
-						alphaGroup->addChild(new vkt::InstanceFactory1<SharedPresentableImageTestInstance, TestConfig, Programs>(testGroup->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, name, Programs(), config));
+						alphaGroup->addChild(new vkt::InstanceFactory1<SharedPresentableImageTestInstance, TestConfig, Programs>(testGroup->getTestContext(), name, name, Programs(), config));
 					}
 
 					transformGroup->addChild(alphaGroup.release());

@@ -893,7 +893,7 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 		const TestConfig	testConfig	(format, groupParams);
 		string				testName	(formatToName(format));
 
-		group->addChild(new InstanceFactory1WithSupport<SparseRenderTargetTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfig)));
+		group->addChild(new InstanceFactory1WithSupport<SparseRenderTargetTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, testName.c_str(), testName.c_str(), testConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfig)));
 	}
 }
 

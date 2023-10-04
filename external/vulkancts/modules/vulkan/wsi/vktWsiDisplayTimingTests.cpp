@@ -1196,7 +1196,7 @@ void createDisplayTimingTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiT
 			config.useDisplayTiming			= !isReference;
 			config.presentMode				= presentModes[presentModeNdx].mode;
 
-			presentModeGroup->addChild(new vkt::InstanceFactory1<DisplayTimingTestInstance, TestConfig, Programs>(testGroup->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, name, Programs(), config));
+			presentModeGroup->addChild(new vkt::InstanceFactory1<DisplayTimingTestInstance, TestConfig, Programs>(testGroup->getTestContext(), name, name, Programs(), config));
 		}
 
 		testGroup->addChild(presentModeGroup.release());

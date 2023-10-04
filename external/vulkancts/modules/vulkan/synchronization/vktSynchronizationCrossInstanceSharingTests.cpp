@@ -1409,7 +1409,7 @@ static void createTests (tcu::TestCaseGroup* group, SynchronizationType type)
 							const TestConfig	config (type, resource, (vk::VkSemaphoreType)semaphoreType, writeOp, readOp, cases[caseNdx].memoryType, cases[caseNdx].semaphoreType, dedicated);
 							std::string			name	= getResourceName(resource) + semaphoreNames[semaphoreType] + cases[caseNdx].nameSuffix;
 
-							opGroup->addChild(new InstanceFactory1<SharingTestInstance, TestConfig, Progs>(testCtx, tcu::NODETYPE_SELF_VALIDATE,  name, "", Progs(), config));
+							opGroup->addChild(new InstanceFactory1<SharingTestInstance, TestConfig, Progs>(testCtx, name, "", Progs(), config));
 							empty = false;
 						}
 					}

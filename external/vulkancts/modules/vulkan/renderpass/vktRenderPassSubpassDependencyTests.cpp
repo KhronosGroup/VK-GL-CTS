@@ -3981,12 +3981,12 @@ void initTests (tcu::TestCaseGroup* group, const RenderingType renderingType)
 					blurKernel
 				};
 
-				renderSizeGroup->addChild(new InstanceFactory1<ExternalDependencyTestInstance, ExternalTestConfig, ExternalPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
+				renderSizeGroup->addChild(new InstanceFactory1<ExternalDependencyTestInstance, ExternalTestConfig, ExternalPrograms>(testCtx, testName.c_str(), testName.c_str(), testConfig));
 				if (renderingType == RENDERING_TYPE_RENDERPASS2)
 				{
 					testName += "_sync_2";
 					testConfig.synchronizationType = SYNCHRONIZATION_TYPE_SYNCHRONIZATION2;
-					renderSizeGroup->addChild(new InstanceFactory1<ExternalDependencyTestInstance, ExternalTestConfig, ExternalPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
+					renderSizeGroup->addChild(new InstanceFactory1<ExternalDependencyTestInstance, ExternalTestConfig, ExternalPrograms>(testCtx, testName.c_str(), testName.c_str(), testConfig));
 				}
 			}
 
@@ -4052,7 +4052,7 @@ void initTests (tcu::TestCaseGroup* group, const RenderingType renderingType)
 			const ExternalTestConfig	testConfig	(VK_FORMAT_R8G8B8A8_UNORM, UVec2(128, 128), renderPasses, renderingType, SYNCHRONIZATION_TYPE_LEGACY, blurKernel);
 			const string				testName	("render_passes_" + de::toString(renderPassCounts[renderPassCountNdx]));
 
-			implicitGroup->addChild(new InstanceFactory1<ExternalDependencyTestInstance, ExternalTestConfig, ExternalPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
+			implicitGroup->addChild(new InstanceFactory1<ExternalDependencyTestInstance, ExternalTestConfig, ExternalPrograms>(testCtx, testName.c_str(), testName.c_str(), testConfig));
 		}
 
 		group->addChild(implicitGroup.release());
@@ -4157,7 +4157,7 @@ void initTests (tcu::TestCaseGroup* group, const RenderingType renderingType)
 					const SubpassTestConfig	testConfig	(formats[formatNdx], renderSizes[renderSizeNdx], renderPass, renderingType);
 					const string			format		(formatToName(formats[formatNdx]).c_str());
 
-					subpassCountGroup->addChild(new InstanceFactory1<SubpassDependencyTestInstance, SubpassTestConfig, SubpassPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, format, format, testConfig));
+					subpassCountGroup->addChild(new InstanceFactory1<SubpassDependencyTestInstance, SubpassTestConfig, SubpassPrograms>(testCtx, format, format, testConfig));
 				}
 
 				renderSizeGroup->addChild(subpassCountGroup.release());
@@ -4186,7 +4186,7 @@ void initTests (tcu::TestCaseGroup* group, const RenderingType renderingType)
 			de::MovePtr<tcu::TestCaseGroup>	renderSizeGroup	(new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupName.c_str()));
 
 			const SubpassSelfDependencyBackwardsTestConfig	testConfig	(VK_FORMAT_R8G8B8A8_UNORM, renderSizes[renderSizeNdx], renderingType);
-			renderSizeGroup->addChild(new InstanceFactory1<SubpassSelfDependencyBackwardsTestInstance, SubpassSelfDependencyBackwardsTestConfig, SubpassSelfDependencyBackwardsPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "geometry_to_indirectdraw", "", testConfig));
+			renderSizeGroup->addChild(new InstanceFactory1<SubpassSelfDependencyBackwardsTestInstance, SubpassSelfDependencyBackwardsTestConfig, SubpassSelfDependencyBackwardsPrograms>(testCtx, "geometry_to_indirectdraw", "", testConfig));
 
 			selfDependencyGroup->addChild(renderSizeGroup.release());
 		}
@@ -4214,7 +4214,7 @@ void initTests (tcu::TestCaseGroup* group, const RenderingType renderingType)
 		{
 			const SeparateChannelsTestConfig testConfig(configs[configIdx].format, renderingType);
 
-			separateChannelsGroup->addChild(new InstanceFactory1<SeparateChannelsTestInstance, SeparateChannelsTestConfig, SeparateChannelsPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, configs[configIdx].name, "", testConfig));
+			separateChannelsGroup->addChild(new InstanceFactory1<SeparateChannelsTestInstance, SeparateChannelsTestConfig, SeparateChannelsPrograms>(testCtx, configs[configIdx].name, "", testConfig));
 		}
 
 		group->addChild(separateChannelsGroup.release());
@@ -4241,7 +4241,7 @@ void initTests (tcu::TestCaseGroup* group, const RenderingType renderingType)
 		{
 			const SingleAttachmentTestConfig testConfig(configs[configIdx].format, renderingType);
 
-			singleAttachmentGroup->addChild(new InstanceFactory1<SingleAttachmentTestInstance, SingleAttachmentTestConfig, SingleAttachmentPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, configs[configIdx].name, "", testConfig));
+			singleAttachmentGroup->addChild(new InstanceFactory1<SingleAttachmentTestInstance, SingleAttachmentTestConfig, SingleAttachmentPrograms>(testCtx, configs[configIdx].name, "", testConfig));
 		}
 
 		group->addChild(singleAttachmentGroup.release());

@@ -1902,7 +1902,7 @@ static void createTests (tcu::TestCaseGroup* group)
 				{
 					const TestConfig config (resource, writeOp, readOp, cases[caseNdx].memoryHandleTypeBuffer, cases[caseNdx].memoryHandleTypeImage);
 
-					opGroup->addChild(new InstanceFactory1<Win32KeyedMutexTestInstance, TestConfig, Progs>(testCtx, tcu::NODETYPE_SELF_VALIDATE,  name, "", Progs(), config));
+					opGroup->addChild(new InstanceFactory1<Win32KeyedMutexTestInstance, TestConfig, Progs>(testCtx, name, "", Progs(), config));
 					empty = false;
 				}
 			}

@@ -1015,7 +1015,7 @@ tcu::TestCaseGroup* createAllocationTestsCommon (tcu::TestContext& testCtx, Allo
 					else
 						config.memoryAllocationCount	= allocationCount;
 
-					orderGroup->addChild(new InstanceFactory1<AllocateFreeTestInstance, TestConfig>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "count_" + de::toString(config.memoryAllocationCount), "", config));
+					orderGroup->addChild(new InstanceFactory1<AllocateFreeTestInstance, TestConfig>(testCtx, "count_" + de::toString(config.memoryAllocationCount), "", config));
 				}
 
 				sizeGroup->addChild(orderGroup.release());
@@ -1063,7 +1063,7 @@ tcu::TestCaseGroup* createAllocationTestsCommon (tcu::TestContext& testCtx, Allo
 					else
 						config.memoryAllocationCount	= allocationCount;
 
-					orderGroup->addChild(new InstanceFactory1<AllocateFreeTestInstance, TestConfig>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "count_" + de::toString(config.memoryAllocationCount), "", config));
+					orderGroup->addChild(new InstanceFactory1<AllocateFreeTestInstance, TestConfig>(testCtx, "count_" + de::toString(config.memoryAllocationCount), "", config));
 				}
 
 				percentGroup->addChild(orderGroup.release());
@@ -1085,7 +1085,7 @@ tcu::TestCaseGroup* createAllocationTestsCommon (tcu::TestContext& testCtx, Allo
 		{
 			TestConfigRandom config(deInt32Hash(caseNdx ^ 32480), allocationMode);
 
-			randomGroup->addChild(new InstanceFactory1<RandomAllocFreeTestInstance, TestConfigRandom>(testCtx, tcu::NODETYPE_SELF_VALIDATE, de::toString(caseNdx), "Random case", config));
+			randomGroup->addChild(new InstanceFactory1<RandomAllocFreeTestInstance, TestConfigRandom>(testCtx, de::toString(caseNdx), "Random case", config));
 		}
 
 		group->addChild(randomGroup.release());

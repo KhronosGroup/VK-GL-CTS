@@ -2776,7 +2776,7 @@ static void addFunctionCaseInNewSubgroup (
 	Arg0										arg0)
 {
 	de::MovePtr<tcu::TestCaseGroup>	subgroup(new tcu::TestCaseGroup(testCtx, subgroupName.c_str(), subgroupDescription.c_str()));
-	subgroup->addChild(createFunctionCase<Arg0>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "basic", "", checkSupport, testFunc, arg0));
+	subgroup->addChild(createFunctionCase<Arg0>(testCtx, "basic", "", checkSupport, testFunc, arg0));
 	group->addChild(subgroup.release());
 }
 

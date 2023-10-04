@@ -4346,17 +4346,6 @@ tcu::TestStatus SecondaryCommandBufferComputeOnlyTestInstance::iterate()
 
 } // anonymous
 
-inline TestCase* createFunctionCaseWithPrograms2 (tcu::TestContext&				testCtx,
-												 tcu::TestNodeType				type,
-												 const std::string&				name,
-												 const std::string&				desc,
-												 FunctionSupport0::Function		checkSupport,
-												 FunctionPrograms0::Function	initPrograms,
-												 FunctionInstance0::Function	testFunction)
-{
-	return new InstanceFactory1WithSupport<FunctionInstance0, FunctionInstance0::Function, FunctionSupport0, FunctionPrograms0>(
-		testCtx, type, name, desc, FunctionPrograms0(initPrograms), testFunction, checkSupport);
-}
 tcu::TestCaseGroup* createBasicComputeShaderTests (tcu::TestContext& testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
 	de::MovePtr<tcu::TestCaseGroup> basicComputeTests(new tcu::TestCaseGroup(testCtx, "basic", "Basic compute tests"));

@@ -55,14 +55,14 @@ template<typename Instance, typename Arg0, typename Programs = NoPrograms1<Arg0>
 class InstanceFactory1 : public TestCase
 {
 public:
-					InstanceFactory1	(tcu::TestContext& testCtx, tcu::TestNodeType type, const std::string& name, const std::string& desc, const Arg0& arg0)
-						: TestCase	(testCtx, type, name, desc)
+					InstanceFactory1	(tcu::TestContext& testCtx, const std::string& name, const std::string& desc, const Arg0& arg0)
+						: TestCase	(testCtx, name, desc)
 						, m_progs	()
 						, m_arg0	(arg0)
 					{}
 
-					InstanceFactory1	(tcu::TestContext& testCtx, tcu::TestNodeType type, const std::string& name, const std::string& desc, const Programs& progs, const Arg0& arg0)
-						: TestCase	(testCtx, type, name, desc)
+					InstanceFactory1	(tcu::TestContext& testCtx, const std::string& name, const std::string& desc, const Programs& progs, const Arg0& arg0)
+						: TestCase	(testCtx, name, desc)
 						, m_progs	(progs)
 						, m_arg0	(arg0)
 					{}
@@ -81,15 +81,15 @@ class InstanceFactory1WithSupport : public TestCase
 {
 public:
 
-					InstanceFactory1WithSupport	(tcu::TestContext& testCtx, tcu::TestNodeType type, const std::string& name, const std::string& desc, const Arg0& arg0, const Support& support)
-						: TestCase	(testCtx, type, name, desc)
+					InstanceFactory1WithSupport	(tcu::TestContext& testCtx, const std::string& name, const std::string& desc, const Arg0& arg0, const Support& support)
+						: TestCase	(testCtx, name, desc)
 						, m_progs	()
 						, m_arg0	(arg0)
 						, m_support	(support)
 					{}
 
-					InstanceFactory1WithSupport	(tcu::TestContext& testCtx, tcu::TestNodeType type, const std::string& name, const std::string& desc, const Programs& progs, const Arg0& arg0, const Support& support)
-						: TestCase	(testCtx, type, name, desc)
+					InstanceFactory1WithSupport	(tcu::TestContext& testCtx, const std::string& name, const std::string& desc, const Programs& progs, const Arg0& arg0, const Support& support)
+						: TestCase	(testCtx, name, desc)
 						, m_progs	(progs)
 						, m_arg0	(arg0)
 						, m_support	(support)
@@ -233,37 +233,33 @@ private:
 // createFunctionCase
 
 inline TestCase* createFunctionCase (tcu::TestContext&				testCtx,
-									 tcu::TestNodeType				type,
 									 const std::string&				name,
 									 const std::string&				desc,
 									 FunctionInstance0::Function	testFunction)
 {
-	return new InstanceFactory1<FunctionInstance0, FunctionInstance0::Function>(testCtx, type, name, desc, testFunction);
+	return new InstanceFactory1<FunctionInstance0, FunctionInstance0::Function>(testCtx, name, desc, testFunction);
 }
 
 inline TestCase* createFunctionCase (tcu::TestContext&				testCtx,
-									 tcu::TestNodeType				type,
 									 const std::string&				name,
 									 const std::string&				desc,
 									 FunctionSupport0::Function		checkSupport,
 									 FunctionInstance0::Function	testFunction)
 {
-	return new InstanceFactory1WithSupport<FunctionInstance0, FunctionInstance0::Function, FunctionSupport0>(testCtx, type, name, desc, testFunction, checkSupport);
+	return new InstanceFactory1WithSupport<FunctionInstance0, FunctionInstance0::Function, FunctionSupport0>(testCtx, name, desc, testFunction, checkSupport);
 }
 
 inline TestCase* createFunctionCaseWithPrograms (tcu::TestContext&				testCtx,
-												 tcu::TestNodeType				type,
 												 const std::string&				name,
 												 const std::string&				desc,
 												 FunctionPrograms0::Function	initPrograms,
 												 FunctionInstance0::Function	testFunction)
 {
 	return new InstanceFactory1<FunctionInstance0, FunctionInstance0::Function, FunctionPrograms0>(
-		testCtx, type, name, desc, FunctionPrograms0(initPrograms), testFunction);
+		testCtx, name, desc, FunctionPrograms0(initPrograms), testFunction);
 }
 
 inline TestCase* createFunctionCaseWithPrograms (tcu::TestContext&				testCtx,
-												 tcu::TestNodeType				type,
 												 const std::string&				name,
 												 const std::string&				desc,
 												 FunctionSupport0::Function		checkSupport,
@@ -271,24 +267,22 @@ inline TestCase* createFunctionCaseWithPrograms (tcu::TestContext&				testCtx,
 												 FunctionInstance0::Function	testFunction)
 {
 	return new InstanceFactory1WithSupport<FunctionInstance0, FunctionInstance0::Function, FunctionSupport0, FunctionPrograms0>(
-		testCtx, type, name, desc, FunctionPrograms0(initPrograms), testFunction, checkSupport);
+		testCtx, name, desc, FunctionPrograms0(initPrograms), testFunction, checkSupport);
 }
 
 template<typename Arg0>
 TestCase* createFunctionCase (tcu::TestContext&								testCtx,
-							  tcu::TestNodeType								type,
 							  const std::string&							name,
 							  const std::string&							desc,
 							  typename FunctionInstance1<Arg0>::Function	testFunction,
 							  Arg0											arg0)
 {
 	return new InstanceFactory1<FunctionInstance1<Arg0>, typename FunctionInstance1<Arg0>::Args>(
-		testCtx, type, name, desc, typename FunctionInstance1<Arg0>::Args(testFunction, arg0));
+		testCtx, name, desc, typename FunctionInstance1<Arg0>::Args(testFunction, arg0));
 }
 
 template<typename Arg0>
 TestCase* createFunctionCase (tcu::TestContext&								testCtx,
-							  tcu::TestNodeType								type,
 							  const std::string&							name,
 							  const std::string&							desc,
 							  typename FunctionSupport1<Arg0>::Function		checkSupport,
@@ -296,12 +290,11 @@ TestCase* createFunctionCase (tcu::TestContext&								testCtx,
 							  Arg0											arg0)
 {
 	return new InstanceFactory1WithSupport<FunctionInstance1<Arg0>, typename FunctionInstance1<Arg0>::Args, FunctionSupport1<Arg0> >(
-		testCtx, type, name, desc, typename FunctionInstance1<Arg0>::Args(testFunction, arg0), typename FunctionSupport1<Arg0>::Args(checkSupport, arg0));
+		testCtx, name, desc, typename FunctionInstance1<Arg0>::Args(testFunction, arg0), typename FunctionSupport1<Arg0>::Args(checkSupport, arg0));
 }
 
 template<typename Arg0>
 TestCase* createFunctionCaseWithPrograms (tcu::TestContext&								testCtx,
-										  tcu::TestNodeType								type,
 										  const std::string&							name,
 										  const std::string&							desc,
 										  typename FunctionPrograms1<Arg0>::Function	initPrograms,
@@ -309,12 +302,11 @@ TestCase* createFunctionCaseWithPrograms (tcu::TestContext&								testCtx,
 										  Arg0											arg0)
 {
 	return new InstanceFactory1<FunctionInstance1<Arg0>, typename FunctionInstance1<Arg0>::Args, FunctionPrograms1<Arg0> >(
-		testCtx, type, name, desc, FunctionPrograms1<Arg0>(initPrograms), typename FunctionInstance1<Arg0>::Args(testFunction, arg0));
+		testCtx, name, desc, FunctionPrograms1<Arg0>(initPrograms), typename FunctionInstance1<Arg0>::Args(testFunction, arg0));
 }
 
 template<typename Arg0>
 TestCase* createFunctionCaseWithPrograms (tcu::TestContext&								testCtx,
-										  tcu::TestNodeType								type,
 										  const std::string&							name,
 										  const std::string&							desc,
 										  typename FunctionSupport1<Arg0>::Function		checkSupport,
@@ -323,7 +315,7 @@ TestCase* createFunctionCaseWithPrograms (tcu::TestContext&								testCtx,
 										  Arg0											arg0)
 {
 	return new InstanceFactory1WithSupport<FunctionInstance1<Arg0>, typename FunctionInstance1<Arg0>::Args, FunctionSupport1<Arg0>, FunctionPrograms1<Arg0> >(
-		testCtx, type, name, desc, FunctionPrograms1<Arg0>(initPrograms), typename FunctionInstance1<Arg0>::Args(testFunction, arg0), typename FunctionSupport1<Arg0>::Args(checkSupport, arg0));
+		testCtx, name, desc, FunctionPrograms1<Arg0>(initPrograms), typename FunctionInstance1<Arg0>::Args(testFunction, arg0), typename FunctionSupport1<Arg0>::Args(checkSupport, arg0));
 }
 
 // addFunctionCase
@@ -333,7 +325,7 @@ inline void addFunctionCase (tcu::TestCaseGroup*			group,
 							 const std::string&				desc,
 							 FunctionInstance0::Function	testFunc)
 {
-	group->addChild(createFunctionCase(group->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, desc, testFunc));
+	group->addChild(createFunctionCase(group->getTestContext(), name, desc, testFunc));
 }
 
 inline void addFunctionCase (tcu::TestCaseGroup*			group,
@@ -342,7 +334,7 @@ inline void addFunctionCase (tcu::TestCaseGroup*			group,
 							 FunctionSupport0::Function		checkSupport,
 							 FunctionInstance0::Function	testFunc)
 {
-	group->addChild(createFunctionCase(group->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, desc, checkSupport, testFunc));
+	group->addChild(createFunctionCase(group->getTestContext(), name, desc, checkSupport, testFunc));
 }
 
 inline void addFunctionCaseWithPrograms (tcu::TestCaseGroup*			group,
@@ -351,7 +343,7 @@ inline void addFunctionCaseWithPrograms (tcu::TestCaseGroup*			group,
 										 FunctionPrograms0::Function	initPrograms,
 										 FunctionInstance0::Function	testFunc)
 {
-	group->addChild(createFunctionCaseWithPrograms(group->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, desc, initPrograms, testFunc));
+	group->addChild(createFunctionCaseWithPrograms(group->getTestContext(), name, desc, initPrograms, testFunc));
 }
 
 inline void addFunctionCaseWithPrograms (tcu::TestCaseGroup*			group,
@@ -361,7 +353,7 @@ inline void addFunctionCaseWithPrograms (tcu::TestCaseGroup*			group,
 										 FunctionPrograms0::Function	initPrograms,
 										 FunctionInstance0::Function	testFunc)
 {
-	group->addChild(createFunctionCaseWithPrograms(group->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, desc, checkSupport, initPrograms, testFunc));
+	group->addChild(createFunctionCaseWithPrograms(group->getTestContext(), name, desc, checkSupport, initPrograms, testFunc));
 }
 
 template<typename Arg0>
@@ -371,7 +363,7 @@ void addFunctionCase (tcu::TestCaseGroup*							group,
 					  typename FunctionInstance1<Arg0>::Function	testFunc,
 					  Arg0											arg0)
 {
-	group->addChild(createFunctionCase<Arg0>(group->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, desc, testFunc, arg0));
+	group->addChild(createFunctionCase<Arg0>(group->getTestContext(), name, desc, testFunc, arg0));
 }
 
 template<typename Arg0>
@@ -382,7 +374,7 @@ void addFunctionCase (tcu::TestCaseGroup*							group,
 					  typename FunctionInstance1<Arg0>::Function	testFunc,
 					  Arg0											arg0)
 {
-	group->addChild(createFunctionCase<Arg0>(group->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, desc, checkSupport, testFunc, arg0));
+	group->addChild(createFunctionCase<Arg0>(group->getTestContext(), name, desc, checkSupport, testFunc, arg0));
 }
 
 template<typename Arg0>
@@ -404,7 +396,7 @@ void addFunctionCaseWithPrograms (tcu::TestCaseGroup*							group,
 								  typename FunctionInstance1<Arg0>::Function	testFunc,
 								  Arg0											arg0)
 {
-	group->addChild(createFunctionCaseWithPrograms<Arg0>(group->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, desc, initPrograms, testFunc, arg0));
+	group->addChild(createFunctionCaseWithPrograms<Arg0>(group->getTestContext(), name, desc, initPrograms, testFunc, arg0));
 }
 
 template<typename Arg0>
@@ -416,7 +408,7 @@ void addFunctionCaseWithPrograms (tcu::TestCaseGroup*							group,
 								  typename FunctionInstance1<Arg0>::Function	testFunc,
 								  Arg0											arg0)
 {
-	group->addChild(createFunctionCaseWithPrograms<Arg0>(group->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, desc, checkSupport, initPrograms, testFunc, arg0));
+	group->addChild(createFunctionCaseWithPrograms<Arg0>(group->getTestContext(), name, desc, checkSupport, initPrograms, testFunc, arg0));
 }
 
 template<typename Arg0>

@@ -222,7 +222,7 @@ tcu::TestCaseGroup* createHlslComputeGroup (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> hlslCasesGroup(new tcu::TestCaseGroup(testCtx, "hlsl_cases", ""));
 
 	TestConfig testConfig = { TT_CBUFFER_PACKING };
-	hlslCasesGroup->addChild(new HlslTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, "cbuffer_packing", "", testConfig, checkSupport));
+	hlslCasesGroup->addChild(new HlslTestInstance(testCtx, "cbuffer_packing", "", testConfig, checkSupport));
 
 	return hlslCasesGroup.release();
 }

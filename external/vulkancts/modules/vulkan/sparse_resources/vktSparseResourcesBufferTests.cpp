@@ -1470,7 +1470,7 @@ TestCase* createTestInstanceWithPrograms (tcu::TestContext&									testCtx,
 										  Arg0												arg0)
 {
 	return new InstanceFactory1WithSupport<TestInstanceT, Arg0, FunctionSupport1<Arg0>, FunctionProgramsSimple1<Arg0> >(
-		testCtx, tcu::NODETYPE_SELF_VALIDATE, name, desc, FunctionProgramsSimple1<Arg0>(initPrograms), arg0, typename FunctionSupport1<Arg0>::Args(checkSupport, arg0));
+		testCtx, name, desc, FunctionProgramsSimple1<Arg0>(initPrograms), arg0, typename FunctionSupport1<Arg0>::Args(checkSupport, arg0));
 }
 
 void populateTestGroup (tcu::TestCaseGroup* parentGroup)
