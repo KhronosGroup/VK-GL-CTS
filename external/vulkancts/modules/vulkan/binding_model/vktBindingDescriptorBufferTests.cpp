@@ -300,6 +300,8 @@ struct TestParams
 	// Push descriptors
 	deUint32					pushDescriptorSetIndex;		// which descriptor set is updated with push descriptor/template
 
+	bool						commands2;					// Use vkCmd* commands from VK_KHR_maintenance6
+
 	bool isCompute() const
 	{
 		return stage == VK_SHADER_STAGE_COMPUTE_BIT;
@@ -668,6 +670,11 @@ std::string getCaseNameUpdateHash(TestParams& params, uint32_t baseHash)
 	if (params.subcase == SubCase::IMMUTABLE_SAMPLERS)
 	{
 		str << "_imm_samplers";
+	}
+
+	if (params.commands2)
+	{
+		str << "_commands_2";
 	}
 
 	params.updateHash(baseHash ^ deStringHash(str.str().c_str()));
@@ -2202,6 +2209,11 @@ void DescriptorBufferTestCase::checkSupport (Context& context) const
 		context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
 		context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
 	}
+
+	if (m_params.commands2)
+	{
+		context.requireDeviceFunctionality("VK_KHR_maintenance6");
+	}
 }
 
 // The base class for all test case implementations.
@@ -2387,7 +2399,6 @@ protected:
 	// Common, but last
 	std::vector<ResourcePtr>						m_resources;			// various resources used to test the descriptors
 	deUint32										m_testIteration;		// for multi-pass tests such as capture/replay
-
 };
 
 DescriptorBufferTestInstance::DescriptorBufferTestInstance(
@@ -2584,6 +2595,7 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(
 	VkPhysicalDeviceRayTracingPipelineFeaturesKHR		rayTracingPipelineFeatures		= initVulkanStructure();
 	VkPhysicalDeviceBufferDeviceAddressFeatures			bufferDeviceAddressFeatures		= initVulkanStructure();
 	VkPhysicalDeviceMaintenance4Features				maintenance4Features			= initVulkanStructure();
+	VkPhysicalDeviceMaintenance6FeaturesKHR				maintenance6Features			= initVulkanStructure();
 
 	void** nextPtr = &features2.pNext;
 	addToChainVulkanStructure(&nextPtr, synchronization2Features);
@@ -2645,6 +2657,12 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(
 		}
 	}
 
+	if (m_params.commands2)
+	{
+		extensions.push_back("VK_KHR_maintenance6");
+		addToChainVulkanStructure(&nextPtr, maintenance6Features);
+	}
+
 	context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
 
 	if (m_params.variant != TestVariant::ROBUST_BUFFER_ACCESS)
@@ -2695,6 +2713,12 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(
 					TCU_THROW(NotSupportedError, "Require rayTracingPipelineFeatures.rayTracingPipelineShaderGroupHandleCaptureReplay");
 			}
 		}
+	}
+
+	if (m_params.commands2)
+	{
+		if (!maintenance6Features.maintenance6)
+			TCU_THROW(NotSupportedError, "maintenance6 required");
 	}
 
 	// Should be enabled by default
@@ -3079,11 +3103,26 @@ void DescriptorBufferTestInstance::bindDescriptorBuffers(VkCommandBuffer cmdBuf,
 
 			if (dsl.hasEmbeddedImmutableSamplers)
 			{
-				m_deviceInterface->cmdBindDescriptorBufferEmbeddedSamplersEXT(
-					cmdBuf,
-					bindPoint,
-					*m_pipelineLayout,
-					setIndex);
+				if (m_params.commands2)
+				{
+					vk::VkBindDescriptorBufferEmbeddedSamplersInfoEXT bindDescriptorBufferEmbeddedSamplersInfo =
+					{
+						VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT,	//	VkStructureType		sType;
+						DE_NULL,																//	const void*			pNext;
+						(VkShaderStageFlags)m_params.stage,										//	VkShaderStageFlags	stageFlags;
+						*m_pipelineLayout,														//	VkPipelineLayout	layout;
+						setIndex																//	uint32_t			set;
+					};
+					m_deviceInterface->cmdBindDescriptorBufferEmbeddedSamplers2EXT(cmdBuf, &bindDescriptorBufferEmbeddedSamplersInfo);
+				}
+				else
+				{
+					m_deviceInterface->cmdBindDescriptorBufferEmbeddedSamplersEXT(
+						cmdBuf,
+						bindPoint,
+						*m_pipelineLayout,
+						setIndex);
+				}
 
 				// No gaps between sets.
 				DE_ASSERT(firstSet == setIndex);
@@ -3139,14 +3178,31 @@ void DescriptorBufferTestInstance::bindDescriptorBuffers(VkCommandBuffer cmdBuf,
 
 		if ((!isBoundSet || isLastSet) && !bufferIndices.empty())
 		{
-			m_deviceInterface->cmdSetDescriptorBufferOffsetsEXT(
-				cmdBuf,
-				bindPoint,
-				*m_pipelineLayout,
-				firstSet,
-				u32(bufferIndices.size()),
-				bufferIndices.data(),
-				bufferOffsets.data());
+			if (m_params.commands2)
+			{
+				vk::VkSetDescriptorBufferOffsetsInfoEXT setDescriptorBufferOffsetInfo = {
+					VK_STRUCTURE_TYPE_SET_DESCRIPTOR_BUFFER_OFFSETS_INFO_EXT,	// VkStructureType		sType;
+					DE_NULL,													// const void*			pNext;
+					(VkShaderStageFlags)m_params.stage,							// VkShaderStageFlags	stageFlags;
+					*m_pipelineLayout,											// VkPipelineLayout		layout;
+					firstSet,													// uint32_t				firstSet;
+					u32(bufferIndices.size()),									// uint32_t				setCount;
+					bufferIndices.data(),										// const uint32_t*		pBufferIndices;
+					bufferOffsets.data()										// const VkDeviceSize*	pOffsets;
+				};
+				m_deviceInterface->cmdSetDescriptorBufferOffsets2EXT(cmdBuf, &setDescriptorBufferOffsetInfo);
+			}
+			else
+			{
+				m_deviceInterface->cmdSetDescriptorBufferOffsetsEXT(
+					cmdBuf,
+					bindPoint,
+					*m_pipelineLayout,
+					firstSet,
+					u32(bufferIndices.size()),
+					bufferIndices.data(),
+					bufferOffsets.data());
+			}
 
 			bufferIndices.clear();
 			bufferOffsets.clear();
@@ -4319,13 +4375,30 @@ void DescriptorBufferTestInstance::pushDescriptorSet(
 
 	if (m_params.variant == TestVariant::PUSH_DESCRIPTOR)
 	{
-		m_deviceInterface->cmdPushDescriptorSetKHR(
-			cmdBuf,
-			bindPoint,
-			*m_pipelineLayout,
-			setIndex,
-			u32(descriptorWrites.size()),
-			descriptorWrites.data());
+		if (m_params.commands2)
+		{
+			vk::VkPushDescriptorSetInfoKHR pushDescriptorSetInfo =
+			{
+				VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO_KHR,	//	VkStructureType				sType;
+				DE_NULL,										//	const void*					pNext;
+				(VkShaderStageFlags)m_params.stage,				//	VkShaderStageFlags			stageFlags;
+				*m_pipelineLayout,								//	VkPipelineLayout			layout;
+				setIndex,										//	uint32_t					set;
+				u32(descriptorWrites.size()),					//	uint32_t					descriptorWriteCount;
+				descriptorWrites.data()							//	const VkWriteDescriptorSet*	pDescriptorWrites;
+			};
+			m_deviceInterface->cmdPushDescriptorSet2KHR(cmdBuf, &pushDescriptorSetInfo);
+		}
+		else
+		{
+			m_deviceInterface->cmdPushDescriptorSetKHR(
+				cmdBuf,
+				bindPoint,
+				*m_pipelineLayout,
+				setIndex,
+				u32(descriptorWrites.size()),
+				descriptorWrites.data());
+		}
 	}
 	else if (m_params.variant == TestVariant::PUSH_TEMPLATE)
 	{
@@ -4392,12 +4465,28 @@ void DescriptorBufferTestInstance::pushDescriptorSet(
 			*m_device,
 			&createInfo);
 
-		m_deviceInterface->cmdPushDescriptorSetWithTemplateKHR(
-			cmdBuf,
-			*descriptorUpdateTemplate,
-			*m_pipelineLayout,
-			setIndex,
-			dataBasePtr);
+		if (m_params.commands2)
+		{
+			vk::VkPushDescriptorSetWithTemplateInfoKHR pushDescriptorSetWithTemplateInfo =
+			{
+				VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO_KHR,	//	VkStructureType				sType;
+				DE_NULL,														//	const void*					pNext;
+				*descriptorUpdateTemplate,										//	VkDescriptorUpdateTemplate	descriptorUpdateTemplate;
+				*m_pipelineLayout,												//	VkPipelineLayout			layout;
+				setIndex,														//	uint32_t					set;
+				dataBasePtr														//	const void*					pData;
+			};
+			m_deviceInterface->cmdPushDescriptorSetWithTemplate2KHR(cmdBuf, &pushDescriptorSetWithTemplateInfo);
+		}
+		else
+		{
+			m_deviceInterface->cmdPushDescriptorSetWithTemplateKHR(
+				cmdBuf,
+				*descriptorUpdateTemplate,
+				*m_pipelineLayout,
+				setIndex,
+				dataBasePtr);
+		}
 	}
 }
 
@@ -5225,6 +5314,11 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 		VK_SHADER_STAGE_CALLABLE_BIT_KHR,
 	};
 
+	const bool choiceStagesCommands[] {
+		false,
+		true,
+	};
+
 	{
 		MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(testCtx, "basic"));
 
@@ -5265,6 +5359,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 
 		for (auto pQueue = choiceQueues; pQueue < DE_ARRAY_END(choiceQueues); ++pQueue)
 		for (auto pStage = choiceStages; pStage < DE_ARRAY_END(choiceStages); ++pStage)
+		for (auto pCommands2 = choiceStagesCommands; pCommands2 < DE_ARRAY_END(choiceStagesCommands); ++pCommands2)
 		for (auto pDescriptor = choiceDescriptors; pDescriptor < DE_ARRAY_END(choiceDescriptors); ++pDescriptor)
 		{
 			if ((*pQueue == VK_QUEUE_COMPUTE_BIT) && (*pStage != VK_SHADER_STAGE_COMPUTE_BIT))
@@ -5282,6 +5377,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 			params.stage		= *pStage;
 			params.queue		= *pQueue;
 			params.descriptor	= *pDescriptor;
+			params.commands2	= *pCommands2;
 
 			subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
 		}
@@ -5444,6 +5540,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 
 		for (auto pQueue = choiceQueues; pQueue < DE_ARRAY_END(choiceQueues); ++pQueue)
 		for (auto pStage = choiceStages; pStage < DE_ARRAY_END(choiceStages); ++pStage)
+		for (auto pCommands2 = choiceStagesCommands; pCommands2 < DE_ARRAY_END(choiceStagesCommands); ++pCommands2)
 		for (auto pOptions = caseOptions; pOptions < DE_ARRAY_END(caseOptions); ++pOptions)
 		{
 			if ((*pQueue == VK_QUEUE_COMPUTE_BIT) && (*pStage != VK_SHADER_STAGE_COMPUTE_BIT))
@@ -5465,6 +5562,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 			params.embeddedImmutableSamplersPerBuffer			= pOptions->samplersPerBuffer;
 			params.descriptor									= VK_DESCRIPTOR_TYPE_MAX_ENUM;
 			params.useMaintenance5								= false;
+			params.commands2									= *pCommands2;
 
 			subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
 		}
@@ -5500,6 +5598,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 
 		for (auto pQueue = choiceQueues; pQueue < DE_ARRAY_END(choiceQueues); ++pQueue)
 		for (auto pStage = choiceStages; pStage < DE_ARRAY_END(choiceStages); ++pStage)
+		for (auto pCommands2 = choiceStagesCommands; pCommands2 < DE_ARRAY_END(choiceStagesCommands); ++pCommands2)
 		for (auto pOptions = caseOptions; pOptions < DE_ARRAY_END(caseOptions); ++pOptions)
 		{
 			if ((*pQueue == VK_QUEUE_COMPUTE_BIT) && (*pStage != VK_SHADER_STAGE_COMPUTE_BIT))
@@ -5520,6 +5619,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 			params.pushDescriptorSetIndex		= pOptions->pushDescriptorSetIndex;
 			params.descriptor					= VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR; // Optional, will be tested if supported
 			params.useMaintenance5				= false;
+			params.commands2					= *pCommands2;
 
 			subGroupPush->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupPushHash), params));
 

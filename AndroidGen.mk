@@ -118,6 +118,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingModelTests.cpp \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingMutableTests.cpp \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingShaderAccessTests.cpp \
+	external/vulkancts/modules/vulkan/binding_model/vktBindingStagesTests.cpp \
 	external/vulkancts/modules/vulkan/clipping/vktClippingTests.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeBasicComputeShaderTests.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeCooperativeMatrixTests.cpp \
