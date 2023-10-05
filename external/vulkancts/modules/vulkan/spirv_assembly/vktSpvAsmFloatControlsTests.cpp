@@ -3576,12 +3576,10 @@ protected:
 											   string& capability,
 											   string& executionMode) const;
 
-	void setupVulkanFeatures(VariableType		inVariableType,
-							 VariableType		outVariableType,
-							 BehaviorFlags		behaviorFlags,
-							 bool				float64FeatureRequired,
-							 bool				int64FeatureRequired,
-							 VulkanFeatures&	features) const;
+	void setupFloatControlsProperties(VariableType									inVariableType,
+									  VariableType									outVariableType,
+									  BehaviorFlags									behaviorFlags,
+									  vk::VkPhysicalDeviceFloatControlsProperties&	props) const;
 
 protected:
 
@@ -3733,19 +3731,11 @@ void TestGroupBuilderBase::getBehaviorCapabilityAndExecutionMode(BehaviorFlags b
 	DE_ASSERT(!capability.empty() && !executionMode.empty());
 }
 
-void TestGroupBuilderBase::setupVulkanFeatures(VariableType		inVariableType,
-											   VariableType		outVariableType,
-											   BehaviorFlags	behaviorFlags,
-											   bool				float64FeatureRequired,
-											   bool				int64FeatureRequired,
-											   VulkanFeatures&	features) const
+void TestGroupBuilderBase::setupFloatControlsProperties(VariableType									inVariableType,
+														VariableType									outVariableType,
+														BehaviorFlags									behaviorFlags,
+														vk::VkPhysicalDeviceFloatControlsProperties&	props) const
 {
-	features.coreFeatures.shaderFloat64 = float64FeatureRequired;
-	features.coreFeatures.shaderInt64 = int64FeatureRequired;
-
-	// request proper float controls features
-	vk::VkPhysicalDeviceFloatControlsProperties& floatControls = features.floatControlsProperties;
-
 	// rounding mode should obey the destination type
 	bool rteRounding = (behaviorFlags & B_RTE_ROUNDING) != 0;
 	bool rtzRounding = (behaviorFlags & B_RTZ_ROUNDING) != 0;
@@ -3754,16 +3744,16 @@ void TestGroupBuilderBase::setupVulkanFeatures(VariableType		inVariableType,
 		switch(outVariableType)
 		{
 		case FP16:
-			floatControls.shaderRoundingModeRTEFloat16 = rteRounding;
-			floatControls.shaderRoundingModeRTZFloat16 = rtzRounding;
+			props.shaderRoundingModeRTEFloat16 = rteRounding;
+			props.shaderRoundingModeRTZFloat16 = rtzRounding;
 			return;
 		case FP32:
-			floatControls.shaderRoundingModeRTEFloat32 = rteRounding;
-			floatControls.shaderRoundingModeRTZFloat32 = rtzRounding;
+			props.shaderRoundingModeRTEFloat32 = rteRounding;
+			props.shaderRoundingModeRTZFloat32 = rtzRounding;
 			return;
 		case FP64:
-			floatControls.shaderRoundingModeRTEFloat64 = rteRounding;
-			floatControls.shaderRoundingModeRTZFloat64 = rtzRounding;
+			props.shaderRoundingModeRTEFloat64 = rteRounding;
+			props.shaderRoundingModeRTZFloat64 = rtzRounding;
 			return;
 		case UINT32:
 		case INT32:
@@ -3776,19 +3766,19 @@ void TestGroupBuilderBase::setupVulkanFeatures(VariableType		inVariableType,
 	switch(inVariableType)
 	{
 	case FP16:
-		floatControls.shaderDenormPreserveFloat16			= behaviorFlags & B_DENORM_PRESERVE;
-		floatControls.shaderDenormFlushToZeroFloat16		= behaviorFlags & B_DENORM_FLUSH;
-		floatControls.shaderSignedZeroInfNanPreserveFloat16	= behaviorFlags & B_ZIN_PRESERVE;
+		props.shaderDenormPreserveFloat16			= behaviorFlags & B_DENORM_PRESERVE;
+		props.shaderDenormFlushToZeroFloat16		= behaviorFlags & B_DENORM_FLUSH;
+		props.shaderSignedZeroInfNanPreserveFloat16	= behaviorFlags & B_ZIN_PRESERVE;
 		return;
 	case FP32:
-		floatControls.shaderDenormPreserveFloat32			= behaviorFlags & B_DENORM_PRESERVE;
-		floatControls.shaderDenormFlushToZeroFloat32		= behaviorFlags & B_DENORM_FLUSH;
-		floatControls.shaderSignedZeroInfNanPreserveFloat32	= behaviorFlags & B_ZIN_PRESERVE;
+		props.shaderDenormPreserveFloat32			= behaviorFlags & B_DENORM_PRESERVE;
+		props.shaderDenormFlushToZeroFloat32		= behaviorFlags & B_DENORM_FLUSH;
+		props.shaderSignedZeroInfNanPreserveFloat32	= behaviorFlags & B_ZIN_PRESERVE;
 		return;
 	case FP64:
-		floatControls.shaderDenormPreserveFloat64			= behaviorFlags & B_DENORM_PRESERVE;
-		floatControls.shaderDenormFlushToZeroFloat64		= behaviorFlags & B_DENORM_FLUSH;
-		floatControls.shaderSignedZeroInfNanPreserveFloat64	= behaviorFlags & B_ZIN_PRESERVE;
+		props.shaderDenormPreserveFloat64			= behaviorFlags & B_DENORM_PRESERVE;
+		props.shaderDenormFlushToZeroFloat64		= behaviorFlags & B_DENORM_FLUSH;
+		props.shaderSignedZeroInfNanPreserveFloat64	= behaviorFlags & B_ZIN_PRESERVE;
 		return;
 	case UINT32:
 	case INT32:
@@ -4341,37 +4331,24 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	csSpec.inputs.push_back(Resource(inBufferSp, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 	csSpec.outputs.push_back(Resource(outBufferSp));
 
-	// check which format features are needed
-	setupVulkanFeatures(inVariableTypeForCaps,		// usualy same as inVariableType - different only for UnpackHalf2x16
-						outVariableType,
-						testCase.behaviorFlags,
-						float64FeatureRequired,
-						int64FeatureRequired,
-						csSpec.requestedVulkanFeatures);
-
+	// check which features/properties are needed
 	csSpec.assembly			= shaderCode;
 	csSpec.numWorkGroups	= IVec3(1, 1, 1);
 	csSpec.verifyIO			= checkFloatsLUT[outVariableType];
 
 	csSpec.extensions.push_back("VK_KHR_shader_float_controls");
-	bool needShaderFloat16 = float16CapabilityAlreadyAdded;
 
-	if (float16FeatureRequired && !testCase.fp16Without16BitStorage)
-	{
-		csSpec.extensions.push_back("VK_KHR_16bit_storage");
-		csSpec.requestedVulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
-		needShaderFloat16 |= testOperation.floatUsage == FLOAT_ARITHMETIC;
-	}
-	needShaderFloat16 |= usesFP16Constants;
-	if (needShaderFloat16)
-	{
-		csSpec.extensions.push_back("VK_KHR_shader_float16_int8");
-		csSpec.requestedVulkanFeatures.extFloat16Int8.shaderFloat16 = true;
-	}
-	if (float64FeatureRequired)
-		csSpec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = VK_TRUE;
-	if (int64FeatureRequired)
-		csSpec.requestedVulkanFeatures.coreFeatures.shaderInt64 = VK_TRUE;
+	csSpec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = float64FeatureRequired;
+	csSpec.requestedVulkanFeatures.coreFeatures.shaderInt64 = int64FeatureRequired;
+	csSpec.requestedVulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = float16FeatureRequired && !testCase.fp16Without16BitStorage;
+	csSpec.requestedVulkanFeatures.extFloat16Int8.shaderFloat16 =	float16CapabilityAlreadyAdded || usesFP16Constants ||
+																	(	float16FeatureRequired && !testCase.fp16Without16BitStorage &&
+																		testOperation.floatUsage == FLOAT_ARITHMETIC );
+
+	setupFloatControlsProperties(inVariableTypeForCaps,		// usualy same as inFloatType - different only for UnpackHalf2x16
+								 outVariableType,
+								 testCase.behaviorFlags,
+								 csSpec.requestedVulkanFeatures.floatControlsProperties);
 }
 
 void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo&	testCaseInfo,
@@ -5276,26 +5253,18 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 	GraphicsInterfaces		noInterfaces;
 
 	VulkanFeatures vulkanFeatures;
-	setupVulkanFeatures(inVariableTypeForCaps,		// usualy same as inVariableType - different only for UnpackHalf2x16
-						outVariableType,
-						testCase.behaviorFlags,
-						float64FeatureRequired,
-						int64FeatureRequired,
-						vulkanFeatures);
+	setupFloatControlsProperties(inVariableTypeForCaps,		// usualy same as inFloatType - different only for UnpackHalf2x16
+								 outVariableType,
+								 testCase.behaviorFlags,
+								 vulkanFeatures.floatControlsProperties);
 	vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = true;
+	vulkanFeatures.coreFeatures.shaderFloat64 = float64FeatureRequired;
+	vulkanFeatures.coreFeatures.shaderInt64 = int64FeatureRequired;
+	vulkanFeatures.extFloat16Int8.shaderFloat16 = needsShaderFloat16;
+	vulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = float16FeatureRequired && !testCase.fp16Without16BitStorage;
 
 	vector<string> extensions;
 	extensions.push_back("VK_KHR_shader_float_controls");
-	if (needsShaderFloat16)
-	{
-		extensions.push_back("VK_KHR_shader_float16_int8");
-		vulkanFeatures.extFloat16Int8.shaderFloat16 = true;
-	}
-	if (float16FeatureRequired && !testCase.fp16Without16BitStorage)
-	{
-		extensions.push_back("VK_KHR_16bit_storage");
-		vulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
-	}
 
 	InstanceContext ctx(defaultColors,
 						defaultColors,
