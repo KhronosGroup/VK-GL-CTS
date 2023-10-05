@@ -9355,50 +9355,58 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup *testCtx)
         float valueAsFloat;
         const char *
             condition; // Must assign to %cond an expression that evaluates to true after %c = OpQuantizeToF16(%test_constant + 0).
+        bool preserveNanInf;
     } tests[] = {
         {"negative", "-0x1.3p1\n", -constructNormalizedFloat(1, 0x300000),
-         "%cond = OpFOrdEqual %bool %c %test_constant\n"}, // -19
+         "%cond = OpFOrdEqual %bool %c %test_constant\n", false}, // -19
         {"positive", "0x1.0p7\n", constructNormalizedFloat(7, 0x000000),
-         "%cond = OpFOrdEqual %bool %c %test_constant\n"}, // +128
+         "%cond = OpFOrdEqual %bool %c %test_constant\n", false}, // +128
         // SPIR-V requires that OpQuantizeToF16 flushes
         // any numbers that would end up denormalized in F16 to zero.
-        {"denorm", "0x0.0006p-126\n", std::ldexp(1.5f, -140), "%cond = OpFOrdEqual %bool %c %c_f32_0\n"}, // denorm
-        {"negative_denorm", "-0x0.0006p-126\n", -std::ldexp(1.5f, -140),
-         "%cond = OpFOrdEqual %bool %c %c_f32_0\n"}, // -denorm
-        {"too_small", "0x1.0p-16\n", std::ldexp(1.0f, -16),
-         "%cond = OpFOrdEqual %bool %c %c_f32_0\n"}, // too small positive
-        {"negative_too_small", "-0x1.0p-32\n", -std::ldexp(1.0f, -32),
-         "%cond = OpFOrdEqual %bool %c %c_f32_0\n"}, // too small negative
+        {"denorm", "0x0.0006p-126\n", std::ldexp(1.5f, -140), "%cond = OpFOrdEqual %bool %c %c_f32_0\n",
+         false}, // denorm
+        {"negative_denorm", "-0x0.0006p-126\n", -std::ldexp(1.5f, -140), "%cond = OpFOrdEqual %bool %c %c_f32_0\n",
+         false}, // -denorm
+        {"too_small", "0x1.0p-16\n", std::ldexp(1.0f, -16), "%cond = OpFOrdEqual %bool %c %c_f32_0\n",
+         false}, // too small positive
+        {"negative_too_small", "-0x1.0p-32\n", -std::ldexp(1.0f, -32), "%cond = OpFOrdEqual %bool %c %c_f32_0\n",
+         false}, // too small negative
         {"negative_inf", "-0x1.0p128\n", -std::ldexp(1.0f, 128),
 
          "%gz = OpFOrdLessThan %bool %c %c_f32_0\n"
          "%inf = OpIsInf %bool %c\n"
-         "%cond = OpLogicalAnd %bool %gz %inf\n"}, // -inf to -inf
+         "%cond = OpLogicalAnd %bool %gz %inf\n",
+         true}, // -inf to -inf
         {"inf", "0x1.0p128\n", std::ldexp(1.0f, 128),
 
          "%gz = OpFOrdGreaterThan %bool %c %c_f32_0\n"
          "%inf = OpIsInf %bool %c\n"
-         "%cond = OpLogicalAnd %bool %gz %inf\n"}, // +inf to +inf
+         "%cond = OpLogicalAnd %bool %gz %inf\n",
+         true}, // +inf to +inf
         {"round_to_negative_inf", "-0x1.0p32\n", -std::ldexp(1.0f, 32),
 
          "%gz = OpFOrdLessThan %bool %c %c_f32_0\n"
          "%inf = OpIsInf %bool %c\n"
-         "%cond = OpLogicalAnd %bool %gz %inf\n"}, // round to -inf
+         "%cond = OpLogicalAnd %bool %gz %inf\n",
+         true}, // round to -inf
         {"round_to_inf", "0x1.0p16\n", std::ldexp(1.0f, 16),
 
          "%gz = OpFOrdGreaterThan %bool %c %c_f32_0\n"
          "%inf = OpIsInf %bool %c\n"
-         "%cond = OpLogicalAnd %bool %gz %inf\n"}, // round to +inf
+         "%cond = OpLogicalAnd %bool %gz %inf\n",
+         true}, // round to +inf
         {"nan", "0x1.1p128\n", std::numeric_limits<float>::quiet_NaN(),
 
          // Test for any NaN value, as NaNs are not preserved
          "%direct_quant = OpQuantizeToF16 %f32 %test_constant\n"
-         "%cond = OpIsNan %bool %direct_quant\n"}, // nan
+         "%cond = OpIsNan %bool %direct_quant\n",
+         true}, // nan
         {"negative_nan", "-0x1.0001p128\n", std::numeric_limits<float>::quiet_NaN(),
 
          // Test for any NaN value, as NaNs are not preserved
          "%direct_quant = OpQuantizeToF16 %f32 %test_constant\n"
-         "%cond = OpIsNan %bool %direct_quant\n"} // -nan
+         "%cond = OpIsNan %bool %direct_quant\n",
+         true} // -nan
     };
     const char *constants = "%test_constant = OpConstant %f32 "; // The value will be test.constant.
 
@@ -9429,16 +9437,31 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup *testCtx)
 
     for (size_t idx = 0; idx < (sizeof(tests) / sizeof(tests[0])); ++idx)
     {
+        std::vector<std::string> extensions;
+        VulkanFeatures features;
         map<string, string> codeSpecialization;
         map<string, string> fragments;
         codeSpecialization["condition"] = tests[idx].condition;
         fragments["testfun"]            = function.specialize(codeSpecialization);
         fragments["pre_main"]           = string(constants) + tests[idx].constant + "\n";
-        createTestsForAllStages(tests[idx].name, inputColors, expectedColors, fragments, testCtx);
+
+        if (tests[idx].preserveNanInf)
+        {
+            fragments["capability"] = "OpCapability SignedZeroInfNanPreserve\n";
+            fragments["extension"]  = "OpExtension \"SPV_KHR_float_controls\"\n";
+            extensions.push_back("VK_KHR_shader_float_controls");
+            features.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat16 = true;
+        }
+
+        createTestsForAllStages(tests[idx].name, inputColors, expectedColors, fragments, SpecConstants(),
+                                PushConstants(), GraphicsResources(), GraphicsInterfaces(), extensions, features,
+                                testCtx);
     }
 
     for (size_t idx = 0; idx < (sizeof(tests) / sizeof(tests[0])); ++idx)
     {
+        std::vector<std::string> extensions;
+        VulkanFeatures features;
         map<string, string> codeSpecialization;
         map<string, string> fragments;
         SpecConstants passConstants;
@@ -9450,8 +9473,17 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup *testCtx)
 
         passConstants.append<float>(tests[idx].valueAsFloat);
 
+        if (tests[idx].preserveNanInf)
+        {
+            fragments["capability"] = "OpCapability SignedZeroInfNanPreserve\n";
+            fragments["extension"]  = "OpExtension \"SPV_KHR_float_controls\"\n";
+            extensions.push_back("VK_KHR_shader_float_controls");
+            features.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat16 = true;
+        }
+
         createTestsForAllStages(string("spec_const_") + tests[idx].name, inputColors, expectedColors, fragments,
-                                passConstants, testCtx);
+                                passConstants, PushConstants(), GraphicsResources(), GraphicsInterfaces(), extensions,
+                                features, testCtx);
     }
 }
 
