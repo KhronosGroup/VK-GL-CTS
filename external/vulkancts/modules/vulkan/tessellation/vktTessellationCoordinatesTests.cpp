@@ -393,7 +393,7 @@ TessCoordTest::TessCoordTest (tcu::TestContext&			testCtx,
 							  const TessPrimitiveType	primitiveType,
 							  const SpacingMode			spacingMode,
 							  const bool				executionModeInEvaluationShader)
-	: TestCase							(testCtx, getCaseName(primitiveType, spacingMode, executionModeInEvaluationShader), "")
+	: TestCase							(testCtx, getCaseName(primitiveType, spacingMode, executionModeInEvaluationShader))
 	, m_primitiveType					(primitiveType)
 	, m_spacingMode						(spacingMode)
 	, m_executionModeInEvaluationShader	(executionModeInEvaluationShader)
@@ -841,7 +841,7 @@ TestInstance* TessCoordTest::createInstance (Context& context) const
 //! The test still fails if not enough coordinates are generated, or if coordinates don't match the reference data.
 tcu::TestCaseGroup* createCoordinatesTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "tesscoord", "Tessellation coordinates tests"));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "tesscoord"));
 
 	for (int primitiveTypeNdx = 0; primitiveTypeNdx < TESSPRIMITIVETYPE_LAST; ++primitiveTypeNdx)
 		for (int spacingModeNdx = 0; spacingModeNdx < SPACINGMODE_LAST; ++spacingModeNdx)

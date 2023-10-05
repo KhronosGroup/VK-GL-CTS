@@ -631,7 +631,7 @@ VkClearValue CheckerboardConfiguration::getClearValue ()
 class ShaderBindingTableIndexingTestCase : public TestCase
 {
 	public:
-							ShaderBindingTableIndexingTestCase			(tcu::TestContext& context, const char* name, const char* desc, const TestParams data);
+							ShaderBindingTableIndexingTestCase			(tcu::TestContext& context, const char* name, const TestParams data);
 							~ShaderBindingTableIndexingTestCase			(void);
 
 	virtual void			checkSupport								(Context& context) const;
@@ -654,8 +654,8 @@ private:
 	TestParams														m_data;
 };
 
-ShaderBindingTableIndexingTestCase::ShaderBindingTableIndexingTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams data)
-	: vkt::TestCase	(context, name, desc)
+ShaderBindingTableIndexingTestCase::ShaderBindingTableIndexingTestCase (tcu::TestContext& context, const char* name, const TestParams data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -1099,8 +1099,8 @@ struct ShaderGroupHandleAlignmentParams
 class ShaderGroupHandleAlignmentCase : public TestCase
 {
 public:
-					ShaderGroupHandleAlignmentCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const ShaderGroupHandleAlignmentParams& params)
-						: TestCase	(testCtx, name, description)
+					ShaderGroupHandleAlignmentCase		(tcu::TestContext& testCtx, const std::string& name, const ShaderGroupHandleAlignmentParams& params)
+						: TestCase	(testCtx, name)
 						, m_params	(params)
 						{
 						}
@@ -1461,7 +1461,8 @@ tcu::TestStatus ShaderGroupHandleAlignmentInstance::iterate (void)
 
 tcu::TestCaseGroup*	createShaderBindingTableTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "shader_binding_table", "Tests veryfying shader binding tables"));
+	// Tests veryfying shader binding tables
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "shader_binding_table"));
 
 	struct ShaderTestTypeData
 	{
@@ -1498,15 +1499,15 @@ tcu::TestCaseGroup*	createShaderBindingTableTests (tcu::TestContext& testCtx)
 
 	for (size_t shaderTestNdx = 0; shaderTestNdx < DE_LENGTH_OF_ARRAY(shaderTestTypes); ++shaderTestNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> shaderTestGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderTestTypes[shaderTestNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> shaderTestGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderTestTypes[shaderTestNdx].name));
 
 		for (size_t sbtOffsetNdx = 0; sbtOffsetNdx < DE_LENGTH_OF_ARRAY(shaderBufferOffsets); ++sbtOffsetNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> sbtOffsetGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderBufferOffsets[sbtOffsetNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup> sbtOffsetGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderBufferOffsets[sbtOffsetNdx].name));
 
 			for (size_t shaderRecordNdx = 0; shaderRecordNdx < DE_LENGTH_OF_ARRAY(shaderRecords); ++shaderRecordNdx)
 			{
-				de::MovePtr<tcu::TestCaseGroup> shaderRecordGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderRecords[shaderRecordNdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup> shaderRecordGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderRecords[shaderRecordNdx].name));
 
 				deUint32		maxSbtRecordStride				= (shaderTestTypes[shaderTestNdx].shaderTestType == STT_HIT) ? MAX_HIT_SBT_RECORD_STRIDE + 1 : 1;
 				deUint32		maxSbtRecordOffset				= MAX_SBT_RECORD_OFFSET;
@@ -1552,7 +1553,7 @@ tcu::TestCaseGroup*	createShaderBindingTableTests (tcu::TestContext& testCtx)
 							str << "_extrabits";
 						}
 
-						shaderRecordGroup->addChild(new ShaderBindingTableIndexingTestCase(group->getTestContext(), str.str().c_str(), "", testParams));
+						shaderRecordGroup->addChild(new ShaderBindingTableIndexingTestCase(group->getTestContext(), str.str().c_str(), testParams));
 					}
 
 				sbtOffsetGroup->addChild(shaderRecordGroup.release());
@@ -1572,9 +1573,8 @@ tcu::TestCaseGroup*	createShaderBindingTableTests (tcu::TestContext& testCtx)
 		{
 			const auto alignStr = std::to_string(alignment);
 			const auto testName = "alignment_" + alignStr;
-			const auto testDesc = "Check aligning shader group handles to " + alignStr + " bytes";
-
-			handleAlignmentGroup->addChild(new ShaderGroupHandleAlignmentCase(testCtx, testName, testDesc, ShaderGroupHandleAlignmentParams{alignment}));
+			// Check aligning shader group handles
+			handleAlignmentGroup->addChild(new ShaderGroupHandleAlignmentCase(testCtx, testName, ShaderGroupHandleAlignmentParams{alignment}));
 		}
 
 		group->addChild(handleAlignmentGroup.release());

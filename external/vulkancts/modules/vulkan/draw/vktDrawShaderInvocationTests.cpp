@@ -90,7 +90,7 @@ void createTests(tcu::TestCaseGroup* testGroup)
 
 	for (unsigned i=0; i<sizeof(cases) / sizeof(caseDef); i++)
 	{
-		cts_amber::AmberTestCase*	testCase = cts_amber::createAmberTestCase(testCtx, cases[i].name, "", dataDir, cases[i].file);
+		cts_amber::AmberTestCase*	testCase = cts_amber::createAmberTestCase(testCtx, cases[i].name, dataDir, cases[i].file);
 		testCase->setCheckSupportCallback(cases[i].supportFunc);
 		testGroup->addChild(testCase);
 	}
@@ -100,7 +100,7 @@ void createTests(tcu::TestCaseGroup* testGroup)
 
 tcu::TestCaseGroup* createShaderInvocationTests(tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "shader_invocation", "Shader Invocation tests", createTests);
+	return createTestGroup(testCtx, "shader_invocation", createTests);
 }
 
 }	// DrawTests

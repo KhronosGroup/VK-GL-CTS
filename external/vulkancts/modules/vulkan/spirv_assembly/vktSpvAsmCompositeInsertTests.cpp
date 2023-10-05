@@ -219,7 +219,8 @@ void addComputeVectorCompositeInsertTests (tcu::TestCaseGroup* group)
 
 		testName += string("vec") + de::toString(elements);
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), "Tests vector composite insert.", spec));
+		// Tests vector composite insert.
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -367,7 +368,8 @@ void addComputeMatrixCompositeInsertTests (tcu::TestCaseGroup* group)
 
 			string testName = string(useUndef ? "undef_" : "") + "mat" + de::toString(cols) + "x" + de::toString(rows);
 
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), "Tests matrix composite insert.", spec));
+			// Tests matrix composite insert.
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 		}
 	}
 }
@@ -520,7 +522,8 @@ void addComputeNestedStructCompositeInsertTests (tcu::TestCaseGroup* group)
 
 		spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(identityData))));
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), "Tests nested struct composite insert.", spec));
+		// Tests nested struct composite insert.
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -606,7 +609,8 @@ void addGraphicsNestedStructCompositeInsertTests (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* createCompositeInsertComputeGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "composite_insert", "Compute tests for composite insert."));
+	// Compute tests for composite insert.
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "composite_insert"));
 	addComputeVectorCompositeInsertTests(group.get());
 	addComputeMatrixCompositeInsertTests(group.get());
 	addComputeNestedStructCompositeInsertTests(group.get());

@@ -1022,8 +1022,8 @@ tcu::TestStatus HostImageCopyTestInstance::iterate (void)
 class HostImageCopyTestCase : public vkt::TestCase
 {
 public:
-								HostImageCopyTestCase	(tcu::TestContext& context, const char* name, const char* description, const TestParameters& parameters)
-								: TestCase		(context, name, description)
+								HostImageCopyTestCase	(tcu::TestContext& context, const char* name, const TestParameters& parameters)
+								: TestCase		(context, name)
 								, m_parameters	(parameters)
 								{
 								}
@@ -1486,8 +1486,8 @@ tcu::TestStatus PreinitializedTestInstance::iterate (void)
 class PreinitializedTestCase : public vkt::TestCase
 {
 public:
-	PreinitializedTestCase						(tcu::TestContext& context, const char* name, const char* description, const vk::VkFormat format, vk::VkImageLayout srcLayout, vk::VkImageLayout dstLayout, vk::VkExtent3D size, deUint32 arrayLayers, bool imageToImageCopy, bool memcpy, vk::VkImageTiling tiling)
-												: TestCase				(context, name, description)
+	PreinitializedTestCase						(tcu::TestContext& context, const char* name, const vk::VkFormat format, vk::VkImageLayout srcLayout, vk::VkImageLayout dstLayout, vk::VkExtent3D size, deUint32 arrayLayers, bool imageToImageCopy, bool memcpy, vk::VkImageTiling tiling)
+												: TestCase				(context, name)
 												, m_format				(format)
 												, m_srcLayout			(srcLayout)
 												, m_dstLayout			(dstLayout)
@@ -1697,8 +1697,8 @@ tcu::TestStatus PropertiesTestInstance::iterate (void) {
 class PropertiesTestCase : public vkt::TestCase
 {
 public:
-	PropertiesTestCase (tcu::TestContext& context, const char* name, const char* description)
-		: TestCase (context, name, description)
+	PropertiesTestCase (tcu::TestContext& context, const char* name)
+		: TestCase (context, name)
 	{
 	}
 private:
@@ -1803,8 +1803,8 @@ tcu::TestStatus QueryTestInstance::iterate (void)
 class QueryTestCase : public vkt::TestCase
 {
 public:
-	QueryTestCase(tcu::TestContext& context, const char* name, const char* description, const vk::VkFormat format, const vk::VkImageTiling tiling)
-		: TestCase (context, name, description)
+	QueryTestCase(tcu::TestContext& context, const char* name, const vk::VkFormat format, const vk::VkImageTiling tiling)
+		: TestCase (context, name)
 		, m_format (format)
 		, m_tiling (tiling)
 	{
@@ -1838,62 +1838,67 @@ void testGenerator(tcu::TestCaseGroup* group)
 		bool				hostTransferLayout;
 		bool				copyMemoryToImage;
 		const char* name;
-		const char* desc;
 	} copyTests[] =
 	{
-		{ true,		true,	"host_transfer_copy_general",	"Host copy and transfer"		},
-		{ true,		false,	"host_transfer",				"Host transfer"					},
-		{ false,	true,	"host_copy",					"Host copy"						},
+		// Host copy and transfer
+		{ true,		true,	"host_transfer_copy_general"},
+		// Host transfer
+		{ true,		false,	"host_transfer"},
+		// Host copy
+		{ false,	true,	"host_copy"},
 	};
 
 	constexpr struct CopyImageToMemory
 	{
 		bool			hostCopyImageToMemory;
 		const char* name;
-		const char* desc;
 	} copyImageToMemoryTests[] = {
-		{ true,		"host_image_to_memory_copy",		"Copy from image to memory on host"	},
-		{ false,	"image_to_memory_copy",				"Copy from image to memory on gpu"	},
+		// Copy from image to memory on host
+		{ true,		"host_image_to_memory_copy"},
+		// Copy from image to memory on gpu
+		{ false,	"image_to_memory_copy"},
 	};
 
 	constexpr struct TransitionTest
 	{
 		bool		host;
 		const char* name;
-		const char* desc;
 	} transitionTests[] =
 	{
-		{ true,		"host_transition",		"Transition using vkTransitionImageLayoutEXT"	},
-		{ false,	"barrier_transition",	"Transition using a pipeline barrier"			},
+		// Transition using vkTransitionImageLayoutEXT
+		{ true,		"host_transition"},
+		// Transition using a pipeline barrier
+		{ false,	"barrier_transition"},
 	};
 
 	const struct FlagsTest
 	{
 		bool		memcpy;
 		const char* name;
-		const char* desc;
 	} flagsTests[] =
 	{
-		{ false,	"none",		"Copy with no flags"							},
-		{ true,		"memcpy",	"Copy with VK_HOST_IMAGE_COPY_MEMCPY_EXT flag"	},
+		// Copy with no flags
+		{ false,	"none"},
+		// Copy with VK_HOST_IMAGE_COPY_MEMCPY_EXT flag
+		{ true,		"memcpy"},
 	};
 
 	const struct DynamicRendering {
 		bool		dynamicRendering;
 		const char* name;
-		const char* desc;
 	} dynamicRendering[] = {
-		{ false,	"render_pass",			"render pass"		},
-		{ true,		"dynamic_rendering",	"dynamic rendering"	},
+		// render pass
+		{ false,	"render_pass"},
+		// dynamic rendering
+		{ true,		"dynamic_rendering"},
 	};
 
 	const struct Tiling {
 		vk::VkImageTiling	tiling;
 		const char*			name;
-		const char*			desc;
 	} tilingTests[] = {
-		{ vk::VK_IMAGE_TILING_LINEAR,	"linear",			"Linear tiling"		},
-		{ vk::VK_IMAGE_TILING_OPTIMAL,	"optimal",			"Optimal tiling"	},
+		{ vk::VK_IMAGE_TILING_LINEAR,	"linear"},
+		{ vk::VK_IMAGE_TILING_OPTIMAL,	"optimal"},
 	};
 
 	const struct ImageFormatsAndCommand {
@@ -1918,12 +1923,11 @@ void testGenerator(tcu::TestCaseGroup* group)
 	{
 		vk::VkExtent3D	size;
 		const char* name;
-		const char* desc;
 	} imageSizes[] =
 	{
-		{ makeExtent3D(16u, 16u, 1u),			"16x16",		"Size of image"	},
-		{ makeExtent3D(32u, 28u, 1u),			"32x28",		"Size of image"	},
-		{ makeExtent3D(53u, 61u, 1u),			"53x61",		"Size of image"	},
+		{ makeExtent3D(16u, 16u, 1u),			"16x16"},
+		{ makeExtent3D(32u, 28u, 1u),			"32x28"},
+		{ makeExtent3D(53u, 61u, 1u),			"53x61"},
 	};
 
 	constexpr struct ImageLayoutTest
@@ -1931,38 +1935,37 @@ void testGenerator(tcu::TestCaseGroup* group)
 		vk::VkImageLayout srcLayout;
 		vk::VkImageLayout dstLayout;
 		const char* name;
-		const char* desc;
 	} imageLayoutTests[] =
 	{
-		{ vk::VK_IMAGE_LAYOUT_GENERAL,				vk::VK_IMAGE_LAYOUT_GENERAL,					"general_general",				"Src and dst copy layouts"	},
-		{ vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,	vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		"transfer_src_transfer_dst",	"Src and dst copy layouts"	},
+		{ vk::VK_IMAGE_LAYOUT_GENERAL,				vk::VK_IMAGE_LAYOUT_GENERAL,					"general_general"},
+		{ vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,	vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		"transfer_src_transfer_dst"},
 	};
 
 	constexpr struct IntermediateImageLayoutTest
 	{
 		vk::VkImageLayout layout;
 		const char* name;
-		const char* desc;
 	} intermediateImageLayoutTests[] =
 	{
-		{ vk::VK_IMAGE_LAYOUT_GENERAL,							"general",							"intermediate layout"	},
-		{ vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			"color_attachment_optimal",			"intermediate layout"	},
-		{ vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	"depth_stencil_attachment_optimal",	"intermediate layout"	},
-		{ vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,	"depth_stencil_read_only_optimal",	"intermediate layout"	},
-		{ vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,			"shader_read_only_optimal",			"intermediate layout"	},
-		{ vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,				"transfer_src_optimal",				"intermediate layout"	},
-		{ vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,				"transfer_dst_optimal",				"intermediate layout"	},
+		{ vk::VK_IMAGE_LAYOUT_GENERAL,							"general"},
+		{ vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			"color_attachment_optimal"},
+		{ vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	"depth_stencil_attachment_optimal"},
+		{ vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,	"depth_stencil_read_only_optimal"},
+		{ vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,			"shader_read_only_optimal"},
+		{ vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,				"transfer_src_optimal"},
+		{ vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,				"transfer_dst_optimal"},
 	};
 
 	constexpr struct SparseTest
 	{
 		bool		sparse;
 		const char* name;
-		const char* desc;
 	} sparseTests[] =
 	{
-		{	false,	"regular",	"non-sparse image"	},
-		{	true,	"sparse",	"sparse image"		},
+		// non-sparse image
+		{	false,	"regular"},
+		// sparse image
+		{	true,	"sparse"},
 	};
 
 	constexpr struct MipLevelRegionCountPaddingTest
@@ -1987,26 +1990,26 @@ void testGenerator(tcu::TestCaseGroup* group)
 	{
 		std::string formatName = formatAndCommand.command == DRAW ? "draw" : "dispatch";
 		formatName += "_" + getFormatShortString(formatAndCommand.output) + "_" + getFormatShortString(formatAndCommand.sampled);
-		tcu::TestCaseGroup* const formatGroup = new tcu::TestCaseGroup(testCtx, formatName.c_str(), "image formats");
+		tcu::TestCaseGroup* const formatGroup = new tcu::TestCaseGroup(testCtx, formatName.c_str());
 
 		bool colorFormat = isCompressedFormat(formatAndCommand.sampled) ||
 			!(tcu::hasDepthComponent(mapVkFormat(formatAndCommand.sampled).order) || tcu::hasDepthComponent(mapVkFormat(formatAndCommand.sampled).order));
 
 		for (const auto& copy : copyTests)
 		{
-			tcu::TestCaseGroup* const copyTestGroup = new tcu::TestCaseGroup(testCtx, copy.name, copy.desc);
+			tcu::TestCaseGroup* const copyTestGroup = new tcu::TestCaseGroup(testCtx, copy.name);
 			for (const auto& imageToMemory : copyImageToMemoryTests)
 			{
-				tcu::TestCaseGroup* const imageToMemoryGroup = new tcu::TestCaseGroup(testCtx, imageToMemory.name, imageToMemory.desc);
+				tcu::TestCaseGroup* const imageToMemoryGroup = new tcu::TestCaseGroup(testCtx, imageToMemory.name);
 				for (const auto& transition : transitionTests)
 				{
-					tcu::TestCaseGroup* const transitionGroup = new tcu::TestCaseGroup(testCtx, transition.name, transition.desc);
+					tcu::TestCaseGroup* const transitionGroup = new tcu::TestCaseGroup(testCtx, transition.name);
 					for (const auto& flags : flagsTests)
 					{
-						tcu::TestCaseGroup* const flagsGroup = new tcu::TestCaseGroup(testCtx, flags.name, flags.desc);
+						tcu::TestCaseGroup* const flagsGroup = new tcu::TestCaseGroup(testCtx, flags.name);
 						for (const auto& layouts : imageLayoutTests)
 						{
-							tcu::TestCaseGroup* const layoutsGroup = new tcu::TestCaseGroup(testCtx, layouts.name, layouts.desc);
+							tcu::TestCaseGroup* const layoutsGroup = new tcu::TestCaseGroup(testCtx, layouts.name);
 							for (const auto& intermediateLayout : intermediateImageLayoutTests)
 							{
 								if (colorFormat && (intermediateLayout.layout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || intermediateLayout.layout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL))
@@ -2014,22 +2017,22 @@ void testGenerator(tcu::TestCaseGroup* group)
 								else if (!colorFormat && intermediateLayout.layout == vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
 									continue;
 
-								tcu::TestCaseGroup* const intermediateLayoutGroup = new tcu::TestCaseGroup(testCtx, intermediateLayout.name, intermediateLayout.desc);
+								tcu::TestCaseGroup* const intermediateLayoutGroup = new tcu::TestCaseGroup(testCtx, intermediateLayout.name);
 								for (const auto& tiling : tilingTests)
 								{
-									tcu::TestCaseGroup* const tilingGroup = new tcu::TestCaseGroup(testCtx, tiling.name, tiling.desc);
+									tcu::TestCaseGroup* const tilingGroup = new tcu::TestCaseGroup(testCtx, tiling.name);
 									for (const auto& mipLevelRegionCountPaddingTest : mipLevelRegionCountPaddingTests)
 									{
-										tcu::TestCaseGroup* const mipLevelRegionCountPaddingGroup = new tcu::TestCaseGroup(testCtx, mipLevelRegionCountPaddingTest.name, mipLevelRegionCountPaddingTest.desc);
+										tcu::TestCaseGroup* const mipLevelRegionCountPaddingGroup = new tcu::TestCaseGroup(testCtx, mipLevelRegionCountPaddingTest.name);
 										for (const auto& size : imageSizes)
 										{
-											tcu::TestCaseGroup* const sizeGroup = new tcu::TestCaseGroup(testCtx, size.name, size.desc);
+											tcu::TestCaseGroup* const sizeGroup = new tcu::TestCaseGroup(testCtx, size.name);
 											for (const auto& sparse : sparseTests)
 											{
 												if (sparse.sparse && isCompressedFormat(formatAndCommand.sampled))
 													continue;
 
-												tcu::TestCaseGroup* const sparseGroup = new tcu::TestCaseGroup(testCtx, sparse.name, sparse.desc);
+												tcu::TestCaseGroup* const sparseGroup = new tcu::TestCaseGroup(testCtx, sparse.name);
 												for (const auto& renderingType : dynamicRendering)
 												{
 													if (renderingType.dynamicRendering && formatAndCommand.command == DISPATCH)
@@ -2057,7 +2060,7 @@ void testGenerator(tcu::TestCaseGroup* group)
 														mipLevelRegionCountPaddingTest.padding			// deUint32			padding
 													};
 
-													sparseGroup->addChild(new HostImageCopyTestCase(testCtx, renderingType.name, renderingType.desc, parameters));
+													sparseGroup->addChild(new HostImageCopyTestCase(testCtx, renderingType.name, parameters));
 												}
 												sizeGroup->addChild(sparseGroup);
 											}
@@ -2096,37 +2099,35 @@ void testGenerator(tcu::TestCaseGroup* group)
 	const struct PreinitializedTiling {
 		vk::VkImageTiling	tiling;
 		const char*			name;
-		const char*			desc;
 	} preinitializedTilingTests[] = {
-		{ vk::VK_IMAGE_TILING_LINEAR,					"linear",				"Linear tiling"			},
-		{ vk::VK_IMAGE_TILING_OPTIMAL,					"optimal",				"Optimal tiling"		},
-		{ vk::VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT,	"drm_format_modifier",	"DRM format modifier"	},
+		{ vk::VK_IMAGE_TILING_LINEAR,					"linear"},
+		{ vk::VK_IMAGE_TILING_OPTIMAL,					"optimal"},
+		{ vk::VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT,	"drm_format_modifier"},
 	};
 
 	constexpr struct PreinitializedImageLayoutTest
 	{
 		vk::VkImageLayout layout;
 		const char* name;
-		const char* desc;
 	} preinitializedImageLayoutTests[] =
 	{
-		{ vk::VK_IMAGE_LAYOUT_GENERAL,										"general",											"copy layout"	},
-		{ vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,						"color_attachment_optimal",							"copy layout"	},
-		{ vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,				"depth_stencil_attachment_optimal",					"copy layout"	},
-		{ vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,				"depth_stencil_read_only_optimal",					"copy layout"	},
-		{ vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,						"shader_read_only_optimal",							"copy layout"	},
-		{ vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,							"transfer_src_optimal",								"copy layout"	},
-		{ vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,							"transfer_dst_optimal",								"copy layout"	},
-		{ vk::VK_IMAGE_LAYOUT_PREINITIALIZED,								"preinitialized",									"copy layout"	},
-		{ vk::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,								"present_src",										"copy layout"	},
-		{ vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL,	"depth_read_only_stencil_attachment_optimal",		"copy layout"	},
-		{ vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL,	"depth_attachment_stencil_read_only_optimal",		"copy layout"	},
-		{ vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL,						"depth_read_only_optimal",							"copy layout"	},
-		{ vk::VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL,					"stencil_attachment_optimal",						"copy layout"	},
-		{ vk::VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL,					"stencil_read_only_optimal",						"copy layout"	},
-		{ vk::VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,							"read_only_optimal",								"copy layout"	},
-		{ vk::VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,							"attachment_optimal",								"copy layout"	},
-		{ vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT,			"attachment_feedback_loop_optimal",					"copy layout"	},
+		{ vk::VK_IMAGE_LAYOUT_GENERAL,										"general"},
+		{ vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,						"color_attachment_optimal"},
+		{ vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,				"depth_stencil_attachment_optimal"},
+		{ vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,				"depth_stencil_read_only_optimal"},
+		{ vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,						"shader_read_only_optimal"},
+		{ vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,							"transfer_src_optimal"},
+		{ vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,							"transfer_dst_optimal"},
+		{ vk::VK_IMAGE_LAYOUT_PREINITIALIZED,								"preinitialized"},
+		{ vk::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,								"present_src"},
+		{ vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL,	"depth_read_only_stencil_attachment_optimal"},
+		{ vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL,	"depth_attachment_stencil_read_only_optimal"},
+		{ vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL,						"depth_read_only_optimal"},
+		{ vk::VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL,					"stencil_attachment_optimal"},
+		{ vk::VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL,					"stencil_read_only_optimal"},
+		{ vk::VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,							"read_only_optimal"},
+		{ vk::VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,							"attachment_optimal"},
+		{ vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT,			"attachment_feedback_loop_optimal"},
 	};
 
 	constexpr struct ImageToImageTest
@@ -2134,12 +2135,11 @@ void testGenerator(tcu::TestCaseGroup* group)
 		bool		imageToImageCopy;
 		bool		memcpy;
 		const char* name;
-		const char* desc;
 	} imageToImageCopyTests[] =
 	{
-		{ true,		false,	"image_to_image_copy",		"Image to image copy"	},
-		{ true,		true,	"image_to_image_memcpy",	"Image to image copy with memcpy flag"	},
-		{ false,	false,	"preinitialized",			"Preinitialized image"	},
+		{ true,		false,	"image_to_image_copy"},
+		{ true,		true,	"image_to_image_memcpy"},
+		{ false,	false,	"preinitialized"},
 	};
 
 	constexpr struct ImageSizeTest
@@ -2147,34 +2147,33 @@ void testGenerator(tcu::TestCaseGroup* group)
 		vk::VkExtent3D	size;
 		deUint32		layerCount;
 		const char* name;
-		const char* desc;
 	} imageSizeTests[] =
 	{
-		{ {32, 32, 1},		1,	"32x32x1_1",	"Image size"	},
-		{ {32, 32, 1},		2,	"32x32x1_2",	"Image size"	},
-		{ {51, 63, 1},		1,	"51x63x1_1",	"Image size"	},
-		{ {24, 24, 4},		1,	"24x24x4_4",	"Image size"	},
+		{ {32, 32, 1},		1,	"32x32x1_1"},
+		{ {32, 32, 1},		2,	"32x32x1_2"},
+		{ {51, 63, 1},		1,	"51x63x1_1"},
+		{ {24, 24, 4},		1,	"24x24x4_4"},
 	};
 
 	for (const auto& tiling : preinitializedTilingTests)
 	{
-		tcu::TestCaseGroup* const tilingGroup = new tcu::TestCaseGroup(testCtx, tiling.name, tiling.desc);
+		tcu::TestCaseGroup* const tilingGroup = new tcu::TestCaseGroup(testCtx, tiling.name);
 		for (const auto& imageToImage : imageToImageCopyTests)
 		{
-			tcu::TestCaseGroup* const imageToImageCopyGroup = new tcu::TestCaseGroup(testCtx, imageToImage.name, imageToImage.desc);
+			tcu::TestCaseGroup* const imageToImageCopyGroup = new tcu::TestCaseGroup(testCtx, imageToImage.name);
 			for (const auto& srcLayout : preinitializedImageLayoutTests)
 			{
-				tcu::TestCaseGroup* const srcLayoutGroup = new tcu::TestCaseGroup(testCtx, srcLayout.name, srcLayout.desc);
+				tcu::TestCaseGroup* const srcLayoutGroup = new tcu::TestCaseGroup(testCtx, srcLayout.name);
 				for (const auto& dstLayout : preinitializedImageLayoutTests)
 				{
-					tcu::TestCaseGroup* const dstLayoutGroup = new tcu::TestCaseGroup(testCtx, dstLayout.name, dstLayout.desc);
+					tcu::TestCaseGroup* const dstLayoutGroup = new tcu::TestCaseGroup(testCtx, dstLayout.name);
 					for (const auto& size : imageSizeTests)
 					{
-						tcu::TestCaseGroup* const sizeGroup = new tcu::TestCaseGroup(testCtx, size.name, size.desc);
+						tcu::TestCaseGroup* const sizeGroup = new tcu::TestCaseGroup(testCtx, size.name);
 						for (const auto& format : preinitializedFormats)
 						{
 							const auto formatName = getFormatShortString(format.format);
-							sizeGroup->addChild(new PreinitializedTestCase(testCtx, formatName.c_str(), "", format.format, srcLayout.layout, dstLayout.layout, size.size, size.layerCount, imageToImage.imageToImageCopy, imageToImage.memcpy, tiling.tiling));
+							sizeGroup->addChild(new PreinitializedTestCase(testCtx, formatName.c_str(), format.format, srcLayout.layout, dstLayout.layout, size.size, size.layerCount, imageToImage.imageToImageCopy, imageToImage.memcpy, tiling.tiling));
 						}
 						dstLayoutGroup->addChild(sizeGroup);
 					}
@@ -2187,8 +2186,8 @@ void testGenerator(tcu::TestCaseGroup* group)
 		group->addChild(tilingGroup);
 	}
 
-	tcu::TestCaseGroup* const propertiesGroup = new tcu::TestCaseGroup(testCtx, "properties", "");
-	propertiesGroup->addChild(new PropertiesTestCase(testCtx, "properties", ""));
+	tcu::TestCaseGroup* const propertiesGroup = new tcu::TestCaseGroup(testCtx, "properties");
+	propertiesGroup->addChild(new PropertiesTestCase(testCtx, "properties"));
 
 	const struct QueryFormats {
 		vk::VkFormat format;
@@ -2206,15 +2205,15 @@ void testGenerator(tcu::TestCaseGroup* group)
 
 	group->addChild(propertiesGroup);
 
-	tcu::TestCaseGroup* const queryGroup = new tcu::TestCaseGroup(testCtx, "query", "");
+	tcu::TestCaseGroup* const queryGroup = new tcu::TestCaseGroup(testCtx, "query");
 
 	for (const auto& tiling : tilingTests)
 	{
-		tcu::TestCaseGroup* const tilingGroup = new tcu::TestCaseGroup(testCtx, tiling.name, tiling.desc);
+		tcu::TestCaseGroup* const tilingGroup = new tcu::TestCaseGroup(testCtx, tiling.name);
 		for (const auto& format : queryFormats)
 		{
 			const auto formatName = getFormatShortString(format.format);
-			tilingGroup->addChild(new QueryTestCase(testCtx, formatName.c_str(), "", format.format, tiling.tiling));
+			tilingGroup->addChild(new QueryTestCase(testCtx, formatName.c_str(), format.format, tiling.tiling));
 		}
 		queryGroup->addChild(tilingGroup);
 	}
@@ -2226,7 +2225,7 @@ void testGenerator(tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* createImageHostImageCopyTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup (createTestGroup(testCtx, "host_image_copy", "Tests for VK_EXT_host_image_copy", testGenerator));
+	de::MovePtr<tcu::TestCaseGroup> testGroup (createTestGroup(testCtx, "host_image_copy", testGenerator));
 	return testGroup.release();
 }
 

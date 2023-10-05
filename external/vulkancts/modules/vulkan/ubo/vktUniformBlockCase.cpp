@@ -2190,8 +2190,8 @@ vk::Move<VkPipeline> UniformBlockCaseInstance::createPipeline (vk::VkShaderModul
 
 // UniformBlockCase.
 
-UniformBlockCase::UniformBlockCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag, bool shuffleUniformMembers)
-	: TestCase					(testCtx, name, description)
+UniformBlockCase::UniformBlockCase (tcu::TestContext& testCtx, const std::string& name, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag, bool shuffleUniformMembers)
+	: TestCase					(testCtx, name)
 	, m_bufferMode				(bufferMode)
 	, m_matrixLoadFlag			(matrixLoadFlag)
 	, m_shuffleUniformMembers	(shuffleUniformMembers)

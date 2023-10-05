@@ -226,9 +226,8 @@ class UnusedClearAttachmentTest : public vkt::TestCase
 public:
 										UnusedClearAttachmentTest	(tcu::TestContext&	testContext,
 																	 const std::string&	name,
-																	 const std::string&	description,
 																	 const TestParams&	testParams)
-											: vkt::TestCase(testContext, name, description)
+											: vkt::TestCase(testContext, name)
 											, m_testParams(testParams)
 											{}
 	virtual								~UnusedClearAttachmentTest	(void) {}
@@ -1239,7 +1238,8 @@ std::string getCombName(const std::vector<deBool>& array)
 
 tcu::TestCaseGroup* createRenderPassUnusedClearAttachmentTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "unused_clear_attachments", "Unused attachments with vkCmdClearAttachments"));
+	// Unused attachments with vkCmdClearAttachments
+	de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "unused_clear_attachments"));
 
 	for (int depthStencilType = 0; depthStencilType < DEPTH_STENCIL_MAX_ENUM; ++depthStencilType)
 	{
@@ -1285,13 +1285,13 @@ tcu::TestCaseGroup* createRenderPassUnusedClearAttachmentTests (tcu::TestContext
 							std::string name = getCombName(array) + "_" + dsCase;
 							if (hasDepthStencil(dsType))
 								name += std::string("_") + getUsed(depthStencilUse);
-							testGroup->addChild(new UnusedClearAttachmentTest(testCtx, name, "", params));
+							testGroup->addChild(new UnusedClearAttachmentTest(testCtx, name, params));
 						});
 					}
 					else
 					{
 						std::string name = dsCase + "_" + getUsed(depthStencilUse);
-						testGroup->addChild(new UnusedClearAttachmentTest(testCtx, name, "", params));
+						testGroup->addChild(new UnusedClearAttachmentTest(testCtx, name, params));
 					}
 
 				}

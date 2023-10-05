@@ -436,7 +436,7 @@ std::string IOBlock::basicSubobjectAtIndex (const int subobjectIndex, const int 
 class UserDefinedIOTest : public TestCase
 {
 public:
-							UserDefinedIOTest	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const CaseDefinition caseDef);
+							UserDefinedIOTest	(tcu::TestContext& testCtx, const std::string& name, const CaseDefinition caseDef);
 	void					initPrograms		(vk::SourceCollections& programCollection) const;
 	void					checkSupport		(Context& context) const;
 	TestInstance*			createInstance		(Context& context) const;
@@ -457,8 +457,8 @@ void UserDefinedIOTest::checkSupport (Context& context) const
 	checkSupportCase(context, m_caseDef);
 }
 
-UserDefinedIOTest::UserDefinedIOTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const CaseDefinition caseDef)
-	: TestCase	(testCtx, name, description)
+UserDefinedIOTest::UserDefinedIOTest (tcu::TestContext& testCtx, const std::string& name, const CaseDefinition caseDef)
+	: TestCase	(testCtx, name)
 	, m_caseDef	(caseDef)
 {
 	const bool			isPerPatchIO				= m_caseDef.ioType == IO_TYPE_PER_PATCH				||
@@ -972,21 +972,26 @@ TestInstance* UserDefinedIOTest::createInstance (Context& context) const
 //! Negative tests weren't ported because vktShaderLibrary doesn't support tests that are expected to fail shader compilation.
 tcu::TestCaseGroup* createUserDefinedIOTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "user_defined_io", "Test non-built-in per-patch and per-vertex inputs and outputs"));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "user_defined_io"));
 
 	static const struct
 	{
 		const char*	name;
-		const char*	description;
 		IOType		ioType;
 	} ioCases[] =
 	{
-		{ "per_patch",					"Per-patch TCS outputs",					IO_TYPE_PER_PATCH				},
-		{ "per_patch_array",			"Per-patch array TCS outputs",				IO_TYPE_PER_PATCH_ARRAY			},
-		{ "per_patch_block",			"Per-patch TCS outputs in IO block",		IO_TYPE_PER_PATCH_BLOCK			},
-		{ "per_patch_block_array",		"Per-patch TCS outputs in IO block array",	IO_TYPE_PER_PATCH_BLOCK_ARRAY	},
-		{ "per_vertex",					"Per-vertex TCS outputs",					IO_TYPE_PER_VERTEX				},
-		{ "per_vertex_block",			"Per-vertex TCS outputs in IO block",		IO_TYPE_PER_VERTEX_BLOCK		},
+		// Per-patch TCS outputs
+		{ "per_patch",IO_TYPE_PER_PATCH				},
+		// Per-patch array TCS outputs
+		{ "per_patch_array",IO_TYPE_PER_PATCH_ARRAY			},
+		// Per-patch TCS outputs in IO block
+		{ "per_patch_block",IO_TYPE_PER_PATCH_BLOCK			},
+		// Per-patch TCS outputs in IO block array
+		{ "per_patch_block_array",IO_TYPE_PER_PATCH_BLOCK_ARRAY	},
+		// Per-vertex TCS outputs
+		{ "per_vertex",IO_TYPE_PER_VERTEX				},
+		// Per-vertex TCS outputs in IO block
+		{ "per_vertex_block",IO_TYPE_PER_VERTEX_BLOCK		},
 	};
 
 	static const struct
@@ -1002,10 +1007,10 @@ tcu::TestCaseGroup* createUserDefinedIOTests (tcu::TestContext& testCtx)
 
 	for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(ioCases); ++caseNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> ioTypeGroup (new tcu::TestCaseGroup(testCtx, ioCases[caseNdx].name, ioCases[caseNdx].description));
+		de::MovePtr<tcu::TestCaseGroup> ioTypeGroup (new tcu::TestCaseGroup(testCtx, ioCases[caseNdx].name));
 		for (int arrayCaseNdx = 0; arrayCaseNdx < DE_LENGTH_OF_ARRAY(vertexArraySizeCases); ++arrayCaseNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> vertexArraySizeGroup (new tcu::TestCaseGroup(testCtx, vertexArraySizeCases[arrayCaseNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup> vertexArraySizeGroup (new tcu::TestCaseGroup(testCtx, vertexArraySizeCases[arrayCaseNdx].name));
 			for (int primitiveTypeNdx = 0; primitiveTypeNdx < TESSPRIMITIVETYPE_LAST; ++primitiveTypeNdx)
 			{
 				const TessPrimitiveType primitiveType = static_cast<TessPrimitiveType>(primitiveTypeNdx);
@@ -1013,7 +1018,7 @@ tcu::TestCaseGroup* createUserDefinedIOTests (tcu::TestContext& testCtx)
 				const CaseDefinition	caseDef		  = { primitiveType, ioCases[caseNdx].ioType, vertexArraySizeCases[arrayCaseNdx].vertexIOArraySize,
 														  std::string() + "vulkan/data/tessellation/user_defined_io_" + primitiveName + "_ref.png" };
 
-				vertexArraySizeGroup->addChild(new UserDefinedIOTest(testCtx, primitiveName, "", caseDef));
+				vertexArraySizeGroup->addChild(new UserDefinedIOTest(testCtx, primitiveName, caseDef));
 			}
 			ioTypeGroup->addChild(vertexArraySizeGroup.release());
 		}

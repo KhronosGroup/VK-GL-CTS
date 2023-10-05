@@ -794,7 +794,6 @@ class TriangleDerivateCase : public ShaderRenderCase
 public:
 									TriangleDerivateCase	(tcu::TestContext&		testCtx,
 															 const std::string&		name,
-															 const std::string&		description,
 															 const UniformSetup*	uniformSetup);
 	virtual							~TriangleDerivateCase	(void);
 
@@ -805,9 +804,8 @@ protected:
 
 TriangleDerivateCase::TriangleDerivateCase (tcu::TestContext&		testCtx,
 											const std::string&		name,
-											const std::string&		description,
 											const UniformSetup*		uniformSetup)
-	: ShaderRenderCase		(testCtx, name, description, false, (ShaderEvaluator*)DE_NULL, uniformSetup, DE_NULL)
+	: ShaderRenderCase		(testCtx, name, false, (ShaderEvaluator*)DE_NULL, uniformSetup, DE_NULL)
 	, m_definitions			()
 {
 }
@@ -887,7 +885,6 @@ class ConstantDerivateCase : public TriangleDerivateCase
 public:
 							ConstantDerivateCase		(tcu::TestContext&		testCtx,
 														 const std::string&		name,
-														 const std::string&		description,
 														 DerivateFunc			func,
 														 glu::DataType			type);
 	virtual					~ConstantDerivateCase		(void);
@@ -898,10 +895,9 @@ public:
 
 ConstantDerivateCase::ConstantDerivateCase (tcu::TestContext&		testCtx,
 											const std::string&		name,
-											const std::string&		description,
 											DerivateFunc			func,
 											glu::DataType			type)
-	: TriangleDerivateCase	(testCtx, name, description, new DerivateUniformSetup(false))
+	: TriangleDerivateCase	(testCtx, name, new DerivateUniformSetup(false))
 {
 	m_definitions.func				= func;
 	m_definitions.dataType			= type;
@@ -1109,7 +1105,6 @@ class LinearDerivateCase : public TriangleDerivateCase
 public:
 							LinearDerivateCase			(tcu::TestContext&		testCtx,
 														 const std::string&		name,
-														 const std::string&		description,
 														 DerivateFunc			func,
 														 glu::DataType			type,
 														 glu::Precision			precision,
@@ -1129,7 +1124,6 @@ private:
 
 LinearDerivateCase::LinearDerivateCase (tcu::TestContext&		testCtx,
 										const std::string&		name,
-										const std::string&		description,
 										DerivateFunc			func,
 										glu::DataType			type,
 										glu::Precision			precision,
@@ -1138,7 +1132,7 @@ LinearDerivateCase::LinearDerivateCase (tcu::TestContext&		testCtx,
 										int						numSamples,
 										const std::string&		fragmentSrcTmpl,
 										BaseUniformType			usedDefaultUniform)
-	: TriangleDerivateCase	(testCtx, name, description, new LinearDerivateUniformSetup(false, usedDefaultUniform))
+	: TriangleDerivateCase	(testCtx, name, new LinearDerivateUniformSetup(false, usedDefaultUniform))
 	, m_fragmentTmpl		(fragmentSrcTmpl)
 {
 	m_definitions.func						= func;
@@ -1409,7 +1403,6 @@ class TextureDerivateCase : public TriangleDerivateCase
 public:
 							TextureDerivateCase			(tcu::TestContext&		testCtx,
 														 const std::string&		name,
-														 const std::string&		description,
 														 DerivateFunc			func,
 														 glu::DataType			type,
 														 glu::Precision			precision,
@@ -1426,13 +1419,12 @@ private:
 
 TextureDerivateCase::TextureDerivateCase (tcu::TestContext&		testCtx,
 										  const std::string&	name,
-										  const std::string&	description,
 										  DerivateFunc			func,
 										  glu::DataType			type,
 										  glu::Precision		precision,
 										  SurfaceType			surfaceType,
 										  int					numSamples)
-	: TriangleDerivateCase	(testCtx, name, description, new DerivateUniformSetup(true))
+	: TriangleDerivateCase	(testCtx, name, new DerivateUniformSetup(true))
 {
 	m_definitions.dataType			= type;
 	m_definitions.func				= func;
@@ -1578,7 +1570,7 @@ private:
 };
 
 ShaderDerivateTests::ShaderDerivateTests (tcu::TestContext& testCtx)
-	: TestCaseGroup(testCtx, "derivate", "Derivate Function Tests")
+	: TestCaseGroup(testCtx, "derivate")
 {
 }
 
@@ -1962,17 +1954,18 @@ void ShaderDerivateTests::init (void)
 	for (int funcNdx = 0; funcNdx < DERIVATE_LAST; funcNdx++)
 	{
 		const DerivateFunc					function		= DerivateFunc(funcNdx);
-		de::MovePtr<tcu::TestCaseGroup>		functionGroup	(new tcu::TestCaseGroup(m_testCtx, getDerivateFuncCaseName(function), getDerivateFuncName(function)));
+		de::MovePtr<tcu::TestCaseGroup>		functionGroup	(new tcu::TestCaseGroup(m_testCtx, getDerivateFuncCaseName(function)));
 
 		// .constant - no precision variants and no subgroup derivatives, checks that derivate of constant arguments is 0
 		if (!isSubgroupFunc(function))
 		{
-			de::MovePtr<tcu::TestCaseGroup>	constantGroup	(new tcu::TestCaseGroup(m_testCtx, "constant", "Derivate of constant argument"));
+			// Derivate of constant argument
+			de::MovePtr<tcu::TestCaseGroup>	constantGroup	(new tcu::TestCaseGroup(m_testCtx, "constant"));
 
 			for (int vecSize = 1; vecSize <= 4; vecSize++)
 			{
 				const glu::DataType			dataType		= vecSize > 1 ? glu::getDataTypeFloatVec(vecSize) : glu::TYPE_FLOAT;
-				constantGroup->addChild(new ConstantDerivateCase(m_testCtx, glu::getDataTypeName(dataType), "", function, dataType));
+				constantGroup->addChild(new ConstantDerivateCase(m_testCtx, glu::getDataTypeName(dataType), function, dataType));
 			}
 
 			functionGroup->addChild(constantGroup.release());
@@ -1983,7 +1976,7 @@ void ShaderDerivateTests::init (void)
 		{
 			for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(s_linearDerivateCases); caseNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	linearCaseGroup	(new tcu::TestCaseGroup(m_testCtx, s_linearDerivateCases[caseNdx].name, s_linearDerivateCases[caseNdx].description));
+				de::MovePtr<tcu::TestCaseGroup>	linearCaseGroup	(new tcu::TestCaseGroup(m_testCtx, s_linearDerivateCases[caseNdx].name));
 				const char*						source			= s_linearDerivateCases[caseNdx].source;
 
 				for (int vecSize = 1; vecSize <= 4; vecSize++)
@@ -2001,7 +1994,7 @@ void ShaderDerivateTests::init (void)
 
 						caseName << glu::getDataTypeName(dataType) << "_" << glu::getPrecisionName(precision);
 
-						linearCaseGroup->addChild(new LinearDerivateCase(m_testCtx, caseName.str(), "", function, dataType, precision, s_linearDerivateCases[caseNdx].inNonUniformControlFlow, surfaceType, numSamples, source, s_linearDerivateCases[caseNdx].usedDefaultUniform));
+						linearCaseGroup->addChild(new LinearDerivateCase(m_testCtx, caseName.str(), function, dataType, precision, s_linearDerivateCases[caseNdx].inNonUniformControlFlow, surfaceType, numSamples, source, s_linearDerivateCases[caseNdx].usedDefaultUniform));
 					}
 				}
 
@@ -2033,7 +2026,7 @@ void ShaderDerivateTests::init (void)
 
 					caseName << glu::getDataTypeName(dataType) << "_" << glu::getPrecisionName(precision);
 
-					fboGroup->addChild(new LinearDerivateCase(m_testCtx, caseName.str(), "", function, dataType, precision, false, surfaceType, numSamples, source, U_LAST));
+					fboGroup->addChild(new LinearDerivateCase(m_testCtx, caseName.str(), function, dataType, precision, false, surfaceType, numSamples, source, U_LAST));
 				}
 			}
 
@@ -2047,7 +2040,7 @@ void ShaderDerivateTests::init (void)
 
 			for (int texCaseNdx = 0; texCaseNdx < DE_LENGTH_OF_ARRAY(s_textureConfigs); texCaseNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	caseGroup		(new tcu::TestCaseGroup(m_testCtx, s_textureConfigs[texCaseNdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup>	caseGroup		(new tcu::TestCaseGroup(m_testCtx, s_textureConfigs[texCaseNdx].name));
 				const SurfaceType				surfaceType		= s_textureConfigs[texCaseNdx].surfaceType;
 				const int						numSamples		= s_textureConfigs[texCaseNdx].numSamples;
 
@@ -2064,7 +2057,7 @@ void ShaderDerivateTests::init (void)
 
 						caseName << glu::getDataTypeName(dataType) << "_" << glu::getPrecisionName(precision);
 
-						caseGroup->addChild(new TextureDerivateCase(m_testCtx, caseName.str(), "", function, dataType, precision, surfaceType, numSamples));
+						caseGroup->addChild(new TextureDerivateCase(m_testCtx, caseName.str(), function, dataType, precision, surfaceType, numSamples));
 					}
 				}
 

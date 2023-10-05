@@ -109,7 +109,8 @@ void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, const
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
 	de::MovePtr<tcu::TestCaseGroup> mainGroup						(new tcu::TestCaseGroup(testCtx, name.c_str(), "Simple Draw tests"));
-	de::MovePtr<tcu::TestCaseGroup> renderpassGroup					(new tcu::TestCaseGroup(testCtx, "renderpass", "Draw using renderpass object"));
+	// Draw using renderpass object
+	de::MovePtr<tcu::TestCaseGroup> renderpassGroup					(new tcu::TestCaseGroup(testCtx, "renderpass"));
 
 	createChildren(testCtx, renderpassGroup.get(), SharedGroupParams(
 		new GroupParams

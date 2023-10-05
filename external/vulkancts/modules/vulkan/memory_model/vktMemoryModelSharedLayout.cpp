@@ -92,21 +92,21 @@ string genName (char first, char last, int ndx)
 }
 
 void createRandomCaseGroup (tcu::TestCaseGroup* parentGroup, tcu::TestContext &testCtx, const char *groupName,
-							const char *description, const deUint32 features, const int numCases, deUint32 baseSeed)
+							const deUint32 features, const int numCases, deUint32 baseSeed)
 {
-	tcu::TestCaseGroup *group = new tcu::TestCaseGroup(testCtx, groupName, description);
+	tcu::TestCaseGroup *group = new tcu::TestCaseGroup(testCtx, groupName);
 	parentGroup->addChild(group);
 
 	baseSeed += static_cast<deUint32>(testCtx.getCommandLine().getBaseSeed());
 
 	for (int i = 0; i < numCases; i++)
-		group->addChild(new RandomSharedLayoutCase(testCtx, de::toString(i).c_str(), "", features, static_cast<deUint32>(i + baseSeed)));
+		group->addChild(new RandomSharedLayoutCase(testCtx, de::toString(i).c_str(), features, static_cast<deUint32>(i + baseSeed)));
 }
 } // anonymous
 
-RandomSharedLayoutCase::RandomSharedLayoutCase (tcu::TestContext &testCtx, const char *name, const char *description,
+RandomSharedLayoutCase::RandomSharedLayoutCase (tcu::TestContext &testCtx, const char *name,
 												deUint32 features, deUint32 seed)
-	: SharedLayoutCase(testCtx, name, description)
+	: SharedLayoutCase(testCtx, name)
 	, m_features(features)
 	, m_maxArrayLength((features & FEATURE_ARRAYS) ? 3 : 0)
 	, m_seed(seed)
@@ -284,7 +284,7 @@ glu::VarType RandomSharedLayoutCase::generateType (de::Random &rnd, int typeDept
 
 tcu::TestCaseGroup* createSharedMemoryLayoutTests (tcu::TestContext &testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> sharedMemoryLayoutGroup(new tcu::TestCaseGroup(testCtx, "shared", "Shared memory layout tests"));
+	de::MovePtr<tcu::TestCaseGroup> sharedMemoryLayoutGroup(new tcu::TestCaseGroup(testCtx, "shared"));
 	tcu::TestCaseGroup *parentGroup = sharedMemoryLayoutGroup.get();
 	{
 		const deUint32 allBasicTypes	= FEATURE_VECTORS | FEATURE_MATRICES;
@@ -294,31 +294,31 @@ tcu::TestCaseGroup* createSharedMemoryLayoutTests (tcu::TestContext &testCtx)
 		{
 			if (i == 1)
 			{
-				parentGroup = new tcu::TestCaseGroup(testCtx, "16bit", "16bit");
+				parentGroup = new tcu::TestCaseGroup(testCtx, "16bit");
 				sharedMemoryLayoutGroup->addChild(parentGroup);
 			}
 			else if (i == 2)
 			{
-				parentGroup = new tcu::TestCaseGroup(testCtx, "8bit", "8bit");
+				parentGroup = new tcu::TestCaseGroup(testCtx, "8bit");
 				sharedMemoryLayoutGroup->addChild(parentGroup);
 			}
 			const deUint32 use16BitTypes	= i == 1 ? FEATURE_16BIT_TYPES : 0;
 			const deUint32 use8BitTypes		= i == 2 ? FEATURE_8BIT_TYPES : 0;
 
-			createRandomCaseGroup(parentGroup, testCtx, "scalar_types", "Scalar types only",
+			createRandomCaseGroup(parentGroup, testCtx, "scalar_types",
 								use8BitTypes | use16BitTypes | unused, 10, 0);
-			createRandomCaseGroup(parentGroup, testCtx, "vector_types", "Scalar and vector types only",
+			createRandomCaseGroup(parentGroup, testCtx, "vector_types",
 								use8BitTypes | use16BitTypes | unused | FEATURE_VECTORS, 10, 25);
-			createRandomCaseGroup(parentGroup, testCtx, "basic_types", "All basic types",
+			createRandomCaseGroup(parentGroup, testCtx, "basic_types",
 								use8BitTypes | use16BitTypes | unused | allBasicTypes, 10, 50);
-			createRandomCaseGroup(parentGroup, testCtx, "basic_arrays", "Arrays",
+			createRandomCaseGroup(parentGroup, testCtx, "basic_arrays",
 								use8BitTypes | use16BitTypes | unused | allBasicTypes | FEATURE_ARRAYS, 10, 50);
-			createRandomCaseGroup(parentGroup, testCtx, "arrays_of_arrays", "Arrays of arrays",
+			createRandomCaseGroup(parentGroup, testCtx, "arrays_of_arrays",
 								use8BitTypes | use16BitTypes | unused | allBasicTypes | FEATURE_ARRAYS |
 								FEATURE_ARRAYS_OF_ARRAYS, 10, 950);
-			createRandomCaseGroup(parentGroup, testCtx, "nested_structs", "Nested structs",
+			createRandomCaseGroup(parentGroup, testCtx, "nested_structs",
 								use8BitTypes | use16BitTypes | unused | allBasicTypes | FEATURE_STRUCTS, 10, 100);
-			createRandomCaseGroup(parentGroup, testCtx, "nested_structs_arrays", "Nested structs, arrays",
+			createRandomCaseGroup(parentGroup, testCtx, "nested_structs_arrays",
 								use8BitTypes | use16BitTypes | unused | allBasicTypes | FEATURE_STRUCTS |
 								FEATURE_ARRAYS | FEATURE_ARRAYS_OF_ARRAYS, 10, 150);
 		}

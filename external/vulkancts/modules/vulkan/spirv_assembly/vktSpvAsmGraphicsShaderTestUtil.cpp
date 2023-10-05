@@ -4759,7 +4759,7 @@ void createTestForStage (vk::VkShaderStageFlagBits	stage,
 
 	ctx.renderFullSquare = renderFullSquare;
 	ctx.splitRenderArea	= splitRenderArea;
-	addFunctionCaseWithPrograms<InstanceContext>(tests, name, "", stageData.initProgramsFn, runAndVerifyDefaultPipeline, ctx);
+	addFunctionCaseWithPrograms<InstanceContext>(tests, name, stageData.initProgramsFn, runAndVerifyDefaultPipeline, ctx);
 }
 
 void createTestsForAllStages (const std::string&			name,

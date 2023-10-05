@@ -1042,9 +1042,8 @@ class MemoryBindingTest : public TestCase
 public:
 										MemoryBindingTest					(tcu::TestContext&		testCtx,
 																			 const std::string&		name,
-																			 const std::string&		description,
 																			 BindingCaseParameters	params)
-										: TestCase							(testCtx, name, description)
+										: TestCase							(testCtx, name)
 										, m_params							(params)
 	{
 	}
@@ -1078,7 +1077,7 @@ private:
 
 tcu::TestCaseGroup* createMemoryBindingTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>		group								(new tcu::TestCaseGroup(testCtx, "binding", "Memory binding tests."));
+	de::MovePtr<tcu::TestCaseGroup>		group								(new tcu::TestCaseGroup(testCtx, "binding"));
 
 #ifdef CTS_USES_VULKANSC
 	const int iterations = 1;
@@ -1090,7 +1089,8 @@ tcu::TestCaseGroup* createMemoryBindingTests (tcu::TestContext& testCtx)
 	{
 		PriorityMode priorityMode = PriorityMode(i);
 
-		de::MovePtr<tcu::TestCaseGroup>		regular								(new tcu::TestCaseGroup(testCtx, "regular", "Basic memory binding tests."));
+		// Basic memory binding tests.
+		de::MovePtr<tcu::TestCaseGroup>		regular								(new tcu::TestCaseGroup(testCtx, "regular"));
 		de::MovePtr<tcu::TestCaseGroup>		aliasing							(new tcu::TestCaseGroup(testCtx, "aliasing", "Memory binding tests with aliasing of two resources."));
 
 		de::MovePtr<tcu::TestCaseGroup>		regular_suballocated				(new tcu::TestCaseGroup(testCtx, "suballocated", "Basic memory binding tests with suballocated memory."));
@@ -1108,9 +1108,9 @@ tcu::TestCaseGroup* createMemoryBindingTests (tcu::TestContext& testCtx)
 			std::ostringstream				testName;
 
 			testName << "buffer_" << bufferSize;
-			regular_suballocated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkBuffer, DE_FALSE> >(testCtx, testName.str(), " ", params));
-			regular_dedicated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkBuffer, DE_TRUE> >(testCtx, testName.str(), " ", params));
-			aliasing_suballocated->addChild(new MemoryBindingTest<AliasedMemoryBindingInstance<VkBuffer, DE_FALSE> >(testCtx, testName.str(), " ", aliasparams));
+			regular_suballocated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkBuffer, DE_FALSE> >(testCtx, testName.str(),params));
+			regular_dedicated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkBuffer, DE_TRUE> >(testCtx, testName.str(),params));
+			aliasing_suballocated->addChild(new MemoryBindingTest<AliasedMemoryBindingInstance<VkBuffer, DE_FALSE> >(testCtx, testName.str(),aliasparams));
 		}
 
 		const deUint32						imageSizes[]						= {	8, 33, 257	};
@@ -1125,9 +1125,9 @@ tcu::TestCaseGroup* createMemoryBindingTests (tcu::TestContext& testCtx)
 			std::ostringstream				testName;
 
 			testName << "image_" << width << '_' << height;
-			regular_suballocated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkImage, DE_FALSE> >(testCtx, testName.str(), " ", regularparams));
-			regular_dedicated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkImage, DE_TRUE> >(testCtx, testName.str(), "", regularparams));
-			aliasing_suballocated->addChild(new MemoryBindingTest<AliasedMemoryBindingInstance<VkImage, DE_FALSE> >(testCtx, testName.str(), " ", aliasparams));
+			regular_suballocated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkImage, DE_FALSE> >(testCtx, testName.str(),regularparams));
+			regular_dedicated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkImage, DE_TRUE> >(testCtx, testName.str(), regularparams));
+			aliasing_suballocated->addChild(new MemoryBindingTest<AliasedMemoryBindingInstance<VkImage, DE_FALSE> >(testCtx, testName.str(),aliasparams));
 		}
 
 		regular->addChild(regular_suballocated.release());
@@ -1135,7 +1135,7 @@ tcu::TestCaseGroup* createMemoryBindingTests (tcu::TestContext& testCtx)
 
 		aliasing->addChild(aliasing_suballocated.release());
 		if (priorityMode != PRIORITY_MODE_DEFAULT) {
-			de::MovePtr<tcu::TestCaseGroup>		priority	(new tcu::TestCaseGroup(testCtx, (priorityMode == PRIORITY_MODE_DYNAMIC) ? "priority_dynamic" : "priority", (priorityMode == PRIORITY_MODE_DYNAMIC) ? "Using VK_EXT_pageable_device_local_memory" : "Using VK_EXT_memory_priority."));
+			de::MovePtr<tcu::TestCaseGroup>		priority	(new tcu::TestCaseGroup(testCtx, (priorityMode == PRIORITY_MODE_DYNAMIC) ? "priority_dynamic" : "priority"));
 			priority->addChild(regular.release());
 			priority->addChild(aliasing.release());
 			group->addChild(priority.release());

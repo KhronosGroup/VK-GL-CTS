@@ -86,7 +86,7 @@ public:
 														 CmdBufferType			cmdBufferType,
 														 vk::VkFormat			format,
 														 bool					pipelineProtectedAccess)
-								: TestCase					(testCtx, name, "Copy image to buffer.")
+								: TestCase					(testCtx, name)
 								, m_fillValue				(fillValue)
 								, m_validator				(data, format)
 								, m_cmdBufferType			(cmdBufferType)
@@ -376,7 +376,8 @@ tcu::TestCaseGroup*	createCopyImageToFloatBufferTests(tcu::TestContext& testCtx,
 #endif
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	copyStaticTests		(new tcu::TestCaseGroup(testCtx, "static", "Copy Image to Buffer Tests with static input"));
+	// Copy Image to Buffer Tests with static input
+	de::MovePtr<tcu::TestCaseGroup>	copyStaticTests		(new tcu::TestCaseGroup(testCtx, "static"));
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testData); ++ndx)
 	{
@@ -423,7 +424,7 @@ tcu::TestCaseGroup*	createCopyImageToFloatBufferTests(tcu::TestContext& testCtx,
 
 	std::string groupName = getCmdBufferTypeStr(cmdBufferType);
 	std::string groupDesc = "Copy Image to Buffer Tests with " + groupName + " command buffer";
-	de::MovePtr<tcu::TestCaseGroup> copyTests (new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupDesc.c_str()));
+	de::MovePtr<tcu::TestCaseGroup> copyTests (new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 	copyTests->addChild(copyStaticTests.release());
 	copyTests->addChild(copyRandomTests.release());
 	return copyTests.release();

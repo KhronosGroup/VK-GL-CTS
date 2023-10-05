@@ -447,7 +447,7 @@ void checkNothing (Context&)
 } //anonymous
 
 DynamicStateVPTests::DynamicStateVPTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
-	: TestCaseGroup					(testCtx, "vp_state", "Tests for viewport state")
+	: TestCaseGroup					(testCtx, "vp_state")
 	, m_pipelineConstructionType	(pipelineConstructionType)
 {
 	/* Left blank on purpose */
@@ -470,7 +470,6 @@ void DynamicStateVPTests::init (void)
 		const bool					isMesh					= (i > 0);
 		ShaderMap					shaderPaths(basePaths);
 		std::string					nameSuffix;
-		std::string					descSuffix;
 		FunctionSupport0::Function	checkSupportFunc;
 
 		if (isMesh)
@@ -478,7 +477,6 @@ void DynamicStateVPTests::init (void)
 #ifndef CTS_USES_VULKANSC
 			shaderPaths[glu::SHADERTYPE_MESH] = "vulkan/dynamic_state/VertexFetch.mesh";
 			nameSuffix = "_mesh";
-			descSuffix = " using mesh shaders";
 			checkSupportFunc = checkMeshShaderSupport;
 #else
 			continue;
@@ -490,8 +488,8 @@ void DynamicStateVPTests::init (void)
 			checkSupportFunc = checkNothing;
 		}
 
-		addChild(new InstanceFactory<ViewportParamTestInstance, FunctionSupport0>(m_testCtx, "viewport" + nameSuffix, "Set viewport which is twice bigger than screen size" + descSuffix, m_pipelineConstructionType, shaderPaths, checkSupportFunc));
-		addChild(new InstanceFactory<ScissorParamTestInstance, FunctionSupport0>(m_testCtx, "scissor" + nameSuffix, "Perform a scissor test on 1/4 bottom-left part of the surface" + descSuffix, m_pipelineConstructionType, shaderPaths, checkSupportFunc));
+		addChild(new InstanceFactory<ViewportParamTestInstance, FunctionSupport0>(m_testCtx, "viewport" + nameSuffix, m_pipelineConstructionType, shaderPaths, checkSupportFunc));
+		addChild(new InstanceFactory<ScissorParamTestInstance, FunctionSupport0>(m_testCtx, "scissor" + nameSuffix, m_pipelineConstructionType, shaderPaths, checkSupportFunc));
 
 		if (isMesh)
 		{
@@ -503,7 +501,8 @@ void DynamicStateVPTests::init (void)
 			shaderPaths[glu::SHADERTYPE_GEOMETRY] = "vulkan/dynamic_state/ViewportArray.geom";
 			checkSupportFunc = checkGeometryAndMultiViewportSupport;
 		}
-		addChild(new InstanceFactory<ViewportArrayTestInstance, FunctionSupport0>(m_testCtx, "viewport_array" + nameSuffix, "Multiple viewports and scissors" + descSuffix, m_pipelineConstructionType, shaderPaths, checkSupportFunc));
+		// Multiple viewports and scissors
+		addChild(new InstanceFactory<ViewportArrayTestInstance, FunctionSupport0>(m_testCtx, "viewport_array" + nameSuffix, m_pipelineConstructionType, shaderPaths, checkSupportFunc));
 	}
 }
 

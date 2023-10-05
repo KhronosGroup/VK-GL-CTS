@@ -658,7 +658,7 @@ void createFullScreenExclusiveTests (tcu::TestCaseGroup* testGroup, vk::wsi::Typ
 			wsiType,
 			fullScreenTestTypes[fseNdx].testType
 		};
-		addFunctionCaseWithPrograms(testGroup, fullScreenTestTypes[fseNdx].name, "", getBasicRenderPrograms, fullScreenExclusiveTest, testParams);
+		addFunctionCaseWithPrograms(testGroup, fullScreenTestTypes[fseNdx].name, getBasicRenderPrograms, fullScreenExclusiveTest, testParams);
 	}
 }
 

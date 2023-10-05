@@ -37,7 +37,8 @@ namespace
 
 tcu::TestCaseGroup* createAtomicTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> atomic		(new tcu::TestCaseGroup(testCtx, "atomic", "Test atomic oprerations on multisample textures"));
+	// Test atomic oprerations on multisample textures
+	de::MovePtr<tcu::TestCaseGroup> atomic		(new tcu::TestCaseGroup(testCtx, "atomic"));
 #ifndef CTS_USES_VULKANSC
 	static const char				dataDir[]	= "texture/multisample/atomic";
 
@@ -54,7 +55,7 @@ tcu::TestCaseGroup* createAtomicTests (tcu::TestContext& testCtx)
 	for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
 	{
 		const std::string			fileName	= cases[i] + ".amber";
-		cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].c_str(), "", dataDir, fileName, requirements);
+		cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].c_str(), dataDir, fileName, requirements);
 
 		atomic->addChild(testCase);
 	}
@@ -103,7 +104,7 @@ tcu::TestCaseGroup* createInvalidSampleIndexTests(tcu::TestContext& testCtx)
 		std::vector<VkImageCreateInfo>	imageRequirements	= { vkImageCreateInfo };
 		const std::string				fileName			= testCase.first + ".amber";
 
-		invalidWrites->addChild(cts_amber::createAmberTestCase(testCtx, testCase.first.c_str(), "", dataDir, fileName, requirements, imageRequirements));
+		invalidWrites->addChild(cts_amber::createAmberTestCase(testCtx, testCase.first.c_str(), dataDir, fileName, requirements, imageRequirements));
 	}
 
 	return invalidWrites.release();
@@ -113,7 +114,7 @@ tcu::TestCaseGroup* createInvalidSampleIndexTests(tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup* createTextureMultisampleTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> multisample (new tcu::TestCaseGroup(testCtx, "multisample", "Multisample texture tests"));
+	de::MovePtr<tcu::TestCaseGroup> multisample (new tcu::TestCaseGroup(testCtx, "multisample"));
 
 	multisample->addChild(createAtomicTests(testCtx));
 	multisample->addChild(createInvalidSampleIndexTests(testCtx));

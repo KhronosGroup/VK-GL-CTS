@@ -424,7 +424,7 @@ VkClearValue SingleSquareConfiguration::getClearValue ()
 class CallableShaderTestCase : public TestCase
 {
 	public:
-							CallableShaderTestCase			(tcu::TestContext& context, const char* name, const char* desc, const TestParams data);
+							CallableShaderTestCase			(tcu::TestContext& context, const char* name, const TestParams data);
 							~CallableShaderTestCase			(void);
 
 	virtual void			checkSupport								(Context& context) const;
@@ -447,8 +447,8 @@ private:
 	TestParams														m_data;
 };
 
-CallableShaderTestCase::CallableShaderTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams data)
-	: vkt::TestCase	(context, name, desc)
+CallableShaderTestCase::CallableShaderTestCase (tcu::TestContext& context, const char* name, const TestParams data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -864,7 +864,7 @@ bool compareFloat(float actual, float expected)
 class InvokeCallableShaderTestCase : public TestCase
 {
 	public:
-							InvokeCallableShaderTestCase			(tcu::TestContext& context, const char* name, const char* desc, const TestParams& data);
+							InvokeCallableShaderTestCase			(tcu::TestContext& context, const char* name, const TestParams& data);
 							~InvokeCallableShaderTestCase			(void);
 
 	virtual void			checkSupport								(Context& context) const;
@@ -885,8 +885,8 @@ private:
 	TestParams													params;
 };
 
-InvokeCallableShaderTestCase::InvokeCallableShaderTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams& data)
-	: vkt::TestCase	(context, name, desc)
+InvokeCallableShaderTestCase::InvokeCallableShaderTestCase (tcu::TestContext& context, const char* name, const TestParams& data)
+	: vkt::TestCase	(context, name)
 	, params		(data)
 {
 }
@@ -1874,7 +1874,8 @@ tcu::TestStatus InvokeCallableShaderTestInstance::iterate()
 
 tcu::TestCaseGroup*	createCallableShadersTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "callable_shader", "Tests veryfying callable shaders"));
+	// Tests veryfying callable shaders
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "callable_shader"));
 
 	struct CallableShaderTestTypeData
 	{
@@ -1899,7 +1900,7 @@ tcu::TestCaseGroup*	createCallableShadersTests (tcu::TestContext& testCtx)
 			glu::SHADERTYPE_LAST,
 			false
 		};
-		group->addChild(new CallableShaderTestCase(group->getTestContext(), callableShaderTestTypes[shaderTestNdx].name, "", testParams));
+		group->addChild(new CallableShaderTestCase(group->getTestContext(), callableShaderTestTypes[shaderTestNdx].name, testParams));
 	}
 
     bool                multipleInvocations[]     = { false               , true };
@@ -1924,7 +1925,7 @@ tcu::TestCaseGroup*	createCallableShadersTests (tcu::TestContext& testCtx)
             params.multipleInvocations = multipleInvocations[k];
 			nameFull.append(multipleInvocationsText[k]);
 
-			group->addChild(new InvokeCallableShaderTestCase(group->getTestContext(), nameFull.c_str(), "", params));
+			group->addChild(new InvokeCallableShaderTestCase(group->getTestContext(), nameFull.c_str(), params));
         }
     }
 

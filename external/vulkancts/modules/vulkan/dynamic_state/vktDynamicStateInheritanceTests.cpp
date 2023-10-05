@@ -1128,8 +1128,8 @@ class InheritanceTestCase : public TestCase
 public:
 	InheritanceTestCase (tcu::TestContext& testCtx,
 						 vk::PipelineConstructionType pipelineConstructionType, InheritanceMode inheritanceMode,
-						 const char* name, const char* description)
-		: TestCase(testCtx, name, description)
+						 const char* name)
+		: TestCase(testCtx, name)
 		, m_pipelineConstructionType	(pipelineConstructionType)
 		, m_inheritanceMode				(inheritanceMode)
 	{
@@ -1164,9 +1164,9 @@ private:
 
 } // anonymous namespace
 
-
+// Tests for inherited viewport/scissor state
 DynamicStateInheritanceTests::DynamicStateInheritanceTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
-	: TestCaseGroup					(testCtx, "inheritance", "Tests for inherited viewport/scissor state")
+	: TestCaseGroup					(testCtx, "inheritance")
 	, m_pipelineConstructionType	(pipelineConstructionType)
 {
 
@@ -1174,19 +1174,19 @@ DynamicStateInheritanceTests::DynamicStateInheritanceTests (tcu::TestContext& te
 
 void DynamicStateInheritanceTests::init (void)
 {
-	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritanceDisabled,
-			 "baseline", "Baseline, no viewport/scissor inheritance"));
+	// Baseline, no viewport/scissor inheritance
+	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritanceDisabled, "baseline"));
 #ifndef CTS_USES_VULKANSC
-	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromPrimary,
-			 "primary", "Inherit viewport/scissor from calling primary command buffer"));
-	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromSecondary,
-			 "secondary", "Inherit viewport/scissor from another secondary command buffer"));
-	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kSplitInheritance,
-			 "split", "Inherit some viewports/scissors from primary, some from secondary"));
-	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromPrimaryWithCount,
-			 "primary_with_count", "Inherit viewport/scissor with count from calling primary command buffer"));
-	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromSecondaryWithCount,
-			 "secondary_with_count", "Inherit viewport/scissor with count from another secondary command buffer"));
+	// Inherit viewport/scissor from calling primary command buffer
+	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromPrimary, "primary"));
+	// Inherit viewport/scissor from another secondary command buffer
+	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromSecondary, "secondary"));
+	// Inherit some viewports/scissors from primary, some from secondary
+	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kSplitInheritance, "split"));
+	// Inherit viewport/scissor with count from calling primary command buffer
+	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromPrimaryWithCount, "primary_with_count"));
+	// Inherit viewport/scissor with count from another secondary command buffer
+	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromSecondaryWithCount, "secondary_with_count"));
 #endif // CTS_USES_VULKANSC
 }
 

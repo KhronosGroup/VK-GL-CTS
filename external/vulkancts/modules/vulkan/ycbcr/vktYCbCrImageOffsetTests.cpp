@@ -193,7 +193,7 @@ namespace
 			const string		srcFormatName	(de::toLower(std::string(getFormatName(srcFormat)).substr(10)));
 
 			const TestConfig	config			(srcFormat);
-			addFunctionCase(testGroup, srcFormatName.c_str(), "", checkSupport, imageOffsetTest, config);
+			addFunctionCase(testGroup, srcFormatName.c_str(), checkSupport, imageOffsetTest, config);
 		}
 	}
 
@@ -201,7 +201,7 @@ namespace
 
 tcu::TestCaseGroup* createImageOffsetTests  (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "subresource_offset", "Subresourcelayout::offset tests for YCbCr images", initYcbcrImageOffsetTests);
+	return createTestGroup(testCtx, "subresource_offset", initYcbcrImageOffsetTests);
 }
 
 } // ycbcr

@@ -580,9 +580,8 @@ class ComputeImage2DView3DImageTest : public vkt::TestCase
 public:
 								ComputeImage2DView3DImageTest	(tcu::TestContext&				testContext,
 																 const char*					name,
-																 const char*					description,
 																 const TestParameters&			testParameters)
-																 : vkt::TestCase (testContext, name, description),
+																 : vkt::TestCase (testContext, name),
 																 m_testParameters (testParameters) {}
 	virtual						~ComputeImage2DView3DImageTest			(void) {}
 
@@ -665,9 +664,8 @@ class FragmentImage2DView3DImageTest : public vkt::TestCase
 public:
 								FragmentImage2DView3DImageTest	(tcu::TestContext&				testContext,
 																 const char*					name,
-																 const char*					description,
 																 const TestParameters&			testParameters)
-																 : vkt::TestCase (testContext, name, description),
+																 : vkt::TestCase (testContext, name),
 																 m_testParameters (testParameters) {}
 	virtual						~FragmentImage2DView3DImageTest	(void) {}
 
@@ -762,9 +760,9 @@ TestInstance* FragmentImage2DView3DImageTest::createInstance (Context& context) 
 
 tcu::TestCaseGroup* createImage2DViewOf3DTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> imageTests			(new tcu::TestCaseGroup(testCtx, "image_2d_view_3d_image", "2D view 3D image tests"));
-	de::MovePtr<tcu::TestCaseGroup>	computeGroup		(new tcu::TestCaseGroup(testCtx, "compute", "Compute shader tests."));
-	de::MovePtr<tcu::TestCaseGroup>	fragmentGroup		(new tcu::TestCaseGroup(testCtx, "fragment", "Fragment shader tests."));
+	de::MovePtr<tcu::TestCaseGroup> imageTests			(new tcu::TestCaseGroup(testCtx, "image_2d_view_3d_image"));
+	de::MovePtr<tcu::TestCaseGroup>	computeGroup		(new tcu::TestCaseGroup(testCtx, "compute"));
+	de::MovePtr<tcu::TestCaseGroup>	fragmentGroup		(new tcu::TestCaseGroup(testCtx, "fragment"));
 
 	const struct {
 		const ImageAccessType	imageType;
@@ -778,8 +776,8 @@ tcu::TestCaseGroup* createImage2DViewOf3DTests (tcu::TestContext& testCtx, Pipel
 	const int32_t imageDimension = 64;
 	for (const auto& imageAccessType : imageAccessTypes)
 	{
-		de::MovePtr<tcu::TestCaseGroup>	computeSubGroup		(new tcu::TestCaseGroup(testCtx, imageAccessType.name.c_str(), "Fragment shader tests."));
-		de::MovePtr<tcu::TestCaseGroup>	fragmentSubGroup	(new tcu::TestCaseGroup(testCtx, imageAccessType.name.c_str(), "Fragment shader tests."));
+		de::MovePtr<tcu::TestCaseGroup>	computeSubGroup		(new tcu::TestCaseGroup(testCtx, imageAccessType.name.c_str()));
+		de::MovePtr<tcu::TestCaseGroup>	fragmentSubGroup	(new tcu::TestCaseGroup(testCtx, imageAccessType.name.c_str()));
 		for (uint32_t mipLevel = 0; mipLevel < 3; mipLevel += 2)
 		{
 			// Test the first and the last layer of the mip level.
@@ -796,12 +794,12 @@ tcu::TestCaseGroup* createImage2DViewOf3DTests (tcu::TestContext& testCtx, Pipel
 						pipelineConstructionType	// PipelineConstructionType		pipelineConstructionType
 					};
 				std::string testName = "mip" + std::to_string(mipLevel) +  "_layer" + std::to_string(layer);
-				fragmentSubGroup->addChild(new FragmentImage2DView3DImageTest(testCtx, testName.c_str(), "description", testParameters));
+				fragmentSubGroup->addChild(new FragmentImage2DView3DImageTest(testCtx, testName.c_str(), testParameters));
 
 				if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 				{
 					testParameters.testType = Compute;
-					computeSubGroup->addChild(new ComputeImage2DView3DImageTest(testCtx, testName.c_str(), "description", testParameters));
+					computeSubGroup->addChild(new ComputeImage2DView3DImageTest(testCtx, testName.c_str(), testParameters));
 				}
 			}
 		}

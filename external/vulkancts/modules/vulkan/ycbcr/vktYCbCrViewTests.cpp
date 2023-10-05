@@ -839,7 +839,7 @@ void addPlaneViewCase (tcu::TestCaseGroup* group, const TestParameters& params)
 		name << "_compatible_format_" << de::toLower(de::toString(params.planeCompatibleFormat).substr(10));
 	}
 
-	addFunctionCaseWithPrograms(group, name.str(), "", checkSupport, initPrograms, testPlaneView, params);
+	addFunctionCaseWithPrograms(group, name.str(), checkSupport, initPrograms, testPlaneView, params);
 }
 
 void populateViewTypeGroup (tcu::TestCaseGroup* group, TestParameters::ViewType viewType)
@@ -900,18 +900,19 @@ void populateViewTypeGroup (tcu::TestCaseGroup* group, TestParameters::ViewType 
 
 void populateViewGroup (tcu::TestCaseGroup* group)
 {
-	addTestGroup(group, "image_view",	"Plane View via VkImageView",		populateViewTypeGroup,	TestParameters::VIEWTYPE_IMAGE_VIEW);
-	addTestGroup(group, "memory_alias",	"Plane View via Memory Aliasing",	populateViewTypeGroup,	TestParameters::VIEWTYPE_MEMORY_ALIAS);
+	// Plane View via VkImageView
+	addTestGroup(group, "image_view", populateViewTypeGroup,	TestParameters::VIEWTYPE_IMAGE_VIEW);
+	// Plane View via Memory Aliasing
+	addTestGroup(group, "memory_alias", populateViewTypeGroup,	TestParameters::VIEWTYPE_MEMORY_ALIAS);
 }
 
 } // anonymous
 
 tcu::TestCaseGroup* createViewTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "plane_view", "YCbCr Plane View Tests", populateViewGroup);
+	return createTestGroup(testCtx, "plane_view", populateViewGroup);
 }
 
 } // ycbcr
 
 } // vkt
-

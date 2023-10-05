@@ -101,7 +101,7 @@ public:
 															 CmdType				cmdType,
 															 CmdBufferType			cmdBufferType,
 															 vk::VkFormat			format)
-								: TestCase			(testCtx, name, getTestTypeName(cmdType))
+								: TestCase			(testCtx, name)
 								, m_fillValue		(fillValue)
 								, m_validator		(data, format)
 								, m_cmdType			(cmdType)
@@ -353,7 +353,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferFloatTests (tcu::TestContext& test
 
 	std::string desc = std::string(getTestTypeName(cmdType)) + " (float)";
 
-	de::MovePtr<tcu::TestCaseGroup>	staticTests		(new tcu::TestCaseGroup(testCtx, "static", (desc + " with static input").c_str()));
+	de::MovePtr<tcu::TestCaseGroup>	staticTests		(new tcu::TestCaseGroup(testCtx, "static"));
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testData); ++ndx)
 	{
 		DE_ASSERT(testData[ndx].data.positions[0].x() < MAX_POSITION);
@@ -367,7 +367,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferFloatTests (tcu::TestContext& test
 	}
 
 	/* Add a few randomized tests */
-	de::MovePtr<tcu::TestCaseGroup>	randomTests		(new tcu::TestCaseGroup(testCtx, "random", (desc + " with random input").c_str()));
+	de::MovePtr<tcu::TestCaseGroup>	randomTests		(new tcu::TestCaseGroup(testCtx, "random"));
 	const int						testCount		= 10;
 	de::Random						rnd				(testCtx.getCommandLine().getBaseSeed());
 	for (int ndx = 0; ndx < testCount; ++ndx)
@@ -399,7 +399,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferFloatTests (tcu::TestContext& test
 	}
 
 	const std::string				groupName		= getCmdBufferTypeStr(cmdBufferType);
-	de::MovePtr<tcu::TestCaseGroup>	primaryGroup	(new tcu::TestCaseGroup(testCtx, groupName.c_str(), (desc + " using " + groupName.c_str() + " command buffer").c_str()));
+	de::MovePtr<tcu::TestCaseGroup>	primaryGroup	(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 	primaryGroup->addChild(staticTests.release());
 	primaryGroup->addChild(randomTests.release());
 
@@ -409,7 +409,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferFloatTests (tcu::TestContext& test
 tcu::TestCaseGroup*	createFillUpdateCopyBufferFloatTests (tcu::TestContext& testCtx, CmdType cmdType)
 {
 	const std::string desc = std::string(getTestTypeName(cmdType)) + " (float)";
-	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "float_buffer", desc.c_str()));
+	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "float_buffer"));
 	testGroup->addChild(createFillUpdateCopyBufferFloatTests(testCtx, cmdType, CMD_BUFFER_PRIMARY));
 	testGroup->addChild(createFillUpdateCopyBufferFloatTests(testCtx, cmdType, CMD_BUFFER_SECONDARY));
 	return testGroup.release();
@@ -464,7 +464,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferIntegerTests (tcu::TestContext& te
 
 
 	std::string desc = std::string(getTestTypeName(cmdType)) + " (integer)";
-	de::MovePtr<tcu::TestCaseGroup>	staticTests		(new tcu::TestCaseGroup(testCtx, "static", (desc + " with static input").c_str()));
+	de::MovePtr<tcu::TestCaseGroup>	staticTests		(new tcu::TestCaseGroup(testCtx, "static"));
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testData); ++ndx)
 	{
 		DE_ASSERT(testData[ndx].data.positions[0].x() < MAX_POSITION);
@@ -478,7 +478,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferIntegerTests (tcu::TestContext& te
 	}
 
 	/* Add a few randomized tests */
-	de::MovePtr<tcu::TestCaseGroup>	randomTests		(new tcu::TestCaseGroup(testCtx, "random", (desc + " with random input").c_str()));
+	de::MovePtr<tcu::TestCaseGroup>	randomTests		(new tcu::TestCaseGroup(testCtx, "random"));
 	const int						testCount		= 10;
 	de::Random						rnd				(testCtx.getCommandLine().getBaseSeed());
 	for (int ndx = 0; ndx < testCount; ++ndx)
@@ -510,7 +510,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferIntegerTests (tcu::TestContext& te
 	}
 
 	const std::string				groupName		= getCmdBufferTypeStr(cmdBufferType);
-	de::MovePtr<tcu::TestCaseGroup>	primaryGroup	(new tcu::TestCaseGroup(testCtx, groupName.c_str(), (desc + " using " + groupName.c_str() + " command buffer").c_str()));
+	de::MovePtr<tcu::TestCaseGroup>	primaryGroup	(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 	primaryGroup->addChild(staticTests.release());
 	primaryGroup->addChild(randomTests.release());
 
@@ -520,7 +520,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferIntegerTests (tcu::TestContext& te
 tcu::TestCaseGroup*	createFillUpdateCopyBufferIntegerTests (tcu::TestContext& testCtx, CmdType cmdType)
 {
 	const std::string desc = std::string(getTestTypeName(cmdType)) + " (integer)";
-	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "integer_buffer", desc.c_str()));
+	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "integer_buffer"));
 	testGroup->addChild(createFillUpdateCopyBufferIntegerTests(testCtx, cmdType, CMD_BUFFER_PRIMARY));
 	testGroup->addChild(createFillUpdateCopyBufferIntegerTests(testCtx, cmdType, CMD_BUFFER_SECONDARY));
 	return testGroup.release();
@@ -571,7 +571,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferUnsignedTests (tcu::TestContext& t
 	};
 
 	std::string desc = std::string(getTestTypeName(cmdType)) + " (unsigned)";
-	de::MovePtr<tcu::TestCaseGroup>	staticTests		(new tcu::TestCaseGroup(testCtx, "static", (desc + " with static input").c_str()));
+	de::MovePtr<tcu::TestCaseGroup>	staticTests		(new tcu::TestCaseGroup(testCtx, "static"));
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testData); ++ndx)
 	{
@@ -586,7 +586,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferUnsignedTests (tcu::TestContext& t
 	}
 
 	/* Add a few randomized tests */
-	de::MovePtr<tcu::TestCaseGroup>	randomTests		(new tcu::TestCaseGroup(testCtx, "random", (desc + " with random input").c_str()));
+	de::MovePtr<tcu::TestCaseGroup>	randomTests		(new tcu::TestCaseGroup(testCtx, "random"));
 	const int						testCount		= 10;
 	de::Random						rnd				(testCtx.getCommandLine().getBaseSeed());
 	for (int ndx = 0; ndx < testCount; ++ndx)
@@ -614,7 +614,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferUnsignedTests (tcu::TestContext& t
 	}
 
 	const std::string				groupName		= getCmdBufferTypeStr(cmdBufferType);
-	de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, groupName.c_str(), (desc + " using " + groupName.c_str() + " command buffer").c_str()));
+	de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 	testGroup->addChild(staticTests.release());
 	testGroup->addChild(randomTests.release());
 
@@ -624,7 +624,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferUnsignedTests (tcu::TestContext& t
 tcu::TestCaseGroup*	createFillUpdateCopyBufferUnsignedTests (tcu::TestContext& testCtx, CmdType cmdType)
 {
 	const std::string desc = std::string(getTestTypeName(cmdType)) + " (unsinged)";
-	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "unsigned_buffer", desc.c_str()));
+	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "unsigned_buffer"));
 	testGroup->addChild(createFillUpdateCopyBufferUnsignedTests(testCtx, cmdType, CMD_BUFFER_PRIMARY));
 	testGroup->addChild(createFillUpdateCopyBufferUnsignedTests(testCtx, cmdType, CMD_BUFFER_SECONDARY));
 	return testGroup.release();
@@ -634,7 +634,8 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferUnsignedTests (tcu::TestContext& t
 
 tcu::TestCaseGroup*	createFillBufferTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "fill", "Fill Buffer Tests"));
+	// Fill Buffer Tests
+	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "fill"));
 
 	testGroup->addChild(createFillUpdateCopyBufferFloatTests(testCtx, FILL_BUFFER));
 	testGroup->addChild(createFillUpdateCopyBufferIntegerTests(testCtx, FILL_BUFFER));

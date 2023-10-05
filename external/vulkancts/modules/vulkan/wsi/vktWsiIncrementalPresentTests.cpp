@@ -1204,19 +1204,19 @@ void createIncrementalPresentTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type
 
 		{
 
-			de::MovePtr<tcu::TestCaseGroup>	scaleGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), scaling[scalingNdx].name, scaling[scalingNdx].name));
+			de::MovePtr<tcu::TestCaseGroup>	scaleGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), scaling[scalingNdx].name));
 
 			for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	presentModeGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name, presentModes[presentModeNdx].name));
+				de::MovePtr<tcu::TestCaseGroup>	presentModeGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name));
 
 				for (size_t transformNdx = 0; transformNdx < DE_LENGTH_OF_ARRAY(transforms); transformNdx++)
 				{
-					de::MovePtr<tcu::TestCaseGroup>	transformGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), transforms[transformNdx].name, transforms[transformNdx].name));
+					de::MovePtr<tcu::TestCaseGroup>	transformGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), transforms[transformNdx].name));
 
 					for (size_t alphaNdx = 0; alphaNdx < DE_LENGTH_OF_ARRAY(alphas); alphaNdx++)
 					{
-						de::MovePtr<tcu::TestCaseGroup>	alphaGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), alphas[alphaNdx].name, alphas[alphaNdx].name));
+						de::MovePtr<tcu::TestCaseGroup>	alphaGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), alphas[alphaNdx].name));
 
 						for (size_t ref = 0; ref < 2; ref++)
 						{
@@ -1231,7 +1231,7 @@ void createIncrementalPresentTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type
 							config.transform				= transforms[transformNdx].transform;
 							config.alpha					= alphas[alphaNdx].alpha;
 
-							alphaGroup->addChild(new vkt::InstanceFactory1<IncrementalPresentTestInstance, TestConfig, Programs>(testGroup->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, name, Programs(), config));
+							alphaGroup->addChild(new vkt::InstanceFactory1<IncrementalPresentTestInstance, TestConfig, Programs>(testGroup->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, Programs(), config));
 						}
 
 						transformGroup->addChild(alphaGroup.release());

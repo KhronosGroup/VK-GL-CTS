@@ -40,7 +40,8 @@ namespace shaderexecutor
 
 tcu::TestCaseGroup* createBuiltinTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	builtinTests			(new tcu::TestCaseGroup(testCtx, "builtin",		"Built-in tests"));
+	// Built-in tests
+	de::MovePtr<tcu::TestCaseGroup>	builtinTests			(new tcu::TestCaseGroup(testCtx, "builtin"));
 	de::MovePtr<tcu::TestCaseGroup>	builtinFunctionTests	(new tcu::TestCaseGroup(testCtx, "function",	"Built-in Function Tests"));
 
 	builtinFunctionTests->addChild(new ShaderCommonFunctionTests(testCtx));

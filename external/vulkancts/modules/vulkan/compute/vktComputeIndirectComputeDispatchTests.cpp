@@ -242,20 +242,17 @@ typedef std::vector<DispatchCommand> DispatchCommandsVec;
 struct DispatchCaseDesc
 {
 								DispatchCaseDesc (const char*					name,
-												  const char*					description,
 												  const deUintptr				bufferSize,
 												  const tcu::UVec3				workGroupSize,
 												  const DispatchCommandsVec&	dispatchCommands,
 												  const bool					computeQueueOnly)
 									: m_name				(name)
-									, m_description			(description)
 									, m_bufferSize			(bufferSize)
 									, m_workGroupSize		(workGroupSize)
 									, m_dispatchCommands	(dispatchCommands)
 									, m_computeOnlyQueue	(computeQueueOnly) {}
 
 	const char*					m_name;
-	const char*					m_description;
 	const deUintptr				m_bufferSize;
 	const tcu::UVec3			m_workGroupSize;
 	const DispatchCommandsVec	m_dispatchCommands;
@@ -587,7 +584,7 @@ IndirectDispatchCaseBufferUpload::IndirectDispatchCaseBufferUpload (tcu::TestCon
 																	const DispatchCaseDesc& caseDesc,
 																	const glu::GLSLVersion	glslVersion,
 																	const vk::ComputePipelineConstructionType computePipelineConstructionType)
-	: vkt::TestCase						(testCtx, caseDesc.m_name, caseDesc.m_description)
+	: vkt::TestCase						(testCtx, caseDesc.m_name)
 	, m_bufferSize						(caseDesc.m_bufferSize)
 	, m_workGroupSize					(caseDesc.m_workGroupSize)
 	, m_dispatchCommands				(caseDesc.m_dispatchCommands)
@@ -855,35 +852,40 @@ tcu::TestCaseGroup* createIndirectComputeDispatchTests (tcu::TestContext& testCt
 
 	static const DispatchCaseDesc s_dispatchCases[] =
 	{
-		DispatchCaseDesc("single_invocation", "Single invocation only from offset 0", INDIRECT_COMMAND_OFFSET, tcu::UVec3(1, 1, 1),
+		// Single invocation only from offset 0
+		DispatchCaseDesc("single_invocation", INDIRECT_COMMAND_OFFSET, tcu::UVec3(1, 1, 1),
 			commandsVec(DispatchCommand(0, tcu::UVec3(1, 1, 1))), false
 		),
-		DispatchCaseDesc("multiple_groups", "Multiple groups dispatched from offset 0", INDIRECT_COMMAND_OFFSET, tcu::UVec3(1, 1, 1),
+		// Multiple groups dispatched from offset 0
+		DispatchCaseDesc("multiple_groups", INDIRECT_COMMAND_OFFSET, tcu::UVec3(1, 1, 1),
 			commandsVec(DispatchCommand(0, tcu::UVec3(2, 3, 5))), false
 		),
-		DispatchCaseDesc("multiple_groups_multiple_invocations", "Multiple groups of size 2x3x1 from offset 0", INDIRECT_COMMAND_OFFSET, tcu::UVec3(2, 3, 1),
+		// Multiple groups of size 2x3x1 from offset 0
+		DispatchCaseDesc("multiple_groups_multiple_invocations", INDIRECT_COMMAND_OFFSET, tcu::UVec3(2, 3, 1),
 			commandsVec(DispatchCommand(0, tcu::UVec3(1, 2, 3))), false
 		),
-		DispatchCaseDesc("small_offset", "Small offset", 16 + INDIRECT_COMMAND_OFFSET, tcu::UVec3(1, 1, 1),
+		DispatchCaseDesc("small_offset", 16 + INDIRECT_COMMAND_OFFSET, tcu::UVec3(1, 1, 1),
 			commandsVec(DispatchCommand(16, tcu::UVec3(1, 1, 1))), false
 		),
-		DispatchCaseDesc("large_offset", "Large offset", (2 << 20), tcu::UVec3(1, 1, 1),
+		DispatchCaseDesc("large_offset", (2 << 20), tcu::UVec3(1, 1, 1),
 			commandsVec(DispatchCommand((1 << 20) + 12, tcu::UVec3(1, 1, 1))), false
 		),
-		DispatchCaseDesc("large_offset_multiple_invocations", "Large offset, multiple invocations", (2 << 20), tcu::UVec3(2, 3, 1),
+		DispatchCaseDesc("large_offset_multiple_invocations", (2 << 20), tcu::UVec3(2, 3, 1),
 			commandsVec(DispatchCommand((1 << 20) + 12, tcu::UVec3(1, 2, 3))), false
 		),
-		DispatchCaseDesc("empty_command", "Empty command", INDIRECT_COMMAND_OFFSET, tcu::UVec3(1, 1, 1),
+		DispatchCaseDesc("empty_command", INDIRECT_COMMAND_OFFSET, tcu::UVec3(1, 1, 1),
 			commandsVec(DispatchCommand(0, tcu::UVec3(0, 0, 0))), false
 		),
-		DispatchCaseDesc("multi_dispatch", "Dispatch multiple compute commands from single buffer", 1 << 10, tcu::UVec3(3, 1, 2),
+		// Dispatch multiple compute commands from single buffer
+		DispatchCaseDesc("multi_dispatch", 1 << 10, tcu::UVec3(3, 1, 2),
 			commandsVec(DispatchCommand(0, tcu::UVec3(1, 1, 1)),
 						DispatchCommand(INDIRECT_COMMAND_OFFSET, tcu::UVec3(2, 1, 1)),
 						DispatchCommand(104, tcu::UVec3(1, 3, 1)),
 						DispatchCommand(40, tcu::UVec3(1, 1, 7)),
 						DispatchCommand(52, tcu::UVec3(1, 1, 4))), false
 		),
-		DispatchCaseDesc("multi_dispatch_reuse_command", "Dispatch multiple compute commands from single buffer", 1 << 10, tcu::UVec3(3, 1, 2),
+		// Dispatch multiple compute commands from single buffer
+		DispatchCaseDesc("multi_dispatch_reuse_command", 1 << 10, tcu::UVec3(3, 1, 2),
 			commandsVec(DispatchCommand(0, tcu::UVec3(1, 1, 1)),
 						DispatchCommand(0, tcu::UVec3(1, 1, 1)),
 						DispatchCommand(0, tcu::UVec3(1, 1, 1)),
@@ -894,31 +896,31 @@ tcu::TestCaseGroup* createIndirectComputeDispatchTests (tcu::TestContext& testCt
 		),
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> indirectComputeDispatchTests(new tcu::TestCaseGroup(testCtx, "indirect_dispatch", "Indirect dispatch tests"));
+	de::MovePtr<tcu::TestCaseGroup> indirectComputeDispatchTests(new tcu::TestCaseGroup(testCtx, "indirect_dispatch"));
 
-	tcu::TestCaseGroup* const	groupBufferUpload = new tcu::TestCaseGroup(testCtx, "upload_buffer", "");
+	tcu::TestCaseGroup* const	groupBufferUpload = new tcu::TestCaseGroup(testCtx, "upload_buffer");
 	indirectComputeDispatchTests->addChild(groupBufferUpload);
 
 	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_dispatchCases); ndx++)
 	{
-		DispatchCaseDesc desc = s_dispatchCases[ndx];
-		std::string computeName = std::string(desc.m_name) + std::string("_compute_only_queue");
-		DispatchCaseDesc computeOnlyDesc = DispatchCaseDesc(computeName.c_str(), desc.m_description, desc.m_bufferSize, desc.m_workGroupSize,
-															desc.m_dispatchCommands, true);
-		groupBufferUpload->addChild(new IndirectDispatchCaseBufferUpload(testCtx, desc, glu::GLSL_VERSION_310_ES, computePipelineConstructionType));
+		DispatchCaseDesc caseDesc = s_dispatchCases[ndx];
+		std::string computeName = std::string(caseDesc.m_name) + std::string("_compute_only_queue");
+		DispatchCaseDesc computeOnlyDesc = DispatchCaseDesc(computeName.c_str(), caseDesc.m_bufferSize, caseDesc.m_workGroupSize,
+															caseDesc.m_dispatchCommands, true);
+		groupBufferUpload->addChild(new IndirectDispatchCaseBufferUpload(testCtx, caseDesc, glu::GLSL_VERSION_310_ES, computePipelineConstructionType));
 		groupBufferUpload->addChild(new IndirectDispatchCaseBufferUpload(testCtx, computeOnlyDesc, glu::GLSL_VERSION_310_ES, computePipelineConstructionType));
 	}
 
-	tcu::TestCaseGroup* const	groupBufferGenerate = new tcu::TestCaseGroup(testCtx, "gen_in_compute", "");
+	tcu::TestCaseGroup* const	groupBufferGenerate = new tcu::TestCaseGroup(testCtx, "gen_in_compute");
 	indirectComputeDispatchTests->addChild(groupBufferGenerate);
 
 	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_dispatchCases); ndx++)
 	{
-		DispatchCaseDesc desc = s_dispatchCases[ndx];
-		std::string computeName = std::string(desc.m_name) + std::string("_compute_only_queue");
-		DispatchCaseDesc computeOnlyDesc = DispatchCaseDesc(computeName.c_str(), desc.m_description, desc.m_bufferSize, desc.m_workGroupSize,
-															desc.m_dispatchCommands, true);
-		groupBufferGenerate->addChild(new IndirectDispatchCaseBufferGenerate(testCtx, desc, glu::GLSL_VERSION_310_ES, computePipelineConstructionType));
+		DispatchCaseDesc caseDesc = s_dispatchCases[ndx];
+		std::string computeName = std::string(caseDesc.m_name) + std::string("_compute_only_queue");
+		DispatchCaseDesc computeOnlyDesc = DispatchCaseDesc(computeName.c_str(), caseDesc.m_bufferSize, caseDesc.m_workGroupSize,
+															caseDesc.m_dispatchCommands, true);
+		groupBufferGenerate->addChild(new IndirectDispatchCaseBufferGenerate(testCtx, caseDesc, glu::GLSL_VERSION_310_ES, computePipelineConstructionType));
 		groupBufferGenerate->addChild(new IndirectDispatchCaseBufferGenerate(testCtx, computeOnlyDesc, glu::GLSL_VERSION_310_ES, computePipelineConstructionType));
 	}
 

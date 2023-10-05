@@ -404,7 +404,7 @@ public:
 } //anonymous
 
 DynamicStateClearTests::DynamicStateClearTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
-	: TestCaseGroup					(testCtx, "image", "Tests for dynamic state")
+	: TestCaseGroup					(testCtx, "image")
 	, m_pipelineConstructionType	(pipelineConstructionType)
 {
 	/* Left blank on purpose */
@@ -420,10 +420,14 @@ void DynamicStateClearTests::init (void)
 	shaderPaths[glu::SHADERTYPE_VERTEX] = "vulkan/dynamic_state/VertexFetch.vert";
 	shaderPaths[glu::SHADERTYPE_FRAGMENT] = "vulkan/dynamic_state/VertexFetch.frag";
 
-	addChild(new InstanceFactory<ClearTestInstance>(m_testCtx, "clear", "Clear attachment after setting dynamic states", m_pipelineConstructionType, shaderPaths));
-	addChild(new InstanceFactory<BlitTestInstance>(m_testCtx, "blit", "Blit image after setting dynamic states", m_pipelineConstructionType, shaderPaths));
-	addChild(new InstanceFactory<CopyTestInstance>(m_testCtx, "copy", "Copy image after setting dynamic states", m_pipelineConstructionType, shaderPaths));
-	addChild(new InstanceFactory<ResolveTestInstance>(m_testCtx, "resolve", "Resolve image after setting dynamic states", m_pipelineConstructionType, shaderPaths));
+	// Clear attachment after setting dynamic states
+	addChild(new InstanceFactory<ClearTestInstance>(m_testCtx, "clear", m_pipelineConstructionType, shaderPaths));
+	// Blit image after setting dynamic states
+	addChild(new InstanceFactory<BlitTestInstance>(m_testCtx, "blit", m_pipelineConstructionType, shaderPaths));
+	// Copy image after setting dynamic states
+	addChild(new InstanceFactory<CopyTestInstance>(m_testCtx, "copy", m_pipelineConstructionType, shaderPaths));
+	// Resolve image after setting dynamic states
+	addChild(new InstanceFactory<ResolveTestInstance>(m_testCtx, "resolve", m_pipelineConstructionType, shaderPaths));
 }
 
 } // DynamicState

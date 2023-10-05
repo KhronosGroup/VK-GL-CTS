@@ -738,7 +738,7 @@ class DynamicStateComputeCase : public vkt::TestCase
 {
 public:
 
-							DynamicStateComputeCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params, PipelineConstructionType pipelineConstructionType);
+							DynamicStateComputeCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params, PipelineConstructionType pipelineConstructionType);
 	virtual					~DynamicStateComputeCase	(void) {}
 
 	virtual void			checkSupport				(Context& context) const;
@@ -766,8 +766,8 @@ protected:
 	PipelineConstructionType	m_pipelineConstructionType;
 };
 
-DynamicStateComputeCase::DynamicStateComputeCase(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params, PipelineConstructionType pipelineConstructionType)
-	: vkt::TestCase					(testCtx, name, description)
+DynamicStateComputeCase::DynamicStateComputeCase(tcu::TestContext& testCtx, const std::string& name, const TestParams& params, PipelineConstructionType pipelineConstructionType)
+	: vkt::TestCase					(testCtx, name)
 	, m_params						(params)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 {}
@@ -1108,7 +1108,8 @@ tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx, v
 {
 	using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
-	GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "compute_transfer", "Dynamic state mixed with compute and transfer operations"));
+	// Dynamic state mixed with compute and transfer operations
+	GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "compute_transfer"));
 
 	const struct
 	{
@@ -1132,18 +1133,18 @@ tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx, v
 
 	// Tests with a single dynamic state.
 	{
-		GroupPtr singleStateGroup(new tcu::TestCaseGroup(testCtx, "single", "Tests using a single dynamic state"));
+		GroupPtr singleStateGroup(new tcu::TestCaseGroup(testCtx, "single"));
 
 		for (int operIdx = 0; operIdx < DE_LENGTH_OF_ARRAY(operations); ++operIdx)
 		{
-			GroupPtr operationGroup(new tcu::TestCaseGroup(testCtx, operations[operIdx].name, ""));
+			GroupPtr operationGroup(new tcu::TestCaseGroup(testCtx, operations[operIdx].name));
 
 			for (int stateIdx = 0; stateIdx < DE_LENGTH_OF_ARRAY(dynamicStateList); ++stateIdx)
 			{
 				const auto	state		= dynamicStateList[stateIdx];
 				const auto	stateName	= getDynamicStateBriefName(state);
 
-				GroupPtr stateGroup(new tcu::TestCaseGroup(testCtx, stateName.c_str(), ""));
+				GroupPtr stateGroup(new tcu::TestCaseGroup(testCtx, stateName.c_str()));
 
 				for (int momentIdx = 0; momentIdx < DE_LENGTH_OF_ARRAY(moments); ++momentIdx)
 				{
@@ -1154,7 +1155,7 @@ tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx, v
 						std::vector<VkDynamicState>(1, state),	//	std::vector<VkDynamicState>	state;
 					};
 
-					stateGroup->addChild(new DynamicStateComputeCase(testCtx, moments[momentIdx].name, "", testParams, pipelineConstructionType));
+					stateGroup->addChild(new DynamicStateComputeCase(testCtx, moments[momentIdx].name, testParams, pipelineConstructionType));
 				}
 
 				operationGroup->addChild(stateGroup.release());
@@ -1168,11 +1169,11 @@ tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx, v
 
 	// A few tests with several dynamic states.
 	{
-		GroupPtr multiStateGroup(new tcu::TestCaseGroup(testCtx, "multi", "Tests using multiple dynamic states"));
+		GroupPtr multiStateGroup(new tcu::TestCaseGroup(testCtx, "multi"));
 
 		for (int operIdx = 0; operIdx < DE_LENGTH_OF_ARRAY(operations); ++operIdx)
 		{
-			GroupPtr operationGroup(new tcu::TestCaseGroup(testCtx, operations[operIdx].name, ""));
+			GroupPtr operationGroup(new tcu::TestCaseGroup(testCtx, operations[operIdx].name));
 
 			for (int momentIdx = 0; momentIdx < DE_LENGTH_OF_ARRAY(moments); ++momentIdx)
 			{
@@ -1191,7 +1192,7 @@ tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx, v
 						break;
 				}
 
-				operationGroup->addChild(new DynamicStateComputeCase(testCtx, moments[momentIdx].name, "", testParams, pipelineConstructionType));
+				operationGroup->addChild(new DynamicStateComputeCase(testCtx, moments[momentIdx].name, testParams, pipelineConstructionType));
 			}
 
 			multiStateGroup->addChild(operationGroup.release());

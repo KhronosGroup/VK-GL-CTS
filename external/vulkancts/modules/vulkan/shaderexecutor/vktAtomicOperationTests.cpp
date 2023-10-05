@@ -1023,7 +1023,6 @@ class AtomicOperationCase : public TestCase
 public:
 							AtomicOperationCase		(tcu::TestContext&		testCtx,
 													 const char*			name,
-													 const char*			description,
 													 AtomicShaderType		type,
 													 DataType				dataType,
 													 AtomicOperation		atomicOp);
@@ -1053,11 +1052,10 @@ private:
 
 AtomicOperationCase::AtomicOperationCase (tcu::TestContext&	testCtx,
 										  const char*		name,
-										  const char*		description,
 										  AtomicShaderType	shaderType,
 										  DataType			dataType,
 										  AtomicOperation	atomicOp)
-	: TestCase			(testCtx, name, description)
+	: TestCase			(testCtx, name)
 	, m_shaderType		(shaderType)
 	, m_dataType		(dataType)
 	, m_atomicOp		(atomicOp)
@@ -1497,18 +1495,24 @@ void addAtomicOperationTests (tcu::TestCaseGroup* atomicOperationTestsGroup)
 	{
 		DataType		dataType;
 		const char*		name;
-		const char*		description;
 	} dataSign[] =
 	{
 #ifndef CTS_USES_VULKANSC
-		{ DATA_TYPE_FLOAT16,"float16",			"Tests using 16-bit float data"				},
+		// Tests using 16-bit float data
+		{ DATA_TYPE_FLOAT16,"float16"},
 #endif // CTS_USES_VULKANSC
-		{ DATA_TYPE_INT32,	"signed",			"Tests using signed data (int)"				},
-		{ DATA_TYPE_UINT32,	"unsigned",			"Tests using unsigned data (uint)"			},
-		{ DATA_TYPE_FLOAT32,"float32",			"Tests using 32-bit float data"				},
-		{ DATA_TYPE_INT64,	"signed64bit",		"Tests using 64 bit signed data (int64)"	},
-		{ DATA_TYPE_UINT64,	"unsigned64bit",	"Tests using 64 bit unsigned data (uint64)"	},
-		{ DATA_TYPE_FLOAT64,"float64",			"Tests using 64-bit float data)"			}
+		// Tests using signed data (int)
+		{ DATA_TYPE_INT32,	"signed"},
+		// Tests using unsigned data (uint)
+		{ DATA_TYPE_UINT32,	"unsigned"},
+		// Tests using 32-bit float data
+		{ DATA_TYPE_FLOAT32,"float32"},
+		// Tests using 64 bit signed data (int64)
+		{ DATA_TYPE_INT64,	"signed64bit"},
+		// Tests using 64 bit unsigned data (uint64)
+		{ DATA_TYPE_UINT64,	"unsigned64bit"},
+		// Tests using 64-bit float data)
+		{ DATA_TYPE_FLOAT64,"float64"}
 	};
 
 	static const struct
@@ -1560,10 +1564,9 @@ void addAtomicOperationTests (tcu::TestCaseGroup* atomicOperationTestsGroup)
 					if (kMemoryTypes[memoryTypeNdx].type == AtomicMemoryType::PAYLOAD && shaderTypes[shaderTypeNdx].type != glu::SHADERTYPE_TASK)
 						continue;
 
-					const std::string description	= std::string("Tests atomic operation ") + atomicOp2Str(atomicOp[opNdx].value) + std::string(".");
 					const std::string name			= std::string(atomicOp[opNdx].name) + "_" + std::string(dataSign[signNdx].name) + "_" + std::string(shaderTypes[shaderTypeNdx].name) + kMemoryTypes[memoryTypeNdx].suffix;
 
-					atomicOperationTestsGroup->addChild(new AtomicOperationCase(testCtx, name.c_str(), description.c_str(), AtomicShaderType(shaderTypes[shaderTypeNdx].type, kMemoryTypes[memoryTypeNdx].type), dataSign[signNdx].dataType, atomicOp[opNdx].value));
+					atomicOperationTestsGroup->addChild(new AtomicOperationCase(testCtx, name.c_str(), AtomicShaderType(shaderTypes[shaderTypeNdx].type, kMemoryTypes[memoryTypeNdx].type), dataSign[signNdx].dataType, atomicOp[opNdx].value));
 				}
 			}
 		}
@@ -1574,7 +1577,7 @@ void addAtomicOperationTests (tcu::TestCaseGroup* atomicOperationTestsGroup)
 
 tcu::TestCaseGroup* createAtomicOperationTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "atomic_operations", "Atomic Operation Tests", addAtomicOperationTests);
+	return createTestGroup(testCtx, "atomic_operations", addAtomicOperationTests);
 }
 
 } // shaderexecutor

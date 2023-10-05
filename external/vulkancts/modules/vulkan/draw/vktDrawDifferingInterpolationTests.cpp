@@ -102,7 +102,7 @@ DrawTestInstance::~DrawTestInstance (void)
 class DrawTestCase : public TestCase
 {
 	public:
-								DrawTestCase		(tcu::TestContext& context, const char* name, const char* desc, const DrawParams data);
+								DrawTestCase		(tcu::TestContext& context, const char* name, const DrawParams data);
 								~DrawTestCase		(void);
 	virtual	void				initPrograms		(SourceCollections& programCollection) const;
 	virtual void				checkSupport		(Context& context) const;
@@ -112,8 +112,8 @@ private:
 	DrawParams					m_data;
 };
 
-DrawTestCase::DrawTestCase (tcu::TestContext& context, const char* name, const char* desc, const DrawParams data)
-	: vkt::TestCase	(context, name, desc)
+DrawTestCase::DrawTestCase (tcu::TestContext& context, const char* name, const DrawParams data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -472,18 +472,22 @@ void createTests (tcu::TestCaseGroup* testGroup, const SharedGroupParams groupPa
 	const DrawParams	paramsNoPerspective0	= { "vert", "fragNoPerspective", "vertNoPerspective", "fragNoPerspective", groupParams };
 	const DrawParams	paramsNoPerspective1	= { "vertNoPerspective", "frag", "vert", "frag", groupParams };
 
-	testGroup->addChild(new DrawTestCase(testCtx, "flat_0", "Mismatching flat interpolation testcase 0.", paramsFlat0));
-	testGroup->addChild(new DrawTestCase(testCtx, "flat_1", "Mismatching flat interpolation testcase 1.", paramsFlat1));
+	// Mismatching flat interpolation testcase 0.
+	testGroup->addChild(new DrawTestCase(testCtx, "flat_0", paramsFlat0));
+	// Mismatching flat interpolation testcase 1.
+	testGroup->addChild(new DrawTestCase(testCtx, "flat_1", paramsFlat1));
 
-	testGroup->addChild(new DrawTestCase(testCtx, "noperspective_0", "Mismatching noperspective interpolation testcase 0.", paramsNoPerspective0));
-	testGroup->addChild(new DrawTestCase(testCtx, "noperspective_1", "Mismatching noperspective interpolation testcase 1.", paramsNoPerspective1));
+	// Mismatching noperspective interpolation testcase 0.
+	testGroup->addChild(new DrawTestCase(testCtx, "noperspective_0", paramsNoPerspective0));
+	// Mismatching noperspective interpolation testcase 1.
+	testGroup->addChild(new DrawTestCase(testCtx, "noperspective_1", paramsNoPerspective1));
 }
 
 }	// anonymous
 
 tcu::TestCaseGroup*	createDifferingInterpolationTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "differing_interpolation", "Tests for mismatched interpolation decorations.", createTests, groupParams);
+	return createTestGroup(testCtx, "differing_interpolation", createTests, groupParams);
 }
 
 }	// Draw

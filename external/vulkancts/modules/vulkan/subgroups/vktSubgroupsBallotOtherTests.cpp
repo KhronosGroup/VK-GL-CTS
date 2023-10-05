@@ -490,7 +490,7 @@ TestCaseGroup* createSubgroupsBallotOtherTests (TestContext& testCtx)
 				requiredSubgroupSize			//  deBool				requiredSubgroupSize;
 			};
 
-			addFunctionCaseWithPrograms(computeGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+			addFunctionCaseWithPrograms(computeGroup.get(), testName,  supportedCheck, initPrograms, test, caseDef);
 		}
 
 #ifndef CTS_USES_VULKANSC
@@ -508,7 +508,7 @@ TestCaseGroup* createSubgroupsBallotOtherTests (TestContext& testCtx)
 					requiredSubgroupSize			//  deBool				requiredSubgroupSize;
 				};
 
-				addFunctionCaseWithPrograms(meshGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+				addFunctionCaseWithPrograms(meshGroup.get(), testName,  supportedCheck, initPrograms, test, caseDef);
 			}
 		}
 #endif // CTS_USES_VULKANSC
@@ -522,7 +522,7 @@ TestCaseGroup* createSubgroupsBallotOtherTests (TestContext& testCtx)
 				DE_FALSE						//  deBool				requiredSubgroupSize;
 			};
 
-			addFunctionCaseWithPrograms(graphicGroup.get(), op, "", supportedCheck, initPrograms, test, caseDef);
+			addFunctionCaseWithPrograms(graphicGroup.get(), op,  supportedCheck, initPrograms, test, caseDef);
 		}
 
 #ifndef CTS_USES_VULKANSC
@@ -535,7 +535,7 @@ TestCaseGroup* createSubgroupsBallotOtherTests (TestContext& testCtx)
 				DE_FALSE						//  deBool				requiredSubgroupSize;
 			};
 
-			addFunctionCaseWithPrograms(raytracingGroup.get(), op, "", supportedCheck, initPrograms, test, caseDef);
+			addFunctionCaseWithPrograms(raytracingGroup.get(), op,  supportedCheck, initPrograms, test, caseDef);
 		}
 #endif // CTS_USES_VULKANSC
 
@@ -550,7 +550,7 @@ TestCaseGroup* createSubgroupsBallotOtherTests (TestContext& testCtx)
 			};
 			const string			testName	= op + "_" + getShaderStageName(caseDef.shaderStage);
 
-			addFunctionCaseWithPrograms(framebufferGroup.get(), testName, "", supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
+			addFunctionCaseWithPrograms(framebufferGroup.get(), testName,  supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 		}
 	}
 

@@ -377,7 +377,8 @@ tcu::TestStatus createPipelineCacheTest (Context& context, TestParams testParams
 
 tcu::TestCaseGroup*	createPipelineCacheTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "pipeline_cache", "Tests verifying Vulkan SC pipeline cache"));
+	// Tests verifying Vulkan SC pipeline cache
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "pipeline_cache"));
 
 	const struct
 	{
@@ -392,7 +393,7 @@ tcu::TestCaseGroup*	createPipelineCacheTests (tcu::TestContext& testCtx)
 	for (int testIdx = 0; testIdx < DE_LENGTH_OF_ARRAY(tests); ++testIdx)
 	{
 		TestParams params{ tests[testIdx].testType };
-		addFunctionCaseWithPrograms(group.get(), tests[testIdx].name, "", createShaders, createPipelineCacheTest, params);
+		addFunctionCaseWithPrograms(group.get(), tests[testIdx].name,  createShaders, createPipelineCacheTest, params);
 	}
 
 	return group.release();

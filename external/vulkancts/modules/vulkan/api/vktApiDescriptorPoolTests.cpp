@@ -352,35 +352,35 @@ tcu::TestCaseGroup* createDescriptorPoolTests (tcu::TestContext& testCtx)
 	const deUint32 numIterationsHigh = 4096;
 
 	de::MovePtr<tcu::TestCaseGroup> descriptorPoolTests(
-		new tcu::TestCaseGroup(testCtx, "descriptor_pool", "Descriptor Pool Tests"));
+		new tcu::TestCaseGroup(testCtx, "descriptor_pool"));
 
+	// Test 2 cycles of vkAllocateDescriptorSets and vkResetDescriptorPool (should pass)
 	addFunctionCase(descriptorPoolTests.get(),
 					"repeated_reset_short",
-					"Test 2 cycles of vkAllocateDescriptorSets and vkResetDescriptorPool (should pass)",
 					checkSupportFreeDescriptorSets,
 					resetDescriptorPoolTest, ResetDescriptorPoolTestParams(2U));
+	// Test many cycles of vkAllocateDescriptorSets and vkResetDescriptorPool
 	addFunctionCase(descriptorPoolTests.get(),
 					"repeated_reset_long",
-					"Test many cycles of vkAllocateDescriptorSets and vkResetDescriptorPool",
 					checkSupportFreeDescriptorSets,
 					resetDescriptorPoolTest, ResetDescriptorPoolTestParams(numIterationsHigh));
+	// Test 2 cycles of vkAllocateDescriptorSets, vkFreeDescriptorSets and vkResetDescriptorPool (should pass)
 	addFunctionCase(descriptorPoolTests.get(),
 					"repeated_free_reset_short",
-					"Test 2 cycles of vkAllocateDescriptorSets, vkFreeDescriptorSets and vkResetDescriptorPool (should pass)",
 					checkSupportFreeDescriptorSets,
 					resetDescriptorPoolTest, ResetDescriptorPoolTestParams(2U, true));
+	// Test many cycles of vkAllocateDescriptorSets, vkFreeDescriptorSets and vkResetDescriptorPool
 	addFunctionCase(descriptorPoolTests.get(),
 					"repeated_free_reset_long",
-					"Test many cycles of vkAllocateDescriptorSets, vkFreeDescriptorSets and vkResetDescriptorPool",
 					checkSupportFreeDescriptorSets,
 					resetDescriptorPoolTest, ResetDescriptorPoolTestParams(numIterationsHigh, true));
+	// Test that when we run out of descriptors a correct error code is returned
 	addFunctionCase(descriptorPoolTests.get(),
 					"out_of_pool_memory",
-					"Test that when we run out of descriptors a correct error code is returned",
 					outOfPoolMemoryTest);
+	// Test a descriptor pool object can be created with zero pools without error or crash
 	addFunctionCase(descriptorPoolTests.get(),
 					"zero_pool_size_count",
-					"Test a descriptor pool object can be created with zero pools without error or crash",
 					zeroPoolSizeCount);
 
 	return descriptorPoolTests.release();

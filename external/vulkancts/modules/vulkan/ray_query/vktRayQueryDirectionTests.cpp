@@ -221,7 +221,7 @@ struct TestParams
 class DirectionTestCase : public vkt::TestCase
 {
 public:
-							DirectionTestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
+							DirectionTestCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params);
 	virtual					~DirectionTestCase		(void) {}
 
 	virtual void			checkSupport			(Context& context) const;
@@ -245,8 +245,8 @@ protected:
 };
 
 
-DirectionTestCase::DirectionTestCase(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-	: vkt::TestCase	(testCtx, name, description)
+DirectionTestCase::DirectionTestCase(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(params)
 {}
 
@@ -534,7 +534,8 @@ std::vector<std::pair<float, float>> generateRotationAngles (de::Random& rnd)
 
 tcu::TestCaseGroup*	createDirectionLengthTests (tcu::TestContext& testCtx)
 {
-	GroupPtr directionGroup (new tcu::TestCaseGroup(testCtx, "direction_length", "Test direction vector length when using ray queries"));
+	// Test direction vector length when using ray queries
+	GroupPtr directionGroup (new tcu::TestCaseGroup(testCtx, "direction_length"));
 
 	struct
 	{
@@ -558,13 +559,13 @@ tcu::TestCaseGroup*	createDirectionLengthTests (tcu::TestContext& testCtx)
 	{
 		const auto& gType = geometryTypes[geometryTypeIdx];
 
-		GroupPtr geomGroup (new tcu::TestCaseGroup(testCtx, gType.name, ""));
+		GroupPtr geomGroup (new tcu::TestCaseGroup(testCtx, gType.name));
 
 		for (size_t scalingIdx = 0; scalingIdx < scalingFactors.size(); ++scalingIdx)
 		{
 			const auto scale		= scalingFactors[scalingIdx];
 			const auto scaleName	= "scaling_factor_" + de::toString(scalingIdx);
-			GroupPtr factorGroup (new tcu::TestCaseGroup(testCtx, scaleName.c_str(), ""));
+			GroupPtr factorGroup (new tcu::TestCaseGroup(testCtx, scaleName.c_str()));
 
 			for (size_t rotationIdx = 0; rotationIdx < rotationAngles.size(); ++rotationIdx)
 			{
@@ -592,7 +593,7 @@ tcu::TestCaseGroup*	createDirectionLengthTests (tcu::TestContext& testCtx)
 				};
 				++caseCounter;
 
-				factorGroup->addChild(new DirectionTestCase(testCtx, angleName, "", params));
+				factorGroup->addChild(new DirectionTestCase(testCtx, angleName, params));
 			}
 
 			geomGroup->addChild(factorGroup.release());
@@ -631,13 +632,13 @@ tcu::TestCaseGroup*	createInsideAABBsTests (tcu::TestContext& testCtx)
 	{
 		const auto&			rayEndCase	= rayEndCases[rayEndCaseIdx];
 		const std::string	rayEndName	= std::string("ray_end_") + rayEndCase.name;
-		GroupPtr			rayEndGroup	(new tcu::TestCaseGroup(testCtx, rayEndName.c_str(), ""));
+		GroupPtr			rayEndGroup	(new tcu::TestCaseGroup(testCtx, rayEndName.c_str()));
 
 		for (size_t scalingIdx = 0; scalingIdx < scalingFactors.size(); ++scalingIdx)
 		{
 			const auto scale		= scalingFactors[scalingIdx];
 			const auto scaleName	= "scaling_factor_" + de::toString(scalingIdx);
-			GroupPtr factorGroup (new tcu::TestCaseGroup(testCtx, scaleName.c_str(), ""));
+			GroupPtr factorGroup (new tcu::TestCaseGroup(testCtx, scaleName.c_str()));
 
 			for (size_t rotationIdx = 0; rotationIdx < rotationAngles.size(); ++rotationIdx)
 			{
@@ -661,7 +662,7 @@ tcu::TestCaseGroup*	createInsideAABBsTests (tcu::TestContext& testCtx)
 					rayEndCase.rayEndType,	//		RayEndType				rayEndType;
 				};
 
-				factorGroup->addChild(new DirectionTestCase(testCtx, angleName, "", params));
+				factorGroup->addChild(new DirectionTestCase(testCtx, angleName, params));
 			}
 
 			rayEndGroup->addChild(factorGroup.release());

@@ -60,20 +60,20 @@ template<typename Instance, typename Support = NoSupport0>
 class InstanceFactory : public TestCase
 {
 public:
-	InstanceFactory (tcu::TestContext& testCtx, const std::string& name, const std::string& desc,
+	InstanceFactory (tcu::TestContext& testCtx, const std::string& name,
 		const vk::PipelineConstructionType pipelineConstructionType,
 		const ShaderMap& shaderPaths)
-		: TestCase						(testCtx, name, desc)
+		: TestCase						(testCtx, name)
 		, m_pipelineConstructionType	(pipelineConstructionType)
 		, m_shaderPaths					(shaderPaths)
 		, m_support						()
 	{
 	}
 
-	InstanceFactory (tcu::TestContext& testCtx, const std::string& name, const std::string& desc,
+	InstanceFactory (tcu::TestContext& testCtx, const std::string& name,
 		const vk::PipelineConstructionType pipelineConstructionType,
 		const ShaderMap& shaderPaths, const Support& support)
-		: TestCase						(testCtx, name, desc)
+		: TestCase						(testCtx, name)
 		, m_pipelineConstructionType	(pipelineConstructionType)
 		, m_shaderPaths					(shaderPaths)
 		, m_support						(support)

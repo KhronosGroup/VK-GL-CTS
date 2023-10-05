@@ -134,7 +134,6 @@ public:
 
 										BlendTest				(tcu::TestContext&							testContext,
 																 const std::string&							name,
-																 const std::string&							description,
 																 PipelineConstructionType					pipelineConstructionType,
 																 const VkFormat								colorFormat,
 																 const VkPipelineColorBlendAttachmentState	blendStates[QUAD_COUNT]);
@@ -162,7 +161,6 @@ public:
 
 										DualSourceBlendTest		(tcu::TestContext&							testContext,
 																 const std::string&							name,
-																 const std::string&							description,
 																 PipelineConstructionType					pipelineConstructionType,
 																 const VkFormat								colorFormat,
 																 const VkPipelineColorBlendAttachmentState	blendStates[QUAD_COUNT]);
@@ -422,11 +420,10 @@ const tcu::Vec4 BlendTest::s_blendConst = tcu::Vec4(0.1f, 0.2f, 0.3f, 0.4f);
 
 BlendTest::BlendTest (tcu::TestContext&								testContext,
 					  const std::string&							name,
-					  const std::string&							description,
 					  PipelineConstructionType						pipelineConstructionType,
 					  const VkFormat								colorFormat,
 					  const VkPipelineColorBlendAttachmentState		blendStates[QUAD_COUNT])
-	: vkt::TestCase					(testContext, name, description)
+	: vkt::TestCase					(testContext, name)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_colorFormat					(colorFormat)
 {
@@ -507,11 +504,10 @@ const tcu::Vec4 DualSourceBlendTest::s_blendConst = tcu::Vec4(0.1f, 0.2f, 0.3f, 
 
 DualSourceBlendTest::DualSourceBlendTest (tcu::TestContext&								testContext,
 										  const std::string&							name,
-										  const std::string&							description,
 										  PipelineConstructionType						pipelineConstructionType,
 										  const VkFormat								colorFormat,
 										  const VkPipelineColorBlendAttachmentState		blendStates[QUAD_COUNT])
-	: vkt::TestCase					(testContext, name, description)
+	: vkt::TestCase					(testContext, name)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_colorFormat					(colorFormat)
 {
@@ -1660,7 +1656,6 @@ class ClampTest : public vkt::TestCase
 public:
 										ClampTest				(tcu::TestContext&							testContext,
 																 const std::string&							name,
-																 const std::string&							description,
 																 const ClampTestParams&						testParams);
 	virtual								~ClampTest				(void) {}
 	virtual void						initPrograms			(SourceCollections& sourceCollections) const;
@@ -1686,9 +1681,8 @@ private:
 
 ClampTest::ClampTest (tcu::TestContext&			testContext,
 					  const std::string&		name,
-					  const std::string&		description,
 					  const ClampTestParams&	testParams)
-	: vkt::TestCase (testContext, name, description)
+	: vkt::TestCase (testContext, name)
 	, m_params(testParams)
 {
 	// As per the spec:
@@ -2070,18 +2064,6 @@ std::string getBlendStateSetName (const VkPipelineColorBlendAttachmentState blen
 	return name.str();
 }
 
-std::string getBlendStateSetDescription (const VkPipelineColorBlendAttachmentState blendStates[BlendTest::QUAD_COUNT])
-{
-	std::ostringstream description;
-
-	description << "Draws " << BlendTest::QUAD_COUNT << " quads with the following blend states:\n";
-
-	for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
-		description << blendStates[quadNdx] << "\n";
-
-	return description.str();
-}
-
 std::string getFormatCaseName (VkFormat format)
 {
 	const std::string fullName = getFormatName(format);
@@ -2142,7 +2124,8 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx, PipelineConstru
 		VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>				blendTests				(new tcu::TestCaseGroup(testCtx, "blend", "Blend tests"));
+	// Blend tests
+	de::MovePtr<tcu::TestCaseGroup>				blendTests				(new tcu::TestCaseGroup(testCtx, "blend"));
 	de::MovePtr<tcu::TestCaseGroup>				formatTests				(new tcu::TestCaseGroup(testCtx, "format", "Uses different blend formats"));
 	de::MovePtr<tcu::TestCaseGroup>				clampTests				(new tcu::TestCaseGroup(testCtx, "clamp", "Verifies clamping for normalized formats"));
 	de::MovePtr<tcu::TestCaseGroup>				dualSourceBlendTests	(new tcu::TestCaseGroup(testCtx, "dual_source", "Blend tests taking into account dual-source blend factors"));
@@ -2165,7 +2148,7 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx, PipelineConstru
 			{
 				std::ostringstream blendStateDescription;
 				blendStateDescription << "Combines blend factors, operators and channel write masks. The constant color used in all tests is " << BlendTest::s_blendConst;
-				blendStateTests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "states", blendStateDescription.str().c_str()));
+				blendStateTests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "states"));
 			}
 
 			blendStateItr.reset();
@@ -2182,7 +2165,6 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx, PipelineConstru
 
 				blendStateTests->addChild(new BlendTest(testCtx,
 														getBlendStateSetName(quadBlendConfigs),
-														getBlendStateSetDescription(quadBlendConfigs),
 														pipelineConstructionType,
 														format,
 														quadBlendConfigs));
@@ -2200,7 +2182,7 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx, PipelineConstru
 			{
 				std::ostringstream blendStateDescription;
 				blendStateDescription << "Combines blend factors, operators and channel write masks. The constant color used in all tests is " << BlendTest::s_blendConst;
-				blendStateTests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "states", blendStateDescription.str().c_str()));
+				blendStateTests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "states"));
 			}
 
 			dualSourceBlendStateItr.reset();
@@ -2227,7 +2209,6 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx, PipelineConstru
 
 				blendStateTests->addChild(new DualSourceBlendTest(testCtx,
 																  getBlendStateSetName(quadBlendConfigs),
-																  getBlendStateSetDescription(quadBlendConfigs),
 																  pipelineConstructionType,
 																  format,
 																  quadBlendConfigs));
@@ -2281,7 +2262,7 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx, PipelineConstru
 			testParams.blendConstants[3] = 1.0f;
 		}
 
-		clampTests->addChild(new ClampTest(testCtx, getFormatCaseName(format), std::string("Using format ") + getFormatName(format), testParams));
+		clampTests->addChild(new ClampTest(testCtx, getFormatCaseName(format), testParams));
 	}
 
 	blendTests->addChild(formatTests.release());

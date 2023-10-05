@@ -177,7 +177,7 @@ void AhbTestInstance::generateRefImage (const tcu::PixelBufferAccess& access, co
 class AhbTestCase : public TestCase
 {
 	public:
-									AhbTestCase			(tcu::TestContext& context, const char* name, const char* desc, const DrawParams data);
+									AhbTestCase			(tcu::TestContext& context, const char* name, const DrawParams data);
 									~AhbTestCase		(void);
 	virtual	void					initPrograms		(SourceCollections& programCollection) const;
 	virtual void					initShaderSources	(void);
@@ -190,8 +190,8 @@ private:
 	std::string											m_fragShaderSource;
 };
 
-AhbTestCase::AhbTestCase (tcu::TestContext& context, const char* name, const char* desc, const DrawParams data)
-	: vkt::TestCase	(context, name, desc)
+AhbTestCase::AhbTestCase (tcu::TestContext& context, const char* name, const DrawParams data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 	initShaderSources();
@@ -638,17 +638,17 @@ tcu::TestStatus AhbTestInstance::iterate (void)
 
 void createAhbDrawTests (tcu::TestCaseGroup* testGroup)
 {
-	testGroup->addChild(new AhbTestCase(testGroup->getTestContext(), "triangle_list", "Draw triangle list to a single layer color buffer",
-									 DrawParams(9u, 1u)));
+	// Draw triangle list to a single layer color buffer
+	testGroup->addChild(new AhbTestCase(testGroup->getTestContext(), "triangle_list", DrawParams(9u, 1u)));
 
-	testGroup->addChild(new AhbTestCase(testGroup->getTestContext(), "triangle_list_layers_3", "Draw triangle list to a color buffer with three layers",
-										DrawParams(9u * 3u, 3u)));
+	// Draw triangle list to a color buffer with three layers
+	testGroup->addChild(new AhbTestCase(testGroup->getTestContext(), "triangle_list_layers_3", DrawParams(9u * 3u, 3u)));
 
-	testGroup->addChild(new AhbTestCase(testGroup->getTestContext(), "triangle_list_layers_5", "Draw triangle list to a color buffer with five layers",
-										DrawParams(9u * 5u, 5u)));
+	// Draw triangle list to a color buffer with five layers
+	testGroup->addChild(new AhbTestCase(testGroup->getTestContext(), "triangle_list_layers_5", DrawParams(9u * 5u, 5u)));
 
-	testGroup->addChild(new AhbTestCase(testGroup->getTestContext(), "triangle_list_layers_8", "Draw triangle list to a color buffer with eight layers",
-										DrawParams(9u * 8u, 8u)));
+	// Draw triangle list to a color buffer with eight layers
+	testGroup->addChild(new AhbTestCase(testGroup->getTestContext(), "triangle_list_layers_8", DrawParams(9u * 8u, 8u)));
 
 }
 
@@ -656,7 +656,8 @@ void createAhbDrawTests (tcu::TestCaseGroup* testGroup)
 
 tcu::TestCaseGroup*	createAhbTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "ahb", "Draw tests using Android Hardware Buffer", createAhbDrawTests);
+	// Draw tests using Android Hardware Buffer
+	return createTestGroup(testCtx, "ahb", createAhbDrawTests);
 }
 
 }	// DrawTests

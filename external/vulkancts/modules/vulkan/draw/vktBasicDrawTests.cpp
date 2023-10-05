@@ -670,7 +670,7 @@ template<typename T>
 class DrawTestCase : public TestCase
 {
 	public:
-									DrawTestCase		(tcu::TestContext& context, const char* name, const char* desc, const T data);
+									DrawTestCase		(tcu::TestContext& context, const char* name, const T data);
 									~DrawTestCase		(void);
 	virtual	void					initPrograms		(vk::SourceCollections& programCollection) const;
 	virtual void					initShaderSources	(void);
@@ -684,8 +684,8 @@ private:
 };
 
 template<typename T>
-DrawTestCase<T>::DrawTestCase (tcu::TestContext& context, const char* name, const char* desc, const T data)
-	: vkt::TestCase	(context, name, desc)
+DrawTestCase<T>::DrawTestCase (tcu::TestContext& context, const char* name, const T data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 	initShaderSources();
@@ -1595,7 +1595,7 @@ void populateSubGroup (tcu::TestCaseGroup* testGroup, const TestCaseParams caseP
 			{
 				deUint32	firstPrimitive	= rnd.getInt(0, primitives);
 				deUint32	firstVertex		= multiplier * firstPrimitive;
-				testGroup->addChild(new DrawCase(testCtx, name.c_str(), "vkCmdDraw testcase.",
+				testGroup->addChild(new DrawCase(testCtx, name.c_str(),
 					DrawParams(topology, groupParams, vertexCount, 1, firstVertex, 0))
 				);
 				break;
@@ -1604,7 +1604,7 @@ void populateSubGroup (tcu::TestCaseGroup* testGroup, const TestCaseParams caseP
 			{
 				deUint32	firstIndex			= rnd.getInt(0, OFFSET_LIMIT);
 				deUint32	vertexOffset		= rnd.getInt(0, OFFSET_LIMIT);
-				testGroup->addChild(new IndexedCase(testCtx, name.c_str(), "vkCmdDrawIndexed testcase.",
+				testGroup->addChild(new IndexedCase(testCtx, name.c_str(),
 					DrawIndexedParams(topology, groupParams, vk::VK_INDEX_TYPE_UINT32, vertexCount, 1, firstIndex, vertexOffset, 0))
 				);
 				break;
@@ -1616,10 +1616,10 @@ void populateSubGroup (tcu::TestCaseGroup* testGroup, const TestCaseParams caseP
 				DrawIndirectParams	params	= DrawIndirectParams(topology, groupParams);
 
 				params.addCommand(vertexCount, 1, 0, 0);
-				testGroup->addChild(new IndirectCase(testCtx, (name + "_single_command").c_str(), "vkCmdDrawIndirect testcase.", params));
+				testGroup->addChild(new IndirectCase(testCtx, (name + "_single_command").c_str(), params));
 
 				params.addCommand(vertexCount, 1, firstVertex, 0);
-				testGroup->addChild(new IndirectCase(testCtx, (name + "_multi_command").c_str(), "vkCmdDrawIndirect testcase.", params));
+				testGroup->addChild(new IndirectCase(testCtx, (name + "_multi_command").c_str(), params));
 				break;
 			}
 			case DRAW_COMMAND_TYPE_DRAW_INDEXED_INDIRECT:
@@ -1629,10 +1629,10 @@ void populateSubGroup (tcu::TestCaseGroup* testGroup, const TestCaseParams caseP
 
 				DrawIndexedIndirectParams	params	= DrawIndexedIndirectParams(topology, groupParams, vk::VK_INDEX_TYPE_UINT32);
 				params.addCommand(vertexCount, 1, 0, 0, 0);
-				testGroup->addChild(new IndexedIndirectCase(testCtx, (name + "_single_command").c_str(), "vkCmdDrawIndexedIndirect testcase.", params));
+				testGroup->addChild(new IndexedIndirectCase(testCtx, (name + "_single_command").c_str(), params));
 
 				params.addCommand(vertexCount, 1, firstIndex, vertexOffset, 0);
-				testGroup->addChild(new IndexedIndirectCase(testCtx, (name + "_multi_command").c_str(), "vkCmdDrawIndexedIndirect testcase.", params));
+				testGroup->addChild(new IndexedIndirectCase(testCtx, (name + "_multi_command").c_str(), params));
 				break;
 			}
 			default:
@@ -1646,7 +1646,7 @@ void createDrawTests(tcu::TestCaseGroup* testGroup, const SharedGroupParams grou
 	for (deUint32 drawTypeIndex = 0; drawTypeIndex < DRAW_COMMAND_TYPE_DRAW_LAST; ++drawTypeIndex)
 	{
 		const DrawCommandType			command			(static_cast<DrawCommandType>(drawTypeIndex));
-		de::MovePtr<tcu::TestCaseGroup>	topologyGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), getDrawCommandTypeName(command), "Group for testing a specific draw command."));
+		de::MovePtr<tcu::TestCaseGroup>	topologyGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), getDrawCommandTypeName(command)));
 
 		for (deUint32 topologyIdx = 0; topologyIdx != vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST; ++topologyIdx)
 		{
@@ -1657,20 +1657,21 @@ void createDrawTests(tcu::TestCaseGroup* testGroup, const SharedGroupParams grou
 			if (groupParams->useSecondaryCmdBuffer && (topologyIdx % 2u))
 				continue;
 
-			addTestGroup(topologyGroup.get(), groupName, "Testcases with a specific topology.", populateSubGroup, TestCaseParams(command, topology, groupParams));
+			// Testcases with a specific topology.
+			addTestGroup(topologyGroup.get(), groupName, populateSubGroup, TestCaseParams(command, topology, groupParams));
 		}
 
 		testGroup->addChild(topologyGroup.release());
 	}
 
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testGroup->getTestContext(), "misc", ""));
+	de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testGroup->getTestContext(), "misc"));
 	if (groupParams->useDynamicRendering == false)
 	{
 		DrawIndexedIndirectParams params(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, groupParams, vk::VK_INDEX_TYPE_UINT32);
 		params.addCommand(4, 1, 0, 0, 0);
 		params.useMaintenance5 = true;
-		miscGroup->addChild(new IndexedIndirectCase(testGroup->getTestContext(), "maintenance5", "", params));
+		miscGroup->addChild(new IndexedIndirectCase(testGroup->getTestContext(), "maintenance5", params));
 	}
 	testGroup->addChild(miscGroup.release());
 #endif // CTS_USES_VULKANSC
@@ -1678,7 +1679,7 @@ void createDrawTests(tcu::TestCaseGroup* testGroup, const SharedGroupParams grou
 
 tcu::TestCaseGroup*	createBasicDrawTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "basic_draw", "Basic drawing tests", createDrawTests, groupParams);
+	return createTestGroup(testCtx, "basic_draw", createDrawTests, groupParams);
 }
 
 }	// DrawTests

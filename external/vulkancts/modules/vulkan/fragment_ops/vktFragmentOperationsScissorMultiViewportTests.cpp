@@ -453,10 +453,10 @@ void checkSupport (Context& context, const int)
 
 tcu::TestCaseGroup* createScissorMultiViewportTests	(tcu::TestContext& testCtx)
 {
-	MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "multi_viewport", ""));
+	MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "multi_viewport"));
 
 	for (int numViewports = 1; numViewports <= MIN_MAX_VIEWPORTS; ++numViewports)
-		addFunctionCaseWithPrograms(group.get(), "scissor_" + de::toString(numViewports), "", checkSupport, initPrograms, test, numViewports);
+		addFunctionCaseWithPrograms(group.get(), "scissor_" + de::toString(numViewports), checkSupport, initPrograms, test, numViewports);
 
 	return group.release();
 }

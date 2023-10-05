@@ -1610,7 +1610,6 @@ class ShaderMatrixCase : public ShaderRenderCase
 public:
 							ShaderMatrixCase			(tcu::TestContext&	testCtx,
 														 const std::string&	name,
-														 const std::string&	desc,
 														 const ShaderInput&	in0,
 														 const ShaderInput&	in1,
 														 const MatrixOp		op,
@@ -1631,14 +1630,12 @@ private:
 
 ShaderMatrixCase::ShaderMatrixCase (tcu::TestContext&	testCtx,
 									const std::string&	name,
-									const std::string&	desc,
 									const ShaderInput&	in0,
 									const ShaderInput&	in1,
 									MatrixOp			op,
 									bool				isVertexCase)
 	: ShaderRenderCase	(testCtx,
 						 name,
-						 desc,
 						 isVertexCase,
 						 new MatrixShaderEvaluator(getEvalFunc(in0, in1, op), in0.inputType, in1.inputType),
 						 DE_NULL /* uniform setup */,
@@ -1955,7 +1952,7 @@ private:
 };
 
 ShaderMatrixTests::ShaderMatrixTests (tcu::TestContext& testCtx)
-	: TestCaseGroup(testCtx, "matrix", "Matrix Tests")
+	: TestCaseGroup(testCtx, "matrix")
 {
 }
 
@@ -1968,48 +1965,69 @@ void ShaderMatrixTests::init (void)
 	static const struct
 	{
 		const char*		name;
-		const char*		desc;
 		const MatrixOp	op;
 		const bool		extendedInputTypeCases; // !< test with const and uniform types too
 		const bool		createInputTypeGroup;	// !< create group for input types
 	} ops[] =
 	{
-		{ "add",			"Matrix addition tests",						OP_ADD,				true,	true	},
-		{ "sub",			"Matrix subtraction tests",						OP_SUB,				true,	true	},
-		{ "mul",			"Matrix multiplication tests",					OP_MUL,				true,	true	},
-		{ "div",			"Matrix division tests",						OP_DIV,				true,	true	},
-		{ "matrixcompmult",	"Matrix component-wise multiplication tests",	OP_COMP_MUL,		false,	true	},
-		{ "outerproduct",	"Matrix outerProduct() tests",					OP_OUTER_PRODUCT,	false,	true	},
-		{ "transpose",		"Matrix transpose() tests",						OP_TRANSPOSE,		false,	true	},
-		{ "determinant",	"Matrix determinant() tests",					OP_DETERMINANT,		false,	true	},
-		{ "inverse",		"Matrix inverse() tests",						OP_INVERSE,			false,	true	},
-		{ "unary_addition",	"Matrix unary addition tests",					OP_UNARY_PLUS,		false,	false	},
-		{ "negation",		"Matrix negation tests",						OP_NEGATION,		false,	false	},
-		{ "pre_increment",	"Matrix prefix increment tests",				OP_PRE_INCREMENT,	false,	false	},
-		{ "pre_decrement",	"Matrix prefix decrement tests",				OP_PRE_DECREMENT,	false,	false	},
-		{ "post_increment",	"Matrix postfix increment tests",				OP_POST_INCREMENT,	false,	false	},
-		{ "post_decrement",	"Matrix postfix decrement tests",				OP_POST_DECREMENT,	false,	false	},
-		{ "add_assign",		"Matrix add into tests",						OP_ADD_INTO,		false,	false	},
-		{ "sub_assign",		"Matrix subtract from tests",					OP_SUBTRACT_FROM,	false,	false	},
-		{ "mul_assign",		"Matrix multiply into tests",					OP_MULTIPLY_INTO,	false,	false	},
-		{ "div_assign",		"Matrix divide into tests",						OP_DIVIDE_INTO,		false,	false	},
+		// Matrix addition tests
+		{ "add",OP_ADD,				true,	true	},
+		// Matrix subtraction tests
+		{ "sub",OP_SUB,				true,	true	},
+		// Matrix multiplication tests
+		{ "mul",OP_MUL,				true,	true	},
+		// Matrix division tests
+		{ "div",OP_DIV,				true,	true	},
+		// Matrix component-wise multiplication tests
+		{ "matrixcompmult",OP_COMP_MUL,		false,	true	},
+		// Matrix outerProduct() tests
+		{ "outerproduct",OP_OUTER_PRODUCT,	false,	true	},
+		// Matrix transpose() tests
+		{ "transpose",OP_TRANSPOSE,		false,	true	},
+		// Matrix determinant() tests
+		{ "determinant",OP_DETERMINANT,		false,	true	},
+		// Matrix inverse() tests
+		{ "inverse",OP_INVERSE,			false,	true	},
+		// Matrix unary addition tests
+		{ "unary_addition",OP_UNARY_PLUS,		false,	false	},
+		// Matrix negation tests
+		{ "negation",OP_NEGATION,		false,	false	},
+		// Matrix prefix increment tests
+		{ "pre_increment",OP_PRE_INCREMENT,	false,	false	},
+		// Matrix prefix decrement tests
+		{ "pre_decrement",OP_PRE_DECREMENT,	false,	false	},
+		// Matrix postfix increment tests
+		{ "post_increment",OP_POST_INCREMENT,	false,	false	},
+		// Matrix postfix decrement tests
+		{ "post_decrement",OP_POST_DECREMENT,	false,	false	},
+		// Matrix add into tests
+		{ "add_assign",OP_ADD_INTO,		false,	false	},
+		// Matrix subtract from tests
+		{ "sub_assign",OP_SUBTRACT_FROM,	false,	false	},
+		// Matrix multiply into tests
+		{ "mul_assign",OP_MULTIPLY_INTO,	false,	false	},
+		// Matrix divide into tests
+		{ "div_assign",OP_DIVIDE_INTO,		false,	false	},
 	};
 
 	struct InputTypeSpec
 	{
 		const char*		name;
-		const char*		desc;
 		const InputType	type;
 	};
 	static const InputTypeSpec extendedInputTypes[] =
 	{
-		{ "const",		"Constant matrix input",	INPUTTYPE_CONST		},
-		{ "uniform",	"Uniform matrix input",		INPUTTYPE_UNIFORM	},
-		{ "dynamic",	"Dynamic matrix input",		INPUTTYPE_DYNAMIC	}
+		// Constant matrix input
+		{ "const",INPUTTYPE_CONST		},
+		// Uniform matrix input
+		{ "uniform",INPUTTYPE_UNIFORM	},
+		// Dynamic matrix input
+		{ "dynamic",INPUTTYPE_DYNAMIC	}
 	};
 	static const InputTypeSpec reducedInputTypes[] =
 	{
-		{ "dynamic",	"Dynamic matrix input",		INPUTTYPE_DYNAMIC	}
+		// Dynamic matrix input
+		{ "dynamic",INPUTTYPE_DYNAMIC	}
 	};
 
 	static const DataType matrixTypes[] =
@@ -2036,7 +2054,7 @@ void ShaderMatrixTests::init (void)
 		const InputTypeSpec*	inTypeList		= (ops[opNdx].extendedInputTypeCases) ? (extendedInputTypes) : (reducedInputTypes);
 		const int				inTypeListSize	= (ops[opNdx].extendedInputTypeCases) ? (DE_LENGTH_OF_ARRAY(extendedInputTypes)) : (DE_LENGTH_OF_ARRAY(reducedInputTypes));
 		const MatrixOp			op				= ops[opNdx].op;
-		tcu::TestCaseGroup*		opGroup			= new tcu::TestCaseGroup(m_testCtx, ops[opNdx].name, ops[opNdx].desc);
+		tcu::TestCaseGroup*		opGroup			= new tcu::TestCaseGroup(m_testCtx, ops[opNdx].name);
 
 		addChild(opGroup);
 
@@ -2047,7 +2065,7 @@ void ShaderMatrixTests::init (void)
 
 			if (ops[opNdx].createInputTypeGroup)
 			{
-				inGroup = new tcu::TestCaseGroup(m_testCtx, inTypeList[inTypeNdx].name, inTypeList[inTypeNdx].desc);
+				inGroup = new tcu::TestCaseGroup(m_testCtx, inTypeList[inTypeNdx].name);
 				opGroup->addChild(inGroup);
 			}
 			else
@@ -2071,8 +2089,8 @@ void ShaderMatrixTests::init (void)
 					{
 						// Matrix-scalar \note For div cases we use uniform input.
 						ShaderInput scalarIn(op == OP_DIV ? INPUTTYPE_UNIFORM : INPUTTYPE_DYNAMIC, TYPE_FLOAT, precision);
-						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + "float_vertex").c_str(),		"Matrix-scalar case", matIn, scalarIn, op, true));
-						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + "float_fragment").c_str(),	"Matrix-scalar case", matIn, scalarIn, op, false));
+						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + "float_vertex").c_str(), matIn, scalarIn, op, true));
+						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + "float_fragment").c_str(), matIn, scalarIn, op, false));
 					}
 
 					if (isOperationMatrixVector(op))
@@ -2081,16 +2099,16 @@ void ShaderMatrixTests::init (void)
 						DataType	colVecType	= getDataTypeFloatVec(numCols);
 						ShaderInput colVecIn	(op == OP_DIV ? INPUTTYPE_UNIFORM : INPUTTYPE_DYNAMIC, colVecType, precision);
 
-						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + getDataTypeName(colVecType) + "_vertex").c_str(),		"Matrix-vector case", matIn, colVecIn, op, true));
-						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + getDataTypeName(colVecType) + "_fragment").c_str(),	"Matrix-vector case", matIn, colVecIn, op, false));
+						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + getDataTypeName(colVecType) + "_vertex").c_str(), matIn, colVecIn, op, true));
+						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + getDataTypeName(colVecType) + "_fragment").c_str(), matIn, colVecIn, op, false));
 
 						// Vector-matrix.
 						DataType	rowVecType	= getDataTypeFloatVec(numRows);
 						ShaderInput	rowVecIn	(op == OP_DIV ? INPUTTYPE_UNIFORM : INPUTTYPE_DYNAMIC, rowVecType, precision);
 						string		vecMatName	= string(precName) + "_" + getDataTypeName(rowVecType) + "_" + matTypeName;
 
-						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (vecMatName + "_vertex").c_str(),		"Vector-matrix case", rowVecIn, matIn, op, true));
-						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (vecMatName + "_fragment").c_str(),	"Vector-matrix case", rowVecIn, matIn, op, false));
+						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (vecMatName + "_vertex").c_str(), rowVecIn, matIn, op, true));
+						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (vecMatName + "_fragment").c_str(), rowVecIn, matIn, op, false));
 					}
 
 					if (isOperationArithmeticMatrixMatrix(op))
@@ -2099,16 +2117,16 @@ void ShaderMatrixTests::init (void)
 						for (int otherCols = 2; otherCols <= 4; otherCols++)
 						{
 							ShaderInput otherMatIn(inputType == INPUTTYPE_DYNAMIC ? INPUTTYPE_UNIFORM : inputType, getDataTypeMatrix(otherCols, numCols /* rows */), precision);
-							inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + getDataTypeName(otherMatIn.dataType) + "_vertex").c_str(),	"Matrix-matrix case", matIn, otherMatIn, op, true));
-							inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + getDataTypeName(otherMatIn.dataType) + "_fragment").c_str(),	"Matrix-matrix case", matIn, otherMatIn, op, false));
+							inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + getDataTypeName(otherMatIn.dataType) + "_vertex").c_str(), matIn, otherMatIn, op, true));
+							inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + getDataTypeName(otherMatIn.dataType) + "_fragment").c_str(), matIn, otherMatIn, op, false));
 						}
 					}
 					else if (isOperationComponentwiseMatrixMatrix(op))
 					{
 						// Component-wise.
 						ShaderInput otherMatIn(inputType == INPUTTYPE_DYNAMIC ? INPUTTYPE_UNIFORM : inputType, matType, precision);
-						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + matTypeName + "_vertex").c_str(),		"Matrix-matrix case", matIn, otherMatIn, op, true));
-						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + matTypeName + "_fragment").c_str(),	"Matrix-matrix case", matIn, otherMatIn, op, false));
+						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + matTypeName + "_vertex").c_str(), matIn, otherMatIn, op, true));
+						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + matTypeName + "_fragment").c_str(), matIn, otherMatIn, op, false));
 					}
 
 					if (isOperationVectorVector(op))
@@ -2116,24 +2134,24 @@ void ShaderMatrixTests::init (void)
 						ShaderInput vec1In(inputType,																getDataTypeFloatVec(numRows), precision);
 						ShaderInput vec2In((inputType == INPUTTYPE_DYNAMIC) ? (INPUTTYPE_UNIFORM) : (inputType),	getDataTypeFloatVec(numCols), precision);
 
-						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + "float_vertex").c_str(),		"Vector-vector case", vec1In, vec2In, op, true));
-						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + "float_fragment").c_str(),	"Vector-vector case", vec1In, vec2In, op, false));
+						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + "float_vertex").c_str(), vec1In, vec2In, op, true));
+						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + "float_fragment").c_str(), vec1In, vec2In, op, false));
 					}
 
 					if ((isOperationUnaryAnyMatrix(op)) ||
 						(isOperationUnarySymmetricMatrix(op) && numCols == numRows))
 					{
 						ShaderInput voidInput(INPUTTYPE_LAST, TYPE_LAST, PRECISION_LAST);
-						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + "float_vertex").c_str(),		"Matrix case", matIn, voidInput, op, true));
-						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + "float_fragment").c_str(),	"Matrix case", matIn, voidInput, op, false));
+						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + "float_vertex").c_str(), matIn, voidInput, op, true));
+						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + "float_fragment").c_str(), matIn, voidInput, op, false));
 					}
 
 					if ((isOperationAssignmentAnyMatrix(op)) ||
 						(isOperationAssignmentSymmetricMatrix(op) && numCols == numRows))
 					{
 						ShaderInput otherMatIn(inputType == INPUTTYPE_DYNAMIC ? INPUTTYPE_UNIFORM : inputType, matType, precision);
-						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + "float_vertex").c_str(),		"Matrix assignment case", matIn, otherMatIn, op, true));
-						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + "float_fragment").c_str(),	"Matrix assignment case", matIn, otherMatIn, op, false));
+						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + "float_vertex").c_str(), matIn, otherMatIn, op, true));
+						inGroup->addChild(new ShaderMatrixCase(m_testCtx, (baseName + "float_fragment").c_str(), matIn, otherMatIn, op, false));
 					}
 				}
 			}

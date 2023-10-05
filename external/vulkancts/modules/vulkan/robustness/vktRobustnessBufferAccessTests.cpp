@@ -79,7 +79,6 @@ public:
 
 								RobustBufferAccessTest		(tcu::TestContext&		testContext,
 															 const std::string&		name,
-															 const std::string&		description,
 															 VkShaderStageFlags		shaderStage,
 															 ShaderType				shaderType,
 															 VkFormat				bufferFormat,
@@ -127,7 +126,6 @@ class RobustBufferReadTest : public RobustBufferAccessTest
 public:
 								RobustBufferReadTest		(tcu::TestContext&		testContext,
 															 const std::string&		name,
-															 const std::string&		description,
 															 VkShaderStageFlags		shaderStage,
 															 ShaderType				shaderType,
 															 VkFormat				bufferFormat,
@@ -152,7 +150,6 @@ class RobustBufferWriteTest : public RobustBufferAccessTest
 public:
 								RobustBufferWriteTest		(tcu::TestContext&		testContext,
 															 const std::string&		name,
-															 const std::string&		description,
 															 VkShaderStageFlags		shaderStage,
 															 ShaderType				shaderType,
 															 VkFormat				bufferFormat,
@@ -300,12 +297,11 @@ const deUint32 RobustBufferAccessTest::s_numberOfVectorBytesAccessed = (deUint32
 
 RobustBufferAccessTest::RobustBufferAccessTest (tcu::TestContext&		testContext,
 												const std::string&		name,
-												const std::string&		description,
 												VkShaderStageFlags		shaderStage,
 												ShaderType				shaderType,
 												VkFormat				bufferFormat,
 												bool					testPipelineRobustness)
-	: vkt::TestCase		(testContext, name, description)
+	: vkt::TestCase		(testContext, name)
 	, m_shaderStage		(shaderStage)
 	, m_shaderType		(shaderType)
 	, m_bufferFormat	(bufferFormat)
@@ -717,7 +713,6 @@ void RobustBufferAccessTest::initBufferAccessPrograms (SourceCollections&	progra
 
 RobustBufferReadTest::RobustBufferReadTest (tcu::TestContext&	testContext,
 											const std::string&	name,
-											const std::string&	description,
 											VkShaderStageFlags	shaderStage,
 											ShaderType			shaderType,
 											VkFormat			bufferFormat,
@@ -725,7 +720,7 @@ RobustBufferReadTest::RobustBufferReadTest (tcu::TestContext&	testContext,
 											VkDeviceSize		readAccessRange,
 											bool				readFromStorage,
 											bool				accessOutOfBackingMemory)
-	: RobustBufferAccessTest		(testContext, name, description, shaderStage, shaderType, bufferFormat, testPipelineRobustness)
+	: RobustBufferAccessTest		(testContext, name, shaderStage, shaderType, bufferFormat, testPipelineRobustness)
 	, m_readFromStorage				(readFromStorage)
 	, m_readAccessRange				(readAccessRange)
 	, m_accessOutOfBackingMemory	(accessOutOfBackingMemory)
@@ -786,7 +781,6 @@ TestInstance* RobustBufferReadTest::createInstance (Context& context) const
 
 RobustBufferWriteTest::RobustBufferWriteTest (tcu::TestContext&		testContext,
 											  const std::string&	name,
-											  const std::string&	description,
 											  VkShaderStageFlags	shaderStage,
 											  ShaderType			shaderType,
 											  VkFormat				bufferFormat,
@@ -794,7 +788,7 @@ RobustBufferWriteTest::RobustBufferWriteTest (tcu::TestContext&		testContext,
 											  VkDeviceSize			writeAccessRange,
 											  bool					accessOutOfBackingMemory)
 
-	: RobustBufferAccessTest		(testContext, name, description, shaderStage, shaderType, bufferFormat, testPipelineRobustness)
+	: RobustBufferAccessTest		(testContext, name, shaderStage, shaderType, bufferFormat, testPipelineRobustness)
 	, m_writeAccessRange			(writeAccessRange)
 	, m_accessOutOfBackingMemory	(accessOutOfBackingMemory)
 {
@@ -1689,7 +1683,7 @@ static void addBufferAccessTests (tcu::TestContext& testCtx, tcu::TestCaseGroup*
 	for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(bufferAccessStages); stageNdx++)
 	{
 		const VkShaderStageFlagBits			stage			= bufferAccessStages[stageNdx];
-		de::MovePtr<tcu::TestCaseGroup>		stageTests		(new tcu::TestCaseGroup(testCtx, getShaderStageName(stage), ""));
+		de::MovePtr<tcu::TestCaseGroup>		stageTests		(new tcu::TestCaseGroup(testCtx, getShaderStageName(stage)));
 
 		for (int shaderTypeNdx = 0; shaderTypeNdx < SHADER_TYPE_COUNT; shaderTypeNdx++)
 		{
@@ -1698,7 +1692,7 @@ static void addBufferAccessTests (tcu::TestContext& testCtx, tcu::TestCaseGroup*
 			const BufferRangeConfig*		ranges;
 			size_t							rangesLength;
 			deUint32						rangeMultiplier;
-			de::MovePtr<tcu::TestCaseGroup> shaderTypeTests	(new tcu::TestCaseGroup(testCtx, shaderTypeNames[shaderTypeNdx], ""));
+			de::MovePtr<tcu::TestCaseGroup> shaderTypeTests	(new tcu::TestCaseGroup(testCtx, shaderTypeNames[shaderTypeNdx]));
 
 			if ((ShaderType)shaderTypeNdx == SHADER_TYPE_TEXEL_COPY)
 			{
@@ -1737,11 +1731,11 @@ static void addBufferAccessTests (tcu::TestContext& testCtx, tcu::TestCaseGroup*
 				}
 
 				const std::string				formatName		= getFormatName(bufferFormat);
-				de::MovePtr<tcu::TestCaseGroup>	formatTests		(new tcu::TestCaseGroup(testCtx, de::toLower(formatName.substr(10)).c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup>	formatTests		(new tcu::TestCaseGroup(testCtx, de::toLower(formatName.substr(10)).c_str()));
 
-				de::MovePtr<tcu::TestCaseGroup> uboReadTests		(new tcu::TestCaseGroup(testCtx, "oob_uniform_read", ""));
-				de::MovePtr<tcu::TestCaseGroup> ssboReadTests		(new tcu::TestCaseGroup(testCtx, "oob_storage_read", ""));
-				de::MovePtr<tcu::TestCaseGroup> ssboWriteTests		(new tcu::TestCaseGroup(testCtx, "oob_storage_write", ""));
+				de::MovePtr<tcu::TestCaseGroup> uboReadTests		(new tcu::TestCaseGroup(testCtx, "oob_uniform_read"));
+				de::MovePtr<tcu::TestCaseGroup> ssboReadTests		(new tcu::TestCaseGroup(testCtx, "oob_storage_read"));
+				de::MovePtr<tcu::TestCaseGroup> ssboWriteTests		(new tcu::TestCaseGroup(testCtx, "oob_storage_write"));
 
 				for (size_t rangeNdx = 0; rangeNdx < rangesLength; rangeNdx++)
 				{
@@ -1752,13 +1746,13 @@ static void addBufferAccessTests (tcu::TestContext& testCtx, tcu::TestCaseGroup*
 						continue;
 					}
 
-					uboReadTests->addChild(new RobustBufferReadTest(testCtx, rangeConfig.name, "", stage, (ShaderType)shaderTypeNdx, bufferFormat, testPipelineRobustness, rangeInBytes, false, false));
+					uboReadTests->addChild(new RobustBufferReadTest(testCtx, rangeConfig.name,  stage, (ShaderType)shaderTypeNdx, bufferFormat, testPipelineRobustness, rangeInBytes, false, false));
 
 					// Avoid too much duplication by excluding certain test cases
 					if (!testPipelineRobustness)
-						ssboReadTests->addChild(new RobustBufferReadTest(testCtx, rangeConfig.name, "", stage, (ShaderType)shaderTypeNdx, bufferFormat, testPipelineRobustness, rangeInBytes, true, false));
+						ssboReadTests->addChild(new RobustBufferReadTest(testCtx, rangeConfig.name,  stage, (ShaderType)shaderTypeNdx, bufferFormat, testPipelineRobustness, rangeInBytes, true, false));
 
-					ssboWriteTests->addChild(new RobustBufferWriteTest(testCtx, rangeConfig.name, "", stage, (ShaderType)shaderTypeNdx, bufferFormat, testPipelineRobustness, rangeInBytes, false));
+					ssboWriteTests->addChild(new RobustBufferWriteTest(testCtx, rangeConfig.name,  stage, (ShaderType)shaderTypeNdx, bufferFormat, testPipelineRobustness, rangeInBytes, false));
 
 				}
 
@@ -1771,19 +1765,19 @@ static void addBufferAccessTests (tcu::TestContext& testCtx, tcu::TestCaseGroup*
 
 			// Read/write out of the memory that backs the buffer
 			{
-				de::MovePtr<tcu::TestCaseGroup>	outOfAllocTests		(new tcu::TestCaseGroup(testCtx, "out_of_alloc", ""));
+				de::MovePtr<tcu::TestCaseGroup>	outOfAllocTests		(new tcu::TestCaseGroup(testCtx, "out_of_alloc"));
 
 				const VkFormat format = (((ShaderType)shaderTypeNdx == SHADER_TYPE_TEXEL_COPY ) ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R32_SFLOAT);
 
 				const VkDeviceSize writeAccessRange = ((ShaderType)shaderTypeNdx == SHADER_TYPE_VECTOR_MEMBER_COPY) ? 8 : 16;
 
-				outOfAllocTests->addChild(new RobustBufferReadTest(testCtx, "oob_uniform_read", "", stage, (ShaderType)shaderTypeNdx, format, testPipelineRobustness, writeAccessRange, false, true));
+				outOfAllocTests->addChild(new RobustBufferReadTest(testCtx, "oob_uniform_read", stage, (ShaderType)shaderTypeNdx, format, testPipelineRobustness, writeAccessRange, false, true));
 
 				// Avoid too much duplication by excluding certain test cases
 				if (!testPipelineRobustness)
-					outOfAllocTests->addChild(new RobustBufferReadTest(testCtx, "oob_storage_read", "", stage, (ShaderType)shaderTypeNdx, format, testPipelineRobustness, writeAccessRange, true, true));
+					outOfAllocTests->addChild(new RobustBufferReadTest(testCtx, "oob_storage_read", stage, (ShaderType)shaderTypeNdx, format, testPipelineRobustness, writeAccessRange, true, true));
 
-				outOfAllocTests->addChild(new RobustBufferWriteTest(testCtx, "oob_storage_write", "", stage, (ShaderType)shaderTypeNdx, format, testPipelineRobustness, writeAccessRange, true));
+				outOfAllocTests->addChild(new RobustBufferWriteTest(testCtx, "oob_storage_write", stage, (ShaderType)shaderTypeNdx, format, testPipelineRobustness, writeAccessRange, true));
 
 				shaderTypeTests->addChild(outOfAllocTests.release());
 			}
@@ -1796,7 +1790,7 @@ static void addBufferAccessTests (tcu::TestContext& testCtx, tcu::TestCaseGroup*
 
 tcu::TestCaseGroup* createBufferAccessTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> bufferAccessTests	(new tcu::TestCaseGroup(testCtx, "buffer_access", ""));
+	de::MovePtr<tcu::TestCaseGroup> bufferAccessTests	(new tcu::TestCaseGroup(testCtx, "buffer_access"));
 
 	addBufferAccessTests(testCtx, bufferAccessTests.get(), false);
 
@@ -1806,7 +1800,7 @@ tcu::TestCaseGroup* createBufferAccessTests (tcu::TestContext& testCtx)
 #ifndef CTS_USES_VULKANSC
 tcu::TestCaseGroup* createPipelineRobustnessBufferAccessTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> bufferAccessTests	(new tcu::TestCaseGroup(testCtx, "pipeline_robustness_buffer_access", ""));
+	de::MovePtr<tcu::TestCaseGroup> bufferAccessTests	(new tcu::TestCaseGroup(testCtx, "pipeline_robustness_buffer_access"));
 	addBufferAccessTests(testCtx, bufferAccessTests.get(), true);
 
 	return bufferAccessTests.release();

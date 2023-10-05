@@ -99,7 +99,7 @@ class APIVersionTestCase : public TestCase
 {
 public:
 							APIVersionTestCase	(tcu::TestContext&		testCtx)
-								: TestCase	(testCtx, "version", "Prints out API info.")
+								: TestCase	(testCtx, "version")
 	{}
 
 	virtual					~APIVersionTestCase	(void)
@@ -533,7 +533,7 @@ class APIEntryPointsTestCase : public TestCase
 {
 public:
 							APIEntryPointsTestCase			(tcu::TestContext&		testCtx)
-								: TestCase	(testCtx, "entry_points", "Prints out API info.")
+								: TestCase	(testCtx, "entry_points")
 	{}
 
 	virtual					~APIEntryPointsTestCase			(void)
@@ -672,8 +672,9 @@ public:
 class APIUnavailableEntryPointsTestCase : public TestCase
 {
 public:
+	// Check if vkGetDeviceProcAddr returns NULL for functions beyond app version.
 	APIUnavailableEntryPointsTestCase(tcu::TestContext& testCtx)
-		: TestCase(testCtx, "unavailable_entry_points", "Check if vkGetDeviceProcAddr returns NULL for functions beyond app version.")
+		: TestCase(testCtx, "unavailable_entry_points")
 	{}
 
 	virtual void			checkSupport(Context& context) const
@@ -691,7 +692,7 @@ public:
 
 tcu::TestCaseGroup*			createVersionSanityCheckTests	(tcu::TestContext & testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	versionTests	(new tcu::TestCaseGroup(testCtx, "version_check", "API Version Tests"));
+	de::MovePtr<tcu::TestCaseGroup>	versionTests	(new tcu::TestCaseGroup(testCtx, "version_check"));
 	versionTests->addChild(new APIVersionTestCase(testCtx));
 	versionTests->addChild(new APIEntryPointsTestCase(testCtx));
 

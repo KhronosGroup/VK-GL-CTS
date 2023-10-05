@@ -922,7 +922,7 @@ public:
 };
 
 SwapchainCounterTestCase::SwapchainCounterTestCase(tcu::TestContext& context, const char* name)
-	: vkt::TestCase(context, name, name)
+	: vkt::TestCase(context, name)
 {
 }
 
@@ -1109,9 +1109,9 @@ tcu::TestStatus testDeviceEvent(Context& context)
 void createDisplayControlTests (tcu::TestCaseGroup* testGroup)
 {
 	testGroup->addChild(new SwapchainCounterTestCase(testGroup->getTestContext(), "swapchain_counter"));
-	addFunctionCase(testGroup, "display_power_control",		"Test display power control",	testDisplayPowerControl);
-	addFunctionCase(testGroup, "register_display_event",	"Test register display event",	testDisplayEvent);
-	addFunctionCase(testGroup, "register_device_event",		"Test register device event",	testDeviceEvent);
+	addFunctionCase(testGroup, "display_power_control",	testDisplayPowerControl);
+	addFunctionCase(testGroup, "register_display_event",	testDisplayEvent);
+	addFunctionCase(testGroup, "register_device_event",	testDeviceEvent);
 }
 
 } // wsi

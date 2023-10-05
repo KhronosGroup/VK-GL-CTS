@@ -172,10 +172,9 @@ class MaxWorkgroupMemoryTest : public vkt::TestCase
 public:
 	MaxWorkgroupMemoryTest(tcu::TestContext& testCtx,
 							const std::string& name,
-							const std::string& description,
 							deUint32 numWorkgroups,
 							const vk::ComputePipelineConstructionType computePipelineConstructionType)
-		: TestCase							(testCtx, name, description),
+		: TestCase							(testCtx, name),
 		m_numWorkgroups						(numWorkgroups)
 		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
@@ -261,7 +260,7 @@ void AddMaxWorkgroupMemoryTests(tcu::TestCaseGroup* group, vk::ComputePipelineCo
 	for (deUint32 i = 0; i < workgroups.size(); ++i) {
 		deUint32 numWG = workgroups[i];
 		group->addChild(new MaxWorkgroupMemoryTest(group->getTestContext(),
-			de::toString(numWG), de::toString(numWG) + " workgroups", numWG, computePipelineConstructionType));
+			de::toString(numWG), numWG, computePipelineConstructionType));
 	}
 }
 
@@ -295,10 +294,9 @@ class TypeTest : public vkt::TestCase
 public:
 	TypeTest(tcu::TestContext& testCtx,
 			const std::string& name,
-			const std::string& description,
 			const TypeCaseDef& caseDef,
 			const vk::ComputePipelineConstructionType computePipelineConstructionType)
-		: TestCase							(testCtx, name, description)
+		: TestCase							(testCtx, name)
 		, m_caseDef							(caseDef)
 		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
@@ -542,7 +540,7 @@ void AddTypeTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType
 	{
 		cases[i].numVariables = (deRandom_getUint32(&rnd) % 16) + 1;
 		group->addChild(
-			new TypeTest(group->getTestContext(), cases[i].typeName.c_str(), cases[i].typeName.c_str(), cases[i], computePipelineConstructionType));
+			new TypeTest(group->getTestContext(), cases[i].typeName.c_str(), cases[i], computePipelineConstructionType));
 	}
 }
 
@@ -583,10 +581,9 @@ class CompositeTest : public vkt::TestCase
 public:
 	CompositeTest(tcu::TestContext& testCtx,
 				  const std::string& name,
-				  const std::string& description,
 				  const CompositeCaseDef& caseDef,
 				  const vk::ComputePipelineConstructionType computePipelineConstructionType)
-		: TestCase							(testCtx, name, description)
+		: TestCase							(testCtx, name)
 		, m_caseDef							(caseDef)
 		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
@@ -927,7 +924,7 @@ void AddCompositeTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructio
 	for (deUint32 i = 0; i < cases.size(); ++i)
 	{
 		group->addChild(
-			new CompositeTest(group->getTestContext(), de::toString(i), de::toString(i), cases[i], computePipelineConstructionType));
+			new CompositeTest(group->getTestContext(), de::toString(i), cases[i], computePipelineConstructionType));
 	}
 }
 
@@ -957,10 +954,9 @@ class MaxWorkgroupsTest : public vkt::TestCase
 public:
 	MaxWorkgroupsTest(tcu::TestContext& testCtx,
 					  const std::string& name,
-					  const std::string& description,
 					  Dim dim,
 					  const vk::ComputePipelineConstructionType computePipelineConstructionType)
-		: TestCase							(testCtx, name, description)
+		: TestCase							(testCtx, name)
 		, m_dim								(dim)
 		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
@@ -1049,9 +1045,9 @@ tcu::TestStatus MaxWorkgroupsInstance::iterate (void)
 
 void AddMaxWorkgroupsTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
-	group->addChild(new MaxWorkgroupsTest(group->getTestContext(), "x", "max x dim workgroups", DimX, computePipelineConstructionType));
-	group->addChild(new MaxWorkgroupsTest(group->getTestContext(), "y", "max y dim workgroups", DimY, computePipelineConstructionType));
-	group->addChild(new MaxWorkgroupsTest(group->getTestContext(), "z", "max z dim workgroups", DimZ, computePipelineConstructionType));
+	group->addChild(new MaxWorkgroupsTest(group->getTestContext(), "x", DimX, computePipelineConstructionType));
+	group->addChild(new MaxWorkgroupsTest(group->getTestContext(), "y", DimY, computePipelineConstructionType));
+	group->addChild(new MaxWorkgroupsTest(group->getTestContext(), "z", DimZ, computePipelineConstructionType));
 }
 
 class SpecializeWorkgroupInstance : public vkt::TestInstance
@@ -1078,10 +1074,9 @@ class SpecializeWorkgroupTest : public vkt::TestCase
 public:
 	SpecializeWorkgroupTest(tcu::TestContext& testCtx,
 					  const std::string& name,
-					  const std::string& description,
 					  deUint32 x, deUint32 y, deUint32 z,
 					  const vk::ComputePipelineConstructionType computePipelineConstructionType)
-		: TestCase							(testCtx, name, description)
+		: TestCase							(testCtx, name)
 		, m_x								(x)
 		, m_y								(y)
 		, m_z								(z)
@@ -1150,7 +1145,6 @@ void AddSpecializeWorkgroupTests(tcu::TestCaseGroup* group, vk::ComputePipelineC
 			{
 				group->addChild(new SpecializeWorkgroupTest(group->getTestContext(),
 					de::toString(x) + "_" + de::toString(y) + "_" + de::toString(z),
-					de::toString(x) + "_" + de::toString(y) + "_" + de::toString(z),
 					x, y, z,
 					computePipelineConstructionType));
 			}
@@ -1180,10 +1174,9 @@ class RepeatedPipelineTest : public vkt::TestCase
 public:
 	RepeatedPipelineTest(tcu::TestContext& testCtx,
 						const std::string& name,
-						const std::string& description,
 						deUint32 xSize, deUint32 repeat, deUint32 odd,
 						const vk::ComputePipelineConstructionType computePipelineConstructionType)
-		: TestCase							(testCtx, name, description)
+		: TestCase							(testCtx, name)
 		, m_xSize							(xSize)
 		, m_repeat							(repeat)
 		, m_odd								(odd)
@@ -1403,7 +1396,6 @@ void AddRepeatedPipelineTests(tcu::TestCaseGroup* group, vk::ComputePipelineCons
 				deUint32 repeat = repeats[k];
 				group->addChild(new RepeatedPipelineTest(group->getTestContext(),
 					std::string("x_") + de::toString(x) + (odd == 1 ? "_odd" : "_even") + "_repeat_" + de::toString(repeat),
-					std::string("x_") + de::toString(x) + (odd == 1 ? "_odd" : "_even") + "_repeat_" + de::toString(repeat),
 					x, odd, repeat, computePipelineConstructionType));
 			}
 		}
@@ -1440,35 +1432,36 @@ void AddSharedMemoryTests (tcu::TestCaseGroup* group, vk::ComputePipelineConstru
 
 tcu::TestCaseGroup* createZeroInitializeWorkgroupMemoryTests (tcu::TestContext& testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> tests(new tcu::TestCaseGroup(testCtx, "zero_initialize_workgroup_memory", "VK_KHR_zero_intialize_workgroup_memory tests"));
+	de::MovePtr<tcu::TestCaseGroup> tests(new tcu::TestCaseGroup(testCtx, "zero_initialize_workgroup_memory"));
 
 	tcu::TestCaseGroup* maxWorkgroupMemoryGroup =
-		new tcu::TestCaseGroup(testCtx, "max_workgroup_memory", "Read initialization of max workgroup memory");
+		// Read initialization of max workgroup memory
+		new tcu::TestCaseGroup(testCtx, "max_workgroup_memory");
 	AddMaxWorkgroupMemoryTests(maxWorkgroupMemoryGroup, computePipelineConstructionType);
 	tests->addChild(maxWorkgroupMemoryGroup);
 
-	tcu::TestCaseGroup* typeGroup = new tcu::TestCaseGroup(testCtx, "types", "basic type tests");
+	tcu::TestCaseGroup* typeGroup = new tcu::TestCaseGroup(testCtx, "types");
 	AddTypeTests(typeGroup, computePipelineConstructionType);
 	tests->addChild(typeGroup);
 
-	tcu::TestCaseGroup* compositeGroup = new tcu::TestCaseGroup(testCtx, "composites", "composite type tests");
+	tcu::TestCaseGroup* compositeGroup = new tcu::TestCaseGroup(testCtx, "composites");
 	AddCompositeTests(compositeGroup, computePipelineConstructionType);
 	tests->addChild(compositeGroup);
 
-	tcu::TestCaseGroup* maxWorkgroupsGroup = new tcu::TestCaseGroup(testCtx, "max_workgroups", "max workgroups");
+	tcu::TestCaseGroup* maxWorkgroupsGroup = new tcu::TestCaseGroup(testCtx, "max_workgroups");
 	AddMaxWorkgroupsTests(maxWorkgroupsGroup, computePipelineConstructionType);
 	tests->addChild(maxWorkgroupsGroup);
 
-	tcu::TestCaseGroup* specializeWorkgroupGroup = new tcu::TestCaseGroup(testCtx, "specialize_workgroup", "specialize workgroup size");
+	tcu::TestCaseGroup* specializeWorkgroupGroup = new tcu::TestCaseGroup(testCtx, "specialize_workgroup");
 	AddSpecializeWorkgroupTests(specializeWorkgroupGroup, computePipelineConstructionType);
 	tests->addChild(specializeWorkgroupGroup);
 
-	tcu::TestCaseGroup* repeatPipelineGroup = new tcu::TestCaseGroup(testCtx, "repeat_pipeline", "repeated pipeline run");
+	tcu::TestCaseGroup* repeatPipelineGroup = new tcu::TestCaseGroup(testCtx, "repeat_pipeline");
 	AddRepeatedPipelineTests(repeatPipelineGroup, computePipelineConstructionType);
 	tests->addChild(repeatPipelineGroup);
 
 #ifndef CTS_USES_VULKANSC
-	tcu::TestCaseGroup* subgroupInvocationGroup = new tcu::TestCaseGroup(testCtx, "shared_memory_blocks", "shared memory tests");
+	tcu::TestCaseGroup* subgroupInvocationGroup = new tcu::TestCaseGroup(testCtx, "shared_memory_blocks");
 	AddSharedMemoryTests(subgroupInvocationGroup, computePipelineConstructionType);
 	tests->addChild(subgroupInvocationGroup);
 #endif // CTS_USES_VULKANSC

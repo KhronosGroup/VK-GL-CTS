@@ -1642,7 +1642,7 @@ void addCases (const MovePtr<tcu::TestCaseGroup>& group, const CaseDescription<O
 {
 	for (const NamedParameters<Object>* cur = cases.paramsBegin; cur != cases.paramsEnd; cur++)
 	{
-		addFunctionCase(group.get(), cur->name, "", checkSupport<Object>, cases.function, cur->parameters);
+		addFunctionCase(group.get(), cur->name, checkSupport<Object>, cases.function, cur->parameters);
 	}
 }
 
@@ -1651,13 +1651,13 @@ void addCasesWithProgs (const MovePtr<tcu::TestCaseGroup>& group, const CaseDesc
 {
 	for (const NamedParameters<Object>* cur = cases.paramsBegin; cur != cases.paramsEnd; cur++)
 	{
-		addFunctionCaseWithPrograms(group.get(), cur->name, "", checkSupport<Object>, Object::initPrograms, cases.function, cur->parameters);
+		addFunctionCaseWithPrograms(group.get(), cur->name, checkSupport<Object>, Object::initPrograms, cases.function, cur->parameters);
 	}
 }
 
-tcu::TestCaseGroup* createObjectTestsGroup (tcu::TestContext& testCtx, const char* name, const char* desc, const CaseDescriptions& cases)
+tcu::TestCaseGroup* createObjectTestsGroup (tcu::TestContext& testCtx, const char* name, const CaseDescriptions& cases)
 {
-	MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name, desc));
+	MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name));
 
 	addCases			(group, cases.device);
 	addCases			(group, cases.deviceMemory);
@@ -1875,11 +1875,11 @@ tcu::TestStatus vkDeviceMemoryAllocateAndFreeTest (Context& context)
 	return tcu::TestStatus::pass("Ok");
 }
 
-tcu::TestCaseGroup* createVkDeviceMemoryTestsGroup (tcu::TestContext& testCtx, const char* name, const char* desc)
+tcu::TestCaseGroup* createVkDeviceMemoryTestsGroup (tcu::TestContext& testCtx, const char* name)
 {
-	MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name, desc));
+	MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name));
 
-	addFunctionCase(group.get(), "allocate_and_free",	"", checkSupport, vkDeviceMemoryAllocateAndFreeTest);
+	addFunctionCase(group.get(), "allocate_and_free", checkSupport, vkDeviceMemoryAllocateAndFreeTest);
 
 	return group.release();
 }
@@ -2205,9 +2205,9 @@ tcu::TestStatus testImportAndUnimportExternalMemory (Context& context, VkExterna
 	return tcu::TestStatus::pass("Pass");
 }
 
-tcu::TestCaseGroup* createExternalMemoryTestsGroup (tcu::TestContext& testCtx, const char* name, const char* desc)
+tcu::TestCaseGroup* createExternalMemoryTestsGroup (tcu::TestContext& testCtx, const char* name)
 {
-	MovePtr<tcu::TestCaseGroup>	group (new tcu::TestCaseGroup(testCtx, name, desc));
+	MovePtr<tcu::TestCaseGroup>	group (new tcu::TestCaseGroup(testCtx, name));
 
 	const std::vector<VkExternalMemoryHandleTypeFlagBits>	externalMemoryTypes	=
 	{
@@ -2222,7 +2222,7 @@ tcu::TestCaseGroup* createExternalMemoryTestsGroup (tcu::TestContext& testCtx, c
 	{
 		const std::string	testName	= std::string("import_and_unimport_") + std::string(externalMemoryTypeToName(externalMemoryType));
 
-		addFunctionCase(group.get(), testName.c_str(), "", checkSupport, testImportAndUnimportExternalMemory, externalMemoryType);
+		addFunctionCase(group.get(), testName.c_str(), checkSupport, testImportAndUnimportExternalMemory, externalMemoryType);
 	}
 
 	return group.release();
@@ -2232,7 +2232,7 @@ tcu::TestCaseGroup* createExternalMemoryTestsGroup (tcu::TestContext& testCtx, c
 
 tcu::TestCaseGroup* createDeviceMemoryReportTests (tcu::TestContext& testCtx)
 {
-	MovePtr<tcu::TestCaseGroup>	deviceMemoryReportTests (new tcu::TestCaseGroup(testCtx, "device_memory_report", "Device Memory Report tests"));
+	MovePtr<tcu::TestCaseGroup>	deviceMemoryReportTests (new tcu::TestCaseGroup(testCtx, "device_memory_report"));
 
 	const Image::Parameters		img1D			(0u,
 												 VK_IMAGE_TYPE_1D,
@@ -2448,9 +2448,12 @@ tcu::TestCaseGroup* createDeviceMemoryReportTests (tcu::TestContext& testCtx)
 		CASE_DESC(createDestroyObjectTest	<CommandPool>,			s_commandPoolCases),
 		CASE_DESC(createDestroyObjectTest	<CommandBuffer>,		s_commandBufferCases),
 	};
-	deviceMemoryReportTests->addChild(createObjectTestsGroup(testCtx, "create_and_destroy_object", "Check emitted callbacks are properly paired", s_createDestroyObjectGroup));
-	deviceMemoryReportTests->addChild(createVkDeviceMemoryTestsGroup(testCtx, "vk_device_memory", "Check callbacks are emitted properly for VkDeviceMemory"));
-	deviceMemoryReportTests->addChild(createExternalMemoryTestsGroup(testCtx, "external_memory", "Check callbacks are emitted properly for external memory"));
+	// Check emitted callbacks are properly paired
+	deviceMemoryReportTests->addChild(createObjectTestsGroup(testCtx, "create_and_destroy_object", s_createDestroyObjectGroup));
+	// Check callbacks are emitted properly for VkDeviceMemory
+	deviceMemoryReportTests->addChild(createVkDeviceMemoryTestsGroup(testCtx, "vk_device_memory"));
+	// Check callbacks are emitted properly for external memory
+	deviceMemoryReportTests->addChild(createExternalMemoryTestsGroup(testCtx, "external_memory"));
 
 	return deviceMemoryReportTests.release();
 }

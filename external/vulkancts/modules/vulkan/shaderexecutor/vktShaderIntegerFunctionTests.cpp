@@ -220,7 +220,7 @@ static deInt32 toPrecision (deInt32 value, int numIntegerBits)
 template<class TestClass>
 static void addFunctionCases (tcu::TestCaseGroup* parent, const char* functionName, bool intTypes, bool uintTypes, bool allPrec, deUint32 shaderBits)
 {
-	tcu::TestCaseGroup* group = new tcu::TestCaseGroup(parent->getTestContext(), functionName, functionName);
+	tcu::TestCaseGroup* group = new tcu::TestCaseGroup(parent->getTestContext(), functionName);
 
 	parent->addChild(group);
 	const glu::DataType scalarTypes[] =
@@ -260,7 +260,7 @@ static void addFunctionCases (tcu::TestCaseGroup* parent, const char* functionNa
 class IntegerFunctionCase : public TestCase
 {
 public:
-										IntegerFunctionCase		(tcu::TestContext& testCtx, const char* name, const char* description, glu::ShaderType shaderType);
+										IntegerFunctionCase		(tcu::TestContext& testCtx, const char* name, glu::ShaderType shaderType);
 										~IntegerFunctionCase	(void);
 
 	virtual	void						initPrograms			(vk::SourceCollections& programCollection) const
@@ -283,8 +283,8 @@ protected:
 	const int							m_numValues;
 };
 
-IntegerFunctionCase::IntegerFunctionCase (tcu::TestContext& testCtx, const char* name, const char* description, glu::ShaderType shaderType)
-	: TestCase		(testCtx, name, description)
+IntegerFunctionCase::IntegerFunctionCase (tcu::TestContext& testCtx, const char* name, glu::ShaderType shaderType)
+	: TestCase		(testCtx, name)
 	, m_shaderType	(shaderType)
 	, m_numValues	(100)
 {
@@ -494,7 +494,7 @@ class UaddCarryCase : public IntegerFunctionCase
 {
 public:
 	UaddCarryCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision, glu::ShaderType shaderType)
-		: IntegerFunctionCase	(testCtx, getIntegerFuncCaseName(baseType, precision, shaderType).c_str(), "uaddCarry", shaderType)
+		: IntegerFunctionCase	(testCtx, getIntegerFuncCaseName(baseType, precision, shaderType).c_str(), shaderType)
 	{
 		m_spec.inputs.push_back(Symbol("x", glu::VarType(baseType, precision)));
 		m_spec.inputs.push_back(Symbol("y", glu::VarType(baseType, precision)));
@@ -602,7 +602,7 @@ class UsubBorrowCase : public IntegerFunctionCase
 {
 public:
 	UsubBorrowCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision, glu::ShaderType shaderType)
-		: IntegerFunctionCase	(testCtx, getIntegerFuncCaseName(baseType, precision, shaderType).c_str(), "usubBorrow", shaderType)
+		: IntegerFunctionCase	(testCtx, getIntegerFuncCaseName(baseType, precision, shaderType).c_str(), shaderType)
 	{
 		m_spec.inputs.push_back(Symbol("x", glu::VarType(baseType, precision)));
 		m_spec.inputs.push_back(Symbol("y", glu::VarType(baseType, precision)));
@@ -706,7 +706,7 @@ class UmulExtendedCase : public IntegerFunctionCase
 {
 public:
 	UmulExtendedCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision, glu::ShaderType shaderType)
-		: IntegerFunctionCase	(testCtx, getIntegerFuncCaseName(baseType, precision, shaderType).c_str(), "umulExtended", shaderType)
+		: IntegerFunctionCase	(testCtx, getIntegerFuncCaseName(baseType, precision, shaderType).c_str(), shaderType)
 	{
 		m_spec.inputs.push_back(Symbol("x", glu::VarType(baseType, precision)));
 		m_spec.inputs.push_back(Symbol("y", glu::VarType(baseType, precision)));
@@ -811,7 +811,7 @@ class ImulExtendedCase : public IntegerFunctionCase
 {
 public:
 	ImulExtendedCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision, glu::ShaderType shaderType)
-		: IntegerFunctionCase	(testCtx, getIntegerFuncCaseName(baseType, precision, shaderType).c_str(), "imulExtended", shaderType)
+		: IntegerFunctionCase	(testCtx, getIntegerFuncCaseName(baseType, precision, shaderType).c_str(), shaderType)
 	{
 		m_spec.inputs.push_back(Symbol("x", glu::VarType(baseType, precision)));
 		m_spec.inputs.push_back(Symbol("y", glu::VarType(baseType, precision)));
@@ -888,7 +888,7 @@ class BitfieldExtractCase : public IntegerFunctionCase
 {
 public:
 	BitfieldExtractCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision, glu::ShaderType shaderType)
-		: IntegerFunctionCase	(testCtx, getIntegerFuncCaseName(baseType, precision, shaderType).c_str(), "bitfieldExtract", shaderType)
+		: IntegerFunctionCase	(testCtx, getIntegerFuncCaseName(baseType, precision, shaderType).c_str(), shaderType)
 	{
 		m_spec.inputs.push_back(Symbol("value", glu::VarType(baseType, precision)));
 		m_spec.inputs.push_back(Symbol("offset", glu::VarType(glu::TYPE_INT, precision)));
@@ -969,7 +969,7 @@ class BitfieldInsertCase : public IntegerFunctionCase
 {
 public:
 	BitfieldInsertCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision, glu::ShaderType shaderType)
-		: IntegerFunctionCase	(testCtx, getIntegerFuncCaseName(baseType, precision, shaderType).c_str(), "bitfieldInsert", shaderType)
+		: IntegerFunctionCase	(testCtx, getIntegerFuncCaseName(baseType, precision, shaderType).c_str(), shaderType)
 	{
 		m_spec.inputs.push_back(Symbol("base", glu::VarType(baseType, precision)));
 		m_spec.inputs.push_back(Symbol("insert", glu::VarType(baseType, precision)));
@@ -1032,7 +1032,7 @@ class BitfieldReverseCase : public IntegerFunctionCase
 {
 public:
 	BitfieldReverseCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision, glu::ShaderType shaderType)
-		: IntegerFunctionCase	(testCtx, getIntegerFuncCaseName(baseType, precision, shaderType).c_str(), "bitfieldReverse", shaderType)
+		: IntegerFunctionCase	(testCtx, getIntegerFuncCaseName(baseType, precision, shaderType).c_str(), shaderType)
 	{
 		m_spec.inputs.push_back(Symbol("value", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("result", glu::VarType(baseType, glu::PRECISION_HIGHP)));
@@ -1093,7 +1093,7 @@ class BitCountCase : public IntegerFunctionCase
 {
 public:
 	BitCountCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision, glu::ShaderType shaderType)
-		: IntegerFunctionCase	(testCtx, getIntegerFuncCaseName(baseType, precision, shaderType).c_str(), "bitCount", shaderType)
+		: IntegerFunctionCase	(testCtx, getIntegerFuncCaseName(baseType, precision, shaderType).c_str(), shaderType)
 	{
 		const int			vecSize		= glu::getDataTypeScalarSize(baseType);
 		const glu::DataType	intType		= vecSize == 1 ? glu::TYPE_INT : glu::getDataTypeIntVec(vecSize);
@@ -1157,7 +1157,7 @@ class FindLSBCase : public IntegerFunctionCase
 {
 public:
 	FindLSBCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision, glu::ShaderType shaderType)
-		: IntegerFunctionCase	(testCtx, getIntegerFuncCaseName(baseType, precision, shaderType).c_str(), "findLSB", shaderType)
+		: IntegerFunctionCase	(testCtx, getIntegerFuncCaseName(baseType, precision, shaderType).c_str(), shaderType)
 	{
 		const int			vecSize		= glu::getDataTypeScalarSize(baseType);
 		const glu::DataType	intType		= vecSize == 1 ? glu::TYPE_INT : glu::getDataTypeIntVec(vecSize);
@@ -1221,7 +1221,7 @@ class findMSBCase : public IntegerFunctionCase
 {
 public:
 	findMSBCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision, glu::ShaderType shaderType)
-		: IntegerFunctionCase	(testCtx, getIntegerFuncCaseName(baseType, precision, shaderType).c_str(), "findMSB", shaderType)
+		: IntegerFunctionCase	(testCtx, getIntegerFuncCaseName(baseType, precision, shaderType).c_str(), shaderType)
 	{
 		const int			vecSize		= glu::getDataTypeScalarSize(baseType);
 		const glu::DataType	intType		= vecSize == 1 ? glu::TYPE_INT : glu::getDataTypeIntVec(vecSize);
@@ -1238,7 +1238,7 @@ public:
 };
 
 ShaderIntegerFunctionTests::ShaderIntegerFunctionTests (tcu::TestContext& testCtx)
-	: tcu::TestCaseGroup	(testCtx, "integer", "Integer function tests")
+	: tcu::TestCaseGroup	(testCtx, "integer")
 {
 }
 

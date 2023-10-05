@@ -480,7 +480,6 @@ public:
 
 							StoreTest			(tcu::TestContext&		testCtx,
 												 const std::string&		name,
-												 const std::string&		description,
 												 const Texture&			texture,
 												 const VkFormat			format,
 												 const VkImageTiling	tiling,
@@ -502,12 +501,11 @@ private:
 
 StoreTest::StoreTest (tcu::TestContext&		testCtx,
 					  const std::string&	name,
-					  const std::string&	description,
 					  const Texture&		texture,
 					  const VkFormat		format,
 					  const VkImageTiling	tiling,
 					  const deUint32		flags)
-	: TestCase						(testCtx, name, description)
+	: TestCase						(testCtx, name)
 	, m_texture						(texture)
 	, m_format						(format)
 	, m_tiling						(tiling)
@@ -1155,7 +1153,6 @@ public:
 
 							LoadStoreTest			(tcu::TestContext&		testCtx,
 													 const std::string&		name,
-													 const std::string&		description,
 													 const Texture&			texture,
 													 const VkFormat			format,
 													 const VkFormat			imageFormat,
@@ -1183,14 +1180,13 @@ private:
 
 LoadStoreTest::LoadStoreTest (tcu::TestContext&		testCtx,
 							  const std::string&	name,
-							  const std::string&	description,
 							  const Texture&		texture,
 							  const VkFormat		format,
 							  const VkFormat		imageFormat,
 							  const VkImageTiling   tiling,
 							  const deUint32		flags,
 							  const deBool			imageLoadStoreLodAMD)
-	: TestCase						(testCtx, name, description)
+	: TestCase						(testCtx, name)
 	, m_texture						(texture)
 	, m_format						(format)
 	, m_imageFormat					(imageFormat)
@@ -2443,7 +2439,7 @@ ImageExtendOperandTest::ImageExtendOperandTest (tcu::TestContext&				testCtx,
 												const bool						operandForce,
 												const bool						relaxedPrecision,
 												ExtendTestType					extendTestType)
-	: TestCase						(testCtx, name, "")
+	: TestCase						(testCtx, name)
 	, m_texture						(texture)
 	, m_readFormat					(readFormat)
 	, m_writeFormat					(writeFormat)
@@ -2852,15 +2848,16 @@ const char* tilingSuffix(VkImageTiling tiling) {
 
 tcu::TestCaseGroup* createImageStoreTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "store", "Plain imageStore() cases"));
+	// Plain imageStore() cases
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "store"));
 	de::MovePtr<tcu::TestCaseGroup> testGroupWithFormat(new tcu::TestCaseGroup(testCtx, "with_format", "Declare a format layout qualifier for write images"));
 	de::MovePtr<tcu::TestCaseGroup> testGroupWithoutFormat(new tcu::TestCaseGroup(testCtx, "without_format", "Do not declare a format layout qualifier for write images"));
 
 	for (int textureNdx = 0; textureNdx < DE_LENGTH_OF_ARRAY(s_textures); ++textureNdx)
 	{
 		const Texture& texture = s_textures[textureNdx];
-		de::MovePtr<tcu::TestCaseGroup> groupWithFormatByImageViewType (new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str(), ""));
-		de::MovePtr<tcu::TestCaseGroup> groupWithoutFormatByImageViewType (new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> groupWithFormatByImageViewType (new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str()));
+		de::MovePtr<tcu::TestCaseGroup> groupWithoutFormatByImageViewType (new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str()));
 		const bool isLayered = (texture.numLayers() > 1);
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++formatNdx)
@@ -2872,22 +2869,22 @@ tcu::TestCaseGroup* createImageStoreTests (tcu::TestContext& testCtx)
 
 				if (hasSpirvFmt)
 				{
-					groupWithFormatByImageViewType->addChild( new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + suffix, "", texture, s_formats[formatNdx], s_tilings[tilingNdx]));
+					groupWithFormatByImageViewType->addChild( new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + suffix, texture, s_formats[formatNdx], s_tilings[tilingNdx]));
 					// Additional tests where the shader uses constant data for imageStore.
-					groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_constant" + suffix, "", texture, s_formats[formatNdx], s_tilings[tilingNdx], StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER | StoreTest::FLAG_STORE_CONSTANT_VALUE));
+					groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_constant" + suffix, texture, s_formats[formatNdx], s_tilings[tilingNdx], StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER | StoreTest::FLAG_STORE_CONSTANT_VALUE));
 				}
-				groupWithoutFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + suffix, "", texture, s_formats[formatNdx], s_tilings[tilingNdx], 0));
+				groupWithoutFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + suffix, texture, s_formats[formatNdx], s_tilings[tilingNdx], 0));
 
 				if (isLayered && hasSpirvFmt)
-					groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_single_layer" + suffix, "",
+					groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_single_layer" + suffix,
 																		   texture, s_formats[formatNdx], VK_IMAGE_TILING_OPTIMAL,
 																		   StoreTest::FLAG_SINGLE_LAYER_BIND | StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
 
 				if (texture.type() == IMAGE_TYPE_BUFFER)
 				{
 					if (hasSpirvFmt)
-						groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_minalign" + suffix, "", texture, s_formats[formatNdx], s_tilings[tilingNdx], StoreTest::FLAG_MINALIGN | StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
-					groupWithoutFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_minalign" + suffix, "", texture, s_formats[formatNdx], s_tilings[tilingNdx], StoreTest::FLAG_MINALIGN));
+						groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_minalign" + suffix, texture, s_formats[formatNdx], s_tilings[tilingNdx], StoreTest::FLAG_MINALIGN | StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
+					groupWithoutFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_minalign" + suffix, texture, s_formats[formatNdx], s_tilings[tilingNdx], StoreTest::FLAG_MINALIGN));
 				}
 			}
 		}
@@ -2915,9 +2912,9 @@ tcu::TestCaseGroup* createImageLoadStoreTests (tcu::TestContext& testCtx)
 		const auto		imageTypeName	= getImageTypeName(texture.type());
 		const bool		isLayered		= (texture.numLayers() > 1);
 
-		de::MovePtr<tcu::TestCaseGroup> groupWithFormatByImageViewType (new tcu::TestCaseGroup(testCtx, imageTypeName.c_str(), ""));
-		de::MovePtr<tcu::TestCaseGroup> groupWithoutFormatByImageViewType (new tcu::TestCaseGroup(testCtx, imageTypeName.c_str(), ""));
-		de::MovePtr<tcu::TestCaseGroup> groupWithoutAnyFormatByImageViewType (new tcu::TestCaseGroup(testCtx, imageTypeName.c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> groupWithFormatByImageViewType (new tcu::TestCaseGroup(testCtx, imageTypeName.c_str()));
+		de::MovePtr<tcu::TestCaseGroup> groupWithoutFormatByImageViewType (new tcu::TestCaseGroup(testCtx, imageTypeName.c_str()));
+		de::MovePtr<tcu::TestCaseGroup> groupWithoutAnyFormatByImageViewType (new tcu::TestCaseGroup(testCtx, imageTypeName.c_str()));
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++formatNdx)
 		{
@@ -2930,13 +2927,13 @@ tcu::TestCaseGroup* createImageLoadStoreTests (tcu::TestContext& testCtx)
 
 				if (hasSpvFormat)
 				{
-					groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + suffix, "", texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx]));
-					groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + suffix, "", texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
+					groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + suffix, texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx]));
+					groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + suffix, texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
 				}
-				groupWithoutAnyFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + suffix, "", texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], 0u));
+				groupWithoutAnyFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + suffix, texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], 0u));
 
 				if (isLayered && hasSpvFormat)
-					groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + "_single_layer" + suffix, "",
+					groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + "_single_layer" + suffix,
 															 texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx],
 															 LoadStoreTest::FLAG_SINGLE_LAYER_BIND | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_READS | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
 
@@ -2944,13 +2941,13 @@ tcu::TestCaseGroup* createImageLoadStoreTests (tcu::TestContext& testCtx)
 				{
 					if (hasSpvFormat)
 					{
-						groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + "_minalign" + suffix, "", texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_READS | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
-						groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + "_minalign_uniform" + suffix, "", texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_READS | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES | LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER));
-						groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + "_minalign" + suffix, "", texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
-						groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + "_minalign_uniform" + suffix, "", texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
+						groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + "_minalign" + suffix, texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_READS | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
+						groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + "_minalign_uniform" + suffix, texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_READS | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES | LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER));
+						groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + "_minalign" + suffix, texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
+						groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + "_minalign_uniform" + suffix, texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
 					}
-					groupWithoutAnyFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + "_minalign" + suffix, "", texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_MINALIGN));
-					groupWithoutAnyFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + "_minalign_uniform" + suffix, "", texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER));
+					groupWithoutAnyFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + "_minalign" + suffix, texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_MINALIGN));
+					groupWithoutAnyFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + "_minalign_uniform" + suffix, texture, s_formats[formatNdx], s_formats[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER));
 				}
 			}
 		}
@@ -2965,8 +2962,8 @@ tcu::TestCaseGroup* createImageLoadStoreTests (tcu::TestContext& testCtx)
 				{
 					const char* suffix = tilingSuffix(s_tilings[tilingNdx]);
 
-					groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + "_uniform" + suffix, "", texture, s_formatsThreeComponent[formatNdx], s_formatsThreeComponent[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
-					groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + "_minalign_uniform" + suffix, "", texture, s_formatsThreeComponent[formatNdx], s_formatsThreeComponent[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
+					groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + "_uniform" + suffix, texture, s_formatsThreeComponent[formatNdx], s_formatsThreeComponent[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
+					groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + "_minalign_uniform" + suffix, texture, s_formatsThreeComponent[formatNdx], s_formatsThreeComponent[formatNdx], s_tilings[tilingNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
 				}
 			}
 		}
@@ -3003,8 +3000,8 @@ tcu::TestCaseGroup* createImageLoadStoreLodAMDTests (tcu::TestContext& testCtx)
 	for (int textureNdx = 0; textureNdx < DE_LENGTH_OF_ARRAY(textures); ++textureNdx)
 	{
 		const Texture& texture = textures[textureNdx];
-		de::MovePtr<tcu::TestCaseGroup> groupWithFormatByImageViewType (new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str(), ""));
-		de::MovePtr<tcu::TestCaseGroup> groupWithoutFormatByImageViewType (new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> groupWithFormatByImageViewType (new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str()));
+		de::MovePtr<tcu::TestCaseGroup> groupWithoutFormatByImageViewType (new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str()));
 		const bool isLayered = (texture.numLayers() > 1);
 
 		if (texture.type() == IMAGE_TYPE_BUFFER)
@@ -3017,11 +3014,11 @@ tcu::TestCaseGroup* createImageLoadStoreLodAMDTests (tcu::TestContext& testCtx)
 			if (!hasSpirvFormat(s_formats[formatNdx]))
 				continue;
 
-			groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx], s_formats[formatNdx], VK_IMAGE_TILING_OPTIMAL, (LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_READS | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES), DE_TRUE));
-			groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx], s_formats[formatNdx], VK_IMAGE_TILING_OPTIMAL, LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES, DE_TRUE));
+			groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), texture, s_formats[formatNdx], s_formats[formatNdx], VK_IMAGE_TILING_OPTIMAL, (LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_READS | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES), DE_TRUE));
+			groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), texture, s_formats[formatNdx], s_formats[formatNdx], VK_IMAGE_TILING_OPTIMAL, LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES, DE_TRUE));
 
 			if (isLayered)
-				groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_single_layer", "",
+				groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_single_layer",
 														 texture, s_formats[formatNdx], s_formats[formatNdx], VK_IMAGE_TILING_OPTIMAL,
 														 LoadStoreTest::FLAG_SINGLE_LAYER_BIND | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_READS | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES, DE_TRUE));
 		}
@@ -3043,7 +3040,7 @@ tcu::TestCaseGroup* createImageFormatReinterpretTests (tcu::TestContext& testCtx
 	for (int textureNdx = 0; textureNdx < DE_LENGTH_OF_ARRAY(s_textures); ++textureNdx)
 	{
 		const Texture& texture = s_textures[textureNdx];
-		de::MovePtr<tcu::TestCaseGroup> groupByImageViewType (new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> groupByImageViewType (new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str()));
 
 		for (int imageFormatNdx = 0; imageFormatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++imageFormatNdx)
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++formatNdx)
@@ -3053,7 +3050,7 @@ tcu::TestCaseGroup* createImageFormatReinterpretTests (tcu::TestContext& testCtx
 
 			const std::string caseName = getFormatShortString(s_formats[imageFormatNdx]) + "_" + getFormatShortString(s_formats[formatNdx]);
 			if (imageFormatNdx != formatNdx && formatsAreCompatible(s_formats[imageFormatNdx], s_formats[formatNdx]))
-				groupByImageViewType->addChild(new LoadStoreTest(testCtx, caseName, "", texture, s_formats[formatNdx], s_formats[imageFormatNdx], VK_IMAGE_TILING_OPTIMAL));
+				groupByImageViewType->addChild(new LoadStoreTest(testCtx, caseName, texture, s_formats[formatNdx], s_formats[imageFormatNdx], VK_IMAGE_TILING_OPTIMAL));
 		}
 		testGroup->addChild(groupByImageViewType.release());
 	}
@@ -3065,7 +3062,7 @@ de::MovePtr<TestCase> createImageQualifierRestrictCase (tcu::TestContext& testCt
 {
 	const VkFormat format = VK_FORMAT_R32G32B32A32_UINT;
 	const Texture& texture = getTestTexture(imageType);
-	return de::MovePtr<TestCase>(new LoadStoreTest(testCtx, name, "", texture, format, format, VK_IMAGE_TILING_OPTIMAL, LoadStoreTest::FLAG_RESTRICT_IMAGES | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_READS | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
+	return de::MovePtr<TestCase>(new LoadStoreTest(testCtx, name, texture, format, format, VK_IMAGE_TILING_OPTIMAL, LoadStoreTest::FLAG_RESTRICT_IMAGES | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_READS | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
 }
 
 namespace
@@ -3144,11 +3141,11 @@ tcu::TestCaseGroup* createImageExtendOperandsTests(tcu::TestContext& testCtx)
 
 		DE_ASSERT(isInt || isUint);
 
-		GroupPtr formatGroup (new tcu::TestCaseGroup(testCtx, getFormatShortString(format).c_str(), ""));
+		GroupPtr formatGroup (new tcu::TestCaseGroup(testCtx, getFormatShortString(format).c_str()));
 
 		for (const auto& testType : testTypes)
 		{
-			GroupPtr testTypeGroup (new tcu::TestCaseGroup(testCtx, testType.name, ""));
+			GroupPtr testTypeGroup (new tcu::TestCaseGroup(testCtx, testType.name));
 
 			for (int match = 0; match < 2; ++match)
 			{
@@ -3159,7 +3156,7 @@ tcu::TestCaseGroup* createImageExtendOperandsTests(tcu::TestContext& testCtx)
 				if (mismatched && isUint)
 					continue;
 
-				GroupPtr matchGroup (new tcu::TestCaseGroup(testCtx, matchGroupName, ""));
+				GroupPtr matchGroup (new tcu::TestCaseGroup(testCtx, matchGroupName));
 
 				for (int prec = 0; prec < 2; prec++)
 				{

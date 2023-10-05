@@ -355,14 +355,21 @@ tcu::TestStatus basicMultiFenceWaitAllFalseCase (Context& context, FenceConfig c
 
 tcu::TestCaseGroup* createBasicFenceTests (tcu::TestContext& testCtx, VideoCodecOperationFlags videoCodecOperationFlags)
 {
-	de::MovePtr<tcu::TestCaseGroup> basicFenceTests(new tcu::TestCaseGroup(testCtx, "fence", "Basic fence tests"));
+	// Basic fence tests
+	de::MovePtr<tcu::TestCaseGroup> basicFenceTests(new tcu::TestCaseGroup(testCtx, "fence"));
 
-	addFunctionCase(basicFenceTests.get(),	"one",					"Basic one fence tests",							checkVideoSupport,							basicOneFenceCase, FenceConfig { 0u, videoCodecOperationFlags });
-	addFunctionCase(basicFenceTests.get(),	"multi",				"Basic multi fence tests",							checkCommandBufferSimultaneousUseSupport,	basicMultiFenceCase, FenceConfig { 0u, videoCodecOperationFlags });
-	addFunctionCase(basicFenceTests.get(),	"empty_submit",			"Signal a fence after an empty queue submission",	checkVideoSupport,							emptySubmitCase, FenceConfig { 0u, videoCodecOperationFlags });
-	addFunctionCase(basicFenceTests.get(),	"multi_waitall_false",	"Basic multi fence test without waitAll",			checkCommandBufferSimultaneousUseSupport,	basicMultiFenceWaitAllFalseCase, FenceConfig { 0u, videoCodecOperationFlags });
-	addFunctionCase(basicFenceTests.get(),	"one_signaled",			"Create a single signaled fence and wait on it",	checkVideoSupport,							basicSignaledCase, FenceConfig { 1u, videoCodecOperationFlags });
-	addFunctionCase(basicFenceTests.get(),	"multiple_signaled",	"Create multiple signaled fences and wait on them",	checkCommandBufferSimultaneousUseSupport,	basicSignaledCase, FenceConfig { 10u, videoCodecOperationFlags });
+	// Basic one fence tests
+	addFunctionCase(basicFenceTests.get(),	"one", checkVideoSupport,							basicOneFenceCase, FenceConfig { 0u, videoCodecOperationFlags });
+	// Basic multi fence tests
+	addFunctionCase(basicFenceTests.get(),	"multi", checkCommandBufferSimultaneousUseSupport,	basicMultiFenceCase, FenceConfig { 0u, videoCodecOperationFlags });
+	// Signal a fence after an empty queue submission
+	addFunctionCase(basicFenceTests.get(),	"empty_submit", checkVideoSupport,							emptySubmitCase, FenceConfig { 0u, videoCodecOperationFlags });
+	// Basic multi fence test without waitAll
+	addFunctionCase(basicFenceTests.get(),	"multi_waitall_false", checkCommandBufferSimultaneousUseSupport,	basicMultiFenceWaitAllFalseCase, FenceConfig { 0u, videoCodecOperationFlags });
+	// Create a single signaled fence and wait on it
+	addFunctionCase(basicFenceTests.get(),	"one_signaled", checkVideoSupport,							basicSignaledCase, FenceConfig { 1u, videoCodecOperationFlags });
+	// Create multiple signaled fences and wait on them
+	addFunctionCase(basicFenceTests.get(),	"multiple_signaled", checkCommandBufferSimultaneousUseSupport,	basicSignaledCase, FenceConfig { 10u, videoCodecOperationFlags });
 
 	return basicFenceTests.release();
 }

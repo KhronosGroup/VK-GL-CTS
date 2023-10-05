@@ -74,7 +74,7 @@ using namespace vk;
 class ConditionalIgnoreClearTestCase : public vkt::TestCase
 {
 public:
-	ConditionalIgnoreClearTestCase(tcu::TestContext& context, const std::string& name, const std::string& description, const ConditionalData& data);
+	ConditionalIgnoreClearTestCase(tcu::TestContext& context, const std::string& name, const ConditionalData& data);
 	void            initPrograms            (SourceCollections&) const override { }
 	TestInstance*   createInstance          (Context& context) const override;
 	void            checkSupport            (Context& context) const override
@@ -101,8 +101,8 @@ private:
 };
 
 
-ConditionalIgnoreClearTestCase::ConditionalIgnoreClearTestCase(tcu::TestContext& context, const std::string& name, const std::string& description, const ConditionalData& data)
-	: vkt::TestCase (context, name, description)
+ConditionalIgnoreClearTestCase::ConditionalIgnoreClearTestCase(tcu::TestContext& context, const std::string& name, const ConditionalData& data)
+	: vkt::TestCase (context, name)
 	, m_data(data)
 { }
 
@@ -319,8 +319,9 @@ tcu::TestStatus ConditionalIgnoreClearTestInstance::iterate(void)
 
 }	// anonymous
 
+// operations that ignore conditions
 ConditionalIgnoreTests::ConditionalIgnoreTests(tcu::TestContext &testCtx)
-	: TestCaseGroup	(testCtx, "conditional_ignore", "operations that ignore conditions")
+	: TestCaseGroup	(testCtx, "conditional_ignore")
 { }
 
 ConditionalIgnoreTests::~ConditionalIgnoreTests(void)
@@ -335,8 +336,8 @@ void ConditionalIgnoreTests::init (void)
 		if (conditionData.clearInRenderPass)
 			continue;
 
-		addChild(new ConditionalIgnoreClearTestCase(m_testCtx, std::string("clear_") + de::toString(conditionData).c_str(),
-			"tests that some clear operations always happen", conditionData));
+		// tests that some clear operations always happen
+		addChild(new ConditionalIgnoreClearTestCase(m_testCtx, std::string("clear_") + de::toString(conditionData).c_str(), conditionData));
 	}
 }
 

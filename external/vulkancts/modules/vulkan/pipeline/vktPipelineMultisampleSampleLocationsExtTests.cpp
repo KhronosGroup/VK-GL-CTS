@@ -132,13 +132,12 @@ private:
 template<typename Instance, typename Arg0>
 void addInstanceTestCaseWithPrograms (tcu::TestCaseGroup*								group,
 									  const std::string&								name,
-									  const std::string&								desc,
 									  typename FunctionSupport1<Arg0>::Function			checkSupport,
 									  typename FunctionProgramsSimple1<Arg0>::Function	initPrograms,
 									  Arg0												arg0)
 {
 	group->addChild(new InstanceFactory1WithSupport<Instance, Arg0, FunctionSupport1<Arg0>, FunctionProgramsSimple1<Arg0> >(
-		group->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, desc, FunctionProgramsSimple1<Arg0>(initPrograms), arg0, typename FunctionSupport1<Arg0>::Args(checkSupport, arg0)));
+		group->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, FunctionProgramsSimple1<Arg0>(initPrograms), arg0, typename FunctionSupport1<Arg0>::Args(checkSupport, arg0)));
 }
 
 void checkSupportSampleLocations (Context& context)
@@ -1860,13 +1859,13 @@ void addCases (tcu::TestCaseGroup* group, const VkSampleCountFlagBits numSamples
 	{
 		params.options	= options.testFlags;
 
-		addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + options.testSuffix).c_str(), "", checkSupportVerifyTests, initPrograms, params);
+		addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + options.testSuffix).c_str(), checkSupportVerifyTests, initPrograms, params);
 
 		params.options	|= (TestOptionFlags)TEST_OPTION_DYNAMIC_STATE_BIT;
-		addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + "_dynamic" + options.testSuffix).c_str(), "", checkSupportVerifyTests, initPrograms, params);
+		addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + "_dynamic" + options.testSuffix).c_str(), checkSupportVerifyTests, initPrograms, params);
 
 		params.options	|= (TestOptionFlags)TEST_OPTION_CLOSELY_PACKED_BIT;
-		addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + "_packed" + options.testSuffix).c_str(), "", checkSupportVerifyTests, initPrograms, params);
+		addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + "_packed" + options.testSuffix).c_str(), checkSupportVerifyTests, initPrograms, params);
 	}
 }
 
@@ -3147,10 +3146,10 @@ void createTestsInGroup (tcu::TestCaseGroup* rootGroup, PipelineConstructionType
 	// Queries
 	if (!useFragmentShadingRate && (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC))
 	{
-		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(rootGroup->getTestContext(), "query", ""));
+		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(rootGroup->getTestContext(), "query"));
 
-		addFunctionCase(group.get(), "sample_locations_properties", "", checkSupportSampleLocations, testQuerySampleLocationProperties);
-		addFunctionCase(group.get(), "multisample_properties",		"", checkSupportSampleLocations, testQueryMultisampleProperties);
+		addFunctionCase(group.get(), "sample_locations_properties", checkSupportSampleLocations, testQuerySampleLocationProperties);
+		addFunctionCase(group.get(), "multisample_properties",		checkSupportSampleLocations, testQueryMultisampleProperties);
 
 		rootGroup->addChild(group.release());
 	}
@@ -3168,8 +3167,8 @@ void createTestsInGroup (tcu::TestCaseGroup* rootGroup, PipelineConstructionType
 	{
 		using namespace VerifySamples;
 
-		MovePtr<tcu::TestCaseGroup> groupLocation		(new tcu::TestCaseGroup(rootGroup->getTestContext(), "verify_location", ""));
-		MovePtr<tcu::TestCaseGroup> groupInterpolation	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "verify_interpolation", ""));
+		MovePtr<tcu::TestCaseGroup> groupLocation		(new tcu::TestCaseGroup(rootGroup->getTestContext(), "verify_location"));
+		MovePtr<tcu::TestCaseGroup> groupInterpolation	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "verify_interpolation"));
 
 		for (const VkSampleCountFlagBits* pLoopNumSamples = sampleCountRange; pLoopNumSamples < DE_ARRAY_END(sampleCountRange); ++pLoopNumSamples)
 		{
@@ -3225,13 +3224,13 @@ void createTestsInGroup (tcu::TestCaseGroup* rootGroup, PipelineConstructionType
 			TEST_IMAGE_ASPECT_STENCIL,
 		};
 
-		MovePtr<tcu::TestCaseGroup> drawGroup (new tcu::TestCaseGroup(rootGroup->getTestContext(), "draw", ""));
+		MovePtr<tcu::TestCaseGroup> drawGroup (new tcu::TestCaseGroup(rootGroup->getTestContext(), "draw"));
 		for (const TestImageAspect* pLoopImageAspect = aspectRange; pLoopImageAspect != DE_ARRAY_END(aspectRange); ++pLoopImageAspect)
 		{
-			MovePtr<tcu::TestCaseGroup> aspectGroup (new tcu::TestCaseGroup(drawGroup->getTestContext(), getString(*pLoopImageAspect), ""));
+			MovePtr<tcu::TestCaseGroup> aspectGroup (new tcu::TestCaseGroup(drawGroup->getTestContext(), getString(*pLoopImageAspect)));
 			for (const VkSampleCountFlagBits* pLoopNumSamples = sampleCountRange; pLoopNumSamples < DE_ARRAY_END(sampleCountRange); ++pLoopNumSamples)
 			{
-				MovePtr<tcu::TestCaseGroup> samplesGroup (new tcu::TestCaseGroup(aspectGroup->getTestContext(), getString(*pLoopNumSamples).c_str(), ""));
+				MovePtr<tcu::TestCaseGroup> samplesGroup (new tcu::TestCaseGroup(aspectGroup->getTestContext(), getString(*pLoopNumSamples).c_str()));
 
 				for (deUint32		 loopDrawSetNdx = 0u;		  loopDrawSetNdx <  DE_LENGTH_OF_ARRAY(drawClearSets); ++loopDrawSetNdx)
 				for (const deUint32* pLoopOptions	= optionSets; pLoopOptions	 != DE_ARRAY_END(optionSets);		   ++pLoopOptions)
@@ -3267,7 +3266,7 @@ void createTestsInGroup (tcu::TestCaseGroup* rootGroup, PipelineConstructionType
 							 << getString(params.clears) << (params.options != 0 ? "_" : "")
 							 << getTestOptionFlagsString(params.options);
 
-					addInstanceTestCaseWithPrograms<DrawTest>(samplesGroup.get(), caseName.str().c_str(), "", checkSupportDrawTests, initPrograms, params);
+					addInstanceTestCaseWithPrograms<DrawTest>(samplesGroup.get(), caseName.str().c_str(), checkSupportDrawTests, initPrograms, params);
 				}
 				aspectGroup->addChild(samplesGroup.release());
 			}
@@ -3281,7 +3280,7 @@ void createTestsInGroup (tcu::TestCaseGroup* rootGroup, PipelineConstructionType
 
 tcu::TestCaseGroup* createMultisampleSampleLocationsExtTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType, bool useFragmentShadingRate)
 {
-	return createTestGroup(testCtx, "sample_locations_ext", "Test a graphics pipeline with user-defined sample locations", createTestsInGroup, pipelineConstructionType, useFragmentShadingRate);
+	return createTestGroup(testCtx, "sample_locations_ext", createTestsInGroup, pipelineConstructionType, useFragmentShadingRate);
 }
 
 } // pipeline

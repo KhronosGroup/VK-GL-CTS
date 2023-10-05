@@ -763,7 +763,7 @@ void populateSwapchainGroup (tcu::TestCaseGroup* testGroup, GroupParameters para
 	{
 		const TestDimension		testDimension	= (TestDimension)dimensionNdx;
 
-		addFunctionCase(testGroup, getTestDimensionName(testDimension), "", checkSupport, params.function, TestParameters(params.wsiType, testDimension));
+		addFunctionCase(testGroup, getTestDimensionName(testDimension), checkSupport, params.function, TestParameters(params.wsiType, testDimension));
 	}
 }
 
@@ -1295,31 +1295,35 @@ void checkSupport (Context& context, vk::wsi::Type)
 
 void populateRenderGroup (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 {
-	addFunctionCaseWithPrograms(testGroup, "basic", "Basic Rendering Test", checkSupport, getBasicRenderPrograms, basicRenderTest, wsiType);
+	addFunctionCaseWithPrograms(testGroup, "basic", checkSupport, getBasicRenderPrograms, basicRenderTest, wsiType);
 }
 
 void createSwapchainTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 {
-	addTestGroup(testGroup, "create",			"Create VkSwapchain with various parameters",					populateSwapchainGroup,		GroupParameters(wsiType, createSwapchainTest));
-	addTestGroup(testGroup, "render",			"Rendering Tests",												populateRenderGroup,		wsiType);
+	// Create VkSwapchain with various parameters
+	addTestGroup(testGroup, "create", populateSwapchainGroup,		GroupParameters(wsiType, createSwapchainTest));
+	// Rendering Tests
+	addTestGroup(testGroup, "render", populateRenderGroup,		wsiType);
 }
 
 void createTypeSpecificTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 {
-	addTestGroup(testGroup, "swapchain", "VkSwapchain Tests", createSwapchainTests, wsiType);
+	// VkSwapchain Tests
+	addTestGroup(testGroup, "swapchain", createSwapchainTests, wsiType);
 }
 
 } // anonymous
 
 tcu::TestCaseGroup* createSwapchainTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> wsiTestGroup (new tcu::TestCaseGroup(testCtx, "wsi", "WSI Tests"));
+	// WSI Tests
+	de::MovePtr<tcu::TestCaseGroup> wsiTestGroup (new tcu::TestCaseGroup(testCtx, "wsi"));
 
 	for (int typeNdx = 0; typeNdx < vk::wsi::TYPE_LAST; ++typeNdx)
 	{
 		const vk::wsi::Type	wsiType		= (vk::wsi::Type)typeNdx;
 
-		addTestGroup(&*wsiTestGroup, getName(wsiType), "", createTypeSpecificTests, wsiType);
+		addTestGroup(&*wsiTestGroup, getName(wsiType), createTypeSpecificTests, wsiType);
 	}
 
 	return wsiTestGroup.release();

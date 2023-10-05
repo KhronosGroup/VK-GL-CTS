@@ -597,7 +597,7 @@ tcu::TestStatus ConditionalDraw::iterate (void)
 }	// anonymous
 
 ConditionalDrawTests::ConditionalDrawTests (tcu::TestContext &testCtx)
-	: TestCaseGroup	(testCtx, "draw", "Conditional Rendering Of Draw Commands")
+	: TestCaseGroup	(testCtx, "draw")
 {
 	/* Left blank on purpose */
 }
@@ -623,7 +623,7 @@ void ConditionalDrawTests::init (void)
 			testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/dynamic_state/VertexFetch.vert";
 			testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/dynamic_state/VertexFetch.frag";
 
-			conditionalDrawRootGroup->addChild(new Draw::InstanceFactory<ConditionalDraw>(m_testCtx, getDrawCommandTypeName(command), "", testSpec));
+			conditionalDrawRootGroup->addChild(new Draw::InstanceFactory<ConditionalDraw>(m_testCtx, getDrawCommandTypeName(command), testSpec));
 		}
 
 		addChild(conditionalDrawRootGroup);

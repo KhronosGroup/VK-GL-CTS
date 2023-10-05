@@ -155,18 +155,18 @@ tcu::TestStatus testQueryProperties (Context& context, const TestType testType)
 
 void createTestCases (tcu::TestCaseGroup* group)
 {
-	addFunctionCase(group, "driver_id_match",		"Check driverID is supported",					checkSupport,	testQueryProperties,	TEST_TYPE_DRIVER_ID_MATCH);
-	addFunctionCase(group, "name_is_not_empty",		"Check name field is not empty",				checkSupport,	testQueryProperties,	TEST_TYPE_NAME_IS_NOT_EMPTY);
-	addFunctionCase(group, "name_zero_terminated",	"Check name field is zero-terminated",			checkSupport,	testQueryProperties,	TEST_TYPE_NAME_ZERO_TERMINATED);
-	addFunctionCase(group, "info_zero_terminated",	"Check info field is zero-terminated",			checkSupport,	testQueryProperties,	TEST_TYPE_INFO_ZERO_TERMINATED);
-	addFunctionCase(group, "conformance_version",	"Check conformanceVersion reported by driver",	checkSupport,	testQueryProperties,	TEST_TYPE_VERSION);
+	addFunctionCase(group, "driver_id_match",			checkSupport,	testQueryProperties,	TEST_TYPE_DRIVER_ID_MATCH);
+	addFunctionCase(group, "name_is_not_empty",		checkSupport,	testQueryProperties,	TEST_TYPE_NAME_IS_NOT_EMPTY);
+	addFunctionCase(group, "name_zero_terminated",	checkSupport,	testQueryProperties,	TEST_TYPE_NAME_ZERO_TERMINATED);
+	addFunctionCase(group, "info_zero_terminated",	checkSupport,	testQueryProperties,	TEST_TYPE_INFO_ZERO_TERMINATED);
+	addFunctionCase(group, "conformance_version",		checkSupport,	testQueryProperties,	TEST_TYPE_VERSION);
 }
 
 } // anonymous
 
 tcu::TestCaseGroup*	createDriverPropertiesTests(tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "driver_properties", "VK_KHR_driver_properties tests", createTestCases);
+	return createTestGroup(testCtx, "driver_properties", createTestCases);
 }
 
 } // api

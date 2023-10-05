@@ -88,7 +88,7 @@ public:
 																	 const std::string&		name,
 																	 const TestParams&		params,
 																	 bool					testFormatOrFlags)
-							: TestCase				(testContext, name, "")
+							: TestCase				(testContext, name)
 							, m_params				(params)
 							, m_testFormatOrFlags	(testFormatOrFlags) { }
 	virtual				~UnsupportedParametersMaintenance5TestCase	(void) = default;
@@ -328,7 +328,8 @@ tcu::TestCaseGroup*	createMaintenance5Tests	(tcu::TestContext& testCtx)
 		{ "sparse_image_format_props",	FuncIDs::DeviceSparseImageFormatProps	},
 		{ "sparse_image_format_props2",	FuncIDs::DeviceSparseImageFormatPropsSecond	}
 	};
-	de::MovePtr<tcu::TestCaseGroup> gRoot(new tcu::TestCaseGroup(testCtx, "maintenance5", "Checks vkGetPhysicalDevice*FormatProperties* API functions"));
+	// Checks vkGetPhysicalDevice*FormatProperties* API functions
+	de::MovePtr<tcu::TestCaseGroup> gRoot(new tcu::TestCaseGroup(testCtx, "maintenance5"));
 	de::MovePtr<tcu::TestCaseGroup> gFormat(new tcu::TestCaseGroup(testCtx, "format", ""));
 	de::MovePtr<tcu::TestCaseGroup> gFlags(new tcu::TestCaseGroup(testCtx, "flags", ""));
 	for (const auto& func : funcs)

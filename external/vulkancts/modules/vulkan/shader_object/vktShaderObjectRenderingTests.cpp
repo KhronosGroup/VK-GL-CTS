@@ -797,8 +797,8 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate (void)
 class ShaderObjectRenderingCase : public vkt::TestCase
 {
 public:
-							ShaderObjectRenderingCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-														: vkt::TestCase		(testCtx, name, description)
+							ShaderObjectRenderingCase	(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+														: vkt::TestCase		(testCtx, name)
 														, m_params			(params)
 														{}
 	virtual					~ShaderObjectRenderingCase	(void) {}
@@ -896,7 +896,7 @@ std::string getFormatCaseName(vk::VkFormat format)
 
 tcu::TestCaseGroup* createShaderObjectRenderingTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> renderingGroup(new tcu::TestCaseGroup(testCtx, "rendering", ""));
+	de::MovePtr<tcu::TestCaseGroup> renderingGroup(new tcu::TestCaseGroup(testCtx, "rendering"));
 
 	const struct
 	{
@@ -965,37 +965,37 @@ tcu::TestCaseGroup* createShaderObjectRenderingTests (tcu::TestContext& testCtx)
 
 	for (const auto& colorAttachmentCountTest : colorAttachmentCountTests)
 	{
-		de::MovePtr<tcu::TestCaseGroup> colorAttachmentGroup(new tcu::TestCaseGroup(testCtx, colorAttachmentCountTest.name, ""));
+		de::MovePtr<tcu::TestCaseGroup> colorAttachmentGroup(new tcu::TestCaseGroup(testCtx, colorAttachmentCountTest.name));
 		for (const auto& extraAttachment : extraAttachmentTests)
 		{
-			de::MovePtr<tcu::TestCaseGroup> extraAttachmentGroup(new tcu::TestCaseGroup(testCtx, extraAttachment.name, ""));
+			de::MovePtr<tcu::TestCaseGroup> extraAttachmentGroup(new tcu::TestCaseGroup(testCtx, extraAttachment.name));
 			for (const auto& extraOutput : extraOutputTests)
 			{
 				if (extraAttachment.extraAttachment != NONE && extraOutput.extraFragmentOutputCount != NONE)
 					continue;
 
-				de::MovePtr<tcu::TestCaseGroup> extraOutputGroup(new tcu::TestCaseGroup(testCtx, extraOutput.name, ""));
+				de::MovePtr<tcu::TestCaseGroup> extraOutputGroup(new tcu::TestCaseGroup(testCtx, extraOutput.name));
 
 				for (const auto& dummyRenderPass : dummyRenderPassTests)
 				{
-					de::MovePtr<tcu::TestCaseGroup> dummyRenderPassGroup(new tcu::TestCaseGroup(testCtx, dummyRenderPass.name, ""));
+					de::MovePtr<tcu::TestCaseGroup> dummyRenderPassGroup(new tcu::TestCaseGroup(testCtx, dummyRenderPass.name));
 					for (deUint32 m = 0; m < 2; ++m)
 					{
 						bool useRandomColorFormats = m == 0;
 						if (useRandomColorFormats && colorAttachmentCountTest.colorAttachmentCount < 2)
 							continue;
 						std::string randomColorFormatsName = useRandomColorFormats ? "random_color_formats" : "same_color_formats";
-						de::MovePtr<tcu::TestCaseGroup> randomColorFormatsGroup(new tcu::TestCaseGroup(testCtx, randomColorFormatsName.c_str(), ""));
+						de::MovePtr<tcu::TestCaseGroup> randomColorFormatsGroup(new tcu::TestCaseGroup(testCtx, randomColorFormatsName.c_str()));
 						for (deUint32 k = 0; k < 2; ++k)
 						{
 							bool bindShadersBeforeBeginRendering = k == 0;
 							std::string bindName = bindShadersBeforeBeginRendering ? "before" : "after";
-							de::MovePtr<tcu::TestCaseGroup> bindGroup(new tcu::TestCaseGroup(testCtx, bindName.c_str(), ""));
+							de::MovePtr<tcu::TestCaseGroup> bindGroup(new tcu::TestCaseGroup(testCtx, bindName.c_str()));
 							for (deUint32 l = 0; l < 2; ++l)
 							{
 								bool writeGlFragDepth = l == 0;
 								std::string writeGlFragName = writeGlFragDepth ? "gl_frag_write" : "none";
-								de::MovePtr<tcu::TestCaseGroup> fragWriteGroup(new tcu::TestCaseGroup(testCtx, writeGlFragName.c_str(), ""));
+								de::MovePtr<tcu::TestCaseGroup> fragWriteGroup(new tcu::TestCaseGroup(testCtx, writeGlFragName.c_str()));
 								for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(colorFormats); ++i)
 								{
 									if (extraAttachment.extraAttachmentCount > colorAttachmentCountTest.colorAttachmentCount)
@@ -1021,7 +1021,7 @@ tcu::TestCaseGroup* createShaderObjectRenderingTests (tcu::TestContext& testCtx)
 									params.randomColorFormats = useRandomColorFormats;
 
 									std::string name = getFormatCaseName(colorFormat);
-									fragWriteGroup->addChild(new ShaderObjectRenderingCase(testCtx, name, "", params));
+									fragWriteGroup->addChild(new ShaderObjectRenderingCase(testCtx, name, params));
 
 									if (writeGlFragDepth)
 										continue;
@@ -1033,7 +1033,7 @@ tcu::TestCaseGroup* createShaderObjectRenderingTests (tcu::TestContext& testCtx)
 										params.depthFormat = depthFormat;
 
 										std::string depthTestName = name + "_" + getFormatCaseName(depthFormat);
-										fragWriteGroup->addChild(new ShaderObjectRenderingCase(testCtx, depthTestName, "", params));
+										fragWriteGroup->addChild(new ShaderObjectRenderingCase(testCtx, depthTestName, params));
 									}
 								}
 								bindGroup->addChild(fragWriteGroup.release());
@@ -1056,4 +1056,3 @@ tcu::TestCaseGroup* createShaderObjectRenderingTests (tcu::TestContext& testCtx)
 
 } // ShaderObject
 } // vkt
-

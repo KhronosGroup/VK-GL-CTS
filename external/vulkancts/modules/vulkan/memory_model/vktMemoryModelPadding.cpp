@@ -137,7 +137,7 @@ struct BufferStructure
 class PaddingTest : public vkt::TestCase
 {
 public:
-							PaddingTest		(tcu::TestContext& testCtx, const std::string& name, const std::string& description);
+							PaddingTest		(tcu::TestContext& testCtx, const std::string& name);
 	virtual					~PaddingTest	(void) {}
 
 	virtual void			initPrograms	(vk::SourceCollections& programCollection) const;
@@ -159,8 +159,8 @@ public:
 };
 
 
-PaddingTest::PaddingTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-	: vkt::TestCase(testCtx, name, description)
+PaddingTest::PaddingTest (tcu::TestContext& testCtx, const std::string& name)
+	: vkt::TestCase(testCtx, name)
 {
 }
 
@@ -343,8 +343,10 @@ tcu::TestStatus PaddingTestInstance::iterate (void)
 
 tcu::TestCaseGroup* createPaddingTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> paddingGroup(new tcu::TestCaseGroup(testCtx, "padding", "Padding bytes tests"));
-	paddingGroup->addChild(new PaddingTest(testCtx, "test", "Check padding bytes at the end of structures are not touched on copy"));
+	// Padding bytes tests
+	de::MovePtr<tcu::TestCaseGroup> paddingGroup(new tcu::TestCaseGroup(testCtx, "padding"));
+	// Check padding bytes at the end of structures are not touched on copy
+	paddingGroup->addChild(new PaddingTest(testCtx, "test"));
 
 	return paddingGroup.release();
 }

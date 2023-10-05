@@ -1708,48 +1708,48 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 			VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,
 		};
 
-		MovePtr<tcu::TestCaseGroup> clipVolumeGroup(new tcu::TestCaseGroup(testCtx, "clip_volume", "clipping with the clip volume"));
+		MovePtr<tcu::TestCaseGroup> clipVolumeGroup(new tcu::TestCaseGroup(testCtx, "clip_volume"));
 
 		// Fully inside the clip volume
 		{
-			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "inside", ""));
+			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "inside"));
 
 			for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
 				addFunctionCaseWithPrograms<VkPrimitiveTopology>(
-					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), "", checkTopologySupport, initPrograms, testPrimitivesInside, cases[caseNdx]);
+					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), checkTopologySupport, initPrograms, testPrimitivesInside, cases[caseNdx]);
 
 			clipVolumeGroup->addChild(group.release());
 		}
 
 		// Fully outside the clip volume
 		{
-			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "outside", ""));
+			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "outside"));
 
 			for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
 				addFunctionCaseWithPrograms<VkPrimitiveTopology>(
-					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), "", checkTopologySupport, initPrograms, testPrimitivesOutside, cases[caseNdx]);
+					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), checkTopologySupport, initPrograms, testPrimitivesOutside, cases[caseNdx]);
 
 			clipVolumeGroup->addChild(group.release());
 		}
 
 		// Depth clamping
 		{
-			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "depth_clamp", ""));
+			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "depth_clamp"));
 
 			for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
 				addFunctionCaseWithPrograms<VkPrimitiveTopology>(
-					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), "", checkTopologySupport, initPrograms, testPrimitivesDepthClamp, cases[caseNdx]);
+					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), checkTopologySupport, initPrograms, testPrimitivesDepthClamp, cases[caseNdx]);
 
 			clipVolumeGroup->addChild(group.release());
 		}
 
 		// Depth clipping
 		{
-			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "depth_clip", ""));
+			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "depth_clip"));
 
 			for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
 				addFunctionCaseWithPrograms<VkPrimitiveTopology>(
-					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), "", checkTopologySupport, initPrograms, testPrimitivesDepthClip, cases[caseNdx]);
+					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), checkTopologySupport, initPrograms, testPrimitivesDepthClip, cases[caseNdx]);
 
 			clipVolumeGroup->addChild(group.release());
 		}
@@ -1759,12 +1759,12 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 			// \note For both points and lines, if an unsupported size/width is selected, the nearest supported size will be chosen.
 			//       We do have to check for feature support though.
 
-			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "clipped", ""));
+			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "clipped"));
 
-			addFunctionCaseWithPrograms(group.get(), "large_points", "", initProgramsPointSize, testLargePoints);
+			addFunctionCaseWithPrograms(group.get(), "large_points", initProgramsPointSize, testLargePoints);
 
-			addFunctionCaseWithPrograms<LineOrientation>(group.get(), "wide_lines_axis_aligned", "", initPrograms, testWideLines, LINE_ORIENTATION_AXIS_ALIGNED);
-			addFunctionCaseWithPrograms<LineOrientation>(group.get(), "wide_lines_diagonal",	 "", initPrograms, testWideLines, LINE_ORIENTATION_DIAGONAL);
+			addFunctionCaseWithPrograms<LineOrientation>(group.get(), "wide_lines_axis_aligned", initPrograms, testWideLines, LINE_ORIENTATION_AXIS_ALIGNED);
+			addFunctionCaseWithPrograms<LineOrientation>(group.get(), "wide_lines_diagonal",	 initPrograms, testWideLines, LINE_ORIENTATION_DIAGONAL);
 
 			clipVolumeGroup->addChild(group.release());
 		}
@@ -1774,7 +1774,7 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 
 	// User-defined clip planes
 	{
-		MovePtr<tcu::TestCaseGroup> clipDistanceGroup(new tcu::TestCaseGroup(testCtx, "user_defined", "user-defined clip planes"));
+		MovePtr<tcu::TestCaseGroup> clipDistanceGroup(new tcu::TestCaseGroup(testCtx, "user_defined"));
 
 		// ClipDistance, CullDistance and maxCombinedClipAndCullDistances usage
 		{
@@ -1783,12 +1783,11 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 			static const struct
 			{
 				const char* const	groupName;
-				const char* const	description;
 				bool				useCullDistance;
 			} caseGroups[] =
 			{
-				{ "clip_distance",		"use ClipDistance",										false },
-				{ "clip_cull_distance",	"use ClipDistance and CullDistance at the same time",	true  },
+				{ "clip_distance",		false },
+				{ "clip_cull_distance",	true  },
 			};
 
 			static const struct
@@ -1811,7 +1810,7 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 				const bool			dynamicIndexing	= (indexingMode == 1);
 				const std::string	mainGroupName	= de::toString(caseGroups[groupNdx].groupName) + (dynamicIndexing ? "_dynamic_index" : "");
 
-				MovePtr<tcu::TestCaseGroup>	mainGroup(new tcu::TestCaseGroup(testCtx, mainGroupName.c_str(), ""));
+				MovePtr<tcu::TestCaseGroup>	mainGroup(new tcu::TestCaseGroup(testCtx, mainGroupName.c_str()));
 
 				for (deUint32 shaderMask = 0u; shaderMask <= (flagTessellation | flagGeometry); ++shaderMask)
 				{
@@ -1819,7 +1818,7 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 					const bool			useGeometry		= (shaderMask & flagGeometry) != 0;
 					const std::string	shaderGroupName	= std::string("vert") + (useTessellation ? "_tess" : "") + (useGeometry ? "_geom" : "");
 
-					MovePtr<tcu::TestCaseGroup>	shaderGroup(new tcu::TestCaseGroup(testCtx, shaderGroupName.c_str(), ""));
+					MovePtr<tcu::TestCaseGroup>	shaderGroup(new tcu::TestCaseGroup(testCtx, shaderGroupName.c_str()));
 
 					for (int numClipPlanes = 1; numClipPlanes <= MAX_CLIP_DISTANCES; ++numClipPlanes)
 					for (int fragmentShaderReadNdx = 0; fragmentShaderReadNdx < DE_LENGTH_OF_ARRAY(fragmentShaderReads); ++fragmentShaderReadNdx)
@@ -1831,7 +1830,7 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 						const VkPrimitiveTopology	topology		= (useTessellation ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
 						addFunctionCaseWithPrograms<CaseDefinition>(
-							shaderGroup.get(), caseName, caseGroups[groupNdx].description, initPrograms, testClipDistance,
+							shaderGroup.get(), caseName, initPrograms, testClipDistance,
 							CaseDefinition(topology, numClipPlanes, numCullPlanes, useTessellation, useGeometry, dynamicIndexing, fragmentShaderReads[fragmentShaderReadNdx].readInFragmentShader));
 					}
 					mainGroup->addChild(shaderGroup.release());
@@ -1845,10 +1844,10 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 		{
 			using namespace ClipDistanceComplementarity;
 
-			MovePtr<tcu::TestCaseGroup>	group(new tcu::TestCaseGroup(testCtx, "complementarity", ""));
+			MovePtr<tcu::TestCaseGroup>	group(new tcu::TestCaseGroup(testCtx, "complementarity"));
 
 			for (int numClipDistances = 1; numClipDistances <= MAX_CLIP_DISTANCES; ++numClipDistances)
-				addFunctionCaseWithPrograms<int>(group.get(), de::toString(numClipDistances).c_str(), "", initPrograms, testComplementarity, numClipDistances);
+				addFunctionCaseWithPrograms<int>(group.get(), de::toString(numClipDistances).c_str(), initPrograms, testComplementarity, numClipDistances);
 
 			clippingTestsGroup->addChild(group.release());
 		}
@@ -1856,9 +1855,9 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 		{
 			using namespace CullDistance;
 
-			MovePtr<tcu::TestCaseGroup>	group(new tcu::TestCaseGroup(testCtx, "misc", ""));
+			MovePtr<tcu::TestCaseGroup>	group(new tcu::TestCaseGroup(testCtx, "misc"));
 
-			addFunctionCaseWithPrograms(group.get(), "negative_and_non_negative_cull_distance", "", checkSupport, initPrograms, testCullDistance);
+			addFunctionCaseWithPrograms(group.get(), "negative_and_non_negative_cull_distance", checkSupport, initPrograms, testCullDistance);
 
 			clippingTestsGroup->addChild(group.release());
 		}
@@ -1869,7 +1868,7 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, name.c_str(), "Clipping tests", addClippingTests);
+	return createTestGroup(testCtx, name.c_str(), addClippingTests);
 }
 
 } // clipping

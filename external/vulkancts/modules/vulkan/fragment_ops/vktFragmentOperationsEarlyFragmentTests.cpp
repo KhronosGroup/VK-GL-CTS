@@ -230,7 +230,7 @@ private:
 };
 
 EarlyFragmentTest::EarlyFragmentTest (tcu::TestContext& testCtx, const std::string name, const deUint32 flags)
-	: TestCase	(testCtx, name, "")
+	: TestCase	(testCtx, name)
 	, m_flags	(flags)
 {
 }
@@ -2620,7 +2620,7 @@ void EarlyFragmentSampleCountTest::checkSupport(Context& context) const
 
 tcu::TestCaseGroup* createEarlyFragmentTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup			(new tcu::TestCaseGroup(testCtx, "early_fragment", "early fragment test cases"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup			(new tcu::TestCaseGroup(testCtx, "early_fragment"));
 
 	{
 		struct TestCaseEarly

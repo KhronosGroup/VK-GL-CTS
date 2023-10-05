@@ -360,7 +360,7 @@ DrawIndexedTestCase::DrawIndexedTestCase(tcu::TestContext&		testContext,
 										 TestMode				mode,
 										 deUint32				robustnessVersion)
 
-	: vkt::TestCase			(testContext, name, "")
+	: vkt::TestCase			(testContext, name)
 	, m_testMode			(mode)
 	, m_robustnessVersion	(robustnessVersion)
 {}
@@ -853,7 +853,8 @@ tcu::TestCaseGroup* createCmdBindIndexBuffer2Tests (tcu::TestContext& testCtx)
 
 	const deUint32 offsets[] = { 0, 100 };
 
-	de::MovePtr<tcu::TestCaseGroup> gRoot(new tcu::TestCaseGroup(testCtx, "bind_index_buffer2", "Test access outside of the buffer with using the vkCmdBindIndexBuffer2 function from VK_KHR_maintenance5 extension."));
+	// Test access outside of the buffer with using the vkCmdBindIndexBuffer2 function from VK_KHR_maintenance5 extension.
+	de::MovePtr<tcu::TestCaseGroup> gRoot(new tcu::TestCaseGroup(testCtx, "bind_index_buffer2"));
 	for (deUint32 offset : offsets)
 	{
 		de::MovePtr<tcu::TestCaseGroup> gOffset(new tcu::TestCaseGroup(testCtx, ("offset_" + std::to_string(offset)).c_str(), ""));

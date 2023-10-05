@@ -4129,7 +4129,7 @@ VkFormat getSupportedDepthStencilFormat (const InstanceInterface& vki, VkPhysica
 class ManyDrawsCase : public TestCase
 {
 public:
-							ManyDrawsCase			(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const ManyDrawsParams& params);
+							ManyDrawsCase			(tcu::TestContext& testCtx, const std::string& name, const ManyDrawsParams& params);
 	virtual					~ManyDrawsCase			(void) {}
 
 	virtual void			checkSupport			(Context& context) const;
@@ -4261,8 +4261,8 @@ struct ManyDrawsAllocatedData
 	}
 };
 
-ManyDrawsCase::ManyDrawsCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const ManyDrawsParams& params)
-	: TestCase	(testCtx, name, description)
+ManyDrawsCase::ManyDrawsCase (tcu::TestContext& testCtx, const std::string& name, const ManyDrawsParams& params)
+	: TestCase	(testCtx, name)
 	, m_params	(params)
 {}
 
@@ -4681,87 +4681,86 @@ tcu::TestStatus ManyDrawsInstance::iterate (void)
 
 tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	commandBuffersTests	(new tcu::TestCaseGroup(testCtx, "command_buffers", "Command Buffers Tests"));
+	de::MovePtr<tcu::TestCaseGroup>	commandBuffersTests	(new tcu::TestCaseGroup(testCtx, "command_buffers"));
 
 	/* 19.1. Command Pools (5.1 in VK 1.0 Spec) */
-	addFunctionCase				(commandBuffersTests.get(), "pool_create_null_params",			"",	createPoolNullParamsTest);
+	addFunctionCase				(commandBuffersTests.get(), "pool_create_null_params",			createPoolNullParamsTest);
 #ifndef CTS_USES_VULKANSC
 	// VkAllocationCallbacks must be NULL in Vulkan SC
-	addFunctionCase				(commandBuffersTests.get(), "pool_create_non_null_allocator",	"",	createPoolNonNullAllocatorTest);
+	addFunctionCase				(commandBuffersTests.get(), "pool_create_non_null_allocator",	createPoolNonNullAllocatorTest);
 #endif // CTS_USES_VULKANSC
-	addFunctionCase				(commandBuffersTests.get(), "pool_create_transient_bit",		"",	createPoolTransientBitTest);
-	addFunctionCase				(commandBuffersTests.get(), "pool_create_reset_bit",			"",	createPoolResetBitTest);
+	addFunctionCase				(commandBuffersTests.get(), "pool_create_transient_bit",		createPoolTransientBitTest);
+	addFunctionCase				(commandBuffersTests.get(), "pool_create_reset_bit",			createPoolResetBitTest);
 #ifndef CTS_USES_VULKANSC
-	addFunctionCase				(commandBuffersTests.get(), "pool_reset_release_res",			"",	resetPoolReleaseResourcesBitTest);
+	addFunctionCase				(commandBuffersTests.get(), "pool_reset_release_res",			resetPoolReleaseResourcesBitTest);
 #endif // CTS_USES_VULKANSC
-	addFunctionCase				(commandBuffersTests.get(), "pool_reset_no_flags_res",			"",	resetPoolNoFlagsTest);
+	addFunctionCase				(commandBuffersTests.get(), "pool_reset_no_flags_res",			resetPoolNoFlagsTest);
 #ifndef CTS_USES_VULKANSC
-	addFunctionCase				(commandBuffersTests.get(), "pool_reset_reuse",					"",	checkEventSupport, resetPoolReuseTest);
+	addFunctionCase				(commandBuffersTests.get(), "pool_reset_reuse",					checkEventSupport, resetPoolReuseTest);
 #endif // CTS_USES_VULKANSC
 	/* 19.2. Command Buffer Lifetime (5.2 in VK 1.0 Spec) */
-	addFunctionCase				(commandBuffersTests.get(), "allocate_single_primary",			"", allocatePrimaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "allocate_many_primary",			"",	allocateManyPrimaryBuffersTest);
-	addFunctionCase				(commandBuffersTests.get(), "allocate_single_secondary",		"", allocateSecondaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "allocate_many_secondary",			"", allocateManySecondaryBuffersTest);
-	addFunctionCase				(commandBuffersTests.get(), "execute_small_primary",			"", checkEventSupport, executePrimaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "execute_large_primary",			"",	checkEventSupport, executeLargePrimaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "reset_implicit",					"", checkEventSupport, resetBufferImplicitlyTest);
+	addFunctionCase				(commandBuffersTests.get(), "allocate_single_primary",			allocatePrimaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "allocate_many_primary",			allocateManyPrimaryBuffersTest);
+	addFunctionCase				(commandBuffersTests.get(), "allocate_single_secondary",		allocateSecondaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "allocate_many_secondary",			allocateManySecondaryBuffersTest);
+	addFunctionCase				(commandBuffersTests.get(), "execute_small_primary",			checkEventSupport, executePrimaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "execute_large_primary",			checkEventSupport, executeLargePrimaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "reset_implicit",					checkEventSupport, resetBufferImplicitlyTest);
 #ifndef CTS_USES_VULKANSC
-	addFunctionCase				(commandBuffersTests.get(), "trim_command_pool",				"", checkEventSupport, trimCommandPoolTest, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-	addFunctionCase				(commandBuffersTests.get(), "trim_command_pool_secondary",		"", checkEventSupport, trimCommandPoolTest, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+	addFunctionCase				(commandBuffersTests.get(), "trim_command_pool",				checkEventSupport, trimCommandPoolTest, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	addFunctionCase				(commandBuffersTests.get(), "trim_command_pool_secondary",		checkEventSupport, trimCommandPoolTest, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 #endif // CTS_USES_VULKANSC
 	/* 19.3. Command Buffer Recording (5.3 in VK 1.0 Spec) */
-	addFunctionCase				(commandBuffersTests.get(), "record_single_primary",			"",	checkEventSupport, recordSinglePrimaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_many_primary",				"", checkEventSupport, recordLargePrimaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_single_secondary",			"", checkEventAndSecondaryCommandBufferNullFramebufferSupport, recordSingleSecondaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_many_secondary",			"", checkEventAndSecondaryCommandBufferNullFramebufferSupport, recordLargeSecondaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_single_primary",			checkEventSupport, recordSinglePrimaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_many_primary",				checkEventSupport, recordLargePrimaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_single_secondary",			checkEventAndSecondaryCommandBufferNullFramebufferSupport, recordSingleSecondaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_many_secondary",			checkEventAndSecondaryCommandBufferNullFramebufferSupport, recordLargeSecondaryBufferTest);
 	{
 		deUint32	seed		= 1614182419u;
 		const auto	smallExtent	= makeExtent3D(128u, 128u, 1u);
 		const auto	largeExtent	= makeExtent3D(512u, 256u, 1u);
 
-		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_primary_1",		"", ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_PRIMARY,	smallExtent,	seed++)));
-		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_primary_2",		"", ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_PRIMARY,	largeExtent,	seed++)));
-		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_secondary_1",	"", ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_SECONDARY,	smallExtent,	seed++)));
-		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_secondary_2",	"", ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_SECONDARY,	largeExtent,	seed++)));
+		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_primary_1",		ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_PRIMARY,	smallExtent,	seed++)));
+		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_primary_2",		ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_PRIMARY,	largeExtent,	seed++)));
+		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_secondary_1",	ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_SECONDARY,	smallExtent,	seed++)));
+		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_secondary_2",	ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_SECONDARY,	largeExtent,	seed++)));
 	}
-	addFunctionCase				(commandBuffersTests.get(), "submit_twice_primary",				"",	checkEventSupport, submitPrimaryBufferTwiceTest);
-	addFunctionCase				(commandBuffersTests.get(), "submit_twice_secondary",			"", checkEventAndSecondaryCommandBufferNullFramebufferSupport, submitSecondaryBufferTwiceTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_one_time_submit_primary",	"",	checkEventSupport, oneTimeSubmitFlagPrimaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_one_time_submit_secondary",	"", checkEventAndSecondaryCommandBufferNullFramebufferSupport, oneTimeSubmitFlagSecondaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "render_pass_continue",				"",	renderPassContinueTest, true);
-	addFunctionCase				(commandBuffersTests.get(), "render_pass_continue_no_fb",		"", checkSecondaryCommandBufferNullOrImagelessFramebufferSupport1, renderPassContinueTest, false);
-	addFunctionCaseWithPrograms (commandBuffersTests.get(), "record_simul_use_secondary_one_primary", "", checkSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport, genComputeIncrementSource, simultaneousUseSecondaryBufferOnePrimaryBufferTest);
-	addFunctionCaseWithPrograms (commandBuffersTests.get(), "record_simul_use_secondary_two_primary", "", checkSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport, genComputeIncrementSource, simultaneousUseSecondaryBufferTwoPrimaryBuffersTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_query_precise_w_flag",		"", checkSecondaryCommandBufferNullOrImagelessFramebufferSupport, recordBufferQueryPreciseWithFlagTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_query_imprecise_w_flag",	"", checkSecondaryCommandBufferNullOrImagelessFramebufferSupport, recordBufferQueryImpreciseWithFlagTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_query_imprecise_wo_flag",	"", checkSecondaryCommandBufferNullOrImagelessFramebufferSupport, recordBufferQueryImpreciseWithoutFlagTest);
-	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_random",		"", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::RANDOM_PTR);
-	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_random_cont",	"", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::RANDOM_PTR_CONTINUATION);
-	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_random_data",	"", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::RANDOM_DATA_PTR);
-	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_invalid_type", "", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::INVALID_STRUCTURE_TYPE);
-	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_valid_nonsense_type", "", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::VALID_NONSENSE_TYPE);
+	addFunctionCase				(commandBuffersTests.get(), "submit_twice_primary",				checkEventSupport, submitPrimaryBufferTwiceTest);
+	addFunctionCase				(commandBuffersTests.get(), "submit_twice_secondary",			checkEventAndSecondaryCommandBufferNullFramebufferSupport, submitSecondaryBufferTwiceTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_one_time_submit_primary",	checkEventSupport, oneTimeSubmitFlagPrimaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_one_time_submit_secondary",	checkEventAndSecondaryCommandBufferNullFramebufferSupport, oneTimeSubmitFlagSecondaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "render_pass_continue",				renderPassContinueTest, true);
+	addFunctionCase				(commandBuffersTests.get(), "render_pass_continue_no_fb",		checkSecondaryCommandBufferNullOrImagelessFramebufferSupport1, renderPassContinueTest, false);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "record_simul_use_secondary_one_primary", checkSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport, genComputeIncrementSource, simultaneousUseSecondaryBufferOnePrimaryBufferTest);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "record_simul_use_secondary_two_primary", checkSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport, genComputeIncrementSource, simultaneousUseSecondaryBufferTwoPrimaryBuffersTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_query_precise_w_flag",		checkSecondaryCommandBufferNullOrImagelessFramebufferSupport, recordBufferQueryPreciseWithFlagTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_query_imprecise_w_flag",	checkSecondaryCommandBufferNullOrImagelessFramebufferSupport, recordBufferQueryImpreciseWithFlagTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_query_imprecise_wo_flag",	checkSecondaryCommandBufferNullOrImagelessFramebufferSupport, recordBufferQueryImpreciseWithoutFlagTest);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_random",		genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::RANDOM_PTR);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_random_cont",	genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::RANDOM_PTR_CONTINUATION);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_random_data",	genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::RANDOM_DATA_PTR);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_invalid_type", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::INVALID_STRUCTURE_TYPE);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_valid_nonsense_type", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::VALID_NONSENSE_TYPE);
 	/* 19.4. Command Buffer Submission (5.4 in VK 1.0 Spec) */
-	addFunctionCase				(commandBuffersTests.get(), "submit_count_non_zero",			"", checkEventSupport, submitBufferCountNonZero);
-	addFunctionCase				(commandBuffersTests.get(), "submit_count_equal_zero",			"", checkEventSupport, submitBufferCountEqualZero);
-	addFunctionCase				(commandBuffersTests.get(), "submit_wait_single_semaphore",		"", checkEventSupport, submitBufferWaitSingleSemaphore);
-	addFunctionCase				(commandBuffersTests.get(), "submit_wait_many_semaphores",		"", checkEventSupport, submitBufferWaitManySemaphores);
-	addFunctionCase				(commandBuffersTests.get(), "submit_null_fence",				"", checkEventSupport, submitBufferNullFence);
-	addFunctionCase				(commandBuffersTests.get(), "submit_two_buffers_one_buffer_null_with_fence", "", checkEventSupport, submitTwoBuffersOneBufferNullWithFence);
+	addFunctionCase				(commandBuffersTests.get(), "submit_count_non_zero",			checkEventSupport, submitBufferCountNonZero);
+	addFunctionCase				(commandBuffersTests.get(), "submit_count_equal_zero",			checkEventSupport, submitBufferCountEqualZero);
+	addFunctionCase				(commandBuffersTests.get(), "submit_wait_single_semaphore",		checkEventSupport, submitBufferWaitSingleSemaphore);
+	addFunctionCase				(commandBuffersTests.get(), "submit_wait_many_semaphores",		checkEventSupport, submitBufferWaitManySemaphores);
+	addFunctionCase				(commandBuffersTests.get(), "submit_null_fence",				checkEventSupport, submitBufferNullFence);
+	addFunctionCase				(commandBuffersTests.get(), "submit_two_buffers_one_buffer_null_with_fence", checkEventSupport, submitTwoBuffersOneBufferNullWithFence);
 	/* 19.5. Secondary Command Buffer Execution (5.6 in VK 1.0 Spec) */
-	addFunctionCase				(commandBuffersTests.get(), "secondary_execute",				"", checkEventAndSecondaryCommandBufferNullFramebufferSupport, executeSecondaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "secondary_execute_twice",			"", checkEventAndTimelineSemaphoreAndSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport, executeSecondaryBufferTwiceTest);
+	addFunctionCase				(commandBuffersTests.get(), "secondary_execute",				checkEventAndSecondaryCommandBufferNullFramebufferSupport, executeSecondaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "secondary_execute_twice",			checkEventAndTimelineSemaphoreAndSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport, executeSecondaryBufferTwiceTest);
 	/* 19.6. Commands Allowed Inside Command Buffers (? in VK 1.0 Spec) */
-	addFunctionCaseWithPrograms (commandBuffersTests.get(), "order_bind_pipeline",				"", genComputeSource, orderBindPipelineTest);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "order_bind_pipeline",				genComputeSource, orderBindPipelineTest);
 	/* Verify untested transitions between command buffer states */
-	addFunctionCase				(commandBuffersTests.get(), "recording_to_ininitial",			"", executeStateTransitionTest, STT_RECORDING_TO_INITIAL);
-	addFunctionCase				(commandBuffersTests.get(), "executable_to_ininitial",			"", executeStateTransitionTest, STT_EXECUTABLE_TO_INITIAL);
-	addFunctionCase				(commandBuffersTests.get(), "recording_to_invalid",				"", executeStateTransitionTest, STT_RECORDING_TO_INVALID);
-	addFunctionCase				(commandBuffersTests.get(), "executable_to_invalid",			"", executeStateTransitionTest, STT_EXECUTABLE_TO_INVALID);
+	addFunctionCase				(commandBuffersTests.get(), "recording_to_ininitial",			executeStateTransitionTest, STT_RECORDING_TO_INITIAL);
+	addFunctionCase				(commandBuffersTests.get(), "executable_to_ininitial",			executeStateTransitionTest, STT_EXECUTABLE_TO_INITIAL);
+	addFunctionCase				(commandBuffersTests.get(), "recording_to_invalid",				executeStateTransitionTest, STT_RECORDING_TO_INVALID);
+	addFunctionCase				(commandBuffersTests.get(), "executable_to_invalid",			executeStateTransitionTest, STT_EXECUTABLE_TO_INVALID);
 
 	return commandBuffersTests.release();
 }
 
 } // api
 } // vkt
-

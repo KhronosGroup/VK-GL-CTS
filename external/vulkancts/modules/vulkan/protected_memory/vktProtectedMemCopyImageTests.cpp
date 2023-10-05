@@ -79,7 +79,7 @@ public:
 														 vk::VkClearColorValue		clearColorValue,
 														 ValidationData				data,
 														 CmdBufferType				cmdBufferType)
-									: TestCase			(testCtx, name, "Clear and copy image.")
+									: TestCase			(testCtx, name)
 									, m_clearColorValue	(clearColorValue)
 									, m_refData			(data)
 									, m_cmdBufferType	(cmdBufferType)
@@ -417,7 +417,8 @@ tcu::TestCaseGroup*	createCopyImageTests (tcu::TestContext& testCtx, CmdBufferTy
 		},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> copyStaticTests	(new tcu::TestCaseGroup(testCtx, "static", "Copy Image Tests with static input"));
+	// Copy Image Tests with static input
+	de::MovePtr<tcu::TestCaseGroup> copyStaticTests	(new tcu::TestCaseGroup(testCtx, "static"));
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testData); ++ndx)
 	{
@@ -448,8 +449,7 @@ tcu::TestCaseGroup*	createCopyImageTests (tcu::TestContext& testCtx, CmdBufferTy
 	}
 
 	std::string groupName = getCmdBufferTypeStr(cmdBufferType);
-	std::string groupDesc = "Copy Image Tests with " + groupName + " command buffer";
-	de::MovePtr<tcu::TestCaseGroup> copyTests (new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupDesc.c_str()));
+	de::MovePtr<tcu::TestCaseGroup> copyTests (new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 	copyTests->addChild(copyStaticTests.release());
 	copyTests->addChild(copyRandomTests.release());
 	return copyTests.release();

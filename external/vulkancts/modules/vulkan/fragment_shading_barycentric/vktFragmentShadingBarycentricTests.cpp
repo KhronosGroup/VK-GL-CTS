@@ -1184,7 +1184,6 @@ class FragmentShadingBarycentricTestCase : public TestCase
 public:
 							FragmentShadingBarycentricTestCase	(tcu::TestContext&	context,
 																 const char*		name,
-																 const char*		desc,
 																 const TestParams	testParams);
 							~FragmentShadingBarycentricTestCase	(void);
 
@@ -1203,8 +1202,8 @@ private:
 	TestParams				m_testParams;
 };
 
-FragmentShadingBarycentricTestCase::FragmentShadingBarycentricTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams testParams)
-	: vkt::TestCase	(context, name, desc)
+FragmentShadingBarycentricTestCase::FragmentShadingBarycentricTestCase (tcu::TestContext& context, const char* name, const TestParams testParams)
+	: vkt::TestCase	(context, name)
 	, m_testParams	(testParams)
 {
 }
@@ -1700,7 +1699,8 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 {
 	const bool					notused			= false;
 	MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, name.c_str(), "Tests fragment shading barycentric extension"));
-	MovePtr<tcu::TestCaseGroup>	libGroup		(new tcu::TestCaseGroup(testCtx, "pipeline_library", "Tests using graphics pipeline libraries"));
+	// Tests using graphics pipeline libraries
+	MovePtr<tcu::TestCaseGroup>	libGroup		(new tcu::TestCaseGroup(testCtx, "pipeline_library"));
 	MovePtr<tcu::TestCaseGroup>	fastLinkGroup	(new tcu::TestCaseGroup(testCtx, "fast_linked_library", "Tests using graphics pipeline libraries with fast linking"));
 
 	const struct
@@ -1795,22 +1795,22 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 
 	for (const auto& constructionTypeCase : constructionTypeCases)
 	{
-		MovePtr<tcu::TestCaseGroup>	testTypeGroup	(new tcu::TestCaseGroup(testCtx, "data", ""));
+		MovePtr<tcu::TestCaseGroup>	testTypeGroup	(new tcu::TestCaseGroup(testCtx, "data"));
 		const TestType				testType		= TEST_TYPE_DATA;
 
 		for (size_t provokingVertexNdx = 0; provokingVertexNdx < DE_LENGTH_OF_ARRAY(provokingVertices); ++provokingVertexNdx)
 		{
-			MovePtr<tcu::TestCaseGroup>	provokingVertexGroup	(new tcu::TestCaseGroup(testCtx, provokingVertices[provokingVertexNdx].name, ""));
+			MovePtr<tcu::TestCaseGroup>	provokingVertexGroup	(new tcu::TestCaseGroup(testCtx, provokingVertices[provokingVertexNdx].name));
 			const bool					provokingVertexLast		= provokingVertices[provokingVertexNdx].value;
 
 			for (size_t dynamicNdx = 0; dynamicNdx < DE_LENGTH_OF_ARRAY(dynamicIndexings); ++dynamicNdx)
 			{
-				MovePtr<tcu::TestCaseGroup>	dynamicIndexingGroup	(new tcu::TestCaseGroup(testCtx, dynamicIndexings[dynamicNdx].name, ""));
+				MovePtr<tcu::TestCaseGroup>	dynamicIndexingGroup	(new tcu::TestCaseGroup(testCtx, dynamicIndexings[dynamicNdx].name));
 				const bool					dynamicIndexing			= dynamicIndexings[dynamicNdx].value;
 
 				for (size_t topologyNdx = 0; topologyNdx < DE_LENGTH_OF_ARRAY(topologies); ++topologyNdx)
 				{
-					MovePtr<tcu::TestCaseGroup>	topologyGroup	(new tcu::TestCaseGroup(testCtx, topologies[topologyNdx].name, ""));
+					MovePtr<tcu::TestCaseGroup>	topologyGroup	(new tcu::TestCaseGroup(testCtx, topologies[topologyNdx].name));
 					const VkPrimitiveTopology	topology		= topologies[topologyNdx].topology;
 
 					for (size_t aggregateNdx = 0; aggregateNdx < 3; ++aggregateNdx)
@@ -1818,7 +1818,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 						const string				aggregateName	= aggregateNdx == 0 ? "type"
 																	: aggregateNdx == 1 ? "struct"
 																	: "array" + de::toString(aggregateNdx);
-						MovePtr<tcu::TestCaseGroup>	aggregateGroup	(new tcu::TestCaseGroup(testCtx, aggregateName.c_str(), ""));
+						MovePtr<tcu::TestCaseGroup>	aggregateGroup	(new tcu::TestCaseGroup(testCtx, aggregateName.c_str()));
 
 						for (size_t dataTypeNdx = 0; dataTypeNdx < DE_LENGTH_OF_ARRAY(dataTypes); ++dataTypeNdx)
 						{
@@ -1843,7 +1843,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 								VK_SAMPLE_COUNT_1_BIT,	//  VkSampleCountFlagBits	sampleCount;
 							};
 
-							aggregateGroup->addChild(new FragmentShadingBarycentricTestCase(testCtx, dataTypeName, "", testParams));
+							aggregateGroup->addChild(new FragmentShadingBarycentricTestCase(testCtx, dataTypeName, testParams));
 						}
 
 						topologyGroup->addChild(aggregateGroup.release());
@@ -1859,7 +1859,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 		}
 
 		{
-			MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
+			MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
 			const TestParams testParams
 			{
 				constructionTypeCase.constructionType,
@@ -1877,7 +1877,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 				notused,								//  bool					dynamicTopologyInPipeline
 				VK_SAMPLE_COUNT_1_BIT,					//  VkSampleCountFlagBits	sampleCount;
 			};
-			miscGroup->addChild(new FragmentShadingBarycentricTestCase(testCtx, "pervertex_correctness", "", testParams));
+			miscGroup->addChild(new FragmentShadingBarycentricTestCase(testCtx, "pervertex_correctness", testParams));
 			testTypeGroup->addChild(miscGroup.release());
 		}
 
@@ -1902,22 +1902,22 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 			{ "msaa_sample_qualifier",			VK_SAMPLE_COUNT_4_BIT,	TEST_SUBTYPE_MSAA_SAMPLE_QUALIFIER },
 		};
 
-		MovePtr<tcu::TestCaseGroup>	testTypeGroup	(new tcu::TestCaseGroup(testCtx, "weights", ""));
+		MovePtr<tcu::TestCaseGroup>	testTypeGroup	(new tcu::TestCaseGroup(testCtx, "weights"));
 		const TestType				testType		= TEST_TYPE_WEIGHTS;
 
 		for (size_t topologyInPipelineNdx = 0; topologyInPipelineNdx < DE_LENGTH_OF_ARRAY(topologiesInPipeline); ++topologyInPipelineNdx)
 		{
-			MovePtr<tcu::TestCaseGroup>	topologyInPipelineGroup	(new tcu::TestCaseGroup(testCtx, topologiesInPipeline[topologyInPipelineNdx].name, ""));
+			MovePtr<tcu::TestCaseGroup>	topologyInPipelineGroup	(new tcu::TestCaseGroup(testCtx, topologiesInPipeline[topologyInPipelineNdx].name));
 			const bool					topologyInPipeline		= topologiesInPipeline[topologyInPipelineNdx].value;
 
 			if (topologyInPipeline)
 			{
 				for (size_t msaaCaseNdx = 0; msaaCaseNdx < DE_LENGTH_OF_ARRAY(msaaCases); ++msaaCaseNdx)
 				{
-					MovePtr<tcu::TestCaseGroup> msaaGroup(new tcu::TestCaseGroup(testCtx, msaaCases[msaaCaseNdx].name, ""));
+					MovePtr<tcu::TestCaseGroup> msaaGroup(new tcu::TestCaseGroup(testCtx, msaaCases[msaaCaseNdx].name));
 					for (size_t topologyNdx = 0; topologyNdx < DE_LENGTH_OF_ARRAY(topologies); ++topologyNdx)
 					{
-						MovePtr<tcu::TestCaseGroup>	topologyGroup(new tcu::TestCaseGroup(testCtx, topologies[topologyNdx].name, ""));
+						MovePtr<tcu::TestCaseGroup>	topologyGroup(new tcu::TestCaseGroup(testCtx, topologies[topologyNdx].name));
 						const VkPrimitiveTopology	topology = topologies[topologyNdx].topology;
 						const bool					testableTopology = isPrimitiveTopologyLine(topology) || isPrimitiveTopologyTriangle(topology);
 
@@ -1947,7 +1947,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 								msaaCases[msaaCaseNdx].samples,		//  VkSampleCountFlagBits	sampleCount;
 							};
 
-							topologyGroup->addChild(new FragmentShadingBarycentricTestCase(testCtx, perspectiveName, "", testParams));
+							topologyGroup->addChild(new FragmentShadingBarycentricTestCase(testCtx, perspectiveName, testParams));
 						}
 						msaaGroup->addChild(topologyGroup.release());
 					}
@@ -1959,12 +1959,12 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 				for (size_t rotationNdx = 0; rotationNdx < DE_LENGTH_OF_ARRAY(rotations); ++rotationNdx)
 				{
 					const uint32_t				rotation		= rotations[rotationNdx];
-					MovePtr<tcu::TestCaseGroup>	rotationGroup	(new tcu::TestCaseGroup(testCtx, de::toString(rotation).c_str(), ""));
+					MovePtr<tcu::TestCaseGroup>	rotationGroup	(new tcu::TestCaseGroup(testCtx, de::toString(rotation).c_str()));
 
 					for (size_t topologyNdx = 0; topologyNdx < DE_LENGTH_OF_ARRAY(topologies); ++topologyNdx)
 					{
 						const VkPrimitiveTopology	topology		= topologies[topologyNdx].topology;
-						MovePtr<tcu::TestCaseGroup>	topologyGroup	(new tcu::TestCaseGroup(testCtx, topologies[topologyNdx].name, ""));
+						MovePtr<tcu::TestCaseGroup>	topologyGroup	(new tcu::TestCaseGroup(testCtx, topologies[topologyNdx].name));
 
 						for (size_t perspectiveNdx = 0; perspectiveNdx < DE_LENGTH_OF_ARRAY(perspectives); ++perspectiveNdx)
 						{
@@ -1989,7 +1989,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 								VK_SAMPLE_COUNT_1_BIT,	//  VkSampleCountFlagBits	sampleCount;
 							};
 
-							topologyGroup->addChild(new FragmentShadingBarycentricTestCase(testCtx, perspectiveName, "", testParams));
+							topologyGroup->addChild(new FragmentShadingBarycentricTestCase(testCtx, perspectiveName, testParams));
 						}
 
 						rotationGroup->addChild(topologyGroup.release());

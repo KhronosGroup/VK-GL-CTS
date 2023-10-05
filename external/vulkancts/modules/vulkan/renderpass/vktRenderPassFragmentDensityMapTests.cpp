@@ -1094,7 +1094,6 @@ class FragmentDensityMapTest : public vkt::TestCase
 public:
 							FragmentDensityMapTest	(tcu::TestContext&	testContext,
 													 const std::string&	name,
-													 const std::string&	description,
 													 const TestParams&	testParams);
 	virtual void			initPrograms			(SourceCollections&	sourceCollections) const;
 	virtual TestInstance*	createInstance			(Context&			context) const;
@@ -1221,9 +1220,8 @@ private:
 
 FragmentDensityMapTest::FragmentDensityMapTest (tcu::TestContext&	testContext,
 												const std::string&	name,
-												const std::string&	description,
 												const TestParams&	testParams)
-	: vkt::TestCase	(testContext, name, description)
+	: vkt::TestCase	(testContext, name)
 	, m_testParams	(testParams)
 {
 	DE_ASSERT(testParams.samplersCount > 0);
@@ -2906,23 +2904,23 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 		if ((groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY) && view.viewCount > 1)
 			continue;
 
-		de::MovePtr<tcu::TestCaseGroup> viewGroup(new tcu::TestCaseGroup(testCtx, view.name.c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> viewGroup(new tcu::TestCaseGroup(testCtx, view.name.c_str()));
 		for (const auto& render : renders)
 		{
 			if ((groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) && render.makeCopy)
 				continue;
 
-			de::MovePtr<tcu::TestCaseGroup> renderGroup(new tcu::TestCaseGroup(testCtx, render.name.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> renderGroup(new tcu::TestCaseGroup(testCtx, render.name.c_str()));
 			for (const auto& size : sizes)
 			{
-				de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, size.name.c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, size.name.c_str()));
 				for (const auto& sample : samples)
 				{
 					// Reduce number of tests for dynamic rendering cases where secondary command buffer is used
 					if (groupParams->useSecondaryCmdBuffer && (sample.samples > VK_SAMPLE_COUNT_2_BIT))
 						break;
 
-					de::MovePtr<tcu::TestCaseGroup> sampleGroup(new tcu::TestCaseGroup(testCtx, sample.name.c_str(), ""));
+					de::MovePtr<tcu::TestCaseGroup> sampleGroup(new tcu::TestCaseGroup(testCtx, sample.name.c_str()));
 					for (const auto& area : fragmentArea)
 					{
 						std::stringstream str;
@@ -2950,24 +2948,24 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 							groupParams						// SharedGroupParams		groupParams;
 						};
 
-						sampleGroup->addChild(new FragmentDensityMapTest(testCtx, std::string("static_subsampled") + str.str(), "", params));
+						sampleGroup->addChild(new FragmentDensityMapTest(testCtx, std::string("static_subsampled") + str.str(), params));
 						params.deferredDensityMap	= true;
-						sampleGroup->addChild(new FragmentDensityMapTest(testCtx, std::string("deferred_subsampled") + str.str(), "", params));
+						sampleGroup->addChild(new FragmentDensityMapTest(testCtx, std::string("deferred_subsampled") + str.str(), params));
 						params.deferredDensityMap	= false;
 						params.dynamicDensityMap	= true;
-						sampleGroup->addChild(new FragmentDensityMapTest(testCtx, std::string("dynamic_subsampled") + str.str(), "", params));
+						sampleGroup->addChild(new FragmentDensityMapTest(testCtx, std::string("dynamic_subsampled") + str.str(), params));
 
 						// generate nonsubsampled tests just for single view and double view cases
 						if (view.viewCount < 3)
 						{
 							params.nonSubsampledImages	= true;
 							params.dynamicDensityMap	= false;
-							sampleGroup->addChild(new FragmentDensityMapTest(testCtx, std::string("static_nonsubsampled") + str.str(), "", params));
+							sampleGroup->addChild(new FragmentDensityMapTest(testCtx, std::string("static_nonsubsampled") + str.str(), params));
 							params.deferredDensityMap	= true;
-							sampleGroup->addChild(new FragmentDensityMapTest(testCtx, std::string("deferred_nonsubsampled") + str.str(), "", params));
+							sampleGroup->addChild(new FragmentDensityMapTest(testCtx, std::string("deferred_nonsubsampled") + str.str(), params));
 							params.deferredDensityMap	= false;
 							params.dynamicDensityMap	= true;
-							sampleGroup->addChild(new FragmentDensityMapTest(testCtx, std::string("dynamic_nonsubsampled") + str.str(), "", params));
+							sampleGroup->addChild(new FragmentDensityMapTest(testCtx, std::string("dynamic_nonsubsampled") + str.str(), params));
 						}
 
 						// test multiviewport - each of views uses different viewport; limit number of cases to 2 samples
@@ -2978,7 +2976,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 							params.dynamicDensityMap	= false;
 							params.deferredDensityMap	= false;
 							params.multiViewport		= true;
-							sampleGroup->addChild(new FragmentDensityMapTest(testCtx, std::string("static_subsampled") + str.str() + "_multiviewport", "", params));
+							sampleGroup->addChild(new FragmentDensityMapTest(testCtx, std::string("static_subsampled") + str.str() + "_multiviewport", params));
 						}
 					}
 					sizeGroup->addChild(sampleGroup.release());
@@ -3002,7 +3000,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 		{ "8_subsampled_samplers",	8 }
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> propertiesGroup(new tcu::TestCaseGroup(testCtx, "properties", ""));
+	de::MovePtr<tcu::TestCaseGroup> propertiesGroup(new tcu::TestCaseGroup(testCtx, "properties"));
 	for (const auto& sampler : subsampledSamplers)
 	{
 		TestParams params
@@ -3026,7 +3024,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 			VK_FORMAT_R8G8_UNORM,			// VkFormat					densityMapFormat;
 			groupParams						// SharedGroupParams		groupParams;
 		};
-		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, sampler.name, "", params));
+		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, sampler.name, params));
 
 		// Reduce number of tests for dynamic rendering cases where secondary command buffer is used
 		if (groupParams->useSecondaryCmdBuffer)
@@ -3056,7 +3054,7 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 			VK_FORMAT_R8G8_UNORM,			// VkFormat					densityMapFormat;
 			groupParams						// SharedGroupParams		groupParams;
 		};
-		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "maintenance5", "", params));
+		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "maintenance5", params));
 	}
 
 	if (groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
@@ -3105,12 +3103,12 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 
 			params.deferredDensityMap = false;
 			params.dynamicDensityMap = false;
-			propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, namePrefix + "imageless_framebuffer_static_subsampled", "", params));
+			propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, namePrefix + "imageless_framebuffer_static_subsampled", params));
 			params.deferredDensityMap = true;
-			propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, namePrefix + "imageless_framebuffer_deferred_subsampled", "", params));
+			propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, namePrefix + "imageless_framebuffer_deferred_subsampled", params));
 			params.deferredDensityMap = false;
 			params.dynamicDensityMap = true;
-			propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, namePrefix + "imageless_framebuffer_dynamic_subsampled", "", params));
+			propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, namePrefix + "imageless_framebuffer_dynamic_subsampled", params));
 		}
 	}
 
@@ -3137,12 +3135,12 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 			VK_FORMAT_R8G8_UNORM,			// VkFormat					densityMapFormat;
 			groupParams						// SharedGroupParams		groupParams;
 		};
-		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "subsampled_loads", "", params));
+		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "subsampled_loads", params));
 		params.subsampledLoads		= false;
 		params.coarseReconstruction	= true;
-		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "subsampled_coarse_reconstruction", "", params));
+		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "subsampled_coarse_reconstruction", params));
 		params.useMemoryAccess		= true;
-		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "memory_access", "", params));
+		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "memory_access", params));
 	}
 
 	fdmTests->addChild(propertiesGroup.release());
@@ -3157,7 +3155,8 @@ static void cleanupGroup (tcu::TestCaseGroup* group, const SharedGroupParams)
 
 tcu::TestCaseGroup* createFragmentDensityMapTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "fragment_density_map", "VK_EXT_fragment_density_map and VK_EXT_fragment_density_map2 extensions tests", createChildren, groupParams, cleanupGroup);
+	// VK_EXT_fragment_density_map and VK_EXT_fragment_density_map2 extensions tests
+	return createTestGroup(testCtx, "fragment_density_map", createChildren, groupParams, cleanupGroup);
 }
 
 } // renderpass

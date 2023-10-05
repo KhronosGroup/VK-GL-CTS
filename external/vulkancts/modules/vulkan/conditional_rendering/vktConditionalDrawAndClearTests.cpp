@@ -1622,41 +1622,41 @@ void checkFanAndVertexStores (Context& context)
 } // unnamed namespace
 
 ConditionalRenderingDrawAndClearTests::ConditionalRenderingDrawAndClearTests (tcu::TestContext &testCtx)
-	: TestCaseGroup (testCtx, "draw_clear", "VK_EXT_conditional_rendering extension tests")
+	: TestCaseGroup (testCtx, "draw_clear")
 {
 	/* Left blank on purpose */
 }
 
 void ConditionalRenderingDrawAndClearTests::init (void)
 {
-	tcu::TestCaseGroup*	clear	= new tcu::TestCaseGroup(m_testCtx, "clear", "Tests using vkCmdClearAttachments.");
-	tcu::TestCaseGroup*	color	= new tcu::TestCaseGroup(m_testCtx, "color", "Test color clear.");
-	tcu::TestCaseGroup*	depth	= new tcu::TestCaseGroup(m_testCtx, "depth", "Test depth clear.");
-	tcu::TestCaseGroup*	draw	= new tcu::TestCaseGroup(m_testCtx, "draw", "Test drawing.");
+	tcu::TestCaseGroup*	clear	= new tcu::TestCaseGroup(m_testCtx, "clear");
+	tcu::TestCaseGroup*	color	= new tcu::TestCaseGroup(m_testCtx, "color");
+	tcu::TestCaseGroup*	depth	= new tcu::TestCaseGroup(m_testCtx, "depth");
+	tcu::TestCaseGroup*	draw	= new tcu::TestCaseGroup(m_testCtx, "draw");
 
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(clearColorTestGrid); testNdx++)
-		color->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, generateClearTestName(clearColorTestGrid[testNdx]), "Color clear test.", clearColorTestGrid[testNdx], checkSupport));
+		color->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, generateClearTestName(clearColorTestGrid[testNdx]), clearColorTestGrid[testNdx], checkSupport));
 
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(clearDepthTestGrid); testNdx++)
-		depth->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, generateClearTestName(clearDepthTestGrid[testNdx]), "Depth clear test.", clearDepthTestGrid[testNdx], checkSupport));
+		depth->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, generateClearTestName(clearDepthTestGrid[testNdx]), clearDepthTestGrid[testNdx], checkSupport));
 
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(clearColorTwiceGrid); testNdx++)
-		color->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "clear_attachment_twice_" + generateClearTestName(clearColorTwiceGrid[testNdx]), "Color clear test.", clearColorTwiceGrid[testNdx], checkSupport));
+		color->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "clear_attachment_twice_" + generateClearTestName(clearColorTwiceGrid[testNdx]), clearColorTwiceGrid[testNdx], checkSupport));
 
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(clearDepthTwiceGrid); testNdx++)
-		depth->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "clear_attachment_twice_" + generateClearTestName(clearDepthTwiceGrid[testNdx]), "Depth clear test.", clearDepthTwiceGrid[testNdx], checkSupport));
+		depth->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "clear_attachment_twice_" + generateClearTestName(clearDepthTwiceGrid[testNdx]), clearDepthTwiceGrid[testNdx], checkSupport));
 
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(drawTestGrid); testNdx++)
-		draw->addChild(new InstanceFactory1WithSupport<ConditionalRenderingDrawTestInstance, DrawTestParams, FunctionSupport0, AddProgramsDraw>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, generateDrawTestName(testNdx, drawTestGrid[testNdx]), "Draw test.", AddProgramsDraw(), drawTestGrid[testNdx], checkFan));
+		draw->addChild(new InstanceFactory1WithSupport<ConditionalRenderingDrawTestInstance, DrawTestParams, FunctionSupport0, AddProgramsDraw>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, generateDrawTestName(testNdx, drawTestGrid[testNdx]), AddProgramsDraw(), drawTestGrid[testNdx], checkFan));
 
 #ifndef CTS_USES_VULKANSC
 	DrawTestParams maintenance5TestParams = drawTestGrid[5];
 	maintenance5TestParams.m_useMaintenance5 = true;
-	draw->addChild(new InstanceFactory1WithSupport<ConditionalRenderingDrawTestInstance, DrawTestParams, FunctionSupport0, AddProgramsDraw>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "maintenance5", "", AddProgramsDraw(), maintenance5TestParams, checkMaintenance5Support));
+	draw->addChild(new InstanceFactory1WithSupport<ConditionalRenderingDrawTestInstance, DrawTestParams, FunctionSupport0, AddProgramsDraw>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "maintenance5", AddProgramsDraw(), maintenance5TestParams, checkMaintenance5Support));
 #endif
 
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(UpdateBufferWithDrawTestGrind); testNdx++)
-		draw->addChild(new InstanceFactory1WithSupport<ConditionalRenderingUpdateBufferWithDrawTestInstance, UpdateBufferWithDrawTestParams, FunctionSupport0, AddProgramsUpdateBufferUsingRendering>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, generateUpdateBufferWithDrawTestName(UpdateBufferWithDrawTestGrind[testNdx]), "Draw test.", AddProgramsUpdateBufferUsingRendering(), UpdateBufferWithDrawTestGrind[testNdx], checkFanAndVertexStores));
+		draw->addChild(new InstanceFactory1WithSupport<ConditionalRenderingUpdateBufferWithDrawTestInstance, UpdateBufferWithDrawTestParams, FunctionSupport0, AddProgramsUpdateBufferUsingRendering>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, generateUpdateBufferWithDrawTestName(UpdateBufferWithDrawTestGrind[testNdx]), AddProgramsUpdateBufferUsingRendering(), UpdateBufferWithDrawTestGrind[testNdx], checkFanAndVertexStores));
 
 	clear->addChild(color);
 	clear->addChild(depth);

@@ -541,12 +541,12 @@ tcu::TestCaseGroup* createImageMultisampleLoadStoreTests (tcu::TestContext& test
 		VK_SAMPLE_COUNT_64_BIT,
 	};
 
-	MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "load_store_multisample", "Multisampled image store and load"));
+	MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "load_store_multisample"));
 
 	for (int baseTextureNdx = 0; baseTextureNdx < DE_LENGTH_OF_ARRAY(textures); ++baseTextureNdx)
 	{
 		const Texture&				baseTexture			= textures[baseTextureNdx];
-		MovePtr<tcu::TestCaseGroup>	imageViewGroup		(new tcu::TestCaseGroup(testCtx, getImageTypeName(baseTexture.type()).c_str(), ""));
+		MovePtr<tcu::TestCaseGroup>	imageViewGroup		(new tcu::TestCaseGroup(testCtx, getImageTypeName(baseTexture.type()).c_str()));
 		const int					numLayerBindModes	= (baseTexture.numLayers() == 1 ? 1 : 2);
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); ++formatNdx)
@@ -554,7 +554,7 @@ tcu::TestCaseGroup* createImageMultisampleLoadStoreTests (tcu::TestContext& test
 			{
 				const bool					singleLayerBind	= (layerBindMode != 0);
 				const std::string			formatGroupName	= getFormatShortString(formats[formatNdx]) + (singleLayerBind ? "_single_layer" : "");
-				MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, formatGroupName.c_str(), ""));
+				MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, formatGroupName.c_str()));
 
 				for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); ++samplesNdx)
 				{
@@ -568,7 +568,7 @@ tcu::TestCaseGroup* createImageMultisampleLoadStoreTests (tcu::TestContext& test
 						singleLayerBind,
 					};
 
-					addFunctionCaseWithPrograms(formatGroup.get(), samplesCaseName, "", checkSupport, initPrograms, test, caseDef);
+					addFunctionCaseWithPrograms(formatGroup.get(), samplesCaseName, checkSupport, initPrograms, test, caseDef);
 				}
 				imageViewGroup->addChild(formatGroup.release());
 			}

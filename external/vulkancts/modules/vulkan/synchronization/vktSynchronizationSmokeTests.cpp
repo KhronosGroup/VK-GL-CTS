@@ -1297,11 +1297,11 @@ void checkSupport(Context& context, SemaphoreTestConfig config)
 tcu::TestCaseGroup* createSmokeTests (tcu::TestContext& textCtx)
 {
 	SynchronizationType					type		(SynchronizationType::LEGACY);
-	de::MovePtr<tcu::TestCaseGroup>		smokeTests	(new tcu::TestCaseGroup(textCtx, "smoke", "Synchronization smoke tests"));
+	de::MovePtr<tcu::TestCaseGroup>		smokeTests	(new tcu::TestCaseGroup(textCtx, "smoke"));
 
-	addFunctionCaseWithPrograms(smokeTests.get(), "fences", "", buildShaders, testFences);
-	addFunctionCaseWithPrograms(smokeTests.get(), "binary_semaphores",   "", checkSupport, initShaders, testSemaphores, SemaphoreTestConfig { type, VK_SEMAPHORE_TYPE_BINARY });
-	addFunctionCaseWithPrograms(smokeTests.get(), "timeline_semaphores", "", checkSupport, initShaders, testSemaphores, SemaphoreTestConfig { type, VK_SEMAPHORE_TYPE_TIMELINE });
+	addFunctionCaseWithPrograms(smokeTests.get(), "fences", buildShaders, testFences);
+	addFunctionCaseWithPrograms(smokeTests.get(), "binary_semaphores",   checkSupport, initShaders, testSemaphores, SemaphoreTestConfig { type, VK_SEMAPHORE_TYPE_BINARY });
+	addFunctionCaseWithPrograms(smokeTests.get(), "timeline_semaphores", checkSupport, initShaders, testSemaphores, SemaphoreTestConfig { type, VK_SEMAPHORE_TYPE_TIMELINE });
 
 	return smokeTests.release();
 }
@@ -1309,10 +1309,10 @@ tcu::TestCaseGroup* createSmokeTests (tcu::TestContext& textCtx)
 tcu::TestCaseGroup* createSynchronization2SmokeTests(tcu::TestContext& textCtx)
 {
 	SynchronizationType					type		(SynchronizationType::SYNCHRONIZATION2);
-	de::MovePtr<tcu::TestCaseGroup>		smokeTests	(new tcu::TestCaseGroup(textCtx, "smoke", "Synchronization smoke tests"));
+	de::MovePtr<tcu::TestCaseGroup>		smokeTests	(new tcu::TestCaseGroup(textCtx, "smoke"));
 
-	addFunctionCaseWithPrograms(smokeTests.get(), "binary_semaphores",   "", checkSupport, initShaders, testSemaphores, SemaphoreTestConfig { type, VK_SEMAPHORE_TYPE_BINARY });
-	addFunctionCaseWithPrograms(smokeTests.get(), "timeline_semaphores", "", checkSupport, initShaders, testSemaphores, SemaphoreTestConfig { type, VK_SEMAPHORE_TYPE_TIMELINE });
+	addFunctionCaseWithPrograms(smokeTests.get(), "binary_semaphores",   checkSupport, initShaders, testSemaphores, SemaphoreTestConfig { type, VK_SEMAPHORE_TYPE_BINARY });
+	addFunctionCaseWithPrograms(smokeTests.get(), "timeline_semaphores", checkSupport, initShaders, testSemaphores, SemaphoreTestConfig { type, VK_SEMAPHORE_TYPE_TIMELINE });
 
 	return smokeTests.release();
 }

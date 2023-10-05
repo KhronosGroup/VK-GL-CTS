@@ -3311,7 +3311,7 @@ void ComputeTestGroupBuilder::init()
 void ComputeTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, const char* groupName, FloatType floatType, bool argumentsFromInput)
 {
 	TestContext&	testCtx	= parentGroup->getTestContext();
-	TestCaseGroup*	group	= new TestCaseGroup(testCtx, groupName, "");
+	TestCaseGroup*	group	= new TestCaseGroup(testCtx, groupName);
 	parentGroup->addChild(group);
 
 	TestCaseVect testCases;
@@ -3342,14 +3342,14 @@ void ComputeTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, c
 		fillShaderSpec(testCaseInfo, csSpec);
 
 		string testName = replace(testCase.baseName, "op", testCaseInfo.operation.name);
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), "", csSpec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), csSpec));
 	}
 }
 
 void ComputeTestGroupBuilder::createSettingsTests(TestCaseGroup* parentGroup)
 {
 	TestContext&	testCtx	= parentGroup->getTestContext();
-	TestCaseGroup*	group	= new TestCaseGroup(testCtx, "independence_settings", "");
+	TestCaseGroup*	group	= new TestCaseGroup(testCtx, "independence_settings");
 	parentGroup->addChild(group);
 
 	using SFCI = VkShaderFloatControlsIndependence;
@@ -3446,10 +3446,10 @@ void ComputeTestGroupBuilder::createSettingsTests(TestCaseGroup* parentGroup)
 	{
 		ComputeShaderSpec	csSpec;
 		fillShaderSpec(testCase, csSpec);
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, testCase.name, "", csSpec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, testCase.name, csSpec));
 	}
 
-	addFunctionCase(group, "independence_settings", "", verifyIndependenceSettings);
+	addFunctionCase(group, "independence_settings", verifyIndependenceSettings);
 }
 
 void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCaseInfo,
@@ -4107,7 +4107,7 @@ void GraphicsTestGroupBuilder::init()
 void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, const char* groupName, FloatType floatType, bool argumentsFromInput)
 {
 	TestContext&	testCtx	= parentGroup->getTestContext();
-	TestCaseGroup*	group	= new TestCaseGroup(testCtx, groupName, "");
+	TestCaseGroup*	group	= new TestCaseGroup(testCtx, groupName);
 	parentGroup->addChild(group);
 
 	// create test cases for vertex stage
@@ -4144,7 +4144,7 @@ void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, 
 		InstanceContext ctxVertex	= createInstanceContext(testCaseInfo);
 		string			testName	= replace(testCase.baseName, "op", testCaseInfo.operation.name);
 
-		addFunctionCaseWithPrograms<InstanceContext>(group, testName + "_vert", "", getGraphicsShaderCode, runAndVerifyDefaultPipeline, ctxVertex);
+		addFunctionCaseWithPrograms<InstanceContext>(group, testName + "_vert", getGraphicsShaderCode, runAndVerifyDefaultPipeline, ctxVertex);
 	}
 
 	// create test cases for fragment stage
@@ -4174,7 +4174,7 @@ void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, 
 		InstanceContext ctxFragment	= createInstanceContext(testCaseInfo);
 		string			testName	= replace(testCase.baseName, "op", testCaseInfo.operation.name);
 
-		addFunctionCaseWithPrograms<InstanceContext>(group, testName + "_frag", "", getGraphicsShaderCode, runAndVerifyDefaultPipeline, ctxFragment);
+		addFunctionCaseWithPrograms<InstanceContext>(group, testName + "_frag", getGraphicsShaderCode, runAndVerifyDefaultPipeline, ctxFragment);
 	}
 }
 
@@ -4598,7 +4598,7 @@ tcu::TestCaseGroup* createFloatControlsTestGroup (TestContext& testCtx, TestGrou
 	for (int i = 0 ; i < DE_LENGTH_OF_ARRAY(testGroups) ; ++i)
 	{
 		const TestGroup& testGroup = testGroups[i];
-		TestCaseGroup* typeGroup = new TestCaseGroup(testCtx, testGroup.groupName, "");
+		TestCaseGroup* typeGroup = new TestCaseGroup(testCtx, testGroup.groupName);
 		group->addChild(typeGroup);
 
 		groupBuilder->createOperationTests(typeGroup, "input_args", testGroup.floatType, true);

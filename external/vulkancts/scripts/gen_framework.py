@@ -2581,9 +2581,9 @@ def writeDeviceFeatures2(api, filename):
 	# function to create tests
 	stream.append("void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)\n{")
 	for x in testedStructureDetail:
-		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x.instanceName[len('device'):]) + '", "' + x.nameList[0] + '", testPhysicalDeviceFeature' + x.instanceName[len('device'):] + ');')
+		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x.instanceName[len('device'):]) + '", testPhysicalDeviceFeature' + x.instanceName[len('device'):] + ');')
 	for x in promotedTests:
-		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x) + '", "", ' + x + ');')
+		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x) + '", ' + x + ');')
 	stream.append('}\n')
 
 	# write out
@@ -2857,7 +2857,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 {
 """)
 	for x in testFunctions:
-		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x[len('createDeviceWithUnsupportedFeaturesTest'):]) + '", "' + x + '", ' + x + ');')
+		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x[len('createDeviceWithUnsupportedFeaturesTest'):]) + '", ' + x + ');')
 	stream.append('}\n')
 
 	writeInlFile(filename, INL_HEADER, stream)
@@ -3689,7 +3689,7 @@ def writeGetDeviceProcAddr(api, filename):
 
 	# function to create tests
 	stream.append("void addGetDeviceProcAddrTests (tcu::TestCaseGroup* testGroup)\n{")
-	stream.append('\taddFunctionCase(testGroup, "non_enabled", "GetDeviceProcAddr", testGetDeviceProcAddr);')
+	stream.append('\taddFunctionCase(testGroup, "non_enabled", testGetDeviceProcAddr);')
 	stream.append('}\n')
 	stream.append('}\n')
 

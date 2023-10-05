@@ -131,7 +131,6 @@ public:
 
 										DepthTest				(tcu::TestContext&					testContext,
 																 const std::string&					name,
-																 const std::string&					description,
 																 const PipelineConstructionType		pipelineConstructionType,
 																 const VkFormat						depthFormat,
 																 const VkCompareOp					depthCompareOps[QUAD_COUNT],
@@ -265,7 +264,6 @@ const float DepthTest::quadWs[QUAD_COUNT] =
 
 DepthTest::DepthTest (tcu::TestContext&					testContext,
 					  const std::string&				name,
-					  const std::string&				description,
 					  const PipelineConstructionType	pipelineConstructionType,
 					  const VkFormat					depthFormat,
 					  const VkCompareOp					depthCompareOps[QUAD_COUNT],
@@ -280,7 +278,7 @@ DepthTest::DepthTest (tcu::TestContext&					testContext,
 					  const bool						hostVisible,
 						const tcu::UVec2				renderSize,
 					  const DepthClipControlCase		depthClipControl)
-	: vkt::TestCase					(testContext, name, description)
+	: vkt::TestCase					(testContext, name)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_depthFormat					(depthFormat)
 	, m_separateDepthStencilLayouts	(separateDepthStencilLayouts)
@@ -1191,22 +1189,6 @@ std::string	getCompareOpsName (const VkCompareOp quadDepthOps[DepthTest::QUAD_CO
 	return name.str();
 }
 
-std::string	getCompareOpsDescription (const VkCompareOp quadDepthOps[DepthTest::QUAD_COUNT])
-{
-	std::ostringstream desc;
-	desc << "Draws " << DepthTest::QUAD_COUNT << " quads with depth compare ops: ";
-
-	for (int quadNdx = 0; quadNdx < DepthTest::QUAD_COUNT; quadNdx++)
-	{
-		desc << getCompareOpName(quadDepthOps[quadNdx]) << " at depth " << DepthTest::quadDepths[quadNdx];
-
-		if (quadNdx < DepthTest::QUAD_COUNT - 1)
-			desc << ", ";
-	}
-	return desc.str();
-}
-
-
 } // anonymous
 
 tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
@@ -1305,18 +1287,17 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 
 	const VkPrimitiveTopology		primitiveTopologies[]		= { VK_PRIMITIVE_TOPOLOGY_POINT_LIST, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST };
 
-	de::MovePtr<tcu::TestCaseGroup>	depthTests					(new tcu::TestCaseGroup(testCtx, "depth", "Depth tests"));
-	de::MovePtr<tcu::TestCaseGroup>	noColorAttachmentTests		(new tcu::TestCaseGroup(testCtx, "nocolor", "Depth tests with no color attachment"));
+	de::MovePtr<tcu::TestCaseGroup>	depthTests					(new tcu::TestCaseGroup(testCtx, "depth"));
+	de::MovePtr<tcu::TestCaseGroup>	noColorAttachmentTests		(new tcu::TestCaseGroup(testCtx, "nocolor"));
 
 	// Tests for format features
 	if (!isConstructionTypeLibrary(pipelineConstructionType))
 	{
-		de::MovePtr<tcu::TestCaseGroup> formatFeaturesTests (new tcu::TestCaseGroup(testCtx, "format_features", "Checks depth format features"));
+		de::MovePtr<tcu::TestCaseGroup> formatFeaturesTests (new tcu::TestCaseGroup(testCtx, "format_features"));
 
 		// Formats that must be supported in all implementations
 		addFunctionCase(formatFeaturesTests.get(),
 				"support_d16_unorm",
-				"Tests if VK_FORMAT_D16_UNORM is supported as depth/stencil attachment format",
 				testSupportsDepthStencilFormat,
 				VK_FORMAT_D16_UNORM);
 
@@ -1326,13 +1307,11 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 
 		addFunctionCase(formatFeaturesTests.get(),
 				"support_d24_unorm_or_d32_sfloat",
-				"Tests if any of VK_FORMAT_D24_UNORM_X8 or VK_FORMAT_D32_SFLOAT are supported as depth/stencil attachment format",
 				testSupportsAtLeastOneDepthStencilFormat,
 				std::vector<VkFormat>(depthOnlyFormats, depthOnlyFormats + DE_LENGTH_OF_ARRAY(depthOnlyFormats)));
 
 		addFunctionCase(formatFeaturesTests.get(),
 				"support_d24_unorm_s8_uint_or_d32_sfloat_s8_uint",
-				"Tests if any of VK_FORMAT_D24_UNORM_S8_UINT or VK_FORMAT_D32_SFLOAT_S8_UINT are supported as depth/stencil attachment format",
 				testSupportsAtLeastOneDepthStencilFormat,
 				std::vector<VkFormat>(depthStencilFormats, depthStencilFormats + DE_LENGTH_OF_ARRAY(depthStencilFormats)));
 
@@ -1345,7 +1324,8 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 
 		// Tests for format and compare operators
 		{
-			de::MovePtr<tcu::TestCaseGroup> formatTests (new tcu::TestCaseGroup(testCtx, "format", "Uses different depth formats"));
+			// Uses different depth formats
+			de::MovePtr<tcu::TestCaseGroup> formatTests (new tcu::TestCaseGroup(testCtx, "format"));
 
 			for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(depthFormats); formatNdx++)
 			{
@@ -1368,7 +1348,6 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 						{
 							compareOpsTests->addChild(new DepthTest(testCtx,
 										topologyName + getCompareOpsName(depthOps[opsNdx]),
-										getCompareOpsDescription(depthOps[opsNdx]),
 										pipelineConstructionType,
 										depthFormats[formatNdx],
 										depthOps[opsNdx],
@@ -1380,7 +1359,6 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 
 							compareOpsTests->addChild(new DepthTest(testCtx,
 										topologyName + getCompareOpsName(depthOps[opsNdx]) + "_depth_bounds_test",
-										getCompareOpsDescription(depthOps[opsNdx]) + " with depth bounds test enabled",
 										pipelineConstructionType,
 										depthFormats[formatNdx],
 										depthOps[opsNdx],
@@ -1400,7 +1378,6 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 
 						compareOpsTests->addChild(new DepthTest(testCtx,
 									"never_zerodepthbounds_depthdisabled_stencilenabled",
-									"special VkPipelineDepthStencilStateCreateInfo",
 									pipelineConstructionType,
 									depthFormats[formatNdx],
 									depthOpsSpecial,
@@ -1416,12 +1393,11 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 					formatTest->addChild(compareOpsTests.release());
 
 					// Test case with depth test enabled, but depth write disabled
-					de::MovePtr<tcu::TestCaseGroup>	depthTestDisabled(new tcu::TestCaseGroup(testCtx, "depth_test_disabled", "Test for disabled depth test"));
+					de::MovePtr<tcu::TestCaseGroup>	depthTestDisabled(new tcu::TestCaseGroup(testCtx, "depth_test_disabled"));
 					{
 						const VkCompareOp depthOpsDepthTestDisabled[DepthTest::QUAD_COUNT] = { VK_COMPARE_OP_NEVER, VK_COMPARE_OP_LESS, VK_COMPARE_OP_GREATER, VK_COMPARE_OP_ALWAYS };
 						depthTestDisabled->addChild(new DepthTest(testCtx,
 									"depth_write_enabled",
-									"Depth writes should not occur if depth test is disabled",
 									pipelineConstructionType,
 									depthFormats[formatNdx],
 									depthOpsDepthTestDisabled,
@@ -1441,9 +1417,9 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 					{
 						const VkCompareOp hostVisibleOps[DepthTest::QUAD_COUNT] = { VK_COMPARE_OP_NEVER, VK_COMPARE_OP_LESS, VK_COMPARE_OP_GREATER, VK_COMPARE_OP_ALWAYS };
 
+						// Depth buffer placed in local memory
 						hostVisibleTests->addChild(new DepthTest(testCtx,
 									"local_memory_depth_buffer",
-									"Depth buffer placed in local memory",
 									pipelineConstructionType,
 									depthFormats[formatNdx],
 									hostVisibleOps,
@@ -1497,7 +1473,7 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 					std::string testName = getFormatCaseName(format) + "_" + de::toLower(std::string(getCompareOpName(compareOp)).substr(14)) + viewportCase.suffix;
 
 					const VkCompareOp ops[DepthTest::QUAD_COUNT] = { compareOp, compareOp, compareOp, compareOp };
-					depthClipControlTests->addChild(new DepthTest(testCtx, testName, "", pipelineConstructionType, format, ops,
+					depthClipControlTests->addChild(new DepthTest(testCtx, testName, pipelineConstructionType, format, ops,
 													false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false, 0.0f, 1.0f, true, false, true, false, tcu::UVec2(32,32), viewportCase.viewportCase));
 				}
 	}

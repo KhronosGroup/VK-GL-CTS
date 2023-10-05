@@ -276,18 +276,19 @@ tcu::TestCaseGroup* createFragInvocationTests (tcu::TestContext& testContext)
 {
 	using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
-	GroupPtr mainGroup (new tcu::TestCaseGroup(testContext, "frag_invocations", "Test implementations do not optimize out fragment shader invocations"));
+	// Test implementations do not optimize out fragment shader invocations
+	GroupPtr mainGroup (new tcu::TestCaseGroup(testContext, "frag_invocations"));
 
 	for (const auto queryType : { QueryType::OCCLUSION, QueryType::INVOCATIONS })
 	{
 		const auto groupName = getQueryTypeName(queryType);
-		GroupPtr queryTypeGroup (new tcu::TestCaseGroup(testContext, groupName.c_str(), ""));
+		GroupPtr queryTypeGroup (new tcu::TestCaseGroup(testContext, groupName.c_str()));
 
 		for (const auto secondaryCase : { false, true })
 		{
 			const auto testName = (secondaryCase ? "secondary" : "primary");
 			const TestParams params { queryType, secondaryCase };
-			addFunctionCaseWithPrograms(queryTypeGroup.get(), testName, "", checkSupport, initPrograms, testInvocations, params);
+			addFunctionCaseWithPrograms(queryTypeGroup.get(), testName, checkSupport, initPrograms, testInvocations, params);
 		}
 
 		mainGroup->addChild(queryTypeGroup.release());
@@ -298,4 +299,3 @@ tcu::TestCaseGroup* createFragInvocationTests (tcu::TestContext& testContext)
 
 } // QueryPool
 } // vkt
-

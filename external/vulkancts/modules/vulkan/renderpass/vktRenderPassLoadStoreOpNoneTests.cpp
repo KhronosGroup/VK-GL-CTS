@@ -358,7 +358,6 @@ class LoadStoreOpNoneTest : public vkt::TestCase
 public:
 							LoadStoreOpNoneTest		(tcu::TestContext&	testContext,
 													 const std::string&	name,
-													 const std::string&	description,
 													 const TestParams&	testParams);
 	virtual					~LoadStoreOpNoneTest	(void);
 	virtual void			initPrograms			(SourceCollections&	sourceCollections) const;
@@ -414,9 +413,8 @@ private:
 
 LoadStoreOpNoneTest::LoadStoreOpNoneTest (tcu::TestContext&		testContext,
 										  const std::string&	name,
-										  const std::string&	description,
 										  const TestParams&		testParams)
-	: vkt::TestCase	(testContext, name, description)
+	: vkt::TestCase	(testContext, name)
 	, m_testParams(testParams)
 {
 }
@@ -1429,7 +1427,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 
 tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	de::MovePtr<tcu::TestCaseGroup>		opNoneTests		(new tcu::TestCaseGroup(testCtx, "load_store_op_none", ""));
+	de::MovePtr<tcu::TestCaseGroup>		opNoneTests		(new tcu::TestCaseGroup(testCtx, "load_store_op_none"));
 
 	const tcu::Vec4	red			(1.0f, 0.0f, 0.0f, 1.0f);
 	const tcu::Vec4	green		(0.0f, 1.0f, 0.0f, 1.0f);
@@ -1483,7 +1481,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 			false								// bool								alphaBlend;
 		};
 
-		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_load_store_op_none", "", params));
+		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_load_store_op_none", params));
 	}
 
 	// Preinitialize color attachment to green. Use a render pass with load and store ops none, but
@@ -1511,7 +1509,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 			false								// bool								alphaBlend;
 		};
 
-		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_none_write_off", "", params));
+		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_none_write_off", params));
 	}
 
 	// Preinitialize color attachment to green. Use a render pass with load and store ops none, and
@@ -1539,7 +1537,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 			false								// bool								alphaBlend;
 		};
 
-		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_none", "", params));
+		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_none", params));
 	}
 
 	// Preinitialize color attachment to green. Use a subpass with no draw calls but instead
@@ -1567,7 +1565,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 			false								// bool								alphaBlend;
 		};
 
-		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_store", "", params));
+		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_store", params));
 	}
 
 	// Preinitialize color attachment to green. Use a subpass with a dark blue attachment clear followed
@@ -1595,7 +1593,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 			true								// bool								alphaBlend;
 		};
 
-		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_store_alphablend", "", params));
+		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_store_alphablend", params));
 	}
 
 	// Preinitialize attachments 0 and 1 to green. Attachment 0 contents inside render area is undefined  because load op 'none'.
@@ -1637,7 +1635,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 		false								// bool								alphaBlend;
 		};
 
-		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_dontcare", "", params));
+		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_dontcare", params));
 	}
 
 	// Preinitialize color attachment to green. Use a render pass with load and store ops none for a multisample color
@@ -1674,7 +1672,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 			false								// bool								alphaBlend;
 		};
 
-		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_none_resolve", "", params));
+		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_none_resolve", params));
 	}
 
 	std::vector<VkFormat>	formats = { VK_FORMAT_D16_UNORM, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_S8_UINT };
@@ -1726,7 +1724,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				false								// bool								alphaBlend;
 			};
 
-			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_"+formatName+"_load_op_load_store_op_none", "", params));
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_"+formatName+"_load_op_load_store_op_none", params));
 		}
 
 		// Preinitialize depth attachment to 0.5. Use a render pass with load and store ops none for the depth, but
@@ -1764,7 +1762,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				false								// bool								alphaBlend;
 			};
 
-			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_" + formatName + "_load_op_none_store_op_none_write_off", "", params));
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_" + formatName + "_load_op_none_store_op_none_write_off", params));
 		}
 
 		// Preinitialize attachment 0 (color) to green and depth buffer to 0.5. During the render pass initialize attachment 1 (depth) to 0.25
@@ -1802,7 +1800,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				false								// bool								alphaBlend;
 			};
 
-			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_" + formatName + "_load_op_none_store_op_store", "", params));
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_" + formatName + "_load_op_none_store_op_store", params));
 		}
 
 		// Preinitialize attachment 0 (color) to green and depth buffer to 0.5. During the render pass initialize attachment 1 (depth) to 0.25
@@ -1841,7 +1839,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				false								// bool								alphaBlend;
 			};
 
-			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_" + formatName + "_load_op_none_store_op_dontcare", "", params));
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_" + formatName + "_load_op_none_store_op_dontcare", params));
 		}
 
 		// Preinitialize attachment 0 (color) to green and attachment 1 (stencil) to 128.
@@ -1883,7 +1881,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				false								// bool								alphaBlend;
 			};
 
-			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_load_store_op_none", "", params));
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_load_store_op_none", params));
 		}
 
 		// Preinitialize stencil attachment to 128. Use a render pass with load and store ops none for the stencil, but
@@ -1921,7 +1919,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				false								// bool								alphaBlend;
 			};
 
-			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_none_store_op_none_write_off", "", params));
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_none_store_op_none_write_off", params));
 		}
 
 		// Preinitialize attachment 0 (color) to green and stencil buffer to 128. During the render pass initialize attachment 1 (stencil) to 64
@@ -1960,7 +1958,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				false								// bool								alphaBlend;
 			};
 
-			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_none_store_op_store", "", params));
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_none_store_op_store", params));
 		}
 
 		// Preinitialize attachment 0 (color) to green and stencil buffer to 128. During the render pass initialize attachment 1 (stencil) to 64
@@ -1999,7 +1997,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				false								// bool								alphaBlend;
 			};
 
-			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_none_store_op_dontcare", "", params));
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_none_store_op_dontcare", params));
 		}
 
 		// Preinitialize attachment 0 (color) to green and depth stencil buffer depth aspect to 0.5 and stencil aspect to 128. Draw a red
@@ -2042,7 +2040,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				false								// bool								alphaBlend;
 			};
 
-			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depthstencil_" + formatName + "_load_op_depth_load_stencil_none_store_op_depth_store_stencil_none_stencil_test_off", "", params));
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depthstencil_" + formatName + "_load_op_depth_load_stencil_none_store_op_depth_store_stencil_none_stencil_test_off", params));
 		}
 
 		// Preinitialize attachment 0 (color) to green and depth stencil buffer stencil aspect to 128 and depth aspect to 0.5. Draw a red rectangle
@@ -2085,7 +2083,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				false								// bool								alphaBlend;
 			};
 
-			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depthstencil_" + formatName + "_load_op_depth_none_stencil_load_store_op_depth_none_stencil_store_depth_test_off", "", params));
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depthstencil_" + formatName + "_load_op_depth_none_stencil_load_store_op_depth_none_stencil_store_depth_test_off", params));
 		}
 
 		// Preinitialize attachment 0 (color) to green and depth stencil buffer depth aspect to 0.5 and stencil aspect to 128. Draw a red
@@ -2127,7 +2125,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				false								// bool								alphaBlend;
 			};
 
-			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depthstencil_" + formatName + "_load_op_depth_load_stencil_none_store_op_depth_store_stencil_none_stencil_write_off", "", params));
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depthstencil_" + formatName + "_load_op_depth_load_stencil_none_store_op_depth_store_stencil_none_stencil_write_off", params));
 		}
 
 		// Preinitialize attachment 0 (color) to green and depth stencil buffer stencil aspect to 128 and depth aspect to 0.5. Draw a red rectangle
@@ -2170,7 +2168,7 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				false								// bool								alphaBlend;
 			};
 
-			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depthstencil_" + formatName + "_load_op_depth_none_stencil_load_store_op_depth_none_stencil_store_depth_write_off", "", params));
+			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depthstencil_" + formatName + "_load_op_depth_none_stencil_load_store_op_depth_none_stencil_store_depth_write_off", params));
 		}
 	}
 

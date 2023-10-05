@@ -493,7 +493,6 @@ void createTestsInGroup (tcu::TestCaseGroup* scissorGroup)
 	struct TestSpec
 	{
 		const char*		name;
-		const char*		description;
 		CaseDef			caseDef;
 	};
 
@@ -505,53 +504,64 @@ void createTestsInGroup (tcu::TestCaseGroup* scissorGroup)
 
 	// Points
 	{
-		MovePtr<tcu::TestCaseGroup> primitiveGroup (new tcu::TestCaseGroup(testCtx, "points", ""));
+		MovePtr<tcu::TestCaseGroup> primitiveGroup (new tcu::TestCaseGroup(testCtx, "points"));
 
 		const TestSpec	cases[] =
 		{
-			{ "inside",				"Points fully inside the scissor area",		{ areaFull,		areaFull,		TEST_PRIMITIVE_POINTS } },
-			{ "partially_inside",	"Points partially inside the scissor area",	{ areaFull,		areaCropped,	TEST_PRIMITIVE_POINTS } },
-			{ "outside",			"Points fully outside the scissor area",	{ areaLeftHalf,	areaRightHalf,	TEST_PRIMITIVE_POINTS } },
+			// Points fully inside the scissor area
+			{ "inside",		{ areaFull,		areaFull,		TEST_PRIMITIVE_POINTS } },
+			// Points partially inside the scissor area
+			{ "partially_inside",	{ areaFull,		areaCropped,	TEST_PRIMITIVE_POINTS } },
+			// Points fully outside the scissor area
+			{ "outside",	{ areaLeftHalf,	areaRightHalf,	TEST_PRIMITIVE_POINTS } },
 		};
 
 		for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
-			addFunctionCaseWithPrograms(primitiveGroup.get(), cases[i].name, cases[i].description, initPrograms, test, cases[i].caseDef);
+			addFunctionCaseWithPrograms(primitiveGroup.get(), cases[i].name, initPrograms, test, cases[i].caseDef);
 
 		scissorGroup->addChild(primitiveGroup.release());
 	}
 
 	// Lines
 	{
-		MovePtr<tcu::TestCaseGroup> primitiveGroup (new tcu::TestCaseGroup(testCtx, "lines", ""));
+		MovePtr<tcu::TestCaseGroup> primitiveGroup (new tcu::TestCaseGroup(testCtx, "lines"));
 
 		const TestSpec	cases[] =
 		{
-			{ "inside",				"Lines fully inside the scissor area",		{ areaFull,		areaFull,			TEST_PRIMITIVE_LINES	} },
-			{ "partially_inside",	"Lines partially inside the scissor area",	{ areaFull,		areaCropped,		TEST_PRIMITIVE_LINES	} },
-			{ "outside",			"Lines fully outside the scissor area",		{ areaLeftHalf,	areaRightHalf,		TEST_PRIMITIVE_LINES	} },
-			{ "crossing",			"A line crossing the scissor area",			{ areaFull,		areaCroppedMore,	TEST_PRIMITIVE_BIG_LINE	} },
+			// Lines fully inside the scissor area
+			{ "inside",		{ areaFull,		areaFull,			TEST_PRIMITIVE_LINES	} },
+			// Lines partially inside the scissor area
+			{ "partially_inside",	{ areaFull,		areaCropped,		TEST_PRIMITIVE_LINES	} },
+			// Lines fully outside the scissor area
+			{ "outside",		{ areaLeftHalf,	areaRightHalf,		TEST_PRIMITIVE_LINES	} },
+			// A line crossing the scissor area
+			{ "crossing",			{ areaFull,		areaCroppedMore,	TEST_PRIMITIVE_BIG_LINE	} },
 		};
 
 		for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
-			addFunctionCaseWithPrograms(primitiveGroup.get(), cases[i].name, cases[i].description, initPrograms, test, cases[i].caseDef);
+			addFunctionCaseWithPrograms(primitiveGroup.get(), cases[i].name, initPrograms, test, cases[i].caseDef);
 
 		scissorGroup->addChild(primitiveGroup.release());
 	}
 
 	// Triangles
 	{
-		MovePtr<tcu::TestCaseGroup> primitiveGroup (new tcu::TestCaseGroup(testCtx, "triangles", ""));
+		MovePtr<tcu::TestCaseGroup> primitiveGroup (new tcu::TestCaseGroup(testCtx, "triangles"));
 
 		const TestSpec	cases[] =
 		{
-			{ "inside",				"Triangles fully inside the scissor area",		{ areaFull,		areaFull,			TEST_PRIMITIVE_TRIANGLES	} },
-			{ "partially_inside",	"Triangles partially inside the scissor area",	{ areaFull,		areaCropped,		TEST_PRIMITIVE_TRIANGLES	} },
-			{ "outside",			"Triangles fully outside the scissor area",		{ areaLeftHalf,	areaRightHalf,		TEST_PRIMITIVE_TRIANGLES	} },
-			{ "crossing",			"A triangle crossing the scissor area",			{ areaFull,		areaCroppedMore,	TEST_PRIMITIVE_BIG_TRIANGLE	} },
+			// Triangles fully inside the scissor area
+			{ "inside",		{ areaFull,		areaFull,			TEST_PRIMITIVE_TRIANGLES	} },
+			// Triangles partially inside the scissor area
+			{ "partially_inside",	{ areaFull,		areaCropped,		TEST_PRIMITIVE_TRIANGLES	} },
+			// Triangles fully outside the scissor area
+			{ "outside",		{ areaLeftHalf,	areaRightHalf,		TEST_PRIMITIVE_TRIANGLES	} },
+			// A triangle crossing the scissor area
+			{ "crossing",			{ areaFull,		areaCroppedMore,	TEST_PRIMITIVE_BIG_TRIANGLE	} },
 		};
 
 		for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
-			addFunctionCaseWithPrograms(primitiveGroup.get(), cases[i].name, cases[i].description, initPrograms, test, cases[i].caseDef);
+			addFunctionCaseWithPrograms(primitiveGroup.get(), cases[i].name, initPrograms, test, cases[i].caseDef);
 
 		scissorGroup->addChild(primitiveGroup.release());
 	}
@@ -566,7 +576,7 @@ void createTestsInGroup (tcu::TestCaseGroup* scissorGroup)
 
 tcu::TestCaseGroup* createScissorTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "scissor", "Scissor tests", createTestsInGroup);
+	return createTestGroup(testCtx, "scissor", createTestsInGroup);
 }
 
 } // FragmentOperations

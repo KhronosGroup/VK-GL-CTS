@@ -2367,7 +2367,7 @@ private:
 };
 
 AttachmentRateTestCase::AttachmentRateTestCase(tcu::TestContext& context, const char* name, de::SharedPtr<TestParams> params)
-	: vkt::TestCase	(context, name, "")
+	: vkt::TestCase	(context, name)
 	, m_params		(params)
 {
 }
@@ -2625,15 +2625,15 @@ void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* pa
 		{ TM_SETUP_RATE_WITH_LINEAR_TILED_IMAGE,								"setup_with_linear_tiled_image" },
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, "attachment_rate", ""));
+	de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, "attachment_rate"));
 
 	for (const auto& testModeParam : testModeParams)
 	{
-		de::MovePtr<tcu::TestCaseGroup> testModeGroup(new tcu::TestCaseGroup(testCtx, testModeParam.name, ""));
+		de::MovePtr<tcu::TestCaseGroup> testModeGroup(new tcu::TestCaseGroup(testCtx, testModeParam.name));
 
 		for (const auto& srFormat : srFormats)
 		{
-			de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, srFormat.name, ""));
+			de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, srFormat.name));
 			for (const auto& srRate : srRates)
 			{
 				formatGroup->addChild(new AttachmentRateTestCase(testCtx, srRate.name, de::SharedPtr<TestParams>(
@@ -2692,7 +2692,7 @@ void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* pa
 		mainGroup->addChild(testModeGroup.release());
 	}
 
-	de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
+	de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
 	if (!groupParams->useDynamicRendering)
 	{
 		miscGroup->addChild(new AttachmentRateTestCase(testCtx, "two_subpass", de::SharedPtr<TestParams>(

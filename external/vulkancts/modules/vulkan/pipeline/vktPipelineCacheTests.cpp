@@ -93,7 +93,6 @@ public:
 															 VkPipelineCacheCreateFlags		pipelineCacheCreateFlags = 0u);
 	virtual						~CacheTestParam				(void) = default;
 	virtual const std::string	generateTestName			(void)	const;
-	virtual const std::string	generateTestDescription		(void)	const;
 	PipelineConstructionType	getPipelineConstructionType	(void)	const	{ return m_pipelineConstructionType; }
 	VkShaderStageFlags			getShaderFlags				(void)	const	{ return m_shaders; }
 	VkPipelineCacheCreateFlags	getPipelineCacheCreateFlags	(void)  const   { return m_pipelineCacheCreateFlags; }
@@ -124,22 +123,12 @@ const std::string CacheTestParam::generateTestName (void) const
 	return name;
 }
 
-const std::string CacheTestParam::generateTestDescription (void) const
-{
-	std::string description = getShaderFlagStr(m_shaders, true);
-	if (m_pipelineCacheCreateFlags == VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT) {
-		description += "with externally synchronized bit";
-	}
-	return description;
-}
-
 template <class Test>
 vkt::TestCase* newTestCase (tcu::TestContext&		testContext,
 							const CacheTestParam*	testParam)
 {
 	return new Test(testContext,
 					testParam->generateTestName().c_str(),
-					testParam->generateTestDescription().c_str(),
 					testParam);
 }
 
@@ -214,9 +203,8 @@ class CacheTest : public vkt::TestCase
 public:
 							CacheTest	(tcu::TestContext&		testContext,
 										 const std::string&		name,
-										 const std::string&		description,
 										 const CacheTestParam*	param)
-							  : vkt::TestCase (testContext, name, description)
+							  : vkt::TestCase (testContext, name)
 							  , m_param (*param)
 							  { }
 	virtual					~CacheTest (void) { }
@@ -299,9 +287,8 @@ class GraphicsCacheTest : public CacheTest
 public:
 							GraphicsCacheTest	(tcu::TestContext&		testContext,
 												 const std::string&		name,
-												 const std::string&		description,
 												 const CacheTestParam*	param)
-								: CacheTest (testContext, name, description, param)
+								: CacheTest (testContext, name, param)
 								{ }
 	virtual					~GraphicsCacheTest	(void) { }
 	virtual void			initPrograms		(SourceCollections&		programCollection) const;
@@ -871,9 +858,8 @@ class ComputeCacheTest : public CacheTest
 public:
 							ComputeCacheTest	(tcu::TestContext&		testContext,
 												 const std::string&		name,
-												 const std::string&		description,
 												 const CacheTestParam*	param)
-								: CacheTest (testContext, name, description, param)
+								: CacheTest (testContext, name, param)
 								{ }
 	virtual					~ComputeCacheTest	(void) { }
 	virtual void			initPrograms		(SourceCollections&		programCollection) const;
@@ -1136,13 +1122,13 @@ tcu::TestStatus ComputeCacheTestInstance::verifyTestResult (void)
 class PipelineFromCacheTest : public GraphicsCacheTest
 {
 public:
-							PipelineFromCacheTest		(tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param);
+							PipelineFromCacheTest		(tcu::TestContext& testContext, const std::string& name, const CacheTestParam* param);
 	virtual					~PipelineFromCacheTest		(void) { }
 	virtual TestInstance*	createInstance				(Context& context) const;
 };
 
-PipelineFromCacheTest::PipelineFromCacheTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param)
-	: GraphicsCacheTest(testContext, name, description, param)
+PipelineFromCacheTest::PipelineFromCacheTest (tcu::TestContext& testContext, const std::string& name, const CacheTestParam* param)
+	: GraphicsCacheTest(testContext, name, param)
 {
 }
 
@@ -1208,13 +1194,13 @@ void PipelineFromCacheTestInstance::preparePipelines (void)
 class PipelineFromIncompleteCacheTest : public GraphicsCacheTest
 {
 public:
-							PipelineFromIncompleteCacheTest		(tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param);
+							PipelineFromIncompleteCacheTest		(tcu::TestContext& testContext, const std::string& name, const CacheTestParam* param);
 	virtual					~PipelineFromIncompleteCacheTest	(void) {}
 	virtual TestInstance*	createInstance						(Context& context) const;
 };
 
-PipelineFromIncompleteCacheTest::PipelineFromIncompleteCacheTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param)
-	: GraphicsCacheTest(testContext, name, description, param)
+PipelineFromIncompleteCacheTest::PipelineFromIncompleteCacheTest (tcu::TestContext& testContext, const std::string& name, const CacheTestParam* param)
+	: GraphicsCacheTest(testContext, name, param)
 {
 }
 
@@ -1337,10 +1323,9 @@ class MergeCacheTest : public GraphicsCacheTest
 public:
 								MergeCacheTest	(tcu::TestContext&			testContext,
 												 const std::string&			name,
-												 const std::string&			description,
 												 const CacheTestParam*		param,
 												 const MergeCacheTestParam* mergeCacheParam)
-									: GraphicsCacheTest (testContext, name, description, param)
+									: GraphicsCacheTest (testContext, name, param)
 									, m_mergeCacheParam	(*mergeCacheParam)
 									{ }
 	virtual						~MergeCacheTest	(void) { }
@@ -1496,9 +1481,8 @@ class CacheHeaderTest : public GraphicsCacheTest
 public:
 			CacheHeaderTest		(tcu::TestContext&		testContext,
 								 const std::string&		name,
-								 const std::string&		description,
 								 const CacheTestParam*	param)
-								: GraphicsCacheTest(testContext, name, description, param)
+								: GraphicsCacheTest(testContext, name, param)
 	{ }
 	virtual	~CacheHeaderTest	(void) { }
 	virtual	TestInstance*		createInstance(Context& context) const;
@@ -1574,13 +1558,13 @@ CacheHeaderTestInstance::~CacheHeaderTestInstance (void)
 class InvalidSizeTest : public GraphicsCacheTest
 {
 public:
-							InvalidSizeTest		(tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param);
+							InvalidSizeTest		(tcu::TestContext& testContext, const std::string& name, const CacheTestParam* param);
 	virtual					~InvalidSizeTest	(void) {}
 	virtual TestInstance*	createInstance		(Context& context) const;
 };
 
-InvalidSizeTest::InvalidSizeTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param)
-	: GraphicsCacheTest(testContext, name, description, param)
+InvalidSizeTest::InvalidSizeTest (tcu::TestContext& testContext, const std::string& name, const CacheTestParam* param)
+	: GraphicsCacheTest(testContext, name, param)
 {
 }
 
@@ -1661,13 +1645,13 @@ InvalidSizeTestInstance::~InvalidSizeTestInstance (void)
 class ZeroSizeTest : public GraphicsCacheTest
 {
 public:
-							ZeroSizeTest	(tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param);
+							ZeroSizeTest	(tcu::TestContext& testContext, const std::string& name, const CacheTestParam* param);
 	virtual					~ZeroSizeTest	(void) {}
 	virtual TestInstance*	createInstance	(Context& context) const;
 };
 
-ZeroSizeTest::ZeroSizeTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param)
-	: GraphicsCacheTest(testContext, name, description, param)
+ZeroSizeTest::ZeroSizeTest (tcu::TestContext& testContext, const std::string& name, const CacheTestParam* param)
+	: GraphicsCacheTest(testContext, name, param)
 {
 }
 
@@ -1739,13 +1723,13 @@ ZeroSizeTestInstance::~ZeroSizeTestInstance (void)
 class InvalidBlobTest : public GraphicsCacheTest
 {
 public:
-							InvalidBlobTest		(tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param);
+							InvalidBlobTest		(tcu::TestContext& testContext, const std::string& name, const CacheTestParam* param);
 	virtual					~InvalidBlobTest	(void) {}
 	virtual TestInstance*	createInstance		(Context& context) const;
 };
 
-InvalidBlobTest::InvalidBlobTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param)
-	: GraphicsCacheTest(testContext, name, description, param)
+InvalidBlobTest::InvalidBlobTest (tcu::TestContext& testContext, const std::string& name, const CacheTestParam* param)
+	: GraphicsCacheTest(testContext, name, param)
 {
 }
 
@@ -1835,7 +1819,7 @@ InvalidBlobTestInstance::~InvalidBlobTestInstance (void)
 
 tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> cacheTests (new tcu::TestCaseGroup(testCtx, "cache", "pipeline cache tests"));
+	de::MovePtr<tcu::TestCaseGroup> cacheTests (new tcu::TestCaseGroup(testCtx, "cache"));
 
 	const VkShaderStageFlags vertFragStages			= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	const VkShaderStageFlags vertGeomFragStages		= vertFragStages | VK_SHADER_STAGE_GEOMETRY_BIT;
@@ -1843,7 +1827,7 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstru
 
 	// Graphics Pipeline Tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> graphicsTests (new tcu::TestCaseGroup(testCtx, "graphics_tests", "Test pipeline cache with graphics pipeline."));
+		de::MovePtr<tcu::TestCaseGroup> graphicsTests (new tcu::TestCaseGroup(testCtx, "graphics_tests"));
 
 		const CacheTestParam testParams[] =
 		{
@@ -1863,7 +1847,7 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstru
 
 	// Graphics Pipeline Tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "pipeline_from_get_data", "Test pipeline cache with graphics pipeline."));
+		de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "pipeline_from_get_data"));
 
 		const CacheTestParam testParams[] =
 		{
@@ -1880,7 +1864,7 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstru
 
 	// Graphics Pipeline Tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "pipeline_from_incomplete_get_data", "Test pipeline cache with graphics pipeline."));
+		de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "pipeline_from_incomplete_get_data"));
 
 		const CacheTestParam testParams[] =
 		{
@@ -1898,7 +1882,7 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstru
 	// Compute Pipeline Tests - don't repeat those tests for graphics pipeline library
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		de::MovePtr<tcu::TestCaseGroup> computeTests (new tcu::TestCaseGroup(testCtx, "compute_tests", "Test pipeline cache with compute pipeline."));
+		de::MovePtr<tcu::TestCaseGroup> computeTests (new tcu::TestCaseGroup(testCtx, "compute_tests"));
 
 		const CacheTestParam testParams[] =
 		{
@@ -1913,7 +1897,7 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstru
 
 	// Merge cache Tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> mergeTests (new tcu::TestCaseGroup(testCtx, "merge", "Cache merging tests"));
+		de::MovePtr<tcu::TestCaseGroup> mergeTests (new tcu::TestCaseGroup(testCtx, "merge"));
 
 		const CacheTestParam testParams[] =
 		{
@@ -1925,7 +1909,7 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstru
 		for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(testParams); i++)
 		{
 
-			de::MovePtr<tcu::TestCaseGroup> mergeStagesTests(new tcu::TestCaseGroup(testCtx, testParams[i].generateTestName().c_str(), testParams[i].generateTestDescription().c_str()));
+			de::MovePtr<tcu::TestCaseGroup> mergeStagesTests(new tcu::TestCaseGroup(testCtx, testParams[i].generateTestName().c_str()));
 
 			for (deUint32 destTypeIdx = 0u; destTypeIdx <= MERGE_CACHE_TYPE_LAST; destTypeIdx++)
 			for (deUint32 srcType1Idx = 0u; srcType1Idx <= MERGE_CACHE_TYPE_LAST; srcType1Idx++)
@@ -1940,7 +1924,6 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstru
 					std::string testName = "src_" + getMergeCacheTypesStr(cacheTestParam.srcCacheTypes) + "_dst_" + getMergeCacheTypeStr(cacheTestParam.destCacheType);
 					mergeStagesTests->addChild(new MergeCacheTest(testCtx,
 															testName.c_str(),
-															"Merge the caches test.",
 															&testParams[i],
 															&cacheTestParam));
 				}
@@ -1955,7 +1938,6 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstru
 					std::string testName = "src_" + getMergeCacheTypesStr(cacheTestParamTwoCaches.srcCacheTypes) + "_dst_" + getMergeCacheTypeStr(cacheTestParamTwoCaches.destCacheType);
 					mergeStagesTests->addChild(new MergeCacheTest(testCtx,
 														   testName.c_str(),
-														   "Merge the caches test.",
 														   &testParams[i],
 														   &cacheTestParamTwoCaches));
 				}
@@ -1967,28 +1949,24 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstru
 
 	// Misc Tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> miscTests(new tcu::TestCaseGroup(testCtx, "misc_tests", "Misc tests that can not be categorized to other group."));
+		de::MovePtr<tcu::TestCaseGroup> miscTests(new tcu::TestCaseGroup(testCtx, "misc_tests"));
 
 		const CacheTestParam testParam(pipelineConstructionType, vertFragStages, false);
 
 		miscTests->addChild(new CacheHeaderTest(testCtx,
 											   "cache_header_test",
-											   "Cache header test.",
 											   &testParam));
 
 		miscTests->addChild(new InvalidSizeTest(testCtx,
 												"invalid_size_test",
-												"Invalid size test.",
 												&testParam));
 
 		miscTests->addChild(new ZeroSizeTest(testCtx,
 											 "zero_size_test",
-											 "Zero size test.",
 											 &testParam));
 
 		miscTests->addChild(new InvalidBlobTest(testCtx,
 												"invalid_blob_test",
-												"Invalid cache blob test.",
 												&testParam));
 
 		cacheTests->addChild(miscTests.release());

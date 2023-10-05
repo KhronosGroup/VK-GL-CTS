@@ -578,8 +578,8 @@ protected:
 class TessStateSwitchCase : public vkt::TestCase
 {
 public:
-					TessStateSwitchCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessStateSwitchParams& params)
-						: vkt::TestCase	(testCtx, name, description)
+					TessStateSwitchCase		(tcu::TestContext& testCtx, const std::string& name, const TessStateSwitchParams& params)
+						: vkt::TestCase	(testCtx, name)
 						, m_params		(params)
 						{}
 
@@ -977,7 +977,8 @@ std::string getDomainOriginName(VkTessellationDomainOrigin value)
 //! These tests correspond to dEQP-GLES31.functional.tessellation.misc_draw.*
 tcu::TestCaseGroup* createMiscDrawTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "misc_draw", "Miscellaneous draw-result-verifying cases"));
+	// Miscellaneous draw-result-verifying cases
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "misc_draw"));
 
 	static const TessPrimitiveType primitivesNoIsolines[] =
 	{
@@ -993,7 +994,8 @@ tcu::TestCaseGroup* createMiscDrawTests (tcu::TestContext& testCtx)
 		const SpacingMode		spacingMode	  = static_cast<SpacingMode>(spacingModeNdx);
 		const std::string		caseName	  = std::string() + "fill_cover_" + getTessPrimitiveTypeShaderName(primitiveType) + "_" + getSpacingModeShaderName(spacingMode);
 
-		addFunctionCaseWithPrograms(group.get(), caseName, "Check that there are no obvious gaps in the triangle-filled area of a tessellated shape",
+		// Check that there are no obvious gaps in the triangle-filled area of a tessellated shape
+		addFunctionCaseWithPrograms(group.get(), caseName,
 									initProgramsFillCoverCase, runTest, makeCaseDefinition(primitiveType, spacingMode, getReferenceImagePathPrefix(caseName)));
 	}
 
@@ -1005,7 +1007,8 @@ tcu::TestCaseGroup* createMiscDrawTests (tcu::TestContext& testCtx)
 		const SpacingMode		spacingMode	  = static_cast<SpacingMode>(spacingModeNdx);
 		const std::string		caseName	  = std::string() + "fill_overlap_" + getTessPrimitiveTypeShaderName(primitiveType) + "_" + getSpacingModeShaderName(spacingMode);
 
-		addFunctionCaseWithPrograms(group.get(), caseName, "Check that there are no obvious triangle overlaps in the triangle-filled area of a tessellated shape",
+		// Check that there are no obvious triangle overlaps in the triangle-filled area of a tessellated shape
+		addFunctionCaseWithPrograms(group.get(), caseName,
 									initProgramsFillNonOverlapCase, runTest, makeCaseDefinition(primitiveType, spacingMode, getReferenceImagePathPrefix(caseName)));
 	}
 
@@ -1015,7 +1018,8 @@ tcu::TestCaseGroup* createMiscDrawTests (tcu::TestContext& testCtx)
 		const SpacingMode spacingMode = static_cast<SpacingMode>(spacingModeNdx);
 		const std::string caseName    = std::string() + "isolines_" + getSpacingModeShaderName(spacingMode);
 
-		addFunctionCaseWithPrograms(group.get(), caseName, "Basic isolines render test", checkSupportCase,
+		// Basic isolines render test
+		addFunctionCaseWithPrograms(group.get(), caseName, checkSupportCase,
 									initProgramsIsolinesCase, runTest, makeCaseDefinition(TESSPRIMITIVETYPE_ISOLINES, spacingMode, getReferenceImagePathPrefix(caseName)));
 	}
 
@@ -1045,7 +1049,7 @@ tcu::TestCaseGroup* createMiscDrawTests (tcu::TestContext& testCtx)
 				};
 
 				const auto testName = std::string("switch_primitive_") + getTessPrimitiveTypeShaderName(params.patchTypes.first) + "_to_" + getTessPrimitiveTypeShaderName(params.patchTypes.second) + nameSuffix;
-				group->addChild(new TessStateSwitchCase(testCtx, testName, "", params));
+				group->addChild(new TessStateSwitchCase(testCtx, testName, params));
 			}
 
 		for (const auto& firstDomainOrigin : domainOrigins)
@@ -1063,7 +1067,7 @@ tcu::TestCaseGroup* createMiscDrawTests (tcu::TestContext& testCtx)
 				};
 
 				const auto testName = std::string("switch_domain_origin_") + getDomainOriginName(params.domainOrigin.first) + "_to_" + getDomainOriginName(params.domainOrigin.second) + nameSuffix;
-				group->addChild(new TessStateSwitchCase(testCtx, testName, "", params));
+				group->addChild(new TessStateSwitchCase(testCtx, testName, params));
 			}
 
 		for (int firstSpacingModeNdx = 0; firstSpacingModeNdx < SPACINGMODE_LAST; ++firstSpacingModeNdx)
@@ -1084,7 +1088,7 @@ tcu::TestCaseGroup* createMiscDrawTests (tcu::TestContext& testCtx)
 				};
 
 				const auto testName = std::string("switch_spacing_mode_") + getSpacingModeShaderName(params.spacing.first) + "_to_" + getSpacingModeShaderName(params.spacing.second) + nameSuffix;
-				group->addChild(new TessStateSwitchCase(testCtx, testName, "", params));
+				group->addChild(new TessStateSwitchCase(testCtx, testName, params));
 			}
 	}
 

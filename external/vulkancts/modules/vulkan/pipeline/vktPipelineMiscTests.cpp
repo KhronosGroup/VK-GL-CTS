@@ -97,7 +97,6 @@ void addMonolithicAmberTests (tcu::TestCaseGroup* tests)
 	// Shader test files are saved in <path>/external/vulkancts/data/vulkan/amber/pipeline/<basename>.amber
 	struct Case {
 		const char*			basename;
-		const char*			description;
 		AmberFeatureFlags	flags;
 	};
 
@@ -105,12 +104,10 @@ void addMonolithicAmberTests (tcu::TestCaseGroup* tests)
 	{
 		{
 			"position_to_ssbo",
-			"Write position data into ssbo using only the vertex shader in a pipeline",
 			(AMBER_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS),
 		},
 		{
 			"primitive_id_from_tess",
-			"Read primitive id from tessellation shaders without a geometry shader",
 			(AMBER_FEATURE_TESSELATION_SHADER | AMBER_FEATURE_GEOMETRY_SHADER),
 		},
 	};
@@ -118,7 +115,7 @@ void addMonolithicAmberTests (tcu::TestCaseGroup* tests)
 	{
 		std::string					file			= std::string(cases[i].basename) + ".amber";
 		std::vector<std::string>	requirements	= getFeatureList(cases[i].flags);
-		cts_amber::AmberTestCase	*testCase		= cts_amber::createAmberTestCase(testCtx, cases[i].basename, cases[i].description, "pipeline", file, requirements);
+		cts_amber::AmberTestCase	*testCase		= cts_amber::createAmberTestCase(testCtx, cases[i].basename, "pipeline", file, requirements);
 
 		tests->addChild(testCase);
 	}
@@ -132,10 +129,9 @@ class ImplicitPrimitiveIDPassthroughCase : public vkt::TestCase
 public:
 	ImplicitPrimitiveIDPassthroughCase		(tcu::TestContext&                  testCtx,
 											 const std::string&                 name,
-											 const std::string&                 description,
 											 const PipelineConstructionType		pipelineConstructionType,
 											 bool withTessellation)
-		: vkt::TestCase(testCtx, name, description)
+		: vkt::TestCase(testCtx, name)
 		, m_pipelineConstructionType(pipelineConstructionType)
 		, m_withTessellationPassthrough(withTessellation)
 	{
@@ -435,8 +431,8 @@ struct UnusedShaderStageParams
 class UnusedShaderStagesCase : public vkt::TestCase
 {
 public:
-					UnusedShaderStagesCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const UnusedShaderStageParams& params)
-						: vkt::TestCase	(testCtx, name, description)
+					UnusedShaderStagesCase	(tcu::TestContext& testCtx, const std::string& name, const UnusedShaderStageParams& params)
+						: vkt::TestCase	(testCtx, name)
 						, m_params		(params)
 						{}
 	virtual			~UnusedShaderStagesCase	(void) {}
@@ -1034,7 +1030,7 @@ tcu::TestStatus UnusedShaderStagesInstance::iterate ()
 class PipelineLibraryInterpolateAtSampleTestCase : public vkt::TestCase
 {
 public:
-	PipelineLibraryInterpolateAtSampleTestCase(tcu::TestContext& context, const std::string& name, const std::string& description);
+	PipelineLibraryInterpolateAtSampleTestCase(tcu::TestContext& context, const std::string& name);
 	void            initPrograms            (vk::SourceCollections& programCollection) const override;
 	TestInstance*   createInstance          (Context& context) const override;
 	void            checkSupport            (Context& context) const override;
@@ -1054,8 +1050,8 @@ public:
 	virtual tcu::TestStatus iterate(void);
 };
 
-PipelineLibraryInterpolateAtSampleTestCase::PipelineLibraryInterpolateAtSampleTestCase(tcu::TestContext& context, const std::string& name, const std::string& description):
-	vkt::TestCase(context, name, description) { }
+PipelineLibraryInterpolateAtSampleTestCase::PipelineLibraryInterpolateAtSampleTestCase(tcu::TestContext& context, const std::string& name):
+	vkt::TestCase(context, name) { }
 
 void PipelineLibraryInterpolateAtSampleTestCase::checkSupport(Context& context) const
 {
@@ -1384,9 +1380,8 @@ class PipelineLayoutBindingTestCases : public vkt::TestCase
 public:
 	PipelineLayoutBindingTestCases		(tcu::TestContext&                  testCtx,
 											 const std::string&                 name,
-											 const std::string&                 description,
 											 const BindingTestConfig&			config)
-		: vkt::TestCase(testCtx, name, description)
+		: vkt::TestCase(testCtx, name)
 		, m_config(config)
 	{
 	}
@@ -1680,17 +1675,20 @@ tcu::TestStatus PipelineLayoutBindingTestInstance::iterate ()
 
 tcu::TestCaseGroup* createMiscTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> miscTests (new tcu::TestCaseGroup(testCtx, "misc", ""));
+	de::MovePtr<tcu::TestCaseGroup> miscTests (new tcu::TestCaseGroup(testCtx, "misc"));
 
 	// Location of the Amber script files under the data/vulkan/amber source tree.
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 		addMonolithicAmberTests(miscTests.get());
 
-	miscTests->addChild(new ImplicitPrimitiveIDPassthroughCase(testCtx, "implicit_primitive_id", "Verify implicit access to gl_PrimtiveID works", pipelineConstructionType, false));
-	miscTests->addChild(new ImplicitPrimitiveIDPassthroughCase(testCtx, "implicit_primitive_id_with_tessellation", "Verify implicit access to gl_PrimtiveID works with a tessellation shader", pipelineConstructionType, true));
+	// Verify implicit access to gl_PrimtiveID works
+	miscTests->addChild(new ImplicitPrimitiveIDPassthroughCase(testCtx, "implicit_primitive_id", pipelineConstructionType, false));
+	// Verify implicit access to gl_PrimtiveID works with a tessellation shader
+	miscTests->addChild(new ImplicitPrimitiveIDPassthroughCase(testCtx, "implicit_primitive_id_with_tessellation", pipelineConstructionType, true));
 	#ifndef CTS_USES_VULKANSC
 	if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY) {
-		miscTests->addChild(new PipelineLibraryInterpolateAtSampleTestCase(testCtx, "interpolate_at_sample_no_sample_shading", "Check if interpolateAtSample works as expected when using a pipeline library and null MSAA state in the fragment shader"));
+		// Check if interpolateAtSample works as expected when using a pipeline library and null MSAA state in the fragment shader"
+		miscTests->addChild(new PipelineLibraryInterpolateAtSampleTestCase(testCtx, "interpolate_at_sample_no_sample_shading"));
 	}
 	#endif
 
@@ -1712,7 +1710,7 @@ tcu::TestCaseGroup* createMiscTests (tcu::TestContext& testCtx, PipelineConstruc
 					testName += "_include_geom";
 
 				const UnusedShaderStageParams params { pipelineConstructionType, useTess, useGeom };
-				miscTests->addChild(new UnusedShaderStagesCase(testCtx, testName, "", params));
+				miscTests->addChild(new UnusedShaderStagesCase(testCtx, testName, params));
 			}
 	}
 #endif // CTS_USES_VULKANSC
@@ -1721,9 +1719,12 @@ tcu::TestCaseGroup* createMiscTests (tcu::TestContext& testCtx, PipelineConstruc
 	BindingTestConfig config1 = {pipelineConstructionType, false, true};
 	BindingTestConfig config2 = {pipelineConstructionType, true, true};
 
-	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_backwards", "Verify implicit access to gl_PrimtiveID works with a tessellation shader", config0));
-	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_holes", "Verify implicit access to gl_PrimtiveID works with a tessellation shader", config1));
-	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_backwards_holes", "Verify implicit access to gl_PrimtiveID works with a tessellation shader", config2));
+	// Verify implicit access to gl_PrimtiveID works with a tessellation shader
+	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_backwards", config0));
+	// Verify implicit access to gl_PrimtiveID works with a tessellation shader
+	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_holes", config1));
+	// Verify implicit access to gl_PrimtiveID works with a tessellation shader
+	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_backwards_holes", config2));
 
 	return miscTests.release();
 }

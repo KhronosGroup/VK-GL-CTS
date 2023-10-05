@@ -80,7 +80,7 @@ public:
 														 vk::VkClearValue		clearValue,
 														 ValidationData			data,
 														 CmdBufferType			cmdBufferType)
-								: TestCase			(testCtx, name, "Clear attachment.")
+								: TestCase			(testCtx, name)
 								, m_clearValue		(clearValue)
 								, m_refData			(data)
 								, m_cmdBufferType	(cmdBufferType)
@@ -346,7 +346,8 @@ tcu::TestCaseGroup*	createAttachmentClearTests (tcu::TestContext& testCtx, CmdBu
 		},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	clearStaticTests	(new tcu::TestCaseGroup(testCtx, "static", "Attachment Clear Op Tests with static input"));
+	// Attachment Clear Op Tests with static input
+	de::MovePtr<tcu::TestCaseGroup>	clearStaticTests	(new tcu::TestCaseGroup(testCtx, "static"));
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testData); ++ndx)
 	{
@@ -379,7 +380,7 @@ tcu::TestCaseGroup*	createAttachmentClearTests (tcu::TestContext& testCtx, CmdBu
 
 	std::string groupName = getCmdBufferTypeStr(cmdBufferType);
 	std::string groupDesc = "Attachment Clear Op Tests with " + groupName + " command buffer";
-	de::MovePtr<tcu::TestCaseGroup> clearTests (new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupDesc.c_str()));
+	de::MovePtr<tcu::TestCaseGroup> clearTests (new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 	clearTests->addChild(clearStaticTests.release());
 	clearTests->addChild(clearRandomTests.release());
 	return clearTests.release();

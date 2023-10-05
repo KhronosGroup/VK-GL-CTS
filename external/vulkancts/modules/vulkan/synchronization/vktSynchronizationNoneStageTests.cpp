@@ -1169,7 +1169,7 @@ private:
 };
 
 NoneStageTestCase::NoneStageTestCase(tcu::TestContext&	testContext, const std::string&	name, const TestParams&	testParams)
-	: vkt::TestCase	(testContext, name, "")
+	: vkt::TestCase	(testContext, name)
 	, m_testParams	(testParams)
 {
 }
@@ -1392,7 +1392,7 @@ void NoneStageTestCase::checkSupport(Context& context) const
 
 tcu::TestCaseGroup* createNoneStageTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> noneStageTests(new tcu::TestCaseGroup(testCtx, "none_stage", ""));
+	de::MovePtr<tcu::TestCaseGroup> noneStageTests(new tcu::TestCaseGroup(testCtx, "none_stage"));
 
 	struct LayoutData
 	{

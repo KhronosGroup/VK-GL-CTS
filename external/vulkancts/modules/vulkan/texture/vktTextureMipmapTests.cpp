@@ -2052,7 +2052,6 @@ class Texture2DImageViewMinLodIntTexCoordTest : public vkt::TestCase
 public:
 	Texture2DImageViewMinLodIntTexCoordTest						(tcu::TestContext&							testContext,
 																 const string&								name,
-																 const string&								description,
 																 const Texture2DMipmapTestCaseParameters&	params);
 	~Texture2DImageViewMinLodIntTexCoordTest					(void);
 	void						initPrograms					(SourceCollections& sourceCollections) const;
@@ -2065,9 +2064,8 @@ protected:
 
 Texture2DImageViewMinLodIntTexCoordTest::Texture2DImageViewMinLodIntTexCoordTest (tcu::TestContext&							testContext,
 																				  const string&								name,
-																				  const string&								description,
 																				  const Texture2DMipmapTestCaseParameters&	params)
-	: vkt::TestCase	(testContext, name, description)
+	: vkt::TestCase	(testContext, name)
 	, m_params		(params)
 {
 }
@@ -2229,7 +2227,6 @@ class Texture3DImageViewMinLodIntTexCoordTest : public vkt::TestCase
 public:
 	Texture3DImageViewMinLodIntTexCoordTest						(tcu::TestContext&							testContext,
 																 const string&								name,
-																 const string&								description,
 																 const Texture3DMipmapTestCaseParameters&	params);
 	~Texture3DImageViewMinLodIntTexCoordTest					(void);
 	void						initPrograms					(SourceCollections& sourceCollections) const;
@@ -2242,9 +2239,8 @@ protected:
 
 Texture3DImageViewMinLodIntTexCoordTest::Texture3DImageViewMinLodIntTexCoordTest (tcu::TestContext&							testContext,
 																				  const string&								name,
-																				  const string&								description,
 																				  const Texture3DMipmapTestCaseParameters&	params)
-	: vkt::TestCase	(testContext, name, description)
+	: vkt::TestCase	(testContext, name)
 	, m_params		(params)
 {
 }
@@ -2372,8 +2368,8 @@ struct GatherParams
 class TextureGatherMinLodTest : public vkt::TestCase
 {
 public:
-					TextureGatherMinLodTest		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const GatherParams& params)
-						: vkt::TestCase	(testCtx, name, description)
+					TextureGatherMinLodTest		(tcu::TestContext& testCtx, const std::string& name, const GatherParams& params)
+						: vkt::TestCase	(testCtx, name)
 						, m_params		(params)
 						{}
 	virtual			~TextureGatherMinLodTest	(void) {}
@@ -2962,7 +2958,7 @@ void populateMinLodGatherGroup (tcu::TestCaseGroup* minLodGatherGroup)
 
 	for (const auto& gatherMinLodCase : GatherMinLodCases)
 	{
-		GroupPtr minLodGroup (new tcu::TestCaseGroup(testCtx, gatherMinLodCase.name, ""));
+		GroupPtr minLodGroup (new tcu::TestCaseGroup(testCtx, gatherMinLodCase.name));
 
 		for (const auto& componentCase : ComponentCases)
 		{
@@ -2974,7 +2970,7 @@ void populateMinLodGatherGroup (tcu::TestCaseGroup* minLodGatherGroup)
 			params.minLod		= gatherMinLodCase.minLod;
 			params.component	= componentCase.component;
 
-			minLodGroup->addChild(new TextureGatherMinLodTest(testCtx, componentCase.name, "", params));
+			minLodGroup->addChild(new TextureGatherMinLodTest(testCtx, componentCase.name, params));
 		}
 
 		minLodGatherGroup->addChild(minLodGroup.release());
@@ -3025,12 +3021,14 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 	{
 		const CoordType		type;
 		const char*			name;
-		const char*			desc;
 	} coordTypes[] =
 	{
-		{ COORDTYPE_BASIC,		"basic",		"Mipmapping with translated and scaled coordinates" },
-		{ COORDTYPE_AFFINE,		"affine",		"Mipmapping with affine coordinate transform"		},
-		{ COORDTYPE_PROJECTED,	"projected",	"Mipmapping with perspective projection"			}
+		// Mipmapping with translated and scaled coordinates
+		{ COORDTYPE_BASIC,		"basic"},
+		// Mipmapping with affine coordinate transform
+		{ COORDTYPE_AFFINE,		"affine"},
+		// Mipmapping with perspective projection
+		{ COORDTYPE_PROJECTED,	"projected"}
 	};
 
 	static const struct
@@ -3063,17 +3061,20 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 	{
 		const CoordType		type;
 		const char*			name;
-		const char*			desc;
 	} cubeCoordTypes[] =
 	{
-		{ COORDTYPE_BASIC,		"basic",		"Mipmapping with translated and scaled coordinates" },
-		{ COORDTYPE_PROJECTED,	"projected",	"Mipmapping with perspective projection"			},
-		{ COORDTYPE_BASIC_BIAS,	"bias",			"User-supplied bias value"							}
+		// Mipmapping with translated and scaled coordinates
+		{ COORDTYPE_BASIC,		"basic"},
+		// Mipmapping with perspective projection
+		{ COORDTYPE_PROJECTED,	"projected"},
+		// User-supplied bias value
+		{ COORDTYPE_BASIC_BIAS,	"bias"}
 	};
 
 	// 2D cases.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	group2D				(new tcu::TestCaseGroup(testCtx, "2d", "2D Mipmap Filtering"));
+		// 2D Mipmap Filtering
+		de::MovePtr<tcu::TestCaseGroup>	group2D				(new tcu::TestCaseGroup(testCtx, "2d"));
 
 		de::MovePtr<tcu::TestCaseGroup>	biasGroup2D			(new tcu::TestCaseGroup(testCtx, "bias", "User-supplied bias value"));
 		de::MovePtr<tcu::TestCaseGroup>	minLodGroup2D		(new tcu::TestCaseGroup(testCtx, "min_lod", "Lod control: min lod"));
@@ -3089,7 +3090,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 
 		for (int coordType = 0; coordType < DE_LENGTH_OF_ARRAY(coordTypes); coordType++)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	coordTypeGroup		(new tcu::TestCaseGroup(testCtx, coordTypes[coordType].name, coordTypes[coordType].desc));
+			de::MovePtr<tcu::TestCaseGroup>	coordTypeGroup		(new tcu::TestCaseGroup(testCtx, coordTypes[coordType].name));
 
 			for (int minFilter = 0; minFilter < DE_LENGTH_OF_ARRAY(minFilterModes); minFilter++)
 			{
@@ -3119,7 +3120,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 						if (tex2DSizes[size].name)
 							name << "_" << tex2DSizes[size].name;
 
-						coordTypeGroup->addChild(new TextureTestCase<Texture2DMipmapTestInstance>(testCtx, name.str().c_str(), "", testParameters));
+						coordTypeGroup->addChild(new TextureTestCase<Texture2DMipmapTestInstance>(testCtx, name.str().c_str(), testParameters));
 					}
 				}
 			}
@@ -3147,7 +3148,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				std::ostringstream name;
 				name << minFilterModes[minFilter].name;
 
-				biasGroup2D->addChild(new TextureTestCase<Texture2DMipmapTestInstance>(testCtx, name.str().c_str(), "", testParameters));
+				biasGroup2D->addChild(new TextureTestCase<Texture2DMipmapTestInstance>(testCtx, name.str().c_str(), testParameters));
 			}
 		}
 
@@ -3161,7 +3162,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_2D_FLOAT);
 
-				minLodGroup2D->addChild(new TextureTestCase<Texture2DMinLodTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+				minLodGroup2D->addChild(new TextureTestCase<Texture2DMinLodTestInstance>(testCtx, minFilterModes[minFilter].name, testParameters));
 			}
 
 			// MAX_LOD
@@ -3172,7 +3173,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_2D_FLOAT);
 
-				maxLodGroup2D->addChild(new TextureTestCase<Texture2DMaxLodTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+				maxLodGroup2D->addChild(new TextureTestCase<Texture2DMaxLodTestInstance>(testCtx, minFilterModes[minFilter].name, testParameters));
 			}
 		}
 
@@ -3186,7 +3187,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				testParameters.aspectMask		= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_2D_FLOAT);
 
-				baseLevelGroup2D->addChild(new TextureTestCase<Texture2DBaseLevelTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+				baseLevelGroup2D->addChild(new TextureTestCase<Texture2DBaseLevelTestInstance>(testCtx, minFilterModes[minFilter].name, testParameters));
 			}
 
 			// MAX_LEVEL
@@ -3198,7 +3199,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				testParameters.aspectMask		= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_2D_FLOAT);
 
-				maxLevelGroup2D->addChild(new TextureTestCase<Texture2DMaxLevelTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+				maxLevelGroup2D->addChild(new TextureTestCase<Texture2DMaxLevelTestInstance>(testCtx, minFilterModes[minFilter].name, testParameters));
 			}
 		}
 
@@ -3214,12 +3215,12 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				testParameters.programs.push_back(PROGRAM_2D_FLOAT);
 				testParameters.testType				= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD;
 
-				imageViewMinLodGroup2D->addChild(new TextureTestCase<Texture2DImageViewMinLodTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+				imageViewMinLodGroup2D->addChild(new TextureTestCase<Texture2DImageViewMinLodTestInstance>(testCtx, minFilterModes[minFilter].name, testParameters));
 
 				std::ostringstream name;
 				name << minFilterModes[minFilter].name << "_integer_texel_coord";
 				testParameters.testType				= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD_INT_TEX_COORD;
-				imageViewMinLodGroup2D->addChild(new Texture2DImageViewMinLodIntTexCoordTest(testCtx, name.str().c_str(), "", testParameters));
+				imageViewMinLodGroup2D->addChild(new Texture2DImageViewMinLodIntTexCoordTest(testCtx, name.str().c_str(), testParameters));
 			}
 
 			// BASE_LEVEL
@@ -3232,12 +3233,12 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				testParameters.programs.push_back(PROGRAM_2D_FLOAT);
 				testParameters.testType				= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD;
 
-				imageViewMinLodBaseLevelGroup2D->addChild(new TextureTestCase<Texture2DImageViewMinLodBaseLevelTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+				imageViewMinLodBaseLevelGroup2D->addChild(new TextureTestCase<Texture2DImageViewMinLodBaseLevelTestInstance>(testCtx, minFilterModes[minFilter].name, testParameters));
 
 				std::ostringstream name;
 				name << minFilterModes[minFilter].name << "_integer_texel_coord";
 				testParameters.testType				= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD_INT_TEX_COORD_BASELEVEL;
-				imageViewMinLodBaseLevelGroup2D->addChild(new Texture2DImageViewMinLodIntTexCoordTest(testCtx, name.str().c_str(), "", testParameters));
+				imageViewMinLodBaseLevelGroup2D->addChild(new Texture2DImageViewMinLodIntTexCoordTest(testCtx, name.str().c_str(), testParameters));
 			}
 
 			imageViewMinLodExtGroup2D->addChild(imageViewMinLodGroup2D.release());
@@ -3274,7 +3275,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 
 		for (int coordType = 0; coordType < DE_LENGTH_OF_ARRAY(cubeCoordTypes); coordType++)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	coordTypeGroup	(new tcu::TestCaseGroup(testCtx, cubeCoordTypes[coordType].name, cubeCoordTypes[coordType].desc));
+			de::MovePtr<tcu::TestCaseGroup>	coordTypeGroup	(new tcu::TestCaseGroup(testCtx, cubeCoordTypes[coordType].name));
 
 			for (int minFilter = 0; minFilter < DE_LENGTH_OF_ARRAY(minFilterModes); minFilter++)
 			{
@@ -3304,7 +3305,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 							 << "_" << magFilterModes[magFilter].name
 							 << "_" << wrapModes[wrapMode].name;
 
-						coordTypeGroup->addChild(new TextureTestCase<TextureCubeMipmapTestInstance>(testCtx, name.str().c_str(), "", testParameters));
+						coordTypeGroup->addChild(new TextureTestCase<TextureCubeMipmapTestInstance>(testCtx, name.str().c_str(), testParameters));
 					}
 				}
 			}
@@ -3322,7 +3323,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
 
-				minLodGroupCube->addChild(new TextureTestCase<TextureCubeMinLodTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+				minLodGroupCube->addChild(new TextureTestCase<TextureCubeMinLodTestInstance>(testCtx, minFilterModes[minFilter].name, testParameters));
 			}
 
 			// MAX_LOD
@@ -3333,7 +3334,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
 
-				maxLodGroupCube->addChild(new TextureTestCase<TextureCubeMaxLodTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+				maxLodGroupCube->addChild(new TextureTestCase<TextureCubeMaxLodTestInstance>(testCtx, minFilterModes[minFilter].name, testParameters));
 			}
 		}
 
@@ -3347,7 +3348,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				testParameters.aspectMask		= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
 
-				baseLevelGroupCube->addChild(new TextureTestCase<TextureCubeBaseLevelTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+				baseLevelGroupCube->addChild(new TextureTestCase<TextureCubeBaseLevelTestInstance>(testCtx, minFilterModes[minFilter].name, testParameters));
 			}
 
 			// MAX_LEVEL
@@ -3359,7 +3360,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				testParameters.aspectMask		= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
 
-				maxLevelGroupCube->addChild(new TextureTestCase<TextureCubeMaxLevelTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+				maxLevelGroupCube->addChild(new TextureTestCase<TextureCubeMaxLevelTestInstance>(testCtx, minFilterModes[minFilter].name, testParameters));
 			}
 		}
 
@@ -3375,7 +3376,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
 				testParameters.testType				= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD;
 
-				imageViewMinLodGroupCube->addChild(new TextureTestCase<TextureCubeImageViewMinLodTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+				imageViewMinLodGroupCube->addChild(new TextureTestCase<TextureCubeImageViewMinLodTestInstance>(testCtx, minFilterModes[minFilter].name, testParameters));
 			}
 
 			// BASE_LEVEL
@@ -3388,7 +3389,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
 				testParameters.testType				= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD;
 
-				imageViewMinLodBaseLevelGroupCube->addChild(new TextureTestCase<TextureCubeImageViewMinLodBaseLevelTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+				imageViewMinLodBaseLevelGroupCube->addChild(new TextureTestCase<TextureCubeImageViewMinLodBaseLevelTestInstance>(testCtx, minFilterModes[minFilter].name, testParameters));
 			}
 
 			imageViewMinLodExtGroupCube->addChild(imageViewMinLodGroupCube.release());
@@ -3425,7 +3426,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 
 		for (int coordType = 0; coordType < DE_LENGTH_OF_ARRAY(coordTypes); coordType++)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	coordTypeGroup	(new tcu::TestCaseGroup(testCtx, coordTypes[coordType].name, coordTypes[coordType].desc));
+			de::MovePtr<tcu::TestCaseGroup>	coordTypeGroup	(new tcu::TestCaseGroup(testCtx, coordTypes[coordType].name));
 
 			for (int minFilter = 0; minFilter < DE_LENGTH_OF_ARRAY(minFilterModes); minFilter++)
 			{
@@ -3459,7 +3460,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 						if (tex3DSizes[size].name)
 							name << "_" << tex3DSizes[size].name;
 
-						coordTypeGroup->addChild(new TextureTestCase<Texture3DMipmapTestInstance>(testCtx, name.str().c_str(), "", testParameters));
+						coordTypeGroup->addChild(new TextureTestCase<Texture3DMipmapTestInstance>(testCtx, name.str().c_str(), testParameters));
 					}
 				}
 			}
@@ -3484,7 +3485,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				testParameters.aspectMask			= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_3D_FLOAT_BIAS);
 
-				biasGroup3D->addChild(new TextureTestCase<Texture3DMipmapTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+				biasGroup3D->addChild(new TextureTestCase<Texture3DMipmapTestInstance>(testCtx, minFilterModes[minFilter].name, testParameters));
 			}
 		}
 
@@ -3498,7 +3499,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				testParameters.aspectMask			= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_3D_FLOAT);
 
-				minLodGroup3D->addChild(new TextureTestCase<Texture3DMinLodTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+				minLodGroup3D->addChild(new TextureTestCase<Texture3DMinLodTestInstance>(testCtx, minFilterModes[minFilter].name, testParameters));
 			}
 
 			// MAX_LOD
@@ -3509,7 +3510,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				testParameters.aspectMask			= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_3D_FLOAT);
 
-				maxLodGroup3D->addChild(new TextureTestCase<Texture3DMaxLodTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+				maxLodGroup3D->addChild(new TextureTestCase<Texture3DMaxLodTestInstance>(testCtx, minFilterModes[minFilter].name, testParameters));
 			}
 		}
 
@@ -3523,7 +3524,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				testParameters.aspectMask			= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_3D_FLOAT);
 
-				baseLevelGroup3D->addChild(new TextureTestCase<Texture3DBaseLevelTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+				baseLevelGroup3D->addChild(new TextureTestCase<Texture3DBaseLevelTestInstance>(testCtx, minFilterModes[minFilter].name, testParameters));
 			}
 
 			// MAX_LEVEL
@@ -3535,7 +3536,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				testParameters.aspectMask			= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_3D_FLOAT);
 
-				maxLevelGroup3D->addChild(new TextureTestCase<Texture3DMaxLevelTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+				maxLevelGroup3D->addChild(new TextureTestCase<Texture3DMaxLevelTestInstance>(testCtx, minFilterModes[minFilter].name, testParameters));
 			}
 		}
 
@@ -3551,12 +3552,12 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				testParameters.programs.push_back(PROGRAM_3D_FLOAT);
 				testParameters.testType				= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD;
 
-				imageViewMinLodGroup3D->addChild(new TextureTestCase<Texture3DImageViewMinLodTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+				imageViewMinLodGroup3D->addChild(new TextureTestCase<Texture3DImageViewMinLodTestInstance>(testCtx, minFilterModes[minFilter].name, testParameters));
 
 				std::ostringstream name;
 				name << minFilterModes[minFilter].name << "_integer_texel_coord";
 				testParameters.testType				= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD_INT_TEX_COORD;
-				imageViewMinLodGroup3D->addChild(new Texture3DImageViewMinLodIntTexCoordTest(testCtx, name.str().c_str(), "", testParameters));
+				imageViewMinLodGroup3D->addChild(new Texture3DImageViewMinLodIntTexCoordTest(testCtx, name.str().c_str(), testParameters));
 			}
 
 			// BASE_LEVEL
@@ -3570,12 +3571,12 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				testParameters.testType					= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD;
 
 
-				imageViewMinLodBaseLevelGroup3D->addChild(new TextureTestCase<Texture3DImageViewMinLodBaseLevelTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));
+				imageViewMinLodBaseLevelGroup3D->addChild(new TextureTestCase<Texture3DImageViewMinLodBaseLevelTestInstance>(testCtx, minFilterModes[minFilter].name, testParameters));
 
 				std::ostringstream name;
 				name << minFilterModes[minFilter].name << "_integer_texel_coord";
 				testParameters.testType					= util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD_INT_TEX_COORD_BASELEVEL;
-				imageViewMinLodBaseLevelGroup3D->addChild(new Texture3DImageViewMinLodIntTexCoordTest(testCtx, name.str().c_str(), "", testParameters));
+				imageViewMinLodBaseLevelGroup3D->addChild(new Texture3DImageViewMinLodIntTexCoordTest(testCtx, name.str().c_str(), testParameters));
 			}
 
 			imageViewMinLodExtGroup3D->addChild(imageViewMinLodGroup3D.release());
@@ -3597,7 +3598,8 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 
 #ifndef CTS_USES_VULKANSC
 	{
-		const auto minLodGatherGroup = createTestGroup(testCtx, "min_lod_gather", "Test minLod with textureGather operations", populateMinLodGatherGroup, destroyDeviceHelpers);
+		// Test minLod with textureGather operations
+		const auto minLodGatherGroup = createTestGroup(testCtx, "min_lod_gather", populateMinLodGatherGroup, destroyDeviceHelpers);
 		textureMipmappingTests->addChild(minLodGatherGroup);
 	}
 #endif // CTS_USES_VULKANSC
@@ -3605,7 +3607,7 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 
 tcu::TestCaseGroup* createTextureMipmappingTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "mipmap", "Texture mipmapping tests.", populateTextureMipmappingTests);
+	return createTestGroup(testCtx, "mipmap", populateTextureMipmappingTests);
 }
 
 } // texture

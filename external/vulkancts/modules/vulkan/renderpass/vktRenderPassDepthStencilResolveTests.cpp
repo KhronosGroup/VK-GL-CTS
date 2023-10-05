@@ -1320,8 +1320,8 @@ struct Programs
 class PropertiesTestCase : public vkt::TestCase
 {
 public:
-							PropertiesTestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-								: vkt::TestCase(testCtx, name, description)
+							PropertiesTestCase		(tcu::TestContext& testCtx, const std::string& name)
+								: vkt::TestCase(testCtx, name)
 								{}
 	virtual					~PropertiesTestCase		(void) {}
 
@@ -1470,8 +1470,10 @@ void initTests (tcu::TestCaseGroup* group)
 
 	// Misc tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc", "Miscellaneous depth/stencil resolve tests"));
-		miscGroup->addChild(new PropertiesTestCase(testCtx, "properties", "Check reported depth/stencil resolve properties"));
+		// Miscellaneous depth/stencil resolve tests
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
+		// Check reported depth/stencil resolve properties
+		miscGroup->addChild(new PropertiesTestCase(testCtx, "properties"));
 		group->addChild(miscGroup.release());
 	}
 
@@ -1481,7 +1483,7 @@ void initTests (tcu::TestCaseGroup* group)
 		ImageTestData imageData = imagesTestData[imageDataNdx];
 
 		// create test group for image data
-		de::MovePtr<tcu::TestCaseGroup> imageGroup(new tcu::TestCaseGroup(testCtx, imageData.groupName, imageData.groupName));
+		de::MovePtr<tcu::TestCaseGroup> imageGroup(new tcu::TestCaseGroup(testCtx, imageData.groupName));
 
 		// iterate over sampleCounts
 		for (size_t sampleCountNdx = 0; sampleCountNdx < DE_LENGTH_OF_ARRAY(sampleCounts); sampleCountNdx++)
@@ -1490,7 +1492,7 @@ void initTests (tcu::TestCaseGroup* group)
 			const std::string	sampleName	("samples_" + de::toString(sampleCount));
 
 			// create test group for sample count
-			de::MovePtr<tcu::TestCaseGroup> sampleGroup(new tcu::TestCaseGroup(testCtx, sampleName.c_str(), sampleName.c_str()));
+			de::MovePtr<tcu::TestCaseGroup> sampleGroup(new tcu::TestCaseGroup(testCtx, sampleName.c_str()));
 
 			// iterate over depth/stencil formats
 			for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
@@ -1510,7 +1512,7 @@ void initTests (tcu::TestCaseGroup* group)
 					const std::string	groupName						= std::string(formatName) + ((useSeparateDepthStencilLayouts) ? "_separate_layouts" : "");
 
 					// create test group for format
-					de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupName.c_str()));
+					de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 
 					// iterate over depth resolve modes
 					for (size_t depthResolveModeNdx = 0; depthResolveModeNdx < DE_LENGTH_OF_ARRAY(resolveModes); depthResolveModeNdx++)
@@ -1577,7 +1579,7 @@ void initTests (tcu::TestCaseGroup* group)
 										tcu::Nothing,
 										false
 									};
-									formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
+									formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testConfig));
 
 									if (sampleCountNdx == 0 && imageDataNdx == 0 && dResolve.flag != VK_RESOLVE_MODE_NONE)
 									{
@@ -1589,7 +1591,7 @@ void initTests (tcu::TestCaseGroup* group)
 											TestConfig compatibilityTestConfig			= testConfig;
 											compatibilityTestConfig.compatibleFormat	= tcu::just(compatibleFormat);
 
-											formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, compatibilityTestName.c_str(), compatibilityTestName.c_str(), compatibilityTestConfig));
+											formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, compatibilityTestName.c_str(), compatibilityTestConfig));
 										}
 									}
 								}
@@ -1621,14 +1623,14 @@ void initTests (tcu::TestCaseGroup* group)
 										tcu::Nothing,
 										false
 									};
-									formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
+									formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testConfig));
 
 									if (dResolve.flag == VK_RESOLVE_MODE_SAMPLE_ZERO_BIT)
 									{
 										std::string samplemaskTestName = name + "_samplemask";
 										TestConfig samplemaskTestConfig = testConfig;
 										samplemaskTestConfig.sampleMask = true;
-										formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, samplemaskTestName.c_str(), samplemaskTestName.c_str(), samplemaskTestConfig));
+										formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, samplemaskTestName.c_str(), samplemaskTestConfig));
 									}
 
 									// All formats with stencil and depth aspects have incompatible formats and sizes in the depth
@@ -1640,7 +1642,7 @@ void initTests (tcu::TestCaseGroup* group)
 										TestConfig compatibilityTestConfig			= testConfig;
 										compatibilityTestConfig.compatibleFormat	= tcu::just(VK_FORMAT_S8_UINT);
 
-										formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, compatibilityTestName.c_str(), compatibilityTestName.c_str(), compatibilityTestConfig));
+										formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, compatibilityTestName.c_str(), compatibilityTestConfig));
 									}
 								}
 							}
@@ -1666,7 +1668,7 @@ void initTests (tcu::TestCaseGroup* group)
 			"image_2d_16_64_6", 16, 64, 6, {{ 10,  10}, {6, 54}}, {1.0f, 0x0}
 		};
 
-		de::MovePtr<tcu::TestCaseGroup> imageGroup(new tcu::TestCaseGroup(testCtx, layeredTextureTestData.groupName, layeredTextureTestData.groupName));
+		de::MovePtr<tcu::TestCaseGroup> imageGroup(new tcu::TestCaseGroup(testCtx, layeredTextureTestData.groupName));
 
 		for (size_t sampleCountNdx = 0; sampleCountNdx < DE_LENGTH_OF_ARRAY(sampleCounts); sampleCountNdx++)
 		{
@@ -1674,7 +1676,7 @@ void initTests (tcu::TestCaseGroup* group)
 			const std::string	sampleName	("samples_" + de::toString(sampleCount));
 
 			// create test group for sample count
-			de::MovePtr<tcu::TestCaseGroup> sampleGroup(new tcu::TestCaseGroup(testCtx, sampleName.c_str(), sampleName.c_str()));
+			de::MovePtr<tcu::TestCaseGroup> sampleGroup(new tcu::TestCaseGroup(testCtx, sampleName.c_str()));
 
 			// iterate over depth/stencil formats
 			for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
@@ -1694,7 +1696,7 @@ void initTests (tcu::TestCaseGroup* group)
 					const std::string	groupName						= std::string(formatName) + ((useSeparateDepthStencilLayouts) ? "_separate_layouts" : "");
 
 					// create test group for format
-					de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupName.c_str()));
+					de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 
 					for (size_t resolveModeNdx = 0; resolveModeNdx < DE_LENGTH_OF_ARRAY(resolveModes); resolveModeNdx++)
 					{
@@ -1738,7 +1740,7 @@ void initTests (tcu::TestCaseGroup* group)
 									tcu::Nothing,
 									false
 								};
-								formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
+								formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testConfig));
 							}
 
 							// there is no average resolve mode for stencil - go to next iteration
@@ -1772,7 +1774,7 @@ void initTests (tcu::TestCaseGroup* group)
 									tcu::Nothing,
 									false
 								};
-								formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
+								formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testConfig));
 							}
 						}
 					}
@@ -1790,7 +1792,7 @@ void initTests (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* createRenderPass2DepthStencilResolveTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "depth_stencil_resolve", "Depth/stencil resolve tests", initTests);
+	return createTestGroup(testCtx, "depth_stencil_resolve", initTests);
 }
 
 } // vkt

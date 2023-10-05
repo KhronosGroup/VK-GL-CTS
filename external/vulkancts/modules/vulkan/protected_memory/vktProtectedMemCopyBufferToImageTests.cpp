@@ -80,7 +80,7 @@ public:
 															 deUint32					fillValue,
 															 ValidationData				data,
 															 CmdBufferType				cmdBufferType)
-									: TestCase				(testCtx, name, "Copy buffer to image.")
+									: TestCase				(testCtx, name)
 									, m_fillValue			(fillValue)
 									, m_refData				(data)
 									, m_validator			(vk::VK_FORMAT_R32G32B32A32_SFLOAT)
@@ -374,7 +374,8 @@ tcu::TestCaseGroup*	createCopyBufferToImageTests (tcu::TestContext& testCtx, Cmd
 		},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	copyStaticTests		(new tcu::TestCaseGroup(testCtx, "static", "Copy Buffer To Image Tests with static input"));
+	// Copy Buffer To Image Tests with static input
+	de::MovePtr<tcu::TestCaseGroup>	copyStaticTests		(new tcu::TestCaseGroup(testCtx, "static"));
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testData); ++ndx)
 	{
@@ -411,7 +412,7 @@ tcu::TestCaseGroup*	createCopyBufferToImageTests (tcu::TestContext& testCtx, Cmd
 
 	std::string groupName = getCmdBufferTypeStr(cmdBufferType);
 	std::string groupDesc = "Copy Buffer To Image Tests with " + groupName + " command buffer";
-	de::MovePtr<tcu::TestCaseGroup> copyTests (new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupDesc.c_str()));
+	de::MovePtr<tcu::TestCaseGroup> copyTests (new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 	copyTests->addChild(copyStaticTests.release());
 	copyTests->addChild(copyRandomTests.release());
 	return copyTests.release();

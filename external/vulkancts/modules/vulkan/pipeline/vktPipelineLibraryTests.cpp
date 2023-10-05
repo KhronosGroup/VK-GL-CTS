@@ -1207,7 +1207,7 @@ tcu::TestStatus PipelineLibraryTestInstance::iterate (void)
 class PipelineLibraryTestCase : public TestCase
 {
 	public:
-							PipelineLibraryTestCase		(tcu::TestContext& context, const char* name, const char* desc, const TestParams data);
+							PipelineLibraryTestCase		(tcu::TestContext& context, const char* name, const TestParams data);
 							~PipelineLibraryTestCase	(void);
 
 	virtual void			checkSupport				(Context& context) const;
@@ -1217,8 +1217,8 @@ private:
 	TestParams				m_data;
 };
 
-PipelineLibraryTestCase::PipelineLibraryTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams data)
-	: vkt::TestCase	(context, name, desc)
+PipelineLibraryTestCase::PipelineLibraryTestCase (tcu::TestContext& context, const char* name, const TestParams data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -2704,7 +2704,7 @@ private:
 };
 
 PipelineLibraryMiscTestCase::PipelineLibraryMiscTestCase(tcu::TestContext& context, const char* name, const MiscTestParams params)
-	: TestCase			(context, name, "")
+	: TestCase			(context, name)
 	, m_testParams		(params)
 {
 }
@@ -3077,7 +3077,7 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group, bool opti
 		if (optimize && testParams.pipelineTreeConfiguration.size() == 1)
 			continue;
 
-		group->addChild(new PipelineLibraryTestCase(group->getTestContext(), testName.c_str(), "", testParams));
+		group->addChild(new PipelineLibraryTestCase(group->getTestContext(), testName.c_str(), testParams));
 	}
 
 	// repeat first case (one that creates montolithic pipeline) to test VK_KHR_maintenance5;
@@ -3092,7 +3092,7 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group, bool opti
 			true										//  bool						useMaintenance5;
 		};
 
-		group->addChild(new PipelineLibraryTestCase(group->getTestContext(), "maintenance5", "", testParams));
+		group->addChild(new PipelineLibraryTestCase(group->getTestContext(), "maintenance5", testParams));
 	}
 }
 
@@ -3100,19 +3100,21 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group, bool opti
 
 tcu::TestCaseGroup*	createPipelineLibraryTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "graphics_library", "Tests verifying graphics pipeline libraries"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "graphics_library"));
 
-	addTestGroup(group.get(), "fast", "Tests graphics pipeline libraries linkage without optimization", addPipelineLibraryConfigurationsTests, false);
-	addTestGroup(group.get(), "optimize", "Tests graphics pipeline libraries linkage with optimization", addPipelineLibraryConfigurationsTests, true);
+	// Tests graphics pipeline libraries linkage without optimization
+	addTestGroup(group.get(), "fast", addPipelineLibraryConfigurationsTests, false);
+	// Tests graphics pipeline libraries linkage with optimization
+	addTestGroup(group.get(), "optimize", addPipelineLibraryConfigurationsTests, true);
 
-	de::MovePtr<tcu::TestCaseGroup> miscTests(new tcu::TestCaseGroup(testCtx, "misc", "Miscellaneous graphics pipeline library tests"));
+	de::MovePtr<tcu::TestCaseGroup> miscTests(new tcu::TestCaseGroup(testCtx, "misc"));
 
-	de::MovePtr<tcu::TestCaseGroup> independentLayoutSetsTests(new tcu::TestCaseGroup(testCtx, "independent_pipeline_layout_sets", ""));
+	de::MovePtr<tcu::TestCaseGroup> independentLayoutSetsTests(new tcu::TestCaseGroup(testCtx, "independent_pipeline_layout_sets"));
 	independentLayoutSetsTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "fast_linked", { MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED, 0u, 0u }));
 	independentLayoutSetsTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "link_opt_union_handle", { MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_WITH_LINK_TIME_OPTIMIZATION_UNION_HANDLE, 0u, 0u }));
 	miscTests->addChild(independentLayoutSetsTests.release());
 
-	de::MovePtr<tcu::TestCaseGroup> bindNullDescriptorCombinationsTests(new tcu::TestCaseGroup(testCtx, "bind_null_descriptor_set", ""));
+	de::MovePtr<tcu::TestCaseGroup> bindNullDescriptorCombinationsTests(new tcu::TestCaseGroup(testCtx, "bind_null_descriptor_set"));
 	const std::vector<const char*> bindNullDescriptorCombinations
 	{
 		// note: there will be as many descriptor sets layouts in pipeline layout as there are chcaracters in the case name;
@@ -3142,7 +3144,7 @@ tcu::TestCaseGroup*	createPipelineLibraryTests (tcu::TestContext& testCtx)
 	miscTests->addChild(bindNullDescriptorCombinationsTests.release());
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> otherTests(new tcu::TestCaseGroup(testCtx, "other", ""));
+		de::MovePtr<tcu::TestCaseGroup> otherTests(new tcu::TestCaseGroup(testCtx, "other"));
 		otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "compare_link_times", { MiscTestMode::COMPARE_LINK_TIMES, 0u, 0u }));
 		otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "null_descriptor_set_in_monolithic_pipeline", { MiscTestMode::BIND_NULL_DESCRIPTOR_SET_IN_MONOLITHIC_PIPELINE, 0u, 0u }));
 		otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "null_rendering_create_info", { MiscTestMode::NULL_RENDERING_CREATE_INFO, 0u, 0u }));
@@ -3150,7 +3152,7 @@ tcu::TestCaseGroup*	createPipelineLibraryTests (tcu::TestContext& testCtx)
 	}
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> nonGraphicsTests(new tcu::TestCaseGroup(testCtx, "non_graphics", "Tests that do not use graphics pipelines"));
+		de::MovePtr<tcu::TestCaseGroup> nonGraphicsTests(new tcu::TestCaseGroup(testCtx, "non_graphics"));
 		nonGraphicsTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "shader_module_info_comp",		{ MiscTestMode::SHADER_MODULE_CREATE_INFO_COMP, 0u, 0u }));
 		nonGraphicsTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "shader_module_info_rt",		{ MiscTestMode::SHADER_MODULE_CREATE_INFO_RT, 0u, 0u }));
 		nonGraphicsTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "shader_module_info_rt_lib",	{ MiscTestMode::SHADER_MODULE_CREATE_INFO_RT_LIB, 0u, 0u }));

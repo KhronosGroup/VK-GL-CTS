@@ -640,10 +640,13 @@ void createDescriptorSetLayoutBindingOrderingSource (SourceCollections& dst)
 
 tcu::TestCaseGroup* createDescriptorSetLayoutLifetimeTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> descriptorSetLayoutLifetimeTests(new tcu::TestCaseGroup(testCtx, "descriptor_set_layout_lifetime", "Descriptor set layout lifetime tests"));
+	// Descriptor set layout lifetime tests
+	de::MovePtr<tcu::TestCaseGroup> descriptorSetLayoutLifetimeTests(new tcu::TestCaseGroup(testCtx, "descriptor_set_layout_lifetime"));
 
-	addFunctionCaseWithPrograms(descriptorSetLayoutLifetimeTests.get(), "graphics", "Test descriptor set layout lifetime in graphics pipeline", createDescriptorSetLayoutLifetimeGraphicsSource, descriptorSetLayoutLifetimeGraphicsTest);
-	addFunctionCaseWithPrograms(descriptorSetLayoutLifetimeTests.get(), "compute", "Test descriptor set layout lifetime in compute pipeline", createDescriptorSetLayoutLifetimeComputeSource,  descriptorSetLayoutLifetimeComputeTest);
+	// Test descriptor set layout lifetime in graphics pipeline
+	addFunctionCaseWithPrograms(descriptorSetLayoutLifetimeTests.get(), "graphics", createDescriptorSetLayoutLifetimeGraphicsSource, descriptorSetLayoutLifetimeGraphicsTest);
+	// Test descriptor set layout lifetime in compute pipeline
+	addFunctionCaseWithPrograms(descriptorSetLayoutLifetimeTests.get(), "compute", createDescriptorSetLayoutLifetimeComputeSource,  descriptorSetLayoutLifetimeComputeTest);
 
 	return descriptorSetLayoutLifetimeTests.release();
 }
@@ -652,10 +655,12 @@ tcu::TestCaseGroup* createEmptyDescriptorSetLayoutTests (tcu::TestContext& testC
 {
 	de::MovePtr<tcu::TestCaseGroup> emptyDescriptorSetLayoutTests(new tcu::TestCaseGroup(testCtx, "empty_set", "Create empty descriptor set layout tests"));
 
-	addFunctionCase(emptyDescriptorSetLayoutTests.get(), "normal", "Create empty desciptor set layout", emptyDescriptorSetLayoutTest, (VkDescriptorSetLayoutCreateFlags)0u);
+	// Create empty desciptor set layout
+	addFunctionCase(emptyDescriptorSetLayoutTests.get(), "normal", emptyDescriptorSetLayoutTest, (VkDescriptorSetLayoutCreateFlags)0u);
 #ifndef CTS_USES_VULKANSC
 	// Removed from Vulkan SC test set: VK_KHR_push_descriptor extension removed from Vulkan SC
-	addFunctionCase(emptyDescriptorSetLayoutTests.get(), "push_descriptor", "Create empty push descriptor set layout", emptyDescriptorSetLayoutTest, (VkDescriptorSetLayoutCreateFlags)VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR);
+	// Create empty push descriptor set layout
+	addFunctionCase(emptyDescriptorSetLayoutTests.get(), "push_descriptor", emptyDescriptorSetLayoutTest, (VkDescriptorSetLayoutCreateFlags)VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR);
 #endif // CTS_USES_VULKANSC
 	return emptyDescriptorSetLayoutTests.release();
 }
@@ -663,7 +668,8 @@ tcu::TestCaseGroup* createEmptyDescriptorSetLayoutTests (tcu::TestContext& testC
 tcu::TestCaseGroup* createDescriptorSetLayoutBindingOrderingTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> descriptorSetLayoutBindingOrderingTests(new tcu::TestCaseGroup(testCtx, "descriptor_set_layout_binding", "Create descriptor set layout ordering tests"));
-	addFunctionCaseWithPrograms(descriptorSetLayoutBindingOrderingTests.get(), "update_subsequent_binding", "Test subsequent binding update with remaining elements", createDescriptorSetLayoutBindingOrderingSource, descriptorSetLayoutBindingOrderingTest);
+	// Test subsequent binding update with remaining elements
+	addFunctionCaseWithPrograms(descriptorSetLayoutBindingOrderingTests.get(), "update_subsequent_binding", createDescriptorSetLayoutBindingOrderingSource, descriptorSetLayoutBindingOrderingTest);
 
 #ifndef CTS_USES_VULKANSC
 	static const char dataDir[] = "api/descriptor_set/descriptor_set_layout_binding";

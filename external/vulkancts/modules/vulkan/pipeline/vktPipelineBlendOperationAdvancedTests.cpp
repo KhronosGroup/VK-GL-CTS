@@ -232,12 +232,6 @@ const std::string generateTestName (struct BlendOperationAdvancedParam param)
 	return result.str();
 }
 
-const std::string generateTestDescription ()
-{
-	std::string result("Test advanced blend operations");
-	return result;
-}
-
 Vec3 calculateWeightingFactors(BlendOperationAdvancedParam param,
 									float alphaSrc, float alphaDst)
 {
@@ -847,7 +841,6 @@ vkt::TestCase* newTestCase (tcu::TestContext&					testContext,
 {
 	return new Test(testContext,
 					generateTestName(testParam).c_str(),
-					generateTestDescription().c_str(),
 					testParam);
 }
 
@@ -1545,9 +1538,8 @@ class BlendOperationAdvancedTest : public vkt::TestCase
 public:
 							BlendOperationAdvancedTest	(tcu::TestContext&					testContext,
 														 const std::string&					name,
-														 const std::string&					description,
 														 const BlendOperationAdvancedParam	param)
-								: vkt::TestCase (testContext, name, description)
+								: vkt::TestCase (testContext, name)
 								, m_param		(param)
 								{ }
 	virtual					~BlendOperationAdvancedTest	(void) { }
@@ -2242,7 +2234,8 @@ tcu::TestCaseGroup* createBlendOperationAdvancedTests (tcu::TestContext& testCtx
 		VK_BLEND_OP_MINUS_CLAMPED_EXT, VK_BLEND_OP_CONTRAST_EXT, VK_BLEND_OP_INVERT_OVG_EXT, VK_BLEND_OP_RED_EXT, VK_BLEND_OP_GREEN_EXT, VK_BLEND_OP_BLUE_EXT,
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> tests (new tcu::TestCaseGroup(testCtx, "blend_operation_advanced", "VK_EXT_blend_operation_advanced tests"));
+	// VK_EXT_blend_operation_advanced tests
+	de::MovePtr<tcu::TestCaseGroup> tests (new tcu::TestCaseGroup(testCtx, "blend_operation_advanced"));
 	de::Random						rnd				(deStringHash(tests->getName()));
 
 	de::MovePtr<tcu::TestCaseGroup> opsTests (new tcu::TestCaseGroup(testCtx, "ops", "Test each blend operation advance op"));
@@ -2288,7 +2281,7 @@ tcu::TestCaseGroup* createBlendOperationAdvancedTests (tcu::TestContext& testCtx
 	tests->addChild(opsTests.release());
 
 	// Independent Blend Tests: test more than one color attachment.
-	de::MovePtr<tcu::TestCaseGroup> independentTests (new tcu::TestCaseGroup(testCtx, "independent", "Test independent blend feature"));
+	de::MovePtr<tcu::TestCaseGroup> independentTests (new tcu::TestCaseGroup(testCtx, "independent"));
 	deUint32 testNumber = 0u;
 
 	for (deUint32 colorAttachmentCount = 1u; colorAttachmentCount < DE_LENGTH_OF_ARRAY(colorAttachmentCounts); colorAttachmentCount++)
@@ -2319,7 +2312,7 @@ tcu::TestCaseGroup* createBlendOperationAdvancedTests (tcu::TestContext& testCtx
 	tests->addChild(independentTests.release());
 
 	// Coherent tests, do two consecutive advanced blending operations on the same color attachment.
-	de::MovePtr<tcu::TestCaseGroup> coherentTests (new tcu::TestCaseGroup(testCtx, "coherent", "Test coherent memory"));
+	de::MovePtr<tcu::TestCaseGroup> coherentTests (new tcu::TestCaseGroup(testCtx, "coherent"));
 	testNumber = 0u;
 
 	for (deUint32 coherent = 0u; coherent < DE_LENGTH_OF_ARRAY(coherentOps); coherent++)

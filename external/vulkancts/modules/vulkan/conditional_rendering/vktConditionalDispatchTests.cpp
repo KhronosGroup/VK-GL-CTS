@@ -74,7 +74,6 @@ class ConditionalDispatchTest : public vkt::TestCase
 public:
 						ConditionalDispatchTest	(tcu::TestContext&			testCtx,
 												 const std::string&			name,
-												 const std::string&			description,
 												 const ConditionalTestSpec&	testSpec);
 
 	void				initPrograms			(vk::SourceCollections&	sourceCollections) const;
@@ -103,9 +102,8 @@ protected:
 
 ConditionalDispatchTest::ConditionalDispatchTest(tcu::TestContext&			testCtx,
 												 const std::string&			name,
-												 const std::string&			description,
 												 const ConditionalTestSpec&	testSpec)
-	: TestCase		(testCtx, name, description)
+	: TestCase		(testCtx, name)
 	, m_testSpec	(testSpec)
 {
 }
@@ -385,7 +383,7 @@ void ConditionalDispatchTests::init (void)
 			testSpec.numCalls = 3;
 			testSpec.conditionalData = conditionData;
 
-			conditionalDrawRootGroup->addChild(new ConditionalDispatchTest(m_testCtx, getDispatchCommandTypeName(command), "", testSpec));
+			conditionalDrawRootGroup->addChild(new ConditionalDispatchTest(m_testCtx, getDispatchCommandTypeName(command), testSpec));
 		}
 
 		addChild(conditionalDrawRootGroup.release());
@@ -401,7 +399,7 @@ void ConditionalDispatchTests::init (void)
 
 	// Tests verifying the condition is interpreted as a 32-bit value.
 	{
-		de::MovePtr<tcu::TestCaseGroup> conditionSizeGroup(new tcu::TestCaseGroup(m_testCtx, "condition_size", "Tests verifying the condition is being read as a 32-bit value"));
+		de::MovePtr<tcu::TestCaseGroup> conditionSizeGroup(new tcu::TestCaseGroup(m_testCtx, "condition_size"));
 
 		struct ValuePaddingExecution
 		{
@@ -438,7 +436,7 @@ void ConditionalDispatchTests::init (void)
 		{
 			const auto& subcase = kConditionLocationSubcase[subcaseNdx];
 
-			de::MovePtr<tcu::TestCaseGroup> subcaseGroup(new tcu::TestCaseGroup(m_testCtx, subcase.name, ""));
+			de::MovePtr<tcu::TestCaseGroup> subcaseGroup(new tcu::TestCaseGroup(m_testCtx, subcase.name));
 
 			ConditionalData conditionalData		= {};
 			conditionalData.conditionInverted	= false;
@@ -487,7 +485,7 @@ void ConditionalDispatchTests::init (void)
 				spec.numCalls			= 1;
 				spec.conditionalData	= conditionalData;
 
-				subcaseGroup->addChild(new ConditionalDispatchTest(m_testCtx, valueResults.name, "", spec));
+				subcaseGroup->addChild(new ConditionalDispatchTest(m_testCtx, valueResults.name, spec));
 			}
 
 			conditionSizeGroup->addChild(subcaseGroup.release());
@@ -498,7 +496,7 @@ void ConditionalDispatchTests::init (void)
 
 	// Tests checking the buffer allocation offset is applied correctly when reading the condition.
 	{
-		de::MovePtr<tcu::TestCaseGroup> allocOffsetGroup(new tcu::TestCaseGroup(m_testCtx, "alloc_offset", "Tests verifying the buffer allocation offset is applied correctly"));
+		de::MovePtr<tcu::TestCaseGroup> allocOffsetGroup(new tcu::TestCaseGroup(m_testCtx, "alloc_offset"));
 
 		const struct
 		{
@@ -534,11 +532,11 @@ void ConditionalDispatchTests::init (void)
 
 		for (const auto& locationCase : kLocationCases)
 		{
-			de::MovePtr<tcu::TestCaseGroup> locationSubGroup(new tcu::TestCaseGroup(m_testCtx, locationCase.name, ""));
+			de::MovePtr<tcu::TestCaseGroup> locationSubGroup(new tcu::TestCaseGroup(m_testCtx, locationCase.name));
 
 			for (const auto& activeCase : kActiveCases)
 			{
-				de::MovePtr<tcu::TestCaseGroup> activeSubGroup(new tcu::TestCaseGroup(m_testCtx, activeCase.name, ""));
+				de::MovePtr<tcu::TestCaseGroup> activeSubGroup(new tcu::TestCaseGroup(m_testCtx, activeCase.name));
 
 				for (const auto& memoryTypeCase : kMemoryTypeCases)
 				{
@@ -597,7 +595,7 @@ void ConditionalDispatchTests::init (void)
 						conditionalData,				//	ConditionalData		conditionalData;
 					};
 
-					activeSubGroup->addChild(new ConditionalDispatchTest(m_testCtx, memoryTypeCase.name, "", spec));
+					activeSubGroup->addChild(new ConditionalDispatchTest(m_testCtx, memoryTypeCase.name, spec));
 				}
 
 				locationSubGroup->addChild(activeSubGroup.release());

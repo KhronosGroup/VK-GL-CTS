@@ -78,7 +78,7 @@ public:
 													 const std::string&		name,
 													 vk::VkClearValue		clearValue,
 													 ValidationData			data)
-								: TestCase		(testCtx, name, "Clear on render pass initialization.")
+								: TestCase		(testCtx, name)
 								, m_clearValue	(clearValue)
 								, m_refData		(data)
 							{
@@ -290,7 +290,8 @@ tcu::TestCaseGroup*	createAttachmentLoadTests (tcu::TestContext& testCtx)
 		},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	loadStaticTests	(new tcu::TestCaseGroup(testCtx, "static", "Attachment Load Op Tests with static input"));
+	// Attachment Load Op Tests with static input
+	de::MovePtr<tcu::TestCaseGroup>	loadStaticTests	(new tcu::TestCaseGroup(testCtx, "static"));
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testData); ++ndx)
 	{

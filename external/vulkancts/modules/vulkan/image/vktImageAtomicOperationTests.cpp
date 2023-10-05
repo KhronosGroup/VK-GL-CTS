@@ -667,7 +667,6 @@ class BinaryAtomicEndResultCase : public vkt::TestCase
 public:
 								BinaryAtomicEndResultCase	(tcu::TestContext&			testCtx,
 															 const string&				name,
-															 const string&				description,
 															 const ImageType			imageType,
 															 const tcu::UVec3&			imageSize,
 															 const tcu::TextureFormat&	format,
@@ -696,7 +695,6 @@ private:
 
 BinaryAtomicEndResultCase::BinaryAtomicEndResultCase (tcu::TestContext&			testCtx,
 													  const string&				name,
-													  const string&				description,
 													  const ImageType			imageType,
 													  const tcu::UVec3&			imageSize,
 													  const tcu::TextureFormat&	format,
@@ -706,7 +704,7 @@ BinaryAtomicEndResultCase::BinaryAtomicEndResultCase (tcu::TestContext&			testCt
 													  const ShaderReadType		shaderReadType,
 													  const ImageBackingType	backingType,
 													  const glu::GLSLVersion	glslVersion)
-	: TestCase		(testCtx, name, description)
+	: TestCase		(testCtx, name)
 	, m_imageType	(imageType)
 	, m_imageSize	(imageSize)
 	, m_format		(format)
@@ -799,7 +797,6 @@ class BinaryAtomicIntermValuesCase : public vkt::TestCase
 public:
 								BinaryAtomicIntermValuesCase	(tcu::TestContext&			testCtx,
 																 const string&				name,
-																 const string&				description,
 																 const ImageType			imageType,
 																 const tcu::UVec3&			imageSize,
 																 const tcu::TextureFormat&	format,
@@ -828,7 +825,6 @@ private:
 
 BinaryAtomicIntermValuesCase::BinaryAtomicIntermValuesCase (TestContext&			testCtx,
 															const string&			name,
-															const string&			description,
 															const ImageType			imageType,
 															const tcu::UVec3&		imageSize,
 															const TextureFormat&	format,
@@ -838,7 +834,7 @@ BinaryAtomicIntermValuesCase::BinaryAtomicIntermValuesCase (TestContext&			testC
 															const ShaderReadType	shaderReadType,
 															const ImageBackingType	backingType,
 															const glu::GLSLVersion	glslVersion)
-	: TestCase		(testCtx, name, description)
+	: TestCase		(testCtx, name)
 	, m_imageType	(imageType)
 	, m_imageSize	(imageSize)
 	, m_format		(format)
@@ -1931,7 +1927,7 @@ TestInstance* BinaryAtomicIntermValuesCase::createInstance (Context& context) co
 
 tcu::TestCaseGroup* createImageAtomicOperationTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> imageAtomicOperationsTests(new tcu::TestCaseGroup(testCtx, "atomic_operations", "Atomic image operations cases"));
+	de::MovePtr<tcu::TestCaseGroup> imageAtomicOperationsTests(new tcu::TestCaseGroup(testCtx, "atomic_operations"));
 
 	struct ImageParams
 	{
@@ -1998,33 +1994,33 @@ tcu::TestCaseGroup* createImageAtomicOperationTests (tcu::TestContext& testCtx)
 	{
 		const AtomicOperation operation = (AtomicOperation)operationI;
 
-		de::MovePtr<tcu::TestCaseGroup> operationGroup(new tcu::TestCaseGroup(testCtx, getAtomicOperationCaseName(operation).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> operationGroup(new tcu::TestCaseGroup(testCtx, getAtomicOperationCaseName(operation).c_str()));
 
 		for (deUint32 imageTypeNdx = 0; imageTypeNdx < DE_LENGTH_OF_ARRAY(imageParamsArray); imageTypeNdx++)
 		{
 			const ImageType	 imageType = imageParamsArray[imageTypeNdx].m_imageType;
 			const tcu::UVec3 imageSize = imageParamsArray[imageTypeNdx].m_imageSize;
 
-			de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str()));
 
 			for (int useTransferIdx = 0; useTransferIdx < 2; ++useTransferIdx)
 			{
 				const bool				useTransfer	= (useTransferIdx > 0);
 				const string			groupName	= (!useTransfer ? "no" : "") + string("transfer");
 
-				de::MovePtr<tcu::TestCaseGroup> transferGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup> transferGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 
 				for (int readTypeIdx = 0; readTypeIdx < DE_LENGTH_OF_ARRAY(readTypes); ++readTypeIdx)
 				{
 					const auto& readType = readTypes[readTypeIdx];
 
-					de::MovePtr<tcu::TestCaseGroup> readTypeGroup(new tcu::TestCaseGroup(testCtx, readType.name, ""));
+					de::MovePtr<tcu::TestCaseGroup> readTypeGroup(new tcu::TestCaseGroup(testCtx, readType.name));
 
 					for (int backingTypeIdx = 0; backingTypeIdx < DE_LENGTH_OF_ARRAY(backingTypes); ++backingTypeIdx)
 					{
 						const auto& backingType = backingTypes[backingTypeIdx];
 
-						de::MovePtr<tcu::TestCaseGroup> backingTypeGroup(new tcu::TestCaseGroup(testCtx, backingType.name, ""));
+						de::MovePtr<tcu::TestCaseGroup> backingTypeGroup(new tcu::TestCaseGroup(testCtx, backingType.name));
 
 						for (deUint32 formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 						{
@@ -2073,11 +2069,11 @@ tcu::TestCaseGroup* createImageAtomicOperationTests (tcu::TestContext& testCtx)
 
 								//!< Atomic case checks the end result of the operations, and not the intermediate return values
 								const string caseEndResult = formatName + "_end_result" + suffix;
-								backingTypeGroup->addChild(new BinaryAtomicEndResultCase(testCtx, caseEndResult, "", imageType, imageSize, format, s_tilings[tilingNdx], operation, useTransfer, readType.type, backingType.type, glu::GLSL_VERSION_450));
+								backingTypeGroup->addChild(new BinaryAtomicEndResultCase(testCtx, caseEndResult, imageType, imageSize, format, s_tilings[tilingNdx], operation, useTransfer, readType.type, backingType.type, glu::GLSL_VERSION_450));
 
 								//!< Atomic case checks the return values of the atomic function and not the end result.
 								const string caseIntermValues = formatName + "_intermediate_values" + suffix;
-								backingTypeGroup->addChild(new BinaryAtomicIntermValuesCase(testCtx, caseIntermValues, "", imageType, imageSize, format, s_tilings[tilingNdx], operation, useTransfer, readType.type, backingType.type, glu::GLSL_VERSION_450));
+								backingTypeGroup->addChild(new BinaryAtomicIntermValuesCase(testCtx, caseIntermValues, imageType, imageSize, format, s_tilings[tilingNdx], operation, useTransfer, readType.type, backingType.type, glu::GLSL_VERSION_450));
 							}
 						}
 

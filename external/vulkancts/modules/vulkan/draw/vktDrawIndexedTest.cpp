@@ -491,7 +491,7 @@ void checkSupport(Context& context, DrawIndexed::TestSpec testSpec)
 }	// anonymous
 
 DrawIndexedTests::DrawIndexedTests (tcu::TestContext &testCtx, const SharedGroupParams groupParams)
-	: TestCaseGroup		(testCtx, "indexed_draw", "drawing indexed geometry")
+	: TestCaseGroup		(testCtx, "indexed_draw")
 	, m_groupParams		(groupParams)
 {
 	/* Left blank on purpose */
@@ -522,45 +522,47 @@ void DrawIndexedTests::init (bool useMaintenance5Ext)
 	const struct {
 		const vk::VkPrimitiveTopology		topology;
 		const char*							nameSuffix;
-		const char*							descSuffix;
 	} TopologyCases[] =
 	{
-		{ vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	"triangle_list",	"triangle list" },
-		{ vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	"triangle_strip",	"triangle strip" },
+		// triangle list
+		{ vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	"triangle_list"},
+		// triangle strip
+		{ vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	"triangle_strip"},
 	};
 
 	const struct
 	{
 		const int		offset;
 		const char*		nameSuffix;
-		const char*		descSuffix;
 	} OffsetCases[] =
 	{
-		{ VERTEX_OFFSET_DEFAULT,	"",							""														},
-		{ VERTEX_OFFSET_MINUS_ONE,	"_offset_minus_one",		" using -1 as the vertex offset"						},
-		{ VERTEX_OFFSET_NEGATIVE,	"_offset_negative_large",	" using a large negative number as the vertex offset"	},
+		{ VERTEX_OFFSET_DEFAULT,	""},
+		//  using -1 as the vertex offset
+		{ VERTEX_OFFSET_MINUS_ONE,	"_offset_minus_one"},
+		//  using a large negative number as the vertex offset
+		{ VERTEX_OFFSET_NEGATIVE,	"_offset_negative_large"},
 	};
 
 	const struct
 	{
 		IndexBindOffset	bindOffset;
 		const char*		nameSuffix;
-		const char*		descSuffix;
 	} IndexBindOffsetCases[] =
 	{
-		{ IndexBindOffset::DEFAULT,		"",						""											},
-		{ IndexBindOffset::POSITIVE,	"_with_bind_offset",	" and applying an index buffer bind offset"	},
+		{ IndexBindOffset::DEFAULT,		""},
+		//  and applying an index buffer bind offset
+		{ IndexBindOffset::POSITIVE,	"_with_bind_offset"},
 	};
 
 	const struct
 	{
 		MemoryBindOffset	memoryBindOffset;
 		const char*			nameSuffix;
-		const char*			descSuffix;
 	} MemoryBindOffsetCases[] =
 	{
-		{ MemoryBindOffset::DEFAULT,	"",						""													},
-		{ MemoryBindOffset::POSITIVE,	"_with_alloc_offset",	" and applying an extra memory allocation offset"	},
+		{ MemoryBindOffset::DEFAULT,	""},
+		//  and applying an extra memory allocation offset
+		{ MemoryBindOffset::POSITIVE,	"_with_alloc_offset"},
 	};
 
 	for (const auto& offsetCase : OffsetCases)
@@ -591,10 +593,9 @@ void DrawIndexedTests::init (bool useMaintenance5Ext)
 						);
 
 						const auto testName = std::string("draw_indexed_") + topologyCase.nameSuffix + offsetCase.nameSuffix + indexBindOffsetCase.nameSuffix + memoryBindOffsetCase.nameSuffix + maintenance5ExtNameSuffix;
-						const auto testDesc = std::string("Draws indexed ") + topologyCase.descSuffix + offsetCase.descSuffix + indexBindOffsetCase.descSuffix + memoryBindOffsetCase.descSuffix + maintenance5ExtDescSuffix;
 
 						addChild(new InstanceFactory<DrawIndexed, FunctionSupport1<DrawIndexed::TestSpec> >
-							(m_testCtx, testName, testDesc, testSpec, FunctionSupport1<DrawIndexed::TestSpec>::Args(checkSupport, testSpec)));
+							(m_testCtx, testName, testSpec, FunctionSupport1<DrawIndexed::TestSpec>::Args(checkSupport, testSpec)));
 					}
 					{
 						DrawInstancedIndexed::TestSpec testSpec
@@ -612,10 +613,9 @@ void DrawIndexedTests::init (bool useMaintenance5Ext)
 						);
 
 						const auto testName = std::string("draw_instanced_indexed_") + topologyCase.nameSuffix + offsetCase.nameSuffix + indexBindOffsetCase.nameSuffix + memoryBindOffsetCase.nameSuffix + maintenance5ExtNameSuffix;
-						const auto testDesc = std::string("Draws instanced indexed ") + topologyCase.descSuffix + offsetCase.descSuffix + indexBindOffsetCase.descSuffix + memoryBindOffsetCase.descSuffix + maintenance5ExtDescSuffix;
 
 						addChild(new InstanceFactory<DrawInstancedIndexed, FunctionSupport1<DrawInstancedIndexed::TestSpec> >
-							(m_testCtx, testName, testDesc, testSpec, FunctionSupport1<DrawInstancedIndexed::TestSpec>::Args(checkSupport, testSpec)));
+							(m_testCtx, testName, testSpec, FunctionSupport1<DrawInstancedIndexed::TestSpec>::Args(checkSupport, testSpec)));
 					}
 				}
 			}

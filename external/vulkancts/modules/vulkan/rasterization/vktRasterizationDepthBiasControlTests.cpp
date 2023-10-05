@@ -261,8 +261,8 @@ class DepthBiasControlCase : public vkt::TestCase
 public:
 	static tcu::Vec4 kOutColor;
 
-					DepthBiasControlCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-						: vkt::TestCase	(testCtx, name, description)
+					DepthBiasControlCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+						: vkt::TestCase	(testCtx, name)
 						, m_params		(params)
 						{}
 	virtual			~DepthBiasControlCase		(void) {}
@@ -766,32 +766,32 @@ tcu::TestCaseGroup* createDepthBiasControlTests (tcu::TestContext& testCtx)
 		{ true,		"_secondary_cmd_buffer"	},
 	};
 
-	GroupPtr dbcGroup (new tcu::TestCaseGroup(testCtx, "depth_bias_control", "Tests for VK_EXT_depth_bias_control"));
+	GroupPtr dbcGroup (new tcu::TestCaseGroup(testCtx, "depth_bias_control"));
 
 	for (const auto& format : attachmentFormats)
 	{
 		const auto formatName = getFormatNameShort(format);
 
-		GroupPtr formatGroup (new tcu::TestCaseGroup(testCtx, formatName.c_str(), ""));
+		GroupPtr formatGroup (new tcu::TestCaseGroup(testCtx, formatName.c_str()));
 
 		for (const auto& reprInfoCase : reprInfoCases)
 		{
-			GroupPtr reprInfoGroup (new tcu::TestCaseGroup(testCtx, reprInfoCase.name, ""));
+			GroupPtr reprInfoGroup (new tcu::TestCaseGroup(testCtx, reprInfoCase.name));
 
 			for (const auto& usedFactorCase : usedFactorCases)
 			{
-				GroupPtr usedFactorGroup (new tcu::TestCaseGroup(testCtx, usedFactorCase.name, ""));
+				GroupPtr usedFactorGroup (new tcu::TestCaseGroup(testCtx, usedFactorCase.name));
 
 				const bool constantFactor = (usedFactorCase.usedFactor == UsedFactor::CONSTANT);
 				const ConstantDepthCaseVec& constantDepthCases = (constantFactor ? constantDepthConstantCases : constantDepthSlopeCases);
 
 				for (const auto& constantDepthCase : constantDepthCases)
 				{
-					GroupPtr constantDepthGroup (new tcu::TestCaseGroup(testCtx, constantDepthCase.name, ""));
+					GroupPtr constantDepthGroup (new tcu::TestCaseGroup(testCtx, constantDepthCase.name));
 
 					for (const auto& targetBiasCase : targetBiasCases)
 					{
-						GroupPtr targetBiasGroup (new tcu::TestCaseGroup(testCtx, targetBiasCase.name, ""));
+						GroupPtr targetBiasGroup (new tcu::TestCaseGroup(testCtx, targetBiasCase.name));
 
 						for (const auto& setMechanismCase : setMechanismCases)
 						{
@@ -841,7 +841,7 @@ tcu::TestCaseGroup* createDepthBiasControlTests (tcu::TestContext& testCtx)
 										secondaryCmdBufferCase.secondaryCmdBuffer,
 									};
 									const std::string testName = std::string(setMechanismCase.name) + clampValueCase.suffix + secondaryCmdBufferCase.suffix;
-									targetBiasGroup->addChild(new DepthBiasControlCase(testCtx, testName, "", params));
+									targetBiasGroup->addChild(new DepthBiasControlCase(testCtx, testName, params));
 								}
 							}
 						}

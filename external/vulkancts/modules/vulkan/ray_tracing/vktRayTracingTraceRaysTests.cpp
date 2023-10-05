@@ -218,7 +218,7 @@ auto initTopAccelerationStructure (VkCommandBuffer		cmdBuffer,
 class RayTracingTraceRaysIndirectTestCase : public TestCase
 {
 	public:
-							RayTracingTraceRaysIndirectTestCase		(tcu::TestContext& context, const char* name, const char* desc, const TestParams data);
+							RayTracingTraceRaysIndirectTestCase		(tcu::TestContext& context, const char* name, const TestParams data);
 							~RayTracingTraceRaysIndirectTestCase	(void);
 
 	virtual void			checkSupport								(Context& context) const;
@@ -245,8 +245,8 @@ private:
 };
 
 
-RayTracingTraceRaysIndirectTestCase::RayTracingTraceRaysIndirectTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams data)
-	: vkt::TestCase	(context, name, desc)
+RayTracingTraceRaysIndirectTestCase::RayTracingTraceRaysIndirectTestCase (tcu::TestContext& context, const char* name, const TestParams data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -799,7 +799,7 @@ private:
 };
 
 TraceRaysIndirect2Case::TraceRaysIndirect2Case (TestContext& testCtx, const std::string& name, const TestParams2& params)
-	: TestCase	(testCtx, name, std::string())
+	: TestCase	(testCtx, name)
 	, m_params	(params)
 {
 }
@@ -1327,7 +1327,8 @@ std::string makeDimensionsName (const VkExtent3D& extent)
 
 tcu::TestCaseGroup* createTraceRaysTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "trace_rays_cmds", "Tests veryfying vkCmdTraceRays* commands"));
+	// Tests veryfying vkCmdTraceRays* commands
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "trace_rays_cmds"));
 
 	struct BufferSourceTypeData
 	{
@@ -1356,7 +1357,7 @@ tcu::TestCaseGroup* createTraceRaysTests(tcu::TestContext& testCtx)
 
 	for (size_t bufferSourceNdx = 0; bufferSourceNdx < DE_LENGTH_OF_ARRAY(bufferSourceTypes); ++bufferSourceNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> bufferSourceGroup(new tcu::TestCaseGroup(group->getTestContext(), bufferSourceTypes[bufferSourceNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> bufferSourceGroup(new tcu::TestCaseGroup(group->getTestContext(), bufferSourceTypes[bufferSourceNdx].name));
 
 		for (size_t traceDimensionsIdx = 0; traceDimensionsIdx < DE_LENGTH_OF_ARRAY(traceDimensions); ++traceDimensionsIdx)
 		{
@@ -1368,7 +1369,7 @@ tcu::TestCaseGroup* createTraceRaysTests(tcu::TestContext& testCtx)
 				{/* Intentionally empty */},
 			};
 			const auto testName = makeDimensionsName(traceDimensions[traceDimensionsIdx]);
-			bufferSourceGroup->addChild(new RayTracingTraceRaysIndirectTestCase(group->getTestContext(), testName.c_str(), "", testParams));
+			bufferSourceGroup->addChild(new RayTracingTraceRaysIndirectTestCase(group->getTestContext(), testName.c_str(), testParams));
 		}
 
 		group->addChild(bufferSourceGroup.release());
@@ -1407,7 +1408,7 @@ tcu::TestCaseGroup* createTraceRaysMaintenance1Tests(tcu::TestContext& testCtx)
 
 	for (size_t bufferSourceNdx = 0; bufferSourceNdx < DE_LENGTH_OF_ARRAY(bufferSourceTypes); ++bufferSourceNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> bufferSourceGroup(new tcu::TestCaseGroup(group->getTestContext(), bufferSourceTypes[bufferSourceNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> bufferSourceGroup(new tcu::TestCaseGroup(group->getTestContext(), bufferSourceTypes[bufferSourceNdx].name));
 
 		for (size_t extendedTraceDimensionsIdx = 0; extendedTraceDimensionsIdx < DE_LENGTH_OF_ARRAY(extendedTraceDimensions); ++extendedTraceDimensionsIdx)
 		{
@@ -1419,7 +1420,7 @@ tcu::TestCaseGroup* createTraceRaysMaintenance1Tests(tcu::TestContext& testCtx)
 				extendedTraceDimensions[extendedTraceDimensionsIdx],
 			};
 			const auto testName = makeDimensionsName(extendedTraceDimensions[extendedTraceDimensionsIdx]);
-			bufferSourceGroup->addChild(new RayTracingTraceRaysIndirectTestCase(group->getTestContext(), testName.c_str(), "", testParams));
+			bufferSourceGroup->addChild(new RayTracingTraceRaysIndirectTestCase(group->getTestContext(), testName.c_str(), testParams));
 		}
 
 		group->addChild(bufferSourceGroup.release());
@@ -1460,15 +1461,15 @@ tcu::TestCaseGroup*	createTraceRays2Tests(tcu::TestContext& testCtx)
 
 	for (const auto& bufferSource : bufferSources)
 	{
-		auto bufferSourceGroup	= new TestCaseGroup(testCtx, bufferSource.second, "");
+		auto bufferSourceGroup	= new TestCaseGroup(testCtx, bufferSource.second);
 
 		for (const auto& copyStyle : copyStyles)
 		{
-			auto copyStyleGroup	= new TestCaseGroup(testCtx, copyStyle.second, "");
+			auto copyStyleGroup	= new TestCaseGroup(testCtx, copyStyle.second);
 
 			for (const auto& submitQueue : submitQueues)
 			{
-				auto submitQueueGroup = new TestCaseGroup(testCtx, submitQueue.second, "");
+				auto submitQueueGroup = new TestCaseGroup(testCtx, submitQueue.second);
 
 				for (const auto& traceDimension : traceDimensions)
 				{

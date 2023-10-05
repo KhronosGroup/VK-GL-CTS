@@ -35,7 +35,7 @@ namespace texture
 
 tcu::TestCaseGroup* createTextureTexelOffsetTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> texelOffset (new tcu::TestCaseGroup(testCtx, "texel_offset", "Test texel offset"));
+	de::MovePtr<tcu::TestCaseGroup> texelOffset (new tcu::TestCaseGroup(testCtx, "texel_offset"));
 #ifndef CTS_USES_VULKANSC
 	static const char			dataDir[]	= "texture/texel_offset";
 	static const std::string	cases[][2]		=

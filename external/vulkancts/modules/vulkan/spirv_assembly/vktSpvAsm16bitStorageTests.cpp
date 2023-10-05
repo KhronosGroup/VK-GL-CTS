@@ -1347,7 +1347,7 @@ void addCompute16bitStorageUniform16To32Group (tcu::TestCaseGroup* group)
 				spec.extensions.push_back("VK_KHR_16bit_storage");
 				spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
-				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 	}
 
@@ -1486,7 +1486,7 @@ void addCompute16bitStorageUniform16To32Group (tcu::TestCaseGroup* group)
 				spec.extensions.push_back("VK_KHR_16bit_storage");
 				spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
-				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 	}
 }
@@ -1690,7 +1690,7 @@ void addCompute16bitStorageUniform16To32ChainAccessGroup (tcu::TestCaseGroup* gr
 				spec.inputs.push_back(Resource(dataTypes[dataTypeIdx].inputs, CAPABILITIES[capIdx].dtype));
 				spec.outputs.push_back(Resource(dataTypes[dataTypeIdx].outputs));
 
-				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 		}
 }
@@ -1862,7 +1862,7 @@ void addCompute16bitStoragePushConstant16To32Group (tcu::TestCaseGroup* group)
 			spec.extensions.push_back("VK_KHR_16bit_storage");
 			spec.requestedVulkanFeatures.ext16BitStorage.storagePushConstant16 = true;
 
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 		}
 	}
 	{// integers
@@ -1980,7 +1980,7 @@ void addCompute16bitStoragePushConstant16To32Group (tcu::TestCaseGroup* group)
 			spec.extensions.push_back("VK_KHR_16bit_storage");
 			spec.requestedVulkanFeatures.ext16BitStorage.storagePushConstant16 = true;
 
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName, testName, spec));
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName, spec));
 		}
 	}
 }
@@ -2309,7 +2309,7 @@ void addCompute16bitStorageUniform16To16Group (tcu::TestCaseGroup* group)
 	spec.extensions.push_back("VK_KHR_16bit_storage");
 	spec.requestedVulkanFeatures = get16BitStorageFeatures("uniform_buffer_block");
 
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "stress_test", "Granularity stress test", spec));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "stress_test", spec));
 }
 
 void addCompute16bitStorageUniform32To16Group (tcu::TestCaseGroup* group)
@@ -2496,7 +2496,7 @@ void addCompute16bitStorageUniform32To16Group (tcu::TestCaseGroup* group)
 					spec.extensions.push_back("VK_KHR_16bit_storage");
 					spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
-					group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+					group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 				}
 	}
 
@@ -2587,7 +2587,7 @@ void addCompute16bitStorageUniform32To16Group (tcu::TestCaseGroup* group)
 				spec.extensions.push_back("VK_KHR_16bit_storage");
 				spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
-				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 	}
 }
@@ -2802,7 +2802,7 @@ void addCompute16bitStorageUniform16StructTo32StructGroup (tcu::TestCaseGroup* g
 			spec.extensions.push_back("VK_KHR_16bit_storage");
 			spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 		}
 	}
 }
@@ -3019,7 +3019,7 @@ void addCompute16bitStorageUniform32StructTo16StructGroup (tcu::TestCaseGroup* g
 			spec.extensions.push_back("VK_KHR_16bit_storage");
 			spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 		}
 	}
 }
@@ -3236,7 +3236,7 @@ void addCompute16bitStructMixedTypesGroup (tcu::TestCaseGroup* group)
 		spec.extensions.push_back		("VK_KHR_16bit_storage");
 		spec.requestedVulkanFeatures	= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -4243,7 +4243,6 @@ void addGraphics16BitStorageInputOutputFloat16To16x2Group (tcu::TestCaseGroup* t
 
 		addFunctionCaseWithPrograms<TestDefinition>(testGroup,
 													cases[caseIdx].name,
-													"",
 													addShaderCode16BitStorageInputOutput16To16x2,
 													runAndVerifyDefaultPipeline,
 													testDef);
@@ -4319,7 +4318,6 @@ void addGraphics16BitStorageInputOutputInt16To16x2Group (tcu::TestCaseGroup* tes
 
 		addFunctionCaseWithPrograms<TestDefinition>(testGroup,
 													cases[caseIdx].name,
-													"",
 													addShaderCode16BitStorageInputOutput16To16x2,
 													runAndVerifyDefaultPipeline,
 													testDef);
@@ -7597,7 +7595,7 @@ void addCompute16bitStorageUniform64To16Group (tcu::TestCaseGroup* group)
 					spec.requestedVulkanFeatures							= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 					spec.requestedVulkanFeatures.coreFeatures.shaderFloat64	= VK_TRUE;
 
-					group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+					group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 				}
 	}
 }
@@ -8357,7 +8355,7 @@ void addCompute16bitStorageUniform16To64Group (tcu::TestCaseGroup* group)
 				spec.requestedVulkanFeatures							= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 				spec.requestedVulkanFeatures.coreFeatures.shaderFloat64	= VK_TRUE;
 
-				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 	}
 }
@@ -8523,7 +8521,7 @@ void addCompute16bitStoragePushConstant16To64Group (tcu::TestCaseGroup* group)
 			spec.requestedVulkanFeatures.coreFeatures.shaderFloat64	= VK_TRUE;
 			spec.requestedVulkanFeatures.ext16BitStorage.storagePushConstant16			= true;
 
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 		}
 	}
 }
@@ -8532,18 +8530,30 @@ void addCompute16bitStoragePushConstant16To64Group (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* create16BitStorageComputeGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group		(new tcu::TestCaseGroup(testCtx, "16bit_storage", "Compute tests for VK_KHR_16bit_storage extension"));
-	addTestGroup(group.get(), "uniform_64_to_16", "64bit floats to 16bit tests under capability StorageUniform{|BufferBlock}", addCompute16bitStorageUniform64To16Group);
-	addTestGroup(group.get(), "uniform_32_to_16", "32bit floats/ints to 16bit tests under capability StorageUniform{|BufferBlock}", addCompute16bitStorageUniform32To16Group);
-	addTestGroup(group.get(), "uniform_16_to_32", "16bit floats/ints to 32bit tests under capability StorageUniform{|BufferBlock}", addCompute16bitStorageUniform16To32Group);
-	addTestGroup(group.get(), "uniform_16_to_64", "16bit floats to 64bit tests under capability StorageUniform{|BufferBlock}", addCompute16bitStorageUniform16To64Group);
-	addTestGroup(group.get(), "push_constant_16_to_32", "16bit floats/ints to 32bit tests under capability StoragePushConstant16", addCompute16bitStoragePushConstant16To32Group);
-	addTestGroup(group.get(), "push_constant_16_to_64", "16bit floats to 64bit tests under capability StoragePushConstant16", addCompute16bitStoragePushConstant16To64Group);
-	addTestGroup(group.get(), "uniform_16struct_to_32struct", "16bit floats struct to 32bit tests under capability StorageUniform{|BufferBlock}", addCompute16bitStorageUniform16StructTo32StructGroup);
-	addTestGroup(group.get(), "uniform_32struct_to_16struct", "32bit floats struct to 16bit tests under capability StorageUniform{|BufferBlock}", addCompute16bitStorageUniform32StructTo16StructGroup);
-	addTestGroup(group.get(), "struct_mixed_types", "mixed type of 8bit and 32bit struct", addCompute16bitStructMixedTypesGroup);
-	addTestGroup(group.get(), "uniform_16_to_16", "16bit floats/ints to 16bit tests under capability StorageUniformBufferBlock16", addCompute16bitStorageUniform16To16Group);
-	addTestGroup(group.get(), "uniform_16_to_32_chainaccess", "chain access 16bit floats/ints to 32bit tests under capability StorageUniform{|BufferBlock}", addCompute16bitStorageUniform16To32ChainAccessGroup);
+	// Compute tests for VK_KHR_16bit_storage extension
+	de::MovePtr<tcu::TestCaseGroup> group		(new tcu::TestCaseGroup(testCtx, "16bit_storage"));
+	// 64bit floats to 16bit tests under capability StorageUniform{|BufferBlock}
+	addTestGroup(group.get(), "uniform_64_to_16", addCompute16bitStorageUniform64To16Group);
+	// 32bit floats/ints to 16bit tests under capability StorageUniform{|BufferBlock}
+	addTestGroup(group.get(), "uniform_32_to_16", addCompute16bitStorageUniform32To16Group);
+	// 16bit floats/ints to 32bit tests under capability StorageUniform{|BufferBlock}
+	addTestGroup(group.get(), "uniform_16_to_32", addCompute16bitStorageUniform16To32Group);
+	// 16bit floats to 64bit tests under capability StorageUniform{|BufferBlock}
+	addTestGroup(group.get(), "uniform_16_to_64", addCompute16bitStorageUniform16To64Group);
+	// 16bit floats/ints to 32bit tests under capability StoragePushConstant16
+	addTestGroup(group.get(), "push_constant_16_to_32", addCompute16bitStoragePushConstant16To32Group);
+	// 16bit floats to 64bit tests under capability StoragePushConstant16
+	addTestGroup(group.get(), "push_constant_16_to_64", addCompute16bitStoragePushConstant16To64Group);
+	// 16bit floats struct to 32bit tests under capability StorageUniform{|BufferBlock}
+	addTestGroup(group.get(), "uniform_16struct_to_32struct", addCompute16bitStorageUniform16StructTo32StructGroup);
+	// 32bit floats struct to 16bit tests under capability StorageUniform{|BufferBlock}
+	addTestGroup(group.get(), "uniform_32struct_to_16struct", addCompute16bitStorageUniform32StructTo16StructGroup);
+	// mixed type of 8bit and 32bit struct
+	addTestGroup(group.get(), "struct_mixed_types", addCompute16bitStructMixedTypesGroup);
+	// 16bit floats/ints to 16bit tests under capability StorageUniformBufferBlock16
+	addTestGroup(group.get(), "uniform_16_to_16", addCompute16bitStorageUniform16To16Group);
+	// chain access 16bit floats/ints to 32bit tests under capability StorageUniform{|BufferBlock}
+	addTestGroup(group.get(), "uniform_16_to_32_chainaccess", addCompute16bitStorageUniform16To32ChainAccessGroup);
 
 	return group.release();
 }
@@ -8552,28 +8562,50 @@ tcu::TestCaseGroup* create16BitStorageGraphicsGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group		(new tcu::TestCaseGroup(testCtx, "16bit_storage", "Graphics tests for VK_KHR_16bit_storage extension"));
 
-	addTestGroup(group.get(), "uniform_float_64_to_16", "64-bit floats into 16-bit tests under capability StorageUniform{|BufferBlock}16", addGraphics16BitStorageUniformFloat64To16Group);
-	addTestGroup(group.get(), "uniform_float_32_to_16", "32-bit floats into 16-bit tests under capability StorageUniform{|BufferBlock}16", addGraphics16BitStorageUniformFloat32To16Group);
-	addTestGroup(group.get(), "uniform_float_16_to_32", "16-bit floats into 32-bit testsunder capability StorageUniform{|BufferBlock}16", addGraphics16BitStorageUniformFloat16To32Group);
-	addTestGroup(group.get(), "uniform_float_16_to_64", "16-bit floats into 64-bit testsunder capability StorageUniform{|BufferBlock}16", addGraphics16BitStorageUniformFloat16To64Group);
-	addTestGroup(group.get(), "uniform_int_32_to_16", "32-bit int into 16-bit tests under capability StorageUniform{|BufferBlock}16", addGraphics16BitStorageUniformInt32To16Group);
-	addTestGroup(group.get(), "uniform_int_16_to_32", "16-bit int into 32-bit tests under capability StorageUniform{|BufferBlock}16", addGraphics16BitStorageUniformInt16To32Group);
-	addTestGroup(group.get(), "input_output_float_64_to_16", "64-bit floats into 16-bit tests under capability StorageInputOutput16", addGraphics16BitStorageInputOutputFloat64To16Group);
-	addTestGroup(group.get(), "input_output_float_32_to_16", "32-bit floats into 16-bit tests under capability StorageInputOutput16", addGraphics16BitStorageInputOutputFloat32To16Group);
-	addTestGroup(group.get(), "input_output_float_16_to_32", "16-bit floats into 32-bit tests under capability StorageInputOutput16", addGraphics16BitStorageInputOutputFloat16To32Group);
-	addTestGroup(group.get(), "input_output_float_16_to_16", "16-bit floats pass-through tests under capability StorageInputOutput16", addGraphics16BitStorageInputOutputFloat16To16Group);
-	addTestGroup(group.get(), "input_output_float_16_to_64", "16-bit floats into 64-bit tests under capability StorageInputOutput16", addGraphics16BitStorageInputOutputFloat16To64Group);
-	addTestGroup(group.get(), "input_output_float_16_to_16x2", "16-bit floats pass-through to two outputs tests under capability StorageInputOutput16", addGraphics16BitStorageInputOutputFloat16To16x2Group);
-	addTestGroup(group.get(), "input_output_int_16_to_16x2", "16-bit ints pass-through to two outputs tests under capability StorageInputOutput16", addGraphics16BitStorageInputOutputInt16To16x2Group);
-	addTestGroup(group.get(), "input_output_int_32_to_16", "32-bit int into 16-bit tests under capability StorageInputOutput16", addGraphics16BitStorageInputOutputInt32To16Group);
-	addTestGroup(group.get(), "input_output_int_16_to_32", "16-bit int into 32-bit tests under capability StorageInputOutput16", addGraphics16BitStorageInputOutputInt16To32Group);
-	addTestGroup(group.get(), "input_output_int_16_to_16", "16-bit int into 16-bit tests under capability StorageInputOutput16", addGraphics16BitStorageInputOutputInt16To16Group);
-	addTestGroup(group.get(), "push_constant_float_16_to_32", "16-bit floats into 32-bit tests under capability StoragePushConstant16", addGraphics16BitStoragePushConstantFloat16To32Group);
-	addTestGroup(group.get(), "push_constant_float_16_to_64", "16-bit floats into 64-bit tests under capability StoragePushConstant16", addGraphics16BitStoragePushConstantFloat16To64Group);
-	addTestGroup(group.get(), "push_constant_int_16_to_32", "16-bit int into 32-bit tests under capability StoragePushConstant16", addGraphics16BitStoragePushConstantInt16To32Group);
-	addTestGroup(group.get(), "uniform_16struct_to_32struct", "16-bit float struct into 32-bit tests under capability StorageUniform{|BufferBlock}16", addGraphics16BitStorageUniformStructFloat16To32Group);
-	addTestGroup(group.get(), "uniform_32struct_to_16struct", "32-bit float struct into 16-bit tests under capability StorageUniform{|BufferBlock}16", addGraphics16BitStorageUniformStructFloat32To16Group);
-	addTestGroup(group.get(), "struct_mixed_types", "mixed type of 8bit and 32bit struct", addGraphics16bitStructMixedTypesGroup);
+	// 64-bit floats into 16-bit tests under capability StorageUniform{|BufferBlock}16
+	addTestGroup(group.get(), "uniform_float_64_to_16", addGraphics16BitStorageUniformFloat64To16Group);
+	// 32-bit floats into 16-bit tests under capability StorageUniform{|BufferBlock}16
+	addTestGroup(group.get(), "uniform_float_32_to_16", addGraphics16BitStorageUniformFloat32To16Group);
+	// 16-bit floats into 32-bit testsunder capability StorageUniform{|BufferBlock}16
+	addTestGroup(group.get(), "uniform_float_16_to_32", addGraphics16BitStorageUniformFloat16To32Group);
+	// 16-bit floats into 64-bit testsunder capability StorageUniform{|BufferBlock}16
+	addTestGroup(group.get(), "uniform_float_16_to_64", addGraphics16BitStorageUniformFloat16To64Group);
+	// 32-bit int into 16-bit tests under capability StorageUniform{|BufferBlock}16
+	addTestGroup(group.get(), "uniform_int_32_to_16", addGraphics16BitStorageUniformInt32To16Group);
+	// 16-bit int into 32-bit tests under capability StorageUniform{|BufferBlock}16
+	addTestGroup(group.get(), "uniform_int_16_to_32", addGraphics16BitStorageUniformInt16To32Group);
+	// 64-bit floats into 16-bit tests under capability StorageInputOutput16
+	addTestGroup(group.get(), "input_output_float_64_to_16", addGraphics16BitStorageInputOutputFloat64To16Group);
+	// 32-bit floats into 16-bit tests under capability StorageInputOutput16
+	addTestGroup(group.get(), "input_output_float_32_to_16", addGraphics16BitStorageInputOutputFloat32To16Group);
+	// 16-bit floats into 32-bit tests under capability StorageInputOutput16
+	addTestGroup(group.get(), "input_output_float_16_to_32", addGraphics16BitStorageInputOutputFloat16To32Group);
+	// 16-bit floats pass-through tests under capability StorageInputOutput16
+	addTestGroup(group.get(), "input_output_float_16_to_16", addGraphics16BitStorageInputOutputFloat16To16Group);
+	// 16-bit floats into 64-bit tests under capability StorageInputOutput16
+	addTestGroup(group.get(), "input_output_float_16_to_64", addGraphics16BitStorageInputOutputFloat16To64Group);
+	// 16-bit floats pass-through to two outputs tests under capability StorageInputOutput16
+	addTestGroup(group.get(), "input_output_float_16_to_16x2", addGraphics16BitStorageInputOutputFloat16To16x2Group);
+	// 16-bit ints pass-through to two outputs tests under capability StorageInputOutput16
+	addTestGroup(group.get(), "input_output_int_16_to_16x2", addGraphics16BitStorageInputOutputInt16To16x2Group);
+	// 32-bit int into 16-bit tests under capability StorageInputOutput16
+	addTestGroup(group.get(), "input_output_int_32_to_16", addGraphics16BitStorageInputOutputInt32To16Group);
+	// 16-bit int into 32-bit tests under capability StorageInputOutput16
+	addTestGroup(group.get(), "input_output_int_16_to_32", addGraphics16BitStorageInputOutputInt16To32Group);
+	// 16-bit int into 16-bit tests under capability StorageInputOutput16
+	addTestGroup(group.get(), "input_output_int_16_to_16", addGraphics16BitStorageInputOutputInt16To16Group);
+	// 16-bit floats into 32-bit tests under capability StoragePushConstant16
+	addTestGroup(group.get(), "push_constant_float_16_to_32", addGraphics16BitStoragePushConstantFloat16To32Group);
+	// 16-bit floats into 64-bit tests under capability StoragePushConstant16
+	addTestGroup(group.get(), "push_constant_float_16_to_64", addGraphics16BitStoragePushConstantFloat16To64Group);
+	// 16-bit int into 32-bit tests under capability StoragePushConstant16
+	addTestGroup(group.get(), "push_constant_int_16_to_32", addGraphics16BitStoragePushConstantInt16To32Group);
+	// 16-bit float struct into 32-bit tests under capability StorageUniform{|BufferBlock}16
+	addTestGroup(group.get(), "uniform_16struct_to_32struct", addGraphics16BitStorageUniformStructFloat16To32Group);
+	// 32-bit float struct into 16-bit tests under capability StorageUniform{|BufferBlock}16
+	addTestGroup(group.get(), "uniform_32struct_to_16struct", addGraphics16BitStorageUniformStructFloat32To16Group);
+	// mixed type of 8bit and 32bit struct
+	addTestGroup(group.get(), "struct_mixed_types", addGraphics16bitStructMixedTypesGroup);
 
 	return group.release();
 }

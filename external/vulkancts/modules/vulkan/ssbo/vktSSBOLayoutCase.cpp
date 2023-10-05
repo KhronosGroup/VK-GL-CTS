@@ -2444,8 +2444,8 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 
 // SSBOLayoutCase.
 
-SSBOLayoutCase::SSBOLayoutCase (tcu::TestContext& testCtx, const char* name, const char* description, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag, MatrixStoreFlags matrixStoreFlag, bool usePhysStorageBuffer)
-	: TestCase			(testCtx, name, description)
+SSBOLayoutCase::SSBOLayoutCase (tcu::TestContext& testCtx, const char* name, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag, MatrixStoreFlags matrixStoreFlag, bool usePhysStorageBuffer)
+	: TestCase			(testCtx, name)
 	, m_bufferMode		(bufferMode)
 	, m_matrixLoadFlag	(matrixLoadFlag)
 	, m_matrixStoreFlag	(matrixStoreFlag)

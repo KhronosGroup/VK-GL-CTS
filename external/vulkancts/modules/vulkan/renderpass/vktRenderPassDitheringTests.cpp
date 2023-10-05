@@ -123,7 +123,6 @@ class DitheringTest : public vkt::TestCase
 public:
 							DitheringTest			(tcu::TestContext&	testContext,
 													 const std::string&	name,
-													 const std::string&	description,
 													 TestParams testParams);
 	virtual					~DitheringTest			(void);
 	virtual void			initPrograms			(SourceCollections&	sourceCollections) const;
@@ -185,9 +184,8 @@ private:
 
 DitheringTest::DitheringTest (tcu::TestContext&		testContext,
 							  const std::string&	name,
-							  const std::string&	description,
 							  TestParams			testParams)
-	: vkt::TestCase	(testContext, name, description)
+	: vkt::TestCase	(testContext, name)
 	, m_testParams	(testParams)
 {
 }
@@ -1017,7 +1015,8 @@ tcu::TestCaseGroup* createRenderPassDitheringTests (tcu::TestContext& testCtx, c
 	TestParams							testParams;
 	VkFormat							testFormats[]				= { VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R5G6B5_UNORM_PACK16, VK_FORMAT_R4G4B4A4_UNORM_PACK16, VK_FORMAT_R5G5B5A1_UNORM_PACK16 };
 	deUint32							testFormatCount				= sizeof(testFormats) / sizeof(testFormats[0]);
-	de::MovePtr<tcu::TestCaseGroup>		ditheringTests				(new tcu::TestCaseGroup(testCtx, "dithering", "Tests for VK_EXT_legacy_dithering"));
+	// Tests for VK_EXT_legacy_dithering
+	de::MovePtr<tcu::TestCaseGroup>		ditheringTests				(new tcu::TestCaseGroup(testCtx, "dithering"));
 
 	testParams.overrideColor		= tcu::Vec4(0.5f, 0.0f, 0.0f, 1.0f);
 	testParams.imageSize			= tcu::UVec2{ imageDimensions, imageDimensions };
@@ -1067,19 +1066,19 @@ tcu::TestCaseGroup* createRenderPassDitheringTests (tcu::TestContext& testCtx, c
 		{
 			testParams.colorFormats.emplace_back(testFormats[i]);
 			const std::string	iFormatName	= de::toLower(de::toString(getFormatStr(testParams.colorFormats.back())).substr(10));
-			baseTests->addChild(new DitheringTest(testCtx, iFormatName, "", testParams));
+			baseTests->addChild(new DitheringTest(testCtx, iFormatName, testParams));
 
 			for (deUint32 j = i + 1; j < testFormatCount; ++j)
 			{
 				testParams.colorFormats.emplace_back(testFormats[j]);
 				const std::string	jFormatName	= iFormatName + "_and_" + de::toLower(de::toString(getFormatStr(testParams.colorFormats.back())).substr(10));
-				baseTests->addChild(new DitheringTest(testCtx, jFormatName, "", testParams));
+				baseTests->addChild(new DitheringTest(testCtx, jFormatName, testParams));
 
 				for (deUint32 k = j + 1; k < testFormatCount; ++k)
 				{
 					testParams.colorFormats.emplace_back(testFormats[k]);
 					const std::string	kFormatName	= jFormatName + "_and_" + de::toLower(de::toString(getFormatStr(testParams.colorFormats.back())).substr(10));
-					baseTests->addChild(new DitheringTest(testCtx, kFormatName, "", testParams));
+					baseTests->addChild(new DitheringTest(testCtx, kFormatName, testParams));
 
 					testParams.colorFormats.pop_back();
 				}
@@ -1129,7 +1128,7 @@ tcu::TestCaseGroup* createRenderPassDitheringTests (tcu::TestContext& testCtx, c
 					for (deUint32 l = 0u; l < compareOpsCount; ++l)
 					{
 						testParams.depthCompareOp = compareOps[l];
-						depthStencilTests->addChild(new DitheringTest(testCtx, "stencil" + names[j] + "_depth" + names[k] + "_op" + names[l] + "_" + formatName, "", testParams));
+						depthStencilTests->addChild(new DitheringTest(testCtx, "stencil" + names[j] + "_depth" + names[k] + "_op" + names[l] + "_" + formatName, testParams));
 					}
 				}
 			}
@@ -1153,12 +1152,12 @@ tcu::TestCaseGroup* createRenderPassDitheringTests (tcu::TestContext& testCtx, c
 			testParams.overrideColor	= tcu::Vec4(0.5f, 0.0f, 0.0f, 1.0f);
 			testParams.srcFactor		= VK_BLEND_FACTOR_SRC_ALPHA;
 			testParams.dstFactor		= VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-			blendTests->addChild(new DitheringTest(testCtx, "srcAlpha_" + formatName, "", testParams));
+			blendTests->addChild(new DitheringTest(testCtx, "srcAlpha_" + formatName, testParams));
 
 			testParams.overrideColor	= tcu::Vec4(0.125f, 0.0f, 0.0f, 1.0f);
 			testParams.srcFactor		= VK_BLEND_FACTOR_ONE;
 			testParams.dstFactor		= VK_BLEND_FACTOR_ONE;
-			blendTests->addChild(new DitheringTest(testCtx, "additive_" + formatName, "", testParams));
+			blendTests->addChild(new DitheringTest(testCtx, "additive_" + formatName, testParams));
 			testParams.colorFormats.pop_back();
 		}
 		testParams.blending = false;

@@ -139,8 +139,8 @@ struct TestParams
 class ProvokingVertexCase : public vkt::TestCase
 {
 public:
-					ProvokingVertexCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-						: vkt::TestCase	(testCtx, name, description)
+					ProvokingVertexCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+						: vkt::TestCase	(testCtx, name)
 						, m_params		(params)
 						{
 							DE_ASSERT(m_params.provokingVertices.size() <= 2);
@@ -456,12 +456,12 @@ tcu::TestCaseGroup* createMeshShaderProvokingVertexTestsEXT (tcu::TestContext& t
 		ProvokingVertexModeVec{VK_PROVOKING_VERTEX_MODE_LAST_VERTEX_EXT, VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT},
 	};
 
-	GroupPtr provokingVertexGroup (new tcu::TestCaseGroup(testCtx, "provoking_vertex", ""));
+	GroupPtr provokingVertexGroup (new tcu::TestCaseGroup(testCtx, "provoking_vertex"));
 
 	for (const auto& geometry : geometries)
 	{
 		const auto	geometryName	= getCaseName(geometry);
-		GroupPtr	geometryGroup	(new tcu::TestCaseGroup(testCtx, geometryName.c_str(), ""));
+		GroupPtr	geometryGroup	(new tcu::TestCaseGroup(testCtx, geometryName.c_str()));
 
 		for (const auto& testModes : testModeCases)
 		{
@@ -472,7 +472,7 @@ tcu::TestCaseGroup* createMeshShaderProvokingVertexTestsEXT (tcu::TestContext& t
 				geometry,	//	Geometry				geometryType;
 			};
 
-			geometryGroup->addChild(new ProvokingVertexCase(testCtx, modeName, "", params));
+			geometryGroup->addChild(new ProvokingVertexCase(testCtx, modeName, params));
 		}
 
 		provokingVertexGroup->addChild(geometryGroup.release());

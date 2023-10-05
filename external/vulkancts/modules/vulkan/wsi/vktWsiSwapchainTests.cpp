@@ -1118,10 +1118,10 @@ void populateSwapchainGroup (tcu::TestCaseGroup* testGroup, GroupParameters para
 	{
 		const TestDimension		testDimension	= (TestDimension)dimensionNdx;
 
-		addFunctionCase(testGroup, getTestDimensionName(testDimension), "", params.function, TestParameters(params.wsiType, testDimension));
+		addFunctionCase(testGroup, getTestDimensionName(testDimension), params.function, TestParameters(params.wsiType, testDimension));
 	}
 
-	addFunctionCase(testGroup, "image_swapchain_create_info", "Test VkImageSwapchainCreateInfoKHR", testImageSwapchainCreateInfo, params.wsiType);
+	addFunctionCase(testGroup, "image_swapchain_create_info", testImageSwapchainCreateInfo, params.wsiType);
 }
 
 void populateSwapchainPrivateDataGroup (tcu::TestCaseGroup* testGroup, GroupParameters params)
@@ -1132,7 +1132,7 @@ void populateSwapchainPrivateDataGroup (tcu::TestCaseGroup* testGroup, GroupPara
 		if (testDimension == TEST_DIMENSION_IMAGE_EXTENT)
 			continue;
 
-		addFunctionCase(testGroup, getTestDimensionName(testDimension), "", params.function, TestParameters(params.wsiType, testDimension));
+		addFunctionCase(testGroup, getTestDimensionName(testDimension), params.function, TestParameters(params.wsiType, testDimension));
 	}
 }
 
@@ -2624,24 +2624,34 @@ void getBasicRenderPrograms (SourceCollections& dst, MultiSwapchainParams)
 
 void populateRenderGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 {
-	addFunctionCaseWithPrograms(testGroup, "basic", "Basic Rendering Test", getBasicRenderPrograms, basicRenderTest<AcquireNextImageWrapper>, wsiType);
-	addFunctionCaseWithPrograms(testGroup, "basic2", "Basic Rendering Test using AcquireNextImage2", getBasicRenderPrograms, basicRenderTest<AcquireNextImage2Wrapper>, wsiType);
-	addFunctionCaseWithPrograms(testGroup, "device_group", "Basic Rendering Test using device_group", getBasicRenderPrograms, deviceGroupRenderTest, wsiType);
-	addFunctionCaseWithPrograms(testGroup, "device_group2", "Rendering Test using device_group and VkImageSwapchainCreateInfo", getBasicRenderPrograms, deviceGroupRenderTest2, wsiType);
+	// Basic Rendering Test
+	addFunctionCaseWithPrograms(testGroup, "basic", getBasicRenderPrograms, basicRenderTest<AcquireNextImageWrapper>, wsiType);
+	// Basic Rendering Test using AcquireNextImage2
+	addFunctionCaseWithPrograms(testGroup, "basic2", getBasicRenderPrograms, basicRenderTest<AcquireNextImage2Wrapper>, wsiType);
+	// Basic Rendering Test using device_group
+	addFunctionCaseWithPrograms(testGroup, "device_group", getBasicRenderPrograms, deviceGroupRenderTest, wsiType);
+	// Rendering Test using device_group and VkImageSwapchainCreateInfo
+	addFunctionCaseWithPrograms(testGroup, "device_group2", getBasicRenderPrograms, deviceGroupRenderTest2, wsiType);
 
 	const MultiSwapchainParams kTwoSwapchains	{ wsiType, 2u	};
 	const MultiSwapchainParams kTenSwapchains	{ wsiType, 10u	};
 
-	addFunctionCaseWithPrograms(testGroup, "2swapchains", "2 Swapchains Rendering Test", getBasicRenderPrograms, multiSwapchainRenderTest<AcquireNextImageWrapper>, kTwoSwapchains);
-	addFunctionCaseWithPrograms(testGroup, "2swapchains2", "2 Swapchains Rendering Test using AcquireNextImage2", getBasicRenderPrograms, multiSwapchainRenderTest<AcquireNextImage2Wrapper>, kTwoSwapchains);
-	addFunctionCaseWithPrograms(testGroup, "10swapchains", "10 Swapchains Rendering Test", getBasicRenderPrograms, multiSwapchainRenderTest<AcquireNextImageWrapper>, kTenSwapchains);
-	addFunctionCaseWithPrograms(testGroup, "10swapchains2", "10 Swapchains Rendering Test using AcquireNextImage2", getBasicRenderPrograms, multiSwapchainRenderTest<AcquireNextImage2Wrapper>, kTenSwapchains);
+	// 2 Swapchains Rendering Test
+	addFunctionCaseWithPrograms(testGroup, "2swapchains", getBasicRenderPrograms, multiSwapchainRenderTest<AcquireNextImageWrapper>, kTwoSwapchains);
+	// 2 Swapchains Rendering Test using AcquireNextImage2
+	addFunctionCaseWithPrograms(testGroup, "2swapchains2", getBasicRenderPrograms, multiSwapchainRenderTest<AcquireNextImage2Wrapper>, kTwoSwapchains);
+	// 10 Swapchains Rendering Test
+	addFunctionCaseWithPrograms(testGroup, "10swapchains", getBasicRenderPrograms, multiSwapchainRenderTest<AcquireNextImageWrapper>, kTenSwapchains);
+	// 10 Swapchains Rendering Test using AcquireNextImage2
+	addFunctionCaseWithPrograms(testGroup, "10swapchains2", getBasicRenderPrograms, multiSwapchainRenderTest<AcquireNextImage2Wrapper>, kTenSwapchains);
 }
 
 void populateGetImagesGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 {
-	addFunctionCase(testGroup, "incomplete", "Test VK_INCOMPLETE return code", getImagesIncompleteResultTest, wsiType);
-	addFunctionCase(testGroup, "count",	"Test proper count of images", getImagesResultsCountTest, wsiType);
+	// Test VK_INCOMPLETE return code
+	addFunctionCase(testGroup, "incomplete", getImagesIncompleteResultTest, wsiType);
+	// Test proper count of images
+	addFunctionCase(testGroup, "count", getImagesResultsCountTest, wsiType);
 }
 
 void populateModifyGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
@@ -2650,7 +2660,8 @@ void populateModifyGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 
 	if (platformProperties.swapchainExtent != PlatformProperties::SWAPCHAIN_EXTENT_MUST_MATCH_WINDOW_SIZE)
 	{
-		addFunctionCaseWithPrograms(testGroup, "resize", "Resize Swapchain Test", getBasicRenderPrograms, resizeSwapchainTest, wsiType);
+		// Resize Swapchain Test
+		addFunctionCaseWithPrograms(testGroup, "resize", getBasicRenderPrograms, resizeSwapchainTest, wsiType);
 	}
 
 	// \todo [2016-05-30 jesse] Add tests for modifying preTransform, compositeAlpha, presentMode
@@ -2658,28 +2669,40 @@ void populateModifyGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 
 void populateDestroyGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 {
-	addFunctionCase(testGroup, "null_handle", "Destroying a VK_NULL_HANDLE swapchain", destroyNullHandleSwapchainTest, wsiType);
-	addFunctionCase(testGroup, "old_swapchain", "Destroying an old swapchain", destroyOldSwapchainTest, wsiType);
+	// Destroying a VK_NULL_HANDLE swapchain
+	addFunctionCase(testGroup, "null_handle", destroyNullHandleSwapchainTest, wsiType);
+	// Destroying an old swapchain
+	addFunctionCase(testGroup, "old_swapchain", destroyOldSwapchainTest, wsiType);
 }
 
 void populateAcquireGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 {
-	addFunctionCase(testGroup, "too_many", "Test acquiring too many images with 0 timeout", acquireTooManyTest, wsiType);
-	addFunctionCase(testGroup, "too_many_timeout", "Test acquiring too many images with timeout", acquireTooManyTimeoutTest, wsiType);
+	// Test acquiring too many images with 0 timeout
+	addFunctionCase(testGroup, "too_many", acquireTooManyTest, wsiType);
+	// Test acquiring too many images with timeout
+	addFunctionCase(testGroup, "too_many_timeout", acquireTooManyTimeoutTest, wsiType);
 }
 
 } // anonymous
 
 void createSwapchainTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 {
-	addTestGroup(testGroup, "create",			"Create VkSwapchain with various parameters",					populateSwapchainGroup,					GroupParameters(wsiType, createSwapchainTest));
-	addTestGroup(testGroup, "simulate_oom",		"Simulate OOM using callbacks during swapchain construction",	populateSwapchainGroup,					GroupParameters(wsiType, createSwapchainSimulateOOMTest));
-	addTestGroup(testGroup, "render",			"Rendering Tests",												populateRenderGroup,					wsiType);
-	addTestGroup(testGroup, "modify",			"Modify VkSwapchain",											populateModifyGroup,					wsiType);
-	addTestGroup(testGroup, "destroy",			"Destroy VkSwapchain",											populateDestroyGroup,					wsiType);
-	addTestGroup(testGroup, "get_images",		"Get swapchain images",											populateGetImagesGroup,					wsiType);
-	addTestGroup(testGroup, "acquire",			"Ancquire next swapchain image",								populateAcquireGroup,					wsiType);
-	addTestGroup(testGroup, "private_data",		"Create VkSwapchain and use VK_EXT_private_data",				populateSwapchainPrivateDataGroup,		GroupParameters(wsiType, createSwapchainPrivateDataTest));
+	// Create VkSwapchain with various parameters
+	addTestGroup(testGroup, "create", populateSwapchainGroup,					GroupParameters(wsiType, createSwapchainTest));
+	// Simulate OOM using callbacks during swapchain construction
+	addTestGroup(testGroup, "simulate_oom", populateSwapchainGroup,					GroupParameters(wsiType, createSwapchainSimulateOOMTest));
+	// Rendering Tests
+	addTestGroup(testGroup, "render", populateRenderGroup,					wsiType);
+	// Modify VkSwapchain
+	addTestGroup(testGroup, "modify", populateModifyGroup,					wsiType);
+	// Destroy VkSwapchain
+	addTestGroup(testGroup, "destroy", populateDestroyGroup,					wsiType);
+	// Get swapchain images
+	addTestGroup(testGroup, "get_images", populateGetImagesGroup,					wsiType);
+	// Ancquire next swapchain image
+	addTestGroup(testGroup, "acquire", populateAcquireGroup,					wsiType);
+	// Create VkSwapchain and use VK_EXT_private_data
+	addTestGroup(testGroup, "private_data", populateSwapchainPrivateDataGroup,		GroupParameters(wsiType, createSwapchainPrivateDataTest));
 }
 
 } // wsi

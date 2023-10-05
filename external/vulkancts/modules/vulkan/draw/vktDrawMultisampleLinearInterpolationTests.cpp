@@ -511,13 +511,12 @@ class MultisampleLinearInterpolationTestCase : public TestCase
 	public:
 								MultisampleLinearInterpolationTestCase	(tcu::TestContext&				context,
 																		 const char*					name,
-																		 const char*					desc,
 																		 const tcu::IVec2				renderSize,
 																		 const float					interpolationRange,
 																		 const tcu::Vec2				offset,
 																		 const VkSampleCountFlagBits	sampleCountFlagBits,
 																		 const SharedGroupParams		groupParams)
-								: vkt::TestCase(context, name, desc)
+								: vkt::TestCase(context, name)
 								, m_renderSize			(renderSize)
 								, m_interpolationRange	(interpolationRange)
 								, m_offset				(offset)
@@ -689,7 +688,7 @@ void createTests (tcu::TestCaseGroup* testGroup, const SharedGroupParams groupPa
 			if (groupParams->useSecondaryCmdBuffer && (flagBit.value > VK_SAMPLE_COUNT_4_BIT))
 				break;
 
-			testGroup->addChild(new MultisampleLinearInterpolationTestCase(testCtx, (offset.name + "_" + flagBit.name).c_str(), ".", tcu::IVec2(16, 16), 1.0f, offset.value, flagBit.value, groupParams));
+			testGroup->addChild(new MultisampleLinearInterpolationTestCase(testCtx, (offset.name + "_" + flagBit.name).c_str(), tcu::IVec2(16, 16), 1.0f, offset.value, flagBit.value, groupParams));
 		}
 	}
 }
@@ -698,7 +697,8 @@ void createTests (tcu::TestCaseGroup* testGroup, const SharedGroupParams groupPa
 
 tcu::TestCaseGroup*	createMultisampleLinearInterpolationTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "linear_interpolation", "Tests for linear interpolation decorations.", createTests, groupParams);
+	// Tests for linear interpolation decorations.
+	return createTestGroup(testCtx, "linear_interpolation", createTests, groupParams);
 }
 
 }	// Draw

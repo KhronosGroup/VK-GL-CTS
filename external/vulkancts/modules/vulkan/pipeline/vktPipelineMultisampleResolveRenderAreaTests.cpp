@@ -434,7 +434,7 @@ public:
 													 const tcu::IVec2					framebufferSize,
 													 const TestShape					testShape,
 													 const VkFormat						colorFormat	= VK_FORMAT_R8G8B8A8_UNORM)
-													: TestCase(testCtx,	name, "")
+													: TestCase(testCtx,	name)
 													, m_pipelineConstructionType	(pipelineConstructionType)
 													, m_sampleCount					(sampleCount)
 													, m_framebufferSize				(framebufferSize)
@@ -516,7 +516,8 @@ void MultisampleRenderAreaTest::checkSupport(Context& context) const
 
 tcu::TestCaseGroup* createMultisampleResolveRenderpassRenderAreaTests(tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroupResolve(new tcu::TestCaseGroup(testCtx, "resolve", "resolving multisample image tests"));
+	// resolving multisample image tests
+	de::MovePtr<tcu::TestCaseGroup> testGroupResolve(new tcu::TestCaseGroup(testCtx, "resolve"));
 
 	de::MovePtr<tcu::TestCaseGroup> testGroupRenderArea(new tcu::TestCaseGroup(testCtx, "renderpass_renderarea", "renderpass render area tests"));
 

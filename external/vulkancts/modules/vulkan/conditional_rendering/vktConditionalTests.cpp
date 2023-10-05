@@ -53,7 +53,7 @@ void createChildren (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, name.c_str(), "Conditional Rendering Tests", createChildren);
+	return createTestGroup(testCtx, name.c_str(), createChildren);
 }
 
 } // conditional

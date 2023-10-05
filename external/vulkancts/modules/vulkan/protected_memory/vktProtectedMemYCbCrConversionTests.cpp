@@ -1294,7 +1294,7 @@ tcu::TestStatus conversionTest (Context& context, TestConfig config)
 
 tcu::TestCaseGroup*	createYCbCrConversionTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "ycbcr", "YCbCr conversion tests"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "ycbcr"));
 
 	struct {
 		const char *			name;
@@ -1438,7 +1438,8 @@ tcu::TestCaseGroup*	createYCbCrConversionTests (tcu::TestContext& testCtx)
 		for (size_t shaderNdx = 0; shaderNdx < DE_LENGTH_OF_ARRAY(shaderTypes); shaderNdx++)
 		{
 			const char*						shaderTypeName	= shaderTypes[shaderNdx].name;
-			de::MovePtr<tcu::TestCaseGroup>	shaderGroup (new tcu::TestCaseGroup(testCtx, shaderTypeName, "YCbCr conversion tests"));
+			// YCbCr conversion tests
+			de::MovePtr<tcu::TestCaseGroup>	shaderGroup (new tcu::TestCaseGroup(testCtx, shaderTypeName));
 
 			for (size_t modelNdx = 0; modelNdx < DE_LENGTH_OF_ARRAY(colorModels); modelNdx++)
 			{
@@ -1491,7 +1492,6 @@ tcu::TestCaseGroup*	createYCbCrConversionTests (tcu::TestContext& testCtx)
 
 							addFunctionCaseWithPrograms(colorRangeGroup.get(),
 														std::string(tilingName) + "_" + chromaOffsetName + (disjoint ? "_disjoint" : ""),
-														"",
 														checkSupport,
 														testShaders,
 														conversionTest,

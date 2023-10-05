@@ -1748,7 +1748,6 @@ public:
 										AttachmentFeedbackLoopLayoutSamplerTest			(tcu::TestContext&				testContext,
 																						 vk::PipelineConstructionType	pipelineConstructionType,
 																						 const char*					name,
-																						 const char*					description,
 																						 SamplerViewType				imageViewType,
 																						 VkFormat						imageFormat,
 																						 int							imageSize,
@@ -1803,7 +1802,6 @@ protected:
 AttachmentFeedbackLoopLayoutSamplerTest::AttachmentFeedbackLoopLayoutSamplerTest	(tcu::TestContext&				testContext,
 																					 vk::PipelineConstructionType	pipelineConstructionType,
 																					 const char*					name,
-																					 const char*					description,
 																					 SamplerViewType				imageViewType,
 																					 VkFormat						imageFormat,
 																					 int							imageSize,
@@ -1814,7 +1812,7 @@ AttachmentFeedbackLoopLayoutSamplerTest::AttachmentFeedbackLoopLayoutSamplerTest
 																					 bool							interleaveReadWriteComponents,
 																					 PipelineStateMode				pipelineStateMode,
 																					 bool							useMaintenance5)
-	: vkt::TestCase					(testContext, name, description)
+	: vkt::TestCase					(testContext, name)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_imageViewType				(imageViewType)
 	, m_imageFormat					(imageFormat)
@@ -2468,7 +2466,7 @@ tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutSamplerTests (tcu::TestCon
 		VK_FORMAT_S8_UINT
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> samplingTypeTests		(new tcu::TestCaseGroup(testCtx, "sampler", ""));
+	de::MovePtr<tcu::TestCaseGroup> samplingTypeTests		(new tcu::TestCaseGroup(testCtx, "sampler"));
 
 	const struct
 	{
@@ -2520,14 +2518,14 @@ tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutSamplerTests (tcu::TestCon
 	for (int imageDescriptorTypeNdx = 0; imageDescriptorTypeNdx < DE_LENGTH_OF_ARRAY(imageDescriptorTypes); imageDescriptorTypeNdx++)
 	{
 		VkDescriptorType					imageDescriptorType		= imageDescriptorTypes[imageDescriptorTypeNdx].type;
-		de::MovePtr<tcu::TestCaseGroup>	imageDescriptorTypeGroup	(new tcu::TestCaseGroup(testCtx, imageDescriptorTypes[imageDescriptorTypeNdx].name, (std::string("Uses a ") + imageDescriptorTypes[imageDescriptorTypeNdx].name + " sampler").c_str()));
-		de::MovePtr<tcu::TestCaseGroup> imageTypeTests		(new tcu::TestCaseGroup(testCtx, "image_type", ""));
+		de::MovePtr<tcu::TestCaseGroup>	imageDescriptorTypeGroup	(new tcu::TestCaseGroup(testCtx, imageDescriptorTypes[imageDescriptorTypeNdx].name));
+		de::MovePtr<tcu::TestCaseGroup> imageTypeTests		(new tcu::TestCaseGroup(testCtx, "image_type"));
 
 		for (int viewTypeNdx = 0; viewTypeNdx < DE_LENGTH_OF_ARRAY(imageViewTypes); viewTypeNdx++)
 		{
 			const SamplerViewType			viewType		= imageViewTypes[viewTypeNdx].type;
-			de::MovePtr<tcu::TestCaseGroup> viewTypeGroup   (new tcu::TestCaseGroup(testCtx, imageViewTypes[viewTypeNdx].name, (std::string("Uses a ") + imageViewTypes[viewTypeNdx].name + " view").c_str()));
-			de::MovePtr<tcu::TestCaseGroup>	formatTests		(new tcu::TestCaseGroup(testCtx, "format", "Tests samplable formats"));
+			de::MovePtr<tcu::TestCaseGroup> viewTypeGroup   (new tcu::TestCaseGroup(testCtx, imageViewTypes[viewTypeNdx].name));
+			de::MovePtr<tcu::TestCaseGroup>	formatTests		(new tcu::TestCaseGroup(testCtx, "format"));
 
 			for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 			{
@@ -2563,13 +2561,13 @@ tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutSamplerTests (tcu::TestCon
 						for (const auto& pipelineStateMode : pipelineStateModes)
 						{
 							std::string name = getFormatCaseName(format) + imageAspectTestModes[imageAspectTestMode] + testModes[testModeNdx].name + interleaveReadWriteComponentsModes[restrictColorNdx].name + pipelineStateMode.suffix;
-							formatTests->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, name.c_str(), "", viewType, format, outputImageSize, imageDescriptorType, 0.0f, testModes[testModeNdx].mode, imageAspectTestMode, interleaveReadWriteComponentsModes[restrictColorNdx].interleaveReadWriteComponents, pipelineStateMode.pipelineStateMode, false));
+							formatTests->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, name.c_str(), viewType, format, outputImageSize, imageDescriptorType, 0.0f, testModes[testModeNdx].mode, imageAspectTestMode, interleaveReadWriteComponentsModes[restrictColorNdx].interleaveReadWriteComponents, pipelineStateMode.pipelineStateMode, false));
 
 							if (!isCompressed && isDepthStencil)
 							{
 								// Image is depth-stencil. Add the stencil case as well.
 								std::string stencilTestName = getFormatCaseName(format) + imageAspectTestModes[IMAGE_ASPECT_TEST_STENCIL] + testModes[testModeNdx].name + interleaveReadWriteComponentsModes[restrictColorNdx].name + pipelineStateMode.suffix;
-								formatTests->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, stencilTestName.c_str(), "", viewType, format, outputImageSize, imageDescriptorType, 0.0f, testModes[testModeNdx].mode, IMAGE_ASPECT_TEST_STENCIL, interleaveReadWriteComponentsModes[restrictColorNdx].interleaveReadWriteComponents, pipelineStateMode.pipelineStateMode, false));
+								formatTests->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, stencilTestName.c_str(), viewType, format, outputImageSize, imageDescriptorType, 0.0f, testModes[testModeNdx].mode, IMAGE_ASPECT_TEST_STENCIL, interleaveReadWriteComponentsModes[restrictColorNdx].interleaveReadWriteComponents, pipelineStateMode.pipelineStateMode, false));
 							}
 						}
 					}
@@ -2586,8 +2584,8 @@ tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutSamplerTests (tcu::TestCon
 	if (pipelineConstructionType == PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
 		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
-		miscGroup->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, "maintenance5_color_attachment", "", VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, outputImageSize, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0.0f, TEST_MODE_READ_ONLY, IMAGE_ASPECT_TEST_COLOR, false, PipelineStateMode::STATIC, true));
-		miscGroup->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, "maintenance5_ds_attachment", "", VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_D16_UNORM, outputImageSize, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0.0f, TEST_MODE_READ_ONLY, IMAGE_ASPECT_TEST_DEPTH, false, PipelineStateMode::STATIC, true));
+		miscGroup->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, "maintenance5_color_attachment", VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, outputImageSize, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0.0f, TEST_MODE_READ_ONLY, IMAGE_ASPECT_TEST_COLOR, false, PipelineStateMode::STATIC, true));
+		miscGroup->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, "maintenance5_ds_attachment", VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_D16_UNORM, outputImageSize, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0.0f, TEST_MODE_READ_ONLY, IMAGE_ASPECT_TEST_DEPTH, false, PipelineStateMode::STATIC, true));
 		samplingTypeTests->addChild(miscGroup.release());
 	}
 
@@ -2596,7 +2594,7 @@ tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutSamplerTests (tcu::TestCon
 
 tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> attachmentFeedbackLoopLayoutTests(new tcu::TestCaseGroup(testCtx, "attachment_feedback_loop_layout", "VK_EXT_attachment_feedback_loop_layout tests"));
+	de::MovePtr<tcu::TestCaseGroup> attachmentFeedbackLoopLayoutTests(new tcu::TestCaseGroup(testCtx, "attachment_feedback_loop_layout"));
 	{
 		attachmentFeedbackLoopLayoutTests->addChild(createAttachmentFeedbackLoopLayoutSamplerTests(testCtx, pipelineConstructionType));
 	}

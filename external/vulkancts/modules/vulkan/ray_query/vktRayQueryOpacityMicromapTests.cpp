@@ -118,7 +118,7 @@ static constexpr deUint32 kNumThreadsAtOnce = 1024;
 class OpacityMicromapCase : public TestCase
 {
 public:
-							OpacityMicromapCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
+							OpacityMicromapCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params);
 	virtual					~OpacityMicromapCase	(void) {}
 
 	virtual void			checkSupport				(Context& context) const;
@@ -141,8 +141,8 @@ protected:
 	TestParams					m_params;
 };
 
-OpacityMicromapCase::OpacityMicromapCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-	: TestCase	(testCtx, name, description)
+OpacityMicromapCase::OpacityMicromapCase (tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+	: TestCase	(testCtx, name)
 	, m_params	(params)
 {}
 
@@ -1062,7 +1062,7 @@ void addBasicTests(tcu::TestCaseGroup* group)
 
 	for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name.c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name.c_str()));
 
 		for (deUint32 testFlagMask = 0; testFlagMask < TEST_FLAG_BIT_LAST; testFlagMask++)
 		{
@@ -1080,11 +1080,11 @@ void addBasicTests(tcu::TestCaseGroup* group)
 			if (maskName == "")
 				maskName = "NoFlags";
 
-			de::MovePtr<tcu::TestCaseGroup> testFlagGroup(new tcu::TestCaseGroup(sourceTypeGroup->getTestContext(), maskName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> testFlagGroup(new tcu::TestCaseGroup(sourceTypeGroup->getTestContext(), maskName.c_str()));
 
 			for (size_t specialIndexNdx = 0; specialIndexNdx < DE_LENGTH_OF_ARRAY(specialIndexUse); ++specialIndexNdx)
 			{
-				de::MovePtr<tcu::TestCaseGroup> specialGroup(new tcu::TestCaseGroup(testFlagGroup->getTestContext(), specialIndexUse[specialIndexNdx].name.c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup> specialGroup(new tcu::TestCaseGroup(testFlagGroup->getTestContext(), specialIndexUse[specialIndexNdx].name.c_str()));
 
 				if (specialIndexUse[specialIndexNdx].useSpecialIndex)
 				{
@@ -1105,7 +1105,7 @@ void addBasicTests(tcu::TestCaseGroup* group)
 						std::stringstream css;
 						css << specialIndex;
 
-						specialGroup->addChild(new OpacityMicromapCase(testCtx, css.str().c_str(), "", testParams));
+						specialGroup->addChild(new OpacityMicromapCase(testCtx, css.str().c_str(), testParams));
 					}
 					testFlagGroup->addChild(specialGroup.release());
 				}				else
@@ -1120,7 +1120,7 @@ void addBasicTests(tcu::TestCaseGroup* group)
 					};
 					for (deUint32 modeNdx = 0; modeNdx < DE_LENGTH_OF_ARRAY(modes); ++modeNdx)
 					{
-						de::MovePtr<tcu::TestCaseGroup> modeGroup(new tcu::TestCaseGroup(testFlagGroup->getTestContext(), modes[modeNdx].name.c_str(), ""));
+						de::MovePtr<tcu::TestCaseGroup> modeGroup(new tcu::TestCaseGroup(testFlagGroup->getTestContext(), modes[modeNdx].name.c_str()));
 
 						for (deUint32 level = 0; level <= kMaxSubdivisionLevel; level++)
 						{
@@ -1140,7 +1140,7 @@ void addBasicTests(tcu::TestCaseGroup* group)
 							std::stringstream css;
 							css << "level_" << level;
 
-							modeGroup->addChild(new OpacityMicromapCase(testCtx, css.str().c_str(), "", testParams));
+							modeGroup->addChild(new OpacityMicromapCase(testCtx, css.str().c_str(), testParams));
 						}
 						specialGroup->addChild(modeGroup.release());
 					}
@@ -1163,7 +1163,7 @@ void addCopyTests(tcu::TestCaseGroup* group)
 
 	for (size_t copyTypeNdx = CT_FIRST_ACTIVE; copyTypeNdx < CT_NUM_COPY_TYPES; ++copyTypeNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> copyTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), copyTypeNames[copyTypeNdx].c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> copyTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), copyTypeNames[copyTypeNdx].c_str()));
 
 		struct {
 			deUint32 mode;
@@ -1175,7 +1175,7 @@ void addCopyTests(tcu::TestCaseGroup* group)
 		};
 		for (deUint32 modeNdx = 0; modeNdx < DE_LENGTH_OF_ARRAY(modes); ++modeNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> modeGroup(new tcu::TestCaseGroup(copyTypeGroup->getTestContext(), modes[modeNdx].name.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> modeGroup(new tcu::TestCaseGroup(copyTypeGroup->getTestContext(), modes[modeNdx].name.c_str()));
 
 			for (deUint32 level = 0; level <= kMaxSubdivisionLevel; level++)
 			{
@@ -1195,7 +1195,7 @@ void addCopyTests(tcu::TestCaseGroup* group)
 				std::stringstream css;
 				css << "level_" << level;
 
-				modeGroup->addChild(new OpacityMicromapCase(testCtx, css.str().c_str(), "", testParams));
+				modeGroup->addChild(new OpacityMicromapCase(testCtx, css.str().c_str(), testParams));
 			}
 			copyTypeGroup->addChild(modeGroup.release());
 		}
@@ -1216,21 +1216,23 @@ void addCopyTests(tcu::TestCaseGroup* group)
 			true,
 		};
 		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(group->getTestContext(), "misc", ""));
-		miscGroup->addChild(new OpacityMicromapCase(testCtx, "maintenance5", "", testParams));
+		miscGroup->addChild(new OpacityMicromapCase(testCtx, "maintenance5", testParams));
 		group->addChild(miscGroup.release());
 	}
 }
 
 tcu::TestCaseGroup* createOpacityMicromapTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "opacity_micromap", "Test acceleration structures using opacity micromap with ray query"));
+	// Test acceleration structures using opacity micromap with ray query
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "opacity_micromap"));
 
-	addTestGroup(group.get(), "render", "Test accessing all formats of opacity micromaps", addBasicTests);
-	addTestGroup(group.get(), "copy", "Test copying opacity micromaps", addCopyTests);
+	// Test accessing all formats of opacity micromaps
+	addTestGroup(group.get(), "render", addBasicTests);
+	// Test copying opacity micromaps
+	addTestGroup(group.get(), "copy", addCopyTests);
 
 	return group.release();
 }
 
 } // RayQuery
 } // vkt
-

@@ -603,17 +603,17 @@ void populatePerFormatGroup (tcu::TestCaseGroup* group, VkFormat format)
 		const char* const		shaderTypeName	= glu::getShaderTypeName(shaderType);
 		const string			name			= string(shaderTypeName) + "_" + tilingName + ((useArrayLayers) ? "_array" : "");
 
-		addFunctionCaseWithPrograms(group, name, "", checkSupport, initPrograms, testFormat, TestParameters(format, size, 0u, tiling, shaderType, false, useArrayLayers));
+		addFunctionCaseWithPrograms(group, name, checkSupport, initPrograms, testFormat, TestParameters(format, size, 0u, tiling, shaderType, false, useArrayLayers));
 
 		if (getPlaneCount(format) > 1)
-			addFunctionCaseWithPrograms(group, name + "_disjoint", "", checkSupport, initPrograms, testFormat, TestParameters(format, size, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT, tiling, shaderType, false, useArrayLayers));
+			addFunctionCaseWithPrograms(group, name + "_disjoint", checkSupport, initPrograms, testFormat, TestParameters(format, size, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT, tiling, shaderType, false, useArrayLayers));
 
 		if (tiling == VK_IMAGE_TILING_LINEAR)
 		{
-			addFunctionCaseWithPrograms(group, name + "_mapped", "", checkSupport, initPrograms, testFormat, TestParameters(format, size, 0u, tiling, shaderType, true, useArrayLayers));
+			addFunctionCaseWithPrograms(group, name + "_mapped", checkSupport, initPrograms, testFormat, TestParameters(format, size, 0u, tiling, shaderType, true, useArrayLayers));
 
 			if (getPlaneCount(format) > 1)
-				addFunctionCaseWithPrograms(group, name + "_disjoint_mapped", "", checkSupport, initPrograms, testFormat, TestParameters(format, size, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT, tiling, shaderType, true, useArrayLayers));
+				addFunctionCaseWithPrograms(group, name + "_disjoint_mapped", checkSupport, initPrograms, testFormat, TestParameters(format, size, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT, tiling, shaderType, true, useArrayLayers));
 		}
 	}
 }
@@ -625,7 +625,7 @@ void populateFormatGroup (tcu::TestCaseGroup* group)
 		const VkFormat					format			= (VkFormat)formatNdx;
 		const string					formatName		= de::toLower(de::toString(format).substr(10));
 
-		group->addChild(createTestGroup<VkFormat>(group->getTestContext(), formatName, "", populatePerFormatGroup, format));
+		group->addChild(createTestGroup<VkFormat>(group->getTestContext(), formatName, populatePerFormatGroup, format));
 	}
 
 	for (int formatNdx = VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT; formatNdx <= VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT; formatNdx++)
@@ -633,7 +633,7 @@ void populateFormatGroup (tcu::TestCaseGroup* group)
 		const VkFormat					format			= (VkFormat)formatNdx;
 		const string					formatName		= de::toLower(de::toString(format).substr(10));
 
-		group->addChild(createTestGroup<VkFormat>(group->getTestContext(), formatName, "", populatePerFormatGroup, format));
+		group->addChild(createTestGroup<VkFormat>(group->getTestContext(), formatName, populatePerFormatGroup, format));
 	}
 }
 
@@ -641,7 +641,7 @@ void populateFormatGroup (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* createFormatTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "format", "YCbCr Format Tests", populateFormatGroup);
+	return createTestGroup(testCtx, "format", populateFormatGroup);
 }
 
 } // ycbcr

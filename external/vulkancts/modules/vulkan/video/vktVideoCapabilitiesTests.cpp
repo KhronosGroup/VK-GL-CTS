@@ -918,7 +918,7 @@ void VideoCapabilitiesQueryH265EncodeTestInstance::validateVideoCapabilitiesExt 
 class VideoCapabilitiesQueryTestCase : public TestCase
 {
 	public:
-							VideoCapabilitiesQueryTestCase	(tcu::TestContext& context, const char* name, const char* desc, const CaseDef caseDef);
+							VideoCapabilitiesQueryTestCase	(tcu::TestContext& context, const char* name, const CaseDef caseDef);
 							~VideoCapabilitiesQueryTestCase	(void);
 
 	virtual TestInstance*	createInstance					(Context& context) const;
@@ -928,8 +928,8 @@ private:
 	CaseDef					m_caseDef;
 };
 
-VideoCapabilitiesQueryTestCase::VideoCapabilitiesQueryTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef caseDef)
-	: vkt::TestCase	(context, name, desc)
+VideoCapabilitiesQueryTestCase::VideoCapabilitiesQueryTestCase (tcu::TestContext& context, const char* name, const CaseDef caseDef)
+	: vkt::TestCase	(context, name)
 	, m_caseDef		(caseDef)
 {
 }
@@ -1006,7 +1006,8 @@ const char* getTestName (const TestType testType)
 
 tcu::TestCaseGroup*	createVideoCapabilitiesTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "capabilities", "Video encoding and decoding capability query tests"));
+	// Video encoding and decoding capability query tests
+	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "capabilities"));
 
 	for (int testTypeNdx = 0; testTypeNdx < TEST_TYPE_LAST; ++testTypeNdx)
 	{
@@ -1016,7 +1017,7 @@ tcu::TestCaseGroup*	createVideoCapabilitiesTests (tcu::TestContext& testCtx)
 			testType,	//  TestType	testType;
 		};
 
-		group->addChild(new VideoCapabilitiesQueryTestCase(testCtx, getTestName(testType), "", caseDef));
+		group->addChild(new VideoCapabilitiesQueryTestCase(testCtx, getTestName(testType), caseDef));
 	}
 
 	return group.release();

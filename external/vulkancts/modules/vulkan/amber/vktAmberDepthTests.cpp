@@ -51,10 +51,9 @@ class DepthTestCase : public AmberTestCase
 public:
 	DepthTestCase  (tcu::TestContext&	testCtx,
 					const char*			name,
-					const char*			description,
 					bool				useCustomDevice,
 					const std::string&	readFilename)
-		:	AmberTestCase(testCtx, name, description, readFilename),
+		:	AmberTestCase(testCtx, name, "", readFilename),
 			m_useCustomDevice(useCustomDevice)
 	{ }
 
@@ -121,7 +120,6 @@ public:
 struct TestInfo
 {
 	std::string					name;
-	std::string					desc;
 	std::vector<std::string>	base_required_features;
 	bool						unrestricted;
 };
@@ -138,7 +136,7 @@ DepthTestCase* createDepthTestCase (tcu::TestContext&   testCtx,
 	readFilename.append("/");
 	readFilename.append(filename);
 
-	DepthTestCase *testCase = new DepthTestCase(testCtx, testInfo.name.c_str(), testInfo.desc.c_str(), !testInfo.unrestricted, readFilename);
+	DepthTestCase *testCase = new DepthTestCase(testCtx, testInfo.name.c_str(), !testInfo.unrestricted, readFilename);
 
 	for (auto req : testInfo.base_required_features)
 		testCase->addRequirement(req);
@@ -153,16 +151,16 @@ static void createTests(tcu::TestCaseGroup *g)
 {
 	static const std::vector<TestInfo>	tests		=
 	{
-		{ "fs_clamp",						"Test fragment shader depth value clamping",					{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics", "Features.depthClamp" },	false },
-		{ "out_of_range",					"Test late clamping of out-of-range depth values",				{ "VK_EXT_depth_clamp_zero_one" },																false },
-		{ "ez_fs_clamp",					"Test fragment shader depth value with early fragment tests",	{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics", "Features.depthClamp" },	false },
-		{ "bias_fs_clamp",					"Test fragment shader depth value with depthBias enabled",		{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics", "Features.depthClamp" },	false },
-		{ "bias_outside_range",				"Test biasing depth values out of the depth range",				{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics" },							false },
-		{ "bias_outside_range_fs_clamp",	"Test fragment shader depth value when biasing out of range",	{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics" },							false },
+		{ "fs_clamp",						{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics", "Features.depthClamp" },	false },
+		{ "out_of_range",					{ "VK_EXT_depth_clamp_zero_one" },																false },
+		{ "ez_fs_clamp",					{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics", "Features.depthClamp" },	false },
+		{ "bias_fs_clamp",					{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics", "Features.depthClamp" },	false },
+		{ "bias_outside_range",				{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics" },							false },
+		{ "bias_outside_range_fs_clamp",	{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics" },							false },
 
 		// Rerun any tests that will get different results with VK_EXT_depth_range_unrestricted
-		{ "out_of_range_unrestricted",					"Test late clamping of out-of-range depth values",				{ "VK_EXT_depth_clamp_zero_one" },										true },
-		{ "bias_outside_range_fs_clamp_unrestricted",	"Test fragment shader depth value when biasing out of range",	{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics" },	true },
+		{ "out_of_range_unrestricted",					{ "VK_EXT_depth_clamp_zero_one" },										true },
+		{ "bias_outside_range_fs_clamp_unrestricted",	{ "VK_EXT_depth_clamp_zero_one", "Features.fragmentStoresAndAtomics" },	true },
 	};
 
    tcu::TestContext& testCtx = g->getTestContext();
@@ -181,7 +179,7 @@ static void cleanupGroup(tcu::TestCaseGroup*)
 
 tcu::TestCaseGroup*	createAmberDepthGroup (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, name.c_str(), "Depth pipeline test group", createTests, cleanupGroup);
+	return createTestGroup(testCtx, name.c_str(), createTests, cleanupGroup);
 }
 
 } // cts_amber

@@ -1871,7 +1871,8 @@ void checkSupport (Context& context, RandomMappingConfig config)
 
 tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>		group							(new tcu::TestCaseGroup(testCtx, "mapping", "Memory mapping tests."));
+	// Memory mapping tests.
+	de::MovePtr<tcu::TestCaseGroup>		group							(new tcu::TestCaseGroup(testCtx, "mapping"));
 	de::MovePtr<tcu::TestCaseGroup>		dedicated						(new tcu::TestCaseGroup(testCtx, "dedicated_alloc", "Dedicated memory mapping tests."));
 	de::MovePtr<tcu::TestCaseGroup>		sets[]							=
 	{
@@ -1936,7 +1937,7 @@ tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 		{
 			const VkDeviceSize				allocationSize		= allocationSizes[allocationSizeNdx];
 			const string					sizeGroupName		= (allocationSize == 0) ? "variable" : de::toString(allocationSize);
-			de::MovePtr<tcu::TestCaseGroup>	allocationSizeGroup	(new tcu::TestCaseGroup(testCtx, sizeGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup>	allocationSizeGroup	(new tcu::TestCaseGroup(testCtx, sizeGroupName.c_str()));
 
 			for (size_t opNdx = 0; opNdx < DE_LENGTH_OF_ARRAY(ops); opNdx++)
 			{
@@ -1953,7 +1954,7 @@ tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 					const deUint32		seed		= (deUint32)(opNdx * allocationSizeNdx);
 					const TestConfig	config		= fullMappedConfig(allocationSize, op, seed, static_cast<AllocationKind>(allocationKindNdx), function.memoryMap2);
 
-					addFunctionCase(allocationSizeGroup.get(), name, name, checkSupport, testMemoryMapping, config);
+					addFunctionCase(allocationSizeGroup.get(), name, checkSupport, testMemoryMapping, config);
 				}
 			}
 
@@ -1972,7 +1973,7 @@ tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 		{
 			const VkDeviceSize				allocationSize		= allocationSizes[allocationSizeNdx];
 			const string					sizeGroupName		= (allocationSize == 0) ? "variable" : de::toString(allocationSize);
-			de::MovePtr<tcu::TestCaseGroup>	allocationSizeGroup	(new tcu::TestCaseGroup(testCtx, sizeGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup>	allocationSizeGroup	(new tcu::TestCaseGroup(testCtx, sizeGroupName.c_str()));
 
 			for (size_t offsetNdx = 0; offsetNdx < DE_LENGTH_OF_ARRAY(offsets); offsetNdx++)
 			{
@@ -1981,7 +1982,7 @@ tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 				if (offset >= allocationSize)
 					continue;
 
-				de::MovePtr<tcu::TestCaseGroup>	offsetGroup		(new tcu::TestCaseGroup(testCtx, ("offset_" + de::toString(offset)).c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup>	offsetGroup		(new tcu::TestCaseGroup(testCtx, ("offset_" + de::toString(offset)).c_str()));
 
 				for (size_t sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes); sizeNdx++)
 				{
@@ -1993,7 +1994,7 @@ tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 					if (offset == 0 && size == allocationSize)
 						continue;
 
-					de::MovePtr<tcu::TestCaseGroup>	sizeGroup	(new tcu::TestCaseGroup(testCtx, ("size_" + de::toString(size)).c_str(), ""));
+					de::MovePtr<tcu::TestCaseGroup>	sizeGroup	(new tcu::TestCaseGroup(testCtx, ("size_" + de::toString(size)).c_str()));
 
 					for (size_t opNdx = 0; opNdx < DE_LENGTH_OF_ARRAY(ops); opNdx++)
 					{
@@ -2012,7 +2013,7 @@ tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 							const TestConfig	config	= subMappedConfig(allocationSize, MemoryRange(offset, size), op, seed,
 								static_cast<AllocationKind>(allocationKindNdx), function.memoryMap2);
 
-							addFunctionCase(sizeGroup.get(), name, "", checkSupport, testMemoryMapping, config);
+							addFunctionCase(sizeGroup.get(), name, checkSupport, testMemoryMapping, config);
 						}
 					}
 
@@ -2044,7 +2045,7 @@ tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 					seed, function.memoryMap2
 				};
 				randomGroup->addChild(new InstanceFactory1WithSupport<RandomMemoryMappingInstance, RandomMappingConfig, FunctionSupport1<RandomMappingConfig>>
-					(testCtx, tcu::NODETYPE_SELF_VALIDATE, name, "Random case", config, typename FunctionSupport1<RandomMappingConfig>::Args(checkSupport, config)));
+					(testCtx, tcu::NODETYPE_SELF_VALIDATE, name, config, typename FunctionSupport1<RandomMappingConfig>::Args(checkSupport, config)));
 			}
 		}
 

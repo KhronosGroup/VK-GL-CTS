@@ -77,8 +77,8 @@ using SpecConstVector				= std::vector<uint32_t>;
 class TaskPayloadShMemSizeCase : public vkt::TestCase
 {
 public:
-					TaskPayloadShMemSizeCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TaskPayloadShMemSizeParams& params)
-						: vkt::TestCase				(testCtx, name, description)
+					TaskPayloadShMemSizeCase	(tcu::TestContext& testCtx, const std::string& name, const TaskPayloadShMemSizeParams& params)
+						: vkt::TestCase				(testCtx, name)
 						, m_params					(params)
 						{}
 	virtual			~TaskPayloadShMemSizeCase	(void) {}
@@ -536,8 +536,8 @@ tcu::TestStatus PayloadShMemSizeInstance::iterate (void)
 class MaxViewIndexCase : public vkt::TestCase
 {
 public:
-					MaxViewIndexCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-						: vkt::TestCase	(testCtx, name, description)
+					MaxViewIndexCase	(tcu::TestContext& testCtx, const std::string& name)
+						: vkt::TestCase	(testCtx, name)
 						{}
 	virtual			~MaxViewIndexCase	(void) {}
 
@@ -808,8 +808,8 @@ tcu::TestStatus MaxViewIndexInstance::iterate (void)
 class MaxOutputLayersCase : public vkt::TestCase
 {
 public:
-					MaxOutputLayersCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-						: vkt::TestCase (testCtx, name, description)
+					MaxOutputLayersCase		(tcu::TestContext& testCtx, const std::string& name)
+						: vkt::TestCase (testCtx, name)
 						{}
 	virtual			~MaxOutputLayersCase	(void) {}
 
@@ -1029,8 +1029,8 @@ struct MaxPrimVertParams
 class MaxMeshOutputPrimVertCase : public vkt::TestCase
 {
 public:
-					MaxMeshOutputPrimVertCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const MaxPrimVertParams& params)
-						: vkt::TestCase			(testCtx, name, description)
+					MaxMeshOutputPrimVertCase	(tcu::TestContext& testCtx, const std::string& name, const MaxPrimVertParams& params)
+						: vkt::TestCase			(testCtx, name)
 						, m_params				(params)
 						{}
 	virtual			~MaxMeshOutputPrimVertCase	(void) {}
@@ -1293,8 +1293,8 @@ tcu::TestStatus MaxMeshOutputPrimVertInstance::iterate (void)
 class MaxMeshOutputComponentsCase : public vkt::TestCase
 {
 public:
-					MaxMeshOutputComponentsCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-						: vkt::TestCase	(testCtx, name, description)
+					MaxMeshOutputComponentsCase		(tcu::TestContext& testCtx, const std::string& name)
+						: vkt::TestCase	(testCtx, name)
 						{}
 
 	virtual			~MaxMeshOutputComponentsCase	(void) {}
@@ -1560,8 +1560,8 @@ tcu::TestStatus MaxMeshOutputComponentsInstance::iterate (void)
 class MeshPayloadShMemSizeCase : public vkt::TestCase
 {
 public:
-					MeshPayloadShMemSizeCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const MeshPayloadShMemSizeParams& params)
-						: vkt::TestCase				(testCtx, name, description)
+					MeshPayloadShMemSizeCase	(tcu::TestContext& testCtx, const std::string& name, const MeshPayloadShMemSizeParams& params)
+						: vkt::TestCase				(testCtx, name)
 						, m_params					(params)
 						{}
 	virtual			~MeshPayloadShMemSizeCase	(void) {}
@@ -1866,8 +1866,8 @@ struct MaxMeshOutputParams
 class MaxMeshOutputSizeCase : public vkt::TestCase
 {
 public:
-					MaxMeshOutputSizeCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const MaxMeshOutputParams& params)
-						: vkt::TestCase	(testCtx, name, description)
+					MaxMeshOutputSizeCase	(tcu::TestContext& testCtx, const std::string& name, const MaxMeshOutputParams& params)
+						: vkt::TestCase	(testCtx, name)
 						, m_params		(params)
 						{}
 	virtual			~MaxMeshOutputSizeCase	(void) {}
@@ -2374,7 +2374,8 @@ tcu::TestCaseGroup* createMeshShaderPropertyTestsEXT (tcu::TestContext& testCtx)
 {
 	using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
-	GroupPtr mainGroup (new tcu::TestCaseGroup(testCtx, "properties", "Tests checking mesh shading properties"));
+	// Tests checking mesh shading properties
+	GroupPtr mainGroup (new tcu::TestCaseGroup(testCtx, "properties"));
 
 	const struct
 	{
@@ -2390,11 +2391,11 @@ tcu::TestCaseGroup* createMeshShaderPropertyTestsEXT (tcu::TestContext& testCtx)
 	for (const auto& taskPayloadShMemCase : taskPayloadShMemCases)
 	{
 		const TaskPayloadShMemSizeParams params { taskPayloadShMemCase.testType };
-		mainGroup->addChild(new TaskPayloadShMemSizeCase(testCtx, taskPayloadShMemCase.name, "", params));
+		mainGroup->addChild(new TaskPayloadShMemSizeCase(testCtx, taskPayloadShMemCase.name, params));
 	}
 
-	mainGroup->addChild(new MaxViewIndexCase(testCtx, "max_view_index", ""));
-	mainGroup->addChild(new MaxOutputLayersCase(testCtx, "max_output_layers", ""));
+	mainGroup->addChild(new MaxViewIndexCase(testCtx, "max_view_index"));
+	mainGroup->addChild(new MaxOutputLayersCase(testCtx, "max_output_layers"));
 
 	const struct
 	{
@@ -2413,11 +2414,11 @@ tcu::TestCaseGroup* createMeshShaderPropertyTestsEXT (tcu::TestContext& testCtx)
 		for (const auto& count : itemCounts)
 		{
 			const MaxPrimVertParams params { primVertCase.limitPrimVertType, count };
-			mainGroup->addChild(new MaxMeshOutputPrimVertCase(testCtx, primVertCase.prefix + std::to_string(count), "", params));
+			mainGroup->addChild(new MaxMeshOutputPrimVertCase(testCtx, primVertCase.prefix + std::to_string(count), params));
 		}
 	}
 
-	mainGroup->addChild(new MaxMeshOutputComponentsCase(testCtx, "max_mesh_output_components", ""));
+	mainGroup->addChild(new MaxMeshOutputComponentsCase(testCtx, "max_mesh_output_components"));
 
 	const struct
 	{
@@ -2433,7 +2434,7 @@ tcu::TestCaseGroup* createMeshShaderPropertyTestsEXT (tcu::TestContext& testCtx)
 	for (const auto& meshPayloadShMemCase : meshPayloadShMemCases)
 	{
 		const MeshPayloadShMemSizeParams params { meshPayloadShMemCase.testType };
-		mainGroup->addChild(new MeshPayloadShMemSizeCase(testCtx, meshPayloadShMemCase.name, "", params));
+		mainGroup->addChild(new MeshPayloadShMemSizeCase(testCtx, meshPayloadShMemCase.name, params));
 	}
 
 	const struct
@@ -2481,7 +2482,7 @@ tcu::TestCaseGroup* createMeshShaderPropertyTestsEXT (tcu::TestContext& testCtx)
 					multiviewCase.viewIndexType,		//	ViewIndexType	viewIndexType;
 				};
 
-				mainGroup->addChild(new MaxMeshOutputSizeCase(testCtx, name, "", params));
+				mainGroup->addChild(new MaxMeshOutputSizeCase(testCtx, name, params));
 			}
 		}
 	}

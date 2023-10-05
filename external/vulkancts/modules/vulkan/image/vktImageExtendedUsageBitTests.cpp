@@ -245,9 +245,9 @@ void checkSupport (Context& context, TestParams params)
 
 tcu::TestCaseGroup* createImageExtendedUsageBitTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> imageExtendedUsageBitTests(new tcu::TestCaseGroup(testCtx, "extended_usage_bit_compatibility", "VK_IMAGE_CREATE_EXTENDED_USAGE_BIT tests to check format compatibility"));
-	de::MovePtr<tcu::TestCaseGroup> getPhysicalDeviceImageFormatPropertiesTests(new tcu::TestCaseGroup(testCtx, "image_format_properties", "vkGetPhysicalDeviceImageFormatProperties() tests"));
-	de::MovePtr<tcu::TestCaseGroup> getPhysicalDeviceImageFormatProperties2Tests(new tcu::TestCaseGroup(testCtx, "image_format_properties2", "vkGetPhysicalDeviceImageFormatProperties2() tests"));
+	de::MovePtr<tcu::TestCaseGroup> imageExtendedUsageBitTests(new tcu::TestCaseGroup(testCtx, "extended_usage_bit_compatibility"));
+	de::MovePtr<tcu::TestCaseGroup> getPhysicalDeviceImageFormatPropertiesTests(new tcu::TestCaseGroup(testCtx, "image_format_properties"));
+	de::MovePtr<tcu::TestCaseGroup> getPhysicalDeviceImageFormatProperties2Tests(new tcu::TestCaseGroup(testCtx, "image_format_properties2"));
 
 	struct ImageUsageFlags
 	{
@@ -300,8 +300,9 @@ tcu::TestCaseGroup* createImageExtendedUsageBitTests (tcu::TestContext& testCtx)
 				std::ostringstream name;
 				std::string usageName = usages[usageNdx].name;
 				name << getFormatShortString(imageFormat) << "_" << tiling[tilingNdx].name << "_" << de::toLower(usageName.substr(15));
-				addFunctionCase(getPhysicalDeviceImageFormatPropertiesTests.get(), name.str().c_str(), "Checks usage bit format compatibility among compatible image view formats", checkSupport, testExtendedUsageBitCompatiblity<PhysicalDeviceImageFormatProperties>, params);
-				addFunctionCase(getPhysicalDeviceImageFormatProperties2Tests.get(), name.str().c_str(), "Checks usage bit format compatibility among compatible image view formats", checkSupport, testExtendedUsageBitCompatiblity<PhysicalDeviceImageFormatProperties2>, params);
+				// Checks usage bit format compatibility among compatible image view formats
+				addFunctionCase(getPhysicalDeviceImageFormatPropertiesTests.get(), name.str().c_str(), checkSupport, testExtendedUsageBitCompatiblity<PhysicalDeviceImageFormatProperties>, params);
+				addFunctionCase(getPhysicalDeviceImageFormatProperties2Tests.get(), name.str().c_str(), checkSupport, testExtendedUsageBitCompatiblity<PhysicalDeviceImageFormatProperties2>, params);
 			}
 		}
 	}

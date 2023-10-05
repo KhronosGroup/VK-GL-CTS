@@ -4057,12 +4057,12 @@ void createFormatTests (tcu::TestCaseGroup* testGroup)
 			const char* const	enumName	= getFormatName(format);
 			const string		caseName	= de::toLower(string(enumName).substr(10));
 
-			addFunctionCase(testGroup, caseName, enumName, formatProperties, format);
+			addFunctionCase(testGroup, caseName, formatProperties, format);
 		}
 	}
 
-	addFunctionCase(testGroup, "depth_stencil",			"",	testDepthStencilSupported);
-	addFunctionCase(testGroup, "compressed_formats",	"",	testCompressedFormatsSupported);
+	addFunctionCase(testGroup, "depth_stencil",	testDepthStencilSupported);
+	addFunctionCase(testGroup, "compressed_formats",	testCompressedFormatsSupported);
 }
 
 VkImageUsageFlags getValidImageUsageFlags (const VkFormatFeatureFlags supportedFeatures, const bool useKhrMaintenance1Semantics)
@@ -6686,7 +6686,7 @@ void createImageFormatTypeTilingTests (tcu::TestCaseGroup* testGroup, ImageForma
 
 			params.format = format;
 
-			addFunctionCase(testGroup, caseName, enumName, execImageFormatTest, params);
+			addFunctionCase(testGroup, caseName, execImageFormatTest, params);
 		}
 	}
 }
@@ -6695,15 +6695,15 @@ void createImageFormatTypeTests (tcu::TestCaseGroup* testGroup, ImageFormatPrope
 {
 	DE_ASSERT(params.tiling == VK_CORE_IMAGE_TILING_LAST);
 
-	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "optimal",	"",	createImageFormatTypeTilingTests, ImageFormatPropertyCase(params.testFunction, VK_FORMAT_UNDEFINED, params.imageType, VK_IMAGE_TILING_OPTIMAL)));
-	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "linear",	"",	createImageFormatTypeTilingTests, ImageFormatPropertyCase(params.testFunction, VK_FORMAT_UNDEFINED, params.imageType, VK_IMAGE_TILING_LINEAR)));
+	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "optimal",	createImageFormatTypeTilingTests, ImageFormatPropertyCase(params.testFunction, VK_FORMAT_UNDEFINED, params.imageType, VK_IMAGE_TILING_OPTIMAL)));
+	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "linear",	createImageFormatTypeTilingTests, ImageFormatPropertyCase(params.testFunction, VK_FORMAT_UNDEFINED, params.imageType, VK_IMAGE_TILING_LINEAR)));
 }
 
 void createImageFormatTests (tcu::TestCaseGroup* testGroup, ImageFormatPropertyCase::Function testFunction)
 {
-	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "1d", "", createImageFormatTypeTests, ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_1D, VK_CORE_IMAGE_TILING_LAST)));
-	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "2d", "", createImageFormatTypeTests, ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_2D, VK_CORE_IMAGE_TILING_LAST)));
-	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "3d", "", createImageFormatTypeTests, ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_3D, VK_CORE_IMAGE_TILING_LAST)));
+	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "1d", createImageFormatTypeTests, ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_1D, VK_CORE_IMAGE_TILING_LAST)));
+	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "2d", createImageFormatTypeTests, ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_2D, VK_CORE_IMAGE_TILING_LAST)));
+	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "3d", createImageFormatTypeTests, ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_3D, VK_CORE_IMAGE_TILING_LAST)));
 }
 
 
@@ -6850,54 +6850,55 @@ static inline void addFunctionCaseInNewSubgroup (
 	tcu::TestContext&			testCtx,
 	tcu::TestCaseGroup*			group,
 	const std::string&			subgroupName,
-	const std::string&			subgroupDescription,
 	FunctionInstance0::Function	testFunc)
 {
-	de::MovePtr<tcu::TestCaseGroup>	subgroup(new tcu::TestCaseGroup(testCtx, subgroupName.c_str(), subgroupDescription.c_str()));
-	addFunctionCase(subgroup.get(), "basic", "", testFunc);
+	de::MovePtr<tcu::TestCaseGroup>	subgroup(new tcu::TestCaseGroup(testCtx, subgroupName.c_str()));
+	addFunctionCase(subgroup.get(), "basic", testFunc);
 	group->addChild(subgroup.release());
 }
 
 tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	infoTests	(new tcu::TestCaseGroup(testCtx, "info", "Platform Information Tests"));
+	de::MovePtr<tcu::TestCaseGroup>	infoTests	(new tcu::TestCaseGroup(testCtx, "info"));
 
-	infoTests->addChild(createTestGroup(testCtx, "format_properties",		"VkGetPhysicalDeviceFormatProperties() Tests",		createFormatTests));
-	infoTests->addChild(createTestGroup(testCtx, "image_format_properties",	"VkGetPhysicalDeviceImageFormatProperties() Tests",	createImageFormatTests,	imageFormatProperties));
+	infoTests->addChild(createTestGroup(testCtx, "format_properties",		createFormatTests));
+	infoTests->addChild(createTestGroup(testCtx, "image_format_properties",	createImageFormatTests,	imageFormatProperties));
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> extCoreVersionGrp (new tcu::TestCaseGroup(testCtx, "extension_core_versions", "Tests checking extension required core versions"));
+		de::MovePtr<tcu::TestCaseGroup> extCoreVersionGrp (new tcu::TestCaseGroup(testCtx, "extension_core_versions"));
 
-		addFunctionCase(extCoreVersionGrp.get(), "extension_core_versions", "", extensionCoreVersions);
+		addFunctionCase(extCoreVersionGrp.get(), "extension_core_versions", extensionCoreVersions);
 
 		infoTests->addChild(extCoreVersionGrp.release());
 	}
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> extendedPropertiesTests (new tcu::TestCaseGroup(testCtx, "get_physical_device_properties2", "VK_KHR_get_physical_device_properties2"));
+		de::MovePtr<tcu::TestCaseGroup> extendedPropertiesTests (new tcu::TestCaseGroup(testCtx, "get_physical_device_properties2"));
 
 		{
 			de::MovePtr<tcu::TestCaseGroup>	subgroup(new tcu::TestCaseGroup(testCtx, "features", ""));
-			addFunctionCase(subgroup.get(), "core", "Extended Device Features", deviceFeatures2);
+			// Extended Device Features
+			addFunctionCase(subgroup.get(), "core", deviceFeatures2);
 			addSeparateFeatureTests(subgroup.get());
 			extendedPropertiesTests->addChild(subgroup.release());
 		}
-		addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "properties",				"Extended Device Properties",				deviceProperties2);
-		addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "format_properties",			"Extended Device Format Properties",		deviceFormatProperties2);
-		addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "queue_family_properties",	"Extended Device Queue Family Properties",	deviceQueueFamilyProperties2);
-		addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "memory_properties",			"Extended Device Memory Properties",		deviceMemoryProperties2);
+		addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "properties",				deviceProperties2);
+		addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "format_properties",			deviceFormatProperties2);
+		addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "queue_family_properties",	deviceQueueFamilyProperties2);
+		addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "memory_properties",			deviceMemoryProperties2);
 
 		infoTests->addChild(extendedPropertiesTests.release());
 	}
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> extendedPropertiesTests (new tcu::TestCaseGroup(testCtx, "vulkan1p2", "Vulkan 1.2 related tests"));
+		// Vulkan 1.2 related tests
+		de::MovePtr<tcu::TestCaseGroup> extendedPropertiesTests (new tcu::TestCaseGroup(testCtx, "vulkan1p2"));
 
-		addFunctionCase(extendedPropertiesTests.get(), "features",							"Extended Vulkan 1.2 Device Features",						deviceFeaturesVulkan12);
-		addFunctionCase(extendedPropertiesTests.get(), "properties",						"Extended Vulkan 1.2 Device Properties",					devicePropertiesVulkan12);
-		addFunctionCase(extendedPropertiesTests.get(), "feature_extensions_consistency",	"Vulkan 1.2 consistency between Features and Extensions",	deviceFeatureExtensionsConsistencyVulkan12);
-		addFunctionCase(extendedPropertiesTests.get(), "property_extensions_consistency",	"Vulkan 1.2 consistency between Properties and Extensions", devicePropertyExtensionsConsistencyVulkan12);
-		addFunctionCase(extendedPropertiesTests.get(), "feature_bits_influence",			"Validate feature bits influence on feature activation",	checkApiVersionSupport<1,2>, featureBitInfluenceOnDeviceCreate<VK_API_VERSION_1_2>);
+		addFunctionCase(extendedPropertiesTests.get(), "features",							deviceFeaturesVulkan12);
+		addFunctionCase(extendedPropertiesTests.get(), "properties",						devicePropertiesVulkan12);
+		addFunctionCase(extendedPropertiesTests.get(), "feature_extensions_consistency",	deviceFeatureExtensionsConsistencyVulkan12);
+		addFunctionCase(extendedPropertiesTests.get(), "property_extensions_consistency",	devicePropertyExtensionsConsistencyVulkan12);
+		addFunctionCase(extendedPropertiesTests.get(), "feature_bits_influence",			checkApiVersionSupport<1,2>, featureBitInfluenceOnDeviceCreate<VK_API_VERSION_1_2>);
 
 		infoTests->addChild(extendedPropertiesTests.release());
 	}
@@ -6906,11 +6907,11 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> extendedPropertiesTests (new tcu::TestCaseGroup(testCtx, "vulkan1p3", "Vulkan 1.3 related tests"));
 
-		addFunctionCase(extendedPropertiesTests.get(), "features",							"Extended Vulkan 1.3 Device Features",						deviceFeaturesVulkan13);
-		addFunctionCase(extendedPropertiesTests.get(), "properties",						"Extended Vulkan 1.3 Device Properties",					devicePropertiesVulkan13);
-		addFunctionCase(extendedPropertiesTests.get(), "feature_extensions_consistency",	"Vulkan 1.3 consistency between Features and Extensions",	deviceFeatureExtensionsConsistencyVulkan13);
-		addFunctionCase(extendedPropertiesTests.get(), "property_extensions_consistency",	"Vulkan 1.3 consistency between Properties and Extensions", devicePropertyExtensionsConsistencyVulkan13);
-		addFunctionCase(extendedPropertiesTests.get(), "feature_bits_influence",			"Validate feature bits influence on feature activation",	checkApiVersionSupport<1, 3>, featureBitInfluenceOnDeviceCreate<VK_API_VERSION_1_3>);
+		addFunctionCase(extendedPropertiesTests.get(), "features",							deviceFeaturesVulkan13);
+		addFunctionCase(extendedPropertiesTests.get(), "properties",						devicePropertiesVulkan13);
+		addFunctionCase(extendedPropertiesTests.get(), "feature_extensions_consistency",	deviceFeatureExtensionsConsistencyVulkan13);
+		addFunctionCase(extendedPropertiesTests.get(), "property_extensions_consistency",	devicePropertyExtensionsConsistencyVulkan13);
+		addFunctionCase(extendedPropertiesTests.get(), "feature_bits_influence",			checkApiVersionSupport<1, 3>, featureBitInfluenceOnDeviceCreate<VK_API_VERSION_1_3>);
 
 		infoTests->addChild(extendedPropertiesTests.release());
 	}
@@ -6919,34 +6920,34 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> limitsValidationTests (new tcu::TestCaseGroup(testCtx, "vulkan1p2_limits_validation", "Vulkan 1.2 and core extensions limits validation"));
 
-		addFunctionCase(limitsValidationTests.get(), "general",							"Vulkan 1.2 Limit validation",							checkApiVersionSupport<1, 2>,				validateLimits12);
+		addFunctionCase(limitsValidationTests.get(), "general",							checkApiVersionSupport<1, 2>,				validateLimits12);
 #ifndef CTS_USES_VULKANSC
 		// Removed from Vulkan SC test set: VK_KHR_push_descriptor extension removed from Vulkan SC
-		addFunctionCase(limitsValidationTests.get(), "khr_push_descriptor",				"VK_KHR_push_descriptor limit validation",				checkSupportKhrPushDescriptor,				validateLimitsKhrPushDescriptor);
+		addFunctionCase(limitsValidationTests.get(), "khr_push_descriptor",				checkSupportKhrPushDescriptor,				validateLimitsKhrPushDescriptor);
 #endif // CTS_USES_VULKANSC
-		addFunctionCase(limitsValidationTests.get(), "khr_multiview",					"VK_KHR_multiview limit validation",					checkSupportKhrMultiview,					validateLimitsKhrMultiview);
-		addFunctionCase(limitsValidationTests.get(), "ext_discard_rectangles",			"VK_EXT_discard_rectangles limit validation",			checkSupportExtDiscardRectangles,			validateLimitsExtDiscardRectangles);
-		addFunctionCase(limitsValidationTests.get(), "ext_sample_locations",			"VK_EXT_sample_locations limit validation",				checkSupportExtSampleLocations,				validateLimitsExtSampleLocations);
-		addFunctionCase(limitsValidationTests.get(), "ext_external_memory_host",		"VK_EXT_external_memory_host limit validation",			checkSupportExtExternalMemoryHost,			validateLimitsExtExternalMemoryHost);
-		addFunctionCase(limitsValidationTests.get(), "ext_blend_operation_advanced",	"VK_EXT_blend_operation_advanced limit validation",		checkSupportExtBlendOperationAdvanced,		validateLimitsExtBlendOperationAdvanced);
-		addFunctionCase(limitsValidationTests.get(), "khr_maintenance_3",				"VK_KHR_maintenance3 limit validation",					checkSupportKhrMaintenance3,				validateLimitsKhrMaintenance3);
-		addFunctionCase(limitsValidationTests.get(), "ext_conservative_rasterization",	"VK_EXT_conservative_rasterization limit validation",	checkSupportExtConservativeRasterization,	validateLimitsExtConservativeRasterization);
-		addFunctionCase(limitsValidationTests.get(), "ext_descriptor_indexing",			"VK_EXT_descriptor_indexing limit validation",			checkSupportExtDescriptorIndexing,			validateLimitsExtDescriptorIndexing);
+		addFunctionCase(limitsValidationTests.get(), "khr_multiview",					checkSupportKhrMultiview,					validateLimitsKhrMultiview);
+		addFunctionCase(limitsValidationTests.get(), "ext_discard_rectangles",			checkSupportExtDiscardRectangles,			validateLimitsExtDiscardRectangles);
+		addFunctionCase(limitsValidationTests.get(), "ext_sample_locations",			checkSupportExtSampleLocations,				validateLimitsExtSampleLocations);
+		addFunctionCase(limitsValidationTests.get(), "ext_external_memory_host",		checkSupportExtExternalMemoryHost,			validateLimitsExtExternalMemoryHost);
+		addFunctionCase(limitsValidationTests.get(), "ext_blend_operation_advanced",	checkSupportExtBlendOperationAdvanced,		validateLimitsExtBlendOperationAdvanced);
+		addFunctionCase(limitsValidationTests.get(), "khr_maintenance_3",				checkSupportKhrMaintenance3,				validateLimitsKhrMaintenance3);
+		addFunctionCase(limitsValidationTests.get(), "ext_conservative_rasterization",	checkSupportExtConservativeRasterization,	validateLimitsExtConservativeRasterization);
+		addFunctionCase(limitsValidationTests.get(), "ext_descriptor_indexing",			checkSupportExtDescriptorIndexing,			validateLimitsExtDescriptorIndexing);
 #ifndef CTS_USES_VULKANSC
 		// Removed from Vulkan SC test set: VK_EXT_inline_uniform_block extension removed from Vulkan SC
-		addFunctionCase(limitsValidationTests.get(), "ext_inline_uniform_block",		"VK_EXT_inline_uniform_block limit validation",			checkSupportExtInlineUniformBlock,			validateLimitsExtInlineUniformBlock);
+		addFunctionCase(limitsValidationTests.get(), "ext_inline_uniform_block",		checkSupportExtInlineUniformBlock,			validateLimitsExtInlineUniformBlock);
 #endif // CTS_USES_VULKANSC
-		addFunctionCase(limitsValidationTests.get(), "ext_vertex_attribute_divisor",	"VK_EXT_vertex_attribute_divisor limit validation",		checkSupportExtVertexAttributeDivisor,		validateLimitsExtVertexAttributeDivisor);
+		addFunctionCase(limitsValidationTests.get(), "ext_vertex_attribute_divisor",	checkSupportExtVertexAttributeDivisor,		validateLimitsExtVertexAttributeDivisor);
 #ifndef CTS_USES_VULKANSC
 		// Removed from Vulkan SC test set: extensions VK_NV_mesh_shader, VK_EXT_transform_feedback, VK_EXT_fragment_density_map, VK_NV_ray_tracing extension removed from Vulkan SC
-		addFunctionCase(limitsValidationTests.get(), "nv_mesh_shader",					"VK_NV_mesh_shader limit validation",					checkSupportNvMeshShader,					validateLimitsNvMeshShader);
-		addFunctionCase(limitsValidationTests.get(), "ext_transform_feedback",			"VK_EXT_transform_feedback limit validation",			checkSupportExtTransformFeedback,			validateLimitsExtTransformFeedback);
-		addFunctionCase(limitsValidationTests.get(), "fragment_density_map",			"VK_EXT_fragment_density_map limit validation",			checkSupportExtFragmentDensityMap,			validateLimitsExtFragmentDensityMap);
-		addFunctionCase(limitsValidationTests.get(), "nv_ray_tracing",					"VK_NV_ray_tracing limit validation",					checkSupportNvRayTracing,					validateLimitsNvRayTracing);
+		addFunctionCase(limitsValidationTests.get(), "nv_mesh_shader",					checkSupportNvMeshShader,					validateLimitsNvMeshShader);
+		addFunctionCase(limitsValidationTests.get(), "ext_transform_feedback",			checkSupportExtTransformFeedback,			validateLimitsExtTransformFeedback);
+		addFunctionCase(limitsValidationTests.get(), "fragment_density_map",			checkSupportExtFragmentDensityMap,			validateLimitsExtFragmentDensityMap);
+		addFunctionCase(limitsValidationTests.get(), "nv_ray_tracing",					checkSupportNvRayTracing,					validateLimitsNvRayTracing);
 #endif
-		addFunctionCase(limitsValidationTests.get(), "timeline_semaphore",				"VK_KHR_timeline_semaphore limit validation",			checkSupportKhrTimelineSemaphore,			validateLimitsKhrTimelineSemaphore);
-		addFunctionCase(limitsValidationTests.get(), "ext_line_rasterization",			"VK_EXT_line_rasterization limit validation",			checkSupportExtLineRasterization,			validateLimitsExtLineRasterization);
-		addFunctionCase(limitsValidationTests.get(), "robustness2",						"VK_EXT_robustness2 limit validation",					checkSupportRobustness2,					validateLimitsRobustness2);
+		addFunctionCase(limitsValidationTests.get(), "timeline_semaphore",				checkSupportKhrTimelineSemaphore,			validateLimitsKhrTimelineSemaphore);
+		addFunctionCase(limitsValidationTests.get(), "ext_line_rasterization",			checkSupportExtLineRasterization,			validateLimitsExtLineRasterization);
+		addFunctionCase(limitsValidationTests.get(), "robustness2",						checkSupportRobustness2,					validateLimitsRobustness2);
 
 		infoTests->addChild(limitsValidationTests.release());
 	}
@@ -6955,21 +6956,22 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		de::MovePtr<tcu::TestCaseGroup> limitsValidationTests(new tcu::TestCaseGroup(testCtx, "vulkan1p3_limits_validation", "Vulkan 1.3 and core extensions limits validation"));
 
 #ifndef CTS_USES_VULKANSC
-		addFunctionCase(limitsValidationTests.get(), "khr_maintenance4",				"VK_KHR_maintenance4",									checkSupportKhrMaintenance4,				validateLimitsKhrMaintenance4);
-		addFunctionCase(limitsValidationTests.get(), "max_inline_uniform_total_size",	"maxInlineUniformTotalSize limit validation",			checkApiVersionSupport<1, 3>,				validateLimitsMaxInlineUniformTotalSize);
+		addFunctionCase(limitsValidationTests.get(), "khr_maintenance4",				checkSupportKhrMaintenance4,				validateLimitsKhrMaintenance4);
+		addFunctionCase(limitsValidationTests.get(), "max_inline_uniform_total_size",	checkApiVersionSupport<1, 3>,				validateLimitsMaxInlineUniformTotalSize);
 #endif // CTS_USES_VULKANSC
 
 		infoTests->addChild(limitsValidationTests.release());
 	}
 
-	infoTests->addChild(createTestGroup(testCtx, "image_format_properties2",		"VkGetPhysicalDeviceImageFormatProperties2() Tests",		createImageFormatTests, imageFormatProperties2));
+	infoTests->addChild(createTestGroup(testCtx, "image_format_properties2",		createImageFormatTests, imageFormatProperties2));
 #ifndef CTS_USES_VULKANSC
-	infoTests->addChild(createTestGroup(testCtx, "sparse_image_format_properties2",	"VkGetPhysicalDeviceSparseImageFormatProperties2() Tests",	createImageFormatTests, sparseImageFormatProperties2));
+	infoTests->addChild(createTestGroup(testCtx, "sparse_image_format_properties2",	createImageFormatTests, sparseImageFormatProperties2));
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> profilesValidationTests(new tcu::TestCaseGroup(testCtx, "profiles", "Profiles limits and features validation"));
+		de::MovePtr<tcu::TestCaseGroup> profilesValidationTests(new tcu::TestCaseGroup(testCtx, "profiles"));
 
-		addFunctionCase(profilesValidationTests.get(), "roadmap_2022", "Limits and features check for roadmap 2022", checkApiVersionSupport<1, 3>, validateRoadmap2022);
+		// Limits and features check for roadmap 2022
+		addFunctionCase(profilesValidationTests.get(), "roadmap_2022", checkApiVersionSupport<1, 3>, validateRoadmap2022);
 
 		infoTests->addChild(profilesValidationTests.release());
 	}
@@ -6978,9 +6980,12 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 	{
 		de::MovePtr<tcu::TestCaseGroup>	androidTests	(new tcu::TestCaseGroup(testCtx, "android", "Android CTS Tests"));
 
-		addFunctionCase(androidTests.get(),	"mandatory_extensions",		"Test that all mandatory extensions are supported",	android::checkSupportAndroid,	android::testMandatoryExtensions);
-		addFunctionCase(androidTests.get(), "no_unknown_extensions",	"Test for unknown device or instance extensions",	android::checkSupportAndroid,	android::testNoUnknownExtensions);
-		addFunctionCase(androidTests.get(), "no_layers",				"Test that no layers are enumerated",				android::checkSupportAndroid,	android::testNoLayers);
+		// Test that all mandatory extensions are supported
+		addFunctionCase(androidTests.get(),	"mandatory_extensions", android::checkSupportAndroid,	android::testMandatoryExtensions);
+		// Test for unknown device or instance extensions
+		addFunctionCase(androidTests.get(), "no_unknown_extensions", android::checkSupportAndroid,	android::testNoUnknownExtensions);
+		// Test that no layers are enumerated
+		addFunctionCase(androidTests.get(), "no_layers", android::checkSupportAndroid,	android::testNoLayers);
 
 		infoTests->addChild(androidTests.release());
 	}
@@ -6990,29 +6995,29 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 
 void createFeatureInfoInstanceTests(tcu::TestCaseGroup* testGroup)
 {
-	addFunctionCase(testGroup, "physical_devices",						"Physical devices",						enumeratePhysicalDevices);
-	addFunctionCase(testGroup, "physical_device_groups",				"Physical devices Groups",				enumeratePhysicalDeviceGroups);
-	addFunctionCase(testGroup, "instance_layers",						"Layers",								enumerateInstanceLayers);
-	addFunctionCase(testGroup, "instance_extensions",					"Extensions",							enumerateInstanceExtensions);
-	addFunctionCase(testGroup, "instance_extension_device_functions",	"Validates device-level entry-points",	validateDeviceLevelEntryPointsFromInstanceExtensions);
+	addFunctionCase(testGroup, "physical_devices",						enumeratePhysicalDevices);
+	addFunctionCase(testGroup, "physical_device_groups",				enumeratePhysicalDeviceGroups);
+	addFunctionCase(testGroup, "instance_layers",								enumerateInstanceLayers);
+	addFunctionCase(testGroup, "instance_extensions",							enumerateInstanceExtensions);
+	addFunctionCase(testGroup, "instance_extension_device_functions",	validateDeviceLevelEntryPointsFromInstanceExtensions);
 }
 
 void createFeatureInfoDeviceTests(tcu::TestCaseGroup* testGroup)
 {
-	addFunctionCase(testGroup, "device_features",					"Device Features",						deviceFeatures);
-	addFunctionCase(testGroup, "device_properties",					"Device Properties",					deviceProperties);
-	addFunctionCase(testGroup, "device_queue_family_properties",	"Queue family properties",				deviceQueueFamilyProperties);
-	addFunctionCase(testGroup, "device_memory_properties",			"Memory properties",					deviceMemoryProperties);
-	addFunctionCase(testGroup, "device_layers",						"Layers",								enumerateDeviceLayers);
-	addFunctionCase(testGroup, "device_extensions",					"Extensions",							enumerateDeviceExtensions);
-	addFunctionCase(testGroup, "device_no_khx_extensions",			"KHX extensions",						testNoKhxExtensions);
-	addFunctionCase(testGroup, "device_memory_budget",				"Memory budget",						deviceMemoryBudgetProperties);
-	addFunctionCase(testGroup, "device_mandatory_features",			"Mandatory features",					deviceMandatoryFeatures);
+	addFunctionCase(testGroup, "device_features",						deviceFeatures);
+	addFunctionCase(testGroup, "device_properties",					deviceProperties);
+	addFunctionCase(testGroup, "device_queue_family_properties",				deviceQueueFamilyProperties);
+	addFunctionCase(testGroup, "device_memory_properties",					deviceMemoryProperties);
+	addFunctionCase(testGroup, "device_layers",								enumerateDeviceLayers);
+	addFunctionCase(testGroup, "device_extensions",							enumerateDeviceExtensions);
+	addFunctionCase(testGroup, "device_no_khx_extensions",						testNoKhxExtensions);
+	addFunctionCase(testGroup, "device_memory_budget",						deviceMemoryBudgetProperties);
+	addFunctionCase(testGroup, "device_mandatory_features",					deviceMandatoryFeatures);
 }
 
 void createFeatureInfoDeviceGroupTests(tcu::TestCaseGroup* testGroup)
 {
-	addFunctionCase(testGroup, "device_group_peer_memory_features",	"Device Group peer memory features",	deviceGroupPeerMemoryFeatures);
+	addFunctionCase(testGroup, "device_group_peer_memory_features",	deviceGroupPeerMemoryFeatures);
 }
 
 } // api

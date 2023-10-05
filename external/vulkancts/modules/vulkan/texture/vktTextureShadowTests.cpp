@@ -1671,11 +1671,12 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 
 	// 2D cases.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	group2D	(new tcu::TestCaseGroup(testCtx, "2d", "2D texture shadow lookup tests"));
+		// 2D texture shadow lookup tests
+		de::MovePtr<tcu::TestCaseGroup>	group2D	(new tcu::TestCaseGroup(testCtx, "2d"));
 
 		for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup	(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup	(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name));
 
 			for (int compareNdx = 0; compareNdx < DE_LENGTH_OF_ARRAY(compareOp); compareNdx++)
 			{
@@ -1698,7 +1699,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 						testParameters.aspectMask	= formats[formatNdx].aspect;
 						testParameters.programs.push_back(PROGRAM_2D_SHADOW);
 
-						filterGroup->addChild(new TextureTestCase<Texture2DShadowTestInstance>(testCtx, name.c_str(), "", testParameters));
+						filterGroup->addChild(new TextureTestCase<Texture2DShadowTestInstance>(testCtx, name.c_str(), testParameters));
 					}
 				}
 			}
@@ -1715,7 +1716,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 
 		for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup	(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup	(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name));
 
 			for (int compareNdx = 0; compareNdx < DE_LENGTH_OF_ARRAY(compareOp); compareNdx++)
 			{
@@ -1741,7 +1742,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 
 							testParameters.programs.push_back(PROGRAM_CUBE_SHADOW);
 
-							filterGroup->addChild(new TextureTestCase<TextureCubeShadowTestInstance>(testCtx, name.c_str(), "", testParameters));
+							filterGroup->addChild(new TextureTestCase<TextureCubeShadowTestInstance>(testCtx, name.c_str(), testParameters));
 						}
 					}
 				}
@@ -1759,7 +1760,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 
 		for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup	(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup	(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name));
 
 			for (int compareNdx = 0; compareNdx < DE_LENGTH_OF_ARRAY(compareOp); compareNdx++)
 			{
@@ -1784,7 +1785,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 
 						testParameters.programs.push_back(PROGRAM_2D_ARRAY_SHADOW);
 
-						filterGroup->addChild(new TextureTestCase<Texture2DArrayShadowTestInstance>(testCtx, name.c_str(), "", testParameters));
+						filterGroup->addChild(new TextureTestCase<Texture2DArrayShadowTestInstance>(testCtx, name.c_str(), testParameters));
 					}
 				}
 			}
@@ -1801,7 +1802,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 
 		for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup	(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup	(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name));
 
 			for (int compareNdx = 0; compareNdx < DE_LENGTH_OF_ARRAY(compareOp); compareNdx++)
 			{
@@ -1822,7 +1823,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 						testParameters.aspectMask	= formats[formatNdx].aspect;
 						testParameters.programs.push_back(PROGRAM_1D_SHADOW);
 
-						filterGroup->addChild(new TextureTestCase<Texture1DShadowTestInstance>(testCtx, name.c_str(), "", testParameters));
+						filterGroup->addChild(new TextureTestCase<Texture1DShadowTestInstance>(testCtx, name.c_str(), testParameters));
 					}
 				}
 			}
@@ -1839,7 +1840,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 
 		for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup	(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup	(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name));
 
 			for (int compareNdx = 0; compareNdx < DE_LENGTH_OF_ARRAY(compareOp); compareNdx++)
 			{
@@ -1862,7 +1863,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 
 						testParameters.programs.push_back(PROGRAM_1D_ARRAY_SHADOW);
 
-						filterGroup->addChild(new TextureTestCase<Texture1DArrayShadowTestInstance>(testCtx, name.c_str(), "", testParameters));
+						filterGroup->addChild(new TextureTestCase<Texture1DArrayShadowTestInstance>(testCtx, name.c_str(), testParameters));
 					}
 				}
 			}
@@ -1879,7 +1880,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 
 		for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup	(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup	(new tcu::TestCaseGroup(testCtx, filters[filterNdx].name));
 
 			for (int compareNdx = 0; compareNdx < DE_LENGTH_OF_ARRAY(compareOp); compareNdx++)
 			{
@@ -1906,7 +1907,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 
 							testParameters.programs.push_back(PROGRAM_CUBE_ARRAY_SHADOW);
 
-							filterGroup->addChild(new TextureTestCase<TextureCubeArrayShadowTestInstance>(testCtx, name.c_str(), "", testParameters));
+							filterGroup->addChild(new TextureTestCase<TextureCubeArrayShadowTestInstance>(testCtx, name.c_str(), testParameters));
 						}
 					}
 				}
@@ -1922,7 +1923,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 	{
 		de::MovePtr<tcu::TestCaseGroup>	groupTexelReplacement	(new tcu::TestCaseGroup(testCtx, "texel_replacement", "Texel replacement texture shadow lookup tests"));
 
-		cts_amber::AmberTestCase*		testCaseLod				= cts_amber::createAmberTestCase(testCtx, "d32_sfloat", "", "texture/shadow/texel_replacement", "d32_sfloat.amber");
+		cts_amber::AmberTestCase*		testCaseLod				= cts_amber::createAmberTestCase(testCtx, "d32_sfloat", "texture/shadow/texel_replacement", "d32_sfloat.amber");
 
 		groupTexelReplacement->addChild(testCaseLod);
 		textureShadowTests->addChild(groupTexelReplacement.release());
@@ -1932,7 +1933,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 
 tcu::TestCaseGroup* createTextureShadowTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "shadow", "Texture shadow tests.", populateTextureShadowTests);
+	return createTestGroup(testCtx, "shadow", populateTextureShadowTests);
 }
 
 } // texture

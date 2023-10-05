@@ -337,8 +337,8 @@ protected:
 class DynamicUnusedAttachmentsCase : public vkt::TestCase
 {
 public:
-					DynamicUnusedAttachmentsCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-						: vkt::TestCase	(testCtx, name, description)
+					DynamicUnusedAttachmentsCase	(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+						: vkt::TestCase	(testCtx, name)
 						, m_params		(params)
 						{}
 	TestInstance*	createInstance					(Context& context) const override { return new DynamicUnusedAttachmentsInstance(context, m_params); }
@@ -985,12 +985,13 @@ using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
 tcu::TestCaseGroup* createDynamicRenderingUnusedAttachmentsTests (tcu::TestContext& testCtx, bool useSecondaries)
 {
-	GroupPtr group (new tcu::TestCaseGroup(testCtx, "unused_attachments", "Tests for VK_EXT_dynamic_rendering_unused_attachments"));
+	// Tests for VK_EXT_dynamic_rendering_unused_attachments
+	GroupPtr group (new tcu::TestCaseGroup(testCtx, "unused_attachments"));
 
 	// Add a combination subgroup just in case we want to add more test cases later to another subgroup.
 	GroupPtr combGroup	(new tcu::TestCaseGroup(testCtx, "comb", "VK_EXT_dynamic_rendering_unused_attachments with different combinations"));
-	GroupPtr colorGroup	(new tcu::TestCaseGroup(testCtx, "color", ""));
-	GroupPtr dsGroup	(new tcu::TestCaseGroup(testCtx, "depth_stencil", ""));
+	GroupPtr colorGroup	(new tcu::TestCaseGroup(testCtx, "color"));
+	GroupPtr dsGroup	(new tcu::TestCaseGroup(testCtx, "depth_stencil"));
 	GroupPtr badFmtGrp	(new tcu::TestCaseGroup(testCtx, "bad_formats", "Test using wrong formats when the handle is VK_NULL_HANDLE"));
 
 	const uint32_t attachmentCounts[]	= { 1u, 4u, 8u, };
@@ -1032,7 +1033,7 @@ tcu::TestCaseGroup* createDynamicRenderingUnusedAttachmentsTests (tcu::TestConte
 										false, false, false,
 										useSecondaries, false
 									);
-									colorGroup->addChild(new DynamicUnusedAttachmentsCase(testCtx, params.getTestName(), "", params));
+									colorGroup->addChild(new DynamicUnusedAttachmentsCase(testCtx, params.getTestName(), params));
 								}
 							}
 					}
@@ -1091,7 +1092,7 @@ tcu::TestCaseGroup* createDynamicRenderingUnusedAttachmentsTests (tcu::TestConte
 												stencilPresent, stencilDefined, stencilValidHandle,
 												useSecondaries, false
 											);
-											dsGroup->addChild(new DynamicUnusedAttachmentsCase(testCtx, params.getTestName(), "", params));
+											dsGroup->addChild(new DynamicUnusedAttachmentsCase(testCtx, params.getTestName(), params));
 										}
 									}
 							}
@@ -1120,7 +1121,7 @@ tcu::TestCaseGroup* createDynamicRenderingUnusedAttachmentsTests (tcu::TestConte
 					true, true, false,
 					useSecondaries, true
 				);
-				badFmtGrp->addChild(new DynamicUnusedAttachmentsCase(testCtx, params.getTestName(), "", params));
+				badFmtGrp->addChild(new DynamicUnusedAttachmentsCase(testCtx, params.getTestName(), params));
 			}
 	}
 	group->addChild(badFmtGrp.release());

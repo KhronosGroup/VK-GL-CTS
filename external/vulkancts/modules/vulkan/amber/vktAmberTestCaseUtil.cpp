@@ -190,6 +190,16 @@ void createAmberTestsFromIndexFile (tcu::TestContext& testCtx, tcu::TestCaseGrou
 }
 
 AmberTestCase* createAmberTestCase (tcu::TestContext&							testCtx,
+										const char*									name,
+										const char*									category,
+										const std::string&							filename,
+										const std::vector<std::string>				requirements,
+										const std::vector<vk::VkImageCreateInfo>	imageRequirements,
+										const std::vector<BufferRequirement>		bufferRequirements) {
+	return createAmberTestCase(testCtx, name, "", category, filename, requirements, imageRequirements, bufferRequirements);
+}
+
+AmberTestCase* createAmberTestCase (tcu::TestContext&							testCtx,
 									const char*									name,
 									const char*									description,
 									const char*									category,

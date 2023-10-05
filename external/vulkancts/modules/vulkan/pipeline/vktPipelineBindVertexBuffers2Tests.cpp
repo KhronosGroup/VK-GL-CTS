@@ -1098,8 +1098,8 @@ tcu::TestStatus BindVertexBuffers2Instance::iterate (void)
 class BindBuffers2Case : public vkt::TestCase
 {
 public:
-					BindBuffers2Case	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const vk::PipelineConstructionType	pipelineConstructionType, const TestParams params, const bool singleBind, const deUint32 count)
-						: vkt::TestCase					(testCtx, name, description)
+					BindBuffers2Case	(tcu::TestContext& testCtx, const std::string& name, const vk::PipelineConstructionType	pipelineConstructionType, const TestParams params, const bool singleBind, const deUint32 count)
+						: vkt::TestCase					(testCtx, name)
 						, m_pipelineConstructionType	(pipelineConstructionType)
 						, m_params						(params)
 						, m_singleBind					(singleBind)
@@ -1212,7 +1212,7 @@ public:
 											 vk::PipelineConstructionType	pipelineConstructionType,
 											 const TestParamsMaint5&		params,
 											 bool							robustness2)
-						: vkt::TestCase(testCtx, name, std::string())
+						: vkt::TestCase(testCtx, name)
 						, m_pipelineConstructionType(pipelineConstructionType)
 						, m_params(params)
 						, m_robustness2(robustness2) { }
@@ -1336,7 +1336,7 @@ TestInstance* BindVertexBuffers2Case::createInstance (Context& context) const
 tcu::TestCaseGroup* createCmdBindVertexBuffers2Tests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
 tcu::TestCaseGroup* createCmdBindBuffers2Tests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> cmdBindBuffers2Group(new tcu::TestCaseGroup(testCtx, "bind_buffers_2", ""));
+	de::MovePtr<tcu::TestCaseGroup> cmdBindBuffers2Group(new tcu::TestCaseGroup(testCtx, "bind_buffers_2"));
 
 	const struct
 	{
@@ -1379,13 +1379,13 @@ tcu::TestCaseGroup* createCmdBindBuffers2Tests (tcu::TestContext& testCtx, vk::P
 
 	for (const auto bindTest : bindTests)
 	{
-		de::MovePtr<tcu::TestCaseGroup> bindGroup(new tcu::TestCaseGroup(testCtx, bindTest.name, ""));
+		de::MovePtr<tcu::TestCaseGroup> bindGroup(new tcu::TestCaseGroup(testCtx, bindTest.name));
 		for (const auto& strideTest : strideTests)
 		{
-			de::MovePtr<tcu::TestCaseGroup> typeGroup(new tcu::TestCaseGroup(testCtx, strideTest.name, ""));
+			de::MovePtr<tcu::TestCaseGroup> typeGroup(new tcu::TestCaseGroup(testCtx, strideTest.name));
 			for (const auto& countTest : countTests)
 			{
-				typeGroup->addChild(new BindBuffers2Case(testCtx, countTest.name, "", pipelineConstructionType, strideTest.params, bindTest.singleBind, countTest.count));
+				typeGroup->addChild(new BindBuffers2Case(testCtx, countTest.name, pipelineConstructionType, strideTest.params, bindTest.singleBind, countTest.count));
 			}
 			bindGroup->addChild(typeGroup.release());
 		}

@@ -172,8 +172,8 @@ tcu::TestStatus ShaderObjectApiInstance::iterate (void)
 class ShaderObjectApiCase : public vkt::TestCase
 {
 public:
-					ShaderObjectApiCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-						: vkt::TestCase		(testCtx, name, description)
+					ShaderObjectApiCase		(tcu::TestContext& testCtx, const std::string& name)
+						: vkt::TestCase		(testCtx, name)
 						{}
 	virtual			~ShaderObjectApiCase	(void) {}
 
@@ -297,8 +297,8 @@ tcu::TestStatus ShaderObjectExtensionVersionInstance::iterate (void)
 class ShaderObjectExtensionVersionCase : public vkt::TestCase
 {
 public:
-					ShaderObjectExtensionVersionCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const ShaderObjectApiTest test)
-						: vkt::TestCase					(testCtx, name, description)
+					ShaderObjectExtensionVersionCase	(tcu::TestContext& testCtx, const std::string& name, const ShaderObjectApiTest test)
+						: vkt::TestCase					(testCtx, name)
 						, m_test						(test)
 						{}
 	virtual			~ShaderObjectExtensionVersionCase	(void) {}
@@ -325,8 +325,8 @@ void ShaderObjectExtensionVersionCase::checkSupport(Context& context) const
 
 tcu::TestCaseGroup* createShaderObjectApiTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> apiGroup(new tcu::TestCaseGroup(testCtx, "api", ""));
-	apiGroup->addChild(new ShaderObjectApiCase(testCtx, "get_device_proc_addr", "Test vkGetDeviceProcAddr"));
+	de::MovePtr<tcu::TestCaseGroup> apiGroup(new tcu::TestCaseGroup(testCtx, "api"));
+	apiGroup->addChild(new ShaderObjectApiCase(testCtx, "get_device_proc_addr"));
 
 	const struct
 	{
@@ -342,11 +342,10 @@ tcu::TestCaseGroup* createShaderObjectApiTests (tcu::TestContext& testCtx)
 
 	for (const auto& test : apiTests)
 	{
-		apiGroup->addChild(new ShaderObjectExtensionVersionCase(testCtx, test.name, "", test.test));
+		apiGroup->addChild(new ShaderObjectExtensionVersionCase(testCtx, test.name, test.test));
 	}
 	return apiGroup.release();
 }
 
 } // ShaderObject
 } // vkt
-

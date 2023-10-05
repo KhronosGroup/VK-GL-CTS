@@ -1192,7 +1192,7 @@ class QueryPoolPerformanceTest : public TestCase
 {
 public:
 	QueryPoolPerformanceTest (tcu::TestContext &context, TestType testType, VkQueueFlagBits queueFlagBits, const char *name)
-		: TestCase			(context, name, "")
+		: TestCase			(context, name)
 		, m_testType		(testType)
 		, m_queueFlagBits	(queueFlagBits)
 	{
@@ -1264,7 +1264,7 @@ private:
 } //anonymous
 
 QueryPoolPerformanceTests::QueryPoolPerformanceTests (tcu::TestContext &testCtx)
-	: TestCaseGroup(testCtx, "performance_query", "Tests for performance queries")
+	: TestCaseGroup(testCtx, "performance_query")
 {
 }
 

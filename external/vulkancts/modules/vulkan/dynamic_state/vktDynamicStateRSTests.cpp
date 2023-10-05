@@ -824,7 +824,7 @@ private:
 	DepthBiasNonZeroParams m_params;
 
 public:
-						DepthBiasNonZeroCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const DepthBiasNonZeroParams& params);
+						DepthBiasNonZeroCase	(tcu::TestContext& testCtx, const std::string& name, const DepthBiasNonZeroParams& params);
 	virtual				~DepthBiasNonZeroCase	(void) {}
 
 	void				checkSupport			(Context& context) const override;
@@ -846,8 +846,8 @@ public:
 	tcu::TestStatus		iterate						(void) override;
 };
 
-DepthBiasNonZeroCase::DepthBiasNonZeroCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const DepthBiasNonZeroParams& params)
-	: vkt::TestCase		(testCtx, name, description)
+DepthBiasNonZeroCase::DepthBiasNonZeroCase (tcu::TestContext& testCtx, const std::string& name, const DepthBiasNonZeroParams& params)
+	: vkt::TestCase		(testCtx, name)
 	, m_params			(params)
 {}
 
@@ -1228,7 +1228,7 @@ void checkNothing (Context&)
 } //anonymous
 
 DynamicStateRSTests::DynamicStateRSTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
-	: TestCaseGroup					(testCtx, "rs_state", "Tests for rasterizer state")
+	: TestCaseGroup					(testCtx, "rs_state")
 	, m_pipelineConstructionType	(pipelineConstructionType)
 {
 	/* Left blank on purpose */
@@ -1250,13 +1250,11 @@ void DynamicStateRSTests::init (void)
 		ShaderMap shaderPaths(basePaths);
 		const bool isMesh = (i > 0);
 		std::string nameSuffix;
-		std::string descSuffix;
 
 		if (isMesh)
 		{
 #ifndef CTS_USES_VULKANSC
 			nameSuffix = "_mesh";
-			descSuffix = " using mesh shaders";
 			shaderPaths[glu::SHADERTYPE_MESH] = "vulkan/dynamic_state/VertexFetch.mesh";
 #else
 			continue;
@@ -1267,11 +1265,12 @@ void DynamicStateRSTests::init (void)
 			shaderPaths[glu::SHADERTYPE_VERTEX] = "vulkan/dynamic_state/VertexFetch.vert";
 		}
 
-		addChild(new InstanceFactory<DepthBiasParamTestInstance, FunctionSupport0>(m_testCtx, "depth_bias" + nameSuffix, "Test depth bias functionality" + descSuffix, m_pipelineConstructionType, shaderPaths, (isMesh ? checkMeshShaderSupport : checkNothing)));
-		addChild(new InstanceFactory<DepthBiasClampParamTestInstance, FunctionSupport0>(m_testCtx, "depth_bias_clamp" + nameSuffix, "Test depth bias clamp functionality" + descSuffix, m_pipelineConstructionType, shaderPaths, (isMesh ? checkMeshAndBiasClampSupport : checkDepthBiasClampSupport)));
+		addChild(new InstanceFactory<DepthBiasParamTestInstance, FunctionSupport0>(m_testCtx, "depth_bias" + nameSuffix, m_pipelineConstructionType, shaderPaths, (isMesh ? checkMeshShaderSupport : checkNothing)));
+		addChild(new InstanceFactory<DepthBiasClampParamTestInstance, FunctionSupport0>(m_testCtx, "depth_bias_clamp" + nameSuffix, m_pipelineConstructionType, shaderPaths, (isMesh ? checkMeshAndBiasClampSupport : checkDepthBiasClampSupport)));
 		if (isMesh)
 			shaderPaths[glu::SHADERTYPE_MESH] = "vulkan/dynamic_state/VertexFetchLines.mesh";
-		addChild(new InstanceFactory<LineWidthParamTestInstance, FunctionSupport0>(m_testCtx, "line_width" + nameSuffix, "Draw a line with width set to max defined by physical device" + descSuffix, m_pipelineConstructionType, shaderPaths, (isMesh ? checkMeshAndWideLinesSupport : checkWideLinesSupport)));
+		// Draw a line with width set to max defined by physical device
+		addChild(new InstanceFactory<LineWidthParamTestInstance, FunctionSupport0>(m_testCtx, "line_width" + nameSuffix, m_pipelineConstructionType, shaderPaths, (isMesh ? checkMeshAndWideLinesSupport : checkWideLinesSupport)));
 
 		{
 			const DepthBiasNonZeroParams params =
@@ -1286,7 +1285,7 @@ void DynamicStateRSTests::init (void)
 				},
 				isMesh,
 			};
-			addChild(new DepthBiasNonZeroCase(m_testCtx, "nonzero_depth_bias_constant" + nameSuffix, "", params));
+			addChild(new DepthBiasNonZeroCase(m_testCtx, "nonzero_depth_bias_constant" + nameSuffix, params));
 		}
 		{
 			const DepthBiasNonZeroParams params =
@@ -1301,7 +1300,7 @@ void DynamicStateRSTests::init (void)
 				},
 				isMesh,
 			};
-			addChild(new DepthBiasNonZeroCase(m_testCtx, "nonzero_depth_bias_clamp" + nameSuffix, "", params));
+			addChild(new DepthBiasNonZeroCase(m_testCtx, "nonzero_depth_bias_clamp" + nameSuffix, params));
 		}
 	}
 }

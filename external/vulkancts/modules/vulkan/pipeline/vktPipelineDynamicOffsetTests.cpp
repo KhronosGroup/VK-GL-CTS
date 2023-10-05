@@ -756,7 +756,6 @@ class DynamicOffsetGraphicsTest : public vkt::TestCase
 public:
 						DynamicOffsetGraphicsTest	(tcu::TestContext&	testContext,
 													 const string&		name,
-													 const string&		description,
 													 const TestParams&	params);
 						~DynamicOffsetGraphicsTest	(void);
 	void				initPrograms				(SourceCollections& sourceCollections) const;
@@ -769,9 +768,8 @@ protected:
 
 DynamicOffsetGraphicsTest::DynamicOffsetGraphicsTest (tcu::TestContext&	testContext,
 													  const string&		name,
-													  const string&		description,
 													  const TestParams&	params)
-	: vkt::TestCase	(testContext, name, description)
+	: vkt::TestCase	(testContext, name)
 	, m_params		(params)
 {
 }
@@ -1307,7 +1305,6 @@ class DynamicOffsetComputeTest : public vkt::TestCase
 public:
 						DynamicOffsetComputeTest	(tcu::TestContext&	testContext,
 													 const string&		name,
-													 const string&		description,
 													 const TestParams&	params);
 						~DynamicOffsetComputeTest	(void);
 	void				initPrograms				(SourceCollections& sourceCollections) const;
@@ -1320,9 +1317,8 @@ protected:
 
 DynamicOffsetComputeTest::DynamicOffsetComputeTest (tcu::TestContext&	testContext,
 													const string&		name,
-													const string&		description,
 													const TestParams&	params)
-	: vkt::TestCase	(testContext, name, description)
+	: vkt::TestCase	(testContext, name)
 	, m_params		(params)
 {
 }
@@ -2082,7 +2078,6 @@ public:
 							DynamicOffsetMixedTest	(tcu::TestContext&	testContext,
 													 const PipelineConstructionType	pipelineConstructionType,
 													 const std::string&				name,
-													 const std::string&				description,
 													 const tcu::IVec2				renderSize,
 													 const deUint32					numInstances,
 													 const bool						testAllOffsets,
@@ -2093,7 +2088,7 @@ public:
 													 const deUint32					fragUboOffset	= 0u,
 													 const deUint32					ssboReadOffset	= 0u,
 													 const deUint32					ssboWriteOffset	= 0u)
-													: vkt::TestCase					(testContext, name, description)
+													: vkt::TestCase					(testContext, name)
 													, m_pipelineConstructionType	(pipelineConstructionType)
 													, m_renderSize					(renderSize)
 													, m_numInstances				(numInstances)
@@ -2326,7 +2321,7 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx, Pipelin
 		{	"numnondynamicbindings_1",	1u	}
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	dynamicOffsetTests	(new tcu::TestCaseGroup(testCtx, "dynamic_offset", "Dynamic offset tests"));
+	de::MovePtr<tcu::TestCaseGroup>	dynamicOffsetTests	(new tcu::TestCaseGroup(testCtx, "dynamic_offset"));
 
 	for (deUint32 pipelineTypeIdx = 0; pipelineTypeIdx < DE_LENGTH_OF_ARRAY(pipelineTypes); pipelineTypeIdx++)
 	{
@@ -2334,36 +2329,36 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx, Pipelin
 		if ((pipelineTypeIdx == 1) && (pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC))
 			continue;
 
-		de::MovePtr<tcu::TestCaseGroup>	pipelineTypeGroup	(new tcu::TestCaseGroup(testCtx, pipelineTypes[pipelineTypeIdx], ""));
+		de::MovePtr<tcu::TestCaseGroup>	pipelineTypeGroup	(new tcu::TestCaseGroup(testCtx, pipelineTypes[pipelineTypeIdx]));
 
 		for (deUint32 groupingTypeIdx = 0; groupingTypeIdx < DE_LENGTH_OF_ARRAY(groupingTypes); ++groupingTypeIdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> groupingTypeGroup (new tcu::TestCaseGroup(testCtx, groupingTypes[groupingTypeIdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup> groupingTypeGroup (new tcu::TestCaseGroup(testCtx, groupingTypes[groupingTypeIdx].name));
 
 			for (deUint32 descriptorTypeIdx = 0; descriptorTypeIdx < DE_LENGTH_OF_ARRAY(descriptorTypes); descriptorTypeIdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	descriptorTypeGroup	(new tcu::TestCaseGroup(testCtx, descriptorTypes[descriptorTypeIdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup>	descriptorTypeGroup	(new tcu::TestCaseGroup(testCtx, descriptorTypes[descriptorTypeIdx].name));
 
 				for (deUint32 numCmdBuffersIdx = 0; numCmdBuffersIdx < DE_LENGTH_OF_ARRAY(numCmdBuffers); numCmdBuffersIdx++)
 				{
-					de::MovePtr<tcu::TestCaseGroup>	numCmdBuffersGroup	(new tcu::TestCaseGroup(testCtx, numCmdBuffers[numCmdBuffersIdx].name, ""));
+					de::MovePtr<tcu::TestCaseGroup>	numCmdBuffersGroup	(new tcu::TestCaseGroup(testCtx, numCmdBuffers[numCmdBuffersIdx].name));
 
 					for (deUint32 reverseOrderIdx = 0; reverseOrderIdx < DE_LENGTH_OF_ARRAY(reverseOrders); reverseOrderIdx++)
 					{
 						if (numCmdBuffers[numCmdBuffersIdx].num < 2 && reverseOrders[reverseOrderIdx].reverse)
 							continue;
 
-						de::MovePtr<tcu::TestCaseGroup>	reverseOrderGroup	(new tcu::TestCaseGroup(testCtx, reverseOrders[reverseOrderIdx].name, ""));
+						de::MovePtr<tcu::TestCaseGroup>	reverseOrderGroup	(new tcu::TestCaseGroup(testCtx, reverseOrders[reverseOrderIdx].name));
 
 						for (deUint32 numDescriptorSetBindingsIdx = 0; numDescriptorSetBindingsIdx < DE_LENGTH_OF_ARRAY(numDescriptorSetBindings); numDescriptorSetBindingsIdx++)
 						{
 							if (numCmdBuffers[numCmdBuffersIdx].num > 1 && numDescriptorSetBindings[numDescriptorSetBindingsIdx].num > 1)
 								continue;
 
-							de::MovePtr<tcu::TestCaseGroup>	numDescriptorSetBindingsGroup	(new tcu::TestCaseGroup(testCtx, numDescriptorSetBindings[numDescriptorSetBindingsIdx].name, ""));
+							de::MovePtr<tcu::TestCaseGroup>	numDescriptorSetBindingsGroup	(new tcu::TestCaseGroup(testCtx, numDescriptorSetBindings[numDescriptorSetBindingsIdx].name));
 							for (deUint32 numDynamicBindingsIdx = 0; numDynamicBindingsIdx < DE_LENGTH_OF_ARRAY(numDynamicBindings); numDynamicBindingsIdx++)
 							{
-								de::MovePtr<tcu::TestCaseGroup>	numDynamicBindingsGroup	(new tcu::TestCaseGroup(testCtx, numDynamicBindings[numDynamicBindingsIdx].name, ""));
+								de::MovePtr<tcu::TestCaseGroup>	numDynamicBindingsGroup	(new tcu::TestCaseGroup(testCtx, numDynamicBindings[numDynamicBindingsIdx].name));
 
 								for (deUint32 numNonDynamicBindingsIdx = 0; numNonDynamicBindingsIdx < DE_LENGTH_OF_ARRAY(numNonDynamicBindings); numNonDynamicBindingsIdx++)
 								{
@@ -2380,10 +2375,10 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx, Pipelin
 									};
 #ifndef CTS_USES_VULKANSC
 									if (strcmp(pipelineTypes[pipelineTypeIdx], "graphics") == 0)
-										numDynamicBindingsGroup->addChild(new DynamicOffsetGraphicsTest(testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, "", params));
+										numDynamicBindingsGroup->addChild(new DynamicOffsetGraphicsTest(testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, params));
 									else
 #endif // CTS_USES_VULKANSC
-										numDynamicBindingsGroup->addChild(new DynamicOffsetComputeTest(testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, "", params));
+										numDynamicBindingsGroup->addChild(new DynamicOffsetComputeTest(testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, params));
 								}
 
 								numDescriptorSetBindingsGroup->addChild(numDynamicBindingsGroup.release());
@@ -2409,7 +2404,7 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx, Pipelin
 
 	// Dynamic descriptor offset test for combined descriptor sets.
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) {
-		de::MovePtr<tcu::TestCaseGroup>	combinedDescriptorsTests(new tcu::TestCaseGroup(testCtx, "combined_descriptors", ""));
+		de::MovePtr<tcu::TestCaseGroup>	combinedDescriptorsTests(new tcu::TestCaseGroup(testCtx, "combined_descriptors"));
 
 		struct
 		{
@@ -2448,8 +2443,8 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx, Pipelin
 
 		// Run tests for all offsets
 		{
-			de::MovePtr<tcu::TestCaseGroup>	allOffsetsGroup(new tcu::TestCaseGroup(testCtx, "all_offsets", ""));
-			de::MovePtr<tcu::TestCaseGroup>	singleOffsetGroup(new tcu::TestCaseGroup(testCtx, "single_offset", ""));
+			de::MovePtr<tcu::TestCaseGroup>	allOffsetsGroup(new tcu::TestCaseGroup(testCtx, "all_offsets"));
+			de::MovePtr<tcu::TestCaseGroup>	singleOffsetGroup(new tcu::TestCaseGroup(testCtx, "single_offset"));
 
 			for (const auto& order : orders)
 			{
@@ -2461,7 +2456,6 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx, Pipelin
 							testCtx,
 							pipelineConstructionType,
 							std::string(order.name) + "_" + std::string(offsets.name) + "_" + pipeline.name,
-							"",
 							tcu::IVec2(32, 32),		// Render size
 							offsets.offsetCount,
 							true,					// All offsets
@@ -2471,7 +2465,6 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx, Pipelin
 							testCtx,
 							pipelineConstructionType,
 							std::string(order.name) + "_" + std::string(offsets.name) + "_" + pipeline.name,
-							"",
 							tcu::IVec2(32, 32),		// Render size
 							offsets.offsetCount,
 							false,					// Single offset only

@@ -121,7 +121,7 @@ void addComputeVariableInitPrivateTest (tcu::TestCaseGroup* group)
 {
 	tcu::TestContext&		testCtx					= group->getTestContext();
 	const int				numFloats				= 128;
-	tcu::TestCaseGroup*		privateGroup			= new tcu::TestCaseGroup(testCtx, "private", "Tests OpVariable initialization in private storage class.");
+	tcu::TestCaseGroup*		privateGroup			= new tcu::TestCaseGroup(testCtx, "private");
 	vector<float>			expectedOutput			(numFloats, 1.0f);
 
 	group->addChild(privateGroup);
@@ -216,7 +216,7 @@ void addComputeVariableInitPrivateTest (tcu::TestCaseGroup* group)
 		spec.numWorkGroups			= IVec3(numElements, 1, 1);
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 
-		privateGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testParams[paramIdx].name.c_str(), "", spec));
+		privateGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testParams[paramIdx].name.c_str(), spec));
 	}
 }
 
@@ -226,7 +226,7 @@ void addGraphicsVariableInitPrivateTest (tcu::TestCaseGroup* group)
 	map<string, string>		fragments;
 	RGBA					defaultColors[4];
 	VulkanFeatures			features;
-	tcu::TestCaseGroup*		privateGroup		= new tcu::TestCaseGroup(testCtx, "private", "Tests OpVariable initialization in private storage class.");
+	tcu::TestCaseGroup*		privateGroup		= new tcu::TestCaseGroup(testCtx, "private");
 	const int				numFloats			= 128;
 	vector<float>			expectedOutput		(numFloats, 1.0f);
 
@@ -591,7 +591,8 @@ void addGraphicsVariableInitOutputTest (tcu::TestCaseGroup* group)
 	tcu::TestContext&		testCtx				= group->getTestContext();
 	map<string, string>		fragments;
 	RGBA					defaultColors[4];
-	tcu::TestCaseGroup*		outputGroup			= new tcu::TestCaseGroup(testCtx, "output", "Tests OpVariable initialization in output storage class.");
+	// Tests OpVariable initialization in output storage class.
+	tcu::TestCaseGroup*		outputGroup			= new tcu::TestCaseGroup(testCtx, "output");
 	SpecConstants			noSpecConstants;
 	PushConstants			noPushConstants;
 	GraphicsInterfaces		noInterfaces;
@@ -648,7 +649,6 @@ void addGraphicsVariableInitOutputTest (tcu::TestCaseGroup* group)
 
 			addFunctionCaseWithPrograms<ShaderParams>(outputGroup,
 													  testParams[paramIdx].name.c_str(),
-													  "",
 													  addShaderCodeOutput,
 													  outputTest,
 													  shaderParams);
