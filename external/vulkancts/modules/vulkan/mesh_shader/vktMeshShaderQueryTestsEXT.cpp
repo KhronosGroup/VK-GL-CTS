@@ -1565,6 +1565,10 @@ tcu::TestCaseGroup* createMeshShaderQueryTestsEXT (tcu::TestContext& testCtx)
 														params.useSecondary		= cmdBufferType.useSecondary;
 														params.multiView		= multiViewCase.multiView;
 
+														// VUID-vkCmdExecuteCommands-commandBuffer-07594
+														if (params.areQueriesInherited() && params.hasPrimitivesQuery())
+															continue;
+
 														multiViewGroup->addChild(new MeshQueryCase(testCtx, cmdBufferType.name, "", std::move(params)));
 													}
 
