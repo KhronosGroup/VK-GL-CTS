@@ -509,6 +509,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmConditionalBranchTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmCrossStageInterfaceTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmEmptyStructTests.cpp \
+	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmFloatControls2Tests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmFloatControlsExtensionlessTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmFloatControlsTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmFromHlslTests.cpp \
