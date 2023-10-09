@@ -130,6 +130,11 @@ public:
 	deUint32									getUsedApiVersion					(void) const;
 	deUint32									getSparseQueueFamilyIndex			(void) const;
 	vk::VkQueue									getSparseQueue						(void) const;
+	int										getComputeQueueFamilyIndex			(void) const;
+	vk::VkQueue									getComputeQueue						(void) const;
+	int										getTransferQueueFamilyIndex			(void) const;
+	vk::VkQueue									getTransferQueue				(void) const;
+
 	de::SharedPtr<vk::ResourceInterface>		getResourceInterface				(void) const;
 	vk::Allocator&								getDefaultAllocator					(void) const;
 	bool										contextSupports						(const deUint32 variantNum, const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const;
