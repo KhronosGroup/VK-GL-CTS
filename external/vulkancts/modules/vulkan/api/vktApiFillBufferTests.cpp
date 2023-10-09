@@ -105,8 +105,11 @@ Move<VkDevice> createCustomDevice(Context& context, uint32_t& queueFamilyIndex)
 
 	if (context.isDeviceFunctionalitySupported("VK_KHR_synchronization2"))
 	{
-		synchronization2Features.pNext = &deviceFeatures2;
-		pNext = &synchronization2Features;
+		if (context.getUsedApiVersion() < VK_API_VERSION_1_3)
+		{
+			synchronization2Features.pNext = &deviceFeatures2;
+			pNext = &synchronization2Features;
+		}
 	}
 
 #ifdef CTS_USES_VULKANSC

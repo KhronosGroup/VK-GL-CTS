@@ -369,10 +369,15 @@ void setDefaultShaderObjectDynamicStates (const vk::DeviceInterface& vk, vk::VkC
 	float coverageModulationTable = 1.0f;
 	if (extensionEnabled(deviceExtensions, "VK_NV_framebuffer_mixed_samples"))
 		vk.cmdSetCoverageModulationTableNV(cmdBuffer, 1, &coverageModulationTable);
+	if (extensionEnabled(deviceExtensions, "VK_NV_shading_rate_image"))
+		vk.cmdSetShadingRateImageEnableNV(cmdBuffer, VK_FALSE);
 	if (extensionEnabled(deviceExtensions, "VK_NV_coverage_reduction_mode"))
 		vk.cmdSetCoverageReductionModeNV(cmdBuffer, vk::VK_COVERAGE_REDUCTION_MODE_MERGE_NV);
 	if (extensionEnabled(deviceExtensions, "VK_NV_representative_fragment_test"))
 		vk.cmdSetRepresentativeFragmentTestEnableNV(cmdBuffer, VK_FALSE);
+	vk::VkBool32 scissorEnable = VK_FALSE;
+	if (extensionEnabled(deviceExtensions, "VK_NV_scissor_exclusive"))
+		vk.cmdSetExclusiveScissorEnableNV(cmdBuffer, 0u, 1u, &scissorEnable);
 	if (extensionEnabled(deviceExtensions, "VK_NV_scissor_exclusive"))
 		vk.cmdSetExclusiveScissorNV(cmdBuffer, 0u, 1u, &scissor);
 	if (extensionEnabled(deviceExtensions, "VK_NV_fragment_shading_rate_enums"))
@@ -383,9 +388,13 @@ void setDefaultShaderObjectDynamicStates (const vk::DeviceInterface& vk, vk::VkC
 		vk.cmdSetDiscardRectangleEXT(cmdBuffer, 0u, 1u, &scissor);
 	if (extensionEnabled(deviceExtensions, "VK_EXT_discard_rectangles"))
 		vk.cmdSetDiscardRectangleModeEXT(cmdBuffer, vk::VK_DISCARD_RECTANGLE_MODE_INCLUSIVE_EXT);
+	if (extensionEnabled(deviceExtensions, "VK_NV_shading_rate_image"))
+		vk.cmdSetShadingRateImageEnableNV(cmdBuffer, VK_FALSE);
+	if (extensionEnabled(deviceExtensions, "VK_EXT_attachment_feedback_loop_dynamic_state"))
+		vk.cmdSetAttachmentFeedbackLoopEnableEXT(cmdBuffer, 0u);
 }
 
-void bindGraphicsShaders (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkShaderEXT vertShader, vk::VkShaderEXT tescShader, vk::VkShaderEXT teseShader, vk::VkShaderEXT geomShader, vk::VkShaderEXT fragShader)
+void bindGraphicsShaders (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkShaderEXT vertShader, vk::VkShaderEXT tescShader, vk::VkShaderEXT teseShader, vk::VkShaderEXT geomShader, vk::VkShaderEXT fragShader, bool taskShaderSupported, bool meshShaderSupported)
 {
 	vk::VkShaderStageFlagBits stages[] = {
 			vk::VK_SHADER_STAGE_VERTEX_BIT,
@@ -401,13 +410,53 @@ void bindGraphicsShaders (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmd
 		geomShader,
 		fragShader,
 	};
-	vk.cmdBindShadersEXT(cmdBuffer, 5, stages, shaders);
+	vk.cmdBindShadersEXT(cmdBuffer, 5u, stages, shaders);
+	if (taskShaderSupported) {
+		vk::VkShaderStageFlagBits stage = vk::VK_SHADER_STAGE_TASK_BIT_EXT;
+		vk::VkShaderEXT shader = VK_NULL_HANDLE;
+		vk.cmdBindShadersEXT(cmdBuffer, 1u, &stage, &shader);
+	}
+	if (meshShaderSupported) {
+		vk::VkShaderStageFlagBits stage = vk::VK_SHADER_STAGE_MESH_BIT_EXT;
+		vk::VkShaderEXT shader = VK_NULL_HANDLE;
+		vk.cmdBindShadersEXT(cmdBuffer, 1u, &stage, &shader);
+	}
 }
 
-void bindComputeShader(const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkShaderEXT compShader)
+void bindComputeShader (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkShaderEXT compShader)
 {
 	vk::VkShaderStageFlagBits stage = vk::VK_SHADER_STAGE_COMPUTE_BIT;
 	vk.cmdBindShadersEXT(cmdBuffer, 1, &stage, &compShader);
+}
+
+void bindNullTaskMeshShaders (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures)
+{
+	vk::VkShaderEXT shader = VK_NULL_HANDLE;
+	vk::VkShaderStageFlagBits taskStage = vk::VK_SHADER_STAGE_TASK_BIT_EXT;
+	vk::VkShaderStageFlagBits meshStage = vk::VK_SHADER_STAGE_MESH_BIT_EXT;
+	if (meshShaderFeatures.taskShader) {
+		vk.cmdBindShadersEXT(cmdBuffer, 1u, &taskStage, &shader);
+	}
+	if (meshShaderFeatures.meshShader) {
+		vk.cmdBindShadersEXT(cmdBuffer, 1u, &meshStage, &shader);
+	}
+}
+
+void bindNullRasterizationShaders (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkPhysicalDeviceFeatures features)
+{
+	vk::VkShaderEXT shader = VK_NULL_HANDLE;
+	vk::VkShaderStageFlagBits vertStage = vk::VK_SHADER_STAGE_VERTEX_BIT;
+	vk::VkShaderStageFlagBits tescStage = vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+	vk::VkShaderStageFlagBits teseStage = vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+	vk::VkShaderStageFlagBits geomStage = vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+	vk.cmdBindShadersEXT(cmdBuffer, 1u, &vertStage, &shader);
+	if (features.tessellationShader) {
+		vk.cmdBindShadersEXT(cmdBuffer, 1u, &tescStage, &shader);
+		vk.cmdBindShadersEXT(cmdBuffer, 1u, &teseStage, &shader);
+	}
+	if (features.geometryShader) {
+		vk.cmdBindShadersEXT(cmdBuffer, 1u, &geomStage, &shader);
+	}
 }
 
 } // vk

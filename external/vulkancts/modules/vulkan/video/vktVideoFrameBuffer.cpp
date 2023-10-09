@@ -363,7 +363,7 @@ public:
 		deUint32 flushedImages = 0;
 		while (!m_displayFrames.empty()) {
 			deUint8 pictureIndex = m_displayFrames.front();
-			DE_ASSERT((pictureIndex >= 0) && (pictureIndex < m_perFrameDecodeImageSet.size()));
+			DE_ASSERT(pictureIndex < m_perFrameDecodeImageSet.size());
 			m_displayFrames.pop();
 			if (m_perFrameDecodeImageSet[(deUint32)pictureIndex].IsAvailable()) {
 				// The frame is not released yet - force release it.

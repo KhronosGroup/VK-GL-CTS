@@ -102,6 +102,7 @@ dEQP-VK.conditional_rendering.draw_clear.draw.case_26_local_memory
 dEQP-VK.conditional_rendering.draw_clear.draw.case_27_local_memory
 dEQP-VK.conditional_rendering.draw_clear.draw.case_28_local_memory
 dEQP-VK.conditional_rendering.draw_clear.draw.case_29_local_memory
+dEQP-VK.conditional_rendering.draw_clear.draw.maintenance5
 dEQP-VK.conditional_rendering.draw_clear.draw.update_with_rendering_discard_host_memory
 dEQP-VK.conditional_rendering.draw_clear.draw.update_with_rendering_no_discard_host_memory
 dEQP-VK.conditional_rendering.draw_clear.draw.update_with_rendering_discard_local_memory

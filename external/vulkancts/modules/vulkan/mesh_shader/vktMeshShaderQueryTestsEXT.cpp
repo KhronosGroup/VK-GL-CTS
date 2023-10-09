@@ -1236,7 +1236,7 @@ tcu::TestStatus MeshQueryInstance::iterate (void)
 			}
 
 			if (hasTaskInvStat)
-				verifyQueryCounter(totalTaskInvs, expectedTaskInv, expectedTaskInv, *m_params, "Task invocations");
+				verifyQueryCounter(totalTaskInvs, expectedTaskInv, expectedTaskInv * viewCount, *m_params, "Task invocations");
 
 			if (hasMeshInvStat)
 				verifyQueryCounter(totalMeshInvs, expectedMeshInv, expectedMeshInv * viewCount, *m_params, "Mesh invocations");
@@ -1564,6 +1564,10 @@ tcu::TestCaseGroup* createMeshShaderQueryTestsEXT (tcu::TestContext& testCtx)
 														params.insideRenderPass	= orderingCase.insideRenderPass;
 														params.useSecondary		= cmdBufferType.useSecondary;
 														params.multiView		= multiViewCase.multiView;
+
+														// VUID-vkCmdExecuteCommands-commandBuffer-07594
+														if (params.areQueriesInherited() && params.hasPrimitivesQuery())
+															continue;
 
 														multiViewGroup->addChild(new MeshQueryCase(testCtx, cmdBufferType.name, "", std::move(params)));
 													}

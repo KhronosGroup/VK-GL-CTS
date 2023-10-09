@@ -114,6 +114,7 @@ struct TestConfig
 	VkFormat					format;
 	deUint32					sampleCount;
 	deUint32					layerCount;
+	deUint32					baseLayer;
 	deUint32					attachmentCount;
 	deUint32					width;
 	deUint32					height;
@@ -173,7 +174,8 @@ protected:
 												 deUint32					mipLevels) const;
 	vector<AllocationSp>	createImageMemory	(const vector<VkImageSp>&	images) const;
 	vector<VkImageViewSp>	createImageViews	(const vector<VkImageSp>&	images,
-												 deUint32					mipLevel = 0) const;
+												 deUint32					mipLevel = 0,
+												 deUint32					baseLayers = 0) const;
 
 	vector<VkBufferSp>		createBuffers		() const;
 	vector<VkBufferSp>		createBuffers		(deUint32					width,
@@ -191,6 +193,7 @@ protected:
 	VkSampleCountFlagBits	sampleCountBitFromSampleCount	(deUint32 count) const;
 	void					logImage						(const std::string& name,
 															 const tcu::ConstPixelBufferAccess& image) const;
+	uint32_t				totalLayers						() const;
 
 protected:
 
@@ -200,6 +203,7 @@ protected:
 	const VkFormat					m_format;
 	const VkSampleCountFlagBits		m_sampleCount;
 	const deUint32					m_layerCount;
+	const deUint32					m_baseLayer;
 	const deUint32					m_attachmentsCount;
 	const deUint32					m_width;
 	const deUint32					m_height;
@@ -212,6 +216,7 @@ MultisampleRenderPassTestBase::MultisampleRenderPassTestBase (Context& context, 
 	, m_format					(config.format)
 	, m_sampleCount				(sampleCountBitFromSampleCount(config.sampleCount))
 	, m_layerCount				(config.layerCount)
+	, m_baseLayer				(config.baseLayer)
 	, m_attachmentsCount		(config.attachmentCount)
 	, m_width					(config.width)
 	, m_height					(config.height)
@@ -250,14 +255,13 @@ Move<VkImage> MultisampleRenderPassTestBase::createImage (VkSampleCountFlagBits	
 
 	try
 	{
-		const VkImageFormatProperties	imageFormatProperties(getPhysicalDeviceImageFormatProperties(vki, physicalDevice, m_format, imageType, imageTiling, usage, 0u));
+		const VkImageFormatProperties	imageFormatProperties	(getPhysicalDeviceImageFormatProperties(vki, physicalDevice, m_format, imageType, imageTiling, usage, 0u));
+		const auto						isDSFormat				= (tcu::hasDepthComponent(format.order) || tcu::hasStencilComponent(format.order));
 
-		if ((tcu::hasDepthComponent(format.order) || tcu::hasStencilComponent(format.order))
-			&& (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0)
+		if (isDSFormat && (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0)
 			TCU_THROW(NotSupportedError, "Format can't be used as depth stencil attachment");
 
-		if (!(tcu::hasDepthComponent(format.order) || tcu::hasStencilComponent(format.order))
-			&& (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) == 0)
+		if (!isDSFormat && (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) == 0)
 			TCU_THROW(NotSupportedError, "Format can't be used as color attachment");
 
 		if (imageFormatProperties.maxExtent.width < imageExtent.width
@@ -277,7 +281,7 @@ Move<VkImage> MultisampleRenderPassTestBase::createImage (VkSampleCountFlagBits	
 			m_format,
 			imageExtent,
 			mipLevels,
-			m_layerCount,
+			totalLayers(),
 			sampleCountBit,
 			imageTiling,
 			usage,
@@ -337,7 +341,7 @@ vector<AllocationSp> MultisampleRenderPassTestBase::createImageMemory (const vec
 	return memory;
 }
 
-vector<VkImageViewSp> MultisampleRenderPassTestBase::createImageViews (const vector<VkImageSp>& images, deUint32 mipLevel) const
+vector<VkImageViewSp> MultisampleRenderPassTestBase::createImageViews (const vector<VkImageSp>& images, deUint32 mipLevel, deUint32 baseLayer) const
 {
 	const DeviceInterface&			vkd		= m_context.getDeviceInterface();
 	VkDevice						device	= m_context.getDevice();
@@ -347,7 +351,7 @@ vector<VkImageViewSp> MultisampleRenderPassTestBase::createImageViews (const vec
 		VK_IMAGE_ASPECT_COLOR_BIT,
 		mipLevel,
 		1u,
-		0u,
+		baseLayer,
 		m_layerCount
 	};
 
@@ -399,7 +403,7 @@ vector<VkBufferSp> MultisampleRenderPassTestBase::createBuffers (deUint32 width,
 		DE_NULL,
 		0u,
 
-		size * m_layerCount * pixelSize,
+		size * totalLayers() * pixelSize,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 
 		VK_SHARING_MODE_EXCLUSIVE,
@@ -534,7 +538,8 @@ VkDeviceSize MultisampleRenderPassTestBase::getPixelSize () const
 tcu::Vec4 MultisampleRenderPassTestBase::getFormatThreshold () const
 {
 	const tcu::TextureFormat	tcuFormat		(mapVkFormat(m_format));
-	const deUint32				componentCount	(tcu::getNumUsedChannels(tcuFormat.order));
+	const bool					isAlphaOnly		= isAlphaOnlyFormat(m_format);
+	const deUint32				componentCount	(isAlphaOnly ? 4u : tcu::getNumUsedChannels(tcuFormat.order));
 
 	if (isSnormFormat(m_format))
 	{
@@ -545,10 +550,10 @@ tcu::Vec4 MultisampleRenderPassTestBase::getFormatThreshold () const
 	}
 	else if (isUnormFormat(m_format))
 	{
-		return Vec4((componentCount >= 1) ? 1.5f * getRepresentableDiffUnorm(m_format, 0) : 0.0f,
-					(componentCount >= 2) ? 1.5f * getRepresentableDiffUnorm(m_format, 1) : 0.0f,
-					(componentCount >= 3) ? 1.5f * getRepresentableDiffUnorm(m_format, 2) : 0.0f,
-					(componentCount == 4) ? 1.5f * getRepresentableDiffUnorm(m_format, 3) : 0.0f);
+		return Vec4((componentCount >= 1 && !isAlphaOnly)	? 1.5f * getRepresentableDiffUnorm(m_format, 0) : 0.0f,
+					(componentCount >= 2 && !isAlphaOnly)	? 1.5f * getRepresentableDiffUnorm(m_format, 1) : 0.0f,
+					(componentCount >= 3 && !isAlphaOnly)	? 1.5f * getRepresentableDiffUnorm(m_format, 2) : 0.0f,
+					(componentCount == 4)					? 1.5f * getRepresentableDiffUnorm(m_format, 3) : 0.0f);
 	}
 	else if (isFloatFormat(m_format))
 	{
@@ -580,13 +585,19 @@ void MultisampleRenderPassTestBase::logImage (const std::string& name, const tcu
 {
 	m_context.getTestContext().getLog() << tcu::LogImage(name.c_str(), name.c_str(), image);
 
-	for (deUint32 layerNdx = 0; layerNdx < m_layerCount; ++layerNdx)
+	const auto totalLayerCount = totalLayers();
+	for (deUint32 layerNdx = m_baseLayer; layerNdx < totalLayerCount; ++layerNdx)
 	{
 		const std::string			layerName	(name + " Layer:" + de::toString(layerNdx));
 		tcu::ConstPixelBufferAccess	layerImage	(image.getFormat(), m_width, m_height, 1, image.getPixelPtr(0, 0, layerNdx));
 
 		m_context.getTestContext().getLog() << tcu::LogImage(layerName.c_str(), layerName.c_str(), layerImage);
 	}
+}
+
+uint32_t MultisampleRenderPassTestBase::totalLayers () const
+{
+	return (m_layerCount + m_baseLayer);
 }
 
 class MultisampleRenderPassTestInstance : public MultisampleRenderPassTestBase
@@ -664,7 +675,7 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& c
 
 	, m_singlesampleImages		(createImages(VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, (1u << renderLevel)*m_width, (1u << renderLevel)*m_height, renderLevel+1 ))
 	, m_singlesampleImageMemory	(createImageMemory(m_singlesampleImages))
-	, m_singlesampleImageViews	(createImageViews(m_singlesampleImages, renderLevel))
+	, m_singlesampleImageViews	(createImageViews(m_singlesampleImages, renderLevel, m_baseLayer))
 
 	// The "normal" render pass has an unused resolve attachment when testing compatibility.
 	, m_renderPass				(createRenderPassSwitch(!m_testCompatibility))
@@ -678,8 +689,8 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& c
 	, m_bufferMemory			(createBufferMemory(m_buffers))
 
 	, m_commandPool				(createCommandPool(context.getDeviceInterface(), context.getDevice(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, context.getUniversalQueueFamilyIndex()))
-	, m_sum						(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), m_width, m_height, m_layerCount)
-	, m_sumSrgb					(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), m_width, m_height, m_layerCount)
+	, m_sum						(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), m_width, m_height, totalLayers())
+	, m_sumSrgb					(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), m_width, m_height, totalLayers())
 	, m_sampleMask				(0x0u)
 
 	, m_renderLevel				(renderLevel)
@@ -739,7 +750,7 @@ void MultisampleRenderPassTestInstance::submit (void)
 					VK_IMAGE_ASPECT_COLOR_BIT,
 					m_renderLevel,
 					1u,
-					0u,
+					m_baseLayer,
 					m_layerCount
 				}
 			};
@@ -776,7 +787,7 @@ void MultisampleRenderPassTestInstance::submit (void)
 		// assume that buffer(s) have enough memory to store desired amount of mipmaps
 		copyImageToBuffer(vkd, *commandBuffer, **m_singlesampleImages[dstNdx], **m_buffers[dstNdx],
 						  m_format, tcu::IVec2((1u << m_renderLevel)*m_width, (1u << m_renderLevel)*m_height), m_renderLevel,
-						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_layerCount);
+						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, totalLayers());
 	}
 
 	endCommandBuffer(vkd, *commandBuffer);
@@ -816,7 +827,7 @@ void MultisampleRenderPassTestInstance::submitDynamicRendering (void)
 				VK_IMAGE_ASPECT_COLOR_BIT,
 				m_renderLevel,
 				1u,
-				0u,
+				m_baseLayer,
 				m_layerCount
 			}
 		});
@@ -963,7 +974,7 @@ void MultisampleRenderPassTestInstance::submitDynamicRendering (void)
 					VK_IMAGE_ASPECT_COLOR_BIT,
 					m_renderLevel,
 					1u,
-					0u,
+					m_baseLayer,
 					m_layerCount
 				}
 			};
@@ -979,7 +990,7 @@ void MultisampleRenderPassTestInstance::submitDynamicRendering (void)
 		// assume that buffer(s) have enough memory to store desired amount of mipmaps
 		copyImageToBuffer(vkd, *cmdBuffer, **m_singlesampleImages[dstNdx], **m_buffers[dstNdx],
 						  m_format, tcu::IVec2((1u << m_renderLevel)*m_width, (1u << m_renderLevel)*m_height), m_renderLevel,
-						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_layerCount);
+						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, totalLayers());
 	}
 
 	endCommandBuffer(vkd, *cmdBuffer);
@@ -1032,10 +1043,10 @@ void MultisampleRenderPassTestInstance::verify (void)
 	for (deUint32 attachmentIdx = 0; attachmentIdx < m_attachmentsCount; ++attachmentIdx)
 	{
 		void* const ptr = static_cast<deUint8*>(m_bufferMemory[attachmentIdx]->getHostPtr()) + offset;
-		accesses.push_back(tcu::ConstPixelBufferAccess(format, m_width, m_height, m_layerCount, ptr));
+		accesses.push_back(tcu::ConstPixelBufferAccess(format, m_width, m_height, totalLayers(), ptr));
 	}
 
-	tcu::TextureLevel					errorMask		(tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::UNORM_INT8), m_width, m_height, m_layerCount);
+	tcu::TextureLevel					errorMask		(tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::UNORM_INT8), m_width, m_height, totalLayers());
 	tcu::TestLog&						log				(m_context.getTestContext().getLog());
 
 	switch (channelClass)
@@ -1044,7 +1055,8 @@ void MultisampleRenderPassTestInstance::verify (void)
 		case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
 		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 		{
-			const int	componentCount	(tcu::getNumUsedChannels(format.order));
+			const bool	isAlphaOnly		= isAlphaOnlyFormat(m_format);
+			const int	componentCount	(isAlphaOnly ? 4 : tcu::getNumUsedChannels(format.order));
 			bool		isOk			= true;
 			float		clearValue;
 			float		renderValue;
@@ -1068,21 +1080,21 @@ void MultisampleRenderPassTestInstance::verify (void)
 					DE_FATAL("Unknown channel class");
 			}
 
-			for (deUint32 z = 0; z < m_layerCount; z++)
+			for (deUint32 z = m_baseLayer; z < totalLayers(); z++)
 			for (deUint32 y = 0; y < m_height; y++)
 			for (deUint32 x = 0; x < m_width; x++)
 			{
 				// Color has to be black if no samples were covered, white if all samples were covered or same in every attachment
 				const Vec4	firstColor	(accesses[0].getPixel(x, y, z));
 				const Vec4	refColor	(m_sampleMask == 0x0u
-										? Vec4(clearValue,
-												componentCount > 1 ? clearValue : 0.0f,
-												componentCount > 2 ? clearValue : 0.0f,
+										? Vec4((isAlphaOnly ? 0.0f : clearValue),
+												componentCount > 1 && !isAlphaOnly ? clearValue : 0.0f,
+												componentCount > 2 && !isAlphaOnly ? clearValue : 0.0f,
 												componentCount > 3 ? clearValue : 1.0f)
 										: m_sampleMask == ((0x1u << m_sampleCount) - 1u)
-										? Vec4(renderValue,
-												componentCount > 1 ? renderValue : 0.0f,
-												componentCount > 2 ? renderValue : 0.0f,
+										? Vec4((isAlphaOnly ? 0.0f : renderValue),
+												componentCount > 1 && !isAlphaOnly ? renderValue : 0.0f,
+												componentCount > 2 && !isAlphaOnly ? renderValue : 0.0f,
 												componentCount > 3 ? renderValue : 1.0f)
 										: firstColor);
 
@@ -1152,7 +1164,7 @@ void MultisampleRenderPassTestInstance::verify (void)
 			bool			inconsistentComponents	= false;
 			bool			inconsistentAttachments	= false;
 
-			for (deUint32 z = 0; z < m_layerCount; z++)
+			for (deUint32 z = m_baseLayer; z < totalLayers(); z++)
 			for (deUint32 y = 0; y < m_height; y++)
 			for (deUint32 x = 0; x < m_width; x++)
 			{
@@ -1253,7 +1265,7 @@ void MultisampleRenderPassTestInstance::verify (void)
 			bool			inconsistentComponents	= false;
 			bool			inconsistentAttachments	= false;
 
-			for (deUint32 z = 0; z < m_layerCount; z++)
+			for (deUint32 z = m_baseLayer; z < totalLayers(); z++)
 			for (deUint32 y = 0; y < m_height; y++)
 			for (deUint32 x = 0; x < m_width; x++)
 			{
@@ -1388,10 +1400,11 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 				|| channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT
 				|| channelClass == tcu::TEXTURECHANNELCLASS_FLOATING_POINT)
 		{
-			const int			componentCount	(tcu::getNumUsedChannels(format.order));
+			const bool			isAlphaOnly		= isAlphaOnlyFormat(m_format);
+			const int			componentCount	(isAlphaOnly ? 4 : tcu::getNumUsedChannels(format.order));
 			const Vec4			errorColor		(1.0f, 0.0f, 0.0f, 1.0f);
 			const Vec4			okColor			(0.0f, 1.0f, 0.0f, 1.0f);
-			tcu::TextureLevel	errorMask		(tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::UNORM_INT8), m_width, m_height, m_layerCount);
+			tcu::TextureLevel	errorMask		(tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::UNORM_INT8), m_width, m_height, totalLayers());
 			bool				isOk			= true;
 			Vec4				maxDiff			(0.0f);
 			Vec4				expectedAverage;
@@ -1400,7 +1413,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 			{
 				case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
 				{
-					expectedAverage = Vec4(0.5f, componentCount > 1 ? 0.5f : 0.0f, componentCount > 2 ? 0.5f : 0.0f, componentCount > 3 ? 0.5f : 1.0f);
+					expectedAverage = Vec4((isAlphaOnly ? 0.0f : 0.5f), componentCount > 1 && !isAlphaOnly ? 0.5f : 0.0f, componentCount > 2 && !isAlphaOnly ? 0.5f : 0.0f, componentCount > 3 ? 0.5f : 1.0f);
 					break;
 				}
 
@@ -1415,7 +1428,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 					DE_FATAL("Unknown channel class");
 			}
 
-			for (deUint32 z = 0; z < m_layerCount; z++)
+			for (deUint32 z = m_baseLayer; z < totalLayers(); z++)
 			for (deUint32 y = 0; y < m_height; y++)
 			for (deUint32 x = 0; x < m_width; x++)
 			{
@@ -1906,7 +1919,7 @@ MaxAttachmenstsRenderPassTestInstance::MaxAttachmenstsRenderPassTestInstance (Co
 
 	, m_singlesampleImages		(createImages(VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT))
 	, m_singlesampleImageMemory	(createImageMemory(m_singlesampleImages))
-	, m_singlesampleImageViews	(createImageViews(m_singlesampleImages))
+	, m_singlesampleImageViews	(createImageViews(m_singlesampleImages, m_baseLayer))
 
 	, m_descriptorSetLayout		(createDescriptorSetLayout())
 	, m_descriptorPool			(createDescriptorPool())
@@ -1967,7 +1980,7 @@ void MaxAttachmenstsRenderPassTestInstance::submit (void)
 					VK_IMAGE_ASPECT_COLOR_BIT,
 					0u,
 					1u,
-					0u,
+					m_baseLayer,
 					m_layerCount
 				}
 			};
@@ -2042,7 +2055,7 @@ void MaxAttachmenstsRenderPassTestInstance::submit (void)
 					VK_IMAGE_ASPECT_COLOR_BIT,
 					0u,
 					1u,
-					0u,
+					m_baseLayer,
 					m_layerCount
 				}
 			};
@@ -2939,6 +2952,11 @@ struct Programs
 template<class TestConfigType>
 void checkSupport(Context& context, TestConfigType config)
 {
+#ifndef CTS_USES_VULKANSC
+	if (config.format == VK_FORMAT_A8_UNORM_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
 	if (config.layerCount > 1)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 
@@ -2963,6 +2981,9 @@ void checkSupport(Context& context, TestConfigType config)
 
 	if (config.attachmentCount > properties.limits.maxColorAttachments)
 		TCU_THROW(NotSupportedError, "Required number of color attachments not supported.");
+
+	if (config.testType == MAX_ATTACHMENTS && config.attachmentCount > properties.limits.maxPerStageDescriptorInputAttachments)
+		TCU_THROW(NotSupportedError, "Required number of per stage descriptor input attachments not supported.");
 }
 
 std::string formatToName (VkFormat format)
@@ -2984,6 +3005,9 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_UINT,
@@ -3074,6 +3098,7 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 					format,
 					sampleCount,
 					layerCount,
+					0,
 					4u,
 					32u,
 					32u,
@@ -3081,6 +3106,22 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 				};
 
 				formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfig)));
+
+				const TestConfig	testConfigBaseLayer
+				{
+					RESOLVE,
+					format,
+					sampleCount,
+					layerCount,
+					1,
+					4u,
+					32u,
+					32u,
+					groupParams
+				};
+				std::string			testNameBaseLayer	("samples_" + de::toString(sampleCount) + "_baseLayer1");
+
+				formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testNameBaseLayer.c_str(), testNameBaseLayer.c_str(), testConfigBaseLayer, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfigBaseLayer)));
 
 				for (deUint32 resolveLevel : resolveLevels)
 				{

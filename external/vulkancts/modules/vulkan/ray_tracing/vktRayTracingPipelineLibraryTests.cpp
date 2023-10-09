@@ -83,6 +83,7 @@ struct TestParams
 	bool								pipelinesCreatedUsingDHO;
 	TestType							testType;
 	bool								useAABBs;
+	bool								useMaintenance5;
 	bool								useLinkTimeOptimizations;
 	bool								retainLinkTimeOptimizations;
 	deUint32							width;
@@ -297,6 +298,9 @@ void RayTracingPipelineLibraryTestCase::checkSupport(Context& context) const
 
 	if (m_data.useLinkTimeOptimizations)
 		context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
+
+	if (m_data.useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
 	if (m_data.includesCaptureReplay())
 	{
@@ -664,6 +668,8 @@ std::vector<uint32_t> RayTracingPipelineLibraryTestInstance::runTest (bool repla
 		}
 
 		rtPipeline->get()->setCreateFlags(creationFlags);
+		if (m_data.useMaintenance5)
+			rtPipeline->get()->setCreateFlags2(translateCreateFlag(creationFlags));
 
 		rtPipeline->get()->setMaxPayloadSize(16U); // because rayPayloadInEXT is uvec4 ( = 16 bytes ) for all chit shaders
 		rtPipelines[idx] = rtPipeline;
@@ -1010,6 +1016,7 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group)
 						geometryCase.useAABBs,
 						false,
 						false,
+						false,
 						RTPL_DEFAULT_SIZE,
 						RTPL_DEFAULT_SIZE
 					};
@@ -1023,7 +1030,24 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group)
 	}
 
 	{
-		TestParams testParams
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(group->getTestContext(), "misc", ""));
+
+		TestParams testParamsMaintenance5
+		{
+			libraryConfigurationData[1].libraryConfiguration,
+			false,
+			false,
+			TestType::CHECK_CAPTURE_REPLAY_HANDLES,
+			false,
+			true,
+			false,
+			true,
+			RTPL_DEFAULT_SIZE,
+			RTPL_DEFAULT_SIZE
+		};
+		miscGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), "maintenance5", "", testParamsMaintenance5));
+
+		TestParams testParamsUseLinkTimeOpt
 		{
 			libraryConfigurationData[5].libraryConfiguration,
 			false,
@@ -1032,14 +1056,26 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group)
 			true,
 			true,
 			false,
+			false,
 			RTPL_DEFAULT_SIZE,
 			RTPL_DEFAULT_SIZE
 		};
+		miscGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), "use_link_time_optimizations", "", testParamsUseLinkTimeOpt));
 
-		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(group->getTestContext(), "misc", ""));
-		miscGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), "use_link_time_optimizations", "", testParams));
-		testParams.retainLinkTimeOptimizations = true;
-		miscGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), "retain_link_time_optimizations", "", testParams));
+		TestParams testParamsRetainLinkTimeOpt
+		{
+			libraryConfigurationData[5].libraryConfiguration,
+			false,
+			false,
+			TestType::DEFAULT,
+			true,
+			true,
+			true,
+			false,
+			RTPL_DEFAULT_SIZE,
+			RTPL_DEFAULT_SIZE
+		};
+		miscGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), "retain_link_time_optimizations", "", testParamsRetainLinkTimeOpt));
 
 		group->addChild(miscGroup.release());
 	}

@@ -58,6 +58,7 @@
 #include "vkBufferWithMemory.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktRasterizationOrderAttachmentAccessTests.hpp"
+#include "vktRasterizationDepthBiasControlTests.hpp"
 #include "vktShaderTileImageTests.hpp"
 #endif // CTS_USES_VULKANSC
 
@@ -194,6 +195,8 @@ public:
 													BaseRenderingTestInstance		(Context& context, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT, deUint32 renderSize = RESOLUTION_POT, VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM, deUint32 additionalRenderSize = 0);
 													~BaseRenderingTestInstance		(void);
 
+	const tcu::TextureFormat&						getTextureFormat				(void) const;
+
 protected:
 	void											addImageTransitionBarrier		(VkCommandBuffer commandBuffer, VkImage image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout) const;
 	virtual void									drawPrimitives					(tcu::Surface& result, const std::vector<tcu::Vec4>& vertexData, VkPrimitiveTopology primitiveTopology);
@@ -219,8 +222,6 @@ protected:
 
 	virtual
 	const VkPipelineColorBlendStateCreateInfo*		getColorBlendStateCreateInfo	(void) const;
-
-	const tcu::TextureFormat&						getTextureFormat				(void) const;
 
 	const deUint32									m_renderSize;
 	const VkSampleCountFlagBits						m_sampleCount;
@@ -1866,20 +1867,22 @@ protected:
 class PointSizeTestInstance : public BaseRenderingTestInstance
 {
 public:
-							PointSizeTestInstance	(Context& context, deUint32 renderSize, float pointSize);
-	virtual tcu::TestStatus	iterate					(void);
-	virtual float			getPointSize			(void) const;
+								PointSizeTestInstance	(Context& context, deUint32 renderSize, float pointSize);
+	virtual tcu::TestStatus		iterate					(void);
+	virtual float				getPointSize			(void) const;
 
-private:
-	void					generatePointData		(PointSceneSpec::ScenePoint& outPoint);
-	void					drawPoint				(tcu::PixelBufferAccess& result, tcu::PointSceneSpec::ScenePoint& point);
-	bool					verifyPoint				(tcu::TestLog& log, tcu::PixelBufferAccess& access, float pointSize);
-	bool					isPointSizeClamped		(float pointSize, float maxPointSizeLimit);
+protected:
+	void						generatePointData		(PointSceneSpec::ScenePoint& outPoint);
+	virtual Move<VkPipeline>	createPipeline			(void);
+	virtual void				bindDrawData			(VkCommandBuffer commandBuffer, VkPipeline graphicsPipeline, VkBuffer vertexBuffer);
+	void						drawPoint				(tcu::PixelBufferAccess& result, tcu::PointSceneSpec::ScenePoint& point);
+	bool						verifyPoint				(tcu::TestLog& log, tcu::PixelBufferAccess& access, float pointSize);
+	bool						isPointSizeClamped		(float pointSize, float maxPointSizeLimit);
 
-	const float				m_pointSize;
-	const float				m_maxPointSize;
-	const deUint32			m_renderSize;
-	const VkFormat			m_format;
+	const float					m_pointSize;
+	const float					m_maxPointSize;
+	const deUint32				m_renderSize;
+	const VkFormat				m_format;
 };
 
 PointSizeTestInstance::PointSizeTestInstance (Context& context, deUint32 renderSize, float pointSize)
@@ -1949,6 +1952,87 @@ void PointSizeTestInstance::generatePointData (PointSceneSpec::ScenePoint& outPo
 	}
 }
 
+Move<VkPipeline> PointSizeTestInstance::createPipeline (void)
+{
+	const DeviceInterface&						vkd									(m_context.getDeviceInterface());
+	const VkDevice								vkDevice							(m_context.getDevice());
+	const std::vector<VkViewport>				viewports							(1, makeViewport(tcu::UVec2(m_renderSize)));
+	const std::vector<VkRect2D>					scissors							(1, makeRect2D(tcu::UVec2(m_renderSize)));
+
+	const VkVertexInputBindingDescription		vertexInputBindingDescription		=
+	{
+		0u,									// deUint32					binding;
+		(deUint32)(2 * sizeof(tcu::Vec4)),	// deUint32					strideInBytes;
+		VK_VERTEX_INPUT_RATE_VERTEX			// VkVertexInputStepRate	stepRate;
+	};
+
+	const VkVertexInputAttributeDescription		vertexInputAttributeDescriptions[2]	=
+	{
+		{
+			0u,								// deUint32	location;
+			0u,								// deUint32	binding;
+			VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
+			0u								// deUint32	offsetInBytes;
+		},
+		{
+			1u,								// deUint32	location;
+			0u,								// deUint32	binding;
+			VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
+			(deUint32)sizeof(tcu::Vec4)		// deUint32	offsetInBytes;
+		}
+	};
+
+	const VkPipelineVertexInputStateCreateInfo	vertexInputStateParams				=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType;
+		DE_NULL,													// const void*								pNext;
+		0,															// VkPipelineVertexInputStateCreateFlags	flags;
+		1u,															// deUint32									bindingCount;
+		&vertexInputBindingDescription,								// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
+		2u,															// deUint32									attributeCount;
+		vertexInputAttributeDescriptions							// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+	};
+
+	return makeGraphicsPipeline(vkd,									// const DeviceInterface&							 vk
+								vkDevice,								// const VkDevice									 device
+								*m_pipelineLayout,						// const VkPipelineLayout							 pipelineLayout
+								*m_vertexShaderModule,					// const VkShaderModule								 vertexShaderModule
+								DE_NULL,								// const VkShaderModule								 tessellationControlShaderModule
+								DE_NULL,								// const VkShaderModule								 tessellationEvalShaderModule
+								DE_NULL,								// const VkShaderModule								 geometryShaderModule
+								*m_fragmentShaderModule,				// const VkShaderModule								 fragmentShaderModule
+								*m_renderPass,							// const VkRenderPass								 renderPass
+								viewports,								// const std::vector<VkViewport>&					 viewports
+								scissors,								// const std::vector<VkRect2D>&						 scissors
+								VK_PRIMITIVE_TOPOLOGY_POINT_LIST,		// const VkPrimitiveTopology						 topology
+								0u,										// const deUint32									 subpass
+								0u,										// const deUint32									 patchControlPoints
+								&vertexInputStateParams,				// const VkPipelineVertexInputStateCreateInfo*		 vertexInputStateCreateInfo
+								getRasterizationStateCreateInfo(),		// const VkPipelineRasterizationStateCreateInfo*	 rasterizationStateCreateInfo
+								DE_NULL,								// const VkPipelineMultisampleStateCreateInfo*		 multisampleStateCreateInfo
+								DE_NULL,								// const VkPipelineDepthStencilStateCreateInfo*		 depthStencilStateCreateInfo,
+								getColorBlendStateCreateInfo());		// const VkPipelineColorBlendStateCreateInfo*		 colorBlendStateCreateInfo
+}
+
+void PointSizeTestInstance::bindDrawData (VkCommandBuffer commandBuffer, VkPipeline graphicsPipeline, VkBuffer vertexBuffer)
+{
+	const DeviceInterface&	vkd					(m_context.getDeviceInterface());
+	const VkDevice			vkDevice			(m_context.getDevice());
+	const VkDeviceSize		vertexBufferOffset	= 0;
+
+	vkd.cmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+	vkd.cmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1, &m_descriptorSet.get(), 0u, DE_NULL);
+	vkd.cmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+
+	// Set Point Size
+	{
+		float pointSize = getPointSize();
+
+		deMemcpy(m_uniformBufferMemory->getHostPtr(), &pointSize, (size_t)m_uniformBufferSize);
+		flushAlloc(vkd, vkDevice, *m_uniformBufferMemory);
+	}
+}
+
 void PointSizeTestInstance::drawPoint (tcu::PixelBufferAccess& result, PointSceneSpec::ScenePoint& point)
 {
 	const tcu::Vec4			positionData		(point.position);
@@ -1967,64 +2051,7 @@ void PointSizeTestInstance::drawPoint (tcu::PixelBufferAccess& result, PointScen
 	de::MovePtr<Allocation>	vertexBufferMemory;
 
 	// Create Graphics Pipeline
-	{
-		const std::vector<VkViewport>				viewports							(1, makeViewport(tcu::UVec2(m_renderSize)));
-		const std::vector<VkRect2D>					scissors							(1, makeRect2D(tcu::UVec2(m_renderSize)));
-
-		const VkVertexInputBindingDescription		vertexInputBindingDescription		=
-		{
-			0u,									// deUint32					binding;
-			(deUint32)(2 * sizeof(tcu::Vec4)),	// deUint32					strideInBytes;
-			VK_VERTEX_INPUT_RATE_VERTEX			// VkVertexInputStepRate	stepRate;
-		};
-
-		const VkVertexInputAttributeDescription		vertexInputAttributeDescriptions[2]	=
-		{
-			{
-				0u,								// deUint32	location;
-				0u,								// deUint32	binding;
-				VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
-				0u								// deUint32	offsetInBytes;
-			},
-			{
-				1u,								// deUint32	location;
-				0u,								// deUint32	binding;
-				VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
-				(deUint32)sizeof(tcu::Vec4)		// deUint32	offsetInBytes;
-			}
-		};
-
-		const VkPipelineVertexInputStateCreateInfo	vertexInputStateParams				=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType;
-			DE_NULL,													// const void*								pNext;
-			0,															// VkPipelineVertexInputStateCreateFlags	flags;
-			1u,															// deUint32									bindingCount;
-			&vertexInputBindingDescription,								// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
-			2u,															// deUint32									attributeCount;
-			vertexInputAttributeDescriptions							// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
-		};
-
-		graphicsPipeline = makeGraphicsPipeline(vkd,								// const DeviceInterface&							 vk
-												vkDevice,							// const VkDevice									 device
-												*m_pipelineLayout,					// const VkPipelineLayout							 pipelineLayout
-												*m_vertexShaderModule,				// const VkShaderModule								 vertexShaderModule
-												DE_NULL,							// const VkShaderModule								 tessellationControlShaderModule
-												DE_NULL,							// const VkShaderModule								 tessellationEvalShaderModule
-												DE_NULL,							// const VkShaderModule								 geometryShaderModule
-												*m_fragmentShaderModule,			// const VkShaderModule								 fragmentShaderModule
-												*m_renderPass,						// const VkRenderPass								 renderPass
-												viewports,							// const std::vector<VkViewport>&					 viewports
-												scissors,							// const std::vector<VkRect2D>&						 scissors
-												VK_PRIMITIVE_TOPOLOGY_POINT_LIST,	// const VkPrimitiveTopology						 topology
-												0u,									// const deUint32									 subpass
-												0u,									// const deUint32									 patchControlPoints
-												&vertexInputStateParams,			// const VkPipelineVertexInputStateCreateInfo*		 vertexInputStateCreateInfo
-												getRasterizationStateCreateInfo(),	// const VkPipelineRasterizationStateCreateInfo*	 rasterizationStateCreateInfo
-												DE_NULL,							// const VkPipelineMultisampleStateCreateInfo*		 multisampleStateCreateInfo
-												DE_NULL,							// const VkPipelineDepthStencilStateCreateInfo*		 depthStencilStateCreateInfo,
-												getColorBlendStateCreateInfo());	// const VkPipelineColorBlendStateCreateInfo*		 colorBlendStateCreateInfo
-	}
+	graphicsPipeline = createPipeline();
 
 	// Create Vertex Buffer
 	{
@@ -2068,11 +2095,7 @@ void PointSizeTestInstance::drawPoint (tcu::PixelBufferAccess& result, PointScen
 	// Begin Render Pass
 	beginRenderPass(vkd, *commandBuffer, *m_renderPass, *m_frameBuffer, vk::makeRect2D(0, 0, m_renderSize, m_renderSize), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
-	const VkDeviceSize vertexBufferOffset = 0;
-
-	vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
-	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1, &m_descriptorSet.get(), 0u, DE_NULL);
-	vkd.cmdBindVertexBuffers(*commandBuffer, 0, 1, &vertexBuffer.get(), &vertexBufferOffset);
+	bindDrawData(commandBuffer.get(), graphicsPipeline.get(), vertexBuffer.get());
 	vkd.cmdDraw(*commandBuffer, 1, 1, 0, 0);
 	endRenderPass(vkd, *commandBuffer);
 
@@ -2080,14 +2103,6 @@ void PointSizeTestInstance::drawPoint (tcu::PixelBufferAccess& result, PointScen
 	copyImageToBuffer(vkd, *commandBuffer, *m_image, *m_resultBuffer, tcu::IVec2(m_renderSize, m_renderSize));
 
 	endCommandBuffer(vkd, *commandBuffer);
-
-	// Set Point Size
-	{
-		float pointSize = getPointSize();
-
-		deMemcpy(m_uniformBufferMemory->getHostPtr(), &pointSize, (size_t)m_uniformBufferSize);
-		flushAlloc(vkd, vkDevice, *m_uniformBufferMemory);
-	}
 
 	// Submit
 	submitCommandsAndWait(vkd, vkDevice, queue, commandBuffer.get());
@@ -2157,6 +2172,245 @@ bool PointSizeTestInstance::verifyPoint (tcu::TestLog& log, tcu::PixelBufferAcce
 bool PointSizeTestInstance::isPointSizeClamped (float pointSize, float maxPointSizeLimit)
 {
 	return (pointSize == maxPointSizeLimit);
+}
+
+class PointDefaultSizeTestInstance : public PointSizeTestInstance
+{
+public:
+								PointDefaultSizeTestInstance	(Context& context, deUint32 renderSize, VkShaderStageFlags stage);
+
+protected:
+	Move<VkPipeline>			createPipeline					(void) override;
+	void						bindDrawData					(VkCommandBuffer commandBuffer, VkPipeline graphicsPipeline, VkBuffer vertexBuffer) override;
+
+	const VkShaderStageFlags	m_tessellationBits				= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+	const VkShaderStageFlags	m_geometryBits					= VK_SHADER_STAGE_GEOMETRY_BIT;
+
+	Move<VkShaderModule>		m_tessellationControlShaderModule;
+	Move<VkShaderModule>		m_tessellationEvaluationShaderModule;
+	Move<VkShaderModule>		m_geometryShaderModule;
+
+	bool						m_hasTessellationStage;
+	bool						m_hasGeometryStage;
+};
+
+PointDefaultSizeTestInstance::PointDefaultSizeTestInstance	(Context& context, deUint32 renderSize, VkShaderStageFlags stage)
+	: PointSizeTestInstance(context, renderSize, 1.0f)
+	, m_hasTessellationStage(stage & m_tessellationBits)
+	, m_hasGeometryStage(stage & m_geometryBits)
+{
+	const DeviceInterface&		vkd					= m_context.getDeviceInterface();
+	const VkDevice				vkDevice			= m_context.getDevice();
+
+	if (m_hasTessellationStage)
+	{
+		m_tessellationControlShaderModule			= createShaderModule(vkd, vkDevice, m_context.getBinaryCollection().get("tessellation_control_shader"), 0);
+		m_tessellationEvaluationShaderModule		= createShaderModule(vkd, vkDevice, m_context.getBinaryCollection().get("tessellation_evaluation_shader"), 0);
+	}
+
+	if (m_hasGeometryStage)
+	{
+		m_geometryShaderModule						= createShaderModule(vkd, vkDevice, m_context.getBinaryCollection().get("geometry_shader"), 0);
+	}
+}
+
+Move<VkPipeline> PointDefaultSizeTestInstance::createPipeline (void)
+{
+	const DeviceInterface&						vkd									(m_context.getDeviceInterface());
+	const VkDevice								vkDevice							(m_context.getDevice());
+	const std::vector<VkViewport>				viewports							(1, makeViewport(tcu::UVec2(m_renderSize)));
+	const std::vector<VkRect2D>					scissors							(1, makeRect2D(tcu::UVec2(m_renderSize)));
+	const VkPrimitiveTopology					topology							= m_hasTessellationStage ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+	const deUint32								patchCount							= m_hasTessellationStage ? 1u : 0u;
+
+	const VkVertexInputBindingDescription		vertexInputBindingDescription		=
+	{
+		0u,									// deUint32					binding;
+		(deUint32)(2 * sizeof(tcu::Vec4)),	// deUint32					strideInBytes;
+		VK_VERTEX_INPUT_RATE_VERTEX			// VkVertexInputStepRate	stepRate;
+	};
+
+	const VkVertexInputAttributeDescription		vertexInputAttributeDescriptions	=
+	{
+		0u,								// deUint32	location;
+		0u,								// deUint32	binding;
+		VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
+		0u								// deUint32	offsetInBytes;
+	};
+
+	const VkPipelineVertexInputStateCreateInfo	vertexInputStateParams				=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType;
+		DE_NULL,													// const void*								pNext;
+		0,															// VkPipelineVertexInputStateCreateFlags	flags;
+		1u,															// deUint32									bindingCount;
+		&vertexInputBindingDescription,								// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
+		1u,															// deUint32									attributeCount;
+		&vertexInputAttributeDescriptions							// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+	};
+
+	return makeGraphicsPipeline(vkd,									// const DeviceInterface&							 vk
+								vkDevice,								// const VkDevice									 device
+								*m_pipelineLayout,						// const VkPipelineLayout							 pipelineLayout
+								*m_vertexShaderModule,					// const VkShaderModule								 vertexShaderModule
+								*m_tessellationControlShaderModule,		// const VkShaderModule								 tessellationControlShaderModule
+								*m_tessellationEvaluationShaderModule,	// const VkShaderModule								 tessellationEvalShaderModule
+								*m_geometryShaderModule,				// const VkShaderModule								 geometryShaderModule
+								*m_fragmentShaderModule,				// const VkShaderModule								 fragmentShaderModule
+								*m_renderPass,							// const VkRenderPass								 renderPass
+								viewports,								// const std::vector<VkViewport>&					 viewports
+								scissors,								// const std::vector<VkRect2D>&						 scissors
+								topology,								// const VkPrimitiveTopology						 topology
+								0u,										// const deUint32									 subpass
+								patchCount,								// const deUint32									 patchControlPoints
+								&vertexInputStateParams,				// const VkPipelineVertexInputStateCreateInfo*		 vertexInputStateCreateInfo
+								getRasterizationStateCreateInfo(),		// const VkPipelineRasterizationStateCreateInfo*	 rasterizationStateCreateInfo
+								DE_NULL,								// const VkPipelineMultisampleStateCreateInfo*		 multisampleStateCreateInfo
+								DE_NULL,								// const VkPipelineDepthStencilStateCreateInfo*		 depthStencilStateCreateInfo,
+								getColorBlendStateCreateInfo());		// const VkPipelineColorBlendStateCreateInfo*		 colorBlendStateCreateInfo
+}
+
+void PointDefaultSizeTestInstance::bindDrawData (VkCommandBuffer commandBuffer, VkPipeline graphicsPipeline, VkBuffer vertexBuffer)
+{
+	const DeviceInterface&	vkd					(m_context.getDeviceInterface());
+	const VkDeviceSize		vertexBufferOffset	= 0;
+
+	vkd.cmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+	vkd.cmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+}
+
+class PointDefaultSizeTestCase : public BaseRenderingTestCase
+{
+public:
+					PointDefaultSizeTestCase	(tcu::TestContext&		context,
+												 std::string			name,
+												 std::string			description,
+												 deUint32				renderSize,
+												 VkShaderStageFlags		stage,
+												 VkSampleCountFlagBits	sampleCount = VK_SAMPLE_COUNT_1_BIT);
+
+	void			initPrograms				(vk::SourceCollections& programCollection) const override;
+	TestInstance*	createInstance				(Context& context) const override;
+	void			checkSupport				(Context& context) const override;
+
+protected:
+	const deUint32				m_renderSize;
+	const VkShaderStageFlags	m_stage;
+};
+
+PointDefaultSizeTestCase::PointDefaultSizeTestCase	(tcu::TestContext&		context,
+													 std::string			name,
+													 std::string			description,
+													 deUint32				renderSize,
+													 VkShaderStageFlags		stage,
+													 VkSampleCountFlagBits	sampleCount)
+	: BaseRenderingTestCase	(context, name, description, sampleCount)
+	, m_renderSize			(renderSize)
+	, m_stage				(stage)
+{
+}
+
+void PointDefaultSizeTestCase::initPrograms			(vk::SourceCollections& programCollection) const
+{
+	std::ostringstream vert;
+	std::ostringstream tesc;
+	std::ostringstream tese;
+	std::ostringstream geom;
+	std::ostringstream frag;
+
+	vert
+		<< "#version 450\n"
+		<< "layout(location = 0) in highp vec4 a_position;\n"
+		<< "void main()"
+		<< "{\n"
+		<< "	gl_Position = a_position;\n"
+		<< "}\n"
+		;
+
+	tesc
+		<< "#version 450\n"
+		<< "layout(vertices = 1) out;\n"
+		<< "void main()\n"
+		<< "{\n"
+		<< "	gl_TessLevelOuter[0] = 1.0;\n"
+		<< "	gl_TessLevelOuter[1] = 1.0;\n"
+		<< "	gl_TessLevelOuter[2] = 1.0;\n"
+		<< "	gl_TessLevelOuter[3] = 1.0;\n"
+		<< "	gl_TessLevelInner[0] = 1.0;\n"
+		<< "	gl_TessLevelInner[1] = 1.0;\n"
+		<< "\n"
+		<< "	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+		<< "}\n"
+		;
+
+	tese
+		<< "#version 450\n"
+		<< "layout(isolines, point_mode) in;\n"
+		<< "void main()\n"
+		<< "{\n"
+		<< "	gl_Position = gl_in[0].gl_Position;\n"
+		<< "}\n"
+		;
+
+	geom
+		<< "#version 450\n"
+		<< "layout(points) in;\n"
+		<< "layout(points, max_vertices=1) out;\n"
+		<< "void main()\n"
+		<< "{\n"
+		<< "	gl_Position = gl_in[0].gl_Position;\n"
+		<< "	EmitVertex();\n"
+		<< "	EndPrimitive();\n"
+		<< "}\n"
+		;
+
+	frag
+		<< "#version 450\n"
+		<< "layout(location = 0) out highp vec4 fragColor;\n"
+		<< "void main()"
+		<< "{\n"
+		<< "	fragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);\n"
+		<< "}\n"
+		;
+
+	programCollection.glslSources.add("vertext_shader") << glu::VertexSource(vert.str());
+	programCollection.glslSources.add("tessellation_control_shader") << glu::TessellationControlSource(tesc.str());
+	programCollection.glslSources.add("tessellation_evaluation_shader") << glu::TessellationEvaluationSource(tese.str());
+	programCollection.glslSources.add("geometry_shader") << glu::GeometrySource(geom.str());
+	programCollection.glslSources.add("fragment_shader") << glu::FragmentSource(frag.str());
+}
+
+TestInstance* PointDefaultSizeTestCase::createInstance	(Context& context) const
+{
+	VkPhysicalDeviceProperties	properties	(context.getDeviceProperties());
+
+	if (m_renderSize > properties.limits.maxViewportDimensions[0] || m_renderSize > properties.limits.maxViewportDimensions[1])
+		TCU_THROW(NotSupportedError , "Viewport dimensions not supported");
+
+	if (m_renderSize > properties.limits.maxFramebufferWidth || m_renderSize > properties.limits.maxFramebufferHeight)
+		TCU_THROW(NotSupportedError , "Framebuffer width/height not supported");
+
+	return new PointDefaultSizeTestInstance(context, m_renderSize, m_stage);
+}
+
+void PointDefaultSizeTestCase::checkSupport				(Context& context) const
+{
+	const VkShaderStageFlags	tessellationBits	= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+	const VkShaderStageFlags	geometryBits		= VK_SHADER_STAGE_GEOMETRY_BIT;
+
+	if (m_stage & tessellationBits)
+	{
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_TESSELLATION_AND_GEOMETRY_POINT_SIZE);
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+	}
+
+	if (m_stage & geometryBits)
+	{
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_TESSELLATION_AND_GEOMETRY_POINT_SIZE);
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+	}
+
+	context.requireDeviceFunctionality("VK_KHR_maintenance5");
 }
 
 template <typename ConcreteTestInstance>
@@ -4522,7 +4776,6 @@ const VkPipelineRasterizationLineStateCreateInfoEXT* ConservativePointTestInstan
 {
 	return DE_NULL;
 }
-
 
 template <typename ConcreteTestInstance>
 class WidenessTestCase : public BaseRenderingTestCase
@@ -6918,6 +7171,734 @@ tcu::TestStatus CullAndPrimitiveIdInstance::iterate ()
 	return tcu::TestStatus::pass("Pass");
 }
 
+struct PolygonModeLargePointsConfig
+{
+	const float	pointSize;
+	const bool	meshShader;
+	const bool	tessellationShaders;
+	const bool	geometryShader;
+	const bool	dynamicPolygonMode;
+	const bool	defaultSize;
+
+	PolygonModeLargePointsConfig (float pointSize_, bool meshShader_, bool tessellationShaders_, bool geometryShader_, bool dynamicPolygonMode_, bool defaultSize_ = false)
+		: pointSize				(pointSize_)
+		, meshShader			(meshShader_)
+		, tessellationShaders	(tessellationShaders_)
+		, geometryShader		(geometryShader_)
+		, dynamicPolygonMode	(dynamicPolygonMode_)
+		, defaultSize			(defaultSize_)
+	{
+		if (meshShader)
+		{
+			DE_ASSERT(!tessellationShaders && !geometryShader);
+		}
+	}
+};
+
+class PolygonModeLargePointsCase : public vkt::TestCase
+{
+public:
+					PolygonModeLargePointsCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const PolygonModeLargePointsConfig& config)
+						: vkt::TestCase	(testCtx, name, description)
+						, m_config		(config)
+						{}
+	virtual			~PolygonModeLargePointsCase	(void) {}
+
+	void			checkSupport				(Context& context) const override;
+	void			initPrograms				(vk::SourceCollections& programCollection) const override;
+	TestInstance*	createInstance				(Context& context) const override;
+
+	static const tcu::Vec4		geometryColor;
+	static constexpr uint32_t	kNumTriangles	= 2u;
+	static constexpr uint32_t	kNumPoints		= kNumTriangles * 3u;
+
+protected:
+	const PolygonModeLargePointsConfig	m_config;
+};
+
+const tcu::Vec4 PolygonModeLargePointsCase::geometryColor (0.0f, 0.0f, 1.0f, 1.0f);
+
+class PolygonModeLargePointsInstance : public vkt::TestInstance
+{
+public:
+						PolygonModeLargePointsInstance	(Context& context, const PolygonModeLargePointsConfig& config)
+							: vkt::TestInstance(context)
+							, m_config(config)
+							{}
+	virtual				~PolygonModeLargePointsInstance	(void) {}
+
+	tcu::TestStatus		iterate							(void) override;
+
+protected:
+	const PolygonModeLargePointsConfig	m_config;
+};
+
+void PolygonModeLargePointsCase::checkSupport (Context &context) const
+{
+#ifndef CTS_USES_VULKANSC
+	context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#else
+	DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FILL_MODE_NON_SOLID);
+
+#ifndef CTS_USES_VULKANSC
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().pointPolygons)
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Point polygons are not supported by this implementation");
+#else
+	DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+
+	const auto& limits = context.getDeviceProperties().limits;
+	if (!limits.standardSampleLocations)
+		TCU_THROW(NotSupportedError, "standardSampleLocations not supported");
+
+	if (m_config.meshShader)
+		context.requireDeviceFunctionality("VK_EXT_mesh_shader");
+
+	if (m_config.tessellationShaders || m_config.geometryShader)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_TESSELLATION_AND_GEOMETRY_POINT_SIZE);
+
+	if (m_config.tessellationShaders)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+
+	if (m_config.geometryShader)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
+	if (m_config.pointSize != 1.0f)
+	{
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_LARGE_POINTS);
+
+		const auto& validRange = limits.pointSizeRange;
+		if (validRange[0] > m_config.pointSize || validRange[1] < m_config.pointSize)
+		{
+			std::ostringstream msg;
+			msg << "Required point size " << m_config.pointSize << " outside valid range [" << validRange[0] << ", " << validRange[1] << "]";
+			TCU_THROW(NotSupportedError, msg.str());
+		}
+	}
+
+#ifndef CTS_USES_VULKANSC
+	if (m_config.dynamicPolygonMode)
+	{
+		const auto eds3Features = context.getExtendedDynamicState3FeaturesEXT();
+		if (!eds3Features.extendedDynamicState3PolygonMode)
+			TCU_THROW(NotSupportedError, "extendedDynamicState3PolygonMode not supported");
+	}
+#else
+	DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+}
+
+void PolygonModeLargePointsCase::initPrograms (vk::SourceCollections &programCollection) const
+{
+	if (!m_config.meshShader)
+	{
+		std::ostringstream vert;
+		vert
+			<< "#version 460\n"
+			<< "layout (location=0) in vec4 inPosition;\n"
+			<< "out gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "};\n"
+			<< "void main (void) {\n"
+			<< "    gl_Position  = inPosition;\n";
+		if (!m_config.defaultSize)
+		{
+		vert
+			<< "    gl_PointSize = " << std::fixed << m_config.pointSize << ";\n";
+		}
+		vert
+			<< "}\n"
+			;
+		programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+	}
+	else
+	{
+		std::ostringstream mesh;
+		mesh
+			<< "#version 450\n"
+			<< "#extension GL_EXT_mesh_shader : enable\n"
+			<< "\n"
+			<< "layout (local_size_x=" << kNumPoints << ", local_size_y=1, local_size_z=1) in;\n"
+			<< "layout (triangles) out;\n"
+			<< "layout (max_vertices=" << kNumPoints << ", max_primitives=" << kNumTriangles << ") out;\n"
+			<< "\n"
+			<< "out gl_MeshPerVertexEXT {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "} gl_MeshVerticesEXT[];\n"
+			<< "\n"
+			<< "layout (set=0, binding=0, std430) readonly buffer VertexData {\n"
+			<< "    vec4 vertices[];\n"
+			<< "} vertexBuffer;\n"
+			<< "\n"
+			<< "void main (void) {\n"
+			<< "    SetMeshOutputsEXT(" << kNumPoints << ", " << kNumTriangles << ");\n"
+			<< "    gl_MeshVerticesEXT[gl_LocalInvocationIndex].gl_Position = vertexBuffer.vertices[gl_LocalInvocationIndex];\n";
+		if (!m_config.defaultSize)
+		{
+		mesh
+			<< "    gl_MeshVerticesEXT[gl_LocalInvocationIndex].gl_PointSize = " << std::fixed << m_config.pointSize << ";\n";
+		}
+		mesh
+			<< "    if (gl_LocalInvocationIndex < " << kNumTriangles << ") {\n"
+			<< "        const uint baseIndex = gl_LocalInvocationIndex * 3u;\n"
+			<< "        gl_PrimitiveTriangleIndicesEXT[gl_LocalInvocationIndex] = uvec3(baseIndex, baseIndex + 1u, baseIndex + 2u);\n"
+			<< "    }\n"
+			<< "}\n"
+			;
+		const vk::ShaderBuildOptions buildOptions (programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+		programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << buildOptions;
+	}
+
+	std::ostringstream frag;
+	frag
+		<< "#version 460\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "void main (void) {\n"
+		<< "    outColor = vec4" << geometryColor << ";\n"
+		<< "}\n"
+		;
+	programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+
+	if (m_config.tessellationShaders)
+	{
+		std::ostringstream tesc;
+		tesc
+			<< "#version 460\n"
+			<< "layout (vertices=3) out;\n"
+			<< "in gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "} gl_in[gl_MaxPatchVertices];\n"
+			<< "out gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "} gl_out[];\n"
+			<< "void main (void) {\n"
+			<< "  gl_TessLevelInner[0] = 1.0;\n"
+			<< "  gl_TessLevelInner[1] = 1.0;\n"
+			<< "  gl_TessLevelOuter[0] = 1.0;\n"
+			<< "  gl_TessLevelOuter[1] = 1.0;\n"
+			<< "  gl_TessLevelOuter[2] = 1.0;\n"
+			<< "  gl_TessLevelOuter[3] = 1.0;\n"
+			<< "  gl_out[gl_InvocationID].gl_Position  = gl_in[gl_InvocationID].gl_Position;\n";
+		if (!m_config.defaultSize)
+		{
+		tesc
+			<< "  gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n";
+		}
+		tesc
+			<< "}\n"
+			;
+		programCollection.glslSources.add("tesc") << glu::TessellationControlSource(tesc.str());
+
+
+		std::ostringstream tese;
+		tese
+			<< "#version 460\n"
+			<< "layout (triangles, fractional_odd_spacing, cw) in;\n"
+			<< "in gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "} gl_in[gl_MaxPatchVertices];\n"
+			<< "out gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "};\n"
+			<< "void main (void) {\n"
+			<< "    gl_Position  = (gl_TessCoord.x * gl_in[0].gl_Position) +\n"
+			<< "                   (gl_TessCoord.y * gl_in[1].gl_Position) +\n"
+			<< "                   (gl_TessCoord.z * gl_in[2].gl_Position);\n";
+		if (!m_config.defaultSize)
+		{
+		tese
+			<< "    gl_PointSize = gl_in[0].gl_PointSize;\n";
+		}
+		tese
+			<< "}\n"
+			;
+		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(tese.str());
+	}
+
+	if (m_config.geometryShader)
+	{
+		std::ostringstream geom;
+		geom
+			<< "#version 460\n"
+			<< "layout (triangles) in;\n"
+			<< "layout (triangle_strip, max_vertices=3) out;\n"
+			<< "in gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "} gl_in[3];\n"
+			<< "out gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "};\n"
+			<< "void main (void) {\n"
+			<< "    for (uint i = 0u; i < 3u; ++i) {\n"
+			<< "        gl_Position  = gl_in[i].gl_Position;\n";
+		if (!m_config.defaultSize)
+		{
+		geom
+			<< "        gl_PointSize = gl_in[i].gl_PointSize;\n";
+		}
+		geom
+			<< "        EmitVertex();\n"
+			<< "    }\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("geom") << glu::GeometrySource(geom.str());
+	}
+}
+
+TestInstance* PolygonModeLargePointsCase::createInstance (Context& context) const
+{
+	return new PolygonModeLargePointsInstance(context, m_config);
+}
+
+/*
+ * The test will create a 4x4 framebuffer and will draw a quad in the middle of it, roughly covering the 4 center pixels. Instead of
+ * making the quad have the exact size to cover the whole center area, the quad will be slightly inside the 4 center pixels, with a
+ * margin of 0.125 units (1/4 of a pixel in unnormalized coordinates). This means a point size of 1.0 will not reach the sampling
+ * points at the pixel center of the edge pixels, but a point size of 2.0 will.
+*/
+/*
+    +----------+----------+----------+----------+
+    |          |          |          |          |
+    |          |          |          |          |
+    |     x    |     x    |     x    |     x    |
+    |          |          |          |          |
+    |          |          |          |          |
+    +----------+----------+----------+----------+
+    |          |          |          |          |
+    |          | +--------+--------+ |          |
+    |     x    | |        |        | |     x    |
+    |          | |        |        | |          |
+    |          | |        |        | |          |
+    +----------+-+--------+--------+-+----------+
+    |          | |        |        | |          |
+    |          | |        |        | |          |
+    |     x    | |        |        | |     x    |
+    |          | +--------+--------+ |          |
+    |          |          |          |          |
+    +----------+----------+----------+----------+
+    |          |          |          |          |
+    |          |          |          |          |
+    |     x    |     x    |     x    |     x    |
+    |          |          |          |          |
+    |          |          |          |          |
+    +----------+----------+----------+----------+
+*/
+tcu::TestStatus PolygonModeLargePointsInstance::iterate (void)
+{
+	const auto&			vkd				= m_context.getDeviceInterface();
+	const auto			device			= m_context.getDevice();
+	auto&				alloc			= m_context.getDefaultAllocator();
+	const auto			queue			= m_context.getUniversalQueue();
+	const auto			qfIndex			= m_context.getUniversalQueueFamilyIndex();
+
+	const auto			colorFormat		= VK_FORMAT_R8G8B8A8_UNORM;
+	const auto			tcuFormat		= mapVkFormat(colorFormat);
+	const auto			colorExtent		= makeExtent3D(4u, 4u, 1u);
+	const tcu::IVec3	colorIExtent	(static_cast<int>(colorExtent.width), static_cast<int>(colorExtent.height), static_cast<int>(colorExtent.depth));
+	const auto			colorUsage		= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const auto			colorSRR		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const auto			colorSRL		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+	const tcu::Vec4		clearColor		(0.0f, 0.0f, 0.0f, 1.0f);
+
+	// Color buffer.
+	const VkImageCreateInfo colorBufferCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
+		nullptr,								//	const void*				pNext;
+		0u,										//	VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,						//	VkImageType				imageType;
+		colorFormat,							//	VkFormat				format;
+		colorExtent,							//	VkExtent3D				extent;
+		1u,										//	uint32_t				mipLevels;
+		1u,										//	uint32_t				arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,					//	VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
+		colorUsage,								//	VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode			sharingMode;
+		0u,										//	uint32_t				queueFamilyIndexCount;
+		nullptr,								//	const uint32_t*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
+	};
+	ImageWithMemory colorBuffer (vkd, device, alloc, colorBufferCreateInfo, MemoryRequirement::Any);
+
+	const auto colorBufferView = makeImageView(vkd, device, colorBuffer.get(), VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSRR);
+
+	// Verification buffer.
+	const auto			pixelSize				= static_cast<VkDeviceSize>(tcuFormat.getPixelSize());
+	const auto			verificationBufferSize	= pixelSize * colorExtent.width * colorExtent.height * colorExtent.depth;
+	const auto			verificationBufferInfo	= makeBufferCreateInfo(verificationBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	BufferWithMemory	verificationBuffer		(vkd, device, alloc, verificationBufferInfo, MemoryRequirement::HostVisible);
+	auto&				verificationBufferAlloc	= verificationBuffer.getAllocation();
+
+	// Vertex buffer.
+	const float			insideMargin	= 0.125f;
+	const tcu::Vec4		topLeft			(-0.5f, -0.5f, 0.0f, 1.0f);
+	const tcu::Vec4		topRight		( 0.5f, -0.5f, 0.0f, 1.0f);
+	const tcu::Vec4		bottomLeft		(-0.5f,  0.5f, 0.0f, 1.0f);
+	const tcu::Vec4		bottomRight		( 0.5f,  0.5f, 0.0f, 1.0f);
+
+	const tcu::Vec4		actualTL		= topLeft + tcu::Vec4(insideMargin, insideMargin, 0.0f, 0.0f);
+	const tcu::Vec4		actualTR		= topRight + tcu::Vec4(-insideMargin, insideMargin, 0.0f, 0.0f);
+	const tcu::Vec4		actualBL		= bottomLeft + tcu::Vec4(insideMargin, -insideMargin, 0.0f, 0.0f);
+	const tcu::Vec4		actualBR		= bottomRight + tcu::Vec4(-insideMargin, -insideMargin, 0.0f, 0.0f);
+
+	const std::vector<tcu::Vec4> vertices
+	{
+		actualTL, actualTR, actualBL,
+		actualTR, actualBR, actualBL,
+	};
+
+	DE_ASSERT(de::sizeU32(vertices) == PolygonModeLargePointsCase::kNumPoints);
+
+	const auto			vertexBufferSize	= static_cast<VkDeviceSize>(de::dataSize(vertices));
+	const auto			vertexBufferUsage	= (m_config.meshShader ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	const auto			vertexBufferInfo	= makeBufferCreateInfo(vertexBufferSize, vertexBufferUsage);
+	BufferWithMemory	vertexBuffer		(vkd, device, alloc, vertexBufferInfo, MemoryRequirement::HostVisible);
+	auto&				vertexBufferAlloc	= vertexBuffer.getAllocation();
+	void*				vertexBufferData	= vertexBufferAlloc.getHostPtr();
+	const VkDeviceSize	vertexBufferOffset	= 0ull;
+
+	deMemcpy(vertexBufferData, vertices.data(), static_cast<size_t>(vertexBufferSize));
+	flushAlloc(vkd, device, vertexBufferAlloc);
+
+	// Pipeline layout.
+	DescriptorSetLayoutBuilder setLayoutBuilder;
+	if (m_config.meshShader)
+	{
+#ifndef CTS_USES_VULKANSC
+		setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_MESH_BIT_EXT);
+#else
+		DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+	}
+	const auto setLayout		= setLayoutBuilder.build(vkd, device);
+	const auto pipelineLayout	= makePipelineLayout(vkd, device, setLayout.get());
+
+	// Descriptor pool and set if needed.
+	Move<VkDescriptorPool>	descriptorPool;
+	Move<VkDescriptorSet>	descriptorSet;
+	if (m_config.meshShader)
+	{
+		DescriptorPoolBuilder poolBuilder;
+		poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+		descriptorPool	= poolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+		descriptorSet	= makeDescriptorSet(vkd, device, descriptorPool.get(), setLayout.get());
+
+		DescriptorSetUpdateBuilder updateBuilder;
+		const auto vertexBufferDescInfo = makeDescriptorBufferInfo(vertexBuffer.get(), 0ull, vertexBufferSize);
+		updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &vertexBufferDescInfo);
+		updateBuilder.update(vkd, device);
+	}
+
+	// Render pass and framebuffer.
+	const auto renderPass	= makeRenderPass(vkd, device, colorFormat);
+	const auto framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), colorBufferView.get(), colorExtent.width, colorExtent.height);
+
+	// Shader modules.
+	const auto&	binaries	= m_context.getBinaryCollection();
+	const auto	vertModule	= (!m_config.meshShader ? createShaderModule(vkd, device, binaries.get("vert")) : Move<VkShaderModule>());
+	const auto	meshModule	= (m_config.meshShader ? createShaderModule(vkd, device, binaries.get("mesh")) : Move<VkShaderModule>());
+	const auto	fragModule	= createShaderModule(vkd, device, binaries.get("frag"));
+	const auto	tescModule	= (m_config.tessellationShaders ? createShaderModule(vkd, device, binaries.get("tesc")) : Move<VkShaderModule>());
+	const auto	teseModule	= (m_config.tessellationShaders ? createShaderModule(vkd, device, binaries.get("tese")) : Move<VkShaderModule>());
+	const auto	geomModule	= (m_config.geometryShader ? createShaderModule(vkd, device, binaries.get("geom")) : Move<VkShaderModule>());
+
+	// Viewports and scissors.
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(colorExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(colorExtent));
+
+	// Rasterization state: key for the test. Rendering triangles as points.
+	const auto polygonMode = (m_config.dynamicPolygonMode ? VK_POLYGON_MODE_FILL : VK_POLYGON_MODE_POINT);
+	const VkPipelineRasterizationStateCreateInfo rasterizationStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	//	VkStructureType							sType;
+		nullptr,													//	const void*								pNext;
+		0u,															//	VkPipelineRasterizationStateCreateFlags	flags;
+		VK_FALSE,													//	VkBool32								depthClampEnable;
+		VK_FALSE,													//	VkBool32								rasterizerDiscardEnable;
+		polygonMode,												//	VkPolygonMode							polygonMode;
+		VK_CULL_MODE_NONE,											//	VkCullModeFlags							cullMode;
+		VK_FRONT_FACE_CLOCKWISE,									//	VkFrontFace								frontFace;
+		VK_FALSE,													//	VkBool32								depthBiasEnable;
+		0.0f,														//	float									depthBiasConstantFactor;
+		0.0f,														//	float									depthBiasClamp;
+		0.0f,														//	float									depthBiasSlopeFactor;
+		1.0f,														//	float									lineWidth;
+	};
+
+	std::vector<VkDynamicState> dynamicStates;
+
+#ifndef CTS_USES_VULKANSC
+	if (m_config.dynamicPolygonMode)
+		dynamicStates.push_back(VK_DYNAMIC_STATE_POLYGON_MODE_EXT);
+#else
+	DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+
+	const VkPipelineDynamicStateCreateInfo dynamicStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	//	VkStructureType						sType;
+		nullptr,												//	const void*							pNext;
+		0u,														//	VkPipelineDynamicStateCreateFlags	flags;
+		de::sizeU32(dynamicStates),								//	uint32_t							dynamicStateCount;
+		de::dataOrNull(dynamicStates),							//	const VkDynamicState*				pDynamicStates;
+	};
+
+	const auto primitiveTopology	= (m_config.tessellationShaders ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	const auto patchControlPoints	= (m_config.tessellationShaders ? 3u : 0u);
+
+	// Pipeline.
+	Move<VkPipeline> pipeline;
+
+	if (m_config.meshShader)
+	{
+#ifndef CTS_USES_VULKANSC
+		pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
+			VK_NULL_HANDLE, meshModule.get(), fragModule.get(),
+			renderPass.get(), viewports, scissors, 0u,
+			&rasterizationStateInfo, nullptr, nullptr, nullptr, &dynamicStateInfo);
+#else
+		DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+	}
+	else
+	{
+		pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
+			vertModule.get(), tescModule.get(), teseModule.get(), geomModule.get(), fragModule.get(),
+			renderPass.get(), viewports, scissors, primitiveTopology, 0u, patchControlPoints,
+			nullptr, &rasterizationStateInfo, nullptr, nullptr, nullptr, &dynamicStateInfo);
+	}
+
+	// Command pool and buffer, render and verify results.
+	const auto cmdPool = makeCommandPool(vkd, device, qfIndex);
+	const auto cmdBufferPtr = allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto cmdBuffer = cmdBufferPtr.get();
+
+	beginCommandBuffer(vkd, cmdBuffer);
+	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), clearColor);
+	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+
+	if (m_config.meshShader)
+		vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+	else
+		vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+
+	if (m_config.dynamicPolygonMode)
+	{
+#ifndef CTS_USES_VULKANSC
+		vkd.cmdSetPolygonModeEXT(cmdBuffer, VK_POLYGON_MODE_POINT);
+#else
+		DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+	}
+
+	if (m_config.meshShader)
+#ifndef CTS_USES_VULKANSC
+		vkd.cmdDrawMeshTasksEXT(cmdBuffer, 1u, 1u, 1u);
+#else
+		DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+	else
+		vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
+
+	endRenderPass(vkd, cmdBuffer);
+
+	// Copy image to verification buffer.
+	const auto preTransferBarrier = makeImageMemoryBarrier(
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		colorBuffer.get(), colorSRR);
+
+	cmdPipelineImageMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &preTransferBarrier);
+
+	const auto copyRegion = makeBufferImageCopy(colorExtent, colorSRL);
+	vkd.cmdCopyImageToBuffer(cmdBuffer, colorBuffer.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, verificationBuffer.get(), 1u, &copyRegion);
+
+	const auto preHostBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+	cmdPipelineMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, &preHostBarrier);
+
+	endCommandBuffer(vkd, cmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	// Check results.
+	invalidateAlloc(vkd, device, verificationBufferAlloc);
+
+	const tcu::PixelBufferAccess	resultAccess	(tcuFormat, colorIExtent, verificationBufferAlloc.getHostPtr());
+	tcu::TextureLevel				referenceLevel	(tcuFormat, colorIExtent.x(), colorIExtent.y(), colorIExtent.z());
+	const tcu::PixelBufferAccess	referenceAccess	= referenceLevel.getAccess();
+	const tcu::Vec4					threshold		(0.0f, 0.0f, 0.0f, 0.0f);
+#ifndef CTS_USES_VULKANSC
+	const auto&						m5Properties	= m_context.getMaintenance5Properties();
+	// If testing default size means we are not setting the point size in shaders, and therefore we don't care about m5Properties.polygonModePointSize
+	// Default size is 1.0f, so we should only take the border into account
+	const bool						pointSizeUsed	= m_config.defaultSize ? false : m5Properties.polygonModePointSize;
+#else
+	const bool						pointSizeUsed	= false;
+#endif // CTS_USES_VULKANSC
+
+	// Prepare reference color image, which depends on VkPhysicalDeviceMaintenance5PropertiesKHR::polygonModePointSize.
+	DE_ASSERT(referenceAccess.getDepth() == 1);
+	for (int y = 0; y < referenceAccess.getHeight(); ++y)
+		for (int x = 0; x < referenceAccess.getWidth(); ++x)
+		{
+			const bool border	= (x == 0 || y == 0 || x == referenceAccess.getWidth() - 1 || y == referenceAccess.getHeight() - 1);
+			const auto color	= ((border && !pointSizeUsed) ? clearColor : PolygonModeLargePointsCase::geometryColor);
+			referenceAccess.setPixel(color, x, y);
+		}
+
+	if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Result", "", referenceAccess, resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Color buffer contents do not match expected result -- check log for details");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+template <typename ConcreteTestInstance>
+class NonStrictLinesMaintenance5TestCase : public BaseRenderingTestCase
+{
+public:
+					NonStrictLinesMaintenance5TestCase	(tcu::TestContext&		context,
+														 const std::string&		name,
+														 const std::string&		description,
+														 PrimitiveWideness		wideness)
+						: BaseRenderingTestCase	(context, name, description, VK_SAMPLE_COUNT_1_BIT)
+						, m_wideness			(wideness) {}
+	virtual auto	createInstance						(Context& context) const -> TestInstance* override
+														{
+															return new ConcreteTestInstance(context, m_wideness, 0);
+														}
+	virtual	auto	checkSupport						(Context& context) const -> void override
+														{
+															context.requireDeviceFunctionality("VK_KHR_maintenance5");
+
+															if (context.getDeviceProperties().limits.strictLines)
+																TCU_THROW(NotSupportedError, "Nonstrict rasterization is not supported");
+
+															if (m_wideness == PRIMITIVEWIDENESS_WIDE)
+																context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_WIDE_LINES);
+														}
+protected:
+	const PrimitiveWideness		m_wideness;
+
+	friend class NonStrictLinesMaintenance5TestInstance;
+	friend class NonStrictLineStripMaintenance5TestInstance;
+	static bool		compareAndVerify					(Context&								context,
+														 BaseLineTestInstance*					lineInstance,
+														 bool									isStrip,
+														 bool									isWide,
+														 std::vector<LineSceneSpec::SceneLine>&	lines,
+														 tcu::Surface&							resultImage,
+														 std::vector<tcu::Vec4>&				/* drawBuffer */);
+};
+
+template<class X>
+bool NonStrictLinesMaintenance5TestCase<X>::compareAndVerify (Context&									context,
+															  BaseLineTestInstance*						lineInstance,
+															  bool										isStrip,
+															  bool										isWide,
+															  std::vector<LineSceneSpec::SceneLine>&	lines,
+															  tcu::Surface&								resultImage,
+															  std::vector<tcu::Vec4>&)
+{
+	const tcu::IVec4		colorBits	= tcu::getTextureFormatBitDepth(lineInstance->getTextureFormat());
+
+	RasterizationArguments	args;
+	args.numSamples		= 0;
+	args.subpixelBits	= context.getDeviceProperties().limits.subPixelPrecisionBits;
+	args.redBits		= colorBits[0];
+	args.greenBits		= colorBits[1];
+	args.blueBits		= colorBits[2];
+
+	LineSceneSpec			scene;
+	scene.lines.swap(lines);
+	scene.lineWidth			= lineInstance->getLineWidth();
+	scene.stippleEnable		= false;
+	scene.stippleFactor		= 1;
+	scene.stipplePattern	= 0xFFFF;
+	scene.isStrip			= isStrip;
+	scene.isSmooth			= false;
+	scene.isRectangular		= false;
+	scene.verificationMode	= tcu::VERIFICATIONMODE_STRICT;
+
+	bool			result				= false;
+	const bool		strict				= false;
+	tcu::TestLog&	log					= context.getTestContext().getLog();
+	const bool		algoBresenhan		= verifyLineGroupRasterization(resultImage, scene, args, log);
+	const bool		algoParallelogram	= verifyRelaxedLineGroupRasterization(resultImage, scene, args, log, true, strict);
+
+#ifndef CTS_USES_VULKANSC
+	const VkPhysicalDeviceMaintenance5PropertiesKHR& p = context.getMaintenance5Properties();
+	if (isWide)
+	{
+		// nonStrictWideLinesUseParallelogram is a boolean value indicating whether non-strict lines
+		// with a width greater than 1.0 are rasterized as parallelograms or using Bresenham's algorithm.
+		result = p.nonStrictWideLinesUseParallelogram ? algoParallelogram : algoBresenhan;
+	}
+	else
+	{
+		// nonStrictSinglePixelWideLinesUseParallelogram is a boolean value indicating whether
+		// non-strict lines with a width of 1.0 are rasterized as parallelograms or using Bresenham's algorithm.
+		result = p.nonStrictSinglePixelWideLinesUseParallelogram ? algoParallelogram : algoBresenhan;
+	}
+#else
+	DE_UNREF(isWide);
+	DE_UNREF(algoBresenhan);
+	DE_UNREF(algoParallelogram);
+#endif
+
+	return result;
+}
+
+
+class NonStrictLinesMaintenance5TestInstance : public LinesTestInstance
+{
+public:
+					NonStrictLinesMaintenance5TestInstance (Context& context, PrimitiveWideness wideness, deUint32 additionalRenderSize)
+						: LinesTestInstance	(context, wideness, PRIMITIVESTRICTNESS_NONSTRICT, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST, LineStippleFactorCase::DEFAULT, additionalRenderSize)
+						, m_amIWide			(PRIMITIVEWIDENESS_WIDE == wideness)
+					{}
+protected:
+	virtual bool	compareAndVerify						(std::vector<LineSceneSpec::SceneLine>&	lines,
+															 tcu::Surface&							resultImage,
+															 std::vector<tcu::Vec4>&				drawBuffer)
+					{
+						return NonStrictLinesMaintenance5TestCase<NonStrictLinesMaintenance5TestInstance>::compareAndVerify(
+							m_context, this, false, m_amIWide, lines, resultImage, drawBuffer);
+					}
+private:
+	const bool	m_amIWide;
+};
+
+class NonStrictLineStripMaintenance5TestInstance : public LineStripTestInstance
+{
+public:
+					NonStrictLineStripMaintenance5TestInstance	(Context& context, PrimitiveWideness wideness, deUint32 additionalRenderSize)
+						: LineStripTestInstance	(context, wideness, PRIMITIVESTRICTNESS_NONSTRICT, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST, LineStippleFactorCase::DEFAULT, additionalRenderSize)
+						, m_amIWide				(PRIMITIVEWIDENESS_WIDE == wideness)
+					{}
+protected:
+	virtual bool	compareAndVerify							(std::vector<LineSceneSpec::SceneLine>&	lines,
+																 tcu::Surface&							resultImage,
+																 std::vector<tcu::Vec4>&				drawBuffer)
+					{
+						return NonStrictLinesMaintenance5TestCase<NonStrictLineStripMaintenance5TestInstance>::compareAndVerify(
+							m_context, this, true, m_amIWide, lines, resultImage, drawBuffer);
+					}
+private:
+	const bool	m_amIWide;
+};
+
 void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 {
 	tcu::TestContext&	testCtx		=	rasterizationTests->getTestContext();
@@ -7085,7 +8066,122 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 
 			primitiveSize->addChild(points);
 		}
+
+		// .default_size
+		{
+			tcu::TestCaseGroup* const defaultSize	= new tcu::TestCaseGroup(testCtx, "default_size", "Default size");
+
+			// .points
+			{
+				tcu::TestCaseGroup* const points						= new tcu::TestCaseGroup(testCtx, "points", "Default point size");
+				static const VkShaderStageFlags vertexStageBits			= VK_SHADER_STAGE_VERTEX_BIT;
+				static const VkShaderStageFlags tessellationStageBits	= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+				static const VkShaderStageFlags geometryStageBits		= VK_SHADER_STAGE_GEOMETRY_BIT;
+				static const struct PointDefaultSizeCombination
+				{
+					const VkShaderStageFlags stageFlags;
+					const std::string stageName;
+				} pointDefaultSizeCombinations[] =
+				{
+					{ vertexStageBits, "vertex" },
+					{ vertexStageBits | tessellationStageBits, "tessellation" },
+					{ vertexStageBits | geometryStageBits, "geometry" },
+					{ vertexStageBits | tessellationStageBits | geometryStageBits, "all" },
+				};
+
+				for (size_t testCombNdx = 0u; testCombNdx < DE_LENGTH_OF_ARRAY(pointDefaultSizeCombinations); testCombNdx++)
+				{
+					const std::string			testCaseName		= pointDefaultSizeCombinations[testCombNdx].stageName;
+					const std::string			testCaseDescription	= "Check default point size in " + pointDefaultSizeCombinations[testCombNdx].stageName + " stage/s.";
+					const VkShaderStageFlags	testStageFlags		= pointDefaultSizeCombinations[testCombNdx].stageFlags;
+					const deUint32				renderSize			= 3u;	// Odd number so only the center pixel is rendered
+
+					points->addChild(new PointDefaultSizeTestCase(testCtx, testCaseName, testCaseDescription, renderSize, testStageFlags));
+				}
+
+				defaultSize->addChild(points);
+			}
+
+#ifndef CTS_USES_VULKANSC
+			// .polygons_as_points
+			{
+				tcu::TestCaseGroup* const polygonsAsPoints = new tcu::TestCaseGroup(testCtx, "polygon_as_points", "Default point size for polygons as points");
+				for (int k = 0; k < 2; ++k)
+				{
+					for (int j = 0; j < 2; ++j)
+					{
+						for (int i = 0; i < 2; ++i)
+						{
+							for (int m = 0; m < 2; ++m)
+							{
+								const bool	meshShader		= (m > 0);
+								const bool	tessellation	= (i > 0);
+								const bool	geometryShader	= (j > 0);
+								const bool	dynamicPolyMode	= (k > 0);
+
+								if (meshShader && (tessellation || geometryShader))
+									continue;
+
+								std::string	testName		(meshShader ? "mesh" : "vert");
+
+								if (tessellation)
+									testName += "_tess";
+
+								if (geometryShader)
+									testName += "_geom";
+
+								testName += (dynamicPolyMode ? "_dynamic_polygon_mode" : "_static_polygon_mode");
+
+								PolygonModeLargePointsConfig config(1.0f, meshShader, tessellation, geometryShader, dynamicPolyMode, true);
+								polygonsAsPoints->addChild(new PolygonModeLargePointsCase(testCtx, testName, "", config));
+							}
+						}
+					}
+				}
+
+				defaultSize->addChild(polygonsAsPoints);
+			}
+#endif
+
+			primitiveSize->addChild(defaultSize);
+		}
 	}
+
+#ifndef CTS_USES_VULKANSC
+	// .polygon_as_large_points
+	{
+		de::MovePtr<tcu::TestCaseGroup> polygonModeLargePointsGroup (new tcu::TestCaseGroup(testCtx, "polygon_as_large_points", "Test polygons rendered as large points"));
+
+		for (int k = 0; k < 2; ++k)
+			for (int j = 0; j < 2; ++j)
+				for (int i = 0; i < 2; ++i)
+					for (int m = 0; m < 2; ++m)
+					{
+						const bool	meshShader		= (m > 0);
+						const bool	tessellation	= (i > 0);
+						const bool	geometryShader	= (j > 0);
+						const bool	dynamicPolyMode	= (k > 0);
+
+						if (meshShader && (tessellation || geometryShader))
+							continue;
+
+						std::string	testName		(meshShader ? "mesh" : "vert");
+
+						if (tessellation)
+							testName += "_tess";
+
+						if (geometryShader)
+							testName += "_geom";
+
+						testName += (dynamicPolyMode ? "_dynamic_polygon_mode" : "_static_polygon_mode");
+
+						PolygonModeLargePointsConfig config(2.0f, meshShader, tessellation, geometryShader, dynamicPolyMode);
+						polygonModeLargePointsGroup->addChild(new PolygonModeLargePointsCase(testCtx, testName, "", config));
+					}
+
+		rasterizationTests->addChild(polygonModeLargePointsGroup.release());
+	}
+#endif // CTS_USES_VULKANSC
 
 	// .fill_rules
 	{
@@ -7770,6 +8866,11 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 	}
 #endif // CTS_USES_VULKANSC
 
+#ifndef CTS_USES_VULKANSC
+	// Depth bias control.
+	rasterizationTests->addChild(createDepthBiasControlTests(testCtx));
+#endif // CTS_USES_VULKANSC
+
 	// Fragment shader side effects.
 	{
 		rasterizationTests->addChild(createFragSideEffectsTests(testCtx));
@@ -7784,6 +8885,23 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 	// Tile Storage tests
 	{
 		rasterizationTests->addChild(createShaderTileImageTests(testCtx));
+	}
+#endif // CTS_USES_VULKANSC
+
+#ifndef CTS_USES_VULKANSC
+	// .maintenance5
+	{
+		//NonStrictLineStripMaintenance5TestInstance
+		tcu::TestCaseGroup* const maintenance5tests = new tcu::TestCaseGroup(testCtx, "maintenance5", "Primitive rasterization");
+		maintenance5tests->addChild(new NonStrictLinesMaintenance5TestCase<NonStrictLinesMaintenance5TestInstance>(testCtx, "non_strict_lines_narrow", "Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode, verify rasterization result",
+																												   PRIMITIVEWIDENESS_NARROW));
+		maintenance5tests->addChild(new NonStrictLinesMaintenance5TestCase<NonStrictLinesMaintenance5TestInstance>(testCtx, "non_strict_lines_wide", "Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode, verify rasterization result",
+																												   PRIMITIVEWIDENESS_WIDE));
+		maintenance5tests->addChild(new NonStrictLinesMaintenance5TestCase<NonStrictLineStripMaintenance5TestInstance>(testCtx, "non_strict_line_strip_narrow", "Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in nonstrict mode, verify rasterization result",
+																													   PRIMITIVEWIDENESS_NARROW));
+		maintenance5tests->addChild(new NonStrictLinesMaintenance5TestCase<NonStrictLineStripMaintenance5TestInstance>(testCtx, "non_strict_line_strip_wide", "Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in nonstrict mode, verify rasterization result",
+																													   PRIMITIVEWIDENESS_WIDE));
+		rasterizationTests->addChild(maintenance5tests);
 	}
 #endif // CTS_USES_VULKANSC
 }

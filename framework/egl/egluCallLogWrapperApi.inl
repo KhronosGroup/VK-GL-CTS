@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 3338ed0db494d6a4db7f76627b38f0b1892db096.
+ * Generated from Khronos EGL API description (egl.xml) revision 6550e9b12e0b4f11182bda30ae2a8dd56d0b02c8.
  */
 eglw::EGLBoolean								eglBindAPI							(eglw::EGLenum api);
 eglw::EGLBoolean								eglBindTexImage						(eglw::EGLDisplay dpy, eglw::EGLSurface surface, eglw::EGLint buffer);
@@ -53,7 +53,7 @@ eglw::EGLBoolean								eglSetDamageRegionKHR				(eglw::EGLDisplay dpy, eglw::EG
 eglw::EGLBoolean								eglSignalSyncKHR					(eglw::EGLDisplay dpy, eglw::EGLSyncKHR sync, eglw::EGLenum mode);
 eglw::EGLBoolean								eglSurfaceAttrib					(eglw::EGLDisplay dpy, eglw::EGLSurface surface, eglw::EGLint attribute, eglw::EGLint value);
 eglw::EGLBoolean								eglSwapBuffers						(eglw::EGLDisplay dpy, eglw::EGLSurface surface);
-eglw::EGLBoolean								eglSwapBuffersWithDamageKHR			(eglw::EGLDisplay dpy, eglw::EGLSurface surface, eglw::EGLint *rects, eglw::EGLint n_rects);
+eglw::EGLBoolean								eglSwapBuffersWithDamageKHR			(eglw::EGLDisplay dpy, eglw::EGLSurface surface, const eglw::EGLint *rects, eglw::EGLint n_rects);
 eglw::EGLBoolean								eglSwapInterval						(eglw::EGLDisplay dpy, eglw::EGLint interval);
 eglw::EGLBoolean								eglTerminate						(eglw::EGLDisplay dpy);
 eglw::EGLBoolean								eglUnlockSurfaceKHR					(eglw::EGLDisplay dpy, eglw::EGLSurface surface);

@@ -35,6 +35,7 @@
 #include "vktDynamicStateInheritanceTests.hpp"
 #include "vktDynamicStateClearTests.hpp"
 #include "vktDynamicStateDiscardTests.hpp"
+#include "vktDynamicStateLineWidthTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -57,6 +58,7 @@ void createChildren (tcu::TestCaseGroup* group, vk::PipelineConstructionType pip
 	group->addChild(new DynamicStateInheritanceTests	(testCtx, pipelineConstructionType));
 	group->addChild(new DynamicStateClearTests			(testCtx, pipelineConstructionType));
 	group->addChild(new DynamicStateDiscardTests		(testCtx, pipelineConstructionType));
+	group->addChild(new DynamicStateLWTests				(testCtx, pipelineConstructionType));
 
 	if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC || pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV)
 		group->addChild(createDynamicStateComputeTests	(testCtx, pipelineConstructionType));

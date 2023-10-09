@@ -300,6 +300,8 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate	(void)
 			break;
 	}
 
+	for (const auto& shader : shadersSeparate)
+		vk.destroyShaderEXT(device, shader, DE_NULL);
 	for (const auto& shader : shadersTogether)
 		vk.destroyShaderEXT(device, shader, DE_NULL);
 

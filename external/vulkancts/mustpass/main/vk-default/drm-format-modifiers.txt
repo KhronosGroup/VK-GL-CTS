@@ -6,6 +6,7 @@ dEQP-VK.drm_format_modifiers.list_modifiers_fmt_features2.b5g6r5_unorm_pack16
 dEQP-VK.drm_format_modifiers.list_modifiers_fmt_features2.r5g5b5a1_unorm_pack16
 dEQP-VK.drm_format_modifiers.list_modifiers_fmt_features2.b5g5r5a1_unorm_pack16
 dEQP-VK.drm_format_modifiers.list_modifiers_fmt_features2.a1r5g5b5_unorm_pack16
+dEQP-VK.drm_format_modifiers.list_modifiers_fmt_features2.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.drm_format_modifiers.list_modifiers_fmt_features2.r8_unorm
 dEQP-VK.drm_format_modifiers.list_modifiers_fmt_features2.r8_snorm
 dEQP-VK.drm_format_modifiers.list_modifiers_fmt_features2.r8_uscaled
@@ -13,6 +14,7 @@ dEQP-VK.drm_format_modifiers.list_modifiers_fmt_features2.r8_sscaled
 dEQP-VK.drm_format_modifiers.list_modifiers_fmt_features2.r8_uint
 dEQP-VK.drm_format_modifiers.list_modifiers_fmt_features2.r8_sint
 dEQP-VK.drm_format_modifiers.list_modifiers_fmt_features2.r8_srgb
+dEQP-VK.drm_format_modifiers.list_modifiers_fmt_features2.a8_unorm_khr
 dEQP-VK.drm_format_modifiers.list_modifiers_fmt_features2.r8g8_unorm
 dEQP-VK.drm_format_modifiers.list_modifiers_fmt_features2.r8g8_snorm
 dEQP-VK.drm_format_modifiers.list_modifiers_fmt_features2.r8g8_uscaled
@@ -131,6 +133,7 @@ dEQP-VK.drm_format_modifiers.list_modifiers.b5g6r5_unorm_pack16
 dEQP-VK.drm_format_modifiers.list_modifiers.r5g5b5a1_unorm_pack16
 dEQP-VK.drm_format_modifiers.list_modifiers.b5g5r5a1_unorm_pack16
 dEQP-VK.drm_format_modifiers.list_modifiers.a1r5g5b5_unorm_pack16
+dEQP-VK.drm_format_modifiers.list_modifiers.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.drm_format_modifiers.list_modifiers.r8_unorm
 dEQP-VK.drm_format_modifiers.list_modifiers.r8_snorm
 dEQP-VK.drm_format_modifiers.list_modifiers.r8_uscaled
@@ -138,6 +141,7 @@ dEQP-VK.drm_format_modifiers.list_modifiers.r8_sscaled
 dEQP-VK.drm_format_modifiers.list_modifiers.r8_uint
 dEQP-VK.drm_format_modifiers.list_modifiers.r8_sint
 dEQP-VK.drm_format_modifiers.list_modifiers.r8_srgb
+dEQP-VK.drm_format_modifiers.list_modifiers.a8_unorm_khr
 dEQP-VK.drm_format_modifiers.list_modifiers.r8g8_unorm
 dEQP-VK.drm_format_modifiers.list_modifiers.r8g8_snorm
 dEQP-VK.drm_format_modifiers.list_modifiers.r8g8_uscaled
@@ -256,6 +260,7 @@ dEQP-VK.drm_format_modifiers.export_import_fmt_features2.b5g6r5_unorm_pack16
 dEQP-VK.drm_format_modifiers.export_import_fmt_features2.r5g5b5a1_unorm_pack16
 dEQP-VK.drm_format_modifiers.export_import_fmt_features2.b5g5r5a1_unorm_pack16
 dEQP-VK.drm_format_modifiers.export_import_fmt_features2.a1r5g5b5_unorm_pack16
+dEQP-VK.drm_format_modifiers.export_import_fmt_features2.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.drm_format_modifiers.export_import_fmt_features2.r8_unorm
 dEQP-VK.drm_format_modifiers.export_import_fmt_features2.r8_snorm
 dEQP-VK.drm_format_modifiers.export_import_fmt_features2.r8_uscaled
@@ -263,6 +268,7 @@ dEQP-VK.drm_format_modifiers.export_import_fmt_features2.r8_sscaled
 dEQP-VK.drm_format_modifiers.export_import_fmt_features2.r8_uint
 dEQP-VK.drm_format_modifiers.export_import_fmt_features2.r8_sint
 dEQP-VK.drm_format_modifiers.export_import_fmt_features2.r8_srgb
+dEQP-VK.drm_format_modifiers.export_import_fmt_features2.a8_unorm_khr
 dEQP-VK.drm_format_modifiers.export_import_fmt_features2.r8g8_unorm
 dEQP-VK.drm_format_modifiers.export_import_fmt_features2.r8g8_snorm
 dEQP-VK.drm_format_modifiers.export_import_fmt_features2.r8g8_uscaled
@@ -381,6 +387,7 @@ dEQP-VK.drm_format_modifiers.export_import.b5g6r5_unorm_pack16
 dEQP-VK.drm_format_modifiers.export_import.r5g5b5a1_unorm_pack16
 dEQP-VK.drm_format_modifiers.export_import.b5g5r5a1_unorm_pack16
 dEQP-VK.drm_format_modifiers.export_import.a1r5g5b5_unorm_pack16
+dEQP-VK.drm_format_modifiers.export_import.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.drm_format_modifiers.export_import.r8_unorm
 dEQP-VK.drm_format_modifiers.export_import.r8_snorm
 dEQP-VK.drm_format_modifiers.export_import.r8_uscaled
@@ -388,6 +395,7 @@ dEQP-VK.drm_format_modifiers.export_import.r8_sscaled
 dEQP-VK.drm_format_modifiers.export_import.r8_uint
 dEQP-VK.drm_format_modifiers.export_import.r8_sint
 dEQP-VK.drm_format_modifiers.export_import.r8_srgb
+dEQP-VK.drm_format_modifiers.export_import.a8_unorm_khr
 dEQP-VK.drm_format_modifiers.export_import.r8g8_unorm
 dEQP-VK.drm_format_modifiers.export_import.r8g8_snorm
 dEQP-VK.drm_format_modifiers.export_import.r8g8_uscaled
@@ -506,6 +514,7 @@ dEQP-VK.drm_format_modifiers.create_list_modifiers_fmt_features2.b5g6r5_unorm_pa
 dEQP-VK.drm_format_modifiers.create_list_modifiers_fmt_features2.r5g5b5a1_unorm_pack16
 dEQP-VK.drm_format_modifiers.create_list_modifiers_fmt_features2.b5g5r5a1_unorm_pack16
 dEQP-VK.drm_format_modifiers.create_list_modifiers_fmt_features2.a1r5g5b5_unorm_pack16
+dEQP-VK.drm_format_modifiers.create_list_modifiers_fmt_features2.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.drm_format_modifiers.create_list_modifiers_fmt_features2.r8_unorm
 dEQP-VK.drm_format_modifiers.create_list_modifiers_fmt_features2.r8_snorm
 dEQP-VK.drm_format_modifiers.create_list_modifiers_fmt_features2.r8_uscaled
@@ -513,6 +522,7 @@ dEQP-VK.drm_format_modifiers.create_list_modifiers_fmt_features2.r8_sscaled
 dEQP-VK.drm_format_modifiers.create_list_modifiers_fmt_features2.r8_uint
 dEQP-VK.drm_format_modifiers.create_list_modifiers_fmt_features2.r8_sint
 dEQP-VK.drm_format_modifiers.create_list_modifiers_fmt_features2.r8_srgb
+dEQP-VK.drm_format_modifiers.create_list_modifiers_fmt_features2.a8_unorm_khr
 dEQP-VK.drm_format_modifiers.create_list_modifiers_fmt_features2.r8g8_unorm
 dEQP-VK.drm_format_modifiers.create_list_modifiers_fmt_features2.r8g8_snorm
 dEQP-VK.drm_format_modifiers.create_list_modifiers_fmt_features2.r8g8_uscaled
@@ -631,6 +641,7 @@ dEQP-VK.drm_format_modifiers.create_list_modifiers.b5g6r5_unorm_pack16
 dEQP-VK.drm_format_modifiers.create_list_modifiers.r5g5b5a1_unorm_pack16
 dEQP-VK.drm_format_modifiers.create_list_modifiers.b5g5r5a1_unorm_pack16
 dEQP-VK.drm_format_modifiers.create_list_modifiers.a1r5g5b5_unorm_pack16
+dEQP-VK.drm_format_modifiers.create_list_modifiers.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.drm_format_modifiers.create_list_modifiers.r8_unorm
 dEQP-VK.drm_format_modifiers.create_list_modifiers.r8_snorm
 dEQP-VK.drm_format_modifiers.create_list_modifiers.r8_uscaled
@@ -638,6 +649,7 @@ dEQP-VK.drm_format_modifiers.create_list_modifiers.r8_sscaled
 dEQP-VK.drm_format_modifiers.create_list_modifiers.r8_uint
 dEQP-VK.drm_format_modifiers.create_list_modifiers.r8_sint
 dEQP-VK.drm_format_modifiers.create_list_modifiers.r8_srgb
+dEQP-VK.drm_format_modifiers.create_list_modifiers.a8_unorm_khr
 dEQP-VK.drm_format_modifiers.create_list_modifiers.r8g8_unorm
 dEQP-VK.drm_format_modifiers.create_list_modifiers.r8g8_snorm
 dEQP-VK.drm_format_modifiers.create_list_modifiers.r8g8_uscaled
@@ -756,6 +768,7 @@ dEQP-VK.drm_format_modifiers.create_explicit_modifier_fmt_features2.b5g6r5_unorm
 dEQP-VK.drm_format_modifiers.create_explicit_modifier_fmt_features2.r5g5b5a1_unorm_pack16
 dEQP-VK.drm_format_modifiers.create_explicit_modifier_fmt_features2.b5g5r5a1_unorm_pack16
 dEQP-VK.drm_format_modifiers.create_explicit_modifier_fmt_features2.a1r5g5b5_unorm_pack16
+dEQP-VK.drm_format_modifiers.create_explicit_modifier_fmt_features2.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.drm_format_modifiers.create_explicit_modifier_fmt_features2.r8_unorm
 dEQP-VK.drm_format_modifiers.create_explicit_modifier_fmt_features2.r8_snorm
 dEQP-VK.drm_format_modifiers.create_explicit_modifier_fmt_features2.r8_uscaled
@@ -763,6 +776,7 @@ dEQP-VK.drm_format_modifiers.create_explicit_modifier_fmt_features2.r8_sscaled
 dEQP-VK.drm_format_modifiers.create_explicit_modifier_fmt_features2.r8_uint
 dEQP-VK.drm_format_modifiers.create_explicit_modifier_fmt_features2.r8_sint
 dEQP-VK.drm_format_modifiers.create_explicit_modifier_fmt_features2.r8_srgb
+dEQP-VK.drm_format_modifiers.create_explicit_modifier_fmt_features2.a8_unorm_khr
 dEQP-VK.drm_format_modifiers.create_explicit_modifier_fmt_features2.r8g8_unorm
 dEQP-VK.drm_format_modifiers.create_explicit_modifier_fmt_features2.r8g8_snorm
 dEQP-VK.drm_format_modifiers.create_explicit_modifier_fmt_features2.r8g8_uscaled
@@ -881,6 +895,7 @@ dEQP-VK.drm_format_modifiers.create_explicit_modifier.b5g6r5_unorm_pack16
 dEQP-VK.drm_format_modifiers.create_explicit_modifier.r5g5b5a1_unorm_pack16
 dEQP-VK.drm_format_modifiers.create_explicit_modifier.b5g5r5a1_unorm_pack16
 dEQP-VK.drm_format_modifiers.create_explicit_modifier.a1r5g5b5_unorm_pack16
+dEQP-VK.drm_format_modifiers.create_explicit_modifier.a1b5g5r5_unorm_pack16_khr
 dEQP-VK.drm_format_modifiers.create_explicit_modifier.r8_unorm
 dEQP-VK.drm_format_modifiers.create_explicit_modifier.r8_snorm
 dEQP-VK.drm_format_modifiers.create_explicit_modifier.r8_uscaled
@@ -888,6 +903,7 @@ dEQP-VK.drm_format_modifiers.create_explicit_modifier.r8_sscaled
 dEQP-VK.drm_format_modifiers.create_explicit_modifier.r8_uint
 dEQP-VK.drm_format_modifiers.create_explicit_modifier.r8_sint
 dEQP-VK.drm_format_modifiers.create_explicit_modifier.r8_srgb
+dEQP-VK.drm_format_modifiers.create_explicit_modifier.a8_unorm_khr
 dEQP-VK.drm_format_modifiers.create_explicit_modifier.r8g8_unorm
 dEQP-VK.drm_format_modifiers.create_explicit_modifier.r8g8_snorm
 dEQP-VK.drm_format_modifiers.create_explicit_modifier.r8g8_uscaled

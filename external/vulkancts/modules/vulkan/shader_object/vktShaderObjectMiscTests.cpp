@@ -57,6 +57,22 @@ struct TestParams {
 	bool destroyDescriptorSetLayout;
 };
 
+vk::VkFormat findDSFormat (const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physicalDevice)
+{
+	const vk::VkFormat dsFormats[] = {
+		vk::VK_FORMAT_D24_UNORM_S8_UINT,
+		vk::VK_FORMAT_D32_SFLOAT_S8_UINT,
+		vk::VK_FORMAT_D16_UNORM_S8_UINT,
+	};
+
+	for (deUint32 i = 0; i < 3; ++i) {
+		const vk::VkFormatProperties	formatProperties = getPhysicalDeviceFormatProperties(vki, physicalDevice, dsFormats[i]);
+		if ((formatProperties.optimalTilingFeatures & vk::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0)
+			return dsFormats[i];
+	}
+	return vk::VK_FORMAT_UNDEFINED;
+}
+
 class ShaderObjectMiscInstance : public vkt::TestInstance
 {
 public:
@@ -107,6 +123,8 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate (void)
 	const auto							deviceExtensions			= vk::removeUnsupportedShaderObjectExtensions(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
 	const bool							tessellationSupported		= m_context.getDeviceFeatures().tessellationShader;
 	const bool							geometrySupported			= m_context.getDeviceFeatures().geometryShader;
+	const bool							taskSupported				= m_context.getMeshShaderFeatures().taskShader;
+	const bool							meshSupported				= m_context.getMeshShaderFeatures().meshShader;
 
 	vk::VkFormat						colorAttachmentFormat		= vk::VK_FORMAT_R8G8B8A8_UNORM;
 	const auto							subresourceRange			= vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -288,7 +306,7 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate (void)
 
 	vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0, 1, &descriptorSet.get(), 0, DE_NULL);
 
-	vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragShader);
+	vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragShader, taskSupported, meshSupported);
 	vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 	vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 
@@ -639,6 +657,13 @@ void ShaderObjectStateInstance::createDevice (void)
 	vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT	eds2Features	= m_context.getExtendedDynamicState2FeaturesEXT();
 	vk::VkPhysicalDeviceExtendedDynamicState3FeaturesEXT	eds3Features	= m_context.getExtendedDynamicState3FeaturesEXT();
 	vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT	viFeatures		= m_context.getVertexInputDynamicStateFeaturesEXT();
+
+	dynamicRenderingFeatures.pNext = DE_NULL;
+	shaderObjectFeatures.pNext = DE_NULL;
+	edsFeatures.pNext = DE_NULL;
+	eds2Features.pNext = DE_NULL;
+	eds3Features.pNext = DE_NULL;
+	viFeatures.pNext = DE_NULL;
 
 	vk::VkPhysicalDeviceFeatures2						features2					= vk::initVulkanStructure();
 	void* pNext = &dynamicRenderingFeatures;
@@ -1010,13 +1035,13 @@ void ShaderObjectStateInstance::setDynamicStates (const vk::DeviceInterface& vk,
 		vk.cmdSetRasterizationStreamEXT(cmdBuffer, 0u);
 	if (m_params.discardRectangles)
 		vk.cmdSetDiscardRectangleEnableEXT(cmdBuffer, m_params.discardRectanglesEnable ? VK_TRUE : VK_FALSE);
-	if (m_params.discardRectanglesEnable)
+	if ((!m_params.pipeline && m_params.discardRectanglesEnable) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_MODE_EXT))
 		vk.cmdSetDiscardRectangleModeEXT(cmdBuffer, vk::VK_DISCARD_RECTANGLE_MODE_EXCLUSIVE_EXT);
-	if (m_params.discardRectanglesEnable)
+	if ((!m_params.pipeline && m_params.discardRectanglesEnable) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT))
 		vk.cmdSetDiscardRectangleEXT(cmdBuffer, 0u, 1u, &scissor);
-	if (m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.conservativeRasterization)
+	if ((!m_params.pipeline && m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.conservativeRasterization) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_CONSERVATIVE_RASTERIZATION_MODE_EXT))
 		vk.cmdSetConservativeRasterizationModeEXT(cmdBuffer, m_params.conservativeRasterizationOverestimate ? vk::VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT : vk::VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT);
-	if (m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.conservativeRasterization && m_params.conservativeRasterizationOverestimate)
+	if ((!m_params.pipeline && m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.conservativeRasterization && m_params.conservativeRasterizationOverestimate) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT))
 		vk.cmdSetExtraPrimitiveOverestimationSizeEXT(cmdBuffer, de::min(1.0f, m_context.getConservativeRasterizationPropertiesEXT().maxExtraPrimitiveOverestimationSize));
 	if ((!m_params.pipeline && m_params.depthClip) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_CLIP_ENABLE_EXT))
 		vk.cmdSetDepthClipEnableEXT(cmdBuffer, VK_TRUE);
@@ -1111,12 +1136,15 @@ tcu::TestStatus ShaderObjectStateInstance::iterate (void)
 	tcu::TestLog&						log								= m_context.getTestContext().getLog();
 
 	vk::VkFormat						colorAttachmentFormat			= vk::VK_FORMAT_R8G8B8A8_UNORM;
-	vk::VkFormat						depthStencilAttachmentFormat	= vk::VK_FORMAT_D24_UNORM_S8_UINT;
+	vk::VkFormat						depthStencilAttachmentFormat	= findDSFormat(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
 	const auto							subresourceRange				= makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
 	const auto							subresourceLayers				= vk::makeImageSubresourceLayers(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
 	auto								depthSubresourceRange			= vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_DEPTH_BIT | vk::VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 1u, 0u, 1u);
 	const vk::VkRect2D					renderArea						= vk::makeRect2D(0, 0, 32, 32);
 	vk::VkExtent3D						extent							= { renderArea.extent.width, renderArea.extent.height, 1};
+
+	const bool							taskSupported					= m_context.getMeshShaderFeatures().taskShader;
+	const bool							meshSupported					= m_context.getMeshShaderFeatures().meshShader;
 
 	const vk::VkImageCreateInfo	createInfo =
 	{
@@ -1231,12 +1259,18 @@ tcu::TestStatus ShaderObjectStateInstance::iterate (void)
 			DE_NULL															// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 		};
 
+		vk::VkPrimitiveTopology topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+		if (m_params.tessShader)
+			topology = vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+		else if (m_params.lines)
+			topology = vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+
 		const vk::VkPipelineInputAssemblyStateCreateInfo	inputAssemblyState =
 		{
 			vk::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType							sType;
 			DE_NULL,															// const void*								pNext;
 			(vk::VkPipelineInputAssemblyStateCreateFlags)0,						// VkPipelineInputAssemblyStateCreateFlags	flags;
-			m_params.tessShader ? vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	// VkPrimitiveTopology						topology;
+			topology,															// VkPrimitiveTopology						topology;
 			VK_FALSE															// VkBool32									primitiveRestartEnable;
 		};
 
@@ -1460,11 +1494,12 @@ tcu::TestStatus ShaderObjectStateInstance::iterate (void)
 				*meshShader,
 				*fragShader,
 			};
+			vk::bindNullRasterizationShaders(vk, *cmdBuffer, m_context.getDeviceFeatures());
 			vk.cmdBindShadersEXT(*cmdBuffer, 2, stages, shaders);
 		}
 		else
 		{
-			vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, *geomShader, *fragShader);
+			vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, *geomShader, *fragShader, taskSupported, meshSupported);
 		}
 	}
 	setDynamicStates(vk, *cmdBuffer);
@@ -1734,8 +1769,7 @@ void ShaderObjectStateCase::checkSupport (Context& context) const
 
 	const auto&						vki					= context.getInstanceInterface();
 	const auto						physicalDevice		= context.getPhysicalDevice();
-	const vk::VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(vki, physicalDevice, vk::VK_FORMAT_D24_UNORM_S8_UINT);
-	if ((formatProperties.optimalTilingFeatures & vk::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0)
+	if (findDSFormat(vki, physicalDevice) == vk::VK_FORMAT_UNDEFINED)
 		TCU_THROW(NotSupportedError, "Required depth/stencil format not supported");
 
 	if (!m_params.pipeline)
@@ -1823,11 +1857,15 @@ void ShaderObjectStateCase::checkSupport (Context& context) const
 			TCU_THROW(NotSupportedError, "extendedDynamicState3ConservativeRasterizationMode not supported");
 	}
 	if (m_params.sampleLocations)
+	{
 		context.requireDeviceFunctionality("VK_EXT_sample_locations");
+		if (m_params.sampleLocationsEnable && (context.getSampleLocationsPropertiesEXT().sampleLocationSampleCounts & vk::VK_SAMPLE_COUNT_1_BIT) == 0)
+			TCU_THROW(NotSupportedError, "VK_SAMPLE_COUNT_1_BIT not supported in sampleLocationSampleCounts");
+	}
 	if (m_params.provokingVertex)
 	{
 		context.requireDeviceFunctionality("VK_EXT_provoking_vertex");
-		if (m_params.pipeline && eds3Features.extendedDynamicState3ProvokingVertexMode)
+		if (m_params.pipeline && !eds3Features.extendedDynamicState3ProvokingVertexMode)
 			TCU_THROW(NotSupportedError, "extendedDynamicState3ProvokingVertexMode not supported");
 	}
 	if (m_params.lineRasterization)
@@ -1835,10 +1873,12 @@ void ShaderObjectStateCase::checkSupport (Context& context) const
 		context.requireDeviceFunctionality("VK_EXT_line_rasterization");
 		if (!context.getLineRasterizationFeaturesEXT().rectangularLines)
 			TCU_THROW(NotSupportedError, "rectangularLines not supported");
-		if (m_params.pipeline && eds3Features.extendedDynamicState3LineRasterizationMode)
+		if (m_params.pipeline && !eds3Features.extendedDynamicState3LineRasterizationMode)
 			TCU_THROW(NotSupportedError, "extendedDynamicState3LineRasterizationMode not supported");
-		if (m_params.pipeline && eds3Features.extendedDynamicState3LineStippleEnable)
+		if (m_params.pipeline && !eds3Features.extendedDynamicState3LineStippleEnable)
 			TCU_THROW(NotSupportedError, "extendedDynamicState3LineStippleEnable not supported");
+		if (m_params.stippledLineEnable && !context.getLineRasterizationFeaturesEXT().stippledRectangularLines)
+			TCU_THROW(NotSupportedError, "stippledRectangularLines not supported");
 	}
 	if (m_params.geomShader)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
@@ -1852,8 +1892,14 @@ void ShaderObjectStateCase::checkSupport (Context& context) const
 	}
 	if (m_params.lines)
 	{
-		if (m_params.pipeline && edsFeatures.extendedDynamicState)
+		if (m_params.pipeline && !edsFeatures.extendedDynamicState)
 			TCU_THROW(NotSupportedError, "extendedDynamicState not supported");
+	}
+	if (m_params.colorBlendEnable && m_params.pipeline)
+	{
+		context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state3");
+		if (!eds3Features.extendedDynamicState3ColorBlendEnable)
+			TCU_THROW(NotSupportedError, "extendedDynamicState3ColorBlendEnable not supported");
 	}
 }
 
@@ -2078,6 +2124,8 @@ tcu::TestStatus ShaderObjectUnusedBuiltinInstance::iterate (void)
 	const auto							deviceExtensions			= vk::removeUnsupportedShaderObjectExtensions(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
 	const bool							tessellationSupported		= m_context.getDeviceFeatures().tessellationShader;
 	const bool							geometrySupported			= m_context.getDeviceFeatures().geometryShader;
+	const bool							taskSupported				= m_context.getMeshShaderFeatures().taskShader;
+	const bool							meshSupported				= m_context.getMeshShaderFeatures().meshShader;
 
 	vk::VkFormat						colorAttachmentFormat		= vk::VK_FORMAT_R8G8B8A8_UNORM;
 	const auto							subresourceRange			= makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -2140,7 +2188,7 @@ tcu::TestStatus ShaderObjectUnusedBuiltinInstance::iterate (void)
 	const vk::VkClearValue				clearValue = vk::makeClearValueColor({ 0.0f, 0.0f, 0.0f, 0.0f });
 	vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
 
-	vk::bindGraphicsShaders(vk, *cmdBuffer, shaders[0], shaders[1], shaders[2], shaders[3], shaders[4]);
+	vk::bindGraphicsShaders(vk, *cmdBuffer, shaders[0], shaders[1], shaders[2], shaders[3], shaders[4], taskSupported, meshSupported);
 	vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST);
 
 	vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
@@ -2381,6 +2429,8 @@ tcu::TestStatus ShaderObjectTessellationModesInstance::iterate (void)
 	const auto							deviceExtensions			= vk::removeUnsupportedShaderObjectExtensions(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
 	const bool							tessellationSupported		= m_context.getDeviceFeatures().tessellationShader;
 	const bool							geometrySupported			= m_context.getDeviceFeatures().geometryShader;
+	const bool							taskSupported				= m_context.getMeshShaderFeatures().taskShader;
+	const bool							meshSupported				= m_context.getMeshShaderFeatures().meshShader;
 
 	vk::VkFormat						colorAttachmentFormat		= vk::VK_FORMAT_R8G8B8A8_UNORM;
 	const auto							subresourceRange			= makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -2431,7 +2481,7 @@ tcu::TestStatus ShaderObjectTessellationModesInstance::iterate (void)
 	const vk::VkClearValue				clearValue = vk::makeClearValueColor({ 0.0f, 0.0f, 0.0f, 0.0f });
 	vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
 
-	vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, VK_NULL_HANDLE, *fragShader);
+	vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, VK_NULL_HANDLE, *fragShader, taskSupported, meshSupported);
 	vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST);
 
 	vk.cmdSetPolygonModeEXT(*cmdBuffer, vk::VK_POLYGON_MODE_LINE);
@@ -2718,7 +2768,7 @@ tcu::TestCaseGroup* createShaderObjectMiscTests(tcu::TestContext& testCtx)
 	} pipelineTests[] =
 	{
 		{ false,	"shaders"	},
-		// { true,		"pipeline"	},
+		{ true,		"pipeline"	},
 	};
 
 	const struct

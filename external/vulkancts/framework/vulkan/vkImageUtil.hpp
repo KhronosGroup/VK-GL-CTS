@@ -49,6 +49,7 @@ bool						isScaledFormat				(VkFormat format);
 bool						isDepthStencilFormat		(VkFormat format);
 bool						isCompressedFormat			(VkFormat format);
 bool						isSrgbFormat				(VkFormat format);
+bool						isAlphaOnlyFormat			(VkFormat format);
 
 bool						is64BitIntegerFormat		(VkFormat format);
 
@@ -139,13 +140,14 @@ struct PlanarFormatDescription
 	}
 };
 
-class ImageWithBuffer {
+class ImageWithBuffer
+{
 	std::unique_ptr<ImageWithMemory>	image;
 	Move<vk::VkImageView>				imageView;
 	std::unique_ptr<BufferWithMemory>	buffer;
 	VkDeviceSize						size;
 
-	public:
+public:
 	ImageWithBuffer(
 			const DeviceInterface&		vkd,
 			const VkDevice				device,

@@ -2164,6 +2164,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PIPELINE_PROPERTIES_IDENTIFIER_EXT:									return "VK_STRUCTURE_TYPE_PIPELINE_PROPERTIES_IDENTIFIER_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROPERTIES_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROPERTIES_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAME_BOUNDARY_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAME_BOUNDARY_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_FRAME_BOUNDARY_EXT:													return "VK_STRUCTURE_TYPE_FRAME_BOUNDARY_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_SUBPASS_RESOLVE_PERFORMANCE_QUERY_EXT:								return "VK_STRUCTURE_TYPE_SUBPASS_RESOLVE_PERFORMANCE_QUERY_EXT";
 		case VK_STRUCTURE_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_INFO_EXT:						return "VK_STRUCTURE_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_INFO_EXT";
@@ -2273,17 +2275,37 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_LATENCY_SLEEP_MODE_INFO_NV:											return "VK_STRUCTURE_TYPE_LATENCY_SLEEP_MODE_INFO_NV";
+		case VK_STRUCTURE_TYPE_LATENCY_SLEEP_INFO_NV:												return "VK_STRUCTURE_TYPE_LATENCY_SLEEP_INFO_NV";
+		case VK_STRUCTURE_TYPE_SET_LATENCY_MARKER_INFO_NV:											return "VK_STRUCTURE_TYPE_SET_LATENCY_MARKER_INFO_NV";
+		case VK_STRUCTURE_TYPE_GET_LATENCY_MARKER_INFO_NV:											return "VK_STRUCTURE_TYPE_GET_LATENCY_MARKER_INFO_NV";
+		case VK_STRUCTURE_TYPE_LATENCY_TIMINGS_FRAME_REPORT_NV:										return "VK_STRUCTURE_TYPE_LATENCY_TIMINGS_FRAME_REPORT_NV";
+		case VK_STRUCTURE_TYPE_LATENCY_SUBMISSION_PRESENT_ID_NV:									return "VK_STRUCTURE_TYPE_LATENCY_SUBMISSION_PRESENT_ID_NV";
+		case VK_STRUCTURE_TYPE_OUT_OF_BAND_QUEUE_TYPE_INFO_NV:										return "VK_STRUCTURE_TYPE_OUT_OF_BAND_QUEUE_TYPE_INFO_NV";
+		case VK_STRUCTURE_TYPE_SWAPCHAIN_LATENCY_CREATE_INFO_NV:									return "VK_STRUCTURE_TYPE_SWAPCHAIN_LATENCY_CREATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_LATENCY_SURFACE_CAPABILITIES_NV:										return "VK_STRUCTURE_TYPE_LATENCY_SURFACE_CAPABILITIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR:									return "VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM";
 		case VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_RENDER_AREAS_RENDER_PASS_BEGIN_INFO_QCOM:			return "VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_RENDER_AREAS_RENDER_PASS_BEGIN_INFO_QCOM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_2_FEATURES_QCOM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_2_FEATURES_QCOM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_2_PROPERTIES_QCOM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_2_PROPERTIES_QCOM";
+		case VK_STRUCTURE_TYPE_SAMPLER_BLOCK_MATCH_WINDOW_CREATE_INFO_QCOM:							return "VK_STRUCTURE_TYPE_SAMPLER_BLOCK_MATCH_WINDOW_CREATE_INFO_QCOM";
+		case VK_STRUCTURE_TYPE_SAMPLER_CUBIC_WEIGHTS_CREATE_INFO_QCOM:								return "VK_STRUCTURE_TYPE_SAMPLER_CUBIC_WEIGHTS_CREATE_INFO_QCOM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUBIC_WEIGHTS_FEATURES_QCOM:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUBIC_WEIGHTS_FEATURES_QCOM";
+		case VK_STRUCTURE_TYPE_BLIT_IMAGE_CUBIC_WEIGHTS_INFO_QCOM:									return "VK_STRUCTURE_TYPE_BLIT_IMAGE_CUBIC_WEIGHTS_INFO_QCOM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_YCBCR_DEGAMMA_FEATURES_QCOM:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_YCBCR_DEGAMMA_FEATURES_QCOM";
+		case VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_YCBCR_DEGAMMA_CREATE_INFO_QCOM:				return "VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_YCBCR_DEGAMMA_CREATE_INFO_QCOM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUBIC_CLAMP_FEATURES_QCOM:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUBIC_CLAMP_FEATURES_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_SCREEN_BUFFER_PROPERTIES_QNX:										return "VK_STRUCTURE_TYPE_SCREEN_BUFFER_PROPERTIES_QNX";
 		case VK_STRUCTURE_TYPE_SCREEN_BUFFER_FORMAT_PROPERTIES_QNX:									return "VK_STRUCTURE_TYPE_SCREEN_BUFFER_FORMAT_PROPERTIES_QNX";
 		case VK_STRUCTURE_TYPE_IMPORT_SCREEN_BUFFER_INFO_QNX:										return "VK_STRUCTURE_TYPE_IMPORT_SCREEN_BUFFER_INFO_QNX";
 		case VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_QNX:													return "VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_QNX";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_DRIVER_PROPERTIES_MSFT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_DRIVER_PROPERTIES_MSFT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV";
 		default:																					return DE_NULL;
 	}
 }
@@ -2428,9 +2450,11 @@ tcu::Format::Bitfield<32> getDescriptorPoolCreateFlagsStr (VkDescriptorPoolCreat
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,	"VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT"),
-		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT,	"VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT"),
-		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_EXT,		"VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,				"VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT,				"VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_EXT,					"VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_ALLOW_OVERALLOCATION_SETS_BIT_NV,	"VK_DESCRIPTOR_POOL_CREATE_ALLOW_OVERALLOCATION_SETS_BIT_NV"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_ALLOW_OVERALLOCATION_POOLS_BIT_NV,	"VK_DESCRIPTOR_POOL_CREATE_ALLOW_OVERALLOCATION_POOLS_BIT_NV"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3534,6 +3558,15 @@ const char* getDeviceFaultVendorBinaryHeaderVersionEXTName (VkDeviceFaultVendorB
 	}
 }
 
+tcu::Format::Bitfield<32> getFrameBoundaryFlagsEXTStr (VkFrameBoundaryFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_FRAME_BOUNDARY_FRAME_END_BIT_EXT,	"VK_FRAME_BOUNDARY_FRAME_END_BIT_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<64> getMemoryDecompressionMethodFlagsNVStr (VkMemoryDecompressionMethodFlagsNV value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -3701,6 +3734,38 @@ const char* getComponentTypeKHRName (VkComponentTypeKHR value)
 		case VK_COMPONENT_TYPE_UINT32_KHR:	return "VK_COMPONENT_TYPE_UINT32_KHR";
 		case VK_COMPONENT_TYPE_UINT64_KHR:	return "VK_COMPONENT_TYPE_UINT64_KHR";
 		default:							return DE_NULL;
+	}
+}
+
+const char* getCubicFilterWeightsQCOMName (VkCubicFilterWeightsQCOM value)
+{
+	switch (value)
+	{
+		case VK_CUBIC_FILTER_WEIGHTS_CATMULL_ROM_QCOM:				return "VK_CUBIC_FILTER_WEIGHTS_CATMULL_ROM_QCOM";
+		case VK_CUBIC_FILTER_WEIGHTS_ZERO_TANGENT_CARDINAL_QCOM:	return "VK_CUBIC_FILTER_WEIGHTS_ZERO_TANGENT_CARDINAL_QCOM";
+		case VK_CUBIC_FILTER_WEIGHTS_B_SPLINE_QCOM:					return "VK_CUBIC_FILTER_WEIGHTS_B_SPLINE_QCOM";
+		case VK_CUBIC_FILTER_WEIGHTS_MITCHELL_NETRAVALI_QCOM:		return "VK_CUBIC_FILTER_WEIGHTS_MITCHELL_NETRAVALI_QCOM";
+		default:													return DE_NULL;
+	}
+}
+
+const char* getBlockMatchWindowCompareModeQCOMName (VkBlockMatchWindowCompareModeQCOM value)
+{
+	switch (value)
+	{
+		case VK_BLOCK_MATCH_WINDOW_COMPARE_MODE_MIN_QCOM:	return "VK_BLOCK_MATCH_WINDOW_COMPARE_MODE_MIN_QCOM";
+		case VK_BLOCK_MATCH_WINDOW_COMPARE_MODE_MAX_QCOM:	return "VK_BLOCK_MATCH_WINDOW_COMPARE_MODE_MAX_QCOM";
+		default:											return DE_NULL;
+	}
+}
+
+const char* getLayeredDriverUnderlyingApiMSFTName (VkLayeredDriverUnderlyingApiMSFT value)
+{
+	switch (value)
+	{
+		case VK_LAYERED_DRIVER_UNDERLYING_API_NONE_MSFT:	return "VK_LAYERED_DRIVER_UNDERLYING_API_NONE_MSFT";
+		case VK_LAYERED_DRIVER_UNDERLYING_API_D3D12_MSFT:	return "VK_LAYERED_DRIVER_UNDERLYING_API_D3D12_MSFT";
+		default:											return DE_NULL;
 	}
 }
 
@@ -4174,10 +4239,11 @@ const char* getSamplerReductionModeName (VkSamplerReductionMode value)
 {
 	switch (value)
 	{
-		case VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE:	return "VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE";
-		case VK_SAMPLER_REDUCTION_MODE_MIN:					return "VK_SAMPLER_REDUCTION_MODE_MIN";
-		case VK_SAMPLER_REDUCTION_MODE_MAX:					return "VK_SAMPLER_REDUCTION_MODE_MAX";
-		default:											return DE_NULL;
+		case VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE:					return "VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE";
+		case VK_SAMPLER_REDUCTION_MODE_MIN:									return "VK_SAMPLER_REDUCTION_MODE_MIN";
+		case VK_SAMPLER_REDUCTION_MODE_MAX:									return "VK_SAMPLER_REDUCTION_MODE_MAX";
+		case VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_RANGECLAMP_QCOM:	return "VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_RANGECLAMP_QCOM";
+		default:															return DE_NULL;
 	}
 }
 
@@ -4388,6 +4454,36 @@ tcu::Format::Bitfield<32> getPresentGravityFlagsEXTStr (VkPresentGravityFlagsEXT
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+const char* getLatencyMarkerNVName (VkLatencyMarkerNV value)
+{
+	switch (value)
+	{
+		case VK_LATENCY_MARKER_SIMULATION_START_NV:					return "VK_LATENCY_MARKER_SIMULATION_START_NV";
+		case VK_LATENCY_MARKER_SIMULATION_END_NV:					return "VK_LATENCY_MARKER_SIMULATION_END_NV";
+		case VK_LATENCY_MARKER_RENDERSUBMIT_START_NV:				return "VK_LATENCY_MARKER_RENDERSUBMIT_START_NV";
+		case VK_LATENCY_MARKER_RENDERSUBMIT_END_NV:					return "VK_LATENCY_MARKER_RENDERSUBMIT_END_NV";
+		case VK_LATENCY_MARKER_PRESENT_START_NV:					return "VK_LATENCY_MARKER_PRESENT_START_NV";
+		case VK_LATENCY_MARKER_PRESENT_END_NV:						return "VK_LATENCY_MARKER_PRESENT_END_NV";
+		case VK_LATENCY_MARKER_INPUT_SAMPLE_NV:						return "VK_LATENCY_MARKER_INPUT_SAMPLE_NV";
+		case VK_LATENCY_MARKER_TRIGGER_FLASH_NV:					return "VK_LATENCY_MARKER_TRIGGER_FLASH_NV";
+		case VK_LATENCY_MARKER_OUT_OF_BAND_RENDERSUBMIT_START_NV:	return "VK_LATENCY_MARKER_OUT_OF_BAND_RENDERSUBMIT_START_NV";
+		case VK_LATENCY_MARKER_OUT_OF_BAND_RENDERSUBMIT_END_NV:		return "VK_LATENCY_MARKER_OUT_OF_BAND_RENDERSUBMIT_END_NV";
+		case VK_LATENCY_MARKER_OUT_OF_BAND_PRESENT_START_NV:		return "VK_LATENCY_MARKER_OUT_OF_BAND_PRESENT_START_NV";
+		case VK_LATENCY_MARKER_OUT_OF_BAND_PRESENT_END_NV:			return "VK_LATENCY_MARKER_OUT_OF_BAND_PRESENT_END_NV";
+		default:													return DE_NULL;
+	}
+}
+
+const char* getOutOfBandQueueTypeNVName (VkOutOfBandQueueTypeNV value)
+{
+	switch (value)
+	{
+		case VK_OUT_OF_BAND_QUEUE_TYPE_RENDER_NV:	return "VK_OUT_OF_BAND_QUEUE_TYPE_RENDER_NV";
+		case VK_OUT_OF_BAND_QUEUE_TYPE_PRESENT_NV:	return "VK_OUT_OF_BAND_QUEUE_TYPE_PRESENT_NV";
+		default:									return DE_NULL;
+	}
+}
+
 const char* getVendorIdName (VkVendorId value)
 {
 	switch (value)
@@ -4432,6 +4528,7 @@ const char* getDriverIdName (VkDriverId value)
 		case VK_DRIVER_ID_MESA_DOZEN:					return "VK_DRIVER_ID_MESA_DOZEN";
 		case VK_DRIVER_ID_MESA_NVK:						return "VK_DRIVER_ID_MESA_NVK";
 		case VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA:	return "VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA";
+		case VK_DRIVER_ID_MESA_AGXV:					return "VK_DRIVER_ID_MESA_AGXV";
 		default:										return DE_NULL;
 	}
 }
@@ -4553,10 +4650,11 @@ const char* getQueryResultStatusKHRName (VkQueryResultStatusKHR value)
 {
 	switch (value)
 	{
-		case VK_QUERY_RESULT_STATUS_ERROR_KHR:		return "VK_QUERY_RESULT_STATUS_ERROR_KHR";
-		case VK_QUERY_RESULT_STATUS_NOT_READY_KHR:	return "VK_QUERY_RESULT_STATUS_NOT_READY_KHR";
-		case VK_QUERY_RESULT_STATUS_COMPLETE_KHR:	return "VK_QUERY_RESULT_STATUS_COMPLETE_KHR";
-		default:									return DE_NULL;
+		case VK_QUERY_RESULT_STATUS_INSUFFICIENT_BITSTREAM_BUFFER_RANGE_KHR:	return "VK_QUERY_RESULT_STATUS_INSUFFICIENT_BITSTREAM_BUFFER_RANGE_KHR";
+		case VK_QUERY_RESULT_STATUS_ERROR_KHR:									return "VK_QUERY_RESULT_STATUS_ERROR_KHR";
+		case VK_QUERY_RESULT_STATUS_NOT_READY_KHR:								return "VK_QUERY_RESULT_STATUS_NOT_READY_KHR";
+		case VK_QUERY_RESULT_STATUS_COMPLETE_KHR:								return "VK_QUERY_RESULT_STATUS_COMPLETE_KHR";
+		default:																return DE_NULL;
 	}
 }
 
@@ -4635,7 +4733,8 @@ tcu::Format::Bitfield<32> getVideoEncodeCapabilityFlagsKHRStr (VkVideoEncodeCapa
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_VIDEO_ENCODE_CAPABILITY_PRECEDING_EXTERNALLY_ENCODED_BYTES_BIT_KHR,	"VK_VIDEO_ENCODE_CAPABILITY_PRECEDING_EXTERNALLY_ENCODED_BYTES_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_CAPABILITY_PRECEDING_EXTERNALLY_ENCODED_BYTES_BIT_KHR,				"VK_VIDEO_ENCODE_CAPABILITY_PRECEDING_EXTERNALLY_ENCODED_BYTES_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_CAPABILITY_INSUFFICIENT_BITSTREAM_BUFFER_RANGE_DETECTION_BIT_KHR,	"VK_VIDEO_ENCODE_CAPABILITY_INSUFFICIENT_BITSTREAM_BUFFER_RANGE_DETECTION_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -4702,6 +4801,8 @@ tcu::Format::Bitfield<32> getVideoEncodeH264StdFlagsEXTStr (VkVideoEncodeH264Std
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_STD_DEBLOCKING_FILTER_DISABLED_BIT_EXT,				"VK_VIDEO_ENCODE_H264_STD_DEBLOCKING_FILTER_DISABLED_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_STD_DEBLOCKING_FILTER_ENABLED_BIT_EXT,				"VK_VIDEO_ENCODE_H264_STD_DEBLOCKING_FILTER_ENABLED_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_STD_DEBLOCKING_FILTER_PARTIAL_BIT_EXT,				"VK_VIDEO_ENCODE_H264_STD_DEBLOCKING_FILTER_PARTIAL_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_STD_SLICE_QP_DELTA_BIT_EXT,							"VK_VIDEO_ENCODE_H264_STD_SLICE_QP_DELTA_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_STD_DIFFERENT_SLICE_QP_DELTA_BIT_EXT,					"VK_VIDEO_ENCODE_H264_STD_DIFFERENT_SLICE_QP_DELTA_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -4760,6 +4861,8 @@ tcu::Format::Bitfield<32> getVideoEncodeH265StdFlagsEXTStr (VkVideoEncodeH265Std
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_STD_DEBLOCKING_FILTER_OVERRIDE_ENABLED_FLAG_SET_BIT_EXT,	"VK_VIDEO_ENCODE_H265_STD_DEBLOCKING_FILTER_OVERRIDE_ENABLED_FLAG_SET_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_STD_DEPENDENT_SLICE_SEGMENTS_ENABLED_FLAG_SET_BIT_EXT,	"VK_VIDEO_ENCODE_H265_STD_DEPENDENT_SLICE_SEGMENTS_ENABLED_FLAG_SET_BIT_EXT"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_STD_DEPENDENT_SLICE_SEGMENT_FLAG_SET_BIT_EXT,				"VK_VIDEO_ENCODE_H265_STD_DEPENDENT_SLICE_SEGMENT_FLAG_SET_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_STD_SLICE_QP_DELTA_BIT_EXT,								"VK_VIDEO_ENCODE_H265_STD_SLICE_QP_DELTA_BIT_EXT"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_STD_DIFFERENT_SLICE_QP_DELTA_BIT_EXT,						"VK_VIDEO_ENCODE_H265_STD_DIFFERENT_SLICE_QP_DELTA_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -12831,7 +12934,9 @@ std::ostream& operator<< (std::ostream& s, const VkAabbPositionsKHR& value)
 std::ostream& operator<< (std::ostream& s, const VkTransformMatrixKHR& value)
 {
 	s << "VkTransformMatrixKHR = {\n";
-	s << "\tmatrix = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.matrix), DE_ARRAY_END(value.matrix)) << '\n';
+	s << "\tmatrix = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < 3 ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.matrix[i0]), DE_ARRAY_END(value.matrix[i0])) << '\n';
 	s << '}';
 	return s;
 }
@@ -16757,6 +16862,34 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderCoreBuilt
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkFrameBoundaryEXT& value)
+{
+	s << "VkFrameBoundaryEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getFrameBoundaryFlagsEXTStr(value.flags) << '\n';
+	s << "\tframeID = " << value.frameID << '\n';
+	s << "\timageCount = " << value.imageCount << '\n';
+	s << "\tpImages = " << value.pImages << '\n';
+	s << "\tbufferCount = " << value.bufferCount << '\n';
+	s << "\tpBuffers = " << value.pBuffers << '\n';
+	s << "\ttagName = " << value.tagName << '\n';
+	s << "\ttagSize = " << value.tagSize << '\n';
+	s << "\tpTag = " << value.pTag << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFrameBoundaryFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceFrameBoundaryFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tframeBoundary = " << value.frameBoundary << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT& value)
 {
 	s << "VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT = {\n";
@@ -17269,6 +17402,118 @@ std::ostream& operator<< (std::ostream& s, const VkDispatchGraphCountInfoAMDX& v
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCubicClampFeaturesQCOM& value)
+{
+	s << "VkPhysicalDeviceCubicClampFeaturesQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcubicRangeClamp = " << value.cubicRangeClamp << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceYcbcrDegammaFeaturesQCOM& value)
+{
+	s << "VkPhysicalDeviceYcbcrDegammaFeaturesQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tycbcrDegamma = " << value.ycbcrDegamma << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSamplerYcbcrConversionYcbcrDegammaCreateInfoQCOM& value)
+{
+	s << "VkSamplerYcbcrConversionYcbcrDegammaCreateInfoQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tenableYDegamma = " << value.enableYDegamma << '\n';
+	s << "\tenableCbCrDegamma = " << value.enableCbCrDegamma << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCubicWeightsFeaturesQCOM& value)
+{
+	s << "VkPhysicalDeviceCubicWeightsFeaturesQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tselectableCubicWeights = " << value.selectableCubicWeights << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSamplerCubicWeightsCreateInfoQCOM& value)
+{
+	s << "VkSamplerCubicWeightsCreateInfoQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcubicWeights = " << value.cubicWeights << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBlitImageCubicWeightsInfoQCOM& value)
+{
+	s << "VkBlitImageCubicWeightsInfoQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcubicWeights = " << value.cubicWeights << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageProcessing2FeaturesQCOM& value)
+{
+	s << "VkPhysicalDeviceImageProcessing2FeaturesQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttextureBlockMatch2 = " << value.textureBlockMatch2 << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageProcessing2PropertiesQCOM& value)
+{
+	s << "VkPhysicalDeviceImageProcessing2PropertiesQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxBlockMatchWindow = " << value.maxBlockMatchWindow << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSamplerBlockMatchWindowCreateInfoQCOM& value)
+{
+	s << "VkSamplerBlockMatchWindowCreateInfoQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\twindowExtent = " << value.windowExtent << '\n';
+	s << "\twindowCompareMode = " << value.windowCompareMode << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdescriptorPoolOverallocation = " << value.descriptorPoolOverallocation << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLayeredDriverPropertiesMSFT& value)
+{
+	s << "VkPhysicalDeviceLayeredDriverPropertiesMSFT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tunderlyingAPI = " << value.underlyingAPI << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalFormatResolveFeaturesANDROID& value)
 {
 	s << "VkPhysicalDeviceExternalFormatResolveFeaturesANDROID = {\n";
@@ -17297,6 +17542,114 @@ std::ostream& operator<< (std::ostream& s, const VkAndroidHardwareBufferFormatRe
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tcolorAttachmentFormat = " << value.colorAttachmentFormat << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkLatencySleepModeInfoNV& value)
+{
+	s << "VkLatencySleepModeInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tlowLatencyMode = " << value.lowLatencyMode << '\n';
+	s << "\tlowLatencyBoost = " << value.lowLatencyBoost << '\n';
+	s << "\tminimumIntervalUs = " << value.minimumIntervalUs << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkLatencySleepInfoNV& value)
+{
+	s << "VkLatencySleepInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsignalSemaphore = " << value.signalSemaphore << '\n';
+	s << "\tvalue = " << value.value << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSetLatencyMarkerInfoNV& value)
+{
+	s << "VkSetLatencyMarkerInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpresentID = " << value.presentID << '\n';
+	s << "\tmarker = " << value.marker << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkGetLatencyMarkerInfoNV& value)
+{
+	s << "VkGetLatencyMarkerInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpTimings = " << value.pTimings << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkLatencyTimingsFrameReportNV& value)
+{
+	s << "VkLatencyTimingsFrameReportNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpresentID = " << value.presentID << '\n';
+	s << "\tinputSampleTimeUs = " << value.inputSampleTimeUs << '\n';
+	s << "\tsimStartTimeUs = " << value.simStartTimeUs << '\n';
+	s << "\tsimEndTimeUs = " << value.simEndTimeUs << '\n';
+	s << "\trenderSubmitStartTimeUs = " << value.renderSubmitStartTimeUs << '\n';
+	s << "\trenderSubmitEndTimeUs = " << value.renderSubmitEndTimeUs << '\n';
+	s << "\tpresentStartTimeUs = " << value.presentStartTimeUs << '\n';
+	s << "\tpresentEndTimeUs = " << value.presentEndTimeUs << '\n';
+	s << "\tdriverStartTimeUs = " << value.driverStartTimeUs << '\n';
+	s << "\tdriverEndTimeUs = " << value.driverEndTimeUs << '\n';
+	s << "\tosRenderQueueStartTimeUs = " << value.osRenderQueueStartTimeUs << '\n';
+	s << "\tosRenderQueueEndTimeUs = " << value.osRenderQueueEndTimeUs << '\n';
+	s << "\tgpuRenderStartTimeUs = " << value.gpuRenderStartTimeUs << '\n';
+	s << "\tgpuRenderEndTimeUs = " << value.gpuRenderEndTimeUs << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkOutOfBandQueueTypeInfoNV& value)
+{
+	s << "VkOutOfBandQueueTypeInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tqueueType = " << value.queueType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkLatencySubmissionPresentIdNV& value)
+{
+	s << "VkLatencySubmissionPresentIdNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpresentID = " << value.presentID << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSwapchainLatencyCreateInfoNV& value)
+{
+	s << "VkSwapchainLatencyCreateInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tlatencyModeEnable = " << value.latencyModeEnable << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkLatencySurfaceCapabilitiesNV& value)
+{
+	s << "VkLatencySurfaceCapabilitiesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpresentModeCount = " << value.presentModeCount << '\n';
+	s << "\tpPresentModes = " << value.pPresentModes << '\n';
 	s << '}';
 	return s;
 }
@@ -17389,8 +17742,12 @@ std::ostream& operator<< (std::ostream& s, const StdVideoH264ScalingLists& value
 	s << "StdVideoH264ScalingLists = {\n";
 	s << "\tscaling_list_present_mask = " << value.scaling_list_present_mask << '\n';
 	s << "\tuse_default_scaling_matrix_mask = " << value.use_default_scaling_matrix_mask << '\n';
-	s << "\tScalingList4x4 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList4x4), DE_ARRAY_END(value.ScalingList4x4)) << '\n';
-	s << "\tScalingList8x8 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList8x8), DE_ARRAY_END(value.ScalingList8x8)) << '\n';
+	s << "\tScalingList4x4 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H264_SCALING_LIST_4X4_NUM_LISTS ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList4x4[i0]), DE_ARRAY_END(value.ScalingList4x4[i0])) << '\n';
+	s << "\tScalingList8x8 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H264_SCALING_LIST_8X8_NUM_LISTS ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList8x8[i0]), DE_ARRAY_END(value.ScalingList8x8[i0])) << '\n';
 	s << '}';
 	return s;
 }
@@ -17529,12 +17886,20 @@ std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264WeightTable& 
 	s << "\tchroma_log2_weight_denom = " << value.chroma_log2_weight_denom << '\n';
 	s << "\tluma_weight_l0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.luma_weight_l0), DE_ARRAY_END(value.luma_weight_l0)) << '\n';
 	s << "\tluma_offset_l0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.luma_offset_l0), DE_ARRAY_END(value.luma_offset_l0)) << '\n';
-	s << "\tchroma_weight_l0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.chroma_weight_l0), DE_ARRAY_END(value.chroma_weight_l0)) << '\n';
-	s << "\tchroma_offset_l0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.chroma_offset_l0), DE_ARRAY_END(value.chroma_offset_l0)) << '\n';
+	s << "\tchroma_weight_l0 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H264_MAX_NUM_LIST_REF ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.chroma_weight_l0[i0]), DE_ARRAY_END(value.chroma_weight_l0[i0])) << '\n';
+	s << "\tchroma_offset_l0 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H264_MAX_NUM_LIST_REF ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.chroma_offset_l0[i0]), DE_ARRAY_END(value.chroma_offset_l0[i0])) << '\n';
 	s << "\tluma_weight_l1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.luma_weight_l1), DE_ARRAY_END(value.luma_weight_l1)) << '\n';
 	s << "\tluma_offset_l1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.luma_offset_l1), DE_ARRAY_END(value.luma_offset_l1)) << '\n';
-	s << "\tchroma_weight_l1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.chroma_weight_l1), DE_ARRAY_END(value.chroma_weight_l1)) << '\n';
-	s << "\tchroma_offset_l1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.chroma_offset_l1), DE_ARRAY_END(value.chroma_offset_l1)) << '\n';
+	s << "\tchroma_weight_l1 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H264_MAX_NUM_LIST_REF ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.chroma_weight_l1[i0]), DE_ARRAY_END(value.chroma_weight_l1[i0])) << '\n';
+	s << "\tchroma_offset_l1 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H264_MAX_NUM_LIST_REF ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.chroma_offset_l1[i0]), DE_ARRAY_END(value.chroma_offset_l1[i0])) << '\n';
 	s << '}';
 	return s;
 }
@@ -17594,7 +17959,7 @@ std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264RefListModEnt
 std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264RefPicMarkingEntry& value)
 {
 	s << "StdVideoEncodeH264RefPicMarkingEntry = {\n";
-	s << "\toperation = " << value.operation << '\n';
+	s << "\tmemory_management_control_operation = " << value.memory_management_control_operation << '\n';
 	s << "\tdifference_of_pic_nums_minus1 = " << value.difference_of_pic_nums_minus1 << '\n';
 	s << "\tlong_term_pic_num = " << value.long_term_pic_num << '\n';
 	s << "\tlong_term_frame_idx = " << value.long_term_frame_idx << '\n';
@@ -17661,6 +18026,7 @@ std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH264SliceHeader& 
 	s << "\tslice_type = " << value.slice_type << '\n';
 	s << "\tslice_alpha_c0_offset_div2 = " << value.slice_alpha_c0_offset_div2 << '\n';
 	s << "\tslice_beta_offset_div2 = " << value.slice_beta_offset_div2 << '\n';
+	s << "\tslice_qp_delta = " << value.slice_qp_delta << '\n';
 	s << "\treserved1 = " << value.reserved1 << '\n';
 	s << "\tcabac_init_idc = " << value.cabac_init_idc << '\n';
 	s << "\tdisable_deblocking_filter_idc = " << value.disable_deblocking_filter_idc << '\n';
@@ -17782,10 +18148,18 @@ std::ostream& operator<< (std::ostream& s, const StdVideoH265VideoParameterSet& 
 std::ostream& operator<< (std::ostream& s, const StdVideoH265ScalingLists& value)
 {
 	s << "StdVideoH265ScalingLists = {\n";
-	s << "\tScalingList4x4 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList4x4), DE_ARRAY_END(value.ScalingList4x4)) << '\n';
-	s << "\tScalingList8x8 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList8x8), DE_ARRAY_END(value.ScalingList8x8)) << '\n';
-	s << "\tScalingList16x16 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList16x16), DE_ARRAY_END(value.ScalingList16x16)) << '\n';
-	s << "\tScalingList32x32 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList32x32), DE_ARRAY_END(value.ScalingList32x32)) << '\n';
+	s << "\tScalingList4x4 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H265_SCALING_LIST_4X4_NUM_LISTS ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList4x4[i0]), DE_ARRAY_END(value.ScalingList4x4[i0])) << '\n';
+	s << "\tScalingList8x8 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H265_SCALING_LIST_8X8_NUM_LISTS ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList8x8[i0]), DE_ARRAY_END(value.ScalingList8x8[i0])) << '\n';
+	s << "\tScalingList16x16 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H265_SCALING_LIST_16X16_NUM_LISTS ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList16x16[i0]), DE_ARRAY_END(value.ScalingList16x16[i0])) << '\n';
+	s << "\tScalingList32x32 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H265_SCALING_LIST_32X32_NUM_LISTS ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.ScalingList32x32[i0]), DE_ARRAY_END(value.ScalingList32x32[i0])) << '\n';
 	s << "\tScalingListDCCoef16x16 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.ScalingListDCCoef16x16)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.ScalingListDCCoef16x16))) << '\n';
 	s << "\tScalingListDCCoef32x32 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.ScalingListDCCoef32x32)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.ScalingListDCCoef32x32))) << '\n';
 	s << '}';
@@ -17892,7 +18266,9 @@ std::ostream& operator<< (std::ostream& s, const StdVideoH265SequenceParameterSe
 std::ostream& operator<< (std::ostream& s, const StdVideoH265PredictorPaletteEntries& value)
 {
 	s << "StdVideoH265PredictorPaletteEntries = {\n";
-	s << "\tPredictorPaletteEntries = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.PredictorPaletteEntries), DE_ARRAY_END(value.PredictorPaletteEntries)) << '\n';
+	s << "\tPredictorPaletteEntries = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H265_PREDICTOR_PALETTE_COMPONENTS_LIST_SIZE ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.PredictorPaletteEntries[i0]), DE_ARRAY_END(value.PredictorPaletteEntries[i0])) << '\n';
 	s << '}';
 	return s;
 }
@@ -18127,19 +18503,27 @@ std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH265WeightTable& 
 	s << "\tdelta_chroma_log2_weight_denom = " << value.delta_chroma_log2_weight_denom << '\n';
 	s << "\tdelta_luma_weight_l0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_luma_weight_l0), DE_ARRAY_END(value.delta_luma_weight_l0)) << '\n';
 	s << "\tluma_offset_l0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.luma_offset_l0), DE_ARRAY_END(value.luma_offset_l0)) << '\n';
-	s << "\tdelta_chroma_weight_l0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_chroma_weight_l0), DE_ARRAY_END(value.delta_chroma_weight_l0)) << '\n';
-	s << "\tdelta_chroma_offset_l0 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_chroma_offset_l0), DE_ARRAY_END(value.delta_chroma_offset_l0)) << '\n';
+	s << "\tdelta_chroma_weight_l0 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H265_MAX_NUM_LIST_REF ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_chroma_weight_l0[i0]), DE_ARRAY_END(value.delta_chroma_weight_l0[i0])) << '\n';
+	s << "\tdelta_chroma_offset_l0 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H265_MAX_NUM_LIST_REF ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_chroma_offset_l0[i0]), DE_ARRAY_END(value.delta_chroma_offset_l0[i0])) << '\n';
 	s << "\tdelta_luma_weight_l1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_luma_weight_l1), DE_ARRAY_END(value.delta_luma_weight_l1)) << '\n';
 	s << "\tluma_offset_l1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.luma_offset_l1), DE_ARRAY_END(value.luma_offset_l1)) << '\n';
-	s << "\tdelta_chroma_weight_l1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_chroma_weight_l1), DE_ARRAY_END(value.delta_chroma_weight_l1)) << '\n';
-	s << "\tdelta_chroma_offset_l1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_chroma_offset_l1), DE_ARRAY_END(value.delta_chroma_offset_l1)) << '\n';
+	s << "\tdelta_chroma_weight_l1 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H265_MAX_NUM_LIST_REF ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_chroma_weight_l1[i0]), DE_ARRAY_END(value.delta_chroma_weight_l1[i0])) << '\n';
+	s << "\tdelta_chroma_offset_l1 = " << '\n';
+	for(deUint32 i0 = 0 ; i0 < STD_VIDEO_H265_MAX_NUM_LIST_REF ; ++i0)
+		s << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_chroma_offset_l1[i0]), DE_ARRAY_END(value.delta_chroma_offset_l1[i0])) << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH265SliceSegmentLongTermRefPics& value)
+std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH265LongTermRefPics& value)
 {
-	s << "StdVideoEncodeH265SliceSegmentLongTermRefPics = {\n";
+	s << "StdVideoEncodeH265LongTermRefPics = {\n";
 	s << "\tnum_long_term_sps = " << value.num_long_term_sps << '\n';
 	s << "\tnum_long_term_pics = " << value.num_long_term_pics << '\n';
 	s << "\tlt_idx_sps = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.lt_idx_sps)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.lt_idx_sps))) << '\n';
@@ -18186,7 +18570,8 @@ std::ostream& operator<< (std::ostream& s, const StdVideoEncodeH265SliceSegmentH
 	s << "\tslice_act_y_qp_offset = " << value.slice_act_y_qp_offset << '\n';
 	s << "\tslice_act_cb_qp_offset = " << value.slice_act_cb_qp_offset << '\n';
 	s << "\tslice_act_cr_qp_offset = " << value.slice_act_cr_qp_offset << '\n';
-	s << "\treserved1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.reserved1)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.reserved1))) << '\n';
+	s << "\tslice_qp_delta = " << value.slice_qp_delta << '\n';
+	s << "\treserved1 = " << value.reserved1 << '\n';
 	s << "\tpWeightTable = " << value.pWeightTable << '\n';
 	s << '}';
 	return s;

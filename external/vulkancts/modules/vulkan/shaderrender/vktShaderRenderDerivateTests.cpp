@@ -360,7 +360,8 @@ static bool verifyConstantDerivate (tcu::TestLog&						log,
 									const tcu::Vec4&					threshold,
 									const tcu::Vec4&					scale,
 									const tcu::Vec4&					bias,
-									VerificationLogging					logPolicy = LOG_ALL)
+									VerificationLogging					logPolicy = LOG_ALL,
+									bool								demoteToHelperInvocation = false)
 {
 	const int			numComps		= glu::getDataTypeFloatScalars(dataType);
 	const tcu::BVec4	mask			= tcu::logicalNot(getDerivateMask(dataType));
@@ -374,6 +375,9 @@ static bool verifyConstantDerivate (tcu::TestLog&						log,
 		for (int x = 0; x < result.getWidth(); x++)
 		{
 			if (isSkippedPixel(result, x, y))
+				continue;
+
+			if (demoteToHelperInvocation && deMod(y, 2) == 1)
 				continue;
 
 			const tcu::Vec4		resDerivate		= readDerivate(result, scale, bias, x, y);
@@ -549,14 +553,15 @@ struct DerivateCaseDefinition
 {
 	DerivateCaseDefinition (void)
 	{
-		func					= DERIVATE_LAST;
-		dataType				= glu::TYPE_LAST;
-		precision				= glu::PRECISION_LAST;
-		inNonUniformControlFlow	= false;
-		coordDataType			= glu::TYPE_LAST;
-		coordPrecision			= glu::PRECISION_LAST;
-		surfaceType				= SURFACETYPE_UNORM_FBO;
-		numSamples				= 0;
+		func						= DERIVATE_LAST;
+		dataType					= glu::TYPE_LAST;
+		precision					= glu::PRECISION_LAST;
+		inNonUniformControlFlow		= false;
+		coordDataType				= glu::TYPE_LAST;
+		coordPrecision				= glu::PRECISION_LAST;
+		surfaceType					= SURFACETYPE_UNORM_FBO;
+		numSamples					= 0;
+		demoteToHelperInvocation	= false;
 	}
 
 	DerivateFunc			func;
@@ -569,6 +574,8 @@ struct DerivateCaseDefinition
 
 	SurfaceType				surfaceType;
 	int						numSamples;
+
+	bool					demoteToHelperInvocation;
 };
 
 struct DerivateCaseValues
@@ -1047,7 +1054,7 @@ bool LinearDerivateCaseInstance::verify (const tcu::ConstPixelBufferAccess& resu
 		// This improves performance significantly.
 		if (verifyConstantDerivate(m_context.getTestContext().getLog(), result, errorMask, m_definitions.dataType,
 								   reference, threshold, m_values.derivScale, m_values.derivBias,
-								   LOG_NOTHING))
+								   LOG_NOTHING, m_definitions.demoteToHelperInvocation))
 		{
 			m_context.getTestContext().getLog()
 				<< tcu::TestLog::Message
@@ -1117,11 +1124,17 @@ public:
 														 SurfaceType			surfaceType,
 														 int					numSamples,
 														 const std::string&		fragmentSrcTmpl,
-														 BaseUniformType		usedDefaultUniform);
+														 BaseUniformType		usedDefaultUniform,
+														 bool					demoteToHelperInvocaiton);
 	virtual					~LinearDerivateCase			(void);
 
 	virtual	void			initPrograms				(vk::SourceCollections& programCollection) const;
 	virtual TestInstance*	createInstance				(Context& context) const;
+	virtual void			checkSupport				(Context& context) const {
+		if (m_definitions.demoteToHelperInvocation) {
+			context.requireDeviceFunctionality("VK_EXT_shader_demote_to_helper_invocation");
+		}
+	}
 
 private:
 	const std::string		m_fragmentTmpl;
@@ -1137,7 +1150,8 @@ LinearDerivateCase::LinearDerivateCase (tcu::TestContext&		testCtx,
 										SurfaceType				surfaceType,
 										int						numSamples,
 										const std::string&		fragmentSrcTmpl,
-										BaseUniformType			usedDefaultUniform)
+										BaseUniformType			usedDefaultUniform,
+										bool					demoteToHelperInvocaiton)
 	: TriangleDerivateCase	(testCtx, name, description, new LinearDerivateUniformSetup(false, usedDefaultUniform))
 	, m_fragmentTmpl		(fragmentSrcTmpl)
 {
@@ -1149,6 +1163,7 @@ LinearDerivateCase::LinearDerivateCase (tcu::TestContext&		testCtx,
 	m_definitions.coordPrecision			= m_definitions.precision;
 	m_definitions.surfaceType				= surfaceType;
 	m_definitions.numSamples				= numSamples;
+	m_definitions.demoteToHelperInvocation	= demoteToHelperInvocaiton;
 }
 
 LinearDerivateCase::~LinearDerivateCase (void)
@@ -1611,6 +1626,7 @@ void ShaderDerivateTests::init (void)
 		const char*			source;
 		BaseUniformType		usedDefaultUniform;
 		bool				inNonUniformControlFlow;
+		bool				demoteToHelperInvocation;
 	} s_linearDerivateCases[] =
 	{
 		{
@@ -1629,6 +1645,7 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			U_LAST,
+			false,
 			false
 		},
 		{
@@ -1653,6 +1670,7 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			U_LAST,
+			false,
 			false
 		},
 		{
@@ -1675,6 +1693,7 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			U_LAST,
+			false,
 			false
 		},
 		{
@@ -1696,6 +1715,7 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			U_LAST,
+			false,
 			false
 		},
 		{
@@ -1719,6 +1739,7 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			U_LAST,
+			false,
 			false
 		},
 		{
@@ -1742,6 +1763,7 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			UB_TRUE,
+			false,
 			false
 		},
 		{
@@ -1764,6 +1786,7 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			UI_TWO,
+			false,
 			false
 		},
 		{
@@ -1788,6 +1811,7 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			UI_ONE,
+			false,
 			false
 		},
 		{
@@ -1816,7 +1840,8 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			UI_ONE,
-			true
+			true,
+			false
 		},
 		{
 			"dynamic_loop",
@@ -1843,7 +1868,8 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			UI_ONE,
-			true
+			true,
+			false
 		},
 		{
 			"dynamic_switch",
@@ -1872,6 +1898,51 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			UI_ONE,
+			true,
+			false
+		},
+		{
+			"output_store",
+			"Store variable to output and read it before using in a derivative",
+
+			"#version 450\n"
+			"layout(location = 0) in ${PRECISION} ${DATATYPE} v_coord;\n"
+			"layout(location = 0) out ${OUTPUT_PREC} ${OUTPUT_TYPE} o_color;\n"
+			"layout(location = 1) out ${PRECISION} ${DATATYPE} intermediateStore;\n"
+			"layout(binding = 0, std140) uniform Scale { ${PRECISION} ${DATATYPE} u_scale; };\n"
+			"layout(binding = 1, std140) uniform Bias { ${PRECISION} ${DATATYPE} u_bias; };\n"
+			"void main (void)\n"
+			"{\n"
+			"	intermediateStore = v_coord;\n"
+			"	${PRECISION} ${DATATYPE} res = ${FUNC}(intermediateStore) * u_scale + u_bias;\n"
+			"	o_color = ${CAST_TO_OUTPUT};\n"
+			"}\n",
+
+			U_LAST,
+			false,
+			true
+		},
+		{
+			"private_store",
+			"Store variable to global and read it before using in a derivative",
+
+			"#version 450\n"
+			"#extension GL_EXT_demote_to_helper_invocation : enable\n"
+			"layout(location = 0) in ${PRECISION} ${DATATYPE} v_coord;\n"
+			"layout(location = 0) out ${OUTPUT_PREC} ${OUTPUT_TYPE} o_color;\n"
+			"layout(binding = 0, std140) uniform Scale { ${PRECISION} ${DATATYPE} u_scale; };\n"
+			"layout(binding = 1, std140) uniform Bias { ${PRECISION} ${DATATYPE} u_bias; };\n"
+			"${PRECISION} ${DATATYPE} intermediateStore;\n"
+			"void main (void)\n"
+			"{\n"
+			"	intermediateStore = v_coord;\n"
+			"	if (mod(gl_FragCoord.y, 2.0f) == 1.0f) demote;\n"
+			"	${PRECISION} ${DATATYPE} res = ${FUNC}(intermediateStore) * u_scale + u_bias;\n"
+			"	o_color = ${CAST_TO_OUTPUT};\n"
+			"}\n",
+
+			U_LAST,
+			false,
 			true
 		},
 	};
@@ -2001,7 +2072,7 @@ void ShaderDerivateTests::init (void)
 
 						caseName << glu::getDataTypeName(dataType) << "_" << glu::getPrecisionName(precision);
 
-						linearCaseGroup->addChild(new LinearDerivateCase(m_testCtx, caseName.str(), "", function, dataType, precision, s_linearDerivateCases[caseNdx].inNonUniformControlFlow, surfaceType, numSamples, source, s_linearDerivateCases[caseNdx].usedDefaultUniform));
+						linearCaseGroup->addChild(new LinearDerivateCase(m_testCtx, caseName.str(), "", function, dataType, precision, s_linearDerivateCases[caseNdx].inNonUniformControlFlow, surfaceType, numSamples, source, s_linearDerivateCases[caseNdx].usedDefaultUniform, s_linearDerivateCases[caseNdx].demoteToHelperInvocation));
 					}
 				}
 
@@ -2033,7 +2104,7 @@ void ShaderDerivateTests::init (void)
 
 					caseName << glu::getDataTypeName(dataType) << "_" << glu::getPrecisionName(precision);
 
-					fboGroup->addChild(new LinearDerivateCase(m_testCtx, caseName.str(), "", function, dataType, precision, false, surfaceType, numSamples, source, U_LAST));
+					fboGroup->addChild(new LinearDerivateCase(m_testCtx, caseName.str(), "", function, dataType, precision, false, surfaceType, numSamples, source, U_LAST, false));
 				}
 			}
 

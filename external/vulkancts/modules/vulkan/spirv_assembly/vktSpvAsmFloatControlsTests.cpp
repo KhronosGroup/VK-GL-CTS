@@ -50,11 +50,15 @@ namespace
 using namespace std;
 using namespace tcu;
 
-enum FloatType
+enum VariableType
 {
 	FP16 = 0,
 	FP32,
-	FP64
+	FP64,
+	UINT32,
+	UINT64,
+	INT32,
+	INT64
 };
 
 enum class BufferDataType
@@ -139,8 +143,45 @@ enum ValueId
 	V_DOT_ARG_B,
 
 	// arguments of conversion operations - used only when arguments are passed from input
-	V_CONV_FROM_FP32_ARG,
-	V_CONV_FROM_FP64_ARG,
+	// Subcases are:
+	//    ...UP: rounds away from zero, e.g. trailing bits are 101..
+	//    ...DOWN: rounds toward zero, e.g. trailing bits are 011..
+	//    ...TIE_UP: rounds up to even, e.g. preserved bit is 1, trailing are 10*
+	//    ...TIE_DOWN: rounds up to even, e.g. preserved bit is 0, trailing are 10*
+	V_CONV_FROM_FP32_TO_FP16_UP_ARG,
+	V_CONV_FROM_FP32_TO_FP16_DOWN_ARG,
+	V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG,
+	V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG,
+	V_CONV_FROM_FP64_TO_FP16_UP_ARG,
+	V_CONV_FROM_FP64_TO_FP16_DOWN_ARG,
+	V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG,
+	V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG,
+	V_CONV_FROM_FP64_TO_FP32_UP_ARG,
+	V_CONV_FROM_FP64_TO_FP32_DOWN_ARG,
+	V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG,
+	V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG,
+
+	// arguments of integer conversion rounding, not all values can be represented by all integer sizes
+	// and only those that can will be used for testing
+	// Subcases are:
+	//    ...UP: rounds away from zero, e.g. integer's value is closer to higher float value even
+	//    ...DOWN: rounds towards zero, e.g. integer's value is closer to lower float value even
+	//    ...TIE: rounds towards zero, e.g. integer's value is equidistant to lower and higher float value
+	// 16 bit values can only use width-conversions -> No rounding testing
+	V_CONV_FROM_UINT_TO_FP32_UP_ARG,
+	V_CONV_FROM_UINT_TO_FP32_DOWN_ARG,
+	V_CONV_FROM_UINT_TO_FP32_TIE_ARG,
+	V_CONV_FROM_UINT_TO_FP64_UP_ARG,
+	V_CONV_FROM_UINT_TO_FP64_DOWN_ARG,
+	V_CONV_FROM_UINT_TO_FP64_TIE_ARG,
+
+	// Same as UINT but will only test with negative values
+	V_CONV_FROM_INT_TO_FP32_UP_ARG,
+	V_CONV_FROM_INT_TO_FP32_DOWN_ARG,
+	V_CONV_FROM_INT_TO_FP32_TIE_ARG,
+	V_CONV_FROM_INT_TO_FP64_UP_ARG,
+	V_CONV_FROM_INT_TO_FP64_DOWN_ARG,
+	V_CONV_FROM_INT_TO_FP64_TIE_ARG,
 
 	// arguments of rounding operations
 	V_ADD_RTZ_RESULT,
@@ -169,16 +210,71 @@ enum ValueId
 	V_ZERO_OR_SQRT_DENORM,
 	V_INF_OR_INV_SQRT_DENORM,
 
-	//results of conversion operations
-	V_CONV_TO_FP16_RTZ_RESULT,
-	V_CONV_TO_FP16_RTE_RESULT,
-	V_CONV_TO_FP32_RTZ_RESULT,
-	V_CONV_TO_FP32_RTE_RESULT,
+	// Results of conversion operations: RTZ
+	V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT,
+	V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT,
+	V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT,
+	V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT,
+	V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT,
+	V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT,
+	V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT,
+	V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT,
+	V_CONV_FROM_FP64_TO_FP32_UP_RTZ_RESULT,
+	V_CONV_FROM_FP64_TO_FP32_DOWN_RTZ_RESULT,
+	V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTZ_RESULT,
+	V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTZ_RESULT,
+	// Results of conversion operations: RTE
+	V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT,
+	V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT,
+	V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT,
+	V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT,
+	V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT,
+	V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT,
+	V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT,
+	V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT,
+	V_CONV_FROM_FP64_TO_FP32_UP_RTE_RESULT,
+	V_CONV_FROM_FP64_TO_FP32_DOWN_RTE_RESULT,
+	V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTE_RESULT,
+	V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTE_RESULT,
+
+	// Results of conversion operations: RTZ
+	// 16 bit values can only use width-conversions -> No rounding testing
+	V_CONV_FROM_UINT32_UP_RTZ_RESULT,
+	V_CONV_FROM_UINT32_DOWN_RTZ_RESULT,
+	V_CONV_FROM_UINT32_TIE_RTZ_RESULT,
+	V_CONV_FROM_UINT64_UP_RTZ_RESULT,
+	V_CONV_FROM_UINT64_DOWN_RTZ_RESULT,
+	V_CONV_FROM_UINT64_TIE_RTZ_RESULT,
+	// Results of conversion operations: RTE
+	// 16 bit values can only use width-conversions -> No rounding testing
+	V_CONV_FROM_UINT32_UP_RTE_RESULT,
+	V_CONV_FROM_UINT32_DOWN_RTE_RESULT,
+	V_CONV_FROM_UINT32_TIE_RTE_RESULT,
+	V_CONV_FROM_UINT64_UP_RTE_RESULT,
+	V_CONV_FROM_UINT64_DOWN_RTE_RESULT,
+	V_CONV_FROM_UINT64_TIE_RTE_RESULT,
+
+	// Same as UINT but will only test with negative values
+	// Results of conversion operations: RTZ
+	V_CONV_FROM_INT32_UP_RTZ_RESULT,
+	V_CONV_FROM_INT32_DOWN_RTZ_RESULT,
+	V_CONV_FROM_INT32_TIE_RTZ_RESULT,
+	V_CONV_FROM_INT64_UP_RTZ_RESULT,
+	V_CONV_FROM_INT64_DOWN_RTZ_RESULT,
+	V_CONV_FROM_INT64_TIE_RTZ_RESULT,
+	// Results of conversion operations: RTE
+	V_CONV_FROM_INT32_UP_RTE_RESULT,
+	V_CONV_FROM_INT32_DOWN_RTE_RESULT,
+	V_CONV_FROM_INT32_TIE_RTE_RESULT,
+	V_CONV_FROM_INT64_UP_RTE_RESULT,
+	V_CONV_FROM_INT64_DOWN_RTE_RESULT,
+	V_CONV_FROM_INT64_TIE_RTE_RESULT,
+
 	V_CONV_DENORM_SMALLER,			// used e.g. when converting fp16 denorm to fp32
 	V_CONV_DENORM_BIGGER,
 };
 
-// Enum containing all tested operatios. Operations are defined in generic way so that
+// Enum containing all tested operations. Operations are defined in generic way so that
 // they can be used to generate tests operating on arguments with different values of
 // specified float type.
 enum OperationId
@@ -192,12 +288,26 @@ enum OperationId
 	OID_D_INSERT,
 	OID_SHUFFLE,
 	OID_TRANSPOSE,
+	OID_CONV_FROM_UINT_TO_FP32,
+	OID_CONV_FROM_UINT_TO_FP64,
+	OID_CONV_FROM_INT_TO_FP32,
+	OID_CONV_FROM_INT_TO_FP64,
+	// No SCONST_CONV_FROM_UINT since it requires Kernel Capability and Vulkan does not expose it
 	OID_CONV_FROM_FP16,
 	OID_CONV_FROM_FP32,
 	OID_CONV_FROM_FP64,
-	OID_SCONST_CONV_FROM_FP32_TO_FP16,
-	OID_SCONST_CONV_FROM_FP64_TO_FP32,
-	OID_SCONST_CONV_FROM_FP64_TO_FP16,
+	OID_SCONST_CONV_FROM_FP32_TO_FP16_UP,		// Round::UP case
+	OID_SCONST_CONV_FROM_FP32_TO_FP16_DOWN,		// Round::DOWN case
+	OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_UP,	// Round::TIE_DOWN case
+	OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_DOWN,	// Round::TIE_DOWN case
+	OID_SCONST_CONV_FROM_FP64_TO_FP32_UP,
+	OID_SCONST_CONV_FROM_FP64_TO_FP32_DOWN,
+	OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_UP,
+	OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_DOWN,
+	OID_SCONST_CONV_FROM_FP64_TO_FP16_UP,
+	OID_SCONST_CONV_FROM_FP64_TO_FP16_DOWN,
+	OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_UP,
+	OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_DOWN,
 	OID_RETURN_VAL,
 
 	// spir-v binary operations
@@ -262,7 +372,7 @@ enum OperationId
 	OID_MODF_ST,
 	OID_FREXP,
 	OID_FREXP_ST,
-	OID_LENGHT,
+	OID_LENGTH,
 	OID_NORMALIZE,
 	OID_REFLECT,
 	OID_REFRACT,
@@ -398,15 +508,15 @@ public:
 
 private:
 	typedef map<ValueId, FLOAT_TYPE> ValueMap;
-	ValueMap m_valueIdToFloatType;
+	ValueMap m_valueIdToVariableType;
 };
 
 template <typename FLOAT_TYPE>
 BufferSp TypeValues<FLOAT_TYPE>::constructInputBuffer(const ValueId* twoArguments) const
 {
 	std::vector<FLOAT_TYPE> inputData(2);
-	inputData[0] = m_valueIdToFloatType.at(twoArguments[0]);
-	inputData[1] = m_valueIdToFloatType.at(twoArguments[1]);
+	inputData[0] = m_valueIdToVariableType.at(twoArguments[0]);
+	inputData[1] = m_valueIdToVariableType.at(twoArguments[1]);
 	return BufferSp(new Buffer<FLOAT_TYPE>(inputData));
 }
 
@@ -443,7 +553,7 @@ void TypeValues<FLOAT_TYPE>::fillInputData(const ValueId* twoArguments, vector<d
 template <typename FLOAT_TYPE>
 FLOAT_TYPE TypeValues<FLOAT_TYPE>::getValue(ValueId id) const
 {
-	return m_valueIdToFloatType.at(id);
+	return m_valueIdToVariableType.at(id);
 }
 
 template <typename FLOAT_TYPE>
@@ -455,13 +565,163 @@ FLOAT_TYPE TypeValues<FLOAT_TYPE>::exactByteEquivalent(UINT_TYPE byteValue) cons
 	return value.fp;
 }
 
+// For floating point conversions, rounding modes only matter when
+// doing a narrowing conversion, i.e. from more mantissa bits
+// to fewer.
+//
+// There are four rounding cases, depending on the value of the
+// least significant mantissa bit that is preserved, and the
+// mantissa bits that are eliminated:
+//
+// Least significant  | Eliminated bit     |  Produces which
+// retained bit       | string             |  Rounding Case
+// -------------------|--------------------|-----------------
+//   don't care       | 0y, y is anything  |  DOWN: Round toward zero
+//   don't care       | 1y, y is non-zero  |  UP: Round away from zero
+//   0                | 1y, y is zero      |  TIE_DOWN: Round toward zero
+//   1                | 1y, y is zero      |  TIE_UP: Round away from zero
+enum class Round
+{
+	DOWN,
+	UP,
+	TIE_DOWN,
+	TIE_UP
+};
+
+template <typename FROM_FLOAT_TYPE, typename TO_FLOAT_TYPE>
+struct conversionDetail
+{
+	typedef typename FROM_FLOAT_TYPE::StorageType FromInt;
+	typedef typename TO_FLOAT_TYPE::StorageType ToInt;
+
+	// How many bits will be removed from the mantissa by the conversion?
+	static const int excessWidth = FROM_FLOAT_TYPE::MANTISSA_BITS - TO_FLOAT_TYPE::MANTISSA_BITS;
+
+	// 'tie' contains the bits for the "1y, y is 0" case in RoundCase table.
+	// All the positions in tie32 will be thrown away, but help determine
+	// the rounding direction.
+	static const FromInt tie = ((FromInt)1) << (excessWidth - 1);
+	static const FromInt down = tie - 1; // bits to trigger down case
+	static const FromInt up = tie + 1; // bits to trigger up case
+	static const FromInt tieDown = tie; // bits to trigger tie-down case
+	static const FromInt tieUp = (tie << 1) | tie; // bits to trigger tie-up case
+	static const int exampleSign = 1; // Could be -1
+	static const int exampleExponent = TO_FLOAT_TYPE::EXPONENT_BIAS;
+
+	// Not all platforms will support 16 or 64 bit values. We need to detect those cases
+	// and make the tests pass through since we cannot validate them.
+	static bool hasExcessBits (void)
+	{
+		return 0 < excessWidth;
+	}
+
+	// Returns arbitrary but nontrivial bits for the mantissa of the conversion
+	// result. This has TO_FLOAT_TYPE::MANTISSA_BITS. The bottom bit must be
+	// zero so it can be filled in later.
+	static ToInt exampleMSBBits (void)
+	{
+		switch (int(TO_FLOAT_TYPE::MANTISSA_BITS)) {
+			case 10: // Float16
+				// The Mantissa has 10 explicitly represented bits, and 1 bit
+				// that is normally hidden, but required here.
+				// The upper 9 are arbitrary, and the bottom bit is 0, to be filled
+				// in later.
+				return static_cast<ToInt>((1<<10) | 0x39a);
+			case 23: // Float32
+				// The Mantissa has 23 explicitly represented bits, and 1 bit
+				// that is normally hidden, but required here.
+				// The upper 22 are arbitrary, and the bottom bit is 0, to be filled
+				// in later.
+				return static_cast<ToInt>((1<<23) | 0x3a5a5a);
+		}
+		DE_ASSERT(false && "Expected Float16 or Float32");
+		return 0;
+	}
+
+	static FromInt inputMantissa (Round r)
+	{
+		const FromInt base = static_cast<FromInt>(exampleMSBBits()) << excessWidth;
+		switch (r)
+		{
+			case Round::DOWN: return base | down;
+			case Round::UP: return base | up;
+			case Round::TIE_DOWN: return base | tieDown;
+			case Round::TIE_UP: return base | tieUp;
+		}
+		DE_ASSERT(false);
+		return 0; // Unreachable
+	}
+
+	static ToInt outputMantissa (FromInt mantissa, Round r)
+	{
+		const ToInt base = static_cast<ToInt>(mantissa >> excessWidth);
+		switch (r)
+		{
+			case Round::DOWN:
+			case Round::TIE_DOWN:
+				return base;
+			case Round::UP:
+			case Round::TIE_UP:
+				return static_cast<ToInt>(base + 1);
+		}
+		DE_ASSERT(false);
+		return 0; // Unreachable
+	}
+
+	// Returns the value for the sample input, for an intended rounding outcome.
+	static FROM_FLOAT_TYPE from (Round r)
+	{
+		return FROM_FLOAT_TYPE::construct(exampleSign, exampleExponent, inputMantissa(r));
+	}
+
+	// Returns the value of from(r) in string form as a sequence of 32 bit words.
+	static std::string fromStr (Round r)
+	{
+		const FromInt value = from(r).bits();
+		switch (sizeof(FromInt)) {
+			case 8:
+				// Return low word first, high word second
+				return to_string(value & 0xFFFFFFFFu) + " " + to_string(value >> 16 >> 16);
+			case 4:
+				return to_string(value);
+		}
+		DE_ASSERT(false);
+		return "";
+	}
+
+	// Return the float value expected for a RTZ conversion.
+	static TO_FLOAT_TYPE resultRTZ (Round r)
+	{
+		// Reconstruct the original input, then round toward zero.
+		const ToInt mantissa = outputMantissa(inputMantissa(r), Round::DOWN);
+		return TO_FLOAT_TYPE::construct(exampleSign, exampleExponent, mantissa);
+	}
+	// Return the bits for the float value expected for a RTZ conversion.
+	static ToInt resultRTZBits (Round r)
+	{
+		return resultRTZ(r).bits();
+	}
+	// Return the float value expected for a RTE conversion.
+	static TO_FLOAT_TYPE resultRTE (Round r)
+	{
+		// Reconstruct the original input, then round as specified.
+		const ToInt mantissa = outputMantissa(inputMantissa(r), r);
+		return TO_FLOAT_TYPE::construct(exampleSign,exampleExponent, mantissa);
+	}
+	// Return the bits for the float value expected for a RTE conversion.
+	static ToInt resultRTEBits (Round r)
+	{
+		return resultRTE(r).bits();
+	}
+};
+
 template <>
 TypeValues<deFloat16>::TypeValues()
 	: TypeValuesBase()
 {
-	// NOTE: when updating entries in m_valueIdToFloatType make sure to
+	// NOTE: when updating entries in m_valueIdToVariableType make sure to
 	// update also valueIdToSnippetArgMap defined in updateSpirvSnippets()
-	ValueMap& vm = m_valueIdToFloatType;
+	ValueMap& vm = m_valueIdToVariableType;
 	vm[V_UNUSED]			= deFloat32To16(0.0f);
 	vm[V_MINUS_INF]			= 0xfc00;
 	vm[V_MINUS_ONE]			= deFloat32To16(-1.0f);
@@ -485,22 +745,103 @@ TypeValues<deFloat16>::TypeValues()
 	vm[V_MUL_ARG_B]					= 0x1900;
 	vm[V_DOT_ARG_A]					= vm[V_ADD_ARG_A];
 	vm[V_DOT_ARG_B]					= vm[V_MUL_ARG_B];
-	vm[V_CONV_FROM_FP32_ARG]		= vm[V_UNUSED];
-	vm[V_CONV_FROM_FP64_ARG]		= vm[V_UNUSED];
+
+	// Float16 is not the source type for a narrowing conversion, so these
+	// entries are unused.
+	vm[V_CONV_FROM_FP32_TO_FP16_UP_ARG]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_DOWN_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_UP_ARG]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_DOWN_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_UP_ARG]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_DOWN_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG]	= vm[V_UNUSED];
+
+	// 16 values can only be used for width-conversions
+	vm[V_CONV_FROM_UINT_TO_FP32_UP_ARG]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT_TO_FP32_DOWN_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT_TO_FP32_TIE_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT_TO_FP64_UP_ARG]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT_TO_FP64_DOWN_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT_TO_FP64_TIE_ARG]		= vm[V_UNUSED];
+
+	vm[V_CONV_FROM_INT_TO_FP32_UP_ARG]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT_TO_FP32_DOWN_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT_TO_FP32_TIE_ARG]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT_TO_FP64_UP_ARG]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT_TO_FP64_DOWN_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT_TO_FP64_TIE_ARG]			= vm[V_UNUSED];
 
 	vm[V_ADD_RTZ_RESULT]			= 0x4001;	// deFloat16Add(vm[V_ADD_ARG_A], vm[V_ADD_ARG_B], rtz)
 	vm[V_SUB_RTZ_RESULT]			= 0xc001;	// deFloat16Sub(vm[V_SUB_ARG_A], vm[V_SUB_ARG_B], rtz)
 	vm[V_MUL_RTZ_RESULT]			= 0x1903;	// deFloat16Mul(vm[V_MUL_ARG_A], vm[V_MUL_ARG_B], rtz)
 	vm[V_DOT_RTZ_RESULT]			= 0x1d03;
-	vm[V_CONV_TO_FP16_RTZ_RESULT]	= deFloat32To16Round(1.22334445f, DE_ROUNDINGMODE_TO_ZERO);
-	vm[V_CONV_TO_FP32_RTZ_RESULT]	= vm[V_UNUSED];
 
 	vm[V_ADD_RTE_RESULT]			= 0x4002;	// deFloat16Add(vm[V_ADD_ARG_A], vm[V_ADD_ARG_B], rte)
 	vm[V_SUB_RTE_RESULT]			= 0xc002;	// deFloat16Sub(vm[V_SUB_ARG_A], vm[V_SUB_ARG_B], rte)
 	vm[V_MUL_RTE_RESULT]			= 0x1904;	// deFloat16Mul(vm[V_MUL_ARG_A], vm[V_MUL_ARG_B], rte)
 	vm[V_DOT_RTE_RESULT]			= 0x1d04;
-	vm[V_CONV_TO_FP16_RTE_RESULT]	= deFloat32To16Round(1.22334445f, DE_ROUNDINGMODE_TO_NEAREST_EVEN);
-	vm[V_CONV_TO_FP32_RTE_RESULT]	= vm[V_UNUSED];
+
+	typedef conversionDetail<Float32,Float16> from32;
+	typedef conversionDetail<Float64,Float16> from64;
+	vm[V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT]			= from32::hasExcessBits() ? from32::resultRTZBits(Round::UP) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT]		= from32::hasExcessBits() ? from32::resultRTZBits(Round::DOWN) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT]		= from32::hasExcessBits() ? from32::resultRTZBits(Round::TIE_UP) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT]	= from32::hasExcessBits() ? from32::resultRTZBits(Round::TIE_DOWN) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT]			= from64::hasExcessBits() ? from64::resultRTZBits(Round::UP) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT]		= from64::hasExcessBits() ? from64::resultRTZBits(Round::DOWN) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT]		= from64::hasExcessBits() ? from64::resultRTZBits(Round::TIE_UP) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT]	= from64::hasExcessBits() ? from64::resultRTZBits(Round::TIE_DOWN) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_UP_RTZ_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_DOWN_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTZ_RESULT]	= vm[V_UNUSED];
+
+	vm[V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT]			= from32::hasExcessBits() ? from32::resultRTEBits(Round::UP) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT]		= from32::hasExcessBits() ? from32::resultRTEBits(Round::DOWN) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT]		= from32::hasExcessBits() ? from32::resultRTEBits(Round::TIE_UP) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT]	= from32::hasExcessBits() ? from32::resultRTEBits(Round::TIE_DOWN) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT]			= from64::hasExcessBits() ? from64::resultRTEBits(Round::UP) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT]		= from64::hasExcessBits() ? from64::resultRTEBits(Round::DOWN) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT]		= from64::hasExcessBits() ? from64::resultRTEBits(Round::TIE_UP) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT]	= from64::hasExcessBits() ? from64::resultRTEBits(Round::TIE_DOWN) : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_UP_RTE_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_DOWN_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTE_RESULT]	= vm[V_UNUSED];
+
+	// 16 values can only be used for width-conversions
+	vm[V_CONV_FROM_UINT32_UP_RTZ_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT32_DOWN_RTZ_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT32_TIE_RTZ_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT64_UP_RTZ_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT64_DOWN_RTZ_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT64_TIE_RTZ_RESULT]				= vm[V_UNUSED];
+
+	vm[V_CONV_FROM_UINT32_UP_RTE_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT32_DOWN_RTE_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT32_TIE_RTE_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT64_UP_RTE_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT64_DOWN_RTE_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT64_TIE_RTE_RESULT]				= vm[V_UNUSED];
+
+	vm[V_CONV_FROM_INT32_UP_RTZ_RESULT]					= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT32_DOWN_RTZ_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT32_TIE_RTZ_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT64_UP_RTZ_RESULT]					= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT64_DOWN_RTZ_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT64_TIE_RTZ_RESULT]				= vm[V_UNUSED];
+
+	vm[V_CONV_FROM_INT32_UP_RTE_RESULT]					= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT32_DOWN_RTE_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT32_TIE_RTE_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT64_UP_RTE_RESULT]					= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT64_DOWN_RTE_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT64_TIE_RTE_RESULT]				= vm[V_UNUSED];
 
 	// there is no precision to store fp32 denorm nor fp64 denorm
 	vm[V_CONV_DENORM_SMALLER]		= vm[V_ZERO];
@@ -511,9 +852,9 @@ template <>
 TypeValues<float>::TypeValues()
 	: TypeValuesBase()
 {
-	// NOTE: when updating entries in m_valueIdToFloatType make sure to
+	// NOTE: when updating entries in m_valueIdToVariableType make sure to
 	// update also valueIdToSnippetArgMap defined in updateSpirvSnippets()
-	ValueMap& vm = m_valueIdToFloatType;
+	ValueMap& vm = m_valueIdToVariableType;
 	vm[V_UNUSED]			=  0.0f;
 	vm[V_MINUS_INF]			= -std::numeric_limits<float>::infinity();
 	vm[V_MINUS_ONE]			= -1.0f;
@@ -538,8 +879,35 @@ TypeValues<float>::TypeValues()
 	vm[V_MUL_ARG_B]					= 5 * e;
 	vm[V_DOT_ARG_A]					= vm[V_ADD_ARG_A];
 	vm[V_DOT_ARG_B]					= 5 * e;
-	vm[V_CONV_FROM_FP32_ARG]		= 1.22334445f;
-	vm[V_CONV_FROM_FP64_ARG]		= vm[V_UNUSED];
+
+	// Float32 is the source of a narrowing conversionsto Float16.
+	typedef conversionDetail<Float32,Float16> from32;
+	vm[V_CONV_FROM_FP32_TO_FP16_UP_ARG]			= from32::hasExcessBits() ? from32::from(Round::UP).asFloat() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_DOWN_ARG]		= from32::hasExcessBits() ? from32::from(Round::DOWN).asFloat() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG]		= from32::hasExcessBits() ? from32::from(Round::TIE_UP).asFloat() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG]	= from32::hasExcessBits() ? from32::from(Round::TIE_DOWN).asFloat() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_UP_ARG]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_DOWN_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_UP_ARG]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_DOWN_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG]	= vm[V_UNUSED];
+
+	vm[V_CONV_FROM_UINT_TO_FP32_UP_ARG]			= exactByteEquivalent(0x02000003); // 33554435
+	vm[V_CONV_FROM_UINT_TO_FP32_DOWN_ARG]		= exactByteEquivalent(0x02000001); // 33554433
+	vm[V_CONV_FROM_UINT_TO_FP32_TIE_ARG]		= exactByteEquivalent(0x02000002); // 33554434
+	vm[V_CONV_FROM_UINT_TO_FP64_UP_ARG]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT_TO_FP64_DOWN_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT_TO_FP64_TIE_ARG]		= vm[V_UNUSED];
+
+	vm[V_CONV_FROM_INT_TO_FP32_UP_ARG]			= exactByteEquivalent(0xfdfffffd); // -33554435
+	vm[V_CONV_FROM_INT_TO_FP32_DOWN_ARG]		= exactByteEquivalent(0xfdffffff); // -33554433
+	vm[V_CONV_FROM_INT_TO_FP32_TIE_ARG]			= exactByteEquivalent(0xfdfffffe); // -33554434
+	vm[V_CONV_FROM_INT_TO_FP64_UP_ARG]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT_TO_FP64_DOWN_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT_TO_FP64_TIE_ARG]			= vm[V_UNUSED];
 
 	int prevRound = fegetround();
 	fesetround(FE_TOWARDZERO);
@@ -547,17 +915,68 @@ TypeValues<float>::TypeValues()
 	vm[V_SUB_RTZ_RESULT]			= vm[V_SUB_ARG_A] - vm[V_SUB_ARG_B];
 	vm[V_MUL_RTZ_RESULT]			= vm[V_MUL_ARG_A] * vm[V_MUL_ARG_B];
 	vm[V_DOT_RTZ_RESULT]			= vm[V_MUL_RTZ_RESULT] + vm[V_MUL_RTZ_RESULT];
-	vm[V_CONV_TO_FP16_RTZ_RESULT]	= vm[V_UNUSED];
-	vm[V_CONV_TO_FP32_RTZ_RESULT]	= exactByteEquivalent<deUint32>(0x3f9c968d); // result of conversion from double(1.22334455)
 
 	fesetround(FE_TONEAREST);
 	vm[V_ADD_RTE_RESULT]			= vm[V_ADD_ARG_A] + vm[V_ADD_ARG_B];
 	vm[V_SUB_RTE_RESULT]			= vm[V_SUB_ARG_A] - vm[V_SUB_ARG_B];
 	vm[V_MUL_RTE_RESULT]			= vm[V_MUL_ARG_A] * vm[V_MUL_ARG_B];
 	vm[V_DOT_RTE_RESULT]			= vm[V_MUL_RTE_RESULT] + vm[V_MUL_RTE_RESULT];
-	vm[V_CONV_TO_FP16_RTE_RESULT]	= vm[V_UNUSED];
-	vm[V_CONV_TO_FP32_RTE_RESULT]	= exactByteEquivalent<deUint32>(0x3f9c968e); // result of conversion from double(1.22334455)
 	fesetround(prevRound);
+
+	typedef conversionDetail<Float64,Float32> from64;
+	vm[V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_UP_RTZ_RESULT]			= from64::hasExcessBits() ? from64::resultRTZ(Round::UP).asFloat() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_DOWN_RTZ_RESULT]		= from64::hasExcessBits() ? from64::resultRTZ(Round::DOWN).asFloat() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTZ_RESULT]		= from64::hasExcessBits() ? from64::resultRTZ(Round::TIE_UP).asFloat() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTZ_RESULT]	= from64::hasExcessBits() ? from64::resultRTZ(Round::TIE_DOWN).asFloat() : vm[V_UNUSED];
+
+	vm[V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_UP_RTE_RESULT]			= from64::hasExcessBits() ? from64::resultRTE(Round::UP).asFloat() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_DOWN_RTE_RESULT]		= from64::hasExcessBits() ? from64::resultRTE(Round::DOWN).asFloat() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTE_RESULT]		= from64::hasExcessBits() ? from64::resultRTE(Round::TIE_UP).asFloat() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTE_RESULT]	= from64::hasExcessBits() ? from64::resultRTE(Round::TIE_DOWN).asFloat() : vm[V_UNUSED];
+
+	vm[V_CONV_FROM_UINT32_UP_RTZ_RESULT]				= exactByteEquivalent(0x4c000000); // 33554432.0
+	vm[V_CONV_FROM_UINT32_DOWN_RTZ_RESULT]				= exactByteEquivalent(0x4c000000); // 33554432.0
+	vm[V_CONV_FROM_UINT32_TIE_RTZ_RESULT]				= exactByteEquivalent(0x4c000000); // 33554432.0
+	vm[V_CONV_FROM_UINT64_UP_RTZ_RESULT]				= exactByteEquivalent(0x4c000000); // 33554432.0
+	vm[V_CONV_FROM_UINT64_DOWN_RTZ_RESULT]				= exactByteEquivalent(0x4c000000); // 33554432.0
+	vm[V_CONV_FROM_UINT64_TIE_RTZ_RESULT]				= exactByteEquivalent(0x4c000000); // 33554432.0
+
+	vm[V_CONV_FROM_UINT32_UP_RTE_RESULT]				= exactByteEquivalent(0x4c000001); // 33554434.0
+	vm[V_CONV_FROM_UINT32_DOWN_RTE_RESULT]				= exactByteEquivalent(0x4c000000); // 33554432.0
+	vm[V_CONV_FROM_UINT32_TIE_RTE_RESULT]				= exactByteEquivalent(0x4c000000); // 33554432.0
+	vm[V_CONV_FROM_UINT64_UP_RTE_RESULT]				= exactByteEquivalent(0x4c000001); // 33554434.0
+	vm[V_CONV_FROM_UINT64_DOWN_RTE_RESULT]				= exactByteEquivalent(0x4c000000); // 33554432.0
+	vm[V_CONV_FROM_UINT64_TIE_RTE_RESULT]				= exactByteEquivalent(0x4c000000); // 33554432.0
+
+	vm[V_CONV_FROM_INT32_UP_RTZ_RESULT]					= exactByteEquivalent(0xcc000000); // -33554432.0
+	vm[V_CONV_FROM_INT32_DOWN_RTZ_RESULT]				= exactByteEquivalent(0xcc000000); // -33554432.0
+	vm[V_CONV_FROM_INT32_TIE_RTZ_RESULT]				= exactByteEquivalent(0xcc000000); // -33554432.0
+	vm[V_CONV_FROM_INT64_UP_RTZ_RESULT]					= exactByteEquivalent(0xcc000000); // -33554432.0
+	vm[V_CONV_FROM_INT64_DOWN_RTZ_RESULT]				= exactByteEquivalent(0xcc000000); // -33554432.0
+	vm[V_CONV_FROM_INT64_TIE_RTZ_RESULT]				= exactByteEquivalent(0xcc000000); // -33554432.0
+
+	vm[V_CONV_FROM_INT32_UP_RTE_RESULT]					= exactByteEquivalent(0xcc000001); // -33554434.0
+	vm[V_CONV_FROM_INT32_DOWN_RTE_RESULT]				= exactByteEquivalent(0xcc000000); // -33554432.0
+	vm[V_CONV_FROM_INT32_TIE_RTE_RESULT]				= exactByteEquivalent(0xcc000000); // -33554432.0
+	vm[V_CONV_FROM_INT64_UP_RTE_RESULT]					= exactByteEquivalent(0xcc000001); // -33554434.0
+	vm[V_CONV_FROM_INT64_DOWN_RTE_RESULT]				= exactByteEquivalent(0xcc000000); // -33554432.0
+	vm[V_CONV_FROM_INT64_TIE_RTE_RESULT]				= exactByteEquivalent(0xcc000000); // -33554432.0
 
 	// there is no precision to store fp64 denorm
 	vm[V_CONV_DENORM_SMALLER]		= exactByteEquivalent<deUint32>(0x387c0000); // fp16 denorm
@@ -568,9 +987,9 @@ template <>
 TypeValues<double>::TypeValues()
 	: TypeValuesBase()
 {
-	// NOTE: when updating entries in m_valueIdToFloatType make sure to
+	// NOTE: when updating entries in m_valueIdToVariableType make sure to
 	// update also valueIdToSnippetArgMap defined in updateSpirvSnippets()
-	ValueMap& vm = m_valueIdToFloatType;
+	ValueMap& vm = m_valueIdToVariableType;
 	vm[V_UNUSED]			=  0.0;
 	vm[V_MINUS_INF]			= -std::numeric_limits<double>::infinity();
 	vm[V_MINUS_ONE]			= -1.0;
@@ -595,8 +1014,36 @@ TypeValues<double>::TypeValues()
 	vm[V_MUL_ARG_B]				= 5 * e;
 	vm[V_DOT_ARG_A]				= vm[V_ADD_ARG_A];
 	vm[V_DOT_ARG_B]				= 5 * e;
-	vm[V_CONV_FROM_FP32_ARG]	= vm[V_UNUSED];
-	vm[V_CONV_FROM_FP64_ARG]	= 1.22334455;
+
+	// Float64 is the source of narrowing conversions to Float32 and Float16.
+	typedef conversionDetail<Float64,Float16> to16;
+	typedef conversionDetail<Float64,Float32> to32;
+	vm[V_CONV_FROM_FP32_TO_FP16_UP_ARG]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_DOWN_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_UP_ARG]			= to16::hasExcessBits() ? to16::from(Round::UP).asDouble() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_DOWN_ARG]		= to16::hasExcessBits() ? to16::from(Round::DOWN).asDouble() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG]		= to16::hasExcessBits() ? to16::from(Round::TIE_UP).asDouble() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG]	= to16::hasExcessBits() ? to16::from(Round::TIE_DOWN).asDouble() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_UP_ARG]			= to32::hasExcessBits() ? to32::from(Round::UP).asDouble() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_DOWN_ARG]		= to32::hasExcessBits() ? to32::from(Round::DOWN).asDouble() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG]		= to32::hasExcessBits() ? to32::from(Round::TIE_UP).asDouble() : vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG]	= to32::hasExcessBits() ? to32::from(Round::TIE_DOWN).asDouble() : vm[V_UNUSED];
+
+	vm[V_CONV_FROM_UINT_TO_FP32_UP_ARG]			= exactByteEquivalent(static_cast<deUint64>(0x0000000002000003)); // 33554435
+	vm[V_CONV_FROM_UINT_TO_FP32_DOWN_ARG]		= exactByteEquivalent(static_cast<deUint64>(0x0000000002000001)); // 33554433
+	vm[V_CONV_FROM_UINT_TO_FP32_TIE_ARG]		= exactByteEquivalent(static_cast<deUint64>(0x0000000002000002)); // 33554434
+	vm[V_CONV_FROM_UINT_TO_FP64_UP_ARG]			= exactByteEquivalent(static_cast<deUint64>(0x0040000000000003)); // 18014398509481987
+	vm[V_CONV_FROM_UINT_TO_FP64_DOWN_ARG]		= exactByteEquivalent(static_cast<deUint64>(0x0040000000000001)); // 18014398509481985
+	vm[V_CONV_FROM_UINT_TO_FP64_TIE_ARG]		= exactByteEquivalent(static_cast<deUint64>(0x0040000000000002)); // 18014398509481986
+
+	vm[V_CONV_FROM_INT_TO_FP32_UP_ARG]			= exactByteEquivalent(static_cast<deUint64>(0xfffffffffdfffffd)); // -33554435
+	vm[V_CONV_FROM_INT_TO_FP32_DOWN_ARG]		= exactByteEquivalent(static_cast<deUint64>(0xfffffffffdffffff)); // -33554433
+	vm[V_CONV_FROM_INT_TO_FP32_TIE_ARG]			= exactByteEquivalent(static_cast<deUint64>(0xfffffffffdfffffe)); // -33554434
+	vm[V_CONV_FROM_INT_TO_FP64_UP_ARG]			= exactByteEquivalent(static_cast<deUint64>(0xffbffffffffffffd)); // -18014398509481987
+	vm[V_CONV_FROM_INT_TO_FP64_DOWN_ARG]		= exactByteEquivalent(static_cast<deUint64>(0xffbfffffffffffff)); // -18014398509481985
+	vm[V_CONV_FROM_INT_TO_FP64_TIE_ARG]			= exactByteEquivalent(static_cast<deUint64>(0xffbffffffffffffe)); // -18014398509481986
 
 	int prevRound = fegetround();
 	fesetround(FE_TOWARDZERO);
@@ -604,30 +1051,90 @@ TypeValues<double>::TypeValues()
 	vm[V_SUB_RTZ_RESULT]			= vm[V_SUB_ARG_A] - vm[V_SUB_ARG_B];
 	vm[V_MUL_RTZ_RESULT]			= vm[V_MUL_ARG_A] * vm[V_MUL_ARG_B];
 	vm[V_DOT_RTZ_RESULT]			= vm[V_MUL_RTZ_RESULT] + vm[V_MUL_RTZ_RESULT];
-	vm[V_CONV_TO_FP16_RTZ_RESULT]	= vm[V_UNUSED];
-	vm[V_CONV_TO_FP32_RTZ_RESULT]	= vm[V_UNUSED];
 
 	fesetround(FE_TONEAREST);
 	vm[V_ADD_RTE_RESULT]			= vm[V_ADD_ARG_A] + vm[V_ADD_ARG_B];
 	vm[V_SUB_RTE_RESULT]			= vm[V_SUB_ARG_A] - vm[V_SUB_ARG_B];
 	vm[V_MUL_RTE_RESULT]			= vm[V_MUL_ARG_A] * vm[V_MUL_ARG_B];
 	vm[V_DOT_RTE_RESULT]			= vm[V_MUL_RTE_RESULT] + vm[V_MUL_RTE_RESULT];
-	vm[V_CONV_TO_FP16_RTE_RESULT]	= vm[V_UNUSED];
-	vm[V_CONV_TO_FP32_RTE_RESULT]	= vm[V_UNUSED];
 	fesetround(prevRound);
+
+
+	// Float64 is not the destination of any narrowing conversions.
+	vm[V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_UP_RTZ_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_DOWN_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTZ_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTZ_RESULT]	= vm[V_UNUSED];
+
+	vm[V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT]	= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_UP_RTE_RESULT]			= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_DOWN_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTE_RESULT]		= vm[V_UNUSED];
+	vm[V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTE_RESULT]	= vm[V_UNUSED];
+
+	vm[V_CONV_FROM_UINT32_UP_RTZ_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT32_DOWN_RTZ_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT32_TIE_RTZ_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT64_UP_RTZ_RESULT]				= exactByteEquivalent(static_cast<deUint64>(0x4350000000000000)); // 18014398509481984.0
+	vm[V_CONV_FROM_UINT64_DOWN_RTZ_RESULT]				= exactByteEquivalent(static_cast<deUint64>(0x4350000000000000)); // 18014398509481984.0
+	vm[V_CONV_FROM_UINT64_TIE_RTZ_RESULT]				= exactByteEquivalent(static_cast<deUint64>(0x4350000000000000)); // 18014398509481984.0
+
+	vm[V_CONV_FROM_UINT32_UP_RTE_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT32_DOWN_RTE_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT32_TIE_RTE_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_UINT64_UP_RTE_RESULT]				= exactByteEquivalent(static_cast<deUint64>(0x4350000000000001)); // 18014398509481988.0
+	vm[V_CONV_FROM_UINT64_DOWN_RTE_RESULT]				= exactByteEquivalent(static_cast<deUint64>(0x4350000000000000)); // 18014398509481984.0
+	vm[V_CONV_FROM_UINT64_TIE_RTE_RESULT]				= exactByteEquivalent(static_cast<deUint64>(0x4350000000000000)); // 18014398509481984.0
+
+	vm[V_CONV_FROM_INT32_UP_RTZ_RESULT]					= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT32_DOWN_RTZ_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT32_TIE_RTZ_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT64_UP_RTZ_RESULT]					= exactByteEquivalent(static_cast<deUint64>(0xc350000000000000)); // -18014398509481984.0
+	vm[V_CONV_FROM_INT64_DOWN_RTZ_RESULT]				= exactByteEquivalent(static_cast<deUint64>(0xc350000000000000)); // -18014398509481984.0
+	vm[V_CONV_FROM_INT64_TIE_RTZ_RESULT]				= exactByteEquivalent(static_cast<deUint64>(0xc350000000000000)); // -18014398509481984.0
+
+	vm[V_CONV_FROM_INT32_UP_RTE_RESULT]					= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT32_DOWN_RTE_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT32_TIE_RTE_RESULT]				= vm[V_UNUSED];
+	vm[V_CONV_FROM_INT64_UP_RTE_RESULT]					= exactByteEquivalent(static_cast<deUint64>(0xc350000000000001)); // -18014398509481988.0
+	vm[V_CONV_FROM_INT64_DOWN_RTE_RESULT]				= exactByteEquivalent(static_cast<deUint64>(0xc350000000000000)); // -18014398509481984.0
+	vm[V_CONV_FROM_INT64_TIE_RTE_RESULT]				= exactByteEquivalent(static_cast<deUint64>(0xc350000000000000)); // -18014398509481984.0
 
 	vm[V_CONV_DENORM_SMALLER]		= exactByteEquivalent<deUint64>(0x3f0f800000000000); // 0x03f0 is fp16 denorm
 	vm[V_CONV_DENORM_BIGGER]		= exactByteEquivalent<deUint64>(0x373f800000000000); // 0x000003f0 is fp32 denorm
 }
 
-// Each float type (fp16, fp32, fp64) has specific set of SPIR-V snippets
-// that was extracted to separate template specialization. Those snippets
-// are used to compose final test shaders. With this approach
-// parameterization can be done just once per type and reused for many tests.
+// Each type (fp16, fp32, fp64, uint16, uint32, uint64, int16, int32, int64)
+// has specific set of SPIR-V snippets that was extracted to separate template
+// specialization. Those snippets are used to compose final test shaders.
+// With this approach parameterization can be done just once per type and reused
+// for many tests.
 class TypeSnippetsBase
 {
 public:
+	TypeSnippetsBase(bool floatType, bool signedInteger)
+	 : isFloatType(floatType)
+	 , isSignedInteger(signedInteger)
+	 {}
+
 	virtual ~TypeSnippetsBase() = default;
+
+	const char* getValueTypeString() const { return isFloatType ? "f" : (isSignedInteger ? "i" : "u"); }
 
 protected:
 	void updateSpirvSnippets();
@@ -645,7 +1152,7 @@ public: // Type specific data:
 	// denormBase is not a denorm - it is used to create denorm.
 	// This value is needed when operations are tested with arguments that were
 	// generated in the code. Generated denorm should be the same as denorm
-	// used when arguments are passed via input (m_valueIdToFloatType[V_DENORM]).
+	// used when arguments are passed via input (m_valueIdToVariableType[V_DENORM]).
 	// This is required as result of some operations depends on actual denorm value
 	// e.g. OpRadians(0x0001) is 0 but OpRadians(0x03f0) is denorm.
 	string denormBase;
@@ -657,6 +1164,8 @@ public: // Type specific data:
 	string arrayStride;
 
 	bool loadStoreRequiresShaderFloat16;
+	bool isFloatType;
+	bool isSignedInteger;
 
 public: // Type specific spir-v snippets:
 
@@ -718,55 +1227,70 @@ void TypeSnippetsBase::updateSpirvSnippets()
 {
 	// annotations to types that are commonly used by tests
 	const string typeAnnotationsTemplate =
-		"OpDecorate %type_float_arr_1 ArrayStride " + arrayStride + "\n"
-		"OpDecorate %type_float_arr_2 ArrayStride " + arrayStride + "\n";
+		"OpDecorate %type_valueType_arr_1 ArrayStride " + arrayStride + "\n"
+		"OpDecorate %type_valueType_arr_2 ArrayStride " + arrayStride + "\n";
 
 	// definition off all types that are commonly used by tests
-	const string typeDefinitionsTemplate =
-		"%type_float             = OpTypeFloat " + bitWidth + "\n"
-		"%type_float_uptr        = OpTypePointer Uniform %type_float\n"
-		"%type_float_fptr        = OpTypePointer Function %type_float\n"
-		"%type_float_vec2        = OpTypeVector %type_float 2\n"
-		"%type_float_vec3        = OpTypeVector %type_float 3\n"
-		"%type_float_vec4        = OpTypeVector %type_float 4\n"
-		"%type_float_vec4_iptr   = OpTypePointer Input %type_float_vec4\n"
-		"%type_float_vec4_optr   = OpTypePointer Output %type_float_vec4\n"
-		"%type_float_mat2x2      = OpTypeMatrix %type_float_vec2 2\n"
-		"%type_float_arr_1       = OpTypeArray %type_float %c_i32_1\n"
-		"%type_float_arr_2       = OpTypeArray %type_float %c_i32_2\n";
+	const string floatTypeDefinition	=
+		"%type_valueType             = OpTypeFloat " + bitWidth + "\n"
+		"%type_valueType_uptr        = OpTypePointer Uniform %type_valueType\n"
+		"%type_valueType_fptr        = OpTypePointer Function %type_valueType\n"
+		"%type_valueType_vec2        = OpTypeVector %type_valueType 2\n"
+		"%type_valueType_vec3        = OpTypeVector %type_valueType 3\n"
+		"%type_valueType_vec4        = OpTypeVector %type_valueType 4\n"
+		"%type_valueType_vec4_iptr   = OpTypePointer Input %type_valueType_vec4\n"
+		"%type_valueType_vec4_optr   = OpTypePointer Output %type_valueType_vec4\n"
+		"%type_valueType_mat2x2      = OpTypeMatrix %type_valueType_vec2 2\n"
+		"%type_valueType_arr_1       = OpTypeArray %type_valueType %c_i32_1\n"
+		"%type_valueType_arr_2       = OpTypeArray %type_valueType %c_i32_2\n";
+	const string uintTypeDefinition		=
+		(bitWidth == "32" ? "" : // 32 bit values are already defined
+		"%type_valueType             = OpTypeInt " + bitWidth + " " + (isSignedInteger ? "1" : "0") + "\n") +
+		"%type_valueType_uptr        = OpTypePointer Uniform %type_valueType\n" +
+		(bitWidth == "32" ? "" : // 32 bit values are already defined
+		"%type_valueType_fptr        = OpTypePointer Function %type_valueType\n"
+		"%type_valueType_vec2        = OpTypeVector %type_valueType 2\n"
+		"%type_valueType_vec3        = OpTypeVector %type_valueType 3\n") +
+		"%type_valueType_vec4        = OpTypeVector %type_valueType 4\n"
+		"%type_valueType_vec4_iptr   = OpTypePointer Input %type_valueType_vec4\n"
+		"%type_valueType_vec4_optr   = OpTypePointer Output %type_valueType_vec4\n"
+		"%type_valueType_arr_1       = OpTypeArray %type_valueType %c_i32_1\n"
+		"%type_valueType_arr_2       = OpTypeArray %type_valueType %c_i32_2\n";
+
+	const string typeDefinitionsTemplate = isFloatType ? floatTypeDefinition : uintTypeDefinition;
 
 	// minimal type definition set that is used by settings tests
 	const string minTypeDefinitionsTemplate =
-		"%type_float             = OpTypeFloat " + bitWidth + "\n"
-		"%type_float_uptr        = OpTypePointer Uniform %type_float\n"
-		"%type_float_arr_2       = OpTypeArray %type_float %c_i32_2\n";
+		"%type_valueType             = OpTypeFloat " + bitWidth + "\n"
+		"%type_valueType_uptr        = OpTypePointer Uniform %type_valueType\n"
+		"%type_valueType_arr_2       = OpTypeArray %type_valueType %c_i32_2\n";
 
 	// definition off all constants that are used by tests
 	const string constantsDefinitionsTemplate =
-		"%c_float_n1             = OpConstant %type_float -1\n"
-		"%c_float_0              = OpConstant %type_float 0.0\n"
-		"%c_float_0_5            = OpConstant %type_float 0.5\n"
-		"%c_float_1              = OpConstant %type_float 1\n"
-		"%c_float_2              = OpConstant %type_float 2\n"
-		"%c_float_3              = OpConstant %type_float 3\n"
-		"%c_float_4              = OpConstant %type_float 4\n"
-		"%c_float_5              = OpConstant %type_float 5\n"
-		"%c_float_6              = OpConstant %type_float 6\n"
-		"%c_float_eps            = OpConstant %type_float " + epsilon + "\n"
-		"%c_float_denorm_base    = OpConstant %type_float " + denormBase + "\n";
+		"%c_valueType_n1             = OpConstant %type_valueType -1\n"
+		"%c_valueType_0              = OpConstant %type_valueType 0.0\n"
+		"%c_valueType_0_5            = OpConstant %type_valueType 0.5\n"
+		"%c_valueType_1              = OpConstant %type_valueType 1\n"
+		"%c_valueType_2              = OpConstant %type_valueType 2\n"
+		"%c_valueType_3              = OpConstant %type_valueType 3\n"
+		"%c_valueType_4              = OpConstant %type_valueType 4\n"
+		"%c_valueType_5              = OpConstant %type_valueType 5\n"
+		"%c_valueType_6              = OpConstant %type_valueType 6\n"
+		"%c_valueType_eps            = OpConstant %type_valueType " + epsilon + "\n"
+		"%c_valueType_denorm_base    = OpConstant %type_valueType " + denormBase + "\n";
 
 	// when arguments are read from SSBO this snipped is placed in main function
 	const string argumentsFromInputTemplate =
-		"%arg1loc                = OpAccessChain %type_float_uptr %ssbo_in %c_i32_0 %c_i32_0\n"
-		"%arg1                   = OpLoad %type_float %arg1loc\n"
-		"%arg2loc                = OpAccessChain %type_float_uptr %ssbo_in %c_i32_0 %c_i32_1\n"
-		"%arg2                   = OpLoad %type_float %arg2loc\n";
+		"%arg1loc                = OpAccessChain %type_valueType_uptr %ssbo_in %c_i32_0 %c_i32_0\n"
+		"%arg1                   = OpLoad %type_valueType %arg1loc\n"
+		"%arg2loc                = OpAccessChain %type_valueType_uptr %ssbo_in %c_i32_0 %c_i32_1\n"
+		"%arg2                   = OpLoad %type_valueType %arg2loc\n";
 
 	const string multiArgumentsFromInputTemplate =
-		"%arg1_float_loc         = OpAccessChain %type_float_uptr %ssbo_in %c_i32_${attr} %c_i32_0\n"
-		"%arg2_float_loc         = OpAccessChain %type_float_uptr %ssbo_in %c_i32_${attr} %c_i32_1\n"
-		"%arg1_float             = OpLoad %type_float %arg1_float_loc\n"
-		"%arg2_float             = OpLoad %type_float %arg2_float_loc\n";
+		"%arg1_valueType_loc         = OpAccessChain %type_valueType_uptr %ssbo_in %c_i32_${attr} %c_i32_0\n"
+		"%arg2_valueType_loc         = OpAccessChain %type_valueType_uptr %ssbo_in %c_i32_${attr} %c_i32_1\n"
+		"%arg1_valueType             = OpLoad %type_valueType %arg1_valueType_loc\n"
+		"%arg2_valueType             = OpLoad %type_valueType %arg2_valueType_loc\n";
 
 	// when tested shader stage reads from SSBO it has to have this snippet
 	inputAnnotationsSnippet =
@@ -777,7 +1301,7 @@ void TypeSnippetsBase::updateSpirvSnippets()
 		"OpDecorate %ssbo_in NonWritable\n";
 
 	const string inputDefinitionsTemplate =
-		"%SSBO_in              = OpTypeStruct %type_float_arr_2\n"
+		"%SSBO_in              = OpTypeStruct %type_valueType_arr_2\n"
 		"%up_SSBO_in           = OpTypePointer Uniform %SSBO_in\n"
 		"%ssbo_in              = OpVariable %up_SSBO_in Uniform\n";
 
@@ -788,37 +1312,37 @@ void TypeSnippetsBase::updateSpirvSnippets()
 		"OpDecorate %ssbo_out Binding 1\n";
 
 	const string multiOutputAnnotationsTemplate =
-		"OpMemberDecorate %SSBO_float_out 0 Offset 0\n"
-		"OpDecorate %type_float_arr_2 ArrayStride "+ arrayStride + "\n"
-		"OpDecorate %SSBO_float_out BufferBlock\n"
-		"OpDecorate %ssbo_float_out DescriptorSet 0\n";
+		"OpMemberDecorate %SSBO_valueType_out 0 Offset 0\n"
+		"OpDecorate %type_valueType_arr_2 ArrayStride "+ arrayStride + "\n"
+		"OpDecorate %SSBO_valueType_out BufferBlock\n"
+		"OpDecorate %ssbo_valueType_out DescriptorSet 0\n";
 
 	const string outputDefinitionsTemplate =
-		"%SSBO_out             = OpTypeStruct %type_float_arr_1\n"
+		"%SSBO_out             = OpTypeStruct %type_valueType_arr_1\n"
 		"%up_SSBO_out          = OpTypePointer Uniform %SSBO_out\n"
 		"%ssbo_out             = OpVariable %up_SSBO_out Uniform\n";
 
 	const string multiOutputDefinitionsTemplate =
-		"%SSBO_float_out         = OpTypeStruct %type_float\n"
-		"%up_SSBO_float_out      = OpTypePointer Uniform %SSBO_float_out\n"
-		"%ssbo_float_out         = OpVariable %up_SSBO_float_out Uniform\n";
+		"%SSBO_valueType_out         = OpTypeStruct %type_valueType\n"
+		"%up_SSBO_valueType_out      = OpTypePointer Uniform %SSBO_valueType_out\n"
+		"%ssbo_valueType_out         = OpVariable %up_SSBO_valueType_out Uniform\n";
 
 	// this snippet is used by compute and fragment stage but not by vertex stage
 	const string storeResultsTemplate =
-		"%outloc               = OpAccessChain %type_float_uptr %ssbo_out %c_i32_0 %c_i32_0\n"
+		"%outloc               = OpAccessChain %type_valueType_uptr %ssbo_out %c_i32_0 %c_i32_0\n"
 		"OpStore %outloc %result\n";
 
 	const string multiStoreResultsTemplate =
-		"%outloc" + bitWidth + "             = OpAccessChain %type_float_uptr %ssbo_float_out %c_i32_0\n"
+		"%outloc" + bitWidth + "             = OpAccessChain %type_valueType_uptr %ssbo_valueType_out %c_i32_0\n"
 		"                        OpStore %outloc" + bitWidth + " %result" + bitWidth + "\n";
 
-	const string typeToken	= "_float";
-	const string typeName	= "_f" + bitWidth;
+	const string typeToken	= "_valueType";
+	const string typeName	= string("_") + getValueTypeString() + bitWidth;
 
 	typeAnnotationsSnippet			= replace(typeAnnotationsTemplate, typeToken, typeName);
 	typeDefinitionsSnippet			= replace(typeDefinitionsTemplate, typeToken, typeName);
 	minTypeDefinitionsSnippet		= replace(minTypeDefinitionsTemplate, typeToken, typeName);
-	constantsDefinitionsSnippet		= replace(constantsDefinitionsTemplate, typeToken, typeName);
+	constantsDefinitionsSnippet		= isFloatType ? replace(constantsDefinitionsTemplate, typeToken, typeName) : ""; // Not needed for int conversion tests
 	argumentsFromInputSnippet		= replace(argumentsFromInputTemplate, typeToken, typeName);
 	multiArgumentsFromInputSnippet	= replace(multiArgumentsFromInputTemplate, typeToken, typeName);
 	inputDefinitionsSnippet			= replace(inputDefinitionsTemplate, typeToken, typeName);
@@ -897,18 +1421,18 @@ void TypeSnippetsBase::updateSpirvSnippets()
 	// need to be in this map, arguments that are only used by tests,
 	// that grab arguments from input, do need to be in this map
 	// NOTE: when updating entries in valueIdToSnippetArgMap make
-	// sure to update also m_valueIdToFloatType for all float width
+	// sure to update also m_valueIdToVariableType for all valueType width
 	SnippetMap& sm = valueIdToSnippetArgMap;
-	sm[V_UNUSED]		= "OpFSub %type_float %c_float_0 %c_float_0\n";
-	sm[V_MINUS_INF]		= "OpFDiv %type_float %c_float_n1 %c_float_0\n";
-	sm[V_MINUS_ONE]		= "OpFAdd %type_float %c_float_n1 %c_float_0\n";
-	sm[V_MINUS_ZERO]	= "OpFMul %type_float %c_float_n1 %c_float_0\n";
-	sm[V_ZERO]			= "OpFMul %type_float %c_float_0 %c_float_0\n";
-	sm[V_HALF]			= "OpFAdd %type_float %c_float_0_5 %c_float_0\n";
-	sm[V_ONE]			= "OpFAdd %type_float %c_float_1 %c_float_0\n";
-	sm[V_INF]			= "OpFDiv %type_float %c_float_1 %c_float_0\n";					// x / 0		== Inf
-	sm[V_DENORM]		= "OpFSub %type_float %c_float_denorm_base %c_float_eps\n";
-	sm[V_NAN]			= "OpFDiv %type_float %c_float_0 %c_float_0\n";					// 0 / 0		== Nan
+	sm[V_UNUSED]		= "OpFSub %type_valueType %c_valueType_0 %c_valueType_0\n";
+	sm[V_MINUS_INF]		= "OpFDiv %type_valueType %c_valueType_n1 %c_valueType_0\n";
+	sm[V_MINUS_ONE]		= "OpFAdd %type_valueType %c_valueType_n1 %c_valueType_0\n";
+	sm[V_MINUS_ZERO]	= "OpFMul %type_valueType %c_valueType_n1 %c_valueType_0\n";
+	sm[V_ZERO]			= "OpFMul %type_valueType %c_valueType_0 %c_valueType_0\n";
+	sm[V_HALF]			= "OpFAdd %type_valueType %c_valueType_0_5 %c_valueType_0\n";
+	sm[V_ONE]			= "OpFAdd %type_valueType %c_valueType_1 %c_valueType_0\n";
+	sm[V_INF]			= "OpFDiv %type_valueType %c_valueType_1 %c_valueType_0\n";					// x / 0		== Inf
+	sm[V_DENORM]		= "OpFSub %type_valueType %c_valueType_denorm_base %c_valueType_eps\n";
+	sm[V_NAN]			= "OpFDiv %type_valueType %c_valueType_0 %c_valueType_0\n";					// 0 / 0		== Nan
 
 	map<ValueId, string>::iterator it;
 	for ( it = sm.begin(); it != sm.end(); it++ )
@@ -921,11 +1445,12 @@ template<typename FLOAT_TYPE>
 class TypeSnippets: public TypeSnippetsBase
 {
 public:
-	TypeSnippets();
+	TypeSnippets(bool floatType = true, bool signedInteger = false);
 };
 
 template<>
-TypeSnippets<deFloat16>::TypeSnippets()
+TypeSnippets<deFloat16>::TypeSnippets(bool floatType, bool signedInteger)
+	: TypeSnippetsBase(floatType, signedInteger)
 {
 	bitWidth		= "16";
 	epsilon			= "6.104e-5";	// 2^-14 = 0x0400
@@ -964,7 +1489,8 @@ TypeSnippets<deFloat16>::TypeSnippets()
 }
 
 template<>
-TypeSnippets<float>::TypeSnippets()
+TypeSnippets<float>::TypeSnippets(bool floatType, bool signedInteger)
+	: TypeSnippetsBase(floatType, signedInteger)
 {
 	bitWidth		= "32";
 	epsilon			= "1.175494351e-38";
@@ -995,12 +1521,15 @@ TypeSnippets<float>::TypeSnippets()
 }
 
 template<>
-TypeSnippets<double>::TypeSnippets()
+TypeSnippets<double>::TypeSnippets(bool floatType, bool signedInteger)
+	: TypeSnippetsBase(floatType, signedInteger)
 {
+	const string	float64Capability	= "OpCapability Float64\n";
+	const string	int64Capability		= "OpCapability Int64\n";
 	bitWidth		= "64";
 	epsilon			= "2.2250738585072014e-308"; // 0x0010000000000000
 	denormBase		= "2.2250738585076994e-308"; // 0x00100000000003F0
-	capabilities	= "OpCapability Float64\n";
+	capabilities	= floatType ? float64Capability : int64Capability;
 	extensions		= "";
 	capabilitiesFp16Without16BitStorage	= "";
 	extensionsFp16Without16BitStorage	= "";
@@ -1029,10 +1558,10 @@ class TypeTestResultsBase
 {
 public:
 	virtual ~TypeTestResultsBase() {}
-	FloatType floatType() const;
+	VariableType variableType() const;
 
 protected:
-	FloatType m_floatType;
+	VariableType m_variableType;
 
 public:
 	// Vectors containing test data for float controls
@@ -1042,9 +1571,9 @@ public:
 	vector<UnaryCase>	unaryOpDenormPreserve;
 };
 
-FloatType TypeTestResultsBase::floatType() const
+VariableType TypeTestResultsBase::variableType() const
 {
-	return m_floatType;
+	return m_variableType;
 }
 
 typedef de::SharedPtr<TypeTestResultsBase> TypeTestResultsSP;
@@ -1059,7 +1588,7 @@ public:
 template<>
 TypeTestResults<deFloat16>::TypeTestResults()
 {
-	m_floatType = FP16;
+	m_variableType = FP16;
 
 	// note: there are many FTZ test cases that can produce diferent result depending
 	// on input denorm being flushed or not; because of that FTZ tests can be limited
@@ -1136,7 +1665,7 @@ TypeTestResults<deFloat16>::TypeTestResults()
 		{ OID_NORMALIZE,	V_ZERO },
 		{ OID_REFLECT,		V_ZERO },
 		{ OID_REFRACT,		V_ZERO },
-		{ OID_LENGHT,		V_ZERO },
+		{ OID_LENGTH,		V_ZERO },
 	};
 
 	const BinaryCase binaryOpDenormPreserveArr[] = {
@@ -1193,7 +1722,7 @@ TypeTestResults<deFloat16>::TypeTestResults()
 template<>
 TypeTestResults<float>::TypeTestResults()
 {
-	m_floatType = FP32;
+	m_variableType = FP32;
 
 	const BinaryCase binaryOpFTZArr[] = {
 		//operation			den op one		den op den		den op inf		den op nan
@@ -1264,7 +1793,7 @@ TypeTestResults<float>::TypeTestResults()
 		{ OID_NORMALIZE,	V_ZERO },
 		{ OID_REFLECT,		V_ZERO },
 		{ OID_REFRACT,		V_ZERO },
-		{ OID_LENGHT,		V_ZERO },
+		{ OID_LENGTH,		V_ZERO },
 	};
 
 	const BinaryCase binaryOpDenormPreserveArr[] = {
@@ -1321,7 +1850,7 @@ TypeTestResults<float>::TypeTestResults()
 template<>
 TypeTestResults<double>::TypeTestResults()
 {
-	m_floatType = FP64;
+	m_variableType = FP64;
 
 	// fp64 is supported by fewer operations then fp16 and fp32
 	// e.g. Radians and Degrees functions are not supported
@@ -1373,7 +1902,7 @@ TypeTestResults<double>::TypeTestResults()
 		{ OID_MODF_ST,		V_ZERO },
 		{ OID_NORMALIZE,	V_ZERO },
 		{ OID_REFLECT,		V_ZERO },
-		{ OID_LENGHT,		V_ZERO },
+		{ OID_LENGTH,		V_ZERO },
 	};
 
 	const BinaryCase binaryOpDenormPreserveArr[] = {
@@ -1454,7 +1983,7 @@ struct Operation
 	// isInputTypeRestricted is set to true and it restricts usage of this
 	// operation to specified input type
 	bool		isInputTypeRestricted;
-	FloatType	restrictedInputType;
+	VariableType	restrictedInputType;
 
 	// arguments for OpSpecConstant need to be specified also as constant
 	bool		isSpecConstant;
@@ -1484,7 +2013,7 @@ struct Operation
 	Operation(const char* _name,
 			  FloatUsage _floatUsage,
 			  bool specConstant,
-			  FloatType _inputType,
+			  VariableType _inputType,
 			  const char* _constants,
 			  const char* _commands,
 			  const FloatStatementUsageFlags _statementUsageFlags = 0)
@@ -1529,7 +2058,7 @@ struct Operation
 	// Full constructor - used by rounding override cases
 	Operation(const char* _name,
 			  FloatUsage _floatUsage,
-			  FloatType _inputType,
+			  VariableType _inputType,
 			  const char* _annotations,
 			  const char* _types,
 			  const char* _constants,
@@ -1560,17 +2089,19 @@ public:
 
 	OperationTestCase(const char*	_baseName,
 					  BehaviorFlags	_behaviorFlags,
-					  OperationId	_operatinId,
+					  OperationId	_operationId,
 					  ValueId		_input1,
 					  ValueId		_input2,
 					  ValueId		_expectedOutput,
 					  bool			_fp16Without16BitStorage = false)
-		: baseName(_baseName)
-		, behaviorFlags(_behaviorFlags)
-		, operationId(_operatinId)
+		: behaviorFlags(_behaviorFlags)
+		, operationId(_operationId)
 		, expectedOutput(_expectedOutput)
 		, fp16Without16BitStorage(_fp16Without16BitStorage)
 	{
+		baseName = _baseName;
+		if (fp16Without16BitStorage)
+			baseName += "_nostorage";
 		input[0] = _input1;
 		input[1] = _input2;
 	}
@@ -1597,7 +2128,7 @@ struct SpecializedOperation
 	string functions;
 	string commands;
 
-	FloatType					inFloatType;
+	VariableType					inVariableType;
 	TypeSnippetsSP				inTypeSnippets;
 	TypeSnippetsSP				outTypeSnippets;
 	FloatStatementUsageFlags	argumentsUsesFloatConstant;
@@ -1630,103 +2161,187 @@ private:
 	typedef OperationTestCase OTC;
 	typedef Operation Op;
 	map<int, Op> m_operations;
+	// SPIR-V assembly snippets that are used in m_operations
+	vector<std::string> m_saved_strings;
+
+	// We expect 12 strings: 3 kinds of narrowing conversions, with
+	// 4 cases each.
+	const size_t m_num_expected_strings = 12;
+	// Saves the given string in m_strings, and returns a pointer to its data.
+	const char* save(std::string str) {
+		m_saved_strings.emplace_back(std::move(str));
+		return m_saved_strings.back().data();
+	}
 };
 
 void TestCasesBuilder::init()
 {
 	map<int, Op>& mo = m_operations;
+	m_saved_strings.reserve(m_num_expected_strings);
 
-	// predefine operations repeatedly used in tests; note that "_float"
+	// predefine operations repeatedly used in tests; note that "_valueType"
 	// in every operation command will be replaced with either "_f16",
-	// "_f32" or "_f64" - StringTemplate is not used here because it
-	// would make code less readable
-	// m_operations contains generic operation definitions that can be
-	// used for all float types
+	// "_f32", "_f64", "_ui16", "ui32", "_ui64", "_i16", "_i32", "_i64"
+	// StringTemplate is not used here because it would make code less
+	// readable m_operations contains generic operation definitions that
+	// can be used for all float types
 
 	mo[OID_NEGATE]			= Op("negate",		FLOAT_ARITHMETIC,
-												"%result             = OpFNegate %type_float %arg1\n",
+												"%result             = OpFNegate %type_valueType %arg1\n",
 												B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_COMPOSITE]		= Op("composite",	FLOAT_ARITHMETIC,
-												"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-												"%result             = OpCompositeExtract %type_float %vec1 0\n",
+												"%vec1               = OpCompositeConstruct %type_valueType_vec2 %arg1 %arg1\n"
+												"%result             = OpCompositeExtract %type_valueType %vec1 0\n",
 												B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_COMPOSITE_INS]	= Op("comp_ins",	FLOAT_ARITHMETIC,
-												"%vec1               = OpCompositeConstruct %type_float_vec2 %c_float_0 %c_float_0\n"
-												"%vec2               = OpCompositeInsert %type_float_vec2 %arg1 %vec1 0\n"
-												"%result             = OpCompositeExtract %type_float %vec2 0\n",
+												"%vec1               = OpCompositeConstruct %type_valueType_vec2 %c_valueType_0 %c_valueType_0\n"
+												"%vec2               = OpCompositeInsert %type_valueType_vec2 %arg1 %vec1 0\n"
+												"%result             = OpCompositeExtract %type_valueType %vec2 0\n",
 												B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_COPY]			= Op("copy",		FLOAT_STORAGE_ONLY,
-												"%result             = OpCopyObject %type_float %arg1\n",
+												"%result             = OpCopyObject %type_valueType %arg1\n",
 												B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_D_EXTRACT]		= Op("extract",		FLOAT_ARITHMETIC,
-												"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-												"%result             = OpVectorExtractDynamic %type_float %vec1 %c_i32_0\n",
+												"%vec1               = OpCompositeConstruct %type_valueType_vec2 %arg1 %arg1\n"
+												"%result             = OpVectorExtractDynamic %type_valueType %vec1 %c_i32_0\n",
 												B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_D_INSERT]		= Op("insert",		FLOAT_ARITHMETIC,
-												"%tmpVec             = OpCompositeConstruct %type_float_vec2 %c_float_2 %c_float_2\n"
-												"%vec1               = OpVectorInsertDynamic %type_float_vec2 %tmpVec %arg1 %c_i32_0\n"
-												"%result             = OpCompositeExtract %type_float %vec1 0\n",
+												"%tmpVec             = OpCompositeConstruct %type_valueType_vec2 %c_valueType_2 %c_valueType_2\n"
+												"%vec1               = OpVectorInsertDynamic %type_valueType_vec2 %tmpVec %arg1 %c_i32_0\n"
+												"%result             = OpCompositeExtract %type_valueType %vec1 0\n",
 												B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_SHUFFLE]			= Op("shuffle",		FLOAT_ARITHMETIC,
-												"%tmpVec1            = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-												"%tmpVec2            = OpCompositeConstruct %type_float_vec2 %c_float_2 %c_float_2\n"	// NOTE: its impossible to test shuffle with denorms flushed
-												"%vec1               = OpVectorShuffle %type_float_vec2 %tmpVec1 %tmpVec2 0 2\n"		//       to zero as this will be done by earlier operation
-												"%result             = OpCompositeExtract %type_float %vec1 0\n",						//       (this also applies to few other operations)
+												"%tmpVec1            = OpCompositeConstruct %type_valueType_vec2 %arg1 %arg1\n"
+												"%tmpVec2            = OpCompositeConstruct %type_valueType_vec2 %c_valueType_2 %c_valueType_2\n"	// NOTE: its impossible to test shuffle with denorms flushed
+												"%vec1               = OpVectorShuffle %type_valueType_vec2 %tmpVec1 %tmpVec2 0 2\n"				//       to zero as this will be done by earlier operation
+												"%result             = OpCompositeExtract %type_valueType %vec1 0\n",								//       (this also applies to few other operations)
 												B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_TRANSPOSE]		= Op("transpose",	FLOAT_ARITHMETIC,
-												"%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-												"%mat                = OpCompositeConstruct %type_float_mat2x2 %col %col\n"
-												"%tmat               = OpTranspose %type_float_mat2x2 %mat\n"
-												"%tcol               = OpCompositeExtract %type_float_vec2 %tmat 0\n"
-												"%result             = OpCompositeExtract %type_float %tcol 0\n",
+												"%col                = OpCompositeConstruct %type_valueType_vec2 %arg1 %arg1\n"
+												"%mat                = OpCompositeConstruct %type_valueType_mat2x2 %col %col\n"
+												"%tmat               = OpTranspose %type_valueType_mat2x2 %mat\n"
+												"%tcol               = OpCompositeExtract %type_valueType_vec2 %tmat 0\n"
+												"%result             = OpCompositeExtract %type_valueType %tcol 0\n",
 												B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_RETURN_VAL]		= Op("ret_val",		FLOAT_ARITHMETIC,
 												"",
-												"%type_test_fun      = OpTypeFunction %type_float %type_float\n",
+												"%type_test_fun      = OpTypeFunction %type_valueType %type_valueType\n",
 												"",
 												"",
-												"%test_fun = OpFunction %type_float None %type_test_fun\n"
-												"%param = OpFunctionParameter %type_float\n"
+												"%test_fun = OpFunction %type_valueType None %type_test_fun\n"
+												"%param = OpFunctionParameter %type_valueType\n"
 												"%entry = OpLabel\n"
 												"OpReturnValue %param\n"
 												"OpFunctionEnd\n",
-												"%result             = OpFunctionCall %type_float %test_fun %arg1\n",
+												"%result             = OpFunctionCall %type_valueType %test_fun %arg1\n",
 												B_STATEMENT_USAGE_TYPES_TYPE_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 
 	// conversion operations that are meant to be used only for single output type (defined by the second number in name)
-	const char* convertSource =					"%result             = OpFConvert %type_float %arg1\n";
+	const char* convertSource =					"%result             = OpFConvert %type_valueType %arg1\n";
 	mo[OID_CONV_FROM_FP16]	= Op("conv_from_fp16", FLOAT_STORAGE_ONLY, false, FP16, "", convertSource, B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_CONV_FROM_FP32]	= Op("conv_from_fp32", FLOAT_STORAGE_ONLY, false, FP32, "", convertSource, B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_CONV_FROM_FP64]	= Op("conv_from_fp64", FLOAT_STORAGE_ONLY, false, FP64, "", convertSource, B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 
-	// from all operands supported by OpSpecConstantOp we can only test FConvert opcode with literals as everything
-	// else requires Karnel capability (OpenCL); values of literals used in SPIR-V code must be equiwalent to
-	// V_CONV_FROM_FP32_ARG and V_CONV_FROM_FP64_ARG so we can use same expected rounded values as for regular OpFConvert
-	mo[OID_SCONST_CONV_FROM_FP32_TO_FP16]
-						= Op("sconst_conv_from_fp32", FLOAT_ARITHMETIC, true, FP32,
-											"%c_arg              = OpConstant %type_f32 1.22334445\n"
-											"%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n",
+	const char* convertFromUintSource =			"%result             = OpConvertUToF %type_valueType %arg1\n";
+	mo[OID_CONV_FROM_UINT_TO_FP32]	= Op("conv_uint_to_fp32", FLOAT_STORAGE_ONLY, false, UINT32, "", convertFromUintSource, B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_CONV_FROM_UINT_TO_FP64]	= Op("conv_uint_to_fp64", FLOAT_STORAGE_ONLY, false, UINT64, "", convertFromUintSource, B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	const char* convertFromIntSource =			"%result             = OpConvertSToF %type_valueType %arg1\n";
+	mo[OID_CONV_FROM_INT_TO_FP32]	= Op("conv_uint_to_fp32", FLOAT_STORAGE_ONLY, false, INT32, "", convertFromIntSource, B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_CONV_FROM_INT_TO_FP64]	= Op("conv_uint_to_fp64", FLOAT_STORAGE_ONLY, false, INT64, "", convertFromIntSource, B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+
+	// From all operands supported by OpSpecConstantOp we can only test FConvert opcode with literals as everything
+	// else requires Karnel capability (OpenCL); values of literals used in SPIR-V code must be equivalent to
+	// the values V_CONV_FROM_....  Use the feature of the SPIR-V assembler where use ! to inject raw integer
+	// words into the SPIR-V binary.
+
+	// fp32 -> fp16 with cases UP, DOWN, TIE_UP, TIE_DOWN
+	typedef conversionDetail<Float32,Float16> conv32to16;
+	mo[OID_SCONST_CONV_FROM_FP32_TO_FP16_UP]
+						= Op("sconst_conv_from_fp32_up", FLOAT_ARITHMETIC, true, FP32,
+											save("%c_arg              = OpConstant %type_f32 !" + conv32to16::fromStr(Round::UP) + "\n"
+											     "%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n"),
 											"",
 											B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP32);
-	mo[OID_SCONST_CONV_FROM_FP64_TO_FP32]
-						= Op("sconst_conv_from_fp64", FLOAT_ARITHMETIC, true, FP64,
-											"%c_arg              = OpConstant %type_f64 1.22334455\n"
-											"%result             = OpSpecConstantOp %type_f32 FConvert %c_arg\n",
+	mo[OID_SCONST_CONV_FROM_FP32_TO_FP16_DOWN]
+						= Op("sconst_conv_from_fp32_down", FLOAT_ARITHMETIC, true, FP32,
+											save("%c_arg              = OpConstant %type_f32 !" + conv32to16::fromStr(Round::DOWN) + "\n"
+											     "%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n"),
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP32);
+	mo[OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_UP]
+						= Op("sconst_conv_from_fp32_tie_up", FLOAT_ARITHMETIC, true, FP32,
+											save("%c_arg              = OpConstant %type_f32 !" + conv32to16::fromStr(Round::TIE_UP) + "\n"
+											     "%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n"),
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP32);
+	mo[OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_DOWN]
+						= Op("sconst_conv_from_fp32_tie_down", FLOAT_ARITHMETIC, true, FP32,
+											save("%c_arg              = OpConstant %type_f32 !" + conv32to16::fromStr(Round::TIE_DOWN) + "\n"
+											     "%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n"),
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP32);
+
+    // fp64 -> fp32 with cases UP, DOWN, TIE_UP, TIE_DOWN
+    // To inject a 64 bit value, inject 2 32-bit words.
+    typedef conversionDetail<Float64,Float32> conv64to32;
+	mo[OID_SCONST_CONV_FROM_FP64_TO_FP32_UP]
+						= Op("sconst_conv_from_fp64_up", FLOAT_ARITHMETIC, true, FP64,
+											save("%c_arg              = OpConstant %type_f64 !" + conv64to32::fromStr(Round::UP) + "\n"
+											     "%result             = OpSpecConstantOp %type_f32 FConvert %c_arg\n"),
 											"",
 											B_STATEMENT_USAGE_CONSTS_TYPE_FP32 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
-	mo[OID_SCONST_CONV_FROM_FP64_TO_FP16]
-						= Op("sconst_conv_from_fp64", FLOAT_ARITHMETIC, true, FP64,
-											"%c_arg              = OpConstant %type_f64 1.22334445\n"
-											"%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n",
+	mo[OID_SCONST_CONV_FROM_FP64_TO_FP32_DOWN]
+						= Op("sconst_conv_from_fp64_down", FLOAT_ARITHMETIC, true, FP64,
+											save("%c_arg              = OpConstant %type_f64 !" + conv64to32::fromStr(Round::DOWN) + "\n"
+											     "%result             = OpSpecConstantOp %type_f32 FConvert %c_arg\n"),
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP32 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
+	mo[OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_UP]
+						= Op("sconst_conv_from_fp64_tie_up", FLOAT_ARITHMETIC, true, FP64,
+											save("%c_arg              = OpConstant %type_f64 !" + conv64to32::fromStr(Round::TIE_UP) + "\n"
+											     "%result             = OpSpecConstantOp %type_f32 FConvert %c_arg\n"),
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP32 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
+	mo[OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_DOWN]
+						= Op("sconst_conv_from_fp64_tie_down", FLOAT_ARITHMETIC, true, FP64,
+											save("%c_arg              = OpConstant %type_f64 !" + conv64to32::fromStr(Round::TIE_DOWN) + "\n"
+											     "%result             = OpSpecConstantOp %type_f32 FConvert %c_arg\n"),
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP32 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
+
+    // fp64 -> fp16 with cases UP, DOWN, TIE_UP, TIE_DOWN
+    typedef conversionDetail<Float64,Float16> conv64to16;
+	mo[OID_SCONST_CONV_FROM_FP64_TO_FP16_UP]
+						= Op("sconst_conv_from_fp64_up", FLOAT_ARITHMETIC, true, FP64,
+											save("%c_arg              = OpConstant %type_f64 !" + conv64to16::fromStr(Round::UP) + "\n"
+											     "%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n"),
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
+	mo[OID_SCONST_CONV_FROM_FP64_TO_FP16_DOWN]
+						= Op("sconst_conv_from_fp64_down", FLOAT_ARITHMETIC, true, FP64,
+											save("%c_arg              = OpConstant %type_f64 !" + conv64to16::fromStr(Round::DOWN) + "\n"
+											     "%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n"),
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
+	mo[OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_UP]
+						= Op("sconst_conv_from_fp64_tie_up", FLOAT_ARITHMETIC, true, FP64,
+											save("%c_arg              = OpConstant %type_f64 !" + conv64to16::fromStr(Round::TIE_UP) + "\n"
+											     "%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n"),
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
+	mo[OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_DOWN]
+						= Op("sconst_conv_from_fp64_tie_down", FLOAT_ARITHMETIC, true, FP64,
+											save("%c_arg              = OpConstant %type_f64 !" + conv64to16::fromStr(Round::TIE_DOWN) + "\n"
+											     "%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n"),
 											"",
 											B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
 
-	mo[OID_ADD]			= Op("add",			FLOAT_ARITHMETIC, "%result             = OpFAdd %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[OID_SUB]			= Op("sub",			FLOAT_ARITHMETIC, "%result             = OpFSub %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[OID_MUL]			= Op("mul",			FLOAT_ARITHMETIC, "%result             = OpFMul %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[OID_DIV]			= Op("div",			FLOAT_ARITHMETIC, "%result             = OpFDiv %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[OID_REM]			= Op("rem",			FLOAT_ARITHMETIC, "%result             = OpFRem %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[OID_MOD]			= Op("mod",			FLOAT_ARITHMETIC, "%result             = OpFMod %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_ADD]			= Op("add",			FLOAT_ARITHMETIC, "%result             = OpFAdd %type_valueType %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_SUB]			= Op("sub",			FLOAT_ARITHMETIC, "%result             = OpFSub %type_valueType %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_MUL]			= Op("mul",			FLOAT_ARITHMETIC, "%result             = OpFMul %type_valueType %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_DIV]			= Op("div",			FLOAT_ARITHMETIC, "%result             = OpFDiv %type_valueType %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_REM]			= Op("rem",			FLOAT_ARITHMETIC, "%result             = OpFRem %type_valueType %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[OID_MOD]			= Op("mod",			FLOAT_ARITHMETIC, "%result             = OpFMod %type_valueType %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_PHI]			= Op("phi",			FLOAT_ARITHMETIC,
 											"%comp               = OpFOrdGreaterThan %type_bool %arg1 %arg2\n"
 											"                      OpSelectionMerge %comp_merge None\n"
@@ -1736,263 +2351,263 @@ void TestCasesBuilder::init()
 											"%false_branch       = OpLabel\n"
 											"                      OpBranch %comp_merge\n"
 											"%comp_merge         = OpLabel\n"
-											"%result             = OpPhi %type_float %arg2 %true_branch %arg1 %false_branch\n",
+											"%result             = OpPhi %type_valueType %arg2 %true_branch %arg1 %false_branch\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_SELECT]		= Op("select",		FLOAT_ARITHMETIC,
-											"%always_true        = OpFOrdGreaterThan %type_bool %c_float_1 %c_float_0\n"
-											"%result             = OpSelect %type_float %always_true %arg1 %arg2\n",
+											"%always_true        = OpFOrdGreaterThan %type_bool %c_valueType_1 %c_valueType_0\n"
+											"%result             = OpSelect %type_valueType %always_true %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_DOT]			= Op("dot",			FLOAT_ARITHMETIC,
-											"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-											"%vec2               = OpCompositeConstruct %type_float_vec2 %arg2 %arg2\n"
-											"%result             = OpDot %type_float %vec1 %vec2\n",
+											"%vec1               = OpCompositeConstruct %type_valueType_vec2 %arg1 %arg1\n"
+											"%vec2               = OpCompositeConstruct %type_valueType_vec2 %arg2 %arg2\n"
+											"%result             = OpDot %type_valueType %vec1 %vec2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_VEC_MUL_S]	= Op("vmuls",		FLOAT_ARITHMETIC,
-											"%vec                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-											"%tmpVec             = OpVectorTimesScalar %type_float_vec2 %vec %arg2\n"
-											"%result             = OpCompositeExtract %type_float %tmpVec 0\n",
+											"%vec                = OpCompositeConstruct %type_valueType_vec2 %arg1 %arg1\n"
+											"%tmpVec             = OpVectorTimesScalar %type_valueType_vec2 %vec %arg2\n"
+											"%result             = OpCompositeExtract %type_valueType %tmpVec 0\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_VEC_MUL_M]	= Op("vmulm",		FLOAT_ARITHMETIC,
-											"%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-											"%mat                = OpCompositeConstruct %type_float_mat2x2 %col %col\n"
-											"%vec                = OpCompositeConstruct %type_float_vec2 %arg2 %arg2\n"
-											"%tmpVec             = OpVectorTimesMatrix %type_float_vec2 %vec %mat\n"
-											"%result             = OpCompositeExtract %type_float %tmpVec 0\n",
+											"%col                = OpCompositeConstruct %type_valueType_vec2 %arg1 %arg1\n"
+											"%mat                = OpCompositeConstruct %type_valueType_mat2x2 %col %col\n"
+											"%vec                = OpCompositeConstruct %type_valueType_vec2 %arg2 %arg2\n"
+											"%tmpVec             = OpVectorTimesMatrix %type_valueType_vec2 %vec %mat\n"
+											"%result             = OpCompositeExtract %type_valueType %tmpVec 0\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_MAT_MUL_S]	= Op("mmuls",		FLOAT_ARITHMETIC,
-											"%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-											"%mat                = OpCompositeConstruct %type_float_mat2x2 %col %col\n"
-											"%mulMat             = OpMatrixTimesScalar %type_float_mat2x2 %mat %arg2\n"
-											"%extCol             = OpCompositeExtract %type_float_vec2 %mulMat 0\n"
-											"%result             = OpCompositeExtract %type_float %extCol 0\n",
+											"%col                = OpCompositeConstruct %type_valueType_vec2 %arg1 %arg1\n"
+											"%mat                = OpCompositeConstruct %type_valueType_mat2x2 %col %col\n"
+											"%mulMat             = OpMatrixTimesScalar %type_valueType_mat2x2 %mat %arg2\n"
+											"%extCol             = OpCompositeExtract %type_valueType_vec2 %mulMat 0\n"
+											"%result             = OpCompositeExtract %type_valueType %extCol 0\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_MAT_MUL_V]	= Op("mmulv",		FLOAT_ARITHMETIC,
-											"%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-											"%mat                = OpCompositeConstruct %type_float_mat2x2 %col %col\n"
-											"%vec                = OpCompositeConstruct %type_float_vec2 %arg2 %arg2\n"
-											"%mulVec             = OpMatrixTimesVector %type_float_vec2 %mat %vec\n"
-											"%result             = OpCompositeExtract %type_float %mulVec 0\n",
+											"%col                = OpCompositeConstruct %type_valueType_vec2 %arg1 %arg1\n"
+											"%mat                = OpCompositeConstruct %type_valueType_mat2x2 %col %col\n"
+											"%vec                = OpCompositeConstruct %type_valueType_vec2 %arg2 %arg2\n"
+											"%mulVec             = OpMatrixTimesVector %type_valueType_vec2 %mat %vec\n"
+											"%result             = OpCompositeExtract %type_valueType %mulVec 0\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_MAT_MUL_M]	= Op("mmulm",		FLOAT_ARITHMETIC,
-											"%col1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-											"%mat1               = OpCompositeConstruct %type_float_mat2x2 %col1 %col1\n"
-											"%col2               = OpCompositeConstruct %type_float_vec2 %arg2 %arg2\n"
-											"%mat2               = OpCompositeConstruct %type_float_mat2x2 %col2 %col2\n"
-											"%mulMat             = OpMatrixTimesMatrix %type_float_mat2x2 %mat1 %mat2\n"
-											"%extCol             = OpCompositeExtract %type_float_vec2 %mulMat 0\n"
-											"%result             = OpCompositeExtract %type_float %extCol 0\n",
+											"%col1               = OpCompositeConstruct %type_valueType_vec2 %arg1 %arg1\n"
+											"%mat1               = OpCompositeConstruct %type_valueType_mat2x2 %col1 %col1\n"
+											"%col2               = OpCompositeConstruct %type_valueType_vec2 %arg2 %arg2\n"
+											"%mat2               = OpCompositeConstruct %type_valueType_mat2x2 %col2 %col2\n"
+											"%mulMat             = OpMatrixTimesMatrix %type_valueType_mat2x2 %mat1 %mat2\n"
+											"%extCol             = OpCompositeExtract %type_valueType_vec2 %mulMat 0\n"
+											"%result             = OpCompositeExtract %type_valueType %extCol 0\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_OUT_PROD]	= Op("out_prod",	FLOAT_ARITHMETIC,
-											"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-											"%vec2               = OpCompositeConstruct %type_float_vec2 %arg2 %arg2\n"
-											"%mulMat             = OpOuterProduct %type_float_mat2x2 %vec1 %vec2\n"
-											"%extCol             = OpCompositeExtract %type_float_vec2 %mulMat 0\n"
-											"%result             = OpCompositeExtract %type_float %extCol 0\n",
+											"%vec1               = OpCompositeConstruct %type_valueType_vec2 %arg1 %arg1\n"
+											"%vec2               = OpCompositeConstruct %type_valueType_vec2 %arg2 %arg2\n"
+											"%mulMat             = OpOuterProduct %type_valueType_mat2x2 %vec1 %vec2\n"
+											"%extCol             = OpCompositeExtract %type_valueType_vec2 %mulMat 0\n"
+											"%result             = OpCompositeExtract %type_valueType %extCol 0\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 
 	// comparison operations
 	mo[OID_ORD_EQ]		= Op("ord_eq",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFOrdEqual %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											"%result            = OpSelect %type_valueType %boolVal %c_valueType_1 %c_valueType_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_UORD_EQ]		= Op("uord_eq",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFUnordEqual %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											"%result            = OpSelect %type_valueType %boolVal %c_valueType_1 %c_valueType_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_ORD_NEQ]		= Op("ord_neq",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFOrdNotEqual %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											"%result            = OpSelect %type_valueType %boolVal %c_valueType_1 %c_valueType_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_UORD_NEQ]	= Op("uord_neq",	FLOAT_ARITHMETIC,
 											"%boolVal           = OpFUnordNotEqual %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											"%result            = OpSelect %type_valueType %boolVal %c_valueType_1 %c_valueType_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_ORD_LS]		= Op("ord_ls",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFOrdLessThan %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											"%result            = OpSelect %type_valueType %boolVal %c_valueType_1 %c_valueType_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_UORD_LS]		= Op("uord_ls",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFUnordLessThan %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											"%result            = OpSelect %type_valueType %boolVal %c_valueType_1 %c_valueType_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_ORD_GT]		= Op("ord_gt",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFOrdGreaterThan %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											"%result            = OpSelect %type_valueType %boolVal %c_valueType_1 %c_valueType_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_UORD_GT]		= Op("uord_gt",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFUnordGreaterThan %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											"%result            = OpSelect %type_valueType %boolVal %c_valueType_1 %c_valueType_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_ORD_LE]		= Op("ord_le",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFOrdLessThanEqual %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											"%result            = OpSelect %type_valueType %boolVal %c_valueType_1 %c_valueType_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_UORD_LE]		= Op("uord_le",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFUnordLessThanEqual %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											"%result            = OpSelect %type_valueType %boolVal %c_valueType_1 %c_valueType_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_ORD_GE]		= Op("ord_ge",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFOrdGreaterThanEqual %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											"%result            = OpSelect %type_valueType %boolVal %c_valueType_1 %c_valueType_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_UORD_GE]		= Op("uord_ge",		FLOAT_ARITHMETIC,
 											"%boolVal           = OpFUnordGreaterThanEqual %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											"%result            = OpSelect %type_valueType %boolVal %c_valueType_1 %c_valueType_0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 
 	mo[OID_ATAN2]		= Op("atan2",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Atan2 %arg1 %arg2\n",
+											"%result             = OpExtInst %type_valueType %std450 Atan2 %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_POW]			= Op("pow",			FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Pow %arg1 %arg2\n",
+											"%result             = OpExtInst %type_valueType %std450 Pow %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_MIX]			= Op("mix",			FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 FMix %arg1 %arg2 %c_float_0_5\n",
+											"%result             = OpExtInst %type_valueType %std450 FMix %arg1 %arg2 %c_valueType_0_5\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_FMA]			= Op("fma",			FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Fma %arg1 %arg2 %c_float_0_5\n",
+											"%result             = OpExtInst %type_valueType %std450 Fma %arg1 %arg2 %c_valueType_0_5\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_MIN]			= Op("min",			FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 FMin %arg1 %arg2\n",
+											"%result             = OpExtInst %type_valueType %std450 FMin %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_MAX]			= Op("max",			FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 FMax %arg1 %arg2\n",
+											"%result             = OpExtInst %type_valueType %std450 FMax %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_CLAMP]		= Op("clamp",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 FClamp %arg1 %arg2 %arg2\n",
+											"%result             = OpExtInst %type_valueType %std450 FClamp %arg1 %arg2 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_STEP]		= Op("step",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Step %arg1 %arg2\n",
+											"%result             = OpExtInst %type_valueType %std450 Step %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_SSTEP]		= Op("sstep",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 SmoothStep %arg1 %arg2 %c_float_0_5\n",
+											"%result             = OpExtInst %type_valueType %std450 SmoothStep %arg1 %arg2 %c_valueType_0_5\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_DIST]		= Op("distance",	FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Distance %arg1 %arg2\n",
+											"%result             = OpExtInst %type_valueType %std450 Distance %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_CROSS]		= Op("cross",		FLOAT_ARITHMETIC,
-											"%vec1               = OpCompositeConstruct %type_float_vec3 %arg1 %arg1 %arg1\n"
-											"%vec2               = OpCompositeConstruct %type_float_vec3 %arg2 %arg2 %arg2\n"
-											"%tmpVec             = OpExtInst %type_float_vec3 %std450 Cross %vec1 %vec2\n"
-											"%result             = OpCompositeExtract %type_float %tmpVec 0\n",
+											"%vec1               = OpCompositeConstruct %type_valueType_vec3 %arg1 %arg1 %arg1\n"
+											"%vec2               = OpCompositeConstruct %type_valueType_vec3 %arg2 %arg2 %arg2\n"
+											"%tmpVec             = OpExtInst %type_valueType_vec3 %std450 Cross %vec1 %vec2\n"
+											"%result             = OpCompositeExtract %type_valueType %tmpVec 0\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_FACE_FWD]	= Op("face_fwd",	FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 FaceForward %c_float_1 %arg1 %arg2\n",
+											"%result             = OpExtInst %type_valueType %std450 FaceForward %c_valueType_1 %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_NMIN]		= Op("nmin",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 NMin %arg1 %arg2\n",
+											"%result             = OpExtInst %type_valueType %std450 NMin %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_NMAX]		= Op("nmax",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 NMax %arg1 %arg2\n",
+											"%result             = OpExtInst %type_valueType %std450 NMax %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_NCLAMP]		= Op("nclamp",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 NClamp %arg2 %arg1 %arg2\n",
+											"%result             = OpExtInst %type_valueType %std450 NClamp %arg2 %arg1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 
 	mo[OID_ROUND]		= Op("round",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Round %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Round %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_ROUND_EV]	= Op("round_ev",	FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 RoundEven %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 RoundEven %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_TRUNC]		= Op("trunc",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Trunc %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Trunc %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_ABS]			= Op("abs",			FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 FAbs %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 FAbs %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_SIGN]		= Op("sign",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 FSign %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 FSign %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_FLOOR]		= Op("floor",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Floor %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Floor %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_CEIL]		= Op("ceil",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Ceil %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Ceil %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_FRACT]		= Op("fract",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Fract %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Fract %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_RADIANS]		= Op("radians",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Radians %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Radians %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_DEGREES]		= Op("degrees",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Degrees %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Degrees %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_SIN]			= Op("sin",			FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Sin %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Sin %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_COS]			= Op("cos",			FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Cos %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Cos %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_TAN]			= Op("tan",			FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Tan %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Tan %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_ASIN]		= Op("asin",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Asin %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Asin %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_ACOS]		= Op("acos",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Acos %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Acos %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_ATAN]		= Op("atan",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Atan %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Atan %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_SINH]		= Op("sinh",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Sinh %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Sinh %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_COSH]		= Op("cosh",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Cosh %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Cosh %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_TANH]		= Op("tanh",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Tanh %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Tanh %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_ASINH]		= Op("asinh",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Asinh %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Asinh %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_ACOSH]		= Op("acosh",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Acosh %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Acosh %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_ATANH]		= Op("atanh",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Atanh %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Atanh %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_EXP]			= Op("exp",			FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Exp %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Exp %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_LOG]			= Op("log",			FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Log %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Log %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_EXP2]		= Op("exp2",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Exp2 %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Exp2 %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_LOG2]		= Op("log2",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Log2 %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Log2 %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_SQRT]		= Op("sqrt",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Sqrt %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 Sqrt %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_INV_SQRT]	= Op("inv_sqrt",	FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 InverseSqrt %arg1\n",
+											"%result             = OpExtInst %type_valueType %std450 InverseSqrt %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_MODF]		= Op("modf",		FLOAT_ARITHMETIC,
 											"",
 											"",
 											"",
-											"%tmpVarPtr          = OpVariable %type_float_fptr Function\n",
+											"%tmpVarPtr          = OpVariable %type_valueType_fptr Function\n",
 											"",
-											"%result             = OpExtInst %type_float %std450 Modf %arg1 %tmpVarPtr\n",
+											"%result             = OpExtInst %type_valueType %std450 Modf %arg1 %tmpVarPtr\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_MODF_ST]		= Op("modf_st",		FLOAT_ARITHMETIC,
 											"OpMemberDecorate %struct_ff 0 Offset ${float_width}\n"
 											"OpMemberDecorate %struct_ff 1 Offset ${float_width}\n",
-											"%struct_ff          = OpTypeStruct %type_float %type_float\n"
+											"%struct_ff          = OpTypeStruct %type_valueType %type_valueType\n"
 											"%struct_ff_fptr     = OpTypePointer Function %struct_ff\n",
 											"",
 											"%tmpStructPtr       = OpVariable %struct_ff_fptr Function\n",
 											"",
 											"%tmpStruct          = OpExtInst %struct_ff %std450 ModfStruct %arg1\n"
 											"                      OpStore %tmpStructPtr %tmpStruct\n"
-											"%tmpLoc             = OpAccessChain %type_float_fptr %tmpStructPtr %c_i32_0\n"
-											"%result             = OpLoad %type_float %tmpLoc\n",
+											"%tmpLoc             = OpAccessChain %type_valueType_fptr %tmpStructPtr %c_i32_0\n"
+											"%result             = OpLoad %type_valueType %tmpLoc\n",
 											B_STATEMENT_USAGE_TYPES_TYPE_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_FREXP]		= Op("frexp",		FLOAT_ARITHMETIC,
 											"",
@@ -2000,53 +2615,53 @@ void TestCasesBuilder::init()
 											"",
 											"%tmpVarPtr          = OpVariable %type_i32_fptr Function\n",
 											"",
-											"%result             = OpExtInst %type_float %std450 Frexp %arg1 %tmpVarPtr\n",
+											"%result             = OpExtInst %type_valueType %std450 Frexp %arg1 %tmpVarPtr\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_FREXP_ST]	= Op("frexp_st",	FLOAT_ARITHMETIC,
 											"OpMemberDecorate %struct_fi 0 Offset ${float_width}\n"
 											"OpMemberDecorate %struct_fi 1 Offset 32\n",
-											"%struct_fi          = OpTypeStruct %type_float %type_i32\n"
+											"%struct_fi          = OpTypeStruct %type_valueType %type_i32\n"
 											"%struct_fi_fptr     = OpTypePointer Function %struct_fi\n",
 											"",
 											"%tmpStructPtr       = OpVariable %struct_fi_fptr Function\n",
 											"",
 											"%tmpStruct          = OpExtInst %struct_fi %std450 FrexpStruct %arg1\n"
 											"                      OpStore %tmpStructPtr %tmpStruct\n"
-											"%tmpLoc             = OpAccessChain %type_float_fptr %tmpStructPtr %c_i32_0\n"
-											"%result             = OpLoad %type_float %tmpLoc\n",
+											"%tmpLoc             = OpAccessChain %type_valueType_fptr %tmpStructPtr %c_i32_0\n"
+											"%result             = OpLoad %type_valueType %tmpLoc\n",
 											B_STATEMENT_USAGE_TYPES_TYPE_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[OID_LENGHT]		= Op("length",		FLOAT_ARITHMETIC,
-											"%result             = OpExtInst %type_float %std450 Length %arg1\n",
+	mo[OID_LENGTH]		= Op("length",		FLOAT_ARITHMETIC,
+											"%result             = OpExtInst %type_valueType %std450 Length %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_NORMALIZE]	= Op("normalize",	FLOAT_ARITHMETIC,
-											"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %c_float_2\n"
-											"%tmpVec             = OpExtInst %type_float_vec2 %std450 Normalize %vec1\n"
-											"%result             = OpCompositeExtract %type_float %tmpVec 0\n",
+											"%vec1               = OpCompositeConstruct %type_valueType_vec2 %arg1 %c_valueType_2\n"
+											"%tmpVec             = OpExtInst %type_valueType_vec2 %std450 Normalize %vec1\n"
+											"%result             = OpCompositeExtract %type_valueType %tmpVec 0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_REFLECT]		= Op("reflect",		FLOAT_ARITHMETIC,
-											"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-											"%vecN               = OpCompositeConstruct %type_float_vec2 %c_float_0 %c_float_n1\n"
-											"%tmpVec             = OpExtInst %type_float_vec2 %std450 Reflect %vec1 %vecN\n"
-											"%result             = OpCompositeExtract %type_float %tmpVec 0\n",
+											"%vec1               = OpCompositeConstruct %type_valueType_vec2 %arg1 %arg1\n"
+											"%vecN               = OpCompositeConstruct %type_valueType_vec2 %c_valueType_0 %c_valueType_n1\n"
+											"%tmpVec             = OpExtInst %type_valueType_vec2 %std450 Reflect %vec1 %vecN\n"
+											"%result             = OpCompositeExtract %type_valueType %tmpVec 0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_REFRACT]		= Op("refract",		FLOAT_ARITHMETIC,
-											"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-											"%vecN               = OpCompositeConstruct %type_float_vec2 %c_float_0 %c_float_n1\n"
-											"%tmpVec             = OpExtInst %type_float_vec2 %std450 Refract %vec1 %vecN %c_float_0_5\n"
-											"%result             = OpCompositeExtract %type_float %tmpVec 0\n",
+											"%vec1               = OpCompositeConstruct %type_valueType_vec2 %arg1 %arg1\n"
+											"%vecN               = OpCompositeConstruct %type_valueType_vec2 %c_valueType_0 %c_valueType_n1\n"
+											"%tmpVec             = OpExtInst %type_valueType_vec2 %std450 Refract %vec1 %vecN %c_valueType_0_5\n"
+											"%result             = OpCompositeExtract %type_valueType %tmpVec 0\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_MAT_DET]		= Op("mat_det",		FLOAT_ARITHMETIC,
-											"%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-											"%mat                = OpCompositeConstruct %type_float_mat2x2 %col %col\n"
-											"%result             = OpExtInst %type_float %std450 Determinant %mat\n",
+											"%col                = OpCompositeConstruct %type_valueType_vec2 %arg1 %arg1\n"
+											"%mat                = OpCompositeConstruct %type_valueType_mat2x2 %col %col\n"
+											"%result             = OpExtInst %type_valueType %std450 Determinant %mat\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_MAT_INV]		= Op("mat_inv",		FLOAT_ARITHMETIC,
-											"%col1               = OpCompositeConstruct %type_float_vec2 %arg1 %c_float_1\n"
-											"%col2               = OpCompositeConstruct %type_float_vec2 %c_float_1 %c_float_1\n"
-											"%mat                = OpCompositeConstruct %type_float_mat2x2 %col1 %col2\n"
-											"%invMat             = OpExtInst %type_float_mat2x2 %std450 MatrixInverse %mat\n"
-											"%extCol             = OpCompositeExtract %type_float_vec2 %invMat 1\n"
-											"%result             = OpCompositeExtract %type_float %extCol 1\n",
+											"%col1               = OpCompositeConstruct %type_valueType_vec2 %arg1 %c_valueType_1\n"
+											"%col2               = OpCompositeConstruct %type_valueType_vec2 %c_valueType_1 %c_valueType_1\n"
+											"%mat                = OpCompositeConstruct %type_valueType_mat2x2 %col1 %col2\n"
+											"%invMat             = OpExtInst %type_valueType_mat2x2 %std450 MatrixInverse %mat\n"
+											"%extCol             = OpCompositeExtract %type_valueType_vec2 %invMat 1\n"
+											"%result             = OpCompositeExtract %type_valueType %extCol 1\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 
 	// PackHalf2x16 is a special case as it operates on fp32 vec2 and returns unsigned int,
@@ -2126,6 +2741,8 @@ void TestCasesBuilder::init()
 											"",
 											"%result             = OpFConvert %type_f16 %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FP16);
+
+	DE_ASSERT(m_saved_strings.size() == m_num_expected_strings);
 }
 
 void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResultsSP typeTestResults, bool argumentsFromInput)
@@ -2135,65 +2752,51 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 
 	testCases.reserve(750);
 
-	bool isFP16 = typeTestResults->floatType() == FP16;
+	bool isFP16 = typeTestResults->variableType() == FP16;
 
-	// Denorm - FlushToZero - binary operations
-	for (size_t i = 0 ; i < typeTestResults->binaryOpFTZ.size() ; ++i)
+	for (int j=0; j<2; j++)
 	{
-		const BinaryCase&	binaryCase	= typeTestResults->binaryOpFTZ[i];
-		OperationId			operation	= binaryCase.operationId;
-		testCases.push_back(OTC("denorm_op_var_flush_to_zero",		B_DENORM_FLUSH,					 operation, V_DENORM, V_ONE,		binaryCase.opVarResult));
-		testCases.push_back(OTC("denorm_op_denorm_flush_to_zero",	B_DENORM_FLUSH,					 operation, V_DENORM, V_DENORM,		binaryCase.opDenormResult));
-		testCases.push_back(OTC("denorm_op_inf_flush_to_zero",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_INF,		binaryCase.opInfResult));
-		testCases.push_back(OTC("denorm_op_nan_flush_to_zero",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_NAN,		binaryCase.opNanResult));
+		// fp16NoStorage tests only supported if testing fp16.
+		bool fp16NoStorage = (j == 1);
+		if (fp16NoStorage && !isFP16) continue;
 
-		if (isFP16)
+		// Denorm - FlushToZero - binary operations
+		for (size_t i = 0 ; i < typeTestResults->binaryOpFTZ.size() ; ++i)
 		{
-			testCases.push_back(OTC("denorm_op_var_flush_to_zero_nostorage",		B_DENORM_FLUSH,					 operation, V_DENORM, V_ONE,		binaryCase.opVarResult, true));
-			testCases.push_back(OTC("denorm_op_denorm_flush_to_zero_nostorage",		B_DENORM_FLUSH,					 operation, V_DENORM, V_DENORM,		binaryCase.opDenormResult, true));
-			testCases.push_back(OTC("denorm_op_inf_flush_to_zero_nostorage",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_INF,		binaryCase.opInfResult, true));
-			testCases.push_back(OTC("denorm_op_nan_flush_to_zero_nostorage",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_NAN,		binaryCase.opNanResult, true));
+			const BinaryCase&	binaryCase	= typeTestResults->binaryOpFTZ[i];
+			OperationId			operation	= binaryCase.operationId;
+			testCases.push_back(OTC("denorm_op_var_flush_to_zero",		B_DENORM_FLUSH,					 operation, V_DENORM, V_ONE,		binaryCase.opVarResult,		fp16NoStorage));
+			testCases.push_back(OTC("denorm_op_denorm_flush_to_zero",	B_DENORM_FLUSH,					 operation, V_DENORM, V_DENORM,		binaryCase.opDenormResult,	fp16NoStorage));
+			testCases.push_back(OTC("denorm_op_inf_flush_to_zero",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_INF,		binaryCase.opInfResult,		fp16NoStorage));
+			testCases.push_back(OTC("denorm_op_nan_flush_to_zero",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_NAN,		binaryCase.opNanResult,		fp16NoStorage));
 		}
-	}
 
-	// Denorm - FlushToZero - unary operations
-	for (size_t i = 0 ; i < typeTestResults->unaryOpFTZ.size() ; ++i)
-	{
-		const UnaryCase&	unaryCase = typeTestResults->unaryOpFTZ[i];
-		OperationId			operation = unaryCase.operationId;
-		testCases.push_back(OTC("op_denorm_flush_to_zero", B_DENORM_FLUSH, operation, V_DENORM, V_UNUSED, unaryCase.result));
-		if (isFP16)
-			testCases.push_back(OTC("op_denorm_flush_to_zero_nostorage", B_DENORM_FLUSH, operation, V_DENORM, V_UNUSED, unaryCase.result, true));
-
-	}
-
-	// Denom - Preserve - binary operations
-	for (size_t i = 0 ; i < typeTestResults->binaryOpDenormPreserve.size() ; ++i)
-	{
-		const BinaryCase&	binaryCase	= typeTestResults->binaryOpDenormPreserve[i];
-		OperationId			operation	= binaryCase.operationId;
-		testCases.push_back(OTC("denorm_op_var_preserve",			B_DENORM_PRESERVE,					operation, V_DENORM,	V_ONE,		binaryCase.opVarResult));
-		testCases.push_back(OTC("denorm_op_denorm_preserve",		B_DENORM_PRESERVE,					operation, V_DENORM,	V_DENORM,	binaryCase.opDenormResult));
-		testCases.push_back(OTC("denorm_op_inf_preserve",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_INF,		binaryCase.opInfResult));
-		testCases.push_back(OTC("denorm_op_nan_preserve",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_NAN,		binaryCase.opNanResult));
-
-		if (isFP16)
+		// Denorm - FlushToZero - unary operations
+		for (size_t i = 0 ; i < typeTestResults->unaryOpFTZ.size() ; ++i)
 		{
-			testCases.push_back(OTC("denorm_op_var_preserve_nostorage",			B_DENORM_PRESERVE,					operation, V_DENORM,	V_ONE,		binaryCase.opVarResult, true));
-			testCases.push_back(OTC("denorm_op_denorm_preserve_nostorage",		B_DENORM_PRESERVE,					operation, V_DENORM,	V_DENORM,	binaryCase.opDenormResult, true));
-			testCases.push_back(OTC("denorm_op_inf_preserve_nostorage",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_INF,		binaryCase.opInfResult, true));
-			testCases.push_back(OTC("denorm_op_nan_preserve_nostorage",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_NAN,		binaryCase.opNanResult, true));
+			const UnaryCase&	unaryCase = typeTestResults->unaryOpFTZ[i];
+			OperationId			operation = unaryCase.operationId;
+			testCases.push_back(OTC("op_denorm_flush_to_zero", B_DENORM_FLUSH, operation, V_DENORM, V_UNUSED, unaryCase.result, fp16NoStorage));
 		}
-	}
 
-	// Denom - Preserve - unary operations
-	for (size_t i = 0 ; i < typeTestResults->unaryOpDenormPreserve.size() ; ++i)
-	{
-		const UnaryCase&	unaryCase	= typeTestResults->unaryOpDenormPreserve[i];
-		OperationId			operation	= unaryCase.operationId;
-		testCases.push_back(OTC("op_denorm_preserve", B_DENORM_PRESERVE, operation, V_DENORM, V_UNUSED, unaryCase.result));
-		if (isFP16)
-			testCases.push_back(OTC("op_denorm_preserve_nostorage", B_DENORM_PRESERVE, operation, V_DENORM, V_UNUSED, unaryCase.result, true));
+		// Denorm - Preserve - binary operations
+		for (size_t i = 0 ; i < typeTestResults->binaryOpDenormPreserve.size() ; ++i)
+		{
+			const BinaryCase&	binaryCase	= typeTestResults->binaryOpDenormPreserve[i];
+			OperationId			operation	= binaryCase.operationId;
+			testCases.push_back(OTC("denorm_op_var_preserve",			B_DENORM_PRESERVE,					operation, V_DENORM,	V_ONE,		binaryCase.opVarResult,		fp16NoStorage));
+			testCases.push_back(OTC("denorm_op_denorm_preserve",		B_DENORM_PRESERVE,					operation, V_DENORM,	V_DENORM,	binaryCase.opDenormResult,	fp16NoStorage));
+			testCases.push_back(OTC("denorm_op_inf_preserve",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_INF,		binaryCase.opInfResult,		fp16NoStorage));
+			testCases.push_back(OTC("denorm_op_nan_preserve",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_NAN,		binaryCase.opNanResult,		fp16NoStorage));
+		}
+
+		// Denorm - Preserve - unary operations
+		for (size_t i = 0 ; i < typeTestResults->unaryOpDenormPreserve.size() ; ++i)
+		{
+			const UnaryCase&	unaryCase	= typeTestResults->unaryOpDenormPreserve[i];
+			OperationId			operation	= unaryCase.operationId;
+			testCases.push_back(OTC("op_denorm_preserve", B_DENORM_PRESERVE, operation, V_DENORM, V_UNUSED, unaryCase.result, fp16NoStorage));
+		}
 	}
 
 	struct ZINCase
@@ -2230,51 +2833,40 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		{ OID_NEGATE,				true,	V_UNUSED,		V_MINUS_ZERO,	V_ZERO,				V_MINUS_INF,	V_INF,				V_NAN },
 	};
 
-	bool isFP64 = typeTestResults->floatType() == FP64;
+	bool isFP64 = typeTestResults->variableType() == FP64;
 
 	// Signed Zero Inf Nan - Preserve - binary operations
-	for (size_t i = 0 ; i < DE_LENGTH_OF_ARRAY(binaryOpZINPreserve) ; ++i)
+	for (int j=0; j<2; j++)
 	{
-		const ZINCase& zc = binaryOpZINPreserve[i];
-		if (isFP64 && !zc.supportedByFP64)
-			continue;
+		// fp16NoStorage tests only supported if testing fp16.
+		bool fp16NoStorage = (j == 1);
+		if (fp16NoStorage && !isFP16) continue;
 
-		testCases.push_back(OTC("zero_op_var_preserve",				B_ZIN_PRESERVE, zc.operationId, V_ZERO,			zc.secondArgument,	zc.preserveZeroResult));
-		testCases.push_back(OTC("signed_zero_op_var_preserve",		B_ZIN_PRESERVE, zc.operationId, V_MINUS_ZERO,	zc.secondArgument,	zc.preserveSZeroResult));
-		testCases.push_back(OTC("inf_op_var_preserve",				B_ZIN_PRESERVE, zc.operationId, V_INF,			zc.secondArgument,	zc.preserveInfResult));
-		testCases.push_back(OTC("signed_inf_op_var_preserve",		B_ZIN_PRESERVE, zc.operationId, V_MINUS_INF,	zc.secondArgument,	zc.preserveSInfResult));
-		testCases.push_back(OTC("nan_op_var_preserve",				B_ZIN_PRESERVE, zc.operationId, V_NAN,			zc.secondArgument,	zc.preserveNanResult));
-
-		if (isFP16)
+		for (size_t i = 0 ; i < DE_LENGTH_OF_ARRAY(binaryOpZINPreserve) ; ++i)
 		{
-			testCases.push_back(OTC("zero_op_var_preserve_nostorage",				B_ZIN_PRESERVE, zc.operationId, V_ZERO,			zc.secondArgument,	zc.preserveZeroResult, true));
-			testCases.push_back(OTC("signed_zero_op_var_preserve_nostorage",		B_ZIN_PRESERVE, zc.operationId, V_MINUS_ZERO,	zc.secondArgument,	zc.preserveSZeroResult, true));
-			testCases.push_back(OTC("inf_op_var_preserve_nostorage",				B_ZIN_PRESERVE, zc.operationId, V_INF,			zc.secondArgument,	zc.preserveInfResult, true));
-			testCases.push_back(OTC("signed_inf_op_var_preserve_nostorage",			B_ZIN_PRESERVE, zc.operationId, V_MINUS_INF,	zc.secondArgument,	zc.preserveSInfResult, true));
-			testCases.push_back(OTC("nan_op_var_preserve_nostorage",				B_ZIN_PRESERVE, zc.operationId, V_NAN,			zc.secondArgument,	zc.preserveNanResult, true));
+			const ZINCase& zc = binaryOpZINPreserve[i];
+			if (isFP64 && !zc.supportedByFP64)
+				continue;
+
+			testCases.push_back(OTC("zero_op_var_preserve",				B_ZIN_PRESERVE, zc.operationId, V_ZERO,			zc.secondArgument,	zc.preserveZeroResult,	fp16NoStorage));
+			testCases.push_back(OTC("signed_zero_op_var_preserve",		B_ZIN_PRESERVE, zc.operationId, V_MINUS_ZERO,	zc.secondArgument,	zc.preserveSZeroResult,	fp16NoStorage));
+			testCases.push_back(OTC("inf_op_var_preserve",				B_ZIN_PRESERVE, zc.operationId, V_INF,			zc.secondArgument,	zc.preserveInfResult,	fp16NoStorage));
+			testCases.push_back(OTC("signed_inf_op_var_preserve",		B_ZIN_PRESERVE, zc.operationId, V_MINUS_INF,	zc.secondArgument,	zc.preserveSInfResult,	fp16NoStorage));
+			testCases.push_back(OTC("nan_op_var_preserve",				B_ZIN_PRESERVE, zc.operationId, V_NAN,			zc.secondArgument,	zc.preserveNanResult,	fp16NoStorage));
 		}
-	}
 
-	// Signed Zero Inf Nan - Preserve - unary operations
-	for (size_t i = 0 ; i < DE_LENGTH_OF_ARRAY(unaryOpZINPreserve) ; ++i)
-	{
-		const ZINCase& zc = unaryOpZINPreserve[i];
-		if (isFP64 && !zc.supportedByFP64)
-			continue;
-
-		testCases.push_back(OTC("op_zero_preserve",			B_ZIN_PRESERVE,zc.operationId, V_ZERO,			V_UNUSED,	zc.preserveZeroResult));
-		testCases.push_back(OTC("op_signed_zero_preserve",	B_ZIN_PRESERVE,zc.operationId, V_MINUS_ZERO,	V_UNUSED,	zc.preserveSZeroResult));
-		testCases.push_back(OTC("op_inf_preserve",			B_ZIN_PRESERVE,zc.operationId, V_INF,			V_UNUSED,	zc.preserveInfResult));
-		testCases.push_back(OTC("op_signed_inf_preserve",	B_ZIN_PRESERVE,zc.operationId, V_MINUS_INF,		V_UNUSED,	zc.preserveSInfResult));
-		testCases.push_back(OTC("op_nan_preserve",			B_ZIN_PRESERVE,zc.operationId, V_NAN,			V_UNUSED,	zc.preserveNanResult));
-
-		if (isFP16)
+		// Signed Zero Inf Nan - Preserve - unary operations
+		for (size_t i = 0 ; i < DE_LENGTH_OF_ARRAY(unaryOpZINPreserve) ; ++i)
 		{
-			testCases.push_back(OTC("op_zero_preserve_nostorage",			B_ZIN_PRESERVE,zc.operationId, V_ZERO,			V_UNUSED,	zc.preserveZeroResult, true));
-			testCases.push_back(OTC("op_signed_zero_preserve_nostorage",	B_ZIN_PRESERVE,zc.operationId, V_MINUS_ZERO,	V_UNUSED,	zc.preserveSZeroResult, true));
-			testCases.push_back(OTC("op_inf_preserve_nostorage",			B_ZIN_PRESERVE,zc.operationId, V_INF,			V_UNUSED,	zc.preserveInfResult, true));
-			testCases.push_back(OTC("op_signed_inf_preserve_nostorage",		B_ZIN_PRESERVE,zc.operationId, V_MINUS_INF,		V_UNUSED,	zc.preserveSInfResult, true));
-			testCases.push_back(OTC("op_nan_preserve_nostorage",			B_ZIN_PRESERVE,zc.operationId, V_NAN,			V_UNUSED,	zc.preserveNanResult, true));
+			const ZINCase& zc = unaryOpZINPreserve[i];
+			if (isFP64 && !zc.supportedByFP64)
+				continue;
+
+			testCases.push_back(OTC("op_zero_preserve",			B_ZIN_PRESERVE,zc.operationId, V_ZERO,			V_UNUSED,	zc.preserveZeroResult,	fp16NoStorage));
+			testCases.push_back(OTC("op_signed_zero_preserve",	B_ZIN_PRESERVE,zc.operationId, V_MINUS_ZERO,	V_UNUSED,	zc.preserveSZeroResult,	fp16NoStorage));
+			testCases.push_back(OTC("op_inf_preserve",			B_ZIN_PRESERVE,zc.operationId, V_INF,			V_UNUSED,	zc.preserveInfResult,	fp16NoStorage));
+			testCases.push_back(OTC("op_signed_inf_preserve",	B_ZIN_PRESERVE,zc.operationId, V_MINUS_INF,		V_UNUSED,	zc.preserveSInfResult,	fp16NoStorage));
+			testCases.push_back(OTC("op_nan_preserve",			B_ZIN_PRESERVE,zc.operationId, V_NAN,			V_UNUSED,	zc.preserveNanResult,	fp16NoStorage));
 		}
 	}
 
@@ -2305,7 +2897,7 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		const ComparisonCase& cc = comparisonCases[op];
 		testCases.push_back(OTC("denorm_op_var_preserve", B_DENORM_PRESERVE, cc.operationId, V_DENORM, V_ONE, cc.denormPreserveResult));
 		if (isFP16)
-			testCases.push_back(OTC("denorm_op_var_preserve_nostorage", B_DENORM_PRESERVE, cc.operationId, V_DENORM, V_ONE, cc.denormPreserveResult, true));
+			testCases.push_back(OTC("denorm_op_var_preserve", B_DENORM_PRESERVE, cc.operationId, V_DENORM, V_ONE, cc.denormPreserveResult, true));
 	}
 
 	if (argumentsFromInput)
@@ -2348,41 +2940,87 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 			testCases.push_back(OTC("rounding_rtz_op", B_RTZ_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTZResult));
 			if (isFP16)
 			{
-				testCases.push_back(OTC("rounding_rte_op_nostorage", B_RTE_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTEResult, true));
-				testCases.push_back(OTC("rounding_rtz_op_nostorage", B_RTZ_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTZResult, true));
+				testCases.push_back(OTC("rounding_rte_op", B_RTE_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTEResult, true));
+				testCases.push_back(OTC("rounding_rtz_op", B_RTZ_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTZResult, true));
 			}
 		}
 	}
 
 	// special cases
-	if (typeTestResults->floatType() == FP16)
+	if (typeTestResults->variableType() == FP16)
 	{
 		if (argumentsFromInput)
 		{
-			testCases.push_back(OTC("rounding_rte_conv_from_fp32", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp32", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rte_conv_from_fp64", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp64", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
+			for (int i=0; i<2; i++)
+			{
+				bool noStorage = (i == 1);
 
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
+				//// Conversions from arguments
+				// fp32 rte
+				testCases.push_back(OTC("rounding_rte_conv_from_fp32_up", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_conv_from_fp32_down", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_conv_from_fp32_tie_up", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_conv_from_fp32_tie_down", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT, noStorage));
 
-			testCases.push_back(OTC("rounding_rte_conv_from_fp32_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, true));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, true));
-			testCases.push_back(OTC("rounding_rte_conv_from_fp64_nostorage", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, true));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_nostorage", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, true));
+				// fp32 rtz
+				testCases.push_back(OTC("rounding_rtz_conv_from_fp32_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_conv_from_fp32_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_conv_from_fp32_tie_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_conv_from_fp32_tie_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP32, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT, noStorage));
 
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, true));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, true));
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_nostorage", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, true));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_nostorage", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, true));
+				// fp64 rte
+				testCases.push_back(OTC("rounding_rte_conv_from_fp64_up", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_conv_from_fp64_down", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_conv_from_fp64_tie_up", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_conv_from_fp64_tie_down", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT, noStorage));
+
+				// fp64 rtz
+				testCases.push_back(OTC("rounding_rtz_conv_from_fp64_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_conv_from_fp64_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_conv_from_fp64_tie_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_conv_from_fp64_tie_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT, noStorage));
+
+				//// Conversions from specialization constants
+				// fp32 rte
+				testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_up", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_UP, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_down", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_DOWN, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_tie_up", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_UP, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_tie_down", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_DOWN, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT, noStorage));
+
+				// fp32 rtz
+				testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_up", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_UP, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_down", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_DOWN, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_tie_up", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_UP, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_tie_down", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP32_TO_FP16_TIE_DOWN, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT, noStorage));
+
+				// fp64 rte
+				testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_up", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_UP, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_down", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_DOWN, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_tie_up", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_UP, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTE_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_tie_down", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_DOWN, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTE_RESULT, noStorage));
+
+				// fp64 rtz
+				testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_up", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_UP, V_CONV_FROM_FP64_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_UP_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_down", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_DOWN, V_CONV_FROM_FP64_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_DOWN_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_tie_up", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_UP, V_CONV_FROM_FP64_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_UP_RTZ_RESULT, noStorage));
+				testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_tie_down", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP16_TIE_DOWN, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP16_TIE_DOWN_RTZ_RESULT, noStorage));
+			}
 
 			// verify that VkShaderFloatingPointRoundingModeKHR can be overridden for a given instruction by the FPRoundingMode decoration.
 			// FPRoundingMode decoration requires VK_KHR_16bit_storage.
-			testCases.push_back(OTC("rounding_rte_override", B_RTE_ROUNDING, OID_ORTZ_ROUND, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
-			testCases.push_back(OTC("rounding_rtz_override", B_RTZ_ROUNDING, OID_ORTE_ROUND, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_override_from_fp32_up", B_RTE_ROUNDING, OID_ORTZ_ROUND, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rte_override_from_fp32_down", B_RTE_ROUNDING, OID_ORTZ_ROUND, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rte_override_from_fp32_tie_up", B_RTE_ROUNDING, OID_ORTZ_ROUND, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rte_override_from_fp32_tie_down", B_RTE_ROUNDING, OID_ORTZ_ROUND, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTZ_RESULT));
+			// Missing for FP64 -> FP16
+			// TODO(https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/4539)
+
+			testCases.push_back(OTC("rounding_rtz_override_from_fp32_up", B_RTE_ROUNDING, OID_ORTE_ROUND, V_CONV_FROM_FP32_TO_FP16_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rtz_override_from_fp32_down", B_RTE_ROUNDING, OID_ORTE_ROUND, V_CONV_FROM_FP32_TO_FP16_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_DOWN_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rtz_override_from_fp32_tie_up", B_RTE_ROUNDING, OID_ORTE_ROUND, V_CONV_FROM_FP32_TO_FP16_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rtz_override_from_fp32_tie_down", B_RTE_ROUNDING, OID_ORTE_ROUND, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP32_TO_FP16_TIE_DOWN_RTE_RESULT));
+			// Missing for FP64 -> FP16
+			// TODO(https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/4539)
 		}
 
 		createUnaryTestCases(testCases, OID_CONV_FROM_FP32, V_CONV_DENORM_SMALLER, V_ZERO);
@@ -2391,16 +3029,79 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		createUnaryTestCases(testCases, OID_CONV_FROM_FP64, V_CONV_DENORM_BIGGER, V_ZERO, true);
 
 	}
-	else if (typeTestResults->floatType() == FP32)
+	else if (typeTestResults->variableType() == FP32)
 	{
 		if (argumentsFromInput)
 		{
-			// convert from fp64 to fp32
-			testCases.push_back(OTC("rounding_rte_conv_from_fp64", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP32_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rtz_conv_from_fp64", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP32_RTZ_RESULT));
+			//// Conversions from arguments
+			// fp64 rte
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64_up", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64_down", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_DOWN_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64_tie_up", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64_tie_down", B_RTE_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTE_RESULT));
 
-			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32, V_UNUSED, V_UNUSED, V_CONV_TO_FP32_RTE_RESULT));
-			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32, V_UNUSED, V_UNUSED, V_CONV_TO_FP32_RTZ_RESULT));
+			// fp64 rtz
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_DOWN_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_tie_up", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_tie_down", B_RTZ_ROUNDING, OID_CONV_FROM_FP64, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTZ_RESULT));
+
+			//// Conversions from specialization constants
+			// fp64 rte
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_up", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32_UP, V_CONV_FROM_FP64_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_down", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32_DOWN, V_CONV_FROM_FP64_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_DOWN_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_tie_up", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_UP, V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_tie_down", B_RTE_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_DOWN, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTE_RESULT));
+
+			// fp64 rtz
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_up", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32_UP, V_CONV_FROM_FP64_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_down", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32_DOWN, V_CONV_FROM_FP64_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_DOWN_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_tie_up", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_UP, V_CONV_FROM_FP64_TO_FP32_TIE_UP_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_tie_down", B_RTZ_ROUNDING, OID_SCONST_CONV_FROM_FP64_TO_FP32_TIE_DOWN, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_ARG, V_UNUSED, V_CONV_FROM_FP64_TO_FP32_TIE_DOWN_RTZ_RESULT));
+
+			// Verify that VkShaderFloatingPointRoundingModeKHR can be overridden for a given instruction by the FPRoundingMode decoration.
+			// Missing for FP64 -> FP32
+			// TODO(https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/4539)
+
+			// uint32 rtz
+			testCases.push_back(OTC("rounding_rtz_conv_from_uint32_up", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP32, V_CONV_FROM_UINT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_UINT32_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_uint32_tie", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP32, V_CONV_FROM_UINT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_UINT32_TIE_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_uint32_down", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP32, V_CONV_FROM_UINT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_UINT32_DOWN_RTZ_RESULT));
+
+			// uint64 rtz
+			testCases.push_back(OTC("rounding_rtz_conv_from_uint64_up", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP64, V_CONV_FROM_UINT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_UINT64_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_uint64_tie", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP64, V_CONV_FROM_UINT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_UINT64_TIE_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_uint64_down", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP64, V_CONV_FROM_UINT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_UINT64_DOWN_RTZ_RESULT));
+
+			// uint32 rte
+			testCases.push_back(OTC("rounding_rte_conv_from_uint32_up", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP32, V_CONV_FROM_UINT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_UINT32_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_uint32_tie", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP32, V_CONV_FROM_UINT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_UINT32_TIE_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_uint32_down", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP32, V_CONV_FROM_UINT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_UINT32_DOWN_RTE_RESULT));
+
+			// uint64 rte
+			testCases.push_back(OTC("rounding_rte_conv_from_uint64_up", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP64, V_CONV_FROM_UINT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_UINT64_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_uint64_tie", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP64, V_CONV_FROM_UINT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_UINT64_TIE_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_uint64_down", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP64, V_CONV_FROM_UINT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_UINT64_DOWN_RTE_RESULT));
+
+			// int32 rtz
+			testCases.push_back(OTC("rounding_rtz_conv_from_int32_up", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP32, V_CONV_FROM_INT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_INT32_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_int32_tie", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP32, V_CONV_FROM_INT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_INT32_TIE_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_int32_down", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP32, V_CONV_FROM_INT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_INT32_DOWN_RTZ_RESULT));
+
+			// int64 rtz
+			testCases.push_back(OTC("rounding_rtz_conv_from_int64_up", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP64, V_CONV_FROM_INT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_INT64_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_int64_tie", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP64, V_CONV_FROM_INT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_INT64_TIE_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_int64_down", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP64, V_CONV_FROM_INT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_INT64_DOWN_RTZ_RESULT));
+
+			// int32 rte
+			testCases.push_back(OTC("rounding_rte_conv_from_int32_up", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP32, V_CONV_FROM_INT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_INT32_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_int32_tie", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP32, V_CONV_FROM_INT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_INT32_TIE_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_int32_down", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP32, V_CONV_FROM_INT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_INT32_DOWN_RTE_RESULT));
+
+			// int64 rte
+			testCases.push_back(OTC("rounding_rte_conv_from_int64_up", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP64, V_CONV_FROM_INT_TO_FP32_UP_ARG, V_UNUSED, V_CONV_FROM_INT64_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_int64_tie", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP64, V_CONV_FROM_INT_TO_FP32_TIE_ARG, V_UNUSED, V_CONV_FROM_INT64_TIE_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_int64_down", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP64, V_CONV_FROM_INT_TO_FP32_DOWN_ARG, V_UNUSED, V_CONV_FROM_INT64_DOWN_RTE_RESULT));
 		}
 		else
 		{
@@ -2418,7 +3119,29 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 	}
 	else // FP64
 	{
-		if (!argumentsFromInput)
+		if (argumentsFromInput)
+		{
+			// uint64 rtz
+			testCases.push_back(OTC("rounding_rtz_conv_from_uint64_up", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP64, V_CONV_FROM_UINT_TO_FP64_UP_ARG, V_UNUSED, V_CONV_FROM_UINT64_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_uint64_tie", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP64, V_CONV_FROM_UINT_TO_FP64_TIE_ARG, V_UNUSED, V_CONV_FROM_UINT64_TIE_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_uint64_down", B_RTZ_ROUNDING, OID_CONV_FROM_UINT_TO_FP64, V_CONV_FROM_UINT_TO_FP64_DOWN_ARG, V_UNUSED, V_CONV_FROM_UINT64_DOWN_RTZ_RESULT));
+
+			// uint64 rte
+			testCases.push_back(OTC("rounding_rte_conv_from_uint64_up", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP64, V_CONV_FROM_UINT_TO_FP64_UP_ARG, V_UNUSED, V_CONV_FROM_UINT64_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_uint64_tie", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP64, V_CONV_FROM_UINT_TO_FP64_TIE_ARG, V_UNUSED, V_CONV_FROM_UINT64_TIE_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_uint64_down", B_RTE_ROUNDING, OID_CONV_FROM_UINT_TO_FP64, V_CONV_FROM_UINT_TO_FP64_DOWN_ARG, V_UNUSED, V_CONV_FROM_UINT64_DOWN_RTE_RESULT));
+
+			// int64 rtz
+			testCases.push_back(OTC("rounding_rtz_conv_from_int64_up", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP64, V_CONV_FROM_INT_TO_FP64_UP_ARG, V_UNUSED, V_CONV_FROM_INT64_UP_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_int64_tie", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP64, V_CONV_FROM_INT_TO_FP64_TIE_ARG, V_UNUSED, V_CONV_FROM_INT64_TIE_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rtz_conv_from_int64_down", B_RTZ_ROUNDING, OID_CONV_FROM_INT_TO_FP64, V_CONV_FROM_INT_TO_FP64_DOWN_ARG, V_UNUSED, V_CONV_FROM_INT64_DOWN_RTZ_RESULT));
+
+			// int64 rte
+			testCases.push_back(OTC("rounding_rte_conv_from_int64_up", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP64, V_CONV_FROM_INT_TO_FP64_UP_ARG, V_UNUSED, V_CONV_FROM_INT64_UP_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_int64_tie", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP64, V_CONV_FROM_INT_TO_FP64_TIE_ARG, V_UNUSED, V_CONV_FROM_INT64_TIE_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rte_conv_from_int64_down", B_RTE_ROUNDING, OID_CONV_FROM_INT_TO_FP64, V_CONV_FROM_INT_TO_FP64_DOWN_ARG, V_UNUSED, V_CONV_FROM_INT64_DOWN_RTE_RESULT));
+		}
+		else
 		{
 			// PackDouble2x32 - custom arguments defined as constants
 			testCases.push_back(OTC("pack_double_denorm_preserve",			B_DENORM_PRESERVE,	OID_PD_DENORM,			V_UNUSED, V_UNUSED, V_DENORM));
@@ -2441,34 +3164,17 @@ const Operation& TestCasesBuilder::getOperation(OperationId id) const
 
 void TestCasesBuilder::createUnaryTestCases(vector<OperationTestCase>& testCases, OperationId operationId, ValueId denormPreserveResult, ValueId denormFTZResult, bool fp16WithoutStorage) const
 {
-	if (fp16WithoutStorage)
-	{
-		// Denom - Preserve
-		testCases.push_back(OTC("op_denorm_preserve_nostorage",		B_DENORM_PRESERVE,	operationId, V_DENORM,	V_UNUSED, denormPreserveResult, true));
+	// Denorm - Preserve
+	testCases.push_back(OTC("op_denorm_preserve",		B_DENORM_PRESERVE,	operationId, V_DENORM,		V_UNUSED, denormPreserveResult, fp16WithoutStorage));
 
-		// Denorm - FlushToZero
-		testCases.push_back(OTC("op_denorm_flush_to_zero_nostorage",	B_DENORM_FLUSH,		operationId, V_DENORM,	V_UNUSED, denormFTZResult, true));
+	// Denorm - FlushToZero
+	testCases.push_back(OTC("op_denorm_flush_to_zero",	B_DENORM_FLUSH,		operationId, V_DENORM,		V_UNUSED, denormFTZResult,		fp16WithoutStorage));
 
-		// Signed Zero Inf Nan - Preserve
-		testCases.push_back(OTC("op_zero_preserve_nostorage",			B_ZIN_PRESERVE,		operationId, V_ZERO,		V_UNUSED, V_ZERO, true));
-		testCases.push_back(OTC("op_signed_zero_preserve_nostorage",	B_ZIN_PRESERVE,		operationId, V_MINUS_ZERO,	V_UNUSED, V_MINUS_ZERO, true));
-		testCases.push_back(OTC("op_inf_preserve_nostorage",			B_ZIN_PRESERVE,		operationId, V_INF,			V_UNUSED, V_INF, true));
-		testCases.push_back(OTC("op_nan_preserve_nostorage",			B_ZIN_PRESERVE,		operationId, V_NAN,			V_UNUSED, V_NAN, true));
-	}
-	else
-	{
-		// Denom - Preserve
-		testCases.push_back(OTC("op_denorm_preserve",		B_DENORM_PRESERVE,	operationId, V_DENORM,	V_UNUSED, denormPreserveResult));
-
-		// Denorm - FlushToZero
-		testCases.push_back(OTC("op_denorm_flush_to_zero",	B_DENORM_FLUSH,		operationId, V_DENORM,	V_UNUSED, denormFTZResult));
-
-		// Signed Zero Inf Nan - Preserve
-		testCases.push_back(OTC("op_zero_preserve",			B_ZIN_PRESERVE,		operationId, V_ZERO,		V_UNUSED, V_ZERO));
-		testCases.push_back(OTC("op_signed_zero_preserve",	B_ZIN_PRESERVE,		operationId, V_MINUS_ZERO,	V_UNUSED, V_MINUS_ZERO));
-		testCases.push_back(OTC("op_inf_preserve",			B_ZIN_PRESERVE,		operationId, V_INF,			V_UNUSED, V_INF));
-		testCases.push_back(OTC("op_nan_preserve",			B_ZIN_PRESERVE,		operationId, V_NAN,			V_UNUSED, V_NAN));
-	}
+	// Signed Zero Inf Nan - Preserve
+	testCases.push_back(OTC("op_zero_preserve",			B_ZIN_PRESERVE,		operationId, V_ZERO,		V_UNUSED, V_ZERO,				fp16WithoutStorage));
+	testCases.push_back(OTC("op_signed_zero_preserve",	B_ZIN_PRESERVE,		operationId, V_MINUS_ZERO,	V_UNUSED, V_MINUS_ZERO,			fp16WithoutStorage));
+	testCases.push_back(OTC("op_inf_preserve",			B_ZIN_PRESERVE,		operationId, V_INF,			V_UNUSED, V_INF,				fp16WithoutStorage));
+	testCases.push_back(OTC("op_nan_preserve",			B_ZIN_PRESERVE,		operationId, V_NAN,			V_UNUSED, V_NAN,				fp16WithoutStorage));
 }
 
 template <typename TYPE, typename FLOAT_TYPE>
@@ -2536,11 +3242,11 @@ bool isCosResultCorrect(const TYPE& returnedFloat, TestLog& log)
 }
 
 template <typename FLOAT_TYPE>
-double getFloatTypeAsDouble(FLOAT_TYPE param)
+double getVariableTypeAsDouble(FLOAT_TYPE param)
 {
 	return param;
 }
-template<> double getFloatTypeAsDouble(deFloat16 param)
+template<> double getVariableTypeAsDouble(deFloat16 param)
 {
 	return deFloat16To64(param);
 }
@@ -2572,7 +3278,7 @@ bool isLogResultCorrect(const TYPE& returnedFloat, FLOAT_TYPE param, REF_FUNCTIO
 	if (returnedFloat.isInf() && returnedFloat.signBit())
 		return true;
 
-	const double expected	= refFunction(getFloatTypeAsDouble(param));
+	const double expected	= refFunction(getVariableTypeAsDouble(param));
 	const double precision	= getPrecisionAt(expected, 3.0, returnedFloat.MANTISSA_BITS);
 
 	if (deAbs(returnedFloat.asDouble() - expected) < precision)
@@ -2590,7 +3296,7 @@ bool isInverseSqrtResultCorrect(const TYPE& returnedFloat, FLOAT_TYPE param, Tes
 	if (returnedFloat.isInf() && !returnedFloat.signBit())
 		return true;
 
-	const double expected	= 1.0/ deSqrt(getFloatTypeAsDouble(param));
+	const double expected	= 1.0/ deSqrt(getVariableTypeAsDouble(param));
 	const double precision	= getPrecisionAt(expected, 2.0, returnedFloat.MANTISSA_BITS);
 
 	if (deAbs(returnedFloat.asDouble() - expected) < precision)
@@ -2609,7 +3315,7 @@ bool isSqrtResultCorrect(const TYPE& returnedFloat, FLOAT_TYPE param, TestLog& l
 		return true;
 
 
-	const double expected				= deSqrt(getFloatTypeAsDouble(param));
+	const double expected				= deSqrt(getVariableTypeAsDouble(param));
 	const double expectedInverseSqrt	= 1.0 / expected;
 	const double inverseSqrtPrecision	= getPrecisionAt(expectedInverseSqrt, 2.0, returnedFloat.MANTISSA_BITS);
 
@@ -2810,7 +3516,7 @@ public:
 
 	virtual void createOperationTests(TestCaseGroup* parentGroup,
 									  const char* groupName,
-									  FloatType floatType,
+									  VariableType variableType,
 									  bool argumentsFromInput) = 0;
 
 	virtual void createSettingsTests(TestCaseGroup* parentGroup) = 0;
@@ -2822,7 +3528,7 @@ protected:
 	// Structure containing all data required to create single operation test.
 	struct OperationTestCaseInfo
 	{
-		FloatType					outFloatType;
+		VariableType				outVariableType;
 		bool						argumentsFromInput;
 		VkShaderStageFlagBits		testedStage;
 		const Operation&			operation;
@@ -2869,10 +3575,11 @@ protected:
 											   string& capability,
 											   string& executionMode) const;
 
-	void setupVulkanFeatures(FloatType			inFloatType,
-							 FloatType			outFloatType,
+	void setupVulkanFeatures(VariableType		inVariableType,
+							 VariableType		outVariableType,
 							 BehaviorFlags		behaviorFlags,
 							 bool				float64FeatureRequired,
+							 bool				int64FeatureRequired,
 							 VulkanFeatures&	features) const;
 
 protected:
@@ -2885,7 +3592,7 @@ protected:
 	};
 
 	// Type specific parameters are stored in this map.
-	map<FloatType, TypeData> m_typeData;
+	map<VariableType, TypeData> m_typeData;
 
 	// Map converting behaviuor id to OpCapability instruction
 	typedef map<BehaviorFlagBits, string> BehaviorNameMap;
@@ -2906,6 +3613,22 @@ TestGroupBuilderBase::TestGroupBuilderBase()
 	m_typeData[FP64].values			= TypeValuesSP(new TypeValues<double>);
 	m_typeData[FP64].snippets		= TypeSnippetsSP(new TypeSnippets<double>);
 	m_typeData[FP64].testResults	= TypeTestResultsSP(new TypeTestResults<double>);
+	m_typeData[UINT32] = TypeData();
+	m_typeData[UINT32].values		= TypeValuesSP(new TypeValues<float>);
+	m_typeData[UINT32].snippets		= TypeSnippetsSP(new TypeSnippets<float>(false));
+	m_typeData[UINT32].testResults	= TypeTestResultsSP(new TypeTestResults<float>);
+	m_typeData[UINT64] = TypeData();
+	m_typeData[UINT64].values		= TypeValuesSP(new TypeValues<double>);
+	m_typeData[UINT64].snippets		= TypeSnippetsSP(new TypeSnippets<double>(false));
+	m_typeData[UINT64].testResults	= TypeTestResultsSP(new TypeTestResults<double>);
+	m_typeData[INT32] = TypeData();
+	m_typeData[INT32].values		= TypeValuesSP(new TypeValues<float>);
+	m_typeData[INT32].snippets		= TypeSnippetsSP(new TypeSnippets<float>(false, true));
+	m_typeData[INT32].testResults	= TypeTestResultsSP(new TypeTestResults<float>);
+	m_typeData[INT64] = TypeData();
+	m_typeData[INT64].values		= TypeValuesSP(new TypeValues<double>);
+	m_typeData[INT64].snippets		= TypeSnippetsSP(new TypeSnippets<double>(false, true));
+	m_typeData[INT64].testResults	= TypeTestResultsSP(new TypeTestResults<double>);
 
 	m_behaviorToName[B_DENORM_PRESERVE]	= "DenormPreserve";
 	m_behaviorToName[B_DENORM_FLUSH]	= "DenormFlushToZero";
@@ -2917,23 +3640,23 @@ TestGroupBuilderBase::TestGroupBuilderBase()
 void TestGroupBuilderBase::specializeOperation (const OperationTestCaseInfo&	testCaseInfo,
 												SpecializedOperation&			specializedOperation) const
 {
-	const string		typeToken		= "_float";
+	const string		typeToken		= "_valueType";
 	const string		widthToken		= "${float_width}";
 
-	FloatType				outFloatType	= testCaseInfo.outFloatType;
+	VariableType			outVariableType	= testCaseInfo.outVariableType;
 	const Operation&		operation		= testCaseInfo.operation;
-	const TypeSnippetsSP	outTypeSnippets	= m_typeData.at(outFloatType).snippets;
+	const TypeSnippetsSP	outTypeSnippets	= m_typeData.at(outVariableType).snippets;
 	const bool				inputRestricted	= operation.isInputTypeRestricted;
-	FloatType				inFloatType		= operation.restrictedInputType;
+	VariableType			inVariableType		= operation.restrictedInputType;
 
 	// usually input type is same as output but this is not the case for conversion
 	// operations; in those cases operation definitions have restricted input type
-	inFloatType = inputRestricted ? inFloatType : outFloatType;
+	inVariableType = inputRestricted ? inVariableType : outVariableType;
 
-	TypeSnippetsSP inTypeSnippets = m_typeData.at(inFloatType).snippets;
+	TypeSnippetsSP inTypeSnippets = m_typeData.at(inVariableType).snippets;
 
-	const string inTypePrefix	= string("_f") + inTypeSnippets->bitWidth;
-	const string outTypePrefix	= string("_f") + outTypeSnippets->bitWidth;
+	const string inTypePrefix	= string("_") + inTypeSnippets->getValueTypeString() + inTypeSnippets->bitWidth;
+	const string outTypePrefix	= string("_") + outTypeSnippets->getValueTypeString() + outTypeSnippets->bitWidth;
 
 	specializedOperation.constants		= replace(operation.constants, typeToken, inTypePrefix);
 	specializedOperation.annotations	= replace(operation.annotations, widthToken, outTypeSnippets->bitWidth);
@@ -2942,7 +3665,7 @@ void TestGroupBuilderBase::specializeOperation (const OperationTestCaseInfo&	tes
 	specializedOperation.functions		= replace(operation.functions, typeToken, outTypePrefix);
 	specializedOperation.commands		= replace(operation.commands, typeToken, outTypePrefix);
 
-	specializedOperation.inFloatType				= inFloatType;
+	specializedOperation.inVariableType				= inVariableType;
 	specializedOperation.inTypeSnippets				= inTypeSnippets;
 	specializedOperation.outTypeSnippets			= outTypeSnippets;
 	specializedOperation.argumentsUsesFloatConstant	= 0;
@@ -2956,7 +3679,7 @@ void TestGroupBuilderBase::specializeOperation (const OperationTestCaseInfo&	tes
 		// read arguments from input SSBO in main function
 		specializedOperation.arguments = inTypeSnippets->argumentsFromInputSnippet;
 
-		if (inFloatType == FP16 && testCaseInfo.testCase.fp16Without16BitStorage)
+		if (inVariableType == FP16 && testCaseInfo.testCase.fp16Without16BitStorage)
 			specializedOperation.arguments = inTypeSnippets->argumentsFromInputFp16Snippet;
 	}
 	else
@@ -3009,13 +3732,15 @@ void TestGroupBuilderBase::getBehaviorCapabilityAndExecutionMode(BehaviorFlags b
 	DE_ASSERT(!capability.empty() && !executionMode.empty());
 }
 
-void TestGroupBuilderBase::setupVulkanFeatures(FloatType		inFloatType,
-											   FloatType		outFloatType,
+void TestGroupBuilderBase::setupVulkanFeatures(VariableType		inVariableType,
+											   VariableType		outVariableType,
 											   BehaviorFlags	behaviorFlags,
 											   bool				float64FeatureRequired,
+											   bool				int64FeatureRequired,
 											   VulkanFeatures&	features) const
 {
 	features.coreFeatures.shaderFloat64 = float64FeatureRequired;
+	features.coreFeatures.shaderInt64 = int64FeatureRequired;
 
 	// request proper float controls features
 	vk::VkPhysicalDeviceFloatControlsProperties& floatControls = features.floatControlsProperties;
@@ -3025,7 +3750,7 @@ void TestGroupBuilderBase::setupVulkanFeatures(FloatType		inFloatType,
 	bool rtzRounding = (behaviorFlags & B_RTZ_ROUNDING) != 0;
 	if (rteRounding || rtzRounding)
 	{
-		switch(outFloatType)
+		switch(outVariableType)
 		{
 		case FP16:
 			floatControls.shaderRoundingModeRTEFloat16 = rteRounding;
@@ -3039,10 +3764,15 @@ void TestGroupBuilderBase::setupVulkanFeatures(FloatType		inFloatType,
 			floatControls.shaderRoundingModeRTEFloat64 = rteRounding;
 			floatControls.shaderRoundingModeRTZFloat64 = rtzRounding;
 			return;
+		case UINT32:
+		case INT32:
+		case UINT64:
+		case INT64:
+			return;
 		}
 	}
 
-	switch(inFloatType)
+	switch(inVariableType)
 	{
 	case FP16:
 		floatControls.shaderDenormPreserveFloat16			= behaviorFlags & B_DENORM_PRESERVE;
@@ -3058,6 +3788,11 @@ void TestGroupBuilderBase::setupVulkanFeatures(FloatType		inFloatType,
 		floatControls.shaderDenormPreserveFloat64			= behaviorFlags & B_DENORM_PRESERVE;
 		floatControls.shaderDenormFlushToZeroFloat64		= behaviorFlags & B_DENORM_FLUSH;
 		floatControls.shaderSignedZeroInfNanPreserveFloat64	= behaviorFlags & B_ZIN_PRESERVE;
+		return;
+	case UINT32:
+	case INT32:
+	case UINT64:
+	case INT64:
 		return;
 	}
 }
@@ -3154,7 +3889,7 @@ public:
 
 	void createOperationTests(TestCaseGroup* parentGroup,
 							  const char* groupName,
-							  FloatType floatType,
+							  VariableType variableType,
 							  bool argumentsFromInput) override;
 
 	void createSettingsTests(TestCaseGroup* parentGroup) override;
@@ -3307,14 +4042,14 @@ void ComputeTestGroupBuilder::init()
 		"OpFunctionEnd\n");
 }
 
-void ComputeTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, const char* groupName, FloatType floatType, bool argumentsFromInput)
+void ComputeTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, const char* groupName, VariableType variableType, bool argumentsFromInput)
 {
 	TestContext&	testCtx	= parentGroup->getTestContext();
 	TestCaseGroup*	group	= new TestCaseGroup(testCtx, groupName, "");
 	parentGroup->addChild(group);
 
 	TestCaseVect testCases;
-	m_operationTestCaseBuilder.build(testCases, m_typeData[floatType].testResults, argumentsFromInput);
+	m_operationTestCaseBuilder.build(testCases, m_typeData[variableType].testResults, argumentsFromInput);
 
 	TestCaseVect::const_iterator currTestCase = testCases.begin();
 	TestCaseVect::const_iterator lastTestCase = testCases.end();
@@ -3329,7 +4064,7 @@ void ComputeTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, c
 
 		OperationTestCaseInfo testCaseInfo =
 		{
-			floatType,
+			variableType,
 			argumentsFromInput,
 			VK_SHADER_STAGE_COMPUTE_BIT,
 			m_operationTestCaseBuilder.getOperation(testCase.operationId),
@@ -3464,25 +4199,25 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 
 	const Operation&			testOperation	= testCaseInfo.operation;
 	const OperationTestCase&	testCase		= testCaseInfo.testCase;
-	FloatType					outFloatType	= testCaseInfo.outFloatType;
+	VariableType				outVariableType	= testCaseInfo.outVariableType;
 
 	SpecializedOperation specOpData;
 	specializeOperation(testCaseInfo, specOpData);
 
 	TypeSnippetsSP	inTypeSnippets		= specOpData.inTypeSnippets;
 	TypeSnippetsSP	outTypeSnippets		= specOpData.outTypeSnippets;
-	FloatType		inFloatType			= specOpData.inFloatType;
+	VariableType	inVariableType		= specOpData.inVariableType;
 
-	bool			outFp16WithoutStorage	= (outFloatType == FP16) && testCase.fp16Without16BitStorage;
-	bool			inFp16WithoutStorage	= (inFloatType == FP16) && testCase.fp16Without16BitStorage;
+	bool			outFp16WithoutStorage	= (outVariableType == FP16) && testCase.fp16Without16BitStorage;
+	bool			inFp16WithoutStorage	= (inVariableType == FP16) && testCase.fp16Without16BitStorage;
 
 	// UnpackHalf2x16 is a corner case - it returns two 32-bit floats but
 	// internaly operates on fp16 and this type should be used by float controls
-	FloatType		inFloatTypeForCaps		= inFloatType;
+	VariableType	inVariableTypeForCaps	= inVariableType;
 	string			inFloatWidthForCaps		= inTypeSnippets->bitWidth;
 	if (testCase.operationId == OID_UPH_DENORM)
 	{
-		inFloatTypeForCaps	= FP16;
+		inVariableTypeForCaps	= FP16;
 		inFloatWidthForCaps	= "16";
 	}
 
@@ -3582,8 +4317,9 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	specializations["constants"]		+= specOpData.constants;
 
 	// check which format features are needed
-	bool float16FeatureRequired = (outFloatType == FP16) || (inFloatType == FP16);
-	bool float64FeatureRequired = (outFloatType == FP64) || (inFloatType == FP64);
+	bool float16FeatureRequired	= (outVariableType == FP16) || (inVariableType == FP16);
+	bool float64FeatureRequired	= (outVariableType == FP64) || (inVariableType == FP64);
+	bool int64FeatureRequired	= ((outVariableType == UINT64) || (outVariableType == INT64)) || ((inVariableType == UINT64) || (inVariableType == INT64));
 
 	// Determine required capabilities.
 	bool float16CapabilityAlreadyAdded = inFp16WithoutStorage || outFp16WithoutStorage;
@@ -3597,23 +4333,24 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	const string shaderCode = m_operationShaderTemplate.specialize(specializations);
 
 	// construct input and output buffers of proper types
-	TypeValuesSP inTypeValues	= m_typeData.at(inFloatType).values;
-	TypeValuesSP outTypeValues	= m_typeData.at(outFloatType).values;
+	TypeValuesSP inTypeValues	= m_typeData.at(inVariableType).values;
+	TypeValuesSP outTypeValues	= m_typeData.at(outVariableType).values;
 	BufferSp inBufferSp			= inTypeValues->constructInputBuffer(testCase.input);
 	BufferSp outBufferSp		= outTypeValues->constructOutputBuffer(testCase.expectedOutput);
 	csSpec.inputs.push_back(Resource(inBufferSp, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 	csSpec.outputs.push_back(Resource(outBufferSp));
 
 	// check which format features are needed
-	setupVulkanFeatures(inFloatTypeForCaps,		// usualy same as inFloatType - different only for UnpackHalf2x16
-						outFloatType,
+	setupVulkanFeatures(inVariableTypeForCaps,		// usualy same as inVariableType - different only for UnpackHalf2x16
+						outVariableType,
 						testCase.behaviorFlags,
 						float64FeatureRequired,
+						int64FeatureRequired,
 						csSpec.requestedVulkanFeatures);
 
 	csSpec.assembly			= shaderCode;
 	csSpec.numWorkGroups	= IVec3(1, 1, 1);
-	csSpec.verifyIO			= checkFloatsLUT[outFloatType];
+	csSpec.verifyIO			= checkFloatsLUT[outVariableType];
 
 	csSpec.extensions.push_back("VK_KHR_shader_float_controls");
 	bool needShaderFloat16 = float16CapabilityAlreadyAdded;
@@ -3632,6 +4369,8 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	}
 	if (float64FeatureRequired)
 		csSpec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = VK_TRUE;
+	if (int64FeatureRequired)
+		csSpec.requestedVulkanFeatures.coreFeatures.shaderInt64 = VK_TRUE;
 }
 
 void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo&	testCaseInfo,
@@ -4086,7 +4825,7 @@ public:
 
 	void init();
 
-	void createOperationTests(TestCaseGroup* parentGroup, const char* groupName, FloatType floatType, bool argumentsFromInput) override;
+	void createOperationTests(TestCaseGroup* parentGroup, const char* groupName, VariableType variableType, bool argumentsFromInput) override;
 	void createSettingsTests(TestCaseGroup* parentGroup) override;
 
 protected:
@@ -4103,7 +4842,7 @@ void GraphicsTestGroupBuilder::init()
 	m_testCaseBuilder.init();
 }
 
-void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, const char* groupName, FloatType floatType, bool argumentsFromInput)
+void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, const char* groupName, VariableType variableType, bool argumentsFromInput)
 {
 	TestContext&	testCtx	= parentGroup->getTestContext();
 	TestCaseGroup*	group	= new TestCaseGroup(testCtx, groupName, "");
@@ -4111,7 +4850,7 @@ void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, 
 
 	// create test cases for vertex stage
 	TestCaseVect testCases;
-	m_testCaseBuilder.build(testCases, m_typeData[floatType].testResults, argumentsFromInput);
+	m_testCaseBuilder.build(testCases, m_typeData[variableType].testResults, argumentsFromInput);
 
 	TestCaseVect::const_iterator currTestCase = testCases.begin();
 	TestCaseVect::const_iterator lastTestCase = testCases.end();
@@ -4133,7 +4872,7 @@ void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, 
 
 		OperationTestCaseInfo testCaseInfo =
 		{
-			floatType,
+			variableType,
 			argumentsFromInput,
 			VK_SHADER_STAGE_VERTEX_BIT,
 			m_testCaseBuilder.getOperation(testCase.operationId),
@@ -4148,7 +4887,7 @@ void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, 
 
 	// create test cases for fragment stage
 	testCases.clear();
-	m_testCaseBuilder.build(testCases, m_typeData[floatType].testResults, argumentsFromInput);
+	m_testCaseBuilder.build(testCases, m_typeData[variableType].testResults, argumentsFromInput);
 
 	currTestCase = testCases.begin();
 	lastTestCase = testCases.end();
@@ -4163,7 +4902,7 @@ void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, 
 
 		OperationTestCaseInfo testCaseInfo =
 		{
-			floatType,
+			variableType,
 			argumentsFromInput,
 			VK_SHADER_STAGE_FRAGMENT_BIT,
 			m_testCaseBuilder.getOperation(testCase.operationId),
@@ -4208,7 +4947,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 
 	const Operation&			testOperation	= testCaseInfo.operation;
 	const OperationTestCase&	testCase		= testCaseInfo.testCase;
-	FloatType					outFloatType	= testCaseInfo.outFloatType;
+	VariableType				outVariableType	= testCaseInfo.outVariableType;
 	VkShaderStageFlagBits		testedStage		= testCaseInfo.testedStage;
 
 	DE_ASSERT((testedStage == VK_SHADER_STAGE_VERTEX_BIT) || (testedStage == VK_SHADER_STAGE_FRAGMENT_BIT));
@@ -4218,10 +4957,10 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 
 	TypeSnippetsSP	inTypeSnippets		= specOpData.inTypeSnippets;
 	TypeSnippetsSP	outTypeSnippets		= specOpData.outTypeSnippets;
-	FloatType		inFloatType			= specOpData.inFloatType;
+	VariableType	inVariableType		= specOpData.inVariableType;
 
-	bool			outFp16WithoutStorage	= (outFloatType == FP16) && testCase.fp16Without16BitStorage;
-	bool			inFp16WithoutStorage	= (inFloatType == FP16) && testCase.fp16Without16BitStorage;
+	bool			outFp16WithoutStorage	= (outVariableType == FP16) && testCase.fp16Without16BitStorage;
+	bool			inFp16WithoutStorage	= (inVariableType == FP16) && testCase.fp16Without16BitStorage;
 
 	// There may be several reasons why we need the shaderFloat16 Vulkan feature.
 	bool needsShaderFloat16 = inFp16WithoutStorage || outFp16WithoutStorage;
@@ -4230,12 +4969,12 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 
 	// UnpackHalf2x16 is a corner case - it returns two 32-bit floats but
 	// internaly operates on fp16 and this type should be used by float controls
-	FloatType		inFloatTypeForCaps		= inFloatType;
+	VariableType	inVariableTypeForCaps	= inVariableType;
 	string			inFloatWidthForCaps		= inTypeSnippets->bitWidth;
 	if (testCase.operationId == OID_UPH_DENORM)
 	{
-		inFloatTypeForCaps	= FP16;
-		inFloatWidthForCaps	= "16";
+		inVariableTypeForCaps	= FP16;
+		inFloatWidthForCaps		= "16";
 	}
 
 	string behaviorCapability;
@@ -4247,8 +4986,9 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 										  behaviorExecutionMode);
 
 	// check which format features are needed
-	bool float16FeatureRequired = (inFloatType == FP16) || (outFloatType == FP16);
-	bool float64FeatureRequired = (inFloatType == FP64) || (outFloatType == FP64);
+	bool float16FeatureRequired	= (inVariableType == FP16) || (outVariableType == FP16);
+	bool float64FeatureRequired	= (inVariableType == FP64) || (outVariableType == FP64);
+	bool int64FeatureRequired	= ((inVariableType == UINT64) || (inVariableType == INT64)) || ((outVariableType == UINT64) || (outVariableType == INT64));
 
 	string vertExecutionMode;
 	string fragExecutionMode;
@@ -4311,10 +5051,10 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 			fragConstants		= outTypeSnippets->constantsDefinitionsSnippet;
 		}
 
-		if (outFloatType != FP32)
+		if (outVariableType != FP32)
 		{
 			fragTypes += f32TypeMinimalRequired;
-			if (inFloatType != FP32)
+			if (inVariableType != FP32)
 				vertTypes += f32TypeMinimalRequired;
 		}
 
@@ -4393,7 +5133,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 		vertTypes			= f32TypeMinimalRequired;
 		vertConstants		= "";
 
-		if ((outFloatType != FP32) && (inFloatType != FP32))
+		if ((outVariableType != FP32) && (inVariableType != FP32))
 			fragTypes += f32TypeMinimalRequired;
 
 		fragAnnotations += specOpData.annotations;
@@ -4520,25 +5260,26 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 	RGBA defaultColors[4] = { RGBA::white(), RGBA::red(), RGBA::green(), RGBA::blue() };
 
 	// construct input and output buffers of proper types
-	TypeValuesSP inTypeValues	= m_typeData.at(inFloatType).values;
-	TypeValuesSP outTypeValues	= m_typeData.at(outFloatType).values;
+	TypeValuesSP inTypeValues	= m_typeData.at(inVariableType).values;
+	TypeValuesSP outTypeValues	= m_typeData.at(outVariableType).values;
 	BufferSp inBufferSp			= inTypeValues->constructInputBuffer(testCase.input);
 	BufferSp outBufferSp		= outTypeValues->constructOutputBuffer(testCase.expectedOutput);
 
 	vkt::SpirVAssembly::GraphicsResources resources;
 	resources.inputs.push_back( Resource(inBufferSp, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 	resources.outputs.push_back(Resource(outBufferSp, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
-	resources.verifyIO = checkFloatsLUT[outFloatType];
+	resources.verifyIO = checkFloatsLUT[outVariableType];
 
 	StageToSpecConstantMap	noSpecConstants;
 	PushConstants			noPushConstants;
 	GraphicsInterfaces		noInterfaces;
 
 	VulkanFeatures vulkanFeatures;
-	setupVulkanFeatures(inFloatTypeForCaps,		// usualy same as inFloatType - different only for UnpackHalf2x16
-						outFloatType,
+	setupVulkanFeatures(inVariableTypeForCaps,		// usualy same as inVariableType - different only for UnpackHalf2x16
+						outVariableType,
 						testCase.behaviorFlags,
 						float64FeatureRequired,
+						int64FeatureRequired,
 						vulkanFeatures);
 	vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = true;
 
@@ -4584,7 +5325,7 @@ tcu::TestCaseGroup* createFloatControlsTestGroup (TestContext& testCtx, TestGrou
 
 	struct TestGroup
 	{
-		FloatType		floatType;
+		VariableType	variableType;
 		const char*		groupName;
 	};
 	TestGroup testGroups[] =
@@ -4600,8 +5341,8 @@ tcu::TestCaseGroup* createFloatControlsTestGroup (TestContext& testCtx, TestGrou
 		TestCaseGroup* typeGroup = new TestCaseGroup(testCtx, testGroup.groupName, "");
 		group->addChild(typeGroup);
 
-		groupBuilder->createOperationTests(typeGroup, "input_args", testGroup.floatType, true);
-		groupBuilder->createOperationTests(typeGroup, "generated_args", testGroup.floatType, false);
+		groupBuilder->createOperationTests(typeGroup, "input_args", testGroup.variableType, true);
+		groupBuilder->createOperationTests(typeGroup, "generated_args", testGroup.variableType, false);
 	}
 
 	groupBuilder->createSettingsTests(group.get());

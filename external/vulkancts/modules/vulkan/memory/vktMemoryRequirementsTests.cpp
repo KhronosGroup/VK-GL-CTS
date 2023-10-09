@@ -1050,6 +1050,14 @@ bool ImageMemoryRequirementsOriginal::isImageSupported (const Context& context, 
 {
 	DE_ASSERT(info.extent.width >= 1u && info.extent.height >= 1u && info.extent.depth >= 1u);
 
+#ifndef CTS_USES_VULKANSC
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance5"))
+	{
+		if (info.format == VK_FORMAT_A8_UNORM_KHR || info.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+			return false;
+	}
+#endif // CTS_USES_VULKANSC
+
 	if (isYCbCrFormat(info.format)
 		&& (info.imageType != VK_IMAGE_TYPE_2D
 			|| info.mipLevels != 1
@@ -1293,6 +1301,9 @@ tcu::TestStatus ImageMemoryRequirementsOriginal::execTest (Context& context, con
 		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
 		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_USCALED,
@@ -1300,6 +1311,9 @@ tcu::TestStatus ImageMemoryRequirementsOriginal::execTest (Context& context, con
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
 		VK_FORMAT_R8_SRGB,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_USCALED,
@@ -1965,13 +1979,24 @@ tcu::TestStatus testMultiplaneImages (Context& context, ImageTestParams params)
 		nonSparseCreateFlags.emplace_back(VK_IMAGE_CREATE_PROTECTED_BIT);
 	}
 #ifndef CTS_USES_VULKANSC
-	std::vector<VkImageCreateFlags> nonSparseCreateFlagsNoSC
+	std::vector<VkImageCreateFlags> nonSparseCreateFlagsNoSC;
+	if (context.isDeviceFunctionalitySupported(VK_NV_CORNER_SAMPLED_IMAGE_EXTENSION_NAME))
 	{
-		  VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV
-		, VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT
-		, VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT
-		, VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_QCOM
-	};
+		nonSparseCreateFlagsNoSC.push_back(VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV);
+	}
+	if (context.isDeviceFunctionalitySupported(VK_EXT_FRAGMENT_DENSITY_MAP_EXTENSION_NAME))
+	{
+		nonSparseCreateFlagsNoSC.push_back(VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT);
+	}
+	if (context.isDeviceFunctionalitySupported(VK_EXT_IMAGE_2D_VIEW_OF_3D_EXTENSION_NAME))
+	{
+		nonSparseCreateFlagsNoSC.push_back(VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT);
+	}
+	if (context.isDeviceFunctionalitySupported(VK_QCOM_FRAGMENT_DENSITY_MAP_OFFSET_EXTENSION_NAME))
+	{
+		nonSparseCreateFlagsNoSC.push_back(VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_QCOM);
+	}
+
 	auto isMultisampledRenderToSingleSampledEnabled = [&]() -> bool
 	{
 		bool enabled = false;

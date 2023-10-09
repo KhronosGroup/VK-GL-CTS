@@ -112,6 +112,50 @@ private:
 
 vk::VkShaderStageFlags ShaderObjectLinkInstance::getNextStage (vk::VkShaderStageFlagBits currentStage)
 {
+	if (currentStage == vk::VK_SHADER_STAGE_VERTEX_BIT && m_params.shaders.vertex == LINKED)
+	{
+		if (m_params.shaders.tesellation_control != UNUSED)
+		{
+			if (m_params.shaders.tesellation_control == LINKED)
+				return vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+		}
+		else if (m_params.shaders.geometry != UNUSED)
+		{
+			if (m_params.shaders.geometry == LINKED)
+				return vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+		}
+		else if (m_params.shaders.fragment != UNUSED)
+		{
+			if (m_params.shaders.fragment == LINKED)
+				return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+	}
+	else if (currentStage == vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT && m_params.shaders.tesellation_control == LINKED && m_params.shaders.tesellation_evaluation == LINKED)
+	{
+		return vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+	}
+	else if (currentStage == vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT && m_params.shaders.tesellation_evaluation == LINKED)
+	{
+		if (m_params.shaders.geometry != UNUSED)
+		{
+			if (m_params.shaders.geometry == LINKED)
+				return vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+		}
+		else if (m_params.shaders.fragment != UNUSED)
+		{
+			if (m_params.shaders.fragment == LINKED)
+				return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+	}
+	else if (currentStage == vk::VK_SHADER_STAGE_GEOMETRY_BIT && m_params.shaders.geometry == LINKED)
+	{
+		if (m_params.shaders.fragment != UNUSED)
+		{
+			if (m_params.shaders.fragment == LINKED)
+				return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+	}
+
 	if (currentStage == vk::VK_SHADER_STAGE_VERTEX_BIT)
 		return m_params.nextStages.vertNextStage;
 
@@ -140,6 +184,8 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate (void)
 	const auto							deviceExtensions			= vk::removeUnsupportedShaderObjectExtensions(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
 	const bool							tessellationSupported		= m_context.getDeviceFeatures().tessellationShader;
 	const bool							geometrySupported			= m_context.getDeviceFeatures().geometryShader;
+	const bool							taskSupported				= m_context.getMeshShaderFeatures().taskShader;
+	const bool							meshSupported				= m_context.getMeshShaderFeatures().meshShader;
 
 	vk::VkFormat						colorAttachmentFormat		= vk::VK_FORMAT_R8G8B8A8_UNORM;
 	const auto							subresourceRange			= makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -200,7 +246,7 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate (void)
 	}
 
 	vk::VkShaderCreateInfoEXT tescShaderCreateInfo = vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, tesc, tessellationSupported, geometrySupported);
-	vertShaderCreateInfo.nextStage = getNextStage(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
+	tescShaderCreateInfo.nextStage = getNextStage(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
 
 	if (m_params.shaders.tesellation_control == LINKED)
 	{
@@ -213,7 +259,7 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate (void)
 	}
 
 	vk::VkShaderCreateInfoEXT teseShaderCreateInfo = vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, tese, tessellationSupported, geometrySupported);
-	vertShaderCreateInfo.nextStage = getNextStage(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
+	teseShaderCreateInfo.nextStage = getNextStage(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
 
 	if (m_params.shaders.tesellation_evaluation == LINKED)
 	{
@@ -226,7 +272,7 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate (void)
 	}
 
 	vk::VkShaderCreateInfoEXT geomShaderCreateInfo = vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_GEOMETRY_BIT, geom, tessellationSupported, geometrySupported);
-	vertShaderCreateInfo.nextStage = getNextStage(vk::VK_SHADER_STAGE_GEOMETRY_BIT);
+	geomShaderCreateInfo.nextStage = getNextStage(vk::VK_SHADER_STAGE_GEOMETRY_BIT);
 
 	if (m_params.shaders.geometry == LINKED)
 	{
@@ -239,7 +285,7 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate (void)
 	}
 
 	vk::VkShaderCreateInfoEXT fragShaderCreateInfo = vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_FRAGMENT_BIT, frag, tessellationSupported, geometrySupported);
-	vertShaderCreateInfo.nextStage = getNextStage(vk::VK_SHADER_STAGE_FRAGMENT_BIT);
+	fragShaderCreateInfo.nextStage = getNextStage(vk::VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	if (m_params.shaders.fragment == LINKED)
 	{
@@ -408,7 +454,7 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate (void)
 			separateShaders.push_back(fragShader);
 		}
 
-		vk::bindGraphicsShaders(vk, *cmdBuffer, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
+		vk::bindGraphicsShaders(vk, *cmdBuffer, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, taskSupported, meshSupported);
 		if (!togetherShaders.empty())
 			vk.cmdBindShadersEXT(*cmdBuffer, (deUint32)togetherShaders.size(), togetherStages.data(), togetherShaders.data());
 		if (!separateShaders.empty())
@@ -421,9 +467,13 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate (void)
 			m_params.shaders.tesellation_control != UNUSED ? tescShader : VK_NULL_HANDLE,
 			m_params.shaders.tesellation_evaluation != UNUSED ? teseShader : VK_NULL_HANDLE,
 			m_params.shaders.geometry != UNUSED ? geomShader : VK_NULL_HANDLE,
-			m_params.shaders.fragment != UNUSED ? fragShader : VK_NULL_HANDLE);
+			m_params.shaders.fragment != UNUSED ? fragShader : VK_NULL_HANDLE,
+			taskSupported,
+			meshSupported);
 	}
 	vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, primitiveTopology, false);
+
+	bindNullTaskMeshShaders(vk, *cmdBuffer, m_context.getMeshShaderFeaturesEXT());
 
 	const vk::VkClearValue				clearValue = vk::makeClearValueColor({ 0.0f, 0.0f, 0.0f, 1.0f });
 	vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
@@ -525,10 +575,13 @@ void ShaderObjectLinkCase::checkSupport (Context& context) const
 {
 	context.requireDeviceFunctionality("VK_EXT_shader_object");
 
-	if (m_params.shaders.tesellation_control != UNUSED || m_params.shaders.tesellation_evaluation != UNUSED)
+	if (m_params.shaders.tesellation_control != UNUSED || m_params.shaders.tesellation_evaluation != UNUSED
+		|| (m_params.nextStages.vertNextStage | vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) > 0)
 		context.requireDeviceCoreFeature(vkt::DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
 
-	if (m_params.shaders.geometry != UNUSED)
+	if (m_params.shaders.geometry != UNUSED
+		|| (m_params.nextStages.vertNextStage | vk::VK_SHADER_STAGE_GEOMETRY_BIT) > 0
+		|| (m_params.nextStages.teseNextStage | vk::VK_SHADER_STAGE_GEOMETRY_BIT) > 0)
 		context.requireDeviceCoreFeature(vkt::DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 }
 
@@ -557,10 +610,18 @@ private:
 vk::VkShaderStageFlags MeshShaderObjectLinkInstance::getNextStage (vk::VkShaderStageFlagBits currentStage)
 {
 	if (currentStage == vk::VK_SHADER_STAGE_TASK_BIT_EXT)
+	{
+		if (m_params.shaders.task == LINKED)
+			return vk::VK_SHADER_STAGE_MESH_BIT_EXT;
 		return m_params.nextStages.taskNextStage;
+	}
 
 	if (currentStage == vk::VK_SHADER_STAGE_MESH_BIT_EXT)
+	{
+		if (m_params.shaders.mesh == LINKED)
+			return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
 		return m_params.nextStages.meshNextStage;
+	}
 
 	return 0;
 }
@@ -650,8 +711,8 @@ tcu::TestStatus MeshShaderObjectLinkInstance::iterate (void)
 		task.getSize(),									// size_t						codeSize;
 		task.getBinary(),								// const void*					pCode;
 		"main",											// const char*					pName;
-		0u,												// uint32_t						setLayoutCount;
-		DE_NULL,										// VkDescriptorSetLayout*		pSetLayouts;
+		1u,												// uint32_t						setLayoutCount;
+		&*descriptorSetLayout,							// VkDescriptorSetLayout*		pSetLayouts;
 		0u,												// uint32_t						pushConstantRangeCount;
 		DE_NULL,										// const VkPushConstantRange*	pPushConstantRanges;
 		DE_NULL,										// const VkSpecializationInfo*	pSpecializationInfo;
@@ -707,8 +768,8 @@ tcu::TestStatus MeshShaderObjectLinkInstance::iterate (void)
 		frag.getSize(),									// size_t						codeSize;
 		frag.getBinary(),								// const void*					pCode;
 		"main",											// const char*					pName;
-		0u,												// uint32_t						setLayoutCount;
-		DE_NULL,										// VkDescriptorSetLayout*		pSetLayouts;
+		1u,												// uint32_t						setLayoutCount;
+		&*descriptorSetLayout,							// VkDescriptorSetLayout*		pSetLayouts;
 		0u,												// uint32_t						pushConstantRangeCount;
 		DE_NULL,										// const VkPushConstantRange*	pPushConstantRanges;
 		DE_NULL,										// const VkSpecializationInfo*	pSpecializationInfo;
@@ -799,6 +860,7 @@ tcu::TestStatus MeshShaderObjectLinkInstance::iterate (void)
 	vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, true);
 	vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0, 1, &descriptorSet.get(), 0, DE_NULL);
 
+	bindNullRasterizationShaders(vk, *cmdBuffer, m_context.getDeviceFeatures());
 	vk::VkShaderStageFlagBits stages[] = {
 			vk::VK_SHADER_STAGE_TASK_BIT_EXT,
 			vk::VK_SHADER_STAGE_MESH_BIT_EXT,
@@ -1052,10 +1114,25 @@ tcu::TestCaseGroup* createShaderObjectLinkTests (tcu::TestContext& testCtx)
 			de::MovePtr<tcu::TestCaseGroup> bindGroup(new tcu::TestCaseGroup(testCtx, bindType.name, ""));
 			for (const auto& randomOrder : randomOrderTests)
 			{
+				NextStages nextStages = {};
+				if (shaders.tesellation_control != UNUSED) {
+					nextStages.vertNextStage |= vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+					nextStages.tescNextStage |= vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+				}
+				if (shaders.geometry != UNUSED) {
+					nextStages.vertNextStage |= vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+					nextStages.teseNextStage |= vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+				}
+				if (shaders.fragment != UNUSED) {
+					nextStages.vertNextStage |= vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+					nextStages.teseNextStage |= vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+					nextStages.geomNextStage |= vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+				}
+
 				TestParams params = {
 					shaders,				// Shaders		shaders;
 					randomOrder,			// bool			randomOrder;
-					{ 0u, 0u, 0u, 0u, },	// NextStages	nextStages;
+					nextStages,				// NextStages	nextStages;
 					false,					// bool			separateLinked;
 					bindType.bindType,		// bool			separateBind;
 				};
@@ -1075,8 +1152,8 @@ tcu::TestCaseGroup* createShaderObjectLinkTests (tcu::TestContext& testCtx)
 						vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
 						vk::VK_SHADER_STAGE_GEOMETRY_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
 						vk::VK_SHADER_STAGE_FRAGMENT_BIT, },																				// NextStages	nextStages;
-					true,																													// bool		separateLinked;
-					ALL,																													// BindType	separateBind
+					true,																													// bool         separateLinked;
+					ALL,																													// BindType		separateBind
 				};
 
 				bindGroup->addChild(new ShaderObjectLinkCase(testCtx, "separate_link", "", params));
@@ -1089,8 +1166,8 @@ tcu::TestCaseGroup* createShaderObjectLinkTests (tcu::TestContext& testCtx)
 	const struct
 	{
 		Shaders		shaders;
-		NextStages nextStages;
-		const char* name;
+		NextStages	nextStages;
+		const char*	name;
 	} nextStageTests[] =
 	{
 		{

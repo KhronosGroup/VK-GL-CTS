@@ -648,11 +648,14 @@ class API:
 			for memberNode in typeNode:
 				if memberNode.tag != "member":
 					continue
-				# handle enum nodes that can be used for arrays
+				# handle enum nodes that can be used for array dimensions
 				arraySizeList = []
 				for node in memberNode:
 					if node.tag == "enum":
 						arraySizeList.append(node.text)
+						# check if there are array dimension that are not enums
+						if '[' in node.tail and len(node.tail) > 2:
+							arraySizeList += node.tail.replace(']', ' ').replace('[', ' ').split()
 				# handle additional text after name tag; it can represent array
 				# size like in VkPipelineFragmentShadingRateEnumStateCreateInfoNV
 				# or number of bits like in VkAccelerationStructureInstanceKHR
@@ -664,7 +667,7 @@ class API:
 						fieldWidth = nameTail.replace(':', '').replace(' ', '')
 					elif '[' in nameTail and ']' in nameTail:
 						nameTail = nameTail.replace(']', ' ').replace('[', ' ')
-						arraySizeList = nameTail.split()
+						arraySizeList = nameTail.split() + arraySizeList
 				# handle additional text after type tag; it can represent pointers like *pNext
 				memberTypeNode	= memberNode.find("type")
 				pointer			= memberTypeNode.tail.strip() if memberTypeNode.tail is not None else None
@@ -740,6 +743,12 @@ class API:
 				typesNode = rootChild
 				for typeItem in typesNode:
 					self.readType(typeItem)
+
+		# Verify that promotedto extensions are supported by the api
+		for ext in self.extensions:
+			if ext.promotedto is not None and "VK_VERSION" not in ext.promotedto:
+				if not any(x.name == ext.promotedto for x in self.extensions):
+					ext.promotedto = None
 
 	def postProcess (self):
 
@@ -1447,8 +1456,22 @@ def getPromotedFunctions (api):
 	promotedFunctions = collections.defaultdict(lambda: list())
 	for feature in api.features:
 		versionSplit = feature.name.split('_')
-		apiMajor = versionSplit[-2]
-		apiMinor = versionSplit[-1]
+		apiMajor = int(versionSplit[-2])
+		apiMinor = int(versionSplit[-1])
+		apiPrefix = '_'.join(versionSplit[:-2])
+		if apiNum == 0 and apiPrefix != 'VK_VERSION':
+			continue
+		if apiNum == 1 and apiPrefix == 'VK_VERSION':
+			# Map of "standard" Vulkan versions to VulkanSC version.
+			stdToSCMap = {
+				(1, 0):	(1, 0),
+				(1, 1): (1, 0),
+				(1, 2): (1, 0),
+			}
+			mapKey = (apiMajor, apiMinor)
+			if mapKey not in stdToSCMap:
+				continue
+			(apiMajor, apiMinor) = stdToSCMap[mapKey]
 		apituple = (apiNum, apiMajor, apiMinor)
 		for featureRequirement in feature.requirementsList:
 			for promotedFun in featureRequirement.commandList:
@@ -1717,11 +1740,10 @@ def writeStrUtilImpl (api, filename):
 					valFmt = "getCharPtrStr(value.%s)" % member.name
 				elif member.type == PLATFORM_TYPE_NAMESPACE + "::Win32LPCWSTR":
 					valFmt = "getWStr(value.%s)" % member.name
-				elif len(member.arraySizeList) > 0:
-					singleDimensional = len(member.arraySizeList) == 1
+				elif len(member.arraySizeList) == 1:
 					if member.name in ["extensionName", "deviceName", "layerName", "description"]:
 						valFmt = "(const char*)value.%s" % member.name
-					elif singleDimensional and (member.type == 'char' or member.type == 'uint8_t'):
+					elif member.type == 'char' or member.type == 'uint8_t':
 						newLine = "'\\n' << "
 						valFmt	= "tcu::formatArray(tcu::Format::HexIterator<%s>(DE_ARRAY_BEGIN(value.%s)), tcu::Format::HexIterator<%s>(DE_ARRAY_END(value.%s)))" % (member.type, member.name, member.type, member.name)
 					else:
@@ -1732,6 +1754,18 @@ def writeStrUtilImpl (api, filename):
 						newLine = "'\\n' << "
 						valFmt	= "tcu::formatArray(DE_ARRAY_BEGIN(value.%s), %s)" % (member.name, endIter)
 					memberName = member.name
+				elif len(member.arraySizeList) > 1:
+					yield f"\ts << \"\\t{member.name} = \" << '\\n';"
+					dim = 0
+					index = ''
+					dimensionCount = len(member.arraySizeList)
+					while dim < dimensionCount-1:
+						yield f"\tfor(deUint32 i{dim} = 0 ; i{dim} < {member.arraySizeList[dim]} ; ++i{dim})"
+						index += f"[i{dim}]"
+						dim +=1
+					yield f"\t\ts << tcu::formatArray(DE_ARRAY_BEGIN(value.{member.name}{index}), DE_ARRAY_END(value.{member.name}{index})) << '\\n';"
+					# move to next member
+					continue
 				else:
 					valFmt = "value.%s" % member.name
 				yield ("\ts << \"\\t%s = \" << " % memberName) + newLine + valFmt + " << '\\n';"
@@ -2973,12 +3007,54 @@ def writeDeviceProperties(api, dpDefs, filename):
 	stream.append('} // vk\n')
 	writeInlFile(filename, INL_HEADER, stream)
 
+UNSUFFIXED_STRUCTURES = [
+	"CornerSampledImage",
+	"ShaderSMBuiltins",
+	"ShadingRateImage",
+	"RayTracing",
+	"RepresentativeFragmentTest",
+	"ComputeShaderDerivatives",
+	"MeshShader",
+	"ShaderImageFootprint",
+	"ExclusiveScissor",
+	"DedicatedAllocationImageAliasing",
+	"CoverageReductionMode",
+	"DeviceGeneratedCommands",
+	"InheritedViewportScissor",
+	"PresentBarrier",
+	"DiagnosticsConfig",
+	"FragmentShadingRateEnums",
+	"RayTracingMotionBlur",
+	"ExternalMemoryRDMA",
+	"CopyMemoryIndirect",
+	"MemoryDecompression",
+	"LinearColorAttachment",
+	"OpticalFlow",
+	"RayTracingInvocationReorder",
+	"DisplacementMicromap"]
+
+def deviceFeaturesOrPropertiesGetter(name):
+	result = name[16:] # Remove VkPhysicalDevice prefix
+	if result[-3:] == "KHR":
+		result = result[0:-3]
+	elif result[-2:] == "NV":
+		suffix = result[-2:]
+		result = result[0:-2]
+		if result[-8:] == "Features":
+			infix = result[-8:]
+			result = result[0:-8]
+		elif result[-10:] == "Properties":
+			infix = result[-10:]
+			result = result[0:-10]
+		if (result in UNSUFFIXED_STRUCTURES):
+			suffix = ""
+		result = result + infix + suffix
+	return result
+
 def genericDeviceFeaturesWriter(dfDefs, pattern, filename):
 	stream = []
 	for _, _, _, extStruct, _, _, _ in dfDefs:
-		nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("NV", "")
-		if extStruct == "VkPhysicalDeviceCooperativeMatrixFeaturesNV":
-			nameSubStr += "NV"
+		nameSubStr = deviceFeaturesOrPropertiesGetter(extStruct)
 		stream.append(pattern.format(extStruct, nameSubStr))
 	writeInlFile(filename, INL_HEADER, indentLines(stream))
 
@@ -2997,11 +3073,7 @@ def writeDeviceFeaturesContextDefs(dfDefs, filename):
 def genericDevicePropertiesWriter(dfDefs, pattern, filename):
 	stream = []
 	for _, _, _, extStruct, _, _, _ in dfDefs:
-		nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("NV", "")
-		if extStruct == "VkPhysicalDeviceRayTracingPropertiesNV":
-			nameSubStr += "NV"
-		if extStruct == "VkPhysicalDeviceCooperativeMatrixPropertiesNV":
-			nameSubStr += "NV"
+		nameSubStr = deviceFeaturesOrPropertiesGetter(extStruct)
 		stream.append(pattern.format(extStruct, nameSubStr))
 	writeInlFile(filename, INL_HEADER, indentLines(stream))
 
@@ -3576,27 +3648,12 @@ def writeGetDeviceProcAddr(api, filename):
 	const Unique<VkDevice>					device			(createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
 	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion());
 
-	const std::vector<std::string> loaderExceptions{
-		"vkSetDebugUtilsObjectNameEXT",
-		"vkSetDebugUtilsObjectTagEXT",
-		"vkQueueBeginDebugUtilsLabelEXT",
-		"vkQueueEndDebugUtilsLabelEXT",
-		"vkQueueInsertDebugUtilsLabelEXT",
-		"vkCmdBeginDebugUtilsLabelEXT",
-		"vkCmdEndDebugUtilsLabelEXT",
-		"vkCmdInsertDebugUtilsLabelEXT",
-	};
-
 	const std::vector<std::string> functions{'''
 	testBlockEnd = '''	};
 
 	bool fail = false;
 	for (const auto& function : functions)
 	{
-		if (std::find(loaderExceptions.begin(), loaderExceptions.end(), function) != loaderExceptions.end())
-		{
-			continue;
-		}
 		if (deviceDriver.getDeviceProcAddr(device.get(), function.c_str()) != DE_NULL)
 		{
 			fail = true;
@@ -3638,7 +3695,7 @@ def writeGetDeviceProcAddr(api, filename):
 	writeInlFile(filename, INL_HEADER, stream)
 
 def writeConformanceVersions(filename):
-    # get list of all vulkan/vulkansc tags from git
+	# get list of all vulkan/vulkansc tags from git
 	listOfTags = os.popen("git ls-remote -t").read()
 	vkMatches = re.findall("vulkan-cts-(\d).(\d).(\d).(\d)", listOfTags, re.M)
 	scMatches = re.findall("vulkansc-cts-(\d).(\d).(\d).(\d)", listOfTags, re.M)
@@ -3652,10 +3709,10 @@ def writeConformanceVersions(filename):
 		if "withdrawal" not in fileName:
 			continue
 		fileContent	= readFile(fileName)
-        # get date when releases are withdrawn
+		# get date when releases are withdrawn
 		match = re.search(r"(20\d\d)-(\d\d)-(\d\d).+ withdrawn", fileContent, re.IGNORECASE)
 		if match is not None:
-            # check if announcement refers to date in the past
+			# check if announcement refers to date in the past
 			if today > datetime.date(int(match[1]), int(match[2]), int(match[3])):
 				# get names of withdrawn branches
 				vkBranchMatches = re.findall("vulkan(\w\w)?-cts-(\d).(\d).(\d).(\d)", fileContent, re.M)
@@ -3670,12 +3727,12 @@ def writeConformanceVersions(filename):
 		addedVersions = set()
 		for v in reversed(versionsToAdd):
 			# add only unique versions; ignore duplicates (e.g. with "-rc1", "-rc2" postfix);
-            # also add versions that are greater then maximal withdrawn version
+			# also add versions that are greater then maximal withdrawn version
 			if v in addedVersions or v <= maxWithdrawnVersion:
 				continue
 			addedVersions.add(v)
 			stream.append(f'\tmakeConformanceVersion({v[0]}, {v[1]}, {v[2]}, {v[3]}),')
-    # save array with versions
+	# save array with versions
 	stream = ['static const VkConformanceVersion knownConformanceVersions[]',\
 			  '{',\
 			  '#ifndef CTS_USES_VULKANSC']
@@ -3777,7 +3834,7 @@ if __name__ == "__main__":
 	writeApiExtensionDependencyInfo			(api, os.path.join(outputPath, "vkApiExtensionDependencyInfo.inl"))
 	writeEntryPointValidation				(api, os.path.join(outputPath, "vkEntryPointValidation.inl"))
 	writeGetDeviceProcAddr					(api, os.path.join(outputPath, "vkGetDeviceProcAddr.inl"))
-	writeConformanceVersions                (     os.path.join(outputPath, "vkKnownConformanceVersions.inl"))
+	writeConformanceVersions				(     os.path.join(outputPath, "vkKnownConformanceVersions.inl"))
 
 	# NOTE: when new files are generated then they should also be added to the
 	# vk-gl-cts\external\vulkancts\framework\vulkan\CMakeLists.txt outputs list

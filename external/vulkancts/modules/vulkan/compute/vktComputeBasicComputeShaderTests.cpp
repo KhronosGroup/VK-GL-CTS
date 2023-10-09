@@ -2642,7 +2642,8 @@ public:
 											const tcu::IVec3&	localsize,
 											const tcu::IVec3&	worksize,
 											const tcu::IVec3&	splitsize,
-											const vk::ComputePipelineConstructionType computePipelineConstructionType);
+											const vk::ComputePipelineConstructionType computePipelineConstructionType,
+											const bool			useMaintenance5);
 
 	virtual void		checkSupport		(Context& context) const;
 	void				initPrograms		(SourceCollections& sourceCollections) const;
@@ -2654,6 +2655,7 @@ private:
 	const tcu::IVec3					m_workSize;
 	const tcu::IVec3					m_splitSize;
 	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+	const bool							m_useMaintenance5;
 };
 
 class DispatchBaseTestInstance : public ComputeTestInstance
@@ -2664,7 +2666,8 @@ public:
 																const tcu::IVec3&	localsize,
 																const tcu::IVec3&	worksize,
 																const tcu::IVec3&	splitsize,
-																const vk::ComputePipelineConstructionType computePipelineConstructionType);
+																const vk::ComputePipelineConstructionType computePipelineConstructionType,
+																const bool			useMaintenance5);
 
 	bool							isInputVectorValid			(const tcu::IVec3& small, const tcu::IVec3& big);
 	tcu::TestStatus					iterate						(void);
@@ -2674,6 +2677,7 @@ private:
 	const tcu::IVec3					m_localSize;
 	const tcu::IVec3					m_workSize;
 	const tcu::IVec3					m_splitWorkSize;
+	const bool							m_useMaintenance5;
 };
 
 DispatchBaseTest::DispatchBaseTest (tcu::TestContext&	testCtx,
@@ -2683,19 +2687,23 @@ DispatchBaseTest::DispatchBaseTest (tcu::TestContext&	testCtx,
 									const tcu::IVec3&	localsize,
 									const tcu::IVec3&	worksize,
 									const tcu::IVec3&	splitsize,
-									const vk::ComputePipelineConstructionType computePipelineConstructionType)
+									const vk::ComputePipelineConstructionType computePipelineConstructionType,
+									const bool			useMaintenance5)
 	: TestCase		(testCtx, name, description)
 	, m_numValues	(numValues)
 	, m_localSize	(localsize)
 	, m_workSize	(worksize)
 	, m_splitSize	(splitsize)
 	, m_computePipelineConstructionType(computePipelineConstructionType)
+	, m_useMaintenance5	(useMaintenance5)
 {
 }
 
 void DispatchBaseTest::checkSupport (Context& context) const
 {
 	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
+	if (m_useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 }
 
 void DispatchBaseTest::initPrograms (SourceCollections& sourceCollections) const
@@ -2726,7 +2734,7 @@ void DispatchBaseTest::initPrograms (SourceCollections& sourceCollections) const
 
 TestInstance* DispatchBaseTest::createInstance (Context& context) const
 {
-	return new DispatchBaseTestInstance(context, m_numValues, m_localSize, m_workSize, m_splitSize, m_computePipelineConstructionType);
+	return new DispatchBaseTestInstance(context, m_numValues, m_localSize, m_workSize, m_splitSize, m_computePipelineConstructionType, m_useMaintenance5);
 }
 
 DispatchBaseTestInstance::DispatchBaseTestInstance (Context& context,
@@ -2734,13 +2742,15 @@ DispatchBaseTestInstance::DispatchBaseTestInstance (Context& context,
 													const tcu::IVec3&	localsize,
 													const tcu::IVec3&	worksize,
 													const tcu::IVec3&	splitsize,
-													const vk::ComputePipelineConstructionType computePipelineConstructionType)
+													const vk::ComputePipelineConstructionType computePipelineConstructionType,
+													const bool			useMaintenance5)
 
 	: ComputeTestInstance				(context, computePipelineConstructionType)
 	, m_numValues						(numValues)
 	, m_localSize						(localsize)
 	, m_workSize						(worksize)
 	, m_splitWorkSize					(splitsize)
+	, m_useMaintenance5		(useMaintenance5)
 {
 	// For easy work distribution across physical devices:
 	// WorkSize should be a multiple of SplitWorkSize only in the X component
@@ -2840,6 +2850,19 @@ tcu::TestStatus DispatchBaseTestInstance::iterate (void)
 	ComputePipelineWrapper			pipeline(vk, device, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp"));
 	pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
 	pipeline.setPipelineCreateFlags(VK_PIPELINE_CREATE_DISPATCH_BASE);
+
+#ifndef CTS_USES_VULKANSC
+	if (m_useMaintenance5)
+	{
+		VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
+		pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_DISPATCH_BASE_BIT_KHR;
+		pipeline.setPipelineCreatePNext(&pipelineFlags2CreateInfo);
+		pipeline.setPipelineCreateFlags(0);
+	}
+#else
+	DE_UNREF(m_useMaintenance5);
+#endif // CTS_USES_VULKANSC
+
 	pipeline.buildPipeline();
 
 	const VkBufferMemoryBarrier hostWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *buffer, 0ull, bufferSizeBytes);
@@ -4414,7 +4437,10 @@ tcu::TestCaseGroup* createBasicDeviceGroupComputeShaderTests (tcu::TestContext& 
 {
 	de::MovePtr<tcu::TestCaseGroup> deviceGroupComputeTests(new tcu::TestCaseGroup(testCtx, "device_group", "Basic device group compute tests"));
 
-	deviceGroupComputeTests->addChild(new DispatchBaseTest(testCtx,	"dispatch_base",	"Compute shader with base groups",				32768,	tcu::IVec3(4,2,4),	tcu::IVec3(16,8,8),	tcu::IVec3(4,8,8), computePipelineConstructionType));
+	deviceGroupComputeTests->addChild(new DispatchBaseTest(testCtx,	"dispatch_base",	"Compute shader with base groups",				32768,	tcu::IVec3(4,2,4),	tcu::IVec3(16,8,8),	tcu::IVec3(4,8,8), computePipelineConstructionType, false));
+#ifndef CTS_USES_VULKANSC
+	deviceGroupComputeTests->addChild(new DispatchBaseTest(testCtx, "dispatch_base_maintenance5",	"Compute shader with base groups",			32768, tcu::IVec3(4, 2, 4), tcu::IVec3(16, 8, 8), tcu::IVec3(4, 8, 8), computePipelineConstructionType, true));
+#endif
 	deviceGroupComputeTests->addChild(new DeviceIndexTest(testCtx,	"device_index",		"Compute shader using deviceIndex in SPIRV",	96,		tcu::IVec3(3,2,1),	tcu::IVec3(2,4,1), computePipelineConstructionType));
 
 	return deviceGroupComputeTests.release();

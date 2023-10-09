@@ -90,13 +90,17 @@ typedef PointerWrapper<VkPipelineRenderingCreateInfoKHR> PipelineRenderingCreate
 typedef PointerWrapper<VkPipelineCreationFeedbackCreateInfoEXT> PipelineCreationFeedbackCreateInfoWrapper;
 typedef ConstPointerWrapper<VkPipelineShaderStageModuleIdentifierCreateInfoEXT> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
 typedef PointerWrapper<VkPipelineRepresentativeFragmentTestStateCreateInfoNV> PipelineRepresentativeFragmentTestCreateInfoWrapper;
+typedef VkPipelineCreateFlags2KHR PipelineCreateFlags2;
 #else
 typedef PointerWrapper<void> PipelineViewportDepthClipControlCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRenderingCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineCreationFeedbackCreateInfoWrapper;
 typedef ConstPointerWrapper<void> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRepresentativeFragmentTestCreateInfoWrapper;
+typedef uint64_t PipelineCreateFlags2;
 #endif
+
+PipelineCreateFlags2 translateCreateFlag(VkPipelineCreateFlags flagToTranslate);
 
 class PipelineLayoutWrapper
 {
@@ -339,6 +343,10 @@ public:
 	// Specify the representative fragment test state.
 	GraphicsPipelineWrapper&	setRepresentativeFragmentTestState	(PipelineRepresentativeFragmentTestCreateInfoWrapper representativeFragmentTestState);
 
+	// Specifying how a pipeline is created using VkPipelineCreateFlags2CreateInfoKHR.
+	GraphicsPipelineWrapper&	setPipelineCreateFlags2				(PipelineCreateFlags2 pipelineFlags2);
+
+
 	// Specify topology that is used by default InputAssemblyState in vertex input state. This needs to be
 	// specified only when there is no custom InputAssemblyState provided in setupVertexInputState and when
 	// topology is diferent then VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST which is used by default.
@@ -507,6 +515,7 @@ public:
 																	 void*												pNext = DE_NULL);
 	// Create shader objects if used
 #ifndef CTS_USES_VULKANSC
+	vk::VkShaderStageFlags		getNextStages						(vk::VkShaderStageFlagBits shaderStage, bool tessellationShaders, bool geometryShaders, bool link);
 	vk::VkShaderCreateInfoEXT	makeShaderCreateInfo				(VkShaderStageFlagBits stage, ShaderWrapper& shader, bool link, bool binary);
 	void						createShaders						(bool linked, bool binary);
 #endif

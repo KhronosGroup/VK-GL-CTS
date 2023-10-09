@@ -83,6 +83,7 @@ struct TestParams
 	deUint32						numViews;					// Number of views for multiview.
 	bool							explicitDeclarations;		// Explicitly declare the input and output blocks or not.
 	bool							useSSBO;					// Write to an SSBO from the selected stages.
+	bool							useDeviceIndexAsViewIndex;	// Treat gl_DeviceIndex shader input variable like gl_ViewIndex.
 
 	// Commonly used checks.
 	bool tessellation	(void) const { return (selectedStages & (STAGE_TESS_CONTROL | STAGE_TESS_EVALUATION));	}
@@ -149,18 +150,33 @@ void NoPositionCase::initPrograms (vk::SourceCollections& programCollection) con
 
 	const bool multiview = (m_params.numViews > 1u);
 
-	if (multiview)
+	if (m_params.useDeviceIndexAsViewIndex)
+		extensions = "#extension GL_EXT_device_group : require\n";
+	else if (multiview)
 		extensions = "#extension GL_EXT_multiview : require\n";
 
 	if (m_params.useSSBO)
 	{
-		const auto stageCountStr	= de::toString(kStageCount);
 		const auto ssboElementCount	= kStageCount * m_params.numViews;
 		ssboDecl = "layout (set=0, binding=0, std430) buffer StorageBlock { uint counters[" + de::toString(ssboElementCount) + "]; } ssbo;\n";
 
 		const std::array<std::string*, kStageCount> writeStrings = {{ &vertSSBOWrite, &tescSSBOWrite, &teseSSBOWrite, &geomSSBOWrite }};
-		for (size_t i = 0; i < writeStrings.size(); ++i)
-			*writeStrings[i] = "    atomicAdd(ssbo.counters[" + de::toString(i) + (multiview ? (" + uint(gl_ViewIndex) * " + stageCountStr) : "") + "], 1u);\n";
+		for (size_t stageNum = 0; stageNum < writeStrings.size(); ++stageNum)
+		{
+			std::ostringstream s;
+			s << "    atomicAdd(ssbo.counters[" << stageNum;
+			if (multiview || m_params.useDeviceIndexAsViewIndex)
+			{
+				s << " * " << m_params.numViews << " + ";
+				if (m_params.useDeviceIndexAsViewIndex)
+					s << "gl_DeviceIndex";
+				else
+					s << "gl_ViewIndex";
+			}
+			s << "], 1);\n";
+			s.flush();
+			*writeStrings[stageNum] = s.str();
+		}
 	}
 
 	if (m_params.selectedStages & STAGE_VERTEX)
@@ -528,7 +544,9 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 	const VkRenderPassCreateInfo renderPassInfo =
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	//	VkStructureType					sType;
-		multiviewInfo.get(),						//	const void*						pNext;
+		(m_params.numViews > 1u)
+			? multiviewInfo.get()
+			: nullptr,								//	const void*						pNext;
 		0u,											//	VkRenderPassCreateFlags			flags;
 		1u,											//	deUint32						attachmentCount;
 		&colorAttachment,							//	const VkAttachmentDescription*	pAttachments;
@@ -556,8 +574,10 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 	const std::vector<VkViewport>	viewports		{ makeViewport(extent) };
 	const std::vector<VkRect2D>		scissors		{ makeRect2D(extent) };
 
-	const auto				primitiveTopology	(tess ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-	GraphicsPipelineWrapper	pipeline			(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
+	const auto						primitiveTopology	(tess ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	const VkPipelineCreateFlags		createFlags		=	m_params.useDeviceIndexAsViewIndex ? VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT : VkPipelineCreateFlagBits(0u);
+	GraphicsPipelineWrapper			pipeline		(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(),
+													 m_params.pipelineConstructionType, createFlags);
 	pipeline.setDefaultTopology(primitiveTopology)
 			.setDefaultRasterizationState()
 			.setDefaultMultisampleState()
@@ -614,8 +634,7 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 	const auto pixelSize	= static_cast<deUint32>(tcu::getPixelSize(tcuFormat));
 	const auto layerPixels	= extent.width * extent.height;
 	const auto layerBytes	= layerPixels * pixelSize;
-	const auto totalPixels	= layerPixels * m_params.numViews;
-	const auto totalBytes	= totalPixels * pixelSize;
+	const auto totalBytes	= layerBytes * m_params.numViews;
 
 	const auto verificationBufferInfo = makeBufferCreateInfo(totalBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 	BufferWithMemory verificationBuffer(vkd, device, alloc, verificationBufferInfo, MemoryRequirement::HostVisible);
@@ -703,31 +722,34 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 		auto&		ssboAlloc			= ssboBuffer->getAllocation();
 		invalidateAlloc(vkd, device, ssboAlloc);
 
-		std::vector<deUint32> ssboCounters;
-		ssboCounters.resize(ssboElementCount);
+		std::vector<deUint32> ssboCounters(ssboElementCount);
 		DE_ASSERT(ssboBufferSizeSz == ssboCounters.size() * sizeof(decltype(ssboCounters)::value_type));
 		deMemcpy(ssboCounters.data(), ssboAlloc.getHostPtr(), ssboBufferSizeSz);
 
 		// Minimum accepted counter values.
-		// Vertex, Tesellation Evaluation, Tessellation Control, Geometry.
+		// Vertex, Tessellation Control, Tesellation Evaluation, Geometry.
 		deUint32 expectedCounters[kStageCount] = { 3u, 3u, 3u, 1u };
 
 		// Verify.
-		for (deUint32 viewIdx = 0u; viewIdx < m_params.numViews; ++viewIdx)
 		for (deUint32 stageIdx = 0u; stageIdx < kStageCount; ++stageIdx)
+		for (deUint32 viewIdx = 0u; viewIdx < m_params.numViews; ++viewIdx)
 		{
 			// If the stage is not selected, the expected value is exactly zero. Otherwise, it must be at least as expectedCounters.
 			const deUint32	minVal		= ((m_params.selectedStages & (1u << stageIdx)) ? expectedCounters[stageIdx] : 0u);
-			const deUint32	storedVal	= ssboCounters[stageIdx + viewIdx * kStageCount];
-			const bool		ok			= ((minVal == 0u) ? (storedVal == minVal) : (storedVal >= minVal));
-
+			const deUint32	storedVal	= ssboCounters[stageIdx * m_params.numViews + viewIdx];
+			const bool		ok			= ((minVal == 0u)
+										   ? true /* continue */
+										   : (storedVal == minVal)
+											 ? true
+											 // All shaders must process at least gl_ViewIndex|gl_DeviceIndex times.
+											 : ((storedVal % minVal) == 0u));
 			if (!ok)
 			{
 				const char* stageNames[kStageCount] =
 				{
 					"vertex",
-					"tessellation evaluation",
 					"tessellation control",
+					"tessellation evaluation",
 					"geometry",
 				};
 
@@ -761,13 +783,28 @@ tcu::TestCaseGroup*	createNoPositionTests (tcu::TestContext& testCtx, vk::Pipeli
 			const std::string ssboGroupName (useSSBO ? "ssbo_writes" : "basic");
 			de::MovePtr<tcu::TestCaseGroup> ssboGroup (new tcu::TestCaseGroup(testCtx, ssboGroupName.c_str(), ""));
 
-			for (deUint32 viewCount = 1u; viewCount <= 2u; ++viewCount)
+			const uint32_t maxTestedViewCount = useSSBO ? 3u : 2u;
+			for (deUint32 viewCount = 1u; viewCount <= maxTestedViewCount; ++viewCount)
 			{
-				const std::string				viewGroupName	((viewCount == 1u) ? "single_view" : "multiview");
+				auto makeViewGroupName = [&]() -> std::string
+				{
+					switch (viewCount)
+					{
+						case 1u: return "single_view";
+						case 2u: return "multiview";
+						case 3u: return "device_index_as_view_index";
+					}
+					DE_ASSERT(false);
+					return std::string();
+				};
+
+				const std::string	viewGroupName				= makeViewGroupName();
+				const bool			useDeviceIndexAsViewIndex	= (3u == viewCount);
+
 				// Shader objects do not support multiview
 				if (viewCount != 1 && vk::isConstructionTypeShaderObject(pipelineConstructionType))
 					continue;
-				de::MovePtr<tcu::TestCaseGroup>	viewGroup		(new tcu::TestCaseGroup(testCtx, viewGroupName.c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup>	viewGroup(new tcu::TestCaseGroup(testCtx, viewGroupName.c_str(), ""));
 
 				for (ShaderStageFlags stages = 0u; stages < STAGE_MASK_COUNT; ++stages)
 				{
@@ -788,7 +825,15 @@ tcu::TestCaseGroup*	createNoPositionTests (tcu::TestContext& testCtx, vk::Pipeli
 						if (stages & STAGE_TESS_EVALUATION)	testName += (testName.empty() ? "" : "_") + std::string("e") + ((writeMask & STAGE_TESS_EVALUATION)	? "1" : "0");
 						if (stages & STAGE_GEOMETRY)		testName += (testName.empty() ? "" : "_") + std::string("g") + ((writeMask & STAGE_GEOMETRY)		? "1" : "0");
 
-						TestParams params = { pipelineConstructionType, stages, writeMask, viewCount, explicitDeclarations, true };
+						TestParams params{};
+						params.pipelineConstructionType		= pipelineConstructionType;
+						params.selectedStages				= stages;
+						params.writeStages					= writeMask;
+						params.numViews						= viewCount;
+						params.explicitDeclarations			= explicitDeclarations;
+						params.useSSBO						= useSSBO;
+						params.useDeviceIndexAsViewIndex	= useDeviceIndexAsViewIndex;
+
 						viewGroup->addChild(new NoPositionCase(testCtx, testName, "", params));
 					}
 				}

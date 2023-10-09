@@ -616,12 +616,17 @@ TestInstance* ComplexTaskDataCase::createInstance (Context& context) const
 class SinglePointCase : public MeshShaderMiscCase
 {
 public:
-					SinglePointCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
+					SinglePointCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params, bool writePointSize = true)
 						: MeshShaderMiscCase (testCtx, name, description, std::move(params))
+						, m_writePointSize(writePointSize)
 					{}
 
+	void			checkSupport			(Context& context) const override;
 	void			initPrograms			(vk::SourceCollections& programCollection) const override;
 	TestInstance*	createInstance			(Context& context) const override;
+
+protected:
+	const bool		m_writePointSize = true;
 };
 
 class SinglePointInstance : public MeshShaderMiscInstance
@@ -633,6 +638,14 @@ public:
 
 	void	generateReferenceLevel	() override;
 };
+
+void SinglePointCase::checkSupport (Context& context) const
+{
+	MeshShaderMiscCase::checkSupport(context);
+
+	if (!m_writePointSize)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+}
 
 TestInstance* SinglePointCase::createInstance (Context& context) const
 {
@@ -662,8 +675,13 @@ void SinglePointCase::initPrograms (vk::SourceCollections& programCollection) co
 		<< "{\n"
 		<< "    SetMeshOutputsEXT(1u, 1u);\n"
 		<< "    pointColor[0] = vec4(0.0f, 1.0f, 1.0f, 1.0f);\n"
-		<< "    gl_MeshVerticesEXT[0].gl_Position = vec4(0.0f, 0.0f, 0.0f, 1.0f);\n"
-		<< "    gl_MeshVerticesEXT[0].gl_PointSize = 1.0f;\n"
+		<< "    gl_MeshVerticesEXT[0].gl_Position = vec4(0.0f, 0.0f, 0.0f, 1.0f);\n";
+	if (m_writePointSize)
+	{
+	mesh
+		<< "    gl_MeshVerticesEXT[0].gl_PointSize = 1.0f;\n";
+	}
+	mesh
 		<< "    gl_PrimitivePointIndicesEXT[0] = 0;\n"
 		<< "}\n"
 		;
@@ -4909,6 +4927,17 @@ tcu::TestCaseGroup* createMeshShaderMiscTestsEXT (tcu::TestContext& testCtx)
 			/*height*/		7u));	// Idem.
 
 		miscTests->addChild(new SinglePointCase(testCtx, "single_point", "Draw a single point", std::move(paramsPtr)));
+	}
+
+	{
+		ParamsPtr paramsPtr (new MiscTestParams(
+			/*taskCount*/	tcu::Nothing,
+			/*meshCount*/	tcu::UVec3(1u, 1u, 1u),
+			/*width*/		5u,		// Use an odd value so there's a pixel in the exact center.
+			/*height*/		7u));	// Idem.
+
+		// VK_KHR_maintenance5: Test default point size is 1.0f
+		miscTests->addChild(new SinglePointCase(testCtx, "single_point_default_size", "Draw a single point without writing to PointSize", std::move(paramsPtr), false));
 	}
 
 	{

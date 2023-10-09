@@ -87,6 +87,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 
 #ifndef CTS_USES_VULKANSC
 	robustnessTests->addChild(createPipelineRobustnessBufferAccessTests(testCtx));
+	robustnessTests->addChild(createCmdBindIndexBuffer2Tests(testCtx));
 #endif
 	robustnessTests->addChild(createRobustness1VertexAccessTests(testCtx));
 

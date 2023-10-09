@@ -3863,6 +3863,16 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderCoreBuiltinsFe
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM;
 }
 
+template<> VkStructureType getStructureType<VkFrameBoundaryEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_FRAME_BOUNDARY_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceFrameBoundaryFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAME_BOUNDARY_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT;
@@ -4073,6 +4083,61 @@ template<> VkStructureType getStructureType<VkExecutionGraphPipelineScratchSizeA
 	return VK_STRUCTURE_TYPE_EXECUTION_GRAPH_PIPELINE_SCRATCH_SIZE_AMDX;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceCubicClampFeaturesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUBIC_CLAMP_FEATURES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceYcbcrDegammaFeaturesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_YCBCR_DEGAMMA_FEATURES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkSamplerYcbcrConversionYcbcrDegammaCreateInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_YCBCR_DEGAMMA_CREATE_INFO_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceCubicWeightsFeaturesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUBIC_WEIGHTS_FEATURES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkSamplerCubicWeightsCreateInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_SAMPLER_CUBIC_WEIGHTS_CREATE_INFO_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkBlitImageCubicWeightsInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_BLIT_IMAGE_CUBIC_WEIGHTS_INFO_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceImageProcessing2FeaturesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_2_FEATURES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceImageProcessing2PropertiesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_2_PROPERTIES_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkSamplerBlockMatchWindowCreateInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_SAMPLER_BLOCK_MATCH_WINDOW_CREATE_INFO_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceLayeredDriverPropertiesMSFT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_DRIVER_PROPERTIES_MSFT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceExternalFormatResolveFeaturesANDROID> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FORMAT_RESOLVE_FEATURES_ANDROID;
@@ -4086,5 +4151,50 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceExternalFormatResolv
 template<> VkStructureType getStructureType<VkAndroidHardwareBufferFormatResolvePropertiesANDROID> (void)
 {
 	return VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_RESOLVE_PROPERTIES_ANDROID;
+}
+
+template<> VkStructureType getStructureType<VkLatencySleepModeInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_LATENCY_SLEEP_MODE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkLatencySleepInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_LATENCY_SLEEP_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkSetLatencyMarkerInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_SET_LATENCY_MARKER_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkGetLatencyMarkerInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_GET_LATENCY_MARKER_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkLatencyTimingsFrameReportNV> (void)
+{
+	return VK_STRUCTURE_TYPE_LATENCY_TIMINGS_FRAME_REPORT_NV;
+}
+
+template<> VkStructureType getStructureType<VkOutOfBandQueueTypeInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_OUT_OF_BAND_QUEUE_TYPE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkLatencySubmissionPresentIdNV> (void)
+{
+	return VK_STRUCTURE_TYPE_LATENCY_SUBMISSION_PRESENT_ID_NV;
+}
+
+template<> VkStructureType getStructureType<VkSwapchainLatencyCreateInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_SWAPCHAIN_LATENCY_CREATE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkLatencySurfaceCapabilitiesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_LATENCY_SURFACE_CAPABILITIES_NV;
 }
 

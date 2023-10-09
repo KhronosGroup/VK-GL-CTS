@@ -3,7 +3,7 @@ include_directories(
 	${DEQP_INL_DIR}
 )
 
-set(DEQP_VK_IMAGE_SRCS
+set(DEQP_VK_VKSC_IMAGE_SRCS
 	vktImageTests.cpp
 	vktImageTests.hpp
 	vktImageTestsUtil.cpp
@@ -52,10 +52,15 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageTransfer.hpp
 	)
 
+set(DEQP_VK_IMAGE_SRCS
+	vktImageHostImageCopyTests.cpp
+	vktImageHostImageCopyTests.hpp
+	)
+
 PCH(DEQP_VK_IMAGE_SRCS ../pch.cpp)
 
-add_library(deqp-vk-image STATIC ${DEQP_VK_IMAGE_SRCS})
+add_library(deqp-vk-image STATIC ${DEQP_VK_VKSC_IMAGE_SRCS} ${DEQP_VK_IMAGE_SRCS})
 target_link_libraries(deqp-vk-image tcutil vkutil)
 
-add_library(deqp-vksc-image STATIC ${DEQP_VK_IMAGE_SRCS})
+add_library(deqp-vksc-image STATIC ${DEQP_VK_VKSC_IMAGE_SRCS})
 target_link_libraries(deqp-vksc-image PUBLIC deqp-vksc-util tcutil vkscutil)
