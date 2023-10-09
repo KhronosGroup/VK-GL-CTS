@@ -27,6 +27,7 @@
 #include "vkPrograms.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkBarrierUtil.hpp"
 
 namespace vkt
 {
@@ -210,15 +211,23 @@ void DynamicStateBaseClass::beginRenderPass (void)
 	beginRenderPassWithClearColor(clearColor);
 }
 
-void DynamicStateBaseClass::beginRenderPassWithClearColor(const vk::VkClearColorValue& clearColor, const bool skipBeginCmdBuffer)
+void DynamicStateBaseClass::beginRenderPassWithClearColor(const vk::VkClearColorValue& clearColor, const bool skipBeginCmdBuffer, const bool previousTransfer)
 {
 	if (!skipBeginCmdBuffer)
 	{
 		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 	}
 
-	initialTransitionColor2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
-								  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
+	if (previousTransfer)
+	{
+		const auto transfer2Transfer = vk::makeMemoryBarrier(vk::VK_ACCESS_TRANSFER_WRITE_BIT, (vk::VK_ACCESS_TRANSFER_WRITE_BIT | vk::VK_ACCESS_TRANSFER_READ_BIT));
+		vk::cmdPipelineMemoryBarrier(m_vk, *m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, &transfer2Transfer);
+	}
+	else
+	{
+		initialTransitionColor2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
+									  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
+	}
 
 	const ImageSubresourceRange subresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT);
 	m_vk.cmdClearColorImage(*m_cmdBuffer, m_colorTargetImage->object(),
