@@ -1454,7 +1454,6 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest (Context& context)
 	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
 	const VkPhysicalDeviceFeatures			deviceFeatures			= deviceFeatures2.features;
 	const vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
-	int										numErrors				= 0;
 
 	// Test features listed in VkPhysicalDeviceFeatures structure
 	{
@@ -1554,7 +1553,6 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest (Context& context)
 
 			if (res != VK_ERROR_FEATURE_NOT_PRESENT)
 			{
-				numErrors++;
 				resultCollector.fail("Not returning VK_ERROR_FEATURE_NOT_PRESENT when creating device with feature "
 				+ de::toString(feature.name) + ", which was reported as unsupported.");
 			}

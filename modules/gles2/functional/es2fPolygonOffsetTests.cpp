@@ -99,7 +99,6 @@ int compareImages (tcu::TestLog& log, glu::RenderContext& renderCtx, const tcu::
 	const tcu::IVec4	threshold		= tcu::IVec4(colorThreshold, colorThreshold, colorThreshold, formatThreshold.getAlpha() > 0 ? colorThreshold : 0)
 										+ tcu::IVec4(formatThreshold.getRed(), formatThreshold.getGreen(), formatThreshold.getBlue(), formatThreshold.getAlpha());
 
-	int			deviatingPixels = 0;
 	int			faultyPixels	= 0;
 	int			compareFailed	= -1;
 
@@ -139,7 +138,6 @@ int compareImages (tcu::TestLog& log, glu::RenderContext& renderCtx, const tcu::
 					diffMask.setPixel(MASK_COLOR_DEV, x, y);
 					if (compareFailed == -1)
 						compareFailed = 0;
-					deviatingPixels++;
 					continue;
 				}
 			}

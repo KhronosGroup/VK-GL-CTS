@@ -87,7 +87,6 @@ BufferLevels::BufferLevels (VkImageType type, VkFormat format, VkExtent3D levelZ
 
 	VkDeviceSize	currentOffset	= 0ull;
 	VkExtent3D		nextExtent		= levelZero;
-	deUint32		levelCount		= 0;
 
 	if (!aspects || (aspects & VK_IMAGE_ASPECT_COLOR_BIT))
 	{
@@ -128,7 +127,6 @@ BufferLevels::BufferLevels (VkImageType type, VkFormat format, VkExtent3D levelZ
 			nextExtent.depth = std::max(1u, (nextExtent.depth / 2u));
 
 		currentOffset += level.size;
-		++levelCount;
 	}
 }
 
