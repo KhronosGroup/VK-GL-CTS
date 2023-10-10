@@ -2598,7 +2598,7 @@ void TestCasesBuilder::init()
 											"%result             = OpExtInst %type_valueType %std450 Modf %arg1 %tmpVarPtr\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_MODF_ST]		= Op("modf_st",		FLOAT_ARITHMETIC,
-											"OpMemberDecorate %struct_ff 0 Offset ${float_width}\n"
+											"OpMemberDecorate %struct_ff 0 Offset 0\n"
 											"OpMemberDecorate %struct_ff 1 Offset ${float_width}\n",
 											"%struct_ff          = OpTypeStruct %type_valueType %type_valueType\n"
 											"%struct_ff_fptr     = OpTypePointer Function %struct_ff\n",
@@ -2619,8 +2619,8 @@ void TestCasesBuilder::init()
 											"%result             = OpExtInst %type_valueType %std450 Frexp %arg1 %tmpVarPtr\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_FREXP_ST]	= Op("frexp_st",	FLOAT_ARITHMETIC,
-											"OpMemberDecorate %struct_fi 0 Offset ${float_width}\n"
-											"OpMemberDecorate %struct_fi 1 Offset 32\n",
+											"OpMemberDecorate %struct_fi 0 Offset 0\n"
+											"OpMemberDecorate %struct_fi 1 Offset ${float_width}\n",
 											"%struct_fi          = OpTypeStruct %type_valueType %type_i32\n"
 											"%struct_fi_fptr     = OpTypePointer Function %struct_fi\n",
 											"",
@@ -3657,8 +3657,10 @@ void TestGroupBuilderBase::specializeOperation (const OperationTestCaseInfo&	tes
 	const string inTypePrefix	= string("_") + inTypeSnippets->getValueTypeString() + inTypeSnippets->bitWidth;
 	const string outTypePrefix	= string("_") + outTypeSnippets->getValueTypeString() + outTypeSnippets->bitWidth;
 
+	std::string byteWidthToken = std::to_string(std::stoi(outTypeSnippets->bitWidth) / 8);
+
 	specializedOperation.constants		= replace(operation.constants, typeToken, inTypePrefix);
-	specializedOperation.annotations	= replace(operation.annotations, widthToken, outTypeSnippets->bitWidth);
+	specializedOperation.annotations	= replace(operation.annotations, widthToken, byteWidthToken);
 	specializedOperation.types			= replace(operation.types, typeToken, outTypePrefix);
 	specializedOperation.variables		= replace(operation.variables, typeToken, outTypePrefix);
 	specializedOperation.functions		= replace(operation.functions, typeToken, outTypePrefix);
