@@ -1884,55 +1884,41 @@ ImageSamplingInstanceParams AttachmentFeedbackLoopLayoutSamplerTest::getImageSam
 
 void AttachmentFeedbackLoopLayoutSamplerTest::checkSupport (Context& context) const
 {
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
+
+	checkPipelineConstructionRequirements(vki, physicalDevice, m_pipelineConstructionType);
+
 	context.requireDeviceFunctionality("VK_EXT_attachment_feedback_loop_layout");
+
 	if (m_useMaintenance5)
 		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
-	if (m_pipelineStateMode != PipelineStateMode::STATIC)
+	if (m_pipelineStateMode != PipelineStateMode::STATIC || isConstructionTypeShaderObject(m_pipelineConstructionType))
 		context.requireDeviceFunctionality("VK_EXT_attachment_feedback_loop_dynamic_state");
 
-	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	const auto imgParams = getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_imageDescriptorType, m_samplerLod);
+	checkSupportImageSamplingInstance(context, imgParams);
 
-	vk::VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT attachmentFeedbackLoopLayoutFeatures =
+	if (m_testMode >= TEST_MODE_READ_WRITE_SAME_PIXEL) // Image as color or DS attachment.
 	{
-		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_FEATURES_EXT,	// VkStructureType	sType;
-		DE_NULL,																				// void*			pNext;
-		DE_FALSE,																				// VkBool32		attachmentFeedbackLoopLayout;
-	};
+		VkFormatProperties formatProps;
+		vki.getPhysicalDeviceFormatProperties(physicalDevice, imgParams.imageFormat, &formatProps);
 
-	vk::VkPhysicalDeviceFeatures2 features2;
-	deMemset(&features2, 0, sizeof(features2));
-	features2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	features2.pNext = &attachmentFeedbackLoopLayoutFeatures;
+		const auto					attachmentFormatFeature	= isDepthStencilFormat(imgParams.imageFormat)
+															? VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+															: VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT;
+		const VkFormatFeatureFlags	neededFeatures			= attachmentFormatFeature
+															| VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+															| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+															| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+															;
 
-	context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
-
-	if (attachmentFeedbackLoopLayoutFeatures.attachmentFeedbackLoopLayout == DE_FALSE)
-	{
-		throw tcu::NotSupportedError("attachmentFeedbackLoopLayout not supported");
-	}
-
-	ImageSamplingInstanceParams	params = getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_imageDescriptorType, m_samplerLod);
-	checkSupportImageSamplingInstance(context, params);
-
-	bool useImageAsColorOrDSAttachment	= m_testMode >= TEST_MODE_READ_WRITE_SAME_PIXEL;
-	if (useImageAsColorOrDSAttachment)
-	{
-		VkFormatProperties	formatProps;
-		const InstanceInterface& instanceInterface = context.getInstanceInterface();
-		VkFormatFeatureFlags attachmentFormatFeature = isDepthStencilFormat(params.imageFormat) ?
-			VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT;
-
-		instanceInterface.getPhysicalDeviceFormatProperties(context.getPhysicalDevice(), params.imageFormat, &formatProps);
-		bool error =
-			(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT ) == 0u ||
-			(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_SRC_BIT ) == 0u ||
-			(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_DST_BIT ) == 0u ||
-			(formatProps.optimalTilingFeatures & attachmentFormatFeature ) == 0u;
-
-		if (error)
+		if ((formatProps.optimalTilingFeatures & neededFeatures) != neededFeatures)
 		{
-			throw tcu::NotSupportedError("format doesn't support some required features");
+			std::ostringstream msg;
+			msg << "Format does not support required features: 0x" << std::hex << neededFeatures;
+			TCU_THROW(NotSupportedError, msg.str());
 		}
 
 		if ((!m_interleaveReadWriteComponents && m_imageAspectTestMode == IMAGE_ASPECT_TEST_STENCIL) ||
