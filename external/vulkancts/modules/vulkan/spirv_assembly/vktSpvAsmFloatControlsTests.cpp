@@ -21,6 +21,7 @@
  * \brief VK_KHR_shader_float_controls tests.
  *//*--------------------------------------------------------------------*/
 
+#define _USE_MATH_DEFINES
 
 #include "vktSpvAsmFloatControlsTests.hpp"
 #include "vktSpvAsmComputeShaderCase.hpp"
@@ -39,6 +40,7 @@
 #include <cstdint>
 #include <fenv.h>
 #include <cstdint>
+#include <cmath>
 
 namespace vkt
 {
@@ -122,7 +124,7 @@ typedef deUint32 BehaviorFlags;
 enum ValueId
 {
 	// common values used as both arguments and results
-	V_UNUSED = 0,		//  used to mark arguments that are not used in operation
+	V_UNUSED = 0,		// used to mark arguments that are not used in operation
 	V_MINUS_INF,		//    or results of tests cases that should be skipped
 	V_MINUS_ONE,		// -1.0
 	V_MINUS_ZERO,		// -0.0
@@ -480,15 +482,9 @@ public:
 	virtual BufferSp	constructInputBuffer	(const ValueId* twoArguments) const = 0;
 	virtual BufferSp	constructOutputBuffer	(ValueId result) const = 0;
 	virtual void		fillInputData			(const ValueId* twoArguments, vector<deUint8>& bufferData, deUint32& offset) const = 0;
-
-protected:
-	const double	pi;
 };
 
-TypeValuesBase::TypeValuesBase()
-	: pi(3.14159265358979323846)
-{
-}
+TypeValuesBase::TypeValuesBase() { }
 
 typedef de::SharedPtr<TypeValuesBase> TypeValuesSP;
 
@@ -734,7 +730,7 @@ TypeValues<deFloat16>::TypeValues()
 	vm[V_DENORM]			= 0x03f0; // this value should be the same as the result of denormBase - epsilon
 	vm[V_NAN]				= 0x7cf0;
 
-	vm[V_PI_DIV_2]			= 0x3e48;
+	vm[V_PI_DIV_2]			= deFloat32To16((float)M_PI_2);
 	vm[V_DENORM_TIMES_TWO]	= 0x07e0;
 	vm[V_DEGREES_DENORM]	= 0x1b0c;
 
@@ -867,7 +863,7 @@ TypeValues<float>::TypeValues()
 	vm[V_DENORM]			=  static_cast<float>(1.413e-42); // 0x000003f0
 	vm[V_NAN]				=  std::numeric_limits<float>::quiet_NaN();
 
-	vm[V_PI_DIV_2]			=  static_cast<float>(pi / 2);
+	vm[V_PI_DIV_2]			=  static_cast<float>(M_PI_2);
 	vm[V_DENORM_TIMES_TWO]	=  vm[V_DENORM] + vm[V_DENORM];
 	vm[V_DEGREES_DENORM]	=  deFloatDegrees(vm[V_DENORM]);
 
@@ -1002,7 +998,7 @@ TypeValues<double>::TypeValues()
 	vm[V_DENORM]			=  4.98e-321; // 0x00000000000003F0
 	vm[V_NAN]				=  std::numeric_limits<double>::quiet_NaN();
 
-	vm[V_PI_DIV_2]			=  pi / 2;
+	vm[V_PI_DIV_2]			=  M_PI_2;
 	vm[V_DENORM_TIMES_TWO]	=  vm[V_DENORM] + vm[V_DENORM];
 	vm[V_DEGREES_DENORM]	=  vm[V_UNUSED];
 
@@ -1961,7 +1957,7 @@ TypeTestResults<double>::TypeTestResults()
 // on given arguments, in some cases verification is also performed there.
 // All snipets stroed in this structure are generic and can be specialized for fp16, fp32 or fp64,
 // thanks to that this data can be shared by many OperationTestCase instances (testing diferent
-// float behaviours on diferent float widths).
+// float behaviors on diferent float widths).
 struct Operation
 {
 	// operation name is included in test case name
@@ -3205,7 +3201,7 @@ bool isAcosResultCorrect(const TYPE& returnedFloat, TestLog& log)
 	// 1.0 /inversesqrt(), inversesqrt() is 2 ULP and rcp is another 2.5 ULP
 
 	double precision = 0;
-	const double piDiv2 = 3.14159265358979323846 / 2;
+	const double piDiv2 = M_PI_2;
 	if (returnedFloat.MANTISSA_BITS == 23)
 	{
 		FloatFormat fp32Format(-126, 127, 23, true, tcu::MAYBE, tcu::YES, tcu::MAYBE);
@@ -4044,13 +4040,8 @@ void ComputeTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, c
 	TestCaseVect testCases;
 	m_operationTestCaseBuilder.build(testCases, m_typeData[variableType].testResults, argumentsFromInput);
 
-	TestCaseVect::const_iterator currTestCase = testCases.begin();
-	TestCaseVect::const_iterator lastTestCase = testCases.end();
-	while(currTestCase != lastTestCase)
+	for(auto& testCase : testCases)
 	{
-		const OperationTestCase& testCase = *currTestCase;
-		++currTestCase;
-
 		// skip cases with undefined output
 		if (testCase.expectedOutput == V_UNUSED)
 			continue;
@@ -4698,7 +4689,6 @@ void getGraphicsShaderCode (vk::SourceCollections& dst, InstanceContext context)
 		"OpReturn\n"
 		"OpFunctionEnd\n";
 
-
 	static const string fragmentTemplate =
 		"OpCapability Shader\n"
 		"${frag_capabilities}"
@@ -4832,13 +4822,8 @@ void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, 
 	TestCaseVect testCases;
 	m_testCaseBuilder.build(testCases, m_typeData[variableType].testResults, argumentsFromInput);
 
-	TestCaseVect::const_iterator currTestCase = testCases.begin();
-	TestCaseVect::const_iterator lastTestCase = testCases.end();
-	while(currTestCase != lastTestCase)
+	for(auto& testCase : testCases)
 	{
-		const OperationTestCase& testCase = *currTestCase;
-		++currTestCase;
-
 		// skip cases with undefined output
 		if (testCase.expectedOutput == V_UNUSED)
 			continue;
@@ -4869,13 +4854,8 @@ void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, 
 	testCases.clear();
 	m_testCaseBuilder.build(testCases, m_typeData[variableType].testResults, argumentsFromInput);
 
-	currTestCase = testCases.begin();
-	lastTestCase = testCases.end();
-	while(currTestCase != lastTestCase)
+	for(auto& testCase : testCases)
 	{
-		const OperationTestCase& testCase = *currTestCase;
-		++currTestCase;
-
 		// skip cases with undefined output
 		if (testCase.expectedOutput == V_UNUSED)
 			continue;
