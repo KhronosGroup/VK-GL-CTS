@@ -2533,14 +2533,14 @@ tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutSamplerTests (tcu::TestCon
 
 	for (int imageDescriptorTypeNdx = 0; imageDescriptorTypeNdx < DE_LENGTH_OF_ARRAY(imageDescriptorTypes); imageDescriptorTypeNdx++)
 	{
-		VkDescriptorType					imageDescriptorType		= imageDescriptorTypes[imageDescriptorTypeNdx].type;
+		VkDescriptorType				imageDescriptorType			= imageDescriptorTypes[imageDescriptorTypeNdx].type;
 		de::MovePtr<tcu::TestCaseGroup>	imageDescriptorTypeGroup	(new tcu::TestCaseGroup(testCtx, imageDescriptorTypes[imageDescriptorTypeNdx].name, (std::string("Uses a ") + imageDescriptorTypes[imageDescriptorTypeNdx].name + " sampler").c_str()));
-		de::MovePtr<tcu::TestCaseGroup> imageTypeTests		(new tcu::TestCaseGroup(testCtx, "image_type", ""));
+		de::MovePtr<tcu::TestCaseGroup>	imageTypeTests				(new tcu::TestCaseGroup(testCtx, "image_type", ""));
 
 		for (int viewTypeNdx = 0; viewTypeNdx < DE_LENGTH_OF_ARRAY(imageViewTypes); viewTypeNdx++)
 		{
 			const SamplerViewType			viewType		= imageViewTypes[viewTypeNdx].type;
-			de::MovePtr<tcu::TestCaseGroup> viewTypeGroup   (new tcu::TestCaseGroup(testCtx, imageViewTypes[viewTypeNdx].name, (std::string("Uses a ") + imageViewTypes[viewTypeNdx].name + " view").c_str()));
+			de::MovePtr<tcu::TestCaseGroup> viewTypeGroup	(new tcu::TestCaseGroup(testCtx, imageViewTypes[viewTypeNdx].name, (std::string("Uses a ") + imageViewTypes[viewTypeNdx].name + " view").c_str()));
 			de::MovePtr<tcu::TestCaseGroup>	formatTests		(new tcu::TestCaseGroup(testCtx, "format", "Tests samplable formats"));
 
 			for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
@@ -2576,6 +2576,19 @@ tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutSamplerTests (tcu::TestCon
 
 						for (const auto& pipelineStateMode : pipelineStateModes)
 						{
+							// In shader object variants of the tests there's no static part, so the
+							// DYNAMIC_WITH_CONTRADICTORY_STATIC variants serve no purpose. We could keep just one of the variants,
+							// but we run both a static and a dynamic one because the command sequence is not exactly the same in
+							// both cases, and the flags used in vkCmdSetAttachmentFeedbackLoopEnableEXT also differ slightly.
+							//
+							// The static variant allows us to check a different sequence and that the code in the pipeline
+							// construction utils is working correctly.
+							//
+							// The dynamic variant sets the state later explicitly (see above) and uses more specific aspect flags.
+							//
+							if (pipelineStateMode.pipelineStateMode == PipelineStateMode::DYNAMIC_WITH_CONTRADICTORY_STATIC && isConstructionTypeShaderObject(pipelineConstructionType))
+								continue;
+
 							std::string name = getFormatCaseName(format) + imageAspectTestModes[imageAspectTestMode] + testModes[testModeNdx].name + interleaveReadWriteComponentsModes[restrictColorNdx].name + pipelineStateMode.suffix;
 							formatTests->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, name.c_str(), "", viewType, format, outputImageSize, imageDescriptorType, 0.0f, testModes[testModeNdx].mode, imageAspectTestMode, interleaveReadWriteComponentsModes[restrictColorNdx].interleaveReadWriteComponents, pipelineStateMode.pipelineStateMode, false));
 
