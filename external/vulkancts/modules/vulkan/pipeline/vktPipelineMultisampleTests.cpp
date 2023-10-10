@@ -6732,6 +6732,7 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 				{ (ZEXP_DEPTH_BIT),												"depth"			},
 				{ (ZEXP_STENCIL_BIT),											"stencil"		},
 				{ (ZEXP_SAMPLE_MASK_BIT),										"sample_mask"	},
+				{ (ZEXP_DEPTH_BIT | ZEXP_STENCIL_BIT),							"depth_stencil"	},
 				{ (ZEXP_DEPTH_BIT | ZEXP_STENCIL_BIT | ZEXP_SAMPLE_MASK_BIT),	"write_all"		},
 			};
 
