@@ -86,8 +86,10 @@ struct TestParam
 	OpType				  opType;
 	DataClass			  dataClass;
 	DataType			  dataType;
+	deUint32			  dataChannelCount;
 	VkShaderStageFlagBits shaderType;
-	const char*			  testName;
+	bool				  wrongExpectation;
+	std::string			  testName;
 };
 
 class ShaderExpectAssumeTestInstance : public TestInstance
@@ -119,8 +121,10 @@ private:
 	{
 		for (deUint32 i = 0; i < kNumElements; i++)
 		{
+			// when values are wrongly expected, the verification result must not be true.
+			deUint32 verificationResult = m_testParam.wrongExpectation ? 0 : 1;
 			// (gl_GlobalInvocationID.x, verification result)
-			if (outputData[i * 2] != i || outputData[i * 2 + 1] != 1)
+			if (outputData[i * 2] != i || outputData[i * 2 + 1] != verificationResult)
 			{
 				return tcu::TestStatus::fail("Result comparison failed");
 			}
@@ -510,7 +514,7 @@ private:
 	void generateStorageBuffers()
 	{
 		// Avoid creating zero-sized buffer/memory
-		const size_t inputBufferSize  = kNumElements * sizeof(deUint64);
+		const size_t inputBufferSize  = kNumElements * sizeof(deUint64) * 4; // maximum size, 4 vector of 64bit
 		const size_t outputBufferSize = kNumElements * sizeof(deUint32) * 2;
 
 		// Upload data to buffer
@@ -533,27 +537,41 @@ private:
 		m_inputAlloc	= memAlloc.allocate(getBufferMemoryRequirements(m_vk, device, *m_inputBuffer),
 											MemoryRequirement::HostVisible);
 		void* inputData = m_inputAlloc->getHostPtr();
+
+		// element stride of channel count 3 is 4, otherwise same to channel count
+		const deUint32 elementStride = (m_testParam.dataChannelCount != 3) ? m_testParam.dataChannelCount : 4;
+
 		for (deUint32 i = 0; i < kNumElements; i++)
 		{
-			switch (m_testParam.dataType)
+			for (deUint32 channel = 0; channel < m_testParam.dataChannelCount; channel++)
 			{
-			case DataType::Bool: // std430 layout alignment of machine type(GLfloat)
-				reinterpret_cast<deInt32*>(inputData)[i] = VK_TRUE;
-				break;
-			case DataType::Int8:
-				reinterpret_cast<deInt8*>(inputData)[i] = static_cast<deInt8>(i);
-				break;
-			case DataType::Int16:
-				reinterpret_cast<deInt16*>(inputData)[i] = static_cast<deInt16>(i);
-				break;
-			case DataType::Int32:
-				reinterpret_cast<deInt32*>(inputData)[i] = static_cast<deInt32>(i);
-				break;
-			case DataType::Int64:
-				reinterpret_cast<deInt64*>(inputData)[i] = static_cast<deInt64>(i);
-				break;
-			default:
-				assert(false);
+				const deUint32 index = (i * elementStride) + channel;
+				deUint32 value = i + channel;
+				if (m_testParam.wrongExpectation)
+				{
+					value += 1; // write wrong value to storage buffer
+				}
+
+				switch (m_testParam.dataType)
+				{
+				case DataType::Bool: // std430 layout alignment of machine type(GLfloat)
+					reinterpret_cast<deInt32*>(inputData)[index] = m_testParam.wrongExpectation ? VK_FALSE : VK_TRUE;
+					break;
+				case DataType::Int8:
+					reinterpret_cast<deInt8*>(inputData)[index] = static_cast<deInt8>(value);
+					break;
+				case DataType::Int16:
+					reinterpret_cast<deInt16*>(inputData)[index] = static_cast<deInt16>(value);
+					break;
+				case DataType::Int32:
+					reinterpret_cast<deInt32*>(inputData)[index] = static_cast<deInt32>(value);
+					break;
+				case DataType::Int64:
+					reinterpret_cast<deInt64*>(inputData)[index] = static_cast<deInt64>(value);
+					break;
+				default:
+					assert(false);
+				}
 			}
 		}
 
@@ -899,27 +917,62 @@ public:
 		switch (m_testParam.dataType)
 		{
 		case DataType::Bool:
-			params["DATATYPE"] = "bool";
+			if (m_testParam.dataChannelCount == 1)
+			{
+				params["DATATYPE"] = "bool";
+			}
+			else
+			{
+				params["DATATYPE"] = "bvec" + std::to_string(m_testParam.dataChannelCount);
+			}
 			break;
 		case DataType::Int8:
 			assert(m_testParam.opType != OpType::Assume);
 			params["DATATYPE_EXTENSION_ENABLE"] = "#extension GL_EXT_shader_explicit_arithmetic_types_int8: enable";
-			params["DATATYPE"]					= "int8_t";
+			if (m_testParam.dataChannelCount == 1)
+			{
+				params["DATATYPE"] = "int8_t";
+			}
+			else
+			{
+				params["DATATYPE"] = "i8vec" + std::to_string(m_testParam.dataChannelCount);
+			}
 			break;
 		case DataType::Int16:
 			assert(m_testParam.opType != OpType::Assume);
 			params["DATATYPE_EXTENSION_ENABLE"] = "#extension GL_EXT_shader_explicit_arithmetic_types_int16: enable";
-			params["DATATYPE"]					= "int16_t";
+			if (m_testParam.dataChannelCount == 1)
+			{
+				params["DATATYPE"] = "int16_t";
+			}
+			else
+			{
+				params["DATATYPE"] = "i16vec" + std::to_string(m_testParam.dataChannelCount);
+			}
 			break;
 		case DataType::Int32:
 			assert(m_testParam.opType != OpType::Assume);
 			params["DATATYPE_EXTENSION_ENABLE"] = "#extension GL_EXT_shader_explicit_arithmetic_types_int32: enable";
-			params["DATATYPE"]					= "int32_t";
+			if (m_testParam.dataChannelCount == 1)
+			{
+				params["DATATYPE"] = "int32_t";
+			}
+			else
+			{
+				params["DATATYPE"] = "i32vec" + std::to_string(m_testParam.dataChannelCount);
+			}
 			break;
 		case DataType::Int64:
 			assert(m_testParam.opType != OpType::Assume);
 			params["DATATYPE_EXTENSION_ENABLE"] = "#extension GL_EXT_shader_explicit_arithmetic_types_int64: enable";
-			params["DATATYPE"]					= "int64_t";
+			if (m_testParam.dataChannelCount == 1)
+			{
+				params["DATATYPE"] = "int64_t";
+			}
+			else
+			{
+				params["DATATYPE"] = "i64vec" + std::to_string(m_testParam.dataChannelCount);
+			}
 			break;
 		default:
 			assert(false);
@@ -928,6 +981,8 @@ public:
 		switch (m_testParam.dataClass)
 		{
 		case DataClass::Constant:
+			assert(m_testParam.dataChannelCount == 1);
+
 			params["OPERAND0"] = "kThisIsTrue";
 			if (m_testParam.opType == OpType::Expect)
 			{
@@ -935,6 +990,8 @@ public:
 			}
 			break;
 		case DataClass::SpecializationConstant:
+			assert(m_testParam.dataChannelCount == 1);
+
 			params["OPERAND0"] = "scThisIsTrue";
 			if (m_testParam.opType == OpType::Expect)
 			{
@@ -965,17 +1022,23 @@ public:
 			{
 				if (m_testParam.dataType == DataType::Bool)
 				{
-					params["OPERAND1"] = "true"; // inputBuffer should be same as invocation id
+					params["OPERAND1"] = params["DATATYPE"] + "(true)"; // inputBuffer should be same as invocation id
 				}
 				else
 				{
-					params["OPERAND1"] =
-						params["DATATYPE"] + "(" + indexingOffset + ")"; // inputBuffer should be same as invocation id
+					// inputBuffer should be same as invocation id + channel
+					params["OPERAND1"] = params["DATATYPE"] + "(" + indexingOffset;
+					for (deUint32 channel = 1; channel < m_testParam.dataChannelCount; channel++) // from channel 1
+					{
+						params["OPERAND1"] += ", " + indexingOffset + " + " + std::to_string(channel);
+					}
+					params["OPERAND1"] += ")";
 				}
 			}
 			break;
 		}
 		case DataClass::PushConstant:
+			assert(m_testParam.dataChannelCount == 1);
 			params["OPERAND0"] = "pcThisIsTrue";
 
 			if (m_testParam.opType == OpType::Expect)
@@ -1250,20 +1313,20 @@ void addShaderExpectAssumeTests(tcu::TestCaseGroup* testGroup)
 	};
 
 	TestParam testParams[] = {
-		{ OpType::Expect, DataClass::Constant, DataType::Bool, VK_SHADER_STAGE_ALL, "constant" },
-		{ OpType::Expect, DataClass::SpecializationConstant, DataType::Bool, VK_SHADER_STAGE_ALL,
+		{ OpType::Expect, DataClass::Constant, DataType::Bool, 0, VK_SHADER_STAGE_ALL, false, "constant" },
+		{ OpType::Expect, DataClass::SpecializationConstant, DataType::Bool, 0, VK_SHADER_STAGE_ALL,false,
 		  "specializationconstant" },
-		{ OpType::Expect, DataClass::PushConstant, DataType::Bool, VK_SHADER_STAGE_ALL, "pushconstant" },
-		{ OpType::Expect, DataClass::StorageBuffer, DataType::Bool, VK_SHADER_STAGE_ALL, "storagebuffer_bool" },
-		{ OpType::Expect, DataClass::StorageBuffer, DataType::Int8, VK_SHADER_STAGE_ALL, "storagebuffer_int8" },
-		{ OpType::Expect, DataClass::StorageBuffer, DataType::Int16, VK_SHADER_STAGE_ALL, "storagebuffer_int16" },
-		{ OpType::Expect, DataClass::StorageBuffer, DataType::Int32, VK_SHADER_STAGE_ALL, "storagebuffer_int32" },
-		{ OpType::Expect, DataClass::StorageBuffer, DataType::Int64, VK_SHADER_STAGE_ALL, "storagebuffer_int64" },
-		{ OpType::Assume, DataClass::Constant, DataType::Bool, VK_SHADER_STAGE_ALL, "constant" },
-		{ OpType::Assume, DataClass::SpecializationConstant, DataType::Bool, VK_SHADER_STAGE_ALL,
-		  "specializationconstant" },
-		{ OpType::Assume, DataClass::PushConstant, DataType::Bool, VK_SHADER_STAGE_ALL, "pushconstant" },
-		{ OpType::Assume, DataClass::StorageBuffer, DataType::Bool, VK_SHADER_STAGE_ALL, "storagebuffer" },
+		{ OpType::Expect, DataClass::PushConstant, DataType::Bool, 0, VK_SHADER_STAGE_ALL, false, "pushconstant" },
+		{ OpType::Expect, DataClass::StorageBuffer, DataType::Bool, 0,  VK_SHADER_STAGE_ALL,false,  "storagebuffer_bool" },
+		{ OpType::Expect, DataClass::StorageBuffer, DataType::Int8, 0, VK_SHADER_STAGE_ALL,false,  "storagebuffer_int8" },
+		{ OpType::Expect, DataClass::StorageBuffer, DataType::Int16, 0, VK_SHADER_STAGE_ALL, false, "storagebuffer_int16" },
+		{ OpType::Expect, DataClass::StorageBuffer, DataType::Int32, 0, VK_SHADER_STAGE_ALL, false, "storagebuffer_int32" },
+		{ OpType::Expect, DataClass::StorageBuffer, DataType::Int64, 0, VK_SHADER_STAGE_ALL, false, "storagebuffer_int64" },
+		{ OpType::Assume, DataClass::Constant, DataType::Bool, 0, VK_SHADER_STAGE_ALL, false, "constant" },
+		{ OpType::Assume, DataClass::SpecializationConstant, DataType::Bool, 0, VK_SHADER_STAGE_ALL,
+		  false, "specializationconstant" },
+		{ OpType::Assume, DataClass::PushConstant, DataType::Bool, 0, VK_SHADER_STAGE_ALL, false, "pushconstant" },
+		{ OpType::Assume, DataClass::StorageBuffer, DataType::Bool, 0, VK_SHADER_STAGE_ALL, false, "storagebuffer" },
 	};
 
 	tcu::TestContext& testCtx = testGroup->getTestContext();
@@ -1285,20 +1348,47 @@ void addShaderExpectAssumeTests(tcu::TestCaseGroup* testGroup)
 		de::MovePtr<tcu::TestCaseGroup> assumeGroupTest(
 			new tcu::TestCaseGroup(testCtx, "assume", "Shader Assume Tests"));
 
-		for (TestParam testParam : testParams)
+		for (deUint32 expectationState = 0; expectationState < 2; expectationState++)
 		{
-			testParam.shaderType = stage;
-
-			switch (testParam.opType)
+			bool wrongExpected = (expectationState == 0) ? false : true;
+			for (deUint32 channelCount = 1; channelCount <= 4; channelCount++)
 			{
-			case OpType::Expect:
-				expectGroupTest->addChild(new ShaderExpectAssumeCase(testCtx, testParam));
-				break;
-			case OpType::Assume:
-				assumeGroupTest->addChild(new ShaderExpectAssumeCase(testCtx, testParam));
-				break;
-			default:
-				assert(false);
+				for (TestParam testParam : testParams)
+				{
+					testParam.dataChannelCount = channelCount;
+					testParam.wrongExpectation = wrongExpected;
+						if (channelCount > 1 || wrongExpected)
+					{
+						if (testParam.opType != OpType::Expect || testParam.dataClass != DataClass::StorageBuffer)
+						{
+							continue;
+						}
+
+						if (channelCount > 1)
+						{
+							testParam.testName = testParam.testName + "_vec" + std::to_string(channelCount);
+						}
+
+						if (wrongExpected)
+						{
+							testParam.testName = testParam.testName + "_wrong_expected";
+						}
+					}
+
+					testParam.shaderType = stage;
+
+					switch (testParam.opType)
+					{
+					case OpType::Expect:
+						expectGroupTest->addChild(new ShaderExpectAssumeCase(testCtx, testParam));
+						break;
+					case OpType::Assume:
+						assumeGroupTest->addChild(new ShaderExpectAssumeCase(testCtx, testParam));
+						break;
+					default:
+						assert(false);
+					}
+				}
 			}
 		}
 
