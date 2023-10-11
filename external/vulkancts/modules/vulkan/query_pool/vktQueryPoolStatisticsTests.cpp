@@ -37,6 +37,7 @@
 #ifdef CTS_USES_VULKANSC
 #include "vkSafetyCriticalUtil.hpp"
 #endif // CTS_USES_VULKANSC
+#include "vkBarrierUtil.hpp"
 
 #include "deMath.h"
 
@@ -48,6 +49,7 @@
 #include "tcuRGBA.hpp"
 #include "tcuStringTemplate.hpp"
 #include "tcuMaybe.hpp"
+#include "tcuTextureUtil.hpp"
 
 #include <vector>
 #include <utility>
@@ -100,6 +102,8 @@ enum ClearOperation
 	CLEAR_COLOR,
 	CLEAR_DEPTH
 };
+
+constexpr uint32_t kTriangleVertices = 3u;
 
 std::string inputTypeToGLString (const VkPrimitiveTopology& inputType)
 {
@@ -4253,8 +4257,7 @@ tcu::TestStatus VertexShaderMultipleQueryTestInstance::checkResult (VkQueryPool 
 	const VkDevice			device				= m_context.getDevice();
 	deUint32				queryCount			= (m_parametersGraphic.queryCount + (m_parametersGraphic.dstOffset ? 1u : 0u));
 	deUint32				size				= NUM_QUERY_STATISTICS * queryCount;
-	std::vector<deUint64>   results;
-	results.resize(size);
+	std::vector<uint64_t>	results				(size, 0ull);
 
 	deBool					hasPartialFlag		= (deBool)(m_parametersGraphic.queryFlags & VK_QUERY_RESULT_PARTIAL_BIT);
 	deBool					hasWaitFlag			= (deBool)(m_parametersGraphic.queryFlags & VK_QUERY_RESULT_WAIT_BIT);
@@ -4271,7 +4274,7 @@ tcu::TestStatus VertexShaderMultipleQueryTestInstance::checkResult (VkQueryPool 
 	}
 	else
 	{
-		VkResult result = vk.getQueryPoolResults(device, queryPool, 0u, m_parametersGraphic.queryCount, size * sizeof(deUint64), results.data(), NUM_QUERY_STATISTICS * sizeof(deUint64), queryFlags);
+		VkResult result = vk.getQueryPoolResults(device, queryPool, 0u, m_parametersGraphic.queryCount, de::dataSize(results), de::dataOrNull(results), NUM_QUERY_STATISTICS * sizeof(deUint64), queryFlags);
 
 		if (!(result == VK_SUCCESS || (!hasWaitFlag && result == VK_NOT_READY)))
 			return tcu::TestStatus::fail("Unexpected getQueryPoolResults() returned value: " + de::toString(getResultStr(result)));
@@ -4535,6 +4538,313 @@ vkt::TestInstance* BlitBetweenIncompatibleFormatsTestCase::createInstance(vkt::C
 	return new BlitBetweenIncompatibleFormatsTestInstance(context);
 }
 
+struct MultipleGeomStatsParams
+{
+	const bool copy;			// true == copy, false == get
+	const bool availability;	// availability bit or not.
+	const bool inheritance;		// secondary with inheritance.
+};
+
+class MultipleGeomStatsTestInstance : public vkt::TestInstance
+{
+public:
+						MultipleGeomStatsTestInstance	(Context& context, const MultipleGeomStatsParams& params)
+							: vkt::TestInstance	(context)
+							, m_params			(params)
+							{}
+	virtual				~MultipleGeomStatsTestInstance	(void) {}
+
+	tcu::TestStatus		iterate			(void) override;
+
+protected:
+	const MultipleGeomStatsParams m_params;
+};
+
+class MultipleGeomStatsTestCase : public vkt::TestCase
+{
+public:
+					MultipleGeomStatsTestCase		(tcu::TestContext& testCtx, const std::string& name, const MultipleGeomStatsParams& params)
+						: vkt::TestCase	(testCtx, name)
+						, m_params		(params)
+						{}
+	virtual			~MultipleGeomStatsTestCase		(void) {}
+
+	void			initPrograms	(vk::SourceCollections& programCollection) const override;
+	TestInstance*	createInstance	(Context& context) const override;
+	void			checkSupport	(Context& context) const override;
+
+protected:
+	const MultipleGeomStatsParams m_params;
+};
+
+void MultipleGeomStatsTestCase::initPrograms (vk::SourceCollections& programCollection) const
+{
+	std::ostringstream vert;
+	vert
+		<< "#version 460\n"
+		<< "layout (location=0) in vec4 inPos;\n"
+		<< "out gl_PerVertex\n"
+		<< "{\n"
+		<< "    vec4 gl_Position;\n"
+		<< "};\n"
+		<< "void main (void) {\n"
+		<< "    gl_Position = inPos;\n"
+		<< "}\n"
+		;
+	programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+	std::ostringstream geom;
+	geom
+		<< "#version 450\n"
+		<< "layout (triangles) in;\n"
+		<< "layout (triangle_strip, max_vertices=" << kTriangleVertices << ") out;\n"
+		<< "in gl_PerVertex\n"
+		<< "{\n"
+		<< "    vec4 gl_Position;\n"
+		<< "} gl_in[" << kTriangleVertices << "];\n"
+		<< "out gl_PerVertex\n"
+		<< "{\n"
+		<< "    vec4 gl_Position;\n"
+		<< "};\n"
+		<< "void main() {\n"
+		;
+	for (uint32_t i = 0; i < kTriangleVertices; ++i)
+	{
+		geom
+			<< "    gl_Position = gl_in[" << i << "].gl_Position;\n"
+			<< "    EmitVertex();\n"
+			;
+	}
+	geom
+		<< "}\n"
+		;
+	programCollection.glslSources.add("geom") << glu::GeometrySource(geom.str());
+
+	std::ostringstream frag;
+	frag
+		<< "#version 460\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "void main (void) {\n"
+		<< "    outColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
+		<< "}\n"
+		;
+	programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+TestInstance* MultipleGeomStatsTestCase::createInstance (Context& context) const
+{
+	return new MultipleGeomStatsTestInstance(context, m_params);
+}
+
+void MultipleGeomStatsTestCase::checkSupport (Context& context) const
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_PIPELINE_STATISTICS_QUERY);
+
+	if (m_params.inheritance)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_INHERITED_QUERIES);
+}
+
+tcu::TestStatus MultipleGeomStatsTestInstance::iterate (void)
+{
+	const auto&			ctx			= m_context.getContextCommonData();
+	const tcu::IVec3	fbExtent	(16, 16, 1);
+	const auto			vkExtent	= makeExtent3D(fbExtent);
+	const auto			fbFormat	= VK_FORMAT_R8G8B8A8_UNORM;
+	const auto			tcuFormat	= mapVkFormat(fbFormat);
+	const auto			fbUsage		= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const tcu::Vec4		clearColor	(0.0f, 0.0f, 0.0f, 1.0f);
+	const tcu::Vec4		geomColor	(0.0f, 0.0f, 1.0f, 1.0f); // Must match frag shader.
+	const tcu::Vec4		threshold	(0.0f, 0.0f, 0.0f, 0.0f); // When using 0 and 1 only, we expect exact results.
+	const auto			bindPoint	= VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+	// Color buffer with verification buffer.
+	ImageWithBuffer colorBuffer (
+		ctx.vkd,
+		ctx.device,
+		ctx.allocator,
+		vkExtent,
+		fbFormat,
+		fbUsage,
+		VK_IMAGE_TYPE_2D);
+
+	// Vertices.
+	std::vector<tcu::Vec4> vertices;
+	const auto imageWidth	= static_cast<float>(fbExtent.x());
+	const auto imageHeight	= static_cast<float>(fbExtent.y());
+	const auto pixelWidth	= 2.0f / imageWidth;
+	const auto pixelHeight	= 2.0f / imageHeight;
+	const auto horMargin	= pixelWidth / 4.0f;
+	const auto vertMargin	= pixelHeight / 4.0f;
+
+	vertices.reserve(vkExtent.width * vkExtent.height * kTriangleVertices);
+
+	for (uint32_t y = 0u; y < vkExtent.height; ++y)
+		for (uint32_t x = 0u; x < vkExtent.width; ++x)
+		{
+			// Pixel center in normalized coordinates.
+			const auto pixX = (static_cast<float>(x) + 0.5f) / imageWidth * 2.0f - 1.0f;
+			const auto pixY = (static_cast<float>(y) + 0.5f) / imageHeight * 2.0f - 1.0f;
+
+			// Triangle around pixel center.
+			vertices.push_back(tcu::Vec4(pixX - horMargin, pixY + vertMargin, 0.0f, 1.0f));
+			vertices.push_back(tcu::Vec4(pixX + horMargin, pixY + vertMargin, 0.0f, 1.0f));
+			vertices.push_back(tcu::Vec4(pixX            , pixY - vertMargin, 0.0f, 1.0f));
+		}
+
+	// Vertex buffer
+	const auto			vbSize			= static_cast<VkDeviceSize>(de::dataSize(vertices));
+	const auto			vbInfo			= makeBufferCreateInfo(vbSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	BufferWithMemory	vertexBuffer	(ctx.vkd, ctx.device, ctx.allocator, vbInfo, MemoryRequirement::HostVisible);
+	const auto			vbAlloc			= vertexBuffer.getAllocation();
+	void*				vbData			= vbAlloc.getHostPtr();
+	const auto			vbOffset		= static_cast<VkDeviceSize>(0);
+
+	deMemcpy(vbData, de::dataOrNull(vertices), de::dataSize(vertices));
+	flushAlloc(ctx.vkd, ctx.device, vbAlloc); // strictly speaking, not needed.
+
+	const auto pipelineLayout	= makePipelineLayout(ctx.vkd, ctx.device);
+	const auto renderPass		= makeRenderPass(ctx.vkd, ctx.device, fbFormat);
+	const auto framebuffer		= makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(), vkExtent.width, vkExtent.height);
+
+	// Modules.
+	const auto&	binaries		= m_context.getBinaryCollection();
+	const auto	vertModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+	const auto	geomModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("geom"));
+	const auto	fragModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(vkExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(vkExtent));
+
+	const auto pipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout,
+		*vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, *geomModule, *fragModule,
+		*renderPass, viewports, scissors); // The default values works for the current setup, including the vertex input data format.
+
+	CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, ctx.qfIndex);
+	const auto cmdBuffer = *cmd.cmdBuffer;
+
+	const VkQueryPipelineStatisticFlags stats	= (VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT
+												 | VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT);
+
+	const VkQueryPoolCreateInfo queryPoolCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,	//	VkStructureType					sType;
+		nullptr,									//	const void*						pNext;
+		0u,											//	VkQueryPoolCreateFlags			flags;
+		VK_QUERY_TYPE_PIPELINE_STATISTICS,			//	VkQueryType						queryType;
+		1u,											//	uint32_t						queryCount;
+		stats,										//	VkQueryPipelineStatisticFlags	pipelineStatistics;
+	};
+	const auto					queryPool			= createQueryPool(ctx.vkd, ctx.device, &queryPoolCreateInfo);
+	const auto					perQueryItemCount	= (2u + (m_params.availability ? 1u : 0u));
+	const VkQueryResultFlags	resultFlags			= (VK_QUERY_RESULT_WAIT_BIT | (m_params.availability ? VK_QUERY_RESULT_WITH_AVAILABILITY_BIT : 0));
+	std::vector<uint32_t>		queryResults		(perQueryItemCount, std::numeric_limits<uint32_t>::max());
+
+	std::unique_ptr<BufferWithMemory> resultsBuffer;
+	if (m_params.copy)
+	{
+		const auto resultsBufferCreateInfo = makeBufferCreateInfo(static_cast<VkDeviceSize>(de::dataSize(queryResults)), VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+		resultsBuffer.reset(new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, resultsBufferCreateInfo, MemoryRequirement::HostVisible));
+		deMemset(resultsBuffer->getAllocation().getHostPtr(), 0xFF, de::dataSize(queryResults));
+		flushAlloc(ctx.vkd, ctx.device, resultsBuffer->getAllocation());
+	}
+
+	Move<VkCommandBuffer> secCmdBuffer;
+	if (m_params.inheritance)
+	{
+		secCmdBuffer = allocateCommandBuffer(ctx.vkd, ctx.device, *cmd.cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+		const auto usageFlags = (VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT);
+
+		const VkCommandBufferInheritanceInfo inheritanceInfo =
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,	//	VkStructureType					sType;
+			nullptr,											//	const void*						pNext;
+			*renderPass,										//	VkRenderPass					renderPass;
+			0u,													//	uint32_t						subpass;
+			*framebuffer,										//	VkFramebuffer					framebuffer;
+			VK_FALSE,											//	VkBool32						occlusionQueryEnable;
+			0u,													//	VkQueryControlFlags				queryFlags;
+			stats,												//	VkQueryPipelineStatisticFlags	pipelineStatistics;
+		};
+		const VkCommandBufferBeginInfo beginInfo =
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,		//	VkStructureType							sType;
+			nullptr,											//	const void*								pNext;
+			usageFlags,											//	VkCommandBufferUsageFlags				flags;
+			&inheritanceInfo,									//	const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
+		};
+		ctx.vkd.beginCommandBuffer(*secCmdBuffer, &beginInfo);
+	}
+
+	// Render pass contents command buffer.
+	const auto rpCmdBuffer		= (m_params.inheritance ? *secCmdBuffer : *cmd.cmdBuffer);
+	const auto subpassContents	= (m_params.inheritance ? VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS : VK_SUBPASS_CONTENTS_INLINE);
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+	ctx.vkd.cmdResetQueryPool(cmdBuffer, *queryPool, 0u, 1u);
+	ctx.vkd.cmdBeginQuery(cmdBuffer, *queryPool, 0u, 0u);
+	beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.at(0u), clearColor, subpassContents);
+	{
+		ctx.vkd.cmdBindVertexBuffers(rpCmdBuffer, 0u, 1u, &vertexBuffer.get(), &vbOffset);
+		ctx.vkd.cmdBindPipeline(rpCmdBuffer, bindPoint, *pipeline);
+		ctx.vkd.cmdDraw(rpCmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
+	}
+	if (m_params.inheritance)
+	{
+		endCommandBuffer(ctx.vkd, *secCmdBuffer);
+		ctx.vkd.cmdExecuteCommands(*cmd.cmdBuffer, 1u, &secCmdBuffer.get());
+	}
+	endRenderPass(ctx.vkd, cmdBuffer);
+	ctx.vkd.cmdEndQuery(cmdBuffer, *queryPool, 0u);
+	copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(),
+		fbExtent.swizzle(0, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
+		VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+	if (m_params.copy)
+	{
+		ctx.vkd.cmdCopyQueryPoolResults(cmdBuffer, *queryPool, 0u, 1u, resultsBuffer->get(), 0ull, 0ull, resultFlags);
+		const auto queryResultsBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+		cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, &queryResultsBarrier);
+	}
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+	// Verify query results.
+	if (m_params.copy)
+	{
+		invalidateAlloc(ctx.vkd, ctx.device, resultsBuffer->getAllocation());
+		deMemcpy(de::dataOrNull(queryResults), resultsBuffer->getAllocation().getHostPtr(), de::dataSize(queryResults));
+	}
+	else
+	{
+		ctx.vkd.getQueryPoolResults(ctx.device, *queryPool, 0u, 1u, de::dataSize(queryResults), de::dataOrNull(queryResults), 0ull, resultFlags);
+	}
+
+	for (uint32_t queryItem = 0u; queryItem < perQueryItemCount; ++queryItem)
+	{
+		const bool	isAvailabilityBit	= (m_params.availability && queryItem == perQueryItemCount - 1u);
+		const auto	minValue			= (isAvailabilityBit ? 1u : de::sizeU32(vertices) / kTriangleVertices);
+		const auto	maxValue			= (isAvailabilityBit ? 1u : std::numeric_limits<uint32_t>::max());
+		const auto&	value				= queryResults.at(queryItem);
+
+		if (value < minValue || value > maxValue)
+		{
+			std::ostringstream msg;
+			msg << "Unexpected value for query item " << queryItem << ": " << value << " out of expected range [" << minValue << ", " << maxValue << "]";
+			TCU_FAIL(msg.str());
+		}
+	}
+
+	// Verify color output.
+	invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+	tcu::PixelBufferAccess resultAccess (tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+
+	auto& log = m_context.getTestContext().getLog();
+	if (!tcu::floatThresholdCompare(log, "Result", "", geomColor, resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Unexpected color in result buffer; check log for details");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 } //anonymous
 
 QueryPoolStatisticsTests::QueryPoolStatisticsTests (tcu::TestContext &testCtx)
@@ -4625,6 +4935,7 @@ void QueryPoolStatisticsTests::init (void)
 
 	de::MovePtr<TestCaseGroup>	vertexShaderMultipleQueries						(new TestCaseGroup(m_testCtx, "multiple_queries"));
 	de::MovePtr<TestCaseGroup>	gsInvocationsNoGs								(new TestCaseGroup(m_testCtx, "gs_invocations_no_gs"));
+	de::MovePtr<TestCaseGroup>	multipleGeomStats								(new TestCaseGroup(m_testCtx, "multiple_geom_stats"));
 
 	CopyType copyType[]															= { COPY_TYPE_GET,	COPY_TYPE_CMD };
 	std::string copyTypeStr[]													= { "",			"cmdcopyquerypoolresults_" };
@@ -5574,6 +5885,25 @@ void QueryPoolStatisticsTests::init (void)
 		}
 	}
 
+	{
+		for (const auto useCopy : { false, true })
+			for (const auto useAvailability : { false, true })
+				for (const auto useInheritance : { false, true })
+				{
+					const std::string name = std::string(useCopy ? "copy" : "get")
+						+ (useAvailability ? "_with_availability" : "")
+						+ (useInheritance ? "_and_inheritance" : "");
+
+					const MultipleGeomStatsParams params
+					{
+						useCopy,
+						useAvailability,
+						useInheritance,
+					};
+					multipleGeomStats->addChild(new MultipleGeomStatsTestCase(m_testCtx, name, params));
+				}
+	}
+
 	addChild(computeShaderInvocationsGroup.release());
 	addChild(inputAssemblyVertices.release());
 	addChild(inputAssemblyPrimitives.release());
@@ -5632,6 +5962,7 @@ void QueryPoolStatisticsTests::init (void)
 	addChild(resetAfterCopyGroup.release());
 
 	addChild(vertexShaderMultipleQueries.release());
+	addChild(multipleGeomStats.release());
 }
 
 void QueryPoolStatisticsTests::deinit (void)
