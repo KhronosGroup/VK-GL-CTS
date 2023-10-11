@@ -169,7 +169,8 @@ enum ValueId
 
 	// non comon results of some operation - corner cases
 	V_PI_DIV_2,
-	V_ZERO_OR_NAN,
+	V_ONE_OR_NAN,
+	V_SIGN_NAN,						// Can be any of -1, -0, +0, +1
 	V_ZERO_OR_MINUS_ZERO,			// both +0 and -0 are accepted
 	V_ZERO_OR_ONE,					// both +0 and 1 are accepted
 	V_TRIG_ONE,						// 1.0 trigonometric operations, including precision margin
@@ -194,7 +195,8 @@ string getValueName(ValueId value)
 	case V_MAX:					return "max";
 	case V_NAN:					return "nan";
 	case V_PI_DIV_2:			return "piDiv2";
-	case V_ZERO_OR_NAN:			return "zeroORnan";
+	case V_ONE_OR_NAN:			return "oneORnan";
+	case V_SIGN_NAN:			return "signNan";
 	case V_ZERO_OR_MINUS_ZERO:	return "zeroOrMinusZero";
 	case V_ZERO_OR_ONE:			return "zeroOrOne";
 	case V_TRIG_ONE:			return "trigOne";
@@ -1154,13 +1156,10 @@ public:
 			{ OID_MUL, V_ZERO, V_INF, V_UNUSED, FP::NotInf },
 			{ OID_MUL, V_ZERO, V_NAN, V_NAN, FP::NotNaN },
 
-			{ OID_DIV, V_MINUS_ZERO, V_ONE, V_MINUS_ZERO, FP::NSZ},
 			{ OID_DIV, V_ZERO, V_INF, V_ZERO, FP::NotInf},
 			{ OID_DIV, V_ZERO, V_NAN, V_NAN, FP::NotNaN},
 
 			{ OID_DOT, V_MINUS_ZERO, V_MINUS_ZERO, V_ZERO, FP::NSZ },
-			{ OID_DOT, V_INF, V_ONE, V_INF, FP::NotInf },
-			{ OID_DOT, V_NAN, V_ONE, V_NAN, FP::NotNaN },
 
 			{ OID_MODF_ST_WH, V_MINUS_INF, V_UNUSED, V_MINUS_INF, FP::NotInf },
 			{ OID_MODF_ST_FR, V_MINUS_INF, V_UNUSED, V_MINUS_ZERO, FP::NSZ|FP::NotInf },
@@ -1175,12 +1174,8 @@ public:
 			{ OID_SZ_FMA,	V_MINUS_ZERO,	V_MINUS_ZERO,	V_MINUS_ZERO,	FP::AllowContract|FP::NSZ}, // -0.0 * 1 + -0.0 == -0.0
 
 			{ OID_MIN, V_MINUS_ZERO, V_ZERO, V_MINUS_ZERO, FP::NSZ },
-			{ OID_MIN, V_INF, V_ONE, V_ONE, FP::NotInf },
-			{ OID_MIN, V_NAN, V_ZERO, V_ZERO_OR_NAN, FP::NotNaN },
 
 			{ OID_MAX, V_MINUS_ONE,	V_MINUS_ZERO, V_MINUS_ZERO, FP::NSZ },
-			{ OID_MAX, V_INF, V_ONE, V_INF, FP::NotInf },
-			{ OID_MAX, V_NAN, V_ZERO, V_ZERO_OR_NAN, FP::NotNaN },
 
 			{ OID_CLAMP, V_MINUS_ONE, V_MINUS_ZERO, V_MINUS_ZERO, FP::NSZ },
 			{ OID_CLAMP, V_ONE, V_INF, V_INF, FP::NotInf },
@@ -1191,8 +1186,6 @@ public:
 			{ OID_CROSS, V_NAN, V_ONE, V_NAN, FP::NotNaN },
 
 			{ OID_NMAX, V_MINUS_ZERO, V_MINUS_ONE, V_MINUS_ZERO, FP::NSZ },
-			{ OID_NMAX, V_INF, V_ONE, V_INF, FP::NotInf },
-			{ OID_NMAX, V_NAN, V_ONE, V_ONE, FP::NotNaN },
 
 			{ OID_NCLAMP, V_MINUS_ONE, V_MINUS_ZERO, V_MINUS_ZERO, FP::NSZ },
 			{ OID_NCLAMP, V_INF, V_ONE, V_ONE, FP::NotInf },
@@ -1217,10 +1210,15 @@ public:
 			{ OID_TRANSPOSE,		V_MINUS_ZERO,	V_INF,			V_NAN		},
 			{ OID_RETURN_VAL,		V_MINUS_ZERO,	V_INF,			V_NAN		},
 
+			{ OID_ADD,				V_ONE,			V_INF,			V_NAN		},
+			{ OID_SUB,				V_MINUS_ONE,	V_INF,			V_NAN		},
+			{ OID_MUL,				V_MINUS_ZERO,	V_INF,			V_NAN		},
+			{ OID_DIV,				V_MINUS_ZERO,	V_INF,			V_NAN		},
 			{ OID_REM,				V_UNUSED,		V_UNUSED,		V_NAN		},
 			{ OID_MOD,				V_UNUSED,		V_UNUSED,		V_NAN		},
 			{ OID_PHI,				V_MINUS_ZERO,	V_ONE,			V_NAN		},
 			{ OID_SELECT,			V_MINUS_ZERO,	V_INF,			V_NAN		},
+			{ OID_DOT,				V_MINUS_ZERO,	V_INF,			V_NAN		},
 			{ OID_VEC_MUL_S,		V_MINUS_ZERO,	V_INF,			V_NAN		},
 			{ OID_VEC_MUL_M,		V_MINUS_ZERO,	V_INF,			V_NAN		},
 			{ OID_MAT_MUL_S,		V_MINUS_ZERO,	V_INF,			V_NAN		},
@@ -1243,6 +1241,7 @@ public:
 			{ OID_ROUND_EV,			V_MINUS_ZERO,	V_INF,			V_NAN		},
 			{ OID_TRUNC,			V_MINUS_ZERO,	V_INF,			V_NAN		},
 			{ OID_ABS,				V_ZERO,			V_INF,			V_NAN		},
+			{ OID_SIGN,				V_ZERO_OR_MINUS_ZERO, V_ONE,	V_SIGN_NAN	},
 			{ OID_FLOOR,			V_MINUS_ZERO,	V_INF,			V_NAN		},
 			{ OID_CEIL,				V_MINUS_ZERO,	V_INF,			V_NAN		},
 			{ OID_FRACT,			V_UNUSED,		V_UNUSED,		V_NAN		},
@@ -1261,11 +1260,14 @@ public:
 			{ OID_MAT_DET,			V_ZERO,			V_UNUSED,		V_NAN		},
 			{ OID_MAT_INV,			V_ZERO,			V_UNUSED,		V_NAN		},
 			{ OID_FMA,				V_MINUS_ONE,	V_INF,			V_NAN		},
+			{ OID_MIN,				V_MINUS_ZERO,	V_ONE,			V_ONE_OR_NAN },
+			{ OID_MAX,				V_ONE,			V_INF,			V_ONE_OR_NAN },
 			{ OID_STEP,				V_ONE,			V_ZERO,			V_UNUSED	},
 			{ OID_SSTEP,			V_HALF,			V_UNUSED,		V_UNUSED	},
 			{ OID_DIST,				V_ONE,			V_INF,			V_NAN		},
 			{ OID_FACE_FWD,			V_MINUS_ONE,	V_MINUS_ONE,	V_UNUSED	},
 			{ OID_NMIN,				V_MINUS_ZERO,	V_ONE,			V_ONE		},
+			{ OID_NMAX,				V_ONE,			V_INF,			V_ONE		},
 		};
 
 		appendStandardCases(stcArr, DE_LENGTH_OF_ARRAY(stcArr));
@@ -2016,14 +2018,25 @@ bool compareBytes(vector<deUint8>& expectedBytes, AllocationSp outputAlloc, Test
 		<< " (" << returnedFloat.asFloat() << ")" << TestLog::EndMessage;
 
 	// handle multiple acceptable results cases
+	if (expectedValueId == V_SIGN_NAN)
+	{
+		if (	valMatches<TYPE, FLOAT_TYPE>(returnedFloat, V_MINUS_ONE) ||
+				valMatches<TYPE, FLOAT_TYPE>(returnedFloat, V_MINUS_ZERO) ||
+				valMatches<TYPE, FLOAT_TYPE>(returnedFloat, V_ZERO) ||
+				valMatches<TYPE, FLOAT_TYPE>(returnedFloat, V_ONE) )
+			return true;
+
+		log << TestLog::Message << "Expected -1, -0, +0 or +1" << TestLog::EndMessage;
+	}
+
 	if (expectedValueId == V_ZERO_OR_MINUS_ZERO)
 		return isEither<TYPE, FLOAT_TYPE>(returnedFloat, V_ZERO, V_MINUS_ZERO, log);
 
 	if (expectedValueId == V_ZERO_OR_ONE)
 		return isEither<TYPE, FLOAT_TYPE>(returnedFloat, V_ZERO, V_ONE, log);
 
-	if (expectedValueId == V_ZERO_OR_NAN)
-		return isEither<TYPE, FLOAT_TYPE>(returnedFloat, V_ZERO, V_NAN, log);
+	if (expectedValueId == V_ONE_OR_NAN)
+		return isEither<TYPE, FLOAT_TYPE>(returnedFloat, V_ONE, V_NAN, log);
 
 	// handle trigonometric operations precision errors
 	if (expectedValueId == V_TRIG_ONE)
