@@ -785,6 +785,10 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
     Enable or disable log file fflush
     default: 'enable'
 
+  --deqp-log-compact=[enable|disable]
+    Enable or disable the compact version of the log
+    default: 'disable'
+
   --deqp-validation=[enable|disable]
     Enable or disable test case validation
     default: 'disable'

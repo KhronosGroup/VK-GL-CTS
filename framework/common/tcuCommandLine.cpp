@@ -92,6 +92,7 @@ DE_DECLARE_COMMAND_LINE_OPT(ArchiveDir,					std::string);
 DE_DECLARE_COMMAND_LINE_OPT(VKDeviceID,					int);
 DE_DECLARE_COMMAND_LINE_OPT(VKDeviceGroupID,			int);
 DE_DECLARE_COMMAND_LINE_OPT(LogFlush,					bool);
+DE_DECLARE_COMMAND_LINE_OPT(LogCompact,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(Validation,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(PrintValidationErrors,		bool);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCache,				bool);
@@ -220,6 +221,7 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<TestOOM>						(DE_NULL,	"deqp-test-oom",							"Run tests that exhaust memory on purpose",			s_enableNames,		TEST_OOM_DEFAULT)
 		<< Option<ArchiveDir>					(DE_NULL,	"deqp-archive-dir",							"Path to test resource files",											".")
 		<< Option<LogFlush>						(DE_NULL,	"deqp-log-flush",							"Enable or disable log file fflush",				s_enableNames,		"enable")
+		<< Option<LogCompact>					(DE_NULL,	"deqp-log-compact",							"Enable or disable the compact version of the log",								s_enableNames,		"disable")
 		<< Option<Validation>					(DE_NULL,	"deqp-validation",							"Enable or disable test case validation",			s_enableNames,		"disable")
 		<< Option<PrintValidationErrors>		(DE_NULL,	"deqp-print-validation-errors",				"Print validation errors to standard error")
 		<< Option<Optimization>					(DE_NULL,	"deqp-optimization-recipe",					"Shader optimization recipe (0=disabled, 1=performance, 2=size)",		"0")
@@ -883,6 +885,9 @@ bool CommandLine::parse (int argc, const char* const* argv)
 
 	if (!m_cmdLine.getOption<opt::LogFlush>())
 		m_logFlags |= QP_TEST_LOG_NO_FLUSH;
+
+	if (m_cmdLine.getOption<opt::LogCompact>())
+		m_logFlags |= QP_TEST_LOG_COMPACT;
 
 	if (!m_cmdLine.getOption<opt::LogEmptyLoginfo>())
 		m_logFlags |= QP_TEST_LOG_EXCLUDE_EMPTY_LOGINFO;
