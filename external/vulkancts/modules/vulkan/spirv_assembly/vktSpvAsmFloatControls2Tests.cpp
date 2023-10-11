@@ -164,6 +164,8 @@ enum ValueId
 	V_ZERO_POINT_ONE,
 	V_TEN,
 	V_HUGE, // a large number that if doubled will result in infinity but that is not equal to the maximum
+	V_TINY, // a number that if squared will underflow to 0.
+	V_MINUS_TINY,
 	V_MAX,
 	V_NAN,
 
@@ -192,6 +194,8 @@ string getValueName(ValueId value)
 	case V_ZERO_POINT_ONE:		return "zeroPtOne";
 	case V_TEN:					return "ten";
 	case V_HUGE:				return "huge";
+	case V_TINY:				return "tiny";
+	case V_MINUS_TINY:			return "minusTiny";
 	case V_MAX:					return "max";
 	case V_NAN:					return "nan";
 	case V_PI_DIV_2:			return "piDiv2";
@@ -470,6 +474,8 @@ TypeValues<deFloat16>::TypeValues()
 	vm[V_ZERO_POINT_ONE]	= deFloat32To16(0.1f);
 	vm[V_TEN]				= deFloat32To16(10.0f);
 	vm[V_HUGE]				= 0x7bfd;
+	vm[V_TINY]				= 0x0400;
+	vm[V_MINUS_TINY]		= 0x8400;
 	vm[V_MAX]				= 0x7bff;
 	vm[V_INF]				= 0x7c00;
 	vm[V_NAN]				= 0x7cf0;
@@ -495,6 +501,8 @@ TypeValues<float>::TypeValues()
 	vm[V_ZERO_POINT_ONE]	=  0.1f;
 	vm[V_TEN]				=  10.0f;
 	vm[V_HUGE]				=  3.40282306073709652508e+38;
+	vm[V_TINY]				=  1.17549435082228750797e-38;
+	vm[V_MINUS_TINY]		= -1.17549435082228750797e-38;
 	vm[V_MAX]				=  std::numeric_limits<float>::max();
 	vm[V_INF]				=  std::numeric_limits<float>::infinity();
 	vm[V_NAN]				=  std::numeric_limits<float>::quiet_NaN();
@@ -520,6 +528,8 @@ TypeValues<double>::TypeValues()
 	vm[V_ZERO_POINT_ONE]	=  0.1;
 	vm[V_TEN]				=  10.0;
 	vm[V_HUGE]				=  1.79769313486231530898e+308;
+	vm[V_TINY]				=  2.22507385850720138309e-308;
+	vm[V_MINUS_TINY]		= -2.22507385850720138309e-308;
 	vm[V_MAX]				=  std::numeric_limits<double>::max();
 	vm[V_INF]				=  std::numeric_limits<double>::infinity();
 	vm[V_NAN]				=  std::numeric_limits<double>::quiet_NaN();
@@ -1145,24 +1155,56 @@ public:
 			{ OID_NEGATE, V_MINUS_INF, V_UNUSED, V_INF, FP::NotInf },
 
 			{ OID_ADD, V_MINUS_ZERO, V_MINUS_ZERO, V_MINUS_ZERO, FP::NSZ },
-			{ OID_ADD, V_ZERO, V_INF, V_INF, FP::NotInf },
+			{ OID_ADD, V_ZERO, V_MINUS_ZERO, V_ZERO, FP::NSZ },
+			{ OID_ADD, V_MINUS_ONE, V_ONE, V_ZERO, FP::NSZ },
+			{ OID_ADD, V_HUGE, V_HUGE, V_INF, FP::NotInf },
+			{ OID_ADD, V_ZERO, V_MINUS_INF, V_MINUS_INF, FP::NotInf },
 			{ OID_ADD, V_ZERO, V_NAN, V_NAN, FP::NotNaN },
+			{ OID_ADD, V_INF, V_MINUS_INF, V_NAN, FP::NotNaN|FP::NotInf },
 
 			{ OID_SUB, V_MINUS_ZERO, V_ZERO, V_MINUS_ZERO, FP::NSZ },
-			{ OID_SUB, V_ZERO, V_INF, V_MINUS_INF, FP::NotInf },
+			{ OID_SUB, V_MINUS_ZERO, V_MINUS_ZERO, V_ZERO, FP::NSZ },
+			{ OID_SUB, V_ZERO, V_MINUS_INF, V_INF, FP::NotInf },
 			{ OID_SUB, V_ZERO, V_NAN, V_NAN, FP::NotNaN },
+			{ OID_SUB, V_INF, V_INF, V_NAN, FP::NotNaN|FP::NotInf },
 
+			{ OID_MUL, V_MINUS_ONE, V_ZERO, V_MINUS_ZERO, FP::NSZ },
 			{ OID_MUL, V_ZERO, V_MINUS_ZERO, V_MINUS_ZERO, FP::NSZ },
-			{ OID_MUL, V_ZERO, V_INF, V_UNUSED, FP::NotInf },
+			{ OID_MUL, V_TINY, V_MINUS_TINY, V_MINUS_ZERO, FP::NSZ },
+			{ OID_MUL, V_HUGE, V_HUGE, V_INF, FP::NotInf },
+			{ OID_MUL, V_ZERO, V_INF, V_NAN, FP::NotInf|FP::NotNaN },
 			{ OID_MUL, V_ZERO, V_NAN, V_NAN, FP::NotNaN },
 
+			{ OID_DIV, V_ONE, V_MINUS_INF, V_MINUS_ZERO, FP::NSZ|FP::NotInf},
 			{ OID_DIV, V_ZERO, V_INF, V_ZERO, FP::NotInf},
+			{ OID_DIV, V_INF, V_MINUS_ZERO, V_MINUS_INF, FP::NSZ|FP::NotInf},
 			{ OID_DIV, V_ZERO, V_NAN, V_NAN, FP::NotNaN},
+			{ OID_DIV, V_INF, V_INF, V_NAN, FP::NotInf|FP::NotNaN},
 
 			{ OID_DOT, V_MINUS_ZERO, V_MINUS_ZERO, V_ZERO, FP::NSZ },
 
+			{ OID_ABS, V_MINUS_INF, V_UNUSED, V_INF, FP::NotInf },
+
+			{ OID_SIGN, V_MINUS_INF, V_UNUSED, V_MINUS_ONE, FP::NotInf },
+
+			{ OID_SQRT, V_MINUS_ONE, V_UNUSED, V_NAN, FP::NotNaN },
+			{ OID_SQRT, V_MINUS_INF, V_UNUSED, V_NAN, FP::NotNaN },
+
+			{ OID_INV_SQRT, V_ZERO, V_UNUSED, V_INF, FP::NotInf },
+			{ OID_INV_SQRT, V_MINUS_ZERO, V_UNUSED, V_MINUS_INF, FP::NSZ|FP::NotInf },
+			{ OID_INV_SQRT, V_MINUS_ONE, V_UNUSED, V_NAN, FP::NotNaN },
+			{ OID_INV_SQRT, V_MINUS_INF, V_UNUSED, V_NAN, FP::NotNaN },
+
 			{ OID_MODF_ST_WH, V_MINUS_INF, V_UNUSED, V_MINUS_INF, FP::NotInf },
 			{ OID_MODF_ST_FR, V_MINUS_INF, V_UNUSED, V_MINUS_ZERO, FP::NSZ|FP::NotInf },
+
+			{ OID_LENGTH, V_MINUS_INF, V_UNUSED, V_INF, FP::NotInf },
+
+			{ OID_NORMALIZE, V_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+
+			{ OID_REFLECT, V_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+
+			{ OID_REFRACT, V_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
 
 			{ OID_MAT_INV, V_ZERO, V_UNUSED, V_MINUS_ZERO, FP::NSZ },
 
@@ -1174,22 +1216,38 @@ public:
 			{ OID_SZ_FMA,	V_MINUS_ZERO,	V_MINUS_ZERO,	V_MINUS_ZERO,	FP::AllowContract|FP::NSZ}, // -0.0 * 1 + -0.0 == -0.0
 
 			{ OID_MIN, V_MINUS_ZERO, V_ZERO, V_MINUS_ZERO, FP::NSZ },
+			{ OID_MIN, V_MINUS_INF, V_ONE, V_MINUS_INF, FP::NotInf },
 
-			{ OID_MAX, V_MINUS_ONE,	V_MINUS_ZERO, V_MINUS_ZERO, FP::NSZ },
+			{ OID_MAX, V_MINUS_ZERO, V_ZERO, V_ZERO, FP::NSZ },
+			{ OID_MAX, V_MINUS_INF, V_ONE, V_ONE, FP::NotInf },
 
 			{ OID_CLAMP, V_MINUS_ONE, V_MINUS_ZERO, V_MINUS_ZERO, FP::NSZ },
+			{ OID_CLAMP, V_MINUS_ZERO, V_ZERO, V_ZERO, FP::NSZ },
+			{ OID_CLAMP, V_ZERO, V_MINUS_ZERO, V_MINUS_ZERO, FP::NSZ },
+			{ OID_CLAMP, V_INF, V_ONE, V_ONE, FP::NotInf },
 			{ OID_CLAMP, V_ONE, V_INF, V_INF, FP::NotInf },
-			{ OID_CLAMP, V_ONE, V_NAN, V_UNUSED, FP::NotNaN },
+			{ OID_CLAMP, V_ONE, V_MINUS_INF, V_MINUS_INF, FP::NotInf },
+			{ OID_CLAMP, V_NAN, V_ONE, V_ONE_OR_NAN, FP::NotNaN },
+			{ OID_CLAMP, V_ONE, V_NAN, V_ONE_OR_NAN, FP::NotNaN },
 
 			{ OID_CROSS, V_MINUS_ZERO, V_MINUS_ZERO, V_ZERO, FP::NSZ },
 			{ OID_CROSS, V_INF, V_ONE, V_UNUSED, FP::NotInf },
 			{ OID_CROSS, V_NAN, V_ONE, V_NAN, FP::NotNaN },
 
-			{ OID_NMAX, V_MINUS_ZERO, V_MINUS_ONE, V_MINUS_ZERO, FP::NSZ },
+			{ OID_NMIN, V_MINUS_ZERO, V_ZERO, V_MINUS_ZERO, FP::NSZ },
+			{ OID_NMIN, V_MINUS_INF, V_ONE, V_MINUS_INF, FP::NotInf },
+
+			{ OID_NMAX, V_MINUS_ZERO, V_ZERO, V_ZERO, FP::NSZ },
+			{ OID_NMAX, V_MINUS_INF, V_ONE, V_ONE, FP::NotInf },
 
 			{ OID_NCLAMP, V_MINUS_ONE, V_MINUS_ZERO, V_MINUS_ZERO, FP::NSZ },
+			{ OID_NCLAMP, V_MINUS_ZERO, V_ZERO, V_ZERO, FP::NSZ },
+			{ OID_NCLAMP, V_ZERO, V_MINUS_ZERO, V_MINUS_ZERO, FP::NSZ },
 			{ OID_NCLAMP, V_INF, V_ONE, V_ONE, FP::NotInf },
+			{ OID_NCLAMP, V_ONE, V_INF, V_INF, FP::NotInf },
+			{ OID_NCLAMP, V_ONE, V_MINUS_INF, V_MINUS_INF, FP::NotInf },
 			{ OID_NCLAMP, V_NAN, V_ONE, V_ONE, FP::NotNaN },
+			{ OID_NCLAMP, V_ONE, V_NAN, V_ONE, FP::NotNaN },
 
 			// a + b + (-a)
 			{ OID_ADD_SUB_REASSOCIABLE, V_MAX, V_HUGE, V_INF, FP::AllowReassoc },
@@ -1246,7 +1304,7 @@ public:
 			{ OID_CEIL,				V_MINUS_ZERO,	V_INF,			V_NAN		},
 			{ OID_FRACT,			V_UNUSED,		V_UNUSED,		V_NAN		},
 			{ OID_SQRT,				V_MINUS_ZERO,	V_INF,			V_NAN		},
-			{ OID_INV_SQRT,			V_UNUSED,		V_ZERO,			V_NAN		},
+			{ OID_INV_SQRT,			V_UNUSED,		V_ZERO,			V_NAN		},		// -0 needs NotInf, so handled as special case.
 			{ OID_MODF,				V_MINUS_ZERO,	V_UNUSED,		V_NAN		},
 			{ OID_MODF_ST_WH,		V_MINUS_ZERO,	V_INF,			V_NAN		},
 			{ OID_MODF_ST_FR,		V_MINUS_ZERO,	V_ZERO,			V_NAN		},
@@ -1308,6 +1366,49 @@ public:
 	TypeTestResults();
 };
 
+const OperationTestCaseInputs nonStc16and32Only[] = {
+	{ OID_SIN, V_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+	{ OID_SIN, V_MINUS_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+	{ OID_COS, V_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+	{ OID_COS, V_MINUS_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+	{ OID_TAN, V_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+	{ OID_TAN, V_MINUS_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+
+	{ OID_ASIN, V_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+	{ OID_ASIN, V_MINUS_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+	{ OID_ACOS, V_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+	{ OID_ACOS, V_MINUS_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+
+	{ OID_SINH, V_MINUS_INF, V_UNUSED, V_MINUS_INF, FP::NotInf },
+	{ OID_COSH, V_MINUS_INF, V_UNUSED, V_INF, FP::NotInf },
+	{ OID_TANH, V_MINUS_INF, V_UNUSED, V_MINUS_ONE, FP::NotInf },
+
+	{ OID_ASINH, V_MINUS_INF, V_UNUSED, V_MINUS_INF, FP::NotInf },
+
+	{ OID_ACOSH, V_ZERO, V_UNUSED, V_NAN, FP::NotNaN },
+	{ OID_ACOSH, V_MINUS_ZERO, V_UNUSED, V_NAN, FP::NSZ|FP::NotNaN },
+	{ OID_ACOSH, V_INF, V_UNUSED, V_INF, FP::NotInf },
+	{ OID_ACOSH, V_MINUS_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+
+	{ OID_ATANH, V_TWO, V_UNUSED, V_NAN, FP::NotNaN },
+	{ OID_ATANH, V_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+	{ OID_ATANH, V_MINUS_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+
+	{ OID_EXP, V_MINUS_INF, V_UNUSED, V_ZERO, FP::NotInf },
+
+	{ OID_LOG, V_ZERO, V_UNUSED, V_MINUS_INF, FP::NSZ|FP::NotInf },
+	{ OID_LOG, V_MINUS_ZERO, V_UNUSED, V_MINUS_INF, FP::NSZ|FP::NotInf },
+	{ OID_LOG, V_MINUS_ONE, V_UNUSED, V_NAN, FP::NotNaN },
+	{ OID_LOG, V_MINUS_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+
+	{ OID_EXP2, V_MINUS_INF, V_UNUSED, V_ZERO, FP::NotInf },
+
+	{ OID_LOG2, V_ZERO, V_UNUSED, V_MINUS_INF, FP::NSZ|FP::NotInf },
+	{ OID_LOG2, V_MINUS_ZERO, V_UNUSED, V_MINUS_INF, FP::NSZ|FP::NotInf },
+	{ OID_LOG2, V_MINUS_ONE, V_UNUSED, V_NAN, FP::NotNaN },
+	{ OID_LOG2, V_MINUS_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+};
+
 // Most of these operations are not accurate enough at 0 to resolve the difference between
 // +0 and -0 so the test is skipped. sin, cos and tan are also explicitly low precision for
 // large inputs, so are not tested at infinity.
@@ -1345,6 +1446,8 @@ TypeTestResults<deFloat16>::TypeTestResults()
 		{ OID_CONV_FROM_FP64, V_MINUS_ZERO, V_INF, V_NAN },
 	};
 
+	testCaseInputs.insert(testCaseInputs.end(), nonStc16and32Only, nonStc16and32Only + DE_LENGTH_OF_ARRAY(nonStc16and32Only));
+
 	appendStandardCases(stcConvTo16, DE_LENGTH_OF_ARRAY(stcConvTo16));
 	appendStandardCases(stc16and32only, DE_LENGTH_OF_ARRAY(stc16and32only));
 }
@@ -1360,6 +1463,8 @@ TypeTestResults<float>::TypeTestResults()
 		{ OID_CONV_FROM_FP16, V_MINUS_ZERO, V_INF, V_NAN },
 		{ OID_CONV_FROM_FP64, V_MINUS_ZERO, V_INF, V_NAN },
 	};
+
+	testCaseInputs.insert(testCaseInputs.end(), nonStc16and32Only, nonStc16and32Only + DE_LENGTH_OF_ARRAY(nonStc16and32Only));
 
 	appendStandardCases(stcConvTo32, DE_LENGTH_OF_ARRAY(stcConvTo32));
 	appendStandardCases(stc16and32only, DE_LENGTH_OF_ARRAY(stc16and32only));
