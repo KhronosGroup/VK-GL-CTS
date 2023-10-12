@@ -135,6 +135,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalIgnoreTests.cpp",
         "external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalRenderingTestUtil.cpp",
         "external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalTests.cpp",
+        "external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalTransformFeedbackTests.cpp",
         "external/vulkancts/modules/vulkan/descriptor_indexing/vktDescriptorIndexingTests.cpp",
         "external/vulkancts/modules/vulkan/descriptor_indexing/vktDescriptorSetsIndexingTests.cpp",
         "external/vulkancts/modules/vulkan/descriptor_indexing/vktDescriptorSetsIndexingTestsUtils.cpp",
