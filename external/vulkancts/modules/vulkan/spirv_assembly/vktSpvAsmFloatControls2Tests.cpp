@@ -168,7 +168,6 @@ enum ValueId
 	V_NAN,
 
 	// non comon results of some operation - corner cases
-	V_MINUS_ONE_OR_CLOSE,			// value used only for fp16 subtraction result of preserved denorm and one
 	V_PI_DIV_2,
 	V_ZERO_OR_NAN,
 	V_ZERO_OR_MINUS_ZERO,			// both +0 and -0 are accepted
@@ -194,7 +193,6 @@ string getValueName(ValueId value)
 	case V_HUGE:				return "huge";
 	case V_MAX:					return "max";
 	case V_NAN:					return "nan";
-	case V_MINUS_ONE_OR_CLOSE:	return "minusOneOrClose";
 	case V_PI_DIV_2:			return "piDiv2";
 	case V_ZERO_OR_NAN:			return "zeroORnan";
 	case V_ZERO_OR_MINUS_ZERO:	return "zeroOrMinusZero";
@@ -1907,21 +1905,32 @@ const Operation& TestCasesBuilder::getOperation(OperationId id) const
 }
 
 template <typename TYPE, typename FLOAT_TYPE>
-bool isZeroOrOtherValue(const TYPE& returnedFloat, ValueId secondAcceptableResult, TestLog& log)
+bool valMatches(const TYPE &ret, ValueId expected)
 {
-	if (returnedFloat.isZero() && !returnedFloat.signBit())
-		return true;
-
 	TypeValues<FLOAT_TYPE> typeValues;
-	typedef typename TYPE::StorageType SType;
-	typename RawConvert<FLOAT_TYPE, SType>::Value value;
-	value.fp = typeValues.getValue(secondAcceptableResult);
 
-	if (returnedFloat.bits() == value.ui)
+	if (expected == V_NAN && ret.isNaN())
 		return true;
 
-	log << TestLog::Message << "Expected 0 or " << toHex(value.ui)
-		<< " (" << value.fp << ")" << TestLog::EndMessage;
+	typename RawConvert<FLOAT_TYPE, typename TYPE::StorageType>::Value val;
+	val.fp = typeValues.getValue(expected);
+	return ret.bits() == val.ui;
+}
+
+template <typename TYPE, typename FLOAT_TYPE>
+bool isEither(const TYPE& returnedFloat, ValueId expected1, ValueId expected2, TestLog& log)
+{
+	TypeValues<FLOAT_TYPE> typeValues;
+
+	if (valMatches<TYPE, FLOAT_TYPE>(returnedFloat, expected1) || valMatches<TYPE, FLOAT_TYPE>(returnedFloat, expected2))
+		return true;
+
+	typename RawConvert<FLOAT_TYPE, typename TYPE::StorageType>::Value val1, val2;
+	val1.fp = typeValues.getValue(expected1);
+	val2.fp = typeValues.getValue(expected2);
+
+	log << TestLog::Message << "Expected " << toHex(val1.ui) << " (" << val1.fp << ")"
+							<< " or " << toHex(val2.ui) << " (" << val2.fp << ")" << TestLog::EndMessage;
 	return false;
 }
 
@@ -2006,37 +2015,15 @@ bool compareBytes(vector<deUint8>& expectedBytes, AllocationSp outputAlloc, Test
 	log << TestLog::Message << "Calculated result: " << toHex(returnedFloat.bits())
 		<< " (" << returnedFloat.asFloat() << ")" << TestLog::EndMessage;
 
-	if (expectedValueId == V_NAN)
-	{
-		if (returnedFloat.isNaN())
-			return true;
-
-		log << TestLog::Message << "Expected NaN" << TestLog::EndMessage;
-		return false;
-	}
-
 	// handle multiple acceptable results cases
 	if (expectedValueId == V_ZERO_OR_MINUS_ZERO)
-	{
-		if (returnedFloat.isZero())
-			return true;
+		return isEither<TYPE, FLOAT_TYPE>(returnedFloat, V_ZERO, V_MINUS_ZERO, log);
 
-		log << TestLog::Message << "Expected 0 or -0" << TestLog::EndMessage;
-		return false;
-	}
 	if (expectedValueId == V_ZERO_OR_ONE)
-		return isZeroOrOtherValue<TYPE, FLOAT_TYPE>(returnedFloat, V_ONE, log);
-
-	if (expectedValueId == V_MINUS_ONE_OR_CLOSE)
-	{
-		// this expected value is only needed for fp16
-		DE_ASSERT(returnedFloat.EXPONENT_BIAS == 15);
-		typename TYPE::StorageType returnedValue = returnedFloat.bits();
-		return (returnedValue == 0xbc00) || (returnedValue == 0xbbff);
-	}
+		return isEither<TYPE, FLOAT_TYPE>(returnedFloat, V_ZERO, V_ONE, log);
 
 	if (expectedValueId == V_ZERO_OR_NAN)
-		return isZeroOrOtherValue<TYPE, FLOAT_TYPE>(returnedFloat, V_NAN, log);
+		return isEither<TYPE, FLOAT_TYPE>(returnedFloat, V_ZERO, V_NAN, log);
 
 	// handle trigonometric operations precision errors
 	if (expectedValueId == V_TRIG_ONE)
@@ -2046,13 +2033,13 @@ bool compareBytes(vector<deUint8>& expectedBytes, AllocationSp outputAlloc, Test
 	if (expectedValueId == V_PI_DIV_2)
 		return isAcosResultCorrect<TYPE>(returnedFloat, log);
 
+	if (valMatches<TYPE, FLOAT_TYPE>(returnedFloat, expectedValueId))
+		return true;
+
 	TypeValues<FLOAT_TYPE> typeValues;
 
 	typename RawConvert<FLOAT_TYPE, SType>::Value value;
 	value.fp = typeValues.getValue(expectedValueId);
-
-	if (returnedFloat.bits() == value.ui)
-		return true;
 
 	log << TestLog::Message << "Expected " << toHex(value.ui)
 		<< " (" << value.fp << ")" << TestLog::EndMessage;
