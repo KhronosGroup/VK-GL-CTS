@@ -325,7 +325,6 @@ void GraphicsCacheTest::initPrograms (SourceCollections& programCollection) cons
 				"  for(int ndx=0; ndx<3; ndx++)\n"
 				"  {\n"
 				"    gl_Position = gl_in[ndx].gl_Position;\n"
-				"    gl_PointSize = gl_in[ndx].gl_PointSize;\n"
 				"    vtxColor    = in_vtxColor[ndx];\n"
 				"    EmitVertex();\n"
 				"  }\n"
@@ -349,7 +348,6 @@ void GraphicsCacheTest::initPrograms (SourceCollections& programCollection) cons
 				"  gl_TessLevelOuter[2] = 4.0;\n"
 				"  gl_TessLevelInner[0] = 4.0;\n"
 				"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
-				"  gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n"
 				"  vtxColor[gl_InvocationID] = color[gl_InvocationID];\n"
 				"}\n");
 	}
@@ -379,7 +377,6 @@ void GraphicsCacheTest::initPrograms (SourceCollections& programCollection) cons
 				"  pos.w = 1.0;\n"
 				"  color.w = 1.0;\n"
 				"  gl_Position = pos;\n"
-				"  gl_PointSize = gl_in[0].gl_PointSize;"
 				"  vtxColor = color;\n"
 				"}\n");
 	}
