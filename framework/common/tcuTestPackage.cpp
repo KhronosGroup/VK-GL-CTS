@@ -34,9 +34,10 @@ namespace tcu
 // TestPackage
 
 TestPackage::TestPackage (TestContext& testCtx, const char* name, const char* description)
-	: TestNode(testCtx, NODETYPE_PACKAGE, name, description)
+	: TestNode(testCtx, NODETYPE_PACKAGE, name)
 	, m_caseListFilter(nullptr)
 {
+	DE_UNREF(description);
 }
 
 TestPackage::~TestPackage (void)
@@ -142,17 +143,17 @@ TestPackageDescriptor::~TestPackageDescriptor (void)
 // TestPackageRoot
 
 TestPackageRoot::TestPackageRoot (TestContext& testCtx)
-	: TestNode(testCtx, NODETYPE_ROOT, "", "")
+	: TestNode(testCtx, NODETYPE_ROOT, "")
 {
 }
 
 TestPackageRoot::TestPackageRoot (TestContext& testCtx, const vector<TestNode*>& children)
-	: TestNode(testCtx, NODETYPE_ROOT, "", "", children)
+	: TestNode(testCtx, NODETYPE_ROOT, "", children)
 {
 }
 
 TestPackageRoot::TestPackageRoot (TestContext& testCtx, const TestPackageRegistry* packageRegistry)
-	: TestNode(testCtx, NODETYPE_ROOT, "", "")
+	: TestNode(testCtx, NODETYPE_ROOT, "")
 {
 	const vector<TestPackageRegistry::PackageInfo*>&	packageInfos	= packageRegistry->getPackageInfos();
 

@@ -84,6 +84,7 @@ public:
 					GridRenderTestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Flags flags);
 
 private:
+	std::string		m_description;
 	const Flags		m_flags;
 	const int		m_tessGenLevel;
 	const int		m_numGeometryInvocations;
@@ -93,6 +94,7 @@ private:
 
 GridRenderTestCase::GridRenderTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Flags flags)
 	: TestCase					(testCtx, name, description)
+	, m_description				(description)
 	, m_flags					(flags)
 	, m_tessGenLevel			((m_flags & FLAG_TESSELLATION_MAX_SPEC)			? 64 : 5)
 	, m_numGeometryInvocations	((m_flags & FLAG_GEOMETRY_INVOCATIONS_MAX_SPEC)	? 32 : 4)
@@ -523,7 +525,7 @@ TestInstance* GridRenderTestCase::createInstance (Context& context) const
 	GridRenderTestInstance::Params params(m_testCtx);
 
 	params.flags								= m_flags;
-	params.description							= getDescription();
+	params.description							= m_description.c_str();
 	params.tessGenLevel							= m_tessGenLevel;
 	params.numGeometryInvocations				= m_numGeometryInvocations;
 	params.numLayers							= m_numLayers;

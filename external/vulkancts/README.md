@@ -513,9 +513,11 @@ are excluded from the log, but that can be customized by modifying
 `vk::DebugReportMessage::shouldBeLogged()` in `vkDebugReportUtil.hpp`.
 
 On the Android target, layers can be added to the APK during the build process
-by setting the `--layers-path` command line option to point into the NDK or to
-a locally-built layers tree. The layers are expected to be found under $abi/
-under the layers path.
+by setting the `--layers-path` command line option to point to the downloaded
+Validation Layers binaries or a locally-built layers tree. The layers are
+expected to be found under $abi/ under the layers path.
+The Validation Layers releases including prebuilt binaries are available at
+https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases.
 
 
 Cherry GUI

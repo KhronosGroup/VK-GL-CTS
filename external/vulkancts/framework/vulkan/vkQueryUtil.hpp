@@ -75,6 +75,7 @@ std::vector<VkLayerProperties>					enumerateInstanceLayerProperties				(const Pl
 std::vector<VkExtensionProperties>				enumerateInstanceExtensionProperties			(const PlatformInterface& vkp, const char* layerName);
 std::vector<VkLayerProperties>					enumerateDeviceLayerProperties					(const InstanceInterface& vki, VkPhysicalDevice physicalDevice);
 std::vector<VkExtensionProperties>				enumerateDeviceExtensionProperties				(const InstanceInterface& vki, VkPhysicalDevice physicalDevice, const char* layerName);
+const std::vector<VkExtensionProperties>&		enumerateCachedDeviceExtensionProperties		(const InstanceInterface& vki, VkPhysicalDevice physicalDevice);
 
 VkQueue											getDeviceQueue									(const DeviceInterface& vkd, VkDevice device, deUint32 queueFamilyIndex, deUint32 queueIndex);
 VkQueue											getDeviceQueue2									(const DeviceInterface& vkd, VkDevice device, const VkDeviceQueueInfo2 *queueInfo);

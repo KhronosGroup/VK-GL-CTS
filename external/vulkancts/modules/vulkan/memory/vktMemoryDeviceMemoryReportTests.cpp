@@ -1589,8 +1589,7 @@ struct CaseDescriptions
 
 static void checkSupport(Context& context)
 {
-	const std::vector<VkExtensionProperties> extensions =
-		enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), DE_NULL);
+	const auto& extensions = enumerateCachedDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice());
 
 	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
 	{

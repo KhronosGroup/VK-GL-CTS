@@ -3993,7 +3993,7 @@ namespace vkt
 				// Check if the physical device supports VK_EXT_robustness2 and the nullDescriptor feature.
 				const auto&	vki					= context.getInstanceInterface();
 				const auto	physicalDevice		= context.getPhysicalDevice();
-				const auto	supportedExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+				const auto&	supportedExtensions	= enumerateCachedDeviceExtensionProperties(vki, physicalDevice);
 
 				if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_robustness2")))
 					TCU_THROW(NotSupportedError, "VK_EXT_robustness2 not supported");

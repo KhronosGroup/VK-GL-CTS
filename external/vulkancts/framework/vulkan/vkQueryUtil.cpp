@@ -30,6 +30,8 @@
 
 #include <vector>
 #include <sstream>
+#include <memory>
+#include <map>
 
 namespace vk
 {
@@ -472,6 +474,56 @@ vector<VkExtensionProperties> enumerateDeviceExtensionProperties (const Instance
 	}
 
 	return properties;
+}
+
+namespace
+{
+
+class ExtensionPropertiesCache
+{
+protected:
+	typedef std::pair<const InstanceInterface*, VkPhysicalDevice>	key_type;
+	typedef std::unique_ptr<std::vector<VkExtensionProperties>>		value_type;
+
+public:
+	ExtensionPropertiesCache () {}
+
+	const std::vector<VkExtensionProperties>* get (const InstanceInterface& vki, VkPhysicalDevice dev)
+	{
+		const key_type key(&vki, dev);
+		const auto itr = m_cache.find(key);
+		if (itr == m_cache.end())
+			return nullptr;
+		return itr->second.get();
+	}
+
+	void add (const InstanceInterface& vki, VkPhysicalDevice dev, const std::vector<VkExtensionProperties>& vec)
+	{
+		const key_type key(&vki, dev);
+		m_cache[key].reset(new std::vector<VkExtensionProperties>(vec));
+	}
+
+protected:
+	std::map<key_type, value_type> m_cache;
+};
+
+} // anonymous namespace
+
+// Uses a global cache to avoid copying so many results and obtaining extension lists over and over again.
+const std::vector<VkExtensionProperties>& enumerateCachedDeviceExtensionProperties (const InstanceInterface& vki, VkPhysicalDevice physicalDevice)
+{
+	// Find extension properties in the cache.
+	static ExtensionPropertiesCache m_extensionPropertiesCache;
+	auto supportedExtensions = m_extensionPropertiesCache.get(vki, physicalDevice);
+
+	if (!supportedExtensions)
+	{
+		const auto enumeratedExtensions = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+		m_extensionPropertiesCache.add(vki, physicalDevice, enumeratedExtensions);
+		supportedExtensions = m_extensionPropertiesCache.get(vki, physicalDevice);
+	}
+
+	return *supportedExtensions;
 }
 
 bool isShaderStageSupported (const VkPhysicalDeviceFeatures& deviceFeatures, VkShaderStageFlagBits stage)
