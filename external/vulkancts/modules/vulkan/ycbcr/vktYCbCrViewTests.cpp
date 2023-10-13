@@ -45,6 +45,8 @@
 #include "deRandom.hpp"
 #include "deSTLUtil.hpp"
 
+#include <memory>
+
 namespace vkt
 {
 namespace ycbcr
@@ -423,24 +425,66 @@ void checkSupport(Context& context, TestParameters params)
 	checkImageFeatureSupport(context, params.planeCompatibleFormat,	VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT);
 }
 
-Vec4 castResult(Vec4 result, VkFormat f) {
-	union {
-		Vec4 vec;
-		IVec4 ivec;
-		UVec4 uvec;
-	} cast = { result };
+struct PixelSetter
+{
+	PixelSetter (const tcu::PixelBufferAccess& access) : m_access(access) {}
+	virtual void setPixel(const tcu::Vec4& rawValues, int x, int y, int z) const = 0;
+protected:
+	union RawReinterpreter
+	{
+		tcu::Vec4	fvec;
+		tcu::UVec4	uvec;
+		tcu::IVec4	ivec;
+	};
+	const tcu::PixelBufferAccess& m_access;
+};
 
-	if (isIntFormat(f)) {
-		IVec4 ivec = cast.ivec;
-		return Vec4((float)ivec.x(), (float)ivec.y(), (float)ivec.z(), (float)ivec.w());
-	}
-	else if (isUintFormat(f)) {
-		UVec4 uvec = cast.uvec;
-		return Vec4((float)uvec.x(), (float)uvec.y(), (float)uvec.z(), (float)uvec.w());
-	}
-	else {
-		return result;
-	}
+struct FloatPixelSetter : public PixelSetter
+{
+	FloatPixelSetter (const tcu::PixelBufferAccess& access) : PixelSetter(access) {}
+	void setPixel(const tcu::Vec4& rawValues, int x, int y, int z) const override { m_access.setPixel(rawValues, x, y, z); }
+};
+
+struct UintPixelSetter : public PixelSetter
+{
+	UintPixelSetter (const tcu::PixelBufferAccess& access) : PixelSetter(access) {}
+	void setPixel(const tcu::Vec4& rawValues, int x, int y, int z) const override { RawReinterpreter v { rawValues }; m_access.setPixel(v.uvec, x, y, z); }
+};
+
+struct IntPixelSetter : public PixelSetter
+{
+	IntPixelSetter (const tcu::PixelBufferAccess& access) : PixelSetter(access) {}
+	void setPixel(const tcu::Vec4& rawValues, int x, int y, int z) const override { RawReinterpreter v { rawValues }; m_access.setPixel(v.ivec, x, y, z); }
+};
+
+std::unique_ptr<PixelSetter> getPixelSetter (const tcu::PixelBufferAccess& access, VkFormat format)
+{
+	std::unique_ptr<PixelSetter> pixelSetterPtr;
+
+	if (isIntFormat(format))
+		pixelSetterPtr.reset(new IntPixelSetter(access));
+	else if (isUintFormat(format))
+		pixelSetterPtr.reset(new UintPixelSetter(access));
+	else
+		pixelSetterPtr.reset(new FloatPixelSetter(access));
+
+	return pixelSetterPtr;
+}
+
+// When comparing data interpreted using two different formats, if one of the formats has padding bits, we must compare results
+// using that format. Padding bits may not be preserved, so we can only compare results for bits which have meaning on both formats.
+VkFormat chooseComparisonFormat (VkFormat planeOriginalFormat, VkFormat planeCompatibleFormat)
+{
+	const bool isOriginalPadded		= isPaddedFormat(planeOriginalFormat);
+	const bool isCompatiblePadded	= isPaddedFormat(planeCompatibleFormat);
+
+	// We can't have padded formats on both sides unless they're the exact same formats.
+	if (isOriginalPadded && isCompatiblePadded)
+		DE_ASSERT(planeOriginalFormat == planeCompatibleFormat);
+
+	if (isCompatiblePadded)
+		return planeCompatibleFormat;
+	return planeOriginalFormat;
 }
 
 tcu::TestStatus testPlaneView (Context& context, TestParameters params)
@@ -686,36 +730,78 @@ tcu::TestStatus testPlaneView (Context& context, TestParameters params)
 			}
 		}
 
-		// Plane view sampling reference
+		// Compare whole image.
 		{
-			const tcu::ConstPixelBufferAccess	planeAccess		(mapVkFormat(params.planeCompatibleFormat),
-																 tcu::IVec3((int)planeExtent.x(), (int)planeExtent.y(), 1),
+			const vector<Vec4>&	reference	= referenceWhole;
+			const vector<Vec4>&	result		= resultWhole;
+
+			for (size_t ndx = 0; ndx < numValues; ++ndx)
+			{
+				const Vec4 resultValue = result[ndx];
+				if (boolAny(greaterThanEqual(abs(resultValue - reference[ndx]), threshold)))
+				{
+					context.getTestContext().getLog()
+						<< TestLog::Message << "ERROR: When sampling complete image at " << texCoord[ndx]
+											<< ": got " << result[ndx]
+											<< ", expected " << reference[ndx]
+						<< TestLog::EndMessage;
+					allOk = false;
+				}
+			}
+		}
+
+		// Compare sampled plane.
+		{
+			const tcu::IVec3	resultSize		(static_cast<int>(numValues), 1, 1);
+			const tcu::IVec3	origPlaneSize	((int)planeExtent.x(), (int)planeExtent.y(), 1);
+
+			// This is not the original *full* image format, but that of the specific plane we worked with (e.g. G10X6_etc becomes R10X6).
+			const auto			planeOriginalFormat			= imageData.getDescription().planes[params.planeNdx].planeCompatibleFormat;
+			const auto			planeCompatibleFormat		= params.planeCompatibleFormat;
+			const auto			tcuPlaneCompatibleFormat	= mapVkFormat(params.planeCompatibleFormat);
+
+			// We need to take the original image and the sampled results to a common ground for comparison.
+			// The common ground will be the padded format if it exists or the original format if it doesn't.
+			// The padded format is chosen as a priority because, if it exists, some bits may have been lost there.
+			const auto			comparisonFormat			= chooseComparisonFormat(planeOriginalFormat, planeCompatibleFormat);
+			const auto			tcuComparisonFormat			= mapVkFormat(comparisonFormat);
+
+			// Re-pack results into the plane-specific format. For that, we use the compatible format first to create an image.
+			tcu::TextureLevel	repackedLevel				(tcuPlaneCompatibleFormat, resultSize.x(), resultSize.y(), resultSize.z());
+			auto				repackedCompatibleAccess	= repackedLevel.getAccess();
+			const auto			pixelSetter					= getPixelSetter(repackedCompatibleAccess, planeCompatibleFormat);
+
+			// Note resultPlane, even if on the C++ side contains an array of Vec4 values, has actually received floats, int32_t or
+			// uint32_t values, depending on the underlying plane compatible format, when used as the ShaderExecutor output.
+			// What we achieve with the pixel setter is to reintepret those raw values as actual ints, uints or floats depending on
+			// the plane compatible format, and call the appropriate value-setting method of repackedCompatibleAccess.
+			for (size_t i = 0u; i < numValues; ++i)
+				pixelSetter->setPixel(resultPlane[i], static_cast<int>(i), 0, 0);
+
+			// Finally, we create an access to the same data with the comparison format for the plane.
+			const tcu::ConstPixelBufferAccess	repackedAccess	(tcuComparisonFormat,
+																 resultSize,
+																 repackedCompatibleAccess.getDataPtr());
+
+			// Now we compare that access with the original texture values sampled in the comparison format.
+			const tcu::ConstPixelBufferAccess	planeAccess		(tcuComparisonFormat,
+																 origPlaneSize,
 																 imageData.getPlanePtr(params.planeNdx));
 			const tcu::Sampler					refSampler		= mapVkSampler(planeSamplerInfo);
 			const tcu::Texture2DView			refTexView		(1u, &planeAccess);
 
 			for (size_t ndx = 0; ndx < numValues; ++ndx)
 			{
-				const Vec2&	coord	= texCoord[ndx];
-				referencePlane[ndx] = refTexView.sample(refSampler, coord.x(), coord.y(), 0.0f);
-			}
-		}
+				const Vec2&	coord		= texCoord[ndx];
+				const auto	refValue	= refTexView.sample(refSampler, coord.x(), coord.y(), 0.0f);
+				const auto	resValue	= repackedAccess.getPixel(static_cast<int>(ndx), 0);
 
-		for (int viewNdx = 0; viewNdx < 2; ++viewNdx)
-		{
-			const char* const	viewName	= (viewNdx == 0) ? "complete image"	: "plane view";
-			const vector<Vec4>&	reference	= (viewNdx == 0) ? referenceWhole	: referencePlane;
-			const vector<Vec4>&	result		= (viewNdx == 0) ? resultWhole		: resultPlane;
-
-			for (size_t ndx = 0; ndx < numValues; ++ndx)
-			{
-				const Vec4 resultValue = (viewNdx == 0) ? result[ndx] : castResult(result[ndx], params.planeCompatibleFormat);
-				if (boolAny(greaterThanEqual(abs(resultValue - reference[ndx]), threshold)))
+				if (boolAny(greaterThanEqual(abs(resValue - refValue), threshold)))
 				{
 					context.getTestContext().getLog()
-						<< TestLog::Message << "ERROR: When sampling " << viewName << " at " << texCoord[ndx]
-											<< ": got " << result[ndx]
-											<< ", expected " << reference[ndx]
+						<< TestLog::Message << "ERROR: When sampling plane view at " << texCoord[ndx]
+											<< ": got " << resValue
+											<< ", expected " << refValue
 						<< TestLog::EndMessage;
 					allOk = false;
 				}
