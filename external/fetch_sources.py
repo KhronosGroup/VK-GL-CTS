@@ -303,8 +303,8 @@ PACKAGES = [
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
-		"git@github.com:KhronosGroup/glslang.git",
-		"7dda6a6347b0bd550e202942adee475956ef462a",
+		None,
+		"77417d5c9e0a5d4c79ddd0285d530b45f7259f0d",
 		"glslang",
 		removeTags = ["master-tot"]),
 	GitRepo(
@@ -319,8 +319,8 @@ PACKAGES = [
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",
-		"git@github.com:google/amber.git",
-		"8b145a6c89dcdb4ec28173339dd176fb7b6f43ed",
+		None,
+		"933ecb4d6288675a92eb1650e0f52b1d7afe8273",
 		"amber"),
 	GitRepo(
 		"https://github.com/open-source-parsers/jsoncpp.git",

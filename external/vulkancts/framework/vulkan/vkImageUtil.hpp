@@ -44,6 +44,7 @@ bool						isUintFormat				(VkFormat format);
 bool						isDepthStencilFormat		(VkFormat format);
 bool						isCompressedFormat			(VkFormat format);
 bool						isSrgbFormat				(VkFormat format);
+bool						isPaddedFormat				(VkFormat format);
 
 bool						is64BitIntegerFormat		(VkFormat format);
 

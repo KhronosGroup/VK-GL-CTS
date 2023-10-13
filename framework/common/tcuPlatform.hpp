@@ -25,6 +25,8 @@
 
 #include "tcuDefs.hpp"
 
+#include <cstdint>
+
 namespace glu
 {
 class Platform;

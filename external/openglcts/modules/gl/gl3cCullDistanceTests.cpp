@@ -2227,6 +2227,11 @@ void CullDistance::FunctionalTest::executeRenderTest(glw::GLuint	 clipdistances_
 	const glw::GLuint stride_in_floats =
 		clipdistances_array_size + culldistances_array_size + 2 /* position's x, y*/ + 2 /* checkpoint x,y */;
 
+	// Release build does not use them
+	DE_UNREF(n_clipped_vertices_real);
+	DE_UNREF(n_culled_primitives_real);
+	DE_UNREF(n_not_clipped_vertices_real);
+
 	switch (primitive_mode)
 	{
 	case PRIMITIVE_MODE_LINES:
