@@ -37,6 +37,7 @@
 #include <vector>
 #include <limits>
 #include <fenv.h>
+#include <cstdint>
 
 namespace vkt
 {

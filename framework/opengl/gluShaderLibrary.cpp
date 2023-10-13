@@ -1036,14 +1036,11 @@ void ShaderParser::parseValue (ValueBlock& valueBlock)
 	// Parse actual value.
 	if (m_curToken == TOKEN_LEFT_BRACKET) // value list
 	{
-		int	arrayLength	= 0; // \todo [2015-08-03 pyry] Currently unused
-
 		advanceToken(TOKEN_LEFT_BRACKET);
 
 		for (;;)
 		{
 			parseValueElement(basicType, dstBlock->back());
-			arrayLength++;
 
 			if (m_curToken == TOKEN_RIGHT_BRACKET)
 				break;

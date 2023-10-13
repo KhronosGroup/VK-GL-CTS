@@ -1157,10 +1157,8 @@ Vec4 ConstPixelBufferAccess::getPixel (int x, int y, int z) const
 		case TextureFormat::SSCALED_INT_1010102_REV:
 		case TextureFormat::SIGNED_INT_1010102_REV:		return swizzleGe( UVec4(SI32(0, 10), SI32(10, 10), SI32(20, 10), SI32(30, 2)), m_format.order, TextureFormat::RGBA).cast<float>();
 		case TextureFormat::UNSIGNED_INT_999_E5_REV:	return unpackRGB999E5(*((const deUint32*)pixelPtr));
+		case TextureFormat::UNORM_SHORT_1555:			return swizzleGe( Vec4(UN16(15,  1), UN16(10,  5), UN16( 5,  5), UN16( 0, 5)), m_format.order, TextureFormat::RGBA);
 
-		case TextureFormat::UNORM_SHORT_1555:
-			DE_ASSERT(m_format.order == TextureFormat::ARGB);
-			return Vec4(UN16(15, 1), UN16(10, 5), UN16(5, 5), UN16(0, 5)).swizzle(1,2,3,0); // ARGB -> RGBA
 
 		case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
 			return Vec4(Float11(UI32(0, 11)).asFloat(), Float11(UI32(11, 11)).asFloat(), Float10(UI32(22, 10)).asFloat(), 1.0f);
@@ -1323,10 +1321,8 @@ IVec4 ConstPixelBufferAccess::getPixelInt (int x, int y, int z) const
 		case TextureFormat::SNORM_INT_1010102_REV:		// Fall-through
 		case TextureFormat::SSCALED_INT_1010102_REV:	// Fall-through
 		case TextureFormat::SIGNED_INT_1010102_REV:		return swizzleGe(IVec4(S32( 0, 10), S32(10, 10), S32(20, 10), S32(30, 2)), m_format.order, TextureFormat::RGBA);
+		case TextureFormat::UNORM_SHORT_1555:			return swizzleGe(UVec4(U16(15,  1), U16(10,  5), U16( 5,  5), U16( 0, 5)).cast<int>(), m_format.order, TextureFormat::RGBA);
 
-		case TextureFormat::UNORM_SHORT_1555:
-			DE_ASSERT(m_format.order == TextureFormat::ARGB);
-			return UVec4(U16(15, 1), U16(10, 5), U16(5, 5), U16(0, 5)).cast<int>().swizzle(1,2,3,0); // ARGB -> RGBA
 
 		default:
 			break; // To generic path.
@@ -1421,10 +1417,8 @@ U64Vec4 ConstPixelBufferAccess::getPixelBitsAsUint64 (int x, int y, int z) const
 		case TextureFormat::SNORM_INT_1010102_REV:		// Fall-through
 		case TextureFormat::SSCALED_INT_1010102_REV:	// Fall-through
 		case TextureFormat::SIGNED_INT_1010102_REV:		return swizzleGe(U64Vec4(U32( 0, 10), U32(10, 10), U32(20, 10), U32(30, 2)), m_format.order, TextureFormat::RGBA);
+		case TextureFormat::UNORM_SHORT_1555:			return swizzleGe(U64Vec4(U16(15,  1), U16(10,  5), U16( 5,  5), U16( 0, 5)), m_format.order, TextureFormat::RGBA);
 
-		case TextureFormat::UNORM_SHORT_1555:
-			DE_ASSERT(m_format.order == TextureFormat::ARGB);
-			return U64Vec4(U16(15, 1), U16(10, 5), U16(5, 5), U16(0, 5)).swizzle(1,2,3,0); // ARGB -> RGBA
 
 		default:
 			break; // To generic path.
