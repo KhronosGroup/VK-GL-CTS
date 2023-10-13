@@ -678,6 +678,10 @@ static void infNanRandomFloats(int numValues, void* const* values, const char *n
 	DE_ASSERT(0 < numInf);
 	DE_ASSERT(0 < numNan);
 	DE_ASSERT(numInf + numNan < numValues*scalarSize);
+
+	// Release build does not use them
+	DE_UNREF(numInf);
+	DE_UNREF(numNan);
 }
 
 class IsnanCaseInstance : public CommonFunctionTestInstance

@@ -6014,11 +6014,11 @@ deUint8 stencilResult(vk::VkStencilOp op, deUint8 storedValue, deUint8 reference
 class TestGroupWithClean : public tcu::TestCaseGroup
 {
 public:
-			TestGroupWithClean	(tcu::TestContext& testCtx, const char* name, const char* description)
-				: tcu::TestCaseGroup(testCtx, name, description)
-				{}
+	TestGroupWithClean	(tcu::TestContext& testCtx, const char* name, const char* description)
+		: tcu::TestCaseGroup(testCtx, name, description)
+		{}
 
-	virtual	~TestGroupWithClean	(void) { cleanupDevices(); }
+	void deinit (void) override { cleanupDevices(); }
 };
 
 using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
