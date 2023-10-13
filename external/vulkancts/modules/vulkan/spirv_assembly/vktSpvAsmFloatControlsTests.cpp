@@ -38,6 +38,7 @@
 #include <limits>
 #include <cstdint>
 #include <fenv.h>
+#include <cstdint>
 
 namespace vkt
 {

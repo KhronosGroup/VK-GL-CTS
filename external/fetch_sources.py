@@ -310,7 +310,7 @@ PACKAGES = [
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
-		"git@github.com:KhronosGroup/glslang.git",
+		None,
 		"c5117b328afc86e16edff6ed6afe0fe7872a7cf3",
 		"glslang",
 		removeTags = ["main-tot"]),
@@ -326,7 +326,7 @@ PACKAGES = [
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",
-		"git@github.com:google/amber.git",
+		None,
 		"933ecb4d6288675a92eb1650e0f52b1d7afe8273",
 		"amber"),
 	GitRepo(

@@ -1413,10 +1413,8 @@ U64Vec4 ConstPixelBufferAccess::getPixelBitsAsUint64 (int x, int y, int z) const
 		case TextureFormat::SNORM_INT_1010102_REV:		// Fall-through
 		case TextureFormat::SSCALED_INT_1010102_REV:	// Fall-through
 		case TextureFormat::SIGNED_INT_1010102_REV:		return swizzleGe(U64Vec4(U32( 0, 10), U32(10, 10), U32(20, 10), U32(30, 2)), m_format.order, TextureFormat::RGBA);
+		case TextureFormat::UNORM_SHORT_1555:			return swizzleGe(U64Vec4(U16(15,  1), U16(10,  5), U16( 5,  5), U16( 0, 5)), m_format.order, TextureFormat::RGBA);
 
-		case TextureFormat::UNORM_SHORT_1555:
-			DE_ASSERT(m_format.order == TextureFormat::ARGB);
-			return U64Vec4(U16(15, 1), U16(10, 5), U16(5, 5), U16(0, 5)).swizzle(1,2,3,0); // ARGB -> RGBA
 
 		default:
 			break; // To generic path.
