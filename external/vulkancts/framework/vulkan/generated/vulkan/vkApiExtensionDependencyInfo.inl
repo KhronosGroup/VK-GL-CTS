@@ -3073,6 +3073,18 @@ bool check_VK_EXT_pipeline_protected_access(const tcu::UVec2& v, const ExtPropVe
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
+bool check_VK_ANDROID_external_format_resolve(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_ANDROID_external_format_resolve"))
+		return true;
+
+	// depends attribute in xml: VK_ANDROID_external_memory_android_hardware_buffer
+	return isSupported(vDEP, "VK_ANDROID_external_memory_android_hardware_buffer");
+}
+
 bool check_VK_KHR_maintenance5(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3519,6 +3531,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_NV_optical_flow",									&check_VK_NV_optical_flow),
 	std::make_pair("VK_EXT_legacy_dithering",								&check_VK_EXT_legacy_dithering),
 	std::make_pair("VK_EXT_pipeline_protected_access",						&check_VK_EXT_pipeline_protected_access),
+	std::make_pair("VK_ANDROID_external_format_resolve",					&check_VK_ANDROID_external_format_resolve),
 	std::make_pair("VK_KHR_maintenance5",									&check_VK_KHR_maintenance5),
 	std::make_pair("VK_KHR_ray_tracing_position_fetch",						&check_VK_KHR_ray_tracing_position_fetch),
 	std::make_pair("VK_EXT_shader_object",									&check_VK_EXT_shader_object),
@@ -3869,6 +3882,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_NV_optical_flow"),
 	std::make_tuple(1, 0, "VK_EXT_legacy_dithering"),
 	std::make_tuple(1, 0, "VK_EXT_pipeline_protected_access"),
+	std::make_tuple(1, 0, "VK_ANDROID_external_format_resolve"),
 	std::make_tuple(1, 1, "VK_KHR_maintenance5"),
 	std::make_tuple(1, 1, "VK_KHR_ray_tracing_position_fetch"),
 	std::make_tuple(1, 0, "VK_EXT_shader_object"),
@@ -3880,6 +3894,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_ARM_shader_core_builtins"),
 	std::make_tuple(1, 0, "VK_EXT_pipeline_library_group_handles"),
 	std::make_tuple(1, 0, "VK_EXT_dynamic_rendering_unused_attachments"),
+	std::make_tuple(1, 0, "VK_NV_low_latency2"),
 	std::make_tuple(1, 0, "VK_KHR_cooperative_matrix"),
 	std::make_tuple(1, 0, "VK_QCOM_multiview_per_view_render_areas"),
 	std::make_tuple(1, 0, "VK_QCOM_image_processing2"),

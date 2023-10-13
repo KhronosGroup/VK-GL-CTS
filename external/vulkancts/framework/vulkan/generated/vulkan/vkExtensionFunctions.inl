@@ -1364,6 +1364,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_ANDROID_external_format_resolve")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_maintenance5")
 	{
 		return;
@@ -1405,6 +1409,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_EXT_dynamic_rendering_unused_attachments")
+	{
+		return;
+	}
+	if (extName == "VK_NV_low_latency2")
 	{
 		return;
 	}
@@ -3112,6 +3120,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_ANDROID_external_format_resolve")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_maintenance5")
 	{
 		functions.push_back("vkCmdBindIndexBuffer2KHR");
@@ -3203,6 +3215,15 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_EXT_dynamic_rendering_unused_attachments")
 	{
+		return;
+	}
+	if (extName == "VK_NV_low_latency2")
+	{
+		functions.push_back("vkSetLatencySleepModeNV");
+		functions.push_back("vkLatencySleepNV");
+		functions.push_back("vkSetLatencyMarkerNV");
+		functions.push_back("vkGetLatencyTimingsNV");
+		functions.push_back("vkQueueNotifyOutOfBandNV");
 		return;
 	}
 	if (extName == "VK_KHR_cooperative_matrix")
@@ -3604,6 +3625,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_NV_optical_flow",
 	"VK_EXT_legacy_dithering",
 	"VK_EXT_pipeline_protected_access",
+	"VK_ANDROID_external_format_resolve",
 	"VK_KHR_maintenance5",
 	"VK_KHR_ray_tracing_position_fetch",
 	"VK_EXT_shader_object",
@@ -3615,6 +3637,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_ARM_shader_core_builtins",
 	"VK_EXT_pipeline_library_group_handles",
 	"VK_EXT_dynamic_rendering_unused_attachments",
+	"VK_NV_low_latency2",
 	"VK_KHR_cooperative_matrix",
 	"VK_QCOM_multiview_per_view_render_areas",
 	"VK_QCOM_image_processing2",

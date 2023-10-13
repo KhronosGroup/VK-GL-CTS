@@ -83,86 +83,6 @@ private:
 	NativeHandle&						operator=					(const NativeHandle&);
 };
 
-class AndroidHardwareBufferExternalApi
-{
-public:
-
-	/**
-	 * getInstance obtains the object, that provides an interface to AHB system APIs .
-	 * If the AHB system API is not supported or if it is not built as supported with the CTS,
-	 * then this function would return a null object.
-	 */
-	static AndroidHardwareBufferExternalApi* getInstance();
-
-	/* Is AndroidHardwareBuffer supported? */
-	static bool supportsAhb();
-
-	/* Are Cube maps supported on current api level? */
-	static bool supportsCubeMap();
-
-	/**
-	 * Allocates a buffer that backs an AHardwareBuffer using the passed parameter as follows:
-	 * width;      - width in pixels
-	 * height;     - height in pixels
-	 * layers;     - number of images
-	 * format;     - One of AHARDWAREBUFFER_FORMAT_*
-	 * usage;      - Combination of AHARDWAREBUFFER_USAGE_*
-	 *
-	 * Returns a valid AndroidHardwareBufferPtr object on success, or an null AndroidHardwareBufferPtr if
-	 * the allocation fails for any reason.
-	 */
-	virtual vk::pt::AndroidHardwareBufferPtr allocate(deUint32 width, deUint32  height, deUint32 layers, deUint32  format, deUint64 usage) = 0;
-
-	/**
-	 * Acquire a reference on the given AHardwareBuffer object.  This prevents the
-	 * object from being deleted until the last reference is removed.
-	 */
-	virtual void acquire(vk::pt::AndroidHardwareBufferPtr buffer) = 0;
-
-	/**
-	 * Remove a reference that was previously acquired with
-	 * AHardwareBuffer_acquire().
-	 */
-	virtual void release(vk::pt::AndroidHardwareBufferPtr buffer) = 0;
-
-	/**
-	 * Return a description of the AHardwareBuffer in the passed in the following fields, if not NULL:
-	 * width;      - width in pixels
-	 * height;     - height in pixels
-	 * layers;     - number of images
-	 * format;     - One of AHARDWAREBUFFER_FORMAT_*
-	 * usage;      - Combination of AHARDWAREBUFFER_USAGE_*
-	 *
-	 */
-	virtual void describe(const vk::pt::AndroidHardwareBufferPtr buffer,
-				  deUint32* width,
-				  deUint32* height,
-				  deUint32* layers,
-				  deUint32* format,
-				  deUint64* usage,
-				  deUint32* stride) = 0;
-
-
-	virtual deUint64 vkUsageToAhbUsage(vk::VkImageUsageFlagBits vkFlag) = 0;
-	virtual deUint64 vkCreateToAhbUsage(vk::VkImageCreateFlagBits vkFlag) = 0;
-	virtual deUint32 vkFormatToAhbFormat(vk::VkFormat vkFormat) = 0;
-	virtual deUint64 mustSupportAhbUsageFlags() = 0;
-	virtual bool     ahbFormatIsBlob(deUint32 format) = 0;
-
-	virtual ~AndroidHardwareBufferExternalApi();
-
-protected:
-	// Protected Constructor
-	AndroidHardwareBufferExternalApi();
-
-private:
-	// Stop the compiler generating methods of copy the object
-	AndroidHardwareBufferExternalApi(AndroidHardwareBufferExternalApi const& copy);            // Not Implemented
-	AndroidHardwareBufferExternalApi& operator=(AndroidHardwareBufferExternalApi const& copy); // Not Implemented
-
-	static bool loadAhbDynamicApis(deInt32 sdkVersion);
-};
-
 const char*						externalSemaphoreTypeToName	(vk::VkExternalSemaphoreHandleTypeFlagBits	type);
 const char*						externalFenceTypeToName		(vk::VkExternalFenceHandleTypeFlagBits		type);
 const char*						externalMemoryTypeToName	(vk::VkExternalMemoryHandleTypeFlagBits		type);
@@ -372,5 +292,7 @@ vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT getPhysicalDeviceExternalMem
 } // vkt
 
 #endif // CTS_USES_VULKANSC
+
+#include "vktExternalMemoryAndroidHardwareBufferUtil.hpp"
 
 #endif // _VKTEXTERNALMEMORYUTIL_HPP
