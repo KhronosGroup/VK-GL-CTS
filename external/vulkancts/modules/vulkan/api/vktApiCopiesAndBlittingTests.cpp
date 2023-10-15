@@ -5056,6 +5056,13 @@ public:
 
 	virtual void			checkSupport			(Context&						context) const
 	{
+
+#ifndef CTS_USES_VULKANSC
+		if (m_params.src.image.format == VK_FORMAT_A8_UNORM_KHR || m_params.dst.image.format == VK_FORMAT_A8_UNORM_KHR ||
+			m_params.src.image.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR || m_params.dst.image.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+			context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
 		VkImageFormatProperties properties;
 		if (context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
 																					m_params.src.image.format,
@@ -5110,12 +5117,6 @@ public:
 				TCU_THROW(NotSupportedError, "Source format feature sampled image filter cubic not supported");
 			}
 		}
-
-#ifndef CTS_USES_VULKANSC
-		if (m_params.src.image.format == VK_FORMAT_A8_UNORM_KHR || m_params.dst.image.format == VK_FORMAT_A8_UNORM_KHR ||
-			m_params.src.image.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR || m_params.dst.image.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
-			context.requireDeviceFunctionality("VK_KHR_maintenance5");
-#endif // CTS_USES_VULKANSC
 
 		checkExtensionSupport(context, m_params.extensionFlags);
 	}
