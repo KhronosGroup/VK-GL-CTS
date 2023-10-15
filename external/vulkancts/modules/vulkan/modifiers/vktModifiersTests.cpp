@@ -184,11 +184,11 @@ static deBool featuresCompatible(FlagsType modifierFeatures, VkFormatFeatureFlag
 }
 
 template <typename ModifierList, typename ModifierProps, VkStructureType modifierListSType>
-std::vector<deUint64> getExportImportCompatibleModifiers (Context& context, VkFormat format)
+std::vector<ModifierProps> getExportImportCompatibleModifiers (Context& context, VkFormat format)
 {
 	const auto&				vki					= context.getInstanceInterface();
 	const auto				drmFormatModifiers	= getDrmFormatModifiers<ModifierList, ModifierProps, modifierListSType>(vki, context.getPhysicalDevice(), format);
-	std::vector<deUint64>	compatibleModifiers;
+	std::vector<ModifierProps>	compatibleModifiers;
 
 	if (drmFormatModifiers.empty())
 		return compatibleModifiers;
@@ -216,7 +216,7 @@ std::vector<deUint64> getExportImportCompatibleModifiers (Context& context, VkFo
 		if (!supported)
 			continue;
 
-		compatibleModifiers.push_back(modifier);
+		compatibleModifiers.push_back(modifierProps);
 	}
 
 	return compatibleModifiers;
@@ -673,7 +673,8 @@ deUint32 chooseMemoryType(deUint32 bits)
 	return -1;
 }
 
-bool exportImportMemoryExplicitModifiersCase (Context& context, const VkFormat format, deUint64 modifier)
+template <typename ModifierProps>
+bool exportImportMemoryExplicitModifiersCase (Context& context, const VkFormat format, const ModifierProps& modifier)
 {
 	const InstanceInterface&						vki					= context.getInstanceInterface();
 	const DeviceInterface&							vkd					= context.getDeviceInterface();
@@ -684,13 +685,13 @@ bool exportImportMemoryExplicitModifiersCase (Context& context, const VkFormat f
 															 VK_IMAGE_TYPE_2D,
 															 (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
 															 VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
-															 modifier);
+															 modifier.drmFormatModifier);
 
 	if (!supported)
-		TCU_FAIL("Modifier " + de::toString(modifier) + " for format " + de::toString(format) + " expected to be compatible");
+		TCU_FAIL("Modifier " + de::toString(modifier.drmFormatModifier) + " for format " + de::toString(format) + " expected to be compatible");
 
 	std::vector<deUint64>					modifiers;
-	modifiers.push_back(modifier);
+	modifiers.push_back(modifier.drmFormatModifier);
 
 
 	const UVec2									imageSize		(64, 64);
