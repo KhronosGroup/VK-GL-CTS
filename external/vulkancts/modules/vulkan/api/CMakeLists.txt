@@ -83,8 +83,6 @@ set(DEQP_VK_API_SRCS
 	vktApiPhysicalDeviceFormatPropertiesMaint5Tests.hpp
 	vktApiFrameBoundaryTests.cpp
 	vktApiFrameBoundaryTests.hpp
-	vktApiExtensionDuplicatesTests.cpp
-	vktApiExtensionDuplicatesTests.hpp
 	)
 
 PCH(DEQP_VK_API_SRCS ../pch.cpp)
