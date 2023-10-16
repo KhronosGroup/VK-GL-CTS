@@ -484,3 +484,8 @@ CmdInitializeGraphScratchMemoryAMDXFunc						cmdInitializeGraphScratchMemoryAMDX
 CmdDispatchGraphAMDXFunc									cmdDispatchGraphAMDX;
 CmdDispatchGraphIndirectAMDXFunc							cmdDispatchGraphIndirectAMDX;
 CmdDispatchGraphIndirectCountAMDXFunc						cmdDispatchGraphIndirectCountAMDX;
+SetLatencySleepModeNVFunc									setLatencySleepModeNV;
+LatencySleepNVFunc											latencySleepNV;
+SetLatencyMarkerNVFunc										setLatencyMarkerNV;
+GetLatencyTimingsNVFunc										getLatencyTimingsNV;
+QueueNotifyOutOfBandNVFunc									queueNotifyOutOfBandNV;

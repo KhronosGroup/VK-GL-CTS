@@ -87,6 +87,7 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_AMD_texture_gather_bias_lod",
 		"VK_AMD_shader_early_and_late_fragment_tests",
 		"VK_ANDROID_external_memory_android_hardware_buffer",
+		"VK_ANDROID_external_format_resolve",
 		"VK_VALVE_mutable_descriptor_type",
 		"VK_NV_shader_subgroup_partitioned",
 		"VK_NV_clip_space_w_scaling",

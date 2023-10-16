@@ -138,6 +138,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/descriptor_indexing/vktDescriptorSetsIndexingTestsUtils.cpp \
 	external/vulkancts/modules/vulkan/device_group/vktDeviceGroupRendering.cpp \
 	external/vulkancts/modules/vulkan/draw/vktBasicDrawTests.cpp \
+	external/vulkancts/modules/vulkan/draw/vktDrawAhbExternalFormatResolveTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawAhbTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawBaseClass.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawBufferObjectUtil.cpp \
@@ -621,6 +622,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockCase.cpp \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockTests.cpp \
 	external/vulkancts/modules/vulkan/util/vktDrawUtil.cpp \
+	external/vulkancts/modules/vulkan/util/vktExternalMemoryAndroidHardwareBufferUtil.cpp \
 	external/vulkancts/modules/vulkan/util/vktExternalMemoryUtil.cpp \
 	external/vulkancts/modules/vulkan/util/vktTypeComparisonUtil.cpp \
 	external/vulkancts/modules/vulkan/video/vktBitstreamBufferImpl.cpp \

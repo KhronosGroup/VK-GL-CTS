@@ -70,6 +70,7 @@ const VkPhysicalDeviceImageProcessingPropertiesQCOM&			getImageProcessingPropert
 const VkPhysicalDeviceExtendedDynamicState3PropertiesEXT&		getExtendedDynamicState3PropertiesEXT		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceExtendedDynamicState3PropertiesEXT>();			}
 const VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&		getShaderModuleIdentifierPropertiesEXT		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT>();		}
 const VkPhysicalDeviceOpticalFlowPropertiesNV&					getOpticalFlowProperties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceOpticalFlowPropertiesNV>();					}
+const VkPhysicalDeviceExternalFormatResolvePropertiesANDROID&	getExternalFormatResolvePropertiesANDROID	(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceExternalFormatResolvePropertiesANDROID>();		}
 const VkPhysicalDeviceMaintenance5PropertiesKHR&				getMaintenance5Properties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMaintenance5PropertiesKHR>();					}
 const VkPhysicalDeviceShaderObjectPropertiesEXT&				getShaderObjectPropertiesEXT				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderObjectPropertiesEXT>();					}
 const VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV&	getRayTracingInvocationReorderProperties	(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV>();	}

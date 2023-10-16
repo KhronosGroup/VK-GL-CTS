@@ -4091,6 +4091,43 @@ VKAPI_ATTR void VKAPI_CALL cmdDispatchGraphIndirectCountAMDX (VkCommandBuffer co
 	DE_UNREF(countInfo);
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL setLatencySleepModeNV (VkDevice device, VkSwapchainKHR swapchain, VkLatencySleepModeInfoNV* pSleepModeInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pSleepModeInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL latencySleepNV (VkDevice device, VkSwapchainKHR swapchain, VkLatencySleepInfoNV* pSleepInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pSleepInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL setLatencyMarkerNV (VkDevice device, VkSwapchainKHR swapchain, VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pLatencyMarkerInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL getLatencyTimingsNV (VkDevice device, VkSwapchainKHR swapchain, uint32_t* pTimingCount, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pTimingCount);
+	DE_UNREF(pLatencyMarkerInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL queueNotifyOutOfBandNV (VkQueue queue, VkOutOfBandQueueTypeInfoNV pQueueTypeInfo)
+{
+	DE_UNREF(queue);
+	DE_UNREF(pQueueTypeInfo);
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -4676,5 +4713,10 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdDispatchGraphAMDX,										cmdDispatchGraphAMDX),
 	VK_NULL_FUNC_ENTRY(vkCmdDispatchGraphIndirectAMDX,								cmdDispatchGraphIndirectAMDX),
 	VK_NULL_FUNC_ENTRY(vkCmdDispatchGraphIndirectCountAMDX,							cmdDispatchGraphIndirectCountAMDX),
+	VK_NULL_FUNC_ENTRY(vkSetLatencySleepModeNV,										setLatencySleepModeNV),
+	VK_NULL_FUNC_ENTRY(vkLatencySleepNV,											latencySleepNV),
+	VK_NULL_FUNC_ENTRY(vkSetLatencyMarkerNV,										setLatencyMarkerNV),
+	VK_NULL_FUNC_ENTRY(vkGetLatencyTimingsNV,										getLatencyTimingsNV),
+	VK_NULL_FUNC_ENTRY(vkQueueNotifyOutOfBandNV,									queueNotifyOutOfBandNV),
 };
 

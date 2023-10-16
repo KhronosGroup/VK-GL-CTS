@@ -23,6 +23,7 @@
 #include "vktCustomInstancesDevices.hpp"
 #include "../compute/vktComputeTestsUtil.hpp"
 
+#include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkDeviceUtil.hpp"
@@ -4852,6 +4853,140 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat (Context& context, vk::VkFo
 		return tcu::TestStatus::pass("Pass");
 }
 
+class AhbExternalFormatResolveApiCase : public TestCase
+{
+public:
+	AhbExternalFormatResolveApiCase		(tcu::TestContext& context, const std::string& name, const std::string& desc, AndroidHardwareBufferInstance::Format format);
+
+	TestInstance*	createInstance		(Context& context) const override;
+	void			checkSupport		(Context& context) const override;
+
+private:
+	const AndroidHardwareBufferInstance::Format	m_format;
+};
+
+class AhbExternalFormatResolveApiInstance : public TestInstance
+{
+public:
+	AhbExternalFormatResolveApiInstance	(Context& context, AndroidHardwareBufferInstance::Format format);
+
+	tcu::TestStatus	iterate				(void) override;
+private:
+	const AndroidHardwareBufferInstance::Format	m_format;
+	const AndroidHardwareBufferInstance::Usage	m_usage		= static_cast<AndroidHardwareBufferInstance::Usage>(
+															  AndroidHardwareBufferInstance::Usage::GPU_FRAMEBUFFER);
+	const deUint32								m_width		= 32u;
+	const deUint32								m_height	= 32u;
+	const deUint32								m_layers	= 1u;
+};
+
+AhbExternalFormatResolveApiCase::AhbExternalFormatResolveApiCase (tcu::TestContext& context, const std::string& name, const std::string& desc, AndroidHardwareBufferInstance::Format format)
+	: TestCase(context, name, desc)
+	, m_format(format)
+{ }
+
+TestInstance* AhbExternalFormatResolveApiCase::createInstance (Context& context) const
+{
+	return new AhbExternalFormatResolveApiInstance(context, m_format);
+}
+
+void AhbExternalFormatResolveApiCase::checkSupport (Context& context) const
+{
+	context.requireDeviceFunctionality("VK_ANDROID_external_format_resolve");
+
+	if (!AndroidHardwareBufferExternalApi::getInstance())
+		TCU_THROW(NotSupportedError, "No AHB api peresent");
+}
+
+AhbExternalFormatResolveApiInstance::AhbExternalFormatResolveApiInstance (Context& context, AndroidHardwareBufferInstance::Format format)
+	: TestInstance(context)
+	, m_format(format)
+{ }
+
+tcu::TestStatus AhbExternalFormatResolveApiInstance::iterate (void)
+{
+	const vk::DeviceInterface&			vk				= m_context.getDeviceInterface();
+	const vk::VkDevice					device			= m_context.getDevice();
+	tcu::TestLog&						log				= m_context.getTestContext().getLog();
+	AndroidHardwareBufferExternalApi*	ahbApi			= AndroidHardwareBufferExternalApi::getInstance();
+
+	if (!ahbApi)
+		TCU_THROW(NotSupportedError, "Android Hardware Buffer not present");
+
+	AndroidHardwareBufferInstance		androidBuffer;
+
+	// If the allocation failed it means AHB format is not supported, test next
+	if (!androidBuffer.allocate(m_format, m_width, m_height, m_layers, m_usage))
+	{
+		std::string			skipReason	= "Unable to allocate renderable AHB with parameters: width("
+										+ std::to_string(m_width)
+										+ "), height("
+										+ std::to_string(m_height)
+										+ "), layers("
+										+ std::to_string(m_layers)
+										+ "), usage("
+										+ std::to_string(m_usage)
+										+ ")";
+
+		log << tcu::TestLog::Message << skipReason << tcu::TestLog::EndMessage;
+		TCU_THROW(NotSupportedError, "Failed to allocate buffer");
+	}
+
+	vk::VkAndroidHardwareBufferFormatResolvePropertiesANDROID	formatResolveProperties =
+	{
+		vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_RESOLVE_PROPERTIES_ANDROID,	// VkStructureType	sType
+		nullptr,																			// void*			pNext
+		vk::VK_FORMAT_UNDEFINED																// VkFormat			colorAttachmentFormat
+	};
+
+	vk::VkAndroidHardwareBufferFormatPropertiesANDROID			formatProperties	=
+	{
+		vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_ANDROID,	// VkStructureType					sType
+		&formatResolveProperties,													// void*							pNext
+		vk::VK_FORMAT_UNDEFINED,													// VkFormat							format
+		0u,																			// uint64_t							externalFormat
+		0u,																			// VkFormatFeatureFlags				formatFeatures
+		vk::VkComponentMapping(),													// VkComponentMapping				samplerYcbcrConversionComponents
+		vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY,							// VkSamplerYcbcrModelConversion	suggestedYcbcrModel
+		vk::VK_SAMPLER_YCBCR_RANGE_ITU_FULL,										// VkSamplerYcbcrRange				suggestedYcbcrRange
+		vk::VK_CHROMA_LOCATION_COSITED_EVEN,										// VkChromaLocation					suggestedXChromaOffset
+		vk::VK_CHROMA_LOCATION_COSITED_EVEN											// VkChromaLocation					suggestedYChromaOffset
+	};
+
+	vk::VkAndroidHardwareBufferPropertiesANDROID				bufferProperties	=
+	{
+		vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID,	// VkStructureType	sType
+		&formatProperties,													// void*			pNext
+		0u,																	// VkDeviceSize		allocationSize
+		0u																	// uint32_t			memoryTypeBits
+	};
+
+	VK_CHECK(vk.getAndroidHardwareBufferPropertiesANDROID(device, androidBuffer.getHandle(), &bufferProperties));
+
+	if (formatProperties.format != vk::VK_FORMAT_UNDEFINED)
+	{
+		vk::VkFormatProperties3		colorAttachmentFormatProperties	= m_context.getFormatProperties(formatProperties.format);
+		vk::VkFormatFeatureFlags	requiredFlags					= vk::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | vk::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+		if ((colorAttachmentFormatProperties.optimalTilingFeatures & requiredFlags) || (colorAttachmentFormatProperties.linearTilingFeatures & requiredFlags))
+			return tcu::TestStatus::pass("");
+		// Depth and stencil format must be supported through this path. No external format resolve is allowed for depth/stencil formats
+		else if (AndroidHardwareBufferInstance::isFormatDepth(m_format) || AndroidHardwareBufferInstance::isFormatStencil(m_format))
+			return tcu::TestStatus::fail("Depth/stencil must be supported through Vulkan Format mapping");
+	}
+
+	if (formatResolveProperties.colorAttachmentFormat != vk::VK_FORMAT_UNDEFINED)
+	{
+		vk::VkFormatProperties3	colorAttachmentFormatProperties	= m_context.getFormatProperties(formatResolveProperties.colorAttachmentFormat);
+
+		// External formats require optimal tiling
+		if (colorAttachmentFormatProperties.optimalTilingFeatures & vk::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)
+			return tcu::TestStatus::pass("");
+	}
+
+	return tcu::TestStatus::fail("No draw support");
+}
+
 void checkMaintenance5(Context& context, vk::VkExternalMemoryHandleTypeFlagBits)
 {
 	context.requireDeviceFunctionality("VK_KHR_maintenance5");
@@ -5036,37 +5171,55 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx, vk
 
 	if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
 	{
-		de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, "image_formats", "Test minimum image format support"));
-
-		const vk::VkFormat	ahbFormats[]	=
 		{
-			vk::VK_FORMAT_R8G8B8_UNORM,
-			vk::VK_FORMAT_R8G8B8A8_UNORM,
-			vk::VK_FORMAT_R5G6B5_UNORM_PACK16,
-			vk::VK_FORMAT_R16G16B16A16_SFLOAT,
-			vk::VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-			vk::VK_FORMAT_D16_UNORM,
-			vk::VK_FORMAT_X8_D24_UNORM_PACK32,
-			vk::VK_FORMAT_D24_UNORM_S8_UINT,
-			vk::VK_FORMAT_D32_SFLOAT,
-			vk::VK_FORMAT_D32_SFLOAT_S8_UINT,
-			vk::VK_FORMAT_S8_UINT,
-			vk::VK_FORMAT_R8_UNORM,
-			vk::VK_FORMAT_R16_UINT,
-			vk::VK_FORMAT_R16G16_UINT,
-			vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
-		};
-		const size_t		numOfAhbFormats	= DE_LENGTH_OF_ARRAY(ahbFormats);
+			de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, "image_formats", "Test minimum image format support"));
 
-		for (size_t ahbFormatNdx = 0; ahbFormatNdx < numOfAhbFormats; ahbFormatNdx++)
-		{
-			const vk::VkFormat	format			= ahbFormats[ahbFormatNdx];
-			const std::string	testCaseName	= getFormatCaseName(format);
+			const vk::VkFormat	ahbFormats[]	=
+			{
+				vk::VK_FORMAT_R8G8B8_UNORM,
+				vk::VK_FORMAT_R8G8B8A8_UNORM,
+				vk::VK_FORMAT_R5G6B5_UNORM_PACK16,
+				vk::VK_FORMAT_R16G16B16A16_SFLOAT,
+				vk::VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+				vk::VK_FORMAT_D16_UNORM,
+				vk::VK_FORMAT_X8_D24_UNORM_PACK32,
+				vk::VK_FORMAT_D24_UNORM_S8_UINT,
+				vk::VK_FORMAT_D32_SFLOAT,
+				vk::VK_FORMAT_D32_SFLOAT_S8_UINT,
+				vk::VK_FORMAT_S8_UINT,
+				vk::VK_FORMAT_R8_UNORM,
+				vk::VK_FORMAT_R16_UINT,
+				vk::VK_FORMAT_R16G16_UINT,
+				vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
+			};
+			const size_t		numOfAhbFormats	= DE_LENGTH_OF_ARRAY(ahbFormats);
 
-			addFunctionCase(formatGroup.get(), testCaseName, "", testAndroidHardwareBufferImageFormat, format);
+			for (size_t ahbFormatNdx = 0; ahbFormatNdx < numOfAhbFormats; ahbFormatNdx++)
+			{
+				const vk::VkFormat	format			= ahbFormats[ahbFormatNdx];
+				const std::string	testCaseName	= getFormatCaseName(format);
+
+				addFunctionCase(formatGroup.get(), testCaseName, "", testAndroidHardwareBufferImageFormat, format);
+			}
+
+			group->addChild(formatGroup.release());
 		}
 
-		group->addChild(formatGroup.release());
+		{
+			de::MovePtr<tcu::TestCaseGroup>	externalFormatResolve	(new tcu::TestCaseGroup(testCtx, "external_format_resolve", "Test minimum image format support"));
+			for (deUint32 i = 0u; i < AndroidHardwareBufferInstance::Format::COUNT; ++i)
+			{
+				const AndroidHardwareBufferInstance::Format	format	= static_cast<AndroidHardwareBufferInstance::Format>(i);
+				if (AndroidHardwareBufferInstance::Format::BLOB == format)
+					continue;
+
+				const std::string							formatName	= AndroidHardwareBufferInstance::getFormatName(format);
+				const std::string							description	= "Ensure drawing is allowed to format " + formatName;
+				externalFormatResolve->addChild(new AhbExternalFormatResolveApiCase(externalFormatResolve->getTestContext(), formatName, description, format));
+			}
+
+			group->addChild(externalFormatResolve.release());
+		}
 	}
 
 	return group;

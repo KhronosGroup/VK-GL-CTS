@@ -4138,3 +4138,63 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceLayeredDriverPropert
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_DRIVER_PROPERTIES_MSFT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceExternalFormatResolveFeaturesANDROID> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FORMAT_RESOLVE_FEATURES_ANDROID;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceExternalFormatResolvePropertiesANDROID> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FORMAT_RESOLVE_PROPERTIES_ANDROID;
+}
+
+template<> VkStructureType getStructureType<VkAndroidHardwareBufferFormatResolvePropertiesANDROID> (void)
+{
+	return VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_RESOLVE_PROPERTIES_ANDROID;
+}
+
+template<> VkStructureType getStructureType<VkLatencySleepModeInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_LATENCY_SLEEP_MODE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkLatencySleepInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_LATENCY_SLEEP_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkSetLatencyMarkerInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_SET_LATENCY_MARKER_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkGetLatencyMarkerInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_GET_LATENCY_MARKER_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkLatencyTimingsFrameReportNV> (void)
+{
+	return VK_STRUCTURE_TYPE_LATENCY_TIMINGS_FRAME_REPORT_NV;
+}
+
+template<> VkStructureType getStructureType<VkOutOfBandQueueTypeInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_OUT_OF_BAND_QUEUE_TYPE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkLatencySubmissionPresentIdNV> (void)
+{
+	return VK_STRUCTURE_TYPE_LATENCY_SUBMISSION_PRESENT_ID_NV;
+}
+
+template<> VkStructureType getStructureType<VkSwapchainLatencyCreateInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_SWAPCHAIN_LATENCY_CREATE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkLatencySurfaceCapabilitiesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_LATENCY_SURFACE_CAPABILITIES_NV;
+}
+

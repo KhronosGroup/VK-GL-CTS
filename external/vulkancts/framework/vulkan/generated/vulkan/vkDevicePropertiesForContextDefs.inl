@@ -70,6 +70,7 @@ const vk::VkPhysicalDeviceImageProcessingPropertiesQCOM&			Context::getImageProc
 const vk::VkPhysicalDeviceExtendedDynamicState3PropertiesEXT&		Context::getExtendedDynamicState3PropertiesEXT		(void) const { return m_device->getExtendedDynamicState3PropertiesEXT();		}
 const vk::VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&		Context::getShaderModuleIdentifierPropertiesEXT		(void) const { return m_device->getShaderModuleIdentifierPropertiesEXT();		}
 const vk::VkPhysicalDeviceOpticalFlowPropertiesNV&					Context::getOpticalFlowProperties					(void) const { return m_device->getOpticalFlowProperties();						}
+const vk::VkPhysicalDeviceExternalFormatResolvePropertiesANDROID&	Context::getExternalFormatResolvePropertiesANDROID	(void) const { return m_device->getExternalFormatResolvePropertiesANDROID();	}
 const vk::VkPhysicalDeviceMaintenance5PropertiesKHR&				Context::getMaintenance5Properties					(void) const { return m_device->getMaintenance5Properties();					}
 const vk::VkPhysicalDeviceShaderObjectPropertiesEXT&				Context::getShaderObjectPropertiesEXT				(void) const { return m_device->getShaderObjectPropertiesEXT();					}
 const vk::VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV&	Context::getRayTracingInvocationReorderProperties	(void) const { return m_device->getRayTracingInvocationReorderProperties();		}
