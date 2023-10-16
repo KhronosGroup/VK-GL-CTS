@@ -23,6 +23,7 @@
 
 #include "vktApiFeatureInfo.hpp"
 
+#include "deDefs.h"
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
@@ -3822,33 +3823,45 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 
 	log << TestLog::Message << properties << TestLog::EndMessage;
 
-	for (int fieldNdx = 0; fieldNdx < DE_LENGTH_OF_ARRAY(fields); fieldNdx++)
+	if (format == vk::VK_FORMAT_UNDEFINED)
 	{
-		const char* const			fieldName	= fields[fieldNdx].fieldName;
-		VkFormatFeatureFlags		supported	= fields[fieldNdx].supportedFeatures;
-		const VkFormatFeatureFlags	required	= fields[fieldNdx].requiredFeatures;
-		const VkFormatFeatureFlags	allowed		= fields[fieldNdx].allowedFeatures;
-
-		if (apiVersion10WithoutKhrMaintenance1 && supported)
+		VkFormatProperties formatUndefProperties;
+		deMemset(&formatUndefProperties, 0xcd, sizeof(VkFormatProperties));
+		formatUndefProperties.bufferFeatures        = 0;
+		formatUndefProperties.linearTilingFeatures  = 0;
+		formatUndefProperties.optimalTilingFeatures = 0;
+		results.check((deMemCmp(&formatUndefProperties, &properties, sizeof(VkFormatProperties)) == 0), "vkGetPhysicalDeviceFormatProperties, with VK_FORMAT_UNDEFINED as input format, is returning non-zero properties");
+	}
+	else
+	{
+		for (int fieldNdx = 0; fieldNdx < DE_LENGTH_OF_ARRAY(fields); fieldNdx++)
 		{
-			supported |= VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
-		}
+			const char* const			fieldName	= fields[fieldNdx].fieldName;
+			VkFormatFeatureFlags		supported	= fields[fieldNdx].supportedFeatures;
+			const VkFormatFeatureFlags	required	= fields[fieldNdx].requiredFeatures;
+			const VkFormatFeatureFlags	allowed		= fields[fieldNdx].allowedFeatures;
 
-		results.check((supported & required) == required, de::toString(fieldName) + ": required: " + de::toString(getFormatFeatureFlagsStr(required)) + "  missing: " + de::toString(getFormatFeatureFlagsStr(~supported & required)));
-
-		results.check((supported & ~allowed) == 0, de::toString(fieldName) + ": has: " + de::toString(getFormatFeatureFlagsStr(supported & ~allowed)));
-
-		if (((supported & VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT) != 0) &&
-			((supported & VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT) == 0))
-		{
-			results.addResult(QP_TEST_RESULT_FAIL, de::toString(fieldName) + " supports VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT but not VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT");
-		}
-
-		if (!isYCbCrFormat(format) && !isCompressedFormat(format)) {
-			const tcu::TextureFormat tcuFormat = mapVkFormat(format);
-			if (tcu::getNumUsedChannels(tcuFormat.order) != 1 && (supported & (VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT|VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT)) != 0)
+			if (apiVersion10WithoutKhrMaintenance1 && supported)
 			{
-				results.addResult(QP_TEST_RESULT_QUALITY_WARNING, "VK_FORMAT_FEATURE_STORAGE_*_ATOMIC_BIT is only defined for single-component images");
+				supported |= VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
+			}
+
+			results.check((supported & required) == required, de::toString(fieldName) + ": required: " + de::toString(getFormatFeatureFlagsStr(required)) + "  missing: " + de::toString(getFormatFeatureFlagsStr(~supported & required)));
+
+			results.check((supported & ~allowed) == 0, de::toString(fieldName) + ": has: " + de::toString(getFormatFeatureFlagsStr(supported & ~allowed)));
+
+			if (((supported & VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT) != 0) &&
+				((supported & VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT) == 0))
+			{
+				results.addResult(QP_TEST_RESULT_FAIL, de::toString(fieldName) + " supports VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT but not VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT");
+			}
+
+			if (!isYCbCrFormat(format) && !isCompressedFormat(format)) {
+				const tcu::TextureFormat tcuFormat = mapVkFormat(format);
+				if (tcu::getNumUsedChannels(tcuFormat.order) != 1 && (supported & (VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT|VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT)) != 0)
+				{
+					results.addResult(QP_TEST_RESULT_QUALITY_WARNING, "VK_FORMAT_FEATURE_STORAGE_*_ATOMIC_BIT is only defined for single-component images");
+				}
 			}
 		}
 	}
@@ -4038,7 +4051,7 @@ void createFormatTests (tcu::TestCaseGroup* testGroup)
 	} s_formatRanges[] =
 	{
 		// core formats
-		{ (VkFormat)(VK_FORMAT_UNDEFINED+1),		VK_CORE_FORMAT_LAST										},
+		{ (VkFormat)(VK_FORMAT_UNDEFINED),			VK_CORE_FORMAT_LAST										},
 
 		// YCbCr formats
 		{ VK_FORMAT_G8B8G8R8_422_UNORM,				(VkFormat)(VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM+1)	},
@@ -4448,6 +4461,9 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 
 				if (isRequiredCombination)
 					results.fail("VK_ERROR_FORMAT_NOT_SUPPORTED returned for required image parameter combination");
+
+				if ((format != VK_FORMAT_UNDEFINED))
+					results.fail("VK_ERROR_FORMAT_NOT_SUPPORTED returned for a supported format");
 
 				// Specification requires that all fields are set to 0
 				results.check(properties.maxExtent.width	== 0, "maxExtent.width != 0");
@@ -5203,7 +5219,23 @@ tcu::TestStatus deviceFormatProperties2 (Context& context)
 		vki.getPhysicalDeviceFormatProperties2(physicalDevice, format, &extProperties);
 
 		TCU_CHECK(extProperties.sType == VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2);
-		TCU_CHECK(extProperties.pNext == DE_NULL);
+
+		if (format == vk::VK_FORMAT_UNDEFINED)
+		{
+			VkFormatProperties2 formatUndefProperties2;
+
+			deMemset(&formatUndefProperties2, 0xcd, sizeof(VkFormatProperties2));
+			formatUndefProperties2.sType                                  = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
+			formatUndefProperties2.pNext                                  = DE_NULL;
+			formatUndefProperties2.formatProperties.bufferFeatures        = 0;
+			formatUndefProperties2.formatProperties.linearTilingFeatures  = 0;
+			formatUndefProperties2.formatProperties.optimalTilingFeatures = 0;
+
+			if (deMemCmp(&formatUndefProperties2, &extProperties, sizeof(VkFormatProperties2)) != 0)
+				TCU_FAIL("vkGetPhysicalDeviceFormatProperties2, with VK_FORMAT_UNDEFINED as input format, is returning non-zero properties");
+		}
+		else
+			TCU_CHECK(extProperties.pNext == DE_NULL);
 
 		if (deMemCmp(&coreProperties, &extProperties.formatProperties, sizeof(VkFormatProperties)) != 0)
 			TCU_FAIL("Mismatch between format properties reported by vkGetPhysicalDeviceFormatProperties and vkGetPhysicalDeviceFormatProperties2");
@@ -6652,7 +6684,7 @@ void createImageFormatTypeTilingTests (tcu::TestCaseGroup* testGroup, ImageForma
 	} s_formatRanges[] =
 	{
 		// core formats
-		{ (VkFormat)(VK_FORMAT_UNDEFINED + 1),		VK_CORE_FORMAT_LAST,										params },
+		{ (VkFormat)(VK_FORMAT_UNDEFINED),			VK_CORE_FORMAT_LAST,										params },
 
 		// YCbCr formats
 		{ VK_FORMAT_G8B8G8R8_422_UNORM,				(VkFormat)(VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM + 1),	params },
