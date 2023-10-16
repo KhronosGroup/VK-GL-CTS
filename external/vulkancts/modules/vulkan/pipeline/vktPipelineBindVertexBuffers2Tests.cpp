@@ -1238,11 +1238,16 @@ void BindVertexBuffers2Case::checkSupport (Context& context) const
 
 	if (m_robustness2)
 	{
-		vk::VkPhysicalDeviceFeatures2 features2 = vk::initVulkanStructure();
+		vk::VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = vk::initVulkanStructure();
+		vk::VkPhysicalDeviceFeatures2 features2 = vk::initVulkanStructure(&robustness2Features);
+
 		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
 		if (!features2.features.robustBufferAccess)
 			TCU_THROW(NotSupportedError, "robustBufferAccess not supported by this implementation");
+
 		context.requireDeviceFunctionality("VK_EXT_robustness2");
+		if (!robustness2Features.robustBufferAccess2)
+			TCU_THROW(NotSupportedError, "robustBufferAccess2 not supported by this implementation");
 	}
 
 	vk::checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
