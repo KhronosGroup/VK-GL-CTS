@@ -171,6 +171,7 @@ enum ValueId
 
 	// non comon results of some operation - corner cases
 	V_PI_DIV_2,
+	V_MINUS_PI_DIV_2,
 	V_ONE_OR_NAN,
 	V_SIGN_NAN,						// Can be any of -1, -0, +0, +1
 	V_ZERO_OR_MINUS_ZERO,			// both +0 and -0 are accepted
@@ -199,6 +200,7 @@ string getValueName(ValueId value)
 	case V_MAX:					return "max";
 	case V_NAN:					return "nan";
 	case V_PI_DIV_2:			return "piDiv2";
+	case V_MINUS_PI_DIV_2:		return "minusPiDiv2";
 	case V_ONE_OR_NAN:			return "oneORnan";
 	case V_SIGN_NAN:			return "signNan";
 	case V_ZERO_OR_MINUS_ZERO:	return "zeroOrMinusZero";
@@ -481,6 +483,7 @@ TypeValues<deFloat16>::TypeValues()
 	vm[V_NAN]				= 0x7cf0;
 
 	vm[V_PI_DIV_2]			= deFloat32To16((float)M_PI_2);
+	vm[V_MINUS_PI_DIV_2]	= deFloat32To16(-(float)M_PI_2);
 }
 
 template <>
@@ -508,6 +511,7 @@ TypeValues<float>::TypeValues()
 	vm[V_NAN]				=  std::numeric_limits<float>::quiet_NaN();
 
 	vm[V_PI_DIV_2]			=  static_cast<float>(M_PI_2);
+	vm[V_MINUS_PI_DIV_2]	= -static_cast<float>(M_PI_2);
 }
 
 template <>
@@ -535,6 +539,7 @@ TypeValues<double>::TypeValues()
 	vm[V_NAN]				=  std::numeric_limits<double>::quiet_NaN();
 
 	vm[V_PI_DIV_2]			=  M_PI_2;
+	vm[V_MINUS_PI_DIV_2]	= -M_PI_2;
 }
 
 // Each float type (fp16, fp32, fp64) has specific set of SPIR-V snippets
@@ -1379,6 +1384,8 @@ const OperationTestCaseInputs nonStc16and32Only[] = {
 	{ OID_ACOS, V_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
 	{ OID_ACOS, V_MINUS_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
 
+	{ OID_ATAN, V_MINUS_INF, V_UNUSED, V_MINUS_PI_DIV_2, FP::NotInf },
+
 	{ OID_SINH, V_MINUS_INF, V_UNUSED, V_MINUS_INF, FP::NotInf },
 	{ OID_COSH, V_MINUS_INF, V_UNUSED, V_INF, FP::NotInf },
 	{ OID_TANH, V_MINUS_INF, V_UNUSED, V_MINUS_ONE, FP::NotInf },
@@ -2042,30 +2049,31 @@ bool isEither(const TYPE& returnedFloat, ValueId expected1, ValueId expected2, T
 }
 
 template <typename TYPE>
-bool isAcosResultCorrect(const TYPE& returnedFloat, TestLog& log)
+bool isTrigULPResultCorrect(const TYPE& returnedFloat, ValueId expected, TestLog& log)
 {
-	// pi/2 is result of acos(0) which in the specs is defined as equivalent to
-	// atan2(sqrt(1.0 - x^2), x), where atan2 has 4096 ULP, sqrt is equivalent to
-	// 1.0 /inversesqrt(), inversesqrt() is 2 ULP and rcp is another 2.5 ULP
+	// The trig ULP results are used for things like the inverse trig functions. The spec gives
+	// precisions for these based on atan, so that precision is used here.
 
-	double precision = 0;
-	const double piDiv2 = M_PI_2;
-	if (returnedFloat.MANTISSA_BITS == 23)
-	{
-		FloatFormat fp32Format(-126, 127, 23, true, tcu::MAYBE, tcu::YES, tcu::MAYBE);
-		precision = fp32Format.ulp(piDiv2, 4096.0);
-	}
-	else
-	{
-		FloatFormat fp16Format(-14, 15, 10, true, tcu::MAYBE);
-		precision = fp16Format.ulp(piDiv2, 5.0);
-	}
+	// This functions doesn't give correct results for fp64 at present, but this is never used.
+	assert (returnedFloat.MANTISSA_BITS == 23 || returnedFloat.MANTISSA_BITS == 10);
 
-	if (deAbs(returnedFloat.asDouble() - piDiv2) < precision)
+	FloatFormat fp32Format(-126, 127, 23, true, tcu::MAYBE, tcu::YES, tcu::MAYBE);
+	FloatFormat fp16Format(-14, 15, 10, true, tcu::MAYBE);
+
+	const FloatFormat *fmt = (returnedFloat.MANTISSA_BITS == 10) ? &fp16Format : &fp32Format;
+
+	// The ULP range is based on the exact result, which we approximate using the double value.
+	TypeValues<double> typeValues;
+	const double ref = typeValues.getValue(expected);
+	uint32_t ulp = (returnedFloat.MANTISSA_BITS == 10) ? 5 : 4096;
+
+	double precision = fmt->ulp(ref, ulp);
+
+	if (deAbs(returnedFloat.asDouble() - ref) < precision)
 		return true;
 
 	log << TestLog::Message << "Expected result to be in range"
-		<< " (" << piDiv2 - precision << ", " << piDiv2 + precision << "), got "
+		<< " (" << ref - precision << ", " << ref + precision << "), got "
 		<< returnedFloat.asDouble() << TestLog::EndMessage;
 	return false;
 }
@@ -2147,9 +2155,9 @@ bool compareBytes(vector<deUint8>& expectedBytes, AllocationSp outputAlloc, Test
 	if (expectedValueId == V_TRIG_ONE)
 		return isTrigAbsResultCorrect<TYPE>(returnedFloat, log);
 
-	// handle acos(0) case
-	if (expectedValueId == V_PI_DIV_2)
-		return isAcosResultCorrect<TYPE>(returnedFloat, log);
+	// handle cases with large ULP precision bounds.
+	if (expectedValueId == V_PI_DIV_2 || expectedValueId == V_MINUS_PI_DIV_2)
+		return isTrigULPResultCorrect(returnedFloat, expectedValueId, log);
 
 	if (valMatches<TYPE, FLOAT_TYPE>(returnedFloat, expectedValueId))
 		return true;
