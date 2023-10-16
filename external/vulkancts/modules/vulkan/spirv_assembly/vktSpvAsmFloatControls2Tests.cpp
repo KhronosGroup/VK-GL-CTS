@@ -170,8 +170,14 @@ enum ValueId
 	V_NAN,
 
 	// non comon results of some operation - corner cases
+	V_PI,
+	V_MINUS_PI,
 	V_PI_DIV_2,
 	V_MINUS_PI_DIV_2,
+	V_PI_DIV_4,
+	V_MINUS_PI_DIV_4,
+	V_3_PI_DIV_4,
+	V_MINUS_3_PI_DIV_4,
 	V_ONE_OR_NAN,
 	V_SIGN_NAN,						// Can be any of -1, -0, +0, +1
 	V_ZERO_OR_MINUS_ZERO,			// both +0 and -0 are accepted
@@ -199,8 +205,14 @@ string getValueName(ValueId value)
 	case V_MINUS_TINY:			return "minusTiny";
 	case V_MAX:					return "max";
 	case V_NAN:					return "nan";
+	case V_PI:					return "pi";
+	case V_MINUS_PI:			return "minusPi";
 	case V_PI_DIV_2:			return "piDiv2";
 	case V_MINUS_PI_DIV_2:		return "minusPiDiv2";
+	case V_PI_DIV_4:			return "piDiv4";
+	case V_MINUS_PI_DIV_4:		return "minusPiDiv4";
+	case V_3_PI_DIV_4:			return "3PiDiv4";
+	case V_MINUS_3_PI_DIV_4:	return "minus3PiDiv4";
 	case V_ONE_OR_NAN:			return "oneORnan";
 	case V_SIGN_NAN:			return "signNan";
 	case V_ZERO_OR_MINUS_ZERO:	return "zeroOrMinusZero";
@@ -482,8 +494,14 @@ TypeValues<deFloat16>::TypeValues()
 	vm[V_INF]				= 0x7c00;
 	vm[V_NAN]				= 0x7cf0;
 
-	vm[V_PI_DIV_2]			= deFloat32To16((float)M_PI_2);
+	vm[V_PI]				= deFloat32To16( (float)M_PI);
+	vm[V_MINUS_PI]			= deFloat32To16(-(float)M_PI);
+	vm[V_PI_DIV_2]			= deFloat32To16( (float)M_PI_2);
 	vm[V_MINUS_PI_DIV_2]	= deFloat32To16(-(float)M_PI_2);
+	vm[V_PI_DIV_4]			= deFloat32To16( (float)M_PI_4);
+	vm[V_MINUS_PI_DIV_4]	= deFloat32To16(-(float)M_PI_4);
+	vm[V_3_PI_DIV_4]		= deFloat32To16( (float)(3*M_PI_4));
+	vm[V_MINUS_3_PI_DIV_4]	= deFloat32To16(-(float)(3*M_PI_4));
 }
 
 template <>
@@ -510,8 +528,14 @@ TypeValues<float>::TypeValues()
 	vm[V_INF]				=  std::numeric_limits<float>::infinity();
 	vm[V_NAN]				=  std::numeric_limits<float>::quiet_NaN();
 
+	vm[V_PI]				=  static_cast<float>(M_PI);
+	vm[V_MINUS_PI]			= -static_cast<float>(M_PI);
 	vm[V_PI_DIV_2]			=  static_cast<float>(M_PI_2);
 	vm[V_MINUS_PI_DIV_2]	= -static_cast<float>(M_PI_2);
+	vm[V_PI_DIV_4]			=  static_cast<float>(M_PI_4);
+	vm[V_MINUS_PI_DIV_4]	= -static_cast<float>(M_PI_4);
+	vm[V_3_PI_DIV_4]		=  static_cast<float>(3*M_PI_4);
+	vm[V_MINUS_3_PI_DIV_4]	= -static_cast<float>(3*M_PI_4);
 }
 
 template <>
@@ -538,8 +562,14 @@ TypeValues<double>::TypeValues()
 	vm[V_INF]				=  std::numeric_limits<double>::infinity();
 	vm[V_NAN]				=  std::numeric_limits<double>::quiet_NaN();
 
+	vm[V_PI]				=  M_PI;
+	vm[V_MINUS_PI]			= -M_PI;
 	vm[V_PI_DIV_2]			=  M_PI_2;
 	vm[V_MINUS_PI_DIV_2]	= -M_PI_2;
+	vm[V_PI_DIV_4]			=  M_PI_4;
+	vm[V_MINUS_PI_DIV_4]	= -M_PI_4;
+	vm[V_3_PI_DIV_4]		=  3*M_PI_4;
+	vm[V_MINUS_3_PI_DIV_4]	= -3*M_PI_4;
 }
 
 // Each float type (fp16, fp32, fp64) has specific set of SPIR-V snippets
@@ -1414,6 +1444,27 @@ const OperationTestCaseInputs nonStc16and32Only[] = {
 	{ OID_LOG2, V_MINUS_ZERO, V_UNUSED, V_MINUS_INF, FP::NSZ|FP::NotInf },
 	{ OID_LOG2, V_MINUS_ONE, V_UNUSED, V_NAN, FP::NotNaN },
 	{ OID_LOG2, V_MINUS_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+
+	{ OID_ATAN2, V_ZERO, V_MINUS_ONE, V_PI, FP::NSZ },
+	{ OID_ATAN2, V_MINUS_ZERO, V_MINUS_ONE, V_MINUS_PI, FP::NSZ },
+	// SPIR-V explicitly says that atan(0, 0) is undefined, so these next 2 tests would not be valid.
+	// The expected behaviour given is the one from POSIX, OpenCL and IEEE-754.
+	//{ OID_ATAN2, V_ZERO, V_MINUS_ZERO, V_PI, FP::NSZ },
+	//{ OID_ATAN2, V_MINUS_ZERO, V_MINUS_ZERO, V_MINUS_PI, FP::NSZ },
+	{ OID_ATAN2, V_ZERO, V_MINUS_INF, V_PI, FP::NSZ|FP::NotInf },
+	{ OID_ATAN2, V_MINUS_ZERO, V_MINUS_INF, V_MINUS_PI, FP::NSZ|FP::NotInf },
+	{ OID_ATAN2, V_ONE, V_MINUS_INF, V_PI, FP::NSZ|FP::NotInf },
+	{ OID_ATAN2, V_MINUS_ONE, V_MINUS_INF, V_MINUS_PI, FP::NSZ|FP::NotInf },
+	{ OID_ATAN2, V_ONE, V_INF, V_ZERO_OR_MINUS_ZERO, FP::NotInf },
+	{ OID_ATAN2, V_MINUS_ONE, V_INF, V_ZERO_OR_MINUS_ZERO, FP::NotInf },
+	{ OID_ATAN2, V_INF, V_ONE, V_PI_DIV_2, FP::NotInf },
+	{ OID_ATAN2, V_MINUS_INF, V_ONE, V_MINUS_PI_DIV_2, FP::NotInf },
+	{ OID_ATAN2, V_INF, V_MINUS_INF, V_3_PI_DIV_4, FP::NotInf },
+	{ OID_ATAN2, V_MINUS_INF, V_MINUS_INF, V_MINUS_3_PI_DIV_4, FP::NotInf },
+	{ OID_ATAN2, V_INF, V_INF, V_PI_DIV_4, FP::NotInf },
+	{ OID_ATAN2, V_MINUS_INF, V_INF, V_MINUS_PI_DIV_4, FP::NotInf },
+	{ OID_ATAN2, V_NAN, V_ONE, V_NAN, FP::NotNaN },
+	{ OID_ATAN2, V_ONE, V_NAN, V_NAN, FP::NotNaN },
 };
 
 // Most of these operations are not accurate enough at 0 to resolve the difference between
@@ -1438,7 +1489,7 @@ const standardOperationTestCase stc16and32only[] = {
 	{ OID_LOG,		V_UNUSED,		V_INF,		V_NAN },
 	{ OID_EXP2,		V_ONE,			V_INF,		V_NAN },
 	{ OID_LOG2,		V_UNUSED,		V_INF,		V_NAN },
-	{ OID_ATAN2,	V_UNUSED,		V_PI_DIV_2,	V_NAN },
+	// OID_ATAN2 -- All handled as special cases
 	{ OID_POW,		V_UNUSED,		V_INF,		V_NAN },
 };
 
@@ -2156,7 +2207,10 @@ bool compareBytes(vector<deUint8>& expectedBytes, AllocationSp outputAlloc, Test
 		return isTrigAbsResultCorrect<TYPE>(returnedFloat, log);
 
 	// handle cases with large ULP precision bounds.
-	if (expectedValueId == V_PI_DIV_2 || expectedValueId == V_MINUS_PI_DIV_2)
+	if (	expectedValueId == V_PI			|| expectedValueId == V_MINUS_PI ||
+			expectedValueId == V_PI_DIV_2	|| expectedValueId == V_MINUS_PI_DIV_2 ||
+			expectedValueId == V_PI_DIV_4	|| expectedValueId == V_MINUS_PI_DIV_4 ||
+			expectedValueId == V_3_PI_DIV_4	|| expectedValueId == V_MINUS_3_PI_DIV_4 )
 		return isTrigULPResultCorrect(returnedFloat, expectedValueId, log);
 
 	if (valMatches<TYPE, FLOAT_TYPE>(returnedFloat, expectedValueId))
