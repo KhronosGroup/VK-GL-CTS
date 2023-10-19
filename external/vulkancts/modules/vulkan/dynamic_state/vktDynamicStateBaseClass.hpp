@@ -59,7 +59,8 @@ protected:
 	void					beginRenderPass					(void);
 
 	void					beginRenderPassWithClearColor	(const vk::VkClearColorValue&	clearColor,
-															 const bool						skipBeginCmdBuffer	= false);
+															 const bool						skipBeginCmdBuffer	= false,
+															 const bool						previousTransfer = false);
 
 	void					setDynamicViewportState			(const deUint32					width,
 															const deUint32					height);
