@@ -112,9 +112,6 @@ void ImageBlockShapesCase::checkSupport (Context& context) const
 			TCU_THROW(NotSupportedError, "sparseImageInt64Atomics is not supported for device");
 		}
 	}
-
-	if (m_numSamples != vk::VK_SAMPLE_COUNT_1_BIT && context.getDeviceFeatures().shaderStorageImageMultisample == VK_FALSE)
-		TCU_THROW(NotSupportedError, "required samples are not supported for device");
 }
 
 class ImageBlockShapesInstance : public SparseResourcesBaseInstance
@@ -169,8 +166,7 @@ tcu::TestStatus ImageBlockShapesInstance::iterate (void)
 	imageCreateInfo.samples					= static_cast<VkSampleCountFlagBits>(m_numSamples);
 	imageCreateInfo.tiling					= VK_IMAGE_TILING_OPTIMAL;
 	imageCreateInfo.initialLayout			= VK_IMAGE_LAYOUT_UNDEFINED;
-	imageCreateInfo.usage					= VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-											  VK_IMAGE_USAGE_STORAGE_BIT;
+	imageCreateInfo.usage					= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	imageCreateInfo.sharingMode				= VK_SHARING_MODE_EXCLUSIVE;
 	imageCreateInfo.queueFamilyIndexCount	= 0u;
 	imageCreateInfo.pQueueFamilyIndices		= DE_NULL;
