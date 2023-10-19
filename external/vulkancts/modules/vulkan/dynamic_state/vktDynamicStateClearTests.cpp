@@ -116,7 +116,7 @@ public:
 		command(false);
 
 		const vk::VkClearColorValue clearColor = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-		beginRenderPassWithClearColor(clearColor, true);
+		beginRenderPassWithClearColor(clearColor, true, true);
 
 		command(true);
 

@@ -196,6 +196,9 @@ static Move<VkDevice> createDeviceWithMemoryReport (deBool								isValidationEn
 		queueCount,																// deUint32								queueCount;
 		&queuePriority,															// const float*							pQueuePriorities;
 	};
+	// Enable all available features since some tests require them to be enabled, VK_IMAGE_VIEW_CUBE_ARRAY for example
+	vk::VkPhysicalDeviceFeatures2						enabledFeatures					= vk::initVulkanStructure();
+	vki.getPhysicalDeviceFeatures(physicalDevice, &enabledFeatures.features);
 	const VkDeviceCreateInfo							deviceCreateInfo				=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,									// VkStructureType						sType;
@@ -207,7 +210,7 @@ static Move<VkDevice> createDeviceWithMemoryReport (deBool								isValidationEn
 		DE_NULL,																// const char* const*					ppEnabledLayerNames
 		DE_LENGTH_OF_ARRAY(enabledExtensions),									// uint32_t								enabledExtensionCount
 		DE_ARRAY_BEGIN(enabledExtensions),										// const char* const*					ppEnabledExtensionNames
-		DE_NULL,																// const VkPhysicalDeviceFeatures*		pEnabledFeatures
+		&enabledFeatures.features,												// const VkPhysicalDeviceFeatures*		pEnabledFeatures
 	};
 
 	return createCustomDevice(isValidationEnabled, vkp, instance, vki, physicalDevice, &deviceCreateInfo);
@@ -1618,9 +1621,18 @@ static void checkSupport(Context& context)
 }
 
 template<typename Object>
-static void checkSupport (Context& context, typename Object::Parameters)
+void checkSupport (Context& context, typename Object::Parameters)
 {
 	checkSupport(context);
+}
+
+template<>
+void checkSupport<ImageView> (Context& context, ImageView::Parameters parameters)
+{
+	if (parameters.viewType == vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
+		context.requireDeviceCoreFeature(vkt::DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
+
+	context.requireDeviceFunctionality("VK_EXT_device_memory_report");
 }
 
 template<typename Object>
