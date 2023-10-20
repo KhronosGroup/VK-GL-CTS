@@ -550,11 +550,12 @@ de::MovePtr<vkt::ycbcr::MultiPlaneImageData> getDecodedImage(DeviceContext&		 de
 	const VkExtent2D						 imageExtent{(deUint32)frame->displayWidth, (deUint32)frame->displayHeight};
 	const VkImage							 image	= frame->outputImageView->GetImageResource()->GetImage();
 	const VkFormat							 format = frame->outputImageView->GetImageResource()->GetImageCreateInfo().format;
+	const uint32_t							 videoImageLayerIndex = frame->imageLayerIndex;
 
 	MovePtr<vkt::ycbcr::MultiPlaneImageData> multiPlaneImageData(new vkt::ycbcr::MultiPlaneImageData(format, tcu::UVec2(imageExtent.width, imageExtent.height)));
 	const VkQueue							 queueDecode				   = getDeviceQueue(vkd, device, queueFamilyIndexDecode, 0u);
 	const VkQueue							 queueTransfer				   = getDeviceQueue(vkd, device, queueFamilyIndexTransfer, 0u);
-	const VkImageSubresourceRange			 imageSubresourceRange		   = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1);
+	const VkImageSubresourceRange			 imageSubresourceRange		   = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, videoImageLayerIndex, 1);
 	const VkImageMemoryBarrier2KHR			 imageBarrierDecode			   = makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
 																				 VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR,
 																				 VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR,
@@ -646,7 +647,9 @@ de::MovePtr<vkt::ycbcr::MultiPlaneImageData> getDecodedImage(DeviceContext&		 de
 
 	VK_CHECK(vkd.waitForFences(device, DE_LENGTH_OF_ARRAY(fences), fences, DE_TRUE, ~0ull));
 
-	vkt::ycbcr::downloadImage(vkd, device, queueFamilyIndexTransfer, devctx.allocator(), image, multiPlaneImageData.get(), 0, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	vkt::ycbcr::downloadImage(vkd, device, queueFamilyIndexTransfer, devctx.allocator(), image,
+	                          multiPlaneImageData.get(), 0, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+	                          videoImageLayerIndex);
 
 	const VkImageMemoryBarrier2KHR imageBarrierTransfer2 = makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,
 																				   VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,
