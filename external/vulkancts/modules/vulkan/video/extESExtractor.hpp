@@ -27,8 +27,8 @@ class ESEDemuxer {
     tcu::TestLog& log;
 
 public:
-    ESEDemuxer(const std::string& filePath, tcu::TestLog& log_)
-		: extractor(es_extractor_new(filePath.c_str(), "Alignment:NAL"))
+    ESEDemuxer(const std::string& filePath, ESEVideoFormat format, tcu::TestLog& log_)
+		: extractor(es_extractor_new(filePath.c_str(), format))
 		, log(log_)
 	{
         eVideoCodec = es_extractor_video_codec(extractor);

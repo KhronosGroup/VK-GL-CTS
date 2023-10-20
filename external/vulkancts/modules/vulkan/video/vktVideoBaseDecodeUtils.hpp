@@ -40,7 +40,6 @@
  * limitations under the License.
  */
 
-#include "extNvidiaVideoParserIf.hpp"
 #include "vktVideoTestUtils.hpp"
 #include "vktVideoFrameBuffer.hpp"
 
@@ -544,6 +543,7 @@ private:
 	std::bitset<MAX_VPS_IDS>								  m_vpsIdsUsed;
 	std::bitset<MAX_SPS_IDS>								  m_spsIdsUsed;
 	std::bitset<MAX_PPS_IDS>								  m_ppsIdsUsed;
+	std::bitset<MAX_SPS_IDS>								  m_av1SpsIdsUsed;
 	int														  m_updateCount{0};
 	VkSharedBaseObj<VkParserVideoPictureParameters>			  m_templatePictureParameters; // needed only for the create
 
@@ -624,15 +624,28 @@ struct nvVideoDecodeH265DpbSlotInfo
 	}
 };
 
-// TODO: These optimizations from the NVIDIA sample code are not worth it for CTS.
-using VulkanBitstreamBufferPool = VulkanVideoRefCountedPool<BitstreamBufferImpl, 64>;
+struct DpbSlotInfoAV1
+{
+    VkVideoDecodeAV1DpbSlotInfoKHR dpbSlotInfo{};
+    StdVideoDecodeAV1ReferenceInfo stdReferenceInfo;
+    const VkVideoDecodeAV1DpbSlotInfoKHR* Init(int8_t slotIndex)
+    {
+        assert((slotIndex >= 0) && (slotIndex < STD_VIDEO_AV1_NUM_REF_FRAMES));
+		DE_UNREF(slotIndex);
+        dpbSlotInfo.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_DPB_SLOT_INFO_KHR;
+        dpbSlotInfo.pNext = NULL;
+        return &dpbSlotInfo;
+    }
+
+    void Invalidate() { memset(this, 0x00, sizeof(*this)); }
+};
 
 // A pool of bitstream buffers and a collection of command buffers for all frames in the decode sequence.
 class NvVkDecodeFrameData
 {
 public:
 	NvVkDecodeFrameData(const DeviceInterface& vkd, VkDevice device, deUint32 decodeQueueIdx)
-		: m_deviceInterface(vkd), m_device(device), m_decodeQueueIdx(decodeQueueIdx), m_videoCommandPool(VK_NULL_HANDLE), m_bitstreamBuffersQueue()
+		: m_deviceInterface(vkd), m_device(device), m_decodeQueueIdx(decodeQueueIdx), m_videoCommandPool(VK_NULL_HANDLE)
 	{
 	}
 
@@ -692,18 +705,12 @@ public:
 		return m_commandBuffers.size();
 	}
 
-	VulkanBitstreamBufferPool& GetBitstreamBuffersQueue()
-	{
-		return m_bitstreamBuffersQueue;
-	}
-
 private:
 	const DeviceInterface&		 m_deviceInterface;
 	VkDevice					 m_device;
 	deUint32					 m_decodeQueueIdx;
 	VkCommandPool				 m_videoCommandPool;
 	std::vector<VkCommandBuffer> m_commandBuffers;
-	VulkanBitstreamBufferPool	 m_bitstreamBuffersQueue;
 };
 
 struct nvVideoH264PicParameters
@@ -733,6 +740,7 @@ struct nvVideoH265PicParameters
 	nvVideoDecodeH265DpbSlotInfo				 dpbRefList[MAX_REF_PICTURES_LIST_ENTRIES];
 };
 
+
 struct NvVkDecodeFrameDataSlot
 {
 	deUint32		slot;
@@ -743,10 +751,18 @@ class VideoBaseDecoder final : public VkParserVideoDecodeClient
 {
 	enum
 	{
-		MAX_FRM_CNT = 32
+		MAX_FRM_CNT = 32,
+		MAX_BUFFER_SIZE = MAX_FRM_CNT * (2 * 1024 * 1024), // 2 MiB per frame is more than enough for CTS
 	};
 
 public:
+
+	// The CTS has two methods of decoding: immediate and cached. In immediate mode decoding, the frame-associated
+	// data may be stack allocated and forgotten frame-to-frame. Cached decoding buffers up all these associated
+	// data so that the frames can be simulated as recorded out of order, in a highly controlled fashion.
+	// This struct is essentially the definition of the frame associated data needed in general by Vulkan.
+	// There is still redundancy due to the past integration of the NVIDIA sample app, which operates purely in immediate
+	// mode decoding.
 	struct CachedDecodeParameters
 	{
 		VkParserPictureData								 pd;
@@ -762,8 +778,10 @@ public:
 		VkVideoDecodeH265DpbSlotInfoKHR					 h265SlotInfo{};
 		StdVideoDecodeH265ReferenceInfo					 h265RefInfo{};
 
-		nvVideoH264PicParameters						 h264PicParams;
-		nvVideoH265PicParameters						 h265PicParams;
+		nvVideoH264PicParameters	h264PicParams;
+		nvVideoH265PicParameters	h265PicParams;
+		VkParserAv1PictureData		av1PicParams;
+
 		NvVkDecodeFrameDataSlot							 frameDataSlot;
 		VkVideoBeginCodingInfoKHR						 decodeBeginInfo{};
 		VkBufferMemoryBarrier2KHR						 bitstreamBufferMemoryBarrier;
@@ -784,11 +802,6 @@ public:
 
 		~CachedDecodeParameters()
 		{
-			if (pd.sideDataLen > 0)
-			{
-				DE_ASSERT(pd.pSideData);
-				delete[] pd.pSideData;
-			}
 		}
 	};
 
@@ -800,6 +813,7 @@ public:
 		bool									queryDecodeStatus{};
 		bool									outOfOrderDecoding{};
 		bool									alwaysRecreateDPB{};
+		bool									intraOnlyDecoding{};
 		size_t									pictureParameterUpdateTriggerHack{0};
 		VkSharedBaseObj<VulkanVideoFrameBuffer> framebuffer;
 	};
@@ -823,7 +837,7 @@ public:
 	// Returns max number of reference frames (always at least 2 for MPEG-2)
 	int32_t			BeginSequence(const VkParserSequenceInfo* pnvsi) override;
 	// Returns a new INvidiaVulkanPicture interface
-	bool			AllocPictureBuffer(VkPicIf** ppNvidiaVulkanPicture) override;
+	bool			AllocPictureBuffer(VkPicIf** ppNvidiaVulkanPicture, uint32_t width, uint32_t height) override;
 	// Called when a picture is ready to be decoded
 	bool			DecodePicture(VkParserPictureData* pNvidiaVulkanParserPictureData) override;
 	// Called when the stream parameters have changed
@@ -834,7 +848,7 @@ public:
 	// Called for custom NAL parsing (not required)
 	void			UnhandledNALU(const deUint8* pbData, size_t cbData) override;
 
-	virtual int32_t StartVideoSequence(const VkParserDetectedVideoFormat* pVideoFormat);
+	virtual void StartVideoSequence(const VkParserDetectedVideoFormat* pVideoFormat);
 	virtual int32_t DecodePictureWithParameters(de::MovePtr<CachedDecodeParameters>& params);
 	VkDeviceSize	GetBitstreamBuffer(VkDeviceSize							   size,
 									   VkDeviceSize							   minBitstreamBufferOffsetAlignment,
@@ -868,6 +882,7 @@ public:
 												  StdVideoDecodeH264PictureInfoFlags currPicFlags,
 												  int8_t							 presetDpbSlot);
 	int8_t			AllocateDpbSlotForCurrentH265(vkPicBuffBase* pPic, bool isReference, int8_t presetDpbSlot);
+
 	int8_t			GetPicIdx(vkPicBuffBase* pNvidiaVulkanPictureBase);
 	int8_t			GetPicIdx(VkPicIf* pNvidiaVulkanPicture);
 	int8_t			GetPicDpbSlot(int8_t picIndex);
@@ -894,6 +909,7 @@ public:
 	void			SubmitQueue(de::MovePtr<CachedDecodeParameters>& cachedParameters);
 	void			QueryDecodeResults(de::MovePtr<CachedDecodeParameters>& cachedParameters);
 	void			decodeFramesOutOfOrder();
+	void			reinitializeFormatsForProfile(const VkVideoCoreProfile* profile);
 
 	DeviceContext*					m_deviceContext{};
 	VkVideoCoreProfile				m_profile{};
@@ -906,10 +922,8 @@ public:
 	std::array<int8_t, MAX_FRM_CNT> m_pictureToDpbSlotMap;
 	VkFormat						m_dpbImageFormat{VK_FORMAT_UNDEFINED};
 	VkFormat						m_outImageFormat{VK_FORMAT_UNDEFINED};
-	deUint32						m_maxNumDecodeSurfaces{1};
 	deUint32						m_maxNumDpbSlots{1};
 	vector<AllocationPtr>			m_videoDecodeSessionAllocs;
-	deUint32						m_numDecodeSurfaces{};
 	Move<VkCommandPool>				m_videoCommandPool{};
 	VkVideoCapabilitiesKHR			m_videoCaps{};
 	VkVideoDecodeCapabilitiesKHR	m_decodeCaps{};
@@ -950,6 +964,7 @@ public:
 	bool														m_queryResultWithStatus{false};
 	bool														m_outOfOrderDecoding{false};
 	bool														m_alwaysRecreateDPB{false};
+	bool														m_intraOnlyDecoding{false};
 	vector<VkParserPerFrameDecodeParameters*>					m_pPerFrameDecodeParameters;
 	vector<VkParserDecodePictureInfo*>							m_pVulkanParserDecodePictureInfo;
 	vector<NvVkDecodeFrameData*>								m_pFrameDatas;
@@ -968,10 +983,9 @@ public:
 	vector<VkSemaphoreSubmitInfoKHR>							m_frameConsumerDoneSemaphoreSubmitInfos;
 
 	std::vector<de::MovePtr<CachedDecodeParameters>>			m_cachedDecodeParams;
-
+	VkSharedBaseObj<BitstreamBufferImpl>						m_bitstreamBuffer{};
+	VkDeviceSize												m_bitstreamBytesProcessed{0};
 	VkParserSequenceInfo										m_nvsi{};
-	deUint32													m_maxStreamBufferSize{};
-	deUint32													m_numBitstreamBuffersToPreallocate{8}; // TODO: Review
 	bool														m_useImageArray{false};
 	bool														m_useImageViewArray{false};
 	bool														m_useSeparateOutputImages{false};

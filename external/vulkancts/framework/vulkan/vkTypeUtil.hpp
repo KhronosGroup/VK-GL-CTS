@@ -28,8 +28,18 @@
 
 namespace vk
 {
+/* TODO: Getting many thousands of issues like,
 
+warning: conversion from 'uint32_t' {aka 'unsigned int'} to 'unsigned char:1' may change value [-Wconversion]
+ 1005 |         res.segmentation_update_data                    = segmentation_update_data;
+      |                                                           ^~~~~~~~~~~~~~~~~~~~~~~~
+
+The framework generator scripts are seemingly not handling bitfields correctly.
+*/
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
 #include "vkTypeUtil.inl"
+#pragma GCC diagnostic pop
 
 inline VkBool32 makeVkBool (bool b)
 {

@@ -148,6 +148,13 @@ const char*	getdVideoH265LevelIdcName								(StdVideoH265LevelIdc value);
 const char*	getdVideoH265SliceTypeName								(StdVideoH265SliceType value);
 const char*	getdVideoH265PictureTypeName							(StdVideoH265PictureType value);
 const char*	getdVideoH265AspectRatioIdcName							(StdVideoH265AspectRatioIdc value);
+const char*	getdVideoAV1ProfileName									(StdVideoAV1Profile value);
+const char*	getdVideoAV1LevelName									(StdVideoAV1Level value);
+const char*	getdVideoAV1FrameTypeName								(StdVideoAV1FrameType value);
+const char*	getdVideoAV1ReferenceNameName							(StdVideoAV1ReferenceName value);
+const char*	getdVideoAV1InterpolationFilterName						(StdVideoAV1InterpolationFilter value);
+const char*	getdVideoAV1TxModeName									(StdVideoAV1TxMode value);
+const char*	getdVideoAV1FrameRestorationTypeName					(StdVideoAV1FrameRestorationType value);
 
 inline tcu::Format::Enum<VkAttachmentLoadOp>								getAttachmentLoadOpStr								(VkAttachmentLoadOp value)								{ return tcu::Format::Enum<VkAttachmentLoadOp>(getAttachmentLoadOpName, value);																}
 inline tcu::Format::Enum<VkAttachmentStoreOp>								getAttachmentStoreOpStr								(VkAttachmentStoreOp value)								{ return tcu::Format::Enum<VkAttachmentStoreOp>(getAttachmentStoreOpName, value);															}
@@ -294,6 +301,13 @@ inline tcu::Format::Enum<StdVideoH265LevelIdc>								getdVideoH265LevelIdcStr		
 inline tcu::Format::Enum<StdVideoH265SliceType>								getdVideoH265SliceTypeStr							(StdVideoH265SliceType value)							{ return tcu::Format::Enum<StdVideoH265SliceType>(getdVideoH265SliceTypeName, value);														}
 inline tcu::Format::Enum<StdVideoH265PictureType>							getdVideoH265PictureTypeStr							(StdVideoH265PictureType value)							{ return tcu::Format::Enum<StdVideoH265PictureType>(getdVideoH265PictureTypeName, value);													}
 inline tcu::Format::Enum<StdVideoH265AspectRatioIdc>						getdVideoH265AspectRatioIdcStr						(StdVideoH265AspectRatioIdc value)						{ return tcu::Format::Enum<StdVideoH265AspectRatioIdc>(getdVideoH265AspectRatioIdcName, value);												}
+inline tcu::Format::Enum<StdVideoAV1Profile>								getdVideoAV1ProfileStr								(StdVideoAV1Profile value)								{ return tcu::Format::Enum<StdVideoAV1Profile>(getdVideoAV1ProfileName, value);																}
+inline tcu::Format::Enum<StdVideoAV1Level>									getdVideoAV1LevelStr								(StdVideoAV1Level value)								{ return tcu::Format::Enum<StdVideoAV1Level>(getdVideoAV1LevelName, value);																	}
+inline tcu::Format::Enum<StdVideoAV1FrameType>								getdVideoAV1FrameTypeStr							(StdVideoAV1FrameType value)							{ return tcu::Format::Enum<StdVideoAV1FrameType>(getdVideoAV1FrameTypeName, value);															}
+inline tcu::Format::Enum<StdVideoAV1ReferenceName>							getdVideoAV1ReferenceNameStr						(StdVideoAV1ReferenceName value)						{ return tcu::Format::Enum<StdVideoAV1ReferenceName>(getdVideoAV1ReferenceNameName, value);													}
+inline tcu::Format::Enum<StdVideoAV1InterpolationFilter>					getdVideoAV1InterpolationFilterStr					(StdVideoAV1InterpolationFilter value)					{ return tcu::Format::Enum<StdVideoAV1InterpolationFilter>(getdVideoAV1InterpolationFilterName, value);										}
+inline tcu::Format::Enum<StdVideoAV1TxMode>									getdVideoAV1TxModeStr								(StdVideoAV1TxMode value)								{ return tcu::Format::Enum<StdVideoAV1TxMode>(getdVideoAV1TxModeName, value);																}
+inline tcu::Format::Enum<StdVideoAV1FrameRestorationType>					getdVideoAV1FrameRestorationTypeStr					(StdVideoAV1FrameRestorationType value)					{ return tcu::Format::Enum<StdVideoAV1FrameRestorationType>(getdVideoAV1FrameRestorationTypeName, value);									}
 
 inline std::ostream&	operator<<	(std::ostream& s, VkAttachmentLoadOp value)									{ return s << getAttachmentLoadOpStr(value);								}
 inline std::ostream&	operator<<	(std::ostream& s, VkAttachmentStoreOp value)								{ return s << getAttachmentStoreOpStr(value);								}
@@ -440,6 +454,13 @@ inline std::ostream&	operator<<	(std::ostream& s, StdVideoH265LevelIdc value)			
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoH265SliceType value)								{ return s << getdVideoH265SliceTypeStr(value);								}
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoH265PictureType value)							{ return s << getdVideoH265PictureTypeStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoH265AspectRatioIdc value)							{ return s << getdVideoH265AspectRatioIdcStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1Profile value)									{ return s << getdVideoAV1ProfileStr(value);								}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1Level value)									{ return s << getdVideoAV1LevelStr(value);									}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1FrameType value)								{ return s << getdVideoAV1FrameTypeStr(value);								}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1ReferenceName value)							{ return s << getdVideoAV1ReferenceNameStr(value);							}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1InterpolationFilter value)						{ return s << getdVideoAV1InterpolationFilterStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1TxMode value)									{ return s << getdVideoAV1TxModeStr(value);									}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1FrameRestorationType value)					{ return s << getdVideoAV1FrameRestorationTypeStr(value);					}
 
 tcu::Format::Bitfield<32>	getFramebufferCreateFlagsStr								(VkFramebufferCreateFlags value);
 tcu::Format::Bitfield<32>	getQueryPoolCreateFlagsStr									(VkQueryPoolCreateFlags value);
@@ -1354,6 +1375,11 @@ std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH265SessionParamet
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH265SessionParametersCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH265PictureInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeH265DpbSlotInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeAV1ProfileInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeAV1CapabilitiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeAV1SessionParametersCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeAV1PictureInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoDecodeAV1DpbSlotInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoSessionCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoSessionParametersCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoSessionParametersUpdateInfoKHR& value);
@@ -1708,3 +1734,25 @@ std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265PictureInfoFl
 std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265PictureInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265ReferenceInfoFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265ReferenceInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1ColorConfigFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1ColorConfig& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1TimingInfoFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1TimingInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1SequenceHeaderFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1SequenceHeader& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1LoopFilterFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1LoopFilter& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1QuantizationFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1Quantization& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1Segmentation& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1TileInfoFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1TileInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1CDEF& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1LoopRestoration& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1GlobalMotion& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1FilmGrainFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoAV1FilmGrain& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoDecodeAV1PictureInfoFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoDecodeAV1PictureInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoDecodeAV1ReferenceInfoFlags& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoDecodeAV1ReferenceInfo& value);

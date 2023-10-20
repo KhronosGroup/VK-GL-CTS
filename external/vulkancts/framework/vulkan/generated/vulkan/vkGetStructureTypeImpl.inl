@@ -2988,6 +2988,31 @@ template<> VkStructureType getStructureType<VkVideoDecodeH265DpbSlotInfoKHR> (vo
 	return VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_DPB_SLOT_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkVideoDecodeAV1ProfileInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PROFILE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeAV1CapabilitiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_CAPABILITIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeAV1SessionParametersCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_SESSION_PARAMETERS_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeAV1PictureInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PICTURE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeAV1DpbSlotInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_DPB_SLOT_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkVideoSessionCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_SESSION_CREATE_INFO_KHR;

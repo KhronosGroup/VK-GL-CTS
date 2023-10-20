@@ -2055,6 +2055,18 @@ bool check_VK_EXT_texel_buffer_alignment(const tcu::UVec2& v, const ExtPropVect&
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
+bool check_VK_QCOM_render_pass_transform(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_QCOM_render_pass_transform"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_swapchain+VK_KHR_surface
+	return isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vIEP, "VK_KHR_surface");
+}
+
 bool check_VK_EXT_depth_bias_control(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -2337,8 +2349,8 @@ bool check_VK_QCOM_rotated_copy_commands(const tcu::UVec2& v, const ExtPropVect&
 	if (!isSupported(vDEP, "VK_QCOM_rotated_copy_commands"))
 		return true;
 
-	// depends attribute in xml: VK_KHR_copy_commands2
-	return (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_copy_commands2"));
+	// depends attribute in xml: VK_KHR_swapchain+VK_KHR_copy_commands2
+	return isSupported(vDEP, "VK_KHR_swapchain") && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_copy_commands2"));
 }
 
 bool check_VK_EXT_image_robustness(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3277,6 +3289,18 @@ bool check_VK_KHR_cooperative_matrix(const tcu::UVec2& v, const ExtPropVect& vIE
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
+bool check_VK_KHR_video_decode_av1(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_video_decode_av1"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_video_decode_queue
+	return isSupported(vDEP, "VK_KHR_video_decode_queue");
+}
+
 bool check_VK_KHR_video_maintenance1(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3405,8 +3429,8 @@ bool check_VK_KHR_maintenance6(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 	if (!isSupported(vDEP, "VK_KHR_maintenance6"))
 		return true;
 
-	// depends attribute in xml: VK_VERSION_1_1
-	return isCompatibile(1, 1, v);
+	// depends attribute in xml: VK_VERSION_1_0
+	return isCompatibile(1, 0, v);
 }
 
 bool check_VK_NV_descriptor_pool_overallocation(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3556,6 +3580,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_NV_inherited_viewport_scissor",						&check_VK_NV_inherited_viewport_scissor),
 	std::make_pair("VK_KHR_shader_integer_dot_product",						&check_VK_KHR_shader_integer_dot_product),
 	std::make_pair("VK_EXT_texel_buffer_alignment",							&check_VK_EXT_texel_buffer_alignment),
+	std::make_pair("VK_QCOM_render_pass_transform",							&check_VK_QCOM_render_pass_transform),
 	std::make_pair("VK_EXT_depth_bias_control",								&check_VK_EXT_depth_bias_control),
 	std::make_pair("VK_EXT_device_memory_report",							&check_VK_EXT_device_memory_report),
 	std::make_pair("VK_EXT_robustness2",									&check_VK_EXT_robustness2),
@@ -3656,6 +3681,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_dynamic_rendering_unused_attachments",			&check_VK_EXT_dynamic_rendering_unused_attachments),
 	std::make_pair("VK_NV_low_latency2",									&check_VK_NV_low_latency2),
 	std::make_pair("VK_KHR_cooperative_matrix",								&check_VK_KHR_cooperative_matrix),
+	std::make_pair("VK_KHR_video_decode_av1",								&check_VK_KHR_video_decode_av1),
 	std::make_pair("VK_KHR_video_maintenance1",								&check_VK_KHR_video_maintenance1),
 	std::make_pair("VK_NV_per_stage_descriptor_set",						&check_VK_NV_per_stage_descriptor_set),
 	std::make_pair("VK_QCOM_image_processing2",								&check_VK_QCOM_image_processing2),
@@ -4021,8 +4047,9 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_NV_low_latency2"),
 	std::make_tuple(1, 0, "VK_KHR_cooperative_matrix"),
 	std::make_tuple(1, 0, "VK_QCOM_multiview_per_view_render_areas"),
+	std::make_tuple(1, 0, "VK_KHR_video_decode_av1"),
 	std::make_tuple(1, 1, "VK_KHR_video_maintenance1"),
-	std::make_tuple(1, 1, "VK_NV_per_stage_descriptor_set"),
+	std::make_tuple(1, 0, "VK_NV_per_stage_descriptor_set"),
 	std::make_tuple(1, 0, "VK_QCOM_image_processing2"),
 	std::make_tuple(1, 0, "VK_QCOM_filter_cubic_weights"),
 	std::make_tuple(1, 0, "VK_QCOM_ycbcr_degamma"),
@@ -4032,6 +4059,6 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_QNX_external_memory_screen_buffer"),
 	std::make_tuple(1, 0, "VK_MSFT_layered_driver"),
 	std::make_tuple(1, 0, "VK_KHR_calibrated_timestamps"),
-	std::make_tuple(1, 1, "VK_KHR_maintenance6"),
+	std::make_tuple(1, 0, "VK_KHR_maintenance6"),
 	std::make_tuple(1, 1, "VK_NV_descriptor_pool_overallocation"),
 };

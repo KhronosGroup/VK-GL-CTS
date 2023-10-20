@@ -47,28 +47,45 @@ enum ClipName
 	CLIP_H264_4K_26_IBP_MAIN,
 	CLIP_JELLY_HEVC,
 
+	CLIP_BASIC_8,
+	CLIP_ALLINTRA_8,
+	CLIP_ALLINTRA_INTRABC_8,
+	CLIP_CDFUPDATE_8,
+	CLIP_GLOBALMOTION_8,
+	CLIP_FILMGRAIN_8,
+	CLIP_SVCL1T2_8,
+	CLIP_SUPERRES_8,
+	CLIP_SIZEUP_8,
+	CLIP_ARGON_SEQCHANGE_AFFINE_8,
+
+	CLIP_BASIC_10,
+	CLIP_ORDERHINT_10,
+	CLIP_FORWARDKEYFRAME_10,
+	CLIP_LOSSLESS_10,
+	CLIP_LOOPFILTER_10,
+	CLIP_CDEF_10,
+	CLIP_ARGON_FILMGRAIN_10,
+	CLIP_ARGON_TEST_787,
+
 	CLIP_LAST,
 };
 
 struct VideoProfileInfo
 {
 	VkVideoCodecOperationFlagBitsKHR	codecOperation;
-	VkVideoChromaSubsamplingFlagBitsKHR subsamplingFlags;
-	VkVideoComponentBitDepthFlagBitsKHR lumaBitDepth;
-	VkVideoComponentBitDepthFlagBitsKHR chromaBitDepth;
-
-	int profileIDC; // TODO: Avoid type-punning
+	VkVideoChromaSubsamplingFlagBitsKHR	subsamplingFlags;
+	VkVideoComponentBitDepthFlagBitsKHR	lumaBitDepth;
+	VkVideoComponentBitDepthFlagBitsKHR	chromaBitDepth;
+	int									profileIDC; // TODO: Avoid type-punning
 };
 
 struct ClipInfo
 {
-	ClipName	 name;
-	const char*	 filename;
-	VideoProfileInfo profile;
-	int			 totalFrames;
-	int			 framesInGOP;
-	int			 numGOPs;
-	const char** frameChecksums;
+	ClipName			name;
+	const char*			filename;
+	std::vector<VideoProfileInfo> sessionProfiles;
+	int					totalFrames;
+	const char**		frameChecksums;
 };
 
 const ClipInfo* clipInfo(ClipName c);

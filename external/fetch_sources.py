@@ -294,8 +294,9 @@ def postExtractLibpng (path):
 				os.path.join(path, "pnglibconf.h"))
 
 PACKAGES = [
+	# Force a change
 	SourcePackage(
-		"http://zlib.net/fossils/zlib-1.2.13.tar.gz",
+		"https://github.com/madler/zlib/releases/download/v1.2.13/zlib-1.2.13.tar.gz",
 		"b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
 		"zlib"),
 	SourcePackage(
@@ -325,9 +326,9 @@ PACKAGES = [
 		"1bfd27101e4578d0284061bdf8f09fb4755c7c2d",
 		"spirv-headers"),
 	GitRepo(
-		"https://github.com/KhronosGroup/Vulkan-Docs.git",
-		"git@github.com:KhronosGroup/Vulkan-Docs.git",
-		"9b94c27d65dc7d11e50a7c00581b89f1983d34ff",
+		"https://gitlab.khronos.org/vulkan/vulkan.git",
+		"git@gitlab.khronos.org:vulkan/vulkan.git",
+		"7947c2ad3c8eb2426e370a5821642f22a6712a13",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",
@@ -343,14 +344,14 @@ PACKAGES = [
 	# integration, this fork contains the small fixes needed for use
 	# by the CTS.
 	GitRepo(
-		"https://github.com/Igalia/vk_video_samples.git",
-		"git@github.com:Igalia/vk_video_samples.git",
-		"b907158533534585d9182cb0becdaec055aa7e12",
+		"https://gitlab.khronos.org/vulkan/vulkan_video_sample_av1_develop.git",
+		"git@gitlab.khronos.org:vulkan/vulkan_video_sample_av1_develop.git",
+		"3e1db72f2308a9ab59642a9e0de34ca3615ae7a8",
 		"nvidia-video-samples"),
 	GitRepo(
 		"https://github.com/Igalia/ESExtractor.git",
 		"git@github.com:Igalia/ESExtractor.git",
-		"v0.3.3",
+		"62be17b57162535b4b0d652c0538b62c7dd06396",
 		"ESExtractor"),
 ]
 

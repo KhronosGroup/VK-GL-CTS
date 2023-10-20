@@ -57,9 +57,11 @@ BINARY_FILE_EXTENSION = [
     ".nspv",
     ".h264",
     ".h265",
+    ".ivf",
+    ".obu",
     ".mp4",
-	".diff"
-    ]
+    ".diff"
+]
 
 def isTextFile (filePath):
     # Special case for a preprocessor test file that uses a non-ascii/utf8 encoding

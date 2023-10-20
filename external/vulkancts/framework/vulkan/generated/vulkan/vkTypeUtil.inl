@@ -900,3 +900,130 @@ inline StdVideoEncodeH265WeightTableFlags makeStdVideoEncodeH265WeightTableFlags
 	res.chroma_weight_l1_flag	= chroma_weight_l1_flag;
 	return res;
 }
+
+inline StdVideoAV1ColorConfigFlags makeStdVideoAV1ColorConfigFlags (uint32_t mono_chrome, uint32_t color_range, uint32_t separate_uv_delta_q, uint32_t color_description_present_flag, uint32_t reserved)
+{
+	StdVideoAV1ColorConfigFlags res;
+	res.mono_chrome						= mono_chrome;
+	res.color_range						= color_range;
+	res.separate_uv_delta_q				= separate_uv_delta_q;
+	res.color_description_present_flag	= color_description_present_flag;
+	res.reserved						= reserved;
+	return res;
+}
+
+inline StdVideoAV1TimingInfoFlags makeStdVideoAV1TimingInfoFlags (uint32_t equal_picture_interval, uint32_t reserved)
+{
+	StdVideoAV1TimingInfoFlags res;
+	res.equal_picture_interval	= equal_picture_interval;
+	res.reserved				= reserved;
+	return res;
+}
+
+inline StdVideoAV1SequenceHeaderFlags makeStdVideoAV1SequenceHeaderFlags (uint32_t still_picture, uint32_t reduced_still_picture_header, uint32_t use_128x128_superblock, uint32_t enable_filter_intra, uint32_t enable_intra_edge_filter, uint32_t enable_interintra_compound, uint32_t enable_masked_compound, uint32_t enable_warped_motion, uint32_t enable_dual_filter, uint32_t enable_order_hint, uint32_t enable_jnt_comp, uint32_t enable_ref_frame_mvs, uint32_t frame_id_numbers_present_flag, uint32_t enable_superres, uint32_t enable_cdef, uint32_t enable_restoration, uint32_t film_grain_params_present, uint32_t timing_info_present_flag, uint32_t initial_display_delay_present_flag, uint32_t reserved)
+{
+	StdVideoAV1SequenceHeaderFlags res;
+	res.still_picture						= still_picture;
+	res.reduced_still_picture_header		= reduced_still_picture_header;
+	res.use_128x128_superblock				= use_128x128_superblock;
+	res.enable_filter_intra					= enable_filter_intra;
+	res.enable_intra_edge_filter			= enable_intra_edge_filter;
+	res.enable_interintra_compound			= enable_interintra_compound;
+	res.enable_masked_compound				= enable_masked_compound;
+	res.enable_warped_motion				= enable_warped_motion;
+	res.enable_dual_filter					= enable_dual_filter;
+	res.enable_order_hint					= enable_order_hint;
+	res.enable_jnt_comp						= enable_jnt_comp;
+	res.enable_ref_frame_mvs				= enable_ref_frame_mvs;
+	res.frame_id_numbers_present_flag		= frame_id_numbers_present_flag;
+	res.enable_superres						= enable_superres;
+	res.enable_cdef							= enable_cdef;
+	res.enable_restoration					= enable_restoration;
+	res.film_grain_params_present			= film_grain_params_present;
+	res.timing_info_present_flag			= timing_info_present_flag;
+	res.initial_display_delay_present_flag	= initial_display_delay_present_flag;
+	res.reserved							= reserved;
+	return res;
+}
+
+inline StdVideoAV1LoopFilterFlags makeStdVideoAV1LoopFilterFlags (uint32_t loop_filter_delta_enabled, uint32_t loop_filter_delta_update, uint32_t reserved)
+{
+	StdVideoAV1LoopFilterFlags res;
+	res.loop_filter_delta_enabled	= loop_filter_delta_enabled;
+	res.loop_filter_delta_update	= loop_filter_delta_update;
+	res.reserved					= reserved;
+	return res;
+}
+
+inline StdVideoAV1QuantizationFlags makeStdVideoAV1QuantizationFlags (uint32_t using_qmatrix, uint32_t diff_uv_delta, uint32_t reserved)
+{
+	StdVideoAV1QuantizationFlags res;
+	res.using_qmatrix	= using_qmatrix;
+	res.diff_uv_delta	= diff_uv_delta;
+	res.reserved		= reserved;
+	return res;
+}
+
+inline StdVideoAV1TileInfoFlags makeStdVideoAV1TileInfoFlags (uint32_t uniform_tile_spacing_flag, uint32_t reserved)
+{
+	StdVideoAV1TileInfoFlags res;
+	res.uniform_tile_spacing_flag	= uniform_tile_spacing_flag;
+	res.reserved					= reserved;
+	return res;
+}
+
+inline StdVideoAV1FilmGrainFlags makeStdVideoAV1FilmGrainFlags (uint32_t chroma_scaling_from_luma, uint32_t overlap_flag, uint32_t clip_to_restricted_range, uint32_t update_grain, uint32_t reserved)
+{
+	StdVideoAV1FilmGrainFlags res;
+	res.chroma_scaling_from_luma	= chroma_scaling_from_luma;
+	res.overlap_flag				= overlap_flag;
+	res.clip_to_restricted_range	= clip_to_restricted_range;
+	res.update_grain				= update_grain;
+	res.reserved					= reserved;
+	return res;
+}
+
+inline StdVideoDecodeAV1PictureInfoFlags makeStdVideoDecodeAV1PictureInfoFlags (uint32_t error_resilient_mode, uint32_t disable_cdf_update, uint32_t use_superres, uint32_t render_and_frame_size_different, uint32_t allow_screen_content_tools, uint32_t is_filter_switchable, uint32_t force_integer_mv, uint32_t frame_size_override_flag, uint32_t buffer_removal_time_present_flag, uint32_t allow_intrabc, uint32_t frame_refs_short_signaling, uint32_t allow_high_precision_mv, uint32_t is_motion_mode_switchable, uint32_t use_ref_frame_mvs, uint32_t disable_frame_end_update_cdf, uint32_t allow_warped_motion, uint32_t reduced_tx_set, uint32_t reference_select, uint32_t skip_mode_present, uint32_t delta_q_present, uint32_t delta_lf_present, uint32_t delta_lf_multi, uint32_t segmentation_enabled, uint32_t segmentation_update_map, uint32_t segmentation_temporal_update, uint32_t segmentation_update_data, uint32_t UsesLr, uint32_t usesChromaLr, uint32_t apply_grain, uint32_t reserved)
+{
+	StdVideoDecodeAV1PictureInfoFlags res;
+	res.error_resilient_mode				= error_resilient_mode;
+	res.disable_cdf_update					= disable_cdf_update;
+	res.use_superres						= use_superres;
+	res.render_and_frame_size_different		= render_and_frame_size_different;
+	res.allow_screen_content_tools			= allow_screen_content_tools;
+	res.is_filter_switchable				= is_filter_switchable;
+	res.force_integer_mv					= force_integer_mv;
+	res.frame_size_override_flag			= frame_size_override_flag;
+	res.buffer_removal_time_present_flag	= buffer_removal_time_present_flag;
+	res.allow_intrabc						= allow_intrabc;
+	res.frame_refs_short_signaling			= frame_refs_short_signaling;
+	res.allow_high_precision_mv				= allow_high_precision_mv;
+	res.is_motion_mode_switchable			= is_motion_mode_switchable;
+	res.use_ref_frame_mvs					= use_ref_frame_mvs;
+	res.disable_frame_end_update_cdf		= disable_frame_end_update_cdf;
+	res.allow_warped_motion					= allow_warped_motion;
+	res.reduced_tx_set						= reduced_tx_set;
+	res.reference_select					= reference_select;
+	res.skip_mode_present					= skip_mode_present;
+	res.delta_q_present						= delta_q_present;
+	res.delta_lf_present					= delta_lf_present;
+	res.delta_lf_multi						= delta_lf_multi;
+	res.segmentation_enabled				= segmentation_enabled;
+	res.segmentation_update_map				= segmentation_update_map;
+	res.segmentation_temporal_update		= segmentation_temporal_update;
+	res.segmentation_update_data			= segmentation_update_data;
+	res.UsesLr								= UsesLr;
+	res.usesChromaLr						= usesChromaLr;
+	res.apply_grain							= apply_grain;
+	res.reserved							= reserved;
+	return res;
+}
+
+inline StdVideoDecodeAV1ReferenceInfoFlags makeStdVideoDecodeAV1ReferenceInfoFlags (uint32_t disable_frame_end_update_cdf, uint32_t segmentation_enabled, uint32_t reserved)
+{
+	StdVideoDecodeAV1ReferenceInfoFlags res;
+	res.disable_frame_end_update_cdf	= disable_frame_end_update_cdf;
+	res.segmentation_enabled			= segmentation_enabled;
+	res.reserved						= reserved;
+	return res;
+}
