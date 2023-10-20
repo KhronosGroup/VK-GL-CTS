@@ -79,7 +79,7 @@ struct NonUniformParams
 class NonUniformArgsCase : public TestCase
 {
 public:
-							NonUniformArgsCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const NonUniformParams& params);
+							NonUniformArgsCase		(tcu::TestContext& testCtx, const std::string& name, const NonUniformParams& params);
 	virtual					~NonUniformArgsCase		(void) {}
 
 	virtual void			checkSupport			(Context& context) const;
@@ -102,8 +102,8 @@ protected:
 	NonUniformParams			m_params;
 };
 
-NonUniformArgsCase::NonUniformArgsCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const NonUniformParams& params)
-	: TestCase	(testCtx, name, description)
+NonUniformArgsCase::NonUniformArgsCase (tcu::TestContext& testCtx, const std::string& name, const NonUniformParams& params)
+	: TestCase	(testCtx, name)
 	, m_params	(params)
 {}
 
@@ -503,7 +503,8 @@ tcu::TestStatus NonUniformArgsInstance::iterate (void)
 
 tcu::TestCaseGroup*	createNonUniformArgsTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> nonUniformGroup(new tcu::TestCaseGroup(testCtx, "non_uniform_args", "Test non-uniform arguments in traceRayExt()"));
+	// Test non-uniform arguments in traceRayExt()
+	de::MovePtr<tcu::TestCaseGroup> nonUniformGroup(new tcu::TestCaseGroup(testCtx, "non_uniform_args"));
 
 	// Closest hit cases.
 	{
@@ -518,7 +519,7 @@ tcu::TestCaseGroup*	createNonUniformArgsTests (tcu::TestContext& testCtx)
 			for (deUint32 rayType = 0u; rayType < typeCount; ++rayType)
 			{
 				params.hitParams.rayType = rayType;
-				nonUniformGroup->addChild(new NonUniformArgsCase(testCtx, "chit_" + de::toString(typeCount) + "_types_" + de::toString(rayType), "", params));
+				nonUniformGroup->addChild(new NonUniformArgsCase(testCtx, "chit_" + de::toString(typeCount) + "_types_" + de::toString(rayType), params));
 			}
 		}
 	}
@@ -534,7 +535,7 @@ tcu::TestCaseGroup*	createNonUniformArgsTests (tcu::TestContext& testCtx)
 		{
 			params.missParams.missCause = static_cast<MissCause>(causeIdx);
 			params.missParams.missIndex = static_cast<deUint32>(causeIdx-1);
-			nonUniformGroup->addChild(new NonUniformArgsCase(testCtx, "miss_cause_" + de::toString(causeIdx), "", params));
+			nonUniformGroup->addChild(new NonUniformArgsCase(testCtx, "miss_cause_" + de::toString(causeIdx), params));
 		}
 	}
 

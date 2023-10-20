@@ -343,22 +343,22 @@ void addEarlyDestroyTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineC
 		false,
 	};
 
-	addFunctionCaseWithPrograms(group, "cache", "", checkSupport, initPrograms, testEarlyDestroyKeepLayout, params);
+	addFunctionCaseWithPrograms(group, "cache", checkSupport, initPrograms, testEarlyDestroyKeepLayout, params);
 	params.usePipelineCache = false;
-	addFunctionCaseWithPrograms(group, "no_cache", "", checkSupport, initPrograms, testEarlyDestroyKeepLayout, params);
+	addFunctionCaseWithPrograms(group, "no_cache", checkSupport, initPrograms, testEarlyDestroyKeepLayout, params);
 	params.usePipelineCache = true;
-	addFunctionCaseWithPrograms(group, "cache_destroy_layout", "", checkSupport, initPrograms, testEarlyDestroyDestroyLayout, params);
+	addFunctionCaseWithPrograms(group, "cache_destroy_layout", checkSupport, initPrograms, testEarlyDestroyDestroyLayout, params);
 	params.usePipelineCache = false;
-	addFunctionCaseWithPrograms(group, "no_cache_destroy_layout", "", checkSupport, initPrograms, testEarlyDestroyDestroyLayout, params);
+	addFunctionCaseWithPrograms(group, "no_cache_destroy_layout", checkSupport, initPrograms, testEarlyDestroyDestroyLayout, params);
 	params.useMaintenance5 = true;
-	addFunctionCaseWithPrograms(group, "no_cache_destroy_layout_maintenance5", "", checkSupport, initPrograms, testEarlyDestroyDestroyLayout, params);
+	addFunctionCaseWithPrograms(group, "no_cache_destroy_layout_maintenance5", checkSupport, initPrograms, testEarlyDestroyDestroyLayout, params);
 }
 
 } // anonymous
 
 tcu::TestCaseGroup* createEarlyDestroyTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "early_destroy", "Tests where pipeline is destroyed early", addEarlyDestroyTestCasesWithFunctions, pipelineConstructionType);
+	return createTestGroup(testCtx, "early_destroy", addEarlyDestroyTestCasesWithFunctions, pipelineConstructionType);
 }
 
 } // pipeline

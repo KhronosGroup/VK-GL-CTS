@@ -111,7 +111,7 @@ struct SpecConstants
 class BorderSwizzleCase : public vkt::TestCase
 {
 public:
-							BorderSwizzleCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
+							BorderSwizzleCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params);
 	virtual					~BorderSwizzleCase		(void) {}
 
 	virtual void			initPrograms			(vk::SourceCollections& programCollection) const;
@@ -135,8 +135,8 @@ protected:
 	TestParams				m_params;
 };
 
-BorderSwizzleCase::BorderSwizzleCase(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-	: vkt::TestCase	(testCtx, name, description)
+BorderSwizzleCase::BorderSwizzleCase(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(params)
 {
 }
@@ -1432,7 +1432,7 @@ tcu::TestCaseGroup* createSamplerBorderSwizzleTests (tcu::TestContext& testCtx, 
 		{ true,		"with_swizzle_hint"	},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, "border_swizzle", "Border color swizzle tests"));
+	de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, "border_swizzle"));
 
 	for (const auto& format : textureFormats)
 	{
@@ -1462,17 +1462,17 @@ tcu::TestCaseGroup* createSamplerBorderSwizzleTests (tcu::TestContext& testCtx, 
 					formatGroupName << "_stencil";
 			}
 
-			de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatGroupName.str().c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatGroupName.str().c_str()));
 
 			for (size_t mappingIdx = 0u; mappingIdx < mappingPermutations.size(); ++mappingIdx)
 			{
 				const auto&						mapping			= mappingPermutations[mappingIdx];
-				de::MovePtr<tcu::TestCaseGroup>	mappingGroup	(new tcu::TestCaseGroup(testCtx, swizzleArrayToString(mapping).c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup>	mappingGroup	(new tcu::TestCaseGroup(testCtx, swizzleArrayToString(mapping).c_str()));
 
 				for (int borderColorIdx = 0; borderColorIdx < DE_LENGTH_OF_ARRAY(borderColors); ++borderColorIdx)
 				{
 					const auto&						borderColor		= borderColors[borderColorIdx];
-					de::MovePtr<tcu::TestCaseGroup>	borderTypeGroup	(new tcu::TestCaseGroup(testCtx, borderColor.borderTypeName, ""));
+					de::MovePtr<tcu::TestCaseGroup>	borderTypeGroup	(new tcu::TestCaseGroup(testCtx, borderColor.borderTypeName));
 
 					const auto formatType	= getFormatType(format, sampleStencil);
 					const auto isIntBorder	= isIntegerBorder(borderColor.borderType);
@@ -1486,7 +1486,7 @@ tcu::TestCaseGroup* createSamplerBorderSwizzleTests (tcu::TestContext& testCtx, 
 					for (int gatherIdx = -1; gatherIdx <= 3; ++gatherIdx)
 					{
 						const auto						componentGather	= gatherIndexToString(gatherIdx);
-						de::MovePtr<tcu::TestCaseGroup>	gatherGroup		(new tcu::TestCaseGroup(testCtx, componentGather.c_str(), ""));
+						de::MovePtr<tcu::TestCaseGroup>	gatherGroup		(new tcu::TestCaseGroup(testCtx, componentGather.c_str()));
 
 						for (const auto& swizzleHint : swizzleHintCases)
 						{
@@ -1516,7 +1516,7 @@ tcu::TestCaseGroup* createSamplerBorderSwizzleTests (tcu::TestContext& testCtx, 
 							params.useSamplerSwizzleHint = swizzleHint.useSwizzleHint;
 							params.useStencilAspect		 = sampleStencil;
 
-							gatherGroup->addChild(new BorderSwizzleCase(testCtx, swizzleHint.name, "", params));
+							gatherGroup->addChild(new BorderSwizzleCase(testCtx, swizzleHint.name, params));
 						}
 
 						borderTypeGroup->addChild(gatherGroup.release());
@@ -1537,6 +1537,4 @@ tcu::TestCaseGroup* createSamplerBorderSwizzleTests (tcu::TestContext& testCtx, 
 
 } // pipeline
 } // vkt
-
-
 

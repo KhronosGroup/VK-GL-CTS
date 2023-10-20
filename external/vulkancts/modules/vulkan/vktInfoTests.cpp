@@ -246,10 +246,10 @@ tcu::TestStatus logPlatformMemoryLimits (Context& context)
 
 void createInfoTests (tcu::TestCaseGroup* testGroup)
 {
-	addFunctionCase(testGroup, "build", "Build Info", logBuildInfo);
-	addFunctionCase(testGroup, "device", "Device Info", logDeviceInfo);
-	addFunctionCase(testGroup, "platform", "Platform Info", logPlatformInfo);
-	addFunctionCase(testGroup, "memory_limits", "Platform Memory Limits", logPlatformMemoryLimits);
+	addFunctionCase(testGroup, "build", logBuildInfo);
+	addFunctionCase(testGroup, "device", logDeviceInfo);
+	addFunctionCase(testGroup, "platform", logPlatformInfo);
+	addFunctionCase(testGroup, "memory_limits", logPlatformMemoryLimits);
 
 	api::createFeatureInfoInstanceTests(testGroup);
 	api::createFeatureInfoDeviceTests(testGroup);
@@ -260,7 +260,7 @@ void createInfoTests (tcu::TestCaseGroup* testGroup)
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, name.c_str(), "Build and Device Info Tests", createInfoTests);
+	return createTestGroup(testCtx, name.c_str(), createInfoTests);
 }
 
 } // info

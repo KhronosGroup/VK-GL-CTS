@@ -73,7 +73,7 @@ public:
 							DeviceFaultCase		(TestContext&		testCtx,
 												 const std::string&	name,
 												 const TestParams&	params)
-								: TestCase	(testCtx, name, std::string())
+								: TestCase	(testCtx, name)
 								, m_params	(params) {}
 	virtual					~DeviceFaultCase	() = default;
 	virtual TestInstance*	createInstance		(Context&			context) const override;
@@ -477,7 +477,7 @@ tcu::TestCaseGroup*	createDeviceFaultTests (tcu::TestContext& testCtx)
 		const char*	name;
 	} const types[] = { { TestType::Real, "real" }, { TestType::Fake, "fake" }, { TestType::CustomDevice, "custom_device" } };
 
-	auto rootGroup = new TestCaseGroup(testCtx, "device_fault", "VK_EXT_device_fault extension tests.");
+	auto rootGroup = new TestCaseGroup(testCtx, "device_fault");
 	for (const auto& type : types)
 	{
 		p.type = type.type;

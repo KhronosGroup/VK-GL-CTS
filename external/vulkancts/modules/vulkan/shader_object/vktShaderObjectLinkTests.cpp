@@ -558,8 +558,8 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate (void)
 class ShaderObjectLinkCase : public vkt::TestCase
 {
 public:
-							ShaderObjectLinkCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-													: vkt::TestCase		(testCtx, name, description)
+							ShaderObjectLinkCase	(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+													: vkt::TestCase		(testCtx, name)
 													, m_params			(params)
 													{}
 	virtual					~ShaderObjectLinkCase	(void) {}
@@ -970,8 +970,8 @@ tcu::TestStatus MeshShaderObjectLinkInstance::iterate (void)
 class MeshShaderObjectLinkCase : public vkt::TestCase
 {
 public:
-					MeshShaderObjectLinkCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const MeshParams& params)
-												: vkt::TestCase		(testCtx, name, description)
+					MeshShaderObjectLinkCase	(tcu::TestContext& testCtx, const std::string& name, const MeshParams& params)
+												: vkt::TestCase		(testCtx, name)
 												, m_params			(params)
 												{}
 	virtual			~MeshShaderObjectLinkCase	(void) {}
@@ -1061,7 +1061,7 @@ std::string typeToString(ShaderType type) {
 
 tcu::TestCaseGroup* createShaderObjectLinkTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> linkGroup(new tcu::TestCaseGroup(testCtx, "link", ""));
+	de::MovePtr<tcu::TestCaseGroup> linkGroup(new tcu::TestCaseGroup(testCtx, "link"));
 
 	const Shaders shaderTests[] =
 	{
@@ -1107,11 +1107,11 @@ tcu::TestCaseGroup* createShaderObjectLinkTests (tcu::TestContext& testCtx)
 		shadersName += typeToString(shaders.tesellation_evaluation) + "_";
 		shadersName += typeToString(shaders.geometry) + "_";
 		shadersName += typeToString(shaders.fragment);
-		de::MovePtr<tcu::TestCaseGroup> shadersGroup(new tcu::TestCaseGroup(testCtx, shadersName.c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> shadersGroup(new tcu::TestCaseGroup(testCtx, shadersName.c_str()));
 
 		for (const auto& bindType : bindTypeTests)
 		{
-			de::MovePtr<tcu::TestCaseGroup> bindGroup(new tcu::TestCaseGroup(testCtx, bindType.name, ""));
+			de::MovePtr<tcu::TestCaseGroup> bindGroup(new tcu::TestCaseGroup(testCtx, bindType.name));
 			for (const auto& randomOrder : randomOrderTests)
 			{
 				NextStages nextStages = {};
@@ -1139,7 +1139,7 @@ tcu::TestCaseGroup* createShaderObjectLinkTests (tcu::TestContext& testCtx)
 
 				std::string randomOrderName = randomOrder ? "random_order" : "default";
 
-				bindGroup->addChild(new ShaderObjectLinkCase(testCtx, randomOrderName, "", params));
+				bindGroup->addChild(new ShaderObjectLinkCase(testCtx, randomOrderName, params));
 			}
 
 			if (shaders.vertex == LINKED || shaders.tesellation_control == LINKED || shaders.tesellation_evaluation == LINKED || shaders.geometry == LINKED || shaders.fragment == LINKED)
@@ -1156,7 +1156,7 @@ tcu::TestCaseGroup* createShaderObjectLinkTests (tcu::TestContext& testCtx)
 					ALL,																													// BindType		separateBind
 				};
 
-				bindGroup->addChild(new ShaderObjectLinkCase(testCtx, "separate_link", "", params));
+				bindGroup->addChild(new ShaderObjectLinkCase(testCtx, "separate_link", params));
 			}
 			shadersGroup->addChild(bindGroup.release());
 		}
@@ -1232,7 +1232,7 @@ tcu::TestCaseGroup* createShaderObjectLinkTests (tcu::TestContext& testCtx)
 		},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> nextStageGroup(new tcu::TestCaseGroup(testCtx, "next_stage", ""));
+	de::MovePtr<tcu::TestCaseGroup> nextStageGroup(new tcu::TestCaseGroup(testCtx, "next_stage"));
 	for (const auto& nextStage : nextStageTests)
 	{
 		TestParams params = {
@@ -1242,7 +1242,7 @@ tcu::TestCaseGroup* createShaderObjectLinkTests (tcu::TestContext& testCtx)
 			false,
 			ALL,
 		};
-		nextStageGroup->addChild(new ShaderObjectLinkCase(testCtx, nextStage.name, "", params));
+		nextStageGroup->addChild(new ShaderObjectLinkCase(testCtx, nextStage.name, params));
 	}
 	linkGroup->addChild(nextStageGroup.release());
 
@@ -1261,7 +1261,7 @@ tcu::TestCaseGroup* createShaderObjectLinkTests (tcu::TestContext& testCtx)
 		name += typeToString(meshShaders.task) + "_";
 		name += typeToString(meshShaders.mesh) + "_";
 		name += typeToString(meshShaders.fragment);
-		de::MovePtr<tcu::TestCaseGroup> meshGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> meshGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 		for (const auto& randomOrder : randomOrderTests)
 		{
@@ -1273,7 +1273,7 @@ tcu::TestCaseGroup* createShaderObjectLinkTests (tcu::TestContext& testCtx)
 
 			std::string randomOrderName = (randomOrder) ? "random_order" : "default";
 
-			meshGroup->addChild(new MeshShaderObjectLinkCase(testCtx, randomOrderName, "", params));
+			meshGroup->addChild(new MeshShaderObjectLinkCase(testCtx, randomOrderName, params));
 		}
 		linkGroup->addChild(meshGroup.release());
 	}
@@ -1288,7 +1288,7 @@ tcu::TestCaseGroup* createShaderObjectLinkTests (tcu::TestContext& testCtx)
 		{ { 0u, vk::VK_SHADER_STAGE_FRAGMENT_BIT, },	"frag"	},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> meshNextStageGroup(new tcu::TestCaseGroup(testCtx, "meshnext_stage", ""));
+	de::MovePtr<tcu::TestCaseGroup> meshNextStageGroup(new tcu::TestCaseGroup(testCtx, "meshnext_stage"));
 	for (const auto& meshNextStage : meshNextStageTests)
 	{
 		MeshParams params = {
@@ -1296,7 +1296,7 @@ tcu::TestCaseGroup* createShaderObjectLinkTests (tcu::TestContext& testCtx)
 			false,
 			meshNextStage.nextStages,
 		};
-		meshNextStageGroup->addChild(new MeshShaderObjectLinkCase(testCtx, meshNextStage.name, "", params));
+		meshNextStageGroup->addChild(new MeshShaderObjectLinkCase(testCtx, meshNextStage.name, params));
 	}
 	linkGroup->addChild(meshNextStageGroup.release());
 

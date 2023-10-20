@@ -4382,8 +4382,8 @@ tcu::TestStatus MultiViewMaskIterationTestInstance::iterate (void)
 class MultiViewRenderTestsCase : public vkt::TestCase
 {
 public:
-	MultiViewRenderTestsCase (tcu::TestContext &context, const char *name, const char *description, const TestParameters& parameters)
-		: TestCase			(context, name, description)
+	MultiViewRenderTestsCase (tcu::TestContext &context, const char *name, const TestParameters& parameters)
+		: TestCase			(context, name)
 		, m_parameters		(parameters)
 	{
 		DE_ASSERT(m_parameters.extent.width == m_parameters.extent.height);
@@ -4847,22 +4847,23 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 		if (renderPassTypeNdx == 1)
 		{
 			renderPassType	= RENDERING_TYPE_RENDERPASS2;
-			targetGroup		= MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(group->getTestContext(), "renderpass2", "RenderPass2 index tests"));
+			targetGroup		= MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(group->getTestContext(), "renderpass2"));
 			targetGroupPtr	= targetGroup.get();
 		}
 		else if (renderPassTypeNdx == 2)
 		{
 			renderPassType	= RENDERING_TYPE_DYNAMIC_RENDERING;
-			targetGroup		= MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(group->getTestContext(), "dynamic_rendering", "Dynamic rendering tests"));
+			targetGroup		= MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(group->getTestContext(), "dynamic_rendering"));
 			targetGroupPtr	= targetGroup.get();
 		}
 
 		tcu::TestContext&			testCtx				(targetGroupPtr->getTestContext());
-		MovePtr<tcu::TestCaseGroup>	groupViewIndex		(new tcu::TestCaseGroup(testCtx, "index", "ViewIndex rendering tests."));
+		// ViewIndex rendering tests.
+		MovePtr<tcu::TestCaseGroup>	groupViewIndex		(new tcu::TestCaseGroup(testCtx, "index"));
 
 		for (int testTypeNdx = TEST_TYPE_VIEW_MASK; testTypeNdx < TEST_TYPE_LAST; ++testTypeNdx)
 		{
-			MovePtr<tcu::TestCaseGroup>	groupShader			(new tcu::TestCaseGroup(testCtx, shaderName[testTypeNdx].c_str(), ""));
+			MovePtr<tcu::TestCaseGroup>	groupShader			(new tcu::TestCaseGroup(testCtx, shaderName[testTypeNdx].c_str()));
 			const TestType				testType			= static_cast<TestType>(testTypeNdx);
 			const VkSampleCountFlagBits	sampleCountFlags	= (testType == TEST_TYPE_MULTISAMPLE) ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
 			VkFormat				colorFormat;
@@ -4885,7 +4886,7 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 					const TestParameters	parameters	=	{ extent3D[testCaseNdx], viewMasks[testCaseNdx], testType, sampleCountFlags, colorFormat, QUERY_TYPE_GET_QUERY_POOL_RESULTS, renderPassType };
 					const std::string		testName	=	createViewMasksName(parameters.viewMasks);
 
-					groupShader->addChild(new MultiViewRenderTestsCase(testCtx, testName.c_str(), "", parameters));
+					groupShader->addChild(new MultiViewRenderTestsCase(testCtx, testName.c_str(), parameters));
 				}
 			}
 			else
@@ -4894,7 +4895,7 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 				{
 					const std::string queryTestName = queryTypeNdx == 0 ? "get_query_pool_results" : "cmd_copy_query_pool_results";
 					const auto queryType = queryTypeNdx == 0 ? QUERY_TYPE_GET_QUERY_POOL_RESULTS : QUERY_TYPE_CMD_COPY_QUERY_POOL_RESULTS;
-					MovePtr<tcu::TestCaseGroup>	queryTypeGroup(new tcu::TestCaseGroup(testCtx, queryTestName.c_str(), "Query type."));
+					MovePtr<tcu::TestCaseGroup>	queryTypeGroup(new tcu::TestCaseGroup(testCtx, queryTestName.c_str()));
 
 					if (testTypeNdx == TEST_TYPE_DEPTH ||
 						testTypeNdx == TEST_TYPE_DEPTH_DIFFERENT_RANGES ||
@@ -4904,7 +4905,7 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 						const TestParameters	parameters		= { dsTestExtent3D, tripleDepthStencilMasks(depthStencilMasks), testType, sampleCountFlags, colorFormat, queryType, renderPassType };
 						const std::string		testName		= createViewMasksName(parameters.viewMasks);
 
-						queryTypeGroup->addChild(new MultiViewRenderTestsCase(testCtx, testName.c_str(), "", parameters));
+						queryTypeGroup->addChild(new MultiViewRenderTestsCase(testCtx, testName.c_str(), parameters));
 					}
 					else
 					{
@@ -4913,7 +4914,7 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 							const TestParameters	parameters	=	{ extent3D[testCaseNdx], viewMasks[testCaseNdx], testType, sampleCountFlags, colorFormat, queryType, renderPassType };
 							const std::string		testName	=	createViewMasksName(parameters.viewMasks);
 
-							queryTypeGroup->addChild(new MultiViewRenderTestsCase(testCtx, testName.c_str(), "", parameters));
+							queryTypeGroup->addChild(new MultiViewRenderTestsCase(testCtx, testName.c_str(), parameters));
 						}
 
 						// maxMultiviewViewCount case
@@ -4922,7 +4923,7 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 							const vector<deUint32>	unusedMasks;
 							const TestParameters	parameters			= { incompleteExtent3D, unusedMasks, testType, sampleCountFlags, colorFormat, queryType, renderPassType };
 
-							queryTypeGroup->addChild(new MultiViewRenderTestsCase(testCtx, "max_multi_view_view_count", "", parameters));
+							queryTypeGroup->addChild(new MultiViewRenderTestsCase(testCtx, "max_multi_view_view_count", parameters));
 						}
 					}
 					groupShader->addChild(queryTypeGroup.release());
@@ -4976,4 +4977,3 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 
 } //MultiView
 } //vkt
-

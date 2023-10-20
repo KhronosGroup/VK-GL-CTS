@@ -354,7 +354,7 @@ public:
 		VectorType	vectorType;
 	};
 
-							DataSpillTestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& testParams);
+							DataSpillTestCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& testParams);
 	virtual					~DataSpillTestCase		(void) {}
 
 	virtual void			initPrograms			(vk::SourceCollections& programCollection) const;
@@ -380,8 +380,8 @@ private:
 };
 
 
-DataSpillTestCase::DataSpillTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& testParams)
-	: vkt::TestCase	(testCtx, name, description)
+DataSpillTestCase::DataSpillTestCase (tcu::TestContext& testCtx, const std::string& name, const TestParams& testParams)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(testParams)
 {
 	switch (m_params.dataType)
@@ -1983,7 +1983,7 @@ public:
 		InterfaceType	interfaceType;
 	};
 
-							DataSpillPipelineInterfaceTestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& testParams);
+							DataSpillPipelineInterfaceTestCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& testParams);
 	virtual					~DataSpillPipelineInterfaceTestCase		(void) {}
 
 	virtual void			initPrograms							(vk::SourceCollections& programCollection) const;
@@ -2008,8 +2008,8 @@ private:
 	TestParams			m_params;
 };
 
-DataSpillPipelineInterfaceTestCase::DataSpillPipelineInterfaceTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& testParams)
-	: vkt::TestCase	(testCtx, name, description)
+DataSpillPipelineInterfaceTestCase::DataSpillPipelineInterfaceTestCase (tcu::TestContext& testCtx, const std::string& name, const TestParams& testParams)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(testParams)
 {
 }
@@ -2688,7 +2688,8 @@ tcu::TestStatus DataSpillPipelineInterfaceTestInstance::iterate (void)
 
 tcu::TestCaseGroup*	createDataSpillTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "data_spill", "Ray tracing tests for data spilling and unspilling around shader calls"));
+	// Ray tracing tests for data spilling and unspilling around shader calls
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "data_spill"));
 
 	struct
 	{
@@ -2747,7 +2748,7 @@ tcu::TestCaseGroup*	createDataSpillTests(tcu::TestContext& testCtx)
 	{
 		const auto& entryCallTypes = callTypes[callTypeIdx];
 
-		de::MovePtr<tcu::TestCaseGroup> callTypeGroup(new tcu::TestCaseGroup(testCtx, entryCallTypes.name, ""));
+		de::MovePtr<tcu::TestCaseGroup> callTypeGroup(new tcu::TestCaseGroup(testCtx, entryCallTypes.name));
 		for (int dataTypeIdx = 0; dataTypeIdx < DE_LENGTH_OF_ARRAY(dataTypes); ++dataTypeIdx)
 		{
 			const auto& entryDataTypes = dataTypes[dataTypeIdx];
@@ -2773,7 +2774,7 @@ tcu::TestCaseGroup*	createDataSpillTests(tcu::TestContext& testCtx)
 
 				const auto testName = std::string(entryVectorTypes.prefix) + entryDataTypes.name;
 
-				callTypeGroup->addChild(new DataSpillTestCase(testCtx, testName, "", params));
+				callTypeGroup->addChild(new DataSpillTestCase(testCtx, testName, params));
 			}
 		}
 
@@ -2781,7 +2782,8 @@ tcu::TestCaseGroup*	createDataSpillTests(tcu::TestContext& testCtx)
 	}
 
 	// Pipeline interface tests.
-	de::MovePtr<tcu::TestCaseGroup> pipelineInterfaceGroup(new tcu::TestCaseGroup(testCtx, "pipeline_interface", "Test data spilling and unspilling of pipeline interface variables"));
+	// Test data spilling and unspilling of pipeline interface variables
+	de::MovePtr<tcu::TestCaseGroup> pipelineInterfaceGroup(new tcu::TestCaseGroup(testCtx, "pipeline_interface"));
 
 	struct
 	{
@@ -2805,7 +2807,7 @@ tcu::TestCaseGroup*	createDataSpillTests(tcu::TestContext& testCtx)
 
 		params.interfaceType = entry.interfaceType;
 
-		pipelineInterfaceGroup->addChild(new DataSpillPipelineInterfaceTestCase(testCtx, entry.name, "", params));
+		pipelineInterfaceGroup->addChild(new DataSpillPipelineInterfaceTestCase(testCtx, entry.name, params));
 	}
 
 	group->addChild(pipelineInterfaceGroup.release());

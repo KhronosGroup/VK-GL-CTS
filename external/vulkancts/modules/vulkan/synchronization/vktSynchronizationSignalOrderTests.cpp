@@ -1060,7 +1060,7 @@ public:
 										  VkSemaphoreType						semaphoreType,
 										  VkExternalSemaphoreHandleTypeFlagBits	semaphoreHandleType,
 										  PipelineCacheData&					pipelineCacheData)
-		: TestCase				(testCtx, name.c_str(), "")
+		: TestCase				(testCtx, name.c_str())
 		, m_type				(type)
 		, m_writeOpSupport		(makeOperationSupport(writeOp, resourceDesc).release())
 		, m_readOpSupport		(makeOperationSupport(readOp, resourceDesc).release())
@@ -1219,7 +1219,7 @@ public:
 			const std::string	opGroupName = getOperationName(writeOp) + "_" + getOperationName(readOp);
 			bool				empty		= true;
 
-			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(m_testCtx, opGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(m_testCtx, opGroupName.c_str()));
 
 			for (int resourceNdx = 0; resourceNdx < DE_LENGTH_OF_ARRAY(s_resources); ++resourceNdx)
 			{
@@ -1636,7 +1636,7 @@ public:
 									const ResourceDescription&	resourceDesc,
 									VkSemaphoreType				semaphoreType,
 									PipelineCacheData&			pipelineCacheData)
-		: TestCase				(testCtx, name.c_str(), "")
+		: TestCase				(testCtx, name.c_str())
 		, m_type				(type)
 		, m_writeOpSupport		(makeOperationSupport(writeOp, resourceDesc).release())
 		, m_readOpSupport		(makeOperationSupport(readOp, resourceDesc).release())
@@ -1757,7 +1757,7 @@ public:
 			const std::string	opGroupName = getOperationName(writeOp) + "_" + getOperationName(readOp);
 			bool				empty		= true;
 
-			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(m_testCtx, opGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(m_testCtx, opGroupName.c_str()));
 
 			for (int resourceNdx = 0; resourceNdx < DE_LENGTH_OF_ARRAY(s_resources); ++resourceNdx)
 			{
@@ -1798,7 +1798,7 @@ private:
 
 tcu::TestCaseGroup* createSignalOrderTests (tcu::TestContext& testCtx, SynchronizationType type)
 {
-	de::MovePtr<tcu::TestCaseGroup> orderingTests(new tcu::TestCaseGroup(testCtx, "signal_order", "Signal ordering tests"));
+	de::MovePtr<tcu::TestCaseGroup> orderingTests(new tcu::TestCaseGroup(testCtx, "signal_order"));
 
 	orderingTests->addChild(new QueueSubmitSignalOrderTests(testCtx, type, VK_SEMAPHORE_TYPE_BINARY_KHR, "binary_semaphore"));
 	orderingTests->addChild(new QueueSubmitSignalOrderTests(testCtx, type, VK_SEMAPHORE_TYPE_TIMELINE_KHR, "timeline_semaphore"));

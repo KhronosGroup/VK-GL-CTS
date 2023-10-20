@@ -74,13 +74,13 @@ void initDynamicStateTestGroup (tcu::TestCaseGroup* mainGroup)
 {
 	auto& testCtx = mainGroup->getTestContext();
 
-	de::MovePtr<tcu::TestCaseGroup> monolithicGroup					(createTestGroup(testCtx, "monolithic",						"Monolithic pipeline tests",					createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC));
-	de::MovePtr<tcu::TestCaseGroup> pipelineLibraryGroup			(createTestGroup(testCtx, "pipeline_library",				"Graphics pipeline library tests",				createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY));
-	de::MovePtr<tcu::TestCaseGroup> fastLinkedLibraryGroup			(createTestGroup(testCtx, "fast_linked_library",			"Fast linked graphics pipeline library tests",	createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY));
-	de::MovePtr<tcu::TestCaseGroup> shaderObjectUnlinkedSpirvGroup	(createTestGroup(testCtx, "shader_object_unlinked_spirv",	"Unlinked spirv shader object tests",			createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV));
-	de::MovePtr<tcu::TestCaseGroup> shaderObjectUnlinkedBinaryGroup	(createTestGroup(testCtx, "shader_object_unlinked_binary",	"Unlinked binary shader object tests",			createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_BINARY));
-	de::MovePtr<tcu::TestCaseGroup> shaderObjectLinkedSpirvGroup	(createTestGroup(testCtx, "shader_object_linked_spirv",		"Linked spirv shader object tests",				createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_LINKED_SPIRV));
-	de::MovePtr<tcu::TestCaseGroup> shaderObjectLinkedBinaryGroup	(createTestGroup(testCtx, "shader_object_linked_binary",	"Linked binary shader object tests",			createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_LINKED_BINARY));
+	de::MovePtr<tcu::TestCaseGroup> monolithicGroup					(createTestGroup(testCtx, "monolithic",								createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC));
+	de::MovePtr<tcu::TestCaseGroup> pipelineLibraryGroup			(createTestGroup(testCtx, "pipeline_library",						createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY));
+	de::MovePtr<tcu::TestCaseGroup> fastLinkedLibraryGroup			(createTestGroup(testCtx, "fast_linked_library",					createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY));
+	de::MovePtr<tcu::TestCaseGroup> shaderObjectUnlinkedSpirvGroup	(createTestGroup(testCtx, "shader_object_unlinked_spirv",			createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV));
+	de::MovePtr<tcu::TestCaseGroup> shaderObjectUnlinkedBinaryGroup	(createTestGroup(testCtx, "shader_object_unlinked_binary",			createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_BINARY));
+	de::MovePtr<tcu::TestCaseGroup> shaderObjectLinkedSpirvGroup	(createTestGroup(testCtx, "shader_object_linked_spirv",				createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_LINKED_SPIRV));
+	de::MovePtr<tcu::TestCaseGroup> shaderObjectLinkedBinaryGroup	(createTestGroup(testCtx, "shader_object_linked_binary",			createChildren, vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_LINKED_BINARY));
 
 	mainGroup->addChild(monolithicGroup.release());
 	mainGroup->addChild(pipelineLibraryGroup.release());
@@ -95,7 +95,8 @@ void initDynamicStateTestGroup (tcu::TestCaseGroup* mainGroup)
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, name.c_str(), "Dynamic State Tests", initDynamicStateTestGroup, cleanupGroup);
+	// Dynamic State Tests
+	return createTestGroup(testCtx, name.c_str(), initDynamicStateTestGroup, cleanupGroup);
 }
 
 } // DynamicState

@@ -287,7 +287,7 @@ public:
 							MemoryRequirementsTest	(TestContext&			testCtx,
 													 const std::string&		name,
 													 const TestConfig		testConfig)
-								: TestCase		(testCtx, name, std::string())
+								: TestCase		(testCtx, name)
 								, m_testConfig	(testConfig)
 								, m_instConfig	(testConfig) {}
 
@@ -964,8 +964,6 @@ TestStatus	BufferMemoryRequirementsInstance::iterate (void)
 
 tcu::TestCaseGroup* createBufferMemoryRequirementsTests (tcu::TestContext& testCtx)
 {
-	cstr nilstr = "";
-
 	struct
 	{
 		bool		include;
@@ -1011,16 +1009,16 @@ tcu::TestCaseGroup* createBufferMemoryRequirementsTests (tcu::TestContext& testC
 #endif
 	}
 
-	auto groupRoot = new TestCaseGroup(testCtx, "buffer_memory_requirements", "vkGetBufferMemoryRequirements*(...) routines tests.");
+	auto groupRoot = new TestCaseGroup(testCtx, "buffer_memory_requirements");
 	for (const auto& createBits : createBitPtrs)
 	{
-		auto groupCreate = new TestCaseGroup(testCtx, bitsToString(*createBits, "create_").c_str(), nilstr);
+		auto groupCreate = new TestCaseGroup(testCtx, bitsToString(*createBits, "create_").c_str());
 		for (const auto& extMemTypeFlag : extMemTypeFlags)
 		{
-			auto groupExtMemTypeFlags = new TestCaseGroup(testCtx, extMemTypeFlag.name, nilstr);
+			auto groupExtMemTypeFlags = new TestCaseGroup(testCtx, extMemTypeFlag.name);
 			for (const auto& method : methods)
 			{
-				auto groupMethod = new TestCaseGroup(testCtx, method.name, nilstr);
+				auto groupMethod = new TestCaseGroup(testCtx, method.name);
 				for (const auto& fateBits : fateBitPtrs)
 				{
 #ifndef CTS_USES_VULKANSC

@@ -238,7 +238,7 @@ public:
 		BUFFERMODE_LAST
 	};
 
-								SSBOLayoutCase				(tcu::TestContext& testCtx, const char* name, const char* description, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag, MatrixStoreFlags matrixStoreFlag, bool usePhysStorageBuffer);
+								SSBOLayoutCase				(tcu::TestContext& testCtx, const char* name, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag, MatrixStoreFlags matrixStoreFlag, bool usePhysStorageBuffer);
 	virtual						~SSBOLayoutCase				(void);
 
 	virtual void				delayedInit					(void);

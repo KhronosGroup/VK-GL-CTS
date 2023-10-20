@@ -63,7 +63,6 @@ class SparseResourceTransferQueueCase : public TestCase
 public:
 	SparseResourceTransferQueueCase	(tcu::TestContext&	testCtx,
 									 const std::string&	name,
-									 const std::string&	description,
 									 const ImageType	imageType,
 									 const tcu::UVec3&	imageSize,
 									 const VkFormat		format);
@@ -79,12 +78,11 @@ private:
 
 SparseResourceTransferQueueCase::SparseResourceTransferQueueCase	(tcu::TestContext&	testCtx,
 																	 const std::string&	name,
-																	 const std::string&	description,
 																	 const ImageType	imageType,
 																	 const tcu::UVec3&	imageSize,
 																	 const VkFormat		format)
 
-	: TestCase(testCtx, name, description)
+	: TestCase(testCtx, name)
 	, m_imageType(imageType)
 	, m_imageSize(imageSize)
 	, m_format(format)
@@ -445,7 +443,8 @@ tcu::TestCaseGroup* createTransferQueueTests(tcu::TestContext& testCtx)
 		{ IMAGE_TYPE_CUBE_ARRAY,	{ tcu::UVec3(256u, 256u, 6u),	tcu::UVec3(128u,  128u, 8u),	tcu::UVec3(137u, 137u, 3u) },	getTestFormats(IMAGE_TYPE_CUBE_ARRAY)	}
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> transferGroup(new tcu::TestCaseGroup(testCtx, "transfer_queue", "Sparse resources on transfer queue operation tests."));
+	// Sparse resources on transfer queue operation tests.
+	de::MovePtr<tcu::TestCaseGroup> transferGroup(new tcu::TestCaseGroup(testCtx, "transfer_queue"));
 
 	for (size_t imageTypeNdx = 0; imageTypeNdx < imageParameters.size(); ++imageTypeNdx)
 	{
@@ -471,7 +470,7 @@ tcu::TestCaseGroup* createTransferQueueTests(tcu::TestContext& testCtx)
 				std::ostringstream	stream;
 				stream << imageSize.x() << "_" << imageSize.y() << "_" << imageSize.z();
 
-				formatGroup->addChild(new SparseResourceTransferQueueCase(testCtx, stream.str(), "", imageType, imageSize, format));
+				formatGroup->addChild(new SparseResourceTransferQueueCase(testCtx, stream.str(), imageType, imageSize, format));
 			}
 			imageTypeGroup->addChild(formatGroup.release());
 		}

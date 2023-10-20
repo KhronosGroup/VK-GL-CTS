@@ -34,7 +34,7 @@ namespace vkt
 class BaseTestPackage : public tcu::TestPackage
 {
 public:
-								BaseTestPackage		(tcu::TestContext& testCtx, const char* name, const char* desc);
+								BaseTestPackage		(tcu::TestContext& testCtx, const char* name);
 	virtual						~BaseTestPackage	(void);
 
 	tcu::TestCaseExecutor*		createExecutor		(void) const;

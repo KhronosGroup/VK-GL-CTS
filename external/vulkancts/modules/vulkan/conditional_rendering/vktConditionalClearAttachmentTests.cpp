@@ -245,14 +245,14 @@ void ConditionalClearAttachmentTests::init (void)
 		if (conditionData.clearInRenderPass)
 			continue;
 
-		tcu::TestCaseGroup* conditionalDrawRootGroup = new tcu::TestCaseGroup(m_testCtx, de::toString(conditionData).c_str(), "");
+		tcu::TestCaseGroup* conditionalDrawRootGroup = new tcu::TestCaseGroup(m_testCtx, de::toString(conditionData).c_str());
 
 		ConditionalTestSpec testSpec;
 		testSpec.conditionalData = conditionData;
 		testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/dynamic_state/VertexFetch.vert";
 		testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/dynamic_state/VertexFetch.frag";
 
-		conditionalDrawRootGroup->addChild(new Draw::InstanceFactory<ConditionalClearAttachmentTest>(m_testCtx, "clear_attachments", "", testSpec));
+		conditionalDrawRootGroup->addChild(new Draw::InstanceFactory<ConditionalClearAttachmentTest>(m_testCtx, "clear_attachments", testSpec));
 
 		addChild(conditionalDrawRootGroup);
 	}

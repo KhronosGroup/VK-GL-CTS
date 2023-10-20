@@ -444,7 +444,7 @@ TestCaseGroup* createSubgroupsClusteredTests (TestContext& testCtx)
 						DE_FALSE						//  deBool				requires16BitUniformBuffer;
 					};
 
-					addFunctionCaseWithPrograms(computeGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+					addFunctionCaseWithPrograms(computeGroup.get(), testName,supportedCheck, initPrograms, test, caseDef);
 				}
 
 #ifndef CTS_USES_VULKANSC
@@ -465,7 +465,7 @@ TestCaseGroup* createSubgroupsClusteredTests (TestContext& testCtx)
 							DE_FALSE						//  deBool				requires16BitUniformBuffer;
 						};
 
-						addFunctionCaseWithPrograms(meshGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+						addFunctionCaseWithPrograms(meshGroup.get(), testName,supportedCheck, initPrograms, test, caseDef);
 					}
 				}
 #endif // CTS_USES_VULKANSC
@@ -482,7 +482,7 @@ TestCaseGroup* createSubgroupsClusteredTests (TestContext& testCtx)
 						DE_FALSE						//  deBool				requires16BitUniformBuffer;
 					};
 
-					addFunctionCaseWithPrograms(graphicGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
+					addFunctionCaseWithPrograms(graphicGroup.get(), name, supportedCheck, initPrograms, test, caseDef);
 				}
 
 				for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(fbStages); ++stageIndex)
@@ -499,7 +499,7 @@ TestCaseGroup* createSubgroupsClusteredTests (TestContext& testCtx)
 					};
 					const string			testName	= name +"_" + getShaderStageName(caseDef.shaderStage);
 
-					addFunctionCaseWithPrograms(framebufferGroup.get(), testName, "", supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
+					addFunctionCaseWithPrograms(framebufferGroup.get(), testName,supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 				}
 			}
 		}
@@ -543,7 +543,7 @@ TestCaseGroup* createSubgroupsClusteredTests (TestContext& testCtx)
 						DE_FALSE						//  deBool				requires16BitUniformBuffer;
 					};
 
-					addFunctionCaseWithPrograms(raytracingGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
+					addFunctionCaseWithPrograms(raytracingGroup.get(), name, supportedCheck, initPrograms, test, caseDef);
 				}
 			}
 		}

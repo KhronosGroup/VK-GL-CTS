@@ -748,7 +748,7 @@ VkClearValue TestAccelerationStructuresConfiguration::getClearValue ()
 class RayTracingCaptureReplayTestCase : public TestCase
 {
 	public:
-							RayTracingCaptureReplayTestCase				(tcu::TestContext& context, const char* name, const char* desc, const TestParams& data);
+							RayTracingCaptureReplayTestCase				(tcu::TestContext& context, const char* name, const TestParams& data);
 							~RayTracingCaptureReplayTestCase			(void);
 
 	virtual void			checkSupport								(Context& context) const;
@@ -775,8 +775,8 @@ private:
 	VkDeviceAddress													copyTLASAddress;
 };
 
-RayTracingCaptureReplayTestCase::RayTracingCaptureReplayTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams& data)
-	: vkt::TestCase	(context, name, desc)
+RayTracingCaptureReplayTestCase::RayTracingCaptureReplayTestCase (tcu::TestContext& context, const char* name, const TestParams& data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -1317,12 +1317,14 @@ void addReplayShaderBindingTablesTests(tcu::TestCaseGroup* group)
 	{
 		SBTReplayTestType	testType;
 		const char*			name;
-		const char*			description;
 	} testTypes[] =
 	{
-		{ TEST_PIPELINE_SINGLE,		"pipeline_single",			"Capture-replay scenario with single captured pipeline" },
-		{ TEST_PIPELINE_AFTER	,	"pipeline_after_captured",	"Not captured pipeline created after captured one" },
-		{ TEST_PIPELINE_BEFORE,		"pipeline_before_captured",	"Not captured pipeline created before captured one" },
+		// Capture-replay scenario with single captured pipeline
+		{ TEST_PIPELINE_SINGLE,		"pipeline_single"},
+		// Not captured pipeline created after captured one
+		{ TEST_PIPELINE_AFTER	,	"pipeline_after_captured"},
+		// Not captured pipeline created before captured one
+		{ TEST_PIPELINE_BEFORE,		"pipeline_before_captured"},
 	};
 
 	for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(testTypes); ++testTypeNdx)
@@ -1339,7 +1341,7 @@ void addReplayShaderBindingTablesTests(tcu::TestCaseGroup* group)
 			RTCR_DEFAULT_SIZE,
 			de::SharedPtr<TestConfiguration>(new TestShaderBindingTablesConfiguration())
 		};
-		group->addChild(new RayTracingCaptureReplayTestCase(group->getTestContext(), testTypes[testTypeNdx].name, testTypes[testTypeNdx].description, testParams));
+		group->addChild(new RayTracingCaptureReplayTestCase(group->getTestContext(), testTypes[testTypeNdx].name, testParams));
 	}
 }
 
@@ -1389,15 +1391,15 @@ void addReplayAccelerationStruturesTests(tcu::TestCaseGroup* group)
 
 	for (size_t operationTypeNdx = 0; operationTypeNdx < DE_LENGTH_OF_ARRAY(operationTypes); ++operationTypeNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> operationTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), operationTypes[operationTypeNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> operationTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), operationTypes[operationTypeNdx].name));
 
 		for (size_t buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name));
 
 			for (size_t operationTargetNdx = 0; operationTargetNdx < DE_LENGTH_OF_ARRAY(operationTargets); ++operationTargetNdx)
 			{
-				de::MovePtr<tcu::TestCaseGroup> operationTargetGroup(new tcu::TestCaseGroup(group->getTestContext(), operationTargets[operationTargetNdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup> operationTargetGroup(new tcu::TestCaseGroup(group->getTestContext(), operationTargets[operationTargetNdx].name));
 
 				for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(bottomTestTypes); ++testTypeNdx)
 				{
@@ -1415,7 +1417,7 @@ void addReplayAccelerationStruturesTests(tcu::TestCaseGroup* group)
 						RTCR_DEFAULT_SIZE,
 						de::SharedPtr<TestConfiguration>(new TestAccelerationStructuresConfiguration())
 					};
-					operationTargetGroup->addChild(new RayTracingCaptureReplayTestCase(group->getTestContext(), bottomTestTypes[testTypeNdx].name, "", testParams));
+					operationTargetGroup->addChild(new RayTracingCaptureReplayTestCase(group->getTestContext(), bottomTestTypes[testTypeNdx].name, testParams));
 				}
 				buildGroup->addChild(operationTargetGroup.release());
 			}
@@ -1427,10 +1429,12 @@ void addReplayAccelerationStruturesTests(tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup*	createCaptureReplayTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "capture_replay", "Capture-replay capabilities"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "capture_replay"));
 
-	addTestGroup(group.get(), "shader_binding_tables", "Test replaying shader binding tables", addReplayShaderBindingTablesTests);
-	addTestGroup(group.get(), "acceleration_structures", "Test replaying acceleration structure", addReplayAccelerationStruturesTests);
+	// Test replaying shader binding tables
+	addTestGroup(group.get(), "shader_binding_tables", addReplayShaderBindingTablesTests);
+	// Test replaying acceleration structure
+	addTestGroup(group.get(), "acceleration_structures", addReplayAccelerationStruturesTests);
 
 	return group.release();
 }

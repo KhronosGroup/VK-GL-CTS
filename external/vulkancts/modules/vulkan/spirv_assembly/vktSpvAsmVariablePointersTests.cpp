@@ -396,7 +396,7 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
 			if (!physPtrs)
 				spec.extensions.push_back("VK_KHR_variable_pointers");
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), spec));
 		}
 		{ // Variable Pointer Reads (using OpFunctionCall)
 			ComputeShaderSpec				spec;
@@ -420,7 +420,7 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
 			if (!physPtrs)
 				spec.extensions.push_back("VK_KHR_variable_pointers");
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), spec));
 		}
 		{ // Variable Pointer Reads (using OpPhi)
 			ComputeShaderSpec				spec;
@@ -452,7 +452,7 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
 			if (!physPtrs)
 				spec.extensions.push_back("VK_KHR_variable_pointers");
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), spec));
 		}
 		{ // Variable Pointer Reads (using OpCopyObject)
 			ComputeShaderSpec				spec;
@@ -479,7 +479,7 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
 			if (!physPtrs)
 				spec.extensions.push_back("VK_KHR_variable_pointers");
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), spec));
 		}
 		{ // Test storing into Private variables.
 			const char* storageClasses[]		= {"Private", "Function"};
@@ -489,7 +489,6 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 				map<string, string>				specs;
 				std::string storageClass		= storageClasses[classId];
 				std::string name				= "stores_" + string(de::toLower(storageClass)) + "_" + bufferType;
-				std::string description			= "Test storing variable pointer into " + storageClass + " variable.";
 				std::string extraVariable		= "%mux_output_copy	= OpVariable %sb_f32ptrptr " + storageClass + "\n";
 				specs["ExtraTypes"]				= "%sb_f32ptrptr = OpTypePointer " + storageClass + " %sb_f32ptr\n";
 				specs["ExtraCapability"]		= extraCap;
@@ -512,7 +511,7 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 				spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
 				if (!physPtrs)
 					spec.extensions.push_back("VK_KHR_variable_pointers");
-				group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), description.c_str(), spec));
+				group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), spec));
 			}
 		}
 		{ // Variable Pointer Reads (Using OpPtrAccessChain)
@@ -549,7 +548,7 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
 			if (!physPtrs)
 				spec.extensions.push_back("VK_KHR_variable_pointers");
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), spec));
 		}
 		{   // Variable Pointer Writes
 			ComputeShaderSpec				spec;
@@ -576,7 +575,7 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedIncrOutput))));
 			if (!physPtrs)
 				spec.extensions.push_back("VK_KHR_variable_pointers");
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), spec));
 		}
 
 		// If we only have VariablePointersStorageBuffer, then the extension does not apply to Workgroup storage class.
@@ -620,7 +619,7 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
 			if (!physPtrs)
 				spec.extensions.push_back("VK_KHR_variable_pointers");
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), spec));
 		}
 	}
 }
@@ -1090,7 +1089,7 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* 
 					spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
 					if (!physPtrs)
 						spec.extensions.push_back("VK_KHR_variable_pointers");
-					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
+					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), spec));
 				}
 
 				// Use OpFunctionCall to choose between 2 pointers
@@ -1126,7 +1125,7 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* 
 					spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
 					if (!physPtrs)
 						spec.extensions.push_back("VK_KHR_variable_pointers");
-					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
+					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), spec));
 				}
 
 				// Use OpPhi to choose between 2 pointers
@@ -1171,7 +1170,7 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* 
 					spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
 					if (!physPtrs)
 						spec.extensions.push_back("VK_KHR_variable_pointers");
-					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
+					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), spec));
 				}
 
 				// Use OpCopyObject to get variable pointers
@@ -1205,7 +1204,7 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* 
 					spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
 					if (!physPtrs)
 						spec.extensions.push_back("VK_KHR_variable_pointers");
-					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
+					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), spec));
 				}
 
 				// Use OpPtrAccessChain to get variable pointers
@@ -1240,7 +1239,7 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* 
 					spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
 					if (!physPtrs)
 						spec.extensions.push_back("VK_KHR_variable_pointers");
-					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
+					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), spec));
 				}
 			}
 		}
@@ -1368,7 +1367,7 @@ void addNullptrVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(input)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
 		spec.extensions.push_back("VK_KHR_variable_pointers");
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), spec));
 	}
 	// Use OpSelect to choose between nullptr and valid pointer. Since we can't dereference nullptr,
 	// it is forced to always choose the valid pointer.
@@ -1387,7 +1386,7 @@ void addNullptrVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(input)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
 		spec.extensions.push_back("VK_KHR_variable_pointers");
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), spec));
 	}
 }
 
@@ -1401,19 +1400,19 @@ void addDynamicOffsetComputeGroup (tcu::TestCaseGroup* group)
 	struct Case
 	{
 		string			name;
-		string			desc;
 	};
 
 	static const Case cases[] =
 	{
-		{ "select_descriptor_array",	"Test accessing a descriptor array using a variable pointer from OpSelect"			},
+		// Test accessing a descriptor array using a variable pointer from OpSelect
+		{ "select_descriptor_array"},
 	};
 
 	for (const auto& testCase : cases)
 	{
 		const string fileName = testCase.name + ".amber";
 
-		group->addChild(cts_amber::createAmberTestCase(testCtx, testCase.name.c_str(), testCase.desc.c_str(), dataDir, fileName, {"VK_KHR_variable_pointers", "VK_KHR_storage_buffer_storage_class", "VariablePointerFeatures.variablePointers", "VariablePointerFeatures.variablePointersStorageBuffer"}));
+		group->addChild(cts_amber::createAmberTestCase(testCtx, testCase.name.c_str(), dataDir, fileName, {"VK_KHR_variable_pointers", "VK_KHR_storage_buffer_storage_class", "VariablePointerFeatures.variablePointers", "VariablePointerFeatures.variablePointersStorageBuffer"}));
 	}
 #else
 	DE_UNREF(group);
@@ -2737,31 +2736,31 @@ void addNullptrVariablePointersGraphicsGroup (tcu::TestCaseGroup* testGroup)
 
 tcu::TestCaseGroup* createVariablePointersComputeGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(testCtx, "variable_pointers", "Compute tests for SPV_KHR_variable_pointers extension"));
-	addTestGroup(group.get(), "compute", "Test the variable pointer extension using a compute shader", addVariablePointersComputeGroup);
+	// Compute tests for SPV_KHR_variable_pointers extension
+	de::MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(testCtx, "variable_pointers"));
+	// Test the variable pointer extension using a compute shader
+	addTestGroup(group.get(), "compute", addVariablePointersComputeGroup);
+	// Testing Variable Pointers pointing to various types in different input buffers
 	addTestGroup(group.get(),
-				 "complex_types_compute",
-				 "Testing Variable Pointers pointing to various types in different input buffers",
-				 addComplexTypesVariablePointersComputeGroup);
+				 "complex_types_compute", addComplexTypesVariablePointersComputeGroup);
+	// Test the usage of nullptr using the variable pointers extension in a compute shader
 	addTestGroup(group.get(),
-				 "nullptr_compute",
-				 "Test the usage of nullptr using the variable pointers extension in a compute shader",
-				 addNullptrVariablePointersComputeGroup);
-	addTestGroup(group.get(), "dynamic_offset",
-				 "Testing variable pointers referring to descriptors using dynamic offset",
-				 addDynamicOffsetComputeGroup);
+				 "nullptr_compute", addNullptrVariablePointersComputeGroup);
+	// Testing variable pointers referring to descriptors using dynamic offset
+	addTestGroup(group.get(), "dynamic_offset", addDynamicOffsetComputeGroup);
 
 	return group.release();
 }
 
 tcu::TestCaseGroup* createPhysicalPointersComputeGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(testCtx, "physical_pointers", "Compute tests for SPV_KHR_physical_storage_buffer extension"));
-	addTestGroup(group.get(), "compute", "Test the physical storage buffer extension using a compute shader", addPhysicalPointersComputeGroup);
+	// Compute tests for SPV_KHR_physical_storage_buffer extension
+	de::MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(testCtx, "physical_pointers"));
+	// Test the physical storage buffer extension using a compute shader
+	addTestGroup(group.get(), "compute", addPhysicalPointersComputeGroup);
+	// Testing physical pointers pointing to various types in different input buffers
 	addTestGroup(group.get(),
-				 "complex_types_compute",
-				 "Testing physical pointers pointing to various types in different input buffers",
-				 addComplexTypesPhysicalPointersComputeGroup);
+				 "complex_types_compute", addComplexTypesPhysicalPointersComputeGroup);
 
 	return group.release();
 }
@@ -2770,19 +2769,16 @@ tcu::TestCaseGroup* createVariablePointersGraphicsGroup (tcu::TestContext& testC
 {
 	de::MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(testCtx, "variable_pointers", "Graphics tests for SPV_KHR_variable_pointers extension"));
 
-	addTestGroup(group.get(), "graphics", "Testing Variable Pointers in graphics pipeline", addVariablePointersGraphicsGroup);
+	addTestGroup(group.get(), "graphics", addVariablePointersGraphicsGroup);
+	// Testing Variable Pointers pointing to different input buffers in graphics pipeline (no SSBO writes)
 	addTestGroup(group.get(),
-				 "multi_buffer_read_only_graphics",
-				 "Testing Variable Pointers pointing to different input buffers in graphics pipeline (no SSBO writes)",
-				 addTwoInputBufferReadOnlyVariablePointersGraphicsGroup);
+				 "multi_buffer_read_only_graphics", addTwoInputBufferReadOnlyVariablePointersGraphicsGroup);
+	// Testing Variable Pointers confined to a single input buffer in graphics pipeline (no SSBO writes)
 	addTestGroup(group.get(),
-				 "single_buffer_read_only_graphics",
-				 "Testing Variable Pointers confined to a single input buffer in graphics pipeline (no SSBO writes)",
-				 addSingleInputBufferReadOnlyVariablePointersGraphicsGroup);
+				 "single_buffer_read_only_graphics", addSingleInputBufferReadOnlyVariablePointersGraphicsGroup);
+	// Test the usage of nullptr using the variable pointers extension in graphics pipeline
 	addTestGroup(group.get(),
-				 "nullptr_graphics",
-				 "Test the usage of nullptr using the variable pointers extension in graphics pipeline",
-				 addNullptrVariablePointersGraphicsGroup);
+				 "nullptr_graphics", addNullptrVariablePointersGraphicsGroup);
 
 	return group.release();
 }

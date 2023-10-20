@@ -144,7 +144,6 @@ class ProvokingVertexTestCase : public TestCase
 public:
 							ProvokingVertexTestCase	(tcu::TestContext&	testCtx,
 													 const std::string&	name,
-													 const std::string&	description,
 													 const Params	params);
 	virtual void			initPrograms			(SourceCollections& programCollection) const;
 	virtual void			checkSupport			(Context& context) const;
@@ -155,9 +154,8 @@ private:
 
 ProvokingVertexTestCase::ProvokingVertexTestCase (tcu::TestContext& testCtx,
 												  const std::string& name,
-												  const std::string& description,
 												  const Params params)
-	: TestCase	(testCtx, name, description)
+	: TestCase	(testCtx, name)
 	, m_params	(params)
 {
 }
@@ -916,14 +914,17 @@ void createTests (tcu::TestCaseGroup* testGroup)
 	const struct Provoking
 	{
 		const char*			name;
-		const char*			desc;
 		ProvokingVertexMode	mode;
 	} provokingVertexModes[] =
 	{
-		{ "default",		"Default provoking vertex convention",				PROVOKING_VERTEX_DEFAULT,		},
-		{ "first",			"VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT",		PROVOKING_VERTEX_FIRST,			},
-		{ "last",			"VK_PROVOKING_VERTEX_MODE_LAST_VERTEX_EXT",			PROVOKING_VERTEX_LAST,			},
-		{ "per_pipeline",	"Pipelines with different provokingVertexModes",	PROVOKING_VERTEX_PER_PIPELINE	}
+		// Default provoking vertex convention
+		{ "default",PROVOKING_VERTEX_DEFAULT,		},
+		// VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT
+		{ "first",PROVOKING_VERTEX_FIRST,			},
+		// VK_PROVOKING_VERTEX_MODE_LAST_VERTEX_EXT
+		{ "last",PROVOKING_VERTEX_LAST,			},
+		// Pipelines with different provokingVertexModes
+		{ "per_pipeline",PROVOKING_VERTEX_PER_PIPELINE	}
 	};
 
 	const struct Topology
@@ -947,17 +948,18 @@ void createTests (tcu::TestCaseGroup* testGroup)
 	const struct TestType
 	{
 		const char*	name;
-		const char* desc;
 		bool		transformFeedback;
 	} testTypes[] =
 	{
-		{ "draw",				"Test that primitives are flat shaded with the provoking vertex color",			false	},
-		{ "transform_feedback",	"Test that transform feedback preserves the position of the provoking vertex",	true	}
+		// Test that primitives are flat shaded with the provoking vertex color
+		{ "draw",false	},
+		// Test that transform feedback preserves the position of the provoking vertex
+		{ "transform_feedback",true	}
 	};
 
 	for (const TestType& testType: testTypes)
 	{
-		tcu::TestCaseGroup* const typeGroup = new tcu::TestCaseGroup(testCtx, testType.name, testType.desc);
+		tcu::TestCaseGroup* const typeGroup = new tcu::TestCaseGroup(testCtx, testType.name);
 
 		for (const Provoking& provoking : provokingVertexModes)
 		{
@@ -965,12 +967,11 @@ void createTests (tcu::TestCaseGroup* testGroup)
 			if (testType.transformFeedback && (provoking.mode == PROVOKING_VERTEX_DEFAULT))
 				continue;
 
-			tcu::TestCaseGroup* const provokingGroup = new tcu::TestCaseGroup(testCtx, provoking.name, provoking.desc);
+			tcu::TestCaseGroup* const provokingGroup = new tcu::TestCaseGroup(testCtx, provoking.name);
 
 			for (const Topology& topology : topologies)
 			{
 				const std::string	caseName	= topology.name;
-				const std::string	caseDesc	= getPrimitiveTopologyName(topology.type);
 
 				const Params		params		=
 				{
@@ -982,7 +983,7 @@ void createTests (tcu::TestCaseGroup* testGroup)
 					provoking.mode						// provokingVertexMode
 				};
 
-				provokingGroup->addChild(new ProvokingVertexTestCase(testCtx, caseName, caseDesc, params));
+				provokingGroup->addChild(new ProvokingVertexTestCase(testCtx, caseName, params));
 			}
 
 			typeGroup->addChild(provokingGroup);
@@ -998,10 +999,8 @@ tcu::TestCaseGroup* createProvokingVertexTests (tcu::TestContext& testCtx)
 {
 	return createTestGroup(testCtx,
 						   "provoking_vertex",
-						   "Tests for provoking vertex",
 						   createTests);
 }
 
 }	// rasterization
 }	// vkt
-

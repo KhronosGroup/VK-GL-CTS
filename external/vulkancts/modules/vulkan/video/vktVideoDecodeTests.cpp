@@ -962,8 +962,8 @@ tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
 class VideoDecodeTestCase : public vkt::TestCase
 {
 public:
-	VideoDecodeTestCase(tcu::TestContext& context, const char* name, const char* desc, MovePtr<TestDefinition> testDefinition)
-		: vkt::TestCase(context, name, desc), m_testDefinition(testDefinition)
+	VideoDecodeTestCase(tcu::TestContext& context, const char* name, MovePtr<TestDefinition> testDefinition)
+		: vkt::TestCase(context, name), m_testDefinition(testDefinition)
 	{
 	}
 
@@ -977,8 +977,8 @@ private:
 class InterleavingDecodeTestCase : public vkt::TestCase
 {
 public:
-	InterleavingDecodeTestCase(tcu::TestContext& context, const char* name, const char* desc, std::vector<MovePtr<TestDefinition>>&& testDefinitions)
-		: vkt::TestCase(context, name, desc), m_testDefinitions(std::move(testDefinitions))
+	InterleavingDecodeTestCase(tcu::TestContext& context, const char* name, std::vector<MovePtr<TestDefinition>>&& testDefinitions)
+		: vkt::TestCase(context, name), m_testDefinitions(std::move(testDefinitions))
 	{
 	}
 
@@ -1077,7 +1077,7 @@ void InterleavingDecodeTestCase::checkSupport(Context& context) const
 tcu::TestCaseGroup* createVideoDecodeTests(tcu::TestContext& testCtx)
 {
 	const deUint32				baseSeed = static_cast<deUint32>(testCtx.getCommandLine().getBaseSeed());
-	MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "decode", "Video decoding session tests"));
+	MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "decode"));
 
 	for (const auto& decodeTest : g_DecodeTests)
 	{
@@ -1086,7 +1086,7 @@ tcu::TestCaseGroup* createVideoDecodeTests(tcu::TestContext& testCtx)
 		const char* testName = getTestName(defn->getTestType());
 		deUint32	rngSeed	 = baseSeed ^ deStringHash(testName);
 		defn->updateHash(rngSeed);
-		group->addChild(new VideoDecodeTestCase(testCtx, testName, "", defn));
+		group->addChild(new VideoDecodeTestCase(testCtx, testName, defn));
 	}
 
 	for (const auto& interleavingTest : g_InterleavingTests)
@@ -1097,7 +1097,7 @@ tcu::TestCaseGroup* createVideoDecodeTests(tcu::TestContext& testCtx)
 		defns.push_back(TestDefinition::create(streamA, baseSeed));
 		DecodeTestParam streamB{interleavingTest.type, interleavingTest.streamB};
 		defns.push_back(TestDefinition::create(streamB, baseSeed));
-		group->addChild(new InterleavingDecodeTestCase(testCtx, testName, "", std::move(defns)));
+		group->addChild(new InterleavingDecodeTestCase(testCtx, testName, std::move(defns)));
 	}
 
 	return group.release();

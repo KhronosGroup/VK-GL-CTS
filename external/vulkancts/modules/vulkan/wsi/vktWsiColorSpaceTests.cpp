@@ -821,9 +821,12 @@ void getBasicRenderPrograms (SourceCollections& dst, Type)
 
 void createColorSpaceTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 {
-	addFunctionCase(testGroup, "extensions", "Verify Colorspace Extensions", basicExtensionTest, wsiType);
-	addFunctionCaseWithPrograms(testGroup, "basic", "Basic Rendering Tests", getBasicRenderPrograms, surfaceFormatRenderTests, wsiType);
-	addFunctionCaseWithPrograms(testGroup, "hdr", "Basic Rendering Tests with HDR", getBasicRenderPrograms, surfaceFormatRenderWithHdrTests, wsiType);
+	// Verify Colorspace Extensions
+	addFunctionCase(testGroup, "extensions", basicExtensionTest, wsiType);
+	// Basic Rendering Tests
+	addFunctionCaseWithPrograms(testGroup, "basic", getBasicRenderPrograms, surfaceFormatRenderTests, wsiType);
+	// Basic Rendering Tests with HDR
+	addFunctionCaseWithPrograms(testGroup, "hdr", getBasicRenderPrograms, surfaceFormatRenderWithHdrTests, wsiType);
 }
 
 void createColorspaceCompareTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
@@ -847,7 +850,7 @@ void createColorspaceCompareTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type 
 			wsiType,
 			format
 		};
-		addFunctionCaseWithPrograms(testGroup, caseName, "", getBasicRenderPrograms2, colorspaceCompareTest, params);
+		addFunctionCaseWithPrograms(testGroup, caseName, getBasicRenderPrograms2, colorspaceCompareTest, params);
 	}
 }
 

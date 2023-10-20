@@ -74,7 +74,7 @@ tcu::TestCaseGroup* createSignedIntCompareGroup (tcu::TestContext& testCtx)
 {
 	// Location of the Amber script files under the data/vulkan/amber source tree.
 	const char* data_dir = "spirv_assembly/instruction/compute/signed_int_compare";
-	return createTestGroup(testCtx, "signed_int_compare", "Signed int compare over uint values", createSignedIntCompareTests, data_dir);
+	return createTestGroup(testCtx, "signed_int_compare", createSignedIntCompareTests, data_dir);
 }
 
 } // SpirVAssembly

@@ -280,9 +280,8 @@ class InstancedDrawCase : public TestCase
 public:
 	InstancedDrawCase (tcu::TestContext&	testCtx,
 					   const std::string&	name,
-					   const std::string&	desc,
 					   TestParams			params)
-		: TestCase	(testCtx, name, desc)
+		: TestCase	(testCtx, name)
 		, m_params	(params)
 	{
 		m_vertexShader = "#version 430\n"
@@ -1089,7 +1088,7 @@ void InstancedDrawInstance::beginSecondaryCmdBuffer(vk::VkRenderingFlagsKHR rend
 } // anonymus
 
 InstancedTests::InstancedTests(tcu::TestContext& testCtx, const SharedGroupParams groupParams)
-	: TestCaseGroup		(testCtx, "instanced", "Instanced drawing tests")
+	: TestCaseGroup		(testCtx, "instanced")
 	, m_groupParams		(groupParams)
 {
 	static const vk::VkPrimitiveTopology	topologies[]			=
@@ -1154,14 +1153,15 @@ InstancedTests::InstancedTests(tcu::TestContext& testCtx, const SharedGroupParam
 
 							std::string testName = de::toString(param);
 
-							addChild(new InstancedDrawCase(m_testCtx, de::toLower(testName), "Instanced drawing test", param));
+							addChild(new InstancedDrawCase(m_testCtx, de::toLower(testName), param));
 
 #ifndef CTS_USES_VULKANSC
 							if (TestParams::FUNCTION_DRAW_INDEXED == functions[functionNdx] || TestParams::FUNCTION_DRAW_INDEXED_INDIRECT == functions[functionNdx])
 							{
 								param.useMaintenance5Ext = true;
 								testName += "_maintenance_5";
-								addChild(new InstancedDrawCase(m_testCtx, de::toLower(testName), "Instanced drawing test using vkCmdBindIndexBuffer2KHR() introduced in VK_KHR_maintenance5", param));
+								// Instanced drawing test using vkCmdBindIndexBuffer2KHR() introduced in VK_KHR_maintenance5
+								addChild(new InstancedDrawCase(m_testCtx, de::toLower(testName), param));
 							}
 #endif // CTS_USES_VULKANSC
 						}

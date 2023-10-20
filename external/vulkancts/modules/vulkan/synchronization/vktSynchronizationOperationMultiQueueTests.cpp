@@ -866,7 +866,6 @@ class BaseTestCase : public TestCase
 public:
 	BaseTestCase (tcu::TestContext&			testCtx,
 				  const std::string&		name,
-				  const std::string&		description,
 				  SynchronizationType		type,
 				  const SyncPrimitive		syncPrimitive,
 				  const ResourceDescription	resourceDesc,
@@ -874,7 +873,7 @@ public:
 				  const OperationName		readOp,
 				  const VkSharingMode		sharingMode,
 				  PipelineCacheData&		pipelineCacheData)
-		: TestCase				(testCtx, name, description)
+		: TestCase				(testCtx, name)
 		, m_type				(type)
 		, m_resourceDesc		(resourceDesc)
 		, m_writeOp				(makeOperationSupport(writeOp, resourceDesc).release())
@@ -981,7 +980,7 @@ void createTests (tcu::TestCaseGroup* group, TestData data)
 
 	for (int groupNdx = 0; groupNdx < DE_LENGTH_OF_ARRAY(groups); ++groupNdx)
 	{
-		MovePtr<tcu::TestCaseGroup> synchGroup (new tcu::TestCaseGroup(testCtx, groups[groupNdx].name, ""));
+		MovePtr<tcu::TestCaseGroup> synchGroup (new tcu::TestCaseGroup(testCtx, groups[groupNdx].name));
 
 		for (int writeOpNdx = 0; writeOpNdx < DE_LENGTH_OF_ARRAY(s_writeOps); ++writeOpNdx)
 		for (int readOpNdx  = 0; readOpNdx  < DE_LENGTH_OF_ARRAY(s_readOps);  ++readOpNdx)
@@ -991,7 +990,7 @@ void createTests (tcu::TestCaseGroup* group, TestData data)
 			const std::string	opGroupName = getOperationName(writeOp) + "_" + getOperationName(readOp);
 			bool				empty		= true;
 
-			MovePtr<tcu::TestCaseGroup> opGroup		(new tcu::TestCaseGroup(testCtx, opGroupName.c_str(), ""));
+			MovePtr<tcu::TestCaseGroup> opGroup		(new tcu::TestCaseGroup(testCtx, opGroupName.c_str()));
 
 			for (int optionNdx = 0; optionNdx <= groups[groupNdx].numOptions; ++optionNdx)
 			for (int resourceNdx = 0; resourceNdx < DE_LENGTH_OF_ARRAY(s_resources); ++resourceNdx)
@@ -1011,7 +1010,7 @@ void createTests (tcu::TestCaseGroup* group, TestData data)
 					else
 						name += "_exclusive";
 
-					opGroup->addChild(new BaseTestCase(testCtx, name, "", data.type, groups[groupNdx].syncPrimitive, resource, writeOp, readOp, sharingMode, *data.pipelineCacheData));
+					opGroup->addChild(new BaseTestCase(testCtx, name, data.type, groups[groupNdx].syncPrimitive, resource, writeOp, readOp, sharingMode, *data.pipelineCacheData));
 					empty = false;
 				}
 			}
@@ -1040,7 +1039,8 @@ tcu::TestCaseGroup* createSynchronizedOperationMultiQueueTests (tcu::TestContext
 		&pipelineCacheData
 	};
 
-	return createTestGroup(testCtx, "multi_queue", "Synchronization of a memory-modifying operation", createTests, data, cleanupGroup);
+	// Synchronization of a memory-modifying operation
+	return createTestGroup(testCtx, "multi_queue", createTests, data, cleanupGroup);
 }
 
 } // synchronization

@@ -603,7 +603,7 @@ private:
 };
 
 OcclusionQueryTest::OcclusionQueryTest	(tcu::TestContext& testCtx, const std::string name, const deUint32 flags, const int renderWidth, const int renderHeight)
-	: TestCase							(testCtx, name, "")
+	: TestCase							(testCtx, name)
 	, m_preciseBitEnabled				(flags & TEST_PRECISE_BIT)
 	, m_scissorTestEnabled				(flags & TEST_SCISSOR)
 	, m_depthClearTestEnabled			(flags & TEST_DEPTH_CLEAR	|| flags & TEST_ALL)
@@ -695,7 +695,7 @@ void OcclusionQueryTest::checkSupport (Context& context) const
 
 tcu::TestCaseGroup* createOcclusionQueryTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "occlusion_query", "occlusion query test cases"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "occlusion_query"));
 
 	{
 		static const struct

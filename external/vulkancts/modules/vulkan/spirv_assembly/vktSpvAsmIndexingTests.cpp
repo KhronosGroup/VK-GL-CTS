@@ -68,7 +68,7 @@ struct InputData
 void addComputeIndexingStructTests (tcu::TestCaseGroup* group)
 {
 	tcu::TestContext&				testCtx				= group->getTestContext();
-	de::MovePtr<tcu::TestCaseGroup> structGroup			(new tcu::TestCaseGroup(testCtx, "struct", "Tests for indexing input struct."));
+	de::MovePtr<tcu::TestCaseGroup> structGroup			(new tcu::TestCaseGroup(testCtx, "struct"));
 	de::Random						rnd					(deStringHash(group->getName()));
 	const int						numItems			= 128;
 	const int						numStructs			= 2;
@@ -273,7 +273,7 @@ void addComputeIndexingStructTests (tcu::TestCaseGroup* group)
 				if (idxSize == 64)
 					spec.requestedVulkanFeatures.coreFeatures.shaderInt64 = VK_TRUE;
 
-				structGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+				structGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 		}
 	}
@@ -283,7 +283,7 @@ void addComputeIndexingStructTests (tcu::TestCaseGroup* group)
 void addGraphicsIndexingStructTests (tcu::TestCaseGroup* group)
 {
 	tcu::TestContext&				testCtx				= group->getTestContext();
-	de::MovePtr<tcu::TestCaseGroup>	structGroup			(new tcu::TestCaseGroup(testCtx, "struct", "Tests for indexing input struct."));
+	de::MovePtr<tcu::TestCaseGroup>	structGroup			(new tcu::TestCaseGroup(testCtx, "struct"));
 	de::Random						rnd					(deStringHash(group->getName()));
 	const int						numItems			= 128;
 	const int						numStructs			= 2;
@@ -570,7 +570,7 @@ void addGraphicsOutputComponentIndexingTests (tcu::TestCaseGroup* testGroup)
 void addComputeIndexingNon16BaseAlignmentTests (tcu::TestCaseGroup* group)
 {
 	tcu::TestContext&				testCtx					= group->getTestContext();
-	de::MovePtr<tcu::TestCaseGroup> non16BaseAlignmentGroup	(new tcu::TestCaseGroup(testCtx, "non16basealignment", "Tests for indexing array with base alignment less than 16."));
+	de::MovePtr<tcu::TestCaseGroup> non16BaseAlignmentGroup	(new tcu::TestCaseGroup(testCtx, "non16basealignment"));
 	de::Random						rnd						(deStringHash(group->getName()));
 	const int						floatArraySize			= 18;
 	const int						numFloatArrays			= 32;
@@ -728,7 +728,7 @@ void addComputeIndexingNon16BaseAlignmentTests (tcu::TestCaseGroup* group)
 
 		spec.assembly					= StringTemplate(shaderStr).specialize(specs);
 
-		non16BaseAlignmentGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+		non16BaseAlignmentGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 
 	group->addChild(non16BaseAlignmentGroup.release());
@@ -738,8 +738,10 @@ void addComputeIndexingNon16BaseAlignmentTests (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* createIndexingComputeGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> indexingGroup	(new tcu::TestCaseGroup(testCtx, "indexing", "Compute tests for data indexing."));
-	de::MovePtr<tcu::TestCaseGroup> inputGroup		(new tcu::TestCaseGroup(testCtx, "input", "Tests for indexing input data."));
+	// Compute tests for data indexing.
+	de::MovePtr<tcu::TestCaseGroup> indexingGroup	(new tcu::TestCaseGroup(testCtx, "indexing"));
+	// Tests for indexing input data.
+	de::MovePtr<tcu::TestCaseGroup> inputGroup		(new tcu::TestCaseGroup(testCtx, "input"));
 
 	addComputeIndexingStructTests(inputGroup.get());
 	addComputeIndexingNon16BaseAlignmentTests(inputGroup.get());

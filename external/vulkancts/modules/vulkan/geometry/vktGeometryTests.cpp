@@ -53,7 +53,7 @@ void createChildren (tcu::TestCaseGroup* geometryTests)
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, name.c_str(), "Geometry shader tests", createChildren);
+	return createTestGroup(testCtx, name.c_str(), createChildren);
 }
 
 } // geometry

@@ -193,19 +193,17 @@ tcu::TestStatus testComputeDerivativeByIndex (Context& context, bool)
 
 tcu::TestCaseGroup* createDerivativeTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> derivativeTests (new tcu::TestCaseGroup(testCtx, "derivative", "pipeline derivative tests"));
-	de::MovePtr<tcu::TestCaseGroup> computeTests (new tcu::TestCaseGroup(testCtx, "compute", "compute tests"));
+	de::MovePtr<tcu::TestCaseGroup> derivativeTests (new tcu::TestCaseGroup(testCtx, "derivative"));
+	de::MovePtr<tcu::TestCaseGroup> computeTests (new tcu::TestCaseGroup(testCtx, "compute"));
 
 	addFunctionCaseWithPrograms(computeTests.get(),
 								"derivative_by_handle",
-								"",
 								initComputeDerivativePrograms,
 								testComputeDerivativeByHandle,
 								false);
 #ifndef CTS_USES_VULKANSC
 	addFunctionCaseWithPrograms(computeTests.get(),
 								"derivative_by_handle_maintenance5",
-								"",
 								checkSupport,
 								initComputeDerivativePrograms,
 								testComputeDerivativeByHandle,
@@ -213,7 +211,6 @@ tcu::TestCaseGroup* createDerivativeTests (tcu::TestContext& testCtx)
 #endif // CTS_USES_VULKANSC
 	addFunctionCaseWithPrograms(computeTests.get(),
 								"derivative_by_index",
-								"",
 								initComputeDerivativePrograms,
 								testComputeDerivativeByIndex,
 								false);

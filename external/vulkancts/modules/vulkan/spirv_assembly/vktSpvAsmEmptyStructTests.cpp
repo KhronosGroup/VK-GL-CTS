@@ -223,7 +223,7 @@ void addCopyingComputeGroup(tcu::TestCaseGroup* group)
 			spec.verifyIO		= verifyResult;
 			spec.inputs.push_back (Resource(BufferSp(new Int32Buffer(bufferType.input)), bufferType.descriptorType));
 			spec.outputs.push_back(Resource(BufferSp(new Int32Buffer(bufferType.expectedOutput))));
-			group->addChild(new SpvAsmComputeShaderCase(group->getTestContext(), name.c_str(), "", spec));
+			group->addChild(new SpvAsmComputeShaderCase(group->getTestContext(), name.c_str(), spec));
 		}
 	}
 }
@@ -332,7 +332,7 @@ void addPointerComparisionComputeGroup(tcu::TestCaseGroup* group)
   spec.inputs.push_back(Resource(BufferSp(new Int32Buffer(input))));
   spec.outputs.push_back(Resource(BufferSp(new Int32Buffer(expectedOutput))));
   spec.extensions.push_back("VK_KHR_spirv_1_4");
-  group->addChild(new SpvAsmComputeShaderCase(testCtx, "ssbo", "", spec));
+  group->addChild(new SpvAsmComputeShaderCase(testCtx, "ssbo", spec));
 }
 
 void addFunctionArgumentReturnValueGroup(tcu::TestCaseGroup* group)
@@ -552,7 +552,7 @@ void addFunctionArgumentReturnValueGroup(tcu::TestCaseGroup* group)
 							   Resource(BufferSp(new Uint32Buffer(expectedOutput))));
 		spec.extensions.push_back("VK_KHR_spirv_1_4");
 		group->addChild(new SpvAsmComputeShaderCase(
-													testCtx, variableDefinition.name.c_str(), "", spec));
+													testCtx, variableDefinition.name.c_str(), spec));
 	}
 }
 
@@ -560,11 +560,15 @@ void addFunctionArgumentReturnValueGroup(tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* createEmptyStructComputeGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(testCtx, "empty_struct", "Tests empty structs in UBOs and SSBOs"));
+	// Tests empty structs in UBOs and SSBOs
+	de::MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(testCtx, "empty_struct"));
 
-	addTestGroup(group.get(), "copying",			"Test copying struct which contains an empty struct",	addCopyingComputeGroup);
-	addTestGroup(group.get(), "pointer_comparison",	"Test pointer comparisons of empty struct members",		addPointerComparisionComputeGroup);
-	addTestGroup(group.get(), "function", "Test empty structs as function arguments or return type", addFunctionArgumentReturnValueGroup);
+	// Test copying struct which contains an empty struct
+	addTestGroup(group.get(), "copying", addCopyingComputeGroup);
+	// Test pointer comparisons of empty struct members
+	addTestGroup(group.get(), "pointer_comparison", addPointerComparisionComputeGroup);
+	// Test empty structs as function arguments or return type
+	addTestGroup(group.get(), "function", addFunctionArgumentReturnValueGroup);
 
 	return group.release();
 }

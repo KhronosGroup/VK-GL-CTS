@@ -4403,9 +4403,10 @@ de::MovePtr<tcu::TestCaseGroup> createFenceTests (tcu::TestContext& testCtx, vk:
 		{ "permanent", PERMANENCE_PERMANENT	}
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> fenceGroup (new tcu::TestCaseGroup(testCtx, externalFenceTypeToName(externalType), externalFenceTypeToName(externalType)));
+	de::MovePtr<tcu::TestCaseGroup> fenceGroup (new tcu::TestCaseGroup(testCtx, externalFenceTypeToName(externalType)));
 
-	addFunctionCase(fenceGroup.get(), "info",	"Test external fence queries.",	testFenceQueries,	externalType);
+	// Test external fence queries.
+	addFunctionCase(fenceGroup.get(), "info", testFenceQueries,	externalType);
 
 	for (size_t permanenceNdx = 0; permanenceNdx < DE_LENGTH_OF_ARRAY(permanences); permanenceNdx++)
 	{
@@ -4419,39 +4420,56 @@ de::MovePtr<tcu::TestCaseGroup> createFenceTests (tcu::TestContext& testCtx, vk:
 		if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT
 			|| externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
 		{
-			addFunctionCase(fenceGroup.get(), std::string("create_win32_") + permanenceName,	"Test creating fence with win32 properties.",	testFenceWin32Create,	config);
+			// Test creating fence with win32 properties.
+			addFunctionCase(fenceGroup.get(), std::string("create_win32_") + permanenceName, testFenceWin32Create,	config);
 		}
 
-		addFunctionCaseWithPrograms(fenceGroup.get(), std::string("import_twice_") + permanenceName,				"Test importing fence twice.",											checkSupport,	initProgramsToGetNativeFd,	testFenceImportTwice,				config);
-		addFunctionCaseWithPrograms(fenceGroup.get(), std::string("reimport_") + permanenceName,					"Test importing again over previously imported fence.",					checkSupport,	initProgramsToGetNativeFd,	testFenceImportReimport,			config);
-		addFunctionCaseWithPrograms(fenceGroup.get(), std::string("import_multiple_times_") + permanenceName,		"Test importing fence multiple times.",									checkSupport,	initProgramsToGetNativeFd,	testFenceMultipleImports,			config);
-		addFunctionCaseWithPrograms(fenceGroup.get(), std::string("signal_export_import_wait_") + permanenceName,	"Test signaling, exporting, importing and waiting for the sempahore.",	checkEvent,		initProgramsToGetNativeFd,	testFenceSignalExportImportWait,	config);
-		addFunctionCaseWithPrograms(fenceGroup.get(), std::string("signal_import_") + permanenceName,				"Test signaling and importing the fence.",								checkSupport,	initProgramsToGetNativeFd,	testFenceSignalImport,				config);
-		addFunctionCaseWithPrograms(fenceGroup.get(), std::string("reset_") + permanenceName,						"Test resetting the fence.",											checkEvent,		initProgramsToGetNativeFd,	testFenceReset,						config);
-		addFunctionCaseWithPrograms(fenceGroup.get(), std::string("transference_") + permanenceName,				"Test fences transference.",											checkEvent,		initProgramsToGetNativeFd,	testFenceTransference,				config);
+		// Test importing fence twice.
+		addFunctionCaseWithPrograms(fenceGroup.get(), std::string("import_twice_") + permanenceName, checkSupport,	initProgramsToGetNativeFd,	testFenceImportTwice,				config);
+		// Test importing again over previously imported fence.
+		addFunctionCaseWithPrograms(fenceGroup.get(), std::string("reimport_") + permanenceName, checkSupport,	initProgramsToGetNativeFd,	testFenceImportReimport,			config);
+		// Test importing fence multiple times.
+		addFunctionCaseWithPrograms(fenceGroup.get(), std::string("import_multiple_times_") + permanenceName, checkSupport,	initProgramsToGetNativeFd,	testFenceMultipleImports,			config);
+		// Test signaling, exporting, importing and waiting for the sempahore.
+		addFunctionCaseWithPrograms(fenceGroup.get(), std::string("signal_export_import_wait_") + permanenceName, checkEvent,		initProgramsToGetNativeFd,	testFenceSignalExportImportWait,	config);
+		// Test signaling and importing the fence.
+		addFunctionCaseWithPrograms(fenceGroup.get(), std::string("signal_import_") + permanenceName, checkSupport,	initProgramsToGetNativeFd,	testFenceSignalImport,				config);
+		// Test resetting the fence.
+		addFunctionCaseWithPrograms(fenceGroup.get(), std::string("reset_") + permanenceName, checkEvent,		initProgramsToGetNativeFd,	testFenceReset,						config);
+		// Test fences transference.
+		addFunctionCaseWithPrograms(fenceGroup.get(), std::string("transference_") + permanenceName, checkEvent,		initProgramsToGetNativeFd,	testFenceTransference,				config);
 
 		if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT)
 		{
-			addFunctionCaseWithPrograms(fenceGroup.get(), std::string("import_signaled_") + permanenceName,			"Test import signaled fence fd.",										initProgramsToGetNativeFd,	testFenceImportSyncFdSignaled,		config);
+			// Test import signaled fence fd.
+			addFunctionCaseWithPrograms(fenceGroup.get(), std::string("import_signaled_") + permanenceName, initProgramsToGetNativeFd,	testFenceImportSyncFdSignaled,		config);
 		}
 
 		if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
 			|| externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT)
 		{
 			// \note Not supported on WIN32 handles
-			addFunctionCaseWithPrograms(fenceGroup.get(), std::string("export_multiple_times_") + permanenceName,	"Test exporting fence multiple times.",		checkSupport,	initProgramsToGetNativeFd,	testFenceMultipleExports,	config);
+			// Test exporting fence multiple times.
+			addFunctionCaseWithPrograms(fenceGroup.get(), std::string("export_multiple_times_") + permanenceName, checkSupport,	initProgramsToGetNativeFd,	testFenceMultipleExports,	config);
 
-			addFunctionCaseWithPrograms(fenceGroup.get(), std::string("dup_") + permanenceName,						"Test calling dup() on exported fence.",	checkSupport,	initProgramsToGetNativeFd,	testFenceFdDup,				config);
-			addFunctionCaseWithPrograms(fenceGroup.get(), std::string("dup2_") + permanenceName,					"Test calling dup2() on exported fence.",	checkSupport,	initProgramsToGetNativeFd,	testFenceFdDup2,			config);
-			addFunctionCaseWithPrograms(fenceGroup.get(), std::string("dup3_") + permanenceName,					"Test calling dup3() on exported fence.",	checkSupport,	initProgramsToGetNativeFd,	testFenceFdDup3,			config);
-			addFunctionCaseWithPrograms(fenceGroup.get(), std::string("send_over_socket_") + permanenceName,		"Test sending fence fd over socket.",		checkSupport,	initProgramsToGetNativeFd,	testFenceFdSendOverSocket,	config);
+			// Test calling dup() on exported fence.
+			addFunctionCaseWithPrograms(fenceGroup.get(), std::string("dup_") + permanenceName, checkSupport,	initProgramsToGetNativeFd,	testFenceFdDup,				config);
+			// Test calling dup2() on exported fence.
+			addFunctionCaseWithPrograms(fenceGroup.get(), std::string("dup2_") + permanenceName, checkSupport,	initProgramsToGetNativeFd,	testFenceFdDup2,			config);
+			// Test calling dup3() on exported fence.
+			addFunctionCaseWithPrograms(fenceGroup.get(), std::string("dup3_") + permanenceName, checkSupport,	initProgramsToGetNativeFd,	testFenceFdDup3,			config);
+			// Test sending fence fd over socket.
+			addFunctionCaseWithPrograms(fenceGroup.get(), std::string("send_over_socket_") + permanenceName, checkSupport,	initProgramsToGetNativeFd,	testFenceFdSendOverSocket,	config);
 		}
 
 		if (getHandelTypeTransferences(externalType) == TRANSFERENCE_REFERENCE)
 		{
-			addFunctionCase(fenceGroup.get(), std::string("signal_wait_import_") + permanenceName,			"Test signaling and then waiting for the the sepmahore.",			testFenceSignalWaitImport,			config);
-			addFunctionCase(fenceGroup.get(), std::string("export_signal_import_wait_") + permanenceName,	"Test exporting, signaling, importing and waiting for the fence.",	testFenceExportSignalImportWait,	config);
-			addFunctionCase(fenceGroup.get(), std::string("export_import_signal_wait_") + permanenceName,	"Test exporting, importing, signaling and waiting for the fence.",	testFenceExportImportSignalWait,	config);
+			// Test signaling and then waiting for the the sepmahore.
+			addFunctionCase(fenceGroup.get(), std::string("signal_wait_import_") + permanenceName, testFenceSignalWaitImport,			config);
+			// Test exporting, signaling, importing and waiting for the fence.
+			addFunctionCase(fenceGroup.get(), std::string("export_signal_import_wait_") + permanenceName, testFenceExportSignalImportWait,	config);
+			// Test exporting, importing, signaling and waiting for the fence.
+			addFunctionCase(fenceGroup.get(), std::string("export_import_signal_wait_") + permanenceName, testFenceExportImportSignalWait,	config);
 		}
 	}
 
@@ -4856,7 +4874,7 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat (Context& context, vk::VkFo
 class AhbExternalFormatResolveApiCase : public TestCase
 {
 public:
-	AhbExternalFormatResolveApiCase		(tcu::TestContext& context, const std::string& name, const std::string& desc, AndroidHardwareBufferInstance::Format format);
+	AhbExternalFormatResolveApiCase		(tcu::TestContext& context, const std::string& name, AndroidHardwareBufferInstance::Format format);
 
 	TestInstance*	createInstance		(Context& context) const override;
 	void			checkSupport		(Context& context) const override;
@@ -4880,8 +4898,8 @@ private:
 	const deUint32								m_layers	= 1u;
 };
 
-AhbExternalFormatResolveApiCase::AhbExternalFormatResolveApiCase (tcu::TestContext& context, const std::string& name, const std::string& desc, AndroidHardwareBufferInstance::Format format)
-	: TestCase(context, name, desc)
+AhbExternalFormatResolveApiCase::AhbExternalFormatResolveApiCase (tcu::TestContext& context, const std::string& name, AndroidHardwareBufferInstance::Format format)
+	: TestCase(context, name)
 	, m_format(format)
 { }
 
@@ -4994,7 +5012,7 @@ void checkMaintenance5(Context& context, vk::VkExternalMemoryHandleTypeFlagBits)
 
 de::MovePtr<tcu::TestCaseGroup> createFenceTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> fenceGroup (new tcu::TestCaseGroup(testCtx, "fence", "Tests for external fences."));
+	de::MovePtr<tcu::TestCaseGroup> fenceGroup (new tcu::TestCaseGroup(testCtx, "fence"));
 
 	fenceGroup->addChild(createFenceTests(testCtx, vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT).release());
 	fenceGroup->addChild(createFenceTests(testCtx, vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT).release());
@@ -5025,13 +5043,12 @@ de::MovePtr<tcu::TestCaseGroup> createSemaphoreTests (tcu::TestContext& testCtx,
 		{ "timeline",	vk::VK_SEMAPHORE_TYPE_TIMELINE },
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> semaphoreGroup (new tcu::TestCaseGroup(testCtx, externalSemaphoreTypeToName(externalType), externalSemaphoreTypeToName(externalType)));
+	de::MovePtr<tcu::TestCaseGroup> semaphoreGroup (new tcu::TestCaseGroup(testCtx, externalSemaphoreTypeToName(externalType)));
 
 	for (size_t semaphoreTypeIdx = 0; semaphoreTypeIdx < DE_LENGTH_OF_ARRAY(permanences); semaphoreTypeIdx++)
 	{
-		addFunctionCase(semaphoreGroup.get(), std::string("info_") + semaphoreTypes[semaphoreTypeIdx].name,
-						"Test external semaphore queries.",	testSemaphoreQueries,
-						TestSemaphoreQueriesParameters(semaphoreTypes[semaphoreTypeIdx].type, externalType));
+		// Test external semaphore queries
+		addFunctionCase(semaphoreGroup.get(), std::string("info_") + semaphoreTypes[semaphoreTypeIdx].name, testSemaphoreQueries, TestSemaphoreQueriesParameters(semaphoreTypes[semaphoreTypeIdx].type, externalType));
 	}
 
 	for (size_t permanenceNdx = 0; permanenceNdx < DE_LENGTH_OF_ARRAY(permanences); permanenceNdx++)
@@ -5046,19 +5063,27 @@ de::MovePtr<tcu::TestCaseGroup> createSemaphoreTests (tcu::TestContext& testCtx,
 		if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT
 			|| externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
 		{
-			addFunctionCase(semaphoreGroup.get(), std::string("create_win32_") + permanenceName,	"Test creating semaphore with win32 properties.",	testSemaphoreWin32Create,	config);
+			// Test creating semaphore with win32 properties.
+			addFunctionCase(semaphoreGroup.get(), std::string("create_win32_") + permanenceName, testSemaphoreWin32Create,	config);
 		}
 
-		addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("import_twice_") + permanenceName,				"Test importing semaphore twice.",										checkSupport,	initProgramsToGetNativeFd,	testSemaphoreImportTwice,				config);
-		addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("reimport_") + permanenceName,					"Test importing again over previously imported semaphore.",				checkSupport,	initProgramsToGetNativeFd,	testSemaphoreImportReimport,			config);
-		addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("import_multiple_times_") + permanenceName,		"Test importing semaphore multiple times.",								checkSupport,	initProgramsToGetNativeFd,	testSemaphoreMultipleImports,			config);
-		addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("signal_export_import_wait_") + permanenceName,	"Test signaling, exporting, importing and waiting for the sempahore.",	checkEvent,		initProgramsToGetNativeFd,	testSemaphoreSignalExportImportWait,	config);
-		addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("signal_import_") + permanenceName,				"Test signaling and importing the semaphore.",							checkSupport,	initProgramsToGetNativeFd,	testSemaphoreSignalImport,				config);
-		addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("transference_") + permanenceName,				"Test semaphores transference.",										checkEvent,		initProgramsToGetNativeFd,	testSemaphoreTransference,				config);
+		// Test importing semaphore twice.
+		addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("import_twice_") + permanenceName, checkSupport,	initProgramsToGetNativeFd,	testSemaphoreImportTwice,				config);
+		// Test importing again over previously imported semaphore.
+		addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("reimport_") + permanenceName, checkSupport,	initProgramsToGetNativeFd,	testSemaphoreImportReimport,			config);
+		// Test importing semaphore multiple times.
+		addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("import_multiple_times_") + permanenceName, checkSupport,	initProgramsToGetNativeFd,	testSemaphoreMultipleImports,			config);
+		// Test signaling, exporting, importing and waiting for the sempahore.
+		addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("signal_export_import_wait_") + permanenceName, checkEvent,		initProgramsToGetNativeFd,	testSemaphoreSignalExportImportWait,	config);
+		// Test signaling and importing the semaphore.
+		addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("signal_import_") + permanenceName, checkSupport,	initProgramsToGetNativeFd,	testSemaphoreSignalImport,				config);
+		// Test semaphores transference.
+		addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("transference_") + permanenceName, checkEvent,		initProgramsToGetNativeFd,	testSemaphoreTransference,				config);
 
 		if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT)
 		{
-			addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("import_signaled_") + permanenceName,			"Test import signaled semaphore fd.",										initProgramsToGetNativeFd,	testSemaphoreImportSyncFdSignaled,	config);
+			// Test import signaled semaphore fd.
+			addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("import_signaled_") + permanenceName, initProgramsToGetNativeFd,	testSemaphoreImportSyncFdSignaled,	config);
 		}
 
 
@@ -5066,19 +5091,27 @@ de::MovePtr<tcu::TestCaseGroup> createSemaphoreTests (tcu::TestContext& testCtx,
 			|| externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT)
 		{
 			// \note Not supported on WIN32 handles
-			addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("export_multiple_times_") + permanenceName,	"Test exporting semaphore multiple times.",		checkSupport,	initProgramsToGetNativeFd,	testSemaphoreMultipleExports,	config);
+			// Test exporting semaphore multiple times.
+			addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("export_multiple_times_") + permanenceName, checkSupport,	initProgramsToGetNativeFd,	testSemaphoreMultipleExports,	config);
 
-			addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("dup_") + permanenceName,						"Test calling dup() on exported semaphore.",	checkSupport,	initProgramsToGetNativeFd,	testSemaphoreFdDup,				config);
-			addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("dup2_") + permanenceName,					"Test calling dup2() on exported semaphore.",	checkSupport,	initProgramsToGetNativeFd,	testSemaphoreFdDup2,			config);
-			addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("dup3_") + permanenceName,					"Test calling dup3() on exported semaphore.",	checkSupport,	initProgramsToGetNativeFd,	testSemaphoreFdDup3,			config);
-			addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("send_over_socket_") + permanenceName,		"Test sending semaphore fd over socket.",		checkSupport,	initProgramsToGetNativeFd,	testSemaphoreFdSendOverSocket,	config);
+			// Test calling dup() on exported semaphore.
+			addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("dup_") + permanenceName, checkSupport,	initProgramsToGetNativeFd,	testSemaphoreFdDup,				config);
+			// Test calling dup2() on exported semaphore.
+			addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("dup2_") + permanenceName, checkSupport,	initProgramsToGetNativeFd,	testSemaphoreFdDup2,			config);
+			// Test calling dup3() on exported semaphore.
+			addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("dup3_") + permanenceName, checkSupport,	initProgramsToGetNativeFd,	testSemaphoreFdDup3,			config);
+			// Test sending semaphore fd over socket.
+			addFunctionCaseWithPrograms(semaphoreGroup.get(), std::string("send_over_socket_") + permanenceName, checkSupport,	initProgramsToGetNativeFd,	testSemaphoreFdSendOverSocket,	config);
 		}
 
 		if (getHandelTypeTransferences(externalType) == TRANSFERENCE_REFERENCE)
 		{
-			addFunctionCase(semaphoreGroup.get(), std::string("signal_wait_import_") + permanenceName,			"Test signaling and then waiting for the the sepmahore.",				testSemaphoreSignalWaitImport,			config);
-			addFunctionCase(semaphoreGroup.get(), std::string("export_signal_import_wait_") + permanenceName,	"Test exporting, signaling, importing and waiting for the semaphore.",	testSemaphoreExportSignalImportWait,	config);
-			addFunctionCase(semaphoreGroup.get(), std::string("export_import_signal_wait_") + permanenceName,	"Test exporting, importing, signaling and waiting for the semaphore.",	checkEvent,		testSemaphoreExportImportSignalWait,	config);
+			// Test signaling and then waiting for the the sepmahore.
+			addFunctionCase(semaphoreGroup.get(), std::string("signal_wait_import_") + permanenceName, testSemaphoreSignalWaitImport,			config);
+			// Test exporting, signaling, importing and waiting for the semaphore.
+			addFunctionCase(semaphoreGroup.get(), std::string("export_signal_import_wait_") + permanenceName, testSemaphoreExportSignalImportWait,	config);
+			// Test exporting, importing, signaling and waiting for the semaphore.
+			addFunctionCase(semaphoreGroup.get(), std::string("export_import_signal_wait_") + permanenceName, checkEvent,		testSemaphoreExportImportSignalWait,	config);
 		}
 	}
 
@@ -5087,7 +5120,8 @@ de::MovePtr<tcu::TestCaseGroup> createSemaphoreTests (tcu::TestContext& testCtx,
 
 de::MovePtr<tcu::TestCaseGroup> createSemaphoreTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> semaphoreGroup (new tcu::TestCaseGroup(testCtx, "semaphore", "Tests for external semaphores."));
+	// Tests for external semaphores.
+	de::MovePtr<tcu::TestCaseGroup> semaphoreGroup (new tcu::TestCaseGroup(testCtx, "semaphore"));
 
 	semaphoreGroup->addChild(createSemaphoreTests(testCtx, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT).release());
 	semaphoreGroup->addChild(createSemaphoreTests(testCtx, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT).release());
@@ -5105,63 +5139,81 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx, vk
 	for (size_t dedicatedNdx = 0; dedicatedNdx < 2; dedicatedNdx++)
 	{
 		const bool						dedicated		(dedicatedNdx == 1);
-		de::MovePtr<tcu::TestCaseGroup>	dedicatedGroup	(new tcu::TestCaseGroup(testCtx, dedicated ? "dedicated" : "suballocated", ""));
+		de::MovePtr<tcu::TestCaseGroup>	dedicatedGroup	(new tcu::TestCaseGroup(testCtx, dedicated ? "dedicated" : "suballocated"));
 
 		for (size_t hostVisibleNdx = 0; hostVisibleNdx < 2; hostVisibleNdx++)
 		{
 			const bool						hostVisible			(hostVisibleNdx == 1);
-			de::MovePtr<tcu::TestCaseGroup>	hostVisibleGroup	(new tcu::TestCaseGroup(testCtx, hostVisible ? "host_visible" : "device_only", ""));
+			de::MovePtr<tcu::TestCaseGroup>	hostVisibleGroup	(new tcu::TestCaseGroup(testCtx, hostVisible ? "host_visible" : "device_only"));
 			const MemoryTestConfig			memoryConfig		(externalType, hostVisible, dedicated);
 
 			if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT
 				|| externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
 			{
-				addFunctionCase(hostVisibleGroup.get(), "create_win32",	"Test creating memory with win32 properties .",		testMemoryWin32Create,	memoryConfig);
+				// Test creating memory with win32 properties .
+				addFunctionCase(hostVisibleGroup.get(), "create_win32", testMemoryWin32Create,	memoryConfig);
 			}
 
-			addFunctionCase(hostVisibleGroup.get(), "import_twice",				"Test importing memory object twice.",			testMemoryImportTwice,		memoryConfig);
-			addFunctionCase(hostVisibleGroup.get(), "import_multiple_times",	"Test importing memory object multiple times.",	testMemoryMultipleImports,	memoryConfig);
+			// Test importing memory object twice.
+			addFunctionCase(hostVisibleGroup.get(), "import_twice", testMemoryImportTwice,		memoryConfig);
+			// Test importing memory object multiple times.
+			addFunctionCase(hostVisibleGroup.get(), "import_multiple_times", testMemoryMultipleImports,	memoryConfig);
 
 			if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT
 				|| externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT)
 			{
-				addFunctionCase(hostVisibleGroup.get(), "dup",						"Test calling dup() on exported memory.",	testMemoryFdDup,			memoryConfig);
-				addFunctionCase(hostVisibleGroup.get(), "dup2",						"Test calling dup2() on exported memory.",	testMemoryFdDup2,			memoryConfig);
-				addFunctionCase(hostVisibleGroup.get(), "dup3",						"Test calling dup3() on exported memory.",	testMemoryFdDup3,			memoryConfig);
-				addFunctionCase(hostVisibleGroup.get(), "send_over_socket",			"Test sending memory fd over socket.",		testMemoryFdSendOverSocket,	memoryConfig);
+				// Test calling dup() on exported memory.
+				addFunctionCase(hostVisibleGroup.get(), "dup", testMemoryFdDup,			memoryConfig);
+				// Test calling dup2() on exported memory.
+				addFunctionCase(hostVisibleGroup.get(), "dup2", testMemoryFdDup2,			memoryConfig);
+				// Test calling dup3() on exported memory.
+				addFunctionCase(hostVisibleGroup.get(), "dup3", testMemoryFdDup3,			memoryConfig);
+				// Test sending memory fd over socket.
+				addFunctionCase(hostVisibleGroup.get(), "send_over_socket", testMemoryFdSendOverSocket,	memoryConfig);
 				// \note Not supported on WIN32 handles
-				addFunctionCase(hostVisibleGroup.get(), "export_multiple_times",	"Test exporting memory multiple times.",	testMemoryMultipleExports,	memoryConfig);
+				// Test exporting memory multiple times.
+				addFunctionCase(hostVisibleGroup.get(), "export_multiple_times", testMemoryMultipleExports,	memoryConfig);
 			}
 
 			if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT)
 			{
-				addFunctionCase(hostVisibleGroup.get(), "fd_properties",			"Test obtaining the FD memory properties",	testMemoryFdProperties,		memoryConfig);
+				// Test obtaining the FD memory properties
+				addFunctionCase(hostVisibleGroup.get(), "fd_properties", testMemoryFdProperties,		memoryConfig);
 			}
 
 			dedicatedGroup->addChild(hostVisibleGroup.release());
 		}
 
 		{
-			de::MovePtr<tcu::TestCaseGroup>	bufferGroup		(new tcu::TestCaseGroup(testCtx, "buffer", ""));
+			de::MovePtr<tcu::TestCaseGroup>	bufferGroup		(new tcu::TestCaseGroup(testCtx, "buffer"));
 			const BufferTestConfig			bufferConfig	(externalType, dedicated);
 
-			addFunctionCase(bufferGroup.get(), "info",						"External buffer memory info query.",															testBufferQueries,				externalType);
-			addFunctionCase(bufferGroup.get(), "maintenance5",				"External buffer memory info query using BufferUsageFlags2CreateInfoKHR.",	checkMaintenance5,	testBufferQueriesMaintenance5,	externalType);
-			addFunctionCase(bufferGroup.get(), "bind_export_import_bind",	"Test binding, exporting, importing and binding buffer.",										testBufferBindExportImportBind,	bufferConfig);
-			addFunctionCase(bufferGroup.get(), "export_bind_import_bind",	"Test exporting, binding, importing and binding buffer.",										testBufferExportBindImportBind,	bufferConfig);
-			addFunctionCase(bufferGroup.get(), "export_import_bind_bind",	"Test exporting, importing and binding buffer.",												testBufferExportImportBindBind,	bufferConfig);
+			// External buffer memory info query.
+			addFunctionCase(bufferGroup.get(), "info", testBufferQueries,				externalType);
+			// External buffer memory info query using BufferUsageFlags2CreateInfoKHR.
+			addFunctionCase(bufferGroup.get(), "maintenance5", checkMaintenance5,	testBufferQueriesMaintenance5,	externalType);
+			// Test binding, exporting, importing and binding buffer.
+			addFunctionCase(bufferGroup.get(), "bind_export_import_bind", testBufferBindExportImportBind,	bufferConfig);
+			// Test exporting, binding, importing and binding buffer.
+			addFunctionCase(bufferGroup.get(), "export_bind_import_bind", testBufferExportBindImportBind,	bufferConfig);
+			// Test exporting, importing and binding buffer.
+			addFunctionCase(bufferGroup.get(), "export_import_bind_bind", testBufferExportImportBindBind,	bufferConfig);
 
 			dedicatedGroup->addChild(bufferGroup.release());
 		}
 
 		{
-			de::MovePtr<tcu::TestCaseGroup> imageGroup	(new tcu::TestCaseGroup(testCtx, "image", ""));
+			de::MovePtr<tcu::TestCaseGroup> imageGroup	(new tcu::TestCaseGroup(testCtx, "image"));
 			const ImageTestConfig			imageConfig	(externalType, dedicated);
 
-			addFunctionCase(imageGroup.get(), "info",						"External image memory info query.",						testImageQueries,				externalType);
-			addFunctionCase(imageGroup.get(), "bind_export_import_bind",	"Test binding, exporting, importing and binding image.",	testImageBindExportImportBind,	imageConfig);
-			addFunctionCase(imageGroup.get(), "export_bind_import_bind",	"Test exporting, binding, importing and binding image.",	testImageExportBindImportBind,	imageConfig);
-			addFunctionCase(imageGroup.get(), "export_import_bind_bind",	"Test exporting, importing and binding image.",				testImageExportImportBindBind,	imageConfig);
+			// External image memory info query.
+			addFunctionCase(imageGroup.get(), "info", testImageQueries,				externalType);
+			// Test binding, exporting, importing and binding image.
+			addFunctionCase(imageGroup.get(), "bind_export_import_bind", testImageBindExportImportBind,	imageConfig);
+			// Test exporting, binding, importing and binding image.
+			addFunctionCase(imageGroup.get(), "export_bind_import_bind", testImageExportBindImportBind,	imageConfig);
+			// Test exporting, importing and binding image.
+			addFunctionCase(imageGroup.get(), "export_import_bind_bind", testImageExportImportBindBind,	imageConfig);
 
 			dedicatedGroup->addChild(imageGroup.release());
 		}
@@ -5172,7 +5224,8 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx, vk
 	if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
 	{
 		{
-			de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, "image_formats", "Test minimum image format support"));
+			// Test minimum image format support
+			de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, "image_formats"));
 
 			const vk::VkFormat	ahbFormats[]	=
 			{
@@ -5199,14 +5252,15 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx, vk
 				const vk::VkFormat	format			= ahbFormats[ahbFormatNdx];
 				const std::string	testCaseName	= getFormatCaseName(format);
 
-				addFunctionCase(formatGroup.get(), testCaseName, "", testAndroidHardwareBufferImageFormat, format);
+				addFunctionCase(formatGroup.get(), testCaseName, testAndroidHardwareBufferImageFormat, format);
 			}
 
 			group->addChild(formatGroup.release());
 		}
 
 		{
-			de::MovePtr<tcu::TestCaseGroup>	externalFormatResolve	(new tcu::TestCaseGroup(testCtx, "external_format_resolve", "Test minimum image format support"));
+			// Test minimum image format support
+			de::MovePtr<tcu::TestCaseGroup>	externalFormatResolve	(new tcu::TestCaseGroup(testCtx, "external_format_resolve"));
 			for (deUint32 i = 0u; i < AndroidHardwareBufferInstance::Format::COUNT; ++i)
 			{
 				const AndroidHardwareBufferInstance::Format	format	= static_cast<AndroidHardwareBufferInstance::Format>(i);
@@ -5214,8 +5268,7 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx, vk
 					continue;
 
 				const std::string							formatName	= AndroidHardwareBufferInstance::getFormatName(format);
-				const std::string							description	= "Ensure drawing is allowed to format " + formatName;
-				externalFormatResolve->addChild(new AhbExternalFormatResolveApiCase(externalFormatResolve->getTestContext(), formatName, description, format));
+				externalFormatResolve->addChild(new AhbExternalFormatResolveApiCase(externalFormatResolve->getTestContext(), formatName, format));
 			}
 
 			group->addChild(externalFormatResolve.release());
@@ -5227,7 +5280,8 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx, vk
 
 de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "memory", "Tests for external memory"));
+	// Tests for external memory
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "memory"));
 
 	group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT).release());
 	group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT).release());

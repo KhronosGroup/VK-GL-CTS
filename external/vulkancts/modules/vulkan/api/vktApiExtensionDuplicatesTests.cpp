@@ -164,7 +164,7 @@ public:
 													 const std::string&		name,
 													 bool					instanceOrDevice,
 													 bool					byPointersOrNames)
-								: TestCase				(testCtx, name, std::string())
+								: TestCase				(testCtx, name)
 								, m_instanceOrDevice	(instanceOrDevice)
 								, m_byPointersOrNames	(byPointersOrNames) {}
 	virtual TestInstance*	createInstance			(Context&				ctx) const override
@@ -337,7 +337,8 @@ tcu::TestCaseGroup* createExtensionDuplicatesTests (tcu::TestContext& testCtx)
 		{ "by_names",		false	}
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	rootGroup(new tcu::TestCaseGroup(testCtx, "extension_duplicates", "Verifies that we can create a device or an instance with duplicate extensions"));
+	// Verifies that we can create a device or an instance with duplicate extensions
+	de::MovePtr<tcu::TestCaseGroup>	rootGroup(new tcu::TestCaseGroup(testCtx, "extension_duplicates"));
 	for (const item_t& type : types)
 	{
 		de::MovePtr<tcu::TestCaseGroup>	typeGroup(new tcu::TestCaseGroup(testCtx, type.first, ""));

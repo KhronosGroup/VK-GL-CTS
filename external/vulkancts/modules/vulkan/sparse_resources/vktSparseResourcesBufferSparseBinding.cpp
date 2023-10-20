@@ -59,7 +59,6 @@ class BufferSparseBindingCase : public TestCase
 public:
 					BufferSparseBindingCase	(tcu::TestContext&	testCtx,
 											 const std::string&	name,
-											 const std::string&	description,
 											 const deUint32		bufferSize,
 											 const bool			useDeviceGroups);
 
@@ -73,10 +72,9 @@ private:
 
 BufferSparseBindingCase::BufferSparseBindingCase (tcu::TestContext&		testCtx,
 												  const std::string&	name,
-												  const std::string&	description,
 												  const deUint32		bufferSize,
 												  const bool			useDeviceGroups)
-	: TestCase			(testCtx, name, description)
+	: TestCase			(testCtx, name)
 	, m_bufferSize		(bufferSize)
 	, m_useDeviceGroups	(useDeviceGroups)
 {
@@ -352,12 +350,12 @@ TestInstance* BufferSparseBindingCase::createInstance (Context& context) const
 
 void addBufferSparseBindingTests (tcu::TestCaseGroup* group, const bool useDeviceGroups)
 {
-	group->addChild(new BufferSparseBindingCase(group->getTestContext(), "buffer_size_2_10", "", 1 << 10, useDeviceGroups));
-	group->addChild(new BufferSparseBindingCase(group->getTestContext(), "buffer_size_2_12", "", 1 << 12, useDeviceGroups));
-	group->addChild(new BufferSparseBindingCase(group->getTestContext(), "buffer_size_2_16", "", 1 << 16, useDeviceGroups));
-	group->addChild(new BufferSparseBindingCase(group->getTestContext(), "buffer_size_2_17", "", 1 << 17, useDeviceGroups));
-	group->addChild(new BufferSparseBindingCase(group->getTestContext(), "buffer_size_2_20", "", 1 << 20, useDeviceGroups));
-	group->addChild(new BufferSparseBindingCase(group->getTestContext(), "buffer_size_2_24", "", 1 << 24, useDeviceGroups));
+	group->addChild(new BufferSparseBindingCase(group->getTestContext(), "buffer_size_2_10", 1 << 10, useDeviceGroups));
+	group->addChild(new BufferSparseBindingCase(group->getTestContext(), "buffer_size_2_12", 1 << 12, useDeviceGroups));
+	group->addChild(new BufferSparseBindingCase(group->getTestContext(), "buffer_size_2_16", 1 << 16, useDeviceGroups));
+	group->addChild(new BufferSparseBindingCase(group->getTestContext(), "buffer_size_2_17", 1 << 17, useDeviceGroups));
+	group->addChild(new BufferSparseBindingCase(group->getTestContext(), "buffer_size_2_20", 1 << 20, useDeviceGroups));
+	group->addChild(new BufferSparseBindingCase(group->getTestContext(), "buffer_size_2_24", 1 << 24, useDeviceGroups));
 }
 
 } // sparse

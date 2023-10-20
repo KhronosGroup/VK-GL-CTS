@@ -449,8 +449,9 @@ void checkNothing (Context&)
 
 } //anonymous
 
+// General tests for dynamic states
 DynamicStateGeneralTests::DynamicStateGeneralTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
-	: TestCaseGroup					(testCtx, "general_state", "General tests for dynamic states")
+	: TestCaseGroup					(testCtx, "general_state")
 	, m_pipelineConstructionType	(pipelineConstructionType)
 {
 	/* Left blank on purpose */
@@ -470,7 +471,6 @@ void DynamicStateGeneralTests::init (void)
 		const bool					isMesh				= (i > 0);
 		ShaderMap					shaderPaths			(basePaths);
 		std::string					nameSuffix;
-		std::string					descSuffix;
 		FunctionSupport0::Function	checkSupportFunc;
 
 		if (isMesh)
@@ -478,7 +478,6 @@ void DynamicStateGeneralTests::init (void)
 #ifndef CTS_USES_VULKANSC
 			shaderPaths[glu::SHADERTYPE_MESH] = "vulkan/dynamic_state/VertexFetch.mesh";
 			nameSuffix = "_mesh";
-			descSuffix = " using mesh shaders";
 			checkSupportFunc = checkMeshShaderSupport;
 #else
 			continue;
@@ -490,10 +489,14 @@ void DynamicStateGeneralTests::init (void)
 			checkSupportFunc = checkNothing;
 		}
 
-		addChild(new InstanceFactory<StateSwitchTestInstance, FunctionSupport0>(m_testCtx, "state_switch" + nameSuffix, "Perform multiple draws with different VP states (scissor test)" + descSuffix, m_pipelineConstructionType, shaderPaths, checkSupportFunc));
-		addChild(new InstanceFactory<BindOrderTestInstance, FunctionSupport0>(m_testCtx, "bind_order" + nameSuffix, "Check if binding order is not important for pipeline configuration" + descSuffix, m_pipelineConstructionType, shaderPaths, checkSupportFunc));
-		if (!isMesh)
-			addChild(new InstanceFactory<StatePersistenceTestInstance>(m_testCtx, "state_persistence" + nameSuffix, "Check if bound states are persistent across pipelines" + descSuffix, m_pipelineConstructionType, shaderPaths));
+		// Perform multiple draws with different VP states (scissor test)
+		addChild(new InstanceFactory<StateSwitchTestInstance, FunctionSupport0>(m_testCtx, "state_switch" + nameSuffix, m_pipelineConstructionType, shaderPaths, checkSupportFunc));
+		// Check if binding order is not important for pipeline configuration
+		addChild(new InstanceFactory<BindOrderTestInstance, FunctionSupport0>(m_testCtx, "bind_order" + nameSuffix, m_pipelineConstructionType, shaderPaths, checkSupportFunc));
+		if (!isMesh) {
+			// Check if bound states are persistent across pipelines
+			addChild(new InstanceFactory<StatePersistenceTestInstance>(m_testCtx, "state_persistence" + nameSuffix, m_pipelineConstructionType, shaderPaths));
+		}
 	}
 }
 

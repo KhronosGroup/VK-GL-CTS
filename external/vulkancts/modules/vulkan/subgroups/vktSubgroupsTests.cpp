@@ -84,7 +84,7 @@ void createChildren(tcu::TestCaseGroup* subgroupsTests)
 tcu::TestCaseGroup* createTests(tcu::TestContext& testCtx, const std::string& name)
 {
 	return createTestGroup(
-			   testCtx, name.c_str(), "Subgroups tests", createChildren);
+			   testCtx, name.c_str(), createChildren);
 }
 
 } // subgroups

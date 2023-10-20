@@ -1255,7 +1255,7 @@ class QueryPoolPerformanceTest : public TestCase
 {
 public:
 	QueryPoolPerformanceTest (tcu::TestContext &context, TestType testType, VkQueueFlagBits queueFlagBits, bool copyResults, uint32_t seed, const std::string& name)
-		: TestCase			(context, name, "")
+		: TestCase			(context, name)
 		, m_testType		(testType)
 		, m_queueFlagBits	(queueFlagBits)
 		, m_copyResults		(copyResults)
@@ -1356,7 +1356,7 @@ private:
 } //anonymous
 
 QueryPoolPerformanceTests::QueryPoolPerformanceTests (tcu::TestContext &testCtx)
-	: TestCaseGroup(testCtx, "performance_query", "Tests for performance queries")
+	: TestCaseGroup(testCtx, "performance_query")
 {
 }
 

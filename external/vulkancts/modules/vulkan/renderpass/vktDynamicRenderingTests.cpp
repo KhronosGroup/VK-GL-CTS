@@ -3777,7 +3777,6 @@ class BaseTestCase : public TestCase
 public:
 							BaseTestCase	(tcu::TestContext&		context,
 											 const std::string&		name,
-											 const std::string&		description,
 											 const TestParameters&	parameters);
 	virtual					~BaseTestCase	(void);
 
@@ -3791,9 +3790,8 @@ protected:
 
 BaseTestCase::BaseTestCase (tcu::TestContext&		context,
 							const std::string&		name,
-							const std::string&		description,
 							const TestParameters&	parameters)
-	: TestCase		(context, name, description)
+	: TestCase		(context, name)
 	, m_parameters	(parameters)
 {
 }
@@ -3945,14 +3943,16 @@ tcu::TestNode* dynamicRenderingTests (tcu::TestContext& testCtx, const TestParam
 		"partial_binding_depth_stencil",
 	};
 
-	return new BaseTestCase(testCtx, testName[parameters.testType], "Dynamic Rendering tests", parameters);
+	// Dynamic Rendering tests
+	return new BaseTestCase(testCtx, testName[parameters.testType], parameters);
 }
 
 }	// anonymous
 
 tcu::TestCaseGroup* createDynamicRenderingBasicTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup (new tcu::TestCaseGroup(testCtx, "basic", "Basic dynamic rendering tests"));
+	// Basic dynamic rendering tests
+	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup (new tcu::TestCaseGroup(testCtx, "basic"));
 
 	for (int testType = 0; testType < TEST_TYPE_LAST; ++testType)
 	{

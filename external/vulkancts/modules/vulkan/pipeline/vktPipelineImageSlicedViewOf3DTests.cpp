@@ -199,8 +199,8 @@ private:
 class SlicedViewTestCase : public vkt::TestCase
 {
 public:
-						SlicedViewTestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-							: vkt::TestCase(testCtx, name, description), m_params(params) {}
+						SlicedViewTestCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+							: vkt::TestCase(testCtx, name), m_params(params) {}
 	virtual				~SlicedViewTestCase		(void) {}
 
 	void				initPrograms			(vk::SourceCollections& programCollection) const override;
@@ -935,7 +935,7 @@ using TestCaseGroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
 tcu::TestCaseGroup* createImageSlicedViewOf3DTests (tcu::TestContext& testCtx)
 {
-	TestCaseGroupPtr imageTests (new tcu::TestCaseGroup(testCtx, "sliced_view_of_3d_image", "Sliced view of 3D image tests"));
+	TestCaseGroupPtr imageTests (new tcu::TestCaseGroup(testCtx, "sliced_view_of_3d_image"));
 
 	const struct
 	{
@@ -975,15 +975,15 @@ tcu::TestCaseGroup* createImageSlicedViewOf3DTests (tcu::TestContext& testCtx)
 		const uint32_t basicDepth = 2u;
 		const uint32_t basicRange = 1u;
 
-		TestCaseGroupPtr basicTests (new tcu::TestCaseGroup(testCtx, "basic", "Basic 3D slice tests"));
+		TestCaseGroupPtr basicTests (new tcu::TestCaseGroup(testCtx, "basic"));
 
 		for (const auto& testTypeCase : testTypeCases)
 		{
-			TestCaseGroupPtr testTypeGroup (new tcu::TestCaseGroup(testCtx, testTypeCase.name, ""));
+			TestCaseGroupPtr testTypeGroup (new tcu::TestCaseGroup(testCtx, testTypeCase.name));
 
 			for (const auto& stageCase : stageCases)
 			{
-				TestCaseGroupPtr stageGroup (new tcu::TestCaseGroup(testCtx, stageCase.name, ""));
+				TestCaseGroupPtr stageGroup (new tcu::TestCaseGroup(testCtx, stageCase.name));
 
 				for (uint32_t offset = 0u; offset < basicDepth; ++offset)
 				{
@@ -992,7 +992,7 @@ tcu::TestCaseGroup* createImageSlicedViewOf3DTests (tcu::TestContext& testCtx)
 						const auto	testName	= "offset_" + std::to_string(offset) + samplingCase.suffix;
 						TestParams	params		(testTypeCase.testType, stageCase.stage, kWidth, kHeight, basicDepth, offset, basicRange, tcu::Nothing, samplingCase.sampleImg);
 
-						stageGroup->addChild(new SlicedViewTestCase(testCtx, testName, "", params));
+						stageGroup->addChild(new SlicedViewTestCase(testCtx, testName, params));
 					}
 				}
 
@@ -1009,11 +1009,11 @@ tcu::TestCaseGroup* createImageSlicedViewOf3DTests (tcu::TestContext& testCtx)
 	{
 		const uint32_t fullDepth = 4u;
 
-		TestCaseGroupPtr fullSliceTests (new tcu::TestCaseGroup(testCtx, "full_slice", "Full 3D slice tests"));
+		TestCaseGroupPtr fullSliceTests (new tcu::TestCaseGroup(testCtx, "full_slice"));
 
 		for (const auto& testTypeCase : testTypeCases)
 		{
-			TestCaseGroupPtr testTypeGroup (new tcu::TestCaseGroup(testCtx, testTypeCase.name, ""));
+			TestCaseGroupPtr testTypeGroup (new tcu::TestCaseGroup(testCtx, testTypeCase.name));
 
 			for (const auto& stageCase : stageCases)
 			{
@@ -1021,7 +1021,7 @@ tcu::TestCaseGroup* createImageSlicedViewOf3DTests (tcu::TestContext& testCtx)
 				{
 					const auto testName = std::string(stageCase.name) + samplingCase.suffix;
 					TestParams params (testTypeCase.testType, stageCase.stage, kWidth, kHeight, fullDepth, 0u, fullDepth, tcu::Nothing, samplingCase.sampleImg);
-					testTypeGroup->addChild(new SlicedViewTestCase(testCtx, testName, "", params));
+					testTypeGroup->addChild(new SlicedViewTestCase(testCtx, testName, params));
 				}
 			}
 
@@ -1041,15 +1041,15 @@ tcu::TestCaseGroup* createImageSlicedViewOf3DTests (tcu::TestContext& testCtx)
 		const int		minDepth	= 10u;
 		const int		maxDepth	= 32u;
 
-		TestCaseGroupPtr randomTests (new tcu::TestCaseGroup(testCtx, "random", "Pseudorandom 3D slice test cases"));
+		TestCaseGroupPtr randomTests (new tcu::TestCaseGroup(testCtx, "random"));
 
 		for (const auto& testTypeCase : testTypeCases)
 		{
-			TestCaseGroupPtr testTypeGroup (new tcu::TestCaseGroup(testCtx, testTypeCase.name, ""));
+			TestCaseGroupPtr testTypeGroup (new tcu::TestCaseGroup(testCtx, testTypeCase.name));
 
 			for (const auto& stageCase : stageCases)
 			{
-				TestCaseGroupPtr stageGroup (new tcu::TestCaseGroup(testCtx, stageCase.name, ""));
+				TestCaseGroupPtr stageGroup (new tcu::TestCaseGroup(testCtx, stageCase.name));
 
 				CaseIdSet generatedCases;
 
@@ -1087,7 +1087,7 @@ tcu::TestCaseGroup* createImageSlicedViewOf3DTests (tcu::TestContext& testCtx)
 						const auto	testName	= "depth_" + std::to_string(depth) + "_offset_" + std::to_string(offset) + "_range_" + rangeStr;
 						TestParams	params		(testTypeCase.testType, stageCase.stage, kWidth, kHeight, depth, offset, range, tcu::Nothing, false);
 
-						stageGroup->addChild(new SlicedViewTestCase(testCtx, testName, "", params));
+						stageGroup->addChild(new SlicedViewTestCase(testCtx, testName, params));
 					}
 				}
 
@@ -1111,15 +1111,15 @@ tcu::TestCaseGroup* createImageSlicedViewOf3DTests (tcu::TestContext& testCtx)
 		const uint32_t	depth			= kWidth;
 		const uint32_t	maxLevels		= TestParams::getMaxMipLevelCountForSize(kWidth);
 
-		TestCaseGroupPtr mipLevelTests (new tcu::TestCaseGroup(testCtx, "mip_level", "3D slice test cases using mip levels"));
+		TestCaseGroupPtr mipLevelTests (new tcu::TestCaseGroup(testCtx, "mip_level"));
 
 		for (const auto& testTypeCase : testTypeCases)
 		{
-			TestCaseGroupPtr testTypeGroup (new tcu::TestCaseGroup(testCtx, testTypeCase.name, ""));
+			TestCaseGroupPtr testTypeGroup (new tcu::TestCaseGroup(testCtx, testTypeCase.name));
 
 			for (const auto& stageCase : stageCases)
 			{
-				TestCaseGroupPtr stageGroup (new tcu::TestCaseGroup(testCtx, stageCase.name, ""));
+				TestCaseGroupPtr stageGroup (new tcu::TestCaseGroup(testCtx, stageCase.name));
 
 				for (uint32_t level = 0u; level < maxLevels; ++level)
 				{
@@ -1129,7 +1129,7 @@ tcu::TestCaseGroup* createImageSlicedViewOf3DTests (tcu::TestContext& testCtx)
 
 					DE_ASSERT(levelSize > 0u);
 
-					TestCaseGroupPtr levelGroup (new tcu::TestCaseGroup(testCtx, groupName.c_str(), ""));
+					TestCaseGroupPtr levelGroup (new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 
 					// Generate a few pseudorandom cases per mip level.
 					for (uint32_t i = 0u; i < casesPerLevel; ++i)
@@ -1160,7 +1160,7 @@ tcu::TestCaseGroup* createImageSlicedViewOf3DTests (tcu::TestContext& testCtx)
 						const auto testName	= "offset_" + std::to_string(offset) + "_range_" + rangeStr;
 						TestParams params	(testTypeCase.testType, stageCase.stage, width, height, depth, offset, range, tcu::just(level), false);
 
-						levelGroup->addChild(new SlicedViewTestCase(testCtx, testName, "", params));
+						levelGroup->addChild(new SlicedViewTestCase(testCtx, testName, params));
 					}
 
 					stageGroup->addChild(levelGroup.release());

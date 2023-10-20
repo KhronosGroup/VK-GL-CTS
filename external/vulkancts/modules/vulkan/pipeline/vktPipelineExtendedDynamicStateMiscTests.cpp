@@ -426,8 +426,8 @@ using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
 tcu::TestCaseGroup* createExtendedDynamicStateMiscTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	GroupPtr miscGroup (new tcu::TestCaseGroup(testCtx, "misc", "Extended dynamic state misc tests"));
-	addFunctionCaseWithPrograms(miscGroup.get(), "sample_shading_dynamic_sample_count", "", sampleShadingWithDynamicSampleCountSupport, sampleShadingWithDynamicSampleCountPrograms, sampleShadingWithDynamicSampleCount, pipelineConstructionType);
+	GroupPtr miscGroup (new tcu::TestCaseGroup(testCtx, "misc"));
+	addFunctionCaseWithPrograms(miscGroup.get(), "sample_shading_dynamic_sample_count", sampleShadingWithDynamicSampleCountSupport, sampleShadingWithDynamicSampleCountPrograms, sampleShadingWithDynamicSampleCount, pipelineConstructionType);
 	return miscGroup.release();
 }
 

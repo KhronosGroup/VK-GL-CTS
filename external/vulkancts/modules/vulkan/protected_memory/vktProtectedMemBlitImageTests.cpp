@@ -79,7 +79,7 @@ public:
 															 vk::VkClearColorValue		clearColorValue,
 															 ValidationData				data,
 															 CmdBufferType				cmdBufferType)
-									: TestCase				(testCtx, name, "Clear and blit image.")
+									: TestCase				(testCtx, name)
 									, m_clearColorValue		(clearColorValue)
 									, m_refData				(data)
 									, m_cmdBufferType		(cmdBufferType)
@@ -419,7 +419,8 @@ tcu::TestCaseGroup*	createBlitImageTests (tcu::TestContext& testCtx, CmdBufferTy
 		},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> blitStaticTests (new tcu::TestCaseGroup(testCtx, "static", "Blit Image Tests with static input"));
+	// Blit Image Tests with static input
+	de::MovePtr<tcu::TestCaseGroup> blitStaticTests (new tcu::TestCaseGroup(testCtx, "static"));
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testData); ++ndx)
 	{
@@ -428,7 +429,8 @@ tcu::TestCaseGroup*	createBlitImageTests (tcu::TestContext& testCtx, CmdBufferTy
 	}
 
 	/* Add a few randomized tests */
-	de::MovePtr<tcu::TestCaseGroup>	blitRandomTests	(new tcu::TestCaseGroup(testCtx, "random", "Blit Image Tests with random input"));
+	// Blit Image Tests with random input
+	de::MovePtr<tcu::TestCaseGroup>	blitRandomTests	(new tcu::TestCaseGroup(testCtx, "random"));
 	const int						testCount			= 10;
 	de::Random						rnd					(testCtx.getCommandLine().getBaseSeed());
 	for (int ndx = 0; ndx < testCount; ++ndx)

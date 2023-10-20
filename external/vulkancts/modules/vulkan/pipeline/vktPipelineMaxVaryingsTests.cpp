@@ -95,12 +95,6 @@ const std::string generateTestName (struct MaxVaryingsParam param)
 	return result.str();
 }
 
-const std::string generateTestDescription ()
-{
-	std::string result("Tests to check max varyings per stage");
-	return result;
-}
-
 void initPrograms (SourceCollections& programCollection, MaxVaryingsParam param)
 {
 	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
@@ -1143,11 +1137,11 @@ tcu::TestCaseGroup* createMaxVaryingsTests (tcu::TestContext& testCtx, PipelineC
 		{ pipelineConstructionType, VK_SHADER_STAGE_GEOMETRY_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_FRAGMENT_BIT },									// Test fragment inputs: VS-GS-FS
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "max_varyings", "Max Varyings tests"));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "max_varyings"));
 
 	for (const auto& testParams : tests)
 	{
-		addFunctionCaseWithPrograms(group.get(), generateTestName(testParams), generateTestDescription(),
+		addFunctionCaseWithPrograms(group.get(), generateTestName(testParams),
 									supportedCheck, initPrograms, test, testParams);
 	}
 

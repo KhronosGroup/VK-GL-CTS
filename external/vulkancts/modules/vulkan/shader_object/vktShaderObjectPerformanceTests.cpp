@@ -721,8 +721,8 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate (void)
 class ShaderObjectPerformanceCase : public vkt::TestCase
 {
 public:
-	ShaderObjectPerformanceCase(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const DrawType drawType, const TestType& type)
-		: vkt::TestCase	(testCtx, name, description)
+	ShaderObjectPerformanceCase(tcu::TestContext& testCtx, const std::string& name, const DrawType drawType, const TestType& type)
+		: vkt::TestCase	(testCtx, name)
 		, m_drawType	(drawType)
 		, m_type		(type)
 	{}
@@ -905,8 +905,8 @@ tcu::TestStatus ShaderObjectDispatchPerformanceInstance::iterate (void)
 class ShaderObjectDispatchPerformanceCase : public vkt::TestCase
 {
 public:
-					ShaderObjectDispatchPerformanceCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const DispatchType dispatchType)
-															: vkt::TestCase		(testCtx, name, description)
+					ShaderObjectDispatchPerformanceCase		(tcu::TestContext& testCtx, const std::string& name, const DispatchType dispatchType)
+															: vkt::TestCase		(testCtx, name)
 															, m_dispatchType	(dispatchType)
 															{}
 	virtual			~ShaderObjectDispatchPerformanceCase	(void) {}
@@ -1034,8 +1034,8 @@ tcu::TestStatus ShaderObjectBinaryPerformanceInstance::iterate (void)
 class ShaderObjectBinaryPerformanceCase : public vkt::TestCase
 {
 public:
-					ShaderObjectBinaryPerformanceCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, BinaryType type)
-														: vkt::TestCase		(testCtx, name, description)
+					ShaderObjectBinaryPerformanceCase	(tcu::TestContext& testCtx, const std::string& name, BinaryType type)
+														: vkt::TestCase		(testCtx, name)
 														, m_type			(type)
 														{}
 	virtual			~ShaderObjectBinaryPerformanceCase	(void) {}
@@ -1062,7 +1062,7 @@ void ShaderObjectBinaryPerformanceCase::initPrograms (vk::SourceCollections& pro
 
 tcu::TestCaseGroup* createShaderObjectPerformanceTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> performanceGroup(new tcu::TestCaseGroup(testCtx, "performance", ""));
+	de::MovePtr<tcu::TestCaseGroup> performanceGroup(new tcu::TestCaseGroup(testCtx, "performance"));
 
 	const struct
 	{
@@ -1094,17 +1094,17 @@ tcu::TestCaseGroup* createShaderObjectPerformanceTests (tcu::TestContext& testCt
 	{
 		for (const auto& typeTest : typeTests)
 		{
-			performanceGroup->addChild(new ShaderObjectPerformanceCase(testCtx, std::string(drawType.name) + "_" + std::string(typeTest.name), "", drawType.drawType, typeTest.testTpye));
+			performanceGroup->addChild(new ShaderObjectPerformanceCase(testCtx, std::string(drawType.name) + "_" + std::string(typeTest.name), drawType.drawType, typeTest.testTpye));
 		}
 	}
-	performanceGroup->addChild(new ShaderObjectPerformanceCase(testCtx, "binary_bind_shaders", "", DRAW, DRAW_BINARY_BIND));
+	performanceGroup->addChild(new ShaderObjectPerformanceCase(testCtx, "binary_bind_shaders", DRAW, DRAW_BINARY_BIND));
 
-	performanceGroup->addChild(new ShaderObjectDispatchPerformanceCase(testCtx, "dispatch", "", DISPATCH));
-	performanceGroup->addChild(new ShaderObjectDispatchPerformanceCase(testCtx, "dispatch_base", "", DISPATCH_BASE));
-	performanceGroup->addChild(new ShaderObjectDispatchPerformanceCase(testCtx, "dispatch_indirect", "", DISPATCH_INDIRECT));
+	performanceGroup->addChild(new ShaderObjectDispatchPerformanceCase(testCtx, "dispatch", DISPATCH));
+	performanceGroup->addChild(new ShaderObjectDispatchPerformanceCase(testCtx, "dispatch_base", DISPATCH_BASE));
+	performanceGroup->addChild(new ShaderObjectDispatchPerformanceCase(testCtx, "dispatch_indirect", DISPATCH_INDIRECT));
 
-	performanceGroup->addChild(new ShaderObjectBinaryPerformanceCase(testCtx, "binary_shader_create", "", BINARY_SHADER_CREATE));
-	performanceGroup->addChild(new ShaderObjectBinaryPerformanceCase(testCtx, "binary_memcpy", "", BINARY_MEMCPY));
+	performanceGroup->addChild(new ShaderObjectBinaryPerformanceCase(testCtx, "binary_shader_create", BINARY_SHADER_CREATE));
+	performanceGroup->addChild(new ShaderObjectBinaryPerformanceCase(testCtx, "binary_memcpy", BINARY_MEMCPY));
 
 	return performanceGroup.release();
 }

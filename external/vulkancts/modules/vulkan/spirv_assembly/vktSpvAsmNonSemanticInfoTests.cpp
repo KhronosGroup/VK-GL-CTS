@@ -106,7 +106,7 @@ protected:
 };
 
 SpvAsmSpirvNonSemanticInfoBasicCase::SpvAsmSpirvNonSemanticInfoBasicCase(tcu::TestContext& testCtx, const char* name, TestType type)
-	: TestCase (testCtx, name, "")
+	: TestCase (testCtx, name)
 	, m_testType(type)
 {
 }
@@ -335,7 +335,8 @@ TestInstance* SpvAsmSpirvNonSemanticInfoBasicCase::createInstance (Context& cont
 
 tcu::TestCaseGroup* createNonSemanticInfoGroup(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "non_semantic_info", "Test for VK_KHR_shader_non_semantic_info"));
+	// Test for VK_KHR_shader_non_semantic_info
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "non_semantic_info"));
 
 	struct TestData
 	{

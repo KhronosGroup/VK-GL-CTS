@@ -1465,12 +1465,11 @@ void checkSupport (Context& context, const TestFlags flags)
 template<typename TestInstanceT, typename Arg0>
 TestCase* createTestInstanceWithPrograms (tcu::TestContext&									testCtx,
 										  const std::string&								name,
-										  const std::string&								desc,
 										  typename FunctionProgramsSimple1<Arg0>::Function	initPrograms,
 										  Arg0												arg0)
 {
 	return new InstanceFactory1WithSupport<TestInstanceT, Arg0, FunctionSupport1<Arg0>, FunctionProgramsSimple1<Arg0> >(
-		testCtx, name, desc, FunctionProgramsSimple1<Arg0>(initPrograms), arg0, typename FunctionSupport1<Arg0>::Args(checkSupport, arg0));
+		testCtx, name, FunctionProgramsSimple1<Arg0>(initPrograms), arg0, typename FunctionSupport1<Arg0>::Args(checkSupport, arg0));
 }
 
 void populateTestGroup (tcu::TestCaseGroup* parentGroup)
@@ -1494,13 +1493,13 @@ void populateTestGroup (tcu::TestCaseGroup* parentGroup)
 
 	// Transfer
 	{
-		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "transfer", ""));
+		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "transfer"));
 		{
-			MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(parentGroup->getTestContext(), "sparse_binding", ""));
+			MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(parentGroup->getTestContext(), "sparse_binding"));
 			addBufferSparseBindingTests(subGroup.get(), false);
 			group->addChild(subGroup.release());
 
-			MovePtr<tcu::TestCaseGroup> subGroupDeviceGroups(new tcu::TestCaseGroup(parentGroup->getTestContext(), "device_group_sparse_binding", ""));
+			MovePtr<tcu::TestCaseGroup> subGroupDeviceGroups(new tcu::TestCaseGroup(parentGroup->getTestContext(), "device_group_sparse_binding"));
 			addBufferSparseBindingTests(subGroupDeviceGroups.get(), true);
 			group->addChild(subGroupDeviceGroups.release());
 		}
@@ -1509,22 +1508,22 @@ void populateTestGroup (tcu::TestCaseGroup* parentGroup)
 
 	// SSBO
 	{
-		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "ssbo", ""));
+		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "ssbo"));
 		{
-			MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(parentGroup->getTestContext(), "sparse_binding_aliased", ""));
+			MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(parentGroup->getTestContext(), "sparse_binding_aliased"));
 			addBufferSparseMemoryAliasingTests(subGroup.get(), false);
 			group->addChild(subGroup.release());
 
-			MovePtr<tcu::TestCaseGroup> subGroupDeviceGroups(new tcu::TestCaseGroup(parentGroup->getTestContext(), "device_group_sparse_binding_aliased", ""));
+			MovePtr<tcu::TestCaseGroup> subGroupDeviceGroups(new tcu::TestCaseGroup(parentGroup->getTestContext(), "device_group_sparse_binding_aliased"));
 			addBufferSparseMemoryAliasingTests(subGroupDeviceGroups.get(), true);
 			group->addChild(subGroupDeviceGroups.release());
 		}
 		{
-			MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(parentGroup->getTestContext(), "sparse_residency", ""));
+			MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(parentGroup->getTestContext(), "sparse_residency"));
 			addBufferSparseResidencyTests(subGroup.get(), false);
 			group->addChild(subGroup.release());
 
-			MovePtr<tcu::TestCaseGroup> subGroupDeviceGroups(new tcu::TestCaseGroup(parentGroup->getTestContext(), "device_group_sparse_residency", ""));
+			MovePtr<tcu::TestCaseGroup> subGroupDeviceGroups(new tcu::TestCaseGroup(parentGroup->getTestContext(), "device_group_sparse_residency"));
 			addBufferSparseResidencyTests(subGroupDeviceGroups.get(), true);
 			group->addChild(subGroupDeviceGroups.release());
 		}
@@ -1533,30 +1532,30 @@ void populateTestGroup (tcu::TestCaseGroup* parentGroup)
 
 	// UBO
 	{
-		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "ubo", ""));
+		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "ubo"));
 
 		for (int groupNdx = 0u; groupNdx < numGroupsIncludingNonResidentStrict; ++groupNdx)
 		{
-			group->addChild(createTestInstanceWithPrograms<UBOTestInstance>(group->getTestContext(), groups[groupNdx].name.c_str(), "", initProgramsDrawWithUBO, groups[groupNdx].flags));
+			group->addChild(createTestInstanceWithPrograms<UBOTestInstance>(group->getTestContext(), groups[groupNdx].name.c_str(), initProgramsDrawWithUBO, groups[groupNdx].flags));
 		}
 		for (int groupNdx = 0u; groupNdx < numGroupsIncludingNonResidentStrict; ++groupNdx)
 		{
-			group->addChild(createTestInstanceWithPrograms<UBOTestInstance>(group->getTestContext(), (devGroupPrefix + groups[groupNdx].name).c_str(), "", initProgramsDrawWithUBO, groups[groupNdx].flags | TEST_FLAG_ENABLE_DEVICE_GROUPS));
+			group->addChild(createTestInstanceWithPrograms<UBOTestInstance>(group->getTestContext(), (devGroupPrefix + groups[groupNdx].name).c_str(), initProgramsDrawWithUBO, groups[groupNdx].flags | TEST_FLAG_ENABLE_DEVICE_GROUPS));
 		}
 		parentGroup->addChild(group.release());
 	}
 
 	// Vertex buffer
 	{
-		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "vertex_buffer", ""));
+		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "vertex_buffer"));
 
 		for (int groupNdx = 0u; groupNdx < numGroupsDefaultList; ++groupNdx)
 		{
-			group->addChild(createTestInstanceWithPrograms<VertexBufferTestInstance>(group->getTestContext(), groups[groupNdx].name.c_str(), "", initProgramsDrawGrid, groups[groupNdx].flags));
+			group->addChild(createTestInstanceWithPrograms<VertexBufferTestInstance>(group->getTestContext(), groups[groupNdx].name.c_str(), initProgramsDrawGrid, groups[groupNdx].flags));
 		}
 		for (int groupNdx = 0u; groupNdx < numGroupsDefaultList; ++groupNdx)
 		{
-			group->addChild(createTestInstanceWithPrograms<VertexBufferTestInstance>(group->getTestContext(), (devGroupPrefix + groups[groupNdx].name).c_str(), "", initProgramsDrawGrid, groups[groupNdx].flags | TEST_FLAG_ENABLE_DEVICE_GROUPS));
+			group->addChild(createTestInstanceWithPrograms<VertexBufferTestInstance>(group->getTestContext(), (devGroupPrefix + groups[groupNdx].name).c_str(), initProgramsDrawGrid, groups[groupNdx].flags | TEST_FLAG_ENABLE_DEVICE_GROUPS));
 		}
 
 		parentGroup->addChild(group.release());
@@ -1564,15 +1563,15 @@ void populateTestGroup (tcu::TestCaseGroup* parentGroup)
 
 	// Index buffer
 	{
-		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "index_buffer", ""));
+		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "index_buffer"));
 
 		for (int groupNdx = 0u; groupNdx < numGroupsDefaultList; ++groupNdx)
 		{
-			group->addChild(createTestInstanceWithPrograms<IndexBufferTestInstance>(group->getTestContext(), groups[groupNdx].name.c_str(), "", initProgramsDrawGrid, groups[groupNdx].flags));
+			group->addChild(createTestInstanceWithPrograms<IndexBufferTestInstance>(group->getTestContext(), groups[groupNdx].name.c_str(), initProgramsDrawGrid, groups[groupNdx].flags));
 		}
 		for (int groupNdx = 0u; groupNdx < numGroupsDefaultList; ++groupNdx)
 		{
-			group->addChild(createTestInstanceWithPrograms<IndexBufferTestInstance>(group->getTestContext(), (devGroupPrefix + groups[groupNdx].name).c_str(), "", initProgramsDrawGrid, groups[groupNdx].flags | TEST_FLAG_ENABLE_DEVICE_GROUPS));
+			group->addChild(createTestInstanceWithPrograms<IndexBufferTestInstance>(group->getTestContext(), (devGroupPrefix + groups[groupNdx].name).c_str(), initProgramsDrawGrid, groups[groupNdx].flags | TEST_FLAG_ENABLE_DEVICE_GROUPS));
 		}
 
 		parentGroup->addChild(group.release());
@@ -1580,15 +1579,15 @@ void populateTestGroup (tcu::TestCaseGroup* parentGroup)
 
 	// Indirect buffer
 	{
-		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "indirect_buffer", ""));
+		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "indirect_buffer"));
 
 		for (int groupNdx = 0u; groupNdx < numGroupsDefaultList; ++groupNdx)
 		{
-			group->addChild(createTestInstanceWithPrograms<IndirectBufferTestInstance>(group->getTestContext(), groups[groupNdx].name.c_str(), "", initProgramsDrawGrid, groups[groupNdx].flags));
+			group->addChild(createTestInstanceWithPrograms<IndirectBufferTestInstance>(group->getTestContext(), groups[groupNdx].name.c_str(), initProgramsDrawGrid, groups[groupNdx].flags));
 		}
 		for (int groupNdx = 0u; groupNdx < numGroupsDefaultList; ++groupNdx)
 		{
-			group->addChild(createTestInstanceWithPrograms<IndirectBufferTestInstance>(group->getTestContext(), (devGroupPrefix +  groups[groupNdx].name).c_str(), "", initProgramsDrawGrid, groups[groupNdx].flags | TEST_FLAG_ENABLE_DEVICE_GROUPS));
+			group->addChild(createTestInstanceWithPrograms<IndirectBufferTestInstance>(group->getTestContext(), (devGroupPrefix +  groups[groupNdx].name).c_str(), initProgramsDrawGrid, groups[groupNdx].flags | TEST_FLAG_ENABLE_DEVICE_GROUPS));
 		}
 
 		parentGroup->addChild(group.release());
@@ -1599,7 +1598,7 @@ void populateTestGroup (tcu::TestCaseGroup* parentGroup)
 
 tcu::TestCaseGroup* createSparseBufferTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "buffer", "Sparse buffer usage tests", populateTestGroup);
+	return createTestGroup(testCtx, "buffer", populateTestGroup);
 }
 
 } // sparse

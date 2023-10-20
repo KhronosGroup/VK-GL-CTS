@@ -532,7 +532,7 @@ void addOpSDotKHRComputeTests(tcu::TestContext& testCtx, tcu::TestCaseGroup *gro
 
 	string qualTestName(getDotProductTestName(inputInfo, packingInfo, outSize));
 
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, qualTestName.data(), "", spec));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, qualTestName.data(), spec));
 }
 
 template <class InBufferT, class T>
@@ -620,7 +620,7 @@ void addOpUDotKHRComputeTests(tcu::TestContext& testCtx, tcu::TestCaseGroup *gro
 
 	string qualTestName(getDotProductTestName(inputInfo, packingInfo, outSize));
 
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, qualTestName.data(), "", spec));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, qualTestName.data(), spec));
 }
 
 template <class InBufferT, class T>
@@ -707,7 +707,7 @@ void addOpSUDotKHRComputeTests(tcu::TestContext& testCtx, tcu::TestCaseGroup *gr
 
 	string qualTestName(getDotProductTestName(inputInfo, packingInfo, outSize));
 
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, qualTestName.data(), "", spec));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, qualTestName.data(), spec));
 }
 
 template <class LHSBufferT, class RHSBufferT, class LHSOperandT, class RHSOperandT>
@@ -803,7 +803,7 @@ void addOpSDotAccSatKHRComputeTests(tcu::TestContext& testCtx, tcu::TestCaseGrou
 
 	string qualTestName(getDotProductTestName(inputInfo, packingInfo, addendSize));
 
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, qualTestName.data(), "", spec));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, qualTestName.data(), spec));
 }
 
 template <class InBufferT, class T>
@@ -899,7 +899,7 @@ void addOpUDotAccSatKHRComputeTests(tcu::TestContext& testCtx, tcu::TestCaseGrou
 
 	string qualTestName(getDotProductTestName(inputInfo, packingInfo, addendSize));
 
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, qualTestName.data(), "", spec));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, qualTestName.data(), spec));
 }
 
 template <class InBufferT, class T>
@@ -995,7 +995,7 @@ void addOpSUDotAccSatKHRComputeTests(tcu::TestContext& testCtx, tcu::TestCaseGro
 
 	string qualTestName(getDotProductTestName(inputInfo, packingInfo, addendSize));
 
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, qualTestName.data(), "", spec));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, qualTestName.data(), spec));
 }
 
 template <class LHSBufferT, class RHSBufferT, class LHSOperandT, class RHSOperandT>
@@ -1063,7 +1063,8 @@ void add8bitOpSUDotAccSatKHRComputeTests(tcu::TestContext& testCtx, tcu::TestCas
 
 tcu::TestCaseGroup* createOpSDotKHRComputeGroup(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "opsdotkhr", "Test the OpSDotKHR instruction"));
+	// Test the OpSDotKHR instruction
+	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "opsdotkhr"));
 	de::Random						rnd		(deStringHash(group->getName()));
 
 	add8bitOpSDotKHRComputeTests(testCtx, group.get(), rnd, string("all"),   std::numeric_limits<deInt8>::min(), std::numeric_limits<deInt8>::max());
@@ -1076,7 +1077,8 @@ tcu::TestCaseGroup* createOpSDotKHRComputeGroup(tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup* createOpUDotKHRComputeGroup(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "opudotkhr", "Test the OpUDotKHR instruction"));
+	// Test the OpUDotKHR instruction
+	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "opudotkhr"));
 	de::Random						rnd		(deStringHash(group->getName()));
 
 	add8bitOpUDotKHRComputeTests(testCtx, group.get(), rnd, string("all"),   std::numeric_limits<deUint8>::min(), std::numeric_limits<deUint8>::max());

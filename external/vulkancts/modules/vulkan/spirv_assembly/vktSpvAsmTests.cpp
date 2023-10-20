@@ -50,7 +50,7 @@ void createChildren (tcu::TestCaseGroup* spirVAssemblyTests)
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, name, "SPIR-V Assembly tests", createChildren);
+	return createTestGroup(testCtx, name, createChildren);
 }
 
 } // SpirVAssembly

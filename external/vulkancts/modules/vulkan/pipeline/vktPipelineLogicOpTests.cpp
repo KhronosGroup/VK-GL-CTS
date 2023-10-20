@@ -138,7 +138,6 @@ class LogicOpTest : public vkt::TestCase
 public:
 									LogicOpTest			(tcu::TestContext&  testCtx,
 														 const std::string& name,
-														 const std::string& description,
 														 const TestParams &testParams);
 	virtual							~LogicOpTest		(void);
 	virtual		  void				initPrograms		(SourceCollections& sourceCollections) const;
@@ -151,9 +150,8 @@ private:
 
 LogicOpTest::LogicOpTest (tcu::TestContext& testCtx,
 						  const std::string& name,
-						  const std::string& description,
 						  const TestParams& testParams)
-	: vkt::TestCase	(testCtx, name, description)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(testParams)
 {
 	DE_ASSERT(m_params.format != VK_FORMAT_UNDEFINED);
@@ -490,7 +488,7 @@ std::string getSimpleFormatName (VkFormat format)
 
 tcu::TestCaseGroup* createLogicOpTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineType)
 {
-	de::MovePtr<tcu::TestCaseGroup>	logicOpTests (new tcu::TestCaseGroup(testCtx, "logic_op", "Logical Operations tests"));
+	de::MovePtr<tcu::TestCaseGroup>	logicOpTests (new tcu::TestCaseGroup(testCtx, "logic_op"));
 
 	// 4 bits are enough to check all possible combinations of logical operation inputs at once, for example s AND d:
 	//
@@ -555,12 +553,12 @@ tcu::TestCaseGroup* createLogicOpTests (tcu::TestContext& testCtx, PipelineConst
 		const auto	formatName	= getSimpleFormatName(format);
 		const auto	formatDesc	= "Logical operator tests with format " + formatName;
 
-		de::MovePtr<tcu::TestCaseGroup> formatGroup (new tcu::TestCaseGroup(testCtx, formatName.c_str(), formatDesc.c_str()));
+		de::MovePtr<tcu::TestCaseGroup> formatGroup (new tcu::TestCaseGroup(testCtx, formatName.c_str()));
 
 		for (auto& params : logicOpTestParams)
 		{
 			params.format = format;
-			formatGroup->addChild(new LogicOpTest(testCtx, params.name, "Tests the " + params.name + " logical operator", params));
+			formatGroup->addChild(new LogicOpTest(testCtx, params.name, params));
 		}
 
 		logicOpTests->addChild(formatGroup.release());

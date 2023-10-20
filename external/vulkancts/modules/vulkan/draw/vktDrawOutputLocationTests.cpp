@@ -52,9 +52,9 @@ void createTests (tcu::TestCaseGroup* testGroup)
 #ifndef CTS_USES_VULKANSC
 	tcu::TestContext& testCtx = testGroup->getTestContext();
 
-	// .array
+	// .Test output location array
 	{
-		tcu::TestCaseGroup* const	array		= new tcu::TestCaseGroup(testCtx, "array", "Test output location array");
+		tcu::TestCaseGroup* const	array		= new tcu::TestCaseGroup(testCtx, "array");
 		static const char			dataDir[]	= "draw/output_location/array";
 
 		static const std::string	cases[]		=
@@ -94,16 +94,16 @@ void createTests (tcu::TestCaseGroup* testGroup)
 		for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
 		{
 			const std::string			fileName	= cases[i] + ".amber";
-			cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].c_str(), "", dataDir, fileName);
+			cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].c_str(), dataDir, fileName);
 
 			testCase->setCheckSupportCallback(checkSupport);
 			array->addChild(testCase);
 		}
 	}
 
-	// .shuffle
+	// .Test output location shuffling
 	{
-		tcu::TestCaseGroup* const	shuffle		= new tcu::TestCaseGroup(testCtx, "shuffle", "Test output location shuffling");
+		tcu::TestCaseGroup* const	shuffle		= new tcu::TestCaseGroup(testCtx, "shuffle");
 		static const char			dataDir[]	= "draw/output_location/shuffle";
 
 		static const std::string	cases[]		=
@@ -116,7 +116,7 @@ void createTests (tcu::TestCaseGroup* testGroup)
 		for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
 		{
 			const std::string			fileName	= cases[i] + ".amber";
-			cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].c_str(), "", dataDir, fileName);
+			cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].c_str(), dataDir, fileName);
 
 			shuffle->addChild(testCase);
 		}
@@ -130,7 +130,8 @@ void createTests (tcu::TestCaseGroup* testGroup)
 
 tcu::TestCaseGroup* createOutputLocationTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "output_location", "Fragment output location tests", createTests);
+	// Fragment output location tests
+	return createTestGroup(testCtx, "output_location", createTests);
 }
 
 }	// Draw

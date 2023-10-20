@@ -81,10 +81,9 @@ public:
 	void			initPrograms			(vk::SourceCollections& programCollection) const;
 	TestInstance*	createInstance			(Context& context) const;
 
-					GridRenderTestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Flags flags);
+					GridRenderTestCase		(tcu::TestContext& testCtx, const std::string& name, const Flags flags);
 
 private:
-	std::string		m_description;
 	const Flags		m_flags;
 	const int		m_tessGenLevel;
 	const int		m_numGeometryInvocations;
@@ -92,9 +91,8 @@ private:
 	int				m_numGeometryPrimitivesPerInvocation;
 };
 
-GridRenderTestCase::GridRenderTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Flags flags)
-	: TestCase					(testCtx, name, description)
-	, m_description				(description)
+GridRenderTestCase::GridRenderTestCase (tcu::TestContext& testCtx, const std::string& name, const Flags flags)
+	: TestCase					(testCtx, name)
 	, m_flags					(flags)
 	, m_tessGenLevel			((m_flags & FLAG_TESSELLATION_MAX_SPEC)			? 64 : 5)
 	, m_numGeometryInvocations	((m_flags & FLAG_GEOMETRY_INVOCATIONS_MAX_SPEC)	? 32 : 4)
@@ -404,13 +402,12 @@ public:
 	{
 		tcu::TestContext&	testCtx;
 		Flags				flags;
-		const char*			description;
 		int					tessGenLevel;
 		int					numGeometryInvocations;
 		int					numLayers;
 		int					numGeometryPrimitivesPerInvocation;
 
-		Params (tcu::TestContext& testContext) : testCtx(testContext), flags(), description(), tessGenLevel(), numGeometryInvocations(), numLayers(), numGeometryPrimitivesPerInvocation() {}
+		Params (tcu::TestContext& testContext) : testCtx(testContext), flags(), tessGenLevel(), numGeometryInvocations(), numLayers(), numGeometryPrimitivesPerInvocation() {}
 	};
 						GridRenderTestInstance	(Context& context, const Params& params);
 	tcu::TestStatus		iterate					(void);
@@ -425,7 +422,6 @@ GridRenderTestInstance::GridRenderTestInstance (Context& context, const Params& 
 	testCtx.getLog()
 		<< tcu::TestLog::Message
 		<< "Testing tessellation and geometry shaders that output a large number of primitives.\n"
-		<< m_params.description
 		<< tcu::TestLog::EndMessage;
 
 	if (m_params.flags & FLAG_GEOMETRY_SCATTER_LAYERS)
@@ -525,7 +521,6 @@ TestInstance* GridRenderTestCase::createInstance (Context& context) const
 	GridRenderTestInstance::Params params(m_testCtx);
 
 	params.flags								= m_flags;
-	params.description							= m_description.c_str();
 	params.tessGenLevel							= m_tessGenLevel;
 	params.numGeometryInvocations				= m_numGeometryInvocations;
 	params.numLayers							= m_numLayers;
@@ -676,7 +671,6 @@ tcu::TestStatus GridRenderTestInstance::iterate (void)
 struct TestCaseDescription
 {
 	const char*	name;
-	const char*	desc;
 	Flags		flags;
 };
 
@@ -688,29 +682,30 @@ struct TestCaseDescription
 //!       because some platforms require precompiled shaders.
 tcu::TestCaseGroup* createGeometryGridRenderLimitsTests  (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "limits", "Render with properties near their limits"));
+	// Render with properties near their limits
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "limits"));
 
 	static const TestCaseDescription cases[] =
 	{
+			// Minimum maximum tessellation level
 		{
 			"output_required_max_tessellation",
-			"Minimum maximum tessellation level",
 			FLAG_TESSELLATION_MAX_SPEC
 		},
+		// Output minimum maximum number of vertices the geometry shader
 		{
 			"output_required_max_geometry",
-			"Output minimum maximum number of vertices the geometry shader",
 			FLAG_GEOMETRY_MAX_SPEC
 		},
+		// Minimum maximum number of geometry shader invocations
 		{
 			"output_required_max_invocations",
-			"Minimum maximum number of geometry shader invocations",
 			FLAG_GEOMETRY_INVOCATIONS_MAX_SPEC
 		},
 	};
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(cases); ++ndx)
-		group->addChild(new GridRenderTestCase(testCtx, cases[ndx].name, cases[ndx].desc, cases[ndx].flags));
+		group->addChild(new GridRenderTestCase(testCtx, cases[ndx].name, cases[ndx].flags));
 
 	return group.release();
 }
@@ -718,29 +713,30 @@ tcu::TestCaseGroup* createGeometryGridRenderLimitsTests  (tcu::TestContext& test
 //! Ported from dEQP-GLES31.functional.tessellation_geometry_interaction.render.scatter.*
 tcu::TestCaseGroup* createGeometryGridRenderScatterTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "scatter", "Scatter output primitives"));
+	// Scatter output primitives
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "scatter"));
 
 	static const TestCaseDescription cases[] =
 	{
+		// Each geometry shader instance outputs its primitives far from other instances of the same execution
 		{
 			"geometry_scatter_instances",
-			"Each geometry shader instance outputs its primitives far from other instances of the same execution",
 			FLAG_GEOMETRY_SCATTER_INSTANCES
 		},
+		// Each geometry shader instance outputs its primitives far from other primitives of the same instance
 		{
 			"geometry_scatter_primitives",
-			"Each geometry shader instance outputs its primitives far from other primitives of the same instance",
 			FLAG_GEOMETRY_SCATTER_PRIMITIVES | FLAG_GEOMETRY_SEPARATE_PRIMITIVES
 		},
+		// Each geometry shader instance outputs its primitives to multiple layers and far from other primitives of the same instance
 		{
 			"geometry_scatter_layers",
-			"Each geometry shader instance outputs its primitives to multiple layers and far from other primitives of the same instance",
 			FLAG_GEOMETRY_SCATTER_LAYERS | FLAG_GEOMETRY_SEPARATE_PRIMITIVES
 		},
 	};
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(cases); ++ndx)
-		group->addChild(new GridRenderTestCase(testCtx, cases[ndx].name, cases[ndx].desc, cases[ndx].flags));
+		group->addChild(new GridRenderTestCase(testCtx, cases[ndx].name, cases[ndx].flags));
 
 	return group.release();
 }

@@ -126,7 +126,6 @@ class ImageSparseResidencyCase : public TestCase
 public:
 	ImageSparseResidencyCase		(tcu::TestContext&		testCtx,
 									 const std::string&		name,
-									 const std::string&		description,
 									 const ImageType		imageType,
 									 const tcu::UVec3&		imageSize,
 									 const VkFormat			format,
@@ -147,13 +146,12 @@ private:
 
 ImageSparseResidencyCase::ImageSparseResidencyCase	(tcu::TestContext&		testCtx,
 													 const std::string&		name,
-													 const std::string&		description,
 													 const ImageType		imageType,
 													 const tcu::UVec3&		imageSize,
 													 const VkFormat			format,
 													 const glu::GLSLVersion	glslVersion,
 													 const bool				useDeviceGroups)
-	: TestCase			(testCtx, name, description)
+	: TestCase			(testCtx, name)
 	, m_useDeviceGroups	(useDeviceGroups)
 	, m_imageType		(imageType)
 	, m_imageSize		(imageSize)
@@ -1060,13 +1058,13 @@ tcu::TestCaseGroup* createImageSparseResidencyTestsCommon (tcu::TestContext& tes
 	for (size_t imageTypeNdx = 0; imageTypeNdx < imageParameters.size(); ++imageTypeNdx)
 	{
 		const ImageType					imageType = imageParameters[imageTypeNdx].imageType;
-		de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str()));
 
 		for (size_t formatNdx = 0; formatNdx < imageParameters[imageTypeNdx].formats.size(); ++formatNdx)
 		{
 			const VkFormat					format				= imageParameters[imageTypeNdx].formats[formatNdx].format;
 			tcu::UVec3						imageSizeAlignment	= getImageSizeAlignment(format);
-			de::MovePtr<tcu::TestCaseGroup> formatGroup			(new tcu::TestCaseGroup(testCtx, getImageFormatID(format).c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> formatGroup			(new tcu::TestCaseGroup(testCtx, getImageFormatID(format).c_str()));
 
 			for (size_t imageSizeNdx = 0; imageSizeNdx < imageParameters[imageTypeNdx].imageSizes.size(); ++imageSizeNdx)
 			{
@@ -1081,7 +1079,7 @@ tcu::TestCaseGroup* createImageSparseResidencyTestsCommon (tcu::TestContext& tes
 				std::ostringstream stream;
 				stream << imageSize.x() << "_" << imageSize.y() << "_" << imageSize.z();
 
-				formatGroup->addChild(new ImageSparseResidencyCase(testCtx, stream.str(), "", imageType, imageSize, format, glu::GLSL_VERSION_440, useDeviceGroup));
+				formatGroup->addChild(new ImageSparseResidencyCase(testCtx, stream.str(), imageType, imageSize, format, glu::GLSL_VERSION_440, useDeviceGroup));
 			}
 			imageTypeGroup->addChild(formatGroup.release());
 		}
@@ -1093,13 +1091,13 @@ tcu::TestCaseGroup* createImageSparseResidencyTestsCommon (tcu::TestContext& tes
 
 tcu::TestCaseGroup* createImageSparseResidencyTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "image_sparse_residency", "Image Sparse Residency"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "image_sparse_residency"));
 	return createImageSparseResidencyTestsCommon(testCtx, testGroup);
 }
 
 tcu::TestCaseGroup* createDeviceGroupImageSparseResidencyTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "device_group_image_sparse_residency", "Image Sparse Residency"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "device_group_image_sparse_residency"));
 	return createImageSparseResidencyTestsCommon(testCtx, testGroup, true);
 }
 

@@ -245,7 +245,6 @@ public:
 														 const VkQueryResultFlags		queryResultFlags);
 								~TimestampTestParam			(void);
 	virtual const std::string	generateTestName			(void) const;
-	virtual const std::string	generateTestDescription		(void) const;
 	PipelineConstructionType	getPipelineConstructionType	(void) const	{ return m_pipelineConstructionType; }
 	StageFlagVector				getStageVector				(void) const	{ return m_stageVec; }
 	bool						getInRenderPass				(void) const	{ return m_inRenderPass; }
@@ -317,31 +316,6 @@ const std::string TimestampTestParam::generateTestName (void) const
 	return result;
 }
 
-const std::string TimestampTestParam::generateTestDescription (void) const
-{
-	std::string result("Record timestamp after ");
-
-	for (StageFlagVector::const_iterator it = m_stageVec.begin(); it != m_stageVec.end(); it++)
-	{
-		if(*it != VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT)
-		{
-			result += getPipelineStageFlagStr(*it, true) + ' ';
-		}
-	}
-	if(m_inRenderPass)
-		result += " in the renderpass";
-	else
-		result += " out of the render pass";
-
-	if(m_hostQueryReset)
-		result += "and the host resets query pool";
-
-	if (m_transferOnlyQueue)
-		result += " on transfer only queue";
-
-	return result;
-}
-
 class TransferTimestampTestParam : public TimestampTestParam
 {
 public:
@@ -402,29 +376,6 @@ const std::string TransferTimestampTestParam::generateTestName (void) const
 	return result;
 }
 
-const std::string TransferTimestampTestParam::generateTestDescription (void) const
-{
-	std::string result("");
-
-	for (StageFlagVector::const_iterator it = m_stageVec.begin(); it != m_stageVec.end(); it++)
-	{
-		if(*it != VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT)
-		{
-			result += getPipelineStageFlagStr(*it, true) + ' ';
-		}
-	}
-
-	result += "with " + getTransferMethodStr(m_method, true);
-
-	if(m_hostQueryReset)
-		result += "and the host resets query pool";
-
-	if (m_transferOnlyQueue)
-		result += " on transfer only queue";
-
-	return result;
-}
-
 class TwoCmdBuffersTestParam : public TimestampTestParam
 {
 public:
@@ -461,7 +412,6 @@ vkt::TestCase* newTestCase	(tcu::TestContext&		testContext,
 {
 	return new Test(testContext,
 					testParam->generateTestName().c_str(),
-					testParam->generateTestDescription().c_str(),
 					testParam);
 }
 
@@ -476,9 +426,8 @@ public:
 
 							TimestampTest	(tcu::TestContext&			testContext,
 											 const std::string&			name,
-											 const std::string&			description,
 											 const TimestampTestParam*	param)
-											 : vkt::TestCase				(testContext, name, description)
+											 : vkt::TestCase				(testContext, name)
 											 , m_pipelineConstructionType	(param->getPipelineConstructionType())
 											 , m_stages						(param->getStageVector())
 											 , m_inRenderPass				(param->getInRenderPass())
@@ -940,9 +889,8 @@ class CalibratedTimestampTest : public vkt::TestCase
 {
 public:
 								CalibratedTimestampTest		(tcu::TestContext&		testContext,
-															 const std::string&		name,
-															 const std::string&		description)
-									: vkt::TestCase{testContext, name, description}
+															 const std::string&		name)
+									: vkt::TestCase{testContext, name}
 									{ }
 
 	virtual						~CalibratedTimestampTest	(void) override { }
@@ -1464,9 +1412,8 @@ class BasicGraphicsTest : public TimestampTest
 public:
 							BasicGraphicsTest	(tcu::TestContext&			testContext,
 												 const std::string&			name,
-												 const std::string&			description,
 												 const TimestampTestParam*	param)
-							: TimestampTest (testContext, name, description, param)
+							: TimestampTest (testContext, name, param)
 { }
 	virtual					~BasicGraphicsTest	(void) { }
 	virtual void			initPrograms		(SourceCollections& programCollection) const;
@@ -1874,9 +1821,8 @@ class AdvGraphicsTest : public BasicGraphicsTest
 public:
 						  AdvGraphicsTest	(tcu::TestContext&			testContext,
 											 const std::string&			name,
-											 const std::string&			description,
 											 const TimestampTestParam*	param)
-							  : BasicGraphicsTest(testContext, name, description, param)
+							  : BasicGraphicsTest(testContext, name, param)
 							  { }
 
 	virtual              ~AdvGraphicsTest (void) { }
@@ -2154,9 +2100,8 @@ class BasicComputeTest : public TimestampTest
 public:
 							BasicComputeTest	(tcu::TestContext&			testContext,
 												 const std::string&			name,
-												 const std::string&			description,
 												 const TimestampTestParam*	param)
-							  : TimestampTest(testContext, name, description, param)
+							  : TimestampTest(testContext, name, param)
 							  { }
 
 	virtual					~BasicComputeTest	(void) { }
@@ -2368,7 +2313,6 @@ class TransferTest : public TimestampTest
 public:
 							TransferTest	(tcu::TestContext&			testContext,
 											 const std::string&			name,
-											 const std::string&			description,
 											 const TimestampTestParam*	param);
 
 	virtual					~TransferTest	(void) { }
@@ -2421,9 +2365,8 @@ protected:
 
 TransferTest::TransferTest (tcu::TestContext&			testContext,
 							const std::string&			name,
-							const std::string&			description,
 							const TimestampTestParam*	param)
-	: TimestampTest(testContext, name, description, param)
+	: TimestampTest(testContext, name, param)
 {
 	const TransferTimestampTestParam* transferParam = dynamic_cast<const TransferTimestampTestParam*>(param);
 	m_method = transferParam->getMethod();
@@ -2753,9 +2696,8 @@ class FillBufferBeforeCopyTest : public vkt::TestCase
 {
 public:
 	FillBufferBeforeCopyTest(tcu::TestContext& testContext,
-		const std::string& name,
-		const std::string& description)
-		: vkt::TestCase(testContext, name, description)
+		const std::string& name)
+		: vkt::TestCase(testContext, name)
 	{ }
 	virtual               ~FillBufferBeforeCopyTest(void) { }
 	virtual void          initPrograms(SourceCollections& programCollection) const;
@@ -2894,9 +2836,8 @@ class ResetTimestampQueryBeforeCopyTest : public vkt::TestCase
 {
 public:
 	ResetTimestampQueryBeforeCopyTest							(tcu::TestContext&	testContext,
-																 const std::string&	name,
-																 const std::string&	description)
-		: vkt::TestCase(testContext, name, description)
+																 const std::string&	name)
+		: vkt::TestCase(testContext, name)
 		{ }
 	virtual               ~ResetTimestampQueryBeforeCopyTest	(void) { }
 	virtual void          initPrograms							(SourceCollections&	programCollection) const;
@@ -3018,9 +2959,8 @@ class TwoCmdBuffersTest : public TimestampTest
 public:
 							TwoCmdBuffersTest	(tcu::TestContext&				testContext,
 												 const std::string&				name,
-												 const std::string&				description,
 												 const TwoCmdBuffersTestParam*	param)
-: TimestampTest (testContext, name, description, param), m_cmdBufferLevel(param->getCmdBufferLevel()) { }
+: TimestampTest (testContext, name, param), m_cmdBufferLevel(param->getCmdBufferLevel()) { }
 	virtual					~TwoCmdBuffersTest	(void) { }
 	virtual TestInstance*	createInstance		(Context&						context) const;
 	virtual void			checkSupport		(Context& context) const;
@@ -3197,9 +3137,8 @@ class ConsistentQueryResultsTest : public vkt::TestCase
 {
 public:
 	ConsistentQueryResultsTest							(tcu::TestContext&	testContext,
-														 const std::string&	name,
-														 const std::string&	description)
-		: vkt::TestCase(testContext, name, description)
+														 const std::string&	name)
+		: vkt::TestCase(testContext, name)
 		{ }
 	virtual               ~ConsistentQueryResultsTest	(void) { }
 	virtual void          initPrograms					(SourceCollections&	programCollection) const;
@@ -3366,7 +3305,7 @@ tcu::TestStatus ConsistentQueryResultsTestInstance::iterate(void)
 
 tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> timestampTests (new tcu::TestCaseGroup(testCtx, "timestamp", "timestamp tests"));
+	de::MovePtr<tcu::TestCaseGroup> timestampTests (new tcu::TestCaseGroup(testCtx, "timestamp"));
 	const VkQueryResultFlags queryResultFlagsTimestampTest[] =
 	{
 		VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT,
@@ -3375,7 +3314,7 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx, PipelineCon
 
 	// Basic Graphics Tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> basicGraphicsTests (new tcu::TestCaseGroup(testCtx, "basic_graphics_tests", "Record timestamp in different pipeline stages of basic graphics tests"));
+		de::MovePtr<tcu::TestCaseGroup> basicGraphicsTests (new tcu::TestCaseGroup(testCtx, "basic_graphics_tests"));
 
 		const VkPipelineStageFlagBits basicGraphicsStages0[][2] =
 		{
@@ -3430,7 +3369,8 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx, PipelineCon
 
 	// Advanced Graphics Tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> advGraphicsTests (new tcu::TestCaseGroup(testCtx, "advanced_graphics_tests", "Record timestamp in different pipeline stages of advanced graphics tests"));
+		// Record timestamp in different pipeline stages of advanced graphics tests
+		de::MovePtr<tcu::TestCaseGroup> advGraphicsTests (new tcu::TestCaseGroup(testCtx, "advanced_graphics_tests"));
 
 		const VkPipelineStageFlagBits advGraphicsStages[][2] =
 		{
@@ -3461,7 +3401,8 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx, PipelineCon
 	// Basic Compute Tests - don't repeat those tests for graphics pipeline library
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		de::MovePtr<tcu::TestCaseGroup> basicComputeTests (new tcu::TestCaseGroup(testCtx, "basic_compute_tests", "Record timestamp for compute stages"));
+		// Record timestamp for compute stages
+		de::MovePtr<tcu::TestCaseGroup> basicComputeTests (new tcu::TestCaseGroup(testCtx, "basic_compute_tests"));
 
 		const VkPipelineStageFlagBits basicComputeStages[][2] =
 		{
@@ -3536,9 +3477,10 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx, PipelineCon
 	{
 		de::MovePtr<tcu::TestCaseGroup> calibratedTimestampTests (new tcu::TestCaseGroup(testCtx, "calibrated", "VK_EXT_calibrated_timestamps tests"));
 
-		calibratedTimestampTests->addChild(new CalibratedTimestampTest<CalibratedTimestampDevDomainTestInstance>	(testCtx, "dev_domain_test",	"Test device domain"));
-		calibratedTimestampTests->addChild(new CalibratedTimestampTest<CalibratedTimestampHostDomainTestInstance>	(testCtx, "host_domain_test",	"Test host domain"));
-		calibratedTimestampTests->addChild(new CalibratedTimestampTest<CalibratedTimestampCalibrationTestInstance>	(testCtx, "calibration_test",	"Test calibration using device and host domains"));
+		calibratedTimestampTests->addChild(new CalibratedTimestampTest<CalibratedTimestampDevDomainTestInstance>	(testCtx, "dev_domain_test"));
+		calibratedTimestampTests->addChild(new CalibratedTimestampTest<CalibratedTimestampHostDomainTestInstance>	(testCtx, "host_domain_test"));
+		// Test calibration using device and host domains
+		calibratedTimestampTests->addChild(new CalibratedTimestampTest<CalibratedTimestampCalibrationTestInstance>	(testCtx, "calibration_test"));
 
 		timestampTests->addChild(calibratedTimestampTests.release());
 	}
@@ -3560,60 +3502,47 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx, PipelineCon
 		{
 			const VkPipelineStageFlagBits miscStages[] = {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
 			TimestampTestParam param(pipelineConstructionType, miscStages, 1u, false, false, false, queryResultFlagsTimestampTest[flagsIdx]);
+			// Only write timestamp command in the commmand buffer
 			miscTests->addChild(new TimestampTest(testCtx,
-												"timestamp_only" + queryResultsFlagsMiscTestsStr[flagsIdx],
-												"Only write timestamp command in the commmand buffer",
-												&param));
+												"timestamp_only" + queryResultsFlagsMiscTestsStr[flagsIdx], &param));
 
 			TwoCmdBuffersTestParam twoCmdBuffersParamPrimary(pipelineConstructionType, miscStages, 1u, false, false, false, VK_COMMAND_BUFFER_LEVEL_PRIMARY, queryResultFlagsMiscTests[flagsIdx]);
+			// Issue query in a command buffer and copy it on another primary command buffer
 			miscTests->addChild(new TwoCmdBuffersTest(testCtx,
-													"two_cmd_buffers_primary" + queryResultsFlagsMiscTestsStr[flagsIdx],
-													"Issue query in a command buffer and copy it on another primary command buffer",
-													&twoCmdBuffersParamPrimary));
+													"two_cmd_buffers_primary" + queryResultsFlagsMiscTestsStr[flagsIdx], &twoCmdBuffersParamPrimary));
 
 			TwoCmdBuffersTestParam twoCmdBuffersParamSecondary(pipelineConstructionType, miscStages, 1u, false, false, false, VK_COMMAND_BUFFER_LEVEL_SECONDARY, queryResultFlagsMiscTests[flagsIdx]);
+			// Issue query in a secondary command buffer and copy it on a primary command buffer
 			miscTests->addChild(new TwoCmdBuffersTest(testCtx,
-													"two_cmd_buffers_secondary" + queryResultsFlagsMiscTestsStr[flagsIdx],
-													"Issue query in a secondary command buffer and copy it on a primary command buffer",
-													&twoCmdBuffersParamSecondary));
+													"two_cmd_buffers_secondary" + queryResultsFlagsMiscTestsStr[flagsIdx], &twoCmdBuffersParamSecondary));
 			// Misc: Host Query Reset tests
 			param.toggleHostQueryReset();
+			// Only write timestamp command in the commmand buffer
 			miscTests->addChild(new TimestampTest(testCtx,
-												"timestamp_only_host_query_reset" + queryResultsFlagsMiscTestsStr[flagsIdx],
-												"Only write timestamp command in the commmand buffer",
-												&param));
+												"timestamp_only_host_query_reset" + queryResultsFlagsMiscTestsStr[flagsIdx], &param));
 			TwoCmdBuffersTestParam twoCmdBuffersParamPrimaryHostQueryReset(pipelineConstructionType, miscStages, 1u, false, true, false, VK_COMMAND_BUFFER_LEVEL_PRIMARY, queryResultFlagsMiscTests[flagsIdx]);
+			// Issue query in a command buffer and copy it on another primary command buffer
 			miscTests->addChild(new TwoCmdBuffersTest(testCtx,
-													"two_cmd_buffers_primary_host_query_reset" + queryResultsFlagsMiscTestsStr[flagsIdx],
-													"Issue query in a command buffer and copy it on another primary command buffer",
-													&twoCmdBuffersParamPrimaryHostQueryReset));
+													"two_cmd_buffers_primary_host_query_reset" + queryResultsFlagsMiscTestsStr[flagsIdx], &twoCmdBuffersParamPrimaryHostQueryReset));
 
 			TwoCmdBuffersTestParam twoCmdBuffersParamSecondaryHostQueryReset(pipelineConstructionType, miscStages, 1u, false, true, false, VK_COMMAND_BUFFER_LEVEL_SECONDARY, queryResultFlagsMiscTests[flagsIdx]);
+			// Issue query in a secondary command buffer and copy it on a primary command buffer
 			miscTests->addChild(new TwoCmdBuffersTest(testCtx,
-													"two_cmd_buffers_secondary_host_query_reset" + queryResultsFlagsMiscTestsStr[flagsIdx],
-													"Issue query in a secondary command buffer and copy it on a primary command buffer",
-													&twoCmdBuffersParamSecondaryHostQueryReset));
+													"two_cmd_buffers_secondary_host_query_reset" + queryResultsFlagsMiscTestsStr[flagsIdx], &twoCmdBuffersParamSecondaryHostQueryReset));
 			TwoCmdBuffersTestParam twoCmdBuffersParamSecondaryTransferQueue(pipelineConstructionType, miscStages, 1u, false, true, true, VK_COMMAND_BUFFER_LEVEL_SECONDARY, queryResultFlagsMiscTests[flagsIdx]);
+			// Issue query in a secondary command buffer and copy it on a primary command buffer
 			miscTests->addChild(new TwoCmdBuffersTest(testCtx,
-													"two_cmd_buffers_secondary_transfer_queue" + queryResultsFlagsMiscTestsStr[flagsIdx],
-													"Issue query in a secondary command buffer and copy it on a primary command buffer",
-													&twoCmdBuffersParamSecondaryTransferQueue));
+													"two_cmd_buffers_secondary_transfer_queue" + queryResultsFlagsMiscTestsStr[flagsIdx], &twoCmdBuffersParamSecondaryTransferQueue));
 		}
 		// Reset timestamp query before copying results.
-		miscTests->addChild(new ResetTimestampQueryBeforeCopyTest(testCtx,
-																"reset_query_before_copy",
-																"Issue a timestamp query and reset it before copying results"));
+		miscTests->addChild(new ResetTimestampQueryBeforeCopyTest(testCtx, "reset_query_before_copy"));
 
 		// Fill buffer with 0s before copying results.
-		miscTests->addChild(new FillBufferBeforeCopyTest(testCtx,
-                                                        "fill_buffer_before_copy",
-                                                        "Fill the results buffer before copying results"));
+		miscTests->addChild(new FillBufferBeforeCopyTest(testCtx, "fill_buffer_before_copy"));
 
 
 		// Check consistency between 32 and 64 bits.
-		miscTests->addChild(new ConsistentQueryResultsTest(testCtx,
-														"consistent_results",
-														"Check consistency between 32-bit and 64-bit timestamp"));
+		miscTests->addChild(new ConsistentQueryResultsTest(testCtx, "consistent_results"));
 
 		timestampTests->addChild(miscTests.release());
 	}

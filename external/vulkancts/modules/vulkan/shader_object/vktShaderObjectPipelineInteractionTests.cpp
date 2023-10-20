@@ -654,8 +654,8 @@ bool ShaderObjectPipelineInteractionInstance::verifyImage (de::MovePtr<vk::Buffe
 class ShaderObjectPipelineInteractionCase : public vkt::TestCase
 {
 public:
-					ShaderObjectPipelineInteractionCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-															: vkt::TestCase		(testCtx, name, description)
+					ShaderObjectPipelineInteractionCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+															: vkt::TestCase		(testCtx, name)
 															, m_params			(params)
 															{}
 	virtual			~ShaderObjectPipelineInteractionCase	(void) {}
@@ -1107,8 +1107,8 @@ bool ShaderObjectStageBindingInstance::verifyImage (de::MovePtr<vk::BufferWithMe
 class ShaderObjectStageBindingCase : public vkt::TestCase
 {
 public:
-					ShaderObjectStageBindingCase			(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const StageTestParams& params)
-															: vkt::TestCase		(testCtx, name, description)
+					ShaderObjectStageBindingCase			(tcu::TestContext& testCtx, const std::string& name, const StageTestParams& params)
+															: vkt::TestCase		(testCtx, name)
 															, m_params			(params)
 															{}
 	virtual			~ShaderObjectStageBindingCase			(void) {}
@@ -1312,7 +1312,7 @@ void ShaderObjectStageBindingCase::initPrograms(vk::SourceCollections& programCo
 
 tcu::TestCaseGroup* createShaderObjectPipelineInteractionTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> pipelineInteractionGroup(new tcu::TestCaseGroup(testCtx, "pipeline_interaction", ""));
+	de::MovePtr<tcu::TestCaseGroup> pipelineInteractionGroup(new tcu::TestCaseGroup(testCtx, "pipeline_interaction"));
 
 	const struct
 	{
@@ -1337,7 +1337,7 @@ tcu::TestCaseGroup* createShaderObjectPipelineInteractionTests (tcu::TestContext
 		TestParams params;
 		params.testType = test.testType;
 
-		pipelineInteractionGroup->addChild(new ShaderObjectPipelineInteractionCase(testCtx, test.name, "", params));
+		pipelineInteractionGroup->addChild(new ShaderObjectPipelineInteractionCase(testCtx, test.name, params));
 	}
 
 	const struct
@@ -1358,7 +1358,7 @@ tcu::TestCaseGroup* createShaderObjectPipelineInteractionTests (tcu::TestContext
 
 	for (const auto& shaderBindTest : shaderBindTests)
 	{
-		pipelineInteractionGroup->addChild(new ShaderObjectStageBindingCase(testCtx, shaderBindTest.name, "", shaderBindTest.shaders));
+		pipelineInteractionGroup->addChild(new ShaderObjectStageBindingCase(testCtx, shaderBindTest.name, shaderBindTest.shaders));
 	}
 
 	return pipelineInteractionGroup.release();

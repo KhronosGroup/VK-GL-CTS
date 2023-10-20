@@ -487,7 +487,7 @@ void createExecTestCases(tcu::TestCaseGroup* group, ExtensionUse extensionUse)
 	for (uint32_t testType = 0; testType < TEST_TYPE_LAST; testType++)
 	{
 		TestParams testParams { extensionUse, (TestType) testType };
-		addFunctionCase(group, testName[testType], "", checkSupport, testCase, testParams);
+		addFunctionCase(group, testName[testType], checkSupport, testCase, testParams);
 	}
 }
 
@@ -495,22 +495,24 @@ void createWsiTestCases(tcu::TestCaseGroup* group)
 {
 	for (uint32_t wsiType = 0; wsiType < wsi::TYPE_LAST; wsiType++)
 	{
-		addFunctionCase(group, wsi::getName((wsi::Type) wsiType), "", checkWsiSupport, testCaseWsi, (wsi::Type) wsiType);
+		addFunctionCase(group, wsi::getName((wsi::Type) wsiType), checkWsiSupport, testCaseWsi, (wsi::Type) wsiType);
 	}
 }
 
 void createTestCases (tcu::TestCaseGroup* group)
 {
-	addTestGroup(group, "core", "VK_EXT_frame_boundary tests", createExecTestCases, EXTENSION_USE_NONE);
-	addTestGroup(group, "sync2", "VK_EXT_frame_boundary tests using sync2", createExecTestCases, EXTENSION_USE_SYNC2);
-	addTestGroup(group, "wsi", "VK_EXT_frame_boundary wsi tests", createWsiTestCases);
+	// VK_EXT_frame_boundary tests
+	addTestGroup(group, "core", createExecTestCases, EXTENSION_USE_NONE);
+	addTestGroup(group, "sync2", createExecTestCases, EXTENSION_USE_SYNC2);
+	addTestGroup(group, "wsi", createWsiTestCases);
 }
 
 } // anonymous
 
 tcu::TestCaseGroup*	createFrameBoundaryTests(tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "frame_boundary", "VK_EXT_frame_boundary tests", createTestCases);
+	// VK_EXT_frame_boundary tests
+	return createTestGroup(testCtx, "frame_boundary", createTestCases);
 }
 
 } // api

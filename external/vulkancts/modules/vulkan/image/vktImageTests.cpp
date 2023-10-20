@@ -92,7 +92,7 @@ void createChildren (tcu::TestCaseGroup* imageTests)
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, name.c_str(), "Image tests", createChildren);
+	return createTestGroup(testCtx, name.c_str(), createChildren);
 }
 
 } // image

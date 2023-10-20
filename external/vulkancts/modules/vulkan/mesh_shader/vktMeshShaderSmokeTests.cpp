@@ -95,7 +95,7 @@ struct MeshTriangleRendererParams
 class MeshOnlyTriangleCase : public vkt::TestCase
 {
 public:
-					MeshOnlyTriangleCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description) : vkt::TestCase (testCtx, name, description) {}
+					MeshOnlyTriangleCase	(tcu::TestContext& testCtx, const std::string& name) : vkt::TestCase (testCtx, name) {}
 	virtual			~MeshOnlyTriangleCase	(void) {}
 
 	void			initPrograms			(vk::SourceCollections& programCollection) const override;
@@ -106,7 +106,7 @@ public:
 class MeshTaskTriangleCase : public vkt::TestCase
 {
 public:
-					MeshTaskTriangleCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description) : vkt::TestCase (testCtx, name, description) {}
+					MeshTaskTriangleCase	(tcu::TestContext& testCtx, const std::string& name) : vkt::TestCase (testCtx, name) {}
 	virtual			~MeshTaskTriangleCase	(void) {}
 
 	void			initPrograms			(vk::SourceCollections& programCollection) const override;
@@ -118,7 +118,7 @@ public:
 class TaskOnlyTriangleCase : public vkt::TestCase
 {
 public:
-					TaskOnlyTriangleCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description) : vkt::TestCase (testCtx, name, description) {}
+					TaskOnlyTriangleCase	(tcu::TestContext& testCtx, const std::string& name) : vkt::TestCase (testCtx, name) {}
 	virtual			~TaskOnlyTriangleCase	(void) {}
 
 	void			initPrograms			(vk::SourceCollections& programCollection) const override;
@@ -1122,15 +1122,15 @@ tcu::TestStatus testFullscreenGradient (Context& context, tcu::Maybe<FragmentSiz
 
 tcu::TestCaseGroup* createMeshShaderSmokeTests (tcu::TestContext& testCtx)
 {
-	GroupPtr smokeTests (new tcu::TestCaseGroup(testCtx, "smoke", "Mesh Shader Smoke Tests"));
+	GroupPtr smokeTests (new tcu::TestCaseGroup(testCtx, "smoke"));
 
-	smokeTests->addChild(new MeshOnlyTriangleCase(testCtx, "mesh_shader_triangle", ""));
-	smokeTests->addChild(new MeshTaskTriangleCase(testCtx, "mesh_task_shader_triangle", ""));
-	smokeTests->addChild(new TaskOnlyTriangleCase(testCtx, "task_only_shader_triangle", ""));
+	smokeTests->addChild(new MeshOnlyTriangleCase(testCtx, "mesh_shader_triangle"));
+	smokeTests->addChild(new MeshTaskTriangleCase(testCtx, "mesh_task_shader_triangle"));
+	smokeTests->addChild(new TaskOnlyTriangleCase(testCtx, "task_only_shader_triangle"));
 
-	addFunctionCaseWithPrograms(smokeTests.get(), "fullscreen_gradient",		"", checkMeshSupport, initGradientPrograms, testFullscreenGradient, tcu::nothing<FragmentSize>());
-	addFunctionCaseWithPrograms(smokeTests.get(), "fullscreen_gradient_fs2x2",	"", checkMeshSupport, initGradientPrograms, testFullscreenGradient, tcu::just(FragmentSize::SIZE_2X2));
-	addFunctionCaseWithPrograms(smokeTests.get(), "fullscreen_gradient_fs2x1",	"", checkMeshSupport, initGradientPrograms, testFullscreenGradient, tcu::just(FragmentSize::SIZE_2X1));
+	addFunctionCaseWithPrograms(smokeTests.get(), "fullscreen_gradient",		checkMeshSupport, initGradientPrograms, testFullscreenGradient, tcu::nothing<FragmentSize>());
+	addFunctionCaseWithPrograms(smokeTests.get(), "fullscreen_gradient_fs2x2",	checkMeshSupport, initGradientPrograms, testFullscreenGradient, tcu::just(FragmentSize::SIZE_2X2));
+	addFunctionCaseWithPrograms(smokeTests.get(), "fullscreen_gradient_fs2x1",	checkMeshSupport, initGradientPrograms, testFullscreenGradient, tcu::just(FragmentSize::SIZE_2X1));
 
 	return smokeTests.release();
 }

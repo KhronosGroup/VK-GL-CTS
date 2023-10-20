@@ -73,7 +73,7 @@ public:
 	TestNode*			find				(const char* path);
 
 protected:
-						TestNode			(TestGroup* parent, TestNodeType nodeType, const char* name, const char* desc);
+						TestNode			(TestGroup* parent, TestNodeType nodeType, const char* name);
 
 private:
 						TestNode			(const TestNode& other);
@@ -97,11 +97,11 @@ public:
 	TestNode*					findChildNode		(const char* path);
 	const TestNode*				findChildNode		(const char* path) const;
 
-	TestGroup*					createGroup			(const char* name, const char* description);
-	TestCase*					createCase			(TestCaseType caseType, const char* name, const char* description);
+	TestGroup*					createGroup			(const char* name);
+	TestCase*					createCase			(TestCaseType caseType, const char* name);
 
 protected:
-								TestGroup			(TestGroup* parent, TestNodeType nodeType, const char* name, const char* description);
+								TestGroup			(TestGroup* parent, TestNodeType nodeType, const char* name);
 
 private:
 	std::vector<TestNode*>		m_children;
@@ -124,10 +124,10 @@ public:
 
 	TestCaseType				getCaseType			(void) const { return m_caseType; }
 
-	static TestCase*			createAsChild		(TestGroup* parent, TestCaseType caseType, const char* name, const char* description);
+	static TestCase*			createAsChild		(TestGroup* parent, TestCaseType caseType, const char* name);
 
 protected:
-								TestCase			(TestGroup* parent, TestCaseType caseType, const char* name, const char* description);
+								TestCase			(TestGroup* parent, TestCaseType caseType, const char* name);
 
 private:
 	TestCaseType				m_caseType;

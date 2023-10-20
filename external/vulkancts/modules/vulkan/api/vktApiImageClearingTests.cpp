@@ -2068,12 +2068,12 @@ std::string getSampleCountName (VkSampleCountFlagBits count)
 
 TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCaseGroup* imageClearingTests, AllocationKind allocationKind)
 {
-	de::MovePtr<TestCaseGroup>	colorImageClearTests					(new TestCaseGroup(testCtx, "clear_color_image", "Color Image Clear Tests"));
-	de::MovePtr<TestCaseGroup>	depthStencilImageClearTests				(new TestCaseGroup(testCtx, "clear_depth_stencil_image", "Clear Depth/Stencil Image Tests"));
-	de::MovePtr<TestCaseGroup>	colorAttachmentClearTests				(new TestCaseGroup(testCtx, "clear_color_attachment", "Clear Color Attachment Tests"));
-	de::MovePtr<TestCaseGroup>	depthStencilAttachmentClearTests		(new TestCaseGroup(testCtx, "clear_depth_stencil_attachment", "Clear Depth/Stencil Attachment Tests"));
-	de::MovePtr<TestCaseGroup>	partialColorAttachmentClearTests		(new TestCaseGroup(testCtx, "partial_clear_color_attachment", "Clear Partial Color Attachment Tests"));
-	de::MovePtr<TestCaseGroup>	partialDepthStencilAttachmentClearTests	(new TestCaseGroup(testCtx, "partial_clear_depth_stencil_attachment", "Clear Partial Depth/Stencil Attachment Tests"));
+	de::MovePtr<TestCaseGroup>	colorImageClearTests					(new TestCaseGroup(testCtx, "clear_color_image"));
+	de::MovePtr<TestCaseGroup>	depthStencilImageClearTests				(new TestCaseGroup(testCtx, "clear_depth_stencil_image"));
+	de::MovePtr<TestCaseGroup>	colorAttachmentClearTests				(new TestCaseGroup(testCtx, "clear_color_attachment"));
+	de::MovePtr<TestCaseGroup>	depthStencilAttachmentClearTests		(new TestCaseGroup(testCtx, "clear_depth_stencil_attachment"));
+	de::MovePtr<TestCaseGroup>	partialColorAttachmentClearTests		(new TestCaseGroup(testCtx, "partial_clear_color_attachment"));
+	de::MovePtr<TestCaseGroup>	partialDepthStencilAttachmentClearTests	(new TestCaseGroup(testCtx, "partial_clear_depth_stencil_attachment"));
 
 	// Some formats are commented out due to the tcu::TextureFormat does not support them yet.
 	const VkFormat		colorImageFormatsToTest[]	=
@@ -2422,11 +2422,11 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 
 		for (size_t	imageTypeIndex = 0; imageTypeIndex < numOfImageTypesToTest; ++imageTypeIndex)
 		{
-			de::MovePtr<TestCaseGroup> imageTypeGroup(new TestCaseGroup(testCtx, getImageTypeCaseName(imageTypesToTest[imageTypeIndex]), ""));
+			de::MovePtr<TestCaseGroup> imageTypeGroup(new TestCaseGroup(testCtx, getImageTypeCaseName(imageTypesToTest[imageTypeIndex])));
 
 			for (size_t	imageTilingIndex = 0; imageTilingIndex < numOfImageTilingsToTest; ++imageTilingIndex)
 			{
-				de::MovePtr<TestCaseGroup> imageTilingGroup(new TestCaseGroup(testCtx, getImageTilingCaseName(imageTilingsToTest[imageTilingIndex]), ""));
+				de::MovePtr<TestCaseGroup> imageTilingGroup(new TestCaseGroup(testCtx, getImageTilingCaseName(imageTilingsToTest[imageTilingIndex])));
 
 				for (size_t imageLayerParamsIndex = 0; imageLayerParamsIndex < numOfImageLayerParamsToTest; ++imageLayerParamsIndex)
 				{
@@ -2438,7 +2438,7 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 					if (imageLayerParamsToTest[imageLayerParamsIndex].isCube)
 						continue;
 
-					de::MovePtr<TestCaseGroup> imageLayersGroup(new TestCaseGroup(testCtx, imageLayerParamsToTest[imageLayerParamsIndex].testName, ""));
+					de::MovePtr<TestCaseGroup> imageLayersGroup(new TestCaseGroup(testCtx, imageLayerParamsToTest[imageLayerParamsIndex].testName));
 
 					for (size_t imageDimensionsIndex = 0; imageDimensionsIndex < DE_LENGTH_OF_ARRAY(imageDimensions); ++imageDimensionsIndex)
 					{
@@ -2518,19 +2518,22 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 
 									if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
 									{
-										imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageTestInstance, TestParams>(testCtx, testCaseName, "Clear Color Image", testParams));
+										// Clear Color Image
+										imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageTestInstance, TestParams>(testCtx, testCaseName, testParams));
 
 										// Removing linear images as the miplevels may be 1
 										if (imageTilingsToTest[imageTilingIndex] == VK_IMAGE_TILING_OPTIMAL)
 										{
 											testParams.isColorMultipleSubresourceRangeTest = true;
 											testCaseName += "_multiple_subresourcerange";
-											imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageMultipleSubresourceRangeTestInstance, TestParams>(testCtx, testCaseName, "Clear Color Image with two ranges", testParams));
+											// Clear Color Image with two ranges
+											imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageMultipleSubresourceRangeTestInstance, TestParams>(testCtx, testCaseName, testParams));
 										}
 									}
 									else
 									{
-										imageLayersGroup->addChild(new InstanceFactory1<TwoStepClearColorImageTestInstance, TestParams>(testCtx, testCaseName, "Clear Color Image", testParams));
+										// Clear Color Image
+										imageLayersGroup->addChild(new InstanceFactory1<TwoStepClearColorImageTestInstance, TestParams>(testCtx, testCaseName, testParams));
 									}
 								}
 							}
@@ -2590,19 +2593,22 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 
 									if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
 									{
-										imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageTestInstance, TestParams>(testCtx, testCaseName, "Clear Color Image", testParams));
+										// Clear Color Image
+										imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageTestInstance, TestParams>(testCtx, testCaseName, testParams));
 
 										// Removing linear images as the miplevels may be 1
 										if (imageTilingsToTest[imageTilingIndex] == VK_IMAGE_TILING_OPTIMAL)
 										{
 											testParams.isColorMultipleSubresourceRangeTest = true;
 											testCaseName += "_multiple_subresourcerange";
-											imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageMultipleSubresourceRangeTestInstance, TestParams>(testCtx, testCaseName, "Clear Color Image with two ranges", testParams));
+											// Clear Color Image with two ranges
+											imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageMultipleSubresourceRangeTestInstance, TestParams>(testCtx, testCaseName, testParams));
 										}
 									}
 									else
 									{
-										imageLayersGroup->addChild(new InstanceFactory1<TwoStepClearColorImageTestInstance, TestParams>(testCtx, testCaseName, "Clear Color Image", testParams));
+										// Clear Color Image
+										imageLayersGroup->addChild(new InstanceFactory1<TwoStepClearColorImageTestInstance, TestParams>(testCtx, testCaseName, testParams));
 									}
 								}
 							}
@@ -2628,7 +2634,7 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 
 		for (size_t imageTypeIndex = 0; imageTypeIndex < numOfImageTypesToTest; ++imageTypeIndex)
 		{
-			de::MovePtr<TestCaseGroup> imageTypeGroup(new TestCaseGroup(testCtx, getImageTypeCaseName(imageTypesToTest[imageTypeIndex]), ""));
+			de::MovePtr<TestCaseGroup> imageTypeGroup(new TestCaseGroup(testCtx, getImageTypeCaseName(imageTypesToTest[imageTypeIndex])));
 
 			for (size_t imageLayerParamsIndex = 0; imageLayerParamsIndex < numOfImageLayerParamsToTest; ++imageLayerParamsIndex)
 			{
@@ -2636,7 +2642,7 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 				if (imageLayerParamsToTest[imageLayerParamsIndex].isCube)
 					continue;
 
-				de::MovePtr<TestCaseGroup> imageLayersGroup(new TestCaseGroup(testCtx, imageLayerParamsToTest[imageLayerParamsIndex].testName, ""));
+				de::MovePtr<TestCaseGroup> imageLayersGroup(new TestCaseGroup(testCtx, imageLayerParamsToTest[imageLayerParamsIndex].testName));
 
 				for (size_t imageDimensionsIndex = 0; imageDimensionsIndex < DE_LENGTH_OF_ARRAY(imageDimensions); ++imageDimensionsIndex)
 				{
@@ -2692,17 +2698,20 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 
 							if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
 							{
-								imageLayersGroup->addChild(new InstanceFactory1<ClearDepthStencilImageTestInstance, TestParams>(testCtx, testCaseName, "Clear Depth/Stencil Image", testParams));
+								// Clear Depth/Stencil Image
+								imageLayersGroup->addChild(new InstanceFactory1<ClearDepthStencilImageTestInstance, TestParams>(testCtx, testCaseName, testParams));
 
 								if (separateDepthStencilLayoutMode == SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE && hasDepth && hasStencil)
 								{
 									const std::string	testCaseNameRanges = getFormatCaseName(format) + dimensionsString + "_multiple_subresourcerange";
-									imageLayersGroup->addChild(new InstanceFactory1<ClearDepthStencilImageMultipleSubresourceRangeTestInstance, TestParams>(testCtx, testCaseNameRanges, "Clear Depth/Stencil Image with ranges", testParams));
+									// Clear Depth/Stencil Image with ranges
+									imageLayersGroup->addChild(new InstanceFactory1<ClearDepthStencilImageMultipleSubresourceRangeTestInstance, TestParams>(testCtx, testCaseNameRanges, testParams));
 								}
 							}
 							else
 							{
-								imageLayersGroup->addChild(new InstanceFactory1<TwoStepClearDepthStencilImageTestInstance, TestParams>(testCtx, testCaseName, "Clear Depth/Stencil Image", testParams));
+								// Clear Depth/Stencil Image
+								imageLayersGroup->addChild(new InstanceFactory1<TwoStepClearDepthStencilImageTestInstance, TestParams>(testCtx, testCaseName, testParams));
 							}
 						}
 					}
@@ -2720,8 +2729,8 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 		{
 			if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
 			{
-				de::MovePtr<TestCaseGroup> colorAttachmentClearLayersGroup(new TestCaseGroup(testCtx, imageLayerParamsToTest[imageLayerParamsIndex].testName, ""));
-				de::MovePtr<TestCaseGroup> partialColorAttachmentClearLayersGroup(new TestCaseGroup(testCtx, imageLayerParamsToTest[imageLayerParamsIndex].testName, ""));
+				de::MovePtr<TestCaseGroup> colorAttachmentClearLayersGroup(new TestCaseGroup(testCtx, imageLayerParamsToTest[imageLayerParamsIndex].testName));
+				de::MovePtr<TestCaseGroup> partialColorAttachmentClearLayersGroup(new TestCaseGroup(testCtx, imageLayerParamsToTest[imageLayerParamsIndex].testName));
 
 				for (size_t imageDimensionsIndex = 0; imageDimensionsIndex < DE_LENGTH_OF_ARRAY(imageDimensions); ++imageDimensionsIndex)
 				{
@@ -2796,9 +2805,11 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 								false,															// bool								isColorMultipleSubresourceRangeTest;
 								VK_SAMPLE_COUNT_1_BIT											// VkSampleCountFlagBits            imageSampleCount
 							};
-							colorAttachmentClearLayersGroup->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, testCaseName, "Clear Color Attachment", testParams));
+							// Clear Color Attachment
+							colorAttachmentClearLayersGroup->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, testCaseName, testParams));
 							if (dimensions.width > 1)
-								partialColorAttachmentClearLayersGroup->addChild(new InstanceFactory1<PartialClearAttachmentTestInstance, TestParams>(testCtx, testCaseName, "Partial Clear Color Attachment", testParams));
+								// Partial Clear Color Attachment
+								partialColorAttachmentClearLayersGroup->addChild(new InstanceFactory1<PartialClearAttachmentTestInstance, TestParams>(testCtx, testCaseName, testParams));
 
 							if (!imageLayerParamsToTest[imageLayerParamsIndex].isCube &&  !(imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange.layerCount == VK_REMAINING_ARRAY_LAYERS) && (dimensions.width > dimensions.height))
 							{
@@ -2806,7 +2817,8 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 								{
 									const std::string msaaTestCaseName = testCaseName + "_" + getSampleCountName(sampleCount);
 									testParams.imageSampleCount = sampleCount;
-									colorAttachmentClearLayersGroup->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, msaaTestCaseName, "Clear Multisample Color Attachment", testParams));
+									// Clear Multisample Color Attachment
+									colorAttachmentClearLayersGroup->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, msaaTestCaseName, testParams));
 								}
 							}
 						}
@@ -2826,8 +2838,8 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 		{
 			if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
 			{
-				de::MovePtr<TestCaseGroup> depthStencilLayersGroup(new TestCaseGroup(testCtx, imageLayerParamsToTest[imageLayerParamsIndex].testName, ""));
-				de::MovePtr<TestCaseGroup> partialDepthStencilLayersGroup(new TestCaseGroup(testCtx, imageLayerParamsToTest[imageLayerParamsIndex].testName, ""));
+				de::MovePtr<TestCaseGroup> depthStencilLayersGroup(new TestCaseGroup(testCtx, imageLayerParamsToTest[imageLayerParamsIndex].testName));
+				de::MovePtr<TestCaseGroup> partialDepthStencilLayersGroup(new TestCaseGroup(testCtx, imageLayerParamsToTest[imageLayerParamsIndex].testName));
 
 				for (size_t imageDimensionsIndex = 0; imageDimensionsIndex < DE_LENGTH_OF_ARRAY(imageDimensions); ++imageDimensionsIndex)
 				{
@@ -2878,9 +2890,11 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 								false,															// bool								isColorMultipleSubresourceRangeTest;
 								VK_SAMPLE_COUNT_1_BIT											// VkSampleCountFlagBits			imageSampleCount
 							};
-							depthStencilLayersGroup->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, testCaseName, "Clear Depth/Stencil Attachment", testParams));
+							// Clear Depth/Stencil Attachment
+							depthStencilLayersGroup->addChild(new InstanceFactory1<ClearAttachmentTestInstance, TestParams>(testCtx, testCaseName, testParams));
 							if (dimensions.width > 1)
-								partialDepthStencilLayersGroup->addChild(new InstanceFactory1<PartialClearAttachmentTestInstance, TestParams>(testCtx, testCaseName, "Partial Clear Depth/Stencil Attachment", testParams));
+								// Partial Clear Depth/Stencil Attachment
+								partialDepthStencilLayersGroup->addChild(new InstanceFactory1<PartialClearAttachmentTestInstance, TestParams>(testCtx, testCaseName, testParams));
 						}
 					}
 				}
@@ -2909,10 +2923,12 @@ void createDedicatedAllocationImageClearingTests (tcu::TestCaseGroup* group)
 
 TestCaseGroup* createImageClearingTests (TestContext& testCtx)
 {
-	de::MovePtr<TestCaseGroup>	imageClearingTests	(new TestCaseGroup(testCtx, "image_clearing", "Image Clearing Tests"));
+	de::MovePtr<TestCaseGroup>	imageClearingTests	(new TestCaseGroup(testCtx, "image_clearing"));
 
-	imageClearingTests->addChild(createTestGroup(testCtx, "core",					"Core Image Clearing Tests",							createCoreImageClearingTests));
-	imageClearingTests->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Image Clearing Tests For Dedicated Memory Allocation",	createDedicatedAllocationImageClearingTests));
+	// Core Image Clearing Tests
+	imageClearingTests->addChild(createTestGroup(testCtx, "core", createCoreImageClearingTests));
+	// Image Clearing Tests For Dedicated Memory Allocation
+	imageClearingTests->addChild(createTestGroup(testCtx, "dedicated_allocation", createDedicatedAllocationImageClearingTests));
 
 	return imageClearingTests.release();
 }

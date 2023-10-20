@@ -1025,7 +1025,7 @@ tcu::TestStatus RayTracingComplexControlFlowInstance::iterate (void)
 class ComplexControlFlowTestCase : public TestCase
 {
 	public:
-										ComplexControlFlowTestCase	(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+										ComplexControlFlowTestCase	(tcu::TestContext& context, const char* name, const CaseDef data);
 										~ComplexControlFlowTestCase	(void);
 
 	virtual	void						initPrograms				(SourceCollections& programCollection) const;
@@ -1040,8 +1040,8 @@ private:
 	CaseDef								m_data;
 };
 
-ComplexControlFlowTestCase::ComplexControlFlowTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
-	: vkt::TestCase	(context, name, desc)
+ComplexControlFlowTestCase::ComplexControlFlowTestCase (tcu::TestContext& context, const char* name, const CaseDef data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -1746,17 +1746,18 @@ tcu::TestCaseGroup*	createComplexControlFlowTests (tcu::TestContext& testCtx)
 		{ "nested_function_call",		TEST_TYPE_NESTED_FUNCTION_CALL		},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "complexcontrolflow", "Ray tracing complex control flow tests"));
+	// Ray tracing complex control flow tests
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "complexcontrolflow"));
 
 	for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(testTypes); ++testTypeNdx)
 	{
 		const TestType					testType		= testTypes[testTypeNdx].testType;
-		de::MovePtr<tcu::TestCaseGroup> testTypeGroup	(new tcu::TestCaseGroup(testCtx, testTypes[testTypeNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> testTypeGroup	(new tcu::TestCaseGroup(testCtx, testTypes[testTypeNdx].name));
 
 		for (size_t testOpNdx = 0; testOpNdx < DE_LENGTH_OF_ARRAY(testOps); ++testOpNdx)
 		{
 			const TestOp					testOp		= testOps[testOpNdx].op;
-			de::MovePtr<tcu::TestCaseGroup> testOpGroup	(new tcu::TestCaseGroup(testCtx, testOps[testOpNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup> testOpGroup	(new tcu::TestCaseGroup(testCtx, testOps[testOpNdx].name));
 
 			for (size_t testStagesNdx = 0; testStagesNdx < DE_LENGTH_OF_ARRAY(testStages); ++testStagesNdx)
 			{
@@ -1776,7 +1777,7 @@ tcu::TestCaseGroup*	createComplexControlFlowTests (tcu::TestContext& testCtx)
 				if ((testOps[testOpNdx].applicableInStages & static_cast<VkShaderStageFlags>(testStage)) == 0)
 					continue;
 
-				testOpGroup->addChild(new ComplexControlFlowTestCase(testCtx, testName.c_str(), "", caseDef));
+				testOpGroup->addChild(new ComplexControlFlowTestCase(testCtx, testName.c_str(), caseDef));
 			}
 
 			testTypeGroup->addChild(testOpGroup.release());

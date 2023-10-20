@@ -72,7 +72,7 @@ std::ostream& operator<< (std::ostream& str, const HexFloat& v)
 class ShaderPackingFunctionCase : public TestCase
 {
 public:
-										ShaderPackingFunctionCase			(tcu::TestContext& testCtx, const char* name, const char* description, glu::ShaderType shaderType);
+										ShaderPackingFunctionCase			(tcu::TestContext& testCtx, const char* name, glu::ShaderType shaderType);
 										~ShaderPackingFunctionCase			(void);
 
 			void						checkSupport						(Context& context) const;
@@ -90,8 +90,8 @@ private:
 	ShaderPackingFunctionCase&			operator=							(const ShaderPackingFunctionCase& other);
 };
 
-ShaderPackingFunctionCase::ShaderPackingFunctionCase (tcu::TestContext& testCtx, const char* name, const char* description, glu::ShaderType shaderType)
-	: TestCase		(testCtx, name, description)
+ShaderPackingFunctionCase::ShaderPackingFunctionCase (tcu::TestContext& testCtx, const char* name, glu::ShaderType shaderType)
+	: TestCase		(testCtx, name)
 	, m_shaderType	(shaderType)
 {
 }
@@ -230,7 +230,7 @@ class PackSnorm2x16Case : public ShaderPackingFunctionCase
 {
 public:
 	PackSnorm2x16Case (tcu::TestContext& testCtx, glu::ShaderType shaderType, glu::Precision precision)
-		: ShaderPackingFunctionCase	(testCtx, (string("packsnorm2x16") + getPrecisionPostfix(precision) + getShaderTypePostfix(shaderType)).c_str(), "packSnorm2x16", shaderType)
+		: ShaderPackingFunctionCase	(testCtx, (string("packsnorm2x16") + getPrecisionPostfix(precision) + getShaderTypePostfix(shaderType)).c_str(), shaderType)
 		, m_precision				(precision)
 	{
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(glu::TYPE_FLOAT_VEC2, precision)));
@@ -335,7 +335,7 @@ class UnpackSnorm2x16Case : public ShaderPackingFunctionCase
 {
 public:
 	UnpackSnorm2x16Case (tcu::TestContext& testCtx, glu::ShaderType shaderType)
-		: ShaderPackingFunctionCase	(testCtx, (string("unpacksnorm2x16") + getShaderTypePostfix(shaderType)).c_str(), "unpackSnorm2x16", shaderType)
+		: ShaderPackingFunctionCase	(testCtx, (string("unpacksnorm2x16") + getShaderTypePostfix(shaderType)).c_str(), shaderType)
 	{
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(glu::TYPE_UINT, glu::PRECISION_HIGHP)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(glu::TYPE_FLOAT_VEC2, glu::PRECISION_HIGHP)));
@@ -449,7 +449,7 @@ class PackUnorm2x16Case : public ShaderPackingFunctionCase
 {
 public:
 	PackUnorm2x16Case (tcu::TestContext& testCtx, glu::ShaderType shaderType, glu::Precision precision)
-		: ShaderPackingFunctionCase	(testCtx, (string("packunorm2x16") + getPrecisionPostfix(precision) + getShaderTypePostfix(shaderType)).c_str(), "packUnorm2x16", shaderType)
+		: ShaderPackingFunctionCase	(testCtx, (string("packunorm2x16") + getPrecisionPostfix(precision) + getShaderTypePostfix(shaderType)).c_str(), shaderType)
 		, m_precision				(precision)
 	{
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(glu::TYPE_FLOAT_VEC2, precision)));
@@ -555,7 +555,7 @@ class UnpackUnorm2x16Case : public ShaderPackingFunctionCase
 {
 public:
 	UnpackUnorm2x16Case (tcu::TestContext& testCtx, glu::ShaderType shaderType)
-		: ShaderPackingFunctionCase(testCtx, (string("unpackunorm2x16") + getShaderTypePostfix(shaderType)).c_str(), "unpackUnorm2x16", shaderType)
+		: ShaderPackingFunctionCase(testCtx, (string("unpackunorm2x16") + getShaderTypePostfix(shaderType)).c_str(), shaderType)
 	{
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(glu::TYPE_UINT, glu::PRECISION_HIGHP)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(glu::TYPE_FLOAT_VEC2, glu::PRECISION_HIGHP)));
@@ -676,7 +676,7 @@ class PackHalf2x16Case : public ShaderPackingFunctionCase
 {
 public:
 	PackHalf2x16Case (tcu::TestContext& testCtx, glu::ShaderType shaderType)
-		: ShaderPackingFunctionCase	(testCtx, (string("packhalf2x16") + getShaderTypePostfix(shaderType)).c_str(), "packHalf2x16", shaderType)
+		: ShaderPackingFunctionCase	(testCtx, (string("packhalf2x16") + getShaderTypePostfix(shaderType)).c_str(), shaderType)
 	{
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(glu::TYPE_FLOAT_VEC2, glu::PRECISION_HIGHP)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(glu::TYPE_UINT, glu::PRECISION_HIGHP)));
@@ -877,7 +877,7 @@ class UnpackHalf2x16Case : public ShaderPackingFunctionCase
 {
 public:
 	UnpackHalf2x16Case (tcu::TestContext& testCtx, glu::ShaderType shaderType)
-		: ShaderPackingFunctionCase	(testCtx, (string("unpackhalf2x16") + getShaderTypePostfix(shaderType)).c_str(), "unpackHalf2x16", shaderType)
+		: ShaderPackingFunctionCase	(testCtx, (string("unpackhalf2x16") + getShaderTypePostfix(shaderType)).c_str(), shaderType)
 	{
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(glu::TYPE_UINT, glu::PRECISION_HIGHP)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(glu::TYPE_FLOAT_VEC2, glu::PRECISION_MEDIUMP)));
@@ -998,7 +998,7 @@ class PackSnorm4x8Case : public ShaderPackingFunctionCase
 {
 public:
 	PackSnorm4x8Case (tcu::TestContext& testCtx, glu::ShaderType shaderType, glu::Precision precision)
-		: ShaderPackingFunctionCase	(testCtx, (string("packsnorm4x8") + getPrecisionPostfix(precision) + getShaderTypePostfix(shaderType)).c_str(), "packSnorm4x8", shaderType)
+		: ShaderPackingFunctionCase	(testCtx, (string("packsnorm4x8") + getPrecisionPostfix(precision) + getShaderTypePostfix(shaderType)).c_str(), shaderType)
 		, m_precision				(precision)
 	{
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(glu::TYPE_FLOAT_VEC4, precision)));
@@ -1112,7 +1112,7 @@ class UnpackSnorm4x8Case : public ShaderPackingFunctionCase
 {
 public:
 	UnpackSnorm4x8Case (tcu::TestContext& testCtx, glu::ShaderType shaderType)
-		: ShaderPackingFunctionCase	(testCtx, (string("unpacksnorm4x8") + getShaderTypePostfix(shaderType)).c_str(), "unpackSnorm4x8", shaderType)
+		: ShaderPackingFunctionCase	(testCtx, (string("unpacksnorm4x8") + getShaderTypePostfix(shaderType)).c_str(), shaderType)
 	{
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(glu::TYPE_UINT, glu::PRECISION_HIGHP)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
@@ -1233,7 +1233,7 @@ class PackUnorm4x8Case : public ShaderPackingFunctionCase
 {
 public:
 	PackUnorm4x8Case (tcu::TestContext& testCtx, glu::ShaderType shaderType, glu::Precision precision)
-		: ShaderPackingFunctionCase	(testCtx, (string("packunorm4x8") + getPrecisionPostfix(precision) + getShaderTypePostfix(shaderType)).c_str(), "packUnorm4x8", shaderType)
+		: ShaderPackingFunctionCase	(testCtx, (string("packunorm4x8") + getPrecisionPostfix(precision) + getShaderTypePostfix(shaderType)).c_str(), shaderType)
 		, m_precision				(precision)
 	{
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(glu::TYPE_FLOAT_VEC4, precision)));
@@ -1346,7 +1346,7 @@ class UnpackUnorm4x8Case : public ShaderPackingFunctionCase
 {
 public:
 	UnpackUnorm4x8Case (tcu::TestContext& testCtx, glu::ShaderType shaderType)
-		: ShaderPackingFunctionCase	(testCtx, (string("unpackunorm4x8") + getShaderTypePostfix(shaderType)).c_str(), "unpackUnorm4x8", shaderType)
+		: ShaderPackingFunctionCase	(testCtx, (string("unpackunorm4x8") + getShaderTypePostfix(shaderType)).c_str(), shaderType)
 	{
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(glu::TYPE_UINT, glu::PRECISION_HIGHP)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
@@ -1362,7 +1362,7 @@ public:
 };
 
 ShaderPackingFunctionTests::ShaderPackingFunctionTests (tcu::TestContext& testCtx)
-	: tcu::TestCaseGroup	(testCtx, "pack_unpack", "Floating-point pack and unpack function tests")
+	: tcu::TestCaseGroup	(testCtx, "pack_unpack")
 {
 }
 

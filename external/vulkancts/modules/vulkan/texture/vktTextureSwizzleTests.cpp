@@ -60,8 +60,8 @@ template <typename INSTANCE_TYPE>
 class SwizzleTestCase : public TextureTestCase<INSTANCE_TYPE>
 {
 public:
-					SwizzleTestCase	(tcu::TestContext& context, const std::string& name, const std::string& description, const typename INSTANCE_TYPE::ParameterType& testParameters)
-						: TextureTestCase<INSTANCE_TYPE>	(context, name, description, testParameters)
+					SwizzleTestCase	(tcu::TestContext& context, const std::string& name, const typename INSTANCE_TYPE::ParameterType& testParameters)
+						: TextureTestCase<INSTANCE_TYPE>	(context, name, testParameters)
 	{}
 
 	virtual void	initPrograms	(vk::SourceCollections& programCollection) const
@@ -519,11 +519,11 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 		{ "yy", { 1, 1 } }
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	groupCompMap		(new tcu::TestCaseGroup(testCtx, "component_mapping",	"Component mapping swizzles"));
-	de::MovePtr<tcu::TestCaseGroup>	groupColor			(new tcu::TestCaseGroup(testCtx, "color",				"Color format swizzles"));
-	de::MovePtr<tcu::TestCaseGroup>	groupDepth			(new tcu::TestCaseGroup(testCtx, "depth",				"Depth format swizzles"));
-	de::MovePtr<tcu::TestCaseGroup>	groupStencil		(new tcu::TestCaseGroup(testCtx, "stencil",				"Stencil format swizzles"));
-	de::MovePtr<tcu::TestCaseGroup>	groupTexCoord		(new tcu::TestCaseGroup(testCtx, "texture_coordinate",	"Texture coordinate swizzles"));
+	de::MovePtr<tcu::TestCaseGroup>	groupCompMap	(new tcu::TestCaseGroup(testCtx, "component_mapping"));
+	de::MovePtr<tcu::TestCaseGroup>	groupColor			(new tcu::TestCaseGroup(testCtx, "color"));
+	de::MovePtr<tcu::TestCaseGroup>	groupDepth			(new tcu::TestCaseGroup(testCtx, "depth"));
+	de::MovePtr<tcu::TestCaseGroup>	groupStencil		(new tcu::TestCaseGroup(testCtx, "stencil"));
+	de::MovePtr<tcu::TestCaseGroup>	groupTexCoord	(new tcu::TestCaseGroup(testCtx, "texture_coordinate"));
 
 	// 2D Component mapping swizzles for color formats
 	for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes2D); sizeNdx++)
@@ -532,7 +532,6 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 	for (int mappingNdx = 0; mappingNdx < DE_LENGTH_OF_ARRAY(componentMappings); mappingNdx++)
 	{
 		const string formatStr	= de::toString(getFormatStr(colorFormats2D[formatNdx].format));
-		const string caseDesc	= formatStr + ", TEXTURETYPE_2D";
 		const string caseName	= de::toLower(formatStr.substr(10)) + "_2d"
 								+ "_" + sizes2D[sizeNdx].name
 								+ backingModes[backingNdx].name
@@ -549,7 +548,7 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 		testParameters.aspectMask		= VK_IMAGE_ASPECT_COLOR_BIT;
 		testParameters.programs.push_back(colorFormats2D[formatNdx].program);
 
-		groupColor->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), caseDesc.c_str(), testParameters));
+		groupColor->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), testParameters));
 	}
 	groupCompMap->addChild(groupColor.release());
 
@@ -560,7 +559,6 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 	for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
 	{
 		const string formatStr	= de::toString(getFormatStr(depthFormats2D[formatNdx].format));
-		const string caseDesc	= formatStr + ", TEXTURETYPE_2D";
 		const string caseName	= de::toLower(formatStr.substr(10)) + "_2d"
 								+ "_" + sizes2D[sizeNdx].name
 								+ backingModes[backingNdx].name
@@ -577,7 +575,7 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 		testParameters.aspectMask		= VK_IMAGE_ASPECT_DEPTH_BIT;
 		testParameters.programs.push_back(depthFormats2D[formatNdx].program);
 
-		groupDepth->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), caseDesc.c_str(), testParameters));
+		groupDepth->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), testParameters));
 	}
 	groupCompMap->addChild(groupDepth.release());
 
@@ -587,7 +585,6 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 	for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
 	{
 		const string formatStr	= de::toString(getFormatStr(stencilFormats2D[formatNdx].format));
-		const string caseDesc	= formatStr + ", TEXTURETYPE_2D";
 		const string caseName	= de::toLower(formatStr.substr(10)) + "_2d"
 								+ "_" + sizes2D[sizeNdx].name
 								+ backingModes[backingNdx].name
@@ -604,7 +601,7 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 		testParameters.aspectMask		= VK_IMAGE_ASPECT_STENCIL_BIT;
 		testParameters.programs.push_back(stencilFormats2D[formatNdx].program);
 
-		groupStencil->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), caseDesc.c_str(), testParameters));
+		groupStencil->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), testParameters));
 	}
 	groupCompMap->addChild(groupStencil.release());
 #endif // CTS_USES_VULKANSC
@@ -616,7 +613,6 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 	for (int swizzleNdx = 0; swizzleNdx < DE_LENGTH_OF_ARRAY(texCoordSwizzles2d); swizzleNdx++)
 	{
 		const string formatStr	= de::toString(getFormatStr(colorFormats2D[formatNdx].format));
-		const string caseDesc	= formatStr + ", TEXTURETYPE_2D";
 		const string caseName	= de::toLower(formatStr.substr(10)) + "_2d"
 								+ "_" + sizes2D[sizeNdx].name
 								+ backingModes[backingNdx].name
@@ -635,7 +631,7 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 		testParameters.aspectMask		= VK_IMAGE_ASPECT_COLOR_BIT;
 		testParameters.programs.push_back(colorFormats2D[formatNdx].program);
 
-		groupTexCoord->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), caseDesc.c_str(), testParameters));
+		groupTexCoord->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), testParameters));
 	}
 
 	textureSwizzleTests->addChild(groupCompMap.release());
@@ -644,7 +640,7 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 
 tcu::TestCaseGroup* createTextureSwizzleTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "swizzle", "Texture swizzle tests.", populateTextureSwizzleTests);
+	return createTestGroup(testCtx, "swizzle", populateTextureSwizzleTests);
 }
 
 } // texture

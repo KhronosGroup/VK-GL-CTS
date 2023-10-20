@@ -119,14 +119,6 @@ const std::string generateTestName (struct DepthRangeUnrestrictedParam param)
 	return result.str();
 }
 
-const std::string generateTestDescription (struct DepthRangeUnrestrictedParam param)
-{
-	std::string result("Test unrestricted depth ranges on viewport");
-	if (param.depthBoundsTestEnable)
-		result += " , depth bounds test";
-	return result;
-}
-
 deBool isSupportedDepthStencilFormat (const InstanceInterface& instanceInterface, VkPhysicalDevice device, VkFormat format)
 {
 	VkFormatProperties formatProps;
@@ -303,7 +295,6 @@ vkt::TestCase* newTestCase (tcu::TestContext&					testContext,
 {
 	return new Test(testContext,
 					generateTestName(testParam).c_str(),
-					generateTestDescription(testParam).c_str(),
 					testParam);
 }
 
@@ -1375,9 +1366,8 @@ class DepthRangeUnrestrictedTest : public vkt::TestCase
 public:
 							DepthRangeUnrestrictedTest			(tcu::TestContext&					testContext,
 																 const std::string&					name,
-																 const std::string&					description,
 																 const DepthRangeUnrestrictedParam	param)
-								: vkt::TestCase (testContext, name, description)
+								: vkt::TestCase (testContext, name)
 								, m_param		(param)
 								{ }
 	virtual					~DepthRangeUnrestrictedTest	(void) { }
@@ -1431,7 +1421,7 @@ void DepthRangeUnrestrictedTest::checkSupport(Context& context) const
 
 tcu::TestCaseGroup* createDepthRangeUnrestrictedTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> depthTests (new tcu::TestCaseGroup(testCtx, "depth_range_unrestricted", "VK_EXT_depth_range_unrestricted tests"));
+	de::MovePtr<tcu::TestCaseGroup> depthTests (new tcu::TestCaseGroup(testCtx, "depth_range_unrestricted"));
 	const VkFormat depthFormats[]	=
 	{
 		VK_FORMAT_D32_SFLOAT,
@@ -1454,7 +1444,7 @@ tcu::TestCaseGroup* createDepthRangeUnrestrictedTests (tcu::TestContext& testCtx
 
 	// Depth clear values outside range [0.0f, 1.0f].
 	{
-		de::MovePtr<tcu::TestCaseGroup> depthClearValueTests (new tcu::TestCaseGroup(testCtx, "clear_value", "Depth Clear value unrestricted"));
+		de::MovePtr<tcu::TestCaseGroup> depthClearValueTests (new tcu::TestCaseGroup(testCtx, "clear_value"));
 		DepthRangeUnrestrictedParam testParams;
 		testParams.pipelineConstructionType		= pipelineConstructionType;
 		testParams.testClearValueOnly			= VK_TRUE;
@@ -1483,7 +1473,7 @@ tcu::TestCaseGroup* createDepthRangeUnrestrictedTests (tcu::TestContext& testCtx
 
 	// Viewport's depth unrestricted range
 	{
-		de::MovePtr<tcu::TestCaseGroup> viewportTests (new tcu::TestCaseGroup(testCtx, "viewport", "Viewport depth unrestricted range"));
+		de::MovePtr<tcu::TestCaseGroup> viewportTests (new tcu::TestCaseGroup(testCtx, "viewport"));
 		DepthRangeUnrestrictedParam testParams;
 		testParams.pipelineConstructionType	= pipelineConstructionType;
 		testParams.testClearValueOnly		= VK_FALSE;
@@ -1521,7 +1511,7 @@ tcu::TestCaseGroup* createDepthRangeUnrestrictedTests (tcu::TestContext& testCtx
 
 	// DepthBounds's depth unrestricted range
 	{
-		de::MovePtr<tcu::TestCaseGroup> depthBoundsTests (new tcu::TestCaseGroup(testCtx, "depthbounds", "Depthbounds unrestricted range"));
+		de::MovePtr<tcu::TestCaseGroup> depthBoundsTests (new tcu::TestCaseGroup(testCtx, "depthbounds"));
 		DepthRangeUnrestrictedParam testParams;
 		testParams.pipelineConstructionType						= pipelineConstructionType;
 		testParams.testClearValueOnly							= VK_FALSE;
@@ -1565,7 +1555,7 @@ tcu::TestCaseGroup* createDepthRangeUnrestrictedTests (tcu::TestContext& testCtx
 
 	// Depth clamping disabled
 	{
-		de::MovePtr<tcu::TestCaseGroup> noDepthClampingTests (new tcu::TestCaseGroup(testCtx, "depthclampingdisabled", "Depth clamping disabled tests"));
+		de::MovePtr<tcu::TestCaseGroup> noDepthClampingTests (new tcu::TestCaseGroup(testCtx, "depthclampingdisabled"));
 		DepthRangeUnrestrictedParam testParams;
 		testParams.pipelineConstructionType		= pipelineConstructionType;
 		testParams.testClearValueOnly			= VK_FALSE;

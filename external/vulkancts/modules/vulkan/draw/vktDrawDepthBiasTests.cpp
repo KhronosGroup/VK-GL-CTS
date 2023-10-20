@@ -62,7 +62,7 @@ void createTests (tcu::TestCaseGroup* testGroup)
 	{
 		std::vector<std::string>	requirements	= cases[i].testRequirements;
 		const std::string			fileName		= cases[i].testName + ".amber";
-		cts_amber::AmberTestCase*	testCase		= cts_amber::createAmberTestCase(testCtx, cases[i].testName.c_str(), "", dataDir, fileName, requirements);
+		cts_amber::AmberTestCase*	testCase		= cts_amber::createAmberTestCase(testCtx, cases[i].testName.c_str(), dataDir, fileName, requirements);
 		testGroup->addChild(testCase);
 	}
 }
@@ -71,7 +71,7 @@ void createTests (tcu::TestCaseGroup* testGroup)
 
 tcu::TestCaseGroup* createDepthBiasTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "depth_bias", "Depth bias tests", createTests);
+	return createTestGroup(testCtx, "depth_bias", createTests);
 }
 
 }	// Draw

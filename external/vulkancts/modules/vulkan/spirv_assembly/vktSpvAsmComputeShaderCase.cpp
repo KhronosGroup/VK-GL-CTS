@@ -365,8 +365,8 @@ namespace SpirVAssembly
 
 // ComputeShaderTestCase implementations
 
-SpvAsmComputeShaderCase::SpvAsmComputeShaderCase (tcu::TestContext& testCtx, const char* name, const char* description, const ComputeShaderSpec& spec)
-	: TestCase		(testCtx, name, description)
+SpvAsmComputeShaderCase::SpvAsmComputeShaderCase (tcu::TestContext& testCtx, const char* name, const ComputeShaderSpec& spec)
+	: TestCase		(testCtx, name)
 	, m_shaderSpec	(spec)
 {
 }

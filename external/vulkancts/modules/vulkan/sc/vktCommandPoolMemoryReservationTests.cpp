@@ -276,7 +276,8 @@ void checkSupport (Context& context, TestParams testParams)
 
 tcu::TestCaseGroup*	createCommandPoolMemoryReservationTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "command_pool_memory_reservation", "Tests verifying memory reservation for command pools in Vulkan SC"));
+	// Tests verifying memory reservation for command pools in Vulkan SC
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "command_pool_memory_reservation"));
 
 	// add vkGetCommandPoolMemoryConsumption tests
 	const struct
@@ -325,19 +326,20 @@ tcu::TestCaseGroup*	createCommandPoolMemoryReservationTests (tcu::TestContext& t
 	};
 
 	{
-		de::MovePtr<tcu::TestCaseGroup>	memConGroup(new tcu::TestCaseGroup(testCtx, "memory_consumption", "Testing vkGetCommandPoolMemoryConsumption"));
+		// Testing vkGetCommandPoolMemoryConsumption
+		de::MovePtr<tcu::TestCaseGroup>	memConGroup(new tcu::TestCaseGroup(testCtx, "memory_consumption"));
 
 		for (int cbIdx = 0; cbIdx < DE_LENGTH_OF_ARRAY(maxCommandBuffers); ++cbIdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> cbGroup(new tcu::TestCaseGroup(testCtx, maxCommandBuffers[cbIdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup> cbGroup(new tcu::TestCaseGroup(testCtx, maxCommandBuffers[cbIdx].name));
 
 			for (int sizeIdx = 0; sizeIdx < DE_LENGTH_OF_ARRAY(reservedSizes); ++sizeIdx)
 			{
-				de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, reservedSizes[sizeIdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, reservedSizes[sizeIdx].name));
 
 				for (int simIdx = 0; simIdx < DE_LENGTH_OF_ARRAY(recording); ++simIdx)
 				{
-					de::MovePtr<tcu::TestCaseGroup> simGroup(new tcu::TestCaseGroup(testCtx, recording[simIdx].name, ""));
+					de::MovePtr<tcu::TestCaseGroup> simGroup(new tcu::TestCaseGroup(testCtx, recording[simIdx].name));
 
 					if(!recording[simIdx].multipleRecording)
 					{
@@ -348,7 +350,7 @@ tcu::TestCaseGroup*	createCommandPoolMemoryReservationTests (tcu::TestContext& t
 							1u,
 							false
 						};
-						addFunctionCase(simGroup.get(), "reserved_size", "", verifyCommandPoolReservedSize, testParams);
+						addFunctionCase(simGroup.get(), "reserved_size", verifyCommandPoolReservedSize, testParams);
 					}
 
 					for (int iterIdx = 0; iterIdx < DE_LENGTH_OF_ARRAY(iterations); ++iterIdx)
@@ -362,7 +364,7 @@ tcu::TestCaseGroup*	createCommandPoolMemoryReservationTests (tcu::TestContext& t
 						};
 						std::ostringstream testName;
 						testName << "allocated_size_" << iterations[iterIdx].name;
-						addFunctionCase(simGroup.get(), testName.str(), "", checkSupport, verifyCommandPoolAllocEqualsCommandBufferAlloc, testParams);
+						addFunctionCase(simGroup.get(), testName.str(), checkSupport, verifyCommandPoolAllocEqualsCommandBufferAlloc, testParams);
 					}
 
 					sizeGroup->addChild(simGroup.release());

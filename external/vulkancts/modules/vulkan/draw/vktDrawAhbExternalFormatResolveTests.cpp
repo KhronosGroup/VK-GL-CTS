@@ -1505,7 +1505,7 @@ void AhbExternalFormatResolveTestInstance::drawCommands (vk::VkCommandBuffer cmd
 class AhbExternalFormatResolveTestCase : public TestCase
 {
 	public:
-					AhbExternalFormatResolveTestCase		(tcu::TestContext& context, const std::string& name, const std::string& desc, const TestParams& params);
+					AhbExternalFormatResolveTestCase		(tcu::TestContext& context, const std::string& name, const TestParams& params);
 	virtual			~AhbExternalFormatResolveTestCase		(void)	{ }
 
 	void			initPrograms							(SourceCollections& programCollection) const override;
@@ -1516,8 +1516,8 @@ private:
 	const TestParams	m_params;
 };
 
-AhbExternalFormatResolveTestCase::AhbExternalFormatResolveTestCase (tcu::TestContext& context, const std::string& name, const std::string& desc, const TestParams& params)
-	: TestCase(context, name, desc)
+AhbExternalFormatResolveTestCase::AhbExternalFormatResolveTestCase (tcu::TestContext& context, const std::string& name, const TestParams& params)
+	: TestCase(context, name)
 	, m_params(params)
 { }
 
@@ -1665,7 +1665,8 @@ void createAhbExternalFormatResolveDrawTests (tcu::TestCaseGroup* testGroup, con
 	}
 
 	tcu::TextureFormat	invalidTextureFormat	= AndroidHardwareBufferInstance::formatToTextureFormat(AndroidHardwareBufferInstance::Format::UNASSIGNED);
-	tcu::TestCaseGroup*	drawGroup				= new tcu::TestCaseGroup(testGroup->getTestContext(), "draw", "Draw tests");
+	// Draw tests
+	tcu::TestCaseGroup*	drawGroup				= new tcu::TestCaseGroup(testGroup->getTestContext(), "draw");
 	tcu::TestCaseGroup*	inputAttachment			= new tcu::TestCaseGroup(testGroup->getTestContext(), "input_attachment", "Draw tests with input attachment");
 	tcu::TestCaseGroup*	clearGroup				= new tcu::TestCaseGroup(testGroup->getTestContext(), "clear", "Clear only tests");
 	for (deUint32 i = 0; i < AndroidHardwareBufferInstance::Format::COUNT; ++i)
@@ -1690,18 +1691,14 @@ void createAhbExternalFormatResolveDrawTests (tcu::TestCaseGroup* testGroup, con
 			tcu::TestCaseGroup*	formatGroup		= new tcu::TestCaseGroup(testGroup->getTestContext(), formatName.c_str(), formatGroupDesc.c_str());
 
 			params.m_renderArea	= defaultRenderArea;
-			formatGroup->addChild(new AhbExternalFormatResolveTestCase(testGroup->getTestContext(), "full_render_area", "Draw to full render area of external format", params));
+			// Draw to full render area of external format
+			formatGroup->addChild(new AhbExternalFormatResolveTestCase(testGroup->getTestContext(), "full_render_area", params));
 
 			params.m_partialDraw	= true;
 			for (size_t renderAreaIndex = 0u; renderAreaIndex < partialRenderAreas.size(); ++renderAreaIndex)
 			{
-				const std::string	testDesc	= "Draw to partial render area ("
-												  "Offset [" + std::to_string(partialRenderAreas[renderAreaIndex].offset.x) + ", " + std::to_string(partialRenderAreas[renderAreaIndex].offset.y) + "], "
-												  "Extent [" + std::to_string(partialRenderAreas[renderAreaIndex].extent.width) + ", " + std::to_string(partialRenderAreas[renderAreaIndex].extent.height) +  "]"
-												  ") of external format " + formatName;
-
 				params.m_renderArea	= partialRenderAreas[renderAreaIndex];
-				formatGroup->addChild(new AhbExternalFormatResolveTestCase(testGroup->getTestContext(), "partial_render_area_" + std::to_string(renderAreaIndex), testDesc, params));
+				formatGroup->addChild(new AhbExternalFormatResolveTestCase(testGroup->getTestContext(), "partial_render_area_" + std::to_string(renderAreaIndex), params));
 			}
 			params.m_partialDraw	= false;
 
@@ -1714,22 +1711,17 @@ void createAhbExternalFormatResolveDrawTests (tcu::TestCaseGroup* testGroup, con
 			params.m_usage				= gpuFramebufferSampled;
 			params.m_renderArea			= defaultRenderArea;
 
-			const std::string	formatGroupDesc	= "Draw to external format " + formatName + " with input attachment";
-			tcu::TestCaseGroup*	formatGroup		= new tcu::TestCaseGroup(testGroup->getTestContext(), formatName.c_str(), formatGroupDesc.c_str());
+			tcu::TestCaseGroup*	formatGroup		= new tcu::TestCaseGroup(testGroup->getTestContext(), formatName.c_str());
 
 			params.m_renderArea	= defaultRenderArea;
-			formatGroup->addChild(new AhbExternalFormatResolveTestCase(testGroup->getTestContext(), "full_render_area", "Draw to full render area of external format", params));
+			// Draw to full render area of external format
+			formatGroup->addChild(new AhbExternalFormatResolveTestCase(testGroup->getTestContext(), "full_render_area", params));
 
 			params.m_partialDraw	= true;
 			for (size_t renderAreaIndex = 0u; renderAreaIndex < partialRenderAreas.size(); ++renderAreaIndex)
 			{
-				const std::string	testDesc	= "Draw to partial render area ("
-												  "Offset [" + std::to_string(partialRenderAreas[renderAreaIndex].offset.x) + ", " + std::to_string(partialRenderAreas[renderAreaIndex].offset.y) + "], "
-												  "Extent [" + std::to_string(partialRenderAreas[renderAreaIndex].extent.width) + ", " + std::to_string(partialRenderAreas[renderAreaIndex].extent.height) +  "]"
-												  ") of external format " + formatName + " with input attachment";
-
 				params.m_renderArea	= partialRenderAreas[renderAreaIndex];
-				formatGroup->addChild(new AhbExternalFormatResolveTestCase(testGroup->getTestContext(), "partial_render_area_" + std::to_string(renderAreaIndex), testDesc, params));
+				formatGroup->addChild(new AhbExternalFormatResolveTestCase(testGroup->getTestContext(), "partial_render_area_" + std::to_string(renderAreaIndex), params));
 			}
 			params.m_partialDraw	= false;
 
@@ -1745,7 +1737,7 @@ void createAhbExternalFormatResolveDrawTests (tcu::TestCaseGroup* testGroup, con
 			{
 				params.m_isClearOnly	= true;
 				params.m_renderArea		= defaultRenderArea;
-				clearGroup->addChild(new AhbExternalFormatResolveTestCase(testGroup->getTestContext(), formatName, "Clear external format " + formatName, params));
+				clearGroup->addChild(new AhbExternalFormatResolveTestCase(testGroup->getTestContext(), formatName, params));
 				params.m_isClearOnly	= false;
 			}
 		}
@@ -1760,7 +1752,8 @@ void createAhbExternalFormatResolveDrawTests (tcu::TestCaseGroup* testGroup, con
 
 tcu::TestCaseGroup*	createAhbExternalFormatResolveTests (tcu::TestContext& testCtx, const SharedGroupParams& groupParams)
 {
-	return createTestGroup(testCtx, "ahb_external_format_resolve", "Draw tests using Android Hardware Buffer external formats", createAhbExternalFormatResolveDrawTests, groupParams);
+	// Draw tests using Android Hardware Buffer external formats
+	return createTestGroup(testCtx, "ahb_external_format_resolve", createAhbExternalFormatResolveDrawTests, groupParams);
 }
 
 

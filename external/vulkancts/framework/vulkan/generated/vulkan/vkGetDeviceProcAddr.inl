@@ -578,7 +578,7 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 
 void addGetDeviceProcAddrTests (tcu::TestCaseGroup* testGroup)
 {
-	addFunctionCase(testGroup, "non_enabled", "GetDeviceProcAddr", testGetDeviceProcAddr);
+	addFunctionCase(testGroup, "non_enabled", testGetDeviceProcAddr);
 }
 
 }

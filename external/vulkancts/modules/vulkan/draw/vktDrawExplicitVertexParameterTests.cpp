@@ -223,7 +223,7 @@ DrawTestInstance::~DrawTestInstance (void)
 class DrawTestCase : public TestCase
 {
 	public:
-								DrawTestCase		(tcu::TestContext& context, const char* name, const char* desc, const DrawParams data);
+								DrawTestCase		(tcu::TestContext& context, const char* name, const DrawParams data);
 								~DrawTestCase		(void);
 	virtual	void				initPrograms		(SourceCollections& programCollection) const;
 	virtual TestInstance*		createInstance		(Context& context) const;
@@ -233,8 +233,8 @@ private:
 	DrawParams					m_data;
 };
 
-DrawTestCase::DrawTestCase (tcu::TestContext& context, const char* name, const char* desc, const DrawParams data)
-	: vkt::TestCase	(context, name, desc)
+DrawTestCase::DrawTestCase (tcu::TestContext& context, const char* name, const DrawParams data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -780,7 +780,7 @@ void createTests (tcu::TestCaseGroup* testGroup, const SharedGroupParams groupPa
 				auxQualifiers[auxNdx],
 				groupParams
 			};
-			testGroup->addChild(new DrawTestCase(testCtx, getTestName(params).c_str(), "", params));
+			testGroup->addChild(new DrawTestCase(testCtx, getTestName(params).c_str(), params));
 		}
 	}
 }
@@ -789,7 +789,8 @@ void createTests (tcu::TestCaseGroup* testGroup, const SharedGroupParams groupPa
 
 tcu::TestCaseGroup*	createExplicitVertexParameterTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "explicit_vertex_parameter", "Tests for VK_AMD_shader_explicit_vertex_parameter.", createTests, groupParams);
+	// Tests for VK_AMD_shader_explicit_vertex_parameter.
+	return createTestGroup(testCtx, "explicit_vertex_parameter", createTests, groupParams);
 }
 
 }	// Draw

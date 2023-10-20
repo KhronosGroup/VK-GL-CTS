@@ -465,7 +465,6 @@ class SampleDrawnCubeFaceTest : public TestCase
 public:
 						SampleDrawnCubeFaceTest	(tcu::TestContext&	testCtx,
 												const std::string&	name,
-												const std::string&	description,
 												const tcu::IVec2&	size,
 												const VkFormat		format);
 
@@ -479,10 +478,9 @@ private:
 
 SampleDrawnCubeFaceTest::SampleDrawnCubeFaceTest (tcu::TestContext&	testCtx,
 												 const std::string&	name,
-												 const std::string&	description,
 												 const tcu::IVec2&	size,
 												 const VkFormat		format)
-	: TestCase	(testCtx, name, description)
+	: TestCase	(testCtx, name)
 	, m_size	(size)
 	, m_format	(format)
 {
@@ -556,9 +554,9 @@ tcu::TestCaseGroup* createImageSampleDrawnCubeFaceTests	(tcu::TestContext& testC
 	const VkFormat		format	= VK_FORMAT_R8G8B8A8_UNORM;
 	const tcu::IVec2	size	= tcu::IVec2(8, 8);
 
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "sample_cubemap", "Sample cube map faces that has been rendered to tests"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "sample_cubemap"));
 
-	testGroup->addChild(new SampleDrawnCubeFaceTest(testCtx, "write_face_0", "", size, format));
+	testGroup->addChild(new SampleDrawnCubeFaceTest(testCtx, "write_face_0", size, format));
 
 	return testGroup.release();
 }

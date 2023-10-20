@@ -611,7 +611,7 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 						deBool(false)					//  deBool				requires16BitUniformBuffer;
 					};
 
-					addFunctionCaseWithPrograms(computeGroupPtr, testName, "", supportedCheck, initPrograms, test, caseDef);
+					addFunctionCaseWithPrograms(computeGroupPtr, testName,  supportedCheck, initPrograms, test, caseDef);
 				}
 
 #ifndef CTS_USES_VULKANSC
@@ -632,7 +632,7 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 							deBool(false)					//  deBool				requires16BitUniformBuffer;
 						};
 
-						addFunctionCaseWithPrograms(meshGroupPtr, testName, "", supportedCheck, initPrograms, test, caseDef);
+						addFunctionCaseWithPrograms(meshGroupPtr, testName,  supportedCheck, initPrograms, test, caseDef);
 					}
 				}
 #endif // CTS_USES_VULKANSC
@@ -649,7 +649,7 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 						deBool(false)					//  deBool				requires16BitUniformBuffer;
 					};
 
-					addFunctionCaseWithPrograms(graphicGroupPtr, name, "", supportedCheck, initPrograms, test, caseDef);
+					addFunctionCaseWithPrograms(graphicGroupPtr, name,  supportedCheck, initPrograms, test, caseDef);
 				}
 
 				for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(fbStages); ++stageIndex)
@@ -666,7 +666,7 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 					};
 					const string			testName	= name + "_" + getShaderStageName(caseDef.shaderStage);
 
-					addFunctionCaseWithPrograms(framebufferGroupPtr, testName, "", supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
+					addFunctionCaseWithPrograms(framebufferGroupPtr, testName,  supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 				}
 
 				{
@@ -682,7 +682,7 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 					};
 					const string			testName	= name + "_" + getShaderStageName(caseDef.shaderStage);
 
-					addFunctionCaseWithPrograms(fragHelperGroupPtr, testName, "", supportedCheck, initFrameBufferProgramsFrag, noSSBOtest, caseDef);
+					addFunctionCaseWithPrograms(fragHelperGroupPtr, testName,  supportedCheck, initFrameBufferProgramsFrag, noSSBOtest, caseDef);
 				}
 			}
 		}
@@ -719,7 +719,7 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 					DE_FALSE						//  deBool				requires16BitUniformBuffer;
 				};
 
-				addFunctionCaseWithPrograms(raytracingGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
+				addFunctionCaseWithPrograms(raytracingGroup.get(), name,  supportedCheck, initPrograms, test, caseDef);
 			}
 		}
 	}

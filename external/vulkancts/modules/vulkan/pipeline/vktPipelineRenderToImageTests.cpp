@@ -1694,7 +1694,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionT
 
 	for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(testCase); ++caseNdx)
 	{
-		MovePtr<tcu::TestCaseGroup>	imageGroup(new tcu::TestCaseGroup(group->getTestContext(), getShortImageViewTypeName(testCase[caseNdx].viewType).c_str(), ""));
+		MovePtr<tcu::TestCaseGroup>	imageGroup(new tcu::TestCaseGroup(group->getTestContext(), getShortImageViewTypeName(testCase[caseNdx].viewType).c_str()));
 
 		// Generate attachment size cases
 		{
@@ -1705,8 +1705,8 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionT
 			sizes.erase(std::remove_if(begin(sizes), end(sizes), [&](const IVec4& v) { return v.x() == MAX_SIZE && v.y() == MAX_SIZE; }), end(sizes));
 #endif // CTS_USES_VULKANSC
 
-			MovePtr<tcu::TestCaseGroup>	smallGroup(new tcu::TestCaseGroup(group->getTestContext(), "small", ""));
-			MovePtr<tcu::TestCaseGroup>	hugeGroup (new tcu::TestCaseGroup(group->getTestContext(), "huge",  ""));
+			MovePtr<tcu::TestCaseGroup>	smallGroup(new tcu::TestCaseGroup(group->getTestContext(), "small"));
+			MovePtr<tcu::TestCaseGroup>	hugeGroup (new tcu::TestCaseGroup(group->getTestContext(), "huge"));
 
 			imageGroup->addChild(smallGroup.get());
 			imageGroup->addChild(hugeGroup.get());
@@ -1728,14 +1728,14 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionT
 							depthStencilFormat[dsFormatNdx],	// VkFormat						depthStencilFormat;
 							allocationKind						// AllocationKind				allocationKind;
 						};
-						addFunctionCaseWithPrograms(smallGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), "", checkSupportAttachmentSize, initPrograms, testAttachmentSize, caseDef);
+						addFunctionCaseWithPrograms(smallGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), checkSupportAttachmentSize, initPrograms, testAttachmentSize, caseDef);
 					}
 				}
 				else // All huge cases go into a separate group
 				{
 					if (allocationKind != ALLOCATION_KIND_DEDICATED)
 					{
-						MovePtr<tcu::TestCaseGroup>	sizeGroup	(new tcu::TestCaseGroup(group->getTestContext(), getSizeDescription(*sizeIter).c_str(), ""));
+						MovePtr<tcu::TestCaseGroup>	sizeGroup	(new tcu::TestCaseGroup(group->getTestContext(), getSizeDescription(*sizeIter).c_str()));
 						const VkFormat				colorFormat	= VK_FORMAT_R8G8B8A8_UNORM;
 
 						// Use the same color format for all cases, to reduce the number of permutations
@@ -1750,7 +1750,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionT
 								depthStencilFormat[dsFormatNdx],	// VkFormat						depthStencilFormat;
 								allocationKind						// AllocationKind				allocationKind;
 							};
-							addFunctionCaseWithPrograms(sizeGroup.get(), getFormatString(colorFormat, depthStencilFormat[dsFormatNdx]), "", checkSupportAttachmentSize, initPrograms, testAttachmentSize, caseDef);
+							addFunctionCaseWithPrograms(sizeGroup.get(), getFormatString(colorFormat, depthStencilFormat[dsFormatNdx]), checkSupportAttachmentSize, initPrograms, testAttachmentSize, caseDef);
 						}
 						hugeGroup->addChild(sizeGroup.release());
 					}
@@ -1762,7 +1762,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionT
 
 		// Generate mip map cases
 		{
-			MovePtr<tcu::TestCaseGroup>	mipmapGroup(new tcu::TestCaseGroup(group->getTestContext(), "mipmap", ""));
+			MovePtr<tcu::TestCaseGroup>	mipmapGroup(new tcu::TestCaseGroup(group->getTestContext(), "mipmap"));
 
 			for (int dsFormatNdx = 0; dsFormatNdx < DE_LENGTH_OF_ARRAY(depthStencilFormat); ++dsFormatNdx)
 			for (int formatNdx   = 0; formatNdx   < DE_LENGTH_OF_ARRAY(format);             ++formatNdx)
@@ -1776,7 +1776,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionT
 					depthStencilFormat[dsFormatNdx],	// VkFormat						depthStencilFormat;
 					allocationKind						// AllocationKind				allocationKind;
 				};
-				addFunctionCaseWithPrograms(mipmapGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), "", checkSupportRenderToMipMaps, initPrograms, testRenderToMipMaps, caseDef);
+				addFunctionCaseWithPrograms(mipmapGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), checkSupportRenderToMipMaps, initPrograms, testRenderToMipMaps, caseDef);
 			}
 			imageGroup->addChild(mipmapGroup.release());
 		}
@@ -1799,10 +1799,12 @@ void addDedicatedAllocationRenderToImageTests (tcu::TestCaseGroup* group, Pipeli
 
 tcu::TestCaseGroup* createRenderToImageTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup>	renderToImageTests	(new tcu::TestCaseGroup(testCtx, "render_to_image", "Render to image tests"));
+	de::MovePtr<tcu::TestCaseGroup>	renderToImageTests	(new tcu::TestCaseGroup(testCtx, "render_to_image"));
 
-	renderToImageTests->addChild(createTestGroup(testCtx, "core",					"Core render to image tests",								addCoreRenderToImageTests, pipelineConstructionType));
-	renderToImageTests->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Render to image tests for dedicated memory allocation",	addDedicatedAllocationRenderToImageTests, pipelineConstructionType));
+	// Core render to image tests
+	renderToImageTests->addChild(createTestGroup(testCtx, "core", addCoreRenderToImageTests, pipelineConstructionType));
+	// Render to image tests for dedicated memory allocation
+	renderToImageTests->addChild(createTestGroup(testCtx, "dedicated_allocation", addDedicatedAllocationRenderToImageTests, pipelineConstructionType));
 
 	return renderToImageTests.release();
 }

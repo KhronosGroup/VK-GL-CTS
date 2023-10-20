@@ -41,7 +41,7 @@ namespace sparse
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> sparseTests (new tcu::TestCaseGroup(testCtx, name.c_str(), "Sparse Resources Tests"));
+	de::MovePtr<tcu::TestCaseGroup> sparseTests (new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 	sparseTests->addChild(createSparseBufferTests							(testCtx));
 	sparseTests->addChild(createImageSparseBindingTests						(testCtx));

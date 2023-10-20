@@ -339,7 +339,7 @@ static std::string getCommonFuncCaseName (glu::DataType baseType, glu::Precision
 template<class TestClass>
 static void addFunctionCases (tcu::TestCaseGroup* parent, const char* functionName, const std::vector<glu::DataType>& scalarTypes)
 {
-	tcu::TestCaseGroup* group = new tcu::TestCaseGroup(parent->getTestContext(), functionName, functionName);
+	tcu::TestCaseGroup* group = new tcu::TestCaseGroup(parent->getTestContext(), functionName);
 	parent->addChild(group);
 
 	for (const auto scalarType : scalarTypes)
@@ -363,7 +363,7 @@ static void addFunctionCases (tcu::TestCaseGroup* parent, const char* functionNa
 class CommonFunctionCase : public TestCase
 {
 public:
-										CommonFunctionCase			(tcu::TestContext& testCtx, const char* name, const char* description);
+										CommonFunctionCase			(tcu::TestContext& testCtx, const char* name);
 										~CommonFunctionCase			(void);
 	virtual	void						initPrograms				(vk::SourceCollections& programCollection) const
 										{
@@ -380,8 +380,8 @@ protected:
 	const int							m_numValues;
 };
 
-CommonFunctionCase::CommonFunctionCase (tcu::TestContext& testCtx, const char* name, const char* description)
-	: TestCase		(testCtx, name, description)
+CommonFunctionCase::CommonFunctionCase (tcu::TestContext& testCtx, const char* name)
+	: TestCase		(testCtx, name)
 	, m_numValues	(100)
 {
 }
@@ -545,7 +545,7 @@ class AbsCase : public CommonFunctionCase
 {
 public:
 	AbsCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision)
-		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision).c_str(), "abs")
+		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision).c_str())
 	{
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(baseType, precision)));
@@ -617,7 +617,7 @@ class SignCase : public CommonFunctionCase
 {
 public:
 	SignCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision)
-		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision).c_str(), "sign")
+		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision).c_str())
 	{
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(baseType, precision)));
@@ -743,7 +743,7 @@ class IsnanCase : public CommonFunctionCase
 {
 public:
 	IsnanCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision)
-		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision).c_str(), "isnan")
+		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision).c_str())
 	{
 		DE_ASSERT(glu::isDataTypeFloatOrVec(baseType) || glu::isDataTypeDoubleOrDVec(baseType));
 
@@ -830,7 +830,7 @@ class IsinfCase : public CommonFunctionCase
 {
 public:
 	IsinfCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision)
-		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision).c_str(), "isinf")
+		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision).c_str())
 	{
 		DE_ASSERT(glu::isDataTypeFloatOrVec(baseType) || glu::isDataTypeDoubleOrDVec(baseType));
 
@@ -911,7 +911,7 @@ class FloatBitsToUintIntCase : public CommonFunctionCase
 {
 public:
 	FloatBitsToUintIntCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision, bool outIsSigned)
-		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision).c_str(), outIsSigned ? "floatBitsToInt" : "floatBitsToUint")
+		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision).c_str())
 	{
 		const int			vecSize		= glu::getDataTypeScalarSize(baseType);
 		const glu::DataType	intType		= outIsSigned ? (vecSize > 1 ? glu::getDataTypeIntVec(vecSize) : glu::TYPE_INT)
@@ -994,7 +994,7 @@ class BitsToFloatCase : public CommonFunctionCase
 {
 public:
 	BitsToFloatCase (tcu::TestContext& testCtx, glu::DataType baseType)
-		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, glu::PRECISION_HIGHP).c_str(), glu::isDataTypeIntOrIVec(baseType) ? "intBitsToFloat" : "uintBitsToFloat")
+		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, glu::PRECISION_HIGHP).c_str())
 	{
 		const bool			inIsSigned	= glu::isDataTypeIntOrIVec(baseType);
 		const int			vecSize		= glu::getDataTypeScalarSize(baseType);
@@ -1014,7 +1014,7 @@ public:
 } // anonymous
 
 ShaderCommonFunctionTests::ShaderCommonFunctionTests (tcu::TestContext& testCtx)
-	: tcu::TestCaseGroup	(testCtx, "common", "Common function tests")
+	: tcu::TestCaseGroup	(testCtx, "common")
 {
 }
 
@@ -1037,8 +1037,8 @@ void ShaderCommonFunctionTests::init (void)
 
 	// (u)intBitsToFloat()
 	{
-		tcu::TestCaseGroup* intGroup	= new tcu::TestCaseGroup(m_testCtx, "intbitstofloat",	"intBitsToFloat() Tests");
-		tcu::TestCaseGroup* uintGroup	= new tcu::TestCaseGroup(m_testCtx, "uintbitstofloat",	"uintBitsToFloat() Tests");
+		tcu::TestCaseGroup* intGroup	= new tcu::TestCaseGroup(m_testCtx, "intbitstofloat");
+		tcu::TestCaseGroup* uintGroup	= new tcu::TestCaseGroup(m_testCtx, "uintbitstofloat");
 
 		addChild(intGroup);
 		addChild(uintGroup);

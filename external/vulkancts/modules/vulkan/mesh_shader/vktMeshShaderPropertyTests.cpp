@@ -234,8 +234,8 @@ class MaxDrawMeshTasksCountCase : public vkt::TestCase
 public:
 	enum class TestType { TASK=0, MESH };
 
-					MaxDrawMeshTasksCountCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, TestType testType)
-						: vkt::TestCase	(testCtx, name, description)
+					MaxDrawMeshTasksCountCase	(tcu::TestContext& testCtx, const std::string& name, TestType testType)
+						: vkt::TestCase	(testCtx, name)
 						, m_testType	(testType)
 						{}
 	virtual			~MaxDrawMeshTasksCountCase	(void) {}
@@ -299,8 +299,8 @@ void MaxDrawMeshTasksCountCase::initPrograms (vk::SourceCollections& programColl
 class MaxTaskWorkGroupInvocationsCase : public vkt::TestCase
 {
 public:
-					MaxTaskWorkGroupInvocationsCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-						: vkt::TestCase	(testCtx, name, description) {}
+					MaxTaskWorkGroupInvocationsCase	(tcu::TestContext& testCtx, const std::string& name)
+						: vkt::TestCase	(testCtx, name) {}
 	virtual			~MaxTaskWorkGroupInvocationsCase (void) {}
 
 	void			initPrograms	(vk::SourceCollections& programCollection) const override;
@@ -350,8 +350,8 @@ void MaxTaskWorkGroupInvocationsCase::initPrograms (vk::SourceCollections& progr
 class MaxTaskWorkGroupSizeCase : public MaxTaskWorkGroupInvocationsCase
 {
 public:
-	MaxTaskWorkGroupSizeCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-		: MaxTaskWorkGroupInvocationsCase (testCtx, name, description) {}
+	MaxTaskWorkGroupSizeCase (tcu::TestContext& testCtx, const std::string& name)
+		: MaxTaskWorkGroupInvocationsCase (testCtx, name) {}
 
 	void checkSupport (Context& context) const override;
 
@@ -376,8 +376,8 @@ void MaxTaskWorkGroupSizeCase::checkSupport (Context& context) const
 class MaxTaskOutputCountCase : public vkt::TestCase
 {
 public:
-					MaxTaskOutputCountCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-						: vkt::TestCase	(testCtx, name, description) {}
+					MaxTaskOutputCountCase	(tcu::TestContext& testCtx, const std::string& name)
+						: vkt::TestCase	(testCtx, name) {}
 	virtual			~MaxTaskOutputCountCase (void) {}
 
 	void			initPrograms	(vk::SourceCollections& programCollection) const override;
@@ -424,8 +424,8 @@ void MaxTaskOutputCountCase::initPrograms (vk::SourceCollections& programCollect
 class MaxMeshWorkGroupInvocationsCase : public vkt::TestCase
 {
 public:
-					MaxMeshWorkGroupInvocationsCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-						: vkt::TestCase	(testCtx, name, description) {}
+					MaxMeshWorkGroupInvocationsCase	(tcu::TestContext& testCtx, const std::string& name)
+						: vkt::TestCase	(testCtx, name) {}
 	virtual			~MaxMeshWorkGroupInvocationsCase (void) {}
 
 	void			initPrograms	(vk::SourceCollections& programCollection) const override;
@@ -470,8 +470,8 @@ void MaxMeshWorkGroupInvocationsCase::initPrograms (vk::SourceCollections& progr
 class MaxMeshWorkGroupSizeCase : public MaxMeshWorkGroupInvocationsCase
 {
 public:
-	MaxMeshWorkGroupSizeCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-		: MaxMeshWorkGroupInvocationsCase (testCtx, name, description) {}
+	MaxMeshWorkGroupSizeCase (tcu::TestContext& testCtx, const std::string& name)
+		: MaxMeshWorkGroupInvocationsCase (testCtx, name) {}
 
 	void checkSupport (Context& context) const override;
 
@@ -542,8 +542,8 @@ std::string getSharedMemoryBody (uint32_t localSize)
 class MaxTaskTotalMemorySizeCase : public vkt::TestCase
 {
 public:
-					MaxTaskTotalMemorySizeCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-						: vkt::TestCase	(testCtx, name, description) {}
+					MaxTaskTotalMemorySizeCase	(tcu::TestContext& testCtx, const std::string& name)
+						: vkt::TestCase	(testCtx, name) {}
 	virtual			~MaxTaskTotalMemorySizeCase (void) {}
 
 	void			initPrograms	(vk::SourceCollections& programCollection) const override;
@@ -598,8 +598,8 @@ void MaxTaskTotalMemorySizeCase::initPrograms (vk::SourceCollections& programCol
 class MaxMeshTotalMemorySizeCase : public vkt::TestCase
 {
 public:
-					MaxMeshTotalMemorySizeCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-						: vkt::TestCase	(testCtx, name, description) {}
+					MaxMeshTotalMemorySizeCase	(tcu::TestContext& testCtx, const std::string& name)
+						: vkt::TestCase	(testCtx, name) {}
 	virtual			~MaxMeshTotalMemorySizeCase (void) {}
 
 	void			initPrograms	(vk::SourceCollections& programCollection) const override;
@@ -649,17 +649,17 @@ void MaxMeshTotalMemorySizeCase::initPrograms (vk::SourceCollections& programCol
 
 tcu::TestCaseGroup* createMeshShaderPropertyTests (tcu::TestContext& testCtx)
 {
-	GroupPtr mainGroup (new tcu::TestCaseGroup(testCtx, "property", "Mesh Shader Property Tests"));
+	GroupPtr mainGroup (new tcu::TestCaseGroup(testCtx, "property"));
 
-	mainGroup->addChild(new MaxDrawMeshTasksCountCase		(testCtx, "max_draw_mesh_tasks_count_with_task",	"", MaxDrawMeshTasksCountCase::TestType::TASK));
-	mainGroup->addChild(new MaxDrawMeshTasksCountCase		(testCtx, "max_draw_mesh_tasks_count_with_mesh",	"", MaxDrawMeshTasksCountCase::TestType::MESH));
-	mainGroup->addChild(new MaxTaskWorkGroupInvocationsCase	(testCtx, "max_task_work_group_invocations",		""));
-	mainGroup->addChild(new MaxTaskWorkGroupSizeCase		(testCtx, "max_task_work_group_size",				""));
-	mainGroup->addChild(new MaxTaskOutputCountCase			(testCtx, "max_task_output_count",					""));
-	mainGroup->addChild(new MaxMeshWorkGroupInvocationsCase	(testCtx, "max_mesh_work_group_invocations",		""));
-	mainGroup->addChild(new MaxMeshWorkGroupSizeCase		(testCtx, "max_mesh_work_group_size",				""));
-	mainGroup->addChild(new MaxTaskTotalMemorySizeCase		(testCtx, "max_task_total_memory_size",				""));
-	mainGroup->addChild(new MaxMeshTotalMemorySizeCase		(testCtx, "max_mesh_total_memory_size",				""));
+	mainGroup->addChild(new MaxDrawMeshTasksCountCase		(testCtx, "max_draw_mesh_tasks_count_with_task", MaxDrawMeshTasksCountCase::TestType::TASK));
+	mainGroup->addChild(new MaxDrawMeshTasksCountCase		(testCtx, "max_draw_mesh_tasks_count_with_mesh", MaxDrawMeshTasksCountCase::TestType::MESH));
+	mainGroup->addChild(new MaxTaskWorkGroupInvocationsCase	(testCtx, "max_task_work_group_invocations"));
+	mainGroup->addChild(new MaxTaskWorkGroupSizeCase		(testCtx, "max_task_work_group_size"));
+	mainGroup->addChild(new MaxTaskOutputCountCase			(testCtx, "max_task_output_count"));
+	mainGroup->addChild(new MaxMeshWorkGroupInvocationsCase	(testCtx, "max_mesh_work_group_invocations"));
+	mainGroup->addChild(new MaxMeshWorkGroupSizeCase		(testCtx, "max_mesh_work_group_size"));
+	mainGroup->addChild(new MaxTaskTotalMemorySizeCase		(testCtx, "max_task_total_memory_size"));
+	mainGroup->addChild(new MaxMeshTotalMemorySizeCase		(testCtx, "max_mesh_total_memory_size"));
 
 	return mainGroup.release();
 }

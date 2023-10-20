@@ -615,8 +615,8 @@ public:
 class DiscardTestCase : public vkt::TestCase
 {
 public:
-	DiscardTestCase (tcu::TestContext& context, const char* name, const char* description, vk::PipelineConstructionType pipelineConstructionType, TestDynamicStateDiscard testCase)
-		: TestCase	(context, name, description)
+	DiscardTestCase (tcu::TestContext& context, const char* name, vk::PipelineConstructionType pipelineConstructionType, TestDynamicStateDiscard testCase)
+		: TestCase	(context, name)
 		, m_pipelineConstructionType(pipelineConstructionType)
 		, m_testCase(testCase)
 		, m_depthBounds(false)
@@ -700,7 +700,7 @@ protected:
 };
 
 DynamicStateDiscardTests::DynamicStateDiscardTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
-	: TestCaseGroup					(testCtx, "discard", "Tests for dynamic state")
+	: TestCaseGroup					(testCtx, "discard")
 	, m_pipelineConstructionType	(pipelineConstructionType)
 {
 	/* Left blank on purpose */
@@ -712,12 +712,18 @@ DynamicStateDiscardTests::~DynamicStateDiscardTests ()
 
 void DynamicStateDiscardTests::init (void)
 {
-	addChild(new DiscardTestCase(m_testCtx, "stencil", "Use dynamic stencil with discard", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_STENCIL));
-	addChild(new DiscardTestCase(m_testCtx, "viewport", "Use dynamic viewport with discard", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_VIEWPORT));
-	addChild(new DiscardTestCase(m_testCtx, "scissor", "Use dynamic scissor with discard", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_SCISSOR));
-	addChild(new DiscardTestCase(m_testCtx, "depth", "Use dynamic depth with discard", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_DEPTH));
-	addChild(new DiscardTestCase(m_testCtx, "blend", "Use dynamic blend constants with discard", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_BLEND_CONSTANTS));
-	addChild(new DiscardTestCase(m_testCtx, "line", "Use dynamic line width with discard", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_LINE_WIDTH));
+	// Use dynamic stencil with discard
+	addChild(new DiscardTestCase(m_testCtx, "stencil", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_STENCIL));
+	// Use dynamic viewport with discard
+	addChild(new DiscardTestCase(m_testCtx, "viewport", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_VIEWPORT));
+	// Use dynamic scissor with discard
+	addChild(new DiscardTestCase(m_testCtx, "scissor", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_SCISSOR));
+	// Use dynamic depth with discard
+	addChild(new DiscardTestCase(m_testCtx, "depth", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_DEPTH));
+	// Use dynamic blend constants with discard
+	addChild(new DiscardTestCase(m_testCtx, "blend", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_BLEND_CONSTANTS));
+	// Use dynamic line width with discard
+	addChild(new DiscardTestCase(m_testCtx, "line", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_LINE_WIDTH));
 }
 
 } // DynamicState

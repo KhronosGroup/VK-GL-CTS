@@ -49,7 +49,7 @@ namespace
 class ShaderTimeoutCase : public vkt::TestCase
 {
 public:
-	ShaderTimeoutCase(tcu::TestContext& testCtx, const std::string& name, deUint32 iterations) : TestCase(testCtx, name, "Long-running compute shader"), m_iterations(iterations) {}
+	ShaderTimeoutCase(tcu::TestContext& testCtx, const std::string& name, deUint32 iterations) : TestCase(testCtx, name), m_iterations(iterations) {}
 
 	TestInstance* createInstance(Context& context) const override;
 	void initPrograms(vk::SourceCollections& programCollection) const override;
@@ -223,7 +223,7 @@ tcu::TestStatus	ShaderTimeoutInstance::iterate(void)
 
 tcu::TestCaseGroup* createShaderTimeoutTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> timeoutGroup(new tcu::TestCaseGroup(testCtx, "shader_timeout", "Shader timeout tests."));
+	de::MovePtr<tcu::TestCaseGroup> timeoutGroup(new tcu::TestCaseGroup(testCtx, "shader_timeout"));
 	for (int i = 0; i < 16; ++i)
 	{
 		deUint32 iterations = 0x1u << i;

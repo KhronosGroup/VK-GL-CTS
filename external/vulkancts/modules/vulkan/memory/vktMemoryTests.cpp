@@ -69,7 +69,7 @@ void createChildren (tcu::TestCaseGroup* memoryTests)
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, name, "Memory Tests", createChildren);
+	return createTestGroup(testCtx, name, createChildren);
 }
 
 } // memory

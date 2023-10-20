@@ -537,7 +537,7 @@ auto makeStdBeginEnd(T* p, deUint32 n) -> std::pair<R, R>
 }
 
 PipelineFlagsCase::PipelineFlagsCase (tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
-	: TestCase					(testCtx, name, std::string())
+	: TestCase					(testCtx, name)
 	, shaderGroupHandleSize		(m_shaderGroupHandleSize)
 	, shaderGroupBaseAlignment	(m_shaderGroupBaseAlignment)
 	, m_params					(params)
@@ -1444,27 +1444,27 @@ tcu::TestCaseGroup*	createPipelineFlagsTests (tcu::TestContext& testCtx)
 	p.stbRecStride		= 0;
 	p.stbRecOffset		= 0;
 
-	auto group = new tcu::TestCaseGroup(testCtx, "pipeline_no_null_shaders_flag", "Pipeline NO_NULL_*_SHADER flags tests");
+	auto group = new tcu::TestCaseGroup(testCtx, "pipeline_no_null_shaders_flag");
 
 	for (auto& processor : processors)
 	{
-		auto processorGroup = new tcu::TestCaseGroup(testCtx, processor.name, "");
+		auto processorGroup = new tcu::TestCaseGroup(testCtx, processor.name);
 
 		for (auto& geometry : geometries)
 		{
-			auto geometryGroup = new tcu::TestCaseGroup(testCtx, geometry.name, "");
+			auto geometryGroup = new tcu::TestCaseGroup(testCtx, geometry.name);
 
 			for (auto& stride : strides)
 			{
-				auto strideGroup = new tcu::TestCaseGroup(testCtx, ("stride_" + std::to_string(stride)).c_str(), "");
+				auto strideGroup = new tcu::TestCaseGroup(testCtx, ("stride_" + std::to_string(stride)).c_str());
 
 				for (auto& offset : offsets)
 				{
-					auto offsetGroup = new tcu::TestCaseGroup(testCtx, ("offset_" + std::to_string(offset)).c_str(), "");
+					auto offsetGroup = new tcu::TestCaseGroup(testCtx, ("offset_" + std::to_string(offset)).c_str());
 
 					for (auto& lib : libs)
 					{
-						auto libGroup = new tcu::TestCaseGroup(testCtx, lib.name, "");
+						auto libGroup = new tcu::TestCaseGroup(testCtx, lib.name);
 
 						VkPipelineCreateFlags	flags;
 

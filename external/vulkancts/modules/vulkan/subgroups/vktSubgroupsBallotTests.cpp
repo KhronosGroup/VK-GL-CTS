@@ -1024,7 +1024,7 @@ TestCaseGroup* createSubgroupsBallotTests(TestContext& testCtx)
 				};
 				const string			testName	= getShaderStageName(caseDef.shaderStage) + testNameSuffix;
 
-				addFunctionCaseWithPrograms(testGroup, testName, "", supportedCheck, initPrograms, test, caseDef);
+				addFunctionCaseWithPrograms(testGroup, testName,  supportedCheck, initPrograms, test, caseDef);
 			}
 		}
 	}
@@ -1051,7 +1051,7 @@ TestCaseGroup* createSubgroupsBallotTests(TestContext& testCtx)
 				};
 				const string			testName	= getShaderStageName(caseDef.shaderStage) + testNameSuffix + "_" + getShaderStageName(stage);
 
-				addFunctionCaseWithPrograms(testGroup, testName, "", supportedCheck, initPrograms, test, caseDef);
+				addFunctionCaseWithPrograms(testGroup, testName,  supportedCheck, initPrograms, test, caseDef);
 			}
 		}
 	}
@@ -1069,7 +1069,7 @@ TestCaseGroup* createSubgroupsBallotTests(TestContext& testCtx)
 			DE_FALSE,						//  deBool				requiredSubgroupSize;
 		};
 
-		addFunctionCaseWithPrograms(testGroup, "graphic", "", supportedCheck, initPrograms, test, caseDef);
+		addFunctionCaseWithPrograms(testGroup, "graphic",  supportedCheck, initPrograms, test, caseDef);
 	}
 
 #ifndef CTS_USES_VULKANSC
@@ -1082,7 +1082,7 @@ TestCaseGroup* createSubgroupsBallotTests(TestContext& testCtx)
 			DE_FALSE,						//  deBool				requiredSubgroupSize;
 		};
 
-		addFunctionCaseWithPrograms(raytracingGroup.get(), "test", "", supportedCheck, initPrograms, test, caseDef);
+		addFunctionCaseWithPrograms(raytracingGroup.get(), "test",  supportedCheck, initPrograms, test, caseDef);
 	}
 #endif // CTS_USES_VULKANSC
 
@@ -1101,7 +1101,7 @@ TestCaseGroup* createSubgroupsBallotTests(TestContext& testCtx)
 				DE_FALSE						//  deBool				requiredSubgroupSize;
 			};
 
-			addFunctionCaseWithPrograms(testGroup, getShaderStageName(caseDef.shaderStage), "", supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
+			addFunctionCaseWithPrograms(testGroup, getShaderStageName(caseDef.shaderStage),  supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 		}
 	}
 

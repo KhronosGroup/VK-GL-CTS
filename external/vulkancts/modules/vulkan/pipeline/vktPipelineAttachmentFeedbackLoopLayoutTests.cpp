@@ -1748,7 +1748,6 @@ public:
 										AttachmentFeedbackLoopLayoutSamplerTest			(tcu::TestContext&				testContext,
 																						 vk::PipelineConstructionType	pipelineConstructionType,
 																						 const char*					name,
-																						 const char*					description,
 																						 SamplerViewType				imageViewType,
 																						 VkFormat						imageFormat,
 																						 int							imageSize,
@@ -1803,7 +1802,6 @@ protected:
 AttachmentFeedbackLoopLayoutSamplerTest::AttachmentFeedbackLoopLayoutSamplerTest	(tcu::TestContext&				testContext,
 																					 vk::PipelineConstructionType	pipelineConstructionType,
 																					 const char*					name,
-																					 const char*					description,
 																					 SamplerViewType				imageViewType,
 																					 VkFormat						imageFormat,
 																					 int							imageSize,
@@ -1814,7 +1812,7 @@ AttachmentFeedbackLoopLayoutSamplerTest::AttachmentFeedbackLoopLayoutSamplerTest
 																					 bool							interleaveReadWriteComponents,
 																					 PipelineStateMode				pipelineStateMode,
 																					 bool							useMaintenance5)
-	: vkt::TestCase					(testContext, name, description)
+	: vkt::TestCase					(testContext, name)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_imageViewType				(imageViewType)
 	, m_imageFormat					(imageFormat)
@@ -1884,55 +1882,41 @@ ImageSamplingInstanceParams AttachmentFeedbackLoopLayoutSamplerTest::getImageSam
 
 void AttachmentFeedbackLoopLayoutSamplerTest::checkSupport (Context& context) const
 {
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
+
+	checkPipelineConstructionRequirements(vki, physicalDevice, m_pipelineConstructionType);
+
 	context.requireDeviceFunctionality("VK_EXT_attachment_feedback_loop_layout");
+
 	if (m_useMaintenance5)
 		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
-	if (m_pipelineStateMode != PipelineStateMode::STATIC)
+	if (m_pipelineStateMode != PipelineStateMode::STATIC || isConstructionTypeShaderObject(m_pipelineConstructionType))
 		context.requireDeviceFunctionality("VK_EXT_attachment_feedback_loop_dynamic_state");
 
-	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	const auto imgParams = getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_imageDescriptorType, m_samplerLod);
+	checkSupportImageSamplingInstance(context, imgParams);
 
-	vk::VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT attachmentFeedbackLoopLayoutFeatures =
+	if (m_testMode >= TEST_MODE_READ_WRITE_SAME_PIXEL) // Image as color or DS attachment.
 	{
-		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_FEATURES_EXT,	// VkStructureType	sType;
-		DE_NULL,																				// void*			pNext;
-		DE_FALSE,																				// VkBool32		attachmentFeedbackLoopLayout;
-	};
+		VkFormatProperties formatProps;
+		vki.getPhysicalDeviceFormatProperties(physicalDevice, imgParams.imageFormat, &formatProps);
 
-	vk::VkPhysicalDeviceFeatures2 features2;
-	deMemset(&features2, 0, sizeof(features2));
-	features2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	features2.pNext = &attachmentFeedbackLoopLayoutFeatures;
+		const auto					attachmentFormatFeature	= isDepthStencilFormat(imgParams.imageFormat)
+															? VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+															: VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT;
+		const VkFormatFeatureFlags	neededFeatures			= attachmentFormatFeature
+															| VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+															| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+															| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+															;
 
-	context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
-
-	if (attachmentFeedbackLoopLayoutFeatures.attachmentFeedbackLoopLayout == DE_FALSE)
-	{
-		throw tcu::NotSupportedError("attachmentFeedbackLoopLayout not supported");
-	}
-
-	ImageSamplingInstanceParams	params = getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_imageDescriptorType, m_samplerLod);
-	checkSupportImageSamplingInstance(context, params);
-
-	bool useImageAsColorOrDSAttachment	= m_testMode >= TEST_MODE_READ_WRITE_SAME_PIXEL;
-	if (useImageAsColorOrDSAttachment)
-	{
-		VkFormatProperties	formatProps;
-		const InstanceInterface& instanceInterface = context.getInstanceInterface();
-		VkFormatFeatureFlags attachmentFormatFeature = isDepthStencilFormat(params.imageFormat) ?
-			VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT;
-
-		instanceInterface.getPhysicalDeviceFormatProperties(context.getPhysicalDevice(), params.imageFormat, &formatProps);
-		bool error =
-			(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT ) == 0u ||
-			(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_SRC_BIT ) == 0u ||
-			(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_DST_BIT ) == 0u ||
-			(formatProps.optimalTilingFeatures & attachmentFormatFeature ) == 0u;
-
-		if (error)
+		if ((formatProps.optimalTilingFeatures & neededFeatures) != neededFeatures)
 		{
-			throw tcu::NotSupportedError("format doesn't support some required features");
+			std::ostringstream msg;
+			msg << "Format does not support required features: 0x" << std::hex << neededFeatures;
+			TCU_THROW(NotSupportedError, msg.str());
 		}
 
 		if ((!m_interleaveReadWriteComponents && m_imageAspectTestMode == IMAGE_ASPECT_TEST_STENCIL) ||
@@ -2482,7 +2466,7 @@ tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutSamplerTests (tcu::TestCon
 		VK_FORMAT_S8_UINT
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> samplingTypeTests		(new tcu::TestCaseGroup(testCtx, "sampler", ""));
+	de::MovePtr<tcu::TestCaseGroup> samplingTypeTests		(new tcu::TestCaseGroup(testCtx, "sampler"));
 
 	const struct
 	{
@@ -2534,14 +2518,14 @@ tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutSamplerTests (tcu::TestCon
 	for (int imageDescriptorTypeNdx = 0; imageDescriptorTypeNdx < DE_LENGTH_OF_ARRAY(imageDescriptorTypes); imageDescriptorTypeNdx++)
 	{
 		VkDescriptorType				imageDescriptorType			= imageDescriptorTypes[imageDescriptorTypeNdx].type;
-		de::MovePtr<tcu::TestCaseGroup>	imageDescriptorTypeGroup	(new tcu::TestCaseGroup(testCtx, imageDescriptorTypes[imageDescriptorTypeNdx].name, (std::string("Uses a ") + imageDescriptorTypes[imageDescriptorTypeNdx].name + " sampler").c_str()));
-		de::MovePtr<tcu::TestCaseGroup>	imageTypeTests				(new tcu::TestCaseGroup(testCtx, "image_type", ""));
+		de::MovePtr<tcu::TestCaseGroup>	imageDescriptorTypeGroup	(new tcu::TestCaseGroup(testCtx, imageDescriptorTypes[imageDescriptorTypeNdx].name));
+		de::MovePtr<tcu::TestCaseGroup>	imageTypeTests				(new tcu::TestCaseGroup(testCtx, "image_type"));
 
 		for (int viewTypeNdx = 0; viewTypeNdx < DE_LENGTH_OF_ARRAY(imageViewTypes); viewTypeNdx++)
 		{
 			const SamplerViewType			viewType		= imageViewTypes[viewTypeNdx].type;
-			de::MovePtr<tcu::TestCaseGroup> viewTypeGroup	(new tcu::TestCaseGroup(testCtx, imageViewTypes[viewTypeNdx].name, (std::string("Uses a ") + imageViewTypes[viewTypeNdx].name + " view").c_str()));
-			de::MovePtr<tcu::TestCaseGroup>	formatTests		(new tcu::TestCaseGroup(testCtx, "format", "Tests samplable formats"));
+			de::MovePtr<tcu::TestCaseGroup> viewTypeGroup	(new tcu::TestCaseGroup(testCtx, imageViewTypes[viewTypeNdx].name));
+			de::MovePtr<tcu::TestCaseGroup>	formatTests		(new tcu::TestCaseGroup(testCtx, "format"));
 
 			for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 			{
@@ -2590,13 +2574,13 @@ tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutSamplerTests (tcu::TestCon
 								continue;
 
 							std::string name = getFormatCaseName(format) + imageAspectTestModes[imageAspectTestMode] + testModes[testModeNdx].name + interleaveReadWriteComponentsModes[restrictColorNdx].name + pipelineStateMode.suffix;
-							formatTests->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, name.c_str(), "", viewType, format, outputImageSize, imageDescriptorType, 0.0f, testModes[testModeNdx].mode, imageAspectTestMode, interleaveReadWriteComponentsModes[restrictColorNdx].interleaveReadWriteComponents, pipelineStateMode.pipelineStateMode, false));
+							formatTests->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, name.c_str(), viewType, format, outputImageSize, imageDescriptorType, 0.0f, testModes[testModeNdx].mode, imageAspectTestMode, interleaveReadWriteComponentsModes[restrictColorNdx].interleaveReadWriteComponents, pipelineStateMode.pipelineStateMode, false));
 
 							if (!isCompressed && isDepthStencil)
 							{
 								// Image is depth-stencil. Add the stencil case as well.
 								std::string stencilTestName = getFormatCaseName(format) + imageAspectTestModes[IMAGE_ASPECT_TEST_STENCIL] + testModes[testModeNdx].name + interleaveReadWriteComponentsModes[restrictColorNdx].name + pipelineStateMode.suffix;
-								formatTests->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, stencilTestName.c_str(), "", viewType, format, outputImageSize, imageDescriptorType, 0.0f, testModes[testModeNdx].mode, IMAGE_ASPECT_TEST_STENCIL, interleaveReadWriteComponentsModes[restrictColorNdx].interleaveReadWriteComponents, pipelineStateMode.pipelineStateMode, false));
+								formatTests->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, stencilTestName.c_str(), viewType, format, outputImageSize, imageDescriptorType, 0.0f, testModes[testModeNdx].mode, IMAGE_ASPECT_TEST_STENCIL, interleaveReadWriteComponentsModes[restrictColorNdx].interleaveReadWriteComponents, pipelineStateMode.pipelineStateMode, false));
 							}
 						}
 					}
@@ -2613,8 +2597,8 @@ tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutSamplerTests (tcu::TestCon
 	if (pipelineConstructionType == PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
 		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
-		miscGroup->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, "maintenance5_color_attachment", "", VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, outputImageSize, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0.0f, TEST_MODE_READ_ONLY, IMAGE_ASPECT_TEST_COLOR, false, PipelineStateMode::STATIC, true));
-		miscGroup->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, "maintenance5_ds_attachment", "", VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_D16_UNORM, outputImageSize, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0.0f, TEST_MODE_READ_ONLY, IMAGE_ASPECT_TEST_DEPTH, false, PipelineStateMode::STATIC, true));
+		miscGroup->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, "maintenance5_color_attachment", VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, outputImageSize, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0.0f, TEST_MODE_READ_ONLY, IMAGE_ASPECT_TEST_COLOR, false, PipelineStateMode::STATIC, true));
+		miscGroup->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, "maintenance5_ds_attachment", VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_D16_UNORM, outputImageSize, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0.0f, TEST_MODE_READ_ONLY, IMAGE_ASPECT_TEST_DEPTH, false, PipelineStateMode::STATIC, true));
 		samplingTypeTests->addChild(miscGroup.release());
 	}
 
@@ -2623,7 +2607,7 @@ tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutSamplerTests (tcu::TestCon
 
 tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> attachmentFeedbackLoopLayoutTests(new tcu::TestCaseGroup(testCtx, "attachment_feedback_loop_layout", "VK_EXT_attachment_feedback_loop_layout tests"));
+	de::MovePtr<tcu::TestCaseGroup> attachmentFeedbackLoopLayoutTests(new tcu::TestCaseGroup(testCtx, "attachment_feedback_loop_layout"));
 	{
 		attachmentFeedbackLoopLayoutTests->addChild(createAttachmentFeedbackLoopLayoutSamplerTests(testCtx, pipelineConstructionType));
 	}

@@ -1392,7 +1392,7 @@ void initTests(tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 								useSeparateDepthStencilLayouts,
 								groupParams
 							};
-							formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
+							formatGroup->addChild(new DSResolveTestInstance(testCtx, testName, testConfig));
 						}
 
 						if (hasStencil)
@@ -1421,7 +1421,7 @@ void initTests(tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 								useSeparateDepthStencilLayouts,
 								groupParams
 							};
-							formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
+							formatGroup->addChild(new DSResolveTestInstance(testCtx, testName, testConfig));
 						}
 					}
 				}
@@ -1436,7 +1436,8 @@ void initTests(tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 
 tcu::TestCaseGroup* createDynamicRenderingDepthStencilResolveTests(tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "depth_stencil_resolve", "Depth/stencil resolve tests", initTests, groupParams);
+	// Depth/stencil resolve tests
+	return createTestGroup(testCtx, "depth_stencil_resolve", initTests, groupParams);
 };
 
 }	// renderpass

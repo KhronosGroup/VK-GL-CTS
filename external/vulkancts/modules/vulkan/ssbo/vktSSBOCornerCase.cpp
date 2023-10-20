@@ -46,8 +46,8 @@ namespace
 class CornerCase : public TestCase
 {
 public:
-								CornerCase			(tcu::TestContext &testCtx, const char *name, const char *description)
-	: TestCase										(testCtx, name, description)
+								CornerCase			(tcu::TestContext &testCtx, const char *name)
+	: TestCase										(testCtx, name)
 	{
 		init();
 	}
@@ -331,8 +331,8 @@ void CornerCase::delayedInit (void)
 
 tcu::TestCaseGroup* createSSBOCornerCaseTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> cornerCaseGroup (new tcu::TestCaseGroup(testCtx, "corner_case", "Corner cases"));
-	cornerCaseGroup->addChild(new CornerCase(testCtx, "long_shader_bitwise_and", ""));
+	de::MovePtr<tcu::TestCaseGroup> cornerCaseGroup (new tcu::TestCaseGroup(testCtx, "corner_case"));
+	cornerCaseGroup->addChild(new CornerCase(testCtx, "long_shader_bitwise_and"));
 	return cornerCaseGroup.release();
 }
 } // ssbo

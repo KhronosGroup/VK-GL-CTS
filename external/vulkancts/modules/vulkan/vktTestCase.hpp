@@ -196,7 +196,7 @@ class TestInstance;
 class TestCase : public tcu::TestCase
 {
 public:
-							TestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description);
+							TestCase		(tcu::TestContext& testCtx, const std::string& name);
 	virtual					~TestCase		(void) {}
 
 	virtual void			delayedInit		(void); // non-const init called after checkSupport but before initPrograms
@@ -223,8 +223,8 @@ private:
 	TestInstance&				operator=		(const TestInstance&);
 };
 
-inline TestCase::TestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-	: tcu::TestCase(testCtx, name.c_str(), description.c_str())
+inline TestCase::TestCase (tcu::TestContext& testCtx, const std::string& name)
+	: tcu::TestCase(testCtx, name.c_str(), "")
 {
 }
 

@@ -2962,7 +2962,7 @@ vk::VkImageCreateInfo makeImageCreateInfo (vk::VkFormat format, vk::VkExtent3D e
 class ExtendedDynamicStateTest : public vkt::TestCase
 {
 public:
-							ExtendedDynamicStateTest		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestConfig& testConfig);
+							ExtendedDynamicStateTest		(tcu::TestContext& testCtx, const std::string& name, const TestConfig& testConfig);
 	virtual					~ExtendedDynamicStateTest		(void) {}
 
 	virtual void			checkSupport					(Context& context) const;
@@ -2985,8 +2985,8 @@ private:
 	TestConfig					m_testConfig;
 };
 
-ExtendedDynamicStateTest::ExtendedDynamicStateTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestConfig& testConfig)
-	: vkt::TestCase	(testCtx, name, description)
+ExtendedDynamicStateTest::ExtendedDynamicStateTest (tcu::TestContext& testCtx, const std::string& name, const TestConfig& testConfig)
+	: vkt::TestCase	(testCtx, name)
 	, m_testConfig	(testConfig)
 {
 	const auto staticTopologyClass = getTopologyClass(testConfig.topologyConfig.staticValue);
@@ -6408,8 +6408,8 @@ deUint8 stencilResult(vk::VkStencilOp op, deUint8 storedValue, deUint8 reference
 class TestGroupWithClean : public tcu::TestCaseGroup
 {
 public:
-	TestGroupWithClean	(tcu::TestContext& testCtx, const char* name, const char* description)
-		: tcu::TestCaseGroup(testCtx, name, description)
+			TestGroupWithClean	(tcu::TestContext& testCtx, const char* name)
+				: tcu::TestCaseGroup(testCtx, name)
 		{}
 
 	void deinit (void) override { cleanupDevices(); }
@@ -6421,8 +6421,8 @@ using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
 tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	GroupPtr extendedDynamicStateGroup(new TestGroupWithClean(testCtx, "extended_dynamic_state", "Tests for VK_EXT_extended_dynamic_state"));
-	GroupPtr meshShaderGroup(new tcu::TestCaseGroup(testCtx, "mesh_shader", "Extended dynamic state with mesh shading pipelines"));
+	GroupPtr extendedDynamicStateGroup(new TestGroupWithClean(testCtx, "extended_dynamic_state"));
+	GroupPtr meshShaderGroup(new tcu::TestCaseGroup(testCtx, "mesh_shader"));
 
 	// Auxiliar constants.
 	const deUint32	kHalfWidthU	= kFramebufferWidth/2u;
@@ -6435,16 +6435,22 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 	{
 		SequenceOrdering	ordering;
 		std::string			name;
-		std::string			desc;
 	} kOrderingCases[] =
 	{
-		{ SequenceOrdering::CMD_BUFFER_START,	"cmd_buffer_start",		"Dynamic state set after command buffer start"																								},
-		{ SequenceOrdering::BEFORE_DRAW,		"before_draw",			"Dynamic state set just before drawing"																										},
-		{ SequenceOrdering::BETWEEN_PIPELINES,	"between_pipelines",	"Dynamic after a pipeline with static states has been bound and before a pipeline with dynamic states has been bound"						},
-		{ SequenceOrdering::AFTER_PIPELINES,	"after_pipelines",		"Dynamic state set after both a static-state pipeline and a second dynamic-state pipeline have been bound"									},
-		{ SequenceOrdering::BEFORE_GOOD_STATIC,	"before_good_static",	"Dynamic state set after a dynamic pipeline has been bound and before a second static-state pipeline with the right values has been bound"	},
-		{ SequenceOrdering::TWO_DRAWS_DYNAMIC,	"two_draws_dynamic",	"Bind bad static pipeline and draw, followed by binding correct dynamic pipeline and drawing again"											},
-		{ SequenceOrdering::TWO_DRAWS_STATIC,	"two_draws_static",		"Bind bad dynamic pipeline and draw, followed by binding correct static pipeline and drawing again"											},
+		// Dynamic state set after command buffer start
+		{ SequenceOrdering::CMD_BUFFER_START,	"cmd_buffer_start"},
+		// Dynamic state set just before drawing
+		{ SequenceOrdering::BEFORE_DRAW,		"before_draw"},
+		// Dynamic after a pipeline with static states has been bound and before a pipeline with dynamic states has been bound
+		{ SequenceOrdering::BETWEEN_PIPELINES,	"between_pipelines"},
+		// Dynamic state set after both a static-state pipeline and a second dynamic-state pipeline have been bound
+		{ SequenceOrdering::AFTER_PIPELINES,	"after_pipelines"},
+		// Dynamic state set after a dynamic pipeline has been bound and before a second static-state pipeline with the right values has been bound
+		{ SequenceOrdering::BEFORE_GOOD_STATIC,	"before_good_static"},
+		// Bind bad static pipeline and draw, followed by binding correct dynamic pipeline and drawing again
+		{ SequenceOrdering::TWO_DRAWS_DYNAMIC,	"two_draws_dynamic"},
+		// Bind bad dynamic pipeline and draw, followed by binding correct static pipeline and drawing again
+		{ SequenceOrdering::TWO_DRAWS_STATIC,	"two_draws_static"},
 	};
 
 	static const struct
@@ -6463,12 +6469,11 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 	{
 		bool			bindUnusedMeshShadingPipeline;
 		std::string		nameSuffix;
-		std::string		descSuffix;
 	} kBindUnusedCases[] =
 	{
-		{ false,	"",					""																},
+		{ false,	""},
 #ifndef CTS_USES_VULKANSC
-		{ true,		"_bind_unused_ms",	" and bind unused mesh shading pipeline before the dynamic one"	},
+		{ true,		"_bind_unused_ms"},
 #endif // CTS_USES_VULKANSC
 	};
 
@@ -6488,20 +6493,22 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 		const auto& kUseMeshShaders	= kMeshShadingCase.useMeshShaders;
 		const auto& kOrdering		= kOrderingCase.ordering;
 
-		GroupPtr orderingGroup(new tcu::TestCaseGroup(testCtx, kOrderingCase.name.c_str(), kOrderingCase.desc.c_str()));
+		GroupPtr orderingGroup(new tcu::TestCaseGroup(testCtx, kOrderingCase.name.c_str()));
 
 		// Cull modes.
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
 			config.cullModeConfig.staticValue	= vk::VK_CULL_MODE_FRONT_BIT;
 			config.cullModeConfig.dynamicValue	= tcu::just<vk::VkCullModeFlags>(vk::VK_CULL_MODE_NONE);
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "cull_none", "Dynamically set cull mode to none", config));
+			// Dynamically set cull mode to none
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "cull_none", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
 			config.cullModeConfig.staticValue	= vk::VK_CULL_MODE_FRONT_AND_BACK;
 			config.cullModeConfig.dynamicValue	= tcu::just<vk::VkCullModeFlags>(vk::VK_CULL_MODE_BACK_BIT);
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "cull_back", "Dynamically set cull mode to back", config));
+			// Dynamically set cull mode to back
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "cull_back", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -6509,14 +6516,16 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.meshParams[0].reversed		= true;
 			config.cullModeConfig.staticValue	= vk::VK_CULL_MODE_BACK_BIT;
 			config.cullModeConfig.dynamicValue	= tcu::just<vk::VkCullModeFlags>(vk::VK_CULL_MODE_FRONT_BIT);
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "cull_front", "Dynamically set cull mode to front", config));
+			// Dynamically set cull mode to front
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "cull_front", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
 			config.cullModeConfig.staticValue	= vk::VK_CULL_MODE_NONE;
 			config.cullModeConfig.dynamicValue	= tcu::just<vk::VkCullModeFlags>(vk::VK_CULL_MODE_FRONT_AND_BACK);
 			config.referenceColor.reset			(new SingleColorGenerator(kDefaultClearColor));
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "cull_front_and_back", "Dynamically set cull mode to front and back", config));
+			// Dynamically set cull mode to front and back
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "cull_front_and_back", config));
 		}
 
 		// Front face.
@@ -6525,7 +6534,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.cullModeConfig.staticValue	= vk::VK_CULL_MODE_BACK_BIT;
 			config.frontFaceConfig.staticValue	= vk::VK_FRONT_FACE_CLOCKWISE;
 			config.frontFaceConfig.dynamicValue	= tcu::just<vk::VkFrontFace>(vk::VK_FRONT_FACE_COUNTER_CLOCKWISE);
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "front_face_cw", "Dynamically set front face to clockwise", config));
+			// Dynamically set front face to clockwise
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "front_face_cw", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -6534,7 +6544,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.cullModeConfig.staticValue	= vk::VK_CULL_MODE_BACK_BIT;
 			config.frontFaceConfig.staticValue	= vk::VK_FRONT_FACE_COUNTER_CLOCKWISE;
 			config.frontFaceConfig.dynamicValue	= tcu::just<vk::VkFrontFace>(vk::VK_FRONT_FACE_CLOCKWISE);
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "front_face_ccw", "Dynamically set front face to counter-clockwise", config));
+			// Dynamically set front face to counter-clockwise
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "front_face_ccw", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -6542,7 +6553,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.frontFaceConfig.staticValue	= vk::VK_FRONT_FACE_COUNTER_CLOCKWISE;
 			config.frontFaceConfig.dynamicValue	= tcu::just<vk::VkFrontFace>(vk::VK_FRONT_FACE_CLOCKWISE);
 			config.referenceColor.reset			(new SingleColorGenerator(kDefaultClearColor));
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "front_face_cw_reversed", "Dynamically set front face to clockwise with a counter-clockwise mesh", config));
+			// Dynamically set front face to clockwise with a counter-clockwise mesh
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "front_face_cw_reversed", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -6552,7 +6564,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.frontFaceConfig.staticValue	= vk::VK_FRONT_FACE_CLOCKWISE;
 			config.frontFaceConfig.dynamicValue	= tcu::just<vk::VkFrontFace>(vk::VK_FRONT_FACE_COUNTER_CLOCKWISE);
 			config.referenceColor.reset			(new SingleColorGenerator(kDefaultClearColor));
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "front_face_ccw_reversed", "Dynamically set front face to counter-clockwise with a clockwise mesh", config));
+			// Dynamically set front face to counter-clockwise with a clockwise mesh
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "front_face_ccw_reversed", config));
 		}
 
 		// Rasterizer discard
@@ -6561,13 +6574,15 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.rastDiscardEnableConfig.staticValue	= false;
 			config.rastDiscardEnableConfig.dynamicValue	= tcu::just(true);
 			config.referenceColor.reset					(new SingleColorGenerator(kDefaultClearColor));
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "disable_raster", "Dynamically disable rasterizer", config));
+			// Dynamically disable rasterizer
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "disable_raster", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
 			config.rastDiscardEnableConfig.staticValue	= true;
 			config.rastDiscardEnableConfig.dynamicValue	= tcu::just(false);
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "enable_raster", "Dynamically enable rasterizer", config));
+			// Dynamically enable rasterizer
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "enable_raster", config));
 		}
 
 		// Logic op
@@ -6583,7 +6598,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.clearColorValue		= vk::makeClearValueColorU32(kGreenClearColor.x(), kGreenClearColor.y(), kGreenClearColor.z(), kGreenClearColor.w());
 			config.referenceColor.reset	(new SingleColorGenerator(kLogicOpFinalColor));
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "logic_op_or", "Dynamically change logic op to VK_LOGIC_OP_OR", config));
+			// Dynamically change logic op to VK_LOGIC_OP_OR
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "logic_op_or", config));
 		}
 
 		// Logic op enable.
@@ -6599,7 +6615,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.clearColorValue		= vk::makeClearValueColorU32(kGreenClearColor.x(), kGreenClearColor.y(), kGreenClearColor.z(), kGreenClearColor.w());
 			config.referenceColor.reset (new SingleColorGenerator(kLogicOpFinalColor));
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "logic_op_enable", "Dynamically enable logic OP", config));
+			// Dynamically enable logic OP
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "logic_op_enable", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -6613,7 +6630,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.clearColorValue		= vk::makeClearValueColorU32(kGreenClearColor.x(), kGreenClearColor.y(), kGreenClearColor.z(), kGreenClearColor.w());
 			config.referenceColor.reset	(new SingleColorGenerator(kLogicOpTriangleColor));
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "logic_op_disable", "Dynamically disable logic OP", config));
+			// Dynamically disable logic OP
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "logic_op_disable", config));
 		}
 
 		// Color blend enable.
@@ -6632,7 +6650,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.colorBlendEnableConfig.dynamicValue	= true;
 			config.referenceColor.reset					(new SingleColorGenerator(kDefaultClearColor));
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_enable", "Dynamically enable color blending", config));
+			// Dynamically enable color blending
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_enable", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -6648,7 +6667,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.colorBlendEnableConfig.staticValue	= true;
 			config.colorBlendEnableConfig.dynamicValue	= false;
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_disable", "Dynamically disable color blending", config));
+			// Dynamically disable color blending
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_disable", config));
 		}
 
 		// Color blend equation.
@@ -6718,14 +6738,15 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 					const std::string stateStr		= (enableStateValue ? "enable" : "disable");
 					const std::string nameSuffix	= (onlyEq ? "" : (allCBDynamic ? ("_dynamic_" + stateStr) : ("_dynamic_but_logic_op_" + stateStr)));
-					const std::string descSuffix	= (onlyEq ? "" : (allCBDynamic ? " and dynamically enable color blending" : " and dynamically enable color blending except for logic op"));
 
-					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_new_color" + nameSuffix, "Dynamically set a color equation that picks the mesh color" + descSuffix, config));
+					// Dynamically set a color equation that picks the mesh color
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_new_color" + nameSuffix, config));
 
 					config.colorBlendEquationConfig.swapValues();
 					config.referenceColor.reset(new SingleColorGenerator(enableStateValue ? kDefaultClearColor : kDefaultTriangleColor));
 
-					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_old_color" + nameSuffix, "Dynamically set a color equation that picks the clear color" + descSuffix, config));
+					// Dynamically set a color equation that picks the clear color
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_old_color" + nameSuffix, config));
 				}
 			}
 		}
@@ -6797,14 +6818,15 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 					const std::string stateStr		= (enableStateValue ? "enable" : "disable");
 					const std::string nameSuffix	= (onlyEq ? "" : (allCBDynamic ? ("_dynamic_" + stateStr) : ("_dynamic_but_logic_op_" + stateStr)));
-					const std::string descSuffix	= (onlyEq ? "" : (allCBDynamic ? " and dynamically enable color blending" : " and dynamically enable color blending except for logic op"));
 
-					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_advanced_new_color" + nameSuffix, "Dynamically set an advanced color equation that picks the mesh color" + descSuffix, config));
+					// Dynamically set an advanced color equation that picks the mesh color
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_advanced_new_color" + nameSuffix, config));
 
 					config.colorBlendEquationConfig.swapValues();
 					config.referenceColor.reset(new SingleColorGenerator(enableStateValue ? kDefaultClearColor : kDefaultTriangleColor));
 
-					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_advanced_old_color" + nameSuffix, "Dynamically set an advanced color equation that picks the clear color" + descSuffix, config));
+					// Dynamically set an advanced color equation that picks the clear color
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_equation_advanced_old_color" + nameSuffix, config));
 				}
 			}
 		}
@@ -6870,8 +6892,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 					config.referenceColor.reset(new SingleColorGenerator(expectGeomColor ? kDefaultTriangleColor : kDefaultClearColor));
 
 					const auto testName = std::string("color_blend_all_") + colorBlendStateName + "_" + colorBlendResultName + "_color";
-					const auto testDesc = std::string(std::string("Set all color blend to dynamic and dynamically set color blend to ") + colorBlendStateName + " and pick the " + colorBlendResultName + " color");
-					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, config));
 				}
 			}
 		}
@@ -6923,7 +6944,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.referenceColor.reset						(new SingleColorGenerator(dualSrcCases[dynamicPick].expectedColor));
 
 				const auto indexStr = std::to_string(dynamicPick);
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_dual_index_" + indexStr, "Dynamically change dual source blending equation to pick color index " + indexStr, config));
+				// Dynamically change dual source blending equation to pick color index
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_dual_index_" + indexStr, config));
 			}
 		}
 
@@ -6956,8 +6978,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.nullStaticColorBlendAttPtr			= true; // What this test is about.
 
 			const char* testName = "null_color_blend_att_ptr";
-			const char* testDesc = "Set all VkPipelineColorBlendAttachmentState substates as dynamic and pass a null pointer in VkPipelineColorBlendStateCreateInfo::pAttachments";
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
+			// Set all VkPipelineColorBlendAttachmentState substates as dynamic and pass a null pointer in VkPipelineColorBlendStateCreateInfo::pAttachments
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, config));
 		}
 
 		// Dynamically enable primitive restart
@@ -6975,7 +6997,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.primRestartEnableConfig.dynamicValue	= tcu::just(true);
 				config.bindUnusedMeshShadingPipeline		= bindUnusedCase.bindUnusedMeshShadingPipeline;
 				config.referenceColor.reset					(new CenterStripGenerator(kDefaultTriangleColor, kDefaultClearColor));
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, std::string("prim_restart_enable") + bindUnusedCase.nameSuffix, "Dynamically enable primitiveRestart" + bindUnusedCase.descSuffix, config));
+				// Dynamically enable primitiveRestart
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, std::string("prim_restart_enable") + bindUnusedCase.nameSuffix, config));
 			}
 		}
 
@@ -6992,7 +7015,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.patchControlPointsConfig.staticValue = 1;
 				config.patchControlPointsConfig.dynamicValue = 3;
 				config.bindUnusedMeshShadingPipeline = bindUnusedCase.bindUnusedMeshShadingPipeline;
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "patch_control_points" + bindUnusedCase.nameSuffix, "Dynamically change patch control points" + bindUnusedCase.descSuffix, config));
+				// Dynamically change patch control points
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "patch_control_points" + bindUnusedCase.nameSuffix, config));
 			}
 
 			{
@@ -7003,9 +7027,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.useExtraDynPCPPipeline = true;
 
 				const auto testName	= "patch_control_points_extra_pipeline";
-				const auto testDesc	= "Dynamically change patch control points and draw first with a pipeline using the state and no tessellation shaders";
-
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
+				// Dynamically change patch control points and draw first with a pipeline using the state and no tessellation shaders
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, config));
 			}
 		}
 
@@ -7020,7 +7043,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.tessDomainOriginConfig.dynamicValue = vk::VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT;
 				config.cullModeConfig.staticValue = vk::VK_CULL_MODE_BACK_BIT;
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "tess_domain_origin_lower_left", "Dynamically set the right domain origin to lower left", config));
+				// Dynamically set the right domain origin to lower left
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "tess_domain_origin_lower_left", config));
 			}
 			{
 				TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -7030,7 +7054,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.tessDomainOriginConfig.dynamicValue = vk::VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT;
 				config.cullModeConfig.staticValue = vk::VK_CULL_MODE_FRONT_BIT;
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "tess_domain_origin_upper_left", "Dynamically set the right domain origin to upper left", config));
+				// Dynamically set the right domain origin to upper left
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "tess_domain_origin_upper_left", config));
 			}
 		}
 
@@ -7073,8 +7098,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 						const std::string	className	= topologyClassName(topologyClass);
 						const std::string	name		= "topology_" + className + (forceGeometryShader ? "_geom" : "") + bindUnusedCase.nameSuffix;
-						const std::string	desc		= "Dynamically switch primitive topologies from the " + className + " class" + (forceGeometryShader ? " and use a geometry shader" : "") + bindUnusedCase.descSuffix;
-						orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, name, desc, config));
+						// Dynamically switch primitive topologies
+						orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, name, config));
 					}
 				}
 			}
@@ -7090,12 +7115,14 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.lineStippleEnableConfig.dynamicValue	= false;
 			config.lineStippleParamsConfig.staticValue	= LineStippleParams{1u, 0x5555u};
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "line_stipple_disable", "Dynamically disable line stipple", config));
+			// Dynamically disable line stipple
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "line_stipple_disable", config));
 
 			config.lineStippleEnableConfig.swapValues();
 			config.referenceColor.reset(new VerticalStripesGenerator(kDefaultTriangleColor, kDefaultClearColor, 1u));
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "line_stipple_enable", "Dynamycally enable line stipple", config));
+			// Dynamycally enable line stipple
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "line_stipple_enable", config));
 		}
 
 		// Line stipple params.
@@ -7109,7 +7136,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.lineStippleParamsConfig.dynamicValue	= LineStippleParams{2u, 0x3333u};
 			config.referenceColor.reset					(new VerticalStripesGenerator(kDefaultTriangleColor, kDefaultClearColor, 4u));
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "line_stipple_params", "Dynamically change the line stipple parameters", config));
+			// Dynamically change the line stipple parameters
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "line_stipple_params", config));
 		}
 
 		// Line rasterization mode.
@@ -7124,11 +7152,13 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.lineRasterModeConfig.staticValue		= LineRasterizationMode::RECTANGULAR;
 			config.lineRasterModeConfig.dynamicValue	= LineRasterizationMode::BRESENHAM;
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "line_raster_mode_bresenham", "Dynamically set line rasterization mode to bresenham", config));
+			// Dynamically set line rasterization mode to bresenham
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "line_raster_mode_bresenham", config));
 
 			config.lineRasterModeConfig.swapValues();
 			config.referenceColor.reset(new SingleColorGenerator(kDefaultClearColor));
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "line_raster_mode_rectangular", "Dynamically set line rasterization mode to rectangular", config));
+			// Dynamically set line rasterization mode to rectangular
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "line_raster_mode_rectangular", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -7141,7 +7171,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.lineRasterModeConfig.staticValue		= LineRasterizationMode::BRESENHAM;
 			config.lineRasterModeConfig.dynamicValue	= LineRasterizationMode::SMOOTH;
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "line_raster_mode_smooth", "Dynamically set line rasterization mode to smooth", config));
+			// Dynamically set line rasterization mode to smooth
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "line_raster_mode_smooth", config));
 		}
 
 		// Viewport.
@@ -7154,14 +7185,16 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				vk::makeViewport(0.0f, 0.0f, kHalfWidthF, kHeightF, 0.0f, 1.0f),
 				vk::makeViewport(kHalfWidthF, 0.0f, kHalfWidthF, kHeightF, 0.0f, 1.0f),
 			};
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "2_viewports", "Dynamically set 2 viewports", config));
+			// Dynamically set 2 viewports
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "2_viewports", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
 			// Bad static reduced viewport.
 			config.viewportConfig.staticValue	= ViewportVec(1u, vk::makeViewport(kHalfWidthU, kFramebufferHeight));
 			config.viewportConfig.staticValue	= ViewportVec(1u, vk::makeViewport(kFramebufferWidth, kFramebufferHeight));
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "1_full_viewport", "Dynamically set viewport to cover full framebuffer", config));
+			// Dynamically set viewport to cover full framebuffer
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "1_full_viewport", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -7172,7 +7205,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				vk::makeViewport(0.0f, 0.0f, kHalfWidthF, kHeightF, 0.0f, 1.0f),		// Left.
 			};
 			config.viewportConfig.dynamicValue	= ViewportVec{config.viewportConfig.staticValue.back(), config.viewportConfig.staticValue.front()};
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "2_viewports_switch", "Dynamically switch the order with 2 viewports", config));
+			// Dynamically switch the order with 2 viewports
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "2_viewports_switch", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -7184,7 +7218,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			};
 			config.viewportConfig.dynamicValue	= ViewportVec{config.viewportConfig.staticValue.back(), config.viewportConfig.staticValue.front()};
 			config.referenceColor.reset			(new SingleColorGenerator(kDefaultClearColor));
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "2_viewports_switch_clean", "Dynamically switch the order with 2 viewports resulting in clean image", config));
+			// Dynamically switch the order with 2 viewports resulting in clean image
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "2_viewports_switch_clean", config));
 		}
 
 		// Scissor.
@@ -7200,14 +7235,16 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				vk::makeRect2D(kHalfWidthU, kFramebufferHeight),
 				vk::makeRect2D(kHalfWidthI, 0, kHalfWidthU, kFramebufferHeight),
 			};
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "2_scissors", "Dynamically set 2 scissors", config));
+			// Dynamically set 2 scissors
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "2_scissors", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
 			// 1 viewport, bad static single scissor.
 			config.scissorConfig.staticValue	= ScissorVec(1u, vk::makeRect2D(kHalfWidthI, 0, kHalfWidthU, kFramebufferHeight));
 			config.scissorConfig.dynamicValue	= ScissorVec(1u, vk::makeRect2D(kFramebufferWidth, kFramebufferHeight));
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "1_full_scissor", "Dynamically set scissor to cover full framebuffer", config));
+			// Dynamically set scissor to cover full framebuffer
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "1_full_scissor", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -7221,7 +7258,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				vk::makeRect2D(kHalfWidthU, kFramebufferHeight),
 			};
 			config.scissorConfig.dynamicValue	= ScissorVec{config.scissorConfig.staticValue.back(), config.scissorConfig.staticValue.front()};
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "2_scissors_switch", "Dynamically switch the order with 2 scissors", config));
+			// Dynamically switch the order with 2 scissors
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "2_scissors_switch", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -7236,7 +7274,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			};
 			config.scissorConfig.dynamicValue	= ScissorVec{config.scissorConfig.staticValue.back(), config.scissorConfig.staticValue.front()};
 			config.referenceColor.reset			(new SingleColorGenerator(kDefaultClearColor));
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "2_scissors_switch_clean", "Dynamically switch the order with 2 scissors to avoid drawing", config));
+			// Dynamically switch the order with 2 scissors to avoid drawing
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "2_scissors_switch_clean", config));
 		}
 
 		// Stride.
@@ -7280,7 +7319,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 						config.strideConfig.staticValue			= halfStrides;
 						config.strideConfig.dynamicValue		= vertexStrides;
 						config.bindUnusedMeshShadingPipeline	= bindUnusedCase.bindUnusedMeshShadingPipeline;
-						orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, prefix + bindUnusedCase.nameSuffix, "Dynamically set stride" + bindUnusedCase.descSuffix, config));
+						// Dynamically set stride
+						orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, prefix + bindUnusedCase.nameSuffix, config));
 					}
 					{
 						TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders, factory);
@@ -7288,7 +7328,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 						config.strideConfig.dynamicValue		= vertexStrides;
 						config.vertexDataOffset					= vertexStrides[0];
 						config.bindUnusedMeshShadingPipeline	= bindUnusedCase.bindUnusedMeshShadingPipeline;
-						orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, prefix + "_with_offset" + bindUnusedCase.nameSuffix, "Dynamically set stride using a nonzero vertex data offset" + bindUnusedCase.descSuffix, config));
+						// Dynamically set stride using a nonzero vertex data offset
+						orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, prefix + "_with_offset" + bindUnusedCase.nameSuffix, config));
 					}
 					{
 						TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders, factory);
@@ -7303,7 +7344,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 						config.meshParams[0].scaleY				= 0.5f;
 						config.meshParams[0].offsetY			= -0.5f;
 
-						orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, prefix + "_with_offset_and_padding" + bindUnusedCase.nameSuffix, "Dynamically set stride using a nonzero vertex data offset and extra bytes" + bindUnusedCase.descSuffix, config));
+						// Dynamically set stride using a nonzero vertex data offset and extra bytes
+						orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, prefix + "_with_offset_and_padding" + bindUnusedCase.nameSuffix, config));
 					}
 				}
 			}
@@ -7330,7 +7372,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				// Use strip scale to synthesize a strip from a vertex attribute which remains constant over the draw call.
 				config.meshParams[0].stripScale = 1.0f;
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "zero_stride_with_offset", "Dynamically set zero stride using a nonzero vertex data offset", config));
+				// Dynamically set zero stride using a nonzero vertex data offset
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "zero_stride_with_offset", config));
 			}
 		}
 
@@ -7341,13 +7384,15 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.depthTestEnableConfig.dynamicValue	= tcu::just(true);
 			// By default, the depth test never passes when enabled.
 			config.referenceColor.reset					(new SingleColorGenerator(kDefaultClearColor));
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_test_enable", "Dynamically enable depth test", config));
+			// Dynamically enable depth test
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_test_enable", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
 			config.depthTestEnableConfig.staticValue	= true;
 			config.depthTestEnableConfig.dynamicValue	= tcu::just(false);
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_test_disable", "Dynamically disable depth test", config));
+			// Dynamically disable depth test
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_test_disable", config));
 		}
 
 		// Depth write enable.
@@ -7365,7 +7410,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.depthWriteEnableConfig.dynamicValue	= tcu::just(true);
 			config.expectedDepth						= 0.25f;
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_write_enable", "Dynamically enable writes to the depth buffer", config));
+			// Dynamically enable writes to the depth buffer
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_write_enable", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -7381,7 +7427,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.depthWriteEnableConfig.dynamicValue	= tcu::just(false);
 			config.expectedDepth						= 0.5f;
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_write_disable", "Dynamically disable writes to the depth buffer", config));
+			// Dynamically disable writes to the depth buffer
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_write_disable", config));
 		}
 
 		// Depth clamp enable.
@@ -7401,7 +7448,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.depthClampEnableConfig.staticValue	= false;
 			config.depthClampEnableConfig.dynamicValue	= true;
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_enable", "Dynamically enable depth clamp", config));
+			// Dynamically enable depth clamp
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_enable", config));
 		}
 		{
 			// Reverse situation.
@@ -7419,7 +7467,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.depthClampEnableConfig.staticValue	= true;
 			config.depthClampEnableConfig.dynamicValue	= false;
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_disable", "Dynamically disable depth clamp", config));
+			// Dynamically disable depth clamp
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_disable", config));
 		}
 
 #if 0
@@ -7446,7 +7495,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.depthClampEnableConfig.staticValue	= false;
 				config.depthClampEnableConfig.dynamicValue	= true;
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_enable_no_clip", "Dynamically enable depth clamp while making sure depth clip is disabled", config));
+				// Dynamically enable depth clamp while making sure depth clip is disabled
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_enable_no_clip", config));
 			}
 			{
 				TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -7465,7 +7515,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.depthClampEnableConfig.dynamicValue	= true;
 				config.depthClipEnableConfig.staticValue	= OptBoolean(true);
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_enable_with_clip", "Dynamically enable depth clamp while keeping depth clip enabled statically", config));
+				// Dynamically enable depth clamp while keeping depth clip enabled statically
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_enable_with_clip", config));
 			}
 			{
 				TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -7484,7 +7535,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				if (vk::isConstructionTypeShaderObject(pipelineConstructionType))
 					config.depthClipEnableConfig.staticValue = OptBoolean(true);
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_disable_with_clip", "Dynamically disable depth clamp making sure depth clipping is enabled", config));
+				// Dynamically disable depth clamp making sure depth clipping is enabled
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_disable_with_clip", config));
 			}
 			// Note: the combination of depth clamp disabled and depth clip disabled cannot be tested because if Zf falls outside
 			// [Zmin,Zmax] from the viewport, then the value of Zf is undefined during the depth test.
@@ -7500,7 +7552,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.oversizedTriangle				= true;
 			config.referenceColor.reset				(new SingleColorGenerator(kDefaultClearColor));
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "polygon_mode_point", "Dynamically set polygon draw mode to points", config));
+			// Dynamically set polygon draw mode to points
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "polygon_mode_point", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -7509,7 +7562,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.polygonModeConfig.dynamicValue	= vk::VK_POLYGON_MODE_FILL;
 			config.oversizedTriangle				= true;
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "polygon_mode_fill", "Dynamically set polygon draw mode to fill", config));
+			// Dynamically set polygon draw mode to fill
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "polygon_mode_fill", config));
 		}
 
 		for (int i = 0; i < 2; ++i)
@@ -7529,7 +7583,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				{
 					config.rasterizationSamplesConfig.staticValue	= inactiveSampleCount;
 					config.rasterizationSamplesConfig.dynamicValue	= activeSampleCount;
-					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, namePrefix + "rasterization_samples", "Dynamically set the rasterization sample count" + descSuffix, config));
+					// Dynamically set the rasterization sample count
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, namePrefix + "rasterization_samples", config));
 				}
 			}
 
@@ -7540,7 +7595,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.sampleMaskConfig.staticValue		= SampleMaskVec(1u, 0u);
 				config.sampleMaskConfig.dynamicValue	= SampleMaskVec(1u, 0xFFu);
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, namePrefix + "sample_mask_enable", "Dynamically set a sample mask that allows drawing" + descSuffix, config));
+				// Dynamically set a sample mask that allows drawing
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, namePrefix + "sample_mask_enable", config));
 			}
 			{
 				TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -7549,7 +7605,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.sampleMaskConfig.dynamicValue	= SampleMaskVec(1u, 0u);
 				config.referenceColor.reset				(new SingleColorGenerator(kDefaultClearColor));
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, namePrefix + "sample_mask_disable", "Dynamically set a sample mask that prevents drawing" + descSuffix, config));
+				// Dynamically set a sample mask that prevents drawing
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, namePrefix + "sample_mask_disable", config));
 			}
 
 			// Alpha to coverage.
@@ -7562,7 +7619,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.alphaToCoverageConfig.dynamicValue	= true;
 				config.referenceColor.reset					(new SingleColorGenerator(kDefaultClearColor));
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, namePrefix + "alpha_to_coverage_enable", "Dynamically enable alpha to coverage" + descSuffix, config));
+				// Dynamically enable alpha to coverage
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, namePrefix + "alpha_to_coverage_enable", config));
 			}
 			{
 				TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -7573,7 +7631,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.alphaToCoverageConfig.dynamicValue	= false;
 				config.referenceColor.reset					(new SingleColorGenerator(kTransparentColor));
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, namePrefix + "alpha_to_coverage_disable", "Dynamically disable alpha to coverage" + descSuffix, config));
+				// Dynamically disable alpha to coverage
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, namePrefix + "alpha_to_coverage_disable", config));
 			}
 
 			// Alpha to one.
@@ -7586,7 +7645,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.alphaToOneConfig.dynamicValue	= true;
 				config.referenceColor.reset				(new SingleColorGenerator(kDefaultTriangleColor));
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, namePrefix + "alpha_to_one_enable", "Dynamically enable alpha to one" + descSuffix, config));
+				// Dynamically enable alpha to one
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, namePrefix + "alpha_to_one_enable", config));
 			}
 			{
 				TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -7597,7 +7657,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.alphaToOneConfig.dynamicValue	= false;
 				config.referenceColor.reset				(new SingleColorGenerator(kTransparentColor));
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, namePrefix + "alpha_to_one_disable", "Dynamically disable alpha to one" + descSuffix, config));
+				// Dynamically disable alpha to one
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, namePrefix + "alpha_to_one_disable", config));
 			}
 		}
 
@@ -7617,7 +7678,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.offCenterProportion				= tcu::Vec2(0.0f, 0.75f);
 			config.referenceColor.reset				(new TopLeftBorderGenerator(kDefaultTriangleColor, kDefaultTriangleColor, kDefaultClearColor, kDefaultClearColor));
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "sample_mask_count", "Dynamically set sample mask with slightly different sample count", config));
+			// Dynamically set sample mask with slightly different sample count
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "sample_mask_count", config));
 		}
 
 		// Special rasterization samples case: make sure rasterization samples is taken from the dynamic value, but provide a larger mask.
@@ -7635,12 +7697,14 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.sampleMaskConfig.staticValue				= SampleMaskVec{ 0xFFFFFFF0u, 0xFFFFFFFFu }; // Last 4 bits off.
 				config.referenceColor.reset						(new SingleColorGenerator(kDefaultClearColor));
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "large_static_rasterization_samples_off", "Dynamically set the rasterization samples to a low value while disabling bits corresponding to the dynamic sample count", config));
+				// Dynamically set the rasterization samples to a low value while disabling bits corresponding to the dynamic sample count
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "large_static_rasterization_samples_off", config));
 
 				config.sampleMaskConfig.staticValue				= SampleMaskVec{ 0xFu, 0u }; // Last 4 bits on.
 				config.referenceColor.reset						(new SingleColorGenerator(kDefaultTriangleColor));
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "large_static_rasterization_samples_on", "Dynamically set the rasterization samples to a low value while enabling bits corresponding to the dynamic sample count", config));
+				// Dynamically set the rasterization samples to a low value while enabling bits corresponding to the dynamic sample count
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "large_static_rasterization_samples_on", config));
 			}
 		}
 
@@ -7677,8 +7741,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				const auto staticCode	= componentCodes(colorCompCase.staticVal);
 				const auto dynamicCode	= componentCodes(colorCompCase.dynamicVal);
 				const auto testName		= "color_write_mask_" + staticCode + "_to_" + dynamicCode;
-
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, "Dynamically set color write mask to " + dynamicCode, config));
+				// Dynamically set color write mask
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, config));
 			}
 		}
 
@@ -7721,7 +7785,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 				const auto testName = std::string("rasterization_stream_") + rastStreamCase.name;
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, "Dynamically switch rasterization streams", config));
+				// Dynamically switch rasterization streams
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, config));
 			}
 		}
 
@@ -7732,12 +7797,14 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				OptBoolean		staticVal;
 				OptBoolean		dynamicVal;
 				const char*		name;
-				const char*		desc;
 			} provokingVtxCases[] =
 			{
-				{ tcu::Nothing,		tcu::just(true),	"provoking_vertex_first_to_last_implicit",	"Dynamically switch provoking vertex mode from none (first) to last"	},
-				{ tcu::just(false),	tcu::just(true),	"provoking_vertex_first_to_last_explicit",	"Dynamically switch provoking vertex mode from first to last"			},
-				{ tcu::just(true),	tcu::just(false),	"provoking_vertex_last_to_first",			"Dynamically switch provoking vertex mode from last to first"			},
+				// Dynamically switch provoking vertex mode from none (first) to last
+				{ tcu::Nothing,		tcu::just(true),	"provoking_vertex_first_to_last_implicit"	},
+				// Dynamically switch provoking vertex mode from first to last
+				{ tcu::just(false),	tcu::just(true),	"provoking_vertex_first_to_last_explicit"			},
+				// Dynamically switch provoking vertex mode from last to first
+				{ tcu::just(true),	tcu::just(false),	"provoking_vertex_last_to_first"			},
 			};
 
 			for (const auto& provokingVtxCase : provokingVtxCases)
@@ -7753,7 +7820,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.provokingVertexConfig.dynamicValue	= provokingVtxCase.dynamicVal;
 				config.oversizedTriangle					= true;
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, provokingVtxCase.name, provokingVtxCase.desc, config));
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, provokingVtxCase.name, config));
 			}
 		}
 
@@ -7764,12 +7831,14 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				OptBoolean		staticVal;
 				OptBoolean		dynamicVal;
 				const char*		name;
-				const char*		desc;
 			} negativeOneToOneCases[] =
 			{
-				{ tcu::Nothing,		tcu::just(true),	"negative_one_to_one_false_to_true_implicit",	"Dynamically switch negative one to one mode from none (false) to true"	},
-				{ tcu::just(false),	tcu::just(true),	"negative_one_to_one_false_to_true_explicit",	"Dynamically switch negative one to one mode from false to true"		},
-				{ tcu::just(true),	tcu::just(false),	"negative_one_to_one_true_to_false",			"Dynamically switch negative one to one mode from true to false"		},
+				// Dynamically switch negative one to one mode from none (false) to true
+				{ tcu::Nothing,		tcu::just(true),	"negative_one_to_one_false_to_true_implicit"	},
+				// Dynamically switch negative one to one mode from false to true
+				{ tcu::just(false),	tcu::just(true),	"negative_one_to_one_false_to_true_explicit"		},
+				// Dynamically switch negative one to one mode from true to false
+				{ tcu::just(true),	tcu::just(false),	"negative_one_to_one_true_to_false"		},
 			};
 
 			for (const auto& negOneToOneCase : negativeOneToOneCases)
@@ -7791,7 +7860,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.meshParams[0].depth					= 0.5f;
 				config.expectedDepth						= (config.getActiveNegativeOneToOneValue() ? 0.75f : 0.5f);
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, negOneToOneCase.name, negOneToOneCase.desc, config));
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, negOneToOneCase.name, config));
 			}
 		}
 
@@ -7802,12 +7871,14 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				OptBoolean		staticVal;
 				OptBoolean		dynamicVal;
 				const char*		name;
-				const char*		desc;
 			} depthClipEnableCases[] =
 			{
-				{ tcu::Nothing,		tcu::just(false),	"depth_clip_enable_true_to_false_implicit",	"Dynamically switch negative one to one mode from none (true) to false"	},
-				{ tcu::just(true),	tcu::just(false),	"depth_clip_enable_true_to_false_explicit",	"Dynamically switch negative one to one mode from true to false"		},
-				{ tcu::just(false),	tcu::just(true),	"depth_clip_enable_true_to_false",			"Dynamically switch negative one to one mode from false to true"		},
+				// Dynamically switch negative one to one mode from none (true) to false
+				{ tcu::Nothing,		tcu::just(false),	"depth_clip_enable_true_to_false_implicit"	},
+				// Dynamically switch negative one to one mode from true to false
+				{ tcu::just(true),	tcu::just(false),	"depth_clip_enable_true_to_false_explicit"		},
+				// Dynamically switch negative one to one mode from false to true
+				{ tcu::just(false),	tcu::just(true),	"depth_clip_enable_true_to_false"		},
 			};
 
 			for (const auto& depthClipEnableCase : depthClipEnableCases)
@@ -7833,7 +7904,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.expectedDepth						= (depthClipActive ? 1.0f : 0.25f);
 				config.referenceColor.reset					(new SingleColorGenerator(depthClipActive ? kDefaultClearColor : kDefaultTriangleColor));
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, depthClipEnableCase.name, depthClipEnableCase.desc, config));
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, depthClipEnableCase.name, config));
 			}
 		}
 
@@ -7850,12 +7921,14 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.sampleLocationsEnableConfig.staticValue	= false;
 			config.sampleLocationsEnableConfig.dynamicValue	= true;
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "sample_locations_enable", "Dynamically enable sample locations", config));
+			// Dynamically enable sample locations
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "sample_locations_enable", config));
 
 			config.sampleLocationsEnableConfig.swapValues();
 			config.referenceColor.reset(new TopLeftBorderGenerator(kDefaultTriangleColor, kDefaultClearColor, kDefaultClearColor, kDefaultClearColor));
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "sample_locations_disable", "Dynamically disable sample locations", config));
+			// Dynamically disable sample locations
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "sample_locations_disable", config));
 		}
 
 		// Coverage to color enable.
@@ -7880,9 +7953,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 					const std::string	finalState	= (covToColor ? "enable" : "disable");
 					const auto			testName	= "coverage_to_color_" + finalState + "_" + (multisample ? "multisample" : "single_sample");
-					const auto			testDesc	= "Dynamically " + finalState + " coverage to color in " + (multisample ? "multisample" : "single sample") + " images";
 
-					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, config));
 				}
 			}
 		}
@@ -7913,9 +7985,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 					const auto	locName		= std::to_string(covToColorLoc);
 					const auto	testName	= "coverage_to_color_location_" + locName + "_" + (multisample ? "multisample" : "single_sample");
-					const auto	testDesc	= "Dynamically enable coverage to color in location " + locName + " using " + (multisample ? "multisample" : "single sample") + " images";
-
-					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
+					// Dynamically enable coverage to color in location
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, config));
 				}
 			}
 		}
@@ -7959,9 +8030,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.referenceColor.reset(new TopLeftBorderGenerator(kDefaultTriangleColor, partialCoverageColor, kDefaultClearColor, partialCoverageColor));
 
 				const auto testName = std::string("coverage_modulation_mode_") + modulationModeCase.name;
-				const auto testDesc = std::string("Dynamically set coverage modulation mode to ") + modulationModeCase.name;
-
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
+				// Dynamically set coverage modulation mode
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, config));
 			}
 		}
 
@@ -7992,7 +8062,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 			config.referenceColor.reset(new TopLeftBorderGenerator(kDefaultTriangleColor, tablePartialCoverageColor, kDefaultClearColor, tablePartialCoverageColor));
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "coverage_modulation_table_enable", "Dynamically enable coverage modulation table", config));
+			// Dynamically enable coverage modulation table
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "coverage_modulation_table_enable", config));
 
 			// Reverse situation, fall back to the default modulation factor.
 			config.coverageModTableEnableConfig.swapValues();
@@ -8000,7 +8071,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			const auto&	noTablePartialCoverageColor	= kDefaultTriangleColor * noTableCoverFactor;
 			config.referenceColor.reset				(new TopLeftBorderGenerator(kDefaultTriangleColor, noTablePartialCoverageColor, kDefaultClearColor, noTablePartialCoverageColor));
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "coverage_modulation_table_disable", "Dynamically disable coverage modulation table", config));
+			// Dynamically disable coverage modulation table
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "coverage_modulation_table_disable", config));
 		}
 
 		// Coverage modulation table.
@@ -8039,7 +8111,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 			config.referenceColor.reset(new TopLeftBorderGenerator(mainColor, borderColor, cornerColor, borderColor));
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "coverage_modulation_table_change", "Dynamically change coverage modulation table", config));
+			// Dynamically change coverage modulation table
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "coverage_modulation_table_change", config));
 		}
 
 		// Coverage reduction mode.
@@ -8061,7 +8134,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.coverageReductionModeConfig.dynamicValue	= vk::VK_COVERAGE_REDUCTION_MODE_TRUNCATE_NV;
 
 			config.referenceColor.reset(new TopLeftBorderGenerator(kDefaultTriangleColor, kDefaultClearColor, kDefaultClearColor, kDefaultClearColor));
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "coverage_reduction_truncate", "Dynamically set coverage reduction truncate mode", config));
+			// Dynamically set coverage reduction truncate mode
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "coverage_reduction_truncate", config));
 
 			// In merge mode, the only pixel without coverage should be the corner. However, the spec is a bit ambiguous in this
 			// case:
@@ -8074,7 +8148,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			// the test appears to pass in existing HW.
 			config.coverageReductionModeConfig.swapValues();
 			config.referenceColor.reset(new TopLeftBorderGenerator(kDefaultTriangleColor, kDefaultTriangleColor, kDefaultClearColor, kDefaultTriangleColor));
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "coverage_reduction_merge", "Dynamically set coverage reduction merge mode", config));
+			// Dynamically set coverage reduction merge mode
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "coverage_reduction_merge", config));
 		}
 
 		// Viewport swizzle.
@@ -8105,11 +8180,13 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.viewportSwizzleConfig.dynamicValue	= ViewportSwzVec(1u, yxSwizzle);
 			config.frontFaceConfig.staticValue			= vk::VK_FRONT_FACE_CLOCKWISE;
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "viewport_swizzle_yx", "Dynamically set a viewport swizzle with X and Y switched around", config));
+			// Dynamically set a viewport swizzle with X and Y switched around
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "viewport_swizzle_yx", config));
 
 			config.viewportSwizzleConfig.swapValues();
 			config.frontFaceConfig.staticValue			= vk::VK_FRONT_FACE_COUNTER_CLOCKWISE;
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "viewport_swizzle_xy", "Dynamically set the viewport identity swizzle", config));
+			// Dynamically set the viewport identity swizzle
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "viewport_swizzle_xy", config));
 		}
 
 		// Shading rate image enable.
@@ -8128,7 +8205,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.shadingRateImageEnableConfig.dynamicValue = sriEnable;
 				config.referenceColor.reset(new SingleColorGenerator(sriEnable ? kDefaultClearColor : kDefaultTriangleColor));
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "shading_rate_image_" + enableStr, "Dynamically " + enableStr + " a shading rate image", config));
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "shading_rate_image_" + enableStr, config));
 			}
 		}
 
@@ -8147,7 +8224,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.viewportWScalingEnableConfig.dynamicValue = wScalingEnable;
 				config.referenceColor.reset(new SingleColorGenerator(wScalingEnable ? kDefaultClearColor : kDefaultTriangleColor));
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "viewport_w_scaling_" + enableStr, "Dynamically " + enableStr + " viewport W scaling", config));
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "viewport_w_scaling_" + enableStr, config));
 			}
 		}
 
@@ -8170,7 +8247,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.reprFragTestEnableConfig.staticValue		= !reprFragTestEnable;
 				config.reprFragTestEnableConfig.dynamicValue	= reprFragTestEnable;
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "repr_frag_test_" + enableStr, "Dynamically " + enableStr + " representative frag test", config));
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "repr_frag_test_" + enableStr, config));
 			}
 		}
 #endif // CTS_USES_VULKANSC
@@ -8186,11 +8263,13 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.conservativeRasterModeConfig.staticValue		= vk::VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT;
 			config.conservativeRasterModeConfig.dynamicValue	= vk::VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT;
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "conservative_rasterization_mode_overestimate", "Dynamically set conservative rasterization mode to overestimation", config));
+			// Dynamically set conservative rasterization mode to overestimation
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "conservative_rasterization_mode_overestimate", config));
 
 			config.conservativeRasterModeConfig.swapValues();
 			config.referenceColor.reset(new TopLeftBorderGenerator(kDefaultTriangleColor, kDefaultClearColor, kDefaultClearColor, kDefaultClearColor));
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "conservative_rasterization_mode_disabled", "Dynamically set conservative rasterization mode to disabled", config));
+			// Dynamically set conservative rasterization mode to disabled
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "conservative_rasterization_mode_disabled", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -8203,7 +8282,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.conservativeRasterModeConfig.dynamicValue	= vk::VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT;
 			config.referenceColor.reset							(new TopLeftBorderGenerator(kDefaultTriangleColor, kDefaultClearColor, kDefaultClearColor, kDefaultClearColor));
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "conservative_rasterization_mode_underestimate", "Dynamically set conservative rasterization mode to underestimation", config));
+			// Dynamically set conservative rasterization mode to underestimation
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "conservative_rasterization_mode_underestimate", config));
 		}
 
 		// Extra primitive overestimation size.
@@ -8222,12 +8302,14 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.extraPrimitiveOverEstConfig.staticValue	= 0.0f;
 			config.extraPrimitiveOverEstConfig.dynamicValue	= 0.75f; // Large enough to reach the center of the border pixel.
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "extra_overestimation_size_large", "Dynamically set the extra overestimation size to a large value", config));
+			// Dynamically set the extra overestimation size to a large value
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "extra_overestimation_size_large", config));
 
 			config.extraPrimitiveOverEstConfig.swapValues();
 			config.referenceColor.reset(new TopLeftBorderGenerator(kDefaultTriangleColor, kDefaultClearColor, kDefaultClearColor, kDefaultClearColor));
 
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "extra_overestimation_size_none", "Dynamically set the extra overestimation size to zero", config));
+			// Dynamically set the extra overestimation size to zero
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "extra_overestimation_size_none", config));
 		}
 
 		// Depth bias enable with static or dynamic depth bias parameters.
@@ -8266,15 +8348,13 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 					config.expectedDepth = 0.75f;
 
 					std::string caseName = "depth_bias_enable";
-					std::string caseDesc = "Dynamically enable the depth bias";
 
 					if (useDynamicBias)
 					{
 						caseName += "_dynamic_bias_params";
-						caseDesc += " and set the bias params dynamically";
 					}
 
-					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, caseName, caseDesc, config));
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, caseName, config));
 				}
 				{
 					TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -8304,15 +8384,13 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 					config.expectedDepth = 0.5f;
 
 					std::string caseName = "depth_bias_disable";
-					std::string caseDesc = "Dynamically disable the depth bias";
 
 					if (useDynamicBias)
 					{
 						caseName += "_dynamic_bias_params";
-						caseDesc += " and set the bias params dynamically";
 					}
 
-					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, caseName, caseDesc, config));
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, caseName, config));
 				}
 			}
 		}
@@ -8355,9 +8433,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.extraDepthThreshold					= static_cast<float>(minR);
 
 			const char* caseName = "depth_bias_repr_info";
-			const char* caseDesc = "Dynamically set the depth bias representation information";
-
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, caseName, caseDesc, config));
+			// Dynamically set the depth bias representation information
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, caseName, config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -8383,9 +8460,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.expectedDepth						= 0.75f;
 
 			const char* caseName = "depth_bias_repr_info_float";
-			const char* caseDesc = "Dynamically set the depth bias representation information to float representation";
-
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, caseName, caseDesc, config));
+			// Dynamically set the depth bias representation information to float representation
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, caseName, config));
 		}
 #endif // CTS_USES_VULKANSC
 
@@ -8405,21 +8481,24 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.meshParams[0].depth					= 0.25f;
 				config.expectedDepth						= 0.5f;
 				config.referenceColor.reset					(new SingleColorGenerator(kDefaultClearColor));
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_never", "Dynamically set the depth compare operator to NEVER", config));
+				// Dynamically set the depth compare operator to NEVER
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_never", config));
 			}
 			{
 				TestConfig config = baseConfig;
 				config.depthCompareOpConfig.dynamicValue	= vk::VK_COMPARE_OP_LESS;
 				config.meshParams[0].depth					= 0.25f;
 				config.expectedDepth						= 0.25f;
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_less", "Dynamically set the depth compare operator to LESS", config));
+				// Dynamically set the depth compare operator to LESS
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_less", config));
 			}
 			{
 				TestConfig config = baseConfig;
 				config.depthCompareOpConfig.dynamicValue	= vk::VK_COMPARE_OP_GREATER;
 				config.meshParams[0].depth					= 0.75f;
 				config.expectedDepth						= 0.75f;
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_greater", "Dynamically set the depth compare operator to GREATER", config));
+				// Dynamically set the depth compare operator to GREATER
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_greater", config));
 			}
 			{
 				TestConfig config = baseConfig;
@@ -8430,21 +8509,24 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.meshParams.push_back(MeshParams(kDefaultTriangleColor, 0.25f));
 				config.expectedDepth						= 0.5f;
 				config.referenceColor.reset					(new SingleColorGenerator(kAlternativeColor));
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_equal", "Dynamically set the depth compare operator to EQUAL", config));
+				// Dynamically set the depth compare operator to EQUAL
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_equal", config));
 			}
 			{
 				TestConfig config = baseConfig;
 				config.depthCompareOpConfig.dynamicValue	= vk::VK_COMPARE_OP_LESS_OR_EQUAL;
 				config.meshParams[0].depth					= 0.25f;
 				config.expectedDepth						= 0.25f;
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_less_equal_less", "Dynamically set the depth compare operator to LESS_OR_EQUAL and draw with smaller depth", config));
+				// Dynamically set the depth compare operator to LESS_OR_EQUAL and draw with smaller depth
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_less_equal_less", config));
 			}
 			{
 				TestConfig config = baseConfig;
 				config.depthCompareOpConfig.dynamicValue	= vk::VK_COMPARE_OP_LESS_OR_EQUAL;
 				config.meshParams[0].depth					= 0.5f;
 				config.expectedDepth						= 0.5f;
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_less_equal_equal", "Dynamically set the depth compare operator to LESS_OR_EQUAL and draw with equal depth", config));
+				// Dynamically set the depth compare operator to LESS_OR_EQUAL and draw with equal depth
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_less_equal_equal", config));
 			}
 			{
 				TestConfig config = baseConfig;
@@ -8454,21 +8536,24 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.meshParams.push_back(MeshParams(kAlternativeColor, 0.25f));
 				config.expectedDepth						= 0.25f;
 				config.referenceColor.reset					(new SingleColorGenerator(kAlternativeColor));
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_less_equal_less_then_equal", "Dynamically set the depth compare operator to LESS_OR_EQUAL and draw two meshes with less and equal depth", config));
+				// Dynamically set the depth compare operator to LESS_OR_EQUAL and draw two meshes with less and equal depth
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_less_equal_less_then_equal", config));
 			}
 			{
 				TestConfig config = baseConfig;
 				config.depthCompareOpConfig.dynamicValue	= vk::VK_COMPARE_OP_GREATER_OR_EQUAL;
 				config.meshParams[0].depth					= 0.75f;
 				config.expectedDepth						= 0.75f;
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_greater_equal_greater", "Dynamically set the depth compare operator to GREATER_OR_EQUAL and draw with greater depth", config));
+				// Dynamically set the depth compare operator to GREATER_OR_EQUAL and draw with greater depth
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_greater_equal_greater", config));
 			}
 			{
 				TestConfig config = baseConfig;
 				config.depthCompareOpConfig.dynamicValue	= vk::VK_COMPARE_OP_GREATER_OR_EQUAL;
 				config.meshParams[0].depth					= 0.5f;
 				config.expectedDepth						= 0.5f;
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_greater_equal_equal", "Dynamically set the depth compare operator to GREATER_OR_EQUAL and draw with equal depth", config));
+				// Dynamically set the depth compare operator to GREATER_OR_EQUAL and draw with equal depth
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_greater_equal_equal", config));
 			}
 			{
 				TestConfig config = baseConfig;
@@ -8478,7 +8563,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.meshParams.push_back(MeshParams(kAlternativeColor, 0.75f));
 				config.expectedDepth						= 0.75f;
 				config.referenceColor.reset					(new SingleColorGenerator(kAlternativeColor));
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_greater_equal_greater_then_equal", "Dynamically set the depth compare operator to GREATER_OR_EQUAL and draw two meshes with greater and equal depth", config));
+				// Dynamically set the depth compare operator to GREATER_OR_EQUAL and draw two meshes with greater and equal depth
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_greater_equal_greater_then_equal", config));
 			}
 			{
 				TestConfig config = baseConfig;
@@ -8493,7 +8579,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 				config.referenceColor.reset					(new SingleColorGenerator(kAlternativeColor));
 				config.expectedDepth						= 0.5f;
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_not_equal", "Dynamically set the depth compare operator to NOT_EQUAL", config));
+				// Dynamically set the depth compare operator to NOT_EQUAL
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_not_equal", config));
 			}
 			{
 				TestConfig config = baseConfig;
@@ -8501,15 +8588,18 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 				config.meshParams[0].depth					= 0.5f;
 				config.expectedDepth						= 0.5f;
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_always_equal", "Dynamically set the depth compare operator to ALWAYS and draw with equal depth", config));
+				// Dynamically set the depth compare operator to ALWAYS and draw with equal depth
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_always_equal", config));
 
 				config.meshParams[0].depth					= 0.25f;
 				config.expectedDepth						= 0.25f;
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_always_less", "Dynamically set the depth compare operator to ALWAYS and draw with less depth", config));
+				// Dynamically set the depth compare operator to ALWAYS and draw with less depth
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_always_less", config));
 
 				config.meshParams[0].depth					= 0.75f;
 				config.expectedDepth						= 0.75f;
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_always_greater", "Dynamically set the depth compare operator to ALWAYS and draw with greater depth", config));
+				// Dynamically set the depth compare operator to ALWAYS and draw with greater depth
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_compare_always_greater", config));
 			}
 		}
 
@@ -8524,13 +8614,15 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.depthBoundsTestEnableConfig.staticValue	= false;
 				config.depthBoundsTestEnableConfig.dynamicValue	= tcu::just(true);
 				config.referenceColor.reset						(new SingleColorGenerator(kDefaultClearColor));
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_bounds_test_enable", "Dynamically enable the depth bounds test", config));
+				// Dynamically enable the depth bounds test
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_bounds_test_enable", config));
 			}
 			{
 				TestConfig config = baseConfig;
 				config.depthBoundsTestEnableConfig.staticValue	= true;
 				config.depthBoundsTestEnableConfig.dynamicValue	= tcu::just(false);
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_bounds_test_disable", "Dynamically disable the depth bounds test", config));
+				// Dynamically disable the depth bounds test
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_bounds_test_disable", config));
 			}
 		}
 
@@ -8541,14 +8633,16 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.stencilTestEnableConfig.dynamicValue				= tcu::just(true);
 			config.stencilOpConfig.staticValue.front().compareOp	= vk::VK_COMPARE_OP_NEVER;
 			config.referenceColor.reset								(new SingleColorGenerator(kDefaultClearColor));
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "stencil_test_enable", "Dynamically enable the stencil test", config));
+			// Dynamically enable the stencil test
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "stencil_test_enable", config));
 		}
 		{
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
 			config.stencilTestEnableConfig.staticValue				= true;
 			config.stencilTestEnableConfig.dynamicValue				= tcu::just(false);
 			config.stencilOpConfig.staticValue.front().compareOp	= vk::VK_COMPARE_OP_NEVER;
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "stencil_test_disable", "Dynamically disable the stencil test", config));
+			// Dynamically disable the stencil test
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "stencil_test_disable", config));
 		}
 
 		// Stencil operation. Many combinations are possible.
@@ -8772,7 +8866,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 									+ "_ref_" + de::toString(refVal)
 									+ "_" + (wouldPass ? (depthFail ? "depthfail" : "pass") : "fail");
 
-								orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, "Dynamically configure stencil test, variant " + testName, config));
+								// Dynamically configure stencil test
+								orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, config));
 							}
 						}
 					}
@@ -8806,7 +8901,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 						config.strideConfig.staticValue			= badStrides;
 						config.strideConfig.dynamicValue		= goodStrides;
 						config.bindUnusedMeshShadingPipeline	= bindUnusedCase.bindUnusedMeshShadingPipeline;
-						orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input" + bindUnusedCase.nameSuffix, "Dynamically set vertex input" + bindUnusedCase.descSuffix, config));
+						orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input" + bindUnusedCase.nameSuffix, config));
 					}
 					{
 						const auto	staticGen	= getVertexWithInstanceDataGenerator();
@@ -8823,7 +8918,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 						config.strideConfig.dynamicValue		= goodStrides;
 						config.bindUnusedMeshShadingPipeline	= bindUnusedCase.bindUnusedMeshShadingPipeline;
 						config.instanceCount					= 2u;
-						orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "instance_rate_stride" + bindUnusedCase.nameSuffix, "Dynamically set instance rate stride" + bindUnusedCase.descSuffix, config));
+						// Dynamically set instance rate stride
+						orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "instance_rate_stride" + bindUnusedCase.nameSuffix, config));
 					}
 				}
 
@@ -8831,21 +8927,24 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 					// Variant without mixing in the stride config.
 					TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders, getVertexWithPaddingGenerator(), getVertexWithExtraAttributesGenerator());
 					config.bindUnusedMeshShadingPipeline = bindUnusedCase.bindUnusedMeshShadingPipeline;
-					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input_no_dyn_stride" + bindUnusedCase.nameSuffix, "Dynamically set vertex input without using dynamic strides" + bindUnusedCase.descSuffix, config));
+					// Dynamically set vertex input without using dynamic strides
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input_no_dyn_stride" + bindUnusedCase.nameSuffix, config));
 				}
 
 				{
 					// Variant using multiple bindings.
 					TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders, getVertexWithExtraAttributesGenerator(), getVertexWithMultipleBindingsGenerator());
 					config.bindUnusedMeshShadingPipeline = bindUnusedCase.bindUnusedMeshShadingPipeline;
-					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input_multiple_bindings" + bindUnusedCase.nameSuffix, "Dynamically set vertex input with multiple bindings" + bindUnusedCase.descSuffix, config));
+					// Dynamically set vertex input with multiple bindings
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input_multiple_bindings" + bindUnusedCase.nameSuffix, config));
 				}
 
 				{
 					// Variant checking dynamic vertex inputs with 16-bit floats.
 					TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders, getVertexWithPaddingGenerator(), getVertexWithPadding16Generator());
 					config.bindUnusedMeshShadingPipeline = bindUnusedCase.bindUnusedMeshShadingPipeline;
-					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input_float16" + bindUnusedCase.nameSuffix, "Dynamically set vertex input with float16 inputs" + bindUnusedCase.descSuffix, config));
+					// Dynamically set vertex input with float16 inputs
+					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "vertex_input_float16" + bindUnusedCase.nameSuffix, config));
 				}
 			}
 		}
@@ -8859,7 +8958,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			{
 				TestConfig config(pipelineConstructionType, kOrdering, false, getVertexWithPaddingGenerator(), getVertexWithExtraAttributesGenerator());
 				config.favorStaticNullPointers = true;
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_vertex_input_state", "Use null pVertexInputState", config));
+				// Use null pVertexInputState
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_vertex_input_state", config));
 			}
 
 			if (!kUseMeshShaders)
@@ -8871,7 +8971,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.primRestartEnableConfig.staticValue	= false;
 				config.primRestartEnableConfig.dynamicValue	= tcu::just(true);
 				config.referenceColor.reset					(new CenterStripGenerator(kDefaultTriangleColor, kDefaultClearColor));
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_input_assembly_state", "Use null pVertexInputState", config));
+				// Use null pVertexInputState
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_input_assembly_state", config));
 			}
 
 			if (!kUseMeshShaders)
@@ -8880,7 +8981,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.topologyConfig.staticValue = vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
 				config.patchControlPointsConfig.staticValue = 1;
 				config.patchControlPointsConfig.dynamicValue = 3;
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_tessellation_state", "Use null pTessellationState", config));
+				// Use null pTessellationState
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_tessellation_state", config));
 			}
 
 			{
@@ -8899,7 +9001,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.scissorConfig.dynamicValue	= ScissorVec{config.scissorConfig.staticValue.back(), config.scissorConfig.staticValue.front()};
 				config.viewportConfig.dynamicValue	= ViewportVec{config.viewportConfig.staticValue.back(), config.viewportConfig.staticValue.front()};
 
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_viewport_state", "Use null pViewportState", config));
+				// Use null pViewportState
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_viewport_state", config));
 			}
 
 			{
@@ -8920,7 +9023,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.depthBiasConfig.dynamicValue				= kNoDepthBiasParams;
 				config.lineWidthConfig.staticValue				= 0.0f;
 				config.lineWidthConfig.dynamicValue				= 1.0f;
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_rasterization_state", "Use null pRasterizationState", config));
+				// Use null pRasterizationState
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_rasterization_state", config));
 			}
 
 			{
@@ -8933,7 +9037,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.alphaToCoverageConfig.dynamicValue		= false;
 				config.alphaToOneConfig.staticValue				= true;
 				config.alphaToOneConfig.dynamicValue			= false;
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_multisample_state", "Use null pMultisampleState", config));
+				// Use null pMultisampleState
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_multisample_state", config));
 			}
 
 			{
@@ -8952,7 +9057,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.stencilOpConfig.dynamicValue				= StencilOpVec(1u, StencilOpParams{vk::VK_STENCIL_FACE_FRONT_AND_BACK, vk::VK_STENCIL_OP_KEEP, vk::VK_STENCIL_OP_KEEP, vk::VK_STENCIL_OP_KEEP, vk::VK_COMPARE_OP_ALWAYS});
 				config.depthBoundsConfig.staticValue			= std::make_pair(1.0f, 1.0f);
 				config.depthBoundsConfig.dynamicValue			= std::make_pair(0.0f, 0.0f);
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_depth_stencil_state", "Use null pDepthStencilState", config));
+				// Use null pDepthStencilState
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_depth_stencil_state", config));
 			}
 
 			{
@@ -8969,7 +9075,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.colorWriteMaskConfig.dynamicValue		= (CR | CG | CB | CA);
 				config.blendConstantsConfig.staticValue			= BlendConstArray{1.0f, 1.0f, 1.0f, 1.0f};
 				config.blendConstantsConfig.dynamicValue		= BlendConstArray{0.0f, 0.0f, 0.0f, 0.0f};
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_color_blend_state", "Use null pColorBlendState", config));
+				// Use null pColorBlendState
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_color_blend_state", config));
 			}
 		}
 
@@ -8981,7 +9088,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			config.oversizedTriangle						= true;
 			config.rasterizationSamplesConfig.staticValue	= kSingleSampleCount;
 			config.rasterizationSamplesConfig.dynamicValue	= kMultiSampleCount;
-			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "sample_shading_sample_count", "Test number of frag shader invocations with sample shading enabled and dynamic sample counts", config));
+			// Test number of frag shader invocations with sample shading enabled and dynamic sample counts
+			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "sample_shading_sample_count", config));
 		}
 
 		tcu::TestCaseGroup* group = (kUseMeshShaders ? meshShaderGroup.get() : extendedDynamicStateGroup.get());

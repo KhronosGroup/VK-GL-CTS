@@ -320,7 +320,7 @@ public:
 class MultiDrawTest : public vkt::TestCase
 {
 public:
-					MultiDrawTest	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
+					MultiDrawTest	(tcu::TestContext& testCtx, const std::string& name, const TestParams& params);
 	virtual			~MultiDrawTest	(void) {}
 
 	void			initPrograms	(vk::SourceCollections& programCollection) const override;
@@ -354,8 +354,8 @@ private:
 	TestParams			m_params;
 };
 
-MultiDrawTest::MultiDrawTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-	: vkt::TestCase	(testCtx, name, description)
+MultiDrawTest::MultiDrawTest (tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(params)
 {}
 
@@ -1321,7 +1321,7 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx, const Sh
 {
 	using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
-	GroupPtr drawMultiGroup (new tcu::TestCaseGroup(testCtx, "multi_draw", "VK_EXT_multi_draw tests"));
+	GroupPtr drawMultiGroup (new tcu::TestCaseGroup(testCtx, "multi_draw"));
 
 	const struct
 	{
@@ -1423,7 +1423,7 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx, const Sh
 		if (groupParams->useSecondaryCmdBuffer && (meshTypeCase.meshType != MeshType::MOSAIC))
 			continue;
 
-		GroupPtr meshTypeGroup(new tcu::TestCaseGroup(testCtx, meshTypeCase.name, ""));
+		GroupPtr meshTypeGroup(new tcu::TestCaseGroup(testCtx, meshTypeCase.name));
 
 		for (const auto& drawTypeCase : drawTypeCases)
 		{
@@ -1444,7 +1444,7 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx, const Sh
 				if (hasOffsetType)
 					drawGroupName += std::string("_") + offsetTypeCase.name;
 
-				GroupPtr drawTypeGroup(new tcu::TestCaseGroup(testCtx, drawGroupName.c_str(), ""));
+				GroupPtr drawTypeGroup(new tcu::TestCaseGroup(testCtx, drawGroupName.c_str()));
 
 				for (const auto& drawCountCase : drawCountCases)
 				{
@@ -1452,23 +1452,23 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx, const Sh
 					if (groupParams->useSecondaryCmdBuffer && (drawCountCase.drawCount != 1u))
 						continue;
 
-					GroupPtr drawCountGroup(new tcu::TestCaseGroup(testCtx, drawCountCase.name, ""));
+					GroupPtr drawCountGroup(new tcu::TestCaseGroup(testCtx, drawCountCase.name));
 
 					for (const auto& strideCase : strideCases)
 					{
-						GroupPtr strideGroup(new tcu::TestCaseGroup(testCtx, strideCase.name, ""));
+						GroupPtr strideGroup(new tcu::TestCaseGroup(testCtx, strideCase.name));
 
 						for (const auto& instanceCase : instanceCases)
 						{
-							GroupPtr instanceGroup(new tcu::TestCaseGroup(testCtx, instanceCase.name, ""));
+							GroupPtr instanceGroup(new tcu::TestCaseGroup(testCtx, instanceCase.name));
 
 							for (const auto& shaderCase : shaderCases)
 							{
-								GroupPtr shaderGroup(new tcu::TestCaseGroup(testCtx, shaderCase.name, ""));
+								GroupPtr shaderGroup(new tcu::TestCaseGroup(testCtx, shaderCase.name));
 
 								for (const auto& multiviewCase : multiviewCases)
 								{
-									GroupPtr multiviewGroup(new tcu::TestCaseGroup(testCtx, multiviewCase.name, ""));
+									GroupPtr multiviewGroup(new tcu::TestCaseGroup(testCtx, multiviewCase.name));
 
 									const auto	isIndexed	= (drawTypeCase.drawType == DrawType::INDEXED);
 									const auto	isPacked	= (offsetTypeCase.vertexOffsetType && *offsetTypeCase.vertexOffsetType == VertexOffsetType::CONSTANT_PACK);
@@ -1500,12 +1500,12 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx, const Sh
 										groupParams,					//	SharedGroupParams				groupParams;
 									};
 
-									multiviewGroup->addChild(new MultiDrawTest(testCtx, "no_offset", "", params));
+									multiviewGroup->addChild(new MultiDrawTest(testCtx, "no_offset", params));
 
 									if (isIndexed)
 									{
 										params.vertexOffset->offset = 6u;
-										multiviewGroup->addChild(new MultiDrawTest(testCtx, "offset_6", "", params));
+										multiviewGroup->addChild(new MultiDrawTest(testCtx, "offset_6", params));
 									}
 
 									shaderGroup->addChild(multiviewGroup.release());

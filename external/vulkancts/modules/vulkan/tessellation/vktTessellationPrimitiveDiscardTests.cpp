@@ -602,7 +602,8 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 //!       - not fail if implementation returned more coordinates than expected
 tcu::TestCaseGroup* createPrimitiveDiscardTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "primitive_discard", "Test primitive discard with relevant outer tessellation level <= 0.0"));
+	// Test primitive discard with relevant outer tessellation level <= 0.0
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "primitive_discard"));
 
 	for (int primitiveTypeNdx = 0; primitiveTypeNdx < TESSPRIMITIVETYPE_LAST; primitiveTypeNdx++)
 	for (int spacingModeNdx = 0; spacingModeNdx < SPACINGMODE_LAST; spacingModeNdx++)
@@ -628,7 +629,7 @@ tcu::TestCaseGroup* createPrimitiveDiscardTests (tcu::TestContext& testCtx)
 									 + (caseDef.usePointMode ? "_point_mode" : "")
 									 + (caseDef.useLessThanOneInnerLevels ? "" : "_valid_levels");
 
-		addFunctionCaseWithPrograms(group.get(), caseName, "", checkSupportCase, initPrograms, test, caseDef);
+		addFunctionCaseWithPrograms(group.get(), caseName, checkSupportCase, initPrograms, test, caseDef);
 	}
 
 	return group.release();

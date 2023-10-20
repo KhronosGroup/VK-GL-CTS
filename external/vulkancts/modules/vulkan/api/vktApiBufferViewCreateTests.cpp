@@ -112,9 +112,8 @@ class BufferViewTestCase : public TestCase
 public:
 										BufferViewTestCase				(tcu::TestContext&			testCtx,
 																		 const std::string&			name,
-																		 const std::string&			description,
 																		 BufferViewCaseParameters	createInfo)
-										: TestCase						(testCtx, name, description)
+										: TestCase						(testCtx, name)
 										, m_testCase					(createInfo)
 	{}
 	virtual								~BufferViewTestCase				(void)
@@ -409,7 +408,7 @@ tcu::TestStatus BufferViewTestInstance::iterate							(void)
 	const vk::VkFormatFeatureFlags		feature[]						= { vk::VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT, vk::VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT };
 	const char* const					usageName[]						= { "uniform", "storage"};
 
-	de::MovePtr<tcu::TestCaseGroup>		bufferViewTests					(new tcu::TestCaseGroup(testCtx, "create", "BufferView Construction Tests"));
+	de::MovePtr<tcu::TestCaseGroup>		bufferViewTests					(new tcu::TestCaseGroup(testCtx, "create"));
 
 	if (!bufferViewTests)
 		TCU_THROW(InternalError, "Could not create test group \"create\".");
@@ -417,22 +416,23 @@ tcu::TestStatus BufferViewTestInstance::iterate							(void)
 	de::MovePtr<tcu::TestCaseGroup>		bufferViewAllocationGroupTests[ALLOCATION_KIND_LAST]
 																		=
 	{
-		de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "suballocation", "BufferView Construction Tests for Suballocated Buffer")),
-		de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "dedicated_alloc", "BufferView Construction Tests for Dedicatedly Allocated Buffer"))
+		// BufferView Construction Tests for Suballocated Buffer
+		de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "suballocation")),
+		// BufferView Construction Tests for Dedicatedly Allocated Buffer
+		de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "dedicated_alloc"))
 	};
 
 	for (deUint32 allocationKind = 0; allocationKind < ALLOCATION_KIND_LAST; ++allocationKind)
 	for (deUint32 usageNdx = 0; usageNdx < DE_LENGTH_OF_ARRAY(usage); ++usageNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageName[usageNdx], ""));
+		de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageName[usageNdx]));
 
 		for (deUint32 format = vk::VK_FORMAT_UNDEFINED + 1; format < VK_CORE_FORMAT_LAST; format++)
 		{
 			const std::string			formatName						= de::toLower(getFormatName((VkFormat)format)).substr(10);
-			de::MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, "suballocation", "BufferView Construction Tests for Suballocated Buffer"));
+			de::MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, "suballocation"));
 
 			const std::string			testName						= de::toLower(getFormatName((VkFormat)format)).substr(10);
-			const std::string			testDescription					= "vkBufferView test " + testName;
 
 			{
 				const BufferViewCaseParameters
@@ -446,7 +446,7 @@ tcu::TestStatus BufferViewTestInstance::iterate							(void)
 					static_cast<AllocationKind>(allocationKind)			// AllocationKind			bufferAllocationKind;
 				};
 
-				usageGroup->addChild(new BufferViewTestCase(testCtx, testName.c_str(), testDescription.c_str(), testParams));
+				usageGroup->addChild(new BufferViewTestCase(testCtx, testName.c_str(), testParams));
 			}
 		}
 		bufferViewAllocationGroupTests[allocationKind]->addChild(usageGroup.release());

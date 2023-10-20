@@ -1706,11 +1706,11 @@ void checkSupport (Context& context, const CaseDef caseDef)
 
 tcu::TestCaseGroup* createImageMutableTests (TestContext& testCtx)
 {
-	de::MovePtr<TestCaseGroup> testGroup	(new TestCaseGroup(testCtx, "mutable", "Cases with mutable images"));
+	de::MovePtr<TestCaseGroup> testGroup	(new TestCaseGroup(testCtx, "mutable"));
 	for (int textureNdx = 0; textureNdx < DE_LENGTH_OF_ARRAY(s_textures); ++textureNdx)
 	{
 		const Texture&					texture					= s_textures[textureNdx];
-		de::MovePtr<tcu::TestCaseGroup> groupByImageViewType	(new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> groupByImageViewType	(new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str()));
 
 		for (int imageFormatNdx = 0; imageFormatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++imageFormatNdx)
 		for (int viewFormatNdx = 0; viewFormatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++viewFormatNdx)
@@ -1744,11 +1744,11 @@ tcu::TestCaseGroup* createImageMutableTests (TestContext& testCtx)
 
 						std::string caseName = getFormatShortString(s_formats[imageFormatNdx]) + "_" + getFormatShortString(s_formats[viewFormatNdx]) +
 							"_" + getUploadString(upload) + "_" + getDownloadString(download);
-						addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, "", checkSupport, initPrograms, testMutable, caseDef);
+						addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, checkSupport, initPrograms, testMutable, caseDef);
 
 						caseDef.isFormatListTest = true;
 						caseName += "_format_list";
-						addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, "", checkSupport, initPrograms, testMutable, caseDef);
+						addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, checkSupport, initPrograms, testMutable, caseDef);
 					}
 				}
 			}
@@ -2174,18 +2174,18 @@ tcu::TestStatus testSwapchainMutable(Context& context, CaseDef caseDef)
 
 tcu::TestCaseGroup* createSwapchainImageMutableTests(TestContext& testCtx)
 {
-	de::MovePtr<TestCaseGroup> testGroup(new TestCaseGroup(testCtx, "swapchain_mutable", "Cases with swapchain mutable images"));
+	de::MovePtr<TestCaseGroup> testGroup(new TestCaseGroup(testCtx, "swapchain_mutable"));
 
 	for (int typeNdx = 0; typeNdx < vk::wsi::TYPE_LAST; ++typeNdx)
 	{
 		const vk::wsi::Type	wsiType = (vk::wsi::Type)typeNdx;
 
-		de::MovePtr<TestCaseGroup> testGroupWsi(new TestCaseGroup(testCtx, getName(wsiType), ""));
+		de::MovePtr<TestCaseGroup> testGroupWsi(new TestCaseGroup(testCtx, getName(wsiType)));
 
 		for (int textureNdx = 0; textureNdx < DE_LENGTH_OF_ARRAY(s_textures); ++textureNdx)
 		{
 			const Texture&					texture = s_textures[textureNdx];
-			de::MovePtr<tcu::TestCaseGroup> groupByImageViewType(new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> groupByImageViewType(new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str()));
 
 			for (int imageFormatNdx = 0; imageFormatNdx < DE_LENGTH_OF_ARRAY(s_swapchainFormats); ++imageFormatNdx)
 				for (int viewFormatNdx = 0; viewFormatNdx < DE_LENGTH_OF_ARRAY(s_swapchainFormats); ++viewFormatNdx)
@@ -2220,7 +2220,7 @@ tcu::TestCaseGroup* createSwapchainImageMutableTests(TestContext& testCtx)
 								std::string caseName = getFormatShortString(s_swapchainFormats[imageFormatNdx]) + "_" + getFormatShortString(s_swapchainFormats[viewFormatNdx]) +
 									"_" + getUploadString(upload) + "_" + getDownloadString(download) + "_format_list";
 
-								addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, "", checkSupport, initPrograms, testSwapchainMutable, caseDef);
+								addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, checkSupport, initPrograms, testSwapchainMutable, caseDef);
 							}
 						}
 					}

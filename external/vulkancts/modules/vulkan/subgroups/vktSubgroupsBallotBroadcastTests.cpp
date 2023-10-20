@@ -528,7 +528,7 @@ TestCaseGroup* createSubgroupsBallotBroadcastTests (TestContext& testCtx)
 								DE_FALSE,						//  deBool				requires16BitUniformBuffer;
 							};
 
-							addFunctionCaseWithPrograms(testGroup, name, "", supportedCheck, initPrograms, test, caseDef);
+							addFunctionCaseWithPrograms(testGroup, name,supportedCheck, initPrograms, test, caseDef);
 						}
 
 						for (deUint32 subgroupSize = 1; subgroupSize <= subgroups::maxSupportedSubgroupSize(); subgroupSize *= 2)
@@ -547,7 +547,7 @@ TestCaseGroup* createSubgroupsBallotBroadcastTests (TestContext& testCtx)
 							};
 							const string			testName	= name + "_requiredsubgroupsize" + de::toString(subgroupSize);
 
-							addFunctionCaseWithPrograms(testGroup, testName, "", supportedCheck, initPrograms, test, caseDef);
+							addFunctionCaseWithPrograms(testGroup, testName,supportedCheck, initPrograms, test, caseDef);
 						}
 					}
 
@@ -571,7 +571,7 @@ TestCaseGroup* createSubgroupsBallotBroadcastTests (TestContext& testCtx)
 								DE_FALSE,						//  deBool				requires16BitUniformBuffer;
 							};
 
-							addFunctionCaseWithPrograms(testGroup, name + stageName, "", supportedCheck, initPrograms, test, caseDef);
+							addFunctionCaseWithPrograms(testGroup, name + stageName, supportedCheck, initPrograms, test, caseDef);
 						}
 
 						for (deUint32 subgroupSize = 1; subgroupSize <= subgroups::maxSupportedSubgroupSize(); subgroupSize *= 2)
@@ -590,7 +590,7 @@ TestCaseGroup* createSubgroupsBallotBroadcastTests (TestContext& testCtx)
 							};
 							const string			testName	= name + "_requiredsubgroupsize" + de::toString(subgroupSize) + stageName;
 
-							addFunctionCaseWithPrograms(testGroup, testName, "", supportedCheck, initPrograms, test, caseDef);
+							addFunctionCaseWithPrograms(testGroup, testName,supportedCheck, initPrograms, test, caseDef);
 						}
 					}
 #endif // CTS_USES_VULKANSC
@@ -610,7 +610,7 @@ TestCaseGroup* createSubgroupsBallotBroadcastTests (TestContext& testCtx)
 							DE_FALSE						//  deBool				requires16BitUniformBuffer;
 						};
 
-						addFunctionCaseWithPrograms(testGroup, name, "", supportedCheck, initPrograms, test, caseDef);
+						addFunctionCaseWithPrograms(testGroup, name,supportedCheck, initPrograms, test, caseDef);
 					}
 
 					{
@@ -631,7 +631,7 @@ TestCaseGroup* createSubgroupsBallotBroadcastTests (TestContext& testCtx)
 								deBool(needs16BitUBOStorage)	//  deBool				requires16BitUniformBuffer;
 							};
 
-							addFunctionCaseWithPrograms(testGroup, name + getShaderStageName(caseDef.shaderStage), "", supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
+							addFunctionCaseWithPrograms(testGroup, name + getShaderStageName(caseDef.shaderStage),  supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 						}
 					}
 				}
@@ -665,7 +665,7 @@ TestCaseGroup* createSubgroupsBallotBroadcastTests (TestContext& testCtx)
 					DE_FALSE						//  deBool				requires16BitUniformBuffer;
 				};
 
-				addFunctionCaseWithPrograms(raytracingGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
+				addFunctionCaseWithPrograms(raytracingGroup.get(), name,  supportedCheck, initPrograms, test, caseDef);
 			}
 		}
 	}

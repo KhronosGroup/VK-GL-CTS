@@ -1468,9 +1468,8 @@ class CopyImageToImageTestCase : public vkt::TestCase
 public:
 							CopyImageToImageTestCase	(tcu::TestContext&				testCtx,
 														 const std::string&				name,
-														 const std::string&				description,
 														 const TestParams				params)
-								: vkt::TestCase	(testCtx, name, description)
+								: vkt::TestCase	(testCtx, name)
 								, m_params		(params)
 	{}
 
@@ -1925,9 +1924,8 @@ class CopyImageToImageMipmapTestCase : public vkt::TestCase
 public:
 							CopyImageToImageMipmapTestCase	(tcu::TestContext&				testCtx,
 															 const std::string&				name,
-															 const std::string&				description,
 															 const TestParams				params)
-								: vkt::TestCase	(testCtx, name, description)
+								: vkt::TestCase	(testCtx, name)
 								, m_params		(params)
 	{}
 
@@ -2182,9 +2180,8 @@ class BufferToBufferTestCase : public vkt::TestCase
 public:
 							BufferToBufferTestCase	(tcu::TestContext&	testCtx,
 													 const std::string&	name,
-													 const std::string&	description,
 													 const TestParams	params)
-								: vkt::TestCase	(testCtx, name, description)
+								: vkt::TestCase	(testCtx, name)
 								, m_params		(params)
 							{}
 
@@ -2389,9 +2386,8 @@ class CopyImageToBufferTestCase : public vkt::TestCase
 public:
 							CopyImageToBufferTestCase	(tcu::TestContext&		testCtx,
 														 const std::string&		name,
-														 const std::string&		description,
 														 const TestParams		params)
-								: vkt::TestCase	(testCtx, name, description)
+								: vkt::TestCase	(testCtx, name)
 								, m_params		(params)
 							{}
 
@@ -2620,9 +2616,8 @@ class CopyCompressedImageToBufferTestCase : public vkt::TestCase
 public:
 	CopyCompressedImageToBufferTestCase	(tcu::TestContext&		testCtx,
 										 const std::string&		name,
-										 const std::string&		description,
 										 const TestParams		params)
-	: vkt::TestCase	(testCtx, name, description)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(params)
 	{ }
 
@@ -2834,9 +2829,8 @@ class CopyBufferToImageTestCase : public vkt::TestCase
 public:
 							CopyBufferToImageTestCase	(tcu::TestContext&		testCtx,
 														 const std::string&		name,
-														 const std::string&		description,
 														 const TestParams		params)
-								: vkt::TestCase		(testCtx, name, description)
+								: vkt::TestCase		(testCtx, name)
 								, m_params			(params)
 							{}
 
@@ -3243,9 +3237,8 @@ class CopyBufferToDepthStencilTestCase : public vkt::TestCase
 public:
 							CopyBufferToDepthStencilTestCase	(tcu::TestContext&		testCtx,
 																 const std::string&		name,
-																 const std::string&		description,
 																 const TestParams		params)
-								: vkt::TestCase(testCtx, name, description)
+								: vkt::TestCase(testCtx, name)
 								, m_params(params)
 							{}
 
@@ -4831,9 +4824,8 @@ class BlitImageTestCase : public vkt::TestCase
 public:
 							BlitImageTestCase		(tcu::TestContext&				testCtx,
 													 const std::string&				name,
-													 const std::string&				description,
 													 const TestParams				params)
-								: vkt::TestCase	(testCtx, name, description)
+								: vkt::TestCase	(testCtx, name)
 								, m_params		(params)
 	{}
 
@@ -4844,6 +4836,13 @@ public:
 
 	virtual void			checkSupport			(Context&						context) const
 	{
+
+#ifndef CTS_USES_VULKANSC
+		if (m_params.src.image.format == VK_FORMAT_A8_UNORM_KHR || m_params.dst.image.format == VK_FORMAT_A8_UNORM_KHR ||
+			m_params.src.image.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR || m_params.dst.image.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+			context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
 		VkImageFormatProperties properties;
 		if (context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
 																					m_params.src.image.format,
@@ -4898,12 +4897,6 @@ public:
 				TCU_THROW(NotSupportedError, "Source format feature sampled image filter cubic not supported");
 			}
 		}
-
-#ifndef CTS_USES_VULKANSC
-		if (m_params.src.image.format == VK_FORMAT_A8_UNORM_KHR || m_params.dst.image.format == VK_FORMAT_A8_UNORM_KHR ||
-			m_params.src.image.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR || m_params.dst.image.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
-			context.requireDeviceFunctionality("VK_KHR_maintenance5");
-#endif // CTS_USES_VULKANSC
 
 		checkExtensionSupport(context, m_params.extensionFlags);
 	}
@@ -5581,9 +5574,8 @@ class BlitMipmapTestCase : public vkt::TestCase
 public:
 							BlitMipmapTestCase		(tcu::TestContext&				testCtx,
 													 const std::string&				name,
-													 const std::string&				description,
 													 const TestParams				params)
-								: vkt::TestCase	(testCtx, name, description)
+								: vkt::TestCase	(testCtx, name)
 								, m_params		(params)
 	{}
 
@@ -7150,10 +7142,9 @@ class ResolveImageToImageTestCase : public vkt::TestCase
 public:
 							ResolveImageToImageTestCase	(tcu::TestContext&					testCtx,
 														 const std::string&					name,
-														 const std::string&					description,
 														 const TestParams					params,
 														 const ResolveImageToImageOptions	options = NO_OPTIONAL_OPERATION)
-								: vkt::TestCase	(testCtx, name, description)
+								: vkt::TestCase	(testCtx, name)
 								, m_params		(params)
 								, m_options		(options)
 	{}
@@ -8279,9 +8270,8 @@ class DepthStencilMSAATestCase : public vkt::TestCase
 public:
 							DepthStencilMSAATestCase	(tcu::TestContext&						testCtx,
 														 const std::string&						name,
-														 const std::string&						description,
 														 const DepthStencilMSAA::TestParameters	testParams)
-								: vkt::TestCase	(testCtx, name, description)
+								: vkt::TestCase	(testCtx, name)
 								, m_params		(testParams)
 	{}
 
@@ -8633,7 +8623,7 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, TestGroupParamsPtr t
 			params.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "whole_image", "Whole image", params));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "whole_image", params));
 	}
 
 	{
@@ -8667,7 +8657,7 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, TestGroupParamsPtr t
 			params.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "whole_image_diff_format", "Whole image with different format", params));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "whole_image_diff_format", params));
 	}
 
 	{
@@ -8701,7 +8691,7 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, TestGroupParamsPtr t
 			params.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "partial_image", "Partial image", params));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "partial_image", params));
 	}
 
 	static const struct
@@ -8782,7 +8772,7 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, TestGroupParamsPtr t
 				// Example test case name: "partial_image_npot_diff_format_clear"
 				const std::string testCaseName = "partial_image_" + extent.name + "_" + format.name + "_" + clear.name;
 
-				group->addChild(new CopyImageToImageTestCase(testCtx, testCaseName, "", params));
+				group->addChild(new CopyImageToImageTestCase(testCtx, testCaseName, params));
 			}
 		}
 	}
@@ -8825,7 +8815,7 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, TestGroupParamsPtr t
 			params.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "depth", "With depth", params));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "depth", params));
 	}
 
 	{
@@ -8866,7 +8856,7 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, TestGroupParamsPtr t
 			params.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "stencil", "With stencil", params));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "stencil", params));
 	}
 }
 
@@ -8901,7 +8891,7 @@ void addImageToImageAllFormatsColorSrcFormatDstFormatTests (tcu::TestCaseGroup* 
 										  getImageLayoutCaseName(params.dst.image.operationLayout);
 			const std::string description	= "From layout " + getImageLayoutCaseName(params.src.image.operationLayout) +
 											  " to " + getImageLayoutCaseName(params.dst.image.operationLayout);
-			group->addChild(new CopyImageToImageTestCase(group->getTestContext(), testName, description, params));
+			group->addChild(new CopyImageToImageTestCase(group->getTestContext(), testName, params));
 		}
 	}
 }
@@ -8946,7 +8936,7 @@ void addImageToImageAllFormatsColorSrcFormatTests (tcu::TestCaseGroup* group, Co
 				continue;
 
 		const std::string	description	= "Copy to destination format " + getFormatCaseName(dstFormat);
-		addTestGroup(group, getFormatCaseName(dstFormat), description, addImageToImageAllFormatsColorSrcFormatDstFormatTests, testParams.params);
+		addTestGroup(group, getFormatCaseName(dstFormat), addImageToImageAllFormatsColorSrcFormatDstFormatTests, testParams.params);
 	}
 }
 
@@ -9488,7 +9478,8 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 
 	// 1D to 1D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_1d", "1D to 1D copies"));
+		// 1D to 1D copies
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_1d"));
 
 		TestParams	params;
 		params.src.image.imageType	= VK_IMAGE_TYPE_1D;
@@ -9535,8 +9526,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 				testParams.compatibleFormats	= nullptr;
 
 				const std::string testName		= getFormatCaseName(params.src.image.format);
-				const std::string description	= "Copy from source format " + getFormatCaseName(params.src.image.format);
-				addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsColorSrcFormatTests, testParams);
+				addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);
 			}
 		}
 
@@ -9545,7 +9535,8 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 
 	// 1D to 2D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_2d", "1D to 2D copies"));
+		// 1D to 2D copies
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_2d"));
 
 		TestParams	params;
 		params.src.image.imageType	 = VK_IMAGE_TYPE_1D;
@@ -9593,8 +9584,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 				testParams.compatibleFormats	= nullptr;
 
 				const std::string testName		= getFormatCaseName(params.src.image.format);
-				const std::string description	= "Copy from source format " + getFormatCaseName(params.src.image.format);
-				addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsColorSrcFormatTests, testParams);
+				addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);
 			}
 		}
 
@@ -9654,8 +9644,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 				testParams.compatibleFormats	= nullptr;
 
 				const std::string testName		= getFormatCaseName(params.src.image.format);
-				const std::string description	= "Copy from source format " + getFormatCaseName(params.src.image.format);
-				addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsColorSrcFormatTests, testParams);
+				addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);
 			}
 		}
 
@@ -9712,8 +9701,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 				testParams.compatibleFormats	= compatibleFormats;
 
 				const std::string testName		= getFormatCaseName(params.src.image.format);
-				const std::string description	= "Copy from source format " + getFormatCaseName(params.src.image.format);
-				addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsColorSrcFormatTests, testParams);
+				addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);
 			}
 		}
 
@@ -9769,8 +9757,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 				testParams.compatibleFormats	= compatibleFormats;
 
 				const std::string testName		= getFormatCaseName(params.src.image.format);
-				const std::string description	= "Copy from source format " + getFormatCaseName(params.src.image.format);
-				addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsColorSrcFormatTests, testParams);
+				addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);
 			}
 		}
 
@@ -9827,8 +9814,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 				testParams.compatibleFormats	= compatibleFormats;
 
 				const std::string testName		= getFormatCaseName(params.src.image.format);
-				const std::string description	= "Copy from source format " + getFormatCaseName(params.src.image.format);
-				addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsColorSrcFormatTests, testParams);
+				addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);
 			}
 		}
 
@@ -9888,8 +9874,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 				testParams.compatibleFormats	= nullptr;
 
 				const std::string testName		= getFormatCaseName(params.src.image.format);
-				const std::string description	= "Copy from source format " + getFormatCaseName(params.src.image.format);
-				addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsColorSrcFormatTests, testParams);
+				addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);
 			}
 		}
 
@@ -9949,8 +9934,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 				testParams.compatibleFormats	= nullptr;
 
 				const std::string testName		= getFormatCaseName(params.src.image.format);
-				const std::string description	= "Copy from source format " + getFormatCaseName(params.src.image.format);
-				addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsColorSrcFormatTests, testParams);
+				addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);
 			}
 		}
 
@@ -10006,8 +9990,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 				testParams.compatibleFormats	= nullptr;
 
 				const std::string testName		= getFormatCaseName(params.src.image.format);
-				const std::string description	= "Copy from source format " + getFormatCaseName(params.src.image.format);
-				addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsColorSrcFormatTests, testParams);
+				addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);
 			}
 		}
 
@@ -10169,8 +10152,7 @@ void addImageToImageDimensionsTests (tcu::TestCaseGroup* group, TestGroupParamsP
 				if (!isSupportedByFramework(testParams.params.src.image.format) && !isCompressedFormat(testParams.params.src.image.format))
 					continue;
 
-				const std::string	srcDescription	= "Copy from source format " + getFormatCaseName(testParams.params.src.image.format);
-				tcu::TestCaseGroup*	srcFormatGroup	= new tcu::TestCaseGroup(testCtx, getFormatCaseName(testParams.params.src.image.format).c_str(), srcDescription.c_str());
+				tcu::TestCaseGroup*	srcFormatGroup	= new tcu::TestCaseGroup(testCtx, getFormatCaseName(testParams.params.src.image.format).c_str());
 
 				// Destination image format
 				for (int dstFormatIndex = 0; dstFormatIndex < DE_LENGTH_OF_ARRAY(testFormats[compatibleFormatsIndex]); dstFormatIndex++)
@@ -10190,8 +10172,7 @@ void addImageToImageDimensionsTests (tcu::TestCaseGroup* group, TestGroupParamsP
 							continue;
 					}
 
-					const std::string	dstDescription	= "Copy to destination format " + getFormatCaseName(testParams.params.dst.image.format);
-					tcu::TestCaseGroup*	dstFormatGroup	= new tcu::TestCaseGroup(testCtx, getFormatCaseName(testParams.params.dst.image.format).c_str(), dstDescription.c_str());
+					tcu::TestCaseGroup*	dstFormatGroup	= new tcu::TestCaseGroup(testCtx, getFormatCaseName(testParams.params.dst.image.format).c_str());
 
 					// Source/destionation image layouts
 					for (int srcLayoutNdx = 0u; srcLayoutNdx < DE_LENGTH_OF_ARRAY(copySrcLayouts); srcLayoutNdx++)
@@ -10203,10 +10184,9 @@ void addImageToImageDimensionsTests (tcu::TestCaseGroup* group, TestGroupParamsP
 							testParams.params.dst.image.operationLayout = copyDstLayouts[dstLayoutNdx];
 
 							const std::string	testName	= getImageLayoutCaseName(testParams.params.src.image.operationLayout) + "_" + getImageLayoutCaseName(testParams.params.dst.image.operationLayout);
-							const std::string	description	= "From layout " + getImageLayoutCaseName(testParams.params.src.image.operationLayout) + " to " + getImageLayoutCaseName(testParams.params.dst.image.operationLayout);
 							const TestParams	params		= testParams.params;
 
-							dstFormatGroup->addChild(new CopyImageToImageTestCase(testCtx, testName, description, params));
+							dstFormatGroup->addChild(new CopyImageToImageTestCase(testCtx, testName, params));
 						}
 					}
 
@@ -10243,9 +10223,7 @@ void addImageToImageAllFormatsDepthStencilFormatsTests (tcu::TestCaseGroup* grou
 
 			const std::string testName		= getImageLayoutCaseName(params.src.image.operationLayout) + "_" +
 											  getImageLayoutCaseName(params.dst.image.operationLayout);
-			const std::string description	= "From layout " + getImageLayoutCaseName(params.src.image.operationLayout) +
-											  " to " + getImageLayoutCaseName(params.dst.image.operationLayout);
-			group->addChild(new CopyImageToImageTestCase(group->getTestContext(), testName, description, params));
+			group->addChild(new CopyImageToImageTestCase(group->getTestContext(), testName, params));
 		}
 	}
 }
@@ -10326,15 +10304,13 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 			}
 
 			const std::string testName		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
-			const std::string description	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format);
-			addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+			addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 
 			if (hasDepth && hasStencil)
 			{
 				params.extensionFlags	|= SEPARATE_DEPTH_STENCIL_LAYOUT;
 				const std::string testName2		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format) + "_separate_layouts";
-				const std::string description2	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format) + " with separate depth/stencil layouts";
-				addTestGroup(subGroup.get(), testName2, description2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+				addTestGroup(subGroup.get(), testName2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 			}
 		}
 
@@ -10405,15 +10381,13 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 			}
 
 			const std::string testName		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
-			const std::string description	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format);
-			addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+			addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 
 			if (hasDepth && hasStencil)
 			{
 				params.extensionFlags	|= SEPARATE_DEPTH_STENCIL_LAYOUT;
 				const std::string testName2		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format) + "_separate_layouts";
-				const std::string description2	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format) + " with separate depth/stencil layouts";
-				addTestGroup(subGroup.get(), testName2, description2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+				addTestGroup(subGroup.get(), testName2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 			}
 		}
 
@@ -10487,15 +10461,13 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 			}
 
 			const std::string testName		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
-			const std::string description	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format);
-			addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+			addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 
 			if (hasDepth && hasStencil)
 			{
 				params.extensionFlags	|= SEPARATE_DEPTH_STENCIL_LAYOUT;
 				const std::string testName2		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format) + "_separate_layouts";
-				const std::string description2	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format) + " with separate depth/stencil layouts";
-				addTestGroup(subGroup.get(), testName2, description2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+				addTestGroup(subGroup.get(), testName2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 			}
 		}
 
@@ -10567,15 +10539,13 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 			}
 
 			const std::string testName		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
-			const std::string description	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format);
-			addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+			addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 
 			if (hasDepth && hasStencil)
 			{
 				params.extensionFlags |= SEPARATE_DEPTH_STENCIL_LAYOUT;
 				const std::string testName2		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format) + "_separate_layouts";
-				const std::string description2	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format) + " with separate depth/stencil layouts";
-				addTestGroup(subGroup.get(), testName2, description2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+				addTestGroup(subGroup.get(), testName2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 
 				// DS Image copy
 				{
@@ -10604,8 +10574,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 					}
 
 					const std::string testName3		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format) + "_depth_stencil_aspects";
-					const std::string description3	= "Copy both depth and stencil aspects from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format);
-					addTestGroup(subGroup.get(), testName3, description3, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+					addTestGroup(subGroup.get(), testName3, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 				}
 			}
 		}
@@ -10677,15 +10646,13 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 			}
 
 			const std::string testName		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
-			const std::string description	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format);
-			addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+			addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 
 			if (hasDepth && hasStencil)
 			{
 				params.extensionFlags |= SEPARATE_DEPTH_STENCIL_LAYOUT;
 				const std::string testName2		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format) + "_separate_layouts";
-				const std::string description2	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format) + " with separate depth/stencil layouts";
-				addTestGroup(subGroup.get(), testName2, description2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+				addTestGroup(subGroup.get(), testName2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 
 				// DS Image copy
 				{
@@ -10714,8 +10681,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 					}
 
 					const std::string testName3		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format) + "_depth_stencil_aspects";
-					const std::string description3	= "Copy both depth and stencil aspects from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format);
-					addTestGroup(subGroup.get(), testName3, description3, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+					addTestGroup(subGroup.get(), testName3, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 				}
 			}
 		}
@@ -10788,15 +10754,13 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 		}
 
 		const std::string testName		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
-		const std::string description	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format);
-		addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+		addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 
 		if (hasDepth && hasStencil)
 		{
 			params.extensionFlags	|= SEPARATE_DEPTH_STENCIL_LAYOUT;
 			const std::string testName2		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format) + "_separate_layouts";
-			const std::string description2	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format) + " with separate depth/stencil layouts";
-			addTestGroup(subGroup.get(), testName2, description2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+			addTestGroup(subGroup.get(), testName2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 
 			// DS Image copy
 			{
@@ -10825,8 +10789,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 				}
 
 				const std::string testName3		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format) + "_depth_stencil_aspects";
-				const std::string description3	= "Copy both depth and stencil aspects from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format);
-				addTestGroup(subGroup.get(), testName3, description3, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+				addTestGroup(subGroup.get(), testName3, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 			}
 		}
 	}
@@ -10901,15 +10864,13 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 		}
 
 		const std::string testName		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
-		const std::string description	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format);
-		addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+		addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 
 		if (hasDepth && hasStencil)
 		{
 			params.extensionFlags	|= SEPARATE_DEPTH_STENCIL_LAYOUT;
 			const std::string testName2		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format) + "_separate_layouts";
-			const std::string description2	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format) + " with separate depth/stencil layouts";
-			addTestGroup(subGroup.get(), testName2, description2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+			addTestGroup(subGroup.get(), testName2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 		}
 	}
 
@@ -10983,15 +10944,13 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 			}
 
 			const std::string testName		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
-			const std::string description	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format);
-			addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+			addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 
 			if (hasDepth && hasStencil)
 			{
 				params.extensionFlags	|= SEPARATE_DEPTH_STENCIL_LAYOUT;
 				const std::string testName2		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format) + "_separate_layouts";
-				const std::string description2	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format) + " with separate depth/stencil layouts";
-				addTestGroup(subGroup.get(), testName2, description2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+				addTestGroup(subGroup.get(), testName2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 			}
 		}
 
@@ -11061,15 +11020,13 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 			}
 
 			const std::string testName		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
-			const std::string description	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format);
-			addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+			addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 
 			if (hasDepth && hasStencil)
 			{
 				params.extensionFlags	|= SEPARATE_DEPTH_STENCIL_LAYOUT;
 				const std::string testName2		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format) + "_separate_layouts";
-				const std::string description2	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format) + " with separate depth/stencil layouts";
-				addTestGroup(subGroup.get(), testName2, description2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+				addTestGroup(subGroup.get(), testName2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 			}
 		}
 
@@ -11079,9 +11036,9 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 
 void addImageToImageAllFormatsTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
 {
-	addTestGroup(group, "color", "Copy image to image with color formats", addImageToImageAllFormatsColorTests, testGroupParams);
+	addTestGroup(group, "color", addImageToImageAllFormatsColorTests, testGroupParams);
 	if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
-		addTestGroup(group, "depth_stencil", "Copy image to image with depth/stencil formats", addImageToImageAllFormatsDepthStencilTests, testGroupParams);
+		addTestGroup(group, "depth_stencil", addImageToImageAllFormatsDepthStencilTests, testGroupParams);
 }
 
 void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
@@ -11139,7 +11096,7 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, TestGroupParamsPtr
 
 			params3DTo2D.regions.push_back(imageCopy);
 		}
-		group->addChild(new CopyImageToImageTestCase(testCtx, "3d_to_2d_by_slices", "copy 3d slices to 2d layers one by one", params3DTo2D));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "3d_to_2d_by_slices", params3DTo2D));
 	}
 
 	{
@@ -11194,7 +11151,7 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, TestGroupParamsPtr
 			params2DTo3D.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "2d_to_3d_by_layers", "copy 2d layers to 3d slices one by one", params2DTo3D));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "2d_to_3d_by_layers", params2DTo3D));
 	}
 
 	{
@@ -11247,7 +11204,7 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, TestGroupParamsPtr
 
 			params3DTo2D.regions.push_back(imageCopy);
 		}
-		group->addChild(new CopyImageToImageTestCase(testCtx, "3d_to_2d_whole", "copy 3d slices to 2d layers all at once", params3DTo2D));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "3d_to_2d_whole", params3DTo2D));
 	}
 
 	{
@@ -11301,7 +11258,7 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, TestGroupParamsPtr
 			params2DTo3D.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "2d_to_3d_whole", "copy 2d layers to 3d slices all at once", params2DTo3D));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "2d_to_3d_whole", params2DTo3D));
 	}
 
 	{
@@ -11362,7 +11319,7 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, TestGroupParamsPtr
 			imageCopy.imageCopy = testCopy;
 			params3DTo2D.regions.push_back(imageCopy);
 		}
-		group->addChild(new CopyImageToImageTestCase(testCtx, "3d_to_2d_regions", "copy 3d slices regions to 2d layers", params3DTo2D));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "3d_to_2d_regions", params3DTo2D));
 	}
 
 	{
@@ -11424,7 +11381,7 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, TestGroupParamsPtr
 			params2DTo3D.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "2d_to_3d_regions", "copy 2d layers regions to 3d slices", params2DTo3D));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "2d_to_3d_regions", params2DTo3D));
 	}
 }
 
@@ -11487,7 +11444,7 @@ void addImageToImageCubeTests (tcu::TestCaseGroup* group, TestGroupParamsPtr tes
 			paramsCubeToArray.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "cube_to_array_layers", "copy cube compatible image to 2d layers layer by layer", paramsCubeToArray));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "cube_to_array_layers", paramsCubeToArray));
 	}
 
 	{
@@ -11544,7 +11501,7 @@ void addImageToImageCubeTests (tcu::TestCaseGroup* group, TestGroupParamsPtr tes
 			paramsCubeToArray.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "cube_to_array_whole", "copy cube compatible image to 2d layers all at once", paramsCubeToArray));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "cube_to_array_whole", paramsCubeToArray));
 	}
 
 	{
@@ -11602,7 +11559,7 @@ void addImageToImageCubeTests (tcu::TestCaseGroup* group, TestGroupParamsPtr tes
 			paramsArrayToCube.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "array_to_cube_layers", "copy 2d layers to cube compatible image layer by layer", paramsArrayToCube));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "array_to_cube_layers", paramsArrayToCube));
 	}
 
 	{
@@ -11659,7 +11616,7 @@ void addImageToImageCubeTests (tcu::TestCaseGroup* group, TestGroupParamsPtr tes
 			paramsArrayToCube.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "array_to_cube_whole", "copy 2d layers to cube compatible image all at once", paramsArrayToCube));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "array_to_cube_whole", paramsArrayToCube));
 	}
 
 	{
@@ -11717,7 +11674,7 @@ void addImageToImageCubeTests (tcu::TestCaseGroup* group, TestGroupParamsPtr tes
 			paramsCubeToArray.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "cube_to_cube_layers", "copy cube compatible image to cube compatible image layer by layer", paramsCubeToArray));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "cube_to_cube_layers", paramsCubeToArray));
 	}
 
 	{
@@ -11774,7 +11731,7 @@ void addImageToImageCubeTests (tcu::TestCaseGroup* group, TestGroupParamsPtr tes
 			paramsCubeToCube.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "cube_to_cube_whole", "copy cube compatible image to cube compatible image all at once", paramsCubeToCube));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "cube_to_cube_whole", paramsCubeToCube));
 	}
 }
 
@@ -11835,7 +11792,7 @@ void addImageToImageArrayTests (tcu::TestCaseGroup* group, TestGroupParamsPtr te
 			paramsArrayToArray.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "array_to_array_layers", "copy 2d array image to 2d array image layer by layer", paramsArrayToArray));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "array_to_array_layers", paramsArrayToArray));
 	}
 
 	{
@@ -11890,7 +11847,7 @@ void addImageToImageArrayTests (tcu::TestCaseGroup* group, TestGroupParamsPtr te
 			paramsArrayToArray.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "array_to_array_whole", "copy 2d array image to 2d array image all at once", paramsArrayToArray));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "array_to_array_whole", paramsArrayToArray));
 	}
 
 	if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
@@ -11947,7 +11904,7 @@ void addImageToImageArrayTests (tcu::TestCaseGroup* group, TestGroupParamsPtr te
 			paramsArrayToArray.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "array_to_array_whole_remaining_layers", "copy 2d array image to 2d array image all at once using VK_REMAINING_ARRAY_LAYERS", paramsArrayToArray));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "array_to_array_whole_remaining_layers", paramsArrayToArray));
 	}
 
 	{
@@ -12003,7 +11960,7 @@ void addImageToImageArrayTests (tcu::TestCaseGroup* group, TestGroupParamsPtr te
 			paramsArrayToArray.regions.push_back(imageCopy);
 		}
 
-		group->addChild(new CopyImageToImageTestCase(testCtx, "array_to_array_partial_remaining_layers", "copy partialy 2d array image to 2d array image using VK_REMAINING_ARRAY_LAYERS", paramsArrayToArray));
+		group->addChild(new CopyImageToImageTestCase(testCtx, "array_to_array_partial_remaining_layers", paramsArrayToArray));
 	}
 
 	{
@@ -12079,19 +12036,19 @@ void addImageToImageArrayTests (tcu::TestCaseGroup* group, TestGroupParamsPtr te
 			std::ostringstream testName;
 			const std::string formatName = getFormatName(imageFormats[imageFormatsNdx]);
 			testName << "array_to_array_whole_mipmap_" << de::toLower(formatName.substr(10));
-			group->addChild(new CopyImageToImageMipmapTestCase(testCtx, testName.str(), "copy 2d array mipmap image to 2d array mipmap image all at once", paramsArrayToArray));
+			group->addChild(new CopyImageToImageMipmapTestCase(testCtx, testName.str(), paramsArrayToArray));
 		}
 	}
 }
 
 void addImageToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
 {
-	addTestGroup(group, "simple_tests", "Copy from image to image simple tests", addImageToImageSimpleTests, testGroupParams);
-	addTestGroup(group, "all_formats", "Copy from image to image with all compatible formats", addImageToImageAllFormatsTests, testGroupParams);
-	addTestGroup(group, "3d_images", "Coping operations on 3d images", addImageToImage3dImagesTests, testGroupParams);
-	addTestGroup(group, "dimensions", "Copying operations on different image dimensions", addImageToImageDimensionsTests, testGroupParams);
-	addTestGroup(group, "cube", "Coping operations on cube compatible images", addImageToImageCubeTests, testGroupParams);
-	addTestGroup(group, "array", "Copying operations on array of images", addImageToImageArrayTests, testGroupParams);
+	addTestGroup(group, "simple_tests", addImageToImageSimpleTests, testGroupParams);
+	addTestGroup(group, "all_formats", addImageToImageAllFormatsTests, testGroupParams);
+	addTestGroup(group, "3d_images", addImageToImage3dImagesTests, testGroupParams);
+	addTestGroup(group, "dimensions", addImageToImageDimensionsTests, testGroupParams);
+	addTestGroup(group, "cube", addImageToImageCubeTests, testGroupParams);
+	addTestGroup(group, "array", addImageToImageArrayTests, testGroupParams);
 }
 
 void add1dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
@@ -12124,7 +12081,7 @@ void add1dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyImageToBufferTestCase(testCtx, "tightly_sized_buffer", "Copy from image to a buffer that is just large enough to contain the data", params));
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "tightly_sized_buffer", params));
 	}
 
 	{
@@ -12154,7 +12111,7 @@ void add1dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyImageToBufferTestCase(testCtx, "larger_buffer", "Copy from image to a buffer that is larger than necessary", params));
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "larger_buffer", params));
 	}
 
 	{
@@ -12195,7 +12152,7 @@ void add1dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 			params.regions.push_back(copyRegion);
 		}
 
-		group->addChild(new CopyImageToBufferTestCase(testCtx, "array_tightly_sized_buffer", "Copy each layer from array to tightly sized buffer", params));
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "array_tightly_sized_buffer", params));
 	}
 
 	{
@@ -12237,7 +12194,7 @@ void add1dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 			params.regions.push_back(copyRegion);
 		}
 
-		group->addChild(new CopyImageToBufferTestCase(testCtx, "array_larger_buffer", "Copy each layer from array to a buffer that is larger than necessary", params));
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "array_larger_buffer", params));
 	}
 
 	{
@@ -12281,7 +12238,7 @@ void add1dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyImageToBufferTestCase(testCtx, "array_all_remaining_layers", "Copy image array to a buffer using VK_REMAINING_ARRAY_LAYERS", params));
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "array_all_remaining_layers", params));
 	}
 
 	{
@@ -12325,7 +12282,7 @@ void add1dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyImageToBufferTestCase(testCtx, "array_not_all_remaining_layers", "Copy image array to a buffer using VK_REMAINING_ARRAY_LAYERS", params));
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "array_not_all_remaining_layers", params));
 	}
 }
 
@@ -12359,7 +12316,7 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyImageToBufferTestCase(testCtx, "whole", "Copy from image to buffer", params));
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "whole", params));
 	}
 
 	{
@@ -12388,7 +12345,7 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyImageToBufferTestCase(testCtx, "buffer_offset", "Copy from image to buffer with buffer offset", params));
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "buffer_offset", params));
 	}
 
 	if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
@@ -12418,7 +12375,7 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyImageToBufferTestCase(testCtx, "buffer_offset_relaxed", "Copy from image to buffer with buffer offset not a multiple of 4", params));
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "buffer_offset_relaxed", params));
 	}
 
 	{
@@ -12460,7 +12417,7 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 			params.regions.push_back(region);
 		}
 
-		group->addChild(new CopyImageToBufferTestCase(testCtx, "regions", "Copy from image to buffer with multiple regions", params));
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "regions", params));
 	}
 
 	{
@@ -12489,7 +12446,7 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyImageToBufferTestCase(testCtx, "tightly_sized_buffer", "Copy from image to a buffer that is just large enough to contain the data", params));
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "tightly_sized_buffer", params));
 	}
 
 	{
@@ -12519,7 +12476,7 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyImageToBufferTestCase(testCtx, "larger_buffer", "Copy from image to a buffer that is larger than necessary", params));
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "larger_buffer", params));
 	}
 
 	{
@@ -12548,7 +12505,7 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyImageToBufferTestCase(testCtx, "tightly_sized_buffer_offset", "Copy from image to a buffer that is just large enough to contain the data", params));
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "tightly_sized_buffer_offset", params));
 	}
 
 	{
@@ -12588,7 +12545,7 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 			params.regions.push_back(copyRegion);
 		}
-		group->addChild(new CopyImageToBufferTestCase(testCtx, "array", "Copy each layer from array to buffer", params));
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "array", params));
 	}
 
 	{
@@ -12629,7 +12586,7 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 			params.regions.push_back(copyRegion);
 		}
-		group->addChild(new CopyImageToBufferTestCase(testCtx, "array_larger_buffer", "Copy each layer from array to a buffer that is larger than necessary", params));
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "array_larger_buffer", params));
 	}
 
 	{
@@ -12669,7 +12626,7 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 			params.regions.push_back(copyRegion);
 		}
-		group->addChild(new CopyImageToBufferTestCase(testCtx, "array_tightly_sized_buffer", "Copy each layer from array to tightly sized buffer", params));
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "array_tightly_sized_buffer", params));
 	}
 
 	{
@@ -12713,7 +12670,7 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyImageToBufferTestCase(testCtx, "array_all_remaining_layers", "Copy from image array to buffer using VK_ARRAY_REMAINING_LAYERS", params));
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "array_all_remaining_layers", params));
 	}
 
 	{
@@ -12757,7 +12714,7 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyImageToBufferTestCase(testCtx, "array_not_all_remaining_layers", "Copy from image array to buffer using VK_ARRAY_REMAINING_LAYERS", params));
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "array_not_all_remaining_layers", params));
 	}
 
 	// those tests are performed for all queues, no need to repeat them
@@ -12799,11 +12756,11 @@ void add2dImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 				params.src.image.format				= *format;
 				{
 					params.queueSelection = QueueSelectionOptions::Universal;
-					group->addChild(new CopyCompressedImageToBufferTestCase(testCtx, getCaseName(*format, params.src.image.extent, numLayers, "universal"), "Copy from image to buffer", params));
+					group->addChild(new CopyCompressedImageToBufferTestCase(testCtx, getCaseName(*format, params.src.image.extent, numLayers, "universal"), params));
 					params.queueSelection = QueueSelectionOptions::ComputeOnly;
-					group->addChild(new CopyCompressedImageToBufferTestCase(testCtx, getCaseName(*format, params.src.image.extent, numLayers, "compute"), "Copy from image to buffer", params));
+					group->addChild(new CopyCompressedImageToBufferTestCase(testCtx, getCaseName(*format, params.src.image.extent, numLayers, "compute"), params));
 					params.queueSelection = QueueSelectionOptions::TransferOnly;
-					group->addChild(new CopyCompressedImageToBufferTestCase(testCtx, getCaseName(*format, params.src.image.extent, numLayers, "transfer"), "Copy from image to buffer", params));
+					group->addChild(new CopyCompressedImageToBufferTestCase(testCtx, getCaseName(*format, params.src.image.extent, numLayers, "transfer"), params));
 				}
 			}
 		}
@@ -12905,13 +12862,13 @@ void addBufferToDepthStencilTests(tcu::TestCaseGroup* group, AllocationKind allo
 			const tcu::TextureFormat	format		= mapVkFormat(config.format);
 			const bool					hasDepth	= tcu::hasDepthComponent(format.order);
 			const bool					hasStencil	= tcu::hasStencilComponent(format.order);
-			std::string					description	= config.name;
+			std::string					testName	= config.name;
 
 			if (offset)
 			{
 				copyDepthRegion.bufferImageCopy		= bufferDepthCopyOffset;
 				copyStencilRegion.bufferImageCopy	= bufferStencilCopyOffset;
-				description							= "buffer_offset_" + description;
+				testName							= "buffer_offset_" + testName;
 				params.src.buffer.size				= (defaultHalfSize - 1u) * defaultSize + defaultHalfSize + defaultQuarterSize;
 			}
 			else
@@ -12936,20 +12893,20 @@ void addBufferToDepthStencilTests(tcu::TestCaseGroup* group, AllocationKind allo
 				params.regions.push_back(copyDepthRegion);
 				params.regions.push_back(copyStencilRegion);
 
-				group->addChild(new CopyBufferToDepthStencilTestCase(testCtx, description + "_DS", "Copy from depth&stencil to image", params));
+				group->addChild(new CopyBufferToDepthStencilTestCase(testCtx, testName + "_DS", params));
 
 				params.singleCommand = DE_FALSE;
 
-				group->addChild(new CopyBufferToDepthStencilTestCase(testCtx, description + "_D_S", "Copy from depth then stencil to image", params));
+				group->addChild(new CopyBufferToDepthStencilTestCase(testCtx, testName + "_D_S", params));
 
 				params.regions.clear();
 				params.regions.push_back(copyStencilRegion);
 				params.regions.push_back(copyDepthRegion);
 
-				group->addChild(new CopyBufferToDepthStencilTestCase(testCtx, description + "_S_D", "Copy from depth then stencil to image", params));
+				group->addChild(new CopyBufferToDepthStencilTestCase(testCtx, testName + "_S_D", params));
 
 				params.singleCommand = DE_TRUE;
-				group->addChild(new CopyBufferToDepthStencilTestCase(testCtx, description + "_SD", "Copy from depth&stencil to image", params));
+				group->addChild(new CopyBufferToDepthStencilTestCase(testCtx, testName + "_SD", params));
 			}
 
 			if (hasStencil)
@@ -12957,7 +12914,7 @@ void addBufferToDepthStencilTests(tcu::TestCaseGroup* group, AllocationKind allo
 				params.regions.clear();
 				params.regions.push_back(copyStencilRegion);
 
-				group->addChild(new CopyBufferToDepthStencilTestCase(testCtx, description + "_S", "Copy from stencil to image", params));
+				group->addChild(new CopyBufferToDepthStencilTestCase(testCtx, testName + "_S", params));
 			}
 
 			if (hasDepth)
@@ -12965,7 +12922,7 @@ void addBufferToDepthStencilTests(tcu::TestCaseGroup* group, AllocationKind allo
 				params.regions.clear();
 				params.regions.push_back(copyDepthRegion);
 
-				group->addChild(new CopyBufferToDepthStencilTestCase(testCtx, description + "_D", "Copy from depth to image", params));
+				group->addChild(new CopyBufferToDepthStencilTestCase(testCtx, testName + "_D", params));
 			}
 		}
 }
@@ -13000,7 +12957,7 @@ void add1dBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyBufferToImageTestCase(testCtx, "tightly_sized_buffer", "Copy from tightly packed buffer to image", params));
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "tightly_sized_buffer", params));
 	}
 
 	{
@@ -13030,7 +12987,7 @@ void add1dBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyBufferToImageTestCase(testCtx, "larger_buffer", "Copy from a buffer to image", params));
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "larger_buffer", params));
 	}
 
 	{
@@ -13071,7 +13028,7 @@ void add1dBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 			params.regions.push_back(copyRegion);
 		}
 
-		group->addChild(new CopyBufferToImageTestCase(testCtx, "array_tightly_sized_buffer", "Copy from a different part of the tightly packed buffer to each layer", params));
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "array_tightly_sized_buffer", params));
 	}
 
 	{
@@ -13115,7 +13072,7 @@ void add1dBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyBufferToImageTestCase(testCtx, "array_all_remaining_layers", "Copy from the buffer to the image using VK_REMAINING_ARRAY_LAYERS", params));
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "array_all_remaining_layers", params));
 	}
 
 	{
@@ -13159,7 +13116,7 @@ void add1dBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyBufferToImageTestCase(testCtx, "array_not_all_remaining_layers", "Copy from the buffer to the image using VK_REMAINING_ARRAY_LAYERS", params));
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "array_not_all_remaining_layers", params));
 	}
 
 	{
@@ -13201,7 +13158,7 @@ void add1dBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 			params.regions.push_back(copyRegion);
 		}
 
-		group->addChild(new CopyBufferToImageTestCase(testCtx, "array_larger_buffer", "Copy from a different part of the buffer to each layer", params));
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "array_larger_buffer", params));
 	}
 }
 
@@ -13235,7 +13192,7 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyBufferToImageTestCase(testCtx, "whole", "Copy from buffer to image", params));
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "whole", params));
 	}
 
 	{
@@ -13267,7 +13224,7 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 			params.regions.push_back(region);
 		}
 
-		group->addChild(new CopyBufferToImageTestCase(testCtx, "regions", "Copy from buffer to image with multiple regions", params));
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "regions", params));
 	}
 
 	{
@@ -13296,7 +13253,7 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyBufferToImageTestCase(testCtx, "buffer_offset", "Copy from buffer to image with buffer offset", params));
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "buffer_offset", params));
 	}
 
 	if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
@@ -13326,7 +13283,7 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyBufferToImageTestCase(testCtx, "buffer_offset_relaxed", "Copy from buffer to image with buffer offset not a multiple of 4", params));
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "buffer_offset_relaxed", params));
 	}
 
 	{
@@ -13355,7 +13312,7 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyBufferToImageTestCase(testCtx, "tightly_sized_buffer", "Copy from buffer that is just large enough to contain the accessed elements", params));
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "tightly_sized_buffer", params));
 	}
 
 	{
@@ -13385,7 +13342,7 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyBufferToImageTestCase(testCtx, "larger_buffer", "Copy from buffer that is larger than necessary to image", params));
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "larger_buffer", params));
 	}
 
 	{
@@ -13414,7 +13371,7 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyBufferToImageTestCase(testCtx, "tightly_sized_buffer_offset", "Copy from buffer that is just large enough to contain the accessed elements", params));
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "tightly_sized_buffer_offset", params));
 	}
 
 	{
@@ -13454,7 +13411,7 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 			params.regions.push_back(copyRegion);
 		}
-		group->addChild(new CopyBufferToImageTestCase(testCtx, "array", "Copy from a different part of the buffer to each layer", params));
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "array", params));
 	}
 
 	{
@@ -13495,7 +13452,7 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 			params.regions.push_back(copyRegion);
 		}
-		group->addChild(new CopyBufferToImageTestCase(testCtx, "array_larger_buffer", "Copy from different part of buffer to each layer", params));
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "array_larger_buffer", params));
 	}
 
 	{
@@ -13535,7 +13492,7 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 			params.regions.push_back(copyRegion);
 		}
-		group->addChild(new CopyBufferToImageTestCase(testCtx, "array_tightly_sized_buffer", "Copy from different part of tightly sized buffer to each layer", params));
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "array_tightly_sized_buffer", params));
 	}
 
 	{
@@ -13579,7 +13536,7 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyBufferToImageTestCase(testCtx, "array_all_remaining_layers", "Copy from the buffer to image using VK_REMAINING_ARRAY_LAYER", params));
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "array_all_remaining_layers", params));
 	}
 
 	{
@@ -13623,7 +13580,7 @@ void add2dBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr test
 
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new CopyBufferToImageTestCase(testCtx, "array_not_all_remaining_layers", "Copy from the buffer to image using VK_REMAINING_ARRAY_LAYER", params));
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "array_not_all_remaining_layers", params));
 	}
 }
 
@@ -13650,7 +13607,7 @@ void addBufferToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testG
 		copyRegion.bufferCopy	= bufferCopy;
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new BufferToBufferTestCase(testCtx, "whole", "Whole buffer", params));
+		group->addChild(new BufferToBufferTestCase(testCtx, "whole", params));
 	}
 
 	// Filter is VK_FILTER_NEAREST.
@@ -13673,7 +13630,7 @@ void addBufferToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testG
 		copyRegion.bufferCopy = bufferCopy;
 		params.regions.push_back(copyRegion);
 
-		group->addChild(new BufferToBufferTestCase(testCtx, "partial", "Partial", params));
+		group->addChild(new BufferToBufferTestCase(testCtx, "partial", params));
 	}
 
 	{
@@ -13700,7 +13657,7 @@ void addBufferToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testG
 			params.regions.push_back(copyRegion);
 		}
 
-		group->addChild(new BufferToBufferTestCase(testCtx, "regions", "Multiple regions", params));
+		group->addChild(new BufferToBufferTestCase(testCtx, "regions", params));
 	}
 
 	{
@@ -13726,7 +13683,7 @@ void addBufferToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testG
 			params.regions.push_back(copyRegion);
 		}
 
-		group->addChild(new BufferToBufferTestCase(testCtx, "unaligned_regions", "Multiple unaligned regions", params));
+		group->addChild(new BufferToBufferTestCase(testCtx, "unaligned_regions", params));
 	}
 }
 
@@ -13737,35 +13694,29 @@ void addBlittingImageSimpleTests (tcu::TestCaseGroup* group, TestParams& params)
 	// Filter is VK_FILTER_NEAREST.
 	{
 		params.filter					= VK_FILTER_NEAREST;
-		const std::string description	= "Nearest filter";
 
 		params.dst.image.format	= VK_FORMAT_R8G8B8A8_UNORM;
-		group->addChild(new BlitImageTestCase(testCtx, "nearest", description, params));
+		group->addChild(new BlitImageTestCase(testCtx, "nearest", params));
 
 		params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
-		const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)");
-		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToR32, params));
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_nearest", params));
 
 		params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
-		const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
-		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_nearest", descriptionOfRGBAToBGRA, params));
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_nearest", params));
 	}
 
 	// Filter is VK_FILTER_LINEAR.
 	{
 		params.filter					= VK_FILTER_LINEAR;
-		const std::string description	= "Linear filter";
 
 		params.dst.image.format	= VK_FORMAT_R8G8B8A8_UNORM;
-		group->addChild(new BlitImageTestCase(testCtx, "linear", description, params));
+		group->addChild(new BlitImageTestCase(testCtx, "linear", params));
 
 		params.dst.image.format	= VK_FORMAT_R32_SFLOAT;
-		const std::string	descriptionOfRGBAToR32	(description + " and different formats (R8G8B8A8 -> R32)");
-		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToR32, params));
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_linear", params));
 
 		params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
-		const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
-		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_linear", params));
 	}
 
 	// Filter is VK_FILTER_CUBIC_EXT.
@@ -13773,18 +13724,15 @@ void addBlittingImageSimpleTests (tcu::TestCaseGroup* group, TestParams& params)
 	if (params.dst.image.imageType == VK_IMAGE_TYPE_2D)
 	{
 		params.filter					= VK_FILTER_CUBIC_EXT;
-		const std::string description	= "Cubic filter";
 
 		params.dst.image.format = VK_FORMAT_R8G8B8A8_UNORM;
-		group->addChild(new BlitImageTestCase(testCtx, "cubic", description, params));
+		group->addChild(new BlitImageTestCase(testCtx, "cubic", params));
 
 		params.dst.image.format = VK_FORMAT_R32_SFLOAT;
-		const std::string	descriptionOfRGBAToR32(description + " and different formats (R8G8B8A8 -> R32)");
-		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", descriptionOfRGBAToR32, params));
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", params));
 
 		params.dst.image.format = VK_FORMAT_B8G8R8A8_UNORM;
-		const std::string	descriptionOfRGBAToBGRA(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
-		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", descriptionOfRGBAToBGRA, params));
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", params));
 	}
 }
 
@@ -13868,7 +13816,7 @@ void addBlittingImageArrayTests (tcu::TestCaseGroup* group, TestParams params)
 
 		params.regions.push_back(region);
 
-		group->addChild(new BlitImageTestCase(testCtx, "all_remaining_layers", "Blit image array using VK_REMAINING_ARRAY_LAYERS", params));
+		group->addChild(new BlitImageTestCase(testCtx, "all_remaining_layers", params));
 	}
 
 	params.regions.clear();
@@ -13912,7 +13860,7 @@ void addBlittingImageArrayTests (tcu::TestCaseGroup* group, TestParams params)
 
 		params.regions.push_back(region);
 
-		group->addChild(new BlitImageTestCase(testCtx, "not_all_remaining_layers", "Blit image array using VK_REMAINING_ARRAY_LAYERS", params));
+		group->addChild(new BlitImageTestCase(testCtx, "not_all_remaining_layers", params));
 	}
 }
 
@@ -14301,29 +14249,29 @@ void addBlittingImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind allo
 	params.extensionFlags				= extensionFlags;
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
-	addTestGroup(group, "whole", "Blit without scaling (whole)", addBlittingImageSimpleWholeTests, params);
-	addTestGroup(group, "array", "Blit array", addBlittingImageArrayTests, params);
-	addTestGroup(group, "mirror_xy", "Flipping x and y coordinates (whole)", addBlittingImageSimpleMirrorXYTests, params);
-	addTestGroup(group, "mirror_x", "Flipping x coordinates (whole)", addBlittingImageSimpleMirrorXTests, params);
-	addTestGroup(group, "mirror_y", "Flipping y coordinates (whole)", addBlittingImageSimpleMirrorYTests, params);
-	addTestGroup(group, "mirror_subregions", "Mirroring subregions in image (no flip, y flip, x flip, xy flip)", addBlittingImageSimpleMirrorSubregionsTests, params);
-	addTestGroup(group, "scaling_whole1", "Blit with scaling (whole, src extent bigger)", addBlittingImageSimpleScalingWhole1Tests, params);
-	addTestGroup(group, "scaling_whole2", "Blit with scaling (whole, dst extent bigger)", addBlittingImageSimpleScalingWhole2Tests, params);
-	addTestGroup(group, "scaling_and_offset", "Blit with scaling and offset (whole, dst extent bigger)", addBlittingImageSimpleScalingAndOffsetTests, params);
-	addTestGroup(group, "without_scaling_partial", "Blit without scaling (partial)", addBlittingImageSimpleWithoutScalingPartialTests, params);
+	addTestGroup(group, "whole", addBlittingImageSimpleWholeTests, params);
+	addTestGroup(group, "array", addBlittingImageArrayTests, params);
+	addTestGroup(group, "mirror_xy", addBlittingImageSimpleMirrorXYTests, params);
+	addTestGroup(group, "mirror_x", addBlittingImageSimpleMirrorXTests, params);
+	addTestGroup(group, "mirror_y", addBlittingImageSimpleMirrorYTests, params);
+	addTestGroup(group, "mirror_subregions", addBlittingImageSimpleMirrorSubregionsTests, params);
+	addTestGroup(group, "scaling_whole1", addBlittingImageSimpleScalingWhole1Tests, params);
+	addTestGroup(group, "scaling_whole2", addBlittingImageSimpleScalingWhole2Tests, params);
+	addTestGroup(group, "scaling_and_offset", addBlittingImageSimpleScalingAndOffsetTests, params);
+	addTestGroup(group, "without_scaling_partial", addBlittingImageSimpleWithoutScalingPartialTests, params);
 
 	params.src.image.imageType			= VK_IMAGE_TYPE_3D;
 	params.dst.image.imageType			= VK_IMAGE_TYPE_3D;
-	addTestGroup(group, "whole_3d", "3D blit without scaling (whole)", addBlittingImageSimpleWholeTests, params);
-	addTestGroup(group, "mirror_xy_3d", "Flipping x and y coordinates of a 3D image (whole)", addBlittingImageSimpleMirrorXYTests, params);
-	addTestGroup(group, "mirror_x_3d", "Flipping x coordinates of a 3D image (whole)", addBlittingImageSimpleMirrorXTests, params);
-	addTestGroup(group, "mirror_y_3d", "Flipping y coordinates of a 3D image (whole)", addBlittingImageSimpleMirrorYTests, params);
-	addTestGroup(group, "mirror_z_3d", "Flipping z coordinates of a 3D image (whole)", addBlittingImageSimpleMirrorZTests, params);
-	addTestGroup(group, "mirror_subregions_3d", "Mirroring subregions in a 3D image (no flip, y flip, x flip, xy flip)", addBlittingImageSimpleMirrorSubregionsTests, params);
-	addTestGroup(group, "scaling_whole1_3d", "3D blit a with scaling (whole, src extent bigger)", addBlittingImageSimpleScalingWhole1Tests, params);
-	addTestGroup(group, "scaling_whole2_3d", "3D blit with scaling (whole, dst extent bigger)", addBlittingImageSimpleScalingWhole2Tests, params);
-	addTestGroup(group, "scaling_and_offset_3d", "3D blit with scaling and offset (whole, dst extent bigger)", addBlittingImageSimpleScalingAndOffsetTests, params);
-	addTestGroup(group, "without_scaling_partial_3d", "3D blit without scaling (partial)", addBlittingImageSimpleWithoutScalingPartialTests, params);
+	addTestGroup(group, "whole_3d", addBlittingImageSimpleWholeTests, params);
+	addTestGroup(group, "mirror_xy_3d", addBlittingImageSimpleMirrorXYTests, params);
+	addTestGroup(group, "mirror_x_3d", addBlittingImageSimpleMirrorXTests, params);
+	addTestGroup(group, "mirror_y_3d", addBlittingImageSimpleMirrorYTests, params);
+	addTestGroup(group, "mirror_z_3d", addBlittingImageSimpleMirrorZTests, params);
+	addTestGroup(group, "mirror_subregions_3d", addBlittingImageSimpleMirrorSubregionsTests, params);
+	addTestGroup(group, "scaling_whole1_3d", addBlittingImageSimpleScalingWhole1Tests, params);
+	addTestGroup(group, "scaling_whole2_3d", addBlittingImageSimpleScalingWhole2Tests, params);
+	addTestGroup(group, "scaling_and_offset_3d", addBlittingImageSimpleScalingAndOffsetTests, params);
+	addTestGroup(group, "without_scaling_partial_3d", addBlittingImageSimpleWithoutScalingPartialTests, params);
 }
 
 enum FilterMaskBits
@@ -14490,20 +14438,18 @@ void addBlittingImageAllFormatsColorSrcFormatDstFormatTests (tcu::TestCaseGroup*
 					testParams.params.filter			= VK_FILTER_NEAREST;
 					const std::string testName			= getBlitImageTilingLayoutCaseName(testParams.params.src.image.tiling, testParams.params.src.image.operationLayout) + "_" +
 														  getBlitImageTilingLayoutCaseName(testParams.params.dst.image.tiling, testParams.params.dst.image.operationLayout);
-					const std::string description		= "Blit from layout " + getBlitImageTilingLayoutCaseName(testParams.params.src.image.tiling, testParams.params.src.image.operationLayout) +
-														  " to " + getBlitImageTilingLayoutCaseName(testParams.params.dst.image.tiling, testParams.params.dst.image.operationLayout);
-					group->addChild(new BlitImageTestCase(testCtx, testName + "_nearest", description, testParams.params));
+					group->addChild(new BlitImageTestCase(testCtx, testName + "_nearest", testParams.params));
 
 					if (testParams.testFilters & FILTER_MASK_LINEAR)
 					{
 						testParams.params.filter = VK_FILTER_LINEAR;
-						group->addChild(new BlitImageTestCase(testCtx, testName + "_linear", description, testParams.params));
+						group->addChild(new BlitImageTestCase(testCtx, testName + "_linear", testParams.params));
 					}
 
 					if (testParams.testFilters & FILTER_MASK_CUBIC)
 					{
 						testParams.params.filter = VK_FILTER_CUBIC_EXT;
-						group->addChild(new BlitImageTestCase(testCtx, testName + "_cubic", description, testParams.params));
+						group->addChild(new BlitImageTestCase(testCtx, testName + "_cubic", testParams.params));
 					}
 
 					if ((testParams.params.src.image.imageType == VK_IMAGE_TYPE_3D) && !isCompressedFormat(testParams.params.src.image.format))
@@ -14527,10 +14473,10 @@ void addBlittingImageAllFormatsColorSrcFormatDstFormatTests (tcu::TestCaseGroup*
 							otherParams.params.src.image.fillMode = modeList[i].mode;
 
 							otherParams.params.filter = VK_FILTER_LINEAR;
-							group->addChild(new BlitImageTestCase(testCtx, testName + "_linear_stripes_" + modeList[i].name, description, otherParams.params));
+							group->addChild(new BlitImageTestCase(testCtx, testName + "_linear_stripes_" + modeList[i].name, otherParams.params));
 
 							otherParams.params.filter = VK_FILTER_NEAREST;
-							group->addChild(new BlitImageTestCase(testCtx, testName + "_nearest_stripes_" + modeList[i].name, description, otherParams.params));
+							group->addChild(new BlitImageTestCase(testCtx, testName + "_nearest_stripes_" + modeList[i].name, otherParams.params));
 						}
 					}
 				}
@@ -14554,8 +14500,7 @@ void addBlittingImageAllFormatsColorSrcFormatTests (tcu::TestCaseGroup* group, B
 			if (!isAllowedBlittingAllFormatsColorSrcFormatTests(testParams))
 				continue;
 
-			const std::string description	= "Blit destination format " + getFormatCaseName(testParams.params.dst.image.format);
-			addTestGroup(group, getFormatCaseName(testParams.params.dst.image.format), description, addBlittingImageAllFormatsColorSrcFormatDstFormatTests, testParams);
+			addTestGroup(group, getFormatCaseName(testParams.params.dst.image.format), addBlittingImageAllFormatsColorSrcFormatDstFormatTests, testParams);
 		}
 	}
 
@@ -14566,8 +14511,7 @@ void addBlittingImageAllFormatsColorSrcFormatTests (tcu::TestCaseGroup* group, B
 	{
 		testParams.params.dst.image.format = srcFormat;
 
-		const std::string description = "Blit destination format " + getFormatCaseName(srcFormat);
-		addTestGroup(group, getFormatCaseName(srcFormat), description, addBlittingImageAllFormatsColorSrcFormatDstFormatTests, testParams);
+		addTestGroup(group, getFormatCaseName(srcFormat), addBlittingImageAllFormatsColorSrcFormatDstFormatTests, testParams);
 	}
 }
 
@@ -14701,14 +14645,14 @@ std::vector<CopyRegion> create2DCopyRegions(deInt32 srcWidth, deInt32 srcHeight,
 
 void addBufferToImageTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
 {
-	addTestGroup(group, "1d_images", "Copying operations on 1d images", add1dBufferToImageTests, testGroupParams);
-	addTestGroup(group, "2d_images", "Copying operations on 2d images", add2dBufferToImageTests, testGroupParams);
+	addTestGroup(group, "1d_images", add1dBufferToImageTests, testGroupParams);
+	addTestGroup(group, "2d_images", add2dBufferToImageTests, testGroupParams);
 }
 
 void addImageToBufferTests (tcu::TestCaseGroup* group, TestGroupParamsPtr testGroupParams)
 {
-	addTestGroup(group, "1d_images", "Copying operations on 1d images", add1dImageToBufferTests, testGroupParams);
-	addTestGroup(group, "2d_images", "Copying operations on 2d images", add2dImageToBufferTests, testGroupParams);
+	addTestGroup(group, "1d_images", add1dImageToBufferTests, testGroupParams);
+	addTestGroup(group, "2d_images", add2dImageToBufferTests, testGroupParams);
 }
 
 void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, deUint32 extensionFlags)
@@ -14793,8 +14737,7 @@ void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, Allocation
 					makeFilterMask(onlyNearest, onlyNearestAndLinear)
 				};
 
-				const std::string description	= "Blit source format " + getFormatCaseName(params.src.image.format);
-				addTestGroup(subGroup.get(), getFormatCaseName(params.src.image.format), description, addBlittingImageAllFormatsColorSrcFormatTests, testParams);
+				addTestGroup(subGroup.get(), getFormatCaseName(params.src.image.format), addBlittingImageAllFormatsColorSrcFormatTests, testParams);
 			}
 		}
 
@@ -14875,8 +14818,7 @@ void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, Allocation
 					makeFilterMask(onlyNearest, onlyNearestAndLinear)
 				};
 
-				const std::string description	= "Blit source format " + getFormatCaseName(params.src.image.format);
-				addTestGroup(subGroup.get(), getFormatCaseName(params.src.image.format), description, addBlittingImageAllFormatsColorSrcFormatTests, testParams);
+				addTestGroup(subGroup.get(), getFormatCaseName(params.src.image.format), addBlittingImageAllFormatsColorSrcFormatTests, testParams);
 			}
 		}
 
@@ -14957,8 +14899,7 @@ void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, Allocation
 					makeFilterMask(onlyNearest, onlyNearestAndLinear)
 				};
 
-				const std::string description	= "Blit source format " + getFormatCaseName(params.src.image.format);
-				addTestGroup(subGroup.get(), getFormatCaseName(params.src.image.format), description, addBlittingImageAllFormatsColorSrcFormatTests, testParams);
+				addTestGroup(subGroup.get(), getFormatCaseName(params.src.image.format), addBlittingImageAllFormatsColorSrcFormatTests, testParams);
 			}
 		}
 
@@ -14990,10 +14931,8 @@ void addBlittingImageAllFormatsDepthStencilFormatsTests (tcu::TestCaseGroup* gro
 
 			const std::string testName		= getImageLayoutCaseName(params.src.image.operationLayout) + "_" +
 											  getImageLayoutCaseName(params.dst.image.operationLayout);
-			const std::string description	= "Blit from " + getImageLayoutCaseName(params.src.image.operationLayout) +
-											  " to " + getImageLayoutCaseName(params.dst.image.operationLayout);
 
-			group->addChild(new BlitImageTestCase(group->getTestContext(), testName + "_nearest", description, params));
+			group->addChild(new BlitImageTestCase(group->getTestContext(), testName + "_nearest", params));
 		}
 	}
 }
@@ -15117,18 +15056,14 @@ void addBlittingImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, All
 			}
 
 			const std::string testName		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
-			const std::string description	= "Blit from " + getFormatCaseName(params.src.image.format) +
-											" to " + getFormatCaseName(params.dst.image.format);
-			addTestGroup(subGroup.get(), testName, description, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
+			addTestGroup(subGroup.get(), testName, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
 
 			if (hasDepth && hasStencil)
 			{
 				params.extensionFlags	|= SEPARATE_DEPTH_STENCIL_LAYOUT;
 				const std::string testName2		= getFormatCaseName(params.src.image.format) + "_" +
 												getFormatCaseName(params.dst.image.format) + "_separate_layouts";
-				const std::string description2	= "Blit from " + getFormatCaseName(params.src.image.format) +
-												" to " + getFormatCaseName(params.dst.image.format) + " with separate depth/stencil layouts";
-				addTestGroup(subGroup.get(), testName2, description2, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
+				addTestGroup(subGroup.get(), testName2, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
 			}
 		}
 
@@ -15237,18 +15172,14 @@ void addBlittingImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, All
 			}
 
 			const std::string testName		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
-			const std::string description	= "Blit from " + getFormatCaseName(params.src.image.format) +
-											" to " + getFormatCaseName(params.dst.image.format);
-			addTestGroup(subGroup.get(), testName, description, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
+			addTestGroup(subGroup.get(), testName, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
 
 			if (hasDepth && hasStencil)
 			{
 				params.extensionFlags	|= SEPARATE_DEPTH_STENCIL_LAYOUT;
 				const std::string testName2		= getFormatCaseName(params.src.image.format) + "_" +
 												getFormatCaseName(params.dst.image.format) + "_separate_layouts";
-				const std::string description2	= "Blit from " + getFormatCaseName(params.src.image.format) +
-												" to " + getFormatCaseName(params.dst.image.format) + " with separate depth/stencil layouts";
-				addTestGroup(subGroup.get(), testName2, description2, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
+				addTestGroup(subGroup.get(), testName2, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
 			}
 		}
 
@@ -15357,18 +15288,14 @@ void addBlittingImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, All
 			}
 
 			const std::string testName		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
-			const std::string description	= "Blit from " + getFormatCaseName(params.src.image.format) +
-											" to " + getFormatCaseName(params.dst.image.format);
-			addTestGroup(subGroup.get(), testName, description, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
+			addTestGroup(subGroup.get(), testName, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
 
 			if (hasDepth && hasStencil)
 			{
 				params.extensionFlags	|= SEPARATE_DEPTH_STENCIL_LAYOUT;
 				const std::string testName2		= getFormatCaseName(params.src.image.format) + "_" +
 												getFormatCaseName(params.dst.image.format) + "_separate_layouts";
-				const std::string description2	= "Blit from " + getFormatCaseName(params.src.image.format) +
-												" to " + getFormatCaseName(params.dst.image.format) + " with separate depth/stencil layouts";
-				addTestGroup(subGroup.get(), testName2, description2, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
+				addTestGroup(subGroup.get(), testName2, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
 			}
 		}
 
@@ -15401,20 +15328,18 @@ void addBlittingImageAllFormatsMipmapFormatTests (tcu::TestCaseGroup* group, Bli
 			testParams.params.filter			= VK_FILTER_NEAREST;
 			const std::string testName			= getImageLayoutCaseName(testParams.params.src.image.operationLayout) + "_" +
 												  getImageLayoutCaseName(testParams.params.dst.image.operationLayout);
-			const std::string description		= "Blit from layout " + getImageLayoutCaseName(testParams.params.src.image.operationLayout) +
-												  " to " + getImageLayoutCaseName(testParams.params.dst.image.operationLayout);
-			group->addChild(new BlitMipmapTestCase(testCtx, testName + "_nearest", description, testParams.params));
+			group->addChild(new BlitMipmapTestCase(testCtx, testName + "_nearest", testParams.params));
 
 			if (testParams.testFilters & FILTER_MASK_LINEAR)
 			{
 				testParams.params.filter = VK_FILTER_LINEAR;
-				group->addChild(new BlitMipmapTestCase(testCtx, testName + "_linear", description, testParams.params));
+				group->addChild(new BlitMipmapTestCase(testCtx, testName + "_linear", testParams.params));
 			}
 
 			if (testParams.testFilters & FILTER_MASK_CUBIC)
 			{
 				testParams.params.filter = VK_FILTER_CUBIC_EXT;
-				group->addChild(new BlitMipmapTestCase(testCtx, testName + "_cubic", description, testParams.params));
+				group->addChild(new BlitMipmapTestCase(testCtx, testName + "_cubic", testParams.params));
 			}
 		}
 	}
@@ -15508,8 +15433,6 @@ void addBlittingImageAllFormatsBaseLevelMipmapTests (tcu::TestCaseGroup* group, 
 
 				const bool onlyNearestAndLinear	= de::contains(onlyNearestAndLinearFormatsToTest, params.src.image.format);
 
-				const std::string description	= "Blit source format " + getFormatCaseName(params.src.image.format);
-
 				BlitColorTestParams testParams;
 				testParams.params				= params;
 				testParams.compatibleFormats	= compatibleFormats;
@@ -15524,7 +15447,7 @@ void addBlittingImageAllFormatsBaseLevelMipmapTests (tcu::TestCaseGroup* group, 
 					testParams.params.regions[regionNdx].imageBlit.dstSubresource.layerCount = layerCount;
 				}
 
-				addTestGroup(layerCountGroup.get(), getFormatCaseName(params.src.image.format), description, addBlittingImageAllFormatsMipmapFormatTests, testParams);
+				addTestGroup(layerCountGroup.get(), getFormatCaseName(params.src.image.format), addBlittingImageAllFormatsMipmapFormatTests, testParams);
 			}
 		}
 		group->addChild(layerCountGroup.release());
@@ -15622,8 +15545,6 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* gro
 
 				const bool			onlyNearestAndLinear	= de::contains(onlyNearestAndLinearFormatsToTest, params.src.image.format);
 
-				const std::string	description				= "Blit source format " + getFormatCaseName(params.src.image.format);
-
 				BlitColorTestParams	testParams;
 				testParams.params							= params;
 				testParams.compatibleFormats				= compatibleFormats;
@@ -15638,7 +15559,7 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* gro
 					testParams.params.regions[regionNdx].imageBlit.dstSubresource.layerCount = layerCount;
 				}
 
-				addTestGroup(layerCountGroup.get(), getFormatCaseName(params.src.image.format), description, addBlittingImageAllFormatsMipmapFormatTests, testParams);
+				addTestGroup(layerCountGroup.get(), getFormatCaseName(params.src.image.format), addBlittingImageAllFormatsMipmapFormatTests, testParams);
 			}
 		}
 		group->addChild(layerCountGroup.release());
@@ -15668,8 +15589,6 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* gro
 					if (!isSupportedByFramework(params.src.image.format))
 						continue;
 
-					const std::string description				= "Blit source format " + getFormatCaseName(params.src.image.format);
-
 					BlitColorTestParams testParams;
 					testParams.params							= params;
 					testParams.compatibleFormats				= compatibleFormatsUInts;
@@ -15684,7 +15603,7 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* gro
 						testParams.params.regions[regionNdx].imageBlit.dstSubresource.layerCount = layerCount;
 					}
 
-					addTestGroup(barrierCountGroup.get(), getFormatCaseName(params.src.image.format), description, addBlittingImageAllFormatsMipmapFormatTests, testParams);
+					addTestGroup(barrierCountGroup.get(), getFormatCaseName(params.src.image.format), addBlittingImageAllFormatsMipmapFormatTests, testParams);
 				}
 				group->addChild(barrierCountGroup.release());
 			}
@@ -15694,21 +15613,21 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* gro
 
 void addBlittingImageAllFormatsMipmapTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, deUint32 extensionFlags)
 {
-	addTestGroup(group, "from_base_level", "Generate all mipmap levels from base level", addBlittingImageAllFormatsBaseLevelMipmapTests, allocationKind, extensionFlags);
-	addTestGroup(group, "from_previous_level", "Generate next mipmap level from previous level", addBlittingImageAllFormatsPreviousLevelMipmapTests, allocationKind, extensionFlags);
+	addTestGroup(group, "from_base_level", addBlittingImageAllFormatsBaseLevelMipmapTests, allocationKind, extensionFlags);
+	addTestGroup(group, "from_previous_level", addBlittingImageAllFormatsPreviousLevelMipmapTests, allocationKind, extensionFlags);
 }
 
 void addBlittingImageAllFormatsTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, deUint32 extensionFlags)
 {
-	addTestGroup(group, "color", "Blitting image with color formats", addBlittingImageAllFormatsColorTests, allocationKind, extensionFlags);
-	addTestGroup(group, "depth_stencil", "Blitting image with depth/stencil formats", addBlittingImageAllFormatsDepthStencilTests, allocationKind, extensionFlags);
-	addTestGroup(group, "generate_mipmaps", "Generating mipmaps with vkCmdBlitImage()", addBlittingImageAllFormatsMipmapTests, allocationKind, extensionFlags);
+	addTestGroup(group, "color", addBlittingImageAllFormatsColorTests, allocationKind, extensionFlags);
+	addTestGroup(group, "depth_stencil", addBlittingImageAllFormatsDepthStencilTests, allocationKind, extensionFlags);
+	addTestGroup(group, "generate_mipmaps", addBlittingImageAllFormatsMipmapTests, allocationKind, extensionFlags);
 }
 
 void addBlittingImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, deUint32 extensionFlags)
 {
-	addTestGroup(group, "simple_tests", "Blitting image simple tests", addBlittingImageSimpleTests, allocationKind, extensionFlags);
-	addTestGroup(group, "all_formats", "Blitting image with all compatible formats", addBlittingImageAllFormatsTests, allocationKind, extensionFlags);
+	addTestGroup(group, "simple_tests", addBlittingImageSimpleTests, allocationKind, extensionFlags);
+	addTestGroup(group, "all_formats", addBlittingImageAllFormatsTests, allocationKind, extensionFlags);
 }
 
 const VkSampleCountFlagBits	samples[]		=
@@ -15764,11 +15683,10 @@ void addResolveImageWholeTests (tcu::TestCaseGroup* group, AllocationKind alloca
 	{
 		params.imageOffset = false;
 		params.samples					= samples[samplesIndex];
-		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params));
+		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), params));
 		params.imageOffset = true;
 		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
-			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params));
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", params));
 		}
 	}
 }
@@ -15814,12 +15732,11 @@ void addResolveImagePartialTests (tcu::TestCaseGroup* group, AllocationKind allo
 	for (int samplesIndex = 0; samplesIndex < DE_LENGTH_OF_ARRAY(samples); ++samplesIndex)
 	{
 		params.samples					= samples[samplesIndex];
-		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
 		params.imageOffset = false;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params));
+		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), params));
 		params.imageOffset = true;
 		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
-			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params));
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", params));
 		}
 	}
 }
@@ -15870,8 +15787,7 @@ void addResolveImageWithRegionsTests (tcu::TestCaseGroup* group, AllocationKind 
 	for (int samplesIndex = 0; samplesIndex < DE_LENGTH_OF_ARRAY(samples); ++samplesIndex)
 	{
 		params.samples					= samples[samplesIndex];
-		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params));
+		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), params));
 	}
 }
 
@@ -15917,12 +15833,11 @@ void addResolveImageWholeCopyBeforeResolvingTests (tcu::TestCaseGroup* group, Al
 	for (int samplesIndex = 0; samplesIndex < DE_LENGTH_OF_ARRAY(samples); ++samplesIndex)
 	{
 		params.samples					= samples[samplesIndex];
-		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
 		params.imageOffset = false;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
+		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), params, COPY_MS_IMAGE_TO_MS_IMAGE));
 		params.imageOffset = true;
 		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
-			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", params, COPY_MS_IMAGE_TO_MS_IMAGE));
 		}
 	}
 }
@@ -15972,13 +15887,12 @@ void addComputeAndTransferQueueTests (tcu::TestCaseGroup* group, AllocationKind 
 	for (const auto& sample : samples)
 	{
 		params.samples					= sample;
-		const std::string description	= "With " + getSampleCountCaseName(sample);
 
 		params.queueSelection = QueueSelectionOptions::ComputeOnly;
-		computeGroup->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(sample), description, params, COPY_MS_IMAGE_TO_MS_IMAGE_COMPUTE));
+		computeGroup->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(sample), params, COPY_MS_IMAGE_TO_MS_IMAGE_COMPUTE));
 
 		params.queueSelection = QueueSelectionOptions::TransferOnly;
-		transferGroup->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(sample), description, params, COPY_MS_IMAGE_TO_MS_IMAGE_TRANSFER));
+		transferGroup->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(sample), params, COPY_MS_IMAGE_TO_MS_IMAGE_TRANSFER));
 	}
 
 	group->addChild(computeGroup.release());
@@ -16027,12 +15941,11 @@ void addResolveImageWholeCopyWithoutCabBeforeResolvingTests (tcu::TestCaseGroup*
 	for (int samplesIndex = 0; samplesIndex < DE_LENGTH_OF_ARRAY(samples); ++samplesIndex)
 	{
 		params.samples					= samples[samplesIndex];
-		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
 		params.imageOffset = false;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB));
+		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), params, COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB));
 		params.imageOffset = true;
 		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
-			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB));
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", params, COPY_MS_IMAGE_TO_MS_IMAGE_NO_CAB));
 		}
 	}
 }
@@ -16097,13 +16010,12 @@ void addResolveImageWholeCopyDiffLayoutsBeforeResolvingTests (tcu::TestCaseGroup
 			params.dst.image.operationLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
 			continue;
 		params.samples						= samples[samplesIndex];
-		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
 		std::string testName = getSampleCountCaseName(samples[samplesIndex]) + "_" + imageLayouts[srcLayoutIndex].name + "_" + imageLayouts[dstLayoutIndex].name;
 		params.imageOffset = false;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), testName, description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
+		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), testName, params, COPY_MS_IMAGE_TO_MS_IMAGE));
 		params.imageOffset = true;
 		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
-			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), testName + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE));
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), testName + "_bind_offset", params, COPY_MS_IMAGE_TO_MS_IMAGE));
 		}
 	}
 }
@@ -16153,12 +16065,11 @@ void addResolveImageLayerCopyBeforeResolvingTests (tcu::TestCaseGroup* group, Al
 	for (int samplesIndex = 0; samplesIndex < DE_LENGTH_OF_ARRAY(samples); ++samplesIndex)
 	{
 		params.samples					= samples[samplesIndex];
-		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
 		params.imageOffset = false;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_LAYER_TO_MS_IMAGE));
+		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), params, COPY_MS_IMAGE_LAYER_TO_MS_IMAGE));
 		params.imageOffset = true;
 		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
-			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_LAYER_TO_MS_IMAGE));
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", params, COPY_MS_IMAGE_LAYER_TO_MS_IMAGE));
 		}
 	}
 }
@@ -16234,12 +16145,11 @@ void addResolveCopyImageWithRegionsTests (tcu::TestCaseGroup* group, AllocationK
 	for (int samplesIndex = 0; samplesIndex < DE_LENGTH_OF_ARRAY(samples); ++samplesIndex)
 	{
 		params.samples					= samples[samplesIndex];
-		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
 		params.imageOffset = false;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_MS_IMAGE_MULTIREGION));
+		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), params, COPY_MS_IMAGE_TO_MS_IMAGE_MULTIREGION));
 		params.imageOffset = true;
 		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
-			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_MS_IMAGE_MULTIREGION));
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", params, COPY_MS_IMAGE_TO_MS_IMAGE_MULTIREGION));
 		}
 	}
 }
@@ -16288,12 +16198,11 @@ void addResolveImageWholeArrayImageTests (tcu::TestCaseGroup* group, AllocationK
 	for (int samplesIndex = 0; samplesIndex < DE_LENGTH_OF_ARRAY(samples); ++samplesIndex)
 	{
 		params.samples					= samples[samplesIndex];
-		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
 		params.imageOffset = false;
-		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
+		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
 		params.imageOffset = true;
 		if (allocationKind != ALLOCATION_KIND_DEDICATED) {
-			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
 		}
 	}
 }
@@ -16339,12 +16248,11 @@ void addResolveImageWholeArrayImageSingleRegionTests (tcu::TestCaseGroup* group,
 		for (int samplesIndex = 0; samplesIndex < DE_LENGTH_OF_ARRAY(samples); ++samplesIndex)
 		{
 			params.samples					= samples[samplesIndex];
-			const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
 			params.imageOffset = false;
-			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
 			params.imageOffset = true;
 			if (allocationKind != ALLOCATION_KIND_DEDICATED) {
-				group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
+				group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_bind_offset", params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
 			}
 		}
 	}
@@ -16390,12 +16298,11 @@ void addResolveImageWholeArrayImageSingleRegionTests (tcu::TestCaseGroup* group,
 		for (int samplesIndex = 0; samplesIndex < DE_LENGTH_OF_ARRAY(samples); ++samplesIndex)
 		{
 			params.samples					= samples[samplesIndex];
-			const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]) + " using VK_REMAINING_ARRAY_LAYERS";
 			params.imageOffset = false;
-			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_all_remaining_layers", description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_all_remaining_layers", params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
 			params.imageOffset = true;
 			if (allocationKind != ALLOCATION_KIND_DEDICATED) {
-				group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_all_remaining_layers_bind_offset", description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
+				group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_all_remaining_layers_bind_offset", params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
 			}
 		}
 	}
@@ -16441,12 +16348,11 @@ void addResolveImageWholeArrayImageSingleRegionTests (tcu::TestCaseGroup* group,
 		for (int samplesIndex = 0; samplesIndex < DE_LENGTH_OF_ARRAY(samples); ++samplesIndex)
 		{
 			params.samples					= samples[samplesIndex];
-			const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]) + " using VK_REMAINING_ARRAY_LAYERS";
 			params.imageOffset = false;
-			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_not_all_remaining_layers", description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
+			group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_not_all_remaining_layers", params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
 			params.imageOffset = true;
 			if (allocationKind != ALLOCATION_KIND_DEDICATED) {
-				group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_not_all_remaining_layers_bind_offset", description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
+				group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]) + "_not_all_remaining_layers_bind_offset", params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
 			}
 		}
 	}
@@ -16506,9 +16412,7 @@ void addResolveImageDiffImageSizeTests (tcu::TestCaseGroup* group, AllocationKin
 			std::ostringstream testName;
 			testName << "src_" << srcImageSize.width << "_" << srcImageSize.height << "_" << srcImageSize.depth << "_" << getSampleCountCaseName(samples[samplesIndex]);
 			std::ostringstream description;
-			description << "With " << getSampleCountCaseName(samples[samplesIndex]) << " and source image size ("
-						<< srcImageSize.width << ", " << srcImageSize.height << ", " << srcImageSize.depth << ")";
-			group->addChild(new ResolveImageToImageTestCase(testCtx, testName.str(), description.str(), params));
+			group->addChild(new ResolveImageToImageTestCase(testCtx, testName.str(), params));
 		}
 	}
 	for (int dstImageExtentIndex = 0; dstImageExtentIndex < DE_LENGTH_OF_ARRAY(imageExtents); ++dstImageExtentIndex)
@@ -16522,13 +16426,11 @@ void addResolveImageDiffImageSizeTests (tcu::TestCaseGroup* group, AllocationKin
 			std::ostringstream testName;
 			testName << "dst_" << dstImageSize.width << "_" << dstImageSize.height << "_" << dstImageSize.depth << "_" << getSampleCountCaseName(samples[samplesIndex]);
 			std::ostringstream description;
-			description << "With " << getSampleCountCaseName(samples[samplesIndex]) << " and destination image size ("
-						<< dstImageSize.width << ", " << dstImageSize.height << ", " << dstImageSize.depth << ")";
 			params.imageOffset = false;
-			group->addChild(new ResolveImageToImageTestCase(testCtx, testName.str(), description.str(), params));
+			group->addChild(new ResolveImageToImageTestCase(testCtx, testName.str(), params));
 			params.imageOffset = true;
 			if (allocationKind != ALLOCATION_KIND_DEDICATED) {
-				group->addChild(new ResolveImageToImageTestCase(testCtx, testName.str() + "_bind_offset", description.str(), params));
+				group->addChild(new ResolveImageToImageTestCase(testCtx, testName.str() + "_bind_offset", params));
 			}
 		}
 	}
@@ -16581,12 +16483,11 @@ void addDepthStencilCopyMSAATest (tcu::TestCaseGroup* group, DepthStencilMSAA::T
 					for (auto sample : samples)
 					{
 						testCreateParams.samples = sample;
-						std::string description = "Copy depth component with sample count: " + getSampleCountCaseName(sample);
 						testCreateParams.imageOffset = false;
-						group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "D_" + getSampleCountCaseName(sample), description, testCreateParams));
+						group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "D_" + getSampleCountCaseName(sample), testCreateParams));
 						testCreateParams.imageOffset = true;
 						if (testCreateParams.allocationKind != ALLOCATION_KIND_DEDICATED) {
-							group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "D_" + getSampleCountCaseName(sample) + "_bind_offset", description, testCreateParams));
+							group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "D_" + getSampleCountCaseName(sample) + "_bind_offset", testCreateParams));
 						}
 					}
 				}
@@ -16597,12 +16498,11 @@ void addDepthStencilCopyMSAATest (tcu::TestCaseGroup* group, DepthStencilMSAA::T
 					for (auto sample : samples)
 					{
 						testCreateParams.samples = sample;
-						std::string description = "Copy stencil component with sample count: " + getSampleCountCaseName(sample);
 						testCreateParams.imageOffset = false;
-						group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "S_" + getSampleCountCaseName(sample), description, testCreateParams));
+						group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "S_" + getSampleCountCaseName(sample), testCreateParams));
 						testCreateParams.imageOffset = true;
 						if (testCreateParams.allocationKind != ALLOCATION_KIND_DEDICATED) {
-							group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "S_" + getSampleCountCaseName(sample) + "_bind_offset", description, testCreateParams));
+							group->addChild(new DepthStencilMSAATestCase(group->getTestContext(), testNameBase + "S_" + getSampleCountCaseName(sample) + "_bind_offset", testCreateParams));
 						}
 					}
 				}
@@ -16623,13 +16523,13 @@ void addDepthStencilCopyMSAATestGroup (tcu::TestCaseGroup* group, AllocationKind
 	testParams.extensionFlags	= extensionFlags;
 
 	testParams.copyOptions = DepthStencilMSAA::COPY_WHOLE_IMAGE;
-	addTestGroup(group, "whole", "Copy from depth stencil to depth stencil with multi sample tests", addDepthStencilCopyMSAATest, testParams);
+	addTestGroup(group, "whole", addDepthStencilCopyMSAATest, testParams);
 
 	testParams.copyOptions = DepthStencilMSAA::COPY_PARTIAL;
-	addTestGroup(group, "partial", "Copy from depth stencil to depth stencil with multi sample tests", addDepthStencilCopyMSAATest, testParams);
+	addTestGroup(group, "partial", addDepthStencilCopyMSAATest, testParams);
 
 	testParams.copyOptions = DepthStencilMSAA::COPY_ARRAY_TO_ARRAY;
-	addTestGroup(group, "array_to_array", "Copy from array layer to array layer", addDepthStencilCopyMSAATest, testParams);
+	addTestGroup(group, "array_to_array", addDepthStencilCopyMSAATest, testParams);
 }
 
 void addBufferCopyOffsetTests (tcu::TestCaseGroup* group)
@@ -16640,7 +16540,7 @@ void addBufferCopyOffsetTests (tcu::TestCaseGroup* group)
 	for (deUint32 dstOffset = 0u; dstOffset < BufferOffsetParams::kMaxOffset; ++dstOffset)
 	{
 		BufferOffsetParams params{srcOffset, dstOffset};
-		addFunctionCase(subGroup.get(), de::toString(srcOffset) + "_" + de::toString(dstOffset), "", bufferOffsetTest, params);
+		addFunctionCase(subGroup.get(), de::toString(srcOffset) + "_" + de::toString(dstOffset), bufferOffsetTest, params);
 	}
 
 	group->addChild(subGroup.release());
@@ -16648,18 +16548,18 @@ void addBufferCopyOffsetTests (tcu::TestCaseGroup* group)
 
 void addResolveImageTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, deUint32 extensionFlags)
 {
-	addTestGroup(group, "whole", "Resolve from image to image (whole)", addResolveImageWholeTests, allocationKind, extensionFlags);
-	addTestGroup(group, "partial", "Resolve from image to image (partial)", addResolveImagePartialTests, allocationKind, extensionFlags);
-	addTestGroup(group, "with_regions", "Resolve from image to image (with regions)", addResolveImageWithRegionsTests, allocationKind, extensionFlags);
-	addTestGroup(group, "whole_copy_before_resolving", "Resolve from image to image (whole copy before resolving)", addResolveImageWholeCopyBeforeResolvingTests, allocationKind, extensionFlags);
-	addTestGroup(group, "whole_copy_before_resolving_no_cab", "Resolve from image to image without using USAGE_COLOR_ATTACHMENT_BIT (whole copy before resolving)", addResolveImageWholeCopyWithoutCabBeforeResolvingTests, allocationKind, extensionFlags);
+	addTestGroup(group, "whole", addResolveImageWholeTests, allocationKind, extensionFlags);
+	addTestGroup(group, "partial", addResolveImagePartialTests, allocationKind, extensionFlags);
+	addTestGroup(group, "with_regions", addResolveImageWithRegionsTests, allocationKind, extensionFlags);
+	addTestGroup(group, "whole_copy_before_resolving", addResolveImageWholeCopyBeforeResolvingTests, allocationKind, extensionFlags);
+	addTestGroup(group, "whole_copy_before_resolving_no_cab", addResolveImageWholeCopyWithoutCabBeforeResolvingTests, allocationKind, extensionFlags);
 	addComputeAndTransferQueueTests(group, allocationKind, extensionFlags);
-	addTestGroup(group, "diff_layout_copy_before_resolving", "Resolve from image to image (whole copy before resolving with different layouts)", addResolveImageWholeCopyDiffLayoutsBeforeResolvingTests, allocationKind, extensionFlags);
-	addTestGroup(group, "layer_copy_before_resolving", "Resolve from image to image (layer copy before resolving)", addResolveImageLayerCopyBeforeResolvingTests, allocationKind, extensionFlags);
-	addTestGroup(group, "copy_with_regions_before_resolving", "Resolve from image to image (region copy before resolving)", addResolveCopyImageWithRegionsTests, allocationKind, extensionFlags);
-	addTestGroup(group, "whole_array_image", "Resolve from image to image (whole array image)", addResolveImageWholeArrayImageTests, allocationKind, extensionFlags);
-	addTestGroup(group, "whole_array_image_one_region", "Resolve from image to image (whole array image with single region)", addResolveImageWholeArrayImageSingleRegionTests, allocationKind, extensionFlags);
-	addTestGroup(group, "diff_image_size", "Resolve from image to image of different size", addResolveImageDiffImageSizeTests, allocationKind, extensionFlags);
+	addTestGroup(group, "diff_layout_copy_before_resolving", addResolveImageWholeCopyDiffLayoutsBeforeResolvingTests, allocationKind, extensionFlags);
+	addTestGroup(group, "layer_copy_before_resolving", addResolveImageLayerCopyBeforeResolvingTests, allocationKind, extensionFlags);
+	addTestGroup(group, "copy_with_regions_before_resolving", addResolveCopyImageWithRegionsTests, allocationKind, extensionFlags);
+	addTestGroup(group, "whole_array_image", addResolveImageWholeArrayImageTests, allocationKind, extensionFlags);
+	addTestGroup(group, "whole_array_image_one_region", addResolveImageWholeArrayImageSingleRegionTests, allocationKind, extensionFlags);
+	addTestGroup(group, "diff_image_size", addResolveImageDiffImageSizeTests, allocationKind, extensionFlags);
 }
 
 void addCopiesAndBlittingTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, deUint32 extensionFlags)
@@ -16671,14 +16571,14 @@ void addCopiesAndBlittingTests (tcu::TestCaseGroup* group, AllocationKind alloca
 		QueueSelectionOptions::Universal
 	});
 
-	addTestGroup(group, "image_to_image", "Copy from image to image", addImageToImageTests, universalGroupParams);
-	addTestGroup(group, "image_to_buffer", "Copy from image to buffer", addImageToBufferTests, universalGroupParams);
-	addTestGroup(group, "buffer_to_image", "Copy from buffer to image", addBufferToImageTests, universalGroupParams);
-	addTestGroup(group, "buffer_to_depthstencil", "Copy from buffer to depth/Stencil", addBufferToDepthStencilTests, allocationKind, extensionFlags);
-	addTestGroup(group, "buffer_to_buffer", "Copy from buffer to buffer", addBufferToBufferTests, universalGroupParams);
-	addTestGroup(group, "blit_image", "Blitting image", addBlittingImageTests, allocationKind, extensionFlags);
-	addTestGroup(group, "resolve_image", "Resolve image", addResolveImageTests, allocationKind, extensionFlags);
-	addTestGroup(group, "depth_stencil_msaa_copy", "Copy depth/stencil with MSAA", addDepthStencilCopyMSAATestGroup, allocationKind, extensionFlags);
+	addTestGroup(group, "image_to_image", addImageToImageTests, universalGroupParams);
+	addTestGroup(group, "image_to_buffer", addImageToBufferTests, universalGroupParams);
+	addTestGroup(group, "buffer_to_image", addBufferToImageTests, universalGroupParams);
+	addTestGroup(group, "buffer_to_depthstencil", addBufferToDepthStencilTests, allocationKind, extensionFlags);
+	addTestGroup(group, "buffer_to_buffer", addBufferToBufferTests, universalGroupParams);
+	addTestGroup(group, "blit_image", addBlittingImageTests, allocationKind, extensionFlags);
+	addTestGroup(group, "resolve_image", addResolveImageTests, allocationKind, extensionFlags);
+	addTestGroup(group, "depth_stencil_msaa_copy", addDepthStencilCopyMSAATestGroup, allocationKind, extensionFlags);
 
 	if (extensionFlags == COPY_COMMANDS_2)
 	{
@@ -16688,10 +16588,10 @@ void addCopiesAndBlittingTests (tcu::TestCaseGroup* group, AllocationKind alloca
 				extensionFlags,
 				QueueSelectionOptions::TransferOnly
 			});
-		addTestGroup(group, "image_to_image_transfer_queue",	"Copy from image to image on transfer queue",	addImageToImageTests,	transferGroupParams);
-		addTestGroup(group, "image_to_buffer_transfer_queue",	"Copy from image to buffer on transfer queue",	addImageToBufferTests,	transferGroupParams);
-		addTestGroup(group, "buffer_to_image_transfer_queue",	"Copy from buffer to image on transfer queue",	addBufferToImageTests,	transferGroupParams);
-		addTestGroup(group, "buffer_to_buffer_transfer_queue",	"Copy from buffer to buffer on transfer queue",	addBufferToBufferTests,	transferGroupParams);
+		addTestGroup(group, "image_to_image_transfer_queue",	addImageToImageTests,	transferGroupParams);
+		addTestGroup(group, "image_to_buffer_transfer_queue",	addImageToBufferTests,	transferGroupParams);
+		addTestGroup(group, "buffer_to_image_transfer_queue",	addBufferToImageTests,	transferGroupParams);
+		addTestGroup(group, "buffer_to_buffer_transfer_queue",	addBufferToBufferTests,	transferGroupParams);
 	}
 }
 
@@ -16726,9 +16626,9 @@ tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	copiesAndBlittingTests(new tcu::TestCaseGroup(testCtx, "copy_and_blit", "Copies And Blitting Tests"));
 
-	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "core", "Core Copies And Blitting Tests", addCoreCopiesAndBlittingTests, cleanupGroup));
-	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Copies And Blitting Tests For Dedicated Memory Allocation",	addDedicatedAllocationCopiesAndBlittingTests, cleanupGroup));
-	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "copy_commands2", "Copies And Blitting Tests using KHR_copy_commands2", addExtensionCopiesAndBlittingTests, cleanupGroup));
+	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "core", addCoreCopiesAndBlittingTests, cleanupGroup));
+	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "dedicated_allocation",	addDedicatedAllocationCopiesAndBlittingTests, cleanupGroup));
+	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "copy_commands2", addExtensionCopiesAndBlittingTests, cleanupGroup));
 
 	return copiesAndBlittingTests.release();
 }

@@ -607,7 +607,7 @@ void populateTextureCompressedFormatTests (tcu::TestCaseGroup* compressedTexture
 		testParameters.programs.push_back(PROGRAM_2D_FLOAT);
 		testParameters.mipmaps		= sizes[sizeNdx].mipmaps;
 
-		compressedTextureTests->addChild(new TextureTestCase<Compressed2DTestInstance>(testCtx, (nameBase + "_2d_" + sizes[sizeNdx].name + backingModes[backingNdx].name).c_str(), (formatStr + ", TEXTURETYPE_2D").c_str(), testParameters));
+		compressedTextureTests->addChild(new TextureTestCase<Compressed2DTestInstance>(testCtx, (nameBase + "_2d_" + sizes[sizeNdx].name + backingModes[backingNdx].name).c_str(), testParameters));
 	}
 }
 
@@ -634,18 +634,18 @@ void populate3DTextureCompressedFormatTests (tcu::TestCaseGroup* compressedTextu
 		testParameters.programs.push_back(PROGRAM_3D_FLOAT);
 		testParameters.mipmaps		= sizes[sizeNdx].mipmaps;
 
-		compressedTextureTests->addChild(new TextureTestCase<Compressed3DTestInstance>(testCtx, (nameBase + "_3d_" + sizes[sizeNdx].name + backingModes[backingNdx].name).c_str(), (formatStr + ", TEXTURETYPE_3D").c_str(), testParameters));
+		compressedTextureTests->addChild(new TextureTestCase<Compressed3DTestInstance>(testCtx, (nameBase + "_3d_" + sizes[sizeNdx].name + backingModes[backingNdx].name).c_str(), testParameters));
 	}
 }
 
 tcu::TestCaseGroup* createTextureCompressedFormatTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "compressed", "Texture compressed format tests.", populateTextureCompressedFormatTests);
+	return createTestGroup(testCtx, "compressed", populateTextureCompressedFormatTests);
 }
 
 tcu::TestCaseGroup* create3DTextureCompressedFormatTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "compressed_3D", "3D texture compressed format tests.", populate3DTextureCompressedFormatTests);
+	return createTestGroup(testCtx, "compressed_3D", populate3DTextureCompressedFormatTests);
 }
 
 } // texture
