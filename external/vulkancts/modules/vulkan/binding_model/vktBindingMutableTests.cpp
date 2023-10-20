@@ -3340,7 +3340,7 @@ tcu::TestStatus MutableTypesInstance::iterate ()
 		VkStridedDeviceAddressRegionKHR	callableSBTRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
 
 		if (bindPoint == VK_PIPELINE_BIND_POINT_COMPUTE)
-			pipeline = makeComputePipeline(vkd, device, pipelineLayout.get(), 0u, shaderModule.get(), 0u, nullptr);
+			pipeline = makeComputePipeline(vkd, device, pipelineLayout.get(), shaderModule.get());
 		else if (bindPoint == VK_PIPELINE_BIND_POINT_GRAPHICS)
 		{
 			VkShaderModule vertModule = DE_NULL;

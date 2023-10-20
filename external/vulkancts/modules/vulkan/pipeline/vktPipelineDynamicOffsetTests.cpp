@@ -5,6 +5,8 @@
  * Copyright (c) 2018 The Khronos Group Inc.
  * Copyright (c) 2018 Google Inc.
  * Copyright (c) 2018 ARM Limited.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +30,7 @@
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
 #include "vktPipelineReferenceRenderer.hpp"
+#include "vkComputePipelineConstructionUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
@@ -60,11 +63,10 @@ using de::UniquePtr;
 
 namespace
 {
-typedef de::SharedPtr<Unique<VkBuffer> >		VkBufferSp;
+typedef de::SharedPtr<Unique<VkBuffer>>			VkBufferSp;
 typedef de::SharedPtr<Allocation>				AllocationSp;
-typedef de::SharedPtr<Unique<VkCommandBuffer> >	VkCommandBufferSp;
-typedef de::SharedPtr<Unique<VkRenderPass> >	VkRenderPassSp;
-typedef de::SharedPtr<Unique<VkFramebuffer> >	VkFramebufferSp;
+typedef de::SharedPtr<Unique<VkCommandBuffer>>	VkCommandBufferSp;
+typedef de::SharedPtr<RenderPassWrapper>		VkRenderPassSp;
 
 enum class GroupingStrategy
 {
@@ -188,9 +190,8 @@ private:
 	de::MovePtr<Allocation>				m_colorImageAlloc;
 	Move<VkImageView>					m_colorAttachmentView;
 	vector<VkRenderPassSp>				m_renderPasses;
-	vector<VkFramebufferSp>				m_framebuffers;
-	Move<VkShaderModule>				m_vertexShaderModule;
-	Move<VkShaderModule>				m_fragmentShaderModule;
+	ShaderWrapper						m_vertexShaderModule;
+	ShaderWrapper						m_fragmentShaderModule;
 	Move<VkBuffer>						m_vertexBuffer;
 	de::MovePtr<Allocation>				m_vertexBufferAlloc;
 	Move<VkBuffer>						m_buffer;
@@ -198,7 +199,7 @@ private:
 	vector<Move<VkDescriptorSetLayout>>	m_descriptorSetLayouts;
 	Move<VkDescriptorPool>				m_descriptorPool;
 	vector<Move<VkDescriptorSet>>		m_descriptorSets;
-	Move<VkPipelineLayout>				m_pipelineLayout;
+	PipelineLayoutWrapper				m_pipelineLayout;
 	vector<GraphicsPipelineWrapper>		m_graphicsPipelines;
 	Move<VkCommandPool>					m_cmdPool;
 	vector<VkCommandBufferSp>			m_cmdBuffers;
@@ -217,7 +218,9 @@ DynamicOffsetGraphicsTestInstance::DynamicOffsetGraphicsTestInstance (Context& c
 void DynamicOffsetGraphicsTestInstance::init (void)
 {
 	const VkComponentMapping		componentMappingRGBA		= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+	const InstanceInterface&		vki							= m_context.getInstanceInterface();
 	const DeviceInterface&			vk							= m_context.getDeviceInterface();
+	const VkPhysicalDevice			physicalDevice				= m_context.getPhysicalDevice();
 	const VkDevice					vkDevice					= m_context.getDevice();
 	const deUint32					queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
 	const deUint32					numBindings					= m_params.numDynamicBindings + m_params.numNonDynamicBindings;
@@ -343,12 +346,8 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 			DE_NULL										// const VkSubpassDependency*		pDependencies
 		};
 
-		m_renderPasses.push_back(VkRenderPassSp(new Unique<VkRenderPass>(createRenderPass(vk, vkDevice, &renderPassInfo))));
-	}
+		m_renderPasses.push_back(VkRenderPassSp(new RenderPassWrapper(m_params.pipelineConstructionType, vk, vkDevice, &renderPassInfo)));
 
-	// Create framebuffers
-	for (deUint32 framebufferIdx = 0; framebufferIdx < m_params.numCmdBuffers; framebufferIdx++)
-	{
 		const VkImageView				attachmentBindInfos[]	=
 		{
 			*m_colorAttachmentView
@@ -359,7 +358,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// VkStructureType				sType;
 			DE_NULL,									// const void*					pNext;
 			0u,											// VkFramebufferCreateFlags		flags;
-			**m_renderPasses[framebufferIdx],			// VkRenderPass					renderPass;
+			**m_renderPasses[renderPassIdx],			// VkRenderPass					renderPass;
 			1u,											// deUint32						attachmentCount;
 			attachmentBindInfos,						// const VkImageView*			pAttachments;
 			(deUint32)m_renderSize.x(),					// deUint32						width;
@@ -367,7 +366,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 			1u											// deUint32						layers;
 		};
 
-		m_framebuffers.push_back(VkFramebufferSp(new Unique<VkFramebuffer>(createFramebuffer(vk, vkDevice, &framebufferParams))));
+		m_renderPasses[renderPassIdx]->createFramebuffer(vk, vkDevice, &framebufferParams, *m_colorImage);
 	}
 
 	// Create pipeline layout
@@ -445,7 +444,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 			DE_NULL														// const VkPushDescriptorRange*	pPushDescriptorRanges;
 		};
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_pipelineLayout = PipelineLayoutWrapper(m_params.pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 	}
 
 	// Create buffer
@@ -558,8 +557,8 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 
 	// Create shaders
 	{
-		m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("vert"), 0u);
-		m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("frag"), 0u);
+		m_vertexShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("vert"), 0u);
+		m_fragmentShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("frag"), 0u);
 	}
 
 	// Create pipelines
@@ -603,8 +602,8 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 		const vector<VkViewport>	viewports	{ makeViewport(m_renderSize) };
 		const vector<VkRect2D>		scissors	{ makeRect2D(m_renderSize) };
 
-		m_graphicsPipelines.emplace_back(vk, vkDevice, m_params.pipelineConstructionType);
-		m_graphicsPipelines.back().setMonolithicPipelineLayout(*m_pipelineLayout)
+		m_graphicsPipelines.emplace_back(vki, vk, physicalDevice, vkDevice, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
+		m_graphicsPipelines.back().setMonolithicPipelineLayout(m_pipelineLayout)
 								  .setDefaultRasterizationState()
 								  .setDefaultDepthStencilState()
 								  .setDefaultColorBlendState()
@@ -612,11 +611,11 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 								  .setupVertexInputState(&vertexInputStateParams)
 								  .setupPreRasterizationShaderState(viewports,
 																	scissors,
-																	*m_pipelineLayout,
+																	m_pipelineLayout,
 																	**m_renderPasses[pipelineIdx],
 																	0u,
-																	*m_vertexShaderModule)
-								  .setupFragmentShaderState(*m_pipelineLayout, **m_renderPasses[pipelineIdx], 0u, *m_fragmentShaderModule)
+																	m_vertexShaderModule)
+								  .setupFragmentShaderState(m_pipelineLayout, **m_renderPasses[pipelineIdx], 0u, m_fragmentShaderModule)
 								  .setupFragmentOutputState(**m_renderPasses[pipelineIdx])
 								  .buildPipeline();
 	}
@@ -659,8 +658,8 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 		const deUint32		idx						= m_params.reverseOrder ? m_params.numCmdBuffers - cmdBufferIdx - 1 : cmdBufferIdx;
 
 		beginCommandBuffer(vk, **m_cmdBuffers[idx], 0u);
-		beginRenderPass(vk, **m_cmdBuffers[idx], **m_renderPasses[idx], **m_framebuffers[idx], makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
-		vk.cmdBindPipeline(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipelines[idx].getPipeline());
+		m_renderPasses[idx]->begin(vk, **m_cmdBuffers[idx], makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
+		m_graphicsPipelines[idx].bind(**m_cmdBuffers[idx]);
 		vk.cmdBindVertexBuffers(**m_cmdBuffers[idx], 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 
 		for (deUint32 i = 0; i < m_params.numDescriptorSetBindings; i++)
@@ -677,7 +676,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 			quadNdx++;
 		}
 
-		endRenderPass(vk, **m_cmdBuffers[idx]);
+		m_renderPasses[idx]->end(vk, **m_cmdBuffers[idx]);
 		endCommandBuffer(vk, **m_cmdBuffers[idx]);
 	}
 }
@@ -788,7 +787,7 @@ TestInstance* DynamicOffsetGraphicsTest::createInstance (Context& context) const
 
 void DynamicOffsetGraphicsTest::checkSupport(Context& context) const
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void DynamicOffsetGraphicsTest::initPrograms (SourceCollections& sourceCollections) const
@@ -889,14 +888,13 @@ private:
 	const deUint32						m_numBindings;
 	const deUint32						m_numOutputColors;
 	const VkPhysicalDeviceLimits		m_deviceLimits;
-	Move<VkShaderModule>				m_computeShaderModule;
 	Move<VkBuffer>						m_buffer;
 	de::MovePtr<Allocation>				m_bufferAlloc;
 	vector<Move<VkDescriptorSetLayout>>	m_descriptorSetLayouts;
 	Move<VkDescriptorPool>				m_descriptorPool;
 	vector<Move<VkDescriptorSet>>		m_descriptorSets;
-	Move<VkPipelineLayout>				m_pipelineLayout;
-	Move<VkPipeline>					m_computePipeline;
+	PipelineLayoutWrapper				m_pipelineLayout;
+	ComputePipelineWrapper				m_computePipeline;
 	Move<VkBuffer>						m_outputBuffer;
 	de::MovePtr<Allocation>				m_outputBufferAlloc;
 	Move<VkCommandPool>					m_cmdPool;
@@ -1016,7 +1014,7 @@ void DynamicOffsetComputeTestInstance::init (void)
 			DE_NULL														// const VkPushDescriptorRange*	pPushDescriptorRanges;
 		};
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_pipelineLayout = PipelineLayoutWrapper(m_params.pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 	}
 
 	// Create buffer
@@ -1192,36 +1190,12 @@ void DynamicOffsetComputeTestInstance::init (void)
 		vk.updateDescriptorSets(vkDevice, 1u, &writeDescriptorSet, 0u, DE_NULL);
 	}
 
-	// Create shader
-	{
-		m_computeShaderModule = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("compute"), 0u);
-	}
-
 	// Create pipeline
 	{
-		const VkPipelineShaderStageCreateInfo	stageCreateInfo	=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
-			DE_NULL,												// const void*							pNext;
-			0u,														// VkPipelineShaderStageCreateFlags		flags;
-			VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
-			*m_computeShaderModule,									// VkShaderModule						module;
-			"main",													// const char*							pName;
-			DE_NULL													// const VkSpecializationInfo*			pSpecializationInfo;
-		};
 
-		const VkComputePipelineCreateInfo		createInfo		=
-		{
-			VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,			// VkStructureType					sType;
-			DE_NULL,												// const void*						pNext;
-			0u,														// VkPipelineCreateFlags			flags;
-			stageCreateInfo,										// VkPipelineShaderStageCreateInfo	stage;
-			*m_pipelineLayout,										// VkPipelineLayout					layout;
-			(VkPipeline)0,											// VkPipeline						basePipelineHandle;
-			0u,														// int32_t							basePipelineIndex;
-		};
-
-		m_computePipeline = createComputePipeline(vk, vkDevice, (vk::VkPipelineCache)0u, &createInfo);
+		m_computePipeline = ComputePipelineWrapper(vk, vkDevice, graphicsToComputeConstructionType(m_params.pipelineConstructionType), m_context.getBinaryCollection().get("compute"));
+		m_computePipeline.setDescriptorSetLayouts(m_pipelineLayout.getSetLayoutCount(), m_pipelineLayout.getSetLayouts());
+		m_computePipeline.buildPipeline();
 	}
 
 	// Create command pool
@@ -1239,7 +1213,7 @@ void DynamicOffsetComputeTestInstance::init (void)
 		const deUint32 idx = m_params.reverseOrder ? m_params.numCmdBuffers - cmdBufferIdx - 1 : cmdBufferIdx;
 
 		beginCommandBuffer(vk, **m_cmdBuffers[idx], 0u);
-		vk.cmdBindPipeline(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipeline);
+		m_computePipeline.bind(**m_cmdBuffers[idx]);
 
 		for (deUint32 i = 0; i < m_params.numDescriptorSetBindings; i++)
 		{
@@ -1338,6 +1312,7 @@ public:
 						~DynamicOffsetComputeTest	(void);
 	void				initPrograms				(SourceCollections& sourceCollections) const;
 	TestInstance*		createInstance				(Context& context) const;
+	void				checkSupport				(Context& context) const;
 
 protected:
 	const TestParams	m_params;
@@ -1359,6 +1334,11 @@ DynamicOffsetComputeTest::~DynamicOffsetComputeTest (void)
 TestInstance* DynamicOffsetComputeTest::createInstance (Context& context) const
 {
 	return new DynamicOffsetComputeTestInstance(context, m_params);
+}
+
+void DynamicOffsetComputeTest::checkSupport(Context& context) const
+{
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void DynamicOffsetComputeTest::initPrograms (SourceCollections& sourceCollections) const
@@ -1456,28 +1436,30 @@ void DynamicOffsetComputeTest::initPrograms (SourceCollections& sourceCollection
 class DynamicOffsetMixedTestInstance : public vkt::TestInstance
 {
 public:
-								DynamicOffsetMixedTestInstance	(Context&			context,
-																 const tcu::IVec2	renderSize,
-																 const deUint32		numInstances,
-																 const bool			testAllOffsets,
-																 const bool			reverseOrder,
-																 const bool			runComputeFirst,
-																 const deUint32		vertexOffset,
-																 const deUint32		sharedUboOffset,
-																 const deUint32		fragUboOffset,
-																 const deUint32		ssboReadOffset,
-																 const deUint32		ssboWriteOffset)
+								DynamicOffsetMixedTestInstance	(Context&						context,
+																 const PipelineConstructionType	pipelineConstructionType,
+																 const tcu::IVec2				renderSize,
+																 const deUint32					numInstances,
+																 const bool						testAllOffsets,
+																 const bool						reverseOrder,
+																 const bool						runComputeFirst,
+																 const deUint32					vertexOffset,
+																 const deUint32					sharedUboOffset,
+																 const deUint32					fragUboOffset,
+																 const deUint32					ssboReadOffset,
+																 const deUint32					ssboWriteOffset)
 																: vkt::TestInstance	(context)
-																, m_renderSize		(renderSize)
-																, m_numInstances	(numInstances)
-																, m_testAllOffsets	(testAllOffsets)
-																, m_reverseOrder	(reverseOrder)
-																, m_runComputeFirst	(runComputeFirst)
-																, m_vertexOffset	(vertexOffset)
-																, m_sharedUboOffset	(sharedUboOffset)
-																, m_fragUboOffset	(fragUboOffset)
-																, m_ssboReadOffset	(ssboReadOffset)
-																, m_ssboWriteOffset	(ssboWriteOffset)
+																, m_pipelineConstructionType	(pipelineConstructionType)
+																, m_renderSize					(renderSize)
+																, m_numInstances				(numInstances)
+																, m_testAllOffsets				(testAllOffsets)
+																, m_reverseOrder				(reverseOrder)
+																, m_runComputeFirst				(runComputeFirst)
+																, m_vertexOffset				(vertexOffset)
+																, m_sharedUboOffset				(sharedUboOffset)
+																, m_fragUboOffset				(fragUboOffset)
+																, m_ssboReadOffset				(ssboReadOffset)
+																, m_ssboWriteOffset				(ssboWriteOffset)
 																{}
 
 								~DynamicOffsetMixedTestInstance	();
@@ -1491,18 +1473,19 @@ private:
 		tcu::Vec4	color;
 	};
 
-	const VkFormat		OUTPUT_COLOR_FORMAT		= VK_FORMAT_R8G8B8A8_UNORM;
+	const VkFormat					OUTPUT_COLOR_FORMAT		= VK_FORMAT_R8G8B8A8_UNORM;
 
-	const tcu::IVec2	m_renderSize;
-	const deUint32		m_numInstances;
-	const bool			m_testAllOffsets;
-	const bool			m_reverseOrder;
-	const bool			m_runComputeFirst;
-	const deUint32		m_vertexOffset;
-	const deUint32		m_sharedUboOffset;
-	const deUint32		m_fragUboOffset;
-	const deUint32		m_ssboReadOffset;
-	const deUint32		m_ssboWriteOffset;
+	const PipelineConstructionType	m_pipelineConstructionType;
+	const tcu::IVec2				m_renderSize;
+	const deUint32					m_numInstances;
+	const bool						m_testAllOffsets;
+	const bool						m_reverseOrder;
+	const bool						m_runComputeFirst;
+	const deUint32					m_vertexOffset;
+	const deUint32					m_sharedUboOffset;
+	const deUint32					m_fragUboOffset;
+	const deUint32					m_ssboReadOffset;
+	const deUint32					m_ssboWriteOffset;
 };
 
 DynamicOffsetMixedTestInstance::~DynamicOffsetMixedTestInstance ()
@@ -1512,15 +1495,17 @@ DynamicOffsetMixedTestInstance::~DynamicOffsetMixedTestInstance ()
 tcu::TestStatus DynamicOffsetMixedTestInstance::iterate (void)
 {
 	tcu::TestLog&											log						= m_context.getTestContext().getLog();
+	const InstanceInterface&								vki						= m_context.getInstanceInterface();
 	const DeviceInterface&									vk						= m_context.getDeviceInterface();
+	const VkPhysicalDevice									physicalDevice			= m_context.getPhysicalDevice();
 	const VkDevice											device					= m_context.getDevice();
 	Allocator&												allocator				= m_context.getDefaultAllocator();
 	const deUint32											queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 
 	// Create shaders
-	const Move<VkShaderModule>								vertexShaderModule		= createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0u);
-	const Move<VkShaderModule>								fragmentShaderModule	= createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u);
-	const Move<VkShaderModule>								computeShaderModule		= createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u);
+	const ShaderWrapper										vertexShaderModule		= ShaderWrapper(vk, device, m_context.getBinaryCollection().get("vert"), 0u);
+	const ShaderWrapper										fragmentShaderModule	= ShaderWrapper(vk, device, m_context.getBinaryCollection().get("frag"), 0u);
+	const ShaderWrapper										computeShaderModule		= ShaderWrapper(vk, device, m_context.getBinaryCollection().get("comp"), 0u);
 
 	const deUint32											vertexBufferBindId		= 0u;
 
@@ -1648,7 +1633,7 @@ tcu::TestStatus DynamicOffsetMixedTestInstance::iterate (void)
 		DE_NULL										// const VkSubpassDependency*		pDependencies
 	};
 
-	Move<VkRenderPass>										renderPass				= createRenderPass(vk, device, &renderPassInfo);
+	RenderPassWrapper										renderPass				(m_pipelineConstructionType, vk, device, &renderPassInfo);
 
 	// Create framebuffer
 	const VkImageView										attachmentBindInfos[]	=
@@ -1669,7 +1654,7 @@ tcu::TestStatus DynamicOffsetMixedTestInstance::iterate (void)
 		1u											// deUint32						layers;
 	};
 
-	Move<VkFramebuffer>										framebuffer				= createFramebuffer(vk, device, &framebufferCreateInfo);
+	renderPass.createFramebuffer(vk, device, &framebufferCreateInfo, *colorImage);
 
 	// Create pipeline layout
 	const VkPipelineLayoutCreateInfo						pipelineLayoutInfo		=
@@ -1683,53 +1668,53 @@ tcu::TestStatus DynamicOffsetMixedTestInstance::iterate (void)
 		DE_NULL													// const VkPushDescriptorRange*	pPushDescriptorRanges;
 	};
 
-	Move<VkPipelineLayout>									pipelineLayout			= createPipelineLayout(vk, device, &pipelineLayoutInfo);
+	PipelineLayoutWrapper									pipelineLayout			(m_pipelineConstructionType, vk, device, &pipelineLayoutInfo);
 
 	// Create graphics pipeline
 	const std::vector<VkViewport>							viewports(1, makeViewport(m_renderSize));
 	const std::vector<VkRect2D>								scissors(1, makeRect2D(m_renderSize));
 
-	Move<VkPipeline>										graphicsPipeline		= makeGraphicsPipeline(
-		vk,										// const DeviceInterface&						vk
-		device,									// const VkDevice								device
-		*pipelineLayout,						// const VkPipelineLayout						pipelineLayout
-		*vertexShaderModule,					// const VkShaderModule							vertexShaderModule
-		DE_NULL,								// const VkShaderModule							tessellationControlShaderModule
-		DE_NULL,								// const VkShaderModule							tessellationEvalShaderModule
-		DE_NULL,								// const VkShaderModule							geometryShaderModule
-		*fragmentShaderModule,					// const VkShaderModule							fragmentShaderModule
-		*renderPass,							// const VkRenderPass							renderPass
-		viewports,								// const std::vector<VkViewport>&				viewports
-		scissors,								// const std::vector<VkRect2D>&					scissors
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology					topology
-		0u,										// const deUint32								subpass
-		0u,										// const deUint32								patchControlPoints
-		&vertexInputStateCreateInfo);			// const VkPipelineVertexInputStateCreateInfo*	vertexInputStateCreateInfo
-
-	// Create compute pipeline
-	const VkPipelineShaderStageCreateInfo					compPipStageCreateInfo	=
+	const VkPipelineRasterizationStateCreateInfo	rasterizationState =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
-		DE_NULL,												// const void*							pNext;
-		0u,														// VkPipelineShaderStageCreateFlags		flags;
-		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
-		*computeShaderModule,									// VkShaderModule						module;
-		"main",													// const char*							pName;
-		DE_NULL													// const VkSpecializationInfo*			pSpecializationInfo;
+		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	// VkStructureType                            sType
+		DE_NULL,													// const void*                                pNext
+		0u,															// VkPipelineRasterizationStateCreateFlags    flags
+		VK_FALSE,													// VkBool32                                   depthClampEnable
+		VK_FALSE,													// VkBool32                                   rasterizerDiscardEnable
+		VK_POLYGON_MODE_FILL,										// VkPolygonMode                              polygonMode
+		VK_CULL_MODE_NONE,											// VkCullModeFlags                            cullMode
+		VK_FRONT_FACE_COUNTER_CLOCKWISE,							// VkFrontFace                                frontFace
+		VK_FALSE,													// VkBool32                                   depthBiasEnable
+		0.0f,														// float                                      depthBiasConstantFactor
+		0.0f,														// float                                      depthBiasClamp
+		0.0f,														// float                                      depthBiasSlopeFactor
+		1.0f														// float                                      lineWidth
 	};
 
-	const VkComputePipelineCreateInfo						compPipelinecreateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,			// VkStructureType					sType;
-		DE_NULL,												// const void*						pNext;
-		0u,														// VkPipelineCreateFlags			flags;
-		compPipStageCreateInfo,									// VkPipelineShaderStageCreateInfo	stage;
-		*pipelineLayout,										// VkPipelineLayout					layout;
-		(VkPipeline)0,											// VkPipeline						basePipelineHandle;
-		0u,														// int32_t							basePipelineIndex;
-	};
+	GraphicsPipelineWrapper										graphicsPipeline		(vki, vk, physicalDevice, device, m_context.getDeviceExtensions(), m_pipelineConstructionType);
 
-	Move<VkPipeline>										computePipeline			= createComputePipeline(vk, device, (vk::VkPipelineCache)0u, &compPipelinecreateInfo);
+	graphicsPipeline.setDefaultMultisampleState()
+		.setDefaultColorBlendState()
+		.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+		.setupVertexInputState(&vertexInputStateCreateInfo)
+		.setupPreRasterizationShaderState((viewports),
+			scissors,
+			pipelineLayout,
+			*renderPass,
+			0u,
+			vertexShaderModule,
+			&rasterizationState)
+		.setupFragmentShaderState(pipelineLayout,
+			*renderPass,
+			0u,
+			fragmentShaderModule)
+		.setupFragmentOutputState(*renderPass, 0u)
+		.setMonolithicPipelineLayout(pipelineLayout)
+		.buildPipeline();
+
+	ComputePipelineWrapper									computePipeline			(vk, device, graphicsToComputeConstructionType(m_pipelineConstructionType), m_context.getBinaryCollection().get("comp"));
+	computePipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+	computePipeline.buildPipeline();
 
 	const VkQueue											queue					= m_context.getUniversalQueue();
 	const VkPhysicalDeviceLimits							deviceLimits			= getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()).limits;
@@ -1928,13 +1913,13 @@ tcu::TestStatus DynamicOffsetMixedTestInstance::iterate (void)
 
 		if (runGraphics)
 		{
-			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), clearColorValue);
-			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
+			renderPass.begin(vk, *cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), clearColorValue);
+			graphicsPipeline.bind(*cmdBuffer);
 			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 		}
 		else
 		{
-			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
+			computePipeline.bind(*cmdBuffer);
 		}
 
 		if (m_testAllOffsets)
@@ -1987,7 +1972,7 @@ tcu::TestStatus DynamicOffsetMixedTestInstance::iterate (void)
 
 		if (runGraphics)
 		{
-			endRenderPass(vk, *cmdBuffer);
+			renderPass.end(vk, *cmdBuffer);
 			copyImageToBuffer(vk, *cmdBuffer, *colorImage, *colorBuffer, m_renderSize, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
 		}
 
@@ -2095,46 +2080,50 @@ class DynamicOffsetMixedTest : public vkt::TestCase
 {
 public:
 							DynamicOffsetMixedTest	(tcu::TestContext&	testContext,
-													 const std::string&	name,
-													 const std::string&	description,
-													 const tcu::IVec2	renderSize,
-													 const deUint32		numInstances,
-													 const bool			testAllOffsets,
-													 const bool			reverseOrder,
-													 const bool			runComputeFirst	= false,
-													 const deUint32		vertexOffset	= 0u,
-													 const deUint32		sharedUboOffset	= 0u,
-													 const deUint32		fragUboOffset	= 0u,
-													 const deUint32		ssboReadOffset	= 0u,
-													 const deUint32		ssboWriteOffset	= 0u)
-													: vkt::TestCase		(testContext, name, description)
-													, m_renderSize		(renderSize)
-													, m_numInstances	(numInstances)
-													, m_testAllOffsets	(testAllOffsets)
-													, m_reverseOrder	(reverseOrder)
-													, m_runComputeFirst	(runComputeFirst)
-													, m_vertexOffset	(vertexOffset)
-													, m_sharedUboOffset	(sharedUboOffset)
-													, m_fragUboOffset	(fragUboOffset)
-													, m_ssboReadOffset	(ssboReadOffset)
-													, m_ssboWriteOffset	(ssboWriteOffset)
+													 const PipelineConstructionType	pipelineConstructionType,
+													 const std::string&				name,
+													 const std::string&				description,
+													 const tcu::IVec2				renderSize,
+													 const deUint32					numInstances,
+													 const bool						testAllOffsets,
+													 const bool						reverseOrder,
+													 const bool						runComputeFirst	= false,
+													 const deUint32					vertexOffset	= 0u,
+													 const deUint32					sharedUboOffset	= 0u,
+													 const deUint32					fragUboOffset	= 0u,
+													 const deUint32					ssboReadOffset	= 0u,
+													 const deUint32					ssboWriteOffset	= 0u)
+													: vkt::TestCase					(testContext, name, description)
+													, m_pipelineConstructionType	(pipelineConstructionType)
+													, m_renderSize					(renderSize)
+													, m_numInstances				(numInstances)
+													, m_testAllOffsets				(testAllOffsets)
+													, m_reverseOrder				(reverseOrder)
+													, m_runComputeFirst				(runComputeFirst)
+													, m_vertexOffset				(vertexOffset)
+													, m_sharedUboOffset				(sharedUboOffset)
+													, m_fragUboOffset				(fragUboOffset)
+													, m_ssboReadOffset				(ssboReadOffset)
+													, m_ssboWriteOffset				(ssboWriteOffset)
 													{}
 
 						~DynamicOffsetMixedTest		(void);
 
 	void				initPrograms				(SourceCollections& sourceCollections) const;
+	void				checkSupport				(vkt::Context& context) const;
 	TestInstance		*createInstance				(Context& context) const;
 private:
-	const tcu::IVec2	m_renderSize;
-	const deUint32		m_numInstances;
-	const bool			m_testAllOffsets;
-	const bool			m_reverseOrder;
-	const bool			m_runComputeFirst;
-	const deUint32		m_vertexOffset;
-	const deUint32		m_sharedUboOffset;
-	const deUint32		m_fragUboOffset;
-	const deUint32		m_ssboReadOffset;
-	const deUint32		m_ssboWriteOffset;
+	const PipelineConstructionType	m_pipelineConstructionType;
+	const tcu::IVec2				m_renderSize;
+	const deUint32					m_numInstances;
+	const bool						m_testAllOffsets;
+	const bool						m_reverseOrder;
+	const bool						m_runComputeFirst;
+	const deUint32					m_vertexOffset;
+	const deUint32					m_sharedUboOffset;
+	const deUint32					m_fragUboOffset;
+	const deUint32					m_ssboReadOffset;
+	const deUint32					m_ssboWriteOffset;
 };
 
 DynamicOffsetMixedTest::~DynamicOffsetMixedTest (void)
@@ -2232,9 +2221,15 @@ void DynamicOffsetMixedTest::initPrograms (SourceCollections& sourceCollections)
 	}
 }
 
+void DynamicOffsetMixedTest::checkSupport (vkt::Context& context) const
+{
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+}
+
 TestInstance* DynamicOffsetMixedTest::createInstance (Context& context) const
 {
 	return new DynamicOffsetMixedTestInstance	(context,
+												 m_pipelineConstructionType,
 												 m_renderSize,
 												 m_numInstances,
 												 m_testAllOffsets,
@@ -2464,6 +2459,7 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx, Pipelin
 					{
 						allOffsetsGroup->addChild(new DynamicOffsetMixedTest(
 							testCtx,
+							pipelineConstructionType,
 							std::string(order.name) + "_" + std::string(offsets.name) + "_" + pipeline.name,
 							"",
 							tcu::IVec2(32, 32),		// Render size
@@ -2473,6 +2469,7 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx, Pipelin
 							pipeline.computeFirst));
 						singleOffsetGroup->addChild(new DynamicOffsetMixedTest(
 							testCtx,
+							pipelineConstructionType,
 							std::string(order.name) + "_" + std::string(offsets.name) + "_" + pipeline.name,
 							"",
 							tcu::IVec2(32, 32),		// Render size

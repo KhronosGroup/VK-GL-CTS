@@ -51,9 +51,9 @@ void createChildren (tcu::TestCaseGroup* group)
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "conditional_rendering", "Conditional Rendering Tests", createChildren);
+	return createTestGroup(testCtx, name.c_str(), "Conditional Rendering Tests", createChildren);
 }
 
 } // conditional

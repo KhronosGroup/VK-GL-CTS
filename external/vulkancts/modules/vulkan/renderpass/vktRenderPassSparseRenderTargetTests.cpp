@@ -807,6 +807,11 @@ std::string formatToName (VkFormat format)
 template<class TestConfigType>
 void checkSupport(Context& context, TestConfigType config)
 {
+#ifndef CTS_USES_VULKANSC
+	if (config.format == VK_FORMAT_A8_UNORM_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
 	if (config.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
 		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
@@ -831,6 +836,9 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_UINT,
@@ -885,7 +893,7 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 		const TestConfig	testConfig	(format, groupParams);
 		string				testName	(formatToName(format));
 
-		group->addChild(new InstanceFactory1WithSupport<SparseRenderTargetTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfig)));
+		group->addChild(new InstanceFactory1WithSupport<SparseRenderTargetTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, testName.c_str(), testName.c_str(), testConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfig)));
 	}
 }
 

@@ -934,6 +934,7 @@ tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
 		totalFramesCheck += (res.correctFrames.size() + res.incorrectFrames.size());
 	}
 	DE_ASSERT(totalFramesCheck == totalFrames);
+	DE_UNREF(totalFramesCheck);
 
 	if (allTestsPassed)
 		return tcu::TestStatus::pass(de::toString(totalFrames) + " correctly decoded frames");

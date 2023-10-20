@@ -3993,7 +3993,7 @@ namespace vkt
 				// Check if the physical device supports VK_EXT_robustness2 and the nullDescriptor feature.
 				const auto&	vki					= context.getInstanceInterface();
 				const auto	physicalDevice		= context.getPhysicalDevice();
-				const auto	supportedExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+				const auto&	supportedExtensions	= enumerateCachedDeviceExtensionProperties(vki, physicalDevice);
 
 				if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_robustness2")))
 					TCU_THROW(NotSupportedError, "VK_EXT_robustness2 not supported");
@@ -4101,7 +4101,7 @@ namespace vkt
 				};
 
 				m_device			= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &createInfo);
-				m_vkd				= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, m_device.get()));
+				m_vkd				= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, m_device.get(), context.getUsedApiVersion()));
 				const auto queue	= getDeviceQueue(*m_vkd, *m_device, queueFamilyIndex, 0u);
 				m_allocator			= de::MovePtr<SimpleAllocator>(new SimpleAllocator(*m_vkd, m_device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 

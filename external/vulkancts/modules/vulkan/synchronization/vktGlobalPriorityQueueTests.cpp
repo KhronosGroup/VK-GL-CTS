@@ -568,7 +568,7 @@ void GPQCase::initPrograms (SourceCollections& programs) const
 	void main()
 	{
 		ivec2 srcIdx = ivec2(gl_GlobalInvocationID.xy);
-		int   width  = imageSize(srcImage).y;
+		int   width  = imageSize(srcImage).x;
 		int   dstIdx = int(gl_GlobalInvocationID.y * width + gl_GlobalInvocationID.x);
 		dstBuffer.data[dstIdx] = uint(imageLoad(srcImage, srcIdx).r) == ${TEST_VALUE} ? 1 : 0;
 	}
@@ -673,7 +673,7 @@ tcu::TestStatus	GPQInstance<VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT>::iterat
 	Move<VkImageView>				view				= createView(**image, imageResourceRange);
 	Move<VkRenderPass>				renderPass			= makeRenderPass(vkd, device, m_config.format);
 	Move<VkFramebuffer>				framebuffer			= makeFramebuffer(vkd, device, *renderPass, *view, m_config.width, m_config.height);
-	const VkDescriptorImageInfo		imageDsInfo			= makeDescriptorImageInfo(VkSampler(0), *view, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	const VkDescriptorImageInfo		imageDsInfo			= makeDescriptorImageInfo(VkSampler(0), *view, VK_IMAGE_LAYOUT_GENERAL);
 	const VkImageMemoryBarrier		imageReadyBarrier	= makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 															VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 															**image, imageResourceRange, consumerIndex, consumerIndex);
@@ -735,7 +735,7 @@ tcu::TestStatus	GPQInstance<VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT>::iterat
 							   0u, nullptr, 0u, nullptr, 1u, &imageReadyBarrier);
 
 		vkd.cmdDispatch(*consumerCmd, m_config.width, m_config.height, 1);
-		vkd.cmdPipelineBarrier(*consumerCmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0u,
+		vkd.cmdPipelineBarrier(*consumerCmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u,
 							   1u, &resultReadyBarrier, 0u, nullptr, 0u, nullptr);
 	endCommandBuffer(vkd, *consumerCmd);
 
@@ -818,7 +818,7 @@ tcu::TestStatus	GPQInstance<VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT>::iterat
 	Move<VkImageView>				view				= createView(**image, imageResourceRange);
 	Move<VkRenderPass>				renderPass			= makeRenderPass(vkd, device, m_config.format);
 	Move<VkFramebuffer>				framebuffer			= makeFramebuffer(vkd, device, *renderPass, *view, m_config.width, m_config.height);
-	const VkDescriptorImageInfo		imageDsInfo			= makeDescriptorImageInfo(VkSampler(0), *view, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	const VkDescriptorImageInfo		imageDsInfo			= makeDescriptorImageInfo(VkSampler(0), *view, VK_IMAGE_LAYOUT_GENERAL);
 	const VkImageMemoryBarrier		imageReadyBarrier	= makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 															VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 															**image, imageResourceRange, producerIndex, producerIndex);
@@ -867,12 +867,12 @@ tcu::TestStatus	GPQInstance<VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT>::iterat
 		vkd.cmdBindVertexBuffers(*producerCmd, 0, 1, vertexBuffer.getPtr(), &static_cast<const VkDeviceSize&>(0));
 		vkd.cmdBindDescriptorSets(*producerCmd, VK_PIPELINE_BIND_POINT_COMPUTE, *producer1Layout, 0, 1, &producerDs.get(), 0, nullptr);
 		vkd.cmdDispatch(*producerCmd, deUint32(positions.size()), 1, 1);
-		vkd.cmdPipelineBarrier(*producerCmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0,
+		vkd.cmdPipelineBarrier(*producerCmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0,
 							   0, nullptr, 1, &producerReadyBarrier, 0, nullptr);
 		beginRenderPass(vkd, *producerCmd, *renderPass, *framebuffer, makeRect2D(m_config.width, m_config.height), clearColor);
 			vkd.cmdDraw(*producerCmd, deUint32(positions.size()), 1, 0, 0);
 		endRenderPass(vkd, *producerCmd);
-		vkd.cmdPipelineBarrier(*producerCmd, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0,
+		vkd.cmdPipelineBarrier(*producerCmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0,
 							   0u, nullptr, 0u, nullptr, 1u, &imageReadyBarrier);
 	endCommandBuffer(vkd, *producerCmd);
 
@@ -880,7 +880,7 @@ tcu::TestStatus	GPQInstance<VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT>::iterat
 		vkd.cmdBindPipeline(*consumerCmd, VK_PIPELINE_BIND_POINT_COMPUTE, *consumerPipeline);
 		vkd.cmdBindDescriptorSets(*consumerCmd, VK_PIPELINE_BIND_POINT_COMPUTE, *consumerLayout, 0, 1, &consumerDs.get(), 0, nullptr);
 		vkd.cmdDispatch(*consumerCmd, m_config.width, m_config.height, 1);
-		vkd.cmdPipelineBarrier(*consumerCmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0,
+		vkd.cmdPipelineBarrier(*consumerCmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0,
 							   0, nullptr, 1, &resultReadyBarrier, 0, nullptr);
 	endCommandBuffer(vkd, *consumerCmd);
 

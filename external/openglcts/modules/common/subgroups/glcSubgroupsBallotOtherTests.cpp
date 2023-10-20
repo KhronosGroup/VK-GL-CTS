@@ -104,7 +104,7 @@ std::string getBodySource(CaseDefinition caseDef)
 		<< "i >= 32u ? 0u : (0xFFFFFFFFu << i), "
 		<< "i >= 64u ? 0u : (0xFFFFFFFFu << ((i < 32u) ? 0u : (i - 32u))), "
 		<< "i >= 96u ? 0u : (0xFFFFFFFFu << ((i < 64u) ? 0u : (i - 64u))), "
-		<< " 0xFFFFFFFFu << ((i < 96u) ? 0u : (i - 96u)))\n"
+		<< "i == 128u ? 0u : (0xFFFFFFFFu << ((i < 96u) ? 0u : (i - 96u))))\n"
 		<< "#define MAKE_SINGLE_BIT_BALLOT_RESULT(i) uvec4("
 		<< "i >= 32u ? 0u : 0x1u << i, "
 		<< "i < 32u || i >= 64u ? 0u : 0x1u << (i - 32u), "

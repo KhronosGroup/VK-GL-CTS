@@ -1048,7 +1048,7 @@ tcu::TestStatus SpvAsmPhysicalStorageBufferPushConstantsTestInstance::iterate (v
 	};
 
 	Move<VkPipelineLayout>			pipelineLayout		= makePipelineLayout(vki, dev, 0, DE_NULL, 1, &pushConstantRange);
-	Move<VkPipeline>				pipeline			= makeComputePipeline(vki, dev, *pipelineLayout, 0, *shaderModule, 0, DE_NULL);
+	Move<VkPipeline>				pipeline			= makeComputePipeline(vki, dev, *pipelineLayout, *shaderModule);
 
 	ut::TypedBuffer<deInt32>		src					(m_context, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, m_params->elements, true);
 	ut::TypedBuffer<deInt32>		dst					(m_context, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, m_params->elements, true);
@@ -1056,7 +1056,7 @@ tcu::TestStatus SpvAsmPhysicalStorageBufferPushConstantsTestInstance::iterate (v
 	src.iota(m_params->elements, true);
 	dst.zero(true);
 
-	const PushConstant				 pc					= { src.getDeviceAddress(), dst.getDeviceAddress(), deInt32(m_params->elements), (m_params->method == PassMethod::PUSH_CONSTANTS_FUNCTION ? 1 : 0) };
+	const PushConstant				 pc					= { src.getDeviceAddress(), dst.getDeviceAddress(), deInt32(m_params->elements), m_params->method == PassMethod::PUSH_CONSTANTS_FUNCTION };
 
 	beginCommandBuffer(vki, *cmdBuffer);
 		vki.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
@@ -1189,7 +1189,7 @@ tcu::TestStatus SpvAsmPhysicalStorageBufferAddrsInSSBOTestInstance::iterate (voi
 															.build(vki, dev, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 	Move<VkDescriptorSet>			descriptorSet		= makeDescriptorSet(vki, dev, *descriptorPool, *descriptorSetLayout);
 	Move<VkPipelineLayout>			pipelineLayout		= makePipelineLayout(vki, dev, 1u, &descriptorSetLayout.get());
-	Move<VkPipeline>				pipeline			= makeComputePipeline(vki, dev, *pipelineLayout, 0, *shaderModule, 0, DE_NULL);
+	Move<VkPipeline>				pipeline			= makeComputePipeline(vki, dev, *pipelineLayout, *shaderModule);
 
 
 	ut::TypedBuffer<deInt32>		src					(m_context, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, m_params->elements, true);

@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2017-2019 The Khronos Group Inc.
  * Copyright (c) 2018-2020 NVIDIA Corporation
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -170,8 +172,7 @@ protected:
 														 const VkClearValue&								clearColor,
 														 const VkClearValue&								clearDepthStencil);
 	void				beginLegacyRender				(VkCommandBuffer									cmdBuffer,
-														 VkRenderPass										renderPass,
-														 VkFramebuffer										framebuffer,
+														 RenderPassWrapper&									renderPass,
 														 VkImageView										srImageView,
 														 VkImageView										cbImageView,
 														 VkImageView										dsImageView,
@@ -181,7 +182,7 @@ protected:
 														 std::vector<GraphicsPipelineWrapper>&				pipelines,
 														 const std::vector<VkViewport>&						viewports,
 														 const std::vector<VkRect2D>&						scissors,
-														 const VkPipelineLayout								pipelineLayout,
+														 const PipelineLayoutWrapper&						pipelineLayout,
 														 const VkRenderPass									renderPass,
 														 const VkPipelineVertexInputStateCreateInfo*		vertexInputState,
 														 const VkPipelineDynamicStateCreateInfo*			dynamicState,
@@ -190,10 +191,10 @@ protected:
 														 const VkPipelineMultisampleStateCreateInfo*		multisampleState,
 														 VkPipelineFragmentShadingRateStateCreateInfoKHR*	shadingRateState,
 														 PipelineRenderingCreateInfoWrapper					dynamicRenderingState,
-														 const VkShaderModule								vertShader,
-														 const VkShaderModule								geomShader,
-														 const VkShaderModule								meshShader,
-														 const VkShaderModule								fragShader,
+														 const ShaderWrapper								vertShader,
+														 const ShaderWrapper								geomShader,
+														 const ShaderWrapper								meshShader,
+														 const ShaderWrapper								fragShader,
 														 const std::vector<VkDescriptorSet>&				descriptorSet,
 														 VkBuffer											vertexBuffer,
 														 const uint32_t										pushConstantSize);
@@ -207,13 +208,13 @@ protected:
 														 std::vector<GraphicsPipelineWrapper>&				pipelines,
 														 const std::vector<VkViewport>&						viewports,
 														 const std::vector<VkRect2D>&						scissors,
-														 const VkPipelineLayout								pipelineLayout,
-														 const VkRenderPass									renderPass,
+														 const PipelineLayoutWrapper&						pipelineLayout,
+														 const RenderPassWrapper&							renderPass,
 														 const VkPipelineRasterizationStateCreateInfo*		rasterizationState,
 														 const VkPipelineDepthStencilStateCreateInfo*		depthStencilState,
 														 const VkPipelineMultisampleStateCreateInfo*		multisampleState,
-														 const VkShaderModule								vertShader,
-														 const VkShaderModule								fragShader,
+														 const ShaderWrapper&								vertShader,
+														 const ShaderWrapper&								fragShader,
 														 const uint32_t										subpass,
 														 VkBuffer											vertexBuffer);
 
@@ -437,7 +438,7 @@ void FSRTestCase::checkSupport(Context& context) const
 			TCU_THROW(NotSupportedError, "multiviewMeshShader not supported");
 	}
 
-	checkPipelineLibraryRequirements(vki, physDev, m_data.groupParams->pipelineConstructionType);
+	checkPipelineConstructionRequirements(vki, physDev, m_data.groupParams->pipelineConstructionType);
 
 	if (m_data.earlyAndLateTest)
 	{
@@ -581,7 +582,13 @@ void FSRTestCase::initPrograms (SourceCollections& programCollection) const
 
 		mss <<
 			"#version 450 core\n"
-			"#extension GL_EXT_mesh_shader : enable\n"
+			"#extension GL_EXT_mesh_shader : enable\n";
+
+		if (m_data.shaderWritesRate) {
+			mss << "#extension GL_EXT_fragment_shading_rate : enable\n";
+		}
+
+		mss <<
 			"layout(local_size_x=3) in;\n"
 			"layout(triangles) out;\n"
 			"layout(max_vertices=3, max_primitives=1) out;\n"
@@ -1597,7 +1604,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 		&pushConstantRange,											// pPushConstantRanges
 	};
 
-	Move<VkPipelineLayout> pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo, NULL);
+	PipelineLayoutWrapper			pipelineLayout			(m_data.groupParams->pipelineConstructionType, vk, device, &pipelineLayoutCreateInfo, NULL);
 
 	const Unique<VkShaderModule>	cs						(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0));
 
@@ -1859,25 +1866,29 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				vk.updateDescriptorSets(device, 1u, &extraWrite, 0u, nullptr);
 			}
 
-			Move<VkRenderPass> renderPass;
-			Move<VkFramebuffer> framebuffer;
+			RenderPassWrapper renderPass;
 
+			std::vector<VkImage> images;
 			std::vector<VkImageView> attachments;
+			images.push_back(**cbImage);
 			attachments.push_back(*cbImageView);
 			deUint32 dsAttachmentIdx = 0, srAttachmentIdx = 0, secAttachmentIdx = 0;
 			if (m_data.useAttachment())
 			{
 				srAttachmentIdx = (deUint32)attachments.size();
+				images.push_back(**srImage);
 				attachments.push_back(*srImageView);
 			}
 			if (m_data.useDepthStencil)
 			{
 				dsAttachmentIdx = (deUint32)attachments.size();
+				images.push_back(**dsImage);
 				attachments.push_back(*dsImageView);
 			}
 			if (m_data.multiSubpasses)
 			{
 				secAttachmentIdx =  (deUint32)attachments.size();
+				images.push_back(**secCbImage);
 				attachments.push_back(*secCbImageView);
 			}
 
@@ -2099,7 +2110,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 					m_data.correlationMask ? &correlatedViewMask : DE_NULL		// pCorrelatedViewMasks
 				};
 
-				renderPass = createRenderPass2(vk, device, &renderPassParams);
+				renderPass = RenderPassWrapper(m_data.groupParams->pipelineConstructionType, vk, device, &renderPassParams);
 
 				std::vector<VkFramebufferAttachmentImageInfo> framebufferAttachmentImageInfo;
 				framebufferAttachmentImageInfo.push_back(
@@ -2182,7 +2193,7 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 					m_data.multiView ? 1 : m_data.numColorLayers,	// layers
 				};
 
-				framebuffer = createFramebuffer(vk, device, &framebufferParams);
+				renderPass.createFramebuffer(vk, device, &framebufferParams, images);
 			}
 
 			const VkVertexInputBindingDescription		vertexBinding =
@@ -2293,24 +2304,24 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			}
 
 			const auto& binaries = m_context.getBinaryCollection();
-			Move<VkShaderModule> fragShader = createShaderModule(vk, device, binaries.get("frag"), 0);
-			Move<VkShaderModule> vertShader;
-			Move<VkShaderModule> geomShader;
-			Move<VkShaderModule> meshShader;
+			ShaderWrapper fragShader = ShaderWrapper(vk, device, binaries.get("frag"), 0);
+			ShaderWrapper vertShader;
+			ShaderWrapper geomShader;
+			ShaderWrapper meshShader;
 
 			if (m_data.meshShader)
 			{
-				meshShader = createShaderModule(vk, device, binaries.get("mesh"), 0);
+				meshShader = ShaderWrapper(vk, device, binaries.get("mesh"), 0);
 			}
 			else
 			{
 				if (m_context.contextSupports(VK_API_VERSION_1_2))
-					vertShader = createShaderModule(vk, device, binaries.get("vert_1_2"), 0);
+					vertShader = ShaderWrapper(vk, device, binaries.get("vert_1_2"), 0);
 				else
-					vertShader = createShaderModule(vk, device, binaries.get("vert"), 0);
+					vertShader = ShaderWrapper(vk, device, binaries.get("vert"), 0);
 
 				if (m_data.geometryShader)
-					geomShader = createShaderModule(vk, device, binaries.get("geom"), 0);
+					geomShader = ShaderWrapper(vk, device, binaries.get("geom"), 0);
 			}
 
 			const deUint32 fragSizeWH = m_data.sampleMaskTest ? 2 : 1;
@@ -2417,10 +2428,10 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				else
 					beginSecondaryCmdBuffer(*secCmdBuffer, cbFormat, dsFormat);
 
-				drawCommands(*secCmdBuffer, pipelines, viewports, scissors, *pipelineLayout, *renderPass,
+				drawCommands(*secCmdBuffer, pipelines, viewports, scissors, pipelineLayout, *renderPass,
 							 &vertexInputStateCreateInfo, &dynamicStateCreateInfo, &rasterizationStateCreateInfo,
 							 &depthStencilStateParams, &multisampleStateCreateInfo, &shadingRateStateCreateInfo,
-							 renderingCreateInfoWrapper, *vertShader, *geomShader, *meshShader, *fragShader, descriptorSetsRaw, **vertexBuffer, pushConstantSize);
+							 renderingCreateInfoWrapper, vertShader, geomShader, meshShader, fragShader, descriptorSetsRaw, **vertexBuffer, pushConstantSize);
 
 				if (m_data.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 					endRendering(vk, *secCmdBuffer);
@@ -2447,10 +2458,10 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 				preRenderCommands(*cmdBuffer, cbImage.get(), dsImage.get(), secCbImage.get(), derivImage.get(), derivNumLevels, srImage.get(), srLayout,
 								  srFillBuffer.get(), numSRLayers, srWidth, srHeight, srFillBpp, clearColor, clearDepthStencil);
 				beginDynamicRender(*cmdBuffer, *srImageView, srLayout, srTexelSize, *cbImageView, *dsImageView, clearColor, clearDepthStencil);
-				drawCommands(*cmdBuffer, pipelines, viewports, scissors, *pipelineLayout, *renderPass,
+				drawCommands(*cmdBuffer, pipelines, viewports, scissors, pipelineLayout, *renderPass,
 							 &vertexInputStateCreateInfo, &dynamicStateCreateInfo, &rasterizationStateCreateInfo,
 							 &depthStencilStateParams, &multisampleStateCreateInfo, &shadingRateStateCreateInfo,
-							 renderingCreateInfoWrapper, *vertShader, *geomShader, *meshShader, *fragShader, descriptorSetsRaw, **vertexBuffer, pushConstantSize);
+							 renderingCreateInfoWrapper, vertShader, geomShader, meshShader, fragShader, descriptorSetsRaw, **vertexBuffer, pushConstantSize);
 				endRendering(vk, *cmdBuffer);
 			}
 #endif // CTS_USES_VULKANSC
@@ -2472,32 +2483,33 @@ tcu::TestStatus FSRTestInstance::iterate (void)
 			deMemcpy(vbuf2, &vertices[0], static_cast<std::size_t>(vertexBufferSize2));
 			flushAlloc(vk, device, secVertexBuf->getAllocation());
 
-			Move<VkShaderModule> fragSimpleShader = createShaderModule(vk, device, binaries.get("frag_simple"), 0);
-			Move<VkShaderModule> vertSimpleShader = createShaderModule(vk, device, binaries.get("vert_simple"), 0);
+			ShaderWrapper fragSimpleShader = ShaderWrapper(vk, device, binaries.get("frag_simple"), 0);
+			ShaderWrapper vertSimpleShader = ShaderWrapper(vk, device, binaries.get("vert_simple"), 0);
 
-			const Unique<VkPipelineLayout>	pipelineLayout1		(makePipelineLayout(vk, device));
+			PipelineLayoutWrapper	pipelineLayout1		(m_data.groupParams->pipelineConstructionType, vk, device);
 
 			if (!m_data.groupParams->useDynamicRendering)
 			{
 				beginCommandBuffer(vk, *cmdBuffer);
 				preRenderCommands(*cmdBuffer, cbImage.get(), dsImage.get(), secCbImage.get(), derivImage.get(), derivNumLevels, srImage.get(), srLayout,
 								  srFillBuffer.get(), numSRLayers, srWidth, srHeight, srFillBpp, clearColor, clearDepthStencil);
-				beginLegacyRender(*cmdBuffer, *renderPass, *framebuffer, *srImageView, *cbImageView, *dsImageView, *secCbImageView, imagelessFB);
-				drawCommands(*cmdBuffer, pipelines, viewports, scissors, *pipelineLayout, *renderPass,
+
+				beginLegacyRender(*cmdBuffer, renderPass, *srImageView, *cbImageView, *dsImageView, *secCbImageView, imagelessFB);
+				drawCommands(*cmdBuffer, pipelines, viewports, scissors, pipelineLayout, *renderPass,
 							 &vertexInputStateCreateInfo, &dynamicStateCreateInfo, &rasterizationStateCreateInfo,
 							 &depthStencilStateParams, &multisampleStateCreateInfo, &shadingRateStateCreateInfo,
-							 renderingCreateInfoWrapper, *vertShader, *geomShader, *meshShader, *fragShader, descriptorSetsRaw, **vertexBuffer, pushConstantSize);
+							 renderingCreateInfoWrapper, vertShader, geomShader, meshShader, fragShader, descriptorSetsRaw, **vertexBuffer, pushConstantSize);
 
 
 				if (m_data.multiSubpasses)
 				{
-					drawCommandsOnNormalSubpass(*cmdBuffer, pipelines, viewports, scissors, *pipelineLayout1, *renderPass,
+					drawCommandsOnNormalSubpass(*cmdBuffer, pipelines, viewports, scissors, pipelineLayout1, renderPass,
 							 &rasterizationStateCreateInfo, &depthStencilStateParams, &multisampleStateCreateInfo,
-							 *vertSimpleShader, *fragSimpleShader, 1u, **secVertexBuf);
+							 vertSimpleShader, fragSimpleShader, 1u, **secVertexBuf);
 
 				}
 
-				endRenderPass(vk, *cmdBuffer);
+				renderPass.end(vk, *cmdBuffer);
 
 				if (m_data.multiSubpasses)
 					copyImageToBufferOnNormalSubpass(*cmdBuffer, secCbImage.get(), secColorOutputBuffer.get(), colorOutputBufferSize);
@@ -3142,7 +3154,7 @@ void FSRTestInstance::preRenderCommands(VkCommandBuffer cmdBuffer, ImageWithMemo
 						  0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 }
 
-void FSRTestInstance::beginLegacyRender(VkCommandBuffer cmdBuffer, VkRenderPass renderPass, VkFramebuffer framebuffer,
+void FSRTestInstance::beginLegacyRender(VkCommandBuffer cmdBuffer, RenderPassWrapper& renderPass,
 										VkImageView srImageView, VkImageView cbImageView, VkImageView dsImageView, VkImageView secCbImageView, bool imagelessFB) const
 {
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
@@ -3177,29 +3189,30 @@ void FSRTestInstance::beginLegacyRender(VkCommandBuffer cmdBuffer, VkRenderPass 
 			clearVals.push_back(makeClearValueColorF32(0.0f, 0.0f, 0.0f, 0.0f));
 	}
 
-	beginRenderPass(vk, cmdBuffer, renderPass, framebuffer, renderArea,
-					m_data.dsClearOp ? static_cast<uint32_t>(clearVals.size()) : 0, m_data.dsClearOp ? clearVals.data(): nullptr,
-					VK_SUBPASS_CONTENTS_INLINE, imagelessFB ? &renderPassAttachmentBeginInfo : DE_NULL);
+	renderPass.begin(vk, cmdBuffer, renderArea, m_data.dsClearOp ? static_cast<uint32_t>(clearVals.size()) : 0, m_data.dsClearOp ? clearVals.data() : nullptr, VK_SUBPASS_CONTENTS_INLINE, imagelessFB ? &renderPassAttachmentBeginInfo : DE_NULL);
 }
 
 void FSRTestInstance::drawCommandsOnNormalSubpass(VkCommandBuffer									cmdBuffer,
 												  std::vector<GraphicsPipelineWrapper>&				pipelines,
 												  const std::vector<VkViewport>&					viewports,
 												  const std::vector<VkRect2D>&						scissors,
-												  const VkPipelineLayout							pipelineLayout,
-												  const VkRenderPass								renderPass,
+												  const PipelineLayoutWrapper&						pipelineLayout,
+												  const RenderPassWrapper&							renderPass,
 												  const VkPipelineRasterizationStateCreateInfo*		rasterizationState,
 												  const VkPipelineDepthStencilStateCreateInfo*		depthStencilState,
 												  const VkPipelineMultisampleStateCreateInfo*		multisampleState,
-												  const VkShaderModule								vertShader,
-												  const VkShaderModule								fragShader,
+												  const ShaderWrapper&								vertShader,
+												  const ShaderWrapper&								fragShader,
 												  const uint32_t									subpass,
 												  VkBuffer											vertexBuffer)
 {
-	const DeviceInterface&	vk		= m_context.getDeviceInterface();
-	const VkDevice			device	= m_context.getDevice();
+	const InstanceInterface&	vki					= m_context.getInstanceInterface();
+	const DeviceInterface&		vk					= m_context.getDeviceInterface();
+	const VkPhysicalDevice		physicalDevice		= m_context.getPhysicalDevice();
+	const VkDevice				device				= m_context.getDevice();
+	const auto&					deviceExtensions	= m_context.getDeviceExtensions();
 
-	pipelines.emplace_back(vk, device, m_data.groupParams->pipelineConstructionType);
+	pipelines.emplace_back(vki, vk, physicalDevice, device, deviceExtensions, m_data.groupParams->pipelineConstructionType);
 	auto& pipeline = pipelines.back();
 
 	pipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
@@ -3209,17 +3222,17 @@ void FSRTestInstance::drawCommandsOnNormalSubpass(VkCommandBuffer									cmdBuf
 			.setupPreRasterizationShaderState(viewports,
 											  scissors,
 											  pipelineLayout,
-											  renderPass,
+											  *renderPass,
 											  subpass,
 											  vertShader,
 											  rasterizationState)
 			.setupFragmentShaderState(pipelineLayout,
-									  renderPass,
+									  *renderPass,
 									  subpass,
 									  fragShader,
 									  depthStencilState,
 									  multisampleState)
-			.setupFragmentOutputState(renderPass, subpass, nullptr, multisampleState)
+			.setupFragmentOutputState(*renderPass, subpass, nullptr, multisampleState)
 			.setMonolithicPipelineLayout(pipelineLayout)
 			.buildPipeline();
 
@@ -3257,7 +3270,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 								   std::vector<GraphicsPipelineWrapper>&			pipelines,
 								   const std::vector<VkViewport>&					viewports,
 								   const std::vector<VkRect2D>&						scissors,
-								   const VkPipelineLayout							pipelineLayout,
+								   const PipelineLayoutWrapper&						pipelineLayout,
 								   const VkRenderPass								renderPass,
 								   const VkPipelineVertexInputStateCreateInfo*		vertexInputState,
 								   const VkPipelineDynamicStateCreateInfo*			dynamicState,
@@ -3266,17 +3279,19 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 								   const VkPipelineMultisampleStateCreateInfo*		multisampleState,
 								   VkPipelineFragmentShadingRateStateCreateInfoKHR*	shadingRateState,
 								   PipelineRenderingCreateInfoWrapper				dynamicRenderingState,
-								   const VkShaderModule								vertShader,
-								   const VkShaderModule								geomShader,
-								   const VkShaderModule								meshShader,
-								   const VkShaderModule								fragShader,
+								   const ShaderWrapper								vertShader,
+								   const ShaderWrapper								geomShader,
+								   const ShaderWrapper								meshShader,
+								   const ShaderWrapper								fragShader,
 								   const std::vector<VkDescriptorSet>&				descriptorSets,
 								   VkBuffer											vertexBuffer,
 								   const uint32_t									pushConstantSize)
 {
-	const DeviceInterface&	vk		= m_context.getDeviceInterface();
-	const VkDevice			device	= m_context.getDevice();
-	const bool				useMesh	= (meshShader != DE_NULL);
+	const InstanceInterface&	vki				= m_context.getInstanceInterface();
+	const DeviceInterface&		vk				= m_context.getDeviceInterface();
+	const VkPhysicalDevice		physicalDevice	= m_context.getPhysicalDevice();
+	const VkDevice				device			= m_context.getDevice();
+	const bool					useMesh			= (meshShader.isSet());
 
 #ifdef CTS_USES_VULKANSC
 	if (useMesh)
@@ -3305,7 +3320,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 		pipelineCreateFlags |= VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
 #endif // CTS_USES_VULKANSC
 
-	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), de::dataOrNull(descriptorSets), 0, DE_NULL);
+	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), de::dataOrNull(descriptorSets), 0, DE_NULL);
 
 	PipelineRenderingCreateInfoWrapper		pipelineRenderingCreateInfo = dynamicRenderingState;
 #ifndef CTS_USES_VULKANSC
@@ -3328,7 +3343,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 	// If using dynamic state, create a single graphics pipeline and bind it
 	if (m_data.useDynamicState)
 	{
-		pipelines.emplace_back(vk, device, m_data.groupParams->pipelineConstructionType, pipelineCreateFlags);
+		pipelines.emplace_back(vki, vk, physicalDevice, device, m_context.getDeviceExtensions(), m_data.groupParams->pipelineConstructionType, pipelineCreateFlags);
 		auto& pipeline = pipelines.back();
 
 		pipeline
@@ -3344,7 +3359,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 													  pipelineLayout,
 													  renderPass,
 													  0u,
-													  DE_NULL,
+													  ShaderWrapper(),
 													  meshShader,
 													  rasterizationState,
 													  nullptr,
@@ -3365,8 +3380,8 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 												  //1u,
 												  vertShader,
 												  rasterizationState,
-												  DE_NULL,
-												  DE_NULL,
+												  ShaderWrapper(),
+												  ShaderWrapper(),
 												  geomShader,
 												  DE_NULL,
 												  shadingRateState,
@@ -3408,7 +3423,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 		// Put primitive shading rate and instance index (used in mesh shading cases) in push constants.
 		pushConstantBlock.shadingRate	= PrimIDToPrimitiveShadingRate(i);
 		pushConstantBlock.instanceIndex	= static_cast<uint32_t>(i);
-		vk.cmdPushConstants(cmdBuffer, pipelineLayout, allShaderStages, 0, pushConstantSize, &pushConstantBlock);
+		vk.cmdPushConstants(cmdBuffer, *pipelineLayout, allShaderStages, 0, pushConstantSize, &pushConstantBlock);
 
 		if (m_data.useDynamicState)
 		{
@@ -3420,7 +3435,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 			// Create a new pipeline with the desired pipeline shading rate
 			shadingRateState->fragmentSize = ShadingRateEnumToExtent(PrimIDToPipelineShadingRate(i));
 
-			pipelines.emplace_back(vk, device, m_data.groupParams->pipelineConstructionType, pipelineCreateFlags);
+			pipelines.emplace_back(vki, vk, physicalDevice, device, m_context.getDeviceExtensions(), m_data.groupParams->pipelineConstructionType, pipelineCreateFlags);
 			auto& pipeline = pipelines.back();
 
 			pipeline
@@ -3436,7 +3451,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 														  pipelineLayout,
 														  renderPass,
 														  0u,
-														  DE_NULL,
+														  ShaderWrapper(),
 														  meshShader,
 														  rasterizationState,
 														  nullptr,
@@ -3456,8 +3471,8 @@ void FSRTestInstance::drawCommands(VkCommandBuffer									cmdBuffer,
 													  0u,
 													  vertShader,
 													  rasterizationState,
-													  DE_NULL,
-													  DE_NULL,
+													  ShaderWrapper(),
+													  ShaderWrapper(),
 													  geomShader,
 													  DE_NULL,
 													  shadingRateState,

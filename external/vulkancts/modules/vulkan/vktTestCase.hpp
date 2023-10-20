@@ -5,6 +5,8 @@
  * ------------------------
  *
  * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -128,6 +130,11 @@ public:
 	deUint32									getUsedApiVersion					(void) const;
 	deUint32									getSparseQueueFamilyIndex			(void) const;
 	vk::VkQueue									getSparseQueue						(void) const;
+	int										getComputeQueueFamilyIndex			(void) const;
+	vk::VkQueue									getComputeQueue						(void) const;
+	int										getTransferQueueFamilyIndex			(void) const;
+	vk::VkQueue									getTransferQueue				(void) const;
+
 	de::SharedPtr<vk::ResourceInterface>		getResourceInterface				(void) const;
 	vk::Allocator&								getDefaultAllocator					(void) const;
 	bool										contextSupports						(const deUint32 variantNum, const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const;
@@ -155,7 +162,7 @@ public:
 	vk::DebugReportRecorder&					getDebugReportRecorder			() const;
 #endif // CTS_USES_VULKANSC
 
-	void checkPipelineLibraryRequirements (const vk::PipelineConstructionType		pipelineConstructionType);
+	void checkPipelineConstructionRequirements (const vk::PipelineConstructionType		pipelineConstructionType);
 	void resetCommandPoolForVKSC													(const vk::VkDevice			device,
 																					 const vk::VkCommandPool	commandPool);
 	ContextCommonData getContextCommonData											();
@@ -190,7 +197,6 @@ class TestCase : public tcu::TestCase
 {
 public:
 							TestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description);
-							TestCase		(tcu::TestContext& testCtx, tcu::TestNodeType type, const std::string& name, const std::string& description);
 	virtual					~TestCase		(void) {}
 
 	virtual void			delayedInit		(void); // non-const init called after checkSupport but before initPrograms
@@ -219,11 +225,6 @@ private:
 
 inline TestCase::TestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description)
 	: tcu::TestCase(testCtx, name.c_str(), description.c_str())
-{
-}
-
-inline TestCase::TestCase (tcu::TestContext& testCtx, tcu::TestNodeType type, const std::string& name, const std::string& description)
-	: tcu::TestCase(testCtx, type, name.c_str(), description.c_str())
 {
 }
 

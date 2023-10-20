@@ -147,4 +147,19 @@ NotSupportedError::NotSupportedError (const std::string& message)
 {
 }
 
+QualityWarning::QualityWarning (const char* message, const char* expr, const char* file, int line)
+	: TestException(message, expr, file, line, QP_TEST_RESULT_QUALITY_WARNING)
+{
+}
+
+QualityWarning::QualityWarning (const std::string& message, const char* expr, const char* file, int line)
+	: TestException(message.c_str(), expr, file, line, QP_TEST_RESULT_QUALITY_WARNING)
+{
+}
+
+QualityWarning::QualityWarning (const std::string& message)
+	: TestException(message, QP_TEST_RESULT_QUALITY_WARNING)
+{
+}
+
 } // namespace tcu

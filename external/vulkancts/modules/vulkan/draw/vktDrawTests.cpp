@@ -51,6 +51,7 @@
 #include "vktDrawOutputLocationTests.hpp"
 #include "vktDrawDepthBiasTests.hpp"
 #include "vktDrawAhbTests.hpp"
+#include "vktDrawAhbExternalFormatResolveTests.hpp"
 #include "vktDrawMultiExtTests.hpp"
 #endif // CTS_USES_VULKANSC
 
@@ -101,14 +102,15 @@ void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, const
 		// subpasses can't be translated to dynamic rendering
 		group->addChild(createAhbTests						(testCtx));
 	}
+	group->addChild(createAhbExternalFormatResolveTests	(testCtx, groupParams));
 #endif // CTS_USES_VULKANSC
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> mainGroup						(new tcu::TestCaseGroup(testCtx, "draw", "Simple Draw tests"));
+	de::MovePtr<tcu::TestCaseGroup> mainGroup						(new tcu::TestCaseGroup(testCtx, name.c_str(), "Simple Draw tests"));
 	de::MovePtr<tcu::TestCaseGroup> renderpassGroup					(new tcu::TestCaseGroup(testCtx, "renderpass", "Draw using renderpass object"));
 
 	createChildren(testCtx, renderpassGroup.get(), SharedGroupParams(

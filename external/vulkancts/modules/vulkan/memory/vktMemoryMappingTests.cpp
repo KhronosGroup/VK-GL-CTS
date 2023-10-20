@@ -2044,7 +2044,7 @@ tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 					seed, function.memoryMap2
 				};
 				randomGroup->addChild(new InstanceFactory1WithSupport<RandomMemoryMappingInstance, RandomMappingConfig, FunctionSupport1<RandomMappingConfig>>
-					(testCtx, tcu::NODETYPE_SELF_VALIDATE, name, "Random case", config, typename FunctionSupport1<RandomMappingConfig>::Args(checkSupport, config)));
+					(testCtx, name, "Random case", config, typename FunctionSupport1<RandomMappingConfig>::Args(checkSupport, config)));
 			}
 		}
 

@@ -65,7 +65,7 @@ struct ExplicitModifier
 	VkSubresourceLayout*	pPlaneLayouts;
 };
 
-void checkModifiersSupported (Context& context, VkFormat)
+void checkModifiersSupported (Context& context, VkFormat format)
 {
 	if (!context.isDeviceFunctionalitySupported("VK_EXT_image_drm_format_modifier"))
 		TCU_THROW(NotSupportedError, "VK_EXT_image_drm_format_modifier is not supported");
@@ -78,6 +78,11 @@ void checkModifiersSupported (Context& context, VkFormat)
 
 	if (!context.isDeviceFunctionalitySupported("VK_KHR_image_format_list"))
 		TCU_THROW(NotSupportedError, "VK_KHR_image_format_list not supported");
+
+#ifndef CTS_USES_VULKANSC
+	if (format == VK_FORMAT_A8_UNORM_KHR || format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
 }
 
 void checkModifiersList2Supported (Context& context, VkFormat fmt)
@@ -957,9 +962,9 @@ tcu::TestStatus exportImportMemoryExplicitModifiersCase (Context& context, const
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup>	drmFormatModifiersGroup	(new tcu::TestCaseGroup(testCtx, "drm_format_modifiers", "DRM format modifiers tests"));
+	de::MovePtr<tcu::TestCaseGroup>	drmFormatModifiersGroup	(new tcu::TestCaseGroup(testCtx, name.c_str(), "DRM format modifiers tests"));
 	const VkFormat					formats[]				=
 	{
 		VK_FORMAT_R4G4_UNORM_PACK8,
@@ -970,6 +975,9 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
 		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_USCALED,
@@ -977,6 +985,9 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
 		VK_FORMAT_R8_SRGB,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_USCALED,

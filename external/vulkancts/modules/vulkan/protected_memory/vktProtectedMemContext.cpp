@@ -42,7 +42,7 @@ ProtectedContext::ProtectedContext	(Context&						ctx,
 		ctx.getResourceInterface(),
 #endif // CTS_USES_VULKANSC
 		ctx.getTestContext().getCommandLine()))
-	, m_deviceDriver		(m_context.getPlatformInterface(), m_instance, *m_device)
+	, m_deviceDriver		(m_context.getPlatformInterface(), m_instance, *m_device, m_context.getUsedApiVersion())
 	, m_allocator			(createAllocator())
 	, m_queue				(getProtectedQueue(m_deviceDriver, *m_device, m_queueFamilyIndex, 0))
 {
@@ -66,7 +66,7 @@ ProtectedContext::ProtectedContext	(Context&						ctx,
 		ctx.getResourceInterface(),
 #endif // CTS_USES_VULKANSC
 		ctx.getTestContext().getCommandLine()))
-	, m_deviceDriver		(m_interface, m_instance, *m_device)
+	, m_deviceDriver		(m_interface, m_instance, *m_device, m_context.getUsedApiVersion())
 	, m_allocator(createAllocator())
 	, m_queue				(getProtectedQueue(m_deviceDriver, *m_device, m_queueFamilyIndex, 0))
 {

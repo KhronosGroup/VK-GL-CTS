@@ -26,7 +26,10 @@
 #include "vkDefs.hpp"
 #include "vkRef.hpp"
 #include "vkMemUtil.hpp"
+#include "vkObjUtil.hpp"
 #include "vkBufferWithMemory.hpp"
+#include "vkBuilderUtil.hpp"
+#include "vkPrograms.hpp"
 
 #include "deFloat16.h"
 
@@ -587,6 +590,7 @@ public:
 	virtual void										setDeferredOperation					(const bool										deferredOperation,
 																								 const deUint32									workerThreadCount		= 0u ) = DE_NULL;
 	virtual void										setUseArrayOfPointers					(const bool										useArrayOfPointers) = DE_NULL;
+	virtual void										setUseMaintenance5						(const bool										useMaintenance5) = DE_NULL;
 	virtual void										setIndirectBuildParameters				(const VkBuffer									indirectBuffer,
 																								 const VkDeviceSize								indirectBufferOffset,
 																								 const deUint32									indirectBufferStride) = DE_NULL;
@@ -605,7 +609,8 @@ public:
 																								 const VkDeviceSize								creationBufferSize		= 0u) = DE_NULL;
 	virtual void										build									(const DeviceInterface&							vk,
 																								 const VkDevice									device,
-																								 const VkCommandBuffer							cmdBuffer) = DE_NULL;
+																								 const VkCommandBuffer							cmdBuffer,
+																								 BottomLevelAccelerationStructure*				srcAccelerationStructure = DE_NULL) = DE_NULL;
 	virtual void										copyFrom								(const DeviceInterface&							vk,
 																								 const VkDevice									device,
 																								 const VkCommandBuffer							cmdBuffer,
@@ -640,8 +645,10 @@ public:
 																								 Allocator&										allocator,
 																								 SerialStorage*									storage,
 																								 VkDeviceAddress								deviceAddress			= 0u);
-
 	virtual const VkAccelerationStructureKHR*			getPtr									(void) const = DE_NULL;
+	virtual void										updateGeometry							(size_t											geometryIndex,
+																								 de::SharedPtr<RaytracedGeometryBase>&			raytracedGeometry) = DE_NULL;
+
 protected:
 	std::vector<de::SharedPtr<RaytracedGeometryBase>>	m_geometriesData;
 	VkDeviceSize										m_structureSize;
@@ -978,6 +985,7 @@ public:
 																							 const void**											shaderGroupDataPtrPerGroup	= nullptr,
 																							 const bool												autoAlignRecords			= true);
 	void														setCreateFlags				(const VkPipelineCreateFlags&							pipelineCreateFlags);
+	void														setCreateFlags2				(const VkPipelineCreateFlags2KHR&						pipelineCreateFlags2);
 	void														setMaxRecursionDepth		(const deUint32&										maxRecursionDepth);
 	void														setMaxPayloadSize			(const deUint32&										maxPayloadSize);
 	void														setMaxAttributeSize			(const deUint32&										maxAttributeSize);
@@ -998,6 +1006,7 @@ protected:
 	std::vector<VkPipelineShaderStageCreateInfo>				m_shaderCreateInfos;
 	std::vector<VkRayTracingShaderGroupCreateInfoKHR>			m_shadersGroupCreateInfos;
 	VkPipelineCreateFlags										m_pipelineCreateFlags;
+	VkPipelineCreateFlags2KHR									m_pipelineCreateFlags2;
 	deUint32													m_maxRecursionDepth;
 	deUint32													m_maxPayloadSize;
 	deUint32													m_maxAttributeSize;

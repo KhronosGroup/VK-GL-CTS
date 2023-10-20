@@ -992,7 +992,7 @@ void initTests (tcu::TestCaseGroup* group, RenderingType renderingType)
 			const TestConfig	testConfig	(sampleCount, TESTMODE_ADD, 0, renderingType);
 			const std::string	testName	("numsamples_" + de::toString(sampleCount) + "_add");
 
-			group->addChild(new InstanceFactory1<SampleReadTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
+			group->addChild(new InstanceFactory1<SampleReadTestInstance, TestConfig, Programs>(testCtx, testName.c_str(), testName.c_str(), testConfig));
 		}
 
 		for (deUint32 sample = 0; sample < sampleCount; sample++)
@@ -1000,7 +1000,7 @@ void initTests (tcu::TestCaseGroup* group, RenderingType renderingType)
 			const TestConfig	testConfig	(sampleCount, TESTMODE_SELECT, sample, renderingType);
 			const std::string	testName	("numsamples_" + de::toString(sampleCount) + "_selected_sample_" + de::toString(sample));
 
-			group->addChild(new InstanceFactory1<SampleReadTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
+			group->addChild(new InstanceFactory1<SampleReadTestInstance, TestConfig, Programs>(testCtx, testName.c_str(), testName.c_str(), testConfig));
 		}
 	}
 }

@@ -74,6 +74,8 @@ struct TestParams
 	deBool					testMultiview;
 
 	deBool					dynamicState;
+
+	deBool					useMaintenance5Ext;
 };
 
 struct VertexPositionAndColor
@@ -233,7 +235,13 @@ private:
 	void										draw					(vk::VkCommandBuffer cmdBuffer,
 																		 vk::VkBuffer vertexBuffer, vk::VkBuffer instancedVertexBuffer,
 																		 de::SharedPtr<Buffer> indexBuffer, de::SharedPtr<Buffer> indirectBuffer,
-																		 deUint32 firstInstance, deUint32 instanceCount);
+																		 vk::VkDeviceSize indexBufferSize, deUint32 firstInstance, deUint32 instanceCount);
+	void										cmdBindIndexBufferImpl	(vk::VkCommandBuffer	commandBuffer,
+																		 vk::VkBuffer			indexBuffer,
+																		 vk::VkDeviceSize		offset,
+																		 vk::VkDeviceSize		size,
+																		 vk::VkIndexType		indexType);
+
 
 #ifndef CTS_USES_VULKANSC
 	void										beginSecondaryCmdBuffer	(vk::VkRenderingFlagsKHR renderingFlags = 0u);
@@ -345,6 +353,11 @@ public:
 			!context.getPortabilitySubsetFeatures().triangleFans)
 		{
 			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
+		}
+
+		if (m_params.useMaintenance5Ext)
+		{
+			context.requireDeviceFunctionality(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
 		}
 #endif // CTS_USES_VULKANSC
 	}
@@ -658,7 +671,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 				else
 					beginSecondaryCmdBuffer();
 
-				draw(*m_secCmdBuffer, vertexBuffer->object(), instancedVertexBuffer->object(), indexBuffer, indirectBuffer, firstInstance, instanceCount);
+				draw(*m_secCmdBuffer, vertexBuffer->object(), instancedVertexBuffer->object(), indexBuffer, indirectBuffer, (m_indexes.size() * sizeof(deUint32)), firstInstance, instanceCount);
 
 				if (m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 					endRendering(m_vk, *m_secCmdBuffer);
@@ -690,7 +703,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 
 				beginRendering(m_vk, *m_cmdBuffer, *m_colorTargetView, renderArea, clearColor, vk::VK_IMAGE_LAYOUT_GENERAL,
 							   vk::VK_ATTACHMENT_LOAD_OP_LOAD, 0u, layerCount, viewMask);
-				draw(*m_cmdBuffer, vertexBuffer->object(), instancedVertexBuffer->object(), indexBuffer, indirectBuffer, firstInstance, instanceCount);
+				draw(*m_cmdBuffer, vertexBuffer->object(), instancedVertexBuffer->object(), indexBuffer, indirectBuffer, (m_indexes.size() * sizeof(deUint32)), firstInstance, instanceCount);
 				endRendering(m_vk, *m_cmdBuffer);
 
 				endCommandBuffer(m_vk, *m_cmdBuffer);
@@ -703,7 +716,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 				preRenderCommands(clearColor, numLayers);
 
 				beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea);
-				draw(*m_cmdBuffer, vertexBuffer->object(), instancedVertexBuffer->object(), indexBuffer, indirectBuffer, firstInstance, instanceCount);
+				draw(*m_cmdBuffer, vertexBuffer->object(), instancedVertexBuffer->object(), indexBuffer, indirectBuffer, (m_indexes.size() * sizeof(deUint32)), firstInstance, instanceCount);
 				endRenderPass(m_vk, *m_cmdBuffer);
 
 				endCommandBuffer(m_vk, *m_cmdBuffer);
@@ -919,13 +932,30 @@ void InstancedDrawInstance::preRenderCommands(const vk::VkClearValue& clearColor
 							0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 }
 
+void InstancedDrawInstance::cmdBindIndexBufferImpl	(vk::VkCommandBuffer	commandBuffer,
+													 vk::VkBuffer			indexBuffer,
+													 vk::VkDeviceSize		offset,
+													 vk::VkDeviceSize		size,
+													 vk::VkIndexType		indexType)
+{
+#ifndef CTS_USES_VULKANSC
+	if (m_params.useMaintenance5Ext)
+		m_vk.cmdBindIndexBuffer2KHR(commandBuffer, indexBuffer, offset, size, indexType);
+	else
+#endif
+	{
+		DE_UNREF(size);
+		m_vk.cmdBindIndexBuffer(commandBuffer, indexBuffer, offset, indexType);
+	}
+}
+
 void InstancedDrawInstance::draw(vk::VkCommandBuffer cmdBuffer,
 								 vk::VkBuffer vertexBuffer, vk::VkBuffer instancedVertexBuffer,
 								 de::SharedPtr<Buffer> indexBuffer, de::SharedPtr<Buffer> indirectBuffer,
-								 deUint32 firstInstance, deUint32 instanceCount)
+								 vk::VkDeviceSize indexBufferSize, deUint32 firstInstance, deUint32 instanceCount)
 {
 	if (m_params.function == TestParams::FUNCTION_DRAW_INDEXED || m_params.function == TestParams::FUNCTION_DRAW_INDEXED_INDIRECT)
-		m_vk.cmdBindIndexBuffer(cmdBuffer, indexBuffer->object(), 0, vk::VK_INDEX_TYPE_UINT32);
+		cmdBindIndexBufferImpl(cmdBuffer, indexBuffer->object(), 0, indexBufferSize, vk::VK_INDEX_TYPE_UINT32);
 
 	const vk::VkBuffer		vertexBuffers[]			{ vertexBuffer,		instancedVertexBuffer	};
 	const vk::VkDeviceSize	vertexBufferOffsets[]	{ 0,				0 };
@@ -1114,7 +1144,8 @@ InstancedTests::InstancedTests(tcu::TestContext& testCtx, const SharedGroupParam
 								testAttribDivisor ? DE_TRUE : DE_FALSE,		// deBool					testAttribDivisor;
 								divisors[divisorNdx],						// deUint32					attribDivisor;
 								multiviews[multiviewNdx],					// deBool					testMultiview;
-								dynState == 0 ? false : true				// deBool					dynamicState;
+								dynState == 0 ? false : true,				// deBool					dynamicState;
+								false										// deBool					useMaintenance5Ext;
 							};
 
 							// Add multiview tests only when vertex attribute divisor is enabled.
@@ -1124,6 +1155,15 @@ InstancedTests::InstancedTests(tcu::TestContext& testCtx, const SharedGroupParam
 							std::string testName = de::toString(param);
 
 							addChild(new InstancedDrawCase(m_testCtx, de::toLower(testName), "Instanced drawing test", param));
+
+#ifndef CTS_USES_VULKANSC
+							if (TestParams::FUNCTION_DRAW_INDEXED == functions[functionNdx] || TestParams::FUNCTION_DRAW_INDEXED_INDIRECT == functions[functionNdx])
+							{
+								param.useMaintenance5Ext = true;
+								testName += "_maintenance_5";
+								addChild(new InstancedDrawCase(m_testCtx, de::toLower(testName), "Instanced drawing test using vkCmdBindIndexBuffer2KHR() introduced in VK_KHR_maintenance5", param));
+							}
+#endif // CTS_USES_VULKANSC
 						}
 					}
 				}

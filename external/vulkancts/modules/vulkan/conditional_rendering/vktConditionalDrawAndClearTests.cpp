@@ -159,6 +159,7 @@ struct DrawTestParams
 	bool						m_discard; //controls the setting of the predicate for conditional rendering.Initial state, may be toggled later depending on the m_togglePredicate setting.
 	bool						m_invert;
 	bool						m_useOffset;
+	bool						m_useMaintenance5;
 	deUint32					m_beginSequenceBits; //bits 0..3 control BEFORE which of the 4 draw calls the vkCmdBeginConditionalRenderingEXT call is executed. Least significant bit corresponds to the first draw call.
 	deUint32					m_endSequenceBits; //bits 0..3 control AFTER which of the 4 draw calls the vkCmdEndConditionalRenderingEXT call is executed. Least significant bit corresponds to the first draw call.
 	deUint32					m_resultBits; //used for reference image preparation.
@@ -189,37 +190,37 @@ enum
 
 const DrawTestParams drawTestGrid[] =
 {
-	{ false,	false,	false,	b0001, b1000, b1111, false,	NONE, HOST },
-	{ true,		false,	false,	b0001, b1000, b0000, false,	NONE, HOST },
-	{ true,		false,	false,	b0001, b0001, b1110, false,	NONE, HOST },
-	{ true,		false,	false,	b1111, b1111, b0000, false,	NONE, HOST },
-	{ true,		false,	false,	b0010, b0010, b1101, false,	NONE, HOST },
-	{ true,		true,	false,	b1010, b1010, b0101, false,	NONE, HOST },
-	{ false,	true,	true,	b1010, b1010, b1111, false,	NONE, HOST },
-	{ true,		true,	true,	b0010, b1000, b0001, false,	NONE, HOST },
-	{ true,		true,	true,	b1001, b1001, b0110, false,	NONE, HOST },
-	{ true,		true,	true,	b0010, b1000, b1111, true,	FILL, HOST },
-	{ true,		true,	true,	b1001, b1001, b1111, true,	FILL, HOST },
-	{ false,	true,	true,	b1001, b1001, b0110, true,	FILL, HOST },
-	{ true,		true,	true,	b0010, b1000, b1111, true,	COPY, HOST },
-	{ true,		true,	true,	b1001, b1001, b1111, true,	COPY, HOST },
-	{ false,	true,	true,	b1001, b1001, b0110, true,	COPY, HOST },
+	{ false,	false,	false,	false, b0001, b1000, b1111, false,	NONE, HOST },
+	{ true,		false,	false,	false, b0001, b1000, b0000, false,	NONE, HOST },
+	{ true,		false,	false,	false, b0001, b0001, b1110, false,	NONE, HOST },
+	{ true,		false,	false,	false, b1111, b1111, b0000, false,	NONE, HOST },
+	{ true,		false,	false,	false, b0010, b0010, b1101, false,	NONE, HOST },
+	{ true,		true,	false,	false, b1010, b1010, b0101, false,	NONE, HOST },
+	{ false,	true,	true,	false, b1010, b1010, b1111, false,	NONE, HOST },
+	{ true,		true,	true,	false, b0010, b1000, b0001, false,	NONE, HOST },
+	{ true,		true,	true,	false, b1001, b1001, b0110, false,	NONE, HOST },
+	{ true,		true,	true,	false, b0010, b1000, b1111, true,	FILL, HOST },
+	{ true,		true,	true,	false, b1001, b1001, b1111, true,	FILL, HOST },
+	{ false,	true,	true,	false, b1001, b1001, b0110, true,	FILL, HOST },
+	{ true,		true,	true,	false, b0010, b1000, b1111, true,	COPY, HOST },
+	{ true,		true,	true,	false, b1001, b1001, b1111, true,	COPY, HOST },
+	{ false,	true,	true,	false, b1001, b1001, b0110, true,	COPY, HOST },
 
-	{ false,	false,	false,	b0001, b1000, b1111, false,	NONE, LOCAL },
-	{ true,		false,	false,	b0001, b1000, b0000, false,	NONE, LOCAL },
-	{ true,		false,	false,	b0001, b0001, b1110, false,	NONE, LOCAL },
-	{ true,		false,	false,	b1111, b1111, b0000, false,	NONE, LOCAL },
-	{ true,		false,	false,	b0010, b0010, b1101, false,	NONE, LOCAL },
-	{ true,		true,	false,	b1010, b1010, b0101, false,	NONE, LOCAL },
-	{ false,	true,	true,	b1010, b1010, b1111, false,	NONE, LOCAL },
-	{ true,		true,	true,	b0010, b1000, b0001, false,	NONE, LOCAL },
-	{ true,		true,	true,	b1001, b1001, b0110, false,	NONE, LOCAL },
-	{ true,		true,	true,	b0010, b1000, b1111, true,	FILL, LOCAL },
-	{ true,		true,	true,	b1001, b1001, b1111, true,	FILL, LOCAL },
-	{ false,	true,	true,	b1001, b1001, b0110, true,	FILL, LOCAL },
-	{ true,		true,	true,	b0010, b1000, b1111, true,	COPY, LOCAL },
-	{ true,		true,	true,	b1001, b1001, b1111, true,	COPY, LOCAL },
-	{ false,	true,	true,	b1001, b1001, b0110, true,	COPY, LOCAL },
+	{ false,	false,	false,	false, b0001, b1000, b1111, false,	NONE, LOCAL },
+	{ true,		false,	false,	false, b0001, b1000, b0000, false,	NONE, LOCAL },
+	{ true,		false,	false,	false, b0001, b0001, b1110, false,	NONE, LOCAL },
+	{ true,		false,	false,	false, b1111, b1111, b0000, false,	NONE, LOCAL },
+	{ true,		false,	false,	false, b0010, b0010, b1101, false,	NONE, LOCAL },
+	{ true,		true,	false,	false, b1010, b1010, b0101, false,	NONE, LOCAL },
+	{ false,	true,	true,	false, b1010, b1010, b1111, false,	NONE, LOCAL },
+	{ true,		true,	true,	false, b0010, b1000, b0001, false,	NONE, LOCAL },
+	{ true,		true,	true,	false, b1001, b1001, b0110, false,	NONE, LOCAL },
+	{ true,		true,	true,	false, b0010, b1000, b1111, true,	FILL, LOCAL },
+	{ true,		true,	true,	false, b1001, b1001, b1111, true,	FILL, LOCAL },
+	{ false,	true,	true,	false, b1001, b1001, b0110, true,	FILL, LOCAL },
+	{ true,		true,	true,	false, b0010, b1000, b1111, true,	COPY, LOCAL },
+	{ true,		true,	true,	false, b1001, b1001, b1111, true,	COPY, LOCAL },
+	{ false,	true,	true,	false, b1001, b1001, b0110, true,	COPY, LOCAL },
 };
 
 struct UpdateBufferWithDrawTestParams
@@ -280,7 +281,7 @@ public:
 									ConditionalRenderingBaseTestInstance					(Context& context);
 protected:
 	virtual tcu::TestStatus			iterate													(void) = 0;
-	void							createInitBufferWithPredicate							(ConditionalBufferMemory memoryType, bool discard, bool invert, deUint32 offsetMultiplier, VkBufferUsageFlagBits extraUsage);
+	void							createInitBufferWithPredicate							(ConditionalBufferMemory memoryType, bool discard, bool invert, deUint32 offsetMultiplier, VkBufferUsageFlagBits extraUsage, bool maintenance5);
 	void							createTargetColorImageAndImageView						(void);
 	void							createTargetDepthImageAndImageView						(void);
 	void							createRenderPass										(VkFormat format, VkImageLayout layout);
@@ -392,18 +393,29 @@ ConditionalRenderingBaseTestInstance::ConditionalRenderingBaseTestInstance (Cont
 {
 }
 
-void ConditionalRenderingBaseTestInstance::createInitBufferWithPredicate (ConditionalBufferMemory memoryType, bool discard, bool invert, deUint32 offsetMultiplier = 0, VkBufferUsageFlagBits extraUsage = (VkBufferUsageFlagBits)0)
+void ConditionalRenderingBaseTestInstance::createInitBufferWithPredicate (ConditionalBufferMemory memoryType, bool discard, bool invert, deUint32 offsetMultiplier = 0, VkBufferUsageFlagBits extraUsage = (VkBufferUsageFlagBits)0, bool maintenance5 = false)
 {
 	m_conditionalRenderingBufferOffset		= sizeof(deUint32) * offsetMultiplier;
 
 	const VkDeviceSize						dataSize										= sizeof(deUint32) + m_conditionalRenderingBufferOffset;
 	deUint32								predicate										= discard ? invert : !invert;
 	const auto								usage											= (memoryType ? VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT : VK_BUFFER_USAGE_TRANSFER_SRC_BIT) | extraUsage;
+	BufferCreateInfo						createInfo										(dataSize, usage);
+
+#ifndef CTS_USES_VULKANSC
+	vk::VkBufferUsageFlags2CreateInfoKHR bufferUsageFlags2 = initVulkanStructure();
+	if (maintenance5)
+	{
+		bufferUsageFlags2.usage = (VkBufferUsageFlagBits2KHR)createInfo.usage;
+		createInfo.pNext = &bufferUsageFlags2;
+		createInfo.usage = 0;
+	}
+#endif // CTS_USES_VULKANSC
 
 	de::SharedPtr<Draw::Buffer> buffer = Buffer::createAndAlloc
 	(
 		m_vkd, m_device,
-		BufferCreateInfo( dataSize, usage ),
+		createInfo,
 		m_context.getDefaultAllocator(),
 		MemoryRequirement::HostVisible
 	);
@@ -415,16 +427,24 @@ void ConditionalRenderingBaseTestInstance::createInitBufferWithPredicate (Condit
 
 	if(memoryType == ConditionalBufferMemory::LOCAL)
 	{
+		createInfo.usage = VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT
+			| VK_BUFFER_USAGE_TRANSFER_DST_BIT
+			| extraUsage;
+		createInfo.pNext = nullptr;
+
+#ifndef CTS_USES_VULKANSC
+		if (maintenance5)
+		{
+			bufferUsageFlags2.usage = (VkBufferUsageFlagBits2KHR)createInfo.usage;
+			createInfo.pNext = &bufferUsageFlags2;
+			createInfo.usage = 0;
+		}
+#endif // CTS_USES_VULKANSC
+
 		m_conditionalRenderingBuffer = Buffer::createAndAlloc
 		(
 			m_vkd, m_device,
-			BufferCreateInfo
-			(
-				dataSize,
-				VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT
-				| VK_BUFFER_USAGE_TRANSFER_DST_BIT
-				| extraUsage
-			),
+			createInfo,
 			m_context.getDefaultAllocator(),
 			MemoryRequirement::Local
 		);
@@ -997,7 +1017,7 @@ tcu::TestStatus ConditionalRenderingDrawTestInstance::iterate (void)
 
 	m_cmdPool							= createCommandPool(m_vkd, m_device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
-	createInitBufferWithPredicate(m_testParams.m_memoryType, m_testParams.m_discard, m_testParams.m_invert, offsetMultiplier, bufferUsageExtraFlags);
+	createInitBufferWithPredicate(m_testParams.m_memoryType, m_testParams.m_discard, m_testParams.m_invert, offsetMultiplier, bufferUsageExtraFlags, m_testParams.m_useMaintenance5);
 
 	if (m_testParams.m_toggleMode == COPY)
 	{
@@ -1584,6 +1604,12 @@ void checkFan (Context& context)
 	}
 }
 
+void checkMaintenance5Support(Context& context)
+{
+	checkFan(context);
+	context.requireDeviceFunctionality("VK_KHR_maintenance5");
+}
+
 void checkFanAndVertexStores (Context& context)
 {
 	checkFan(context);
@@ -1609,22 +1635,28 @@ void ConditionalRenderingDrawAndClearTests::init (void)
 	tcu::TestCaseGroup*	draw	= new tcu::TestCaseGroup(m_testCtx, "draw", "Test drawing.");
 
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(clearColorTestGrid); testNdx++)
-		color->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, generateClearTestName(clearColorTestGrid[testNdx]), "Color clear test.", clearColorTestGrid[testNdx], checkSupport));
+		color->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, generateClearTestName(clearColorTestGrid[testNdx]), "Color clear test.", clearColorTestGrid[testNdx], checkSupport));
 
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(clearDepthTestGrid); testNdx++)
-		depth->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, generateClearTestName(clearDepthTestGrid[testNdx]), "Depth clear test.", clearDepthTestGrid[testNdx], checkSupport));
+		depth->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, generateClearTestName(clearDepthTestGrid[testNdx]), "Depth clear test.", clearDepthTestGrid[testNdx], checkSupport));
 
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(clearColorTwiceGrid); testNdx++)
-		color->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "clear_attachment_twice_" + generateClearTestName(clearColorTwiceGrid[testNdx]), "Color clear test.", clearColorTwiceGrid[testNdx], checkSupport));
+		color->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, "clear_attachment_twice_" + generateClearTestName(clearColorTwiceGrid[testNdx]), "Color clear test.", clearColorTwiceGrid[testNdx], checkSupport));
 
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(clearDepthTwiceGrid); testNdx++)
-		depth->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "clear_attachment_twice_" + generateClearTestName(clearDepthTwiceGrid[testNdx]), "Depth clear test.", clearDepthTwiceGrid[testNdx], checkSupport));
+		depth->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, "clear_attachment_twice_" + generateClearTestName(clearDepthTwiceGrid[testNdx]), "Depth clear test.", clearDepthTwiceGrid[testNdx], checkSupport));
 
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(drawTestGrid); testNdx++)
-		draw->addChild(new InstanceFactory1WithSupport<ConditionalRenderingDrawTestInstance, DrawTestParams, FunctionSupport0, AddProgramsDraw>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, generateDrawTestName(testNdx, drawTestGrid[testNdx]), "Draw test.", AddProgramsDraw(), drawTestGrid[testNdx], checkFan));
+		draw->addChild(new InstanceFactory1WithSupport<ConditionalRenderingDrawTestInstance, DrawTestParams, FunctionSupport0, AddProgramsDraw>(m_testCtx, generateDrawTestName(testNdx, drawTestGrid[testNdx]), "Draw test.", AddProgramsDraw(), drawTestGrid[testNdx], checkFan));
+
+#ifndef CTS_USES_VULKANSC
+	DrawTestParams maintenance5TestParams = drawTestGrid[5];
+	maintenance5TestParams.m_useMaintenance5 = true;
+	draw->addChild(new InstanceFactory1WithSupport<ConditionalRenderingDrawTestInstance, DrawTestParams, FunctionSupport0, AddProgramsDraw>(m_testCtx, "maintenance5", "", AddProgramsDraw(), maintenance5TestParams, checkMaintenance5Support));
+#endif
 
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(UpdateBufferWithDrawTestGrind); testNdx++)
-		draw->addChild(new InstanceFactory1WithSupport<ConditionalRenderingUpdateBufferWithDrawTestInstance, UpdateBufferWithDrawTestParams, FunctionSupport0, AddProgramsUpdateBufferUsingRendering>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, generateUpdateBufferWithDrawTestName(UpdateBufferWithDrawTestGrind[testNdx]), "Draw test.", AddProgramsUpdateBufferUsingRendering(), UpdateBufferWithDrawTestGrind[testNdx], checkFanAndVertexStores));
+		draw->addChild(new InstanceFactory1WithSupport<ConditionalRenderingUpdateBufferWithDrawTestInstance, UpdateBufferWithDrawTestParams, FunctionSupport0, AddProgramsUpdateBufferUsingRendering>(m_testCtx, generateUpdateBufferWithDrawTestName(UpdateBufferWithDrawTestGrind[testNdx]), "Draw test.", AddProgramsUpdateBufferUsingRendering(), UpdateBufferWithDrawTestGrind[testNdx], checkFanAndVertexStores));
 
 	clear->addChild(color);
 	clear->addChild(depth);

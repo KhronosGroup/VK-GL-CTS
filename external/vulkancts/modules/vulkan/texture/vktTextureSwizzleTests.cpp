@@ -71,6 +71,23 @@ public:
 						   this->m_testsParameters.programs,
 						   this->m_testsParameters.texCoordSwizzle);
 	}
+
+	virtual void	checkSupport	(Context& context) const
+	{
+		checkTextureSupport(context, this->m_testsParameters);
+
+#ifndef CTS_USES_VULKANSC
+		if ((this->m_testsParameters.aspectMask & VK_IMAGE_ASPECT_DEPTH_BIT) ||
+			(this->m_testsParameters.aspectMask & VK_IMAGE_ASPECT_STENCIL_BIT))
+		{
+			if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance5"))
+				TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance5 not supported");
+
+			if (!context.getMaintenance5Properties().depthStencilSwizzleOneSupport)
+				TCU_THROW(NotSupportedError, "Property depthStencilSwizzleOneSupport is not supported");
+		}
+#endif // CTS_USES_VULKANSC
+	}
 };
 
 struct Swizzle2DTestParameters : public Texture2DTestCaseParameters
@@ -142,10 +159,21 @@ tcu::TestStatus Swizzle2DTestInstance::iterate (void)
 
 	// Params for reference
 	sampleParams.sampler		= util::createSampler(m_testParameters.wrapS, m_testParameters.wrapT, m_testParameters.minFilter, m_testParameters.magFilter);
-	sampleParams.samplerType	= isCompressedFormat(m_testParameters.format) ? SAMPLERTYPE_FLOAT : getSamplerType(m_format);
 	sampleParams.lodMode		= LODMODE_EXACT;
 	sampleParams.colorBias		= tcu::Vec4(lookupBias);
 	sampleParams.colorScale		= tcu::Vec4(lookupScale);
+	if (m_testParameters.aspectMask == VK_IMAGE_ASPECT_COLOR_BIT)
+	{
+		sampleParams.samplerType = isCompressedFormat(m_testParameters.format) ? SAMPLERTYPE_FLOAT : getSamplerType(m_format);
+	}
+	else if(m_testParameters.aspectMask == VK_IMAGE_ASPECT_DEPTH_BIT)
+	{
+		sampleParams.samplerType	= SAMPLERTYPE_FLOAT;
+	}
+	else // VK_IMAGE_ASPECT_STENCIL_BIT
+	{
+		sampleParams.samplerType	= SAMPLERTYPE_UINT;
+	}
 
 	if (sampleParams.colorBias != tcu::Vec4(0.0f))
 		sampleParams.flags = RenderParams::USE_BIAS;
@@ -293,7 +321,7 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 	static const struct{
 		const VkFormat	format;
 		const Program	program;
-	} formats2D[] =
+	} colorFormats2D[] =
 	{
 		{ VK_FORMAT_R4G4_UNORM_PACK8,			PROGRAM_2D_FLOAT		},
 		{ VK_FORMAT_R4G4B4A4_UNORM_PACK16,		PROGRAM_2D_FLOAT		},
@@ -418,6 +446,32 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 		{ VK_FORMAT_ASTC_12x12_SRGB_BLOCK,		PROGRAM_2D_FLOAT		}
 	};
 
+#ifndef CTS_USES_VULKANSC
+	static const struct {
+		const VkFormat	format;
+		const Program	program;
+	} depthFormats2D[] =
+	{
+		{ VK_FORMAT_D16_UNORM,				PROGRAM_2D_FLOAT	},
+		{ VK_FORMAT_X8_D24_UNORM_PACK32,	PROGRAM_2D_FLOAT	},
+		{ VK_FORMAT_D32_SFLOAT,				PROGRAM_2D_FLOAT	},
+		{ VK_FORMAT_D16_UNORM_S8_UINT,		PROGRAM_2D_FLOAT	},
+		{ VK_FORMAT_D24_UNORM_S8_UINT,		PROGRAM_2D_FLOAT	},
+		{ VK_FORMAT_D32_SFLOAT_S8_UINT,		PROGRAM_2D_FLOAT	}
+	};
+
+	static const struct {
+		const VkFormat	format;
+		const Program	program;
+	} stencilFormats2D[] =
+	{
+		{ VK_FORMAT_S8_UINT,				PROGRAM_2D_UINT	},
+		{ VK_FORMAT_D16_UNORM_S8_UINT,		PROGRAM_2D_UINT	},
+		{ VK_FORMAT_D24_UNORM_S8_UINT,		PROGRAM_2D_UINT	},
+		{ VK_FORMAT_D32_SFLOAT_S8_UINT,		PROGRAM_2D_UINT	}
+	};
+#endif // CTS_USES_VULKANSC
+
 	static const struct {
 		const char*		name;
 		const deUint32	width;
@@ -465,16 +519,19 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 		{ "yy", { 1, 1 } }
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	groupCompMap	(new tcu::TestCaseGroup(testCtx, "component_mapping",	"Component mapping swizzles"));
-	de::MovePtr<tcu::TestCaseGroup>	groupTexCoord	(new tcu::TestCaseGroup(testCtx, "texture_coordinate",	"Texture coordinate swizzles"));
+	de::MovePtr<tcu::TestCaseGroup>	groupCompMap		(new tcu::TestCaseGroup(testCtx, "component_mapping",	"Component mapping swizzles"));
+	de::MovePtr<tcu::TestCaseGroup>	groupColor			(new tcu::TestCaseGroup(testCtx, "color",				"Color format swizzles"));
+	de::MovePtr<tcu::TestCaseGroup>	groupDepth			(new tcu::TestCaseGroup(testCtx, "depth",				"Depth format swizzles"));
+	de::MovePtr<tcu::TestCaseGroup>	groupStencil		(new tcu::TestCaseGroup(testCtx, "stencil",				"Stencil format swizzles"));
+	de::MovePtr<tcu::TestCaseGroup>	groupTexCoord		(new tcu::TestCaseGroup(testCtx, "texture_coordinate",	"Texture coordinate swizzles"));
 
-	// 2D Component mapping swizzles
+	// 2D Component mapping swizzles for color formats
 	for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes2D); sizeNdx++)
-	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats2D); formatNdx++)
+	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(colorFormats2D); formatNdx++)
 	for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
 	for (int mappingNdx = 0; mappingNdx < DE_LENGTH_OF_ARRAY(componentMappings); mappingNdx++)
 	{
-		const string formatStr	= de::toString(getFormatStr(formats2D[formatNdx].format));
+		const string formatStr	= de::toString(getFormatStr(colorFormats2D[formatNdx].format));
 		const string caseDesc	= formatStr + ", TEXTURETYPE_2D";
 		const string caseName	= de::toLower(formatStr.substr(10)) + "_2d"
 								+ "_" + sizes2D[sizeNdx].name
@@ -482,7 +539,7 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 								+ "_" + componentMappings[mappingNdx].name;
 
 		Swizzle2DTestParameters	testParameters;
-		testParameters.format			= formats2D[formatNdx].format;
+		testParameters.format			= colorFormats2D[formatNdx].format;
 		testParameters.backingMode		= backingModes[backingNdx].backingMode;
 		testParameters.componentMapping	= componentMappings[mappingNdx].componentMapping;
 		testParameters.width			= sizes2D[sizeNdx].width;
@@ -490,18 +547,75 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 		testParameters.minFilter		= tcu::Sampler::NEAREST;
 		testParameters.magFilter		= tcu::Sampler::NEAREST;
 		testParameters.aspectMask		= VK_IMAGE_ASPECT_COLOR_BIT;
-		testParameters.programs.push_back(formats2D[formatNdx].program);
+		testParameters.programs.push_back(colorFormats2D[formatNdx].program);
 
-		groupCompMap->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), caseDesc.c_str(), testParameters));
+		groupColor->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), caseDesc.c_str(), testParameters));
 	}
+	groupCompMap->addChild(groupColor.release());
+
+#ifndef CTS_USES_VULKANSC
+	// 2D Component mapping swizzles for depth formats
+	for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes2D); sizeNdx++)
+	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(depthFormats2D); formatNdx++)
+	for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
+	{
+		const string formatStr	= de::toString(getFormatStr(depthFormats2D[formatNdx].format));
+		const string caseDesc	= formatStr + ", TEXTURETYPE_2D";
+		const string caseName	= de::toLower(formatStr.substr(10)) + "_2d"
+								+ "_" + sizes2D[sizeNdx].name
+								+ backingModes[backingNdx].name
+								+ "_" + componentMappings[1].name;
+
+		Swizzle2DTestParameters	testParameters;
+		testParameters.format			= depthFormats2D[formatNdx].format;
+		testParameters.backingMode		= backingModes[backingNdx].backingMode;
+		testParameters.componentMapping	= componentMappings[1].componentMapping;
+		testParameters.width			= sizes2D[sizeNdx].width;
+		testParameters.height			= sizes2D[sizeNdx].height;
+		testParameters.minFilter		= tcu::Sampler::NEAREST;
+		testParameters.magFilter		= tcu::Sampler::NEAREST;
+		testParameters.aspectMask		= VK_IMAGE_ASPECT_DEPTH_BIT;
+		testParameters.programs.push_back(depthFormats2D[formatNdx].program);
+
+		groupDepth->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), caseDesc.c_str(), testParameters));
+	}
+	groupCompMap->addChild(groupDepth.release());
+
+	// 2D Component mapping swizzles for depth formats
+	for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes2D); sizeNdx++)
+	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(stencilFormats2D); formatNdx++)
+	for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
+	{
+		const string formatStr	= de::toString(getFormatStr(stencilFormats2D[formatNdx].format));
+		const string caseDesc	= formatStr + ", TEXTURETYPE_2D";
+		const string caseName	= de::toLower(formatStr.substr(10)) + "_2d"
+								+ "_" + sizes2D[sizeNdx].name
+								+ backingModes[backingNdx].name
+								+ "_" + componentMappings[1].name;
+
+		Swizzle2DTestParameters	testParameters;
+		testParameters.format			= stencilFormats2D[formatNdx].format;
+		testParameters.backingMode		= backingModes[backingNdx].backingMode;
+		testParameters.componentMapping	= componentMappings[1].componentMapping;
+		testParameters.width			= sizes2D[sizeNdx].width;
+		testParameters.height			= sizes2D[sizeNdx].height;
+		testParameters.minFilter		= tcu::Sampler::NEAREST;
+		testParameters.magFilter		= tcu::Sampler::NEAREST;
+		testParameters.aspectMask		= VK_IMAGE_ASPECT_STENCIL_BIT;
+		testParameters.programs.push_back(stencilFormats2D[formatNdx].program);
+
+		groupStencil->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), caseDesc.c_str(), testParameters));
+	}
+	groupCompMap->addChild(groupStencil.release());
+#endif // CTS_USES_VULKANSC
 
 	// 2D Texture coordinate swizzles
 	for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes2D); sizeNdx++)
-	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats2D); formatNdx++)
+	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(colorFormats2D); formatNdx++)
 	for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
 	for (int swizzleNdx = 0; swizzleNdx < DE_LENGTH_OF_ARRAY(texCoordSwizzles2d); swizzleNdx++)
 	{
-		const string formatStr	= de::toString(getFormatStr(formats2D[formatNdx].format));
+		const string formatStr	= de::toString(getFormatStr(colorFormats2D[formatNdx].format));
 		const string caseDesc	= formatStr + ", TEXTURETYPE_2D";
 		const string caseName	= de::toLower(formatStr.substr(10)) + "_2d"
 								+ "_" + sizes2D[sizeNdx].name
@@ -509,7 +623,7 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 								+ "_" + texCoordSwizzles2d[swizzleNdx].swizzle;
 
 		Swizzle2DTestParameters	testParameters;
-		testParameters.format			= formats2D[formatNdx].format;
+		testParameters.format			= colorFormats2D[formatNdx].format;
 		testParameters.backingMode		= backingModes[backingNdx].backingMode;
 		testParameters.componentMapping	= makeComponentMappingRGBA();
 		testParameters.texCoordSwizzle	= texCoordSwizzles2d[swizzleNdx].swizzle;
@@ -519,7 +633,7 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 		testParameters.minFilter		= tcu::Sampler::NEAREST;
 		testParameters.magFilter		= tcu::Sampler::NEAREST;
 		testParameters.aspectMask		= VK_IMAGE_ASPECT_COLOR_BIT;
-		testParameters.programs.push_back(formats2D[formatNdx].program);
+		testParameters.programs.push_back(colorFormats2D[formatNdx].program);
 
 		groupTexCoord->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), caseDesc.c_str(), testParameters));
 	}

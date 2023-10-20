@@ -209,6 +209,12 @@ static const FormatKey s_extTextureSRGBRG8Formats[] =
 	GL_SRG8_EXT,
 };
 
+static const FormatKey s_qcomRenderSRGBR8RG8Formats[] =
+{
+	GL_SR8_EXT,
+	GL_SRG8_EXT,
+};
+
 static const FormatExtEntry s_esExtFormats[] =
 {
 	{
@@ -388,6 +394,12 @@ static const FormatExtEntry s_esExtFormats[] =
 		"GL_EXT_texture_sRGB_RG8",
 		(deUint32)TEXTURE_VALID,
 		GLS_ARRAY_RANGE(s_extTextureSRGBRG8Formats)
+	},
+
+	{
+		"GL_QCOM_render_sRGB_R8_RG8",
+		(deUint32)(REQUIRED_RENDERABLE | COLOR_RENDERABLE | RENDERBUFFER_VALID | TEXTURE_VALID),
+		GLS_ARRAY_RANGE(s_qcomRenderSRGBR8RG8Formats)
 	},
 };
 

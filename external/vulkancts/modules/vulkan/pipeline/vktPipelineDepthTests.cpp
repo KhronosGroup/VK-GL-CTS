@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Imagination Technologies Ltd.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -214,11 +216,11 @@ private:
 	de::MovePtr<Allocation>				m_depthImageAlloc;
 	Move<VkImageView>					m_colorAttachmentView;
 	Move<VkImageView>					m_depthAttachmentView;
-	Move<VkRenderPass>					m_renderPass;
+	RenderPassWrapper					m_renderPass;
 	Move<VkFramebuffer>					m_framebuffer;
 
-	Move<VkShaderModule>				m_vertexShaderModule;
-	Move<VkShaderModule>				m_fragmentShaderModule;
+	ShaderWrapper						m_vertexShaderModule;
+	ShaderWrapper						m_fragmentShaderModule;
 
 	Move<VkBuffer>						m_vertexBuffer;
 	std::vector<Vertex4RGBA>			m_vertices;
@@ -228,7 +230,7 @@ private:
 	std::vector<Vertex4RGBA>			m_altVertices;
 	de::MovePtr<Allocation>				m_altVertexBufferAlloc;
 
-	Move<VkPipelineLayout>				m_pipelineLayout;
+	PipelineLayoutWrapper				m_pipelineLayout;
 	GraphicsPipelineWrapper				m_graphicsPipelines[DepthTest::QUAD_COUNT];
 	GraphicsPipelineWrapper				m_altGraphicsPipelines[DepthTest::QUAD_COUNT];
 
@@ -311,7 +313,7 @@ void DepthTest::checkSupport (Context& context) const
 	if (m_separateDepthStencilLayouts && !context.isDeviceFunctionalitySupported("VK_KHR_separate_depth_stencil_layouts"))
 		TCU_THROW(NotSupportedError, "VK_KHR_separate_depth_stencil_layouts is not supported");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 
 #ifndef CTS_USES_VULKANSC
 	if (m_depthClipControl != DepthClipControlCase::DISABLED && !context.isDeviceFunctionalitySupported("VK_EXT_depth_clip_control"))
@@ -394,17 +396,17 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 	, m_depthClipControl			(depthClipControl)
 	, m_graphicsPipelines
 	{
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType }
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType }
 	}
 	, m_altGraphicsPipelines
 	{
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType }
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), m_context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), m_context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), m_context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), m_context.getDeviceExtensions(), pipelineConstructionType }
 	}
 {
 	const DeviceInterface&		vk						= context.getDeviceInterface();
@@ -519,15 +521,20 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 	}
 
 	// Create render pass
-	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat, m_depthFormat);
+	m_renderPass = RenderPassWrapper(pipelineConstructionType, vk, vkDevice, m_colorFormat, m_depthFormat);
 
 	// Create framebuffer
 	{
+		std::vector<VkImage>			images;
 		std::vector<VkImageView>		attachmentBindInfos;
 
 		if (m_colorAttachmentEnable)
+		{
+			images.push_back(*m_colorImage);
 			attachmentBindInfos.push_back(*m_colorAttachmentView);
+		}
 
+		images.push_back(*m_depthImage);
 		attachmentBindInfos.push_back(*m_depthAttachmentView);
 
 		const VkFramebufferCreateInfo	framebufferParams	=
@@ -543,7 +550,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 			1u													// deUint32						layers;
 		};
 
-		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
+		m_renderPass.createFramebuffer(vk, vkDevice, &framebufferParams, images);
 	}
 
 	// Create pipeline layout
@@ -559,13 +566,13 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 			DE_NULL												// const VkPushConstantRange*		pPushConstantRanges;
 		};
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_pipelineLayout = PipelineLayoutWrapper(pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 	}
 
 	// Shader modules
-	m_vertexShaderModule		= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
+	m_vertexShaderModule		= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
 	if (m_colorAttachmentEnable)
-		m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
+		m_fragmentShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
 
 	const std::vector<VkViewport>	viewports		{ makeViewport(m_renderSize) };
 	const std::vector<VkViewport>	badViewports	{ makeViewport(0.0f, 0.0f, static_cast<float>(m_renderSize.x()) / 2.0f, static_cast<float>(m_renderSize.y()) / 2.0f, 1.0f, 0.0f) };
@@ -751,18 +758,18 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 										.setupVertexInputState(&vertexInputStateParams, &inputAssemblyStateParams)
 										.setupPreRasterizationShaderState((dynamicViewport ? badViewports : viewports),
 																	scissors,
-																	*m_pipelineLayout,
+																	m_pipelineLayout,
 																	*m_renderPass,
 																	0u,
-																	*m_vertexShaderModule,
+																	m_vertexShaderModule,
 																	&rasterizationStateParams)
-										.setupFragmentShaderState(*m_pipelineLayout,
+										.setupFragmentShaderState(m_pipelineLayout,
 																	*m_renderPass,
 																	0u,
-																	*m_fragmentShaderModule,
+																	m_fragmentShaderModule,
 																	&depthStencilStateParams)
 										.setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateCreateInfo)
-										.setMonolithicPipelineLayout(*m_pipelineLayout)
+										.setMonolithicPipelineLayout(m_pipelineLayout)
 										.buildPipeline();
 
 			if (useAltGraphicsPipelines)
@@ -776,18 +783,18 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 												   .setupVertexInputState(&vertexInputStateParams, &inputAssemblyStateParams)
 												   .setupPreRasterizationShaderState((dynamicViewport ? badViewports : viewports),
 																				scissors,
-																				*m_pipelineLayout,
+																				m_pipelineLayout,
 																				*m_renderPass,
 																				0u,
-																				*m_vertexShaderModule,
+																				m_vertexShaderModule,
 																				&rasterizationStateParams)
-												   .setupFragmentShaderState(*m_pipelineLayout,
+												   .setupFragmentShaderState(m_pipelineLayout,
 																		*m_renderPass,
 																		0u,
-																		*m_fragmentShaderModule,
+																		m_fragmentShaderModule,
 																		&depthStencilStateParams)
 												   .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateCreateInfo)
-												   .setMonolithicPipelineLayout(*m_pipelineLayout)
+												   .setMonolithicPipelineLayout(m_pipelineLayout)
 												   .buildPipeline();
 				}
 				else
@@ -799,18 +806,18 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 												   .setupVertexInputState(&vertexInputStateParams)
 												   .setupPreRasterizationShaderState((dynamicViewport ? badViewports : viewports),
 																					scissors,
-																					*m_pipelineLayout,
+																					m_pipelineLayout,
 																					*m_renderPass,
 																					0u,
-																					*m_vertexShaderModule,
+																					m_vertexShaderModule,
 																					&rasterizationStateParams)
-												   .setupFragmentShaderState(*m_pipelineLayout,
+												   .setupFragmentShaderState(m_pipelineLayout,
 																					*m_renderPass,
 																					0u,
-																					*m_fragmentShaderModule,
+																					m_fragmentShaderModule,
 																					&depthStencilStateParams)
 												   .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateCreateInfo)
-												   .setMonolithicPipelineLayout(*m_pipelineLayout)
+												   .setMonolithicPipelineLayout(m_pipelineLayout)
 												   .buildPipeline();
 				}
 			}
@@ -951,7 +958,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 			VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
 			0u, DE_NULL, 0u, DE_NULL, (deUint32)imageLayoutBarriers.size(), imageLayoutBarriers.data());
 
-		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), (deUint32)attachmentClearValues.size(), attachmentClearValues.data());
+		m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), (deUint32)attachmentClearValues.size(), attachmentClearValues.data());
 
 		const VkDeviceSize quadOffset = (m_vertices.size() / DepthTest::QUAD_COUNT) * sizeof(Vertex4RGBA);
 
@@ -961,7 +968,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 
 			if (m_depthClipControl == DepthClipControlCase::NORMAL_W && depthCompareOps[quadNdx] != vk::VK_COMPARE_OP_NEVER)
 			{
-				vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_altGraphicsPipelines[quadNdx].getPipeline());
+				m_altGraphicsPipelines[quadNdx].bind(*m_cmdBuffer);
 				vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_altVertexBuffer.get(), &vertexBufferOffset);
 				vk.cmdDraw(*m_cmdBuffer, (deUint32)(m_altVertices.size() / DepthTest::QUAD_COUNT), 1, 0, 0);
 			}
@@ -970,23 +977,45 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 				|| m_depthClipControl == DepthClipControlCase::BEFORE_DYNAMIC
 				|| m_depthClipControl == DepthClipControlCase::BEFORE_TWO_DYNAMICS)
 			{
-				vk.cmdSetViewport(*m_cmdBuffer, 0u, 1u, viewports.data());
+				if (vk::isConstructionTypeShaderObject(pipelineConstructionType))
+				{
+#ifndef CTS_USES_VULKANSC
+					vk.cmdSetViewportWithCount(*m_cmdBuffer, 1u, viewports.data());
+#else
+					vk.cmdSetViewportWithCountEXT(*m_cmdBuffer, 1u, viewports.data());
+#endif
+				}
+				else
+				{
+					vk.cmdSetViewport(*m_cmdBuffer, 0u, 1u, viewports.data());
+				}
 			}
 
 			if (m_depthClipControl == DepthClipControlCase::BEFORE_TWO_DYNAMICS)
-				vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_altGraphicsPipelines[quadNdx].getPipeline());
-			vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipelines[quadNdx].getPipeline());
+				m_altGraphicsPipelines[quadNdx].bind(*m_cmdBuffer);
+			m_graphicsPipelines[quadNdx].bind(*m_cmdBuffer);
 
 			if (m_depthClipControl == DepthClipControlCase::AFTER_DYNAMIC)
 			{
-				vk.cmdSetViewport(*m_cmdBuffer, 0u, 1u, viewports.data());
+				if (vk::isConstructionTypeShaderObject(pipelineConstructionType))
+				{
+#ifndef CTS_USES_VULKANSC
+					vk.cmdSetViewportWithCount(*m_cmdBuffer, 1u, viewports.data());
+#else
+					vk.cmdSetViewportWithCountEXT(*m_cmdBuffer, 1u, viewports.data());
+#endif
+				}
+				else
+				{
+					vk.cmdSetViewport(*m_cmdBuffer, 0u, 1u, viewports.data());
+				}
 			}
 
 			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 			vk.cmdDraw(*m_cmdBuffer, (deUint32)(m_vertices.size() / DepthTest::QUAD_COUNT), 1, 0, 0);
 		}
 
-		endRenderPass(vk, *m_cmdBuffer);
+		m_renderPass.end(vk, *m_cmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }
@@ -1280,7 +1309,7 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 	de::MovePtr<tcu::TestCaseGroup>	noColorAttachmentTests		(new tcu::TestCaseGroup(testCtx, "nocolor", "Depth tests with no color attachment"));
 
 	// Tests for format features
-	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+	if (!isConstructionTypeLibrary(pipelineConstructionType))
 	{
 		de::MovePtr<tcu::TestCaseGroup> formatFeaturesTests (new tcu::TestCaseGroup(testCtx, "format_features", "Checks depth format features"));
 

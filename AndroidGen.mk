@@ -32,6 +32,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkBufferWithMemory.cpp \
 	external/vulkancts/framework/vulkan/vkBuilderUtil.cpp \
 	external/vulkancts/framework/vulkan/vkCmdUtil.cpp \
+	external/vulkancts/framework/vulkan/vkComputePipelineConstructionUtil.cpp \
 	external/vulkancts/framework/vulkan/vkDebugReportUtil.cpp \
 	external/vulkancts/framework/vulkan/vkDefs.cpp \
 	external/vulkancts/framework/vulkan/vkDeviceFeatures.cpp \
@@ -54,6 +55,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkRenderDocUtil.cpp \
 	external/vulkancts/framework/vulkan/vkResourceInterface.cpp \
 	external/vulkancts/framework/vulkan/vkSafetyCriticalUtil.cpp \
+	external/vulkancts/framework/vulkan/vkShaderObjectUtil.cpp \
 	external/vulkancts/framework/vulkan/vkShaderProgram.cpp \
 	external/vulkancts/framework/vulkan/vkShaderToSpirV.cpp \
 	external/vulkancts/framework/vulkan/vkSpirVAsm.cpp \
@@ -84,10 +86,12 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/api/vktApiDeviceDrmPropertiesTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiDeviceInitializationTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiDriverPropertiesTests.cpp \
+	external/vulkancts/modules/vulkan/api/vktApiExtensionDuplicatesTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiExternalMemoryTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiFeatureInfo.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiFillBufferTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiFormatPropertiesExtendedKHRtests.cpp \
+	external/vulkancts/modules/vulkan/api/vktApiFrameBoundaryTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiGetDeviceProcAddrTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiGetMemoryCommitment.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiGranularityTests.cpp \
@@ -97,6 +101,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/api/vktApiMemoryRequirementInvarianceTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiNullHandleTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiObjectManagementTests.cpp \
+	external/vulkancts/modules/vulkan/api/vktApiPhysicalDeviceFormatPropertiesMaint5Tests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiPipelineTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiSmokeTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiTests.cpp \
@@ -133,6 +138,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/descriptor_indexing/vktDescriptorSetsIndexingTestsUtils.cpp \
 	external/vulkancts/modules/vulkan/device_group/vktDeviceGroupRendering.cpp \
 	external/vulkancts/modules/vulkan/draw/vktBasicDrawTests.cpp \
+	external/vulkancts/modules/vulkan/draw/vktDrawAhbExternalFormatResolveTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawAhbTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawBaseClass.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawBufferObjectUtil.cpp \
@@ -170,6 +176,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateDiscardTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateGeneralTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateInheritanceTests.cpp \
+	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateLineWidthTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateRSTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateTests.cpp \
 	external/vulkancts/modules/vulkan/dynamic_state/vktDynamicStateVPTests.cpp \
@@ -202,6 +209,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/image/vktImageCompressionTranscodingSupport.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageDepthStencilDescriptorTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageExtendedUsageBitTests.cpp \
+	external/vulkancts/modules/vulkan/image/vktImageHostImageCopyTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageLoadStoreTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageLoadStoreUtil.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageMisalignedCubeTests.cpp \
@@ -326,6 +334,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexInputTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexUtil.cpp \
 	external/vulkancts/modules/vulkan/postmortem/vktPostmortemDeviceFaultTests.cpp \
+	external/vulkancts/modules/vulkan/postmortem/vktPostmortemDeviceLossTests.cpp \
 	external/vulkancts/modules/vulkan/postmortem/vktPostmortemShaderTimeoutTests.cpp \
 	external/vulkancts/modules/vulkan/postmortem/vktPostmortemTests.cpp \
 	external/vulkancts/modules/vulkan/postmortem/vktPostmortemUseAfterFreeTests.cpp \
@@ -355,6 +364,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolPerformanceTests.cpp \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolStatisticsTests.cpp \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolTests.cpp \
+	external/vulkancts/modules/vulkan/rasterization/vktRasterizationDepthBiasControlTests.cpp \
 	external/vulkancts/modules/vulkan/rasterization/vktRasterizationFragShaderSideEffectsTests.cpp \
 	external/vulkancts/modules/vulkan/rasterization/vktRasterizationOrderAttachmentAccessTests.cpp \
 	external/vulkancts/modules/vulkan/rasterization/vktRasterizationProvokingVertexTests.cpp \
@@ -400,8 +410,10 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingTraversalControlTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingWatertightnessTests.cpp \
 	external/vulkancts/modules/vulkan/reconvergence/vktReconvergenceTests.cpp \
+	external/vulkancts/modules/vulkan/renderpass/vktDynamicRenderingDepthStencilResolveTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktDynamicRenderingRandomTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktDynamicRenderingTests.cpp \
+	external/vulkancts/modules/vulkan/renderpass/vktDynamicRenderingUnusedAttachmentsTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassDepthStencilResolveTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassDepthStencilWriteConditionsTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassDitheringTests.cpp \
@@ -437,6 +449,17 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/sc/vktPipelineIdentifierTests.cpp \
 	external/vulkancts/modules/vulkan/sc/vktSafetyCriticalApiTests.cpp \
 	external/vulkancts/modules/vulkan/sc/vktSafetyCriticalTests.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectApiTests.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectBinaryTests.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectBindingTests.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectCreateTests.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectCreateUtil.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectLinkTests.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectMiscTests.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectPerformanceTests.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectPipelineInteractionTests.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectRenderingTests.cpp \
+	external/vulkancts/modules/vulkan/shader_object/vktShaderObjectTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktAtomicOperationTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktOpaqueTypeIndexingTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderBuiltinPrecisionTests.cpp \
@@ -480,6 +503,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesShaderIntrinsicsStorage.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesTests.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesTestsUtil.cpp \
+	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesTransferQueueTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsm16bitStorageTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsm64bitCompareTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsm8bitStorageTests.cpp \
@@ -600,6 +624,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockCase.cpp \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockTests.cpp \
 	external/vulkancts/modules/vulkan/util/vktDrawUtil.cpp \
+	external/vulkancts/modules/vulkan/util/vktExternalMemoryAndroidHardwareBufferUtil.cpp \
 	external/vulkancts/modules/vulkan/util/vktExternalMemoryUtil.cpp \
 	external/vulkancts/modules/vulkan/util/vktTypeComparisonUtil.cpp \
 	external/vulkancts/modules/vulkan/video/vktBitstreamBufferImpl.cpp \
@@ -1377,6 +1402,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/renderpass \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/robustness \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/sc \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/shader_object \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/shaderexecutor \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/shaderrender \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/sparse_resources \

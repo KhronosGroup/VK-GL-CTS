@@ -384,21 +384,21 @@ void SpvAsmComputeShaderCase::checkSupport(Context& context) const
 
 	// Core features
 	// Check that we're not skipping tests needlessly based on things that don't affect compute.
-	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.fullDrawIndexUint32						== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.fullDrawIndexUint32					== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.independentBlend						== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.geometryShader							== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.tessellationShader						== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.sampleRateShading						== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.dualSrcBlend							== DE_FALSE);
-	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.logicOp									== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.logicOp								== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.multiDrawIndirect						== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.drawIndirectFirstInstance				== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.depthClamp								== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.depthBiasClamp							== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.fillModeNonSolid						== DE_FALSE);
-	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.depthBounds								== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.depthBounds							== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.wideLines								== DE_FALSE);
-	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.largePoints								== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.largePoints							== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.alphaToOne								== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.multiViewport							== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.occlusionQueryPrecise					== DE_FALSE);
@@ -408,7 +408,7 @@ void SpvAsmComputeShaderCase::checkSupport(Context& context) const
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.shaderClipDistance						== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.shaderCullDistance						== DE_FALSE);
 	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.sparseBinding							== DE_FALSE);
-	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.variableMultisampleRate					== DE_FALSE);
+	assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.variableMultisampleRate				== DE_FALSE);
 
 	const char* unsupportedFeature = DE_NULL;
 	if (!isVulkanFeaturesSupported(context, m_shaderSpec.requestedVulkanFeatures, &unsupportedFeature))
@@ -576,64 +576,61 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 											  (descType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
 		// Create image view and sampler
-		if (hasImage || hasSampler)
+		if (hasImage)
 		{
-			if (descType != VK_DESCRIPTOR_TYPE_SAMPLER)
+			const VkImageViewCreateInfo	imgViewParams	=
 			{
-				const VkImageViewCreateInfo	imgViewParams	=
+				VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	//	VkStructureType			sType;
+				DE_NULL,									//	const void*				pNext;
+				0u,											//	VkImageViewCreateFlags	flags;
+				**inputImages[imageNdx++],					//	VkImage					image;
+				VK_IMAGE_VIEW_TYPE_2D,						//	VkImageViewType			viewType;
+				VK_FORMAT_R32G32B32A32_SFLOAT,				//	VkFormat				format;
 				{
-					VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	//	VkStructureType			sType;
-					DE_NULL,									//	const void*				pNext;
-					0u,											//	VkImageViewCreateFlags	flags;
-					**inputImages[imageNdx++],					//	VkImage					image;
-					VK_IMAGE_VIEW_TYPE_2D,						//	VkImageViewType			viewType;
-					VK_FORMAT_R32G32B32A32_SFLOAT,				//	VkFormat				format;
-					{
-						VK_COMPONENT_SWIZZLE_R,
-						VK_COMPONENT_SWIZZLE_G,
-						VK_COMPONENT_SWIZZLE_B,
-						VK_COMPONENT_SWIZZLE_A
-					},											//	VkChannelMapping		channels;
-					{
-						VK_IMAGE_ASPECT_COLOR_BIT,					//	VkImageAspectFlags		aspectMask;
-						0u,											//	deUint32				baseMipLevel;
-						1u,											//	deUint32				mipLevels;
-						0u,											//	deUint32				baseArrayLayer;
-						1u,											//	deUint32				arraySize;
-					},											//	VkImageSubresourceRange	subresourceRange;
-				};
+					VK_COMPONENT_SWIZZLE_R,
+					VK_COMPONENT_SWIZZLE_G,
+					VK_COMPONENT_SWIZZLE_B,
+					VK_COMPONENT_SWIZZLE_A
+				},											//	VkChannelMapping		channels;
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,					//	VkImageAspectFlags		aspectMask;
+					0u,											//	deUint32				baseMipLevel;
+					1u,											//	deUint32				mipLevels;
+					0u,											//	deUint32				baseArrayLayer;
+					1u,											//	deUint32				arraySize;
+				},											//	VkImageSubresourceRange	subresourceRange;
+			};
 
-				Move<VkImageView>			imgView			(createImageView(vkdi, device, &imgViewParams));
-				inputImageViews.push_back(ImageViewHandleSp(new ImageViewHandleUp(imgView)));
-			}
+			Move<VkImageView>			imgView			(createImageView(vkdi, device, &imgViewParams));
+			inputImageViews.push_back(ImageViewHandleSp(new ImageViewHandleUp(imgView)));
+		}
 
-			if (hasSampler)
+		if (hasSampler)
+		{
+			const VkSamplerCreateInfo	samplerParams	=
 			{
-				const VkSamplerCreateInfo	samplerParams	=
-				{
-					VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,		// VkStructureType			sType;
-					DE_NULL,									// const void*				pNext;
-					0,											// VkSamplerCreateFlags		flags;
-					VK_FILTER_NEAREST,							// VkFilter					magFilter:
-					VK_FILTER_NEAREST,							// VkFilter					minFilter;
-					VK_SAMPLER_MIPMAP_MODE_NEAREST,				// VkSamplerMipmapMode		mipmapMode;
-					VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode		addressModeU;
-					VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode		addressModeV;
-					VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode		addressModeW;
-					0.0f,										// float					mipLodBias;
-					VK_FALSE,									// VkBool32					anistoropyEnable;
-					1.0f,										// float					maxAnisotropy;
-					VK_FALSE,									// VkBool32					compareEnable;
-					VK_COMPARE_OP_ALWAYS,						// VkCompareOp				compareOp;
-					0.0f,										// float					minLod;
-					0.0f,										// float					maxLod;
-					VK_BORDER_COLOR_INT_OPAQUE_BLACK,			// VkBorderColor			borderColor;
-					VK_FALSE									// VkBool32					unnormalizedCoordinates;
-				};
+				VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,		// VkStructureType			sType;
+				DE_NULL,									// const void*				pNext;
+				0,											// VkSamplerCreateFlags		flags;
+				VK_FILTER_NEAREST,							// VkFilter					magFilter:
+				VK_FILTER_NEAREST,							// VkFilter					minFilter;
+				VK_SAMPLER_MIPMAP_MODE_NEAREST,				// VkSamplerMipmapMode		mipmapMode;
+				VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode		addressModeU;
+				VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode		addressModeV;
+				VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode		addressModeW;
+				0.0f,										// float					mipLodBias;
+				VK_FALSE,									// VkBool32					anistoropyEnable;
+				1.0f,										// float					maxAnisotropy;
+				VK_FALSE,									// VkBool32					compareEnable;
+				VK_COMPARE_OP_ALWAYS,						// VkCompareOp				compareOp;
+				0.0f,										// float					minLod;
+				0.0f,										// float					maxLod;
+				VK_BORDER_COLOR_INT_OPAQUE_BLACK,			// VkBorderColor			borderColor;
+				VK_FALSE									// VkBool32					unnormalizedCoordinates;
+			};
 
-				Move<VkSampler>				sampler			(createSampler(vkdi, device, &samplerParams));
-				inputSamplers.push_back(SamplerHandleSp(new SamplerHandleUp(sampler)));
-			}
+			Move<VkSampler>				sampler			(createSampler(vkdi, device, &samplerParams));
+			inputSamplers.push_back(SamplerHandleSp(new SamplerHandleUp(sampler)));
 		}
 
 		// Create descriptor buffer and image infos

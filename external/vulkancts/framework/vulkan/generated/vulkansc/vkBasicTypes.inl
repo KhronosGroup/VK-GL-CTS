@@ -33,6 +33,7 @@
 #define VK_SHADER_UNUSED_KHR						(static_cast<uint32_t>			((~0U)))
 #define VK_MAX_GLOBAL_PRIORITY_SIZE_KHR				(static_cast<uint32_t>			(16))
 #define VK_MAX_SHADER_MODULE_IDENTIFIER_SIZE_EXT	(static_cast<uint32_t>			(32))
+#define VK_SHADER_INDEX_UNUSED_AMDX					(static_cast<uint32_t>			((~0U)))
 #define VKSC_API_MAX_FRAMEWORK_VERSION	VKSC_API_VERSION_1_0
 
 VK_DEFINE_HANDLE					(VkInstance,					HANDLE_TYPE_INSTANCE);
@@ -1142,7 +1143,7 @@ enum VkStructureType
 	VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO									= 1000044002,
 	VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES						= 1000044003,
 	VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO							= 1000044004,
-	VK_STRUCTURE_TYPE_PRIVATE_VENDOR_INFO_RESERVED_OFFSET_0_NV							= 1000051000,
+	VK_STRUCTURE_TYPE_PRIVATE_VENDOR_INFO_PLACEHOLDER_OFFSET_0_NV						= 1000051000,
 	VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO									= 1000053000,
 	VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES								= 1000053001,
 	VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES								= 1000053002,
@@ -2443,6 +2444,7 @@ enum VkDriverId
 	VK_DRIVER_ID_MESA_DOZEN						= 23,
 	VK_DRIVER_ID_MESA_NVK						= 24,
 	VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA	= 25,
+	VK_DRIVER_ID_MESA_AGXV						= 26,
 	VK_DRIVER_ID_MAX_ENUM						= 0x7FFFFFFF
 };
 typedef VkDriverId VkDriverIdKHR;
@@ -2641,6 +2643,10 @@ typedef uint32_t VkMicromapCreateFlagsEXT;
 
 typedef uint32_t VkDirectDriverLoadingFlagsLUNARG;
 
+typedef uint64_t VkPipelineCreateFlags2KHR;
+
+typedef uint64_t VkBufferUsageFlags2KHR;
+
 typedef uint32_t VkCompositeAlphaFlagsKHR;
 
 typedef uint32_t VkDisplayPlaneAlphaFlagsKHR;
@@ -2785,6 +2791,8 @@ typedef VkSubmitFlags VkSubmitFlagsKHR;
 
 typedef uint32_t VkImageFormatConstraintsFlagsFUCHSIA;
 
+typedef uint32_t VkHostImageCopyFlagsEXT;
+
 typedef uint32_t VkImageConstraintsInfoFlagsFUCHSIA;
 
 typedef uint32_t VkGraphicsPipelineLibraryFlagsEXT;
@@ -2804,6 +2812,8 @@ typedef uint32_t VkOpticalFlowUsageFlagsNV;
 typedef uint32_t VkOpticalFlowSessionCreateFlagsNV;
 
 typedef uint32_t VkOpticalFlowExecuteFlagsNV;
+
+typedef uint32_t VkFrameBoundaryFlagsEXT;
 
 typedef uint32_t VkPresentScalingFlagsEXT;
 

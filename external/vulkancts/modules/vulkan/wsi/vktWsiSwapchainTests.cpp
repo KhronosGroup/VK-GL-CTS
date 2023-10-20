@@ -60,6 +60,11 @@
 #include <algorithm>
 #include <iterator>
 
+#if (DE_OS == DE_OS_ANDROID)
+#include <thread>
+#include <chrono>
+#endif
+
 namespace vkt
 {
 namespace wsi
@@ -277,7 +282,7 @@ struct DeviceHelper
 												 queueFamilyIndex,
 												 context.getTestContext().getCommandLine().isValidationEnabled(),
 												 pAllocator))
-		, vkd				(context.getPlatformInterface(), instance, *device)
+		, vkd				(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion())
 		, queue				(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
 	{
 	}
@@ -320,7 +325,7 @@ struct MultiQueueDeviceHelper
 												 queueFamilyIndices,
 												 context.getTestContext().getCommandLine().isValidationEnabled(),
 												 pAllocator))
-		, vkd				(context.getPlatformInterface(), instance, *device)
+		, vkd				(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion())
 	{
 	}
 
@@ -913,6 +918,17 @@ tcu::TestStatus createSwapchainSimulateOOMTest (Context& context, TestParameters
 					// With concurrent sharing mode, at least two queues are needed.
 					if (curParams.imageSharingMode == VK_SHARING_MODE_CONCURRENT)
 						continue;
+
+#if (DE_OS == DE_OS_ANDROID)
+					// Give some extra time to deallocate memory from previous createSwapchainKHR calls with large dimensions on Android.
+					// 15ms was decided to be the safest amount of time, otherwise test may crash with an OOM issue.
+					constexpr deUint32 sleepInMs = 15;
+
+					if (params.dimension == TEST_DIMENSION_MIN_IMAGE_COUNT)
+					{
+						std::this_thread::sleep_for(std::chrono::milliseconds(sleepInMs));
+					}
+#endif
 
 					const Unique<VkSwapchainKHR>	swapchain	(createSwapchainKHR(devHelper.vkd, *devHelper.device, &curParams, failingAllocator.getCallbacks()));
 				}
@@ -1725,7 +1741,7 @@ tcu::TestStatus deviceGroupRenderTest (Context& context, Type wsiType)
 	};
 
 	Move<VkDevice>					groupDevice					= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), instHelper.instance, instHelper.vki, physicalDevicesInGroup[deviceIdx], &deviceCreateInfo);
-	const DeviceDriver				vkd							(context.getPlatformInterface(), instHelper.instance, *groupDevice);
+	const DeviceDriver				vkd							(context.getPlatformInterface(), instHelper.instance, *groupDevice, context.getUsedApiVersion());
 	VkQueue							queue						(getDeviceQueue(vkd, *groupDevice, queueFamilyIndex, 0));
 	SimpleAllocator					allocator					(vkd, *groupDevice, getPhysicalDeviceMemoryProperties(instHelper.vki, physicalDevicesInGroup[deviceIdx]));
 
@@ -1956,7 +1972,7 @@ tcu::TestStatus deviceGroupRenderTest2 (Context& context, Type wsiType)
 	};
 
 	Move<VkDevice>						groupDevice			= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), instHelper.instance, instHelper.vki, physicalDevicesInGroup[deviceIdx], &deviceCreateInfo);
-	const DeviceDriver					vkd					(context.getPlatformInterface(), instHelper.instance, *groupDevice);
+	const DeviceDriver					vkd					(context.getPlatformInterface(), instHelper.instance, *groupDevice, context.getUsedApiVersion());
 	VkQueue								queue				(getDeviceQueue(vkd, *groupDevice, queueFamilyIndex, 0));
 	SimpleAllocator						allocator			(vkd, *groupDevice, getPhysicalDeviceMemoryProperties(instHelper.vki, physicalDevicesInGroup[deviceIdx]));
 

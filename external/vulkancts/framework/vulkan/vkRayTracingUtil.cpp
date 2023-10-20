@@ -834,8 +834,6 @@ BufferWithMemory* createIndexBuffer (const DeviceInterface&										vk,
 									 Allocator&													allocator,
 									 const std::vector<de::SharedPtr<RaytracedGeometryBase>>&	geometriesData)
 {
-
-
 	const VkDeviceSize bufferSizeBytes = getIndexBufferSize(geometriesData);
 	return bufferSizeBytes ? createIndexBuffer(vk, device, allocator, bufferSizeBytes) : nullptr;
 }
@@ -889,6 +887,7 @@ public:
 	void													setDeferredOperation							(const bool										deferredOperation,
 																											 const deUint32									workerThreadCount) override;
 	void													setUseArrayOfPointers							(const bool										useArrayOfPointers) override;
+	void													setUseMaintenance5								(const bool										useMaintenance5) override;
 	void													setIndirectBuildParameters						(const VkBuffer									indirectBuffer,
 																											 const VkDeviceSize								indirectBufferOffset,
 																											 const deUint32									indirectBufferStride) override;
@@ -905,7 +904,8 @@ public:
 																											 const VkDeviceSize								creationBufferSize		= 0u) override;
 	void													build											(const DeviceInterface&							vk,
 																											 const VkDevice									device,
-																											 const VkCommandBuffer							cmdBuffer) override;
+																											 const VkCommandBuffer							cmdBuffer,
+																											 BottomLevelAccelerationStructure*				srcAccelerationStructure = DE_NULL) override;
 	void													copyFrom										(const DeviceInterface&							vk,
 																											 const VkDevice									device,
 																											 const VkCommandBuffer							cmdBuffer,
@@ -922,6 +922,8 @@ public:
 																											 SerialStorage*									storage) override;
 
 	const VkAccelerationStructureKHR*						getPtr											(void) const override;
+	void													updateGeometry									(size_t											geometryIndex,
+																											 de::SharedPtr<RaytracedGeometryBase>&			raytracedGeometry) override;
 
 protected:
 	VkAccelerationStructureBuildTypeKHR						m_buildType;
@@ -934,6 +936,7 @@ protected:
 	bool													m_deferredOperation;
 	deUint32												m_workerThreadCount;
 	bool													m_useArrayOfPointers;
+	bool													m_useMaintenance5;
 	de::MovePtr<BufferWithMemory>							m_accelerationStructureBuffer;
 	de::MovePtr<BufferWithMemory>							m_vertexBuffer;
 	de::MovePtr<BufferWithMemory>							m_indexBuffer;
@@ -1056,6 +1059,11 @@ void BottomLevelAccelerationStructureKHR::setUseArrayOfPointers (const bool	useA
 	m_useArrayOfPointers = useArrayOfPointers;
 }
 
+void BottomLevelAccelerationStructureKHR::setUseMaintenance5(const bool	useMaintenance5)
+{
+	m_useMaintenance5 = useMaintenance5;
+}
+
 void BottomLevelAccelerationStructureKHR::setIndirectBuildParameters (const VkBuffer		indirectBuffer,
 																	  const VkDeviceSize	indirectBufferOffset,
 																	  const deUint32		indirectBufferStride)
@@ -1142,7 +1150,16 @@ void BottomLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 
 	if (!externalCreationBuffer)
 	{
-		const VkBufferCreateInfo		bufferCreateInfo		= makeBufferCreateInfo(m_structureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+		VkBufferCreateInfo					bufferCreateInfo	= makeBufferCreateInfo(m_structureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+		VkBufferUsageFlags2CreateInfoKHR	bufferUsageFlags2	= vk::initVulkanStructure();
+
+		if (m_useMaintenance5)
+		{
+			bufferUsageFlags2.usage = VK_BUFFER_USAGE_2_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR;
+			bufferCreateInfo.pNext = &bufferUsageFlags2;
+			bufferCreateInfo.usage = 0;
+		}
+
 		const MemoryRequirement			memoryRequirement		= addMemoryRequirement | MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress;
 		const bool						bindMemOnCreation		= (!m_creationBufferUnbounded);
 
@@ -1197,14 +1214,31 @@ void BottomLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 
 	if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR && !m_geometriesData.empty())
 	{
-		m_vertexBuffer	= de::MovePtr<BufferWithMemory>(createVertexBuffer(vk, device, allocator, m_geometriesData));
-		m_indexBuffer	= de::MovePtr<BufferWithMemory>(createIndexBuffer(vk, device, allocator, m_geometriesData));
+		VkBufferCreateInfo bufferCreateInfo = makeBufferCreateInfo(getVertexBufferSize(m_geometriesData), VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+		VkBufferUsageFlags2CreateInfoKHR bufferUsageFlags2 = vk::initVulkanStructure();
+
+		if (m_useMaintenance5)
+		{
+			bufferUsageFlags2.usage = vk::VK_BUFFER_USAGE_2_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR;
+			bufferCreateInfo.pNext = &bufferUsageFlags2;
+			bufferCreateInfo.usage = 0;
+		}
+
+		const vk::MemoryRequirement memoryRequirement = MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress;
+		m_vertexBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, memoryRequirement));
+
+		bufferCreateInfo.size = getIndexBufferSize(m_geometriesData);
+		if (bufferCreateInfo.size)
+			m_indexBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, memoryRequirement));
+		else
+			m_indexBuffer = de::MovePtr<BufferWithMemory>(nullptr);
 	}
 }
 
 void BottomLevelAccelerationStructureKHR::build (const DeviceInterface&						vk,
 												 const VkDevice								device,
-												 const VkCommandBuffer						cmdBuffer)
+												 const VkCommandBuffer						cmdBuffer,
+												 BottomLevelAccelerationStructure*          srcAccelerationStructure)
 {
 	DE_ASSERT(!m_geometriesData.empty());
 	DE_ASSERT(m_accelerationStructureKHR.get() != DE_NULL);
@@ -1236,14 +1270,17 @@ void BottomLevelAccelerationStructureKHR::build (const DeviceInterface&						vk,
 																										? 0u
 																										: static_cast<deUint32>(accelerationStructureGeometriesKHR.size()));
 
+		VkAccelerationStructureKHR				srcStructure									= (srcAccelerationStructure != DE_NULL) ? *(srcAccelerationStructure->getPtr()) : DE_NULL;
+		VkBuildAccelerationStructureModeKHR		mode											= (srcAccelerationStructure != DE_NULL) ? VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR : VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+
 		VkAccelerationStructureBuildGeometryInfoKHR	accelerationStructureBuildGeometryInfoKHR	=
 		{
 			VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,			//  VkStructureType										sType;
 			DE_NULL,																	//  const void*											pNext;
 			VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,							//  VkAccelerationStructureTypeKHR						type;
 			m_buildFlags,																//  VkBuildAccelerationStructureFlagsKHR				flags;
-			VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,								//  VkBuildAccelerationStructureModeKHR					mode;
-			DE_NULL,																	//  VkAccelerationStructureKHR							srcAccelerationStructure;
+			mode,								//  VkBuildAccelerationStructureModeKHR					mode;
+			srcStructure,																	//  VkAccelerationStructureKHR							srcAccelerationStructure;
 			m_accelerationStructureKHR.get(),											//  VkAccelerationStructureKHR							dstAccelerationStructure;
 			geometryCount,																//  deUint32											geometryCount;
 			m_useArrayOfPointers ? DE_NULL : accelerationStructureGeometriesKHRPointer,	//  const VkAccelerationStructureGeometryKHR*			pGeometries;
@@ -1570,6 +1607,13 @@ void BottomLevelAccelerationStructure::createAndDeserializeFrom (const DeviceInt
 	DE_ASSERT(storage->getStorageSize() >= SerialStorage::SERIAL_STORAGE_SIZE_MIN);
 	create(vk, device, allocator, storage->getDeserializedSize(), deviceAddress);
 	deserialize(vk, device, cmdBuffer, storage);
+}
+
+void BottomLevelAccelerationStructureKHR::updateGeometry (size_t									geometryIndex,
+														  de::SharedPtr<RaytracedGeometryBase>&	raytracedGeometry)
+{
+	DE_ASSERT(geometryIndex < m_geometriesData.size());
+	m_geometriesData[geometryIndex] = raytracedGeometry;
 }
 
 de::MovePtr<BottomLevelAccelerationStructure> makeBottomLevelAccelerationStructure ()
@@ -2867,7 +2911,6 @@ void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 
 void TopLevelAccelerationStructureKHR::updateInstanceMatrix (const DeviceInterface& vk, const VkDevice device, size_t instanceIndex, const VkTransformMatrixKHR& matrix)
 {
-	DE_ASSERT(m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR);
 	DE_ASSERT(instanceIndex < m_bottomLevelInstances.size());
 	DE_ASSERT(instanceIndex < m_instanceData.size());
 
@@ -3394,6 +3437,7 @@ RayTracingPipeline::RayTracingPipeline ()
 	, m_shaderCreateInfos		()
 	, m_shadersGroupCreateInfos	()
 	, m_pipelineCreateFlags		(0U)
+	, m_pipelineCreateFlags2	(0U)
 	, m_maxRecursionDepth		(1U)
 	, m_maxPayloadSize			(0U)
 	, m_maxAttributeSize		(0U)
@@ -3583,7 +3627,7 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 		m_dynamicStates.data(),									// const VkDynamicState*				pDynamicStates;
 	};
 
-	const VkRayTracingPipelineCreateInfoKHR				pipelineCreateInfo				=
+	VkRayTracingPipelineCreateInfoKHR					pipelineCreateInfo
 	{
 		VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,	//  VkStructureType								sType;
 		DE_NULL,												//  const void*									pNext;
@@ -3603,6 +3647,14 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 	VkPipeline											object							= DE_NULL;
 	VkResult											result							= vk.createRayTracingPipelinesKHR(device, deferredOperation.get(), pipelineCache, 1u, &pipelineCreateInfo, DE_NULL, &object);
 	const bool											allowCompileRequired			= ((m_pipelineCreateFlags & VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT_EXT) != 0);
+
+	VkPipelineCreateFlags2CreateInfoKHR					pipelineFlags2CreateInfo		= initVulkanStructure();
+	if (m_pipelineCreateFlags2)
+	{
+		pipelineFlags2CreateInfo.flags	= m_pipelineCreateFlags2;
+		pipelineCreateInfo.pNext		= &pipelineFlags2CreateInfo;
+		pipelineCreateInfo.flags		= 0;
+	}
 
 	if (m_deferredOperation)
 	{
@@ -3748,12 +3800,21 @@ de::MovePtr<BufferWithMemory> RayTracingPipeline::createShaderBindingTable (cons
 	const VkBufferUsageFlags				sbtFlags						= VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | additionalBufferUsageFlags;
 	VkBufferCreateInfo						sbtCreateInfo					= makeBufferCreateInfo(sbtSize, sbtFlags);
 	sbtCreateInfo.flags														|= additionalBufferCreateFlags;
+	VkBufferUsageFlags2CreateInfoKHR		bufferUsageFlags2				= vk::initVulkanStructure();
 	VkBufferOpaqueCaptureAddressCreateInfo	sbtCaptureAddressInfo			=
 	{
 		VK_STRUCTURE_TYPE_BUFFER_OPAQUE_CAPTURE_ADDRESS_CREATE_INFO,	// VkStructureType	sType;
 		DE_NULL,														// const void*		pNext;
 		deUint64(opaqueCaptureAddress)									// deUint64			opaqueCaptureAddress;
 	};
+
+	// when maintenance5 is tested then m_pipelineCreateFlags2 is non-zero
+	if (m_pipelineCreateFlags2)
+	{
+		bufferUsageFlags2.usage = (VkBufferUsageFlags2KHR)sbtFlags;
+		sbtCreateInfo.pNext = &bufferUsageFlags2;
+		sbtCreateInfo.usage = 0;
+	}
 
 	if (opaqueCaptureAddress != 0u)
 	{
@@ -3791,6 +3852,11 @@ de::MovePtr<BufferWithMemory> RayTracingPipeline::createShaderBindingTable (cons
 void RayTracingPipeline::setCreateFlags (const VkPipelineCreateFlags& pipelineCreateFlags)
 {
 	m_pipelineCreateFlags = pipelineCreateFlags;
+}
+
+void RayTracingPipeline::setCreateFlags2 (const VkPipelineCreateFlags2KHR& pipelineCreateFlags2)
+{
+	m_pipelineCreateFlags2 = pipelineCreateFlags2;
 }
 
 void RayTracingPipeline::setMaxRecursionDepth (const deUint32& maxRecursionDepth)

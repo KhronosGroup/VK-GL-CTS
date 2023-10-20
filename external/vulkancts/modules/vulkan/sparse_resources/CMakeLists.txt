@@ -40,6 +40,8 @@ set(DEQP_VK_SPARSE_RESOURCES_SRCS
 	vktSparseResourcesTests.hpp
 	vktSparseResourcesTestsUtil.cpp
 	vktSparseResourcesTestsUtil.hpp
+	vktSparseResourcesTransferQueueTests.cpp
+	vktSparseResourcesTransferQueueTests.hpp
 	)
 
 PCH(DEQP_VK_SPARSE_RESOURCES_SRCS ../pch.cpp)

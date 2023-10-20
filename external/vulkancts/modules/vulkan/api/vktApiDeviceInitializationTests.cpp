@@ -687,7 +687,7 @@ tcu::TestStatus createDeviceTest (Context& context)
 	};
 
 	const Unique<VkDevice>			device					(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver				deviceDriver			(platformInterface, instance, device.get());
+	const DeviceDriver				deviceDriver			(platformInterface, instance, device.get(), context.getUsedApiVersion());
 	const VkQueue					queue					= getDeviceQueue(deviceDriver, *device,  queueFamilyIndex, queueIndex);
 
 	VK_CHECK(deviceDriver.queueWaitIdle(queue));
@@ -767,7 +767,7 @@ tcu::TestStatus createMultipleDevicesTest (Context& context)
 			}
 
 			{
-				const DeviceDriver	deviceDriver	(platformInterface, instances.back(), devices[deviceNdx]);
+				const DeviceDriver	deviceDriver	(platformInterface, instances.back(), devices[deviceNdx], context.getUsedApiVersion());
 				const VkQueue		queue			= getDeviceQueue(deviceDriver, devices[deviceNdx], queueFamilyIndex, queueIndex);
 
 				VK_CHECK(deviceDriver.queueWaitIdle(queue));
@@ -784,7 +784,7 @@ tcu::TestStatus createMultipleDevicesTest (Context& context)
 		{
 			if (devices[deviceNdx] != (VkDevice)DE_NULL)
 			{
-				DeviceDriver deviceDriver(platformInterface, instances[deviceNdx], devices[deviceNdx]);
+				DeviceDriver deviceDriver(platformInterface, instances[deviceNdx], devices[deviceNdx], context.getUsedApiVersion());
 				deviceDriver.destroyDevice(devices[deviceNdx], DE_NULL/*pAllocator*/);
 			}
 		}
@@ -796,7 +796,7 @@ tcu::TestStatus createMultipleDevicesTest (Context& context)
 	{
 		if (devices[deviceNdx] != (VkDevice)DE_NULL)
 		{
-			DeviceDriver deviceDriver(platformInterface, instances[deviceNdx], devices[deviceNdx]);
+			DeviceDriver deviceDriver(platformInterface, instances[deviceNdx], devices[deviceNdx], context.getUsedApiVersion());
 			deviceDriver.destroyDevice(devices[deviceNdx], DE_NULL/*pAllocator*/);
 		}
 	}
@@ -860,7 +860,7 @@ tcu::TestStatus createDeviceWithUnsupportedExtensionsTest (Context& context)
 
 		if (device)
 		{
-			const DeviceDriver	deviceIface	(platformInterface, instance, device);
+			const DeviceDriver	deviceIface	(platformInterface, instance, device, context.getUsedApiVersion());
 			deviceIface.destroyDevice(device, DE_NULL/*pAllocator*/);
 		}
 
@@ -947,7 +947,7 @@ tcu::TestStatus createDeviceWithVariousQueueCountsTest (Context& context)
 		};
 
 		const Unique<VkDevice>			device				(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-		const DeviceDriver				deviceDriver		(platformInterface, instance, device.get());
+		const DeviceDriver				deviceDriver		(platformInterface, instance, device.get(), context.getUsedApiVersion());
 		const deUint32					queueFamilyIndex	= deviceCreateInfo.pQueueCreateInfos->queueFamilyIndex;
 		const deUint32					queueCount			= deviceCreateInfo.pQueueCreateInfos->queueCount;
 
@@ -1087,7 +1087,7 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context, bool useKh
 		try
 		{
 			const Unique<VkDevice>		device				(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-			const DeviceDriver			deviceDriver		(platformInterface, instance, device.get());
+			const DeviceDriver			deviceDriver		(platformInterface, instance, device.get(), context.getUsedApiVersion());
 			const deUint32				queueFamilyIndex	= deviceCreateInfo.pQueueCreateInfos->queueFamilyIndex;
 			const VkQueue				queue				= getDeviceQueue(deviceDriver, *device, queueFamilyIndex, 0);
 			VkResult					result;
@@ -1272,7 +1272,7 @@ tcu::TestStatus createDeviceWithQueriedGlobalPriorityTest (Context& context, boo
 			try
 			{
 				const Unique<VkDevice>		device				(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-				const DeviceDriver			deviceDriver		(platformInterface, instance, device.get());
+				const DeviceDriver			deviceDriver		(platformInterface, instance, device.get(), context.getUsedApiVersion());
 				const VkQueue				queue				= getDeviceQueue(deviceDriver, *device, ndx, 0);
 
 				TCU_CHECK(!!queue);
@@ -1367,7 +1367,7 @@ tcu::TestStatus createDeviceFeatures2Test (Context& context)
 
 	{
 		const Unique<VkDevice>	device		(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &deviceCreateInfo));
-		const DeviceDriver		vkd			(vkp, instance, device.get());
+		const DeviceDriver		vkd			(vkp, instance, device.get(), context.getUsedApiVersion());
 		const VkQueue			queue		= getDeviceQueue(vkd, *device, queueFamilyIndex, queueIndex);
 
 		VK_CHECK(vkd.queueWaitIdle(queue));
@@ -1384,7 +1384,7 @@ struct Feature
 
 #define FEATURE_ITEM(STRUCT, MEMBER) {#MEMBER, DE_OFFSET_OF(STRUCT, MEMBER)}
 // This macro is used to avoid the "out of array bounds" compiler warnings/errors in the checkFeatures function.
-#define SAFE_OFFSET(LIMITING_STRUCT, STRUCT, MEMBER) std::min(static_cast<deUint32>(sizeof(LIMITING_STRUCT) - sizeof(VkBool32)), DE_OFFSET_OF(STRUCT, MEMBER))
+#define SAFE_OFFSET(LIMITING_STRUCT, STRUCT, MEMBER) std::min<size_t>(sizeof(LIMITING_STRUCT) - sizeof(VkBool32), DE_OFFSET_OF(STRUCT, MEMBER))
 
 template<typename StructType>
 void checkFeatures (const PlatformInterface&				vkp,
@@ -1404,7 +1404,8 @@ void checkFeatures (const PlatformInterface&				vkp,
 #ifdef CTS_USES_VULKANSC
 					VkDeviceObjectReservationCreateInfo		memReservationStatMax,
 #endif // CTS_USES_VULKANSC
-					bool									isSubProcess
+					bool									isSubProcess,
+					uint32_t								usedApiVersion
 	)
 {
 	struct StructureBase
@@ -1578,7 +1579,7 @@ void checkFeatures (const PlatformInterface&				vkp,
 		}
 		if (device != (VkDevice)DE_NULL)
 		{
-			DeviceDriver deviceDriver(vkp, instance, device);
+			DeviceDriver deviceDriver(vkp, instance, device, usedApiVersion);
 			deviceDriver.destroyDevice(device, DE_NULL);
 		}
 	}
@@ -1716,7 +1717,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest (Context& context)
 
 			if (device != DE_NULL)
 			{
-				DeviceDriver deviceDriver(vkp, instance, device);
+				DeviceDriver deviceDriver(vkp, instance, device, context.getUsedApiVersion());
 				deviceDriver.destroyDevice(device, DE_NULL);
 			}
 		}
@@ -1803,7 +1804,7 @@ tcu::TestStatus createDeviceQueue2Test (Context& context)
 
 	{
 		const Unique<VkDevice>				device					(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-		const DeviceDriver					deviceDriver			(platformInterface, instance, device.get());
+		const DeviceDriver					deviceDriver			(platformInterface, instance, device.get(), context.getUsedApiVersion());
 		const VkQueue						queue2					= getDeviceQueue2(deviceDriver, *device, &deviceQueueInfo2);
 
 		VK_CHECK(deviceDriver.queueWaitIdle(queue2));
@@ -1978,7 +1979,7 @@ bool runQueueCreationTestCombination (Context& context, tcu::ResultCollector& re
 	const VkInstance						instance				= context.getInstance();
 
 	const Unique<VkDevice>					device					(createProtectedDeviceWithQueueConfig(context, queueCreateInfo, dumpExtraInfo));
-	const DeviceDriver						deviceDriver			(platformInterface, instance, *device);
+	const DeviceDriver						deviceDriver			(platformInterface, instance, *device, context.getUsedApiVersion());
 
 	for (const QueueCreationInfo& info : testCombination)
 	{
@@ -2721,7 +2722,7 @@ tcu::TestStatus createInstanceDeviceIntentionalAllocFail (Context& context)
 		else if (result != VK_SUCCESS)
 			return tcu::TestStatus::fail("VkCreateDevice returned " + de::toString(result));
 
-		DeviceDriver(vkp, instance, device).destroyDevice(device, &allocationCallbacks);
+		DeviceDriver(vkp, instance, device, context.getUsedApiVersion()).destroyDevice(device, &allocationCallbacks);
 		vki.destroyInstance(instance, &allocationCallbacks);
 		if (max_allowed_alloc == 0)
 		{
@@ -2775,7 +2776,7 @@ static void addFunctionCaseInNewSubgroup (
 	Arg0										arg0)
 {
 	de::MovePtr<tcu::TestCaseGroup>	subgroup(new tcu::TestCaseGroup(testCtx, subgroupName.c_str(), subgroupDescription.c_str()));
-	subgroup->addChild(createFunctionCase<Arg0>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "basic", "", checkSupport, testFunc, arg0));
+	subgroup->addChild(createFunctionCase<Arg0>(testCtx, "basic", "", checkSupport, testFunc, arg0));
 	group->addChild(subgroup.release());
 }
 

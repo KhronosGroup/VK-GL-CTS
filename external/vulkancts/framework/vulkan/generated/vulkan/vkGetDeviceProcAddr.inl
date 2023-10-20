@@ -54,18 +54,7 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		DE_NULL,									//  const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	const Unique<VkDevice>					device			(createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get());
-
-	const std::vector<std::string> loaderExceptions{
-		"vkSetDebugUtilsObjectNameEXT",
-		"vkSetDebugUtilsObjectTagEXT",
-		"vkQueueBeginDebugUtilsLabelEXT",
-		"vkQueueEndDebugUtilsLabelEXT",
-		"vkQueueInsertDebugUtilsLabelEXT",
-		"vkCmdBeginDebugUtilsLabelEXT",
-		"vkCmdEndDebugUtilsLabelEXT",
-		"vkCmdInsertDebugUtilsLabelEXT",
-	};
+	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion());
 
 	const std::vector<std::string> functions{
 		"vkDestroySurfaceKHR",
@@ -227,6 +216,13 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkSubmitDebugUtilsMessageEXT",
 		"vkGetAndroidHardwareBufferPropertiesANDROID",
 		"vkGetMemoryAndroidHardwareBufferANDROID",
+		"vkCreateExecutionGraphPipelinesAMDX",
+		"vkGetExecutionGraphPipelineScratchSizeAMDX",
+		"vkGetExecutionGraphPipelineNodeIndexAMDX",
+		"vkCmdInitializeGraphScratchMemoryAMDX",
+		"vkCmdDispatchGraphAMDX",
+		"vkCmdDispatchGraphIndirectAMDX",
+		"vkCmdDispatchGraphIndirectCountAMDX",
 		"vkCmdSetSampleLocationsEXT",
 		"vkGetPhysicalDeviceMultisamplePropertiesEXT",
 		"vkGetImageMemoryRequirements2KHR",
@@ -346,6 +342,11 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkGetPipelineExecutablePropertiesKHR",
 		"vkGetPipelineExecutableStatisticsKHR",
 		"vkGetPipelineExecutableInternalRepresentationsKHR",
+		"vkCopyMemoryToImageEXT",
+		"vkCopyImageToMemoryEXT",
+		"vkCopyImageToImageEXT",
+		"vkTransitionImageLayoutEXT",
+		"vkGetImageSubresourceLayout2EXT",
 		"vkMapMemory2KHR",
 		"vkUnmapMemory2KHR",
 		"vkReleaseSwapchainImagesEXT",
@@ -451,6 +452,9 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCmdCopyMemoryToImageIndirectNV",
 		"vkCmdDecompressMemoryNV",
 		"vkCmdDecompressMemoryIndirectCountNV",
+		"vkGetPipelineIndirectMemoryRequirementsNV",
+		"vkCmdUpdatePipelineIndirectBufferNV",
+		"vkGetPipelineIndirectDeviceAddressNV",
 		"vkCmdSetTessellationDomainOriginEXT",
 		"vkCmdSetDepthClampEnableEXT",
 		"vkCmdSetPolygonModeEXT",
@@ -489,6 +493,10 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkDestroyOpticalFlowSessionNV",
 		"vkBindOpticalFlowSessionImageNV",
 		"vkCmdOpticalFlowExecuteNV",
+		"vkCmdBindIndexBuffer2KHR",
+		"vkGetRenderingAreaGranularityKHR",
+		"vkGetDeviceImageSubresourceLayoutKHR",
+		"vkGetImageSubresourceLayout2KHR",
 		"vkCreateShadersEXT",
 		"vkDestroyShaderEXT",
 		"vkGetShaderBinaryDataEXT",
@@ -544,6 +552,11 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCmdSetCoverageReductionModeNV",
 		"vkGetFramebufferTilePropertiesQCOM",
 		"vkGetDynamicRenderingTilePropertiesQCOM",
+		"vkSetLatencySleepModeNV",
+		"vkLatencySleepNV",
+		"vkSetLatencyMarkerNV",
+		"vkGetLatencyTimingsNV",
+		"vkQueueNotifyOutOfBandNV",
 		"vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR",
 		"vkCmdSetAttachmentFeedbackLoopEnableEXT",
 		"vkGetScreenBufferPropertiesQNX",
@@ -552,10 +565,6 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 	bool fail = false;
 	for (const auto& function : functions)
 	{
-		if (std::find(loaderExceptions.begin(), loaderExceptions.end(), function) != loaderExceptions.end())
-		{
-			continue;
-		}
 		if (deviceDriver.getDeviceProcAddr(device.get(), function.c_str()) != DE_NULL)
 		{
 			fail = true;

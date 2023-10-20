@@ -1661,7 +1661,6 @@ void MultisampleTests::init (void)
 															caseType == CASETYPE_FBO_MAX_SAMPLES		? "Render into a framebuffer object with the maximum number of samples" :
 															DE_NULL);
 		DE_ASSERT(group->getName() != DE_NULL);
-		DE_ASSERT(group->getDescription() != DE_NULL);
 		DE_ASSERT(numFboSamples >= -1);
 		addChild(group);
 

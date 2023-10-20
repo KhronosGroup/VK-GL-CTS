@@ -507,7 +507,7 @@ public:
 			m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, m_context.getPhysicalDevice(), &deviceInfo);
 		}
 #endif // CTS_USES_VULKANSC
-		m_logicalDeviceInterface = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), getDevice()));
+		m_logicalDeviceInterface = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), getDevice(), m_context.getUsedApiVersion()));
 		m_logicalDeviceInterface->getDeviceQueue(getDevice(), m_context.getUniversalQueueFamilyIndex(), 0, &m_logicalDeviceQueue);
 	};
 
@@ -972,11 +972,11 @@ public:
 		createBuffer(dstBuffer, dstMemory, &dstMemorySize);
 
 		deBool							passed								= DE_TRUE;
-		for (deUint32 i = 0; passed && i < m_params.targetsCount; ++i)
+		for (deUint32 i = 0; i < m_params.targetsCount; ++i)
 		{
 			fillUpResource(srcBuffer, *targets[i]);
 			readUpResource(*targets[i], dstBuffer);
-			passed = checkData(*dstMemory, 1, dstMemorySize);
+			passed = checkData(*dstMemory, 1, dstMemorySize) && passed;
 		}
 
 		return passed ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Failed");
@@ -1023,13 +1023,13 @@ public:
 		createBuffer(dstBuffer, dstMemory, &dstMemorySize);
 
 		deBool							passed								= DE_TRUE;
-		for (deUint32 i = 0; passed && i < m_params.targetsCount; ++i)
+		for (deUint32 i = 0; i < m_params.targetsCount; ++i)
 		{
 			// Do a layout transition on alias 1 before we transition and write to alias 0
 			layoutTransitionResource(*(targets[1][i]));
 			fillUpResource(srcBuffer, *(targets[0][i]));
 			readUpResource(*(targets[1][i]), dstBuffer);
-			passed = checkData(*dstMemory, 2, dstMemorySize);
+			passed = checkData(*dstMemory, 2, dstMemorySize) && passed;
 		}
 
 		return passed ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Failed");

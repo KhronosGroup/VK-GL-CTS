@@ -70,75 +70,6 @@ std::unique_ptr<vk::BufferWithMemory> makeBufferForImage(const vk::DeviceInterfa
 	return outBuffer;
 }
 
-vk::Move<vk::VkRenderPass> makeTestRenderPass (const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat)
-{
-	const vk::VkAttachmentDescription			colorAttachmentDescription			=
-	{
-		(vk::VkAttachmentDescriptionFlags)0u,			// VkAttachmentDescriptionFlags		flags
-		colorFormat,									// VkFormat							format
-		vk::VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits			samples
-		vk::VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp				loadOp
-		vk::VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				storeOp
-		vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp				stencilLoadOp
-		vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp				stencilStoreOp
-		vk::VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout					initialLayout
-		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout					finalLayout
-	};
-
-	const vk::VkAttachmentReference				colorAttachmentRef =
-	{
-		0u,												// deUint32         attachment
-		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout    layout
-	};
-
-	const vk::VkSubpassDescription			subpassDescription					=
-	{
-		(vk::VkSubpassDescriptionFlags)0u,						// VkSubpassDescriptionFlags		flags
-		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,					// VkPipelineBindPoint				pipelineBindPoint
-		0u,														// deUint32							inputAttachmentCount
-		DE_NULL,												// const VkAttachmentReference*		pInputAttachments
-		1u,														// deUint32							colorAttachmentCount
-		&colorAttachmentRef,									// const VkAttachmentReference*		pColorAttachments
-		DE_NULL,												// const VkAttachmentReference*		pResolveAttachments
-		DE_NULL,												// const VkAttachmentReference*		pDepthStencilAttachment
-		0u,														// deUint32							preserveAttachmentCount
-		DE_NULL													// const deUint32*					pPreserveAttachments
-	};
-
-	const vk::VkRenderPassCreateInfo		renderPassInfo						=
-	{
-		vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			// VkStructureType					sType
-		DE_NULL,												// const void*						pNext
-		(vk::VkRenderPassCreateFlags)0u,						// VkRenderPassCreateFlags			flags
-		1u,														// deUint32							attachmentCount
-		& colorAttachmentDescription,							// const VkAttachmentDescription*	pAttachments
-		1u,														// deUint32							subpassCount
-		&subpassDescription,									// const VkSubpassDescription*		pSubpasses
-		0u,														// deUint32							dependencyCount
-		DE_NULL													// const VkSubpassDependency*		pDependencies
-	};
-
-	return createRenderPass(vk, device, &renderPassInfo, DE_NULL);
-}
-
-vk::Move<vk::VkFramebuffer> makeTestFramebuffer (const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::Move<vk::VkRenderPass>& renderPass, vk::VkImageView colorImageView)
-{
-	const vk::VkFramebufferCreateInfo framebufferParams =
-	{
-		vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,		// VkStructureType				sType;
-		DE_NULL,											// const void*					pNext;
-		0u,													// VkFramebufferCreateFlags		flags;
-		*renderPass,										// VkRenderPass					renderPass;
-		1u,													// deUint32						attachmentCount;
-		&colorImageView,									// const VkImageView*			pAttachments;
-		32u,												// deUint32						width;
-		32u,												// deUint32						height;
-		1u,													// deUint32						layers;
-	};
-
-	return createFramebuffer(vk, device, &framebufferParams);
-}
-
 vk::VkImageCreateInfo makeImageCreateInfo(vk::VkFormat format, vk::VkExtent3D extent, vk::VkImageUsageFlags usage)
 {
 	const vk::VkImageCreateInfo imageCreateInfo =
@@ -203,7 +134,7 @@ public:
 	}
 
 private:
-	void						draw		(const vk::VkPipeline pipeline);
+	void						draw		(const vk::GraphicsPipelineWrapper& pipeline);
 	bool						verifyImage	(tcu::Vec4 value, bool oob);
 	tcu::TestStatus				iterate		(void);
 
@@ -215,16 +146,15 @@ private:
 	vk::Move	<vk::VkCommandPool>			m_cmdPool;
 	vk::Move<vk::VkCommandBuffer>			m_cmdBuffer;
 	de::MovePtr<vk::BufferWithMemory>		m_buffer;
-	vk::Move<vk::VkRenderPass>				m_renderPass;
-	vk::Move<vk::VkFramebuffer>				m_framebuffer;
-	vk::Move<vk::VkPipelineLayout>			m_pipelineLayout;
+	vk::RenderPassWrapper					m_renderPass;
+	vk::PipelineLayoutWrapper				m_pipelineLayout;
 	vk::Move<vk::VkDescriptorPool>			m_descriptorPool;
 	vk::Move<vk::VkDescriptorSet>			m_descriptorSet;
 	de::MovePtr<vk::ImageWithMemory>		m_colorAttachment;
 	std::unique_ptr<vk::BufferWithMemory>	m_outBuffer;
 };
 
-void PipelineCacheTestInstance::draw (const vk::VkPipeline pipeline)
+void PipelineCacheTestInstance::draw (const vk::GraphicsPipelineWrapper& pipeline)
 {
 	const vk::DeviceInterface&					vk		= m_context.getDeviceInterface();
 	const vk::VkDevice							device	= m_context.getDevice();
@@ -238,11 +168,11 @@ void PipelineCacheTestInstance::draw (const vk::VkPipeline pipeline)
 		vk::VkDeviceSize offset = 0u;
 		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &**m_buffer, &offset);
 	}
-	vk::beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(m_extent), clearColor);
+	m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(m_extent), clearColor);
 	vk.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0, 1, &*m_descriptorSet, 0, DE_NULL);
-	vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+	pipeline.bind(*m_cmdBuffer);
 	vk.cmdDraw(*m_cmdBuffer, 4, 1, 0, 0);
-	vk::endRenderPass(vk, *m_cmdBuffer);
+	m_renderPass.end(vk, *m_cmdBuffer);
 	vk::endCommandBuffer(vk, *m_cmdBuffer);
 
 	vk::submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
@@ -286,11 +216,14 @@ bool PipelineCacheTestInstance::verifyImage (tcu::Vec4 value, bool oob)
 
 tcu::TestStatus PipelineCacheTestInstance::iterate (void)
 {
+	const vk::InstanceInterface&				vki						= m_context.getInstanceInterface();
 	const vk::DeviceInterface&					vk						= m_context.getDeviceInterface();
+	const vk::VkPhysicalDevice					physicalDevice			= m_context.getPhysicalDevice();
 	const vk::VkDevice							device					= m_context.getDevice();
 	const deUint32								queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	const vk::VkQueue							queue					= m_context.getUniversalQueue();
 	auto&										alloc					= m_context.getDefaultAllocator();
+	const auto&									deviceExtensions		= m_context.getDeviceExtensions();
 
 	m_extent		= {32, 32};
 	const deUint32								bufferSize				= sizeof(float) * 4u;
@@ -324,8 +257,8 @@ tcu::TestStatus PipelineCacheTestInstance::iterate (void)
 	const std::vector<vk::VkViewport>			viewports				{ makeViewport(m_extent) };
 	const std::vector<vk::VkRect2D>				scissors				{ makeRect2D(m_extent) };
 
-	vk::Move<vk::VkShaderModule>				vert					= createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"));
-	vk::Move<vk::VkShaderModule>				frag					= createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"));
+	vk::ShaderWrapper							vert					= vk::ShaderWrapper(vk, device, m_context.getBinaryCollection().get("vert"));
+	vk::ShaderWrapper							frag					= vk::ShaderWrapper(vk, device, m_context.getBinaryCollection().get("frag"));
 
 	vk::VkDescriptorType						descriptorType			= vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 	if (m_type == STORAGE)
@@ -346,7 +279,7 @@ tcu::TestStatus PipelineCacheTestInstance::iterate (void)
 		.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build(vk, device));
 
-	m_pipelineLayout		= makePipelineLayout(vk, device, *descriptorSetLayout);
+	m_pipelineLayout		= vk::PipelineLayoutWrapper(m_pipelineConstructionType, vk, device, *descriptorSetLayout);
 
 	m_descriptorPool		= (vk::DescriptorPoolBuilder()
 		.addType(descriptorType)
@@ -390,8 +323,8 @@ tcu::TestStatus PipelineCacheTestInstance::iterate (void)
 	m_colorAttachment		= de::MovePtr<vk::ImageWithMemory>(new vk::ImageWithMemory(vk, device, alloc, imageCreateInfo, vk::MemoryRequirement::Any));
 	const auto									colorAttachmentView		= makeImageView(vk, device, m_colorAttachment->get(), vk::VK_IMAGE_VIEW_TYPE_2D, vk::VK_FORMAT_R32G32B32A32_SFLOAT, subresourceRange);
 
-	m_renderPass			= makeTestRenderPass(vk, device, vk::VK_FORMAT_R32G32B32A32_SFLOAT);
-	m_framebuffer			= makeTestFramebuffer(vk, device, m_renderPass, *colorAttachmentView);
+	m_renderPass			= vk::RenderPassWrapper(m_pipelineConstructionType, vk, device, vk::VK_FORMAT_R32G32B32A32_SFLOAT);
+	m_renderPass.createFramebuffer(vk, device, **m_colorAttachment, *colorAttachmentView, 32, 32);
 
 	vk::VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo =
 	{
@@ -447,7 +380,7 @@ tcu::TestStatus PipelineCacheTestInstance::iterate (void)
 
 	vk::Move<vk::VkPipelineCache>				pipelineCache			= createPipelineCache(vk, device, &pipelineCacheCreateInfo);
 
-	vk::GraphicsPipelineWrapper					graphicsPipeline		(vk, device, m_pipelineConstructionType);
+	vk::GraphicsPipelineWrapper					graphicsPipeline		(vki, vk, physicalDevice, device, deviceExtensions, m_pipelineConstructionType);
 	graphicsPipeline.setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
 					.setDefaultRasterizationState()
 					.setDefaultMultisampleState()
@@ -456,13 +389,13 @@ tcu::TestStatus PipelineCacheTestInstance::iterate (void)
 					.setupVertexInputState(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
 					.setupPreRasterizationShaderState(viewports,
 						scissors,
-						*m_pipelineLayout,
+						m_pipelineLayout,
 						*m_renderPass,
 						0u,
-						*vert)
-					.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *frag)
+						vert)
+					.setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, frag)
 					.setupFragmentOutputState(*m_renderPass)
-					.setMonolithicPipelineLayout(*m_pipelineLayout)
+					.setMonolithicPipelineLayout(m_pipelineLayout)
 					.buildPipeline(*pipelineCache);
 
 	vk::VkPipelineRobustnessCreateInfoEXT		pipelineRobustnessInfo = vk::initVulkanStructure();
@@ -482,7 +415,7 @@ tcu::TestStatus PipelineCacheTestInstance::iterate (void)
 		else if (m_type == IMAGE) pipelineRobustnessInfo.images = vk::VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_2_EXT;
 	}
 
-	vk::GraphicsPipelineWrapper					robustPipeline			(vk, device, m_pipelineConstructionType);
+	vk::GraphicsPipelineWrapper					robustPipeline			(vki, vk, physicalDevice, device, deviceExtensions, m_pipelineConstructionType);
 	robustPipeline.setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
 					.setDefaultRasterizationState()
 					.setDefaultMultisampleState()
@@ -491,13 +424,13 @@ tcu::TestStatus PipelineCacheTestInstance::iterate (void)
 					.setupVertexInputState(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
 					.setupPreRasterizationShaderState(viewports,
 						scissors,
-						*m_pipelineLayout,
+						m_pipelineLayout,
 						*m_renderPass,
 						0u,
-						*vert)
-					.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *frag)
+						vert)
+					.setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, frag)
 					.setupFragmentOutputState(*m_renderPass)
-					.setMonolithicPipelineLayout(*m_pipelineLayout)
+					.setMonolithicPipelineLayout(m_pipelineLayout)
 					.buildPipeline(*pipelineCache, 0, 0, vk::PipelineCreationFeedbackCreateInfoWrapper(), &pipelineRobustnessInfo);
 
 	if (m_type == IMAGE)
@@ -567,7 +500,7 @@ tcu::TestStatus PipelineCacheTestInstance::iterate (void)
 		vk::submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
 	}
 
-	draw(graphicsPipeline.getPipeline());
+	draw(graphicsPipeline);
 
 	if (!verifyImage(tcu::Vec4(values[0]), false))
 		return tcu::TestStatus::fail("Fail");
@@ -576,7 +509,7 @@ tcu::TestStatus PipelineCacheTestInstance::iterate (void)
 	deMemcpy(indexBufferAlloc.getHostPtr(), &invalidIndex, sizeof(deUint32));
 	flushAlloc(vk, device, indexBufferAlloc);
 
-	draw(robustPipeline.getPipeline());
+	draw(robustPipeline);
 
 	if (m_robustnessBufferBehaviour == ROBUSTNESS_2)
 	{
@@ -640,7 +573,7 @@ void PipelineCacheTestCase::checkSupport (vkt::Context& context) const
 		}
 	}
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	vk::checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
 void PipelineCacheTestCase::initPrograms(vk::SourceCollections& programCollection) const

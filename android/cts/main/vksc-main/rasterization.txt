@@ -425,6 +425,10 @@ dEQP-VKSC.rasterization.primitive_size.points.point_size_2048
 dEQP-VKSC.rasterization.primitive_size.points.point_size_4096
 dEQP-VKSC.rasterization.primitive_size.points.point_size_8192
 dEQP-VKSC.rasterization.primitive_size.points.point_size_10000
+dEQP-VKSC.rasterization.primitive_size.default_size.points.vertex
+dEQP-VKSC.rasterization.primitive_size.default_size.points.tessellation
+dEQP-VKSC.rasterization.primitive_size.default_size.points.geometry
+dEQP-VKSC.rasterization.primitive_size.default_size.points.all
 dEQP-VKSC.rasterization.interpolation_multisample_8_bit.triangles
 dEQP-VKSC.rasterization.interpolation_multisample_8_bit.lines
 dEQP-VKSC.rasterization.interpolation_multisample_8_bit.lines_wide

@@ -1018,7 +1018,7 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_queueFamiliesA			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiA, m_physicalDeviceA))
 	, m_queueFamilyIndicesA		(getFamilyIndices(m_queueFamiliesA))
 	, m_deviceA					(InstanceAndDevice::getDeviceA())
-	, m_vkdA					(context.getPlatformInterface(), m_instanceA, *m_deviceA)
+	, m_vkdA					(context.getPlatformInterface(), m_instanceA, *m_deviceA, context.getUsedApiVersion())
 
 	, m_instanceB				(InstanceAndDevice::getInstanceB(context))
 	, m_vkiB					(InstanceAndDevice::getDriverB())
@@ -1026,7 +1026,7 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_queueFamiliesB			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiB, m_physicalDeviceB))
 	, m_queueFamilyIndicesB		(getFamilyIndices(m_queueFamiliesB))
 	, m_deviceB					(InstanceAndDevice::getDeviceB())
-	, m_vkdB					(context.getPlatformInterface(), m_instanceB, *m_deviceB)
+	, m_vkdB					(context.getPlatformInterface(), m_instanceB, *m_deviceB, context.getUsedApiVersion())
 
 	, m_semaphoreHandleType		(m_config.semaphoreHandleType)
 	, m_memoryHandleType		(m_config.memoryHandleType)
@@ -1409,7 +1409,7 @@ static void createTests (tcu::TestCaseGroup* group, SynchronizationType type)
 							const TestConfig	config (type, resource, (vk::VkSemaphoreType)semaphoreType, writeOp, readOp, cases[caseNdx].memoryType, cases[caseNdx].semaphoreType, dedicated);
 							std::string			name	= getResourceName(resource) + semaphoreNames[semaphoreType] + cases[caseNdx].nameSuffix;
 
-							opGroup->addChild(new InstanceFactory1<SharingTestInstance, TestConfig, Progs>(testCtx, tcu::NODETYPE_SELF_VALIDATE,  name, "", Progs(), config));
+							opGroup->addChild(new InstanceFactory1<SharingTestInstance, TestConfig, Progs>(testCtx, name, "", Progs(), config));
 							empty = false;
 						}
 					}

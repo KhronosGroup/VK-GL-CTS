@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2019 Google LLC
  * Copyright (c) 2019 The Khronos Group Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,6 +113,11 @@ void addMonolithicAmberTests (tcu::TestCaseGroup* tests)
 			"Read primitive id from tessellation shaders without a geometry shader",
 			(AMBER_FEATURE_TESSELATION_SHADER | AMBER_FEATURE_GEOMETRY_SHADER),
 		},
+		{
+			"layer_read_from_frag",
+			"Read gl_layer from fragment shaders without previous writes",
+			(AMBER_FEATURE_GEOMETRY_SHADER),
+		},
 	};
 	for (unsigned i = 0; i < DE_LENGTH_OF_ARRAY(cases) ; ++i)
 	{
@@ -154,18 +161,19 @@ public:
 	ImplicitPrimitiveIDPassthroughInstance	(Context&                           context,
 											 const PipelineConstructionType		pipelineConstructionType,
 											 bool withTessellation)
-		:
-		vkt::TestInstance(context)
-		, m_renderSize		        (2, 2)
-		, m_extent(makeExtent3D(m_renderSize.x(), m_renderSize.y(), 1u))
-		, m_graphicsPipeline		(context.getDeviceInterface(), context.getDevice(), pipelineConstructionType)
-		, m_withTessellationPassthrough(withTessellation)
+		: vkt::TestInstance				(context)
+		, m_pipelineConstructionType	(pipelineConstructionType)
+		, m_renderSize					(2, 2)
+		, m_extent(makeExtent3D			(m_renderSize.x(), m_renderSize.y(), 1u))
+		, m_graphicsPipeline			(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType)
+		, m_withTessellationPassthrough	(withTessellation)
 	{
 	}
 	~ImplicitPrimitiveIDPassthroughInstance	(void) {}
 	tcu::TestStatus		iterate				(void) override;
 
 private:
+	PipelineConstructionType	m_pipelineConstructionType;
 	const tcu::UVec2            m_renderSize;
 	const VkExtent3D		    m_extent;
 	const VkFormat		        m_format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -185,7 +193,7 @@ void ImplicitPrimitiveIDPassthroughCase::checkSupport (Context &context) const
 
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
 void ImplicitPrimitiveIDPassthroughCase::initPrograms(SourceCollections& sources) const
@@ -314,19 +322,19 @@ tcu::TestStatus ImplicitPrimitiveIDPassthroughInstance::iterate ()
 	auto&				verifBufferAlloc	= verifBuffer.getAllocation();
 
 	// Render pass and framebuffer.
-	const auto renderPass	= makeRenderPass(vkd, device, m_format);
-	const auto framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), colorBufferView.get(), m_extent.width, m_extent.height);
+	RenderPassWrapper	renderPass			(m_pipelineConstructionType, vkd, device, m_format);
+	renderPass.createFramebuffer(vkd, device, colorBuffer.get(), colorBufferView.get(), m_extent.width, m_extent.height);
 
 	// Shader modules.
 	const auto&		binaries		= m_context.getBinaryCollection();
-	const auto		vertModule		= createShaderModule(vkd, device, binaries.get("vert"));
-	const auto		fragModule		= createShaderModule(vkd, device, binaries.get("frag"));
-	Move<VkShaderModule> tscModule;
-	Move<VkShaderModule> tseModule;
+	const auto		vertModule		= ShaderWrapper(vkd, device, binaries.get("vert"));
+	const auto		fragModule		= ShaderWrapper(vkd, device, binaries.get("frag"));
+	ShaderWrapper tscModule;
+	ShaderWrapper tseModule;
 
 	if (m_withTessellationPassthrough) {
-		tscModule = createShaderModule(vkd, device, binaries.get("tsc"));
-		tseModule = createShaderModule(vkd, device, binaries.get("tse"));
+		tscModule = ShaderWrapper(vkd, device, binaries.get("tsc"));
+		tseModule = ShaderWrapper(vkd, device, binaries.get("tse"));
 	}
 
 	// Viewports and scissors.
@@ -352,7 +360,7 @@ tcu::TestStatus ImplicitPrimitiveIDPassthroughInstance::iterate ()
 	};
 
 	// Pipeline layout and graphics pipeline.
-	const auto pipelineLayout	= makePipelineLayout(vkd, device);
+	const PipelineLayoutWrapper pipelineLayout	(m_pipelineConstructionType, vkd, device);
 
 	const auto topology = m_withTessellationPassthrough ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	m_graphicsPipeline.setDefaultRasterizationState()
@@ -361,10 +369,10 @@ tcu::TestStatus ImplicitPrimitiveIDPassthroughInstance::iterate ()
 		.setDefaultDepthStencilState()
 		.setDefaultMultisampleState()
 		.setDefaultColorBlendState()
-		.setupPreRasterizationShaderState(viewports, scissors, *pipelineLayout, *renderPass, 0u, *vertModule, &rasterizationState, *tscModule, *tseModule)
-		.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragModule)
+		.setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertModule, &rasterizationState, tscModule, tseModule)
+		.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragModule)
 		.setupFragmentOutputState(*renderPass)
-		.setMonolithicPipelineLayout(*pipelineLayout)
+		.setMonolithicPipelineLayout(pipelineLayout)
 		.buildPipeline();
 
 	// Command pool and buffer.
@@ -375,10 +383,10 @@ tcu::TestStatus ImplicitPrimitiveIDPassthroughInstance::iterate ()
 	beginCommandBuffer(vkd, cmdBuffer);
 
 	// Draw.
-	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), clearColor);
-	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
+	renderPass.begin(vkd, cmdBuffer, scissors.at(0u), clearColor);
+	m_graphicsPipeline.bind(cmdBuffer);
 	vkd.cmdDraw(cmdBuffer, 6, 1u, 0u, 0u);
-	endRenderPass(vkd, cmdBuffer);
+	renderPass.end(vkd, cmdBuffer);
 
 	// Copy to verification buffer.
 	const auto copyRegion		= makeBufferImageCopy(m_extent, colorSRL);
@@ -639,7 +647,7 @@ TestInstance* UnusedShaderStagesCase::createInstance (Context &context) const
 
 void UnusedShaderStagesCase::checkSupport (Context &context) const
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 
 	if (m_params.useTessShaders)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
@@ -725,8 +733,8 @@ tcu::TestStatus UnusedShaderStagesInstance::iterate ()
 	auto&				verificationBufferAlloc			= verificationBuffer.getAllocation();
 
 	// Render pass and framebuffer.
-	const auto renderPass	= makeRenderPass(vkd, device, colorFormat);
-	const auto framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), colorAttachmentView.get(), colorExtent.width, colorExtent.height);
+	RenderPassWrapper	renderPass						(m_params.pipelineConstructionType, vkd, device, colorFormat);
+	renderPass.createFramebuffer(vkd, device, *colorAttachment, colorAttachmentView.get(), colorExtent.width, colorExtent.height);
 
 	// Pipeline layout.
 	const auto pipelineLayout = makePipelineLayout(vkd, device);
@@ -983,10 +991,10 @@ tcu::TestStatus UnusedShaderStagesInstance::iterate ()
 	const auto cmdBuffer	= cmdBufferPtr.get();
 
 	beginCommandBuffer(vkd, cmdBuffer);
-	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), clearColor);
+	renderPass.begin(vkd, cmdBuffer, scissors.at(0u), clearColor);
 	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
 	vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
-	endRenderPass(vkd, cmdBuffer);
+	renderPass.end(vkd, cmdBuffer);
 
 	// Copy color attachment to verification buffer.
 	const auto preCopyBarrier	= makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -1058,7 +1066,7 @@ void PipelineLibraryInterpolateAtSampleTestCase::checkSupport(Context& context) 
 {
 	context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY);
 }
 
 void PipelineLibraryInterpolateAtSampleTestCase::initPrograms(vk::SourceCollections& collection) const
@@ -1120,7 +1128,9 @@ PipelineLibraryInterpolateAtSampleTestInstance::PipelineLibraryInterpolateAtSamp
 
 void PipelineLibraryInterpolateAtSampleTestInstance::runTest(BufferWithMemory& index, BufferWithMemory& values, size_t bufferSize, PipelineConstructionType type)
 {
+	const auto& vki			= m_context.getInstanceInterface();
 	const auto& vkd			= m_context.getDeviceInterface();
+	const auto  physDevice	= m_context.getPhysicalDevice();
 	const auto  device		= m_context.getDevice();
 	auto& alloc				= m_context.getDefaultAllocator();
 	auto imageFormat		= vk::VK_FORMAT_R8G8B8A8_UNORM;
@@ -1131,7 +1141,7 @@ void PipelineLibraryInterpolateAtSampleTestInstance::runTest(BufferWithMemory& i
 
 	de::MovePtr<vk::ImageWithMemory>  colorAttachment;
 
-	vk::GraphicsPipelineWrapper pipeline1(vkd, device, type);
+	vk::GraphicsPipelineWrapper pipeline1(vki, vkd, physDevice, device, m_context.getDeviceExtensions(), type);
 	const auto  qIndex	= m_context.getUniversalQueueFamilyIndex();
 
 	const auto  subresourceRange	= vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -1163,7 +1173,7 @@ void PipelineLibraryInterpolateAtSampleTestInstance::runTest(BufferWithMemory& i
 	layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	auto descriptorSetLayout    = layoutBuilder.build(vkd, device);
-	auto graphicsPipelineLayout = vk::makePipelineLayout(vkd, device, descriptorSetLayout.get());
+	vk::PipelineLayoutWrapper	graphicsPipelineLayout (type, vkd, device, descriptorSetLayout.get());
 
 	DescriptorPoolBuilder poolBuilder;
 	poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -1181,8 +1191,8 @@ void PipelineLibraryInterpolateAtSampleTestInstance::runTest(BufferWithMemory& i
 
 	updater.update(vkd, device);
 
-	auto vtxshader  = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"));
-	auto frgshader  = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"));
+	auto vtxshader  = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert"));
+	auto frgshader  = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag"));
 
 	const vk::VkPipelineVertexInputStateCreateInfo vertexInputState =
 	{
@@ -1211,14 +1221,14 @@ void PipelineLibraryInterpolateAtSampleTestInstance::runTest(BufferWithMemory& i
 		.setupPreRasterizationShaderState(
 			viewports,
 			scissors,
-			*graphicsPipelineLayout,
+			graphicsPipelineLayout,
 			DE_NULL,
 			0u,
-			*vtxshader)
-		.setupFragmentShaderState(*graphicsPipelineLayout, DE_NULL, 0u,
-			*frgshader)
+			vtxshader)
+		.setupFragmentShaderState(graphicsPipelineLayout, DE_NULL, 0u,
+			frgshader)
 		.setupFragmentOutputState(DE_NULL, 0u, DE_NULL, &multisampling)
-		.setMonolithicPipelineLayout(*graphicsPipelineLayout).buildPipeline();
+		.setMonolithicPipelineLayout(graphicsPipelineLayout).buildPipeline();
 
 	auto commandPool = createCommandPool(vkd, device, vk::VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, qIndex);
 	auto commandBuffer = vk::allocateCommandBuffer(vkd, device, commandPool.get(), vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -1264,7 +1274,8 @@ void PipelineLibraryInterpolateAtSampleTestInstance::runTest(BufferWithMemory& i
 	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayout.get(), 0u, 1, &descriptorSetBuffer.get(), 0u, nullptr);
 
 	vkd.cmdBeginRendering(*commandBuffer, &render_info);
-	vkd.cmdBindPipeline(commandBuffer.get(), vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline1.getPipeline());
+	pipeline1.bind(commandBuffer.get());
+	vkd.cmdSetPatchControlPointsEXT(commandBuffer.get(), 3);
 	vkd.cmdDraw(commandBuffer.get(), 6, 1, 0, 0);
 	vkd.cmdEndRendering(*commandBuffer);
 
@@ -1397,12 +1408,12 @@ class PipelineLayoutBindingTestInstance : public vkt::TestInstance
 public:
 	PipelineLayoutBindingTestInstance	(Context& context,
 										 const BindingTestConfig& config)
-		: vkt::TestInstance(context)
-		, m_renderSize		        (2, 2)
-		, m_extent(makeExtent3D(m_renderSize.x(), m_renderSize.y(), 1u))
-		, m_format					(VK_FORMAT_R8G8B8A8_UNORM)
-		, m_graphicsPipeline		(context.getDeviceInterface(), context.getDevice(), config.construction)
-		, m_config					(config)
+		: vkt::TestInstance				(context)
+		, m_renderSize					(2, 2)
+		, m_extent						(makeExtent3D(m_renderSize.x(), m_renderSize.y(), 1u))
+		, m_format						(VK_FORMAT_R8G8B8A8_UNORM)
+		, m_graphicsPipeline			(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), config.construction)
+		, m_config						(config)
 	{
 	}
 	~PipelineLayoutBindingTestInstance	(void) {}
@@ -1423,7 +1434,7 @@ TestInstance* PipelineLayoutBindingTestCases::createInstance (Context& context) 
 
 void PipelineLayoutBindingTestCases::checkSupport (Context &context) const
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_config.construction);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_config.construction);
 }
 
 void PipelineLayoutBindingTestCases::initPrograms(SourceCollections& sources) const
@@ -1519,13 +1530,13 @@ tcu::TestStatus PipelineLayoutBindingTestInstance::iterate ()
 	auto&				verifBufferAlloc	= verifBuffer.getAllocation();
 
 	// Render pass and framebuffer.
-	const auto renderPass	= makeRenderPass(vkd, device, m_format);
-	const auto framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), colorBufferView.get(), m_extent.width, m_extent.height);
+	RenderPassWrapper	renderPass			(m_config.construction, vkd, device, m_format);
+	renderPass.createFramebuffer(vkd, device, colorBuffer.get(), colorBufferView.get(), m_extent.width, m_extent.height);
 
 	// Shader modules.
 	const auto&		binaries		= m_context.getBinaryCollection();
-	const auto		vertModule		= createShaderModule(vkd, device, binaries.get("vert"));
-	const auto		fragModule		= createShaderModule(vkd, device, binaries.get("frag"));
+	const auto		vertModule		= ShaderWrapper(vkd, device, binaries.get("vert"));
+	const auto		fragModule		= ShaderWrapper(vkd, device, binaries.get("frag"));
 
 	// Viewports and scissors.
 	const std::vector<VkViewport>	viewports	(1u, makeViewport(m_extent));
@@ -1569,7 +1580,7 @@ tcu::TestStatus PipelineLayoutBindingTestInstance::iterate ()
 
 	// Pipeline layout and graphics pipeline.
 	uint32_t setAndDescriptorCount = de::sizeU32(indices);
-	const auto pipelineLayout	= makePipelineLayout(vkd, device, descriptorSetLayouts);
+	const vk::PipelineLayoutWrapper pipelineLayout	(m_config.construction, vkd, device, descriptorSetLayouts);
 	DescriptorPoolBuilder poolBuilder;
 	poolBuilder.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, setAndDescriptorCount);
 	const auto descriptorPool = poolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, setAndDescriptorCount);
@@ -1612,10 +1623,10 @@ tcu::TestStatus PipelineLayoutBindingTestInstance::iterate ()
 		.setDefaultDepthStencilState()
 		.setDefaultMultisampleState()
 		.setDefaultColorBlendState()
-		.setupPreRasterizationShaderState(viewports, scissors, *pipelineLayout, *renderPass, 0u, *vertModule, &rasterizationState)
-		.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragModule)
+		.setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertModule, &rasterizationState)
+		.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragModule)
 		.setupFragmentOutputState(*renderPass)
-		.setMonolithicPipelineLayout(*pipelineLayout)
+		.setMonolithicPipelineLayout(pipelineLayout)
 		.buildPipeline();
 
 	// Command pool and buffer.
@@ -1626,16 +1637,16 @@ tcu::TestStatus PipelineLayoutBindingTestInstance::iterate ()
 	beginCommandBuffer(vkd, cmdBuffer);
 
 	// Draw.
-	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), clearColor);
+	renderPass.begin(vkd, cmdBuffer, scissors.at(0u), clearColor);
 	for (auto i : indices) {
 		if (m_config.holes && ((i == 1) || (i == 2))) {
 			continue;
 		}
 		vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), i, 1, &descriptorSets[i], 0u, nullptr);
 	}
-	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
+	m_graphicsPipeline.bind(cmdBuffer);
 	vkd.cmdDraw(cmdBuffer, 3, 1u, 0u, 0u);
-	endRenderPass(vkd, cmdBuffer);
+	renderPass.end(vkd, cmdBuffer);
 
 	// Copy to verification buffer.
 	const auto copyRegion		= makeBufferImageCopy(m_extent, colorSRL);
@@ -1689,7 +1700,7 @@ tcu::TestCaseGroup* createMiscTests (tcu::TestContext& testCtx, PipelineConstruc
 	#endif
 
 #ifndef CTS_USES_VULKANSC
-	if (pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+	if (isConstructionTypeLibrary(pipelineConstructionType))
 	{
 		for (int useTessIdx = 0; useTessIdx < 2; ++useTessIdx)
 			for (int useGeomIdx = 0; useGeomIdx < 2; ++useGeomIdx)

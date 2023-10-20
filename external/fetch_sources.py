@@ -140,7 +140,7 @@ class SourcePackage (Source):
 			raise Exception("Checksum mismatch for %s, expected %s, got %s" % (self.filename, self.checksum, checksum))
 
 		if not os.path.exists(os.path.dirname(dstPath)):
-			os.mkdir(os.path.dirname(dstPath))
+			os.makedirs(os.path.dirname(dstPath))
 
 		writeBinaryFile(dstPath, data)
 
@@ -306,23 +306,23 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
 		"git@github.com:KhronosGroup/SPIRV-Tools.git",
-		"6f276e05ccab210584996bc40a0bef82b91f4f40",
+		"bfc94f63a7adbcf8ae166f5f108ac9f69079efc0",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		"git@github.com:KhronosGroup/glslang.git",
-		"77417d5c9e0a5d4c79ddd0285d530b45f7259f0d",
+		"4c57db1595462c51d5080893f65c42fc1f318146",
 		"glslang",
 		removeTags = ["main-tot"]),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
 		"git@github.com:KhronosGroup/SPIRV-Headers.git",
-		"8e2ad27488ed2f87c068c01a8f5e8979f7086405",
+		"b8b9eb8640c8c0107ba580fbcb10f969022ca32c",
 		"spirv-headers"),
 	GitRepo(
 		"https://github.com/KhronosGroup/Vulkan-Docs.git",
 		"git@github.com:KhronosGroup/Vulkan-Docs.git",
-		"3dae5d7fbf332970ae0a97d5ab05ae5db93e62f0",
+		"e5dbdd580cf0696db8ed0aeb0736e0f512d9bbe1",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",

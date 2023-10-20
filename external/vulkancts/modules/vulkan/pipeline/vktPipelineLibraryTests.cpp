@@ -3,6 +3,8 @@
  * ------------------------
  *
  * Copyright (c) 2021 The Khronos Group Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,6 +92,7 @@ struct TestParams
 	PipelineTreeConfiguration	pipelineTreeConfiguration;
 	bool						optimize;
 	bool						delayedShaderCreate;
+	bool						useMaintenance5;
 };
 
 struct RuntimePipelineTreeNode
@@ -867,7 +870,7 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 	VkDescriptorSetLayout vecLayoutBoth[2] = { *descriptorSetLayoutVert, *descriptorSetLayoutFrag };
 
 	VkPipelineLayoutCreateFlags pipelineLayoutCreateFlag = 0u;
-	if (m_data.delayedShaderCreate || (m_data.pipelineTreeConfiguration.size() > 1))
+	if (!m_data.useMaintenance5 && (m_data.delayedShaderCreate || (m_data.pipelineTreeConfiguration.size() > 1)))
 		pipelineLayoutCreateFlag = VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT;
 
 	const Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
@@ -942,7 +945,7 @@ bool PipelineLibraryTestInstance::runTest (RuntimePipelineTreeConfiguration&	run
 		}
 
 
-		if (linkedLibrariesFlags != ALL_GRAPHICS_PIPELINE_LIBRARY_FLAGS  && graphicsPipelineLibraryCreateInfo.flags != 0)
+		if (!m_data.useMaintenance5 && linkedLibrariesFlags != ALL_GRAPHICS_PIPELINE_LIBRARY_FLAGS && graphicsPipelineLibraryCreateInfo.flags != 0)
 			appendStructurePtrToVulkanChain(&graphicsPipelineCreateInfo.pNext, &graphicsPipelineLibraryCreateInfo);
 
 		if (linkingInfo.libraryCount != 0)
@@ -1226,6 +1229,12 @@ PipelineLibraryTestCase::~PipelineLibraryTestCase (void)
 
 void PipelineLibraryTestCase::checkSupport (Context& context) const
 {
+	if (m_data.useMaintenance5)
+	{
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+		return;
+	}
+
 	context.requireDeviceFunctionality("VK_KHR_pipeline_library");
 
 	if (m_data.delayedShaderCreate || (m_data.pipelineTreeConfiguration.size() > 1))
@@ -2704,12 +2713,6 @@ void PipelineLibraryMiscTestCase::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
 
-	// VK_KHR_pipeline_library must be supported if the VK_EXT_graphics_pipeline_library extension is supported.
-	// Note that vktTestCase skips enabling VK_KHR_pipeline_library by default and we can't use requireDeviceFunctionality for it.
-	const auto supportedExtensions = enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), DE_NULL);
-	if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_pipeline_library")))
-		TCU_FAIL("VK_KHR_pipeline_library not supported but VK_EXT_graphics_pipeline_library supported");
-
 	if ((m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED) &&
 		!context.getGraphicsPipelineLibraryPropertiesEXT().graphicsPipelineLibraryFastLinking)
 		TCU_THROW(NotSupportedError, "graphicsPipelineLibraryFastLinking is not supported");
@@ -3066,7 +3069,8 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group, bool opti
 		{
 			pipelineTreeConfiguration[libConfigNdx],	//  PipelineTreeConfiguration	pipelineTreeConfiguration;
 			optimize,									//  bool						optimize;
-			delayedShaderCreate							//  bool						delayedShaderCreate;
+			delayedShaderCreate,						//  bool						delayedShaderCreate;
+			false										//  bool						useMaintenance5;
 		};
 		const std::string	testName			= getTestName(pipelineTreeConfiguration[libConfigNdx]);
 
@@ -3075,11 +3079,26 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group, bool opti
 
 		group->addChild(new PipelineLibraryTestCase(group->getTestContext(), testName.c_str(), "", testParams));
 	}
+
+	// repeat first case (one that creates montolithic pipeline) to test VK_KHR_maintenance5;
+	// VkShaderModule deprecation (tested with delayedShaderCreate) was added to VK_KHR_maintenance5
+	if (optimize == false)
+	{
+		const TestParams testParams
+		{
+			pipelineTreeConfiguration[0],				//  PipelineTreeConfiguration	pipelineTreeConfiguration;
+			false,										//  bool						optimize;
+			true,										//  bool						delayedShaderCreate;
+			true										//  bool						useMaintenance5;
+		};
+
+		group->addChild(new PipelineLibraryTestCase(group->getTestContext(), "maintenance5", "", testParams));
+	}
 }
 
 }	// anonymous
 
-tcu::TestCaseGroup*	createPipelineLibraryTests(tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createPipelineLibraryTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "graphics_library", "Tests verifying graphics pipeline libraries"));
 

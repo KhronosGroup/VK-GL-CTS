@@ -119,6 +119,16 @@ public:
 	virtual			~NotSupportedError	(void) throw() {}
 };
 
+//! Quality warning.
+class QualityWarning : public TestException
+{
+public:
+					QualityWarning	(const char* message, const char* expr, const char* file, int line);
+					QualityWarning	(const std::string& message, const char* expr, const char* file, int line);
+					QualityWarning	(const std::string& message);
+	virtual			~QualityWarning	(void) throw() {}
+};
+
 } // tcu
 
 #define TCU_THROW_EXPR(ERRCLASS, MSG, EXPR)						\

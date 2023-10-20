@@ -1439,6 +1439,9 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 
 	for (int tessLevelCaseNdx = 0; tessLevelCaseNdx < static_cast<int>(tessLevelCases.size()); ++tessLevelCaseNdx)
 	{
+		if (m_caseDef.caseType == CASETYPE_INVARIANT_OUTER_TRIANGLE_SET)
+			m_context.getTestContext().touchWatchdog();
+
 		const LevelCase& levelCase = tessLevelCases[tessLevelCaseNdx];
 		PerPrimitiveVec  firstPrim;
 
@@ -2189,13 +2192,13 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 tcu::TestCase* makeTessCoordRangeTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
 {
 	const CaseDefinition caseDef = { CASETYPE_TESS_COORD_RANGE, primitiveType, spacingMode, winding, usePointMode };
-	return createFunctionCaseWithPrograms(testCtx, tcu::NODETYPE_SELF_VALIDATE, name, description, checkSupportCase, initPrograms, test, caseDef);
+	return createFunctionCaseWithPrograms(testCtx, name, description, checkSupportCase, initPrograms, test, caseDef);
 }
 
 tcu::TestCase* makeOneMinusTessCoordTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
 {
 	const CaseDefinition caseDef = { CASETYPE_ONE_MINUS_TESS_COORD, primitiveType, spacingMode, winding, usePointMode };
-	return createFunctionCaseWithPrograms(testCtx, tcu::NODETYPE_SELF_VALIDATE, name, description, checkSupportCase, initPrograms, test, caseDef);
+	return createFunctionCaseWithPrograms(testCtx, name, description, checkSupportCase, initPrograms, test, caseDef);
 }
 
 } // TessCoordComponent ns

@@ -91,35 +91,27 @@ private:
 	PipelineCacheData	m_pipelineCacheData;
 };
 
-const std::pair<std::string, std::string> getGroupName (SynchronizationType type, VideoCodecOperationFlags videoCodecOperation)
+const std::pair<std::string, std::string> getGroupName (SynchronizationType type, const std::string& name, VideoCodecOperationFlags videoCodecOperation)
 {
 	if (videoCodecOperation == 0)
 	{
 		const bool	isSynchronization2	(type == SynchronizationType::SYNCHRONIZATION2);
-		const char*	groupName[]			{ "synchronization",		"synchronization2" };
 		const char*	groupDescription[]	{ "Synchronization tests",	"VK_KHR_synchronization2 tests" };
 
-		return std::pair<std::string, std::string>(groupName[isSynchronization2], groupDescription[isSynchronization2]);
+		return std::pair<std::string, std::string>(name, groupDescription[isSynchronization2]);
 	}
 
 #ifndef CTS_USES_VULKANSC
-	switch (videoCodecOperation)
-	{
-		case vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT:	return std::pair<std::string, std::string>("encode_h264", "");
-		case vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT:	return std::pair<std::string, std::string>("encode_h265", "");
-		case vk::VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR:	return std::pair<std::string, std::string>("decode_h264", "");
-		case vk::VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR:	return std::pair<std::string, std::string>("decode_h265", "");
-		default:												TCU_THROW(InternalError, "Unknown codec operation");
-	}
+	return std::pair<std::string, std::string>(name, "");
 #else
 	TCU_THROW(InternalError, "Video support is not implemented in Vulkan SC");
 #endif
 }
 
-tcu::TestCaseGroup* createTestsInternal (tcu::TestContext& testCtx, SynchronizationType type, VideoCodecOperationFlags videoCodecOperation)
+tcu::TestCaseGroup* createTestsInternal (tcu::TestContext& testCtx, SynchronizationType type, const std::string& name, VideoCodecOperationFlags videoCodecOperation)
 {
 	const bool									isSynchronization2	(type == SynchronizationType::SYNCHRONIZATION2);
-	const std::pair<std::string, std::string>	groupName			= getGroupName(type, videoCodecOperation);
+	const std::pair<std::string, std::string>	groupName			= getGroupName(type, name, videoCodecOperation);
 
 	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, groupName.first.c_str(), groupName.second.c_str()));
 
@@ -164,20 +156,30 @@ tcu::TestCaseGroup* createTestsInternal (tcu::TestContext& testCtx, Synchronizat
 
 } // synchronization
 
-tcu::TestCaseGroup* createSynchronizationTests (tcu::TestContext& testCtx, synchronization::VideoCodecOperationFlags videoCodecOperation)
+tcu::TestCaseGroup* createSynchronizationTests(tcu::TestContext& testCtx, const std::string& name)
+{
+	return createSynchronizationTests(testCtx, name, 0u);
+}
+
+tcu::TestCaseGroup* createSynchronization2Tests(tcu::TestContext& testCtx, const std::string& name)
+{
+	return createSynchronization2Tests(testCtx, name, 0u);
+}
+
+tcu::TestCaseGroup* createSynchronizationTests (tcu::TestContext& testCtx, const std::string& name, synchronization::VideoCodecOperationFlags videoCodecOperation)
 {
 	using namespace synchronization;
 
-	de::MovePtr<tcu::TestCaseGroup> testGroup	(createTestsInternal(testCtx, SynchronizationType::LEGACY, videoCodecOperation));
+	de::MovePtr<tcu::TestCaseGroup> testGroup	(createTestsInternal(testCtx, SynchronizationType::LEGACY, name, videoCodecOperation));
 
 	return testGroup.release();
 }
 
-tcu::TestCaseGroup* createSynchronization2Tests (tcu::TestContext& testCtx, synchronization::VideoCodecOperationFlags videoCodecOperation)
+tcu::TestCaseGroup* createSynchronization2Tests (tcu::TestContext& testCtx, const std::string& name, synchronization::VideoCodecOperationFlags videoCodecOperation)
 {
 	using namespace synchronization;
 
-	de::MovePtr<tcu::TestCaseGroup> testGroup(createTestsInternal(testCtx, SynchronizationType::SYNCHRONIZATION2, videoCodecOperation));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(createTestsInternal(testCtx, SynchronizationType::SYNCHRONIZATION2, name, videoCodecOperation));
 
 	return testGroup.release();
 }
