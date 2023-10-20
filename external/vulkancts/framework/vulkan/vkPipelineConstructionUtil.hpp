@@ -532,7 +532,7 @@ public:
 	// Create shader objects if used
 #ifndef CTS_USES_VULKANSC
 	vk::VkShaderStageFlags		getNextStages						(vk::VkShaderStageFlagBits shaderStage, bool tessellationShaders, bool geometryShaders, bool link);
-	vk::VkShaderCreateInfoEXT	makeShaderCreateInfo				(VkShaderStageFlagBits stage, ShaderWrapper& shader, bool link, bool binary);
+	vk::VkShaderCreateInfoEXT	makeShaderCreateInfo				(VkShaderStageFlagBits stage, ShaderWrapper& shader, bool link, bool binary, ShaderWrapper& other);
 	void						createShaders						(bool linked, bool binary);
 #endif
 

@@ -983,7 +983,7 @@ void ShaderObjectStateInstance::setDynamicStates (const vk::DeviceInterface& vk,
 		vk.cmdSetDepthBiasEnable(cmdBuffer, m_params.depthBiasEnable ? VK_TRUE : VK_FALSE);
 	if ((!m_params.pipeline && m_params.vertShader) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE))
 		vk.cmdSetPrimitiveRestartEnable(cmdBuffer, VK_FALSE);
-	if ((!m_params.pipeline && m_params.fragShader) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE))
+	if (!m_params.pipeline || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE))
 		vk.cmdSetRasterizerDiscardEnable(cmdBuffer, m_params.rasterizerDiscardEnable ? VK_TRUE : VK_FALSE);
 	if ((!m_params.pipeline && m_params.vertShader) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE))
 		if (extensionEnabled(deviceExtensions, "VK_EXT_shader_object") || extensionEnabled(deviceExtensions, "VK_EXT_vertex_input_dynamic_state"))
@@ -1039,9 +1039,9 @@ void ShaderObjectStateInstance::setDynamicStates (const vk::DeviceInterface& vk,
 		vk.cmdSetDiscardRectangleModeEXT(cmdBuffer, vk::VK_DISCARD_RECTANGLE_MODE_EXCLUSIVE_EXT);
 	if ((!m_params.pipeline && m_params.discardRectanglesEnable) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT))
 		vk.cmdSetDiscardRectangleEXT(cmdBuffer, 0u, 1u, &scissor);
-	if ((!m_params.pipeline && m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.conservativeRasterization) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_CONSERVATIVE_RASTERIZATION_MODE_EXT))
+	if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable && m_params.conservativeRasterization) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_CONSERVATIVE_RASTERIZATION_MODE_EXT))
 		vk.cmdSetConservativeRasterizationModeEXT(cmdBuffer, m_params.conservativeRasterizationOverestimate ? vk::VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT : vk::VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT);
-	if ((!m_params.pipeline && m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.conservativeRasterization && m_params.conservativeRasterizationOverestimate) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT))
+	if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable && m_params.conservativeRasterization && m_params.conservativeRasterizationOverestimate) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT))
 		vk.cmdSetExtraPrimitiveOverestimationSizeEXT(cmdBuffer, de::min(1.0f, m_context.getConservativeRasterizationPropertiesEXT().maxExtraPrimitiveOverestimationSize));
 	if ((!m_params.pipeline && m_params.depthClip) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_CLIP_ENABLE_EXT))
 		vk.cmdSetDepthClipEnableEXT(cmdBuffer, VK_TRUE);
@@ -1061,7 +1061,7 @@ void ShaderObjectStateInstance::setDynamicStates (const vk::DeviceInterface& vk,
 		vk.cmdSetSampleLocationsEXT(cmdBuffer, &sampleLocationsInfo);
 	if ((!m_params.pipeline && m_params.provokingVertex) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_PROVOKING_VERTEX_MODE_EXT))
 		vk.cmdSetProvokingVertexModeEXT(cmdBuffer, vk::VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT);
-	if (m_params.pipeline || (m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.lineRasterization && m_params.lines))
+	if (m_params.pipeline || (!m_params.rasterizerDiscardEnable && m_params.lineRasterization && m_params.lines))
 	{
 		if (!m_params.pipeline || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_RASTERIZATION_MODE_EXT))
 			vk.cmdSetLineRasterizationModeEXT(cmdBuffer, vk::VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT);

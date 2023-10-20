@@ -1110,10 +1110,12 @@ tcu::TestStatus MeshShaderObjectBindingInstance::iterate (void)
 	};
 	vk.cmdBindShadersEXT(*cmdBuffer, 3u, stages, shaders);
 	vk.cmdDrawMeshTasksEXT(*cmdBuffer, 1, 1, 1);
+	vk::endRendering(vk, *cmdBuffer);
 
 	vk::VkBufferMemoryBarrier shaderBufferBarrier = vk::makeBufferMemoryBarrier(vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_SHADER_WRITE_BIT, *outputBuffer, 0u, bufferSizeBytes);
 	vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (vk::VkDependencyFlags)0u, 0u, (const vk::VkMemoryBarrier*)DE_NULL, 1u, &shaderBufferBarrier, 0u, (const vk::VkImageMemoryBarrier*)DE_NULL);
 
+	vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_LOAD);
 	if (m_params.stage == vk::VK_SHADER_STAGE_TASK_BIT_EXT)
 		vk.cmdBindShadersEXT(*cmdBuffer, 1u, &stages[0], &*taskShader2);
 	else if (m_params.stage == vk::VK_SHADER_STAGE_MESH_BIT_EXT)

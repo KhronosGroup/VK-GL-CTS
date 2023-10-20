@@ -3237,7 +3237,7 @@ vk::VkShaderStageFlags GraphicsPipelineWrapper::getNextStages (vk::VkShaderStage
 	return 0;
 }
 
-vk::VkShaderCreateInfoEXT GraphicsPipelineWrapper::makeShaderCreateInfo (VkShaderStageFlagBits stage, ShaderWrapper& shader, bool link, bool binary)
+vk::VkShaderCreateInfoEXT GraphicsPipelineWrapper::makeShaderCreateInfo (VkShaderStageFlagBits stage, ShaderWrapper& shader, bool link, bool binary, ShaderWrapper& other)
 {
 	if (binary)
 		shader.getShaderBinary();
@@ -3266,6 +3266,17 @@ vk::VkShaderCreateInfoEXT GraphicsPipelineWrapper::makeShaderCreateInfo (VkShade
 		shaderCreateInfo.pushConstantRangeCount = shader.getPipelineLayout()->getPushConstantRangeCount();
 		shaderCreateInfo.pPushConstantRanges = shader.getPipelineLayout()->getPushConstantRanges();
 	}
+	// Pipeline layouts and push constant ranges must match between shaders that are used together
+	if (other.isSet() && shaderCreateInfo.setLayoutCount == 0)
+	{
+		shaderCreateInfo.setLayoutCount = other.getPipelineLayout()->getSetLayoutCount();
+		shaderCreateInfo.pSetLayouts = other.getPipelineLayout()->getSetLayouts();
+	}
+	if (other.isSet() && shaderCreateInfo.pushConstantRangeCount == 0)
+	{
+		shaderCreateInfo.pushConstantRangeCount = other.getPipelineLayout()->getPushConstantRangeCount();
+		shaderCreateInfo.pPushConstantRanges = other.getPipelineLayout()->getPushConstantRanges();
+	}
 	shaderCreateInfo.pSpecializationInfo = shader.getSpecializationInfo();
 	return shaderCreateInfo;
 }
@@ -3274,20 +3285,20 @@ void GraphicsPipelineWrapper::createShaders (bool linked, bool binary)
 {
 	std::vector<vk::VkShaderCreateInfoEXT> createInfos;
 	if (m_internalData->vertexShader.isSet())
-		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_VERTEX_BIT, m_internalData->vertexShader, linked, binary));
+		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_VERTEX_BIT, m_internalData->vertexShader, linked, binary, m_internalData->fragmentShader));
 	if (m_internalData->tessellationControlShader.isSet())
-		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, m_internalData->tessellationControlShader, linked, binary));
+		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, m_internalData->tessellationControlShader, linked, binary, m_internalData->fragmentShader));
 	if (m_internalData->tessellationEvaluationShader.isSet())
-		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, m_internalData->tessellationEvaluationShader, linked, binary));
+		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, m_internalData->tessellationEvaluationShader, linked, binary, m_internalData->fragmentShader));
 	if (m_internalData->geometryShader.isSet())
-		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_GEOMETRY_BIT, m_internalData->geometryShader, linked, binary));
+		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_GEOMETRY_BIT, m_internalData->geometryShader, linked, binary, m_internalData->fragmentShader));
 	if (m_internalData->fragmentShader.isSet())
-		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_FRAGMENT_BIT, m_internalData->fragmentShader, linked, binary));
+		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_FRAGMENT_BIT, m_internalData->fragmentShader, linked, binary, m_internalData->vertexShader));
 	if (m_internalData->taskShader.isSet())
-		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_TASK_BIT_EXT, m_internalData->taskShader, linked, binary));
+		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_TASK_BIT_EXT, m_internalData->taskShader, linked, binary, m_internalData->fragmentShader));
 	if (m_internalData->meshShader.isSet())
 	{
-		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_MESH_BIT_EXT, m_internalData->meshShader, linked, binary));
+		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_MESH_BIT_EXT, m_internalData->meshShader, linked, binary, m_internalData->fragmentShader));
 		if (!m_internalData->taskShader.isSet())
 			createInfos.back().flags |= vk::VK_SHADER_CREATE_NO_TASK_SHADER_BIT_EXT;
 	}
@@ -4043,16 +4054,53 @@ void GraphicsPipelineWrapper::setShaderObjectDynamicStates (vk::VkCommandBuffer 
 			}
 			break;
 		case vk::VK_DYNAMIC_STATE_COLOR_BLEND_ENABLE_EXT:
-			if (!state->colorBlendEnables.empty() && rasterizerDiscardDisabled)
-				vk.cmdSetColorBlendEnableEXT(cmdBuffer, 0, (deUint32)state->colorBlendEnables.size(), state->colorBlendEnables.data());
+			if (rasterizerDiscardDisabled)
+			{
+				if (!state->colorBlendEnables.empty())
+				{
+					vk.cmdSetColorBlendEnableEXT(cmdBuffer, 0, (deUint32)state->colorBlendEnables.size(), state->colorBlendEnables.data());
+				}
+				else
+				{
+					VkBool32 disable = VK_FALSE;
+					vk.cmdSetColorBlendEnableEXT(cmdBuffer, 0, 1u, &disable);
+				}
+			}
 			break;
 		case vk::VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT:
-			if (!state->blendEquations.empty() && state->colorBlendAdvanced.empty() && rasterizerDiscardDisabled)
-				vk.cmdSetColorBlendEquationEXT(cmdBuffer, 0, (deUint32)state->blendEquations.size(), state->blendEquations.data());
+			if (rasterizerDiscardDisabled)
+			{
+				if (!state->blendEquations.empty())
+				{
+					vk.cmdSetColorBlendEquationEXT(cmdBuffer, 0, (deUint32)state->blendEquations.size(), state->blendEquations.data());
+				}
+				else
+				{
+					vk::VkColorBlendEquationEXT blendEquation = {
+						VK_BLEND_FACTOR_SRC_ALPHA,	// VkBlendFactor	srcColorBlendFactor;
+						VK_BLEND_FACTOR_DST_ALPHA,	// VkBlendFactor	dstColorBlendFactor;
+						VK_BLEND_OP_ADD,			// VkBlendOp		colorBlendOp;
+						VK_BLEND_FACTOR_SRC_ALPHA,	// VkBlendFactor	srcAlphaBlendFactor;
+						VK_BLEND_FACTOR_DST_ALPHA,	// VkBlendFactor	dstAlphaBlendFactor;
+						VK_BLEND_OP_ADD,			// VkBlendOp		alphaBlendOp;
+					};
+					vk.cmdSetColorBlendEquationEXT(cmdBuffer, 0, 1u, &blendEquation);
+				}
+			}
 			break;
 		case vk::VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT:
-			if (!state->colorWriteMasks.empty() && rasterizerDiscardDisabled)
-				vk.cmdSetColorWriteMaskEXT(cmdBuffer, 0, (deUint32)state->colorWriteMasks.size(), state->colorWriteMasks.data());
+			if (rasterizerDiscardDisabled)
+			{
+				if (!state->colorWriteMasks.empty())
+				{
+					vk.cmdSetColorWriteMaskEXT(cmdBuffer, 0, (deUint32)state->colorWriteMasks.size(), state->colorWriteMasks.data());
+				}
+				else
+				{
+					VkColorComponentFlags colorWriteMask = 0u;
+					vk.cmdSetColorWriteMaskEXT(cmdBuffer, 0, 1u, &colorWriteMask);
+				}
+			}
 			break;
 		case vk::VK_DYNAMIC_STATE_CONSERVATIVE_RASTERIZATION_MODE_EXT:
 			vk.cmdSetConservativeRasterizationModeEXT(cmdBuffer, state->conservativeRasterizationMode);
@@ -4155,14 +4203,17 @@ void GraphicsPipelineWrapper::setShaderObjectDynamicStates (vk::VkCommandBuffer 
 			}
 			else
 			{
-				const vk::VkViewportSwizzleNV idSwizzle
+				std::vector<vk::VkViewportSwizzleNV> idSwizzles(4u);
+				for (auto& swizzle : idSwizzles)
 				{
-					vk::VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_X_NV,
-					vk::VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_Y_NV,
-					vk::VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_Z_NV,
-					vk::VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_W_NV,
-				};
-				vk.cmdSetViewportSwizzleNV(cmdBuffer, 0u, 1u, &idSwizzle);
+					swizzle = {
+						vk::VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_X_NV,
+						vk::VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_Y_NV,
+						vk::VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_Z_NV,
+						vk::VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_W_NV,
+					};
+				}
+				vk.cmdSetViewportSwizzleNV(cmdBuffer, 0u, (deUint32)idSwizzles.size(), idSwizzles.data());
 			}
 			break;
 		case vk::VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_ENABLE_NV:

@@ -764,6 +764,10 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate (void)
 	auto pipelineLibraryGroupHandlesFeatures		= m_context.getPipelineLibraryGroupHandlesFeaturesEXT();
 	auto multivewPerViewRenderAreasFeatures			= m_context.getMultiviewPerViewRenderAreasFeaturesQCOM();
 
+	// These features depend on other features being enabled
+	meshShaderFeatures.multiviewMeshShader = VK_FALSE;
+	meshShaderFeatures.primitiveFragmentShadingRateMeshShader = VK_FALSE;
+
 	std::vector<void*> pNextFeatures = {
 		&vulkan11features,
 		&vulkan12features,
