@@ -124,7 +124,8 @@ void										downloadImage				(const vk::DeviceInterface&	vkd,
 																		 vk::VkImage				image,
 																		 MultiPlaneImageData*		imageData,
 																		 vk::VkAccessFlags			prevAccess,
-																		 vk::VkImageLayout			initialLayout);
+																		 vk::VkImageLayout			initialLayout,
+																		 uint32_t				baseArrayLayer = 0);
 
 void										readImageMemory				(const vk::DeviceInterface&							vkd,
 																		 vk::VkDevice										device,
