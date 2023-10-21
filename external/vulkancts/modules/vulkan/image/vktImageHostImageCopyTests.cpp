@@ -1838,6 +1838,193 @@ void QueryTestCase::checkSupport (vkt::Context& context) const {
 		TCU_THROW(NotSupportedError, "Format feature sampled image bit not supported for linear tiling.");
 }
 
+class IdenticalMemoryLayoutTestInstance : public vkt::TestInstance
+{
+public:
+	IdenticalMemoryLayoutTestInstance (vkt::Context& context, const vk::VkFormat format, const vk::VkImageTiling tiling)
+		: vkt::TestInstance (context)
+		, m_format			(format)
+		, m_tiling			(tiling)
+	{
+	}
+
+private:
+	tcu::TestStatus				iterate			(void);
+
+	const vk::VkFormat			m_format;
+	const vk::VkImageTiling		m_tiling;
+};
+
+tcu::TestStatus IdenticalMemoryLayoutTestInstance::iterate (void)
+{
+	const InstanceInterface&			vki					= m_context.getInstanceInterface();
+	const DeviceInterface&				vk					= m_context.getDeviceInterface();
+	const vk::VkPhysicalDevice			physicalDevice		= m_context.getPhysicalDevice();
+	const vk::VkDevice					device				= m_context.getDevice();
+	const auto							memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
+	const deUint32						queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const vk::VkQueue					queue				= m_context.getUniversalQueue();
+	auto&								alloc				= m_context.getDefaultAllocator();
+	tcu::TestLog&						log					= m_context.getTestContext().getLog();
+
+	const Move<vk::VkCommandPool>		cmdPool				(createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Move<vk::VkCommandBuffer>		cmdBuffer			(allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+	const auto							aspect				= getAspectFlags(m_format);
+
+	vk::VkImageCreateInfo	imageCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType
+		DE_NULL,									// const void*				pNext
+		0u,											// VkImageCreateFlags		flags
+		vk::VK_IMAGE_TYPE_2D,						// VkImageType				imageType
+		m_format,									// VkFormat					format
+		{32u, 32u, 1u},								// VkExtent3D				extent
+		1u,											// uint32_t					mipLevels
+		1u,											// uint32_t					arrayLayers
+		vk::VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits	samples
+		m_tiling,									// VkImageTiling			tiling
+		vk::VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT,		// VkImageUsageFlags		usage
+		vk::VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode			sharingMode
+		0,											// uint32_t					queueFamilyIndexCount
+		DE_NULL,									// const uint32_t*			pQueueFamilyIndices
+		vk::VK_IMAGE_LAYOUT_PREINITIALIZED			// VkImageLayout			initialLayout
+	};
+
+	const auto image = vk::createImage(vk, device, &imageCreateInfo, nullptr);
+
+	const auto memoryRequirements = vk::getImageMemoryRequirements(vk, device, *image);
+
+	vk::VkBufferCreateInfo	bufferCreateInfo = {
+		vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
+		DE_NULL,									// const void*			pNext;
+		(vk::VkBufferCreateFlags)0u,				// VkBufferCreateFlags	flags;
+		memoryRequirements.size,					// VkDeviceSize			size;
+		vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT,		// VkBufferUsageFlags	usage;
+		vk::VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
+		0u,											// uint32_t				queueFamilyIndexCount;
+		DE_NULL,									// const uint32_t*		pQueueFamilyIndices;
+	};
+
+	const auto buffer = vk::createBuffer(vk, device, &bufferCreateInfo, nullptr);
+
+	uint32_t memoryIndex = selectMatchingMemoryType(memoryProperties, memoryRequirements.memoryTypeBits, MemoryRequirement::HostVisible);
+
+	vk::VkMemoryAllocateInfo memoryAllocateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	//	VkStructureType	sType;
+		DE_NULL,									//	const void*		pNext;
+		memoryRequirements.size,					//	VkDeviceSize	allocationSize;
+		memoryIndex,								//	uint32_t		memoryTypeIndex;
+	};
+	const auto memory = vk::allocateMemory(vk, device, &memoryAllocateInfo, nullptr);
+
+	vk.bindImageMemory(device, *image, *memory, 0u);
+	vk.bindBufferMemory(device, *buffer, *memory, 0u);
+
+	de::MovePtr<BufferWithMemory>	fromBuffer			= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, alloc, makeBufferCreateInfo(memoryRequirements.size, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible));
+	de::MovePtr<BufferWithMemory>	fromImage			= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, alloc, makeBufferCreateInfo(memoryRequirements.size, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible));
+
+	auto ptr = vk::mapMemory(vk, device, *memory, 0u, memoryRequirements.size, 0u);
+
+	generateData(ptr, (deUint32)memoryRequirements.size, m_format);
+
+	vk::VkBufferCopy region =
+	{
+		0u,							// VkDeviceSize	srcOffset;
+		0u,							// VkDeviceSize	dstOffset;
+		memoryRequirements.size,	// VkDeviceSize	size;
+	};
+
+	vk::beginCommandBuffer(vk, *cmdBuffer);
+	vk.cmdCopyBuffer(*cmdBuffer, *buffer, **fromBuffer, 1u, &region);
+	vk::endCommandBuffer(vk, *cmdBuffer);
+	vk::submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	vk::VkBufferImageCopy imageRegion =
+	{
+		0u,								// VkDeviceSize					bufferOffset;
+		0u,								// uint32_t						bufferRowLength;
+		0u,								// uint32_t						bufferImageHeight;
+		{aspect, 0u, 0u, 1u},			// VkImageSubresourceLayers		imageSubresource;
+		{0, 0, 0,},						// VkOffset3D					imageOffset;
+		imageCreateInfo.extent,			// VkExtent3D					imageExtent;
+	};
+
+	const vk::VkImageSubresourceRange	subresourceRange = makeImageSubresourceRange(aspect, 0u, 1u, 0u, 1u);
+
+	vk::beginCommandBuffer(vk, *cmdBuffer);
+	auto imageMemoryBarrier = makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_PREINITIALIZED, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *image, subresourceRange);
+	vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_NONE, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1, &imageMemoryBarrier);
+	vk.cmdCopyImageToBuffer(*cmdBuffer, *image, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **fromImage, 1u, &imageRegion);
+	vk::endCommandBuffer(vk, *cmdBuffer);
+	vk::submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	invalidateAlloc(vk, device, fromBuffer->getAllocation());
+	invalidateAlloc(vk, device, fromImage->getAllocation());
+
+	deUint8* fromBufferPtr = reinterpret_cast<deUint8*>(fromBuffer->getAllocation().getHostPtr());
+	deUint8* fromImagePtr = reinterpret_cast<deUint8*>(fromBuffer->getAllocation().getHostPtr());
+
+	for (deUint32 i = 0; i < memoryRequirements.size; ++i)
+	{
+		if (fromBufferPtr[i] != fromImagePtr[i]) {
+			log << tcu::TestLog::Message << "Copy from buffer at byte " << i << " is " << fromBufferPtr[i] << ", but copy from image at byte " << i << " is " << fromImagePtr[i] << tcu::TestLog::EndMessage;
+			return tcu::TestStatus::fail("fail");
+		}
+	}
+
+	return tcu::TestStatus::pass("pass");
+}
+
+class IdenticalMemoryLayoutTestCase : public vkt::TestCase
+{
+public:
+	IdenticalMemoryLayoutTestCase (tcu::TestContext& context, const char* name, const vk::VkFormat format, const vk::VkImageTiling tiling)
+		: TestCase (context, name)
+		, m_format (format)
+		, m_tiling (tiling)
+	{
+	}
+private:
+	vkt::TestInstance*			createInstance	(vkt::Context& context) const { return new IdenticalMemoryLayoutTestInstance(context, m_format, m_tiling); }
+	void						checkSupport	(vkt::Context& context) const;
+
+	const vk::VkFormat			m_format;
+	const vk::VkImageTiling		m_tiling;
+};
+
+void IdenticalMemoryLayoutTestCase::checkSupport (vkt::Context& context) const {
+	const InstanceInterface&				vki				= context.getInstanceInterface();
+
+	context.requireDeviceFunctionality("VK_EXT_host_image_copy");
+
+	vk::VkFormatProperties3 formatProperties3 = vk::initVulkanStructure();
+	vk::VkFormatProperties2 formatProperties2 = vk::initVulkanStructure(&formatProperties3);
+	vki.getPhysicalDeviceFormatProperties2(context.getPhysicalDevice(), m_format, &formatProperties2);
+	if (m_tiling == VK_IMAGE_TILING_OPTIMAL && (formatProperties3.optimalTilingFeatures & (vk::VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT | vk::VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT)) == 0)
+		TCU_THROW(NotSupportedError, "Required format feature not supported for optimal tiling.");
+	if (m_tiling == VK_IMAGE_TILING_LINEAR && (formatProperties3.linearTilingFeatures & (vk::VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT | vk::VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT)) == 0)
+		TCU_THROW(NotSupportedError, "Required format feature not supported for linear tiling.");
+
+	vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,							// VkStructureType		sType;
+		DE_NULL,																			// const void*			pNext;
+		m_format,																			// VkFormat				format;
+		vk::VK_IMAGE_TYPE_2D,																// VkImageType			type;
+		m_tiling,																			// VkImageTiling		tiling;
+		vk::VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT,		// VkImageUsageFlags	usage;
+		(vk::VkImageCreateFlags)0u															// VkImageCreateFlags	flags;
+	};
+
+	vk::VkHostImageCopyDevicePerformanceQueryEXT	hostImageCopyDevicePerformanceQuery = vk::initVulkanStructure();
+	vk::VkImageFormatProperties2					imageFormatProperties				= vk::initVulkanStructure(&hostImageCopyDevicePerformanceQuery);
+	vk::VkResult res = vki.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo, &imageFormatProperties);
+	if (res == VK_ERROR_FORMAT_NOT_SUPPORTED)
+		TCU_THROW(NotSupportedError, "Format not supported.");
+}
+
 void testGenerator(tcu::TestCaseGroup* group)
 {
 	constexpr struct CopyTest
@@ -2223,6 +2410,21 @@ void testGenerator(tcu::TestCaseGroup* group)
 	}
 
 	group->addChild(queryGroup);
+
+	tcu::TestCaseGroup* const identicalMemoryLayoutGroup = new tcu::TestCaseGroup(testCtx, "identical_memory_layout");
+
+	for (const auto& tiling : tilingTests)
+	{
+		tcu::TestCaseGroup* const tilingGroup = new tcu::TestCaseGroup(testCtx, tiling.name);
+		for (const auto& format : queryFormats)
+		{
+			const auto formatName = getFormatShortString(format.format);
+			tilingGroup->addChild(new IdenticalMemoryLayoutTestCase(testCtx, formatName.c_str(), format.format, tiling.tiling));
+		}
+		identicalMemoryLayoutGroup->addChild(tilingGroup);
+	}
+
+	group->addChild(identicalMemoryLayoutGroup);
 }
 
 } // anonymous
