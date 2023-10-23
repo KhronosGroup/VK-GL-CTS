@@ -843,11 +843,38 @@ bool exportImportMemoryExplicitModifiersCase (Context& context, const VkFormat f
 	TCU_CHECK(properties.drmFormatModifier == modifiers.front());
 	inputImageMemFd	= vkt::ExternalMemoryUtil::getMemoryFd(vkd, device, *dstMemory, VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT);
 
-	Move<VkImage>				importedSrcImage		(createImageWithDrmFormatModifiers(vkd, device, VK_IMAGE_TYPE_2D,
+	ExplicitModifier explicitModifier =
+	{
+		modifier.drmFormatModifier,
+		modifier.drmFormatModifierPlaneCount,
+		DE_NULL,								// pPlaneLayouts
+	};
+	std::vector<VkSubresourceLayout>	planeLayouts;
+	for (uint32_t i = 0; i < modifier.drmFormatModifierPlaneCount; i++)
+	{
+		VkImageSubresource imageSubresource;
+		VkSubresourceLayout subresourceLayout;
+
+		deMemset(&imageSubresource, 0, sizeof(imageSubresource));
+
+		imageSubresource.aspectMask = VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT << i;
+
+		vkd.getImageSubresourceLayout(device, *dstImage, &imageSubresource, &subresourceLayout);
+
+		subresourceLayout.size = 0;
+		subresourceLayout.arrayPitch = 0;
+		subresourceLayout.depthPitch = 0;
+
+		planeLayouts.push_back(subresourceLayout);
+
+	}
+	explicitModifier.pPlaneLayouts = planeLayouts.data();
+
+	Move<VkImage>				importedSrcImage		(createImageWithDrmFormatExplicitModifier(vkd, device, VK_IMAGE_TYPE_2D,
 																																						 VK_IMAGE_USAGE_TRANSFER_DST_BIT |
 																																						 VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 																																						 VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
-																																						 {format}, UVec2(64, 64), modifiers));
+																																						 {format}, UVec2(64, 64), explicitModifier));
 
 	VkMemoryRequirements importedSrcImageMemoryReq = getImageMemoryRequirements(vkd, device, *importedSrcImage);
 
