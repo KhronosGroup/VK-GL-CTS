@@ -348,6 +348,8 @@ void CooperativeMatrixTestCase::checkSupport (Context& context) const
 
 	std::vector<VkCooperativeMatrixPropertiesKHR>	properties		= getCooperativeMatrixPropertiesConverted(context, isKhr(m_data.useType));
 	bool											supported[2]	= { false, false };
+	const auto										isMMA			= isMatrixMulAddOp(m_data.testType);
+	const auto										isMMASat		= m_data.testType == TT_MATRIXMULADD_SATURATED;
 
 	for (size_t i = 0; i < properties.size(); ++i)
 	{
@@ -356,10 +358,10 @@ void CooperativeMatrixTestCase::checkSupport (Context& context) const
 		if (p->scope != VK_SCOPE_SUBGROUP_KHR)
 			continue;
 
-		if (m_data.testType == TT_MATRIXMULADD_SATURATED && p->saturatingAccumulation == DE_FALSE)
+		if (isMMA && isMMASat != static_cast<bool>(p->saturatingAccumulation))
 			continue;
 
-		if (isMatrixMulAddOp(m_data.testType))
+		if (isMMA)
 		{
 			if (p->AType == m_data.inputType &&
 				p->BType == m_data.inputType &&
