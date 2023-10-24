@@ -558,8 +558,7 @@ tcu::TestStatus testPhysicalDeviceFeatureMaintenance6FeaturesKHR (Context& conte
 		log << TestLog::Message << deviceMaintenance6FeaturesKHR[0] << TestLog::EndMessage;
 
 	if (isMaintenance6FeaturesKHR &&
-		(deviceMaintenance6FeaturesKHR[0].maintenance6 != deviceMaintenance6FeaturesKHR[1].maintenance6 ||
-		 deviceMaintenance6FeaturesKHR[0].blockTexelViewCompatibleMultipleLayers != deviceMaintenance6FeaturesKHR[1].blockTexelViewCompatibleMultipleLayers))
+		(deviceMaintenance6FeaturesKHR[0].maintenance6 != deviceMaintenance6FeaturesKHR[1].maintenance6))
 	{
 		TCU_FAIL("Mismatch between VkPhysicalDeviceMaintenance6FeaturesKHR");
 	}

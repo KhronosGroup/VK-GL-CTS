@@ -3175,13 +3175,13 @@ struct VkPhysicalDeviceMaintenance6FeaturesKHR
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		maintenance6;
-	VkBool32		blockTexelViewCompatibleMultipleLayers;
 };
 
 struct VkPhysicalDeviceMaintenance6PropertiesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
+	VkBool32		blockTexelViewCompatibleMultipleLayers;
 	uint32_t		maxCombinedImageSamplerDescriptorCount;
 	VkBool32		fragmentShadingRateClampCombinerInputs;
 };

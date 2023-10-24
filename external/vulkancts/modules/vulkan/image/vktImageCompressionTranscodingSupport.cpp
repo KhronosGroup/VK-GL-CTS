@@ -3052,8 +3052,8 @@ void TexelViewCompatibleCase::checkSupport (Context& context) const
 #ifndef CTS_USES_VULKANSC
 	if (m_parameters.useMultiLayerViews())
 	{
-		const auto& maint6Features = context.getMaintenance6Features();
-		if (!maint6Features.blockTexelViewCompatibleMultipleLayers)
+		const auto& maint6Properties = context.getMaintenance6Properties();
+		if (!maint6Properties.blockTexelViewCompatibleMultipleLayers)
 			TCU_THROW(NotSupportedError, "blockTexelViewCompatibleMultipleLayers not supported");
 	}
 #endif // CTS_USES_VULKANSC

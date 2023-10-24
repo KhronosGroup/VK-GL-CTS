@@ -11810,12 +11810,12 @@ typedef struct VkPhysicalDeviceMaintenance6FeaturesKHR {
     VkStructureType    sType;
     void*              pNext;
     VkBool32           maintenance6;
-    VkBool32           blockTexelViewCompatibleMultipleLayers;
 } VkPhysicalDeviceMaintenance6FeaturesKHR;
 
 typedef struct VkPhysicalDeviceMaintenance6PropertiesKHR {
     VkStructureType    sType;
     void*              pNext;
+    VkBool32           blockTexelViewCompatibleMultipleLayers;
     deUint32           maxCombinedImageSamplerDescriptorCount;
     VkBool32           fragmentShadingRateClampCombinerInputs;
 } VkPhysicalDeviceMaintenance6PropertiesKHR;

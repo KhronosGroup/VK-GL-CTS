@@ -9700,7 +9700,6 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance6Fea
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmaintenance6 = " << value.maintenance6 << '\n';
-	s << "\tblockTexelViewCompatibleMultipleLayers = " << value.blockTexelViewCompatibleMultipleLayers << '\n';
 	s << '}';
 	return s;
 }
@@ -9710,6 +9709,7 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance6Pro
 	s << "VkPhysicalDeviceMaintenance6PropertiesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tblockTexelViewCompatibleMultipleLayers = " << value.blockTexelViewCompatibleMultipleLayers << '\n';
 	s << "\tmaxCombinedImageSamplerDescriptorCount = " << value.maxCombinedImageSamplerDescriptorCount << '\n';
 	s << "\tfragmentShadingRateClampCombinerInputs = " << value.fragmentShadingRateClampCombinerInputs << '\n';
 	s << '}';

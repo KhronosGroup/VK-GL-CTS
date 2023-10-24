@@ -699,10 +699,9 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMaintenance6FeaturesKHR (
 		static const Feature features[] =
 		{
 		FEATURE_ITEM (VkPhysicalDeviceMaintenance6FeaturesKHR, maintenance6),
-		FEATURE_ITEM (VkPhysicalDeviceMaintenance6FeaturesKHR, blockTexelViewCompatibleMultipleLayers),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceMaintenance6FeaturesKHR*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion());
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
