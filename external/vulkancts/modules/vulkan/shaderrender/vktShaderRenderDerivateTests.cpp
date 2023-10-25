@@ -702,31 +702,6 @@ tcu::TestStatus TriangleDerivateCaseInstance::iterate (void)
 	const deUint32				numTriangles	= 2;
 	const deUint16				indices[]		= { 0, 2, 1, 2, 3, 1 };
 	tcu::TextureLevel			resultImage;
-	const bool					subgroupFunc	= isSubgroupFunc(m_definitions.func);
-
-	if (m_definitions.inNonUniformControlFlow || subgroupFunc)
-	{
-		const std::string errorPrefix	= m_definitions.inNonUniformControlFlow
-										? "Derivatives in dynamic control flow"
-										: "Manual derivatives with subgroup operations";
-
-		if (!m_context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
-			throw tcu::NotSupportedError(errorPrefix + " require Vulkan 1.1");
-
-		const auto& subgroupProperties = m_context.getSubgroupProperties();
-
-		if (subgroupProperties.subgroupSize < 4)
-			throw tcu::NotSupportedError(errorPrefix + " require subgroupSize >= 4");
-
-		if ((subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_BALLOT_BIT) == 0)
-			throw tcu::NotSupportedError(errorPrefix + " tests require VK_SUBGROUP_FEATURE_BALLOT_BIT");
-
-		if ((subgroupProperties.supportedStages & VK_SHADER_STAGE_FRAGMENT_BIT) == 0)
-			throw tcu::NotSupportedError(errorPrefix + " tests require subgroup supported stage including VK_SHADER_STAGE_FRAGMENT_BIT");
-
-		if (subgroupFunc && (subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_QUAD_BIT) == 0)
-			throw tcu::NotSupportedError(errorPrefix + " tests require VK_SUBGROUP_FEATURE_QUAD_BIT");
-	}
 
 	setup();
 
@@ -794,9 +769,11 @@ public:
 															 const UniformSetup*	uniformSetup);
 	virtual							~TriangleDerivateCase	(void);
 
+	void							checkSupport			(Context& context) const override;
+
 protected:
-	mutable DerivateCaseDefinition	m_definitions;
-	mutable DerivateCaseValues		m_values;
+	DerivateCaseDefinition	m_definitions;
+	DerivateCaseValues		m_values;
 };
 
 TriangleDerivateCase::TriangleDerivateCase (tcu::TestContext&		testCtx,
@@ -809,6 +786,37 @@ TriangleDerivateCase::TriangleDerivateCase (tcu::TestContext&		testCtx,
 
 TriangleDerivateCase::~TriangleDerivateCase (void)
 {
+}
+
+void TriangleDerivateCase::checkSupport (Context& context) const
+{
+	ShaderRenderCase::checkSupport(context);
+
+	const bool subgroupFunc = isSubgroupFunc(m_definitions.func);
+
+	if (m_definitions.inNonUniformControlFlow || subgroupFunc)
+	{
+		const std::string errorPrefix	= m_definitions.inNonUniformControlFlow
+										? "Derivatives in dynamic control flow"
+										: "Manual derivatives with subgroup operations";
+
+		if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
+			throw tcu::NotSupportedError(errorPrefix + " require Vulkan 1.1");
+
+		const auto& subgroupProperties = context.getSubgroupProperties();
+
+		if (subgroupProperties.subgroupSize < 4)
+			throw tcu::NotSupportedError(errorPrefix + " require subgroupSize >= 4");
+
+		if ((subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_BALLOT_BIT) == 0)
+			throw tcu::NotSupportedError(errorPrefix + " tests require VK_SUBGROUP_FEATURE_BALLOT_BIT");
+
+		if ((subgroupProperties.supportedStages & VK_SHADER_STAGE_FRAGMENT_BIT) == 0)
+			throw tcu::NotSupportedError(errorPrefix + " tests require subgroup supported stage including VK_SHADER_STAGE_FRAGMENT_BIT");
+
+		if (subgroupFunc && (subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_QUAD_BIT) == 0)
+			throw tcu::NotSupportedError(errorPrefix + " tests require VK_SUBGROUP_FEATURE_QUAD_BIT");
+	}
 }
 
 static std::string genVertexSource (glu::DataType coordType, glu::Precision precision)
@@ -899,6 +907,9 @@ ConstantDerivateCase::ConstantDerivateCase (tcu::TestContext&		testCtx,
 	m_definitions.func				= func;
 	m_definitions.dataType			= type;
 	m_definitions.precision			= glu::PRECISION_HIGHP;
+
+	m_values.derivScale		= tcu::Vec4(1e3f, 1e3f, 1e3f, 1e3f);
+	m_values.derivBias		= tcu::Vec4(0.5f, 0.5f, 0.5f, 0.5f);
 }
 
 ConstantDerivateCase::~ConstantDerivateCase (void)
@@ -940,9 +951,6 @@ void ConstantDerivateCase::initPrograms (vk::SourceCollections& programCollectio
 	std::string fragmentSrc = tcu::StringTemplate(fragmentTmpl).specialize(fragmentParams);
 	programCollection.glslSources.add("vert") << glu::VertexSource(genVertexSource(m_definitions.coordDataType, m_definitions.coordPrecision));
 	programCollection.glslSources.add("frag") << glu::FragmentSource(fragmentSrc);
-
-	m_values.derivScale		= tcu::Vec4(1e3f, 1e3f, 1e3f, 1e3f);
-	m_values.derivBias		= tcu::Vec4(0.5f, 0.5f, 0.5f, 0.5f);
 }
 
 // Linear cases
@@ -1140,6 +1148,55 @@ LinearDerivateCase::LinearDerivateCase (tcu::TestContext&		testCtx,
 	m_definitions.coordPrecision			= m_definitions.precision;
 	m_definitions.surfaceType				= surfaceType;
 	m_definitions.numSamples				= numSamples;
+
+	const tcu::UVec2	viewportSize	(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
+	const float			w				= float(viewportSize.x());
+	const float			h				= float(viewportSize.y());
+
+	switch (m_definitions.precision)
+	{
+		case glu::PRECISION_HIGHP:
+			m_values.coordMin = tcu::Vec4(-97.f, 0.2f, 71.f, 74.f);
+			m_values.coordMax = tcu::Vec4(-13.2f, -77.f, 44.f, 76.f);
+			break;
+
+		case glu::PRECISION_MEDIUMP:
+			m_values.coordMin = tcu::Vec4(-37.0f, 47.f, -7.f, 0.0f);
+			m_values.coordMax = tcu::Vec4(-1.0f, 12.f, 7.f, 19.f);
+			break;
+
+		case glu::PRECISION_LOWP:
+			m_values.coordMin = tcu::Vec4(0.0f, -1.0f, 0.0f, 1.0f);
+			m_values.coordMax = tcu::Vec4(1.0f, 1.0f, -1.0f, -1.0f);
+			break;
+
+		default:
+			DE_ASSERT(false);
+	}
+
+	if (m_definitions.surfaceType == SURFACETYPE_FLOAT_FBO)
+	{
+		// No scale or bias used for accuracy.
+		m_values.derivScale	= tcu::Vec4(1.0f);
+		m_values.derivBias	= tcu::Vec4(0.0f);
+	}
+	else
+	{
+		// Compute scale - bias that normalizes to 0..1 range.
+		const tcu::Vec4 dx = (m_values.coordMax - m_values.coordMin) / tcu::Vec4(w, w, w*0.5f, -w*0.5f);
+		const tcu::Vec4 dy = (m_values.coordMax - m_values.coordMin) / tcu::Vec4(h, h, h*0.5f, -h*0.5f);
+
+		if (isDfdxFunc(m_definitions.func))
+			m_values.derivScale = 0.5f / dx;
+		else if (isDfdyFunc(m_definitions.func))
+			m_values.derivScale = 0.5f / dy;
+		else if (isFwidthFunc(m_definitions.func))
+			m_values.derivScale = 0.5f / (tcu::abs(dx) + tcu::abs(dy));
+		else
+			DE_ASSERT(false);
+
+		m_values.derivBias = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	}
 }
 
 LinearDerivateCase::~LinearDerivateCase (void)
@@ -1157,9 +1214,6 @@ void LinearDerivateCase::initPrograms (vk::SourceCollections& programCollection)
 	const SpirvVersion				spirvVersion = (m_definitions.inNonUniformControlFlow || isSubgroupFunc(m_definitions.func)) ? vk::SPIRV_VERSION_1_3 : vk::SPIRV_VERSION_1_0;
 	const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
 
-	const tcu::UVec2	viewportSize	(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
-	const float			w				= float(viewportSize.x());
-	const float			h				= float(viewportSize.y());
 	const bool			packToInt		= m_definitions.surfaceType == SURFACETYPE_FLOAT_FBO;
 	map<string, string>	fragmentParams;
 
@@ -1187,51 +1241,6 @@ void LinearDerivateCase::initPrograms (vk::SourceCollections& programCollection)
 	std::string fragmentSrc = tcu::StringTemplate(m_fragmentTmpl).specialize(fragmentParams);
 	programCollection.glslSources.add("vert") << glu::VertexSource(genVertexSource(m_definitions.coordDataType, m_definitions.coordPrecision));
 	programCollection.glslSources.add("frag") << glu::FragmentSource(fragmentSrc) << buildOptions;
-
-	switch (m_definitions.precision)
-	{
-		case glu::PRECISION_HIGHP:
-			m_values.coordMin = tcu::Vec4(-97.f, 0.2f, 71.f, 74.f);
-			m_values.coordMax = tcu::Vec4(-13.2f, -77.f, 44.f, 76.f);
-			break;
-
-		case glu::PRECISION_MEDIUMP:
-			m_values.coordMin = tcu::Vec4(-37.0f, 47.f, -7.f, 0.0f);
-			m_values.coordMax = tcu::Vec4(-1.0f, 12.f, 7.f, 19.f);
-			break;
-
-		case glu::PRECISION_LOWP:
-			m_values.coordMin = tcu::Vec4(0.0f, -1.0f, 0.0f, 1.0f);
-			m_values.coordMax = tcu::Vec4(1.0f, 1.0f, -1.0f, -1.0f);
-			break;
-
-		default:
-			DE_ASSERT(false);
-	}
-
-	if (m_definitions.surfaceType == SURFACETYPE_FLOAT_FBO)
-	{
-		// No scale or bias used for accuracy.
-		m_values.derivScale	= tcu::Vec4(1.0f);
-		m_values.derivBias		= tcu::Vec4(0.0f);
-	}
-	else
-	{
-		// Compute scale - bias that normalizes to 0..1 range.
-		const tcu::Vec4 dx = (m_values.coordMax - m_values.coordMin) / tcu::Vec4(w, w, w*0.5f, -w*0.5f);
-		const tcu::Vec4 dy = (m_values.coordMax - m_values.coordMin) / tcu::Vec4(h, h, h*0.5f, -h*0.5f);
-
-		if (isDfdxFunc(m_definitions.func))
-			m_values.derivScale = 0.5f / dx;
-		else if (isDfdyFunc(m_definitions.func))
-			m_values.derivScale = 0.5f / dy;
-		else if (isFwidthFunc(m_definitions.func))
-			m_values.derivScale = 0.5f / (tcu::abs(dx) + tcu::abs(dy));
-		else
-			DE_ASSERT(false);
-
-		m_values.derivBias = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
-	}
 }
 
 // TextureDerivateCaseInstance
@@ -1411,7 +1420,7 @@ public:
 	virtual TestInstance*	createInstance				(Context& context) const;
 
 private:
-	mutable TextureCaseValues	m_textureValues;
+	TextureCaseValues		m_textureValues;
 };
 
 TextureDerivateCase::TextureDerivateCase (tcu::TestContext&		testCtx,
@@ -1430,6 +1439,63 @@ TextureDerivateCase::TextureDerivateCase (tcu::TestContext&		testCtx,
 	m_definitions.coordPrecision	= glu::PRECISION_HIGHP;
 	m_definitions.surfaceType		= surfaceType;
 	m_definitions.numSamples		= numSamples;
+
+	// Texture size matches viewport and nearest sampling is used. Thus texture sampling
+	// is equal to just interpolating the texture value range.
+
+	// Determine value range for texture.
+
+	switch (m_definitions.precision)
+	{
+		case glu::PRECISION_HIGHP:
+			m_textureValues.texValueMin = tcu::Vec4(-97.f, 0.2f, 71.f, 74.f);
+			m_textureValues.texValueMax = tcu::Vec4(-13.2f, -77.f, 44.f, 76.f);
+			break;
+
+		case glu::PRECISION_MEDIUMP:
+			m_textureValues.texValueMin = tcu::Vec4(-37.0f, 47.f, -7.f, 0.0f);
+			m_textureValues.texValueMax = tcu::Vec4(-1.0f, 12.f, 7.f, 19.f);
+			break;
+
+		case glu::PRECISION_LOWP:
+			m_textureValues.texValueMin = tcu::Vec4(0.0f, -1.0f, 0.0f, 1.0f);
+			m_textureValues.texValueMax = tcu::Vec4(1.0f, 1.0f, -1.0f, -1.0f);
+			break;
+
+		default:
+			DE_ASSERT(false);
+	}
+
+	// Texture coordinates
+	m_values.coordMin = tcu::Vec4(0.0f);
+	m_values.coordMax = tcu::Vec4(1.0f);
+
+	if (m_definitions.surfaceType == SURFACETYPE_FLOAT_FBO)
+	{
+		// No scale or bias used for accuracy.
+		m_values.derivScale		= tcu::Vec4(1.0f);
+		m_values.derivBias		= tcu::Vec4(0.0f);
+	}
+	else
+	{
+		// Compute scale - bias that normalizes to 0..1 range.
+		const tcu::UVec2	viewportSize	(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
+		const float			w				= float(viewportSize.x());
+		const float			h				= float(viewportSize.y());
+		const tcu::Vec4		dx				= (m_textureValues.texValueMax - m_textureValues.texValueMin) / tcu::Vec4(w, w, w*0.5f, -w*0.5f);
+		const tcu::Vec4		dy				= (m_textureValues.texValueMax - m_textureValues.texValueMin) / tcu::Vec4(h, h, h*0.5f, -h*0.5f);
+
+		if (isDfdxFunc(m_definitions.func))
+			m_values.derivScale = 0.5f / dx;
+		else if (isDfdyFunc(m_definitions.func))
+			m_values.derivScale = 0.5f / dy;
+		else if (isFwidthFunc(m_definitions.func))
+			m_values.derivScale = 0.5f / (tcu::abs(dx) + tcu::abs(dy));
+		else
+			DE_ASSERT(false);
+
+		m_values.derivBias = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	}
 }
 
 TextureDerivateCase::~TextureDerivateCase (void)
@@ -1491,63 +1557,6 @@ void TextureDerivateCase::initPrograms (vk::SourceCollections& programCollection
 		std::string fragmentSrc = tcu::StringTemplate(fragmentTmpl).specialize(fragmentParams);
 		programCollection.glslSources.add("vert") << glu::VertexSource(genVertexSource(m_definitions.coordDataType, m_definitions.coordPrecision));
 		programCollection.glslSources.add("frag") << glu::FragmentSource(fragmentSrc);
-	}
-
-	// Texture size matches viewport and nearest sampling is used. Thus texture sampling
-	// is equal to just interpolating the texture value range.
-
-	// Determine value range for texture.
-
-	switch (m_definitions.precision)
-	{
-		case glu::PRECISION_HIGHP:
-			m_textureValues.texValueMin = tcu::Vec4(-97.f, 0.2f, 71.f, 74.f);
-			m_textureValues.texValueMax = tcu::Vec4(-13.2f, -77.f, 44.f, 76.f);
-			break;
-
-		case glu::PRECISION_MEDIUMP:
-			m_textureValues.texValueMin = tcu::Vec4(-37.0f, 47.f, -7.f, 0.0f);
-			m_textureValues.texValueMax = tcu::Vec4(-1.0f, 12.f, 7.f, 19.f);
-			break;
-
-		case glu::PRECISION_LOWP:
-			m_textureValues.texValueMin = tcu::Vec4(0.0f, -1.0f, 0.0f, 1.0f);
-			m_textureValues.texValueMax = tcu::Vec4(1.0f, 1.0f, -1.0f, -1.0f);
-			break;
-
-		default:
-			DE_ASSERT(false);
-	}
-
-	// Texture coordinates
-	m_values.coordMin = tcu::Vec4(0.0f);
-	m_values.coordMax = tcu::Vec4(1.0f);
-
-	if (m_definitions.surfaceType == SURFACETYPE_FLOAT_FBO)
-	{
-		// No scale or bias used for accuracy.
-		m_values.derivScale		= tcu::Vec4(1.0f);
-		m_values.derivBias		= tcu::Vec4(0.0f);
-	}
-	else
-	{
-		// Compute scale - bias that normalizes to 0..1 range.
-		const tcu::UVec2	viewportSize	(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
-		const float			w				= float(viewportSize.x());
-		const float			h				= float(viewportSize.y());
-		const tcu::Vec4		dx				= (m_textureValues.texValueMax - m_textureValues.texValueMin) / tcu::Vec4(w, w, w*0.5f, -w*0.5f);
-		const tcu::Vec4		dy				= (m_textureValues.texValueMax - m_textureValues.texValueMin) / tcu::Vec4(h, h, h*0.5f, -h*0.5f);
-
-		if (isDfdxFunc(m_definitions.func))
-			m_values.derivScale = 0.5f / dx;
-		else if (isDfdyFunc(m_definitions.func))
-			m_values.derivScale = 0.5f / dy;
-		else if (isFwidthFunc(m_definitions.func))
-			m_values.derivScale = 0.5f / (tcu::abs(dx) + tcu::abs(dy));
-		else
-			DE_ASSERT(false);
-
-		m_values.derivBias = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
 	}
 }
 
