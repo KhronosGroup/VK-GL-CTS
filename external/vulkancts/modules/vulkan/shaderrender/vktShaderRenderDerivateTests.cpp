@@ -702,24 +702,18 @@ tcu::TestStatus TriangleDerivateCaseInstance::iterate (void)
 	const deUint32				numTriangles	= 2;
 	const deUint16				indices[]		= { 0, 2, 1, 2, 3, 1 };
 	tcu::TextureLevel			resultImage;
+	const bool					subgroupFunc	= isSubgroupFunc(m_definitions.func);
 
-	if (m_definitions.inNonUniformControlFlow || isSubgroupFunc(m_definitions.func))
+	if (m_definitions.inNonUniformControlFlow || subgroupFunc)
 	{
-		const std::string errorPrefix = m_definitions.inNonUniformControlFlow ? "Derivatives in dynamic control flow" :
-																				"Manual derivatives with subgroup operations";
+		const std::string errorPrefix	= m_definitions.inNonUniformControlFlow
+										? "Derivatives in dynamic control flow"
+										: "Manual derivatives with subgroup operations";
+
 		if (!m_context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
 			throw tcu::NotSupportedError(errorPrefix + " require Vulkan 1.1");
 
-		vk::VkPhysicalDeviceSubgroupProperties subgroupProperties;
-		deMemset(&subgroupProperties, 0, sizeof(subgroupProperties));
-		subgroupProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
-
-		vk::VkPhysicalDeviceProperties2 properties2;
-		deMemset(&properties2, 0, sizeof(properties2));
-		properties2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-		properties2.pNext = &subgroupProperties;
-
-		m_context.getInstanceInterface().getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &properties2);
+		const auto& subgroupProperties = m_context.getSubgroupProperties();
 
 		if (subgroupProperties.subgroupSize < 4)
 			throw tcu::NotSupportedError(errorPrefix + " require subgroupSize >= 4");
@@ -727,7 +721,10 @@ tcu::TestStatus TriangleDerivateCaseInstance::iterate (void)
 		if ((subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_BALLOT_BIT) == 0)
 			throw tcu::NotSupportedError(errorPrefix + " tests require VK_SUBGROUP_FEATURE_BALLOT_BIT");
 
-		if (isSubgroupFunc(m_definitions.func) && (subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_QUAD_BIT) == 0)
+		if ((subgroupProperties.supportedStages & VK_SHADER_STAGE_FRAGMENT_BIT) == 0)
+			throw tcu::NotSupportedError(errorPrefix + " tests require subgroup supported stage including VK_SHADER_STAGE_FRAGMENT_BIT");
+
+		if (subgroupFunc && (subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_QUAD_BIT) == 0)
 			throw tcu::NotSupportedError(errorPrefix + " tests require VK_SUBGROUP_FEATURE_QUAD_BIT");
 	}
 
