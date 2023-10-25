@@ -1291,7 +1291,7 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 	de::MovePtr<tcu::TestCaseGroup>	noColorAttachmentTests		(new tcu::TestCaseGroup(testCtx, "nocolor"));
 
 	// Tests for format features
-	if (!isConstructionTypeLibrary(pipelineConstructionType))
+	if (!isConstructionTypeLibrary(pipelineConstructionType) && !isConstructionTypeShaderObject(pipelineConstructionType))
 	{
 		de::MovePtr<tcu::TestCaseGroup> formatFeaturesTests (new tcu::TestCaseGroup(testCtx, "format_features"));
 

@@ -1402,7 +1402,7 @@ void AddRepeatedPipelineTests(tcu::TestCaseGroup* group, vk::ComputePipelineCons
 	}
 }
 #ifndef CTS_USES_VULKANSC
-void AddSharedMemoryTests (tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType)
+void AddSharedMemoryTests (tcu::TestCaseGroup* group)
 {
 	tcu::TestContext&			testCtx		= group->getTestContext();
 	std::string					filePath	= "compute/zero_initialize_workgroup_memory";
@@ -1461,9 +1461,13 @@ tcu::TestCaseGroup* createZeroInitializeWorkgroupMemoryTests (tcu::TestContext& 
 	tests->addChild(repeatPipelineGroup);
 
 #ifndef CTS_USES_VULKANSC
-	tcu::TestCaseGroup* subgroupInvocationGroup = new tcu::TestCaseGroup(testCtx, "shared_memory_blocks");
-	AddSharedMemoryTests(subgroupInvocationGroup, computePipelineConstructionType);
-	tests->addChild(subgroupInvocationGroup);
+	// These are Amber tests and Amber cannot use shader objects.
+	if (!isComputePipelineConstructionTypeShaderObject(computePipelineConstructionType))
+	{
+		tcu::TestCaseGroup* subgroupInvocationGroup = new tcu::TestCaseGroup(testCtx, "shared_memory_blocks");
+		AddSharedMemoryTests(subgroupInvocationGroup);
+		tests->addChild(subgroupInvocationGroup);
+	}
 #endif // CTS_USES_VULKANSC
 
 	return tests.release();

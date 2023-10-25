@@ -399,6 +399,7 @@ tcu::TestStatus NonSequentialInstance::iterate (void)
 	{
 		graphicsPipelines[i].setDefaultDepthStencilState()
 			.setDefaultColorBlendState()
+			.setMonolithicPipelineLayout(pipelineLayout)
 			.setDynamicState(&pipelineDynamicStateNfo)
 			.setDefaultMultisampleState()
 			.setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
