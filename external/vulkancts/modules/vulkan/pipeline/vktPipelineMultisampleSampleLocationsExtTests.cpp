@@ -955,9 +955,9 @@ public:
 		m_renderPass.begin(vk, cmdBuffer, renderArea, static_cast<deUint32>(m_clearValues.size()), dataOrNullPtr(m_clearValues), subpassContents, &renderPassSampleLocationsBeginInfo);
 	}
 
-	void nextSubpass (const DeviceInterface& vk, const VkCommandBuffer cmdBuffer) const
+	void nextSubpass (const DeviceInterface& vk, const VkCommandBuffer cmdBuffer, const VkSubpassContents subpassContents) const
 	{
-		m_renderPass.nextSubpass(vk, cmdBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		m_renderPass.nextSubpass(vk, cmdBuffer, subpassContents);
 	}
 
 	void endRenderPass (const DeviceInterface& vk, const VkCommandBuffer cmdBuffer) const
@@ -2940,7 +2940,7 @@ protected:
 			rt.recordBeginRenderPass(vk, *cmdBuffer, renderArea, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 			vk.cmdExecuteCommands(*cmdBuffer, 1u, &secondaryCmdBuffer[0].get());
 
-			rt.nextSubpass(vk, *cmdBuffer);
+			rt.nextSubpass(vk, *cmdBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 			vk.cmdExecuteCommands(*cmdBuffer, 1u, &secondaryCmdBuffer[1].get());
 		}
 		else
@@ -2948,7 +2948,7 @@ protected:
 			rt.recordBeginRenderPass(vk, *cmdBuffer, renderArea, VK_SUBPASS_CONTENTS_INLINE);
 			recordFirstPassContents(*cmdBuffer, pipelines[0], sampleLocationsInfo[0]);
 
-			rt.nextSubpass(vk, *cmdBuffer);
+			rt.nextSubpass(vk, *cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 			recordSecondPassContents(*cmdBuffer, pipelines[1], sampleLocationsInfo[1], clearColor1, clearDepthStencil0, scissor);
 		}
 
