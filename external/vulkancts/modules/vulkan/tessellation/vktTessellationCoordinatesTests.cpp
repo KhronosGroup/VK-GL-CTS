@@ -759,7 +759,7 @@ tcu::TestStatus TessCoordTestInstance::iterate (void)
 
 		// Reset the command buffer and begin recording.
 		beginCommandBuffer(vk, *cmdBuffer);
-		beginRenderPassWithRasterizationDisabled(vk, *cmdBuffer, *renderPass, *framebuffer);
+		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(1, 1));
 
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
