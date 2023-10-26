@@ -39,6 +39,7 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <unordered_map>
 
 using std::string;
 using std::vector;
@@ -264,6 +265,33 @@ void registerLegacyOptions (de::cmdline::Parser& parser)
 
 } // opt
 
+
+// Used to store hashes of test case names
+typedef size_t test_case_hash_t;
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Generates an hash for the test case name part provided.
+ * If a hashCollisionDetectionMap is passed, will detect hash
+ * collisions using that map. hashCollisionDetectionMap can be NULL.
+ * As an example, the standard std::hash<std::string>, truncated to
+ * 32-bit, will collide with 'random_298' and 'subgroupand_int16_t_mesh_requiredsubgroupsize'
+ *//*--------------------------------------------------------------------*/
+static test_case_hash_t hashTestNodeName(const std::string &name, std::unordered_map<test_case_hash_t, std::string> *hashCollisionDetectionMap)
+{
+	const test_case_hash_t hash = (test_case_hash_t)std::hash<std::string>{}(name);
+	if(hashCollisionDetectionMap != nullptr) {
+		auto search = hashCollisionDetectionMap->find(hash);
+		if (search != hashCollisionDetectionMap->end()) {
+			if (search->second != name) {
+				print("There was an hash collision between '%s' and '%s'\n", search->second.c_str(), name.c_str());
+				throw std::runtime_error("Hash collision detected!");
+			}
+		}
+		hashCollisionDetectionMap->insert({hash, name});
+	}
+	return hash;
+}
+
 // \todo [2014-02-13 pyry] This could be useful elsewhere as well.
 class DebugOutStreambuf : public std::streambuf
 {
@@ -325,15 +353,14 @@ void DebugOutStreambuf::flushLine (void)
 class CaseTreeNode
 {
 public:
-										CaseTreeNode		(const std::string& name) : m_name(name) {}
+										CaseTreeNode		(const test_case_hash_t hash) : m_hash(hash) {}
 										~CaseTreeNode		(void);
 
-	const std::string&					getName				(void) const { return m_name;				}
+	test_case_hash_t					getHash				(void) const { return m_hash;				}
 	bool								hasChildren			(void) const { return !m_children.empty();	}
 
-	bool								hasChild			(const std::string& name) const;
-	const CaseTreeNode*					getChild			(const std::string& name) const;
-	CaseTreeNode*						getChild			(const std::string& name);
+	bool								hasChild			(test_case_hash_t hash) const;
+	CaseTreeNode*						getChild			(test_case_hash_t hash) const;
 
 	void								addChild			(CaseTreeNode* child) { m_children.push_back(child); }
 
@@ -343,10 +370,9 @@ private:
 
 	enum { NOT_FOUND = -1 };
 
-	// \todo [2014-10-30 pyry] Speed up with hash / sorting
-	int									findChildNdx		(const std::string& name) const;
+	int									findChildNdx		(test_case_hash_t hash) const;
 
-	std::string							m_name;
+	test_case_hash_t					m_hash;
 	std::vector<CaseTreeNode*>			m_children;
 };
 
@@ -356,30 +382,24 @@ CaseTreeNode::~CaseTreeNode (void)
 		delete *i;
 }
 
-int CaseTreeNode::findChildNdx (const std::string& name) const
+int CaseTreeNode::findChildNdx (test_case_hash_t hash) const
 {
 	for (int ndx = 0; ndx < (int)m_children.size(); ++ndx)
 	{
-		if (m_children[ndx]->getName() == name)
+		if (m_children[ndx]->getHash() == hash)
 			return ndx;
 	}
 	return NOT_FOUND;
 }
 
-inline bool CaseTreeNode::hasChild (const std::string& name) const
+inline bool CaseTreeNode::hasChild (test_case_hash_t hash) const
 {
-	return findChildNdx(name) != NOT_FOUND;
+	return findChildNdx(hash) != NOT_FOUND;
 }
 
-inline const CaseTreeNode* CaseTreeNode::getChild (const std::string& name) const
+inline CaseTreeNode* CaseTreeNode::getChild (test_case_hash_t hash) const
 {
-	const int ndx = findChildNdx(name);
-	return ndx == NOT_FOUND ? DE_NULL : m_children[ndx];
-}
-
-inline CaseTreeNode* CaseTreeNode::getChild (const std::string& name)
-{
-	const int ndx = findChildNdx(name);
+	const int ndx = findChildNdx(hash);
 	return ndx == NOT_FOUND ? DE_NULL : m_children[ndx];
 }
 
@@ -398,7 +418,8 @@ static const CaseTreeNode* findNode (const CaseTreeNode* root, const char* path)
 
 	for (;;)
 	{
-		curNode = curNode->getChild(std::string(curPath, curPath+curLen));
+		test_case_hash_t hash = hashTestNodeName(std::string(curPath, curPath + curLen), nullptr);
+		curNode = curNode->getChild(hash);
 
 		if (!curNode)
 			break;
@@ -418,7 +439,7 @@ static const CaseTreeNode* findNode (const CaseTreeNode* root, const char* path)
 	return curNode;
 }
 
-static void parseCaseTrie (CaseTreeNode* root, std::istream& in)
+static void parseCaseTrie (CaseTreeNode* root, std::istream& in, std::unordered_map<test_case_hash_t, string> &hashCollisionDetectionMap)
 {
 	vector<CaseTreeNode*>	nodeStack;
 	string					curName;
@@ -440,7 +461,8 @@ static void parseCaseTrie (CaseTreeNode* root, std::istream& in)
 		{
 			if (!curName.empty() && expectNode)
 			{
-				CaseTreeNode* const newChild = new CaseTreeNode(curName);
+				test_case_hash_t hash = hashTestNodeName(curName, &hashCollisionDetectionMap);
+				CaseTreeNode* const newChild = new CaseTreeNode(hash);
 
 				try
 				{
@@ -484,7 +506,7 @@ static void parseCaseTrie (CaseTreeNode* root, std::istream& in)
 	}
 }
 
-static void parseSimpleCaseList (vector<CaseTreeNode*>& nodeStack, std::istream& in, bool reportDuplicates)
+static void parseSimpleCaseList (vector<CaseTreeNode*>& nodeStack, std::istream& in, bool reportDuplicates, std::unordered_map<test_case_hash_t, string> &hashCollisionDetectionMap)
 {
 	// \note Algorithm assumes that cases are sorted by groups, but will
 	//		 function fine, albeit more slowly, if that is not the case.
@@ -500,9 +522,10 @@ static void parseSimpleCaseList (vector<CaseTreeNode*>& nodeStack, std::istream&
 			if (curName.empty())
 				throw std::invalid_argument("Empty test case name");
 
-			if (!nodeStack[stackPos]->hasChild(curName))
+			test_case_hash_t hash = hashTestNodeName(curName, &hashCollisionDetectionMap);
+			if (!nodeStack[stackPos]->hasChild(hash))
 			{
-				CaseTreeNode* const newChild = new CaseTreeNode(curName);
+				CaseTreeNode* const newChild = new CaseTreeNode(hash);
 
 				try
 				{
@@ -538,13 +561,14 @@ static void parseSimpleCaseList (vector<CaseTreeNode*>& nodeStack, std::istream&
 			if ((int)nodeStack.size() <= stackPos+1)
 				nodeStack.resize(nodeStack.size()*2, DE_NULL);
 
-			if (!nodeStack[stackPos+1] || nodeStack[stackPos+1]->getName() != curName)
+			test_case_hash_t hash = hashTestNodeName(curName, &hashCollisionDetectionMap);
+			if (!nodeStack[stackPos+1] || nodeStack[stackPos+1]->getHash() != hash)
 			{
-				CaseTreeNode* curGroup = nodeStack[stackPos]->getChild(curName);
+				CaseTreeNode* curGroup = nodeStack[stackPos]->getChild(hash);
 
 				if (!curGroup)
 				{
-					curGroup = new CaseTreeNode(curName);
+					curGroup = new CaseTreeNode(hash);
 
 					try
 					{
@@ -563,7 +587,7 @@ static void parseSimpleCaseList (vector<CaseTreeNode*>& nodeStack, std::istream&
 					nodeStack[stackPos+2] = DE_NULL; // Invalidate rest of entries
 			}
 
-			DE_ASSERT(nodeStack[stackPos+1]->getName() == curName);
+			DE_ASSERT(nodeStack[stackPos+1]->getHash() == hash);
 
 			curName.clear();
 			stackPos += 1;
@@ -575,13 +599,13 @@ static void parseSimpleCaseList (vector<CaseTreeNode*>& nodeStack, std::istream&
 	}
 }
 
-static void parseCaseList (CaseTreeNode* root, std::istream& in, bool reportDuplicates)
+static void parseCaseList (CaseTreeNode* root, std::istream& in, bool reportDuplicates, std::unordered_map<test_case_hash_t, string> &hashCollisionDetectionMap)
 {
 	vector<CaseTreeNode*> nodeStack(8, root);
-	parseSimpleCaseList(nodeStack, in, reportDuplicates);
+	parseSimpleCaseList(nodeStack, in, reportDuplicates, hashCollisionDetectionMap);
 }
 
-static void parseGroupFile(CaseTreeNode* root, std::istream& inGroupList, const tcu::Archive& archive, bool reportDuplicates)
+static void parseGroupFile(CaseTreeNode* root, std::istream& inGroupList, const tcu::Archive& archive, bool reportDuplicates, std::unordered_map<test_case_hash_t, string> &hashCollisionDetectionMap)
 {
 	// read whole file and remove all '\r'
 	std::string buffer(std::istreambuf_iterator<char>(inGroupList), {});
@@ -603,17 +627,20 @@ static void parseGroupFile(CaseTreeNode* root, std::istream& inGroupList, const 
 			throw Exception("Empty case list resource");
 
 		std::istringstream groupIn(std::string(groupBuffer.begin(), groupBuffer.end()));
-		parseSimpleCaseList(nodeStack, groupIn, reportDuplicates);
+		parseSimpleCaseList(nodeStack, groupIn, reportDuplicates, hashCollisionDetectionMap);
 	}
 }
 
 static CaseTreeNode* parseCaseList (std::istream& in, const tcu::Archive& archive, const char* path = DE_NULL)
 {
-	CaseTreeNode* const root = new CaseTreeNode("");
+	std::unordered_map<test_case_hash_t, std::string> hashCollisionDetectionMap{};
+	auto rootName = "";
+	test_case_hash_t hash = hashTestNodeName(rootName, &hashCollisionDetectionMap);
+	CaseTreeNode* const root = new CaseTreeNode(hash);
 	try
 	{
 		if (in.peek() == '{')
-			parseCaseTrie(root, in);
+			parseCaseTrie(root, in, hashCollisionDetectionMap);
 		else
 		{
 			// if we are reading cases from file determine if we are
@@ -636,9 +663,9 @@ static CaseTreeNode* parseCaseList (std::istream& in, const tcu::Archive& archiv
 			}
 
 			if (readGroupFile)
-				parseGroupFile(root, in, archive, true);
+				parseGroupFile(root, in, archive, true, hashCollisionDetectionMap);
 			else
-				parseCaseList(root, in, true);
+				parseCaseList(root, in, true, hashCollisionDetectionMap);
 		}
 
 		{
@@ -1115,7 +1142,7 @@ const char* CommandLine::getVkLibraryPath(void) const
 {
 	if (m_cmdLine.hasOption<opt::VkLibraryPath>())
 		return (m_cmdLine.getOption<opt::VkLibraryPath>() != "") ? m_cmdLine.getOption<opt::VkLibraryPath>().c_str() : DE_NULL;
-    else
+	else
 		return DE_NULL;
 }
 
@@ -1274,7 +1301,8 @@ CaseListFilter::CaseListFilter (const de::cmdline::CommandLine& cmdLine, const t
 				{
 					fileStream.clear();
 					fileStream.seekg(0, fileStream.beg);
-					parseCaseList(m_caseTree, fileStream, false);
+					std::unordered_map<test_case_hash_t, std::string> hashCollisionDetectionMap{};
+					parseCaseList(m_caseTree, fileStream, false, hashCollisionDetectionMap);
 				}
 			}
 		}
