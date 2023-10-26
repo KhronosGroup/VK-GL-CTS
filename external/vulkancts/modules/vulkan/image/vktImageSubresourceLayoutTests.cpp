@@ -650,6 +650,7 @@ tcu::TestStatus ImageSubresourceLayoutInstance::iterateAspect (VkImageAspectFlag
 	return tcu::TestStatus::pass("Pass");
 }
 
+#ifndef CTS_USES_VULKANSC
 class ImageSubresourceLayoutInvarianceInstance: public vkt::TestInstance
 {
 public:
@@ -670,7 +671,6 @@ ImageSubresourceLayoutInvarianceInstance::ImageSubresourceLayoutInvarianceInstan
 
 tcu::TestStatus ImageSubresourceLayoutInvarianceInstance::iterate(void)
 {
-#ifndef CTS_USES_VULKANSC
 	const VkDevice			device	= m_context.getDevice();
 	const DeviceInterface&	vk		= m_context.getDeviceInterface();
 
@@ -743,9 +743,6 @@ tcu::TestStatus ImageSubresourceLayoutInvarianceInstance::iterate(void)
 				return tcu::TestStatus::fail("Fail (vkGetImageSubresourceLayout2KHR)");
 		}
 	}
-#else
-	DE_UNREF(m_params);
-#endif // CTS_USES_VULKANSC
 	return tcu::TestStatus::pass("Pass");
 }
 
@@ -774,6 +771,7 @@ void ImageSubresourceLayoutInvarianceCase::checkSupport(Context& context) const
 	ImageSubresourceLayoutCase::checkSupport(context);
 	context.requireDeviceFunctionality("VK_KHR_maintenance5");
 }
+#endif // CTS_USES_VULKANSC
 
 } // anonymous namespace
 
